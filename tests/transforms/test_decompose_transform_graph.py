@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """Tests the ``decompose`` transform with the new experimental graph-based decomposition system."""
+
 from collections import defaultdict
 from functools import partial
 
@@ -20,7 +21,10 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane.decomposition.decomposition_rule import null_decomp
+from pennylane.measurements.mid_measure import MidMeasureMP
 from pennylane.operation import Operation
+from pennylane.ops.op_math.condition import Conditional
 from pennylane.transforms.decompose import _resolve_gate_set
 
 
@@ -286,7 +290,7 @@ class TestDecomposeGraphEnabled:
     def test_fall_back(self):
         """Tests that op.decompose() is used for ops unsolved in the graph."""
 
-        class CustomOp(qml.operation.Operation):  # pylint: disable=too-few-public-methods
+        class CustomOp(Operation):  # pylint: disable=too-few-public-methods
             """Dummy custom op."""
 
             resource_keys = set()
@@ -354,7 +358,7 @@ class TestDecomposeGraphEnabled:
     def test_adjoint_decomp(self):
         """Tests decomposing an adjoint operation."""
 
-        class CustomOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
+        class CustomOp(Operation):  # pylint: disable=too-few-public-methods
 
             resource_keys = set()
 
@@ -387,6 +391,61 @@ class TestDecomposeGraphEnabled:
             qml.RY(-0.2, wires=[0]),
             qml.RX(-0.1, wires=[0]),
         ]
+
+    def test_decompose_with_mcm(self):
+        """Tests that circuits and decomposition rules containing MCMs are supported."""
+
+        class CustomOp(Operation):  # pylint: disable=too-few-public-methods
+
+            resource_keys = set()
+
+            @property
+            def resource_params(self) -> dict:
+                return {}
+
+        @qml.register_resources({qml.H: 1, qml.X: 1, "measure": 1})
+        def _custom_decomp(wires, **_):
+            qml.H(wires[0])
+            m0 = qml.measure(wires[0])
+            qml.cond(m0, qml.H)(wires[1])
+
+        @partial(
+            qml.transforms.decompose,
+            gate_set={qml.RX, qml.RY, qml.RZ, "measure"},
+            fixed_decomps={qml.GlobalPhase: null_decomp, CustomOp: _custom_decomp},
+        )
+        @qml.qnode(qml.device("default.qubit"))
+        def circuit():
+            CustomOp(wires=[0, 1])
+            m0 = qml.measure(0)
+            qml.cond(m0, qml.X)(0)
+            return qml.probs()
+
+        decomposed_tape = qml.workflow.construct_tape(circuit, level="user")()
+        assert len(decomposed_tape.operations) == 7
+
+        def equivalent_circuit():
+            qml.RZ(np.pi, wires=0)
+            qml.RY(np.pi / 2, wires=0)
+            m0 = qml.measure(0)
+            qml.cond(m0, qml.RZ)(np.pi, wires=1)
+            qml.cond(m0, qml.RY)(np.pi / 2, wires=1)
+            m1 = qml.measure(0)
+            qml.cond(m1, qml.RX)(np.pi, wires=0)
+
+        with qml.queuing.AnnotatedQueue() as q:
+            equivalent_circuit()
+
+        qml.assert_equal(decomposed_tape.operations[0], q.queue[0])
+        qml.assert_equal(decomposed_tape.operations[1], q.queue[1])
+        assert isinstance(decomposed_tape.operations[3], Conditional)
+        assert isinstance(decomposed_tape.operations[4], Conditional)
+        assert isinstance(decomposed_tape.operations[6], Conditional)
+        qml.assert_equal(decomposed_tape.operations[3].base, q.queue[3].base)
+        qml.assert_equal(decomposed_tape.operations[4].base, q.queue[4].base)
+        qml.assert_equal(decomposed_tape.operations[6].base, q.queue[6].base)
+        assert isinstance(decomposed_tape.operations[2], MidMeasureMP)
+        assert isinstance(decomposed_tape.operations[5], MidMeasureMP)
 
     @pytest.mark.integration
     @pytest.mark.parametrize(
