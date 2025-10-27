@@ -160,6 +160,3 @@ class DisplacementEmbedding(Operation):
         return [
             Displacement(pars[i, 0], pars[i, 1], wires=wires[i : i + 1]) for i in range(len(wires))
         ]
-
-
-def _displacement_embedding_resources():

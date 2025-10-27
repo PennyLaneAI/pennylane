@@ -18,7 +18,7 @@ from collections import defaultdict
 
 from pennylane.control_flow import for_loop
 
-from pennylane.decomposition import resource_rep, add_decomps
+from pennylane.decomposition import resource_rep, add_decomps, register_resources
 
 # pylint: disable=too-many-arguments
 
@@ -318,7 +318,7 @@ class QAOAEmbedding(Operation):
     @property
     def resource_params(self) -> dict:
         return {
-            "repeats": math.shape(self.parameters[1])[-2],  # TODO: check this
+            "repeat": math.shape(self.parameters[1])[-2],
             "n_features": math.shape(self.parameters[0])[-1],
             "num_wires": len(self.wires),
             "local_field": self.hyperparameters["local_field"]
@@ -366,6 +366,7 @@ def _qaoa_embedding_resources(repeat, n_features, num_wires, local_field):
     return resources
 
 
+@register_resources(_qaoa_embedding_resources)
 def _qaoa_embedding_decomposition(features, weights, wires, local_field):
     if has_jax and capture.enabled():
         weights, wires, features = jnp.array(weights), jnp.array(wires), jnp.array(features)
