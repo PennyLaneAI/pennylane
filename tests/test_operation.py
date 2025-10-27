@@ -14,6 +14,7 @@
 """
 Unit tests for :mod:`pennylane.operation`.
 """
+
 import copy
 
 import numpy as np
@@ -50,6 +51,20 @@ def test_is_hermitian_property_deprecation():
         PennyLaneDeprecationWarning, match="The `is_hermitian` property is deprecated"
     ):
         assert op.is_hermitian
+
+
+def test_is_hermitian_property_subclass_override_deprecation():
+    """Tests that a subclass overriding is_hermitian property will raise a deprecation warning."""
+
+    with pytest.warns(
+        PennyLaneDeprecationWarning, match="The `is_hermitian` property is deprecated"
+    ):
+
+        # pylint: disable = unused-variable
+        class DummyOp(Operator):
+            """Dummy operation that overrides is_hermitian"""
+
+            is_hermitian = True
 
 
 class TestOperatorConstruction:

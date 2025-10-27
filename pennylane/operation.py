@@ -701,6 +701,16 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         register_pytree(cls, cls._flatten, cls._unflatten)
         cls._primitive = create_operator_primitive(cls)
 
+        if cls.is_hermitian != Operator.is_hermitian:
+            warnings.warn(
+                "The `is_hermitian` property is deprecated and has been renamed to `is_verified_hermitian` "
+                "as it better reflects the functionality of this property. The deprecated access through `is_hermitian` "
+                "will be removed in PennyLane v0.45. Alternatively, consider using the `pennylane.is_hermitian` "
+                "function instead as it provides a more reliable check for hermiticity. Please be aware that it comes "
+                "with a higher computational cost. ",
+                PennyLaneDeprecationWarning,
+            )
+
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
         """This class method should match the call signature of the class itself.
