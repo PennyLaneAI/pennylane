@@ -1341,7 +1341,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         This property provides a fast, non-exhaustive check used for internal optimizations.
 
         Returns:
-            * ``True``: The operator is verifiably Hermitian.
+            * ``True``: The operator is guaranteed to be Hermitian.
             * ``False``: The check is inconclusive - the operator may be Hermitian, but was not easily provable.
 
         As an example, consider the following edge case:
