@@ -168,7 +168,9 @@ class AllSinglesDoubles(Operation):
         super().__init__(weights, wires=wires, id=id)
 
     @classmethod
-    def _primitive_bind_call(cls, weights, wires, hf_state, singles=None, doubles=None, id=None):  # pylint: disable=arguments-differ
+    def _primitive_bind_call(
+        cls, weights, wires, hf_state, singles=None, doubles=None, id=None
+    ):  # pylint: disable=arguments-differ
         singles = math.array(singles) if singles is not None else math.array(((),))
         doubles = math.array(doubles) if doubles is not None else math.array(((),))
         wires = math.array(wires)
