@@ -102,7 +102,10 @@ class TestDecompose:
             [qml.Hadamard(0)],
             {qml.RX: 1, qml.RZ: 2},
             [qml.RZ(qnp.pi / 2, 0), qml.RX(qnp.pi / 2, 0), qml.RZ(qnp.pi / 2, 0)],
-            None,
+            {
+                "type": UserWarning,
+                "msg": "Gate weights were provided to a non-graph-based decomposition.",
+            },
         ),
         (
             [qml.Toffoli([0, 1, 2]), qml.measurements.MidMeasureMP(0)],

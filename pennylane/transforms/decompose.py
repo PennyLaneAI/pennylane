@@ -939,6 +939,9 @@ def _resolve_gate_set(  # pylint: disable=too-many-branches
     # in a gate_set_contains function that checks if either the name of the operator is within
     # the names in the gate set, or if the type of the operator is within the types.
     if isinstance(gate_set, Iterable):
+        if not isinstance(gate_set, (set, dict)):
+            gate_set = set(gate_set)
+
         gate_types = tuple(gate for gate in gate_set if isinstance(gate, type))
         gate_names = {translate_op_alias(gate) for gate in gate_set if isinstance(gate, str)}
 
@@ -989,9 +992,6 @@ def _resolve_gate_set(  # pylint: disable=too-many-branches
         # If the stopping condition is not explicitly provided, the default is to simply check
         # whether an operator belongs to the target gate set.
         _stopping_condition = gate_set_contains
-
-    if not isinstance(gate_set, (set, dict)):
-        gate_set = set(gate_set)
 
     return gate_set, _stopping_condition
 
