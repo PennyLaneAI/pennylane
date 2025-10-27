@@ -285,12 +285,10 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
                 f"The given operator must be a PennyLane ~.Sum or ~.SProd, got {hamiltonian}"
             )
 
-        if check_hermitian:
-            for op in hamiltonian.operands:
-                if not op.is_verified_hermitian:
-                    raise ValueError(
-                        "One or more of the terms in the Hamiltonian are not verified to be Hermitian. Please consider verifying the Hamiltonian manually using the more exhaustive 'qml.is_hermitian' check and provide `check_hermitian=False` to the `TrotterProduct` constructor."
-                    )
+        if check_hermitian and not all(op.is_hermitian for op in hamiltonian.operands):
+            raise ValueError(
+                "One or more of the terms in the Hamiltonian are not verified to be Hermitian. Please consider verifying the Hamiltonian manually using the more exhaustive 'qml.is_hermitian' check and provide `check_hermitian=False` to the `TrotterProduct` constructor."
+            )
 
         self._hyperparameters = {
             "n": n,
