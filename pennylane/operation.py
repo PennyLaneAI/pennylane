@@ -1352,7 +1352,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         On the contrary, the more exhaustive (and computationally intensive) check via :func:`pennylane.is_hermitian` function
         will give the correct answer:
 
-        >>> qml.is_verified_hermitian(op)
+        >>> qml.is_hermitian(op)
         True
         """
 
