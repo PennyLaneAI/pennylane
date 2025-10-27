@@ -1298,7 +1298,8 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
 
     @property
     def is_hermitian(self) -> bool:
-        """This property determines if an operator is likely hermitian.
+        """
+        This property determines if an operator is verifed to be Hermitian.
 
         .. warning::
 
@@ -1310,18 +1311,28 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
 
         .. note::
 
-            This property is not exhaustive and does not formally check Hermicity. Please note that if the property returns ``False``, the operator may still be hermitian.
+            This property provides a fast, non-exhaustive check used for internal
+            optimizations. It relies on quick, provable shortcuts (e.g., operator
+            properties) rather than a full, computationally expensive check.
 
-        As an example, consider the following edge case:
+            For a definitive check, use the :func:`pennylane.is_hermitian` function.
+            Please note that this comes with increased computational cost.
+
+        Returns:
+            * ``True``: The operator is guaranteed to be Hermitian.
+            * ``False``: The check is inconclusive. The operator may be Hermitian, but was not easily provable.
+
+        An operator may be Hermitian, but not verified to be by this property:
 
         >>> op = (qml.X(0) @ qml.Y(0) - qml.X(0) @ qml.Z(0)) * 1j
-        >>> op.is_hermitian
+        >>> op.is_verified_hermitian  # inconclusive
         False
 
-        On the contrary, the :func:`~.is_hermitian` function will give the correct answer:
+        However, the definitive function will give the correct answer:
 
         >>> qml.is_hermitian(op)
         True
+
         """
         warnings.warn(
             "The `is_hermitian` property is deprecated and has been renamed to `is_verified_hermitian` "
@@ -1338,23 +1349,30 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
     def is_verified_hermitian(self) -> bool:
         """This property determines if an operator is verifed to be Hermitian.
 
-        This property provides a fast, non-exhaustive check used for internal optimizations.
+        .. note::
+
+            This property provides a fast, non-exhaustive check used for internal
+            optimizations. It relies on quick, provable shortcuts (e.g., operator
+            properties) rather than a full, computationally expensive check.
+
+            For a definitive check, use the :func:`pennylane.is_hermitian` function.
+            Please note that this comes with increased computational cost.
 
         Returns:
             * ``True``: The operator is guaranteed to be Hermitian.
-            * ``False``: The check is inconclusive - the operator may be Hermitian, but was not easily provable.
+            * ``False``: The check is inconclusive. The operator may be Hermitian, but was not easily provable.
 
-        As an example, consider the following edge case:
+        An operator may be Hermitian, but not verified to be by this property:
 
         >>> op = (qml.X(0) @ qml.Y(0) - qml.X(0) @ qml.Z(0)) * 1j
-        >>> op.is_verified_hermitian
+        >>> op.is_verified_hermitian  # inconclusive
         False
 
-        On the contrary, the more exhaustive (and computationally intensive) check via :func:`pennylane.is_hermitian` function
-        will give the correct answer:
+        However, the definitive function will give the correct answer:
 
         >>> qml.is_hermitian(op)
         True
+
         """
 
         return False
