@@ -289,7 +289,7 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
             for op in hamiltonian.operands:
                 if not op.is_verified_hermitian:
                     raise ValueError(
-                        "One or more of the terms in the Hamiltonian are not verified to be Hermitian. Please check manually using 'qml.is_hermitian' and provide `check_hermitian=False` to the `TrotterProduct` constructor."
+                        "One or more of the terms in the Hamiltonian are not verified to be Hermitian. Please consider verifying the Hamiltonian manually using the more exhaustive 'qml.is_hermitian' check and provide `check_hermitian=False` to the `TrotterProduct` constructor."
                     )
 
         self._hyperparameters = {
