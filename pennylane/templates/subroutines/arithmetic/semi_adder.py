@@ -312,7 +312,7 @@ def _semiadder(x_wires, y_wires, work_wires, **_):
 
     x_wires_pl = x_wires[::-1][:num_y_wires]
     y_wires_pl = y_wires[::-1]
-    work_wires_pl_template = work_wires[::-1][: len(y_wires) - 1]
+    work_wires_pl_template = work_wires[::-1][: num_y_wires - 1]
 
     TemporaryAND([x_wires_pl[0], y_wires_pl[0], work_wires_pl_template[0]])
 
