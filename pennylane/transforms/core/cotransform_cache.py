@@ -32,7 +32,7 @@ def _numpy_jac(*_, **__) -> TensorLike:
 def _autograd_jac(classical_function, argnums, *args, **kwargs) -> TensorLike:
     if not math.get_trainable_indices(args) and argnums is None:
         raise QuantumFunctionError("No trainable parameters.")
-    return autograd_jacobian(classical_function, argnum=argnums)(*args, **kwargs)
+    return autograd_jacobian(classical_function, argnums=argnums)(*args, **kwargs)
 
 
 # pylint: disable=import-outside-toplevel, unused-argument

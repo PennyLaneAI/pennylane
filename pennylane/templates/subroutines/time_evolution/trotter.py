@@ -14,6 +14,7 @@
 """
 Contains templates for Suzuki-Trotter approximation based subroutines.
 """
+
 import copy
 from collections import defaultdict
 
@@ -502,18 +503,14 @@ def _trotter_product_decomposition_resources(n, order, ops):
 
     if order == 1:
         for op in ops:
-            reps[resource_rep(qml_ops.op_math.Evolution, base=op, num_steps=None)] = n * _count(
-                op, ops
-            )
+            reps[resource_rep(qml_ops.op_math.Evolution, base=op)] = n * _count(op, ops)
         return reps
     if order == 2:
         for op in ops:
-            reps[resource_rep(qml_ops.op_math.Evolution, base=op, num_steps=None)] = (
-                n * 2 * _count(op, ops)
-            )
+            reps[resource_rep(qml_ops.op_math.Evolution, base=op)] = n * 2 * _count(op, ops)
         return reps
     for op in ops:
-        reps[resource_rep(qml_ops.op_math.Evolution, base=op, num_steps=None)] = (
+        reps[resource_rep(qml_ops.op_math.Evolution, base=op)] = (
             n * _count(op, ops) * 2 * 5 * (order - 2) / 2
         )
     return reps
@@ -812,7 +809,6 @@ def trotterize(qfunc, n=1, order=2, reverse=False):
 
     @wraps(qfunc)
     def wrapper(time, *args, **kwargs):
-
         special_keys = ["n", "order", "qfunc", "reverse"]
         if any(key in kwargs for key in special_keys):
             raise ValueError(

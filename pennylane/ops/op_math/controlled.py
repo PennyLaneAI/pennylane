@@ -36,7 +36,6 @@ from pennylane.decomposition.resources import resolve_work_wire_type
 from pennylane.exceptions import (
     GeneratorUndefinedError,
     ParameterFrequenciesUndefinedError,
-    PennyLaneDeprecationWarning,
     SparseMatrixUndefinedError,
 )
 from pennylane.operation import Operation, Operator, classproperty
@@ -289,7 +288,7 @@ def _get_ctrl_qfunc_prim():
     ctrl_prim.prim_type = "higher_order"
 
     @ctrl_prim.def_impl
-    def _(*args, n_control, jaxpr, control_values, work_wires, n_consts):
+    def _impl(*args, n_control, jaxpr, control_values, work_wires, n_consts):
         from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 
         consts = args[:n_consts]
@@ -305,7 +304,7 @@ def _get_ctrl_qfunc_prim():
         return []
 
     @ctrl_prim.def_abstract_eval
-    def _(*_, **__):
+    def _abstract_eval(*_, **__):
         return []
 
     return ctrl_prim
@@ -608,14 +607,6 @@ class Controlled(SymbolicOp):
                 "Work wires must be different the control_wires and base operation wires."
             )
 
-        if work_wire_type in ("clean", "dirty"):
-            work_wire_type = "zeroed" if work_wire_type == "clean" else "borrowed"
-            warnings.warn(
-                "Specifying work_wire_type as 'clean' or 'dirty' is deprecated, "
-                "use 'zeroed' or 'borrowed' instead.",
-                PennyLaneDeprecationWarning,
-            )
-
         if work_wire_type not in {"zeroed", "borrowed"}:
             raise ValueError(
                 f"work_wire_type must be either 'zeroed' or 'borrowed'. Got '{work_wire_type}'."
@@ -848,7 +839,6 @@ class Controlled(SymbolicOp):
         return False
 
     def decomposition(self):
-
         if self.compute_decomposition is not Operator.compute_decomposition:
             return self.compute_decomposition(*self.data, self.wires)
 
@@ -1118,7 +1108,7 @@ class ControlledOp(Controlled, Operation):
 if Controlled._primitive is not None:  # pylint: disable=protected-access
 
     @Controlled._primitive.def_impl  # pylint: disable=protected-access
-    def _(
+    def _impl(
         base,
         *control_wires,
         control_values=None,
