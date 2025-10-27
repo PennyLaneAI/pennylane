@@ -324,12 +324,12 @@ class TestDecomposeInterpreter:
                 return qml.expval(qml.Z(0))
 
             @cond_f.else_if(x > 1)
-            def _():
+            def _else_if():
                 qml.Y(0)
                 return qml.expval(qml.Y(0))
 
             @cond_f.otherwise
-            def _():
+            def _else():
                 qml.Z(0)
                 return qml.expval(qml.X(0))
 

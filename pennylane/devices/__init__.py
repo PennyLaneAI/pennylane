@@ -186,18 +186,4 @@ from ._qutrit_device import QutritDevice
 def __getattr__(name):
     if name == "plugin_devices":
         return device_constructor.plugin_devices
-
-    if name == "DefaultExecutionConfig":
-        # pylint: disable=import-outside-toplevel
-        import warnings
-        from pennylane.exceptions import PennyLaneDeprecationWarning
-
-        warnings.warn(
-            "`pennylane.devices.DefaultExecutionConfig` is deprecated and will be removed in v0.44. "
-            "Please use `ExecutionConfig()` instead.",
-            PennyLaneDeprecationWarning,
-            stacklevel=2,
-        )
-        return ExecutionConfig()
-
     raise AttributeError(f"module 'pennylane.devices' has no attribute '{name}'")

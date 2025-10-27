@@ -16,6 +16,7 @@
 Developer note: Conditionals inherit from BooleanFn and store the condition they
 utilize in the ``condition`` attribute.
 """
+
 from inspect import isclass, signature
 
 from pennylane import math, measurements
@@ -344,7 +345,6 @@ def _check_arithmetic_ops(op1, op2):
             not isinstance(op1, type(op2))
             or (op1.base.arithmetic_depth != op2.base.arithmetic_depth)
             or not math.allclose(op1.coeff, op2.coeff)
-            or (op1.num_steps != op2.num_steps)
         ):
             return False
         if op1.base.arithmetic_depth:
@@ -506,7 +506,6 @@ class MeasEq(BooleanFn):
         )
 
     def _check_meas(self, mp):
-
         if isclass(mp) and not issubclass(mp, measurements.MeasurementProcess):
             return False
 

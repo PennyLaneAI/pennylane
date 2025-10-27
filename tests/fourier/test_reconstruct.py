@@ -896,7 +896,7 @@ class TestReconstruct:
                     params[outer_key_num] * mask + x * shift_vec,
                     *params[outer_key_num + 1 :],
                 )
-                exp_qnode_grad = qml.grad(qnode, argnum=outer_key_num)
+                exp_qnode_grad = qml.grad(qnode, argnums=outer_key_num)
                 exp_grad = qml.grad(univariate)
                 grad = qml.grad(rec)
                 if nums_frequency is None:

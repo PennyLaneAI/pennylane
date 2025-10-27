@@ -552,7 +552,7 @@ class DecompGraphSolution:
         def _is_solved(op_node: _OperatorNode):
             return (
                 op_node in self._all_op_indices
-                and self._all_op_indices[op_node] in visitor.distances
+                and self._all_op_indices[op_node] in visitor.predecessors
             )
 
         def _is_feasible(op_node: _OperatorNode):

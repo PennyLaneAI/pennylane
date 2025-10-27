@@ -15,6 +15,7 @@
 Contains tests for the `qml.workflow.get_transform_program` getter and `construct_batch`.
 
 """
+
 from functools import partial
 
 import numpy as np
@@ -22,7 +23,6 @@ import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
-from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.transforms.core.transform_dispatcher import TransformContainer
 from pennylane.transforms.core.transform_program import TransformProgram
 from pennylane.workflow import construct_batch, get_transform_program
@@ -86,12 +86,7 @@ class TestTransformProgramGetter:
         assert isinstance(p_grad, TransformProgram)
         p_default = get_transform_program(circuit)
         assert p_dev == p_default
-        with pytest.warns(
-            PennyLaneDeprecationWarning,
-            match="`level=None` is deprecated",
-        ):
-            p_none = get_transform_program(circuit, None)
-        assert p_none == p_dev
+
         assert len(p_dev) == 10
         config = qml.devices.ExecutionConfig(
             interface=getattr(circuit, "interface", None),
@@ -353,19 +348,6 @@ class TestConstructBatch:
         assert len(batch) == 2
 
         assert fn((1.0, 2.0)) == ((1.0, 2.0),)
-
-    def test_level_none_deprecated(self):
-        """Test that level=None raises a deprecation warning."""
-
-        @qml.qnode(qml.device("default.qubit"))
-        def circuit():
-            return qml.state()
-
-        with pytest.warns(
-            PennyLaneDeprecationWarning,
-            match="`level=None` is deprecated",
-        ):
-            construct_batch(circuit, level=None)
 
     def test_final_transform(self):
         """Test that the final transform is included when level="device"."""

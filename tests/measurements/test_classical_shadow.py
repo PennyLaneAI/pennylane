@@ -879,7 +879,7 @@ class TestExpvalBackward:
             0.8, 2, size=qml.StronglyEntanglingLayers.shape(n_layers=2, n_wires=3)
         )
         actual = qml.jacobian(shadow_circuit)(x, obs, k=1)
-        expected = qml.jacobian(cost_exact, argnum=0)(x, obs)
+        expected = qml.jacobian(cost_exact, argnums=0)(x, obs)
 
         assert qml.math.allclose(actual, expected, atol=1e-1)
 
@@ -956,12 +956,12 @@ class TestExpvalBackward:
         assert qml.math.allclose(actual, qml.math.stack(expected), atol=1e-1)
 
 
-def get_basis_circuit(wires, shots, basis, interface="autograd", device="default.mixed"):
+def get_basis_circuit(wires, shots, basis, interface="autograd", device="default.mixed", seed=None):
     """
     Return a QNode that prepares a state in a given computational basis
     and performs a classical shadow measurement
     """
-    dev = qml.device(device or "default.mixed", wires=wires)
+    dev = qml.device(device or "default.mixed", wires=wires, seed=seed)
 
     @qml.set_shots(shots)
     @qml.qnode(dev, interface=interface)
@@ -984,7 +984,7 @@ wires_list = [1, 3]
 @pytest.mark.all_interfaces
 @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
 @pytest.mark.parametrize("circuit_basis, basis_recipe", [("x", 0), ("y", 1), ("z", 2)])
-def test_return_distribution(wires, interface, circuit_basis, basis_recipe):
+def test_return_distribution(wires, interface, circuit_basis, basis_recipe, seed):
     """Test that the distribution of the bits and recipes are correct for a circuit
     that prepares all qubits in a Pauli basis"""
     # high number of shots to prevent true negatives
@@ -993,7 +993,7 @@ def test_return_distribution(wires, interface, circuit_basis, basis_recipe):
     device = "default.mixed"
 
     circuit = get_basis_circuit(
-        wires, basis=circuit_basis, shots=shots, interface=interface, device=device
+        wires, basis=circuit_basis, shots=shots, interface=interface, device=device, seed=seed
     )
     bits, recipes = circuit()  # pylint: disable=unpacking-non-sequence
     new_bits, new_recipes = circuit()  # pylint: disable=unpacking-non-sequence

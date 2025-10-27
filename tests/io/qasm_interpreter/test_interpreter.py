@@ -352,7 +352,7 @@ class TestMeasurementReset:
 
         # Note: we can't compare MeasurementValues using __eq__ as they don't have a truthiness,
         # __eq__ returns a MeasurementValue
-        def compare_measurement_values(mv_1: MeasurementValue[T], mv_2: MeasurementValue[T]):
+        def compare_measurement_values(mv_1: MeasurementValue, mv_2: MeasurementValue):
             res_1 = mv_1.processing_fn()
             res_2 = mv_2.processing_fn()
             meas_1 = mv_1.measurements

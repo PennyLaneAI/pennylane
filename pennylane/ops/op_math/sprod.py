@@ -121,7 +121,7 @@ class SProd(ScalarSymbolicOp):
                 return qml.expval(qml.s_prod(scalar, qml.Hadamard(wires=0)))
 
         >>> scalar, theta = (1.2, 3.4)
-        >>> qml.grad(circuit, argnum=[0,1])(scalar, theta)
+        >>> qml.grad(circuit, argnums=[0,1])(scalar, theta)
         (array(-0.6836...), array(0.2168...))
 
     """
