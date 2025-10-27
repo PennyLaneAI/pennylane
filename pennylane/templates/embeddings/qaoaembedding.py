@@ -416,7 +416,7 @@ def _qaoa_embedding_decomposition(features, weights, wires, local_field):
             local_field(weights[l][1], wires=wires[0:1])
             local_field(weights[l][2], wires=wires[1:2])
 
-        cond(len(wires) == 1, true_body, false_body, (len(wires) == 2, elif_body))()
+        cond(len(wires) == 1, true_body, false_body, ((len(wires) == 2, elif_body),))()
 
     repeat_loop()  # pylint: disable=no-value-for-parameter
 
