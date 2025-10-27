@@ -28,7 +28,7 @@ from .temporary_and import TemporaryAND
 
 
 def _left_operator(wires, ik_is_zero=False):
-    """Implement the left block in figure 2, https://arxiv.org/pdf/1709.06648
+    """Implement the left block in figure 2, https://arxiv.org/pdf/1709.06648.
 
     Args:
         wires (Sequence[int]): the four wires that are represented in figure 2
@@ -51,7 +51,7 @@ def _left_operator(wires, ik_is_zero=False):
 
 
 def _right_operator(wires, ik_is_zero=False):
-    """Implement the right block in figure 2, https://arxiv.org/pdf/1709.06648
+    """Implement the right block in figure 2, https://arxiv.org/pdf/1709.06648.
 
     Args:
         wires (Sequence[int]): the four wires that are represented in figure 2
@@ -76,7 +76,7 @@ def _right_operator(wires, ik_is_zero=False):
 def _controlled_right_operator(
     wires, control_wires, control_values, ik_is_zero=False, work_wires=None
 ):
-    """Implement the right block in figure 4, https://arxiv.org/pdf/1709.06648
+    """Implement the right block in figure 4, https://arxiv.org/pdf/1709.06648.
 
     Args:
         control_wires (Sequence[int]): wires used to control the operator
