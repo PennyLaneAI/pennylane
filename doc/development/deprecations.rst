@@ -9,8 +9,11 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
-* The :prop:``pennylane.operation.Operator.is_hermitian`` property is deprecated. Instead, please use the
-  :func:`pennylane.is_hermitian` function to check for hermiticity.
+* The :prop:`pennylane.operation.Operator.is_hermitian` property has been deprecated and renamed 
+  to :prop:`pennylane.operation.Operator.is_verified_hermitian` as it better reflects the functionality of this property. 
+  The deprecated access through `is_hermitian` will be removed in PennyLane v0.45. 
+  Alternatively, consider using the :func:`pennylane.is_hermitian` function instead as it provides a more reliable check for hermiticity. 
+  Please be aware that it comes with a higher computational cost.
   
   - Deprecated in v0.44
   - Will be removed in v0.45
