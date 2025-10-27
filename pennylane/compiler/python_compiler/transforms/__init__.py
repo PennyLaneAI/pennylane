@@ -18,6 +18,8 @@ from .mbqc import (
     ConvertToMBQCFormalismPass,
     decompose_graph_state_pass,
     DecomposeGraphStatePass,
+    outline_state_evolution_pass,
+    OutlineStateEvolutionPass,
     null_decompose_graph_state_pass,
     NullDecomposeGraphStatePass,
 )
@@ -33,6 +35,8 @@ from .quantum import (
     MeasurementsFromSamplesPass,
     merge_rotations_pass,
     MergeRotationsPass,
+    split_non_commuting_pass,
+    SplitNonCommutingPass,
 )
 
 
@@ -48,11 +52,15 @@ __all__ = [
     "MeasurementsFromSamplesPass",
     "merge_rotations_pass",
     "MergeRotationsPass",
+    "split_non_commuting_pass",
+    "SplitNonCommutingPass",
     # MBQC
     "convert_to_mbqc_formalism_pass",
     "ConvertToMBQCFormalismPass",
     "decompose_graph_state_pass",
     "DecomposeGraphStatePass",
+    "OutlineStateEvolutionPass",
+    "outline_state_evolution_pass",
     "null_decompose_graph_state_pass",
     "NullDecomposeGraphStatePass",
 ]
