@@ -27,7 +27,12 @@ from scipy.linalg import block_diag
 
 import pennylane as qml
 from pennylane.allocation import allocate
-from pennylane.decomposition import add_decomps, register_condition, register_resources
+from pennylane.decomposition import (
+    add_decomps,
+    change_op_basis_resource_rep,
+    register_condition,
+    register_resources,
+)
 from pennylane.decomposition.symbolic_decomposition import (
     adjoint_rotation,
     flip_zero_control,
@@ -1346,9 +1351,10 @@ add_decomps("Pow(Toffoli)", pow_involutory)
 
 def _toffoli_elbow_resources():
     return {
-        qml.TemporaryAND: 1,
-        qml.CNOT: 1,
-        qml.decomposition.adjoint_resource_rep(qml.TemporaryAND, {}): 1,
+        change_op_basis_resource_rep(
+            qml.TemporaryAND,
+            qml.CNOT,
+        ): 1,
     }
 
 
