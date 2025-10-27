@@ -927,6 +927,9 @@ def _resolve_gate_set(  # pylint: disable=too-many-branches
         # We simply disregard the weights and treat the dictionary as just a set of gates.
         if not enabled_graph():
             gate_set = set(gate_set.keys())
+            raise UserWarning(
+                "Gate weights were provided to a non-graph-based decomposition. These will be ignored."
+            )
 
     # Less common, but this is used when a single gate is provided as the gate_set
     if isinstance(gate_set, (str, type)):
