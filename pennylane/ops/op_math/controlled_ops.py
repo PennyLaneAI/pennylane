@@ -56,6 +56,8 @@ from .decompositions.controlled_decompositions import (
     single_ctrl_decomp_zyz_rule,
 )
 
+from pennylane.allocation import allocate
+
 INV_SQRT2 = 1 / qml.math.sqrt(2)
 
 stack_last = partial(qml.math.stack, axis=-1)
@@ -1342,6 +1344,20 @@ add_decomps(Toffoli, _toffoli)
 add_decomps("Adjoint(Toffoli)", self_adjoint)
 add_decomps("Pow(Toffoli)", pow_involutory)
 
+def _toffoli_elbow_resources():
+    return {
+        qml.TemporaryAND: 1,
+        qml.CNOT: 1,
+        qml.decomposition.adjoint_resource_rep(qml.TemporaryAND, {}): 1,
+    }
+
+
+@register_resources(_toffoli_resources, work_wires={"zeroed": 1})
+def _toffoli_elbow(wires: WiresLike, **__):
+    with allocate(1, qml.allocation.AllocateState.ZERO, restored=True) as work_wires:
+        qml.change_op_basis(qml.Elbow([wires[0], wires[1], work_wires[0]]), qml.CNOT([work_wires[0], wires[2]]))
+
+add_decomps(Toffoli, _toffoli_elbow)
 
 class MultiControlledX(ControlledOp):
     r"""Apply a :class:`~.PauliX` gate controlled on an arbitrary computational basis state.
