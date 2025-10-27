@@ -15,6 +15,7 @@
 This submodule contains the discrete-variable quantum operations that do
 not depend on any parameters.
 """
+
 # pylint: disable=arguments-differ
 import cmath
 from copy import copy
@@ -63,7 +64,7 @@ class Hadamard(Operation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
 
-    is_hermitian = True
+    is_verified_hermitian = True
     _queue_category = "_ops"
 
     num_wires = 1
@@ -285,7 +286,6 @@ def _controlled_h_resources(*_, num_control_wires, num_work_wires, work_wire_typ
 
 @register_resources(_controlled_h_resources)
 def _controlled_hadamard(wires, control_wires, work_wires, work_wire_type, **__):
-
     if len(control_wires) == 1:
         qml.CH(wires)
         return
@@ -322,8 +322,6 @@ class PauliX(Operation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
 
-    is_hermitian = True
-
     num_wires = 1
     """int: Number of wires that the operator acts on."""
 
@@ -337,7 +335,7 @@ class PauliX(Operation):
     batch_size = None
 
     _queue_category = "_ops"
-    is_hermitian = True
+    is_verified_hermitian = True
 
     @property
     def pauli_rep(self):
@@ -606,7 +604,7 @@ class PauliY(Operation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
 
-    is_hermitian = True
+    is_verified_hermitian = True
 
     num_wires = 1
     """int: Number of wires that the operator acts on."""
@@ -831,7 +829,6 @@ def _controlled_y_resource(*_, num_control_wires, num_work_wires, work_wire_type
 
 @register_resources(_controlled_y_resource)
 def _controlled_y_decomp(*_, wires, control_wires, work_wires, work_wire_type, **__):
-
     if len(control_wires) == 1:
         qml.CY(wires=wires)
         return
@@ -863,7 +860,7 @@ class PauliZ(Operation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
 
-    is_hermitian = True
+    is_verified_hermitian = True
     _queue_category = "_ops"
     num_wires = 1
     num_params = 0
@@ -1105,7 +1102,6 @@ def _controlled_z_resources(*_, num_control_wires, num_work_wires, work_wire_typ
 
 @register_resources(_controlled_z_resources)
 def _controlled_z_decomp(*_, wires, control_wires, work_wires, work_wire_type, **__):
-
     if len(control_wires) == 1:
         qml.CZ(wires=wires)
         return
@@ -1634,6 +1630,7 @@ class SWAP(Operation):
         wires (Sequence[int]): the wires the operation acts on
     """
 
+    is_verified_hermitian = True
     num_wires = 2
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
@@ -1749,10 +1746,6 @@ class SWAP(Operation):
     def _controlled(self, wire: WiresLike) -> "qml.CSWAP":
         return qml.CSWAP(wires=wire + self.wires)
 
-    @property
-    def is_verified_hermitian(self) -> bool:
-        return True
-
 
 def _swap_to_cnot_resources():
     return {qml.CNOT: 3}
@@ -1787,7 +1780,6 @@ def _controlled_swap_resources(*_, num_control_wires, num_work_wires, work_wire_
 
 @register_resources(_controlled_swap_resources)
 def _controlled_swap_decomp(*_, wires, control_wires, work_wires, work_wire_type, **__):
-
     if len(control_wires) == 1:
         qml.CSWAP(wires=wires)
         return

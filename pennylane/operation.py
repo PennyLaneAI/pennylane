@@ -2317,7 +2317,7 @@ class CVObservable(CV, Operator):
            can be useful for some applications where the instance has to be identified
     """
 
-    is_hermitian = True
+    is_verified_hermitian = True
 
     def queue(self, context=QueuingManager):
         """Avoids queuing the observable."""

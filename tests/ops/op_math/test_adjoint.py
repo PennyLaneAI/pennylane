@@ -281,7 +281,7 @@ class TestProperties:
         # pylint: disable=too-few-public-methods
         class DummyOp(qml.operation.Operator):
             num_wires = 1
-            is_hermitian = value
+            is_verified_hermitian = value
 
         op = Adjoint(DummyOp(0))
         assert op.is_hermitian == value
