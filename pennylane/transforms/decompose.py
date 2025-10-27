@@ -982,7 +982,7 @@ def _(gate_set: Callable):
     return gate_set, gate_set_contains
 
 
-def _resolve_gate_set(  # pylint: disable=too-many-branches
+def _resolve_gate_set(
     gate_set: Iterable[type | str] | dict[type | str, float] | Callable | None = None,
     stopping_condition: Callable[[Operator], bool] | None = None,
 ) -> tuple[set[type | str] | dict[type | str, float], Callable[[Operator], bool]]:
