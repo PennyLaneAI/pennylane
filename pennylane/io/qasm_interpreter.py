@@ -89,6 +89,7 @@ def _eval_unary_op(operand: any, operator: str, line: int):
     )  # pragma: no cover
 
 
+# pylint: disable = too-many-branches
 def _eval_assignment(lhs: any, operator: str, value: any, line: int):
     """
     Evaluates an assignment.
@@ -136,7 +137,7 @@ def _eval_assignment(lhs: any, operator: str, value: any, line: int):
     return lhs
 
 
-# pylint: disable=too-many-return-statements
+# pylint: disable=too-many-return-statements, too-many-branches
 def _eval_binary_op(lhs: any, operator: str, rhs: any, line: int):
     """
     Evaluates a binary operator.

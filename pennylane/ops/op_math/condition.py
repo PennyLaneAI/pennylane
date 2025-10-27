@@ -790,11 +790,11 @@ def _get_cond_qfunc_prim():
     )
 
     @cond_prim.def_abstract_eval
-    def _(*_, jaxpr_branches, **__):
+    def _abstract_eval(*_, jaxpr_branches, **__):
         return [out.aval for out in jaxpr_branches[0].outvars]
 
     @cond_prim.def_impl
-    def _(*all_args, jaxpr_branches, consts_slices, args_slice):
+    def _impl(*all_args, jaxpr_branches, consts_slices, args_slice):
         n_branches = len(jaxpr_branches)
         conditions = all_args[:n_branches]
         args = all_args[args_slice]
