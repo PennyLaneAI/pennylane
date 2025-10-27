@@ -51,4 +51,6 @@ def is_hermitian(op: Operator):
     >>> qml.is_hermitian(op2)
     False
     """
+    if op.is_verified_hermitian:
+        return True
     return allclose(matrix(op), matrix(adjoint(op)))
