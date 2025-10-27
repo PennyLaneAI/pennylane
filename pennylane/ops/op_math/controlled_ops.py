@@ -26,6 +26,7 @@ import numpy as np
 from scipy.linalg import block_diag
 
 import pennylane as qml
+from pennylane.allocation import allocate
 from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.decomposition.symbolic_decomposition import (
     adjoint_rotation,
@@ -55,8 +56,6 @@ from .decompositions.controlled_decompositions import (
     multi_control_decomp_zyz_rule,
     single_ctrl_decomp_zyz_rule,
 )
-
-from pennylane.allocation import allocate
 
 INV_SQRT2 = 1 / qml.math.sqrt(2)
 
