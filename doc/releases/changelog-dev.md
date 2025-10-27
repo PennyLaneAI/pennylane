@@ -2,6 +2,12 @@
 
 <h3>New features since last release</h3>
 
+* A compilation pass written with xDSL called `qml.compiler.python_compiler.transforms.ParitySynthPass`
+  has been added for the experimental xDSL Python compiler integration. This pass resynthesizes
+  subcircuits that form a phase polynomial (``CNOT`` and ``RZ`` gates), using ``ParitySynth`` by
+  [Vandaele et al.](https://arxiv.org/abs/2104.00934)
+  [(#8414)](https://github.com/PennyLaneAI/pennylane/pull/8414)
+
 * Added a :meth:`~pennylane.devices.DeviceCapabilities.gate_set` method to :class:`~pennylane.devices.DeviceCapabilities`
   that produces a set of gate names to be used as the target gate set in decompositions.
   [(#8522)](https://github.com/PennyLaneAI/pennylane/pull/8522)
@@ -26,7 +32,7 @@
   additional templates.
   [(#8520)](https://github.com/PennyLaneAI/pennylane/pull/8520)
   [(#8515)](https://github.com/PennyLaneAI/pennylane/pull/8515)
-  
+
   - :class:`~.QSVT`
   - :class:`~.AmplitudeEmbedding`
 
@@ -136,13 +142,13 @@
 
 * Access to the follow functions and classes from the ``pennylane.resources`` module are deprecated. Instead, these functions must be imported from the ``pennylane.estimator`` module.
   [(#8484)](https://github.com/PennyLaneAI/pennylane/pull/8484)
-    
+
     - ``qml.estimator.estimate_shots`` in favor of ``qml.resources.estimate_shots``
     - ``qml.estimator.estimate_error`` in favor of ``qml.resources.estimate_error``
     - ``qml.estimator.FirstQuantization`` in favor of ``qml.resources.FirstQuantization``
     - ``qml.estimator.DoubleFactorization`` in favor of ``qml.resources.DoubleFactorization``
 
-* ``argnum`` has been renamed ``argnums`` for ``qml.grad``, ``qml.jacobian``, ``qml.jvp`` and `qml.vjp``.
+* ``argnum`` has been renamed ``argnums`` for ``qml.grad``, ``qml.jacobian``, ``qml.jvp`` and ``qml.vjp``.
   [(#8496)](https://github.com/PennyLaneAI/pennylane/pull/8496)
   [(#8481)](https://github.com/PennyLaneAI/pennylane/pull/8481)
 
@@ -155,7 +161,7 @@
 
 * Fix all NumPy 1.X `DeprecationWarnings` in our source code.
   [(#8497)](https://github.com/PennyLaneAI/pennylane/pull/8497)
-  
+
 * Update versions for `pylint`, `isort` and `black` in `format.yml`
   [(#8506)](https://github.com/PennyLaneAI/pennylane/pull/8506)
 
@@ -167,7 +173,7 @@
   circuit. A clear error is now also raised when there are observables with overlapping wires.
   [(#8383)](https://github.com/PennyLaneAI/pennylane/pull/8383)
 
-* Add an `outline_state_evolution_pass` pass to the MBQC xDSL transform, which moves all 
+* Add an `outline_state_evolution_pass` pass to the MBQC xDSL transform, which moves all
   quantum gate operations to a private callable.
   [(#8367)](https://github.com/PennyLaneAI/pennylane/pull/8367)
 
@@ -183,17 +189,17 @@
   [(#8486)](https://github.com/PennyLaneAI/pennylane/pull/8486)
   [(#8495)](https://github.com/PennyLaneAI/pennylane/pull/8495)
 
-* The various private functions of the :class:`~pennylane.estimator.FirstQuantization` class have 
+* The various private functions of the :class:`~pennylane.estimator.FirstQuantization` class have
   been modified to avoid using `numpy.matrix` as this function is deprecated.
   [(#8523)](https://github.com/PennyLaneAI/pennylane/pull/8523)
 
-* The `ftqc` module now includes dummy transforms for several Catalyst/MLIR passes (`to-ppr`, `commute-ppr`, `merge-ppr-ppm`, `pprm-to-mbqc` 
+* The `ftqc` module now includes dummy transforms for several Catalyst/MLIR passes (`to-ppr`, `commute-ppr`, `merge-ppr-ppm`, `pprm-to-mbqc`
   and `reduce-t-depth`), to allow them to be captured as primitives in PLxPR and mapped to the MLIR passes in Catalyst. This enables using the passes with the unified compiler and program capture.
   [(#8519)](https://github.com/PennyLaneAI/pennylane/pull/8519)
 
-* The decompositions for several templates have been updated to use 
+* The decompositions for several templates have been updated to use
   :class:`~.ops.op_math.ChangeOpBasis`, which makes their decompositions more resource efficient
-  by eliminating unnecessary controlled operations. The templates include :class:`~.PhaseAdder`, 
+  by eliminating unnecessary controlled operations. The templates include :class:`~.PhaseAdder`,
   :class:`~.TemporaryAND`, :class:`~.QSVT`, and :class:`~.SelectPauliRot`.
   [(#8490)](https://github.com/PennyLaneAI/pennylane/pull/8490)
 

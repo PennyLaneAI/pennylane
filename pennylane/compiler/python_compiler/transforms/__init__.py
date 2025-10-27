@@ -35,6 +35,8 @@ from .quantum import (
     MeasurementsFromSamplesPass,
     merge_rotations_pass,
     MergeRotationsPass,
+    parity_synth_pass,
+    ParitySynthPass,
 )
 
 
@@ -50,6 +52,8 @@ __all__ = [
     "MeasurementsFromSamplesPass",
     "merge_rotations_pass",
     "MergeRotationsPass",
+    "parity_synth_pass",
+    "ParitySynthPass",
     # MBQC
     "convert_to_mbqc_formalism_pass",
     "ConvertToMBQCFormalismPass",
