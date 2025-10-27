@@ -176,6 +176,10 @@
   circuit. A clear error is now also raised when there are observables with overlapping wires.
   [(#8383)](https://github.com/PennyLaneAI/pennylane/pull/8383)
 
+* A compilation pass for `convert_to_mbqc_gateset_pass` has been added to the experimental `ftqc` module. It wraps the more general 
+  decomposition pass, with the MBQC target gateset and custom decomposition to reach `RotXZX`.
+  [(#8462)](https://github.com/PennyLaneAI/pennylane/pull/8462)
+
 * Add an `outline_state_evolution_pass` pass to the MBQC xDSL transform, which moves all 
   quantum gate operations to a private callable.
   [(#8367)](https://github.com/PennyLaneAI/pennylane/pull/8367)
