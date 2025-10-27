@@ -243,8 +243,8 @@ class Exp(ScalarSymbolicOp, Operation):
         return self.base.num_params + 1
 
     @property
-    def is_hermitian(self):
-        return self.base.is_hermitian and math.allequal(math.imag(self.coeff), 0)
+    def is_verified_hermitian(self):
+        return self.base.is_verified_hermitian and math.allequal(math.imag(self.coeff), 0)
 
     @property
     def _queue_category(self):

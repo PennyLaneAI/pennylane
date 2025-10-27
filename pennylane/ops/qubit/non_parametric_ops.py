@@ -1750,7 +1750,7 @@ class SWAP(Operation):
         return qml.CSWAP(wires=wire + self.wires)
 
     @property
-    def is_hermitian(self) -> bool:
+    def is_verified_hermitian(self) -> bool:
         return True
 
 

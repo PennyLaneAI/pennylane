@@ -123,8 +123,8 @@ class SymbolicOp(Operator):
         return self.base.has_matrix
 
     @property
-    def is_hermitian(self):
-        return self.base.is_hermitian
+    def is_verified_hermitian(self):
+        return self.base.is_verified_hermitian
 
     @property
     def _queue_category(self):
