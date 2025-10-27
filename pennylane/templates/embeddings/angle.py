@@ -160,6 +160,8 @@ def _angle_embedding_resources(rotation, num_wires):
 @register_resources(_angle_embedding_resources)
 def _angle_embedding_decomposition(features, wires, rotation):
     batched = math.ndim(features) > 1
+    # We will iterate over the first axis of `features` together with iterating over the wires.
+    # If the leading dimension is a batch dimension, exchange the wire and batching axes.
     features = math.T(features) if batched else features
 
     if has_jax and capture.enabled():
