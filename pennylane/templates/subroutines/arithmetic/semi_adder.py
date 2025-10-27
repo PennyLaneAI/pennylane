@@ -428,20 +428,20 @@ def _controlled_semi_adder(base, control_wires, control_values, **__):
         CNOT([x_wires_pl[-1], y_wires_pl[-1]])
 
     for i in range(len(y_wires_pl) - 2, 0, -1):
+
+        wire_args = [work_wires_pl[i - 1], y_wires_pl[i], work_wires_pl[i]]
+        ik_is_zero = True
         if i < num_x_wires:
-            _controlled_right_operator(
-                [work_wires_pl[i - 1], x_wires_pl[i], y_wires_pl[i], work_wires_pl[i]],
-                control_wires=control_wires,
-                control_values=control_values,
-                work_wires=extra_work_wires,
-            )
-        else:
-            _controlled_right_operator(
-                [work_wires_pl[i - 1], y_wires_pl[i], work_wires_pl[i]],
-                control_wires=control_wires,
-                control_values=control_values,
-                ik_is_zero=True,
-            )
+            wire_args.insert(1, x_wires_pl[i])
+            ik_is_zero = False
+
+        _controlled_right_operator(
+            wire_args,
+            control_wires=control_wires,
+            control_values=control_values,
+            work_wires=extra_work_wires,
+            ik_is_zero=ik_is_zero,
+        )
 
     adjoint(TemporaryAND([x_wires_pl[0], y_wires_pl[0], work_wires_pl[0]]))
     ctrl(
