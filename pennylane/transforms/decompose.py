@@ -950,7 +950,8 @@ def _resolve_gate_set(  # pylint: disable=too-many-branches
     # is not provided but stopping_condition is. This would only be valid with graph disabled.
     elif gate_set is None:
         gate_set = set()
-        gate_set_contains = lambda op: False  # pylint: disable=unnecessary-lambda-assignment
+        def gate_set_contains(op):
+            return False
         if enabled_graph():
             raise TypeError(
                 "The gate_set argument is required when the graph-based decomposition system "
