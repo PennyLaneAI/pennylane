@@ -50,6 +50,8 @@ __all__ = [
     "MeasurementsFromSamplesPass",
     "merge_rotations_pass",
     "MergeRotationsPass",
+    "tree_traversal_pass",
+    "TreeTraversalPass",
     # MBQC
     "convert_to_mbqc_formalism_pass",
     "ConvertToMBQCFormalismPass",
