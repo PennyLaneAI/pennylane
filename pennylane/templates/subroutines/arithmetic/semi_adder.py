@@ -28,7 +28,13 @@ from .temporary_and import TemporaryAND
 
 
 def _left_operator(wires, ik_is_zero=False):
-    """Implement the left block in figure 2, https://arxiv.org/pdf/1709.06648"""
+    """Implement the left block in figure 2, https://arxiv.org/pdf/1709.06648
+
+    Args:
+        wires (Sequence[int]): the four wires that are represented in figure 2
+        ik_is_zero (bool): boolean used to specify if the input state :math:`|i_k\rangle = |0\rangle`. This
+                           extra information reduces de complexity of the circuit.
+    """
 
     if not ik_is_zero:
         ck, ik, tk, aux = wires
@@ -45,7 +51,13 @@ def _left_operator(wires, ik_is_zero=False):
 
 
 def _right_operator(wires, ik_is_zero=False):
-    """Implement the right block in figure 2, https://arxiv.org/pdf/1709.06648"""
+    """Implement the right block in figure 2, https://arxiv.org/pdf/1709.06648
+
+    Args:
+        wires (Sequence[int]): the four wires that are represented in figure 2
+        ik_is_zero (bool): boolean used to specify if the input state :math:`|i_k\rangle = |0\rangle`. This
+                           extra information reduces de complexity of the circuit.
+    """
 
     if not ik_is_zero:
         ck, ik, tk, aux = wires
@@ -64,7 +76,15 @@ def _right_operator(wires, ik_is_zero=False):
 def _controlled_right_operator(
     wires, control_wires, control_values, ik_is_zero=False, work_wires=None
 ):
-    """Implement the right block in figure 4, https://arxiv.org/pdf/1709.06648"""
+    """Implement the right block in figure 4, https://arxiv.org/pdf/1709.06648
+
+    Args:
+        control_wires (Sequence[int]): wires used to control the operator
+        control_values (Iterable[bool | int]): the control values
+        wires (Sequence[int]): the last four wires that are represented in figure 4
+        ik_is_zero (bool): boolean used to specify if the input state :math:`|i_k\rangle = |0\rangle`. This
+                           extra information reduces de complexity of the circuit
+    """
 
     if not ik_is_zero:
         ck, ik, tk, aux = wires
@@ -292,29 +312,48 @@ def _semiadder(x_wires, y_wires, work_wires, **_):
 
     x_wires_pl = x_wires[::-1][:num_y_wires]
     y_wires_pl = y_wires[::-1]
-    work_wires_pl = work_wires[::-1]
-    TemporaryAND([x_wires_pl[0], y_wires_pl[0], work_wires_pl[0]])
+    work_wires_pl_template = work_wires[::-1][: len(y_wires) - 1]
+
+    TemporaryAND([x_wires_pl[0], y_wires_pl[0], work_wires_pl_template[0]])
 
     for i in range(1, num_y_wires - 1):
         if i < num_x_wires:
-            _left_operator([work_wires_pl[i - 1], x_wires_pl[i], y_wires_pl[i], work_wires_pl[i]])
+            _left_operator(
+                [
+                    work_wires_pl_template[i - 1],
+                    x_wires_pl[i],
+                    y_wires_pl[i],
+                    work_wires_pl_template[i],
+                ]
+            )
         else:
-            _left_operator([work_wires_pl[i - 1], y_wires_pl[i], work_wires_pl[i]], ik_is_zero=True)
+            _left_operator(
+                [work_wires_pl_template[i - 1], y_wires_pl[i], work_wires_pl_template[i]],
+                ik_is_zero=True,
+            )
 
-    CNOT([work_wires_pl[-1], y_wires_pl[-1]])
+    CNOT([work_wires_pl_template[-1], y_wires_pl[-1]])
 
     if num_x_wires >= num_y_wires:
         CNOT([x_wires_pl[-1], y_wires_pl[-1]])
 
     for i in range(len(y_wires_pl) - 2, 0, -1):
         if i < num_x_wires:
-            _right_operator([work_wires_pl[i - 1], x_wires_pl[i], y_wires_pl[i], work_wires_pl[i]])
+            _right_operator(
+                [
+                    work_wires_pl_template[i - 1],
+                    x_wires_pl[i],
+                    y_wires_pl[i],
+                    work_wires_pl_template[i],
+                ]
+            )
         else:
             _right_operator(
-                [work_wires_pl[i - 1], y_wires_pl[i], work_wires_pl[i]], ik_is_zero=True
+                [work_wires_pl_template[i - 1], y_wires_pl[i], work_wires_pl_template[i]],
+                ik_is_zero=True,
             )
 
-    adjoint(TemporaryAND([x_wires_pl[0], y_wires_pl[0], work_wires_pl[0]]))
+    adjoint(TemporaryAND([x_wires_pl[0], y_wires_pl[0], work_wires_pl_template[0]]))
     CNOT([x_wires_pl[0], y_wires_pl[0]])
 
 

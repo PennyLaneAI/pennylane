@@ -32,6 +32,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Now :class:`~.SemiAdder` works correctly if more ``work_wires`` than required are passed. 
+ [(#8423)](https://github.com/PennyLaneAI/pennylane/pull/8423)
+* 
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
