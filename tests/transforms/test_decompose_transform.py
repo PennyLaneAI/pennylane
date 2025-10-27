@@ -71,7 +71,18 @@ class InfiniteOp(Operation):
 class TestDecompose:
     """Unit tests for decompose function"""
 
-    gate_set_inputs = [None, "RX", ["RX"], ("RX",), {"RX"}, qml.RX, [qml.RX], (qml.RX,), {qml.RX}]
+    gate_set_inputs = [
+        None,
+        "RX",
+        ["RX"],
+        ("RX",),
+        {"RX"},
+        qml.RX,
+        [qml.RX],
+        (qml.RX,),
+        {qml.RX},
+        {qml.RX: 1.0},
+    ]
 
     iterables_test = [
         (
@@ -139,8 +150,15 @@ class TestDecompose:
     def test_different_input_formats(self, gate_set):
         """Tests that gate sets of different types are handled correctly"""
         tape = qml.tape.QuantumScript([qml.RX(0, wires=[0])])
-        (decomposed_tape,), _ = decompose(tape, gate_set=gate_set)
-        qml.assert_equal(tape, decomposed_tape)
+        if isinstance(gate_set, dict):
+            with pytest.raises(
+                UserWarning, match="Gate weights were provided to a non-graph-based decomposition."
+            ):
+                (decomposed_tape,), _ = decompose(tape, gate_set=gate_set)
+                qml.assert_equal(tape, decomposed_tape)
+        else:
+            (decomposed_tape,), _ = decompose(tape, gate_set=gate_set)
+            qml.assert_equal(tape, decomposed_tape)
 
     def test_user_warning(self):
         """Tests that user warning is raised if operator does not have a valid decomposition"""
