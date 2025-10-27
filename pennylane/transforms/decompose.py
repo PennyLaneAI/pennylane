@@ -932,15 +932,14 @@ def _(gate_set: Iterable):
     # The gate_set could be a mix of operator names and operator types. We need to wrap this
     # in a gate_set_contains function that checks if either the name of the operator is within
     # the names in the gate set, or if the type of the operator is within the types.
-    if isinstance(gate_set, Iterable):
-        if not isinstance(gate_set, (set, dict)):
-            gate_set = set(gate_set)
+    if not isinstance(gate_set, (set, dict)):
+        gate_set = set(gate_set)
 
-        gate_types = tuple(gate for gate in gate_set if isinstance(gate, type))
-        gate_names = {translate_op_alias(gate) for gate in gate_set if isinstance(gate, str)}
+    gate_types = tuple(gate for gate in gate_set if isinstance(gate, type))
+    gate_names = {translate_op_alias(gate) for gate in gate_set if isinstance(gate, str)}
 
-        def gate_set_contains(op: Operator) -> bool:
-            return (op.name in gate_names) or isinstance(op, gate_types)
+    def gate_set_contains(op: Operator) -> bool:
+        return (op.name in gate_names) or isinstance(op, gate_types)
 
     return gate_set, gate_set_contains
 
