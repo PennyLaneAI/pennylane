@@ -231,7 +231,7 @@ def _(self, *invals, reset, postselect):
 
 
 @DefaultQubitInterpreter.register_primitive(adjoint_transform_prim)
-def _(self, *invals, jaxpr, n_consts, lazy=True):
+def _adjoint_transform_prim(self, *invals, jaxpr, n_consts, lazy=True):
     consts = invals[:n_consts]
     args = invals[n_consts:]
     recorder = CollectOpsandMeas()
@@ -251,7 +251,7 @@ def _(self, *invals, jaxpr, n_consts, lazy=True):
 
 # pylint: disable=too-many-arguments
 @DefaultQubitInterpreter.register_primitive(ctrl_transform_prim)
-def _(self, *invals, n_control, jaxpr, control_values, work_wires, n_consts):
+def _ctrl_transform_prim(self, *invals, n_control, jaxpr, control_values, work_wires, n_consts):
     consts = invals[:n_consts]
     control_wires = invals[-n_control:]
     args = invals[n_consts:-n_control]

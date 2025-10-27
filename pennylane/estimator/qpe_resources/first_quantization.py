@@ -120,7 +120,7 @@ class FirstQuantization(Operation):
                 / self.omega
                 * np.array([np.cross(vectors[i], vectors[j]) for i, j in [(1, 2), (2, 0), (0, 1)]])
             )
-            bbt = np.matrix(recip_vectors) @ np.matrix(recip_vectors).T
+            bbt = recip_vectors @ recip_vectors.T
             self.cubic = np.linalg.norm(bbt - (recip_vectors**2).max() * np.identity(3)) < 1e-6
 
         self._lamb = self.norm(
@@ -731,7 +731,7 @@ class FirstQuantization(Operation):
             * np.array([np.cross(vectors[i], vectors[j]) for i, j in [(1, 2), (2, 0), (0, 1)]])
         )
 
-        bbt = np.matrix(recip_vectors) @ np.matrix(recip_vectors).T
+        bbt = recip_vectors @ recip_vectors.T
 
         orthogonal = (
             np.linalg.norm(bbt - np.array([np.max(b**2) for b in recip_vectors]) * np.identity(3))
@@ -801,8 +801,7 @@ class FirstQuantization(Operation):
         lambda_u_1 = lambda_u * lambda_nu_1 / lambda_nu
         lambda_v_1 = lambda_v * lambda_nu_1 / lambda_nu
 
-        b_mat = np.matrix(recip_vectors)
-        abs_sum = np.abs(b_mat @ b_mat.T).flatten().sum()
+        abs_sum = np.abs(recip_vectors @ recip_vectors.T).flatten().sum()
 
         # taken from Appendix I.1 of arXiv:2302.07981v1 (2023)
         if orthogonal:
@@ -918,7 +917,7 @@ class FirstQuantization(Operation):
                 * np.pi
                 * eta
                 * 2 ** (2 * n_p - 2)
-                * np.abs(np.matrix(recip_vectors) @ np.matrix(recip_vectors).T).flatten().sum()
+                * np.abs(recip_vectors @ recip_vectors.T).flatten().sum()
                 / error_b
             )
         )
@@ -1013,7 +1012,7 @@ class FirstQuantization(Operation):
                 * np.pi
                 * eta
                 * 2 ** (2 * n_p - 2)
-                * np.abs(np.matrix(recip_vectors) @ np.matrix(recip_vectors).T).flatten().sum()
+                * np.abs(recip_vectors @ recip_vectors.T).flatten().sum()
                 / error_b
             )
         )

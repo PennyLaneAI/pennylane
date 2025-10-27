@@ -144,28 +144,6 @@ unmodified_templates_cases = [
         {"wires": [3, 2, 0], "id": "your_id"},
     ),
     (qml.MottonenStatePreparation, (), {"state_vector": jnp.array([1.0, 0.0]), "wires": [1]}),
-    # Need to fix AllSinglesDoubles positional args: Currently have to pass hf_state as kwarg
-    # if we want to pass wires as kwarg, see issue #5521
-    (
-        qml.AllSinglesDoubles,
-        (jnp.ones(3), [2, 3, 0, 1]),
-        {
-            "singles": [[0, 2], [1, 3]],
-            "doubles": [[2, 3, 0, 1]],
-            "hf_state": np.array([0, 1, 1, 0]),
-        },
-    ),
-    (
-        qml.AllSinglesDoubles,
-        (jnp.zeros(3),),
-        {
-            "singles": [[0, 2], [1, 3]],
-            "doubles": [[2, 3, 0, 1]],
-            "wires": list(range(8)),
-            "hf_state": np.ones(8, dtype=int),
-        },
-    ),
-    # (qml.AllSinglesDoubles, (jnp.ones(3), [2, 3, 0, 1], np.array([0, 1, 1, 0])), {"singles": [[0, 2], [1, 3]], "doubles": [[2,3,0,1]]}), # Can't trace
     (qml.AQFT, (1, [0, 1, 2]), {}),
     (qml.AQFT, (2,), {"wires": [0, 1, 2, 3]}),
     (qml.AQFT, (), {"order": 2, "wires": [0, 2, 3, 1]}),
@@ -257,6 +235,7 @@ def test_unmodified_templates(template, args, kwargs):
 # TestModifiedTemplates below.
 tested_modified_templates = [
     qml.TrotterProduct,
+    qml.AllSinglesDoubles,
     qml.AmplitudeAmplification,
     qml.ApproxTimeEvolution,
     qml.BasisRotation,
@@ -701,6 +680,33 @@ class TestModifiedTemplates:
 
         assert len(q) == 1
         assert q.queue[0] == qml.MPSPrep(mps=mps, wires=wires)
+
+    def test_all_singles_doubles(self):
+        arguments = (
+            jnp.array([-2.8, 0.5]),
+            jnp.array([1, 2, 3, 4]),
+            jnp.array([1, 1, 0, 0]),
+        )
+        keyword_args = (
+            jnp.array([[0, 2]]),
+            jnp.array([[0, 1, 2, 3]]),
+        )
+        params = (*arguments, *keyword_args)
+
+        def qfunc(weights, wires, hf_state, singles, doubles):
+            qml.AllSinglesDoubles(weights, wires, hf_state, singles=singles, doubles=doubles)
+
+        # Validate inputs
+        qfunc(*params)
+
+        # Actually test primitive bind
+        jaxpr = jax.make_jaxpr(qfunc)(*params)
+
+        with qml.queuing.AnnotatedQueue() as q:
+            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *params)
+
+        assert len(q) == 1
+        assert q.queue[0] == qml.AllSinglesDoubles(*params)
 
     def test_quantum_monte_carlo(self):
         """Test the primitive bind call of QuantumMonteCarlo."""
