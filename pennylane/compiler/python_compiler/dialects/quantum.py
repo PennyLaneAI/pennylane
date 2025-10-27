@@ -870,12 +870,9 @@ class QubitUnitaryOp(IRDLOperation):
         if not isinstance(in_ctrl_values, Sequence):
             in_ctrl_values = (in_ctrl_values,)
 
-        if isinstance(gate_name, str):
-            gate_name = StringAttr(data=gate_name)
-
         out_qubits = tuple(QubitType() for _ in in_qubits)
         out_ctrl_qubits = tuple(QubitType() for _ in in_ctrl_qubits)
-        properties = {"gate_name": gate_name}
+        properties = {}
         if adjoint:
             properties["adjoint"] = UnitAttr()
 

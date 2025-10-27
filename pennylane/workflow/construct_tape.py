@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Contains a function to extract a single tape from a QNode"""
+
 from __future__ import annotations
 
 from collections.abc import Callable
@@ -25,21 +26,14 @@ if TYPE_CHECKING:
     from .qnode import QNode
 
 
-def construct_tape(
-    qnode: QNode, level: str | int | slice | None = "user"
-) -> Callable[..., QuantumScript]:
+def construct_tape(qnode: QNode, level: str | int | slice = "user") -> Callable[..., QuantumScript]:
     """Constructs the tape for a designated stage in the transform program.
-
-    .. warning::
-
-        Using ``level=None`` is deprecated and will be removed in a future release.
-        Please use ``level='device'`` to include all transforms.
 
     Args:
         qnode (QNode): the qnode we want to get the tapes and post-processing for.
-        level (None, str, int, slice): An indication of what transforms to apply before drawing.
-            Check :func:`~.workflow.get_transform_program` for more information on the allowed values and usage details of
-            this argument.
+        level (str, int, slice): An indication of what transforms to apply before
+            drawing. Check :func:`~.workflow.get_transform_program` for more
+            information on the allowed values and usage details of this argument.
 
     Returns:
         tape (QuantumScript): a quantum circuit.
@@ -77,7 +71,6 @@ def construct_tape(
     """
 
     def wrapper(*args, **kwargs):
-
         batch, _ = construct_batch(qnode, level)(*args, **kwargs)
 
         if len(batch) > 1:
