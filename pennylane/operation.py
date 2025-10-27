@@ -1322,15 +1322,18 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
             * ``True``: The operator is guaranteed to be Hermitian.
             * ``False``: The check is inconclusive. The operator may be Hermitian, but was not easily provable.
 
-        An operator may be Hermitian, but not verified to be by this property:
+        Consider this operator,
 
         >>> op = (qml.X(0) @ qml.Y(0) - qml.X(0) @ qml.Z(0)) * 1j
-        >>> op.is_verified_hermitian  # inconclusive
+
+        In this case, Hermicity cannot be verified and leads to an inconclusive result:
+
+        >>> op.is_verified_hermitian # inconclusive
         False
 
-        However, the definitive function will give the correct answer:
+        However, using :func:`pennylane.is_hermitian` will give the correct answer:
 
-        >>> qml.is_hermitian(op)
+        >>> qml.is_hermitian(op) # definitive
         True
 
         """
@@ -1347,7 +1350,16 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
 
     @property
     def is_verified_hermitian(self) -> bool:
-        """This property determines if an operator is verifed to be Hermitian.
+        """
+        This property determines if an operator is verifed to be Hermitian.
+
+        .. warning::
+
+            The ``is_hermitian`` property is deprecated and has been renamed to ``is_verified_hermitian``
+            as it better reflects the functionality of this property. The deprecated access through ``is_hermitian``
+            will be removed in PennyLane v0.45. Alternatively, consider using the :func:`~.is_hermitian`
+            function instead as it provides a more reliable check for hermiticity. Please be aware that it comes
+            with a higher computational cost.
 
         .. note::
 
@@ -1362,15 +1374,18 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
             * ``True``: The operator is guaranteed to be Hermitian.
             * ``False``: The check is inconclusive. The operator may be Hermitian, but was not easily provable.
 
-        An operator may be Hermitian, but not verified to be by this property:
+        Consider this operator,
 
         >>> op = (qml.X(0) @ qml.Y(0) - qml.X(0) @ qml.Z(0)) * 1j
-        >>> op.is_verified_hermitian  # inconclusive
+
+        In this case, Hermicity cannot be verified and leads to an inconclusive result:
+
+        >>> op.is_verified_hermitian # inconclusive
         False
 
-        However, the definitive function will give the correct answer:
+        However, using :func:`pennylane.is_hermitian` will give the correct answer:
 
-        >>> qml.is_hermitian(op)
+        >>> qml.is_hermitian(op) # definitive
         True
 
         """
