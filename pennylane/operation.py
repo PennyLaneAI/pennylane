@@ -1325,7 +1325,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         warnings.warn(
             "The `is_hermitian` property is deprecated and has been renamed to 'is_verified_hermitian' "
             "as it better reflects the functionality of this property. The deprecated access through `is_hermitian` "
-            "will be removed in PennyLane v0.45. Alternatively, consider using the :func:`~.is_hermitian` "
+            "will be removed in PennyLane v0.45. Alternatively, consider using the `pennylane.is_hermitian` "
             "function instead as it provides a more reliable check for hermiticity. Please be aware that it comes "
             "with a higher computational cost. ",
             PennyLaneDeprecationWarning,
