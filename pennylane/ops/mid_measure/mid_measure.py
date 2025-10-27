@@ -186,7 +186,7 @@ def measure(
 
     Args:
         wires (Wires): The wire to measure.
-        reset (Optional[bool]): Whether to reset the wire to the :math:`|0 \rangle`
+        reset (bool): Whether to reset the wire to the :math:`|0 \rangle`
             state after measurement.
         postselect (Optional[int]): Which basis state to postselect after a mid-circuit
             measurement. None by default. If postselection is requested, only the post-measurement
