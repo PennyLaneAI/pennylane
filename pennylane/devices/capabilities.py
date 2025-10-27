@@ -14,6 +14,7 @@
 """
 Defines the DeviceCapabilities class, and tools to load it from a TOML file.
 """
+
 import re
 from collections.abc import Callable
 from dataclasses import dataclass, field, replace
@@ -174,6 +175,28 @@ class DeviceCapabilities:  # pylint: disable=too-many-instance-attributes
         capabilities = parse_toml_document(document)
         update_device_capabilities(capabilities, document, runtime_interface)
         return capabilities
+
+    def gate_set(self, differentiable=False) -> set[str]:
+        """Get the names of the set of supported gates.
+
+        Args:
+            differentiable (bool): Whether to include gates that are not differentiable.
+                If True, gates that are not differentiable will be excluded.
+
+        Returns:
+            set[str]: The target gate set.
+
+        """
+        gate_set = set()
+        for op, prop in self.operations.items():
+            if differentiable and not prop.differentiable:
+                continue
+            gate_set.add(op)
+            if prop.controllable:
+                gate_set.add(f"C({op})")
+            if prop.invertible:
+                gate_set.add(f"Adjoint({op})")
+        return gate_set
 
     def supports_operation(self, operation: str | Operator) -> bool:
         """Checks if the given operation is supported by name."""
@@ -416,7 +439,6 @@ def observable_stopping_condition_factory(
     """
 
     def observable_stopping_condition(obs: qml.operation.Operator) -> bool:
-
         if not capabilities.supports_observable(obs.name):
             return False
 
@@ -451,7 +473,6 @@ def validate_mcm_method(capabilities: DeviceCapabilities, mcm_method: str, shots
         return
 
     if mcm_method not in capabilities.supported_mcm_methods:
-
         supported_methods = capabilities.supported_mcm_methods + ["deferred"]
         supported_method_strings = [f'"{m}"' for m in supported_methods]
         raise QuantumFunctionError(

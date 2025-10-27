@@ -14,13 +14,10 @@
 """
 Defines the MeasurementValue class
 """
-from collections.abc import Callable
-from typing import Generic, TypeVar
+from collections.abc import Callable, Generator
 
 from pennylane import math
 from pennylane.wires import Wires
-
-T = TypeVar("T")
 
 
 def no_processing(results):
@@ -28,14 +25,13 @@ def no_processing(results):
     return results
 
 
-class MeasurementValue(Generic[T]):
+class MeasurementValue:
     """A class representing unknown measurement outcomes in the qubit model.
 
-    Measurements on a single qubit in the computational basis are assumed.
-
     Args:
-        measurements (list[.MidMeasureMP]): The measurement(s) that this object depends on.
+        measurements (list[MidMeasureMP | PauliMeasure]): The measurement(s) that this object depends on.
         processing_fn (callable | None): A lazy transformation applied to the measurement values.
+
     """
 
     name = "MeasurementValue"
@@ -56,14 +52,14 @@ class MeasurementValue(Generic[T]):
             return no_processing
         return self._processing_fn
 
-    def items(self):
+    def items(self) -> Generator:
         """A generator representing all the possible outcomes of the MeasurementValue."""
         num_meas = len(self.measurements)
         for i in range(2**num_meas):
             branch = tuple(int(b) for b in f"{i:0{num_meas}b}")
             yield branch, self.processing_fn(*branch)
 
-    def postselected_items(self):
+    def postselected_items(self) -> Generator:
         """A generator representing all the possible outcomes of the MeasurementValue,
         taking postselection into account."""
         # pylint: disable=stop-iteration-return

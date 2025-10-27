@@ -14,7 +14,9 @@
 r"""
 Contains the AmplitudeEmbedding template.
 """
+from pennylane.decomposition import add_decomps
 from pennylane.ops import StatePrep
+from pennylane.ops.qubit.state_preparation import _state_prep_decomp
 
 
 # pylint: disable=too-many-arguments
@@ -104,6 +106,12 @@ class AmplitudeEmbedding(StatePrep):
 
     """
 
+    resource_keys = frozenset({"num_wires"})
+
+    @property
+    def resource_params(self):
+        return {"num_wires": len(self.wires)}
+
     def __init__(
         self, features, wires, *, pad_with=None, normalize=False, id=None, validate_norm=True
     ):
@@ -115,3 +123,6 @@ class AmplitudeEmbedding(StatePrep):
             validate_norm=validate_norm,
             id=id,
         )
+
+
+add_decomps(AmplitudeEmbedding, _state_prep_decomp)

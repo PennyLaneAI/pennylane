@@ -288,7 +288,7 @@ def _get_ctrl_qfunc_prim():
     ctrl_prim.prim_type = "higher_order"
 
     @ctrl_prim.def_impl
-    def _(*args, n_control, jaxpr, control_values, work_wires, n_consts):
+    def _impl(*args, n_control, jaxpr, control_values, work_wires, n_consts):
         from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 
         consts = args[:n_consts]
@@ -304,7 +304,7 @@ def _get_ctrl_qfunc_prim():
         return []
 
     @ctrl_prim.def_abstract_eval
-    def _(*_, **__):
+    def _abstract_eval(*_, **__):
         return []
 
     return ctrl_prim
@@ -1108,7 +1108,7 @@ class ControlledOp(Controlled, Operation):
 if Controlled._primitive is not None:  # pylint: disable=protected-access
 
     @Controlled._primitive.def_impl  # pylint: disable=protected-access
-    def _(
+    def _impl(
         base,
         *control_wires,
         control_values=None,
