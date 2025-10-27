@@ -245,7 +245,7 @@ class TestDecomposition:
 
     DECOMP_PARAMS = [
         ([0], [[0, 0, np.pi / 2]], range(2), "X"),
-        ([0, 0], [[0, 0, 0, 0, 0, np.pi / 2]], range(3), "X"),
+        ([[0, 0]], [[[0, 0, 0, 0, 0, np.pi / 2]]], range(3), "X"),
     ]
 
     @pytest.mark.capture
