@@ -7,7 +7,7 @@ appdirs==1.4.4
 argon2-cffi==25.1.0
 argon2-cffi-bindings==25.1.0
 arrow==1.4.0
-astroid==3.3.11
+astroid==4.0.1
 asttokens==3.0.0
 astunparse==1.6.3
 async-lru==2.0.5
@@ -77,7 +77,7 @@ ipython==9.6.0
 ipython_pygments_lexers==1.1.1
 ipywidgets==8.1.7
 isoduration==20.11.0
-isort==6.0.1
+isort==7.0.0
 itsdangerous==2.2.0
 jax==0.6.2
 jaxlib==0.6.2
@@ -94,9 +94,9 @@ jupyter_client==8.6.3
 jupyter_core==5.9.1
 jupyter_server==2.17.0
 jupyter_server_terminals==0.5.3
-jupyterlab==4.4.9
+jupyterlab==4.4.10
 jupyterlab_pygments==0.3.0
-jupyterlab_server==2.27.3
+jupyterlab_server==2.28.0
 jupyterlab_widgets==3.0.15
 kiwisolver==1.4.9
 lark==1.3.0
@@ -104,7 +104,7 @@ llvmlite==0.44.0
 markdown-it-py==4.0.0
 MarkupSafe==3.0.3
 matplotlib==3.10.7
-matplotlib-inline==0.1.7
+matplotlib-inline==0.2.1
 mccabe==0.7.0
 mdurl==0.1.2
 mistune==3.1.4
@@ -112,7 +112,7 @@ mitiq==0.47.0
 ml_dtypes==0.5.3
 mpmath==1.3.0
 mypy_extensions==1.1.0
-narwhals==2.8.0
+narwhals==2.9.0
 nbclient==0.10.2
 nbconvert==7.16.6
 nbformat==5.10.4
@@ -134,8 +134,8 @@ pandas==2.3.3
 pandocfilters==1.5.1
 parso==0.8.5
 pathspec==0.12.1
-PennyLane-qiskit @ git+https://github.com/PennyLaneAI/pennylane-qiskit.git@2c7345760103d923eaa80ce749180ce4ba0a9bd3
-pennylane_catalyst==0.14.0.dev9
+PennyLane-qiskit @ git+https://github.com/PennyLaneAI/pennylane-qiskit.git@a570dca78d833dc6f2b279f15fc23e372f1b409c
+pennylane_catalyst==0.14.0.dev15
 pennylane_lightning==0.43.0
 pennylane_lightning_kokkos==0.43.0
 pexpect==4.9.0
@@ -148,7 +148,7 @@ pre_commit==4.3.0
 prometheus_client==0.23.1
 prompt_toolkit==3.0.52
 protobuf==6.33.0
-psutil==7.1.1
+psutil==7.1.2
 psygnal==0.15.0
 ptyprocess==0.7.0
 pure_eval==0.2.3
@@ -160,7 +160,7 @@ pydantic_core==2.41.4
 pydot==3.0.4
 Pygments==2.19.2
 PyJWT==2.10.1
-pylint==3.3.8
+pylint==4.0.2
 pyparsing==3.1.4
 pyperclip==1.11.0
 pyproject_hooks==1.2.0
@@ -196,10 +196,10 @@ rfc3339-validator==0.1.4
 rfc3986-validator==0.1.1
 rfc3987-syntax==1.1.0
 rich==13.9.4
-rpds-py==0.27.1
+rpds-py==0.28.0
 rustworkx==0.17.1
 scipy==1.15.2
-scipy-openblas32==0.3.30.0.2
+scipy-openblas32==0.3.30.0.4
 scs==3.2.9
 Send2Trash==1.8.3
 six==1.17.0
@@ -213,7 +213,7 @@ stim==1.15.0
 sympy==1.14.0
 tabulate==0.9.0
 tach==0.28.5
-termcolor==3.1.0
+termcolor==3.2.0
 terminado==0.18.1
 tinycss2==1.4.0
 tomli==2.3.0
@@ -235,5 +235,6 @@ webencodings==0.5.1
 websocket-client==1.9.0
 Werkzeug==3.1.3
 widgetsnbextension==4.0.14
-xdsl==0.49.0
+xdsl @ git+https://github.com/xdslproject/xdsl.git@44e68054841b9937b6da9cf77f5369f18f336bae
+xdsl-jax @ git+https://github.com/xdslproject/xdsl-jax.git@724eda359b6ea4e4ef73629c3bd9f4706918b543
 zipp==3.23.0

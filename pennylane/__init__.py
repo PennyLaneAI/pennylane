@@ -81,6 +81,7 @@ from pennylane.measurements import (
     counts,
     density_matrix,
     measure,
+    pauli_measure,
     expval,
     probs,
     sample,
