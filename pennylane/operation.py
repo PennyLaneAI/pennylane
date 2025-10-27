@@ -1318,8 +1318,8 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
             Please note that this comes with increased computational cost.
 
         Returns:
-            * ``True``: The operator is guaranteed to be Hermitian.
-            * ``False``: The check is inconclusive. The operator may be Hermitian, but was not easily provable.
+            bool: The property will return ``True`` if the operator is guaranteed to be Hermitian and
+            ``False`` if the check is inconclusive and the operator may or may not be Hermitian.
 
         Consider this operator,
 
@@ -1369,8 +1369,8 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
             Please note that this comes with increased computational cost.
 
         Returns:
-            * ``True``: The operator is guaranteed to be Hermitian.
-            * ``False``: The check is inconclusive. The operator may be Hermitian, but was not easily provable.
+            bool: The property will return ``True`` if the operator is guaranteed to be Hermitian and
+            ``False`` if the check is inconclusive and the operator may or may not be Hermitian.
 
         Consider this operator,
 
