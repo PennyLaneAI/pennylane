@@ -233,7 +233,7 @@ def _get_while_loop_qfunc_prim():
     register_custom_staging_rule(while_loop_prim, lambda params: params["jaxpr_body_fn"].outvars)
 
     @while_loop_prim.def_impl
-    def _(
+    def _impl(
         *args,
         jaxpr_body_fn,
         jaxpr_cond_fn,
@@ -253,7 +253,7 @@ def _get_while_loop_qfunc_prim():
         return fn_res
 
     @while_loop_prim.def_abstract_eval
-    def _(*args, args_slice, **__):
+    def _abstract_eval(*args, args_slice, **__):
         return args[args_slice]
 
     return while_loop_prim

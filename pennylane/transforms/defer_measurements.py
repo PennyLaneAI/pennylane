@@ -364,7 +364,7 @@ def _get_plxpr_defer_measurements():
             return outvals
 
     @DeferMeasurementsInterpreter.register_primitive(measure_prim)
-    def _(self, wires, reset=False, postselect=None):
+    def _measure_primitive(self, wires, reset=False, postselect=None):
         cur_target = self.state["cur_target"]
         # Range for comparison is [cur_target, num_wires) because cur_target
         # is the _current_ wire to be used for an MCM.
@@ -392,7 +392,7 @@ def _get_plxpr_defer_measurements():
         return MeasurementValue([meas])
 
     @DeferMeasurementsInterpreter.register_primitive(cond_prim)
-    def _(self, *invals, jaxpr_branches, consts_slices, args_slice):
+    def _cond_primitive(self, *invals, jaxpr_branches, consts_slices, args_slice):
         n_branches = len(jaxpr_branches)
         conditions = invals[:n_branches]
         if not any(isinstance(c, MeasurementValue) for c in conditions):
