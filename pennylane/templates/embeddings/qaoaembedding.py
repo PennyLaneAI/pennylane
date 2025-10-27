@@ -173,7 +173,7 @@ class QAOAEmbedding(Operation):
 
     grad_method = None
 
-    resource_keys = {"repeats", "n_features", "num_wires", "local_field"}
+    resource_keys = {"repeat", "n_features", "num_wires", "local_field"}
 
     def __init__(self, features, weights, wires, local_field="Y", id=None):
         if local_field == "Z":
