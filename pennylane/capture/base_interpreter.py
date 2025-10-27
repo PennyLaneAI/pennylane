@@ -263,6 +263,14 @@ class PlxprInterpreter:
 
     def read(self, var):
         """Extract the value corresponding to a variable."""
+        # print(f"var: {var}")
+        # print(f"type: {type(var)}")
+        # print(f"isinstance(var, jax.extend.core.Literal): {isinstance(var, jax.extend.core.Literal)}")
+
+        # if isinstance(var, jax.extend.core.Literal):
+        #     print(f"var.val: {var.val}")
+        # else:
+        #     print(f"self._env[var]: {self._env}")
         return var.val if isinstance(var, jax.extend.core.Literal) else self._env[var]
 
     def setup(self) -> None:
