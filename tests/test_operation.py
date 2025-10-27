@@ -42,6 +42,16 @@ CNOT_broadcasted = np.tensordot([1.4], CNOT, axes=0)
 I_broadcasted = I[pnp.newaxis]
 
 
+def test_is_hermitian_property_deprecation():
+    """Tests that the is_hermitian property is deprecated."""
+
+    op = qml.ops.X()
+    with pytest.warns(
+        PennyLaneDeprecationWarning, match="The `is_hermitian` property is deprecated"
+    ):
+        assert op.is_hermitian
+
+
 class TestOperatorConstruction:
     """Test custom operators' construction."""
 
@@ -930,10 +940,7 @@ class TestOperationConstruction:
             grad_method = None
 
         op = DummyOp(wires=0)
-        with pytest.warns(
-            PennyLaneDeprecationWarning, match="The 'is_hermitian' property is deprecated"
-        ):
-            assert op.is_hermitian is False
+        assert op.is_verified_hermitian is False
 
 
 class TestObservableConstruction:
@@ -1034,10 +1041,7 @@ class TestObservableConstruction:
             grad_method = None
 
         op = DummyObserv(wires=0)
-        with pytest.warns(
-            PennyLaneDeprecationWarning, match="The 'is_hermitian' property is deprecated"
-        ):
-            assert op.is_hermitian is False
+        assert op.is_verified_hermitian is False
 
 
 class TestOperatorIntegration:
