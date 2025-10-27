@@ -6,7 +6,26 @@
   that produces a set of gate names to be used as the target gate set in decompositions.
   [(#8522)](https://github.com/PennyLaneAI/pennylane/pull/8522)
 
+* Added a :func:`~pennylane.measurements.pauli_measure` that takes a Pauli product measurement.
+  [(#8461)](https://github.com/PennyLaneAI/pennylane/pull/8461)
+
 <h3>Improvements 🛠</h3>
+
+* The new graph based decompositions system enabled via :func:`~.decomposition.enable_graph` now supports the following
+  additional templates.
+  [(#8520)](https://github.com/PennyLaneAI/pennylane/pull/8520)
+  [(#8515)](https://github.com/PennyLaneAI/pennylane/pull/8515)
+  [(#8516)](https://github.com/PennyLaneAI/pennylane/pull/8516)
+  [(#8543)](https://github.com/PennyLaneAI/pennylane/pull/8543)
+  
+  - :class:`~.QSVT`
+  - :class:`~.AmplitudeEmbedding`
+  - :class:`~.AllSinglesDoubles`
+  - :class:`~.QAOAEmbedding`
+
+* A new `qml.compiler.python_compiler.utils` submodule has been added, containing general-purpose utilities for
+  working with xDSL. This includes a function that extracts the concrete value of scalar, constant SSA values.
+  [(#8514)](https://github.com/PennyLaneAI/pennylane/pull/8514)
 
 * Added a keyword argument ``recursive`` to ``qml.transforms.cancel_inverses`` that enables
   recursive cancellation of nested pairs of mutually inverse gates. This makes the transform
@@ -14,16 +33,6 @@
   the circuit from scratch. By default, the recursive cancellation is enabled (``recursive=True``).
   To obtain previous behaviour, disable it by setting ``recursive=False``.
   [(#8483)](https://github.com/PennyLaneAI/pennylane/pull/8483)
-
-* The new graph based decompositions system enabled via :func:`~.decomposition.enable_graph` now supports the following
-  additional templates.
-  [(#8520)](https://github.com/PennyLaneAI/pennylane/pull/8520)
-  [(#8515)](https://github.com/PennyLaneAI/pennylane/pull/8515)
-  [(#8543)](https://github.com/PennyLaneAI/pennylane/pull/8543)
-
-  - :class:`~.QSVT`
-  - :class:`~.AmplitudeEmbedding`
-  - :class:`~.QAOAEmbedding`
 
 * `qml.grad` and `qml.jacobian` now lazily dispatch to catalyst and program
   capture, allowing for `qml.qjit(qml.grad(c))` and `qml.qjit(qml.jacobian(c))` to work.
@@ -148,6 +157,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Fix all NumPy 1.X `DeprecationWarnings` in our source code.
+  [(#8497)](https://github.com/PennyLaneAI/pennylane/pull/8497)
+  
 * Update versions for `pylint`, `isort` and `black` in `format.yml`
   [(#8506)](https://github.com/PennyLaneAI/pennylane/pull/8506)
 
@@ -158,6 +170,10 @@
   that included the wrong SSA value for final qubit insertion and deallocation at the end of the
   circuit. A clear error is now also raised when there are observables with overlapping wires.
   [(#8383)](https://github.com/PennyLaneAI/pennylane/pull/8383)
+
+* Add an `outline_state_evolution_pass` pass to the MBQC xDSL transform, which moves all 
+  quantum gate operations to a private callable.
+  [(#8367)](https://github.com/PennyLaneAI/pennylane/pull/8367)
 
 * The experimental xDSL implementation of `measurements_from_samples_pass` has been updated to support `shots` defined by an `arith.constant` operation.
   [(#8460)](https://github.com/PennyLaneAI/pennylane/pull/8460)
@@ -210,6 +226,8 @@ Astral Cai,
 Marcus Edwards,
 Lillian Frederiksen,
 Christina Lee,
+Mudit Pandey,
 Shuli Shu,
 Jay Soni,
 David Wierichs,
+Hongsheng Zheng

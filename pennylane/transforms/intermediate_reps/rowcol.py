@@ -39,7 +39,7 @@ try:
     F_2 = galois.GF(2)  # pragma: no cover
     has_galois = True  # pragma: no cover
 
-except ImportError:
+except ModuleNotFoundError:
     has_galois = False
 
 
