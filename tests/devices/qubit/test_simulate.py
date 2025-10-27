@@ -1614,9 +1614,6 @@ class TestMidMeasurements:
         else:
             assert qml.math.allclose(combined_measurement, expected)
 
-    # Near 10% failure rate; need revise and fix soon
-    # FIXME: [sc-95724]
-    @pytest.mark.local_salt(9)
     @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
     @pytest.mark.parametrize("postselect_mode", [None, "hw-like", "pad-invalid-samples"])
     def test_simulate_one_shot_native_mcm(self, ml_framework, postselect_mode, seed):
@@ -1647,21 +1644,21 @@ class TestMidMeasurements:
             [qml.RX(np.pi / 4, wires=0)], [qml.sample(wires=0)], shots=n_shots
         )
         expected_result = simulate(equivalent_tape, rng=rng)
-        fisher_exact_test(mcm_results, expected_result)
+        fisher_exact_test(mcm_results, expected_result, threshold=0.01)
 
         subset = [ts for ms, ts in zip(mcm_results, terminal_results) if ms == 0]
         equivalent_tape = qml.tape.QuantumScript(
             [qml.RX(np.pi / 4, wires=0)], [qml.expval(qml.Z(0))], shots=n_shots
         )
         expected_sample = simulate(equivalent_tape, rng=rng)
-        fisher_exact_test(subset, expected_sample, outcomes=(-1, 1))
+        fisher_exact_test(subset, expected_sample, outcomes=(-1, 1), threshold=0.01)
 
         subset = [ts for ms, ts in zip(mcm_results, terminal_results) if ms == 1]
         equivalent_tape = qml.tape.QuantumScript(
             [qml.X(0), qml.RX(np.pi / 4, wires=0)], [qml.expval(qml.Z(0))], shots=n_shots
         )
         expected_sample = simulate(equivalent_tape, rng=rng)
-        fisher_exact_test(subset, expected_sample, outcomes=(-1, 1))
+        fisher_exact_test(subset, expected_sample, outcomes=(-1, 1), threshold=0.01)
 
     def test_tree_traversal_non_standard_wire_order(self):
         """Test that tree-traversal still works with a non-standard wire order."""

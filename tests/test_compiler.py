@@ -539,15 +539,15 @@ class TestCatalystControlFlow:
 class TestCatalystGrad:
     """Test ``qml.qjit`` with Catalyst's grad operations"""
 
-    @pytest.mark.parametrize("argnum", (None, 0))
+    @pytest.mark.parametrize("argnums", (None, 0))
     @pytest.mark.parametrize("g_fn", (qml.grad, qml.jacobian))
-    def test_lazy_dispatch_grad(self, g_fn, argnum):
+    def test_lazy_dispatch_grad(self, g_fn, argnums):
         """Test that grad is lazily dispatched to the catalyst version at runtime."""
 
         def f(x):
             return x**2
 
-        g = qml.qjit(g_fn(f, argnum=argnum))(0.5)
+        g = qml.qjit(g_fn(f, argnums=argnums))(0.5)
         assert qml.math.allclose(g, 1.0)
         assert qml.math.get_interface(g) == "jax"
 
@@ -638,7 +638,7 @@ class TestCatalystGrad:
             return qml.jacobian(func, method="auto")(p)
 
         result = workflow(0.5)
-        reference = qml.jacobian(func, argnum=0)(0.5)
+        reference = qml.jacobian(func, argnums=0)(0.5)
 
         assert jnp.allclose(result, reference)
 
@@ -696,6 +696,56 @@ class TestCatalystGrad:
         assert len(res) == 2
         assert jnp.allclose(res[0], jnp.array([0.09983342, 0.04, 0.02]))
         assert jnp.allclose(res[1], jnp.array([0.29850125, 0.24000006, 0.12]))
+
+    @pytest.mark.parametrize("argnum_name", ("argnum", "argnums"))
+    def test_jvp_argnums(self, argnum_name):
+        """Test that res."""
+
+        def f(x, y):
+            return y * x**2
+
+        @qml.qjit
+        def w(x, y):
+            return qml.jvp(f, [x, y], [1.0], **{argnum_name: [1]})
+
+        x = jnp.array(0.5)
+        y = jnp.array(3.0)
+
+        if argnum_name == "argnum":
+            with pytest.warns(
+                qml.exceptions.PennyLaneDeprecationWarning, match="argnum in qml.jvp"
+            ):
+                res, dres = w(x, y)
+        else:
+            res, dres = w(x, y)
+
+        assert qml.math.allclose(res, f(x, y))
+        assert qml.math.allclose(dres, x**2)
+
+    @pytest.mark.parametrize("argnum_name", ("argnum", "argnums"))
+    def test_vjp_argnums(self, argnum_name):
+        """Test that res."""
+
+        def f(x, y):
+            return y * x**2
+
+        @qml.qjit
+        def w(x, y):
+            return qml.vjp(f, [x, y], [1.0], **{argnum_name: [1]})
+
+        x = jnp.array(0.5)
+        y = jnp.array(3.0)
+
+        if argnum_name == "argnum":
+            with pytest.warns(
+                qml.exceptions.PennyLaneDeprecationWarning, match="argnum in qml.vjp"
+            ):
+                res, dres = w(x, y)
+        else:
+            res, dres = w(x, y)
+
+        assert qml.math.allclose(res, f(x, y))
+        assert qml.math.allclose(dres, x**2)
 
     def test_jvp_without_qjit(self):
         """Test that an error is raised when using JVP without QJIT."""

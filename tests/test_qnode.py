@@ -35,27 +35,6 @@ from pennylane.workflow.qnode import _make_execution_config
 from pennylane.workflow.set_shots import set_shots
 
 
-def test_add_transform_deprecation():
-    """Test that the add_transform method raises a deprecation warning."""
-
-    dev = qml.device("default.qubit", wires=2)
-
-    @qml.qnode(dev)
-    def circuit(x):
-        qml.RX(x, wires=0)
-        return qml.expval(qml.PauliZ(0))
-
-    with pytest.warns(
-        PennyLaneDeprecationWarning,
-        match="The `qml.QNode.add_transform` method is deprecated and will be removed in v0.44",
-    ):
-        circuit.add_transform(
-            qml.transforms.core.TransformContainer(
-                qml.transform(qml.gradients.param_shift.expand_transform)
-            )
-        )
-
-
 def dummyfunc():
     """dummy func."""
     return None
@@ -437,7 +416,7 @@ class TestValidation:
             QuantumFunctionError,
             match="does not support backprop with requested circuit",
         ):
-            qml.grad(circuit, argnum=0)([0.5])
+            qml.grad(circuit, argnums=0)([0.5])
 
     def test_qnode_print(self):
         """Test that printing a QNode object yields the right information."""
@@ -1429,7 +1408,7 @@ class TestShots:
 
         with warnings.catch_warnings():
             warnings.filterwarnings("error", message="Cached execution with finite shots detected")
-            qml.jacobian(circuit, argnum=0)(0.3)
+            qml.jacobian(circuit, argnums=0)(0.3)
 
     # pylint: disable=unexpected-keyword-arg
     @pytest.mark.parametrize(
