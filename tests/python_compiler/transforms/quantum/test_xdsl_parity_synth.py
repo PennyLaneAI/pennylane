@@ -55,10 +55,6 @@ def assert_binary_matrix(matrix: np.ndarray):
         )
 
 
-path_2 = nx.path_graph(2)
-path_4 = nx.path_graph(4)
-
-
 class TestParityNetworkSynth:
     """Tests for the synthesizing of a parity network with ``_parity_network_synth``."""
 
@@ -80,7 +76,7 @@ class TestParityNetworkSynth:
         if connectivity is not None:
             assert all(connectivity.has_edge(*_cnot) for _cnot in cnot_circuit)
 
-    @pytest.mark.parametrize("connectivity", (None, path_2))
+    @pytest.mark.parametrize("connectivity", (None, nx.path_graph(2)))
     def test_empty_parity_table(self, connectivity):
         """Test that an empty parity table results in an empty circuit."""
         P = np.ones(shape=(10, 0), dtype=int)
@@ -382,8 +378,6 @@ class TestParitySynthPass:
     """Unit tests for ParitySynthPass."""
 
     pipeline = (ParitySynthPass(),)
-    pipeline_path_graph_2 = (ParitySynthPass(connectivity=path_2),)
-    pipeline_path_graph_4 = (ParitySynthPass(connectivity=path_4),)
 
     def test_no_phase_polynomial_ops(self, run_filecheck):
         """Test that nothing changes when there are no phase polynomial gates."""
@@ -414,32 +408,6 @@ class TestParitySynthPass:
             }
         """
         run_filecheck(translate_program_to_xdsl(program), self.pipeline)
-
-    def test_composable_cnots_connectivity(self, run_filecheck):
-        """Test that two out of three CNOT gates are merged with a connectivity present."""
-        program = """
-            func.func @test_func() {
-                %0 = quantum.alloc(3) : !quantum.reg
-
-                %1 = "stablehlo.constant"() <{value = dense<0> : tensor<i64>}> : () -> tensor<i64>
-                %2 = tensor.extract %1[] : tensor<i64>
-                // CHECK: [[q0:%.+]] = quantum.extract %0[%2] : !quantum.reg -> !quantum.bit
-                %3 = quantum.extract %0[%2] : !quantum.reg -> !quantum.bit
-
-                %4 = "stablehlo.constant"() <{value = dense<1> : tensor<i64>}> : () -> tensor<i64>
-                %5 = tensor.extract %4[] : tensor<i64>
-                // CHECK: [[q1:%.+]] = quantum.extract %0[%5] : !quantum.reg -> !quantum.bit
-                %6 = quantum.extract %0[%5] : !quantum.reg -> !quantum.bit
-
-                // CHECK: quantum.custom "CNOT"() [[q0]], [[q1]] : !quantum.bit, !quantum.bit
-                %7, %8 = _CNOT %3, %6
-                %9, %10 = _CNOT %7, %8
-                %11, %12 = _CNOT %9, %10
-                // CHECK-NOT: "quantum.custom"
-                return
-            }
-        """
-        run_filecheck(translate_program_to_xdsl(program), self.pipeline_path_graph_2)
 
     def test_two_cnots_single_rotation_no_merge(self, run_filecheck):
         """Test that a phase polynomial of two CNOTs separated by a rotation on the target
@@ -611,6 +579,155 @@ class TestParitySynthPass:
         run_filecheck(translate_program_to_xdsl(program), self.pipeline)
 
 
+@pytest.mark.usefixtures("enable_disable_plxpr")
+class TestParitySynthPassConnectivity:
+    """Test the ParitySynthPass with connectivity."""
+
+    pipeline_path_graph_2 = (ParitySynthPass(connectivity=nx.path_graph(2)),)
+    pipeline_path_graph_3 = (ParitySynthPass(connectivity=nx.path_graph(3)),)
+    pipeline_path_graph_4 = (ParitySynthPass(connectivity=nx.path_graph(4)),)
+
+    def test_simple_phase_polynomial_respecting_connectivity(self, run_filecheck):
+        """Test that a single connectivity-respecting phase polynomial is maintained."""
+        program = """
+            func.func @test_func(%arg0: f64) {
+                %0 = quantum.alloc(3) : !quantum.reg
+
+                %1 = "stablehlo.constant"() <{value = dense<0> : tensor<i64>}> : () -> tensor<i64>
+                %2 = tensor.extract %1[] : tensor<i64>
+                // CHECK: [[q0:%.+]] = quantum.extract %0[%2] : !quantum.reg -> !quantum.bit
+                %3 = quantum.extract %0[%2] : !quantum.reg -> !quantum.bit
+
+                %4 = "stablehlo.constant"() <{value = dense<1> : tensor<i64>}> : () -> tensor<i64>
+                %5 = tensor.extract %4[] : tensor<i64>
+                // CHECK: [[q1:%.+]] = quantum.extract %0[%5] : !quantum.reg -> !quantum.bit
+                %6 = quantum.extract %0[%5] : !quantum.reg -> !quantum.bit
+
+                %7 = "stablehlo.constant"() <{value = dense<2> : tensor<i64>}> : () -> tensor<i64>
+                %8 = tensor.extract %7[] : tensor<i64>
+                // CHECK: [[q2:%.+]] = quantum.extract %0[%8] : !quantum.reg -> !quantum.bit
+                %9 = quantum.extract %0[%8] : !quantum.reg -> !quantum.bit
+
+                // CHECK: [[q3:%.+]], [[q4:%.+]] = quantum.custom "CNOT"() [[q1]], [[q0]] : !quantum.bit, !quantum.bit
+                %10, %11 = _CNOT %6, %3
+                // CHECK: quantum.custom "RZ"(%arg0) [[q4]] : !quantum.bit
+                %12 = quantum.custom "RZ"(%arg0) %11 : !quantum.bit
+                // CHECK-NOT: "quantum.custom"
+                return
+            }
+        """
+        run_filecheck(translate_program_to_xdsl(program), self.pipeline_path_graph_3)
+
+    def test_decompose_cnot_to_adhere_to_connectivity(self, run_filecheck):
+        """Test that a connectivity-violating CNOT is resynthesized into legal CNOTs."""
+        program = """
+            func.func @test_func(%arg0: f64) {
+                %0 = quantum.alloc(3) : !quantum.reg
+
+                %1 = "stablehlo.constant"() <{value = dense<0> : tensor<i64>}> : () -> tensor<i64>
+                %2 = tensor.extract %1[] : tensor<i64>
+                // CHECK: [[q0:%.+]] = quantum.extract %0[%2] : !quantum.reg -> !quantum.bit
+                %3 = quantum.extract %0[%2] : !quantum.reg -> !quantum.bit
+
+                %4 = "stablehlo.constant"() <{value = dense<1> : tensor<i64>}> : () -> tensor<i64>
+                %5 = tensor.extract %4[] : tensor<i64>
+                // CHECK: [[q1:%.+]] = quantum.extract %0[%5] : !quantum.reg -> !quantum.bit
+                %6 = quantum.extract %0[%5] : !quantum.reg -> !quantum.bit
+
+                %7 = "stablehlo.constant"() <{value = dense<2> : tensor<i64>}> : () -> tensor<i64>
+                %8 = tensor.extract %7[] : tensor<i64>
+                // CHECK: [[q2:%.+]] = quantum.extract %0[%8] : !quantum.reg -> !quantum.bit
+                %9 = quantum.extract %0[%8] : !quantum.reg -> !quantum.bit
+
+                // CHECK: [[q3:%.+]], [[q4:%.+]] = quantum.custom "CNOT"() [[q2]], [[q1]] : !quantum.bit, !quantum.bit
+                // CHECK: [[q5:%.+]], [[q6:%.+]] = quantum.custom "CNOT"() [[q4]], [[q0]] : !quantum.bit, !quantum.bit
+                // CHECK: [[q7:%.+]], [[q8:%.+]] = quantum.custom "CNOT"() [[q3]], [[q5]] : !quantum.bit, !quantum.bit
+                // CHECK: [[q9:%.+]], [[q10:%.+]] = quantum.custom "CNOT"() [[q8]], [[q6]] : !quantum.bit, !quantum.bit
+                %10, %11 = _CNOT %9, %3
+                // CHECK-NOT: "quantum.custom"
+                return
+            }
+        """
+        run_filecheck(translate_program_to_xdsl(program), self.pipeline_path_graph_3, verify=True)
+
+    def test_decompose_wrapped_phase_poly_to_connectivity(self, run_filecheck):
+        """Test that a connectivity-violating phase polyonomial is resynthesized into
+        a legal one, in the presence of non-phase-poly ops."""
+        program = """
+            func.func @test_func(%arg0: f64) {
+                %0 = quantum.alloc(3) : !quantum.reg
+
+                %1 = "stablehlo.constant"() <{value = dense<0> : tensor<i64>}> : () -> tensor<i64>
+                %2 = tensor.extract %1[] : tensor<i64>
+                // CHECK: [[q0:%.+]] = quantum.extract %0[%2] : !quantum.reg -> !quantum.bit
+                %3 = quantum.extract %0[%2] : !quantum.reg -> !quantum.bit
+
+                %4 = "stablehlo.constant"() <{value = dense<1> : tensor<i64>}> : () -> tensor<i64>
+                %5 = tensor.extract %4[] : tensor<i64>
+                // CHECK: [[q1:%.+]] = quantum.extract %0[%5] : !quantum.reg -> !quantum.bit
+                %6 = quantum.extract %0[%5] : !quantum.reg -> !quantum.bit
+
+                %7 = "stablehlo.constant"() <{value = dense<2> : tensor<i64>}> : () -> tensor<i64>
+                %8 = tensor.extract %7[] : tensor<i64>
+                // CHECK: [[q2:%.+]] = quantum.extract %0[%8] : !quantum.reg -> !quantum.bit
+                %9 = quantum.extract %0[%8] : !quantum.reg -> !quantum.bit
+
+                // CHECK: [[q3:%.+]] = quantum.custom "Hadamard"() [[q0]] : !quantum.bit
+                %10 = quantum.custom "Hadamard"() %3 : !quantum.bit
+                // CHECK: [[q4:%.+]] = quantum.custom "Hadamard"() [[q1]] : !quantum.bit
+                %11 = quantum.custom "Hadamard"() %6 : !quantum.bit
+                // CHECK: [[q5:%.+]] = quantum.custom "Hadamard"() [[q2]] : !quantum.bit
+                %12 = quantum.custom "Hadamard"() %9 : !quantum.bit
+                // CHECK: [[q6:%.+]], [[q7:%.+]] = quantum.custom "CNOT"() [[q4]], [[q3]] : !quantum.bit, !quantum.bit
+                // CHECK: [[q8:%.+]], [[q9:%.+]] = quantum.custom "CNOT"() [[q5]], [[q6]] : !quantum.bit, !quantum.bit
+                // CHECK: [[q10:%.+]], [[q11:%.+]] = quantum.custom "CNOT"() [[q9]], [[q7]] : !quantum.bit, !quantum.bit
+                // CHECK: [[q12:%.+]] = quantum.custom "RZ"(%arg0) [[q11]] : !quantum.bit
+                // CHECK: [[q13:%.+]], [[q14:%.+]] = quantum.custom "CNOT"() [[q10]], [[q8]] : !quantum.bit, !quantum.bit
+                // CHECK: [[q15:%.+]], [[q16:%.+]] = quantum.custom "CNOT"() [[q12]], [[q13]] : !quantum.bit, !quantum.bit
+                // CHECK: [[q17:%.+]], [[q18:%.+]] = quantum.custom "CNOT"() [[q16]], [[q14]] : !quantum.bit, !quantum.bit
+                // CHECK: [[q19:%.+]], [[q20:%.+]] = quantum.custom "CNOT"() [[q18]], [[q17]] : !quantum.bit, !quantum.bit
+                %13, %14 = _CNOT %12, %10
+                %15 = quantum.custom "RZ"(%arg0) %14 : !quantum.bit
+                %16, %17 = _CNOT %15, %13
+                // CHECK: quantum.custom "Hadamard"() [[q15]] : !quantum.bit
+                %18 = quantum.custom "Hadamard"() %11 : !quantum.bit
+                // HECK: quantum.custom "Hadamard"() [[q19]] : !quantum.bit
+                %19 = quantum.custom "Hadamard"() %16 : !quantum.bit
+                // CHECK: quantum.custom "Hadamard"() [[q20]] : !quantum.bit
+                %20 = quantum.custom "Hadamard"() %17 : !quantum.bit
+                // CHECK-NOT: "quantum.custom"
+                return
+            }
+        """
+        run_filecheck(translate_program_to_xdsl(program), self.pipeline_path_graph_3, verify=True)
+
+    def test_composable_cnots_connectivity(self, run_filecheck):
+        """Test that two out of three CNOT gates are merged with a connectivity present."""
+        program = """
+            func.func @test_func() {
+                %0 = quantum.alloc(3) : !quantum.reg
+
+                %1 = "stablehlo.constant"() <{value = dense<0> : tensor<i64>}> : () -> tensor<i64>
+                %2 = tensor.extract %1[] : tensor<i64>
+                // CHECK: [[q0:%.+]] = quantum.extract %0[%2] : !quantum.reg -> !quantum.bit
+                %3 = quantum.extract %0[%2] : !quantum.reg -> !quantum.bit
+
+                %4 = "stablehlo.constant"() <{value = dense<1> : tensor<i64>}> : () -> tensor<i64>
+                %5 = tensor.extract %4[] : tensor<i64>
+                // CHECK: [[q1:%.+]] = quantum.extract %0[%5] : !quantum.reg -> !quantum.bit
+                %6 = quantum.extract %0[%5] : !quantum.reg -> !quantum.bit
+
+                // CHECK: quantum.custom "CNOT"() [[q0]], [[q1]] : !quantum.bit, !quantum.bit
+                %7, %8 = _CNOT %3, %6
+                %9, %10 = _CNOT %7, %8
+                %11, %12 = _CNOT %9, %10
+                // CHECK-NOT: "quantum.custom"
+                return
+            }
+        """
+        run_filecheck(translate_program_to_xdsl(program), self.pipeline_path_graph_2)
+
+
 # pylint: disable=too-few-public-methods
 @pytest.mark.usefixtures("enable_disable_plxpr")
 class TestParitySynthIntegration:
@@ -621,7 +738,7 @@ class TestParitySynthIntegration:
         dev = qml.device("lightning.qubit", wires=2)
 
         @qml.qjit(target="mlir", pass_plugins=[getXDSLPluginAbsolutePath()])
-        @parity_synth_pass
+        @parity_synth_pass(None)
         @qml.qnode(dev)
         def circuit(x: float, y: float, z: float):
             # CHECK: [[phi:%.+]] = tensor.extract %arg0
@@ -649,30 +766,36 @@ class TestParitySynthIntegration:
         dev = qml.device("lightning.qubit", wires=3)
 
         @qml.qjit(target="mlir", pass_plugins=[getXDSLPluginAbsolutePath()])
-        @partial(parity_synth_pass, connectivity=nx.path_graph(3))
+        @parity_synth_pass(connectivity=nx.path_graph(3))
         @qml.qnode(dev)
-        def circuit(x: float, y: float, z: float):
+        def circuit():
             # CHECK: [[phi:%.+]] = tensor.extract %arg0
+            # CHECK: [[omega:%.+]] = tensor.extract %arg1
             # CHECK: [[theta:%.+]] = tensor.extract %arg2
             # CHECK: quantum.custom "RZ"([[phi]])
             # CHECK: quantum.custom "RZ"([[theta]])
             # CHECK: quantum.custom "CNOT"()
             # CHECK: quantum.custom "CNOT"()
-            # CHECK: [[omega:%.+]] = tensor.extract %arg1
             # CHECK: quantum.custom "RZ"([[omega]])
+            # CHECK: quantum.custom "CNOT"()
             # CHECK: quantum.custom "CNOT"()
             # CHECK: quantum.custom "CNOT"()
             # CHECK-NOT: quantum.custom
             qml.CNOT((1, 0))
-            qml.RZ(x, 2)
+            qml.RZ(0.1, 2)
             qml.CNOT((0, 2))
-            qml.RZ(y, 2)
+            qml.RZ(0.2, 2)
             qml.CNOT((0, 2))
-            qml.RZ(z, 2)
+            qml.RZ(0.3, 2)
             qml.CNOT((1, 0))
             return qml.state()
 
-        run_filecheck_qjit(circuit)
+        # run_filecheck_qjit(circuit)
+        print(circuit.mlir)
+        from pennylane.compiler.python_compiler.visualization import draw
+
+        print(draw(circuit, level=5)())
+        assert False
 
 
 if __name__ == "__main__":
