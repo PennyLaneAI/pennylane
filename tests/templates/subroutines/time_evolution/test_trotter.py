@@ -23,7 +23,6 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as qnp
-from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.math import allclose, get_interface
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.resource import Resources
@@ -388,11 +387,7 @@ class TestInitialization:
         with pytest.raises(
             ValueError, match="One or more of the terms in the Hamiltonian may not be Hermitian"
         ):
-            with pytest.warns(
-                PennyLaneDeprecationWarning,
-                match="The 'check_hermitian' argument is deprecated and will be removed in PennyLane v0.45.",
-            ):
-                qml.TrotterProduct(hamiltonian, time=0.5)
+            qml.TrotterProduct(hamiltonian, time=0.5)
 
         try:
             qml.TrotterProduct(hamiltonian, time=0.5, check_hermitian=False)
