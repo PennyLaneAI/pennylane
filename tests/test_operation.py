@@ -45,7 +45,7 @@ I_broadcasted = I[pnp.newaxis]
 def test_is_hermitian_property_deprecation():
     """Tests that the is_hermitian property is deprecated."""
 
-    op = qml.ops.X()
+    op = qml.ops.X(wires=0)
     with pytest.warns(
         PennyLaneDeprecationWarning, match="The `is_hermitian` property is deprecated"
     ):
