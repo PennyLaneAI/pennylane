@@ -1346,13 +1346,13 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         As an example, consider the following edge case:
 
         >>> op = (qml.X(0) @ qml.Y(0) - qml.X(0) @ qml.Z(0)) * 1j
-        >>> op.is_hermitian
+        >>> op.is_verified_hermitian
         False
 
         On the contrary, the more exhaustive (and computationally intensive) check via :func:`pennylane.is_hermitian` function
         will give the correct answer:
 
-        >>> qml.is_hermitian(op)
+        >>> qml.is_verified_hermitian(op)
         True
         """
 
