@@ -1344,6 +1344,7 @@ add_decomps(Toffoli, _toffoli)
 add_decomps("Adjoint(Toffoli)", self_adjoint)
 add_decomps("Pow(Toffoli)", pow_involutory)
 
+
 def _toffoli_elbow_resources():
     return {
         qml.TemporaryAND: 1,
@@ -1355,9 +1356,13 @@ def _toffoli_elbow_resources():
 @register_resources(_toffoli_resources, work_wires={"zeroed": 1})
 def _toffoli_elbow(wires: WiresLike, **__):
     with allocate(1, qml.allocation.AllocateState.ZERO, restored=True) as work_wires:
-        qml.change_op_basis(qml.Elbow([wires[0], wires[1], work_wires[0]]), qml.CNOT([work_wires[0], wires[2]]))
+        qml.change_op_basis(
+            qml.Elbow([wires[0], wires[1], work_wires[0]]), qml.CNOT([work_wires[0], wires[2]])
+        )
+
 
 add_decomps(Toffoli, _toffoli_elbow)
+
 
 class MultiControlledX(ControlledOp):
     r"""Apply a :class:`~.PauliX` gate controlled on an arbitrary computational basis state.

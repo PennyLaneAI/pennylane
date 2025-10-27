@@ -162,13 +162,13 @@ class TestControlledQubitUnitary:
     def test_toffoli_elbow_decomposition(self):
         """Test that the decomposed Toffoli gate using TemporaryAnd operators works properly."""
 
-        wires = qml.wires.Wires([0,1,2])
+        wires = qml.wires.Wires([0, 1, 2])
 
         def arbitrary_input(wires):
             for ind, wire in enumerate(wires):
                 qml.RX(ind + 0.3, wire)
 
-        dev = qml.device("default.qubit", wires = 4)
+        dev = qml.device("default.qubit", wires=5)
 
         with qml.tape.QuantumTape() as tape:
             arbitrary_input(wires=wires)
@@ -186,6 +186,8 @@ class TestControlledQubitUnitary:
             tape.operations,
             [qml.probs(wires=wires)],
         )
+
+        assert len(qs.wires) == 4  # one work wire has been allocated
 
         program, _ = dev.preprocess()
         tape = program([qs])
