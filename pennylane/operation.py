@@ -1298,7 +1298,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
 
     @property
     def is_hermitian(self) -> bool:
-        """This property determines if an operator is verifed to be Hermitian.
+        """This property determines if an operator is verified to be Hermitian.
 
         .. warning::
 
@@ -1349,7 +1349,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
 
     @property
     def is_verified_hermitian(self) -> bool:
-        """This property determines if an operator is verifed to be Hermitian.
+        """This property determines if an operator is verified to be Hermitian.
 
         .. warning::
 
