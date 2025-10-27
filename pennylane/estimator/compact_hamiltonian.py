@@ -14,6 +14,7 @@
 """
 Contains classes used to compactly store the metadata of various Hamiltonians which are relevant for resource estimation.
 """
+from typing import Tuple, Dict
 from dataclasses import dataclass
 
 
@@ -97,3 +98,61 @@ class VibronicHamiltonian:
     num_states: int
     grid_size: int
     taylor_degree: int
+
+
+class PauliHamiltonian:
+    """For a pauli Hamiltonian, stores the minimum necessary information pretaining to resource estimation.
+    
+    Args:
+        num_qubits (int): total number of qubits the hamiltonian acts on
+        num_pauli_words (int or None): the number of terms (Pauli words) in the hamiltonian
+        max_factors (int or None): the maximum number of factors over all terms in the hamiltonian
+        one_norm (float or None): the one-norm of the hamiltonian
+        pauli_dist (dict or None): A dictionary representing the various Pauli words and how
+            frequently they appear in the hamiltonian.
+        commuting_groups (tuple(dict) or None): A tuple of dictionaries where each entry is a group
+            of terms from the hamiltonian such that all terms in the group commute. Here each
+            dictionary contains the various Pauli words and how frequently they appear in the group.
+
+    Returns:
+        PauliHamiltonian: An instance of PauliHamiltonian
+    """
+
+    def __init__(
+        self, 
+        num_qubits: int,
+        num_pauli_words: int | None = None,
+        max_factors: int | None = None,
+        one_norm: int | None = None,
+        pauli_dist: Dict | None = None,
+        commuting_groups: Tuple[Dict] | None = None,
+    ):
+        self.num_qubits = num_qubits
+        self.one_norm = one_norm
+        self.max_factors = max_factors
+        self.commuting_groups = commuting_groups
+
+        if pauli_dist is not None:
+            _validate_pauli_dist(pauli_dist)
+
+        self.pauli_dist = pauli_dist
+
+        if num_pauli_words is None:
+            if self.pauli_dist is None:
+                raise ValueError("Must specifiy atleast one of `num_pauli_words` or `pauli_dist`. Got None for both.")
+            num_pauli_words = sum(pauli_dist.values())
+        else: 
+            if (self.pauli_dist is not None) and (sum_freqs := sum(pauli_dist.values())) != num_pauli_words:
+                raise ValueError(f"The sum of the frequencies of `pauli_dist` ({sum_freqs}) should match `num_pauli_words`({num_pauli_words})")
+        
+        self.num_pauli_words = num_pauli_words
+
+
+def _validate_pauli_dist(pauli_dist: dict) -> bool:
+    """Validate that the pauli_dist is formatted as expected"""
+    for pauli_word, freq in pauli_dist.items():
+        if ((not isinstance(pauli_word, str)) or (not all(char in {"X","Y","Z"} for char in pauli_word))):
+            raise ValueError(f"The keys of `pauli_dist` represent Pauli words and should be strings containing either 'X','Y' or 'Z' characters only. Got {pauli_word} : {freq}")
+
+        if not isinstance(freq, int):
+            raise ValueError(f"The values of `pauli_dist` represent frequencies and should be integers, got {pauli_word} : {freq}")

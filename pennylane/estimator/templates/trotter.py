@@ -22,10 +22,11 @@ from pennylane.estimator.compact_hamiltonian import (
     THCHamiltonian,
     VibrationalHamiltonian,
     VibronicHamiltonian,
+    PauliHamiltonian,
 )
 from pennylane.estimator.ops.op_math.symbolic import Controlled, Prod
 from pennylane.estimator.ops.qubit.non_parametric_ops import Hadamard, T, X
-from pennylane.estimator.ops.qubit.parametric_ops_multi_qubit import MultiRZ
+from pennylane.estimator.ops.qubit.parametric_ops_multi_qubit import MultiRZ, PauliRot
 from pennylane.estimator.ops.qubit.parametric_ops_single_qubit import RZ
 from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
@@ -1733,3 +1734,251 @@ class TrotterVibronic(ResourceOperator):
         gate_list.append(Deallocate(phase_grad_wires * (taylor_degree - 1)))
 
         return gate_list
+
+
+class TrotterPauli(ResourceOperator):
+    r"""An operation representing the Suzuki-Trotter product approximation for the complex matrix
+    exponential of a Hamiltonian represented as a linear combination of tensor products Pauli operators.
+
+    The Suzuki-Trotter product formula provides a method to approximate the matrix exponential of
+    Hamiltonian expressed as a linear combination of terms which in general do not commute.
+    Consider the Hamiltonian :math:`H = \Sigma^{N}_{j=0} O_{j}`: the product formula is constructed using
+    symmetrized products of the terms in the Hamiltonian. The symmetrized products of order
+    :math:`m \in [1, 2, 4, ..., 2k]` with :math:`k \in \mathbb{N}` are given by:
+
+    .. math::
+
+        \begin{align}
+            S_{1}(t) &= \Pi_{j=0}^{N} \ e^{i t O_{j}} \\
+            S_{2}(t) &= \Pi_{j=0}^{N} \ e^{i \frac{t}{2} O_{j}} \cdot \Pi_{j=N}^{0} \ e^{i \frac{t}{2} O_{j}} \\
+            &\vdots \\
+            S_{m}(t) &= S_{m-2}(p_{m}t)^{2} \cdot S_{m-2}((1-4p_{m})t) \cdot S_{m-2}(p_{m}t)^{2},
+        \end{align}
+
+    where the coefficient is :math:`p_{m} = 1 / (4 - \sqrt[m - 1]{4})`. The :math:`m^{\text{th}}`
+    order, :math:`n`-step Suzuki-Trotter approximation is then defined as:
+
+    .. math::
+
+        e^{iHt} \approx \left [S_{m}(t / n)  \right ]^{n}.
+
+    For more details see `J. Math. Phys. 32, 400 (1991) <https://pubs.aip.org/aip/jmp/article-abstract/32/2/400/229229>`_.
+
+    Args:
+        pauli_ham (:class:`~.pennylane.estimator.compact_hamiltonian.PauliHamiltonian`):
+            the hamiltonian to be approximately exponentiated
+        num_steps (int): number of Trotter steps to perform
+        order (int): order of the approximation, must be ``1`` or an even number
+        wires (list[int] | None): the wires on which the operator acts
+
+    Resources:
+        The resources are defined according to the recursive formula presented above.
+        The number of times an operator :math:`e^{itO_{j}}` is applied depends on the
+        number of Trotter steps (`n`) and the order of the approximation (`m`) and is given by:
+
+        .. math::
+
+            C_{O_j} = 2 * n \cdot 5^{\frac{m}{2} - 1}.
+
+        Furthermore, because of the symmetric form of the recursive formula, the first and last terms get grouped.
+        This reduces the counts for those terms to:
+
+        .. math::
+
+            \begin{align}
+                C_{O_{0}} &= n \cdot 5^{\frac{m}{2} - 1} + 1,  \\
+                C_{O_{N}} &= n \cdot 5^{\frac{m}{2} - 1}.
+            \end{align}
+
+        [TODO Update this!!!]
+        The resources for a single step expansion of compressed double factorized Hamiltonian are
+        calculated based on `arXiv:2506.15784 <https://arxiv.org/abs/2506.15784>`_.
+
+    .. seealso::
+        :class:`~.estimator.compact_hamiltonian.PauliHamiltonian`
+
+    .. seealso:: :class:`~.TrotterProduct`
+
+    **Example**
+
+    The resources for this operation are computed using:
+
+    [TODO Update this!!!]
+    >>> import pennylane.estimator as qre
+    >>> num_steps, order = (1, 2)
+    >>> cdf_ham = qre.CDFHamiltonian(num_orbitals = 4, num_fragments = 4)
+    >>> res = qre.estimate(qre.TrotterCDF(cdf_ham, num_steps, order))
+    >>> print(res)
+    --- Resources: ---
+     Total wires: 8
+        algorithmic wires: 8
+        allocated wires: 0
+             zero state: 0
+             any state: 0
+     Total gates : 2.238E+4
+      'T': 2.075E+4,
+      'CNOT': 448,
+      'Z': 336,
+      'S': 504,
+      'Hadamard': 336
+    """
+
+    resource_keys = {"pauli_ham", "num_steps", "order", "pauli_rot_precision"}
+
+    def __init__(
+        self,
+        pauli_ham: PauliHamiltonian,
+        num_steps: int,
+        order: int,
+        pauli_rot_precision: float | None = None,
+        wires: WiresLike | None = None,
+    ):
+
+        if not isinstance(pauli_ham, PauliHamiltonian):
+            raise TypeError(
+                f"Unsupported Hamiltonian representation for TrotterPauli."
+                f"This method works with Pauli Hamiltonian, {type(pauli_ham)} provided"
+            )
+        self.num_steps = num_steps
+        self.order = order
+        self.pauli_ham = pauli_ham
+        self.pauli_rot_precision = pauli_rot_precision
+
+        self.num_wires = pauli_ham.num_qubits
+
+        if wires is not None and len(Wires(wires)) != self.num_wires:
+            raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
+
+        super().__init__(wires=wires)
+
+    @property
+    def resource_params(self) -> dict:
+        r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+        Returns:
+            dict: A dictionary containing the resource parameters:
+                * pauli_ham (:class:`~.pennylane.estimator.templates.compact_hamiltonian.PauliHamiltonian`): 
+                  The hamiltonian to be approximately exponentiated
+                * num_steps (int): number of Trotter steps to perform
+                * order (int): order of the approximation, must be 1 or even.
+        """
+        return {
+            "pauli_ham": self.pauli_ham,
+            "num_steps": self.num_steps,
+            "order": self.order,
+            "pauli_rot_precision": self.pauli_rot_precision, 
+        }
+
+    @classmethod
+    def resource_rep(
+        cls, pauli_ham: PauliHamiltonian, num_steps: int, order: int, pauli_rot_precision: float,
+    ) -> CompressedResourceOp:
+        """Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute a resource estimation.
+
+        Args:
+            pauli_ham (:class:`~.pennylane.estimator.templates.compact_hamiltonian.PauliHamiltonian`): 
+                The hamiltonian to be approximately exponentiated
+            num_steps (int): number of Trotter steps to perform
+            order (int): order of the approximation, must be 1 or even.
+
+        Returns:
+            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+        """
+        params = {
+            "pauli_ham": pauli_ham,
+            "num_steps": num_steps,
+            "order": order,
+            "pauli_rot_precision": pauli_rot_precision,
+        }
+        num_wires = pauli_ham.num_qubits
+        return CompressedResourceOp(cls, num_wires, params)
+
+    @classmethod
+    def resource_decomp(
+        cls, pauli_ham: PauliHamiltonian, num_steps: int, order: int, pauli_rot_precision: float,
+    ) -> list[GateCount]:
+        r"""Returns a list representing the resources of the operator. Each object represents a
+        quantum gate and the number of times it occurs in the decomposition.
+
+        Args:
+            pauli_ham (:class:`~.pennylane.estimator.templates.compact_hamiltonian.PauliHamiltonian`):
+                The hamiltonian to be approximately exponentiated
+            num_steps (int): number of Trotter steps to perform
+            order (int): order of the approximation, must be 1 or even.
+
+        Resources:
+            The resources are defined according to the recursive formula presented above.
+            The number of times an operator, :math:`e^{itO_{j}}`, is applied depends on the
+            number of Trotter steps (`n`) and the order of the approximation (`m`) and is given by:
+
+            .. math::
+
+                C_{O_j} = 2 * n \cdot 5^{\frac{m}{2} - 1}.
+
+            Furthermore, because of the symmetric form of the recursive formula, the first and last terms get grouped.
+            This reduces the counts for those terms to:
+
+            .. math::
+
+                \begin{align}
+                    C_{O_{0}} &= n \cdot 5^{\frac{m}{2} - 1} + 1,  \\
+                    C_{O_{N}} &= n \cdot 5^{\frac{m}{2} - 1}.
+                \end{align}
+
+            [TODO Update this!!!]
+            The resources for a single step expansion of compressed double factorized Hamiltonian are
+            calculated based on `arXiv:2506.15784 <https://arxiv.org/abs/2506.15784>`_.
+
+
+        Returns:
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
+        """
+        k = order // 2
+        if (groups := pauli_ham.commuting_groups) is not None:
+            num_groups = len(groups)
+            cost_groups = [
+                cls.cost_pauli_group(group, pauli_rot_precision) for group in groups
+            ]
+
+            gate_count_lst = []
+            if order == 1:
+                for group_cost_lst in cost_groups:
+                    gate_count_lst.extend([num_steps * gate_count for gate_count in group_cost_lst])
+
+                return group_cost_lst
+
+            for index, group_cost_lst in enumerate(cost_groups):
+                if index == 0:
+                    fragment_repetition = num_steps * (5 ** (k - 1)) + 1
+                elif index == num_groups - 1:
+                    fragment_repetition = num_steps * (5 ** (k - 1))
+                else:
+                    fragment_repetition = 2 * num_steps * (5 ** (k - 1))
+
+                gate_count_lst.extend([fragment_repetition * gate_count for gate_count in group_cost_lst])
+
+            return gate_count_lst
+
+        pauli_dist = pauli_ham.pauli_dist or (
+            {
+                "X" * pauli_ham.max_factors: pauli_ham.num_pauli_words // 3,
+                "Y" * pauli_ham.max_factors: pauli_ham.num_pauli_words // 3,
+                "Z" * pauli_ham.max_factors: (pauli_ham.num_pauli_words // 3) + (pauli_ham.num_pauli_words % 3),
+            }
+        )
+
+        cost_fragments = cls.cost_pauli_group(pauli_dist, precision=pauli_rot_precision)
+        fragment_repetition = num_steps if order == 1 else 2 * num_steps * (5**(k-1))
+        return [fragment_repetition * gate_count for gate_count in cost_fragments]
+
+
+    @staticmethod
+    def cost_pauli_group(pauli_dist: dict, precision: float):
+        gate_count_lst = []
+        for pauli_word, count in pauli_dist.items():
+            gate_count_lst.append(GateCount(PauliRot.resource_rep(pauli_word, precision), count))
+
+        return gate_count_lst
