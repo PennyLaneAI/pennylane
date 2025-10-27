@@ -280,7 +280,9 @@ def _get_for_loop_qfunc_prim():
 
     # pylint: disable=too-many-arguments
     @for_loop_prim.def_impl
-    def _impl(start, stop, step, *args, jaxpr_body_fn, consts_slice, args_slice, abstract_shapes_slice):
+    def _impl(
+        start, stop, step, *args, jaxpr_body_fn, consts_slice, args_slice, abstract_shapes_slice
+    ):
         # Convert tuples back to slices (tuples are used for JAX 0.7.0 hashability)
         from pennylane.capture import _restore_slice
 

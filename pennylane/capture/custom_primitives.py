@@ -43,6 +43,14 @@ def _make_hashable(obj: Any) -> Any:
     Returns:
         Hashable version of the object
     """
+
+    # First, check if the object is already hashable
+    try:
+        hash(obj)
+        return obj
+    except TypeError:
+        pass
+
     # Import here to avoid circular dependency and only when needed
     # pylint: disable=import-outside-toplevel,too-many-return-statements
     import jax
