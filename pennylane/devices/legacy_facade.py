@@ -40,7 +40,6 @@ from .execution_config import ExecutionConfig
 from .modifiers import single_tape_support
 from .preprocess import (
     decompose,
-    mid_circuit_measurements,
     no_sampling,
     validate_adjoint_trainable_params,
     validate_measurements,
