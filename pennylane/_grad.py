@@ -264,7 +264,7 @@ class grad:
             return_annotation=inspect.Signature.empty
         )
         n = getattr(self._func, "__name__", repr(self._func))
-        self.__name__ = f"<jacobian: {n}>"
+        self.__name__ = f"<grad: {n}>"
 
     def _get_grad_fn(self, args):
         """Get the required gradient function.
