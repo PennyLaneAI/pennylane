@@ -1308,8 +1308,9 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
             function instead as it provides a more reliable check for hermiticity. Please be aware that it comes
             with a higher computational cost.
 
-        If this property returns ``True``, the operator is verified to
-        be hermitian, but if it returns ``False``, the operator may still be hermitian.
+        .. note::
+
+            This property is not exhaustive and does not formally check Hermicity. Please note that if the property returns ``False``, the operator may still be hermitian.
 
         As an example, consider the following edge case:
 
