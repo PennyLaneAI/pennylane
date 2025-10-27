@@ -378,14 +378,11 @@ class _CachedCallable:
                     partial(sk_decomposition, epsilon=epsilon, **method_kwargs)
                 )
             case "gridsynth":
+                rs_decomp = partial(
+                    rs_decomposition, epsilon=epsilon, is_qjit=is_qjit, **method_kwargs
+                )
                 self.decompose_fn = (
-                    lru_cache(maxsize=cache_size)(
-                        partial(rs_decomposition, epsilon=epsilon, is_qjit=is_qjit, **method_kwargs)
-                    )
-                    if not is_qjit
-                    else partial(
-                        rs_decomposition, epsilon=epsilon, is_qjit=is_qjit, **method_kwargs
-                    )
+                    rs_decomp if is_qjit else lru_cache(maxsize=cache_size)(rs_decomp)
                 )
             case _:
                 raise NotImplementedError(
@@ -398,9 +395,9 @@ class _CachedCallable:
         self.is_qjit = is_qjit
         self.method_kwargs = method_kwargs
         self.query = (
-            lru_cache(maxsize=cache_size)(self.cached_decompose)
-            if not is_qjit
-            else self.cached_decompose
+            self.cached_decompose
+            if is_qjit
+            else lru_cache(maxsize=cache_size)(self.cached_decompose)
         )
 
     # pylint: disable=too-many-arguments
