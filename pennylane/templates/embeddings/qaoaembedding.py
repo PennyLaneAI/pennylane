@@ -16,16 +16,15 @@ Contains the QAOAEmbedding template.
 """
 from collections import defaultdict
 
+from pennylane import capture, math
 from pennylane.control_flow import for_loop
-
-from pennylane.decomposition import resource_rep, add_decomps, register_resources
-
-# pylint: disable=too-many-arguments
-
-from pennylane import math, capture
+from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.operation import Operation
 from pennylane.ops import RX, RY, RZ, H, MultiRZ, cond
 from pennylane.wires import Wires
+
+# pylint: disable=too-many-arguments
+
 
 has_jax = True
 try:
@@ -174,7 +173,7 @@ class QAOAEmbedding(Operation):
 
     grad_method = None
 
-    resource_keys = { "repeats", "n_features", "num_wires", "local_field" }
+    resource_keys = {"repeats", "n_features", "num_wires", "local_field"}
 
     def __init__(self, features, weights, wires, local_field="Y", id=None):
         if local_field == "Z":
@@ -321,7 +320,7 @@ class QAOAEmbedding(Operation):
             "repeat": math.shape(self.parameters[1])[-2],
             "n_features": math.shape(self.parameters[0])[-1],
             "num_wires": len(self.wires),
-            "local_field": self.hyperparameters["local_field"]
+            "local_field": self.hyperparameters["local_field"],
         }
 
     @staticmethod
@@ -351,16 +350,18 @@ class QAOAEmbedding(Operation):
 def _qaoa_embedding_resources(repeat, n_features, num_wires, local_field):
     resources = defaultdict(int)
 
-    resources.update({
-        resource_rep(RX): n_features * (repeat + 1),
-        resource_rep(H): num_wires - n_features * (repeat + 1)
-    })
+    resources.update(
+        {
+            resource_rep(RX): n_features * (repeat + 1),
+            resource_rep(H): (num_wires - n_features) * (repeat + 1),
+        }
+    )
 
     resources[resource_rep(local_field)] += num_wires * repeat
 
     if num_wires == 2:
         resources[resource_rep(MultiRZ, num_wires=2)] = repeat
-    else:
+    elif num_wires > 2:
         resources[resource_rep(MultiRZ, num_wires=2)] = num_wires * repeat
 
     return resources
@@ -393,11 +394,14 @@ def _qaoa_embedding_decomposition(features, weights, wires, local_field):
 
         hadamard_loop()  # pylint: disable=no-value-for-parameter
 
+        def true_body():
+            local_field(weights[l][0], wires=wires)
+
         def false_body():
 
             @for_loop(len(wires))
             def multi_rz_loop(i):
-                MultiRZ(weights[l][i], wires.subset([i, i + 1], periodic_boundary=True))
+                MultiRZ(weights[l][i], wires=[wires[i], wires[(i + 1) % len(wires)]])
 
             multi_rz_loop()  # pylint: disable=no-value-for-parameter
 
@@ -408,11 +412,11 @@ def _qaoa_embedding_decomposition(features, weights, wires, local_field):
             local_field_loop()  # pylint: disable=no-value-for-parameter
 
         def elif_body():
-            MultiRZ(weights[l][0], wires=wires.subset([0, 1]))
+            MultiRZ(weights[l][0], wires=[wires[0], wires[1]])
             local_field(weights[l][1], wires=wires[0:1])
             local_field(weights[l][2], wires=wires[1:2])
 
-        cond(len(wires) == 1, lambda: local_field(weights[l][0], wires=wires), false_body, (len(wires) == 2, elif_body))
+        cond(len(wires) == 1, true_body, false_body, (len(wires) == 2, elif_body))()
 
     repeat_loop()  # pylint: disable=no-value-for-parameter
 

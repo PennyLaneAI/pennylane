@@ -245,7 +245,7 @@ class TestDecomposition:
 
     DECOMP_PARAMS = [
         ([0], [[0, 0, np.pi / 2]], range(2), "X"),
-        ([0, 0], [[0, 0, 0, 0, 0, np.pi / 2]], range(3), "Y"),
+        ([0, 0], [[0, 0, 0, 0, 0, np.pi / 2]], range(3), "X"),
     ]
 
     @pytest.mark.capture
@@ -254,6 +254,7 @@ class TestDecomposition:
         op = qml.QAOAEmbedding(features, weights, wires, local_field=local_field)
         for rule in qml.list_decomps(qml.QAOAEmbedding):
             _test_decomposition_rule(op, rule)
+
 
 class TestInputs:
     """Test inputs and pre-processing."""
