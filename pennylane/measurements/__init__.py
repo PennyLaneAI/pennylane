@@ -280,6 +280,7 @@ from .measurements import (
     StateMeasurement,
 )
 from .mid_measure import MidMeasureMP, find_post_processed_mcms, get_mcm_predicates, measure
+from .pauli_measure import PauliMeasure, pauli_measure
 from .mutual_info import MutualInfoMP, mutual_info
 from .null_measurement import NullMeasurement
 from .probs import ProbabilityMP, probs
