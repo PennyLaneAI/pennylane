@@ -56,7 +56,7 @@ register_transform(merge_ppr_ppm, "merge-ppr-ppm", False)
 
 
 @transform
-def ppm_to_mbqc(tape):
+def ppr_to_mbqc(tape):
     """A wrapper that allows us to register a primitive that represents the transform during capture.
     The transform itself is only implemented in Catalyst. This is just to enable capture."""
     raise NotImplementedError(
@@ -64,7 +64,7 @@ def ppm_to_mbqc(tape):
     )
 
 
-register_transform(ppm_to_mbqc, "ppm-to-mbqc", False)
+register_transform(ppr_to_mbqc, "ppr-to-mbqc", False)
 
 
 @transform
