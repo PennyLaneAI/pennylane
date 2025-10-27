@@ -15,14 +15,12 @@
 Contains templates for Suzuki-Trotter approximation based subroutines.
 """
 import copy
-import warnings
 from collections import defaultdict
 
 from pennylane import math
 from pennylane import ops as qml_ops
 from pennylane.capture.autograph import wraps
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
-from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.operation import Operation, Operator
 from pennylane.queuing import QueuingManager, apply
 from pennylane.resource import Resources, ResourcesOperation
@@ -254,16 +252,9 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
         return cls._primitive.bind(*args, **kwargs)
 
     def __init__(  # pylint: disable=too-many-arguments,too-many-positional-arguments
-        self, hamiltonian, time, n=1, order=1, check_hermitian="unset", id=None
+        self, hamiltonian, time, n=1, order=1, check_hermitian=True, id=None
     ):
         r"""Initialize the TrotterProduct class"""
-
-        if check_hermitian != "unset":
-            warnings.warn(
-                "The `check_hermitian` argument is deprecated and will be removed in PennyLane v0.45. If you need to check if the Hamiltonian is Hermitian, please do so manually and consider using `qml.is_hermitian` to do so.",
-                PennyLaneDeprecationWarning,
-            )
-        check_hermitian = False
 
         if order <= 0 or order != 1 and order % 2 != 0:
             raise ValueError(
@@ -296,16 +287,10 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
 
         if check_hermitian:
             for op in hamiltonian.operands:
-                with warnings.catch_warnings():
-                    warnings.filterwarnings(
-                        action="ignore",
-                        category=PennyLaneDeprecationWarning,
-                        message=r".*is_hermitian.*",
+                if not op.is_verified_hermitian:
+                    raise ValueError(
+                        "One or more of the terms in the Hamiltonian are not verified to be Hermitian. Please check manually using 'qml.is_hermitian' and provide `check_hermitian=False` to the `TrotterProduct` constructor."
                     )
-                    if not op.is_hermitian:
-                        raise ValueError(
-                            "One or more of the terms in the Hamiltonian may not be Hermitian"
-                        )
 
         self._hyperparameters = {
             "n": n,
