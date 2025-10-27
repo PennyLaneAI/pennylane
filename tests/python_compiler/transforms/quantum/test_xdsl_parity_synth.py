@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit test module for the ParitySynth transform"""
+from functools import partial
 from itertools import product
 
 import networkx as nx
@@ -415,7 +416,7 @@ class TestParitySynthPass:
         run_filecheck(translate_program_to_xdsl(program), self.pipeline)
 
     def test_composable_cnots_connectivity(self, run_filecheck):
-        """Test that two out of three CNOT gates are merged."""
+        """Test that two out of three CNOT gates are merged with a connectivity present."""
         program = """
             func.func @test_func() {
                 %0 = quantum.alloc(3) : !quantum.reg
@@ -638,6 +639,36 @@ class TestParitySynthIntegration:
             qml.RX(y, 1)
             qml.CNOT((1, 0))
             qml.RZ(z, 1)
+            qml.CNOT((1, 0))
+            return qml.state()
+
+        run_filecheck_qjit(circuit)
+
+    def test_qjit_connectivity(self, run_filecheck_qjit):
+        """Test that the ParitySynthPass works correctly with qjit and connectivity information."""
+        dev = qml.device("lightning.qubit", wires=3)
+
+        @qml.qjit(target="mlir", pass_plugins=[getXDSLPluginAbsolutePath()])
+        @partial(parity_synth_pass, connectivity=nx.path_graph(3))
+        @qml.qnode(dev)
+        def circuit(x: float, y: float, z: float):
+            # CHECK: [[phi:%.+]] = tensor.extract %arg0
+            # CHECK: [[theta:%.+]] = tensor.extract %arg2
+            # CHECK: quantum.custom "RZ"([[phi]])
+            # CHECK: quantum.custom "RZ"([[theta]])
+            # CHECK: quantum.custom "CNOT"()
+            # CHECK: quantum.custom "CNOT"()
+            # CHECK: [[omega:%.+]] = tensor.extract %arg1
+            # CHECK: quantum.custom "RZ"([[omega]])
+            # CHECK: quantum.custom "CNOT"()
+            # CHECK: quantum.custom "CNOT"()
+            # CHECK-NOT: quantum.custom
+            qml.CNOT((1, 0))
+            qml.RZ(x, 2)
+            qml.CNOT((0, 2))
+            qml.RZ(y, 2)
+            qml.CNOT((0, 2))
+            qml.RZ(z, 2)
             qml.CNOT((1, 0))
             return qml.state()
 

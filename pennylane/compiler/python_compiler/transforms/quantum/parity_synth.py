@@ -94,17 +94,8 @@ def _fill_in(t, terminal_nodes, P, inv_synth_matrix):
     f.remove_nodes_from(terminal_nodes)
     terminal_set = set(terminal_nodes)
     while len(f):
-        for u in f:
-            if f.degree(u) <= 1:
-                break
-        else:
-            raise ValueError(f"Should have found a leaf. {f=}")
-        for v in t[u]:
-            if v in terminal_set:
-                break
-        else:
-            raise ValueError(f"Should have found a neighbour. {f=}, {u=}")
-
+        u = next(iter(u for u in f if f.degree(u) <= 1))
+        v = next(iter(v for v in t[u] if v in terminal_set))
         cnots.append((u, v))
         P[u] += P[v]
         inv_synth_matrix[:, u] += inv_synth_matrix[:, v]
@@ -118,10 +109,13 @@ def _loop_body_parity_network_synth(
     inv_synth_matrix: np.ndarray,
     circuit: list[int, list[tuple[int]]],
 ) -> tuple[np.ndarray, list]:
-    """Loop body function for ``_parity_network_synth``, the main subroutine of ``parity_synth``.
+    """Loop body function for ``_parity_network_synth``, the main subroutine of ``parity_synth``,
+    without connectivity-awareness.
+
     The loop body corresponds to synthesizing one parity in the parity table ``P``, and updating
     all relevant data accordingly. It is the ``for``-loop body in Algorithm 1
-    in https://arxiv.org/abs/2104.00934.
+    in https://arxiv.org/abs/2104.00934 and accordingly does _not_ take any connectivity into
+    account.
 
     Args:
         P (np.ndarray): (Remaining) parity table for which to synthesize the parity network.
@@ -175,16 +169,45 @@ def _loop_body_parity_network_synth(
 
 
 def _loop_body_parity_network_synth_con(P, inv_synth_matrix, circuit, connectivity):
-    parity_idx, t, terminal_nodes = _find_parity(P, connectivity)
-    fill_in_cnots, P, inv_synth_matrix = _fill_in(t, terminal_nodes, P, inv_synth_matrix)
-    P = np.concatenate([P[:, :parity_idx], P[:, parity_idx + 1 :]], axis=1)
+    """Loop body function for ``_parity_network_synth``, the main subroutine of ``parity_synth``,
+    with connectivity-awareness.
+
+    The loop body corresponds to synthesizing one parity in the parity table ``P``, and updating
+    all relevant data accordingly. It is the ``for``-loop body in Algorithm 4 in
+    https://arxiv.org/abs/2104.00934 and accordingly _does_ take any connectivity into account.
+
+    Args:
+        P (np.ndarray): (Remaining) parity table for which to synthesize the parity network.
+        inv_synth_matrix (np.ndarray): Inverse of the parity _matrix_ implemented within
+            the parity network that has been synthesized so far.
+        circuit (list[int, list[tuple[int]]]): Circuit for the parity network that has been
+            synthesized so far. Each entry of the list consists of a _relative_ index into
+            the list of parities (or rotation angles) of the phase polynomial, a qubit
+            index onto which the rotation should be applied, and the subcircuit that should
+            be applied _before_ the rotation to achieve the respective parity.
+        connectivity (nx.Graph): Connectivity graph to be taken into account.
+
+    Returns:
+        tuple[np.ndarray, list]: Same as inputs except for ``connectivity``, with updates
+        applied; ``P`` has a column less and has been transformed in addition.
+        ``inv_synth_matrix`` has been transformed according to the newly synthesized subcircuit
+        implementing the next parity. The ``circuit`` representation is grown by one entry,
+        corresponding to that parity.
+
+    """
+    parity_idx, t, terminal_nodes = _find_parity(P, connectivity)  # Lines 4, 6, 7
+    fill_in_cnots, P, inv_synth_matrix = _fill_in(t, terminal_nodes, P, inv_synth_matrix)  # Line 8
+    P = np.concatenate([P[:, :parity_idx], P[:, parity_idx + 1 :]], axis=1)  # Line 5
     m = P.shape[1]
-    if m == 0:
+    if m == 0:  # If there is just one parity, we don't have to search anything
         root = next(iter(t))
         sub_circuit = _apply_dfs_po_circuit(t, root, P, inv_synth_matrix)
         circuit.append((parity_idx, root, fill_in_cnots + sub_circuit))
         return P % 2, inv_synth_matrix, circuit
 
+    # The following nested for loop implements line 12, see main text for detailed description
+    # Along the way, lines 13-17 are executed anyways, so we just need to memorize the CNOT
+    # circuit and new parity from within the search process for the argmin in line 12.
     cheapest_cost_vector = np.ones(m, dtype=int) * int(1e16)
     cheapest_sub_circuit, cheapest_root, cheapest_P = None, None, None  # Will never be returned
     for root in t:
@@ -205,8 +228,11 @@ def _loop_body_parity_network_synth_con(P, inv_synth_matrix, circuit, connectivi
                 cheapest_P = P_X
             break
 
+    # Update inv_synth_matrix in place, this has not been done during searching above.
     for i, j in cheapest_sub_circuit:
         inv_synth_matrix[:, i] += inv_synth_matrix[:, j]
+
+    # Grow total circuit by found circuit for the chosen parity.
     circuit.append((parity_idx, cheapest_root, fill_in_cnots + cheapest_sub_circuit))
     return cheapest_P, inv_synth_matrix, circuit
 
@@ -496,6 +522,11 @@ class ParitySynthPattern(pattern_rewriter.RewritePattern):
         # phase polynomial
         inv_wire_map: dict[int, QubitType] = {val: key for key, val in self.init_wire_map.items()}
         inv_wire_map_before: dict[int, QubitType] = inv_wire_map.copy()
+        print("Before tracing through the new phase polynomial:")
+        print(
+            f"    init_wire_map: init_wire_map:{ {id(k): v for k, v in self.init_wire_map.items()}}"
+        )
+        print(f"    inv_wire_map: init_wire_map:{ {k: id(v) for k, v in inv_wire_map.items()}}")
 
         ## Calculate the new circuit by going to phase polynomial IR and back, including synthesis
         ## of trailing CNOTs via rowcol
