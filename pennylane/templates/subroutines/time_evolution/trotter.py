@@ -112,7 +112,7 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
     Raises:
         TypeError: The ``hamiltonian`` is not of type :class:`~.Sum`.
         ValueError: The ``hamiltonian`` has only one term or no terms.
-        ValueError: One or more of the terms in ``hamiltonian`` are not Hermitian
+        ValueError: One or more of the terms in ``hamiltonian`` are not verified to be Hermitian. 
             (only for ``check_hermitian=True``)
         ValueError: The ``order`` is not one or a positive even integer.
 
