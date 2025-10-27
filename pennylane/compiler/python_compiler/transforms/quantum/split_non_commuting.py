@@ -294,12 +294,14 @@ class SplitNonCommutingPattern(pattern_rewriter.RewritePattern):
 
         obs_op = observable.owner
 
-        # For NamedObsOp and ComputationalBasisOp, the first operand is the qubit
-        if isinstance(obs_op, (quantum.NamedObsOp, quantum.ComputationalBasisOp)):
+        # For NamedObsOp, the first operand is the qubit
+        if isinstance(obs_op, (quantum.NamedObsOp)):
             acted_qubits.add(obs_op.operands[0])
 
-        # For HamiltonianOp and TensorOp, we need to handle multiple qubits
-        elif isinstance(obs_op, (quantum.HamiltonianOp, quantum.TensorOp)):
+        # For other observable operations, we need to handle multiple qubits
+        elif isinstance(
+            obs_op, (quantum.HamiltonianOp, quantum.TensorOp, quantum.ComputationalBasisOp)
+        ):
             raise NotImplementedError(f"unsupported observable operation: {obs_op}")
 
         return acted_qubits
