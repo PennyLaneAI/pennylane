@@ -64,8 +64,10 @@ def _get_grad_prim():
             return res[0] if scalar_out else res
 
         if scalar_out:
-            return jax.grad(func, argnums=argnums)(*args)
-        return jax.tree_util.tree_leaves(jax.jacobian(func, argnums=argnums)(*args))
+           res = jax.grad(func, argnums=argnums)(*args)
+        else:
+           jax.jacobian(func, argnums=argnums)(*args)
+        return jax.tree_util.tree_leaves(res)
 
     # pylint: disable=unused-argument
     @grad_prim.def_abstract_eval
