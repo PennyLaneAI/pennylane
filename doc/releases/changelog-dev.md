@@ -11,20 +11,26 @@
 
 <h3>Improvements 🛠</h3>
 
+* The new graph based decompositions system enabled via :func:`~.decomposition.enable_graph` now supports the following
+  additional templates.
+  [(#8520)](https://github.com/PennyLaneAI/pennylane/pull/8520)
+  [(#8515)](https://github.com/PennyLaneAI/pennylane/pull/8515)
+  [(#8516)](https://github.com/PennyLaneAI/pennylane/pull/8516)
+  
+  - :class:`~.QSVT`
+  - :class:`~.AmplitudeEmbedding`
+  - :class:`~.AllSinglesDoubles`
+
+* A new `qml.compiler.python_compiler.utils` submodule has been added, containing general-purpose utilities for
+  working with xDSL. This includes a function that extracts the concrete value of scalar, constant SSA values.
+  [(#8514)](https://github.com/PennyLaneAI/pennylane/pull/8514)
+
 * Added a keyword argument ``recursive`` to ``qml.transforms.cancel_inverses`` that enables
   recursive cancellation of nested pairs of mutually inverse gates. This makes the transform
   more powerful, because it can cancel larger blocks of inverse gates without having to scan
   the circuit from scratch. By default, the recursive cancellation is enabled (``recursive=True``).
   To obtain previous behaviour, disable it by setting ``recursive=False``.
   [(#8483)](https://github.com/PennyLaneAI/pennylane/pull/8483)
-
-* The new graph based decompositions system enabled via :func:`~.decomposition.enable_graph` now supports the following
-  additional templates.
-  [(#8520)](https://github.com/PennyLaneAI/pennylane/pull/8520)
-  [(#8515)](https://github.com/PennyLaneAI/pennylane/pull/8515)
-  
-  - :class:`~.QSVT`
-  - :class:`~.AmplitudeEmbedding`
 
 * `qml.grad` and `qml.jacobian` now lazily dispatch to catalyst and program
   capture, allowing for `qml.qjit(qml.grad(c))` and `qml.qjit(qml.jacobian(c))` to work.
@@ -169,6 +175,10 @@
   circuit. A clear error is now also raised when there are observables with overlapping wires.
   [(#8383)](https://github.com/PennyLaneAI/pennylane/pull/8383)
 
+* Add an `outline_state_evolution_pass` pass to the MBQC xDSL transform, which moves all 
+  quantum gate operations to a private callable.
+  [(#8367)](https://github.com/PennyLaneAI/pennylane/pull/8367)
+
 * The experimental xDSL implementation of `measurements_from_samples_pass` has been updated to support `shots` defined by an `arith.constant` operation.
   [(#8460)](https://github.com/PennyLaneAI/pennylane/pull/8460)
 
@@ -198,6 +208,12 @@
 
 <h3>Documentation 📝</h3>
 
+* The docstring for ``qml.device`` has been updated to include a section on custom decompositions,
+  and a warning about the removal of the ``custom_decomps`` kwarg in v0.44. Additionally, the page
+  :doc:`Building a plugin <../development/plugins>` now includes instructions on using
+  the :func:`~pennylane.devices.preprocess.decompose` transform for device-level decompositions.
+  [(#8492)](https://github.com/PennyLaneAI/pennylane/pull/8492)
+
 <h3>Bug fixes 🐛</h3>
 
 * Fixes a bug in ``QubitUnitaryOp.__init__`` in the unified compiler module that prevented an
@@ -220,6 +236,9 @@ Astral Cai,
 Marcus Edwards,
 Lillian Frederiksen,
 Christina Lee,
+Gabriela Sanchez Diaz,
+Mudit Pandey,
 Shuli Shu,
 Jay Soni,
 David Wierichs,
+Hongsheng Zheng
