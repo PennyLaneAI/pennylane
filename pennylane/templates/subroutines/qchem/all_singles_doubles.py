@@ -19,10 +19,18 @@ import copy
 
 import numpy as np
 
-from pennylane import math
+from pennylane import capture, math
+from pennylane.control_flow import for_loop
+from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.operation import Operation
 from pennylane.ops import BasisState, DoubleExcitation, SingleExcitation
 from pennylane.wires import Wires
+
+has_jax = True
+try:
+    from jax import numpy as jnp
+except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
+    has_jax = False  # pragma: no cover
 
 
 class AllSinglesDoubles(Operation):
@@ -118,6 +126,8 @@ class AllSinglesDoubles(Operation):
 
     grad_method = None
 
+    resource_keys = {"num_singles", "num_doubles", "num_wires"}
+
     def __init__(self, weights, wires, hf_state, singles=None, doubles=None, id=None):
         if len(wires) < 2:
             raise ValueError(
@@ -157,6 +167,25 @@ class AllSinglesDoubles(Operation):
 
         super().__init__(weights, wires=wires, id=id)
 
+    @classmethod
+    def _primitive_bind_call(
+        cls, weights, wires, hf_state, singles=None, doubles=None, id=None
+    ):  # pylint: disable=arguments-differ
+        singles = math.array(singles) if singles is not None else math.array(((),))
+        doubles = math.array(doubles) if doubles is not None else math.array(((),))
+        wires = math.array(wires)
+        hf_state = math.array(hf_state)
+        weights = math.array(weights)
+        return cls._primitive.bind(weights, wires, hf_state, singles, doubles, id=id)
+
+    @property
+    def resource_params(self) -> dict:
+        return {
+            "num_singles": len(self.hyperparameters["singles"]),
+            "num_doubles": len(self.hyperparameters["doubles"]),
+            "num_wires": len(self.wires),
+        }
+
     def map_wires(self, wire_map: dict):
         new_op = copy.deepcopy(self)
         new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
@@ -186,14 +215,13 @@ class AllSinglesDoubles(Operation):
             weights (tensor_like): size ``(len(singles) + len(doubles),)`` tensor containing the
                 angles entering the :class:`~.pennylane.SingleExcitation` and
                 :class:`~.pennylane.DoubleExcitation` operations, in that order
-            wires (Any or Iterable[Any]): wires that the operator acts on
+            wires (Any or Iterable[Any]): wires that the BasisState operator acts on
             hf_state (array[int]): Length ``len(wires)`` occupation-number vector representing the
                 Hartree-Fock state. ``hf_state`` is used to initialize the wires.
             singles (Sequence[Sequence]): sequence of lists with the indices of the two qubits
                 the :class:`~.pennylane.SingleExcitation` operations act on
             doubles (Sequence[Sequence]): sequence of lists with the indices of the four qubits
                 the :class:`~.pennylane.DoubleExcitation` operations act on
-
         Returns:
             list[.Operator]: decomposition of the operator
         """
@@ -222,17 +250,59 @@ class AllSinglesDoubles(Operation):
         Returns:
             tuple(int): shape of the tensor containing the circuit parameters
         """
-        if not singles and not doubles:
+        if (singles is None or len(singles) == 0) and (doubles is None or len(doubles) == 0):
             raise ValueError(
                 f"'singles' and 'doubles' lists can not be both empty;"
                 f" got singles = {singles}, doubles = {doubles}"
             )
 
-        if not singles:
+        if singles is None or len(singles) == 0:
             shape_ = (len(doubles),)
-        elif not doubles:
+        elif doubles is None or len(doubles) == 0:
             shape_ = (len(singles),)
         else:
             shape_ = (len(singles) + len(doubles),)
 
         return shape_
+
+
+if AllSinglesDoubles._primitive is not None:
+
+    @AllSinglesDoubles._primitive.def_impl
+    def _(*args, **kwargs):  # pylint: disable=unused-argument
+        # need to convert array values into integers
+        # for plxpr, all wires must be integers
+        # could be abstract when using tracing evaluation in interpreter
+        wires = tuple(w if math.is_abstract(w) else int(w) for w in args[1])
+        return type.__call__(AllSinglesDoubles, args[0], wires, args[2], args[3], args[4])
+
+
+def _all_singles_doubles_resouces(num_singles, num_doubles, num_wires):
+    return {
+        resource_rep(BasisState, num_wires=num_wires): 1,
+        resource_rep(DoubleExcitation): num_doubles,
+        resource_rep(SingleExcitation): num_singles,
+    }
+
+
+@register_resources(_all_singles_doubles_resouces)
+def _all_singles_doubles_decomposition(weights, wires, hf_state, singles, doubles):
+    BasisState(hf_state, wires=wires)
+
+    if has_jax and capture.enabled():
+        weights, doubles, singles = jnp.array(weights), jnp.array(doubles), jnp.array(singles)
+
+    @for_loop(len(doubles))
+    def doubles_loop(i):
+        DoubleExcitation(weights[len(singles) + i], wires=doubles[i])
+
+    doubles_loop()  # pylint: disable=no-value-for-parameter
+
+    @for_loop(len(singles))
+    def singles_loop(j):
+        SingleExcitation(weights[j], wires=singles[j])
+
+    singles_loop()  # pylint: disable=no-value-for-parameter
+
+
+add_decomps(AllSinglesDoubles, _all_singles_doubles_decomposition)
