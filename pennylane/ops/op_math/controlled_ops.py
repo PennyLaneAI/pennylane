@@ -1352,7 +1352,7 @@ add_decomps("Pow(Toffoli)", pow_involutory)
 def _toffoli_elbow_resources():
     return {
         change_op_basis_resource_rep(
-            qml.TemporaryAND,
+            qml.Elbow,
             qml.CNOT,
         ): 1,
     }
