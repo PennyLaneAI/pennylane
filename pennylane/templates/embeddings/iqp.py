@@ -28,7 +28,7 @@ from pennylane.wires import Wires
 has_jax = True
 try:
     from jax import numpy as jnp
-except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
+except ModuleNotFoundError as import_error:  # pragma: no cover
     has_jax = False  # pragma: no cover
 
 
@@ -176,7 +176,7 @@ class IQPEmbedding(Operation):
 
     grad_method = None
 
-    resource_keys = {"pattern_size", "num_repeats", "num_wires"}
+    resource_keys = {"pattern_size", "n_repeats", "num_wires"}
 
     def __init__(self, features, wires, n_repeats=1, pattern=None, id=None):
         shape = math.shape(features)
@@ -202,7 +202,7 @@ class IQPEmbedding(Operation):
     def resource_params(self) -> dict:
         return {
             "pattern_size": len(self.hyperparameters["pattern"]),
-            "num_repeats": self.hyperparameters["n_repeats"],
+            "n_repeats": self.hyperparameters["n_repeats"],
             "num_wires": len(self.wires),
         }
 
@@ -277,11 +277,11 @@ class IQPEmbedding(Operation):
         return op_list
 
 
-def _iqp_embedding_resources(pattern_size, num_repeats, num_wires):
+def _iqp_embedding_resources(pattern_size, n_repeats, num_wires):
     return {
-        resource_rep(RZ): num_repeats * num_wires,
-        resource_rep(H): num_repeats * num_wires,
-        resource_rep(MultiRZ, num_wires=2): pattern_size * num_repeats,
+        resource_rep(RZ): n_repeats * num_wires,
+        resource_rep(H): n_repeats * num_wires,
+        resource_rep(MultiRZ, num_wires=2): pattern_size * n_repeats,
     }
 
 
