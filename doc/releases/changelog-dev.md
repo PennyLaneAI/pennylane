@@ -256,6 +256,9 @@
 * Fixes a bug where a `KeyError` is raised when querying the decomposition rule for an operator in the gate set from a :class:`~pennylane.decomposition.DecompGraphSolution`.
   [(#8526)](https://github.com/PennyLaneAI/pennylane/pull/8526)
 
+* Fixes a bug where mid-circuit measurements were generating incomplete QASM.
+  [(#8556)](https://github.com/PennyLaneAI/pennylane/pull/8556)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
