@@ -268,11 +268,11 @@ class TestDeferMeasurementsInterpreter:
                 qml.RX(phi, 0)
 
             @cond_fn.else_if(m1)
-            def _(phi):
+            def _else_if(phi):
                 qml.RY(phi, 0)
 
             @cond_fn.otherwise
-            def _(phi):
+            def _else(phi):
                 qml.RZ(phi, 0)
 
             cond_fn(x)
@@ -517,13 +517,13 @@ class TestDeferMeasurementsHigherOrderPrimitives:
                 qml.measure(1)
 
             @cond_fn.else_if(x > 1.0)
-            def _(phi):
+            def _else_if(phi):
                 qml.measure(2, postselect=postselect)
                 qml.RY(phi, 0)
                 qml.measure(2)
 
             @cond_fn.otherwise
-            def _(phi):
+            def _else(phi):
                 qml.measure(3, postselect=postselect)
                 qml.RZ(phi, 0)
                 qml.measure(3)
