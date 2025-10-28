@@ -238,8 +238,8 @@ class SimplifiedTwoDesign(Operation):
 def _simplified_two_design_resources(n_layers, num_wires):
     if num_wires > 1:
         return {
-            resource_rep(RY): num_wires + (n_layers * num_wires - 1) * 2,
-            resource_rep(CZ): n_layers * num_wires - 1,
+            resource_rep(RY): num_wires + (n_layers * num_wires - n_layers) * 2,
+            resource_rep(CZ): n_layers * num_wires - n_layers,
         }
     return {resource_rep(RY): num_wires}
 
