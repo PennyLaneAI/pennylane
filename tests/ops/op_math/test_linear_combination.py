@@ -561,20 +561,20 @@ class TestLinearCombination:
         assert pr is not None
         assert pr == true_pauli
 
-    def test_is_hermitian_trivial(self):
+    def test_is_verified_hermitian_trivial(self):
         """Test that an empty LinearCombination is trivially hermitian"""
         op = qml.ops.LinearCombination([], [])
-        assert op.is_hermitian
+        assert op.is_verified_hermitian
 
-    IS_HERMITIAN_TEST = (
+    IS_VERIFIED_HERMITIAN_TEST = (
         (qml.ops.LinearCombination([0.5, 0.5], [X(0), X(1) @ X(2)]), True),
         (qml.ops.LinearCombination([0.5, 0.5j], [X(0), X(1) @ X(2)]), False),
         (qml.ops.LinearCombination([0.5, 0.5], [X(0), qml.Hadamard(0)]), True),
     )
 
-    @pytest.mark.parametrize("op, res", IS_HERMITIAN_TEST)
-    def test_is_hermitian(self, op, res):
-        assert op.is_hermitian is res
+    @pytest.mark.parametrize("op, res", IS_VERIFIED_HERMITIAN_TEST)
+    def test_is_verified_hermitian(self, op, res):
+        assert op.is_verified_hermitian is res
 
     @pytest.mark.parametrize("coeffs, ops", valid_LinearCombinations)
     def test_LinearCombination_valid_init(self, coeffs, ops):

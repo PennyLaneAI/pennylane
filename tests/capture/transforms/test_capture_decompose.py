@@ -32,9 +32,8 @@ from pennylane.capture.primitives import (
     qnode_prim,
     while_loop_prim,
 )
-from pennylane.measurements import MidMeasureMP
 from pennylane.operation import Operation
-from pennylane.ops import Conditional
+from pennylane.ops import Conditional, MidMeasure
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 from pennylane.transforms.decompose import DecomposeInterpreter, decompose_plxpr_to_plxpr
 
@@ -324,12 +323,12 @@ class TestDecomposeInterpreter:
                 return qml.expval(qml.Z(0))
 
             @cond_f.else_if(x > 1)
-            def _():
+            def _else_if():
                 qml.Y(0)
                 return qml.expval(qml.Y(0))
 
             @cond_f.otherwise
-            def _():
+            def _else():
                 qml.Z(0)
                 return qml.expval(qml.X(0))
 
@@ -523,8 +522,8 @@ class TestDecomposeInterpreter:
         qml.assert_equal(ops[5].base, q.queue[5].base)
         qml.assert_equal(ops[6].base, q.queue[6].base)
         qml.assert_equal(ops[8].base, q.queue[8].base)
-        assert isinstance(ops[3], MidMeasureMP)
-        assert isinstance(ops[7], MidMeasureMP)
+        assert isinstance(ops[3], MidMeasure)
+        assert isinstance(ops[7], MidMeasure)
 
 
 class TestControlledDecompositions:

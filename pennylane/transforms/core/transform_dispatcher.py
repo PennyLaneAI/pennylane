@@ -43,7 +43,7 @@ def _create_transform_primitive(name):
     transform_prim.prim_type = "transform"
 
     @transform_prim.def_impl
-    def _(
+    def _impl(
         *all_args, inner_jaxpr, args_slice, consts_slice, targs_slice, tkwargs
     ):  # pylint: disable=unused-argument
         args = all_args[args_slice]
@@ -51,7 +51,7 @@ def _create_transform_primitive(name):
         return capture.eval_jaxpr(inner_jaxpr, consts, *args)
 
     @transform_prim.def_abstract_eval
-    def _(*_, inner_jaxpr, **__):
+    def _abstract_eval(*_, inner_jaxpr, **__):
         return [out.aval for out in inner_jaxpr.outvars]
 
     return transform_prim

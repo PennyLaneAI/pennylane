@@ -432,8 +432,8 @@ class TestSpecialGates:
 
         plt.close()
 
-    def test_MidMeasureMP(self):
-        """Tests MidMeasureMP has correct special handling."""
+    def test_MidMeasure(self):
+        """Tests MidMeasure has correct special handling."""
         m = qml.measure(0)
         tape = QuantumScript(m.measurements)
         _, ax = tape_mpl(tape)
