@@ -1823,14 +1823,13 @@ class TrotterPauli(ResourceOperator):
       'Hadamard': 336
     """
 
-    resource_keys = {"pauli_ham", "num_steps", "order", "pauli_rot_precision"}
+    resource_keys = {"pauli_ham", "num_steps", "order"}
 
     def __init__(
         self,
         pauli_ham: PauliHamiltonian,
         num_steps: int,
         order: int,
-        pauli_rot_precision: float | None = None,
         wires: WiresLike | None = None,
     ):
 
@@ -1842,7 +1841,6 @@ class TrotterPauli(ResourceOperator):
         self.num_steps = num_steps
         self.order = order
         self.pauli_ham = pauli_ham
-        self.pauli_rot_precision = pauli_rot_precision
 
         self.num_wires = pauli_ham.num_qubits
 
@@ -1866,12 +1864,11 @@ class TrotterPauli(ResourceOperator):
             "pauli_ham": self.pauli_ham,
             "num_steps": self.num_steps,
             "order": self.order,
-            "pauli_rot_precision": self.pauli_rot_precision, 
         }
 
     @classmethod
     def resource_rep(
-        cls, pauli_ham: PauliHamiltonian, num_steps: int, order: int, pauli_rot_precision: float,
+        cls, pauli_ham: PauliHamiltonian, num_steps: int, order: int,
     ) -> CompressedResourceOp:
         """Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
@@ -1889,14 +1886,13 @@ class TrotterPauli(ResourceOperator):
             "pauli_ham": pauli_ham,
             "num_steps": num_steps,
             "order": order,
-            "pauli_rot_precision": pauli_rot_precision,
         }
         num_wires = pauli_ham.num_qubits
         return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
     def resource_decomp(
-        cls, pauli_ham: PauliHamiltonian, num_steps: int, order: int, pauli_rot_precision: float,
+        cls, pauli_ham: PauliHamiltonian, num_steps: int, order: int,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a
         quantum gate and the number of times it occurs in the decomposition.
@@ -1940,7 +1936,7 @@ class TrotterPauli(ResourceOperator):
         if (groups := pauli_ham.commuting_groups) is not None:
             num_groups = len(groups)
             cost_groups = [
-                cls.cost_pauli_group(group, pauli_rot_precision) for group in groups
+                cls.cost_pauli_group(group) for group in groups
             ]
 
             gate_count_lst = []
@@ -1970,15 +1966,14 @@ class TrotterPauli(ResourceOperator):
             }
         )
 
-        cost_fragments = cls.cost_pauli_group(pauli_dist, precision=pauli_rot_precision)
+        cost_fragments = cls.cost_pauli_group(pauli_dist)
         fragment_repetition = num_steps if order == 1 else 2 * num_steps * (5**(k-1))
         return [fragment_repetition * gate_count for gate_count in cost_fragments]
 
-
     @staticmethod
-    def cost_pauli_group(pauli_dist: dict, precision: float):
+    def cost_pauli_group(pauli_dist: dict):
         gate_count_lst = []
         for pauli_word, count in pauli_dist.items():
-            gate_count_lst.append(GateCount(PauliRot.resource_rep(pauli_word, precision), count))
+            gate_count_lst.append(GateCount(PauliRot.resource_rep(pauli_word), count))
 
         return gate_count_lst
