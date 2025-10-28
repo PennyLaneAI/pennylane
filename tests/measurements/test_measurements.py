@@ -23,8 +23,6 @@ from pennylane.measurements import (
     ExpectationMP,
     MeasurementProcess,
     MeasurementTransform,
-    MeasurementValue,
-    MidMeasureMP,
     MutualInfoMP,
     ProbabilityMP,
     PurityMP,
@@ -44,6 +42,23 @@ from pennylane.queuing import AnnotatedQueue
 from pennylane.wires import Wires
 
 # pylint: disable=too-few-public-methods, unused-argument
+
+
+def test_measurements_module_getattr():
+    """Test that the getattr raises an attribute error for things that dont exist."""
+    with pytest.raises(AttributeError):
+        qml.measurements.not_here  # pylint: disable=pointless-statement
+
+
+def test_mid_measure_deprecations():
+
+    assert qml.measurements.MidMeasureMP == qml.ops.MidMeasure
+    assert qml.measurements.MeasurementValue == qml.ops.MeasurementValue
+    assert qml.measurements.measure == qml.ops.measure
+    assert qml.measurements.get_mcm_predicates == qml.ops.mid_measure.get_mcm_predicates
+    from pennylane.devices.qubit.simulate import _find_post_processed_mcms
+
+    assert qml.measurements.find_post_processed_mcms == _find_post_processed_mcms
 
 
 class NotValidMeasurement(MeasurementProcess):
@@ -129,7 +144,6 @@ valid_meausurements = [
     ExpectationMP(obs=qml.s_prod(2.0, qml.PauliX(0))),
     ExpectationMP(eigvals=[0.5, 0.6], wires=Wires("a")),
     ExpectationMP(obs=mv),
-    MidMeasureMP(wires=Wires("a"), reset=True, id="abcd"),
     MutualInfoMP(wires=(Wires("a"), Wires("b")), log_base=3),
     ProbabilityMP(wires=Wires("a"), eigvals=[0.5, 0.6]),
     ProbabilityMP(obs=3.0 * qml.PauliX(0)),
@@ -325,8 +339,8 @@ class TestProperties:
         m = ProbabilityMP(eigvals=(1, 0), wires=qml.wires.Wires(0))
         assert repr(m) == "probs(eigvals=[1 0], wires=[0])"
 
-        m0 = MeasurementValue([MidMeasureMP(Wires(0), id="0")], lambda v: v)
-        m1 = MeasurementValue([MidMeasureMP(Wires(1), id="1")], lambda v: v)
+        m0 = qml.ops.MeasurementValue([qml.ops.MidMeasure(Wires(0), id="0")], lambda v: v)
+        m1 = qml.ops.MeasurementValue([qml.ops.MidMeasure(Wires(1), id="1")], lambda v: v)
         m = ProbabilityMP(obs=[m0, m1])
         expected = "probs([MeasurementValue(wires=[0]), MeasurementValue(wires=[1])])"
         assert repr(m) == expected
