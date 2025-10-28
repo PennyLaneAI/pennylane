@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit test module for the ParitySynth transform"""
-from functools import partial
 from itertools import product
 
 import networkx as nx
@@ -689,11 +688,11 @@ class TestParitySynthPassConnectivity:
                 %13, %14 = _CNOT %12, %10
                 %15 = quantum.custom "RZ"(%arg0) %14 : !quantum.bit
                 %16, %17 = _CNOT %15, %13
-                // CHECK: quantum.custom "Hadamard"() [[q15]] : !quantum.bit
-                %18 = quantum.custom "Hadamard"() %11 : !quantum.bit
-                // HECK: quantum.custom "Hadamard"() [[q19]] : !quantum.bit
-                %19 = quantum.custom "Hadamard"() %16 : !quantum.bit
                 // CHECK: quantum.custom "Hadamard"() [[q20]] : !quantum.bit
+                // CHECK: quantum.custom "Hadamard"() [[q15]] : !quantum.bit
+                // CHECK: quantum.custom "Hadamard"() [[q19]] : !quantum.bit
+                %18 = quantum.custom "Hadamard"() %11 : !quantum.bit
+                %19 = quantum.custom "Hadamard"() %16 : !quantum.bit
                 %20 = quantum.custom "Hadamard"() %17 : !quantum.bit
                 // CHECK-NOT: "quantum.custom"
                 return
@@ -738,7 +737,7 @@ class TestParitySynthIntegration:
         dev = qml.device("lightning.qubit", wires=2)
 
         @qml.qjit(target="mlir", pass_plugins=[getXDSLPluginAbsolutePath()])
-        @parity_synth_pass(None)
+        @parity_synth_pass
         @qml.qnode(dev)
         def circuit(x: float, y: float, z: float):
             # CHECK: [[phi:%.+]] = tensor.extract %arg0
@@ -766,7 +765,7 @@ class TestParitySynthIntegration:
         dev = qml.device("lightning.qubit", wires=3)
 
         @qml.qjit(target="mlir", pass_plugins=[getXDSLPluginAbsolutePath()])
-        @parity_synth_pass(connectivity=nx.path_graph(3))
+        @parity_synth_pass
         @qml.qnode(dev)
         def circuit():
             # CHECK: [[phi:%.+]] = tensor.extract %arg0
@@ -790,12 +789,9 @@ class TestParitySynthIntegration:
             qml.CNOT((1, 0))
             return qml.state()
 
-        # run_filecheck_qjit(circuit)
-        print(circuit.mlir)
-        from pennylane.compiler.python_compiler.visualization import draw
-
-        print(draw(circuit, level=5)())
-        assert False
+        run_filecheck_qjit(circuit)
+        # from pennylane.compiler.python_compiler.visualization import draw
+        # print(draw(circuit, level=5)())
 
 
 if __name__ == "__main__":

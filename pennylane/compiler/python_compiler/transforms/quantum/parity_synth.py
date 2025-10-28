@@ -39,7 +39,7 @@ from ...dialects.quantum import (
     QuregType,
 )
 from ...pass_api import compiler_transform
-from ...visualization.xdsl_conversion import resolve_constant_params, resolve_constant_wire
+from ...visualization.xdsl_conversion import resolve_constant_wire
 
 ### xDSL-agnostic part
 
@@ -83,6 +83,18 @@ def _compute_cost(terminal_nodes: list[int], connectivity: nx.Graph) -> tuple[nx
 
 
 def _find_parity(P, connectivity):
+    """Compute the parity in ``P`` that has the lowest cost for a given connectivity,
+    as reported by ``_compute_cost``.
+
+    Args:
+        P (np.ndarray): Parity table containing candidate parities.
+        connectivity (nx.Graph): Connectivity graph
+
+    Returns:
+        tuple[int, nx.Graph, list[int]]:
+            Index of the parity with smallest cost, its associated Steiner tree and terminal nodes
+            (nodes where the parity is 1) within this Steiner tree.
+    """
     terminals = [list(map(int, np.where(y)[0])) for y in P.T]
     trees, cost = zip(*[_compute_cost(terminal, connectivity) for terminal in terminals])
     min_idx = np.argmin(cost)
@@ -90,6 +102,9 @@ def _find_parity(P, connectivity):
 
 
 def _fill_in(t, terminal_nodes, P, inv_synth_matrix):
+    """Fill in the non-terminal nodes of a Steiner tree by applying CNOTs, which are
+    tracked both in the parity table and the inverse parity matrix ``inv_synth_matrix``.
+    """
     cnots = []
     f = t.copy()
     f.remove_nodes_from(terminal_nodes)
@@ -290,13 +305,12 @@ non_phase_polynomial_quantum_ops = (MultiRZOp, QubitUnitaryOp)
 
 def make_phase_polynomial(
     ops: list[CustomOp],
-    init_wire_map: dict[QubitType, int],
+    mapper,
 ) -> tuple[np.ndarray]:
     r"""Compute the phase polynomial representation of a list of ``CustomOp``\ s.
     This implementation is very similar to :func:`~.transforms.intermediate_reps.phase_polynomial`
     but adjusted to work with xDSL objects."""
-    wire_map = init_wire_map
-
+    wire_map = mapper.phase_poly_map
     parity_matrix = np.eye(len(wire_map), dtype=int)
     parity_table = []
     angles = []
@@ -326,14 +340,78 @@ def make_phase_polynomial(
 
 @dataclass
 class QubitMapper:
+    """A helper class to map between integer-valued wire labels and qubit SSAValues throughout
+    ParitySynthPattern. This version is used when ParitySynth is used without connectivity.
+    """
 
+    connectivity: None = None
+    phase_poly_map: dict[QubitType, int] | None = None
+    qubits_used_by_pp: set[QubitType] | None = None
+    num_pp_qubits: int = 0
+
+    def reset_pp_info(self):
+        """Reset the QubitMapper after processing a single phase polynomial."""
+        self.phase_poly_map = None
+        self.qubits_used_by_pp = None
+        self.num_pp_qubits = 0
+
+    def handle_allocation(self, *_, **__):
+        """Processes allocation operations into qubit mapping information."""
+
+    def handle_phase_poly_op(self, op):
+        """Process a phase polynomial operation into qubit tracking."""
+        if self.phase_poly_map is None:
+            self.phase_poly_map = {}
+            self.qubits_used_by_pp = set()
+        for i, q in enumerate(op.in_qubits):
+            if q in self.qubits_used_by_pp:
+                self.qubits_used_by_pp.remove(q)
+            else:
+                self.phase_poly_map[q] = self.num_pp_qubits
+                self.num_pp_qubits += 1
+            self.qubits_used_by_pp.add(op.out_qubits[i])
+
+    def update_global_map(self, _):
+        """Method to update globally tracked map between wire labels and SSAValues. Not needed
+        for the connectivity-free mapper."""
+
+    def handle_connectivity(self, *_, **__):
+        """Method to take care of qubits that have not been extracted but are needed in
+        a newly synthesized phase polynomial due to connectivity. Not needed for the
+        connectivity-free mapper."""
+
+    def fuse_phase_poly_into_circuit(self, inv_wire_map, rewriter):
+        """Fuse a newly synthesized phasy polynomial block into the circuit by replacing
+        the output qubits of the old phase polynomial block with those of the new block,
+        wherever they are used in the remaining circuit."""
+        for old_qubit, int_wire in self.phase_poly_map.items():
+            rewriter.replace_all_uses_with(old_qubit, inv_wire_map[int_wire])
+
+
+@dataclass
+class QubitMapperConnectivity:
+    """A helper class to map between integer-valued wire labels and qubit SSAValues throughout
+    ParitySynthPattern. This version is used when ParitySynth is used without connectivity.
+    """
+
+    # pylint: disable=too-many-instance-attributes
+
+    connectivity: nx.Graph
     global_map: dict[QubitType, int] = field(default_factory=dict)
     inv_global_map: dict[int, QubitType] = field(default_factory=dict)
     allocated: tuple[QuregType, int] | None = None
     extracted: set[int] = field(default_factory=set)
     phase_poly_map: dict[QubitType, int] | None = None
-    new_phase_poly_map: dict[int, QubitType] | None = None
-    special_output_qubits: dict[QubitType] = field(default_factory=dict)
+    special_output_qubits: dict[int, QubitType] = field(default_factory=dict)
+    wires_used_by_pp: set[int] | None = None
+
+    def reset_pp_info(self):
+        """Reset the QubitMapper after processing a single phase polynomial. Global
+        information in ``global_map``, ``inv_global_map``, ``allocated``, ``extracted`` is not
+        reset."""
+        self.phase_poly_map = None
+        self.special_output_qubits = {}
+        self.wires_used_by_pp = None
 
     def handle_allocation(self, op, rewriter):
         """Processes allocation operations into qubit mapping information."""
@@ -363,24 +441,29 @@ class QubitMapper:
         """Process a phase polynomial operation into qubit tracking."""
         if self.phase_poly_map is None:
             self.phase_poly_map = self.global_map.copy()
-            self.new_phase_poly_map = self.inv_global_map.copy()
+            self.wires_used_by_pp = set()
+        for q in op.in_qubits:
+            int_wire = self.global_map.get(q, None)
+            if int_wire is not None:
+                self.wires_used_by_pp.add(int_wire)
 
     def update_global_map(self, op):
+        """Method to update the globally tracked map between wire labels and SSAValues after
+        synthesizing a phase polynomial block."""
         for in_q, out_q in zip(
             op.in_qubits + op.in_ctrl_qubits, op.out_qubits + op.out_ctrl_qubits, strict=True
         ):
             self.global_map[out_q] = int_wire = self.global_map.pop(in_q)
             self.inv_global_map[int_wire] = out_q
 
-    def handle_connectivity(
-        self, connectivity: nx.Graph, rewriter, used_wires: set[int], insertion_point: InsertPoint
-    ):
-        if connectivity is None:
-            return
-        if not used_wires.issubset(set(connectivity.nodes)):
+    def handle_connectivity(self, rewriter, used_wires: set[int], insertion_point: InsertPoint):
+        """Method to take care of qubits that have not been extracted but are needed in
+        a newly synthesized phase polynomial due to connectivity constraints. This is
+        done individually per phase polynomial block."""
+        if not used_wires.issubset(set(self.connectivity.nodes)):
             raise ValueError(
                 "The circuit uses wire labels that are not present in the connectivity graph. "
-                f"Used labels: {used_wires}\nGraph node labels: {set(connectivity.nodes)}"
+                f"Used labels: {used_wires}\nGraph node labels: {set(self.connectivity.nodes)}"
             )
         for w in used_wires.difference(self.extracted):
             if w >= self.allocated[1]:
@@ -390,33 +473,32 @@ class QubitMapper:
             extract_op = ExtractOp(self.allocated[0], w)
             rewriter.insert_op(extract_op, insertion_point)
             self.extracted.add(w)
-            self.global_map[extract_op.results[0]] = idx
-            self.global_map[idx] = extract_op.results[0]
+            self.global_map[extract_op.results[0]] = w
+            self.global_map[w] = extract_op.results[0]
 
-    def fuse_phase_poly_into_circuit(self, rewriter):
-        # Replace the output qubits of the old phase polynomial operations by the output qubits of
-        # the new circuit
+    def fuse_phase_poly_into_circuit(self, inv_wire_map, rewriter):
+        """Fuse a newly synthesized phasy polynomial block into the circuit by replacing
+        the output qubits of the old phase polynomial block with those of the new block,
+        wherever they are used in the remaining circuit. If the old phase polynomial did
+        not use a qubit which the new phase polynomial does use, the previously unused qubit
+        has previously been replaced by ``self.special_output_qubits[idx]`` where ``idx`` is the
+        integer-valued wire label. This allows us to replace it by the respective output
+        qubit of the new block without also replacing it in the new block as input."""
         for previous_out_qubit, int_wire in self.phase_poly_map.items():
-            new_out_qubit = self.new_phase_poly_map[int_wire]
+            new_out_qubit = inv_wire_map[int_wire]
             input_qubit = self.inv_global_map[int_wire]
-            old_pp_used_wire = previous_out_qubit != input_qubit
-            new_pp_used_wire = new_out_qubit != input_qubit
-            if old_pp_used_wire:
-                if new_pp_used_wire:
-                    rewriter.replace_all_uses_with(previous_out_qubit, new_out_qubit)
+            if new_out_qubit != input_qubit:  # New phase polynomial used this qubit
+                if previous_out_qubit != input_qubit:  # Old phase polynomial used this qubit
+                    replaced_qubit = previous_out_qubit
                 else:
-                    raise NotImplementedError()
-            else:
-                if new_pp_used_wire:
-                    rewriter.replace_all_uses_with(previous_out_qubit, new_out_qubit)
-                    rewriter.replace_all_uses_with(
-                        self.special_out_qubits[input_qubit], input_qubit
-                    )
-                else:
-                    pass
+                    # Old phase polynomial did not use this qubit. Remainder circuit was
+                    # modified with special output qubit to replace it here.
+                    replaced_qubit = self.special_output_qubits[int_wire]
+                rewriter.replace_all_uses_with(replaced_qubit, new_out_qubit)
 
-            self.global_map[new_out_qubit] = int_wire  # Not sure about these two lines
-            self.inv_global_map[int_wire] = new_out_qubit  # Not sure about these two lines
+            # Update global maps to contain new output instead of old output qubit
+            self.global_map[new_out_qubit] = int_wire
+            self.inv_global_map[int_wire] = new_out_qubit
 
 
 class ParitySynthPattern(pattern_rewriter.RewritePattern):
@@ -426,36 +508,11 @@ class ParitySynthPattern(pattern_rewriter.RewritePattern):
 
     connectivity: nx.Graph
     phase_polynomial_ops: list[CustomOp]
-    init_wire_map: [QubitType, int]
     global_wire_map: [QubitType, int]
-    phase_polynomial_ops: set[QubitType]
-    num_phase_polynomial_qubits: int
 
     def __init__(self, *args, connectivity: nx.Graph | None = None, **kwargs):
         super().__init__(*args, **kwargs)
         self.connectivity = connectivity
-        self._reset_vars()
-
-    def _reset_vars(self):
-        """Initialize/reset variables that are used in ``match_and_rewrite`` as well as
-        ``rewrite_phase_polynomial``."""
-        self.phase_polynomial_ops = []
-        self.init_wire_map = {}
-        self.phase_polynomial_qubits = set()
-        self.num_phase_polynomial_qubits = 0
-
-    def _record_phase_poly_op(self, op: CustomOp):
-        """Add a ``CustomOp`` to the phase polynomial ops, remove its input qubits
-        from ``self.phase_polynomial_qubits`` if present or add them to ``self.init_wire_map``
-        if not, and insert its output qubits in ``self.phase_polynomial_qubits``."""
-        for i, q in enumerate(op.in_qubits):
-            if q in self.phase_polynomial_qubits:
-                self.phase_polynomial_qubits.remove(q)
-            else:
-                self.init_wire_map[q] = self.num_phase_polynomial_qubits
-                self.num_phase_polynomial_qubits += 1
-            self.phase_polynomial_qubits.add(op.out_qubits[i])
-        self.phase_polynomial_ops.append(op)
 
     @pattern_rewriter.op_type_rewrite_pattern
     def match_and_rewrite(self, funcOp: func.FuncOp, rewriter: pattern_rewriter.PatternRewriter):
@@ -480,72 +537,51 @@ class ParitySynthPattern(pattern_rewriter.RewritePattern):
         as a non-phase-polynomial operation is encountered. Note that this makes the (size of the)
         rewritten phase polynomials dependent on the order in which we walk over the operations.
         """
-        # The effort spent on qubit tracking and additional parities when connectivity is present
-        # can be significant, so we separate the implementations with and without connectivity.
         if self.connectivity is None:
-            self._match_and_rewrite_without_connectivity(funcOp, rewriter)
+            mapper = QubitMapper()
         else:
-            self._match_and_rewrite_with_connectivity(funcOp, rewriter)
-
-    def _match_and_rewrite_without_connectivity(self, funcOp, rewriter):
+            mapper = QubitMapperConnectivity(self.connectivity)
+        phase_poly_ops = []
         for op in funcOp.body.walk():
+            if isinstance(op, (AllocOp, AllocQubitOp, ExtractOp)):
+                mapper.handle_allocation(op, rewriter)
+                continue
+
             if not isinstance(op, (CustomOp,) + non_phase_polynomial_quantum_ops):
                 # Non-quantum operation. Global phases are treated similarly, because they commute
                 continue
 
             if isinstance(op, CustomOp) and op.gate_name.data in valid_phase_polynomial_ops:
                 # Include op in phase polynomial ops and track its qubits
-                self._record_phase_poly_op(op)
+                phase_poly_ops.append(op)
+                mapper.handle_phase_poly_op(op)
                 continue
 
             # not a phase polynomial op, so we activate rewriting of the phase polynomial
-            self.rewrite_phase_polynomial(rewriter, None)
+            self.rewrite_phase_polynomial(phase_poly_ops, rewriter, mapper)
+            phase_poly_ops = []
+            mapper.update_global_map(op)
+            mapper.reset_pp_info()
 
         # end of operations; rewrite terminal phase polynomial
-        self.rewrite_phase_polynomial(rewriter, None)
-
-    def _match_and_rewrite_with_connectivity(self, funcOp, rewriter):
-        mapper = QubitMapper()
-        allocated_first_register = False
-        for op in funcOp.body.walk():
-            print(type(op))
-            match op:
-
-                case AllocOp() | AllocQubitOp() | ExtractOp():
-                    mapper.handle_allocation(op, rewriter)
-                case CustomOp():
-                    if op.gate_name.data in valid_phase_polynomial_ops:
-                        self.phase_polynomial_ops.append(op)
-                        mapper.handle_phase_poly_op(op)
-
-                    else:
-                        self.rewrite_phase_polynomial(rewriter, mapper)
-                        mapper.update_global_map(op)
-
-                case MultiRZOp() | QubitUnitaryOp():
-                    # not a phase polynomial op, so we activate rewriting of the phase polynomial
-                    self.rewrite_phase_polynomial(rewriter, mapper)
-                    mapper.update_global_map(op)
-
-        # end of operations; rewrite terminal phase polynomial
-        self.rewrite_phase_polynomial(rewriter, mapper)
+        self.rewrite_phase_polynomial(phase_poly_ops, rewriter, mapper)
 
     @staticmethod
-    def _cnot(i: int, j: int, inv_wire_map: dict[int, QubitType]):
+    def _cnot(i: int, j: int, inv_wire_map, mapper: QubitMapper, rewriter):
         """Create a CNOT operator acting on the qubits that map to wires ``i`` and ``j``
         and update the wire map so that ``i`` and ``j`` point to the output qubits afterwards."""
-        cnot_op = CustomOp(
-            in_qubits=[inv_wire_map[i], inv_wire_map[j]],
-            gate_name="CNOT",
-            params=tuple(),
-        )
-        print(
-            f"created customop CNOT on wires {id(inv_wire_map[i]), id(inv_wire_map[j])} for {i=}, {j=}."
-        )
-        print(f"Those wires were created by {inv_wire_map[i].op}, {inv_wire_map[j].op}")
-        print(
-            f"Overwriting entries for those i, j with {id(cnot_op.out_qubits[0])}, {id(cnot_op.out_qubits[1])}."
-        )
+        in_qubits = [inv_wire_map[i], inv_wire_map[j]]
+        if mapper.connectivity is not None:
+            for idx, q in zip((i, j), in_qubits):
+                if idx not in mapper.wires_used_by_pp:
+                    # An allocation that should _NOT_ make it into the quantum program.
+                    new_alloc = AllocQubitOp()
+                    new_qubit = new_alloc.results[0]
+                    rewriter.replace_all_uses_with(q, new_qubit)
+                    mapper.special_output_qubits[idx] = new_qubit
+                    mapper.wires_used_by_pp.add(idx)
+
+        cnot_op = CustomOp(in_qubits=in_qubits, gate_name="CNOT", params=tuple())
         inv_wire_map[i] = cnot_op.out_qubits[0]
         inv_wire_map[j] = cnot_op.out_qubits[1]
         return cnot_op
@@ -559,27 +595,26 @@ class ParitySynthPattern(pattern_rewriter.RewritePattern):
         return rz_op
 
     def rewrite_phase_polynomial(
-        self, rewriter: pattern_rewriter.PatternRewriter, mapper: QubitMapper
+        self, phase_poly_ops, rewriter: pattern_rewriter.PatternRewriter, mapper: QubitMapper
     ):
         """Rewrite a single region of a circuit that represents a phase polynomial."""
-        if not self.phase_polynomial_ops:
+        if not phase_poly_ops:
             # Nothing to do
             return
 
-        if len(self.phase_polynomial_ops) == 1 and self.connectivity is None:
+        if len(phase_poly_ops) == 1 and self.connectivity is None:
             # Phase polynomials of length 1 are left untouched. Reset internal state
-            self._reset_vars()
             return
 
-        insertion_point: InsertPoint = InsertPoint.after(self.phase_polynomial_ops[-1])
+        insertion_point: InsertPoint = InsertPoint.after(phase_poly_ops[-1])
 
         ## Calculate the new circuit by going to phase polynomial IR and back, including synthesis
         ## of trailing CNOTs via rowcol
 
+        inv_phase_poly_map = {val: key for key, val in mapper.phase_poly_map.items()}
+
         # Compute the IR
-        M, P, angles, arith_ops = make_phase_polynomial(
-            self.phase_polynomial_ops, mapper.phase_poly_map
-        )
+        M, P, angles, arith_ops = make_phase_polynomial(phase_poly_ops, mapper)
 
         # Insert arithmetic operations produced within `make_phase_polynomial`
         for op in arith_ops:
@@ -595,33 +630,32 @@ class ParitySynthPattern(pattern_rewriter.RewritePattern):
             w for _, _, subcircuit in subcircuits for pair in subcircuit for w in pair
         } | {w for pair in rowcol_circuit for w in pair}
 
-        insertion_point_before: InsertPoint = InsertPoint.before(self.phase_polynomial_ops[0])
-        mapper.handle_connectivity(self.connectivity, rewriter, used_wires, insertion_point_before)
+        insertion_point_before: InsertPoint = InsertPoint.before(phase_poly_ops[0])
 
-        ops_to_insert = []
+        mapper.handle_connectivity(rewriter, used_wires, insertion_point_before)
+
         # Apply the parity network part of the new circuit
-        # SET SPECIAL OUTPUT QUBITS
         for idx, phase_wire, subcircuit in subcircuits:
             for i, j in subcircuit:
-                ops_to_insert.append(self._cnot(i, j, mapper.new_phase_poly_map))
+                rewriter.insert_op(
+                    self._cnot(i, j, inv_phase_poly_map, mapper, rewriter), insertion_point
+                )
 
-            ops_to_insert.append(self._rz(phase_wire, angles.pop(idx), mapper.new_phase_poly_map))
+            rewriter.insert_op(
+                self._rz(phase_wire, angles.pop(idx), inv_phase_poly_map), insertion_point
+            )
 
         # Apply the remaining parity matrix part of the new circuit
         for i, j in rowcol_circuit:
-            ops_to_insert.append(self._cnot(i, j, mapper.new_phase_poly_map))
+            rewriter.insert_op(
+                self._cnot(i, j, inv_phase_poly_map, mapper, rewriter), insertion_point
+            )
 
-        mapper.fuse_phase_poly_into_circuit(rewriter)
-
-        for op in ops_to_insert:
-            rewriter.insert_op(op, insertion_point)
+        mapper.fuse_phase_poly_into_circuit(inv_phase_poly_map, rewriter)
 
         # Erase the old phase polynomial operations.
-        for op in self.phase_polynomial_ops[::-1]:
+        for op in phase_poly_ops[::-1]:
             rewriter.erase_op(op)
-
-        # Reset internal state
-        self._reset_vars()
 
 
 @dataclass(frozen=True)
