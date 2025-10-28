@@ -1526,9 +1526,9 @@ class TestQNodeAutographIntegration:
             return qml.state()
 
         jaxpr = jax.make_jaxpr(c)(3)
-        assert jaxpr.eqns[0].primitive == qml.transforms.merge_rotations._primitive
+        assert jaxpr.eqns[0].params["transform"] == qml.transforms.merge_rotations
         j2 = jaxpr.eqns[0].params["inner_jaxpr"]
-        assert j2.eqns[0].primitive == qml.transforms.cancel_inverses._primitive
+        assert j2.eqns[0].params["transform"] == qml.transforms.cancel_inverses
         j3 = j2.eqns[0].params["inner_jaxpr"]
         assert j3.eqns[0].primitive == qnode_prim
         j4 = j3.eqns[0].params["qfunc_jaxpr"]
@@ -1554,9 +1554,9 @@ class TestQNodeAutographIntegration:
 
         for i in [1, 3]:
 
-            assert jaxpr.eqns[i].primitive == qml.transforms.merge_rotations._primitive
+            assert jaxpr.eqns[i].params["transform"] == qml.transforms.merge_rotations
             j2 = jaxpr.eqns[i].params["inner_jaxpr"]
-            assert j2.eqns[0].primitive == qml.transforms.cancel_inverses._primitive
+            assert j2.eqns[0].params["transform"] == qml.transforms.cancel_inverses
             j3 = j2.eqns[0].params["inner_jaxpr"]
             assert j3.eqns[0].primitive == qnode_prim
             j4 = j3.eqns[0].params["qfunc_jaxpr"]
