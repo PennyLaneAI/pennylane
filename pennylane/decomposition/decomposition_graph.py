@@ -490,7 +490,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
             visitor=visitor,
         )
         if visitor.unsolved_op_indices:
-            unsolved_ops = [self._graph[op_idx].op for op_idx in visitor.unsolved_op_indices]
+            unsolved_ops = (self._graph[op_idx].op for op_idx in visitor.unsolved_op_indices)
             # Remove operators that are to be ignored
             op_names = {op.name for op in unsolved_ops if op.op_type not in IGNORED_UNSOLVED_OPS}
             # If unsolved operators are left after filtering for those to be ignored, warn
