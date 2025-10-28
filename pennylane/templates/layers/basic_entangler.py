@@ -14,11 +14,11 @@
 r"""
 Contains the BasicEntanglerLayers template.
 """
-from pennylane import capture, cond, math
+from pennylane import add_decomps, capture, math
 from pennylane.control_flow import for_loop
 from pennylane.decomposition import register_resources, resource_rep
 from pennylane.operation import Operation
-from pennylane.ops import CNOT, RX
+from pennylane.ops import CNOT, RX, cond
 
 has_jax = True
 try:
@@ -230,7 +230,7 @@ class BasicEntanglerLayers(Operation):
 
 
 def _basic_entangler_resources(repeat, num_wires, rotation):
-    resources = {resource_rep(type(rotation), *rotation.resource_params): repeat * num_wires}
+    resources = {resource_rep(rotation): repeat * num_wires}
 
     if num_wires == 2:
         resources[resource_rep(CNOT)] = repeat
@@ -253,18 +253,30 @@ def _basic_entangler_decomposition(weights, wires, rotation):
 
         @for_loop(len(wires))
         def wires_loop(i):
-            rotation(weights[..., layer, i], wires=wires[i : i + 1])
+
+            def recurse(depth, lst, layer, i):
+                if jnp.ndim(weights) - depth == 2:
+                    return lst[layer][i]
+                else:
+                    return [recurse(depth + 1, l, layer, i) for l in lst]
+
+            rotation(recurse(0, weights, layer, i), wires=wires[i])
 
         wires_loop()  # pylint: disable=no-value-for-parameter
 
-        def true_body():
+        def elif_body():
             for i in range(len(wires)):
-                w = wires.subset([i, i + 1], periodic_boundary=True)
-                CNOT(wires=w)
+                j = i + 1
+                if j > len(wires):
+                    j = 0
+                CNOT(wires=[i, j])
 
-        def false_body():
+        def true_body():
             CNOT(wires=wires)
 
-        cond(len(wires) > 2, true_body, false_body)()
+        cond(len(wires) == 2, true_body, false_fn=None, elifs=((len(wires) > 2, elif_body),))()
 
     repeat_loop()  # pylint: disable=no-value-for-parameter
+
+
+add_decomps(BasicEntanglerLayers, _basic_entangler_decomposition)
