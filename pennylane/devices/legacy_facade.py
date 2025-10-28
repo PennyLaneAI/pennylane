@@ -25,10 +25,15 @@ from dataclasses import replace
 
 from pennylane import math, ops
 from pennylane.devices.capabilities import DeviceCapabilities
-from pennylane.exceptions import DeviceError, PennyLaneDeprecationWarning, QuantumFunctionError
+from pennylane.exceptions import (
+    DecompositionUndefinedError,
+    DeviceError,
+    PennyLaneDeprecationWarning,
+    QuantumFunctionError,
+)
 from pennylane.math import Interface, requires_grad
 from pennylane.measurements import ExpectationMP, MidMeasureMP, Shots
-from pennylane.operation import DecompositionUndefinedError, Operator
+from pennylane.operation import Operator
 from pennylane.tape import QuantumScript
 from pennylane.transforms import broadcast_expand, defer_measurements, dynamic_one_shot
 from pennylane.transforms.core import TransformProgram, transform
