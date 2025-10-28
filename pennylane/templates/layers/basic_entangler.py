@@ -257,7 +257,7 @@ def _basic_entangler_decomposition(weights, wires, rotation):
             def recurse(depth, lst, layer, i):
                 if jnp.ndim(weights) - depth == 2:
                     return lst[layer][i]
-                return [recurse(depth + 1, l, layer, i) for l in lst]
+                return [recurse(depth + 1, l, layer, i) for l in lst]  # pragma: no cover
 
             rotation(recurse(0, weights, layer, i), wires=wires[i])
 
@@ -266,7 +266,7 @@ def _basic_entangler_decomposition(weights, wires, rotation):
         def elif_body():
             for i in range(len(wires)):
                 j = i + 1
-                if j > len(wires):
+                if j >= len(wires):
                     j = 0
                 CNOT(wires=[i, j])
 
