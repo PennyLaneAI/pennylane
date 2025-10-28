@@ -398,3 +398,5 @@ from .intermediate_reps import (
     rowcol,
 )
 from .rz_phase_gradient import rz_phase_gradient
+
+from .catalyst_passes import *

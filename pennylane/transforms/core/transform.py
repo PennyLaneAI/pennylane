@@ -28,6 +28,7 @@ def transform(  # pylint: disable=too-many-arguments,too-many-positional-argumen
     final_transform=False,
     use_argnum_in_expand=False,
     plxpr_transform=None,
+    pass_name: None | str = None,
 ) -> TransformDispatcher:
     r"""Generalizes a function that transforms tapes to work with additional circuit-like objects such as a
     :class:`~.QNode`.
@@ -340,4 +341,5 @@ def transform(  # pylint: disable=too-many-arguments,too-many-positional-argumen
         final_transform=final_transform,
         use_argnum_in_expand=use_argnum_in_expand,
         plxpr_transform=plxpr_transform,
+        pass_name=pass_name,
     )
