@@ -1358,7 +1358,7 @@ def _toffoli_elbow_resources():
     }
 
 
-@register_resources(_toffoli_resources, work_wires={"zeroed": 1})
+@register_resources(_toffoli_elbow_resources, work_wires={"zeroed": 1})
 def _toffoli_elbow(wires: WiresLike, **__):
     with allocate(1, qml.allocation.AllocateState.ZERO, restored=True) as work_wires:
         qml.change_op_basis(
