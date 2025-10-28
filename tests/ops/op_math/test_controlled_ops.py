@@ -182,10 +182,7 @@ class TestControlledQubitUnitary:
 
             qml.adjoint(arbitrary_input)(wires=wires)
 
-        qs = qml.tape.QuantumScript(
-            tape.operations,
-            [qml.probs(wires=wires)],
-        )
+        qs = qml.tape.QuantumScript(tape.operations, [qml.probs(wires=wires)])
 
         assert len(qs.wires) == 4  # one work wire has been allocated
 
