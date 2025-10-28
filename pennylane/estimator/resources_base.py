@@ -104,7 +104,7 @@ class Resources:
         self.algo_wires = algo_wires
         self.gate_types = defaultdict(int, gate_types)
 
-    def add_series(self, other: "Resources") -> "Resources":
+    def add_series(self, other: Resources) -> Resources:
         """Add two Resources objects in series.
 
         When combining resources for serial execution, the following rules apply:
@@ -159,7 +159,7 @@ class Resources:
             gate_types=new_gate_types,
         )
 
-    def add_parallel(self, other: "Resources") -> "Resources":
+    def add_parallel(self, other: Resources) -> Resources:
         """Add two Resources objects in parallel.
 
         When combining resources for parallel execution, the following rules apply:
