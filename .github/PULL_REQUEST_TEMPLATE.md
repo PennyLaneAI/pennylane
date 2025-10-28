@@ -2,7 +2,7 @@
 
 Please complete the following checklist when submitting a PR:
 
-- [ ] All new features must include a unit test.
+- [ ] All new features must include appropriate unit tests.
       If you've fixed a bug or added code that should be tested, add a test to the
       test directory!
 
@@ -35,3 +35,5 @@ line and fill in the pull request template.
 **Possible Drawbacks:**
 
 **Related GitHub Issues:**
+
+**Related Shortcut Stories:**
