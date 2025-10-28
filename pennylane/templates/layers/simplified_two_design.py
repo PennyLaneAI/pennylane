@@ -15,6 +15,7 @@ r"""
 Contains the SimplifiedTwoDesign template.
 """
 from pennylane import capture, math
+from pennylane.control_flow import for_loop
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.operation import Operation
 from pennylane.ops import CZ, RY
@@ -255,23 +256,45 @@ def _simplified_two_design_decomposition(initial_layer_weights, weights, wires):
         )
 
     # initial rotations
-    for i in range(len(wires)):  # pylint: disable=consider-using-enumerate
+    @for_loop(len(wires))
+    def initial_rotation_loop(i):
         RY(initial_layer_weights[i], wires=wires[i])
 
-    for layer in range(n_layers):
+    initial_rotation_loop()  # pylint: disable=no-value-for-parameter
+
+    @for_loop(n_layers)
+    def layers_loop(layer):
         # even layer of entanglers
         even_wires = [wires[i : i + 2] for i in range(0, len(wires) - 1, 2)]
-        for i, wire_pair in enumerate(even_wires):
+
+        if has_jax and capture.enabled():
+            even_wires = jnp.array(even_wires)
+
+        @for_loop(len(even_wires))
+        def even_wires_loop(i):
+            wire_pair = even_wires[i]
             CZ(wires=wire_pair)
             RY(weights[layer, i, 0], wires=wire_pair[0])
             RY(weights[layer, i, 1], wires=wire_pair[1])
 
+        even_wires_loop()  # pylint: disable=no-value-for-parameter
+
         # odd layer of entanglers
         odd_wires = [wires[i : i + 2] for i in range(1, len(wires) - 1, 2)]
-        for i, wire_pair in enumerate(odd_wires):
+
+        if has_jax and capture.enabled():
+            odd_wires = jnp.array(odd_wires)
+
+        @for_loop(len(odd_wires))
+        def odd_wires_loop(i):
+            wire_pair = odd_wires[i]
             CZ(wires=wire_pair)
             RY(weights[layer, len(wires) // 2 + i, 0], wires=wire_pair[0])
             RY(weights[layer, len(wires) // 2 + i, 1], wires=wire_pair[1])
+
+        odd_wires_loop()  # pylint: disable=no-value-for-parameter
+
+    layers_loop()  # pylint: disable=no-value-for-parameter
 
 
 add_decomps(SimplifiedTwoDesign, _simplified_two_design_decomposition)
