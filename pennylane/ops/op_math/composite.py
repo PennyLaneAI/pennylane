@@ -174,7 +174,7 @@ class CompositeOp(Operator):
 
     @property
     @abc.abstractmethod
-    def is_hermitian(self):
+    def is_verified_hermitian(self):
         """This property determines if the composite operator is hermitian."""
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
@@ -269,7 +269,7 @@ class CompositeOp(Operator):
             dict[str, array]: dictionary containing the eigenvalues and the
                 eigenvectors of the operator.
         """
-        eigen_func = math.linalg.eigh if self.is_hermitian else math.linalg.eig
+        eigen_func = math.linalg.eigh if self.is_verified_hermitian else math.linalg.eig
 
         if self.hash not in self._eigs:
             mat = self.matrix()

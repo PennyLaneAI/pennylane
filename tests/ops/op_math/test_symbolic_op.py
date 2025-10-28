@@ -150,11 +150,11 @@ class TestProperties:
         """Test that symbolic op is hermitian if the base is hermitian."""
 
         class DummyOp(Operator):
-            is_hermitian = is_herm
+            is_verified_hermitian = is_herm
 
         base = DummyOp("b")
         op = SymbolicOp(base)
-        assert op.is_hermitian == is_herm
+        assert op.is_verified_hermitian == is_herm
 
     @pytest.mark.parametrize("queue_cat", ("_ops", None))
     def test_queuecateory(self, queue_cat):
