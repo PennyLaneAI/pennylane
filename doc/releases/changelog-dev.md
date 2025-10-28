@@ -217,6 +217,10 @@
   :class:`~.TemporaryAND`, :class:`~.QSVT`, and :class:`~.SelectPauliRot`.
   [(#8490)](https://github.com/PennyLaneAI/pennylane/pull/8490)
 
+* Solovay-Kitaev decomposition using the :func:`~.clifford_t_decompostion` transform
+  with ``method="sk"`` or directly via :func:`~.ops.sk_decomposition` now raises a more
+  informative ``RuntimeError`` when used with JAX-JIT or :func:`~.qjit`.
+  [(#8489)](https://github.com/PennyLaneAI/pennylane/pull/8489)
 
 <h3>Documentation 📝</h3>
 
