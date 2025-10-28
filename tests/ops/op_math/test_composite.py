@@ -53,7 +53,7 @@ class ValidOp(CompositeOp):
         return qml.pauli.PauliSentence({})
 
     @property
-    def is_hermitian(self):
+    def is_verified_hermitian(self):
         return False
 
     def matrix(self, wire_order=None):
