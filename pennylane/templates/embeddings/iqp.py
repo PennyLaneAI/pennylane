@@ -28,7 +28,7 @@ from pennylane.wires import Wires
 has_jax = True
 try:
     from jax import numpy as jnp
-except ModuleNotFoundError:  # pragma: no cover
+except ModuleNotFoundError as import_error:  # pragma: no cover
     has_jax = False  # pragma: no cover
 
 
