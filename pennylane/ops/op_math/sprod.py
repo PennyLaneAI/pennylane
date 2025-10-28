@@ -199,10 +199,10 @@ class SProd(ScalarSymbolicOp):
 
     @property
     @handle_recursion_error
-    def is_hermitian(self):
+    def is_verified_hermitian(self):
         """If the base operator is hermitian and the scalar is real,
         then the scalar product operator is hermitian."""
-        return self.base.is_hermitian and not math.iscomplex(self.scalar)
+        return self.base.is_verified_hermitian and not math.iscomplex(self.scalar)
 
     # pylint: disable=arguments-renamed,invalid-overridden-method
     @property

@@ -179,13 +179,14 @@ these objects are located in ``pennylane.ops.qubit.attributes``, not ``pennylane
     ~ops.qubit.attributes.symmetric_over_control_wires
 
 """
+
 # pylint: disable=access-member-before-definition
 import abc
 import copy
 import warnings
 from collections.abc import Callable, Hashable, Iterable
 from functools import lru_cache
-from typing import Any, Literal, Optional, Union
+from typing import Any, ClassVar, Literal, Optional, Union
 
 import numpy as np
 from scipy.sparse import spmatrix
@@ -200,6 +201,7 @@ from pennylane.exceptions import (
     GeneratorUndefinedError,
     MatrixUndefinedError,
     ParameterFrequenciesUndefinedError,
+    PennyLaneDeprecationWarning,
     PowUndefinedError,
     SparseMatrixUndefinedError,
     TermsUndefinedError,
@@ -341,7 +343,7 @@ def create_operator_primitive(
     primitive.prim_type = "operator"
 
     @primitive.def_impl
-    def _(*args, **kwargs):
+    def _impl(*args, **kwargs):
         if "n_wires" not in kwargs:
             return type.__call__(operator_type, *args, **kwargs)
         n_wires = kwargs.pop("n_wires")
@@ -357,7 +359,7 @@ def create_operator_primitive(
     abstract_type = _get_abstract_operator()
 
     @primitive.def_abstract_eval
-    def _(*_, **__):
+    def _abstract_eval(*_, **__):
         return abstract_type()
 
     return primitive
@@ -680,9 +682,34 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
     Optional[jax.extend.core.Primitive]
     """
 
+    resource_keys: ClassVar[set | frozenset] = set()
+    """The set of parameters that affects the resource requirement of the operator.
+
+    All decomposition rules for this operator class are expected to have a resource function
+    that accepts keyword arguments that match these keys exactly. The :func:`~pennylane.resource_rep`
+    function will also expect keyword arguments that match these keys when called with this
+    operator type.
+
+    The default implementation is an empty set, which is suitable for most operators.
+
+    .. seealso::
+        :meth:`~.Operator.resource_params`
+
+    """
+
     def __init_subclass__(cls, **_):
         register_pytree(cls, cls._flatten, cls._unflatten)
         cls._primitive = create_operator_primitive(cls)
+
+        if cls.is_hermitian != Operator.is_hermitian:
+            warnings.warn(
+                "The `is_hermitian` property is deprecated and has been renamed to `is_verified_hermitian` "
+                "as it better reflects the functionality of this property. The deprecated access through `is_hermitian` "
+                "will be removed in PennyLane v0.45. Alternatively, consider using the `pennylane.is_hermitian` "
+                "function instead as it provides a more reliable check for hermiticity. Please be aware that it comes "
+                "with a higher computational cost. ",
+                PennyLaneDeprecationWarning,
+            )
 
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
@@ -1092,13 +1119,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
             return f"{op_label}"
         return f"{op_label}\n({inner_string})"
 
-    def __init__(
-        self,
-        *params: TensorLike,
-        wires: WiresLike | None = None,
-        id: str | None = None,
-    ):
-
+    def __init__(self, *params: TensorLike, wires: WiresLike | None = None, id: str | None = None):
         self._name: str = self.__class__.__name__  #: str: name of the operator
         self._id: str = id
         self._pauli_rep: qml.pauli.PauliSentence | None = (
@@ -1287,26 +1308,88 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
 
     @property
     def is_hermitian(self) -> bool:
-        """This property determines if an operator is likely hermitian.
+        """This property determines if an operator is verified to be Hermitian.
 
-        .. note:: It is recommended to use the :func:`~.is_hermitian` function.
-            Although this function may be expensive to calculate,
-            the ``op.is_hermitian`` property can lead to technically incorrect results.
+        .. warning::
 
-        If this property returns ``True``, the operator is guaranteed to
-        be hermitian, but if it returns ``False``, the operator may still be hermitian.
+            The ``is_hermitian`` property is deprecated and has been renamed to ``is_verified_hermitian``
+            as it better reflects the functionality of this property. The deprecated access through ``is_hermitian``
+            will be removed in PennyLane v0.45. Alternatively, consider using the :func:`~.is_hermitian`
+            function instead as it provides a more reliable check for hermiticity. Please be aware that it comes
+            with a higher computational cost.
 
-        As an example, consider the following edge case:
+        .. note::
+
+            This property provides a fast, non-exhaustive check used for internal
+            optimizations. It relies on quick, provable shortcuts (e.g., operator
+            properties) rather than a full, computationally expensive check.
+
+            For a definitive check, use the :func:`pennylane.is_hermitian` function.
+            Please note that this comes with increased computational cost.
+
+        Returns:
+            bool: The property will return ``True`` if the operator is guaranteed to be Hermitian and
+            ``False`` if the check is inconclusive and the operator may or may not be Hermitian.
+
+        Consider this operator,
 
         >>> op = (qml.X(0) @ qml.Y(0) - qml.X(0) @ qml.Z(0)) * 1j
-        >>> op.is_hermitian
+
+        In this case, Hermicity cannot be verified and leads to an inconclusive result:
+
+        >>> op.is_verified_hermitian # inconclusive
         False
 
-        On the contrary, the :func:`~.is_hermitian` function will give the correct answer:
+        However, using :func:`pennylane.is_hermitian` will give the correct answer:
 
-        >>> qml.is_hermitian(op)
+        >>> qml.is_hermitian(op) # definitive
         True
+
         """
+        warnings.warn(
+            "The `is_hermitian` property is deprecated and has been renamed to `is_verified_hermitian` "
+            "as it better reflects the functionality of this property. The deprecated access through `is_hermitian` "
+            "will be removed in PennyLane v0.45. Alternatively, consider using the `pennylane.is_hermitian` "
+            "function instead as it provides a more reliable check for hermiticity. Please be aware that it comes "
+            "with a higher computational cost. ",
+            PennyLaneDeprecationWarning,
+        )
+
+        return self.is_verified_hermitian
+
+    @property
+    def is_verified_hermitian(self) -> bool:
+        """This property determines if an operator is verified to be Hermitian.
+
+        .. note::
+
+            This property provides a fast, non-exhaustive check used for internal
+            optimizations. It relies on quick, provable shortcuts (e.g., operator
+            properties) rather than a full, computationally expensive check.
+
+            For a definitive check, use the :func:`pennylane.is_hermitian` function.
+            Please note that this comes with increased computational cost.
+
+        Returns:
+            bool: The property will return ``True`` if the operator is guaranteed to be Hermitian and
+            ``False`` if the check is inconclusive and the operator may or may not be Hermitian.
+
+        Consider this operator,
+
+        >>> op = (qml.X(0) @ qml.Y(0) - qml.X(0) @ qml.Z(0)) * 1j
+
+        In this case, Hermicity cannot be verified and leads to an inconclusive result:
+
+        >>> op.is_verified_hermitian # inconclusive
+        False
+
+        However, using :func:`pennylane.is_hermitian` will give the correct answer:
+
+        >>> qml.is_hermitian(op) # definitive
+        True
+
+        """
+
         return False
 
     # pylint: disable=no-self-argument, comparison-with-callable
@@ -1397,23 +1480,6 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         """
 
         raise DecompositionUndefinedError
-
-    @classproperty
-    def resource_keys(self) -> set | frozenset:  # pylint: disable=no-self-use
-        """The set of parameters that affects the resource requirement of the operator.
-
-        All decomposition rules for this operator class are expected to have a resource function
-        that accepts keyword arguments that match these keys exactly. The :func:`~pennylane.resource_rep`
-        function will also expect keyword arguments that match these keys when called with this
-        operator type.
-
-        The default implementation is an empty set, which is suitable for most operators.
-
-        .. seealso::
-            :meth:`~.Operator.resource_params`
-
-        """
-        return set()
 
     @property
     def resource_params(self) -> dict:
@@ -2285,7 +2351,7 @@ class CVObservable(CV, Operator):
            can be useful for some applications where the instance has to be identified
     """
 
-    is_hermitian = True
+    is_verified_hermitian = True
 
     def queue(self, context=QueuingManager):
         """Avoids queuing the observable."""
