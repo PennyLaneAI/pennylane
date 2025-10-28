@@ -257,8 +257,7 @@ def _basic_entangler_decomposition(weights, wires, rotation):
             def recurse(depth, lst, layer, i):
                 if jnp.ndim(weights) - depth == 2:
                     return lst[layer][i]
-                else:
-                    return [recurse(depth + 1, l, layer, i) for l in lst]
+                return [recurse(depth + 1, l, layer, i) for l in lst]
 
             rotation(recurse(0, weights, layer, i), wires=wires[i])
 
