@@ -298,11 +298,11 @@ def _iqp_embedding_decomposition(features, wires, n_repeats, pattern):
     def outer_loop(_):
 
         @for_loop(len(wires))
-        def inner_loop(i):
+        def single_qubit_loop(i):
             H(wires=wires[i])
             RZ(features[i], wires=wires[i])
 
-        inner_loop()  # pylint: disable=no-value-for-parameter
+        single_qubit_loop()  # pylint: disable=no-value-for-parameter
 
         @for_loop(len(pattern))
         def pattern_loop(j):
