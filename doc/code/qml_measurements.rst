@@ -45,4 +45,4 @@ processes are top-level imports:
     :no-main-docstr:
     :include-all-objects:
     :inheritance-diagram:
-    :skip: MeasurementShapeError, classical_shadow, counts, density_matrix, expval, measure, mutual_info, probs, purity, sample, shadow_expval, state, var, vn_entropy
+    :skip: MeasurementShapeError, classical_shadow, counts, density_matrix, expval, mutual_info, probs, purity, sample, shadow_expval, state, var, vn_entropy

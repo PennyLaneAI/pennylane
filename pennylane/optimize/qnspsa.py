@@ -443,7 +443,7 @@ class QNSPSAOptimizer:
 
         # self.k has been updated earlier
         ind = (self.k - 2) % self.last_n_steps.size
-        self.last_n_steps[ind] = loss_curr
+        self.last_n_steps[ind] = loss_curr.item()
 
         tol = (
             2 * self.last_n_steps.std()
