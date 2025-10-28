@@ -15,6 +15,7 @@
 """Unit tests for the decomposition graph."""
 # pylint: disable=protected-access,no-name-in-module
 
+import warnings
 from unittest.mock import patch
 
 import numpy as np
@@ -259,12 +260,24 @@ class TestDecompositionGraph:
         # verify that is_solved_for returns False for non-existent operators
         assert not solution.is_solved_for(qml.Toffoli(wires=[0, 1, 2]))
 
-    def test_decomposition_not_found(self, _):
-        """Tests that the correct error is raised if a decomposition isn't found."""
+    def test_decomposition_not_found_warning(self, _):
+        """Tests that the correct warning is raised if a decomposition isn't found."""
 
         op = qml.Hadamard(wires=[0])
         graph = DecompositionGraph(operations=[op], gate_set={"RX", "RY", "GlobalPhase"})
         with pytest.warns(UserWarning, match="unable to find a decomposition for {'Hadamard'}"):
+            graph.solve()
+
+    @pytest.mark.parametrize(
+        "op", [qml.allocation.Allocate(1), qml.allocation.Deallocate(qml.allocation.DynamicWire())]
+    )
+    def test_decomposition_not_found_ignored_op_no_warning(self, _, op):
+        """Tests that no warning is raised if a decomposition isn't found but the unsolved
+        operator type is among specific operators, like Allocate and Deallocate."""
+
+        graph = DecompositionGraph(operations=[op], gate_set={"RX", "RY", "GlobalPhase"})
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
             graph.solve()
 
     def test_lazy_solve(self, _):
