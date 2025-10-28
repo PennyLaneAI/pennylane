@@ -138,9 +138,12 @@ class PauliHamiltonian:
         self.pauli_dist = pauli_dist
 
         if num_pauli_words is None:
-            if self.pauli_dist is None:
+            if self.pauli_dist is None and self.commuting_groups is None:
                 raise ValueError("Must specifiy atleast one of `num_pauli_words` or `pauli_dist`. Got None for both.")
-            num_pauli_words = sum(pauli_dist.values())
+            if self.pauli_dist is not None:
+                num_pauli_words = sum(pauli_dist.values())
+            else: 
+                num_pauli_words = sum(sum(group.values()) for group in self.commuting_groups)
         else: 
             if (self.pauli_dist is not None) and (sum_freqs := sum(pauli_dist.values())) != num_pauli_words:
                 raise ValueError(f"The sum of the frequencies of `pauli_dist` ({sum_freqs}) should match `num_pauli_words`({num_pauli_words})")
