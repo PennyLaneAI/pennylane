@@ -32,6 +32,12 @@ from pennylane.exceptions import DeviceError
 pytestmark = pytest.mark.skip_unsupported
 
 
+def _skip_test_for_ionq(dev):
+    """Skip the specific test because the IonQ plugin does not yet support custom measurement processes."""
+    if "ionq" in getattr(dev, "short_name", dev.name):
+        pytest.skip(f"Custom measurement test skipped for {dev.short_name}.")
+
+
 def check_op_supported(op, dev):
     """Skip test if device does not support an operation. Works with both device APIs"""
     if isinstance(dev, qml.devices.LegacyDevice):
@@ -602,6 +608,7 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
     def test_QDrift(self, device, tol):
         """Test the QDrift template."""
         dev = device(2)
+        _skip_test_for_ionq(dev)
         coeffs = [0.25, 0.75]
         ops = [qml.X(0), qml.Z(0)]
         H = qml.dot(coeffs, ops)
@@ -839,6 +846,7 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
     def test_TrotterProduct(self, device, tol):
         """Test the TrotterProduct template."""
         dev = device(2)
+        _skip_test_for_ionq(dev)
         coeffs = [0.25, 0.75]
         ops = [qml.X(0), qml.Z(0)]
         H = qml.dot(coeffs, ops)
