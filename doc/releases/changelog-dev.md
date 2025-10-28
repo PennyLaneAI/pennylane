@@ -136,6 +136,13 @@
 
 <h3>Deprecations 👋</h3>
 
+* The ``pennylane.operation.Operator.is_hermitian`` property has been deprecated and renamed 
+  to ``pennylane.operation.Operator.is_verified_hermitian`` as it better reflects the functionality of this property. 
+  The deprecated access through ``is_hermitian`` will be removed in PennyLane v0.45. 
+  Alternatively, consider using the ``pennylane.is_hermitian`` function instead as it provides a more reliable check for hermiticity. 
+  Please be aware that it comes with a higher computational cost.
+  [(#8494)](https://github.com/PennyLaneAI/pennylane/pull/8494)
+  
 * Access to the follow functions and classes from the ``pennylane.resources`` module are deprecated. Instead, these functions must be imported from the ``pennylane.estimator`` module.
   [(#8484)](https://github.com/PennyLaneAI/pennylane/pull/8484)
 
