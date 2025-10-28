@@ -140,6 +140,13 @@
 
 <h3>Deprecations 👋</h3>
 
+* `qml.measure`, `qml.measurements.MidMeasureMP`, `qml.measurements.MeasurementValue`,
+  and `qml.measurements.get_mcm_predicates` are now located in `qml.ops.mid_measure`.
+  `MidMeasureMP` is now renamed to `MidMeasure`.
+  `qml.measurements.find_post_processed_mcms` is now `qml.devices.qubit.simulate._find_post_processed_mcms`,
+  and is being made private, as it is an utility for tree-traversal.
+  [(#8466)](https://github.com/PennyLaneAI/pennylane/pull/8466)
+
 * The ``pennylane.operation.Operator.is_hermitian`` property has been deprecated and renamed 
   to ``pennylane.operation.Operator.is_verified_hermitian`` as it better reflects the functionality of this property. 
   The deprecated access through ``is_hermitian`` will be removed in PennyLane v0.45. 
