@@ -37,6 +37,33 @@ def test_weighted_graph_handles_negative_weight():
 
 
 @pytest.mark.unit
+@pytest.mark.usefixtures("enable_graph_decomposition")
+def test_weights_affect_graph_decomposition():
+    tape = qml.tape.QuantumScript([qml.CRX(0.1, wires=[0, 1]), qml.Toffoli(wires=[0, 1, 2])])
+
+    [new_tape], _ = qml.transforms.decompose(
+        tape, gate_set={qml.Toffoli: 1.23, qml.RX: 4.56, qml.CZ: 0.01, qml.H: 420, qml.CRZ: 100}
+    )
+    assert new_tape.operations == [
+        qml.RX(0.05, wires=[1]),
+        qml.CZ(wires=[0, 1]),
+        qml.RX(-0.05, wires=[1]),
+        qml.CZ(wires=[0, 1]),
+        qml.Toffoli(wires=[0, 1, 2]),
+    ]
+
+    [new_tape], _ = qml.transforms.decompose(
+        tape, gate_set={qml.Toffoli: 1.23, qml.RX: 4.56, qml.CZ: 0.01, qml.H: 0.1, qml.CRZ: 0.1}
+    )
+    assert new_tape.operations == [
+        qml.H(wires=[1]),
+        qml.CRZ(0.10, wires=[0, 1]),
+        qml.H(wires=[1]),
+        qml.Toffoli(wires=[0, 1, 2]),
+    ]
+
+
+@pytest.mark.unit
 def test_fixed_alt_decomps_not_available():
     """Test that a TypeError is raised when graph is disabled and
     fixed_decomps or alt_decomps is used."""

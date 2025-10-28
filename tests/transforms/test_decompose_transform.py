@@ -21,6 +21,7 @@ import pytest
 
 import pennylane as qml
 import pennylane.numpy as qnp
+from pennylane.devices.default_qubit import stopping_condition
 from pennylane.measurements import MidMeasureMP
 from pennylane.operation import Operation
 from pennylane.ops import Conditional
@@ -162,6 +163,19 @@ class TestDecompose:
         else:
             (decomposed_tape,), _ = decompose(tape, gate_set=gate_set)
             qml.assert_equal(tape, decomposed_tape)
+
+    def test_stopping_cond_without_gate_set(self):
+        gate_set = None
+
+        def stopping_condition(op):
+            return op.name in ("RX")
+
+        tape = qml.tape.QuantumScript([qml.RX(0, wires=[0])])
+
+        (decomposed_tape,), _ = decompose(
+            tape, gate_set=gate_set, stopping_condition=stopping_condition
+        )
+        qml.assert_equal(tape, decomposed_tape)
 
     def test_user_warning(self):
         """Tests that user warning is raised if operator does not have a valid decomposition"""

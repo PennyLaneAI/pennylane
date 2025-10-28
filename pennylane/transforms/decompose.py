@@ -951,7 +951,8 @@ def _(gate_set: NoneType):  # pylint: disable=unused-argument
     # is not provided but stopping_condition is. This would only be valid with graph disabled.
     gate_set = set()
 
-    def gate_set_contains(op: Operator) -> bool:  # pylint: disable=unused-argument
+    # pylint: disable=unused-argument
+    def gate_set_contains(op: Operator) -> bool:
         return False
 
     if enabled_graph():
