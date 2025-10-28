@@ -2,6 +2,10 @@
 
 <h3>New features since last release</h3>
 
+* A new decomposition has been added for the Controlled :class:`~.SemiAdder`,
+  which is efficient and skips controlling all gates in its decomposition.
+  [(#8423)](https://github.com/PennyLaneAI/pennylane/pull/8423)
+
 * Added a :meth:`~pennylane.devices.DeviceCapabilities.gate_set` method to :class:`~pennylane.devices.DeviceCapabilities`
   that produces a set of gate names to be used as the target gate set in decompositions.
   [(#8522)](https://github.com/PennyLaneAI/pennylane/pull/8522)
@@ -220,6 +224,10 @@
   :class:`~.TemporaryAND`, :class:`~.QSVT`, and :class:`~.SelectPauliRot`.
   [(#8490)](https://github.com/PennyLaneAI/pennylane/pull/8490)
 
+* Solovay-Kitaev decomposition using the :func:`~.clifford_t_decompostion` transform
+  with ``method="sk"`` or directly via :func:`~.ops.sk_decomposition` now raises a more
+  informative ``RuntimeError`` when used with JAX-JIT or :func:`~.qjit`.
+  [(#8489)](https://github.com/PennyLaneAI/pennylane/pull/8489)
 
 <h3>Documentation 📝</h3>
 
@@ -233,6 +241,9 @@
   [(#8492)](https://github.com/PennyLaneAI/pennylane/pull/8492)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixes a bug in :class:`~.SemiAdder` where the results were incorrect when more ``work_wires`` than required were passed.
+ [(#8423)](https://github.com/PennyLaneAI/pennylane/pull/8423)
 
 * Fixes a bug in ``QubitUnitaryOp.__init__`` in the unified compiler module that prevented an
   instance from being constructed.
@@ -249,6 +260,8 @@
 
 This release contains contributions from (in alphabetical order):
 
+
+Guillermo Alonso,
 Utkarsh Azad,
 Astral Cai,
 Marcus Edwards,
