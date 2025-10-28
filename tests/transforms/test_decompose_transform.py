@@ -167,15 +167,21 @@ class TestDecompose:
     def test_stopping_cond_without_gate_set(self):
         gate_set = None
 
-        def stopping_condition(op):
+        def stopping_cond(op):
             return op.name in ("RX")
 
         tape = qml.tape.QuantumScript([qml.RX(0, wires=[0])])
 
-        (decomposed_tape,), _ = decompose(
-            tape, gate_set=gate_set, stopping_condition=stopping_condition
-        )
+        (decomposed_tape,), _ = decompose(tape, gate_set=gate_set, stopping_condition=stopping_cond)
         qml.assert_equal(tape, decomposed_tape)
+
+        def stopping_cond_2(op):
+            return op.name in ("CX")
+
+        with pytest.raises(
+            UserWarning, match="Operator RX does not define a decomposition to the target gate set"
+        ):
+            decompose(tape, gate_set=gate_set, stopping_condition=stopping_cond_2)
 
     def test_user_warning(self):
         """Tests that user warning is raised if operator does not have a valid decomposition"""
@@ -297,10 +303,10 @@ class TestPrivateHelpers:
     def test_operator_decomposition_gen_accepted_operator(self, op):
         """Test the _operator_decomposition_gen function on an operator that is accepted."""
 
-        def stopping_condition(op):
+        def stopping_cond(op):
             return op.has_matrix
 
-        casted_to_list = list(_operator_decomposition_gen(op, stopping_condition))
+        casted_to_list = list(_operator_decomposition_gen(op, stopping_cond))
         assert len(casted_to_list) == 1
         assert casted_to_list[0] is op
 
@@ -308,11 +314,11 @@ class TestPrivateHelpers:
         """Assert _operator_decomposition_gen turns into a list with the operators decomposition
         when only a single layer of expansion is necessary."""
 
-        def stopping_condition(op):
+        def stopping_cond(op):
             return op.has_matrix
 
         op = NoMatOp("a")
-        casted_to_list = list(_operator_decomposition_gen(op, stopping_condition))
+        casted_to_list = list(_operator_decomposition_gen(op, stopping_cond))
         assert len(casted_to_list) == 2
         qml.assert_equal(casted_to_list[0], qml.PauliX("a"))
         qml.assert_equal(casted_to_list[1], qml.PauliY("a"))
@@ -320,7 +326,7 @@ class TestPrivateHelpers:
     def test_operator_decomposition_gen_decomposed_operator_ragged_nesting(self):
         """Test that _operator_decomposition_gen handles a decomposition that requires different depths of decomposition."""
 
-        def stopping_condition(op):
+        def stopping_cond(op):
             return op.has_matrix
 
         class RaggedDecompositionOp(Operation):
@@ -332,7 +338,7 @@ class TestPrivateHelpers:
                 return [NoMatOp(self.wires), qml.S(self.wires), qml.adjoint(NoMatOp(self.wires))]
 
         op = RaggedDecompositionOp("a")
-        final_decomp = list(_operator_decomposition_gen(op, stopping_condition))
+        final_decomp = list(_operator_decomposition_gen(op, stopping_cond))
         assert len(final_decomp) == 5
         qml.assert_equal(final_decomp[0], qml.PauliX("a"))
         qml.assert_equal(final_decomp[1], qml.PauliY("a"))
