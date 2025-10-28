@@ -39,7 +39,7 @@ class TestAttribute:
 
     def test_measurement_process_input(self):
         """Test that MeasurementProcesses are valid objects to check inside Attributes"""
-        assert qml.measurements.MidMeasureMP(0) not in new_attribute
+        assert qml.ops.MidMeasure(0) not in new_attribute
         assert qml.expval(qml.PauliX(0)) not in new_attribute
 
     def test_string_inclusion(self):
