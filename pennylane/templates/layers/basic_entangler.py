@@ -14,9 +14,17 @@
 r"""
 Contains the BasicEntanglerLayers template.
 """
-from pennylane import math
+from pennylane import capture, cond, math
+from pennylane.control_flow import for_loop
+from pennylane.decomposition import register_resources, resource_rep
 from pennylane.operation import Operation
 from pennylane.ops import CNOT, RX
+
+has_jax = True
+try:
+    from jax import numpy as jnp
+except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
+    has_jax = False  # pragma: no cover
 
 
 class BasicEntanglerLayers(Operation):
@@ -124,6 +132,8 @@ class BasicEntanglerLayers(Operation):
 
     grad_method = None
 
+    resource_keys = {"repeat", "num_wires", "rotation"}
+
     def __init__(self, weights, wires=None, rotation=None, id=None):
         # convert weights to numpy array if weights is list otherwise keep unchanged
         interface = math.get_interface(weights)
@@ -148,6 +158,14 @@ class BasicEntanglerLayers(Operation):
     @property
     def num_params(self):
         return 1
+
+    @property
+    def resource_params(self) -> dict:
+        return {
+            "repeat": math.shape(self.parameters[0])[-2],
+            "num_wires": len(self.wires),
+            "rotation": self.hyperparameters["rotation"],
+        }
 
     @staticmethod
     def compute_decomposition(weights, wires, rotation):  # pylint: disable=arguments-differ
@@ -209,3 +227,44 @@ class BasicEntanglerLayers(Operation):
         """
 
         return n_layers, n_wires
+
+
+def _basic_entangler_resources(repeat, num_wires, rotation):
+    resources = {resource_rep(type(rotation), *rotation.resource_params): repeat * num_wires}
+
+    if num_wires == 2:
+        resources[resource_rep(CNOT)] = repeat
+
+    elif num_wires > 2:
+        resources[resource_rep(CNOT)] = repeat * num_wires
+
+    return resources
+
+
+@register_resources(_basic_entangler_resources)
+def _basic_entangler_decomposition(weights, wires, rotation):
+    repeat = math.shape(weights)[-2]
+
+    if has_jax and capture.enabled():
+        weights, wires = jnp.array(weights), jnp.array(wires)
+
+    @for_loop(repeat)
+    def repeat_loop(layer):
+
+        @for_loop(len(wires))
+        def wires_loop(i):
+            rotation(weights[..., layer, i], wires=wires[i : i + 1])
+
+        wires_loop()  # pylint: disable=no-value-for-parameter
+
+        def true_body():
+            for i in range(len(wires)):
+                w = wires.subset([i, i + 1], periodic_boundary=True)
+                CNOT(wires=w)
+
+        def false_body():
+            CNOT(wires=wires)
+
+        cond(len(wires) > 2, true_body, false_body)()
+
+    repeat_loop()  # pylint: disable=no-value-for-parameter
