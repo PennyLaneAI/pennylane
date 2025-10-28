@@ -9,6 +9,7 @@ from jax import numpy as jnp
 from tqdm import tqdm
 import pennylane.labs.resource_estimation.thc_decomp as thc
 from pennylane.labs.resource_estimation.auxiliary import QuantumSolver
+from pyscf import gto, scf, tdscf
 
 #Remove printing from unnecessary routines
 import sys
@@ -33,7 +34,53 @@ def _calculate_energies_with_fci(obt, eri, ncas, nelecas, nroots):
     return energies
 
 
+def _calculate_energies_with_cis(obt, eri, ncas, nelecas, nroots):
+    """
+    Perform CIS calculation using PySCF with given integrals.
+    
+    Arguments:
+        obt - one-electron tensor (in chemist notation, includes active space correction)
+        eri - two-electron tensor (in chemist notation)
+        ncas - number of orbitals in active space
+        nelecas - number of electrons in active space
+        nroots - number of excited states to consider
+    
+    Returns:
+        First nroots excited energies obtained using CIS
+    """
+    
+    # Create a minimal molecule object (dummy)
+    mol = gto.M()
+    mol.nelectron = nelecas
+    mol.incore_anyway = True
+    
+    # Create mean-field object
+    mf = scf.RHF(mol)
+    mf.get_hcore = lambda *args: obt
+    mf.get_ovlp = lambda *args: np.eye(ncas)
+    mf._eri = eri
+    
+    # Run SCF calculation
+    mf.kernel()
+    
+    # Set up CIS calculation (equivalent to HF in Tamm-Dancoff approximation)
+    cis = tdscf.TDA(mf)
+    cis.nroots = nroots
+    
+    # Calculate excited states
+    excitation_energies = cis.kernel()[0]
+    
+    # Convert to numpy array if needed
+    if isinstance(excitation_energies, float):
+        excitation_energies = np.array([excitation_energies])
+    
+    return excitation_energies
+
+
 def _calculate_energies(obt, eri, ncas, nelecas, nroots, solver, **kwargs):
+    if solver == "cis":
+        return _calculate_energies_with_cis(obt, eri, ncas, nelecas, nroots)
+
     QS = QuantumSolver(solver_type=solver, **kwargs)
     if solver == "fci":
         return QS._solve_fci(obt, eri, ncas, nelecas, nroots)
@@ -99,14 +146,17 @@ def _bliss_constant_shift(avec, bvec, ob_sym_vals, num_ob_syms):
     return const_shift
 
 
-def thc_rank_finder(obt, eri, num_elecs, epsilon=1.6e-3, criterion="avg", verbose=True, regularize=1e-5, maxiter=int(5e5), learning_rate=5e-4,\
+def thc_rank_finder(obt, eri, num_elecs, epsilon=1.6e-3, criterion="avg", verbose=True, regularize=1e-5, maxiter=int(5e5), learning_rate=5e-4, default_factor=3, bypass_energy=False,\
                     Nthc_min=None, Nthc_max=None, num_thc_calcs=10, ob_sym_list=[], nroots=10, solver="dmrg", bond_dim=None, sub_verbose=False, **kwargs):
     print(f"Starting calculation of energies for exact tensors...")
     ncas = obt.shape[0]
     TIMES_ARR = [time()]
-    exact_energies = _calculate_energies(obt, eri, ncas, num_elecs, nroots, solver, bond_dim=bond_dim)
-    TIMES_ARR.append(time())
-    print(f"Finished initial energy calculation for {nroots} first electronic energies after {TIMES_ARR[1]-TIMES_ARR[0]:.2f} seconds")
+    if bypass_energy:
+        print(f"Bypassing electronic structure calculations, will use fixed THC rank...")
+    else:
+        exact_energies = _calculate_energies(obt, eri, ncas, num_elecs, nroots, solver, bond_dim=bond_dim)
+        TIMES_ARR.append(time())
+        print(f"Finished initial energy calculation for {nroots} first electronic energies after {TIMES_ARR[1]-TIMES_ARR[0]:.2f} seconds")
 
     if Nthc_min is None:
         Nthc_min = 2*ncas
@@ -120,7 +170,7 @@ def thc_rank_finder(obt, eri, num_elecs, epsilon=1.6e-3, criterion="avg", verbos
         raise ValueError(f"Minimum THC rank {Nthc_min} is larger than maximum rank {Nthc_max}")
 
     thc_ranks = np.round(np.linspace(Nthc_min, stop=Nthc_max, num=num_thc_calcs)).astype(int)
-    if verbose:
+    if verbose and (not bypass_energy):
         print(f"Will do THC calculations for ranks {thc_ranks}")
 
     num_ob_syms = len(ob_sym_list)
@@ -131,50 +181,65 @@ def thc_rank_finder(obt, eri, num_elecs, epsilon=1.6e-3, criterion="avg", verbos
     else:
         include_bliss = False
 
-    thc_energies = []
-    diffs_arr = []
-    thc_lambdas = []
-    thc_cost = []
-    thc_params = []
-    undetermined_rank = True
-
-    curr_idx = 0
-    while undetermined_rank and curr_idx < num_thc_calcs:
-        t_rank = thc_ranks[curr_idx]
-        if verbose:
-            print(f"Starting calculation for THC rank {t_rank}")
-        my_params, my_lam = _silent_thc(eri, t_rank, obt, ob_sym_list, regularize=regularize, maxiter=maxiter, learning_rate=learning_rate, verbose=sub_verbose, **kwargs)
-        thc_params.append(my_params)
-        thc_lambdas.append(my_lam)
+    if bypass_energy:
+        Nthc = int(round(default_factor*ncas))
+        print(f"Bypassed energy calculations: will use default rank of {default_factor}*N = {Nthc}")
+        my_params, my_lam = _silent_thc(eri, Nthc, obt, ob_sym_list, regularize=regularize, maxiter=maxiter, learning_rate=learning_rate, verbose=sub_verbose, **kwargs)
         my_eri = thc._unfold_thc(my_params["MPQ"], my_params["etaPp"])
-
         if include_bliss:
             obt_killer, eri_killer = thc._BLISS_corrections(my_params["avec"], my_params["bvec"], my_params["beta_mats_params"], my_params["dvec"], ncas, ob_sym_mats, ob_sym_vals, num_ob_syms)
             eri_killer = np.array(eri_killer)
         else:
             eri_killer = np.zeros_like(eri)
 
-        diffs_arr.append(np.sqrt(np.sum(np.abs(eri - my_eri - eri_killer)**2)))
+        my_diff = np.sqrt(np.sum(np.abs(eri - my_eri - eri_killer)**2))
+        print(f"Found 1-norm is {my_lam:.2f}, and 2-norm difference from full tensor is {my_diff:.2e}")
 
-        thc_energies.append(_calculate_energies(obt, my_eri + eri_killer, ncas, num_elecs, nroots, solver))
-        energy_deltas = np.abs(exact_energies - thc_energies[-1])
-        thc_cost.append(_thc_cost(energy_deltas, criterion))
+        return Nthc, my_lam, my_params
+    else:
+        thc_energies = []
+        diffs_arr = []
+        thc_lambdas = []
+        thc_cost = []
+        thc_params = []
+        undetermined_rank = True
+        curr_idx = 0
+        while undetermined_rank and curr_idx < num_thc_calcs:
+            t_rank = thc_ranks[curr_idx]
+            if verbose:
+                print(f"Starting calculation for THC rank {t_rank}")
+            my_params, my_lam = _silent_thc(eri, t_rank, obt, ob_sym_list, regularize=regularize, maxiter=maxiter, learning_rate=learning_rate, verbose=sub_verbose, **kwargs)
+            thc_params.append(my_params)
+            thc_lambdas.append(my_lam)
+            my_eri = thc._unfold_thc(my_params["MPQ"], my_params["etaPp"])
 
-        if verbose:
-            print(f"Finished calculation for THC rank {t_rank} with associated cost 1-norm {my_lam:.2f}, 2-norm difference {diffs_arr[-1]:.2e}, and {criterion} cost {thc_cost[-1]:.2e}")
-            TIMES_ARR.append(time())
-            print(f"Time for calculation was {TIMES_ARR[-1]-TIMES_ARR[-2]:.2f} seconds\n")
+            if include_bliss:
+                obt_killer, eri_killer = thc._BLISS_corrections(my_params["avec"], my_params["bvec"], my_params["beta_mats_params"], my_params["dvec"], ncas, ob_sym_mats, ob_sym_vals, num_ob_syms)
+                eri_killer = np.array(eri_killer)
+            else:
+                eri_killer = np.zeros_like(eri)
 
-        if thc_cost[-1] < epsilon:
-            print(f"Found converged THC for rank = {t_rank} with associated {criterion} eigenvalue deviation of {thc_cost[-1]}")
-            undetermined_rank = False
+            diffs_arr.append(np.sqrt(np.sum(np.abs(eri - my_eri - eri_killer)**2)))
 
-        curr_idx += 1
+            thc_energies.append(_calculate_energies(obt, my_eri + eri_killer, ncas, num_elecs, nroots, solver))
+            energy_deltas = np.abs(exact_energies - thc_energies[-1])
+            thc_cost.append(_thc_cost(energy_deltas, criterion))
 
-    if undetermined_rank:
-        raise ValueError(f"Finished calculations with maximum THC rank of {thc_ranks[-1]} with minimum cost function of {np.min(thc_cost)}, not converged! Modify hyperparameters or increase maximum THC rank")
+            if verbose:
+                print(f"Finished calculation for THC rank {t_rank} with associated cost 1-norm {my_lam:.2f}, 2-norm difference {diffs_arr[-1]:.2e}, and {criterion} cost {thc_cost[-1]:.2e}")
+                TIMES_ARR.append(time())
+                print(f"Time for calculation was {TIMES_ARR[-1]-TIMES_ARR[-2]:.2f} seconds\n")
 
-    return t_rank, thc_lambdas[-1], thc_params[-1]
+            if thc_cost[-1] < epsilon:
+                print(f"Found converged THC for rank = {t_rank} with associated {criterion} eigenvalue deviation of {thc_cost[-1]}")
+                undetermined_rank = False
+
+            curr_idx += 1
+
+        if undetermined_rank:
+            raise ValueError(f"Finished calculations with maximum THC rank of {thc_ranks[-1]} with minimum cost function of {np.min(thc_cost)}, not converged! Modify hyperparameters or increase maximum THC rank")
+
+        return t_rank, thc_lambdas[-1], thc_params[-1]
 
 ######## DEPRECATED FUNCTIONS
 
