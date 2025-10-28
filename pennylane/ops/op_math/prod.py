@@ -256,7 +256,7 @@ class Prod(CompositeOp):
     grad_method = None
 
     @property
-    def is_hermitian(self):
+    def is_verified_hermitian(self):
         """Check if the product operator is hermitian.
 
         Note, this check is not exhaustive. There can be hermitian operators for which this check
@@ -266,7 +266,7 @@ class Prod(CompositeOp):
         for o1, o2 in combinations(self.operands, r=2):
             if qml.wires.Wires.shared_wires([o1.wires, o2.wires]):
                 return False
-        return all(op.is_hermitian for op in self)
+        return all(op.is_verified_hermitian for op in self)
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property

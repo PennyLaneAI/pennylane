@@ -2,6 +2,10 @@
 
 <h3>New features since last release</h3>
 
+* A new decomposition has been added for the Controlled :class:`~.SemiAdder`,
+  which is efficient and skips controlling all gates in its decomposition.
+  [(#8423)](https://github.com/PennyLaneAI/pennylane/pull/8423)
+
 * Added a :meth:`~pennylane.devices.DeviceCapabilities.gate_set` method to :class:`~pennylane.devices.DeviceCapabilities`
   that produces a set of gate names to be used as the target gate set in decompositions.
   [(#8522)](https://github.com/PennyLaneAI/pennylane/pull/8522)
@@ -138,6 +142,20 @@
 
 <h3>Deprecations 👋</h3>
 
+* `qml.measure`, `qml.measurements.MidMeasureMP`, `qml.measurements.MeasurementValue`,
+  and `qml.measurements.get_mcm_predicates` are now located in `qml.ops.mid_measure`.
+  `MidMeasureMP` is now renamed to `MidMeasure`.
+  `qml.measurements.find_post_processed_mcms` is now `qml.devices.qubit.simulate._find_post_processed_mcms`,
+  and is being made private, as it is an utility for tree-traversal.
+  [(#8466)](https://github.com/PennyLaneAI/pennylane/pull/8466)
+
+* The ``pennylane.operation.Operator.is_hermitian`` property has been deprecated and renamed 
+  to ``pennylane.operation.Operator.is_verified_hermitian`` as it better reflects the functionality of this property. 
+  The deprecated access through ``is_hermitian`` will be removed in PennyLane v0.45. 
+  Alternatively, consider using the ``pennylane.is_hermitian`` function instead as it provides a more reliable check for hermiticity. 
+  Please be aware that it comes with a higher computational cost.
+  [(#8494)](https://github.com/PennyLaneAI/pennylane/pull/8494)
+  
 * Access to the follow functions and classes from the ``pennylane.resources`` module are deprecated. Instead, these functions must be imported from the ``pennylane.estimator`` module.
   [(#8484)](https://github.com/PennyLaneAI/pennylane/pull/8484)
 
@@ -208,6 +226,10 @@
   :class:`~.TemporaryAND`, :class:`~.QSVT`, and :class:`~.SelectPauliRot`.
   [(#8490)](https://github.com/PennyLaneAI/pennylane/pull/8490)
 
+* Solovay-Kitaev decomposition using the :func:`~.clifford_t_decompostion` transform
+  with ``method="sk"`` or directly via :func:`~.ops.sk_decomposition` now raises a more
+  informative ``RuntimeError`` when used with JAX-JIT or :func:`~.qjit`.
+  [(#8489)](https://github.com/PennyLaneAI/pennylane/pull/8489)
 
 <h3>Documentation 📝</h3>
 
@@ -221,6 +243,9 @@
   [(#8492)](https://github.com/PennyLaneAI/pennylane/pull/8492)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixes a bug in :class:`~.SemiAdder` where the results were incorrect when more ``work_wires`` than required were passed.
+ [(#8423)](https://github.com/PennyLaneAI/pennylane/pull/8423)
 
 * Fixes a bug in ``QubitUnitaryOp.__init__`` in the unified compiler module that prevented an
   instance from being constructed.
@@ -237,6 +262,8 @@
 
 This release contains contributions from (in alphabetical order):
 
+
+Guillermo Alonso,
 Utkarsh Azad,
 Astral Cai,
 Marcus Edwards,
