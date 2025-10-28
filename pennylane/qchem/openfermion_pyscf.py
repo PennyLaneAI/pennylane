@@ -17,13 +17,13 @@
 import os
 
 import numpy as np
-import scipy as sp
+from scipy.constants import angstrom, physical_constants
 
 import pennylane as qml
 
 from .basis_data import atomic_numbers
 
-BOHR_TO_ANG = sp.constants.physical_constants["Bohr radius"][0] / sp.constants.angstrom
+BOHR_TO_ANG = physical_constants["Bohr radius"][0] / angstrom
 
 
 def _import_of():

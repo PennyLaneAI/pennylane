@@ -20,11 +20,11 @@ import re
 from shutil import copyfile
 
 import numpy as np
-import scipy as sp
+from scipy.constants import angstrom, physical_constants
 
 import pennylane as qml
 
-BOHR_TO_ANG = sp.constants.physical_constants["Bohr radius"][0] / sp.constants.angstrom
+BOHR_TO_ANG = physical_constants["Bohr radius"][0] / angstrom
 
 
 def read_structure(filepath, outpath="."):
