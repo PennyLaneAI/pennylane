@@ -5,8 +5,10 @@
 * A compilation pass written with xDSL called `qml.compiler.python_compiler.transforms.ParitySynthPass`
   has been added for the experimental xDSL Python compiler integration. This pass resynthesizes
   subcircuits that form a phase polynomial (``CNOT`` and ``RZ`` gates), using ``ParitySynth`` by
-  [Vandaele et al.](https://arxiv.org/abs/2104.00934)
+  [Vandaele et al.](https://arxiv.org/abs/2104.00934).
+  In doing so, it is able to take user-provided device connectivity into account.
   [(#8414)](https://github.com/PennyLaneAI/pennylane/pull/8414)
+  [(#8415)](https://github.com/PennyLaneAI/pennylane/pull/8415)
 
 * Added a :meth:`~pennylane.devices.DeviceCapabilities.gate_set` method to :class:`~pennylane.devices.DeviceCapabilities`
   that produces a set of gate names to be used as the target gate set in decompositions.

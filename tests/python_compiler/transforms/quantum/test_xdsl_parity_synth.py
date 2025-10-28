@@ -14,6 +14,7 @@
 """Unit test module for the ParitySynth transform"""
 from itertools import product
 
+import networkx as nx
 import numpy as np
 import pytest
 from numpy.testing import assert_allclose, assert_equal
@@ -22,6 +23,7 @@ pytestmark = pytest.mark.external
 
 pytest.importorskip("xdsl")
 pytest.importorskip("catalyst")
+
 
 # pylint: disable=wrong-import-position
 from catalyst.passes.xdsl_plugin import getXDSLPluginAbsolutePath
@@ -56,37 +58,46 @@ class TestParityNetworkSynth:
     """Tests for the synthesizing of a parity network with ``_parity_network_synth``."""
 
     @staticmethod
-    def validate_circuit_entry(entry, exp_len=None):
+    def validate_circuit_entry(entry, exp_len=None, connectivity=None):
         """Validate that an object is a three-tuple consisting of an two integers and a list
         of two-tuples with integers in them, like ``(1, 4, [(0, 2), (1, 0)])``. This constitutes
-        the format for circuit entries in the output of ``_parity_network_synth``."""
+        the format for circuit entries in the output of ``_parity_network_synth``.
+        Also checks that the CNOTs adhere to a specific connectivity, if given."""
         assert isinstance(entry, tuple) and len(entry) == 3
         parity_idx, qubit_idx, cnot_circuit = entry
         assert isinstance(parity_idx, np.int64)
         assert isinstance(qubit_idx, int)
+        # Check cnot_circuit
         assert isinstance(cnot_circuit, list)
         if exp_len is not None:
             assert len(cnot_circuit) == exp_len
         assert all(isinstance(_cnot, tuple) and len(_cnot) == 2 for _cnot in cnot_circuit)
+        if connectivity is not None:
+            assert all(connectivity.has_edge(*_cnot) for _cnot in cnot_circuit)
 
-    def test_empty_parity_table(self):
+    @pytest.mark.parametrize("connectivity", (None, nx.path_graph(2)))
+    def test_empty_parity_table(self, connectivity):
         """Test that an empty parity table results in an empty circuit."""
         P = np.ones(shape=(10, 0), dtype=int)
-        circuit, inv_synth_matrix = _parity_network_synth(P)
+        circuit, inv_synth_matrix = _parity_network_synth(P, connectivity)
         assert not circuit
         assert inv_synth_matrix is None
 
+    @pytest.mark.parametrize("connectivity", (None, "path"))
     @pytest.mark.parametrize("n, idx", [(1, 0), (2, 0), (2, 1), (3, 2), (10, 5)])
-    def test_single_unit_vector_parity(self, n, idx):
+    def test_single_unit_vector_parity(self, n, idx, connectivity):
         """Test that a single unit vector-parity is synthesized into no CNOTs and a single RZ."""
+        if connectivity == "path":
+            connectivity = nx.path_graph(n)
         I = np.eye(n, dtype=int)
         P = I[:, idx : idx + 1]
-        circuit, inv_synth_matrix = _parity_network_synth(P)
+        circuit, inv_synth_matrix = _parity_network_synth(P, connectivity)
         assert isinstance(circuit, list) and len(circuit) == 1
-        self.validate_circuit_entry(circuit[0], exp_len=0)
+        self.validate_circuit_entry(circuit[0], exp_len=0, connectivity=connectivity)
         assert_binary_matrix(inv_synth_matrix)
         assert_equal(I, inv_synth_matrix)
 
+    @pytest.mark.parametrize("connectivity", (None, "path"))
     @pytest.mark.parametrize(
         "n, ids",
         [
@@ -99,15 +110,17 @@ class TestParityNetworkSynth:
             (10, [5, 4, 9, 0, 2, 3]),
         ],
     )
-    def test_multiple_unit_vector_parities(self, n, ids):
+    def test_multiple_unit_vector_parities(self, n, ids, connectivity):
         """Test that multiple unit vector-parities are synthesized into no CNOTs and a
         series of RZ gates."""
+        if connectivity == "path":
+            connectivity = nx.path_graph(n)
         I = np.eye(n, dtype=int)
         P = np.concatenate([I[:, idx : idx + 1] for idx in ids], axis=1)
-        circuit, inv_synth_matrix = _parity_network_synth(P)
+        circuit, inv_synth_matrix = _parity_network_synth(P, connectivity)
         assert isinstance(circuit, list) and len(circuit) == len(ids)
         for entry in circuit:
-            self.validate_circuit_entry(entry, exp_len=0)
+            self.validate_circuit_entry(entry, exp_len=0, connectivity=connectivity)
         assert_binary_matrix(inv_synth_matrix)
         assert_equal(I, inv_synth_matrix)
 
@@ -129,6 +142,66 @@ class TestParityNetworkSynth:
         assert isinstance(circuit, list) and len(circuit) == 1
         self.validate_circuit_entry(circuit[0], exp_len=np.sum(P) - 1)
         I = np.eye(len(parity), dtype=int)
+        assert I.shape == inv_synth_matrix.shape
+        assert set(inv_synth_matrix.flat).issubset({0, 1})
+        assert not np.allclose(I, inv_synth_matrix)
+
+    @pytest.mark.parametrize(
+        "parity",
+        [
+            [1, 0, 0, 1, 0, 1],
+            [1, 1, 1],
+            [0, 1, 1, 1, 0, 0, 0, 1, 1],
+            [1, 1],
+            [1, 0, 0, 0, 0, 0, 0, 1],
+        ],
+    )
+    def test_single_non_unit_parity_path(self, parity):
+        """Test that a single non-unit vector-parity ``p`` is synthesized into
+        ``2|V_T| - |p| - 1`` CNOTs and a single RZ, for a path graph connectivity."""
+
+        num_wires = len(parity)
+        connectivity = nx.path_graph(num_wires)
+        P = np.array([parity]).T
+        circuit, inv_synth_matrix = _parity_network_synth(P, connectivity)
+        assert isinstance(circuit, list) and len(circuit) == 1
+        ones = np.where(parity)[0]
+        # Steiner tree in path graph is just the path graph between first and last `1` in parity
+        steiner_size = np.max(ones) - np.min(ones) + 1
+        # See "cost" on p.10: C(y) = 2 |V_T| - |S| - 1.
+        exp_len = 2 * steiner_size - np.sum(P) - 1
+        self.validate_circuit_entry(circuit[0], exp_len=exp_len, connectivity=connectivity)
+        I = np.eye(num_wires, dtype=int)
+        assert I.shape == inv_synth_matrix.shape
+        assert set(inv_synth_matrix.flat).issubset({0, 1})
+        assert not np.allclose(I, inv_synth_matrix)
+
+    @pytest.mark.parametrize(
+        "parity",
+        [
+            [1, 0, 0, 1, 0, 1],
+            [1, 1, 1],
+            [0, 1, 1, 1, 0, 0, 0, 1, 1],
+            [1, 1],
+            [1, 0, 0, 0, 0, 0, 0, 1],
+        ],
+    )
+    def test_single_non_unit_parity_star(self, parity):
+        """Test that a single non-unit vector-parity ``p`` is synthesized into
+        ``2|V_T| - |p| - 1`` CNOTs and a single RZ, for a star graph connectivity."""
+
+        num_wires = len(parity)
+        connectivity = nx.star_graph(num_wires - 1)  # Star graph with num_wires nodes, 0 in center
+        P = np.array([parity]).T
+        circuit, inv_synth_matrix = _parity_network_synth(P, connectivity)
+        assert isinstance(circuit, list) and len(circuit) == 1
+        # Steiner tree in star graph is just the star graph with `1`s in parity. If parity[0] is
+        # `0`, we therefore need to account for it additionally
+        steiner_size = np.sum(P) + (1 - parity[0])
+        # See "cost" on p.10: C(y) = 2 |V_T| - |S| - 1.
+        exp_len = 2 * steiner_size - np.sum(P) - 1
+        self.validate_circuit_entry(circuit[0], exp_len=exp_len, connectivity=connectivity)
+        I = np.eye(num_wires, dtype=int)
         assert I.shape == inv_synth_matrix.shape
         assert set(inv_synth_matrix.flat).issubset({0, 1})
         assert not np.allclose(I, inv_synth_matrix)
@@ -159,13 +232,57 @@ class TestParityNetworkSynth:
         assert set(inv_synth_matrix.flat).issubset({0, 1})
         assert not np.allclose(I, inv_synth_matrix)
 
+    @pytest.mark.parametrize(
+        "parities, exp_lens",
+        [
+            ([[1, 0, 0, 1, 0, 1], [0, 0, 1, 1, 0, 0], [0, 0, 1, 1, 0, 0]], (1, 0, 7)),
+            ([[1, 1, 1], [0, 1, 1], [1, 1, 1]], (1, 1, 0)),
+            ([[0, 1, 1, 1, 0, 0, 0, 1, 1], [0, 1, 1, 1, 0, 0, 0, 1, 1]], (10, 0)),
+            ([[1, 1], [1, 1], [0, 1], [1, 0], [1, 0], [0, 1]], (0, 0, 0, 0, 1, 0)),
+            (
+                [[1, 0, 0, 0, 0, 0, 0, 1], [1, 0, 0, 0, 0, 0, 0, 1], [1, 0, 0, 0, 0, 0, 0, 1]],
+                (13, 0, 0),
+            ),
+        ],
+    )
+    def test_with_repeated_parities_path(self, parities, exp_lens):
+        """Test that repeated (non-unit vector-)parities are synthesized in sequence and
+        require no CNOT between their RZ gates, with path connectivity."""
+
+        num_wires = len(parities[0])
+        connectivity = nx.path_graph(num_wires)
+        P = np.array(parities).T
+        circuit, inv_synth_matrix = _parity_network_synth(P, connectivity)
+        assert isinstance(circuit, list) and len(circuit) == len(parities)
+        for entry, exp_len in zip(circuit, exp_lens, strict=True):
+            self.validate_circuit_entry(entry, exp_len=exp_len)
+        I = np.eye(num_wires, dtype=int)
+        assert I.shape == inv_synth_matrix.shape
+        assert set(inv_synth_matrix.flat).issubset({0, 1})
+        assert not np.allclose(I, inv_synth_matrix)
+
+    @pytest.mark.parametrize("connectivity", [None, "path", "star", "random"])
     @pytest.mark.parametrize("n, seed", [(2, 851), (3, 231), (4, 8241), (5, 214)])
     @pytest.mark.parametrize("num_parities", (1, 2, 3, 10, 20))
-    def test_roundtrip(self, num_parities, n, seed):
+    def test_roundtrip(self, num_parities, n, seed, connectivity):
         """Test that the parity table of a randomly sampled CNOT+RZ circuit is synthesized
         into a new CNOT+RZ circuit with the same parities, and that the inverse of the
         parity matrix of the new circuit is reported correctly."""
         # pylint: disable=unbalanced-tuple-unpacking
+
+        if n == 2 and connectivity is not None:
+            pytest.skip(reason="All connected graphs for n=2 are equal")
+        if connectivity == "path":
+            connectivity = nx.path_graph(n)
+        elif connectivity == "star":
+            connectivity = nx.star_graph(n - 1)
+        elif connectivity == "random":
+            connected = False
+            seed = 5712
+            while not connected:
+                connectivity = nx.gnp_random_graph(n, 0.2, seed)
+                seed += 1
+                connected = nx.is_connected(connectivity)
 
         np.random.seed(seed)  # todo: proper seeding
         # Make all cnot ops
@@ -188,8 +305,8 @@ class TestParityNetworkSynth:
 
         angles_ = list(angles)
         # Synthesize parity network and compute new PL circuit from it
-        new_circuit, inv_parity_matrix = _parity_network_synth(P)
-        new_circuit = sum(
+        new_circuit, inv_parity_matrix = _parity_network_synth(P, connectivity)
+        new_ops = sum(
             [
                 [qml.CNOT(_cnot) for _cnot in sub_circuit]
                 + [qml.RZ(angles_.pop(angle_idx), qubit_idx)]
@@ -199,16 +316,42 @@ class TestParityNetworkSynth:
         )
         # Compute IR of new PL circuit
         new_parity_matrix, new_P, new_angles = phase_polynomial(
-            qml.tape.QuantumScript(new_circuit), wire_order=range(n)
+            qml.tape.QuantumScript(new_ops), wire_order=range(n)
         )
         # Compare phase parities and make sure that the inv_parity_matrix is valid
         assert_allclose(new_P @ new_angles, P @ angles)
         assert_binary_matrix(inv_parity_matrix)
         assert_equal((new_parity_matrix @ inv_parity_matrix) % 2, np.eye(n, dtype=int))
+        if connectivity is not None:
+            for *_, sub_circuit in new_circuit:
+                assert all(connectivity.has_edge(*_cnot) for _cnot in sub_circuit)
 
 
 def translate_program_to_xdsl(program):
-    """Translate an almost-xDSL-program into an xDSL program by replacing some shorthand notations."""
+    """Translate an almost-xDSL program into a valid xDSL program, removing some
+    shorthand expressions.
+
+    Currently supported:
+
+    qubit initialization:
+
+        %{i} = INIT_QUBIT
+
+        is translated to
+
+        // CHECK: [[q{i}:%.+]] = "test.op"() : () -> !quantum.bit
+        %{i} = "test.op"() : () -> !quantum.bit
+
+    cnots (excl. file check):
+
+        %{i}, %{j} = _CNOT %{a}, %{b}
+
+        is translated to
+
+        %{i}, %{j} = quantum.custom "CNOT"() %{a}, %{b} : !quantum.bit, !quantum.bit
+
+    Everything else is left untouched
+    """
     new_lines = []
     for line in program.split("\n"):
         if "INIT_QUBIT" in line:
@@ -247,7 +390,6 @@ class TestParitySynthPass:
                 return
             }
         """
-
         run_filecheck(translate_program_to_xdsl(program), self.pipeline)
 
     def test_composable_cnots(self, run_filecheck):
@@ -264,7 +406,6 @@ class TestParitySynthPass:
                 return
             }
         """
-
         run_filecheck(translate_program_to_xdsl(program), self.pipeline)
 
     def test_two_cnots_single_rotation_no_merge(self, run_filecheck):
@@ -437,6 +578,155 @@ class TestParitySynthPass:
         run_filecheck(translate_program_to_xdsl(program), self.pipeline)
 
 
+@pytest.mark.usefixtures("enable_disable_plxpr")
+class TestParitySynthPassConnectivity:
+    """Test the ParitySynthPass with connectivity."""
+
+    pipeline_path_graph_2 = (ParitySynthPass(connectivity=nx.path_graph(2)),)
+    pipeline_path_graph_3 = (ParitySynthPass(connectivity=nx.path_graph(3)),)
+    pipeline_path_graph_4 = (ParitySynthPass(connectivity=nx.path_graph(4)),)
+
+    def test_simple_phase_polynomial_respecting_connectivity(self, run_filecheck):
+        """Test that a single connectivity-respecting phase polynomial is maintained."""
+        program = """
+            func.func @test_func(%arg0: f64) {
+                %0 = quantum.alloc(3) : !quantum.reg
+
+                %1 = "stablehlo.constant"() <{value = dense<0> : tensor<i64>}> : () -> tensor<i64>
+                %2 = tensor.extract %1[] : tensor<i64>
+                // CHECK: [[q0:%.+]] = quantum.extract %0[%2] : !quantum.reg -> !quantum.bit
+                %3 = quantum.extract %0[%2] : !quantum.reg -> !quantum.bit
+
+                %4 = "stablehlo.constant"() <{value = dense<1> : tensor<i64>}> : () -> tensor<i64>
+                %5 = tensor.extract %4[] : tensor<i64>
+                // CHECK: [[q1:%.+]] = quantum.extract %0[%5] : !quantum.reg -> !quantum.bit
+                %6 = quantum.extract %0[%5] : !quantum.reg -> !quantum.bit
+
+                %7 = "stablehlo.constant"() <{value = dense<2> : tensor<i64>}> : () -> tensor<i64>
+                %8 = tensor.extract %7[] : tensor<i64>
+                // CHECK: [[q2:%.+]] = quantum.extract %0[%8] : !quantum.reg -> !quantum.bit
+                %9 = quantum.extract %0[%8] : !quantum.reg -> !quantum.bit
+
+                // CHECK: [[q3:%.+]], [[q4:%.+]] = quantum.custom "CNOT"() [[q1]], [[q0]] : !quantum.bit, !quantum.bit
+                %10, %11 = _CNOT %6, %3
+                // CHECK: quantum.custom "RZ"(%arg0) [[q4]] : !quantum.bit
+                %12 = quantum.custom "RZ"(%arg0) %11 : !quantum.bit
+                // CHECK-NOT: "quantum.custom"
+                return
+            }
+        """
+        run_filecheck(translate_program_to_xdsl(program), self.pipeline_path_graph_3)
+
+    def test_decompose_cnot_to_adhere_to_connectivity(self, run_filecheck):
+        """Test that a connectivity-violating CNOT is resynthesized into legal CNOTs."""
+        program = """
+            func.func @test_func(%arg0: f64) {
+                %0 = quantum.alloc(3) : !quantum.reg
+
+                %1 = "stablehlo.constant"() <{value = dense<0> : tensor<i64>}> : () -> tensor<i64>
+                %2 = tensor.extract %1[] : tensor<i64>
+                // CHECK: [[q0:%.+]] = quantum.extract %0[%2] : !quantum.reg -> !quantum.bit
+                %3 = quantum.extract %0[%2] : !quantum.reg -> !quantum.bit
+
+                %4 = "stablehlo.constant"() <{value = dense<1> : tensor<i64>}> : () -> tensor<i64>
+                %5 = tensor.extract %4[] : tensor<i64>
+                // CHECK: [[q1:%.+]] = quantum.extract %0[%5] : !quantum.reg -> !quantum.bit
+                %6 = quantum.extract %0[%5] : !quantum.reg -> !quantum.bit
+
+                %7 = "stablehlo.constant"() <{value = dense<2> : tensor<i64>}> : () -> tensor<i64>
+                %8 = tensor.extract %7[] : tensor<i64>
+                // CHECK: [[q2:%.+]] = quantum.extract %0[%8] : !quantum.reg -> !quantum.bit
+                %9 = quantum.extract %0[%8] : !quantum.reg -> !quantum.bit
+
+                // CHECK: [[q3:%.+]], [[q4:%.+]] = quantum.custom "CNOT"() [[q2]], [[q1]] : !quantum.bit, !quantum.bit
+                // CHECK: [[q5:%.+]], [[q6:%.+]] = quantum.custom "CNOT"() [[q4]], [[q0]] : !quantum.bit, !quantum.bit
+                // CHECK: [[q7:%.+]], [[q8:%.+]] = quantum.custom "CNOT"() [[q3]], [[q5]] : !quantum.bit, !quantum.bit
+                // CHECK: [[q9:%.+]], [[q10:%.+]] = quantum.custom "CNOT"() [[q8]], [[q6]] : !quantum.bit, !quantum.bit
+                %10, %11 = _CNOT %9, %3
+                // CHECK-NOT: "quantum.custom"
+                return
+            }
+        """
+        run_filecheck(translate_program_to_xdsl(program), self.pipeline_path_graph_3, verify=True)
+
+    def test_decompose_wrapped_phase_poly_to_connectivity(self, run_filecheck):
+        """Test that a connectivity-violating phase polyonomial is resynthesized into
+        a legal one, in the presence of non-phase-poly ops."""
+        program = """
+            func.func @test_func(%arg0: f64) {
+                %0 = quantum.alloc(3) : !quantum.reg
+
+                %1 = "stablehlo.constant"() <{value = dense<0> : tensor<i64>}> : () -> tensor<i64>
+                %2 = tensor.extract %1[] : tensor<i64>
+                // CHECK: [[q0:%.+]] = quantum.extract %0[%2] : !quantum.reg -> !quantum.bit
+                %3 = quantum.extract %0[%2] : !quantum.reg -> !quantum.bit
+
+                %4 = "stablehlo.constant"() <{value = dense<1> : tensor<i64>}> : () -> tensor<i64>
+                %5 = tensor.extract %4[] : tensor<i64>
+                // CHECK: [[q1:%.+]] = quantum.extract %0[%5] : !quantum.reg -> !quantum.bit
+                %6 = quantum.extract %0[%5] : !quantum.reg -> !quantum.bit
+
+                %7 = "stablehlo.constant"() <{value = dense<2> : tensor<i64>}> : () -> tensor<i64>
+                %8 = tensor.extract %7[] : tensor<i64>
+                // CHECK: [[q2:%.+]] = quantum.extract %0[%8] : !quantum.reg -> !quantum.bit
+                %9 = quantum.extract %0[%8] : !quantum.reg -> !quantum.bit
+
+                // CHECK: [[q3:%.+]] = quantum.custom "Hadamard"() [[q0]] : !quantum.bit
+                %10 = quantum.custom "Hadamard"() %3 : !quantum.bit
+                // CHECK: [[q4:%.+]] = quantum.custom "Hadamard"() [[q1]] : !quantum.bit
+                %11 = quantum.custom "Hadamard"() %6 : !quantum.bit
+                // CHECK: [[q5:%.+]] = quantum.custom "Hadamard"() [[q2]] : !quantum.bit
+                %12 = quantum.custom "Hadamard"() %9 : !quantum.bit
+                // CHECK: [[q6:%.+]], [[q7:%.+]] = quantum.custom "CNOT"() [[q4]], [[q3]] : !quantum.bit, !quantum.bit
+                // CHECK: [[q8:%.+]], [[q9:%.+]] = quantum.custom "CNOT"() [[q5]], [[q6]] : !quantum.bit, !quantum.bit
+                // CHECK: [[q10:%.+]], [[q11:%.+]] = quantum.custom "CNOT"() [[q9]], [[q7]] : !quantum.bit, !quantum.bit
+                // CHECK: [[q12:%.+]] = quantum.custom "RZ"(%arg0) [[q11]] : !quantum.bit
+                // CHECK: [[q13:%.+]], [[q14:%.+]] = quantum.custom "CNOT"() [[q10]], [[q8]] : !quantum.bit, !quantum.bit
+                // CHECK: [[q15:%.+]], [[q16:%.+]] = quantum.custom "CNOT"() [[q12]], [[q13]] : !quantum.bit, !quantum.bit
+                // CHECK: [[q17:%.+]], [[q18:%.+]] = quantum.custom "CNOT"() [[q16]], [[q14]] : !quantum.bit, !quantum.bit
+                // CHECK: [[q19:%.+]], [[q20:%.+]] = quantum.custom "CNOT"() [[q18]], [[q17]] : !quantum.bit, !quantum.bit
+                %13, %14 = _CNOT %12, %10
+                %15 = quantum.custom "RZ"(%arg0) %14 : !quantum.bit
+                %16, %17 = _CNOT %15, %13
+                // CHECK: quantum.custom "Hadamard"() [[q20]] : !quantum.bit
+                // CHECK: quantum.custom "Hadamard"() [[q15]] : !quantum.bit
+                // CHECK: quantum.custom "Hadamard"() [[q19]] : !quantum.bit
+                %18 = quantum.custom "Hadamard"() %11 : !quantum.bit
+                %19 = quantum.custom "Hadamard"() %16 : !quantum.bit
+                %20 = quantum.custom "Hadamard"() %17 : !quantum.bit
+                // CHECK-NOT: "quantum.custom"
+                return
+            }
+        """
+        run_filecheck(translate_program_to_xdsl(program), self.pipeline_path_graph_3, verify=True)
+
+    def test_composable_cnots_connectivity(self, run_filecheck):
+        """Test that two out of three CNOT gates are merged with a connectivity present."""
+        program = """
+            func.func @test_func() {
+                %0 = quantum.alloc(3) : !quantum.reg
+
+                %1 = "stablehlo.constant"() <{value = dense<0> : tensor<i64>}> : () -> tensor<i64>
+                %2 = tensor.extract %1[] : tensor<i64>
+                // CHECK: [[q0:%.+]] = quantum.extract %0[%2] : !quantum.reg -> !quantum.bit
+                %3 = quantum.extract %0[%2] : !quantum.reg -> !quantum.bit
+
+                %4 = "stablehlo.constant"() <{value = dense<1> : tensor<i64>}> : () -> tensor<i64>
+                %5 = tensor.extract %4[] : tensor<i64>
+                // CHECK: [[q1:%.+]] = quantum.extract %0[%5] : !quantum.reg -> !quantum.bit
+                %6 = quantum.extract %0[%5] : !quantum.reg -> !quantum.bit
+
+                // CHECK: quantum.custom "CNOT"() [[q0]], [[q1]] : !quantum.bit, !quantum.bit
+                %7, %8 = _CNOT %3, %6
+                %9, %10 = _CNOT %7, %8
+                %11, %12 = _CNOT %9, %10
+                // CHECK-NOT: "quantum.custom"
+                return
+            }
+        """
+        run_filecheck(translate_program_to_xdsl(program), self.pipeline_path_graph_2)
+
+
 # pylint: disable=too-few-public-methods
 @pytest.mark.usefixtures("enable_disable_plxpr")
 class TestParitySynthIntegration:
@@ -469,6 +759,39 @@ class TestParitySynthIntegration:
             return qml.state()
 
         run_filecheck_qjit(circuit)
+
+    def test_qjit_connectivity(self, run_filecheck_qjit):
+        """Test that the ParitySynthPass works correctly with qjit and connectivity information."""
+        dev = qml.device("lightning.qubit", wires=3)
+
+        @qml.qjit(target="mlir", pass_plugins=[getXDSLPluginAbsolutePath()])
+        @parity_synth_pass
+        @qml.qnode(dev)
+        def circuit():
+            # CHECK: [[phi:%.+]] = tensor.extract %arg0
+            # CHECK: [[omega:%.+]] = tensor.extract %arg1
+            # CHECK: [[theta:%.+]] = tensor.extract %arg2
+            # CHECK: quantum.custom "RZ"([[phi]])
+            # CHECK: quantum.custom "RZ"([[theta]])
+            # CHECK: quantum.custom "CNOT"()
+            # CHECK: quantum.custom "CNOT"()
+            # CHECK: quantum.custom "RZ"([[omega]])
+            # CHECK: quantum.custom "CNOT"()
+            # CHECK: quantum.custom "CNOT"()
+            # CHECK: quantum.custom "CNOT"()
+            # CHECK-NOT: quantum.custom
+            qml.CNOT((1, 0))
+            qml.RZ(0.1, 2)
+            qml.CNOT((0, 2))
+            qml.RZ(0.2, 2)
+            qml.CNOT((0, 2))
+            qml.RZ(0.3, 2)
+            qml.CNOT((1, 0))
+            return qml.state()
+
+        run_filecheck_qjit(circuit)
+        # from pennylane.compiler.python_compiler.visualization import draw
+        # print(draw(circuit, level=5)())
 
 
 if __name__ == "__main__":
