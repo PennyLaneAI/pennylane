@@ -922,6 +922,11 @@ def _(gate_set: dict):
     return gate_set
 
 
+@_process_gate_set.register
+def _(gate_set: Iterable):
+    return set(gate_set)
+
+
 @singledispatch
 def _process_gate_set_contains(gate_set):  # pylint: disable=unused-argument
     raise TypeError("Invalid gate_set type. Must be an iterable, dictionary, or function.")
@@ -932,9 +937,6 @@ def _(gate_set: Iterable):
     # The gate_set could be a mix of operator names and operator types. We need to wrap this
     # in a gate_set_contains function that checks if either the name of the operator is within
     # the names in the gate set, or if the type of the operator is within the types.
-    if not isinstance(gate_set, (set, dict)):
-        gate_set = set(gate_set)
-
     gate_types = tuple(gate for gate in gate_set if isinstance(gate, type))
     gate_names = {translate_op_alias(gate) for gate in gate_set if isinstance(gate, str)}
 

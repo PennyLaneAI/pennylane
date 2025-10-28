@@ -171,7 +171,9 @@ class TestDecompose:
 
         tape = qml.tape.QuantumScript([qml.RX(0, wires=[0])])
 
-        (decomposed_tape,), _ = decompose(tape, gate_set=gate_set, stopping_condition=stopping_condition)
+        (decomposed_tape,), _ = decompose(
+            tape, gate_set=gate_set, stopping_condition=stopping_condition
+        )
         qml.assert_equal(tape, decomposed_tape)
 
         def stopping_condition_2(op):
