@@ -26,7 +26,64 @@ from pennylane.queuing import QueuingManager
 from .composite import handle_recursion_error
 
 
-class SymbolicOp(Operator):
+class SymbolicMeta(qml.capture.ABCCaptureMeta):
+
+    def __getitem__(cls, item):
+        return AliasType(cls, item)
+
+
+class AliasType:
+    """A bespoke type alias with a particular type of target operator.
+
+    This class can be constructed by indexing into a ``SymbolicOp``:
+
+    >>> qml.ops.Adjoint[qml.X]
+    Adjoint[PauliX]
+
+    This can be used with ``isinstance`` checks:
+
+    >>> op = qml.adjoint(qml.X(0))
+    >>> isinstance(op, qml.ops.Adjoint[qml.X])
+    True
+    >>> isinstance(op, qml.ops.Adjoint[qml.Y])
+    False
+
+    and used in comparison and hashing:
+
+    >>> qml.ops.Adjoint[qml.X] == qml.ops.Adjoint[qml.X]
+    True
+    >>> {qml.ops.Adjoint[qml.X], qml.ops.Adjoint[qml.Y], qml.ops.Adjoint[qml.X]}
+    {Adjoint[PauliX], Adjoint[PauliY]}
+
+    Upon call, they can create a normal ``Adjoint`` with no target type validation.
+
+    >>> qml.ops.Adjoint[qml.X](qml.Y(0))
+    Adjoint(Y(0))
+
+    """
+
+    def __init__(self, symbolic_type, target: type[Operator]):
+        self.symbolic_type = symbolic_type
+        self.target = target
+
+    def __repr__(self):
+        n = self.target.__name__ if isinstance(self.target, type) else self.target
+        return f"{self.symbolic_type.__name__}[{n}]"
+
+    def __eq__(self, other):
+        return isinstance(other, self.symbolic_type) and other.target == self.target
+
+    def __hash__(self):
+        return hash((self.symbolic_type, self.target))
+
+    def __instancecheck__(self, obj):
+        return isinstance(obj, self.symbolic_type) and isinstance(obj.base, self.target)
+
+    def __call__(self, *args, **kwargs):
+        return self.symbolic_type(*args, **kwargs)
+
+
+class SymbolicOp(Operator, metaclass=SymbolicMeta):
     """Developer-facing base class for single-operator symbolic operators.
 
     Args:
