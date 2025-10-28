@@ -968,9 +968,9 @@ def _(gate_set: NoneType):  # pylint: disable=unused-argument
 
 @_process_gate_set_contains.register
 def _(gate_set: Callable):
-    # This branch exists for backwards compatibility reasons. I forgot to bring this up
-    # as a v0.44 deprecation but maybe we should deprecate providing a function to the
-    # gate_set argument because only the stopping_condition is supposed to be a function.
+    # This branch exists for backwards compatibility reasons. It was overlooked
+    # as a v0.44 deprecation. It is suggested that providing a function to the
+    # gate_set argument should be deprecated, because only the stopping_condition is supposed to be a function.
     # The deprecation is proposed in sc-102183
     gate_set_contains = gate_set
     gate_set = set()
