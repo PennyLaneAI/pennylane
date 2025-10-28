@@ -79,7 +79,7 @@ class TestDefaultBitMap:
         bit_map = default_bit_map([])
         assert bit_map == {}
 
-        bit_map = default_bit_map([qml.measurements.MidMeasureMP(0)])
+        bit_map = default_bit_map([qml.ops.MidMeasure(0)])
         assert bit_map == {}
 
     def test_simple(self):

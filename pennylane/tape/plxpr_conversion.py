@@ -33,10 +33,15 @@ from pennylane.capture.primitives import (
     pauli_measure_prim,
     qnode_prim,
 )
-from pennylane.measurements import MeasurementValue, get_mcm_predicates, measure, pauli_measure
-from pennylane.measurements.mid_measure import MidMeasureMP
-from pennylane.measurements.pauli_measure import PauliMeasure
 from pennylane.operation import Operator
+from pennylane.ops.mid_measure import (
+    MeasurementValue,
+    MidMeasure,
+    PauliMeasure,
+    get_mcm_predicates,
+    measure,
+    pauli_measure,
+)
 from pennylane.wires import DynamicWire
 
 from .qscript import QuantumScript
@@ -66,7 +71,7 @@ class CollectOpsandMeas(FlattenedInterpreter):
     >>> collector.eval(plxpr.jaxpr, plxpr.consts, 1.2)
     [probs(wires=[0]), expval(Z(1))]
     >>> collector.state
-    {'ops': [X(0), X(1), X(2), Adjoint(S(0)), MidMeasureMP(wires=[0]), RX(Array(2.4, dtype=float..., weak_type=True), wires=[0])], 'measurements': [probs(wires=[0]), expval(Z(1))], 'dynamic_wire_map': {}}
+    {'ops': [X(0), X(1), X(2), Adjoint(S(0)), MidMeasure(wires=[0], postselect=None, reset=False), RX(Array(2.4, dtype=float..., weak_type=True), wires=[0])], 'measurements': [probs(wires=[0]), expval(Z(1))], 'dynamic_wire_map': {}}
 
     After execution, the collected operations and measurements are available in the ``state``
     property.
@@ -284,7 +289,7 @@ def plxpr_to_tape(plxpr: "jax.extend.core.Jaxpr", consts, *args, shots=None) -> 
 
 def _map_op_wires(op, wire_map, mcm_map):
     new_op = op.map_wires(wire_map)
-    if isinstance(op, (MidMeasureMP, PauliMeasure)):
+    if isinstance(op, (MidMeasure, PauliMeasure)):
         mcm_map[op] = new_op
     return new_op
 

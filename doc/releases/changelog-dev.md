@@ -2,6 +2,10 @@
 
 <h3>New features since last release</h3>
 
+* A new decomposition has been added for the Controlled :class:`~.SemiAdder`,
+  which is efficient and skips controlling all gates in its decomposition.
+  [(#8423)](https://github.com/PennyLaneAI/pennylane/pull/8423)
+
 * Added a :meth:`~pennylane.devices.DeviceCapabilities.gate_set` method to :class:`~pennylane.devices.DeviceCapabilities`
   that produces a set of gate names to be used as the target gate set in decompositions.
   [(#8522)](https://github.com/PennyLaneAI/pennylane/pull/8522)
@@ -16,7 +20,7 @@
   [(#8520)](https://github.com/PennyLaneAI/pennylane/pull/8520)
   [(#8515)](https://github.com/PennyLaneAI/pennylane/pull/8515)
   [(#8516)](https://github.com/PennyLaneAI/pennylane/pull/8516)
-  
+
   - :class:`~.QSVT`
   - :class:`~.AmplitudeEmbedding`
   - :class:`~.AllSinglesDoubles`
@@ -136,15 +140,29 @@
 
 <h3>Deprecations 👋</h3>
 
+* `qml.measure`, `qml.measurements.MidMeasureMP`, `qml.measurements.MeasurementValue`,
+  and `qml.measurements.get_mcm_predicates` are now located in `qml.ops.mid_measure`.
+  `MidMeasureMP` is now renamed to `MidMeasure`.
+  `qml.measurements.find_post_processed_mcms` is now `qml.devices.qubit.simulate._find_post_processed_mcms`,
+  and is being made private, as it is an utility for tree-traversal.
+  [(#8466)](https://github.com/PennyLaneAI/pennylane/pull/8466)
+
+* The ``pennylane.operation.Operator.is_hermitian`` property has been deprecated and renamed 
+  to ``pennylane.operation.Operator.is_verified_hermitian`` as it better reflects the functionality of this property. 
+  The deprecated access through ``is_hermitian`` will be removed in PennyLane v0.45. 
+  Alternatively, consider using the ``pennylane.is_hermitian`` function instead as it provides a more reliable check for hermiticity. 
+  Please be aware that it comes with a higher computational cost.
+  [(#8494)](https://github.com/PennyLaneAI/pennylane/pull/8494)
+  
 * Access to the follow functions and classes from the ``pennylane.resources`` module are deprecated. Instead, these functions must be imported from the ``pennylane.estimator`` module.
   [(#8484)](https://github.com/PennyLaneAI/pennylane/pull/8484)
-    
+
     - ``qml.estimator.estimate_shots`` in favor of ``qml.resources.estimate_shots``
     - ``qml.estimator.estimate_error`` in favor of ``qml.resources.estimate_error``
     - ``qml.estimator.FirstQuantization`` in favor of ``qml.resources.FirstQuantization``
     - ``qml.estimator.DoubleFactorization`` in favor of ``qml.resources.DoubleFactorization``
 
-* ``argnum`` has been renamed ``argnums`` for ``qml.grad``, ``qml.jacobian``, ``qml.jvp`` and `qml.vjp``.
+* ``argnum`` has been renamed ``argnums`` for ``qml.grad``, ``qml.jacobian``, ``qml.jvp`` and ``qml.vjp``.
   [(#8496)](https://github.com/PennyLaneAI/pennylane/pull/8496)
   [(#8481)](https://github.com/PennyLaneAI/pennylane/pull/8481)
 
@@ -157,19 +175,26 @@
 
 * Fix all NumPy 1.X `DeprecationWarnings` in our source code.
   [(#8497)](https://github.com/PennyLaneAI/pennylane/pull/8497)
-  
+
 * Update versions for `pylint`, `isort` and `black` in `format.yml`
   [(#8506)](https://github.com/PennyLaneAI/pennylane/pull/8506)
 
 * Reclassifies `registers` as a tertiary module for use with tach.
   [(#8513)](https://github.com/PennyLaneAI/pennylane/pull/8513)
 
+* A new `split_non_commuting_pass` compiler pass has been added to the xDSL transforms. This pass
+  splits quantum functions that measure observables on the same wires into multiple function executions,
+  where each execution measures observables on different wires (using the "wires" grouping strategy).
+  The original function is replaced with calls to these generated functions, and the results are combined
+  appropriately.
+  [(#8531)](https://github.com/PennyLaneAI/pennylane/pull/8531)
+
 * The experimental xDSL implementation of `diagonalize_measurements` has been updated to fix a bug
   that included the wrong SSA value for final qubit insertion and deallocation at the end of the
   circuit. A clear error is now also raised when there are observables with overlapping wires.
   [(#8383)](https://github.com/PennyLaneAI/pennylane/pull/8383)
 
-* Add an `outline_state_evolution_pass` pass to the MBQC xDSL transform, which moves all 
+* Add an `outline_state_evolution_pass` pass to the MBQC xDSL transform, which moves all
   quantum gate operations to a private callable.
   [(#8367)](https://github.com/PennyLaneAI/pennylane/pull/8367)
 
@@ -185,22 +210,29 @@
   [(#8486)](https://github.com/PennyLaneAI/pennylane/pull/8486)
   [(#8495)](https://github.com/PennyLaneAI/pennylane/pull/8495)
 
-* The various private functions of the :class:`~pennylane.estimator.FirstQuantization` class have 
+* The various private functions of the :class:`~pennylane.estimator.FirstQuantization` class have
   been modified to avoid using `numpy.matrix` as this function is deprecated.
   [(#8523)](https://github.com/PennyLaneAI/pennylane/pull/8523)
 
-* The `ftqc` module now includes dummy transforms for several Catalyst/MLIR passes (`to-ppr`, `commute-ppr`, `merge-ppr-ppm`, `pprm-to-mbqc` 
+* The `ftqc` module now includes dummy transforms for several Catalyst/MLIR passes (`to-ppr`, `commute-ppr`, `merge-ppr-ppm`, `pprm-to-mbqc`
   and `reduce-t-depth`), to allow them to be captured as primitives in PLxPR and mapped to the MLIR passes in Catalyst. This enables using the passes with the unified compiler and program capture.
   [(#8519)](https://github.com/PennyLaneAI/pennylane/pull/8519)
 
-* The decompositions for several templates have been updated to use 
+* The decompositions for several templates have been updated to use
   :class:`~.ops.op_math.ChangeOpBasis`, which makes their decompositions more resource efficient
-  by eliminating unnecessary controlled operations. The templates include :class:`~.PhaseAdder`, 
+  by eliminating unnecessary controlled operations. The templates include :class:`~.PhaseAdder`,
   :class:`~.TemporaryAND`, :class:`~.QSVT`, and :class:`~.SelectPauliRot`.
   [(#8490)](https://github.com/PennyLaneAI/pennylane/pull/8490)
 
+* Solovay-Kitaev decomposition using the :func:`~.clifford_t_decompostion` transform
+  with ``method="sk"`` or directly via :func:`~.ops.sk_decomposition` now raises a more
+  informative ``RuntimeError`` when used with JAX-JIT or :func:`~.qjit`.
+  [(#8489)](https://github.com/PennyLaneAI/pennylane/pull/8489)
 
 <h3>Documentation 📝</h3>
+
+* The code example in the documentation for ``qml.decomposition.register_resources`` has been
+  updated to adhere to renamed keyword arguments and default behaviour of ``max_work_wires``.
 
 * The docstring for ``qml.device`` has been updated to include a section on custom decompositions,
   and a warning about the removal of the ``custom_decomps`` kwarg in v0.44. Additionally, the page
@@ -209,6 +241,9 @@
   [(#8492)](https://github.com/PennyLaneAI/pennylane/pull/8492)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixes a bug in :class:`~.SemiAdder` where the results were incorrect when more ``work_wires`` than required were passed.
+ [(#8423)](https://github.com/PennyLaneAI/pennylane/pull/8423)
 
 * Fixes a bug in ``QubitUnitaryOp.__init__`` in the unified compiler module that prevented an
   instance from being constructed.
@@ -225,6 +260,8 @@
 
 This release contains contributions from (in alphabetical order):
 
+
+Guillermo Alonso,
 Utkarsh Azad,
 Astral Cai,
 Marcus Edwards,

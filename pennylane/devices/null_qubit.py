@@ -33,11 +33,11 @@ from pennylane.measurements import (
     CountsMP,
     DensityMatrixMP,
     MeasurementProcess,
-    MeasurementValue,
     ProbabilityMP,
     Shots,
     StateMP,
 )
+from pennylane.ops import MeasurementValue
 from pennylane.tape import QuantumScriptOrBatch
 from pennylane.transforms.core import TransformProgram
 from pennylane.typing import Result, ResultBatch

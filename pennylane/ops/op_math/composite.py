@@ -79,7 +79,7 @@ class CompositeOp(Operator):
     ):  # pylint: disable=super-init-not-called
         self._id = id
         self._name = self.__class__.__name__
-        if any(isinstance(op, qml.measurements.MidMeasureMP) for op in operands):
+        if any(isinstance(op, qml.ops.MidMeasure) for op in operands):
             raise ValueError("Composite operators of mid-circuit measurements are not supported.")
         self.operands = operands
         self._wires = qml.wires.Wires.all_wires([op.wires for op in operands])
@@ -174,7 +174,7 @@ class CompositeOp(Operator):
 
     @property
     @abc.abstractmethod
-    def is_hermitian(self):
+    def is_verified_hermitian(self):
         """This property determines if the composite operator is hermitian."""
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
@@ -269,7 +269,7 @@ class CompositeOp(Operator):
             dict[str, array]: dictionary containing the eigenvalues and the
                 eigenvectors of the operator.
         """
-        eigen_func = math.linalg.eigh if self.is_hermitian else math.linalg.eig
+        eigen_func = math.linalg.eigh if self.is_verified_hermitian else math.linalg.eig
 
         if self.hash not in self._eigs:
             mat = self.matrix()
