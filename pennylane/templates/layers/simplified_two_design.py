@@ -14,9 +14,16 @@
 r"""
 Contains the SimplifiedTwoDesign template.
 """
-from pennylane import math
+from pennylane import capture, math
+from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.operation import Operation
 from pennylane.ops import CZ, RY
+
+has_jax = True
+try:
+    from jax import numpy as jnp
+except ModuleNotFoundError as import_error:  # pragma: no cover
+    has_jax = False  # pragma: no cover
 
 
 class SimplifiedTwoDesign(Operation):
@@ -101,6 +108,8 @@ class SimplifiedTwoDesign(Operation):
 
     grad_method = None
 
+    resource_keys = {"num_wires", "n_layers"}
+
     def __init__(self, initial_layer_weights, weights, wires, id=None):
         shape = math.shape(weights)
 
@@ -128,6 +137,10 @@ class SimplifiedTwoDesign(Operation):
     @property
     def num_params(self):
         return 2
+
+    @property
+    def resource_params(self) -> dict:
+        return {"num_wires": len(self.wires), "n_layers": math.shape(self.parameters[1])[0]}
 
     @staticmethod
     def compute_decomposition(
@@ -219,3 +232,46 @@ class SimplifiedTwoDesign(Operation):
             return [(n_wires,), (n_layers,)]
 
         return [(n_wires,), (n_layers, n_wires - 1, 2)]
+
+
+def _simplified_two_design_resources(n_layers, num_wires):
+    if num_wires > 1:
+        return {
+            resource_rep(RY): num_wires + (n_layers * num_wires - 1) * 2,
+            resource_rep(CZ): n_layers * num_wires - 1,
+        }
+    return {resource_rep(RY): num_wires}
+
+
+@register_resources(_simplified_two_design_resources)
+def _simplified_two_design_decomposition(initial_layer_weights, weights, wires):
+    n_layers = math.shape(weights)[0]
+
+    if has_jax and capture.enabled():
+        initial_layer_weights, weights, wires = (
+            jnp.array(initial_layer_weights),
+            jnp.array(weights),
+            jnp.array(wires),
+        )
+
+    # initial rotations
+    for i in range(len(wires)):  # pylint: disable=consider-using-enumerate
+        RY(initial_layer_weights[i], wires=wires[i])
+
+    for layer in range(n_layers):
+        # even layer of entanglers
+        even_wires = [wires[i : i + 2] for i in range(0, len(wires) - 1, 2)]
+        for i, wire_pair in enumerate(even_wires):
+            CZ(wires=wire_pair)
+            RY(weights[layer, i, 0], wires=wire_pair[0])
+            RY(weights[layer, i, 1], wires=wire_pair[1])
+
+        # odd layer of entanglers
+        odd_wires = [wires[i : i + 2] for i in range(1, len(wires) - 1, 2)]
+        for i, wire_pair in enumerate(odd_wires):
+            CZ(wires=wire_pair)
+            RY(weights[layer, len(wires) // 2 + i, 0], wires=wire_pair[0])
+            RY(weights[layer, len(wires) // 2 + i, 1], wires=wire_pair[1])
+
+
+add_decomps(SimplifiedTwoDesign, _simplified_two_design_decomposition)
