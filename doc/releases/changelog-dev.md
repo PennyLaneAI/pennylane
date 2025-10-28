@@ -240,6 +240,10 @@
   the :func:`~pennylane.devices.preprocess.decompose` transform for device-level decompositions.
   [(#8492)](https://github.com/PennyLaneAI/pennylane/pull/8492)
 
+* Added a warning in the :doc:`qml.from_qasm </code/api/pennylane.from_qasm>` about the default measurement behavior in `qml.to_openqasm`, and clarified that 
+  `qml.from_qasm` returns a callable that must be executed.
+  [(#8354)](https://github.com/PennyLaneAI/pennylane/pull/8354)
+
 <h3>Bug fixes 🐛</h3>
 
 * Fixes a bug in :class:`~.SemiAdder` where the results were incorrect when more ``work_wires`` than required were passed.
