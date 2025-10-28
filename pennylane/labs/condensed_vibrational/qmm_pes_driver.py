@@ -24,15 +24,24 @@ import scipy as sp
 from pennylane import concurrency, qchem
 from pennylane.qchem.vibrational.christiansen_utils import _read_data, _write_data
 from pennylane.qchem.vibrational.localize_modes import localize_normal_modes
-from pennylane.qchem.vibrational.vibrational_class import (
-    VibrationalPES,
+from .qmm_vibrational_class import (
+    QMMVibrationalPES,
     _get_dipole,
     _harmonic_analysis,
     _single_point,
-    optimize_geometry,
+    recursive_optimize_geometry,
+    qmmm_geometry_optimization,
 )
+from pennylane.qchem.vibrational.vibrational_class import optimize_geometry, _single_point as _qm_single_point
 
-from .utils import setup_environment_wrapper, snapshot_and_average, setup_cached_workflow
+try:
+    from qmm_workflow import run_sampling_and_scf_wrapper, setup_environment_wrapper
+    QMM_AVAILABLE = True
+except ImportError:
+    QMM_AVAILABLE = False
+    raise ValueError("qmm_workflow not available from QMM package, cannot run condensed phase workflow!")
+    
+from time import time
 from tqdm import tqdm
 
 # pylint: disable=too-many-arguments,too-many-function-args
@@ -60,8 +69,7 @@ def _pes_onemode(
     num_workers=1,
     backend="serial",
     path=None,
-    qmm_workflow=None,
-    **kwargs
+    qmm_info=None
 ):
     r"""Computes the one-mode potential energy surface on a grid along directions defined by displacement vectors.
 
@@ -90,18 +98,14 @@ def _pes_onemode(
     all_jobs = range(quad_order)
     jobs_on_rank = np.array_split(all_jobs, num_workers)
 
-    # Create a function that wraps _local_pes_onemode with the additional arguments
-    def wrapped_local_pes_onemode(rank, jobs):
-        return _local_pes_onemode(
-            rank, jobs, molecule, scf_result, freqs, vectors, grid, path, 
-            method, dipole, qmm_workflow, **kwargs
-        )
-
-    arguments = [(j, i) for j, i in enumerate(jobs_on_rank)]
+    arguments = [
+        (j, i, molecule, scf_result, freqs, vectors, grid, path, method, dipole, qmm_info)
+        for j, i in enumerate(jobs_on_rank)
+    ]
 
     executor_class = concurrency.backends.get_executor(backend)
     with executor_class(max_workers=num_workers) as executor:
-        executor.starmap(wrapped_local_pes_onemode, arguments)
+        executor.starmap(_local_pes_onemode, arguments)
 
     pes_onebody = None
     dipole_onebody = None
@@ -116,7 +120,7 @@ def _pes_onemode(
 
 
 def _local_pes_onemode(
-    rank, jobs_on_rank, molecule, scf_result, freqs, vectors, grid, path, method="rhf", dipole=False, qmm_workflow=None, **kwargs
+    rank, jobs_on_rank, molecule, scf_result, freqs, vectors, grid, path, method="rhf", dipole=False, qmm_info=None
 ):
     r"""Computes the one-mode potential energy surface on a grid along directions defined by
     displacement vectors for each thread.
@@ -146,16 +150,15 @@ def _local_pes_onemode(
 
     local_pes_onebody = np.zeros((nmodes, len(jobs_on_rank)), dtype=float)
 
-    ref_energy, ref_dipole = snapshot_and_average(molecule, qmm_workflow, do_dipole=dipole, method=method, **kwargs)
     if dipole:
         local_dipole_onebody = np.zeros((nmodes, len(jobs_on_rank), 3), dtype=float)
-
+        ref_dipole = _get_dipole(scf_result, method)
     for mode in range(nmodes):
         vec = vectors[mode]
         if (freqs[mode].imag) > 1e-6:
             continue  # pragma: no cover
 
-        for job_idx, job in tqdm(enumerate(jobs_on_rank), desc="One-body term"):
+        for job_idx, job in enumerate(jobs_on_rank):
             gridpoint = grid[job]
             scaling = np.sqrt(HBAR / (2 * np.pi * freqs[mode] * 100 * sp.constants.c))
             positions = np.array(init_geom + scaling * gridpoint * vec)
@@ -170,11 +173,11 @@ def _local_pes_onemode(
                 load_data=True,
             )
 
-            displ_energy, displ_dipole = snapshot_and_average(displ_mol, qmm_workflow, do_dipole=dipole, method=method, **kwargs)
+            displ_scf = _single_point(displ_mol, qmm_info, method=method)
 
-            local_pes_onebody[mode][job_idx] = displ_energy - ref_energy
+            local_pes_onebody[mode][job_idx] = displ_scf.e_tot - scf_result.e_tot
             if dipole:
-                local_dipole_onebody[mode, job_idx, :] = displ_dipole - ref_dipole
+                local_dipole_onebody[mode, job_idx, :] = _get_dipole(displ_scf, method) - ref_dipole
 
     _write_data(path, rank, "v1data", "V1_PES", local_pes_onebody)
     if dipole:
@@ -237,8 +240,7 @@ def _pes_twomode(
     num_workers=1,
     backend="serial",
     path=None,
-    qmm_workflow=None,
-    **kwargs
+    qmm_info=None
 ):
     r"""Computes the two-mode potential energy surface on a grid along directions defined by
     displacement vectors.
@@ -273,19 +275,27 @@ def _pes_twomode(
     ]
 
     jobs_on_rank = np.array_split(all_jobs, num_workers)
-    
-    # Create a function that wraps _local_pes_twomode with the additional arguments
-    def wrapped_local_pes_twomode(rank, jobs):
-        return _local_pes_twomode(
-            rank, jobs, molecule, scf_result, freqs, vectors, pes_onebody, 
-            dipole_onebody, path, method, dipole, qmm_workflow, **kwargs
+    arguments = [
+        (
+            j,
+            i,
+            molecule,
+            scf_result,
+            freqs,
+            vectors,
+            pes_onebody,
+            dipole_onebody,
+            path,
+            method,
+            dipole,
+            qmm_info
         )
-
-    arguments = [(j, i) for j, i in enumerate(jobs_on_rank)]
+        for j, i in enumerate(jobs_on_rank)
+    ]
 
     executor_class = concurrency.backends.get_executor(backend)
     with executor_class(max_workers=num_workers) as executor:
-        executor.starmap(wrapped_local_pes_twomode, arguments)
+        executor.starmap(_local_pes_twomode, arguments)
 
     pes_twobody = None
     dipole_twobody = None
@@ -312,8 +322,7 @@ def _local_pes_twomode(
     path,
     method="rhf",
     dipole=False,
-    qmm_workflow=None,
-    **kwargs
+    qmm_info=None
 ):
     r"""Computes the two-mode potential energy surface on a grid along directions defined by
     displacement vectors for each thread.
@@ -345,13 +354,13 @@ def _local_pes_twomode(
     nmodes = len(freqs)
 
     all_mode_combos = [(mode_a, mode_b) for mode_a in range(nmodes) for mode_b in range(mode_a)]
-    local_pes_twobody = np.zeros((len(all_mode_combos) * len(jobs_on_rank)))
+    local_pes_twobody = np.zeros(len(all_mode_combos) * len(jobs_on_rank))
 
-    ref_energy, ref_dipole = snapshot_and_average(molecule, qmm_workflow, do_dipole=dipole, method=method, **kwargs)
     if dipole:
         local_dipole_twobody = np.zeros((len(all_mode_combos) * len(jobs_on_rank), 3), dtype=float)
+        ref_dipole = _get_dipole(scf_result, method)
 
-    for mode_idx, [mode_a, mode_b] in tqdm(enumerate(all_mode_combos), desc="Two-body terms"):
+    for mode_idx, [mode_a, mode_b] in enumerate(all_mode_combos):
 
         if (freqs[mode_a].imag) > 1e-6 or (freqs[mode_b].imag) > 1e-6:
             continue  # pragma: no cover
@@ -377,16 +386,16 @@ def _local_pes_twomode(
                 unit="angstrom",
                 load_data=True,
             )
-            displ_energy, displ_dipole = snapshot_and_average(displ_mol, qmm_workflow, do_dipole=dipole, method=method, **kwargs)
+            displ_scf = _single_point(displ_mol, qmm_info, method=method)
             idx = mode_idx * len(jobs_on_rank) + job_idx
 
             local_pes_twobody[idx] = (
-                displ_energy - pes_onebody[mode_a, i] - pes_onebody[mode_b, j] - ref_energy
+                displ_scf.e_tot - pes_onebody[mode_a, i] - pes_onebody[mode_b, j] - scf_result.e_tot
             )
 
             if dipole:
                 local_dipole_twobody[idx, :] = (
-                    displ_dipole
+                    _get_dipole(displ_scf, method)
                     - dipole_onebody[mode_a, i, :]
                     - dipole_onebody[mode_b, j, :]
                     - ref_dipole
@@ -418,9 +427,9 @@ def _load_pes_twomode(num_proc, nmodes, quad_order, path, dipole=False):
 
     final_shape = (nmodes, nmodes, quad_order, quad_order)
     nmode_combos = int(nmodes * (nmodes - 1) / 2)
-    pes_twobody = np.zeros((final_shape))
+    pes_twobody = np.zeros(final_shape)
     if dipole:
-        dipole_twobody = np.zeros((final_shape + (3,)))
+        dipole_twobody = np.zeros(final_shape + (3,))
 
     mode_combo = 0
     for mode_a in range(nmodes):
@@ -472,8 +481,7 @@ def _local_pes_threemode(
     path,
     method="rhf",
     dipole=False,
-    qmm_workflow=None,
-    **kwargs
+    qmm_info=None
 ):
     r"""Computes the three-mode potential energy surface on a grid along directions defined by
     displacement vectors for each thread.
@@ -515,13 +523,13 @@ def _local_pes_threemode(
 
     local_pes_threebody = np.zeros(len(all_mode_combos) * len(jobs_on_rank))
 
-    ref_energy, ref_dipole = snapshot_and_average(molecule, qmm_workflow, do_dipole=dipole, method=method, **kwargs)
     if dipole:
         local_dipole_threebody = np.zeros(
             (len(all_mode_combos) * len(jobs_on_rank), 3), dtype=float
         )
+        ref_dipole = _get_dipole(scf_result, method)
 
-    for mode_combo, [mode_a, mode_b, mode_c] in tqdm(enumerate(all_mode_combos), desc="Three-body terms"):
+    for mode_combo, [mode_a, mode_b, mode_c] in enumerate(all_mode_combos):
 
         if (
             (freqs[mode_a].imag) > 1e-6
@@ -558,22 +566,22 @@ def _local_pes_threemode(
                 unit="angstrom",
                 load_data=True,
             )
-            displ_energy, displ_dipole = snapshot_and_average(displ_mol, qmm_workflow, do_dipole=dipole, method=method, **kwargs)
+            displ_scf = _single_point(displ_mol, qmm_info, method=method)
 
             idx = mode_combo * len(jobs_on_rank) + job_idx
             local_pes_threebody[idx] = (
-                displ_energy
+                displ_scf.e_tot
                 - pes_twobody[mode_a, mode_b, i, j]
                 - pes_twobody[mode_a, mode_c, i, k]
                 - pes_twobody[mode_b, mode_c, j, k]
                 - pes_onebody[mode_a, i]
                 - pes_onebody[mode_b, j]
                 - pes_onebody[mode_c, k]
-                - ref_energy
+                - scf_result.e_tot
             )
             if dipole:
                 local_dipole_threebody[idx, :] = (
-                    displ_dipole
+                    _get_dipole(displ_scf, method)
                     - dipole_twobody[mode_a, mode_b, i, j, :]
                     - dipole_twobody[mode_a, mode_c, i, k, :]
                     - dipole_twobody[mode_b, mode_c, j, k, :]
@@ -603,8 +611,7 @@ def _pes_threemode(
     num_workers=1,
     backend="serial",
     path=None,
-    qmm_workflow=None,
-    **kwargs
+    qmm_info=None
 ):
     r"""Computes the three-mode potential energy surface on a grid along directions defined by
     displacement vectors.
@@ -643,20 +650,29 @@ def _pes_threemode(
         )
     ]
     jobs_on_rank = np.array_split(all_jobs, num_workers)
-    
-    # Create a function that wraps _local_pes_threemode with the additional arguments
-    def wrapped_local_pes_threemode(rank, jobs):
-        return _local_pes_threemode(
-            rank, jobs, molecule, scf_result, freqs, vectors, pes_onebody, 
-            pes_twobody, dipole_onebody, dipole_twobody, path, method, 
-            dipole, qmm_workflow, **kwargs
+    arguments = [
+        (
+            j,
+            i,
+            molecule,
+            scf_result,
+            freqs,
+            vectors,
+            pes_onebody,
+            pes_twobody,
+            dipole_onebody,
+            dipole_twobody,
+            path,
+            method,
+            dipole,
+            qmm_info
         )
-
-    arguments = [(j, i) for j, i in enumerate(jobs_on_rank)]
+        for j, i in enumerate(jobs_on_rank)
+    ]
 
     executor_class = concurrency.backends.get_executor(backend)
     with executor_class(max_workers=num_workers) as executor:
-        executor.starmap(wrapped_local_pes_threemode, arguments)
+        executor.starmap(_local_pes_threemode, arguments)
 
     pes_threebody = None
 
@@ -691,7 +707,7 @@ def _load_pes_threemode(num_proc, nmodes, quad_order, path, dipole):
     final_shape = (nmodes, nmodes, nmodes, quad_order, quad_order, quad_order)
     nmode_combos = int(nmodes * (nmodes - 1) * (nmodes - 2) / 6)
     pes_threebody = np.zeros(final_shape)
-    dipole_threebody = np.zeros((final_shape + (3,))) if dipole else None
+    dipole_threebody = np.zeros(final_shape + (3,)) if dipole else None
 
     mode_combo = 0
     for mode_a in range(nmodes):
@@ -731,7 +747,7 @@ def _load_pes_threemode(num_proc, nmodes, quad_order, path, dipole):
     return pes_threebody, None  # pragma: no cover
 
 
-def condensed_vibrational_pes(
+def qmm_vibrational_pes(
     molecule,
     n_points=9,
     method="rhf",
@@ -742,7 +758,11 @@ def condensed_vibrational_pes(
     dipole_level=1,
     num_workers=1,
     backend="serial",
-    **kwargs
+    qmm_info=None,
+    freqs=None,
+    vectors=None,
+    uloc=None,
+    do_harmonic=True
 ):
     r"""Computes potential energy surfaces along vibrational normal modes.
 
@@ -769,9 +789,10 @@ def condensed_vibrational_pes(
             options are ``mp_pool``, ``cf_procpool``, ``cf_threadpool``, ``serial``,
             ``mpi4py_pool``, ``mpi4py_comm``. Default value is set to ``serial``. See Usage Details
             for more information.
+        qmm_info: dictionary containing information of MM environment (charges, locations, indices of MM atoms and number of QM atoms)
 
     Returns:
-       VibrationalPES: the VibrationalPES object
+       QMMVibrationalPES: the QMMVibrationalPES object
 
     **Example**
 
@@ -788,25 +809,25 @@ def condensed_vibrational_pes(
         The ``backend`` options allow to run calculations using multiple threads or multiple
         processes.
 
-        - ``serial``: This executor wraps Python standard library calls without support for
-            multithreaded or multiprocess execution. Any calls to external libraries that utilize
-            threads, such as BLAS through numpy, can still use multithreaded calls at that layer.
+        * ``serial``: This executor wraps Python standard library calls without support for
+          multithreaded or multiprocess execution. Any calls to external libraries that utilize
+          threads, such as BLAS through numpy, can still use multithreaded calls at that layer.
 
-        - ``mp_pool``: This executor wraps Python standard library `multiprocessing.Pool <https://docs.python.org/3/library/multiprocessing.html#module-multiprocessing.pool>`_
-            interface, and provides support for execution using multiple processes.
+        * ``mp_pool``: This executor wraps Python standard library `multiprocessing.Pool <https://docs.python.org/3/library/multiprocessing.html#module-multiprocessing.pool>`_
+          interface, and provides support for execution using multiple processes.
 
-        - ``cf_procpool``: This executor wraps Python standard library `concurrent.futures.ProcessPoolExecutor <https://docs.python.org/3/library/concurrent.futures.html#processpoolexecutor>`_
-            interface, and provides support for execution using multiple processes.
+        * ``cf_procpool``: This executor wraps Python standard library `concurrent.futures.ProcessPoolExecutor <https://docs.python.org/3/library/concurrent.futures.html#processpoolexecutor>`_
+          interface, and provides support for execution using multiple processes.
 
-        - ``cf_threadpool``: This executor wraps Python standard library `concurrent.futures.ThreadPoolExecutor <https://docs.python.org/3/library/concurrent.futures.html#threadpoolexecutor>`_
-            interface, and provides support for execution using multiple threads. The threading
-            executor may not provide execution speed-ups for tasks when using a GIL-enabled Python.
+        * ``cf_threadpool``: This executor wraps Python standard library `concurrent.futures.ThreadPoolExecutor <https://docs.python.org/3/library/concurrent.futures.html#threadpoolexecutor>`_
+          interface, and provides support for execution using multiple threads. The threading
+          executor may not provide execution speed-ups for tasks when using a GIL-enabled Python.
 
-        - ``mpi4py_pool``: This executor wraps the `mpi4py.futures.MPIPoolExecutor <https://mpi4py.readthedocs.io/en/stable/mpi4py.futures.html#mpipoolexecutor>`_
-            class, and provides support for execution using multiple processes launched using MPI.
+        * ``mpi4py_pool``: This executor wraps the `mpi4py.futures.MPIPoolExecutor <https://mpi4py.readthedocs.io/en/stable/mpi4py.futures.html#mpipoolexecutor>`_
+          class, and provides support for execution using multiple processes launched using MPI.
 
-        - ``mpi4py_comm``: This executor wraps the `mpi4py.futures.MPICommExecutor <https://mpi4py.readthedocs.io/en/stable/mpi4py.futures.html#mpicommexecutor>`_
-            class, and provides support for execution using multiple processes launched using MPI.
+        * ``mpi4py_comm``: This executor wraps the `mpi4py.futures.MPICommExecutor <https://mpi4py.readthedocs.io/en/stable/mpi4py.futures.html#mpicommexecutor>`_
+          class, and provides support for execution using multiple processes launched using MPI.
     """
     with TemporaryDirectory() as tmpdir:
         path = Path(tmpdir)
@@ -821,8 +842,12 @@ def condensed_vibrational_pes(
         if n_points < 1:
             raise ValueError("Number of sample points cannot be less than 1.")
 
+        scf_orig = _single_point(molecule, qmm_info, method)
         if optimize:
-            geom_eq = optimize_geometry(molecule, method)
+            # geom_eq, eq_success = qmmm_geometry_optimization(scf_orig.mol, qmm_info["mm_coords"], qmm_info["mm_charges"], method, molecule.basis_name)
+            # if not eq_success:
+            #     raise ValueError(f"Geometry optimization of molecule inside MM environment failed...")
+            geom_eq = recursive_optimize_geometry(molecule, qmm_info, method)
             mol_eq = qchem.Molecule(
                 molecule.symbols,
                 geom_eq,
@@ -835,16 +860,14 @@ def condensed_vibrational_pes(
         else:
             mol_eq = molecule
 
-        # Initialize QMM workflow for condensed phase calculations with cached snapshots
-        qmm_workflow = setup_cached_workflow(mol_eq, **kwargs)
+        scf_result = _single_point(mol_eq, qmm_info, method)
 
-        scf_result = _single_point(mol_eq, method)
-
-        uloc = None
-
-        freqs, vectors = _harmonic_analysis(scf_result, method)
-        if localize:
-            freqs, vectors, uloc = localize_normal_modes(freqs, vectors, bins=bins)
+        if do_harmonic:
+            freqs, vectors = _harmonic_analysis(scf_result, method)
+            if localize:
+                freqs, vectors, uloc = localize_normal_modes(freqs, vectors, bins=bins)
+        elif freqs is None or vectors is None:
+            raise ValueError(f"Running calculations for MM snapshot but do_harmonic is marked as false and no vibrational frequencies and modes provided!")
 
         grid, gauss_weights = np.polynomial.hermite.hermgauss(n_points)
 
@@ -861,8 +884,7 @@ def condensed_vibrational_pes(
             num_workers=num_workers,
             backend=backend,
             path=path,
-            qmm_workflow=qmm_workflow,
-            **kwargs
+            qmm_info=qmm_info
         )
 
         # build PES -- two-body
@@ -882,8 +904,7 @@ def condensed_vibrational_pes(
             num_workers=num_workers,
             backend=backend,
             path=path,
-            qmm_workflow=qmm_workflow,
-            **kwargs
+            qmm_info=qmm_info
         )
 
         pes_data = [pes_onebody, pes_twobody]
@@ -908,14 +929,144 @@ def condensed_vibrational_pes(
                 num_workers=num_workers,
                 backend=backend,
                 path=path,
-                qmm_workflow=qmm_workflow,
-                **kwargs
+                qmm_info=qmm_info
             )
 
             pes_data = [pes_onebody, pes_twobody, pes_threebody]
             dipole_data = [dipole_onebody, dipole_twobody, dipole_threebody]
 
         freqs = freqs * CM_TO_AU
-        return VibrationalPES(
-            freqs, grid, gauss_weights, uloc, pes_data, dipole_data, localize, dipole_level
+        return QMMVibrationalPES(
+            freqs, grid, gauss_weights, uloc, pes_data, dipole_data, localize, dipole_level, qmm_info
         )
+
+_DEFAULT_QMM_KWARGS = {"temperature": 280.0,          # K
+    "pressure": 1.0,               # bar
+    "n_molecules": 64,            # For density estimation (liquid); lowered in debug
+    "box_size_angstroms": 20.0,    # Simulation cube edge in Å
+    "forcefield_xmls" : None, #Location for custom forcefield xmls file, use ff_model if none is provided
+    "ff_model": "openff-2.1.0",   # Small molecule force field (if OpenFF path used)
+
+    # Time evolution lengths
+    "nvt_equilibration_ps": 200.0,
+    "npt_equilibration_ns": 2.0,
+    "production_ns": 5.0,
+    "time_step_fs": 2.0,
+    "report_interval_ps": 10.0,
+    "simulation_time_ps": 1000.0,  # Total MD time (liquid)
+
+    "minimization_steps": 5000,
+    "platform_name": "CPU",      # Or CPU / OpenCL
+
+    "snapshot_interval_ps": None,  # If None auto = simulation_time_ps / n_snapshots
+    "displacement_amplitude": 0.1, # Å for solid configs
+}
+
+_QMM_SAMPLING_KEYS = {
+    "box_size_angstroms",
+    "simulation_time_ps",
+    "n_snapshots",
+    "temperature",
+    "pressure",
+    "snapshot_interval_ps",
+    "displacement_amplitude",
+    "qm_basis",
+    "qm_method",
+    "charge",
+    "spin",
+    "forcefield_xmls"
+}
+
+_QMM_INFO_FLAG = False
+def _extract_qmm_info(qmm_scf):
+    qmm_info = {
+    "mm_coords" : qmm_scf.mm_mol.atom_coords(),    
+    "mm_charges" : qmm_scf.mm_mol.atom_charges(),
+    }
+    
+    return qmm_info
+
+def qmm_pes_sampler(molecule, n_snapshots=10, qmm_kwargs = _DEFAULT_QMM_KWARGS, optimize=True, snapshot_optimize=True, method="rhf", localize=True, **kwargs):
+    #Obtain equilibrium nuclear geometry without environment
+    #arguments in kwargs will override the ones in qmm_kwargs if appearing in both
+    sampling_kwargs = {k: v for k, v in qmm_kwargs.items() if k in _QMM_SAMPLING_KEYS}
+    for kw in kwargs:
+        if kw in _QMM_SAMPLING_KEYS:
+            sampling_kwargs[kw] = kwargs[kw]
+
+    sampling_kwargs["n_snapshots"] = n_snapshots
+    sampling_kwargs["qm_basis"] = molecule.basis_name
+    print(f"Warning! Forcing electronic structure method to be HF") #qmm_workflow module needs adjustments for keyword compatibility with PL standard
+    sampling_kwargs["qm_method"] = "hf"
+    sampling_kwargs["charge"] = molecule.charge
+    sampling_kwargs["spin"] = (molecule.mult-1)/2
+
+    for kw in _DEFAULT_QMM_KWARGS:
+        if kw in kwargs:
+            del kwargs[kw]
+
+    TIMES_ARR = [time()]
+    print(f"Obtaining equilibrium geometry for isolated molecule...")
+    if optimize:
+        geom_eq = optimize_geometry(molecule, method)
+        mol_eq = qchem.Molecule(
+            molecule.symbols,
+            geom_eq,
+            unit=molecule.unit,
+            basis_name=molecule.basis_name,
+            charge=molecule.charge,
+            mult=molecule.mult,
+            load_data=molecule.load_data,
+        )
+    else:
+        mol_eq = molecule
+
+    TIMES_ARR.append(time())
+    print(f"Finished equilibrium geometry calculations after {TIMES_ARR[-1]-TIMES_ARR[-2]:.2f} seconds")
+
+    scf_eq = _qm_single_point(mol_eq, method)
+    freqs, vectors = _harmonic_analysis(scf_eq, method)
+    
+    if "bins" in kwargs:
+        bins = kwargs["bins"]
+    else:
+        bins = None
+
+    if bins is None:
+        bins = [2600]
+
+    if localize:
+        freqs, vectors, uloc = localize_normal_modes(freqs, vectors, bins=bins)
+    else:
+        uloc = None
+
+    #Obtain thermal snapshots
+    print(f"Setting up workflow for MM thermal sampling")
+    qmm_workflow = setup_environment_wrapper(mol_eq, **sampling_kwargs)
+    TIMES_ARR.append(time())
+    print(f"Finished MM propagations after {TIMES_ARR[-1]-TIMES_ARR[-2]:.2f} seconds")
+
+    #Perform MM dynamics for thermal sampling of environment
+    print(f"Doing MM thermal sampling...")
+    scf_snapshots = run_sampling_and_scf_wrapper(qmm_workflow, mol_eq, **sampling_kwargs)
+
+    TIMES_ARR.append(time())
+    print(f"Finished MM propagation after {TIMES_ARR[-1]-TIMES_ARR[-2]:.2f} seconds")
+
+    #Obtain PES for each of the snapshots
+    PESs = []
+
+    for ii in tqdm(range(n_snapshots), desc=f"Obtaining vibrational PES over snapshots"):
+        print(f"Starting PES calculation for snapshot {ii}, environment information is:")
+        qmm_info = _extract_qmm_info(scf_snapshots[ii])
+        print("\n\n" + 80*"#" + "\n"+ 80*"#")
+        print(f"First 10 MM atoms coords: {np.round(qmm_info['mm_coords'][:10], decimals=3)}")
+        print(80*"#" + "\n"+ 80*"#" + "\n\n")
+        PESs.append(qmm_vibrational_pes(mol_eq, method=method, qmm_info=qmm_info, optimize=snapshot_optimize, freqs=freqs, vectors=vectors, uloc=uloc, localize=localize, **kwargs))
+
+        TIMES_ARR.append(time())
+        print(f"Finished calculation for snapshot {ii} after {TIMES_ARR[-1]-TIMES_ARR[-2]:.2f} seconds")
+
+    print(f"Finished entire QM/MM workflow for many PESs after {TIMES_ARR[-1]-TIMES_ARR[0]:.2f}")
+
+    return PESs

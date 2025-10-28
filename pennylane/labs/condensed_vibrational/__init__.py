@@ -18,8 +18,8 @@ This module extends the standard vibrational spectroscopy capabilities to includ
 condensed phase effects using QMM (Quantum Mechanical/Molecular Mechanical) methods.
 """
 
-from .pes_driver import condensed_vibrational_pes
+from .qmm_pes_driver import qmm_pes_sampler
 
 __all__ = [
-    "condensed_vibrational_pes"
+    "qmm_pes_sampler"
 ]
