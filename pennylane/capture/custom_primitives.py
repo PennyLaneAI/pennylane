@@ -75,7 +75,11 @@ def _make_hashable(obj: Any) -> Any:
     if isinstance(obj, list):
         return tuple(_make_hashable(item) for item in obj)
     if isinstance(obj, dict):
-        return tuple(sorted((k, _make_hashable(v)) for k, v in obj.items()))
+        # Sort by str(key) to handle non-comparable keys (e.g., class types like ABCCaptureMeta)
+        # This ensures consistent ordering without requiring keys to implement __lt__
+        return tuple(
+            sorted(((k, _make_hashable(v)) for k, v in obj.items()), key=lambda x: str(x[0]))
+        )
     return obj
 
 
