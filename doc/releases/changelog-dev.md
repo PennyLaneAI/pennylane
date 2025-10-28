@@ -16,7 +16,7 @@
   [(#8520)](https://github.com/PennyLaneAI/pennylane/pull/8520)
   [(#8515)](https://github.com/PennyLaneAI/pennylane/pull/8515)
   [(#8516)](https://github.com/PennyLaneAI/pennylane/pull/8516)
-  
+
   - :class:`~.QSVT`
   - :class:`~.AmplitudeEmbedding`
   - :class:`~.AllSinglesDoubles`
@@ -144,7 +144,7 @@
     - ``qml.estimator.FirstQuantization`` in favor of ``qml.resources.FirstQuantization``
     - ``qml.estimator.DoubleFactorization`` in favor of ``qml.resources.DoubleFactorization``
 
-* ``argnum`` has been renamed ``argnums`` for ``qml.grad``, ``qml.jacobian``, ``qml.jvp`` and `qml.vjp``.
+* ``argnum`` has been renamed ``argnums`` for ``qml.grad``, ``qml.jacobian``, ``qml.jvp`` and ``qml.vjp``.
   [(#8496)](https://github.com/PennyLaneAI/pennylane/pull/8496)
   [(#8481)](https://github.com/PennyLaneAI/pennylane/pull/8481)
 
@@ -157,7 +157,7 @@
 
 * Fix all NumPy 1.X `DeprecationWarnings` in our source code.
   [(#8497)](https://github.com/PennyLaneAI/pennylane/pull/8497)
-  
+
 * Update versions for `pylint`, `isort` and `black` in `format.yml`
   [(#8506)](https://github.com/PennyLaneAI/pennylane/pull/8506)
 
@@ -176,7 +176,7 @@
   circuit. A clear error is now also raised when there are observables with overlapping wires.
   [(#8383)](https://github.com/PennyLaneAI/pennylane/pull/8383)
 
-* Add an `outline_state_evolution_pass` pass to the MBQC xDSL transform, which moves all 
+* Add an `outline_state_evolution_pass` pass to the MBQC xDSL transform, which moves all
   quantum gate operations to a private callable.
   [(#8367)](https://github.com/PennyLaneAI/pennylane/pull/8367)
 
@@ -208,6 +208,9 @@
 
 
 <h3>Documentation 📝</h3>
+
+* The code example in the documentation for ``qml.decomposition.register_resources`` has been
+  updated to adhere to renamed keyword arguments and default behaviour of ``max_work_wires``.
 
 * The docstring for ``qml.device`` has been updated to include a section on custom decompositions,
   and a warning about the removal of the ``custom_decomps`` kwarg in v0.44. Additionally, the page
