@@ -529,7 +529,7 @@ def _capture_apply(obj, transform, *targs, **tkwargs):
         import jax  # pylint: disable=import-outside-toplevel
 
         flat_qfunc = capture.flatfn.FlatFn(obj)
-        jaxpr = jax.make_jaxpr(functools.partial(flat_qfunc, **kwargs))(*args)
+        jaxpr = jax.make_jaxpr(flat_qfunc)(*args, **kwargs)
         flat_args = jax.tree_util.tree_leaves(args)
 
         n_args = len(flat_args)
