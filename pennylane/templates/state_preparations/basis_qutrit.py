@@ -16,6 +16,7 @@ Contains the QutritBasisStatePreparation template.
 """
 
 import numpy as np
+from pennylane.decomposition import resource_rep
 
 import pennylane as qml
 from pennylane.operation import Operation
@@ -133,3 +134,26 @@ class QutritBasisStatePreparation(Operation):
                 op_list.append(qml.TShift(wire))
 
         return op_list
+
+
+def _qutrit_state_prep_resources(num_wires, len_basis_state):
+    shortest = min(num_wires, len_basis_state)
+
+    resources = {
+        resource_rep(qml.TRY)
+    }
+
+    if qml.math.is_abstract(basis_state):
+        for wire, state in zip(wires, basis_state):
+            qml.TRY(state * (2 - state) * np.pi, wires=wire, subspace=(0, 1)),
+            qml.TRY(state * (1 - state) * np.pi / 2, wires=wire, subspace=(0, 2)),
+            qml.TRZ((-2 * state + 3) * state * np.pi, wires=wire, subspace=(0, 2)),
+            qml.TRY(state * (2 - state) * np.pi, wires=wire, subspace=(0, 2)),
+            qml.TRY(state * (1 - state) * np.pi / 2, wires=wire, subspace=(0, 1)),
+            qml.TRZ(-(7 * state - 10) * state * np.pi, wires=wire, subspace=(0, 2)),
+
+    for wire, state in zip(wires, basis_state):
+        for _ in range(state):
+            op_list.append(qml.TShift(wire))
+
+    return op_list
