@@ -23,7 +23,7 @@ from pennylane.ops import CZ, RY
 has_jax = True
 try:
     from jax import numpy as jnp
-except ModuleNotFoundError as import_error:  # pragma: no cover
+except ModuleNotFoundError:  # pragma: no cover
     has_jax = False  # pragma: no cover
 
 
