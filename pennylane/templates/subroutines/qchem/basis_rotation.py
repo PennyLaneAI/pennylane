@@ -17,6 +17,7 @@ This module contains the template for performing basis transformation defined by
 import numpy as np
 
 from pennylane import math
+from pennylane.control_flow import for_loop
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.operation import Operation
 from pennylane.ops import PhaseShift, SingleExcitation, cond
@@ -399,27 +400,47 @@ def _basis_rotation_decomp_resources(dim, is_real):
 @register_resources(_basis_rotation_decomp_resources, exact=False)
 def _basis_rotation_decomp(unitary_matrix, wires: WiresLike, **__):
 
-    if math.is_real_obj_or_close(unitary_matrix):
-        angle, unitary_matrix = _adjust_determinant(unitary_matrix)
-        if angle is not None:
+    def real_unitary(unitary, wires):
+        angle, unitary_matrix = _adjust_determinant(unitary)
+
+        def with_angle():
             PhaseShift(angle, wires=wires[0])
 
-        _, givens_list = math.decomposition.givens_decomposition(unitary_matrix)
-        for grot_mat, (i, j) in givens_list:
+        cond(angle is not None, with_angle)()
+
+        _, givens_list = math.decomposition.givens_decomposition(unitary)
+
+        @for_loop(len(givens_list))
+        def givens_loop(idx):
+            grot_mat, (i, j) = givens_list[idx]
             theta = math.arctan2(grot_mat[0, 1], grot_mat[0, 0])
             SingleExcitation(2 * theta, wires=[wires[i], wires[j]])
-        return
 
-    phase_list, givens_list = math.decomposition.givens_decomposition(unitary_matrix)
+        givens_loop()  # pylint: disable=no-value-for-parameter
 
-    for idx, phase in enumerate(phase_list):
-        PhaseShift(math.angle(phase), wires=wires[idx])
+    def not_real(unitary, wires):
+        phase_list, givens_list = math.decomposition.givens_decomposition(unitary)
 
-    for grot_mat, (i, j) in givens_list:
-        theta = math.arccos(math.real(grot_mat[1, 1]))
-        phi = math.angle(grot_mat[0, 0])
-        SingleExcitation(2 * theta, wires=[wires[i], wires[j]])
-        cond(not math.allclose(phi, 0.0), PhaseShift)(phi, wires[i])
+        @for_loop(len(phase_list))
+        def phase_loop(idx):
+            phase = phase_list[idx]
+            PhaseShift(math.angle(phase), wires=wires[idx])
+
+        phase_loop()  # pylint: disable=no-value-for-parameter
+
+        @for_loop(len(givens_list))
+        def givens_loop(idx):
+            grot_mat, (i, j) = givens_list[idx]
+            theta = math.arccos(math.real(grot_mat[1, 1]))
+            phi = math.angle(grot_mat[0, 0])
+            SingleExcitation(2 * theta, wires=[wires[i], wires[j]])
+            cond(not math.allclose(phi, 0.0), PhaseShift)(phi, wires[i])
+
+        givens_loop()  # pylint: disable=no-value-for-parameter
+
+    cond(math.is_real_obj_or_close(unitary_matrix), real_unitary, not_real)(
+        unitary=unitary_matrix, wires=wires
+    )
 
 
 add_decomps(BasisRotation, _basis_rotation_decomp)
