@@ -18,14 +18,14 @@ xdsl_available = True
 try:
     from xdsl.passes import ModulePass
     from xdsl.universe import Universe
-
-    from . import dialects, transforms
 except (ImportError, ModuleNotFoundError):
     xdsl_available = False  # pragma: no cover
 
 XDSL_UNIVERSE = None
 
 if xdsl_available:
+
+    from . import dialects, transforms
 
     shared_dialects = ("stablehlo", "transform")
 
