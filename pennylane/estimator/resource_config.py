@@ -18,9 +18,11 @@ from collections.abc import Callable
 from enum import StrEnum
 from typing import TYPE_CHECKING
 
-from pennylane.estimator.ops.op_math.controlled_ops import CRX, CRY, CRZ
+from pennylane.estimator.ops.op_math.controlled_ops import CRX, CRY, CRZ, CRot, ControlledPhaseShift
 from pennylane.estimator.ops.qubit.matrix_ops import QubitUnitary
-from pennylane.estimator.ops.qubit.parametric_ops_single_qubit import RX, RY, RZ
+from pennylane.estimator.ops.qubit.qchem_ops import SingleExcitation
+from pennylane.estimator.ops.qubit.parametric_ops_multi_qubit import MultiRZ, PauliRot
+from pennylane.estimator.ops.qubit.parametric_ops_single_qubit import RX, RY, RZ, Rot
 from pennylane.estimator.templates import (
     AliasSampling,
     MPSPrep,
@@ -116,13 +118,19 @@ class ResourceConfig:
             RX: {"precision": _DEFAULT_PRECISION},
             RY: {"precision": _DEFAULT_PRECISION},
             RZ: {"precision": _DEFAULT_PRECISION},
-            CRX: {"precision": _DEFAULT_PRECISION},
-            CRY: {"precision": _DEFAULT_PRECISION},
-            CRZ: {"precision": _DEFAULT_PRECISION},
-            SelectPauliRot: {"precision": _DEFAULT_PRECISION},
+            Rot: {"precision": None},
+            CRX: {"precision": None},
+            CRY: {"precision": None},
+            CRZ: {"precision": None},
+            CRot: {"precision": None},
+            ControlledPhaseShift: {"precision": None},
             QubitUnitary: {"precision": _DEFAULT_PRECISION},
+            MultiRZ: {"precision": None},
+            PauliRot:  {"precision": None},
+            SingleExcitation: {"precision": None},
+            SelectPauliRot: {"precision": None},
             AliasSampling: {"precision": _DEFAULT_PRECISION},
-            MPSPrep: {"precision": _DEFAULT_PRECISION},
+            MPSPrep: {"precision": None},
             QROMStatePreparation: {"precision": _DEFAULT_PRECISION},
             SelectTHC: {"rotation_precision": _DEFAULT_BIT_PRECISION},
             PrepTHC: {"coeff_precision": _DEFAULT_BIT_PRECISION},
@@ -138,7 +146,6 @@ class ResourceConfig:
                 "phase_grad_precision": _DEFAULT_PHASEGRAD_PRECISION,
                 "coeff_precision": 1e-3,
             },
-            TrotterPauli: {"pauli_rot_precision": _DEFAULT_PRECISION},
         }
         self._custom_decomps = {}
         self._adj_custom_decomps = {}

@@ -101,7 +101,7 @@ class QubitizeTHC(ResourceOperator):
 
     """
 
-    resource_keys = {"thc_ham", "prep_op", "select_op"}
+    resource_keys = {"thc_ham", "prep_op", "select_op", "coeff_precision", "rotation_precision"}
 
     def __init__(
         self,
