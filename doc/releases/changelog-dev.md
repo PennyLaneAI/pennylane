@@ -58,7 +58,7 @@
 * Wires can be specified via `range` with program capture and autograph.
 
 * A new decomposition has been added to :class:`pennylane.Toffoli`. This decomposition uses one
-  work wire and :class:`pennylane.TemporaryAND` operators to reduce the resources needed. 
+  work wire and :class:`pennylane.TemporaryAND` operators to reduce the resources needed.
   [(#8549)](https://github.com/PennyLaneAI/pennylane/pull/8549)
 
 <h3>Breaking changes 💔</h3>
@@ -153,13 +153,13 @@
   and is being made private, as it is an utility for tree-traversal.
   [(#8466)](https://github.com/PennyLaneAI/pennylane/pull/8466)
 
-* The ``pennylane.operation.Operator.is_hermitian`` property has been deprecated and renamed 
-  to ``pennylane.operation.Operator.is_verified_hermitian`` as it better reflects the functionality of this property. 
-  The deprecated access through ``is_hermitian`` will be removed in PennyLane v0.45. 
-  Alternatively, consider using the ``pennylane.is_hermitian`` function instead as it provides a more reliable check for hermiticity. 
+* The ``pennylane.operation.Operator.is_hermitian`` property has been deprecated and renamed
+  to ``pennylane.operation.Operator.is_verified_hermitian`` as it better reflects the functionality of this property.
+  The deprecated access through ``is_hermitian`` will be removed in PennyLane v0.45.
+  Alternatively, consider using the ``pennylane.is_hermitian`` function instead as it provides a more reliable check for hermiticity.
   Please be aware that it comes with a higher computational cost.
   [(#8494)](https://github.com/PennyLaneAI/pennylane/pull/8494)
-  
+
 * Access to the follow functions and classes from the ``pennylane.resources`` module are deprecated. Instead, these functions must be imported from the ``pennylane.estimator`` module.
   [(#8484)](https://github.com/PennyLaneAI/pennylane/pull/8484)
 
@@ -237,8 +237,13 @@
 
 <h3>Documentation 📝</h3>
 
+* The documentation of ``qml.transforms.rz_phase_gradient`` has been updated with respect to the
+  sign convention of phase gradient states, how it prepares the phase gradient state in the code
+  example, and the verification of the code example result.
+
 * The code example in the documentation for ``qml.decomposition.register_resources`` has been
   updated to adhere to renamed keyword arguments and default behaviour of ``max_work_wires``.
+  [(#8536)](https://github.com/PennyLaneAI/pennylane/pull/8536)
 
 * The docstring for ``qml.device`` has been updated to include a section on custom decompositions,
   and a warning about the removal of the ``custom_decomps`` kwarg in v0.44. Additionally, the page
