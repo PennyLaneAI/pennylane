@@ -270,13 +270,12 @@ def _simplified_two_design_decomposition(initial_layer_weights, weights, wires):
         if has_jax and capture.enabled():
             even_wires = jnp.array(even_wires)
 
-        all_wire_pairs =  (
-            [wires[i : i + 2] for i in range(0, len(wires) - 1, 2)]
-            +  [wires[i : i + 2] for i in range(1, len(wires) - 1, 2)]
-        )
+        all_wire_pairs = [wires[i : i + 2] for i in range(0, len(wires) - 1, 2)] + [
+            wires[i : i + 2] for i in range(1, len(wires) - 1, 2)
+        ]
         if has_jax and capture.enabled():
             all_wire_pairs = jnp.array(all_wire_pairs)
-            
+
         @for_loop(len(all_wire_pairs))
         def block_loop(i):
             wire_pair = all_wire_pairs[i]
