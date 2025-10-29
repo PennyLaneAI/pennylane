@@ -710,7 +710,7 @@ class TestQNodeIntegration:
         assert qml.math.allclose(res, expected_result)
 
 
-expected_grad_param_0 = [
+expected_jacobian_param_0 = [
     0.125,
     0.125,
     0.125,
@@ -722,7 +722,7 @@ expected_grad_param_0 = [
     0,
 ]
 
-expected_grad_param_1 = [
+expected_jacobian_param_1 = [
     -0.125,
     -0.125,
     -0.125,
@@ -783,8 +783,8 @@ class TestDifferentiability:
         params = pnp.array(pnp.pi / 4), pnp.array(3 * pnp.pi / 4)
         grad1, grad2 = qml.jacobian(cost)(*params)
 
-        expected_grad_1 = expected_grad_param_0
-        expected_grad_2 = expected_grad_param_1
+        expected_grad_1 = expected_jacobian_param_0
+        expected_grad_2 = expected_jacobian_param_1
 
         assert qml.math.allclose(grad1, expected_grad_1)
         assert qml.math.allclose(grad2, expected_grad_2)
@@ -847,8 +847,8 @@ class TestDifferentiability:
         params = jnp.array(jnp.pi / 4), jnp.array(3 * jnp.pi / 4)
         grad1, grad2 = jax.jacobian(cost, argnums=[0, 1])(*params)
 
-        expected_grad_1 = expected_grad_param_0
-        expected_grad_2 = expected_grad_param_1
+        expected_grad_1 = expected_jacobian_param_0
+        expected_grad_2 = expected_jacobian_param_1
 
         assert qml.math.allclose(grad1, expected_grad_1)
         assert qml.math.allclose(grad2, expected_grad_2)
@@ -891,8 +891,8 @@ class TestDifferentiability:
         params = torch.tensor(np.pi / 4), torch.tensor(3 * np.pi / 4)
         grad1, grad2 = jacobian(cost, params)
 
-        expected_grad_1 = expected_grad_param_0
-        expected_grad_2 = expected_grad_param_1
+        expected_grad_1 = expected_jacobian_param_0
+        expected_grad_2 = expected_jacobian_param_1
 
         assert qml.math.allclose(grad1, expected_grad_1, atol=1e-7)
         assert qml.math.allclose(grad2, expected_grad_2, atol=1e-7)
@@ -931,8 +931,8 @@ class TestDifferentiability:
 
         grad1, grad2 = tape.jacobian(cost, params)
 
-        expected_grad_1 = expected_grad_param_0
-        expected_grad_2 = expected_grad_param_1
+        expected_grad_1 = expected_jacobian_param_0
+        expected_grad_2 = expected_jacobian_param_1
 
         assert qml.math.allclose(grad1, expected_grad_1, atol=1e-7)
         assert qml.math.allclose(grad2, expected_grad_2, atol=1e-7)

@@ -20,7 +20,7 @@ import pennylane as qml
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
 
-from pennylane.capture.primitives import grad_prim, qnode_prim
+from pennylane.capture.primitives import jacobian_prim, qnode_prim
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 from pennylane.transforms.defer_measurements import (
     DeferMeasurementsInterpreter,
@@ -713,7 +713,7 @@ class TestDeferMeasurementsHigherOrderPrimitives:
         x = 1.5
         transformed_fn = DeferMeasurementsInterpreter(num_wires=4)(diff_fn(circuit))
         jaxpr = jax.make_jaxpr(transformed_fn)(x)
-        assert jaxpr.eqns[0].primitive == grad_prim
+        assert jaxpr.eqns[0].primitive == jacobian_prim
         inner_jaxpr = jaxpr.eqns[0].params["jaxpr"]
         assert inner_jaxpr.eqns[0].primitive == qnode_prim
         qfunc_jaxpr = inner_jaxpr.eqns[0].params["qfunc_jaxpr"]

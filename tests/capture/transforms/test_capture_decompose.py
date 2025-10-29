@@ -27,7 +27,7 @@ from pennylane.capture.primitives import (
     cond_prim,
     ctrl_transform_prim,
     for_loop_prim,
-    grad_prim,
+    jacobian_prim,
     qnode_prim,
     while_loop_prim,
 )
@@ -458,7 +458,7 @@ class TestDecomposeInterpreter:
 
         jaxpr = jax.make_jaxpr(f)(0.5, 1.5, 2.5)
 
-        assert jaxpr.eqns[0].primitive == grad_prim
+        assert jaxpr.eqns[0].primitive == jacobian_prim
         grad_jaxpr = jaxpr.eqns[0].params["jaxpr"]
         qfunc_jaxpr = grad_jaxpr.eqns[0].params["qfunc_jaxpr"]
         assert qfunc_jaxpr.eqns[0].primitive == qml.RZ._primitive

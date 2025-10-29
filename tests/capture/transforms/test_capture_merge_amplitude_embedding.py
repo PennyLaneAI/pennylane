@@ -34,7 +34,7 @@ from pennylane.capture.primitives import (
     cond_prim,
     ctrl_transform_prim,
     for_loop_prim,
-    grad_prim,
+    jacobian_prim,
     measure_prim,
     qnode_prim,
     while_loop_prim,
@@ -820,8 +820,8 @@ class TestHigherOrderPrimitiveIntegration:
         assert qfunc_jaxpr.eqns[2].primitive == qml.PauliZ._primitive
         assert qfunc_jaxpr.eqns[3].primitive == qml.measurements.ExpectationMP._obs_primitive
 
-    def test_grad_prim(self):
-        """Test that the transform works correctly when applied with grad_prim."""
+    def test_jacobian_prim(self):
+        """Test that the transform works correctly when applied with jacobian_prim."""
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -835,7 +835,7 @@ class TestHigherOrderPrimitiveIntegration:
 
         f = qml.grad(circuit)
         jaxpr = jax.make_jaxpr(f)(0, 1)
-        assert jaxpr.eqns[0].primitive == grad_prim
+        assert jaxpr.eqns[0].primitive == jacobian_prim
         inner_jaxpr = _find_eq_with_name(jaxpr, "jaxpr")
         qfunc_jaxpr = _find_eq_with_name(inner_jaxpr, "qfunc_jaxpr")
         # Get all operators in qfunc

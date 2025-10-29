@@ -23,7 +23,7 @@ pytestmark = [pytest.mark.jax, pytest.mark.capture]
 jax = pytest.importorskip("jax")
 
 from pennylane.capture.primitives import (  # pylint: disable=wrong-import-position
-    grad_prim,
+    jacobian_prim,
     qnode_prim,
 )
 
@@ -38,7 +38,7 @@ def test_error_with_non_scalar_function():
 
 def diff_eqn_assertions(eqn, scalar_out, argnums=None, n_consts=0, fn=None):
     argnums = [0] if argnums is None else argnums
-    assert eqn.primitive == grad_prim
+    assert eqn.primitive == jacobian_prim
     assert set(eqn.params.keys()) == {
         "argnums",
         "n_consts",
@@ -152,7 +152,7 @@ class TestGrad:
         assert [var.aval for var in grad_eqn.outvars] == jaxpr_2.out_avals
         diff_eqn_assertions(grad_eqn, scalar_out=True, fn=qml_func_1)
         assert len(grad_eqn.params["jaxpr"].eqns) == 1  # inner grad equation
-        assert grad_eqn.params["jaxpr"].eqns[0].primitive == grad_prim
+        assert grad_eqn.params["jaxpr"].eqns[0].primitive == jacobian_prim
 
         # 3rd order
         qml_func_3 = qml.grad(qml_func_2)
@@ -166,7 +166,7 @@ class TestGrad:
         assert [var.aval for var in grad_eqn.outvars] == jaxpr_3.out_avals
         diff_eqn_assertions(grad_eqn, scalar_out=True, fn=qml_func_2)
         assert len(grad_eqn.params["jaxpr"].eqns) == 1  # inner grad equation
-        assert grad_eqn.params["jaxpr"].eqns[0].primitive == grad_prim
+        assert grad_eqn.params["jaxpr"].eqns[0].primitive == jacobian_prim
 
         # jax v0.5.3 broke this
         # expected_2 = 6 * jnp.sin(x) * jnp.cos(x) ** 2 - 3 * jnp.sin(x) ** 3
@@ -244,7 +244,7 @@ class TestGrad:
         assert qml.math.allclose(manual_res, expected_res)
 
     @pytest.mark.parametrize("argnums", ([0, 1], [0], [1]))
-    def test_grad_pytree_input(self, argnums):
+    def test_jacobian_pytree_input(self, argnums):
         """Test that the qml.grad primitive can be captured with pytree inputs."""
 
         fdtype = jax.numpy.float64 if jax.config.jax_enable_x64 else jax.numpy.float32
@@ -356,7 +356,7 @@ class TestGrad:
 
         jaxpr = jax.make_jaxpr(w)(2)
         grad_eqn = jaxpr.eqns[2] if same_dynamic_shape else jaxpr.eqns[3]
-        assert grad_eqn.primitive == grad_prim
+        assert grad_eqn.primitive == jacobian_prim
 
         shift = 1 if same_dynamic_shape else 2
         assert grad_eqn.params["argnums"] == [shift, shift + 1]
@@ -489,7 +489,7 @@ class TestJacobian:
         assert [var.aval for var in jac_eqn.outvars] == jaxpr_2.out_avals
         diff_eqn_assertions(jac_eqn, scalar_out=False, fn=qml_func_1)
         assert len(jac_eqn.params["jaxpr"].eqns) == 1  # inner jacobian equation
-        assert jac_eqn.params["jaxpr"].eqns[0].primitive == grad_prim
+        assert jac_eqn.params["jaxpr"].eqns[0].primitive == jacobian_prim
 
         # broken by jax 0.5.3
         # hyperdiag = qml.numpy.zeros((4, 4, 4))
@@ -644,7 +644,7 @@ class TestJacobian:
 
         jaxpr = jax.make_jaxpr(w)(2)
         grad_eqn = jaxpr.eqns[2] if same_dynamic_shape else jaxpr.eqns[3]
-        assert grad_eqn.primitive == grad_prim
+        assert grad_eqn.primitive == jacobian_prim
 
         shift = 1 if same_dynamic_shape else 2
         assert grad_eqn.params["argnums"] == [shift, shift + 1]

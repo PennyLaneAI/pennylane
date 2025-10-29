@@ -155,7 +155,7 @@
 
 <h3>Internal changes ⚙️</h3>
 
-* The `grad` and `jacobian` primitives now store the function under `fn`. There is also now a single `grad_p`
+* The `grad` and `jacobian` primitives now store the function under `fn`. There is also now a single `jacobian_p`
   primitive for use in program capture.
   [(#8357)](https://github.com/PennyLaneAI/pennylane/pull/8357)
 

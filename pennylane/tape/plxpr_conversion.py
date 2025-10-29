@@ -27,7 +27,7 @@ from pennylane.capture.primitives import (
     adjoint_transform_prim,
     cond_prim,
     ctrl_transform_prim,
-    grad_prim,
+    jacobian_prim,
     measure_prim,
     pauli_measure_prim,
     qnode_prim,
@@ -183,8 +183,8 @@ def _(self, *wires, pauli_word="", postselect=None):
     return m0
 
 
-@CollectOpsandMeas.register_primitive(grad_prim)
-def _grad_primitive(self, *invals, jaxpr, n_consts, **params):
+@CollectOpsandMeas.register_primitive(jacobian_prim)
+def _jacobian_primitive(self, *invals, jaxpr, n_consts, **params):
     raise NotImplementedError("CollectOpsandMeas cannot handle the grad primitive")
 
 

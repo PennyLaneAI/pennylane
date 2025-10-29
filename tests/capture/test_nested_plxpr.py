@@ -157,7 +157,7 @@ class TestAdjointQfunc:
 
     def test_adjoint_grad(self):
         """Test that adjoint differentiated with grad can be captured."""
-        from pennylane.capture.primitives import grad_prim, qnode_prim
+        from pennylane.capture.primitives import jacobian_prim, qnode_prim
 
         @qml.grad
         @qml.qnode(qml.device("default.qubit", wires=1))
@@ -169,7 +169,7 @@ class TestAdjointQfunc:
 
         assert len(plxpr.eqns) == 1
         grad_eqn = plxpr.eqns[0]
-        assert grad_eqn.primitive == grad_prim
+        assert grad_eqn.primitive == jacobian_prim
         assert set(grad_eqn.params.keys()) == {
             "argnums",
             "n_consts",
@@ -425,7 +425,7 @@ class TestCtrlQfunc:
 
     def test_ctrl_grad(self):
         """Test that ctrl differentiated with grad can be captured."""
-        from pennylane.capture.primitives import grad_prim, qnode_prim
+        from pennylane.capture.primitives import jacobian_prim, qnode_prim
 
         @qml.grad
         @qml.qnode(qml.device("default.qubit", wires=2))
@@ -438,7 +438,7 @@ class TestCtrlQfunc:
 
         assert len(plxpr.eqns) == 1
         grad_eqn = plxpr.eqns[0]
-        assert grad_eqn.primitive == grad_prim
+        assert grad_eqn.primitive == jacobian_prim
         assert set(grad_eqn.params.keys()) == {
             "argnums",
             "n_consts",

@@ -41,18 +41,18 @@ except ImportError:
 
 # pylint: disable=unused-argument, too-many-arguments
 @lru_cache
-def _get_grad_prim():
+def _get_jacobian_prim():
     """Create a primitive for gradient computations.
     This primitive is used when capturing ``qml.grad``.
     """
     if not has_jax:  # pragma: no cover
         return None
 
-    grad_prim = capture.QmlPrimitive("grad")
-    grad_prim.multiple_results = True
-    grad_prim.prim_type = "higher_order"
+    jacobian_prim = capture.QmlPrimitive("grad")
+    jacobian_prim.multiple_results = True
+    jacobian_prim.prim_type = "higher_order"
 
-    @grad_prim.def_impl
+    @jacobian_prim.def_impl
     def _grad_impl(*args, argnums, jaxpr, n_consts, method, h, scalar_out, fn):
         if method != "auto":  # pragma: no cover
             raise ValueError(f"Invalid values '{method=}' without QJIT.")
@@ -70,7 +70,7 @@ def _get_grad_prim():
         return jax.tree_util.tree_leaves(res)
 
     # pylint: disable=unused-argument
-    @grad_prim.def_abstract_eval
+    @jacobian_prim.def_abstract_eval
     def _grad_abstract(*args, argnums, jaxpr, n_consts, method, h, scalar_out, fn):
         if scalar_out and (len(jaxpr.outvars) != 1 or jaxpr.outvars[0].aval.shape != ()):
             raise TypeError("Grad only applies to scalar-output functions. Try jacobian.")
@@ -82,7 +82,7 @@ def _get_grad_prim():
             for in_aval in in_avals
         ]
 
-    return grad_prim
+    return jacobian_prim
 
 
 def _shape(shape, dtype, weak_type=False):
@@ -153,7 +153,7 @@ def _capture_diff(func, *, argnums=None, scalar_out: bool = False, method=None, 
             "h": h,
             "scalar_out": scalar_out,
         }
-        out_flat = _get_grad_prim().bind(
+        out_flat = _get_jacobian_prim().bind(
             *jaxpr.consts,
             *abstract_shapes,
             *flat_args,

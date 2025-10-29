@@ -25,7 +25,7 @@ jax = pytest.importorskip("jax")
 from pennylane.capture.primitives import (
     cond_prim,
     for_loop_prim,
-    grad_prim,
+    jacobian_prim,
     measure_prim,
     while_loop_prim,
 )
@@ -576,7 +576,7 @@ class TestSingleQubitFusionHigherOrderPrimitives:
 
         jaxpr = jax.make_jaxpr(grad_fn(circuit))(input)
         assert len(jaxpr.eqns) == 1
-        assert jaxpr.eqns[0].primitive == grad_prim
+        assert jaxpr.eqns[0].primitive == jacobian_prim
         assert jaxpr.eqns[0].params["scalar_out"] == (grad_fn == qml.grad)
 
         # pylint: disable=inconsistent-return-statements

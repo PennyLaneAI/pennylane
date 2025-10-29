@@ -437,5 +437,5 @@ class TestAdjointJacobian:
         circ = qml.QNode(circuit, dev, diff_method="adjoint")
         grad_adjoint = qml.jacobian(circ)(par)
         circ = qml.QNode(circuit, dev, diff_method="parameter-shift")
-        grad_psr = qml.jacobian(circ)(par)
-        assert np.allclose(grad_adjoint, grad_psr)
+        jacobian_psr = qml.jacobian(circ)(par)
+        assert np.allclose(grad_adjoint, jacobian_psr)
