@@ -256,7 +256,7 @@ class TestCollectOpsandMeas:
         grad_fn = fn(g)
         with pytest.raises(
             NotImplementedError,
-            match="CollectOpsandMeas cannot handle the grad primitive",
+            match="CollectOpsandMeas cannot handle the jacobian primitive",
         ):
             collector(grad_fn)(0.5)
 
