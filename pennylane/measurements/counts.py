@@ -22,11 +22,11 @@ import numpy as np
 from pennylane import math
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.operation import Operator
+from pennylane.ops import MeasurementValue
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
 from .capture_measurements import _get_abstract_measurement
-from .measurement_value import MeasurementValue
 from .measurements import SampleMeasurement
 from .process_samples import process_raw_samples
 

@@ -14,7 +14,6 @@
 """
 Contains templates for Suzuki-Trotter approximation based subroutines.
 """
-
 import copy
 from collections import defaultdict
 
@@ -113,7 +112,7 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
     Raises:
         TypeError: The ``hamiltonian`` is not of type :class:`~.Sum`.
         ValueError: The ``hamiltonian`` has only one term or no terms.
-        ValueError: One or more of the terms in ``hamiltonian`` are not Hermitian
+        ValueError: One or more of the terms in ``hamiltonian`` are not verified to be Hermitian. 
             (only for ``check_hermitian=True``)
         ValueError: The ``order`` is not one or a positive even integer.
 
@@ -286,12 +285,10 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
                 f"The given operator must be a PennyLane ~.Sum or ~.SProd, got {hamiltonian}"
             )
 
-        if check_hermitian:
-            for op in hamiltonian.operands:
-                if not op.is_hermitian:
-                    raise ValueError(
-                        "One or more of the terms in the Hamiltonian may not be Hermitian"
-                    )
+        if check_hermitian and not all(op.is_verified_hermitian for op in hamiltonian.operands):
+            raise ValueError(
+                "One or more of the terms in the Hamiltonian are not verified to be Hermitian. Please consider verifying the Hamiltonian manually using the more exhaustive 'qml.is_hermitian' check and provide `check_hermitian=False` to the `TrotterProduct` constructor."
+            )
 
         self._hyperparameters = {
             "n": n,

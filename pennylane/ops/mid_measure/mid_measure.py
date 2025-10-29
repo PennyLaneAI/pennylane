@@ -27,9 +27,7 @@ from pennylane.wires import Wires
 from .measurement_value import MeasurementValue
 
 
-def _measure_impl(
-    wires: Hashable | Wires, reset: bool | None = False, postselect: int | None = None
-):
+def _measure_impl(wires: Hashable | Wires, reset: bool = False, postselect: int | None = None):
     """Concrete implementation of qml.measure"""
     wires = Wires(wires)
     if len(wires) > 1:
@@ -39,7 +37,7 @@ def _measure_impl(
 
     # Create a UUID and a map between MP and MV to support serialization
     measurement_id = str(uuid.uuid4())
-    mp = MidMeasureMP(wires=wires, reset=reset, postselect=postselect, id=measurement_id)
+    mp = MidMeasure(wires=wires, reset=reset, postselect=postselect, id=measurement_id)
     return MeasurementValue([mp])
 
 
@@ -98,27 +96,7 @@ def get_mcm_predicates(conditions: tuple[MeasurementValue]) -> list[MeasurementV
     return new_conds
 
 
-def find_post_processed_mcms(circuit):
-    """Return the subset of mid-circuit measurements which are required for post-processing.
-
-    This includes any mid-circuit measurement that is post-selected or the object of a terminal
-    measurement.
-    """
-    post_processed_mcms = {
-        op
-        for op in circuit.operations
-        if isinstance(op, MidMeasureMP) and op.postselect is not None
-    }
-    for m in circuit.measurements:
-        if isinstance(m.mv, list):
-            for mv in m.mv:
-                post_processed_mcms = post_processed_mcms | set(mv.measurements)
-        elif m.mv is not None:
-            post_processed_mcms = post_processed_mcms | set(m.mv.measurements)
-    return post_processed_mcms
-
-
-class MidMeasureMP(Operator):
+class MidMeasure(Operator):
     """Mid-circuit measurement.
 
     This class additionally stores information about unknown measurement outcomes in the qubit model.
@@ -136,6 +114,9 @@ class MidMeasureMP(Operator):
         id (str): Custom label given to a measurement instance.
     """
 
+    def __repr__(self):
+        return f"MidMeasure(wires={list(self.wires)}, postselect={self.postselect}, reset={self.reset})"
+
     num_wires = 1
     num_params = 0
     batch_size = None
@@ -143,15 +124,16 @@ class MidMeasureMP(Operator):
     def __init__(
         self,
         wires: Wires | None = None,
-        reset: bool | None = False,
+        reset: bool = False,
         postselect: int | None = None,
         id: str | None = None,
     ):
         super().__init__(wires=Wires(wires), id=id)
         self._hyperparameters = {"reset": reset, "postselect": postselect, "id": id}
+        self._name = "MidMeasureMP"
 
     @property
-    def reset(self) -> bool | None:
+    def reset(self) -> bool:
         """Whether to reset the wire into the zero state after the measurement."""
         return self.hyperparameters["reset"]
 
@@ -202,6 +184,20 @@ def measure(
     r"""Perform a mid-circuit measurement in the computational basis on the
     supplied qubit.
 
+    Args:
+        wires (Wires): The wire to measure.
+        reset (bool): Whether to reset the wire to the :math:`|0 \rangle`
+            state after measurement.
+        postselect (Optional[int]): Which basis state to postselect after a mid-circuit
+            measurement. None by default. If postselection is requested, only the post-measurement
+            state that is used for postselection will be considered in the remaining circuit.
+
+    Returns:
+        MeasurementValue: A reference to the future result of the mid circuit measurement
+
+    Raises:
+        QuantumFunctionError: if multiple wires were specified
+
     Computational basis measurements are performed using the 0, 1 convention
     rather than the ±1 convention.
     Measurement outcomes can be used to conditionally apply operations, and measurement
@@ -212,7 +208,7 @@ def measure(
 
     **Example:**
 
-    .. code-block:: python3
+    .. code-block:: python
 
         dev = qml.device("default.qubit", wires=3)
 
@@ -227,14 +223,14 @@ def measure(
 
     Executing this QNode:
 
-    >>> pars = np.array([0.643, 0.246], requires_grad=True)
+    >>> pars = np.array([0.643, 0.246])
     >>> func(*pars)
-    tensor([0.90165331, 0.09834669], requires_grad=True)
+    array([0.901..., 0.0983...])
 
     Wires can be reused after measurement. Moreover, measured wires can be reset
     to the :math:`|0 \rangle` state by setting ``reset=True``.
 
-    .. code-block:: python3
+    .. code-block:: python
 
         dev = qml.device("default.qubit", wires=3)
 
@@ -247,7 +243,7 @@ def measure(
     Executing this QNode:
 
     >>> func()
-    tensor([1., 0.], requires_grad=True)
+    array([1., 0.])
 
     Mid-circuit measurements can be manipulated using the following arithmetic operators:
     ``+``, ``-``, ``*``, ``/``, ``~`` (not), ``&`` (and), ``|`` (or), ``==``, ``<=``,
@@ -268,9 +264,9 @@ def measure(
         Computational basis measurements are performed using the 0, 1 convention rather than the ±1 convention.
         So, for example, ``expval(qml.measure(0))`` and ``expval(qml.Z(0))`` will give different answers.
 
-    .. code-block:: python3
+    .. code-block:: python
 
-        dev = qml.device("default.qubit")
+        dev = qml.device("default.qubit", seed=1234)
 
         @qml.qnode(dev)
         def circuit(x, y):
@@ -281,22 +277,8 @@ def measure(
                 qml.sample(m0), qml.expval(m0), qml.var(m0), qml.probs(op=m0), qml.counts(op=m0),
             )
 
-    >>> circuit(1.0, 2.0, shots=1000)
-    (array([0, 1, 1, ..., 1, 1, 1])), 0.702, 0.20919600000000002, array([0.298, 0.702]), {0: 298, 1: 702})
-
-    Args:
-        wires (Wires): The wire to measure.
-        reset (Optional[bool]): Whether to reset the wire to the :math:`|0 \rangle`
-            state after measurement.
-        postselect (Optional[int]): Which basis state to postselect after a mid-circuit
-            measurement. None by default. If postselection is requested, only the post-measurement
-            state that is used for postselection will be considered in the remaining circuit.
-
-    Returns:
-        MidMeasureMP: measurement process instance
-
-    Raises:
-        QuantumFunctionError: if multiple wires were specified
+    >>> qml.set_shots(circuit, shots=1000)(1.0, 2.0)
+        (array([0, 1, 0, ... 1, 0, 1]), np.float64(0.713), np.float64(0.2046...), array([0.287, 0.713]), {0.0: np.int64(287), 1.0: np.int64(713)})
 
     .. details::
         :title: Postselection
@@ -305,9 +287,9 @@ def measure(
         argument. For example, specifying ``postselect=1`` on wire 0 would be equivalent to projecting
         the state vector onto the :math:`|1\rangle` state on wire 0:
 
-        .. code-block:: python3
+        .. code-block:: python
 
-            dev = qml.device("default.qubit")
+            dev = qml.device("default.qubit", seed=1234)
 
             @qml.qnode(dev)
             def func(x):
@@ -321,9 +303,11 @@ def measure(
 
         >>> qml.set_shots(func, 10)(np.pi / 2)
         array([[1],
-        [1],
-        [1],
-        [1]])
+            [1],
+            [1],
+            [1],
+            [1],
+            [1]])
 
         Note that less than 10 samples are returned. This is because samples that do not meet the postselection criteria are
         thrown away.
@@ -331,7 +315,7 @@ def measure(
         If postselection is requested on a state with zero probability of being measured, the result may contain ``NaN``
         or ``Inf`` values:
 
-        .. code-block:: python3
+        .. code-block:: python
 
             dev = qml.device("default.qubit")
 
@@ -343,22 +327,22 @@ def measure(
                 return qml.probs(wires=1)
 
         >>> func(0.0)
-        tensor([nan, nan], requires_grad=True)
+        array([nan, nan])
 
-        In the case of ``qml.sample``, an empty array will be returned:
+        In the case of ``qml.sample`` and `mcm_method="deferred"`, an empty array will be returned:
 
-        .. code-block:: python3
+        .. code-block:: python
 
             dev = qml.device("default.qubit")
 
-            @qml.qnode(dev)
+            @qml.qnode(dev, mcm_method="deferred")
             def func(x):
                 qml.RX(x, wires=0)
                 m0 = qml.measure(0, postselect=1)
                 qml.cond(m0, qml.X)(wires=1)
                 return qml.sample(wires=[0, 1])
 
-        >>> func(0.0, shots=[10, 10])
+        >>> qml.set_shots(func, shots=[10, 10])(0.0)
         (array([], shape=(0, 2), dtype=int64), array([], shape=(0, 2), dtype=int64))
 
         .. note::
