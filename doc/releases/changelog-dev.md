@@ -55,6 +55,10 @@
 
 * Wires can be specified via `range` with program capture and autograph.
 
+* A new decomposition has been added to :class:`pennylane.Toffoli`. This decomposition uses one
+  work wire and :class:`pennylane.TemporaryAND` operators to reduce the resources needed. 
+  [(#8549)](https://github.com/PennyLaneAI/pennylane/pull/8549)
+
 <h3>Breaking changes 💔</h3>
 
 * Providing ``num_steps`` to :func:`pennylane.evolve`, :func:`pennylane.exp`, :class:`pennylane.ops.Evolution`,
