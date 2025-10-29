@@ -72,7 +72,13 @@ class TestGrad:
         """Test that an error is raised for an unsupported grad_fn."""
 
         with pytest.raises(ValueError, match="Got unrecognized method"):
-            grad_fn(lambda x: x**2, method="param-shift")(0.5)
+            jax.make_jaxpr(grad_fn(lambda x: x**2, method="param-shift"))(0.5)
+
+    @pytest.mark.parametrize("grad_fn", (qml.grad, qml.jacobian))
+    def test_error_method_execution(self, grad_fn):
+        """Test that non-auto methods raise an error during plxpr execution."""
+        with pytest.raises(ValueError, match="Invalid value"):
+            grad_fn(lambda x: x**2, method="fd")(0.5)
 
     @pytest.mark.parametrize("argnums", ([0, 1], [0], [1], 0, 1))
     def test_classical_grad(self, argnums):
