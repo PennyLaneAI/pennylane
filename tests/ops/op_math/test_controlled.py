@@ -363,10 +363,10 @@ class TestControlledProperties:
 
         class DummyOp(Operator):
             num_wires = 1
-            is_hermitian = value
+            is_verified_hermitian = value
 
         op = Controlled(DummyOp(1), 0)
-        assert op.is_hermitian is value
+        assert op.is_verified_hermitian is value
 
     def test_map_wires(self):
         """Test that we can get and set private wires."""
