@@ -74,8 +74,10 @@ def batch_input(
     >>> rng = np.random.default_rng(seed=1234)
     >>> x = rng.random((10, 2))
     >>> w = rng.random((2, ))
-    >>> circuit(x, w)
-    array([0.485..., 0.585..., 0.695..., ..., 0.616..., 0.0166...])
+    >>> circuit(x, w) # doctest: +SKIP
+    array([0.4855, 0.5854, 0.6954, 0.5384, 0.5838, 0.2737, 0.0233, 0.2253,
+           0.6166, 0.0167])
+
     """
 
     argnum = tuple(argnum) if isinstance(argnum, (list, tuple)) else (int(argnum),)

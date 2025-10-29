@@ -110,7 +110,7 @@ def batch_partial(qnode, all_operations=False, preprocess=None, **partial_kwargs
     >>> batch_size = 4
     >>> y0 = qml.numpy.linspace(0.5, 2, batch_size)
     >>> batched_lambda_circuit(y0)
-    tensor([0.916..., 0.873... , 0.821..., 0.761...], requires_grad=True)
+    tensor([0.916..., 0.873..., 0.821..., 0.761...], requires_grad=True)
 
     Jacobians can be computed in this scenario as well:
 

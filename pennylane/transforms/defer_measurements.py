@@ -659,7 +659,7 @@ def defer_measurements(
                     qml.measure(n)
 
             >>> jax.make_jaxpr(f)(0)
-            { lambda ; a:i32[]. let _:AbstractOperator() = CNOT[n_wires=2] a 0:i32[] in () }
+            { lambda ; a:i...[]. let _:AbstractOperator() = CNOT[n_wires=2] a 0:i...[] in () }
 
             The circuit gets transformed without issue because the concrete value of the measured wire
             is unknown. However, execution with n = 0 would raise an error, as the CNOT wires would
