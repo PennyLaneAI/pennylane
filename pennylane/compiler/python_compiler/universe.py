@@ -13,33 +13,42 @@
 # limitations under the License.
 """xDSL universe for containing all dialects and passes."""
 
-from xdsl.passes import ModulePass
-from xdsl.universe import Universe
+xdsl_available = True
 
-from . import dialects, transforms
+try:
+    from xdsl.passes import ModulePass
+    from xdsl.universe import Universe
 
-shared_dialects = ("stablehlo", "transform")
+    from . import dialects, transforms
+except (ImportError, ModuleNotFoundError):
+    xdsl_available = False
 
-# Create a map from dialect names to dialect classes. Dialects that are already
-# provided by xDSL cannot be loaded into the multiverse, so we don't add them to
-# our universe.
-names_to_dialects = {
-    d.name: d
-    for name in dialects.__all__
-    if (d := getattr(dialects, name)).name not in shared_dialects
-}
+XDSL_UNIVERSE = None
 
-# Create a map from pass names to their respective ModulePass. The transforms module
-# contains PassDispatcher instances as well as ModulePasses. We only want to collect
-# the ModulePasses. We cannot use issubclass with instances, which is why we first
-# check if isinstance(transform, type).
-names_to_passes = {
-    t.name: t
-    for name in transforms.__all__
-    if isinstance((t := getattr(transforms, name)), type) and issubclass(t, ModulePass)
-}
+if xdsl_available:
 
-# The Universe is used to expose custom dialects and transforms to xDSL. It is
-# specified as an entry point in PennyLane's pyproject.toml file, which makes
-# it available to look up by xDSL for tools such as xdsl-opt, xdsl-gui, etc.
-XDSL_UNIVERSE = Universe(all_dialects=names_to_dialects, all_passes=names_to_passes)
+    shared_dialects = ("stablehlo", "transform")
+
+    # Create a map from dialect names to dialect classes. Dialects that are already
+    # provided by xDSL cannot be loaded into the multiverse, so we don't add them to
+    # our universe.
+    names_to_dialects = {
+        d.name: d
+        for name in dialects.__all__
+        if (d := getattr(dialects, name)).name not in shared_dialects
+    }
+
+    # Create a map from pass names to their respective ModulePass. The transforms module
+    # contains PassDispatcher instances as well as ModulePasses. We only want to collect
+    # the ModulePasses. We cannot use issubclass with instances, which is why we first
+    # check if isinstance(transform, type).
+    names_to_passes = {
+        t.name: t
+        for name in transforms.__all__
+        if isinstance((t := getattr(transforms, name)), type) and issubclass(t, ModulePass)
+    }
+
+    # The Universe is used to expose custom dialects and transforms to xDSL. It is
+    # specified as an entry point in PennyLane's pyproject.toml file, which makes
+    # it available to look up by xDSL for tools such as xdsl-opt, xdsl-gui, etc.
+    XDSL_UNIVERSE = Universe(all_dialects=names_to_dialects, all_passes=names_to_passes)
