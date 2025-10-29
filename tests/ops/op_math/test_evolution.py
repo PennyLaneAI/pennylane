@@ -169,10 +169,10 @@ class TestEvolution:
             Evolution(qml.PauliX(0), -0.5 * x)
             return qml.expval(qml.PauliZ(0))
 
-        jacobian_param_shift = qml.grad(circ_param_shift)(x)
+        grad_param_shift = qml.grad(circ_param_shift)(x)
         grad = jax.grad(circ)(x)
 
-        assert qml.math.allclose(grad, jacobian_param_shift)
+        assert qml.math.allclose(grad, grad_param_shift)
 
     def test_generator_warns_if_not_hermitian(self):
         base = qml.s_prod(1j, qml.Identity(0))

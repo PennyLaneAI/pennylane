@@ -1569,13 +1569,13 @@ class TestStochPulseGradIntegration:
         qnode_backprop = qml.QNode(ansatz, dev, interface="jax")
 
         with qml.Tracker(dev) as tracker:
-            jacobian_pulse_grad = jax.grad(qnode_pulse_grad)(params)
+            grad_pulse_grad = jax.grad(qnode_pulse_grad)(params)
         assert tracker.totals["executions"] == 1 + 2 * 3 * num_split_times
         grad_backprop = jax.grad(qnode_backprop)(params)
         # Values are close to zero so we need to use `atol` instead of `rtol`
         # to avoid numerical issues
         assert all(
-            qml.math.allclose(r, e, atol=5e-3) for r, e in zip(jacobian_pulse_grad, grad_backprop)
+            qml.math.allclose(r, e, atol=5e-3) for r, e in zip(grad_pulse_grad, grad_backprop)
         )
         jax.clear_caches()
 

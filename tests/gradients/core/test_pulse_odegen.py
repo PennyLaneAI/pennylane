@@ -1431,12 +1431,12 @@ class TestPulseOdegenIntegration:
         qnode_backprop = qml.QNode(ansatz, dev, interface="jax")
 
         with qml.Tracker(dev) as tracker:
-            jacobian_pulse_grad = jax.grad(qnode_pulse_grad)(params)
+            grad_pulse_grad = jax.grad(qnode_pulse_grad)(params)
         assert tracker.totals["executions"] == 1 + 12  # one forward execution, dim(DLA)=6
         grad_backprop = jax.grad(qnode_backprop)(params)
 
         assert all(
-            qml.math.allclose(r, e, atol=1e-7) for r, e in zip(jacobian_pulse_grad, grad_backprop)
+            qml.math.allclose(r, e, atol=1e-7) for r, e in zip(grad_pulse_grad, grad_backprop)
         )
 
     @pytest.mark.parametrize("argnums", [[0, 1], 0, 1])

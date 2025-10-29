@@ -451,7 +451,7 @@ class TestInterfaces:
         assert qml.math.allclose(grads, grads2)
 
     @pytest.mark.autograd
-    def test_autojacobian_parameter_shift(self):
+    def test_autograd_parameter_shift(self):
         """Tests the autograd interface using the parameter-shift method."""
         dev = qml.device("default.qubit", wires=2)
 

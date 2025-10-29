@@ -329,7 +329,7 @@ class TestFable:
             ]
         )
 
-        input_autojacobian_positive_delta = pnp.array(input_positive_delta)
+        input_autograd_positive_delta = pnp.array(input_positive_delta)
         input_autograd_negative_delta = pnp.array(input_negative_delta)
         input_autograd = pnp.array(input_matrix)
 
@@ -340,7 +340,7 @@ class TestFable:
 
         grad_fn = qml.grad(circuit_autograd)
         gradient_numeric = (
-            circuit_autograd(input_autojacobian_positive_delta)
+            circuit_autograd(input_autograd_positive_delta)
             - circuit_autograd(input_autograd_negative_delta)
         ) / (2 * delta)
         gradient_autograd = grad_fn(input_autograd)

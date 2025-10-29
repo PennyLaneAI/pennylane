@@ -194,9 +194,9 @@ class TestPurityIntegration:
             qml.IsingXX(x, wires=[0, 1])
             return qml.purity(wires=wires)
 
-        jacobian_purity = qml.grad(circuit)(param)
+        grad_purity = qml.grad(circuit)(param)
         expected_grad = expected_purity_grad_ising_xx(param) if is_partial else 0
-        assert qml.math.allclose(jacobian_purity, expected_grad, rtol=1e-04, atol=1e-05)
+        assert qml.math.allclose(grad_purity, expected_grad, rtol=1e-04, atol=1e-05)
 
     @pytest.mark.parametrize("device", mix_supported_devices)
     @pytest.mark.parametrize("wires,is_partial", wires_list)
@@ -260,10 +260,10 @@ class TestPurityIntegration:
             qml.IsingXX(x, wires=[0, 1])
             return qml.purity(wires=wires)
 
-        jacobian_purity = jax.grad(circuit)(jax.numpy.array(param))
+        grad_purity = jax.grad(circuit)(jax.numpy.array(param))
         grad_expected_purity = expected_purity_grad_ising_xx(param) if is_partial else 0
 
-        assert qml.math.allclose(jacobian_purity, grad_expected_purity, rtol=1e-04, atol=1e-05)
+        assert qml.math.allclose(grad_purity, grad_expected_purity, rtol=1e-04, atol=1e-05)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("device", devices)
@@ -307,10 +307,10 @@ class TestPurityIntegration:
             qml.IsingXX(x, wires=[0, 1])
             return qml.purity(wires=wires)
 
-        jacobian_purity = jax.jit(jax.grad(circuit))(jax.numpy.array(param))
+        grad_purity = jax.jit(jax.grad(circuit))(jax.numpy.array(param))
         grad_expected_purity = expected_purity_grad_ising_xx(param) if is_partial else 0
 
-        assert qml.math.allclose(jacobian_purity, grad_expected_purity, rtol=1e-04, atol=1e-05)
+        assert qml.math.allclose(grad_purity, grad_expected_purity, rtol=1e-04, atol=1e-05)
 
     @pytest.mark.torch
     @pytest.mark.parametrize("device", devices)
@@ -358,9 +358,9 @@ class TestPurityIntegration:
         param = torch.tensor(param, dtype=torch.float64, requires_grad=True)
         purity = circuit(param)
         purity.backward()  # pylint: disable=no-member
-        jacobian_purity = param.grad
+        grad_purity = param.grad
 
-        assert qml.math.allclose(jacobian_purity, expected_grad, rtol=1e-04, atol=1e-05)
+        assert qml.math.allclose(grad_purity, expected_grad, rtol=1e-04, atol=1e-05)
 
     @pytest.mark.tf
     @pytest.mark.parametrize("device", devices)
@@ -409,9 +409,9 @@ class TestPurityIntegration:
         with tf.GradientTape() as tape:
             purity = circuit(param)
 
-        jacobian_purity = tape.gradient(purity, param)
+        grad_purity = tape.gradient(purity, param)
 
-        assert qml.math.allclose(jacobian_purity, grad_expected_purity, rtol=1e-04, atol=1e-05)
+        assert qml.math.allclose(grad_purity, grad_expected_purity, rtol=1e-04, atol=1e-05)
 
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("param", parameters)

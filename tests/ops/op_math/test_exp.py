@@ -788,7 +788,7 @@ class TestIntegration:
 
     @pytest.mark.xfail  # related to #6333
     @pytest.mark.autograd
-    def test_autojacobian_param_shift_qnode(self):
+    def test_autograd_param_shift_qnode(self):
         """Test execution and gradient with pennylane numpy array."""
 
         phi = qml.numpy.array(1.2)
