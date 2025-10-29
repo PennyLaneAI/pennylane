@@ -21,7 +21,7 @@ try:
 
     from . import dialects, transforms
 except (ImportError, ModuleNotFoundError):
-    xdsl_available = False
+    xdsl_available = False  # pragma: no cover
 
 XDSL_UNIVERSE = None
 
