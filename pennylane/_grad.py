@@ -55,7 +55,7 @@ def _get_jacobian_prim():
     @jacobian_prim.def_impl
     def _grad_impl(*args, argnums, jaxpr, n_consts, method, h, scalar_out, fn):
         if method != "auto":  # pragma: no cover
-            raise ValueError(f"Invalid values '{method=}' without QJIT.")
+            raise ValueError(f"Invalid value '{method=}' without QJIT.")
         consts = args[:n_consts]
         args = args[n_consts:]
 
@@ -263,8 +263,8 @@ class grad:
         self.__signature__ = inspect.signature(self._func).replace(
             return_annotation=inspect.Signature.empty
         )
-        n = getattr(self._func, "__name__", repr(self._func))
-        self.__name__ = f"<grad: {n}>"
+        fn_name = getattr(self._func, "__name__", repr(self._func))
+        self.__name__ = f"<grad: {fn_name}>"
 
     def _get_grad_fn(self, args):
         """Get the required gradient function.
@@ -628,8 +628,8 @@ class jacobian:
         self.__signature__ = inspect.signature(self._func).replace(
             return_annotation=inspect.Signature.empty
         )
-        n = getattr(self._func, "__name__", repr(self._func))
-        self.__name__ = f"<jacobian: {n}>"
+        fn_name = getattr(self._func, "__name__", repr(self._func))
+        self.__name__ = f"<jacobian: {fn_name}>"
 
     def __call__(self, *args, **kwargs):
         if active_jit := compiler.active_compiler():
