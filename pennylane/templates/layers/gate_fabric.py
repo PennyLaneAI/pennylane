@@ -17,12 +17,13 @@ Contains the quantum-number-preserving GateFabric template.
 # pylint: disable=too-many-arguments
 import numpy as np
 
-from pennylane import math, capture
+from pennylane import capture, math
 from pennylane.control_flow import for_loop
-from pennylane.decomposition import register_resources, resource_rep, add_decomps
+from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.operation import Operation
 from pennylane.ops import DoubleExcitation, OrbitalRotation, cond
 from pennylane.templates.embeddings import BasisEmbedding
+from pennylane.wires import Wires
 
 has_jax = True
 try:
@@ -338,7 +339,11 @@ def _gate_fabric_resources(n_layers, num_wires, len_wire_pattern, include_pi):
 
 @register_resources(_gate_fabric_resources)
 def _gate_fabric_decomposition(weights, wires, init_state, include_pi):
+    if isinstance(wires, Wires):
+        wires = wires.labels
+
     n_layers = math.shape(weights)[0]
+
     wire_pattern = [wires[i : i + 4] for i in range(0, len(wires), 4) if len(wires[i : i + 4]) == 4]
     if len(wires) > 4:
         wire_pattern += [
