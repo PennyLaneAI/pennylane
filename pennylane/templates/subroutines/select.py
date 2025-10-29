@@ -350,6 +350,37 @@ class Select(Operation):
     .. details::
         :title: Available decomposition rules
 
+        **multi_control**
+
+        .. code-block::
+
+            # Example of how to access, source
+            qml.list_decomps(qml.Select)[multi_control]
+
+        Resources
+
+        TBD
+
+        .. figure:: ../../../doc/_static/templates/decompositions/select_decomp_multi_control.png
+                    :align: center
+                    :width: 70%
+                    :target: javascript:void(0);
+
+        **unary** 
+
+        `Babbush et al. (2018) <https://arxiv.org/abs/1805.03662>`__
+
+        .. code-block::
+
+            # Example of how to access, source
+            qml.list_decomps(qml.Select)[unary]
+
+        Resources
+
+        .. figure:: ../../../doc/_static/templates/decompositions/select_decomp_multi_control.png
+                    :align: center
+                    :width: 70%
+                    :target: javascript:void(0);
     """
 
     resource_keys = {"op_reps", "num_control_wires", "partial", "num_work_wires"}
