@@ -543,10 +543,7 @@ class TestJacobian:
 
         jac_eqn = jaxpr.eqns[0]
         assert jac_eqn.invars[0].aval == jaxpr.in_avals[0]
-        diff_eqn_assertions(
-            jac_eqn,
-            scalar_out=False,
-        )
+        diff_eqn_assertions(jac_eqn, scalar_out=False)
         jac_jaxpr = jac_eqn.params["jaxpr"]
         assert len(jac_jaxpr.eqns) == 1  # qnode equation
 
