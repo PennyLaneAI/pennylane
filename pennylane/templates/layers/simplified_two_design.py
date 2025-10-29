@@ -23,7 +23,7 @@ from pennylane.ops import CZ, RY
 has_jax = True
 try:
     from jax import numpy as jnp
-except ModuleNotFoundError as import_error:  # pragma: no cover
+except ModuleNotFoundError:  # pragma: no cover
     has_jax = False  # pragma: no cover
 
 
@@ -270,29 +270,21 @@ def _simplified_two_design_decomposition(initial_layer_weights, weights, wires):
         if has_jax and capture.enabled():
             even_wires = jnp.array(even_wires)
 
-        @for_loop(len(even_wires))
-        def even_wires_loop(i):
-            wire_pair = even_wires[i]
+        all_wire_pairs =  (
+            [wires[i : i + 2] for i in range(0, len(wires) - 1, 2)]
+            +  [wires[i : i + 2] for i in range(1, len(wires) - 1, 2)]
+        )
+        if has_jax and capture.enabled():
+            all_wire_pairs = jnp.array(all_wire_pairs)
+            
+        @for_loop(len(all_wire_pairs))
+        def block_loop(i):
+            wire_pair = all_wire_pairs[i]
             CZ(wires=wire_pair)
             RY(weights[layer, i, 0], wires=wire_pair[0])
             RY(weights[layer, i, 1], wires=wire_pair[1])
 
-        even_wires_loop()  # pylint: disable=no-value-for-parameter
-
-        # odd layer of entanglers
-        odd_wires = [wires[i : i + 2] for i in range(1, len(wires) - 1, 2)]
-
-        if has_jax and capture.enabled():
-            odd_wires = jnp.array(odd_wires)
-
-        @for_loop(len(odd_wires))
-        def odd_wires_loop(i):
-            wire_pair = odd_wires[i]
-            CZ(wires=wire_pair)
-            RY(weights[layer, len(wires) // 2 + i, 0], wires=wire_pair[0])
-            RY(weights[layer, len(wires) // 2 + i, 1], wires=wire_pair[1])
-
-        odd_wires_loop()  # pylint: disable=no-value-for-parameter
+        block_loop()  # pylint: disable=no-value-for-parameter
 
     layers_loop()  # pylint: disable=no-value-for-parameter
 
