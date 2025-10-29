@@ -72,7 +72,7 @@ def _get_jacobian_prim():
     # pylint: disable=unused-argument
     @jacobian_prim.def_abstract_eval
     def _grad_abstract(*args, argnums, jaxpr, n_consts, method, h, scalar_out, fn):
-        if scalar_out and (len(jaxpr.outvars) != 1 or jaxpr.outvars[0].aval.shape != ()):
+        if scalar_out and not (len(jaxpr.outvars) == 1 and jaxpr.outvars[0].aval.shape == ()):
             raise TypeError("Grad only applies to scalar-output functions. Try jacobian.")
         in_avals = tuple(args[i + n_consts] for i in argnums)
         out_shapes = tuple(outvar.aval.shape for outvar in jaxpr.outvars)
