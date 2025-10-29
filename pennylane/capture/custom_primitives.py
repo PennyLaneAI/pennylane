@@ -94,7 +94,7 @@ def _restore_slice(obj: Any) -> Any:
         obj: Object that may be a tuple representation of a slice
 
     Returns:
-        slice object if obj is a 3-tuple, otherwise returns obj unchanged
+        slice object if obj is a 3-tuple with (start, stop, step), otherwise returns obj unchanged
     """
     if isinstance(obj, tuple) and len(obj) == 3:
         # Tuples representing slices have exactly 3 elements (start, stop, step)
@@ -105,40 +105,61 @@ def _restore_slice(obj: Any) -> Any:
     return obj
 
 
-def _restore_hashable(obj: Any) -> Any:
-    """Restore unhashable objects from their hashable tuple representations.
+def _restore_dict(obj: Any) -> dict:
+    """Restore dict from hashable tuple representation.
 
-    This is the general inverse of _make_hashable. It attempts to detect and restore
-    lists and dicts that were converted to tuples.
+    This is the inverse of _make_hashable for dicts. When QmlPrimitive.bind() converts
+    dicts to sorted tuples of (key, value) pairs for hashability, this function converts
+    them back to dicts.
 
     Args:
-        obj: Object that may be a tuple representation of a list or dict
+        obj: Tuple of (key, value) tuples representing a dict
 
     Returns:
-        Restored object (dict, list, slice) or original object unchanged
+        dict: Restored dictionary with recursively restored values
+
+    Example:
+        >>> _restore_dict((('a', 1), ('b', 2)))
+        {'a': 1, 'b': 2}
     """
     if not isinstance(obj, tuple):
         return obj
 
-    # Empty tuple likely represents empty dict in transform kwargs context
+    # Empty tuple represents empty dict
     if len(obj) == 0:
         return {}
 
-    # Check if it's a dict representation (tuple of (key, value) tuples)
-    if len(obj) > 0 and all(isinstance(item, tuple) and len(item) == 2 for item in obj):
-        # Try to restore as dict
-        try:
-            return {k: _restore_hashable(v) for k, v in obj}
-        except (TypeError, ValueError):
-            # If it fails, it's probably a regular tuple, fall through
-            pass
+    # Check if this tuple is actually a dict representation
+    # (all elements must be 2-tuples to be key-value pairs)
+    if not all(isinstance(item, tuple) and len(item) == 2 for item in obj):
+        # Not a dict representation, return as-is (it's a regular tuple)
+        return obj
 
-    # Check if it's a slice representation (3-tuple with None or ints)
-    if len(obj) == 3 and all(x is None or isinstance(x, int) for x in obj):
-        return slice(*obj)
+    # Convert tuple of (key, value) tuples back to dict, recursively restoring nested values
+    return {k: _restore_dict(v) for k, v in obj}
 
-    # Otherwise try to restore as list with recursive restoration
-    return tuple(_restore_hashable(item) for item in obj)
+
+def _restore_list(obj: Any) -> list:
+    """Restore list from hashable tuple representation.
+
+    This is the inverse of _make_hashable for lists. When QmlPrimitive.bind() converts
+    lists to tuples for hashability, this function converts them back to lists.
+
+    Args:
+        obj: Tuple representing a list
+
+    Returns:
+        list: Restored list with recursively restored elements
+
+    Example:
+        >>> _restore_list((1, 2, (3, 4)))
+        [1, 2, [3, 4]]
+    """
+    if not isinstance(obj, tuple):
+        return obj
+
+    # Recursively restore nested tuples to lists
+    return [_restore_list(item) for item in obj]
 
 
 # pylint: disable=abstract-method,too-few-public-methods

@@ -59,7 +59,7 @@ JAX 0.7.0+ Patches
 
 Impact
 ------
-These patches fix 27+ dynamic shape tests that were previously failing due to these JAX bugs:
+These patches fix many dynamic shape tests that were previously failing due to these JAX bugs:
 - Array creation operations (jnp.arange, jnp.ones, jnp.zeros with traced dimensions)
 - Cond operations with dynamic shapes
 - For loop operations with dynamic shapes
