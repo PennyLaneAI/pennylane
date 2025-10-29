@@ -24,7 +24,7 @@ except (ImportError, ModuleNotFoundError):
 XDSL_UNIVERSE = None
 
 if xdsl_available:
-
+    # pylint: disable=import-outside-toplevel
     from . import dialects, transforms
 
     shared_dialects = ("stablehlo", "transform")
