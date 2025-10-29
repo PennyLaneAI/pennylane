@@ -58,6 +58,16 @@ class TestResourceOutOfPlaceSquare:
 class TestResourcePhaseGradient:
     """Test the PhaseGradient class."""
 
+    def test_init_no_num_wires(self):
+        """Test that we can instantiate the operator without providing num_wires"""
+        op = qre.PhaseGradient(wires=range(3))
+        assert op.resource_params == {"num_wires": 3}
+
+    def test_init_raises_error(self):
+        """Test that an error is raised when wires and num_wires are both not provided"""
+        with pytest.raises(ValueError, match="Must provide atleast one of"):
+            qre.PhaseGradient()
+
     @pytest.mark.parametrize("num_wires", (1, 2, 3, 4, 5))
     def test_resource_params(self, num_wires):
         """Test that the resource params are correct."""
@@ -516,7 +526,10 @@ class TestResourceQPE:
     def test_tracking_name(self):
         """Test that the name of the operator is tracked correctly."""
         op = qre.QPE(base=qre.X(), num_estimation_wires=3, adj_qft_op=qre.QFT(3))
-        assert op.tracking_name() == "QPE(X, 3, adj_qft=QFT)"
+        assert (
+            op.tracking_name(resource_rep(qre.X), 3, resource_rep(qre.QFT, {"num_wires": 3}))
+            == "QPE(X, 3, adj_qft=QFT(3))"
+        )
 
     @pytest.mark.parametrize(
         "base_op, num_est_wires, adj_qft_op",
@@ -855,9 +868,19 @@ class TestResourceIterativeQPE:
 class TestResourceQFT:
     """Test the ResourceQFT class."""
 
+    def test_init_no_num_wires(self):
+        """Test that we can instantiate the operator without providing num_wires"""
+        op = qre.QFT(wires=range(3))
+        assert op.resource_params == {"num_wires": 3}
+
+    def test_init_raises_error(self):
+        """Test that an error is raised when wires and num_wires are both not provided"""
+        with pytest.raises(ValueError, match="Must provide atleast one of"):
+            qre.QFT()
+
     def test_tracking_name(self):
         """Test that the name of the operator is tracked correctly."""
-        assert qre.QFT(1).tracking_name() == "QFT(1)"
+        assert qre.QFT(1).tracking_name(1) == "QFT(1)"
 
     @pytest.mark.parametrize("num_wires", (1, 2, 3, 4))
     def test_resource_params(self, num_wires):
@@ -958,9 +981,19 @@ class TestResourceAQFT:
         with pytest.raises(ValueError, match="Order must be a positive integer greater than 0."):
             qre.AQFT(order, 3)
 
+    def test_init_no_num_wires(self):
+        """Test that we can instantiate the operator without providing num_wires"""
+        op = qre.AQFT(order=2, wires=range(3))
+        assert op.resource_params == {"order": 2, "num_wires": 3}
+
+    def test_init_raises_error(self):
+        """Test that an error is raised when wires and num_wires are both not provided"""
+        with pytest.raises(ValueError, match="Must provide atleast one of"):
+            qre.AQFT(order=2)
+
     def test_tracking_name(self):
         """Test that the name of the operator is tracked correctly."""
-        assert qre.AQFT(3, 2).tracking_name() == "AQFT(3, 2)"
+        assert qre.AQFT(3, 2).tracking_name(3, 2) == "AQFT(3, 2)"
 
     @pytest.mark.parametrize(
         "num_wires, order",
@@ -1093,7 +1126,17 @@ class TestResourceBasisRotation:
 
     def test_tracking_name(self):
         """Test that the name of the operator is tracked correctly."""
-        assert qre.BasisRotation(1).tracking_name() == "BasisRotation(1)"
+        assert qre.BasisRotation(1).tracking_name(1) == "BasisRotation(1)"
+
+    def test_init_no_dim(self):
+        """Test that we can instantiate the operator without providing dim"""
+        op = qre.BasisRotation(wires=range(3))
+        assert op.resource_params == {"dim": 3}
+
+    def test_init_raises_error(self):
+        """Test that an error is raised when wires and dim are both not provided"""
+        with pytest.raises(ValueError, match="Must provide atleast one of"):
+            qre.BasisRotation()
 
     @pytest.mark.parametrize("dim", (1, 2, 3))
     def test_resource_params(self, dim):
@@ -1636,11 +1679,13 @@ class TestResourceQROM:
             qre.QROM.controlled_resource_decomp(
                 num_ctrl_wires=num_ctrl_wires,
                 num_zero_ctrl=num_zero_ctrl,
-                num_bitstrings=num_data_points,
-                size_bitstring=size_data_points,
-                num_bit_flips=num_bit_flips,
-                restored=restored,
-                select_swap_depth=depth,
+                target_resource_params={
+                    "num_bitstrings": num_data_points,
+                    "size_bitstring": size_data_points,
+                    "num_bit_flips": num_bit_flips,
+                    "restored": restored,
+                    "select_swap_depth": depth,
+                },
             )
             == expected_res
         )

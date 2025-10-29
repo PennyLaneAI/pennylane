@@ -158,7 +158,7 @@ def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
             qnode.interface = math.get_interface(*args, *list(kwargs.values()))
 
         if qnode.interface == "autograd":
-            jac = jacobian(classical_preprocessing, argnum=wrapper_argnum)(*args, **kwargs)
+            jac = jacobian(classical_preprocessing, argnums=wrapper_argnum)(*args, **kwargs)
 
         elif qnode.interface == "torch":
             import torch

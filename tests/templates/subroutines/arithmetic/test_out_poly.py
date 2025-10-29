@@ -59,6 +59,7 @@ def f_test(x, y, z):
     return x**2 + y * x * z**5 - z**3 + 3
 
 
+@pytest.mark.jax
 def test_standard_validity_OutPoly():
     """Check the operation using the assert_valid function."""
     wires = qml.registers({"x": 3, "y": 3, "z": 3, "output": 3, "aux": 2})
@@ -201,6 +202,26 @@ class TestOutPoly:
         op = qml.OutPoly(polynomial_function, input_registers, output_wires)
         for rule in qml.list_decomps(qml.OutPoly):
             _test_decomposition_rule(op, rule)
+
+    def test_compute_decomposition_no_coeffs_list(self):
+        """Test that coeffs list is an optional argnument to compute_decomposition."""
+
+        decomp = qml.OutPoly.compute_decomposition(
+            lambda x, y: x + y, input_registers=[[0, 1], [2, 3]], output_wires=[4, 5], mod=4
+        )
+
+        pa2 = qml.PhaseAdder(k=2, mod=4, x_wires=[4, 5])
+        pa1 = qml.PhaseAdder(k=1, mod=4, x_wires=[4, 5])
+        expected = [
+            qml.QFT(wires=[4, 5]),
+            qml.ctrl(pa1, [3]),
+            qml.ctrl(pa2, 2),
+            qml.ctrl(pa1, 1),
+            qml.ctrl(pa2, 0),
+            qml.adjoint(qml.QFT(wires=[4, 5])),
+        ]
+        for op1, op2 in zip(decomp, expected):
+            qml.assert_equal(op1, op2)
 
     @pytest.mark.jax
     def test_jit_compatible(self):

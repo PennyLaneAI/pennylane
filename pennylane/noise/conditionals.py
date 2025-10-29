@@ -16,6 +16,7 @@
 Developer note: Conditionals inherit from BooleanFn and store the condition they
 utilize in the ``condition`` attribute.
 """
+
 from inspect import isclass, signature
 
 from pennylane import math, measurements
@@ -23,7 +24,17 @@ from pennylane import ops as qops
 from pennylane.boolean_fn import BooleanFn
 from pennylane.exceptions import WireError
 from pennylane.operation import Operation
-from pennylane.ops import Adjoint, Controlled, Exp, LinearCombination, adjoint, ctrl
+from pennylane.ops import (
+    Adjoint,
+    Controlled,
+    Exp,
+    LinearCombination,
+    MeasurementValue,
+    MidMeasure,
+    adjoint,
+    ctrl,
+    measure,
+)
 from pennylane.ops.functions import map_wires, simplify
 from pennylane.queuing import QueuingManager
 from pennylane.templates import ControlledSequence
@@ -309,10 +320,8 @@ def _get_ops(val):
             op_names.append(getattr(qops, _val, None))
         elif isclass(_val) and not issubclass(_val, measurements.MeasurementProcess):
             op_names.append(_val)
-        elif isinstance(_val, (measurements.MeasurementValue, measurements.MidMeasureMP)):
-            mid_measure = (
-                _val if isinstance(_val, measurements.MidMeasureMP) else _val.measurements[0]
-            )
+        elif isinstance(_val, (MeasurementValue, MidMeasure)):
+            mid_measure = _val if isinstance(_val, MidMeasure) else _val.measurements[0]
             op_names.append(["MidMeasure", "Reset"][getattr(mid_measure, "reset", 0)])
         elif isinstance(_val, measurements.MeasurementProcess):
             obs_name = _get_ops(getattr(_val, "obs", None) or getattr(_val, "H", None))
@@ -344,7 +353,6 @@ def _check_arithmetic_ops(op1, op2):
             not isinstance(op1, type(op2))
             or (op1.base.arithmetic_depth != op2.base.arithmetic_depth)
             or not math.allclose(op1.coeff, op2.coeff)
-            or (op1.num_steps != op2.num_steps)
         ):
             return False
         if op1.base.arithmetic_depth:
@@ -506,7 +514,6 @@ class MeasEq(BooleanFn):
         )
 
     def _check_meas(self, mp):
-
         if isclass(mp) and not issubclass(mp, measurements.MeasurementProcess):
             return False
 
@@ -580,7 +587,7 @@ _MEAS_FUNC_MAP = {
     measurements.purity: measurements.PurityMP,
     measurements.classical_shadow: measurements.ClassicalShadowMP,
     measurements.shadow_expval: measurements.ShadowExpvalMP,
-    measurements.measure: measurements.MidMeasureMP,
+    measure: MidMeasure,
 }
 
 
@@ -666,7 +673,7 @@ def partial_wires(operation, *args, **kwargs):
     >>> func(2)
     RX(1.2, wires=[2])
     >>> func(qml.RY(1.0, ["wires"]))
-    RX(1.2, wires=["wires"])
+    RX(1.2, wires=['wires'])
 
     Additionally, an :class:`Operation <pennylane.operation.Operation>` class can
     also be provided, while providing required positional arguments via ``args``:
@@ -682,7 +689,7 @@ def partial_wires(operation, *args, **kwargs):
     RX(1.2, wires=[2])
     >>> rfunc = qml.noise.partial_wires(qml.RX(1.2, [12]), phi=2.3)
     >>> rfunc(qml.RY(1.0, ["light"]))
-    RX(2.3, wires=["light"])
+    RX(2.3, wires=['light'])
 
     Finally, one may also use this with an instance of
     :class:`MeasurementProcess <pennylane.measurement.MeasurementProcess>`

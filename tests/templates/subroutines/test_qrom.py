@@ -22,6 +22,7 @@ from pennylane import numpy as np
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 
+@pytest.mark.jax
 def test_assert_valid_qrom():
     """Run standard validity tests."""
     bitstrings = ["000", "001", "111", "011", "000", "101", "110", "111"]
@@ -30,6 +31,7 @@ def test_assert_valid_qrom():
     qml.ops.functions.assert_valid(op)
 
 
+@pytest.mark.jax
 def test_falsy_zero_as_work_wire():
     """Test that work wire is not treated as a falsy zero."""
     op = qml.QROM(["1", "0", "0", "1"], control_wires=[1, 2], target_wires=[3], work_wires=0)

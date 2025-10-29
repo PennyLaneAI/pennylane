@@ -38,6 +38,7 @@ class TestTemporaryAND:
         op2 = qml.Elbow(wires=[0, "a", 2], control_values=(0, 0))
         qml.assert_equal(op1, op2)
 
+    @pytest.mark.jax
     def test_standard_validity(self):
         """Check the operation using the assert_valid function."""
 
@@ -111,6 +112,7 @@ class TestTemporaryAND:
 
     @pytest.mark.parametrize("control_values", [(0, 0), (0, 1), (1, 0), (1, 1)])
     def test_compute_matrix_temporary_and(self, control_values):
+        """Tests that the matrix of the TemporaryAND operator is correct."""
 
         matrix_base = qml.math.array(
             [

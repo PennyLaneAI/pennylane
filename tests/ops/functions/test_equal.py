@@ -1660,13 +1660,13 @@ class TestMeasurementsEqual:
         assert qml.equal(qml.expval(o1), qml.expval(o2)) is True
 
     def test_mid_measure(self):
-        """Test that `MidMeasureMP`s are equal only if their wires
+        """Test that `MidMeasure`s are equal only if their wires
         an id are equal and their `reset` attribute match."""
-        mp = qml.measurements.MidMeasureMP(wires=qml.wires.Wires([0]), reset=True, id="test_id")
+        mp = qml.ops.MidMeasure(wires=qml.wires.Wires([0]), reset=True, id="test_id")
 
-        mp1 = qml.measurements.MidMeasureMP(wires=qml.wires.Wires([1]), reset=True, id="test_id")
-        mp2 = qml.measurements.MidMeasureMP(wires=qml.wires.Wires([0]), reset=False, id="test_id")
-        mp3 = qml.measurements.MidMeasureMP(wires=qml.wires.Wires([0]), reset=True, id="foo")
+        mp1 = qml.ops.MidMeasure(wires=qml.wires.Wires([1]), reset=True, id="test_id")
+        mp2 = qml.ops.MidMeasure(wires=qml.wires.Wires([0]), reset=False, id="test_id")
+        mp3 = qml.ops.MidMeasure(wires=qml.wires.Wires([0]), reset=True, id="foo")
 
         assert qml.equal(mp, mp1) is False
         assert qml.equal(mp, mp2) is False
@@ -1675,7 +1675,7 @@ class TestMeasurementsEqual:
         assert (
             qml.equal(
                 mp,
-                qml.measurements.MidMeasureMP(wires=qml.wires.Wires([0]), reset=True, id="test_id"),
+                qml.ops.MidMeasure(wires=qml.wires.Wires([0]), reset=True, id="test_id"),
             )
             is True
         )
@@ -1684,7 +1684,7 @@ class TestMeasurementsEqual:
         """Test that MeasurementValue's are equal when their measurements are the same."""
         mv1 = qml.measure(0)
         mv2 = qml.measure(0)
-        # qml.equal of MidMeasureMP checks the id
+        # qml.equal of MidMeasure checks the id
         mv2.measurements[0]._id = mv1.measurements[0].id  # pylint: disable=protected-access
 
         assert qml.equal(mv1, mv1) is True
@@ -1701,7 +1701,7 @@ class TestMeasurementsEqual:
         mv1 = qml.measure(0)
         mv2 = qml.measure(1)
         mv3 = qml.measure(0)
-        # qml.equal of MidMeasureMP checks the id
+        # qml.equal of MidMeasure checks the id
         mv3.measurements[0]._id = mv1.measurements[0].id  # pylint: disable=protected-access
 
         assert qml.equal(mv1 * mv2, mv2 * mv1) is True
@@ -2088,7 +2088,7 @@ class TestSymbolicOpComparison:
         m1 = qml.measure(wire1)
         m2 = qml.measure(wire2)
         if wire1 == wire2:
-            # qml.equal checks id for MidMeasureMP, but here we only care about them acting on the same wire
+            # qml.equal checks id for MidMeasure, but here we only care about them acting on the same wire
             m2.measurements[0]._id = m1.measurements[0].id  # pylint: disable=protected-access
         base = qml.PauliX(wire2)
         op1 = Conditional(m1, base)
@@ -3056,6 +3056,28 @@ def test_ops_with_abstract_parameters_not_equal():
 def test_not_equal_prep_sel_prep(op, other_op):
     """Test that two PrepSelPrep operators with different Hamiltonian are not equal."""
     assert qml.equal(op, other_op) is False
+
+
+def test_qsvt():
+    """Test that QSVT operators can be compared."""
+
+    projectors = [qml.PCPhase(0.2, dim=1, wires=0), qml.PCPhase(0.3, dim=1, wires=0)]
+    op1 = qml.QSVT(qml.X(0), projectors)
+    op2 = qml.QSVT(qml.Y(0), projectors)
+    op3 = qml.QSVT(qml.X(0), projectors[:1])
+    op4 = qml.QSVT(qml.X(0), projectors[::-1])
+
+    for op in [op1, op2, op3, op4]:
+        qml.assert_equal(op, op)
+
+    with pytest.raises(AssertionError, match=r"different block encodings"):
+        qml.assert_equal(op1, op2)
+
+    with pytest.raises(AssertionError, match=r"different number of projectors"):
+        qml.assert_equal(op1, op3)
+
+    with pytest.raises(AssertionError, match=r"different projectors at position 0"):
+        qml.assert_equal(op1, op4)
 
 
 def test_select():

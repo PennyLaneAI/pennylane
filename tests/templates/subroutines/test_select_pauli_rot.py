@@ -22,6 +22,7 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.ops.op_math import Prod
 
 
 def get_tape(angles, wires):
@@ -42,19 +43,20 @@ def get_tape(angles, wires):
 
 class TestSelectPauliRot:
 
+    @pytest.mark.jax
     def test_standard_validity(self):
         """Check the operation using the assert_valid function."""
 
         wires = qml.registers({"control_wires": 3, "target_wire": 1})
 
         op = qml.SelectPauliRot(
-            angles=qml.math.ones(8),
+            angles=qml.math.random.RandomState(8).random(8),
             control_wires=wires["control_wires"],
             target_wire=wires["target_wire"],
             rot_axis="X",
         )
 
-        qml.ops.functions.assert_valid(op, heuristic_resources=True)
+        qml.ops.functions.assert_valid(op)
 
     @pytest.mark.parametrize(
         ("angles", "rot_axis", "target_wire", "msg_match"),
@@ -147,6 +149,14 @@ class TestSelectPauliRot:
             x, control_wires=range(n), target_wire=n, rot_axis=axis
         ).decomposition()
 
+        if axis in "XY":
+            decomp_1 = decomposition[0].decomposition()
+            decomp_2 = decomposition_2[0].decomposition()
+            decomposition, decomposition_2 = [], []
+            for op1, op2 in zip(decomp_1, decomp_2):
+                decomposition.extend([op1] if not isinstance(op1, Prod) else op1.decomposition())
+                decomposition_2.extend([op2] if not isinstance(op2, Prod) else op2.decomposition())
+
         for dec in [decomposition, decomposition_2]:
             if axis == "Y":
                 assert dec[0].name == "Adjoint(S)"
@@ -210,12 +220,11 @@ class TestSelectPauliRot:
         wires = qml.registers({"control": 2, "target": 1})
         dev = qml.device("default.qubit", wires=3)
 
-        qs = get_tape(torch.tensor(angles), wires)
+        qs = get_tape(torch.tensor(angles, dtype=torch.float64), wires)
 
         program, _ = dev.preprocess()
         tape = program([qs])
-        output_torch = dev.execute(tape[0])[0]
-
+        output_torch = qml.execute(tape[0], dev, interface="torch")[0]
         qs = get_tape(angles, wires)
 
         program, _ = dev.preprocess()

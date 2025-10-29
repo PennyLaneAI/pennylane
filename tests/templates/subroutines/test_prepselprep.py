@@ -23,6 +23,7 @@ import pytest
 import pennylane as qml
 
 
+@pytest.mark.jax
 @pytest.mark.parametrize(
     ("lcu", "control", "skip_diff"),
     [

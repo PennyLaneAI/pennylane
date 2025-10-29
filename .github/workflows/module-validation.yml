@@ -38,4 +38,3 @@ jobs:
           tach report pennylane/labs
           tach report pennylane/ftqc
           tach check
-

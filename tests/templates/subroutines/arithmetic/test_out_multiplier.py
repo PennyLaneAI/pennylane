@@ -23,6 +23,7 @@ from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.arithmetic.out_multiplier import OutMultiplier
 
 
+@pytest.mark.jax
 def test_standard_validity_OutMultiplier():
     """Check the operation using the assert_valid function."""
     mod = 12

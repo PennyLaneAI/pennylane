@@ -1373,8 +1373,8 @@ class TestDifferentiability:
             qml.math.allclose(_sub_c, sub_c, atol=tol, rtol=0) for _sub_c, sub_c in zip(_c, c)
         )
         for argnum in range(len(weights)):
-            expected_full = qml.jacobian(_cost_full, argnum=argnum)(*weights)
-            jac = qml.jacobian(cost_full, argnum=argnum)(*weights)
+            expected_full = qml.jacobian(_cost_full, argnums=argnum)(*weights)
+            jac = qml.jacobian(cost_full, argnums=argnum)(*weights)
             assert qml.math.allclose(expected_full, jac, atol=tol, rtol=0)
 
     @pytest.mark.jax

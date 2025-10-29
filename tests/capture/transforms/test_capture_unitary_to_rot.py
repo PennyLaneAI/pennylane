@@ -286,12 +286,12 @@ class TestHigherOrderPrimitiveIntegration:
                 return qml.expval(qml.Z(0))
 
             @cond_f.else_if(n > 1)
-            def _():
+            def _else_if():
                 qml.QubitUnitary(U, 1)
                 return qml.expval(qml.Y(0))
 
             @cond_f.otherwise
-            def _():
+            def _else():
                 qml.QubitUnitary(U, 2)
                 return qml.expval(qml.X(0))
 

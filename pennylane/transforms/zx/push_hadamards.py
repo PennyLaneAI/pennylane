@@ -64,9 +64,8 @@ def push_hadamards(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
 
     **Example:**
 
-    .. code-block:: python3
+    .. code-block:: python
 
-        import pennylane as qml
         import pennylane.transforms.zx as zx
 
         dev = qml.device("default.qubit")
@@ -84,13 +83,10 @@ def push_hadamards(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
             qml.Hadamard(2)
             return qml.state()
 
-
-    .. code-block:: pycon
-
-        >>> print(qml.draw(circuit)())
-        0: ──T────┤  State
-        1: ──T─╭X─┤  State
-        2: ──H─╰●─┤  State
+    >>> print(qml.draw(circuit)())
+    0: ──T────┤  State
+    1: ──T─╭X─┤  State
+    2: ──H─╰●─┤  State
 
     """
     # pylint: disable=import-outside-toplevel

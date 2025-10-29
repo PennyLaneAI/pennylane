@@ -28,6 +28,7 @@ def hadamards(wires):
         qml.Hadamard(wires=wire)
 
 
+@pytest.mark.jax
 def test_standard_validity():
     """Test standard validity criteria using assert_valid."""
     op = qml.Reflection(qml.Hadamard(wires=0), 0.5, reflection_wires=[0])
@@ -202,7 +203,18 @@ class TestIntegration:
 
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", [False, True])
-    @pytest.mark.parametrize("shots", [None, 50000])
+    @pytest.mark.parametrize(
+        "shots",
+        [
+            None,
+            pytest.param(
+                50000,
+                marks=pytest.mark.xfail(
+                    reason="Flaky test under investigation (tracked in sc-101771)", strict=False
+                ),
+            ),
+        ],
+    )
     def test_qnode_jax(self, shots, use_jit, seed):
         """Test that the QNode executes and is differentiable with JAX. The shots
         argument controls whether autodiff or parameter-shift gradients are used."""

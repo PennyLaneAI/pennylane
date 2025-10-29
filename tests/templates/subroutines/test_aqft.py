@@ -21,6 +21,7 @@ import pennylane as qml
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 
+@pytest.mark.jax
 def test_standard_validity():
     """Check the operation using the assert_valid function."""
     op = qml.AQFT(order=2, wires=(0, 1, 2))

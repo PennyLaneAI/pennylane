@@ -491,8 +491,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
             op_names = {op_node.op.name for op_node in unsolved_ops}
             warnings.warn(
                 f"The graph-based decomposition system is unable to find a decomposition for "
-                f"{op_names} to the target gate set {set(self._gate_set_weights)}. The default "
-                "decomposition (op.decomposition()) for these operators will be used instead.",
+                f"{op_names} to the target gate set {set(self._gate_set_weights)}.",
                 UserWarning,
             )
         return DecompGraphSolution(visitor, self._all_op_indices, self._op_to_op_nodes)
@@ -553,7 +552,7 @@ class DecompGraphSolution:
         def _is_solved(op_node: _OperatorNode):
             return (
                 op_node in self._all_op_indices
-                and self._all_op_indices[op_node] in visitor.distances
+                and self._all_op_indices[op_node] in visitor.predecessors
             )
 
         def _is_feasible(op_node: _OperatorNode):

@@ -56,7 +56,7 @@ def registers(register_dict):
 
     A simple example showcasing how to implement the `SWAP <https://en.wikipedia.org/wiki/Swap_test>`_ test:
 
-    .. code-block::
+    .. code-block:: python
 
         dev = qml.device("default.qubit")
         reg = qml.registers({"aux": 1, "phi": 5, "psi": 5})
@@ -73,8 +73,8 @@ def registers(register_dict):
 
             return qml.expval(qml.Z(wires=reg["aux"]))
 
-    >>> circuit()
-    tensor(1., requires_grad=True)
+    >>> print(circuit())
+    0.999...
     """
 
     def _registers(register_dict, _start_wire_index=0):

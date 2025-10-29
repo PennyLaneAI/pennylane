@@ -4,9 +4,11 @@ Installation and dependencies
 Dependencies
 ------------
 
-PennyLane requires the following libraries be installed:
+PennyLane requires `Python <http://python.org/>`_ >= 3.11 to be installed.
 
-* `Python <http://python.org/>`_ >= 3.10
+After installing Python, we recommend using any virtual environment manager to install and manage
+dependencies. See the `Python documentation <https://docs.python.org/3/tutorial/venv.html>`_
+for more an example.
 
 The following Python packages are hard dependencies, and will automatically
 be installed alongside PennyLane:
@@ -18,7 +20,7 @@ be installed alongside PennyLane:
 * `autograd <https://github.com/HIPS/autograd>`_
 * `tomlkit <https://github.com/python-poetry/tomlkit>`_
 * `appdirs <https://github.com/ActiveState/appdirs>`_
-* `autoray <https://github.com/jcmgray/autoray>`__ >= 0.8.0 
+* `autoray <https://github.com/jcmgray/autoray>`__ == 0.8.0 
 * `cachetools <https://github.com/tkem/cachetools>`_
 * `pennylane-lightning <https://github.com/PennyLaneAI/pennylane-lightning>`_ >= 0.42
 * `requests <https://github.com/psf/requests>`_
@@ -37,10 +39,6 @@ The following Python packages are optional:
 * ``kahypar`` and ``opt_einsum`` for ``qcut``
 * ``cvxopt``for ``qml.kernels.closest_psd_matrix``
 
-If you currently do not have Python 3 installed, we recommend
-`Anaconda for Python 3 <https://www.anaconda.com/download/>`_, a distributed version
-of Python packaged for scientific computation.
-
 .. _install_interfaces:
 
 Interface dependencies
@@ -49,7 +47,7 @@ Interface dependencies
 For development of the PyTorch and JAX interfaces, there are additional
 requirements which must be installed manually:
 
-* **JAX interface**: ``jax`` and ``jaxlib`` == 0.6.0
+* **JAX interface**: ``jax`` and ``jaxlib`` ~= 0.6.0
 
 * **PyTorch interface**: ``pytorch``
 
@@ -63,7 +61,7 @@ using development mode:
 
     git clone https://github.com/PennyLaneAI/pennylane
     cd pennylane
-    pip install -e .
+    python -m pip install -e .
 
 The ``-e`` flag ensures that edits to the source code will be reflected when
 importing PennyLane in Python.
@@ -82,4 +80,4 @@ pre-commit quality checks. Those can be installed easily via ``pip``:
 
 .. code-block:: bash
 
-    pip install -r requirements-dev.txt
+    python -m pip install -r requirements-dev.txt

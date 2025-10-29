@@ -769,14 +769,14 @@ class TestProperties:
     )
 
     @pytest.mark.parametrize("op, scalar, hermitian_status", ops_are_hermitian)
-    def test_is_hermitian(self, op, scalar, hermitian_status):
+    def test_is_verified_hermitian(self, op, scalar, hermitian_status):
         """Test that scalar product ops are correctly classified as hermitian or not."""
         sprod_op = s_prod(scalar, op)
-        assert sprod_op.is_hermitian == hermitian_status
+        assert sprod_op.is_verified_hermitian == hermitian_status
 
     @pytest.mark.tf
-    def test_is_hermitian_tf(self):
-        """Test that is_hermitian works when a tf type scalar is provided."""
+    def test_is_verified_hermitian_tf(self):
+        """Test that is_verified_hermitian works when a tf type scalar is provided."""
         import tensorflow as tf
 
         coeffs = (tf.Variable(1.23), tf.Variable(1.23 + 1.2j))
@@ -784,7 +784,7 @@ class TestProperties:
 
         for scalar, hermitian_state in zip(coeffs, true_hermitian_states):
             op = s_prod(scalar, qml.PauliX(wires=0))
-            assert op.is_hermitian == hermitian_state
+            assert op.is_verified_hermitian == hermitian_state
 
     @pytest.mark.tf
     def test_no_dtype_promotion(self):
@@ -794,8 +794,8 @@ class TestProperties:
         assert op.scalar.dtype == next(iter(op.pauli_rep.values())).dtype
 
     @pytest.mark.jax
-    def test_is_hermitian_jax(self):
-        """Test that is_hermitian works when a jax type scalar is provided."""
+    def test_is_verified_hermitian_jax(self):
+        """Test that is_verified_hermitian works when a jax type scalar is provided."""
         import jax.numpy as jnp
 
         coeffs = (jnp.array(1.23), jnp.array(1.23 + 1.2j))
@@ -803,11 +803,11 @@ class TestProperties:
 
         for scalar, hermitian_state in zip(coeffs, true_hermitian_states):
             op = s_prod(scalar, qml.PauliX(wires=0))
-            assert op.is_hermitian == hermitian_state
+            assert op.is_verified_hermitian == hermitian_state
 
     @pytest.mark.torch
-    def test_is_hermitian_torch(self):
-        """Test that is_hermitian works when a torch type scalar is provided."""
+    def test_is_verified_hermitian_torch(self):
+        """Test that is_verified_hermitian works when a torch type scalar is provided."""
         import torch
 
         coeffs = (torch.tensor(1.23), torch.tensor(1.23 + 1.2j))
@@ -815,7 +815,7 @@ class TestProperties:
 
         for scalar, hermitian_state in zip(coeffs, true_hermitian_states):
             op = s_prod(scalar, qml.PauliX(wires=0))
-            assert op.is_hermitian == hermitian_state
+            assert op.is_verified_hermitian == hermitian_state
 
     ops_labels = (
         (qml.PauliX(wires=0), 1.23, 2, "1.23*X"),
@@ -837,7 +837,7 @@ class TestProperties:
         op = s_prod(-1.2, base)
 
         cache = {"matrices": []}
-        assert op.label(decimals=2, cache=cache) == "-1.20*U(M0)"
+        assert op.label(decimals=2, cache=cache) == "-1.20*U\n(M0)"
         assert len(cache["matrices"]) == 1
 
     op_pauli_reps = (

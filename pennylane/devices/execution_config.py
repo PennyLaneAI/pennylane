@@ -14,6 +14,7 @@
 """
 Contains the :class:`ExecutionConfig` and :class:`MCMConfig` data classes.
 """
+
 from __future__ import annotations
 
 from collections.abc import MutableMapping
@@ -209,20 +210,3 @@ class ExecutionConfig:
 
         if self.executor_backend is None:
             object.__setattr__(self, "executor_backend", get_executor(backend=ExecBackends.MP_Pool))
-
-
-def __getattr__(name):
-    if name == "DefaultExecutionConfig":
-        # pylint: disable=import-outside-toplevel
-        import warnings
-
-        from pennylane.exceptions import PennyLaneDeprecationWarning
-
-        warnings.warn(
-            "`pennylane.devices.execution_config.DefaultExecutionConfig` is deprecated and will be removed in v0.44. "
-            "Please use `ExecutionConfig()` instead.",
-            PennyLaneDeprecationWarning,
-            stacklevel=2,
-        )
-        return ExecutionConfig()
-    raise AttributeError(f"module 'pennylane.devices.execution_config' has no attribute '{name}'")

@@ -14,6 +14,7 @@
 """
 Unit tests for :mod:`pennylane.operation`.
 """
+
 import copy
 
 import numpy as np
@@ -22,6 +23,7 @@ from gate_data import CNOT, I, Toffoli, X
 
 import pennylane as qml
 from pennylane import numpy as pnp
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.operation import (
     _UNSET_BATCH_SIZE,
     Operation,
@@ -39,6 +41,30 @@ from pennylane.wires import Wires
 Toffoli_broadcasted = np.tensordot([0.1, -4.2j], Toffoli, axes=0)
 CNOT_broadcasted = np.tensordot([1.4], CNOT, axes=0)
 I_broadcasted = I[pnp.newaxis]
+
+
+def test_is_hermitian_property_deprecation():
+    """Tests that the is_hermitian property is deprecated."""
+
+    op = qml.ops.X(wires=0)
+    with pytest.warns(
+        PennyLaneDeprecationWarning, match="The `is_hermitian` property is deprecated"
+    ):
+        assert op.is_hermitian
+
+
+def test_is_hermitian_property_subclass_override_deprecation():
+    """Tests that a subclass overriding is_hermitian property will raise a deprecation warning."""
+
+    with pytest.warns(
+        PennyLaneDeprecationWarning, match="The `is_hermitian` property is deprecated"
+    ):
+
+        # pylint: disable = unused-variable
+        class DummyOp(Operator):
+            """Dummy operation that overrides is_hermitian"""
+
+            is_hermitian = True
 
 
 class TestOperatorConstruction:
@@ -929,7 +955,7 @@ class TestOperationConstruction:
             grad_method = None
 
         op = DummyOp(wires=0)
-        assert op.is_hermitian is False
+        assert op.is_verified_hermitian is False
 
 
 class TestObservableConstruction:
@@ -1028,7 +1054,7 @@ class TestObservableConstruction:
             grad_method = None
 
         op = DummyObserv(wires=0)
-        assert op.is_hermitian is False
+        assert op.is_verified_hermitian is False
 
 
 class TestOperatorIntegration:

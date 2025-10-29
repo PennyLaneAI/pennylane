@@ -21,7 +21,7 @@ Executors and backends
 
 Executor implementations in PennyLane build functional abstractions around the following API calls:
 
-.. code-block:: python
+.. code-block:: python3
 
     # Single function execution on the executor backend
     executor.submit(fn: Callable, *args, **kwargs)
@@ -39,7 +39,7 @@ These loosely mirror the native Python functions `map <https://docs.python.org/3
 
 Local and remote function execution through an instantiated ``executor`` is available through the above API calls, or via a functor-like dispatch mechanism:
 
-.. code-block:: python
+.. code-block:: python3
 
     executor = create_executor(...)
     executor("submit", myfunc, *mydata)

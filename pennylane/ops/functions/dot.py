@@ -126,7 +126,7 @@ def dot(
             op = qml.dot(coeffs, obs, grouping_type="qwc")
 
         >>> op.grouping_indices
-        ((2,), (0, 1))
+        ((0, 1), (2,))
 
         ``grouping_type`` can be ``"qwc"`` (qubit-wise commuting), ``"commuting"``, or ``"anticommuting"``, and
         ``method`` can be ``'lf'`` (Largest First), ``'rlf'`` (Recursive Largest First),

@@ -196,7 +196,7 @@ class kUpCCGSD(Operation):
 
         .. code-block:: python
 
-            shape = qml.kUpCCGSD.shape(n_layers=2, n_wires=4)
+            shape = qml.kUpCCGSD.shape(k=2, n_wires=4, delta_sz=0)
             weights = np.random.random(size=shape)
 
         >>> weights.shape

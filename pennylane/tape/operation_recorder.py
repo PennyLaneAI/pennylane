@@ -33,9 +33,8 @@ class OperationRecorder(QuantumScript, AnnotatedQueue):
 
     >>> shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=1, n_wires=2)
     >>> weights = np.random.random(shape)
-    >>>
-    >>> with OperationRecorder() as rec:
-    >>>    qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1])
+    >>> with OperationRecorder() as rec: # doctest: +SKIP
+    ...    qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1])
 
 
     Alternatively, the :attr:`~.OperationRecorder.queue` attribute can be used

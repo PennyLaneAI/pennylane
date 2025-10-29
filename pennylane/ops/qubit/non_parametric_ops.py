@@ -15,6 +15,7 @@
 This submodule contains the discrete-variable quantum operations that do
 not depend on any parameters.
 """
+
 # pylint: disable=arguments-differ
 import cmath
 from copy import copy
@@ -63,7 +64,7 @@ class Hadamard(Operation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
 
-    is_hermitian = True
+    is_verified_hermitian = True
 
     num_wires = 1
     """int: Number of wires that the operator acts on."""
@@ -148,7 +149,7 @@ class Hadamard(Operation):
         **Example**
 
         >>> print(qml.Hadamard.compute_eigvals())
-        [ 1 -1]
+        [ 1. -1.]
         """
         return qml.pauli.pauli_eigs(1)
 
@@ -284,7 +285,6 @@ def _controlled_h_resources(*_, num_control_wires, num_work_wires, work_wire_typ
 
 @register_resources(_controlled_h_resources)
 def _controlled_hadamard(wires, control_wires, work_wires, work_wire_type, **__):
-
     if len(control_wires) == 1:
         qml.CH(wires)
         return
@@ -321,8 +321,6 @@ class PauliX(Operation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
 
-    is_hermitian = True
-
     num_wires = 1
     """int: Number of wires that the operator acts on."""
 
@@ -335,7 +333,7 @@ class PauliX(Operation):
 
     batch_size = None
 
-    is_hermitian = True
+    is_verified_hermitian = True
 
     @property
     def pauli_rep(self):
@@ -419,7 +417,7 @@ class PauliX(Operation):
         **Example**
 
         >>> print(qml.X.compute_eigvals())
-        [ 1 -1]
+        [ 1. -1.]
         """
         return qml.pauli.pauli_eigs(1)
 
@@ -604,7 +602,7 @@ class PauliY(Operation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
 
-    is_hermitian = True
+    is_verified_hermitian = True
 
     num_wires = 1
     """int: Number of wires that the operator acts on."""
@@ -699,7 +697,7 @@ class PauliY(Operation):
         **Example**
 
         >>> print(qml.Y.compute_eigvals())
-        [ 1 -1]
+        [ 1. -1.]
         """
         return qml.pauli.pauli_eigs(1)
 
@@ -827,7 +825,6 @@ def _controlled_y_resource(*_, num_control_wires, num_work_wires, work_wire_type
 
 @register_resources(_controlled_y_resource)
 def _controlled_y_decomp(*_, wires, control_wires, work_wires, work_wire_type, **__):
-
     if len(control_wires) == 1:
         qml.CY(wires=wires)
         return
@@ -859,7 +856,7 @@ class PauliZ(Operation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
 
-    is_hermitian = True
+    is_verified_hermitian = True
     num_wires = 1
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
@@ -953,7 +950,7 @@ class PauliZ(Operation):
         **Example**
 
         >>> print(qml.Z.compute_eigvals())
-        [ 1 -1]
+        [ 1. -1.]
         """
         return qml.pauli.pauli_eigs(1)
 
@@ -1100,7 +1097,6 @@ def _controlled_z_resources(*_, num_control_wires, num_work_wires, work_wire_typ
 
 @register_resources(_controlled_z_resources)
 def _controlled_z_decomp(*_, wires, control_wires, work_wires, work_wire_type, **__):
-
     if len(control_wires) == 1:
         qml.CZ(wires=wires)
         return
@@ -1352,8 +1348,8 @@ class T(Operation):
         **Example**
 
         >>> print(qml.T.compute_matrix())
-        [[1.+0.j         0.        +0.j        ]
-         [0.+0.j         0.70710678+0.70710678j]]
+        [[1.        +0.j         0.        +0.j        ]
+        [0.        +0.j         0.70710678+0.70710678j]]
         """
         return np.array([[1, 0], [0, cmath.exp(1j * np.pi / 4)]])
 
@@ -1378,7 +1374,7 @@ class T(Operation):
         **Example**
 
         >>> print(qml.T.compute_eigvals())
-        [1.+0.j 0.70710678+0.70710678j]
+        [1.        +0.j         0.70710678+0.70710678j]
         """
         return np.array([1, cmath.exp(1j * np.pi / 4)])
 
@@ -1629,6 +1625,7 @@ class SWAP(Operation):
         wires (Sequence[int]): the wires the operation acts on
     """
 
+    is_verified_hermitian = True
     num_wires = 2
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
@@ -1744,10 +1741,6 @@ class SWAP(Operation):
     def _controlled(self, wire: WiresLike) -> "qml.CSWAP":
         return qml.CSWAP(wires=wire + self.wires)
 
-    @property
-    def is_hermitian(self) -> bool:
-        return True
-
 
 def _swap_to_cnot_resources():
     return {qml.CNOT: 3}
@@ -1782,7 +1775,6 @@ def _controlled_swap_resources(*_, num_control_wires, num_work_wires, work_wire_
 
 @register_resources(_controlled_swap_resources)
 def _controlled_swap_decomp(*_, wires, control_wires, work_wires, work_wire_type, **__):
-
     if len(control_wires) == 1:
         qml.CSWAP(wires=wires)
         return
@@ -1857,11 +1849,16 @@ class ECR(Operation):
 
         **Example**
 
-        >>> print(qml.ECR.compute_matrix())
-         [[0+0.j 0.+0.j 1/sqrt(2)+0.j 0.+1j/sqrt(2)]
-         [0.+0.j 0.+0.j 0.+1.j/sqrt(2) 1/sqrt(2)+0.j]
-         [1/sqrt(2)+0.j 0.-1.j/sqrt(2) 0.+0.j 0.+0.j]
-         [0.-1/sqrt(2)j 1/sqrt(2)+0.j 0.+0.j 0.+0.j]]
+        >>> from pprint import pprint
+        >>> pprint(qml.ECR.compute_matrix())
+        array([[ 0.        +0.j        ,  0.        +0.j        ,
+                 0.70710678+0.j        ,  0.        +0.70710678j],
+               [ 0.        +0.j        ,  0.        +0.j        ,
+                 0.        +0.70710678j,  0.70710678+0.j        ],
+               [ 0.70710678+0.j        , -0.        -0.70710678j,
+                 0.        +0.j        ,  0.        +0.j        ],
+               [-0.        -0.70710678j,  0.70710678+0.j        ,
+                 0.        +0.j        ,  0.        +0.j        ]])
         """
 
         return np.array(
@@ -1895,7 +1892,7 @@ class ECR(Operation):
         **Example**
 
         >>> print(qml.ECR.compute_eigvals())
-        [1, -1, 1, -1]
+        [ 1 -1  1 -1]
         """
 
         return np.array([1, -1, 1, -1])
@@ -1904,28 +1901,27 @@ class ECR(Operation):
     def compute_decomposition(wires: WiresLike) -> list[qml.operation.Operator]:
         r"""Representation of the operator as a product of other operators (static method).
 
-           .. math:: O = O_1 O_2 \dots O_n.
+        .. math:: O = O_1 O_2 \dots O_n.
 
 
-           .. seealso:: :meth:`~.ECR.decomposition`.
+        .. seealso:: :meth:`~.ECR.decomposition`.
 
-           Args:
-               wires (Iterable, Wires): wires that the operator acts on
+        Args:
+            wires (Iterable, Wires): wires that the operator acts on
 
-           Returns:
-               list[Operator]: decomposition into lower level operations
+        Returns:
+            list[Operator]: decomposition into lower level operations
 
-           **Example:**
+        **Example:**
 
-           >>> print(qml.ECR.compute_decomposition((0,1)))
-
-
+        >>> from pprint import pprint
+        >>> pprint(qml.ECR.compute_decomposition((0,1)))
         [Z(0),
-         CNOT(wires=[0, 1]),
-         SX(1),
-         RX(1.5707963267948966, wires=[0]),
-         RY(1.5707963267948966, wires=[0]),
-         RX(1.5707963267948966, wires=[0])]
+        CNOT(wires=[0, 1]),
+        SX(1),
+        RX(1.5707963267948966, wires=[0]),
+        RY(1.5707963267948966, wires=[0]),
+        RX(1.5707963267948966, wires=[0])]
 
         """
         pi = np.pi
@@ -2053,7 +2049,7 @@ class ISWAP(Operation):
         **Example**
 
         >>> print(qml.ISWAP.compute_eigvals())
-        [1j, -1j, 1, 1]
+        [ 0.+1.j -0.-1.j  1.+0.j  1.+0.j]
         """
         return np.array([1j, -1j, 1, 1])
 
@@ -2196,11 +2192,16 @@ class SISWAP(Operation):
 
         **Example**
 
-        >>> print(qml.SISWAP.compute_matrix())
-        [[1.+0.j          0.+0.j          0.+0.j  0.+0.j]
-         [0.+0.j  0.70710678+0.j  0.+0.70710678j  0.+0.j]
-         [0.+0.j  0.+0.70710678j  0.70710678+0.j  0.+0.j]
-         [0.+0.j          0.+0.j          0.+0.j  1.+0.j]]
+        >>> from pprint import pprint
+        >>> pprint(qml.SISWAP.compute_matrix())
+        array([[1.        +0.j        , 0.        +0.j        ,
+                0.        +0.j        , 0.        +0.j        ],
+            [0.        +0.j        , 0.70710678+0.j        ,
+                0.        +0.70710678j, 0.        +0.j        ],
+            [0.        +0.j        , 0.        +0.70710678j,
+                0.70710678+0.j        , 0.        +0.j        ],
+            [0.        +0.j        , 0.        +0.j        ,
+                0.        +0.j        , 1.        +0.j        ]])
         """
         return np.array(
             [
@@ -2233,7 +2234,7 @@ class SISWAP(Operation):
         **Example**
 
         >>> print(qml.SISWAP.compute_eigvals())
-        [0.70710678+0.70710678j 0.70710678-0.70710678j 1.+0.j 1.+0.j]
+        [0.70710678+0.70710678j 0.70710678-0.70710678j 1.        +0.j 1.        +0.j        ]
         """
         return np.array([INV_SQRT2 * (1 + 1j), INV_SQRT2 * (1 - 1j), 1, 1])
 
@@ -2255,7 +2256,7 @@ class SISWAP(Operation):
         **Example:**
 
         >>> print(qml.SISWAP.compute_decomposition((0,1)))
-        [SX(0)),
+        [SX(0),
         RZ(1.5707963267948966, wires=[0]),
         CNOT(wires=[0, 1]),
         SX(0),
