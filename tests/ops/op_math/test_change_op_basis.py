@@ -145,7 +145,7 @@ class TestProperties:  # pylint: disable=too-few-public-methods
         """Test is_hermitian property updates correctly."""
         middle_op = ops_lst[1]
         change_op = change_op_basis(*ops_lst)
-        assert middle_op.is_hermitian == change_op.is_hermitian
+        assert middle_op.is_verified_hermitian == change_op.is_verified_hermitian
 
     @pytest.mark.parametrize("ops_lst", ops)
     def test_queue_category_ops(self, ops_lst):

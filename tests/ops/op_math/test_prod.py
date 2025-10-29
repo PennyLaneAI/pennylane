@@ -897,10 +897,10 @@ class TestProperties:
     """Test class properties."""
 
     @pytest.mark.parametrize("ops_lst, hermitian_status", list(zip(ops, ops_hermitian_status)))
-    def test_is_hermitian(self, ops_lst, hermitian_status):
-        """Test is_hermitian property updates correctly."""
+    def test_is_verified_hermitian(self, ops_lst, hermitian_status):
+        """Test is_verified_hermitian property updates correctly."""
         prod_op = prod(*ops_lst)
-        assert prod_op.is_hermitian == hermitian_status
+        assert prod_op.is_verified_hermitian == hermitian_status
 
     @pytest.mark.tf
     def test_is_hermitian_tf(self):

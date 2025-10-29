@@ -21,23 +21,56 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as pnp
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 
 @pytest.mark.jax
 def test_standard_validity():
     """Run standard tests of operation validity."""
     op = qml.AllSinglesDoubles(
-        [1.0, 2.0],
-        wires=range(4),
-        hf_state=np.array([1, 1, 0, 0]),
-        singles=[[0, 1]],
-        doubles=[[0, 1, 2, 3]],
+        np.array([1.0, 2.0]),
+        np.array(list(range(4))),
+        np.array([1, 1, 0, 0]),
+        singles=np.array([[0, 1]]),
+        doubles=np.array([[0, 1, 2, 3]]),
     )
     qml.ops.functions.assert_valid(op)
 
 
 class TestDecomposition:
     """Tests that the template defines the correct decomposition."""
+
+    DECOMP_PARAMS = [
+        (
+            np.array([-2.8, 0.5]),
+            range(4),
+            np.array([1, 1, 0, 0]),
+            [[0, 2]],
+            [[0, 1, 2, 3]],
+        ),
+        (
+            np.array([0.0, 1.0]),
+            range(4),
+            np.array([0, 1, 0, 1]),
+            [[1, 3]],
+            [[0, 1, 2, 3]],
+        ),
+        (
+            np.array([0.0, -11.0]),
+            range(4),
+            np.array([1, 1, 1, 1]),
+            [[1, 3]],
+            [[3, 2, 1, 0]],
+        ),
+    ]
+
+    @pytest.mark.capture
+    @pytest.mark.parametrize(("weights", "wires", "hf_state", "singles", "doubles"), DECOMP_PARAMS)
+    def test_decomposition_new(self, weights, wires, hf_state, singles, doubles):
+        """Test the decomposition of the AllSinglesDoubles template."""
+        op = qml.AllSinglesDoubles(weights, wires, hf_state, singles=singles, doubles=doubles)
+        for rule in qml.list_decomps(qml.AllSinglesDoubles):
+            _test_decomposition_rule(op, rule)
 
     @pytest.mark.parametrize(
         ("singles", "doubles", "weights", "ref_gates"),
