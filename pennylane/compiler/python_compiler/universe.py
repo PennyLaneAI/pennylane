@@ -21,6 +21,9 @@ try:
 except (ImportError, ModuleNotFoundError):
     xdsl_available = False  # pragma: no cover
 
+# We must check that xDSL is installed because we're adding an entry point to
+# PennyLane that references this file, and we must ensure that PennyLane can
+# be installed in environments where xDSL is not installed.
 XDSL_UNIVERSE = None
 
 if xdsl_available:
