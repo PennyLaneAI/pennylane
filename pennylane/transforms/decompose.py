@@ -512,6 +512,10 @@ def decompose(
     1: ──H─╰●──────│───────│───────╭QFT†─┤
     2: ──H─────────╰●──────│───────├QFT†─┤
     3: ──H─────────────────╰●──────╰QFT†─┤
+    <BLANKLINE>
+    M0 =
+    [[0.87758256+0.j         0.        -0.47942554j]
+     [0.        -0.47942554j 0.87758256+0.j        ]]
 
     >>> print(qml.draw(qml.transforms.decompose(circuit, max_expansion=2))())
     0: ──H──RZ(4.71)──RY(1.14)─╭X──RY(-1.14)──RZ(-3.14)─╭X──RZ(-1.57)──RZ(1.57)──RY(1.00)─╭X ···
@@ -547,24 +551,21 @@ def decompose(
             tape = qml.tape.QuantumScript.from_queue(q)
             [new_tape], _ = qml.transforms.decompose([tape], gate_set={"RX", "RY", "RZ", "CZ"})
 
-        .. code-block:: pycon
-
-            >>> new_tape.operations
-            [RZ(1.5707963267948966, wires=[1]),
-             RY(0.25, wires=[1]),
-             CNOT(wires=[0, 1]),
-             RY(-0.25, wires=[1]),
-             CNOT(wires=[0, 1]),
-             RZ(-1.5707963267948966, wires=[1])]
+        >>> from pprint import pprint
+        >>> pprint(new_tape.operations)
+        [RZ(np.float64(1.57...), wires=[1]),
+         RY(0.25, wires=[1]),
+         CNOT(wires=[0, 1]),
+         RY(-0.25, wires=[1]),
+         CNOT(wires=[0, 1]),
+         RZ(np.float64(-1.57...), wires=[1])]
 
         With the new system enabled, the transform produces the expected outcome.
 
-        .. code-block:: pycon
-
-            >>> qml.decomposition.enable_graph()
-            >>> [new_tape], _ = qml.transforms.decompose([tape], gate_set={"RX", "RY", "RZ", "CZ"})
-            >>> new_tape.operations
-            [RX(0.25, wires=[1]), CZ(wires=[0, 1]), RX(-0.25, wires=[1]), CZ(wires=[0, 1])]
+        >>> qml.decomposition.enable_graph()
+        >>> [new_tape], _ = qml.transforms.decompose([tape], gate_set={"RX", "RY", "RZ", "CZ"})
+        >>> new_tape.operations
+        [RX(0.25, wires=[1]), CZ(wires=[0, 1]), RX(-0.25, wires=[1]), CZ(wires=[0, 1])]
 
         **Weighted Gate Sets**
 
@@ -582,12 +583,10 @@ def decompose(
                 qml.Toffoli(wires=[0, 1, 2])
                 return qml.expval(qml.Z(0))
 
-        .. code-block:: pycon
-
-            >>> print(qml.draw(circuit)())
-            0: ───────────╭●────────────╭●─╭●─┤  <Z>
-            1: ──RX(0.05)─╰Z──RX(-0.05)─╰Z─├●─┤
-            2: ────────────────────────────╰X─┤
+        >>> print(qml.draw(circuit)())
+        0: ───────────╭●────────────╭●─╭●─┤  <Z>
+        1: ──RX(0.05)─╰Z──RX(-0.05)─╰Z─├●─┤
+        2: ────────────────────────────╰X─┤
 
         .. code-block:: python
 
@@ -601,12 +600,10 @@ def decompose(
                 qml.Toffoli(wires=[0, 1, 2])
                 return qml.expval(qml.Z(0))
 
-        .. code-block:: pycon
-
-            >>> print(qml.draw(circuit)())
-            0: ────╭●───────────╭●─┤  <Z>
-            1: ──H─╰RZ(0.10)──H─├●─┤
-            2: ─────────────────╰X─┤
+        >>> print(qml.draw(circuit)())
+        0: ────╭●───────────╭●─┤  <Z>
+        1: ──H─╰RZ(0.10)──H─├●─┤
+        2: ─────────────────╰X─┤
 
 
         Here, when the Hadamard and ``CRZ`` have relatively high weights, a decomposition involving them is considered
@@ -660,15 +657,13 @@ def decompose(
                 qml.QubitUnitary(U, wires=[0, 1])
                 return qml.expval(qml.PauliZ(0))
 
-        .. code-block:: pycon
-
-            >>> print(qml.draw(circuit)())
-            0: ──RZ(0.10)──RY(0.20)──RZ(0.30)─┤  <Z>
-            1: ──U(M0)────────────────────────┤
-
-            M0 =
-            [[1.+0.j 0.+0.j]
-             [0.+0.j 1.+0.j]]
+        >>> print(qml.draw(circuit)())
+        0: ──RZ(0.10)──RY(0.20)──RZ(0.30)─┤  <Z>
+        1: ──U(M0)────────────────────────┤
+        <BLANKLINE>
+        M0 =
+        [[1.+0.j 0.+0.j]
+            [0.+0.j 1.+0.j]]
 
         We can see that the ``QubitUnitary`` on wire 1 is not decomposed due to the stopping
         condition, despite ``QubitUnitary`` not being in the target gate set.
@@ -728,11 +723,9 @@ def decompose(
                 qml.IsingXX(0.5, wires=[0, 1])
                 return qml.state()
 
-
-        .. code-block:: pycon
-
-            >>> qml.specs(circuit)()["resources"].gate_types
-            defaultdict(int, {'RZ': 12, 'RX': 7, 'GlobalPhase': 6, 'CZ': 3})
+        >>> qml.specs(circuit)()["resources"].gate_types
+        defaultdict(<class 'int'>, {'RZ': 12, 'RX': 7, 'GlobalPhase': 6, 'CZ': 3})
+        >>> qml.decomposition.disable_graph()
 
     """
 

@@ -113,7 +113,8 @@ def transform(  # pylint: disable=too-many-arguments,too-many-positional-argumen
     transform and its processing function are applied in the execution.
 
     >>> transformed_qnode = dispatched_transform(qnode_circuit)
-    <QNode: wires=2, device='default.qubit', interface='auto', diff_method='best'>
+    >>> transformed_qnode
+    <QNode: device='<default.qubit device at ...>', interface='auto', diff_method='best', shots='Shots(total=None)'>
 
     >>> transformed_qnode.transform_program
     TransformProgram(my_quantum_transform)
@@ -160,16 +161,15 @@ def transform(  # pylint: disable=too-many-arguments,too-many-positional-argumen
         It returns a new batch of tapes ``batch2``, each of which has been transformed by the second transform, and a processing function ``function2``.
 
         >>> batch2
-        (<QuantumTape: wires=[0, 1, 2], params=2>,
-        <QuantumTape: wires=[0, 1, 2], params=1>)
+        (<QuantumTape: wires=[0, 1, 2], params=1>, <QuantumTape: wires=[0, 1, 2], params=1>)
 
         >>> type(function2)
-        function
+        <class 'function'>
 
         We can combine the processing functions to post-process the results of the execution.
 
         >>> function1(function2(result))
-        [array(0.5)]
+        np.float64(0.499...)
 
     .. details::
         :title: Signature of a transform
@@ -250,24 +250,24 @@ def transform(  # pylint: disable=too-many-arguments,too-many-positional-argumen
                 qml.adjoint(qml.S(1))
                 return qml.expval(qml.Z(1))
 
-        >>> qml.capture.make_plxpr(circuit)()
+        >>> jax.make_jaxpr(circuit)()
         { lambda ; . let
             a:AbstractMeasurement(n_wires=None) = cancel_inverses_transform[
             args_slice=slice(0, 0, None)
             consts_slice=slice(0, 0, None)
             inner_jaxpr={ lambda ; . let
-                _:AbstractOperator() = PauliX[n_wires=1] 0
-                _:AbstractOperator() = S[n_wires=1] 1
-                _:AbstractOperator() = PauliX[n_wires=1] 0
-                b:AbstractOperator() = S[n_wires=1] 1
+                _:AbstractOperator() = PauliX[n_wires=1] 0:i32[]
+                _:AbstractOperator() = S[n_wires=1] 1:i32[]
+                _:AbstractOperator() = PauliX[n_wires=1] 0:i32[]
+                b:AbstractOperator() = S[n_wires=1] 1:i32[]
                 _:AbstractOperator() = Adjoint b
-                c:AbstractOperator() = PauliZ[n_wires=1] 1
+                c:AbstractOperator() = PauliZ[n_wires=1] 1:i32[]
                 d:AbstractMeasurement(n_wires=None) = expval_obs c
-              in (d,) }
+                in (d,) }
             targs_slice=slice(0, None, None)
             tkwargs={}
             ]
-          in (a,) }
+        in (a,) }
 
         As shown, the transform gets applied as a higher-order primitive, with the jaxpr
         representation of the function being transformed stored in the ``inner_jaxpr``
@@ -302,11 +302,11 @@ def transform(  # pylint: disable=too-many-arguments,too-many-positional-argumen
         as an input, and returns a new function that has been transformed:
 
         >>> transformed_circuit = qml.capture.expand_plxpr_transforms(circuit)
-        >>> qml.capture.make_plxpr(transformed_circuit)()
+        >>> jax.make_jaxpr(transformed_circuit)()
         { lambda ; . let
-            a:AbstractOperator() = PauliZ[n_wires=1] 1
+            a:AbstractOperator() = PauliZ[n_wires=1] 1:i32[]
             b:AbstractMeasurement(n_wires=None) = expval_obs a
-          in (b,) }
+        in (b,) }
     """
     # 1: Checks for the transform
     if not callable(quantum_transform):

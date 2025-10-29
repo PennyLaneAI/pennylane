@@ -73,7 +73,7 @@ def commutation_dag(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postproces
     the  form ``(ID, CommutationDAGNode)``:
 
     >>> nodes = dag.get_nodes()
-    >>> nodes
+    >>> nodes # doctest: +SKIP
     NodeDataView({0: <pennylane.transforms.commutation_dag.CommutationDAGNode object at 0x7f461c4bb580>, ...}, data='node')
 
     You can also access specific nodes (of type :class:`~.CommutationDAGNode`) by using the :meth:`~.get_node`
@@ -81,7 +81,7 @@ def commutation_dag(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postproces
     node attributes.
 
     >>> second_node = dag.get_node(2)
-    >>> second_node
+    >>> second_node # doctest: +SKIP
     <pennylane.transforms.commutation_dag.CommutationDAGNode object at 0x136f8c4c0>
     >>> second_node.op
     CNOT(wires=[1, 2])

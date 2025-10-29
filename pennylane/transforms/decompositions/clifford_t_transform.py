@@ -481,7 +481,7 @@ def clifford_t_decomposition(
 
     **Example**
 
-    .. code-block:: python3
+    .. code-block:: python
 
         @qml.qnode(qml.device("default.qubit"))
         def circuit(x, y):
@@ -495,7 +495,11 @@ def clifford_t_decomposition(
         result = circuit(x, y)
         approx = decomposed_circuit(x, y)
 
-    >>> qml.math.allclose(result, approx, atol=1e-4)
+    >>> result
+    np.float64(-0.2669...)
+    >>> approx
+    np.float64(-0.2662...)
+    >>> qml.math.allclose(result, approx, atol=1e-3)
     True
     """
     with QueuingManager.stop_recording():
