@@ -16,6 +16,7 @@ Contains the quantum-number-preserving GateFabric template.
 """
 # pylint: disable=too-many-arguments
 import numpy as np
+from pennylane.decomposition import resource_rep
 
 from pennylane import math
 from pennylane.operation import Operation
@@ -176,6 +177,8 @@ class GateFabric(Operation):
 
     grad_method = None
 
+    resource_keys = { "n_layers", "num_wires", "len_wire_pattern", "include_pi" }
+
     def __init__(self, weights, wires, init_state, include_pi=False, id=None):
         if len(wires) < 4:
             raise ValueError(
@@ -212,6 +215,26 @@ class GateFabric(Operation):
     @property
     def num_params(self):
         return 1
+
+    @property
+    def resource_params(self) -> dict:
+        len_wire_pattern = 0
+
+        for i in range(0, len(self.wires), 4):
+            if len(self.wires[i: i + 4]) == 4:
+                len_wire_pattern += 1
+
+        if len(self.wires) > 4:
+            for i in range(2, len(self.wires), 4):
+                if len(self.wires[i: i + 4]) == 4:
+                    len_wire_pattern += 1
+
+        return {
+            "n_layers": math.shape(self.parameters[0])[0],
+            "num_wires": len(self.wires),
+            "len_wire_pattern": len_wire_pattern,
+            "include_pi": self.hyperparameters["include_pi"],
+        }
 
     @staticmethod
     def compute_decomposition(
@@ -290,3 +313,17 @@ class GateFabric(Operation):
             )
 
         return n_layers, n_wires // 2 - 1, 2
+
+
+def _gate_fabric_resources(n_layers, num_wires, len_wire_pattern, include_pi):
+    resources = {
+        resource_rep(BasisEmbedding, num_wires=num_wires): 1,
+        resource_rep(DoubleExcitation): n_layers * len_wire_pattern
+    }
+
+    if include_pi:
+        resources[resource_rep(OrbitalRotation)] = 2 * n_layers * len_wire_pattern
+    else:
+        resources[resource_rep(OrbitalRotation)] = n_layers * len_wire_pattern
+
+    return resources
