@@ -35,6 +35,12 @@ from pennylane.wires import Wires
 from .resource_operator import ResourceOperator
 
 
+def _map_term_trotter(op: Operation):
+    """Exponentiate op for trotter decomposition"""
+    if isinstance(op, qops.op_math.Sum):
+        return qtemps.TrotterProduct(op, time=1, n=1, order=1, check_hermitian=False)
+    return qops.op_math.Evolution(op)
+
 @singledispatch
 def _map_to_resource_op(op: Operation) -> ResourceOperator:
     r"""Maps an instance of :class:`~.Operation` to its associated :class:`~.estimator.ResourceOperator`.
@@ -333,8 +339,8 @@ def _(op: qtemps.TrotterProduct):
 
     with QueuingManager.stop_recording():
         res_ops = [
-            _map_to_resource_op(qops.Evolution(term))
-            for term in op.hyperparameters["base"].terms()[1]
+            _map_to_resource_op(_map_term_trotter(term))
+            for term in op.hyperparameters["base"].operands
         ]
 
     return re_temps.TrotterProduct(

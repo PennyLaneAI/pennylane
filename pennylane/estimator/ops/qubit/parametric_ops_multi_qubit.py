@@ -317,12 +317,23 @@ class PauliRot(ResourceOperator):
             gp = qre.resource_rep(qre.GlobalPhase)
             return [GateCount(gp)]
 
+        # Special Cases:
         if pauli_string == "X":
             return [GateCount(qre.resource_rep(qre.RX, {"precision": precision}))]
         if pauli_string == "Y":
             return [GateCount(qre.resource_rep(qre.RY, {"precision": precision}))]
         if pauli_string == "Z":
             return [GateCount(qre.resource_rep(qre.RZ, {"precision": precision}))]
+        if pauli_string == "XX":  # IsingXX
+            return [
+                GateCount(qre.resource_rep(qre.RX, {"precision": precision})),
+                GateCount(qre.resource_rep(qre.CNOT), count=2),
+            ]
+        if pauli_string == "YY":  # IsingYY
+            return [
+                GateCount(qre.resource_rep(qre.RY, {"precision": precision})),
+                GateCount(qre.resource_rep(qre.CY), count=2),
+            ]
 
         active_wires = len(pauli_string.replace("I", ""))
 
