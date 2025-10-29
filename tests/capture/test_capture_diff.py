@@ -609,7 +609,7 @@ class TestJacobian:
         assert len(jaxpr.eqns) == 3
 
         argnums = [argnums] if isinstance(argnums, int) else argnums
-        # Compute the flat argnum in order to determine the expected number of out tracers
+        # Compute the flat argnums in order to determine the expected number of out tracers
         flat_argnums = [0] * (0 in argnums) + [1, 2] * (1 in argnums)
         assert jaxpr.out_avals == [jax.core.ShapedArray((), fdtype, weak_type=True)] * (
             2 * len(flat_argnums)
