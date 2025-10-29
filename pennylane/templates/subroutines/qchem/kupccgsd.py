@@ -19,6 +19,7 @@ import copy
 from itertools import product
 
 import numpy as np
+from pennylane.decomposition import resource_rep
 
 from pennylane import math
 from pennylane.operation import Operation
@@ -338,3 +339,18 @@ class kUpCCGSD(Operation):
         d_wires = generalized_pair_doubles(range(n_wires))
 
         return k, len(s_wires) + len(d_wires)
+
+
+def _kupccgsd_resources(num_wires, k, len_d_wires, len_s_wires):
+    resources = {
+        resource_rep(BasisEmbedding, num_wires=num_wires): 1
+    }
+
+    for layer in range(k):
+        for i, (w1, w2) in enumerate(d_wires):
+            FermionicDoubleExcitation(
+                weights[layer][len(s_wires) + i], wires1=w1, wires2=w2
+            )
+
+        for j, s_wires_ in enumerate(s_wires):
+            FermionicSingleExcitation(weights[layer][j], wires=s_wires_)
