@@ -75,8 +75,7 @@ def batch_input(
     >>> x = rng.random((10, 2))
     >>> w = rng.random((2, ))
     >>> circuit(x, w)
-    array([0.48547961, 0.58543377, 0.69542861, 0.53843052, 0.58384576,
-           0.27369882, 0.02334763, 0.22528259, 0.61655047, 0.01669167])
+    array([0.485..., 0.585..., 0.695..., ..., 0.616..., 0.0166...])
     """
 
     argnum = tuple(argnum) if isinstance(argnum, (list, tuple)) else (int(argnum),)

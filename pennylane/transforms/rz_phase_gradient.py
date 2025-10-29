@@ -175,7 +175,7 @@ def rz_phase_gradient(
     Executing the circuit, we get the expected result:
 
     >>> rz_circ(phi, wire)
-    array([0.85355339, 0.14644661])
+    array([0.853..., 0.146...])
 
     """
 

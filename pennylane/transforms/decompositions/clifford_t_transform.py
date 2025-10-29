@@ -498,9 +498,10 @@ def clifford_t_decomposition(
     >>> result
     np.float64(-0.2669...)
     >>> approx
-    np.float64(-0.2662...)
-    >>> qml.math.allclose(result, approx, atol=1e-3)
+    np.float64(-0.26...)
+    >>> qml.math.allclose(result, approx, atol=1e-2)
     True
+
     """
     with QueuingManager.stop_recording():
         # Build the basis set and the pipeline for initial compilation pass

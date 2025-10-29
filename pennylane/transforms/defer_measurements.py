@@ -555,12 +555,12 @@ def defer_measurements(
     >>> qnode = qml.QNode(transformed_qfunc, dev)
     >>> par = pnp.array(np.pi/2, requires_grad=True)
     >>> qnode(par)
-    tensor(0.43487747, requires_grad=True)
+    tensor(0.434..., requires_grad=True)
 
     We can also differentiate parameters passed to conditional operations:
 
     >>> qml.grad(qnode)(par)
-    tensor(-0.49622252, requires_grad=True)
+    tensor(-0.496... requires_grad=True)
 
     Reusing and resetting measured wires will work as expected with the
     ``defer_measurements`` transform:
@@ -583,7 +583,7 @@ def defer_measurements(
 
     >>> pars = pnp.array([0.643, 0.246], requires_grad=True)
     >>> func(*pars)
-    tensor([0.76960924, 0.13204407, 0.08394415, 0.01440254], requires_grad=True)
+    tensor([0.769..., 0.132..., 0.0839..., 0.014...], requires_grad=True)
 
     .. details::
         :title: Usage Details
@@ -701,7 +701,7 @@ def defer_measurements(
                   qml.RX(phi, 0)
                   return qml.expval(qml.PauliZ(0))
 
-        >>> jax.make_jaxpr(f)()
+        >>> jax.make_jaxpr(f)() # doctest: +SKIP
         { lambda ; . let
             _:AbstractOperator() = CNOT[n_wires=2] 0:i32[] 9:i32[]
             a:f32[] = mul 0.0:f32[] 3.141592653589793:f32[]

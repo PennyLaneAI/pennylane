@@ -115,7 +115,7 @@ def broadcast_expand(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postproce
     to the three parameters in the broadcasted input ``x``:
 
     >>> expanded_circuit(x)
-    array([0.98006658, 0.82533561, 0.54030231])
+    array([0.980..., 0.825..., 0.540...])
 
     We also can call the transform manually on a tape:
 
@@ -126,7 +126,7 @@ def broadcast_expand(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postproce
     >>> tapes
     (<QuantumScript: wires=[0], params=1>, <QuantumScript: wires=[0], params=1>, <QuantumScript: wires=[0], params=1>)
     >>> fn(qml.execute(tapes, qml.device("default.qubit")))
-    array([0.98006658, 0.82533561, 0.54030231])
+    array([0.980..., 0.825..., 0.540...])
     """
     if tape.batch_size is None:
         return (tape,), null_postprocessing

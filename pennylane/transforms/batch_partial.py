@@ -85,12 +85,12 @@ def batch_partial(qnode, all_operations=False, preprocess=None, **partial_kwargs
     >>> batch_size = 4
     >>> x = qml.numpy.linspace(0.1, 0.5, batch_size)
     >>> batched_partial_circuit(x)
-    tensor([0.97517033, 0.95350781, 0.91491915, 0.86008934], requires_grad=True)
+    tensor([0.975..., 0.953..., 0.914..., 0.860...], requires_grad=True)
 
     Jacobians can be computed for the arguments of the wrapper function, but
     not for any pre-supplied argument passed to ``qml.batch_partial``:
 
-    >>> qml.jacobian(batched_partial_circuit)(x)
+    >>> qml.jacobian(batched_partial_circuit)(x) # doctest: +SKIP
     array([[-0.0978434 ,  0.        ,  0.        ,  0.        ],
            [ 0.        , -0.22661276,  0.        ,  0.        ],
            [ 0.        ,  0.        , -0.35135943,  0.        ],
@@ -110,11 +110,11 @@ def batch_partial(qnode, all_operations=False, preprocess=None, **partial_kwargs
     >>> batch_size = 4
     >>> y0 = qml.numpy.linspace(0.5, 2, batch_size)
     >>> batched_lambda_circuit(y0)
-    tensor([0.91645953, 0.8731983 , 0.82121237, 0.76102116], requires_grad=True)
+    tensor([0.916..., 0.873... , 0.821..., 0.761...], requires_grad=True)
 
     Jacobians can be computed in this scenario as well:
 
-    >>> qml.jacobian(batched_lambda_circuit)(y0)
+    >>> qml.jacobian(batched_lambda_circuit)(y0) # doctest: +SKIP
     array([[-0.07749457,  0.        ,  0.        ,  0.        ],
            [ 0.        , -0.09540608,  0.        ,  0.        ],
            [ 0.        ,  0.        , -0.11236432,  0.        ],

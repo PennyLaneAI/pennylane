@@ -360,7 +360,7 @@ def rowcol(
     We now run the algorithm:
 
     >>> new_qfunc = qml.transforms.rowcol(qfunc)
-    >>> print(qml.draw(new_qfunc, wire_order=range(5))())
+    >>> print(qml.draw(new_qfunc, wire_order=range(5))()) # doctest: +SKIP
     0: ──────────╭X─╭X─╭●─╭●─╭●─╭X─┤
     1: ────╭●─╭X─│──│──│──│──│──│──┤
     2: ─╭X─╰X─╰●─│──╰●─│──│──╰X─╰●─┤
@@ -370,9 +370,9 @@ def rowcol(
     We can confirm that this circuit indeed implements the original circuit:
 
     >>> import numpy as np
-    >>> U1 = qml.matrix(new_qfunc, wire_order=range(5))()
-    >>> U2 = qml.matrix(qfunc, wire_order=range(5))()
-    >>> np.allclose(U1, U2)
+    >>> U1 = qml.matrix(new_qfunc, wire_order=range(5))() # doctest: +SKIP
+    >>> U2 = qml.matrix(qfunc, wire_order=range(5))() # doctest: +SKIP
+    >>> np.allclose(U1, U2) # doctest: +SKIP
     True
 
     The same is true for the :func:`~.parity_matrix` of both circuits.

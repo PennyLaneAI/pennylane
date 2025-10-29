@@ -136,8 +136,8 @@ def unitary_to_rot(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
     >>> print(qml.draw(qnode)())
     0: ──U(M0)─┤  <Z>
     M0 =
-    [[-0.17111489+0.58564875j -0.69352236-0.38309524j]
-    [ 0.25053735+0.75164238j  0.60700543-0.06171855j]]
+    [[-0.171...+0.5856...j -0.693...-0.383...j]
+    [ 0.250...+0.751...j  0.607...-0.061...j]]
 
     We can use the transform to decompose the gate:
 
