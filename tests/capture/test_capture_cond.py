@@ -156,7 +156,7 @@ class TestCond:
     )
     def test_gradient(self, testing_functions, selector, arg, decorator):
         """Test the gradient of the conditional."""
-        from pennylane.capture.primitives import grad_prim
+        from pennylane.capture.primitives import jacobian_prim
 
         true_fn, false_fn, _, _, _, _ = testing_functions
 
@@ -176,7 +176,7 @@ class TestCond:
 
         jaxpr = jax.make_jaxpr(test_func)(arg)
         assert len(jaxpr.eqns) == 1
-        assert jaxpr.eqns[0].primitive == grad_prim
+        assert jaxpr.eqns[0].primitive == jacobian_prim
         # broken on jax0.5.3
         # correct_func = jax.grad(func(selector))
         # assert np.allclose(correct_func(arg), expected)
