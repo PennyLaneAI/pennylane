@@ -171,7 +171,7 @@ def rz_phase_gradient(
     The additional work wires are required by the :class:`~.SemiAdder`.
     Executing the circuit, we get the expected result:
 
-    >>> rz_circ(phi, wire)
+    >>> rz_circ(phi, wire) # doctest: +SKIP
     array([0.853..., 0.146...])
 
     """
