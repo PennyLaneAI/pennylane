@@ -18,7 +18,7 @@ from functools import lru_cache, partial
 
 import numpy as np
 
-from pennylane import capture, math
+from pennylane import math
 
 has_jax = True
 try:
