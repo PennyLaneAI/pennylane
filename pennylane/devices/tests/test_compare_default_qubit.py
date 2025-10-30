@@ -251,7 +251,7 @@ class TestComparison:
         ]
 
         layers = 3
-        rng = pnp.random.default_rng(1967)
+        rng = pnp.random.default_rng(1968)
         gates_per_layers = [rng.permutation(gates).numpy() for _ in range(layers)]
 
         def circuit():
