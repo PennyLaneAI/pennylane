@@ -25,10 +25,16 @@ from dataclasses import replace
 
 from pennylane import math, ops
 from pennylane.devices.capabilities import DeviceCapabilities
-from pennylane.exceptions import DeviceError, PennyLaneDeprecationWarning, QuantumFunctionError
+from pennylane.exceptions import (
+    DecompositionUndefinedError,
+    DeviceError,
+    PennyLaneDeprecationWarning,
+    QuantumFunctionError,
+)
 from pennylane.math import Interface, requires_grad
-from pennylane.measurements import ExpectationMP, MidMeasureMP, Shots
-from pennylane.operation import DecompositionUndefinedError, Operator
+from pennylane.measurements import ExpectationMP, Shots
+from pennylane.operation import Operator
+from pennylane.ops import MidMeasure
 from pennylane.tape import QuantumScript
 from pennylane.transforms import broadcast_expand, defer_measurements, dynamic_one_shot
 from pennylane.transforms.core import TransformProgram, transform
@@ -112,7 +118,7 @@ def adjoint_ops(op: Operator) -> bool:
     """Specify whether or not an Operator is supported by adjoint differentiation."""
     if isinstance(op, ops.QubitUnitary) and not any(requires_grad(d) for d in op.data):
         return True
-    return not isinstance(op, MidMeasureMP) and (
+    return not isinstance(op, MidMeasure) and (
         op.num_params == 0 or (op.num_params == 1 and op.has_generator)
     )
 
@@ -182,6 +188,7 @@ class LegacyDeviceFacade(Device):
         _config_filepath = getattr(self._device, "config_filepath", None)
         if _config_filepath:
             self.capabilities = DeviceCapabilities.from_toml_file(_config_filepath)
+            self.config_filepath = _config_filepath
 
         if self._device.shots:
             warnings.warn(

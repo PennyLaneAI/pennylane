@@ -121,7 +121,7 @@ class SProd(ScalarSymbolicOp):
                 return qml.expval(qml.s_prod(scalar, qml.Hadamard(wires=0)))
 
         >>> scalar, theta = (1.2, 3.4)
-        >>> qml.grad(circuit, argnum=[0,1])(scalar, theta)
+        >>> qml.grad(circuit, argnums=[0,1])(scalar, theta)
         (array(-0.6836...), array(0.2168...))
 
     """
@@ -199,10 +199,10 @@ class SProd(ScalarSymbolicOp):
 
     @property
     @handle_recursion_error
-    def is_hermitian(self):
+    def is_verified_hermitian(self):
         """If the base operator is hermitian and the scalar is real,
         then the scalar product operator is hermitian."""
-        return self.base.is_hermitian and not math.iscomplex(self.scalar)
+        return self.base.is_verified_hermitian and not math.iscomplex(self.scalar)
 
     # pylint: disable=arguments-renamed,invalid-overridden-method
     @property

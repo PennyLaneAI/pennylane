@@ -167,7 +167,7 @@ class TestValidation:
             QuantumFunctionError,
             match="does not support backprop with requested circuit.",
         ):
-            qml.grad(circuit, argnum=0)([0.5])
+            qml.grad(circuit, argnums=0)([0.5])
 
     def test_qnode_print(self):
         """Test that printing a QNode object yields the right information."""
@@ -624,7 +624,7 @@ class TestIntegration:
         spy.assert_not_called()
         tape = qml.workflow.construct_tape(circuit)()
         assert len(tape.operations) == 2
-        assert isinstance(tape.operations[1], qml.measurements.MidMeasureMP)
+        assert isinstance(tape.operations[1], qml.ops.MidMeasure)
 
     @pytest.mark.parametrize("basis_state", [[1, 0], [0, 1]])
     def test_sampling_with_mcm(self, basis_state, mocker):
@@ -1015,7 +1015,7 @@ class TestShots:
 
         with warnings.catch_warnings():
             warnings.filterwarnings("error", message="Cached execution with finite shots detected")
-            qml.jacobian(circuit, argnum=0)(0.3)
+            qml.jacobian(circuit, argnums=0)(0.3)
 
     # pylint: disable=unexpected-keyword-arg
     @pytest.mark.parametrize(
@@ -1397,7 +1397,7 @@ class TestTapeExpansion:
         def circuit():
             return qml.expval(H)
 
-        spy = mocker.spy(qml.transforms, "split_non_commuting")
+        spy = mocker.spy(qml.devices._legacy_device, "split_non_commuting")
         res = circuit()
         assert np.allclose(res, c[2], atol=0.3)
 

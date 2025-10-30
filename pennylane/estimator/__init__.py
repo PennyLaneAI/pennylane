@@ -110,3 +110,6 @@ from .compact_hamiltonian import (
     VibronicHamiltonian,
     VibrationalHamiltonian,
 )
+
+from .measurement import estimate_error, estimate_shots
+from .qpe_resources import FirstQuantization, DoubleFactorization
