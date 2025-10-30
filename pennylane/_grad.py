@@ -48,7 +48,7 @@ def _get_jacobian_prim():
     if not has_jax:  # pragma: no cover
         return None
 
-    jacobian_prim = capture.QmlPrimitive("grad")
+    jacobian_prim = capture.QmlPrimitive("jacobian")
     jacobian_prim.multiple_results = True
     jacobian_prim.prim_type = "higher_order"
 

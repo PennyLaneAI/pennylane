@@ -609,8 +609,8 @@ def handle_qnode(self, *invals, shots_len, qnode, device, execution_config, qfun
 
 
 @PlxprInterpreter.register_primitive(jacobian_prim)
-def handle_grad(self, *invals, jaxpr, n_consts, **params):
-    """Handle the grad primitive."""
+def handle_jacobian(self, *invals, jaxpr, n_consts, **params):
+"""Handle the jacobian primitive."""
     consts = invals[:n_consts]
     args = invals[n_consts:]
     new_jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr, consts, *args)
