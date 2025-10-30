@@ -173,7 +173,7 @@ def is_real_obj_or_close(obj):
     ``qml.math.allclose`` are used to determine whether the
     input is close to real-valued.
     """
-    if has_jax:
+    if get_deep_interface(obj) == "jax":
         return jnp.logical_and(jnp.logical_not(is_abstract(obj)), allclose(ar.imag(obj), 0.0))
     return not is_abstract(obj) and allclose(ar.imag(obj), 0.0)
 
