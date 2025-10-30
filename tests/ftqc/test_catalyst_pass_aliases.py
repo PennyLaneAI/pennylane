@@ -22,6 +22,8 @@ import pennylane as qml
 from pennylane.capture import make_plxpr
 from pennylane.ftqc.catalyst_pass_aliases import (
     commute_ppr,
+    decompose_clifford_ppr,
+    decompose_non_clifford_ppr,
     merge_ppr_ppm,
     ppm_compilation,
     ppr_to_mbqc,
@@ -65,6 +67,8 @@ def test_pass_is_captured(pass_fn):
         (merge_ppr_ppm, "merge-ppr-ppm"),
         (ppr_to_mbqc, "ppr-to-mbqc"),
         (ppr_to_ppm, "ppr-to-ppm"),
+        (decompose_clifford_ppr, "decompose-clifford-ppr"),
+        (decompose_non_clifford_ppr, "decompose-non-clifford-ppr"),
         (reduce_t_depth, "reduce-t-depth"),
         (ppm_compilation, "ppm-compilation"),
     ],
