@@ -132,13 +132,13 @@ def create_measurement_obs_primitive(
     primitive.prim_type = "measurement"
 
     @primitive.def_impl
-    def _(obs, **kwargs):
+    def _impl(obs, **kwargs):
         return type.__call__(measurement_type, obs=obs, **kwargs)
 
     abstract_type = _get_abstract_measurement()
 
     @primitive.def_abstract_eval
-    def _(*_, **__):
+    def _abstract_eval(*_, **__):
         abstract_eval = measurement_type._abstract_eval  # pylint: disable=protected-access
         return abstract_type(abstract_eval, n_wires=None)
 
@@ -169,13 +169,13 @@ def create_measurement_mcm_primitive(
     primitive.prim_type = "measurement"
 
     @primitive.def_impl
-    def _(*mcms, single_mcm=True, **kwargs):
+    def _impl(*mcms, single_mcm=True, **kwargs):
         return type.__call__(measurement_type, obs=mcms[0] if single_mcm else mcms, **kwargs)
 
     abstract_type = _get_abstract_measurement()
 
     @primitive.def_abstract_eval
-    def _(*mcms, **__):
+    def _abstract_eval(*mcms, **__):
         abstract_eval = measurement_type._abstract_eval  # pylint: disable=protected-access
         return abstract_type(abstract_eval, n_wires=len(mcms))
 
@@ -205,7 +205,7 @@ def create_measurement_wires_primitive(
     primitive.prim_type = "measurement"
 
     @primitive.def_impl
-    def _(*args, has_eigvals=False, **kwargs):
+    def _impl(*args, has_eigvals=False, **kwargs):
         if has_eigvals:
             wires = Wires(tuple(w if is_abstract(w) else int(w) for w in args[:-1]))
             kwargs["eigvals"] = args[-1]
@@ -217,7 +217,7 @@ def create_measurement_wires_primitive(
     abstract_type = _get_abstract_measurement()
 
     @primitive.def_abstract_eval
-    def _(*args, has_eigvals=False, **_):
+    def _abstract_eval(*args, has_eigvals=False, **_):
         abstract_eval = measurement_type._abstract_eval  # pylint: disable=protected-access
         n_wires = len(args) - 1 if has_eigvals else len(args)
         return abstract_type(abstract_eval, n_wires=n_wires, has_eigvals=has_eigvals)

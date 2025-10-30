@@ -379,7 +379,7 @@ class QSVT(Operation):
 
     >>> q_script = qml.tape.QuantumScript(ops=[qml.QSVT(block_encoding, phase_shifts)])
     >>> print(q_script.expand().draw(decimals=2))
-    0: ──RZ(-2.46)──H──RZ(1.00)──H†──RZ(-8.00)─┤
+    0: ──RZ(-2.46)──(H†)@RZ(1.00)@H──RZ(-8.00)─┤
 
     See the Usage Details section for more examples on implementing QSVT with different block
     encoding methods.
@@ -593,22 +593,23 @@ class QSVT(Operation):
         op_list = []
         UA_adj = copy.copy(UA)
 
-        for idx, op in enumerate(projectors[:-1]):
-            if QueuingManager.recording():
-                apply(op)
-            op_list.append(op)
-
-            if idx % 2 == 0:
-                if QueuingManager.recording():
-                    apply(UA)
-                op_list.append(UA)
-
-            else:
-                op_list.append(ops.adjoint(UA_adj))
-
         if QueuingManager.recording():
-            apply(projectors[-1])
-        op_list.append(projectors[-1])
+            apply(projectors[0])
+        op_list.append(projectors[0])
+
+        for op in projectors[1:-1]:
+            # change_op_basis would queue internally when called in a queuing context.
+            op_list.append(ops.change_op_basis(UA, op, ops.adjoint(UA_adj)))
+
+        if len(projectors) % 2 == 0:
+            if QueuingManager.recording():
+                apply(UA)
+            op_list.append(UA)
+
+        if len(projectors) > 1:
+            if QueuingManager.recording():
+                apply(projectors[-1])
+            op_list.append(projectors[-1])
 
         return op_list
 

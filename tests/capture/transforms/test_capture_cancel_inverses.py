@@ -406,13 +406,13 @@ class TestCancelInversesInterpreter:
                 return qml.S(0)
 
             @cond_fn.else_if(x > 1)
-            def _():
+            def _else_if():
                 qml.S(0)
                 qml.adjoint(qml.S(0))
                 return qml.T(0)
 
             @cond_fn.otherwise
-            def _():
+            def _else():
                 qml.adjoint(qml.T(0))
                 qml.T(0)
                 return qml.Hadamard(0)

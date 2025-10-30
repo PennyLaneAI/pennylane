@@ -15,7 +15,7 @@
 
 from __future__ import annotations
 
-from typing import Dict, List, Sequence
+from collections.abc import Sequence
 
 import numpy as np
 import scipy as sp
@@ -25,7 +25,7 @@ from pennylane.labs.trotter_error import Fragment
 from pennylane.labs.trotter_error.abstract import AbstractState
 
 
-def sparse_fragments(fragments: Sequence[csr_array]) -> List[SparseFragment]:
+def sparse_fragments(fragments: Sequence[csr_array]) -> list[SparseFragment]:
     """Instantiates :class:`~.pennylane.labs.trotter_error.SparseFragment` objects.
 
     Args:
@@ -112,7 +112,7 @@ class SparseFragment(Fragment):
         result = left.state.conjugate().dot(self.fragment.dot(right.state.transpose()))
         return complex(result.toarray().flatten()[0])
 
-    def norm(self, params: Dict = None) -> float:
+    def norm(self, params: dict = None) -> float:
         if params is None:
             params = {}
 
