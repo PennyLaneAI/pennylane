@@ -139,7 +139,7 @@ def batch_params(
     of shape ``(batch_size,)``:
 
     >>> circuit(x, weights)
-    tensor([ 0.008...,  0.273... , -0.24...], requires_grad=True)
+    tensor([ 0.008...,  0.273..., -0.24...], requires_grad=True)
 
     QNodes with a batch dimension remain fully differentiable:
 
