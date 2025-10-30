@@ -251,7 +251,7 @@ class TestComparison:
         ]
 
         layers = 3
-        # Avoid seed 1968 until https://github.com/Qiskit/qiskit/issues/15278 is fixed.
+        # Avoid seed 1967 until https://github.com/Qiskit/qiskit/issues/15278 is fixed.
         rng = pnp.random.default_rng(1968)
         gates_per_layers = [rng.permutation(gates).numpy() for _ in range(layers)]
 
