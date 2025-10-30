@@ -19,12 +19,8 @@ import pytest
 
 from pennylane import CNOT
 from pennylane.tape import QuantumScript
-from pennylane.transforms import (
-    parity_matrix,
-    postorder_traverse,
-    preorder_traverse,
-    rowcol,
-)
+from pennylane.transforms import parity_matrix, rowcol
+from pennylane.transforms.intermediate_reps import postorder_traverse, preorder_traverse
 from pennylane.transforms.intermediate_reps.rowcol import _rowcol_parity_matrix
 
 path_graph_4 = nx.path_graph(4)

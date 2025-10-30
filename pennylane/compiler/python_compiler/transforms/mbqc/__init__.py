@@ -30,6 +30,7 @@ from .graph_state_utils import (
     generate_adj_matrix,
 )
 
+from .outline_state_evolution import OutlineStateEvolutionPass, outline_state_evolution_pass
 
 __all__ = [
     # Passes
@@ -38,8 +39,10 @@ __all__ = [
     "ConvertToMBQCFormalismPass",
     "convert_to_mbqc_formalism_pass",
     "DecomposeGraphStatePass",
+    "OutlineStateEvolutionPass",
     "NullDecomposeGraphStatePass",
     "null_decompose_graph_state_pass",
+    "outline_state_evolution_pass",
     # Utils
     "get_num_aux_wires",
     "decompose_graph_state_pass",

@@ -18,7 +18,6 @@
 Dynamism operations for the StableHLO dialect.
 """
 
-from xdsl.dialects import stablehlo as xstablehlo
 from xdsl.dialects.builtin import DenseArrayBase, i64
 from xdsl.irdl import (
     IRDLOperation,
@@ -35,6 +34,7 @@ from xdsl.traits import (
     SingleBlockImplicitTerminator,
 )
 from xdsl.utils.exceptions import VerifyException
+from xdsl_jax.dialects import stablehlo as xstablehlo
 
 from .types import HLO_Tensor
 

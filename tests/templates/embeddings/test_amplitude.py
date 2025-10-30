@@ -19,6 +19,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as pnp
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 FEATURES = [
     np.array([0, 1, 0, 0]),
@@ -168,6 +169,21 @@ class TestDecomposition:
 
         assert np.allclose(res1, res2, atol=tol, rtol=0)
         assert np.allclose(state1, state2, atol=tol, rtol=0)
+
+    DECOMP_PARAMS = [
+        ([], 1, 1.0, False),
+        ([0.7071067811865476], 2, 0.5, True),
+        ([0.5773502691896257], 3, 0.3333333333333333, False),
+        ([0.5, 0.5], 4, 0.25, True),
+        ([0.4472135954999579, 0.4472135954999579], 5, 0.2, False),
+    ]
+
+    @pytest.mark.parametrize(("features", "wires", "pad_with", "normalize"), DECOMP_PARAMS)
+    def test_decomposition_new(self, features, wires, pad_with, normalize):
+        """Test the decomposition of the AmplitudeEmbedding template."""
+        op = qml.AmplitudeEmbedding(features, wires, pad_with=pad_with, normalize=normalize)
+        for rule in qml.list_decomps(qml.AmplitudeEmbedding):
+            _test_decomposition_rule(op, rule)
 
 
 class TestInputs:

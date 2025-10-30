@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""Resource operators for PennyLane subroutine templates."""
+
 import math
 from collections import defaultdict
 
@@ -95,8 +96,8 @@ class OutOfPlaceSquare(ResourceOperator):
 
     @classmethod
     def resource_decomp(cls, register_size):
-        r"""Returns a dictionary representing the resources of the operator. The
-        keys are the operators and the associated values are the counts.
+        r"""Returns a list representing the resources of the operator. Each object in the list
+        represents a gate and the number of times it occurs in the circuit.
 
         Args:
             register_size (int): the size of the input register
@@ -128,7 +129,7 @@ class PhaseGradient(ResourceOperator):
     `C. Gidney, Quantum 2, 74, (2018) <https://quantum-journal.org/papers/q-2018-06-18-74/>`_.
 
     Args:
-        num_wires (int): the number of wires to prepare in the phase gradient state
+        num_wires (int | None): the number of wires to prepare in the phase gradient state
         wires (Sequence[int], None): the wires the operation acts on
 
     Resources:
@@ -161,7 +162,11 @@ class PhaseGradient(ResourceOperator):
 
     resource_keys = {"num_wires"}
 
-    def __init__(self, num_wires: int, wires: WiresLike = None):
+    def __init__(self, num_wires: int | None = None, wires: WiresLike = None):
+        if num_wires is None:
+            if wires is None:
+                raise ValueError("Must provide atleast one of `num_wires` and `wires`.")
+            num_wires = len(wires)
         self.num_wires = num_wires
         super().__init__(wires=wires)
 
@@ -295,8 +300,8 @@ class OutMultiplier(ResourceOperator):
 
     @classmethod
     def resource_decomp(cls, a_num_wires, b_num_wires) -> list[GateCount]:
-        r"""Returns a dictionary representing the resources of the operator. The
-        keys are the operators and the associated values are the counts.
+        r"""Returns a list representing the resources of the operator. Each object in the list
+        represents a gate and the number of times it occurs in the circuit.
 
         Args:
             a_num_wires (int): the size of the first input register
@@ -397,8 +402,8 @@ class SemiAdder(ResourceOperator):
 
     @classmethod
     def resource_decomp(cls, max_register_size: int):
-        r"""Returns a dictionary representing the resources of the operator. The
-        keys are the operators and the associated values are the counts.
+        r"""Returns a list representing the resources of the operator. Each object in the list
+        represents a gate and the number of times it occurs in the circuit.
 
         Args:
             max_register_size (int): the size of the larger of the two registers being added together
@@ -810,8 +815,8 @@ class QPE(ResourceOperator):
         num_estimation_wires: int,
         adj_qft_cmpr_op: CompressedResourceOp | None = None,
     ):
-        r"""Returns a dictionary representing the resources of the operator. The
-        keys are the operators and the associated values are the counts.
+        r"""Returns a list representing the resources of the operator. Each object in the list
+        represents a gate and the number of times it occurs in the circuit.
 
         Args:
             base_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A compressed resource operator, corresponding
@@ -970,7 +975,7 @@ class QFT(ResourceOperator):
     r"""Resource class for QFT.
 
     Args:
-        num_wires (int): the number of qubits the operation acts upon
+        num_wires (int | None): the number of qubits the operation acts upon
         wires (Sequence[int], None): the wires the operation acts on
 
     Resources:
@@ -1026,7 +1031,11 @@ class QFT(ResourceOperator):
 
     resource_keys = {"num_wires"}
 
-    def __init__(self, num_wires: int, wires: WiresLike = None) -> None:
+    def __init__(self, num_wires: int | None = None, wires: WiresLike = None) -> None:
+        if num_wires is None:
+            if wires is None:
+                raise ValueError("Must provide atleast one of `num_wires` and `wires`.")
+            num_wires = len(wires)
         self.num_wires = num_wires
         super().__init__(wires=wires)
 
@@ -1149,7 +1158,7 @@ class AQFT(ResourceOperator):
 
     Args:
         order (int): the maximum number of controlled phase shifts per qubit to which the operation is truncated
-        num_wires (int): the number of qubits the operation acts upon
+        num_wires (int | None): the number of qubits the operation acts upon
         wires (Sequence[int], None): the wires the operation acts on
 
     Resources:
@@ -1183,7 +1192,11 @@ class AQFT(ResourceOperator):
 
     resource_keys = {"order, num_wires"}
 
-    def __init__(self, order: int, num_wires: int, wires: WiresLike = None) -> None:
+    def __init__(self, order: int, num_wires: int | None = None, wires: WiresLike = None) -> None:
+        if num_wires is None:
+            if wires is None:
+                raise ValueError("Must provide atleast one of `num_wires` and `wires`.")
+            num_wires = len(wires)
         self.order = order
         self.num_wires = num_wires
 
@@ -1304,9 +1317,9 @@ class BasisRotation(ResourceOperator):
     r"""Resource class for the BasisRotation gate.
 
     Args:
-        dim (int): The dimensions of the input matrix specifying the basis transformation.
+        dim (int | None): The dimensions of the input matrix specifying the basis transformation.
             This is equivalent to the number of rows or columns of the matrix.
-        wires (Sequence[int], None): the wires the operation acts on
+        wires (Sequence[int], None): the wires the operation acts on, should be equal to the dimension
 
     Resources:
         The resources are obtained from the construction scheme given in `Optica, 3, 1460 (2016)
@@ -1340,14 +1353,18 @@ class BasisRotation(ResourceOperator):
 
     resource_keys = {"dim"}
 
-    def __init__(self, dim: int, wires: WiresLike = None):
+    def __init__(self, dim: int | None = None, wires: WiresLike = None):
+        if dim is None:
+            if wires is None:
+                raise ValueError("Must provide atleast one of `dim` and `wires`.")
+            dim = len(wires)
         self.num_wires = dim
         super().__init__(wires=wires)
 
     @classmethod
     def resource_decomp(cls, dim) -> list[GateCount]:
-        r"""Returns a dictionary representing the resources of the operator. The
-        keys are the operators and the associated values are the counts.
+        r"""Returns a list representing the resources of the operator. Each object in the list
+        represents a gate and the number of times it occurs in the circuit.
 
         Args:
             dim (int): The dimensions of the input :code:`unitary_matrix`. This is computed

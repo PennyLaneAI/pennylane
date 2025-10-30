@@ -128,13 +128,16 @@ class ArbitraryStatePreparation(Operation):
         **Example**
 
         >>> weights = torch.tensor([1., 2., 3., 4., 5., 6.])
-        >>> qml.ArbitraryStatePreparation.compute_decomposition(weights, wires=["a", "b"])
-        [PauliRot(tensor(1.), 'XI', wires=['a', 'b']),
-         PauliRot(tensor(2.), 'YI', wires=['a', 'b']),
-         PauliRot(tensor(3.), 'IX', wires=['a', 'b']),
-         PauliRot(tensor(4.), 'IY', wires=['a', 'b']),
-         PauliRot(tensor(5.), 'XX', wires=['a', 'b']),
-         PauliRot(tensor(6.), 'XY', wires=['a', 'b'])]
+        >>> ops = qml.ArbitraryStatePreparation.compute_decomposition(weights, wires=["a", "b"])
+        >>> from pprint import pprint
+        >>> pprint(ops)
+        [PauliRot(1.0, XI, wires=['a', 'b']),
+        PauliRot(2.0, YI, wires=['a', 'b']),
+        PauliRot(3.0, IX, wires=['a', 'b']),
+        PauliRot(4.0, IY, wires=['a', 'b']),
+        PauliRot(5.0, XX, wires=['a', 'b']),
+        PauliRot(6.0, XY, wires=['a', 'b'])]
+
         """
         op_list = []
         for i, pauli_word in enumerate(_state_preparation_pauli_words(len(wires))):

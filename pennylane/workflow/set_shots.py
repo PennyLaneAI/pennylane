@@ -37,7 +37,7 @@ def set_shots(*args, shots: ShotsLike = _SHOTS_NOT_PROVIDED):
     """Transform used to set or update a circuit's shots.
 
     Args:
-        qnode (QNode): The QNode to transform. If not provided, `set_shots` can be used as a decorator directly.
+        qnode (QNode): The QNode to transform. If not provided, ``set_shots`` can be used as a decorator directly.
         shots (None or int or Sequence[int] or Sequence[tuple[int, int]] or pennylane.shots.Shots): The
             number of shots (or a shots vector) that the transformed circuit will execute.
 

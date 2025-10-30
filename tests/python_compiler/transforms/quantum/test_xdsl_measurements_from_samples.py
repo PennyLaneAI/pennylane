@@ -74,6 +74,40 @@ class TestMeasurementsFromSamplesPass:
         pipeline = (MeasurementsFromSamplesPass(),)
         run_filecheck(program, pipeline)
 
+    def test_1_wire_expval_shots_from_arith_constantop(self, run_filecheck):
+        """Test the measurements-from-samples pass on a 1-wire circuit with shots from an arith.constant op and an expval(Z) measurement."""
+        program = """
+        builtin.module @module_circuit {
+            // CHECK-LABEL: circuit
+            func.func public @circuit() -> (tensor<f64>) {
+                %0 = arith.constant 1 : i64
+                quantum.device shots(%0) ["", "", ""]
+
+                // CHECK: [[q0:%.+]] = "test.op"() : () -> !quantum.bit
+                %1 = "test.op"() : () -> !quantum.bit
+
+                // CHECK-NOT: quantum.namedobs
+                %2 = quantum.namedobs %1[PauliZ] : !quantum.obs
+
+                // CHECK: [[obs:%.+]] = quantum.compbasis qubits [[q0]] : !quantum.obs
+                // CHECK: [[samples:%.+]] = quantum.sample [[obs]] : tensor<1x1xf64>
+                // CHECK: [[c0:%.+]] = arith.constant dense<0> : tensor<i64>
+                // CHECK: [[res:%.+]] = func.call @expval_from_samples.tensor.1x1xf64([[samples]], [[c0]]) :
+                // CHECK-SAME: (tensor<1x1xf64>, tensor<i64>) -> tensor<f64>
+                // CHECK-NOT: quantum.expval
+                %3 = quantum.expval %2 : f64
+                %4 = "tensor.from_elements"(%3) : (f64) -> tensor<f64>
+
+                // CHECK: func.return [[res]] : tensor<f64>
+                func.return %4 : tensor<f64>
+            }
+            // CHECK-LABEL: func.func public @expval_from_samples.tensor.1x1xf64
+        }
+        """
+
+        pipeline = (MeasurementsFromSamplesPass(),)
+        run_filecheck(program, pipeline)
+
     def test_1_wire_var(self, run_filecheck):
         """Test the measurements-from-samples pass on a 1-wire circuit terminating with a var(Z)
         measurement.
@@ -818,6 +852,25 @@ class TestMeasurementsFromSamplesIntegration:
             return qml.expval(qml.Z(wires=0))
 
         run_filecheck_qjit(circuit)
+
+    @pytest.mark.usefixtures("enable_disable_plxpr")
+    def test_integrate_with_decompose(self):
+        dev = qml.device("null.qubit", wires=4)
+
+        @qml.qjit(target="mlir", pass_plugins=[xdsl_plugin.getXDSLPluginAbsolutePath()])
+        @measurements_from_samples_pass
+        @partial(
+            qml.transforms.decompose,
+            gate_set={"X", "Y", "Z", "S", "H", "CNOT", "RZ", "GlobalPhase"},
+        )
+        @qml.set_shots(1000)
+        @qml.qnode(dev, shots=1000)
+        def circuit():
+            qml.CRX(0.1, wires=[0, 1])
+            return qml.expval(qml.Z(0))
+
+        res = circuit()
+        assert res == 1.0
 
 
 def _counts_catalyst_to_pl(basis_states, counts):

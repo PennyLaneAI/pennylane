@@ -53,7 +53,7 @@ class ValidOp(CompositeOp):
         return qml.pauli.PauliSentence({})
 
     @property
-    def is_hermitian(self):
+    def is_verified_hermitian(self):
         return False
 
     def matrix(self, wire_order=None):
@@ -82,6 +82,18 @@ class TestConstruction:
         """Test that initializing a composite operator with less than 2 operands raises a ValueError."""
         with pytest.raises(ValueError, match="Require at least two operators to combine;"):
             _ = ValidOp(qml.PauliX(0))
+
+    def test_raise_error_with_mcm_input(self):
+        """Test that composite ops of mid-circuit measurements are not supported."""
+        mcm_0 = qml.ops.MidMeasure(0)
+        mcm_1 = qml.ops.MidMeasure(1)
+        op = qml.RX(0.5, 2)
+        with pytest.raises(ValueError, match="Composite operators of mid-circuit"):
+            _ = ValidOp(mcm_0, mcm_1)
+        with pytest.raises(ValueError, match="Composite operators of mid-circuit"):
+            _ = ValidOp(op, mcm_1)
+        with pytest.raises(ValueError, match="Composite operators of mid-circuit"):
+            _ = ValidOp(mcm_0, op)
 
     def test_initialization(self):
         """Test that valid child classes can be initialized without error"""
@@ -310,7 +322,7 @@ class TestMscMethods:
         U = np.array([[1, 0], [0, -1]])
         cache = {"matrices": []}
         op = ValidOp(qml.PauliX(0), ValidOp(qml.PauliY(1), qml.QubitUnitary(U, wires=0)))
-        assert op.label(cache=cache) == "X#(Y#U(M0))"
+        assert op.label(cache=cache) == "X#(Y#U\n(M0))"
         assert cache["matrices"] == [U]
 
     @pytest.mark.parametrize("ops_lst", ops)

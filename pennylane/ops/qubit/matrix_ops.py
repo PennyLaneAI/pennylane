@@ -207,8 +207,8 @@ class QubitUnitary(Operation):
 
         >>> U = np.array([[0.98877108+0.j, 0.-0.14943813j], [0.-0.14943813j, 0.98877108+0.j]])
         >>> qml.QubitUnitary.compute_matrix(U)
-        [[0.98877108+0.j, 0.-0.14943813j],
-        [0.-0.14943813j, 0.98877108+0.j]]
+         array([[0.988...+0.j        , 0.        -0.149...j],
+                [0.        -0.149...j, 0.988...+0.j        ]])
         """
         if sp.sparse.issparse(U):
             raise qml.operation.MatrixUndefinedError(
@@ -228,10 +228,16 @@ class QubitUnitary(Operation):
 
         **Example**
 
-        >>> U = np.array([[0.98877108+0.j, 0.-0.14943813j], [0.-0.14943813j, 0.98877108+0.j]])
+        >>> U = np.array([
+        ...     [1, 0, 0, 0],
+        ...     [0, 1, 0, 0],
+        ...     [0, 0, 0, 1],
+        ...     [0, 0, 1, 0]
+        ... ])
+        >>> U = sp.sparse.csr_matrix(U)
         >>> qml.QubitUnitary.compute_sparse_matrix(U)
-        <2x2 sparse matrix of type '<class 'numpy.complex128'>'
-            with 2 stored elements in Compressed Sparse Row format>
+        <Compressed Sparse Row sparse matrix of dtype 'int64'
+            with 4 stored elements and shape (4, 4)>
         """
         if sp.sparse.issparse(U):
             return U.asformat(format)
@@ -260,8 +266,13 @@ class QubitUnitary(Operation):
         **Example:**
 
         >>> U = 1 / np.sqrt(2) * np.array([[1, 1], [1, -1]])
-        >>> qml.QubitUnitary.compute_decomposition(U, 0)
-        [Rot(tensor(3.14159265, requires_grad=True), tensor(1.57079633, requires_grad=True), tensor(0., requires_grad=True), wires=[0])]
+        >>> decomp = qml.QubitUnitary.compute_decomposition(U, 0)
+        >>> from pprint import pprint
+        >>> pprint(decomp)
+        [RZ(np.float64(3.141...), wires=[0]),
+        RY(np.float64(1.570...), wires=[0]),
+        RZ(np.float64(0.0), wires=[0]),
+        GlobalPhase(np.float64(-1.570...), wires=[])]
 
         """
         # Decomposes arbitrary single-qubit unitaries as Rot gates (RZ - RY - RZ format),
@@ -835,8 +846,8 @@ class BlockEncode(Operation):
 
         >>> A = np.array([[0.1,0.2],[0.3,0.4]])
         >>> A
-        tensor([[0.1, 0.2],
-                [0.3, 0.4]])
+        array([[0.1, 0.2],
+            [0.3, 0.4]])
         >>> qml.BlockEncode.compute_matrix(A, subspace=[2,2,4])
         array([[ 0.1       ,  0.2       ,  0.97283788, -0.05988708],
                [ 0.3       ,  0.4       , -0.05988708,  0.86395228],

@@ -29,6 +29,8 @@ from pennylane.compiler.python_compiler.transforms import MergeRotationsPass, me
 class TestMergeRotationsPass:
     """Unit tests for MergeRotationsPass."""
 
+    pipeline = (MergeRotationsPass(),)
+
     def test_no_composable_ops(self, run_filecheck):
         """Test that nothing changes when there are no composable gates."""
         program = """
@@ -43,8 +45,7 @@ class TestMergeRotationsPass:
             }
         """
 
-        pipeline = (MergeRotationsPass(),)
-        run_filecheck(program, pipeline)
+        run_filecheck(program, self.pipeline)
 
     def test_composable_ops(self, run_filecheck):
         """Test that composable gates are merged."""
@@ -61,8 +62,7 @@ class TestMergeRotationsPass:
             }
         """
 
-        pipeline = (MergeRotationsPass(),)
-        run_filecheck(program, pipeline)
+        run_filecheck(program, self.pipeline)
 
     def test_many_composable_ops(self, run_filecheck):
         """Test that more than 2 composable ops are merged correctly."""
@@ -83,8 +83,7 @@ class TestMergeRotationsPass:
             }
         """
 
-        pipeline = (MergeRotationsPass(),)
-        run_filecheck(program, pipeline)
+        run_filecheck(program, self.pipeline)
 
     def test_non_consecutive_composable_ops(self, run_filecheck):
         """Test that non-consecutive composable gates are not merged."""
@@ -102,8 +101,7 @@ class TestMergeRotationsPass:
             }
         """
 
-        pipeline = (MergeRotationsPass(),)
-        run_filecheck(program, pipeline)
+        run_filecheck(program, self.pipeline)
 
     def test_composable_ops_different_qubits(self, run_filecheck):
         """Test that composable gates on different qubits are not merged."""
@@ -121,8 +119,7 @@ class TestMergeRotationsPass:
             }
         """
 
-        pipeline = (MergeRotationsPass(),)
-        run_filecheck(program, pipeline)
+        run_filecheck(program, self.pipeline)
 
     def test_controlled_composable_ops(self, run_filecheck):
         """Test that controlled composable ops can be merged."""
@@ -144,8 +141,7 @@ class TestMergeRotationsPass:
             }
         """
 
-        pipeline = (MergeRotationsPass(),)
-        run_filecheck(program, pipeline)
+        run_filecheck(program, self.pipeline)
 
     def test_controlled_composable_ops_same_control_values(self, run_filecheck):
         """Test that controlled composable ops with the same control values
@@ -169,8 +165,7 @@ class TestMergeRotationsPass:
             }
         """
 
-        pipeline = (MergeRotationsPass(),)
-        run_filecheck(program, pipeline)
+        run_filecheck(program, self.pipeline)
 
     def test_controlled_composable_ops_different_control_values(self, run_filecheck):
         """Test that controlled composable ops with different control values
@@ -193,8 +188,36 @@ class TestMergeRotationsPass:
             }
         """
 
-        pipeline = (MergeRotationsPass(),)
-        run_filecheck(program, pipeline)
+        run_filecheck(program, self.pipeline)
+
+    @pytest.mark.parametrize(
+        "first_adj, second_adj, sign",
+        [
+            (False, False, "+"),
+            (False, True, "-"),
+            (True, False, "-"),
+            (True, True, "+"),
+        ],
+    )
+    def test_adjoint_property(self, first_adj, second_adj, sign, run_filecheck):
+        """Test that composable ops with and without adjoint property are merged correctly."""
+        adj_string_0 = "adj" if first_adj else ""
+        adj_string_1 = "adj" if second_adj else ""
+        arith_op_str = "arith.addf" if sign == "+" else "arith.subf"
+        program = f"""
+            func.func @test_func(%arg0: f64, %arg1: f64) {{
+                // CHECK: [[q0:%.+]] = "test.op"() : () -> !quantum.bit
+                %0 = "test.op"() : () -> !quantum.bit
+                // CHECK: [[new_angle:%.+]] = {arith_op_str} %arg0, %arg1 : f64
+                // CHECK: [[q1:%.+]] = quantum.custom "RX"([[new_angle]]) [[q0]] {adj_string_0} : !quantum.bit
+                // CHECK-NOT: "quantum.custom"
+                %1 = quantum.custom "RX"(%arg0) %0 {adj_string_0}: !quantum.bit
+                %2 = quantum.custom "RX"(%arg1) %1 {adj_string_1}: !quantum.bit
+                return
+            }}
+        """
+
+        run_filecheck(program, self.pipeline)
 
 
 # pylint: disable=too-few-public-methods
@@ -204,7 +227,7 @@ class TestMergeRotationsIntegration:
 
     def test_qjit(self, run_filecheck_qjit):
         """Test that the MergeRotationsPass works correctly with qjit."""
-        dev = qml.device("lightning.qubit", wires=2)
+        dev = qml.device("lightning.qubit", wires=1)
 
         @qml.qjit(target="mlir", pass_plugins=[getXDSLPluginAbsolutePath()])
         @merge_rotations_pass

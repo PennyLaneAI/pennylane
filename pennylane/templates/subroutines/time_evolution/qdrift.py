@@ -112,7 +112,7 @@ class QDrift(Operation):
 
     **Example**
 
-    .. code-block:: python3
+    .. code-block:: python
 
         coeffs = [0.25, 0.75]
         ops = [qml.X(0), qml.Z(0)]
@@ -131,7 +131,7 @@ class QDrift(Operation):
             return qml.probs()
 
     >>> my_circ()
-    array([0.65379493, 0.        , 0.34620507, 0.        ])
+    array([0.653..., 0.        , 0.346..., 0.        ])
 
     .. note::
 
@@ -146,7 +146,7 @@ class QDrift(Operation):
         coefficients of the input Hamiltonian. We can however compute the gradient
         with respect to the evolution time:
 
-        .. code-block:: python3
+        .. code-block:: python
 
             dev = qml.device("default.qubit", wires=2)
 
@@ -165,9 +165,9 @@ class QDrift(Operation):
                 return qml.expval(qml.Z(0) @ qml.Z(1))
 
 
-        >>> time = np.array(1.23)
+        >>> time = qml.numpy.array(1.23)
         >>> print(qml.grad(my_circ)(time))
-        0.27980654844422853
+        0.279...
 
         The error in the approximation of time evolution with the QDrift protocol is
         directly related to the number of samples used in the product. We provide a

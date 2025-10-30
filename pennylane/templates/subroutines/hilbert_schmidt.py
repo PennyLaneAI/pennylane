@@ -251,7 +251,7 @@ class HilbertSchmidt(Operation):
 if HilbertSchmidt._primitive is not None:
 
     @HilbertSchmidt._primitive.def_impl
-    def _(*ops, num_v_ops, **kwargs):
+    def _hilbert_schmidt_impl(*ops, num_v_ops, **kwargs):
         V = ops[:num_v_ops]
         U = ops[num_v_ops:]
         return type.__call__(HilbertSchmidt, V, U, **kwargs)
@@ -324,7 +324,7 @@ class LocalHilbertSchmidt(HilbertSchmidt):
         Now that the cost function has been defined it can be called for specific parameters:
 
         >>> cost_lhst(V, U)
-        np.float64(0.5)
+        np.float64(0.5...)
     """
 
     @staticmethod
@@ -386,7 +386,7 @@ class LocalHilbertSchmidt(HilbertSchmidt):
 if LocalHilbertSchmidt._primitive is not None:
 
     @LocalHilbertSchmidt._primitive.def_impl
-    def _(*ops, num_v_ops, **kwargs):
+    def _local_hilbert_schmidt_impl(*ops, num_v_ops, **kwargs):
         V = ops[:num_v_ops]
         U = ops[num_v_ops:]
         return type.__call__(LocalHilbertSchmidt, V, U, **kwargs)

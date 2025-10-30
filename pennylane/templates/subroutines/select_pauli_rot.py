@@ -14,11 +14,19 @@
 r"""
 Contains the SelectPauliRot template.
 """
+from collections import defaultdict
 
 from pennylane import math
-from pennylane.decomposition import add_decomps, adjoint_resource_rep, register_resources
+from pennylane.decomposition import (
+    add_decomps,
+    adjoint_resource_rep,
+    change_op_basis_resource_rep,
+    register_resources,
+    resource_rep,
+)
 from pennylane.operation import Operation
-from pennylane.ops import CNOT, RZ, Hadamard, S, adjoint
+from pennylane.ops import CNOT, RZ, Hadamard, S, adjoint, change_op_basis, prod
+from pennylane.ops.op_math import Prod
 from pennylane.queuing import AnnotatedQueue, QueuingManager, apply
 from pennylane.templates.state_preparations.mottonen import _apply_uniform_rotation_dagger
 from pennylane.wires import Wires
@@ -66,7 +74,7 @@ class SelectPauliRot(Operation):
 
     **Example**
 
-    .. code-block::
+    .. code-block:: python
 
         angles = np.array([1.0, 2.0, 3.0, 4.0])
 
@@ -83,11 +91,9 @@ class SelectPauliRot(Operation):
             )
             return qml.state()
 
-    .. code-block:: pycon
-
-        >>> print(circuit())
-        [0.87758256+0.j 0.47942554+0.j 0.        +0.j 0.        +0.j
-         0.        +0.j 0.        +0.j 0.        +0.j 0.        +0.j]
+    >>> print(circuit()) # doctest: +SKIP
+    [0.8776+0.j 0.4794+0.j 0.    +0.j 0.    +0.j 0.    +0.j 0.    +0.j
+     0.    +0.j 0.    +0.j]
     """
 
     grad_method = None
@@ -182,12 +188,33 @@ class SelectPauliRot(Operation):
 
 
 def _select_pauli_rot_resource(num_wires, rot_axis):
+    prod_res = {
+        resource_rep(RZ): 2 ** (num_wires - 1),
+        resource_rep(CNOT): 2 ** (num_wires - 1) if num_wires > 1 else 0,
+    }
+    if rot_axis == "Z":
+        return prod_res
+
+    if rot_axis == "X":
+        return {
+            change_op_basis_resource_rep(
+                resource_rep(Hadamard),
+                resource_rep(Prod, resources=defaultdict(int, prod_res)),
+                resource_rep(Hadamard),
+            ): 1,
+        }
+
+    prod_rep1 = resource_rep(
+        Prod, resources=defaultdict(int, {resource_rep(Hadamard): 1, adjoint_resource_rep(S): 1})
+    )
+    prod_rep2 = resource_rep(
+        Prod, resources=defaultdict(int, {resource_rep(S): 1, resource_rep(Hadamard): 1})
+    )
+
     return {
-        RZ: 2 ** (num_wires - 1),
-        CNOT: 2 ** (num_wires - 1) if num_wires > 1 else 0,
-        Hadamard: 0 if rot_axis == "Z" else 2,
-        S: 1 if rot_axis == "Y" else 0,
-        adjoint_resource_rep(S, {}): 1 if rot_axis == "Y" else 0,
+        change_op_basis_resource_rep(
+            prod_rep1, resource_rep(Prod, resources=defaultdict(int, prod_res)), prod_rep2
+        ): 1,
     }
 
 
@@ -196,19 +223,21 @@ def _select_pauli_rot_resource(num_wires, rot_axis):
 def decompose_select_pauli_rot(angles, wires, rot_axis, **__):
     r"""Decomposes the SelectPauliRot"""
 
-    if rot_axis == "X":
-        Hadamard(wires[-1])
-    elif rot_axis == "Y":
-        adjoint(S(wires[-1]))
-        Hadamard(wires[-1])
-
-    _apply_uniform_rotation_dagger(RZ, angles, wires[-2::-1], wires[-1])
-
-    if rot_axis == "X":
-        Hadamard(wires[-1])
-    elif rot_axis == "Y":
-        Hadamard(wires[-1])
-        S(wires[-1])
+    match rot_axis:
+        case "X":
+            change_op_basis(
+                Hadamard(wires[-1]),
+                prod(_apply_uniform_rotation_dagger)(RZ, angles, wires[-2::-1], wires[-1]),
+                Hadamard(wires[-1]),
+            )
+        case "Y":
+            change_op_basis(
+                Hadamard(wires[-1]) @ adjoint(S(wires[-1])),
+                prod(_apply_uniform_rotation_dagger)(RZ, angles, wires[-2::-1], wires[-1]),
+                S(wires[-1]) @ Hadamard(wires[-1]),
+            )
+        case "Z":
+            _apply_uniform_rotation_dagger(RZ, angles, wires[-2::-1], wires[-1])
 
 
 add_decomps(SelectPauliRot, decompose_select_pauli_rot)

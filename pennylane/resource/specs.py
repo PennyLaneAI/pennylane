@@ -12,10 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Code for resource estimation"""
+
 import copy
 import inspect
 import json
 import os
+import warnings
 from collections import defaultdict
 from collections.abc import Callable
 from functools import partial
@@ -66,7 +68,6 @@ def _specs_qnode(qnode, level, compute_depth, *args, **kwargs) -> list[SpecsDict
     gradient_fn = config.gradient_method
 
     for tape in batch:
-
         info = specs_from_tape(tape, compute_depth)
         info["num_device_wires"] = len(qnode.device.wires or tape.wires)
         info["num_tape_wires"] = tape.num_wires
@@ -131,7 +132,11 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> SpecsDict:  # pr
         compute_depth=compute_depth,
     )
 
-    new_qnode = qjit.original_function.update(device=spoofed_dev)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", category=UserWarning, message="The device's shots value does not match "
+        )
+        new_qnode = qjit.original_function.update(device=spoofed_dev)
     new_qjit = QJIT(new_qnode, copy.copy(qjit.compile_options))
 
     if os.path.exists(_RESOURCE_TRACKING_FILEPATH):
@@ -176,7 +181,7 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> SpecsDict:  # pr
 
 def specs(
     qnode,
-    level: None | Literal["top", "user", "device", "gradient"] | int | slice = "gradient",
+    level: Literal["top", "user", "device", "gradient"] | int | slice = "gradient",
     compute_depth: bool = True,
 ) -> Callable[..., list[dict[str, Any]] | dict[str, Any]]:
     r"""Resource information about a quantum circuit.
@@ -188,7 +193,7 @@ def specs(
         qnode (.QNode | .QJIT): the QNode to calculate the specifications for.
 
     Keyword Args:
-        level (None, str, int, slice): An indication of what transforms to apply before computing the resource information.
+        level (str, int, slice): An indication of what transforms to apply before computing the resource information.
             Check :func:`~.workflow.get_transform_program` for more information on the allowed values and usage details of
             this argument.
         compute_depth (bool): Whether to compute the depth of the circuit. If ``False``, the depth will not be included in the returned information.
