@@ -131,14 +131,6 @@ class BasisRotation(Operation):
         For real-valued matrices, the decomposition only consists of ``SingleExcitation`` gates,
         except for one phase gate to account for negative determinants:
 
-        >>> from scipy.stats import ortho_group
-        >>> O = ortho_group.rvs(4, random_state=51)
-        >>> print(qml.draw(qml.BasisRotation(wires=range(4), unitary_matrix=O).decomposition)())
-        0: ──Rϕ(3.14+0.00j)─╭G(-3.19)──────────╭G(2.63)─┤
-        1: ─╭G(-3.13)───────╰G(-3.19)─╭G(2.68)─╰G(2.63)─┤
-        2: ─╰G(-3.13)───────╭G(-2.98)─╰G(2.68)─╭G(5.70)─┤
-        3: ─────────────────╰G(-2.98)──────────╰G(5.70)─┤
-
     .. details::
         :title: Theory
         :href: theory-basis-rotation
@@ -243,7 +235,7 @@ class BasisRotation(Operation):
         (note the additional prefactor of :math:`2` from the mapping):
 
         >>> qml.generator(qml.SingleExcitation(0.2512, [0, 1]))
-        (X(0) @ Y(1) + -1.0 * (Y(0) @ X(1)), np.float64(0.25))
+        (X(0) @ Y(1) + -1.0 * (Y(0) @ X(1)), 0.25)
 
         Similarly, the ``PhaseShift`` gates have the generators
         :math:`\hat{D}_j=\tfrac{i}{2}(\mathbb{I}-Z_j)=i|1\rangle\langle 1|_j`:
