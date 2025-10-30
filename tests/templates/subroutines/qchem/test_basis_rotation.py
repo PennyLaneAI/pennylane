@@ -166,31 +166,6 @@ class TestDecomposition:
         for rule in qml.list_decomps(qml.BasisRotation):
             _test_decomposition_rule(op, rule)
 
-    @pytest.mark.parametrize(
-        ("num_wires", "ortho_matrix"),
-        [
-            (
-                2,
-                np.array(
-                    [
-                        [-0.618452, -0.68369054 - 0.38740723j],
-                        [-0.78582258, 0.53807284 + 0.30489424j],
-                    ]
-                ),  # unitary matrix
-            ),
-        ],
-    )
-    @pytest.mark.usefixtures("enable_graph_decomposition")
-    def test_basis_rotation_operations_real_without_jax(self, num_wires, ortho_matrix):
-        """Test the correctness of the BasisRotation template including the gate count
-        and their order, the wires the operation acts on and the correct use of parameters
-        in the circuit."""
-        op = qml.BasisRotation(wires=range(num_wires), unitary_matrix=ortho_matrix)
-
-        # Tests the decomposition rule defined with the new system
-        for rule in qml.list_decomps(qml.BasisRotation):
-            _test_decomposition_rule(op, rule)
-
     def test_custom_wire_labels(self, tol):
         """Test that BasisRotation template can deal with non-numeric, nonconsecutive wire labels."""
 

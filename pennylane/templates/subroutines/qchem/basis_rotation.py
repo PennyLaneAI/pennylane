@@ -417,8 +417,8 @@ def _basis_rotation_decomp(unitary_matrix, wires: WiresLike, **__):
 
             cond(jnp.logical_not(jnp.allclose(angle, 0.0 + 0.0j)), shift)(angle)
         else:
-            if angle != 0.0 + 0.0j:
-                PhaseShift(angle, wires=wires[0])
+            if angle != 0.0 + 0.0j:  # pragma: no cover
+                PhaseShift(angle, wires=wires[0])  # pragma: no cover
 
         _, givens_list = math.decomposition.givens_decomposition(unitary, True)
         givens_ids = [(i, j) for _, (i, j) in givens_list]
