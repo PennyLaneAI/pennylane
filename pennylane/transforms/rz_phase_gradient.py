@@ -168,12 +168,6 @@ def rz_phase_gradient(
     work_0: ─────────├(|Ψ⟩)@SemiAdder@(|Ψ⟩)────├GlobalPhase(2.75)─┤
     work_1: ─────────╰(|Ψ⟩)@SemiAdder@(|Ψ⟩)────╰GlobalPhase(2.75)─┤
 
-    The additional work wires are required by the :class:`~.SemiAdder`.
-    Executing the circuit, we get the expected result:
-
-    >>> rz_circ(phi, wire) # doctest: +SKIP
-    array([0.853..., 0.146...])
-
     """
 
     if len(phase_grad_wires) < len(angle_wires):
