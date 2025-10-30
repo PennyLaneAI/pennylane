@@ -1393,7 +1393,9 @@ class TestParameterShiftRule:
         res = dev.execute(tape)
         expected = [1 - np.cos(a) ** 2, (39 / 2) - 6 * np.sin(2 * a) + (35 / 2) * np.cos(2 * a)]
         for r in res:
-            assert qml.math.allclose(r, expected, atol=0.10)  # around 97% pass chance for the correct sampling
+            assert qml.math.allclose(
+                r, expected, atol=0.10
+            )  # around 97% pass chance for the correct sampling
 
         # circuit jacobians
         tapes, fn = qml.gradients.param_shift(tape, broadcast=broadcast)
