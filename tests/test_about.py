@@ -20,6 +20,7 @@ import contextlib
 import io
 import re
 import importlib
+import json
 
 import pytest
 
@@ -57,3 +58,22 @@ def test_about_prints_core_fields(capsys):
     assert "Version:" in cap.out
     assert "Summary:" in cap.out
     assert "Location:" in cap.out
+
+def test_about_shows_editable_location(monkeypatch, capsys):
+    about = importlib.import_module("pennylane.about")
+
+    class Dist:
+        metadata = {"Name": "PennyLane", "Version": "x"}
+        @staticmethod
+        def read_text(name):
+            return json.dumps({"dir_info": {"editable": True}, "url": "file:///tmp/pl"})
+
+    im = importlib.import_module("importlib.metadata")
+    monkeypatch.setattr(about, "metadata", im)
+    monkeypatch.setattr(im, "distribution", lambda _name: Dist())
+    monkeypatch.setattr(about, "_pkg_location", lambda: "/site-packages/pennylane")
+
+    about.about()
+    out = capsys.readouterr().out
+    assert "Editable project location: /tmp/pl" in out
+    assert re.search(r"Location:\s*/site-packages/pennylane", out)
