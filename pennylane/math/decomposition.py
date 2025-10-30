@@ -18,13 +18,14 @@ from functools import lru_cache, partial
 
 import numpy as np
 
-from pennylane import math
+from pennylane import math, capture
 
+has_jax = True
 try:
     import jax
     import jax.numpy as jnp
 except ModuleNotFoundError:  # pragma: no cover
-    ...
+    has_jax = False
 
 
 def zyz_rotation_angles(U, return_global_phase=False):
@@ -572,7 +573,7 @@ def _left_givens(indices, unitary, j, real_valued):
     return _left_givens_core(indices, unitary, j, real_valued)
 
 
-def givens_decomposition(unitary):
+def givens_decomposition(unitary, is_real):
     r"""Decompose a unitary into a sequence of Givens rotation gates with phase shifts and a diagonal phase matrix.
 
     Args:
@@ -669,12 +670,7 @@ def givens_decomposition(unitary):
 
     """
     interface = math.get_deep_interface(unitary)
-    is_real = math.is_real_obj_or_close(unitary)
     unitary_mat = math.copy(unitary) if interface == "jax" else math.toarray(unitary).copy()
-    converted_dtype = False
-    if math.get_dtype_name(unitary).startswith("complex") and is_real:
-        converted_dtype = True
-        unitary_mat = math.real(unitary_mat)
 
     shape = math.shape(unitary_mat)
 
@@ -698,7 +694,58 @@ def givens_decomposition(unitary):
     unitary_mat, all_givens = (_absorb_phases_so if is_real else _commute_phases_u)(
         left_givens, right_givens, unitary_mat, interface
     )
-    if converted_dtype:
-        unitary_mat = math.convert_like(unitary_mat, unitary)
-        all_givens = [(math.convert_like(mat, unitary), indices) for mat, indices in all_givens]
     return unitary_mat, all_givens
+
+
+def givens_decomposition_real(unitary):
+    interface = math.get_deep_interface(unitary)
+    shape = math.shape(unitary)
+
+    if len(shape) != 2 or shape[0] != shape[1]:
+        raise ValueError(f"The unitary matrix should be of shape NxN, got {shape}")
+
+    N = shape[0]
+
+    left_givens, right_givens = [], []
+    for i in range(1, N):
+        if i % 2:
+            for j in range(i):
+                indices = [i - j - 1, i - j]
+                unitary, grot_mat_conj = _right_givens(indices, unitary, N, j, True)
+                right_givens.append((grot_mat_conj, indices))
+        else:
+            for j in range(1, i + 1):
+                indices = [N + j - i - 2, N + j - i - 1]
+                unitary, grot_mat = _left_givens(indices, unitary, j, True)
+                left_givens.append((grot_mat, indices))
+    unitary, all_givens = (_absorb_phases_so)(
+        left_givens, right_givens, unitary, interface
+    )
+    return unitary, all_givens
+
+
+def givens_decomposition_complex(unitary):
+    interface = math.get_deep_interface(unitary)
+    shape = math.shape(unitary)
+
+    if len(shape) != 2 or shape[0] != shape[1]:
+        raise ValueError(f"The unitary matrix should be of shape NxN, got {shape}")
+
+    N = shape[0]
+
+    left_givens, right_givens = [], []
+    for i in range(1, N):
+        if i % 2:
+            for j in range(i):
+                indices = [i - j - 1, i - j]
+                unitary, grot_mat_conj = _right_givens(indices, unitary, N, j, False)
+                right_givens.append((grot_mat_conj, indices))
+        else:
+            for j in range(1, i + 1):
+                indices = [N + j - i - 2, N + j - i - 1]
+                unitary, grot_mat = _left_givens(indices, unitary, j, False)
+                left_givens.append((grot_mat, indices))
+    unitary, all_givens = (_commute_phases_u)(
+        left_givens, right_givens, unitary, interface
+    )
+    return unitary, all_givens
