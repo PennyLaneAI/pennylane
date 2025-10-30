@@ -315,6 +315,43 @@ def xdsl_to_qml_op(op) -> Operator:
     return _apply_adjoint_and_ctrls(gate, op)
 
 
+def xdsl_to_qml_op_type(op) -> str:
+    """Convert an xDSL operation into a PennyLane Operator class.
+
+    Args:
+        op: The xDSL operation to convert.
+
+    Returns:
+        A class representing the PennyLane operator.
+    """
+
+    name_map = {
+        "quantum.gphase": "GlobalPhase",
+        "quantum.unitary": "QubitUnitary",
+        "quantum.set_state": "StatePrep",
+        "quantum.multirz": "MultiRZ",
+        "quantum.set_basis_state": "BasisState",
+    }
+
+    if op.name == "quantum.custom":
+        gate_cls = resolve_gate(op.properties.get("gate_name").data)
+        gate_name = gate_cls.__name__
+    elif op.name in name_map:
+        gate_name = name_map[op.name]
+    else:
+        raise NotImplementedError(f"Unsupported gate: {op.name}")
+
+    if op.properties.get("adjoint"):
+        gate_name = f"Adjoint({gate_name})"
+    if hasattr(op, "in_ctrl_qubits"):
+        n_ctrls = len(op.in_ctrl_qubits)
+        if n_ctrls == 1:
+            gate_name = f"C({gate_name})"
+        elif n_ctrls > 1:
+            gate_name = f"{n_ctrls}C({gate_name})"
+    return gate_name
+
+
 def xdsl_to_qml_measurement(op, *args, **kwargs) -> MeasurementProcess | Operator:
     """Convert any xDSL measurement/observable operation to a PennyLane object.
 
