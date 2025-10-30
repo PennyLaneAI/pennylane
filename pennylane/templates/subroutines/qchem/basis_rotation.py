@@ -415,7 +415,7 @@ def _basis_rotation_decomp(unitary_matrix, wires: WiresLike, **__):
             def shift(a):
                 PhaseShift(a, wires=wires[0])
 
-            cond(jnp.allclose(angle, 0.0 + 0.0j), shift)(angle)
+            cond(jnp.logical_not(jnp.allclose(angle, 0.0 + 0.0j)), shift)(angle)
         else:
             if angle != 0.0 + 0.0j:
                 PhaseShift(angle, wires=wires[0])
