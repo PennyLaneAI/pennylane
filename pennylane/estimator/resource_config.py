@@ -30,7 +30,7 @@ from pennylane.estimator.templates import (
     SelectPauliRot,
     SelectTHC,
 )
-from pennylane.estimator.templates.trotter import TrotterVibrational, TrotterVibronic
+from pennylane.estimator.templates.trotter import TrotterVibrational, TrotterVibronic, TrotterPauli
 
 if TYPE_CHECKING:
     from pennylane.estimator.resource_operator import ResourceOperator
@@ -138,6 +138,7 @@ class ResourceConfig:
                 "phase_grad_precision": _DEFAULT_PHASEGRAD_PRECISION,
                 "coeff_precision": 1e-3,
             },
+            TrotterPauli: {"pauli_rot_precision": _DEFAULT_PRECISION},
         }
         self._custom_decomps = {}
         self._adj_custom_decomps = {}
