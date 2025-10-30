@@ -136,13 +136,13 @@ class TestProperties:
 
         assert Exp(qml.RX(1.2, 0), -1.2j)._queue_category == "_ops"
 
-    def test_is_hermitian(self):
+    def test_is_verified_hermitian(self):
         """Test that the op is hermitian if the base is hermitian and the coeff is real."""
-        assert Exp(qml.PauliX(0), -1.0).is_hermitian
+        assert Exp(qml.PauliX(0), -1.0).is_verified_hermitian
 
-        assert not Exp(qml.PauliX(0), 1.0 + 2j).is_hermitian
+        assert not Exp(qml.PauliX(0), 1.0 + 2j).is_verified_hermitian
 
-        assert not Exp(qml.RX(1.2, wires=0)).is_hermitian
+        assert not Exp(qml.RX(1.2, wires=0)).is_verified_hermitian
 
     def test_batching_properties(self):
         """Test the batching properties and methods."""

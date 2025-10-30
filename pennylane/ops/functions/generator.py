@@ -194,7 +194,7 @@ def generator(op: qml.operation.Operator, format="prefactor"):
             # versions <=0.22, assume gen_op.generator is a property
             gen = _generator_backcompatibility(gen_op)
 
-        if not gen.is_hermitian:
+        if not gen.is_verified_hermitian:
             raise QuantumFunctionError(
                 f"Generator {gen.name} of operation {gen_op.name} is not hermitian"
             )

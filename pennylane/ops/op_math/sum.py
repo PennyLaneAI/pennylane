@@ -306,7 +306,7 @@ class Sum(CompositeOp):
 
     @property
     @handle_recursion_error
-    def is_hermitian(self):
+    def is_verified_hermitian(self):
         """If all of the terms in the sum are hermitian, then the Sum is hermitian."""
         if self.pauli_rep is not None:
             coeffs_list = list(self.pauli_rep.values())
@@ -315,7 +315,7 @@ class Sum(CompositeOp):
             if not math.is_abstract(coeffs_list[0]):
                 return not any(math.iscomplex(c) for c in coeffs_list)
 
-        return all(s.is_hermitian for s in self)
+        return all(s.is_verified_hermitian for s in self)
 
     @handle_recursion_error
     def label(self, decimals=None, base_label=None, cache=None):
