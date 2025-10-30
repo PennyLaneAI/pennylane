@@ -111,7 +111,7 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> SpecsDict:  # pr
 
     # TODO: Determine if its possible to have batched QJIT code / how to handle it
 
-    if not isinstance(qjit.original_function, qml.QNode):
+    if not isinstance(qjit.user_function, qml.QNode):
         raise ValueError("qml.specs can only be applied to a QNode or qjit'd QNode")
 
     original_device = qjit.device
@@ -136,7 +136,7 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> SpecsDict:  # pr
         warnings.filterwarnings(
             "ignore", category=UserWarning, message="The device's shots value does not match "
         )
-        new_qnode = qjit.original_function.update(device=spoofed_dev)
+        new_qnode = qjit.user_function.update(device=spoofed_dev)
     new_qjit = QJIT(new_qnode, copy.copy(qjit.compile_options))
 
     if os.path.exists(_RESOURCE_TRACKING_FILEPATH):
@@ -158,7 +158,7 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> SpecsDict:  # pr
                 int, {int(k): v for (k, v) in resource_data["gate_sizes"].items()}
             ),
             depth=resource_data["depth"],
-            shots=qjit.original_function.shots,  # TODO: Can this ever be overriden during compilation?
+            shots=qjit.user_function.shots,  # TODO: Can this ever be overriden during compilation?
         )
     finally:
         # Ensure we clean up the resource tracking file
@@ -169,7 +169,7 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> SpecsDict:  # pr
     info["device_name"] = original_device.name
     info["level"] = level
     info["gradient_options"] = qjit.gradient_kwargs
-    info["interface"] = qjit.original_function.interface
+    info["interface"] = qjit.user_function.interface
     info["diff_method"] = (
         _get_absolute_import_path(qjit.diff_method)
         if callable(qjit.diff_method)

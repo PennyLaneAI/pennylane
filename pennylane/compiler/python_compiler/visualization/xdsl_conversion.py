@@ -21,6 +21,7 @@ from collections.abc import Callable
 from typing import TYPE_CHECKING
 
 from xdsl.dialects.builtin import DenseIntOrFPElementsAttr, IntegerAttr, IntegerType
+from xdsl.dialects.scf import ForOp
 from xdsl.dialects.tensor import ExtractOp as TensorExtractOp
 from xdsl.ir import SSAValue
 
@@ -149,6 +150,9 @@ def resolve_constant_params(ssa: SSAValue) -> float | int:
         case "arith.constant":
             return op.value.value.data  # Catalyst
 
+        case "arith.index_cast":
+            return resolve_constant_params(op.input)
+
         case "stablehlo.constant":
             return _extract_dense_constant_value(op)
 
@@ -166,6 +170,26 @@ def resolve_constant_params(ssa: SSAValue) -> float | int:
 
         case _:
             raise NotImplementedError(f"Cannot resolve parameters for operation: {op}")
+
+
+def count_static_loop_iterations(for_op: ForOp) -> int:
+    """
+    Calculates static loop iterations for a given ForOp.
+
+    Requires that the loop bounds and step are constant values.
+    """
+
+    lower_bound_op, upper_bound_op, step_op = for_op.operands[0:3]
+
+    lower_bound = resolve_constant_params(lower_bound_op)
+    upper_bound = resolve_constant_params(upper_bound_op)
+    step = resolve_constant_params(step_op)
+
+    if upper_bound <= lower_bound:
+        return 0
+
+    num_elements = upper_bound - lower_bound
+    return (num_elements + step - 1) // step
 
 
 def dispatch_wires_extract(op: ExtractOpPL):
