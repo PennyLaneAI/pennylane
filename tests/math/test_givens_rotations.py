@@ -81,7 +81,6 @@ def test_givens_matrix_real(a, b, left):
     r"""Test that `_givens_matrix` builds the correct real-valued Givens rotation matrices."""
 
     grot_mat = _givens_matrix(a, b, left, real_valued=True)
-    assert grot_mat.dtype == np.float64
 
     rotated_vector = grot_mat @ np.array([a, b])
     sign = np.sign(a * b)
@@ -156,7 +155,7 @@ def test_givens_decomposition_jax(shape, jit, seed):
     matrix = jnp.array(unitary_group.rvs(shape, random_state=seed))
     func = jax.jit(givens_decomposition) if jit else givens_decomposition
 
-    phase_mat, ordered_rotations = func(matrix)
+    phase_mat, ordered_rotations = func(matrix, is_real_obj_or_close(matrix))
     assert all(j == i + 1 for _, (i, j) in ordered_rotations)
     decomposed_matrix = np.diag(phase_mat)
     for grot_mat, (i, _) in ordered_rotations:
@@ -177,7 +176,7 @@ def test_givens_decomposition_real_valued(shape, dtype, seed):
     matrix = ortho_group.rvs(shape, random_state=seed).astype(dtype)
     matrix[0] *= np.linalg.det(matrix)  # Make unit determinant
 
-    phase_mat, ordered_rotations = givens_decomposition(matrix)
+    phase_mat, ordered_rotations = givens_decomposition(matrix, True)
     assert all(j == i + 1 for _, (i, j) in ordered_rotations)
     decomposed_matrix = np.diag(phase_mat)
     if dtype is np.float64:
@@ -253,7 +252,7 @@ def test_givens_decomposition_exceptions(unitary_matrix, msg_match):
     """Test that givens_decomposition throws an exception if the parameters have illegal shapes."""
 
     with pytest.raises(ValueError, match=msg_match):
-        givens_decomposition(unitary_matrix)
+        givens_decomposition(unitary_matrix, is_real_obj_or_close(unitary_matrix))
 
 
 @pytest.mark.jax

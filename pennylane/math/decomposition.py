@@ -372,22 +372,42 @@ def _givens_matrix_core(a, b, left=True, tol=1e-8, real_valued=False):
     elif not left:
         cosine, sine = sine, -cosine
 
-    g00, g01 = cosine, -sine
-    if real_valued:
-        phase = math.where((abs_a < tol) + (abs_b < tol), 1.0, math.sign(a * b))  # previously sign
-        g01 *= phase
+    g00, g01 = cosine + 0.0 + 0.0j, -sine + 0.0 + 0.0j
+    if interface == "jax":
+
+        def real_branch(g00, g01):
+            phase = math.where(
+                (abs_a < tol) + (abs_b < tol), 1.0, math.sign(a * b)
+            )  # previously sign
+            g01 *= phase
+            return phase, g00, g01
+
+        def complex_branch(g00, g01):
+            aprod = math.nan_to_num(abs_b * abs_a)
+            phase = math.where(abs_b < tol, 1.0, (b * math.conj(a)) / (aprod + EPS))
+            phase = math.where(abs_a < tol, 1.0, phase)
+            g00 = phase * g00
+            return phase, g00, g01
+
+        phase, g00, g01 = jax.lax.cond(real_valued, real_branch, complex_branch, g00, g01)
     else:
-        aprod = math.nan_to_num(abs_b * abs_a)
-        phase = math.where(abs_b < tol, 1.0, (b * math.conj(a)) / (aprod + EPS))
-        phase = math.where(abs_a < tol, 1.0, phase)
-        g00 = phase * g00
+        if real_valued:
+            phase = math.where(
+                (abs_a < tol) + (abs_b < tol), 1.0, math.sign(a * b)
+            )  # previously sign
+            g01 *= phase
+        else:
+            aprod = math.nan_to_num(abs_b * abs_a)
+            phase = math.where(abs_b < tol, 1.0, (b * math.conj(a)) / (aprod + EPS))
+            phase = math.where(abs_a < tol, 1.0, phase)
+            g00 = phase * g00
 
     g10, g11 = phase * sine, cosine
 
     return math.array([[g00, g01], [g10, g11]], like=interface)
 
 
-def _absorb_phases_so(left_givens, right_givens, phases, interface):
+def _absorb_phases_so(left_givens, right_givens, phases):
     r"""Function handling the diagonal phases left over from diagonalization via Givens
     rotations, for the real-valued case.
 
@@ -400,7 +420,6 @@ def _absorb_phases_so(left_givens, right_givens, phases, interface):
             in the obtained decomposition (see details below). The format is as for ``left_givens``
         phases (array): Result of the diagonalization via Givens rotations (see details below).
             Will be diagonal and only contain :math:`\pm 1`.
-        interface (str): The ML interface of ``phases``.
 
     Returns:
         tuple[array, list[tuple[array,int]]]: New phases with at most one entry :math:`-1`, and
@@ -430,6 +449,7 @@ def _absorb_phases_so(left_givens, right_givens, phases, interface):
     The phases with -1 are guaranteed to come in an even number, so that this procedure will
     end up with modified rotations and the identity as phase matrix.
     """
+    interface = math.get_interface(phases)
     N = len(phases)
     mod = N % 2
     last_rotations = left_givens if mod else right_givens
@@ -453,7 +473,7 @@ def _absorb_phases_so(left_givens, right_givens, phases, interface):
     return math.diag(phases), left_givens + list(reversed(right_givens))
 
 
-def _commute_phases_u(left_givens, right_givens, phases, interface):
+def _commute_phases_u(left_givens, right_givens, phases):
     r"""Function handling the diagonal phases left over from diagonalization via Givens
     rotations, for the complex-valued case.
 
@@ -466,7 +486,6 @@ def _commute_phases_u(left_givens, right_givens, phases, interface):
             in the obtained decomposition (see details below). The format is as for ``left_givens``
         phases (array): Result of the diagonalization via Givens rotations (see details below).
             Will be diagonal and only contain complex phases :math:`e^{i\phi}`.
-        interface (str): The ML interface of ``phases``.
 
     Returns:
         tuple[array, list[tuple[array,int]]]: New diagonal phases after commuting through Givens
@@ -482,6 +501,7 @@ def _commute_phases_u(left_givens, right_givens, phases, interface):
     After pulling the phases out, the Givens rotations are reordered so that they do not
     diagonalize, but reproduce, the original unitary.
     """
+    interface = math.get_interface(phases)
     nleft_givens = []
     for grot_mat, (i, j) in reversed(left_givens):
         # Manually compute new Givens matrix and new phase when commuting a phase through.
@@ -684,15 +704,21 @@ def givens_decomposition(unitary, is_real):
     for i in range(1, N):
         if i % 2:
             for j in range(i):
-                indices = [i - j - 1, i - j]
+                indices = (i - j - 1, i - j)
                 unitary_mat, grot_mat_conj = _right_givens(indices, unitary_mat, N, j, is_real)
                 right_givens.append((grot_mat_conj, indices))
         else:
             for j in range(1, i + 1):
-                indices = [N + j - i - 2, N + j - i - 1]
+                indices = (N + j - i - 2, N + j - i - 1)
                 unitary_mat, grot_mat = _left_givens(indices, unitary_mat, j, is_real)
                 left_givens.append((grot_mat, indices))
-    unitary_mat, all_givens = (_absorb_phases_so if is_real else _commute_phases_u)(
-        left_givens, right_givens, unitary_mat, interface
-    )
+
+    if interface == "jax":
+        unitary_mat, all_givens = jax.lax.cond(
+            is_real, _absorb_phases_so, _commute_phases_u, left_givens, right_givens, unitary_mat
+        )
+    else:
+        unitary_mat, all_givens = (_absorb_phases_so if is_real else _commute_phases_u)(
+            left_givens, right_givens, unitary_mat
+        )
     return unitary_mat, all_givens
