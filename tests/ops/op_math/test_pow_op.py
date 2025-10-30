@@ -361,10 +361,10 @@ class TestProperties:
             """Dummy operator."""
 
             num_wires = 1
-            is_hermitian = value
+            is_verified_hermitian = value
 
         op: Pow = power_method(base=DummyOp(1), z=2.5)
-        assert op.is_hermitian is value
+        assert op.is_verified_hermitian is value
 
     def test_queue_category(self, power_method):
         """Test that the queue category `"_ops"` carries over."""
