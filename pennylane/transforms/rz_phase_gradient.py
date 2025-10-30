@@ -115,9 +115,6 @@ def rz_phase_gradient(
 
         from functools import partial
 
-        import numpy as np
-
-        import pennylane as qml
         from pennylane.transforms.rz_phase_gradient import rz_phase_gradient
 
         precision = 3
