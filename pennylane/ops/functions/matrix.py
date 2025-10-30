@@ -16,6 +16,7 @@ This module contains the qml.matrix function.
 """
 from collections.abc import Callable, Sequence
 from functools import partial
+from typing import Protocol, runtime_checkable
 
 from pennylane import math
 from pennylane.exceptions import MatrixUndefinedError, TransformError
@@ -26,6 +27,14 @@ from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn, TensorLike
 from pennylane.workflow.qnode import QNode
+
+
+# pylint: disable=too-few-public-methods
+@runtime_checkable
+class QJITCallable(Protocol):
+    """A protocol for objects that have a user_function attribute which is a QNode."""
+
+    user_function: QNode
 
 
 # pylint: disable=unused-argument
@@ -201,10 +210,6 @@ def _matrix_tape(op: QuantumScript, wire_order: Sequence | None = None) -> Tenso
 @matrix.register
 def _matrix_qnode(op: QNode, wire_order: Sequence | None = None) -> TensorLike:
     """Compute the matrix representation of a QNode."""
-    # Handle Catalyst QJIT-compiled QNodes
-    if op.__class__.__name__ == "QJIT" and hasattr(op, "user_function"):
-        op = op.user_function
-
     if wire_order is None and op.device.wires is None:
         raise ValueError(
             "wire_order is required by qml.matrix() for QNodes if the device does "
@@ -214,8 +219,13 @@ def _matrix_qnode(op: QNode, wire_order: Sequence | None = None) -> TensorLike:
 
 
 @matrix.register
-def _matrix_function(op: Callable, wire_order: Sequence | None = None) -> TensorLike:
+def _matrix_function(op: Callable | QJITCallable, wire_order: Sequence | None = None) -> TensorLike:
     """Compute the matrix representation of a quantum function."""
+    # Handle Catalyst QJIT-compiled QNodes
+    if isinstance(op, QJITCallable):
+        op = op.user_function
+        return _matrix_qnode(op)
+
     if getattr(op, "num_wires", 0) != 1 and wire_order is None:
         raise ValueError("wire_order is required by qml.matrix() for quantum functions.")
 
