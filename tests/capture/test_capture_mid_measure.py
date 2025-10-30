@@ -343,7 +343,7 @@ class TestMidMeasureExecute:
                     # either all ones or all minus ones
                     assert ones_count == 0 or minus_ones_count == 0
                 else:
-                    sample_avg = 1.0 * (ones_count - minus_ones_count) / shots
+                    sample_expected_avg = 1.0 (ones_count / shots) + (-1.0) * (minus_ones_count / shots)
                     # Check the sample average instead of individual counts
                     # For eigenvalues {+1, -1}, the sample average should be p_plus - p_minus
                     # with std = 2*sqrt(p_plus*p_minus/shots)
@@ -352,7 +352,7 @@ class TestMidMeasureExecute:
                     expected_avg = p_plus - p_minus
                     std_sample_avg = 2 * qml.math.sqrt(p_plus * p_minus / shots)
                     atol = 3 * std_sample_avg
-                    assert qml.math.allclose(sample_avg, expected_avg, atol=atol, rtol=0)
+                    assert qml.math.allclose(sample_expected_avg, expected_avg, atol=atol, rtol=0)
             else:  # qml.expval, qml.var, qml.sample, qml.probs
                 assert qml.math.allclose(res, expected, atol=1 / qml.math.sqrt(shots), rtol=0.1)
         else:
