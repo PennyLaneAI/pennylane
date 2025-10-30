@@ -372,16 +372,16 @@ class BasisRotation(Operation):
 
         if math.is_real_obj_or_close(unitary_matrix):
             angle, unitary_matrix = _adjust_determinant(unitary_matrix)
-            if angle is not None:
+            if angle != 0.0 + 0.0j:
                 op_list.append(PhaseShift(angle, wires=wires[0]))
 
-            _, givens_list = math.decomposition.givens_decomposition(unitary_matrix)
+            _, givens_list = math.decomposition.givens_decomposition(unitary_matrix, True)
             for grot_mat, (i, j) in givens_list:
                 theta = math.arctan2(grot_mat[0, 1], grot_mat[0, 0])
                 op_list.append(SingleExcitation(2 * theta, wires=[wires[i], wires[j]]))
             return op_list
 
-        phase_list, givens_list = math.decomposition.givens_decomposition(unitary_matrix)
+        phase_list, givens_list = math.decomposition.givens_decomposition(unitary_matrix, False)
 
         for idx, phase in enumerate(phase_list):
             op_list.append(PhaseShift(math.angle(phase), wires=wires[idx]))
