@@ -343,7 +343,7 @@ class TestMidMeasureExecute:
                     # either all ones or all minus ones
                     assert ones_count == 0 or minus_ones_count == 0
                 else:
-                    sample_expected_avg = 1.0 (ones_count / shots) + (-1.0) * (minus_ones_count / shots)
+                    sample_expected_avg = 1.0 * (ones_count / shots) + (-1.0) * (minus_ones_count / shots)
                     # Check the sample average instead of individual counts
                     # For eigenvalues {+1, -1}, the sample average should be p_plus - p_minus
                     # with std = 2*sqrt(p_plus*p_minus/shots)
