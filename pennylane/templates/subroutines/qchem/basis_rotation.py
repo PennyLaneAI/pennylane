@@ -235,7 +235,7 @@ class BasisRotation(Operation):
         (note the additional prefactor of :math:`2` from the mapping):
 
         >>> qml.generator(qml.SingleExcitation(0.2512, [0, 1]))
-        (X(0) @ Y(1) + -1.0 * (Y(0) @ X(1)), 0.25)
+        (X(0) @ Y(1) + -1.0 * (Y(0) @ X(1)), np.float64(0.25))
 
         Similarly, the ``PhaseShift`` gates have the generators
         :math:`\hat{D}_j=\tfrac{i}{2}(\mathbb{I}-Z_j)=i|1\rangle\langle 1|_j`:
