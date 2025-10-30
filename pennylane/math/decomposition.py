@@ -18,7 +18,7 @@ from functools import lru_cache, partial
 
 import numpy as np
 
-from pennylane import math, capture
+from pennylane import capture, math
 
 has_jax = True
 try:
@@ -578,6 +578,7 @@ def givens_decomposition(unitary, is_real):
 
     Args:
         unitary (tensor): unitary matrix on which decomposition will be performed
+        is_real (bool): whether the unitary matrix is approximately real
 
     Returns:
         (tensor_like, list[(tensor_like, tuple)]): diagonal elements of the phase matrix :math:`D` and Givens rotation matrix :math:`T` with their indices

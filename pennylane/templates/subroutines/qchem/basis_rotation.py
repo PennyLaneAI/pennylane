@@ -359,9 +359,9 @@ class BasisRotation(Operation):
 
         if check:
             if not math.is_abstract(unitary_matrix) and not math.allclose(
-                    unitary_matrix @ math.conj(unitary_matrix).T,
-                    math.eye(len(unitary_matrix), dtype=complex),
-                    atol=1e-4,
+                unitary_matrix @ math.conj(unitary_matrix).T,
+                math.eye(len(unitary_matrix), dtype=complex),
+                atol=1e-4,
             ):
                 raise ValueError("The provided transformation matrix should be unitary.")
 
@@ -398,7 +398,6 @@ class BasisRotation(Operation):
         return op_list
 
 
-
 def _basis_rotation_decomp_resources(dim, is_real):
     se_count = dim * (dim - 1) / 2
     if is_real:
@@ -422,8 +421,10 @@ def _basis_rotation_decomp(unitary_matrix, wires: WiresLike, **__):
         angle, unitary_matrix = _adjust_determinant(unitary)
 
         if has_jax and capture.enabled():
+
             def shift(a):
                 PhaseShift(a, wires=wires[0])
+
             cond(jnp.allclose(angle, 0.0 + 0.0j), shift)(angle)
         else:
             if angle != 0.0 + 0.0j:
@@ -436,7 +437,6 @@ def _basis_rotation_decomp(unitary_matrix, wires: WiresLike, **__):
         if has_jax and capture.enabled():
             givens_ids = jnp.array(givens_ids)
             givens_matrices = jnp.array(givens_matrices)
-
 
         @for_loop(len(givens_list))
         def givens_loop(idx):
