@@ -66,7 +66,6 @@ def test_pass_is_captured(pass_fn):
         (ppr_to_mbqc, "ppr-to-mbqc"),
         (ppr_to_ppm, "ppr-to-ppm"),
         (reduce_t_depth, "reduce-t-depth"),
-        (ppr_to_ppm, "ppr-to-ppm"),
         (ppm_compilation, "ppm-compilation"),
     ],
 )
