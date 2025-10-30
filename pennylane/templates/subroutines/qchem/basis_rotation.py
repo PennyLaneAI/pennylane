@@ -137,9 +137,9 @@ class BasisRotation(Operation):
         >>> O = ortho_group.rvs(4, random_state=51)
         >>> print(qml.draw(qml.BasisRotation(wires=range(4), unitary_matrix=O).decomposition)())
         0: ──Rϕ(3.14+0.00j)─╭G(-3.19)──────────╭G(2.63)─┤
-        1: ─╭G(-3.13)─╰G(-3.19)─╭G(2.68)─╰G(2.63)─┤
-        2: ─╰G(-3.13)─╭G(-2.98)─╰G(2.68)─╭G(5.70)─┤
-        3: ───────────╰G(-2.98)──────────╰G(5.70)─┤
+        1: ─╭G(-3.13)───────╰G(-3.19)─╭G(2.68)─╰G(2.63)─┤
+        2: ─╰G(-3.13)───────╭G(-2.98)─╰G(2.68)─╭G(5.70)─┤
+        3: ─────────────────╰G(-2.98)──────────╰G(5.70)─┤
 
     .. details::
         :title: Theory
