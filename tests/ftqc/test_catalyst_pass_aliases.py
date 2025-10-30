@@ -39,7 +39,17 @@ pytestmark = pytest.mark.external
 @pytest.mark.usefixtures("enable_disable_plxpr")
 @pytest.mark.parametrize(
     "pass_fn",
-    [to_ppr, commute_ppr, merge_ppr_ppm, ppr_to_mbqc, reduce_t_depth, ppr_to_ppm, ppm_compilation],
+    [
+        to_ppr,
+        commute_ppr,
+        merge_ppr_ppm,
+        ppr_to_mbqc,
+        reduce_t_depth,
+        decompose_clifford_ppr,
+        decompose_non_clifford_ppr,
+        ppr_to_ppm,
+        ppm_compilation,
+    ],
 )
 def test_pass_is_captured(pass_fn):
 
@@ -93,7 +103,17 @@ def test_converstion_to_mlir(pass_fn, pass_name):
 @pytest.mark.catalyst
 @pytest.mark.parametrize(
     "pass_fn",
-    [to_ppr, commute_ppr, merge_ppr_ppm, ppr_to_mbqc, reduce_t_depth, ppr_to_ppm, ppm_compilation],
+    [
+        to_ppr,
+        commute_ppr,
+        merge_ppr_ppm,
+        ppr_to_mbqc,
+        reduce_t_depth,
+        decompose_clifford_ppr,
+        decompose_non_clifford_ppr,
+        ppr_to_ppm,
+        ppm_compilation,
+    ],
 )
 def test_pass_without_qjit_raises_error(pass_fn):
     """Test that trying to apply the transform without QJIT raises an error"""
