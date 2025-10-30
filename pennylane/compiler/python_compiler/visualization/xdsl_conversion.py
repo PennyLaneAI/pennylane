@@ -179,11 +179,9 @@ def count_static_loop_iterations(for_op: ForOp) -> int:
     Requires that the loop bounds and step are constant values.
     """
 
-    lower_bound_op, upper_bound_op, step_op = for_op.operands[0:3]
-
-    lower_bound = resolve_constant_params(lower_bound_op)
-    upper_bound = resolve_constant_params(upper_bound_op)
-    step = resolve_constant_params(step_op)
+    lower_bound = resolve_constant_params(for_op.lb)
+    upper_bound = resolve_constant_params(for_op.ub)
+    step = resolve_constant_params(for_op.step)
 
     if upper_bound <= lower_bound:
         return 0
