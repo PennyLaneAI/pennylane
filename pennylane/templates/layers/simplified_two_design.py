@@ -264,11 +264,6 @@ def _simplified_two_design_decomposition(initial_layer_weights, weights, wires):
 
     @for_loop(n_layers)
     def layers_loop(layer):
-        # even layer of entanglers
-        even_wires = [wires[i : i + 2] for i in range(0, len(wires) - 1, 2)]
-
-        if has_jax and capture.enabled():
-            even_wires = jnp.array(even_wires)
 
         all_wire_pairs = [wires[i : i + 2] for i in range(0, len(wires) - 1, 2)] + [
             wires[i : i + 2] for i in range(1, len(wires) - 1, 2)
