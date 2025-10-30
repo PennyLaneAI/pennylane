@@ -14,13 +14,11 @@
 """
 This module contains the template for performing basis transformation defined by a set of fermionic ladder operators.
 """
-import autoray as ar
 import numpy as np
 
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
 from pennylane.decomposition import add_decomps, register_resources
-from pennylane.math import allclose, get_dtype_name, is_abstract
 from pennylane.operation import Operation
 from pennylane.ops import PhaseShift, SingleExcitation, cond
 from pennylane.wires import Wires, WiresLike
@@ -418,7 +416,7 @@ def _basis_rotation_decomp(unitary_matrix, wires: WiresLike, **__):
         unitary_matrix, wires = jnp.array(unitary_matrix), jnp.array(wires)
 
     def real_unitary(unitary, wires):
-        angle, unitary_matrix = _adjust_determinant(unitary)
+        angle, unitary = _adjust_determinant(unitary)
 
         if has_jax and capture.enabled():
 

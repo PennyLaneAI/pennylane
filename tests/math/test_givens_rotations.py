@@ -20,6 +20,7 @@ from scipy.stats import ortho_group, unitary_group
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.math import is_real_obj_or_close
 from pennylane.math.decomposition import _givens_matrix, _set_unitary_matrix, givens_decomposition
 
 
@@ -132,7 +133,7 @@ def test_givens_decomposition(shape, seed):
 
     matrix = unitary_group.rvs(shape, random_state=seed)
 
-    phase_mat, ordered_rotations = givens_decomposition(matrix)
+    phase_mat, ordered_rotations = givens_decomposition(matrix, is_real_obj_or_close(matrix))
     assert all(j == i + 1 for _, (i, j) in ordered_rotations)
     decomposed_matrix = np.diag(phase_mat)
     for grot_mat, (i, _) in ordered_rotations:
@@ -208,7 +209,7 @@ def test_givens_decomposition_real_valued_jax(shape, dtype, jit, seed):
     matrix = jnp.array(matrix)
     func = jax.jit(givens_decomposition) if jit else givens_decomposition
 
-    phase_mat, ordered_rotations = func(matrix)
+    phase_mat, ordered_rotations = func(matrix, True)
     assert all(j == i + 1 for _, (i, j) in ordered_rotations)
     decomposed_matrix = np.diag(phase_mat)
     if dtype is np.float64:
