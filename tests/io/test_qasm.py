@@ -716,7 +716,7 @@ class TestQNodeQasmIntegrationTests:
                             include "qelib1.inc";
                             qreg q[3];
                             creg c[3];
-                            creg mcms[3]
+                            creg mcms[3];
                             x q[0];
                             measure q[0] -> mcms[0];
                             measure q[1] -> mcms[1];
