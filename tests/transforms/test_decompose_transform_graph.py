@@ -37,6 +37,33 @@ def test_weighted_graph_handles_negative_weight():
 
 
 @pytest.mark.unit
+@pytest.mark.usefixtures("enable_graph_decomposition")
+def test_weights_affect_graph_decomposition():
+    tape = qml.tape.QuantumScript([qml.CRX(0.1, wires=[0, 1]), qml.Toffoli(wires=[0, 1, 2])])
+
+    [new_tape], _ = qml.transforms.decompose(
+        tape, gate_set={qml.Toffoli: 1.23, qml.RX: 4.56, qml.CZ: 0.01, qml.H: 420, qml.CRZ: 100}
+    )
+    assert new_tape.operations == [
+        qml.RX(0.05, wires=[1]),
+        qml.CZ(wires=[0, 1]),
+        qml.RX(-0.05, wires=[1]),
+        qml.CZ(wires=[0, 1]),
+        qml.Toffoli(wires=[0, 1, 2]),
+    ]
+
+    [new_tape], _ = qml.transforms.decompose(
+        tape, gate_set={qml.Toffoli: 1.23, qml.RX: 4.56, qml.CZ: 0.01, qml.H: 0.1, qml.CRZ: 0.1}
+    )
+    assert new_tape.operations == [
+        qml.H(wires=[1]),
+        qml.CRZ(0.10, wires=[0, 1]),
+        qml.H(wires=[1]),
+        qml.Toffoli(wires=[0, 1, 2]),
+    ]
+
+
+@pytest.mark.unit
 def test_fixed_alt_decomps_not_available():
     """Test that a TypeError is raised when graph is disabled and
     fixed_decomps or alt_decomps is used."""
@@ -115,6 +142,14 @@ def _decomp2_without_work_wire(wires, **__):
 @pytest.mark.usefixtures("enable_graph_decomposition")
 class TestDecomposeGraphEnabled:
     """Tests the decompose transform with graph enabled."""
+
+    @pytest.mark.unit
+    def test_none_gate_set_error(self):
+        """Tests that an error is raised when gate_set is not provided."""
+
+        tape = qml.tape.QuantumScript([])
+        with pytest.raises(TypeError, match="The gate_set argument is required."):
+            qml.transforms.decompose(tape, stopping_condition=lambda op: True)
 
     @pytest.mark.unit
     def test_none_gate_set_error(self):
@@ -464,7 +499,7 @@ class TestDecomposeGraphEnabled:
 
         gate_counts = defaultdict(int)
         for op in result.operations:
-            if isinstance(op, qml.measurements.MidMeasureMP):
+            if isinstance(op, qml.ops.MidMeasure):
                 continue
             gate_counts[type(op)] += 1
         assert gate_counts == expected_gate_count

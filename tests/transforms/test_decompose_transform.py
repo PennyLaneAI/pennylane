@@ -22,9 +22,8 @@ import pytest
 import pennylane as qml
 import pennylane.numpy as qnp
 from pennylane.exceptions import PennyLaneDeprecationWarning
-from pennylane.measurements import MidMeasureMP
 from pennylane.operation import Operation
-from pennylane.ops import Conditional
+from pennylane.ops import Conditional, MidMeasure
 from pennylane.transforms.decompose import _operator_decomposition_gen, decompose
 
 # pylint: disable=unnecessary-lambda-assignment
@@ -72,7 +71,18 @@ class InfiniteOp(Operation):
 class TestDecompose:
     """Unit tests for decompose function"""
 
-    gate_set_inputs = [None, "RX", ["RX"], ("RX",), {"RX"}, qml.RX, [qml.RX], (qml.RX,), {qml.RX}]
+    gate_set_inputs = [
+        None,
+        "RX",
+        ["RX"],
+        ("RX",),
+        {"RX"},
+        qml.RX,
+        [qml.RX],
+        (qml.RX,),
+        {qml.RX},
+        {qml.RX: 1.0},
+    ]
 
     iterables_test = [
         (
@@ -92,15 +102,18 @@ class TestDecompose:
             [qml.Hadamard(0)],
             {qml.RX: 1, qml.RZ: 2},
             [qml.RZ(qnp.pi / 2, 0), qml.RX(qnp.pi / 2, 0), qml.RZ(qnp.pi / 2, 0)],
-            None,
-        ),
-        (
-            [qml.Toffoli([0, 1, 2]), qml.measurements.MidMeasureMP(0)],
-            {qml.Toffoli},
-            [qml.Toffoli([0, 1, 2]), qml.measurements.MidMeasureMP(0)],
             {
                 "type": UserWarning,
-                "msg": "MidMeasureMP",
+                "msg": "Gate weights were provided to a non-graph-based decomposition.",
+            },
+        ),
+        (
+            [qml.Toffoli([0, 1, 2]), qml.ops.MidMeasure(0)],
+            {qml.Toffoli},
+            [qml.Toffoli([0, 1, 2]), qml.ops.MidMeasure(0)],
+            {
+                "type": UserWarning,
+                "msg": "MidMeasure",
             },
         ),
     ]
@@ -140,8 +153,36 @@ class TestDecompose:
     def test_different_input_formats(self, gate_set):
         """Tests that gate sets of different types are handled correctly"""
         tape = qml.tape.QuantumScript([qml.RX(0, wires=[0])])
-        (decomposed_tape,), _ = decompose(tape, gate_set=gate_set)
+        if isinstance(gate_set, dict):
+            with pytest.raises(
+                UserWarning, match="Gate weights were provided to a non-graph-based decomposition."
+            ):
+                (decomposed_tape,), _ = decompose(tape, gate_set=gate_set)
+                qml.assert_equal(tape, decomposed_tape)
+        else:
+            (decomposed_tape,), _ = decompose(tape, gate_set=gate_set)
+            qml.assert_equal(tape, decomposed_tape)
+
+    def test_stopping_cond_without_gate_set(self):
+        gate_set = None
+
+        def stopping_condition(op):
+            return op.name in ("RX")
+
+        tape = qml.tape.QuantumScript([qml.RX(0, wires=[0])])
+
+        (decomposed_tape,), _ = decompose(
+            tape, gate_set=gate_set, stopping_condition=stopping_condition
+        )
         qml.assert_equal(tape, decomposed_tape)
+
+        def stopping_condition_2(op):
+            return op.name in ("CX")
+
+        with pytest.raises(
+            UserWarning, match="Operator RX does not define a decomposition to the target gate set"
+        ):
+            decompose(tape, gate_set=gate_set, stopping_condition=stopping_condition_2)
 
     def test_user_warning(self):
         """Tests that user warning is raised if operator does not have a valid decomposition"""
@@ -230,7 +271,7 @@ class TestDecompose:
             ]
         )
         [decomposed_tape], _ = qml.transforms.decompose(
-            [tape], gate_set={qml.RX, qml.RZ, MidMeasureMP}
+            [tape], gate_set={qml.RX, qml.RZ, MidMeasure}
         )
         assert len(decomposed_tape.operations) == 10
 
@@ -259,8 +300,8 @@ class TestDecompose:
         qml.assert_equal(decomposed_tape.operations[6].base, q.queue[6].base)
         qml.assert_equal(decomposed_tape.operations[8].base, q.queue[8].base)
         qml.assert_equal(decomposed_tape.operations[9].base, q.queue[9].base)
-        assert isinstance(decomposed_tape.operations[3], MidMeasureMP)
-        assert isinstance(decomposed_tape.operations[7], MidMeasureMP)
+        assert isinstance(decomposed_tape.operations[3], MidMeasure)
+        assert isinstance(decomposed_tape.operations[7], MidMeasure)
 
 
 def test_null_postprocessing():
