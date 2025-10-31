@@ -572,19 +572,20 @@ def process_queue(
                 f"{obj} encountered in AnnotatedQueue and is not an object that can "
                 "be processed into a QuantumScript. Queues should contain Operator or MeasurementProcess objects only."
             )
-        if obj._queue_category is not None:
-            if list_order[obj._queue_category] > list_order[current_list]:
-                current_list = obj._queue_category
-            elif list_order[obj._queue_category] < list_order[current_list]:
-                raise ValueError(
-                    f"{obj._queue_category[1:]} operation {obj} must occur prior "
-                    f"to {current_list[1:]}. Please place earlier in the queue."
-                )
-            lists[obj._queue_category].append(obj)
-        else:
+        if obj._queue_category is None:
             warnings.warn(
                 category=PennyLaneDeprecationWarning,
                 message="Preventing an object from getting queued with `_queue_category=None` is deprecated.",
             )
+            continue
+
+        if list_order[obj._queue_category] > list_order[current_list]:
+            current_list = obj._queue_category
+        elif list_order[obj._queue_category] < list_order[current_list]:
+            raise ValueError(
+                f"{obj._queue_category[1:]} operation {obj} must occur prior "
+                f"to {current_list[1:]}. Please place earlier in the queue."
+            )
+        lists[obj._queue_category].append(obj)
 
     return lists["_ops"], lists["_measurements"]

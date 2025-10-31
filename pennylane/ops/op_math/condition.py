@@ -117,6 +117,8 @@ class Conditional(SymbolicOp, Operation):
         self._id = id
         self._pauli_rep = None
         self.queue()
+        self._wires = then_op.wires
+        self.__queue_category = then_op._queue_category  # pylint: disable=protected-access
 
         if self.grad_recipe is None:
             self.grad_recipe = [None] * self.num_params
@@ -128,6 +130,10 @@ class Conditional(SymbolicOp, Operation):
     def meas_val(self):
         """the measurement outcome value to consider from `expr` argument"""
         return self.hyperparameters["meas_val"]
+
+    @property
+    def _queue_category(self):
+        return self.__queue_category  # pylint: disable=protected-access
 
     @property
     def num_params(self):
