@@ -85,8 +85,10 @@ For example, if we replace the definition of ``f_and_jvp`` from above with one t
    bad_f.defjvp(bad_f_and_jvp)
 
 >>> jax.grad(bad_f)(jax.numpy.array(2.0))
-in custom jvp function:  2.0 Traced<~float64[]:JaxprTrace>
-Array(4., dtype=float64, weak_type=True)
+Traceback (most recent call last):
+    ...
+ValueError: Converting a JAX array to a NumPy array not supported when using the JAX JIT.
+...
 
 Note that the comment about ``JIT`` is generally a comment about not being able to trace code.
 
