@@ -276,9 +276,9 @@ class TestDecompositionGraph:
         operator type is among specific operators, like Allocate and Deallocate."""
 
         graph = DecompositionGraph(operations=[op], gate_set={"RX", "RY", "GlobalPhase"})
-        with warnings.catch_warnings():
-            warnings.simplefilter("error")
+        with pytest.warns(UserWarning) as record:
             graph.solve()
+        assert len(record) == 0
 
     def test_lazy_solve(self, _):
         """Tests the lazy keyword argument."""
