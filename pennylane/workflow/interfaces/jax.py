@@ -80,10 +80,10 @@ For example, if we replace the definition of ``f_and_jvp`` from above with one t
         x = primals[0]
         dx = qml.math.unwrap(tangents[0]) # This line breaks tracing
         return x**2, 2*x*dx
-        
-   bad_f = jax.custom_jvp(f)
-   bad_f.defjvp(bad_f_and_jvp)
 
+>>> bad_f = jax.custom_jvp(f)
+>>> bad_f.defjvp(bad_f_and_jvp)
+<function bad_f_and_jvp at 0x...>
 >>> jax.grad(bad_f)(jax.numpy.array(2.0))
 Traceback (most recent call last):
     ...
