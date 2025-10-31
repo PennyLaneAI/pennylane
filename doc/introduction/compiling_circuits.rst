@@ -276,7 +276,7 @@ Default behaviour with custom decompositions
 
 .. warning::
     The keyword argument for defining custom quantum gate decompositions, ``custom_decomps``,
-    has been deprecated and will be removed in v0.44. Instead, to specify custom decompositions for
+    has been deprecated and will be removed in v0.45. Instead, to specify custom decompositions for
     your operators, use the :func:`qml.transforms.decompose <pennylane.transforms.decompose>` transform with the new
     graph-based system enabled via :func:`qml.decomposition.enable_graph() <pennylane.decomposition.enable_graph>`.
     The details on how to define your decomposition rules using the graph decomposition system are described
