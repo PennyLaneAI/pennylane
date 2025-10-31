@@ -257,6 +257,8 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Prevent qml.about() from crashing in environments without pip (e.g., when using the uv package manager) by using standard library metadata.
+  [(#8457)](https://github.com/PennyLaneAI/pennylane/pull/8457)
 * Fixes a bug in `clifford_t_decomposition` with `method="gridsynth"` and qjit, where using cached decomposition with the same parameter causes an error.
   [(#8535)](https://github.com/PennyLaneAI/pennylane/pull/8535)
 
@@ -266,7 +268,6 @@
 * Fixes a bug in ``QubitUnitaryOp.__init__`` in the unified compiler module that prevented an
   instance from being constructed.
   [(#8456)](https://github.com/PennyLaneAI/pennylane/pull/8456)
-
 * Fixes a bug where the deferred measurement method is used silently even if ``mcm_method="one-shot"`` is explicitly requested,
   when a device that extends the ``LegacyDevice`` does not declare support for mid-circuit measurements.
   [(#8486)](https://github.com/PennyLaneAI/pennylane/pull/8486)
@@ -290,5 +291,6 @@ Gabriela Sanchez Diaz,
 Mudit Pandey,
 Shuli Shu,
 Jay Soni,
+Leo Wei,
 David Wierichs,
 Hongsheng Zheng
