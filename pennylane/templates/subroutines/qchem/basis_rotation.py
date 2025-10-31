@@ -131,6 +131,14 @@ class BasisRotation(Operation):
         For real-valued matrices, the decomposition only consists of ``SingleExcitation`` gates,
         except for one phase gate to account for negative determinants:
 
+        >>> from scipy.stats import ortho_group
+        >>> O = ortho_group.rvs(4, random_state=51)
+        >>> print(qml.draw(qml.BasisRotation(wires=range(4), unitary_matrix=O).decomposition)())
+        0: ──Rϕ(3.14+0.00j)─╭G(-3.19)──────────╭G(2.63)─┤
+        1: ─╭G(-3.13)───────╰G(-3.19)─╭G(2.68)─╰G(2.63)─┤
+        2: ─╰G(-3.13)───────╭G(-2.98)─╰G(2.68)─╭G(5.70)─┤
+        3: ─────────────────╰G(-2.98)──────────╰G(5.70)─┤
+
     .. details::
         :title: Theory
         :href: theory-basis-rotation
@@ -367,7 +375,7 @@ class BasisRotation(Operation):
 
             _, givens_list = math.decomposition.givens_decomposition(unitary_matrix, True)
             for grot_mat, (i, j) in givens_list:
-                theta = math.arctan2(grot_mat[0, 1], grot_mat[0, 0])
+                theta = math.arctan2(np.real(grot_mat[0, 1]), np.real(grot_mat[0, 0]))
                 op_list.append(SingleExcitation(2 * theta, wires=[wires[i], wires[j]]))
             return op_list
 
@@ -432,7 +440,7 @@ def _basis_rotation_decomp(unitary_matrix, wires: WiresLike, **__):
         def givens_loop(idx):
             grot_mat = givens_matrices[idx]
             (i, j) = givens_ids[idx]
-            theta = math.arctan2(grot_mat[0, 1], grot_mat[0, 0])
+            theta = math.arctan2(np.real(grot_mat[0, 1]), np.real(grot_mat[0, 0]))
             SingleExcitation(2 * theta, wires=[wires[i], wires[j]])
 
         givens_loop()  # pylint: disable=no-value-for-parameter

@@ -28,6 +28,21 @@ from pennylane.ops.functions.assert_valid import _test_decomposition_rule
     [
         np.array(
             [
+                [0.1478133, 0.58295722, 0.79661853, 0.06091815],
+                [-0.34142933, -0.60933128, 0.54474544, -0.46410538],
+                [-0.76014658, 0.01047548, 0.0841176, 0.64419847],
+                [0.53268604, -0.53737001, 0.24814422, 0.60489958],
+            ]
+        ),  # orthogonal matrix with determinant -1
+        np.array(
+            [
+                [-0.25619233, 0.81407233, 0.52120219],
+                [-0.72789572, -0.5172592, 0.45012302],
+                [0.63602933, -0.26406278, 0.72507761],
+            ]
+        ),  # orthogonal matrix with determinant 1
+        np.array(
+            [
                 [-0.618452, -0.68369054 - 0.38740723j],
                 [-0.78582258, 0.53807284 + 0.30489424j],
             ]
@@ -110,6 +125,16 @@ class TestDecomposition:
     @pytest.mark.parametrize(
         ("num_wires", "ortho_matrix", "givens"),
         [
+            (
+                2,
+                np.array(
+                    [  # A single Givens matrix obtained from sin(0.61246) and cos(0.61246)
+                        [0.8182362852252838, 0.5748820588092205],
+                        [-0.5748820588092205, 0.8182362852252838],
+                    ]
+                ),
+                [([0, 1], 2 * 0.61246)],
+            ),
             (
                 2,
                 np.array(
