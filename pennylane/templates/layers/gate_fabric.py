@@ -240,7 +240,7 @@ class GateFabric(Operation):
 
         return {
             "n_layers": math.shape(self.parameters[0])[0],
-            "num_wires": len(self.wires),
+            "num_wires": num_wires,
             "len_wire_pattern": len_wire_pattern,
             "include_pi": self.hyperparameters["include_pi"],
         }
