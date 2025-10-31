@@ -45,7 +45,7 @@ def _adjust_determinant(matrix):
     """
     det = math.linalg.det(matrix)
 
-    def abstract_or_near_zero_det(mat):
+    def abstract_or_less_than_zero_det(mat):
         # Adjust determinant to make unitary matrix special orthogonal; multiplication of
         # the first column with -1 is equal to prepending the decomposition with a phase shift
         mat = math.copy(mat) if math.get_interface(mat) == "jax" else math.toarray(mat).copy()
@@ -55,7 +55,7 @@ def _adjust_determinant(matrix):
     def false_branch(mat):
         return np.array(0.0 + 0.0j), mat
 
-    return cond(math.is_abstract(matrix) or det < 0, abstract_or_near_zero_det, false_branch)(
+    return cond(math.is_abstract(matrix) or det < 0, abstract_or_less_than_zero_det, false_branch)(
         matrix
     )
 
