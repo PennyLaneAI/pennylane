@@ -228,12 +228,13 @@ class GateFabric(Operation):
     def resource_params(self) -> dict:
         len_wire_pattern = 0
 
-        for i in range(0, len(self.wires), 4):
+        num_wires = len(self.wires)
+        for i in range(0, num_wires, 4):
             if len(self.wires[i : i + 4]) == 4:
                 len_wire_pattern += 1
 
-        if len(self.wires) > 4:
-            for i in range(2, len(self.wires), 4):
+        if num_wires > 4:
+            for i in range(2, num_wires, 4):
                 if len(self.wires[i : i + 4]) == 4:
                     len_wire_pattern += 1
 
