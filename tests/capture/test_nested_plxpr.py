@@ -157,7 +157,7 @@ class TestAdjointQfunc:
 
     def test_adjoint_grad(self):
         """Test that adjoint differentiated with grad can be captured."""
-        from pennylane.capture.primitives import grad_prim, qnode_prim
+        from pennylane.capture.primitives import jacobian_prim, qnode_prim
 
         @qml.grad
         @qml.qnode(qml.device("default.qubit", wires=1))
@@ -169,12 +169,20 @@ class TestAdjointQfunc:
 
         assert len(plxpr.eqns) == 1
         grad_eqn = plxpr.eqns[0]
-        assert grad_eqn.primitive == grad_prim
-        assert set(grad_eqn.params.keys()) == {"argnums", "n_consts", "jaxpr", "method", "h"}
+        assert grad_eqn.primitive == jacobian_prim
+        assert set(grad_eqn.params.keys()) == {
+            "argnums",
+            "n_consts",
+            "jaxpr",
+            "method",
+            "h",
+            "fn",
+            "scalar_out",
+        }
         assert grad_eqn.params["argnums"] == [0]
         assert grad_eqn.params["n_consts"] == 0
-        assert grad_eqn.params["method"] is None
-        assert grad_eqn.params["h"] is None
+        assert grad_eqn.params["method"] == "auto"
+        assert grad_eqn.params["h"] == 1e-6
         assert len(grad_eqn.params["jaxpr"].eqns) == 1
 
         qnode_eqn = grad_eqn.params["jaxpr"].eqns[0]
@@ -417,7 +425,7 @@ class TestCtrlQfunc:
 
     def test_ctrl_grad(self):
         """Test that ctrl differentiated with grad can be captured."""
-        from pennylane.capture.primitives import grad_prim, qnode_prim
+        from pennylane.capture.primitives import jacobian_prim, qnode_prim
 
         @qml.grad
         @qml.qnode(qml.device("default.qubit", wires=2))
@@ -430,12 +438,20 @@ class TestCtrlQfunc:
 
         assert len(plxpr.eqns) == 1
         grad_eqn = plxpr.eqns[0]
-        assert grad_eqn.primitive == grad_prim
-        assert set(grad_eqn.params.keys()) == {"argnums", "n_consts", "jaxpr", "method", "h"}
+        assert grad_eqn.primitive == jacobian_prim
+        assert set(grad_eqn.params.keys()) == {
+            "argnums",
+            "n_consts",
+            "jaxpr",
+            "method",
+            "h",
+            "fn",
+            "scalar_out",
+        }
         assert grad_eqn.params["argnums"] == [0]
         assert grad_eqn.params["n_consts"] == 0
-        assert grad_eqn.params["method"] is None
-        assert grad_eqn.params["h"] is None
+        assert grad_eqn.params["method"] == "auto"
+        assert grad_eqn.params["h"] == 1e-6
         assert len(grad_eqn.params["jaxpr"].eqns) == 1
 
         qnode_eqn = grad_eqn.params["jaxpr"].eqns[0]
