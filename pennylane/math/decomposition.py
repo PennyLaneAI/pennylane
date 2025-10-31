@@ -376,9 +376,7 @@ def _givens_matrix_core(a, b, left=True, tol=1e-8, real_valued=False):
     if interface == "jax":
 
         def real_branch(g00, g01):
-            phase = math.where(
-                (abs_a < tol) + (abs_b < tol), 1.0, math.sign(a * b)
-            )
+            phase = math.where((abs_a < tol) + (abs_b < tol), 1.0, math.sign(a * b))
             g01 *= phase
             return phase, g00, g01
 
@@ -392,9 +390,7 @@ def _givens_matrix_core(a, b, left=True, tol=1e-8, real_valued=False):
         phase, g00, g01 = jax.lax.cond(real_valued, real_branch, complex_branch, g00, g01)
     else:
         if real_valued:
-            phase = math.where(
-                (abs_a < tol) + (abs_b < tol), 1.0, math.sign(a * b)
-            )
+            phase = math.where((abs_a < tol) + (abs_b < tol), 1.0, math.sign(a * b))
             g01 *= phase
         else:
             aprod = math.nan_to_num(abs_b * abs_a)
