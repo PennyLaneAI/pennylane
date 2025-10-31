@@ -140,7 +140,7 @@ def compile(
     of gates into which the compiler will first attempt to decompose the
     existing operations prior to applying any optimization transforms.
 
-    .. code-block:: python3
+    .. code-block:: python
 
         compiled_qnode = qml.compile(
             qnode,
