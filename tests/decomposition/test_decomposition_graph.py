@@ -276,7 +276,7 @@ class TestDecompositionGraph:
         operator type is among specific operators, like Allocate and Deallocate."""
 
         graph = DecompositionGraph(operations=[op], gate_set={"RX", "RY", "GlobalPhase"})
-        with pytest.warns(UserWarning) as record:
+        with warnings.catch_warnings(record=True) as record:
             graph.solve()
         assert len(record) == 0
 
