@@ -48,8 +48,8 @@ To use the ``CustomFunction`` class, we call it with the static ``apply`` method
 >>> res
 tensor(4., grad_fn=<CustomFunctionBackward>)
 >>> res.backward()
->>> val.grad
 Calculating the gradient with x=2.0, dy=1.0, exponent=2
+>>> val.grad
 tensor(4.)
 
 Note that for custom functions, the output of ``forward`` and the output of ``backward`` are flattened iterables of
@@ -132,9 +132,11 @@ class ExecuteTapes(torch.autograd.Function):
     ``tapes``; this function should always be called
     with the parameters extracted directly from the tapes as follows:
 
-    >>> parameters = [p for t in tapes for p in t.get_parameters()]
-    >>> kwargs = {"tapes": tapes, "execute_fn": execute_fn, "jpc": jpc}
-    >>> ExecuteTapes.apply(kwargs, *parameters)
+    .. code-block:: python3
+
+        parameters = [p for t in tapes for p in t.get_parameters()]
+        kwargs = {"tapes": tapes, "execute_fn": execute_fn, "jpc": jpc}
+        ExecuteTapes.apply(kwargs, *parameters)
 
     """
 

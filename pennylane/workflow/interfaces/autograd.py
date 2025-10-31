@@ -41,7 +41,7 @@ I need to:
 
 >>> autograd.grad(f)(autograd.numpy.array(2.0))
 Calculating the gradient with 2.0, 1.0
-4.0
+np.float64(4.0)
 
 The above code told autograd how to differentiate the first argument of ``f``.
 
@@ -119,7 +119,6 @@ def autograd_execute(
     **Example:**
 
     >>> from pennylane.workflow.jacobian_products import DeviceDerivatives
-    >>> from pennylane.workflow.autograd import autograd_execute
     >>> execute_fn = qml.device('default.qubit').execute
     >>> config = qml.devices.ExecutionConfig(gradient_method="adjoint", use_device_gradient=True)
     >>> jpc = DeviceDerivatives(qml.device('default.qubit'), config)
@@ -127,8 +126,8 @@ def autograd_execute(
     ...     tape = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.Z(0))])
     ...     batch = (tape, )
     ...     return autograd_execute(batch, execute_fn, jpc)
-    >>> qml.grad(f)(qml.numpy.array(0.1))
-    -0.09983341664682815
+    >>> print(qml.grad(f)(qml.numpy.array(0.1)))
+    -0.0998...
 
     """
     tapes = tuple(tapes)
