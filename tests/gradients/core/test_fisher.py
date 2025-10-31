@@ -24,6 +24,17 @@ import pennylane.numpy as pnp
 from pennylane.gradients.fisher import _compute_cfim, _make_probs, classical_fisher, quantum_fisher
 
 
+# Helper to get available devices for testing
+def _get_fisher_test_devices():
+    """Return list of available devices for Fisher tests."""
+    devices = [qml.device("default.qubit"), qml.device("default.mixed", wires=3)]
+    try:
+        devices.append(qml.device("lightning.qubit", wires=3))
+    except (ImportError, RuntimeError):
+        pass
+    return devices
+
+
 class TestMakeProbs:
     """Class to test the private function _make_probs."""
 
@@ -144,14 +155,7 @@ class TestIntegration:
         res = classical_fisher(circ)(params)
         assert np.allclose(res, n_wires * np.ones((n_params, n_params)), atol=1)
 
-    @pytest.mark.parametrize(
-        "dev",
-        (
-            qml.device("default.qubit"),
-            qml.device("default.mixed", wires=3),
-            qml.device("lightning.qubit", wires=3),
-        ),
-    )
+    @pytest.mark.parametrize("dev", _get_fisher_test_devices())
     def test_quantum_fisher_info(self, dev, seed):
         """Integration test of quantum fisher information matrix CFIM. This is just calling
         ``qml.metric_tensor`` or ``qml.adjoint_metric_tensor`` and multiplying by a factor of 4"""

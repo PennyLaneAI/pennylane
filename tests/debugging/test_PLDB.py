@@ -23,6 +23,18 @@ import pennylane as qml
 from pennylane.debugging import PLDB, pldb_device_manager
 
 
+# Helper to get available devices for testing
+def _get_test_devices():
+    """Return list of available devices for testing."""
+    devices = [qml.device("default.qubit", wires=2)]
+    try:
+        devices.append(qml.device("lightning.qubit", wires=2))
+    except (ImportError, RuntimeError):
+        # Lightning not available (e.g., no Python 3.14 wheels yet)
+        pass
+    return devices
+
+
 # pylint: disable=protected-access
 class TestPLDB:
     """Test the interactive debugging integration"""
@@ -166,9 +178,7 @@ class TestPLDB:
     )
 
     @pytest.mark.parametrize("tape, expected_result", zip(tapes, results))
-    @pytest.mark.parametrize(
-        "dev", (qml.device("default.qubit", wires=2), qml.device("lightning.qubit", wires=2))
-    )
+    @pytest.mark.parametrize("dev", _get_test_devices())
     def test_execute(self, dev, tape, expected_result):
         """Test that the _execute method works as expected."""
         PLDB.add_device(dev)

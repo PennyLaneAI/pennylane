@@ -1,7 +1,7 @@
 numpy
 scipy
 cvxpy
-cvxopt
+cvxopt; python_version < "3.14"
 networkx
 rustworkx
 autograd
