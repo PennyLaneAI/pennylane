@@ -27,6 +27,7 @@ import pennylane as qml
 from pennylane.devices import ExecutionConfig
 from pennylane.devices.default_tensor import _operations, stopping_condition
 from pennylane.exceptions import DeviceError, WireError
+from pennylane.math import is_real_obj_or_close
 from pennylane.math.decomposition import givens_decomposition
 from pennylane.typing import TensorLike
 
@@ -513,7 +514,7 @@ def test_wire_order_dense_vector(method, num_orbitals):
     U0 = expm((X0 + X0.T) / 2.0)
 
     def basis_rotation_ops(unitary_matrix, wires):
-        _, givens_list = givens_decomposition(unitary_matrix)
+        _, givens_list = givens_decomposition(unitary_matrix, is_real_obj_or_close(unitary_matrix))
 
         for grot_mat, indices in givens_list:
             theta = np.arccos(np.real(grot_mat[1, 1]))
