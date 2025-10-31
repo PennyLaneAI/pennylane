@@ -128,12 +128,6 @@ multiply = ar.numpy.multiply
 toarray = ar.numpy.to_numpy
 T = ar.numpy.transpose
 
-has_jax = True
-try:
-    from jax import numpy as jnp
-except ModuleNotFoundError:  # pragma: no cover
-    has_jax = False  # pragma: no cover
-
 
 def get_dtype_name(x) -> str:
     """An interface independent way of getting the name of the datatype.
@@ -173,9 +167,9 @@ def is_real_obj_or_close(obj):
     ``qml.math.allclose`` are used to determine whether the
     input is close to real-valued.
     """
-    if get_deep_interface(obj) == "jax":
-        return jnp.logical_and(jnp.logical_not(is_abstract(obj)), allclose(ar.imag(obj), 0.0))
-    return not is_abstract(obj) and allclose(ar.imag(obj), 0.0)
+    if not is_abstract(obj) and allclose(ar.imag(obj), 0.0):
+        obj = ar.real(obj)
+    return not get_dtype_name(obj).startswith("complex")
 
 
 class NumpyMimic(ar.autoray.AutoNamespace):
