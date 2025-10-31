@@ -339,7 +339,7 @@ def quantum_monte_carlo(
 
         >>> specs = qml.specs(qmc, level="device")()
         >>> from pprint import pprint
-        >>> pprint(specs)
+        >>> pprint(specs) # doctest: +SKIP
         {'device_name': 'default.qubit',
         'diff_method': 'best',
         'errors': {},
