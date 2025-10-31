@@ -76,10 +76,13 @@ For example, if we replace the definition of ``f_and_jvp`` from above with one t
 
     jax.config.update("jax_enable_x64", True)
 
-    def f_and_jvp(primals, tangents):
+    def bad_f_and_jvp(primals, tangents):
         x = primals[0]
         dx = qml.math.unwrap(tangents[0]) # This line breaks tracing
         return x**2, 2*x*dx
+        
+   bad_f = jax.custom_jvp(f)
+   bad_f.defjvp(bad_f_and_jvp)
 
 >>> jax.grad(registered_f_jvp)(jax.numpy.array(2.0))
 in custom jvp function:  2.0 Traced<~float64[]:JaxprTrace>
