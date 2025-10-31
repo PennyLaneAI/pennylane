@@ -97,7 +97,9 @@ def create_expand_fn(depth, stop_at=None, device=None, docstring=None):
     def expand_fn(tape, depth=depth, **kwargs):
         with qml.QueuingManager.stop_recording():
             if not all(stop_at(op) for op in tape.operations):
-                (tape,), _ = qml.transforms.decompose(tape, max_expansion=depth, gate_set=stop_at)
+                (tape,), _ = qml.transforms.decompose(
+                    tape, max_expansion=depth, stopping_condition=stop_at
+                )
             else:
                 return tape
 

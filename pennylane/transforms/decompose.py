@@ -28,7 +28,7 @@ from pennylane.allocation import Allocate, Deallocate
 from pennylane.decomposition import DecompositionGraph, enabled_graph
 from pennylane.decomposition.decomposition_graph import DecompGraphSolution
 from pennylane.decomposition.utils import translate_op_alias
-from pennylane.exceptions import DecompositionUndefinedError
+from pennylane.exceptions import DecompositionUndefinedError, PennyLaneDeprecationWarning
 from pennylane.operation import Operator
 from pennylane.ops import Conditional, GlobalPhase
 from pennylane.transforms.core import transform
@@ -961,12 +961,16 @@ def _(gate_set: NoneType):  # pylint: disable=unused-argument
 
 @_process_gate_set_contains.register
 def _(gate_set: Callable):
-    # This branch exists for backwards compatibility reasons. It was overlooked
-    # as a v0.44 deprecation. It is suggested that providing a function to the
-    # gate_set argument should be deprecated, because only the stopping_condition is supposed to be a function.
-    # The deprecation is proposed in sc-102183
+    # This branch exists for backwards compatibility reasons.
     gate_set_contains = gate_set
     gate_set = set()
+
+    warnings.warn(
+        "Passing a function to the gate_set argument is deprecated. The gate_set "
+        "expects a static iterable of operator types and/or operator names, and the "
+        "function should be passed to the stopping_condition argument instead.",
+        PennyLaneDeprecationWarning,
+    )
 
     if enabled_graph():
         raise TypeError(

@@ -9,17 +9,24 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
-* The :attr:`pennylane.operation.Operator.is_hermitian` property has been deprecated and renamed 
-  to :attr:`pennylane.operation.Operator.is_verified_hermitian` as it better reflects the functionality of this property. 
-  The deprecated access through ``is_hermitian`` will be removed in PennyLane v0.45. 
-  Alternatively, consider using the :func:`pennylane.is_hermitian` function instead as it provides a more reliable check for hermiticity. 
+* The :attr:`pennylane.operation.Operator.is_hermitian` property has been deprecated and renamed
+  to :attr:`pennylane.operation.Operator.is_verified_hermitian` as it better reflects the functionality of this property.
+  The deprecated access through ``is_hermitian`` will be removed in PennyLane v0.45.
+  Alternatively, consider using the :func:`pennylane.is_hermitian` function instead as it provides a more reliable check for hermiticity.
   Please be aware that it comes with a higher computational cost.
-  
+
   - Deprecated in v0.44
   - Will be removed in v0.45
-  
-* Access to the following functions and classes from the ``pennylane.resources`` module are 
-  deprecated. Instead, these functions must be imported from the ``pennylane.estimator`` module.
+
+* Passing a function to the ``gate_set`` argument in the :func:`~pennylane.transforms.decompose` transform
+  is deprecated. The ``gate_set`` argument expects a static iterable of operator type and/or operator names,
+  and the function should be passed to the ``stopping_condition`` argument instead.
+
+  - Deprecated in v0.44
+  - Will be removed in v0.45
+
+* Access to the following functions and classes from the `~pennylane.resources` module are 
+  deprecated. Instead, these functions must be imported from the `~pennylane.estimator` module.
 
     - ``qml.estimator.estimate_shots`` in favor of ``qml.resources.estimate_shots``
     - ``qml.estimator.estimate_error`` in favor of ``qml.resources.estimate_error``
