@@ -32,6 +32,21 @@ def register_pass(name, _callable):
     available_passes[name] = _callable  # pragma: no cover
 
 
+def is_xdsl_pass(pass_name: str) -> bool:
+    """Check if a pass name corresponds to an xDSL implemented pass.
+
+    This function checks if the pass is registered in PennyLane's unified compiler
+    pass registry, which dynamically tracks all available xDSL passes.
+
+    Args:
+        pass_name: Name of the pass to check
+
+    Returns:
+        bool: True if this is an xDSL compiler pass
+    """
+    return pass_name in available_passes
+
+
 @dataclass(frozen=True)
 class ApplyTransformSequence(ModulePass):
     """
@@ -45,26 +60,26 @@ class ApplyTransformSequence(ModulePass):
     name = "apply-transform-sequence"
     callback: Callable[[ModulePass, builtin.ModuleOp, ModulePass], None] | None = None
 
-    def apply(self, ctx: Context, module: builtin.ModuleOp) -> None:  # pylint: disable=no-self-use
+    def apply(self, ctx: Context, op: builtin.ModuleOp) -> None:  # pylint: disable=no-self-use
         """Applies the transformation"""
         nested_modules = []
-        for region in module.regions:
+        for region in op.regions:
             for block in region.blocks:
-                for op in block.ops:
-                    if isinstance(op, builtin.ModuleOp):
-                        nested_modules.append(op)
+                for operation in block.ops:
+                    if isinstance(operation, builtin.ModuleOp):
+                        nested_modules.append(operation)
 
         pipeline = PassPipeline(
             (TransformInterpreterPass(passes=available_passes, callback=self.callback),)
         )
-        for op in nested_modules:
-            pipeline.apply(ctx, op)
+        for operation in nested_modules:
+            pipeline.apply(ctx, operation)
 
         for mod in nested_modules:
             for region in mod.regions:
                 for block in region.blocks:
-                    for op in block.ops:
-                        if isinstance(op, builtin.ModuleOp) and op.get_attr_or_prop(
+                    for operation in block.ops:
+                        if isinstance(operation, builtin.ModuleOp) and operation.get_attr_or_prop(
                             "transform.with_named_sequence"
                         ):
-                            block.erase_op(op)  # pragma: no cover
+                            block.erase_op(operation)  # pragma: no cover

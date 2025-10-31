@@ -247,6 +247,10 @@
   informative ``RuntimeError`` when used with JAX-JIT or :func:`~.qjit`.
   [(#8489)](https://github.com/PennyLaneAI/pennylane/pull/8489)
 
+* The `is_xdsl_pass` function has been added to the `pennylane.compiler.python_compiler.pass_api` module.
+  This function checks if a pass name corresponds to an xDSL implemented pass.
+  [(#8572)](https://github.com/PennyLaneAI/pennylane/pull/8572)
+
 <h3>Documentation 📝</h3>
 
 * The documentation of ``qml.transforms.rz_phase_gradient`` has been updated with respect to the
