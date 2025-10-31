@@ -84,7 +84,7 @@ For example, if we replace the definition of ``f_and_jvp`` from above with one t
    bad_f = jax.custom_jvp(f)
    bad_f.defjvp(bad_f_and_jvp)
 
->>> jax.grad(registered_f_jvp)(jax.numpy.array(2.0))
+>>> jax.grad(bad_f)(jax.numpy.array(2.0))
 in custom jvp function:  2.0 Traced<~float64[]:JaxprTrace>
 Array(4., dtype=float64, weak_type=True)
 
