@@ -14,6 +14,7 @@
 """
 This module contains the qml.matrix function.
 """
+
 from collections.abc import Callable, Sequence
 from functools import partial
 from typing import Protocol, runtime_checkable
@@ -40,7 +41,8 @@ class QJITCallable(Protocol):
 # pylint: disable=unused-argument
 @transform
 def matrix(
-    op: Operator | QuantumScript | QNode | Callable | QJITCallable, wire_order: Sequence | None = None
+    op: Operator | QuantumScript | QNode | Callable | QJITCallable,
+    wire_order: Sequence | None = None,
 ) -> TensorLike:
     r"""The dense matrix representation of an operation or quantum circuit.
 
@@ -247,7 +249,6 @@ def _matrix_fallback(op: object, **_kwargs) -> TensorLike:
 def _matrix_transform(
     tape: QuantumScript, wire_order: Sequence | None = None, **kwargs
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
-
     if wire_order and not set(tape.wires).issubset(wire_order):
         raise TransformError(
             f"Wires in circuit {list(tape.wires)} are inconsistent with "
