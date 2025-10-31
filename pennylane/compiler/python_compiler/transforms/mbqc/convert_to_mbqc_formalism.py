@@ -377,137 +377,88 @@ class ConvertToMBQCFormalismPattern(
 
         return prev_res
 
-    def _hadamard_corrections(
+    def _hadamard_parity(
         self,
         mres: list[builtin.IntegerType],
-        qubit: QubitType,
         op: CustomOp,
         rewriter: pattern_rewriter.PatternRewriter,
     ):
-        """Insert correction ops of a Hadamard gate to the IR.
-        Args:
-            mres (list[builtin.IntegerType]): A list of the mid-measurement results.
-            qubit (QubitType) : An auxiliary result qubit.
-            op (CustomOp) : A gate operation object.
-            rewriter (pattern_rewriter.PatternRewriter): A pattern rewriter.
-
-        Returns:
-            The result auxiliary qubit.
-        """
         m1, m2, m3, m4 = mres
 
-        # X correction
+        # X parity
         x_parity = self._parity_check([m1, m3, m4], op, rewriter)
-        res_aux_qubit = self._insert_cond_byproduct_op(x_parity, "PauliX", qubit, op, rewriter)
 
-        # Z correction
+        # Z parity
         z_parity = self._parity_check([m2, m3], op, rewriter)
-        res_aux_qubit = self._insert_cond_byproduct_op(
-            z_parity, "PauliZ", res_aux_qubit, op, rewriter
-        )
 
-        return res_aux_qubit
+        return [x_parity, z_parity]
 
-    def _s_corrections(
+    def _s_parity(
         self,
         mres: list[builtin.IntegerType],
-        qubit: QubitType,
         op: CustomOp,
         rewriter: pattern_rewriter.PatternRewriter,
     ):
-        """Insert correction ops of a S gate to the IR.
-        Args:
-            mres (list[builtin.IntegerType]): A list of the mid-measurement results.
-            qubit (QubitType) : An auxiliary result qubit.
-            op (CustomOp) : A gate operation object.
-            rewriter (pattern_rewriter.PatternRewriter): A pattern rewriter.
-
-        Returns:
-            The result auxiliary qubit.
-        """
         m1, m2, m3, m4 = mres
 
-        # X correction
+        # X parity
         x_parity = self._parity_check([m2, m4], op, rewriter)
-        res_aux_qubit = self._insert_cond_byproduct_op(x_parity, "PauliX", qubit, op, rewriter)
 
-        # Z correction
+        # Z parity
         z_parity = self._parity_check([m1, m2, m3], op, rewriter, additional_const_one=True)
-        res_aux_qubit = self._insert_cond_byproduct_op(
-            z_parity, "PauliZ", res_aux_qubit, op, rewriter
-        )
-        return res_aux_qubit
+        return [x_parity, z_parity]
 
-    def _rot_corrections(
+    def _rot_parity(
         self,
         mres: list[builtin.IntegerType],
-        qubit: QubitType,
         op: CustomOp,
         rewriter: pattern_rewriter.PatternRewriter,
     ):
-        """Insert correction ops of a RotXZX or RZ gate to the IR.
-        Args:
-            mres (list[builtin.IntegerType]): A list of the mid-measurement results.
-            qubit (QubitType) : An auxiliary result qubit.
-            op (CustomOp) : A gate operation object.
-            rewriter (pattern_rewriter.PatternRewriter): A pattern rewriter.
-
-        Returns:
-            The result auxiliary qubit.
-        """
         m1, m2, m3, m4 = mres
-        # X correction
+        # X parity
         x_parity = self._parity_check([m2, m4], op, rewriter)
-        res_aux_qubit = self._insert_cond_byproduct_op(x_parity, "PauliX", qubit, op, rewriter)
 
-        # Z correction
+        # Z parity
         z_parity = self._parity_check([m1, m3], op, rewriter)
-        res_aux_qubit = self._insert_cond_byproduct_op(
-            z_parity, "PauliZ", res_aux_qubit, op, rewriter
-        )
-        return res_aux_qubit
+        return [x_parity, z_parity]
 
-    def _cnot_corrections(
+    def _cnot_parity(
         self,
         mres: list[builtin.IntegerType],
-        qubits: list[QubitType],
         op: CustomOp,
         rewriter: pattern_rewriter.PatternRewriter,
     ):
-        """Insert correction ops of a CNOT gate to the IR.
-        Args:
-            mres (list[builtin.IntegerType]): A list of the mid-measurement results.
-            qubits (list[QubitType]) : A list of auxiliary result qubits.
-            op (CustomOp) : A gate operation object.
-            rewriter (pattern_rewriter.PatternRewriter): A pattern rewriter.
-
-        Returns:
-            The result auxiliary qubits.
-        """
         m1, m2, m3, m4, m5, m6, m8, m9, m10, m11, m12, m13, m14 = mres
-        # Corrections for the control qubit
-        x_parity = self._parity_check([m2, m3, m5, m6], op, rewriter)
-        ctrl_aux_qubit = self._insert_cond_byproduct_op(x_parity, "PauliX", qubits[0], op, rewriter)
-        z_parity = self._parity_check(
+        # parity for the control qubit
+        xc_parity = self._parity_check([m2, m3, m5, m6], op, rewriter)
+        zc_parity = self._parity_check(
             [m1, m3, m4, m5, m8, m9, m11], op, rewriter, additional_const_one=True
         )
-        ctrl_aux_qubit = self._insert_cond_byproduct_op(
-            z_parity, "PauliZ", ctrl_aux_qubit, op, rewriter
-        )
+        # parity for the target qubit
+        xt_parity = self._parity_check([m2, m3, m8, m10, m12, m14], op, rewriter)
+        zt_parity = self._parity_check([m9, m11, m13], op, rewriter)
+        return [xc_parity, zc_parity, xt_parity, zt_parity]
 
-        # Corrections for the target qubit
-        x_parity = self._parity_check([m2, m3, m8, m10, m12, m14], op, rewriter)
-        tgt_aux_qubit = self._insert_cond_byproduct_op(x_parity, "PauliX", qubits[1], op, rewriter)
-        z_parity = self._parity_check([m9, m11, m13], op, rewriter)
-        tgt_aux_qubit = self._insert_cond_byproduct_op(
-            z_parity, "PauliZ", tgt_aux_qubit, op, rewriter
-        )
-
-        return ctrl_aux_qubit, tgt_aux_qubit
+    def _insert_parity_checks(self, mres, op, rewriter):
+        match op.gate_name.data:
+            case "Hadamard":
+                return self._hadamard_parity(mres, op, rewriter)
+            case "S":
+                return self._s_parity(mres, op, rewriter)
+            case "RotXZX":
+                return self._rot_parity(mres, op, rewriter)
+            case "RZ":
+                return self._rot_parity(mres, op, rewriter)
+            case "CNOT":
+                return self._cnot_parity(mres, op, rewriter)
+            case _:
+                raise ValueError(
+                    f"{op.gate_name.data} is not supported in the MBQC formalism. Please decompose it into the MBQC gate set."
+                )
 
     def _insert_byprod_corrections(
         self,
-        mres: list[builtin.IntegerType],
+        xz: list[builtin.IntegerType],
         qubits: QubitType | list[QubitType],
         op: CustomOp,
         rewriter: pattern_rewriter.PatternRewriter,
@@ -522,21 +473,19 @@ class ConvertToMBQCFormalismPattern(
         Returns:
             The result auxiliary qubits.
         """
-        match op.gate_name.data:
-            case "Hadamard":
-                return self._hadamard_corrections(mres, qubits, op, rewriter)
-            case "S":
-                return self._s_corrections(mres, qubits, op, rewriter)
-            case "RotXZX":
-                return self._rot_corrections(mres, qubits, op, rewriter)
-            case "RZ":
-                return self._rot_corrections(mres, qubits, op, rewriter)
-            case "CNOT":
-                return self._cnot_corrections(mres, qubits, op, rewriter)
-            case _:
-                raise ValueError(
-                    f"{op.gate_name.data} is not supported in the MBQC formalism. Please decompose it into the MBQC gate set."
-                )
+        if not isinstance(qubits, list):
+            x, z = xz[0], xz[1]
+            res_aux_qubit = self._insert_cond_byproduct_op(x, "PauliX", qubits, op, rewriter)
+            res_aux_qubit = self._insert_cond_byproduct_op(z, "PauliZ", res_aux_qubit, op, rewriter)
+            return res_aux_qubit
+
+        result_qubits = []
+        for i, qubit in enumerate(qubits):
+            x, z = xz[2 * i + 0], xz[2 * i + 1]
+            res_aux_qubit = self._insert_cond_byproduct_op(x, "PauliX", qubit, op, rewriter)
+            res_aux_qubit = self._insert_cond_byproduct_op(z, "PauliZ", res_aux_qubit, op, rewriter)
+            result_qubits.append(res_aux_qubit)
+        return result_qubits
 
     def _deallocate_aux_qubits(
         self,
@@ -603,9 +552,12 @@ class ConvertToMBQCFormalismPattern(
                         graph_qubits_dict, op, rewriter
                     )
 
+                    # Insert parity check ops
+                    xz_parity = self._insert_parity_checks(mres, op, rewriter)
+
                     # Insert byproduct ops to the IR
                     graph_qubits_dict[5] = self._insert_byprod_corrections(
-                        mres, graph_qubits_dict[5], op, rewriter
+                        xz_parity, graph_qubits_dict[5], op, rewriter
                     )
 
                     # Deallocate the non-result auxiliary qubits and target qubit in the qreg
@@ -649,9 +601,12 @@ class ConvertToMBQCFormalismPattern(
                         graph_qubits_dict, op, rewriter
                     )
 
+                    # Insert parity check ops
+                    xz_parity = self._insert_parity_checks(mres, op, rewriter)
+
                     # Insert byproduct ops to the IR
                     graph_qubits_dict[7], graph_qubits_dict[15] = self._insert_byprod_corrections(
-                        mres, [graph_qubits_dict[7], graph_qubits_dict[15]], op, rewriter
+                        xz_parity, [graph_qubits_dict[7], graph_qubits_dict[15]], op, rewriter
                     )
 
                     # Deallocate non-result aux_qubits and the target/control qubits in the qreg

@@ -13,6 +13,7 @@
 # limitations under the License.
 """PennyLane-xDSL transformations API specifically for the MBQC transform."""
 
+from .add_pauli_tracker import add_pauli_tracker_pass, AddPauliTrackerPass
 from .convert_to_mbqc_formalism import ConvertToMBQCFormalismPass, convert_to_mbqc_formalism_pass
 from .decompose_graph_state import (
     DecomposeGraphStatePass,
@@ -33,7 +34,10 @@ from .outline_state_evolution import OutlineStateEvolutionPass, outline_state_ev
 
 __all__ = [
     # Passes
+    "AddPauliTrackerPass",
+    "add_pauli_tracker_pass",
     "ConvertToMBQCFormalismPass",
+    "convert_to_mbqc_formalism_pass",
     "DecomposeGraphStatePass",
     "OutlineStateEvolutionPass",
     "NullDecomposeGraphStatePass",
