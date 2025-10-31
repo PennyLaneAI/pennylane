@@ -26,6 +26,23 @@ from pennylane import qnode
 from pennylane.devices import DefaultQubit
 from pennylane.exceptions import DeviceError, QuantumFunctionError
 
+
+# Helper to build lightning device entries if available
+def _get_lightning_entries():
+    """Return lightning device entries for test parametrization."""
+    try:
+        dev = qml.device("lightning.qubit", wires=5)
+        return [
+            ["autograd", dev, "adjoint", False, True],
+            ["autograd", qml.device("lightning.qubit", wires=5), "adjoint", True, True],
+            ["autograd", qml.device("lightning.qubit", wires=5), "adjoint", False, False],
+            ["autograd", qml.device("lightning.qubit", wires=5), "adjoint", True, False],
+            ["auto", qml.device("lightning.qubit", wires=5), "adjoint", False, False],
+            ["auto", qml.device("lightning.qubit", wires=5), "adjoint", True, False],
+        ]
+    except (ImportError, RuntimeError):
+        return []
+
 # dev, diff_method, grad_on_execution, device_vjp
 qubit_device_and_diff_method = [
     [qml.device("default.qubit"), "finite-diff", False, False],
@@ -52,10 +69,7 @@ interface_qubit_device_and_diff_method = [
     ["autograd", DefaultQubit(), "adjoint", False, True],
     ["autograd", DefaultQubit(), "spsa", False, False],
     ["autograd", DefaultQubit(), "hadamard", False, False],
-    ["autograd", qml.device("lightning.qubit", wires=5), "adjoint", False, True],
-    ["autograd", qml.device("lightning.qubit", wires=5), "adjoint", True, True],
-    ["autograd", qml.device("lightning.qubit", wires=5), "adjoint", False, False],
-    ["autograd", qml.device("lightning.qubit", wires=5), "adjoint", True, False],
+    *_get_lightning_entries(),
     ["auto", DefaultQubit(), "finite-diff", False, False],
     ["auto", DefaultQubit(), "parameter-shift", False, False],
     ["auto", DefaultQubit(), "backprop", True, False],
@@ -63,8 +77,6 @@ interface_qubit_device_and_diff_method = [
     ["auto", DefaultQubit(), "adjoint", False, False],
     ["auto", DefaultQubit(), "spsa", False, False],
     ["auto", DefaultQubit(), "hadamard", False, False],
-    ["auto", qml.device("lightning.qubit", wires=5), "adjoint", False, False],
-    ["auto", qml.device("lightning.qubit", wires=5), "adjoint", True, False],
     ["auto", qml.device("reference.qubit"), "parameter-shift", False, False],
 ]
 
