@@ -372,7 +372,7 @@ def _givens_matrix_core(a, b, left=True, tol=1e-8, real_valued=False):
     elif not left:
         cosine, sine = sine, -cosine
 
-    g00, g01 = cosine + 0.0 + 0.0j, -sine + 0.0 + 0.0j
+    g00, g01 = cosine + 0j, -sine + 0j
     if interface == "jax":
 
         def real_branch(g00, g01):
