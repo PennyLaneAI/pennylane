@@ -15,6 +15,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* Added decompositions of the ``RX``, ``RY`` and ``RZ`` rotations into one of the other two, as well
+  as basis changing Clifford gates, to the graph-based decomposition system.
+  [(#8569)](https://github.com/PennyLaneAI/pennylane/pull/8569)
+
 * The new graph based decompositions system enabled via :func:`~.decomposition.enable_graph` now supports the following
   additional templates.
   [(#8520)](https://github.com/PennyLaneAI/pennylane/pull/8520)
