@@ -1022,9 +1022,6 @@ def _resolve_gate_set(
         # whether an operator belongs to the target gate set.
         _stopping_condition = gate_set_contains
 
-    if not isinstance(gate_set, (set, dict)):
-        gate_set = set(gate_set)
-
     return gate_set, _stopping_condition
 
 
