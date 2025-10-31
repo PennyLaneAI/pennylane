@@ -250,7 +250,7 @@
   :doc:`Building a plugin <../development/plugins>` now includes instructions on using
   the :func:`~pennylane.devices.preprocess.decompose` transform for device-level decompositions.
   The documentation for :doc:`Compiling circuits <../introduction/compiling_circuits>` has also been
-  updated with a warning message about ``custom_decomps`` future romoval.
+  updated with a warning message about ``custom_decomps`` future removal.
   [(#8492)](https://github.com/PennyLaneAI/pennylane/pull/8492)
   [(#8564)](https://github.com/PennyLaneAI/pennylane/pull/8564)
 
