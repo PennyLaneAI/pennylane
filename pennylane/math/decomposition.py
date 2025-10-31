@@ -394,7 +394,7 @@ def _givens_matrix_core(a, b, left=True, tol=1e-8, real_valued=False):
         if real_valued:
             phase = math.where(
                 (abs_a < tol) + (abs_b < tol), 1.0, math.sign(a * b)
-            )  # previously sign
+            )
             g01 *= phase
         else:
             aprod = math.nan_to_num(abs_b * abs_a)
