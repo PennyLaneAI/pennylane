@@ -17,6 +17,23 @@ This submodule defines a capture compatible call to QNodes.
 Workflow Development Status
 ---------------------------
 
+The non-exhaustive list of unsupported features are:
+
+**Breaking ``vmap``/parameter broadcasting into a non-broadcasted state**. The current workflow assumes
+that the device execution can natively handle broadcasted parameters. ``vmap`` and parameter broadcasting
+will not work with devices other than default qubit.
+
+>>> @qml.qnode(qml.device('lightning.qubit', wires=1))
+... def circuit(x):
+...     qml.RX(x, 0)
+...     return qml.expval(qml.Z(0))
+>>> jax.vmap(circuit)(jax.numpy.array([1.0, 2.0, 3.0]))
+Traceback (most recent call last):
+    ...
+ValueError: Converting a JAX array to a NumPy array not supported when using the JAX JIT.
+--------------------
+For simplicity, JAX has removed its internal frames from the traceback of the following exception. Set JAX_TRACEBACK_FILTERING=off to include these.
+
 **Grouping commuting measurements and/or splitting up non-commuting measurements.** Currently, each
 measurement is fully independent and generated from different raw samples than every other measurement.
 To generate multiple measurement from the same samples, we need a way of denoting which measurements
