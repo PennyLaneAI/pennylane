@@ -263,6 +263,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Add an exception to the warning for unsolved operators within the graph-based decomposition
+  system if the unsolved operators are :class:`.allocation.Allocate` or :class:`.allocation.Deallocate`.
+  [(#8553)](https://github.com/PennyLaneAI/pennylane/pull/8553)
+
 * Fixes a bug in `clifford_t_decomposition` with `method="gridsynth"` and qjit, where using cached decomposition with the same parameter causes an error.
   [(#8535)](https://github.com/PennyLaneAI/pennylane/pull/8535)
 
