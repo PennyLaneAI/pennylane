@@ -104,17 +104,21 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> SpecsDict:  # pr
     # pylint: disable=import-outside-toplevel
     # Have to import locally to prevent circular imports as well as accounting for Catalyst not being installed
     # Integration tests for this function are within the Catalyst frontend tests, it is not covered by unit tests
-
+    import catalyst
     from catalyst.jit import QJIT
 
     from ..devices import NullQubit
 
     # TODO: Determine if its possible to have batched QJIT code / how to handle it
-
-    if not isinstance(qjit.user_function, qml.QNode):
+    pass_pipeline_wrapped = False
+    if isinstance(qjit.user_function, catalyst.passes.pass_api.PassPipelineWrapper):
+        pass_pipeline_wrapped = True
+        original_qnode = qjit.original_qnode
+    elif not isinstance(qjit.user_function, qml.QNode):
         raise ValueError("qml.specs can only be applied to a QNode or qjit'd QNode")
+    else:
+        original_qnode = qjit.user_function
 
-    original_device = qjit.device
     info = SpecsDict()
 
     if level != "device":
@@ -124,6 +128,7 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> SpecsDict:  # pr
     # which will give resource usage information for after all compiler passes have completed
 
     # TODO: Find a way to inherit all devices args from input
+    original_device = original_qnode.device
     spoofed_dev = NullQubit(
         target_device=original_device,
         wires=original_device.wires,
@@ -136,8 +141,27 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> SpecsDict:  # pr
         warnings.filterwarnings(
             "ignore", category=UserWarning, message="The device's shots value does not match "
         )
-        new_qnode = qjit.user_function.update(device=spoofed_dev)
-    new_qjit = QJIT(new_qnode, copy.copy(qjit.compile_options))
+        if pass_pipeline_wrapped:
+            new_qnode = original_qnode.update(device=spoofed_dev)
+
+            def recursively_add_passes(pass_pipeline):
+                if isinstance(pass_pipeline, catalyst.passes.pass_api.PassPipelineWrapper):
+                    inner_fxn = recursively_add_passes(pass_pipeline.qnode)
+                    new_pass_pipeline = catalyst.passes.pass_api.PassPipelineWrapper(
+                        inner_fxn,
+                        pass_pipeline.pass_name_or_pipeline,
+                        *pass_pipeline.flags,
+                        **pass_pipeline.valued_options,
+                    )
+                    return new_pass_pipeline
+                else:
+                    return new_qnode
+
+            pass_pipeline = recursively_add_passes(qjit.user_function)
+            new_qjit = QJIT(pass_pipeline, copy.copy(qjit.compile_options))
+        else:
+            new_qnode = qjit.user_function.update(device=spoofed_dev)
+            new_qjit = QJIT(new_qnode, copy.copy(qjit.compile_options))
 
     if os.path.exists(_RESOURCE_TRACKING_FILEPATH):
         # TODO: Warn that something has gone wrong here
@@ -158,7 +182,7 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> SpecsDict:  # pr
                 int, {int(k): v for (k, v) in resource_data["gate_sizes"].items()}
             ),
             depth=resource_data["depth"],
-            shots=qjit.user_function.shots,  # TODO: Can this ever be overriden during compilation?
+            shots=original_qnode.shots,  # TODO: Can this ever be overriden during compilation?
         )
     finally:
         # Ensure we clean up the resource tracking file
@@ -168,12 +192,12 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> SpecsDict:  # pr
     info["num_device_wires"] = len(original_device.wires)
     info["device_name"] = original_device.name
     info["level"] = level
-    info["gradient_options"] = qjit.gradient_kwargs
-    info["interface"] = qjit.user_function.interface
+    info["gradient_options"] = original_qnode.gradient_kwargs
+    info["interface"] = original_qnode.interface
     info["diff_method"] = (
-        _get_absolute_import_path(qjit.diff_method)
-        if callable(qjit.diff_method)
-        else qjit.diff_method
+        _get_absolute_import_path(original_qnode.diff_method)
+        if callable(original_qnode.diff_method)
+        else original_qnode.diff_method
     )
 
     return info
