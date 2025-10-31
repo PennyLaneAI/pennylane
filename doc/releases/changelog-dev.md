@@ -251,7 +251,7 @@
 
 * Added a "Unified Compiler Cookbook" markdown file to ``qml.compiler.python_compiler`, which provides a quickstart guide
   for getting started with xDSL and its integration with PennyLane and Catalyst.
-  [(#____)](https://github.com/PennyLaneAI/pennylane/pull/____)
+  [(#8571)](https://github.com/PennyLaneAI/pennylane/pull/8571)
 
 * The documentation of ``qml.transforms.rz_phase_gradient`` has been updated with respect to the
   sign convention of phase gradient states, how it prepares the phase gradient state in the code
