@@ -247,9 +247,9 @@
   informative ``RuntimeError`` when used with JAX-JIT or :func:`~.qjit`.
   [(#8489)](https://github.com/PennyLaneAI/pennylane/pull/8489)
 
-* The `is_xdsl_pass` function has been added to the `pennylane.compiler.python_compiler.pass_api` module.
-  This function checks if a pass name corresponds to an xDSL implemented pass.
+* Users can now run the xDSL passes without the need to pass the `pass_plugins` argument to the `qjit` decorator.
   [(#8572)](https://github.com/PennyLaneAI/pennylane/pull/8572)
+  [(#8573)](https://github.com/PennyLaneAI/pennylane/pull/8573)
 
 <h3>Documentation 📝</h3>
 
