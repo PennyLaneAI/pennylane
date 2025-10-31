@@ -243,8 +243,8 @@ class Exp(ScalarSymbolicOp, Operation):
         return self.base.num_params + 1
 
     @property
-    def is_hermitian(self):
-        return self.base.is_hermitian and math.allequal(math.imag(self.coeff), 0)
+    def is_verified_hermitian(self):
+        return self.base.is_verified_hermitian and math.allequal(math.imag(self.coeff), 0)
 
     @property
     def _queue_category(self):
@@ -319,7 +319,7 @@ class Exp(ScalarSymbolicOp, Operation):
         if type(self) is Exp and not math.is_abstract(coeff) and math.real(coeff):
             error_msg = f"The decomposition of the {self} operator is not defined."
 
-            if self.base.is_hermitian:
+            if self.base.is_verified_hermitian:
                 error_msg += (
                     " Decomposition is not defined for real coefficients of hermitian operators."
                 )
@@ -450,8 +450,8 @@ class Exp(ScalarSymbolicOp, Operation):
     @property
     def has_generator(self):
         if math.is_abstract(self.coeff):
-            return self.base.is_hermitian
-        return self.base.is_hermitian and not np.real(self.coeff)
+            return self.base.is_verified_hermitian
+        return self.base.is_verified_hermitian and not np.real(self.coeff)
 
     def generator(self):
         r"""Generator of an operator that is in single-parameter-form.
