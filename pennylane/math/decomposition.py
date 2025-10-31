@@ -378,7 +378,7 @@ def _givens_matrix_core(a, b, left=True, tol=1e-8, real_valued=False):
         def real_branch(g00, g01):
             phase = math.where(
                 (abs_a < tol) + (abs_b < tol), 1.0, math.sign(a * b)
-            )  # previously sign
+            )
             g01 *= phase
             return phase, g00, g01
 
