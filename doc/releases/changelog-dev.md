@@ -20,11 +20,13 @@
   [(#8520)](https://github.com/PennyLaneAI/pennylane/pull/8520)
   [(#8515)](https://github.com/PennyLaneAI/pennylane/pull/8515)
   [(#8516)](https://github.com/PennyLaneAI/pennylane/pull/8516)
+  [(#8538)](https://github.com/PennyLaneAI/pennylane/pull/8538)  
   [(#8534)](https://github.com/PennyLaneAI/pennylane/pull/8534)
 
   - :class:`~.QSVT`
   - :class:`~.AmplitudeEmbedding`
   - :class:`~.AllSinglesDoubles`
+  - :class:`~.AngleEmbedding`
   - :class:`~.IQPEmbedding`
 
 * A new `qml.compiler.python_compiler.utils` submodule has been added, containing general-purpose utilities for
