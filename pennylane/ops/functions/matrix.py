@@ -40,7 +40,7 @@ class QJITCallable(Protocol):
 # pylint: disable=unused-argument
 @transform
 def matrix(
-    op: Operator | QuantumScript | QNode | Callable, wire_order: Sequence | None = None
+    op: Operator | QuantumScript | QNode | Callable | QJITCallable, wire_order: Sequence | None = None
 ) -> TensorLike:
     r"""The dense matrix representation of an operation or quantum circuit.
 
