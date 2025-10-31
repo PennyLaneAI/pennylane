@@ -25,6 +25,29 @@ from pennylane.exceptions import DeviceError, PennyLaneDeprecationWarning, Quant
 from pennylane.ops.functions.equal import assert_equal
 
 
+# Helper to check if lightning is available
+def _is_lightning_available():
+    """Check if lightning.qubit device is available."""
+    try:
+        qml.device("lightning.qubit", wires=1)
+        return True
+    except (ImportError, RuntimeError):
+        return False
+
+
+# Helper to get available devices for testing
+def _get_test_devices_for_snapshots():
+    """Return list of available devices for snapshot testing."""
+    devices = [
+        qml.device("default.qubit"),
+        qml.device("default.mixed", wires=2),
+        qml.device("default.qutrit", wires=2),
+    ]
+    if _is_lightning_available():
+        devices.append(qml.device("lightning.qubit", wires=2))
+    return devices
+
+
 def _compare_numpy_dicts(dict1, dict2):
     assert dict1.keys() == dict2.keys()
     assert all(np.allclose(dict1[key], dict_2_val) for key, dict_2_val in dict2.items())
@@ -142,17 +165,7 @@ class TestSnapshotTape:
             qml.snapshots(c)()
 
 
-@pytest.mark.parametrize(
-    "dev",
-    [
-        # Two supported devices
-        qml.device("default.qubit"),
-        qml.device("default.mixed", wires=2),
-        # Two non-supported devices
-        qml.device("default.qutrit", wires=2),
-        qml.device("lightning.qubit", wires=2),
-    ],
-)
+@pytest.mark.parametrize("dev", _get_test_devices_for_snapshots())
 class TestSnapshotGeneral:
     def test_sample_measurement_with_analytical_device_fails(self, dev):
         @qml.qnode(dev)
@@ -630,6 +643,7 @@ class TestSnapshotSupportedQNode:
 class TestSnapshotUnsupportedQNode:
     """Unit tests for qml.snapshots when using with qnodes with unsupported devices"""
 
+    @pytest.mark.skipif(not _is_lightning_available(), reason="Lightning not available")
     def test_unsupported_device_warning(self):
         """Test that a warning is raised when the device being used by a qnode does not natively support
         qml.Snapshot"""
@@ -650,6 +664,7 @@ class TestSnapshotUnsupportedQNode:
     # should be revised and fixed soon
     # current failure rate: ~7%
     # FIXME: [sc-92966]
+    @pytest.mark.skipif(not _is_lightning_available(), reason="Lightning not available")
     @pytest.mark.local_salt(2)
     def test_lightning_qubit_finite_shots(self, seed):
         dev = qml.device("lightning.qubit", wires=2, seed=seed)
@@ -672,6 +687,7 @@ class TestSnapshotUnsupportedQNode:
         )
         assert ttest_ind([count["0"] for count in counts], 500).pvalue >= 0.75
 
+    @pytest.mark.skipif(not _is_lightning_available(), reason="Lightning not available")
     @pytest.mark.parametrize("diff_method", ["backprop", "adjoint"])
     def test_lightning_qubit_fails_for_state_snapshots_with_adjoint_and_backprop(self, diff_method):
         """Test lightning with backprop and adjoint differentiation fails with default snapshot as it
