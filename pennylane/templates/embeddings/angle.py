@@ -19,6 +19,7 @@ from pennylane.control_flow import for_loop
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.operation import Operation
 from pennylane.ops import RX, RY, RZ
+from pennylane.wires import WiresLike
 
 has_jax = True
 try:
@@ -153,12 +154,12 @@ class AngleEmbedding(Operation):
         return [rotation(features[i], wires=wires[i]) for i in range(len(wires))]
 
 
-def _angle_embedding_resources(rotation, num_wires):
+def _angle_embedding_resources(rotation: str, num_wires: int) -> dict:
     return {resource_rep(rotation): num_wires}
 
 
 @register_resources(_angle_embedding_resources)
-def _angle_embedding_decomposition(features, wires, rotation):
+def _angle_embedding_decomposition(features: list, wires: WiresLike, rotation: str):
     batched = math.ndim(features) > 1
     # We will iterate over the first axis of `features` together with iterating over the wires.
     # If the leading dimension is a batch dimension, exchange the wire and batching axes.
