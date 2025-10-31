@@ -263,6 +263,9 @@
   the :func:`~pennylane.devices.preprocess.decompose` transform for device-level decompositions.
   [(#8492)](https://github.com/PennyLaneAI/pennylane/pull/8492)
 
+* Improves documentation in the transforms module and adds documentation testing for it.
+  [(#8557)](https://github.com/PennyLaneAI/pennylane/pull/8557)
+
 <h3>Bug fixes 🐛</h3>
 
 * Add an exception to the warning for unsolved operators within the graph-based decomposition
