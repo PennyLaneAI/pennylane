@@ -50,7 +50,6 @@ if TYPE_CHECKING:
 
     from pennylane.concurrency.executors import ExecBackends
     from pennylane.devices import Device, LegacyDevice
-    from pennylane.transforms.core import TransformContainer
     from pennylane.typing import Result
     from pennylane.workflow.resolution import SupportedDiffMethods
 
@@ -169,7 +168,7 @@ def _validate_qfunc_output(qfunc_output, measurements) -> None:
 
 
 def _validate_diff_method(
-    device: SupportedDeviceAPIs, diff_method: str | TransformDispatcher
+    device: SupportedDeviceAPIs, diff_method: str | TransformDispatcher | None = None
 ) -> None:
     if diff_method is None:
         return
