@@ -52,3 +52,41 @@ def test_argnum_deprecation(grad_fn):
     y = qml.numpy.array(0.5, requires_grad=True)
     r = g(x, y)
     assert qml.math.allclose(r, 0.25)
+
+
+def test_grad_name():
+    """Test that grad has name associated with it for the later mlir op."""
+
+    def f(x):
+        return x**2
+
+    assert qml.grad(f).__name__ == "<grad: f>"
+
+    class A:
+
+        def __repr__(self):
+            return "A"
+
+        def __call__(self, x):
+            return x**2
+
+    assert qml.grad(A()).__name__ == "<grad: A>"
+
+
+def test_jacobian_name():
+    """Test that jacobian has name associated with it for the later mlir op."""
+
+    def f(x):
+        return x**2
+
+    assert qml.jacobian(f).__name__ == "<jacobian: f>"
+
+    class A:
+
+        def __repr__(self):
+            return "A"
+
+        def __call__(self, x):
+            return x**2
+
+    assert qml.jacobian(A()).__name__ == "<jacobian: A>"
