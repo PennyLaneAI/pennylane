@@ -22,8 +22,12 @@ import pennylane as qml
 from pennylane.capture import make_plxpr
 from pennylane.ftqc.catalyst_pass_aliases import (
     commute_ppr,
+    decompose_clifford_ppr,
+    decompose_non_clifford_ppr,
     merge_ppr_ppm,
-    ppm_to_mbqc,
+    ppm_compilation,
+    ppr_to_mbqc,
+    ppr_to_ppm,
     reduce_t_depth,
     to_ppr,
 )
@@ -34,7 +38,18 @@ pytestmark = pytest.mark.external
 @pytest.mark.catalyst
 @pytest.mark.usefixtures("enable_disable_plxpr")
 @pytest.mark.parametrize(
-    "pass_fn", [to_ppr, commute_ppr, merge_ppr_ppm, ppm_to_mbqc, reduce_t_depth]
+    "pass_fn",
+    [
+        to_ppr,
+        commute_ppr,
+        merge_ppr_ppm,
+        ppr_to_mbqc,
+        reduce_t_depth,
+        decompose_clifford_ppr,
+        decompose_non_clifford_ppr,
+        ppr_to_ppm,
+        ppm_compilation,
+    ],
 )
 def test_pass_is_captured(pass_fn):
 
@@ -60,8 +75,12 @@ def test_pass_is_captured(pass_fn):
         (to_ppr, "to-ppr"),
         (commute_ppr, "commute-ppr"),
         (merge_ppr_ppm, "merge-ppr-ppm"),
-        (ppm_to_mbqc, "ppm-to-mbqc"),
+        (ppr_to_mbqc, "ppr-to-mbqc"),
+        (ppr_to_ppm, "ppr-to-ppm"),
+        (decompose_clifford_ppr, "decompose-clifford-ppr"),
+        (decompose_non_clifford_ppr, "decompose-non-clifford-ppr"),
         (reduce_t_depth, "reduce-t-depth"),
+        (ppm_compilation, "ppm-compilation"),
     ],
 )
 def test_converstion_to_mlir(pass_fn, pass_name):
@@ -83,7 +102,18 @@ def test_converstion_to_mlir(pass_fn, pass_name):
 
 @pytest.mark.catalyst
 @pytest.mark.parametrize(
-    "pass_fn", [to_ppr, commute_ppr, merge_ppr_ppm, ppm_to_mbqc, reduce_t_depth]
+    "pass_fn",
+    [
+        to_ppr,
+        commute_ppr,
+        merge_ppr_ppm,
+        ppr_to_mbqc,
+        reduce_t_depth,
+        decompose_clifford_ppr,
+        decompose_non_clifford_ppr,
+        ppr_to_ppm,
+        ppm_compilation,
+    ],
 )
 def test_pass_without_qjit_raises_error(pass_fn):
     """Test that trying to apply the transform without QJIT raises an error"""
