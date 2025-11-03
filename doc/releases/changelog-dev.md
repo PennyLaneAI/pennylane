@@ -24,11 +24,13 @@
   [(#8520)](https://github.com/PennyLaneAI/pennylane/pull/8520)
   [(#8515)](https://github.com/PennyLaneAI/pennylane/pull/8515)
   [(#8516)](https://github.com/PennyLaneAI/pennylane/pull/8516)
+  [(#8538)](https://github.com/PennyLaneAI/pennylane/pull/8538)  
   [(#8534)](https://github.com/PennyLaneAI/pennylane/pull/8534)
 
   - :class:`~.QSVT`
   - :class:`~.AmplitudeEmbedding`
   - :class:`~.AllSinglesDoubles`
+  - :class:`~.AngleEmbedding`
   - :class:`~.IQPEmbedding`
 
 * A new `qml.compiler.python_compiler.utils` submodule has been added, containing general-purpose utilities for
@@ -264,6 +266,9 @@
   :doc:`Building a plugin <../development/plugins>` now includes instructions on using
   the :func:`~pennylane.devices.preprocess.decompose` transform for device-level decompositions.
   [(#8492)](https://github.com/PennyLaneAI/pennylane/pull/8492)
+
+* Improves documentation in the transforms module and adds documentation testing for it.
+  [(#8557)](https://github.com/PennyLaneAI/pennylane/pull/8557)
 
 <h3>Bug fixes 🐛</h3>
 
