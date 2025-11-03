@@ -446,8 +446,7 @@ def _basis_rotation_decomp(unitary_matrix, wires: WiresLike, **__):
 
     def complex_unitary(unitary, wires):
         phase_list, givens_list = math.decomposition.givens_decomposition(unitary, False)
-        givens_ids = [(i, j) for _, (i, j) in givens_list]
-        givens_matrices = [arr for arr, (_, _) in givens_list]
+        givens_matrices, givens_ids = zip(*givens_list)
 
         if has_jax and capture.enabled():
             phase_list = jnp.array(phase_list)
