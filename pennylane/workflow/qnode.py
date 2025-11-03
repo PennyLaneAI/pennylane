@@ -463,7 +463,7 @@ class QNode:
 
         >>> result = circuit(x, y, U)
         >>> result
-        array([ 0.322...,  0.0968..., -0.0271...])
+        array([ 0.322...,  0.0968..., -0.027...])
 
         This is equivalent to iterating over all broadcasted arguments using ``zip``:
 
