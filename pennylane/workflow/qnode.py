@@ -453,7 +453,8 @@ class QNode:
 
             x = np.array([0.4, 2.1, -1.3])
             y = 2.71
-            U = np.stack([qml.X.compute_matrix(), qml.Y.compute_matrix(), qml.Z.compute_matrix()])
+            gates = [qml.X(0), qml.Y(1), qml.Z(3)]
+            U = np.stack([g.matrix(wire_order=range(4)) for g in gates])
 
         This circuit takes three arguments, and the first two are used twice each. ``x`` and
         ``U`` will lead to a batch size of ``3`` for the ``RX`` rotations and the multi-qubit
@@ -461,13 +462,13 @@ class QNode:
         all three values in ``x`` and ``U``. We obtain three output values:
 
         >>> result = circuit(x, y, U)
-        >>> result # doctest: +SKIP
-        array([ 0.19275597, -0.2854614 , -0.05227345])
+        >>> result
+        array([ 0.322...,  0.0968..., -0.0271...])
 
         This is equivalent to iterating over all broadcasted arguments using ``zip``:
 
-        >>> [circuit(x_val, y, U_val) for x_val, U_val in zip(x, U)] # doctest: +SKIP
-        [np.float64(0.1927559743829826), np.float64(-0.28546140072249226), np.float64(-0.05227344915109773)]
+        >>> [circuit(x_val, y, U_val) for x_val, U_val in zip(x, U)]
+        [np.float64(0.322...), np.float64(0.0968...), np.float64(-0.0271...)]
 
         In the same way it is possible to broadcast multiple arguments of a single operator,
         for example:
