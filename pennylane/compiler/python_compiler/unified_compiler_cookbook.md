@@ -82,13 +82,13 @@ Now that we’re familiar with the high-level constructs that MLIR uses, let’s
 `SSAValue` has two subclasses, which will be seen a lot when inspecting xDSL modules. These are:
 
 - `OpResult`: This subclass represents SSA values that are defined by an operation
-    
+
     ```
     c = add a b
     ```
-    
+
     In the above pseudocode, `c` is defined by the operation `add`, and in xDSL, will be represented as an `OpResult` instance.
-    
+
 - `BlockArgument`: This subclass represents SSA values that are block arguments
 
 ## `Attribute`
@@ -131,8 +131,8 @@ class CustomOp(IRDLOperation):
 
     name = "quantum.custom"
 
-		# assembly_format defines what the operation should look like
-		# when pretty-printed in the IR
+    # assembly_format defines what the operation should look like
+    # when pretty-printed in the IR
     assembly_format = """
         $gate_name `(` $params `)` $in_qubits
         (`adj` $adjoint^)?
@@ -142,38 +142,38 @@ class CustomOp(IRDLOperation):
         `:` type($out_qubits) (`ctrls` type($out_ctrl_qubits)^ )?
     """
 
-		# These options are used because we have operands whose lengths aren't
-		# known (eg. different instances of CustomOp may have different number
-		# of qubits depending on the gate they represent (2 for CNOT, 1 for
-		# RX, etc.). These options basically say, "when the operation instance
-		# is initialized, create 2 properties that store the length of each of
-		# the different groups of operands and results.
+    # These options are used because we have operands whose lengths aren't
+    # known (eg. different instances of CustomOp may have different number
+    # of qubits depending on the gate they represent (2 for CNOT, 1 for
+    # RX, etc.). These options basically say, "when the operation instance
+    # is initialized, create 2 properties that store the length of each of
+    # the different groups of operands and results.
     irdl_options = [
         AttrSizedOperandSegments(as_property=True),
         AttrSizedResultSegments(as_property=True),
     ]
 
-		# var_operand_def means that the length of this operand
-		# can vary.
+    # var_operand_def means that the length of this operand
+    # can vary.
     params = var_operand_def(EqAttrConstraint(Float64Type()))
 
     in_qubits = var_operand_def(BaseAttr(QubitType))
 
-		# prop_def means that gate_name is a required property
+    # prop_def means that gate_name is a required property
     gate_name = prop_def(BaseAttr(StringAttr))
 
-		# opt_prop_def means adjoint is an optional property. Additionally,
-		# it's type is a UnitAttr(), which essentially means that a given
-		# instance of CustomOp is an adjoint gate iff it has an adjoint property.
-		# The value of the property is irrelevant; it only gets meaning from its
-		# existance.
+    # opt_prop_def means adjoint is an optional property. Additionally,
+    # it's type is a UnitAttr(), which essentially means that a given
+    # instance of CustomOp is an adjoint gate iff it has an adjoint property.
+    # The value of the property is irrelevant; it only gets meaning from its
+    # existance.
     adjoint = opt_prop_def(EqAttrConstraint(UnitAttr()))
 
     in_ctrl_qubits = var_operand_def(BaseAttr(QubitType))
 
     in_ctrl_values = var_operand_def(EqAttrConstraint(IntegerType(1)))
 
-		# var_result_def means that the length of out_qubits can vary
+    # var_result_def means that the length of out_qubits can vary
     out_qubits = var_result_def(BaseAttr(QubitType))
 
     out_ctrl_qubits = var_result_def(BaseAttr(QubitType))
@@ -210,19 +210,19 @@ from xdsl import pattern_rewriter
 from pennylane.compiler.python_compiler.quantum_dialect import CustomOp
 
 class MyPattern(pattern_rewriter.RewritePattern):
-		"""Dummy class for example."""
+    """Dummy class for example."""
 
-		# This decorator is what xDSL uses to match operations
-		# based on the type hint.
-		@pattern_rewriter.op_type_rewrite_pattern
-		def match_and_rewrite(
-		    self, op: CustomOp, rewriter: pattern_rewriter.PatternRewriter
-		):
-		    if op.gate_name.data != "Hadamard":
-		        # If not Hadamard, we do nothing
-		        return
+    # This decorator is what xDSL uses to match operations
+    # based on the type hint.
+    @pattern_rewriter.op_type_rewrite_pattern
+    def match_and_rewrite(
+        self, op: CustomOp, rewriter: pattern_rewriter.PatternRewriter
+    ):
+        if op.gate_name.data != "Hadamard":
+            # If not Hadamard, we do nothing
+            return
 
-		    # Do whatever we need
+        # Do whatever we need
 ```
 
 ### `PatternRewriter`
@@ -271,7 +271,7 @@ class HToXPattern(pattern_rewriter.RewritePattern):
 
 ### `PatternRewriteWalker`
 
-`PatternRewriteWalker` walks over the IR in depth-first order, and applies a provided `RewritePattern` to it. By default, it implements a worklist algorithm that keeps iterating over the operations and matching and rewriting until a steady state is reached (i.e. no new changes are detected; this is why `PatternRewriter` needs to keep track of whether any changes were made). 
+`PatternRewriteWalker` walks over the IR in depth-first order, and applies a provided `RewritePattern` to it. By default, it implements a worklist algorithm that keeps iterating over the operations and matching and rewriting until a steady state is reached (i.e. no new changes are detected; this is why `PatternRewriter` needs to keep track of whether any changes were made).
 
 Putting everything together, we can create a `ModulePass` that replaces all `Hadamard`s with `PauliX`s
 
@@ -329,13 +329,13 @@ To complete the example we’ve been building in this section, let’s put it al
 Let’s first create the module to which we want to apply the pass. For this, we will use the `xdsl_from_qjit` utility, which is described in the “PennyLane integration” section below.
 
 - **Creating the module**
-    
+
     ```python
     import pennylane as qml
     from pennylane.compiler.python_compiler.conversion import xdsl_from_qjit
-    
+
     dev = qml.device("lightning.qubit", wires=3)
-    
+
     @xdsl_from_qjit
     @qml.qjit(target="mlir")
     @qml.qnode(dev)
@@ -344,10 +344,10 @@ Let’s first create the module to which we want to apply the pass. For this, we
         qml.Hadamard(1)
         qml.Hadamard(2)
         return qml.state()
-    
+
     mod = circuit()
     ```
-    
+
     ```pycon
     >>> print(mod)
     builtin.module @circuit {
@@ -401,18 +401,18 @@ Let’s first create the module to which we want to apply the pass. For this, we
       }
     }
     ```
-    
+
 - **Transforming the module**
-    
+
     In the above module, there are 3 `CustomOp`s, each with gate name `Hadamard`. Let’s try applying our pass to it. Bear in mind that passes update modules in-place:
-    
+
     ```python
     from xdsl import passes
-    
+
     pipeline = passes.PassPipeline((HToXPass(),))
     pipeline.apply(xdsl.context.Context(), mod)
     ```
-    
+
     ```pycon
     >>> print(mod)
     builtin.module @circuit {
@@ -466,7 +466,7 @@ Let’s first create the module to which we want to apply the pass. For this, we
       }
     }
     ```
-    
+
 
     Great! We can see that all the `Hadamard`s have been replaced with `PauliX`s, just how we wanted.
 
@@ -527,7 +527,7 @@ module @circuit {
       transform.named_sequence @__transform_main(%arg0: !transform.op<"builtin.module">) {
         %0 = transform.apply_registered_pass "merge-rotations" to %arg0 : (!transform.op<"builtin.module">) -> !transform.op<"builtin.module">
         %1 = transform.apply_registered_pass "remove-chained-self-inverse" to %0 : (!transform.op<"builtin.module">) -> !transform.op<"builtin.module">
-        transform.yield 
+        transform.yield
       }
     }
     func.func public @circuit() -> tensor<2xcomplex<f64>> attributes {diff_method = "adjoint", llvm.linkage = #llvm.linkage<internal>, qnode} {
@@ -559,8 +559,6 @@ module @circuit {
 - QNodes are represented as modules as well—each QNode has its own module. These modules have 4 key components:
     - The `module attributes {transform.with_named_sequence}` contains the transforms that the user requested for the QNode. In our example, those are the `merge_rotations` and `cancel_inverses` transforms.
     - The `@circuit` function represents the body of the QNode. Inside this body, we initialize a device using the specified shots, allocate a quantum register, and then apply both quantum and classical instructions. Note that quantum instructions can *only* be present inside this function. Note that this function will contain an attribute called `qnode`.
-    - The `@setup` function is for initializing the QNode.
-    - The `@teardown` function is for tearing down the QNode.
 
 ## SSA in the `Quantum` dialect
 
@@ -571,10 +569,10 @@ Before a `QubitType` can be used by any gates, it must be extracted from the qua
 Let’s take a look at a very simple example. Below, I have a very simple circuit with two gates applied to the same wire. Let’s take a look at its MLIR representation:
 
 - **Example**
-    
+
     ```python
     dev = qml.device("lightning.qubit", wires=3)
-    
+
     @qml.qjit(target="mlir")
     @qml.qnode(dev)
     def circuit():
@@ -582,7 +580,7 @@ Let’s take a look at a very simple example. Below, I have a very simple circui
         qml.H(0)
         return qml.state()
     ```
-    
+
     ```pycon
     >>> print(circuit.mlir)
     module @circuit {
@@ -593,7 +591,7 @@ Let’s take a look at a very simple example. Below, I have a very simple circui
       module @module_circuit {
         module attributes {transform.with_named_sequence} {
           transform.named_sequence @__transform_main(%arg0: !transform.op<"builtin.module">) {
-            transform.yield 
+            transform.yield
           }
         }
         func.func public @circuit() -> tensor<8xcomplex<f64>> attributes {diff_method = "adjoint", llvm.linkage = #llvm.linkage<internal>, qnode} {
@@ -621,7 +619,7 @@ Let’s take a look at a very simple example. Below, I have a very simple circui
       }
     }
     ```
-    
+
 
 **Notes**
 
@@ -638,14 +636,14 @@ Let’s take a look at a very simple example. Below, I have a very simple circui
 The lowering rules for Catalyst automatically handle dynamic wires. When a new dynamic wire, `w`, is used, all wires used before it are first inserted into the quantum register using `InsertOp`. Only then does the `QubitType` corresponding to `w` get extracted from the quantum register using `ExtractOp`. Consider the following example:
 
 - **Example**
-    
+
     ```python
     import pennylane as qml
-    
+
     qml.capture.enable()
-    
+
     dev = qml.device("lightning.qubit", wires=3)
-    
+
     @qml.qjit(target="mlir")
     @qml.qnode(dev)
     def circuit(w1: int, w2: int):
@@ -657,7 +655,7 @@ The lowering rules for Catalyst automatically handle dynamic wires. When a new d
         qml.H(0)
         return qml.state()
     ```
-    
+
     ```pycon
     >>> print(circuit.mlir)
     module @circuit {
@@ -668,7 +666,7 @@ The lowering rules for Catalyst automatically handle dynamic wires. When a new d
       module @module_circuit {
         module attributes {transform.with_named_sequence} {
           transform.named_sequence @__transform_main(%arg0: !transform.op<"builtin.module">) {
-            transform.yield 
+            transform.yield
           }
         }
         func.func public @circuit(%arg0: tensor<i64>, %arg1: tensor<i64>) -> tensor<8xcomplex<f64>> attributes {diff_method = "adjoint", llvm.linkage = #llvm.linkage<internal>, qnode} {
@@ -714,9 +712,9 @@ The lowering rules for Catalyst automatically handle dynamic wires. When a new d
       }
     }
     ```
-    
+
     **Notes**
-    
+
     - If a qubit is inserted into the quantum register, it is not reused again, and a new qubit corresponding to the same wire label must be extracted from the register.
     - When a dynamic wire is going to be used for the first time, all qubits that have been used previously without being re-inserted into the quantum register must be inserted.
     - If a dynamic wire is reused before any other wires, then it does not need to be inserted to and extracted from the quantum register again.
@@ -758,8 +756,8 @@ dev = qml.device("lightning.qubit", wires=1)
 @my_pass
 @qml.qnode(dev)
 def circuit(x):
-        qml.RX(x, 0)
-        return qml.expval(qml.Z(0))
+    qml.RX(x, 0)
+    return qml.expval(qml.Z(0))
 
 circuit(1.5)
 ```
@@ -784,7 +782,7 @@ The `python_compiler.conversion` submodule provides several utilities for creati
 - `inline_module(from_mod: xbuiltin.ModuleOp, to_mod: xbuiltin.ModuleOp, change_main_to: str = None) -> None`: This function takes two modules as input, and inlines the whole body of the first module into the second. Additionally, if `change_main_to` is provided, it looks for a function named `main`, and updates its name to `change_main_to`
 - `inline_jit_to_module(func: JaxJittedFunction, mod: xbuiltin.ModuleOp, *args, **kwargs) -> None`: This function takes a `jax.jit`-ed function, converts it into an xDSL module, and then inlines the contents of the xDSL module into `mod`. Note that this function does not return anything; instead, it modifies `mod` in-place.
 
-The following notebook shows examples of how each of the utilities can be used: [xDSL conversion utilities tutorial](https://gist.github.com/mudit2812/36565c57b9e7cb36f2b89fb0063d5f82) 
+The following notebook shows examples of how each of the utilities can be used: [xDSL conversion utilities tutorial](https://gist.github.com/mudit2812/36565c57b9e7cb36f2b89fb0063d5f82)
 
 # Useful patterns
 
@@ -794,7 +792,7 @@ Now that we have gone over compilers, xDSL, and how it’s being used in PennyLa
 
 Post-processing functions are purely classical, so we can leverage the `xdsl_module` utility function to create xDSL modules from Python code, and inject it into the modules we are rewriting as needed. The following Jupyter notebook shows an example where we perform very simple post-processing on a QNode that returns an expectation value by squaring the expectation value.
 
-[xDSL post-processing tutorial](https://gist.github.com/mudit2812/0b9ec8c30e60f7894ae55aa19d273508) 
+[xDSL post-processing tutorial](https://gist.github.com/mudit2812/0b9ec8c30e60f7894ae55aa19d273508)
 
 ## Splitting tapes
 
@@ -856,7 +854,7 @@ To find more details about the above directives, or to learn about other availab
 
 xDSL provides a `Test` dialect ([source](https://github.com/xdslproject/xdsl/blob/main/xdsl/dialects/test.py)), which contains many operations that are useful for unit testing. In our testing, we found the `TestOp` operation to be the most useful. This operation can produce arbitrary results, which we can use to limit artificial dependencies on other dialects.
 
-For example, if I just need to assert that a specific gate is present, without `TestOp`, I would need my module to contain an `AllocOp` that creates a quantum register, an `ExtractOp` that extracts a qubit from the register, and only then I can use the qubit for the gate I’m trying to match. Instead, I can just insert a `TestOp` that returns a qubit and use that. 
+For example, if I just need to assert that a specific gate is present, without `TestOp`, I would need my module to contain an `AllocOp` that creates a quantum register, an `ExtractOp` that extracts a qubit from the register, and only then I can use the qubit for the gate I’m trying to match. Instead, I can just insert a `TestOp` that returns a qubit and use that.
 
 This is very powerful for unit testing, as it makes writing tests much simpler, while also limiting the scope of the test as one would expect for unit tests.
 
@@ -881,8 +879,8 @@ def test_h_to_x_pass(run_filecheck):
     # the transformed program has a CustomOp that is a PauliX applied
     # to the same qubit, and no CustomOp that is a Hadamard.
 
-		# Below we also see how we can use `test.op`, which we use to
-		# create a qubit to give to the Hadamard.
+    # Below we also see how we can use `test.op`, which we use to
+    # create a qubit to give to the Hadamard.
     program = """
         func.func @test_func() {
             // CHECK: [[q0:%.+]] = "test.op"() : () -> !quantum.bit
@@ -894,29 +892,29 @@ def test_h_to_x_pass(run_filecheck):
         }
     """
 
-		# First, we must create the pass pipeline that we want to apply
-		# to our program.
-		pipeline = (HToXPass(),)
+    # First, we must create the pass pipeline that we want to apply
+    # to our program.
+    pipeline = (HToXPass(),)
 
-		# Next, we use run_filecheck to run filecheck testing on the
-		# program. The fixture will create an xDSL module from the program
-		# string, call the filecheck API, and assert correctness.
+    # Next, we use run_filecheck to run filecheck testing on the
+    # program. The fixture will create an xDSL module from the program
+    # string, call the filecheck API, and assert correctness.
     run_filecheck(program, pipeline)
 
-		# Optionally, there are two keyword arguments that can modify the
-		# behaviour of run_filecheck. Both the roundtrip and verify
-		# arguments are false by default.
-		run_filecheck(program, pipeline, roundtrip=True, verify=True)
+    # Optionally, there are two keyword arguments that can modify the
+    # behaviour of run_filecheck. Both the roundtrip and verify
+    # arguments are false by default.
+    run_filecheck(program, pipeline, roundtrip=True, verify=True)
 
-		# roundtrip=True makes it so that after parsing the program string
-		# to an xDSL module, we print it as a string again, and then parse
-		# it back into an xDSL module. This is useful when writing tests
-		# for dialects, so that we can check that the dialects can be printed
-		# parsed correctly.
+    # roundtrip=True makes it so that after parsing the program string
+    # to an xDSL module, we print it as a string again, and then parse
+    # it back into an xDSL module. This is useful when writing tests
+    # for dialects, so that we can check that the dialects can be printed
+    # parsed correctly.
 
-		# verify=True simply runs `module.verify()`, which iteratively uses
-		# xDSL's verifiers to verify all operations and attributes in the
-		# module.
+    # verify=True simply runs `module.verify()`, which iteratively uses
+    # xDSL's verifiers to verify all operations and attributes in the
+    # module.
 ```
 
 ### `run_filecheck_qjit` example
@@ -935,19 +933,19 @@ def test_h_to_x_pass_integration(run_filecheck_qjit):
     @qml.qjit(pass_plugins=[getXDSLPluginAbsolutePath])
     @h_to_x_pass
     def circuit():
-		    # CHECK: [[q0:%.+]] = "test.op"() : () -> !quantum.bit
-		    # CHECK: quantum.custom "PauliX"() [[q0]] : !quantum.bit
-		    # CHECK-NOT: quantum.custom "Hadamard"
-	      qml.Hadamard(0)
-	      return qml.state()
+        # CHECK: [[q0:%.+]] = "test.op"() : () -> !quantum.bit
+        # CHECK: quantum.custom "PauliX"() [[q0]] : !quantum.bit
+        # CHECK-NOT: quantum.custom "Hadamard"
+        qml.Hadamard(0)
+        return qml.state()
 
-		# Finally, we use the run_filecheck_qjit fixture. We pass it our
-		# original qjitted workflow. It extracts the filecheck directives
-		# from the workflow, creates an MLIR program, parses it to xDSL,
-		# applies the specified transforms, and uses the filecheck API to
-		# assert correctness.
+    # Finally, we use the run_filecheck_qjit fixture. We pass it our
+    # original qjitted workflow. It extracts the filecheck directives
+    # from the workflow, creates an MLIR program, parses it to xDSL,
+    # applies the specified transforms, and uses the filecheck API to
+    # assert correctness.
     run_filecheck_qjit(circuit)
-    
+
     # run_filecheck_qjit also accepts a boolean `verify` argument
     # that is false by default, which works exactly the same way as
     # the `verify` argument of `run_filecheck`.
@@ -963,9 +961,9 @@ There are several blockers that are currently disabling developers from taking f
 ## Strategies to circumvent blockers
 
 1. We can use dummy subroutines for now. We know what the inputs and outputs of these subroutines should be, so we can create our own `FuncOp`s that adhere to the input/output spec and just have their body be empty for now. The below notebook shows an example where we create a dummy quantum subroutine, and use it to develop a pass.
-    
-    [xDSL subroutines tutorial](https://gist.github.com/mudit2812/7bd38555ecff3a9fa028491574b2606e) 
-    
+
+    [xDSL subroutines tutorial](https://gist.github.com/mudit2812/7bd38555ecff3a9fa028491574b2606e)
+
 
 # Suggested reading
 
@@ -979,8 +977,8 @@ There are several blockers that are currently disabling developers from taking f
 
 # References
 
-1. Wikimedia Foundation. (2025, August 11). *Static single-assignment form*. Wikipedia. https://en.wikipedia.org/wiki/Static_single-assignment_form 
+1. Wikimedia Foundation. (2025, August 11). *Static single-assignment form*. Wikipedia. https://en.wikipedia.org/wiki/Static_single-assignment_form
 2. *MLIR Language Reference*. MLIR. (n.d.). https://mlir.llvm.org/docs/LangRef/
-3. *Understanding the IR Structure*. MLIR. (n.d.-b). https://mlir.llvm.org/docs/Tutorials/UnderstandingTheIRStructure/ 
-4. *Mlir::Value class reference*. MLIR. (n.d.-b). https://mlir.llvm.org/doxygen/classmlir_1_1Value.html 
+3. *Understanding the IR Structure*. MLIR. (n.d.-b). https://mlir.llvm.org/docs/Tutorials/UnderstandingTheIRStructure/
+4. *Mlir::Value class reference*. MLIR. (n.d.-b). https://mlir.llvm.org/doxygen/classmlir_1_1Value.html
 5. *LLVM Programmer’s Manual*. LLVM. (n.d.). https://llvm.org/docs/ProgrammersManual.html
