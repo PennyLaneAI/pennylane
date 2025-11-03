@@ -213,6 +213,15 @@ if _find_spec("jax") is not None:
             RuntimeWarning,
         )
 
+if _find_spec("numpy") is not None:
+    if (numpy_version := _Version(_metadata_version("numpy"))) < _Version("2.0.0"):
+        warnings.warn(
+            "PennyLane has dropped maintainence support for NumPy < 2.0.0. "
+            f"You have version {numpy_version} installed. "
+            "Please consider upgrading NumPy using "
+            "python -m pip install numpy --upgrade. "
+        )
+
 
 def __getattr__(name):
 

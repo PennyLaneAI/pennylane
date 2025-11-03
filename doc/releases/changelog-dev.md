@@ -75,6 +75,10 @@
 
 <h3>Breaking changes 💔</h3>
 
+* Support for `numpy<2.0` has been removed. 
+  [(#8497)](https://github.com/PennyLaneAI/pennylane/pull/8497)
+  [(#)](https://github.com/PennyLaneAI/pennylane/pull/)
+
 * Providing ``num_steps`` to :func:`pennylane.evolve`, :func:`pennylane.exp`, :class:`pennylane.ops.Evolution`,
   and :class:`pennylane.ops.Exp` has been disallowed. Instead, use :class:`~.TrotterProduct` for approximate
   methods, providing the ``n`` parameter to perform the Suzuki-Trotter product approximation of a Hamiltonian
@@ -194,9 +198,6 @@
 * The `grad` and `jacobian` primitives now store the function under `fn`. There is also now a single `jacobian_p`
   primitive for use in program capture.
   [(#8357)](https://github.com/PennyLaneAI/pennylane/pull/8357)
-
-* Fix all NumPy 1.X `DeprecationWarnings` in our source code.
-  [(#8497)](https://github.com/PennyLaneAI/pennylane/pull/8497)
 
 * Update versions for `pylint`, `isort` and `black` in `format.yml`
   [(#8506)](https://github.com/PennyLaneAI/pennylane/pull/8506)
