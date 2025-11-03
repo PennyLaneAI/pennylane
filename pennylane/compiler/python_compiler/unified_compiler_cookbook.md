@@ -829,8 +829,8 @@ The number of `CHECK` comments does not need to be the same as the number of ope
 ```python
 program = """
     func.func @test_func() {
-        // CHECK: [[q0:%.*]] = "test.op"() : () -> !quantum.bit
-        // CHECK: [[q1:%.*]] = "test.op"() : () -> !quantum.bit
+        // CHECK: [[q0:%.+]] = "test.op"() : () -> !quantum.bit
+        // CHECK: [[q1:%.+]] = "test.op"() : () -> !quantum.bit
         %0 = "test.op"() : () -> !quantum.bit
         %1 = "test.op"() : () -> !quantum.bit
         // CHECK: quantum.custom "PauliX"() [[q0]] : !quantum.bit
