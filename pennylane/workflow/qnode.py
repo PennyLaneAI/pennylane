@@ -466,7 +466,7 @@ class QNode:
 
         This is equivalent to iterating over all broadcasted arguments using ``zip``:
 
-        >>> [circuit(x_val, y, U_val) for x_val, U_val in zip(x, U)] + doctest: +SKIP
+        >>> [circuit(x_val, y, U_val) for x_val, U_val in zip(x, U)] # doctest: +SKIP
         [np.float64(0.1927559743829826), np.float64(-0.28546140072249226), np.float64(-0.05227344915109773)]
 
         In the same way it is possible to broadcast multiple arguments of a single operator,
