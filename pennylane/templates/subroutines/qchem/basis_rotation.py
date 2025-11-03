@@ -39,8 +39,8 @@ def _adjust_determinant(matrix):
 
     Returns:
         tuple[float, array]: The angle to be passed into a PhaseShift gate on the first
-        wire to perform the determinant adjustment on the quantum circuit level, which is ``None``
-        if no adjustment is needed, as well as the new matrix with adjusted determinant :math:`+1`.
+        wire to perform the determinant adjustment on the quantum circuit level,
+        as well as the new matrix with adjusted determinant :math:`+1`.
 
     """
     det = math.linalg.det(matrix)
