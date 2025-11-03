@@ -595,6 +595,8 @@ class QSVT(Operation):
 
         for idx, op in enumerate(projectors[:-1]):
             if idx % 2 == 0:
+                if QueuingManager.recording():
+                    apply(op)
                 op_list.append(op)
             else:
                 # change_op_basis would queue internally when called in a queuing context.
