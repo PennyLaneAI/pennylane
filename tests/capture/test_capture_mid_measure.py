@@ -355,7 +355,7 @@ class TestMidMeasureExecute:
                     std_sample_avg = qml.math.sqrt(p_plus * p_minus / shots)
                     atol = 3 * std_sample_avg
                     assert qml.math.allclose(sample_expected_avg, expected_avg, atol=atol, rtol=0)
-            else:  # qml.expval, qml.var, qml.sample, qml.probs
+            else:  # qml.expval, qml.var, qml.probs
                 assert qml.math.allclose(res, expected, atol=1 / qml.math.sqrt(shots), rtol=0.1)
         else:
             assert compare_with_capture_disabled(f, phi)
