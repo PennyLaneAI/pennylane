@@ -375,7 +375,7 @@ class BasisRotation(Operation):
 
             _, givens_list = math.decomposition.givens_decomposition(unitary_matrix, True)
             for grot_mat, (i, j) in givens_list:
-                theta = math.arctan2(np.real(grot_mat[0, 1]), np.real(grot_mat[0, 0]))
+                theta = math.arctan2(math.real(grot_mat[0, 1]), math.real(grot_mat[0, 0]))
                 op_list.append(SingleExcitation(2 * theta, wires=[wires[i], wires[j]]))
             return op_list
 
