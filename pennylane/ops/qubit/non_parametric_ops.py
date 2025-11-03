@@ -726,13 +726,9 @@ class PauliY(Operation):
         **Example**
 
         >>> print(qml.Y.compute_diagonalizing_gates(wires=[0]))
-        [Z(0), S(0), H(0)]
+        [Adjoint(S(0)), H(0)]
         """
-        return [
-            Z(wires=wires),
-            S(wires=wires),
-            Hadamard(wires=wires),
-        ]
+        return [qml.adjoint(S(wires=wires)), Hadamard(wires=wires)]
 
     @staticmethod
     def compute_decomposition(wires: WiresLike) -> list[qml.operation.Operator]:
