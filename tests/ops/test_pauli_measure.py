@@ -17,7 +17,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import queuing
-from pennylane.measurements import MeasurementValue, PauliMeasure
+from pennylane.ops import MeasurementValue, PauliMeasure
 
 
 class TestPauliMeasure:

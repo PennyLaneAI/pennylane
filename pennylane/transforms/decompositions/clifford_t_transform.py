@@ -19,8 +19,7 @@ from functools import lru_cache, partial
 from itertools import product
 
 import pennylane as qml
-from pennylane.measurements.mid_measure import MeasurementValue
-from pennylane.ops import Adjoint
+from pennylane.ops import Adjoint, MeasurementValue
 from pennylane.ops.op_math.decompositions.ross_selinger import rs_decomposition
 from pennylane.ops.op_math.decompositions.solovay_kitaev import sk_decomposition
 from pennylane.queuing import QueuingManager
@@ -565,6 +564,11 @@ def clifford_t_decomposition(
         # note: the last operator in the decomposition must be a GlobalPhase
 
         is_qjit = qml.compiler.active_compiler() == "catalyst"
+        if number_ops > 0 and is_qjit and method == "sk":
+            raise RuntimeError(
+                "Solovay-Kitaev decomposition (method='sk') is not supported with QJIT or JAX-JIT. "
+                "Use Ross-Selinger decomposition (method='gridsynth') instead."
+            )
 
         # Build the decomposition cache based on the method
         global _CLIFFORD_T_CACHE  # pylint: disable=global-statement
