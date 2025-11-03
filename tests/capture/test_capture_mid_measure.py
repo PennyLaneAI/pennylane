@@ -352,7 +352,7 @@ class TestMidMeasureExecute:
                     p_plus = qml.math.cos(phi / 2) ** 2
                     p_minus = 1 - p_plus
                     expected_avg = p_plus - p_minus
-                    std_sample_avg = 2 * qml.math.sqrt(p_plus * p_minus / shots)
+                    std_sample_avg = qml.math.sqrt(p_plus * p_minus / shots)
                     atol = 3 * std_sample_avg
                     assert qml.math.allclose(sample_expected_avg, expected_avg, atol=atol, rtol=0)
             else:  # qml.expval, qml.var, qml.sample, qml.probs
