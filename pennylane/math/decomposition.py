@@ -373,30 +373,26 @@ def _givens_matrix_core(a, b, left=True, tol=1e-8, real_valued=False):
         cosine, sine = sine, -cosine
 
     g00, g01 = cosine + 0j, -sine + 0j
+
+    def real_branch(g00, g01):
+        phase = math.where((abs_a < tol) + (abs_b < tol), 1.0, math.sign(a * b))
+        g01 *= phase
+        return phase, g00, g01
+
+    def complex_branch(g00, g01):
+        aprod = math.nan_to_num(abs_b * abs_a)
+        phase = math.where(abs_b < tol, 1.0, (b * math.conj(a)) / (aprod + EPS))
+        phase = math.where(abs_a < tol, 1.0, phase)
+        g00 = phase * g00
+        return phase, g00, g01
+
     if interface == "jax":
-
-        def real_branch(g00, g01):
-            phase = math.where((abs_a < tol) + (abs_b < tol), 1.0, math.sign(a * b))
-            g01 *= phase
-            return phase, g00, g01
-
-        def complex_branch(g00, g01):
-            aprod = math.nan_to_num(abs_b * abs_a)
-            phase = math.where(abs_b < tol, 1.0, (b * math.conj(a)) / (aprod + EPS))
-            phase = math.where(abs_a < tol, 1.0, phase)
-            g00 = phase * g00
-            return phase, g00, g01
-
         phase, g00, g01 = jax.lax.cond(real_valued, real_branch, complex_branch, g00, g01)
     else:
         if real_valued:
-            phase = math.where((abs_a < tol) + (abs_b < tol), 1.0, math.sign(a * b))
-            g01 *= phase
+            phase, g00, g01 = real_branch(g00, g01)
         else:
-            aprod = math.nan_to_num(abs_b * abs_a)
-            phase = math.where(abs_b < tol, 1.0, (b * math.conj(a)) / (aprod + EPS))
-            phase = math.where(abs_a < tol, 1.0, phase)
-            g00 = phase * g00
+            phase, g00, g01 = complex_branch(g00, g01)
 
     g10, g11 = phase * sine, cosine
 
