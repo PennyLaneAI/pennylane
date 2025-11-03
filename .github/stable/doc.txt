@@ -1,4 +1,4 @@
-argcomplete==3.6.2
+argcomplete==3.6.3
 attrs==23.2.0
 Automat==22.10.0
 Babel==2.10.3
@@ -40,8 +40,8 @@ netifaces==0.11.0
 oauthlib==3.2.2
 packaging==24.0
 pexpect==4.9.0
-pipx==1.7.1
-platformdirs==4.4.0
+pipx==1.8.0
+platformdirs==4.5.0
 ptyprocess==0.7.0
 pyasn1==0.4.8
 pyasn1-modules==0.2.8
