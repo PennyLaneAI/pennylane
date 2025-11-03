@@ -67,7 +67,7 @@ class Hermitian(Operator):
 
     _queue_category = None
 
-    is_hermitian = True
+    is_verified_hermitian = True
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
@@ -307,7 +307,7 @@ class SparseHamiltonian(Operator):
     """
 
     _queue_category = None
-    is_hermitian = True
+    is_verified_hermitian = True
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
@@ -453,7 +453,7 @@ class Projector(Operator):
 
     """
 
-    is_hermitian = True
+    is_verified_hermitian = True
     name = "Projector"
     num_params = 1
     _queue_category = None
