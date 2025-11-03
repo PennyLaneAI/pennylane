@@ -115,9 +115,6 @@ def rz_phase_gradient(
 
         from functools import partial
 
-        import numpy as np
-
-        import pennylane as qml
         from pennylane.transforms.rz_phase_gradient import rz_phase_gradient
 
         precision = 3
@@ -175,12 +172,12 @@ def rz_phase_gradient(
     Executing the circuit, we get the following result:
 
     >>> rz_circ(phi, wire)
-    array([0.85355339, 0.14644661])
+    array([0.853..., 0.146...])
 
     This matches the expected result of just applying a simple ``RX`` gate:
 
     >>> np.abs(qml.RX(phi, 0).matrix()[:, 0]) ** 2
-    array([0.85355339, 0.14644661])
+    array([0.853..., 0.146...])
 
     """
 
