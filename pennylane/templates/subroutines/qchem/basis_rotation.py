@@ -429,8 +429,7 @@ def _basis_rotation_decomp(unitary_matrix, wires: WiresLike, **__):
                 PhaseShift(angle, wires=wires[0])
 
         _, givens_list = math.decomposition.givens_decomposition(unitary, True)
-        givens_ids = [(i, j) for _, (i, j) in givens_list]
-        givens_matrices = [arr for arr, (_, _) in givens_list]
+        givens_matrices, givens_ids = zip(*givens_list)
 
         if has_jax and capture.enabled():
             givens_ids = jnp.array(givens_ids)
