@@ -1,28 +1,22 @@
-from functools import partial
+"""
+Defines some catalyst passes.
+"""
 
 from .core import transform
 
 
-@partial(transform, pass_name="disentangle-CNOT")
-def disentangle_cnot(tape):
-    raise NotImplementedError("only has an MLIR implementation.")
+def _make_no_tape_implementation(name):
+    # pylint: disable=unused-variable
+    def no_tape_implementation(tape, *args, **kwargs):
+        raise NotImplementedError(f"{name} only has an MLIR implementation.")
+
+    return no_tape_implementation
 
 
-@partial(transform, pass_name="disentangle-SWAP")
-def disentangle_swap(tape):
-    raise NotImplementedError("only has an MLIR implementation")
-
-
-@partial(transform, pass_name="ions-decomposition")
-def ions_decomposition(tape):
-    raise NotImplementedError("only has an MLIR implementation")
-
-
-@partial(transform, pass_name="to-ppr")
-def to_ppr(tape):
-    raise NotImplementedError("only has an MLIR implementation")
-
-
-@partial(transform, pass_name="commute_ppr")
-def commute_ppr(tape, max_pauli_size=0):
-    raise NotImplementedError("only has an MLIR implementation")
+disentangle_cnot = transform(_make_no_tape_implementation("disentangle_cnot"), "disentangle-CNOT")
+disentangle_swap = transform(_make_no_tape_implementation("disentangle_swap"), "disentangle-SWAP")
+ions_decomposition = transform(
+    _make_no_tape_implementation("ions_decomposition"), "ions-decomposition"
+)
+to_ppr = transform(_make_no_tape_implementation("to_ppr"), "to-ppr")
+commute_ppr = transform(_make_no_tape_implementation("commute_ppr"), "commute_ppr")
