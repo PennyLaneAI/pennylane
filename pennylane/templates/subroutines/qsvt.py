@@ -593,11 +593,7 @@ class QSVT(Operation):
         op_list = []
         UA_adj = copy.copy(UA)
 
-        if QueuingManager.recording():
-            apply(projectors[0])
-        op_list.append(projectors[0])
-
-        for idx, op in enumerate(projectors[1:-1]):
+        for idx, op in enumerate(projectors[:-1]):
             if idx % 2 == 0:
                 op_list.append(op)
             else:
