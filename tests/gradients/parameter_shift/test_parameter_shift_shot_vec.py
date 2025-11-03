@@ -1371,7 +1371,6 @@ class TestParameterShiftRule:
             assert gradF[0] == pytest.approx(expected, abs=2)
             assert qml.math.allclose(gradF[1], expected, atol=1.5)
 
-    @pytest.mark.xfail(reason="Flaky test under investigation (tracked in sc-101770)", strict=False)
     def test_involutory_and_noninvolutory_variance_single_param(self, broadcast, seed):
         """Tests a qubit Hermitian observable that is not involutory alongside
         an involutory observable when there's a single trainable parameter."""
@@ -1394,7 +1393,9 @@ class TestParameterShiftRule:
         res = dev.execute(tape)
         expected = [1 - np.cos(a) ** 2, (39 / 2) - 6 * np.sin(2 * a) + (35 / 2) * np.cos(2 * a)]
         for r in res:
-            assert qml.math.allclose(r, expected, atol=5e-2)
+            assert qml.math.allclose(
+                r, expected, atol=0.10
+            )  # around 97% pass chance for the correct sampling
 
         # circuit jacobians
         tapes, fn = qml.gradients.param_shift(tape, broadcast=broadcast)

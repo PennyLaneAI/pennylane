@@ -21,13 +21,19 @@
   [(#8515)](https://github.com/PennyLaneAI/pennylane/pull/8515)
   [(#8516)](https://github.com/PennyLaneAI/pennylane/pull/8516)
   [(#8555)](https://github.com/PennyLaneAI/pennylane/pull/8555)
+  [(#8558)](https://github.com/PennyLaneAI/pennylane/pull/8558)
+  [(#8538)](https://github.com/PennyLaneAI/pennylane/pull/8538)  
   [(#8534)](https://github.com/PennyLaneAI/pennylane/pull/8534)
-
+  [(#8543)](https://github.com/PennyLaneAI/pennylane/pull/8543)
+  
   - :class:`~.QSVT`
   - :class:`~.AmplitudeEmbedding`
   - :class:`~.AllSinglesDoubles`
   - :class:`~.SimplifiedTwoDesign`
+  - :class:`~.GateFabric`
+  - :class:`~.AngleEmbedding`
   - :class:`~.IQPEmbedding`
+  - :class:`~.QAOAEmbedding`
 
 * A new `qml.compiler.python_compiler.utils` submodule has been added, containing general-purpose utilities for
   working with xDSL. This includes a function that extracts the concrete value of scalar, constant SSA values.
@@ -58,6 +64,12 @@
   [(#8464)](https://github.com/PennyLaneAI/pennylane/pull/8464)
 
 * Wires can be specified via `range` with program capture and autograph.
+  [(#8500)](https://github.com/PennyLaneAI/pennylane/pull/8500)
+
+* The :func:`~pennylane.transforms.decompose` transform no longer raises an error if both `gate_set` and
+  `stopping_condition` are provided, or if `gate_set` is a dictionary, when the new graph-based decomposition
+  system is disabled.
+  [(#8532)](https://github.com/PennyLaneAI/pennylane/pull/8532)
 
 * A new decomposition has been added to :class:`pennylane.Toffoli`. This decomposition uses one
   work wire and :class:`pennylane.TemporaryAND` operators to reduce the resources needed.
@@ -181,6 +193,10 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* The `grad` and `jacobian` primitives now store the function under `fn`. There is also now a single `jacobian_p`
+  primitive for use in program capture.
+  [(#8357)](https://github.com/PennyLaneAI/pennylane/pull/8357)
+
 * Fix all NumPy 1.X `DeprecationWarnings` in our source code.
   [(#8497)](https://github.com/PennyLaneAI/pennylane/pull/8497)
 
@@ -253,7 +269,14 @@
   the :func:`~pennylane.devices.preprocess.decompose` transform for device-level decompositions.
   [(#8492)](https://github.com/PennyLaneAI/pennylane/pull/8492)
 
+* Improves documentation in the transforms module and adds documentation testing for it.
+  [(#8557)](https://github.com/PennyLaneAI/pennylane/pull/8557)
+
 <h3>Bug fixes 🐛</h3>
+
+* Add an exception to the warning for unsolved operators within the graph-based decomposition
+  system if the unsolved operators are :class:`.allocation.Allocate` or :class:`.allocation.Deallocate`.
+  [(#8553)](https://github.com/PennyLaneAI/pennylane/pull/8553)
 
 * Fixes a bug in `clifford_t_decomposition` with `method="gridsynth"` and qjit, where using cached decomposition with the same parameter causes an error.
   [(#8535)](https://github.com/PennyLaneAI/pennylane/pull/8535)
