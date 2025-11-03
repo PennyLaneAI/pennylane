@@ -453,7 +453,7 @@ class QNode:
 
             x = np.array([0.4, 2.1, -1.3])
             y = 2.71
-            U = np.stack([unitary_group.rvs(16) for _ in range(3)])
+            U = np.stack([qml.X.compute_matrix(), qml.Y.compute_matrix(), qml.Z.compute_matrix()])
 
         This circuit takes three arguments, and the first two are used twice each. ``x`` and
         ``U`` will lead to a batch size of ``3`` for the ``RX`` rotations and the multi-qubit
