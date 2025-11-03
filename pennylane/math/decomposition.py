@@ -19,6 +19,7 @@ from functools import lru_cache, partial
 import numpy as np
 
 from pennylane import math
+from pennylane.math import is_abstract
 
 has_jax = True
 try:
@@ -705,7 +706,7 @@ def givens_decomposition(unitary, is_real=False):
                 unitary_mat, grot_mat = _left_givens(indices, unitary_mat, j, is_real)
                 left_givens.append((grot_mat, indices))
 
-    if interface == "jax":
+    if interface == "jax" and is_abstract(is_real):
         unitary_mat, all_givens = jax.lax.cond(
             is_real, _absorb_phases_so, _commute_phases_u, left_givens, right_givens, unitary_mat
         )

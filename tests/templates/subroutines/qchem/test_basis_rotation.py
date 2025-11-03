@@ -525,7 +525,6 @@ class TestInterfaces:
 
     @pytest.mark.parametrize("device_name", ("default.qubit", "reference.qubit"))
     @pytest.mark.jax
-    @pytest.mark.xfail(reason="The legacy decomposition method is not jit compatible")
     def test_jax_jit(self, device_name, tol):
         """Test the jax interface."""
 
