@@ -461,13 +461,13 @@ class QNode:
         all three values in ``x`` and ``U``. We obtain three output values:
 
         >>> result = circuit(x, y, U)
-        >>> result # doctest: +SKIP
-        array([ 0.34560453, -0.26799399, -0.11409664])
+        >>> result
+        array([ 0.19275597, -0.2854614 , -0.05227345])
 
         This is equivalent to iterating over all broadcasted arguments using ``zip``:
 
-        >>> [circuit(x_val, y, U_val) for x_val, U_val in zip(x, U)] # doctest: +SKIP
-        [np.float64(0.2769413890858924), np.float64(-0.04160521312845867), np.float64(0.021569381284900963)]
+        >>> [circuit(x_val, y, U_val) for x_val, U_val in zip(x, U)]
+        [np.float64(0.1927559743829826), np.float64(-0.28546140072249226), np.float64(-0.05227344915109773)]
 
         In the same way it is possible to broadcast multiple arguments of a single operator,
         for example:
