@@ -219,7 +219,7 @@ if _find_spec("numpy") is not None:
             "PennyLane has dropped maintainence support for NumPy < 2.0.0. "
             f"You have version {numpy_version} installed. "
             "Please consider upgrading NumPy using "
-            "python -m pip install numpy --upgrade. "
+            "`python -m pip install numpy --upgrade`. "
         )
 
 
