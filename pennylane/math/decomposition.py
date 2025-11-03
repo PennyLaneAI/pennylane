@@ -585,7 +585,7 @@ def _left_givens(indices, unitary, j, real_valued):
     return _left_givens_core(indices, unitary, j, real_valued)
 
 
-def givens_decomposition(unitary, is_real):
+def givens_decomposition(unitary, is_real=False):
     r"""Decompose a unitary into a sequence of Givens rotation gates with phase shifts and a diagonal phase matrix.
 
     Args:
