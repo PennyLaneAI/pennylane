@@ -96,3 +96,75 @@ jobs:
           "
 
           pytest pennylane $IGNORE_OPTS --ignore-glob='*tests*'
+
+
+  documentation-tests-2:
+    if: github.event.pull_request.draft == false
+    needs: [determine_runner]
+    runs-on: ${{ needs.determine_runner.outputs.runner_group }}
+
+    name: Documentation Tests on Python 3.12
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install --upgrade setuptools
+          pip install --upgrade --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ --pre pennylane-catalyst
+          pip install -e .
+          pip install sybil pytest "jax~=0.6.0" "jaxlib~=0.6.0" torch matplotlib pyzx
+
+      # TODO: Remove the --ignore options as layers are tested and verified
+      # to be working correctly.
+      - name: Run documentation tests
+        run: |
+          IGNORE_OPTS_CLOSED="
+          --ignore=pennylane/labs
+          --ignore=pennylane/compiler/python_compiler
+          "
+          IGNORE_OPTS_CORE="
+          --ignore=pennylane/control_flow
+          --ignore=pennylane/math
+          --ignore=pennylane/compiler
+          --ignore=pennylane/measurements
+          --ignore=pennylane/ops/qubit
+          --ignore=pennylane/ops/qutrit
+          --ignore=pennylane/capture
+          --ignore=pennylane/decomposition
+          --ignore=pennylane/devices
+          --ignore=pennylane/workflow
+          "
+          IGNORE_OPTS_AUXILIARY="
+          --ignore=pennylane/shadows
+          --ignore=pennylane/gradients
+          --ignore=pennylane/optimize
+          --ignore=pennylane/pulse
+          "
+          IGNORE_OPTS_TERTIARY="
+          --ignore=pennylane/io
+          --ignore=pennylane/logging
+          --ignore=pennylane/qnn
+          --ignore=pennylane/qaoa
+          --ignore=pennylane/data
+          --ignore=pennylane/fourier
+          --ignore=pennylane/debugging
+          --ignore=pennylane/qcut
+          --ignore=pennylane/qchem
+          "
+
+          IGNORE_OPTS="
+          ${IGNORE_OPTS_CLOSED}
+          ${IGNORE_OPTS_CORE}
+          ${IGNORE_OPTS_AUXILIARY}
+          ${IGNORE_OPTS_TERTIARY}
+          "
+
+          pytest pennylane $IGNORE_OPTS --ignore-glob='*tests*'
