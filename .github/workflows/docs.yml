@@ -50,8 +50,8 @@ jobs:
       with:
         docs-folder: "doc/"
         pre-build-command: >
-            apt install -y graphviz
-            && alias git=/usr/bin/git
+            export PATH=$PATH:/usr/bin/git
+            && apt install -y graphviz
             && pip3 install -r doc/requirements.txt
             && pip3 install .
             && pip3 install openfermionpyscf
