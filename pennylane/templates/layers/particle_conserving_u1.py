@@ -20,7 +20,7 @@ from functools import reduce
 import numpy as np
 
 from pennylane import math
-from pennylane.decomposition import resource_rep
+from pennylane.decomposition import resource_rep, register_resources, add_decomps
 from pennylane.operation import Operation
 from pennylane.ops import CNOT, CZ, CRot, PhaseShift
 from pennylane.templates.embeddings import BasisEmbedding
@@ -250,6 +250,8 @@ class ParticleConservingU1(Operation):
 
     grad_method = None
 
+    resource_keys = { "num_wires", "n_layers" }
+
     def __init__(self, weights, wires, init_state=None, id=None):
         if len(wires) < 2:
             raise ValueError(
@@ -280,6 +282,13 @@ class ParticleConservingU1(Operation):
     @property
     def num_params(self):
         return 1
+
+    @property
+    def resource_params(self) -> dict:
+        return {
+            "num_wires": len(self.wires),
+            "n_layers": math.shape(self.parameters[0])[0]
+        }
 
     @staticmethod
     def compute_decomposition(weights, wires, init_state):  # pylint: disable=arguments-differ
@@ -355,16 +364,15 @@ class ParticleConservingU1(Operation):
             raise ValueError(
                 f"The number of qubits must be greater than one; got 'n_wires' = {n_wires}"
             )
+
         return n_layers, n_wires - 1, 2
 
 
-def _particle_conserving_u1_resources(weights, num_wires):
+def _particle_conserving_u1_resources(n_layers, num_wires):
     # number of pairs of even-indexed of wires
     num_nm_wires = math.floor(num_wires / 2) if num_wires % 2 == 0 else math.ceil(num_wires / 2)
     # number of odd-indexed pairs of wires
     num_nm_wires += math.floor((num_wires - 1) / 2)
-
-    n_layers = math.shape(weights)[0]
 
     resources = {
         resource_rep(BasisEmbedding, num_wires=num_wires): 1,
@@ -375,3 +383,64 @@ def _particle_conserving_u1_resources(weights, num_wires):
     }
 
     return resources
+
+
+def _decompose_ua_qfunc(phi, wires):
+    r"""Appends the circuit decomposing the controlled application of the unitary
+    :math:`U_A(\phi)`
+
+    .. math::
+
+        U_A(\phi) = \left(\begin{array}{cc} 0 & e^{-i\phi} \\ e^{-i\phi} & 0 \\ \end{array}\right)
+
+    in terms of the quantum operations supported by PennyLane.
+
+    :math:`U_A(\phi)` is used in `arXiv:1805.04340 <https://arxiv.org/abs/1805.04340>`_,
+    to define two-qubit exchange gates required to build particle-conserving
+    VQE ansatze for quantum chemistry simulations. See :func:`~.ParticleConservingU1`.
+
+    :math:`U_A(\phi)` is expressed in terms of ``PhaseShift``, ``Rot`` and ``PauliZ`` operations
+    :math:`U_A(\phi) = R_\phi(-2\phi) R(-\phi, \pi, \phi) \sigma_z`.
+
+    Args:
+        phi (float): angle :math:`\phi` defining the unitary :math:`U_A(\phi)`
+        wires (Iterable): the wires ``n`` and ``m`` the circuit acts on
+
+    Returns:
+          list[.Operator]: sequence of operators defined by this function
+    """
+    n, m = wires
+
+    CZ(wires=wires)
+    CRot(-phi, np.pi, phi, wires=wires)
+
+    # decomposition of C-PhaseShift(2*phi) gate
+    PhaseShift(-phi, wires=m)
+    CNOT(wires=wires)
+    PhaseShift(phi, wires=m)
+    CNOT(wires=wires)
+    PhaseShift(-phi, wires=n)
+
+
+@register_resources(_particle_conserving_u1_resources)
+def _particle_conserving_u1_decomposition(weights, wires, init_state):  # pylint: disable=arguments-differ
+    nm_wires = [wires[l: l + 2] for l in range(0, len(wires) - 1, 2)]
+    nm_wires += [wires[l: l + 2] for l in range(1, len(wires) - 1, 2)]
+    n_layers = math.shape(weights)[0]
+
+    BasisEmbedding(init_state, wires=wires)
+
+    for l in range(n_layers):
+        for i, wires_ in enumerate(nm_wires):
+            phi, theta = weights[l, i, 0], weights[l, i, 1]
+
+            # C-UA(phi)
+            _decompose_ua_qfunc(phi, wires_)
+
+            CZ(wires=wires_[::-1])
+            CRot(0, 2 * theta, 0, wires=wires_[::-1])
+
+            # C-UA(-phi)
+            _decompose_ua_qfunc(-phi, wires_)
+
+add_decomps(ParticleConservingU1, _particle_conserving_u1_decomposition)
