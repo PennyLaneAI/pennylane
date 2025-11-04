@@ -240,9 +240,12 @@
   been modified to avoid using `numpy.matrix` as this function is deprecated.
   [(#8523)](https://github.com/PennyLaneAI/pennylane/pull/8523)
 
-* The `ftqc` module now includes dummy transforms for several Catalyst/MLIR passes (`to-ppr`, `commute-ppr`, `merge-ppr-ppm`, `pprm-to-mbqc`
-  and `reduce-t-depth`), to allow them to be captured as primitives in PLxPR and mapped to the MLIR passes in Catalyst. This enables using the passes with the unified compiler and program capture.
+* The `ftqc` module now includes dummy transforms for several Catalyst/MLIR passes (`to-ppr`, `commute-ppr`, `merge-ppr-ppm`,
+  `decompose-clifford-ppr`, `decompose-non-clifford-ppr`, `ppr-to-ppm`, `ppr-to-mbqc` and `reduce-t-depth`), to allow them to
+  be captured as primitives in PLxPR and mapped to the MLIR passes in Catalyst. This enables using the passes with the unified
+  compiler and program capture.
   [(#8519)](https://github.com/PennyLaneAI/pennylane/pull/8519)
+  [(#8544)](https://github.com/PennyLaneAI/pennylane/pull/8544)
 
 * The decompositions for several templates have been updated to use
   :class:`~.ops.op_math.ChangeOpBasis`, which makes their decompositions more resource efficient
