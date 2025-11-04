@@ -21,7 +21,7 @@ from itertools import product
 
 import numpy as np
 
-from pennylane import capture, math
+from pennylane import math
 from pennylane.control_flow import for_loop
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.operation import Operation
@@ -30,12 +30,6 @@ from pennylane.wires import Wires
 
 from .fermionic_double_excitation import FermionicDoubleExcitation
 from .fermionic_single_excitation import FermionicSingleExcitation
-
-has_jax = True
-try:
-    from jax import numpy as jnp
-except ModuleNotFoundError:  # pragma: no cover
-    has_jax = False  # pragma: no cover
 
 
 def generalized_singles(wires, delta_sz):
@@ -364,7 +358,7 @@ def _kupccgsd_resources(num_wires, k, d_wires, s_wires):
     resources = defaultdict(int)
     resources[resource_rep(BasisEmbedding, num_wires=num_wires)] = 1
 
-    for layer in range(k):
+    for _ in range(k):
         for w1, w2 in d_wires:
             resources[
                 resource_rep(FermionicDoubleExcitation, num_wires_1=len(w1), num_wires_2=len(w2))
@@ -385,7 +379,7 @@ def _kupccgsd_decomposition(
     k,
     init_state,
     delta_sz=None,
-):  # pylint: disable=too-many-arguments, arguments-differ, unused_argument
+):  # pylint: disable=too-many-arguments, arguments-differ, unused-argument
 
     BasisEmbedding(init_state, wires=wires)
 
