@@ -20,6 +20,7 @@
   [(#8520)](https://github.com/PennyLaneAI/pennylane/pull/8520)
   [(#8515)](https://github.com/PennyLaneAI/pennylane/pull/8515)
   [(#8516)](https://github.com/PennyLaneAI/pennylane/pull/8516)
+  [(#8555)](https://github.com/PennyLaneAI/pennylane/pull/8555)
   [(#8558)](https://github.com/PennyLaneAI/pennylane/pull/8558)
   [(#8538)](https://github.com/PennyLaneAI/pennylane/pull/8538)  
   [(#8534)](https://github.com/PennyLaneAI/pennylane/pull/8534)
@@ -28,6 +29,7 @@
   - :class:`~.QSVT`
   - :class:`~.AmplitudeEmbedding`
   - :class:`~.AllSinglesDoubles`
+  - :class:`~.SimplifiedTwoDesign`
   - :class:`~.GateFabric`
   - :class:`~.AngleEmbedding`
   - :class:`~.IQPEmbedding`
