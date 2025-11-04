@@ -247,6 +247,10 @@
   informative ``RuntimeError`` when used with JAX-JIT or :func:`~.qjit`.
   [(#8489)](https://github.com/PennyLaneAI/pennylane/pull/8489)
 
+* The :func:`~pennylane.compiler.python_compiler.Compiler.run` method now accepts a string as input,
+  which is parsed and transformed with xDSL.
+  [(#8587)](https://github.com/PennyLaneAI/pennylane/pull/8587)
+
 <h3>Documentation 📝</h3>
 
 * The documentation of ``qml.transforms.rz_phase_gradient`` has been updated with respect to the
