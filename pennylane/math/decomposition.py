@@ -19,7 +19,6 @@ from functools import lru_cache, partial
 import numpy as np
 
 from pennylane import math
-from pennylane.math import is_abstract
 
 has_jax = True
 try:
@@ -686,7 +685,7 @@ def givens_decomposition(unitary, is_real=False):
     interface = math.get_deep_interface(unitary)
     unitary_mat = math.copy(unitary) if interface == "jax" else math.toarray(unitary).copy()
 
-    if not is_abstract(unitary_mat) and math.is_real_obj_or_close(unitary_mat) != is_real:
+    if not math.is_abstract(unitary_mat) and math.is_real_obj_or_close(unitary_mat) != is_real:
         raise ValueError(
             "The value of is_real passed to givens_decomposition does not match the unitary matrix provided."
         )
@@ -711,7 +710,7 @@ def givens_decomposition(unitary, is_real=False):
                 unitary_mat, grot_mat = _left_givens(indices, unitary_mat, j, is_real)
                 left_givens.append((grot_mat, indices))
 
-    if interface == "jax" and is_abstract(is_real):
+    if interface == "jax" and math.is_abstract(is_real):
         unitary_mat, all_givens = jax.lax.cond(
             is_real, _absorb_phases_so, _commute_phases_u, left_givens, right_givens, unitary_mat
         )
