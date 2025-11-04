@@ -78,6 +78,8 @@ class SymbolicOp(Operator):
         self._id = id
         self._pauli_rep = None
         self.queue()
+        self._wires = base.wires
+        self.__queue_category = base._queue_category  # pylint: disable=protected-access
 
     @property
     def batch_size(self):
@@ -101,11 +103,6 @@ class SymbolicOp(Operator):
     def num_params(self):
         return self.base.num_params
 
-    @property
-    @handle_recursion_error
-    def wires(self):
-        return self.base.wires
-
     # pylint:disable = missing-function-docstring
     @property
     @handle_recursion_error
@@ -128,7 +125,7 @@ class SymbolicOp(Operator):
 
     @property
     def _queue_category(self):
-        return self.base._queue_category  # pylint: disable=protected-access
+        return self.__queue_category  # pylint: disable=protected-access
 
     def queue(self, context=QueuingManager):
         context.remove(self.base)
@@ -152,7 +149,9 @@ class SymbolicOp(Operator):
     @handle_recursion_error
     def map_wires(self, wire_map: dict):
         new_op = copy(self)
-        new_op.hyperparameters["base"] = self.base.map_wires(wire_map=wire_map)
+        new_base = self.base.map_wires(wire_map=wire_map)
+        new_op.hyperparameters["base"] = new_base
+        new_op._wires = new_base.wires  # pylint:disable=protected-access
         if (p_rep := new_op.pauli_rep) is not None:
             new_op._pauli_rep = p_rep.map_wires(wire_map)  # pylint:disable=protected-access
         return new_op
