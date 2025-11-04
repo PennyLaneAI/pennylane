@@ -118,7 +118,8 @@ add_module_names = False
 # built documents.
 
 import pennylane
-from pennylane.compiler import python_compiler
+
+# from pennylane.compiler import python_compiler
 
 pennylane.Hamiltonian = pennylane.ops.op_math.linear_combination.LinearCombination
 
