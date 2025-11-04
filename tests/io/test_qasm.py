@@ -745,7 +745,7 @@ class TestQNodeQasmIntegrationTests:
                     include "qelib1.inc";
                     qreg q[1];
                     creg c[1];
-                    creg mcms[1]
+                    creg mcms[1];
                     measure q[0] -> mcms[0];
                     if(mcms[0]==1) rx({p}) q[0];
                     measure q[0] -> c[0];
