@@ -20,9 +20,10 @@ from collections import defaultdict
 from itertools import product
 
 import numpy as np
+from pennylane.control_flow import for_loop
 
 from pennylane import math
-from pennylane.decomposition import resource_rep
+from pennylane.decomposition import resource_rep, register_resources, add_decomps
 from pennylane.operation import Operation
 from pennylane.templates.embeddings import BasisEmbedding
 from pennylane.wires import Wires
@@ -354,3 +355,39 @@ def _kupccgsd_resources(num_wires, k, d_wires, s_wires):
 
         for s_wires_ in s_wires:
             resources[resource_rep(FermionicSingleExcitation, num_wires=len(s_wires_))] += 1
+
+
+@register_resources(_kupccgsd_resources)
+def _kupccgsd_decomposition(
+    weights,
+    wires,
+    s_wires,
+    d_wires,
+    k,
+    init_state,
+):  # pylint: disable=too-many-arguments, arguments-differ
+    BasisEmbedding(init_state, wires=wires)
+
+    @for_loop(k)
+    def layer_loop(layer):
+
+        @for_loop(len(d_wires))
+        def double_loop(i):
+            (w1, w2) = d_wires[i]
+            FermionicDoubleExcitation(
+                weights[layer][len(s_wires) + i], wires1=w1, wires2=w2
+            )
+
+        double_loop()  # pylint: disable=no-value-for-parameter
+
+        @for_loop(len(s_wires))
+        def single_loop(j):
+            s_wires_ = s_wires[j]
+            FermionicSingleExcitation(weights[layer][j], wires=s_wires_)
+
+        single_loop()  # pylint: disable=no-value-for-parameter
+
+    layer_loop()  # pylint: disable=no-value-for-parameter
+
+
+add_decomps(kUpCCGSD, _kupccgsd_decomposition)
