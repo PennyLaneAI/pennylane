@@ -157,12 +157,14 @@ def register_resources(
             to their number of occurrences therein. If a function is provided instead of a static
             dictionary, a dictionary must be returned from the function. For more information,
             consult the "Quantum Functions as Decomposition Rules" section below.
+        qfunc (Callable): the quantum function that implements the decomposition. If ``None``,
+            returns a decorator for acting on a function.
+
+    Keyword Args:
         work_wires (dict or Callable): a dictionary declaring the number of work wires of each type
             required to perform this decomposition. Accepted work wire types include ``"zeroed"``,
             ``"borrowed"``, ``"burnable"``, and ``"garbage"``. For more information, consult the
             "Dynamic Allocation of Work Wires" section below.
-        qfunc (Callable): the quantum function that implements the decomposition. If ``None``,
-            returns a decorator for acting on a function.
         exact (bool): whether the resources are computed exactly (``True``, default) or
             estimated heuristically (``False``). This information is only relevant for testing
             and validation purposes.
@@ -330,12 +332,14 @@ def register_resources(
           @qml.register_condition(lambda num_control_wires, **_: num_control_wires > 1)
           @qml.register_resources(ops=_ops_fn, work_wires={"zeroed": 1})
           def _controlled_rot_decomp(*params, wires, **_):
-              with allocate(1, require_zeros=True, restored=True) as work_wires:
+              with allocate(1, state="zero", restored=True) as work_wires:
                   qml.ctrl(qml.X(work_wires[0]), control=wires[:-1])
                   qml.CRot(*params, wires=[work_wires[0], wires[-1]])
                   qml.ctrl(qml.X(work_wires[0]), control=wires[:-1])
 
-          @partial(qml.transforms.decompose, fixed_decomps={"C(Rot)": _controlled_rot_decomp})
+          decomps = {"C(Rot)": _controlled_rot_decomp}
+
+          @partial(qml.transforms.decompose, fixed_decomps=decomps, max_work_wires=1)
           @qml.qnode(qml.device("default.qubit"))
           def circuit():
               qml.ctrl(qml.Rot(0.1, 0.2, 0.3, wires=3), control=[0, 1, 2])

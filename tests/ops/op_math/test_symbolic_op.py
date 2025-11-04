@@ -150,11 +150,11 @@ class TestProperties:
         """Test that symbolic op is hermitian if the base is hermitian."""
 
         class DummyOp(Operator):
-            is_hermitian = is_herm
+            is_verified_hermitian = is_herm
 
         base = DummyOp("b")
         op = SymbolicOp(base)
-        assert op.is_hermitian == is_herm
+        assert op.is_verified_hermitian == is_herm
 
     @pytest.mark.parametrize("queue_cat", ("_ops", None))
     def test_queuecateory(self, queue_cat):
@@ -189,6 +189,12 @@ class TestProperties:
         base = Operator("a")
         op = SymbolicOp(base)
         assert op.pauli_rep is None
+
+    def test_raise_error_with_mcm_input(self):
+        """Test that symbolic ops of mid-circuit measurements are not supported."""
+        mcm = qml.ops.MidMeasure(0)
+        with pytest.raises(ValueError, match="Symbolic operators of mid-circuit"):
+            _ = SymbolicOp(mcm)
 
 
 class TestQueuing:

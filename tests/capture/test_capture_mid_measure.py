@@ -17,7 +17,7 @@
 import pytest
 
 import pennylane as qml
-from pennylane.measurements.mid_measure import MeasurementValue, MidMeasureMP
+from pennylane.ops.mid_measure import MeasurementValue, MidMeasure
 
 jax = pytest.importorskip("jax")
 import jax.numpy as jnp
@@ -40,7 +40,7 @@ class TestMidMeasureUnit:
 
         assert len(q) == 1
         mp = list(q.keys())[0].obj
-        assert isinstance(mp, MidMeasureMP)
+        assert isinstance(mp, MidMeasure)
         assert mp.reset == reset
         assert mp.postselect == postselect
         assert isinstance(m, MeasurementValue)
@@ -313,9 +313,6 @@ class TestMidMeasureExecute:
     """System-level tests for executing circuits with mid-circuit measurements with program
     capture enabled."""
 
-    # NOTE: this test has an estimated fail rate of around 20%~30%
-    # FIXME: [sc-95723]
-    @pytest.mark.local_salt(11)
     @pytest.mark.parametrize("reset", [True, False])
     @pytest.mark.parametrize("postselect", [None, 0, 1])
     @pytest.mark.parametrize("phi", jnp.arange(1.0, 3, 1.5))
@@ -339,24 +336,27 @@ class TestMidMeasureExecute:
             qml.capture.disable()
             expected = f(phi)
 
-            if mp_fn is qml.expval:
-                assert qml.math.allclose(res, expected, atol=1 / qml.math.sqrt(shots), rtol=0.1)
-            elif mp_fn is qml.var:
-                assert qml.math.allclose(res, expected, atol=1 / qml.math.sqrt(shots), rtol=0.1)
-            elif mp_fn is qml.probs:
-                assert qml.math.allclose(res, expected, atol=1 / qml.math.sqrt(shots), rtol=0.1)
-            else:
-                # mp_fn is qml.sample
+            if mp_fn is qml.sample:
                 ones_count = jnp.sum(res == 1)
                 minus_ones_count = jnp.sum(res == -1)
-                theoretical_ones_count = shots * (qml.math.cos(phi / 2) ** 2)
-                theoretical_minus_ones_count = shots * (qml.math.sin(phi / 2) ** 2)
                 if reset:
                     # either all ones or all minus ones
                     assert ones_count == 0 or minus_ones_count == 0
                 else:
-                    assert qml.math.allclose(ones_count, theoretical_ones_count, atol=5)
-                    assert qml.math.allclose(minus_ones_count, theoretical_minus_ones_count, atol=5)
+                    sample_expected_avg = 1.0 * (ones_count / shots) + (-1.0) * (
+                        minus_ones_count / shots
+                    )
+                    # Check the sample average instead of individual counts
+                    # For eigenvalues {+1, -1}, the sample average should be p_plus - p_minus
+                    # with std = 2*sqrt(p_plus*p_minus/shots)
+                    p_plus = qml.math.cos(phi / 2) ** 2
+                    p_minus = 1 - p_plus
+                    expected_avg = p_plus - p_minus
+                    std_sample_avg = qml.math.sqrt(p_plus * p_minus / shots)
+                    atol = 3 * std_sample_avg
+                    assert qml.math.allclose(sample_expected_avg, expected_avg, atol=atol, rtol=0)
+            else:  # qml.expval, qml.var, qml.probs
+                assert qml.math.allclose(res, expected, atol=1 / qml.math.sqrt(shots), rtol=0.1)
         else:
             assert compare_with_capture_disabled(f, phi)
 

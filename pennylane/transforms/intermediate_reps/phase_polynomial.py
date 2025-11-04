@@ -25,46 +25,53 @@ from pennylane.typing import PostprocessingFn, TensorLike
 
 @partial(transform, is_informative=True)
 def phase_polynomial(
-    circ: QuantumScript, wire_order: Sequence = None
+    circ: QuantumScript, wire_order: Sequence | None = None
 ) -> tuple[tuple[TensorLike, TensorLike, TensorLike], PostprocessingFn]:
     r"""
-    `Phase polynomial intermediate representation <https://pennylane.ai/compilation/phase-polynomial-intermediate-representation>`__ for circuits consisting of :class:`~.CNOT` and :class:`~.RZ` gates.
+    Compute the `Phase polynomial intermediate representation <https://pennylane.ai/compilation/phase-polynomial-intermediate-representation>`__
+    for circuits consisting of :class:`~.CNOT` and :class:`~.RZ` gates.
 
-    For a given ciruit, it produces the `parity matrix <https://pennylane.ai/compilation/parity-matrix-intermediate-representation>`__, the `parity table <https://pennylane.ai/compilation/parity-table>`__ and the associated angles, which make up the phase polynomial intermediate representation.
+    For a given ciruit, it produces the `parity matrix <https://pennylane.ai/compilation/parity-matrix-intermediate-representation>`__,
+    the `parity table <https://pennylane.ai/compilation/parity-table>`__ and the associated angles,
+    which make up the phase polynomial intermediate representation.
 
     Args:
-        circ (QNode or QuantumScript or Callable): Quantum circuit containing only CNOT and RZ gates.
-        wire_order (Iterable): ``wire_order`` indicating how rows and columns should be ordered. If ``None`` is provided, we take the wires of the input circuit (``tape.wires``).
+        circ (QNode or QuantumScript or Callable): Quantum circuit containing only ``CNOT`` and ``RZ`` gates.
+        wire_order (Iterable): Indicates how rows and columns should be ordered. If ``None`` is provided, uses the wires of the input circuit (``tape.wires``).
 
     Returns:
-        tuple(TensorLike, TensorLike, TensorLike): A tuple consisting of the :func:`~parity_matrix`, parity table and corresponding angles for each parity.
+        tuple(TensorLike, TensorLike, TensorLike):
+            A tuple consisting of the :func:`~parity_matrix`, parity table and corresponding angles for each parity.
             In the case of inputting a callable function, a new callable with the same call signature is returned (see :func:`pennylane.transform`).
 
     **Example**
 
     We look at the circuit in Figure 1 in `arXiv:2104.00934 <https://arxiv.org/abs/2104.00934>`__.
 
-    >>> import pennylane as qml
-    >>> tape = qml.tape.QuantumScript([
-    ...     qml.CNOT((1, 0)),
-    ...     qml.RZ(1, 0),
-    ...     qml.CNOT((2, 0)),
-    ...     qml.RZ(2, 0),
-    ...     qml.CNOT((0, 1)),
-    ...     qml.CNOT((3, 1)),
-    ...     qml.RZ(3, 1)
-    ... ])
-    >>> print(qml.drawer.tape_text(tape, decimals=0, wire_order=range(4)))
-    0: ─╭X──RZ(1)─╭X──RZ(2)─╭●───────────┤
-    1: ─╰●────────│─────────╰X─╭X──RZ(3)─┤
-    2: ───────────╰●───────────│─────────┤
-    3: ────────────────────────╰●────────┤
+    .. code-block: python
 
-    The phase polynomial representation consisting of the parity matrix, parity table and associated
-    angles are computed by ``phase_polynomial``.
+        import pennylane as qml
+
+        def circuit():
+            qml.CNOT((1, 0))
+            qml.RZ(1, 0)
+            qml.CNOT((2, 0))
+            qml.RZ(2, 0)
+            qml.CNOT((0, 1))
+            qml.CNOT((3, 1))
+            qml.RZ(3, 1)
+
+    >>> print(qml.draw(circuit)())
+    0: ─╭X──RZ(1.00)─╭X──RZ(2.00)─╭●──────────────┤
+    1: ─╰●───────────│────────────╰X─╭X──RZ(3.00)─┤
+    2: ──────────────╰●──────────────│────────────┤
+    3: ──────────────────────────────╰●───────────┤
+
+    The phase polynomial representation consisting of the parity matrix, parity table and
+    associated angles are computed by ``phase_polynomial``.
 
     >>> from pennylane.transforms import phase_polynomial
-    >>> pmat, ptab, angles = phase_polynomial(tape, wire_order=range(4))
+    >>> pmat, ptab, angles = phase_polynomial(circuit, wire_order=range(4))()
     >>> pmat
     array([[1, 1, 1, 0],
            [1, 0, 1, 1],
@@ -93,6 +100,7 @@ def phase_polynomial(
                 return basis_state.state_vector().reshape(-1)
 
             input_wf = comp_basis_to_wf(input)
+            tape = qml.tape.make_qscript(circuit)()
             output_wf = qml.matrix(tape, wire_order=range(4)) @ input_wf
 
         The output wavefunction is given by :math:`e^{2i} |1 1 1 1\rangle`, which we can confirm:
@@ -185,7 +193,6 @@ def phase_polynomial(
         angles = []
         i = 0
         for op in circ.operations:
-
             if op.name == "CNOT":
                 control, target = op.wires
                 parity_matrix[wire_map[target]] = (

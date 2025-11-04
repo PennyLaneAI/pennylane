@@ -118,7 +118,7 @@ class TestSnapshotTape:
         with pytest.raises(
             ValueError, match="Mid-circuit measurements can not be used in snapshots"
         ):
-            qml.Snapshot(measurement=qml.measurements.MidMeasureMP(1))
+            qml.Snapshot(measurement=qml.ops.MidMeasure(1))
 
     def test_snapshot_fails_with_non_str_tags(self):
         with pytest.raises(ValueError, match="tags can only be of type 'str'"):
@@ -740,7 +740,7 @@ class TestSnapshotUnsupportedQNode:
         # Make sure shots are overridden correctly
         with pytest.warns(
             PennyLaneDeprecationWarning,
-            match="'shots' specified on call to a QNode is deprecated",
+            match="Specifying 'shots' when executing a QNode is deprecated",
         ):
             result = circuit(shots=200)
         finite_shot_result = result[0]

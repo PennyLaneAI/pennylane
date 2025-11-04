@@ -14,6 +14,7 @@
 """
 This module contains the QNode class and qnode decorator.
 """
+
 from __future__ import annotations
 
 import copy
@@ -31,7 +32,8 @@ from pennylane import math, pytrees
 from pennylane.exceptions import PennyLaneDeprecationWarning, QuantumFunctionError
 from pennylane.logging import debug_logger
 from pennylane.math import Interface
-from pennylane.measurements import MidMeasureMP, Shots, ShotsLike
+from pennylane.measurements import Shots, ShotsLike
+from pennylane.ops import MidMeasure
 from pennylane.queuing import AnnotatedQueue
 from pennylane.tape import QuantumScript
 from pennylane.transforms.core import TransformDispatcher, TransformProgram
@@ -97,7 +99,6 @@ def _make_execution_config(
 
 
 def _to_qfunc_output_type(results: Result, qfunc_output, has_partitioned_shots: bool) -> Result:
-
     if has_partitioned_shots:
         return tuple(_to_qfunc_output_type(r, qfunc_output, False) for r in results)
 
@@ -157,7 +158,7 @@ def _validate_qfunc_output(qfunc_output, measurements) -> None:
             "or a nonempty sequence of measurements."
         )
 
-    terminal_measurements = [m for m in measurements if not isinstance(m, MidMeasureMP)]
+    terminal_measurements = [m for m in measurements if not isinstance(m, MidMeasure)]
 
     if any(
         ret is not m for ret, m in zip(measurement_processes, terminal_measurements, strict=True)
@@ -671,24 +672,6 @@ class QNode:
         """The transform program used by the QNode."""
         return self._transform_program
 
-    @debug_logger
-    def add_transform(self, transform_container: TransformContainer):
-        """Add a transform (container) to the transform program.
-
-        .. warning::
-
-            This method is deprecated and will be removed in v0.44. Instead, please use :meth:`~.TransformProgram.push_back` on
-            the ``QNode.transform_program`` property to add transforms to the transform program.
-
-        .. warning:: This is a developer facing feature and is called when a transform is applied on a QNode.
-        """
-        warnings.warn(
-            "The `qml.QNode.add_transform` method is deprecated and will be removed in v0.44. "
-            "Instead, please use `QNode.transform_program.push_back(transform_container=transform_container)`.",
-            PennyLaneDeprecationWarning,
-        )
-        self._transform_program.push_back(transform_container=transform_container)
-
     def update(self, **kwargs) -> QNode:
         """Returns a new QNode instance but with updated settings (e.g., a different `diff_method`). Any settings not specified will retain their original value.
 
@@ -815,7 +798,8 @@ class QNode:
         if "shots" in kwargs:
             # NOTE: at removal, remember to remove the userwarning below as well
             warnings.warn(
-                "'shots' specified on call to a QNode is deprecated and will be removed in v0.44. Use qml.set_shots instead.",
+                "Specifying 'shots' when executing a QNode is deprecated and will be removed in "
+                "v0.44. Please set shots on QNode initialization, or use qml.set_shots instead.",
                 PennyLaneDeprecationWarning,
                 stacklevel=2,
             )
@@ -858,7 +842,6 @@ class QNode:
         return tape
 
     def _impl_call(self, *args, **kwargs) -> Result:
-
         # construct the tape
         tape = self.construct(args, kwargs)
 

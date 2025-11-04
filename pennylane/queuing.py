@@ -431,12 +431,12 @@ class AnnotatedQueue(OrderedDict):
         return super().__contains__(key)
 
 
-def apply(op, context=QueuingManager):
+def apply(op, context: type[QueuingManager] | AnnotatedQueue = QueuingManager):
     """Apply an instantiated operator or measurement to a queuing context.
 
     Args:
         op (.Operator or .MeasurementProcess): the operator or measurement to apply/queue
-        context (.QueuingManager): The queuing context to queue the operator to.
+        context (type[.QueuingManager] | AnnotatedQueue): The queuing context to queue the operator to.
             Note that if no context is specified, the operator is
             applied to the currently active queuing context.
     Returns:
@@ -444,8 +444,8 @@ def apply(op, context=QueuingManager):
 
     **Example**
 
-    In PennyLane, **operations and measurements are 'queued' or added to a circuit
-    when they are instantiated**.
+    In PennyLane, operations and measurements are 'queued' or added to a circuit
+    when they are instantiated.
 
     The ``apply`` function can be used to add operations that might have
     already been instantiated elsewhere to the QNode:
@@ -518,35 +518,6 @@ def apply(op, context=QueuingManager):
         By default, ``apply`` will queue operators to the currently
         active queuing context.
 
-        When working with low-level queuing contexts such as quantum tapes,
-        the desired context to queue the operation to can be explicitly
-        passed:
-
-        .. code-block:: python
-
-            with qml.tape.QuantumTape() as tape1:
-                qml.Hadamard(wires=1)
-
-                with qml.tape.QuantumTape() as tape2:
-                    # Due to the nesting behaviour of queuing contexts,
-                    # tape2 will be queued to tape1.
-
-                    # The following PauliX operation will be queued
-                    # to the active queuing context, tape2, during instantiation.
-                    op1 = qml.X(0)
-
-                    # We can use qml.apply to apply the same operation to tape1
-                    # without leaving the tape2 context.
-                    qml.apply(op1, context=tape1)
-
-                    qml.RZ(0.2, wires=0)
-
-                qml.CNOT(wires=[0, 1])
-
-        >>> tape1.operations
-        [H(1), <QuantumTape: wires=[0], params=1>, X(0), CNOT(wires=[0, 1])]
-        >>> tape2.operations
-        [X(0), RZ(0.2, wires=[0])]
     """
     if not QueuingManager.recording():
         raise RuntimeError("No queuing context available to append operation to.")

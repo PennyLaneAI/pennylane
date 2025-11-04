@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit and integration tests for the transform dispatcher."""
+
 import inspect
 from collections.abc import Callable, Sequence
 from functools import partial
@@ -262,14 +263,12 @@ class TestTransformContainer:
 
 
 class TestTransformDispatcherExtension:
-
     @pytest.mark.parametrize("explicit_type", (True, False))
     def test_generic_register(self, explicit_type):
         """Test that generic_register can register behavior for a new object."""
 
         # pylint: disable=too-few-public-methods
         class Subroutine:
-
             def __init__(self, ops):
                 self.ops = ops
 
@@ -738,7 +737,6 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         """Test a device transform."""
 
         class DummyDev(qml.devices.Device):
-
             # pylint: disable=unused-argument
             def preprocess_transforms(self, execution_config=None):
                 prog = qml.transforms.core.TransformProgram()
@@ -788,8 +786,10 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         assert new_dev.original_device is device
         assert repr(new_dev).startswith("Transformed Device")
 
-        program = device.preprocess_transforms()
-        new_program = new_dev.preprocess_transforms()
+        config = device.setup_execution_config()
+        program = device.preprocess_transforms(config)
+        config = new_dev.setup_execution_config()
+        new_program = new_dev.preprocess_transforms(config)
 
         assert isinstance(program, qml.transforms.core.TransformProgram)
         assert isinstance(new_program, qml.transforms.core.TransformProgram)

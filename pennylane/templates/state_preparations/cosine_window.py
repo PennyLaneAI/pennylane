@@ -58,8 +58,9 @@ class CosineWindow(StatePrepBase):
     ... def example_circuit():
     ...     qml.CosineWindow(wires=range(2))
     ...     return qml.probs()
-    >>> print(example_circuit())
-    [1.87469973e-33 2.50000000e-01 5.00000000e-01 2.50000000e-01]
+    >>> print(example_circuit()) # doctest: +SKIP
+    [1.8747e-33 2.5000e-01 5.0000e-01 2.5000e-01]
+
     """
 
     resource_keys = {"num_wires"}
