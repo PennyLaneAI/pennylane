@@ -14,9 +14,6 @@
 r"""
 Contains the hardware-efficient ParticleConservingU1 template.
 """
-from collections import defaultdict
-from functools import reduce
-
 import numpy as np
 
 from pennylane import math
