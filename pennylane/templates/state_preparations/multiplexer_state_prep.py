@@ -94,7 +94,7 @@ class MultiplexerStatePreparation(Operation):
         }
 
     @staticmethod
-    def compute_decomposition(state_vector, wires):
+    def compute_decomposition(state_vector, wires):  # pylint: disable=arguments-differ
         with qml.queuing.AnnotatedQueue() as q:
             _multiplexer_state_prep_decomposition(state_vector, wires)
 
@@ -106,7 +106,7 @@ class MultiplexerStatePreparation(Operation):
 
 
 def _multiplexer_state_prep_decomposition_resources(num_wires) -> dict:
-    resources = dict()
+    resources = {}
     for i in range(num_wires):
         resources[qml.resource_rep(qml.SelectPauliRot, num_wires=i + 1, rot_axis="Y")] = 1
 
