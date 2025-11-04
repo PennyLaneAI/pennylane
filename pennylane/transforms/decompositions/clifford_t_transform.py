@@ -34,6 +34,10 @@ from pennylane.transforms.optimization import (
 from pennylane.transforms.optimization.optimization_utils import _fuse_global_phases, find_next_gate
 from pennylane.typing import PostprocessingFn
 
+IS_QJIT = qml.compiler.active_compiler() == "catalyst"
+if IS_QJIT:
+    from catalyst.api_extensions.control_flow import ForLoop, Cond
+
 # Single qubits Clifford+T gates in PL
 _CLIFFORD_T_ONE_GATES = [
     qml.Identity,
@@ -285,8 +289,9 @@ def _one_qubit_decompose(op):
     d_ops = []
     for sd_op in sd_ops:
         d_ops.extend(_rot_decompose(sd_op) if sd_op.num_params else [sd_op])
+    d_ops.append(gphase_op)
 
-    return d_ops, gphase_op
+    return d_ops
 
 
 def _two_qubit_decompose(op):
@@ -306,23 +311,42 @@ def _two_qubit_decompose(op):
     return d_ops
 
 
-def _merge_param_gates(operations, merge_ops=None):
-    """Merge the provided parametrized gates on the same wires that are adjacent to each other"""
+def _reconstruct_decomposed_region(region, decomposed_region):
+    """Reconstruct a decomposed region with the new operations."""
+    
+    if not region.quantum_tape:
+        raise ValueError("Region does not have a quantum tape")
+    
+    print("region.quantum_tape.operations BEFORE reconstruction", region.quantum_tape.operations)
+    region.quantum_tape = region.quantum_tape.copy(operations=decomposed_region)
+    print("region.quantum_tape.operations AFTER reconstruction", region.quantum_tape.operations)
 
+    return region
+
+
+def _merge_param_gates(operations, merge_ops=None):
+    """Merge the provided parametrized gates on the same wires that are adjacent to each other.    
+    This function handles control flow operations recursively.
+    """
     copied_ops = operations.copy()
-    merged_ops, number_ops = [], 0
+    merged_ops = []
 
     while len(copied_ops) > 0:
         curr_gate = copied_ops.pop(0)
+    
+        if IS_QJIT and isinstance(curr_gate, (ForLoop, Cond)):
+            for region in curr_gate.regions:
+                if region.quantum_tape:
+                    region_ops = _merge_param_gates(region.quantum_tape.operations, merge_ops)
+                    region.quantum_tape = region.quantum_tape.copy(operations=region_ops)
+            merged_ops.append(curr_gate)
+            continue
 
         # If gate is not to be merged, let it go
         if merge_ops is not None and curr_gate.name not in merge_ops:
             merged_ops.append(curr_gate)
             continue
 
-        # If gate is in the merge_ops, update counter
-        if curr_gate.name in merge_ops:
-            number_ops += 1
 
         # Find the next gate that acts on the same wires
         next_gate_idx = find_next_gate(curr_gate.wires, copied_ops)
@@ -347,7 +371,69 @@ def _merge_param_gates(operations, merge_ops=None):
         # Replace the current gate, add it to merged list and pop it from orginal one
         merged_ops.append(curr_gate.__class__(*cumulative_angles, wires=curr_gate.wires))
 
-    return merged_ops, number_ops
+    return merged_ops
+
+
+def _decompose_operations(operations, basis_set):
+    """Decompose operations into Clifford+T basis components.
+    
+    Args:
+        operations: List of operations to decompose
+        basis_set: Set of allowed basis operations
+        
+    Returns:
+        decomposed_ops - decomposed operations and global phase operations
+    """    
+    decomp_ops = []
+
+    for op in operations:
+        # Check whether operation is to be skipped
+        if isinstance(op, _SKIP_OP_TYPES + _CATALYST_SKIP_OP_TYPES):
+            decomp_ops.append(op)
+
+        # Check whether the operation is a global phase
+        elif isinstance(op, qml.GlobalPhase):
+            decomp_ops.append(op)
+
+        # Check whether the operation is a Clifford or a T-gate
+        elif op.name in basis_set and check_clifford_t(op):
+            if op.num_params:
+                decomp_ops.extend(_rot_decompose(op))
+            else:
+                decomp_ops.append(op)
+
+        # Decompose and then iteratively go deeper via DFS
+        else:
+            # Single qubit unitary decomposition with ZXZ rotations
+            if op.num_wires == 1:
+                if op.name in basis_set:
+                    d_ops = _rot_decompose(op)
+                else:
+                    d_ops = _one_qubit_decompose(op)
+                decomp_ops.extend(d_ops)
+
+            # Two qubit unitary decomposition with SU(4) rotations
+            elif op.num_wires == 2:
+                d_ops = _two_qubit_decompose(op)
+                decomp_ops.extend(d_ops)
+
+            # Handle structured control flow recursively
+            else:
+                if IS_QJIT and isinstance(op, (ForLoop, Cond)):
+                    # Recursively decompose operations within each region
+                    # We do in-place modification of the regions in the control flow operation.
+                    for region in op.regions:
+                        if region.quantum_tape:
+                            nested_decomp_ops = _decompose_operations(
+                                region.quantum_tape.operations, basis_set
+                            )
+                            _reconstruct_decomposed_region(region, nested_decomp_ops)
+                    decomp_ops.append(op)
+                else:
+                    raise ValueError(
+                        f"Cannot unroll {op} into the Clifford+T basis as no rule exists for its decomposition"
+                    )
+    return decomp_ops
 
 
 # NOTE: The cache size is set to 2000, which is a reasonable size for the mapping
@@ -436,7 +522,7 @@ class _CachedCallable:
 def clifford_t_decomposition(
     tape: QuantumScript,
     epsilon=1e-4,
-    method="sk",
+    method="gridsynth",
     cache_size=1000,
     cache_eps_rtol=None,
     **method_kwargs,
@@ -458,7 +544,7 @@ def clifford_t_decomposition(
 
     Args:
         tape (QNode or QuantumTape or Callable): The quantum circuit to be decomposed.
-        epsilon (float): The maximum permissible operator norm error of the complete circuit decomposition. Defaults to ``0.0001``.
+        epsilon (float): The maximum permissible error of each RZ decomposition. Defaults to ``0.0001``.
         method (str): Method to be used for Clifford+T decomposition. Default value is ``"sk"`` for Solovay-Kitaev. Alternatively,
             the Ross-Selinger algorithm can be used with ``"gridsynth"``.
         cache_size (int): The size of the cache built for the decomposition function based on the angle. Defaults to ``1000``.
@@ -521,62 +607,18 @@ def clifford_t_decomposition(
         if not _CATALYST_SKIP_OP_TYPES:
             _add_catalyst_skip_op_types()
 
-        # Now iterate over the expanded tape operations
-        decomp_ops, gphase_ops = [], []
-        for op in compiled_tape.operations:
-            # Check whether operation is to be skipped
-            if isinstance(op, _SKIP_OP_TYPES + _CATALYST_SKIP_OP_TYPES):
-                decomp_ops.append(op)
-
-            # Check whether the operation is a global phase
-            elif isinstance(op, qml.GlobalPhase):
-                gphase_ops.append(op)
-
-            # Check whether the operation is a Clifford or a T-gate
-            elif op.name in basis_set and check_clifford_t(op):
-                if op.num_params:
-                    decomp_ops.extend(_rot_decompose(op))
-                else:
-                    decomp_ops.append(op)
-
-            # Decompose and then iteratively go deeper via DFS
-            else:
-                # Single qubit unitary decomposition with ZXZ rotations
-                if op.num_wires == 1:
-                    if op.name in basis_set:
-                        d_ops = _rot_decompose(op)
-                    else:
-                        d_ops, g_op = _one_qubit_decompose(op)
-                        gphase_ops.append(g_op)
-                    decomp_ops.extend(d_ops)
-
-                # Two qubit unitary decomposition with SU(4) rotations
-                elif op.num_wires == 2:
-                    d_ops = _two_qubit_decompose(op)
-                    decomp_ops.extend(d_ops)
-
-                # If we don't know how to decompose the operation
-                else:
-                    raise ValueError(
-                        f"Cannot unroll {op} into the Clifford+T basis as no rule exists for its decomposition"
-                    )
+        # Decompose all operations using the abstracted function
+        decomp_ops = _decompose_operations(compiled_tape.operations, basis_set)
 
         # Merge RZ rotations together
-        merged_ops, number_ops = _merge_param_gates(decomp_ops, merge_ops=["RZ"])
-
-        # Squeeze global phases into a single global phase
-        new_operations = _fuse_global_phases(merged_ops + gphase_ops)
-
-        # Compute the per-gate epsilon value
-        epsilon /= number_ops or 1
+        new_operations = _merge_param_gates(decomp_ops, merge_ops=["RZ"])
 
         # _CACHED_DECOMPOSE is a global variable that caches the decomposition function,
         # where the implementation of each function should have the following signature:
         # def decompose_fn(op: Operator, epsilon: float, **method_kwargs) -> List[Operator]
         # note: the last operator in the decomposition must be a GlobalPhase
 
-        is_qjit = qml.compiler.active_compiler() == "catalyst"
-        if number_ops > 0 and is_qjit and method == "sk":
+        if IS_QJIT and method == "sk":
             raise RuntimeError(
                 "Solovay-Kitaev decomposition (method='sk') is not supported with QJIT or JAX-JIT. "
                 "Use Ross-Selinger decomposition (method='gridsynth') instead."
@@ -585,45 +627,59 @@ def clifford_t_decomposition(
         # Build the decomposition cache based on the method
         global _CLIFFORD_T_CACHE  # pylint: disable=global-statement
         if _CLIFFORD_T_CACHE is None or not _CLIFFORD_T_CACHE.compatible(
-            method, epsilon, cache_size, cache_eps_rtol, is_qjit, **method_kwargs
+            method, epsilon, cache_size, cache_eps_rtol, IS_QJIT, **method_kwargs
         ):
             _CLIFFORD_T_CACHE = _CachedCallable(
-                method, epsilon, cache_size, is_qjit, **method_kwargs
+                method, epsilon, cache_size, IS_QJIT, **method_kwargs
             )
 
-        decomp_ops = []
-        phase = new_operations.pop().data[0]
-        for op in new_operations:
-            if isinstance(op, qml.RZ):
-                # If simplifies to Identity, skip it
-                if not (op_param := op.simplify().data):
-                    continue
-                wire = op.wires[0] if is_qjit else 0
-                # Decompose the RZ operation with a default wire
-                clifford_ops = _CLIFFORD_T_CACHE.query(qml.RZ(op_param[0], [wire]))
-                op_wire = op.wires[0]
-                # Extract the global phase from the last operation
-                # Map the operations to the original wires
-                if is_qjit:
-                    phase += clifford_ops[-1].data[0]
-                    decomp_ops.extend(clifford_ops[:-1])  # Already mapped
+        phase = new_operations.pop().data[0] # TODO: This is incorrect.Extracting the global phase from the last operation (since this is what decompose_operation returns)
+
+        def decompose_all_rz_operations(operations, phase = phase):
+            decomp_ops = []
+
+            for op in operations:
+                if IS_QJIT and isinstance(op, (ForLoop, Cond)):
+                    for region in op.regions:
+                        if region.quantum_tape:
+                            decomposed_region_ops = decompose_all_rz_operations(region.quantum_tape.operations)
+                            region.quantum_tape = region.quantum_tape.copy(operations=decomposed_region_ops)
+                    decomp_ops.append(op)
+                elif isinstance(op, qml.RZ):
+                    # If simplifies to Identity, skip it
+                    if not (op_param := op.simplify().data):
+                        continue
+                    wire = op.wires[0] if IS_QJIT else 0
+                    # Decompose the RZ operation with a default wire
+                    clifford_ops = _CLIFFORD_T_CACHE.query(qml.RZ(op_param[0], [wire]))
+                    op_wire = op.wires[0]
+                    # Extract the global phase from the last operation
+                    # Map the operations to the original wires
+                    if IS_QJIT:
+                        phase = clifford_ops[-1].data[0]
+                        decomp_ops.extend(clifford_ops[:-1])  # Already mapped
+                        print("IS QJIT, phase, is abstract, allclose", phase, qml.math.is_abstract(phase), qml.math.allclose(phase, 0.0))
+                        if qml.math.is_abstract(phase):
+                            decomp_ops.append(qml.GlobalPhase(phase))
+                    else:
+                        phase = qml.math.convert_like(clifford_ops[-1].data[0], phase)
+                        decomp_ops.extend([_map_wires(cl_op, op_wire) for cl_op in clifford_ops[:-1]])
+                        print("NOT QJIT, phase, is abstract, allclose", phase, qml.math.is_abstract(phase), qml.math.allclose(phase, 0.0))
+                        if not qml.math.allclose(phase, 0.0):
+                            decomp_ops.append(qml.GlobalPhase(phase))
                 else:
-                    phase += qml.math.convert_like(clifford_ops[-1].data[0], phase)
-                    decomp_ops.extend([_map_wires(cl_op, op_wire) for cl_op in clifford_ops[:-1]])
-            else:
-                decomp_ops.append(op)
+                    decomp_ops.append(op)
+            return decomp_ops
 
-        # check if phase is non-zero for non jax-jit cases
-        if qml.math.is_abstract(phase) or not qml.math.allclose(phase, 0.0):
-            decomp_ops.append(qml.GlobalPhase(phase))
-
+        decomp_ops = decompose_all_rz_operations(new_operations)
+    
     # Construct a new tape with the expanded set of operations
     # and then clear `decomp_ops` list to free up the memory
     new_tape = compiled_tape.copy(operations=decomp_ops)
     decomp_ops.clear()
 
     # Perform a final attempt of simplification before return
-    if not is_qjit:
+    if not IS_QJIT:
         # This is skipped for qjit because when qjit is enabled, the circuit may contain
         # higher-level operations such as Cond and ForLoop whose wires attribute does not
         # reflect the wires of all operators within its scope.
