@@ -316,13 +316,13 @@ def xdsl_to_qml_op(op) -> Operator:
 
 
 def xdsl_to_qml_op_type(op) -> str:
-    """Convert an xDSL operation into a PennyLane Operator class.
+    """Convert an xDSL operation into a string representing a PennyLane class.
 
     Args:
         op: The xDSL operation to convert.
 
     Returns:
-        A class representing the PennyLane operator.
+        A string representing the PennyLane operator.
     """
 
     name_map = {
@@ -390,3 +390,54 @@ def xdsl_to_qml_measurement(op, *args, **kwargs) -> MeasurementProcess | Operato
 
         case _:
             raise NotImplementedError(f"Unsupported measurement/observable: {op.name}")
+
+
+def xdsl_to_qml_measurement_type(op, obs_op=None) -> str:
+    """Convert any xDSL measurement/observable operation into a string representing a PennyLane class.
+
+    Args:
+        op: The xDSL measurement/observable operation to convert.
+
+    Returns:
+        A string representing the PennyLane measurement.
+    """
+
+    resolveable_names = (
+        "quantum.state",
+        "quantum.probs",
+        "quantum.sample",
+        "quantum.expval",
+        "quantum.var",
+    )
+
+    if op.name == "quantum.measure":
+        gate_name = "MidMeasure"
+
+    elif op.name == "quantum.compbasis":
+        # Defines a pseudo-observable to represent measurements in the computational basis
+        # Used within e.g. `probs()`
+        gate_name = f"{len(op.qubits)} wires"
+
+    elif op.name == "quantum.hamiltonian":
+        ops_list = [xdsl_to_qml_measurement_type(term.owner) for term in op.terms]
+        gate_name = f"Hamiltonian({', '.join(ops_list)})"
+
+    elif op.name == "quantum.tensor":
+        ops_list = [xdsl_to_qml_measurement_type(operand.owner) for operand in op.operands]
+        gate_name = " @ ".join(ops_list)
+
+    elif op.name == "quantum.namedobs":
+        gate_cls = resolve_gate(op.type.data.value)
+        gate_name = gate_cls.__name__
+
+    elif op.name in resolveable_names:
+        gate_cls = resolve_measurement(op.name)
+        gate_name = gate_cls.__name__
+
+    else:
+        raise NotImplementedError(f"Unsupported measurement/observable: {op.name}")
+
+    if obs_op != None:
+        gate_name = f"{gate_name}({obs_op})"
+
+    return gate_name
