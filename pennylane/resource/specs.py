@@ -107,6 +107,14 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> SpecsDict:  # pr
     import catalyst
     from catalyst.jit import QJIT
 
+    if isinstance(level, int) or level == "all":
+        # TODO: Account for tape transforms
+        return qml.compiler.python_compiler.mlir_specs(qjit, level)(*args, **kwargs)
+
+    # Fall-through to runtime execution for "device" level specs
+    if level != "device":
+        raise NotImplementedError(f"Unsupported level argument '{level}' for QJIT'd code.")
+
     from ..devices import NullQubit
 
     # TODO: Determine if its possible to have batched QJIT code / how to handle it
@@ -120,9 +128,6 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> SpecsDict:  # pr
         original_qnode = qjit.user_function
 
     info = SpecsDict()
-
-    if level != "device":
-        raise NotImplementedError(f"Unsupported level argument '{level}' for QJIT'd code.")
 
     # When running at the device level, execute on null.qubit directly with resource tracking,
     # which will give resource usage information for after all compiler passes have completed
