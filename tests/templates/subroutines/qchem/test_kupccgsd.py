@@ -31,27 +31,33 @@ k_delta_sz_init_state_wires = [
 ]
 
 
-@pytest.mark.jax
-@pytest.mark.parametrize("k, delta_sz, init_state, wires", k_delta_sz_init_state_wires)
-def test_standard_validity(k, delta_sz, init_state, wires):
-    """Test standard validity criteria for kUpCCGSD."""
-    sz = np.array([0.5 if (i % 2 == 0) else -0.5 for i in range(len(wires))])
-    gen_single_terms_wires = [
+def _gen_single_terms_wires(wires, sz, delta_sz):
+    return [
         wires[r : p + 1] if r < p else wires[p : r + 1][::-1]
         for r in range(len(wires))
         for p in range(len(wires))
         if sz[p] - sz[r] == delta_sz and p != r
     ]
 
-    # wires for generalized pair coupled cluser double exictation terms
-    pair_double_terms_wires = [
+
+def _pair_double_terms_wires(wires):
+    return [
         [wires[r : r + 2], wires[p : p + 2]]
         for r in range(0, len(wires) - 1, 2)
         for p in range(0, len(wires) - 1, 2)
         if p != r
     ]
 
-    n_excit_terms = len(gen_single_terms_wires) + len(pair_double_terms_wires)
+
+@pytest.mark.jax
+@pytest.mark.parametrize("k, delta_sz, init_state, wires", k_delta_sz_init_state_wires)
+def test_standard_validity(k, delta_sz, init_state, wires):
+    """Test standard validity criteria for kUpCCGSD."""
+    sz = np.array([0.5 if (i % 2 == 0) else -0.5 for i in range(len(wires))])
+
+    n_excit_terms = len(_gen_single_terms_wires(wires, sz, delta_sz)) + len(
+        _pair_double_terms_wires(wires)
+    )
     weights = np.random.normal(0, 2 * np.pi, (k, n_excit_terms))
 
     op = qml.kUpCCGSD(weights, wires=wires, k=k, delta_sz=delta_sz, init_state=init_state)
@@ -71,20 +77,9 @@ class TestDecomposition:
 
         # wires for generalized single excitation terms
         sz = np.array([0.5 if (i % 2 == 0) else -0.5 for i in range(len(wires))])
-        gen_single_terms_wires = [
-            wires[r : p + 1] if r < p else wires[p : r + 1][::-1]
-            for r in range(len(wires))
-            for p in range(len(wires))
-            if sz[p] - sz[r] == delta_sz and p != r
-        ]
 
-        # wires for generalized pair coupled cluser double exictation terms
-        pair_double_terms_wires = [
-            [wires[r : r + 2], wires[p : p + 2]]
-            for r in range(0, len(wires) - 1, 2)
-            for p in range(0, len(wires) - 1, 2)
-            if p != r
-        ]
+        gen_single_terms_wires = _gen_single_terms_wires(wires, sz, delta_sz)
+        pair_double_terms_wires = _pair_double_terms_wires(wires)
 
         n_excit_terms = len(gen_single_terms_wires) + len(pair_double_terms_wires)
         weights = np.random.normal(0, 2 * np.pi, (k, n_excit_terms))
@@ -353,24 +348,11 @@ class TestDecomposition:
     @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize(("k", "delta_sz", "init_state", "wires"), k_delta_sz_init_state_wires)
     def test_decomposition_new(self, k, delta_sz, init_state, wires):
-        # wires for generalized single excitation terms
         sz = np.array([0.5 if (i % 2 == 0) else -0.5 for i in range(len(wires))])
-        gen_single_terms_wires = [
-            wires[r : p + 1] if r < p else wires[p : r + 1][::-1]
-            for r in range(len(wires))
-            for p in range(len(wires))
-            if sz[p] - sz[r] == delta_sz and p != r
-        ]
 
-        # wires for generalized pair coupled cluster double excitation terms
-        pair_double_terms_wires = [
-            [wires[r : r + 2], wires[p : p + 2]]
-            for r in range(0, len(wires) - 1, 2)
-            for p in range(0, len(wires) - 1, 2)
-            if p != r
-        ]
-
-        n_excit_terms = len(gen_single_terms_wires) + len(pair_double_terms_wires)
+        n_excit_terms = len(_gen_single_terms_wires(wires, sz, delta_sz)) + len(
+            _pair_double_terms_wires(wires)
+        )
         weights = np.random.normal(0, 2 * np.pi, (k, n_excit_terms))
         op = qml.kUpCCGSD(weights, wires=wires, k=k, delta_sz=delta_sz, init_state=init_state)
         for rule in qml.list_decomps(qml.kUpCCGSD):
