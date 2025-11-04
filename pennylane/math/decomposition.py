@@ -686,23 +686,10 @@ def givens_decomposition(unitary, is_real=False):
     interface = math.get_deep_interface(unitary)
     unitary_mat = math.copy(unitary) if interface == "jax" else math.toarray(unitary).copy()
 
-    def raise_user_error():
+    if not is_abstract(unitary_mat) and math.is_real_obj_or_close(unitary_mat) != is_real:
         raise ValueError(
             "The value of is_real passed to givens_decomposition does not match the unitary matrix provided."
         )
-
-    def do_not_raise():
-        pass
-
-    if not is_abstract(unitary_mat):
-        if interface == "jax" and is_abstract(is_real):
-            jax.lax.cond(
-                jnp.logical_not(jnp.equal(math.is_real_obj_or_close(unitary_mat), is_real)),
-                raise_user_error,
-                do_not_raise,
-            )
-        elif math.is_real_obj_or_close(unitary_mat) != is_real:
-            raise_user_error()
 
     shape = math.shape(unitary_mat)
 
