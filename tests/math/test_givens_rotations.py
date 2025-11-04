@@ -249,10 +249,10 @@ def test_givens_matrix_raises(seed):
     random_matrix = unitary_group.rvs(2, random_state=seed)
 
     # should raise
-    with pytest.raises(ValueError, match="The value of is_real passed to givens_decomposition"):
+    with pytest.raises(ValueError, match="The value of is_real=True passed to givens_decomposition"):
         givens_decomposition(complex_unitary_matrix, is_real=True)
 
-    with pytest.raises(ValueError, match="The value of is_real passed to givens_decomposition"):
+    with pytest.raises(ValueError, match="The value of is_real=False passed to givens_decomposition"):
         givens_decomposition(real_unitary_matrix, is_real=False)
 
     # should not raise
