@@ -21,11 +21,13 @@
   [(#8515)](https://github.com/PennyLaneAI/pennylane/pull/8515)
   [(#8516)](https://github.com/PennyLaneAI/pennylane/pull/8516)
   [(#8534)](https://github.com/PennyLaneAI/pennylane/pull/8534)
+  [(#8582)](https://github.com/PennyLaneAI/pennylane/pull/8582)
 
   - :class:`~.QSVT`
   - :class:`~.AmplitudeEmbedding`
   - :class:`~.AllSinglesDoubles`
   - :class:`~.IQPEmbedding`
+  - :class:`~.kUpCCGSD`
 
 * A new `qml.compiler.python_compiler.utils` submodule has been added, containing general-purpose utilities for
   working with xDSL. This includes a function that extracts the concrete value of scalar, constant SSA values.
