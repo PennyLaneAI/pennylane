@@ -22,8 +22,8 @@ from pennylane.capture import pause
 from pennylane.capture.base_interpreter import FlattenedInterpreter
 from pennylane.capture.primitives import adjoint_transform_prim, ctrl_transform_prim, measure_prim
 from pennylane.devices import ExecutionConfig
-from pennylane.measurements import MidMeasureMP, Shots
-from pennylane.ops import adjoint, ctrl
+from pennylane.measurements import Shots
+from pennylane.ops import MidMeasure, adjoint, ctrl
 from pennylane.ops.qubit import Projector
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 
@@ -220,7 +220,7 @@ class DefaultQubitInterpreter(FlattenedInterpreter):
 
 @DefaultQubitInterpreter.register_primitive(measure_prim)
 def _(self, *invals, reset, postselect):
-    mp = MidMeasureMP(invals, reset=reset, postselect=postselect)
+    mp = MidMeasure(invals, reset=reset, postselect=postselect)
     self.key, new_key = jax.random.split(self.key, 2)
     mcms = {}
     self.state = apply_operation(mp, self.state, mid_measurements=mcms, prng_key=new_key)
@@ -231,7 +231,7 @@ def _(self, *invals, reset, postselect):
 
 
 @DefaultQubitInterpreter.register_primitive(adjoint_transform_prim)
-def _(self, *invals, jaxpr, n_consts, lazy=True):
+def _adjoint_transform_prim(self, *invals, jaxpr, n_consts, lazy=True):
     consts = invals[:n_consts]
     args = invals[n_consts:]
     recorder = CollectOpsandMeas()
@@ -251,7 +251,7 @@ def _(self, *invals, jaxpr, n_consts, lazy=True):
 
 # pylint: disable=too-many-arguments
 @DefaultQubitInterpreter.register_primitive(ctrl_transform_prim)
-def _(self, *invals, n_control, jaxpr, control_values, work_wires, n_consts):
+def _ctrl_transform_prim(self, *invals, n_control, jaxpr, control_values, work_wires, n_consts):
     consts = invals[:n_consts]
     control_wires = invals[-n_control:]
     args = invals[n_consts:-n_control]

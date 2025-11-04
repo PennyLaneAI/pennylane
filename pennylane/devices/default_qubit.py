@@ -14,6 +14,7 @@
 """
 The default.qubit device is PennyLane's standard qubit-based device.
 """
+
 from __future__ import annotations
 
 import logging
@@ -33,7 +34,6 @@ from pennylane.measurements import (
     CountsMP,
     ExpectationMP,
     MeasurementProcess,
-    MidMeasureMP,
     SampleMeasurement,
     ShadowExpvalMP,
     Shots,
@@ -41,11 +41,18 @@ from pennylane.measurements import (
     StateMP,
 )
 from pennylane.operation import DecompositionUndefinedError
+from pennylane.ops import MidMeasure
 from pennylane.ops.op_math import Conditional
 from pennylane.tape import QuantumScript, QuantumScriptBatch, QuantumScriptOrBatch
-from pennylane.transforms import broadcast_expand, convert_to_numpy_parameters
+from pennylane.transforms import (
+    broadcast_expand,
+    convert_to_numpy_parameters,
+)
 from pennylane.transforms import decompose as transforms_decompose
-from pennylane.transforms import defer_measurements, dynamic_one_shot
+from pennylane.transforms import (
+    defer_measurements,
+    dynamic_one_shot,
+)
 from pennylane.transforms.core import TransformProgram, transform
 from pennylane.typing import PostprocessingFn, Result, ResultBatch, TensorLike
 
@@ -139,7 +146,7 @@ def stopping_condition(op: Operator, allow_mcms=True) -> bool:
         return constraint(op)
     if op.__class__.__name__[:3] == "Pow" and any(math.requires_grad(d) for d in op.data):
         return False
-    if isinstance(op, MidMeasureMP):
+    if isinstance(op, MidMeasure):
         return allow_mcms
     return op.has_matrix or op.has_sparse_matrix
 
@@ -282,7 +289,7 @@ def adjoint_state_measurements(
 
 def adjoint_ops(op: Operator) -> bool:
     """Specify whether or not an Operator is supported by adjoint differentiation."""
-    return not isinstance(op, (Conditional, MidMeasureMP)) and (
+    return not isinstance(op, (Conditional, MidMeasure)) and (
         op.num_params == 0
         or not any(math.requires_grad(d) for d in op.data)
         or (op.num_params == 1 and op.has_generator)
@@ -743,7 +750,6 @@ class DefaultQubit(Device):
         return replace(config, **updated_values)
 
     def _setup_mcm_config(self, mcm_config: MCMConfig, tape: QuantumScript) -> MCMConfig:
-
         if capture.enabled():
             return self._capture_setup_mcm_config(mcm_config)
 
@@ -759,6 +765,12 @@ class DefaultQubit(Device):
                 f"mcm_method {final_mcm_method} not supported on default.qubit. "
                 f"Supported methods are {supported_methods}"
             )
+
+        if mcm_config.postselect_mode == "fill-shots" and final_mcm_method != "deferred":
+            raise DeviceError(
+                "Using postselect_mode='fill-shots' is only supported with mcm_method='deferred'."
+            )
+
         return replace(mcm_config, mcm_method=final_mcm_method)
 
     def _capture_setup_mcm_config(self, mcm_config):
@@ -808,7 +820,6 @@ class DefaultQubit(Device):
             )
 
         if max_workers is None:
-
             return tuple(
                 _simulate_wrapper(
                     c,

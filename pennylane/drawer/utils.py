@@ -16,8 +16,8 @@ This module contains some useful utility functions for circuit drawing.
 """
 import numpy as np
 
-from pennylane.measurements import MeasurementProcess, MeasurementValue, MidMeasureMP
-from pennylane.ops import Conditional, Controlled
+from pennylane.measurements import MeasurementProcess
+from pennylane.ops import Conditional, Controlled, MeasurementValue, MidMeasure
 
 
 def default_wire_map(tape):
@@ -43,7 +43,7 @@ def default_wire_map(tape):
 
 
 def default_bit_map(tape):
-    """Create a dictionary mapping ``MidMeasureMP``'s to indices corresponding to classical
+    """Create a dictionary mapping ``MidMeasure``'s to indices corresponding to classical
     wires. We only add mid-circuit measurements that are used for classical conditions and for
     collecting statistics to this dictionary.
 
@@ -57,7 +57,7 @@ def default_bit_map(tape):
 
     mcm_idx = 0
     for op in tape:
-        if isinstance(op, MidMeasureMP):
+        if isinstance(op, MidMeasure):
             mcms[op] = mcm_idx
             mcm_idx += 1
 
@@ -177,14 +177,16 @@ def cwire_connections(layers, bit_map):
         they contain the measured quantum wires and the largest quantum wire of conditionally
         applied operations (no entries for terminal statistics of mid-circuit measurements).
 
+    >>> from pennylane.drawer.utils import cwire_connections
+    >>> from pennylane.drawer.drawable_layers import drawable_layers
     >>> with qml.queuing.AnnotatedQueue() as q:
     ...     m0 = qml.measure(0)
     ...     m1 = qml.measure(1)
     ...     qml.cond(m0 & m1, qml.Y)(0)
     ...     qml.cond(m0, qml.S)(3)
     >>> tape = qml.tape.QuantumScript.from_queue(q)
-    >>> layers = drawable_layers(tape)
     >>> bit_map = {m0.measurements[0]: 0, m1.measurements[0]: 1}
+    >>> layers = drawable_layers(tape, bit_map=bit_map)
     >>> new_bit_map, cwire_layers, cwire_wires = cwire_connections(layers, bit_map)
     >>> new_bit_map == bit_map # No reusage happening
     True
@@ -207,7 +209,7 @@ def cwire_connections(layers, bit_map):
 
     for layer_idx, layer in enumerate(layers):
         for op in layer:
-            if isinstance(op, MidMeasureMP) and op in bit_map:
+            if isinstance(op, MidMeasure) and op in bit_map:
                 _meas = [op]
                 con_wire = op.wires[0]
 
@@ -279,7 +281,7 @@ def _try_reusing_cwires(bit_map, connected_layers, connected_wires):
 def transform_deferred_measurements_tape(tape):
     """Helper function to replace MeasurementValues with wires for tapes using
     deferred measurements."""
-    if not any(isinstance(op, MidMeasureMP) for op in tape.operations) and any(
+    if not any(isinstance(op, MidMeasure) for op in tape.operations) and any(
         m.mv is not None for m in tape.measurements
     ):
         new_measurements = []

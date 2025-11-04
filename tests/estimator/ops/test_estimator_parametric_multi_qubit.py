@@ -28,6 +28,16 @@ class TestMultiRZ:
         with pytest.raises(ValueError, match="Expected 4 wires, got 2"):
             qre.MultiRZ(num_wires=4, wires=[0, 1])
 
+    def test_init_no_num_wires(self):
+        """Test that we can instantiate the operator without providing num_wires"""
+        op = qre.MultiRZ(wires=range(3))
+        assert op.resource_params == {"num_wires": 3, "precision": None}
+
+    def test_init_raises_error(self):
+        """Test that an error is raised when wires and num_wires are both not provided"""
+        with pytest.raises(ValueError, match="Must provide atleast one of"):
+            qre.MultiRZ()
+
     @pytest.mark.parametrize("precision", (None, 1e-3))
     @pytest.mark.parametrize("num_wires", range(1, 5))
     def test_resource_params(self, num_wires, precision):
@@ -177,7 +187,7 @@ class TestPauliRot:
 
     expected_h_count = (0, 4, 6, 6, 0)
     expected_s_count = (0, 1, 0, 1, 0)
-    params = zip(pauli_words, expected_h_count, expected_s_count)
+    params = tuple(zip(pauli_words, expected_h_count, expected_s_count))
 
     @pytest.mark.parametrize("precision", (None, 1e-3))
     @pytest.mark.parametrize("pauli_string, expected_h_count, expected_s_count", params)
@@ -215,16 +225,13 @@ class TestPauliRot:
     @pytest.mark.parametrize("pauli_string, expected_h_count, expected_s_count", params)
     def test_resources_from_rep(self, pauli_string, expected_h_count, expected_s_count):
         """Test that the resources can be computed from the compressed representation and params."""
-        op = qre.PauliRot(0.5, pauli_string, wires=range(len(pauli_string)))
+        op = qre.PauliRot(pauli_string, 0.5, wires=range(len(pauli_string)))
         active_wires = len(pauli_string.replace("I", ""))
 
         if set(pauli_string) == {"I"}:
             expected = [qre.GateCount(qre.GlobalPhase.resource_rep())]
         else:
-            expected = [
-                qre.GateCount(qre.RZ.resource_rep()),
-                qre.GateCount(qre.CNOT.resource_rep(), 2 * (active_wires - 1)),
-            ]
+            expected = []
 
             if expected_h_count:
                 expected.append(qre.GateCount(qre.Hadamard.resource_rep(), expected_h_count))
@@ -237,6 +244,9 @@ class TestPauliRot:
                         expected_s_count,
                     )
                 )
+
+            expected.append(qre.GateCount(qre.RZ.resource_rep(precision=0.5)))
+            expected.append(qre.GateCount(qre.CNOT.resource_rep(), 2 * (active_wires - 1)))
 
         op_compressed_rep = op.resource_rep_from_op()
         op_resource_type = op_compressed_rep.op_type

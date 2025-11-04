@@ -84,8 +84,8 @@ class TestAdjoint:
             (
                 qre.SemiAdder(5),
                 qre.Resources(
-                    zeroed=4,
-                    any_state=0,
+                    zeroed_wires=4,
+                    any_state_wires=0,
                     algo_wires=10,
                     gate_types=defaultdict(
                         int,
@@ -100,8 +100,8 @@ class TestAdjoint:
             (
                 qre.CRZ(precision=1e-3),
                 qre.Resources(
-                    zeroed=0,
-                    any_state=0,
+                    zeroed_wires=0,
+                    any_state_wires=0,
                     algo_wires=2,
                     gate_types=defaultdict(
                         int, {resource_rep(qre.CNOT): 2, resource_rep(qre.T): 42}
@@ -111,8 +111,8 @@ class TestAdjoint:
             (
                 qre.CRZ(),
                 qre.Resources(
-                    zeroed=0,
-                    any_state=0,
+                    zeroed_wires=0,
+                    any_state_wires=0,
                     algo_wires=2,
                     gate_types=defaultdict(
                         int, {resource_rep(qre.CNOT): 2, resource_rep(qre.T): 88}
@@ -243,8 +243,8 @@ class TestControlled:
             (
                 qre.SemiAdder(5),
                 qre.Resources(
-                    zeroed=4,
-                    any_state=0,
+                    zeroed_wires=4,
+                    any_state_wires=0,
                     algo_wires=11,
                     gate_types=defaultdict(
                         int,
@@ -256,8 +256,8 @@ class TestControlled:
                     ),
                 ),
                 qre.Resources(
-                    zeroed=5,
-                    any_state=0,
+                    zeroed_wires=5,
+                    any_state_wires=0,
                     algo_wires=12,
                     gate_types=defaultdict(
                         int,
@@ -273,8 +273,8 @@ class TestControlled:
             (
                 qre.CRZ(precision=1e-3),
                 qre.Resources(
-                    zeroed=0,
-                    any_state=0,
+                    zeroed_wires=0,
+                    any_state_wires=0,
                     algo_wires=3,
                     gate_types=defaultdict(
                         int,
@@ -285,8 +285,8 @@ class TestControlled:
                     ),
                 ),
                 qre.Resources(
-                    zeroed=1,
-                    any_state=0,
+                    zeroed_wires=1,
+                    any_state_wires=0,
                     algo_wires=4,
                     gate_types=defaultdict(
                         int,
@@ -303,8 +303,8 @@ class TestControlled:
             (
                 qre.CRZ(),
                 qre.Resources(
-                    zeroed=0,
-                    any_state=0,
+                    zeroed_wires=0,
+                    any_state_wires=0,
                     algo_wires=3,
                     gate_types=defaultdict(
                         int,
@@ -315,8 +315,8 @@ class TestControlled:
                     ),
                 ),
                 qre.Resources(
-                    zeroed=1,
-                    any_state=0,
+                    zeroed_wires=1,
+                    any_state_wires=0,
                     algo_wires=4,
                     gate_types=defaultdict(
                         int,
@@ -467,8 +467,8 @@ class TestPow:
                 qre.RX(),
                 2,
                 qre.Resources(
-                    zeroed=0,
-                    any_state=0,
+                    zeroed_wires=0,
+                    any_state_wires=0,
                     algo_wires=1,
                     gate_types=defaultdict(
                         int,
@@ -482,8 +482,8 @@ class TestPow:
                 qre.RX(precision=1e-3),
                 2,
                 qre.Resources(
-                    zeroed=0,
-                    any_state=0,
+                    zeroed_wires=0,
+                    any_state_wires=0,
                     algo_wires=1,
                     gate_types=defaultdict(
                         int,

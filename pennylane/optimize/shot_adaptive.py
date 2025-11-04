@@ -273,7 +273,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
             else:
                 cost = qnode
 
-            jacs = jacobian(cost, argnum=argnums)(*args, **kwargs)
+            jacs = jacobian(cost, argnums=argnums)(*args, **kwargs)
 
             if s == 1:
                 jacs = [np.expand_dims(j, 0) for j in jacs]
@@ -334,7 +334,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
         def cost(*args, **kwargs):
             return math.stack(set_shots(qnode, shots=new_shots)(*args, **kwargs))
 
-        grads = [jacobian(cost, argnum=i)(*args, **kwargs) for i in self.trainable_args]
+        grads = [jacobian(cost, argnums=i)(*args, **kwargs) for i in self.trainable_args]
 
         return grads
 

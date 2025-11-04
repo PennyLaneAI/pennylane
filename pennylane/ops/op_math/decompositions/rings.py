@@ -675,6 +675,7 @@ class SO3Matrix:
             >>> A = DyadicMatrix(ZOmega(d=2), ZOmega(d=2), ZOmega(d=2), ZOmega(d=2), k = 4) * 2
             >>> B = SO3Matrix(A @ A)
             >>> B.normalize()
+            >>> B
             SO3Matrix(matrix=[[1, 1], [1, 1]], k=-6)
         """
         elements = self.flatten

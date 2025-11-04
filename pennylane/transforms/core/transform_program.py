@@ -15,6 +15,7 @@
 This module contains the ``TransformProgram`` class.
 """
 from collections.abc import Sequence
+from copy import copy
 from functools import partial
 from typing import overload
 
@@ -134,9 +135,9 @@ class TransformProgram:
     >>> program.add_transform(qml.compile)
     >>> program.add_transform(qml.transforms.cancel_inverses)
     >>> [t for t in program]  # Iteration
-    [<compile([], {})>, <cancel_inverses([], {})>]
+    [<compile((), {})>, <cancel_inverses((), {})>]
     >>> program[0]
-    <compile([], {})>
+    <compile((), {})>
     >>> program[::-1]
     TransformProgram(cancel_inverses, compile)
     >>> len(program)
@@ -164,6 +165,9 @@ class TransformProgram:
     ):
         self._transform_program = list(initial_program) if initial_program else []
         self.cotransform_cache = cotransform_cache
+
+    def __copy__(self):
+        return TransformProgram(self._transform_program, self.cotransform_cache)
 
     def __iter__(self):
         """list[TransformContainer]: Return an iterator to the underlying transform program."""
@@ -494,3 +498,27 @@ class TransformProgram:
         if type(args[0]).__name__ == "Jaxpr":
             return self.__call_jaxpr(*args, **kwargs)
         return self.__call_tapes(*args, **kwargs)
+
+
+@TransformDispatcher.generic_register
+def _apply_to_program(obj: TransformProgram, transform, *targs, **tkwargs):
+    program = copy(obj)
+
+    if transform.expand_transform:
+        # pylint: disable=protected-access
+        program.push_back(
+            TransformContainer(
+                transform.expand_transform,
+                targs,
+                tkwargs,
+                use_argnum=transform._use_argnum_in_expand,
+            )
+        )
+    program.push_back(
+        TransformContainer(
+            transform,
+            args=targs,
+            kwargs=tkwargs,
+        )
+    )
+    return program

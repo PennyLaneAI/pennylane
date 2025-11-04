@@ -65,7 +65,7 @@ class Multiplier(Operation):
 
     This example performs the multiplication of two integers :math:`x=3` and :math:`k=4` modulo :math:`mod=7`.
 
-    .. code-block::
+    .. code-block:: python
 
         x = 3
         k = 4
@@ -75,17 +75,15 @@ class Multiplier(Operation):
         work_wires = [3,4,5,6,7]
 
         dev = qml.device("default.qubit")
-        @partial(qml.set_shots, shots=1)
-        @qml.qnode(dev)
+
+        @qml.qnode(dev, shots=1)
         def circuit():
             qml.BasisEmbedding(x, wires=x_wires)
             qml.Multiplier(k, x_wires, mod, work_wires)
             return qml.sample(wires=x_wires)
 
-    .. code-block:: pycon
-
-        >>> print(circuit())
-        [[1 0 1]]
+    >>> print(circuit())
+    [[1 0 1]]
 
     The result :math:`[1 0 1]`, is the binary representation of
     :math:`3 \cdot 4 \; \text{modulo} \; 7 = 5`.
@@ -216,8 +214,13 @@ class Multiplier(Operation):
 
         **Example**
 
-        >>> qml.Multiplier.compute_decomposition(k=3, mod=8, x_wires=[0,1,2], work_wires=[3,4,5])
-        [((Adjoint(QFT(wires=[3, 4, 5]))) @ (Adjoint(ControlledSequence(PhaseAdder(wires=[3, 4, 5, None]), control=[0, 1, 2]))) @ QFT(wires=[[3, 4, 5]])) @ (SWAP(wires=[2, 5]) @ SWAP(wires=[1, 4]) @ SWAP(wires=[0, 3])) @ ((Adjoint(QFT(wires=[3, 4, 5]))) @ (ControlledSequence(PhaseAdder(wires=[3, 4, 5, None]), control=[0, 1, 2])) @ QFT(wires=[3, 4, 5]))]
+        >>> ops = qml.Multiplier.compute_decomposition(k=3, mod=8, x_wires=[0,1,2], work_wires=[3,4,5])
+        >>> from pprint import pprint
+        >>> pprint(ops)
+        [(Adjoint(QFT(wires=[3, 4, 5]))) @ (ControlledSequence(PhaseAdder(wires=[3, 4, 5]), control=[0, 1, 2])) @ QFT(wires=[3, 4, 5]),
+        SWAP(wires=[2, 5]) @ SWAP(wires=[1, 4]) @ SWAP(wires=[0, 3]),
+        (Adjoint(QFT(wires=[3, 4, 5]))) @ (Adjoint(ControlledSequence(PhaseAdder(wires=[3, 4, 5]), control=[0, 1, 2]))) @ QFT(wires=[3, 4, 5])]
+
         """
 
         if mod != 2 ** len(x_wires):

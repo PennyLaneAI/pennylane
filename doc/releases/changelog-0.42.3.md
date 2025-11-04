@@ -1,4 +1,4 @@
-# Release 0.42.3 (current release)
+# Release 0.42.3
 
 <h3>Bug fixes 🐛</h3>
 

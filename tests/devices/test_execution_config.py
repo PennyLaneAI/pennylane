@@ -25,25 +25,6 @@ from pennylane.gradients import param_shift
 from pennylane.math import Interface
 
 
-def test_default_execution_config_deprecation():
-    """Test that the DefaultExecutionConfig is deprecated."""
-    with pytest.warns(
-        UserWarning,
-        match="`pennylane.devices.DefaultExecutionConfig` is deprecated and will be removed in v0.44.",
-    ):
-        from pennylane.devices import (  # pylint: disable=unused-import, import-outside-toplevel, no-name-in-module
-            DefaultExecutionConfig,
-        )
-
-    with pytest.warns(
-        UserWarning,
-        match="`pennylane.devices.execution_config.DefaultExecutionConfig` is deprecated and will be removed in v0.44.",
-    ):
-        from pennylane.devices.execution_config import (  # pylint: disable=unused-import, import-outside-toplevel, no-name-in-module
-            DefaultExecutionConfig,
-        )
-
-
 class TestFrozenMapping:
     """Tests all of the dunders for FrozenMapping."""
 

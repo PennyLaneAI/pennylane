@@ -73,10 +73,10 @@ class RandomLayers(Operation):
         .. code-block:: python
 
             import pennylane as qml
-            from pennylane import numpy as np
+            from pennylane import numpy as pnp
 
             dev = qml.device("default.qubit", wires=2)
-            weights = np.array([[0.1, -2.1, 1.4]])
+            weights = pnp.array([[0.1, -2.1, 1.4]])
 
             @qml.qnode(dev)
             def circuit1(weights):
@@ -88,18 +88,18 @@ class RandomLayers(Operation):
                 qml.RandomLayers(weights=weights, wires=range(2))
                 return qml.expval(qml.Z(0))
 
-        >>> np.allclose(circuit1(weights), circuit2(weights))
+        >>> pnp.allclose(circuit1(weights), circuit2(weights))
         True
 
         You can verify this by drawing the circuits.
 
         >>> print(qml.draw(circuit1, level="device")(weights))
-        0: ──────────────────────╭X─╭X──RZ(1.40)─┤  <Z>
-        1: ──RX(0.10)──RX(-2.10)─╰●─╰●───────────┤
+        0: ──RY(0.10)──╭●───────────┤  <Z>
+        1: ──RX(-2.10)─╰X──RZ(1.40)─┤
 
         >>> print(qml.draw(circuit2, level="device")(weights))
-        0: ──────────────────────╭X─╭X──RZ(1.40)─┤  <Z>
-        1: ──RX(0.10)──RX(-2.10)─╰●─╰●───────────┤
+        0: ──RY(0.10)──╭●───────────┤  <Z>
+        1: ──RX(-2.10)─╰X──RZ(1.40)─┤
 
 
         **Changing the seed**
@@ -113,21 +113,19 @@ class RandomLayers(Operation):
         ...     return qml.expval(qml.Z(0))
         >>> np.allclose(circuit(weights, seed=9), circuit(weights, seed=12))
         False
-        >>>  print(qml.draw(circuit, level="device")(weights, seed=9))
-        0: ─╭X──RX(0.10)────────────┤  <Z>
-        1: ─╰●──RY(-2.10)──RX(1.40)─┤
+        >>> print(qml.draw(circuit, level="device")(weights, seed=9))
+        0: ──RZ(0.10)────────────┤  <Z>
+        1: ──RZ(-2.10)──RZ(1.40)─┤
         >>> print(qml.draw(circuit, level="device")(weights, seed=12))
-        0: ─╭X──RZ(0.10)──╭●─╭X───────────┤  <Z>
-        1: ─╰●──RX(-2.10)─╰X─╰●──RZ(1.40)─┤
+        0: ─╭●─╭X──RY(0.10)──RY(-2.10)─┤  <Z>
+        1: ─╰X─╰●──RX(1.40)────────────┤
 
 
         **Automatic creation of random circuits**
 
         To automate the process of creating different circuits with ``RandomLayers``,
         you can set ``seed=None`` to avoid specifying a seed. However, in this case care needs
-        to be taken. In the default setting, a quantum node is **mutable**, which means that the quantum function is
-        re-evaluated every time it is called. This means that the circuit is re-constructed from scratch
-        each time you call the qnode:
+        to be taken. The quantum function is re-evaluated every time it is called.
 
         .. code-block:: python
 
@@ -139,23 +137,8 @@ class RandomLayers(Operation):
             first_call = circuit_rnd(weights)
             second_call = circuit_rnd(weights)
 
-        >>> np.allclose(first_call, second_call)
+        >>> np.allclose(first_call, second_call) # doctest: +SKIP
         False
-
-        This can be rectified by making the quantum node **immutable**.
-
-        .. code-block:: python
-
-            @qml.qnode(dev, mutable=False)
-            def circuit_rnd(weights):
-                qml.RandomLayers(weights=weights, wires=range(2), seed=None)
-                return qml.expval(qml.Z(0))
-
-            first_call = circuit_rnd(weights)
-            second_call = circuit_rnd(weights)
-
-        >>> np.allclose(first_call, second_call)
-        True
 
         **Parameter shape**
 
@@ -225,13 +208,15 @@ class RandomLayers(Operation):
 
         >>> weights = torch.tensor([[0.1, -2.1, 1.4]])
         >>> rotations=[qml.RY, qml.RX]
-        >>> qml.RandomLayers.compute_decomposition(weights, wires=["a", "b"], ratio_imprim=0.3,
+        >>> ops = qml.RandomLayers.compute_decomposition(weights, wires=["a", "b"], ratio_imprim=0.3,
         ...                                         imprimitive=qml.CNOT, rotations=rotations, seed=42)
-        [RY(tensor(0.1000), wires=['b']),
-         RY(tensor(-2.1000), wires=['b']),
-         CNOT(wires=['b', 'a']),
-         CNOT(wires=['b', 'a']),
-         RX(tensor(1.4000), wires=['a'])]
+        >>> from pprint import pprint
+        >>> pprint(ops)
+        [RX(tensor(0.1000), wires=['a']),
+        RY(tensor(-2.1000), wires=['b']),
+        CNOT(wires=['a', 'b']),
+        RX(tensor(1.4000), wires=['b'])]
+
         """
         wires = Wires(wires)
         rng = np.random.default_rng(seed)
