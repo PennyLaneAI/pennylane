@@ -14,9 +14,13 @@
 r"""
 Contains the hardware-efficient ParticleConservingU1 template.
 """
+from collections import defaultdict
+from functools import reduce
+
 import numpy as np
 
 from pennylane import math
+from pennylane.decomposition import resource_rep
 from pennylane.operation import Operation
 from pennylane.ops import CNOT, CZ, CRot, PhaseShift
 from pennylane.templates.embeddings import BasisEmbedding
@@ -352,3 +356,22 @@ class ParticleConservingU1(Operation):
                 f"The number of qubits must be greater than one; got 'n_wires' = {n_wires}"
             )
         return n_layers, n_wires - 1, 2
+
+
+def _particle_conserving_u1_resources(weights, num_wires):
+    # number of pairs of even-indexed of wires
+    num_nm_wires = math.floor(num_wires / 2) if num_wires % 2 == 0 else math.ceil(num_wires / 2)
+    # number of odd-indexed pairs of wires
+    num_nm_wires += math.floor((num_wires - 1) / 2)
+
+    n_layers = math.shape(weights)[0]
+
+    resources = {
+        resource_rep(BasisEmbedding, num_wires=num_wires): 1,
+        resource_rep(CZ): 3 * num_nm_wires * n_layers,
+        resource_rep(CRot): 3 * num_nm_wires * n_layers,
+        resource_rep(PhaseShift): 6 * num_nm_wires * n_layers,
+        resource_rep(CNOT): 4 * num_nm_wires * n_layers,
+    }
+
+    return resources
