@@ -474,9 +474,16 @@ def _basis_rotation_decomp(unitary_matrix, wires: WiresLike, **__):
 
         givens_loop()  # pylint: disable=no-value-for-parameter
 
-    cond(math.is_real_obj_or_close(unitary_matrix), real_unitary, complex_unitary)(
-        unitary=unitary_matrix, wires=wires
-    )
+    is_real = math.is_real_obj_or_close(unitary_matrix)
+
+    if not math.is_abstract(is_real):
+        if is_real:
+            real_unitary(unitary_matrix, wires)
+        else:
+            complex_unitary(unitary_matrix, wires)
+    else:
+        # Note that this cond() does not work if is_real is not abstract!
+        cond(is_real, real_unitary, complex_unitary)(unitary=unitary_matrix, wires=wires)
 
 
 add_decomps(BasisRotation, _basis_rotation_decomp)

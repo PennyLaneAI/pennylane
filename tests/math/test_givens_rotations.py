@@ -19,6 +19,7 @@ import pytest
 from scipy.stats import ortho_group, unitary_group
 
 import pennylane as qml
+from pennylane import math
 from pennylane import numpy as np
 from pennylane.math import is_real_obj_or_close
 from pennylane.math.decomposition import _givens_matrix, _set_unitary_matrix, givens_decomposition
@@ -223,6 +224,44 @@ def test_givens_decomposition_real_valued_jax(shape, dtype, jit, seed):
     assert decomposed_matrix.dtype == dtype
     # check if U = D x Π T_{m, n}
     assert np.allclose(matrix, decomposed_matrix), f"\n{matrix}\n{decomposed_matrix}"
+
+
+@pytest.mark.jax
+def test_givens_matrix_raises(seed):
+    r"""Test that `givens_decomposition` raises a ValueError exception appropriately."""
+    from jax import numpy as jnp
+
+    complex_unitary_matrix = jnp.array(
+        [
+            [0.51378719 + 0.0j, 0.0546265 + 0.79145487j, -0.2051466 + 0.2540723j],
+            [0.62651582 + 0.0j, -0.00828925 - 0.60570321j, -0.36704948 + 0.32528067j],
+            [-0.58608928 + 0.0j, 0.03902657 + 0.04633548j, -0.57220635 + 0.57044649j],
+        ]
+    )
+
+    real_unitary_matrix = jnp.array(
+        [
+            [0.51378719 + 0.0j, 0.0546265 + 0.0j, -0.2051466 + 0.0j],
+            [0.62651582 + 0.0j, -0.00828925 - 0.0j, -0.36704948 + 0.0j],
+            [-0.58608928 + 0.0j, 0.03902657 + 0.0j, -0.57220635 + 0.0j],
+        ]
+    )
+
+    random_matrix = unitary_group.rvs(2, random_state=seed)
+
+    # should raise
+    with pytest.raises(ValueError, match="The value of is_real passed to givens_decomposition"):
+        givens_decomposition(complex_unitary_matrix, is_real=True)
+
+    with pytest.raises(ValueError, match="The value of is_real passed to givens_decomposition"):
+        givens_decomposition(real_unitary_matrix, is_real=False)
+
+    # should not raise
+    givens_decomposition(complex_unitary_matrix, is_real=False)
+
+    givens_decomposition(real_unitary_matrix, is_real=True)
+
+    givens_decomposition(random_matrix, is_real_obj_or_close(random_matrix))
 
 
 @pytest.mark.parametrize(
