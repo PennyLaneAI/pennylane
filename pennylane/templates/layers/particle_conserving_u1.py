@@ -20,7 +20,7 @@ from functools import reduce
 import numpy as np
 
 from pennylane import math
-from pennylane.decomposition import resource_rep, register_resources, add_decomps
+from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.operation import Operation
 from pennylane.ops import CNOT, CZ, CRot, PhaseShift
 from pennylane.templates.embeddings import BasisEmbedding
@@ -250,7 +250,7 @@ class ParticleConservingU1(Operation):
 
     grad_method = None
 
-    resource_keys = { "num_wires", "n_layers" }
+    resource_keys = {"num_wires", "n_layers"}
 
     def __init__(self, weights, wires, init_state=None, id=None):
         if len(wires) < 2:
@@ -285,10 +285,7 @@ class ParticleConservingU1(Operation):
 
     @property
     def resource_params(self) -> dict:
-        return {
-            "num_wires": len(self.wires),
-            "n_layers": math.shape(self.parameters[0])[0]
-        }
+        return {"num_wires": len(self.wires), "n_layers": math.shape(self.parameters[0])[0]}
 
     @staticmethod
     def compute_decomposition(weights, wires, init_state):  # pylint: disable=arguments-differ
@@ -370,7 +367,9 @@ class ParticleConservingU1(Operation):
 
 def _particle_conserving_u1_resources(n_layers, num_wires):
     # number of pairs of even-indexed of wires
-    num_nm_wires = math.floor(num_wires / 2) if num_wires % 2 == 0 else math.ceil(num_wires / 2)
+    num_nm_wires = (
+        math.floor(num_wires / 2) if num_wires % 2 == 0 else math.ceil((num_wires - 1) / 2)
+    )
     # number of odd-indexed pairs of wires
     num_nm_wires += math.floor((num_wires - 1) / 2)
 
@@ -423,9 +422,11 @@ def _decompose_ua_qfunc(phi, wires):
 
 
 @register_resources(_particle_conserving_u1_resources)
-def _particle_conserving_u1_decomposition(weights, wires, init_state):  # pylint: disable=arguments-differ
-    nm_wires = [wires[l: l + 2] for l in range(0, len(wires) - 1, 2)]
-    nm_wires += [wires[l: l + 2] for l in range(1, len(wires) - 1, 2)]
+def _particle_conserving_u1_decomposition(
+    weights, wires, init_state
+):  # pylint: disable=arguments-differ
+    nm_wires = [wires[l : l + 2] for l in range(0, len(wires) - 1, 2)]
+    nm_wires += [wires[l : l + 2] for l in range(1, len(wires) - 1, 2)]
     n_layers = math.shape(weights)[0]
 
     BasisEmbedding(init_state, wires=wires)
@@ -442,5 +443,6 @@ def _particle_conserving_u1_decomposition(weights, wires, init_state):  # pylint
 
             # C-UA(-phi)
             _decompose_ua_qfunc(-phi, wires_)
+
 
 add_decomps(ParticleConservingU1, _particle_conserving_u1_decomposition)
