@@ -38,3 +38,5 @@ sphinxext-opengraph==0.9.0
 matplotlib==3.8.0
 diastatic-malt
 galois
+pennylane-catalyst
+xdsl==0.54
