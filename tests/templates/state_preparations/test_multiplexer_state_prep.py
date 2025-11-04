@@ -29,7 +29,7 @@ class TestMultiplexerStatePreparation:
     def test_standard_validity(self):
         """Check the operation using the assert_valid function."""
 
-        state = np.random.rand(2**4)
+        state = np.random.rand(2**4) * 1j
         state /= np.linalg.norm(state)
 
         wires = range(4)

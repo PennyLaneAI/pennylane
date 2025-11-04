@@ -62,6 +62,8 @@ class MultiplexerStatePreparation(Operation):
 
     """
 
+    resource_keys = {"num_wires"}
+
     # pylint: disable=too-many-positional-arguments
     def __init__(self, state_vector, wires, id=None):  # pylint: disable=too-many-arguments
 
@@ -85,56 +87,78 @@ class MultiplexerStatePreparation(Operation):
     def _primitive_bind_call(cls, *args, **kwargs):
         return cls._primitive.bind(*args, **kwargs)
 
+    @property
+    def resource_params(self) -> dict:
+        return {
+            "num_wires": len(self.wires),
+        }
+
     @staticmethod
-    def compute_decomposition(state_vector, wires):  # pylint: disable=arguments-differ
-        r"""
-        Computes the decomposition operations for the given state vector.
+    def compute_decomposition(state_vector, wires):
+        with qml.queuing.AnnotatedQueue() as q:
+            _multiplexer_state_prep_decomposition(state_vector, wires)
 
-        Args:
+        if qml.queuing.QueuingManager.recording():
+            for op in q.queue:
+                qml.apply(op)
 
-            state_vector (tensor_like): The state vector to prepare.
-            wires (Sequence[int]): The wires which the operator acts on.
+        return q.queue
 
-        Returns:
-            list: List of decomposition operations.
-        """
 
-        probs = qml.math.abs(state_vector) ** 2
-        phases = qml.math.angle(state_vector) % (2 * np.pi)
-        eps = 1e-15  # Small constant to avoid division by zero
+def _multiplexer_state_prep_decomposition_resources(num_wires) -> dict:
+    resources = dict()
+    for i in range(num_wires):
+        resources[qml.resource_rep(qml.SelectPauliRot, num_wires=i + 1, rot_axis="Y")] = 1
 
-        decomp_ops = []
-        num_iterations = int(qml.math.log2(qml.math.shape(probs)[0]))
+    resources[qml.resource_rep(qml.DiagonalQubitUnitary, num_wires=num_wires)] = 1
 
-        for i in range(num_iterations):
+    return resources
 
-            probs_aux = qml.math.reshape(probs, [1, -1])
 
-            # Calculation of the numerator and denominator of the function f(x) (Eq.5 [arXiv:quant-ph/0208112])
-            for itx in range(i + 1):
-                probs_denominator = qml.math.sum(probs_aux, axis=1)
-                probs_aux = qml.math.reshape(probs_aux, [int(2 ** (itx + 1)), -1])
-                probs_numerator = qml.math.sum(probs_aux, axis=1)[::2]
+@qml.register_resources(_multiplexer_state_prep_decomposition_resources, exact=False)
+def _multiplexer_state_prep_decomposition(state_vector, wires):  # pylint: disable=arguments-differ
+    r"""
+    Computes the decomposition operations for the given state vector.
 
-            # Compute the angles θi
-            thetas = [
-                2
-                * qml.math.arccos(qml.math.sqrt(probs_numerator[j] / (probs_denominator[j] + eps)))
-                for j in range(qml.math.shape(probs_numerator)[0])
-            ]
-            # Apply the SelectPauliRot operation to apply the theta rotations
-            decomp_ops.append(
-                qml.SelectPauliRot(
-                    thetas, target_wire=wires[i], control_wires=wires[:i], rot_axis="Y"
-                )
-            )
+    Args:
 
-        if not qml.math.allclose(phases, 0.0):
+        state_vector (tensor_like): The state vector to prepare.
+        wires (Sequence[int]): The wires which the operator acts on.
 
-            # Compute the phases
-            thetas = [1j * phase for phase in phases]
+    Returns:
+        list: List of decomposition operations.
+    """
 
-            # Apply the DiagonalQubitUnitary operation to encode the phases
-            decomp_ops.append(qml.DiagonalQubitUnitary(qml.math.exp(thetas), wires=wires))
+    probs = qml.math.abs(state_vector) ** 2
+    phases = qml.math.angle(state_vector) % (2 * np.pi)
+    eps = 1e-15  # Small constant to avoid division by zero
 
-        return decomp_ops
+    num_iterations = int(qml.math.log2(qml.math.shape(probs)[0]))
+
+    for i in range(num_iterations):
+
+        probs_aux = qml.math.reshape(probs, [1, -1])
+
+        # Calculation of the numerator and denominator of the function f(x) (Eq.5 [arXiv:quant-ph/0208112])
+        for itx in range(i + 1):
+            probs_denominator = qml.math.sum(probs_aux, axis=1)
+            probs_aux = qml.math.reshape(probs_aux, [int(2 ** (itx + 1)), -1])
+            probs_numerator = qml.math.sum(probs_aux, axis=1)[::2]
+
+        # Compute the angles θi
+        thetas = [
+            2 * qml.math.arccos(qml.math.sqrt(probs_numerator[j] / (probs_denominator[j] + eps)))
+            for j in range(qml.math.shape(probs_numerator)[0])
+        ]
+        # Apply the SelectPauliRot operation to apply the theta rotations
+        qml.SelectPauliRot(thetas, target_wire=wires[i], control_wires=wires[:i], rot_axis="Y")
+
+    if not qml.math.allclose(phases, 0.0):
+        # Compute the phases
+        thetas = [1j * phase for phase in phases]
+
+        # Apply the DiagonalQubitUnitary operation to encode the phases
+        qml.DiagonalQubitUnitary(qml.math.exp(thetas), wires=wires)
+
+
+qml.add_decomps(MultiplexerStatePreparation, _multiplexer_state_prep_decomposition)
