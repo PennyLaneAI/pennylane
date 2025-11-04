@@ -16,6 +16,7 @@ Visualization functions for PennyLane-xDSL transformations.
 """
 
 
+from .specs_collector import specs_collect
 from .collector import QMLCollector
 from .draw import draw
 from .mlir_graph import generate_mlir_graph
