@@ -40,4 +40,4 @@ diastatic-malt
 galois
 pennylane-catalyst
 xdsl==0.54
-git+https://github.com/xdslproject/xdsl-jax.git
+/usr/bin/git+https://github.com/xdslproject/xdsl-jax.git
