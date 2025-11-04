@@ -20,16 +20,22 @@ from collections import defaultdict
 from itertools import product
 
 import numpy as np
-from pennylane.control_flow import for_loop
 
-from pennylane import math
-from pennylane.decomposition import resource_rep, register_resources, add_decomps
+from pennylane import capture, math
+from pennylane.control_flow import for_loop
+from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.operation import Operation
 from pennylane.templates.embeddings import BasisEmbedding
 from pennylane.wires import Wires
 
 from .fermionic_double_excitation import FermionicDoubleExcitation
 from .fermionic_single_excitation import FermionicSingleExcitation
+
+has_jax = True
+try:
+    from jax import numpy as jnp
+except ModuleNotFoundError:  # pragma: no cover
+    has_jax = False  # pragma: no cover
 
 
 def generalized_singles(wires, delta_sz):
@@ -209,6 +215,8 @@ class kUpCCGSD(Operation):
 
     grad_method = None
 
+    resource_keys = {"num_wires", "k", "s_wires", "d_wires"}
+
     def _flatten(self):
 
         # Do not need to flatten s_wires or d_wires because they are derived hyperparameters
@@ -266,6 +274,15 @@ class kUpCCGSD(Operation):
     @property
     def num_params(self):
         return 1
+
+    @property
+    def resource_params(self) -> dict:
+        return {
+            "num_wires": len(self.wires),
+            "k": self.hyperparameters["k"],
+            "s_wires": self.hyperparameters["s_wires"],
+            "d_wires": self.hyperparameters["d_wires"],
+        }
 
     @staticmethod
     def compute_decomposition(
@@ -356,6 +373,8 @@ def _kupccgsd_resources(num_wires, k, d_wires, s_wires):
         for s_wires_ in s_wires:
             resources[resource_rep(FermionicSingleExcitation, num_wires=len(s_wires_))] += 1
 
+    return resources
+
 
 @register_resources(_kupccgsd_resources)
 def _kupccgsd_decomposition(
@@ -365,7 +384,9 @@ def _kupccgsd_decomposition(
     d_wires,
     k,
     init_state,
-):  # pylint: disable=too-many-arguments, arguments-differ
+    delta_sz=None,
+):  # pylint: disable=too-many-arguments, arguments-differ, unused_argument
+
     BasisEmbedding(init_state, wires=wires)
 
     @for_loop(k)
@@ -374,9 +395,7 @@ def _kupccgsd_decomposition(
         @for_loop(len(d_wires))
         def double_loop(i):
             (w1, w2) = d_wires[i]
-            FermionicDoubleExcitation(
-                weights[layer][len(s_wires) + i], wires1=w1, wires2=w2
-            )
+            FermionicDoubleExcitation(weights[layer][len(s_wires) + i], wires1=w1, wires2=w2)
 
         double_loop()  # pylint: disable=no-value-for-parameter
 

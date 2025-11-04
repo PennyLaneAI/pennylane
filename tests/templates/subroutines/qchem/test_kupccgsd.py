@@ -20,6 +20,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 k_delta_sz_init_state_wires = [
     (1, 0, qml.math.array([1, 1, 0, 0]), qml.math.array([0, 1, 2, 3])),
@@ -348,6 +349,32 @@ class TestDecomposition:
 
         assert gen_singles_wires == generalized_singles_wires
         assert gen_doubles_wires == generalized_pair_doubles_wires
+
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    @pytest.mark.parametrize(("k", "delta_sz", "init_state", "wires"), k_delta_sz_init_state_wires)
+    def test_decomposition_new(self, k, delta_sz, init_state, wires):
+        # wires for generalized single excitation terms
+        sz = np.array([0.5 if (i % 2 == 0) else -0.5 for i in range(len(wires))])
+        gen_single_terms_wires = [
+            wires[r : p + 1] if r < p else wires[p : r + 1][::-1]
+            for r in range(len(wires))
+            for p in range(len(wires))
+            if sz[p] - sz[r] == delta_sz and p != r
+        ]
+
+        # wires for generalized pair coupled cluster double excitation terms
+        pair_double_terms_wires = [
+            [wires[r : r + 2], wires[p : p + 2]]
+            for r in range(0, len(wires) - 1, 2)
+            for p in range(0, len(wires) - 1, 2)
+            if p != r
+        ]
+
+        n_excit_terms = len(gen_single_terms_wires) + len(pair_double_terms_wires)
+        weights = np.random.normal(0, 2 * np.pi, (k, n_excit_terms))
+        op = qml.kUpCCGSD(weights, wires=wires, k=k, delta_sz=delta_sz, init_state=init_state)
+        for rule in qml.list_decomps(qml.kUpCCGSD):
+            _test_decomposition_rule(op, rule)
 
 
 class TestInputs:
