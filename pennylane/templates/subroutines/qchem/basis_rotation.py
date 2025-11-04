@@ -439,7 +439,7 @@ def _basis_rotation_decomp(unitary_matrix, wires: WiresLike, **__):
         def givens_loop(idx):
             grot_mat = givens_matrices[idx]
             (i, j) = givens_ids[idx]
-            theta = math.arctan2(np.real(grot_mat[0, 1]), np.real(grot_mat[0, 0]))
+            theta = math.arctan2(math.real(grot_mat[0, 1]), math.real(grot_mat[0, 0]))
             SingleExcitation(2 * theta, wires=[wires[i], wires[j]])
 
         givens_loop()  # pylint: disable=no-value-for-parameter
