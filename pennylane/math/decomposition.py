@@ -688,7 +688,7 @@ def givens_decomposition(unitary, is_real=False):
 
     if not is_abstract(unitary_mat) and math.is_real_obj_or_close(unitary_mat) != is_real:
         raise ValueError(
-            "The value of is_real passed to givens_decomposition does not match the unitary matrix provided."
+            f"The value of is_real={is_real} passed to givens_decomposition does not match the specified unitary."
         )
 
     shape = math.shape(unitary_mat)
