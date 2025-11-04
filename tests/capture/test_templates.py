@@ -831,7 +831,7 @@ class TestModifiedTemplates:
         }
 
         def qfunc():
-            qml.QROMStatePreparation(**kwargs)
+            qml.MultiplexerStatePreparation(**kwargs)
 
         # Validate inputs
         qfunc()
@@ -842,7 +842,7 @@ class TestModifiedTemplates:
         assert len(jaxpr.eqns) == 1
 
         eqn = jaxpr.eqns[0]
-        assert eqn.primitive == qml.QROMStatePreparation._primitive
+        assert eqn.primitive == qml.MultiplexerStatePreparation._primitive
         assert eqn.invars == jaxpr.jaxpr.invars
         assert eqn.params == kwargs
         assert len(eqn.outvars) == 1
@@ -852,7 +852,7 @@ class TestModifiedTemplates:
             jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
 
         assert len(q) == 1
-        qml.assert_equal(q.queue[0], qml.QROMStatePreparation(**kwargs))
+        qml.assert_equal(q.queue[0], qml.MultiplexerStatePreparation(**kwargs))
 
     def test_multiplexed_rotation(self):
         """Test the primitive bind call of SelectPauliRot."""

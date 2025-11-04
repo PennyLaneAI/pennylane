@@ -55,7 +55,7 @@ class MultiplexerStatePreparation(Operation):
 
     .. code-block:: pycon
 
-        >>> circuit()
+        >>> np.round(circuit(), 2)
         array([0.5 , 0.  , 0.25, 0.25])
 
     .. seealso:: :class:`~.SelectPauliRot`
