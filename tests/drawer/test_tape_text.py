@@ -38,18 +38,12 @@ from pennylane.tape import QuantumScript
 default_wire_map = {0: 0, 1: 1, 2: 2, 3: 3}
 default_bit_map = {}
 
-default_mid_measure_1 = qml.measurements.MidMeasureMP(0, id="1")
-default_mid_measure_2 = qml.measurements.MidMeasureMP(0, id="2")
-default_mid_measure_3 = qml.measurements.MidMeasureMP(0, id="3")
-default_measurement_value_1 = qml.measurements.MeasurementValue(
-    [default_mid_measure_1], lambda v: v
-)
-default_measurement_value_2 = qml.measurements.MeasurementValue(
-    [default_mid_measure_2], lambda v: v
-)
-default_measurement_value_3 = qml.measurements.MeasurementValue(
-    [default_mid_measure_3], lambda v: v
-)
+default_mid_measure_1 = qml.ops.MidMeasure(0, id="1")
+default_mid_measure_2 = qml.ops.MidMeasure(0, id="2")
+default_mid_measure_3 = qml.ops.MidMeasure(0, id="3")
+default_measurement_value_1 = qml.ops.MeasurementValue([default_mid_measure_1], lambda v: v)
+default_measurement_value_2 = qml.ops.MeasurementValue([default_mid_measure_2], lambda v: v)
+default_measurement_value_3 = qml.ops.MeasurementValue([default_mid_measure_3], lambda v: v)
 cond_bit_map_1 = {default_mid_measure_1: 0}
 cond_bit_map_2 = {default_mid_measure_1: 0, default_mid_measure_2: 1}
 stats_bit_map_1 = {default_mid_measure_1: 0, default_mid_measure_2: 1, default_mid_measure_3: 2}
@@ -123,7 +117,7 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments, too-many-posit
         ],
     )
     def test_add_mid_measure_grouping_symbols(self, op, layer_str, bit_map, out):
-        """Test private _add_grouping_symbols function renders as expected for MidMeasureMPs."""
+        """Test private _add_grouping_symbols function renders as expected for MidMeasures."""
         config = _Config(wire_map=default_wire_map, bit_map=bit_map, num_op_layers=4, cur_layer=1)
         assert out == _add_mid_measure_grouping_symbols(op, layer_str, config)
 
@@ -294,8 +288,9 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments, too-many-posit
             (qml.Snapshot(), ["─|Snap|", "─|Snap|", "─|Snap|", "─|Snap|"]),
             (qml.Barrier(), ["─||", "─||", "─||", "─||"]),
             (qml.S(0) @ qml.T(0), ["─S@T", "─", "─", "─"]),
-            (qml.TemporaryAND([0, 1, 3]), ["╭●", "├●", "│", "╰─"]),
-            (qml.TemporaryAND([1, 0, 3], control_values=(0, 1)), ["╭●", "├○", "│", "╰─"]),
+            (qml.TemporaryAND([0, 1, 3]), ["╭●", "├●", "│", "╰⊕"]),
+            (qml.TemporaryAND([1, 0, 3], control_values=(0, 1)), ["╭●", "├○", "│", "╰⊕"]),
+            (qml.ctrl(qml.TemporaryAND([0, 1, 2]), control=[3]), ["╭●", "├●", "├⊕", "╰●"]),
         ],
     )
     def test_add_obj(self, op, out):
@@ -324,7 +319,7 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments, too-many-posit
         ],
     )
     def test_add_mid_measure_op(self, op, layer_str, bit_map, out):
-        """Test adding the first MidMeasureMP to array of strings"""
+        """Test adding the first MidMeasure to array of strings"""
         config = _Config(wire_map=default_wire_map, bit_map=bit_map, num_op_layers=4, cur_layer=0)
         assert out == _add_obj(op, layer_str, config)
 
@@ -679,11 +674,11 @@ single_op_tests_data = [
     ),
     (
         qml.TemporaryAND([3, 0, 2], control_values=(1, 0)),
-        "3: ─╭●─┤  \n0: ─├○─┤  \n2: ─╰──┤  ",
+        "3: ─╭●─┤  \n0: ─├○─┤  \n2: ─╰⊕─┤  ",
     ),
     (
         qml.adjoint(qml.TemporaryAND([3, 0, 2], control_values=(0, 1))),
-        "3: ──○╮─┤  \n0: ──●┤─┤  \n2: ───╯─┤  ",
+        "3: ──○╮─┤  \n0: ──●┤─┤  \n2: ──⊕╯─┤  ",
     ),
 ]
 
@@ -749,11 +744,11 @@ class TestLayering:
         )
         expected = (
             "a: ─╭●───○╮─┤  \n"
-            "b: ─├●────┤─┤  \n"
-            "c: ─╰─────│─┤  \n"
+            "b: ─├●───⊕┤─┤  \n"
+            "c: ─╰⊕────│─┤  \n"
             "d: ──●╮──○╯─┤  \n"
-            "e: ───┤─╭○──┤  \n"
-            "f: ──●╯─├───┤  \n"
+            "e: ──⊕┤─╭○──┤  \n"
+            "f: ──●╯─├⊕──┤  \n"
             "g: ─────│───┤  \n"
             "h: ─────╰●──┤  "
         )

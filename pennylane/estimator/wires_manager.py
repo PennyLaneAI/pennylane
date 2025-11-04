@@ -13,7 +13,6 @@
 # limitations under the License.
 """This module contains the base class for wire management."""
 
-
 from pennylane.queuing import QueuingManager
 
 
@@ -41,10 +40,10 @@ class WireResourceManager:
 
     >>> import pennylane.estimator as qre
     >>> q = qre.WireResourceManager(
-    ...             zeroed=2,
-    ...             any_state=2,
-    ...             tight_budget=False,
-    ...     )
+    ...     zeroed=2,
+    ...     any_state=2,
+    ...     tight_budget=False,
+    ... )
     >>> print(q)
     WireResourceManager(zeroed wires=2, any_state wires=2, algorithmic wires=0, tight budget=False)
 
@@ -53,7 +52,6 @@ class WireResourceManager:
     def __init__(
         self, zeroed: int, any_state: int = 0, algo_wires: int = 0, tight_budget: bool = False
     ) -> None:
-
         self.tight_budget = tight_budget
         self._algo_wires = algo_wires
         self.zeroed = zeroed
@@ -111,7 +109,7 @@ class WireResourceManager:
         if num_wires > available_zeroed:
             if self.tight_budget:
                 raise ValueError(
-                    f"Grabbing more wires than available zeroed wires."
+                    f"Grabbing more wires than available zeroed wires. "
                     f"Number of zeroed wires available is {available_zeroed}, while {num_wires} are being grabbed."
                 )
             self.zeroed = 0
@@ -131,7 +129,7 @@ class WireResourceManager:
 
         if num_wires > self.any_state:
             raise ValueError(
-                f"Freeing more wires than available any_state wires."
+                f"Freeing more wires than available any_state wires. "
                 f"Number of any_state wires available is {self.any_state}, while {num_wires} wires are being released."
             )
 
@@ -189,7 +187,7 @@ class Allocate(_WireAction):
         >>> config = qre.ResourceConfig()
         >>> config.set_decomp(qre.MultiControlledX, resource_decomp)
         >>> res = qre.estimate(qre.MultiControlledX(3, 0), config=config)
-        >>> print(res.algo_wires, res.zeroed, res.any_state)
+        >>> print(res.algo_wires, res.zeroed_wires, res.any_state_wires)
         4 0 0
 
         This decomposition uses a total of ``4`` wires and doesn't track the work wires.
@@ -210,7 +208,7 @@ class Allocate(_WireAction):
         >>> config = qre.ResourceConfig()
         >>> config.set_decomp(qre.MultiControlledX, resource_decomp)
         >>> res = qre.estimate(qre.MultiControlledX(3, 0), config=config)
-        >>> print(res.algo_wires, res.zeroed, res.any_state)
+        >>> print(res.algo_wires, res.zeroed_wires, res.any_state_wires)
         4 1 0
 
         Now, the one extra auxiliary wire is being tracked.
@@ -249,7 +247,7 @@ class Deallocate(_WireAction):
         >>> config = qre.ResourceConfig()
         >>> config.set_decomp(qre.MultiControlledX, resource_decomp)
         >>> res = qre.estimate(qre.MultiControlledX(3, 0), config=config)
-        >>> print(res.algo_wires, res.zeroed, res.any_state)
+        >>> print(res.algo_wires, res.zeroed_wires, res.any_state_wires)
         4 0 1
 
         This decomposition uses a total of ``4`` algorithmic wires and ``1`` work wire which is returned in an arbitrary state.
@@ -270,7 +268,7 @@ class Deallocate(_WireAction):
         >>> config = qre.ResourceConfig()
         >>> config.set_decomp(qre.MultiControlledX, resource_decomp)
         >>> res = qre.estimate(qre.MultiControlledX(3, 0), config=config)
-        >>> print(res.algo_wires, res.zeroed, res.any_state)
+        >>> print(res.algo_wires, res.zeroed_wires, res.any_state_wires)
         4 1 0
 
         Now, the auxiliary wire is freed, meaning that it is described as being in the zeroed state

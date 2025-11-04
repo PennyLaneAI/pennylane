@@ -33,7 +33,6 @@ from .primitives import (
     cond_prim,
     ctrl_transform_prim,
     for_loop_prim,
-    grad_prim,
     jacobian_prim,
     qnode_prim,
     quantum_subroutine_p,
@@ -443,7 +442,7 @@ def _(self, x, *dyn_shape, shape, broadcast_dimensions, sharding):
 
 # pylint: disable=unused-argument
 @PlxprInterpreter.register_primitive(jax.lax.iota_p)
-def _(self, *dyn_shape, dimension, dtype, shape, sharding):
+def _iota_primitive(self, *dyn_shape, dimension, dtype, shape, sharding):
     """Handle the iota primitive created by jnp.arange
 
     >>> import jax
@@ -614,18 +613,6 @@ def handle_qnode(self, *invals, shots_len, qnode, device, execution_config, qfun
 def _(self, *invals, jaxpr, **params):
     return copy(self).eval(jaxpr.jaxpr, jaxpr.consts, *invals)
 
-
-@PlxprInterpreter.register_primitive(grad_prim)
-def handle_grad(self, *invals, jaxpr, n_consts, **params):
-    """Handle the grad primitive."""
-    consts = invals[:n_consts]
-    args = invals[n_consts:]
-    new_jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr, consts, *args)
-    return grad_prim.bind(
-        *new_jaxpr.consts, *args, jaxpr=new_jaxpr.jaxpr, n_consts=len(new_jaxpr.consts), **params
-    )
-
-
 @PlxprInterpreter.register_primitive(jacobian_prim)
 def handle_jacobian(self, *invals, jaxpr, n_consts, **params):
     """Handle the jacobian primitive."""
@@ -652,7 +639,7 @@ else:  # pragma: no cover
 
 
 @FlattenedInterpreter.register_primitive(pjit_p)
-def _(self, *invals, jaxpr, **params):
+def _pjit_primitive(self, *invals, jaxpr, **params):
     if jax.config.jax_dynamic_shapes:
         # just evaluate it so it doesn't throw dynamic shape errors
         return copy(self).eval(jaxpr.jaxpr, jaxpr.consts, *invals)

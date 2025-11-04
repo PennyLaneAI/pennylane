@@ -103,7 +103,10 @@ class TestSelectTHC:
             )
         )
         assert select_cost.algo_wires == expected_res["algo_wires"]
-        assert select_cost.zeroed + select_cost.any_state == expected_res["auxiliary_wires"]
+        assert (
+            select_cost.zeroed_wires + select_cost.any_state_wires
+            == expected_res["auxiliary_wires"]
+        )
         assert select_cost.gate_counts["Toffoli"] == expected_res["toffoli_gates"]
 
     # The Toffoli and qubit costs are compared here
@@ -154,7 +157,8 @@ class TestSelectTHC:
         )
         assert ctrl_select_cost.algo_wires == expected_res["algo_wires"]
         assert (
-            ctrl_select_cost.zeroed + ctrl_select_cost.any_state == expected_res["auxiliary_wires"]
+            ctrl_select_cost.zeroed_wires + ctrl_select_cost.any_state_wires
+            == expected_res["auxiliary_wires"]
         )
         assert ctrl_select_cost.gate_counts["Toffoli"] == expected_res["toffoli_gates"]
 

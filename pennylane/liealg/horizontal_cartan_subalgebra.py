@@ -212,7 +212,7 @@ def horizontal_cartan_subalgebra(
         >>> from pennylane.liealg import adjvec_to_op
         >>> a = adjvec_to_op(np_a, g)
         >>> h_op = [qml.pauli_decompose(op).pauli_rep for op in a]
-        >>> h_op
+        >>> h_op # doctest: +SKIP
         [-1.0 * Y(1) @ Y(2), -1.0 * Z(1) @ Z(2), 1.0 * X(1) @ X(2)]
 
         In that case we chose a Cartan subalgebra from which we can readily see that it is commuting, but we also provide a small helper function to check that.

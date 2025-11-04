@@ -26,17 +26,18 @@ from pennylane.typing import PostprocessingFn, TensorLike
 
 @partial(transform, is_informative=True)
 def parity_matrix(
-    circ: QuantumScript, wire_order: Sequence = None
+    circ: QuantumScript, wire_order: Sequence | None = None
 ) -> tuple[TensorLike, PostprocessingFn]:
     r"""Compute the `parity matrix intermediate representation <https://pennylane.ai/compilation/parity-matrix-intermediate-representation>`__ of a CNOT circuit.
 
     Args:
-        circ (QNode or QuantumScript or Callable): Quantum circuit containing only CNOT gates.
-        wire_order (Sequence): Wire order indicating how rows and columns should be ordered. If ``None`` is provided, we take the wires of the input circuit (``tape.wires``).
+        circ (QNode or QuantumScript or Callable): Quantum circuit containing only ``CNOT`` gates.
+        wire_order (Sequence): Indicates how rows and columns should be ordered. If ``None`` is provided, uses the wires of the input circuit (``tape.wires``).
 
     Returns:
-        TensorLike: :math:`n \times n` Parity matrix for :math:`n` qubits.
-            In the case of inputting a callable function, a new callable with the same call signature is returned (see :func:`pennylane.transform`).
+        TensorLike:
+            :math:`n \times n` Parity matrix for :math:`n` qubits. In the case of inputting a callable function,
+            a new callable with the same call signature is returned (see :func:`pennylane.transform`).
 
     **Example**
 
@@ -45,18 +46,15 @@ def parity_matrix(
         import pennylane as qml
         from pennylane.transforms import parity_matrix
 
-        tape = qml.tape.QuantumScript([
-            qml.CNOT((3, 2)),
-            qml.CNOT((0, 2)),
-            qml.CNOT((2, 1)),
-            qml.CNOT((3, 2)),
-            qml.CNOT((3, 0)),
-            qml.CNOT((0, 2)),
-        ], [])
+        def circuit():
+            qml.CNOT((3, 2))
+            qml.CNOT((0, 2))
+            qml.CNOT((2, 1))
+            qml.CNOT((3, 2))
+            qml.CNOT((3, 0))
+            qml.CNOT((0, 2))
 
-        P = parity_matrix(tape, wire_order=range(4))
-
-    >>> P
+    >>> parity_matrix(circuit, wire_order=range(4))()
     array([[1, 0, 0, 1],
            [1, 1, 1, 1],
            [0, 0, 1, 1],
@@ -99,7 +97,6 @@ def parity_matrix(
 
         P = np.eye(len(w_order), dtype=int)
         for op in circ.operations:
-
             control, target = op.wires
             P[wire_map[target]] += P[wire_map[control]]
 

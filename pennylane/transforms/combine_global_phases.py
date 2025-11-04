@@ -42,7 +42,7 @@ def combine_global_phases(tape: QuantumScript) -> tuple[QuantumScriptBatch, Post
     Suppose we want to combine all the global phase gates in a given quantum circuit.
     The ``combine_global_phases`` transform can be used to do this as follows:
 
-    .. code-block:: python3
+    .. code-block:: python
 
         dev = qml.device("default.qubit", wires=3)
 
@@ -59,9 +59,10 @@ def combine_global_phases(tape: QuantumScript) -> tuple[QuantumScriptBatch, Post
     To check the result, let's print out the circuit:
 
     >>> print(qml.draw(circuit)())
-    0: ──Y─────GlobalPhase(0.76)─┤ ╭<X@Z>
-    1: ──H─╭●──GlobalPhase(0.76)─┤ ╰<X@Z>
-    2: ────╰X──GlobalPhase(0.76)─┤
+    0: ──Y────╭GlobalPhase(0.76)─┤ ╭<X@Z>
+    1: ──H─╭●─├GlobalPhase(0.76)─┤ ╰<X@Z>
+    2: ────╰X─╰GlobalPhase(0.76)─┤
+
     """
 
     has_global_phase = False

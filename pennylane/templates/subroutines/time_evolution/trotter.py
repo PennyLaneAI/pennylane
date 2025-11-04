@@ -112,13 +112,13 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
     Raises:
         TypeError: The ``hamiltonian`` is not of type :class:`~.Sum`.
         ValueError: The ``hamiltonian`` has only one term or no terms.
-        ValueError: One or more of the terms in ``hamiltonian`` are not Hermitian
+        ValueError: One or more of the terms in ``hamiltonian`` are not verified to be Hermitian. 
             (only for ``check_hermitian=True``)
         ValueError: The ``order`` is not one or a positive even integer.
 
     **Example**
 
-    .. code-block:: python3
+    .. code-block:: python
 
         coeffs = [0.25, 0.75]
         ops = [qml.X(0), qml.Z(0)]
@@ -137,7 +137,7 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
             return qml.state()
 
     >>> my_circ()
-    array([-0.13259524+0.59790098j,  0.        +0.j        , -0.13259524-0.77932754j,  0.        +0.j        ])
+    array([-0.132...+0.597...j,  0.        +0.j        , -0.132...-0.779...j,  0.        +0.j        ])
 
     .. warning::
 
@@ -172,7 +172,7 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
         This operation is similar to the :class:`~.ApproxTimeEvolution`. One can recover the behaviour
         of :class:`~.ApproxTimeEvolution` by taking the adjoint:
 
-        >>> qml.adjoint(qml.TrotterProduct(hamiltonian, time, order=1, n=n))
+        >>> qml.adjoint(qml.TrotterProduct(hamiltonian, time, order=1, n=n)) # doctest: +SKIP
 
         The grouping of terms in the ``operands`` attribute of the ``hamiltonian`` impacts
         the structure of the gates created by ``TrotterProduct``. To understand this, first
@@ -182,6 +182,12 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
         >>> ops = [qml.X(0), qml.Y(1), qml.Y(0) @ qml.Z(1), qml.X(0) @ qml.Y(1)]
         >>> H_flat = qml.dot(coeffs, ops)
         >>> H_flat
+        (
+            0.5 * X(0)
+        + 0.2 * Y(1)
+        + 0.1 * (Y(0) @ Z(1))
+        + -0.6 * (X(0) @ Y(1))
+        )
         >>> print(*H_flat.operands, sep="\n")
         0.5 * X(0)
         0.2 * Y(1)
@@ -193,10 +199,7 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
         exponentials per Trotter step:
 
         >>> qml.TrotterProduct(H_flat, 1., n=1, order=1).decomposition()
-        [Exp(1j -0.6 * (X(0) @ Y(1))),
-         Exp(1j 0.1 * (Y(0) @ Z(1))),
-         Exp(1j 0.2 * Y(1)),
-         Exp(1j 0.5 * X(0))]
+        [Evolution(1j -0.6 * (X(0) @ Y(1))), Evolution(1j 0.1 * (Y(0) @ Z(1))), Evolution(1j 0.2 * Y(1)), Evolution(1j 0.5 * X(0))]
 
         If we first create two operands with two Pauli words each and then sum those, this is
         reflected in the structure of the operator:
@@ -209,8 +212,7 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
         The ``TrotterProduct`` accordingly has a different structure as well:
 
         >>> qml.TrotterProduct(H_grouped, 1., n=1, order=1).decomposition()
-        [Exp(1j 0.1 * (Y(0) @ Z(1)) + -0.6 * (X(0) @ Y(1))),
-         Exp(1j 0.5 * X(0) + 0.2 * Y(1))]
+        [Evolution(1j 0.1 * (Y(0) @ Z(1)) + -0.6 * (X(0) @ Y(1))), Evolution(1j 0.5 * X(0) + 0.2 * Y(1))]
 
 
         As we can see, the ``operands`` structure of the Hamiltonian directly impacts the
@@ -218,11 +220,11 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
         approximations to the true time evolution.
 
         We can also compute the gradient with respect to the coefficients of the Hamiltonian and the
-        evolution time:
+        evolution time. Note that this is currently only possible with backprop. 
 
-        .. code-block:: python3
+        .. code-block:: python
 
-            @qml.qnode(dev)
+            @qml.qnode(dev, diff_method="backprop")
             def my_circ(c1, c2, time):
                 # Prepare H:
                 H = qml.dot([c1, c2], [qml.X(0), qml.Z(0)])
@@ -236,9 +238,10 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
                 # Measure some quantity
                 return qml.expval(qml.Z(0) @ qml.Z(1))
 
-        >>> args = np.array([1.23, 4.5, 0.1])
+        >>> args = qml.numpy.array([1.23, 4.5, 0.1])
         >>> qml.grad(my_circ)(*tuple(args))
-        (tensor(0.00961064, requires_grad=True), tensor(-0.12338274, requires_grad=True), tensor(-5.43401259, requires_grad=True))
+        (tensor(0.077..., requires_grad=True), tensor(0.015..., requires_grad=True), tensor(1.642..., requires_grad=True))
+
     """
 
     resource_keys = {"n", "order", "ops"}
@@ -282,12 +285,10 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
                 f"The given operator must be a PennyLane ~.Sum or ~.SProd, got {hamiltonian}"
             )
 
-        if check_hermitian:
-            for op in hamiltonian.operands:
-                if not op.is_hermitian:
-                    raise ValueError(
-                        "One or more of the terms in the Hamiltonian may not be Hermitian"
-                    )
+        if check_hermitian and not all(op.is_verified_hermitian for op in hamiltonian.operands):
+            raise ValueError(
+                "One or more of the terms in the Hamiltonian are not verified to be Hermitian. Please consider verifying the Hamiltonian manually using the more exhaustive 'qml.is_hermitian' check and provide `check_hermitian=False` to the `TrotterProduct` constructor."
+            )
 
         self._hyperparameters = {
             "n": n,
@@ -437,8 +438,8 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
 
         >>> op = qml.ctrl(qml.U2(3.4, 4.5, wires="a"), ("b", "c") )
         >>> op._flatten()
-        ((U2(3.4, 4.5, wires=['a']),),
-        (Wires(['b', 'c']), (True, True), Wires([])))
+        ((U2(3.4, 4.5, wires=['a']),), (Wires(['b', 'c']), (True, True), Wires([]), 'borrowed'))
+
         """
         hamiltonian = self.hyperparameters["base"]
         time = self.data[-1]
@@ -450,29 +451,6 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
 
     @classmethod
     def _unflatten(cls, data, metadata):
-        """Recreate an operation from its serialized format.
-
-        Args:
-            data: the trainable component of the operation
-            metadata: the non-trainable component of the operation.
-
-        The output of ``Operator._flatten`` and the class type must be sufficient to reconstruct the original
-        operation with ``Operator._unflatten``.
-
-        **Example:**
-
-        >>> op = qml.Rot(1.2, 2.3, 3.4, wires=0)
-        >>> op._flatten()
-        ((1.2, 2.3, 3.4), (Wires([0]), ()))
-        >>> qml.Rot._unflatten(*op._flatten())
-        >>> op = qml.PauliRot(1.2, "XY", wires=(0,1))
-        >>> op._flatten()
-        ((1.2,), (Wires([0, 1]), (('pauli_word', 'XY'),)))
-        >>> op = qml.ctrl(qml.U2(3.4, 4.5, wires="a"), ("b", "c") )
-        >>> type(op)._unflatten(*op._flatten())
-        Controlled(U2(3.4, 4.5, wires=['a']), control_wires=['b', 'c'])
-
-        """
         return cls(*data, **dict(metadata))
 
     @staticmethod
@@ -522,18 +500,14 @@ def _trotter_product_decomposition_resources(n, order, ops):
 
     if order == 1:
         for op in ops:
-            reps[resource_rep(qml_ops.op_math.Evolution, base=op, num_steps=None)] = n * _count(
-                op, ops
-            )
+            reps[resource_rep(qml_ops.op_math.Evolution, base=op)] = n * _count(op, ops)
         return reps
     if order == 2:
         for op in ops:
-            reps[resource_rep(qml_ops.op_math.Evolution, base=op, num_steps=None)] = (
-                n * 2 * _count(op, ops)
-            )
+            reps[resource_rep(qml_ops.op_math.Evolution, base=op)] = n * 2 * _count(op, ops)
         return reps
     for op in ops:
-        reps[resource_rep(qml_ops.op_math.Evolution, base=op, num_steps=None)] = (
+        reps[resource_rep(qml_ops.op_math.Evolution, base=op)] = (
             n * _count(op, ops) * 2 * 5 * (order - 2) / 2
         )
     return reps
@@ -636,7 +610,7 @@ class TrotterizedQfunc(Operation):
 
     **Example**
 
-    .. code-block:: python3
+    .. code-block:: python
 
         def first_order_expansion(time, theta, phi, wires=[0, 1, 2], flip=False):
             "This is the first order expansion (U_1)."
@@ -660,15 +634,15 @@ class TrotterizedQfunc(Operation):
 
     We can visualize the circuit to see the Suzuki-Trotter product formula being applied:
 
-        >>> time = 0.1
-        >>> angles = (0.12, -3.45)
-        >>> print(qml.draw(my_circuit, level="device")(time, angles, num_trotter_steps=1))
-        a: ──RX(0.01)──╭●─╭●──RX(0.01)──┤  State
-        b: ──RY(-0.17)─╰X─╰X──RY(-0.17)─┤  State
-        >>>
-        >>> print(qml.draw(my_circuit, level="device")(time, angles, num_trotter_steps=3))
-        a: ──RX(0.00)──╭●─╭●──RX(0.00)───RX(0.00)──╭●─╭●──RX(0.00)───RX(0.00)──╭●─╭●──RX(0.00)──┤  State
-        b: ──RY(-0.06)─╰X─╰X──RY(-0.06)──RY(-0.06)─╰X─╰X──RY(-0.06)──RY(-0.06)─╰X─╰X──RY(-0.06)─┤  State
+    >>> time = 0.1
+    >>> angles = (0.12, -3.45)
+    >>> print(qml.draw(my_circuit, level="device")(time, angles, num_trotter_steps=1))
+    a: ──RX(0.01)──╭●─╭●──RX(0.01)──┤  State
+    b: ──RY(-0.17)─╰X─╰X──RY(-0.17)─┤  State
+    >>>
+    >>> print(qml.draw(my_circuit, level="device")(time, angles, num_trotter_steps=3))
+    a: ──RX(0.00)──╭●─╭●──RX(0.00)───RX(0.00)──╭●─╭●──RX(0.00)───RX(0.00)──╭●─╭●──RX(0.00)──┤  State
+    b: ──RY(-0.06)─╰X─╰X──RY(-0.06)──RY(-0.06)─╰X─╰X──RY(-0.06)──RY(-0.06)─╰X─╰X──RY(-0.06)─┤  State
 
     """
 
@@ -734,33 +708,11 @@ class TrotterizedQfunc(Operation):
         return decomp
 
     def _flatten(self):
-        """Serialize the operation into trainable and non-trainable components.
-
-        Returns:
-            data, metadata: The trainable and non-trainable components.
-
-        See ``Operator._unflatten``.
-
-        The data component can be recursive and include other operations. For example, the trainable component of ``Adjoint(RX(1, wires=0))``
-        will be the operator ``RX(1, wires=0)``.
-
-        The metadata **must** be hashable.  If the hyperparameters contain a non-hashable component, then this
-        method and ``Operator._unflatten`` should be overridden to provide a hashable version of the hyperparameters.
-        """
         hashable_hyperparameters = tuple(self.hyperparameters.items()) + (("wires", self.wires),)
         return self.data, hashable_hyperparameters
 
     @classmethod
     def _unflatten(cls, data, metadata):
-        """Recreate an operation from its serialized format.
-
-        Args:
-            data: the trainable component of the operation
-            metadata: the non-trainable component of the operation.
-
-        The output of ``Operator._flatten`` and the class type must be sufficient to reconstruct the original
-        operation with ``Operator._unflatten``.
-        """
         return cls(*data, **dict(metadata))
 
 
@@ -819,7 +771,7 @@ def trotterize(qfunc, n=1, order=2, reverse=False):
 
     **Example**
 
-    .. code-block:: python3
+    .. code-block:: python
 
         def first_order_expansion(time, theta, phi, wires, flip=False):
             "This is the first order expansion (U_1)."
@@ -839,22 +791,21 @@ def trotterize(qfunc, n=1, order=2, reverse=False):
 
     We can visualize the circuit to see the Suzuki-Trotter product formula being applied:
 
-        >>> time = 0.1
-        >>> theta, phi = (0.12, -3.45)
-        >>>
-        >>> print(qml.draw(my_circuit, level="device")(time, theta, phi, num_trotter_steps=1))
-        a: ──RX(0.01)──╭●─╭●──RX(0.01)──┤  State
-        b: ──RY(-0.17)─╰X─╰X──RY(-0.17)─┤  State
-        >>>
-        >>> print(qml.draw(my_circuit, level="device")(time, theta, phi, num_trotter_steps=3))
-        a: ──RX(0.00)──╭●─╭●──RX(0.00)───RX(0.00)──╭●─╭●──RX(0.00)───RX(0.00)──╭●─╭●──RX(0.00)──┤  State
-        b: ──RY(-0.06)─╰X─╰X──RY(-0.06)──RY(-0.06)─╰X─╰X──RY(-0.06)──RY(-0.06)─╰X─╰X──RY(-0.06)─┤  State
+    >>> time = 0.1
+    >>> theta, phi = (0.12, -3.45)
+    >>>
+    >>> print(qml.draw(my_circuit, level="device")(time, theta, phi, num_trotter_steps=1))
+    a: ──RX(0.01)──╭●─╭●──RX(0.01)──┤  State
+    b: ──RY(-0.17)─╰X─╰X──RY(-0.17)─┤  State
+    >>>
+    >>> print(qml.draw(my_circuit, level="device")(time, theta, phi, num_trotter_steps=3))
+    a: ──RX(0.00)──╭●─╭●──RX(0.00)───RX(0.00)──╭●─╭●──RX(0.00)───RX(0.00)──╭●─╭●──RX(0.00)──┤  State
+    b: ──RY(-0.06)─╰X─╰X──RY(-0.06)──RY(-0.06)─╰X─╰X──RY(-0.06)──RY(-0.06)─╰X─╰X──RY(-0.06)─┤  State
 
     """
 
     @wraps(qfunc)
     def wrapper(time, *args, **kwargs):
-
         special_keys = ["n", "order", "qfunc", "reverse"]
         if any(key in kwargs for key in special_keys):
             raise ValueError(
