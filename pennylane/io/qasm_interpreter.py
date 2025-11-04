@@ -1073,7 +1073,7 @@ class QasmInterpreter:
             context (Context): the current context.
         """
         raise EndProgram(
-            f"The QASM program was terminated om line {node.span.start_line}."
+            f"The QASM program was terminated on line {node.span.start_line}. "
             f"There may be unprocessed QASM code."
         )
 
