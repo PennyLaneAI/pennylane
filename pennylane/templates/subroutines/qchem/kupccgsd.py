@@ -16,12 +16,13 @@ Contains the k-UpCCGSD template.
 """
 # pylint: disable-msg=too-many-arguments,protected-access,too-many-positional-arguments
 import copy
+from collections import defaultdict
 from itertools import product
 
 import numpy as np
-from pennylane.decomposition import resource_rep
 
 from pennylane import math
+from pennylane.decomposition import resource_rep
 from pennylane.operation import Operation
 from pennylane.templates.embeddings import BasisEmbedding
 from pennylane.wires import Wires
@@ -341,16 +342,15 @@ class kUpCCGSD(Operation):
         return k, len(s_wires) + len(d_wires)
 
 
-def _kupccgsd_resources(num_wires, k, len_d_wires, len_s_wires):
-    resources = {
-        resource_rep(BasisEmbedding, num_wires=num_wires): 1
-    }
+def _kupccgsd_resources(num_wires, k, d_wires, s_wires):
+    resources = defaultdict(int)
+    resources[resource_rep(BasisEmbedding, num_wires=num_wires)] = 1
 
     for layer in range(k):
-        for i, (w1, w2) in enumerate(d_wires):
-            FermionicDoubleExcitation(
-                weights[layer][len(s_wires) + i], wires1=w1, wires2=w2
-            )
+        for w1, w2 in d_wires:
+            resources[
+                resource_rep(FermionicDoubleExcitation, num_wires_1=len(w1), num_wires_2=len(w2))
+            ] += 1
 
-        for j, s_wires_ in enumerate(s_wires):
-            FermionicSingleExcitation(weights[layer][j], wires=s_wires_)
+        for s_wires_ in s_wires:
+            resources[resource_rep(FermionicSingleExcitation, num_wires=len(s_wires_))] += 1
