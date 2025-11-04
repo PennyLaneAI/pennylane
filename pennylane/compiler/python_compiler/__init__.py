@@ -21,7 +21,7 @@ This submodule contains the API for the integration of PennyLane and Catalyst wi
     This module is currently experimental and will not maintain API stability between releases.
 
 To get started with the unified compiler and xDSL, check out the
-:doc:`quickstart guide </development/unified_compiler/unified_compiler_cookbook>`
+:doc:`quickstart guide </development/unified_compiler/unified_compiler_cookbook>`.
 
 .. automodapi:: pennylane.compiler.python_compiler
     :no-heading:
