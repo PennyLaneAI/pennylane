@@ -37,30 +37,48 @@ class Compiler:
 
     @staticmethod
     def run(
-        jmod: jaxModule,
+        module: jaxModule | str,
         callback: Callable[[ModulePass, ModuleOp, ModulePass], None] | None = None,
-    ) -> jaxModule:
+    ) -> jaxModule | str:
         """Runs the apply-transform-sequence pass.
 
         The apply-transform-sequence pass is a "meta-pass". In other words,
         it is a pass that runs other passes.
-        """
 
-        gentxtmod: str = jmod.operation.get_asm(
-            binary=False, print_generic_op_form=True, assume_verified=True
-        )
+        Args:
+            module: Either a Jax MLIR module or MLIR IR as string
+            callback: Optional callback function called between passes
+
+        Returns:
+            jaxModule if input was jaxModule, str if input was str
+        """
+        # Convert to generic text format
+        is_jax_module = isinstance(module, jaxModule)
+        if is_jax_module:
+            gentxtmod = module.operation.get_asm(
+                binary=False, print_generic_op_form=True, assume_verified=True
+            )
+        else:
+            gentxtmod = module
+
+        # Parse and transform with xDSL
         ctx = xContext(allow_unregistered=True)
         parser = QuantumParser(ctx, gentxtmod)
         # xmod is modified in place
         xmod = parser.parse_module()
         pipeline = PassPipeline((ApplyTransformSequence(callback=callback),))
         pipeline.apply(ctx, xmod)
+
+        # Convert back to string
         buffer = io.StringIO()
         Printer(stream=buffer, print_generic_format=True).print_op(xmod)
-        with jaxContext() as jctx:
-            jctx.allow_unregistered_dialects = True
-            jctx.append_dialect_registry(mlir.upstream_dialects)
-            stablehlo.register_dialect(jctx)  # pylint: disable=no-member
-            newmod: jaxModule = jaxModule.parse(buffer.getvalue())
 
-        return newmod
+        # Convert back to jaxModule if input was jaxModule
+        if is_jax_module:
+            with jaxContext() as jctx:
+                jctx.allow_unregistered_dialects = True
+                jctx.append_dialect_registry(mlir.upstream_dialects)
+                stablehlo.register_dialect(jctx)  # pylint: disable=no-member
+                newmod: jaxModule = jaxModule.parse(buffer.getvalue())
+            return newmod
+        return buffer.getvalue()
