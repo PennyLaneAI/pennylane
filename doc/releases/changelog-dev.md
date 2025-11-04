@@ -13,6 +13,10 @@
 * Added a :func:`~pennylane.measurements.pauli_measure` that takes a Pauli product measurement.
   [(#8461)](https://github.com/PennyLaneAI/pennylane/pull/8461)
 
+* A new template :class:`~.MultiplexerStatePreparation` has been added. This template allows prepare arbitrary states
+  using :class:`~.SelectPauliRot` operations.
+  [(#8581)](https://github.com/PennyLaneAI/pennylane/pull/8581)
+
 <h3>Improvements 🛠</h3>
 
 * The new graph based decompositions system enabled via :func:`~.decomposition.enable_graph` now supports the following
