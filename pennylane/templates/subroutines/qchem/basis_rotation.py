@@ -50,10 +50,10 @@ def _adjust_determinant(matrix):
         # the first column with -1 is equal to prepending the decomposition with a phase shift
         mat = math.copy(mat) if math.get_interface(mat) == "jax" else math.toarray(mat).copy()
         mat = math.T(math.set_index(math.T(mat), 0, -mat[:, 0]))
-        return np.pi * (1 - det) / 2 + 0.0 + 0.0j, mat
+        return np.pi * (1 - math.real(det)) / 2, mat
 
     def false_branch(mat):
-        return np.array(0.0 + 0.0j), mat
+        return np.array(0.0), mat
 
     return cond(math.is_abstract(matrix) or det < 0, abstract_or_less_than_zero_det, false_branch)(
         matrix
@@ -134,10 +134,10 @@ class BasisRotation(Operation):
         >>> from scipy.stats import ortho_group
         >>> O = ortho_group.rvs(4, random_state=51)
         >>> print(qml.draw(qml.BasisRotation(wires=range(4), unitary_matrix=O).decomposition)())
-        0: ──Rϕ(3.14+0.00j)─╭G(-3.19)──────────╭G(2.63)─┤
-        1: ─╭G(-3.13)───────╰G(-3.19)─╭G(2.68)─╰G(2.63)─┤
-        2: ─╰G(-3.13)───────╭G(-2.98)─╰G(2.68)─╭G(5.70)─┤
-        3: ─────────────────╰G(-2.98)──────────╰G(5.70)─┤
+        0: ──Rϕ(3.14)─╭G(-3.19)──────────╭G(2.63)─┤
+        1: ─╭G(-3.13)─╰G(-3.19)─╭G(2.68)─╰G(2.63)─┤
+        2: ─╰G(-3.13)─╭G(-2.98)─╰G(2.68)─╭G(5.70)─┤
+        3: ───────────╰G(-2.98)──────────╰G(5.70)─┤
 
     .. details::
         :title: Theory
