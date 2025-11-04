@@ -272,6 +272,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* A performance regression caused by extra erroneous operators in the QSVT template has been fixed.
+  [(#8577)](https://github.com/PennyLaneAI/pennylane/pull/8577)
+
 * Add an exception to the warning for unsolved operators within the graph-based decomposition
   system if the unsolved operators are :class:`.allocation.Allocate` or :class:`.allocation.Deallocate`.
   [(#8553)](https://github.com/PennyLaneAI/pennylane/pull/8553)
