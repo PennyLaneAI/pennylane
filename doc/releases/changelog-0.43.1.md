@@ -11,4 +11,4 @@
 This release contains contributions from (in alphabetical order):
 
 Yushao Chen,
-nate stemen.
+Nate Stemen.
