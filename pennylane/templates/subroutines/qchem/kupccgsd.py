@@ -26,7 +26,7 @@ from pennylane.control_flow import for_loop
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.operation import Operation
 from pennylane.templates.embeddings import BasisEmbedding
-from pennylane.wires import Wires
+from pennylane.wires import Wires, WiresLike
 
 from .fermionic_double_excitation import FermionicDoubleExcitation
 from .fermionic_single_excitation import FermionicSingleExcitation
@@ -354,7 +354,7 @@ class kUpCCGSD(Operation):
         return k, len(s_wires) + len(d_wires)
 
 
-def _kupccgsd_resources(num_wires, k, d_wires, s_wires):
+def _kupccgsd_resources(num_wires: int, k: int, d_wires: list, s_wires: list):
     resources = defaultdict(int)
     resources[resource_rep(BasisEmbedding, num_wires=num_wires)] = 1
 
@@ -372,13 +372,13 @@ def _kupccgsd_resources(num_wires, k, d_wires, s_wires):
 
 @register_resources(_kupccgsd_resources)
 def _kupccgsd_decomposition(
-    weights,
-    wires,
-    s_wires,
-    d_wires,
-    k,
-    init_state,
-    delta_sz=None,
+    weights: list,
+    wires: WiresLike,
+    s_wires: list,
+    d_wires: list,
+    k: int,
+    init_state: tuple[int],
+    delta_sz: int = None,
 ):  # pylint: disable=too-many-arguments, arguments-differ, unused-argument
 
     BasisEmbedding(init_state, wires=wires)
