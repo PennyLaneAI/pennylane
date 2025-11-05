@@ -81,8 +81,6 @@ def mlir_specs(qnode: QNode, level: None | int = None) -> callable:
         if not cache:
             return None
 
-        print(cache)
-
         return cache.get(level, cache[max(cache.keys())])[0]
 
     return wrapper

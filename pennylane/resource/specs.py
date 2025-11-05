@@ -197,11 +197,11 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> SpecsDict:  # pr
         results = qml.compiler.python_compiler.mlir_specs(qjit, level)(*args, **kwargs)
         resources = Resources(
             num_wires=results.num_wires,
-            num_gates=None,
+            num_gates=sum(results.resource_sizes.values()),
             gate_types=results.quantum_operations | results.ppm_operations,
-            gate_sizes=None,
-            depth=None,
-            shots=None,
+            gate_sizes=results.resource_sizes,
+            depth=None,  # Can't get depth for intermediate stages
+            shots=original_qnode.shots,  # TODO: Can this ever be overriden during compilation?
         )
 
     elif level == "device":

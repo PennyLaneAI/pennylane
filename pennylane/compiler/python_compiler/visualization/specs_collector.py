@@ -18,6 +18,7 @@ which collects and maps PennyLane operations and measurements from xDSL.
 """
 
 import enum
+from collections import defaultdict
 from functools import singledispatch
 
 import xdsl
@@ -66,9 +67,11 @@ class ResourcesResult:
     """Class to hold the result of resource collection for a given operation."""
 
     def __init__(self):
-        self.quantum_operations: dict[str, int] = {}
-        self.quantum_measurements: dict[str, int] = {}
-        self.ppm_operations: dict[str, int] = {}
+        self.quantum_operations: dict[str, int] = defaultdict(int)
+        self.quantum_measurements: dict[str, int] = defaultdict(int)
+        self.ppm_operations: dict[str, int] = defaultdict(int)
+
+        self.resource_sizes: dict[int, int] = defaultdict(int)
 
         self.device_name = None
         self.num_wires = 0  # More accurately, the number of NEW allocations in this region
@@ -76,11 +79,14 @@ class ResourcesResult:
     def merge_with(self, other: "ResourcesResult") -> None:
         """Merge another ResourcesResult into this one."""
         for name, count in other.quantum_operations.items():
-            self.quantum_operations[name] = self.quantum_operations.get(name, 0) + count
+            self.quantum_operations[name] += count
         for name, count in other.quantum_measurements.items():
-            self.quantum_measurements[name] = self.quantum_measurements.get(name, 0) + count
+            self.quantum_measurements[name] += count
         for name, count in other.ppm_operations.items():
-            self.ppm_operations[name] = self.ppm_operations.get(name, 0) + count
+            self.ppm_operations[name] += count
+
+        for size, count in other.resource_sizes.items():
+            self.resource_sizes[size] += count
 
         self.device_name = self.device_name or other.device_name
         self.num_wires += other.num_wires
@@ -94,6 +100,9 @@ class ResourcesResult:
         for name in self.ppm_operations:
             self.ppm_operations[name] *= scalar
 
+        for size in self.resource_sizes:
+            self.resource_sizes[size] *= scalar
+
         # This is the number of allocations WITHIN this region, should be scaled
         self.num_wires *= scalar
 
@@ -104,7 +113,9 @@ class ResourcesResult:
 
 
 @singledispatch
-def handle_resource(xdsl_op: xdsl.ir.Operation) -> tuple[ResourceType, str] | tuple[None, None]:
+def handle_resource(
+    xdsl_op: xdsl.ir.Operation,
+) -> tuple[ResourceType, str, int] | tuple[None, None]:
     # breakpoint()
     # print(f"Unsupported xDSL op: {xdsl_op}")
     # raise NotImplementedError(f"Unsupported xDSL op: {xdsl_op}")
@@ -230,12 +241,15 @@ def _collect_region(region) -> ResourcesResult:
                 resources.quantum_operations[resource] = (
                     resources.quantum_operations.get(resource, 0) + 1
                 )
+                n_qubits = len(op.in_qubits) + len(op.in_ctrl_qubits)
+                resources.resource_sizes[n_qubits] += 1
             case ResourceType.MEASUREMENT:
                 resources.quantum_measurements[resource] = (
                     resources.quantum_measurements.get(resource, 0) + 1
                 )
             case ResourceType.PPM:
                 resources.ppm_operations[resource] = resources.ppm_operations.get(resource, 0) + 1
+                resources.resource_sizes[len(op.in_qubits)] += 1
             case ResourceType.OTHER:
                 # Parse out extra circuit information
                 handle_extra(op, resources)
