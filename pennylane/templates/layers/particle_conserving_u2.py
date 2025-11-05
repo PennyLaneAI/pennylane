@@ -20,7 +20,7 @@ from pennylane.decomposition import add_decomps, register_resources, resource_re
 from pennylane.operation import Operation
 from pennylane.ops import CNOT, CRX, RZ
 from pennylane.templates.embeddings import BasisEmbedding
-from pennylane.wires import Wires
+from pennylane.wires import Wires, WiresLike
 
 has_jax = True
 try:
@@ -263,7 +263,7 @@ class ParticleConservingU2(Operation):
         return n_layers, 2 * n_wires - 1
 
 
-def _particle_conserving_u2_resources(num_wires, n_layers):
+def _particle_conserving_u2_resources(num_wires: int, n_layers: int):
     # number of pairs of even-indexed of wires
     num_nm_wires = (
         math.floor(num_wires / 2) if num_wires % 2 == 0 else math.ceil((num_wires - 1) / 2)
@@ -280,7 +280,7 @@ def _particle_conserving_u2_resources(num_wires, n_layers):
 
 
 @register_resources(_particle_conserving_u2_resources)
-def _particle_conserving_u2_decomposition(weights, wires, init_state):
+def _particle_conserving_u2_decomposition(weights: list, wires: WiresLike, init_state: tuple[int]):
     nm_wires = [wires[l : l + 2] for l in range(0, len(wires) - 1, 2)]
     nm_wires += [wires[l : l + 2] for l in range(1, len(wires) - 1, 2)]
     n_layers = math.shape(weights)[0]
