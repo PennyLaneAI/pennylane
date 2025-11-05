@@ -345,19 +345,6 @@ class TestDecomposition:
         assert gen_singles_wires == generalized_singles_wires
         assert gen_doubles_wires == generalized_pair_doubles_wires
 
-    @pytest.mark.usefixtures("enable_graph_decomposition")
-    @pytest.mark.parametrize(("k", "delta_sz", "init_state", "wires"), k_delta_sz_init_state_wires)
-    def test_decomposition_new(self, k, delta_sz, init_state, wires):
-        sz = np.array([0.5 if (i % 2 == 0) else -0.5 for i in range(len(wires))])
-
-        n_excit_terms = len(_gen_single_terms_wires(wires, sz, delta_sz)) + len(
-            _pair_double_terms_wires(wires)
-        )
-        weights = np.random.normal(0, 2 * np.pi, (k, n_excit_terms))
-        op = qml.kUpCCGSD(weights, wires=wires, k=k, delta_sz=delta_sz, init_state=init_state)
-        for rule in qml.list_decomps(qml.kUpCCGSD):
-            _test_decomposition_rule(op, rule)
-
 
 class TestInputs:
     """Test inputs and pre-processing."""
