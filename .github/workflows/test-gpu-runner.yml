@@ -1,0 +1,14 @@
+name: GPU Tests
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  gpu-tests:
+    runs-on:
+      - single-gpu-x64
+
+    steps:
+      - name: Test
+        run: |
+          echo "Testing"
