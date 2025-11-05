@@ -274,6 +274,14 @@ enabled.
 Default behaviour with custom decompositions
 ********************************************
 
+.. warning::
+    The keyword argument for defining custom quantum gate decompositions, ``custom_decomps``,
+    has been deprecated and will be removed in v0.45. Instead, to specify custom decompositions for
+    your operators, use the :func:`qml.transforms.decompose <pennylane.transforms.decompose>` transform with the new
+    graph-based system enabled via :func:`qml.decomposition.enable_graph() <pennylane.decomposition.enable_graph>`.
+    The details on how to define your decomposition rules using the graph decomposition system are described
+    in :ref:`the next section <custom_decomps_with_graph>`.
+
 For example, suppose we would like to implement the following QNode:
 
 .. code-block:: python
@@ -357,6 +365,8 @@ be used.
 
     To have better control over custom decompositions, consider using the graph 
     decompositions system functionality outlined in the next section.
+
+.. _custom_decomps_with_graph:
 
 Custom decompositions with qml.decomposition.enable_graph
 *********************************************************

@@ -171,7 +171,7 @@ def device(name, *args, **kwargs):
 
         .. warning::
             The keyword argument for defining custom quantum gate decompositions, ``custom_decomps``,
-            has been deprecated and will be removed in v0.44. Instead, to specify custom decompositions for
+            has been deprecated and will be removed in v0.45. Instead, to specify custom decompositions for
             your operators, use the ``qml.transforms.decompose`` transform with the new
             graph-based system enabled via ``qml.decomposition.enable_graph()``. See the documentation
             on **Customizing Decompositions** in :func:`~.transforms.decompose` for more details on how
