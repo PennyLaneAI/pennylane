@@ -180,6 +180,7 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> SpecsDict:  # pr
     # Have to import locally to prevent circular imports as well as accounting for Catalyst not being installed
     # Integration tests for this function are within the Catalyst frontend tests, it is not covered by unit tests
     import catalyst
+
     from pennylane.compiler.python_compiler.visualization import mlir_specs
 
     # TODO: Determine if its possible to have batched QJIT code / how to handle it
@@ -195,14 +196,37 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> SpecsDict:  # pr
 
     if isinstance(level, (int, tuple, list)) or level == "all":
         single_level = isinstance(level, int)
-
-        # TODO: Account for tape transforms
-        results = mlir_specs(qjit, level)(*args, **kwargs)
-
         if single_level:
-            results = [results]
+            level = [level]
+        elif level != "all":
+            level = list(level)
 
         resources = []
+
+        num_trans_levels = len(qml.workflow.get_transform_program(original_qnode))
+        trans_levels = list(range(num_trans_levels)) if level == "all" else level
+
+        # Handle tape transforms
+        for trans_level in trans_levels:
+            if trans_level not in range(num_trans_levels):
+                continue  # Not a tape transform level
+
+            batch, _ = qml.workflow.construct_batch(original_qnode, level=trans_level)(
+                *args, **kwargs
+            )
+            assert len(batch) == 1, "Batched QJIT code is not currently supported by qml.specs"
+            info = specs_from_tape(batch[0], compute_depth)
+
+            resources.append(info["resources"])
+
+        # Handle MLIR levels
+        mlir_levels = (
+            [lvl - num_trans_levels for lvl in level if lvl > num_trans_levels]
+            if level != "all"
+            else "all"
+        )
+        results = mlir_specs(qjit, mlir_levels)(*args, **kwargs)
+
         for res in results:
             res_resources = Resources(
                 num_wires=res.num_wires,
