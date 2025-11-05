@@ -623,7 +623,7 @@ def givens_decomposition(unitary):
     all phase angles :math:`\phi` vanish and :math:`D` can be fixed to the identity,
     absorbing its phases :math:`\pm 1` (with an even number of :math:`-1`\ s due to the
     determinant constraint) into the :math:`T` matrices.
-    :math:`U` is considered to be orthogonal if the keyword argument ``is_real`` is set to True.
+    Whether :math:`U` is orthogonal is inferred from the data type of ``unitary``.
     If the determinant of an orthogonal :math:`U` is negative, this will show as a single
     negative phase in the first output value of ``givens_decomposition``.
 
