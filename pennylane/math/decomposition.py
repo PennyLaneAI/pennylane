@@ -585,13 +585,11 @@ def _left_givens(indices, unitary, j, real_valued):
     return _left_givens_core(indices, unitary, j, real_valued)
 
 
-def givens_decomposition(unitary, is_real=False):
+def givens_decomposition(unitary):
     r"""Decompose a unitary into a sequence of Givens rotation gates with phase shifts and a diagonal phase matrix.
 
     Args:
         unitary (tensor): unitary matrix on which decomposition will be performed
-        is_real (bool): whether the unitary matrix is approximately real and a more efficient decomposition can be used
-            (more details below).
 
     Returns:
         (tensor_like, list[(tensor_like, tuple)]): diagonal elements of the phase matrix :math:`D` and Givens rotation matrix :math:`T` with their indices
@@ -685,6 +683,7 @@ def givens_decomposition(unitary, is_real=False):
     """
     interface = math.get_deep_interface(unitary)
     unitary_mat = math.copy(unitary) if interface == "jax" else math.toarray(unitary).copy()
+    is_real = not "complex" in math.get_dtype_name(unitary)
 
     shape = math.shape(unitary_mat)
 

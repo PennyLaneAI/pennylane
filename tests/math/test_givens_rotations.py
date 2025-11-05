@@ -132,7 +132,7 @@ def test_givens_decomposition(shape, seed):
 
     matrix = unitary_group.rvs(shape, random_state=seed)
 
-    phase_mat, ordered_rotations = givens_decomposition(matrix, not "complex" in matrix.dtype.name)
+    phase_mat, ordered_rotations = givens_decomposition(matrix)
     assert all(j == i + 1 for _, (i, j) in ordered_rotations)
     decomposed_matrix = np.diag(phase_mat)
     for grot_mat, (i, _) in ordered_rotations:
@@ -155,7 +155,7 @@ def test_givens_decomposition_jax(shape, jit, seed):
     matrix = jnp.array(unitary_group.rvs(shape, random_state=seed))
     func = jax.jit(givens_decomposition) if jit else givens_decomposition
 
-    phase_mat, ordered_rotations = func(matrix, is_real_obj_or_close(matrix))
+    phase_mat, ordered_rotations = func(matrix)
     assert all(j == i + 1 for _, (i, j) in ordered_rotations)
     decomposed_matrix = np.diag(phase_mat)
     for grot_mat, (i, _) in ordered_rotations:
@@ -176,7 +176,7 @@ def test_givens_decomposition_real_valued(shape, dtype, seed):
     matrix = ortho_group.rvs(shape, random_state=seed).astype(dtype)
     matrix[0] *= np.linalg.det(matrix)  # Make unit determinant
 
-    phase_mat, ordered_rotations = givens_decomposition(matrix, True)
+    phase_mat, ordered_rotations = givens_decomposition(matrix)
     assert all(j == i + 1 for _, (i, j) in ordered_rotations)
     decomposed_matrix = np.diag(phase_mat)
     if dtype is np.float64:
@@ -208,7 +208,7 @@ def test_givens_decomposition_real_valued_jax(shape, dtype, jit, seed):
     matrix = jnp.array(matrix)
     func = jax.jit(givens_decomposition) if jit else givens_decomposition
 
-    phase_mat, ordered_rotations = func(matrix, True)
+    phase_mat, ordered_rotations = func(matrix)
     assert all(j == i + 1 for _, (i, j) in ordered_rotations)
     decomposed_matrix = np.diag(phase_mat)
     if dtype is np.float64:
@@ -252,7 +252,7 @@ def test_givens_decomposition_exceptions(unitary_matrix, msg_match):
     """Test that givens_decomposition throws an exception if the parameters have illegal shapes."""
 
     with pytest.raises(ValueError, match=msg_match):
-        givens_decomposition(unitary_matrix, not "complex" in unitary_matrix.dtype.name)
+        givens_decomposition(unitary_matrix)
 
 
 @pytest.mark.jax

@@ -373,13 +373,13 @@ class BasisRotation(Operation):
             if angle != 0.0:
                 op_list.append(PhaseShift(angle, wires=wires[0]))
 
-            _, givens_list = math.decomposition.givens_decomposition(unitary_matrix, True)
+            _, givens_list = math.decomposition.givens_decomposition(unitary_matrix)
             for grot_mat, (i, j) in givens_list:
                 theta = math.arctan2(math.real(grot_mat[0, 1]), math.real(grot_mat[0, 0]))
                 op_list.append(SingleExcitation(2 * theta, wires=[wires[i], wires[j]]))
             return op_list
 
-        phase_list, givens_list = math.decomposition.givens_decomposition(unitary_matrix, False)
+        phase_list, givens_list = math.decomposition.givens_decomposition(unitary_matrix)
 
         for idx, phase in enumerate(phase_list):
             op_list.append(PhaseShift(math.angle(phase), wires=wires[idx]))
@@ -428,7 +428,7 @@ def _basis_rotation_decomp(unitary_matrix, wires: WiresLike, **__):
             if angle != 0.0:
                 PhaseShift(angle, wires=wires[0])
 
-        _, givens_list = math.decomposition.givens_decomposition(unitary, True)
+        _, givens_list = math.decomposition.givens_decomposition(unitary)
         givens_matrices, givens_ids = zip(*givens_list)
 
         if has_jax and capture.enabled():
@@ -445,7 +445,7 @@ def _basis_rotation_decomp(unitary_matrix, wires: WiresLike, **__):
         givens_loop()  # pylint: disable=no-value-for-parameter
 
     def complex_unitary(unitary, wires):
-        phase_list, givens_list = math.decomposition.givens_decomposition(unitary, False)
+        phase_list, givens_list = math.decomposition.givens_decomposition(unitary)
         givens_matrices, givens_ids = zip(*givens_list)
 
         if has_jax and capture.enabled():
