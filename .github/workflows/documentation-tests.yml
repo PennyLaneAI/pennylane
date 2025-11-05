@@ -57,6 +57,10 @@ jobs:
           pip install -e .
           pip install sybil pytest "jax~=0.6.0" "jaxlib~=0.6.0" torch matplotlib pyzx
 
+      - name: CPL Ecosystem Info
+        run: | 
+          python -c "import pennylane as qml\nqml.about()"
+
       # TODO: Remove the --ignore options as layers are tested and verified
       # to be working correctly.
       - name: Run documentation tests
