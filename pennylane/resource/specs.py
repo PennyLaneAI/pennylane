@@ -180,6 +180,7 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> SpecsDict:  # pr
     # Have to import locally to prevent circular imports as well as accounting for Catalyst not being installed
     # Integration tests for this function are within the Catalyst frontend tests, it is not covered by unit tests
     import catalyst
+    from pennylane.compiler.python_compiler.visualization import mlir_specs
 
     # TODO: Determine if its possible to have batched QJIT code / how to handle it
     pass_pipeline_wrapped = False
@@ -196,7 +197,7 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> SpecsDict:  # pr
         single_level = isinstance(level, int)
 
         # TODO: Account for tape transforms
-        results = qml.compiler.python_compiler.mlir_specs(qjit, level)(*args, **kwargs)
+        results = mlir_specs(qjit, level)(*args, **kwargs)
 
         if single_level:
             results = [results]
