@@ -241,7 +241,11 @@ def _collect_region(region) -> ResourcesResult:
                 resources.quantum_operations[resource] = (
                     resources.quantum_operations.get(resource, 0) + 1
                 )
-                n_qubits = len(op.in_qubits) + len(op.in_ctrl_qubits)
+                n_qubits = 0
+                if hasattr(op, "in_qubits"):
+                    n_qubits += len(op.in_qubits)
+                if hasattr(op, "in_ctrl_qubits"):
+                    n_qubits += len(op.in_ctrl_qubits)
                 resources.resource_sizes[n_qubits] += 1
             case ResourceType.MEASUREMENT:
                 resources.quantum_measurements[resource] = (

@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import warnings
 from functools import wraps
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 from catalyst import qjit
 from catalyst.passes.xdsl_plugin import getXDSLPluginAbsolutePath
@@ -44,7 +44,9 @@ def _get_mlir_module(qnode: QNode, args, kwargs) -> ModuleOp:
     return jitted_qnode.mlir_module
 
 
-def mlir_specs(qnode: QNode, level: None | int = None) -> callable:
+def mlir_specs(
+    qnode: QNode, level: None | int | tuple[int] | list[int] | Literal["all"] = None
+) -> callable:
     """Compute the specs used for a circuit at the level of an MLIR pass.
 
     Args:
@@ -81,6 +83,11 @@ def mlir_specs(qnode: QNode, level: None | int = None) -> callable:
         if not cache:
             return None
 
+        if level == "all":
+            return [cache[lvl][0] for lvl in sorted(cache.keys())]
+        if isinstance(level, (tuple, list)):
+            return [cache[lvl][0] if lvl in cache else None for lvl in level]
+        # Just one level was specified
         return cache.get(level, cache[max(cache.keys())])[0]
 
     return wrapper

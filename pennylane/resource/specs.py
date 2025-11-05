@@ -141,7 +141,7 @@ def _specs_qjit_device_level_tracking(
                 else:
                     return new_qnode
 
-            pass_pipeline = recursively_add_passes(qjit.user_function)
+            pass_pipeline = recursively_add_passes(qjit.original_function)
             new_qjit = QJIT(pass_pipeline, copy.copy(qjit.compile_options))
         else:
             new_qnode = qjit.original_function.update(device=spoofed_dev)
@@ -183,7 +183,7 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> SpecsDict:  # pr
 
     # TODO: Determine if its possible to have batched QJIT code / how to handle it
     pass_pipeline_wrapped = False
-    if isinstance(qjit.user_function, catalyst.passes.pass_api.PassPipelineWrapper):
+    if isinstance(qjit.original_function, catalyst.passes.pass_api.PassPipelineWrapper):
         pass_pipeline_wrapped = True
         original_qnode = qjit.original_qnode
     elif isinstance(qjit.original_function, qml.QNode):
@@ -192,17 +192,29 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> SpecsDict:  # pr
         raise ValueError("qml.specs can only be applied to a QNode or qjit'd QNode")
     device = original_qnode.device
 
-    if isinstance(level, int) or level == "all":
+    if isinstance(level, (int, tuple, list)) or level == "all":
+        single_level = isinstance(level, int)
+
         # TODO: Account for tape transforms
         results = qml.compiler.python_compiler.mlir_specs(qjit, level)(*args, **kwargs)
-        resources = Resources(
-            num_wires=results.num_wires,
-            num_gates=sum(results.resource_sizes.values()),
-            gate_types=results.quantum_operations | results.ppm_operations,
-            gate_sizes=results.resource_sizes,
-            depth=None,  # Can't get depth for intermediate stages
-            shots=original_qnode.shots,  # TODO: Can this ever be overriden during compilation?
-        )
+
+        if single_level:
+            results = [results]
+
+        resources = []
+        for res in results:
+            res_resources = Resources(
+                num_wires=res.num_wires,
+                num_gates=sum(res.resource_sizes.values()),
+                gate_types=res.quantum_operations | res.ppm_operations,
+                gate_sizes=res.resource_sizes,
+                depth=None,  # Can't get depth for intermediate stages
+                shots=original_qnode.shots,  # TODO: Can this ever be overriden during compilation?
+            )
+            resources.append(res_resources)
+
+        if single_level:
+            resources = resources[0]
 
     elif level == "device":
         resources = _specs_qjit_device_level_tracking(
