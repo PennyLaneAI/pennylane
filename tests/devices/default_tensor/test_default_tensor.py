@@ -514,7 +514,9 @@ def test_wire_order_dense_vector(method, num_orbitals):
     U0 = expm((X0 + X0.T) / 2.0)
 
     def basis_rotation_ops(unitary_matrix, wires):
-        _, givens_list = givens_decomposition(unitary_matrix, is_real_obj_or_close(unitary_matrix))
+        _, givens_list = givens_decomposition(
+            unitary_matrix, not "complex" in unitary_matrix.dtype.name
+        )
 
         for grot_mat, indices in givens_list:
             theta = np.arccos(np.real(grot_mat[1, 1]))

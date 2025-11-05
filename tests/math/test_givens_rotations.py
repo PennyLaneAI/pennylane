@@ -132,7 +132,7 @@ def test_givens_decomposition(shape, seed):
 
     matrix = unitary_group.rvs(shape, random_state=seed)
 
-    phase_mat, ordered_rotations = givens_decomposition(matrix, is_real_obj_or_close(matrix))
+    phase_mat, ordered_rotations = givens_decomposition(matrix, not "complex" in matrix.dtype.name)
     assert all(j == i + 1 for _, (i, j) in ordered_rotations)
     decomposed_matrix = np.diag(phase_mat)
     for grot_mat, (i, _) in ordered_rotations:
@@ -252,7 +252,7 @@ def test_givens_decomposition_exceptions(unitary_matrix, msg_match):
     """Test that givens_decomposition throws an exception if the parameters have illegal shapes."""
 
     with pytest.raises(ValueError, match=msg_match):
-        givens_decomposition(unitary_matrix, is_real_obj_or_close(unitary_matrix))
+        givens_decomposition(unitary_matrix, not "complex" in unitary_matrix.dtype.name)
 
 
 @pytest.mark.jax
