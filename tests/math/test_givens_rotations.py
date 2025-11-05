@@ -20,7 +20,6 @@ from scipy.stats import ortho_group, unitary_group
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.math import is_real_obj_or_close
 from pennylane.math.decomposition import _givens_matrix, _set_unitary_matrix, givens_decomposition
 
 

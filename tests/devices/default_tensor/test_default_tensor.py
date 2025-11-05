@@ -27,7 +27,6 @@ import pennylane as qml
 from pennylane.devices import ExecutionConfig
 from pennylane.devices.default_tensor import _operations, stopping_condition
 from pennylane.exceptions import DeviceError, WireError
-from pennylane.math import is_real_obj_or_close
 from pennylane.math.decomposition import givens_decomposition
 from pennylane.typing import TensorLike
 
