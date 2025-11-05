@@ -25,8 +25,13 @@ from xdsl.dialects import func
 from xdsl.dialects.scf import ForOp, IfOp
 
 from pennylane.compiler.python_compiler.dialects.catalyst import CallbackOp
+from pennylane.compiler.python_compiler.dialects.qec import (
+    PPMeasurementOp,
+    PPRotationOp,
+)
 from pennylane.compiler.python_compiler.dialects.quantum import (
     CustomOp,
+    DeviceInitOp,
     ExpvalOp,
     GlobalPhaseOp,
     MeasureOp,
@@ -45,9 +50,13 @@ from pennylane.compiler.python_compiler.visualization.xdsl_conversion import *
 class ResourceType(enum.Enum):
     """Enum for what kind of resource corresponds to a given xDSL operation type."""
 
+    # Circuit resources
     GATE = "gate"
     MEASUREMENT = "measurement"
     PPM = "ppm"
+
+    # Extra circuit info
+    OTHER = "other"
 
 
 class ResourcesResult:
@@ -58,6 +67,9 @@ class ResourcesResult:
         self.quantum_measurements: dict[str, int] = {}
         self.ppm_operations: dict[str, int] = {}
 
+        self.device = None
+        self.num_wires = 0
+
     def merge_with(self, other: "ResourcesResult") -> None:
         """Merge another ResourcesResult into this one."""
         for name, count in other.quantum_operations.items():
@@ -66,6 +78,9 @@ class ResourcesResult:
             self.quantum_measurements[name] = self.quantum_measurements.get(name, 0) + count
         for name, count in other.ppm_operations.items():
             self.ppm_operations[name] = self.ppm_operations.get(name, 0) + count
+
+        self.device = self.device or other.device
+        self.num_wires = max(self.num_wires, other.num_wires)
 
     def multiply_by_scalar(self, scalar: int) -> None:
         """Multiply all counts by a scalar."""
@@ -78,7 +93,7 @@ class ResourcesResult:
 
 
 @singledispatch
-def handle(xdsl_op: xdsl.ir.Operation) -> tuple[ResourceType, str] | tuple[None, None]:
+def handle_resource(xdsl_op: xdsl.ir.Operation) -> tuple[ResourceType, str] | tuple[None, None]:
     # breakpoint()
     # print(f"Unsupported xDSL op: {xdsl_op}")
     # raise NotImplementedError(f"Unsupported xDSL op: {xdsl_op}")
@@ -90,12 +105,12 @@ def handle(xdsl_op: xdsl.ir.Operation) -> tuple[ResourceType, str] | tuple[None,
 ############################################################
 
 
-@handle.register
+@handle_resource.register
 def _(xdsl_meas: StateOp) -> tuple[ResourceType, str]:
     return ResourceType.MEASUREMENT, xdsl_to_qml_measurement_type(xdsl_meas)
 
 
-@handle.register
+@handle_resource.register
 def _(xdsl_meas_op: ExpvalOp | VarianceOp | ProbsOp | SampleOp) -> tuple[ResourceType, str]:
     obs_op = xdsl_meas_op.obs.owner
     return ResourceType.MEASUREMENT, xdsl_to_qml_measurement_type(
@@ -103,21 +118,42 @@ def _(xdsl_meas_op: ExpvalOp | VarianceOp | ProbsOp | SampleOp) -> tuple[Resourc
     )
 
 
-@handle.register
+@handle_resource.register
 def _(xdsl_measure: MeasureOp) -> tuple[ResourceType, str]:
     return ResourceType.MEASUREMENT, xdsl_to_qml_measurement_type(xdsl_measure)
 
 
 ############################################################
-### Operators
+### Quantum Gates
 ############################################################
 
 
-@handle.register
+@handle_resource.register
 def _(
     xdsl_op: CustomOp | GlobalPhaseOp | QubitUnitaryOp | SetStateOp | MultiRZOp | SetBasisStateOp,
 ) -> tuple[ResourceType, str]:
     return ResourceType.GATE, xdsl_to_qml_op_type(xdsl_op)
+
+
+############################################################
+### PPM Operations
+############################################################
+
+
+@handle_resource.register
+def _(xdsl_op: PPRotationOp) -> tuple[ResourceType, str]:
+    s = f"PPR-pi/{xdsl_op.rotation_kind.value.data}-w{len(xdsl_op.in_qubits)}"
+    return ResourceType.PPM, s
+
+
+@handle_resource.register
+def _(xdsl_op: PPMeasurementOp) -> tuple[ResourceType, str]:
+    return ResourceType.PPM, f"PPM-w{len(xdsl_op.in_qubits)}"
+
+
+############################################################
+### Main Routines
+############################################################
 
 
 def _collect_region(region) -> ResourcesResult:
@@ -139,7 +175,7 @@ def _collect_region(region) -> ResourcesResult:
             collected_ops.merge_with(_collect_region(op.false_region))
             continue
 
-        resource_type, resource = handle(op)
+        resource_type, resource = handle_resource(op)
 
         if resource_type is None or resource is None:
             # xDSL op type is not a PennyLane resource to be tracked
@@ -154,7 +190,10 @@ def _collect_region(region) -> ResourcesResult:
                 collected_ops.quantum_measurements[resource] = (
                     collected_ops.quantum_measurements.get(resource, 0) + 1
                 )
-            # TODO: PPM specs
+            case ResourceType.PPM:
+                collected_ops.ppm_operations[resource] = (
+                    collected_ops.ppm_operations.get(resource, 0) + 1
+                )
             case _:
                 raise NotImplementedError(
                     f"Unsupported resource type {resource_type} for resource {resource}."
@@ -180,4 +219,5 @@ def specs_collect(module) -> dict[str, int]:
         collected_ops.merge_with(_collect_region(func_op.body))
 
     # print("Measurements:", collected_ops.quantum_measurements)
+    # print("PPMs:", collected_ops.ppm_operations)
     return collected_ops.quantum_operations
