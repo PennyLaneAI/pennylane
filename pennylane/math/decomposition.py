@@ -686,11 +686,6 @@ def givens_decomposition(unitary, is_real=False):
     interface = math.get_deep_interface(unitary)
     unitary_mat = math.copy(unitary) if interface == "jax" else math.toarray(unitary).copy()
 
-    if not math.is_abstract(unitary_mat) and math.is_real_obj_or_close(unitary_mat) != is_real:
-        raise ValueError(
-            f"The value of is_real={is_real} passed to givens_decomposition does not match the specified unitary."
-        )
-
     shape = math.shape(unitary_mat)
 
     if len(shape) != 2 or shape[0] != shape[1]:

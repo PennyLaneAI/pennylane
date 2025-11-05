@@ -476,10 +476,7 @@ def _basis_rotation_decomp(unitary_matrix, wires: WiresLike, **__):
 
     is_real = math.is_real_obj_or_close(unitary_matrix)
 
-    if is_real:
-        real_unitary(unitary_matrix, wires)
-    else:
-        complex_unitary(unitary_matrix, wires)
+    cond(is_real, real_unitary, complex_unitary)(unitary=unitary_matrix, wires=wires)
 
 
 add_decomps(BasisRotation, _basis_rotation_decomp)
