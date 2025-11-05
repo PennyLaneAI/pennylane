@@ -214,7 +214,7 @@ if _find_spec("jax") is not None:
         )
 
 if _find_spec("numpy") is not None:
-    if (numpy_version := _Version(_metadata_version("numpy"))) < _Version("2.0.0"):
+    if (numpy_version := _Version(_metadata_version("numpy"))) < _Version("2.0.0"):  # pragma: no cover
         warnings.warn(
             "PennyLane has dropped maintainence support for NumPy < 2.0.0. "
             f"You have version {numpy_version} installed. "
