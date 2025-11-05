@@ -28,8 +28,11 @@ from pennylane.compiler.python_compiler.dialects.catalyst import CallbackOp
 from pennylane.compiler.python_compiler.dialects.qec import (
     PPMeasurementOp,
     PPRotationOp,
+    SelectPPMeasurementOp,
 )
 from pennylane.compiler.python_compiler.dialects.quantum import (
+    AllocOp,
+    AllocQubitOp,
     CustomOp,
     DeviceInitOp,
     ExpvalOp,
@@ -67,8 +70,8 @@ class ResourcesResult:
         self.quantum_measurements: dict[str, int] = {}
         self.ppm_operations: dict[str, int] = {}
 
-        self.device = None
-        self.num_wires = 0
+        self.device_name = None
+        self.num_wires = 0 # More accurately, the number of NEW allocations in this region
 
     def merge_with(self, other: "ResourcesResult") -> None:
         """Merge another ResourcesResult into this one."""
@@ -79,8 +82,8 @@ class ResourcesResult:
         for name, count in other.ppm_operations.items():
             self.ppm_operations[name] = self.ppm_operations.get(name, 0) + count
 
-        self.device = self.device or other.device
-        self.num_wires = max(self.num_wires, other.num_wires)
+        self.device_name = self.device_name or other.device_name
+        self.num_wires += other.num_wires
 
     def multiply_by_scalar(self, scalar: int) -> None:
         """Multiply all counts by a scalar."""
@@ -90,6 +93,21 @@ class ResourcesResult:
             self.quantum_measurements[name] *= scalar
         for name in self.ppm_operations:
             self.ppm_operations[name] *= scalar
+
+        # This is the number of allocations WITHIN this region, should be scaled
+        self.num_wires *= scalar
+
+    def __repr__(self):
+        return f"""\
+ResourcesResult(
+  device_name: {self.device_name}
+  num_wires: {self.num_wires}
+  operations: {self.quantum_operations}
+  measurements: {self.quantum_measurements}
+  PPMs: {self.ppm_operations}
+)"""
+
+    __str__ = __repr__
 
 
 @singledispatch
@@ -147,8 +165,41 @@ def _(xdsl_op: PPRotationOp) -> tuple[ResourceType, str]:
 
 
 @handle_resource.register
-def _(xdsl_op: PPMeasurementOp) -> tuple[ResourceType, str]:
+def _(xdsl_op: PPMeasurementOp | SelectPPMeasurementOp) -> tuple[ResourceType, str]:
     return ResourceType.PPM, f"PPM-w{len(xdsl_op.in_qubits)}"
+
+
+############################################################
+### Other Specs Info
+############################################################
+
+
+@handle_resource.register
+def _(
+    xdsl_op: DeviceInitOp | AllocOp | AllocQubitOp,
+) -> tuple[None, None]:
+    # If these types are matched, parse them with the extra specs handler
+    return ResourceType.OTHER, None
+
+
+@singledispatch
+def handle_extra(xdsl_op: xdsl.ir.Operation, resources: ResourcesResult) -> None:
+    raise NotImplementedError(f"Unsupported xDSL op: {xdsl_op}")
+
+
+@handle_extra.register
+def _(xdsl_op: DeviceInitOp, resources: ResourcesResult) -> None:
+    resources.device_name = xdsl_op.device_name.data
+
+
+@handle_extra.register
+def _(xdsl_op: AllocQubitOp | AllocOp, resources: ResourcesResult) -> None:
+    # TODO: Should be able to handle deallocs as well
+    if isinstance(xdsl_op, AllocQubitOp):
+        nallocs = 1
+    else:
+        nallocs = xdsl_op.nqubits_attr.value.data
+    resources.num_wires += nallocs
 
 
 ############################################################
@@ -177,7 +228,7 @@ def _collect_region(region) -> ResourcesResult:
 
         resource_type, resource = handle_resource(op)
 
-        if resource_type is None or resource is None:
+        if resource_type is None:
             # xDSL op type is not a PennyLane resource to be tracked
             continue
 
@@ -194,6 +245,9 @@ def _collect_region(region) -> ResourcesResult:
                 collected_ops.ppm_operations[resource] = (
                     collected_ops.ppm_operations.get(resource, 0) + 1
                 )
+            case ResourceType.OTHER:
+                # Parse out extra circuit information
+                handle_extra(op, collected_ops)
             case _:
                 raise NotImplementedError(
                     f"Unsupported resource type {resource_type} for resource {resource}."
@@ -218,6 +272,7 @@ def specs_collect(module) -> dict[str, int]:
 
         collected_ops.merge_with(_collect_region(func_op.body))
 
+    print(collected_ops)
     # print("Measurements:", collected_ops.quantum_measurements)
     # print("PPMs:", collected_ops.ppm_operations)
     return collected_ops.quantum_operations
