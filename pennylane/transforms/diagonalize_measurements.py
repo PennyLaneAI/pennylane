@@ -74,7 +74,7 @@ def diagonalize_measurements(tape, supported_base_obs=_default_supported_obs, to
     This transform allows us to transform QNode measurements into the measurement basis by adding
     the relevant diagonalizing gates to the end of the tape operations.
 
-    .. code-block:: python3
+    .. code-block:: python
 
         from pennylane.transforms import diagonalize_measurements
 
@@ -103,7 +103,7 @@ def diagonalize_measurements(tape, supported_base_obs=_default_supported_obs, to
     2: ──Z─────────S──H─┤        ╰Var[𝓗(0.50)]
 
     >>> circuit([np.pi/4, np.pi/4])
-    (0.5, 0.75)
+    (np.float64(0.5), np.float64(0.749...))
 
     .. details::
         :title: Usage Details
@@ -111,7 +111,7 @@ def diagonalize_measurements(tape, supported_base_obs=_default_supported_obs, to
         The transform diagonalizes observables from the local Pauli basis only, i.e. it diagonalizes
         X, Y, Z, and Hadamard. Any other observable will be unaffected:
 
-        .. code-block:: python3
+        .. code-block:: python
 
             measurements = [
                 qml.expval(qml.X(0) + qml.Hermitian([[1, 0], [0, 1]], wires=[1]))
@@ -129,7 +129,7 @@ def diagonalize_measurements(tape, supported_base_obs=_default_supported_obs, to
         X, Y and Z, but doesn't provide support for Hadamard? We can set this by passing
         ``supported_base_obs`` to the transform. Let's create a tape with some measurements:
 
-        .. code-block:: python3
+        .. code-block:: python
 
             measurements = [
                 qml.expval(qml.X(0) + qml.Hadamard(1)),
