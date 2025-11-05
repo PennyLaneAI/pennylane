@@ -17,13 +17,13 @@
 import os
 
 import numpy as np
-from scipy.constants import angstrom, physical_constants
 
 import pennylane as qml
 
 from .basis_data import atomic_numbers
 
-BOHR_TO_ANG = physical_constants["Bohr radius"][0] / angstrom
+# Bohr-Angstrom correlation coefficient (https://physics.nist.gov/cgi-bin/cuu/Value?bohrrada0)
+BOHR_TO_ANG = 0.529177210903
 
 
 def _import_of():
