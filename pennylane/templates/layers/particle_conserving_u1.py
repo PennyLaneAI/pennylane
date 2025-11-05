@@ -16,11 +16,19 @@ Contains the hardware-efficient ParticleConservingU1 template.
 """
 import numpy as np
 
-from pennylane import math
+from pennylane import capture, math
+from pennylane.control_flow import for_loop
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.operation import Operation
 from pennylane.ops import CNOT, CZ, CRot, PhaseShift
 from pennylane.templates.embeddings import BasisEmbedding
+from pennylane.wires import Wires
+
+has_jax = True
+try:
+    import jax.numpy as jnp
+except ModuleNotFoundError:  # pragma: no cover
+    has_jax = False  # pragma: no cover
 
 
 def decompose_ua(phi, wires=None):
@@ -426,10 +434,26 @@ def _particle_conserving_u1_decomposition(
     nm_wires += [wires[l : l + 2] for l in range(1, len(wires) - 1, 2)]
     n_layers = math.shape(weights)[0]
 
+    if isinstance(wires, Wires):
+        wires = wires.labels
+        nm_wires = list(map(lambda w: w.labels if isinstance(w, Wires) else w, nm_wires))
+
+    if has_jax and capture.enabled():
+        nm_wires, weights, wires, init_state = (
+            jnp.array(nm_wires),
+            jnp.array(weights),
+            jnp.array(wires),
+            jnp.array(init_state),
+        )
+
     BasisEmbedding(init_state, wires=wires)
 
-    for l in range(n_layers):
-        for i, wires_ in enumerate(nm_wires):
+    @for_loop(n_layers)
+    def layers_loop(l):
+
+        @for_loop(len(nm_wires))
+        def nm_loop(i):
+            wires_ = nm_wires[i]
             phi, theta = weights[l, i, 0], weights[l, i, 1]
 
             # C-UA(phi)
@@ -440,6 +464,10 @@ def _particle_conserving_u1_decomposition(
 
             # C-UA(-phi)
             _decompose_ua_qfunc(-phi, wires_)
+
+        nm_loop()  # pylint: disable=no-value-for-parameter
+
+    layers_loop()  # pylint: disable=no-value-for-parameter
 
 
 add_decomps(ParticleConservingU1, _particle_conserving_u1_decomposition)
