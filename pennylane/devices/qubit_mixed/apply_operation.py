@@ -641,9 +641,15 @@ def apply_diagonal_unitary(op: Operator, state: TensorLike, is_state_batched: bo
     num_wires = int((len(math.shape(state)) - is_state_batched) / 2)
 
     eigvals = math.stack(op.eigvals())
-    expand_shape = [-1, 2 * len(channel_wires)] if bool(op.batch_size) else [2] * len(channel_wires)
+    expand_shape = [-1] + [2] * len(channel_wires) if bool(op.batch_size) else [2] * len(channel_wires)
     eigvals = math.reshape(eigvals, expand_shape)
     eigvals = math.cast_like(eigvals, state)
+
+    # Handle the case when op is batched but state is not
+    if op.batch_size is not None and not is_state_batched:
+        # Expand state to have a batch dimension
+        state = math.expand_dims(state, 0)
+        is_state_batched = True
 
     state_indices = alphabet[: 2 * num_wires + is_state_batched]
 
