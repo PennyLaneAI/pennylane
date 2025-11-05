@@ -354,33 +354,70 @@ class Select(Operation):
 
         .. code-block::
 
-            # Example of how to access, source
-            qml.list_decomps(qml.Select)[multi_control]
+            # Example of how to access
+            qml.list_decomps(qml.Select)["multi_control"]
 
         Resources
-
-        TBD
-
-        .. figure:: ../../../doc/_static/templates/decompositions/select_decomp_multi_control.png
-                    :align: center
-                    :width: 70%
-                    :target: javascript:void(0);
-
-        **unary** 
-
-        `Babbush et al. (2018) <https://arxiv.org/abs/1805.03662>`__
 
         .. code-block::
 
-            # Example of how to access, source
-            qml.list_decomps(qml.Select)[unary]
+            Total wires: 5  
+            algorithmic wires: 4   
+            allocated wires: 1  
+            zero state: 1  
+            any state: 0  
+            Total gates : 22  
+            'Toffoli': 5,  
+            'CNOT': 3,  
+            'X': 8,  
+            'Z': 1,  
+            'S': 2,  
+            'Hadamard': 3  
 
-        Resources
+        The following decomposition rule is applied
 
-        .. figure:: ../../../doc/_static/templates/decompositions/select_decomp_multi_control.png
+        .. figure:: ../../../doc/_static/templates/subroutines/select.png
                     :align: center
                     :width: 70%
                     :target: javascript:void(0);
+
+        **unary**
+
+        .. code-block::
+
+            # Example of how to access
+            qml.list_decomps(qml.Select)["unary"]
+
+        Resources
+
+        .. code-block::
+
+            Total wires: 5
+            algorithmic wires: 4
+            allocated wires: 1
+            zero state: 0
+            any state: 0
+            Total gates : 22
+            'Toffoli': 5,
+            'CNOT': 3,
+            'Hadamard': 3
+
+        The following decomposition rule is applied
+
+        .. figure:: ../../../doc/_static/templates/subroutines/select.png
+                    :align: center
+                    :width: 70%
+                    :target: javascript:void(0);
+
+        Reference: `Babbush et al. (2018) <https://arxiv.org/abs/1805.03662>`__
+
+        +---------------------+---------------+--------------+
+        | Decomposition rule  | Information   | Resources    |
+        +=====================+===============+==============+
+        | body row 1, column 1   | column 2   | column 3     |
+        +------------------------+------------+--------------+
+        | body row 1, column 1   | column 2   | column 3     |
+        +------------------------+------------+--------------+
     """
 
     resource_keys = {"op_reps", "num_control_wires", "partial", "num_work_wires"}
