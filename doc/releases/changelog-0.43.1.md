@@ -11,4 +11,5 @@
 This release contains contributions from (in alphabetical order):
 
 Yushao Chen,
+Marcus Edwards,
 Nate Stemen.
