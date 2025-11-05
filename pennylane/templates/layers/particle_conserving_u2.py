@@ -14,6 +14,8 @@
 r"""
 Contains the hardware-efficient ParticleConservingU2 template.
 """
+from pennylane.decomposition import resource_rep, register_resources
+
 from pennylane import math
 from pennylane.operation import Operation
 from pennylane.ops import CNOT, CRX, RZ
@@ -246,3 +248,38 @@ class ParticleConservingU2(Operation):
                 f"The number of qubits must be greater than one; got 'n_wires' = {n_wires}"
             )
         return n_layers, 2 * n_wires - 1
+
+
+def _particle_conserving_u2_resources(num_wires, n_layers):
+    # number of pairs of even-indexed of wires
+    num_nm_wires = (
+        math.floor(num_wires / 2) if num_wires % 2 == 0 else math.ceil((num_wires - 1) / 2)
+    )
+    # number of odd-indexed pairs of wires
+    num_nm_wires += math.floor((num_wires - 1) / 2)
+
+    # n_layers = math.shape(weights)[0]
+    return {
+        resource_rep(BasisEmbedding, num_wires=num_wires): 1,
+        resource_rep(RZ): n_layers * num_wires,
+        resource_rep(CNOT): 2 * num_nm_wires * n_layers,
+        resource_rep(CRX): num_nm_wires * n_layers
+    }
+
+
+@register_resources(_particle_conserving_u2_resources)
+def _particle_conserving_u2_decomposition(weights, wires, init_state):
+    nm_wires = [wires[l: l + 2] for l in range(0, len(wires) - 1, 2)]
+    nm_wires += [wires[l: l + 2] for l in range(1, len(wires) - 1, 2)]
+    n_layers = math.shape(weights)[0]
+
+    BasisEmbedding(init_state, wires=wires)
+
+    for l in range(n_layers):
+        for j, wires_ in enumerate(wires):
+            RZ(weights[l, j], wires=wires_)
+
+        for i, wires_ in enumerate(nm_wires):
+            CNOT(wires=wires_)
+            CRX(2 * weights[l, len(wires_) + i], wires=wires_[::-1])
+            CNOT(wires=wires_)
