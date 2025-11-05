@@ -39,7 +39,7 @@ def is_xdsl_pass(pass_name: str) -> bool:
     pass registry, which dynamically tracks all available xDSL passes.
 
     Args:
-        pass_name: Name of the pass to check
+        pass_name (str): Name of the pass to check
 
     Returns:
         bool: True if this is an xDSL compiler pass
