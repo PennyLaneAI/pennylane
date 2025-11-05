@@ -20,9 +20,54 @@ from dataclasses import replace
 
 import pytest
 
-from pennylane.devices.execution_config import ExecutionConfig, FrozenMapping, MCMConfig
+from pennylane.devices.execution_config import (
+    MCM_METHOD,
+    POSTSELECT_MODE,
+    ExecutionConfig,
+    FrozenMapping,
+    MCMConfig,
+)
 from pennylane.gradients import param_shift
 from pennylane.math import Interface
+
+
+class TestPostSelectModeEnum:
+    """Tests the POSTSELECT_MODE Enum"""
+
+    @pytest.mark.parametrize(
+        "postselect_mode", ["hw-like", "fill-shots", "pad-invalid-samples", "device", None]
+    )
+    def test_supported_values(self, postselect_mode):
+        """Tests that the supported values get mapped correctly."""
+
+        assert POSTSELECT_MODE(postselect_mode).value == postselect_mode
+
+    @pytest.mark.parametrize("postselect_mode", ["hw_like", 1, "none", True])
+    def test_unsupported_values(self, postselect_mode):
+        """Tests that the unsupported values raise a AttributeError"""
+
+        with pytest.raises(ValueError, match=f"'{postselect_mode}' is not a valid MCM_METHOD"):
+            _ = MCM_METHOD(postselect_mode)
+
+
+class TestMCMMethodEnum:
+    """Tests the MCMMethodEnum"""
+
+    @pytest.mark.parametrize(
+        "mcm_method",
+        ["deferred", "one-shot", "tree-traversal", "single-branch-statistics", "device", None],
+    )
+    def test_supported_values(self, mcm_method):
+        """Tests that the supported values get mapped correctly."""
+
+        assert MCM_METHOD(mcm_method).value == mcm_method
+
+    @pytest.mark.parametrize("mcm_method", ["tree_traversal", 1, "none", True])
+    def test_unsupported_values(self, mcm_method):
+        """Tests that the unsupported values raise a AttributeError"""
+
+        with pytest.raises(ValueError, match=f"'{mcm_method}' is not a valid MCM_METHOD"):
+            _ = MCM_METHOD(mcm_method)
 
 
 class TestFrozenMapping:
@@ -320,7 +365,7 @@ class TestMCMConfig:
     )
     def test_invalid_postselect_mode_raises_value_error(self, invalid_mode):
         """Test that MCMConfig raises ValueError for invalid postselect_mode."""
-        with pytest.raises(ValueError, match=f"Invalid postselection mode '{invalid_mode}'."):
+        with pytest.raises(ValueError, match=f"'{invalid_mode}' is not a valid POSTSELECT_MODE"):
             MCMConfig(postselect_mode=invalid_mode)
 
     def test_immutability(self):

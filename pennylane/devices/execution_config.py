@@ -20,7 +20,8 @@ from __future__ import annotations
 from collections.abc import MutableMapping
 from copy import deepcopy
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Literal
+from enum import Enum
+from typing import TYPE_CHECKING
 
 from pennylane.concurrency.executors.backends import ExecBackends, get_executor
 from pennylane.math.interface_utils import Interface
@@ -81,20 +82,61 @@ class FrozenMapping(MutableMapping):
         return deepcopy(self._data, memo)
 
 
+class MCM_METHOD(Enum):
+    """Canonical set up supported mid-circuit measurement methods."""
+
+    DEFERRED = "deferred"
+    ONE_SHOT = "one-shot"
+    TREE_TRAVERSAL = "tree-traversal"
+    SINGLE_BRANCH_STATISTICS = "single-branch-statistics"
+    DEVICE = "device"
+    NONE = None
+
+    @classmethod
+    def _missing_(cls, value):
+        """Custom look-up to enable proper error handling for unsupported values."""
+
+        supported_values = [item.value for item in cls]
+
+        standard_msg = f"'{value}' is not a valid {cls.__name__}."
+        custom_addition = (
+            f"Please use one of the supported mid-circuit measurement methods: {supported_values}."
+        )
+        raise ValueError(f"{standard_msg} {custom_addition}")
+
+
+class POSTSELECT_MODE(Enum):
+    """Canonical set up supported postselect modes."""
+
+    HW_LIKE = "hw-like"
+    FILL_SHOTS = "fill-shots"
+    PAD_INVALID_SAMPLES = "pad-invalid-samples"
+    DEVICE = "device"
+    NONE = None
+
+    @classmethod
+    def _missing_(cls, value):
+        """Custom look-up to enable proper error handling for unsupported values."""
+
+        supported_values = [item.value for item in cls]
+
+        standard_msg = f"'{value}' is not a valid {cls.__name__}."
+        custom_addition = f"Please use one of the supported postselect modes: {supported_values}."
+        raise ValueError(f"{standard_msg} {custom_addition}")
+
+
 @dataclass(frozen=True)
 class MCMConfig:
     """A class to store mid-circuit measurement configurations."""
 
-    mcm_method: (
-        Literal["deferred", "one-shot", "tree-traversal", "single-branch-statistics"] | str | None
-    ) = None
+    mcm_method: MCM_METHOD | str | None = None
     """The mid-circuit measurement strategy to use. Use ``"deferred"`` for the deferred
     measurements principle and ``"one-shot"`` if using finite shots to execute the circuit for
     each shot separately. Any other value will be passed to the device, and the device is
     expected to handle mid-circuit measurements using the requested method. If not specified,
     the device will decide which method to use."""
 
-    postselect_mode: Literal["hw-like", "fill-shots", "pad-invalid-samples"] | str | None = None
+    postselect_mode: POSTSELECT_MODE | str | None = None
     """How postselection is handled with finite-shots. If ``"hw-like"``, invalid shots will be
     discarded and only results for valid shots will be returned. In this case, fewer samples
     may be returned than the original number of shots. If ``"fill-shots"``, the returned samples
@@ -104,8 +146,8 @@ class MCMConfig:
 
     def __post_init__(self):
         """Validate the configured mid-circuit measurement options."""
-        if self.postselect_mode not in ("hw-like", "fill-shots", "pad-invalid-samples", None):
-            raise ValueError(f"Invalid postselection mode '{self.postselect_mode}'.")
+        object.__setattr__(self, "mcm_method", MCM_METHOD(self.mcm_method))
+        object.__setattr__(self, "postselect_mode", POSTSELECT_MODE(self.postselect_mode))
 
 
 # pylint: disable=too-many-instance-attributes

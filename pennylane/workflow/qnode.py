@@ -123,13 +123,6 @@ def _to_qfunc_output_type(results: Result, qfunc_output, has_partitioned_shots: 
     return pytrees.unflatten(results, qfunc_output_structure)
 
 
-def _validate_mcm_config(
-    postselect_mode: Literal["hw-like", "fill-shots"] | None,
-    mcm_method: Literal["deferred", "one-shot", "tree-traversal"] | None,
-) -> None:
-    qml.devices.MCMConfig(postselect_mode=postselect_mode, mcm_method=mcm_method)
-
-
 def _validate_qfunc_output(qfunc_output, measurements) -> None:
     measurement_processes = pytrees.flatten(
         qfunc_output,
@@ -294,12 +287,12 @@ class QNode:
             (classical) computational overhead during the backwards pass.
         device_vjp (bool): Whether or not to use the device-provided Vector Jacobian Product (VJP).
             A value of ``None`` indicates to use it if the device provides it, but use the full jacobian otherwise.
-        postselect_mode (str): Configuration for handling shots with mid-circuit measurement postselection. If
+        postselect_mode (str | None): Configuration for handling shots with mid-circuit measurement postselection. If
             ``"hw-like"``, invalid shots will be discarded and only results for valid shots will be returned.
             If ``"fill-shots"``, results corresponding to the original number of shots will be returned. The
             default is ``None``, in which case the device will automatically choose the best configuration. For
             usage details, please refer to the :doc:`dynamic quantum circuits page </introduction/dynamic_quantum_circuits>`.
-        mcm_method (str): The strategy for applying mid-circuit measurements.
+        mcm_method (str | None): The strategy for applying mid-circuit measurements.
             Available methods include ``"deferred"`` (to use the deferred
             measurement principle), ``"one-shot"`` (to execute the circuit
             for each shot separately when using finite shots), and
@@ -532,8 +525,8 @@ class QNode:
         cachesize: int = 10000,
         max_diff: int = 1,
         device_vjp: bool | None = False,
-        postselect_mode: Literal["hw-like", "fill-shots"] | None = None,
-        mcm_method: Literal["deferred", "one-shot", "tree-traversal"] | None = None,
+        postselect_mode: str | None = None,
+        mcm_method: str | None = None,
         gradient_kwargs: dict | None = None,
         static_argnums: int | Iterable[int] = (),
         executor_backend: ExecBackends | str | None = None,
@@ -593,7 +586,6 @@ class QNode:
         self.static_argnums = sorted(static_argnums)
 
         # execution keyword arguments
-        _validate_mcm_config(postselect_mode, mcm_method)
         self.execute_kwargs = {
             "grad_on_execution": grad_on_execution,
             "cache": cache,
