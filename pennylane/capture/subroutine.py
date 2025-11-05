@@ -54,7 +54,7 @@ class Patcher:
             setattr(obj, attr_name, self.backup[(obj, attr_name)])
 
 
-def subroutine(func):
+def subroutine(func, static_argnames=None, abstracted_axes=None):
     """
     Denotes the creation of a function in the intermediate representation.
 
@@ -149,6 +149,8 @@ def subroutine(func):
                 quantum_subroutine_p,
             ),
         ):
-            return jax.jit(inside)(*args, **kwargs)
+            return jax.jit(
+                inside, static_argnames=static_argnames, abstracted_axes=abstracted_axes
+            )(*args, **kwargs)
 
     return wrapper
