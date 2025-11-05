@@ -710,7 +710,6 @@ def givens_decomposition(unitary):
             is_real, _absorb_phases_so, _commute_phases_u, left_givens, right_givens, unitary_mat
         )
     else:
-        unitary_mat, all_givens = (_absorb_phases_so if is_real else _commute_phases_u)(
-            left_givens, right_givens, unitary_mat
-        )
+        f = _absorb_phases_so if is_real else _commute_phases_u
+        unitary_mat, all_givens = f(left_givens, right_givens, unitary_mat)
     return unitary_mat, all_givens
