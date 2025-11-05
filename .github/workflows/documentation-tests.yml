@@ -59,7 +59,8 @@ jobs:
 
       - name: CPL Ecosystem Info
         run: | 
-          python -c "import pennylane as qml\nqml.about()"
+          python -c "import pennylane as qml; qml.about()"
+          python -m pip list
 
       # TODO: Remove the --ignore options as layers are tested and verified
       # to be working correctly.
