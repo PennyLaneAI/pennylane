@@ -427,7 +427,7 @@ def commute_controlled(
             return qml.expval(qml.Z(0))
 
     >>> circuit(0.5)
-    0.9999999999999999
+    np.float64(0.999...)
 
     .. details::
         :title: Usage Details
