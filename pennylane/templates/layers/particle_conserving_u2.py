@@ -16,7 +16,7 @@ Contains the hardware-efficient ParticleConservingU2 template.
 """
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
-from pennylane.decomposition import register_resources, resource_rep
+from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.operation import Operation
 from pennylane.ops import CNOT, CRX, RZ
 from pennylane.templates.embeddings import BasisEmbedding
@@ -163,6 +163,8 @@ class ParticleConservingU2(Operation):
 
     grad_method = None
 
+    resource_keys = {"num_wires", "n_layers"}
+
     def __init__(self, weights, wires, init_state=None, id=None):
         if len(wires) < 2:
             raise ValueError(
@@ -189,6 +191,10 @@ class ParticleConservingU2(Operation):
     @property
     def num_params(self):
         return 1
+
+    @property
+    def resource_params(self) -> dict:
+        return {"num_wires": len(self.wires), "n_layers": math.shape(self.parameters[0])[0]}
 
     @staticmethod
     def compute_decomposition(weights, wires, init_state):  # pylint: disable=arguments-differ
@@ -265,7 +271,6 @@ def _particle_conserving_u2_resources(num_wires, n_layers):
     # number of odd-indexed pairs of wires
     num_nm_wires += math.floor((num_wires - 1) / 2)
 
-    # n_layers = math.shape(weights)[0]
     return {
         resource_rep(BasisEmbedding, num_wires=num_wires): 1,
         resource_rep(RZ): n_layers * num_wires,
@@ -306,7 +311,7 @@ def _particle_conserving_u2_decomposition(weights, wires, init_state):
 
         @for_loop(len(nm_wires))
         def nm_loop(i):
-            wires_ = wires[i]
+            wires_ = nm_wires[i]
             CNOT(wires=wires_)
             CRX(2 * weights[l, len(wires_) + i], wires=wires_[::-1])
             CNOT(wires=wires_)
@@ -314,3 +319,6 @@ def _particle_conserving_u2_decomposition(weights, wires, init_state):
         nm_loop()  # pylint: disable=no-value-for-parameter
 
     layers_loop()  # pylint: disable=no-value-for-parameter
+
+
+add_decomps(ParticleConservingU2, _particle_conserving_u2_decomposition)
