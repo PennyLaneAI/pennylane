@@ -641,7 +641,9 @@ def apply_diagonal_unitary(op: Operator, state: TensorLike, is_state_batched: bo
     num_wires = int((len(math.shape(state)) - is_state_batched) / 2)
 
     eigvals = math.stack(op.eigvals())
-    expand_shape = [-1] + [2] * len(channel_wires) if bool(op.batch_size) else [2] * len(channel_wires)
+    expand_shape = (
+        [-1] + [2] * len(channel_wires) if bool(op.batch_size) else [2] * len(channel_wires)
+    )
     eigvals = math.reshape(eigvals, expand_shape)
     eigvals = math.cast_like(eigvals, state)
 
