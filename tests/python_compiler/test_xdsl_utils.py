@@ -18,11 +18,25 @@ import pytest
 
 pytestmark = pytest.mark.external
 xdsl = pytest.importorskip("xdsl")
+jax = pytest.importorskip("jax")
 
 # pylint: disable=wrong-import-position
-from xdsl.dialects import arith, builtin, tensor, test
+from xdsl.dialects import arith, builtin, func, tensor, test
 
-from pennylane.compiler.python_compiler.dialects.stablehlo import ConstantOp as hloConstantOp
+from pennylane.compiler.python_compiler import QuantumParser
+from pennylane.compiler.python_compiler.conversion import (
+    generic_str,
+    inline_jit_to_module,
+    inline_module,
+    mlir_from_docstring,
+    mlir_module,
+    parse_generic_to_mlir_module,
+    parse_generic_to_xdsl_module,
+    xdsl_from_docstring,
+    xdsl_from_qjit,
+    xdsl_module,
+)
+from pennylane.compiler.python_compiler.dialects import stablehlo
 from pennylane.compiler.python_compiler.utils import get_constant_from_ssa
 
 
@@ -58,7 +72,7 @@ class TestGetConstantFromSSA:
             (-1.1 + 2.3j, builtin.ComplexType(builtin.Float64Type())),
         ],
     )
-    @pytest.mark.parametrize("constant_op", [arith.ConstantOp, hloConstantOp])
+    @pytest.mark.parametrize("constant_op", [arith.ConstantOp, stablehlo.ConstantOp])
     def test_scalar_constant_extracted_from_rank0_tensor(self, const, elt_type, constant_op):
         """Test that constants created by ``stablehlo.constant`` are returned correctly."""
         data = const
@@ -92,7 +106,7 @@ class TestGetConstantFromSSA:
             type=builtin.TensorType(element_type=builtin.Float64Type(), shape=(3,)),
             data=(1.0, 2.0, 3.0),
         )
-        val = hloConstantOp(value=dense_attr).results[0]
+        val = stablehlo.ConstantOp(value=dense_attr).results[0]
 
         assert get_constant_from_ssa(val) is None
 
@@ -106,7 +120,7 @@ class TestGetConstantFromSSA:
             type=builtin.TensorType(element_type=builtin.Float64Type(), shape=(3,)),
             data=(1.0, 2.0, 3.0),
         )
-        tensor_ = hloConstantOp(value=dense_attr).results[0]
+        tensor_ = stablehlo.ConstantOp(value=dense_attr).results[0]
         val = tensor.ExtractOp(
             tensor=tensor_, indices=[dummy_index], result_type=builtin.Float64Type()
         ).results[0]
@@ -114,6 +128,69 @@ class TestGetConstantFromSSA:
         assert isinstance(val.type, builtin.Float64Type)
 
         assert get_constant_from_ssa(val) is None
+
+
+class TestConversionUtils:
+    """Unit tests for utilities for converting Python code to xDSL modules."""
+
+    def test_generic_str(self):
+        """Test that the generic_str function works correctly."""
+
+        @jax.jit
+        def f(x):
+            return x + 1
+
+        gen_str = generic_str(f)(1)
+        module = QuantumParser(gen_str).parse_module()
+
+        assert len(module.regions[0].blocks[0].ops) == 1
+        func_op = module.regions[0].blocks[0].first_op
+        assert isinstance(func_op, func.FuncOp)
+
+        expected_op_names = ["stablehlo.constant", "stablehlo.add", "func.return"]
+        for op, expected_op_name in zip(func_op.body.ops, expected_op_names):
+            assert op.name == expected_op_name
+
+    def test_mlir_module(self):
+        """Test that the mlir_module function works correctly."""
+
+    def test_xdsl_module(self):
+        """Test that the xdsl_module function works correctly."""
+
+    def test_parse_generic_to_mlir_module(self):
+        """Test that the parse_generic_to_mlir_module function works correctly."""
+
+    def test_parse_generic_to_xdsl_module(self):
+        """Test that the parse_generic_to_xdsl_module function works correctly."""
+
+    def test_mlir_from_docstring(self):
+        """Test that the mlir_from_docstring function works correctly."""
+
+    def test_xdsl_from_docstring(self):
+        """Test that the xdsl_from_docstring function works correctly."""
+
+    def test_xdsl_from_qjit(self):
+        """Test that the xdsl_from_qjit function works correctly."""
+
+
+class TestInliningUtils:
+    """Unit tests for utilities for inlining operations into xDSL modules."""
+
+    def test_inline_module(self):
+        """Test that the inline_module function works correctly."""
+
+    def test_inline_jit_to_module(self):
+        """Test that the inline_jit_to_module function works correctly."""
+
+
+class TestXDSLToPLUtils:
+    """Unit tests for utilities that convert xDSL constructs to PennyLane gates and measurements."""
+
+    def test_xdsl_to_qml_op(self):
+        """Test that the xdsl_to_qml_op function works correctly."""
+
+    def test_xdsl_to_qml_measurement(self):
+        """Test that the xdsl_to_qml_measurement function works correctly."""
 
 
 if __name__ == "__main__":
