@@ -34,10 +34,6 @@ from pennylane.transforms.optimization import (
 from pennylane.transforms.optimization.optimization_utils import _fuse_global_phases, find_next_gate
 from pennylane.typing import PostprocessingFn
 
-IS_QJIT = qml.compiler.active_compiler() == "catalyst"
-if IS_QJIT:
-    from catalyst.api_extensions.control_flow import ForLoop, Cond
-
 # Single qubits Clifford+T gates in PL
 _CLIFFORD_T_ONE_GATES = [
     qml.Identity,
@@ -313,28 +309,26 @@ def _two_qubit_decompose(op):
 
 def _reconstruct_decomposed_region(region, decomposed_region):
     """Reconstruct a decomposed region with the new operations."""
-    
     if not region.quantum_tape:
         raise ValueError("Region does not have a quantum tape")
-    
-    print("region.quantum_tape.operations BEFORE reconstruction", region.quantum_tape.operations)
     region.quantum_tape = region.quantum_tape.copy(operations=decomposed_region)
-    print("region.quantum_tape.operations AFTER reconstruction", region.quantum_tape.operations)
-
     return region
 
 
 def _merge_param_gates(operations, merge_ops=None):
     """Merge the provided parametrized gates on the same wires that are adjacent to each other.    
     This function handles control flow operations recursively.
-    """
+    """    
+    if is_qjit := qml.compiler.active_compiler() == "catalyst":
+        from catalyst.api_extensions.control_flow import ForLoop, Cond
+
     copied_ops = operations.copy()
     merged_ops = []
 
     while len(copied_ops) > 0:
         curr_gate = copied_ops.pop(0)
     
-        if IS_QJIT and isinstance(curr_gate, (ForLoop, Cond)):
+        if is_qjit and isinstance(curr_gate, (ForLoop, Cond)):
             for region in curr_gate.regions:
                 if region.quantum_tape:
                     region_ops = _merge_param_gates(region.quantum_tape.operations, merge_ops)
@@ -383,7 +377,10 @@ def _decompose_operations(operations, basis_set):
         
     Returns:
         decomposed_ops - decomposed operations and global phase operations
-    """    
+    """
+    if is_qjit := qml.compiler.active_compiler() == "catalyst":
+        from catalyst.api_extensions.control_flow import ForLoop, Cond
+
     decomp_ops = []
 
     for op in operations:
@@ -419,7 +416,7 @@ def _decompose_operations(operations, basis_set):
 
             # Handle structured control flow recursively
             else:
-                if IS_QJIT and isinstance(op, (ForLoop, Cond)):
+                if is_qjit and isinstance(op, (ForLoop, Cond)):
                     # Recursively decompose operations within each region
                     # We do in-place modification of the regions in the control flow operation.
                     for region in op.regions:
@@ -596,6 +593,9 @@ def clifford_t_decomposition(
     True
 
     """
+    if is_qjit := qml.compiler.active_compiler() == "catalyst":
+        from catalyst.api_extensions.control_flow import ForLoop, Cond
+
     with QueuingManager.stop_recording():
         # Build the basis set and the pipeline for initial compilation pass
         basis_set = [op.__name__ for op in _PARAMETER_GATES + _CLIFFORD_T_GATES + _SKIP_OP_TYPES]
@@ -618,7 +618,7 @@ def clifford_t_decomposition(
         # def decompose_fn(op: Operator, epsilon: float, **method_kwargs) -> List[Operator]
         # note: the last operator in the decomposition must be a GlobalPhase
 
-        if IS_QJIT and method == "sk":
+        if is_qjit and method == "sk":
             raise RuntimeError(
                 "Solovay-Kitaev decomposition (method='sk') is not supported with QJIT or JAX-JIT. "
                 "Use Ross-Selinger decomposition (method='gridsynth') instead."
@@ -627,19 +627,17 @@ def clifford_t_decomposition(
         # Build the decomposition cache based on the method
         global _CLIFFORD_T_CACHE  # pylint: disable=global-statement
         if _CLIFFORD_T_CACHE is None or not _CLIFFORD_T_CACHE.compatible(
-            method, epsilon, cache_size, cache_eps_rtol, IS_QJIT, **method_kwargs
+            method, epsilon, cache_size, cache_eps_rtol, is_qjit, **method_kwargs
         ):
             _CLIFFORD_T_CACHE = _CachedCallable(
-                method, epsilon, cache_size, IS_QJIT, **method_kwargs
+                method, epsilon, cache_size, is_qjit, **method_kwargs
             )
 
-        phase = new_operations.pop().data[0] # TODO: This is incorrect.Extracting the global phase from the last operation (since this is what decompose_operation returns)
-
-        def decompose_all_rz_operations(operations, phase = phase):
+        def decompose_all_rz_operations(operations):
             decomp_ops = []
 
             for op in operations:
-                if IS_QJIT and isinstance(op, (ForLoop, Cond)):
+                if is_qjit and isinstance(op, (ForLoop, Cond)):
                     for region in op.regions:
                         if region.quantum_tape:
                             decomposed_region_ops = decompose_all_rz_operations(region.quantum_tape.operations)
@@ -649,22 +647,20 @@ def clifford_t_decomposition(
                     # If simplifies to Identity, skip it
                     if not (op_param := op.simplify().data):
                         continue
-                    wire = op.wires[0] if IS_QJIT else 0
+                    wire = op.wires[0] if is_qjit else 0
                     # Decompose the RZ operation with a default wire
                     clifford_ops = _CLIFFORD_T_CACHE.query(qml.RZ(op_param[0], [wire]))
                     op_wire = op.wires[0]
                     # Extract the global phase from the last operation
                     # Map the operations to the original wires
-                    if IS_QJIT:
+                    if is_qjit:
                         phase = clifford_ops[-1].data[0]
                         decomp_ops.extend(clifford_ops[:-1])  # Already mapped
-                        print("IS QJIT, phase, is abstract, allclose", phase, qml.math.is_abstract(phase), qml.math.allclose(phase, 0.0))
                         if qml.math.is_abstract(phase):
                             decomp_ops.append(qml.GlobalPhase(phase))
                     else:
                         phase = qml.math.convert_like(clifford_ops[-1].data[0], phase)
                         decomp_ops.extend([_map_wires(cl_op, op_wire) for cl_op in clifford_ops[:-1]])
-                        print("NOT QJIT, phase, is abstract, allclose", phase, qml.math.is_abstract(phase), qml.math.allclose(phase, 0.0))
                         if not qml.math.allclose(phase, 0.0):
                             decomp_ops.append(qml.GlobalPhase(phase))
                 else:
@@ -679,7 +675,7 @@ def clifford_t_decomposition(
     decomp_ops.clear()
 
     # Perform a final attempt of simplification before return
-    if not IS_QJIT:
+    if not is_qjit:
         # This is skipped for qjit because when qjit is enabled, the circuit may contain
         # higher-level operations such as Cond and ForLoop whose wires attribute does not
         # reflect the wires of all operators within its scope.
