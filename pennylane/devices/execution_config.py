@@ -20,7 +20,7 @@ from __future__ import annotations
 from collections.abc import MutableMapping
 from copy import deepcopy
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import StrEnum
 from typing import TYPE_CHECKING
 
 from pennylane.concurrency.executors.backends import ExecBackends, get_executor
@@ -82,7 +82,7 @@ class FrozenMapping(MutableMapping):
         return deepcopy(self._data, memo)
 
 
-class MCM_METHOD(Enum):
+class MCM_METHOD(StrEnum):
     """Canonical set up supported mid-circuit measurement methods."""
 
     DEFERRED = "deferred"
@@ -90,7 +90,6 @@ class MCM_METHOD(Enum):
     TREE_TRAVERSAL = "tree-traversal"
     SINGLE_BRANCH_STATISTICS = "single-branch-statistics"
     DEVICE = "device"
-    NONE = None
 
     @classmethod
     def _missing_(cls, value):
@@ -105,14 +104,13 @@ class MCM_METHOD(Enum):
         raise ValueError(f"{standard_msg} {custom_addition}")
 
 
-class POSTSELECT_MODE(Enum):
+class POSTSELECT_MODE(StrEnum):
     """Canonical set up supported postselect modes."""
 
     HW_LIKE = "hw-like"
     FILL_SHOTS = "fill-shots"
     PAD_INVALID_SAMPLES = "pad-invalid-samples"
     DEVICE = "device"
-    NONE = None
 
     @classmethod
     def _missing_(cls, value):
@@ -146,8 +144,20 @@ class MCMConfig:
 
     def __post_init__(self):
         """Validate the configured mid-circuit measurement options."""
-        object.__setattr__(self, "mcm_method", MCM_METHOD(self.mcm_method))
-        object.__setattr__(self, "postselect_mode", POSTSELECT_MODE(self.postselect_mode))
+        object.__setattr__(
+            self,
+            "mcm_method",
+            self.mcm_method if self.mcm_method is None else MCM_METHOD(self.mcm_method),
+        )
+        object.__setattr__(
+            self,
+            "postselect_mode",
+            (
+                self.postselect_mode
+                if self.postselect_mode is None
+                else POSTSELECT_MODE(self.postselect_mode)
+            ),
+        )
 
 
 # pylint: disable=too-many-instance-attributes

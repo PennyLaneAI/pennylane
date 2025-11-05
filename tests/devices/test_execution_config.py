@@ -35,7 +35,7 @@ class TestPostSelectModeEnum:
     """Tests the POSTSELECT_MODE Enum"""
 
     @pytest.mark.parametrize(
-        "postselect_mode", ["hw-like", "fill-shots", "pad-invalid-samples", "device", None]
+        "postselect_mode", ["hw-like", "fill-shots", "pad-invalid-samples", "device"]
     )
     def test_supported_values(self, postselect_mode):
         """Tests that the supported values get mapped correctly."""
@@ -55,7 +55,7 @@ class TestMCMMethodEnum:
 
     @pytest.mark.parametrize(
         "mcm_method",
-        ["deferred", "one-shot", "tree-traversal", "single-branch-statistics", "device", None],
+        ["deferred", "one-shot", "tree-traversal", "single-branch-statistics", "device"],
     )
     def test_supported_values(self, mcm_method):
         """Tests that the supported values get mapped correctly."""

@@ -123,6 +123,13 @@ def _to_qfunc_output_type(results: Result, qfunc_output, has_partitioned_shots: 
     return pytrees.unflatten(results, qfunc_output_structure)
 
 
+def _validate_mcm_config(
+    postselect_mode: str | None,
+    mcm_method: str | None,
+) -> None:
+    qml.devices.MCMConfig(postselect_mode=postselect_mode, mcm_method=mcm_method)
+
+
 def _validate_qfunc_output(qfunc_output, measurements) -> None:
     measurement_processes = pytrees.flatten(
         qfunc_output,
@@ -586,6 +593,7 @@ class QNode:
         self.static_argnums = sorted(static_argnums)
 
         # execution keyword arguments
+        _validate_mcm_config(postselect_mode, mcm_method)
         self.execute_kwargs = {
             "grad_on_execution": grad_on_execution,
             "cache": cache,
