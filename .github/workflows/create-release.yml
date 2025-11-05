@@ -82,7 +82,7 @@ jobs:
 
       - name: Create Release
         run: |
-          gh release create "v${{ inputs.release_version }}" --repo PennyLaneAI/pennylane --title "Release ${{ inputs.release_version }}" --notes "${{ inputs.release_notes }}" --draft
+          gh release create "v${{ inputs.release_version }}" --repo PennyLaneAI/pennylane --title "Release v${{ inputs.release_version }}" --notes "${{ inputs.release_notes }}" --draft
 
   merge-rc-pr:
     name: Create PR to merge RC branch into master
@@ -99,7 +99,7 @@ jobs:
           git config user.name "GitHub Actions Bot"
           git config user.email "<>"
           git tag -a "${{ inputs.release_branch }}" -m "Release version ${{ inputs.release_branch }}"
-          git push origin "${{ inputs.release_version }}"
+          git push origin "${{ inputs.release_branch }}"
 
       - name: Merge RC branch into master
         env:
