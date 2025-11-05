@@ -14,12 +14,19 @@
 r"""
 Contains the hardware-efficient ParticleConservingU2 template.
 """
-from pennylane.decomposition import resource_rep, register_resources
-
-from pennylane import math
+from pennylane import capture, math
+from pennylane.control_flow import for_loop
+from pennylane.decomposition import register_resources, resource_rep
 from pennylane.operation import Operation
 from pennylane.ops import CNOT, CRX, RZ
 from pennylane.templates.embeddings import BasisEmbedding
+from pennylane.wires import Wires
+
+has_jax = True
+try:
+    import jax.numpy as jnp
+except ModuleNotFoundError:  # pragma: no cover
+    has_jax = False  # pragma: no cover
 
 
 def u2_ex_gate(phi, wires=None):
@@ -263,23 +270,47 @@ def _particle_conserving_u2_resources(num_wires, n_layers):
         resource_rep(BasisEmbedding, num_wires=num_wires): 1,
         resource_rep(RZ): n_layers * num_wires,
         resource_rep(CNOT): 2 * num_nm_wires * n_layers,
-        resource_rep(CRX): num_nm_wires * n_layers
+        resource_rep(CRX): num_nm_wires * n_layers,
     }
 
 
 @register_resources(_particle_conserving_u2_resources)
 def _particle_conserving_u2_decomposition(weights, wires, init_state):
-    nm_wires = [wires[l: l + 2] for l in range(0, len(wires) - 1, 2)]
-    nm_wires += [wires[l: l + 2] for l in range(1, len(wires) - 1, 2)]
+    nm_wires = [wires[l : l + 2] for l in range(0, len(wires) - 1, 2)]
+    nm_wires += [wires[l : l + 2] for l in range(1, len(wires) - 1, 2)]
     n_layers = math.shape(weights)[0]
+
+    if isinstance(wires, Wires):
+        wires = wires.labels
+        nm_wires = list(map(lambda w: w.labels if isinstance(w, Wires) else w, nm_wires))
+
+    if has_jax and capture.enabled():
+        nm_wires, weights, wires, init_state = (
+            jnp.array(nm_wires),
+            jnp.array(weights),
+            jnp.array(wires),
+            jnp.array(init_state),
+        )
 
     BasisEmbedding(init_state, wires=wires)
 
-    for l in range(n_layers):
-        for j, wires_ in enumerate(wires):
+    @for_loop(n_layers)
+    def layers_loop(l):
+
+        @for_loop(len(wires))
+        def wires_loop(j):
+            wires_ = wires[j]
             RZ(weights[l, j], wires=wires_)
 
-        for i, wires_ in enumerate(nm_wires):
+        wires_loop()  # pylint: disable=no-value-for-parameter
+
+        @for_loop(len(nm_wires))
+        def nm_loop(i):
+            wires_ = wires[i]
             CNOT(wires=wires_)
             CRX(2 * weights[l, len(wires_) + i], wires=wires_[::-1])
             CNOT(wires=wires_)
+
+        nm_loop()  # pylint: disable=no-value-for-parameter
+
+    layers_loop()  # pylint: disable=no-value-for-parameter
