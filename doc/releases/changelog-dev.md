@@ -245,6 +245,9 @@
   by eliminating unnecessary controlled operations. The templates include :class:`~.PhaseAdder`,
   :class:`~.TemporaryAND`, :class:`~.QSVT`, and :class:`~.SelectPauliRot`.
   [(#8490)](https://github.com/PennyLaneAI/pennylane/pull/8490)
+  [(#8577)](https://github.com/PennyLaneAI/pennylane/pull/8577)
+
+  - NOTE: [(#8490)](https://github.com/PennyLaneAI/pennylane/pull/8490) introduced a bug (a performance regression caused by extra erroneous operators in the QSVT template) which was fixed in [(#8577)](https://github.com/PennyLaneAI/pennylane/pull/8577)
 
 * Solovay-Kitaev decomposition using the :func:`~.clifford_t_decompostion` transform
   with ``method="sk"`` or directly via :func:`~.ops.sk_decomposition` now raises a more
@@ -271,9 +274,6 @@
   [(#8557)](https://github.com/PennyLaneAI/pennylane/pull/8557)
 
 <h3>Bug fixes 🐛</h3>
-
-* A performance regression caused by extra erroneous operators in the QSVT template has been fixed.
-  [(#8577)](https://github.com/PennyLaneAI/pennylane/pull/8577)
 
 * Add an exception to the warning for unsolved operators within the graph-based decomposition
   system if the unsolved operators are :class:`.allocation.Allocate` or :class:`.allocation.Deallocate`.
