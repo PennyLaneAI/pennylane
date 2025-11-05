@@ -590,7 +590,8 @@ def givens_decomposition(unitary, is_real=False):
 
     Args:
         unitary (tensor): unitary matrix on which decomposition will be performed
-        is_real (bool): whether the unitary matrix is approximately real
+        is_real (bool): whether the unitary matrix is approximately real and a more efficient decomposition can be used
+            (more details below).
 
     Returns:
         (tensor_like, list[(tensor_like, tuple)]): diagonal elements of the phase matrix :math:`D` and Givens rotation matrix :math:`T` with their indices
@@ -624,7 +625,7 @@ def givens_decomposition(unitary, is_real=False):
     all phase angles :math:`\phi` vanish and :math:`D` can be fixed to the identity,
     absorbing its phases :math:`\pm 1` (with an even number of :math:`-1`\ s due to the
     determinant constraint) into the :math:`T` matrices.
-    Whether :math:`U` is orthogonal is inferred from the data type of ``unitary``.
+    :math:`U` is considered to be orthogonal if the keyword argument ``is_real`` is set to True.
     If the determinant of an orthogonal :math:`U` is negative, this will show as a single
     negative phase in the first output value of ``givens_decomposition``.
 
