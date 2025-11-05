@@ -99,39 +99,18 @@ def _specs_qnode(qnode, level, compute_depth, *args, **kwargs) -> list[SpecsDict
     return infos[0] if len(infos) == 1 else infos
 
 
-# NOTE: Some information is missing from specs_qjit compared to specs_qnode
-def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> SpecsDict:  # pragma: no cover
+def _specs_qjit_device_level_tracking(
+    qjit, original_qnode, pass_pipeline_wrapped, compute_depth, *args, **kwargs
+) -> Resources:  # pragma: no cover
     # pylint: disable=import-outside-toplevel
     # Have to import locally to prevent circular imports as well as accounting for Catalyst not being installed
-    # Integration tests for this function are within the Catalyst frontend tests, it is not covered by unit tests
     import catalyst
-    from catalyst.jit import QJIT
-
-    if isinstance(level, int) or level == "all":
-        # TODO: Account for tape transforms
-        return qml.compiler.python_compiler.mlir_specs(qjit, level)(*args, **kwargs)
-
-    # Fall-through to runtime execution for "device" level specs
-    if level != "device":
-        raise NotImplementedError(f"Unsupported level argument '{level}' for QJIT'd code.")
+    from catalyst import QJIT
 
     from ..devices import NullQubit
 
-    # TODO: Determine if its possible to have batched QJIT code / how to handle it
-    pass_pipeline_wrapped = False
-    if isinstance(qjit.user_function, catalyst.passes.pass_api.PassPipelineWrapper):
-        pass_pipeline_wrapped = True
-        original_qnode = qjit.original_qnode
-    elif not isinstance(qjit.user_function, qml.QNode):
-        raise ValueError("qml.specs can only be applied to a QNode or qjit'd QNode")
-    else:
-        original_qnode = qjit.user_function
-
-    info = SpecsDict()
-
     # When running at the device level, execute on null.qubit directly with resource tracking,
     # which will give resource usage information for after all compiler passes have completed
-
     # TODO: Find a way to inherit all devices args from input
     original_device = original_qnode.device
     spoofed_dev = NullQubit(
@@ -165,7 +144,7 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> SpecsDict:  # pr
             pass_pipeline = recursively_add_passes(qjit.user_function)
             new_qjit = QJIT(pass_pipeline, copy.copy(qjit.compile_options))
         else:
-            new_qnode = qjit.user_function.update(device=spoofed_dev)
+            new_qnode = qjit.original_function.update(device=spoofed_dev)
             new_qjit = QJIT(new_qnode, copy.copy(qjit.compile_options))
 
     if os.path.exists(_RESOURCE_TRACKING_FILEPATH):
@@ -179,7 +158,7 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> SpecsDict:  # pr
         with open(_RESOURCE_TRACKING_FILEPATH, encoding="utf-8") as f:
             resource_data = json.load(f)
 
-        info["resources"] = Resources(
+        return Resources(
             num_wires=resource_data["num_wires"],
             num_gates=resource_data["num_gates"],
             gate_types=defaultdict(int, resource_data["gate_types"]),
@@ -194,8 +173,51 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> SpecsDict:  # pr
         if os.path.exists(_RESOURCE_TRACKING_FILEPATH):
             os.remove(_RESOURCE_TRACKING_FILEPATH)
 
-    info["num_device_wires"] = len(original_device.wires)
-    info["device_name"] = original_device.name
+
+# NOTE: Some information is missing from specs_qjit compared to specs_qnode
+def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> SpecsDict:  # pragma: no cover
+    # pylint: disable=import-outside-toplevel
+    # Have to import locally to prevent circular imports as well as accounting for Catalyst not being installed
+    # Integration tests for this function are within the Catalyst frontend tests, it is not covered by unit tests
+    import catalyst
+
+    # TODO: Determine if its possible to have batched QJIT code / how to handle it
+    pass_pipeline_wrapped = False
+    if isinstance(qjit.user_function, catalyst.passes.pass_api.PassPipelineWrapper):
+        pass_pipeline_wrapped = True
+        original_qnode = qjit.original_qnode
+    elif isinstance(qjit.original_function, qml.QNode):
+        original_qnode = qjit.original_function
+    else:
+        raise ValueError("qml.specs can only be applied to a QNode or qjit'd QNode")
+    device = original_qnode.device
+
+    if isinstance(level, int) or level == "all":
+        # TODO: Account for tape transforms
+        results = qml.compiler.python_compiler.mlir_specs(qjit, level)(*args, **kwargs)
+        resources = Resources(
+            num_wires=results.num_wires,
+            num_gates=None,
+            gate_types=results.quantum_operations | results.ppm_operations,
+            gate_sizes=None,
+            depth=None,
+            shots=None,
+        )
+
+    elif level == "device":
+        resources = _specs_qjit_device_level_tracking(
+            qjit, original_qnode, pass_pipeline_wrapped, compute_depth, *args, **kwargs
+        )
+
+    else:
+        raise NotImplementedError(f"Unsupported level argument '{level}' for QJIT'd code.")
+
+    info = SpecsDict()
+
+    info["resources"] = resources
+
+    info["num_device_wires"] = len(device.wires)
+    info["device_name"] = device.name
     info["level"] = level
     info["gradient_options"] = original_qnode.gradient_kwargs
     info["interface"] = original_qnode.interface

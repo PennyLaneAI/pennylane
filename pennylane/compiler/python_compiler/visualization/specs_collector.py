@@ -98,14 +98,7 @@ class ResourcesResult:
         self.num_wires *= scalar
 
     def __repr__(self):
-        return f"""\
-ResourcesResult(
-  device_name: {self.device_name}
-  num_wires: {self.num_wires}
-  operations: {self.quantum_operations}
-  measurements: {self.quantum_measurements}
-  PPMs: {self.ppm_operations}
-)"""
+        return f"ResourcesResult(device_name: {self.device_name}, num_wires: {self.num_wires}, operations: {self.quantum_operations}, measurements: {self.quantum_measurements}, PPMs: {self.ppm_operations})"
 
     __str__ = __repr__
 
@@ -210,20 +203,20 @@ def _(xdsl_op: AllocQubitOp | AllocOp, resources: ResourcesResult) -> None:
 def _collect_region(region) -> ResourcesResult:
     """Collect PennyLane ops and measurements from a region."""
 
-    collected_ops = ResourcesResult()
+    resources = ResourcesResult()
 
     for op in region.ops:
         if isinstance(op, ForOp):
             iters = count_static_loop_iterations(op)
             body_ops = _collect_region(op.body)
             body_ops.multiply_by_scalar(iters)
-            collected_ops.merge_with(body_ops)
+            resources.merge_with(body_ops)
             continue
 
         if isinstance(op, IfOp):
             # NOTE: For now we count operations from both branches
-            collected_ops.merge_with(_collect_region(op.true_region))
-            collected_ops.merge_with(_collect_region(op.false_region))
+            resources.merge_with(_collect_region(op.true_region))
+            resources.merge_with(_collect_region(op.false_region))
             continue
 
         resource_type, resource = handle_resource(op)
@@ -234,32 +227,30 @@ def _collect_region(region) -> ResourcesResult:
 
         match resource_type:
             case ResourceType.GATE:
-                collected_ops.quantum_operations[resource] = (
-                    collected_ops.quantum_operations.get(resource, 0) + 1
+                resources.quantum_operations[resource] = (
+                    resources.quantum_operations.get(resource, 0) + 1
                 )
             case ResourceType.MEASUREMENT:
-                collected_ops.quantum_measurements[resource] = (
-                    collected_ops.quantum_measurements.get(resource, 0) + 1
+                resources.quantum_measurements[resource] = (
+                    resources.quantum_measurements.get(resource, 0) + 1
                 )
             case ResourceType.PPM:
-                collected_ops.ppm_operations[resource] = (
-                    collected_ops.ppm_operations.get(resource, 0) + 1
-                )
+                resources.ppm_operations[resource] = resources.ppm_operations.get(resource, 0) + 1
             case ResourceType.OTHER:
                 # Parse out extra circuit information
-                handle_extra(op, collected_ops)
+                handle_extra(op, resources)
             case _:
                 raise NotImplementedError(
                     f"Unsupported resource type {resource_type} for resource {resource}."
                 )
 
-    return collected_ops
+    return resources
 
 
-def specs_collect(module) -> dict[str, int]:
+def specs_collect(module) -> ResourcesResult:
     """Collect PennyLane ops and measurements from the module."""
 
-    collected_ops = ResourcesResult()
+    resources = ResourcesResult()
 
     for func_op in module.body.ops:
 
@@ -270,9 +261,6 @@ def specs_collect(module) -> dict[str, int]:
         if not isinstance(func_op, func.FuncOp):
             raise ValueError("Expected FuncOp in module body.")
 
-        collected_ops.merge_with(_collect_region(func_op.body))
+        resources.merge_with(_collect_region(func_op.body))
 
-    print(collected_ops)
-    # print("Measurements:", collected_ops.quantum_measurements)
-    # print("PPMs:", collected_ops.ppm_operations)
-    return collected_ops.quantum_operations
+    return resources
