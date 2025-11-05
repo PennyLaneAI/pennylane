@@ -20,7 +20,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+
 
 k_delta_sz_init_state_wires = [
     (1, 0, qml.math.array([1, 1, 0, 0]), qml.math.array([0, 1, 2, 3])),
