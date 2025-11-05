@@ -162,6 +162,11 @@
 
 <h3>Deprecations 👋</h3>
 
+* Maintenance support of NumPy<2.0 is deprecated and will be dropped v0.44.
+  Future versions of PennyLane are not guaranteed to work with NumPy<2.0.
+  We recommend upgrading your version of NumPy to benefit from enhanced support and features.
+  [(#8578)](https://github.com/PennyLaneAI/pennylane/pull/8578)
+
 * `qml.measure`, `qml.measurements.MidMeasureMP`, `qml.measurements.MeasurementValue`,
   and `qml.measurements.get_mcm_predicates` are now located in `qml.ops.mid_measure`.
   `MidMeasureMP` is now renamed to `MidMeasure`.

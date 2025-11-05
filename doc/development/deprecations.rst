@@ -9,6 +9,13 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* Maintenance support of NumPy<2.0 is deprecated and will be dropped v0.44.
+  Future versions of PennyLane are not guaranteed to work with NumPy<2.0.
+  We recommend upgrading your version of NumPy to benefit from enhanced support and features.
+
+  - Deprecated in v0.44
+  - Will be removed in v0.45
+
 * The :attr:`pennylane.operation.Operator.is_hermitian` property has been deprecated and renamed 
   to :attr:`pennylane.operation.Operator.is_verified_hermitian` as it better reflects the functionality of this property. 
   The deprecated access through ``is_hermitian`` will be removed in PennyLane v0.45. 
