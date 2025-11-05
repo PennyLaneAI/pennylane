@@ -33,7 +33,6 @@ from .primitives import (
     cond_prim,
     ctrl_transform_prim,
     for_loop_prim,
-    grad_prim,
     jacobian_prim,
     qnode_prim,
     while_loop_prim,
@@ -606,17 +605,6 @@ def handle_qnode(self, *invals, shots_len, qnode, device, execution_config, qfun
         execution_config=execution_config,
         qfunc_jaxpr=new_qfunc_jaxpr.jaxpr,
         n_consts=len(new_qfunc_jaxpr.consts),
-    )
-
-
-@PlxprInterpreter.register_primitive(grad_prim)
-def handle_grad(self, *invals, jaxpr, n_consts, **params):
-    """Handle the grad primitive."""
-    consts = invals[:n_consts]
-    args = invals[n_consts:]
-    new_jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr, consts, *args)
-    return grad_prim.bind(
-        *new_jaxpr.consts, *args, jaxpr=new_jaxpr.jaxpr, n_consts=len(new_jaxpr.consts), **params
     )
 
 

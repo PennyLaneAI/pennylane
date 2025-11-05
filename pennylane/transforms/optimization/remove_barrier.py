@@ -36,7 +36,7 @@ def remove_barrier(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
     .. code-block:: python
 
         @remove_barrier
-        @qml.qnode(device=dev)
+        @qml.qnode(qml.device('default.qubit'))
         def circuit(x, y):
             qml.Hadamard(wires=0)
             qml.Hadamard(wires=1)
@@ -62,11 +62,11 @@ def remove_barrier(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
 
         The circuit before optimization:
 
-        >>> dev = qml.device('default.qubit', wires=2)
+        >>> dev = qml.device('default.qubit')
         >>> qnode = qml.QNode(qfunc, dev)
         >>> print(qml.draw(qnode)(1, 2))
-            0: ──H──╭||──X──┤ ⟨Z⟩
-            1: ──H──╰||─────┤
+        0: ──H─╭||──X─┤  <Z>
+        1: ──H─╰||────┤
 
 
         We can remove the Barrier by running the ``remove_barrier`` transform:
@@ -74,8 +74,8 @@ def remove_barrier(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
         >>> optimized_qfunc = remove_barrier(qfunc)
         >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
         >>> print(qml.draw(optimized_qnode)(1, 2))
-           0: ──H──X──┤ ⟨Z⟩
-           1: ──H─────┤
+        0: ──H──X─┤  <Z>
+        1: ──H────┤
 
     """
     operations = filter(lambda op: op.name != "Barrier", tape.operations)
