@@ -71,7 +71,7 @@ class ResourcesResult:
         self.ppm_operations: dict[str, int] = {}
 
         self.device_name = None
-        self.num_wires = 0 # More accurately, the number of NEW allocations in this region
+        self.num_wires = 0  # More accurately, the number of NEW allocations in this region
 
     def merge_with(self, other: "ResourcesResult") -> None:
         """Merge another ResourcesResult into this one."""
