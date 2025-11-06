@@ -33,7 +33,7 @@ permissions: write-all
 
 jobs:
   get_branch:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       run_sphinx: ${{ steps.get_pr_branch.outputs.run_sphinx }}
     steps:
@@ -42,9 +42,8 @@ jobs:
         run: |
           BRANCH_NAME="${{ github.head_ref}}"
           echo "branch is $BRANCH_NAME"
-          if [[ "$BRANCH_NAME" =~ ^sc-[0-9]+-rc-doc$ ]]; then
+          if [[ "$BRANCH_NAME" =~ v[0-9]+\.[0-9]+\.[0-9]+-docs$ ]]; then
             echo "run_sphinx=true" >> $GITHUB_OUTPUT  
-            echo "true"
           elif [ "${{github.event.pull_request.draft}}" == false ]; then
             echo "run_sphinx=true" >> $GITHUB_OUTPUT
           else
@@ -57,7 +56,7 @@ jobs:
     name: Determine runner type to use
     uses: ./.github/workflows/determine-workflow-runner.yml
     with:
-      default_runner: ubuntu-latest
+      default_runner: ubuntu-24.04
       force_large_runner: ${{ github.event_name == 'merge_group' }}
 
   sphinx:
