@@ -329,12 +329,7 @@ class TestMCMConfig:
 
     @pytest.mark.parametrize(
         "mcm_method",
-        [
-            None,
-            "deferred",
-            "one-shot",
-            "some_custom_method",  # Any string is valid as per docstring
-        ],
+        [None, "deferred", "one-shot", "device", "single-branch-statistics", "tree-traversal"],
     )
     def test_valid_mcm_method(self, mcm_method):
         """Test that MCMConfig can be instantiated with valid mcm_method values."""
@@ -354,6 +349,19 @@ class TestMCMConfig:
         """Test that MCMConfig can be instantiated with valid postselect_mode values."""
         config = MCMConfig(postselect_mode=postselect_mode)
         assert config.postselect_mode == postselect_mode
+
+    @pytest.mark.parametrize(
+        "invalid_mcm_method",
+        [
+            "foo",
+            123,
+            True,
+        ],
+    )
+    def test_invalid_mcm_method_raises_value_error(self, mcm_method):
+        """Test that MCMConfig raises a ValueError for an invalid mcm method"""
+        with pytest.raises(ValueError, match=f"'{mcm_method} is not a valid MCM_METHOD"):
+            MCMConfig(mcm_method=mcm_method)
 
     @pytest.mark.parametrize(
         "invalid_mode",
