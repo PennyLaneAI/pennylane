@@ -274,6 +274,16 @@
   [(#8536)](https://github.com/PennyLaneAI/pennylane/pull/8536)
 
 * The docstring for ``qml.device`` has been updated to include a section on custom decompositions,
+  and a warning about the removal of the ``custom_decomps`` kwarg in v0.45. Additionally, the page
+  :doc:`Building a plugin <../development/plugins>` now includes instructions on using
+  the :func:`~pennylane.devices.preprocess.decompose` transform for device-level decompositions.
+  The documentation for :doc:`Compiling circuits <../introduction/compiling_circuits>` has also been
+  updated with a warning message about ``custom_decomps`` future removal.
+  [(#8492)](https://github.com/PennyLaneAI/pennylane/pull/8492)
+  [(#8564)](https://github.com/PennyLaneAI/pennylane/pull/8564)
+
+A warning message has been added to :doc:`Building a plugin <../development/plugins>`
+  docstring for ``qml.device`` has been updated to include a section on custom decompositions,
   and a warning about the removal of the ``custom_decomps`` kwarg in v0.44. Additionally, the page
   :doc:`Building a plugin <../development/plugins>` now includes instructions on using
   the :func:`~pennylane.devices.preprocess.decompose` transform for device-level decompositions.
