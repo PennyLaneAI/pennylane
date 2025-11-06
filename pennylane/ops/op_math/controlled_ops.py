@@ -1453,6 +1453,17 @@ class MultiControlledX(ControlledOp):
     def _primitive_bind_call(
         cls, wires, control_values=None, work_wires=None, work_wire_type="borrowed", id=None
     ):
+        # Convert control_values to tuple for hashability (JAX 0.7.0+)
+        if control_values is not None and isinstance(control_values, (list, tuple)):
+            control_values = tuple(control_values)
+
+        # Convert work_wires to tuple for hashability (JAX 0.7.0+)
+        if work_wires is not None:
+            if hasattr(work_wires, "tolist"):
+                work_wires = tuple(work_wires.tolist())
+            elif isinstance(work_wires, (list, tuple)):
+                work_wires = tuple(work_wires)
+
         return cls._primitive.bind(
             *wires,
             n_wires=len(wires),
