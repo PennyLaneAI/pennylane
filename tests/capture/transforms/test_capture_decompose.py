@@ -42,9 +42,7 @@ pytestmark = [pytest.mark.jax, pytest.mark.capture]
 class TestDecomposeInterpreter:
     """Unit tests for the DecomposeInterpreter class for decomposing plxpr."""
 
-    @pytest.mark.parametrize(
-        "gate_set", [["RX"], [qml.RX], lambda op: op.name == "RX", qml.RX, "RX"]
-    )
+    @pytest.mark.parametrize("gate_set", [["RX"], [qml.RX], qml.RX, "RX"])
     @pytest.mark.parametrize("max_expansion", [None, 4])
     def test_init(self, gate_set, max_expansion):
         """Test that DecomposeInterpreter is initialized correctly."""
