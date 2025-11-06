@@ -15,6 +15,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* The `~.BasisRotation` graph decomposition was re-written in a qjit friendly way with PennyLane control flow.
+  [(#8560)](https://github.com/PennyLaneAI/pennylane/pull/8560)
+
 * The new graph based decompositions system enabled via :func:`~.decomposition.enable_graph` now supports the following
   additional templates.
   [(#8520)](https://github.com/PennyLaneAI/pennylane/pull/8520)
@@ -252,11 +255,16 @@
   by eliminating unnecessary controlled operations. The templates include :class:`~.PhaseAdder`,
   :class:`~.TemporaryAND`, :class:`~.QSVT`, and :class:`~.SelectPauliRot`.
   [(#8490)](https://github.com/PennyLaneAI/pennylane/pull/8490)
+  [(#8577)](https://github.com/PennyLaneAI/pennylane/pull/8577)
 
 * Solovay-Kitaev decomposition using the :func:`~.clifford_t_decompostion` transform
   with ``method="sk"`` or directly via :func:`~.ops.sk_decomposition` now raises a more
   informative ``RuntimeError`` when used with JAX-JIT or :func:`~.qjit`.
   [(#8489)](https://github.com/PennyLaneAI/pennylane/pull/8489)
+
+* The :func:`~pennylane.compiler.python_compiler.Compiler.run` method now accepts a string as input,
+  which is parsed and transformed with xDSL.
+  [(#8587)](https://github.com/PennyLaneAI/pennylane/pull/8587)
 
 <h3>Documentation 📝</h3>
 
@@ -274,6 +282,16 @@
   [(#8536)](https://github.com/PennyLaneAI/pennylane/pull/8536)
 
 * The docstring for ``qml.device`` has been updated to include a section on custom decompositions,
+  and a warning about the removal of the ``custom_decomps`` kwarg in v0.45. Additionally, the page
+  :doc:`Building a plugin <../development/plugins>` now includes instructions on using
+  the :func:`~pennylane.devices.preprocess.decompose` transform for device-level decompositions.
+  The documentation for :doc:`Compiling circuits <../introduction/compiling_circuits>` has also been
+  updated with a warning message about ``custom_decomps`` future removal.
+  [(#8492)](https://github.com/PennyLaneAI/pennylane/pull/8492)
+  [(#8564)](https://github.com/PennyLaneAI/pennylane/pull/8564)
+
+A warning message has been added to :doc:`Building a plugin <../development/plugins>`
+  docstring for ``qml.device`` has been updated to include a section on custom decompositions,
   and a warning about the removal of the ``custom_decomps`` kwarg in v0.44. Additionally, the page
   :doc:`Building a plugin <../development/plugins>` now includes instructions on using
   the :func:`~pennylane.devices.preprocess.decompose` transform for device-level decompositions.
