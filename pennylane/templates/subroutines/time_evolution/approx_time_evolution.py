@@ -18,7 +18,7 @@ Contains the ApproxTimeEvolution template.
 import copy
 from collections import defaultdict
 
-from pennylane.control_flow import for_loop
+from pennylane.control_flow import for_loop, while_loop
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.operation import Operation
 from pennylane.ops import PauliRot, cond
@@ -222,12 +222,11 @@ class ApproxTimeEvolution(Operation):
         single_round = []
         with QueuingManager.stop_recording():
             for pw, coeff in hamiltonian.pauli_rep.items():
-                if len(pw) == 0:
-                    continue
-                theta = 2 * time * coeff / n
-                term_str = "".join(pw.values())
-                wires = Wires(pw.keys())
-                single_round.append(PauliRot(theta, term_str, wires=wires))
+                if len(pw) != 0:
+                    theta = 2 * time * coeff / n
+                    term_str = "".join(pw.values())
+                    wires = Wires(pw.keys())
+                    single_round.append(PauliRot(theta, term_str, wires=wires))
 
         full_decomp = single_round * n
         if QueuingManager.recording():
@@ -241,10 +240,9 @@ def _approx_time_evolution_resources(words, n):
 
     for _ in range(n):
         for pw in words:
-            if len(pw) == 0:
-                continue
-            term_str = "".join(pw.values())
-            resources[resource_rep(PauliRot, pauli_word=term_str)] += 1
+            if len(pw) != 0:
+                term_str = "".join(pw.values())
+                resources[resource_rep(PauliRot, pauli_word=term_str)] += 1
 
     return resources
 
@@ -267,9 +265,12 @@ def _approx_time_evolution_decomposition(
             coeff_index = 0
             found = pauli_items[coeff_index][0] == pw
 
-            while not found:
-                coeff_index += 1
-                found = pauli_items[coeff_index][0] == pw
+            @while_loop(lambda f, i: not f)
+            def search_loop(found, index):  # pylint: disable=unused-argument
+                index += 1
+                return pauli_items[index][0] == pw, index
+
+            found, coeff_index = search_loop(found, coeff_index)
 
             coeff = pauli_items[coeff_index][1]
 
