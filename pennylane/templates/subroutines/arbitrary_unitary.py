@@ -16,12 +16,19 @@ Contains the ArbitraryUnitary template.
 """
 from collections import defaultdict
 
-from pennylane import math
+from pennylane import capture, math
 from pennylane.control_flow import for_loop
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.operation import Operation
 from pennylane.ops import PauliRot
-from pennylane.wires import WiresLike
+from pennylane.wires import Wires, WiresLike
+
+has_jax = True
+try:
+    import jax.numpy as jnp
+except ModuleNotFoundError:  # pragma: no cover
+    has_jax = False  # pragma: no cover
+
 
 _PAULIS = ["I", "X", "Y", "Z"]
 
@@ -165,6 +172,11 @@ def _arbitrary_unitary_resources(num_wires: int) -> dict:
 @register_resources(_arbitrary_unitary_resources)
 def _arbitrary_unitary_decomposition(weights: list, wires: WiresLike):
     words = _all_pauli_words_but_identity(len(wires))
+
+    if has_jax and capture.enabled():
+        if isinstance(wires, Wires):
+            wires = wires.labels
+        words, weights, wires = jnp.array(words), jnp.array(weights), jnp.array(wires)
 
     @for_loop(len(words))
     def rot_loop(i):
