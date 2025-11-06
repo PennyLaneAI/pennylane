@@ -273,7 +273,7 @@ def specs_collect(module) -> ResourcesResult:
     for func_op in module.body.ops:
 
         if isinstance(func_op, CallbackOp):
-            print("Skipping CallbackOp in collector.")
+            # print("Skipping CallbackOp in collector.")
             continue
 
         if not isinstance(func_op, func.FuncOp):
