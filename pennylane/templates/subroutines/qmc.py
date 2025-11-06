@@ -454,7 +454,9 @@ def _quantum_monte_carlo_resources(num_target_wires, num_estimation_wires, q_res
 
 
 @register_resources(_quantum_monte_carlo_resources)
-def _quantum_monte_carlo_decomposition(A, R, Q, wires, estimation_wires, target_wires):
+def _quantum_monte_carlo_decomposition(
+    A, R, Q, wires, estimation_wires, target_wires
+):  # pylint: disable=unused-argument
     QubitUnitary(A, wires=target_wires[:-1])
     QubitUnitary(R, wires=target_wires)
     QuantumPhaseEstimation(Q, target_wires=target_wires, estimation_wires=estimation_wires)
