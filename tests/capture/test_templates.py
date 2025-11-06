@@ -179,25 +179,6 @@ unmodified_templates_cases = [
             reason="initial_layer_weights and weights parameters as kwargs with arrays are unhashable",
         ),
     ),
-    pytest.param(
-        qml.StronglyEntanglingLayers,
-        (jnp.ones((3, 2, 3)), [2, 3]),
-        {"ranges": [1, 1, 1]},
-        marks=pytest.mark.xfail(strict=True, reason="ranges parameter with list is unhashable"),
-    ),
-    (
-        qml.StronglyEntanglingLayers,
-        (jnp.ones((1, 3, 3)),),
-        {"wires": [3, 2, 1], "imprimitive": qml.CZ},
-    ),
-    pytest.param(
-        qml.StronglyEntanglingLayers,
-        (),
-        {"weights": jnp.ones((3, 3, 3)), "wires": [3, 2, 1]},
-        marks=pytest.mark.xfail(
-            strict=True, reason="weights parameter as kwarg with array is unhashable"
-        ),
-    ),
     (qml.ArbitraryStatePreparation, (jnp.ones(6), [2, 3]), {}),
     (qml.ArbitraryStatePreparation, (jnp.zeros(14),), {"wires": [3, 2, 0]}),
     pytest.param(
@@ -363,6 +344,7 @@ tested_modified_templates = [
     qml.MERA,
     qml.MPS,
     qml.TTN,
+    qml.StronglyEntanglingLayers,
     qml.QROM,
     qml.PhaseAdder,
     qml.Adder,
@@ -706,6 +688,90 @@ class TestModifiedTemplates:
 
         assert len(q) == 1
         qml.assert_equal(q.queue[0], template(**kwargs))
+
+    @pytest.mark.parametrize(
+        "args, kwargs",
+        [
+            # Test case 1: ranges as list (should be converted to tuple)
+            (
+                (jnp.ones((3, 2, 3)), [2, 3]),
+                {"ranges": [1, 1, 1]},
+            ),
+            # Test case 2: custom imprimitive
+            (
+                (jnp.ones((1, 3, 3)),),
+                {"wires": [3, 2, 1], "imprimitive": qml.CZ},
+            ),
+            # Test case 3: weights as keyword argument
+            (
+                (),
+                {"weights": jnp.ones((3, 3, 3)), "wires": [3, 2, 1]},
+            ),
+        ],
+    )
+    def test_strongly_entangling_layers(self, args, kwargs):
+        """Test the primitive bind call of StronglyEntanglingLayers."""
+
+        # Extract weights - it's either in args or kwargs
+        if args:
+            weights = args[0]
+            wires = args[1] if len(args) > 1 else kwargs.get("wires")
+        else:
+            weights = kwargs["weights"]
+            wires = kwargs["wires"]
+
+        # Build complete kwargs for the template (excluding weights if in args)
+        template_kwargs = kwargs.copy()
+        if "weights" in template_kwargs and args:
+            del template_kwargs["weights"]
+
+        def qfunc(weights):
+            if args:
+                qml.StronglyEntanglingLayers(weights, *args[1:], **template_kwargs)
+            else:
+                qml.StronglyEntanglingLayers(
+                    weights, **{k: v for k, v in template_kwargs.items() if k != "weights"}
+                )
+
+        # Validate inputs
+        qfunc(weights)
+
+        # Actually test primitive bind
+        jaxpr = jax.make_jaxpr(qfunc)(weights)
+
+        assert len(jaxpr.eqns) == 1
+
+        eqn = jaxpr.eqns[0]
+        assert eqn.primitive == qml.StronglyEntanglingLayers._primitive
+
+        # Build expected params - ranges should be converted to tuple for hashability
+        expected_params = {}
+        if "ranges" in kwargs:
+            expected_params["ranges"] = tuple(kwargs["ranges"])
+        if "imprimitive" in kwargs:
+            expected_params["imprimitive"] = kwargs["imprimitive"]
+        expected_params["n_wires"] = (
+            len(wires) if isinstance(wires, (list, tuple)) else wires.shape[0]
+        )
+
+        assert normalize_for_comparison(eqn.params) == normalize_for_comparison(expected_params)
+        assert len(eqn.outvars) == 1
+        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+
+        with qml.queuing.AnnotatedQueue() as q:
+            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, weights)
+
+        assert len(q) == 1
+        # Reconstruct expected operator with all original kwargs
+        full_kwargs = kwargs.copy()
+        if args and len(args) > 1:
+            full_kwargs["wires"] = args[1]
+        if "weights" in full_kwargs:
+            del full_kwargs["weights"]
+        qml.assert_equal(
+            q.queue[0],
+            qml.StronglyEntanglingLayers(weights, **full_kwargs),
+        )
 
     def test_qsvt(self):
         """Test the primitive bind call of QSVT."""
