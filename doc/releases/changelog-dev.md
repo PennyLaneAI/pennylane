@@ -15,6 +15,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* The `~.BasisRotation` graph decomposition was re-written in a qjit friendly way with PennyLane control flow.
+  [(#8560)](https://github.com/PennyLaneAI/pennylane/pull/8560)
+
 * The new graph based decompositions system enabled via :func:`~.decomposition.enable_graph` now supports the following
   additional templates.
   [(#8520)](https://github.com/PennyLaneAI/pennylane/pull/8520)
@@ -259,7 +262,16 @@
   informative ``RuntimeError`` when used with JAX-JIT or :func:`~.qjit`.
   [(#8489)](https://github.com/PennyLaneAI/pennylane/pull/8489)
 
+* The :func:`~pennylane.compiler.python_compiler.Compiler.run` method now accepts a string as input,
+  which is parsed and transformed with xDSL.
+  [(#8587)](https://github.com/PennyLaneAI/pennylane/pull/8587)
+
 <h3>Documentation 📝</h3>
+
+* Added a "Unified Compiler Cookbook" RST file, along with tutorials, to ``qml.compiler.python_compiler`,
+  which provides a quickstart guide for getting started with xDSL and its integration with PennyLane and
+  Catalyst.
+  [(#8571)](https://github.com/PennyLaneAI/pennylane/pull/8571)
 
 * The documentation of ``qml.transforms.rz_phase_gradient`` has been updated with respect to the
   sign convention of phase gradient states, how it prepares the phase gradient state in the code
