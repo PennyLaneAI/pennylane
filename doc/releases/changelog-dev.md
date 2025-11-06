@@ -198,6 +198,12 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* In program capture, transforms now have a single transform primitive that have a `transform` param that stores
+  the `TransformDispatcher`. Before, each transform had it's own primitive stored on the 
+  `TransformDispatcher._primitive` private property. It proved difficult to keep maintaining dispatch behaviour
+  for every single transform.
+  [(#8576)](https://github.com/PennyLaneAI/pennylane/pull/8576)
+
 * The `grad` and `jacobian` primitives now store the function under `fn`. There is also now a single `jacobian_p`
   primitive for use in program capture.
   [(#8357)](https://github.com/PennyLaneAI/pennylane/pull/8357)

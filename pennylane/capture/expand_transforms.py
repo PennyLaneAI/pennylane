@@ -18,6 +18,8 @@ from collections.abc import Callable
 from copy import copy
 from functools import wraps
 
+import jax
+
 from pennylane.transforms.core.transform_dispatcher import _create_transform_primitive
 
 from .base_interpreter import PlxprInterpreter
@@ -42,7 +44,11 @@ def _(
     consts = invals[consts_slice]
     targs = invals[targs_slice]
 
-    jaxpr = transform.plxpr_transform(inner_jaxpr, consts, targs, tkwargs, *args)
+    def wrapper(*inner_args):
+        return copy(self).eval(inner_jaxpr, consts, *inner_args)
+
+    jaxpr = jax.make_jaxpr(wrapper)(*args)
+    jaxpr = transform.plxpr_transform(jaxpr.jaxpr, jaxpr.consts, targs, tkwargs, *args)
     return copy(self).eval(jaxpr.jaxpr, jaxpr.consts, *args)
 
 
