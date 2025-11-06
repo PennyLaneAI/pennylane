@@ -142,7 +142,9 @@ def _capture_diff(func, *, argnums=None, scalar_out: bool = False, method=None, 
         jaxpr = jax.make_jaxpr(flat_fn, abstracted_axes=abstracted_axes)(*flat_args)
 
         num_abstract_shapes = len(abstract_shapes)
-        shifted_argnums = [a + num_abstract_shapes for a in flat_argnums]
+        shifted_argnums = tuple(
+            a + num_abstract_shapes for a in flat_argnums
+        )  # Convert to tuple for hashability
 
         prim_kwargs = {
             "argnums": shifted_argnums,

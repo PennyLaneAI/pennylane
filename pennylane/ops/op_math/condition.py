@@ -317,20 +317,24 @@ class CondCallable:
                 f = _add_abstract_shapes(f)
             jaxpr = jax.make_jaxpr(f, abstracted_axes=abstracted_axes)(*args)
             jaxpr_branches.append(jaxpr.jaxpr)
-            consts_slices.append(slice(end_const_ind, end_const_ind + len(jaxpr.consts)))
+            consts_slices.append((end_const_ind, end_const_ind + len(jaxpr.consts), None))
             consts += jaxpr.consts
             end_const_ind += len(jaxpr.consts)
 
         _validate_jaxpr_returns(jaxpr_branches, self.otherwise_fn)
         flat_args, _ = jax.tree_util.tree_flatten(args)
+
+        # Store as hashable tuples from the start - no conversion needed
         results = cond_prim.bind(
             *conditions,
             *consts,
             *abstract_shapes,
             *flat_args,
-            jaxpr_branches=jaxpr_branches,
-            consts_slices=consts_slices,
-            args_slice=slice(end_const_ind, None),
+            jaxpr_branches=tuple(jaxpr_branches),  # Already a tuple
+            consts_slices_tuple=tuple(
+                consts_slices
+            ),  # List of slice tuples -> tuple of slice tuples
+            args_slice_tuple=(end_const_ind, None, None),  # Slice tuple format
         )
         assert flat_true_fn.out_tree is not None, "out_tree of flat_true_fn should exist"
         results = results[-flat_true_fn.out_tree.num_leaves :]
@@ -794,16 +798,13 @@ def _get_cond_qfunc_prim():
         return [out.aval for out in jaxpr_branches[0].outvars]
 
     @cond_prim.def_impl
-    def _impl(*all_args, jaxpr_branches, consts_slices, args_slice):
-        # Convert tuples back to slices (tuples are used for JAX 0.7.0 hashability)
-        from pennylane.capture import _restore_slice
-
-        args_slice = _restore_slice(args_slice)
-        consts_slices = [_restore_slice(s) for s in consts_slices]
+    def _impl(*all_args, jaxpr_branches, consts_slices_tuple, args_slice_tuple):
+        # Convert slice tuples (start, stop, step) directly to slice objects for indexing
+        args = all_args[slice(*args_slice_tuple)]
+        consts_slices = [slice(*s) for s in consts_slices_tuple]
 
         n_branches = len(jaxpr_branches)
         conditions = all_args[:n_branches]
-        args = all_args[args_slice]
 
         # Find predicates that use mid-circuit measurements. We don't check the last
         # condition as that is always `True`.

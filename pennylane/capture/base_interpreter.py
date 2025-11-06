@@ -493,26 +493,34 @@ def handle_ctrl_transform(self, *invals, n_control, jaxpr, control_values, work_
 
 @PlxprInterpreter.register_primitive(for_loop_prim)
 def handle_for_loop(
-    self, start, stop, step, *args, jaxpr_body_fn, consts_slice, args_slice, abstract_shapes_slice
+    self,
+    start,
+    stop,
+    step,
+    *args,
+    jaxpr_body_fn,
+    consts_slice_tuple,
+    args_slice_tuple,
+    abstract_shapes_slice_tuple,
 ):
     """Handle a for loop primitive."""
-    # Convert tuples back to slices (tuples are used for JAX 0.7.0 hashability)
-    from pennylane.capture import _restore_slice  # pylint: disable=import-outside-toplevel
-
-    consts_slice = _restore_slice(consts_slice)
-    args_slice = _restore_slice(args_slice)
-    abstract_shapes_slice = _restore_slice(abstract_shapes_slice)
-
-    consts = args[consts_slice]
-    init_state = args[args_slice]
-    abstract_shapes = args[abstract_shapes_slice]
+    # Convert slice tuples (start, stop, step) directly to slice objects for indexing
+    consts = args[slice(*consts_slice_tuple)]
+    init_state = args[slice(*args_slice_tuple)]
+    abstract_shapes = args[slice(*abstract_shapes_slice_tuple)]
     new_jaxpr_body_fn = jaxpr_to_jaxpr(
         copy(self), jaxpr_body_fn, consts, *abstract_shapes, start, *init_state
     )
 
-    consts_slice = slice(0, len(new_jaxpr_body_fn.consts))
-    abstract_shapes_slice = slice(consts_slice.stop, consts_slice.stop + len(abstract_shapes))
-    args_slice = slice(abstract_shapes_slice.stop, None)
+    # Store slice bounds as tuples (start, stop, step) - hashable and semantic
+    new_consts_slice_tuple = (0, len(new_jaxpr_body_fn.consts), None)
+    new_abstract_shapes_slice_tuple = (
+        len(new_jaxpr_body_fn.consts),
+        len(new_jaxpr_body_fn.consts) + len(abstract_shapes),
+        None,
+    )
+    new_args_slice_tuple = (len(new_jaxpr_body_fn.consts) + len(abstract_shapes), None, None)
+
     return for_loop_prim.bind(
         start,
         stop,
@@ -521,26 +529,22 @@ def handle_for_loop(
         *abstract_shapes,
         *init_state,
         jaxpr_body_fn=new_jaxpr_body_fn.jaxpr,
-        consts_slice=consts_slice,
-        args_slice=args_slice,
-        abstract_shapes_slice=abstract_shapes_slice,
+        consts_slice_tuple=new_consts_slice_tuple,
+        args_slice_tuple=new_args_slice_tuple,
+        abstract_shapes_slice_tuple=new_abstract_shapes_slice_tuple,
     )
 
 
 @PlxprInterpreter.register_primitive(cond_prim)
-def handle_cond(self, *invals, jaxpr_branches, consts_slices, args_slice):
+def handle_cond(self, *invals, jaxpr_branches, consts_slices_tuple, args_slice_tuple):
     """Handle a cond primitive."""
-    # Convert tuples back to slices (tuples are used for JAX 0.7.0 hashability)
-    from pennylane.capture import _restore_slice  # pylint: disable=import-outside-toplevel
-
-    args_slice = _restore_slice(args_slice)
-    consts_slices = [_restore_slice(s) for s in consts_slices]
-
-    args = invals[args_slice]
+    # Convert slice tuples (start, stop, step) directly to slice objects for indexing
+    args = invals[slice(*args_slice_tuple)]
+    consts_slices = [slice(*s) for s in consts_slices_tuple]
 
     new_jaxprs = []
     new_consts = []
-    new_consts_slices = []
+    new_consts_slices_tuple = []
     end_const_ind = len(jaxpr_branches)
 
     for const_slice, jaxpr in zip(consts_slices, jaxpr_branches):
@@ -548,17 +552,18 @@ def handle_cond(self, *invals, jaxpr_branches, consts_slices, args_slice):
         new_jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr, consts, *args)
         new_jaxprs.append(new_jaxpr.jaxpr)
         new_consts.extend(new_jaxpr.consts)
-        new_consts_slices.append(slice(end_const_ind, end_const_ind + len(new_jaxpr.consts)))
+        new_consts_slices_tuple.append((end_const_ind, end_const_ind + len(new_jaxpr.consts), None))
         end_const_ind += len(new_jaxpr.consts)
 
-    new_args_slice = slice(end_const_ind, None)
+    new_args_slice_tuple = (end_const_ind, None, None)
+
     return cond_prim.bind(
         *invals[: len(jaxpr_branches)],
         *new_consts,
         *args,
-        jaxpr_branches=new_jaxprs,
-        consts_slices=new_consts_slices,
-        args_slice=new_args_slice,
+        jaxpr_branches=tuple(new_jaxprs),
+        consts_slices_tuple=tuple(new_consts_slices_tuple),
+        args_slice_tuple=new_args_slice_tuple,
     )
 
 
@@ -568,28 +573,31 @@ def handle_while_loop(
     *invals,
     jaxpr_body_fn,
     jaxpr_cond_fn,
-    body_slice,
-    cond_slice,
-    args_slice,
+    body_slice_tuple,
+    cond_slice_tuple,
+    args_slice_tuple,
 ):
     """Handle a while loop primitive."""
-    # Convert tuples back to slices (tuples are used for JAX 0.7.0 hashability)
-    from pennylane.capture import _restore_slice  # pylint: disable=import-outside-toplevel
-
-    body_slice = _restore_slice(body_slice)
-    cond_slice = _restore_slice(cond_slice)
-    args_slice = _restore_slice(args_slice)
-
-    consts_body = invals[body_slice]
-    consts_cond = invals[cond_slice]
-    init_state = invals[args_slice]
+    # Convert slice tuples (start, stop, step) directly to slice objects for indexing
+    consts_body = invals[slice(*body_slice_tuple)]
+    consts_cond = invals[slice(*cond_slice_tuple)]
+    init_state = invals[slice(*args_slice_tuple)]
 
     new_jaxpr_body_fn = jaxpr_to_jaxpr(copy(self), jaxpr_body_fn, consts_body, *init_state)
     new_jaxpr_cond_fn = jaxpr_to_jaxpr(copy(self), jaxpr_cond_fn, consts_cond, *init_state)
 
-    body_consts = slice(0, len(new_jaxpr_body_fn.consts))
-    cond_consts = slice(body_consts.stop, body_consts.stop + len(new_jaxpr_cond_fn.consts))
-    args_slice = slice(cond_consts.stop, None)
+    # Store slice bounds as tuples (start, stop, step) - hashable and semantic
+    new_body_slice_tuple = (0, len(new_jaxpr_body_fn.consts), None)
+    new_cond_slice_tuple = (
+        len(new_jaxpr_body_fn.consts),
+        len(new_jaxpr_body_fn.consts) + len(new_jaxpr_cond_fn.consts),
+        None,
+    )
+    new_args_slice_tuple = (
+        len(new_jaxpr_body_fn.consts) + len(new_jaxpr_cond_fn.consts),
+        None,
+        None,
+    )
 
     return while_loop_prim.bind(
         *new_jaxpr_body_fn.consts,
@@ -597,9 +605,9 @@ def handle_while_loop(
         *init_state,
         jaxpr_body_fn=new_jaxpr_body_fn.jaxpr,
         jaxpr_cond_fn=new_jaxpr_cond_fn.jaxpr,
-        body_slice=body_consts,
-        cond_slice=cond_consts,
-        args_slice=args_slice,
+        body_slice_tuple=new_body_slice_tuple,
+        cond_slice_tuple=new_cond_slice_tuple,
+        args_slice_tuple=new_args_slice_tuple,
     )
 
 
@@ -669,21 +677,15 @@ def flatten_while_loop(
     *invals,
     jaxpr_body_fn,
     jaxpr_cond_fn,
-    body_slice,
-    cond_slice,
-    args_slice,
+    body_slice_tuple,
+    cond_slice_tuple,
+    args_slice_tuple,
 ):
     """Handle the while loop by a flattened python strategy."""
-    # Convert tuples back to slices (tuples are used for JAX 0.7.0 hashability)
-    from pennylane.capture import _restore_slice  # pylint: disable=import-outside-toplevel
-
-    body_slice = _restore_slice(body_slice)
-    cond_slice = _restore_slice(cond_slice)
-    args_slice = _restore_slice(args_slice)
-
-    consts_body = invals[body_slice]
-    consts_cond = invals[cond_slice]
-    init_state = invals[args_slice]
+    # Convert slice tuples (start, stop, step) directly to slice objects for indexing
+    consts_body = invals[slice(*body_slice_tuple)]
+    consts_cond = invals[slice(*cond_slice_tuple)]
+    init_state = invals[slice(*args_slice_tuple)]
 
     fn_res = init_state
     while copy(self).eval(jaxpr_cond_fn, consts_cond, *fn_res)[0]:
@@ -696,17 +698,14 @@ FlattenedHigherOrderPrimitives[while_loop_prim] = flatten_while_loop
 
 
 @FlattenedInterpreter.register_primitive(cond_prim)
-def flattened_cond(self, *invals, jaxpr_branches, consts_slices, args_slice):
+def flattened_cond(self, *invals, jaxpr_branches, consts_slices_tuple, args_slice_tuple):
     """Handle the cond primitive by a flattened python strategy."""
-    # Convert tuples back to slices (tuples are used for JAX 0.7.0 hashability)
-    from pennylane.capture import _restore_slice  # pylint: disable=import-outside-toplevel
-
-    args_slice = _restore_slice(args_slice)
-    consts_slices = [_restore_slice(s) for s in consts_slices]
+    # Convert slice tuples (start, stop, step) directly to slice objects for indexing
+    args = invals[slice(*args_slice_tuple)]
+    consts_slices = [slice(*s) for s in consts_slices_tuple]
 
     n_branches = len(jaxpr_branches)
     conditions = invals[:n_branches]
-    args = invals[args_slice]
 
     for pred, jaxpr, const_slice in zip(conditions, jaxpr_branches, consts_slices):
         consts = invals[const_slice]
@@ -724,20 +723,22 @@ FlattenedHigherOrderPrimitives[cond_prim] = flattened_cond
 
 @FlattenedInterpreter.register_primitive(for_loop_prim)
 def flattened_for(
-    self, start, stop, step, *invals, jaxpr_body_fn, consts_slice, args_slice, abstract_shapes_slice
+    self,
+    start,
+    stop,
+    step,
+    *invals,
+    jaxpr_body_fn,
+    consts_slice_tuple,
+    args_slice_tuple,
+    abstract_shapes_slice_tuple,
 ):
     """Handle the for loop by a flattened python strategy."""
-    # Convert tuples back to slices (tuples are used for JAX 0.7.0 hashability)
-    from pennylane.capture import _restore_slice  # pylint: disable=import-outside-toplevel
-
-    consts_slice = _restore_slice(consts_slice)
-    args_slice = _restore_slice(args_slice)
-    abstract_shapes_slice = _restore_slice(abstract_shapes_slice)
-
-    consts = invals[consts_slice]
-    init_state = invals[args_slice]
-    abstract_shapes = invals[abstract_shapes_slice]
-    num_abstract_shapes = abstract_shapes_slice.stop - abstract_shapes_slice.start
+    # Convert slice tuples (start, stop, step) directly to slice objects for indexing
+    consts = invals[slice(*consts_slice_tuple)]
+    init_state = invals[slice(*args_slice_tuple)]
+    abstract_shapes = invals[slice(*abstract_shapes_slice_tuple)]
+    num_abstract_shapes = abstract_shapes_slice_tuple[1] - abstract_shapes_slice_tuple[0]
 
     res = init_state
     for i in range(start, stop, step):

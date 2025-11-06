@@ -377,7 +377,7 @@ class TestOpmath:
         """Test a nested control operation."""
 
         def qfunc(op):
-            qml.ctrl(op, control=(3, 4), control_values=[0, 1])
+            qml.ctrl(op, control=(3, 4), control_values=(0, 1))
 
         jaxpr = jax.make_jaxpr(qfunc)(qml.IsingXX(1.2, wires=(0, 1)))
 
@@ -402,7 +402,7 @@ class TestOpmath:
             jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3.4)
 
         assert len(q) == 1
-        expected = qml.ctrl(qml.IsingXX(3.4, wires=(0, 1)), control=(3, 4), control_values=[0, 1])
+        expected = qml.ctrl(qml.IsingXX(3.4, wires=(0, 1)), control=(3, 4), control_values=(0, 1))
         qml.assert_equal(q.queue[0], expected)
 
 

@@ -37,11 +37,26 @@ def _make_hashable(obj: Any) -> Any:
     JAX 0.7.0 requires all primitive parameters to be hashable. This helper converts
     common unhashable types (list, dict, slice) to hashable tuples.
 
+    **IMPORTANT**: Callers must explicitly call this function to convert parameters
+    before passing them to primitive.bind(). The automatic conversion in QmlPrimitive.bind()
+    has been removed to ensure primitives never contain unhashable metadata from the start.
+
     Args:
         obj: Object to potentially convert to hashable form
 
     Returns:
         Hashable version of the object
+
+    Example:
+        >>> # Convert a slice to hashable tuple before binding
+        >>> args_slice = slice(0, 5)
+        >>> hashable_slice = _make_hashable(args_slice)  # Returns (0, 5, None)
+        >>> primitive.bind(data, args_slice=hashable_slice)
+
+        >>> # Convert a dict to hashable tuple of tuples before binding
+        >>> kwargs = {'key': 'value'}
+        >>> hashable_kwargs = _make_hashable(kwargs)  # Returns (('key', 'value'),)
+        >>> primitive.bind(data, kwargs=hashable_kwargs)
     """
 
     # First, check if the object is already hashable
@@ -181,11 +196,10 @@ class QmlPrimitive(Primitive):
         self._prim_type = PrimitiveType(value)
 
     def bind(self, *args, **params):
-        """Bind with automatic parameter hashability conversion for JAX 0.7.0+.
+        """Bind method for QmlPrimitive.
 
-        Overrides the parent bind method to automatically convert unhashable parameters
-        (like lists, dicts, and slices) to hashable tuples, which is required by JAX 0.7.0+.
+        Note: JAX 0.7.0+ requires all parameters to be hashable. Callers are responsible
+        for ensuring parameters are hashable (e.g., passing tuples instead of lists/dicts/slices).
+        Use _make_hashable() helper function to convert unhashable objects before calling bind().
         """
-        # Convert all parameters to hashable forms
-        hashable_params = {k: _make_hashable(v) for k, v in params.items()}
-        return super().bind(*args, **hashable_params)
+        return super().bind(*args, **params)

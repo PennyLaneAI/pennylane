@@ -281,18 +281,19 @@ def _get_for_loop_qfunc_prim():
     # pylint: disable=too-many-arguments
     @for_loop_prim.def_impl
     def _impl(
-        start, stop, step, *args, jaxpr_body_fn, consts_slice, args_slice, abstract_shapes_slice
+        start,
+        stop,
+        step,
+        *args,
+        jaxpr_body_fn,
+        consts_slice_tuple,
+        args_slice_tuple,
+        abstract_shapes_slice_tuple,
     ):
-        # Convert tuples back to slices (tuples are used for JAX 0.7.0 hashability)
-        from pennylane.capture import _restore_slice
-
-        consts_slice = _restore_slice(consts_slice)
-        args_slice = _restore_slice(args_slice)
-        abstract_shapes_slice = _restore_slice(abstract_shapes_slice)
-
-        consts = args[consts_slice]
-        init_state = args[args_slice]
-        abstract_shapes = args[abstract_shapes_slice]
+        # Convert slice tuples (start, stop, step) directly to slice objects for indexing
+        consts = args[slice(*consts_slice_tuple)]
+        init_state = args[slice(*args_slice_tuple)]
+        abstract_shapes = args[slice(*abstract_shapes_slice_tuple)]
 
         # in case start >= stop, return the initial state
         fn_res = init_state
@@ -304,13 +305,11 @@ def _get_for_loop_qfunc_prim():
 
     # pylint: disable=unused-argument
     @for_loop_prim.def_abstract_eval
-    def __abstract_eval(start, stop, step, *args, args_slice, abstract_shapes_slice, **_):
-        # Convert tuples back to slices (tuples are used for JAX 0.7.0 hashability)
-        from pennylane.capture import _restore_slice
-
-        args_slice = _restore_slice(args_slice)
-        abstract_shapes_slice = _restore_slice(abstract_shapes_slice)
-        return args[abstract_shapes_slice] + args[args_slice]
+    def __abstract_eval(
+        start, stop, step, *args, args_slice_tuple, abstract_shapes_slice_tuple, **_
+    ):
+        # Convert slice tuples directly to slice objects for indexing
+        return args[slice(*abstract_shapes_slice_tuple)] + args[slice(*args_slice_tuple)]
 
     return for_loop_prim
 
@@ -412,9 +411,14 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
 
         for_loop_prim = _get_for_loop_qfunc_prim()
 
-        consts_slice = slice(0, len(jaxpr_body_fn.consts))
-        abstract_shapes_slice = slice(consts_slice.stop, consts_slice.stop + len(abstract_shapes))
-        args_slice = slice(abstract_shapes_slice.stop, None)
+        # Store slice bounds as tuples (start, stop, step) - hashable and semantic
+        consts_slice_tuple = (0, len(jaxpr_body_fn.consts), None)
+        abstract_shapes_slice_tuple = (
+            len(jaxpr_body_fn.consts),
+            len(jaxpr_body_fn.consts) + len(abstract_shapes),
+            None,
+        )
+        args_slice_tuple = (len(jaxpr_body_fn.consts) + len(abstract_shapes), None, None)
 
         results = for_loop_prim.bind(
             self.start,
@@ -424,9 +428,9 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
             *abstract_shapes,
             *flat_args,
             jaxpr_body_fn=jaxpr_body_fn.jaxpr,
-            consts_slice=consts_slice,
-            args_slice=args_slice,
-            abstract_shapes_slice=abstract_shapes_slice,
+            consts_slice_tuple=consts_slice_tuple,
+            args_slice_tuple=args_slice_tuple,
+            abstract_shapes_slice_tuple=abstract_shapes_slice_tuple,
         )
         results = results[-out_tree.num_leaves :]
         return jax.tree_util.tree_unflatten(out_tree, results)

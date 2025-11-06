@@ -44,12 +44,16 @@ def _create_transform_primitive(name):
 
     @transform_prim.def_impl
     def _impl(
-        *all_args, inner_jaxpr, args_slice, consts_slice, targs_slice, tkwargs
+        *all_args,
+        inner_jaxpr,
+        args_slice_tuple,
+        consts_slice_tuple,
+        targs_slice_tuple,
+        tkwargs_tuple,
     ):  # pylint: disable=unused-argument
-        from pennylane.capture import _restore_slice  # pylint: disable=import-outside-toplevel
-
-        args = all_args[_restore_slice(args_slice)]
-        consts = all_args[_restore_slice(consts_slice)]
+        # Convert slice tuples (start, stop, step) directly to slice objects for indexing
+        args = all_args[slice(*args_slice_tuple)]
+        consts = all_args[slice(*consts_slice_tuple)]
         return capture.eval_jaxpr(inner_jaxpr, consts, *args)
 
     @transform_prim.def_abstract_eval
@@ -112,17 +116,20 @@ def _register_primitive_for_expansion(primitive, plxpr_transform):
 
     @ExpandTransformsInterpreter.register_primitive(primitive)
     def _(
-        self, *invals, inner_jaxpr, args_slice, consts_slice, targs_slice, tkwargs
+        self,
+        *invals,
+        inner_jaxpr,
+        args_slice_tuple,
+        consts_slice_tuple,
+        targs_slice_tuple,
+        tkwargs_tuple,
     ):  # pylint: disable=too-many-arguments
-        from pennylane.capture import (  # pylint: disable=import-outside-toplevel
-            _restore_dict,
-            _restore_slice,
-        )
-
-        args = invals[_restore_slice(args_slice)]
-        consts = invals[_restore_slice(consts_slice)]
-        targs = invals[_restore_slice(targs_slice)]
-        tkwargs = _restore_dict(tkwargs)
+        # Convert slice tuples directly to slice objects for indexing
+        args = invals[slice(*args_slice_tuple)]
+        consts = invals[slice(*consts_slice_tuple)]
+        targs = invals[slice(*targs_slice_tuple)]
+        # Convert kwargs tuple back to dict, restoring nested dicts recursively
+        tkwargs = _restore_nested_dict(tkwargs_tuple)
 
         def wrapper(*inner_args):
             return copy(self).eval(inner_jaxpr, consts, *inner_args)
@@ -532,34 +539,75 @@ def _apply_to_tape(obj: QuantumScript, transform, *targs, **tkwargs):
     return transformed_tapes, processing_fn
 
 
+def _make_hashable_nested(obj):
+    """Recursively convert unhashable objects to hashable tuples."""
+    try:
+        hash(obj)
+        return obj
+    except TypeError:
+        pass
+
+    if isinstance(obj, dict):
+        return tuple(
+            sorted(((k, _make_hashable_nested(v)) for k, v in obj.items()), key=lambda x: str(x[0]))
+        )
+    if isinstance(obj, list):
+        return tuple(_make_hashable_nested(item) for item in obj)
+    return obj
+
+
+def _restore_nested_dict(obj):
+    """Recursively restore dicts from nested tuples."""
+    if isinstance(obj, tuple):
+        if len(obj) == 0:
+            # Empty tuple represents empty dict
+            return {}
+        # Check if this looks like a dict tuple: ((k1, v1), (k2, v2), ...)
+        if all(isinstance(item, tuple) and len(item) == 2 for item in obj):
+            # Could be a dict or just a tuple of pairs, restore recursively
+            return {k: _restore_nested_dict(v) for k, v in obj}
+        # Otherwise restore each item recursively
+        return tuple(_restore_nested_dict(item) for item in obj)
+    return obj
+
+
 def _capture_apply(obj, transform, *targs, **tkwargs):
     @wraps(obj)
     def qfunc_transformed(*args, **kwargs):
         import jax  # pylint: disable=import-outside-toplevel
 
-        flat_qfunc = capture.flatfn.FlatFn(obj)
-        jaxpr = jax.make_jaxpr(functools.partial(flat_qfunc, **kwargs))(*args)
-        flat_args = jax.tree_util.tree_leaves(args)
+        if isinstance(obj, QuantumScript):
+            return transform._primitive.bind(
+                obj, targs=(), tkwargs=tkwargs
+            )  # pylint: disable=protected-access
 
-        n_args = len(flat_args)
-        n_consts = len(jaxpr.consts)
-        args_slice = slice(0, n_args)
-        consts_slice = slice(n_args, n_args + n_consts)
-        targs_slice = slice(n_args + n_consts, None)
+        if capture.enabled():
+            flat_qfunc = capture.flatfn.FlatFn(obj)
+            jaxpr = jax.make_jaxpr(functools.partial(flat_qfunc, **kwargs))(*args)
+            flat_args = jax.tree_util.tree_leaves(args)
 
-        results = transform._primitive.bind(  # pylint: disable=protected-access
-            *flat_args,
-            *jaxpr.consts,
-            *targs,
-            inner_jaxpr=jaxpr.jaxpr,
-            args_slice=args_slice,
-            consts_slice=consts_slice,
-            targs_slice=targs_slice,
-            tkwargs=tkwargs,
-        )
+            n_args = len(flat_args)
+            n_consts = len(jaxpr.consts)
+            # Store slice bounds as tuples (start, stop, step) - hashable and semantic
+            args_slice_tuple = (0, n_args, None)
+            consts_slice_tuple = (n_args, n_args + n_consts, None)
+            targs_slice_tuple = (n_args + n_consts, None, None)
+            # Store kwargs as sorted tuple of (key, value) pairs with recursive hashable conversion
+            tkwargs_tuple = _make_hashable_nested(tkwargs)
 
-        assert flat_qfunc.out_tree is not None
-        return jax.tree_util.tree_unflatten(flat_qfunc.out_tree, results)
+            results = transform._primitive.bind(  # pylint: disable=protected-access
+                *flat_args,
+                *jaxpr.consts,
+                *targs,
+                inner_jaxpr=jaxpr.jaxpr,
+                args_slice_tuple=args_slice_tuple,
+                consts_slice_tuple=consts_slice_tuple,
+                targs_slice_tuple=targs_slice_tuple,
+                tkwargs_tuple=tkwargs_tuple,
+            )
+
+            assert flat_qfunc.out_tree is not None
+            return jax.tree_util.tree_unflatten(flat_qfunc.out_tree, results)
 
     return qfunc_transformed
 

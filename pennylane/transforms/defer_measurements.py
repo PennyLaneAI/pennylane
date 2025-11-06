@@ -390,7 +390,7 @@ def _get_plxpr_defer_measurements():
         return MeasurementValue([meas])
 
     @DeferMeasurementsInterpreter.register_primitive(cond_prim)
-    def _cond_primitive(self, *invals, jaxpr_branches, consts_slices, args_slice):
+    def _cond_primitive(self, *invals, jaxpr_branches, consts_slices_tuple, args_slice_tuple):
         n_branches = len(jaxpr_branches)
         conditions = invals[:n_branches]
         if not any(isinstance(c, MeasurementValue) for c in conditions):
@@ -398,14 +398,14 @@ def _get_plxpr_defer_measurements():
                 self,
                 *invals,
                 jaxpr_branches=jaxpr_branches,
-                consts_slices=consts_slices,
-                args_slice=args_slice,
+                consts_slices_tuple=consts_slices_tuple,
+                args_slice_tuple=args_slice_tuple,
             )
 
-        from pennylane.capture import _restore_slice  # pylint: disable=import-outside-toplevel
-
+        # Convert slice tuples (start, stop, step) directly to slice objects for indexing
         conditions = get_mcm_predicates(conditions[:-1])
-        args = invals[_restore_slice(args_slice)]
+        args = invals[slice(*args_slice_tuple)]
+        consts_slices = [slice(*s) for s in consts_slices_tuple]
 
         for i, (condition, jaxpr) in enumerate(zip(conditions, jaxpr_branches, strict=True)):
 
@@ -414,14 +414,14 @@ def _get_plxpr_defer_measurements():
 
                 for branch, value in condition.items():
                     # When reduce_postselected is True, some branches can be ()
-                    cur_consts = invals[_restore_slice(consts_slices[i])]
+                    cur_consts = invals[consts_slices[i]]
                     qml.cond(value, ctrl_transform_prim.bind)(
                         *cur_consts,
                         *args,
                         *control_wires,
                         jaxpr=jaxpr,
                         n_control=len(control_wires),
-                        control_values=branch,
+                        control_values=tuple(branch) if isinstance(branch, list) else branch,
                         work_wires=None,
                         n_consts=len(cur_consts),
                     )

@@ -55,7 +55,7 @@ class TestCommuteControlledInterpreter:
         @CommuteControlledInterpreter(direction=direction)
         def circuit():
             qml.PauliX(wires=2)
-            qml.ControlledQubitUnitary(jax.numpy.array([[0, 1], [1, 0]]), wires=[0, 2])
+            qml.ControlledQubitUnitary(jax.numpy.array([[0, 1], [1, 0]]), wires=(0, 2))
             qml.PauliX(wires=2)
 
         # This circuit should be unchanged
@@ -69,7 +69,7 @@ class TestCommuteControlledInterpreter:
 
         expected_ops = [
             qml.PauliX(wires=2),
-            qml.ControlledQubitUnitary(jax.numpy.array([[0, 1], [1, 0]]), wires=[0, 2]),
+            qml.ControlledQubitUnitary(jax.numpy.array([[0, 1], [1, 0]]), wires=(0, 2)),
             qml.PauliX(wires=2),
         ]
 
