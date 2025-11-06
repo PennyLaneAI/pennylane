@@ -15,19 +15,30 @@
 
 <h3>Improvements 🛠</h3>
 
+* The `~.BasisRotation` graph decomposition was re-written in a qjit friendly way with PennyLane control flow.
+  [(#8560)](https://github.com/PennyLaneAI/pennylane/pull/8560)
+
 * The new graph based decompositions system enabled via :func:`~.decomposition.enable_graph` now supports the following
   additional templates.
   [(#8520)](https://github.com/PennyLaneAI/pennylane/pull/8520)
   [(#8515)](https://github.com/PennyLaneAI/pennylane/pull/8515)
   [(#8516)](https://github.com/PennyLaneAI/pennylane/pull/8516)
+  [(#8555)](https://github.com/PennyLaneAI/pennylane/pull/8555)
+  [(#8558)](https://github.com/PennyLaneAI/pennylane/pull/8558)
   [(#8538)](https://github.com/PennyLaneAI/pennylane/pull/8538)  
   [(#8534)](https://github.com/PennyLaneAI/pennylane/pull/8534)
-
+  [(#8543)](https://github.com/PennyLaneAI/pennylane/pull/8543)
+  [(#8554)](https://github.com/PennyLaneAI/pennylane/pull/8554)
+  
   - :class:`~.QSVT`
   - :class:`~.AmplitudeEmbedding`
   - :class:`~.AllSinglesDoubles`
+  - :class:`~.SimplifiedTwoDesign`
+  - :class:`~.GateFabric`
   - :class:`~.AngleEmbedding`
   - :class:`~.IQPEmbedding`
+  - :class:`~.QAOAEmbedding`
+  - :class:`~.BasicEntanglerLayers`
 
 * A new `qml.compiler.python_compiler.utils` submodule has been added, containing general-purpose utilities for
   working with xDSL. This includes a function that extracts the concrete value of scalar, constant SSA values.
@@ -232,15 +243,19 @@
   been modified to avoid using `numpy.matrix` as this function is deprecated.
   [(#8523)](https://github.com/PennyLaneAI/pennylane/pull/8523)
 
-* The `ftqc` module now includes dummy transforms for several Catalyst/MLIR passes (`to-ppr`, `commute-ppr`, `merge-ppr-ppm`, `pprm-to-mbqc`
-  and `reduce-t-depth`), to allow them to be captured as primitives in PLxPR and mapped to the MLIR passes in Catalyst. This enables using the passes with the unified compiler and program capture.
+* The `ftqc` module now includes dummy transforms for several Catalyst/MLIR passes (`to-ppr`, `commute-ppr`, `merge-ppr-ppm`,
+  `decompose-clifford-ppr`, `decompose-non-clifford-ppr`, `ppr-to-ppm`, `ppr-to-mbqc` and `reduce-t-depth`), to allow them to
+  be captured as primitives in PLxPR and mapped to the MLIR passes in Catalyst. This enables using the passes with the unified
+  compiler and program capture.
   [(#8519)](https://github.com/PennyLaneAI/pennylane/pull/8519)
+  [(#8544)](https://github.com/PennyLaneAI/pennylane/pull/8544)
 
 * The decompositions for several templates have been updated to use
   :class:`~.ops.op_math.ChangeOpBasis`, which makes their decompositions more resource efficient
   by eliminating unnecessary controlled operations. The templates include :class:`~.PhaseAdder`,
   :class:`~.TemporaryAND`, :class:`~.QSVT`, and :class:`~.SelectPauliRot`.
   [(#8490)](https://github.com/PennyLaneAI/pennylane/pull/8490)
+  [(#8577)](https://github.com/PennyLaneAI/pennylane/pull/8577)
 
 * Solovay-Kitaev decomposition using the :func:`~.clifford_t_decompostion` transform
   with ``method="sk"`` or directly via :func:`~.ops.sk_decomposition` now raises a more
@@ -248,6 +263,11 @@
   [(#8489)](https://github.com/PennyLaneAI/pennylane/pull/8489)
 
 <h3>Documentation 📝</h3>
+
+* Added a "Unified Compiler Cookbook" RST file, along with tutorials, to ``qml.compiler.python_compiler`,
+  which provides a quickstart guide for getting started with xDSL and its integration with PennyLane and
+  Catalyst.
+  [(#8571)](https://github.com/PennyLaneAI/pennylane/pull/8571)
 
 * The documentation of ``qml.transforms.rz_phase_gradient`` has been updated with respect to the
   sign convention of phase gradient states, how it prepares the phase gradient state in the code
@@ -258,6 +278,16 @@
   [(#8536)](https://github.com/PennyLaneAI/pennylane/pull/8536)
 
 * The docstring for ``qml.device`` has been updated to include a section on custom decompositions,
+  and a warning about the removal of the ``custom_decomps`` kwarg in v0.45. Additionally, the page
+  :doc:`Building a plugin <../development/plugins>` now includes instructions on using
+  the :func:`~pennylane.devices.preprocess.decompose` transform for device-level decompositions.
+  The documentation for :doc:`Compiling circuits <../introduction/compiling_circuits>` has also been
+  updated with a warning message about ``custom_decomps`` future removal.
+  [(#8492)](https://github.com/PennyLaneAI/pennylane/pull/8492)
+  [(#8564)](https://github.com/PennyLaneAI/pennylane/pull/8564)
+
+A warning message has been added to :doc:`Building a plugin <../development/plugins>`
+  docstring for ``qml.device`` has been updated to include a section on custom decompositions,
   and a warning about the removal of the ``custom_decomps`` kwarg in v0.44. Additionally, the page
   :doc:`Building a plugin <../development/plugins>` now includes instructions on using
   the :func:`~pennylane.devices.preprocess.decompose` transform for device-level decompositions.
@@ -289,6 +319,9 @@
 * Fixes a bug where a `KeyError` is raised when querying the decomposition rule for an operator in the gate set from a :class:`~pennylane.decomposition.DecompGraphSolution`.
   [(#8526)](https://github.com/PennyLaneAI/pennylane/pull/8526)
 
+* Fixes a bug where mid-circuit measurements were generating incomplete QASM.
+  [(#8556)](https://github.com/PennyLaneAI/pennylane/pull/8556)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -305,5 +338,6 @@ Gabriela Sanchez Diaz,
 Mudit Pandey,
 Shuli Shu,
 Jay Soni,
+nate stemen,
 David Wierichs,
 Hongsheng Zheng
