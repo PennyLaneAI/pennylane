@@ -203,7 +203,8 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> SpecsDict:  # pr
 
         resources = {}
 
-        tape_transforms = qml.workflow.get_transform_program(original_qnode)
+        # Note that this only gets transforms manually applied by the user
+        tape_transforms = original_qnode.transform_program
         num_trans_levels = len(tape_transforms)
         trans_levels = list(range(num_trans_levels)) if level == "all" else level
 
@@ -212,11 +213,11 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> SpecsDict:  # pr
             if trans_level not in range(num_trans_levels):
                 continue  # Not a tape transform level
 
-            batch, _ = qml.workflow.construct_batch(original_qnode, level=trans_level)(
+            # User transforms always come first, so level remains correct
+            tape = qml.workflow.construct_tape(original_qnode, level=trans_level)(
                 *args, **kwargs
             )
-            assert len(batch) == 1, "Batched QJIT code is not currently supported by qml.specs"
-            info = specs_from_tape(batch[0], compute_depth)
+            info = specs_from_tape(tape, compute_depth)
 
             trans_name = tape_transforms[trans_level].transform.__name__
             if trans_name in resources:

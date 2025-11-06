@@ -164,7 +164,7 @@ def _(
 
 @handle_resource.register
 def _(xdsl_op: PPRotationOp) -> tuple[ResourceType, str]:
-    s = f"PPR-pi/{xdsl_op.rotation_kind.value.data}-w{len(xdsl_op.in_qubits)}"
+    s = f"PPR-pi/{abs(xdsl_op.rotation_kind.value.data)}-w{len(xdsl_op.in_qubits)}"
     return ResourceType.PPM, s
 
 
