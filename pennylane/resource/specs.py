@@ -214,9 +214,7 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> SpecsDict:  # pr
                 continue  # Not a tape transform level
 
             # User transforms always come first, so level remains correct
-            tape = qml.workflow.construct_tape(original_qnode, level=trans_level)(
-                *args, **kwargs
-            )
+            tape = qml.workflow.construct_tape(original_qnode, level=trans_level)(*args, **kwargs)
             info = specs_from_tape(tape, compute_depth)
 
             trans_name = tape_transforms[trans_level].transform.__name__
