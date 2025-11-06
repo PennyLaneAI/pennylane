@@ -198,6 +198,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Refactor `qml.matrix` to use new transform dispatching for supported types.
+  [(#8501)](https://github.com/PennyLaneAI/pennylane/pull/8501)
+  
 * The `grad` and `jacobian` primitives now store the function under `fn`. There is also now a single `jacobian_p`
   primitive for use in program capture.
   [(#8357)](https://github.com/PennyLaneAI/pennylane/pull/8357)

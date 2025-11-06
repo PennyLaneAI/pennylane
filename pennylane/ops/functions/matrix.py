@@ -14,26 +14,36 @@
 """
 This module contains the qml.matrix function.
 """
-from functools import partial
 
-import pennylane as qml
-from pennylane import transform
+from collections.abc import Callable, Sequence
+from functools import partial
+from typing import Protocol, runtime_checkable
+
+from pennylane import math
 from pennylane.exceptions import MatrixUndefinedError, TransformError
 from pennylane.operation import Operator
 from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, QuantumScriptBatch
+from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn, TensorLike
-
-# pylint: disable=too-many-branches
-
-
-def catalyst_qjit(qnode):
-    """A method checking whether a qnode is compiled by catalyst.qjit"""
-    return qnode.__class__.__name__ == "QJIT" and hasattr(qnode, "user_function")
+from pennylane.workflow.qnode import QNode
 
 
-def matrix(op: Operator | PauliWord | PauliSentence, wire_order=None) -> TensorLike:
+# pylint: disable=too-few-public-methods
+@runtime_checkable
+class QJITCallable(Protocol):
+    """A protocol for objects that have a user_function attribute which is a QNode."""
+
+    user_function: QNode
+
+
+# pylint: disable=unused-argument
+@transform
+def matrix(
+    op: Operator | QuantumScript | QNode | Callable | QJITCallable,
+    wire_order: Sequence | None = None,
+) -> TensorLike:
     r"""The dense matrix representation of an operation or quantum circuit.
 
     .. note::
@@ -142,58 +152,25 @@ def matrix(op: Operator | PauliWord | PauliSentence, wire_order=None) -> TensorL
 
         >>> theta = pnp.array(0.3, requires_grad=True)
         >>> # Expected value is 2 * cos(0.3 / 2)
-        >>> cost(theta)
-        np.float64(1.97...)
+        >>> print(cost(theta))
+        1.977...
         >>> # The gradient is -sin(0.3 / 2)
         >>> qml.grad(cost, argnums=0)(theta)
         tensor(-0.14943813, requires_grad=True)
 
     """
-    if catalyst_qjit(op):
-        op = op.user_function
 
-    if not isinstance(op, Operator):
 
-        if isinstance(op, (PauliWord, PauliSentence)):
-            if wire_order is None and len(op.wires) > 1:
-                raise ValueError(
-                    "wire_order is required by qml.matrix() for PauliWords "
-                    "or PauliSentences with more than one wire."
-                )
-            return op.to_mat(wire_order=wire_order)
-
-        if isinstance(op, QuantumScript):
-            if wire_order is None:
-                error_base_str = "wire_order is required by qml.matrix() for tapes"
-                if len(op.wires) > 1:
-                    raise ValueError(error_base_str + " with more than one wire.")
-                if len(op.wires) == 0:
-                    raise ValueError(error_base_str + " without wires.")
-
-        elif isinstance(op, qml.QNode):
-            if wire_order is None and op.device.wires is None:
-                raise ValueError(
-                    "wire_order is required by qml.matrix() for QNodes if the device does "
-                    "not have wires specified."
-                )
-
-        elif callable(op):
-            if getattr(op, "num_wires", 0) != 1 and wire_order is None:
-                raise ValueError("wire_order is required by qml.matrix() for quantum functions.")
-
-        else:
-            raise TransformError("Input is not an Operator, tape, QNode, or quantum function")
-
-        return _matrix_transform(op, wire_order=wire_order)
-
-    # Starting from now, op is an Operator
-    # Validate wire_order
+@matrix.register
+def _matrix_op(op: Operator, wire_order: Sequence | None = None) -> TensorLike:
     if wire_order and not set(op.wires).issubset(wire_order):
         raise TransformError(
             f"Wires in circuit {list(op.wires)} are inconsistent with "
             f"those in wire_order {list(wire_order)}"
         )
+
     QueuingManager.remove(op)
+
     if op.has_matrix:
         return op.matrix(wire_order=wire_order)
     if op.has_sparse_matrix:
@@ -202,16 +179,76 @@ def matrix(op: Operator | PauliWord | PauliSentence, wire_order=None) -> TensorL
         with QueuingManager.stop_recording():
             ops = op.decomposition()
         return matrix(QuantumScript(ops), wire_order=wire_order or op.wires)
+
     raise MatrixUndefinedError(
         "Operator must define a matrix, sparse matrix, or decomposition for use with qml.matrix."
     )
 
 
+@matrix.register
+def _matrix_pauli(op: PauliWord | PauliSentence, wire_order: Sequence | None = None) -> TensorLike:
+    """Compute the matrix representation of a PauliWord or PauliSentence."""
+    if wire_order is None and len(op.wires) > 1:
+        raise ValueError(
+            "wire_order is required by qml.matrix() for PauliWords "
+            "or PauliSentences with more than one wire."
+        )
+    return op.to_mat(wire_order=wire_order)
+
+
+@matrix.register
+def _matrix_tape(op: QuantumScript, wire_order: Sequence | None = None) -> TensorLike:
+    """Compute the matrix representation of a QuantumScript."""
+    if wire_order is None:
+        error_base_str = "wire_order is required by qml.matrix() for tapes"
+        if len(op.wires) > 1:
+            raise ValueError(error_base_str + " with more than one wire.")
+        if len(op.wires) == 0:
+            raise ValueError(error_base_str + " without wires.")
+
+    return _matrix_transform(op, wire_order=wire_order)
+
+
+@matrix.register
+def _matrix_qnode(op: QNode, wire_order: Sequence | None = None) -> TensorLike:
+    """Compute the matrix representation of a QNode."""
+    if wire_order is None and op.device.wires is None:
+        raise ValueError(
+            "wire_order is required by qml.matrix() for QNodes if the device does "
+            "not have wires specified."
+        )
+    return _matrix_transform(op, wire_order=wire_order)
+
+
+@matrix.register
+def _matrix_function(op: Callable | QJITCallable, wire_order: Sequence | None = None) -> TensorLike:
+    """Compute the matrix representation of a quantum function."""
+    # Handle Catalyst QJIT-compiled QNodes
+    if isinstance(op, QJITCallable):
+        op = op.user_function
+        return _matrix_qnode(op)
+
+    if getattr(op, "num_wires", 0) != 1 and wire_order is None:
+        raise ValueError("wire_order is required by qml.matrix() for quantum functions.")
+
+    return _matrix_transform(op, wire_order=wire_order)
+
+
+# Registering for 'object' creates a fallback for any type not specifically handled.
+@matrix.register
+def _matrix_fallback(op: object, **_kwargs) -> TensorLike:
+    """Fallback for unsupported types."""
+    raise TransformError(
+        f"No matrix transform registered for type {type(op).__name__}. "
+        "The qml.matrix transform only supports Operators, PauliWord, PauliSentence, "
+        "QuantumScripts, QNodes, and callables."
+    )
+
+
 @partial(transform, is_informative=True)
 def _matrix_transform(
-    tape: QuantumScript, wire_order=None, **kwargs
+    tape: QuantumScript, wire_order: Sequence | None = None, **kwargs
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
-
     if wire_order and not set(tape.wires).issubset(wire_order):
         raise TransformError(
             f"Wires in circuit {list(tape.wires)} are inconsistent with "
@@ -219,17 +256,17 @@ def _matrix_transform(
         )
 
     wires = kwargs.get("device_wires", None) or tape.wires
-    wire_order = wire_order or wires
+    wire_order = wires if wire_order is None else wire_order
 
     def processing_fn(res):
         """Defines how matrix works if applied to a tape containing multiple operations."""
 
         params = res[0].get_parameters(trainable_only=False)
-        interface = qml.math.get_interface(*params)
+        interface = math.get_interface(*params)
 
         # initialize the unitary matrix
         if len(res[0].operations) == 0:
-            result = qml.math.eye(2 ** len(wire_order), like=interface)
+            result = math.eye(2 ** len(wire_order), like=interface)
         else:
             result = matrix(res[0].operations[0], wire_order=wire_order)
 
@@ -237,14 +274,14 @@ def _matrix_transform(
             U = matrix(op, wire_order=wire_order)
             # Coerce the matrices U and result and use matrix multiplication. Broadcasted axes
             # are handled correctly automatically by ``matmul`` (See e.g. NumPy documentation)
-            result = qml.math.matmul(*qml.math.coerce([U, result], like=interface), like=interface)
+            result = math.matmul(*math.coerce([U, result], like=interface), like=interface)
 
         return result
 
     return [tape], processing_fn
 
 
-@_matrix_transform.custom_qnode_transform
-def _matrix_transform_qnode(self, qnode, targs, tkwargs):
+@_matrix_transform.register
+def _matrix_transform_qnode(qnode: QNode, *targs, **tkwargs):
     tkwargs.setdefault("device_wires", qnode.device.wires)
-    return self.default_qnode_transform(qnode, targs, tkwargs)
+    return _matrix_transform.generic_apply_transform(qnode, *targs, **tkwargs)
