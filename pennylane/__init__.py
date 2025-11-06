@@ -218,10 +218,12 @@ if _find_spec("numpy") is not None:
         "2.0.0"
     ):  # pragma: no cover
         warnings.warn(
-            "PennyLane has dropped maintainence support for NumPy < 2.0.0. "
+            "PennyLane v0.44 has dropped maintainence support for NumPy < 2.0.0. "
             f"You have version {numpy_version} installed. "
+            "Future versions of PennyLane are not guaranteed to work with NumPy<2.0. "
             "Please consider upgrading NumPy using "
-            "`python -m pip install numpy --upgrade`. "
+            "`python -m pip install numpy --upgrade`. ",
+            exceptions.PennyLaneDeprecationWarning,
         )
 
 
