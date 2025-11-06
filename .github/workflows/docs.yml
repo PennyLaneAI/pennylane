@@ -32,14 +32,6 @@ on:
 permissions: write-all
 
 jobs:
-  determine_runner:
-    if: github.event.pull_request.draft == false
-    name: Determine runner type to use
-    uses: ./.github/workflows/determine-workflow-runner.yml
-    with:
-      default_runner: ubuntu-latest
-      force_large_runner: ${{ github.event_name == 'merge_group' }}
-
   get_branch:
     runs-on: ubuntu-latest
     outputs:
@@ -58,6 +50,15 @@ jobs:
           else
             echo "run_sphinx=false" >> $GITHUB_OUTPUT
           fi
+
+  determine_runner:
+    if: needs.get_branch.outputs.run_sphinx == 'true'
+    needs: get_branch
+    name: Determine runner type to use
+    uses: ./.github/workflows/determine-workflow-runner.yml
+    with:
+      default_runner: ubuntu-latest
+      force_large_runner: ${{ github.event_name == 'merge_group' }}
 
   sphinx:
     if: needs.get_branch.outputs.run_sphinx == 'true'
