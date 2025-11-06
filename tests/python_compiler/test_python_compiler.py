@@ -218,7 +218,7 @@ class TestCatalystIntegration:
 
     @pytest.fixture
     def plugin_args(self, use_plugin):
-        """Fixture to conditionally provide plugin arguments based on use_plugin parameter."""
+        """Fixture to conditionally provide plugin arguments given the use_plugin parameter."""
         return {"pass_plugins": [getXDSLPluginAbsolutePath()]} if use_plugin else {}
 
     @pytest.mark.usefixtures("enable_disable_plxpr")
