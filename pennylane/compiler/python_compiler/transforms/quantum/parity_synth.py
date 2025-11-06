@@ -26,7 +26,8 @@ from xdsl.dialects import arith, builtin, func
 from xdsl.ir import SSAValue
 from xdsl.rewriter import InsertPoint
 
-from .....transforms.intermediate_reps.rowcol import _rowcol_parity_matrix
+from pennylane.transforms.intermediate_reps.rowcol import _rowcol_parity_matrix
+
 from ...dialects.quantum import CustomOp, QubitType
 from ...pass_api import compiler_transform
 
@@ -175,7 +176,7 @@ def make_phase_polynomial(
             arith_ops.append(neg_op)
             angle = neg_op.result
         angles.append(angle)
-        wire = wire_map[op.in_qubits[0]]
+        wire = wire_map.pop(op.in_qubits[0])
         parity_table.append(parity_matrix[wire].copy())  # append _current_ parity (hence the copy)
         wire_map[op.out_qubits[0]] = wire
 

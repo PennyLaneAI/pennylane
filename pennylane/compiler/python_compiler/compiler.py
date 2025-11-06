@@ -55,7 +55,6 @@ class Compiler:
         xmod = parser.parse_module()
         pipeline = PassPipeline((ApplyTransformSequence(callback=callback),))
         pipeline.apply(ctx, xmod)
-        print(xmod)
         buffer = io.StringIO()
         Printer(stream=buffer, print_generic_format=True).print_op(xmod)
         with jaxContext() as jctx:
