@@ -264,7 +264,15 @@ def _approx_time_evolution_decomposition(*coeffs_and_time, wires, hamiltonian, n
         @for_loop(len(pauli_keys))
         def paulis_loop(k):
             pw = pauli_keys[k]
-            coeff = pauli_items[pw]
+            coeff_index = 0
+            found = pauli_items[coeff_index][0] == pw
+
+            while not found:
+                coeff_index += 1
+                found = pauli_items[coeff_index][0] == pw
+
+
+            coeff = pauli_items[coeff_index][1]
 
             def rot():
                 theta = 2 * time * coeff / n
