@@ -47,8 +47,8 @@ except (ModuleNotFoundError, ImportError) as import_error:
 
 
 def _get_op_call_graph(op):
-    """Return call graph for PennyLane Operator. If the call graph is not implemented,
-    return ``None``, which means we will build the call graph via decomposition"""
+    """Return call graph for PennyLane Operator. The call graph depends on the results of calling
+    estimate on said PennyLane Operator."""
     simple_mapper = {
         "Hadamard": qt_gates.Hadamard,
         "CNOT": qt_gates.CNOT,
@@ -66,7 +66,7 @@ def _get_op_call_graph(op):
             qt_gate = simple_mapper[gate]()
             qt_gate_types[qt_gate] += count
     except (DecompositionUndefinedError, AttributeError):
-        pass
+        return None
     return qt_gate_types
 
 
