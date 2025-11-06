@@ -356,6 +356,8 @@ class TestMCMConfig:
             "foo",
             123,
             True,
+            "None",
+            "none",
         ],
     )
     def test_invalid_mcm_method_raises_value_error(self, mcm_method):
