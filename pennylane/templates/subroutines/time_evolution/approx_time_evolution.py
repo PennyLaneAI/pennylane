@@ -16,6 +16,9 @@ Contains the ApproxTimeEvolution template.
 """
 # pylint: disable=protected-access
 import copy
+from collections import defaultdict
+
+from pennylane.decomposition import resource_rep
 
 from pennylane.operation import Operation
 from pennylane.ops import PauliRot
@@ -118,6 +121,8 @@ class ApproxTimeEvolution(Operation):
 
     grad_method = None
 
+    resource_keys = {"words", "n"}
+
     def _flatten(self):
         h = self.hyperparameters["hamiltonian"]
         data = (h, self.data[-1])
@@ -130,6 +135,13 @@ class ApproxTimeEvolution(Operation):
     @classmethod
     def _unflatten(cls, data, metadata):
         return cls(data[0], data[1], n=metadata[0])
+
+    @property
+    def resource_params(self) -> dict:
+        return {
+            "words": list(self.hyperparameters["hamiltonian"].pauli_rep.keys()),
+            "n": self.hyperparameters["n"],
+        }
 
     def __init__(self, hamiltonian, time, n, id=None):
         if getattr(hamiltonian, "pauli_rep", None) is None:
@@ -222,3 +234,17 @@ class ApproxTimeEvolution(Operation):
             _ = [apply(op) for op in full_decomp]
 
         return full_decomp
+
+
+def _approx_time_evolution_resources(words, n):
+    resources = defaultdict(int)
+
+    for _ in range(n):
+        for pw in words:
+            if len(pw) == 0:
+                continue
+            term_str = "".join(pw.values())
+            wires = Wires(pw.keys())
+            resources[resource_rep(PauliRot, pauli_word=term_str)] += 1
+
+    return resources
