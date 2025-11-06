@@ -184,7 +184,6 @@ PlxprInterpreter: type
 expand_plxpr_transforms: Callable[[Callable], Callable]
 eval_jaxpr: Callable
 QmlPrimitive: "Type[jax.extend.core.Primitive]"
-_restore_dict: Callable
 
 
 # pylint: disable=import-outside-toplevel, redefined-outer-name, too-many-return-statements
@@ -193,11 +192,6 @@ def __getattr__(key):
         from .custom_primitives import QmlPrimitive
 
         return QmlPrimitive
-
-    if key == "_restore_dict":
-        from .custom_primitives import _restore_dict
-
-        return _restore_dict
 
     if key == "AbstractOperator":
         from .primitives import _get_abstract_operator

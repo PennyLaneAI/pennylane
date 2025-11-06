@@ -16,7 +16,6 @@ This submodule offers custom primitives for the PennyLane capture module.
 """
 
 from enum import Enum
-from typing import Any
 
 from jax.extend.core import Primitive
 
@@ -29,40 +28,6 @@ class PrimitiveType(Enum):
     MEASUREMENT = "measurement"
     HIGHER_ORDER = "higher_order"
     TRANSFORM = "transform"
-
-
-def _restore_dict(obj: Any) -> dict:
-    """Restore dict from hashable tuple representation.
-
-    This is used by transforms that need to restore kwargs from hashable tuple
-    representations stored in JAX primitives. The hashable representation is a
-    sorted tuple of (key, value) tuples created by _make_hashable_nested().
-
-    Args:
-        obj: Tuple of (key, value) tuples representing a dict
-
-    Returns:
-        dict: Restored dictionary with recursively restored values
-
-    Example:
-        >>> _restore_dict((('a', 1), ('b', 2)))
-        {'a': 1, 'b': 2}
-    """
-    if not isinstance(obj, tuple):
-        return obj
-
-    # Empty tuple represents empty dict
-    if len(obj) == 0:
-        return {}
-
-    # Check if this tuple is actually a dict representation
-    # (all elements must be 2-tuples to be key-value pairs)
-    if not all(isinstance(item, tuple) and len(item) == 2 for item in obj):
-        # Not a dict representation, return as-is (it's a regular tuple)
-        return obj
-
-    # Convert tuple of (key, value) tuples back to dict, recursively restoring nested values
-    return {k: _restore_dict(v) for k, v in obj}
 
 
 # pylint: disable=abstract-method,too-few-public-methods

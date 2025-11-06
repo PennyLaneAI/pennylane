@@ -102,10 +102,12 @@ def _get_plxpr_map_wires():
 
     def map_wires_plxpr_to_plxpr(jaxpr, consts, targs, tkwargs, *args):
         """Function for applying the ``map_wires`` transform on plxpr."""
-        from pennylane.capture import _restore_dict  # pylint: disable=import-outside-toplevel
+        from pennylane.transforms.core.transform_dispatcher import (  # pylint: disable=import-outside-toplevel
+            _restore_nested_dict,
+        )
 
         # Restore tkwargs from hashable tuple to dict
-        tkwargs = _restore_dict(tkwargs)
+        tkwargs = _restore_nested_dict(tkwargs)
 
         if tkwargs.pop("queue", False):
             warn(
