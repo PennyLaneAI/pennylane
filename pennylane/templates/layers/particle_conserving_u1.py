@@ -22,7 +22,7 @@ from pennylane.decomposition import add_decomps, register_resources, resource_re
 from pennylane.operation import Operation
 from pennylane.ops import CNOT, CZ, CRot, PhaseShift
 from pennylane.templates.embeddings import BasisEmbedding
-from pennylane.wires import Wires
+from pennylane.wires import Wires, WiresLike
 
 has_jax = True
 try:
@@ -370,7 +370,7 @@ class ParticleConservingU1(Operation):
         return n_layers, n_wires - 1, 2
 
 
-def _particle_conserving_u1_resources(n_layers, num_wires):
+def _particle_conserving_u1_resources(n_layers: int, num_wires: int):
     # number of pairs of even-indexed of wires
     num_nm_wires = (
         math.floor(num_wires / 2) if num_wires % 2 == 0 else math.ceil((num_wires - 1) / 2)
@@ -389,7 +389,7 @@ def _particle_conserving_u1_resources(n_layers, num_wires):
     return resources
 
 
-def _decompose_ua_qfunc(phi, wires):
+def _decompose_ua_qfunc(phi: float, wires: WiresLike):
     r"""Appends the circuit decomposing the controlled application of the unitary
     :math:`U_A(\phi)`
 
@@ -428,7 +428,7 @@ def _decompose_ua_qfunc(phi, wires):
 
 @register_resources(_particle_conserving_u1_resources)
 def _particle_conserving_u1_decomposition(
-    weights, wires, init_state
+    weights: list, wires: WiresLike, init_state: tuple[int]
 ):  # pylint: disable=arguments-differ
     nm_wires = [wires[l : l + 2] for l in range(0, len(wires) - 1, 2)]
     nm_wires += [wires[l : l + 2] for l in range(1, len(wires) - 1, 2)]
