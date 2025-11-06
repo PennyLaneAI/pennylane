@@ -173,11 +173,6 @@ def _arbitrary_unitary_resources(num_wires: int) -> dict:
 def _arbitrary_unitary_decomposition(weights: list, wires: WiresLike):
     words = list(_all_pauli_words_but_identity(len(wires)))
 
-    if has_jax and capture.enabled():
-        if isinstance(wires, Wires):
-            wires = wires.labels
-        words, weights, wires = jnp.array(words), jnp.array(weights), jnp.array(wires)
-
     @for_loop(len(words))
     def rot_loop(i):
         PauliRot(weights[..., i], words[i], wires=wires)
