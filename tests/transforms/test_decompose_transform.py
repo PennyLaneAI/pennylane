@@ -70,7 +70,18 @@ class InfiniteOp(Operation):
 class TestDecompose:
     """Unit tests for decompose function"""
 
-    gate_set_inputs = [None, "RX", ["RX"], ("RX",), {"RX"}, qml.RX, [qml.RX], (qml.RX,), {qml.RX}]
+    gate_set_inputs = [
+        None,
+        "RX",
+        ["RX"],
+        ("RX",),
+        {"RX"},
+        qml.RX,
+        [qml.RX],
+        (qml.RX,),
+        {qml.RX},
+        {qml.RX: 1.0},
+    ]
 
     iterables_test = [
         (
@@ -87,14 +98,12 @@ class TestDecompose:
         ),
         ([qml.Toffoli([0, 1, 2])], {qml.Toffoli}, [qml.Toffoli([0, 1, 2])], None),
         (
-            [qml.ops.MidMeasure(0)],
-            {},
-            [qml.ops.MidMeasure(0)],
+            [qml.Hadamard(0)],
+            {qml.RX: 1, qml.RZ: 2},
+            [qml.RZ(qnp.pi / 2, 0), qml.RX(qnp.pi / 2, 0), qml.RZ(qnp.pi / 2, 0)],
             {
-                "type": TypeError,
-                "msg": "Specifying the gate_set with a dictionary of operator types and their weights is only supported "
-                "with the new experimental graph-based decomposition system. Enable the new system "
-                "using qml.decomposition.enable_graph()",
+                "type": UserWarning,
+                "msg": "Gate weights were provided to a non-graph-based decomposition.",
             },
         ),
         (
@@ -143,8 +152,36 @@ class TestDecompose:
     def test_different_input_formats(self, gate_set):
         """Tests that gate sets of different types are handled correctly"""
         tape = qml.tape.QuantumScript([qml.RX(0, wires=[0])])
-        (decomposed_tape,), _ = decompose(tape, gate_set=gate_set)
+        if isinstance(gate_set, dict):
+            with pytest.raises(
+                UserWarning, match="Gate weights were provided to a non-graph-based decomposition."
+            ):
+                (decomposed_tape,), _ = decompose(tape, gate_set=gate_set)
+                qml.assert_equal(tape, decomposed_tape)
+        else:
+            (decomposed_tape,), _ = decompose(tape, gate_set=gate_set)
+            qml.assert_equal(tape, decomposed_tape)
+
+    def test_stopping_cond_without_gate_set(self):
+        gate_set = None
+
+        def stopping_condition(op):
+            return op.name in ("RX")
+
+        tape = qml.tape.QuantumScript([qml.RX(0, wires=[0])])
+
+        (decomposed_tape,), _ = decompose(
+            tape, gate_set=gate_set, stopping_condition=stopping_condition
+        )
         qml.assert_equal(tape, decomposed_tape)
+
+        def stopping_condition_2(op):
+            return op.name in ("CX")
+
+        with pytest.raises(
+            UserWarning, match="Operator RX does not define a decomposition to the target gate set"
+        ):
+            decompose(tape, gate_set=gate_set, stopping_condition=stopping_condition_2)
 
     def test_user_warning(self):
         """Tests that user warning is raised if operator does not have a valid decomposition"""
@@ -196,7 +233,6 @@ class TestDecompose:
         """Tests that circuits and decomposition rules containing MCMs are supported."""
 
         class CustomOp(Operation):  # pylint: disable=too-few-public-methods
-
             resource_keys = set()
 
             @property
@@ -318,22 +354,6 @@ class TestPrivateHelpers:
         final_decomp = list(_operator_decomposition_gen(op, stopping_condition, max_expansion=5))
 
         qml.assert_equal(op, final_decomp[0])
-
-    @pytest.mark.unit
-    def test_no_both_gate_set_and_stopping_condition_graph_disabled(self):
-        """Tests that with graph disabled, gate_set and stopping_condition cannot both exist."""
-
-        tape = qml.tape.QuantumScript([])
-
-        def stopping_condition(op):  # pylint: disable=unused-argument
-            return True
-
-        with pytest.raises(TypeError, match="Specifying both gate_set and stopping_condition"):
-            qml.transforms.decompose(
-                tape,
-                gate_set={qml.RZ, qml.RY, qml.GlobalPhase, qml.CNOT},
-                stopping_condition=stopping_condition,
-            )
 
     @pytest.mark.unit
     def test_invalid_gate_set(self):
