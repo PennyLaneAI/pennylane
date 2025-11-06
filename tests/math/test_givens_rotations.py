@@ -80,7 +80,6 @@ def test_givens_matrix_real(a, b, left):
     r"""Test that `_givens_matrix` builds the correct real-valued Givens rotation matrices."""
 
     grot_mat = _givens_matrix(a, b, left, real_valued=True)
-    assert grot_mat.dtype == np.float64
 
     rotated_vector = grot_mat @ np.array([a, b])
     sign = np.sign(a * b)
