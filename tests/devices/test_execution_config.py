@@ -42,7 +42,7 @@ class TestPostSelectModeEnum:
 
         assert POSTSELECT_MODE(postselect_mode).value == postselect_mode
 
-    @pytest.mark.parametrize("postselect_mode", ["hw_like", 1, "none", True])
+    @pytest.mark.parametrize("postselect_mode", ["hw_like", 1, "none", True, None])
     def test_unsupported_values(self, postselect_mode):
         """Tests that the unsupported values raise a AttributeError"""
 
@@ -62,7 +62,7 @@ class TestMCMMethodEnum:
 
         assert MCM_METHOD(mcm_method).value == mcm_method
 
-    @pytest.mark.parametrize("mcm_method", ["tree_traversal", 1, "none", True])
+    @pytest.mark.parametrize("mcm_method", ["tree_traversal", 1, "none", True, None])
     def test_unsupported_values(self, mcm_method):
         """Tests that the unsupported values raise a AttributeError"""
 
