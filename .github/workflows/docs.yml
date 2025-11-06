@@ -50,11 +50,11 @@ jobs:
         run: |
           BRANCH_NAME="${{ github.head_ref}}"
           echo "branch is $BRANCH_NAME"
-          if [ "${{github.event.pull_request.draft}}" == false ]; then
-            echo "run_sphinx=true" >> $GITHUB_OUTPUT
-          elif [[ "$BRANCH_NAME" =~ ^sc-[0-9]+-rc-doc$ ]]; then
+          if [[ "$BRANCH_NAME" =~ ^sc-[0-9]+-rc-doc$ ]]; then
             echo "run_sphinx=true" >> $GITHUB_OUTPUT  
             echo "true"
+          elif [ "${{github.event.pull_request.draft}}" == false ]; then
+            echo "run_sphinx=true" >> $GITHUB_OUTPUT
           else
             echo "run_sphinx=false" >> $GITHUB_OUTPUT
           fi
