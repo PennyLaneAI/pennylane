@@ -16,19 +16,12 @@ Contains the ArbitraryUnitary template.
 """
 from collections import defaultdict
 
-from pennylane import capture, math
+from pennylane import math
 from pennylane.control_flow import for_loop
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.operation import Operation
 from pennylane.ops import PauliRot
-from pennylane.wires import Wires, WiresLike
-
-has_jax = True
-try:
-    import jax.numpy as jnp
-except ModuleNotFoundError:  # pragma: no cover
-    has_jax = False  # pragma: no cover
-
+from pennylane.wires import WiresLike
 
 _PAULIS = ["I", "X", "Y", "Z"]
 
