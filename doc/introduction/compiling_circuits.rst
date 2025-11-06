@@ -188,7 +188,7 @@ or two-qubit gates using a rule:
 
     qml.decomposition.disable_graph()
 
-    @partial(decompose, stopping_condition=lambda op: len(op.wires) <= 2) 
+    @partial(decompose, gate_set={"H", "T", "CNOT"}, stopping_condition=lambda op: len(op.wires) <= 2)
     @qml.qnode(dev)
     def circuit():
         qml.Toffoli(wires=[0,1,2])
