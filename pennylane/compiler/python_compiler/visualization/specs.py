@@ -84,9 +84,9 @@ def mlir_specs(
             return None
 
         if level == "all":
-            return [cache[lvl][0] for lvl in sorted(cache.keys())]
+            return {f"MLIR-{lvl}": cache[lvl][0] for lvl in sorted(cache.keys())}
         if isinstance(level, (tuple, list)):
-            return [cache.get(lvl, cache[max(cache.keys())])[0] for lvl in level]
+            return {f"MLIR-{lvl}": cache.get(lvl, cache[max(cache.keys())])[0] for lvl in level}
         # Just one level was specified
         return cache.get(level, cache[max(cache.keys())])[0]
 

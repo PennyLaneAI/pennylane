@@ -201,9 +201,10 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> SpecsDict:  # pr
         elif level != "all":
             level = list(level)
 
-        resources = []
+        resources = {}
 
-        num_trans_levels = len(qml.workflow.get_transform_program(original_qnode))
+        tape_transforms = qml.workflow.get_transform_program(original_qnode)
+        num_trans_levels = len(tape_transforms)
         trans_levels = list(range(num_trans_levels)) if level == "all" else level
 
         # Handle tape transforms
@@ -217,7 +218,13 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> SpecsDict:  # pr
             assert len(batch) == 1, "Batched QJIT code is not currently supported by qml.specs"
             info = specs_from_tape(batch[0], compute_depth)
 
-            resources.append(info["resources"])
+            trans_name = tape_transforms[trans_level].transform.__name__
+            if trans_name in resources:
+                rep = 2
+                while f"{trans_name}-{rep}" in resources:
+                    rep += 1
+                trans_name += f"-{rep}"
+            resources[trans_name] = info["resources"]
 
         # Handle MLIR levels
         mlir_levels = (
@@ -227,7 +234,7 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> SpecsDict:  # pr
         )
         results = mlir_specs(qjit, mlir_levels)(*args, **kwargs)
 
-        for res in results:
+        for level_name, res in results.items():
             res_resources = Resources(
                 num_wires=res.num_wires,
                 num_gates=sum(res.resource_sizes.values()),
@@ -236,10 +243,11 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> SpecsDict:  # pr
                 depth=None,  # Can't get depth for intermediate stages
                 shots=original_qnode.shots,  # TODO: Can this ever be overriden during compilation?
             )
-            resources.append(res_resources)
+            resources[level_name] = res_resources
 
         if single_level:
-            resources = resources[0]
+            resources = next(iter(resources.values()))
+            level = level[0]
 
     elif level == "device":
         resources = _specs_qjit_device_level_tracking(
