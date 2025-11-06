@@ -206,7 +206,7 @@ def test_invalid_ir_type_mismatch(run_filecheck):
     %cos = "stablehlo.cosine"(%ti32) : (tensor<2x3xi32>) -> tensor<2x3xi32>
     """
 
-    with pytest.raises(Exception, match="operand at position 0 does not verify"):
+    with pytest.raises(Exception, match="'operand' at position 0 does not verify"):
         run_filecheck(program, roundtrip=True, verify=True)
 
 
