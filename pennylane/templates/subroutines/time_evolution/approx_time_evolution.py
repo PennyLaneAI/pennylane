@@ -18,10 +18,12 @@ Contains the ApproxTimeEvolution template.
 import copy
 from collections import defaultdict
 
-from pennylane.decomposition import resource_rep
+from pennylane.control_flow import for_loop
+
+from pennylane.decomposition import resource_rep, register_resources, add_decomps
 
 from pennylane.operation import Operation
-from pennylane.ops import PauliRot
+from pennylane.ops import PauliRot, cond
 from pennylane.queuing import QueuingManager, apply
 from pennylane.wires import Wires
 
@@ -244,7 +246,36 @@ def _approx_time_evolution_resources(words, n):
             if len(pw) == 0:
                 continue
             term_str = "".join(pw.values())
-            wires = Wires(pw.keys())
             resources[resource_rep(PauliRot, pauli_word=term_str)] += 1
 
     return resources
+
+
+@register_resources(_approx_time_evolution_resources)
+def _approx_time_evolution_decomposition(*coeffs_and_time, wires, hamiltonian, n):  # pylint: disable=unused-argument
+    time = coeffs_and_time[-1]
+
+    @for_loop(n)
+    def rounds_loop(_):
+
+        pauli_keys = list(hamiltonian.pauli_rep.keys())
+        pauli_items = list(hamiltonian.pauli_rep.items())
+
+        @for_loop(len(pauli_keys))
+        def paulis_loop(k):
+            pw = pauli_keys[k]
+            coeff = pauli_items[pw]
+
+            def rot():
+                theta = 2 * time * coeff / n
+                term_str = "".join(pw.values())
+                wires = Wires(pw.keys())
+                PauliRot(theta, term_str, wires=wires)
+
+            cond(len(pw) != 0, rot, None)()
+
+        paulis_loop()  # pylint: disable=no-value-for-parameter
+
+    rounds_loop()  # pylint: disable=no-value-for-parameter
+
+add_decomps(ApproxTimeEvolution, _approx_time_evolution_decomposition)
