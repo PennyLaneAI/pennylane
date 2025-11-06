@@ -75,13 +75,11 @@ from pennylane._grad import grad, jacobian, vjp, jvp
 from pennylane._version import __version__
 from pennylane.about import about
 from pennylane.circuit_graph import CircuitGraph
-from pennylane.configuration import Configuration
+from pennylane.configuration import Configuration, default_config
 from pennylane.registers import registers
 from pennylane.measurements import (
     counts,
     density_matrix,
-    measure,
-    pauli_measure,
     expval,
     probs,
     sample,
@@ -94,7 +92,7 @@ from pennylane.measurements import (
     shadow_expval,
 )
 from pennylane.ops import *
-from pennylane.ops import adjoint, ctrl, cond, change_op_basis, exp, sum, pow, prod, s_prod
+from pennylane.ops import adjoint, ctrl, cond, change_op_basis, exp, sum, pow, prod, s_prod, measure
 from pennylane.ops import LinearCombination as Hamiltonian
 from pennylane.templates import layer
 from pennylane.templates.embeddings import *
@@ -214,9 +212,6 @@ if _find_spec("jax") is not None:
             "python -m pip install jax~=0.6.0 jaxlib~=0.6.0",
             RuntimeWarning,
         )
-
-# Look for an existing configuration file
-default_config = Configuration("config.toml")
 
 
 def __getattr__(name):

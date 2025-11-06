@@ -715,10 +715,8 @@ class TestHigherOrderPrimitiveRegistrations:
 
         jaxpr = jax.make_jaxpr(f)(0.5)
 
-        if grad_f == qml.grad:
-            assert jaxpr.eqns[0].primitive == qml.capture.primitives.grad_prim
-        else:
-            assert jaxpr.eqns[0].primitive == qml.capture.primitives.jacobian_prim
+        assert jaxpr.eqns[0].primitive == qml.capture.primitives.jacobian_prim
+        assert jaxpr.eqns[0].params["scalar_out"] == (grad_f == qml.grad)
         grad_jaxpr = jaxpr.eqns[0].params["jaxpr"]
         qfunc_jaxpr = grad_jaxpr.eqns[0].params["qfunc_jaxpr"]
         assert qfunc_jaxpr.eqns[1].primitive == qml.RX._primitive  # eqn 0 is mul

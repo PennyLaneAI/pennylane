@@ -53,7 +53,7 @@ class ValidOp(CompositeOp):
         return qml.pauli.PauliSentence({})
 
     @property
-    def is_hermitian(self):
+    def is_verified_hermitian(self):
         return False
 
     def matrix(self, wire_order=None):
@@ -85,8 +85,8 @@ class TestConstruction:
 
     def test_raise_error_with_mcm_input(self):
         """Test that composite ops of mid-circuit measurements are not supported."""
-        mcm_0 = qml.measurements.MidMeasureMP(0)
-        mcm_1 = qml.measurements.MidMeasureMP(1)
+        mcm_0 = qml.ops.MidMeasure(0)
+        mcm_1 = qml.ops.MidMeasure(1)
         op = qml.RX(0.5, 2)
         with pytest.raises(ValueError, match="Composite operators of mid-circuit"):
             _ = ValidOp(mcm_0, mcm_1)
