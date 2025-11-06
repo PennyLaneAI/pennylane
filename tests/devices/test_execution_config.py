@@ -351,7 +351,7 @@ class TestMCMConfig:
         assert config.postselect_mode == postselect_mode
 
     @pytest.mark.parametrize(
-        "invalid_mcm_method",
+        "mcm_method",
         [
             "foo",
             123,
@@ -362,7 +362,7 @@ class TestMCMConfig:
     )
     def test_invalid_mcm_method_raises_value_error(self, mcm_method):
         """Test that MCMConfig raises a ValueError for an invalid mcm method"""
-        with pytest.raises(ValueError, match=f"'{mcm_method} is not a valid MCM_METHOD"):
+        with pytest.raises(ValueError, match=f"'{mcm_method}' is not a valid MCM_METHOD"):
             MCMConfig(mcm_method=mcm_method)
 
     @pytest.mark.parametrize(
