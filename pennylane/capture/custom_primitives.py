@@ -47,11 +47,3 @@ class QmlPrimitive(Primitive):
     def prim_type(self, value: str | PrimitiveType):
         """Setter for QmlPrimitive.prim_type."""
         self._prim_type = PrimitiveType(value)
-
-    def bind(self, *args, **params):
-        """Bind method for QmlPrimitive.
-
-        Note: JAX 0.7.0+ requires all parameters to be hashable. Callers are responsible
-        for ensuring parameters are hashable (e.g., passing tuples instead of lists/dicts/slices).
-        """
-        return super().bind(*args, **params)

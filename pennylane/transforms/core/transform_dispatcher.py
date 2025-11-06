@@ -576,38 +576,32 @@ def _capture_apply(obj, transform, *targs, **tkwargs):
     def qfunc_transformed(*args, **kwargs):
         import jax  # pylint: disable=import-outside-toplevel
 
-        if isinstance(obj, QuantumScript):
-            return transform._primitive.bind(
-                obj, targs=(), tkwargs=tkwargs
-            )  # pylint: disable=protected-access
+        flat_qfunc = capture.flatfn.FlatFn(obj)
+        jaxpr = jax.make_jaxpr(functools.partial(flat_qfunc, **kwargs))(*args)
+        flat_args = jax.tree_util.tree_leaves(args)
 
-        if capture.enabled():
-            flat_qfunc = capture.flatfn.FlatFn(obj)
-            jaxpr = jax.make_jaxpr(functools.partial(flat_qfunc, **kwargs))(*args)
-            flat_args = jax.tree_util.tree_leaves(args)
+        n_args = len(flat_args)
+        n_consts = len(jaxpr.consts)
+        # Store slice bounds as tuples (start, stop, step) - hashable and semantic
+        args_slice_tuple = (0, n_args, None)
+        consts_slice_tuple = (n_args, n_args + n_consts, None)
+        targs_slice_tuple = (n_args + n_consts, None, None)
+        # Store kwargs as sorted tuple of (key, value) pairs with recursive hashable conversion
+        tkwargs_tuple = _make_hashable_nested(tkwargs)
 
-            n_args = len(flat_args)
-            n_consts = len(jaxpr.consts)
-            # Store slice bounds as tuples (start, stop, step) - hashable and semantic
-            args_slice_tuple = (0, n_args, None)
-            consts_slice_tuple = (n_args, n_args + n_consts, None)
-            targs_slice_tuple = (n_args + n_consts, None, None)
-            # Store kwargs as sorted tuple of (key, value) pairs with recursive hashable conversion
-            tkwargs_tuple = _make_hashable_nested(tkwargs)
+        results = transform._primitive.bind(  # pylint: disable=protected-access
+            *flat_args,
+            *jaxpr.consts,
+            *targs,
+            inner_jaxpr=jaxpr.jaxpr,
+            args_slice_tuple=args_slice_tuple,
+            consts_slice_tuple=consts_slice_tuple,
+            targs_slice_tuple=targs_slice_tuple,
+            tkwargs_tuple=tkwargs_tuple,
+        )
 
-            results = transform._primitive.bind(  # pylint: disable=protected-access
-                *flat_args,
-                *jaxpr.consts,
-                *targs,
-                inner_jaxpr=jaxpr.jaxpr,
-                args_slice_tuple=args_slice_tuple,
-                consts_slice_tuple=consts_slice_tuple,
-                targs_slice_tuple=targs_slice_tuple,
-                tkwargs_tuple=tkwargs_tuple,
-            )
-
-            assert flat_qfunc.out_tree is not None
-            return jax.tree_util.tree_unflatten(flat_qfunc.out_tree, results)
+        assert flat_qfunc.out_tree is not None
+        return jax.tree_util.tree_unflatten(flat_qfunc.out_tree, results)
 
     return qfunc_transformed
 

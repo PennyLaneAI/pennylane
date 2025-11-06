@@ -169,11 +169,6 @@ from .make_plxpr import make_plxpr
 from .autograph import run_autograph, disable_autograph
 from .dynamic_shapes import determine_abstracted_axes, register_custom_staging_rule
 
-# Import jax_patches to automatically apply fixes for JAX 0.7.0+ bugs
-# These patches fix bugs in JAX and don't change behavior for correct code.
-# The context manager apply_jax_patches is available for fine-grained control if needed.
-from . import jax_patches  # pylint: disable=unused-import
-
 # by defining this here, we avoid
 # E0611: No name 'AbstractOperator' in module 'pennylane.capture' (no-name-in-module)
 # on use of from capture import AbstractOperator

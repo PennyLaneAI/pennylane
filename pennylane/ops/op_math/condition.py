@@ -323,8 +323,6 @@ class CondCallable:
 
         _validate_jaxpr_returns(jaxpr_branches, self.otherwise_fn)
         flat_args, _ = jax.tree_util.tree_flatten(args)
-
-        # Store as hashable tuples from the start - no conversion needed
         results = cond_prim.bind(
             *conditions,
             *consts,
