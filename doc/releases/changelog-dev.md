@@ -79,10 +79,6 @@
 
 <h3>Breaking changes 💔</h3>
 
-* Maintenance support for `numpy<2.0` has been removed. 
-  [(#8497)](https://github.com/PennyLaneAI/pennylane/pull/8497)
-  [(#8578)](https://github.com/PennyLaneAI/pennylane/pull/8578)
-
 * Providing ``num_steps`` to :func:`pennylane.evolve`, :func:`pennylane.exp`, :class:`pennylane.ops.Evolution`,
   and :class:`pennylane.ops.Exp` has been disallowed. Instead, use :class:`~.TrotterProduct` for approximate
   methods, providing the ``n`` parameter to perform the Suzuki-Trotter product approximation of a Hamiltonian
