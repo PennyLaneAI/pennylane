@@ -65,7 +65,7 @@ def _get_op_call_graph(op):
         for gate, count in gate_counts.items():
             qt_gate = simple_mapper[gate]()
             qt_gate_types[qt_gate] += count
-    except:
+    except (DecompositionUndefinedError, AttributeError):
         pass
     return qt_gate_types
 
