@@ -81,6 +81,7 @@ class TestIsRealObjOrClose:
     def test_jax(self, data, dtype, exp_output):
         """Test with JAX."""
         import jax
+        from jax import numpy as jnp
 
         x = jax.numpy.array(data, dtype=dtype)
-        assert qml.math.is_real_obj_or_close(x) is exp_output
+        assert qml.math.is_real_obj_or_close(x) == jnp.array(exp_output)
