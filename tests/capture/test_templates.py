@@ -246,8 +246,6 @@ unmodified_templates_cases = [
         ([0, 1, 2, 3, 4],),
         {"acquaintances": lambda index, wires, param=None: qml.CNOT(index)},
     ),
-    (qml.GroverOperator, (), {"wires": [0, 1]}),
-    (qml.GroverOperator, ([0, 1],), {}),
     pytest.param(
         qml.UCCSD,
         (jnp.ones(3), [2, 3, 0, 1]),
@@ -345,6 +343,7 @@ tested_modified_templates = [
     qml.MPS,
     qml.TTN,
     qml.StronglyEntanglingLayers,
+    qml.GroverOperator,
     qml.QROM,
     qml.PhaseAdder,
     qml.Adder,
@@ -771,6 +770,52 @@ class TestModifiedTemplates:
         qml.assert_equal(
             q.queue[0],
             qml.StronglyEntanglingLayers(weights, **full_kwargs),
+        )
+
+    @pytest.mark.parametrize(
+        "wires, work_wires",
+        [
+            ([0, 1], []),
+            ([0, 1, 2], [3, 4]),
+        ],
+    )
+    def test_grover_operator(self, wires, work_wires):
+        """Test the primitive bind call of GroverOperator."""
+
+        kwargs = {"work_wires": work_wires} if work_wires else {}
+
+        def qfunc(*wires):
+            qml.GroverOperator(wires=wires, **kwargs)
+
+        # Validate inputs
+        qfunc(*wires)
+
+        # Actually test primitive bind
+        jaxpr = jax.make_jaxpr(qfunc)(*wires)
+
+        assert len(jaxpr.eqns) == 1
+
+        eqn = jaxpr.eqns[0]
+        assert eqn.primitive == qml.GroverOperator._primitive
+
+        # work_wires should be converted to tuple for hashability
+        expected_params = {
+            "n_wires": len(wires),
+        }
+        if work_wires:
+            expected_params["work_wires"] = tuple(work_wires)
+
+        assert normalize_for_comparison(eqn.params) == normalize_for_comparison(expected_params)
+        assert len(eqn.outvars) == 1
+        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+
+        with qml.queuing.AnnotatedQueue() as q:
+            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *wires)
+
+        assert len(q) == 1
+        qml.assert_equal(
+            q.queue[0],
+            qml.GroverOperator(wires=wires, **kwargs),
         )
 
     def test_qsvt(self):
