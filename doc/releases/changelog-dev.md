@@ -2,6 +2,12 @@
 
 <h3>New features since last release</h3>
 
+* A compilation pass written with xDSL called `qml.compiler.python_compiler.transforms.ParitySynthPass`
+  has been added for the experimental xDSL Python compiler integration. This pass resynthesizes
+  subcircuits that form a phase polynomial (``CNOT`` and ``RZ`` gates), using ``ParitySynth`` by
+  [Vandaele et al.](https://arxiv.org/abs/2104.00934)
+  [(#8414)](https://github.com/PennyLaneAI/pennylane/pull/8414)
+
 * A new decomposition has been added for the Controlled :class:`~.SemiAdder`,
   which is efficient and skips controlling all gates in its decomposition.
   [(#8423)](https://github.com/PennyLaneAI/pennylane/pull/8423)
@@ -22,11 +28,11 @@
   [(#8516)](https://github.com/PennyLaneAI/pennylane/pull/8516)
   [(#8555)](https://github.com/PennyLaneAI/pennylane/pull/8555)
   [(#8558)](https://github.com/PennyLaneAI/pennylane/pull/8558)
-  [(#8538)](https://github.com/PennyLaneAI/pennylane/pull/8538)  
+  [(#8538)](https://github.com/PennyLaneAI/pennylane/pull/8538)
   [(#8534)](https://github.com/PennyLaneAI/pennylane/pull/8534)
   [(#8543)](https://github.com/PennyLaneAI/pennylane/pull/8543)
   [(#8554)](https://github.com/PennyLaneAI/pennylane/pull/8554)
-  
+
   - :class:`~.QSVT`
   - :class:`~.AmplitudeEmbedding`
   - :class:`~.AllSinglesDoubles`
@@ -47,6 +53,14 @@
   the circuit from scratch. By default, the recursive cancellation is enabled (``recursive=True``).
   To obtain previous behaviour, disable it by setting ``recursive=False``.
   [(#8483)](https://github.com/PennyLaneAI/pennylane/pull/8483)
+
+* The new graph based decompositions system enabled via :func:`~.decomposition.enable_graph` now supports the following
+  additional templates.
+  [(#8520)](https://github.com/PennyLaneAI/pennylane/pull/8520)
+  [(#8515)](https://github.com/PennyLaneAI/pennylane/pull/8515)
+
+  - :class:`~.QSVT`
+  - :class:`~.AmplitudeEmbedding`
 
 * `qml.grad` and `qml.jacobian` now lazily dispatch to catalyst and program
   capture, allowing for `qml.qjit(qml.grad(c))` and `qml.qjit(qml.jacobian(c))` to work.
