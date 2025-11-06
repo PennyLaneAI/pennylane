@@ -105,13 +105,10 @@ from .utils import (
     binary_finite_reduced_row_echelon,
 )
 from .interface_utils import (
-    get_canonical_interface_name,
-    SupportedInterfaceUserInput,
     SUPPORTED_INTERFACE_NAMES,
     get_deep_interface,
     get_interface,
     Interface,
-    InterfaceLike,
 )
 from .grad import grad, jacobian
 from . import decomposition
@@ -175,7 +172,7 @@ def is_real_obj_or_close(obj):
     return not get_dtype_name(obj).startswith("complex")
 
 
-class NumpyMimic(ar.autoray.NumpyMimic):
+class NumpyMimic(ar.autoray.AutoNamespace):
     """Subclass of the Autoray NumpyMimic class in order to support
     the NumPy fft submodule"""
 
@@ -188,7 +185,7 @@ class NumpyMimic(ar.autoray.NumpyMimic):
 
 
 numpy_mimic = NumpyMimic()
-numpy_fft = ar.autoray.NumpyMimic("fft")
+numpy_fft = ar.autoray.AutoNamespace(submodule="fft")
 
 # small constant for numerical stability that the user can modify
 eps = 1e-14
@@ -228,7 +225,6 @@ __all__ = [
     "get_dtype_name",
     "get_interface",
     "get_batch_size",
-    "get_canonical_interface_name",
     "get_deep_interface",
     "get_trainable_indices",
     "grad",

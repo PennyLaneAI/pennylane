@@ -1300,7 +1300,7 @@ class TestOutputShape:
             pytest.skip("Sample doesn't support analytic computations.")
 
         num_wires = 3
-        dev = qml.device("default.qubit", wires=num_wires, shots=shots)
+        dev = qml.device("default.qubit", wires=num_wires)
 
         a = np.array(0.1)
         b = np.array(0.2)
@@ -1334,7 +1334,7 @@ class TestOutputShape:
         if shots and isinstance(measurement, qml.measurements.StateMeasurement):
             pytest.skip("State measurements with finite shots not supported.")
 
-        dev = qml.device("default.qubit", wires=3, shots=shots)
+        dev = qml.device("default.qubit", wires=3)
 
         a = np.array(0.1)
         b = np.array(0.2)
@@ -1361,7 +1361,7 @@ class TestOutputShape:
     def test_multi_measure(self, measurements, expected, shots):
         """Test that the expected output shape is obtained when using multiple
         expectation value, variance and probability measurements."""
-        dev = qml.device("default.qubit", wires=3, shots=shots)
+        dev = qml.device("default.qubit", wires=3)
 
         qs = QuantumScript(measurements=measurements, shots=shots)
 
@@ -1395,7 +1395,7 @@ class TestOutputShape:
                 )
 
         shots = (1, 1, 3, 3, 5, 1)
-        dev = qml.device("default.qubit", wires=3, shots=shots)
+        dev = qml.device("default.qubit", wires=3)
 
         a = np.array(0.1)
         b = np.array(0.2)
@@ -1422,7 +1422,7 @@ class TestOutputShape:
     def test_multi_measure_sample(self, shots):
         """Test that the expected output shape is obtained when using multiple
         qml.sample measurements."""
-        dev = qml.device("default.qubit", wires=3, shots=shots)
+        dev = qml.device("default.qubit", wires=3)
 
         a = np.array(0.1)
         b = np.array(0.2)
@@ -1462,7 +1462,7 @@ class TestOutputShape:
             pytest.skip("Density matrix does not support parameter broadcasting")
 
         num_wires = 3
-        dev = qml.device("default.qubit", wires=num_wires, shots=shots)
+        dev = qml.device("default.qubit", wires=num_wires)
 
         a = np.array([0.1, 0.2, 0.3])
         b = np.array([0.4, 0.5, 0.6])
@@ -1495,7 +1495,7 @@ class TestOutputShape:
         if isinstance(measurement, (StateMP, MutualInfoMP, VnEntropyMP)):
             pytest.skip("Density matrix does not support parameter broadcasting.")
 
-        dev = qml.device("default.qubit", wires=3, shots=shots)
+        dev = qml.device("default.qubit", wires=3)
 
         a = np.array([0.1, 0.2, 0.3])
         b = np.array([0.4, 0.5, 0.6])
@@ -1523,7 +1523,7 @@ class TestOutputShape:
         """Test that the expected output shape is obtained when using multiple
         qml.sample measurements with an observable with a shot vector."""
         shots = (1, 1, 3, 3, 5, 1)
-        dev = qml.device("default.qubit", wires=3, shots=shots)
+        dev = qml.device("default.qubit", wires=3)
 
         a = np.array(0.1)
         b = np.array(0.2)
@@ -1552,7 +1552,7 @@ class TestOutputShape:
         """Test that the expected output shape is obtained when using multiple
         qml.sample measurements with wires with a shot vector."""
         shots = (1, 1, 3, 3, 5, 1)
-        dev = qml.device("default.qubit", wires=3, shots=shots)
+        dev = qml.device("default.qubit", wires=3)
 
         num_samples = 3
         ops = [qml.RY(0.3, 0), qml.RX(0.2, 0)]
@@ -1575,7 +1575,7 @@ class TestOutputShape:
     def test_raises_broadcasting_shot_vector(self):
         """Test that getting the output shape of a tape that uses parameter
         broadcasting along with a device with a shot vector raises an error."""
-        dev = qml.device("default.qubit", wires=3, shots=(1, 2, 3))
+        dev = qml.device("default.qubit", wires=3)
 
         y = np.array([0.1, 0.2])
         tape = qml.tape.QuantumScript([qml.RY(y, 0)], [qml.expval(qml.Z(0))], shots=(1, 2, 3))
@@ -1603,7 +1603,7 @@ class TestNumericType:
     def test_float_measures(self, ret, shots):
         """Test that most measurements output floating point values and that
         the tape output domain correctly identifies this."""
-        dev = qml.device("default.qubit", wires=3, shots=shots)
+        dev = qml.device("default.qubit", wires=3)
         if shots and isinstance(ret, (MutualInfoMP, VnEntropyMP)):
             pytest.skip("Shots and entropies not supported.")
 
@@ -1648,7 +1648,7 @@ class TestNumericType:
     def test_sample_int_eigvals(self):
         """Test that the tape can correctly determine the output domain for a
         sampling measurement returning samples"""
-        dev = qml.device("default.qubit", wires=3, shots=5)
+        dev = qml.device("default.qubit", wires=3)
         qs = QuantumScript([qml.RY(0.4, 0)], [qml.sample()], shots=5)
 
         result = qml.execute([qs], dev, diff_method=None)[0]
@@ -1666,7 +1666,7 @@ class TestNumericType:
     def test_sample_real_eigvals(self):
         """Test that the tape can correctly determine the output domain when
         sampling a Hermitian observable with real eigenvalues."""
-        dev = qml.device("default.qubit", wires=3, shots=5)
+        dev = qml.device("default.qubit", wires=3)
 
         arr = np.array(
             [
@@ -1693,7 +1693,7 @@ class TestNumericType:
         """Test that the tape can correctly determine the output domain for
         multiple sampling measurements with a Hermitian observable with real
         eigenvalues and another sample with integer values."""
-        dev = qml.device("default.qubit", wires=3, shots=5)
+        dev = qml.device("default.qubit", wires=3)
 
         arr = np.array([1.32, 2.312])
         herm = np.outer(arr, arr)

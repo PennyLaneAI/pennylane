@@ -14,14 +14,13 @@
 r"""
 Contains the quantum-number-preserving GateFabric template.
 """
-# pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+# pylint: disable=too-many-arguments
 import numpy as np
 
 from pennylane import math
 from pennylane.operation import Operation
 from pennylane.ops import DoubleExcitation, OrbitalRotation
-
-from ..embeddings import BasisEmbedding
+from pennylane.templates.embeddings import BasisEmbedding
 
 
 class GateFabric(Operation):

@@ -29,6 +29,8 @@ import pennylane as qml
 from pennylane.decomposition import DecompositionRule
 from pennylane.exceptions import EigvalsUndefinedError
 
+from .equal import assert_equal
+
 
 def _assert_error_raised(func, error, failure_comment):
     def inner_func(*args, **kwargs):
@@ -146,6 +148,13 @@ def _test_decomposition_rule(op, rule: DecompositionRule, heuristic_resources=Fa
     with qml.queuing.AnnotatedQueue() as q:
         rule(*op.data, wires=op.wires, **op.hyperparameters)
     tape = qml.tape.QuantumScript.from_queue(q)
+
+    total_work_wires = rule.get_work_wire_spec(**op.resource_params).total
+    if total_work_wires:
+        [tape], _ = qml.transforms.resolve_dynamic_wires(
+            [tape], zeroed=range(len(tape.wires), len(tape.wires) + total_work_wires)
+        )
+
     actual_gate_counts = defaultdict(int)
     for _op in tape.operations:
         resource_rep = qml.resource_rep(type(_op), **_op.resource_params)
@@ -157,17 +166,19 @@ def _test_decomposition_rule(op, rule: DecompositionRule, heuristic_resources=Fa
         assert all(op in gate_counts for op in actual_gate_counts)
     else:
         non_zero_gate_counts = {k: v for k, v in gate_counts.items() if v > 0}
-        assert non_zero_gate_counts == actual_gate_counts
-
-    # Add projector to the additional wires (work wires) on the tape
-    work_wires = tape.wires - op.wires
-    all_wires = op.wires + work_wires
-    if work_wires:
-        op = op @ qml.Projector([0] * len(work_wires), wires=work_wires)
-        tape.operations.insert(0, qml.Projector([0] * len(work_wires), wires=work_wires))
+        assert (
+            non_zero_gate_counts == actual_gate_counts
+        ), f"\nGate counts expected from resource function:\n{non_zero_gate_counts}\nActual gate counts:\n{actual_gate_counts}"
 
     # Tests that the decomposition produces the same matrix
     if op.has_matrix:
+        # Add projector to the additional wires (work wires) on the tape
+        work_wires = tape.wires - op.wires
+        all_wires = op.wires + work_wires
+        if work_wires:
+            op = op @ qml.Projector([0] * len(work_wires), wires=work_wires)
+            tape.operations.insert(0, qml.Projector([0] * len(work_wires), wires=work_wires))
+
         op_matrix = op.matrix(wire_order=all_wires)
         decomp_matrix = qml.matrix(tape, wire_order=all_wires)
         assert qml.math.allclose(
@@ -361,7 +372,12 @@ def _check_capture(op):
 
         jaxpr = jax.make_jaxpr(test_fn)(*data)
         new_op = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *data)[0]
-        assert op == new_op
+        assert_equal(op, new_op)
+
+        leaves = jax.tree_util.tree_leaves(jaxpr.eqns[-1].params)
+        assert not any(
+            qml.math.is_abstract(l) for l in leaves
+        ), "capture params cannot contain tracers"
     except Exception as e:
         raise ValueError(
             "The capture of the operation into jaxpr failed somehow."
@@ -443,6 +459,7 @@ def assert_valid(
     skip_new_decomp=False,
     skip_pickle=False,
     skip_wire_mapping=False,
+    skip_capture=False,
     heuristic_resources=False,
 ) -> None:
     """Runs basic validation checks on an :class:`~.operation.Operator` to make
@@ -474,10 +491,8 @@ def assert_valid(
 
         op = MyOp(qml.numpy.array(0.5), wires=0)
 
-    .. code-block::
-
-        >>> assert_valid(op)
-        AssertionError: op.data must be a tuple
+    >>> assert_valid(op)
+    AssertionError: op.data must be a tuple
 
     .. code-block:: python
 
@@ -488,11 +503,9 @@ def assert_valid(
                 super().__init__(wires=wires)
 
         op = MyOp(wires = 0)
-        assert_valid(op)
 
-    .. code-block::
-
-        ValueError: metadata output from _flatten must be hashable. This also applies to hyperparameters
+    >>> assert_valid(op)
+    ValueError: metadata output from _flatten must be hashable. This also applies to hyperparameters
 
     """
 
@@ -519,4 +532,5 @@ def assert_valid(
     _check_generator(op)
     if not skip_differentiation:
         _check_differentiation(op)
-    _check_capture(op)
+    if not skip_capture:
+        _check_capture(op)

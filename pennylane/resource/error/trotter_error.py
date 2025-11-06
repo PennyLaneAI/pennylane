@@ -241,7 +241,8 @@ def _recursive_flatten(order: int, num_ops: int, scalar_t: float):
     if order == 2:
         return ops_index_lst + ops_index_lst[::-1], [0.5 * scalar_t] * (2 * num_ops)
 
-    scalar_1 = qml.templates.subroutines.trotter._scalar(order)  # pylint: disable=protected-access
+    # pylint: disable=protected-access
+    scalar_1 = qml.templates.subroutines.time_evolution.trotter._scalar(order)
     scalar_2 = 1 - 4 * scalar_1
 
     ops_index_lst_1, coeff_lst_1 = _recursive_flatten(order - 2, num_ops, scalar_1 * scalar_t)

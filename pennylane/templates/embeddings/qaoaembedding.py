@@ -14,9 +14,10 @@
 r"""
 Contains the QAOAEmbedding template.
 """
-from pennylane import math
 
-# pylint: disable-msg=too-many-branches,too-many-arguments,protected-access, consider-using-enumerate
+# pylint: disable=too-many-arguments
+
+from pennylane import math
 from pennylane.operation import Operation
 from pennylane.ops import RX, RY, RZ, H, MultiRZ
 from pennylane.wires import Wires

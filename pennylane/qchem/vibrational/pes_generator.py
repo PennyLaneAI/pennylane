@@ -32,8 +32,7 @@ from pennylane.qchem.vibrational.vibrational_class import (
     optimize_geometry,
 )
 
-# pylint: disable=too-many-arguments,too-many-function-args
-# pylint: disable= import-outside-toplevel, too-many-positional-arguments
+# pylint: disable=too-many-arguments,too-many-function-args,too-many-positional-arguments
 
 # constants
 # TODO: Make this code work in atomic units only.

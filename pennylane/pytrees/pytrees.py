@@ -69,7 +69,7 @@ def unflatten_tuple(data, _) -> tuple:
 
 def unflatten_dict(data, metadata) -> dict:
     """Unflatten a dictionary."""
-    return dict(zip(metadata, data))
+    return dict(zip(metadata, data, strict=True))
 
 
 unflatten_registrations: dict[type, UnflattenFn] = {
@@ -296,8 +296,6 @@ def _unflatten(new_data, structure):
     return unflatten_registrations[structure.type_](children, structure.metadata)
 
 
-# TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
-# pylint: disable=no-member
 register_pytree(
     autograd.builtins.list,
     lambda obj: (list(obj), ()),

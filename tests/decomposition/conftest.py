@@ -20,7 +20,7 @@ from collections import defaultdict
 
 import pennylane as qml
 from pennylane.decomposition import Resources
-from pennylane.decomposition.decomposition_rule import _auto_wrap
+from pennylane.decomposition.decomposition_rule import auto_wrap
 from pennylane.decomposition.symbolic_decomposition import (
     adjoint_rotation,
     pow_involutory,
@@ -29,7 +29,6 @@ from pennylane.decomposition.symbolic_decomposition import (
 )
 from pennylane.ops.identity import _controlled_g_phase_decomp
 from pennylane.ops.qubit.non_parametric_ops import _controlled_hadamard, _controlled_x_decomp
-from pennylane.ops.qubit.parametric_ops_single_qubit import _controlled_phase_shift_decomp
 
 decompositions = defaultdict(list)
 
@@ -37,7 +36,7 @@ decompositions = defaultdict(list)
 def to_resources(gate_count: dict, weighted_cost: float = None) -> Resources:
     """Wrap a dictionary of gate counts in a Resources object."""
     return Resources(
-        {_auto_wrap(op): count for op, count in gate_count.items() if count >= 0},
+        {auto_wrap(op): count for op, count in gate_count.items() if count >= 0},
         (
             sum(count for gate, count in gate_count.items())
             if weighted_cost is None
@@ -162,7 +161,6 @@ decompositions["CRot"] = [_crot]
 decompositions["C(PauliX)"] = [_controlled_x_decomp]
 decompositions["C(GlobalPhase)"] = [_controlled_g_phase_decomp]
 decompositions["C(Hadamard)"] = [_controlled_hadamard]
-decompositions["C(PhaseShift)"] = [_controlled_phase_shift_decomp]
 decompositions["Adjoint(Hadamard)"] = [self_adjoint]
 decompositions["Pow(Hadamard)"] = [pow_involutory]
 decompositions["Adjoint(RX)"] = [adjoint_rotation]

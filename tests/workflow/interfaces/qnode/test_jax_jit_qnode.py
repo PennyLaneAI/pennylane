@@ -3266,7 +3266,7 @@ class TestSinglePrecision:
         try:
 
             @jax.jit
-            @qml.qnode(qml.device("default.qubit", shots=10), diff_method=qml.gradients.param_shift)
+            @qml.qnode(qml.device("default.qubit"), diff_method=qml.gradients.param_shift, shots=10)
             def circuit(x):
                 qml.RX(x, wires=0)
                 return qml.sample(wires=0)

@@ -71,7 +71,6 @@ def fidelity_statevector(state0, state1, check_state=False, c_dtype="complex128"
     state0 = math.cast(state0, dtype=c_dtype)
     state1 = math.cast(state1, dtype=c_dtype)
 
-    # pylint: disable=protected-access
     if check_state:
         _check_state_vector(state0)
         _check_state_vector(state1)
@@ -143,7 +142,6 @@ def fidelity(state0, state1, check_state=False, c_dtype="complex128"):
     state0 = math.cast(state0, dtype=c_dtype)
     state1 = math.cast(state1, dtype=c_dtype)
 
-    # pylint: disable= protected-access
     if check_state:
         _check_density_matrix(state0)
         _check_density_matrix(state1)
@@ -330,8 +328,6 @@ def _register_torch_vjp():
     # pylint: disable=import-outside-toplevel
     import torch
 
-    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
-    # pylint: disable=abstract-method, arguments-differ
     class _TorchFidelity(torch.autograd.Function):
         @staticmethod
         def forward(ctx, dm0, dm1):

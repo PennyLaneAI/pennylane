@@ -47,7 +47,7 @@ from .tracker import Tracker
 
 def _local_tape_expand(tape, depth, stop_at):
     """Expand all objects in a tape to a specific depth excluding measurements.
-    see `pennylane.tape.tape.expand_tape` for examples.
+    see `pennylane.tape.expand_tape` for examples.
 
     Args:
         tape (QuantumTape): The tape to expand
@@ -59,7 +59,7 @@ def _local_tape_expand(tape, depth, stop_at):
     Returns:
         QuantumTape: The expanded version of ``tape``.
     """
-    # This function mimics `pennylane.tape.tape.expand_tape()`, but does not expand measurements and
+    # This function mimics `pennylane.tape.expand_tape()`, but does not expand measurements and
     # does not perform validation checks for non-commuting measurements on the same wires.
     if depth == 0:
         return tape

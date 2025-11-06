@@ -131,7 +131,7 @@ def make_plxpr(func: Callable, static_argnums: int | Sequence[int] = (), autogra
             ] b True a a
           in (c,) }
 
-        We can evaulate this to get the results:
+        We can evaluate this to get the results:
 
         >>> jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 2)
         [Array(4, dtype=int64, weak_type=True)]

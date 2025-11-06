@@ -30,6 +30,7 @@ from .subroutines import (
     ResourceIterativeQPE,
 )
 from .trotter import (
+    ResourceTrotterProduct,
     ResourceTrotterCDF,
     ResourceTrotterTHC,
     ResourceTrotterVibrational,

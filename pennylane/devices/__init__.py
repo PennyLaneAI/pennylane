@@ -71,6 +71,7 @@ method for devices.
     :toctree: api
 
     decompose
+    device_resolve_dynamic_wires
     measurements_from_counts
     measurements_from_samples
     validate_observables

@@ -88,7 +88,7 @@ class TestJVPIntegration:
     def test_jacobian_multiple_outputs(self, diff_method):
         """Test that finite diff can handle multiple outputs."""
 
-        @qml.qnode(qml.device("default.qubit", wires=1), diff_method=diff_method, autograph=False)
+        @qml.qnode(qml.device("default.qubit", wires=1), diff_method=diff_method)
         def circuit(x):
             qml.RX(x, 0)
             mps = [

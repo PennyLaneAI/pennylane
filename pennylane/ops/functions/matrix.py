@@ -230,6 +230,7 @@ def matrix(op: Operator | PauliWord | PauliSentence, wire_order=None) -> TensorL
             f"Wires in circuit {list(op.wires)} are inconsistent with "
             f"those in wire_order {list(wire_order)}"
         )
+    QueuingManager.remove(op)
     if op.has_matrix:
         return op.matrix(wire_order=wire_order)
     if op.has_sparse_matrix:

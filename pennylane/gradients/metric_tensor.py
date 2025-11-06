@@ -356,23 +356,24 @@ def metric_tensor(  # pylint:disable=too-many-arguments, too-many-positional-arg
 
         .. code-block:: python
 
-            >>> dev = qml.device("default.qubit", wires=3)
-            >>> @qml.qnode(dev, interface="autograd")
-            >>> def circuit(weights):
-            ...     qml.RX(weights[1], wires=0)
-            ...     qml.RY(weights[0], wires=0)
-            ...     qml.CNOT(wires=[0, 1])
-            ...     qml.RZ(weights[2], wires=1)
-            ...     qml.RZ(weights[3], wires=0)
-            ...     return qml.expval(qml.Z(0))
+            dev = qml.device("default.qubit")
+            @qml.qnode(dev, interface="autograd")
+            def circuit(weights):
+                qml.RX(weights[1], wires=0)
+                qml.RY(weights[0], wires=0)
+                qml.CNOT(wires=[0, 1])
+                qml.RZ(weights[2], wires=1)
+                qml.RZ(weights[3], wires=0)
+                return qml.expval(qml.Z(0))
 
-            >>> weights = np.array([0.1, 0.2, 0.4, 0.5], requires_grad=True)
-            >>> mt = qml.metric_tensor(circuit, argnum=(0, 2, 3))(weights)
-            >>> print(mt)
-            [[ 0.          0.          0.          0.        ]
-             [ 0.          0.25       -0.02495835 -0.02495835]
-             [ 0.         -0.02495835  0.01226071  0.01226071]
-             [ 0.         -0.02495835  0.01226071  0.01226071]]
+            weights = np.array([0.1, 0.2, 0.4, 0.5], requires_grad=True)
+            mt = qml.metric_tensor(circuit, argnum=(0, 2, 3))(weights)
+
+        >>> print(mt)
+        [[ 0.          0.          0.          0.        ]
+         [ 0.          0.25       -0.02495835 -0.02495835]
+         [ 0.         -0.02495835  0.01226071  0.01226071]
+         [ 0.         -0.02495835  0.01226071  0.01226071]]
 
         Because the 0-th element of ``weights`` appears second in the QNode and therefore in the
         underlying tape, it is the 1st tape parameter.

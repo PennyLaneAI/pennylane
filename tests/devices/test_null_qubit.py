@@ -13,8 +13,6 @@
 # limitations under the License.
 """Tests for null.qubit."""
 
-import json
-import os
 from collections import defaultdict as dd
 
 import numpy as np
@@ -39,7 +37,8 @@ def test_name():
 def test_shots():
     """Test the shots property of NullQubit."""
     assert NullQubit().shots == qml.measurements.Shots(None)
-    assert NullQubit(shots=100).shots == qml.measurements.Shots(100)
+    with pytest.warns(PennyLaneDeprecationWarning, match="shots on device is deprecated"):
+        assert NullQubit(shots=100).shots == qml.measurements.Shots(100)
 
     with pytest.raises(AttributeError):
         NullQubit().shots = 10
@@ -64,88 +63,61 @@ def test_debugger_attribute():
     assert dev._debugger is None
 
 
-def test_resource_tracking_attribute():
+def test_resource_tracking_attributes():
     """Test NullQubit track_resources attribute"""
+    default_dev = NullQubit()
+    assert "track_resources" in default_dev.device_kwargs
+    assert default_dev.device_kwargs["track_resources"] is False
+    assert "resources_filename" not in default_dev.device_kwargs
+    assert "compute_depth" not in default_dev.device_kwargs
+
+    dev = NullQubit(track_resources=True, resources_filename="test.json", compute_depth=True)
+    assert "track_resources" in dev.device_kwargs
+    assert dev.device_kwargs["track_resources"] is True
+    assert "resources_filename" in dev.device_kwargs
+    assert dev.device_kwargs["resources_filename"] == "test.json"
+    assert "compute_depth" in dev.device_kwargs
+    assert dev.device_kwargs["compute_depth"] is True
+
+
+def test_set_device_target():
+    """Test that the device target can be set and retrieved correctly."""
     # pylint: disable=protected-access
-    assert NullQubit()._track_resources is False
-    dev = NullQubit(track_resources=True)
-    assert dev._track_resources is True
+    default_dev = NullQubit()
+    assert default_dev._target_device is None
+    assert default_dev.config_filepath is None
 
-    def small_circ(params):
-        qml.X(0)
-        qml.H(0)
+    # Pick something other than DefaultQubit, which is already the default
+    to_target = qml.devices.ReferenceQubit()
 
-        qml.Barrier()
+    dev = NullQubit(target_device=to_target)
+    assert dev._target_device == to_target
+    assert dev.config_filepath == to_target.config_filepath
 
-        # Add a more complex operation to check that the innermost operation is counted
-        op = qml.T(0)
-        op = qml.adjoint(op)
-        op = qml.ctrl(op, control=1, control_values=[1])
+    program1, _ = dev.preprocess(ExecutionConfig())
+    program2, _ = to_target.preprocess(ExecutionConfig())
 
-        qml.ctrl(qml.S(0), control=[1, 2], control_values=[1, 1])
+    # Check that the preprocess function mimics the given target
 
-        qml.CNOT([0, 1])
-        qml.Barrier()
+    assert len(program1) == len(program2)
+    for t1, t2 in zip(program1, program2):
+        assert t1.transform == t2.transform
 
-        qml.ctrl(qml.IsingXX(0, [0, 1]), control=2, control_values=[1])
-        qml.adjoint(qml.S(0))
+        assert len(t1.args) == len(t2.args)
+        for i, arg in enumerate(t1.args):
+            if not callable(arg):
+                assert arg == t2.args[i]
 
-        qml.RX(params[0], wires=0)
-        qml.RX(params[0] * 2, wires=1)
+        assert len(t1.kwargs) == len(t2.kwargs)
+        for k in t1.kwargs:
+            assert k in t2.kwargs
+            if not callable(t1.kwargs[k]):
+                assert t1.kwargs[k] == t2.kwargs[k]
 
-        qml.QubitUnitary([[1, 0], [0, 1]], wires=0)
-        qml.ControlledQubitUnitary([[1, 0], [0, 1]], wires=[0, 1, 2], control_values=[1, 1])
-
-        return qml.expval(qml.PauliZ(0))
-
-    qnode = qml.QNode(small_circ, dev, diff_method="backprop")
-
-    inputs = qml.numpy.array([0.5])
-
-    def check_outputs():
-        written_files = list(
-            filter(
-                lambda fname: fname.startswith(qml.devices.null_qubit.RESOURCES_FNAME_PREFIX),
-                os.listdir(os.getcwd()),
-            )
-        )
-
-        assert len(written_files) == 1
-        resources_fname = written_files[0]
-
-        assert os.path.exists(resources_fname)
-
-        with open(resources_fname, encoding="utf-8") as f:
-            stats = f.read()
-
-        os.remove(resources_fname)
-
-        assert stats == json.dumps(
-            {
-                "num_wires": 3,
-                "num_gates": 11,
-                "gate_types": {
-                    "PauliX": 1,
-                    "Hadamard": 1,
-                    "C(Adj(T))": 1,
-                    "2C(S)": 1,
-                    "CNOT": 1,
-                    "C(IsingXX)": 1,
-                    "Adj(S)": 1,
-                    "RX": 2,
-                    "QubitUnitary": 1,
-                    "ControlledQubitUnitary": 1,
-                },
-            }
-        )
-
-    # Check ordinary forward computation
-    qnode(inputs)
-    check_outputs()
-
-    # Check backpropagation
-    assert qml.grad(qnode)(inputs) == 0
-    check_outputs()
+    # Check that passing a NullQubit device takes the underlying target
+    dev2 = NullQubit(target_device=dev)
+    assert dev2._target_device == to_target
+    assert dev2.config_filepath == to_target.config_filepath
 
 
 @pytest.mark.parametrize("shots", (None, 10))
@@ -830,6 +802,7 @@ class TestSumOfTermsDifferentiability:
         assert g1 == 0
 
 
+@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 @pytest.mark.parametrize("config", [None, ExecutionConfig(gradient_method="device")])
 class TestDeviceDifferentiation:
     """Tests device differentiation integration with NullQubit."""
@@ -1139,9 +1112,9 @@ class TestIntegration:
     @pytest.mark.parametrize("wires,expected", [(None, [0, 0]), (3, [0, 0, 0])])
     def test_sample_uses_device_wires(self, wires, expected):
         """Test that if device wires are given, then they are used by sample."""
-        dev = NullQubit(wires=wires, shots=5)
+        dev = NullQubit(wires=wires)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, shots=5)
         def circuit():
             qml.PauliX(2)
             qml.Identity(0)
@@ -1202,9 +1175,9 @@ class TestIntegration:
     )
     def test_counts_uses_device_wires(self, wires, all_outcomes, expected):
         """Test that if device wires are given, then they are used by probs."""
-        dev = NullQubit(wires=wires, shots=10)
+        dev = NullQubit(wires=wires)
 
-        @qml.qnode(dev, interface=None)
+        @qml.qnode(dev, interface=None, shots=10)
         def circuit():
             qml.PauliX(2)
             qml.Identity(0)
@@ -1391,12 +1364,74 @@ def test_execute_plxpr_shots():
 
     jaxpr = jax.make_jaxpr(f)(0.5)
 
-    with pytest.warns(
-        PennyLaneDeprecationWarning,
-        match="Setting shots on device is deprecated",
-    ):
-        dev = qml.device("null.qubit", wires=4, shots=50)
-    res = dev.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 1.0)
+    dev = qml.device("null.qubit", wires=4)
+    res = dev.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 1.0, shots=50)
     assert qml.math.allclose(res[0], 0)
     assert qml.math.allclose(res[1], 0)
     assert qml.math.allclose(res[2], jax.numpy.zeros((50, 2)))
+
+
+@pytest.mark.usefixtures("enable_graph_decomposition")
+class TestNullQubitGraphModeExclusive:  # pylint: disable=too-few-public-methods
+    """Tests for NullQubit features that require graph mode enabled.
+    The legacy decomposition mode should not be able to run these tests.
+    NOTE: All tests in this suite will auto-enable graph mode via fixture.
+    """
+
+    def test_insufficient_work_wires_causes_fallback(self):
+        """Test that if a decomposition requires more work wires than available on null.qubit,
+        that decomposition is discarded and fallback is used."""
+
+        class MyNullQubitOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
+            num_wires = 1
+
+        @qml.register_resources({qml.H: 2})
+        def decomp_fallback(wires):
+            qml.H(wires)
+            qml.H(wires)
+
+        @qml.register_resources({qml.X: 1}, work_wires={"burnable": 5})
+        def decomp_with_work_wire(wires):
+            qml.X(wires)
+
+        qml.add_decomps(MyNullQubitOp, decomp_fallback, decomp_with_work_wire)
+
+        tape = qml.tape.QuantumScript([MyNullQubitOp(0)])
+        dev = qml.device("null.qubit", wires=1)  # Only 1 wire, but decomp needs 5 burnable
+        program = dev.preprocess_transforms()
+        (out_tape,), _ = program([tape])
+
+        assert len(out_tape.operations) == 2
+        assert out_tape.operations[0].name == "Hadamard"
+        assert out_tape.operations[1].name == "Hadamard"
+
+    def test_operator_without_graph_decomposition_runs_without_error(self):
+        """Test that an operator with no graph-based decomposition outside the gateset
+        still runs without error on NullQubit."""
+
+        # Create a custom operator that's not in the standard gateset
+        class CustomOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
+            num_wires = 2
+
+            def decomposition(self):
+                # Legacy decomposition only (no graph-based decomposition registered)
+                return [qml.PauliX(self.wires[0]), qml.PauliY(self.wires[1])]
+
+        # Create a tape with this custom operator
+        tape = qml.tape.QuantumScript([CustomOp(wires=[0, 1])], [qml.expval(qml.Z(0))])
+        dev = qml.device("null.qubit", wires=3)
+
+        # This should not raise an error even though there's no graph-based decomposition
+        program = dev.preprocess_transforms()
+        (out_tape,), _ = program([tape])
+
+        qml.assert_equal(out_tape, tape)
+
+        # NullQubit should accept the operator even if it's not decomposed at preprocessing
+        # The key point is that it runs without error
+
+        # Execution should work without error
+        result = dev.execute([out_tape])
+
+        # Should return 0 (as expected for NullQubit)
+        assert result[0] == 0

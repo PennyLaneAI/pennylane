@@ -41,7 +41,7 @@ be contributed upstream.
 
 from xdsl.dialects.builtin import Dialect
 
-# pylint: disable=unused-wildcard-import,wildcard-import,undefined-variable,too-few-public-methods
+# pylint: disable=too-few-public-methods
 from xdsl.dialects.transform import ApplyRegisteredPassOp as xApplyRegisteredPassOp
 from xdsl.dialects.transform import (
     DictionaryAttr,
@@ -60,7 +60,6 @@ from xdsl.irdl import IRDLOperation, ParsePropInAttrDict
 
 
 @irdl_op_definition
-# pylint: disable=function-redefined
 class ApplyRegisteredPassOp(IRDLOperation):
     """
     See external [documentation](https://mlir.llvm.org/docs/Dialects/Transform/#transformapply_registered_pass-transformapplyregisteredpassop).

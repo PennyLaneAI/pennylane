@@ -33,6 +33,7 @@ General Execution Errors
 .. autosummary::
     :toctree: api
 
+    ~AllocationError
     ~CaptureError
     ~DeviceError
     ~QuantumFunctionError
@@ -80,6 +81,10 @@ User Warnings
 # =============================================================================
 # General Execution and Quantum Function Errors
 # =============================================================================
+
+
+class AllocationError(RuntimeError):
+    """An error arising from trying handling a dynamically allocated wire."""
 
 
 class CaptureError(Exception):
@@ -165,6 +170,10 @@ class GeneratorUndefinedError(OperatorPropertyUndefined):
 class ParameterFrequenciesUndefinedError(OperatorPropertyUndefined):
     """Exception used to indicate that an operator
     does not have parameter_frequencies"""
+
+
+class ResourcesUndefinedError(Exception):
+    r"""Exception to be raised when a ``ResourceOperator`` does not implement resource_decomp"""
 
 
 # =============================================================================

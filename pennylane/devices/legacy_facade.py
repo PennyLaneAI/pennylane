@@ -25,7 +25,7 @@ from dataclasses import replace
 
 import pennylane as qml
 from pennylane.exceptions import DeviceError, PennyLaneDeprecationWarning
-from pennylane.math import get_canonical_interface_name, requires_grad
+from pennylane.math import Interface, requires_grad
 from pennylane.measurements import MidMeasureMP, Shots
 from pennylane.transforms.core.transform_program import TransformProgram
 
@@ -333,9 +333,8 @@ class LegacyDeviceFacade(Device):
         if tape.shots:
             return False
         params = tape.get_parameters(trainable_only=False)
-        interface = qml.math.get_interface(*params)
-        if interface != "numpy":
-            interface = get_canonical_interface_name(interface).value
+        if (interface := qml.math.get_interface(*params)) != "numpy":
+            interface = Interface(interface).value
 
         if tape and any(isinstance(m.obs, qml.SparseHamiltonian) for m in tape.measurements):
             return False

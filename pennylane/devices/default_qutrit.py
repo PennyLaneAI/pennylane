@@ -24,10 +24,10 @@ import logging
 import numpy as np
 
 import pennylane as qml
+from pennylane._version import __version__
 from pennylane.exceptions import DeviceError, WireError
 from pennylane.logging import debug_logger, debug_logger_init
 
-from .._version import __version__
 from ._qutrit_device import QutritDevice
 
 logger = logging.getLogger(__name__)
@@ -200,8 +200,6 @@ class DefaultQutrit(QutritDevice):
         wire_map = zip(wires, consecutive_wires)
         return dict(wire_map)
 
-    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
-    # pylint: disable=arguments-differ
     @debug_logger
     def apply(self, operations, rotations=None, **kwargs):
         rotations = rotations or []

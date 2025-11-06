@@ -104,11 +104,7 @@ class TestConstructTape:
                 return qml.expval(qml.PauliZ(0))
 
         num_shots = 10
-        with pytest.warns(
-            qml.exceptions.PennyLaneDeprecationWarning,
-            match="'shots' specified on call to a QNode is deprecated and will be removed in v0.44. Use qml.set_shots instead.",
-        ):
-            tape = construct_tape(circuit)(shots=num_shots)
+        tape = construct_tape(circuit)(shots=num_shots)
         expected_tape = qml.tape.QuantumScript(
             [qml.X(0)] * num_shots, [qml.expval(qml.PauliZ(0))], trainable_params=[]
         )

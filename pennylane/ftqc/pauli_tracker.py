@@ -414,8 +414,9 @@ def get_byproduct_corrections(tape: QuantumScript, mid_meas: list, measurement_v
 
 
             num_shots = 1000
-            dev = qml.device("lightning.qubit", shots=num_shots)
+            dev = qml.device("lightning.qubit")
 
+            @qml.set_shots(num_shots)
             @diagonalize_mcms
             @qml.qnode(dev, mcm_method="one-shot")
             def circ(start_state):

@@ -64,6 +64,7 @@ class TestTransformProgram:
         def null_postprocessing(results):
             return results[0]
 
+        @qml.transform
         def just_pauli_x_out(
             tape: QuantumScript,
         ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
@@ -107,6 +108,7 @@ class TestTransformProgram:
         def null_postprocessing(results):
             return results
 
+        @qml.transform
         def split_shots(tape):
             tape1 = qml.tape.QuantumScript(
                 tape.operations, tape.measurements, shots=tape.shots.total_shots // 2
@@ -134,6 +136,7 @@ class TestTransformProgram:
         def sum_measurements(results):
             return sum(results)
 
+        @qml.transform
         def split_sum_terms(tape):
             sum_obj = tape.measurements[0].obs
             new_tapes = tuple(
@@ -173,6 +176,7 @@ class TestTransformProgram:
         def null_postprocessing(results):
             return results[0]
 
+        @qml.transform
         def just_pauli_x_out(
             tape: QuantumScript,
         ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
@@ -180,6 +184,7 @@ class TestTransformProgram:
                 qml.tape.QuantumScript([qml.PauliX(0)], tape.measurements),
             ), null_postprocessing
 
+        @qml.transform
         def repeat_operations(
             tape: QuantumScript,
         ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
@@ -222,10 +227,12 @@ class TestTransformProgram:
         def scale_two(results):
             return results[0] * 2.0
 
+        @qml.transform
         def transform_add(tape: QuantumScript):
             """A valid transform."""
             return (tape,), add_one
 
+        @qml.transform
         def transform_mul(tape: QuantumScript):
             return (tape,), scale_two
 

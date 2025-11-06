@@ -23,12 +23,6 @@ from pennylane.operation import Operation
 from pennylane.ops import GlobalPhase, Hadamard, MultiControlledX, PauliZ
 from pennylane.wires import Wires, WiresLike
 
-has_jax = True
-try:
-    from jax import numpy as jnp
-except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
-    has_jax = False  # pragma: no cover
-
 
 class GroverOperator(Operation):
     r"""Performs the Grover Diffusion Operator.
@@ -262,11 +256,11 @@ def _grover_operator_resources(num_wires, num_work_wires):
 
 
 @register_resources(_grover_operator_resources)
-def _grover_decomposition(wires, work_wires, n_wires):  # pylint: disable=arguments-differ
+def _grover_decomposition(wires, work_wires, n_wires):
     ctrl_values = [0] * (n_wires - 1)
 
-    if has_jax and capture.enabled():
-        wires = jnp.array(wires)
+    if capture.enabled():
+        wires = math.array(wires, like="jax")
 
     @for_loop(len(wires) - 1)
     def apply_hadamards(i):

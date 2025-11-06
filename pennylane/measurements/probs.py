@@ -14,6 +14,7 @@
 """
 This module contains the qml.probs measurement.
 """
+import warnings
 from collections.abc import Sequence
 
 import numpy as np
@@ -21,6 +22,7 @@ import numpy as np
 from pennylane import math
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.ops import LinearCombination
+from pennylane.ops.qubit.observables import Hermitian
 from pennylane.queuing import QueuingManager
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
@@ -247,27 +249,51 @@ def probs(wires=None, op=None) -> ProbabilityMP:
     to a :math:`50\%` chance of measuring either :math:`|00\rangle`
     or :math:`|01\rangle`.
 
-    .. code-block:: python3
+    .. warning::
 
-        dev = qml.device("default.qubit", wires=2)
+       ``qml.probs`` is not compatible with :class:`~.Hermitian`. When using
+       ``qml.probs`` with a Hermitian observable, the output might be different than
+       expected as the lexicographical ordering of eigenvalues is not guaranteed and
+       the diagonalizing gates may exist in a degenerate subspace.
+
+    **Example:**
+
+    The order of the output might be different when using ``qml.Hermitian``, as in the
+    following example:
+
+    .. code-block:: python3
 
         H = 1 / np.sqrt(2) * np.array([[1, 1], [1, -1]])
 
         @qml.qnode(dev)
         def circuit():
-            qml.Z(0)
-            qml.X(1)
-            return qml.probs(op=qml.Hermitian(H, wires=0))
+            qml.H(wires=0)
+            return qml.probs(op=qml.Hermitian(H, wires=0)), qml.probs(op=qml.Hadamard(wires=0))
 
     >>> circuit()
-    array([0.14644661 0.85355339])
+    (array([0.14644661, 0.85355339]), array([0.85355339, 0.14644661]))
 
-    The returned array is in lexicographic order, so corresponds
-    to a :math:`14.6\%` chance of measuring the rotated :math:`|0\rangle` state
-    and :math:`85.4\%` of measuring the rotated :math:`|1\rangle` state.
+    **Example:**
 
-    Note that the output shape of this measurement process depends on whether
-    the device simulates qubit or continuous variable quantum systems.
+    The output might also be different than expected when using ``qml.Hermitian``,
+    because the probability vector can be expressed in the eigenbasis obtained from
+    diagonalizing the matrix of the observable, as in the following example:
+
+    .. code-block:: python3
+
+        ob = qml.X(0) @ qml.Y(1)
+        h = qml.Hermitian(ob.matrix(), wires=[0, 1])
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.probs(op=h), qml.probs(op=ob)
+
+    >>> circuit()
+    (array([0.5, 0. , 0. , 0.5]), array([0.25, 0.25, 0.25, 0.25]))
+
+    Both outputs are in the eigenbasis of the observable, but at different locations in a degenerate subspace.  Both
+    correspond to half in the ``-1`` eigenvalue and half in the ``+1`` eigenvalue.
+
     """
     if isinstance(op, MeasurementValue):
         if len(op.measurements) > 1:
@@ -280,10 +306,10 @@ def probs(wires=None, op=None) -> ProbabilityMP:
 
     if isinstance(op, Sequence):
         if not math.is_abstract(op[0]) and not all(
-            isinstance(o, MeasurementValue) and len(o.measurements) == 1 for o in op
+            isinstance(o, MeasurementValue) and not o.has_processing for o in op
         ):
             raise QuantumFunctionError(
-                "Only sequences of single MeasurementValues can be passed with the op argument. "
+                "Only sequences of unprocessed MeasurementValues can be passed with the op argument. "
                 "MeasurementValues manipulated using arithmetic operators cannot be used when "
                 "collecting statistics for a sequence of mid-circuit measurements."
             )
@@ -305,4 +331,12 @@ def probs(wires=None, op=None) -> ProbabilityMP:
                 "provided. The wires for probs will be determined directly from the observable."
             )
         wires = Wires(wires)
+
+    if isinstance(op, Hermitian):
+        warnings.warn(
+            "Using qml.probs with a Hermitian observable might return different results than expected as the "
+            "lexicographical ordering of eigenvalues is not guaranteed.",
+            UserWarning,
+        )
+
     return ProbabilityMP(obs=op, wires=wires)

@@ -242,7 +242,6 @@ def horizontal_cartan_subalgebra(
         if verbose:
             print(f"iteration {iteration}: Found {len(np_a)} independent Abelian operators.")
         # todo: avoid re-computing this overlap in every while-loop iteration.
-        # todo: avoid re-computing this overlap in every while-loop iteration.
         kernel_intersection = np_m
         for h_i in np_a:
 

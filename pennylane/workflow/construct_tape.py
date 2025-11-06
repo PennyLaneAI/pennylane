@@ -14,27 +14,32 @@
 """Contains a function to extract a single tape from a QNode"""
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import TYPE_CHECKING
 
 from .construct_batch import construct_batch
 
 if TYPE_CHECKING:
+    from pennylane.tape import QuantumScript
+
     from .qnode import QNode
 
 
-def construct_tape(qnode: QNode, level: str | int | slice | None = "user"):
+def construct_tape(
+    qnode: QNode, level: str | int | slice | None = "user"
+) -> Callable[..., QuantumScript]:
     """Constructs the tape for a designated stage in the transform program.
+
+    .. warning::
+
+        Using ``level=None`` is deprecated and will be removed in a future release.
+        Please use ``level='device'`` to include all transforms.
 
     Args:
         qnode (QNode): the qnode we want to get the tapes and post-processing for.
-        level (None, str, int, slice): Specifies which stage of the QNode's transform program to use for tape construction.
-
-            - ``None`` or ``"device"``: Uses the entire transformation pipeline.
-            - ``"top"``: Ignores transformations and returns the original tape as defined.
-            - ``"user"``: Includes transformations that are manually applied by the user.
-            - ``"gradient"``: Extracts the gradient-level tape.
-            - ``int``: Can also accept an integer, corresponding to a number of transforms in the program.
-            - ``slice``: Can also accept a ``slice`` object to select an arbitrary subset of the transform program.
+        level (None, str, int, slice): An indication of what transforms to apply before drawing.
+            Check :func:`~.workflow.get_transform_program` for more information on the allowed values and usage details of
+            this argument.
 
     Returns:
         tape (QuantumScript): a quantum circuit.

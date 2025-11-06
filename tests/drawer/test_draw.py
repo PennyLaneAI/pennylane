@@ -900,8 +900,12 @@ class TestMidCircuitMeasurements:
 
 
 class TestLevelExpansionStrategy:
+    """Tests for the level expansion strategy in the draw function."""
+
     @pytest.fixture
     def transforms_circuit(self):
+        """Fixture for a circuit with transforms applied."""
+
         @qml.transforms.merge_rotations
         @qml.transforms.cancel_inverses
         @qml.qnode(qml.device("default.qubit"), diff_method="parameter-shift")
@@ -950,6 +954,7 @@ class TestLevelExpansionStrategy:
         ],
     )
     def test_equivalent_levels(self, transforms_circuit, var1, var2, expected):
+        """Test that drawing the circuit at different levels produces equivalent results."""
         order = [2, 1, 0]
         weights = pnp.array([[1.0, 20]])
 

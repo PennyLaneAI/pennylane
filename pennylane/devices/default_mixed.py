@@ -27,7 +27,7 @@ import pennylane as qml
 from pennylane.devices.qubit_mixed import simulate
 from pennylane.exceptions import DeviceError
 from pennylane.logging import debug_logger, debug_logger_init
-from pennylane.math import get_canonical_interface_name
+from pennylane.math import Interface
 from pennylane.ops.channel import __qubit_channels__ as channels
 from pennylane.tape import QuantumScript
 from pennylane.transforms.core import TransformProgram
@@ -299,7 +299,7 @@ class DefaultMixed(Device):
             "best",
         }
         updated_values["grad_on_execution"] = False
-        updated_values["interface"] = get_canonical_interface_name(execution_config.interface)
+        updated_values["interface"] = Interface(execution_config.interface)
 
         # Add device options
         updated_values["device_options"] = dict(execution_config.device_options)  # copy

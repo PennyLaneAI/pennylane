@@ -15,12 +15,9 @@ r"""
 Contains the hardware-efficient ParticleConservingU2 template.
 """
 from pennylane import math
-
-# pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from pennylane.operation import Operation
 from pennylane.ops import CNOT, CRX, RZ
-
-from ..embeddings import BasisEmbedding
+from pennylane.templates.embeddings import BasisEmbedding
 
 
 def u2_ex_gate(phi, wires=None):

@@ -33,7 +33,7 @@ def _stop_autograph(f):
 
 
 class CaptureMeta(type):
-    """A metatype that dispatches class creation to ``cls._primitve_bind_call`` instead
+    """A metatype that dispatches class creation to ``cls._primitive_bind_call`` instead
     of normal class creation.
 
     See ``pennylane/capture/explanations.md`` for more detailed information on how this technically

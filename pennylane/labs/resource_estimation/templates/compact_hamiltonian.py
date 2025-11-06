@@ -42,7 +42,7 @@ class CompactHamiltonian:
     >>> import pennylane.labs.resource_estimation as plre
     >>> compact_ham = plre.CompactHamiltonian.thc(num_orbitals=8, tensor_rank=40)
     >>> trotter_thc = plre.ResourceTrotterTHC(compact_ham, num_steps=100, order=2)
-    >>> res = plre.estimate_resources(trotter_thc)
+    >>> res = plre.estimate(trotter_thc)
     >>> print(res)
     --- Resources: ---
      Total qubits: 80
@@ -70,20 +70,6 @@ class CompactHamiltonian:
             CompactHamiltonian: An instance of CompactHamiltonian initialized with CDF parameters.
         """
         return cls("cdf", num_orbitals=num_orbitals, num_fragments=num_fragments)
-
-    @classmethod
-    def df(cls, num_orbitals: int, num_fragments: int, num_eigenvectors: int):
-        """Constructs a double factorized Hamiltonian instance
-
-        Args:
-            num_orbitals (int): number of spatial orbitals
-            num_fragments (int): number of fragments in the double factorized (DF) representation
-            num_eigenvectors(int): total number of eigenvectors
-
-        Returns:
-            CompactHamiltonian: An instance of CompactHamiltonian initialized with DF parameters.
-        """
-        return cls("df", num_orbitals=num_orbitals, num_fragments=num_fragments, num_eigenvectors=num_eigenvectors)
 
     @classmethod
     def thc(cls, num_orbitals: int, tensor_rank: int):

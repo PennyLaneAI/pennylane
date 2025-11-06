@@ -18,8 +18,6 @@ import copy
 from collections.abc import Iterable
 
 from pennylane.math import is_abstract
-
-# pylint: disable-msg=too-many-arguments
 from pennylane.operation import Operation, Operator
 from pennylane.ops import CNOT, Hadamard, QubitUnitary
 from pennylane.queuing import QueuingManager, apply
@@ -205,7 +203,7 @@ class HilbertSchmidt(Operation):
         U: Operator | Iterable[Operator],
         V: Operator | Iterable[Operator],
     ) -> list[Operator]:
-        # pylint: disable=arguments-differ,unused-argument
+        # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators."""
 
         u_ops = (U,) if isinstance(U, Operator) else tuple(U)
@@ -336,7 +334,6 @@ class LocalHilbertSchmidt(HilbertSchmidt):
         U: Operator | Iterable[Operator],
         V: Operator | Iterable[Operator],
     ) -> list[Operator]:
-        # pylint: disable=too-many-positional-arguments
         r"""Representation of the operator as a product of other operators (static method)."""
 
         u_ops = (U,) if isinstance(U, Operator) else tuple(U)

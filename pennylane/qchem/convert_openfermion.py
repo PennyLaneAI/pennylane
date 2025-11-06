@@ -91,7 +91,7 @@ def from_openfermion(openfermion_op, wires=None, tol=1e-16):
         if len(fermi_words) == 1 and fermi_coeffs[0] == 1.0:
             return fermi_words[0]
 
-        pl_op = FermiSentence(dict(zip(fermi_words, fermi_coeffs)))
+        pl_op = FermiSentence(dict(zip(fermi_words, fermi_coeffs, strict=True)))
         pl_op.simplify(tol=tol)
 
         return pl_op
@@ -156,8 +156,6 @@ def _(pl_op: Sum, wires=None, tol=1.0e-16):
     return _pennylane_to_openfermion(np.array(coeffs), ops, wires=wires, tol=tol)
 
 
-# TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
-# pylint: disable=unused-argument
 @_to_openfermion_dispatch.register
 def _(ops: FermiWord, wires=None, tol=1.0e-16):
     # pylint: disable=protected-access

@@ -12,15 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Provides transforms for mitigating quantum circuits."""
+
 from collections.abc import Sequence
-from copy import copy
 from typing import Any
 
 from pennylane import math
-from pennylane.math import mean, round, shape
 from pennylane.operation import Channel
 from pennylane.ops.op_math import adjoint
-from pennylane.queuing import AnnotatedQueue, apply
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
@@ -180,42 +178,8 @@ def fold_global(tape: QuantumScript, scale_factor) -> tuple[QuantumScriptBatch, 
 
 
     """
-    # The main intention for providing ``fold_global`` was for it to be used in combination with ``mitigate_with_zne``, which also works with mitiq functions.
-    # To preserve the mitiq functionality, ``mitigate_with_zne`` should get a tape transform.
-    # To make ``fold_global`` also user-facing and work with qnodes, this function is batch_transformed instead, and therefore applicable on qnodes.
-    return [fold_global_tape(tape, scale_factor)], lambda x: x[0]
 
-
-def _divmod(a, b):
-    """Performs divmod but in an all-interface compatible manner"""
-    out1 = math.floor(a / b)
-    out2 = a - out1 * b
-    return int(out1), out2
-
-
-def fold_global_tape(circuit, scale_factor):
-    r"""
-    This is the internal tape transform to be used with :func:`~.pennylane.transforms.mitigate_with_zne`.
-    For the user-facing function see :func:`~.pennylane.transforms.fold_global`.
-
-    Args:
-        circuit (QuantumTape): the circuit to be folded
-        scale_factor (float): Scale factor :math:`\lambda` determining :math:`n` and :math:`s`
-
-    Returns:
-        QuantumTape: Folded circuit
-
-    """
-
-    # TODO: simplify queing via qfunc(op) - currently just a workaround, to solve the problem of ownership when tape contains adjoint(op)
-    # https://github.com/PennyLaneAI/pennylane/pull/2766 already touched on the issue, future work
-    # in Q3 2022 should make it possible to substantially simplify this.
-    def qfunc(op):
-        copy(op).queue()
-
-    # Generate base_circuit without measurements
-    # Treat all circuits as lists of operations, build new tape in the end
-    base_ops = circuit.operations
+    base_ops = tape.operations
     if any(isinstance(op, Channel) for op in base_ops):
         raise ValueError(
             "Circuits containing quantum channels cannot be folded with mitigate_with_zne. "
@@ -226,37 +190,26 @@ def fold_global_tape(circuit, scale_factor):
     num_global_folds, fraction_scale = _divmod(scale_factor - 1, 2)
 
     n_ops = len(base_ops)
-    num_to_fold = int(round(fraction_scale * n_ops / 2))
+    num_to_fold = int(math.round(fraction_scale * n_ops / 2))
 
-    # Create new_circuit from folded list
-    with AnnotatedQueue() as new_circuit_q:
-        # Original U
-        for op in base_ops:
-            qfunc(op)
+    adjoints = [adjoint(op) for op in base_ops]
 
-        # Folding U => U (U^H U)**n.
-        for _ in range(int(num_global_folds)):
-            for op in base_ops[::-1]:
-                adjoint(qfunc)(op)
+    ops = base_ops + (adjoints[::-1] + base_ops) * num_global_folds
 
-            for op in base_ops:
-                qfunc(op)
+    if num_to_fold:
+        ops += adjoints[: -num_to_fold - 1 : -1] + base_ops[-num_to_fold:]
 
-        # Remainder folding U => U (U^H U)**n (L_d^H .. L_s^H) (L_s .. L_d)
-        for i in range(n_ops - 1, n_ops - num_to_fold - 1, -1):
-            adjoint(qfunc)(base_ops[i])
-
-        for i in range(n_ops - num_to_fold, n_ops):
-            qfunc(base_ops[i])
-
-        # Append measurements
-        for meas in circuit.measurements:
-            apply(meas)
-
-    return QuantumScript.from_queue(new_circuit_q)
+    new_tape = tape.copy(ops=ops)
+    return [new_tape], lambda x: x[0]
 
 
-# TODO: make this a pennylane.math function
+def _divmod(a, b):
+    """Performs divmod but in an all-interface compatible manner"""
+    out1 = math.floor(a / b)
+    out2 = a - out1 * b
+    return int(out1), out2
+
+
 def _polyfit(x, y, order):
     """Brute force implementation of polynomial fit"""
     x = math.convert_like(x, y[0])
@@ -619,13 +572,15 @@ def mitigate_with_zne(
         for i in range(0, len(results), reps_per_factor):
             # The stacking ensures the right interface is used
             # averaging over axis=0 is critical because the qnode may have multiple outputs
-            results_flattened.append(mean(math.stack(results[i : i + reps_per_factor]), axis=0))
+            results_flattened.append(
+                math.mean(math.stack(results[i : i + reps_per_factor]), axis=0)
+            )
 
         extrapolated = extrapolate(scale_factors, results_flattened, **extrapolate_kwargs)
 
-        extrapolated = extrapolated[0] if shape(extrapolated) == (1,) else extrapolated
+        extrapolated = extrapolated[0] if math.shape(extrapolated) == (1,) else extrapolated
 
         # unstack the results in the case of multiple measurements
-        return extrapolated if shape(extrapolated) == () else tuple(math.unstack(extrapolated))
+        return extrapolated if math.shape(extrapolated) == () else tuple(math.unstack(extrapolated))
 
     return out_tapes, processing_fn

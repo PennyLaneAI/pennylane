@@ -15,8 +15,6 @@ r"""
 Contains the ``DisplacementEmbedding`` template.
 """
 from pennylane import math
-
-# pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from pennylane.operation import Operation
 from pennylane.ops.cv import Displacement
 
@@ -107,6 +105,7 @@ class DisplacementEmbedding(Operation):
         Operation.__init__(new_op, *data, wires=metadata[0])
         return new_op
 
+    # pylint: disable=too-many-arguments
     def __init__(self, features, wires, method="amplitude", c=0.1, id=None):
         shape = math.shape(features)
         constants = [c] * shape[0]

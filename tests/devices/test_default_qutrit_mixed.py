@@ -35,7 +35,10 @@ class TestDeviceProperties:
     def test_shots(self):
         """Test the shots property of DefaultQutritMixed."""
         assert DefaultQutritMixed().shots == qml.measurements.Shots(None)
-        assert DefaultQutritMixed(shots=100).shots == qml.measurements.Shots(100)
+        with pytest.warns(
+            qml.exceptions.PennyLaneDeprecationWarning, match="shots on device is deprecated"
+        ):
+            assert DefaultQutritMixed(shots=100).shots == qml.measurements.Shots(100)
 
         with pytest.raises(AttributeError):
             DefaultQutritMixed().shots = 10

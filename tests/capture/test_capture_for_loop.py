@@ -569,14 +569,11 @@ class TestCaptureCircuitsForLoop:
     @pytest.mark.parametrize(
         "upper_bound, arg, expected", [(3, 0.5, 0.00223126), (2, 12, 0.2653001)]
     )
-    @pytest.mark.parametrize("autograph", [True, False])
-    def test_nested_for_and_while_loop(self, upper_bound, arg, expected, autograph):
+    def test_nested_for_and_while_loop(self, upper_bound, arg, expected):
         """Test that a nested for loop and while loop is correctly captured into a jaxpr."""
-        if autograph:
-            pytest.xfail(reason="Autograph bug with lambda functions as condition, see sc-82837")
         dev = qml.device("default.qubit", wires=3)
 
-        @qml.qnode(dev, autograph=autograph)
+        @qml.qnode(dev)
         def circuit(upper_bound, arg):
 
             # for loop with dynamic bounds

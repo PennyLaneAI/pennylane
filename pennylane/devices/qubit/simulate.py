@@ -15,8 +15,6 @@
 import logging
 
 # pylint: disable=protected-access
-# TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
-# pylint: disable=unused-argument
 from collections import Counter
 from functools import partial, singledispatch
 
@@ -25,7 +23,7 @@ from numpy.random import default_rng
 
 import pennylane as qml
 from pennylane.logging import debug_logger
-from pennylane.math.interface_utils import get_canonical_interface_name
+from pennylane.math.interface_utils import Interface
 from pennylane.measurements import (
     CountsMP,
     ExpectationMP,
@@ -178,8 +176,9 @@ def get_final_state(circuit, debugger=None, **execution_kwargs):
     if len(circuit) > 0 and isinstance(circuit[0], qml.operation.StatePrepBase):
         prep = circuit[0]
 
-    interface = get_canonical_interface_name(interface)
-    state = create_initial_state(sorted(circuit.op_wires), prep, like=interface.get_like())
+    state = create_initial_state(
+        sorted(circuit.op_wires), prep, like=Interface(interface).get_like()
+    )
 
     # initial state is batched only if the state preparation (if it exists) is batched
     is_state_batched = bool(prep and prep.batch_size is not None)
@@ -329,7 +328,9 @@ def simulate(
     has_mcm = any(isinstance(op, MidMeasureMP) for op in circuit.operations)
     if has_mcm:
         if execution_kwargs.get("mcm_method", None) == "tree-traversal":
-            return simulate_tree_mcm(circuit, prng_key=prng_key, **execution_kwargs)
+            return simulate_tree_mcm(
+                circuit, prng_key=prng_key, debugger=debugger, **execution_kwargs
+            )
 
         results = []
         aux_circ = circuit.copy(shots=[1])
@@ -596,6 +597,7 @@ def simulate_tree_mcm(
     # Finalize terminal measurements post-processing #
     ##################################################
 
+    _finalize_debugger(debugger)
     measurement_dicts = get_measurement_dicts(terminal_measurements, stack, depth)
     if finite_shots:
         terminal_measurements = circuit.measurements
@@ -603,6 +605,15 @@ def simulate_tree_mcm(
     mcm_samples = prune_mcm_samples(mcm_samples)
     results = combine_measurements(terminal_measurements, measurement_dicts, mcm_samples)
     return variance_post_processing((results,))
+
+
+def _finalize_debugger(debugger):
+    """Ensures all snapshot results are wrapped in a list for consistency."""
+    if not debugger or not debugger.active:
+        return
+    for tag, results in debugger.snapshots.items():
+        if not isinstance(results, list):
+            debugger.snapshots[tag] = [results]
 
 
 def split_circuit_at_mcms(circuit):
@@ -654,7 +665,7 @@ def prepend_state_prep(circuit, state, interface, wires):
     if len(circuit) > 0 and isinstance(circuit[0], qml.operation.StatePrepBase):
         return circuit
 
-    interface = get_canonical_interface_name(interface)
+    interface = Interface(interface)
     state = create_initial_state(wires, None, like=interface.get_like()) if state is None else state
     new_ops = [
         qml.StatePrep(qml.math.ravel(state), wires=wires, validate_norm=False)

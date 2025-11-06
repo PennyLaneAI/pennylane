@@ -160,9 +160,6 @@ def drawable_layers(operations, wire_map=None, bit_map=None):
 
     # loop over operations
     for op in operations:
-        if isinstance(op, MidMeasureMP):
-            if len(op.wires) > 1:
-                raise ValueError("Cannot draw mid-circuit measurements with more than one wire.")
 
         if isinstance(op, MeasurementProcess) and op.mv is not None:
             # Only terminal measurements that collect mid-circuit measurement statistics have
@@ -184,7 +181,15 @@ def drawable_layers(operations, wire_map=None, bit_map=None):
             # Find occupied wires of the operator/measurement process and find which layer to
             # put it in.
             op_occupied_wires = _get_op_occupied_wires(op, wire_map, bit_map)
-            op_layer = _recursive_find_layer(max_layer, op_occupied_wires, occupied_wires_per_layer)
+            try:
+                op_layer = _recursive_find_layer(
+                    max_layer, op_occupied_wires, occupied_wires_per_layer
+                )
+            except RecursionError as e:
+                raise RecursionError(
+                    f"Drawer is currently at depth {max_layer}, which is too deep to handle. "
+                    "Try drawing a smaller subset of your circuit instead."
+                ) from e
             op_occupied_cwires = set()
 
         # see if need to add new layer
