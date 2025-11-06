@@ -54,7 +54,7 @@ class TrotterProduct(ResourceOperator):
     exponential of a Hamiltonian operator.
 
     The Suzuki-Trotter product formula provides a method to approximate the matrix exponential of
-    Hamiltonian expressed as a linear combination of terms which in general do not commute.  
+    Hamiltonian expressed as a linear combination of terms which in general do not commute.
     Consider the Hamiltonian :math:`H = \Sigma^{N}_{j=0} O_{j}`: the product formula is constructed using
     symmetrized products of the terms in the Hamiltonian. The symmetrized products of order
     :math:`m \in [1, 2, 4, ..., 2k]` with :math:`k \in \mathbb{N}` are given by:
@@ -76,7 +76,7 @@ class TrotterProduct(ResourceOperator):
     For more details, see `J. Math. Phys. 32, 400 (1991) <https://pubs.aip.org/aip/jmp/article-abstract/32/2/400/229229>`_.
 
     Args:
-        first_order_expansion (list[~pennylane.labs.resource_estimation.ResourceOperator]): A list of operators
+        first_order_expansion (list[~pennylane.estimator.ResourceOperator]): A list of operators
             constituting the first order expansion of the Hamiltonian to be approximately exponentiated.
         num_steps (int): number of Trotter steps to perform
         order (int): order of the Suzuki-Trotter approximation; must be ``1`` or an even number
@@ -270,7 +270,7 @@ class TrotterCDF(ResourceOperator):
     exponential of a compressed double-factorized (CDF) Hamiltonian.
 
     The Suzuki-Trotter product formula provides a method to approximate the matrix exponential of
-    Hamiltonian expressed as a linear combination of terms which in general do not commute.  
+    Hamiltonian expressed as a linear combination of terms which in general do not commute.
     Consider the Hamiltonian :math:`H = \Sigma^{N}_{j=0} O_{j}`: the product formula is constructed using
     symmetrized products of the terms in the Hamiltonian. The symmetrized products of order
     :math:`m \in [1, 2, 4, ..., 2k]` with :math:`k \in \mathbb{N}` are given by:
@@ -911,7 +911,7 @@ class TrotterVibrational(ResourceOperator):
     exponential of a vibrational Hamiltonian.
 
     The Suzuki-Trotter product formula provides a method to approximate the matrix exponential of
-    Hamiltonian expressed as a linear combination of terms which in general do not commute.  
+    Hamiltonian expressed as a linear combination of terms which in general do not commute.
     Consider the Hamiltonian :math:`H = \Sigma^{N}_{j=0} O_{j}`: the product formula is constructed using
     symmetrized products of the terms in the Hamiltonian. The symmetrized products of order
     :math:`m \in [1, 2, 4, ..., 2k]` with :math:`k \in \mathbb{N}` are given by:
@@ -1306,7 +1306,7 @@ class TrotterVibronic(ResourceOperator):
     exponential of a real-space vibronic Hamiltonian.
 
     The Suzuki-Trotter product formula provides a method to approximate the matrix exponential of
-    Hamiltonian expressed as a linear combination of terms which in general do not commute.  
+    Hamiltonian expressed as a linear combination of terms which in general do not commute.
     Consider the Hamiltonian :math:`H = \Sigma^{N}_{j=0} O_{j}`: the product formula is constructed using
     symmetrized products of the terms in the Hamiltonian. The symmetrized products of order
     :math:`m \in [1, 2, 4, ..., 2k]` with :math:`k \in \mathbb{N}` are given by:
@@ -1363,7 +1363,7 @@ class TrotterVibronic(ResourceOperator):
     .. seealso::
         :class:`~.estimator.compact_hamiltonian.VibronicHamiltonian`
 
-    .. seealso:: :class:`~.TrotterProduct`        
+    .. seealso:: :class:`~.TrotterProduct`
 
     **Example**
 

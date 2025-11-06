@@ -31,7 +31,7 @@ from .subroutines import (
 
 from .trotter import TrotterCDF, TrotterProduct, TrotterTHC, TrotterVibrational, TrotterVibronic
 
-from .stateprep import MPSPrep, QROMStatePreparation, UniformStatePrep, AliasSampling
+from .stateprep import MPSPrep, QROMStatePreparation, UniformStatePrep, AliasSampling, PrepTHC
 
 from .comparators import (
     IntegerComparator,
@@ -39,3 +39,5 @@ from .comparators import (
     TwoQubitComparator,
     RegisterComparator,
 )
+from .qubitize import QubitizeTHC
+from .select import SelectTHC

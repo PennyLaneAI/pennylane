@@ -29,7 +29,7 @@ class QubitUnitary(ResourceOperator):
     r"""Resource class for the QubitUnitary template.
 
     Args:
-        num_wires (int): the number of qubits the operation acts upon
+        num_wires (int | None): the number of qubits the operation acts upon
         precision (Union[float, None], optional): The precision used when preparing the single qubit
             rotations used to synthesize the n-qubit unitary.
         wires (Sequence[int], None): the wires the operation acts on
@@ -55,19 +55,29 @@ class QubitUnitary(ResourceOperator):
 
     >>> import pennylane.estimator as qre
     >>> qu = qre.QubitUnitary(num_wires=3)
+    >>> gate_set =["RZ", "RY", "CNOT"]
     >>> print(qre.estimate(qu, gate_set))
     --- Resources: ---
-     Total qubits: 3
+     Total wires: 3
+        algorithmic wires: 3
+        allocated wires: 0
+             zero state: 0
+             any state: 0
      Total gates : 52
-     Qubit breakdown:
-      zeroed qubits: 0, any_state qubits: 0, algorithmic qubits: 3
-     Gate breakdown:
-      {'RZ': 24, 'CNOT': 24, 'RY': 4}
+      'RZ': 24,
+      'RY': 4,
+      'CNOT': 24
     """
 
     resource_keys = {"num_wires", "precision"}
 
-    def __init__(self, num_wires: int, precision: float | None = None, wires: WiresLike = None):
+    def __init__(
+        self, num_wires: int | None = None, precision: float | None = None, wires: WiresLike = None
+    ):
+        if num_wires is None:
+            if wires is None:
+                raise ValueError("Must provide atleast one of `num_wires` and `wires`.")
+            num_wires = len(wires)
         self.num_wires = num_wires
         self.precision = precision
         super().__init__(wires=wires)
