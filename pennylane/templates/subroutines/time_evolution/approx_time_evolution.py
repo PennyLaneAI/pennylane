@@ -19,9 +19,7 @@ import copy
 from collections import defaultdict
 
 from pennylane.control_flow import for_loop
-
-from pennylane.decomposition import resource_rep, register_resources, add_decomps
-
+from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.operation import Operation
 from pennylane.ops import PauliRot, cond
 from pennylane.queuing import QueuingManager, apply
@@ -252,7 +250,9 @@ def _approx_time_evolution_resources(words, n):
 
 
 @register_resources(_approx_time_evolution_resources)
-def _approx_time_evolution_decomposition(*coeffs_and_time, wires, hamiltonian, n):  # pylint: disable=unused-argument
+def _approx_time_evolution_decomposition(
+    *coeffs_and_time, wires, hamiltonian, n
+):  # pylint: disable=unused-argument
     time = coeffs_and_time[-1]
 
     @for_loop(n)
@@ -271,7 +271,6 @@ def _approx_time_evolution_decomposition(*coeffs_and_time, wires, hamiltonian, n
                 coeff_index += 1
                 found = pauli_items[coeff_index][0] == pw
 
-
             coeff = pauli_items[coeff_index][1]
 
             def rot():
@@ -285,5 +284,6 @@ def _approx_time_evolution_decomposition(*coeffs_and_time, wires, hamiltonian, n
         paulis_loop()  # pylint: disable=no-value-for-parameter
 
     rounds_loop()  # pylint: disable=no-value-for-parameter
+
 
 add_decomps(ApproxTimeEvolution, _approx_time_evolution_decomposition)
