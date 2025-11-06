@@ -27,7 +27,7 @@ pytest.importorskip("catalyst")
 from catalyst.passes.xdsl_plugin import getXDSLPluginAbsolutePath
 
 import pennylane as qml
-from pennylane.compiler.python_compiler.transforms import ParitySynthPass, parity_synth_pass
+from pennylane.compiler.python_compiler.transforms import ParitySynthPass, parity_synth
 from pennylane.compiler.python_compiler.transforms.quantum.parity_synth import (
     _parity_network_synth,
 )
@@ -447,7 +447,7 @@ class TestParitySynthIntegration:
         dev = qml.device("lightning.qubit", wires=2)
 
         @qml.qjit(target="mlir", pass_plugins=[getXDSLPluginAbsolutePath()])
-        @parity_synth_pass
+        @parity_synth
         @qml.qnode(dev)
         def circuit(x: float, y: float, z: float):
             # CHECK: [[phi:%.+]] = tensor.extract %arg0

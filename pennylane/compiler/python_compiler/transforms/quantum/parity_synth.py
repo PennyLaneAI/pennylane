@@ -350,4 +350,4 @@ class ParitySynthPass(passes.ModulePass):
         walker.rewrite_module(module)
 
 
-parity_synth_pass = compiler_transform(ParitySynthPass)
+parity_synth = compiler_transform(ParitySynthPass)

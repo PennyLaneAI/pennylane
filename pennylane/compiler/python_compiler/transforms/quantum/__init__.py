@@ -23,7 +23,7 @@ from .measurements_from_samples import (
     measurements_from_samples_pass,
 )
 from .merge_rotations import MergeRotationsPass, merge_rotations_pass
-from .parity_synth import ParitySynthPass, parity_synth_pass
+from .parity_synth import ParitySynthPass, parity_synth
 
 from .split_non_commuting import SplitNonCommutingPass, split_non_commuting_pass
 
@@ -38,7 +38,7 @@ __all__ = [
     "MeasurementsFromSamplesPass",
     "merge_rotations_pass",
     "MergeRotationsPass",
-    "parity_synth_pass",
+    "parity_synth",
     "ParitySynthPass",
     "split_non_commuting_pass",
     "SplitNonCommutingPass",
