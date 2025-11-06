@@ -353,7 +353,8 @@ def merge_amplitude_embedding(tape: QuantumScript) -> tuple[QuantumScriptBatch, 
             return qml.state()
 
     >>> circuit()
-    [1.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j]
+    array([0.+0.j, 0.+0.j, 0.+0.j, 1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j,
+           0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j])
 
     .. details::
         :title: Usage Details
@@ -375,12 +376,10 @@ def merge_amplitude_embedding(tape: QuantumScript) -> tuple[QuantumScriptBatch, 
         >>> optimized_qfunc = qml.transforms.merge_amplitude_embedding(qfunc)
         >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
         >>> print(qml.draw(optimized_qnode)())
-        0: ─╭●──────────────────────┤  State
-        1: ─╰X──────────────────────┤  State
-        2: ─╭AmplitudeEmbedding(M0)─┤  State
-        3: ─╰AmplitudeEmbedding(M0)─┤  State
-        M0 =
-        [0.+0.j 0.+0.j 0.+0.j 1.+0.j]
+        0: ─╭●───┤  State
+        1: ─╰X───┤  State
+        2: ─╭|Ψ⟩─┤  State
+        3: ─╰|Ψ⟩─┤  State
 
     """
     new_operations = []

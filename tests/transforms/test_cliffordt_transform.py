@@ -13,6 +13,8 @@
 # limitations under the License.
 """Unit tests for the Clifford+T transform."""
 
+# pylint: disable=too-many-public-methods
+
 import math
 from functools import reduce
 
@@ -136,6 +138,14 @@ def circuit_9(num_repeat, rand_angles):
     return qml.expval(qml.Z(0))
 
 
+def circuit_10():
+    """Circuit 10 with two RZs with same parameter that are not merged"""
+    qml.RZ(0.5, 0)
+    qml.T(0)
+    qml.RZ(0.5, 0)
+    return qml.expval(qml.Z(0))
+
+
 class TestCliffordCompile:
     """Unit tests for clifford compilation function."""
 
@@ -205,7 +215,7 @@ class TestCliffordCompile:
     @pytest.mark.catalyst
     @pytest.mark.jax
     @pytest.mark.external
-    @pytest.mark.parametrize("circuit", [circuit_7, circuit_8])
+    @pytest.mark.parametrize("circuit", [circuit_7, circuit_8, circuit_10])
     def test_decomposition_with_rs_qjit(self, circuit):
         """Test decomposition for the Clifford transform with Ross-Selinger method with QJIT enabled."""
 
@@ -218,6 +228,27 @@ class TestCliffordCompile:
         qjit_cir = qml.qjit(decomp_cir)
 
         res1, res2 = decomp_cir(), qjit_cir()
+        assert qml.math.isclose(res1, res2, atol=1e-2)
+
+    @pytest.mark.catalyst
+    @pytest.mark.jax
+    @pytest.mark.external
+    @pytest.mark.parametrize("circuit", [circuit_1, circuit_10])
+    def test_decomposition_with_rs_qjit_repeated_decomp(self, circuit):
+        """Test decomposition for multiple Clifford transforms with Ross-Selinger method with QJIT enabled with repeated parameters."""
+
+        pytest.importorskip("jax")
+        pytest.importorskip("catalyst")
+
+        dev = qml.device("lightning.qubit", wires=4)
+        qnode_cir = qml.qnode(dev)(circuit)
+        decomp_cir = clifford_t_decomposition(qnode_cir, method="gridsynth")
+        qjit_cir = qml.qjit(decomp_cir)
+
+        decomp_cir_copy = clifford_t_decomposition(qnode_cir, method="gridsynth")
+        qjit_cir_copy = qml.qjit(decomp_cir_copy)
+
+        res1, res2 = qjit_cir(), qjit_cir_copy()
         assert qml.math.isclose(res1, res2, atol=1e-2)
 
     def test_qnode_decomposition(self):

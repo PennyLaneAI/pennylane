@@ -540,7 +540,7 @@ def defer_measurements(
     Suppose we have a quantum function with mid-circuit measurements and
     conditional operations:
 
-    .. code-block:: python3
+    .. code-block:: python
 
         def qfunc(par):
             qml.RY(0.123, wires=0)
@@ -555,19 +555,19 @@ def defer_measurements(
     >>> dev = qml.device('default.qubit', wires=2)
     >>> transformed_qfunc = qml.defer_measurements(qfunc)
     >>> qnode = qml.QNode(transformed_qfunc, dev)
-    >>> par = np.array(np.pi/2, requires_grad=True)
+    >>> par = pnp.array(np.pi/2, requires_grad=True)
     >>> qnode(par)
-    tensor(0.43487747, requires_grad=True)
+    tensor(0.434..., requires_grad=True)
 
     We can also differentiate parameters passed to conditional operations:
 
     >>> qml.grad(qnode)(par)
-    tensor(-0.49622252, requires_grad=True)
+    tensor(-0.496... requires_grad=True)
 
     Reusing and resetting measured wires will work as expected with the
     ``defer_measurements`` transform:
 
-    .. code-block:: python3
+    .. code-block:: python
 
         dev = qml.device("default.qubit", wires=3)
 
@@ -583,9 +583,9 @@ def defer_measurements(
 
     Executing this QNode:
 
-    >>> pars = np.array([0.643, 0.246], requires_grad=True)
+    >>> pars = pnp.array([0.643, 0.246], requires_grad=True)
     >>> func(*pars)
-    tensor([0.76960924, 0.13204407, 0.08394415, 0.01440254], requires_grad=True)
+    tensor([0.769..., 0.132..., 0.0839..., 0.014...], requires_grad=True)
 
     .. details::
         :title: Usage Details
@@ -595,7 +595,7 @@ def defer_measurements(
         operations and control wires. We can explicitly switch this feature off and compare
         the created circuits with and without this optimization. Consider the following circuit:
 
-        .. code-block:: python3
+        .. code-block:: python
 
             @qml.qnode(qml.device("default.qubit"))
             def node(x):
@@ -613,12 +613,12 @@ def defer_measurements(
         qubits. They correspond to the combinations of controls that satisfy the condition
         ``mcm0+mcm1+mcm2==1``.
 
-        >>> print(qml.draw(qml.defer_measurements(node, reduce_postselected=False))(0.6))
+        >>> print(qml.draw(qml.defer_measurements(node, reduce_postselected=False))(0.6)) # doctest: +SKIP
         0: ──RX(0.60)──|0⟩⟨0|─╭●─────────────────────────────────────────────┤ ╭<Z@Z>
         1: ──RX(0.60)─────────│──╭●─╭X───────────────────────────────────────┤ │
-        2: ──RX(0.60)─────────│──│──│───|1⟩⟨1|─╭○────────╭○────────╭●────────┤ │
+        2: ──RX(0.60)─────────│──│──│───|1⟩⟨1|─╭○────────╭●────────╭○────────┤ │
         3: ───────────────────│──│──│──────────├RX(0.50)─├RX(0.50)─├RX(0.50)─┤ ╰<Z@Z>
-        4: ───────────────────╰X─│──│──────────├○────────├●────────├○────────┤
+        4: ───────────────────╰X─│──│──────────├○────────├○────────├●────────┤
         5: ──────────────────────╰X─╰●─────────╰●────────╰○────────╰○────────┤
 
         If we do not explicitly deactivate the optimization, we obtain a much simpler circuit:
@@ -661,7 +661,7 @@ def defer_measurements(
                     qml.measure(n)
 
             >>> jax.make_jaxpr(f)(0)
-            { lambda ; a:i64[]. let _:AbstractOperator() = CNOT[n_wires=2] a 0 in () }
+            { lambda ; a:i...[]. let _:AbstractOperator() = CNOT[n_wires=2] a 0:i...[] in () }
 
             The circuit gets transformed without issue because the concrete value of the measured wire
             is unknown. However, execution with n = 0 would raise an error, as the CNOT wires would
@@ -703,26 +703,29 @@ def defer_measurements(
                   qml.RX(phi, 0)
                   return qml.expval(qml.PauliZ(0))
 
-          >>> jax.make_jaxpr(f)()
-          { lambda ; . let
-              _:AbstractOperator() = CNOT[n_wires=2] 0 9
-              a:f64[] = mul 0.0 3.141592653589793
-              b:f64[] = sin a
-              c:AbstractOperator() = RX[n_wires=1] b 0
-              _:AbstractOperator() = Controlled[
-                control_values=(False,)
-                work_wires=Wires([])
-              ] c 9
-              d:f64[] = mul 1.0 3.141592653589793
-              e:f64[] = sin d
-              f:AbstractOperator() = RX[n_wires=1] e 0
-              _:AbstractOperator() = Controlled[
-                control_values=(True,)
-                work_wires=Wires([])
-              ] f 9
-              g:AbstractOperator() = PauliZ[n_wires=1] 0
-              h:AbstractMeasurement(n_wires=None) = expval_obs g
-            in (h,) }
+        >>> jax.make_jaxpr(f)() # doctest: +SKIP
+        { lambda ; . let
+            _:AbstractOperator() = CNOT[n_wires=2] 0:i32[] 9:i32[]
+            a:f32[] = mul 0.0:f32[] 3.141592653589793:f32[]
+            b:f32[] = sin a
+            c:AbstractOperator() = RX[n_wires=1] b 0:i32[]
+            _:AbstractOperator() = Controlled[
+            control_values=(False,)
+            work_wire_type=borrowed
+            work_wires=Wires([])
+            ] c 9:i32[]
+            d:f32[] = mul 1.0:f32[] 3.141592653589793:f32[]
+            e:f32[] = sin d
+            f:AbstractOperator() = RX[n_wires=1] e 0:i32[]
+            _:AbstractOperator() = Controlled[
+            control_values=(True,)
+            work_wire_type=borrowed
+            work_wires=Wires([])
+            ] f 9:i32[]
+            g:AbstractOperator() = PauliZ[n_wires=1] 0:i32[]
+            h:AbstractMeasurement(n_wires=None) = expval_obs g
+        in (h,) }
+        >>> qml.capture.disable()
 
         The above dummy example showcases how the transform is applied when the aforementioned
         features are used.

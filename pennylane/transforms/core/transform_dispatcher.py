@@ -296,7 +296,7 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
         .. code-block:: python
 
             @TransformDispatcher.generic_register(Subroutine)
-            def apply_to_subroutine(obj: Subroutine, transform *targs, **tkwargs):
+            def apply_to_subroutine(obj: Subroutine, transform, *targs, **tkwargs):
                 tape = qml.tape.QuantumScript(obj.ops)
                 batch, _ = transform(tape, *targs, **tkwargs)
                 return Subroutine(batch[0].operations)
@@ -349,7 +349,7 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
 
         **Example**
 
-        .. code-block:: python
+        .. code-block:: python3
 
             @transform
             def my_transform(tape, *targs, **tkwargs):
@@ -358,8 +358,9 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
 
             @my_transform.custom_qnode_transform
             def my_custom_qnode_wrapper(self, qnode, targs, tkwargs):
-                tkwargs = {**tkwargs, shots=100}
-                return self.default_qnode_transform(qnode, targs, tkwargs)
+                new_tkwargs = dict(tkwargs)
+                new_tkwargs['shots'] = 100
+                return self.generic_apply_transform(qnode, *targs, **new_tkwargs)
 
         The custom QNode execution wrapper must have arguments
         ``self`` (the batch transform object), ``qnode`` (the input QNode
@@ -369,7 +370,7 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
         It should return a QNode that accepts the *same* arguments as the
         input QNode with the transform applied.
 
-        The default :meth:`~.default_qnode_transform` method may be called
+        The default :meth:`~.generic_apply_transform` method may be called
         if only pre- or post-processing dependent on QNode arguments is required.
         """
         # unfortunately, we don't have access to qml.QNode here, or in the places where

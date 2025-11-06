@@ -129,7 +129,7 @@ class TestCaptureForLoop:
 
     def test_for_loop_grad(self):
         """Test simple for-loop primitive with gradient."""
-        from pennylane.capture.primitives import grad_prim
+        from pennylane.capture.primitives import jacobian_prim
 
         @qml.qnode(qml.device("default.qubit", wires=2))
         def inner_func(x):
@@ -156,9 +156,16 @@ class TestCaptureForLoop:
         assert len(jaxpr.eqns) == 1  # a single grad equation
 
         grad_eqn = jaxpr.eqns[0]
-        assert grad_eqn.primitive == grad_prim
-        assert set(grad_eqn.params.keys()) == {"argnums", "n_consts", "jaxpr", "method", "h"}
-        # JAX 0.7.0 requires hashable params, so lists become tuples
+        assert grad_eqn.primitive == jacobian_prim
+        assert set(grad_eqn.params.keys()) == {
+            "argnums",
+            "n_consts",
+            "jaxpr",
+            "method",
+            "h",
+            "fn",
+            "scalar_out",
+        }
         assert grad_eqn.params["argnums"] == (0,)
         assert [var.aval for var in grad_eqn.outvars] == jaxpr.out_avals
         assert len(grad_eqn.params["jaxpr"].eqns) == 1  # a single QNode equation
