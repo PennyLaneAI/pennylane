@@ -1,5 +1,5 @@
 
-# Release 0.43.1
+# Release 0.43.1 (current release)
 
 <h3>Bug fixes 🐛</h3>
 
