@@ -254,8 +254,6 @@
   [(#8490)](https://github.com/PennyLaneAI/pennylane/pull/8490)
   [(#8577)](https://github.com/PennyLaneAI/pennylane/pull/8577)
 
-  - NOTE: [(#8490)](https://github.com/PennyLaneAI/pennylane/pull/8490) introduced a bug (a performance regression caused by extra erroneous operators in the QSVT template) which was fixed in [(#8577)](https://github.com/PennyLaneAI/pennylane/pull/8577)
-
 * Solovay-Kitaev decomposition using the :func:`~.clifford_t_decompostion` transform
   with ``method="sk"`` or directly via :func:`~.ops.sk_decomposition` now raises a more
   informative ``RuntimeError`` when used with JAX-JIT or :func:`~.qjit`.
