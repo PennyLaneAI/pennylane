@@ -131,7 +131,7 @@ def _tape_openqasm(
 
     num_mcms = sum(isinstance(o, MidMeasure) for o in tape.operations)
     if num_mcms:
-        lines.append(f"creg mcms[{num_mcms}]")
+        lines.append(f"creg mcms[{num_mcms}];")
     bit_map = {}
 
     # get the user applied circuit operations without interface information
