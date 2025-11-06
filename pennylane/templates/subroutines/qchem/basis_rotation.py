@@ -55,9 +55,7 @@ def _adjust_determinant(matrix):
     def false_branch(mat):
         return np.array(0.0), mat
 
-    return cond(math.is_abstract(matrix) or det < 0, abstract_or_negative_det, false_branch)(
-        matrix
-    )
+    return cond(math.is_abstract(matrix) or det < 0, abstract_or_negative_det, false_branch)(matrix)
 
 
 class BasisRotation(Operation):
