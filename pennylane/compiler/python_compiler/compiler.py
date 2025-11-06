@@ -46,11 +46,11 @@ class Compiler:
         it is a pass that runs other passes.
 
         Args:
-            module: Either a Jax MLIR module or MLIR IR as string
+            module: Either a Jax MLIR module or MLIR IR as a string
             callback: Optional callback function called between passes
 
         Returns:
-            jaxModule if input was jaxModule, str if input was str
+            jaxModule | str: jaxModule if the input was a jaxModule, else a string.
         """
         # Convert to generic text format
         is_jax_module = isinstance(module, jaxModule)
