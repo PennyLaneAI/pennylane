@@ -47,7 +47,7 @@ jobs:
     steps:
       - name: Set PR branch name
         run: |
-          BRANCH_NAME="${{ github.ref_name}}"
+          BRANCH_NAME="${{ github.head_ref}}"
           echo "branch is $BRANCH_NAME"
           if [ "${{github.event.pull_request.draft}}" == false ]; then
             echo "run_sphinx=true" >> $GITHUB_OUTPUT
