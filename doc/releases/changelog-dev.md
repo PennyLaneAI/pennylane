@@ -266,6 +266,10 @@
   This function checks if a pass name corresponds to an xDSL implemented pass.
   [(#8572)](https://github.com/PennyLaneAI/pennylane/pull/8572)
 
+* The :func:`~pennylane.compiler.python_compiler.Compiler.run` method now accepts a string as input,
+  which is parsed and transformed with xDSL.
+  [(#8587)](https://github.com/PennyLaneAI/pennylane/pull/8587)
+
 <h3>Documentation 📝</h3>
 
 * Added a "Unified Compiler Cookbook" RST file, along with tutorials, to ``qml.compiler.python_compiler`,
