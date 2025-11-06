@@ -79,7 +79,7 @@
 
 <h3>Breaking changes 💔</h3>
 
-* Support for `numpy<2.0` has been removed. 
+* Maintenance support for `numpy<2.0` has been removed. 
   [(#8497)](https://github.com/PennyLaneAI/pennylane/pull/8497)
   [(#8578)](https://github.com/PennyLaneAI/pennylane/pull/8578)
 
