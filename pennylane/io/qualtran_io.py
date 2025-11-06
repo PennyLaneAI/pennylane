@@ -23,8 +23,8 @@ import numpy as np
 import pennylane.measurements as qmeas
 import pennylane.ops as qops
 import pennylane.templates as qtemps
-from pennylane.exceptions import DecompositionUndefinedError, MatrixUndefinedError
 from pennylane.estimator.estimate import estimate
+from pennylane.exceptions import DecompositionUndefinedError, MatrixUndefinedError
 from pennylane.operation import Operation, Operator
 from pennylane.registers import registers
 from pennylane.tape import make_qscript
