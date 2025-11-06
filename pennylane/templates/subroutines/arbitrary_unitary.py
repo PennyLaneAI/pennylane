@@ -171,7 +171,7 @@ def _arbitrary_unitary_resources(num_wires: int) -> dict:
 
 @register_resources(_arbitrary_unitary_resources)
 def _arbitrary_unitary_decomposition(weights: list, wires: WiresLike):
-    words = _all_pauli_words_but_identity(len(wires))
+    words = list(_all_pauli_words_but_identity(len(wires)))
 
     if has_jax and capture.enabled():
         if isinstance(wires, Wires):
