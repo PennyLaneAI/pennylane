@@ -164,8 +164,8 @@ def _arbitrary_unitary_resources(num_wires: int) -> dict:
 def _arbitrary_unitary_decomposition(weights: list, wires: WiresLike):
     words = list(_all_pauli_words_but_identity(len(wires)))
 
-    for i in range(len(words)):
-        PauliRot(weights[..., i], words[i], wires=wires)
+    for i, word in enumerate(words):
+        PauliRot(weights[..., i], word, wires=wires)
 
 
 add_decomps(ArbitraryUnitary, _arbitrary_unitary_decomposition)
