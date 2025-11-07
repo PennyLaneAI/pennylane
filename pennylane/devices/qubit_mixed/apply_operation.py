@@ -642,7 +642,7 @@ def apply_diagonal_unitary(op: Operator, state: TensorLike, is_state_batched: bo
 
     eigvals = math.stack(op.eigvals())
     expand_shape = (
-        [-1] + [2] * len(channel_wires) if bool(op.batch_size) else [2] * len(channel_wires)
+        [-1] + [2] * len(channel_wires) if op.batch_size is not None else [2] * len(channel_wires)
     )
     eigvals = math.reshape(eigvals, expand_shape)
     eigvals = math.cast_like(eigvals, state)
@@ -664,7 +664,7 @@ def apply_diagonal_unitary(op: Operator, state: TensorLike, is_state_batched: bo
 
     # For batched operations, use explicit batch index instead of ellipsis
     # When is_state_batched=True, the first character of state_indices is the batch index
-    if bool(op.batch_size):
+    if op.batch_size is not None:
         batch_index = state_indices[0] if is_state_batched else ""
         einsum_indices = f"{batch_index}{row_indices},{state_indices},{batch_index}{col_indices}->{state_indices}"
     else:
