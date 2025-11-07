@@ -376,9 +376,11 @@ def decompose(
             (2) a dictionary mapping operator types and/or names to their respective costs, in
             which case the total cost will be minimized (only available when the new graph-based
             decomposition system is enabled), or (3) a function that returns ``True`` if the
-            operator belongs to the target gate set (not supported with the new graph-based
-            decomposition system). If ``None``, the gate set is considered to be all operations in
-            ``qml.ops.__all__``.  See :doc:`quantum operators </introduction/operations>` for this list.
+            operator belongs to the target gate set (Note that this option is deprecated and its
+            also not supported with the new graph-based decomposition system. Use the
+            stopping_condition argument instead. ). If ``None``, the gate set is considered to be
+            all operations in ``qml.ops.__all__``.  See :doc:`quantum operators </introduction/operations>`
+            for this list.
         stopping_condition (Callable, optional): a function that returns ``True`` if the operator
             does not need to be decomposed. If ``None``, the default stopping condition is whether
             the operator is in the target gate set. See the "Gate Set vs. Stopping Condition"
