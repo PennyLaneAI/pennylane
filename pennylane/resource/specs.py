@@ -205,7 +205,7 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> SpecsDict:  # pr
 
         # Note that this only gets transforms manually applied by the user
         tape_transforms = original_qnode.transform_program
-        num_trans_levels = len(tape_transforms)
+        num_trans_levels = len(tape_transforms) + 1
         trans_levels = list(range(num_trans_levels)) if level == "all" else level
 
         # Handle tape transforms
@@ -217,7 +217,11 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> SpecsDict:  # pr
             tape = qml.workflow.construct_tape(original_qnode, level=trans_level)(*args, **kwargs)
             info = specs_from_tape(tape, compute_depth)
 
-            trans_name = tape_transforms[trans_level].transform.__name__
+            trans_name = (
+                tape_transforms[trans_level - 1].transform.__name__
+                if trans_level > 0
+                else "No transforms"
+            )
             if trans_name in resources:
                 rep = 2
                 while f"{trans_name}-{rep}" in resources:
@@ -227,7 +231,7 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> SpecsDict:  # pr
 
         # Handle MLIR levels
         mlir_levels = (
-            [lvl - num_trans_levels for lvl in level if lvl > num_trans_levels]
+            [lvl - num_trans_levels for lvl in level if lvl >= num_trans_levels]
             if level != "all"
             else "all"
         )
