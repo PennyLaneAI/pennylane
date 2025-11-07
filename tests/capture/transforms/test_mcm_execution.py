@@ -129,11 +129,11 @@ class TestExecutionAnalytic:
                 qml.RY(y, 0)
 
             @cond_fn.else_if(m1 == 0)
-            def _(y):
+            def _else_if(y):
                 qml.RY(2 * y, 0)
 
             @cond_fn.otherwise
-            def _(y):
+            def _else(y):
                 qml.RY(3 * y, 0)
 
             cond_fn(x)
@@ -164,12 +164,12 @@ class TestExecutionAnalytic:
                 # Final state |0>
 
             @cond_fn.else_if(x > 1.5)
-            def _():
+            def _else_if():
                 qml.PauliZ(0)
                 # Equal prob of |0> and |1>
 
             @cond_fn.otherwise
-            def _():
+            def _else():
                 qml.Hadamard(0)
                 m1 = qml.measure(0)
                 qml.RX(m1 * jnp.pi, 0)

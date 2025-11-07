@@ -1093,7 +1093,7 @@ class TestShotList:
 
         # test gradient works
         # TODO: Add after differentiability of qutrit circuits is implemented
-        # res = qml.jacobian(circuit, argnum=[0, 1])(0.1, 0.6)
+        # res = qml.jacobian(circuit, argnums=[0, 1])(0.1, 0.6)
 
     marginal_shot_data = [
         [[1, 2, 3, 10], (4, 3)],
@@ -1142,7 +1142,7 @@ class TestShotList:
         # test gradient works
         # TODO: Uncomment after parametric operations are added for qutrits and decomposition
         # for QutritUnitary exists
-        # res = qml.jacobian(circuit, argnum=[0, 1])(0.1, 0.6)
+        # res = qml.jacobian(circuit, argnums=[0, 1])(0.1, 0.6)
 
     shot_data = [
         [[1, 2, 3, 10], (4, 3, 2)],
@@ -1181,7 +1181,7 @@ class TestShotList:
         # test gradient works
         # TODO: Uncomment after parametric operations are added for qutrits and decomposition
         # for QutritUnitary exists
-        # res = qml.jacobian(circuit, argnum=[0])(pnp.eye(9, dtype=np.complex128))
+        # res = qml.jacobian(circuit, argnums=[0])(pnp.eye(9, dtype=np.complex128))
 
 
 class TestUnimplemented:

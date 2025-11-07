@@ -18,7 +18,7 @@ from collections.abc import Hashable, Sequence
 
 from pennylane.allocation import AllocateState
 from pennylane.exceptions import AllocationError
-from pennylane.measurements import measure
+from pennylane.ops import measure
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn, Result, ResultBatch
 
@@ -198,14 +198,16 @@ def resolve_dynamic_wires(
 
     >>> no_resets = resolve_dynamic_wires(circuit, zeroed=("a",), allow_resets=False)
     >>> print(qml.draw(no_resets)())
-    AllocationError: no wires left to allocate.
+    Traceback (most recent call last):
+        ...
+    pennylane.exceptions.AllocationError: no wires left to allocate.
 
     If we only provide ``any_state`` qubits with unknown states, then they will be reset to zero before being used
     in an operation that requires a zero state.
 
     >>> assigned_any_state = resolve_dynamic_wires(circuit, any_state=("a", "b"))
     >>> print(qml.draw(assigned_any_state)())
-    b: ──┤↗│  │0⟩──X──┤↗│  │0⟩──Y─|
+    b: ──┤↗│  │0⟩──X──┤↗│  │0⟩──Y─┤
 
 
     Note that the last provided wire with label ``"b"`` is used first.
