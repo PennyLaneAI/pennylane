@@ -14,10 +14,8 @@
 r"""
 Contains the ArbitraryUnitary template.
 """
-from collections import defaultdict
 
 from pennylane import math
-from pennylane.control_flow import for_loop
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.operation import Operation
 from pennylane.ops import PauliRot
@@ -156,9 +154,9 @@ class ArbitraryUnitary(Operation):
 
 
 def _arbitrary_unitary_resources(num_wires: int) -> dict:
-    resources = defaultdict(int)
+    resources = {}
     for pauli_word in _all_pauli_words_but_identity(num_wires):
-        resources[resource_rep(PauliRot, pauli_word=pauli_word)] += 1
+        resources[resource_rep(PauliRot, pauli_word=pauli_word)] = 1
     return resources
 
 
@@ -166,11 +164,8 @@ def _arbitrary_unitary_resources(num_wires: int) -> dict:
 def _arbitrary_unitary_decomposition(weights: list, wires: WiresLike):
     words = list(_all_pauli_words_but_identity(len(wires)))
 
-    @for_loop(len(words))
-    def rot_loop(i):
+    for i in range(len(words)):
         PauliRot(weights[..., i], words[i], wires=wires)
-
-    rot_loop()  # pylint: disable=no-value-for-parameter
 
 
 add_decomps(ArbitraryUnitary, _arbitrary_unitary_decomposition)
