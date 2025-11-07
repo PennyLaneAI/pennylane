@@ -411,13 +411,51 @@ class Select(Operation):
 
         Reference: `Babbush et al. (2018) <https://arxiv.org/abs/1805.03662>`__
 
-        +---------------------+---------------+--------------+
-        | Decomposition rule  | Information   | Resources    |
-        +=====================+===============+==============+
-        | body row 1, column 1   | column 2   | column 3     |
-        +------------------------+------------+--------------+
-        | body row 1, column 1   | column 2   | column 3     |
-        +------------------------+------------+--------------+
+        **Table version**
+
+        .. list-table::
+            :widths: 20 60 20
+            :header-rows: 1
+
+            * - **Decomposition rule**
+              - **Information**
+              - **Resources**
+            * - multi_control
+
+                .. code-block::
+
+                    # Example of how to access
+                    qml.list_decomps(qml.Select)["multi_control"]
+              - .. figure:: ../../../doc/_static/templates/subroutines/select.png
+                    :align: center
+                    :width: 70%
+                    :target: javascript:void(0);
+              - .. code-block::
+
+                    Total wires: 5
+                    algorithmic wires: 4
+                    allocated wires: 1
+            * - unary
+
+                .. code-block::
+
+                    # Example of how to access
+                    qml.list_decomps(qml.Select)["unary"]
+              - .. figure:: ../../../doc/_static/templates/subroutines/select.png
+                    :align: center
+                    :width: 70%
+                    :target: javascript:void(0);
+              - .. code-block::
+
+                    Total wires: 5  
+                    algorithmic wires: 4   
+                    allocated wires: 1  
+                    zero state: 1  
+                    any state: 0  
+                    Total gates : 22  
+                    'Toffoli': 5,  
+                    'CNOT': 3, 
+                    'Hadamard': 3
     """
 
     resource_keys = {"op_reps", "num_control_wires", "partial", "num_work_wires"}
