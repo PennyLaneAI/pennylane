@@ -11,16 +11,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Transform function for the Clifford+T decomposition."""
+"""Transform function for the Ross-Selinger decomposition (GridSynth) for qjit + capture."""
 
 from pennylane.transforms.core import transform
+
+
 @transform
-def rs_decomposition(
-    tape, *, epsilon
-):
-    r""" Only for qjit
-    """
-   
-    raise NotImplementedError("Direct rs_decomposition is only supported with Catalyst backend.")
+def rs_decomposition(tape, *, epsilon):
+    r"""This is an alias for Catalyst's rs_decomposition pass."""
 
-
+    raise NotImplementedError(
+        "This pass is implemented in Catalyst. Only supported with qjit + capture. Otherwise, please use qml.transforms.clifford_t_decomposition."
+    )
