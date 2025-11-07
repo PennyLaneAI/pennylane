@@ -27,6 +27,7 @@ from xdsl.context import Context as xContext
 from xdsl.dialects import builtin as xbuiltin
 from xdsl.dialects import func as xfunc
 from xdsl.ir import Dialect as xDialect
+from xdsl.traits import SymbolOpInterface
 from xdsl.traits import SymbolTable as xSymbolTable
 
 from .parser import QuantumParser
@@ -114,7 +115,7 @@ def xdsl_module(func: JaxJittedFunction) -> Callable[..., xbuiltin.ModuleOp]:
 
 
 def inline_module(
-    from_mod: xbuiltin.ModuleOp, to_mod: xbuiltin.ModuleOp, change_main_to: str = None
+    from_mod: xbuiltin.ModuleOp, to_mod: xbuiltin.ModuleOp, change_main_to: str | None = None
 ) -> None:
     """Inline the contents of one xDSL module into another xDSL module. The inlined body is appended
     to the end of ``to_mod``.
@@ -128,7 +129,13 @@ def inline_module(
             main.properties["sym_name"] = xbuiltin.StringAttr(change_main_to)
 
     for op in from_mod.body.ops:
-        xSymbolTable.insert_or_update(to_mod, op.clone())
+        clone = op.clone()
+        if op.has_trait(SymbolOpInterface):
+            # Do safe insertion for symbol op
+            xSymbolTable.insert_or_update(to_mod, clone)
+
+        else:
+            to_mod.regions[0].blocks[0].add_op(clone)
 
 
 def inline_jit_to_module(func: JaxJittedFunction, mod: xbuiltin.ModuleOp) -> Callable[..., None]:

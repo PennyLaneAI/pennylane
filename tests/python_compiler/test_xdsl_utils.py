@@ -245,13 +245,13 @@ class TestConversionUtils:
         assert isinstance(mod, builtin.ModuleOp)
 
         nested_modules = []
-        for op in mod.body.walk():
+        for op in mod.body.ops:
             if isinstance(op, builtin.ModuleOp):
                 nested_modules.append(op)
 
         funcs = []
         assert len(nested_modules) == 1
-        for op in nested_modules[0].body.walk():
+        for op in nested_modules[0].body.ops:
             if isinstance(op, func.FuncOp):
                 funcs.append(op)
 
@@ -263,38 +263,74 @@ class TestConversionUtils:
 class TestInliningUtils:
     """Unit tests for utilities for inlining operations into xDSL modules."""
 
-    def test_inline_module(self):
+    @pytest.mark.parametrize("change_main_to", ["foo", None])
+    def test_inline_module(self, change_main_to):
         """Test that the inline_module function works correctly."""
+
+        mod1_main = func.FuncOp(name="main", function_type=((), ()))
+        mod1_func = func.FuncOp(name="not_main", function_type=((), ()))
+        mod1_ops = [mod1_main, mod1_func, test.TestPureOp()]
+        mod1 = builtin.ModuleOp(mod1_ops)
+
+        mod2_ops = [test.TestOp()]
+        mod2 = builtin.ModuleOp(mod2_ops)
+
+        inline_module(mod1, mod2, change_main_to=change_main_to)
+
+        assert len(mod2.ops) == 4
+        expected_mod2 = builtin.ModuleOp(ops=[op.clone() for op in mod2_ops + mod1_ops])
+        assert mod2.is_structurally_equivalent(expected_mod2)
+
+        # Check that mod1 is unchanged
+        expected_mod1 = builtin.ModuleOp(ops=[op.clone() for op in mod1_ops])
+        assert mod1.is_structurally_equivalent(expected_mod1)
+
+        expected_names = {"not_main", change_main_to or "main"}
+        actual_names = set()
+        for op in mod2.ops:
+            if isinstance(op, func.FuncOp):
+                actual_names.add(op.sym_name.data)
+
+        assert actual_names == expected_names
 
     def test_inline_jit_to_module(self):
         """Test that the inline_jit_to_module function works correctly."""
 
+        @jax.jit
+        def f1(x):
+            return x
 
-class TestXDSLToPLUtils:
-    """Unit tests for utilities that convert xDSL constructs to PennyLane gates and measurements."""
+        @jax.jit
+        def f2(x):
+            return f1(x)
 
-    @pytest.mark.parametrize("", [])
-    def test_xdsl_to_qml_op_static_wires(self):
-        """Test that the xdsl_to_qml_op function works correctly."""
+        mod = builtin.ModuleOp(ops=[])
+        # Mutate the module in-place
+        inline_jit_to_module(f2, mod)(1.5)
 
-    @pytest.mark.parametrize("", [])
-    def test_xdsl_to_qml_op_dynamic_wires(self):
-        """Test that the xdsl_to_qml_op function works correctly."""
+        expected_func_names = {"f1", "f2"}
+        funcs = []
+        actual_func_names = set()
+        f2_func = None
+        assert len(mod.ops) == 2
+        for op in mod.body.ops:
+            assert isinstance(op, func.FuncOp)
+            funcs.append(op)
+            sym_name = op.sym_name.data
+            actual_func_names.add(sym_name)
+            if sym_name == "f2":
+                f2_func = op
 
-    def test_xdsl_to_qml_op_invalid_op(self):
-        """Test that the xdsl_to_qml_op raises an error if given an invalid operation as input."""
+        assert actual_func_names == expected_func_names
 
-    @pytest.mark.parametrize("", [])
-    def test_xdsl_to_qml_measurement_static_wires(self):
-        """Test that the xdsl_to_qml_measurement function works correctly with qubits corresponding to
-        static wires."""
+        # Check that f2 calls f1
+        call_op = None
+        for op in f2_func.body.ops:
+            if isinstance(op, func.CallOp):
+                call_op = op
 
-    @pytest.mark.parametrize("", [])
-    def test_xdsl_to_qml_measurement_dynamic_wires(self):
-        """Test that the xdsl_to_qml_measurement function works correctly."""
-
-    def test_xdsl_to_qml_measurement_invalid_op(self):
-        """Test that the xdsl_to_qml_measurement raises an error if given an invalid operation as input."""
+        assert call_op is not None
+        assert call_op.callee.root_reference.data == "f1"
 
 
 if __name__ == "__main__":
