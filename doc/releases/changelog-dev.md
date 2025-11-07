@@ -259,6 +259,10 @@
   [(#8490)](https://github.com/PennyLaneAI/pennylane/pull/8490)
   [(#8577)](https://github.com/PennyLaneAI/pennylane/pull/8577)
 
+* The constant to convert the length unit Bohr to Angstrom in ``qml.qchem`` is updated to use scipy
+  constants.
+  [(#8537)](https://github.com/PennyLaneAI/pennylane/pull/8537)
+
 * Solovay-Kitaev decomposition using the :func:`~.clifford_t_decompostion` transform
   with ``method="sk"`` or directly via :func:`~.ops.sk_decomposition` now raises a more
   informative ``RuntimeError`` when used with JAX-JIT or :func:`~.qjit`.
@@ -342,6 +346,7 @@ Utkarsh Azad,
 Astral Cai,
 Marcus Edwards,
 Lillian Frederiksen,
+Soran Jahangiri,
 Christina Lee,
 Joseph Lee,
 Gabriela Sanchez Diaz,
