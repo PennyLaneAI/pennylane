@@ -27,6 +27,7 @@
   [(#8558)](https://github.com/PennyLaneAI/pennylane/pull/8558)
   [(#8538)](https://github.com/PennyLaneAI/pennylane/pull/8538)  
   [(#8534)](https://github.com/PennyLaneAI/pennylane/pull/8534)
+  [(#8582)](https://github.com/PennyLaneAI/pennylane/pull/8582)
   [(#8543)](https://github.com/PennyLaneAI/pennylane/pull/8543)
   [(#8554)](https://github.com/PennyLaneAI/pennylane/pull/8554)
   
@@ -37,6 +38,7 @@
   - :class:`~.GateFabric`
   - :class:`~.AngleEmbedding`
   - :class:`~.IQPEmbedding`
+  - :class:`~.kUpCCGSD`
   - :class:`~.QAOAEmbedding`
   - :class:`~.BasicEntanglerLayers`
 
