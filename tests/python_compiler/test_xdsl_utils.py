@@ -16,13 +16,16 @@
 
 import pytest
 
-pytestmark = pytest.mark.external
+pytestmark = [pytest.mark.external, pytest.mark.capture]
 xdsl = pytest.importorskip("xdsl")
 jax = pytest.importorskip("jax")
 
 # pylint: disable=wrong-import-position
+from jaxlib.mlir.ir import Module as jaxModule  # pylint: disable=no-name-in-module
+from xdsl.context import Context
 from xdsl.dialects import arith, builtin, func, tensor, test
 
+import pennylane as qml
 from pennylane.compiler.python_compiler import QuantumParser
 from pennylane.compiler.python_compiler.conversion import (
     generic_str,
@@ -141,7 +144,8 @@ class TestConversionUtils:
             return x + 1
 
         gen_str = generic_str(f)(1)
-        module = QuantumParser(gen_str).parse_module()
+        context = Context()
+        module = QuantumParser(context, gen_str).parse_module()
 
         assert len(module.regions[0].blocks[0].ops) == 1
         func_op = module.regions[0].blocks[0].first_op
@@ -154,23 +158,106 @@ class TestConversionUtils:
     def test_mlir_module(self):
         """Test that the mlir_module function works correctly."""
 
+        @jax.jit
+        def f(x):
+            return x + 1
+
+        mod = mlir_module(f)(1)
+        assert isinstance(mod, jaxModule)
+
     def test_xdsl_module(self):
         """Test that the xdsl_module function works correctly."""
 
+        @jax.jit
+        def f(x):
+            return x + 1
+
+        mod = xdsl_module(f)(1)
+        assert isinstance(mod, builtin.ModuleOp)
+
+        assert len(mod.regions[0].blocks[0].ops) == 1
+        func_op = mod.regions[0].blocks[0].first_op
+        assert isinstance(func_op, func.FuncOp)
+
+        expected_op_names = ["stablehlo.constant", "stablehlo.add", "func.return"]
+        for op, expected_op_name in zip(func_op.body.ops, expected_op_names):
+            assert op.name == expected_op_name
+
     def test_parse_generic_to_mlir_module(self):
         """Test that the parse_generic_to_mlir_module function works correctly."""
+        program_str = """
+            "builtin.module"() ({
+                %0 = "arith.constant"() <{value = 0 : i64}> : () -> i64
+            }) : () -> ()
+        """
+
+        mod = parse_generic_to_mlir_module(program_str)
+        assert isinstance(mod, jaxModule)
 
     def test_parse_generic_to_xdsl_module(self):
         """Test that the parse_generic_to_xdsl_module function works correctly."""
+        program_str = """
+            "builtin.module"() ({
+                %0 = "arith.constant"() <{value = 0 : i64}> : () -> i64
+            }) : () -> ()
+        """
+
+        mod = parse_generic_to_xdsl_module(program_str)
+        assert isinstance(mod, builtin.ModuleOp)
+
+        assert len(mod.regions[0].blocks[0].ops) == 1
+        assert isinstance(mod.regions[0].blocks[0].first_op, arith.ConstantOp)
 
     def test_mlir_from_docstring(self):
         """Test that the mlir_from_docstring function works correctly."""
 
+        def f():
+            """
+            %0 = "arith.constant"() <{value = 0 : i64}> : () -> i64
+            """
+
+        mod = mlir_from_docstring(f)
+        assert isinstance(mod, jaxModule)
+
     def test_xdsl_from_docstring(self):
         """Test that the xdsl_from_docstring function works correctly."""
 
+        def f():
+            """
+            %0 = "arith.constant"() <{value = 0 : i64}> : () -> i64
+            """
+
+        mod = xdsl_from_docstring(f)
+        assert isinstance(mod, builtin.ModuleOp)
+
+        assert len(mod.regions[0].blocks[0].ops) == 1
+        assert isinstance(mod.regions[0].blocks[0].first_op, arith.ConstantOp)
+
     def test_xdsl_from_qjit(self):
         """Test that the xdsl_from_qjit function works correctly."""
+
+        @qml.qjit
+        @qml.qnode(qml.device("lightning.qubit", wires=2))
+        def circuit():
+            return qml.state()
+
+        mod = xdsl_from_qjit(circuit)()
+        assert isinstance(mod, builtin.ModuleOp)
+
+        nested_modules = []
+        for op in mod.body.walk():
+            if isinstance(op, builtin.ModuleOp):
+                nested_modules.append(op)
+
+        funcs = []
+        assert len(nested_modules) == 1
+        for op in nested_modules[0].body.walk():
+            if isinstance(op, func.FuncOp):
+                funcs.append(op)
+
+        assert len(funcs) == 1
+        # All qnodes have a UnitAttr attribute called qnode
+        assert funcs[0].attributes.get("qnode", None) is not None
 
 
 class TestInliningUtils:
@@ -186,11 +273,28 @@ class TestInliningUtils:
 class TestXDSLToPLUtils:
     """Unit tests for utilities that convert xDSL constructs to PennyLane gates and measurements."""
 
-    def test_xdsl_to_qml_op(self):
+    @pytest.mark.parametrize("", [])
+    def test_xdsl_to_qml_op_static_wires(self):
         """Test that the xdsl_to_qml_op function works correctly."""
 
-    def test_xdsl_to_qml_measurement(self):
+    @pytest.mark.parametrize("", [])
+    def test_xdsl_to_qml_op_dynamic_wires(self):
+        """Test that the xdsl_to_qml_op function works correctly."""
+
+    def test_xdsl_to_qml_op_invalid_op(self):
+        """Test that the xdsl_to_qml_op raises an error if given an invalid operation as input."""
+
+    @pytest.mark.parametrize("", [])
+    def test_xdsl_to_qml_measurement_static_wires(self):
+        """Test that the xdsl_to_qml_measurement function works correctly with qubits corresponding to
+        static wires."""
+
+    @pytest.mark.parametrize("", [])
+    def test_xdsl_to_qml_measurement_dynamic_wires(self):
         """Test that the xdsl_to_qml_measurement function works correctly."""
+
+    def test_xdsl_to_qml_measurement_invalid_op(self):
+        """Test that the xdsl_to_qml_measurement raises an error if given an invalid operation as input."""
 
 
 if __name__ == "__main__":

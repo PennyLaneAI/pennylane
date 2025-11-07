@@ -49,14 +49,14 @@ def mlir_module(func: JaxJittedFunction) -> Callable[..., jModule]:
     return wrapper
 
 
-def _generic_str_inline(func: JaxJittedFunction, *args, **kwargs) -> str:  # pragma: no cover
+def _generic_str_inline(func: JaxJittedFunction, *args, **kwargs) -> str:
     """Create the generic textual representation for a jax.jitted function"""
     lowered = func.lower(*args, **kwargs)
     mod = lowered.compiler_ir()
     return mod.operation.get_asm(binary=False, print_generic_op_form=True, assume_verified=True)
 
 
-def generic_str(func: JaxJittedFunction) -> Callable[..., str]:  # pragma: no cover
+def generic_str(func: JaxJittedFunction) -> Callable[..., str]:
     """Returns a wrapper that creates the generic textual representation for a
     jax.jitted function."""
 
@@ -69,7 +69,7 @@ def generic_str(func: JaxJittedFunction) -> Callable[..., str]:  # pragma: no co
 
 def parse_generic_to_xdsl_module(
     program: str, extra_dialects: Sequence[xDialect] | None = None
-) -> xbuiltin.ModuleOp:  # pragma: no cover
+) -> xbuiltin.ModuleOp:
     """Parses a generic MLIR program string to an xDSL module."""
     ctx = xContext(allow_unregistered=True)
     parser = QuantumParser(ctx, program, extra_dialects=extra_dialects)
@@ -77,7 +77,7 @@ def parse_generic_to_xdsl_module(
     return moduleOp
 
 
-def parse_generic_to_mlir_module(program: str) -> jModule:  # pragma: no cover
+def parse_generic_to_mlir_module(program: str) -> jModule:
     """Parses a generic MLIR program string to an MLIR module."""
     with jContext() as ctx:
         ctx.allow_unregistered_dialects = True
@@ -85,37 +85,25 @@ def parse_generic_to_mlir_module(program: str) -> jModule:  # pragma: no cover
         return jModule.parse(program)
 
 
-def mlir_from_docstring(func: Callable) -> jModule:  # pragma: no cover
-    """Returns a wrapper that parses an MLIR program string located in the docstring
-    into an MLIR module."""
+def mlir_from_docstring(func: Callable) -> jModule:
+    """Returns an MLIR module using the docstring of the input callable as an MLIR string."""
 
-    @wraps(func)
-    def wrapper(*_, **__):
-        return parse_generic_to_mlir_module(func.__doc__)
-
-    return wrapper
+    return parse_generic_to_mlir_module(func.__doc__)
 
 
-def _xdsl_module_inline(
-    func: JaxJittedFunction, *args, **kwargs
-) -> xbuiltin.ModuleOp:  # pragma: no cover
+def _xdsl_module_inline(func: JaxJittedFunction, *args, **kwargs) -> xbuiltin.ModuleOp:
     """Get the xDSL module from a jax.jitted function"""
     generic_repr = _generic_str_inline(func, *args, **kwargs)
     return parse_generic_to_xdsl_module(generic_repr)
 
 
-def xdsl_from_docstring(func: Callable) -> xbuiltin.ModuleOp:  # pragma: no cover
-    """Returns a wrapper that parses an MLIR program string located in the docstring
-    into an xDSL module."""
+def xdsl_from_docstring(func: Callable) -> xbuiltin.ModuleOp:
+    """Returns an xDSL module using the docstring of the input callable as an MLIR string."""
 
-    @wraps(func)
-    def wrapper(*_, **__):
-        return parse_generic_to_xdsl_module(func.__doc__)
-
-    return wrapper
+    return parse_generic_to_xdsl_module(func.__doc__)
 
 
-def xdsl_module(func: JaxJittedFunction) -> Callable[..., xbuiltin.ModuleOp]:  # pragma: no cover
+def xdsl_module(func: JaxJittedFunction) -> Callable[..., xbuiltin.ModuleOp]:
     """Returns a wrapper that creates an xDSL module from a jax.jitted function."""
 
     @wraps(func)
