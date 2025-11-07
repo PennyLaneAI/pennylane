@@ -332,7 +332,7 @@ def quantum_monte_carlo(
         The estimated value can be retrieved using the formula :math:`\mu = (1-\cos(\pi \theta))/2`
 
         >>> (1 - np.cos(np.pi * phase_estimated)) / 2
-         np.float64(0.426...)
+        np.float64(0.426...)
 
         It is also possible to explore the resources required to perform the quantum Monte Carlo
         algorithm
