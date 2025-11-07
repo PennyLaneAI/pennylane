@@ -500,7 +500,7 @@ class ConvertToMBQCFormalismPattern(
         tgt_aux_qubit = self._insert_cond_byproduct_op(x_parity, "PauliX", qubits[1], op, rewriter)
         z_parity = self._parity_check([m9, m11, m13], op, rewriter)
         tgt_aux_qubit = self._insert_cond_byproduct_op(
-            x_parity, "PauliZ", tgt_aux_qubit, op, rewriter
+            z_parity, "PauliZ", tgt_aux_qubit, op, rewriter
         )
 
         return ctrl_aux_qubit, tgt_aux_qubit

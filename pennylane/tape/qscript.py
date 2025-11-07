@@ -23,7 +23,7 @@ import warnings
 from collections import Counter
 from collections.abc import Callable, Hashable, Iterable, Iterator, Sequence
 from functools import cached_property
-from typing import Any, ParamSpec, TypeVar, Union
+from typing import Any, ParamSpec, TypeVar
 
 import pennylane as qml
 from pennylane.exceptions import PennyLaneDeprecationWarning
@@ -719,100 +719,6 @@ class QuantumScript:
             shots=self.shots,
             trainable_params=self.trainable_params,
         )
-
-    # ========================================================
-    # MEASUREMENT SHAPE
-    #
-    # We can extract the private static methods to a new class later
-    # ========================================================
-
-    def shape(
-        self, device: Union["qml.devices.Device", "qml.devices.LegacyDevice"]
-    ) -> tuple[int, ...] | tuple[tuple[int, ...], ...]:
-        """Produces the output shape of the quantum script by inspecting its measurements
-        and the device used for execution.
-
-        .. note::
-
-            The computed shape is not stored because the output shape may be
-            dependent on the device used for execution.
-
-        Args:
-            device (pennylane.devices.Device): the device that will be used for the script execution
-
-        Returns:
-            Union[tuple[int], tuple[tuple[int]]]: the output shape(s) of the quantum script result
-
-        .. warning::
-
-            The ``QuantumScript.shape`` method is deprecated and will be removed in v0.44.
-            Instead, please use ``MeasurementProcess.shape``.
-
-        **Examples**
-
-        >>> dev = qml.device('default.qubit', wires=2)
-        >>> qs = QuantumScript(measurements=[qml.state()])
-        >>> qs.shape(dev)
-        (4,)
-        >>> m = [qml.state(), qml.expval(qml.Z(0)), qml.probs((0,1))]
-        >>> qs = QuantumScript(measurements=m)
-        >>> qs.shape(dev)
-        ((4,), (), (4,))
-
-        """
-        warnings.warn(
-            "``QuantumScript.shape`` is deprecated and will be removed in v0.44. "
-            "Instead, please use ``MeasurementProcess.shape``.",
-            PennyLaneDeprecationWarning,
-        )
-
-        num_device_wires = len(device.wires) if device.wires else len(self.wires)
-
-        def get_shape(mp, _shots):
-            # depends on num_device_wires and self.batch_size from closure
-            standard_shape = mp.shape(shots=_shots, num_device_wires=num_device_wires)
-            if self.batch_size:
-                return (self.batch_size, *standard_shape)
-            return standard_shape
-
-        shape = []
-        for s in self.shots if self.shots else [None]:
-            shots_shape = tuple(get_shape(mp, s) for mp in self.measurements)
-            shots_shape = shots_shape[0] if len(shots_shape) == 1 else tuple(shots_shape)
-            shape.append(shots_shape)
-
-        return tuple(shape) if self.shots.has_partitioned_shots else shape[0]
-
-    @property
-    def numeric_type(self) -> type | tuple[type, ...]:
-        """Returns the expected numeric type of the quantum script result by inspecting
-        its measurements.
-
-        Returns:
-            Union[type, Tuple[type]]: The numeric type corresponding to the result type of the
-            quantum script, or a tuple of such types if the script contains multiple measurements
-
-        .. warning::
-
-            ``QuantumScript.numeric_type`` is deprecated and will be removed in v0.44.
-            Instead, please use ``MeasurementProcess.numeric_type``.
-
-        **Example:**
-
-        >>> dev = qml.device('default.qubit', wires=2)
-        >>> qs = QuantumScript(measurements=[qml.state()])
-        >>> qs.numeric_type
-         <class 'complex'>
-        """
-        warnings.warn(
-            "``QuantumScript.numeric_type`` is deprecated and will be removed in v0.44. "
-            "Instead, please use ``MeasurementProcess.numeric_type``.",
-            PennyLaneDeprecationWarning,
-        )
-
-        types = tuple(observable.numeric_type for observable in self.measurements)
-
-        return types[0] if len(types) == 1 else types
 
     # ========================================================
     # Transforms: QuantumScript to QuantumScript

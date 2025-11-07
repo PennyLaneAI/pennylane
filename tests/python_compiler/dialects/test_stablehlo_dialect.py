@@ -173,6 +173,9 @@ def test_all_other_operations(run_filecheck):
     
     // CHECK: %select = "stablehlo.select"(%[[ti1]], %[[tf32]], %[[tf32]]) : (tensor<i1>, tensor<f32>, tensor<f32>) -> tensor<f32>
     %select = "stablehlo.select"(%ti1, %tf32, %tf32) : (tensor<i1>, tensor<f32>, tensor<f32>) -> tensor<f32>
+
+    // CHECK: %constant1 = "stablehlo.constant"() <{value = dense<[[0.000000e+00, 1.000000e+00], [2.000000e+00, 3.000000e+00]]> : tensor<2x2xf32>}> : () -> tensor<2x2xf32>
+    %constant1 = "stablehlo.constant"() <{value = dense<[[0.0, 1.0], [2.0, 3.0]]> : tensor<2x2xf32>}> : () -> tensor<2x2xf32>
     """
 
     run_filecheck(program, roundtrip=True, verify=True)
@@ -203,7 +206,7 @@ def test_invalid_ir_type_mismatch(run_filecheck):
     %cos = "stablehlo.cosine"(%ti32) : (tensor<2x3xi32>) -> tensor<2x3xi32>
     """
 
-    with pytest.raises(Exception, match="operand at position 0 does not verify"):
+    with pytest.raises(Exception, match="'operand' at position 0 does not verify"):
         run_filecheck(program, roundtrip=True, verify=True)
 
 

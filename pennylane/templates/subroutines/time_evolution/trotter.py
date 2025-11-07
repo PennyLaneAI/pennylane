@@ -112,7 +112,7 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
     Raises:
         TypeError: The ``hamiltonian`` is not of type :class:`~.Sum`.
         ValueError: The ``hamiltonian`` has only one term or no terms.
-        ValueError: One or more of the terms in ``hamiltonian`` are not Hermitian
+        ValueError: One or more of the terms in ``hamiltonian`` are not verified to be Hermitian. 
             (only for ``check_hermitian=True``)
         ValueError: The ``order`` is not one or a positive even integer.
 
@@ -285,12 +285,10 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
                 f"The given operator must be a PennyLane ~.Sum or ~.SProd, got {hamiltonian}"
             )
 
-        if check_hermitian:
-            for op in hamiltonian.operands:
-                if not op.is_hermitian:
-                    raise ValueError(
-                        "One or more of the terms in the Hamiltonian may not be Hermitian"
-                    )
+        if check_hermitian and not all(op.is_verified_hermitian for op in hamiltonian.operands):
+            raise ValueError(
+                "One or more of the terms in the Hamiltonian are not verified to be Hermitian. Please consider verifying the Hamiltonian manually using the more exhaustive 'qml.is_hermitian' check and provide `check_hermitian=False` to the `TrotterProduct` constructor."
+            )
 
         self._hyperparameters = {
             "n": n,
@@ -502,18 +500,14 @@ def _trotter_product_decomposition_resources(n, order, ops):
 
     if order == 1:
         for op in ops:
-            reps[resource_rep(qml_ops.op_math.Evolution, base=op, num_steps=None)] = n * _count(
-                op, ops
-            )
+            reps[resource_rep(qml_ops.op_math.Evolution, base=op)] = n * _count(op, ops)
         return reps
     if order == 2:
         for op in ops:
-            reps[resource_rep(qml_ops.op_math.Evolution, base=op, num_steps=None)] = (
-                n * 2 * _count(op, ops)
-            )
+            reps[resource_rep(qml_ops.op_math.Evolution, base=op)] = n * 2 * _count(op, ops)
         return reps
     for op in ops:
-        reps[resource_rep(qml_ops.op_math.Evolution, base=op, num_steps=None)] = (
+        reps[resource_rep(qml_ops.op_math.Evolution, base=op)] = (
             n * _count(op, ops) * 2 * 5 * (order - 2) / 2
         )
     return reps
@@ -812,7 +806,6 @@ def trotterize(qfunc, n=1, order=2, reverse=False):
 
     @wraps(qfunc)
     def wrapper(time, *args, **kwargs):
-
         special_keys = ["n", "order", "qfunc", "reverse"]
         if any(key in kwargs for key in special_keys):
             raise ValueError(
