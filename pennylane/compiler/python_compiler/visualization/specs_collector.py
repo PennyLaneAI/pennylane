@@ -164,7 +164,14 @@ def _(
 
 @handle_resource.register
 def _(xdsl_op: PPRotationOp) -> tuple[ResourceType, str]:
-    s = f"PPR-pi/{abs(xdsl_op.rotation_kind.value.data)}-w{len(xdsl_op.in_qubits)}"
+    if xdsl_op.rotation_kind.value.data == 0:
+        # Sanity check that this is an identity
+        assert all(
+            pauli_op.data == "I" for pauli_op in xdsl_op.pauli_product
+        ), "Found non-identity PPRotation with pi/0 rotation!"
+        s = "PPR-identity"
+    else:
+        s = f"PPR-pi/{abs(xdsl_op.rotation_kind.value.data)}-w{len(xdsl_op.in_qubits)}"
     return ResourceType.PPM, s
 
 
