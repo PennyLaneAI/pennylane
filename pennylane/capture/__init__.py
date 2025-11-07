@@ -187,6 +187,11 @@ QmlPrimitive: "Type[jax.extend.core.Primitive]"
 
 # pylint: disable=import-outside-toplevel, redefined-outer-name, too-many-return-statements
 def __getattr__(key):
+    if key == "_restore_slice":
+        from .custom_primitives import _restore_slice
+
+        return _restore_slice
+
     if key == "QmlPrimitive":
         from .custom_primitives import QmlPrimitive
 
