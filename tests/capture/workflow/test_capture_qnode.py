@@ -1814,7 +1814,6 @@ class TestStaticArgnums:
             assert qml.math.allclose(res, circuit(*args))
 
 
-@pytest.mark.xfail
 class TestQNodeCaptureCaching:
     """Unit tests for caching QNode executions with program capture."""
 
