@@ -1,4 +1,4 @@
-# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+# Copyright 2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,7 +11,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-r"""This module contains decompositions for quantum circuits."""
+"""Transform function for the Clifford+T decomposition."""
 
-from .clifford_t_transform import clifford_t_decomposition
-from .rs_decomposition import rs_decomposition
+from pennylane.transforms.core import transform
+@transform
+def rs_decomposition(
+    tape, *, epsilon
+):
+    r""" Only for qjit
+    """
+   
+    raise NotImplementedError("Direct rs_decomposition is only supported with Catalyst backend.")
+
+
