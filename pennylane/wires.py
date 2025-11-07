@@ -61,8 +61,23 @@ def _process(wires):
         # of considering the elements of iterables as wire labels.
         wires = [wires]
 
+    # Handle JAX 0.7.2 Literal types that don't have numpy-like attributes
     if math.get_interface(wires) == "jax" and not math.is_abstract(wires):
-        wires = tuple(wires.tolist() if wires.ndim > 0 else (wires.item(),))
+        # Check if it's a JAX Literal type (from JAX 0.7.2+)
+        if hasattr(wires, "__class__") and "Literal" in wires.__class__.__name__:
+            # Convert Literal to native Python type for processing
+            wires = (int(wires) if isinstance(wires, (int, type(wires))) else wires,)
+        elif hasattr(wires, "ndim"):
+            # Standard JAX array
+            wires = tuple(wires.tolist() if wires.ndim > 0 else (wires.item(),))
+        else:
+            # JAX tracer or other type - try to convert directly
+            try:
+                wires = tuple(wires.tolist() if hasattr(wires, "tolist") else (wires,))
+            except (AttributeError, TypeError):
+                # If all else fails, treat as single wire
+                wires = (wires,)
+                return wires
 
     try:
         # Use tuple conversion as a check for whether `wires` can be iterated over.

@@ -158,6 +158,45 @@ qnode_prim.multiple_results = True
 qnode_prim.prim_type = "higher_order"
 
 
+@qnode_prim.def_abstract_eval
+def _qnode_abstract_eval(*avals, qfunc_jaxpr, shots_len, device, **params):
+    """Abstract evaluation for qnode primitive - returns output shapes."""
+    # Get shots if provided
+    if shots_len > 0:
+        shots = [aval.val if hasattr(aval, "val") else None for aval in avals[:shots_len]]
+        shots = shots[0] if shots else None
+    else:
+        shots = None
+
+    # Get output shapes from qfunc_jaxpr outvars
+    num_device_wires = len(device.wires)
+    batch_dims = params.get("batch_dims")
+    n_consts = params["n_consts"]
+
+    # Calculate batch shape
+    if batch_dims is not None:
+        split = n_consts + shots_len
+        non_const_avals = avals[split:]
+        non_const_batch_dims = batch_dims[split:]
+        batch_shape = tuple(
+            aval.shape[dim] if dim is not None else 1
+            for aval, dim in zip(non_const_avals, non_const_batch_dims, strict=False)
+            if dim is not None
+        )
+    else:
+        batch_shape = ()
+
+    # Get shapes from jaxpr outvars
+    output_avals = _get_shapes_for(
+        *qfunc_jaxpr.outvars,
+        shots=shots,
+        num_device_wires=num_device_wires,
+        batch_shape=batch_shape,
+    )
+
+    return output_avals
+
+
 # pylint: disable=too-many-arguments
 @debug_logger
 @qnode_prim.def_impl
@@ -233,12 +272,11 @@ def _(*args, qnode, device, execution_config, qfunc_jaxpr, n_consts, shots_len, 
     return jax.vmap(partial_eval, batch_dims[(n_consts + shots_len) :])(*non_const_args)
 
 
-def custom_staging_rule(
-    jaxpr_trace: pe.DynamicJaxprTrace, source_info, *tracers: pe.DynamicJaxprTracer, **params
-) -> Sequence[pe.DynamicJaxprTracer] | pe.DynamicJaxprTracer:
+def custom_partial_eval_rule(trace, *tracers, **params):
     """
-    Add new jaxpr equation to the jaxpr_trace and return new tracers.
+    Custom partial evaluation rule for qnode primitive (JAX 0.7.2+).
 
+    This replaces the deprecated custom_staging_rule API.
     See capture/intro_to_dynamic_shapes.py for more context and capture.register_custom_staging_rule
     for the implementation used on other higher order primitives.
     """
@@ -260,40 +298,39 @@ def custom_staging_rule(
         batch_shape=batch_shape,
     )
 
-    # Create output variables for the new equation
-    outvars = [jaxpr_trace.frame.newvar(o) for o in new_shapes]
+    # Create output tracers using JAX 0.7.2 API
+    out_tracers = [pe.JaxprTracer(trace, pe.PartialVal.unknown(aval), None) for aval in new_shapes]
 
-    # Create JaxprEqnContext and TracingEqn for JAX 0.7.0
+    # JAX 0.7.2: Use new_eqn_recipe instead of manually creating TracingEqn
+    # This is the approach used by JAX's built-in partial_eval rules
     # pylint: disable=import-outside-toplevel
-    from jax._src import compute_on, config, xla_metadata_lib
-    from jax._src.interpreters.partial_eval import JaxprEqnContext, TracingEqn
+    from jax._src import source_info_util
+    from jax._src.interpreters.partial_eval import new_eqn_recipe
 
-    ctx = JaxprEqnContext(
-        compute_on.current_compute_type(),
-        config.threefry_partitionable.value,
-        xla_metadata_lib.current_xla_metadata(),
-    )
+    # Get source info from current context
+    name_stack = source_info_util.current_name_stack()[len(trace.name_stack) :]
+    source = source_info_util.current().replace(name_stack=name_stack)
 
-    # Create TracingEqn instead of JaxprEqn for JAX 0.7.0
-    eqn = TracingEqn(
-        tracers,  # in_tracers (not invars!)
-        outvars,
+    # Create equation recipe using JAX's new_eqn_recipe
+    eqn = new_eqn_recipe(
+        trace,
+        tracers,  # input tracers
+        out_tracers,  # output tracers
         qnode_prim,
         params,
         jax.core.no_effects,
-        source_info,
-        ctx,
+        source,
     )
 
-    jaxpr_trace.frame.add_eqn(eqn)
-
-    # Create output tracers
-    out_tracers = [pe.DynamicJaxprTracer(jaxpr_trace, o, v) for o, v in zip(new_shapes, outvars)]
+    # Set the recipe for each output tracer
+    for t in out_tracers:
+        t.recipe = eqn
 
     return out_tracers
 
 
-pe.custom_staging_rules[qnode_prim] = custom_staging_rule
+# Register with the new API for JAX 0.7.2+
+pe.custom_partial_eval_rules[qnode_prim] = custom_partial_eval_rule
 
 
 # pylint: disable=too-many-arguments

@@ -167,74 +167,78 @@ def register_custom_staging_rule(
     # see also capture/intro_to_dynamic_shapes.md
 
     def _tracer_and_outvar(
-        jaxpr_trace: pe.DynamicJaxprTrace,
+        trace,
         outvar: jax.extend.core.Var,
         env: dict[jax.extend.core.Var, jax.extend.core.Var],
-    ) -> tuple[pe.DynamicJaxprTracer, jax.extend.core.Var]:
+    ) -> tuple[pe.JaxprTracer, jax.extend.core.Var]:
         """
         Create a new tracer and return var from the true branch outvar.
         Returned vars are cached in env for use in future shapes
         """
         if not hasattr(outvar.aval, "shape"):
-            # JAX 0.7.0: Create variable first, then pass to DynamicJaxprTracer
-            new_var = jaxpr_trace.frame.newvar(outvar.aval)
-            out_tracer = pe.DynamicJaxprTracer(jaxpr_trace, outvar.aval, new_var)
+            # Create variable first, then pass to JaxprTracer
+            new_var = trace.frame.newvar(outvar.aval)
+            out_tracer = pe.JaxprTracer(trace, pe.PartialVal.unknown(outvar.aval), None)
             return out_tracer, new_var
         new_shape = [s if isinstance(s, int) else env[s] for s in outvar.aval.shape]
         if all(isinstance(s, int) for s in outvar.aval.shape):
             new_aval = jax.core.ShapedArray(tuple(new_shape), outvar.aval.dtype)
         else:
             new_aval = jax.core.DShapedArray(tuple(new_shape), outvar.aval.dtype)
-        # JAX 0.7.0: Create variable first, then pass to DynamicJaxprTracer
-        new_var = jaxpr_trace.frame.newvar(new_aval)
-        out_tracer = pe.DynamicJaxprTracer(jaxpr_trace, new_aval, new_var)
+        # Create variable first, then pass to JaxprTracer
+        new_var = trace.frame.newvar(new_aval)
+        out_tracer = pe.JaxprTracer(trace, pe.PartialVal.unknown(new_aval), None)
 
         if not isinstance(outvar, jax.extend.core.Literal):
             env[outvar] = new_var
         return out_tracer, new_var
 
-    def custom_staging_rule(
-        jaxpr_trace: pe.DynamicJaxprTrace, source_info, *tracers: pe.DynamicJaxprTracer, **params
-    ) -> Sequence[pe.DynamicJaxprTracer] | pe.DynamicJaxprTracer:
+    def custom_partial_eval_rule(trace, *tracers, **params):
         """
-        Add new jaxpr equation to the jaxpr_trace and return new tracers.
+        Custom partial evaluation rule for dynamic shapes (JAX 0.7.2+).
+
+        This replaces the deprecated custom_staging_rule API.
+        Add new jaxpr equation to the trace and return new tracers.
         """
         if not jax.config.jax_dynamic_shapes:
-            # fallback to normal behavior
-            return jaxpr_trace.default_process_primitive(
-                primitive, tracers, params, source_info=source_info
-            )
+            # fallback to normal behavior - use default trace processing
+            return trace.default_process_primitive(primitive, tracers, params)
+
         outvars = get_outvars_from_params(params)
 
         env: dict[jax.extend.core.Var, jax.extend.core.Var] = {}  # branch var to new equation var
         if outvars:
             out_tracers, returned_vars = tuple(
-                zip(*(_tracer_and_outvar(jaxpr_trace, var, env) for var in outvars), strict=True)
+                zip(*(_tracer_and_outvar(trace, var, env) for var in outvars), strict=True)
             )
         else:
             out_tracers, returned_vars = (), ()
 
-        # JAX 0.7.0: Create TracingEqn with proper context
+        # JAX 0.7.2: Use new_eqn_recipe instead of manually creating TracingEqn
+        # This is the approach used by JAX's built-in partial_eval rules
         # pylint: disable=import-outside-toplevel
-        from jax._src import compute_on, config, xla_metadata_lib
-        from jax._src.interpreters.partial_eval import JaxprEqnContext, TracingEqn
+        from jax._src import source_info_util
+        from jax._src.interpreters.partial_eval import new_eqn_recipe
 
-        ctx = JaxprEqnContext(
-            compute_on.current_compute_type(),
-            config.threefry_partitionable.value,
-            xla_metadata_lib.current_xla_metadata(),
-        )
+        # Get source info from current context
+        name_stack = source_info_util.current_name_stack()[len(trace.name_stack) :]
+        source = source_info_util.current().replace(name_stack=name_stack)
 
-        eqn = TracingEqn(
-            tracers,  # in_tracers (not invars!)
-            returned_vars,
+        # Create equation recipe using JAX's new_eqn_recipe
+        eqn = new_eqn_recipe(
+            trace,
+            tracers,  # input tracers
+            out_tracers,  # output tracers
             primitive,
             params,
             jax.core.no_effects,
-            source_info,
-            ctx,
+            source,
         )
-        jaxpr_trace.frame.add_eqn(eqn)
+
+        # Set the recipe for each output tracer
+        for t in out_tracers:
+            t.recipe = eqn
+
         return out_tracers
 
-    pe.custom_staging_rules[primitive] = custom_staging_rule
+    pe.custom_partial_eval_rules[primitive] = custom_partial_eval_rule

@@ -317,6 +317,21 @@ def _get_abstract_operator() -> type:
         def _pow(a, b):
             return qml.pow(a, b)
 
+    # Register Operator base class in JAX's type system for JAX 0.7.2+
+    # This allows typeof() to work on operator instances during tree_unflatten
+    # by mapping any Operator instance to AbstractOperator
+    def _operator_to_abstract(op):
+        """Convert an Operator instance to its abstract representation."""
+        return AbstractOperator()
+
+    # Import after AbstractOperator is defined to avoid circular imports
+    from pennylane.operation import (
+        Operator,
+    )  # pylint: disable=import-outside-toplevel, cyclic-import
+
+    # Register the mapping - this will be used by JAX's typeof() function
+    jax.core.pytype_aval_mappings[Operator] = _operator_to_abstract
+
     return AbstractOperator
 
 
