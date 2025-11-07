@@ -139,7 +139,7 @@ class ApproxTimeEvolution(Operation):
     @property
     def resource_params(self) -> dict:
         return {
-            "words": list(self.hyperparameters["hamiltonian"].pauli_rep.keys()),
+            "words": tuple(self.hyperparameters["hamiltonian"].pauli_rep.keys()),
             "n": self.hyperparameters["n"],
         }
 
@@ -259,8 +259,7 @@ def _approx_time_evolution_decomposition(
         pauli_keys = list(hamiltonian.pauli_rep.keys())
         pauli_items = list(hamiltonian.pauli_rep.items())
 
-        @for_loop(len(pauli_keys))
-        def paulis_loop(k):
+        for k in range(len(pauli_keys)):
             pw = pauli_keys[k]
             coeff_index = 0
             found = pauli_items[coeff_index][0] == pw
@@ -281,8 +280,6 @@ def _approx_time_evolution_decomposition(
                 PauliRot(theta, term_str, wires=wires)
 
             cond(len(pw) != 0, rot, None)()
-
-        paulis_loop()  # pylint: disable=no-value-for-parameter
 
     rounds_loop()  # pylint: disable=no-value-for-parameter
 
