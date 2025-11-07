@@ -59,7 +59,7 @@ def initialize_memref_with_value(dest: SSAValue, value: SSAValue, size: int | SS
     return (c0_index, c1_index, for_op)
 
 def print_mlir(op, msg="", should_print: bool = True):
-    # should_print = False
+    should_print = False
     if should_print:
         printer = Printer()
         print("-"*100)
@@ -74,7 +74,7 @@ def print_mlir(op, msg="", should_print: bool = True):
         print("-"*100)
 
 def print_ssa_values(values, msg="SSA Values || ", should_print:bool = True):
-    # should_print = False
+    should_print = False
     if should_print:
         print(f"// {msg}")
         for val in values:
@@ -460,8 +460,9 @@ class TreeTraversalPattern(RewritePattern):
         segment_change = False
 
         real_mcm_op = None
-        inner_mcm_ops =  None
+        current_if_op = None
 
+        # Extract the IfOps containing measure operations
         op_walker = new_segment.body.walk()
         for op in op_walker:
             if isinstance(op, scf.IfOp):
@@ -472,9 +473,7 @@ class TreeTraversalPattern(RewritePattern):
 
                 contain_mcm = "contain_mcm" in op.attributes
                 if contain_mcm:
-                    inner_mcm_ops = op
-                    print_mlir(op, msg=f"  - Found IfOp in segment {segment.depth}, contain_mcm={contain_mcm}")
-                    continue
+                    current_if_op = op
 
         mid_ops = []
         record = False
@@ -482,38 +481,67 @@ class TreeTraversalPattern(RewritePattern):
             if op == real_mcm_op:
                 record = True
 
-            if op == inner_mcm_ops:
+            if op == current_if_op:
                 record = False
                 break
 
             if record:
                 mid_ops.append(op)
 
-        if (inner_mcm_ops is not None
+        if (current_if_op is not None
             and real_mcm_op is not None
-            and inner_mcm_ops is not real_mcm_op):
+            and current_if_op is not real_mcm_op):
 
             segment_change = True
             print_mlir(real_mcm_op, msg=f"  - Moving real measure IfOp after inner IfOp in segment {segment.depth}")
 
+            where_to_move_real_mcm = None
+
+            # Find the measure operation inside the true branch of the inner IfOp
+            for inner_op in current_if_op.true_region.ops:
+                if isinstance(inner_op, quantum.MeasureOp):
+                    where_to_move_real_mcm = inner_op
+                    break
+
+            if where_to_move_real_mcm is None:
+                where_to_move_real_mcm = current_if_op.true_region.ops.first
+
+
+            # last_qreg = None
+            # for op in mid_ops[::-1]:
+            #     if isinstance(op, quantum.InsertOp):
+            #         last_qreg = op.operands[0]
+            #     op.detach()
+            #     rewriter.insert_op(op, InsertPoint.before(where_to_move_real_mcm))
+
+            q_bit_mcm = real_mcm_op.results[1]
+            real_mcm_op_mcm_q_bit = real_mcm_op.true_region.ops.first
+
+            q_bit_mcm.replace_by_if(real_mcm_op_mcm_q_bit.operands[0], lambda use: use.operation is not real_mcm_op)
+
             # Move the real measure IfOp after the inner IfOp
-            last_qreg = None
-            for op in mid_ops:
-                if isinstance(op, quantum.InsertOp):
-                    last_qreg = op.operands[0]
-                op.detach()
-                rewriter.insert_op(op, InsertPoint.at_start(inner_mcm_ops.true_region.block))
-
             real_mcm_op.detach()
-            rewriter.insert_op(real_mcm_op, InsertPoint.at_start(inner_mcm_ops.true_region.block))
+            rewriter.insert_op(real_mcm_op, InsertPoint.before(where_to_move_real_mcm))
 
-            # Update the qreg input of the False branch of the inner IfOp
-            if last_qreg is not None:
-                yield_op = inner_mcm_ops.false_region.ops.last
-                if isinstance(yield_op, scf.YieldOp):
-                    yield_op.operands[0] = last_qreg
-                    rewriter.notify_op_modified(yield_op)
-                    print_mlir(yield_op, msg=f"    - Updated qreg input of False branch of inner IfOp in segment {segment.depth}")
+            if  isinstance(where_to_move_real_mcm, quantum.MeasureOp):
+                for new_mcm_use, old_mcm_use in zip(real_mcm_op.results, where_to_move_real_mcm.results):
+                    old_mcm_use.replace_by_if(new_mcm_use, lambda use: use.operation is not where_to_move_real_mcm)
+
+                old_mcm_operands = where_to_move_real_mcm.operands[0]
+                real_mcm_op_walks = real_mcm_op.walk()
+                for op in real_mcm_op_walks:
+                    if isinstance(op, quantum.MeasureOp):
+                        op.operands = (old_mcm_operands,)
+                        rewriter.notify_op_modified(op)
+
+
+            # # Update the qreg input of the False branch of the inner IfOp
+            # if last_qreg is not None:
+            #     yield_op = current_if_op.false_region.ops.last
+            #     if isinstance(yield_op, scf.YieldOp):
+            #         yield_op.operands[0] = last_qreg
+            #         rewriter.notify_op_modified(yield_op)
+            #         print_mlir(yield_op, msg=f"    - Updated qreg input of False branch of inner IfOp in segment {segment.depth}")
 
         if segment_change:
             print_mlir(new_segment, msg=f"After additional transform for segment {segment.depth}")

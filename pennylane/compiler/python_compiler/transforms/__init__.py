@@ -37,6 +37,8 @@ from .quantum import (
     MergeRotationsPass,
     split_non_commuting_pass,
     SplitNonCommutingPass,
+    tree_traversal_pass,
+    TreeTraversalPass,
 )
 
 
