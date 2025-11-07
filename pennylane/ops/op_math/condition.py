@@ -322,7 +322,7 @@ class CondCallable:
             end_const_ind += len(jaxpr.consts)
 
         _validate_jaxpr_returns(jaxpr_branches, self.otherwise_fn)
-        flat_args, _ = jax.tree_util.tree_flatten(args)
+        flat_args, _ = jax.tree_util.tree_flatten((args, kwargs))
         results = cond_prim.bind(
             *conditions,
             *consts,
