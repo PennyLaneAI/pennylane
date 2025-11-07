@@ -29,18 +29,16 @@ import pennylane as qml
 from pennylane.compiler.python_compiler.transforms import TreeTraversalPass, tree_traversal_pass
 
 """
-Not supported operation:
+Not supported features:
     - mcm postselection
     - mcm reset
     - return qml.state()
     - return qml.probs()
     - return qml.sample()
-    - Multiple observables in expval/var/prob
+    - return multiple measurements,e.g.
+        return qml.expval(Z(0)), qml.expval(X(1))
     - qml.expval(mcm_result)
-    - qml.cond()
 """
-
-
 class TestTreeTraversalPass:
     """Unit tests for TreeTraversalPass."""
 
@@ -619,34 +617,51 @@ class TestTreeTraversalPass:
     # @pytest.mark.parametrize("postselect", [None,0, 1])
     @pytest.mark.parametrize("reset", [False])
     # @pytest.mark.parametrize("reset", [False, True])
-    @pytest.mark.parametrize("measure_f", [qml.expval, qml.probs, qml.var, qml.counts, qml.sample])
+    @pytest.mark.parametrize("measure_f", [
+        lambda obs: qml.expval(qml.Z(0)),
+        lambda obs: qml.expval(qml.Y(0)),
+        lambda obs: qml.expval(qml.Z(1)),
+        lambda obs: qml.expval(qml.Y(1)),
+    ])
     def test_multiple_measurements_and_reset(self, shots, postselect, reset, measure_f, seed):
         """Tests that DefaultQubit handles a circuit with a single mid-circuit measurement with reset
         and a conditional gate. Multiple measurements of the mid-circuit measurement value are
         performed. This function also tests `reset` parametrizing over the parameter."""
 
-        if measure_f is not qml.expval:
-            pytest.skip("For the momment only support qml.exval")
-
         dev = qml.device("lightning.qubit", wires=3, seed=seed)
-        obs = qml.PauliY(1)
         params = [np.pi / 2.5, np.pi / 3, -np.pi / 3.5]
 
         def obs_tape(x, y, z, reset=False, postselect=None):
             qml.RX(x, 0)
             qml.RZ(np.pi / 8, 0)
+
             m0 = qml.measure(0, reset=reset)
-            qml.RX(np.pi / 4, 0)
-            qml.RZ(np.pi / 4, 0)
-            qml.RX(-np.pi / 4, 0)
-            qml.RZ(-np.pi / 4, 0)
-            qml.RX(y, 1)
+
+            def ansatz_m0_0_true():
+                qml.RX(np.pi / 4, 0)
+                qml.RZ(np.pi / 4, 0)
+
+            def ansatz_m0_0_false():
+                qml.RX(-np.pi / 4, 0)
+                qml.RZ(-np.pi / 4, 0)
+
+            qml.cond(m0, ansatz_m0_0_true, ansatz_m0_0_false)()
+
             m1 = qml.measure(1, postselect=postselect)
-            qml.RZ(np.pi / 3, 1)
-            qml.RX(np.pi / 3, 1)
-            qml.RZ(np.pi / 3, 1)
-            qml.RX(-np.pi / 3, 1)
-            qml.RZ(-np.pi / 3, 1)
+
+            qml.RX(y, 1)
+            qml.RZ(np.pi / 4, 1)
+            m1 = qml.measure(1, postselect=postselect)
+
+            def ansatz_m1_0_true():
+                qml.RX( np.pi / 8, 1)
+                qml.RZ( np.pi / 8, 1)
+            def ansatz_m1_0_false():
+                qml.RX(-np.pi / 8, 1)
+                qml.RZ(-np.pi / 8, 1)
+
+            qml.cond(m1, ansatz_m1_0_true, ansatz_m1_0_false)()
+
             # return m0, m1
 
         # Measures:
@@ -654,18 +669,6 @@ class TestTreeTraversalPass:
         # qml.expval, qml.probs, qml.var
         # With shots
         # qml.expval, qml.count, qml.var, qml.sample
-
-        def func_expval(x, y, z):
-            obs_tape(x, y, z, reset=reset, postselect=postselect)
-            return qml.expval(obs)
-
-        def func_probs(x, y, z):
-            obs_tape(x, y, z, reset=reset, postselect=postselect)
-            # return qml.sample()
-            # return qml.probs()
-            # return qml.var()
-
-        func = func_expval
 
         @qml.qjit(
             target="mlir",
@@ -675,7 +678,8 @@ class TestTreeTraversalPass:
         @tree_traversal_pass
         @qml.qnode(dev)
         def qjit_func(x, y, z):
-            return func(x, y, z)
+            obs_tape(x, y, z, reset=reset, postselect=postselect)
+            return measure_f(None)
 
         results0 = qjit_func(*params)
 
@@ -686,63 +690,9 @@ class TestTreeTraversalPass:
         @qml.set_shots(shots)
         @qml.qnode(dev, mcm_method="deferred")
         def ref_func(x, y, z):
-            return func(x, y, z)
+            obs_tape(x, y, z, reset=reset, postselect=postselect)
+            return measure_f(None)
 
         results1 = ref_func(*params)
 
         mcm_utils.validate_measurements(qml.expval, shots, results1, results0, batch_size=None)
-        # mcm_utils.validate_measurements(qml.sample, shots, results1, results0, batch_size=None)
-
-    def not_test_mcm_detection_functionality(self):
-        """Test that TreeTraversalPass correctly detects mid-circuit measurements."""
-        from xdsl.dialects import builtin, func
-        from xdsl.ir import Operation
-
-        from pennylane.compiler.python_compiler.dialects import quantum
-        from pennylane.compiler.python_compiler.transforms.quantum.tree_traversal import (
-            TreeTraversalPattern,
-        )
-
-        pattern = TreeTraversalPattern()
-
-        # Create mock operations for testing
-        # Test MCM detection with a function containing quantum.MeasureOp
-        measure_op = quantum.MeasureOp.create(
-            properties={"postselect": None},
-            operands=[],  # We can't easily create valid operands in isolation
-            result_types=[builtin.i1, quantum.QubitType()],
-        )
-
-        # Create a mock function with MCM
-        func_with_mcm = func.FuncOp(
-            "test_func",
-            builtin.FunctionType.from_lists([], []),
-            visibility=builtin.StringAttr("public"),
-        )
-        func_with_mcm.attributes["qnode"] = builtin.UnitAttr()
-        # Add the measure op to the function body
-        func_with_mcm.body.blocks[0].add_op(measure_op)
-
-        # Create a mock function without MCM
-        func_without_mcm = func.FuncOp(
-            "test_func_no_mcm",
-            builtin.FunctionType.from_lists([], []),
-            visibility=builtin.StringAttr("public"),
-        )
-        func_without_mcm.attributes["qnode"] = builtin.UnitAttr()
-
-        # Create a function without qnode attribute
-        func_no_qnode = func.FuncOp(
-            "test_func_no_qnode",
-            builtin.FunctionType.from_lists([], []),
-            visibility=builtin.StringAttr("public"),
-        )
-
-        # Test the MCM detection logic
-        assert pattern.check_if_qnode_have_mcm(func_with_mcm) == True
-        assert pattern.check_if_qnode_have_mcm(func_without_mcm) == False
-
-        # Test qnode attribute detection (this is just checking the pattern matching logic)
-        assert "qnode" in func_with_mcm.attributes
-        assert "qnode" in func_without_mcm.attributes
-        assert "qnode" not in func_no_qnode.attributes
