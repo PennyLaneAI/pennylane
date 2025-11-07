@@ -259,27 +259,26 @@ def _approx_time_evolution_decomposition(
         pauli_keys = list(hamiltonian.pauli_rep.keys())
         pauli_items = list(hamiltonian.pauli_rep.items())
 
-        for k in range(len(pauli_keys)):
-            pw = pauli_keys[k]
+        for pauli_key in pauli_keys:
             coeff_index = 0
-            found = pauli_items[coeff_index][0] == pw
+            found = pauli_items[coeff_index][0] == pauli_key
 
-            @while_loop(lambda f, i: not f)
-            def search_loop(found, index):  # pylint: disable=unused-argument
+            @while_loop(lambda f, i, p: not f)
+            def search_loop(found, index, pk):  # pylint: disable=unused-argument
                 index += 1
-                return pauli_items[index][0] == pw, index
+                return pauli_items[index][0] == pk, index, pk
 
-            found, coeff_index = search_loop(found, coeff_index)
+            found, coeff_index, _ = search_loop(found, coeff_index, pauli_key)
 
             coeff = pauli_items[coeff_index][1]
 
-            def rot():
-                theta = 2 * time * coeff / n
+            def rot(c, pw):
+                theta = 2 * time * c / n
                 term_str = "".join(pw.values())
                 wires = Wires(pw.keys())
                 PauliRot(theta, term_str, wires=wires)
 
-            cond(len(pw) != 0, rot, None)()
+            cond(len(pauli_key) != 0, rot, None)(coeff, pauli_key)
 
     rounds_loop()  # pylint: disable=no-value-for-parameter
 
