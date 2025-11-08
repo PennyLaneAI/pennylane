@@ -29,6 +29,7 @@ from xdsl.printer import Printer
 
 from pennylane.compiler.python_compiler import compiler_transform
 from pennylane.compiler.python_compiler.dialects import quantum
+from pennylane.compiler.python_compiler.dialects import stablehlo
 
 
 ##############################################################################
@@ -111,9 +112,11 @@ class TreeTraversalPass(ModulePass):
         for op in module.ops:
             if isinstance(op, func.FuncOp) and "qnode" in op.attributes:
                 rewriter = PatternRewriter(op)
+                UnrollLoopPattern().match_and_rewrite(op, rewriter)
+
                 IfOperatorPartitioningPass().match_and_rewrite(op, rewriter)
 
-                print_mlir(module, msg="After If Statement Split Pass", should_print=print_stuff)
+                # print_mlir(module, msg="After If Statement Split Pass", should_print=print_stuff)
 
                 TreeTraversalPattern().match_and_rewrite(op, rewriter)
 
@@ -121,7 +124,6 @@ class TreeTraversalPass(ModulePass):
 
 
 tree_traversal_pass = compiler_transform(TreeTraversalPass)
-
 
 # pylint: disable=too-many-instance-attributes
 class TreeTraversalPattern(RewritePattern):
@@ -466,27 +468,12 @@ class TreeTraversalPattern(RewritePattern):
         op_walker = new_segment.body.walk()
         for op in op_walker:
             if isinstance(op, scf.IfOp):
-
                 if real_mcm_op is None:
                     real_mcm_op = op
                     continue
-
                 contain_mcm = "contain_mcm" in op.attributes
                 if contain_mcm:
                     current_if_op = op
-
-        mid_ops = []
-        record = False
-        for op in new_segment.body.ops:
-            if op == real_mcm_op:
-                record = True
-
-            if op == current_if_op:
-                record = False
-                break
-
-            if record:
-                mid_ops.append(op)
 
         if (current_if_op is not None
             and real_mcm_op is not None
@@ -506,20 +493,13 @@ class TreeTraversalPattern(RewritePattern):
             if where_to_move_real_mcm is None:
                 where_to_move_real_mcm = current_if_op.true_region.ops.first
 
-
-            # last_qreg = None
-            # for op in mid_ops[::-1]:
-            #     if isinstance(op, quantum.InsertOp):
-            #         last_qreg = op.operands[0]
-            #     op.detach()
-            #     rewriter.insert_op(op, InsertPoint.before(where_to_move_real_mcm))
-
+            # Update the qreg input in the inner IfOp
             q_bit_mcm = real_mcm_op.results[1]
             real_mcm_op_mcm_q_bit = real_mcm_op.true_region.ops.first
 
             q_bit_mcm.replace_by_if(real_mcm_op_mcm_q_bit.operands[0], lambda use: use.operation is not real_mcm_op)
 
-            # Move the real measure IfOp after the inner IfOp
+            # Move the real measure IfOp before the mcm inside the inner IfOp
             real_mcm_op.detach()
             rewriter.insert_op(real_mcm_op, InsertPoint.before(where_to_move_real_mcm))
 
@@ -533,15 +513,6 @@ class TreeTraversalPattern(RewritePattern):
                     if isinstance(op, quantum.MeasureOp):
                         op.operands = (old_mcm_operands,)
                         rewriter.notify_op_modified(op)
-
-
-            # # Update the qreg input of the False branch of the inner IfOp
-            # if last_qreg is not None:
-            #     yield_op = current_if_op.false_region.ops.last
-            #     if isinstance(yield_op, scf.YieldOp):
-            #         yield_op.operands[0] = last_qreg
-            #         rewriter.notify_op_modified(yield_op)
-            #         print_mlir(yield_op, msg=f"    - Updated qreg input of False branch of inner IfOp in segment {segment.depth}")
 
         if segment_change:
             print_mlir(new_segment, msg=f"After additional transform for segment {segment.depth}")
@@ -1450,45 +1421,6 @@ class TreeTraversalPattern(RewritePattern):
         rewriter.insertion_point = ip_backup
         return ifOp.results[0]
 
-    def simulate(
-        self,
-        current_depth: SSAValue,
-        current_branch: SSAValue,
-        visited_stack: SSAValue,
-        statevec_stack: SSAValue,
-        probs_stack: SSAValue,
-        folded_result: SSAValue,
-        segment_iter_args: list[SSAValue],
-    ):
-        """This function is called when going down the tree (left or right), which requires
-        backing up the statevector, storing mcm probabilities, projecting the state, and running
-        a simulation segment."""
-
-        # TODO: we need the refilled register here
-        # quantum.ComputationalBasisOp()
-        # quantum.StateOp()
-
-        # quantum.ComputationalBasisOp()
-        # quantum.ProbsOp()
-
-        # quantum.MeasureOp(..., postselect=)
-
-        callOp = func.CallOp(
-            "segment_table",
-            [
-                current_depth,
-                current_branch,
-                visited_stack,
-                statevec_stack,
-                probs_stack,
-                folded_result,
-                *segment_iter_args,
-            ],
-            [val.type for val in segment_iter_args],
-        )
-
-        return (), callOp
-
     def handle_restore(
         self,
         qreg: SSAValue,
@@ -1616,8 +1548,12 @@ class TreeTraversalPattern(RewritePattern):
             rewriter.insert_op(op, InsertPoint.at_end(insert_block))
 
 
-IfOpWithDepth = Tuple[scf.IfOp, int]
 class IfOperatorPartitioningPass(RewritePattern):
+    """A rewrite pattern that partitions scf.IfOps containing measurement-controlled
+    operations into separate branches for each operator.
+    ️"""
+
+    IfOpWithDepth = Tuple[scf.IfOp, int]
 
     @op_type_rewrite_pattern
     def match_and_rewrite(self, op: func.FuncOp, rewriter: PatternRewriter) -> None:
@@ -1726,7 +1662,7 @@ class IfOperatorPartitioningPass(RewritePattern):
         """Finds the scf.if operation(s) nested at the maximum depth inside the parent_if_op."""
         # The parent IfOp A is at depth 0, so its immediate children (B, D) are at depth 1.
         # We initialize the search list.
-        deepest_ops_with_depth: List[IfOpWithDepth] = [(None, 0)]
+        deepest_ops_with_depth: List[self.IfOpWithDepth] = [(None, 0)]
 
         # Start the recursion. We look *inside* the regions of the parent_if_op.
         self._find_deepest_if_recursive(parent_if_op, 0, deepest_ops_with_depth)
@@ -2355,3 +2291,173 @@ class IfOperatorPartitioningPass(RewritePattern):
 
             for orig_nested_op, cloned_nested_op in zip(orig_block.ops, cloned_block.ops):
                 self.update_value_mapper_recursively(orig_nested_op, cloned_nested_op, value_mapper)
+
+
+class UnrollLoopPattern(RewritePattern):
+    # @op_type_rewrite_pattern
+    def match_and_rewrite(self, op: scf.ForOp, rewriter: PatternRewriter) -> None:
+
+        """Unroll nested scf.ForOps into separate branches for each operator."""
+
+        needs_unroll = self.detect_mcm_in_loop_ops(op)
+
+        if not needs_unroll:
+            return
+
+        self.unroll_nested_loops(op, rewriter)
+        op_walk = op.walk()
+        for nested_op in op_walk:
+            if isinstance(nested_op, scf.ForOp):
+                self.unroll_loop(nested_op, rewriter)
+
+    def detect_mcm_in_loop_ops(self, op: scf.ForOp) -> bool:
+        """Detect if there are measurement-controlled operations inside ForOps."""
+        op_walk = op.walk()
+        for current_op in op_walk:
+            if isinstance(current_op, scf.ForOp):
+                # Check if there are measurement-controlled operations inside the ForOp
+                for inner_op in current_op.body.ops:
+                    if isinstance(inner_op, quantum.MeasureOp):
+                        return True
+        return False
+
+    def unroll_nested_loops(self, main_op: scf.ForOp, rewriter: PatternRewriter) -> None:
+        """Unroll nested scf.ForOps into separate branches for each operator."""
+
+        # Check for deepest nested ForOps
+        nested_ForOp = self.get_deepest_for_loops(main_op)
+
+        depth = nested_ForOp[0][1] if nested_ForOp else 0
+        target_for_op = nested_ForOp[0][0] if nested_ForOp else None
+
+        if depth > 1:
+            self.unroll_loop(target_for_op.parent_op(), rewriter)
+            self.unroll_nested_loops(main_op, rewriter)
+        else:
+            return
+
+    # Find the deepest for loop and unroll it
+    def get_deepest_for_loops(self, parent_op: scf.ForOp) -> list[tuple[scf.ForOp, int]]:
+        """Finds the scf.for operation(s) nested at the maximum depth inside the parent_op."""
+        # The parent ForOp A is at depth 0, so its immediate children (B, D) are at depth 1.
+        # We initialize the search list.
+        deepest_ops_with_depth: List[tuple[scf.ForOp, int]] = [(None, 0)]
+
+        # Start the recursion. We look *inside* the regions of the parent_op.
+        self._find_deepest_for_recursive(parent_op, 0, deepest_ops_with_depth)
+
+        # Extract only the ForOp objects from the list of (ForOp, depth) tuples.
+        return deepest_ops_with_depth
+
+    def _find_deepest_for_recursive(self,op: Operation, current_depth: int, max_depth_ops: List[tuple[scf.ForOp, int]]) -> None:
+        """
+        Helper function to recursively traverse the IR, tracking the max depth
+        of scf.For operations found so far.
+        """
+        # Iterate over all nested regions (then_region, else_region, etc.)
+        for region in op.regions:
+            for block in region.blocks:
+                for child_op in block.ops:
+
+                    new_depth = current_depth
+
+                    if isinstance(child_op, scf.ForOp):
+                        # Found an ForOp, increase the depth for the ops *inside* its regions.
+                        # This ForOp itself is at 'current_depth + 1'.
+                        new_depth = current_depth + 1
+
+                        # --- Check and Update Max Depth List ---
+
+                        # 1. Is this deeper than the current max? (First find or deeper op)
+                        if not max_depth_ops or new_depth > max_depth_ops[0][1]:
+                            # It's a new maximum depth! Clear the old list and start fresh.
+                            max_depth_ops.clear()
+                            max_depth_ops.append((child_op, new_depth))
+
+                        # 2. Is this at the same depth as the current max? (A tie)
+                        elif new_depth == max_depth_ops[0][1]:
+                            # Add it to the list of winners.
+                            max_depth_ops.append((child_op, new_depth))
+
+                    # Recursively search inside this child op (regardless of its type)
+                    # We pass the potentially *increased* new_depth.
+                    self._find_deepest_for_recursive(child_op, new_depth, max_depth_ops)
+
+    def unroll_loop(self, op: scf.ForOp, rewriter: PatternRewriter) -> None:
+        print_mlir(op, "FDX: UnrollLoopPattern: Attempting to unroll loop.")
+        print_ssa_values(op.iter_args, "FDX: UnrollLoopPattern: Final iter args:")
+
+        def find_constant_bound(bound: SSAValue) -> tuple[bool, Operation | None]:
+
+            check_bound = bound
+            while True:
+                if isinstance(check_bound.owner, arith.ConstantOp):
+                    return True, check_bound.owner
+                elif isinstance(check_bound.owner, stablehlo.ConstantOp):
+                    return True, check_bound.owner
+                elif len(check_bound.owner.operands) == 0:
+                    return False, None
+                else:
+                    check_bound = check_bound.owner.operands[0]
+
+        lb_found, lb_op = find_constant_bound(op.lb)
+        ub_found, ub_op = find_constant_bound(op.ub)
+        step_found, step_op = find_constant_bound(op.step)
+
+        if (
+            not lb_found
+            or not ub_found
+            or not step_found
+        ):
+            print("FDX: UnrollLoopPattern: Cannot unroll loop, bounds or step are not constant.")
+            return
+
+        assert (isinstance(lb_op.value, builtin.IntegerAttr)
+                or isinstance(lb_op.value, builtin.DenseIntOrFPElementsAttr))
+        assert (isinstance(ub_op.value, builtin.IntegerAttr)
+                or isinstance(ub_op.value, builtin.DenseIntOrFPElementsAttr))
+        assert (isinstance(step_op.value, builtin.IntegerAttr)
+                or isinstance(step_op.value, builtin.DenseIntOrFPElementsAttr))
+
+        if isinstance(lb_op.value, builtin.DenseIntOrFPElementsAttr):
+            lb = lb_op.value.data.data[0]
+            ub = ub_op.value.data.data[0]
+            step = step_op.value.data.data[0]
+        else:
+            lb = lb_op.value.value.data
+            ub = ub_op.value.value.data
+            step = step_op.value.value.data
+
+        iter_args: tuple[SSAValue, ...] = op.iter_args
+
+        i_arg, *block_iter_args = op.body.block.args
+
+        for i in range(lb, ub, step):
+            i_op = rewriter.insert_op(
+                arith.ConstantOp(builtin.IntegerAttr(i, builtin.IndexType())),
+                InsertPoint.before(op)
+            )
+            i_op.result.name_hint = i_arg.name_hint
+
+            value_mapper: dict[SSAValue, SSAValue] = {
+                arg: val for arg, val in zip(block_iter_args, iter_args, strict=True)
+            }
+            value_mapper[i_arg] = i_op.result
+
+            for inner_op in op.body.block.ops:
+                if isinstance(inner_op, scf.YieldOp):
+                    iter_args = tuple(
+                        value_mapper.get(val, val) for val in inner_op.arguments
+                    )
+                else:
+                    inner_op_clone = inner_op.clone(value_mapper)
+                    rewriter.insert_op(inner_op_clone, InsertPoint.before(op))
+
+        op.results[0].replace_by(inner_op_clone.results[0])
+        op.detach()
+        op.erase()
+
+
+        print_mlir(op, "FDX: UnrollLoopPattern: Attempting to unroll loop.")
+
+        print_ssa_values(iter_args, "FDX: UnrollLoopPattern: Final iter args:")

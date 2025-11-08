@@ -632,6 +632,10 @@ class TestTreeTraversalPass:
         params = [np.pi / 2.5, np.pi / 3, -np.pi / 3.5]
 
         def obs_tape(x, y, z, reset=False, postselect=None):
+
+            for i in range(3):
+                qml.measure(i, reset=reset)
+
             qml.RX(x, 0)
             qml.RZ(np.pi / 8, 0)
 
@@ -661,8 +665,6 @@ class TestTreeTraversalPass:
                 qml.RZ(-np.pi / 8, 1)
 
             qml.cond(m1, ansatz_m1_0_true, ansatz_m1_0_false)()
-
-            # return m0, m1
 
         # Measures:
         # Without shots
