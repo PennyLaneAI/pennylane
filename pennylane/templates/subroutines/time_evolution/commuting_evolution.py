@@ -209,7 +209,7 @@ class CommutingEvolution(Operation):
 
 
 def _commuting_evolution_resources(words: tuple[PauliWord]):
-    return {resource_rep(ApproxTimeEvolution, words=words, n=1)}
+    return {resource_rep(ApproxTimeEvolution, words=words, n=1): 1}
 
 
 @register_resources(_commuting_evolution_resources)
