@@ -82,6 +82,10 @@
   work wire and :class:`pennylane.TemporaryAND` operators to reduce the resources needed.
   [(#8549)](https://github.com/PennyLaneAI/pennylane/pull/8549)
 
+* Scipy sparse matrices can now be passed directly to :func:`~pennylane.pauli_decompose` without
+  manual conversion to dense arrays.
+  [(#8612)](https://github.com/PennyLaneAI/pennylane/pull/8612)
+
 <h3>Breaking changes 💔</h3>
 
 * Providing ``num_steps`` to :func:`pennylane.evolve`, :func:`pennylane.exp`, :class:`pennylane.ops.Evolution`,
@@ -347,6 +351,7 @@ Astral Cai,
 Marcus Edwards,
 Lillian Frederiksen,
 Soran Jahangiri,
+Jacob Kitchen,
 Christina Lee,
 Joseph Lee,
 Gabriela Sanchez Diaz,
