@@ -394,7 +394,6 @@ class TestDecomposeGraphEnabled:
         """Tests decomposing an adjoint operation."""
 
         class CustomOp(Operation):  # pylint: disable=too-few-public-methods
-
             resource_keys = set()
 
             @property
@@ -431,14 +430,13 @@ class TestDecomposeGraphEnabled:
         """Tests that circuits and decomposition rules containing MCMs are supported."""
 
         class CustomOp(Operation):  # pylint: disable=too-few-public-methods
-
             resource_keys = set()
 
             @property
             def resource_params(self) -> dict:
                 return {}
 
-        @qml.register_resources({qml.H: 1, qml.X: 1, "measure": 1})
+        @qml.register_resources({qml.H: 1, qml.X: 1, MidMeasure: 1})
         def _custom_decomp(wires, **_):
             qml.H(wires[0])
             m0 = qml.measure(wires[0])
