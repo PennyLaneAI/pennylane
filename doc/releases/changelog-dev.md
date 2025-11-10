@@ -198,7 +198,7 @@
 
 <h3>Internal changes ⚙️</h3>
 
-* Updated documents check to run on pull requests on `*-docs` branches. [(#8590)](https://github.com/PennyLaneAI/pennylane/pull/8590)
+* Updated documents check to run on pull requests on `v[0-9]+\.[0-9]+\.[0-9]+-docs` branches. [(#8590)](https://github.com/PennyLaneAI/pennylane/pull/8590)
 
 * The `grad` and `jacobian` primitives now store the function under `fn`. There is also now a single `jacobian_p`
   primitive for use in program capture.
