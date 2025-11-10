@@ -18,8 +18,6 @@ from functools import reduce, singledispatch
 from itertools import product
 from operator import matmul
 
-import numpy as np
-
 import pennylane as qml
 from pennylane.math.utils import is_abstract
 from pennylane.ops import Identity, LinearCombination, PauliX, PauliY, PauliZ, Prod, SProd, Sum
