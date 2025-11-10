@@ -28,7 +28,7 @@ from pennylane.decomposition import (
 )
 from pennylane.math import is_abstract
 from pennylane.operation import Operation, Operator
-from pennylane.ops import CNOT, Hadamard, QubitUnitary, cond
+from pennylane.ops import CNOT, Hadamard, QubitUnitary
 from pennylane.queuing import QueuingManager, apply
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
@@ -517,7 +517,7 @@ def _up_to_last_layer(
 
         accumulator = []
         for operator in ops:
-            for wire_index in range(len(operator.wires)):
+            for wire_index in range(len(operator.wires)):  # pylint: disable=consider-using-enumerate
 
                 if has_jax and capture.enabled() and isinstance(operator.wires, Wires):
                     wire = operator.wires.labels[wire_index]
