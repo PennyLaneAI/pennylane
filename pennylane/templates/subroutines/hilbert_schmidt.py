@@ -517,9 +517,9 @@ def _up_to_last_layer(
 
         accumulator = []
         for operator in ops:
-            for wire_index in range(
+            for wire_index in range(  # pylint: disable=consider-using-enumerate
                 len(operator.wires)
-            ):  # pylint: disable=consider-using-enumerate
+            ):
 
                 if has_jax and capture.enabled() and isinstance(operator.wires, Wires):
                     wire = operator.wires.labels[wire_index]
