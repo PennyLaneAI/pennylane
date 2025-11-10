@@ -18,13 +18,26 @@ import copy
 from collections import defaultdict
 from collections.abc import Iterable
 
-from pennylane.decomposition import CompressedResourceOp, resource_rep
+from pennylane import capture
+from pennylane.control_flow import for_loop
+from pennylane.decomposition import (
+    CompressedResourceOp,
+    add_decomps,
+    register_resources,
+    resource_rep,
+)
 from pennylane.math import is_abstract
 from pennylane.operation import Operation, Operator
-from pennylane.ops import CNOT, Hadamard, QubitUnitary
+from pennylane.ops import CNOT, Hadamard, QubitUnitary, cond
 from pennylane.queuing import QueuingManager, apply
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
+
+has_jax = True
+try:
+    import jax.numpy as jnp
+except ModuleNotFoundError:  # pragma: no cover
+    has_jax = False  # pragma: no cover
 
 
 class HilbertSchmidt(Operation):
@@ -491,3 +504,86 @@ def _local_hilbert_schmidt_graph_resources(
 
     return resources
 
+
+@register_resources(_hilbert_schmidt_resources)
+def _hilbert_schmidt_decomposition(
+    *params: TensorLike,
+    wires: int | Iterable[int | str] | Wires,
+    U: Operator | Iterable[Operator],
+    V: Operator | Iterable[Operator],
+):
+    u_ops = (U,) if isinstance(U, Operator) else tuple(U)
+    v_ops = (V,) if isinstance(V, Operator) else tuple(V)
+
+    def collect_wires_in_order(ops):
+
+        @for_loop(len(ops))
+        def collect_u_wires(op_index, accumulator):
+            operator = ops[op_index]
+
+            @for_loop(len(operator.wires))
+            def wires_loop(wire_index, acc, op):
+                def append_to_accumulator(wire, a):
+                    a.append(wire)
+                    return a
+
+                if has_jax and capture.enabled() and isinstance(op, Wires):
+                    wire = op.labels[wire_index]
+                else:
+                    wire = op.wires[wire_index]
+
+                return cond(wire not in acc, append_to_accumulator, lambda w, a: a)(wire, acc)
+
+            return wires_loop(accumulator, operator)  # pylint: disable=no-value-for-parameter
+
+        return collect_u_wires([])  # pylint: disable=no-value-for-parameter
+
+    u_wires = collect_wires_in_order(u_ops)
+    v_wires = collect_wires_in_order(v_ops)
+
+    n_wires = len(u_wires + v_wires)
+    first_range = range(n_wires // 2)
+    second_range = range(n_wires // 2, n_wires)
+
+    if has_jax and capture.enabled():
+        if isinstance(wires, Wires):
+            wires = wires.labels
+        wires, u_wires, v_wires, first_range, second_range = (
+            jnp.array(wires),
+            jnp.array(u_wires),
+            jnp.array(v_wires),
+            jnp.array(first_range),
+            jnp.array(second_range),
+        )
+
+    @for_loop(len(first_range))
+    def layer_hadamards(i):
+        Hadamard(wires[i])
+
+    layer_hadamards()  # pylint: disable=no-value-for-parameter
+
+    @for_loop(min(len(first_range), len(second_range)))
+    def layer_cnots(j):
+        CNOT(wires=[wires[first_range[j]], wires[second_range[j]]])
+
+    layer_cnots()  # pylint: disable=no-value-for-parameter
+
+    @for_loop(len(u_ops))
+    def u_ops_loop(k):
+        apply(u_ops[k])
+
+    u_ops_loop()  # pylint: disable=no-value-for-parameter
+
+    @for_loop(len(v_ops))
+    def v_ops_loop(l):
+        op_v = v_ops[l]
+        mat = op_v.matrix().conjugate()
+        QubitUnitary(mat, wires=op_v.wires)
+
+    v_ops_loop()  # pylint: disable=no-value-for-parameter
+
+    layer_cnots()  # pylint: disable=no-value-for-parameter
+    layer_hadamards()  # pylint: disable=no-value-for-parameter
+
+
+add_decomps(HilbertSchmidt, _hilbert_schmidt_decomposition)
