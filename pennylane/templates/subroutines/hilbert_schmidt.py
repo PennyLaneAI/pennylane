@@ -15,8 +15,10 @@
 This submodule contains the templates for the Hilbert-Schmidt tests.
 """
 import copy
+from collections import defaultdict
 from collections.abc import Iterable
 
+from pennylane.decomposition import CompressedResourceOp, resource_rep
 from pennylane.math import is_abstract
 from pennylane.operation import Operation, Operator
 from pennylane.ops import CNOT, Hadamard, QubitUnitary
@@ -101,6 +103,8 @@ class HilbertSchmidt(Operation):
 
     grad_method = None
 
+    resource_keys = {"num_wires", "u_reps", "v_wires"}
+
     @classmethod
     def _primitive_bind_call(cls, V, U, **kwargs):  # kwarg is id
         # pylint: disable=arguments-differ
@@ -116,6 +120,29 @@ class HilbertSchmidt(Operation):
     @classmethod
     def _unflatten(cls, data, _) -> "HilbertSchmidt":
         return cls(*data)
+
+    @property
+    def resource_params(self) -> dict:
+        return {
+            "num_wires": len(self.hyperparameters["U"] + self.hyperparameters["V"]),
+            "u_reps": (
+                [
+                    resource_rep(type(op_u), **op_u.resource_params)
+                    for op_u in self.hyperparameters["U"]
+                ]
+                if isinstance(self.hyperparameters["U"], Operator)
+                else [
+                    resource_rep(
+                        type(self.hyperparameters["U"]), **self.hyperparameters["U"].resource_params
+                    )
+                ]
+            ),
+            "v_wires": (
+                [len(op_v.wires) for op_v in self.hyperparameters["V"]]
+                if isinstance(self.hyperparameters["V"], Iterable)
+                else [len(self.hyperparameters["V"].wires)]
+            ),
+        }
 
     def __init__(
         self,
@@ -390,3 +417,27 @@ if LocalHilbertSchmidt._primitive is not None:
         V = ops[:num_v_ops]
         U = ops[num_v_ops:]
         return type.__call__(LocalHilbertSchmidt, V, U, **kwargs)
+
+
+def _hilbert_schmidt_resources(
+    num_wires: int, u_reps: list[CompressedResourceOp], v_wires: list[int]
+):
+    num_first_range = num_wires // 2
+    num_second_range = num_wires - num_wires // 2
+
+    resources = defaultdict(int)
+
+    resources.update(
+        {
+            resource_rep(Hadamard): num_first_range * 2,
+            resource_rep(CNOT): min(num_first_range, num_second_range) * 2,
+        }
+    )
+
+    for op_rep in u_reps:
+        resources[op_rep] += 1
+
+    for n_wires in v_wires:
+        resources[resource_rep(QubitUnitary, num_wires=n_wires)] += 1
+
+    return resources
