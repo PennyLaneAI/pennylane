@@ -17,9 +17,8 @@ Contains the CommutingEvolution template.
 # pylint: disable-msg=too-many-arguments
 import copy
 
-from pennylane.decomposition import resource_rep, register_resources, add_decomps
-
 from pennylane import math
+from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.operation import Operation
 from pennylane.ops.op_math.linear_combination import Hamiltonian
 from pennylane.pauli import PauliWord
@@ -210,13 +209,13 @@ class CommutingEvolution(Operation):
 
 
 def _commuting_evolution_resources(words: tuple[PauliWord]):
-    return {
-        resource_rep(ApproxTimeEvolution, words=words, n=1)
-    }
+    return {resource_rep(ApproxTimeEvolution, words=words, n=1)}
 
 
 @register_resources(_commuting_evolution_resources)
-def _commuting_evolution_decomposition(time: list, *_, wires: WiresLike, hamiltonian: Hamiltonian, **__):  # pylint: disable=unused-argument
+def _commuting_evolution_decomposition(
+    time: list, *_, wires: WiresLike, hamiltonian: Hamiltonian, **__
+):  # pylint: disable=unused-argument
     ApproxTimeEvolution(hamiltonian, time, 1)
 
 
