@@ -415,7 +415,7 @@ class LocalHilbertSchmidt(HilbertSchmidt):
     @property
     def resource_params(self) -> dict:
         return {
-            "num_wires": len(self.hyperparameters["U"] + self.hyperparameters["V"]),
+            "num_wires": len(self.wires),
             "u_reps": (
                 [
                     resource_rep(type(op_u), **op_u.resource_params)
@@ -515,26 +515,19 @@ def _up_to_last_layer(
 
     def collect_wires_in_order(ops):
 
-        @for_loop(len(ops))
-        def collect_u_wires(op_index, accumulator):
-            operator = ops[op_index]
+        accumulator = []
+        for operator in ops:
+            for wire_index in range(len(operator.wires)):
 
-            @for_loop(len(operator.wires))
-            def wires_loop(wire_index, acc, op):
-                def append_to_accumulator(wire, a):
-                    a.append(wire)
-                    return a
-
-                if has_jax and capture.enabled() and isinstance(op, Wires):
-                    wire = op.labels[wire_index]
+                if has_jax and capture.enabled() and isinstance(operator.wires, Wires):
+                    wire = operator.wires.labels[wire_index]
                 else:
-                    wire = op.wires[wire_index]
+                    wire = operator.wires[wire_index]
 
-                return cond(wire not in acc, append_to_accumulator, lambda w, a: a)(wire, acc)
+                if wire not in accumulator:
+                    accumulator.append(wire)
 
-            return wires_loop(accumulator, operator)  # pylint: disable=no-value-for-parameter
-
-        return collect_u_wires([])  # pylint: disable=no-value-for-parameter
+        return accumulator
 
     u_wires = collect_wires_in_order(u_ops)
     v_wires = collect_wires_in_order(v_ops)
@@ -566,19 +559,12 @@ def _up_to_last_layer(
 
     layer_cnots()  # pylint: disable=no-value-for-parameter
 
-    @for_loop(len(u_ops))
-    def u_ops_loop(k):
-        apply(u_ops[k])
+    for op_u in u_ops:
+        apply(op_u)
 
-    u_ops_loop()  # pylint: disable=no-value-for-parameter
-
-    @for_loop(len(v_ops))
-    def v_ops_loop(l):
-        op_v = v_ops[l]
+    for op_v in v_ops:
         mat = op_v.matrix().conjugate()
         QubitUnitary(mat, wires=op_v.wires)
-
-    v_ops_loop()  # pylint: disable=no-value-for-parameter
 
     return n_wires, first_range, second_range
 
