@@ -120,14 +120,10 @@ class TestCaptureTransforms:
         assert (transform_eqn := jaxpr.eqns[0]).primitive == z_to_hadamard._primitive
 
         params = transform_eqn.params
-        # JAX 0.7.2 keeps slices as slice objects (not tuples like in 0.7.0)
-        assert params["args_slice"] == slice(0, 1, None)
-        assert params["consts_slice"] == slice(1, 1, None)
-        assert params["targs_slice"] == slice(1, None, None)
-        # Dicts are also converted to tuples
-        from pennylane.capture.custom_primitives import _restore_dict
-
-        assert _restore_dict(params["tkwargs"]) == tkwargs
+        assert params["args_slice"] == slice(0, 1)
+        assert params["consts_slice"] == slice(1, 1)
+        assert params["targs_slice"] == slice(1, None)
+        assert params["tkwargs"] == tkwargs
 
         inner_jaxpr = params["inner_jaxpr"]
         expected_jaxpr = jax.make_jaxpr(func)(*args).jaxpr
@@ -151,14 +147,10 @@ class TestCaptureTransforms:
         assert (transform_eqn := jaxpr.eqns[0]).primitive == z_to_hadamard._primitive
 
         params = transform_eqn.params
-        # JAX 0.7.2 keeps slices as slice objects (not tuples like in 0.7.0)
-        assert params["args_slice"] == slice(0, 2, None)
-        assert params["consts_slice"] == slice(2, 2, None)
-        assert params["targs_slice"] == slice(2, None, None)
-        # Dicts are also converted to tuples
-        from pennylane.capture.custom_primitives import _restore_dict
-
-        assert _restore_dict(params["tkwargs"]) == tkwargs
+        assert params["args_slice"] == slice(0, 2)
+        assert params["consts_slice"] == slice(2, 2)
+        assert params["targs_slice"] == slice(2, None)
+        assert params["tkwargs"] == tkwargs
 
         inner_jaxpr = params["inner_jaxpr"]
         expected_jaxpr = jax.make_jaxpr(func)(*args).jaxpr
@@ -239,24 +231,19 @@ class TestCaptureTransforms:
         assert (transform_eqn1 := jaxpr.eqns[0]).primitive == z_to_hadamard._primitive
 
         params1 = transform_eqn1.params
-        # JAX 0.7.2 keeps slices as slice objects (not tuples like in 0.7.0)
-        from pennylane.capture.custom_primitives import _restore_dict
-
-        assert params1["args_slice"] == slice(0, 1, None)
-        assert params1["consts_slice"] == slice(1, 1, None)
-        assert params1["targs_slice"] == slice(1, None, None)
-        # Dicts are also converted to tuples
-        assert _restore_dict(params1["tkwargs"]) == tkwargs1
+        assert params1["args_slice"] == slice(0, 1)
+        assert params1["consts_slice"] == slice(1, 1)
+        assert params1["targs_slice"] == slice(1, None)
+        assert params1["tkwargs"] == tkwargs1
 
         inner_jaxpr = params1["inner_jaxpr"]
         assert (transform_eqn2 := inner_jaxpr.eqns[0]).primitive == expval_z_obs_to_x_obs._primitive
 
         params2 = transform_eqn2.params
-        # JAX 0.7.2 keeps slices as slice objects (not tuples like in 0.7.0)
-        assert params2["args_slice"] == slice(0, 1, None)
-        assert params2["consts_slice"] == slice(1, 1, None)
-        assert params2["targs_slice"] == slice(1, None, None)
-        assert _restore_dict(params2["tkwargs"]) == tkwargs2
+        assert params2["args_slice"] == slice(0, 1)
+        assert params2["consts_slice"] == slice(1, 1)
+        assert params2["targs_slice"] == slice(1, None)
+        assert params2["tkwargs"] == tkwargs2
 
         inner_inner_jaxpr = params2["inner_jaxpr"]
         expected_jaxpr = jax.make_jaxpr(func)(*args).jaxpr
