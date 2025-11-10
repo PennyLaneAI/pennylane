@@ -137,7 +137,7 @@ class HilbertSchmidt(Operation):
     @property
     def resource_params(self) -> dict:
         return {
-            "num_wires": len(self.hyperparameters["U"] + self.hyperparameters["V"]),
+            "num_wires": len(self.wires),
             "u_reps": (
                 [
                     resource_rep(type(op_u), **op_u.resource_params)
@@ -509,7 +509,7 @@ def _up_to_last_layer(
     wires: int | Iterable[int | str] | Wires,
     U: Operator | Iterable[Operator],
     V: Operator | Iterable[Operator],
-) -> tuple[int, Iterable, Iterable]:
+) -> tuple[int, Iterable, Iterable, list[int]]:
     u_ops = (U,) if isinstance(U, Operator) else tuple(U)
     v_ops = (V,) if isinstance(V, Operator) else tuple(V)
 
@@ -566,7 +566,7 @@ def _up_to_last_layer(
         mat = op_v.matrix().conjugate()
         QubitUnitary(mat, wires=op_v.wires)
 
-    return n_wires, first_range, second_range
+    return n_wires, first_range, second_range, wires
 
 
 @register_resources(_hilbert_schmidt_resources)
@@ -576,7 +576,7 @@ def _hilbert_schmidt_decomposition(
     U: Operator | Iterable[Operator],
     V: Operator | Iterable[Operator],
 ):  # pylint: disable=unused-argument
-    _, first_range, second_range = _up_to_last_layer(wires, U, V)
+    _, first_range, second_range, wires = _up_to_last_layer(wires, U, V)
 
     @for_loop(min(len(first_range), len(second_range)))
     def layer_cnots(j):
@@ -598,7 +598,7 @@ def _local_hilbert_schmidt_decomposition(
     U: Operator | Iterable[Operator],
     V: Operator | Iterable[Operator],
 ):  # pylint: disable=unused-argument
-    n_wires, _, _ = _up_to_last_layer(wires, U, V)
+    n_wires, _, _, wires = _up_to_last_layer(wires, U, V)
 
     CNOT(wires=[wires[0], wires[n_wires // 2]])
     Hadamard(wires[0])

@@ -22,7 +22,6 @@ import pytest
 import pennylane as qml
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
-
 # pylint: disable=expression-not-assigned
 
 
@@ -424,6 +423,22 @@ class TestHilbertSchmidt:
         jit_circuit = jax.jit(circuit)
         assert qml.math.allclose(circuit(np.array([np.pi / 2])), jit_circuit(np.array([np.pi / 2])))
 
+    DECOMP_PARAMS = [
+        (qml.SWAP(wires=[0, 1]), [qml.RZ(0.1, wires=2), qml.CNOT(wires=[2, 3])]),
+        ([qml.RY(0.1, wires=2), qml.SWAP(wires=[2, 3])], qml.CNOT(wires=[0, 1])),
+        (
+            [qml.RX(0.1, wires=0), qml.SWAP(wires=[1, 2])],
+            [qml.RZ(0.1, wires=3), qml.CNOT(wires=[5, 4])],
+        ),
+    ]
+
+    @pytest.mark.capture
+    @pytest.mark.parametrize(("U", "V"), DECOMP_PARAMS)
+    def test_decomposition_new(self, U, V):
+        op = qml.HilbertSchmidt(V, U)
+        for rule in qml.list_decomps(qml.HilbertSchmidt):
+            _test_decomposition_rule(op, rule)
+
 
 class TestLocalHilbertSchmidt:
     """Tests for the Local Hilbert-Schmidt template."""
@@ -578,7 +593,10 @@ class TestLocalHilbertSchmidt:
     DECOMP_PARAMS = [
         (qml.SWAP(wires=[0, 1]), [qml.RZ(0.1, wires=2), qml.CNOT(wires=[2, 3])]),
         ([qml.RY(0.1, wires=2), qml.SWAP(wires=[2, 3])], qml.CNOT(wires=[0, 1])),
-        ([qml.RX(0.1, wires=0), qml.SWAP(wires=[1, 2])], [qml.RZ(0.1, wires=3), qml.CNOT(wires=[5, 4])]),
+        (
+            [qml.RX(0.1, wires=0), qml.SWAP(wires=[1, 2])],
+            [qml.RZ(0.1, wires=3), qml.CNOT(wires=[5, 4])],
+        ),
     ]
 
     @pytest.mark.capture
