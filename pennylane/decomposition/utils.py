@@ -26,6 +26,7 @@ OP_NAME_ALIASES = {
     "I": "Identity",
     "H": "Hadamard",
     "measure": "MidMeasureMP",
+    "MidMeasure": "MidMeasureMP",
 }
 
 
