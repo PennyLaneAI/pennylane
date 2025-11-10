@@ -354,6 +354,8 @@ class LocalHilbertSchmidt(HilbertSchmidt):
         np.float64(0.5...)
     """
 
+    resource_keys = {"num_wires", "u_reps", "v_wires"}
+
     @staticmethod
     def compute_decomposition(
         *params: TensorLike,
@@ -396,6 +398,29 @@ class LocalHilbertSchmidt(HilbertSchmidt):
         decomp_ops.extend((CNOT(wires=[wires[0], wires[n_wires // 2]]), Hadamard(wires[0])))
 
         return decomp_ops
+
+    @property
+    def resource_params(self) -> dict:
+        return {
+            "num_wires": len(self.hyperparameters["U"] + self.hyperparameters["V"]),
+            "u_reps": (
+                [
+                    resource_rep(type(op_u), **op_u.resource_params)
+                    for op_u in self.hyperparameters["U"]
+                ]
+                if isinstance(self.hyperparameters["U"], Operator)
+                else [
+                    resource_rep(
+                        type(self.hyperparameters["U"]), **self.hyperparameters["U"].resource_params
+                    )
+                ]
+            ),
+            "v_wires": (
+                [len(op_v.wires) for op_v in self.hyperparameters["V"]]
+                if isinstance(self.hyperparameters["V"], Iterable)
+                else [len(self.hyperparameters["V"].wires)]
+            ),
+        }
 
     def __copy__(self):
         clone = LocalHilbertSchmidt.__new__(LocalHilbertSchmidt)
@@ -441,3 +466,28 @@ def _hilbert_schmidt_resources(
         resources[resource_rep(QubitUnitary, num_wires=n_wires)] += 1
 
     return resources
+
+
+def _local_hilbert_schmidt_graph_resources(
+    num_wires: int, u_reps: list[CompressedResourceOp], v_wires: list[int]
+):
+    num_first_range = num_wires // 2
+    num_second_range = num_wires - num_wires // 2
+
+    resources = defaultdict(int)
+
+    resources.update(
+        {
+            resource_rep(Hadamard): num_first_range + 1,
+            resource_rep(CNOT): min(num_first_range, num_second_range) + 1,
+        }
+    )
+
+    for op_rep in u_reps:
+        resources[op_rep] += 1
+
+    for n_wires in v_wires:
+        resources[resource_rep(QubitUnitary, num_wires=n_wires)] += 1
+
+    return resources
+
