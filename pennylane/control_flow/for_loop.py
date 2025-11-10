@@ -404,7 +404,11 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
         except Exception as e:  # pylint: disable=broad-exception-caught
             logger.exception(e, exc_info=True)
             warnings.warn(
-                f"Structured capture of qml.for_loop failed with error:\n\n{e}.\n\nFull error logged at exception level. Use qml.logging.enable_logging() to view.",
+                (
+                    "Structured capture of qml.for_loop failed with error:"
+                    f"\n\n{e}.\n\nFull error logged at exception level. "
+                    "Use qml.logging.enable_logging() to view."
+                ),
                 CaptureWarning,
             )
             return self._call_capture_disabled(*init_state)
