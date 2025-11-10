@@ -18,11 +18,11 @@ written using xDSL."""
 import math
 from dataclasses import dataclass
 
-from xdsl import context, passes, pattern_rewriter
+from xdsl import builder, context, passes, pattern_rewriter
 from xdsl.dialects import arith, builtin, func, scf
 from xdsl.dialects.scf import ForOp, IfOp, WhileOp
 from xdsl.ir import SSAValue
-from xdsl.ir.core import OpResult
+from xdsl.ir.core import Block, OpResult, Region
 from xdsl.rewriter import InsertPoint
 
 from ...dialects.mbqc import (
@@ -60,13 +60,72 @@ class ConvertToMBQCFormalismPass(passes.ModulePass):
 
     name = "convert-to-mbqc-formalism"
 
+    def _convert_h_subroutine(self):
+        input_types = (QubitType(),)
+        output_types = (QubitType(),)
+        block = Block(arg_types=input_types)
+
+        with builder.ImplicitBuilder(block):
+            in_qubits = [block.args[0]]
+            adj_matrix = generate_adj_matrix("Hadamard")
+            adj_matrix_op = arith.ConstantOp(
+                builtin.DenseIntOrFPElementsAttr.from_list(
+                    type=builtin.TensorType(
+                        builtin.IntegerType(1), shape=(len(adj_matrix),)
+                    ),
+                    data=adj_matrix,
+                )
+            )
+
+            num_aux_wres = get_num_aux_wires("Hadamard")
+
+            graph_state_prep_op = GraphStatePrepOp(adj_matrix_op.result, "Hadamard", "CZ")
+
+            graph_state_reg = graph_state_prep_op.results[0]
+
+            graph_qubit_dict = {}
+            # Extract qubit from the graph state reg
+            for i in range(num_aux_wres):
+                extract_op = ExtractOp(graph_state_reg, i)
+
+                # Note the following line maps the aux qubit index in the register to the
+                # standard context book MBQC representation. Note that auxiliary qubits in
+                # the graph state for one qubit gates only hit the `if` branch as `i` is
+                # always less than `4`, while the auxiliary qubits in graph state for a `CNOT`
+                # gate with an index >= 7 would hit the `else` branch.
+                key = i + 2 if i < 7 else i + 3
+
+                graph_qubit_dict[key] = extract_op.results[0]
+
+            cz_op = CustomOp(
+                in_qubits=[in_qubits[0], graph_qubit_dict[2]], gate_name="CZ"
+            )
+
+            graph_qubit_dict[1], graph_qubit_dict[2] = cz_op.results
+            
+
+            for node in graph_qubit_dict:
+                if node not in [5]:
+                    dealloc_qubit_op = DeallocQubitOp(graph_qubit_dict[node])
+            
+            func.ReturnOp(graph_qubit_dict[5])
+
+        region = Region([block])
+        funcOp = func.FuncOp("convert_hadamard_to_mbqc", (input_types, output_types), region=region)
+        return funcOp
+
     # pylint: disable=no-self-use
     def apply(self, _ctx: context.Context, module: builtin.ModuleOp) -> None:
         """Apply the convert-to-mbqc-formalism pass."""
+        # Insert subroutines for MBQC gate sets
+
+        h_funcOp = self._convert_h_subroutine()
+        module.regions[0].blocks.first.add_op(h_funcOp)
+
         pattern_rewriter.PatternRewriteWalker(
             pattern_rewriter.GreedyRewritePatternApplier(
                 [
-                    ConvertToMBQCFormalismPattern(),
+                    ConvertToMBQCFormalismPattern({"hadamard":h_funcOp}),
                 ]
             ),
             apply_recursively=False,
@@ -80,6 +139,9 @@ class ConvertToMBQCFormalismPattern(
     pattern_rewriter.RewritePattern
 ):  # pylint: disable=too-few-public-methods,no-self-use
     """RewritePattern for converting to the MBQC formalism."""
+
+    def __init__(self, subroutines_dict):
+        self.subroutine_dict = subroutines_dict
 
     def _prep_graph_state(
         self,
@@ -573,100 +635,111 @@ class ConvertToMBQCFormalismPattern(
             two_wire_adj_matrix_op = None
             for op in region.ops:
                 # TODOs: Refactor the code below in this loop into separate functions
-                if isinstance(op, CustomOp) and op.gate_name.data in _MBQC_ONE_QUBIT_GATES:
-                    # Allocate auxiliary qubits and entangle them
-                    if one_wire_adj_matrix_op is None:
-                        adj_matrix = generate_adj_matrix(op.gate_name.data)
-                        one_wire_adj_matrix_op = arith.ConstantOp(
-                            builtin.DenseIntOrFPElementsAttr.from_list(
-                                type=builtin.TensorType(
-                                    builtin.IntegerType(1), shape=(len(adj_matrix),)
-                                ),
-                                data=adj_matrix,
-                            )
-                        )
-                        rewriter.insert_op(one_wire_adj_matrix_op, InsertPoint.before(op))
-
-                    graph_qubits_dict = self._prep_graph_state(one_wire_adj_matrix_op, op, rewriter)
-
-                    # Entangle the op.in_qubits[0] with the graph_qubits_dict[2]
-                    cz_op = CustomOp(
-                        in_qubits=[op.in_qubits[0], graph_qubits_dict[2]], gate_name="CZ"
+                if isinstance(op, CustomOp) and op.gate_name.data == "Hadamard":
+                    callOp = func.CallOp(
+                    builtin.SymbolRefAttr("convert_hadamard_to_mbqc"),
+                        [op.in_qubits[0]],
+                        self.subroutine_dict["hadamard"].function_type.outputs.data,
                     )
-                    rewriter.insert_op(cz_op, InsertPoint.before(op))
-
-                    # Update the graph qubit dict
-                    graph_qubits_dict[1], graph_qubits_dict[2] = cz_op.results
-
-                    # Insert measurement ops to the IR
-                    mres, graph_qubits_dict = self._queue_measurements(
-                        graph_qubits_dict, op, rewriter
-                    )
-
-                    # Insert byproduct ops to the IR
-                    graph_qubits_dict[5] = self._insert_byprod_corrections(
-                        mres, graph_qubits_dict[5], op, rewriter
-                    )
-
-                    # Deallocate the non-result auxiliary qubits and target qubit in the qreg
-                    self._deallocate_aux_qubits(graph_qubits_dict, [5], op, rewriter)
-
-                    # Replace all uses of output qubit of op with the result auxiliary qubit
-                    rewriter.replace_all_uses_with(op.results[0], graph_qubits_dict[5])
-                    # Remove op operation
+                    rewriter.insert_op(callOp, InsertPoint.before(op))
+                    rewriter.replace_all_uses_with(op.out_qubits[0], callOp.results[0])
                     rewriter.erase_op(op)
-                elif isinstance(op, CustomOp) and op.gate_name.data in _MBQC_TWO_QUBIT_GATES:
-                    # Allocate auxiliary qubits and entangle them
-                    if two_wire_adj_matrix_op is None:
-                        adj_matrix = generate_adj_matrix(op.gate_name.data)
-                        two_wire_adj_matrix_op = arith.ConstantOp(
-                            builtin.DenseIntOrFPElementsAttr.from_list(
-                                type=builtin.TensorType(
-                                    builtin.IntegerType(1), shape=(len(adj_matrix),)
-                                ),
-                                data=adj_matrix,
-                            )
-                        )
-                        rewriter.insert_op(two_wire_adj_matrix_op, InsertPoint.before(op))
-                    graph_qubits_dict = self._prep_graph_state(two_wire_adj_matrix_op, op, rewriter)
 
-                    # Entangle the op.in_qubits[0] with the graph_qubits_dict[2]
-                    cz_op = CustomOp(
-                        in_qubits=[op.in_qubits[0], graph_qubits_dict[2]], gate_name="CZ"
-                    )
-                    rewriter.insert_op(cz_op, InsertPoint.before(op))
-                    graph_qubits_dict[1], graph_qubits_dict[2] = cz_op.results
+                # elif isinstance(op, CustomOp) and op.gate_name.data in _MBQC_ONE_QUBIT_GATES:
+                #     # Allocate auxiliary qubits and entangle them
+                #     if one_wire_adj_matrix_op is None:
+                #         adj_matrix = generate_adj_matrix(op.gate_name.data)
+                #         one_wire_adj_matrix_op = arith.ConstantOp(
+                #             builtin.DenseIntOrFPElementsAttr.from_list(
+                #                 type=builtin.TensorType(
+                #                     builtin.IntegerType(1), shape=(len(adj_matrix),)
+                #                 ),
+                #                 data=adj_matrix,
+                #             )
+                #         )
+                #         rewriter.insert_op(one_wire_adj_matrix_op, InsertPoint.before(op))
 
-                    # Entangle op.in_qubits[1] with with the graph_qubits_dict[10] for a CNOT gate
-                    cz_op = CustomOp(
-                        in_qubits=[op.in_qubits[1], graph_qubits_dict[10]], gate_name="CZ"
-                    )
-                    rewriter.insert_op(cz_op, InsertPoint.before(op))
-                    graph_qubits_dict[9], graph_qubits_dict[10] = cz_op.results
+                #     graph_qubits_dict = self._prep_graph_state(one_wire_adj_matrix_op, op, rewriter)
 
-                    # Insert measurement ops to the IR
-                    mres, graph_qubits_dict = self._queue_measurements(
-                        graph_qubits_dict, op, rewriter
-                    )
+                #     # Entangle the op.in_qubits[0] with the graph_qubits_dict[2]
+                #     cz_op = CustomOp(
+                #         in_qubits=[op.in_qubits[0], graph_qubits_dict[2]], gate_name="CZ"
+                #     )
+                #     rewriter.insert_op(cz_op, InsertPoint.before(op))
 
-                    # Insert byproduct ops to the IR
-                    graph_qubits_dict[7], graph_qubits_dict[15] = self._insert_byprod_corrections(
-                        mres, [graph_qubits_dict[7], graph_qubits_dict[15]], op, rewriter
-                    )
+                #     # Update the graph qubit dict
+                #     graph_qubits_dict[1], graph_qubits_dict[2] = cz_op.results
 
-                    # Deallocate non-result aux_qubits and the target/control qubits in the qreg
-                    self._deallocate_aux_qubits(graph_qubits_dict, [7, 15], op, rewriter)
+                #     # Insert measurement ops to the IR
+                #     mres, graph_qubits_dict = self._queue_measurements(
+                #         graph_qubits_dict, op, rewriter
+                #     )
 
-                    # Replace all uses of output qubit of op with the result auxiliary qubit
-                    rewriter.replace_all_uses_with(op.results[0], graph_qubits_dict[7])
-                    rewriter.replace_all_uses_with(op.results[1], graph_qubits_dict[15])
-                    # Remove op operation
-                    rewriter.erase_op(op)
-                elif isinstance(op, GlobalPhaseOp) or (
-                    isinstance(op, CustomOp) and op.gate_name.data in _PAULIS
-                ):
-                    continue
+                #     # Insert byproduct ops to the IR
+                #     graph_qubits_dict[5] = self._insert_byprod_corrections(
+                #         mres, graph_qubits_dict[5], op, rewriter
+                #     )
+
+                #     # Deallocate the non-result auxiliary qubits and target qubit in the qreg
+                #     self._deallocate_aux_qubits(graph_qubits_dict, [5], op, rewriter)
+
+                #     # Replace all uses of output qubit of op with the result auxiliary qubit
+                #     rewriter.replace_all_uses_with(op.results[0], graph_qubits_dict[5])
+                #     # Remove op operation
+                #     rewriter.erase_op(op)
+                # elif isinstance(op, CustomOp) and op.gate_name.data in _MBQC_TWO_QUBIT_GATES:
+                #     # Allocate auxiliary qubits and entangle them
+                #     if two_wire_adj_matrix_op is None:
+                #         adj_matrix = generate_adj_matrix(op.gate_name.data)
+                #         two_wire_adj_matrix_op = arith.ConstantOp(
+                #             builtin.DenseIntOrFPElementsAttr.from_list(
+                #                 type=builtin.TensorType(
+                #                     builtin.IntegerType(1), shape=(len(adj_matrix),)
+                #                 ),
+                #                 data=adj_matrix,
+                #             )
+                #         )
+                #         rewriter.insert_op(two_wire_adj_matrix_op, InsertPoint.before(op))
+                #     graph_qubits_dict = self._prep_graph_state(two_wire_adj_matrix_op, op, rewriter)
+
+                #     # Entangle the op.in_qubits[0] with the graph_qubits_dict[2]
+                #     cz_op = CustomOp(
+                #         in_qubits=[op.in_qubits[0], graph_qubits_dict[2]], gate_name="CZ"
+                #     )
+                #     rewriter.insert_op(cz_op, InsertPoint.before(op))
+                #     graph_qubits_dict[1], graph_qubits_dict[2] = cz_op.results
+
+                #     # Entangle op.in_qubits[1] with with the graph_qubits_dict[10] for a CNOT gate
+                #     cz_op = CustomOp(
+                #         in_qubits=[op.in_qubits[1], graph_qubits_dict[10]], gate_name="CZ"
+                #     )
+                #     rewriter.insert_op(cz_op, InsertPoint.before(op))
+                #     graph_qubits_dict[9], graph_qubits_dict[10] = cz_op.results
+
+                #     # Insert measurement ops to the IR
+                #     mres, graph_qubits_dict = self._queue_measurements(
+                #         graph_qubits_dict, op, rewriter
+                #     )
+
+                #     # Insert byproduct ops to the IR
+                #     graph_qubits_dict[7], graph_qubits_dict[15] = self._insert_byprod_corrections(
+                #         mres, [graph_qubits_dict[7], graph_qubits_dict[15]], op, rewriter
+                #     )
+
+                #     # Deallocate non-result aux_qubits and the target/control qubits in the qreg
+                #     self._deallocate_aux_qubits(graph_qubits_dict, [7, 15], op, rewriter)
+
+                #     # Replace all uses of output qubit of op with the result auxiliary qubit
+                #     rewriter.replace_all_uses_with(op.results[0], graph_qubits_dict[7])
+                #     rewriter.replace_all_uses_with(op.results[1], graph_qubits_dict[15])
+                #     # Remove op operation
+                #     rewriter.erase_op(op)
+                # elif isinstance(op, GlobalPhaseOp) or (
+                #     isinstance(op, CustomOp) and op.gate_name.data in _PAULIS
+                # ):
+                #     continue
                 elif isinstance(op, CustomOp):
-                    raise NotImplementedError(
-                        f"{op.gate_name.data} cannot be converted to the MBQC formalism."
-                    )
+                    pass
+                    # raise NotImplementedError(
+                    #     f"{op.gate_name.data} cannot be converted to the MBQC formalism."
+                    # )
