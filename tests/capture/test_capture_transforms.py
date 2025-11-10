@@ -120,10 +120,13 @@ class TestCaptureTransforms:
         assert (transform_eqn := jaxpr.eqns[0]).primitive == z_to_hadamard._primitive
 
         params = transform_eqn.params
-        assert params["args_slice"] == slice(0, 1)
-        assert params["consts_slice"] == slice(1, 1)
-        assert params["targs_slice"] == slice(1, None)
-        assert params["tkwargs"] == tkwargs
+        # Slices are made hashable (slice -> tuple) by QmlPrimitive.bind() for Python 3.11 compatibility
+        from pennylane.capture import _restore_dict, _restore_slice
+        assert _restore_slice(params["args_slice"]) == slice(0, 1)
+        assert _restore_slice(params["consts_slice"]) == slice(1, 1)
+        assert _restore_slice(params["targs_slice"]) == slice(1, None)
+        # tkwargs is made hashable (dict -> tuple of tuples) by QmlPrimitive.bind()
+        assert _restore_dict(params["tkwargs"]) == tkwargs
 
         inner_jaxpr = params["inner_jaxpr"]
         expected_jaxpr = jax.make_jaxpr(func)(*args).jaxpr
@@ -147,10 +150,13 @@ class TestCaptureTransforms:
         assert (transform_eqn := jaxpr.eqns[0]).primitive == z_to_hadamard._primitive
 
         params = transform_eqn.params
-        assert params["args_slice"] == slice(0, 2)
-        assert params["consts_slice"] == slice(2, 2)
-        assert params["targs_slice"] == slice(2, None)
-        assert params["tkwargs"] == tkwargs
+        # Slices are made hashable (slice -> tuple) by QmlPrimitive.bind() for Python 3.11 compatibility
+        from pennylane.capture import _restore_dict, _restore_slice
+        assert _restore_slice(params["args_slice"]) == slice(0, 2)
+        assert _restore_slice(params["consts_slice"]) == slice(2, 2)
+        assert _restore_slice(params["targs_slice"]) == slice(2, None)
+        # tkwargs is made hashable (dict -> tuple of tuples) by QmlPrimitive.bind()
+        assert _restore_dict(params["tkwargs"]) == tkwargs
 
         inner_jaxpr = params["inner_jaxpr"]
         expected_jaxpr = jax.make_jaxpr(func)(*args).jaxpr
@@ -231,19 +237,22 @@ class TestCaptureTransforms:
         assert (transform_eqn1 := jaxpr.eqns[0]).primitive == z_to_hadamard._primitive
 
         params1 = transform_eqn1.params
-        assert params1["args_slice"] == slice(0, 1)
-        assert params1["consts_slice"] == slice(1, 1)
-        assert params1["targs_slice"] == slice(1, None)
-        assert params1["tkwargs"] == tkwargs1
+        # Slices are made hashable (slice -> tuple) by QmlPrimitive.bind() for Python 3.11 compatibility
+        from pennylane.capture import _restore_dict, _restore_slice
+        assert _restore_slice(params1["args_slice"]) == slice(0, 1)
+        assert _restore_slice(params1["consts_slice"]) == slice(1, 1)
+        assert _restore_slice(params1["targs_slice"]) == slice(1, None)
+        # tkwargs is made hashable (dict -> tuple of tuples) by QmlPrimitive.bind()
+        assert _restore_dict(params1["tkwargs"]) == tkwargs1
 
         inner_jaxpr = params1["inner_jaxpr"]
         assert (transform_eqn2 := inner_jaxpr.eqns[0]).primitive == expval_z_obs_to_x_obs._primitive
 
         params2 = transform_eqn2.params
-        assert params2["args_slice"] == slice(0, 1)
-        assert params2["consts_slice"] == slice(1, 1)
-        assert params2["targs_slice"] == slice(1, None)
-        assert params2["tkwargs"] == tkwargs2
+        assert _restore_slice(params2["args_slice"]) == slice(0, 1)
+        assert _restore_slice(params2["consts_slice"]) == slice(1, 1)
+        assert _restore_slice(params2["targs_slice"]) == slice(1, None)
+        assert _restore_dict(params2["tkwargs"]) == tkwargs2
 
         inner_inner_jaxpr = params2["inner_jaxpr"]
         expected_jaxpr = jax.make_jaxpr(func)(*args).jaxpr

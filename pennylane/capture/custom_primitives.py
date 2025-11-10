@@ -44,20 +44,22 @@ def _make_hashable(obj: Any) -> Any:
         Hashable version of the object
     """
 
-    # First, check if the object is already hashable
-    try:
-        hash(obj)
-        return obj
-    except TypeError:
-        pass
-
     # Import here to avoid circular dependency and only when needed
     # pylint: disable=import-outside-toplevel,too-many-return-statements
     import jax
     import numpy as np
 
+    # Check slice BEFORE hash() because slice is hashable in Python 3.12+ but not in 3.11
+    # We need consistent behavior across Python versions for CI compatibility
     if isinstance(obj, slice):
         return (obj.start, obj.stop, obj.step)
+
+    # Check if the object is already hashable
+    try:
+        hash(obj)
+        return obj
+    except TypeError:
+        pass
 
     # Check if obj is a JAX tracer - these are already hashable, don't convert
     # Must check before Array check since tracers can also be Array instances
@@ -165,7 +167,13 @@ def _restore_list(obj: Any) -> list:
 # pylint: disable=abstract-method,too-few-public-methods
 class QmlPrimitive(Primitive):
     """A subclass for JAX's Primitive that differentiates between different
-    classes of primitives and automatically makes parameters hashable for JAX 0.7.0+."""
+    classes of primitives and automatically makes parameters hashable for JAX 0.7.0+.
+    
+    Note: With kwargs-as-inputs architecture, we still need hashable parameters for
+    JAX primitives, but we no longer bake kwargs into closures using functools.partial.
+    Instead, we pass kwargs directly to make_jaxpr, which eliminates closure hashability
+    issues while still requiring primitive parameters to be hashable.
+    """
 
     _prim_type: PrimitiveType = PrimitiveType.DEFAULT
 
