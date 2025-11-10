@@ -115,6 +115,8 @@ class CommutingEvolution(Operation):
 
     grad_method = None
 
+    resource_keys = {"words"}
+
     def _flatten(self):
         h = self.hyperparameters["hamiltonian"]
         data = (self.data[0], h)
