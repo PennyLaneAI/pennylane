@@ -39,6 +39,8 @@ Not supported features:
         return qml.expval(Z(0)), qml.expval(X(1))
     - qml.expval(mcm_result)
 """
+
+
 class TestTreeTraversalPass:
     """Unit tests for TreeTraversalPass."""
 
@@ -617,12 +619,15 @@ class TestTreeTraversalPass:
     # @pytest.mark.parametrize("postselect", [None,0, 1])
     @pytest.mark.parametrize("reset", [False])
     # @pytest.mark.parametrize("reset", [False, True])
-    @pytest.mark.parametrize("measure_f", [
-        lambda obs: qml.expval(qml.Z(0)),
-        lambda obs: qml.expval(qml.Y(0)),
-        lambda obs: qml.expval(qml.Z(1)),
-        lambda obs: qml.expval(qml.Y(1)),
-    ])
+    @pytest.mark.parametrize(
+        "measure_f",
+        [
+            lambda : qml.expval(qml.Z(0)),
+            lambda : qml.expval(qml.Y(0)),
+            lambda : qml.expval(qml.Z(1)),
+            lambda : qml.expval(qml.Y(1)),
+        ],
+    )
     def test_multiple_measurements_and_reset(self, shots, postselect, reset, measure_f, seed):
         """Tests that DefaultQubit handles a circuit with a single mid-circuit measurement with reset
         and a conditional gate. Multiple measurements of the mid-circuit measurement value are
@@ -658,8 +663,9 @@ class TestTreeTraversalPass:
             m1 = qml.measure(1, postselect=postselect)
 
             def ansatz_m1_0_true():
-                qml.RX( np.pi / 8, 1)
-                qml.RZ( np.pi / 8, 1)
+                qml.RX(np.pi / 8, 1)
+                qml.RZ(np.pi / 8, 1)
+
             def ansatz_m1_0_false():
                 qml.RX(-np.pi / 8, 1)
                 qml.RZ(-np.pi / 8, 1)
@@ -681,7 +687,7 @@ class TestTreeTraversalPass:
         @qml.qnode(dev)
         def qjit_func(x, y, z):
             obs_tape(x, y, z, reset=reset, postselect=postselect)
-            return measure_f(None)
+            return measure_f()
 
         results0 = qjit_func(*params)
 
@@ -693,7 +699,7 @@ class TestTreeTraversalPass:
         @qml.qnode(dev, mcm_method="deferred")
         def ref_func(x, y, z):
             obs_tape(x, y, z, reset=reset, postselect=postselect)
-            return measure_f(None)
+            return measure_f()
 
         results1 = ref_func(*params)
 

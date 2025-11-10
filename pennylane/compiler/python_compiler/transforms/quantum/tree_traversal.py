@@ -16,20 +16,21 @@
 
 from dataclasses import dataclass, field
 from itertools import chain
-from typing import Type, TypeVar, Tuple, Dict, List
+from typing import Dict, List, Tuple, Type, TypeVar
 
 from xdsl import context, passes
 from xdsl.dialects import arith, builtin, func, memref, scf, tensor
-from xdsl.ir import Block, Operation, Region, SSAValue
+from xdsl.ir import Block, BlockArgument, Operation, Region, SSAValue
 from xdsl.passes import ModulePass
 from xdsl.pattern_rewriter import PatternRewriter, RewritePattern, op_type_rewrite_pattern
-from xdsl.rewriter import BlockInsertPoint, InsertPoint
 from xdsl.printer import Printer
-
+from xdsl.rewriter import BlockInsertPoint, InsertPoint
+from xdsl.transforms.canonicalize import CanonicalizationRewritePattern
+from xdsl.transforms.common_subexpression_elimination import cse
+from xdsl.transforms.dead_code_elimination import RemoveUnusedOperations
 
 from pennylane.compiler.python_compiler import compiler_transform
-from pennylane.compiler.python_compiler.dialects import quantum
-from pennylane.compiler.python_compiler.dialects import stablehlo
+from pennylane.compiler.python_compiler.dialects import quantum, stablehlo
 
 
 ##############################################################################
@@ -59,11 +60,12 @@ def initialize_memref_with_value(dest: SSAValue, value: SSAValue, size: int | SS
     )
     return (c0_index, c1_index, for_op)
 
+
 def print_mlir(op, msg="", should_print: bool = True):
     should_print = False
     if should_print:
         printer = Printer()
-        print("-"*100)
+        print("-" * 100)
         print(f"// Start || {msg}")
         if isinstance(op, Region):
             printer.print_region(op)
@@ -72,14 +74,16 @@ def print_mlir(op, msg="", should_print: bool = True):
         elif isinstance(op, Operation):
             printer.print_op(op)
         print(f"\n// End {msg}")
-        print("-"*100)
+        print("-" * 100)
 
-def print_ssa_values(values, msg="SSA Values || ", should_print:bool = True):
+
+def print_ssa_values(values, msg="SSA Values || ", should_print: bool = True):
     should_print = False
     if should_print:
         print(f"// {msg}")
         for val in values:
             print(f"  - {val}")
+
 
 @dataclass
 class ProgramSegment:
@@ -112,11 +116,19 @@ class TreeTraversalPass(ModulePass):
         for op in module.ops:
             if isinstance(op, func.FuncOp) and "qnode" in op.attributes:
                 rewriter = PatternRewriter(op)
-                UnrollLoopPattern().match_and_rewrite(op, rewriter)
+
+                unroll_pattern = UnrollLoopPattern()
+                unroll_pattern.match_and_rewrite(op, rewriter)
+
+                if unroll_pattern.unrolling_applied():
+                    CanonicalizationRewritePattern().match_and_rewrite(op, rewriter)
+                    cse(op, rewriter)
+                    RemoveUnusedOperations().match_and_rewrite(op, rewriter)
+                    cse(op, rewriter)
 
                 IfOperatorPartitioningPass().match_and_rewrite(op, rewriter)
 
-                # print_mlir(module, msg="After If Statement Split Pass", should_print=print_stuff)
+                print_mlir(module, msg="After If Statement Split Pass", should_print=print_stuff)
 
                 TreeTraversalPattern().match_and_rewrite(op, rewriter)
 
@@ -124,6 +136,7 @@ class TreeTraversalPass(ModulePass):
 
 
 tree_traversal_pass = compiler_transform(TreeTraversalPass)
+
 
 # pylint: disable=too-many-instance-attributes
 class TreeTraversalPattern(RewritePattern):
@@ -454,10 +467,12 @@ class TreeTraversalPattern(RewritePattern):
         self.all_segment_io = all_segment_io
         self.values_as_io_index = values_as_io_index
 
-    def additional_transform_for_segment(self, new_segment: func.FuncOp, segment: ProgramSegment, rewriter: PatternRewriter) -> func.FuncOp:
+    def additional_transform_for_segment(
+        self, new_segment: func.FuncOp, segment: ProgramSegment, rewriter: PatternRewriter
+    ) -> func.FuncOp:
         """Apply additional transformations to each segment function as needed."""
 
-        print_mlir(new_segment, msg=f"Before additional transform for segment {segment.depth}")
+        # print_mlir(new_segment, msg=f"Before additional transform for segment {segment.depth}")
 
         segment_change = False
 
@@ -475,12 +490,14 @@ class TreeTraversalPattern(RewritePattern):
                 if contain_mcm:
                     current_if_op = op
 
-        if (current_if_op is not None
+        if (
+            current_if_op is not None
             and real_mcm_op is not None
-            and current_if_op is not real_mcm_op):
+            and current_if_op is not real_mcm_op
+        ):
 
             segment_change = True
-            print_mlir(real_mcm_op, msg=f"  - Moving real measure IfOp after inner IfOp in segment {segment.depth}")
+            # print_mlir(real_mcm_op, msg=f"  - Moving real measure IfOp after inner IfOp in segment {segment.depth}")
 
             where_to_move_real_mcm = None
 
@@ -497,15 +514,21 @@ class TreeTraversalPattern(RewritePattern):
             q_bit_mcm = real_mcm_op.results[1]
             real_mcm_op_mcm_q_bit = real_mcm_op.true_region.ops.first
 
-            q_bit_mcm.replace_by_if(real_mcm_op_mcm_q_bit.operands[0], lambda use: use.operation is not real_mcm_op)
+            q_bit_mcm.replace_by_if(
+                real_mcm_op_mcm_q_bit.operands[0], lambda use: use.operation is not real_mcm_op
+            )
 
             # Move the real measure IfOp before the mcm inside the inner IfOp
             real_mcm_op.detach()
             rewriter.insert_op(real_mcm_op, InsertPoint.before(where_to_move_real_mcm))
 
-            if  isinstance(where_to_move_real_mcm, quantum.MeasureOp):
-                for new_mcm_use, old_mcm_use in zip(real_mcm_op.results, where_to_move_real_mcm.results):
-                    old_mcm_use.replace_by_if(new_mcm_use, lambda use: use.operation is not where_to_move_real_mcm)
+            if isinstance(where_to_move_real_mcm, quantum.MeasureOp):
+                for new_mcm_use, old_mcm_use in zip(
+                    real_mcm_op.results, where_to_move_real_mcm.results
+                ):
+                    old_mcm_use.replace_by_if(
+                        new_mcm_use, lambda use: use.operation is not where_to_move_real_mcm
+                    )
 
                 old_mcm_operands = where_to_move_real_mcm.operands[0]
                 real_mcm_op_walks = real_mcm_op.walk()
@@ -514,9 +537,8 @@ class TreeTraversalPattern(RewritePattern):
                         op.operands = (old_mcm_operands,)
                         rewriter.notify_op_modified(op)
 
-        if segment_change:
-            print_mlir(new_segment, msg=f"After additional transform for segment {segment.depth}")
-
+        # if segment_change:
+        #     print_mlir(new_segment, msg=f"After additional transform for segment {segment.depth}")
 
         return new_segment
 
@@ -666,7 +688,7 @@ class TreeTraversalPattern(RewritePattern):
         assert len(measurement_ops) <= 1, "expected at most one measurement op in the segment"
         if measurement_ops:
             for measurement_op in measurement_ops:
-                #measurement_op = measurement_ops[0]
+                # measurement_op = measurement_ops[0]
                 # folded_result[counter + 1] += measurement_op.results[0] * probs_stack[counter + 1]
                 c1 = arith.ConstantOp.from_int_and_width(1, builtin.IndexType())
                 depth_ssa = arith.ConstantOp.from_int_and_width(counter, builtin.IndexType())
@@ -1578,11 +1600,10 @@ class IfOperatorPartitioningPass(RewritePattern):
         # Adding fake MeasureOp before if Op with the attribute contain_mcm = "true"
         self.adding_fake_measureOp(op, rewriter)
 
-
     def __init__(self):
         self.module: builtin.ModuleOp = None
         self.original_func_op: func.FuncOp = None
-        self.holder_returns : dict[scf.IfOp, scf.IfOp] = {}
+        self.holder_returns: dict[scf.IfOp, scf.IfOp] = {}
 
     def adding_fake_measureOp(self, op: func.FuncOp, rewriter: PatternRewriter) -> None:
         """Add fake MeasureOp before IfOps that contain measurement-controlled operations."""
@@ -1590,10 +1611,6 @@ class IfOperatorPartitioningPass(RewritePattern):
         for current_op in op_walk:
             if isinstance(current_op, scf.IfOp):
                 contain_mcm = "contain_mcm" in current_op.attributes
-                true_branch = current_op.attributes.get("partition", "false")
-
-                # if true_branch.data != "true_branch":
-                #     continue
 
                 if not contain_mcm:
                     continue
@@ -1625,9 +1642,9 @@ class IfOperatorPartitioningPass(RewritePattern):
                 rewriter.insert_op(q_insert, InsertPoint.before(current_op))
 
                 # Replace the old q_reg with the output of q_insert
-                # where_to_insert.results[0].replace_by_if(new_inner_op.results[0], lambda use: use.operation not in new_inner_op_ops)
-
-                qreg_if_op[0].replace_by_if(q_insert.results[0], lambda use: use.operation not in [q_extract, q_insert])
+                qreg_if_op[0].replace_by_if(
+                    q_insert.results[0], lambda use: use.operation not in [q_extract, q_insert]
+                )
 
     def detect_mcm_in_if_ops(self, op: func.FuncOp) -> bool:
         """Detect if there are measurement-controlled operations inside IfOps."""
@@ -1670,7 +1687,9 @@ class IfOperatorPartitioningPass(RewritePattern):
         # Extract only the IfOp objects from the list of (IfOp, depth) tuples.
         return deepest_ops_with_depth
 
-    def _find_deepest_if_recursive(self,op: Operation, current_depth: int, max_depth_ops: List[IfOpWithDepth]) -> None:
+    def _find_deepest_if_recursive(
+        self, op: Operation, current_depth: int, max_depth_ops: List[IfOpWithDepth]
+    ) -> None:
         """
         Helper function to recursively traverse the IR, tracking the max depth
         of scf.If operations found so far.
@@ -1721,7 +1740,7 @@ class IfOperatorPartitioningPass(RewritePattern):
             new_outer_if_op_output = [out for out in outer_if_op.results]
             new_outer_if_op_output_types = [out.type for out in outer_if_op.results]
 
-            has_nested_if_ops, nested_if_ops = self.get_nested_if_ops(outer_if_op)
+            _, nested_if_ops = self.get_nested_if_ops(outer_if_op)
             where_to_insert = outer_if_op
 
             # Holder for IfOps that are kept for updating SSA values later
@@ -1730,18 +1749,28 @@ class IfOperatorPartitioningPass(RewritePattern):
             for inner_op in nested_if_ops:
 
                 where_to_insert, outer_if_op = self.move_inner_if_op_2_outer(
-                                                inner_op, outer_if_op, new_outer_if_op_output, new_outer_if_op_output_types, where_to_insert, rewriter,
-                                                )
+                    inner_op,
+                    outer_if_op,
+                    new_outer_if_op_output,
+                    new_outer_if_op_output_types,
+                    where_to_insert,
+                    rewriter,
+                )
 
             # detach and erase old outer if op
             for hold_op in self.holder_returns.keys():
                 hold_op.detach()
                 hold_op.erase()
 
-    def move_inner_if_op_2_outer(self,
-                                        inner_op: scf.IfOp, outer_if_op: scf.IfOp, new_outer_if_op_output: list[SSAValue], new_outer_if_op_output_types: list[Type], where_to_insert: scf.IfOp,
-                                        rewriter: PatternRewriter,
-                                        ) -> None:
+    def move_inner_if_op_2_outer(
+        self,
+        inner_op: scf.IfOp,
+        outer_if_op: scf.IfOp,
+        new_outer_if_op_output: list[SSAValue],
+        new_outer_if_op_output_types: list[Type],
+        where_to_insert: scf.IfOp,
+        rewriter: PatternRewriter,
+    ) -> None:
         """Move inner IfOp after the outer IfOp."""
 
         definition_outer = self.analyze_definitions_for_ops([outer_if_op])
@@ -1749,8 +1778,7 @@ class IfOperatorPartitioningPass(RewritePattern):
 
         ssa_needed_from_outer = set(missing_values_inner).intersection(set(definition_outer))
 
-        # Select only definition outer
-        # Use list to preserve order
+        # Select only definition outer. Use list to preserve order
         missing_values_inner = [mv for mv in missing_values_inner if mv in definition_outer]
 
         for mv in ssa_needed_from_outer:
@@ -1758,29 +1786,34 @@ class IfOperatorPartitioningPass(RewritePattern):
                 new_outer_if_op_output.append(mv)
                 new_outer_if_op_output_types.append(mv.type)
 
-        # Matching qreg
-
         inner_results = inner_op.results
 
         # Replace the qreg from the inner IfOp with the immediate outer IfOp qreg
         # This dont affect the inner IfOp since its qreg is only used in quantum ops inside its regions
-        qreg_if_op_inner = [mv for mv in missing_values_inner if isinstance(mv.type, quantum.QuregType)]
+        qreg_if_op_inner = [
+            mv for mv in missing_values_inner if isinstance(mv.type, quantum.QuregType)
+        ]
 
         for result in inner_results:
             if isinstance(result.type, quantum.QuregType):
                 result.replace_by(qreg_if_op_inner[0])
 
-        qreg_if_op_outer = [output for output in where_to_insert.results if isinstance(output.type, quantum.QuregType)]
+        qreg_if_op_outer = [
+            output
+            for output in where_to_insert.results
+            if isinstance(output.type, quantum.QuregType)
+        ]
 
-        assert len(qreg_if_op_outer) == 1, "Expected exactly one quantum register in outer IfOp results."
+        assert (
+            len(qreg_if_op_outer) == 1
+        ), "Expected exactly one quantum register in outer IfOp results."
 
         # Detach inner_op from its parent before modifying
-        if len(inner_results) == 1 :
+        if len(inner_results) == 1:
             inner_op.detach()
         else:
             # Add a new attribute to mark it as flattened
             inner_op.attributes["old_return"] = builtin.StringAttr("true")
-
 
         # expand the current attr_dict
         attr_dict = inner_op.attributes.copy()
@@ -1802,11 +1835,7 @@ class IfOperatorPartitioningPass(RewritePattern):
 
         new_true_block = Block()
 
-        self.clone_operations_to_block(
-            true_ops,
-            new_true_block,
-            value_mapper
-        )
+        self.clone_operations_to_block(true_ops, new_true_block, value_mapper)
 
         # ------------------------------------------------------------------------------------------
         # Inner false region
@@ -1835,12 +1864,7 @@ class IfOperatorPartitioningPass(RewritePattern):
             new_false_block = Block()
 
             value_mapper = {qreg_if_op_inner[0]: qreg_if_op_outer[0]}
-            self.clone_operations_to_block(
-                false_ops,
-                new_false_block,
-                value_mapper
-            )
-
+            self.clone_operations_to_block(false_ops, new_false_block, value_mapper)
 
         new_if_op_attrs = where_to_insert.attributes.copy()
         new_if_op_attrs.update(attr_dict or {})
@@ -1851,7 +1875,9 @@ class IfOperatorPartitioningPass(RewritePattern):
         # that have been removed, then we need to update it
         needs_to_update_conditional = True
 
-        if inner_op.cond.owner.attributes.get("old_return",None) is not None and isinstance(inner_op.cond.owner, scf.IfOp):
+        if inner_op.cond.owner.attributes.get("old_return", None) is not None and isinstance(
+            inner_op.cond.owner, scf.IfOp
+        ):
             hold_return = inner_op.cond.owner
             return_index = list(hold_return.results).index(inner_op.cond)
             conditional = self.holder_returns[hold_return].results[return_index]
@@ -1866,23 +1892,20 @@ class IfOperatorPartitioningPass(RewritePattern):
             conditional = inner_op.cond
 
         new_inner_op = scf.IfOp(
-            conditional,
-            inner_op.result_types,
-            [new_true_block],
-            [new_false_block],
-            new_if_op_attrs
+            conditional, inner_op.result_types, [new_true_block], [new_false_block], new_if_op_attrs
         )
         rewriter.insert_op(new_inner_op, InsertPoint.after(where_to_insert))
 
-
         # Update uses of old inner IfOp results to new inner IfOp results
         new_inner_op_ops = list(chain(*[op.walk() for op in [new_inner_op]]))
-        where_to_insert.results[0].replace_by_if(new_inner_op.results[0], lambda use: use.operation not in new_inner_op_ops)
+        where_to_insert.results[0].replace_by_if(
+            new_inner_op.results[0], lambda use: use.operation not in new_inner_op_ops
+        )
 
         where_to_insert = new_inner_op
 
         # Detach and erase old inner IfOp
-        if len(inner_results) == 1 :
+        if len(inner_results) == 1:
             inner_op.erase()
         else:
             self.holder_returns[inner_op] = new_inner_op
@@ -1906,10 +1929,12 @@ class IfOperatorPartitioningPass(RewritePattern):
         true_yield_op = [op for op in true_block.ops if isinstance(op, scf.YieldOp)][-1]
 
         # Merge the existing true yield operands with the missing values from inner IfOp
-        new_res = [res for res in true_yield_op.operands] + [ ssa for ssa in  missing_values_inner if not isinstance(ssa.type, quantum.QuregType) ]
+        new_res = [res for res in true_yield_op.operands] + [
+            ssa for ssa in missing_values_inner if not isinstance(ssa.type, quantum.QuregType)
+        ]
         return_types = [new_r.type for new_r in new_res]
 
-        new_true_yield_op = scf.YieldOp( *new_res )
+        new_true_yield_op = scf.YieldOp(*new_res)
 
         rewriter.replace_op(true_yield_op, new_true_yield_op)
 
@@ -1930,10 +1955,9 @@ class IfOperatorPartitioningPass(RewritePattern):
 
         new_res = [res for res in false_yield_op.operands] + false_op_res
 
-        new_false_yield_op = scf.YieldOp( *new_res )
+        new_false_yield_op = scf.YieldOp(*new_res)
 
         rewriter.replace_op(false_yield_op, new_false_yield_op)
-
 
         # ------------------------------------------------------------------------------------------
         # Create new IfOp with cloned regions
@@ -1942,7 +1966,7 @@ class IfOperatorPartitioningPass(RewritePattern):
             return_types,
             [true_block],
             [false_block],
-            outer_if_op.attributes.copy()
+            outer_if_op.attributes.copy(),
         )
 
         # Add it at the top of the block
@@ -1958,7 +1982,9 @@ class IfOperatorPartitioningPass(RewritePattern):
 
         if needs_to_update_conditional:
             new_cond = new_inner_op.cond
-            new_cond.replace_by_if(outer_if_op.results[-1], lambda use: use.operation in [new_inner_op])
+            new_cond.replace_by_if(
+                outer_if_op.results[-1], lambda use: use.operation in [new_inner_op]
+            )
 
         return where_to_insert, outer_if_op
 
@@ -1974,7 +2000,9 @@ class IfOperatorPartitioningPass(RewritePattern):
                 nested_if_ops.append(inner_op)
         return len(nested_if_ops) > 0, nested_if_ops
 
-    def split_nested_if_ops(self, op: func.FuncOp, rewriter: PatternRewriter, go_deeper: bool = False) -> None:
+    def split_nested_if_ops(
+        self, op: func.FuncOp, rewriter: PatternRewriter, go_deeper: bool = False
+    ) -> None:
         """Recursively split nested scf.IfOps into separate branches for true and false regions."""
 
         if go_deeper and isinstance(op, scf.IfOp):
@@ -2012,7 +2040,7 @@ class IfOperatorPartitioningPass(RewritePattern):
         op_walk = op.walk()
         for current_op in op_walk:
             if isinstance(current_op, scf.IfOp) and self.detect_mcm_in_if_ops(current_op):
-            # if isinstance(current_op, scf.IfOp):
+                # if isinstance(current_op, scf.IfOp):
 
                 have_nested_if_ops = self.looking_for_nested_if_ops(current_op)
 
@@ -2042,11 +2070,6 @@ class IfOperatorPartitioningPass(RewritePattern):
                 # Analyze missing values for the IfOp
                 missing_values = self.analyze_missing_values_for_ops([current_op])
 
-                # Get outputs required by operations after the IfOp
-                required_outputs = self.analyze_required_outputs(
-                    [current_op], current_op.next_op
-                )
-
                 # Get quantum register from missing values
                 qreg_if_op = [mv for mv in missing_values if isinstance(mv.type, quantum.QuregType)]
 
@@ -2061,17 +2084,12 @@ class IfOperatorPartitioningPass(RewritePattern):
                 value_mapper = {}
 
                 attr_dict = {
-                                "contain_mcm": builtin.StringAttr("true"),
-                                "partition": builtin.StringAttr("true_branch"),
-                            }
+                    "contain_mcm": builtin.StringAttr("true"),
+                    "partition": builtin.StringAttr("true_branch"),
+                }
 
                 new_if_op_4_true = self.create_if_op_partition(
-                    rewriter,
-                    true_region,
-                    current_op,
-                    value_mapper,
-                    current_op,
-                    attr_dict=attr_dict
+                    rewriter, true_region, current_op, value_mapper, current_op, attr_dict=attr_dict
                 )
 
                 # --------------------------------------------------------------------------
@@ -2086,16 +2104,16 @@ class IfOperatorPartitioningPass(RewritePattern):
                 for new_op in [not_op, true_op]:
                     rewriter.insert_op(new_op, InsertPoint.after(new_if_op_4_true))
 
-                #--------------------------------------------------------------------------
+                # --------------------------------------------------------------------------
                 # Create the new IfOp for the false region
-                #--------------------------------------------------------------------------
+                # --------------------------------------------------------------------------
 
                 value_mapper = {qreg_if_op[0]: new_if_op_4_true.results[0]}
 
                 attr_dict = {
-                            "contain_mcm": builtin.StringAttr("true"),
-                            "partition": builtin.StringAttr("false_branch"),
-                             }
+                    "contain_mcm": builtin.StringAttr("true"),
+                    "partition": builtin.StringAttr("false_branch"),
+                }
 
                 _ = self.create_if_op_partition(
                     rewriter,
@@ -2104,7 +2122,7 @@ class IfOperatorPartitioningPass(RewritePattern):
                     value_mapper,
                     not_op,
                     conditional=not_op.result,
-                    attr_dict=attr_dict
+                    attr_dict=attr_dict,
                 )
 
                 # --------------------------------------------------------------------------
@@ -2119,28 +2137,23 @@ class IfOperatorPartitioningPass(RewritePattern):
                     if_op.detach()
                     if_op.erase()
 
-    def create_if_op_partition(self,
-                               rewriter: PatternRewriter,
-                               if_region: Region,
-                               previous_IfOp: scf.IfOp,
-                               value_mapper: dict[SSAValue, SSAValue],
-                               op_where_insert_after: Operation,
-                               conditional: SSAValue = None,
-                               attr_dict: dict[str, builtin.Attribute] = None
-                               ) -> scf.IfOp:
-
+    def create_if_op_partition(
+        self,
+        rewriter: PatternRewriter,
+        if_region: Region,
+        previous_IfOp: scf.IfOp,
+        value_mapper: dict[SSAValue, SSAValue],
+        op_where_insert_after: Operation,
+        conditional: SSAValue = None,
+        attr_dict: dict[str, builtin.Attribute] = None,
+    ) -> scf.IfOp:
         """Create a new IfOp partition with cloned regions and updated value mapping."""
-
 
         true_ops = [op for op in if_region.blocks[0].ops]
 
         new_true_block = Block()
 
-        self.clone_operations_to_block(
-            true_ops,
-            new_true_block,
-            value_mapper
-        )
+        self.clone_operations_to_block(true_ops, new_true_block, value_mapper)
 
         # --------------------------------------------------------------------------
         # Create a new empty block for false region
@@ -2167,19 +2180,20 @@ class IfOperatorPartitioningPass(RewritePattern):
         if conditional is None:
             conditional = previous_IfOp.cond
 
-
         new_if_op_4_true = scf.IfOp(
             conditional,
             previous_IfOp.result_types,
             [new_true_block],
             [new_false_block],
-            new_if_op_attrs
+            new_if_op_attrs,
         )
         rewriter.insert_op(new_if_op_4_true, InsertPoint.after(op_where_insert_after))
 
         new_if_op_4_true_ops = list(chain(*[op.walk() for op in [new_if_op_4_true]]))
 
-        previous_IfOp.results[0].replace_by_if(new_if_op_4_true.results[0], lambda use: use.operation not in new_if_op_4_true_ops)
+        previous_IfOp.results[0].replace_by_if(
+            new_if_op_4_true.results[0], lambda use: use.operation not in new_if_op_4_true_ops
+        )
 
         return new_if_op_4_true
 
@@ -2232,8 +2246,8 @@ class IfOperatorPartitioningPass(RewritePattern):
         return list(ops_defined_values)
 
     def analyze_required_outputs(
-            self, ops: list[Operation], terminal_op: Operation, new_original_func_op: func.FuncOp = None
-        ) -> list[SSAValue]:
+        self, ops: list[Operation], terminal_op: Operation, new_original_func_op: func.FuncOp = None
+    ) -> list[SSAValue]:
         """get required outputs for ops
         Given a list of operations and a terminal operation, return the values that are
         required by the operations after the terminal operation.
@@ -2294,28 +2308,38 @@ class IfOperatorPartitioningPass(RewritePattern):
 
 
 class UnrollLoopPattern(RewritePattern):
-    # @op_type_rewrite_pattern
-    def match_and_rewrite(self, op: scf.ForOp, rewriter: PatternRewriter) -> None:
+    """A rewrite pattern that unrolls scf.ForOps containing measurement-controlled
+    operations into separate branches for each operator."""
 
+    def __init__(self):
+        """Initialize UnrollLoopPattern."""
+        self.needs_unroll: bool = False
+
+    def match_and_rewrite(self, op: scf.ForOp, rewriter: PatternRewriter) -> None:
         """Unroll nested scf.ForOps into separate branches for each operator."""
 
-        needs_unroll = self.detect_mcm_in_loop_ops(op)
+        self.needs_unroll = self.detect_mcm_in_loop_ops(op)
 
-        if not needs_unroll:
+        if not self.needs_unroll:
             return
 
         self.unroll_nested_loops(op, rewriter)
         op_walk = op.walk()
         for nested_op in op_walk:
             if isinstance(nested_op, scf.ForOp):
+                if not self.detect_mcm_in_loop_ops(nested_op):
+                    continue
                 self.unroll_loop(nested_op, rewriter)
 
+    def unrolling_applied(self) -> bool:
+        """Check if unrolling was applied."""
+        return self.needs_unroll
+
     def detect_mcm_in_loop_ops(self, op: scf.ForOp) -> bool:
-        """Detect if there are measurement-controlled operations inside ForOps."""
+        """Detect if there are mid-circuit measurement operations inside ForOps."""
         op_walk = op.walk()
         for current_op in op_walk:
             if isinstance(current_op, scf.ForOp):
-                # Check if there are measurement-controlled operations inside the ForOp
                 for inner_op in current_op.body.ops:
                     if isinstance(inner_op, quantum.MeasureOp):
                         return True
@@ -2336,11 +2360,9 @@ class UnrollLoopPattern(RewritePattern):
         else:
             return
 
-    # Find the deepest for loop and unroll it
     def get_deepest_for_loops(self, parent_op: scf.ForOp) -> list[tuple[scf.ForOp, int]]:
         """Finds the scf.for operation(s) nested at the maximum depth inside the parent_op."""
-        # The parent ForOp A is at depth 0, so its immediate children (B, D) are at depth 1.
-        # We initialize the search list.
+
         deepest_ops_with_depth: List[tuple[scf.ForOp, int]] = [(None, 0)]
 
         # Start the recursion. We look *inside* the regions of the parent_op.
@@ -2349,7 +2371,9 @@ class UnrollLoopPattern(RewritePattern):
         # Extract only the ForOp objects from the list of (ForOp, depth) tuples.
         return deepest_ops_with_depth
 
-    def _find_deepest_for_recursive(self,op: Operation, current_depth: int, max_depth_ops: List[tuple[scf.ForOp, int]]) -> None:
+    def _find_deepest_for_recursive(
+        self, op: Operation, current_depth: int, max_depth_ops: List[tuple[scf.ForOp, int]]
+    ) -> None:
         """
         Helper function to recursively traverse the IR, tracking the max depth
         of scf.For operations found so far.
@@ -2384,10 +2408,10 @@ class UnrollLoopPattern(RewritePattern):
                     self._find_deepest_for_recursive(child_op, new_depth, max_depth_ops)
 
     def unroll_loop(self, op: scf.ForOp, rewriter: PatternRewriter) -> None:
-        print_mlir(op, "FDX: UnrollLoopPattern: Attempting to unroll loop.")
-        print_ssa_values(op.iter_args, "FDX: UnrollLoopPattern: Final iter args:")
+        """Unroll an scf.ForOp into separate branches for each operator."""
 
         def find_constant_bound(bound: SSAValue) -> tuple[bool, Operation | None]:
+            """Find the constant value of a SSA in ForOp bounds"""
 
             check_bound = bound
             while True:
@@ -2395,47 +2419,50 @@ class UnrollLoopPattern(RewritePattern):
                     return True, check_bound.owner
                 elif isinstance(check_bound.owner, stablehlo.ConstantOp):
                     return True, check_bound.owner
+                elif isinstance(check_bound, BlockArgument):
+                    return False, None
                 elif len(check_bound.owner.operands) == 0:
                     return False, None
                 else:
                     check_bound = check_bound.owner.operands[0]
 
-        lb_found, lb_op = find_constant_bound(op.lb)
         ub_found, ub_op = find_constant_bound(op.ub)
+        lb_found, lb_op = find_constant_bound(op.lb)
         step_found, step_op = find_constant_bound(op.step)
 
-        if (
-            not lb_found
-            or not ub_found
-            or not step_found
-        ):
-            print("FDX: UnrollLoopPattern: Cannot unroll loop, bounds or step are not constant.")
-            return
+        assert (
+            lb_found and ub_found and step_found
+        ), "UnrollLoopPattern: Cannot unroll loop, bounds or step are not constant."
 
-        assert (isinstance(lb_op.value, builtin.IntegerAttr)
-                or isinstance(lb_op.value, builtin.DenseIntOrFPElementsAttr))
-        assert (isinstance(ub_op.value, builtin.IntegerAttr)
-                or isinstance(ub_op.value, builtin.DenseIntOrFPElementsAttr))
-        assert (isinstance(step_op.value, builtin.IntegerAttr)
-                or isinstance(step_op.value, builtin.DenseIntOrFPElementsAttr))
+        def check_extract_value(bound: Operation) -> int:
 
-        if isinstance(lb_op.value, builtin.DenseIntOrFPElementsAttr):
-            lb = lb_op.value.data.data[0]
-            ub = ub_op.value.data.data[0]
-            step = step_op.value.data.data[0]
-        else:
-            lb = lb_op.value.value.data
-            ub = ub_op.value.value.data
-            step = step_op.value.value.data
+            is_IntegerAttr: bool = isinstance(bound.value, builtin.IntegerAttr)
+            is_ElementsAttr: bool = isinstance(bound.value, builtin.DenseIntOrFPElementsAttr)
+
+            assert (
+                is_IntegerAttr or is_ElementsAttr
+            ), "UnrollLoopPattern: The ForOp bound should come from arith.ConstantOp or stablehlo.ConstantOp"
+
+            if is_IntegerAttr:
+                return bound.value.value.data
+
+            # is_ElementsAttr
+            return bound.value.data.data[0]
+
+        lb = check_extract_value(lb_op)
+        ub = check_extract_value(ub_op)
+        step = check_extract_value(step_op)
 
         iter_args: tuple[SSAValue, ...] = op.iter_args
 
         i_arg, *block_iter_args = op.body.block.args
 
+        inner_op_clone: Operation | None = None
+
         for i in range(lb, ub, step):
             i_op = rewriter.insert_op(
                 arith.ConstantOp(builtin.IntegerAttr(i, builtin.IndexType())),
-                InsertPoint.before(op)
+                InsertPoint.before(op),
             )
             i_op.result.name_hint = i_arg.name_hint
 
@@ -2446,18 +2473,13 @@ class UnrollLoopPattern(RewritePattern):
 
             for inner_op in op.body.block.ops:
                 if isinstance(inner_op, scf.YieldOp):
-                    iter_args = tuple(
-                        value_mapper.get(val, val) for val in inner_op.arguments
-                    )
+                    iter_args = tuple(value_mapper.get(val, val) for val in inner_op.arguments)
                 else:
                     inner_op_clone = inner_op.clone(value_mapper)
                     rewriter.insert_op(inner_op_clone, InsertPoint.before(op))
 
-        op.results[0].replace_by(inner_op_clone.results[0])
-        op.detach()
-        op.erase()
+        if inner_op_clone is not None:
+            op.results[0].replace_by(inner_op_clone.results[0])
 
-
-        print_mlir(op, "FDX: UnrollLoopPattern: Attempting to unroll loop.")
-
-        print_ssa_values(iter_args, "FDX: UnrollLoopPattern: Final iter args:")
+            op.detach()
+            op.erase()
