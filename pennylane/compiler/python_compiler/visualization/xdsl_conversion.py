@@ -142,6 +142,9 @@ def resolve_constant_params(ssa: SSAValue) -> float | int:
     if isinstance(op, TensorExtractOp):
         return resolve_constant_params(op.tensor)
 
+    if not hasattr(op, "name"):
+        raise NotImplementedError(f"Cannot resolve parameters for operation: {op}")
+
     match op.name:
 
         case "arith.addf":

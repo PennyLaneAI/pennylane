@@ -18,12 +18,13 @@ which collects and maps PennyLane operations and measurements from xDSL.
 """
 
 import enum
+import warnings
 from collections import defaultdict
 from functools import singledispatch
 
 import xdsl
 from xdsl.dialects import func
-from xdsl.dialects.scf import ForOp, IfOp
+from xdsl.dialects.scf import ForOp, IfOp, WhileOp
 
 from pennylane.compiler.python_compiler.dialects.catalyst import CallbackOp
 from pennylane.compiler.python_compiler.dialects.qec import (
@@ -218,23 +219,63 @@ def _(xdsl_op: AllocQubitOp | AllocOp, resources: ResourcesResult) -> None:
 ############################################################
 
 
-def _collect_region(region) -> ResourcesResult:
+def _collect_region(region, loop_warning=False, cond_warning=False) -> ResourcesResult:
     """Collect PennyLane ops and measurements from a region."""
 
     resources = ResourcesResult()
 
     for op in region.ops:
         if isinstance(op, ForOp):
-            iters = count_static_loop_iterations(op)
-            body_ops = _collect_region(op.body)
-            body_ops.multiply_by_scalar(iters)
+            body_ops = _collect_region(
+                op.body, loop_warning=loop_warning, cond_warning=cond_warning
+            )
+            try:
+                iters = count_static_loop_iterations(op)
+                body_ops.multiply_by_scalar(iters)
+            except NotImplementedError:
+                # Unable to statically determine loop iterations
+                if not loop_warning:
+                    warnings.warn(
+                        "Specs was unable to determine the number of loop iterations. "
+                        "The results will assume the loop runs only once. "
+                        "This may be fixed in some cases by inlining dynamic arguments."
+                    )
+                loop_warning = True
+            resources.merge_with(body_ops)
+            continue
+
+        if isinstance(op, WhileOp):
+            if not loop_warning:
+                warnings.warn(
+                    "Specs was unable to determine the number of loop iterations. "
+                    "The results will assume the loop runs only once. "
+                    "This may be fixed in some cases by inlining dynamic arguments."
+                )
+                loop_warning = True
+            body_ops = _collect_region(
+                op.after_region, loop_warning=loop_warning, cond_warning=cond_warning
+            )
             resources.merge_with(body_ops)
             continue
 
         if isinstance(op, IfOp):
-            # NOTE: For now we count operations from both branches
-            resources.merge_with(_collect_region(op.true_region))
-            resources.merge_with(_collect_region(op.false_region))
+            if not cond_warning:
+                # NOTE: For now we count operations from both branches
+                warnings.warn(
+                    "Specs was unable to determine the branch of a conditional. "
+                    "The results will assume both branches of the conditional are run."
+                )
+                cond_warning = True
+            resources.merge_with(
+                _collect_region(
+                    op.true_region, loop_warning=loop_warning, cond_warning=cond_warning
+                )
+            )
+            resources.merge_with(
+                _collect_region(
+                    op.false_region, loop_warning=loop_warning, cond_warning=cond_warning
+                )
+            )
             continue
 
         resource_type, resource = handle_resource(op)
