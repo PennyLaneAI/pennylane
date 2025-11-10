@@ -31,7 +31,6 @@ from pennylane.decomposition.utils import translate_op_alias
 from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.operation import Operator
 from pennylane.ops import Conditional, GlobalPhase
-from pennylane.ops.mid_measure import MidMeasure
 from pennylane.transforms.core import transform
 
 
@@ -847,14 +846,6 @@ def _operator_decomposition_gen(  # pylint: disable=too-many-arguments,too-many-
             "assign a decomposition rule to GlobalPhase via the fixed_decomps keyword "
             "argument. To make GlobalPhase decompose to nothing, you can import null_decomp "
             "from pennylane.decomposition, and assign it to GlobalPhase."
-        )
-        yield op
-
-    elif enabled_graph() and isinstance(op, MidMeasure):
-        warnings.warn(
-            "MidMeasure (a mid-circuit measurement) exists in the circuit but is not found "
-            'in the target gate set. To remove this warning, add `MidMeasure` or `"measure"` '
-            "to the gate set."
         )
         yield op
 
