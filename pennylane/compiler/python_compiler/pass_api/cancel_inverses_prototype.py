@@ -56,6 +56,8 @@ class CancelInverses(PLModulePass):
 
 
 # pylint: disable=unused-argument
+
+
 @CancelInverses.rewrite_rule(quantum.CustomOp)
 def rewrite_custom_op(self, op, rewriter):
     """Rewrite rule for CustomOp."""
@@ -77,6 +79,27 @@ def rewrite_custom_op(self, op, rewriter):
         rewriter.erase_op(next_user)
         rewriter.erase_op(op)
         op = op.in_qubits[0].owner
+
+
+# We can register more rewrite rules as needed:
+
+
+@CancelInverses.rewrite_rule(quantum.InsertOp)
+def rewrite_insert_op(self, op, rewriter):
+    """Rewrite rule for InsertOp."""
+    return
+
+
+@CancelInverses.rewrite_rule(quantum.ExtractOp)
+def rewrite_extract_op(self, op, rewriter):
+    """Rewrite rule for ExtractOp."""
+    return
+
+
+@CancelInverses.rewrite_rule(quantum.MeasureOp)
+def rewrite_mid_measure_op(self, op, rewriter):
+    """Rewrite rule for MeasureOp."""
+    return
 
 
 cancel_inverses_2 = compiler_transform(CancelInverses)
