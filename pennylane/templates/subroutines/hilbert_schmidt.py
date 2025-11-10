@@ -143,7 +143,7 @@ class HilbertSchmidt(Operation):
                     resource_rep(type(op_u), **op_u.resource_params)
                     for op_u in self.hyperparameters["U"]
                 ]
-                if isinstance(self.hyperparameters["U"], Operator)
+                if isinstance(self.hyperparameters["U"], Iterable)
                 else [
                     resource_rep(
                         type(self.hyperparameters["U"]), **self.hyperparameters["U"].resource_params
@@ -421,7 +421,7 @@ class LocalHilbertSchmidt(HilbertSchmidt):
                     resource_rep(type(op_u), **op_u.resource_params)
                     for op_u in self.hyperparameters["U"]
                 ]
-                if isinstance(self.hyperparameters["U"], Operator)
+                if isinstance(self.hyperparameters["U"], Iterable)
                 else [
                     resource_rep(
                         type(self.hyperparameters["U"]), **self.hyperparameters["U"].resource_params
@@ -481,7 +481,7 @@ def _hilbert_schmidt_resources(
     return resources
 
 
-def _local_hilbert_schmidt_graph_resources(
+def _local_hilbert_schmidt_resources(
     num_wires: int, u_reps: list[CompressedResourceOp], v_wires: list[int]
 ):
     num_first_range = num_wires // 2
@@ -505,13 +505,11 @@ def _local_hilbert_schmidt_graph_resources(
     return resources
 
 
-@register_resources(_hilbert_schmidt_resources)
-def _hilbert_schmidt_decomposition(
-    *params: TensorLike,
+def _up_to_last_layer(
     wires: int | Iterable[int | str] | Wires,
     U: Operator | Iterable[Operator],
     V: Operator | Iterable[Operator],
-):
+) -> tuple[int, Iterable, Iterable]:
     u_ops = (U,) if isinstance(U, Operator) else tuple(U)
     v_ops = (V,) if isinstance(V, Operator) else tuple(V)
 
@@ -582,8 +580,43 @@ def _hilbert_schmidt_decomposition(
 
     v_ops_loop()  # pylint: disable=no-value-for-parameter
 
+    return n_wires, first_range, second_range
+
+
+@register_resources(_hilbert_schmidt_resources)
+def _hilbert_schmidt_decomposition(
+    *params: TensorLike,
+    wires: int | Iterable[int | str] | Wires,
+    U: Operator | Iterable[Operator],
+    V: Operator | Iterable[Operator],
+):
+    _, first_range, second_range = _up_to_last_layer(wires, U, V)
+
+    @for_loop(min(len(first_range), len(second_range)))
+    def layer_cnots(j):
+        CNOT(wires=[wires[first_range[j]], wires[second_range[j]]])
+
     layer_cnots()  # pylint: disable=no-value-for-parameter
+
+    @for_loop(len(first_range))
+    def layer_hadamards(i):
+        Hadamard(wires[i])
+
     layer_hadamards()  # pylint: disable=no-value-for-parameter
 
 
+@register_resources(_local_hilbert_schmidt_resources)
+def _local_hilbert_schmidt_decomposition(
+    *params: TensorLike,
+    wires: int | Iterable[int | str] | Wires,
+    U: Operator | Iterable[Operator],
+    V: Operator | Iterable[Operator],
+):
+    n_wires, _, _ = _up_to_last_layer(wires, U, V)
+
+    CNOT(wires=[wires[0], wires[n_wires // 2]])
+    Hadamard(wires[0])
+
+
 add_decomps(HilbertSchmidt, _hilbert_schmidt_decomposition)
+add_decomps(LocalHilbertSchmidt, _local_hilbert_schmidt_decomposition)
