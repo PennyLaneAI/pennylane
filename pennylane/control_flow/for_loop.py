@@ -379,9 +379,12 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
             new_body_fn = flat_fn
             dummy_init_state = flat_args
 
-        jaxpr_body_fn = jax.make_jaxpr(new_body_fn, abstracted_axes=abstracted_axes)(
-            0, *dummy_init_state
-        )
+        try:
+            jaxpr_body_fn = jax.make_jaxpr(new_body_fn, abstracted_axes=abstracted_axes)(
+                0, *dummy_init_state
+            )
+        except ValueError as e:
+            handle_jaxpr_error(e, (self.body_fn,), self.allow_array_resizing, "for_loop")
 
         error_msg = validate_no_resizing_returns(jaxpr_body_fn.jaxpr, shape_locations, "for_loop")
         if error_msg:
