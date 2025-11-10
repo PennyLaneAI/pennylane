@@ -202,7 +202,7 @@
   import pennylane as qml
   from functools import partial
   
-  @partial(qml.transforms.decompose, gate_set=lambda op: len(op.wires)<=2)
+  @partial(qml.transforms.decompose, gate_set={"H", "T", "CNOT"}, stopping_condition=lambda op: len(op.wires) <= 2)
   @qml.qnode(qml.device("default.qubit"))
   def circuit():
       qml.Hadamard(wires=[0])
