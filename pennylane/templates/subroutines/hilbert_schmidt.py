@@ -589,7 +589,7 @@ def _hilbert_schmidt_decomposition(
     wires: int | Iterable[int | str] | Wires,
     U: Operator | Iterable[Operator],
     V: Operator | Iterable[Operator],
-):
+):  # pylint: disable=unused-argument
     _, first_range, second_range = _up_to_last_layer(wires, U, V)
 
     @for_loop(min(len(first_range), len(second_range)))
@@ -611,7 +611,7 @@ def _local_hilbert_schmidt_decomposition(
     wires: int | Iterable[int | str] | Wires,
     U: Operator | Iterable[Operator],
     V: Operator | Iterable[Operator],
-):
+):  # pylint: disable=unused-argument
     n_wires, _, _ = _up_to_last_layer(wires, U, V)
 
     CNOT(wires=[wires[0], wires[n_wires // 2]])
