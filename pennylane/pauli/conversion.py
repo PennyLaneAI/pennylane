@@ -18,6 +18,8 @@ from functools import reduce, singledispatch
 from itertools import product
 from operator import matmul
 
+import numpy as np
+
 import pennylane as qml
 from pennylane.math.utils import is_abstract
 from pennylane.ops import Identity, LinearCombination, PauliX, PauliY, PauliZ, Prod, SProd, Sum
@@ -25,6 +27,13 @@ from pennylane.ops.qubit.matrix_ops import _walsh_hadamard_transform
 
 from .pauli_arithmetic import I, PauliSentence, PauliWord, X, Y, Z, op_map
 from .utils import is_pauli_word
+
+try:
+    import scipy.sparse as sp
+
+    SCIPY_AVAILABLE = True
+except ImportError:
+    SCIPY_AVAILABLE = False
 
 
 def _generalized_pauli_decompose(
@@ -42,8 +51,9 @@ def _generalized_pauli_decompose(
     phase from each ``PauliY`` term occurring in the word.
 
     Args:
-        matrix (tensor_like[complex]): any matrix M, the keyword argument ``padding=True``
-            should be provided if the dimension of M is not :math:`2^n\times 2^n`.
+        matrix (tensor_like[complex] or scipy.sparse matrix): any matrix M, the keyword argument ``padding=True``
+            should be provided if the dimension of M is not :math:`2^n\times 2^n`. Scipy sparse
+            matrices are also supported and will be converted to dense format internally.
         hide_identity (bool): does not include the Identity observable within
             the tensor products of the decomposition if ``True``.
         wire_order (list[Union[int, str]]): the ordered list of wires with respect
@@ -123,7 +133,21 @@ def _generalized_pauli_decompose(
         >>> qml.grad(circuit)(A)
         array([[0.+0.j        , 0.+0.2397...j]])
 
+        Scipy sparse matrices are also supported:
+
+        >>> import scipy.sparse as sp
+        >>> sparse_matrix = sp.csr_matrix([[0, 1], [1, 0]])
+        >>> coeffs, obs = qml.pauli.conversion._generalized_pauli_decompose(sparse_matrix)
+        >>> coeffs
+        array([1.+0.j])
+        >>> obs
+        [X(0)]
+
     """
+    # Convert scipy sparse matrices to dense format
+    if SCIPY_AVAILABLE and sp.issparse(matrix):
+        matrix = matrix.toarray()
+
     # Ensuring original matrix is not manipulated and we support builtin types.
     matrix = qml.math.convert_like(matrix, next(iter([*matrix[0]]), []))
 
@@ -221,7 +245,8 @@ def pauli_decompose(
     r"""Decomposes a Hermitian matrix into a linear combination of Pauli operators.
 
     Args:
-        H (tensor_like[complex]): a Hermitian matrix of dimension :math:`2^n\times 2^n`.
+        H (tensor_like[complex] or scipy.sparse matrix): a Hermitian matrix of dimension :math:`2^n\times 2^n`.
+            Scipy sparse matrices are also supported and will be converted to dense format internally.
         hide_identity (bool): does not include the Identity observable within
             the tensor products of the decomposition if ``True``.
         wire_order (list[Union[int, str]]): the ordered list of wires with respect
@@ -303,7 +328,18 @@ def pauli_decompose(
         coefficients for each of the :math:`4^n` Pauli words are computed while accounting for the
         phase from each ``PauliY`` term occurring in the word.
 
+        Scipy sparse matrices are also supported:
+
+        >>> import scipy.sparse as sp
+        >>> sparse_H = sp.csr_matrix([[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]])
+        >>> qml.pauli_decompose(sparse_H)
+        1.0 * (Z(0) @ Z(1))
+
     """
+    # Convert scipy sparse matrices to dense format
+    if SCIPY_AVAILABLE and sp.issparse(H):
+        H = H.toarray()
+
     shape = qml.math.shape(H)
     n = int(qml.math.log2(shape[0]))
     N = 2**n
