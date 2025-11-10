@@ -199,7 +199,10 @@ class ControlledQubitUnitary(ControlledOp):
         if wires is None:
             raise TypeError("Must specify a set of wires. None is not a valid `wires` label.")
 
-        if not isinstance(base, Iterable):
+        # In JAX 0.7.2+, LiteralArray types are not recognized as Iterable
+        # Check if it's a matrix by checking for shape or ndim attribute
+        is_matrix = isinstance(base, Iterable) or hasattr(base, "shape") or hasattr(base, "ndim")
+        if not is_matrix:
             raise ValueError("Base must be a matrix.")
 
         work_wires = Wires(() if work_wires is None else work_wires)

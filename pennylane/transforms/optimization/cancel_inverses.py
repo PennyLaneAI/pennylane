@@ -38,19 +38,69 @@ def _check_equality(items1: TensorLike | Wires, items2: TensorLike | Wires) -> b
         if is_abstract(d1) or is_abstract(d2):
             if d1 is not d2:
                 return False
-        elif d1 != d2:
-            return False
+        else:
+            # In JAX 0.7.2, calling allclose or any math ops inside traced context
+            # can return tracers. Use direct identity check or concrete value comparison
+            # When under tracing, avoid using math operations
+            try:
+                # Try direct equality first - works for concrete values
+                if d1 != d2:
+                    # If direct comparison worked, values are different
+                    return False
+            except Exception:  # pylint: disable=broad-except
+                # If comparison raises (e.g., for arrays), use identity check
+                # This happens when values are tracers or special types
+                if d1 is not d2:
+                    return False
 
     return True
 
 
 def _ops_equal(op1: Operator, op2: Operator) -> bool:
-    """Checks if two operators are equal up to class, data, hyperparameters, and wires"""
-    return (
-        op1.__class__ is op2.__class__
-        and _check_equality(op1.data, op2.data)
-        and (op1.hyperparameters == op2.hyperparameters)
-    )
+    """Checks if two operators are equal up to class, data, hyperparameters, and wires
+    
+    This version avoids using == on operators since that can trigger qml.equal which 
+    uses allclose, and in JAX 0.7.2+ tracing contexts, allclose returns tracers that
+    can't be converted to bool.
+    """
+    # Check class - safe, doesn't trigger tracing
+    if op1.__class__ is not op2.__class__:
+        return False
+    
+    # Check hyperparameters - need special handling to avoid comparing operators
+    # Hyperparameters can contain operators (e.g., 'base' for controlled ops)
+    # which would trigger __eq__ and qml.equal
+    hp1 = op1.hyperparameters
+    hp2 = op2.hyperparameters
+    
+    # First check if keys match
+    if set(hp1.keys()) != set(hp2.keys()):
+        return False
+    
+    # Then compare values, avoiding operator comparisons
+    for key in hp1.keys():
+        v1, v2 = hp1[key], hp2[key]
+        
+        # If both values are operators, recursively check equality
+        if isinstance(v1, Operator) and isinstance(v2, Operator):
+            if not _ops_equal(v1, v2):
+                return False
+        else:
+            # For non-operator values, direct comparison is safe
+            # This handles Wires, lists, strings, etc.
+            try:
+                if v1 != v2:
+                    return False
+            except Exception:  # pylint: disable=broad-except
+                # If comparison fails (e.g., for special types), use identity
+                if v1 is not v2:
+                    return False
+    
+    # Check data using _check_equality which handles tracing-safe comparison
+    if not _check_equality(op1.data, op2.data):
+        return False
+    
+    return True
 
 
 def _are_inverses(op1: Operator, op2: Operator) -> bool:

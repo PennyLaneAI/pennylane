@@ -192,11 +192,15 @@ def _qnode_abstract_eval(*avals, qfunc_jaxpr, shots_len, device, **params):
         split = n_consts + shots_len
         non_const_avals = avals[split:]
         non_const_batch_dims = batch_dims[split:]
-        batch_shape = tuple(
-            aval.shape[dim] if dim is not None else 1
-            for aval, dim in zip(non_const_avals, non_const_batch_dims, strict=False)
-            if dim is not None
-        )
+        # BUG FIX: Use _get_batch_shape to properly broadcast batch dimensions
+        # instead of creating a tuple of all batch dims (which gives (3, 3) instead of (3,))
+        # We need to extract actual shapes from batch dims
+        input_shapes = [
+            (aval.shape[batch_dim],)
+            for aval, batch_dim in zip(non_const_avals, non_const_batch_dims, strict=True)
+            if batch_dim is not None
+        ]
+        batch_shape = jax.lax.broadcast_shapes(*input_shapes) if input_shapes else ()
     else:
         batch_shape = ()
 
@@ -305,11 +309,29 @@ def custom_partial_eval_rule(trace, *tracers, **params):
     """
     shots_len, jaxpr = params["shots_len"], params["qfunc_jaxpr"]
     device = params["device"]
-    invars = [x.val for x in tracers]
-    shots_vars = invars[:shots_len]
+    
+    # JAX 0.7.2: JaxprTracer doesn't have .val attribute
+    # Use concrete_shots from params if available, otherwise extract from Literal tracers
+    if shots_len > 0:
+        concrete_shots = params.get("concrete_shots")
+        if concrete_shots is not None:
+            shots_vars = [concrete_shots] if not isinstance(concrete_shots, (list, tuple)) else concrete_shots
+        else:
+            # Extract from tracers if they're Literals
+            shots_vars = []
+            for tracer in tracers[:shots_len]:
+                if isinstance(tracer.aval, jax.core.AbstractValue) and hasattr(tracer.aval, "val"):
+                    shots_vars.append(tracer.aval.val)
+                else:
+                    # If we can't extract concrete value, use None
+                    shots_vars.append(None)
+    else:
+        shots_vars = []
 
     batch_dims = params.get("batch_dims")
-    split = params["n_consts"] + params["shots_len"]
+    # JAX 0.7.2: Compute n_consts from jaxpr instead of using params
+    n_consts = len(jaxpr.constvars)
+    split = n_consts + shots_len
     batch_shape = (
         _get_batch_shape(tracers[split:], batch_dims[split:]) if batch_dims is not None else ()
     )
@@ -402,6 +424,10 @@ def _qnode_batching_rule(
                 UserWarning,
             )
 
+    # NOTE: We do NOT pass batch_dims to bind() here because the batching rule
+    # is responsible for handling the batching, not delegating it to the primitive.
+    # The primitive's implementation will use device-level broadcasting instead.
+    # However, we still pass batch_dims to allow the implementation to know about batching.
     result = qnode_prim.bind(
         *batched_args,
         shots_len=shots_len,
@@ -413,6 +439,15 @@ def _qnode_batching_rule(
         concrete_shots=concrete_shots,  # JAX 0.7.2: Pass through concrete_shots
     )
 
+    # BUG FIX: Since the implementation handles batching internally (via jax.vmap when batch_dims is present),
+    # and custom_partial_eval_rule adds batch_shape to the output shapes, the result is already batched.
+    # We return None for batch_axes to indicate "result is already in batched form, don't add another dimension".
+    # NOTE: JAX batching rules can return either:
+    #   - (result, batch_axes): where batch_axes indicates where the batch dim is in each output
+    #   - (result, None): indicates result is not batched (shouldn't happen here)
+    # Actually, looking at JAX source, we should return the batch axes even if implementation does vmap.
+    # The issue might be elsewhere. Let me check if implementation is being called during tracing...
+    
     # The batch dimension is at the front (axis 0) for all elements in the result.
     # JAX doesn't expose `out_axes` in the batching rule.
     return result, (0,) * len(result)

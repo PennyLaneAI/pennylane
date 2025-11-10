@@ -521,7 +521,9 @@ def test_plxpr_to_plxpr_transform():
     jaxpr = jax.make_jaxpr(qfunc)()
     transformed_jaxpr = merge_amplitude_embedding_plxpr_to_plxpr(jaxpr.jaxpr, jaxpr.consts, [], {})
     assert isinstance(transformed_jaxpr, jax.extend.core.ClosedJaxpr)
-    assert len(transformed_jaxpr.eqns) == 4
+    # JAX 0.7.2 adds extra jit equations for norm validation in AmplitudeEmbedding
+    # Expected: 2 jit (norm), 1 merged AmplitudeEmbedding, 1 Hadamard, 1 PauliZ, 1 expval = 6
+    assert len(transformed_jaxpr.eqns) == 6
 
     collector = CollectOpsandMeas()
     collector.eval(transformed_jaxpr.jaxpr, transformed_jaxpr.consts)
@@ -555,11 +557,14 @@ class TestHigherOrderPrimitiveIntegration:
             qml.measure(wires=0)
 
         jaxpr = jax.make_jaxpr(qfunc)()
-        assert len(jaxpr.eqns) == 3
-        assert jaxpr.eqns[0].primitive == qml.AmplitudeEmbedding._primitive
-        assert qml.math.allclose(jaxpr.eqns[0].params["n_wires"], 2)
-        assert jaxpr.eqns[1].primitive == qml.Hadamard._primitive
-        assert jaxpr.eqns[2].primitive == measure_prim
+        # JAX 0.7.2: 2 jit (norm) + 1 merged AmplitudeEmbedding + 1 Hadamard + 1 measure = 5
+        assert len(jaxpr.eqns) == 5
+        assert jaxpr.eqns[0].primitive.name == "jit"  # norm for first AmpEmbed
+        assert jaxpr.eqns[1].primitive.name == "jit"  # norm for second AmpEmbed
+        assert jaxpr.eqns[2].primitive == qml.AmplitudeEmbedding._primitive
+        assert qml.math.allclose(jaxpr.eqns[2].params["n_wires"], 2)
+        assert jaxpr.eqns[3].primitive == qml.Hadamard._primitive
+        assert jaxpr.eqns[4].primitive == measure_prim
 
     @pytest.mark.xfail(
         reason="The transform does not currently merge through higher order primitives. See sc-85439."
@@ -614,16 +619,24 @@ class TestHigherOrderPrimitiveIntegration:
             qml.RY(0, 1)
 
         jaxpr = jax.make_jaxpr(f)()
-        assert len(jaxpr.eqns) == 3
+        # JAX 0.7.2: 2 jit (norm) + 1 AmplitudeEmbedding + 1 ctrl_transform + 1 RY = 5
+        assert len(jaxpr.eqns) == 5
         # TODO: This AE should be merged with the one in ctrl_fn, limitation of PC
-        assert jaxpr.eqns[0].primitive == qml.AmplitudeEmbedding._primitive
-        assert jaxpr.eqns[1].primitive == ctrl_transform_prim
-        assert jaxpr.eqns[2].primitive == qml.RY._primitive
+        assert jaxpr.eqns[0].primitive.name == "jit"  # norm
+        assert jaxpr.eqns[1].primitive.name == "jit"  # norm
+        assert jaxpr.eqns[2].primitive == qml.AmplitudeEmbedding._primitive
+        assert jaxpr.eqns[3].primitive == ctrl_transform_prim
+        assert jaxpr.eqns[4].primitive == qml.RY._primitive
 
-        inner_jaxpr = jaxpr.eqns[1].params["jaxpr"]
-        assert inner_jaxpr.eqns[0].primitive == qml.AmplitudeEmbedding._primitive
-        assert qml.math.allclose(inner_jaxpr.eqns[0].params["n_wires"], 2)
-        assert inner_jaxpr.eqns[1].primitive == qml.X._primitive
+        inner_jaxpr = jaxpr.eqns[3].params["jaxpr"]
+        # JAX 0.7.2: The two AmplitudeEmbeddings inside ctrl_fn actually merge!
+        # 2 jit (norm validations, one per original AE) + 1 merged AE + 1 X = 4
+        assert len(inner_jaxpr.eqns) == 4
+        assert inner_jaxpr.eqns[0].primitive.name == "jit"  # norm for first original AE
+        assert inner_jaxpr.eqns[1].primitive.name == "jit"  # norm for second original AE
+        assert inner_jaxpr.eqns[2].primitive == qml.AmplitudeEmbedding._primitive
+        assert qml.math.allclose(inner_jaxpr.eqns[2].params["n_wires"], 2)  # merged on wires 1 and 2
+        assert inner_jaxpr.eqns[3].primitive == qml.X._primitive
 
     @pytest.mark.parametrize("lazy", [True, False])
     def test_adjoint_transform_prim(self, lazy):
@@ -639,15 +652,19 @@ class TestHigherOrderPrimitiveIntegration:
             qml.adjoint(g, lazy=lazy)()
 
         jaxpr = jax.make_jaxpr(f)()
+        # JAX 0.7.2: Only 1 adjoint_transform at outer level (jit inside)
         assert len(jaxpr.eqns) == 1
         assert jaxpr.eqns[0].primitive == adjoint_transform_prim
         assert jaxpr.eqns[0].params["lazy"] == lazy
 
         inner_jaxpr = jaxpr.eqns[0].params["jaxpr"]
-        assert len(inner_jaxpr.eqns) == 2
-        assert inner_jaxpr.eqns[0].primitive == qml.AmplitudeEmbedding._primitive
-        assert qml.math.allclose(inner_jaxpr.eqns[0].params["n_wires"], 2)
-        assert inner_jaxpr.eqns[1].primitive == qml.X._primitive
+        # Inner jaxpr: 2 jit (norm) + 1 merged AmplitudeEmbedding + 1 X = 4
+        assert len(inner_jaxpr.eqns) == 4
+        assert inner_jaxpr.eqns[0].primitive.name == "jit"
+        assert inner_jaxpr.eqns[1].primitive.name == "jit"
+        assert inner_jaxpr.eqns[2].primitive == qml.AmplitudeEmbedding._primitive
+        assert qml.math.allclose(inner_jaxpr.eqns[2].params["n_wires"], 2)
+        assert inner_jaxpr.eqns[3].primitive == qml.X._primitive
 
     def test_cond_prim_only_true_branch(self):
         """Test that the transform works correctly when applied with cond_prim with just a true branch."""
@@ -663,13 +680,18 @@ class TestHigherOrderPrimitiveIntegration:
 
         args = (3,)
         jaxpr = jax.make_jaxpr(f)(*args)
+        # JAX 0.7.2: equation 0 is gt (comparison), equation 1 is cond
+        assert len(jaxpr.eqns) == 2
+        assert jaxpr.eqns[0].primitive.name == "gt"  # x > 2
         assert jaxpr.eqns[1].primitive == cond_prim
 
-        # True branch
+        # True branch: 2 jit (norm) + 1 merged AmplitudeEmbedding = 3
         branch = jaxpr.eqns[1].params["jaxpr_branches"][0]
-        assert len(branch.eqns) == 1
-        assert branch.eqns[0].primitive == qml.AmplitudeEmbedding._primitive
-        assert qml.math.allclose(branch.eqns[0].params["n_wires"], 2)
+        assert len(branch.eqns) == 3
+        assert branch.eqns[0].primitive.name == "jit"
+        assert branch.eqns[1].primitive.name == "jit"
+        assert branch.eqns[2].primitive == qml.AmplitudeEmbedding._primitive
+        assert qml.math.allclose(branch.eqns[2].params["n_wires"], 2)
 
     def test_cond_prim_all_cond_branches(self):
         """Test that the transform works correctly when applied with cond_prim."""
@@ -702,12 +724,19 @@ class TestHigherOrderPrimitiveIntegration:
 
         args = (3,)
         jaxpr = jax.make_jaxpr(f)(*args)
-        # First 2 primitives are the conditions for the true and elif branches
+        # JAX 0.7.2: 2 gt (comparisons) + 1 cond = 3 at top level (jit inside branches)
+        assert len(jaxpr.eqns) == 3
+        assert jaxpr.eqns[0].primitive.name == "gt"  # x > 2
+        assert jaxpr.eqns[1].primitive.name == "gt"  # x > 1
         assert jaxpr.eqns[2].primitive == cond_prim
 
-        # True branch
+        # True branch: 2 jit + 1 merged AmplitudeEmbedding + 1 Z + 1 Z + 1 expval = 6
         branch = jaxpr.eqns[2].params["jaxpr_branches"][0]
-        assert qml.math.allclose(branch.eqns[0].params["n_wires"], 2)
+        assert len(branch.eqns) == 6
+        assert branch.eqns[0].primitive.name == "jit"
+        assert branch.eqns[1].primitive.name == "jit"
+        assert branch.eqns[2].primitive == qml.AmplitudeEmbedding._primitive
+        assert qml.math.allclose(branch.eqns[2].params["n_wires"], 2)
         expected_primitives = [
             qml.AmplitudeEmbedding._primitive,
             qml.Z._primitive,
@@ -716,12 +745,14 @@ class TestHigherOrderPrimitiveIntegration:
         ]
         assert all(
             eqn.primitive == exp_prim
-            for eqn, exp_prim in zip(branch.eqns, expected_primitives, strict=True)
+            for eqn, exp_prim in zip(branch.eqns[2:], expected_primitives, strict=True)
         )
 
-        # Elif branch
-        branch = jaxpr.eqns[2].params["jaxpr_branches"][1]
-        assert qml.math.allclose(branch.eqns[0].params["n_wires"], 2)
+        # Elif branch: 2 jit + 1 merged AmplitudeEmbedding + 1 Y + 1 Y + 1 expval = 6
+        branch_elif = jaxpr.eqns[2].params["jaxpr_branches"][1]
+        assert len(branch_elif.eqns) == 6
+        assert branch_elif.eqns[2].primitive == qml.AmplitudeEmbedding._primitive
+        assert qml.math.allclose(branch_elif.eqns[2].params["n_wires"], 2)
         expected_primitives = [
             qml.AmplitudeEmbedding._primitive,
             qml.Y._primitive,
@@ -730,12 +761,14 @@ class TestHigherOrderPrimitiveIntegration:
         ]
         assert all(
             eqn.primitive == exp_prim
-            for eqn, exp_prim in zip(branch.eqns, expected_primitives, strict=True)
+            for eqn, exp_prim in zip(branch_elif.eqns[2:], expected_primitives, strict=True)
         )
 
-        # Else branch
-        branch = jaxpr.eqns[2].params["jaxpr_branches"][2]
-        assert qml.math.allclose(branch.eqns[0].params["n_wires"], 2)
+        # Else branch: 2 jit + 1 merged AmpEmbed + 1 X + 1 X + 1 expval = 6
+        branch_else = jaxpr.eqns[2].params["jaxpr_branches"][2]
+        assert len(branch_else.eqns) == 6
+        assert branch_else.eqns[2].primitive == qml.AmplitudeEmbedding._primitive
+        assert qml.math.allclose(branch_else.eqns[2].params["n_wires"], 2)
         expected_primitives = [
             qml.AmplitudeEmbedding._primitive,
             qml.X._primitive,
@@ -744,7 +777,7 @@ class TestHigherOrderPrimitiveIntegration:
         ]
         assert all(
             eqn.primitive == exp_prim
-            for eqn, exp_prim in zip(branch.eqns, expected_primitives, strict=True)
+            for eqn, exp_prim in zip(branch_else.eqns[2:], expected_primitives, strict=True)
         )
 
     def test_for_loop_prim(self):
@@ -763,14 +796,18 @@ class TestHigherOrderPrimitiveIntegration:
             h()
 
         jaxpr = jax.make_jaxpr(f)(3)
+        # JAX 0.7.2: jit equations are inside the loop body, not at top level
         assert len(jaxpr.eqns) == 1
         assert jaxpr.eqns[0].primitive == for_loop_prim
 
         inner_jaxpr = jaxpr.eqns[0].params["jaxpr_body_fn"]
-        assert len(inner_jaxpr.eqns) == 2
-        assert inner_jaxpr.eqns[0].primitive == qml.AmplitudeEmbedding._primitive
-        assert qml.math.allclose(inner_jaxpr.eqns[0].params["n_wires"], 2)
-        assert inner_jaxpr.eqns[1].primitive == qml.Hadamard._primitive
+        # Inner: 2 jit + 1 merged AmplitudeEmbedding + 1 Hadamard = 4
+        assert len(inner_jaxpr.eqns) == 4
+        assert inner_jaxpr.eqns[0].primitive.name == "jit"
+        assert inner_jaxpr.eqns[1].primitive.name == "jit"
+        assert inner_jaxpr.eqns[2].primitive == qml.AmplitudeEmbedding._primitive
+        assert qml.math.allclose(inner_jaxpr.eqns[2].params["n_wires"], 2)
+        assert inner_jaxpr.eqns[3].primitive == qml.Hadamard._primitive
 
     def test_while_loop_prim(self):
         """Test that the transform works correctly when applied with while_loop_prim."""
@@ -788,14 +825,20 @@ class TestHigherOrderPrimitiveIntegration:
             h(0)
 
         jaxpr = jax.make_jaxpr(f)(3)
+        # JAX 0.7.2: jit equations are inside the loop body, not at top level
         assert len(jaxpr.eqns) == 1
         assert jaxpr.eqns[0].primitive == while_loop_prim
 
         inner_jaxpr = jaxpr.eqns[0].params["jaxpr_body_fn"]
-        assert len(inner_jaxpr.eqns) == 3
-        assert inner_jaxpr.eqns[1].primitive == qml.AmplitudeEmbedding._primitive
-        assert qml.math.allclose(inner_jaxpr.eqns[1].params["n_wires"], 2)
-        assert inner_jaxpr.eqns[2].primitive == qml.Hadamard._primitive
+        # Inner: 2 jit + 1 add + 1 merged AmplitudeEmbedding + 1 Hadamard = 5
+        # The add (return statement) comes before the quantum ops
+        assert len(inner_jaxpr.eqns) == 5
+        assert inner_jaxpr.eqns[0].primitive.name == "jit"  # norm
+        assert inner_jaxpr.eqns[1].primitive.name == "jit"  # norm
+        assert inner_jaxpr.eqns[2].primitive.name == "add"  # i + 1 (return)
+        assert inner_jaxpr.eqns[3].primitive == qml.AmplitudeEmbedding._primitive
+        assert qml.math.allclose(inner_jaxpr.eqns[3].params["n_wires"], 2)
+        assert inner_jaxpr.eqns[4].primitive == qml.Hadamard._primitive
 
     def test_qnode_prim(self):
         """Test that the transform works correctly when applied with qnode_prim."""
@@ -813,12 +856,15 @@ class TestHigherOrderPrimitiveIntegration:
 
         assert jaxpr.eqns[0].primitive == qnode_prim
         qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
-        assert len(qfunc_jaxpr.eqns) == 4
-        assert qfunc_jaxpr.eqns[0].primitive == qml.AmplitudeEmbedding._primitive
-        assert qml.math.allclose(qfunc_jaxpr.eqns[0].params["n_wires"], 2)
-        assert qfunc_jaxpr.eqns[1].primitive == qml.Hadamard._primitive
-        assert qfunc_jaxpr.eqns[2].primitive == qml.PauliZ._primitive
-        assert qfunc_jaxpr.eqns[3].primitive == qml.measurements.ExpectationMP._obs_primitive
+        # JAX 0.7.2: 2 jit + 1 merged AmplitudeEmbedding + 1 Hadamard + 1 PauliZ + 1 expval = 6
+        assert len(qfunc_jaxpr.eqns) == 6
+        assert qfunc_jaxpr.eqns[0].primitive.name == "jit"
+        assert qfunc_jaxpr.eqns[1].primitive.name == "jit"
+        assert qfunc_jaxpr.eqns[2].primitive == qml.AmplitudeEmbedding._primitive
+        assert qml.math.allclose(qfunc_jaxpr.eqns[2].params["n_wires"], 2)
+        assert qfunc_jaxpr.eqns[3].primitive == qml.Hadamard._primitive
+        assert qfunc_jaxpr.eqns[4].primitive == qml.PauliZ._primitive
+        assert qfunc_jaxpr.eqns[5].primitive == qml.measurements.ExpectationMP._obs_primitive
 
     def test_jacobian_prim(self):
         """Test that the transform works correctly when applied with jacobian_prim."""
@@ -838,7 +884,7 @@ class TestHigherOrderPrimitiveIntegration:
         assert jaxpr.eqns[0].primitive == jacobian_prim
         inner_jaxpr = _find_eq_with_name(jaxpr, "jaxpr")
         qfunc_jaxpr = _find_eq_with_name(inner_jaxpr, "qfunc_jaxpr")
-        # Get all operators in qfunc
+        # Get all operators in qfunc (excluding jit)
         qfunc_jaxpr = qfunc_jaxpr.replace(
             eqns=[
                 eqn
@@ -846,6 +892,7 @@ class TestHigherOrderPrimitiveIntegration:
                 if getattr(eqn.primitive, "prim_type", "") == "operator"
             ]
         )
+        # After filtering: 1 merged AmplitudeEmbedding + 1 Hadamard + 1 PauliZ = 3
         assert len(qfunc_jaxpr.eqns) == 3
         assert qfunc_jaxpr.eqns[0].primitive == qml.AmplitudeEmbedding._primitive
         assert qml.math.allclose(qfunc_jaxpr.eqns[0].params["n_wires"], 2)
@@ -1050,12 +1097,16 @@ class TestExpandPlxprTransformIntegration:
 
         transformed_qfunc = qml.capture.expand_plxpr_transforms(qfunc)
         transformed_jaxpr = jax.make_jaxpr(transformed_qfunc)()
-        assert len(transformed_jaxpr.eqns) == 4
-        assert transformed_jaxpr.eqns[0].primitive == qml.AmplitudeEmbedding._primitive
-        assert qml.math.allclose(transformed_jaxpr.eqns[0].params["n_wires"], 2)
-        assert transformed_jaxpr.eqns[1].primitive == qml.Hadamard._primitive
-        assert transformed_jaxpr.eqns[2].primitive == qml.PauliZ._primitive
-        assert transformed_jaxpr.eqns[3].primitive == qml.measurements.ExpectationMP._obs_primitive
+        # JAX 0.7.2: 5 jit (2 for each original + 1 for merged) + 1 merged AmpEmbed + 1 Hadamard + 1 PauliZ + 1 expval = 9
+        assert len(transformed_jaxpr.eqns) == 9
+        # Skip jit equations and check operators
+        op_eqns = [eqn for eqn in transformed_jaxpr.eqns if eqn.primitive.name != "jit"]
+        assert len(op_eqns) == 4
+        assert op_eqns[0].primitive == qml.AmplitudeEmbedding._primitive
+        assert qml.math.allclose(op_eqns[0].params["n_wires"], 2)
+        assert op_eqns[1].primitive == qml.Hadamard._primitive
+        assert op_eqns[2].primitive == qml.PauliZ._primitive
+        assert op_eqns[3].primitive == qml.measurements.ExpectationMP._obs_primitive
 
     def test_decorator(self):
         """Test that the transform works with the decorator"""
@@ -1069,9 +1120,13 @@ class TestExpandPlxprTransformIntegration:
             return qml.expval(qml.Z(0))
 
         jaxpr = jax.make_jaxpr(qfunc)()
-        assert len(jaxpr.eqns) == 4
-        assert jaxpr.eqns[0].primitive == qml.AmplitudeEmbedding._primitive
-        assert qml.math.allclose(jaxpr.eqns[0].params["n_wires"], 2)
-        assert jaxpr.eqns[1].primitive == qml.Hadamard._primitive
-        assert jaxpr.eqns[2].primitive == qml.PauliZ._primitive
-        assert jaxpr.eqns[3].primitive == qml.measurements.ExpectationMP._obs_primitive
+        # JAX 0.7.2: Same as test_example, 5 jit + 4 ops = 9
+        assert len(jaxpr.eqns) == 9
+        # Skip jit equations and check operators
+        op_eqns = [eqn for eqn in jaxpr.eqns if eqn.primitive.name != "jit"]
+        assert len(op_eqns) == 4
+        assert op_eqns[0].primitive == qml.AmplitudeEmbedding._primitive
+        assert qml.math.allclose(op_eqns[0].params["n_wires"], 2)
+        assert op_eqns[1].primitive == qml.Hadamard._primitive
+        assert op_eqns[2].primitive == qml.PauliZ._primitive
+        assert op_eqns[3].primitive == qml.measurements.ExpectationMP._obs_primitive
