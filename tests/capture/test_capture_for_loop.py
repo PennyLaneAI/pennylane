@@ -262,7 +262,10 @@ class TestDynamicShapes:
 
         jaxpr = jax.make_jaxpr(f, abstracted_axes=("a",))(jax.numpy.arange(5))
 
-        [shape, output] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3, jax.numpy.arange(3))
+        # JAX 0.7.2: eval_jaxpr returns [output], shape is implicit
+        result = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3, jax.numpy.arange(3))
+        output = result[0]
+        shape = output.shape[0]
         expected = jax.numpy.array([0, 8, 16])  # [0, 1, 2] * 2**3
         assert jax.numpy.allclose(output, expected)
         assert qml.math.allclose(shape, 3)
@@ -327,7 +330,10 @@ class TestDynamicShapes:
             return f(i0, jnp.ones(i0))
 
         jaxpr = jax.make_jaxpr(w)(2)
-        [a_size, final_j, final_a] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2)
+        # JAX 0.7.2: eval_jaxpr returns [final_j, final_a], not [a_size, final_j, final_a]
+        result = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2)
+        final_j, final_a = result
+        a_size = final_a.shape[0]
         assert qml.math.allclose(a_size, 2)  # what it was initialized with
         assert qml.math.allclose(final_j, 5)  # 2 +3
         assert qml.math.allclose(final_a, jnp.ones(2) * 2**3)  # 2**3
@@ -363,7 +369,10 @@ class TestDynamicShapes:
             return f(a0, b0)
 
         jaxpr = jax.make_jaxpr(w)(2)
-        [dynamic_shape, a, b] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2)
+        # JAX 0.7.2: eval_jaxpr returns [a, b], dynamic shape is implicit
+        result = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2)
+        a, b = result
+        dynamic_shape = a.shape[0]
         assert qml.math.allclose(dynamic_shape, 2)  # the initial size
         assert qml.math.allclose(a, jnp.array([7, 7]))  # 1 + 0 + 1 + 2 + 3 = 7
         assert qml.math.allclose(b, jnp.array([9, 9]))  # 1 + 1 + 1 + 2 + 4
@@ -383,7 +392,10 @@ class TestDynamicShapes:
             return f(x0, y0)
 
         jaxpr = jax.make_jaxpr(workflow)(2)
-        [s, x, y] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2)
+        # JAX 0.7.2: eval_jaxpr returns [x, y], dynamic shape s is implicit
+        result = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2)
+        x, y = result
+        s = x.shape[0]
         assert qml.math.allclose(s, 8)
         x_expected = jnp.ones(8)
         assert qml.math.allclose(x, x_expected)
@@ -401,7 +413,10 @@ class TestDynamicShapes:
             return f(jnp.zeros(i0), jnp.zeros(i0))
 
         jaxpr = jax.make_jaxpr(w)(2)
-        [shape1, shape2, a, b] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3)
+        # JAX 0.7.2: eval_jaxpr returns [a, b], dynamic shapes are implicit
+        result = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3)
+        a, b = result
+        shape1, shape2 = a.shape[0], b.shape[0]
         assert jnp.allclose(shape1, 15)
         assert jnp.allclose(shape2, 3)
         expected = jnp.ones(15)

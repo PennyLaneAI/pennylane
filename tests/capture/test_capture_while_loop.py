@@ -334,9 +334,13 @@ class TestCaptureWhileLoopDynamicShapes:
 
         jaxpr = jax.make_jaxpr(f, abstracted_axes=("a",))(jnp.arange(2))
 
-        [dynamic_shape, output] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3, jnp.arange(3))
+        # JAX 0.7.2: eval_jaxpr no longer returns dynamic_shape separately
+        # It's implicit in the output array's shape
+        result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3, jnp.arange(3))
+        # result is a list with one element (the output array)
+        output = result[0] if isinstance(result, list) else result
         expected = jnp.array([0, 4, 8])
-        assert qml.math.allclose(dynamic_shape, 3)
+        assert output.shape[0] == 3  # Dynamic shape is reflected in the array shape
         assert jnp.allclose(output, expected)
 
     def test_while_loop_dynamic_array_creation(self):
@@ -397,7 +401,11 @@ class TestCaptureWhileLoopDynamicShapes:
             return f(i0, jnp.ones(i0))
 
         jaxpr = jax.make_jaxpr(w)(2)
-        [a_size, final_i, final_a] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2)
+        # JAX 0.7.2: eval_jaxpr returns [final_i, final_a], not [a_size, final_i, final_a]
+        # The dynamic shape is implicit in final_a.shape[0]
+        result = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2)
+        final_i, final_a = result
+        a_size = final_a.shape[0]  # Extract dynamic shape from array
         assert qml.math.allclose(a_size, 2)  # what it was initialized with
         assert qml.math.allclose(final_i, 5)  # loop condition
         assert qml.math.allclose(final_a, jnp.ones(2) * 2**3)  # 2**(5-2)
@@ -433,7 +441,10 @@ class TestCaptureWhileLoopDynamicShapes:
             return f(a0, b0)
 
         jaxpr = jax.make_jaxpr(w)(2)
-        [dynamic_shape, a, b] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2)
+        # JAX 0.7.2: eval_jaxpr returns [a, b], dynamic shape is implicit
+        result = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2)
+        a, b = result
+        dynamic_shape = a.shape[0]  # Extract from array shape
         assert qml.math.allclose(dynamic_shape, 2)  # the initial size
         assert qml.math.allclose(a, jnp.array([11, 11]))  # 11 + 11 > 20 , 11 = 1 + 1+ 2 + 3+ 4
         assert qml.math.allclose(b, jnp.array([5, 5]))
@@ -453,7 +464,10 @@ class TestCaptureWhileLoopDynamicShapes:
             return f(x0, y0)
 
         jaxpr = jax.make_jaxpr(workflow)(2)
-        [dynamic_shape, x, y] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 1)
+        # JAX 0.7.2: eval_jaxpr returns [x, y], dynamic shape is implicit
+        result = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 1)
+        x, y = result
+        dynamic_shape = x.shape[0]  # Extract from array shape
         assert qml.math.allclose(dynamic_shape, 16)
         x_expected = jnp.ones(16)
         assert qml.math.allclose(x, x_expected)
@@ -473,7 +487,10 @@ class TestCaptureWhileLoopDynamicShapes:
             return f(jnp.zeros(i0), jnp.zeros(i0))
 
         jaxpr = jax.make_jaxpr(w)(2)
-        [shape1, shape2, a, b] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3)
+        # JAX 0.7.2: eval_jaxpr returns [a, b], dynamic shapes are implicit
+        result = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3)
+        a, b = result
+        shape1, shape2 = a.shape[0], b.shape[0]  # Extract from array shapes
         assert jnp.allclose(shape1, 12)
         assert jnp.allclose(shape2, 3)
         expected = jnp.ones(12)

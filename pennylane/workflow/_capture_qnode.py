@@ -162,16 +162,30 @@ qnode_prim.prim_type = "higher_order"
 def _qnode_abstract_eval(*avals, qfunc_jaxpr, shots_len, device, **params):
     """Abstract evaluation for qnode primitive - returns output shapes."""
     # Get shots if provided
+    # JAX 0.7.2: During vmap batching, shots arguments become tracers (ShapedArray)
+    # instead of concrete values (Literals). To handle this, we store the concrete
+    # shots value in params['concrete_shots'] when binding the primitive.
     if shots_len > 0:
-        shots = [aval.val if hasattr(aval, "val") else None for aval in avals[:shots_len]]
-        shots = shots[0] if shots else None
+        # First try to get concrete shots from params (added for JAX 0.7.2)
+        shots = params.get("concrete_shots")
+        
+        # If not in params, try to extract from avals (for backwards compatibility)
+        if shots is None:
+            shots_aval = avals[0]
+            if hasattr(shots_aval, "val"):
+                # It's a Literal with a concrete value
+                shots = shots_aval.val
+            elif isinstance(shots_aval, (int, float)):
+                # It's a Python int/float
+                shots = int(shots_aval)
     else:
         shots = None
 
-    # Get output shapes from qfunc_jaxpr outvars
+    # Get output shapes from jaxpr outvars
     num_device_wires = len(device.wires)
     batch_dims = params.get("batch_dims")
-    n_consts = params["n_consts"]
+    # JAX 0.7.2: Compute n_consts from jaxpr instead of passing as parameter
+    n_consts = len(qfunc_jaxpr.constvars)
 
     # Calculate batch shape
     if batch_dims is not None:
@@ -187,9 +201,11 @@ def _qnode_abstract_eval(*avals, qfunc_jaxpr, shots_len, device, **params):
         batch_shape = ()
 
     # Get shapes from jaxpr outvars
+    # _get_shapes_for expects shots to be iterable or None
+    shots_list = [shots] if shots is not None and not isinstance(shots, (list, tuple)) else shots
     output_avals = _get_shapes_for(
         *qfunc_jaxpr.outvars,
-        shots=shots,
+        shots=shots_list,
         num_device_wires=num_device_wires,
         batch_shape=batch_shape,
     )
@@ -200,7 +216,7 @@ def _qnode_abstract_eval(*avals, qfunc_jaxpr, shots_len, device, **params):
 # pylint: disable=too-many-arguments
 @debug_logger
 @qnode_prim.def_impl
-def _(*args, qnode, device, execution_config, qfunc_jaxpr, n_consts, shots_len, batch_dims=None):
+def _(*args, qnode, device, execution_config, qfunc_jaxpr, shots_len, batch_dims=None, concrete_shots=None):
 
     warn(
         "Executing PennyLane programs with capture enabled should be done inside ``qml.qjit``. Native execution of captured programs is an unmaintained experimental feature.",
@@ -209,6 +225,10 @@ def _(*args, qnode, device, execution_config, qfunc_jaxpr, n_consts, shots_len, 
 
     execution_config = device.setup_execution_config(execution_config)
 
+    # JAX 0.7.2: Compute n_consts from jaxpr instead of passing as parameter
+    n_consts = len(qfunc_jaxpr.constvars)
+
+    # Split args: shots, consts, then actual args
     if shots_len == 0:
         shots = None
         non_shots_args = args
@@ -216,7 +236,7 @@ def _(*args, qnode, device, execution_config, qfunc_jaxpr, n_consts, shots_len, 
         shots, non_shots_args = args[:shots_len], args[shots_len:]
 
     consts = non_shots_args[:n_consts]
-    non_const_args = non_shots_args[n_consts:]
+    all_args = non_shots_args[n_consts:]
 
     device_program = device.preprocess_transforms(execution_config)
     if batch_dims is not None:
@@ -232,7 +252,7 @@ def _(*args, qnode, device, execution_config, qfunc_jaxpr, n_consts, shots_len, 
         temp_args = temp_all_args[(n_consts + shots_len) :]
     else:
         temp_consts = consts
-        temp_args = non_const_args
+        temp_args = all_args
 
     # Expand user transforms applied to the qfunc
     if getattr(qfunc_jaxpr.eqns[0].primitive, "prim_type", "") == "transform":
@@ -243,6 +263,9 @@ def _(*args, qnode, device, execution_config, qfunc_jaxpr, n_consts, shots_len, 
         qfunc_jaxpr = jax.make_jaxpr(transformed_func)(*temp_args)
         temp_consts = qfunc_jaxpr.consts
         qfunc_jaxpr = qfunc_jaxpr.jaxpr
+    else:
+        # Keep the consts we extracted
+        pass
 
     # Expand user transforms applied to the qnode
     qfunc_jaxpr = qnode.transform_program(qfunc_jaxpr, temp_consts, *temp_args)
@@ -268,8 +291,8 @@ def _(*args, qnode, device, execution_config, qfunc_jaxpr, n_consts, shots_len, 
         shots=Shots(shots),
     )
     if batch_dims is None:
-        return partial_eval(*non_const_args)
-    return jax.vmap(partial_eval, batch_dims[(n_consts + shots_len) :])(*non_const_args)
+        return partial_eval(*all_args)
+    return jax.vmap(partial_eval, batch_dims[(n_consts + shots_len) :])(*all_args)
 
 
 def custom_partial_eval_rule(trace, *tracers, **params):
@@ -343,25 +366,26 @@ def _qnode_batching_rule(
     execution_config,
     qfunc_jaxpr,
     shots_len,
-    n_consts,
+    concrete_shots=None,  # JAX 0.7.2: Accept concrete_shots parameter
 ):
     """
     Batching rule for the ``qnode`` primitive.
 
     This rule exploits the parameter broadcasting feature of the QNode to vectorize the circuit execution.
     """
+    
+    # JAX 0.7.2: Compute n_consts from jaxpr
+    n_consts = len(qfunc_jaxpr.constvars)
 
     for idx, (arg, batch_dim) in enumerate(zip(batched_args, batch_dims, strict=True)):
 
         if _is_scalar_tensor(arg):
             continue
 
-        # Regardless of their shape, jax.vmap automatically inserts `None` as the batch dimension for constants.
-        # However, if the constant is not a standard JAX type, the batch dimension is not inserted at all.
-        # How to handle this case is still an open question. For now, we raise a warning and give the user full flexibility.
+        # Check shots and consts indices
         if idx < (n_consts + shots_len):
             warn(
-                f"Constant argument at index {idx} is not scalar. "
+                f"Constant or shots argument at index {idx} is not scalar. "
                 "This may lead to unintended behavior or wrong results if the argument is provided "
                 "using parameter broadcasting to a quantum operation that supports batching.",
                 UserWarning,
@@ -385,8 +409,8 @@ def _qnode_batching_rule(
         device=device,
         execution_config=execution_config,
         qfunc_jaxpr=qfunc_jaxpr,
-        n_consts=n_consts,
         batch_dims=batch_dims,
+        concrete_shots=concrete_shots,  # JAX 0.7.2: Pass through concrete_shots
     )
 
     # The batch dimension is at the front (axis 0) for all elements in the result.
@@ -660,7 +684,10 @@ def _bind_qnode(qnode, *args, **kwargs):
         device=qnode.device,
         execution_config=config,
         qfunc_jaxpr=qfunc_jaxpr.jaxpr,
-        n_consts=len(qfunc_jaxpr.consts),
+        # JAX 0.7.2: Store concrete shots values in params for abstract evaluation
+        # During vmap batching, the flat_shots arguments become tracers, so we need
+        # the concrete values available in params
+        concrete_shots=flat_shots[0] if len(flat_shots) == 1 else flat_shots if flat_shots else None,
     )
 
     if len(flat_shots) > 1:

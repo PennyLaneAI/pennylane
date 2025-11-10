@@ -226,12 +226,142 @@ def _patch_pjit_staging_rule():
     """
     Patch pjit_staging_rule to fix dynamic shape handling for JAX 0.7.2+.
 
-    In JAX 0.7.2, we use custom_partial_eval_rules instead of custom_staging_rules.
-    This may not be needed if JAX's built-in pjit handling works correctly.
+    The issue is that pjit_staging_rule calls trace.frame.add_eqn() with a JaxprEqn,
+    but when the trace is a JaxprTrace (not DynamicJaxprTrace), this causes an
+    AssertionError because JaxprTrace expects TracingEqn objects.
+
+    The fix is to use the recipe-based approach (new_eqn_recipe) for JaxprTrace.
     """
-    # For now, do nothing - JAX 0.7.2's built-in pjit handling should work
-    # If issues arise, we can add a custom_partial_eval_rule for jit_p here
-    pass
+    import jax._src.pjit as pjit_module
+    from jax._src import config, core, source_info_util
+    from jax._src.interpreters import partial_eval as pe
+    from jax._src.interpreters import pxla
+
+    # Store original function
+    _original_functions["pjit_staging_rule"] = pjit_module.pjit_staging_rule
+    original_pjit_staging_rule = pjit_module.pjit_staging_rule
+
+    def patched_pjit_staging_rule(trace, source_info, *args, **params):
+        """Patched version that uses recipe-based approach for JaxprTrace."""
+        # Handle the non-dynamic-shapes path and inline path - use original
+        if params["compiler_options_kvs"]:
+            raise ValueError(
+                '`compiler_options` can only be passed to top-level `jax.jit`. Got'
+                f' compiler_options={dict(params["compiler_options_kvs"])} specified on'
+                f' a nested jit with name: {params["name"]} and source info:'
+                f' {source_info_util.summarize(source_info)}')
+
+        # Handle inline path
+        if (params["inline"] and
+            all(isinstance(i, pjit_module.UnspecifiedValue) for i in params["in_shardings"]) and
+            all(isinstance(o, pjit_module.UnspecifiedValue) for o in params["out_shardings"]) and
+            all(i is None for i in params["in_layouts"]) and
+            all(o is None for o in params["out_layouts"])):
+            jaxpr = params["jaxpr"]
+            if config.dynamic_shapes.value:
+                with core.set_current_trace(trace):
+                    out = core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args,
+                                          propagate_source_info=False)
+            else:
+                out = pe.inline_jaxpr_into_trace(
+                    trace, source_info, jaxpr.jaxpr, jaxpr.consts, *args)
+            return [trace.to_jaxpr_tracer(x, source_info) for x in out]
+
+        # Handle dynamic shapes path - this is where the bug is
+        jaxpr = params['jaxpr']
+        if config.dynamic_shapes.value:
+            jaxpr, in_fwd, out_shardings, out_layouts = pjit_module._pjit_forwarding(
+                jaxpr, params['out_shardings'], params['out_layouts'])
+            params = dict(params, jaxpr=jaxpr, out_shardings=out_shardings,
+                          out_layouts=out_layouts)
+
+            # Check if we're in JaxprTrace (recipe-based) or DynamicJaxprTrace (frame-based)
+            if hasattr(trace, "make_eqn"):
+                # DynamicJaxprTrace path - use make_eqn to create proper TracingEqn
+                out_avals = pjit_module._out_type(jaxpr)
+                
+                # Convert args to tracers if needed
+                in_tracers = [core.get_referent(arg) for arg in args]
+                
+                # Use make_eqn to create the equation and tracers properly
+                eqn, out_tracers = trace.make_eqn(
+                    in_tracers, out_avals, pjit_module.jit_p, params,
+                    jaxpr.effects, source_info
+                )
+                trace.frame.add_eqn(eqn)
+            else:
+                # JaxprTrace path - use recipe-based approach
+                out_avals = pjit_module._out_type(jaxpr)
+                out_tracers = [pe.JaxprTracer(trace, pe.PartialVal.unknown(aval), None)
+                               for aval in out_avals]
+                eqn = pe.new_eqn_recipe(
+                    trace, args, out_tracers, pjit_module.jit_p, params,
+                    jaxpr.effects, source_info
+                )
+                for out_tracer in out_tracers:
+                    out_tracer.recipe = eqn
+
+            # Handle forwarding
+            out_tracers_ = iter(out_tracers)
+            out_tracers = [args[f] if type(f) is int else next(out_tracers_)
+                           for f in in_fwd]
+            assert next(out_tracers_, None) is None
+            return out_tracers
+
+        # Handle mutable consts path
+        elif any(isinstance(c, core.MutableArray) for c in jaxpr.consts):
+            jaxpr, consts = pxla._move_mutable_consts(jaxpr)
+            consts = [trace.new_const(c, source_info) for c in consts]
+            in_shardings = (*params['in_shardings'],) + (pjit_module.UNSPECIFIED,) * len(consts)
+            in_layouts = (*params['in_layouts'],) + (None,) * len(consts)
+            donated_invars = (*params['donated_invars'],) + (False,) * len(consts)
+            new_params = dict(params, jaxpr=jaxpr, in_shardings=in_shardings,
+                              in_layouts=in_layouts, donated_invars=donated_invars)
+            out_tracers = trace.default_process_primitive(
+                pjit_module.jit_p, (*args, *consts), new_params, source_info=source_info)
+        else:
+            # Default path
+            out_tracers = trace.default_process_primitive(
+                pjit_module.jit_p, args, params, source_info=source_info)
+
+        return out_tracers
+
+    # Apply the patch
+    pjit_module.pjit_staging_rule = patched_pjit_staging_rule
+    pe.custom_staging_rules[pjit_module.jit_p] = patched_pjit_staging_rule
+
+
+def _patch_bind_with_trace():
+    """
+    Patch Primitive.bind_with_trace to handle typeof failures gracefully.
+    
+    In JAX 0.7.2, bind_with_trace tries to apply typeof to all args, but fails
+    with Python lists and other non-JAX types. The original code has a try/except
+    but then raises an unhelpful error. This patch catches the exception and falls
+    back to trace.process_primitive directly.
+    """
+    from jax._src import core
+    from jax._src.core import typeof
+
+    # Store original function
+    _original_functions["bind_with_trace"] = core.Primitive.bind_with_trace
+
+    def patched_bind_with_trace(self, trace, args, params):
+        """Patched version that handles typeof failures gracefully."""
+        try:
+            in_type = list(map(typeof, args))
+        except Exception:  # pylint: disable=broad-exception-caught
+            # If typeof fails (e.g., with Python lists), just process the primitive
+            return trace.process_primitive(self, args, params)
+        else:
+            # Original logic when typeof succeeds
+            if self.is_high(*in_type, **params) and trace.requires_low:
+                with core.set_current_trace(trace):
+                    return self.to_lojax(*args, **params)
+            return trace.process_primitive(self, args, params)
+
+    # Apply the patch
+    core.Primitive.bind_with_trace = patched_bind_with_trace
 
 
 # Store original functions for restoration
@@ -267,6 +397,7 @@ def _apply_patches():
             _add_make_eqn_helper()  # Still useful for potential DynamicJaxprTrace usage
             _patch_dyn_shape_staging_rule()
             _patch_pjit_staging_rule()
+            _patch_bind_with_trace()
 
             _patches_applied = True
         except Exception as e:  # pylint: disable=broad-except

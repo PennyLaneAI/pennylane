@@ -352,7 +352,31 @@ def _equal_operators(
         for params1, params2 in zip(op1.data, op2.data):
             params1_interface = qml.math.get_interface(params1)
             params2_interface = qml.math.get_interface(params2)
+            
+            # Special handling for JAX Literal types vs numpy arrays
+            # In JAX 0.7.2+, Literal types are used more extensively
+            # We consider jax Literals and numpy arrays as compatible interfaces
             if params1_interface != params2_interface:
+                # Check if one is a JAX Literal and the other is numpy
+                is_literal_vs_numpy = (
+                    (params1_interface == "jax" and params2_interface == "numpy") or
+                    (params1_interface == "numpy" and params2_interface == "jax")
+                )
+                
+                # If it's Literal vs numpy, check if params1 is actually a Literal type
+                if is_literal_vs_numpy:
+                    try:
+                        from jax._src import literals
+                        is_literal = isinstance(params1, (literals.LiteralInt, literals.LiteralFloat, literals.LiteralArray)) or \
+                                     isinstance(params2, (literals.LiteralInt, literals.LiteralFloat, literals.LiteralArray))
+                        if is_literal:
+                            # Consider them compatible - skip this check
+                            continue
+                    except (ImportError, AttributeError):
+                        # If JAX literals aren't available, fall through to normal check
+                        pass
+                
+                # If we get here, interfaces are genuinely different
                 return (
                     "Parameters have different interfaces.\n "
                     f"{params1} interface is {params1_interface} and {params2} interface is {params2_interface}"
@@ -600,7 +624,25 @@ def _equal_sprod(op1: SProd, op2: SProd, **kwargs):
         for params1, params2 in zip(op1.data, op2.data):
             params1_interface = qml.math.get_interface(params1)
             params2_interface = qml.math.get_interface(params2)
+            
+            # Special handling for JAX Literal types vs numpy/python scalars
             if params1_interface != params2_interface:
+                # Check if one is a JAX Literal and the other is numpy/python
+                is_literal_vs_other = (
+                    (params1_interface == "jax" and params2_interface in ("numpy", "python")) or
+                    (params1_interface in ("numpy", "python") and params2_interface == "jax")
+                )
+                
+                if is_literal_vs_other:
+                    try:
+                        from jax._src import literals
+                        is_literal = isinstance(params1, (literals.LiteralInt, literals.LiteralFloat, literals.LiteralArray)) or \
+                                     isinstance(params2, (literals.LiteralInt, literals.LiteralFloat, literals.LiteralArray))
+                        if is_literal:
+                            continue
+                    except (ImportError, AttributeError):
+                        pass
+                
                 return (
                     "Parameters have different interfaces.\n "
                     f"{params1} interface is {params1_interface} and {params2} interface is {params2_interface}"

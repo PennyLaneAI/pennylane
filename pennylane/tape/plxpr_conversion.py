@@ -198,8 +198,11 @@ def _jacobian_primitive(self, *invals, jaxpr, n_consts, **params):
 # pylint: disable=unused-argument
 @CollectOpsandMeas.register_primitive(qnode_prim)
 def _qnode_primitive(
-    self, *invals, shots_len, qnode, device, execution_config, qfunc_jaxpr, n_consts
+    self, *invals, shots_len, qnode, device, execution_config, qfunc_jaxpr, concrete_shots=None
 ):  # pylint: disable=too-many-arguments
+    # JAX 0.7.2: Compute n_consts from jaxpr
+    n_consts = len(qfunc_jaxpr.constvars)
+    
     consts = invals[shots_len : shots_len + n_consts]
     args = invals[shots_len + n_consts :]
 

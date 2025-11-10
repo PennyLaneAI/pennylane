@@ -192,6 +192,11 @@ def __getattr__(key):
 
         return _restore_slice
 
+    if key == "_restore_dict":
+        from .custom_primitives import _restore_dict
+
+        return _restore_dict
+
     if key == "QmlPrimitive":
         from .custom_primitives import QmlPrimitive
 
