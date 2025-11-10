@@ -17,7 +17,7 @@ from pennylane.transforms.core import transform
 
 
 @transform
-def rs_decomposition(tape, *, epsilon):
+def rs_decomposition(tape, *, epsilon, ppr_basis):
     r"""This is an alias for Catalyst's rs_decomposition pass."""
 
     raise NotImplementedError(
