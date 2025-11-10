@@ -235,18 +235,19 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> SpecsDict:  # pr
             if level != "all"
             else "all"
         )
-        results = mlir_specs(qjit, mlir_levels)(*args, **kwargs)
+        if mlir_levels == "all" or len(mlir_levels) > 0:
+            results = mlir_specs(qjit, mlir_levels)(*args, **kwargs)
 
-        for level_name, res in results.items():
-            res_resources = Resources(
-                num_wires=res.num_wires,
-                num_gates=sum(res.resource_sizes.values()),
-                gate_types=res.quantum_operations | res.ppm_operations,
-                gate_sizes=res.resource_sizes,
-                depth=None,  # Can't get depth for intermediate stages
-                shots=original_qnode.shots,  # TODO: Can this ever be overriden during compilation?
-            )
-            resources[level_name] = res_resources
+            for level_name, res in results.items():
+                res_resources = Resources(
+                    num_wires=res.num_wires,
+                    num_gates=sum(res.resource_sizes.values()),
+                    gate_types=res.quantum_operations | res.ppm_operations,
+                    gate_sizes=res.resource_sizes,
+                    depth=None,  # Can't get depth for intermediate stages
+                    shots=original_qnode.shots,  # TODO: Can this ever be overriden during compilation?
+                )
+                resources[level_name] = res_resources
 
         if single_level:
             resources = next(iter(resources.values()))

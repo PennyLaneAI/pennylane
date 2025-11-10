@@ -32,6 +32,10 @@ if TYPE_CHECKING:
     from pennylane.workflow.qnode import QNode
 
 
+class StopCompilation(Exception):
+    """Custom exception to stop compilation early when the desired specs level is reached."""
+
+
 # TODO: This function is identically defined within draw.py
 def _get_mlir_module(qnode: QNode, args, kwargs) -> ModuleOp:
     """Ensure the QNode is compiled and return its MLIR module."""
@@ -58,6 +62,12 @@ def mlir_specs(
     """
     cache: dict[int, tuple[dict[str, int], str]] = {}
 
+    max_level = level
+    if max_level == "all":
+        max_level = None
+    elif isinstance(level, (tuple, list)):
+        max_level = max(level)
+
     def _specs_callback(previous_pass, module, next_pass, pass_level=0):
         """Callback function for gathering circuit specs."""
 
@@ -70,6 +80,9 @@ def mlir_specs(
             pass_name if pass_level else "No transforms",
         )
 
+        if max_level is not None and pass_level >= max_level:
+            raise StopCompilation("Stopping compilation after reaching max specs level.")
+
     @wraps(qnode)
     def wrapper(*args, **kwargs):
         if args or kwargs:
@@ -78,15 +91,20 @@ def mlir_specs(
                 UserWarning,
             )
         mlir_module = _get_mlir_module(qnode, args, kwargs)
-        Compiler.run(mlir_module, callback=_specs_callback)
+        try:
+            Compiler.run(mlir_module, callback=_specs_callback)
+        except StopCompilation:
+            # We use StopCompilation to short-circuit the compilation once we reach
+            # the desired level
+            pass
 
         if not cache:
             return None
 
         if level == "all":
-            return {f"MLIR-{lvl}": cache[lvl][0] for lvl in sorted(cache.keys())}
+            return {f"{cache[lvl][1]} (MLIR-{lvl})": cache[lvl][0] for lvl in sorted(cache.keys())}
         if isinstance(level, (tuple, list)):
-            return {f"MLIR-{lvl}": cache.get(lvl, cache[max(cache.keys())])[0] for lvl in level}
+            return {f"{cache[lvl][1]} (MLIR-{lvl})": cache[lvl][0] for lvl in level if lvl in cache}
         # Just one level was specified
         return cache.get(level, cache[max(cache.keys())])[0]
 
