@@ -34,7 +34,7 @@ except ImportError:
     SCIPY_AVAILABLE = False
 
 
-def _generalized_pauli_decompose(
+def _generalized_pauli_decompose(  # pylint: disable=too-many-branches
     matrix, hide_identity=False, wire_order=None, pauli=False, padding=False
 ) -> tuple[qml.typing.TensorLike, list]:
     r"""Decomposes any matrix into a linear combination of Pauli operators.
