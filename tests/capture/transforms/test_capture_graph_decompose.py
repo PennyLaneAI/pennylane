@@ -25,9 +25,8 @@ import pytest
 
 import pennylane as qml
 from pennylane.decomposition.decomposition_rule import null_decomp
-from pennylane.measurements import MidMeasureMP
 from pennylane.operation import Operation
-from pennylane.ops import Conditional
+from pennylane.ops import Conditional, MidMeasure
 
 jax = pytest.importorskip("jax")
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
@@ -463,8 +462,8 @@ class TestDecomposeInterpreterGraphEnabled:
         qml.assert_equal(ops[3].base, q.queue[3].base)
         qml.assert_equal(ops[4].base, q.queue[4].base)
         qml.assert_equal(ops[6].base, q.queue[6].base)
-        assert isinstance(ops[2], MidMeasureMP)
-        assert isinstance(ops[5], MidMeasureMP)
+        assert isinstance(ops[2], MidMeasure)
+        assert isinstance(ops[5], MidMeasure)
 
     @pytest.mark.parametrize(
         "num_work_wires, expected_gate_count",
@@ -546,7 +545,7 @@ class TestDecomposeInterpreterGraphEnabled:
 
         gate_counts = defaultdict(int)
         for op in result.operations:
-            if isinstance(op, qml.measurements.MidMeasureMP):
+            if isinstance(op, qml.ops.MidMeasure):
                 continue
             gate_counts[type(op)] += 1
         assert gate_counts == expected_gate_count

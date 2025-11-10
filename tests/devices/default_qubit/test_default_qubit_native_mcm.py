@@ -19,8 +19,8 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.devices.qubit.apply_operation import MidMeasureMP
 from pennylane.devices.qubit.simulate import combine_measurements_core, measurement_with_no_shots
+from pennylane.ops import MidMeasure
 from pennylane.transforms.dynamic_one_shot import fill_in_value
 
 pytestmark = pytest.mark.slow
@@ -291,7 +291,7 @@ def composite_mcm_gradient_measure_obs(shots, postselect, reset, measure_f, seed
 def test_sample_with_broadcasting_and_postselection_error(mcm_method, seed):
     """Test that an error is raised if returning qml.sample if postselecting with broadcasting"""
     tape = qml.tape.QuantumScript(
-        [qml.RX([0.1, 0.2], 0), MidMeasureMP(0, postselect=1)], [qml.sample(wires=0)], shots=10
+        [qml.RX([0.1, 0.2], 0), MidMeasure(0, postselect=1)], [qml.sample(wires=0)], shots=10
     )
     with pytest.raises(ValueError, match="Returning qml.sample is not supported when"):
         qml.transforms.dynamic_one_shot(tape)

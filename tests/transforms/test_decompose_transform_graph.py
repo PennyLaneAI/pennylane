@@ -22,8 +22,8 @@ import pytest
 
 import pennylane as qml
 from pennylane.decomposition.decomposition_rule import null_decomp
-from pennylane.measurements.mid_measure import MidMeasureMP
 from pennylane.operation import Operation
+from pennylane.ops.mid_measure import MidMeasure
 from pennylane.ops.op_math.condition import Conditional
 from pennylane.transforms.decompose import _resolve_gate_set
 
@@ -35,8 +35,35 @@ def test_weighted_graph_handles_negative_weight():
     tape = qml.tape.QuantumScript([])
 
     # edge case: negative gate weight
-    with pytest.raises(ValueError, match="Negative gate weights"):
+    with pytest.raises(ValueError, match="Negative weights"):
         qml.transforms.decompose(tape, gate_set={"CNOT": -10.0, "RZ": 1.0})
+
+
+@pytest.mark.unit
+@pytest.mark.usefixtures("enable_graph_decomposition")
+def test_weights_affect_graph_decomposition():
+    tape = qml.tape.QuantumScript([qml.CRX(0.1, wires=[0, 1]), qml.Toffoli(wires=[0, 1, 2])])
+
+    [new_tape], _ = qml.transforms.decompose(
+        tape, gate_set={qml.Toffoli: 1.23, qml.RX: 4.56, qml.CZ: 0.01, qml.H: 420, qml.CRZ: 100}
+    )
+    assert new_tape.operations == [
+        qml.RX(0.05, wires=[1]),
+        qml.CZ(wires=[0, 1]),
+        qml.RX(-0.05, wires=[1]),
+        qml.CZ(wires=[0, 1]),
+        qml.Toffoli(wires=[0, 1, 2]),
+    ]
+
+    [new_tape], _ = qml.transforms.decompose(
+        tape, gate_set={qml.Toffoli: 1.23, qml.RX: 4.56, qml.CZ: 0.01, qml.H: 0.1, qml.CRZ: 0.1}
+    )
+    assert new_tape.operations == [
+        qml.H(wires=[1]),
+        qml.CRZ(0.10, wires=[0, 1]),
+        qml.H(wires=[1]),
+        qml.Toffoli(wires=[0, 1, 2]),
+    ]
 
 
 @pytest.mark.unit
@@ -126,6 +153,14 @@ class TestDecomposeGraphEnabled:
         tape = qml.tape.QuantumScript([])
         with pytest.raises(TypeError, match="Specifying gate_set as a function"):
             qml.transforms.decompose(tape, gate_set=lambda op: True)
+
+    @pytest.mark.unit
+    def test_none_gate_set_error(self):
+        """Tests that an error is raised when gate_set is not provided."""
+
+        tape = qml.tape.QuantumScript([])
+        with pytest.raises(TypeError, match="The gate_set argument is required."):
+            qml.transforms.decompose(tape, stopping_condition=lambda op: True)
 
     @pytest.mark.integration
     def test_mixed_gate_set_specification(self):
@@ -444,8 +479,8 @@ class TestDecomposeGraphEnabled:
         qml.assert_equal(decomposed_tape.operations[3].base, q.queue[3].base)
         qml.assert_equal(decomposed_tape.operations[4].base, q.queue[4].base)
         qml.assert_equal(decomposed_tape.operations[6].base, q.queue[6].base)
-        assert isinstance(decomposed_tape.operations[2], MidMeasureMP)
-        assert isinstance(decomposed_tape.operations[5], MidMeasureMP)
+        assert isinstance(decomposed_tape.operations[2], MidMeasure)
+        assert isinstance(decomposed_tape.operations[5], MidMeasure)
 
     @pytest.mark.integration
     @pytest.mark.parametrize(
@@ -523,7 +558,7 @@ class TestDecomposeGraphEnabled:
 
         gate_counts = defaultdict(int)
         for op in result.operations:
-            if isinstance(op, qml.measurements.MidMeasureMP):
+            if isinstance(op, qml.ops.MidMeasure):
                 continue
             gate_counts[type(op)] += 1
         assert gate_counts == expected_gate_count
@@ -570,7 +605,6 @@ def test_stopping_condition():
     U = qml.matrix(qml.Rot(0.1, 0.2, 0.3, wires=0) @ qml.Identity(wires=1))
 
     def stopping_condition(op):
-
         if isinstance(op, qml.QubitUnitary):
             identity = qml.math.eye(2 ** len(op.wires))
             return qml.math.allclose(op.matrix(), identity)

@@ -7,7 +7,7 @@ appdirs==1.4.4
 argon2-cffi==25.1.0
 argon2-cffi-bindings==25.1.0
 arrow==1.4.0
-astroid==3.3.11
+astroid==4.0.1
 asttokens==3.0.0
 astunparse==1.6.3
 async-lru==2.0.5
@@ -18,7 +18,7 @@ babel==2.17.0
 bartiq==0.9.0
 beautifulsoup4==4.14.2
 black==25.9.0
-bleach==6.2.0
+bleach==6.3.0
 blinker==1.9.0
 build==1.3.0
 cachetools==6.2.1
@@ -66,18 +66,18 @@ h11==0.16.0
 httpcore==1.0.9
 httpx==0.28.1
 ibm-cloud-sdk-core==3.24.2
-ibm-platform-services==0.69.0
+ibm-platform-services==0.71.0
 identify==2.6.15
 idna==3.11
 immutabledict==4.2.1
 importlib_metadata==8.7.0
 iniconfig==2.3.0
-ipykernel==7.0.1
+ipykernel==7.1.0
 ipython==9.6.0
 ipython_pygments_lexers==1.1.1
-ipywidgets==8.1.7
+ipywidgets==8.1.8
 isoduration==20.11.0
-isort==6.0.1
+isort==7.0.0
 itsdangerous==2.2.0
 jax==0.6.2
 jaxlib==0.6.2
@@ -94,17 +94,17 @@ jupyter_client==8.6.3
 jupyter_core==5.9.1
 jupyter_server==2.17.0
 jupyter_server_terminals==0.5.3
-jupyterlab==4.4.9
+jupyterlab==4.4.10
 jupyterlab_pygments==0.3.0
-jupyterlab_server==2.27.3
-jupyterlab_widgets==3.0.15
+jupyterlab_server==2.28.0
+jupyterlab_widgets==3.0.16
 kiwisolver==1.4.9
-lark==1.3.0
+lark==1.3.1
 llvmlite==0.44.0
 markdown-it-py==4.0.0
 MarkupSafe==3.0.3
 matplotlib==3.10.7
-matplotlib-inline==0.1.7
+matplotlib-inline==0.2.1
 mccabe==0.7.0
 mdurl==0.1.2
 mistune==3.1.4
@@ -112,7 +112,7 @@ mitiq==0.47.0
 ml_dtypes==0.5.3
 mpmath==1.3.0
 mypy_extensions==1.1.0
-narwhals==2.8.0
+narwhals==2.10.1
 nbclient==0.10.2
 nbconvert==7.16.6
 nbformat==5.10.4
@@ -134,8 +134,8 @@ pandas==2.3.3
 pandocfilters==1.5.1
 parso==0.8.5
 pathspec==0.12.1
-PennyLane-qiskit @ git+https://github.com/PennyLaneAI/pennylane-qiskit.git@2c7345760103d923eaa80ce749180ce4ba0a9bd3
-pennylane_catalyst==0.14.0.dev9
+PennyLane-qiskit @ git+https://github.com/PennyLaneAI/pennylane-qiskit.git@6d6cd2f2045167e420aa14f1a982fab9692b6fd0
+pennylane_catalyst==0.14.0.dev20
 pennylane_lightning==0.43.0
 pennylane_lightning_kokkos==0.43.0
 pexpect==4.9.0
@@ -148,7 +148,7 @@ pre_commit==4.3.0
 prometheus_client==0.23.1
 prompt_toolkit==3.0.52
 protobuf==6.33.0
-psutil==7.1.1
+psutil==7.1.3
 psygnal==0.15.0
 ptyprocess==0.7.0
 pure_eval==0.2.3
@@ -160,13 +160,13 @@ pydantic_core==2.41.4
 pydot==3.0.4
 Pygments==2.19.2
 PyJWT==2.10.1
-pylint==3.3.8
+pylint==4.0.2
 pyparsing==3.1.4
 pyperclip==1.11.0
 pyproject_hooks==1.2.0
 pyspnego==0.12.0
 pytest==8.4.2
-pytest-benchmark==5.1.0
+pytest-benchmark==5.2.0
 pytest-cov==7.0.0
 pytest-forked==1.6.0
 pytest-mock==3.15.1
@@ -180,12 +180,12 @@ pytz==2025.2
 PyYAML==6.0.3
 pyzmq==27.1.0
 pyzx==0.9.0
-qiskit==2.1.2
+qiskit==2.2.2
 qiskit-aer==0.17.2
-qiskit-ibm-runtime==0.41.1
+qiskit-ibm-runtime==0.43.1
 qref==0.9.0
-qsharp==1.21.0
-qsharp-widgets==1.21.0
+qsharp==1.22.0
+qsharp-widgets==1.22.0
 qualtran==0.6.1
 quimb==1.11.2
 referencing==0.37.0
@@ -196,10 +196,10 @@ rfc3339-validator==0.1.4
 rfc3986-validator==0.1.1
 rfc3987-syntax==1.1.0
 rich==13.9.4
-rpds-py==0.27.1
+rpds-py==0.28.0
 rustworkx==0.17.1
 scipy==1.15.2
-scipy-openblas32==0.3.30.0.2
+scipy-openblas32==0.3.30.0.6
 scs==3.2.9
 Send2Trash==1.8.3
 six==1.17.0
@@ -213,7 +213,7 @@ stim==1.15.0
 sympy==1.14.0
 tabulate==0.9.0
 tach==0.28.5
-termcolor==3.1.0
+termcolor==3.2.0
 terminado==0.18.1
 tinycss2==1.4.0
 tomli==2.3.0
@@ -228,12 +228,13 @@ typing_extensions==4.15.0
 tzdata==2025.2
 uri-template==1.3.0
 urllib3==2.5.0
-virtualenv==20.35.3
+virtualenv==20.35.4
 wcwidth==0.2.14
-webcolors==24.11.1
+webcolors==25.10.0
 webencodings==0.5.1
 websocket-client==1.9.0
 Werkzeug==3.1.3
-widgetsnbextension==4.0.14
-xdsl==0.49.0
+widgetsnbextension==4.0.15
+xdsl @ git+https://github.com/xdslproject/xdsl.git@44e68054841b9937b6da9cf77f5369f18f336bae
+xdsl-jax @ git+https://github.com/xdslproject/xdsl-jax.git@895f7c13e8d0f02bbe99d7fb9ebcaafea4ea629f
 zipp==3.23.0
