@@ -13,20 +13,25 @@
 # limitations under the License.
 """For loop."""
 import functools
+import logging
+import warnings
 from typing import Literal
 
 from pennylane import capture
 from pennylane.capture import FlatFn, enabled
 from pennylane.capture.dynamic_shapes import register_custom_staging_rule
 from pennylane.compiler.compiler import AvailableCompilers, active_compiler
+from pennylane.exceptions import CaptureWarning
 
 from ._loop_abstract_axes import (
     add_abstract_shapes,
     get_dummy_arg,
-    handle_jaxpr_error,
     loop_determine_abstracted_axes,
     validate_no_resizing_returns,
 )
+
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
 
 
 def for_loop(
@@ -374,12 +379,9 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
             new_body_fn = flat_fn
             dummy_init_state = flat_args
 
-        try:
-            jaxpr_body_fn = jax.make_jaxpr(new_body_fn, abstracted_axes=abstracted_axes)(
-                0, *dummy_init_state
-            )
-        except ValueError as e:
-            handle_jaxpr_error(e, (self.body_fn,), self.allow_array_resizing, "for_loop")
+        jaxpr_body_fn = jax.make_jaxpr(new_body_fn, abstracted_axes=abstracted_axes)(
+            0, *dummy_init_state
+        )
 
         error_msg = validate_no_resizing_returns(jaxpr_body_fn.jaxpr, shape_locations, "for_loop")
         if error_msg:
@@ -395,10 +397,17 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
 
         import jax  # pylint: disable=import-outside-toplevel
 
-        jaxpr_body_fn, abstract_shapes, flat_args, out_tree = self._get_jaxpr(
-            init_state, allow_array_resizing=self.allow_array_resizing
-        )
-
+        try:
+            jaxpr_body_fn, abstract_shapes, flat_args, out_tree = self._get_jaxpr(
+                init_state, allow_array_resizing=self.allow_array_resizing
+            )
+        except Exception as e:  # pylint: disable=broad-exception-caught
+            logger.exception(e, exc_info=True)
+            warnings.warn(
+                f"Structured capture of qml.for_loop failed with error:\n\n{e}.\n\nFull error logged at exception level. Use qml.logging.enable_logging() to view.",
+                CaptureWarning,
+            )
+            return self._call_capture_disabled(*init_state)
         for_loop_prim = _get_for_loop_qfunc_prim()
 
         consts_slice = slice(0, len(jaxpr_body_fn.consts))
@@ -417,6 +426,7 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
             args_slice=args_slice,
             abstract_shapes_slice=abstract_shapes_slice,
         )
+
         results = results[-out_tree.num_leaves :]
         return jax.tree_util.tree_unflatten(out_tree, results)
 
