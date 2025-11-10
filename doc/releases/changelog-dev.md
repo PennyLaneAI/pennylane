@@ -198,6 +198,25 @@
   and the function should be passed to the ``stopping_condition`` argument instead.
   [(#8533)](https://github.com/PennyLaneAI/pennylane/pull/8533)
 
+  ```python
+  import pennylane as qml
+  from functools import partial
+  
+  @partial(qml.transforms.decompose, gate_set=lambda op: len(op.wires)<=2)
+  @qml.qnode(qml.device("default.qubit"))
+  def circuit():
+      qml.Hadamard(wires=[0])
+      qml.Toffoli(wires=[0,1,2])
+      return qml.expval(qml.Z(0))
+  ```
+  
+  ```pycon
+  >>> print(qml.draw(circuit)())
+  0: ──H────────╭●───────────╭●────╭●──T──╭●─┤  <Z>
+  1: ────╭●─────│─────╭●─────│───T─╰X──T†─╰X─┤
+  2: ──H─╰X──T†─╰X──T─╰X──T†─╰X──T──H────────┤
+  ```
+
 <h3>Internal changes ⚙️</h3>
 
 * The `grad` and `jacobian` primitives now store the function under `fn`. There is also now a single `jacobian_p`
