@@ -316,6 +316,10 @@ A warning message has been added to :doc:`Building a plugin <../development/plug
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixes a bug in `default.mixed` device where certain diagonal operations were incorrectly
+  reshaped during application when using broadcasting.
+  [(#8593)](https://github.com/PennyLaneAI/pennylane/pull/8593)
+
 * Add an exception to the warning for unsolved operators within the graph-based decomposition
   system if the unsolved operators are :class:`.allocation.Allocate` or :class:`.allocation.Deallocate`.
   [(#8553)](https://github.com/PennyLaneAI/pennylane/pull/8553)
@@ -348,6 +352,7 @@ This release contains contributions from (in alphabetical order):
 Guillermo Alonso,
 Utkarsh Azad,
 Astral Cai,
+Yushao Chen,
 Marcus Edwards,
 Lillian Frederiksen,
 Soran Jahangiri,
