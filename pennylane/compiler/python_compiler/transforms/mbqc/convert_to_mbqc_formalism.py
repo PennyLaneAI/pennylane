@@ -70,9 +70,7 @@ class ConvertToMBQCFormalismPass(passes.ModulePass):
             adj_matrix = generate_adj_matrix("Hadamard")
             adj_matrix_op = arith.ConstantOp(
                 builtin.DenseIntOrFPElementsAttr.from_list(
-                    type=builtin.TensorType(
-                        builtin.IntegerType(1), shape=(len(adj_matrix),)
-                    ),
+                    type=builtin.TensorType(builtin.IntegerType(1), shape=(len(adj_matrix),)),
                     data=adj_matrix,
                 )
             )
@@ -97,17 +95,34 @@ class ConvertToMBQCFormalismPass(passes.ModulePass):
 
                 graph_qubit_dict[key] = extract_op.results[0]
 
-            cz_op = CustomOp(
-                in_qubits=[in_qubits[0], graph_qubit_dict[2]], gate_name="CZ"
-            )
+            cz_op = CustomOp(in_qubits=[in_qubits[0], graph_qubit_dict[2]], gate_name="CZ")
 
             graph_qubit_dict[1], graph_qubit_dict[2] = cz_op.results
-            
+
+            # byproduct_op = CustomOp(in_qubits=in_qubits, gate_name="PauliX")
+            # true_region = [byproduct_op, scf.YieldOp(byproduct_op.results[0])]
+
+            # false_region = [scf.YieldOp(in_qubits[0])]
+
+            # constant_one_op = arith.ConstantOp.from_int_and_width(1, builtin.i1)
+            # cond_op = IfOp(constant_one_op, (QubitType(),), true_region, false_region)
+
+            # graph_qubit_dict[5] = cond_op.results[0]
+
+            constant_one_op = arith.ConstantOp.from_int_and_width(1, builtin.i1)
+            cond = arith.CmpiOp(constant_one_op, constant_one_op, "slt")
+            branch = scf.IfOp(cond, (QubitType(),), Region(Block()), Region(Block()))
+
+            with builder.ImplicitBuilder(branch.true_region.block):
+                byproduct_op = CustomOp(in_qubits=in_qubits, gate_name="PauliX")
+                scf.YieldOp(byproduct_op.results[0])
+            with builder.ImplicitBuilder(branch.false_region.block):
+                scf.YieldOp(in_qubits[0])
 
             for node in graph_qubit_dict:
                 if node not in [5]:
                     dealloc_qubit_op = DeallocQubitOp(graph_qubit_dict[node])
-            
+
             func.ReturnOp(graph_qubit_dict[5])
 
         region = Region([block])
@@ -125,7 +140,7 @@ class ConvertToMBQCFormalismPass(passes.ModulePass):
         pattern_rewriter.PatternRewriteWalker(
             pattern_rewriter.GreedyRewritePatternApplier(
                 [
-                    ConvertToMBQCFormalismPattern({"hadamard":h_funcOp}),
+                    ConvertToMBQCFormalismPattern({"hadamard": h_funcOp}),
                 ]
             ),
             apply_recursively=False,
@@ -637,7 +652,7 @@ class ConvertToMBQCFormalismPattern(
                 # TODOs: Refactor the code below in this loop into separate functions
                 if isinstance(op, CustomOp) and op.gate_name.data == "Hadamard":
                     callOp = func.CallOp(
-                    builtin.SymbolRefAttr("convert_hadamard_to_mbqc"),
+                        builtin.SymbolRefAttr("convert_hadamard_to_mbqc"),
                         [op.in_qubits[0]],
                         self.subroutine_dict["hadamard"].function_type.outputs.data,
                     )
