@@ -19,7 +19,7 @@ from collections.abc import Callable, Sequence
 from typing import Union
 
 import pennylane as qml
-from pennylane import QueuingManager
+from pennylane import QueuingManager, math
 from pennylane.capture import FlatFn
 from pennylane.capture.autograph import wraps
 from pennylane.compiler import compiler
@@ -69,7 +69,7 @@ def _add_abstract_shapes(f):
         out = f(*args, **kwargs)
         shapes = []
         for x in out:
-            shapes.extend(s for s in getattr(x, "shape", ()) if qml.math.is_abstract(s))
+            shapes.extend(s for s in getattr(x, "shape", ()) if math.is_abstract(s))
         return *shapes, *out
 
     return new_f
@@ -207,10 +207,7 @@ class CondCallable:
         # it's easier to store the original `elifs` argument
         self.orig_elifs = elifs
 
-        if false_fn is None and not qml.capture.enabled():
-            self.otherwise_fn = lambda *args, **kwargs: None
-
-        if elifs and not qml.capture.enabled():
+        if elifs:
             elif_preds, elif_fns = list(zip(*elifs))
             self.preds.extend(elif_preds)
             self.branch_fns.extend(elif_fns)
@@ -279,8 +276,9 @@ class CondCallable:
         for pred, branch_fn in zip(self.preds, self.branch_fns):
             if pred:
                 return branch_fn(*args, **kwargs)
-
-        return self.false_fn(*args, **kwargs)
+        if self.otherwise_fn:
+            return self.otherwise_fn(*args, **kwargs)
+        return None
 
     def __call_capture_enabled(self, *args, **kwargs):
         import jax  # pylint: disable=import-outside-toplevel
@@ -296,9 +294,8 @@ class CondCallable:
         flat_true_fn = FlatFn(true_fn)
         branches = [(self.preds[0], flat_true_fn), *elifs, (True, self.otherwise_fn)]
 
-        end_const_ind = len(
-            branches
-        )  # consts go after the len(branches) conditions, first const at len(branches)
+        # consts go after the len(branches) conditions, first const at len(branches)
+        end_const_ind = len(branches)
         conditions = []
         jaxpr_branches = []
         consts = []
@@ -307,7 +304,7 @@ class CondCallable:
         abstracted_axes, abstract_shapes = qml.capture.determine_abstracted_axes(args)
 
         for pred, fn in branches:
-            if (pred_shape := qml.math.shape(pred)) != ():
+            if (pred_shape := math.shape(pred)) != ():
                 raise ValueError(f"Condition predicate must be a scalar. Got {pred_shape}.")
             conditions.append(pred)
             if fn is None:
@@ -337,8 +334,7 @@ class CondCallable:
         return jax.tree_util.tree_unflatten(flat_true_fn.out_tree, results)
 
     def __call__(self, *args, **kwargs):
-
-        if qml.capture.enabled():
+        if qml.capture.enabled() and any(math.is_abstract(p) for p in self.preds):
             return self.__call_capture_enabled(*args, **kwargs)
 
         return self.__call_capture_disabled(*args, **kwargs)

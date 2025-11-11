@@ -61,11 +61,11 @@ def testing_functions():
 def test_bad_predicate_shape():
     """Test that an error is raised if the predicate is not a scalar."""
 
-    def f():
-        qml.cond(np.array([0, 0]), qml.X, qml.Z)(0)
+    def f(pred):
+        qml.cond(pred, qml.X, qml.Z)(0)
 
     with pytest.raises(ValueError, match="predicate must be a scalar"):
-        jax.make_jaxpr(f)()
+        jax.make_jaxpr(f)(np.array([0, 0]))
 
 
 @pytest.mark.parametrize("decorator", [True, False])
@@ -95,6 +95,8 @@ class TestCond:
                 conditional.else_if(pred == -3)(elif_fn3)
                 conditional.else_if(pred == -4)(elif_fn4)
                 conditional.otherwise(false_fn)
+                print(conditional.preds)
+                print(pred)
                 return conditional
 
             return qml.cond(
@@ -112,7 +114,10 @@ class TestCond:
         result = test_func(selector)(arg)
         assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
 
-        jaxpr = jax.make_jaxpr(test_func(selector))(arg)
+        def f(pred, arg):
+            return test_func(pred)(arg)
+
+        jaxpr = jax.make_jaxpr(f)(selector, arg)
         assert jaxpr.eqns[0].primitive == cond_prim
         res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, arg)
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
