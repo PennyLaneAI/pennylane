@@ -188,8 +188,8 @@ jobs:
           # Use the latest stable release or main branch
           git checkout master
           
-          # Build and install
-          uv pip install -e . --verbose
+          # Build and install (NOT editable - we need the C++ extensions compiled)
+          PL_BACKEND=lightning_qubit uv pip install . --verbose
           
           echo "PennyLane-Lightning compiled and installed successfully"
 
