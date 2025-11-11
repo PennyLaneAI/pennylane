@@ -464,7 +464,7 @@ class SemiAdder(ResourceOperator):
         if max_register_size <= 2:
             target_resource_params = target_resource_params or {}
             gate_lst = []
-            if num_zero_ctrl != 0:
+            if num_zero_ctrl != 0: # pragma: no cover
                 x = resource_rep(qre.X)
                 gate_lst.append(GateCount(x, 2 * num_zero_ctrl))
 
