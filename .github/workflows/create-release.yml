@@ -11,11 +11,11 @@ on:
         required: true
         type: string
       release_notes:
-        description: 'The release notes to use for the GitHub release'
+        description: 'The release notes to use for the GitHub release. "New features since last release..."'
         required: true
         type: string
       bump_catalyst_lightning:
-        description: 'Whether to bump catalyst and lightning versions in the RC branch'
+        description: 'Whether to bump catalyst and lightning versions in the RC branch. Check box to enable.'
         required: false
         type: boolean
         default: true
