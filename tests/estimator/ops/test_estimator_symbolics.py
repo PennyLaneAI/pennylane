@@ -21,7 +21,6 @@ import pytest
 import pennylane.estimator as qre
 from pennylane.estimator.resource_operator import GateCount, resource_rep
 from pennylane.estimator.wires_manager import Allocate, Deallocate
-from pennylane.exceptions import ResourcesUndefinedError
 from pennylane.queuing import AnnotatedQueue
 from pennylane.wires import Wires
 
