@@ -156,7 +156,7 @@ jobs:
             "default": ["3.11"],
             "jax-tests": ["3.11", "3.12", "3.14"],
             "capture-jax-tests": ["3.11", "3.12", "3.14"],
-            "gradients-tests": ["3.11"],
+            "gradients-tests": ["3.11"]
           }
           EOF
           fi
