@@ -13,13 +13,19 @@
 # limitations under the License.
 """xDSL transforms core API."""
 
-from .apply_transform_sequence import ApplyTransformSequence, available_passes, register_pass
+from .apply_transform_sequence import (
+    ApplyTransformSequence,
+    available_passes,
+    is_xdsl_pass,
+    register_pass,
+)
 from .transform_interpreter import TransformFunctionsExt, TransformInterpreterPass
 from .compiler_transform import PassDispatcher, compiler_transform
 
 __all__ = [
     "ApplyTransformSequence",
     "available_passes",
+    "is_xdsl_pass",
     "PassDispatcher",
     "register_pass",
     "TransformFunctionsExt",
