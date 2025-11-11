@@ -14,6 +14,7 @@
 """
 Integration tests for the draw transform
 """
+
 # pylint: disable=import-outside-toplevel
 from functools import partial
 
@@ -193,10 +194,7 @@ class TestMatrixParameters:
         assert draw(matrices_circuit, show_matrices=False)() == expected1
 
         expected2 = (
-            "0: ─╭|Ψ⟩──U(M0)─┤  <𝓗(M0)>\n"
-            "1: ─╰|Ψ⟩────────┤         \n"
-            "\n"
-            "M0 = \n[[1. 0.]\n [0. 1.]]"
+            "0: ─╭|Ψ⟩──U(M0)─┤  <𝓗(M0)>\n1: ─╰|Ψ⟩────────┤         \n\nM0 = \n[[1. 0.]\n [0. 1.]]"
         )
         assert draw(matrices_circuit)() == expected2
 
@@ -897,6 +895,86 @@ class TestMidCircuitMeasurements:
         )
 
         assert drawing == expected_drawing
+
+
+class TestPauliMeasure:
+    """Tests PauliMeasure in a circuit drawing."""
+
+    def test_pauli_measure_single_wire(self):
+        """Tests drawing a pauli measurement on a single wire."""
+
+        def circ():
+            qml.H(0)
+            qml.pauli_measure("X", wires=0)
+            return qml.probs()
+
+        expected = "0: ──H──┤↗X├─┤  Probs"
+        assert draw(circ)() == expected
+
+    def test_pauli_measure_multi_wires(self):
+        """Tests drawing a pauli measurement on multiple wires."""
+
+        def circ():
+            qml.H(0)
+            qml.pauli_measure("XY", wires=[0, 1])
+            qml.CNOT([1, 2])
+            return qml.expval(qml.Z(2))
+
+        expected = "0: ──H─╭┤↗X├────┤     \n1: ────╰┤↗Y├─╭●─┤     \n2: ──────────╰X─┤  <Z>"
+        assert draw(circ)() == expected
+
+    def test_pauli_measure_multi_non_adjacent_wires(self):
+        """Tests when the pauli measure skips wires."""
+
+        def circ():
+            qml.H(0)
+            qml.H(1)
+            qml.pauli_measure("XYZ", wires=[3, 0, 2])
+            qml.X(1)
+            return qml.probs()
+
+        expected = (
+            "0: ──H─╭┤↗Y├────┤  Probs\n"
+            "1: ──H─│──────X─┤  Probs\n"
+            "2: ────├┤↗Z├────┤  Probs\n"
+            "3: ────╰┤↗X├────┤  Probs"
+        )
+        assert draw(circ)() == expected
+
+    def test_conditional_on_pauli_measure(self):
+        """Tests drawing using PPMs as classical control."""
+
+        def circ():
+            qml.H(0)
+            qml.H(1)
+            qml.H(2)
+            qml.H(3)
+            qml.H(4)
+            m0 = qml.pauli_measure("XYZ", wires=[3, 0, 2])
+            qml.cond(m0, qml.X)(1)
+            return qml.probs()
+
+        expected = (
+            "0: ──H─╭┤↗Y├────┤  Probs\n"
+            "1: ──H─│──────X─┤  Probs\n"
+            "2: ──H─├┤↗Z├──║─┤  Probs\n"
+            "3: ──H─╰┤↗X├──║─┤  Probs\n"
+            "4: ──H───║────║─┤  Probs\n"
+            "         ╚════╝         "
+        )
+        assert draw(circ)() == expected
+
+    def test_terminal_measure_of_pauli_measure(self):
+        """Tests drawing a terminal measurement of a pauli product measurement."""
+
+        def circ():
+            qml.H(0)
+            qml.H(1)
+            m0 = qml.pauli_measure("XY", wires=[1, 0])
+            return qml.expval(m0)
+
+        expected = "0: ──H─╭┤↗Y├─┤       \n1: ──H─╰┤↗X├─┤       \n         ╚═══╡  <PPM>"
+        assert draw(circ)() == expected
 
 
 class TestLevelExpansionStrategy:

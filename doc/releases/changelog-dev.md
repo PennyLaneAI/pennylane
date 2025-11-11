@@ -10,8 +10,13 @@
   that produces a set of gate names to be used as the target gate set in decompositions.
   [(#8522)](https://github.com/PennyLaneAI/pennylane/pull/8522)
 
-* Added a :func:`~pennylane.measurements.pauli_measure` that takes a Pauli product measurement.
+<h4>Pauli product measurements</h4>
+
+* Added a :func:`~pennylane.ops.pauli_measure` that takes a Pauli product measurement.
   [(#8461)](https://github.com/PennyLaneAI/pennylane/pull/8461)
+
+* Added support for displaying :func:`~pennylane.ops.pauli_measure` in circuit drawings.
+  [(#8623)](https://github.com/PennyLaneAI/pennylane/pull/8623)
 
 <h3>Improvements 🛠</h3>
 

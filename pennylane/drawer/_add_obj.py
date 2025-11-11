@@ -323,7 +323,7 @@ def _add_cwire_measurement(m, layer_str, config):
     mcms = [v.measurements[0] for v in m.mv] if isinstance(m.mv, list) else m.mv.measurements
     layer_str = _add_cwire_measurement_grouping_symbols(mcms, layer_str, config)
 
-    mv_label = "MCM"
+    mv_label = "PPM" if isinstance(mcms[0], PauliMeasure) else "MCM"
     meas_label = measurement_label_map[type(m)](mv_label)
 
     n_wires = len(config.wire_map)
