@@ -959,6 +959,25 @@ class TestResourceQFT:
         """Test that the resources are correct for phase gradient method."""
         assert qre.QFT.phase_grad_resource_decomp(num_wires) == expected_res
 
+    def test_phase_grad_resource_decomp_estimate(self):
+        """Test the resource estimation with QFT.phase_grad_resource_decomp."""
+        config = qre.ResourceConfig()
+        config.set_decomp(qre.QFT, qre.QFT.phase_grad_resource_decomp)
+
+        op = qre.QFT(3)
+        resources = qre.estimate(op, config=config)
+
+        expected_gates = {
+            "Toffoli": 5,
+            "CNOT": 6,
+            "Hadamard": 6,
+        }
+        assert resources.gate_counts == expected_gates
+        assert resources.algo_wires + resources.zeroed_wires + resources.any_state_wires == 4
+        assert resources.algo_wires == 3
+        assert resources.any_state_wires == 0
+        assert resources.zeroed_wires == 1
+
 
 class TestResourceAQFT:
     """Test the ResourceAQFT class."""
