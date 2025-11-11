@@ -25,6 +25,21 @@ Pending deprecations
   - Deprecated in v0.44
   - Will be removed in v0.45
 
+  The example below illustrates how you can provide a function as the ``stopping_condition`` in addition to providing
+  a ``gate_set``, in which case the decomposition of each operator will stop once either it is given in terms of the gates
+  in the ``gate_set`` or the ``stopping_condition`` is satisfied.
+
+  .. code-block:: python
+    import pennylane as qml
+    from functools import partial
+
+    @partial(qml.transforms.decompose, gate_set={"H", "T", "CNOT"}, stopping_condition=lambda op: len(op.wires) <= 2)
+    @qml.qnode(qml.device("default.qubit"))
+    def circuit():
+        qml.Hadamard(wires=[0])
+        qml.Toffoli(wires=[0,1,2])
+        return qml.expval(qml.Z(0))
+
 * Access to the following functions and classes from the `~pennylane.resources` module are 
   deprecated. Instead, these functions must be imported from the `~pennylane.estimator` module.
 

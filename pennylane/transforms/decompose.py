@@ -453,7 +453,9 @@ def decompose(
     1: ───────────────────────────────├●─┤
     2: ───────────────────────────────╰X─┤
 
-    You can also use a function to build a decomposition gate set:
+    You can also provide a function as the ``stopping_condition`` in addition to providing a ``gate_set``, in which case
+    the decomposition of each operator will stop once either it is given in terms of the gates in the ``gate_set`` or
+    the ``stopping_condition`` is satisfied.
 
     .. code-block:: python
 
