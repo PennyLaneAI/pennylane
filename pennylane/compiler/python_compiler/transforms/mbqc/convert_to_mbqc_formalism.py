@@ -20,7 +20,7 @@ from dataclasses import dataclass
 
 from xdsl import context, passes, pattern_rewriter
 from xdsl.dialects import arith, builtin, func, scf
-from xdsl.dialects.scf import ForOp, IfOp, WhileOp
+from xdsl.dialects.scf import ForOp, IfOp, WhileOp, IndexSwitchOp
 from xdsl.ir import SSAValue
 from xdsl.ir.core import OpResult
 from xdsl.rewriter import InsertPoint
@@ -561,7 +561,9 @@ class ConvertToMBQCFormalismPattern(
     # pylint: disable=no-self-use
     @pattern_rewriter.op_type_rewrite_pattern
     def match_and_rewrite(
-        self, root: func.FuncOp | IfOp | WhileOp | ForOp, rewriter: pattern_rewriter.PatternRewriter
+        self,
+        root: func.FuncOp | IfOp | WhileOp | ForOp | IndexSwitchOp,
+        rewriter: pattern_rewriter.PatternRewriter,
     ):
         """Match and rewrite for converting to the MBQC formalism."""
 
@@ -571,6 +573,11 @@ class ConvertToMBQCFormalismPattern(
             # come back to this later.
             one_wire_adj_matrix_op = None
             two_wire_adj_matrix_op = None
+
+            # Ignore the region if it is empty (i.e., function that has no body)
+            if not region.blocks:
+                continue
+
             for op in region.ops:
                 # TODOs: Refactor the code below in this loop into separate functions
                 if isinstance(op, CustomOp) and op.gate_name.data in _MBQC_ONE_QUBIT_GATES:

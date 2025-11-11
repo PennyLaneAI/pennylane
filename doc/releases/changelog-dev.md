@@ -33,16 +33,16 @@
   [(#8543)](https://github.com/PennyLaneAI/pennylane/pull/8543)
   [(#8554)](https://github.com/PennyLaneAI/pennylane/pull/8554)
   
-  - :class:`~.QSVT`
-  - :class:`~.AmplitudeEmbedding`
-  - :class:`~.AllSinglesDoubles`
-  - :class:`~.SimplifiedTwoDesign`
-  - :class:`~.GateFabric`
-  - :class:`~.AngleEmbedding`
-  - :class:`~.IQPEmbedding`
-  - :class:`~.kUpCCGSD`
-  - :class:`~.QAOAEmbedding`
-  - :class:`~.BasicEntanglerLayers`
+  * :class:`~.QSVT`
+  * :class:`~.AmplitudeEmbedding`
+  * :class:`~.AllSinglesDoubles`
+  * :class:`~.SimplifiedTwoDesign`
+  * :class:`~.GateFabric`
+  * :class:`~.AngleEmbedding`
+  * :class:`~.IQPEmbedding`
+  * :class:`~.kUpCCGSD`
+  * :class:`~.QAOAEmbedding`
+  * :class:`~.BasicEntanglerLayers`
 
 * A new `qml.compiler.python_compiler.utils` submodule has been added, containing general-purpose utilities for
   working with xDSL. This includes a function that extracts the concrete value of scalar, constant SSA values.
@@ -138,11 +138,11 @@
 * Some unnecessary methods of the ``qml.CircuitGraph`` class have been removed:
   [(#8477)](https://github.com/PennyLaneAI/pennylane/pull/8477)
 
-  - ``print_contents`` in favor of ``print(obj)``
-  - ``observables_in_order`` in favor of ``observables``
-  - ``operations_in_order`` in favor of ``operations``
-  - ``ancestors_in_order(obj)`` in favor of ``ancestors(obj, sort=True)``
-  - ``descendants_in_order(obj)`` in favor of ``descendants(obj, sort=True)``
+  * ``print_contents`` in favor of ``print(obj)``
+  * ``observables_in_order`` in favor of ``observables``
+  * ``operations_in_order`` in favor of ``operations``
+  * ``ancestors_in_order(obj)`` in favor of ``ancestors(obj, sort=True)``
+  * ``descendants_in_order(obj)`` in favor of ``descendants(obj, sort=True)``
 
 * ``pennylane.devices.DefaultExecutionConfig`` has been removed. Instead, use
   ``qml.devices.ExecutionConfig()`` to create a default execution configuration.
@@ -186,10 +186,10 @@
 * Access to the follow functions and classes from the ``pennylane.resources`` module are deprecated. Instead, these functions must be imported from the ``pennylane.estimator`` module.
   [(#8484)](https://github.com/PennyLaneAI/pennylane/pull/8484)
 
-    - ``qml.estimator.estimate_shots`` in favor of ``qml.resources.estimate_shots``
-    - ``qml.estimator.estimate_error`` in favor of ``qml.resources.estimate_error``
-    - ``qml.estimator.FirstQuantization`` in favor of ``qml.resources.FirstQuantization``
-    - ``qml.estimator.DoubleFactorization`` in favor of ``qml.resources.DoubleFactorization``
+  * ``qml.estimator.estimate_shots`` in favor of ``qml.resources.estimate_shots``
+  * ``qml.estimator.estimate_error`` in favor of ``qml.resources.estimate_error``
+  * ``qml.estimator.FirstQuantization`` in favor of ``qml.resources.FirstQuantization``
+  * ``qml.estimator.DoubleFactorization`` in favor of ``qml.resources.DoubleFactorization``
 
 * ``argnum`` has been renamed ``argnums`` for ``qml.grad``, ``qml.jacobian``, ``qml.jvp`` and ``qml.vjp``.
   [(#8496)](https://github.com/PennyLaneAI/pennylane/pull/8496)
@@ -281,6 +281,10 @@
   which is parsed and transformed with xDSL.
   [(#8587)](https://github.com/PennyLaneAI/pennylane/pull/8587)
 
+* The :func:`~pennylane.compiler.python_compiler.transforms.convert_to_mbqc_formalism_pass` supports 
+  :class:`~xdsl.dialects.scf.IndexSwitchOp` in IR and ignores regions that have no body.
+  [(#?)](https://github.com/PennyLaneAI/pennylane/pull/?)
+
 <h3>Documentation 📝</h3>
 
 * Added a "Unified Compiler Cookbook" RST file, along with tutorials, to ``qml.compiler.python_compiler`,
@@ -348,7 +352,6 @@ A warning message has been added to :doc:`Building a plugin <../development/plug
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
-
 
 Guillermo Alonso,
 Utkarsh Azad,
