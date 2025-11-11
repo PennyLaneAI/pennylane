@@ -379,8 +379,8 @@ class ConvertToMBQCFormalismPass(passes.ModulePass):
                 return self._hadamard_corrections(mres, qubits)
             case "S":
                 return self._s_corrections(mres, qubits)
-            # case "RotXZX":
-            #     return self._rot_corrections(mres, qubits)
+            case "RotXZX":
+                return self._rot_corrections(mres, qubits)
             case "RZ":
                 return self._rot_corrections(mres, qubits)
             # case "CNOT":
@@ -399,7 +399,7 @@ class ConvertToMBQCFormalismPass(passes.ModulePass):
         input_types = (QubitType(),)
         if gate_name == "RZ":
             input_types += (builtin.Float64Type(),)
-        if gate_name == "RZXZX":
+        if gate_name == "RotXZX":
             input_types += (
                 builtin.Float64Type(),
                 builtin.Float64Type(),
@@ -467,6 +467,10 @@ class ConvertToMBQCFormalismPass(passes.ModulePass):
         rz_funcOp = self._convert_single_qubit_gate_subroutine("RZ")
         module.regions[0].blocks.first.add_op(rz_funcOp)
         subroutine_dict["RZ"] = rz_funcOp
+
+        rotxzx_funcOp = self._convert_single_qubit_gate_subroutine("RotXZX")
+        module.regions[0].blocks.first.add_op(rotxzx_funcOp)
+        subroutine_dict["RotXZX"] = rotxzx_funcOp
 
         pattern_rewriter.PatternRewriteWalker(
             pattern_rewriter.GreedyRewritePatternApplier(
@@ -994,6 +998,15 @@ class ConvertToMBQCFormalismPattern(
                     callOp = func.CallOp(
                         builtin.SymbolRefAttr(op.gate_name.data.lower() + "_in_mbqc"),
                         [op.in_qubits[0], op.params[0]],
+                        self.subroutine_dict[op.gate_name.data].function_type.outputs.data,
+                    )
+                    rewriter.insert_op(callOp, InsertPoint.before(op))
+                    rewriter.replace_all_uses_with(op.out_qubits[0], callOp.results[0])
+                    rewriter.erase_op(op)
+                elif isinstance(op, CustomOp) and op.gate_name.data in ["RotXZX"]:
+                    callOp = func.CallOp(
+                        builtin.SymbolRefAttr(op.gate_name.data.lower() + "_in_mbqc"),
+                        [op.in_qubits[0], op.params[0], op.params[1], op.params[2]],
                         self.subroutine_dict[op.gate_name.data].function_type.outputs.data,
                     )
                     rewriter.insert_op(callOp, InsertPoint.before(op))
