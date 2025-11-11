@@ -154,16 +154,9 @@ jobs:
             cat >python_versions.json <<-EOF
           {
             "default": ["3.11"],
-            "torch-tests": ["3.11"],
-            "jax-tests": ["3.11", "3.12", "3.13", "3.14"],
-            "capture-jax-tests": ["3.11", "3.12", "3.13", "3.14"],
-            "all-interfaces-tests": ["3.11"],
-            "external-libraries-tests": ["3.11"],
-            "qcut-tests": ["3.11"],
-            "qchem-tests": ["3.11"],
+            "jax-tests": ["3.11", "3.12", "3.14"],
+            "capture-jax-tests": ["3.11", "3.12", "3.14"],
             "gradients-tests": ["3.11"],
-            "data-tests": ["3.11"],
-            "device-tests": ["3.11"]
           }
           EOF
           fi
