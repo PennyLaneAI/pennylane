@@ -816,6 +816,45 @@ class PCPhaseOp(IRDLOperation):
 
     out_ctrl_qubits = var_result_def(QubitType)
 
+    # pylint: disable=too-many-arguments
+    def __init__(
+        self,
+        *,
+        theta: SSAValue[Float64Type],
+        dim: SSAValue[Float64Type],
+        in_qubits: QubitSSAValue | Operation | Sequence[QubitSSAValue | Operation],
+        in_ctrl_qubits: (
+            QubitSSAValue | Operation | Sequence[QubitSSAValue | Operation] | None
+        ) = None,
+        in_ctrl_values: (
+            SSAValue[IntegerType]
+            | Operation
+            | Sequence[SSAValue[IntegerType]]
+            | Sequence[Operation]
+            | None
+        ) = None,
+        adjoint: UnitAttr | bool = False,
+    ):
+        in_ctrl_qubits = () if in_ctrl_qubits is None else in_ctrl_qubits
+        in_ctrl_values = () if in_ctrl_values is None else in_ctrl_values
+
+        if not isinstance(in_qubits, Sequence):
+            in_qubits = (in_qubits,)
+        if not isinstance(in_ctrl_qubits, Sequence):
+            in_ctrl_qubits = (in_ctrl_qubits,)
+        if not isinstance(in_ctrl_values, Sequence):
+            in_ctrl_values = (in_ctrl_values,)
+
+        out_qubits = tuple(QubitType() for _ in in_qubits)
+        out_ctrl_qubits = tuple(QubitType() for _ in in_ctrl_qubits)
+        properties = {"adjoint": UnitAttr()} if adjoint else {}
+
+        super().__init__(
+            operands=(theta, dim, in_qubits, in_ctrl_qubits, in_ctrl_values),
+            result_types=(out_qubits, out_ctrl_qubits),
+            properties=properties,
+        )
+
 
 @irdl_op_definition
 class ProbsOp(IRDLOperation):
