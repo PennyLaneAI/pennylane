@@ -48,7 +48,7 @@ jobs:
           pip install --upgrade setuptools
           pip install --upgrade --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ --pre pennylane-catalyst
           pip install -e .
-          pip install sybil pytest "jax~=0.6.0" "jaxlib~=0.6.0" torch
+          pip install sybil pytest "jax~=0.6.0" "jaxlib~=0.6.0" torch matplotlib
           pip install scikit-learn 
 
       # TODO: Remove the --ignore options as layers are tested and verified
@@ -57,6 +57,7 @@ jobs:
         run: |
           IGNORE_OPTS_CLOSED="
           --ignore=pennylane/ftqc
+          --ignore=pennylane/logging
           --ignore=pennylane/labs
           --ignore=pennylane/compiler/python_compiler
           "
@@ -65,7 +66,6 @@ jobs:
           --ignore=pennylane/control_flow
           --ignore=pennylane/math
           --ignore=pennylane/compiler
-          --ignore=pennylane/measurements
           --ignore=pennylane/ops/qubit
           --ignore=pennylane/ops/qutrit
           --ignore=pennylane/transforms
@@ -75,19 +75,15 @@ jobs:
           "
           IGNORE_OPTS_AUXILIARY="
           --ignore=pennylane/gradients
-          --ignore=pennylane/pulse
           --ignore=pennylane/templates
           "
           IGNORE_OPTS_TERTIARY="
           --ignore=pennylane/resource
           --ignore=pennylane/io
-          --ignore=pennylane/logging
           --ignore=pennylane/data
           --ignore=pennylane/spin
           --ignore=pennylane/drawer
-          --ignore=pennylane/fourier
           --ignore=pennylane/noise
-          --ignore=pennylane/debugging
           --ignore=pennylane/qcut
           --ignore=pennylane/estimator
           --ignore=pennylane/qchem

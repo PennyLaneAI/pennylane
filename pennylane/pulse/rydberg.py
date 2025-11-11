@@ -229,9 +229,9 @@ def rydberg_drive(amplitude, phase, detuning, wires):
 
     >>> params = [2.4]
     >>> circuit(params)
-    Array(0.78301974, dtype=float64)
+    Array(0.783..., dtype=float64)
     >>> jax.grad(circuit)(params)
-    [Array(-0.6250622, dtype=float64)]
+    [Array(-0.62..., dtype=float64, weak_type=True)]
 
     We can also create a Hamiltonian with local drives. The following circuit corresponds to the
     evolution where additional local drives acting on wires ``0`` and ``1`` respectively are added to the

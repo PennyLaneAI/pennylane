@@ -93,7 +93,7 @@ def vn_entropy(wires, log_base=None) -> VnEntropyMP:
 
     **Example:**
 
-    .. code-block:: python3
+    .. code-block:: python
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -105,13 +105,13 @@ def vn_entropy(wires, log_base=None) -> VnEntropyMP:
     Executing this QNode:
 
     >>> circuit_entropy(np.pi/2)
-    0.6931472
+    np.float64(0.693...)
 
     It is also possible to get the gradient of the previous QNode:
 
-    >>> param = np.array(np.pi/4, requires_grad=True)
+    >>> param = pnp.array(np.pi/4, requires_grad=True)
     >>> qml.grad(circuit_entropy)(param)
-    tensor(0.62322524, requires_grad=True)
+    tensor(0.623..., requires_grad=True)
 
     .. note::
 
