@@ -430,6 +430,9 @@ def _particle_conserving_u1_decomposition(
 
     if isinstance(wires, Wires):
         wires = wires.labels
+        # If we are using capture, then it is going to be problematic to use Wires.
+        # Instead, we need to use the wire labels. Here we have a collection of Wires,
+        # and this line goes through each of them and turns them into their labels.
         nm_wires = list(map(lambda w: w.labels if isinstance(w, Wires) else w, nm_wires))
 
     if capture.enabled():
