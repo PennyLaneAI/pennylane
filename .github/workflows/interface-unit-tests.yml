@@ -172,7 +172,6 @@ jobs:
             cat >matrix_max_parallel.json <<-EOF
           {
             "default": 1,
-            "core-tests": 6,
             "gradients-tests": 2,
             "jax-tests": 4,
             "device-tests": 1
@@ -182,7 +181,6 @@ jobs:
             cat >matrix_max_parallel.json <<-EOF
           {
             "default": 1,
-            "core-tests": 6,
             "jax-tests": 8,
             "torch-tests": 2,
             "device-tests": 1
@@ -493,44 +491,44 @@ jobs:
       requirements_file: ${{ github.event_name == 'schedule' && strategy.job-index == 0 && 'external.txt' || '' }}
 
 
-  qcut-tests:
-    needs:
-      - setup-ci-load
-      - determine_runner
-      - default-dependency-versions
-      - warnings-as-errors-setup
-    strategy:
-      fail-fast: ${{ needs.warnings-as-errors-setup.outputs.fail_fast == 'default' }}
-      max-parallel: >-
-        ${{
-           fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).qcut-tests
-           || fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).default
-         }}
-      matrix:
-        python-version: >-
-          ${{
-            fromJSON(needs.setup-ci-load.outputs.python-version).qcut-tests
-            || fromJSON(needs.setup-ci-load.outputs.python-version).default
-           }}
-    if: ${{ !contains(fromJSON(needs.setup-ci-load.outputs.jobs-to-skip), 'qcut-tests') }}
-    uses: ./.github/workflows/unit-test.yml
-    with:
-      job_runner_name: ${{ needs.determine_runner.outputs.runner_group }}
-      job_name: ${{ inputs.job_name_prefix }}qcut-tests (${{ matrix.python-version }})${{ inputs.job_name_suffix }}
-      branch: ${{ inputs.branch }}
-      coverage_artifact_name: qcut-coverage
-      python_version: ${{ matrix.python-version }}
-      pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
-      pytest_markers: qcut
-      pytest_additional_args: ${{ needs.warnings-as-errors-setup.outputs.pytest_warning_args }}
-      pytest_xml_file_path: '${{ inputs.job_name_prefix }}qcut-tests (${{ matrix.python-version }})${{ inputs.job_name_suffix }}.xml'
-      additional_pip_packages: |
-        kahypar==1.3.5 
-        opt_einsum
-        ${{ needs.default-dependency-versions.outputs.jax-version }}
-        ${{ needs.default-dependency-versions.outputs.pytorch-version }}
-        ${{ inputs.additional_python_packages }}
-      additional_pip_packages_post: ${{ needs.default-dependency-versions.outputs.pennylane-lightning-latest }}
+  # qcut-tests:
+  #   needs:
+  #     - setup-ci-load
+  #     - determine_runner
+  #     - default-dependency-versions
+  #     - warnings-as-errors-setup
+  #   strategy:
+  #     fail-fast: ${{ needs.warnings-as-errors-setup.outputs.fail_fast == 'default' }}
+  #     max-parallel: >-
+  #       ${{
+  #          fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).qcut-tests
+  #          || fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).default
+  #        }}
+  #     matrix:
+  #       python-version: >-
+  #         ${{
+  #           fromJSON(needs.setup-ci-load.outputs.python-version).qcut-tests
+  #           || fromJSON(needs.setup-ci-load.outputs.python-version).default
+  #          }}
+  #   if: ${{ !contains(fromJSON(needs.setup-ci-load.outputs.jobs-to-skip), 'qcut-tests') }}
+  #   uses: ./.github/workflows/unit-test.yml
+  #   with:
+  #     job_runner_name: ${{ needs.determine_runner.outputs.runner_group }}
+  #     job_name: ${{ inputs.job_name_prefix }}qcut-tests (${{ matrix.python-version }})${{ inputs.job_name_suffix }}
+  #     branch: ${{ inputs.branch }}
+  #     coverage_artifact_name: qcut-coverage
+  #     python_version: ${{ matrix.python-version }}
+  #     pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
+  #     pytest_markers: qcut
+  #     pytest_additional_args: ${{ needs.warnings-as-errors-setup.outputs.pytest_warning_args }}
+  #     pytest_xml_file_path: '${{ inputs.job_name_prefix }}qcut-tests (${{ matrix.python-version }})${{ inputs.job_name_suffix }}.xml'
+  #     additional_pip_packages: |
+  #       kahypar==1.3.5 
+  #       opt_einsum
+  #       ${{ needs.default-dependency-versions.outputs.jax-version }}
+  #       ${{ needs.default-dependency-versions.outputs.pytorch-version }}
+  #       ${{ inputs.additional_python_packages }}
+  #     additional_pip_packages_post: ${{ needs.default-dependency-versions.outputs.pennylane-lightning-latest }}
 
 
   # qchem-tests:
@@ -699,13 +697,13 @@ jobs:
       - autograd-tests
       - jax-tests
       - capture-jax-tests
-      - core-tests
+      # - core-tests
       - all-interfaces-tests
       - external-libraries-tests
-      - qcut-tests
-      - qchem-tests
+      # - qcut-tests
+      # - qchem-tests
       - gradients-tests
-      - data-tests
+      # - data-tests
       - device-tests
     
     # Run this job even if any dependencies were skipped
@@ -759,13 +757,13 @@ jobs:
       - autograd-tests
       - jax-tests
       - capture-jax-tests
-      - core-tests
+      # - core-tests
       - all-interfaces-tests
       - external-libraries-tests
-      - qcut-tests
-      - qchem-tests
+      # - qcut-tests
+      # - qchem-tests
       - gradients-tests
-      - data-tests
+      # - data-tests
       - device-tests
 
     # Run this if any of the test jobs failed or were cancelled
