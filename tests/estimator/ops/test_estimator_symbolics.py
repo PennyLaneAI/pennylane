@@ -57,6 +57,19 @@ class TestAdjoint:
             **op.resource_params
         )
 
+        op = qre.QubitUnitary(num_wires=1)  # no default_adjoint_decomp defined
+        adj_op = qre.Adjoint(op)
+        expected_res = [
+            GateCount(
+                qre.resource_rep(
+                    qre.Adjoint,
+                    {"base_cmpr_op": qre.resource_rep(qre.RZ)},
+                ),
+                1,
+            )
+        ]
+        assert adj_op.resource_decomp(**adj_op.resource_params) == expected_res
+
     @pytest.mark.parametrize(
         "base_op, adj_res",
         (
@@ -190,6 +203,21 @@ class TestControlled:
         for (ctrl_wires, ctrl_values), res in ctrl_params_and_expected_res:
             ctrl_op = qre.Controlled(op, ctrl_wires, ctrl_values)
             assert ctrl_op.resource_decomp(**ctrl_op.resource_params) == res
+
+        op = qre.QubitUnitary(num_wires=1)  # no default_adjoint_decomp defined
+        ctrl_op = qre.Controlled(op, num_ctrl_wires=3, num_zero_ctrl=2)
+        expected_res = [
+            GateCount(qre.resource_rep(qre.X), 4),
+            GateCount(
+                qre.Controlled.resource_rep(
+                    qre.resource_rep(qre.RZ),
+                    num_ctrl_wires=3,
+                    num_zero_ctrl=0,
+                ),
+                1,
+            ),
+        ]
+        assert ctrl_op.resource_decomp(**ctrl_op.resource_params) == expected_res
 
     @pytest.mark.parametrize(
         "base_op, ctrl_res, ctrl_ctrl_res",
@@ -376,6 +404,11 @@ class TestPow:
         for z, res in z_and_expected_res:
             pow_op = qre.Pow(op, z)
             assert pow_op.resource_decomp(**pow_op.resource_params) == res
+
+        op = qre.QubitUnitary(num_wires=1)  # no default_pow_decomp defined
+        pow_op = qre.Pow(op, 7)
+        expected_res = [GateCount(op.resource_rep_from_op(), 7)]
+        assert pow_op.resource_decomp(**pow_op.resource_params) == expected_res
 
     @pytest.mark.parametrize("z", (0, 1, 2, 3))
     @pytest.mark.parametrize(
