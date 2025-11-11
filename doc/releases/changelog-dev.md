@@ -15,6 +15,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* Add the `PCPhaseOp` operation to the xDSL Quantum dialect.
+  [(#8___)](https://github.com/PennyLaneAI/pennylane/pull/8___)
+
 * The `~.BasisRotation` graph decomposition was re-written in a qjit friendly way with PennyLane control flow.
   [(#8560)](https://github.com/PennyLaneAI/pennylane/pull/8560)
 
