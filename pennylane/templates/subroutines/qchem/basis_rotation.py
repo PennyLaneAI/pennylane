@@ -55,7 +55,14 @@ def _adjust_determinant(matrix):
     def false_branch(mat):
         return np.array(0.0), mat
 
-    return cond(math.is_abstract(matrix) or det < 0, abstract_or_negative_det, false_branch)(matrix)
+    if math.is_abstract(matrix):
+        return abstract_or_negative_det(matrix)
+
+    if capture.enabled():
+        return cond(det < 0, abstract_or_negative_det, false_branch)(matrix)
+    elif det < 0:
+        return abstract_or_negative_det(matrix)
+    return np.array(0.0), matrix
 
 
 class BasisRotation(Operation):
@@ -368,17 +375,7 @@ class BasisRotation(Operation):
 
         if math.is_real_obj_or_close(unitary_matrix):
 
-            det = math.linalg.det(unitary_matrix)
-            angle = np.array(0.0)
-            mat = (
-                math.copy(unitary_matrix)
-                if math.get_interface(unitary_matrix) == "jax"
-                else math.toarray(unitary_matrix).copy()
-            )
-
-            if math.is_abstract(unitary_matrix) or det < 0:
-                mat = math.T(math.set_index(math.T(mat), 0, -mat[:, 0]))
-                angle = np.pi * (1 - math.real(det)) / 2
+            angle, mat = _adjust_determinant(unitary_matrix)
 
             if not math.is_abstract(angle) and not math.allclose(angle, 0.0):
                 op_list.append(PhaseShift(angle, wires=wires[0]))
