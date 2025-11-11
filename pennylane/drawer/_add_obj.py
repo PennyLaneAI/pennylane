@@ -25,7 +25,6 @@ Usage:
 The `_add_obj` function is automatically invoked by the text drawer when rendering a quantum circuit. Users typically do not need to call it directly.
 """
 
-
 from functools import singledispatch
 
 from pennylane.measurements import (
@@ -39,7 +38,15 @@ from pennylane.measurements import (
     VarianceMP,
 )
 from pennylane.operation import Operator
-from pennylane.ops import Adjoint, Conditional, Controlled, GlobalPhase, Identity, MidMeasure
+from pennylane.ops import (
+    Adjoint,
+    Conditional,
+    Controlled,
+    GlobalPhase,
+    Identity,
+    MidMeasure,
+    PauliRot,
+)
 from pennylane.tape import QuantumScript
 from pennylane.templates.subroutines import TemporaryAND
 
@@ -224,6 +231,20 @@ def _add_op(obj: Operator, layer_str, config, tape_cache=None, skip_grouping_sym
     return layer_str
 
 
+@_add_obj.register
+def _add_pauli_rot(obj: PauliRot, layer_str, config, tape_cache=None, skip_grouping_symbols=False):
+    """Updates ``layer_str`` with ``op`` operation."""
+
+    if not skip_grouping_symbols:
+        layer_str = _add_grouping_symbols(obj.wires, layer_str, config)
+
+    for w in obj.wires:
+        label = obj.label(decimals=config.decimals, cache=config.cache, wire=w).replace("\n", "")
+        layer_str[config.wire_map[w]] += label
+
+    return layer_str
+
+
 @_add_obj.register(Identity)
 @_add_obj.register(GlobalPhase)
 def _add_global_op(
@@ -262,7 +283,7 @@ def _add_mid_measure_op(
 @_add_obj.register
 def _add_tape(obj: QuantumScript, layer_str, config, tape_cache, skip_grouping_symbols=False):
     layer_str = _add_grouping_symbols(obj.wires, layer_str, config)
-    label = f"Tape:{config.cache['tape_offset']+len(tape_cache)}"
+    label = f"Tape:{config.cache['tape_offset'] + len(tape_cache)}"
     for w in obj.wires:
         layer_str[config.wire_map[w]] += label
     tape_cache.append(obj)
