@@ -392,7 +392,14 @@ def _check_capture(op):
 
 def _check_pickle(op):
     """Check that an operation can be dumped and reloaded with pickle."""
-    pickled = pickle.dumps(op)
+    try:
+        pickled = pickle.dumps(op)
+    except Exception as e:
+        # In Python 3.14+, pickle raises PicklingError with detailed context.
+        # Convert to AttributeError for backward compatibility with tests.
+        if isinstance(e, pickle.PicklingError):
+            raise AttributeError(f"Operation cannot be pickled: {e}") from e
+        raise
     unpickled = pickle.loads(pickled)
     assert unpickled == op, "operation must be able to be pickled and unpickled"
 
