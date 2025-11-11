@@ -17,6 +17,8 @@
 
 * The `~.BasisRotation` graph decomposition was re-written in a qjit friendly way with PennyLane control flow.
   [(#8560)](https://github.com/PennyLaneAI/pennylane/pull/8560)
+  [(#8608)](https://github.com/PennyLaneAI/pennylane/pull/8608)
+  [(#8620)](https://github.com/PennyLaneAI/pennylane/pull/8620)
 
 * The new graph based decompositions system enabled via :func:`~.decomposition.enable_graph` now supports the following
   additional templates.
