@@ -125,7 +125,6 @@ def test_integration_for_transform_interpreter(capsys):
             else:
                 print("hello world")
 
-    @xdsl_from_docstring
     def program():
         """
         builtin.module {
@@ -142,7 +141,7 @@ def test_integration_for_transform_interpreter(capsys):
     ctx.load_dialect(builtin.Builtin)
     ctx.load_dialect(transform.Transform)
 
-    mod = program()
+    mod = xdsl_from_docstring(program)
     pipeline = xdsl.passes.PassPipeline((ApplyTransformSequence(),))
     pipeline.apply(ctx, mod)
 
