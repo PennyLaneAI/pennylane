@@ -11,15 +11,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Transform function for the Ross-Selinger decomposition (GridSynth) for qjit + capture."""
+"""Alias transform function for the Ross-Selinger decomposition (GridSynth) for qjit + capture."""
 
 from pennylane.transforms.core import transform
 
 
 @transform
-def rs_decomposition(tape, *, epsilon, ppr_basis):
-    r"""This is an alias for Catalyst's rs_decomposition pass."""
+def gridsynth(tape, *, epsilon, ppr_basis):
+    r"""A wrapper that allows us to register a primitive that represents the transform during capture.
+    The transform itself is only implemented in Catalyst. This is just to enable capture."""
 
     raise NotImplementedError(
-        "This pass is implemented in Catalyst. Only supported with qjit + capture. Otherwise, please use qml.transforms.clifford_t_decomposition."
+        "This pass (GridSynth) is only implemented when using capture and QJIT. Otherwise, please use qml.transforms.clifford_t_decomposition."
     )

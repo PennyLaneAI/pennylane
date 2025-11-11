@@ -345,7 +345,7 @@ from .batch_partial import batch_partial
 from .convert_to_numpy_parameters import convert_to_numpy_parameters
 from .compile import compile
 
-from .decompositions import clifford_t_decomposition, rs_decomposition
+from .decompositions import clifford_t_decomposition, gridsynth
 from .defer_measurements import defer_measurements
 from .diagonalize_measurements import diagonalize_measurements
 from .dynamic_one_shot import dynamic_one_shot, is_mcm
