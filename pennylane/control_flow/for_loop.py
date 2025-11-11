@@ -412,6 +412,7 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
                     "Structured capture of qml.for_loop failed with error:"
                     f"\n\n{e}.\n\nFull error logged at exception level. "
                     "Use qml.logging.enable_logging() to view."
+                    "\nFalling back to unrolled Python for loop."
                 ),
                 CaptureWarning,
             )
