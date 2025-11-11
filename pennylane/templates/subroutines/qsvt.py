@@ -1295,22 +1295,3 @@ def poly_to_angles(poly, routine, angle_solver: Literal["root-finding"] = "root-
     if routine == "GQSP":
         return _compute_gqsp_angles(poly)
     raise AssertionError("Invalid routine. Valid values are 'GQSP', 'QSP' and 'QSVT'")
-
-
-def approx_poly(vector, degree, domain=None, basis=None):
-    r"""Approximates a polynomial function of a given degree at value x
-
-    Args:
-        vector (tensor_like): values to approximate with a polynomial
-        degree (int): degree of the polynomial
-        domain (tuple[float, float]): domain of the polynomial. If None, the domain is [-1, 1]
-        basis (str): basis to use for the polynomial
-    """
-    if domain is None:
-        domain = [-1, 1]
-
-    xs_vals = np.linspace(domain[0], domain[1], len(vector))
-    if basis == "chebyshev":
-        return np.polynomial.Chebyshev.fit(xs_vals, vector, degree, domain=domain)
-
-    return np.polynomial.Polynomial.fit(xs_vals, vector, degree)
