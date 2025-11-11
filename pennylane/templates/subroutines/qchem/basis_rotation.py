@@ -47,7 +47,8 @@ def _adjust_determinant(matrix):
 
     mat = matrix
     if math.is_abstract(det) or det < 0:
-        mat = math.copy(mat) if math.get_interface(mat) == "jax" else math.toarray(mat).copy()
+        if math.get_interface(mat) != "jax":
+            mat = math.toarray(mat).copy()
         mat = math.T(math.set_index(math.T(mat), 0, -mat[:, 0]))
         return np.pi * (1 - math.real(det)) / 2, mat
 
