@@ -23,7 +23,15 @@ filecheck = pytest.importorskip("filecheck")
 
 pytestmark = pytest.mark.external
 
-from xdsl.dialects.builtin import I32, ComplexType, Float64Type, StringAttr, TensorType, i1
+from xdsl.dialects.builtin import (
+    I32,
+    ComplexType,
+    Float64Type,
+    StringAttr,
+    TensorType,
+    UnitAttr,
+    i1,
+)
 from xdsl.dialects.test import TestOp
 from xdsl.ir import AttributeCovT, OpResult
 
@@ -62,6 +70,7 @@ expected_ops_names = {
     "MultiRZOp": "quantum.multirz",
     "NamedObsOp": "quantum.namedobs",
     "NumQubitsOp": "quantum.num_qubits",
+    "PCPhaseOp": "quantum.pcphase",
     "ProbsOp": "quantum.probs",
     "QubitUnitaryOp": "quantum.unitary",
     "SampleOp": "quantum.sample",
@@ -98,6 +107,7 @@ q1 = create_ssa_value(QubitType())
 q2 = create_ssa_value(QubitType())
 qreg = create_ssa_value(QuregType())
 theta = create_ssa_value(Float64Type())
+dim = create_ssa_value(Float64Type())
 pauli_x = NamedObservableAttr("PauliX")
 obs = create_ssa_value(ObservableType())
 i = create_ssa_value(I32)
@@ -121,6 +131,7 @@ expected_ops_init_kwargs = {
         "in_qubits": (q0, q1),
         "in_ctrl_qubits": (q2,),
         "params": (theta,),
+        "adjoint": True,
     },
     "DeallocOp": {"qreg": qreg},
     "DeallocQubitOp": {"qubit": q0},
@@ -143,9 +154,17 @@ expected_ops_init_kwargs = {
         "in_qubits": (q1, q0),
         "in_ctrl_qubits": (q2,),
         "in_ctrl_values": (i,),
+        "adjoint": UnitAttr(),
     },
     "NamedObsOp": {"qubit": q0, "obs_type": pauli_x},
     "NumQubitsOp": {"result_types": (i,)},
+    "PCPhaseOp": {
+        "theta": theta,
+        "dim": dim,
+        "in_qubits": (q1, q0),
+        "in_ctrl_qubits": (q2,),
+        "in_ctrl_values": (i,),
+    },
     "ProbsOp": {
         "operands": (obs, i, None),
         "result_types": (TensorType(Float64Type(), shape=(8,)),),
@@ -350,6 +369,19 @@ class TestAssemblyFormat:
         // Adjoint
         // CHECK: {{%.+}}, {{%.+}} = quantum.multirz([[PARAM1]]) [[Q0]], [[Q1]] adj : !quantum.bit, !quantum.bit
         %qm6, %qm7 = quantum.multirz(%param1) %q0, %q1 adj : !quantum.bit, !quantum.bit
+
+        ////////////////// **PCPhaseOp tests** //////////////////
+        // No control wires
+        // CHECK: {{%.+}}, {{%.+}}, {{%.+}} = quantum.pcphase([[PARAM1]], [[PARAM2]]) [[Q0]], [[Q1]], [[Q2]] : !quantum.bit, !quantum.bit, !quantum.bit
+        %qp1, %qp2, %qp3 = quantum.pcphase(%param1, %param2) %q0, %q1, %q2 : !quantum.bit, !quantum.bit, !quantum.bit
+
+        // Control wires and values
+        // CHECK: {{%.+}}, {{%.+}}, {{%.+}} = quantum.pcphase([[PARAM1]], [[PARAM2]]) [[Q0]], [[Q1]] ctrls([[Q2]]) ctrlvals([[TRUE_CST]]) : !quantum.bit, !quantum.bit ctrls !quantum.bit
+        %qp4, %qp5, %qp6 = quantum.pcphase(%param1, %param2) %q0, %q1 ctrls(%q2) ctrlvals(%true_cst) : !quantum.bit, !quantum.bit ctrls !quantum.bit
+
+        // Adjoint
+        // CHECK: {{%.+}}, {{%.+}} = quantum.pcphase([[PARAM1]], [[PARAM2]]) [[Q0]], [[Q1]] adj : !quantum.bit, !quantum.bit
+        %qp7, %qp8 = quantum.pcphase(%param1, %param2) %q0, %q1 adj : !quantum.bit, !quantum.bit
 
         ////////////////// **QubitUnitaryOp tests** //////////////////
         // No control wires
