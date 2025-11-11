@@ -78,6 +78,12 @@ class PauliMeasure(Operator):
     def resource_params(self) -> dict:
         return {"pauli_word": self.hyperparameters["pauli_word"]}
 
+    def label(self, decimals=None, base_label=None, cache=None, wire=None) -> str:
+        """How the pauli-product measurement is represented in diagrams and drawings."""
+        if wire is None:
+            return f"┤↗{self.pauli_word}├"
+        return f"┤↗{self.pauli_word[self.wires.index(wire)]}├"
+
     @property
     def hash(self) -> int:
         """int: An integer hash uniquely representing the measurement."""
