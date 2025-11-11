@@ -45,22 +45,13 @@ def _adjust_determinant(matrix):
     """
     det = math.linalg.det(matrix)
 
-    def abstract_or_negative_det(mat):
-        # Adjust determinant to make unitary matrix special orthogonal; multiplication of
-        # the first column with -1 is equal to prepending the decomposition with a phase shift
-        if math.get_interface(mat) != "jax":
-            mat = math.toarray(mat).copy()
+    mat = matrix
+    if math.is_abstract(det) or det < 0:
+        mat = math.copy(mat) if math.get_interface(mat) == "jax" else math.toarray(mat).copy()
         mat = math.T(math.set_index(math.T(mat), 0, -mat[:, 0]))
         return np.pi * (1 - math.real(det)) / 2, mat
 
-    def false_branch(mat):
-        return np.array(0.0), mat
-
-    if capture.enabled():
-        return cond(det < 0, abstract_or_negative_det, false_branch)(matrix)
-    if det < 0:
-        return abstract_or_negative_det(matrix)
-    return np.array(0.0), matrix
+    return np.array(0.0), mat
 
 
 class BasisRotation(Operation):
