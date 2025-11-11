@@ -191,7 +191,10 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> SpecsDict:  # pr
     elif isinstance(qjit.original_function, qml.QNode):
         original_qnode = qjit.original_function
     else:
-        raise ValueError("qml.specs can only be applied to a QNode or qjit'd QNode")
+        raise ValueError(
+            "qml.specs can only be applied to a QNode or qjit'd QNode, instead got:",
+            qjit.original_function,
+        )
 
     device = original_qnode.device
 
