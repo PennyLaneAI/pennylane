@@ -23,7 +23,7 @@ from typing import Any
 
 import numpy as np
 
-import pennylane.estimator as qre
+import pennylane.estimator.ops as qre_ops
 from pennylane.operation import classproperty
 from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
@@ -334,7 +334,7 @@ class ResourceOperator(ABC):
         target_resource_params = target_resource_params or {}
         gate_lst = []
         if num_zero_ctrl != 0:
-            x = resource_rep(qre.X)
+            x = resource_rep(qre_ops.X)
             gate_lst.append(GateCount(x, 2 * num_zero_ctrl))
 
         decomp = cls.resource_decomp(**target_resource_params)
