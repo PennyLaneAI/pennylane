@@ -13,7 +13,6 @@
 # limitations under the License.
 r"""Resource operators for symbolic operations."""
 from collections.abc import Iterable
-from functools import singledispatch
 
 import pennylane.estimator as qre
 from pennylane.estimator.resource_operator import (
@@ -25,7 +24,6 @@ from pennylane.estimator.resource_operator import (
     _dequeue,
     resource_rep,
 )
-from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.wires import Wires, WiresLike
 
 # pylint: disable=arguments-differ,super-init-not-called, signature-differs

@@ -48,7 +48,7 @@ def _(action: Deallocate):
 
 
 @singledispatch
-def _apply_controlled(action, num_ctrl_wires, num_zero_ctrl):
+def _apply_controlled(action, num_ctrl_wires, num_zero_ctrl):  # pylint: disable=unused-argument
     return action
 
 
