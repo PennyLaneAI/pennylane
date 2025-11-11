@@ -626,7 +626,9 @@ class ConvertToMBQCFormalismPass(passes.ModulePass):
         # Insert subroutines for MBQC gate sets
         # TODOs: All the MBQC gate subroutines are added before traversing the IR.
         # This can be optimized later by only adding necessary subroutines needed
-        # for the IR.
+        # for the IR. 
+        # TODOs: Not sure if the optimization is required even later since the code
+        # generation phase could even eliminate unused func.func.
         subroutine_dict = {}
 
         for gate_name in _MBQC_ONE_QUBIT_GATES:
