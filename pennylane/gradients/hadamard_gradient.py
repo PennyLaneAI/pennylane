@@ -537,6 +537,16 @@ def _reversed_direct_hadamard_test(tape, trainable_param_idx, aux_wire) -> tuple
     return new_batch, new_coeffs
 
 
+def _quantum_automatic_differentiation():
+    # 1) check if we have a work wire -> direct or standard differentiation
+
+    # 2) check if we are doing forward or reversed (switch the generator with the measured op) based how many
+    # combinations there are. Depends on the combinations of expectations and terms in the Hamiltonian.
+    # If the terms in the Hamiltonian are on different wires we can measure them at the same time, but still need
+    # different circuits for the controls, can refer to the hamiltonian’s "grouping indices" list: its length gives
+    # the number of shots need for the expectations.
+
+
 def _new_measurement(mp, aux_wire, all_wires: Wires):
     obs = mp.obs or ops.op_math.prod(*(ops.Z(w) for w in mp.wires or all_wires))
     new_obs = ops.functions.simplify(obs @ ops.Y(aux_wire))
