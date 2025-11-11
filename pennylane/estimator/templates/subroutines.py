@@ -18,6 +18,7 @@ from collections import defaultdict
 
 import pennylane.estimator as qre
 from pennylane import numpy as qnp
+from pennylane.estimator.ops.op_math.symbolic import Controlled
 from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
@@ -26,7 +27,6 @@ from pennylane.estimator.resource_operator import (
     resource_rep,
 )
 from pennylane.estimator.wires_manager import Allocate, Deallocate
-from pennylane.exceptions import ResourcesUndefinedError
 from pennylane.wires import Wires, WiresLike
 
 # pylint: disable=arguments-differ,too-many-arguments,unused-argument,super-init-not-called, signature-differs
@@ -462,7 +462,27 @@ class SemiAdder(ResourceOperator):
         """
         max_register_size = target_resource_params["max_register_size"]
         if max_register_size <= 2:
-            raise ResourcesUndefinedError
+            target_resource_params = target_resource_params or {}
+            gate_lst = []
+            if num_zero_ctrl != 0:
+                x = resource_rep(qre.X)
+                gate_lst.append(GateCount(x, 2 * num_zero_ctrl))
+
+            decomp = cls.resource_decomp(**target_resource_params)
+            for action in decomp:
+                if isinstance(action, GateCount):
+                    gate = action.gate
+                    c_gate = Controlled.resource_rep(
+                        gate,
+                        num_ctrl_wires,
+                        num_zero_ctrl=0,  # we flipped already and added the X gates above
+                    )
+                    gate_lst.append(GateCount(c_gate, action.count))
+
+                else:  # pragma: no cover
+                    gate_lst.append(action)
+
+            return gate_lst
         gate_lst = []
 
         if num_ctrl_wires > 1:
