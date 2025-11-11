@@ -552,6 +552,7 @@ class ConvertToMBQCFormalismPass(passes.ModulePass):
             visibility="private",
             region=region,
         )
+        funcOp.attributes["mbqc_transform"] = builtin.StringAttr.get("y")
         return funcOp
 
     def _convert_cnot_gate_subroutine(self, gate_name="CNOT"):
@@ -602,6 +603,7 @@ class ConvertToMBQCFormalismPass(passes.ModulePass):
             visibility="private",
             region=region,
         )
+        funcOp.attributes["mbqc_transform"] = builtin.StringAttr.get("y")
         return funcOp
 
     # pylint: disable=no-self-use
@@ -659,8 +661,8 @@ class ConvertToMBQCFormalismPattern(
     ):
         """Match and rewrite for converting to the MBQC formalism."""
 
-        # TODO: this should be tested with all mbqc transforms
-        if isinstance(root, func.FuncOp) and "qnode" not in root.attributes:
+        # Ensure that "Hadamard"/"CZ" gates in the subroutine are not converted. 
+        if isinstance(root, func.FuncOp) and "mbqc_transform" in root.attributes:
             return
 
         for region in root.regions:
