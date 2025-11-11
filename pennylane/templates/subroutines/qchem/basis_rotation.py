@@ -45,17 +45,14 @@ def _adjust_determinant(matrix):
     """
     det = math.linalg.det(matrix)
 
-    def abstract_or_negative_det(mat):
-        # Adjust determinant to make unitary matrix special orthogonal; multiplication of
-        # the first column with -1 is equal to prepending the decomposition with a phase shift
-        mat = math.copy(mat) if math.get_interface(mat) == "jax" else math.toarray(mat).copy()
+    mat = matrix
+    if math.is_abstract(det) or det < 0:
+        if math.get_interface(mat) != "jax":
+            mat = math.toarray(mat).copy()
         mat = math.T(math.set_index(math.T(mat), 0, -mat[:, 0]))
         return np.pi * (1 - math.real(det)) / 2, mat
 
-    def false_branch(mat):
-        return np.array(0.0), mat
-
-    return cond(math.is_abstract(matrix) or det < 0, abstract_or_negative_det, false_branch)(matrix)
+    return np.array(0.0), mat
 
 
 class BasisRotation(Operation):
@@ -367,11 +364,13 @@ class BasisRotation(Operation):
         op_list = []
 
         if math.is_real_obj_or_close(unitary_matrix):
-            angle, unitary_matrix = _adjust_determinant(unitary_matrix)
+
+            angle, mat = _adjust_determinant(unitary_matrix)
+
             if not math.is_abstract(angle) and not math.allclose(angle, 0.0):
                 op_list.append(PhaseShift(angle, wires=wires[0]))
 
-            _, givens_list = math.decomposition.givens_decomposition(unitary_matrix)
+            _, givens_list = math.decomposition.givens_decomposition(mat)
             for grot_mat, (i, j) in givens_list:
                 theta = math.arctan2(math.real(grot_mat[0, 1]), math.real(grot_mat[0, 0]))
                 op_list.append(SingleExcitation(2 * theta, wires=[wires[i], wires[j]]))
