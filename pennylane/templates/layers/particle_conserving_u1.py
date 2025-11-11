@@ -24,12 +24,6 @@ from pennylane.ops import CNOT, CZ, CRot, PhaseShift
 from pennylane.templates.embeddings import BasisEmbedding
 from pennylane.wires import Wires, WiresLike
 
-has_jax = True
-try:
-    import jax.numpy as jnp
-except ModuleNotFoundError:  # pragma: no cover
-    has_jax = False  # pragma: no cover
-
 
 def decompose_ua(phi, wires=None):
     r"""Appends the circuit decomposing the controlled application of the unitary
@@ -438,12 +432,12 @@ def _particle_conserving_u1_decomposition(
         wires = wires.labels
         nm_wires = list(map(lambda w: w.labels if isinstance(w, Wires) else w, nm_wires))
 
-    if has_jax and capture.enabled():
+    if capture.enabled():
         nm_wires, weights, wires, init_state = (
-            jnp.array(nm_wires),
-            jnp.array(weights),
-            jnp.array(wires),
-            jnp.array(init_state),
+            math.array(nm_wires, like="jax"),
+            math.array(weights, like="jax"),
+            math.array(wires, like="jax"),
+            math.array(init_state, like="jax"),
         )
 
     BasisEmbedding(init_state, wires=wires)
