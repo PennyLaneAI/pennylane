@@ -205,9 +205,9 @@
   and the function should be passed to the ``stopping_condition`` argument instead.
   [(#8533)](https://github.com/PennyLaneAI/pennylane/pull/8533)
 
-  The example below illustrates how you can provide a function as the ``stopping_condition`` in addition to providing 
-  a ``gate_set``, in which case the decomposition of each operator will stop once either it is given in terms of the gates 
-  in the ``gate_set`` or the ``stopping_condition`` is satisfied.
+  The example below illustrates how you can provide a function as the ``stopping_condition`` in addition to providing a 
+  ``gate_set``. The decomposition of each operator will then stop once it reaches the gates in the ``gate_set`` or the 
+  ``stopping_condition`` is satisfied.
 
   ```python
   import pennylane as qml
