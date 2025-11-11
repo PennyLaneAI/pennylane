@@ -60,6 +60,163 @@ class ConvertToMBQCFormalismPass(passes.ModulePass):
 
     name = "convert-to-mbqc-formalism"
 
+    def _prep_graph_state(self, gate_name: str):
+        """Insert a graph state prep operation into the IR for each gate and extract and return auxiliary qubits
+        in the graph state.
+
+        Args:
+            gate_name[str]: Name of gate operation.
+
+        Return:
+            graph_qubit_dict : A dictionary of qubits in the graph
+        """
+        num_aux_wres = get_num_aux_wires(gate_name)
+
+        adj_matrix_op = arith.ConstantOp(
+            builtin.DenseIntOrFPElementsAttr.from_list(
+                type=builtin.TensorType(
+                    builtin.IntegerType(1), shape=(len(generate_adj_matrix(gate_name)),)
+                ),
+                data=generate_adj_matrix(gate_name),
+            )
+        )
+
+        graph_state_prep_op = GraphStatePrepOp(adj_matrix_op.result, "Hadamard", "CZ")
+        graph_state_reg = graph_state_prep_op.results[0]
+
+        graph_qubit_dict = {}
+        # Extract qubit from the graph state reg
+        for i in range(num_aux_wres):
+            extract_op = ExtractOp(graph_state_reg, i)
+
+            # Note the following line maps the aux qubit index in the register to the
+            # standard context book MBQC representation. Note that auxiliary qubits in
+            # the graph state for one qubit gates only hit the `if` branch as `i` is
+            # always less than `4`, while the auxiliary qubits in graph state for a `CNOT`
+            # gate with an index >= 7 would hit the `else` branch.
+            key = i + 2 if i < 7 else i + 3
+
+            graph_qubit_dict[key] = extract_op.results[0]
+
+        return graph_qubit_dict
+
+    def _insert_xy_basis_measure_op(
+        self,
+        angle: float,
+        qubit: QubitType,
+    ):
+        """Insert an arbitrary basis measure related operations to the IR.
+        Args:
+            angle (float) : The angle of measurement basis.
+            qubit (QubitType) : The target qubit to be measured.
+
+        Returns:
+            The results include: 1. a measurement result; 2, a result qubit.
+        """
+        plane_op = MeasurementPlaneAttr(MeasurementPlaneEnum("XY"))
+        # Create a constant op from a float64 variable
+        const_angle_op = arith.ConstantOp(builtin.FloatAttr(data=angle, type=builtin.Float64Type()))
+        # Create a MeasureInBasisOp op
+        measure_op = MeasureInBasisOp(in_qubit=qubit, plane=plane_op, angle=const_angle_op)
+        # Returns the results of the newly created measure_op.
+        # The results include: 1, a measurement result; 2, a result qubit.
+        return measure_op.results
+
+    def _insert_measure_x_op(self, qubit):
+        """Insert a X-basis measure op related operations to the IR."""
+        return self._insert_xy_basis_measure_op(0.0, qubit)
+
+    def _insert_measure_y_op(self, qubit):
+        """Insert a Y-basis measure op related operations to the IR."""
+        return self._insert_xy_basis_measure_op(math.pi / 2, qubit)
+
+    def _hadamard_measurements(self, graph_qubit_dict):
+        """Insert measurement ops for a Hadamard gate and return measurement results and the result graph qubits"""
+        m1, graph_qubit_dict[1] = self._insert_measure_x_op(graph_qubit_dict[1])
+        m2, graph_qubit_dict[2] = self._insert_measure_y_op(graph_qubit_dict[2])
+        m3, graph_qubit_dict[3] = self._insert_measure_y_op(graph_qubit_dict[3])
+        m4, graph_qubit_dict[4] = self._insert_measure_y_op(graph_qubit_dict[4])
+        return [m1, m2, m3, m4], graph_qubit_dict
+
+    def _parity_check(
+        self,
+        mres: list[builtin.IntegerType],
+        additional_const_one: bool = False,
+    ):
+        """Insert parity check related operations to the IR.
+        Args:
+            mres (list[builtin.IntegerType]): A list of the mid-measurement results.
+            additional_const_one (bool) : Whether we need to add an additional const one to get the
+                parity or not. Defaults to False.
+        Returns:
+            The result of parity check.
+        """
+        prev_res = mres[0]
+        xor_op = None
+        # Create xor ops to iterate all elements in the mres and insert them to the IR
+        for i in range(1, len(mres)):
+            xor_op = arith.XOrIOp(prev_res, mres[i])
+            prev_res = xor_op.result
+
+        # Create an xor op for an additional const one and insert ops to the IR
+        if additional_const_one:
+            constant_one_op = arith.ConstantOp.from_int_and_width(1, builtin.i1)
+            xor_op = arith.XOrIOp(prev_res, constant_one_op)
+            prev_res = xor_op.result
+
+        return prev_res
+
+    def _insert_cond_byproduct_op(
+        self,
+        parity_res: OpResult,
+        gate_name: str,
+        qubit: QubitType,
+    ):  # pylint: disable=too-many-arguments, too-many-positional-arguments
+        """Insert a byproduct op related operations to the IR.
+        Args:
+            parity_res (OpResult) : Parity check result.
+            gate_name (str) : The name of the gate to be corrected.
+            qubit (QubitType) : The result auxiliary qubit to be corrected.
+
+        Return:
+            The result auxiliary qubit.
+        """
+        constant_one_op = arith.ConstantOp.from_int_and_width(1, builtin.i1)
+        cond = arith.CmpiOp(parity_res, constant_one_op, "eq")
+        branch = scf.IfOp(cond, (QubitType(),), Region(Block()), Region(Block()))
+
+        with builder.ImplicitBuilder(branch.true_region.block):
+            byproduct_op = CustomOp(in_qubits=qubit, gate_name=gate_name)
+            scf.YieldOp(byproduct_op.results[0])
+        with builder.ImplicitBuilder(branch.false_region.block):
+            scf.YieldOp(qubit)
+        return branch.results[0]
+
+    def _hadamard_corrections(
+        self,
+        mres: list[builtin.IntegerType],
+        qubit: QubitType,
+    ):
+        """Insert correction ops of a Hadamard gate to the IR.
+        Args:
+            mres (list[builtin.IntegerType]): A list of the mid-measurement results.
+            qubit (QubitType) : An auxiliary result qubit.
+
+        Returns:
+            The result auxiliary qubit.
+        """
+        m1, m2, m3, m4 = mres
+
+        # X correction
+        x_parity = self._parity_check([m1, m3, m4])
+        res_aux_qubit = self._insert_cond_byproduct_op(x_parity, "PauliX", qubit)
+
+        # Z correction
+        z_parity = self._parity_check([m2, m3])
+        res_aux_qubit = self._insert_cond_byproduct_op(z_parity, "PauliZ", res_aux_qubit)
+
+        return res_aux_qubit
+
     def _convert_h_subroutine(self):
         input_types = (QubitType(),)
         output_types = (QubitType(),)
@@ -67,57 +224,18 @@ class ConvertToMBQCFormalismPass(passes.ModulePass):
 
         with builder.ImplicitBuilder(block):
             in_qubits = [block.args[0]]
-            adj_matrix = generate_adj_matrix("Hadamard")
-            adj_matrix_op = arith.ConstantOp(
-                builtin.DenseIntOrFPElementsAttr.from_list(
-                    type=builtin.TensorType(builtin.IntegerType(1), shape=(len(adj_matrix),)),
-                    data=adj_matrix,
-                )
-            )
 
-            num_aux_wres = get_num_aux_wires("Hadamard")
-
-            graph_state_prep_op = GraphStatePrepOp(adj_matrix_op.result, "Hadamard", "CZ")
-
-            graph_state_reg = graph_state_prep_op.results[0]
-
-            graph_qubit_dict = {}
-            # Extract qubit from the graph state reg
-            for i in range(num_aux_wres):
-                extract_op = ExtractOp(graph_state_reg, i)
-
-                # Note the following line maps the aux qubit index in the register to the
-                # standard context book MBQC representation. Note that auxiliary qubits in
-                # the graph state for one qubit gates only hit the `if` branch as `i` is
-                # always less than `4`, while the auxiliary qubits in graph state for a `CNOT`
-                # gate with an index >= 7 would hit the `else` branch.
-                key = i + 2 if i < 7 else i + 3
-
-                graph_qubit_dict[key] = extract_op.results[0]
+            graph_qubit_dict = self._prep_graph_state(gate_name="Hadamard")
 
             cz_op = CustomOp(in_qubits=[in_qubits[0], graph_qubit_dict[2]], gate_name="CZ")
 
             graph_qubit_dict[1], graph_qubit_dict[2] = cz_op.results
 
-            # byproduct_op = CustomOp(in_qubits=in_qubits, gate_name="PauliX")
-            # true_region = [byproduct_op, scf.YieldOp(byproduct_op.results[0])]
+            mres, graph_qubit_dict = self._hadamard_measurements(graph_qubit_dict)
 
-            # false_region = [scf.YieldOp(in_qubits[0])]
+            by_product_correction = self._hadamard_corrections(mres, graph_qubit_dict[5])
 
-            # constant_one_op = arith.ConstantOp.from_int_and_width(1, builtin.i1)
-            # cond_op = IfOp(constant_one_op, (QubitType(),), true_region, false_region)
-
-            # graph_qubit_dict[5] = cond_op.results[0]
-
-            constant_one_op = arith.ConstantOp.from_int_and_width(1, builtin.i1)
-            cond = arith.CmpiOp(constant_one_op, constant_one_op, "slt")
-            branch = scf.IfOp(cond, (QubitType(),), Region(Block()), Region(Block()))
-
-            with builder.ImplicitBuilder(branch.true_region.block):
-                byproduct_op = CustomOp(in_qubits=in_qubits, gate_name="PauliX")
-                scf.YieldOp(byproduct_op.results[0])
-            with builder.ImplicitBuilder(branch.false_region.block):
-                scf.YieldOp(in_qubits[0])
+            graph_qubit_dict[5] = by_product_correction
 
             for node in graph_qubit_dict:
                 if node not in [5]:
@@ -126,7 +244,12 @@ class ConvertToMBQCFormalismPass(passes.ModulePass):
             func.ReturnOp(graph_qubit_dict[5])
 
         region = Region([block])
-        funcOp = func.FuncOp("convert_hadamard_to_mbqc", (input_types, output_types), region=region)
+        funcOp = func.FuncOp(
+            "convert_hadamard_to_mbqc",
+            (input_types, output_types),
+            visibility="private",
+            region=region,
+        )
         return funcOp
 
     # pylint: disable=no-self-use
