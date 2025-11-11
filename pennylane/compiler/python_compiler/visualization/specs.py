@@ -14,11 +14,13 @@
 
 """This file contains the implementation of the `specs` function for the Unified Compiler."""
 
+from __future__ import annotations
+
 import warnings
 from functools import wraps
 from typing import TYPE_CHECKING, Literal
 
-from catalyst import qjit
+from catalyst.jit import qjit
 from catalyst.passes.xdsl_plugin import getXDSLPluginAbsolutePath
 
 from ..compiler import Compiler
