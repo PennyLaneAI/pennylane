@@ -227,6 +227,24 @@ class TestResourceSemiAdder:
         (
             (
                 1,
+                1,
+                1,
+                [
+                    GateCount(resource_rep(qre.X), 2),
+                    GateCount(
+                        resource_rep(
+                            qre.Controlled,
+                            {
+                                "base_cmpr_op": resource_rep(qre.CNOT),
+                                "num_ctrl_wires": 1,
+                                "num_zero_ctrl": 0,
+                            },
+                        )
+                    ),
+                ],
+            ),
+            (
+                1,
                 0,
                 5,
                 [
