@@ -37,7 +37,7 @@ jobs:
     outputs:
       run_sphinx: ${{ steps.get_pr_branch.outputs.run_sphinx }}
     steps:
-      - name: Set PR branch name
+      - name: Get PR branch name
         id: get_pr_branch
         run: |
           BRANCH_NAME="${{ github.head_ref}}"
