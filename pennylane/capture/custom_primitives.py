@@ -44,6 +44,12 @@ def _make_hashable(obj: Any) -> Any:
         Hashable version of the object
     """
 
+    # slice is unhashable in 3.11, but hashable in 3.12+
+    # so we have to treat it first incase incompatibility among 
+    # different Python versions
+    if isinstance(obj, slice):
+        return (obj.start, obj.stop, obj.step)
+
     # First, check if the object is already hashable
     try:
         hash(obj)
@@ -55,9 +61,6 @@ def _make_hashable(obj: Any) -> Any:
     # pylint: disable=import-outside-toplevel,too-many-return-statements
     import jax
     import numpy as np
-
-    if isinstance(obj, slice):
-        return (obj.start, obj.stop, obj.step)
 
     # Check if obj is a JAX tracer - these are already hashable, don't convert
     # Must check before Array check since tracers can also be Array instances
