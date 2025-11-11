@@ -60,7 +60,7 @@ def _adjust_determinant(matrix):
 
     if capture.enabled():
         return cond(det < 0, abstract_or_negative_det, false_branch)(matrix)
-    elif det < 0:
+    if det < 0:
         return abstract_or_negative_det(matrix)
     return np.array(0.0), matrix
 
