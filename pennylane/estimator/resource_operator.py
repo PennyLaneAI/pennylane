@@ -313,6 +313,7 @@ class ResourceOperator(ABC):
         """
         # Local import to avoid circular dependency
         import pennylane.estimator as qre
+
         from .ops.op_math.symbolic import Controlled
 
         target_resource_params = target_resource_params or {}
