@@ -283,7 +283,7 @@ def _try_reusing_cwires(bit_map, connected_layers, connected_wires):
 def transform_deferred_measurements_tape(tape):
     """Helper function to replace MeasurementValues with wires for tapes using
     deferred measurements."""
-    if not any(isinstance(op, MidMeasure) for op in tape.operations) and any(
+    if not any(isinstance(op, (MidMeasure, PauliMeasure)) for op in tape.operations) and any(
         m.mv is not None for m in tape.measurements
     ):
         new_measurements = []
