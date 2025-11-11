@@ -48,7 +48,9 @@ def diff_eqn_assertions(eqn, scalar_out, argnums=None, n_consts=0, fn=None):
         "fn",
         "scalar_out",
     }
-    assert eqn.params["argnums"] == argnums
+    # JAX 0.7.0+ requires hashable params, so lists become tuples
+    expected_argnums = tuple(argnums) if isinstance(argnums, list) else argnums
+    assert eqn.params["argnums"] == expected_argnums
     assert eqn.params["n_consts"] == n_consts
     assert eqn.params["method"] == "auto"
     assert eqn.params["h"] == 1e-6
