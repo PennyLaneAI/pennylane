@@ -53,6 +53,8 @@ _MBQC_TWO_QUBIT_GATES = {
     "CNOT",
 }
 
+_MBQC_GATE_SET = _MBQC_ONE_QUBIT_GATES | _MBQC_TWO_QUBIT_GATES
+
 
 @dataclass(frozen=True)
 class ConvertToMBQCFormalismPass(passes.ModulePass):
@@ -452,15 +454,17 @@ class ConvertToMBQCFormalismPass(passes.ModulePass):
 
         return ctrl_aux_qubit, tgt_aux_qubit
 
-    def _queue_measurements(self, gate_name: str, graph_qubit_dict, params: None | list[builtin.Float64Type] = None):
-        """ Add measurement ops to the subroutine.
+    def _queue_measurements(
+        self, gate_name: str, graph_qubit_dict, params: None | list[builtin.Float64Type] = None
+    ):
+        """Add measurement ops to the subroutine.
         Args:
             gate_name (str): Gate name.
             graph_qubit_dict (list[builtin.IntegerType]): A list of the mid-measurement results.
             params (None | list[builtin.Float64Type]) : Parameters of the gate.
 
         Returns:
-            The measurement results and updated graph_qubit_dict.        
+            The measurement results and updated graph_qubit_dict.
 
         """
         match gate_name:
@@ -621,8 +625,8 @@ class ConvertToMBQCFormalismPass(passes.ModulePass):
         """Apply the convert-to-mbqc-formalism pass."""
         # Insert subroutines for MBQC gate sets
         # TODOs: All the MBQC gate subroutines are added before traversing the IR.
-        # This can be optimized later by only adding necessary subroutines needed 
-        # for the IR. 
+        # This can be optimized later by only adding necessary subroutines needed
+        # for the IR.
         subroutine_dict = {}
 
         for gate_name in _MBQC_ONE_QUBIT_GATES:
@@ -668,42 +672,21 @@ class ConvertToMBQCFormalismPattern(
 
         for region in root.regions:
             for op in region.ops:
-                if isinstance(op, CustomOp) and op.gate_name.data in ["Hadamard", "S"]:
-                    callOp = func.CallOp(
-                        builtin.SymbolRefAttr(op.gate_name.data.lower() + "_in_mbqc"),
-                        [op.in_qubits[0]],
-                        self.subroutine_dict[op.gate_name.data].function_type.outputs.data,
-                    )
+                if isinstance(op, CustomOp) and op.gate_name.data in _MBQC_GATE_SET:
+                    callee = builtin.SymbolRefAttr(op.gate_name.data.lower() + "_in_mbqc")
+                    arguments = []
+                    for qubit in op.in_qubits:
+                        arguments.append(qubit)
+                    for param in op.params:
+                        arguments.append(param)
+
+                    return_types = self.subroutine_dict[
+                        op.gate_name.data
+                    ].function_type.outputs.data
+                    callOp = func.CallOp(callee, arguments, return_types)
                     rewriter.insert_op(callOp, InsertPoint.before(op))
-                    rewriter.replace_all_uses_with(op.out_qubits[0], callOp.results[0])
-                    rewriter.erase_op(op)
-                elif isinstance(op, CustomOp) and op.gate_name.data in ["RZ"]:
-                    callOp = func.CallOp(
-                        builtin.SymbolRefAttr(op.gate_name.data.lower() + "_in_mbqc"),
-                        [op.in_qubits[0], op.params[0]],
-                        self.subroutine_dict[op.gate_name.data].function_type.outputs.data,
-                    )
-                    rewriter.insert_op(callOp, InsertPoint.before(op))
-                    rewriter.replace_all_uses_with(op.out_qubits[0], callOp.results[0])
-                    rewriter.erase_op(op)
-                elif isinstance(op, CustomOp) and op.gate_name.data in ["RotXZX"]:
-                    callOp = func.CallOp(
-                        builtin.SymbolRefAttr(op.gate_name.data.lower() + "_in_mbqc"),
-                        [op.in_qubits[0], op.params[0], op.params[1], op.params[2]],
-                        self.subroutine_dict[op.gate_name.data].function_type.outputs.data,
-                    )
-                    rewriter.insert_op(callOp, InsertPoint.before(op))
-                    rewriter.replace_all_uses_with(op.out_qubits[0], callOp.results[0])
-                    rewriter.erase_op(op)
-                elif isinstance(op, CustomOp) and op.gate_name.data in ["CNOT"]:
-                    callOp = func.CallOp(
-                        builtin.SymbolRefAttr(op.gate_name.data.lower() + "_in_mbqc"),
-                        [op.in_qubits[0], op.in_qubits[1]],
-                        self.subroutine_dict[op.gate_name.data].function_type.outputs.data,
-                    )
-                    rewriter.insert_op(callOp, InsertPoint.before(op))
-                    rewriter.replace_all_uses_with(op.out_qubits[0], callOp.results[0])
-                    rewriter.replace_all_uses_with(op.out_qubits[1], callOp.results[1])
+                    for i, out_qubit in enumerate(op.out_qubits):
+                        rewriter.replace_all_uses_with(out_qubit, callOp.results[i])
                     rewriter.erase_op(op)
 
                 elif isinstance(op, GlobalPhaseOp) or (
