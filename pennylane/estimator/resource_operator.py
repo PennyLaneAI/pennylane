@@ -274,11 +274,23 @@ class ResourceOperator(ABC):
     def adjoint_resource_decomp(cls, target_resource_params: dict | None = None) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
 
+        By default, this method decomposes the operator, and then computes the adjoint of each
+        gate in the decomposition.
+
         Args:
             target_resource_params (dict | None): A dictionary containing the resource parameters
                 of the target operator.
         """
-        raise ResourcesUndefinedError
+        # Local import to avoid circular dependency
+        from .ops.op_math.symbolic import _apply_adj
+
+        target_resource_params = target_resource_params or {}
+        gate_lst = []
+        decomp = cls.resource_decomp(**target_resource_params)
+
+        for gate in decomp[::-1]:  # reverse the order
+            gate_lst.append(_apply_adj(gate))
+        return gate_lst
 
     @classmethod
     def controlled_resource_decomp(
@@ -289,6 +301,9 @@ class ResourceOperator(ABC):
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
+        By default, this method decomposes the operator, and then computes the controlled version
+        of each gate in the decomposition.
+
         Args:
             num_ctrl_wires (int): the number of qubits the
                 operation is controlled on
@@ -297,7 +312,31 @@ class ResourceOperator(ABC):
             target_resource_params (dict | None): A dictionary containing the resource parameters
                 of the target operator.
         """
-        raise ResourcesUndefinedError
+        # Local import to avoid circular dependency
+        import pennylane.estimator as qre
+        from .ops.op_math.symbolic import Controlled
+
+        target_resource_params = target_resource_params or {}
+        gate_lst = []
+        if num_zero_ctrl != 0:
+            x = resource_rep(qre.X)
+            gate_lst.append(GateCount(x, 2 * num_zero_ctrl))
+
+        decomp = cls.resource_decomp(**target_resource_params)
+        for action in decomp:
+            if isinstance(action, GateCount):
+                gate = action.gate
+                c_gate = Controlled.resource_rep(
+                    gate,
+                    num_ctrl_wires,
+                    num_zero_ctrl=0,  # we flipped already and added the X gates above
+                )
+                gate_lst.append(GateCount(c_gate, action.count))
+
+            else:  # pragma: no cover
+                gate_lst.append(action)
+
+        return gate_lst
 
     @classmethod
     def pow_resource_decomp(
@@ -306,12 +345,17 @@ class ResourceOperator(ABC):
         r"""Returns a list representing the resources for an operator
         raised to a power.
 
+        By default, this method returns the operator multiplied by the given power.
+
         Args:
             pow_z (int): exponent that the operator is being raised to
             target_resource_params (dict | None): A dictionary containing the resource parameters
                 of the target operator.
         """
-        raise ResourcesUndefinedError
+        target_resource_params = target_resource_params or {}
+        num_wires = target_resource_params.get("num_wires")
+        base_cmpr_op = CompressedResourceOp(cls, num_wires, target_resource_params)
+        return [GateCount(base_cmpr_op, pow_z)]
 
     def __repr__(self) -> str:
         str_rep = self.__class__.__name__ + "(" + str(self.resource_params) + ")"
