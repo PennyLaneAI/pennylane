@@ -61,7 +61,7 @@ class ConvertToMBQCFormalismPass(passes.ModulePass):
     name = "convert-to-mbqc-formalism"
 
     def _prep_graph_state(self, gate_name: str):
-        """Insert a graph state prep operation into the IR for each gate and extract and return auxiliary qubits
+        """Add a graph state prep operation into the subroutine for each gate and extract and return auxiliary qubits
         in the graph state.
 
         Args:
@@ -105,7 +105,7 @@ class ConvertToMBQCFormalismPass(passes.ModulePass):
         const_angle_op: arith.ConstantOp,
         qubit: QubitType,
     ):
-        """Insert an arbitrary basis measure related operations to the IR.
+        """Add an arbitrary basis measure related operations to the subroutine.
         Args:
             const_angle_op (arith.ConstantOp) : The angle of measurement basis.
             qubit (QubitType) : The target qubit to be measured.
@@ -120,7 +120,6 @@ class ConvertToMBQCFormalismPass(passes.ModulePass):
         # The results include: 1, a measurement result; 2, a result qubit.
         return measure_op.results
 
-
     def _insert_cond_arbitrary_basis_measure_op(
         self,
         meas_parity: builtin.IntegerType,
@@ -129,7 +128,7 @@ class ConvertToMBQCFormalismPass(passes.ModulePass):
         qubit: QubitType,
     ):  # pylint: disable=too-many-arguments, too-many-positional-arguments
         """
-        Insert a conditional arbitrary basis measurement operation based on a previous measurement result.
+        Add a conditional arbitrary basis measurement operation based on a previous measurement result.
         Args:
             meas_parity (builtin.IntegerType) : A parity of previous measurements.
             angle (SSAValue[builtin.Float64Type]) : An angle SSAValue from a parametric gate operation.
@@ -166,7 +165,7 @@ class ConvertToMBQCFormalismPass(passes.ModulePass):
         return branch.results
 
     def _hadamard_measurements(self, graph_qubit_dict):
-        """Insert measurement ops for a Hadamard gate and return measurement results and the result graph qubits"""
+        """Add measurement ops for a Hadamard gate to the subroutine"""
         const_x_angle = arith.ConstantOp(
             builtin.FloatAttr(data=0.0, type=builtin.Float64Type())
         )  # measure_x
@@ -188,7 +187,7 @@ class ConvertToMBQCFormalismPass(passes.ModulePass):
         return [m1, m2, m3, m4], graph_qubit_dict
 
     def _s_measurements(self, graph_qubit_dict):
-        """Insert measurement ops for a S gate and return measurement results and the result graph qubits"""
+        """Add measurement ops for a S gate to the subroutine"""
         const_x_angle = arith.ConstantOp(
             builtin.FloatAttr(data=0.0, type=builtin.Float64Type())
         )  # measure_x
@@ -210,7 +209,7 @@ class ConvertToMBQCFormalismPass(passes.ModulePass):
         return [m1, m2, m3, m4], graph_qubit_dict
 
     def _rz_measurements(self, graph_qubit_dict, params):
-        """Insert measurement ops for a RZ gate and return measurement results and the result graph qubits"""
+        """Add measurement ops for a RZ gate to the subroutine"""
         const_x_angle = arith.ConstantOp(
             builtin.FloatAttr(data=0.0, type=builtin.Float64Type())
         )  # measure_x
@@ -229,7 +228,7 @@ class ConvertToMBQCFormalismPass(passes.ModulePass):
         return [m1, m2, m3, m4], graph_qubit_dict
 
     def _rotxzx_measurements(self, graph_qubit_dict, params):
-        """Insert measurement ops for a RotXZX gate and return measurement results and the result graph qubits"""
+        """Add measurement ops for a RotXZX gate to the subroutine"""
         const_x_angle = arith.ConstantOp(
             builtin.FloatAttr(data=0.0, type=builtin.Float64Type())
         )  # measure_x
@@ -251,7 +250,7 @@ class ConvertToMBQCFormalismPass(passes.ModulePass):
         return [m1, m2, m3, m4], graph_qubit_dict
 
     def _cnot_measurements(self, graph_qubit_dict):
-        """Insert measurement ops for a CNOT gate and return measurement results and the result graph qubits"""
+        """Add measurement ops for a CNOT gate to the subroutine"""
         const_x_angle = arith.ConstantOp(
             builtin.FloatAttr(data=0.0, type=builtin.Float64Type())
         )  # measure_x
@@ -305,7 +304,7 @@ class ConvertToMBQCFormalismPass(passes.ModulePass):
         mres: list[builtin.IntegerType],
         additional_const_one: bool = False,
     ):
-        """Insert parity check related operations to the IR.
+        """Add parity check related operations to the subroutine.
         Args:
             mres (list[builtin.IntegerType]): A list of the mid-measurement results.
             additional_const_one (bool) : Whether we need to add an additional const one to get the
@@ -334,7 +333,7 @@ class ConvertToMBQCFormalismPass(passes.ModulePass):
         gate_name: str,
         qubit: QubitType,
     ):  # pylint: disable=too-many-arguments, too-many-positional-arguments
-        """Insert a byproduct op related operations to the IR.
+        """Add a byproduct op related operations to the subroutine.
         Args:
             parity_res (OpResult) : Parity check result.
             gate_name (str) : The name of the gate to be corrected.
@@ -359,7 +358,7 @@ class ConvertToMBQCFormalismPass(passes.ModulePass):
         mres: list[builtin.IntegerType],
         qubit: QubitType,
     ):
-        """Insert correction ops of a Hadamard gate to the IR.
+        """Add correction ops of a Hadamard gate to the subroutine.
         Args:
             mres (list[builtin.IntegerType]): A list of the mid-measurement results.
             qubit (QubitType) : An auxiliary result qubit.
@@ -384,7 +383,7 @@ class ConvertToMBQCFormalismPass(passes.ModulePass):
         mres: list[builtin.IntegerType],
         qubit: QubitType,
     ):
-        """Insert correction ops of a S gate to the IR.
+        """Add correction ops of a S gate to the subroutine.
         Args:
             mres (list[builtin.IntegerType]): A list of the mid-measurement results.
             qubit (QubitType) : An auxiliary result qubit.
@@ -408,7 +407,7 @@ class ConvertToMBQCFormalismPass(passes.ModulePass):
         mres: list[builtin.IntegerType],
         qubit: QubitType,
     ):
-        """Insert correction ops of a RotXZX or RZ gate to the IR.
+        """Add correction ops of a RotXZX or RZ gate to the subroutine.
         Args:
             mres (list[builtin.IntegerType]): A list of the mid-measurement results.
             qubit (QubitType) : An auxiliary result qubit.
@@ -431,7 +430,7 @@ class ConvertToMBQCFormalismPass(passes.ModulePass):
         mres: list[builtin.IntegerType],
         qubits: list[QubitType],
     ):
-        """Insert correction ops of a CNOT gate to the IR.
+        """Add correction ops of a CNOT gate to the subroutine.
         Args:
             mres (list[builtin.IntegerType]): A list of the mid-measurement results.
             qubits (list[QubitType]) : A list of auxiliary result qubits.
@@ -453,7 +452,17 @@ class ConvertToMBQCFormalismPass(passes.ModulePass):
 
         return ctrl_aux_qubit, tgt_aux_qubit
 
-    def _queue_measurements(self, gate_name: str, graph_qubit_dict, params=None):
+    def _queue_measurements(self, gate_name: str, graph_qubit_dict, params: None | list[builtin.Float64Type] = None):
+        """ Add measurement ops to the subroutine.
+        Args:
+            gate_name (str): Gate name.
+            graph_qubit_dict (list[builtin.IntegerType]): A list of the mid-measurement results.
+            params (None | list[builtin.Float64Type]) : Parameters of the gate.
+
+        Returns:
+            The measurement results and updated graph_qubit_dict.        
+
+        """
         match gate_name:
             case "Hadamard":
                 return self._hadamard_measurements(graph_qubit_dict)
@@ -476,8 +485,9 @@ class ConvertToMBQCFormalismPass(passes.ModulePass):
         mres: list[builtin.IntegerType],
         qubits: QubitType | list[QubitType],
     ):
-        """Insert correction ops for the result auxiliary qubit/s to the IR.
+        """Add correction ops for the result auxiliary qubit/s to the subroutine.
         Args:
+            gate_name (str): Gate name.
             mres (list[builtin.IntegerType]): A list of the mid-measurement results.
             qubits (QubitType | list[QubitType]) : An or a list of auxiliary result qubit.
 
@@ -505,11 +515,7 @@ class ConvertToMBQCFormalismPass(passes.ModulePass):
         if gate_name == "RZ":
             input_types += (builtin.Float64Type(),)
         if gate_name == "RotXZX":
-            input_types += (
-                builtin.Float64Type(),
-                builtin.Float64Type(),
-                builtin.Float64Type(),
-            )
+            input_types += (builtin.Float64Type(),) * 3
         output_types = (QubitType(),)
         block = Block(arg_types=input_types)
 
@@ -533,6 +539,7 @@ class ConvertToMBQCFormalismPass(passes.ModulePass):
 
             mres, graph_qubit_dict = self._queue_measurements(gate_name, graph_qubit_dict, params)
 
+            # The following could be removed to support Pauli tracker
             by_product_correction = self._insert_byprod_corrections(
                 gate_name, mres, graph_qubit_dict[5]
             )
@@ -552,6 +559,7 @@ class ConvertToMBQCFormalismPass(passes.ModulePass):
             visibility="private",
             region=region,
         )
+        # Add an attribute to avoid transforming H, CZ gates in the func to MQBC
         funcOp.attributes["mbqc_transform"] = builtin.StringAttr.get("y")
         return funcOp
 
@@ -581,6 +589,7 @@ class ConvertToMBQCFormalismPass(passes.ModulePass):
 
             mres, graph_qubit_dict = self._queue_measurements(gate_name, graph_qubit_dict)
 
+            # The following could be removed to support Pauli tracker
             graph_qubit_dict[7], graph_qubit_dict[15] = self._insert_byprod_corrections(
                 gate_name, mres, [graph_qubit_dict[7], graph_qubit_dict[15]]
             )
@@ -603,6 +612,7 @@ class ConvertToMBQCFormalismPass(passes.ModulePass):
             visibility="private",
             region=region,
         )
+        # Add an attribute to avoid transforming H, CZ gates in the func to MQBC
         funcOp.attributes["mbqc_transform"] = builtin.StringAttr.get("y")
         return funcOp
 
@@ -610,24 +620,15 @@ class ConvertToMBQCFormalismPass(passes.ModulePass):
     def apply(self, _ctx: context.Context, module: builtin.ModuleOp) -> None:
         """Apply the convert-to-mbqc-formalism pass."""
         # Insert subroutines for MBQC gate sets
-
+        # TODOs: All the MBQC gate subroutines are added before traversing the IR.
+        # This can be optimized later by only adding necessary subroutines needed 
+        # for the IR. 
         subroutine_dict = {}
 
-        h_funcOp = self._convert_single_qubit_gate_subroutine("Hadamard")
-        module.regions[0].blocks.first.add_op(h_funcOp)
-        subroutine_dict["Hadamard"] = h_funcOp
-
-        s_funcOp = self._convert_single_qubit_gate_subroutine("S")
-        module.regions[0].blocks.first.add_op(s_funcOp)
-        subroutine_dict["S"] = s_funcOp
-
-        rz_funcOp = self._convert_single_qubit_gate_subroutine("RZ")
-        module.regions[0].blocks.first.add_op(rz_funcOp)
-        subroutine_dict["RZ"] = rz_funcOp
-
-        rotxzx_funcOp = self._convert_single_qubit_gate_subroutine("RotXZX")
-        module.regions[0].blocks.first.add_op(rotxzx_funcOp)
-        subroutine_dict["RotXZX"] = rotxzx_funcOp
+        for gate_name in _MBQC_ONE_QUBIT_GATES:
+            funcOp = self._convert_single_qubit_gate_subroutine(gate_name)
+            module.regions[0].blocks.first.add_op(funcOp)
+            subroutine_dict[gate_name] = funcOp
 
         cnot_funcOp = self._convert_cnot_gate_subroutine()
         module.regions[0].blocks.first.add_op(cnot_funcOp)
@@ -661,16 +662,12 @@ class ConvertToMBQCFormalismPattern(
     ):
         """Match and rewrite for converting to the MBQC formalism."""
 
-        # Ensure that "Hadamard"/"CZ" gates in the subroutine are not converted. 
+        # Ensure that "Hadamard"/"CZ" gates in the subroutine are not converted.
         if isinstance(root, func.FuncOp) and "mbqc_transform" in root.attributes:
             return
 
         for region in root.regions:
-            # TODOs: Current implementation ensures only one type adj matrix op is inserted into one region of an IR.
-            # We can further optimize it by ensure only one type adj matrix op is inserted into the IR. We can
-            # come back to this later.
             for op in region.ops:
-                # TODOs: Refactor the code below in this loop into separate functions
                 if isinstance(op, CustomOp) and op.gate_name.data in ["Hadamard", "S"]:
                     callOp = func.CallOp(
                         builtin.SymbolRefAttr(op.gate_name.data.lower() + "_in_mbqc"),
