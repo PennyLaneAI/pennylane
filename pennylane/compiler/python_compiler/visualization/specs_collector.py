@@ -117,9 +117,7 @@ class ResourcesResult:
 def handle_resource(
     xdsl_op: xdsl.ir.Operation,
 ) -> tuple[ResourceType, str, int] | tuple[None, None]:
-    # breakpoint()
-    # print(f"Unsupported xDSL op: {xdsl_op}")
-    # raise NotImplementedError(f"Unsupported xDSL op: {xdsl_op}")
+    # Default handler for unsupported xDSL op types
     return None, None
 
 
@@ -286,9 +284,7 @@ def _collect_region(region, loop_warning=False, cond_warning=False) -> Resources
 
         match resource_type:
             case ResourceType.GATE:
-                resources.quantum_operations[resource] = (
-                    resources.quantum_operations.get(resource, 0) + 1
-                )
+                resources.quantum_operations[resource] += 1
                 n_qubits = 0
                 if hasattr(op, "in_qubits"):
                     n_qubits += len(op.in_qubits)
@@ -296,11 +292,9 @@ def _collect_region(region, loop_warning=False, cond_warning=False) -> Resources
                     n_qubits += len(op.in_ctrl_qubits)
                 resources.resource_sizes[n_qubits] += 1
             case ResourceType.MEASUREMENT:
-                resources.quantum_measurements[resource] = (
-                    resources.quantum_measurements.get(resource, 0) + 1
-                )
+                resources.quantum_measurements[resource] += 1
             case ResourceType.PPM:
-                resources.ppm_operations[resource] = resources.ppm_operations.get(resource, 0) + 1
+                resources.ppm_operations[resource] += 1
                 resources.resource_sizes[len(op.in_qubits)] += 1
             case ResourceType.OTHER:
                 # Parse out extra circuit information
@@ -314,14 +308,15 @@ def _collect_region(region, loop_warning=False, cond_warning=False) -> Resources
 
 
 def specs_collect(module) -> ResourcesResult:
-    """Collect PennyLane ops and measurements from the module."""
+    """Collect PennyLane resources from the module."""
 
     resources = ResourcesResult()
 
     for func_op in module.body.ops:
+        # TODO: May need to determine how many times a function is called for functions other than the main circuit
 
         if isinstance(func_op, CallbackOp):
-            # print("Skipping CallbackOp in collector.")
+            # Skip callback ops, which are not part of the quantum circuit itself
             continue
 
         if not isinstance(func_op, func.FuncOp):

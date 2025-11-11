@@ -14,8 +14,6 @@
 
 """This file contains the implementation of the `specs` function for the Unified Compiler."""
 
-from __future__ import annotations
-
 import warnings
 from functools import wraps
 from typing import TYPE_CHECKING, Literal
@@ -27,9 +25,8 @@ from ..compiler import Compiler
 from .specs_collector import specs_collect
 
 if TYPE_CHECKING:
+    from catalyst.jit import QJIT
     from xdsl.dialects.builtin import ModuleOp
-
-    from pennylane.workflow.qnode import QNode
 
 
 class StopCompilation(Exception):
@@ -37,7 +34,7 @@ class StopCompilation(Exception):
 
 
 # TODO: This function is identically defined within draw.py
-def _get_mlir_module(qnode: QNode, args, kwargs) -> ModuleOp:
+def _get_mlir_module(qnode: QJIT, args, kwargs) -> ModuleOp:
     """Ensure the QNode is compiled and return its MLIR module."""
     if hasattr(qnode, "mlir_module") and qnode.mlir_module is not None:
         return qnode.mlir_module
@@ -49,13 +46,13 @@ def _get_mlir_module(qnode: QNode, args, kwargs) -> ModuleOp:
 
 
 def mlir_specs(
-    qnode: QNode, level: None | int | tuple[int] | list[int] | Literal["all"] = None
+    qnode: QJIT, level: None | int | tuple[int] | list[int] | Literal["all"] = None
 ) -> callable:
     """Compute the specs used for a circuit at the level of an MLIR pass.
 
     Args:
         qnode (QNode): The (QJIT'd) qnode to get the specs for
-        level (None | int, optional): The (int) level of the MLIR pass to get the specs for
+        level (None | int | tuple[int] | list[int] | "all", optional): The level of the MLIR pass to get the specs for
 
     Returns:
         callable: A callable that returns the specs for the circuit at the specified level
@@ -87,19 +84,16 @@ def mlir_specs(
     def wrapper(*args, **kwargs):
         if args or kwargs:
             warnings.warn(
-                "The `specs` function does not yet support dynamic arguments.\n",
+                "The `specs` function does not yet support dynamic arguments.",
                 UserWarning,
             )
         mlir_module = _get_mlir_module(qnode, args, kwargs)
         try:
             Compiler.run(mlir_module, callback=_specs_callback)
         except StopCompilation:
-            # We use StopCompilation to short-circuit the compilation once we reach
+            # We use StopCompilation to interrupt the compilation once we reach
             # the desired level
             pass
-
-        if not cache:
-            return None
 
         if level == "all":
             return {f"{cache[lvl][1]} (MLIR-{lvl})": cache[lvl][0] for lvl in sorted(cache.keys())}

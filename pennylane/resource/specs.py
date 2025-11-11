@@ -183,7 +183,7 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> SpecsDict:  # pr
 
     from pennylane.compiler.python_compiler.visualization import mlir_specs
 
-    # TODO: Determine if its possible to have batched QJIT code / how to handle it
+    # Unwrap the original QNode if any passes have been applied
     pass_pipeline_wrapped = False
     if isinstance(qjit.original_function, catalyst.passes.pass_api.PassPipelineWrapper):
         pass_pipeline_wrapped = True
@@ -192,6 +192,7 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> SpecsDict:  # pr
         original_qnode = qjit.original_function
     else:
         raise ValueError("qml.specs can only be applied to a QNode or qjit'd QNode")
+
     device = original_qnode.device
 
     if isinstance(level, (int, tuple, list)) or level == "all":
@@ -206,14 +207,15 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> SpecsDict:  # pr
         # Note that this only gets transforms manually applied by the user
         tape_transforms = original_qnode.transform_program
         num_trans_levels = len(tape_transforms) + 1
-        trans_levels = list(range(num_trans_levels)) if level == "all" else level
+        trans_levels = (
+            list(range(num_trans_levels))
+            if level == "all"
+            else [lvl for lvl in level if lvl < num_trans_levels]
+        )
 
         # Handle tape transforms
         for trans_level in trans_levels:
-            if trans_level not in range(num_trans_levels):
-                continue  # Not a tape transform level
-
-            # User transforms always come first, so level remains correct
+            # User transforms always come first, so level and trans_level align correctly
             tape = qml.workflow.construct_tape(original_qnode, level=trans_level)(*args, **kwargs)
             info = specs_from_tape(tape, compute_depth)
 
@@ -222,6 +224,7 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> SpecsDict:  # pr
                 if trans_level > 0
                 else "No transforms"
             )
+            # If the same transform appears multiple times, append a suffix
             if trans_name in resources:
                 rep = 2
                 while f"{trans_name}-{rep}" in resources:
@@ -249,6 +252,7 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> SpecsDict:  # pr
                 )
                 resources[level_name] = res_resources
 
+        # Unpack dictionary to single item if only 1 level was given as input
         if single_level:
             resources = next(iter(resources.values()))
             level = level[0]
