@@ -26,6 +26,7 @@ from pennylane.exceptions import CaptureWarning
 from ._loop_abstract_axes import (
     add_abstract_shapes,
     get_dummy_arg,
+    handle_jaxpr_error,
     loop_determine_abstracted_axes,
     validate_no_resizing_returns,
 )
