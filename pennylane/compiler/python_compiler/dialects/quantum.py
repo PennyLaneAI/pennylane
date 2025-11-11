@@ -781,6 +781,43 @@ class NumQubitsOp(IRDLOperation):
 
 
 @irdl_op_definition
+class PCPhaseOp(IRDLOperation):
+    """Apply a projector-controlled phase gate"""
+
+    name = "quantum.pcphase"
+
+    assembly_format = """
+        `(` $theta `,` $dim `)` $in_qubits
+        (`adj` $adjoint^)?
+        attr-dict
+        ( `ctrls` `(` $in_ctrl_qubits^ `)` )?
+        ( `ctrlvals` `(` $in_ctrl_values^ `)` )?
+        `:` type($out_qubits) (`ctrls` type($out_ctrl_qubits)^ )?
+    """
+
+    irdl_options = [
+        AttrSizedOperandSegments(as_property=True),
+        AttrSizedResultSegments(as_property=True),
+    ]
+
+    theta = operand_def(Float64Type())
+
+    dim = operand_def(Float64Type())
+
+    in_qubits = var_operand_def(QubitType)
+
+    adjoint = opt_prop_def(UnitAttr)
+
+    in_ctrl_qubits = var_operand_def(QubitType)
+
+    in_ctrl_values = var_operand_def(i1)
+
+    out_qubits = var_result_def(QubitType)
+
+    out_ctrl_qubits = var_result_def(QubitType)
+
+
+@irdl_op_definition
 class ProbsOp(IRDLOperation):
     """Compute computational basis probabilities for the current state"""
 
@@ -1041,6 +1078,7 @@ Quantum = Dialect(
         MultiRZOp,
         NamedObsOp,
         NumQubitsOp,
+        PCPhaseOp,
         ProbsOp,
         QubitUnitaryOp,
         SampleOp,
