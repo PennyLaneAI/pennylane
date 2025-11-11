@@ -217,6 +217,24 @@ class ConvertToMBQCFormalismPass(passes.ModulePass):
         )
         return [m1, m2, m3, m4], graph_qubit_dict
 
+    def _cnot_measurements(self, graph_qubit_dict):
+        """Insert measurement ops for a CNOT gate and return measurement results and the result graph qubits"""
+        m1, graph_qubit_dict[1] = self._insert_measure_x_op(graph_qubit_dict[1])
+        m2, graph_qubit_dict[2] = self._insert_measure_y_op(graph_qubit_dict[2])
+        m3, graph_qubit_dict[3] = self._insert_measure_y_op(graph_qubit_dict[3])
+        m4, graph_qubit_dict[4] = self._insert_measure_y_op(graph_qubit_dict[4])
+        m5, graph_qubit_dict[5] = self._insert_measure_y_op(graph_qubit_dict[5])
+        m6, graph_qubit_dict[6] = self._insert_measure_y_op(graph_qubit_dict[6])
+        m8, graph_qubit_dict[8] = self._insert_measure_y_op(graph_qubit_dict[8])
+        m9, graph_qubit_dict[9] = self._insert_measure_x_op(graph_qubit_dict[9])
+        m10, graph_qubit_dict[10] = self._insert_measure_x_op(graph_qubit_dict[10])
+        m11, graph_qubit_dict[11] = self._insert_measure_x_op(graph_qubit_dict[11])
+        m12, graph_qubit_dict[12] = self._insert_measure_y_op(graph_qubit_dict[12])
+        m13, graph_qubit_dict[13] = self._insert_measure_x_op(graph_qubit_dict[13])
+        m14, graph_qubit_dict[14] = self._insert_measure_x_op(graph_qubit_dict[14])
+
+        return [m1, m2, m3, m4, m5, m6, m8, m9, m10, m11, m12, m13, m14], graph_qubit_dict
+
     def _parity_check(
         self,
         mres: list[builtin.IntegerType],
@@ -343,7 +361,34 @@ class ConvertToMBQCFormalismPass(passes.ModulePass):
         res_aux_qubit = self._insert_cond_byproduct_op(z_parity, "PauliZ", res_aux_qubit)
         return res_aux_qubit
 
-    def _queue_measurements(self, gate_name: str, graph_qubit_dict, params):
+    def _cnot_corrections(
+        self,
+        mres: list[builtin.IntegerType],
+        qubits: list[QubitType],
+    ):
+        """Insert correction ops of a CNOT gate to the IR.
+        Args:
+            mres (list[builtin.IntegerType]): A list of the mid-measurement results.
+            qubits (list[QubitType]) : A list of auxiliary result qubits.
+        Returns:
+            The result auxiliary qubits.
+        """
+        m1, m2, m3, m4, m5, m6, m8, m9, m10, m11, m12, m13, m14 = mres
+        # Corrections for the control qubit
+        x_parity = self._parity_check([m2, m3, m5, m6])
+        ctrl_aux_qubit = self._insert_cond_byproduct_op(x_parity, "PauliX", qubits[0])
+        z_parity = self._parity_check([m1, m3, m4, m5, m8, m9, m11], additional_const_one=True)
+        ctrl_aux_qubit = self._insert_cond_byproduct_op(z_parity, "PauliZ", ctrl_aux_qubit)
+
+        # Corrections for the target qubit
+        x_parity = self._parity_check([m2, m3, m8, m10, m12, m14])
+        tgt_aux_qubit = self._insert_cond_byproduct_op(x_parity, "PauliX", qubits[1])
+        z_parity = self._parity_check([m9, m11, m13])
+        tgt_aux_qubit = self._insert_cond_byproduct_op(z_parity, "PauliZ", tgt_aux_qubit)
+
+        return ctrl_aux_qubit, tgt_aux_qubit
+
+    def _queue_measurements(self, gate_name: str, graph_qubit_dict, params=None):
         match gate_name:
             case "Hadamard":
                 return self._hadamard_measurements(graph_qubit_dict)
@@ -353,8 +398,8 @@ class ConvertToMBQCFormalismPass(passes.ModulePass):
                 return self._rz_measurements(graph_qubit_dict, params)
             case "RotXZX":
                 return self._rotxzx_measurements(graph_qubit_dict, params)
-            # case "CNOT":
-            #     return self._cnot_measurements(graph_qubit_dict)
+            case "CNOT":
+                return self._cnot_measurements(graph_qubit_dict)
             case _:
                 raise ValueError(
                     f"{gate_name} is not supported in the MBQC formalism. Please decompose it into the MBQC gate set."
@@ -383,19 +428,14 @@ class ConvertToMBQCFormalismPass(passes.ModulePass):
                 return self._rot_corrections(mres, qubits)
             case "RZ":
                 return self._rot_corrections(mres, qubits)
-            # case "CNOT":
-            #     return self._cnot_corrections(mres, qubits)
+            case "CNOT":
+                return self._cnot_corrections(mres, qubits)
             case _:
                 raise ValueError(
                     f"{gate_name} is not supported in the MBQC formalism. Please decompose it into the MBQC gate set."
                 )
 
     def _convert_single_qubit_gate_subroutine(self, gate_name):
-        # input_types = (
-        #     (QubitType(), Sequence[SSAValue[builtin.Float64Type]])
-        #     if gate_name in ["RZ", "RotXZX"]
-        #     else (QubitType(),)
-        # )
         input_types = (QubitType(),)
         if gate_name == "RZ":
             input_types += (builtin.Float64Type(),)
@@ -449,6 +489,56 @@ class ConvertToMBQCFormalismPass(passes.ModulePass):
         )
         return funcOp
 
+    def _convert_cnot_gate_subroutine(self, gate_name="CNOT"):
+        input_types = (
+            QubitType(),
+            QubitType(),
+        )
+        output_types = (
+            QubitType(),
+            QubitType(),
+        )
+        block = Block(arg_types=input_types)
+
+        with builder.ImplicitBuilder(block):
+            in_qubits = [block.args[0], block.args[1]]
+
+            graph_qubit_dict = self._prep_graph_state(gate_name=gate_name)
+
+            # Entangle the op.in_qubits[0] with the graph_qubits_dict[2]
+            cz_op = CustomOp(in_qubits=[in_qubits[0], graph_qubit_dict[2]], gate_name="CZ")
+            graph_qubit_dict[1], graph_qubit_dict[2] = cz_op.results
+
+            # Entangle op.in_qubits[1] with with the graph_qubits_dict[10] for a CNOT gate
+            cz_op = CustomOp(in_qubits=[in_qubits[1], graph_qubit_dict[10]], gate_name="CZ")
+            graph_qubit_dict[9], graph_qubit_dict[10] = cz_op.results
+
+            mres, graph_qubit_dict = self._queue_measurements(gate_name, graph_qubit_dict)
+
+            graph_qubit_dict[7], graph_qubit_dict[15] = self._insert_byprod_corrections(
+                gate_name, mres, [graph_qubit_dict[7], graph_qubit_dict[15]]
+            )
+
+            for node in graph_qubit_dict:
+                if node not in [7, 15]:
+                    dealloc_qubit_op = DeallocQubitOp(graph_qubit_dict[node])
+
+            func.ReturnOp(
+                *(
+                    graph_qubit_dict[7],
+                    graph_qubit_dict[15],
+                )
+            )
+
+        region = Region([block])
+        funcOp = func.FuncOp(
+            gate_name.lower() + "_in_mbqc",
+            (input_types, output_types),
+            visibility="private",
+            region=region,
+        )
+        return funcOp
+
     # pylint: disable=no-self-use
     def apply(self, _ctx: context.Context, module: builtin.ModuleOp) -> None:
         """Apply the convert-to-mbqc-formalism pass."""
@@ -471,6 +561,10 @@ class ConvertToMBQCFormalismPass(passes.ModulePass):
         rotxzx_funcOp = self._convert_single_qubit_gate_subroutine("RotXZX")
         module.regions[0].blocks.first.add_op(rotxzx_funcOp)
         subroutine_dict["RotXZX"] = rotxzx_funcOp
+
+        cnot_funcOp = self._convert_cnot_gate_subroutine()
+        module.regions[0].blocks.first.add_op(cnot_funcOp)
+        subroutine_dict["CNOT"] = cnot_funcOp
 
         pattern_rewriter.PatternRewriteWalker(
             pattern_rewriter.GreedyRewritePatternApplier(
@@ -1011,6 +1105,16 @@ class ConvertToMBQCFormalismPattern(
                     )
                     rewriter.insert_op(callOp, InsertPoint.before(op))
                     rewriter.replace_all_uses_with(op.out_qubits[0], callOp.results[0])
+                    rewriter.erase_op(op)
+                elif isinstance(op, CustomOp) and op.gate_name.data in ["CNOT"]:
+                    callOp = func.CallOp(
+                        builtin.SymbolRefAttr(op.gate_name.data.lower() + "_in_mbqc"),
+                        [op.in_qubits[0], op.in_qubits[1]],
+                        self.subroutine_dict[op.gate_name.data].function_type.outputs.data,
+                    )
+                    rewriter.insert_op(callOp, InsertPoint.before(op))
+                    rewriter.replace_all_uses_with(op.out_qubits[0], callOp.results[0])
+                    rewriter.replace_all_uses_with(op.out_qubits[1], callOp.results[1])
                     rewriter.erase_op(op)
 
                 # elif isinstance(op, CustomOp) and op.gate_name.data in _MBQC_ONE_QUBIT_GATES:
