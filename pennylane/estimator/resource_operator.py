@@ -18,15 +18,38 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from collections.abc import Hashable, Iterable
+from functools import singledispatch
 from typing import Any
 
 import numpy as np
 
+import pennylane.estimator as qre
 from pennylane.operation import classproperty
 from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
 
 from .resources_base import Resources
+from .wires_manager import Allocate, Deallocate
+
+
+@singledispatch
+def _apply_adj(action):
+    raise TypeError(f"Unsupported type {action}")
+
+
+@_apply_adj.register
+def _(action: Allocate):
+    return Deallocate(action.num_wires)
+
+
+@_apply_adj.register
+def _(action: Deallocate):
+    return Allocate(action.num_wires)
+
+
+@singledispatch
+def _apply_controlled(action, num_ctrl_wires, num_zero_ctrl):
+    return action
 
 
 class CompressedResourceOp:
@@ -280,9 +303,6 @@ class ResourceOperator(ABC):
             target_resource_params (dict | None): A dictionary containing the resource parameters
                 of the target operator.
         """
-        # Local import to avoid circular dependency
-        from .ops.op_math.symbolic import _apply_adj
-
         target_resource_params = target_resource_params or {}
         gate_lst = []
         decomp = cls.resource_decomp(**target_resource_params)
@@ -311,11 +331,6 @@ class ResourceOperator(ABC):
             target_resource_params (dict | None): A dictionary containing the resource parameters
                 of the target operator.
         """
-        # Local import to avoid circular dependency
-        import pennylane.estimator as qre
-
-        from .ops.op_math.symbolic import Controlled
-
         target_resource_params = target_resource_params or {}
         gate_lst = []
         if num_zero_ctrl != 0:
@@ -324,17 +339,7 @@ class ResourceOperator(ABC):
 
         decomp = cls.resource_decomp(**target_resource_params)
         for action in decomp:
-            if isinstance(action, GateCount):
-                gate = action.gate
-                c_gate = Controlled.resource_rep(
-                    gate,
-                    num_ctrl_wires,
-                    num_zero_ctrl=0,  # we flipped already and added the X gates above
-                )
-                gate_lst.append(GateCount(c_gate, action.count))
-
-            else:  # pragma: no cover
-                gate_lst.append(action)
+            gate_lst.append(_apply_controlled(action, num_ctrl_wires, 0))
 
         return gate_lst
 

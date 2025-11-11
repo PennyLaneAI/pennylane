@@ -20,6 +20,8 @@ from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
     ResourceOperator,
+    _apply_adj,
+    _apply_controlled,
     _dequeue,
     resource_rep,
 )
@@ -990,22 +992,18 @@ class ChangeOpBasis(ResourceOperator):
         ]
 
 
-@singledispatch
-def _apply_adj(action):
-    raise TypeError(f"Unsupported type {action}")
-
-
 @_apply_adj.register
 def _(action: GateCount):
     gate = action.gate
     return GateCount(resource_rep(Adjoint, {"base_cmpr_op": gate}), action.count)
 
 
-@_apply_adj.register
-def _(action: Allocate):
-    return Deallocate(action.num_wires)
-
-
-@_apply_adj.register
-def _(action: Deallocate):
-    return Allocate(action.num_wires)
+@_apply_controlled.register
+def _(action: GateCount, num_ctrl_wires, num_zero_ctrl):
+    gate = action.gate
+    c_gate = Controlled.resource_rep(
+        gate,
+        num_ctrl_wires,
+        num_zero_ctrl=num_zero_ctrl,
+    )
+    return GateCount(c_gate, action.count)

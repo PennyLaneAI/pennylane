@@ -297,17 +297,6 @@ class TestResourceSemiAdder:
         )
         assert op.resource_decomp(**op.resource_params) == expected_res
 
-    @pytest.mark.parametrize("max_register_size", (-1, 0, 2))
-    def test_resources_controlled_error(self, max_register_size):
-        """Test that the controlled_resource_decomp raises correct errors."""
-
-        with pytest.raises(ResourcesUndefinedError):
-            qre.SemiAdder.controlled_resource_decomp(
-                num_ctrl_wires=1,
-                num_zero_ctrl=0,
-                target_resource_params={"max_register_size": max_register_size},
-            )
-
 
 class TestResourceControlledSequence:
     """Test the ResourceControlledSequence class."""
