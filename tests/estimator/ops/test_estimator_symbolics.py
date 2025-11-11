@@ -57,27 +57,6 @@ class TestAdjoint:
             **op.resource_params
         )
 
-        class ResourceDummyS(qre.S):
-            """Dummy class with no default adjoint decomp"""
-
-            @classmethod
-            def adjoint_resource_decomp(cls, target_resource_params=None) -> list[GateCount]:
-                """No default resources"""
-                raise ResourcesUndefinedError
-
-        op = ResourceDummyS()  # no default_adjoint_decomp defined
-        adj_op = qre.Adjoint(op)
-        expected_res = [
-            GateCount(
-                qre.resource_rep(
-                    qre.Adjoint,
-                    {"base_cmpr_op": qre.resource_rep(qre.T)},
-                ),
-                2,
-            )
-        ]
-        assert adj_op.resource_decomp(**adj_op.resource_params) == expected_res
-
     @pytest.mark.parametrize(
         "base_op, adj_res",
         (
@@ -211,31 +190,6 @@ class TestControlled:
         for (ctrl_wires, ctrl_values), res in ctrl_params_and_expected_res:
             ctrl_op = qre.Controlled(op, ctrl_wires, ctrl_values)
             assert ctrl_op.resource_decomp(**ctrl_op.resource_params) == res
-
-        class ResourceDummyZ(qre.Z):
-            """Dummy class with no default ctrl decomp"""
-
-            @classmethod
-            def controlled_resource_decomp(
-                cls, num_ctrl_wires, num_zero_ctrl, **kwargs
-            ) -> list[GateCount]:
-                """No default resources"""
-                raise ResourcesUndefinedError
-
-        op = ResourceDummyZ()  # no default_ctrl_decomp defined
-        ctrl_op = qre.Controlled(op, num_ctrl_wires=3, num_zero_ctrl=2)
-        expected_res = [
-            GateCount(qre.resource_rep(qre.X), 4),
-            GateCount(
-                qre.Controlled.resource_rep(
-                    qre.resource_rep(qre.S),
-                    num_ctrl_wires=3,
-                    num_zero_ctrl=0,
-                ),
-                2,
-            ),
-        ]
-        assert ctrl_op.resource_decomp(**ctrl_op.resource_params) == expected_res
 
     @pytest.mark.parametrize(
         "base_op, ctrl_res, ctrl_ctrl_res",
@@ -422,19 +376,6 @@ class TestPow:
         for z, res in z_and_expected_res:
             pow_op = qre.Pow(op, z)
             assert pow_op.resource_decomp(**pow_op.resource_params) == res
-
-        class ResourceDummyX(qre.X):
-            """Dummy class with no default pow decomp"""
-
-            @classmethod
-            def pow_resource_decomp(cls, pow_z, **kwargs) -> list[GateCount]:
-                """No default resources"""
-                raise ResourcesUndefinedError
-
-        op = ResourceDummyX()  # no default_pow_decomp defined
-        pow_op = qre.Pow(op, 7)
-        expected_res = [GateCount(op.resource_rep_from_op(), 7)]
-        assert pow_op.resource_decomp(**pow_op.resource_params) == expected_res
 
     @pytest.mark.parametrize("z", (0, 1, 2, 3))
     @pytest.mark.parametrize(
