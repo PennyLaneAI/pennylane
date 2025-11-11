@@ -22,7 +22,6 @@ from typing import Any
 
 import numpy as np
 
-from pennylane.exceptions import ResourcesUndefinedError
 from pennylane.operation import classproperty
 from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
