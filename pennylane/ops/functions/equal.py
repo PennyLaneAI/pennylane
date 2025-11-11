@@ -712,7 +712,12 @@ def _equal_mid_measure(op1: MidMeasure, op2: MidMeasure, **_):
 
 @_equal_dispatch.register
 def _equal_pauli_measure(op1: PauliMeasure, op2: PauliMeasure, **_):
-    return op1.wires == op2.wires and op1.id == op2.id and op1.postselect == op2.postselect
+    return (
+        op1.wires == op2.wires
+        and op1.id == op2.id
+        and op1.postselect == op2.postselect
+        and op1.pauli_word == op2.pauli_word
+    )
 
 
 @_equal_dispatch.register
