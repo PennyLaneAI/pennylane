@@ -368,7 +368,7 @@ class BasisRotation(Operation):
 
         if math.is_real_obj_or_close(unitary_matrix):
             angle, unitary_matrix = _adjust_determinant(unitary_matrix)
-            if not math.allclose(angle, 0.0):
+            if not math.is_abstract(angle) and not math.allclose(angle, 0.0):
                 op_list.append(PhaseShift(angle, wires=wires[0]))
 
             _, givens_list = math.decomposition.givens_decomposition(unitary_matrix)
@@ -423,7 +423,7 @@ def _basis_rotation_decomp(unitary_matrix, wires: WiresLike, **__):
 
             cond(jnp.logical_not(jnp.allclose(angle, 0.0)), shift)(angle)
         else:
-            if not math.allclose(angle, 0.0):
+            if not math.is_abstract(angle) and not math.allclose(angle, 0.0):
                 PhaseShift(angle, wires=wires[0])
 
         _, givens_list = math.decomposition.givens_decomposition(unitary)
