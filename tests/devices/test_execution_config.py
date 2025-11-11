@@ -46,8 +46,8 @@ class TestPostSelectModeEnum:
     def test_unsupported_values(self, postselect_mode):
         """Tests that the unsupported values raise a AttributeError"""
 
-        with pytest.raises(ValueError, match=f"'{postselect_mode}' is not a valid MCM_METHOD"):
-            _ = MCM_METHOD(postselect_mode)
+        with pytest.raises(ValueError, match=f"'{postselect_mode}' is not a valid POSTSELECT_MODE"):
+            _ = POSTSELECT_MODE(postselect_mode)
 
 
 class TestMCMMethodEnum:
