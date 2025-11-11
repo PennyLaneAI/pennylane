@@ -82,7 +82,7 @@ def construct_execution_config(qnode: QNode, resolve: bool | None = True) -> Exe
                     device_options={'max_workers': None, 'rng': ..., 'prng_key': None},
                     interface=<Interface.NUMPY: 'numpy'>,
                     derivative_order=1,
-                    mcm_config=MCMConfig(mcm_method='deferred',
+                    mcm_config=MCMConfig(mcm_method=<MCM_METHOD.DEFERRED: 'deferred'>,
                                          postselect_mode=None),
                     convert_to_numpy=True,
                     executor_backend=<class 'pennylane.concurrency.executors.native.multiproc.MPPoolExec'>)
