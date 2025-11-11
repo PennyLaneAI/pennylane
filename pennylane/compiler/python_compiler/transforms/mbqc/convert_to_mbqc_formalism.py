@@ -130,12 +130,91 @@ class ConvertToMBQCFormalismPass(passes.ModulePass):
         """Insert a Y-basis measure op related operations to the IR."""
         return self._insert_xy_basis_measure_op(math.pi / 2, qubit)
 
+    def _insert_cond_arbitrary_basis_measure_op(
+        self,
+        meas_parity: builtin.IntegerType,
+        angle: SSAValue[builtin.Float64Type],
+        plane: str,
+        qubit: QubitType,
+    ):  # pylint: disable=too-many-arguments, too-many-positional-arguments
+        """
+        Insert a conditional arbitrary basis measurement operation based on a previous measurement result.
+        Args:
+            meas_parity (builtin.IntegerType) : A parity of previous measurements.
+            angle (SSAValue[builtin.Float64Type]) : An angle SSAValue from a parametric gate operation.
+            plane (str): Plane of the measurement basis.
+            qubit (QubitType) : The target qubit to be measured.
+
+        Returns:
+            The results include: 1. a measurement result; 2, a result qubit.
+        """
+        constant_one_op = arith.ConstantOp.from_int_and_width(1, builtin.i1)
+        cond = arith.CmpiOp(meas_parity, constant_one_op, "eq")
+        branch = scf.IfOp(
+            cond,
+            (
+                builtin.IntegerType(1),
+                QubitType(),
+            ),
+            Region(Block()),
+            Region(Block()),
+        )
+
+        plane_op = MeasurementPlaneAttr(MeasurementPlaneEnum(plane))
+
+        with builder.ImplicitBuilder(branch.true_region.block):
+            measure_op = MeasureInBasisOp(in_qubit=qubit, plane=plane_op, angle=angle)
+            scf.YieldOp(measure_op.results[0], measure_op.results[1])
+        with builder.ImplicitBuilder(branch.false_region.block):
+            const_neg_angle_op = arith.NegfOp(angle)
+            measure_neg_op = MeasureInBasisOp(
+                in_qubit=qubit, plane=plane_op, angle=const_neg_angle_op.result
+            )
+            scf.YieldOp(measure_neg_op.results[0], measure_neg_op.results[1])
+
+        return branch.results
+
     def _hadamard_measurements(self, graph_qubit_dict):
         """Insert measurement ops for a Hadamard gate and return measurement results and the result graph qubits"""
         m1, graph_qubit_dict[1] = self._insert_measure_x_op(graph_qubit_dict[1])
         m2, graph_qubit_dict[2] = self._insert_measure_y_op(graph_qubit_dict[2])
         m3, graph_qubit_dict[3] = self._insert_measure_y_op(graph_qubit_dict[3])
         m4, graph_qubit_dict[4] = self._insert_measure_y_op(graph_qubit_dict[4])
+        return [m1, m2, m3, m4], graph_qubit_dict
+
+    def _s_measurements(self, graph_qubit_dict):
+        """Insert measurement ops for a S gate and return measurement results and the result graph qubits"""
+        m1, graph_qubit_dict[1] = self._insert_measure_x_op(graph_qubit_dict[1])
+        m2, graph_qubit_dict[2] = self._insert_measure_x_op(graph_qubit_dict[2])
+        m3, graph_qubit_dict[3] = self._insert_measure_y_op(graph_qubit_dict[3])
+        m4, graph_qubit_dict[4] = self._insert_measure_x_op(graph_qubit_dict[4])
+        return [m1, m2, m3, m4], graph_qubit_dict
+
+    def _rz_measurements(self, graph_qubit_dict, params):
+        """Insert measurement ops for a RZ gate and return measurement results and the result graph qubits"""
+        m1, graph_qubit_dict[1] = self._insert_measure_x_op(graph_qubit_dict[1])
+        m2, graph_qubit_dict[2] = self._insert_measure_x_op(graph_qubit_dict[2])
+        m3, graph_qubit_dict[3] = self._insert_cond_arbitrary_basis_measure_op(
+            m2, params[0], "XY", graph_qubit_dict[3]
+        )
+        m4, graph_qubit_dict[4] = self._insert_measure_x_op(graph_qubit_dict[4])
+        return [m1, m2, m3, m4], graph_qubit_dict
+
+    def _rotxzx_measurements(self, graph_qubit_dict, params):
+        """Insert measurement ops for a RotXZX gate and return measurement results and the result graph qubits"""
+        m1, graph_qubit_dict[1] = self._insert_measure_x_op(graph_qubit_dict[1])
+        m2, graph_qubit_dict[2] = self._insert_cond_arbitrary_basis_measure_op(
+            m1, params[0], "XY", graph_qubit_dict[2]
+        )
+        m3, graph_qubit_dict[3] = self._insert_cond_arbitrary_basis_measure_op(
+            m2, params[1], "XY", graph_qubit_dict[3]
+        )
+
+        m1_xor_m3 = arith.XOrIOp(m1, m3)
+
+        m4, graph_qubit_dict[4] = self._insert_cond_arbitrary_basis_measure_op(
+            m1_xor_m3.result, params[2], "XY", graph_qubit_dict[4]
+        )
         return [m1, m2, m3, m4], graph_qubit_dict
 
     def _parity_check(
@@ -217,23 +296,141 @@ class ConvertToMBQCFormalismPass(passes.ModulePass):
 
         return res_aux_qubit
 
-    def _convert_h_subroutine(self):
+    def _s_corrections(
+        self,
+        mres: list[builtin.IntegerType],
+        qubit: QubitType,
+    ):
+        """Insert correction ops of a S gate to the IR.
+        Args:
+            mres (list[builtin.IntegerType]): A list of the mid-measurement results.
+            qubit (QubitType) : An auxiliary result qubit.
+
+        Returns:
+            The result auxiliary qubit.
+        """
+        m1, m2, m3, m4 = mres
+
+        # X correction
+        x_parity = self._parity_check([m2, m4])
+        res_aux_qubit = self._insert_cond_byproduct_op(x_parity, "PauliX", qubit)
+
+        # Z correction
+        z_parity = self._parity_check([m1, m2, m3], additional_const_one=True)
+        res_aux_qubit = self._insert_cond_byproduct_op(z_parity, "PauliZ", res_aux_qubit)
+        return res_aux_qubit
+
+    def _rot_corrections(
+        self,
+        mres: list[builtin.IntegerType],
+        qubit: QubitType,
+    ):
+        """Insert correction ops of a RotXZX or RZ gate to the IR.
+        Args:
+            mres (list[builtin.IntegerType]): A list of the mid-measurement results.
+            qubit (QubitType) : An auxiliary result qubit.
+
+        Returns:
+            The result auxiliary qubit.
+        """
+        m1, m2, m3, m4 = mres
+        # X correction
+        x_parity = self._parity_check([m2, m4])
+        res_aux_qubit = self._insert_cond_byproduct_op(x_parity, "PauliX", qubit)
+
+        # Z correction
+        z_parity = self._parity_check([m1, m3])
+        res_aux_qubit = self._insert_cond_byproduct_op(z_parity, "PauliZ", res_aux_qubit)
+        return res_aux_qubit
+
+    def _queue_measurements(self, gate_name: str, graph_qubit_dict, params):
+        match gate_name:
+            case "Hadamard":
+                return self._hadamard_measurements(graph_qubit_dict)
+            case "S":
+                return self._s_measurements(graph_qubit_dict)
+            case "RZ":
+                return self._rz_measurements(graph_qubit_dict, params)
+            case "RotXZX":
+                return self._rotxzx_measurements(graph_qubit_dict, params)
+            # case "CNOT":
+            #     return self._cnot_measurements(graph_qubit_dict)
+            case _:
+                raise ValueError(
+                    f"{gate_name} is not supported in the MBQC formalism. Please decompose it into the MBQC gate set."
+                )
+
+    def _insert_byprod_corrections(
+        self,
+        gate_name: str,
+        mres: list[builtin.IntegerType],
+        qubits: QubitType | list[QubitType],
+    ):
+        """Insert correction ops for the result auxiliary qubit/s to the IR.
+        Args:
+            mres (list[builtin.IntegerType]): A list of the mid-measurement results.
+            qubits (QubitType | list[QubitType]) : An or a list of auxiliary result qubit.
+
+        Returns:
+            The result auxiliary qubits.
+        """
+        match gate_name:
+            case "Hadamard":
+                return self._hadamard_corrections(mres, qubits)
+            case "S":
+                return self._s_corrections(mres, qubits)
+            # case "RotXZX":
+            #     return self._rot_corrections(mres, qubits)
+            case "RZ":
+                return self._rot_corrections(mres, qubits)
+            # case "CNOT":
+            #     return self._cnot_corrections(mres, qubits)
+            case _:
+                raise ValueError(
+                    f"{gate_name} is not supported in the MBQC formalism. Please decompose it into the MBQC gate set."
+                )
+
+    def _convert_single_qubit_gate_subroutine(self, gate_name):
+        # input_types = (
+        #     (QubitType(), Sequence[SSAValue[builtin.Float64Type]])
+        #     if gate_name in ["RZ", "RotXZX"]
+        #     else (QubitType(),)
+        # )
         input_types = (QubitType(),)
+        if gate_name == "RZ":
+            input_types += (builtin.Float64Type(),)
+        if gate_name == "RZXZX":
+            input_types += (
+                builtin.Float64Type(),
+                builtin.Float64Type(),
+                builtin.Float64Type(),
+            )
         output_types = (QubitType(),)
         block = Block(arg_types=input_types)
 
         with builder.ImplicitBuilder(block):
             in_qubits = [block.args[0]]
+            params = None
+            if gate_name == "RZ":
+                params = [block.args[1]]
+            if gate_name == "RotXZX":
+                params = [
+                    block.args[1],
+                    block.args[2],
+                    block.args[3],
+                ]
 
-            graph_qubit_dict = self._prep_graph_state(gate_name="Hadamard")
+            graph_qubit_dict = self._prep_graph_state(gate_name=gate_name)
 
             cz_op = CustomOp(in_qubits=[in_qubits[0], graph_qubit_dict[2]], gate_name="CZ")
 
             graph_qubit_dict[1], graph_qubit_dict[2] = cz_op.results
 
-            mres, graph_qubit_dict = self._hadamard_measurements(graph_qubit_dict)
+            mres, graph_qubit_dict = self._queue_measurements(gate_name, graph_qubit_dict, params)
 
-            by_product_correction = self._hadamard_corrections(mres, graph_qubit_dict[5])
+            by_product_correction = self._insert_byprod_corrections(
+                gate_name, mres, graph_qubit_dict[5]
+            )
 
             graph_qubit_dict[5] = by_product_correction
 
@@ -245,7 +442,7 @@ class ConvertToMBQCFormalismPass(passes.ModulePass):
 
         region = Region([block])
         funcOp = func.FuncOp(
-            "convert_hadamard_to_mbqc",
+            gate_name.lower() + "_in_mbqc",
             (input_types, output_types),
             visibility="private",
             region=region,
@@ -257,13 +454,24 @@ class ConvertToMBQCFormalismPass(passes.ModulePass):
         """Apply the convert-to-mbqc-formalism pass."""
         # Insert subroutines for MBQC gate sets
 
-        h_funcOp = self._convert_h_subroutine()
+        subroutine_dict = {}
+
+        h_funcOp = self._convert_single_qubit_gate_subroutine("Hadamard")
         module.regions[0].blocks.first.add_op(h_funcOp)
+        subroutine_dict["Hadamard"] = h_funcOp
+
+        s_funcOp = self._convert_single_qubit_gate_subroutine("S")
+        module.regions[0].blocks.first.add_op(s_funcOp)
+        subroutine_dict["S"] = s_funcOp
+
+        rz_funcOp = self._convert_single_qubit_gate_subroutine("RZ")
+        module.regions[0].blocks.first.add_op(rz_funcOp)
+        subroutine_dict["RZ"] = rz_funcOp
 
         pattern_rewriter.PatternRewriteWalker(
             pattern_rewriter.GreedyRewritePatternApplier(
                 [
-                    ConvertToMBQCFormalismPattern({"hadamard": h_funcOp}),
+                    ConvertToMBQCFormalismPattern(subroutine_dict),
                 ]
             ),
             apply_recursively=False,
@@ -773,11 +981,20 @@ class ConvertToMBQCFormalismPattern(
             two_wire_adj_matrix_op = None
             for op in region.ops:
                 # TODOs: Refactor the code below in this loop into separate functions
-                if isinstance(op, CustomOp) and op.gate_name.data == "Hadamard":
+                if isinstance(op, CustomOp) and op.gate_name.data in ["Hadamard", "S"]:
                     callOp = func.CallOp(
-                        builtin.SymbolRefAttr("convert_hadamard_to_mbqc"),
+                        builtin.SymbolRefAttr(op.gate_name.data.lower() + "_in_mbqc"),
                         [op.in_qubits[0]],
-                        self.subroutine_dict["hadamard"].function_type.outputs.data,
+                        self.subroutine_dict[op.gate_name.data].function_type.outputs.data,
+                    )
+                    rewriter.insert_op(callOp, InsertPoint.before(op))
+                    rewriter.replace_all_uses_with(op.out_qubits[0], callOp.results[0])
+                    rewriter.erase_op(op)
+                elif isinstance(op, CustomOp) and op.gate_name.data in ["RZ"]:
+                    callOp = func.CallOp(
+                        builtin.SymbolRefAttr(op.gate_name.data.lower() + "_in_mbqc"),
+                        [op.in_qubits[0], op.params[0]],
+                        self.subroutine_dict[op.gate_name.data].function_type.outputs.data,
                     )
                     rewriter.insert_op(callOp, InsertPoint.before(op))
                     rewriter.replace_all_uses_with(op.out_qubits[0], callOp.results[0])
