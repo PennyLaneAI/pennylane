@@ -202,7 +202,7 @@
 
 <h3>Internal changes ⚙️</h3>
 
-* When program capture is enabled, there is no longer caching of the jaxpr on the qnode.
+* When program capture is enabled, there is no longer caching of the jaxpr on the QNode.
   [(#8629)](https://github.com/PennyLaneAI/pennylane/pull/8629)
 
 * The `grad` and `jacobian` primitives now store the function under `fn`. There is also now a single `jacobian_p`
