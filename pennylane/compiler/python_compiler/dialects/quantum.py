@@ -257,7 +257,7 @@ class CountsOp(IRDLOperation):
 
     obs = operand_def(ObservableType)
 
-    dynamic_shape = opt_operand_def(IntegerType(64))
+    dynamic_shape = opt_operand_def(i64)
 
     in_eigvals = opt_operand_def(MemRefConstraint(element_type=Float64Type(), rank=1))
 
@@ -298,7 +298,7 @@ class CustomOp(IRDLOperation):
 
     in_ctrl_qubits = var_operand_def(QubitType)
 
-    in_ctrl_values = var_operand_def(IntegerType(1))
+    in_ctrl_values = var_operand_def(i1)
 
     out_qubits = var_result_def(QubitType)
 
@@ -398,7 +398,7 @@ class DeviceInitOp(IRDLOperation):
 
     irdl_options = [ParsePropInAttrDict()]
 
-    shots = opt_operand_def(IntegerType(64))
+    shots = opt_operand_def(i64)
 
     auto_qubit_management = opt_prop_def(UnitAttr)
 
@@ -446,7 +446,7 @@ class ExtractOp(IRDLOperation):
 
     qreg = operand_def(QuregType)
 
-    idx = opt_operand_def(IntegerType(64))
+    idx = opt_operand_def(i64)
 
     idx_attr = opt_prop_def(IntegerAttr.constr(type=i64, value=AtLeast(0)))
 
@@ -507,7 +507,7 @@ class GlobalPhaseOp(IRDLOperation):
 
     in_ctrl_qubits = var_operand_def(QubitType)
 
-    in_ctrl_values = var_operand_def(IntegerType(1))
+    in_ctrl_values = var_operand_def(i1)
 
     out_ctrl_qubits = var_result_def(QubitType)
 
@@ -605,7 +605,7 @@ class InsertOp(IRDLOperation):
 
     in_qreg = operand_def(QuregType)
 
-    idx = opt_operand_def(IntegerType(64))
+    idx = opt_operand_def(i64)
 
     idx_attr = opt_prop_def(IntegerAttr.constr(type=i64, value=AtLeast(0)))
 
@@ -650,7 +650,7 @@ class MeasureOp(IRDLOperation):
         IntegerAttr.constr(type=I32, value=IntSetConstraint(frozenset((0, 1))))
     )
 
-    mres = result_def(IntegerType(1))
+    mres = result_def(i1)
 
     out_qubit = result_def(QubitType)
 
@@ -666,7 +666,7 @@ class MeasureOp(IRDLOperation):
             properties = {"postselect": postselect}
 
         super().__init__(
-            operands=(in_qubit,), properties=properties, result_types=(IntegerType(1), QubitType())
+            operands=(in_qubit,), properties=properties, result_types=(i1, QubitType())
         )
 
 
@@ -698,7 +698,7 @@ class MultiRZOp(IRDLOperation):
 
     in_ctrl_qubits = var_operand_def(QubitType)
 
-    in_ctrl_values = var_operand_def(IntegerType(1))
+    in_ctrl_values = var_operand_def(i1)
 
     out_qubits = var_result_def(QubitType)
 
@@ -777,7 +777,7 @@ class NumQubitsOp(IRDLOperation):
         attr-dict `:` type(results)
     """
 
-    num_qubits = result_def(IntegerType(64))
+    num_qubits = result_def(i64)
 
 
 @irdl_op_definition
@@ -796,7 +796,7 @@ class ProbsOp(IRDLOperation):
 
     obs = operand_def(ObservableType)
 
-    dynamic_shape = opt_operand_def(IntegerType(64))
+    dynamic_shape = opt_operand_def(i64)
 
     state_in = opt_operand_def(MemRefConstraint(element_type=Float64Type(), rank=1))
 
@@ -834,7 +834,7 @@ class QubitUnitaryOp(IRDLOperation):
 
     in_ctrl_qubits = var_operand_def(QubitType)
 
-    in_ctrl_values = var_operand_def(IntegerType(1))
+    in_ctrl_values = var_operand_def(i1)
 
     out_qubits = var_result_def(QubitType)
 
@@ -899,7 +899,7 @@ class SampleOp(IRDLOperation):
 
     obs = operand_def(ObservableType)
 
-    dynamic_shape = var_operand_def(IntegerType(64))
+    dynamic_shape = var_operand_def(i64)
 
     in_data = opt_operand_def(MemRefConstraint(element_type=Float64Type(), rank=(1, 2)))
 
@@ -961,7 +961,7 @@ class StateOp(IRDLOperation):
 
     obs = operand_def(ObservableType)
 
-    dynamic_shape = opt_operand_def(IntegerType(64))
+    dynamic_shape = opt_operand_def(i64)
 
     state_in = opt_operand_def(MemRefConstraint(element_type=ComplexType(Float64Type()), rank=1))
 
