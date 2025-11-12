@@ -524,24 +524,27 @@ class ConvertToMBQCFormalismPass(passes.ModulePass):
         """
         if gate_name not in _MBQC_ONE_QUBIT_GATES:
             raise NotImplementedError(f"Subroutine for the {gate_name} gate is not supported.")
-        input_types = (QubitType(),)
+        # ensure the order of parameters are aligned with customOp
+        input_types = ()
         if gate_name == "RZ":
             input_types += (builtin.Float64Type(),)
         if gate_name == "RotXZX":
             input_types += (builtin.Float64Type(),) * 3
+        input_types += (QubitType(),)
+
         output_types = (QubitType(),)
         block = Block(arg_types=input_types)
 
         with builder.ImplicitBuilder(block):
-            in_qubits = [block.args[0]]
+            in_qubits = [block.args[-1]]
             params = None
             if gate_name == "RZ":
-                params = [block.args[1]]
+                params = [block.args[0]]
             if gate_name == "RotXZX":
                 params = [
+                    block.args[0],
                     block.args[1],
                     block.args[2],
-                    block.args[3],
                 ]
 
             graph_qubit_dict = self._prep_graph_state(gate_name=gate_name)
@@ -692,10 +695,10 @@ class ConvertToMBQCFormalismPattern(
                 if isinstance(op, CustomOp) and op.gate_name.data in _MBQC_GATE_SET:
                     callee = builtin.SymbolRefAttr(op.gate_name.data.lower() + "_in_mbqc")
                     arguments = []
-                    for qubit in op.in_qubits:
-                        arguments.append(qubit)
                     for param in op.params:
                         arguments.append(param)
+                    for qubit in op.in_qubits:
+                        arguments.append(qubit)
 
                     return_types = self.subroutine_dict[
                         op.gate_name.data
