@@ -269,7 +269,10 @@ def _approx_time_evolution_decomposition(
                 wires = Wires(pw.keys())
                 PauliRot(theta, term_str, wires=wires)
 
-            cond(len(pauli_key) != 0, rot, None)(
+            def nop(c, pw):  # pylint: disable=unused-argument
+                pass
+
+            cond(len(pauli_key) != 0, rot, nop)(
                 coeff, pauli_key  # pylint: disable=undefined-loop-variable
             )
 
