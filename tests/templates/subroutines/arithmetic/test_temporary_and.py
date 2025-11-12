@@ -110,6 +110,37 @@ class TestTemporaryAND:
         for rule in qml.list_decomps(qml.TemporaryAND):
             _test_decomposition_rule(qml.TemporaryAND([0, 1, 2], control_values=(0, 0)), rule)
 
+    @pytest.mark.parametrize("control_values", [(0, 0)])
+    def test_adjoint_temporary_and_decomposition(self, control_values):
+        """
+        Validate the MCM-based decomposition of Adjoint(TemporaryAND).
+        """
+        sys_wires = [0, 1, 2]
+        work_wires = [3]  # ancilla for deferred measure
+        dev = qml.device("default.qubit", wires=sys_wires + work_wires)
+
+        rules = qml.list_decomps("Adjoint(TemporaryAND)")
+        assert rules, "No decomposition rules registered for Adjoint(TemporaryAND)"
+        rule = rules[0]
+
+        @qml.qnode(dev, interface=None)
+        def circuit(a, b):
+            qml.BasisState(qml.math.array([a, b, 0], dtype=int), wires=sys_wires)
+            qml.TemporaryAND(wires=sys_wires, control_values=control_values)
+            rule(wires=sys_wires, control_values=control_values)
+            return qml.probs(wires=sys_wires)
+
+        for a in (0, 1):
+            for b in (0, 1):
+                probs = circuit(a, b)
+                idx = (a << 2) | (b << 1) | 0
+                assert qml.math.allclose(
+                    probs[idx], 1.0
+                ), f"Failed for a={a}, b={b}, cv={control_values}"
+                mask = qml.math.ones_like(probs, dtype=bool)
+                mask[idx] = False
+                assert qml.math.allclose(probs[mask], 0.0, atol=1e-12)
+
     @pytest.mark.parametrize("control_values", [(0, 0), (0, 1), (1, 0), (1, 1)])
     def test_compute_matrix_temporary_and(self, control_values):
         """Tests that the matrix of the TemporaryAND operator is correct."""
