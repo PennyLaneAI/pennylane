@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Cancel inverses prototype using the new pass API."""
+# pylint: disable=unused-argument
 
 from xdsl.ir import Operation
 
@@ -19,53 +20,50 @@ from ..dialects import quantum
 from .compiler_transform import compiler_transform
 from .passes import PLModulePass
 
-self_inverses = [
-    "Identity",
-    "Hadamard",
-    "PauliX",
-    "PauliY",
-    "PauliZ",
-    "CNOT",
-    "CZ",
-    "CY",
-    "CH",
-    "SWAP",
-    "Toffoli",
-    "CCZ",
-]
-
-
-def _can_cancel(op: quantum.CustomOp, next_op: Operation) -> bool:
-    """Check if ops can be cancelled."""
-    if isinstance(next_op, quantum.CustomOp):
-        if op.gate_name.data == next_op.gate_name.data:
-            if (
-                op.out_qubits == next_op.in_qubits
-                and op.out_ctrl_qubits == next_op.in_ctrl_qubits
-                and op.in_ctrl_values == next_op.in_ctrl_values
-            ):
-                return True
-
-    return False
-
 
 class CancelInverses(PLModulePass):
     """Reimplementation of cancel_inverses using new API."""
 
     name = "cancel-inverses-2"
 
+    self_inverses = [
+        "Identity",
+        "Hadamard",
+        "PauliX",
+        "PauliY",
+        "PauliZ",
+        "CNOT",
+        "CZ",
+        "CY",
+        "CH",
+        "SWAP",
+        "Toffoli",
+        "CCZ",
+    ]
 
-# pylint: disable=unused-argument
+    @staticmethod
+    def can_cancel(op: quantum.CustomOp, next_op: Operation) -> bool:
+        """Check if ops can be cancelled."""
+        if isinstance(next_op, quantum.CustomOp):
+            if op.gate_name.data == next_op.gate_name.data:
+                if (
+                    op.out_qubits == next_op.in_qubits
+                    and op.out_ctrl_qubits == next_op.in_ctrl_qubits
+                    and op.in_ctrl_values == next_op.in_ctrl_values
+                ):
+                    return True
+
+        return False
 
 
 @CancelInverses.rewrite_rule(quantum.CustomOp)
 def rewrite_custom_op(self, op, rewriter):
     """Rewrite rule for CustomOp."""
-    while isinstance(op, quantum.CustomOp) and op.gate_name.data in self_inverses:
+    while isinstance(op, quantum.CustomOp) and op.gate_name.data in self.self_inverses:
         next_user = None
         for use in op.results[0].uses:
             user = use.operation
-            if _can_cancel(op, user):
+            if self.can_cancel(op, user):
                 next_user: quantum.CustomOp = user
                 break
 
@@ -81,9 +79,8 @@ def rewrite_custom_op(self, op, rewriter):
         op = op.in_qubits[0].owner
 
 
-# We can register more rewrite rules as needed:
-
-
+# We can register more rewrite rules as needed. Here are some
+# dummy rewrite rules to illustrate:
 @CancelInverses.rewrite_rule(quantum.InsertOp)
 def rewrite_insert_op(self, op, rewriter):
     """Rewrite rule for InsertOp."""
