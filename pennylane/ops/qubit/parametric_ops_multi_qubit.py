@@ -16,6 +16,7 @@
 This submodule contains the discrete-variable quantum operations that are the
 core parametrized gates.
 """
+
 # pylint: disable=arguments-differ
 import functools
 from collections import Counter
@@ -226,7 +227,6 @@ def _multi_rz_decomposition_resources(num_wires):
 
 @register_resources(_multi_rz_decomposition_resources)
 def _multi_rz_decomposition(theta: TensorLike, wires: WiresLike, **__):
-
     @qml.for_loop(len(wires) - 1, 0, -1)
     def _pre_cnot(i):
         qml.CNOT(wires=(wires[i], wires[i - 1]))
@@ -348,6 +348,7 @@ class PauliRot(Operation):
         decimals: int | None = None,
         base_label: str | None = None,
         cache: dict | None = None,
+        wire=None,
     ) -> str:
         r"""A customizable string representation of the operator.
 
@@ -373,6 +374,10 @@ class PauliRot(Operation):
 
         """
         pauli_word = self.hyperparameters["pauli_word"]
+
+        if wire is not None and wire in self.wires:
+            pauli_word = pauli_word[self.wires.index(wire)]
+
         op_label = base_label or ("R" + pauli_word)
 
         # TODO[dwierichs]: Implement a proper label for parameter-broadcasted operators
@@ -1023,7 +1028,6 @@ def _decompose_pcphase_resource(num_wires, dim):
 
     n_zero_control_values = 0
     for i, c_i in enumerate(powers_of_two):
-
         if c_i != 0:
             subspace = int(c_i < 0)
             if flipped:
@@ -1075,7 +1079,6 @@ def _decompose_pcphase(phi, wires, dimension):
 
     control_values = []
     for i, c_i in enumerate(powers_of_two):
-
         if c_i != 0:
             # Projector with rank 2**(n-1-i) needs to be added/subtracted
             subspace = int(c_i < 0)  # If c_i < 0, target |1> subspace, else target |0> subspace
@@ -1692,7 +1695,6 @@ class IsingXY(Operation):
     parameter_frequencies = [(0.5, 1.0)]
 
     def generator(self) -> "qml.Hamiltonian":
-
         return qml.Hamiltonian(
             [0.25, 0.25],
             [

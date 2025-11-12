@@ -14,6 +14,7 @@
 """
 Integration tests for the draw transform
 """
+
 # pylint: disable=import-outside-toplevel
 from functools import partial
 
@@ -193,10 +194,7 @@ class TestMatrixParameters:
         assert draw(matrices_circuit, show_matrices=False)() == expected1
 
         expected2 = (
-            "0: ─╭|Ψ⟩──U(M0)─┤  <𝓗(M0)>\n"
-            "1: ─╰|Ψ⟩────────┤         \n"
-            "\n"
-            "M0 = \n[[1. 0.]\n [0. 1.]]"
+            "0: ─╭|Ψ⟩──U(M0)─┤  <𝓗(M0)>\n1: ─╰|Ψ⟩────────┤         \n\nM0 = \n[[1. 0.]\n [0. 1.]]"
         )
         assert draw(matrices_circuit)() == expected2
 
@@ -986,6 +984,16 @@ class TestLevelExpansionStrategy:
 
         with pytest.warns(UserWarning, match="the level argument is ignored"):
             qml.draw(qfunc, level=None)
+
+
+def test_multi_wire_pauli_rot():
+    """Test that the pauli word is correctly labeled on different wires for PauliRot"""
+
+    def qfunc():
+        qml.PauliRot(0.5, "XY", wires=[1, 0])
+
+    expected = "0: ─╭RY(0.50)─┤  \n1: ─╰RX(0.50)─┤  "
+    assert draw(qfunc)() == expected
 
 
 def test_draw_batch_transform():
