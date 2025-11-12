@@ -210,9 +210,9 @@ class TestDecomposition:
     ]
 
     @pytest.mark.capture
-    @pytest.mark.parametrize(("hamiltonian", "time", "n"), DECOMP_PARAMS)
-    def test_decomposition_new(self, hamiltonian, time, n):
-        op = qml.ApproxTimeEvolution(hamiltonian, time, n)
+    @pytest.mark.parametrize(("hamiltonian", "time", "steps"), DECOMP_PARAMS)
+    def test_decomposition_new(self, hamiltonian, time, steps):
+        op = qml.ApproxTimeEvolution(hamiltonian, time, steps)
         for rule in qml.list_decomps(qml.ApproxTimeEvolution):
             _test_decomposition_rule(op, rule)
 
