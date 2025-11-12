@@ -546,10 +546,11 @@ class TestTapeTransformFallback:
         dummy_targs = (0, 0)
 
         # True branch
-        jaxpr = jax.make_jaxpr(f, static_argnums=0)(3.5)
-        assert jaxpr.eqns[0].primitive == cond_prim
+        jaxpr = jax.make_jaxpr(f)(3.5)
+        # 0 and 1 are greater than
+        assert jaxpr.eqns[2].primitive == cond_prim
         transformed_jaxpr = z_to_hadamard.plxpr_transform(
-            jaxpr.jaxpr, jaxpr.consts, dummy_targs, {}
+            jaxpr.jaxpr, jaxpr.consts, dummy_targs, {}, 3.5
         )
         assert all(eqn.primitive != cond_prim for eqn in transformed_jaxpr.eqns)
         collector = CollectOpsandMeas()

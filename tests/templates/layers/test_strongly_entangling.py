@@ -216,7 +216,7 @@ class TestDynamicDecomposition:
             return qml.state()
 
         jaxpr = jax.make_jaxpr(circuit)(weights, wires=wires)
-
+        print(jaxpr)
         # Validate Jaxpr
         jaxpr_eqns = jaxpr.eqns
         layer_loop_eqn = [eqn for eqn in jaxpr_eqns if eqn.primitive == for_loop_prim]

@@ -248,8 +248,8 @@ class TestConditionals:
         """
         # pylint: disable=using-constant-test
 
-        def circuit():
-            if True:
+        def circuit(val):
+            if val:
                 res = measure(wires=0)
 
             return qml.expval(res)  # pylint: disable=possibly-used-before-assignment
@@ -257,16 +257,16 @@ class TestConditionals:
         with pytest.raises(
             AutoGraphError, match="Some branches did not define a value for variable 'res'"
         ):
-            qml.capture.autograph.run_autograph(circuit)()
+            jax.make_jaxpr(qml.capture.autograph.run_autograph(circuit))(True)
 
     def test_branch_multi_return_type_mismatch(self):
         """Test that an exception is raised when the return types of all branches do not match."""
         # pylint: disable=using-constant-test
 
-        def circuit():
-            if True:
+        def circuit(val1, val2):
+            if val1:
                 res = 1
-            elif False:
+            elif val2:
                 res = 0.0
             else:
                 res = 2
@@ -274,7 +274,7 @@ class TestConditionals:
             return res
 
         with pytest.raises(ValueError, match="Mismatch in output abstract values"):
-            run_autograph(circuit)()
+            jax.make_jaxpr(run_autograph(circuit))(True, False)
 
     def test_multiple_return_different_measurements(self):
         """Test that different measurements be used in the return in different branches, as

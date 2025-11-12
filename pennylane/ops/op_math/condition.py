@@ -203,10 +203,8 @@ class CondCallable:
         self.branch_fns = [true_fn]
         self.otherwise_fn = false_fn
 
-        # when working with `qml.capture.enabled()`,
-        # it's easier to store the original `elifs` argument
-        self.orig_elifs = elifs
-
+        if len(elifs) > 0 and not isinstance(elifs[0], tuple):
+            elifs = (elifs,)
         if elifs:
             elif_preds, elif_fns = list(zip(*elifs))
             self.preds.extend(elif_preds)
@@ -226,7 +224,6 @@ class CondCallable:
         def decorator(branch_fn):
             self.preds.append(pred)
             self.branch_fns.append(branch_fn)
-            self.orig_elifs += ((pred, branch_fn),)
             return self
 
         return decorator
@@ -285,11 +282,7 @@ class CondCallable:
 
         cond_prim = _get_cond_qfunc_prim()
 
-        elifs = (
-            [self.orig_elifs]
-            if len(self.orig_elifs) > 0 and not isinstance(self.orig_elifs[0], tuple)
-            else list(self.orig_elifs)
-        )
+        elifs = zip(self.preds[1:], self.branch_fns[1:])  # skip true branch
         true_fn = _no_return(self.true_fn) if self.otherwise_fn is None else self.true_fn
         flat_true_fn = FlatFn(true_fn)
         branches = [(self.preds[0], flat_true_fn), *elifs, (True, self.otherwise_fn)]
