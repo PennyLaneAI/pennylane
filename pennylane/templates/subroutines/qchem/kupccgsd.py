@@ -225,13 +225,12 @@ class kUpCCGSD(Operation):
         self,
         weights: TensorLike,
         wires: WiresLike,
-        init_state: Sequence[int] | None = None,
+        init_state: Sequence[int],
         k: int = 1,
         delta_sz: int = 0,
         id=None,
     ):
         wires = Wires(wires)
-        init_state = () if init_state is None else init_state
 
         if len(wires) < 4:
             raise ValueError(f"Requires at least four wires; got {len(wires)} wires.")
