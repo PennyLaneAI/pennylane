@@ -18,7 +18,7 @@ Contains the ApproxTimeEvolution template.
 import copy
 from collections import defaultdict
 
-from pennylane.control_flow import for_loop, while_loop
+from pennylane.control_flow import for_loop
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.operation import Operation
 from pennylane.ops import PauliRot, cond
@@ -258,21 +258,10 @@ def _approx_time_evolution_decomposition(
     @for_loop(n)
     def rounds_loop(_):
 
-        pauli_keys = list(hamiltonian.pauli_rep.keys())
-        pauli_items = list(hamiltonian.pauli_rep.items())
-
-        for pauli_key in pauli_keys:
-            coeff_index = 0
-            found = pauli_items[coeff_index][0] == pauli_key
-
-            @while_loop(lambda f, i, p: not f)
-            def search_loop(found, index, pk):  # pylint: disable=unused-argument
-                index += 1
-                return pauli_items[index][0] == pk, index, pk
-
-            found, coeff_index, _ = search_loop(found, coeff_index, pauli_key)
-
-            coeff = pauli_items[coeff_index][1]
+        for pauli_key in list(hamiltonian.pauli_rep.keys()):
+            for pk, coeff in hamiltonian.pauli_rep.items():
+                if pauli_key == pk:
+                    break
 
             def rot(c, pw):
                 theta = 2 * time * c / n
@@ -280,7 +269,9 @@ def _approx_time_evolution_decomposition(
                 wires = Wires(pw.keys())
                 PauliRot(theta, term_str, wires=wires)
 
-            cond(len(pauli_key) != 0, rot, None)(coeff, pauli_key)
+            cond(len(pauli_key) != 0, rot, None)(
+                coeff, pauli_key
+            )  # pylint: disable=undefined-loop-variable
 
     rounds_loop()  # pylint: disable=no-value-for-parameter
 
