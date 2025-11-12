@@ -56,7 +56,7 @@ register_transform(merge_ppr_ppm, "merge-ppr-ppm", False)
 
 
 @transform
-def ppm_to_mbqc(tape):
+def ppr_to_mbqc(tape):
     """A wrapper that allows us to register a primitive that represents the transform during capture.
     The transform itself is only implemented in Catalyst. This is just to enable capture."""
     raise NotImplementedError(
@@ -64,7 +64,7 @@ def ppm_to_mbqc(tape):
     )
 
 
-register_transform(ppm_to_mbqc, "ppm-to-mbqc", False)
+register_transform(ppr_to_mbqc, "ppr-to-mbqc", False)
 
 
 @transform
@@ -77,3 +77,51 @@ def reduce_t_depth(tape):
 
 
 register_transform(reduce_t_depth, "reduce-t-depth", False)
+
+
+@transform
+def decompose_non_clifford_ppr(tape):
+    """A wrapper that allows us to register a primitive that represents the transform during capture.
+    The transform itself is only implemented in Catalyst. This is just to enable capture."""
+    raise NotImplementedError(
+        "The decompose_non_clifford_ppr pass is only implemented when using capture and QJIT."
+    )
+
+
+register_transform(decompose_non_clifford_ppr, "decompose-non-clifford-ppr", False)
+
+
+@transform
+def decompose_clifford_ppr(tape):
+    """A wrapper that allows us to register a primitive that represents the transform during capture.
+    The transform itself is only implemented in Catalyst. This is just to enable capture."""
+    raise NotImplementedError(
+        "The decompose_clifford_ppr pass is only implemented when using capture and QJIT."
+    )
+
+
+register_transform(decompose_clifford_ppr, "decompose-clifford-ppr", False)
+
+
+@transform
+def ppr_to_ppm(tape):
+    """A wrapper that allows us to register a primitive that represents the transform during capture.
+    The transform itself is only implemented in Catalyst. This is just to enable capture."""
+    raise NotImplementedError(
+        "The ppr_to_ppm pass is only implemented when using capture and QJIT."
+    )
+
+
+register_transform(ppr_to_ppm, "ppr-to-ppm", False)
+
+
+@transform
+def ppm_compilation(tape):
+    """A wrapper that allows us to register a primitive that represents the transform during capture.
+    The transform itself is only implemented in Catalyst. This is just to enable capture."""
+    raise NotImplementedError(
+        "The ppm_compilation pass is only implemented when using capture and QJIT."
+    )
+
+
+register_transform(ppm_compilation, "ppm-compilation", False)

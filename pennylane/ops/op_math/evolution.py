@@ -144,7 +144,7 @@ class Evolution(Exp):
         -1 * (0.5 * Y(0) + Z(0) @ X(1))
 
         """
-        if not self.base.is_hermitian:
+        if not self.base.is_verified_hermitian:
             warn(f"The base {self.base} may not be hermitian.")
         if qml.math.real(self.coeff):
             raise GeneratorUndefinedError(

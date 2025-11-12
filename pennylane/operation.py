@@ -201,6 +201,7 @@ from pennylane.exceptions import (
     GeneratorUndefinedError,
     MatrixUndefinedError,
     ParameterFrequenciesUndefinedError,
+    PennyLaneDeprecationWarning,
     PowUndefinedError,
     SparseMatrixUndefinedError,
     TermsUndefinedError,
@@ -699,6 +700,16 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
     def __init_subclass__(cls, **_):
         register_pytree(cls, cls._flatten, cls._unflatten)
         cls._primitive = create_operator_primitive(cls)
+
+        if cls.is_hermitian != Operator.is_hermitian:
+            warnings.warn(
+                "The `is_hermitian` property is deprecated and has been renamed to `is_verified_hermitian` "
+                "as it better reflects the functionality of this property. The deprecated access through `is_hermitian` "
+                "will be removed in PennyLane v0.45. Alternatively, consider using the `pennylane.is_hermitian` "
+                "function instead as it provides a more reliable check for hermiticity. Please be aware that it comes "
+                "with a higher computational cost. ",
+                PennyLaneDeprecationWarning,
+            )
 
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
@@ -1297,26 +1308,88 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
 
     @property
     def is_hermitian(self) -> bool:
-        """This property determines if an operator is likely hermitian.
+        """This property determines if an operator is verified to be Hermitian.
 
-        .. note:: It is recommended to use the :func:`~.is_hermitian` function.
-            Although this function may be expensive to calculate,
-            the ``op.is_hermitian`` property can lead to technically incorrect results.
+        .. warning::
 
-        If this property returns ``True``, the operator is guaranteed to
-        be hermitian, but if it returns ``False``, the operator may still be hermitian.
+            The ``is_hermitian`` property is deprecated and has been renamed to ``is_verified_hermitian``
+            as it better reflects the functionality of this property. The deprecated access through ``is_hermitian``
+            will be removed in PennyLane v0.45. Alternatively, consider using the :func:`~.is_hermitian`
+            function instead as it provides a more reliable check for hermiticity. Please be aware that it comes
+            with a higher computational cost.
 
-        As an example, consider the following edge case:
+        .. note::
+
+            This property provides a fast, non-exhaustive check used for internal
+            optimizations. It relies on quick, provable shortcuts (e.g., operator
+            properties) rather than a full, computationally expensive check.
+
+            For a definitive check, use the :func:`pennylane.is_hermitian` function.
+            Please note that this comes with increased computational cost.
+
+        Returns:
+            bool: The property will return ``True`` if the operator is guaranteed to be Hermitian and
+            ``False`` if the check is inconclusive and the operator may or may not be Hermitian.
+
+        Consider this operator,
 
         >>> op = (qml.X(0) @ qml.Y(0) - qml.X(0) @ qml.Z(0)) * 1j
-        >>> op.is_hermitian
+
+        In this case, Hermicity cannot be verified and leads to an inconclusive result:
+
+        >>> op.is_verified_hermitian # inconclusive
         False
 
-        On the contrary, the :func:`~.is_hermitian` function will give the correct answer:
+        However, using :func:`pennylane.is_hermitian` will give the correct answer:
 
-        >>> qml.is_hermitian(op)
+        >>> qml.is_hermitian(op) # definitive
         True
+
         """
+        warnings.warn(
+            "The `is_hermitian` property is deprecated and has been renamed to `is_verified_hermitian` "
+            "as it better reflects the functionality of this property. The deprecated access through `is_hermitian` "
+            "will be removed in PennyLane v0.45. Alternatively, consider using the `pennylane.is_hermitian` "
+            "function instead as it provides a more reliable check for hermiticity. Please be aware that it comes "
+            "with a higher computational cost. ",
+            PennyLaneDeprecationWarning,
+        )
+
+        return self.is_verified_hermitian
+
+    @property
+    def is_verified_hermitian(self) -> bool:
+        """This property determines if an operator is verified to be Hermitian.
+
+        .. note::
+
+            This property provides a fast, non-exhaustive check used for internal
+            optimizations. It relies on quick, provable shortcuts (e.g., operator
+            properties) rather than a full, computationally expensive check.
+
+            For a definitive check, use the :func:`pennylane.is_hermitian` function.
+            Please note that this comes with increased computational cost.
+
+        Returns:
+            bool: The property will return ``True`` if the operator is guaranteed to be Hermitian and
+            ``False`` if the check is inconclusive and the operator may or may not be Hermitian.
+
+        Consider this operator,
+
+        >>> op = (qml.X(0) @ qml.Y(0) - qml.X(0) @ qml.Z(0)) * 1j
+
+        In this case, Hermicity cannot be verified and leads to an inconclusive result:
+
+        >>> op.is_verified_hermitian # inconclusive
+        False
+
+        However, using :func:`pennylane.is_hermitian` will give the correct answer:
+
+        >>> qml.is_hermitian(op) # definitive
+        True
+
+        """
+
         return False
 
     # pylint: disable=no-self-argument, comparison-with-callable
@@ -2278,7 +2351,7 @@ class CVObservable(CV, Operator):
            can be useful for some applications where the instance has to be identified
     """
 
-    is_hermitian = True
+    is_verified_hermitian = True
 
     def queue(self, context=QueuingManager):
         """Avoids queuing the observable."""
