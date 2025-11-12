@@ -91,18 +91,6 @@ class MCM_METHOD(StrEnum):
     SINGLE_BRANCH_STATISTICS = "single-branch-statistics"
     DEVICE = "device"
 
-    @classmethod
-    def _missing_(cls, value):
-        """Custom look-up to enable proper error handling for unsupported values."""
-
-        supported_values = [item.value for item in cls]
-
-        standard_msg = f"'{value}' is not a valid {cls.__name__.lower()}."
-        custom_addition = (
-            f"Please use one of the supported mid-circuit measurement methods: {supported_values}."
-        )
-        raise ValueError(f"{standard_msg} {custom_addition}")
-
 
 class POSTSELECT_MODE(StrEnum):
     """Canonical set up supported postselect modes."""
@@ -111,16 +99,6 @@ class POSTSELECT_MODE(StrEnum):
     FILL_SHOTS = "fill-shots"
     PAD_INVALID_SAMPLES = "pad-invalid-samples"
     DEVICE = "device"
-
-    @classmethod
-    def _missing_(cls, value):
-        """Custom look-up to enable proper error handling for unsupported values."""
-
-        supported_values = [item.value for item in cls]
-
-        standard_msg = f"'{value}' is not a valid {cls.__name__.lower()}."
-        custom_addition = f"Please use one of the supported postselect modes: {supported_values}."
-        raise ValueError(f"{standard_msg} {custom_addition}")
 
 
 @dataclass(frozen=True)
@@ -142,8 +120,31 @@ class MCMConfig:
     decide which mode to use. Note that internally ``"pad-invalid-samples"`` is used internally
     instead of ``"hw-like"`` when using jax/catalyst."""
 
+    def _validate_inputs(self, mcm_method, postselect_mode) -> None:
+        """Validate inputs to MCMConfig.
+
+        Args:
+            mcm_method (MCM_METHOD | str | None): Mid-circuit measurement method.
+            postselect_mode (POSTSELECT_MODE | str | None): Postselection mode.
+
+        """
+        _valid_mcm_methods = [None] + [item.value for item in MCM_METHOD]
+        _valid_postselection_modes = [None] + [item.value for item in POSTSELECT_MODE]
+
+        if mcm_method not in _valid_mcm_methods:
+            raise ValueError(
+                f"'{mcm_method}' is not a valid mcm_method. Please use one of the supported mid-circuit measurement methods available: {_valid_mcm_methods}"
+            )
+
+        if postselect_mode not in _valid_postselection_modes:
+            raise ValueError(
+                f"'{postselect_mode}' is not a valid postselect_mode. Please use one of the supported postselection modes available: {_valid_postselection_modes}"
+            )
+
     def __post_init__(self):
         """Validate the configured mid-circuit measurement options."""
+        self._validate_inputs(self.mcm_method, self.postselect_mode)
+
         object.__setattr__(
             self,
             "mcm_method",
