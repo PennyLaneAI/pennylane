@@ -330,13 +330,42 @@ def _equal_operators(
             f"Got {op1.hyperparameters}\n and {op2.hyperparameters}."
         )
 
-    if any(qml.math.is_abstract(d) for d in op1.data + op2.data):
-        # assume all tracers are independent
-        return "Data contains a tracer. Abstract tracers are assumed to be unique."
-    if not all(
-        qml.math.allclose(d1, d2, rtol=rtol, atol=atol) for d1, d2 in zip(op1.data, op2.data)
-    ):
-        return f"op1 and op2 have different data.\nGot {op1.data} and {op2.data}"
+    # Check if data contains abstract tracers
+    # If both parameters are the same tracer object, they're equal
+    # If parameters are different tracers, assume they're different
+    # If parameters are concrete, use allclose for comparison
+    for d1, d2 in zip(op1.data, op2.data):
+        is_abstract_d1 = qml.math.is_abstract(d1)
+        is_abstract_d2 = qml.math.is_abstract(d2)
+
+        if is_abstract_d1 or is_abstract_d2:
+            # At least one is abstract
+            if is_abstract_d1 and is_abstract_d2:
+                # Both abstract - check if same tracer
+                if d1 is not d2:
+                    return "Data contains different abstract tracers. Abstract tracers are assumed to be unique."
+            else:
+                # One abstract, one concrete - they're different
+                return "Data contains mixed abstract and concrete values."
+        else:
+            # Both concrete - but we might be in a tracing context
+            # Try to use numpy's allclose to avoid creating traced operations
+            try:
+                import numpy as np
+
+                # Convert to numpy arrays to avoid tracing
+                d1_np = np.asarray(d1)
+                d2_np = np.asarray(d2)
+                if not np.allclose(d1_np, d2_np, rtol=rtol, atol=atol):
+                    return f"op1 and op2 have different data.\nGot {op1.data} and {op2.data}"
+            except (TypeError, ValueError):
+                # Fall back to qml.math.allclose if numpy conversion fails
+                close_result = qml.math.allclose(d1, d2, rtol=rtol, atol=atol)
+                if qml.math.is_abstract(close_result):
+                    # allclose returned a tracer - assume equal to avoid tracing issues
+                    continue
+                elif not close_result:
+                    return f"op1 and op2 have different data.\nGot {op1.data} and {op2.data}"
 
     if check_trainability:
         for params1, params2 in zip(op1.data, op2.data):
