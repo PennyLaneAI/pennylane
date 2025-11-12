@@ -14,6 +14,7 @@
 r"""
 Contains the AllSinglesDoubles template.
 """
+
 # pylint: disable=too-many-arguments,protected-access
 import copy
 
@@ -24,7 +25,8 @@ from pennylane.control_flow import for_loop
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.operation import Operation
 from pennylane.ops import BasisState, DoubleExcitation, SingleExcitation
-from pennylane.wires import Wires
+from pennylane.typing import TensorLike
+from pennylane.wires import Wires, WiresLike
 
 has_jax = True
 try:
@@ -71,15 +73,15 @@ class AllSinglesDoubles(Operation):
     other states encoding multiply-excited configurations.
 
     Args:
-        weights (tensor_like): size ``(len(singles) + len(doubles),)`` tensor containing the
+        weights (TensorLike): size ``(len(singles) + len(doubles),)`` tensor containing the
             angles entering the :class:`~.pennylane.SingleExcitation` and
             :class:`~.pennylane.DoubleExcitation` operations, in that order
-        wires (Iterable): wires that the template acts on
-        hf_state (array[int]): Length ``len(wires)`` occupation-number vector representing the
+        wires (WiresLike): wires that the template acts on
+        hf_state (list[int]): Length ``len(wires)`` occupation-number vector representing the
             Hartree-Fock state. ``hf_state`` is used to initialize the wires.
-        singles (Sequence[Sequence]): sequence of lists with the indices of the two qubits
+        singles (list[list]): sequence of lists with the indices of the two qubits
             the :class:`~.pennylane.SingleExcitation` operations act on
-        doubles (Sequence[Sequence]): sequence of lists with the indices of the four qubits
+        doubles (list[list]): sequence of lists with the indices of the four qubits
             the :class:`~.pennylane.DoubleExcitation` operations act on
 
     .. details::
@@ -128,7 +130,19 @@ class AllSinglesDoubles(Operation):
 
     resource_keys = {"num_singles", "num_doubles", "num_wires"}
 
-    def __init__(self, weights, wires, hf_state, singles=None, doubles=None, id=None):
+    def __init__(
+        self,
+        weights: TensorLike,
+        wires: WiresLike,
+        hf_state: list[int],
+        singles: list[list] | None = None,
+        doubles: list[list] | None = None,
+        id=None,
+    ):
+        singles = [] if singles is None else singles
+        doubles = [] if doubles is None else doubles
+        wires = Wires(wires)
+
         if len(wires) < 2:
             raise ValueError(
                 f"The number of qubits (wires) can not be less than 2; got len(wires) = {len(wires)}"
