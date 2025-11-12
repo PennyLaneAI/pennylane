@@ -56,7 +56,7 @@ class PrepSelPrep(Operation):
     Args:
         lcu (Union[.Hamiltonian, .Sum, .Prod, .SProd, .LinearCombination]): The operator
             written as a linear combination of unitaries.
-        control (Iterable[Any], WiresLike): The control qubits for the PrepSelPrep operator.
+        control (WiresLike): The control qubits for the PrepSelPrep operator.
 
     **Example**
 
