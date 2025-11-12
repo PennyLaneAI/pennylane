@@ -616,6 +616,8 @@ class TestHigherOrderPrimitiveIntegration:
         ]
         assert len(op_eqns) == 1
         assert op_eqns[0].primitive == qml.RX._primitive
+
+    def test_for_loop_higher_order_primitive(self):
         """Test that the for_loop primitive is correctly interpreted"""
 
         @MergeRotationsInterpreter()
@@ -644,6 +646,8 @@ class TestHigherOrderPrimitiveIntegration:
         ]
         assert len(op_eqns) == 1
         assert op_eqns[0].primitive == qml.RX._primitive
+
+    def test_while_loop_higher_order_primitive(self):
         """Test that the while_loop primitive is correctly interpreted"""
 
         @MergeRotationsInterpreter()
