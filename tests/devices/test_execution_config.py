@@ -21,6 +21,8 @@ from dataclasses import replace
 import pytest
 
 from pennylane.devices.execution_config import (
+    MCM_METHOD,
+    POSTSELECT_MODE,
     ExecutionConfig,
     FrozenMapping,
     MCMConfig,
@@ -286,24 +288,20 @@ class TestMCMConfig:
         assert config.mcm_method == "deferred"
         assert config.postselect_mode == "hw-like"
 
+    _VALID_MCM_METHODS: list[str | None] = [None] + [item.value for item in MCM_METHOD]
+
     @pytest.mark.parametrize(
         "mcm_method",
-        [None, "deferred", "one-shot", "device", "single-branch-statistics", "tree-traversal"],
+        _VALID_MCM_METHODS,
     )
     def test_valid_mcm_method(self, mcm_method):
         """Test that MCMConfig can be instantiated with valid mcm_method values."""
         config = MCMConfig(mcm_method=mcm_method)
         assert config.mcm_method == mcm_method
 
-    @pytest.mark.parametrize(
-        "postselect_mode",
-        [
-            None,
-            "hw-like",
-            "fill-shots",
-            "pad-invalid-samples",
-        ],
-    )
+    _VALID_POSTSELECT_MODES: list[str | None] = [None] + [item.value for item in POSTSELECT_MODE]
+
+    @pytest.mark.parametrize("postselect_mode", _VALID_POSTSELECT_MODES)
     def test_valid_postselect_mode(self, postselect_mode):
         """Test that MCMConfig can be instantiated with valid postselect_mode values."""
         config = MCMConfig(postselect_mode=postselect_mode)
