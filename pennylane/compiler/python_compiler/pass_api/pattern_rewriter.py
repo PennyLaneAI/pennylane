@@ -15,10 +15,9 @@
 
 from collections.abc import Sequence
 from numbers import Number
-from uuid import UUID, uuid4
 
 from xdsl.builder import ImplicitBuilder
-from xdsl.dialects import arith, builtin, func, scf, stablehlo, tensor
+from xdsl.dialects import arith, builtin, func, scf, tensor
 from xdsl.ir import BlockArgument
 from xdsl.ir import Operation as xOperation
 from xdsl.ir import Region, SSAValue
@@ -29,7 +28,7 @@ from pennylane import math, measurements, ops
 from pennylane.exceptions import TransformError
 from pennylane.operation import Operator
 
-from ..dialects import mbqc, quantum
+from ..dialects import quantum
 from ..utils import get_constant_from_ssa
 
 # # Tuple of all operations that return qubits
@@ -338,11 +337,11 @@ class PLPatternRewriter(PatternRewriter):
         """
         try:
             qnode: func.FuncOp = self.get_qnode(get_func=True)
-        except TransformError:
+        except TransformError as e:
             raise TransformError(
                 "Cannot get the number of shots when rewriting an operation outside the "
                 "scope of a QNode."
-            )
+            ) from e
 
         # The qnode function always initializes a quantum device using the quantum.DeviceInitOp
         # operation.
@@ -461,10 +460,12 @@ class PLPatternRewriter(PatternRewriter):
 
         return gate, (), (), False
 
+    # TODO: fix too-many-statements warning
+    # pylint: disable=too-many-statements
     def insert_gate(
         self, gate: Operator, insertion_point: InsertPoint, params: Sequence[SSAValue] | None = None
     ) -> xOperation:
-        """Insert a PL gate into the IR at the provided insertion point.
+        r"""Insert a PL gate into the IR at the provided insertion point.
 
         .. note::
 
@@ -506,19 +507,19 @@ class PLPatternRewriter(PatternRewriter):
             for d in gate.data:
                 try:
                     d = float(d)
-                except ValueError:
+                except ValueError as e:
                     raise TransformError(
                         "Only values that can be cast into floats can be used as gate "
                         f"parameters. Got {d}."
-                    )
-                constOp = self.create_scalar_constant(d, insertion_point)
+                    ) from e
+                constOp = self.insert_constant(d, insertion_point)
                 params.append(constOp.results[0])
                 insertion_point = InsertPoint.after(constOp)
 
             # TODO: Uncomment after PCPhaseOp is added to Quantum dialect
             # # PCPhase has a `dim` hyperparameter which also needs to be inserted into the IR.
             # if isinstance(gate, ops.PCPhase):
-            #     constOp = self.create_scalar_constant(float(gate.hyperparameters["dimension"][0]), insertion_point)
+            #     constOp = self.insert_constant(float(gate.hyperparameters["dimension"][0]), insertion_point)
             #     params.append(constOp.results[0])
             #     insertion_point = InsertPoint.after(constOp)
 
@@ -559,10 +560,10 @@ class PLPatternRewriter(PatternRewriter):
             true_cst = None
             false_cst = None
             if any(ctrl_vals):
-                true_cst = self.create_scalar_constant(True, insertion_point=insertion_point)
+                true_cst = self.insert_constant(True, insertion_point=insertion_point)
                 insertion_point = InsertPoint.after(true_cst)
             if not all(ctrl_vals):
-                false_cst = self.create_scalar_constant(False, insertion_point=insertion_point)
+                false_cst = self.insert_constant(False, insertion_point=insertion_point)
                 insertion_point = InsertPoint.after(false_cst)
             in_ctrl_values = tuple(
                 true_cst.results[0] if v else false_cst.results[0] for v in ctrl_vals
@@ -663,7 +664,7 @@ class PLPatternRewriter(PatternRewriter):
     #         # not known at compile time.
     #         tensor_shape = (-1,)
     #         # Create dynamic shape, which is (2**num_qubits,) or (1 << num_qubits,)
-    #         const1Op = self.create_scalar_constant(1, insertion_point=insertion_point)
+    #         const1Op = self.insert_constant(1, insertion_point=insertion_point)
     #         leftShiftOp = arith.ShLIOp(const1Op, n_qubits)
     #         self.insert_op(leftShiftOp, insertion_point=InsertPoint.after(const1Op))
     #         insertion_point = InsertPoint.after(leftShiftOp)
@@ -837,7 +838,7 @@ class PLPatternRewriteWalker(PatternRewriteWalker):
             # Apply the pattern on the operation
             try:
                 self.pattern.match_and_rewrite(op, rewriter)
-            except Exception as err:
+            except Exception as err:  # pylint: disable=broad-exception-caught
                 op.emit_error(
                     f"Error while applying pattern: {err}",
                     underlying_error=err,
