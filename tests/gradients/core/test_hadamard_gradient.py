@@ -402,6 +402,21 @@ class TestDifferentModes:
             expected = 1 / np.sqrt(2) * (1.0 - 2.0) + 1 / np.sqrt(2) * (3.0 - 4.0)
             assert qml.math.allclose(out, expected)
 
+
+    # TODO: paramerize with hamiltonians, wires
+    def test_automatic_mode_hadamard_obs(self):
+        """Test the automatic mode dispatches the correct modes for the scenario."""
+
+        dev = qml.device('default.qubit')
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.evolve(qml.X(0) @ qml.X(1) + qml.Z(0) @ qml.Z(1) + qml.H(0), x)
+            return qml.expval(qml.Z(0))
+
+        batch, fn = qml.gradients.hadamard_grad(circuit, mode="auto")
+
+
     @pytest.mark.parametrize("mode", ["direct", "reversed-direct"])
     def test_no_available_work_wire_direct_methods(self, mode):
         """Test that direct and reversed direct work with no available work wires."""

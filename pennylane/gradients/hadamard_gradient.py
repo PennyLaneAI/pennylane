@@ -119,8 +119,8 @@ def hadamard_grad(
         device_wires (pennylane.wires.Wires): Wires of the device that are going to be used for the
             gradient. Facilitates finding a default for ``aux_wire`` if ``aux_wire`` is ``None``.
         mode (str): Specifies the gradient computation mode. Accepted values are
-            ``"standard"``, ``"reversed"``, ``"direct"``, and ``"reversed-direct"``. The default
-            is ``"standard"``.
+            ``"standard"``, ``"reversed"``, ``"direct"``, ``"reversed-direct"``, or ``"auto"``. The default
+            is ``"auto"``.
 
     Returns:
         qnode (QNode) or tuple[List[QuantumTape], function]:
@@ -537,14 +537,18 @@ def _reversed_direct_hadamard_test(tape, trainable_param_idx, aux_wire) -> tuple
     return new_batch, new_coeffs
 
 
-def _quantum_automatic_differentiation():
+def _quantum_automatic_differentiation(tape, trainable_param_idx, aux_wire) -> tuple[list, list]:
     # 1) check if we have a work wire -> direct or standard differentiation
+    direct = not aux_wire
 
     # 2) check if we are doing forward or reversed (switch the generator with the measured op) based how many
     # combinations there are. Depends on the combinations of expectations and terms in the Hamiltonian.
     # If the terms in the Hamiltonian are on different wires we can measure them at the same time, but still need
     # different circuits for the controls, can refer to the hamiltonian’s "grouping indices" list: its length gives
     # the number of shots need for the expectations.
+    trainable_op, _, _ = tape.get_operation(trainable_param_idx)
+    expectations_shots = len(trainable_op.grouping_indices)
+
 
 
 def _new_measurement(mp, aux_wire, all_wires: Wires):
