@@ -48,7 +48,7 @@ def _mid_measure_prim(self, wires, reset, postselect):  # pylint: disable=unused
 
 
 @CollectResourceOps.register_primitive(pauli_measure_prim)
-def _pauli_measure_prim(self, wires, reset, postselect):  # pylint: disable=unused-argument
+def _pauli_measure_prim(self, *wires, pauli_word, postselect):  # pylint: disable=unused-argument
     # The purpose of the CollectResourceOps is to collect all operators that
     # potentially needs to be decomposed, which doesn't apply to PPMs
     return 0

@@ -98,6 +98,7 @@ def _create_pauli_measure_primitive():
 
     @pauli_measure_p.def_impl
     def _pauli_measure_primitive_impl(*wires, pauli_word="", postselect=None):
+        wires = [w if math.is_abstract(w) else int(w) for w in wires]
         return _pauli_measure_impl(wires, pauli_word=pauli_word, postselect=postselect)
 
     @pauli_measure_p.def_abstract_eval
