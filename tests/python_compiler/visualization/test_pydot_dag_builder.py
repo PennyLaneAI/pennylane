@@ -13,10 +13,11 @@
 # limitations under the License.
 """Unit tests for the PyDotDAGBuilder subclass."""
 
-import pydot
 import pytest
 
 from pennylane.compiler.python_compiler.visualization.pydot_dag_builder import PyDotDAGBuilder
+
+pydot = pytest.importorskip("pydot")
 
 
 @pytest.mark.unit
@@ -64,7 +65,44 @@ def test_add_cluster():
 
     dag_builder = PyDotDAGBuilder()
     dag_builder.add_cluster("0", "my_cluster")
-    print(dag_builder.graph.get_subgraphs()[0])
 
     assert len(dag_builder.graph.get_subgraphs()) == 1
     assert dag_builder.graph.get_subgraphs()[0].get_name() == "cluster_0"
+
+
+@pytest.mark.unit
+def test_add_node_with_attrs():
+    """Tests that default attributes are applied and can be overridden."""
+    dag_builder = PyDotDAGBuilder()
+
+    # Defaults
+    dag_builder.add_node("0", "node0")
+    node0 = dag_builder.graph.get_node("0")[0]
+    assert node0.get("fillcolor") == "lightblue"
+    assert node0.get("penwidth") == 3
+
+    # Make sure we can override
+    dag_builder.add_node("1", "node1", fillcolor="red", penwidth=4)
+    node1 = dag_builder.graph.get_node("1")[0]
+    assert node1.get("fillcolor") == "red"
+    assert node1.get("penwidth") == 4
+
+
+@pytest.mark.unit
+def test_add_edge_with_attrs():
+    """Tests that default attributes are applied and can be overridden."""
+    dag_builder = PyDotDAGBuilder()
+
+    # Defaults
+    dag_builder.add_node("0", "node0")
+    dag_builder.add_node("1", "node1")
+    dag_builder.add_edge("0", "1")
+    edge = dag_builder.graph.get_edges()[0]
+    assert edge.get("color") == "lightblue4"
+    assert edge.get("penwidth") == 3
+
+    # Make sure we can override
+    dag_builder.add_edge("0", "1", color="red", penwidth=4)
+    edge = dag_builder.graph.get_edges()[1]
+    assert edge.get("color") == "red"
+    assert edge.get("penwidth") == 4

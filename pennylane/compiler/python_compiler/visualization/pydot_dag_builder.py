@@ -13,6 +13,8 @@
 # limitations under the License.
 """File that defines the PyDotDAGBuilder subclass of DAGBuilder."""
 
+from typing import Any
+
 from .dag_builder import DAGBuilder
 
 has_pydot = True
@@ -53,7 +55,7 @@ class PyDotDAGBuilder(DAGBuilder):
         node_id: str,
         node_label: str,
         parent_graph_id: str | None = None,
-        **node_attrs: str | int,
+        **node_attrs: Any,
     ) -> None:
         """Add a single node to the graph.
 
@@ -70,7 +72,7 @@ class PyDotDAGBuilder(DAGBuilder):
 
         self._clusters[parent_graph_id].add_node(node)
 
-    def add_edge(self, from_node_id: str, to_node_id: str, **edge_attrs: str | int) -> None:
+    def add_edge(self, from_node_id: str, to_node_id: str, **edge_attrs: Any) -> None:
         """Add a single directed edge between nodes in the graph.
 
         Args:
@@ -88,7 +90,7 @@ class PyDotDAGBuilder(DAGBuilder):
         cluster_id: str,
         cluster_label: str,
         parent_graph_id: str | None = None,
-        **cluster_attrs: str | int,
+        **cluster_attrs: Any,
     ) -> None:
         """Add a single cluster to the graph.
 
