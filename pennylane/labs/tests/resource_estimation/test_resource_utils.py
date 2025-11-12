@@ -20,20 +20,25 @@ import pytest
 
 from pennylane.labs.resource_estimation.resource_utils import approx_poly_degree
 
+
 def test_approx_poly_degree():
     """Test the approx_poly_degree function"""
     x_vec = np.array([1, 2, 3, 4, 5])
     y_vec = np.array([1, 4, 9, 16, 25])
-    poly, loss = approx_poly_degree(x_vec, y_vec, max_degree=3)
-    assert poly == np.array([1, 0, 0])
-    assert loss == 0
+    coeffs, loss = approx_poly_degree(x_vec, y_vec, max_degree=3)
+
+    assert np.allclose(coeffs, np.array([0, 0, 1]))
+    assert np.allclose(loss, 0)
+
 
 @pytest.mark.parametrize("basis", ["chebyshev", "legendre", "hermite"])
 def test_approx_poly_degree_basis(basis):
     """Test the approx_poly_degree function with different bases"""
-    x_vec = np.array([1, 2, 3, 4, 5])
-    y_vec = np.array([1, 4, 9, 16, 25])
-    poly, loss = approx_poly_degree(x_vec, y_vec, basis=basis)
-    assert isinstance(poly, np.polynomial.Polynomial)
+    x_vec = np.random.RandomState(123).rand(10)
+    y_vec = np.random.RandomState(863).rand(10)
+    e_tol = 1e-2
+    coeffs, loss = approx_poly_degree(x_vec, y_vec, basis=basis, error_tol=e_tol)
+
+    assert isinstance(coeffs, np.ndarray)
     assert isinstance(loss, float)
-    assert loss <= 1e-6
+    assert loss <= e_tol

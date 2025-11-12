@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Utility functions for resource estimation."""
-from typing import Any
 from collections.abc import Callable
+from typing import Any
 
 import numpy as np
 
@@ -52,6 +52,9 @@ def approx_poly_degree(
     Keyword Arguments:
         rcond (float): the relative condition number of the fit.
         w (tensor_like): weights for the sample points.
+
+    Returns:
+        tuple[np.ndarray, float]: the coefficients of the polynomial and the loss of the fit.
     """
     min_degree = 0 if min_degree is None else min_degree
     max_degree = len(x_vec) - 1 if max_degree is None else max_degree
@@ -64,7 +67,7 @@ def approx_poly_degree(
 
     loss_func = lambda x: x
     if approx_poly_func is None:
-        loss_func = lambda x: x[0]
+        loss_func = lambda x: float("inf") if len(x[0]) == 0 else float(x[0][0])
         fit_kwargs["full"] = True
 
         match basis:
@@ -80,7 +83,7 @@ def approx_poly_degree(
     best_loss, best_poly = float("inf"), None
     for degree in range(min_degree, max_degree + 1):
         poly, stats = approx_poly_func(x_vec, y_vec, degree, **fit_kwargs)
-        if (loss := loss_func(stats)) < best_loss:
+        if (loss := loss_func(stats)) and loss < best_loss:
             best_loss, best_poly = loss, poly
             if loss <= error_tol:
                 break
