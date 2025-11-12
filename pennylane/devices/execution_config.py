@@ -128,8 +128,10 @@ class MCMConfig:
             postselect_mode (POSTSELECT_MODE | str | None): Postselection mode.
 
         """
-        _valid_mcm_methods = [None] + list(MCM_METHOD)
-        _valid_postselection_modes = [None] + list(POSTSELECT_MODE)
+        _valid_mcm_methods: list[str | None] = [None] + [item.value for item in MCM_METHOD]
+        _valid_postselection_modes: list[str | None] = [None] + [
+            item.value for item in POSTSELECT_MODE
+        ]
 
         if mcm_method not in _valid_mcm_methods:
             raise ValueError(
