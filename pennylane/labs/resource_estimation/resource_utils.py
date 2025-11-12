@@ -15,7 +15,7 @@
 import numpy as np
 
 
-# pylint: disable=unnecessary-lambda-assignment
+# pylint: disable=unnecessary-lambda-assignmentm too-many-arguments
 def approx_poly_degree(
     x_vec,
     y_vec,
