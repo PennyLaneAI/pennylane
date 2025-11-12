@@ -24,11 +24,11 @@ from xdsl.ir import Operation
 from xdsl.passes import ModulePass
 from xdsl.pattern_rewriter import (
     GreedyRewritePatternApplier,
-    PatternRewriter,
-    PatternRewriteWalker,
     RewritePattern,
     op_type_rewrite_pattern,
 )
+
+from .pattern_rewriter import PLPatternRewriter, PLPatternRewriteWalker
 
 
 def _update_type_hints(hint: type[Operation] | type[Operation]) -> Callable:
@@ -77,7 +77,7 @@ def _create_rewrite_pattern(
 
         @op_type_rewrite_pattern
         @_update_type_hints(hint)
-        def match_and_rewrite(self, op: Operation, rewriter: PatternRewriter) -> None:
+        def match_and_rewrite(self, op: Operation, rewriter: PLPatternRewriter) -> None:
             rewrite_rule(self._pass, op, rewriter)
 
     return _RewritePattern
@@ -98,7 +98,7 @@ class PLModulePass(ModulePass):
     @classmethod
     def rewrite_rule(
         cls, hint: type[Operation] | type[Operation]
-    ) -> Callable[[Operation, PatternRewriter], Callable]:
+    ) -> Callable[[Operation, PLPatternRewriter], Callable]:
         """Decorator to register a rewrite rule.
 
         The rewrite rule must have the following signature:
@@ -106,7 +106,7 @@ class PLModulePass(ModulePass):
         .. code-block:: python
 
             @PLModulePass.rewrite_rule(MyOperation)
-            def rewrite_myop(self, op: MyOperation, rewriter: PatternRewriter) -> None:
+            def rewrite_myop(self, op: MyOperation, rewriter: PLPatternRewriter) -> None:
                 ...
 
         .. note::
@@ -121,7 +121,7 @@ class PLModulePass(ModulePass):
             Callable: a decorator to register the rewrite rule with the ModulePass
         """
 
-        def decorator(rule: Callable[[Operation, PatternRewriter], None]) -> Callable:
+        def decorator(rule: Callable[[Operation, PLPatternRewriter], None]) -> Callable:
             rewrite_pattern = _create_rewrite_pattern(hint, rule)
             cls._rewrite_patterns[hint] = rewrite_pattern
             return rule
@@ -151,10 +151,10 @@ class PLModulePass(ModulePass):
             pattern = GreedyRewritePatternApplier(
                 rewrite_patterns=[rp(self) for rp in self._rewrite_patterns.values()]
             )
-            walker = PatternRewriteWalker(pattern=pattern, apply_recursively=self.recursive)
+            walker = PLPatternRewriteWalker(pattern=pattern, apply_recursively=self.recursive)
             walker.rewrite_module(op)
 
         else:
             for rp in self._rewrite_patterns.values():
-                walker = PatternRewriteWalker(pattern=rp(self), apply_recursively=self.recursive)
+                walker = PLPatternRewriteWalker(pattern=rp(self), apply_recursively=self.recursive)
                 walker.rewrite_module(op)
