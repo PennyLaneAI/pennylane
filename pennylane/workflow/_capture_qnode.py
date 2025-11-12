@@ -171,40 +171,22 @@ qnode_prim.prim_type = "higher_order"
 @qnode_prim.def_abstract_eval
 def _qnode_abstract_eval(*avals, qfunc_jaxpr, shots_len, device, **params):
     """Abstract evaluation for qnode primitive - returns output shapes."""
-    # Get shots if provided
-    # JAX 0.7.2: During vmap batching, shots arguments become tracers (ShapedArray)
-    # instead of concrete values (Literals). To handle this, we store the concrete
-    # shots value in params['concrete_shots'] when binding the primitive.
+    # During vmap, flat_shots arguments become tracers - extract from concrete_shots
     if shots_len > 0:
-        # First try to get concrete shots from params (added for JAX 0.7.2)
         shots = params.get("concrete_shots")
-
-        # If not in params, try to extract from avals (for backwards compatibility)
-        if shots is None:
-            shots_aval = avals[0]
-            if hasattr(shots_aval, "val"):
-                # It's a Literal with a concrete value
-                shots = shots_aval.val
-            elif isinstance(shots_aval, (int, float)):
-                # It's a Python int/float
-                shots = int(shots_aval)
     else:
         shots = None
 
     # Get output shapes from jaxpr outvars
     num_device_wires = len(device.wires)
     batch_dims = params.get("batch_dims")
-    # JAX 0.7.2: Compute n_consts from jaxpr instead of passing as parameter
     n_consts = len(qfunc_jaxpr.constvars)
 
-    # Calculate batch shape
+    # Calculate batch shape by broadcasting batch dimensions
     if batch_dims is not None:
         split = n_consts + shots_len
         non_const_avals = avals[split:]
         non_const_batch_dims = batch_dims[split:]
-        # BUG FIX: Use _get_batch_shape to properly broadcast batch dimensions
-        # instead of creating a tuple of all batch dims (which gives (3, 3) instead of (3,))
-        # We need to extract actual shapes from batch dims
         input_shapes = [
             (aval.shape[batch_dim],)
             for aval, batch_dim in zip(non_const_avals, non_const_batch_dims, strict=True)
@@ -248,7 +230,6 @@ def _(
 
     execution_config = device.setup_execution_config(execution_config)
 
-    # JAX 0.7.2: Compute n_consts from jaxpr instead of passing as parameter
     n_consts = len(qfunc_jaxpr.constvars)
 
     # Split args: shots, consts, then actual args
@@ -286,9 +267,6 @@ def _(
         qfunc_jaxpr = jax.make_jaxpr(transformed_func)(*temp_args)
         temp_consts = qfunc_jaxpr.consts
         qfunc_jaxpr = qfunc_jaxpr.jaxpr
-    else:
-        # Keep the consts we extracted
-        pass
 
     # Expand user transforms applied to the qnode
     qfunc_jaxpr = qnode.transform_program(qfunc_jaxpr, temp_consts, *temp_args)
@@ -328,7 +306,7 @@ def _qnode_batching_rule(
     execution_config,
     qfunc_jaxpr,
     shots_len,
-    concrete_shots=None,  # JAX 0.7.2: Accept concrete_shots parameter
+    concrete_shots=None,
 ):
     """
     Batching rule for the ``qnode`` primitive.
@@ -336,7 +314,6 @@ def _qnode_batching_rule(
     This rule exploits the parameter broadcasting feature of the QNode to vectorize the circuit execution.
     """
 
-    # JAX 0.7.2: Compute n_consts from jaxpr
     n_consts = len(qfunc_jaxpr.constvars)
 
     for idx, (arg, batch_dim) in enumerate(zip(batched_args, batch_dims, strict=True)):
@@ -366,10 +343,6 @@ def _qnode_batching_rule(
                 UserWarning,
             )
 
-    # NOTE: We do NOT pass batch_dims to bind() here because the batching rule
-    # is responsible for handling the batching, not delegating it to the primitive.
-    # The primitive's implementation will use device-level broadcasting instead.
-    # However, we still pass batch_dims to allow the implementation to know about batching.
     result = qnode_prim.bind(
         *batched_args,
         shots_len=shots_len,
@@ -378,20 +351,10 @@ def _qnode_batching_rule(
         execution_config=execution_config,
         qfunc_jaxpr=qfunc_jaxpr,
         batch_dims=batch_dims,
-        concrete_shots=concrete_shots,  # JAX 0.7.2: Pass through concrete_shots
+        concrete_shots=concrete_shots,
     )
 
-    # BUG FIX: Since the implementation handles batching internally (via jax.vmap when batch_dims is present),
-    # and custom_partial_eval_rule adds batch_shape to the output shapes, the result is already batched.
-    # We return None for batch_axes to indicate "result is already in batched form, don't add another dimension".
-    # NOTE: JAX batching rules can return either:
-    #   - (result, batch_axes): where batch_axes indicates where the batch dim is in each output
-    #   - (result, None): indicates result is not batched (shouldn't happen here)
-    # Actually, looking at JAX source, we should return the batch axes even if implementation does vmap.
-    # The issue might be elsewhere. Let me check if implementation is being called during tracing...
-
-    # The batch dimension is at the front (axis 0) for all elements in the result.
-    # JAX doesn't expose `out_axes` in the batching rule.
+    # Batch dimension is at axis 0 for all outputs
     return result, (0,) * len(result)
 
 
@@ -614,12 +577,8 @@ def _bind_qnode(qnode, *args, **kwargs):
         device=qnode.device,
         execution_config=config,
         qfunc_jaxpr=qfunc_jaxpr.jaxpr,
-        # JAX 0.7.2: Store concrete shots values in params for abstract evaluation
-        # During vmap batching, the flat_shots arguments become tracers, so we need
-        # the concrete values available in params
-        concrete_shots=(
-            flat_shots[0] if len(flat_shots) == 1 else flat_shots if flat_shots else None
-        ),
+        # During vmap, flat_shots become tracers - pass concrete values
+        concrete_shots=flat_shots or None,
     )
 
     if len(flat_shots) > 1:
