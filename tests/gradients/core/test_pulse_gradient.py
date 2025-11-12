@@ -1579,9 +1579,6 @@ class TestStochPulseGradIntegration:
         )
         jax.clear_caches()
 
-    @pytest.mark.xfail(
-        reason="Test seems wrong and is under investigation (tracked in sc-101765)", strict=False
-    )
     @pytest.mark.parametrize("shots, tol", [(None, 1e-4), (100, 0.1), ([100, 100], 0.1)])
     @pytest.mark.parametrize("num_split_times", [1, 2])
     def test_qnode_probs_expval_broadcasting(self, num_split_times, shots, tol, seed):
@@ -1610,10 +1607,10 @@ class TestStochPulseGradIntegration:
         jac = jax.jacobian(circuit)(params)
         p = params[0] * T
         exp_jac = (jnp.array([-1, 1]) * jnp.sin(2 * p) * T, -2 * jnp.sin(2 * p) * T)
-        if hasattr(shots, "len"):
-            for j_shots, e_shots in zip(jac, exp_jac):
-                for j, e in zip(j_shots, e_shots):
-                    assert qml.math.allclose(j[0], e, atol=tol, rtol=0.0)
+        if isinstance(shots, list):
+            for j_shots in jac:
+                for j, e in zip(j_shots, exp_jac):
+                    assert qml.math.allclose(j, e, atol=tol, rtol=0.0)
         else:
             for j, e in zip(jac, exp_jac):
                 assert qml.math.allclose(j[0], e, atol=tol, rtol=0.0)
