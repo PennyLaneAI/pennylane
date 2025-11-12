@@ -196,7 +196,7 @@ class TestDynamicDecomposition:
         import jax
         from jax import numpy as jnp
 
-        from pennylane.capture.primitives import cond_prim, for_loop_prim
+        from pennylane.capture.primitives import for_loop_prim
         from pennylane.tape.plxpr_conversion import CollectOpsandMeas
         from pennylane.transforms.decompose import DecomposeInterpreter
 
@@ -216,8 +216,6 @@ class TestDynamicDecomposition:
             return qml.state()
 
         jaxpr = jax.make_jaxpr(circuit)(weights, wires=wires)
-        print(jaxpr)
-        # Validate Jaxpr
         jaxpr_eqns = jaxpr.eqns
         layer_loop_eqn = [eqn for eqn in jaxpr_eqns if eqn.primitive == for_loop_prim]
         assert layer_loop_eqn[0].primitive == for_loop_prim
@@ -228,17 +226,8 @@ class TestDynamicDecomposition:
         rot_inner_eqn = rot_loop_eqn[0].params["jaxpr_body_fn"].eqns
         assert rot_inner_eqn[-1].primitive == qml.Rot._primitive
 
-        cond_eqn = [eqn for eqn in layer_inner_eqn if eqn.primitive == cond_prim]
-        assert cond_eqn[0].primitive == cond_prim
-        true_branch_eqns = cond_eqn[0].params["jaxpr_branches"][0].eqns
-        false_branch_eqns = cond_eqn[0].params["jaxpr_branches"][1].eqns
-        assert false_branch_eqns == []
-
-        imprimitive_loop_eqn = [eqn for eqn in true_branch_eqns if eqn.primitive == for_loop_prim]
-        assert imprimitive_loop_eqn[0].primitive == for_loop_prim
-        imprimitive_inner_eqn = imprimitive_loop_eqn[0].params["jaxpr_body_fn"].eqns
-        assert imprimitive_inner_eqn[-1].primitive == imprimitive._primitive
-
+        cnot_inner_eqn = rot_loop_eqn[1].params["jaxpr_body_fn"].eqns
+        assert cnot_inner_eqn[-1].primitive == qml.CNOT._primitive
         # Validate Ops
         collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts, weights, *wires)
