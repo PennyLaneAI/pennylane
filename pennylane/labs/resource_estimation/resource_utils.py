@@ -15,65 +15,71 @@
 import numpy as np
 
 
-def approx_poly_degree(x_vec, y_vec, error_tol=1e-6, loss="mse", max_degree=None, min_degree=None, basis=None, **fit_kwargs, **loss_kwargs):
+# pylint: disable=unnecessary-lambda-assignment
+def approx_poly_degree(
+    x_vec,
+    y_vec,
+    error_tol=1e-6,
+    max_degree=None,
+    min_degree=None,
+    basis=None,
+    approx_poly_func=None,
+    **fit_kwargs,
+):
     r"""Approximates a polynomial function of a given degree at value x
 
     Args:
-        x_vec (tensor_like): values to approximate with a polynomial
-        y_vec (tensor_like): values to approximate with a polynomial
-        error_tol (float): tolerance for the error
-        loss (str | callable): loss function to use, where available options are `"mse"` (mean squared error), `"mae"`
-            (mean absolute error), `"rmse"` (root mean squared error), or a custom loss function. Defaults to `"mse"`.
-        max_degree (int): maximum degree of the polynomial
-        min_degree (int): minimum degree of the polynomial
-        basis (str): basis to use for the polynomial
-        **fit_kwargs: additional keyword arguments to pass to the Numpy's polynomial fit function.
-            See these `docs <https://numpy.org/doc/stable/reference/generated/numpy.polynomial.Polynomial.fit.html>`_
-            for more details.
-        **loss_kwargs: additional keyword arguments to pass to the loss function
+        x_vec (tensor_like): x-values for the sample points
+        y_vec (tensor_like): y-values for the sample points
+        error_tol (float): tolerance for the least squares fit error. Defaults to ``1e-6``.
+        max_degree (int): maximum degree of the polynomial. Defaults to ``0``.
+        min_degree (int): minimum degree of the polynomial. Defaults to ``len(x_vec) - 1``.
+        basis (str): basis to use for the polynomial. Available options are ``"chebyshev"``,
+            ``"legendre"``, and ``"hermite"``. Defaults to ``None``, which assumes fitting
+            data to a polynomial in the monomial basis.
+        approx_poly_func (callable): function to approximate the polynomial with signature
+            ``(x_vec, y_vec, degree, **kwargs) -> tuple[np.array, float]``
+            Defaults to ``None``, which will use the NumPy polynomial fit function corresponding
+            to the ``basis`` keyword argument. Providing a custom function will override the
+            ``basis`` keyword argument.
+        **fit_kwargs: additional keyword arguments to pass to the `fitting` functions.
+            See keyword arguments below for available arguments for the default ``NumPy`` fitting
+            functions. Custom functions may support different keyword arguments.
+
+    Keyword Arguments:
+        rcond (float): the relative condition number of the fit.
+        w (tensor_like): weights for the sample points.
     """
     min_degree = 0 if min_degree is None else min_degree
     max_degree = len(x_vec) - 1 if max_degree is None else max_degree
 
     if min_degree > max_degree:
         raise ValueError("min_degree must be less than or equal to max_degree")
-    
+
     if min_degree < 0:
         raise ValueError("min_degree must be non-negative")
 
-    # pylint: disable=unnecessary-lambda-assignment
-    if loss == "mse":
-        loss_func = lambda y_pred, y_true: np.mean((y_pred - y_true) ** 2)
-    elif loss == "mae":
-        loss_func = lambda y_pred, y_true: np.mean(np.abs(y_pred - y_true))
-    elif loss == "rmse":
-        loss_func = lambda y_pred, y_true: np.sqrt(np.mean((y_pred - y_true) ** 2))
-    else:
-        loss_func = loss
+    loss_func = lambda x: x
+    if approx_poly_func is None:
+        loss_func = lambda x: x[0]
+        fit_kwargs["full"] = True
 
-    best_loss, best_poly = float('inf'), None
+        match basis:
+            case "chebyshev":
+                approx_poly_func = np.polynomial.chebyshev.chebfit
+            case "legendre":
+                approx_poly_func = np.polynomial.legendre.legfit
+            case "hermite":
+                approx_poly_func = np.polynomial.hermite.hermfit
+            case _:
+                approx_poly_func = np.polynomial.polynomial.polyfit
+
+    best_loss, best_poly = float("inf"), None
     for degree in range(min_degree, max_degree + 1):
-        poly = approx_poly(x_vec, y_vec, degree, basis=basis, **fit_kwargs)
-        loss = loss_func(poly(x_vec), y_vec, **loss_kwargs)
-        if loss < best_loss:
+        poly, stats = approx_poly_func(x_vec, y_vec, degree, **fit_kwargs)
+        if (loss := loss_func(stats)) < best_loss:
             best_loss, best_poly = loss, poly
-        if loss < error_tol:
-            break
+            if loss <= error_tol:
+                break
 
     return best_poly, best_loss
-
-def approx_poly(x_vec, y_vec, degree, basis=None, **fit_kwargs):
-    r"""Approximates a polynomial function of a given degree at value x
-
-    Args:
-        x_vec (tensor_like): values to approximate with a polynomial
-        y_vec (tensor_like): values to approximate with a polynomial
-        degree (int): degree of the polynomial
-        basis (str): basis to use for the polynomial
-        **fit_kwargs: additional keyword arguments to pass to the Numpy's polynomial fit function.
-            See these `docs <https://numpy.org/doc/stable/reference/generated/numpy.polynomial.Polynomial.fit.html>`_
-            for more details.
-    """
-    if basis == "chebyshev":
-        return np.polynomial.Chebyshev.fit(x_vec, y_vec, degree, **fit_kwargs)
-    return np.polynomial.Polynomial.fit(x_vec, y_vec, degree, **fit_kwargs)
