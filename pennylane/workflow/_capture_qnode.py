@@ -75,12 +75,14 @@ features is non-exhaustive.
 
 """
 import logging
+from collections.abc import Sequence
 from functools import partial
 from numbers import Number
 from warnings import warn
 
 import jax
 from jax.interpreters import ad, batching, mlir
+from jax.interpreters import partial_eval as pe
 
 import pennylane as qml
 from pennylane.capture import FlatFn, QmlPrimitive
@@ -166,60 +168,10 @@ qnode_prim.multiple_results = True
 qnode_prim.prim_type = "higher_order"
 
 
-@qnode_prim.def_abstract_eval
-def _qnode_abstract_eval(*avals, qfunc_jaxpr, shots_len, device, **params):
-    """Abstract evaluation for qnode primitive - returns output shapes."""
-    # During vmap, flat_shots arguments become tracers - extract from concrete_shots
-    if shots_len > 0:
-        shots = params.get("concrete_shots")
-    else:
-        shots = None
-
-    # Get output shapes from jaxpr outvars
-    num_device_wires = len(device.wires)
-    batch_dims = params.get("batch_dims")
-    n_consts = len(qfunc_jaxpr.constvars)
-
-    # Calculate batch shape by broadcasting batch dimensions
-    if batch_dims is not None:
-        split = n_consts + shots_len
-        non_const_avals = avals[split:]
-        non_const_batch_dims = batch_dims[split:]
-        input_shapes = [
-            (aval.shape[batch_dim],)
-            for aval, batch_dim in zip(non_const_avals, non_const_batch_dims, strict=True)
-            if batch_dim is not None
-        ]
-        batch_shape = jax.lax.broadcast_shapes(*input_shapes) if input_shapes else ()
-    else:
-        batch_shape = ()
-
-    # Get shapes from jaxpr outvars
-    # _get_shapes_for expects shots to be iterable or None
-    shots_list = [shots] if shots is not None and not isinstance(shots, (list, tuple)) else shots
-    output_avals = _get_shapes_for(
-        *qfunc_jaxpr.outvars,
-        shots=shots_list,
-        num_device_wires=num_device_wires,
-        batch_shape=batch_shape,
-    )
-
-    return output_avals
-
-
 # pylint: disable=too-many-arguments
 @debug_logger
 @qnode_prim.def_impl
-def _(
-    *args,
-    qnode,
-    device,
-    execution_config,
-    qfunc_jaxpr,
-    shots_len,
-    batch_dims=None,
-    concrete_shots=None,  # pylint: disable=unused-argument  # Used by abstract_eval
-):
+def _(*args, qnode, device, execution_config, qfunc_jaxpr, n_consts, shots_len, batch_dims=None):
 
     warn(
         "Executing PennyLane programs with capture enabled should be done inside ``qml.qjit``. Native execution of captured programs is an unmaintained experimental feature.",
@@ -228,9 +180,6 @@ def _(
 
     execution_config = device.setup_execution_config(execution_config)
 
-    n_consts = len(qfunc_jaxpr.constvars)
-
-    # Split args: shots, consts, then actual args
     if shots_len == 0:
         shots = None
         non_shots_args = args
@@ -238,7 +187,7 @@ def _(
         shots, non_shots_args = args[:shots_len], args[shots_len:]
 
     consts = non_shots_args[:n_consts]
-    all_args = non_shots_args[n_consts:]
+    non_const_args = non_shots_args[n_consts:]
 
     device_program = device.preprocess_transforms(execution_config)
     if batch_dims is not None:
@@ -254,7 +203,7 @@ def _(
         temp_args = temp_all_args[(n_consts + shots_len) :]
     else:
         temp_consts = consts
-        temp_args = all_args
+        temp_args = non_const_args
 
     # Expand user transforms applied to the qfunc
     if getattr(qfunc_jaxpr.eqns[0].primitive, "prim_type", "") == "transform":
@@ -290,8 +239,66 @@ def _(
         shots=Shots(shots),
     )
     if batch_dims is None:
-        return partial_eval(*all_args)
-    return jax.vmap(partial_eval, batch_dims[(n_consts + shots_len) :])(*all_args)
+        return partial_eval(*non_const_args)
+    return jax.vmap(partial_eval, batch_dims[(n_consts + shots_len) :])(*non_const_args)
+
+
+def custom_staging_rule(
+    jaxpr_trace: pe.DynamicJaxprTrace, source_info, *tracers: pe.DynamicJaxprTracer, **params
+) -> Sequence[pe.DynamicJaxprTracer] | pe.DynamicJaxprTracer:
+    """
+    Add new jaxpr equation to the jaxpr_trace and return new tracers.
+
+    See capture/intro_to_dynamic_shapes.py for more context and capture.register_custom_staging_rule
+    for the implementation used on other higher order primitives.
+    """
+    shots_len, jaxpr = params["shots_len"], params["qfunc_jaxpr"]
+    device = params["device"]
+    invars = [t.val for t in tracers]
+    shots_vars = invars[:shots_len]
+
+    batch_dims = params.get("batch_dims")
+    split = params["n_consts"] + params["shots_len"]
+    batch_shape = (
+        _get_batch_shape(tracers[split:], batch_dims[split:]) if batch_dims is not None else ()
+    )
+
+    new_shapes = _get_shapes_for(
+        *jaxpr.outvars,
+        shots=shots_vars,
+        num_device_wires=len(device.wires),
+        batch_shape=batch_shape,
+    )
+
+    outvars = [jaxpr_trace.frame.newvar(aval) for aval in new_shapes]
+
+    # Create JaxprEqnContext and TracingEqn for JAX 0.7.0
+    # pylint: disable=import-outside-toplevel
+    from jax._src import compute_on, xla_metadata_lib
+    from jax._src.interpreters.partial_eval import JaxprEqnContext, TracingEqn
+
+    ctx = JaxprEqnContext(
+        compute_on.current_compute_type(),
+        jax.config.jax_threefry_partitionable,
+        xla_metadata_lib.current_xla_metadata(),
+    )
+
+    eqn = TracingEqn(
+        list(tracers),  # input tracers
+        outvars,  # output vars
+        qnode_prim,
+        params,
+        jax.core.no_effects,
+        source_info,
+        ctx,
+    )
+    jaxpr_trace.frame.add_eqn(eqn)
+
+    out_tracers = [pe.DynamicJaxprTracer(jaxpr_trace, o, v) for o, v in zip(new_shapes, outvars)]
+    return out_tracers
+
+
+pe.custom_staging_rules[qnode_prim] = custom_staging_rule
 
 
 # pylint: disable=too-many-arguments
@@ -304,15 +311,13 @@ def _qnode_batching_rule(
     execution_config,
     qfunc_jaxpr,
     shots_len,
-    concrete_shots=None,
+    n_consts,
 ):
     """
     Batching rule for the ``qnode`` primitive.
 
     This rule exploits the parameter broadcasting feature of the QNode to vectorize the circuit execution.
     """
-
-    n_consts = len(qfunc_jaxpr.constvars)
 
     for idx, (arg, batch_dim) in enumerate(zip(batched_args, batch_dims, strict=True)):
 
@@ -348,11 +353,12 @@ def _qnode_batching_rule(
         device=device,
         execution_config=execution_config,
         qfunc_jaxpr=qfunc_jaxpr,
+        n_consts=n_consts,
         batch_dims=batch_dims,
-        concrete_shots=concrete_shots,
     )
 
-    # Batch dimension is at axis 0 for all outputs
+    # The batch dimension is at the front (axis 0) for all elements in the result.
+    # JAX doesn't expose `out_axes` in the batching rule.
     return result, (0,) * len(result)
 
 
@@ -362,12 +368,6 @@ def _qnode_batching_rule(
 
 @debug_logger
 def _finite_diff(args, tangents, **impl_kwargs):
-    """Compute JVP using finite differences.
-
-    This function uses qml.gradients.finite_diff_jvp which computes the JVP
-    using numerical finite differences. The function is made JAX-traceable by
-    ensuring all operations are compatible with JAX arrays.
-    """
     if not jax.config.jax_enable_x64:
         warn(
             "Detected 32 bits precision with finite differences. This can lead to incorrect results."
@@ -575,8 +575,7 @@ def _bind_qnode(qnode, *args, **kwargs):
         device=qnode.device,
         execution_config=config,
         qfunc_jaxpr=qfunc_jaxpr.jaxpr,
-        # During vmap, flat_shots become tracers - pass concrete values
-        concrete_shots=flat_shots or None,
+        n_consts=len(qfunc_jaxpr.consts),
     )
 
     if len(flat_shots) > 1:
