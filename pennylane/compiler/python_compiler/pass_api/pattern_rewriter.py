@@ -26,7 +26,7 @@ from xdsl.pattern_rewriter import PatternRewriter, PatternRewriterListener, Patt
 from xdsl.rewriter import InsertPoint
 
 from pennylane import math, measurements, ops
-from pennylane.exceptions import CompileError
+from pennylane.exceptions import TransformError
 from pennylane.operation import Operator
 
 from ..dialects import mbqc, quantum
@@ -325,7 +325,7 @@ class PLPatternRewriter(PatternRewriter):
         try:
             qnode_module = self.get_qnode_module()
         except Exception:
-            raise RuntimeError(
+            raise TransformError(
                 "Cannot get the number of shots when rewriting a module outside the "
                 "scope of a QNode."
             )
@@ -366,6 +366,53 @@ class PLPatternRewriter(PatternRewriter):
 
         shots = get_constant_from_ssa(shots)
         return None if shots == 0 else shots
+
+    def insert_mid_measure(
+        self, mcm: measurements.MidMeasureMP, insertion_point: InsertPoint
+    ) -> SSAValue[quantum.QubitType]:
+        """Insert a PL mid-circuit measurement into the IR at the provided insertion point.
+
+        Args:
+            mcm (pennylane.ops.MidMeasureMP): The mid-circuit measurement to insert into
+                the IR. Note that the measurement qubit must be an SSAValue.
+            insertion_point (InsertPoint): The point in the IR where the operation must
+                be inserted.
+
+        Returns:
+            xdsl.ir.SSAValue[quantum.QubitType]: The qubit returned by the mid-circuit measurement.
+        """
+        in_qubit: SSAValue[quantum.QubitType] = mcm.wires[0]
+        midMeasureOp = quantum.MeasureOp(in_qubit=in_qubit, postselect=mcm.postselect)
+        self.insert_op(midMeasureOp, insertion_point=insertion_point)
+        out_qubit = midMeasureOp.out_qubit
+
+        # If resetting, we need to insert a conditional statement that applies a PauliX
+        # if we measured |1>. The else block just yields a qubit.
+        if mcm.reset:
+            true_region = Region()
+            with ImplicitBuilder(true_region):
+                gate = quantum.CustomOp(gate_name="PauliX", in_qubits=(midMeasureOp.out_qubit,))
+                _ = scf.YieldOp(gate.out_qubits[0])
+
+            false_region = Region()
+            with ImplicitBuilder(false_region):
+                _ = scf.YieldOp(midMeasureOp.out_qubit)
+
+            ifOp = scf.IfOp(
+                cond=midMeasureOp.mres,
+                return_types=(quantum.QubitType(),),
+                true_region=true_region,
+                false_region=false_region,
+            )
+            self.insert_op(ifOp, InsertPoint.after(midMeasureOp))
+            out_qubit = ifOp.results[0]
+
+        mcm_qubit_uses = [use for use in in_qubit.uses if use.operation != midMeasureOp]
+        in_qubit.replace_by_if(out_qubit, lambda use: use.operation != midMeasureOp)
+        for use in mcm_qubit_uses:
+            self.notify_op_modified(use.operation)
+
+        return out_qubit
 
     # @staticmethod
     # def _get_gate_base(gate: Operator):
@@ -688,39 +735,6 @@ class PLPatternRewriter(PatternRewriter):
     #             )
 
     #     self.insert_op(measurementOp, insertion_point=insertion_point)
-
-    # def insert_mid_measure(
-    #     self, mcm: measurements.MidMeasureMP, insertion_point: InsertPoint
-    # ) -> None:
-    #     """Insert a PL measurement into the IR at the provided insertion point."""
-    #     in_qubit = mcm.wires[0]
-    #     midMeasureOp = quantum.MeasureOp(in_qubit=in_qubit, postselect=mcm.postselect)
-    #     self.insert_op(midMeasureOp, insertion_point=insertion_point)
-    #     in_qubit.replace_by_if(lambda use: use.operation != midMeasureOp)
-    #     self.notify_op_modified(midMeasureOp)
-
-    #     # If reseting, we need to insert a conditional statement that applies a PauliX
-    #     # if we measured |1>. The else block just yields a qubit.
-    #     if mcm.reset:
-    #         true_region = Region()
-    #         with ImplicitBuilder(true_region):
-    #             gate = quantum.CustomOp(gate_name="PauliX", in_qubits=(midMeasureOp.out_qubit,))
-    #             _ = scf.YieldOp(gate.out_qubits[0])
-
-    #         false_region = Region()
-    #         with ImplicitBuilder(false_region):
-    #             _ = scf.YieldOp(midMeasureOp.out_qubit)
-
-    #         ifOp = scf.IfOp(
-    #             cond=midMeasureOp.mres,
-    #             return_types=(quantum.QubitType(),),
-    #             true_region=true_region,
-    #             false_region=false_region,
-    #         )
-    #         self.insert_op(ifOp, InsertPoint.after(midMeasureOp))
-    #         mcm_out_qubit = midMeasureOp.results[1]
-    #         mcm_out_qubit.replace_by_if(lambda use: use.operation != ifOp)
-    #         self.notify_op_modified(ifOp)
 
 
 # pylint: disable=too-few-public-methods
