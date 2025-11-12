@@ -135,9 +135,9 @@ class TransformProgram:
     >>> program.add_transform(qml.compile)
     >>> program.add_transform(qml.transforms.cancel_inverses)
     >>> [t for t in program]  # Iteration
-    [<compile([], {})>, <cancel_inverses([], {})>]
+    [<compile((), {})>, <cancel_inverses((), {})>]
     >>> program[0]
-    <compile([], {})>
+    <compile((), {})>
     >>> program[::-1]
     TransformProgram(cancel_inverses, compile)
     >>> len(program)
