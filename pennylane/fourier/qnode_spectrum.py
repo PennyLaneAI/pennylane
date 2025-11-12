@@ -85,7 +85,7 @@ def _process_ids(encoding_args, argnum, qnode):
     in various combinations:
 
     >>> _process_ids(encoding_args, None, circuit)
-    (OrderedDict([('a', [(1,), (2,)]), ('c', Ellipsis), ('x', [()])]), [0, 2, 3])
+    (OrderedDict({'a': [(1,), (2,)], 'c': Ellipsis, 'x': [()]}), [0, 2, 3])
 
     The first output, ``encoding_args``, essentially is unchanged, it simply was ordered in
     the order of the QNode arguments. The second output, ``argnum``, contains all three
@@ -93,19 +93,19 @@ def _process_ids(encoding_args, argnum, qnode):
     If we in addition pass ``argnum``, it is ignored:
 
     >>> _process_ids(encoding_args, argnum, circuit)
-    (OrderedDict([('a', [(1,), (2,)]), ('c', Ellipsis), ('x', [()])]), [0, 2, 3])
+    (OrderedDict({'a': [(1,), (2,)], 'c': Ellipsis, 'x': [()]}), [0, 2, 3])
 
     Only if we leave out ``encoding_args`` does it make a difference:
 
     >>> _process_ids(None, argnum, circuit)
-    (OrderedDict([('a', Ellipsis), ('c', Ellipsis)]), [0, 2])
+    (OrderedDict({'a': Ellipsis, 'c': Ellipsis}), [0, 2])
 
     Now only the arguments in ``argnum`` are considered, in particular the ``argnum`` input
     is simply sorted. In ``encoding_args``, all argument names are paired with an ``Ellipsis``.
     If we skip both inputs, all QNode arguments are extracted:
 
     >>> _process_ids(None, None, circuit)
-    (OrderedDict([('a', Ellipsis), ('b', Ellipsis), ('c', Ellipsis)]), [0, 1, 2])
+    (OrderedDict({'a': Ellipsis, 'b': Ellipsis, 'c': Ellipsis}), [0, 1, 2])
 
     Note that ``x`` does not appear here, because it has a default value defined and thus is
     considered a keyword argument.
