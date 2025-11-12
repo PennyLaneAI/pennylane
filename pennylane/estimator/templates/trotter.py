@@ -19,10 +19,10 @@ import numpy as np
 
 from pennylane.estimator.compact_hamiltonian import (
     CDFHamiltonian,
+    PauliHamiltonian,
     THCHamiltonian,
     VibrationalHamiltonian,
     VibronicHamiltonian,
-    PauliHamiltonian,
 )
 from pennylane.estimator.ops.op_math.symbolic import Controlled, Prod
 from pennylane.estimator.ops.qubit.non_parametric_ops import Hadamard, T, X
@@ -1855,7 +1855,7 @@ class TrotterPauli(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * pauli_ham (:class:`~.pennylane.estimator.templates.compact_hamiltonian.PauliHamiltonian`): 
+                * pauli_ham (:class:`~.pennylane.estimator.templates.compact_hamiltonian.PauliHamiltonian`):
                   The hamiltonian to be approximately exponentiated
                 * num_steps (int): number of Trotter steps to perform
                 * order (int): order of the approximation, must be 1 or even.
@@ -1874,7 +1874,7 @@ class TrotterPauli(ResourceOperator):
         the Operator that are needed to compute a resource estimation.
 
         Args:
-            pauli_ham (:class:`~.pennylane.estimator.templates.compact_hamiltonian.PauliHamiltonian`): 
+            pauli_ham (:class:`~.pennylane.estimator.templates.compact_hamiltonian.PauliHamiltonian`):
                 The hamiltonian to be approximately exponentiated
             num_steps (int): number of Trotter steps to perform
             order (int): order of the approximation, must be 1 or even.
@@ -1954,7 +1954,9 @@ class TrotterPauli(ResourceOperator):
                 else:
                     fragment_repetition = 2 * num_steps * (5 ** (k - 1))
 
-                gate_count_lst.extend([fragment_repetition * gate_count for gate_count in group_cost_lst])
+                gate_count_lst.extend(
+                    [fragment_repetition * gate_count for gate_count in group_cost_lst]
+                )
 
             return gate_count_lst
 
@@ -1962,7 +1964,8 @@ class TrotterPauli(ResourceOperator):
             {
                 "X" * pauli_ham.max_factors: pauli_ham.num_pauli_words // 3,
                 "Y" * pauli_ham.max_factors: pauli_ham.num_pauli_words // 3,
-                "Z" * pauli_ham.max_factors: (pauli_ham.num_pauli_words // 3) + (pauli_ham.num_pauli_words % 3),
+                "Z" * pauli_ham.max_factors: (pauli_ham.num_pauli_words // 3)
+                + (pauli_ham.num_pauli_words % 3),
             }
         )
 

@@ -20,14 +20,15 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.templates.subroutines.arithmetic.semi_adder import _controlled_semi_adder
 
 
 @pytest.mark.jax
 def test_standard_validity_SemiAdder():
     """Check the operation using the assert_valid function."""
     x_wires = [0, 1, 2]
-    y_wires = [4, 5, 6]
-    work_wires = [7, 8]
+    y_wires = [3, 4, 5]
+    work_wires = [6, 7]
     op = qml.SemiAdder(x_wires, y_wires, work_wires)
     qml.ops.functions.assert_valid(op)
 
@@ -54,6 +55,8 @@ class TestSemiAdder:
             ([0], [3, 4, 5, 6], [7, 8, 9], 1, 5),
             ([0, 1, 2, 3, 4], [5, 6], [7], 11, 2),
             (["a", "b", "d"], ["e", "h", "p"], ["f", "z"], 4, 2),
+            (["a", "b", "d"], ["e", "h", "p"], ["f", "z", "u", "q"], 4, 2),
+            (["a", "b", "d"], ["e", "h", "p"], ["f", "z", "u", "q", "v"], 4, 2),
         ],
     )
     def test_operation_result(
@@ -192,3 +195,60 @@ class TestSemiAdder:
             sum(bit * (2**i) for i, bit in enumerate(reversed(circuit()[0, :]))),
             (x + y) % 2 ** len(y_wires),
         )
+
+    @pytest.mark.parametrize(
+        (
+            "x_wires",
+            "y_wires",
+            "work_wires",
+            "control_wire",
+            "x_value",
+            "y_value",
+            "control_value",
+            "expected_output",
+        ),
+        [
+            ([3], [0, 1, 2], [6, 7], [8], 1, 0, 1, [0, 0, 1]),
+            ([3], [0, 1, 2], [6, 7, 9], [8], 1, 0, 1, [0, 0, 1]),
+            ([0, 1, 2], [3], [6], [8], 1, 0, 0, [0]),
+            ([0, 1, 2], [3], [6], [8], 1, 1, 1, [0]),
+            ([0, 1, 2], [3, 4], [6], [8], 1, 1, 1, [1, 0]),
+            ([0, 1, 2], [3, 4, 5], [6, 7], [8], 2, 2, 1, [1, 0, 0]),
+            ([0, 1, 2], [3, 4, 5], [6, 7], [8], 3, 7, 1, [0, 1, 0]),
+            ([0, 1, 2, 3], [4, 5, 6], [7, 8], [10], 2, 2, 1, [1, 0, 0]),
+            ([0, 1, 2, 3], [4, 5, 6], [7, 8], [10], 2, 2, 0, [0, 1, 0]),
+            ([0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10], [11], 3, 4, 1, [0, 1, 1, 1]),
+            ([0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10], [11], 3, 4, 0, [0, 1, 0, 0]),
+            ([0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 12, 13], [11], 3, 4, 0, [0, 1, 0, 0]),
+            ([0], [1], None, [2], 1, 1, 1, [0]),
+            ([0], [1], None, [2], 1, 1, 0, [1]),
+        ],
+    )
+    def test_controlled_decomposition(
+        self,
+        x_wires,
+        y_wires,
+        work_wires,
+        control_wire,
+        x_value,
+        y_value,
+        control_value,
+        expected_output,
+    ):  # pylint: disable=too-many-arguments
+        """Test correctness of C(SemiAdder) decomposition"""
+
+        dev = qml.device("default.qubit")
+
+        op = qml.SemiAdder(x_wires, y_wires, work_wires)
+
+        @qml.set_shots(1)
+        @qml.qnode(dev)
+        def circuit():
+            qml.BasisState(x_value, x_wires)
+            qml.BasisState(y_value, y_wires)
+            if control_value == 1:
+                qml.X(control_wire)
+            _controlled_semi_adder(op, control_wire, 1)
+            return qml.sample(wires=y_wires)
+
+        assert np.allclose(circuit(), expected_output)

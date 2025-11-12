@@ -16,7 +16,6 @@ from __future__ import annotations
 
 import math
 from functools import singledispatch
-from typing import Union
 
 import numpy as np
 
@@ -409,19 +408,19 @@ def _(op: Prod):
 
 
 @_map_to_resource_op.register
-def _(op: Union[Adjoint, AdjointOperation]):
+def _(op: Adjoint | AdjointOperation):
     return re_ops.Adjoint(
         base_op=_map_to_resource_op(op.base),
     )
 
 
 @_map_to_resource_op.register
-def _(op: Union[Pow, PowOperation]):
+def _(op: Pow | PowOperation):
     return re_ops.Pow(_map_to_resource_op(op.base), pow_z=op.z)
 
 
 @_map_to_resource_op.register
-def _(op: Union[Controlled, ControlledOp]):
+def _(op: Controlled | ControlledOp):
     ctrl_wires = op.control_wires
     num_zero_ctrl = sum(1 if bool(val) is False else 0 for val in op.control_values)
 
