@@ -92,17 +92,8 @@ class SampleMP(SampleMeasurement):
         shots: int | None = None,
         num_device_wires: int = 0,
     ) -> tuple[tuple[int, ...], type]:
-        # JAX 0.7.2: During vmap/abstract evaluation with batching, shots might be None
-        # even though it will be provided at execution time. However, we need a concrete
-        # value for the shape. If shots is None here, it likely means the shots value
-        # wasn't properly extracted from the abstract values in the qnode primitive.
-        # We should not use a placeholder here - instead, the caller should ensure
-        # shots is properly extracted.
         if shots is None:
-            raise ValueError(
-                "finite shots are required to use SampleMP. "
-                "Shots must be specified either at the device level or via qml.set_shots()."
-            )
+            raise ValueError("finite shots are required to use SampleMP")
         sample_eigvals = n_wires is None or has_eigvals
         dtype = float if sample_eigvals else int
 
