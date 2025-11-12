@@ -26,6 +26,7 @@ from pennylane.exceptions import CaptureWarning
 from ._loop_abstract_axes import (
     add_abstract_shapes,
     get_dummy_arg,
+    handle_jaxpr_error,
     loop_determine_abstracted_axes,
     validate_no_resizing_returns,
 )
@@ -411,6 +412,7 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
                     "Structured capture of qml.for_loop failed with error:"
                     f"\n\n{e}.\n\nFull error logged at exception level. "
                     "Use qml.logging.enable_logging() to view."
+                    "\nFalling back to unrolled Python for loop."
                 ),
                 CaptureWarning,
             )
