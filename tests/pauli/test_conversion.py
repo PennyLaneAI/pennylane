@@ -277,6 +277,95 @@ class TestDecomposition:
             no_identities = not any(isinstance(o, Identity) for o in tensor.operands)
             assert all_identities or no_identities
 
+    def test_sparse_matrix_no_dense_conversion(self, monkeypatch):
+        """Ensure the sparse path does not densify inputs."""
+        sp = pytest.importorskip("scipy.sparse")
+
+        base = sp.csr_matrix(np.diag([1, -1, -1, 1]))
+        dense_reference = base.toarray().copy()
+        expected_sentence = qml.pauli_decompose(dense_reference, pauli=True)
+
+        def raise_toarray(self, *args, **kwargs):
+            raise AssertionError("dense conversion attempted")
+
+        monkeypatch.setattr(base.__class__, "toarray", raise_toarray, raising=False)
+
+        sentence = qml.pauli_decompose(base, pauli=True)
+        assert isinstance(sentence, PauliSentence)
+        assert sentence == expected_sentence
+
+    def test_sparse_large_system_pauli_sentence(self):
+        """Validate sparse decomposition on a larger sparse system."""
+        sp = pytest.importorskip("scipy.sparse")
+
+        num_qubits = 6
+        sentence = PauliSentence(
+            {
+                PauliWord({0: "X", 3: "Y"}): 0.75 - 0.1j,
+                PauliWord({2: "Z"}): -1.2,
+                PauliWord({}): 0.5,
+            }
+        )
+
+        dense_matrix = sentence.to_mat(range(num_qubits))
+        sparse_matrix = sp.coo_matrix(dense_matrix)
+
+        result = qml.pauli_decompose(sparse_matrix, pauli=True, check_hermitian=False)
+
+        assert isinstance(result, PauliSentence)
+        assert len(result) == len(sentence)
+        for pw, coeff in sentence.items():
+            assert pw in result
+            assert np.allclose(result[pw], coeff)
+
+    def test_sparse_non_hermitian(self):
+        """Test that sparse non-Hermitian matrices can be decomposed with check_hermitian=False."""
+        sp = pytest.importorskip("scipy.sparse")
+
+        non_hermitian = np.array([[1, 2j], [3j, 4]])
+        sparse_nh = sp.csr_matrix(non_hermitian)
+        result = qml.pauli_decompose(sparse_nh, pauli=True, check_hermitian=False)
+        assert isinstance(result, PauliSentence)
+        reconstructed = result.to_mat(range(1))
+        assert np.allclose(reconstructed, non_hermitian)
+
+    def test_sparse_empty_matrix_error(self):
+        """Test that an exception is raised if the sparse matrix is empty."""
+        sp = pytest.importorskip("scipy.sparse")
+
+        empty_matrix = sp.csr_matrix((0, 0))
+        with pytest.raises(ValueError, match="Cannot decompose an empty matrix"):
+            qml.pauli_decompose(empty_matrix, check_hermitian=False)
+
+    @pytest.mark.parametrize("sparse_type", ["csr_matrix", "coo_matrix"])
+    def test_sparse_wrong_shape_error(self, sparse_type):
+        """Test that an exception is raised if the sparse matrix does not have
+        the correct shape"""
+        sp = pytest.importorskip("scipy.sparse")
+
+        sparse_class = getattr(sp, sparse_type)
+        non_square = sparse_class(np.ones((4, 2)))
+        with pytest.raises(ValueError, match="The matrix should be square"):
+            qml.pauli_decompose(non_square, check_hermitian=False)
+
+        non_power2 = sparse_class(np.eye(3))
+        with pytest.raises(ValueError, match="Dimension of the matrix should be a power of 2"):
+            qml.pauli_decompose(non_power2, check_hermitian=False)
+
+    def test_sparse_duplicate_entries(self):
+        """Test that sparse matrices with duplicate entries are handled correctly."""
+        sp = pytest.importorskip("scipy.sparse")
+
+        rows = np.array([0, 0, 1])
+        cols = np.array([0, 0, 1])
+        data = np.array([1.0, 2.0, 3.0])
+        sparse_dup = sp.coo_matrix((data, (rows, cols)), shape=(2, 2))
+        result = qml.pauli_decompose(sparse_dup, pauli=True, check_hermitian=False)
+        assert isinstance(result, PauliSentence)
+        reconstructed = result.to_mat(range(1))
+        expected = np.array([[3.0, 0.0], [0.0, 3.0]])
+        assert np.allclose(reconstructed, expected)
+
 
 class TestPhasedDecomposition:
     """Tests the _generalized_pauli_decompose via pauli_decompose function"""
