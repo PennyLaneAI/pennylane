@@ -325,6 +325,10 @@ def _capture_ctrl_transform(qfunc: Callable, control, control_values, work_wires
         )
         flat_args = jax.tree_util.tree_leaves(args)
         control_wires = qml.wires.Wires(control)  # make sure is iterable
+        # Ensure control_values is hashable (tuple) for JAX 0.7.0+
+        hashable_control_values = (
+            tuple(control_values) if isinstance(control_values, list) else control_values
+        )
         ctrl_prim.bind(
             *jaxpr.consts,
             *abstract_shapes,
@@ -332,7 +336,7 @@ def _capture_ctrl_transform(qfunc: Callable, control, control_values, work_wires
             *control_wires,
             jaxpr=jaxpr.jaxpr,
             n_control=len(control_wires),
-            control_values=control_values,
+            control_values=hashable_control_values,
             work_wires=work_wires,
             n_consts=len(jaxpr.consts),
         )

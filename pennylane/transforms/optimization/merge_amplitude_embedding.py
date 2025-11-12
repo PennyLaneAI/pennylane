@@ -227,12 +227,14 @@ def _get_plxpr_merge_amplitude_embedding():
     # Overwrite the cond primitive so that visited wires can be correctly
     # detected across the different branches.
     @MergeAmplitudeEmbeddingInterpreter.register_primitive(cond_prim)
-    def _cond_primitive(self, *invals, jaxpr_branches, consts_slices, args_slice):
-        args = invals[args_slice]
+    def _cond_primitive(self, *invals, jaxpr_branches, consts_slices_tuple, args_slice_tuple):
+        # Convert slice tuples (start, stop, step) directly to slice objects for indexing
+        args = invals[slice(*args_slice_tuple)]
+        consts_slices = [slice(*s) for s in consts_slices_tuple]
 
         new_jaxprs = []
         new_consts = []
-        new_consts_slices = []
+        new_consts_slices_tuple = []
         end_const_ind = len(jaxpr_branches)
 
         # Store state before we begin to process the branches
@@ -270,7 +272,9 @@ def _get_plxpr_merge_amplitude_embedding():
 
             new_jaxprs.append(new_jaxpr.jaxpr)
             new_consts.extend(new_jaxpr.consts)
-            new_consts_slices.append(slice(end_const_ind, end_const_ind + len(new_jaxpr.consts)))
+            new_consts_slices_tuple.append(
+                (end_const_ind, end_const_ind + len(new_jaxpr.consts), None)
+            )
             end_const_ind += len(new_jaxpr.consts)
 
         # Reset state to all updates from all branches in the cond
@@ -280,14 +284,15 @@ def _get_plxpr_merge_amplitude_embedding():
             "ops_found": curr_ops_found,
         }
 
-        new_args_slice = slice(end_const_ind, None)
+        new_args_slice_tuple = (end_const_ind, None, None)
+
         return cond_prim.bind(
             *invals[: len(jaxpr_branches)],
             *new_consts,
             *args,
-            jaxpr_branches=new_jaxprs,
-            consts_slices=new_consts_slices,
-            args_slice=new_args_slice,
+            jaxpr_branches=tuple(new_jaxprs),
+            consts_slices_tuple=tuple(new_consts_slices_tuple),
+            args_slice_tuple=new_args_slice_tuple,
         )
 
     @MergeAmplitudeEmbeddingInterpreter.register_primitive(measure_prim)

@@ -237,14 +237,14 @@ def _get_while_loop_qfunc_prim():
         *args,
         jaxpr_body_fn,
         jaxpr_cond_fn,
-        body_slice,
-        cond_slice,
-        args_slice,
+        body_slice_tuple,
+        cond_slice_tuple,
+        args_slice_tuple,
     ):
-
-        jaxpr_consts_body = args[body_slice]
-        jaxpr_consts_cond = args[cond_slice]
-        init_state = args[args_slice]
+        # Convert slice tuples (start, stop, step) directly to slice objects for indexing
+        jaxpr_consts_body = args[slice(*body_slice_tuple)]
+        jaxpr_consts_cond = args[slice(*cond_slice_tuple)]
+        init_state = args[slice(*args_slice_tuple)]
         # If cond_fn(*init_state) is False, return the initial state
         fn_res = init_state
         while capture.eval_jaxpr(jaxpr_cond_fn, jaxpr_consts_cond, *fn_res)[0]:
@@ -253,8 +253,9 @@ def _get_while_loop_qfunc_prim():
         return fn_res
 
     @while_loop_prim.def_abstract_eval
-    def _abstract_eval(*args, args_slice, **__):
-        return args[args_slice]
+    def _abstract_eval(*args, args_slice_tuple, **__):
+        # Convert slice tuple directly to slice object for indexing
+        return args[slice(*args_slice_tuple)]
 
     return while_loop_prim
 
@@ -338,9 +339,14 @@ class WhileLoopCallable:  # pylint:disable=too-few-public-methods
             init_state, allow_array_resizing=self.allow_array_resizing
         )
 
-        body_consts = slice(0, len(jaxpr_body_fn.consts))
-        cond_consts = slice(body_consts.stop, body_consts.stop + len(jaxpr_cond_fn.consts))
-        args_slice = slice(cond_consts.stop, None)
+        # Store slice bounds as tuples (start, stop, step) - hashable and semantic
+        body_slice_tuple = (0, len(jaxpr_body_fn.consts), None)
+        cond_slice_tuple = (
+            len(jaxpr_body_fn.consts),
+            len(jaxpr_body_fn.consts) + len(jaxpr_cond_fn.consts),
+            None,
+        )
+        args_slice_tuple = (len(jaxpr_body_fn.consts) + len(jaxpr_cond_fn.consts), None, None)
 
         results = while_loop_prim.bind(
             *jaxpr_body_fn.consts,
@@ -348,9 +354,9 @@ class WhileLoopCallable:  # pylint:disable=too-few-public-methods
             *all_args,
             jaxpr_body_fn=jaxpr_body_fn.jaxpr,
             jaxpr_cond_fn=jaxpr_cond_fn.jaxpr,
-            body_slice=body_consts,
-            cond_slice=cond_consts,
-            args_slice=args_slice,
+            body_slice_tuple=body_slice_tuple,
+            cond_slice_tuple=cond_slice_tuple,
+            args_slice_tuple=args_slice_tuple,
         )
 
         results = results[-out_tree.num_leaves :]

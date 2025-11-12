@@ -192,6 +192,32 @@ class StronglyEntanglingLayers(Operation):
     def num_params(self):
         return 1
 
+    def _flatten(self):
+        """Flatten the operation into trainable and non-trainable components.
+
+        Ensures that ranges is stored as a tuple in metadata for hashability.
+        """
+        # Convert ranges to tuple to ensure hashability for JAX primitives
+        ranges_tuple = tuple(self.hyperparameters["ranges"])
+        imprimitive = self.hyperparameters["imprimitive"]
+        hashable_hyperparameters = (("ranges", ranges_tuple), ("imprimitive", imprimitive))
+        return self.data, (self.wires, hashable_hyperparameters)
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        """Recreate the operation from its serialized format."""
+        wires, hashable_hyperparameters = metadata
+        hyperparams_dict = dict(hashable_hyperparameters)
+        return cls(*data, wires=wires, **hyperparams_dict)
+
+    @classmethod
+    def _primitive_bind_call(cls, *args, **kwargs):
+        """Bind the operation to the primitive, ensuring ranges is a tuple for hashability."""
+        # Convert ranges to tuple if present to ensure hashability for JAX primitives
+        if "ranges" in kwargs and kwargs["ranges"] is not None:
+            kwargs["ranges"] = tuple(kwargs["ranges"])
+        return super()._primitive_bind_call(*args, **kwargs)
+
     @staticmethod
     def compute_decomposition(
         weights, wires, ranges, imprimitive=CNOT

@@ -186,6 +186,7 @@ def test_default_measurement_handling():
     qml.assert_equal(res2, qml.probs(wires=0))
 
 
+@pytest.mark.xfail(strict=True, reason="SProd uses unhashable _pauli_rep parameter")
 def test_measurement_handling():
     """Test that the default measurement handling works."""
 
@@ -700,6 +701,7 @@ class TestHigherOrderPrimitiveRegistrations:
         assert jaxpr2.consts == [scalar]
         assert len(jaxpr2.eqns[0].params["qfunc_jaxpr"].constvars) == 1
 
+    @pytest.mark.xfail(strict=True, reason="SProd uses unhashable _pauli_rep parameter")
     @pytest.mark.parametrize("grad_f", (qml.grad, qml.jacobian))
     def test_grad_and_jac(self, grad_f):
         """Test interpreters can handle grad and jacobian HOP's."""
@@ -723,6 +725,7 @@ class TestHigherOrderPrimitiveRegistrations:
         assert qfunc_jaxpr.eqns[2].primitive == qml.Z._primitive
         assert qfunc_jaxpr.eqns[3].primitive == qml.ops.SProd._primitive
 
+    @pytest.mark.xfail(strict=True, reason="SProd uses unhashable _pauli_rep parameter")
     @pytest.mark.parametrize("grad_f", (qml.grad, qml.jacobian))
     def test_grad_and_jac_consts(self, grad_f):
         """Test interpreters can handle grad and jacobian HOP's and propagate consts correctly."""

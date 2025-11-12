@@ -85,10 +85,10 @@ class TestExpandTransformsInterpreter:
             invals = [*inner_args, *jaxpr.consts]
             params = {
                 "inner_jaxpr": jaxpr.jaxpr,
-                "args_slice": slice(0, len(inner_args)),
-                "consts_slice": slice(len(inner_args), len(jaxpr.consts) + len(inner_args)),
-                "targs_slice": slice(len(jaxpr.consts) + len(inner_args), None),
-                "tkwargs": {},
+                "args_slice_tuple": (0, len(inner_args), None),
+                "consts_slice_tuple": (len(inner_args), len(jaxpr.consts) + len(inner_args), None),
+                "targs_slice_tuple": (len(jaxpr.consts) + len(inner_args), None, None),
+                "tkwargs_tuple": (),
             }
             return custom_handler(interpreter, *invals, **params)
 

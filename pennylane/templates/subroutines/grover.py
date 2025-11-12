@@ -111,6 +111,30 @@ class GroverOperator(Operation):
         hyperparameters = (("work_wires", self.hyperparameters["work_wires"]),)
         return tuple(), (self.wires, hyperparameters)
 
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        wires, hyperparameters_list = metadata
+        hyperparameters_dict = dict(hyperparameters_list)
+        return cls(wires=wires, **hyperparameters_dict)
+
+    @classmethod
+    def _primitive_bind_call(cls, *args, **kwargs):
+        """Custom primitive bind call to ensure work_wires is hashable.
+
+        JAX 0.7.0+ requires all primitive parameters to be hashable. The work_wires
+        parameter is a Wires object (list-like), so we convert it to a tuple before binding.
+        """
+        # Convert work_wires from Wires to tuple for hashability
+        if "work_wires" in kwargs and kwargs["work_wires"] is not None:
+            work_wires = kwargs["work_wires"]
+            # Convert Wires object or list to tuple
+            if hasattr(work_wires, "tolist"):
+                kwargs["work_wires"] = tuple(work_wires.tolist())
+            elif isinstance(work_wires, (list, tuple)):
+                kwargs["work_wires"] = tuple(work_wires)
+
+        return super()._primitive_bind_call(*args, **kwargs)
+
     def __init__(self, wires: WiresLike, work_wires: WiresLike = (), id=None):
         wires = Wires(wires)
         work_wires = Wires(() if work_wires is None else work_wires)

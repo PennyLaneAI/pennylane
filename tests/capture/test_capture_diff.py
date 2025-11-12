@@ -38,6 +38,8 @@ def test_error_with_non_scalar_function():
 
 def diff_eqn_assertions(eqn, scalar_out, argnums=None, n_consts=0, fn=None):
     argnums = [0] if argnums is None else argnums
+    # Convert argnums to tuple for comparison since primitives store tuples
+    expected_argnums = tuple(argnums) if isinstance(argnums, list) else argnums
     assert eqn.primitive == jacobian_prim
     assert set(eqn.params.keys()) == {
         "argnums",
@@ -48,7 +50,7 @@ def diff_eqn_assertions(eqn, scalar_out, argnums=None, n_consts=0, fn=None):
         "fn",
         "scalar_out",
     }
-    assert eqn.params["argnums"] == argnums
+    assert eqn.params["argnums"] == expected_argnums
     assert eqn.params["n_consts"] == n_consts
     assert eqn.params["method"] == "auto"
     assert eqn.params["h"] == 1e-6
@@ -365,7 +367,8 @@ class TestGrad:
         assert grad_eqn.primitive == jacobian_prim
 
         shift = 1 if same_dynamic_shape else 2
-        assert grad_eqn.params["argnums"] == [shift, shift + 1]
+        # JAX 0.7.0 requires hashable params, so lists become tuples
+        assert grad_eqn.params["argnums"] == (shift, shift + 1)
         assert len(grad_eqn.outvars) == 2
         assert grad_eqn.outvars[0].aval.shape == grad_eqn.invars[shift].aval.shape
         assert grad_eqn.outvars[1].aval.shape == grad_eqn.invars[shift + 1].aval.shape
@@ -650,7 +653,8 @@ class TestJacobian:
         assert grad_eqn.primitive == jacobian_prim
 
         shift = 1 if same_dynamic_shape else 2
-        assert grad_eqn.params["argnums"] == [shift, shift + 1]
+        # JAX 0.7.0 requires hashable params, so lists become tuples
+        assert grad_eqn.params["argnums"] == (shift, shift + 1)
         assert len(grad_eqn.outvars) == 2
 
         assert grad_eqn.outvars[0].aval.shape == (4, *grad_eqn.invars[shift].aval.shape)

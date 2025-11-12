@@ -20,7 +20,6 @@ computing the sum of operations.
 import itertools
 from collections import Counter
 from collections.abc import Iterable
-from copy import copy
 
 import pennylane as qml
 from pennylane import math
@@ -600,7 +599,7 @@ class _SumSummandsGrouping:
             if op_hash in self.queue:
                 self.queue[op_hash][0] += coeff
             else:
-                self.queue[op_hash] = [copy(coeff), summand]
+                self.queue[op_hash] = [coeff, summand]
 
     def get_summands(self, cutoff=1.0e-12):
         """Get summands list.

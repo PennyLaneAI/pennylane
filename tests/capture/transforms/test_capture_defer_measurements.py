@@ -161,8 +161,8 @@ class TestDeferMeasurementsInterpreter:
         ops = collector.state["ops"]
         expected_ops = [
             qml.CNOT([0, 9]),
-            qml.ops.Controlled(qml.RX(jnp.array(0), 0), 9, control_values=[0]),
-            qml.ops.Controlled(qml.RX(jnp.array(x), 0), 9, control_values=[1]),
+            qml.ops.Controlled(qml.RX(jnp.array(0), 0), 9, control_values=(0,)),
+            qml.ops.Controlled(qml.RX(jnp.array(x), 0), 9, control_values=(1,)),
         ]
         assert ops == expected_ops
 
@@ -197,9 +197,11 @@ class TestDeferMeasurementsInterpreter:
         ops = collector.state["ops"]
         expected_ops = [
             qml.CNOT([0, 9]),
-            qml.ops.Controlled(qml.s_prod(args[1], qml.RX(jnp.array(0), 0)), 9, control_values=[0]),
             qml.ops.Controlled(
-                qml.s_prod(args[1], qml.RX(jnp.array(args[0]), 0)), 9, control_values=[1]
+                qml.s_prod(args[1], qml.RX(jnp.array(0), 0)), 9, control_values=(0,)
+            ),
+            qml.ops.Controlled(
+                qml.s_prod(args[1], qml.RX(jnp.array(args[0]), 0)), 9, control_values=(1,)
             ),
         ]
         assert ops == expected_ops

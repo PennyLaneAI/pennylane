@@ -77,11 +77,13 @@ def _ctrl_transform_prim(self, *invals, n_control, jaxpr, n_consts, **params):
 
 
 @CollectResourceOps.register_primitive(cond_prim)
-def explore_all_branches(self, *invals, jaxpr_branches, consts_slices, args_slice):
+def explore_all_branches(self, *invals, jaxpr_branches, consts_slices_tuple, args_slice_tuple):
     """Handle the cond primitive by a flattened python strategy."""
+    # Convert slice tuples (start, stop, step) directly to slice objects for indexing
     n_branches = len(jaxpr_branches)
     conditions = invals[:n_branches]
-    args = invals[args_slice]
+    args = invals[slice(*args_slice_tuple)]
+    consts_slices = [slice(*s) for s in consts_slices_tuple]
     outvals = ()
     for _, jaxpr, consts_slice in zip(conditions, jaxpr_branches, consts_slices):
         consts = invals[consts_slice]
