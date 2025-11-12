@@ -228,31 +228,44 @@ class PLPatternRewriter(PatternRewriter):
         super().__init__(current_operation)
         # self.ctx = RewriteContext()
 
-    def erase_gate(self, op: xOperation) -> None:
-        """Erase a quantum gate.
+    def get_qnode(
+        self, start_op: xOperation | None = None, get_func: bool = False
+    ) -> builtin.ModuleOp | func.FuncOp:
+        """Get the module corresponding to the QNode containing the given operation.
 
-        Safely erase a quantum gate from the module being transformed. This method automatically
-        handles and pre-processing required before safely erasing an operation. To erase quantum
-        gates, which include ``CustomOp``, ``GlobalPhaseOp``, ``MultiRZOp``, ``PCPhaseOp``, and
-        ``QubitUnitaryOp``, it is recommended to use this method instead of ``erase_op``.
+        The input operation, or the operation used to initialize the rewriter if an operation
+        is not provided, are used to search outer scopes until the module corresponding
+        to a QNode is found.
+
+        .. note::
+
+            This method assumes that the module corresponding to a QNode will not contain any
+            modules in its body.
 
         Args:
-            op (xdsl.ir.Operation): The operation to erase
-        """
-        # TODO: Update with PCPhaseOp once added
-        if not isinstance(op, _gate_like_ops):
-            raise TypeError(
-                f"Cannot erase {op}. 'PLPatternRewriter.erase_op' can only erase "
-                "gate-like operations."
-            )
+            start_op (xdsl.ir.Operation): The operation used to begin the search. If ``None``,
+                the operation used to initialize the rewriter will be used for the search.
+            get_func (bool): If ``True``, the FuncOp corresponding to the QNode will be returned
+                instead of the module. ``False`` by default.
 
-        # GlobalPhaseOp does not have any target qubits
-        in_qubits = (
-            op.in_ctrl_qubits
-            if isinstance(op, quantum.GlobalPhaseOp)
-            else (op.in_qubits + op.in_ctrl_qubits)
-        )
-        self.replace_op(op, (), in_qubits)
+        Returns:
+            ModuleOp | FuncOp: The QNode module surrounding the current operation, or the QNode
+            function if ``get_func`` is ``True``.
+        """
+        current_op: xOperation = start_op or self.current_operation
+        while not isinstance(current_op, builtin.ModuleOp):
+            current_op = current_op.parent_op()
+
+        qnode_func = None
+        for op in current_op.body.ops():
+            if isinstance(op, func.FuncOp) and op.attributes.get("qnode", None):
+                qnode_func = op
+                break
+
+        if qnode_func is None:
+            raise TransformError(f"{current_op} is not inside a QNode's scope.")
+
+        return qnode_func if get_func else current_op
 
     def insert_constant(self, cst: Number, insertion_point: InsertPoint) -> xOperation:
         """Create a scalar ConstantOp and insert it into the IR.
@@ -323,22 +336,12 @@ class PLPatternRewriter(PatternRewriter):
             ``SSAValue``. If the execution is analytic, ``None`` will be returned.
         """
         try:
-            qnode_module = self.get_qnode_module()
-        except Exception:
+            qnode: func.FuncOp = self.get_qnode(get_func=True)
+        except TransformError:
             raise TransformError(
-                "Cannot get the number of shots when rewriting a module outside the "
+                "Cannot get the number of shots when rewriting an operation outside the "
                 "scope of a QNode."
             )
-
-        # The qnode entry point inside the qnode module is a FuncOp with a UnitAttr called "qnode"
-        # This must always be present inside a qnode module.
-        qnode = None
-        for op in qnode_module.regions[0].blocks[0]:
-            if isinstance(op, func.FuncOp) and op.attributes.get("qnode", None) is not None:
-                qnode = op
-                break
-
-        assert qnode is not None
 
         # The qnode function always initializes a quantum device using the quantum.DeviceInitOp
         # operation.
@@ -349,6 +352,7 @@ class PLPatternRewriter(PatternRewriter):
                 break
 
         assert device_init is not None
+
         # If the device is **known** to be analytic, it will not have any operands. Note that even
         # if the DeviceInitOp has shots as its operand, it may be analytic if the shots operand is
         # a constant == 0.
@@ -366,6 +370,32 @@ class PLPatternRewriter(PatternRewriter):
 
         shots = get_constant_from_ssa(shots)
         return None if shots == 0 else shots
+
+    def erase_gate(self, op: xOperation) -> None:
+        """Erase a quantum gate.
+
+        Safely erase a quantum gate from the module being transformed. This method automatically
+        handles and pre-processing required before safely erasing an operation. To erase quantum
+        gates, which include ``CustomOp``, ``GlobalPhaseOp``, ``MultiRZOp``, ``PCPhaseOp``, and
+        ``QubitUnitaryOp``, it is recommended to use this method instead of ``erase_op``.
+
+        Args:
+            op (xdsl.ir.Operation): The operation to erase
+        """
+        # TODO: Update with PCPhaseOp once added
+        if not isinstance(op, _gate_like_ops):
+            raise TypeError(
+                f"Cannot erase {op}. 'PLPatternRewriter.erase_op' can only erase "
+                "gate-like operations."
+            )
+
+        # GlobalPhaseOp does not have any target qubits
+        in_qubits = (
+            op.in_ctrl_qubits
+            if isinstance(op, quantum.GlobalPhaseOp)
+            else (op.in_qubits + op.in_ctrl_qubits)
+        )
+        self.replace_op(op, (), in_qubits)
 
     def insert_mid_measure(
         self, mcm: measurements.MidMeasureMP, insertion_point: InsertPoint
