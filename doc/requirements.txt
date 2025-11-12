@@ -3,8 +3,8 @@ appdirs
 autograd
 autoray
 cachetools
-jax==0.6.0
-jaxlib==0.6.0
+jax==0.6.2
+jaxlib==0.6.2
 mistune==0.8.4
 m2r2
 numpy
@@ -38,3 +38,6 @@ sphinxext-opengraph==0.9.0
 matplotlib==3.8.0
 diastatic-malt
 galois
+pennylane-catalyst
+xdsl
+git+https://github.com/xdslproject/xdsl-jax.git

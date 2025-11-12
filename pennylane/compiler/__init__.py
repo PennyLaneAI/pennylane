@@ -253,6 +253,10 @@ if no function is provided:
         return wrapper_fn
 
 """
+# import os
 
 from .compiler import active, active_compiler, available, available_compilers
 from .qjit_api import qjit
+
+# if os.environ.get("SPHINX_BUILD", "") == "1":
+#     from .python_compiler import *

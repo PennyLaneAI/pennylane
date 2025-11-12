@@ -154,6 +154,17 @@ def _dummy_register(obj):  # just used for sphinx
     return obj  # pragma: no cover
 
 
+# pragma: no cover
+def _dummy_primitive_factory():
+    try:  # pragma: no cover
+        # pylint: disable=import-outside-toplevel
+        from pennylane.capture.custom_primitives import QmlPrimitive  # pragma: no cover
+    except ImportError:  # pragma: no cover
+        return None  # pragma: no cover
+
+    return QmlPrimitive("dummy_p")  # pragma: no cover
+
+
 class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
     r"""Converts a transform that has the signature ``(tape -> Sequence(tape), fn)`` to a transform dispatcher
     that can act on :class:`pennylane.tape.QuantumTape`, quantum function, :class:`pennylane.QNode`,
@@ -184,6 +195,12 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
 
             args[0].custom_qnode_transform = lambda x: x
             args[0].register = _dummy_register
+            args[0]._primitive = _dummy_primitive_factory()
+
+            def null_transform(tape):
+                return [tape], lambda x: x[0]
+
+            args[0]._plxpr_transform = _create_plxpr_fallback_transform(null_transform)
 
             return args[0]
 
