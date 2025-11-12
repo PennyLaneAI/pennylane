@@ -113,9 +113,7 @@ class ArbitraryUnitary(Operation):
 
     @property
     def resource_params(self) -> dict:
-        return {
-            "num_wires": len(self.wires),
-        }
+        return {"num_wires": len(self.wires)}
 
     @staticmethod
     def compute_decomposition(weights, wires):  # pylint: disable=arguments-differ
