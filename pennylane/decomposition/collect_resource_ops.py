@@ -22,7 +22,10 @@ from pennylane.capture.primitives import (
     cond_prim,
     ctrl_transform_prim,
     measure_prim,
+    pauli_measure_prim,
 )
+from pennylane.ops.mid_measure.mid_measure import MidMeasure
+from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
 
 from .resources import adjoint_resource_rep, controlled_resource_rep, resource_rep
 
@@ -40,7 +43,14 @@ class CollectResourceOps(FlattenedInterpreter):
 
 
 @CollectResourceOps.register_primitive(measure_prim)
-def _(self, wires, reset, postselect):  # pylint: disable=unused-argument
+def _mid_measure_prim(self, wires, reset, postselect):  # pylint: disable=unused-argument
+    self.state["ops"].add(resource_rep(MidMeasure))
+    return 0
+
+
+@CollectResourceOps.register_primitive(pauli_measure_prim)
+def _pauli_measure_prim(self, wires, reset, postselect):  # pylint: disable=unused-argument
+    self.state["ops"].add(resource_rep(PauliMeasure))
     return 0
 
 

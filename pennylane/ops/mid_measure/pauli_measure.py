@@ -31,8 +31,6 @@ _VALID_PAULI_CHARS = "XYZ"
 class PauliMeasure(Operator):
     """A Pauli product measurement."""
 
-    resource_keys = {"pauli_word"}
-
     def __init__(
         self,
         pauli_word: str,
@@ -73,10 +71,6 @@ class PauliMeasure(Operator):
 
     def __repr__(self) -> str:
         return f"PauliMeasure('{self.pauli_word}', wires={self.wires.tolist()})"
-
-    @property
-    def resource_params(self) -> dict:
-        return {"pauli_word": self.hyperparameters["pauli_word"]}
 
     @property
     def hash(self) -> int:
