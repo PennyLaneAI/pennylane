@@ -56,3 +56,15 @@ def test_add_edge():
     edge = dag_builder.graph.get_edges()[0]
     assert edge.get_source() == "0"
     assert edge.get_destination() == "1"
+
+
+@pytest.mark.unit
+def test_add_cluster():
+    """Unit test the 'add_cluster' method."""
+
+    dag_builder = PyDotDAGBuilder()
+    dag_builder.add_cluster("0", "my_cluster")
+    print(dag_builder.graph.get_subgraphs()[0])
+
+    assert len(dag_builder.graph.get_subgraphs()) == 1
+    assert dag_builder.graph.get_subgraphs()[0].get_name() == "cluster_0"
