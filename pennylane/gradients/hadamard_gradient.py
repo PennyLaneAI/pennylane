@@ -68,7 +68,7 @@ def _expand_transform_hadamard(
     argnum=None,
     aux_wire=None,
     device_wires=None,
-    mode: Literal["standard", "reversed", "direct", "reversed-direct"] = "standard",
+    mode: Literal["standard", "reversed", "direct", "reversed-direct", "auto"] = "auto",
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Expand function to be applied before hadamard gradient."""
     batch, postprocessing = decompose(
@@ -102,7 +102,7 @@ def hadamard_grad(
     argnum=None,
     aux_wire=None,
     device_wires=None,
-    mode: Literal["standard", "reversed", "direct", "reversed-direct"] = "standard",
+    mode: Literal["standard", "reversed", "direct", "reversed-direct", "auto"] = "auto",
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""Transform a circuit to compute the Hadamard test gradient of all gates
     with respect to their inputs.
@@ -548,9 +548,26 @@ def _quantum_automatic_differentiation(tape, trainable_param_idx, aux_wire) -> t
     # different circuits for the controls, can refer to the hamiltonian’s "grouping indices" list: its length gives
     # the number of shots need for the expectations.
     trainable_op, _, _ = tape.get_operation(trainable_param_idx)
+    _, generators = _get_pauli_generators(trainable_op)
+    _, observables = _get_pauli_terms(tape.measurements[0].obs)   # assumes there's only one observable in the tape
+
     trainable_op.base.compute_grouping()  # Note: only works for Hamiltonians made exclusively of Paulis
     expectations_shots = len(trainable_op.base.grouping_indices)
 
+    if direct:
+        direct_combinations = expectations_shots * len(generators) * 2
+        reversed_direct_combinations = expectations_shots * len(observables) * 2
+
+        if direct_combinations <= reversed_direct_combinations:
+            return _direct_hadamard_test(tape, trainable_param_idx, aux_wire)
+        return _reversed_hadamard_test(tape, trainable_param_idx, aux_wire)
+
+    standard_combinations = expectations_shots * len(generators)
+    reversed_combinations = expectations_shots * len(observables)
+
+    if standard_combinations <= reversed_combinations:
+        return _hadamard_test(tape, trainable_param_idx, aux_wire)
+    return _reversed_hadamard_test(tape, trainable_param_idx, aux_wire)
 
 
 def _new_measurement(mp, aux_wire, all_wires: Wires):

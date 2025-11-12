@@ -20,6 +20,9 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.exceptions import QuantumFunctionError
+from pennylane.gradients import hadamard_gradient
+from pennylane.gradients.hadamard_gradient import _hadamard_test, _direct_hadamard_test, _reversed_hadamard_test, \
+    _reversed_direct_hadamard_test
 
 
 def grad_fn(tape, dev, fn=qml.gradients.hadamard_grad, **kwargs):
@@ -404,12 +407,18 @@ class TestDifferentModes:
 
 
     # TODO: paramerize with hamiltonians, wires
-    def test_automatic_mode_hadamard_obs(self):
+    def test_automatic_mode(self, mocker):
         """Test the automatic mode dispatches the correct modes for the scenario."""
 
         t = np.array(0.0)
 
         dev = qml.device('default.qubit')
+
+        # setup mocks
+        standard = mocker.spy(hadamard_gradient, "_hadamard_test")
+        direct = mocker.spy(hadamard_gradient, "_direct_hadamard_test")
+        reversed = mocker.spy(hadamard_gradient, "_reversed_hadamard_test")
+        reversed_direct = mocker.spy(hadamard_gradient, "_reversed_direct_hadamard_test")
 
         @qml.qnode(dev)
         def circuit(x):
@@ -417,6 +426,8 @@ class TestDifferentModes:
             return qml.expval(qml.Z(0))
 
         qml.gradients.hadamard_grad(circuit, mode="auto")(t)
+
+        assert standard.call_count == 1
 
 
     @pytest.mark.parametrize("mode", ["direct", "reversed-direct"])
