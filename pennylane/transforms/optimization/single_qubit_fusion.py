@@ -250,10 +250,7 @@ def _get_plxpr_single_qubit_fusion():  # pylint: disable=too-many-statements
         interpreter = SingleQubitFusionInterpreter(*targs, **tkwargs)
 
         def wrapper(*inner_args):
-            with qml.capture.pause():
-                results = interpreter.eval(jaxpr, consts, *inner_args)
-            # Return the results so they can be traced as outputs
-            return results
+            return interpreter.eval(jaxpr, consts, *inner_args)
 
         return make_jaxpr(wrapper)(*args)
 
