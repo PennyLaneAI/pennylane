@@ -106,3 +106,29 @@ def test_add_edge_with_attrs():
     edge = dag_builder.graph.get_edges()[1]
     assert edge.get("color") == "red"
     assert edge.get("penwidth") == 4
+
+
+@pytest.mark.unit
+def test_add_cluster_with_attrs():
+    """Tests that default cluster attributes are applied and can be overridden."""
+    dag_builder = PyDotDAGBuilder()
+
+    dag_builder.add_cluster("0", "cluster0")
+    cluster1 = dag_builder.graph.get_subgraph("cluster_0")[0]
+
+    # Defaults
+    assert cluster1.get("style") == "solid"
+    assert cluster1.get("fillcolor") is None
+    assert cluster1.get("penwidth") == 2
+    assert cluster1.get("fontname") == "Helvetica"
+
+    dag_builder.add_cluster("1", "cluster1", style="filled", penwidth=10, fillcolor="red")
+    cluster2 = dag_builder.graph.get_subgraph("cluster_1")[0]
+
+    # Make sure we can override
+    assert cluster2.get("style") == "filled"
+    assert cluster2.get("penwidth") == 10
+    assert cluster2.get("fillcolor") == "red"
+
+    # Check that other defaults are still present
+    assert cluster2.get("fontname") == "Helvetica"
