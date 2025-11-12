@@ -923,6 +923,25 @@ class TestPauliMeasure:
         expected = "0: ──H─╭┤↗X├────┤     \n1: ────╰┤↗Y├─╭●─┤     \n2: ──────────╰X─┤  <Z>"
         assert draw(circ)() == expected
 
+    @pytest.mark.parametrize("postselect", [0, 1])
+    def test_pauli_measure_postselect(self, postselect):
+        """Tests drawing a pauli measurement with postselect."""
+
+        postselect_script = "₁" if postselect == 1 else "₀"
+
+        def circ():
+            qml.H(0)
+            qml.pauli_measure("XY", wires=[0, 1], postselect=postselect)
+            qml.CNOT([1, 2])
+            return qml.expval(qml.Z(2))
+
+        expected = (
+            f"0: ──H─╭┤↗{postselect_script}X├────┤     \n"
+            f"1: ────╰┤↗{postselect_script}Y├─╭●─┤     \n"
+            "2: ───────────╰X─┤  <Z>"
+        )
+        assert draw(circ)() == expected
+
     def test_pauli_measure_multi_non_adjacent_wires(self):
         """Tests when the pauli measure skips wires."""
 
