@@ -46,7 +46,7 @@ class TestPostSelectModeEnum:
     def test_unsupported_values(self, postselect_mode):
         """Tests that the unsupported values raise a AttributeError"""
 
-        with pytest.raises(ValueError, match=f"'{postselect_mode}' is not a valid POSTSELECT_MODE"):
+        with pytest.raises(ValueError, match=f"'{postselect_mode}' is not a valid postselect_mode"):
             _ = POSTSELECT_MODE(postselect_mode)
 
 
@@ -66,7 +66,7 @@ class TestMCMMethodEnum:
     def test_unsupported_values(self, mcm_method):
         """Tests that the unsupported values raise a AttributeError"""
 
-        with pytest.raises(ValueError, match=f"'{mcm_method}' is not a valid MCM_METHOD"):
+        with pytest.raises(ValueError, match=f"'{mcm_method}' is not a valid mcm_method"):
             _ = MCM_METHOD(mcm_method)
 
 
@@ -362,7 +362,7 @@ class TestMCMConfig:
     )
     def test_invalid_mcm_method_raises_value_error(self, mcm_method):
         """Test that MCMConfig raises a ValueError for an invalid mcm method"""
-        with pytest.raises(ValueError, match=f"'{mcm_method}' is not a valid MCM_METHOD"):
+        with pytest.raises(ValueError, match=f"'{mcm_method}' is not a valid mcm_method"):
             MCMConfig(mcm_method=mcm_method)
 
     @pytest.mark.parametrize(
@@ -375,7 +375,7 @@ class TestMCMConfig:
     )
     def test_invalid_postselect_mode_raises_value_error(self, invalid_mode):
         """Test that MCMConfig raises ValueError for invalid postselect_mode."""
-        with pytest.raises(ValueError, match=f"'{invalid_mode}' is not a valid POSTSELECT_MODE"):
+        with pytest.raises(ValueError, match=f"'{invalid_mode}' is not a valid postselect_mode"):
             MCMConfig(postselect_mode=invalid_mode)
 
     def test_immutability(self):

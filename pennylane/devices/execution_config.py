@@ -97,7 +97,7 @@ class MCM_METHOD(StrEnum):
 
         supported_values = [item.value for item in cls]
 
-        standard_msg = f"'{value}' is not a valid {cls.__name__}."
+        standard_msg = f"'{value}' is not a valid {cls.__name__.lower()}."
         custom_addition = (
             f"Please use one of the supported mid-circuit measurement methods: {supported_values}."
         )
@@ -118,7 +118,7 @@ class POSTSELECT_MODE(StrEnum):
 
         supported_values = [item.value for item in cls]
 
-        standard_msg = f"'{value}' is not a valid {cls.__name__}."
+        standard_msg = f"'{value}' is not a valid {cls.__name__.lower()}."
         custom_addition = f"Please use one of the supported postselect modes: {supported_values}."
         raise ValueError(f"{standard_msg} {custom_addition}")
 
