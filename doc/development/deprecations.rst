@@ -41,6 +41,11 @@ Pending deprecations
         qml.Toffoli(wires=[0,1,2])
         return qml.expval(qml.Z(0))
 
+  >>> print(qml.draw(circuit)())
+  0: ──H────────╭●───────────╭●────╭●──T──╭●─┤  <Z>
+  1: ────╭●─────│─────╭●─────│───T─╰X──T†─╰X─┤
+  2: ──H─╰X──T†─╰X──T─╰X──T†─╰X──T──H────────┤
+
 
 * Access to the following functions and classes from the `~pennylane.resources` module are 
   deprecated. Instead, these functions must be imported from the `~pennylane.estimator` module.
