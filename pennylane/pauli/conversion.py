@@ -106,7 +106,6 @@ def _generalized_pauli_decompose(  # pylint: disable=too-many-branches
     Y('a') @ Y('b'),
     Z('a') @ I('b'),
     Z('a') @ X('b'),
-    Z('a') @ Y('b'),
     Z('a') @ Z('b')]
 
     .. details::
@@ -248,7 +247,53 @@ def _generalized_pauli_decompose(  # pylint: disable=too-many-branches
 def _generalized_pauli_decompose_sparse(  # pylint: disable=too-many-statements,too-many-branches
     matrix, hide_identity=False, wire_order=None, pauli=False, padding=False
 ) -> tuple[qml.typing.TensorLike, list]:
-    """Sparse SciPy implementation of the generalized Pauli decomposition."""
+    r"""Sparse SciPy implementation of the generalized Pauli decomposition.
+
+    This function computes a weighted sum of Pauli words that is equivalent to the input
+    matrix, using a sparsity-aware routine that iterates over the nonzero entries without
+    converting the matrix to a dense array. It supports padding for non-power-of-two or
+    rectangular inputs and returns either operator tensors or Pauli-word data depending on
+    the ``pauli`` flag.
+
+    Args:
+        matrix (scipy.sparse matrix): Any sparse matrix. If its dimension is not
+            :math:`2^n \times 2^n`, use ``padding=True`` to pad with zeros to the next power of two.
+        hide_identity (bool): If ``True``, Identity factors are omitted within tensor products
+            of the decomposition terms.
+        wire_order (list[Union[int, str]] | None): The ordered list of wires corresponding to
+            the matrix qubit order. If ``None``, uses ``range(n)``.
+        pauli (bool): If ``True``, returns a list of Pauli-word specifications as ``(char, wire)``
+            pairs per term. If ``False``, returns PennyLane operator tensors for each term.
+        padding (bool): If ``True``, enables zero-padding to make the matrix square with
+            side length a power of two.
+
+    Ordering convention:
+        Pauli words are constructed MSB-first; the leftmost character corresponds to
+        ``wire_order[0]`` and the rightmost to ``wire_order[-1]``.
+
+    Returns:
+        Tuple[qml.typing.TensorLike, list]:
+            A tuple ``(coeffs, terms)`` where ``coeffs`` is a complex-valued array of coefficients.
+            ``terms`` is either a list of operator tensors (if ``pauli=False``) or a list of
+            lists of ``(pauli_char, wire)`` pairs (if ``pauli=True``).
+
+    Raises:
+        RuntimeError: If SciPy is not available.
+        ValueError: If the input has the wrong shape (not square or not a power of two when
+            ``padding=False``), or if the matrix is empty.
+
+    Example:
+        >>> import pennylane as qml
+        >>> import scipy.sparse as sp
+        >>> sparse_matrix = sp.csr_matrix([[0, 1], [1, 0]])
+        >>> coeffs, terms = qml.pauli.conversion._generalized_pauli_decompose_sparse(
+        ...     sparse_matrix, wire_order=[0]
+        ... )
+        >>> coeffs
+        array([1.+0.j])
+        >>> terms  # doctest: +ELLIPSIS
+        [X(0)]
+    """
     if not SCIPY_AVAILABLE:
         raise RuntimeError("SciPy is required for sparse Pauli decomposition.")
 
