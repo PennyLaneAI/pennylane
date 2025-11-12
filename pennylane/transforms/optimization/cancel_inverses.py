@@ -58,29 +58,29 @@ def _check_equality(items1: TensorLike | Wires, items2: TensorLike | Wires) -> b
 
 def _ops_equal(op1: Operator, op2: Operator) -> bool:
     """Checks if two operators are equal up to class, data, hyperparameters, and wires
-    
-    This version avoids using == on operators since that can trigger qml.equal which 
+
+    This version avoids using == on operators since that can trigger qml.equal which
     uses allclose, and in JAX 0.7.2+ tracing contexts, allclose returns tracers that
     can't be converted to bool.
     """
     # Check class - safe, doesn't trigger tracing
     if op1.__class__ is not op2.__class__:
         return False
-    
+
     # Check hyperparameters - need special handling to avoid comparing operators
     # Hyperparameters can contain operators (e.g., 'base' for controlled ops)
     # which would trigger __eq__ and qml.equal
     hp1 = op1.hyperparameters
     hp2 = op2.hyperparameters
-    
+
     # First check if keys match
     if set(hp1.keys()) != set(hp2.keys()):
         return False
-    
+
     # Then compare values, avoiding operator comparisons
     for key in hp1.keys():
         v1, v2 = hp1[key], hp2[key]
-        
+
         # If both values are operators, recursively check equality
         if isinstance(v1, Operator) and isinstance(v2, Operator):
             if not _ops_equal(v1, v2):
@@ -95,11 +95,11 @@ def _ops_equal(op1: Operator, op2: Operator) -> bool:
                 # If comparison fails (e.g., for special types), use identity
                 if v1 is not v2:
                     return False
-    
+
     # Check data using _check_equality which handles tracing-safe comparison
     if not _check_equality(op1.data, op2.data):
         return False
-    
+
     return True
 
 

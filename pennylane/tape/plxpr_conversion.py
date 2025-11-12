@@ -202,7 +202,7 @@ def _qnode_primitive(
 ):  # pylint: disable=too-many-arguments
     # JAX 0.7.2: Compute n_consts from jaxpr
     n_consts = len(qfunc_jaxpr.constvars)
-    
+
     consts = invals[shots_len : shots_len + n_consts]
     args = invals[shots_len + n_consts :]
 

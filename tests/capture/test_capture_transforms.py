@@ -122,6 +122,7 @@ class TestCaptureTransforms:
         params = transform_eqn.params
         # Slices are made hashable (slice -> tuple) by QmlPrimitive.bind() for Python 3.11 compatibility
         from pennylane.capture import _restore_dict, _restore_slice
+
         assert _restore_slice(params["args_slice"]) == slice(0, 1)
         assert _restore_slice(params["consts_slice"]) == slice(1, 1)
         assert _restore_slice(params["targs_slice"]) == slice(1, None)
@@ -152,6 +153,7 @@ class TestCaptureTransforms:
         params = transform_eqn.params
         # Slices are made hashable (slice -> tuple) by QmlPrimitive.bind() for Python 3.11 compatibility
         from pennylane.capture import _restore_dict, _restore_slice
+
         assert _restore_slice(params["args_slice"]) == slice(0, 2)
         assert _restore_slice(params["consts_slice"]) == slice(2, 2)
         assert _restore_slice(params["targs_slice"]) == slice(2, None)
@@ -239,6 +241,7 @@ class TestCaptureTransforms:
         params1 = transform_eqn1.params
         # Slices are made hashable (slice -> tuple) by QmlPrimitive.bind() for Python 3.11 compatibility
         from pennylane.capture import _restore_dict, _restore_slice
+
         assert _restore_slice(params1["args_slice"]) == slice(0, 1)
         assert _restore_slice(params1["consts_slice"]) == slice(1, 1)
         assert _restore_slice(params1["targs_slice"]) == slice(1, None)

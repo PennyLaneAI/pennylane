@@ -325,9 +325,9 @@ def _get_abstract_operator() -> type:
         return AbstractOperator()
 
     # Import after AbstractOperator is defined to avoid circular imports
-    from pennylane.operation import (
+    from pennylane.operation import (  # pylint: disable=import-outside-toplevel, cyclic-import
         Operator,
-    )  # pylint: disable=import-outside-toplevel, cyclic-import
+    )
 
     # Register the mapping - this will be used by JAX's typeof() function
     jax.core.pytype_aval_mappings[Operator] = _operator_to_abstract

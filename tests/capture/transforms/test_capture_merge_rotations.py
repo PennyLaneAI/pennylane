@@ -578,7 +578,7 @@ class TestHigherOrderPrimitiveIntegration:
         # Just verify structure: RY, ctrl primitive, RZ (plus JAX tracing equations)
         ctrl_eqn = [eq for eq in jaxpr.eqns if eq.primitive == ctrl_transform_prim]
         assert len(ctrl_eqn) == 1
-        
+
         # Check operators exist (may have extra tracing equations)
         ry_eqns = [eq for eq in jaxpr.eqns if eq.primitive == qml.RY._primitive]
         rz_eqns = [eq for eq in jaxpr.eqns if eq.primitive == qml.RZ._primitive]
@@ -587,7 +587,9 @@ class TestHigherOrderPrimitiveIntegration:
 
         inner_jaxpr = ctrl_eqn[0].params["jaxpr"]
         # JAX 0.7.2: assert len(inner_jaxpr.eqns) == 1
-        op_eqns = [eq for eq in inner_jaxpr.eqns if getattr(eq.primitive, "prim_type", "") == "operator"]
+        op_eqns = [
+            eq for eq in inner_jaxpr.eqns if getattr(eq.primitive, "prim_type", "") == "operator"
+        ]
         assert len(op_eqns) == 1
         assert op_eqns[0].primitive == qml.RX._primitive
 
@@ -609,7 +611,9 @@ class TestHigherOrderPrimitiveIntegration:
 
         inner_jaxpr = jaxpr.eqns[0].params["jaxpr"]
         # JAX 0.7.2: assert len(inner_jaxpr.eqns) == 1
-        op_eqns = [eq for eq in inner_jaxpr.eqns if getattr(eq.primitive, "prim_type", "") == "operator"]
+        op_eqns = [
+            eq for eq in inner_jaxpr.eqns if getattr(eq.primitive, "prim_type", "") == "operator"
+        ]
         assert len(op_eqns) == 1
         assert op_eqns[0].primitive == qml.RX._primitive
         """Test that the for_loop primitive is correctly interpreted"""
@@ -635,7 +639,9 @@ class TestHigherOrderPrimitiveIntegration:
         assert jaxpr.eqns[0].primitive == for_loop_prim
         inner_jaxpr = jaxpr.eqns[0].params["jaxpr_body_fn"]
         # JAX 0.7.2: assert len(inner_jaxpr.eqns) == 1
-        op_eqns = [eq for eq in inner_jaxpr.eqns if getattr(eq.primitive, "prim_type", "") == "operator"]
+        op_eqns = [
+            eq for eq in inner_jaxpr.eqns if getattr(eq.primitive, "prim_type", "") == "operator"
+        ]
         assert len(op_eqns) == 1
         assert op_eqns[0].primitive == qml.RX._primitive
         """Test that the while_loop primitive is correctly interpreted"""
@@ -838,7 +844,12 @@ class TestHigherOrderPrimitiveIntegration:
         jaxpr = jax.make_jaxpr(circuit)()
         # JAX 0.7.2: Don't check total equation count
         # Filter to operator/measurement primitives only
-        op_meas_eqns = [eq for eq in jaxpr.eqns if getattr(eq.primitive, "prim_type", "") in ("operator", "measurement") or eq.primitive == measure_prim]
+        op_meas_eqns = [
+            eq
+            for eq in jaxpr.eqns
+            if getattr(eq.primitive, "prim_type", "") in ("operator", "measurement")
+            or eq.primitive == measure_prim
+        ]
         assert len(op_meas_eqns) == 5
         assert op_meas_eqns[0].primitive == qml.RX._primitive
         assert op_meas_eqns[1].primitive == measure_prim

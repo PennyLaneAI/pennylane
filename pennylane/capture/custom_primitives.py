@@ -168,7 +168,7 @@ def _restore_list(obj: Any) -> list:
 class QmlPrimitive(Primitive):
     """A subclass for JAX's Primitive that differentiates between different
     classes of primitives and automatically makes parameters hashable for JAX 0.7.0+.
-    
+
     Note: With kwargs-as-inputs architecture, we still need hashable parameters for
     JAX primitives, but we no longer bake kwargs into closures using functools.partial.
     Instead, we pass kwargs directly to make_jaxpr, which eliminates closure hashability

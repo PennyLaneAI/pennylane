@@ -635,7 +635,9 @@ class TestHigherOrderPrimitiveIntegration:
         assert inner_jaxpr.eqns[0].primitive.name == "jit"  # norm for first original AE
         assert inner_jaxpr.eqns[1].primitive.name == "jit"  # norm for second original AE
         assert inner_jaxpr.eqns[2].primitive == qml.AmplitudeEmbedding._primitive
-        assert qml.math.allclose(inner_jaxpr.eqns[2].params["n_wires"], 2)  # merged on wires 1 and 2
+        assert qml.math.allclose(
+            inner_jaxpr.eqns[2].params["n_wires"], 2
+        )  # merged on wires 1 and 2
         assert inner_jaxpr.eqns[3].primitive == qml.X._primitive
 
     @pytest.mark.parametrize("lazy", [True, False])

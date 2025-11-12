@@ -605,11 +605,13 @@ def handle_while_loop(
 
 # pylint: disable=too-many-arguments
 @PlxprInterpreter.register_primitive(qnode_prim)
-def handle_qnode(self, *invals, shots_len, qnode, device, execution_config, qfunc_jaxpr, concrete_shots=None):
+def handle_qnode(
+    self, *invals, shots_len, qnode, device, execution_config, qfunc_jaxpr, concrete_shots=None
+):
     """Handle a qnode primitive."""
     # JAX 0.7.2: Compute n_consts from jaxpr
     n_consts = len(qfunc_jaxpr.constvars)
-    
+
     # Split: shots, consts, args
     shots, invals = invals[:shots_len], invals[shots_len:]
     consts = invals[:n_consts]
@@ -629,7 +631,6 @@ def handle_qnode(self, *invals, shots_len, qnode, device, execution_config, qfun
         qfunc_jaxpr=new_qfunc_jaxpr.jaxpr,
         concrete_shots=concrete_shots,  # JAX 0.7.2: Pass through concrete_shots
     )
-
 
 
 @PlxprInterpreter.register_primitive(jacobian_prim)

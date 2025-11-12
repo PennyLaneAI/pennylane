@@ -568,7 +568,11 @@ class TestSingleQubitFusionHigherOrderPrimitives:
         rot_eqns = [eq for eq in circuit_jaxpr.eqns if eq.primitive == qml.Rot._primitive]
         assert len(rot_eqns) == 1
         # Check measurement primitive exists
-        meas_eqns = [eq for eq in circuit_jaxpr.eqns if getattr(eq.primitive, 'prim_type', '') == 'measurement']
+        meas_eqns = [
+            eq
+            for eq in circuit_jaxpr.eqns
+            if getattr(eq.primitive, "prim_type", "") == "measurement"
+        ]
         assert len(meas_eqns) == 1
         assert meas_eqns[0].primitive == qml.measurements.ExpectationMP._obs_primitive
 
@@ -811,8 +815,10 @@ class TestSingleQubitFusionHigherOrderPrimitives:
         # Filter equations: 2 Rot (from fused RX+S), 1 measure, 1 expval
         rot_eqns = [eq for eq in jaxpr.eqns if eq.primitive == qml.Rot._primitive]
         measure_eqns = [eq for eq in jaxpr.eqns if eq.primitive == measure_prim]
-        expval_eqns = [eq for eq in jaxpr.eqns if eq.primitive == qml.measurements.ExpectationMP._obs_primitive]
-        
+        expval_eqns = [
+            eq for eq in jaxpr.eqns if eq.primitive == qml.measurements.ExpectationMP._obs_primitive
+        ]
+
         # Check structure: 2 fused Rot gates, 1 mid-circuit measurement, 1 expectation
         assert len(rot_eqns) == 2
         assert len(measure_eqns) == 1
@@ -841,7 +847,11 @@ class TestSingleQubitFusionPLXPR:
         )
         assert isinstance(transformed_jaxpr, jax.extend.core.ClosedJaxpr)
         # JAX 0.7.2: Check operator primitives only
-        op_eqns = [eq for eq in transformed_jaxpr.eqns if getattr(eq.primitive, 'prim_type', '') in ('operator', 'measurement')]
+        op_eqns = [
+            eq
+            for eq in transformed_jaxpr.eqns
+            if getattr(eq.primitive, "prim_type", "") in ("operator", "measurement")
+        ]
         assert len(op_eqns) == 3
         assert op_eqns[0].primitive == qml.Rot._primitive
         assert op_eqns[1].primitive == qml.PauliZ._primitive
@@ -868,7 +878,11 @@ class TestSingleQubitFusionPLXPR:
         transformed_jaxpr = jax.make_jaxpr(transformed_qfunc)()
 
         # JAX 0.7.2: Check operator/measurement primitives only
-        op_eqns = [eq for eq in transformed_jaxpr.eqns if getattr(eq.primitive, 'prim_type', '') in ('operator', 'measurement')]
+        op_eqns = [
+            eq
+            for eq in transformed_jaxpr.eqns
+            if getattr(eq.primitive, "prim_type", "") in ("operator", "measurement")
+        ]
         assert len(op_eqns) == 3
         assert op_eqns[0].primitive == qml.Rot._primitive
         assert op_eqns[1].primitive == qml.PauliZ._primitive
@@ -891,7 +905,11 @@ class TestSingleQubitFusionPLXPR:
 
         jaxpr = jax.make_jaxpr(circuit)()
         # JAX 0.7.2: Check operator/measurement primitives only
-        op_eqns = [eq for eq in jaxpr.eqns if getattr(eq.primitive, 'prim_type', '') in ('operator', 'measurement')]
+        op_eqns = [
+            eq
+            for eq in jaxpr.eqns
+            if getattr(eq.primitive, "prim_type", "") in ("operator", "measurement")
+        ]
         assert len(op_eqns) == 3
         assert op_eqns[0].primitive == qml.Rot._primitive
         assert op_eqns[1].primitive == qml.PauliZ._primitive
