@@ -154,10 +154,10 @@ class ConvertToMBQCFormalismPass(passes.ModulePass):
 
         plane_op = MeasurementPlaneAttr(MeasurementPlaneEnum(plane))
 
-        with builder.ImplicitBuilder(branch.true_region.block):
+        with builder.ImplicitBuilder(branch.true_region):
             measure_op = MeasureInBasisOp(in_qubit=qubit, plane=plane_op, angle=angle)
             scf.YieldOp(measure_op.results[0], measure_op.results[1])
-        with builder.ImplicitBuilder(branch.false_region.block):
+        with builder.ImplicitBuilder(branch.false_region):
             const_neg_angle_op = arith.NegfOp(angle)
             measure_neg_op = MeasureInBasisOp(
                 in_qubit=qubit, plane=plane_op, angle=const_neg_angle_op.result
@@ -348,10 +348,10 @@ class ConvertToMBQCFormalismPass(passes.ModulePass):
         cond = arith.CmpiOp(parity_res, constant_one_op, "eq")
         branch = scf.IfOp(cond, (QubitType(),), Region(Block()), Region(Block()))
 
-        with builder.ImplicitBuilder(branch.true_region.block):
+        with builder.ImplicitBuilder(branch.true_region):
             byproduct_op = CustomOp(in_qubits=qubit, gate_name=gate_name)
             scf.YieldOp(byproduct_op.results[0])
-        with builder.ImplicitBuilder(branch.false_region.block):
+        with builder.ImplicitBuilder(branch.false_region):
             scf.YieldOp(qubit)
         return branch.results[0]
 
@@ -552,18 +552,21 @@ class ConvertToMBQCFormalismPass(passes.ModulePass):
 
             for node in graph_qubit_dict:
                 if node not in [5]:
-                    dealloc_qubit_op = DeallocQubitOp(graph_qubit_dict[node])
+                    _ = DeallocQubitOp(graph_qubit_dict[node])
 
             func.ReturnOp(graph_qubit_dict[5])
 
         region = Region([block])
+        # Note that visibility is set as private to ensure the subroutines that are
+        # not called (dead code) can be eliminated as the ["symbol-dce"](https://github.com/PennyLaneAI/catalyst/blob/372c376eb821e830da778fdc8af423eeb487eab6/frontend/catalyst/pipelines.py#L248)_
+        # pass was added to the pipeline.
         funcOp = func.FuncOp(
             gate_name.lower() + "_in_mbqc",
             (input_types, output_types),
             visibility="private",
             region=region,
         )
-        # Add an attribute to avoid transforming H, CZ gates in the func to MQBC
+        # Add an attribute to the mbqc transform subroutine
         funcOp.attributes["mbqc_transform"] = builtin.StringAttr.get("y")
         return funcOp
 
@@ -600,7 +603,7 @@ class ConvertToMBQCFormalismPass(passes.ModulePass):
 
             for node in graph_qubit_dict:
                 if node not in [7, 15]:
-                    dealloc_qubit_op = DeallocQubitOp(graph_qubit_dict[node])
+                    _ = DeallocQubitOp(graph_qubit_dict[node])
 
             func.ReturnOp(
                 *(
@@ -610,25 +613,26 @@ class ConvertToMBQCFormalismPass(passes.ModulePass):
             )
 
         region = Region([block])
+        # Note that visibility is set as private to ensure the subroutines that are
+        # not called (dead code) can be eliminated as the ["symbol-dce"](https://github.com/PennyLaneAI/catalyst/blob/372c376eb821e830da778fdc8af423eeb487eab6/frontend/catalyst/pipelines.py#L248)_
+        # pass was added to the pipeline.
         funcOp = func.FuncOp(
             gate_name.lower() + "_in_mbqc",
             (input_types, output_types),
             visibility="private",
             region=region,
         )
-        # Add an attribute to avoid transforming H, CZ gates in the func to MQBC
+        # Add an attribute to the mbqc transform subroutine
         funcOp.attributes["mbqc_transform"] = builtin.StringAttr.get("y")
         return funcOp
 
     # pylint: disable=no-self-use
     def apply(self, _ctx: context.Context, module: builtin.ModuleOp) -> None:
         """Apply the convert-to-mbqc-formalism pass."""
-        # Insert subroutines for MBQC gate sets
-        # TODOs: All the MBQC gate subroutines are added before traversing the IR.
-        # This can be optimized later by only adding necessary subroutines needed
-        # for the IR. 
-        # TODOs: Not sure if the optimization is required even later since the code
-        # generation phase could even eliminate unused func.func.
+        # Insert subroutines for all gates in the MBQC gate set to the module.
+        # Note that the visibility of those subroutines are set as private, which ensure
+        # the ["symbol-dce"](https://github.com/PennyLaneAI/catalyst/blob/372c376eb821e830da778fdc8af423eeb487eab6/frontend/catalyst/pipelines.py#L248)_
+        # pass could eliminate the unreferenced subroutines.
         subroutine_dict = {}
 
         for gate_name in _MBQC_ONE_QUBIT_GATES:
@@ -668,7 +672,7 @@ class ConvertToMBQCFormalismPattern(
     ):
         """Match and rewrite for converting to the MBQC formalism."""
 
-        # Ensure that "Hadamard"/"CZ" gates in the subroutine are not converted.
+        # Ensure that "Hadamard"/"CZ" gates in mbqc_transform subroutines are not converted.
         if isinstance(root, func.FuncOp) and "mbqc_transform" in root.attributes:
             return
 
