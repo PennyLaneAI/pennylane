@@ -85,7 +85,8 @@
   [(#8549)](https://github.com/PennyLaneAI/pennylane/pull/8549)
 
 * Scipy sparse matrices can now be passed directly to :func:`~pennylane.pauli_decompose` without
-  manual conversion to dense arrays.
+  manual conversion to dense arrays. Sparse matrices are processed natively allowing efficient
+  decomposition of large sparse matrices that cannot fit in memory as dense arrays.
   [(#8612)](https://github.com/PennyLaneAI/pennylane/pull/8612)
 
 <h3>Breaking changes 💔</h3>
