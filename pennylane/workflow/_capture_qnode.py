@@ -75,14 +75,12 @@ features is non-exhaustive.
 
 """
 import logging
-from collections.abc import Sequence
 from functools import partial
 from numbers import Number
 from warnings import warn
 
 import jax
 from jax.interpreters import ad, batching, mlir
-from jax.interpreters import partial_eval as pe
 
 import pennylane as qml
 from pennylane.capture import FlatFn, QmlPrimitive
@@ -220,7 +218,7 @@ def _(
     qfunc_jaxpr,
     shots_len,
     batch_dims=None,
-    concrete_shots=None,
+    concrete_shots=None,  # pylint: disable=unused-argument  # Used by abstract_eval
 ):
 
     warn(

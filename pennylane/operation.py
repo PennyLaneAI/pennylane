@@ -320,12 +320,12 @@ def _get_abstract_operator() -> type:
     # Register Operator base class in JAX's type system for JAX 0.7.2+
     # This allows typeof() to work on operator instances during tree_unflatten
     # by mapping any Operator instance to AbstractOperator
-    def _operator_to_abstract(op):
+    def _operator_to_abstract(op):  # pylint: disable=unused-argument
         """Convert an Operator instance to its abstract representation."""
         return AbstractOperator()
 
     # Import after AbstractOperator is defined to avoid circular imports
-    from pennylane.operation import (  # pylint: disable=import-outside-toplevel, cyclic-import
+    from pennylane.operation import (  # pylint: disable=import-outside-toplevel, cyclic-import, import-self, redefined-outer-name
         Operator,
     )
 

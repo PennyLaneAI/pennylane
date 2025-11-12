@@ -348,7 +348,7 @@ def _equal_operators(
                     f"{params1} trainability is {params1_train} and {params2} trainability is {params2_train}"
                 )
 
-    if check_interface:
+    if check_interface:  # pylint: disable=too-many-nested-blocks
         for params1, params2 in zip(op1.data, op2.data):
             params1_interface = qml.math.get_interface(params1)
             params2_interface = qml.math.get_interface(params2)
@@ -365,7 +365,7 @@ def _equal_operators(
                 # If it's Literal vs numpy, check if params1 is actually a Literal type
                 if is_literal_vs_numpy:
                     try:
-                        from jax._src import literals
+                        from jax._src import literals  # pylint: disable=import-outside-toplevel
 
                         is_literal = isinstance(
                             params1,
@@ -625,7 +625,7 @@ def _equal_sprod(op1: SProd, op2: SProd, **kwargs):
         kwargs["atol"],
     )
 
-    if check_interface:
+    if check_interface:  # pylint: disable=too-many-nested-blocks
         for params1, params2 in zip(op1.data, op2.data):
             params1_interface = qml.math.get_interface(params1)
             params2_interface = qml.math.get_interface(params2)
@@ -639,7 +639,7 @@ def _equal_sprod(op1: SProd, op2: SProd, **kwargs):
 
                 if is_literal_vs_other:
                     try:
-                        from jax._src import literals
+                        from jax._src import literals  # pylint: disable=import-outside-toplevel
 
                         is_literal = isinstance(
                             params1,

@@ -239,7 +239,6 @@ def _patch_pjit_staging_rule():
 
     # Store original function
     _original_functions["pjit_staging_rule"] = pjit_module.pjit_staging_rule
-    original_pjit_staging_rule = pjit_module.pjit_staging_rule
 
     def patched_pjit_staging_rule(trace, source_info, *args, **params):
         """Patched version that uses recipe-based approach for JaxprTrace."""

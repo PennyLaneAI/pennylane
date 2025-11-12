@@ -56,7 +56,7 @@ def _check_equality(items1: TensorLike | Wires, items2: TensorLike | Wires) -> b
     return True
 
 
-def _ops_equal(op1: Operator, op2: Operator) -> bool:
+def _ops_equal(op1: Operator, op2: Operator) -> bool:  # pylint: disable=too-many-return-statements
     """Checks if two operators are equal up to class, data, hyperparameters, and wires
 
     This version avoids using == on operators since that can trigger qml.equal which

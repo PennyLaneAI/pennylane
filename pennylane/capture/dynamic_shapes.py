@@ -14,7 +14,7 @@
 """
 Contains a utility for handling inputs with dynamically shaped arrays.
 """
-from collections.abc import Callable, Sequence
+from collections.abc import Callable
 
 has_jax = True
 try:
@@ -259,10 +259,9 @@ def register_custom_staging_rule(
         avals = [var.aval for var in outvars]
         if len(avals) == 0:
             return jax.core.abstract_unit
-        elif len(avals) == 1:
+        if len(avals) == 1:
             return avals[0]
-        else:
-            return avals
+        return avals
 
     # Mark primitive as potentially having multiple results
     # (JAX will check the actual return from abstract_eval)
@@ -273,7 +272,7 @@ def register_custom_staging_rule(
     # JAX 0.7.2: Register both staging rule (for DynamicJaxprTrace) and partial_eval rule (for JaxprTrace)
     # Note: custom_staging_rules is deprecated in JAX 0.7.2 but still functional and necessary
     # for dynamic shapes support. Suppress the deprecation warning.
-    import warnings
+    import warnings  # pylint: disable=import-outside-toplevel
 
     with warnings.catch_warnings():
         warnings.filterwarnings(
