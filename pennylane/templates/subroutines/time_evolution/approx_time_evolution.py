@@ -270,8 +270,8 @@ def _approx_time_evolution_decomposition(
                 PauliRot(theta, term_str, wires=wires)
 
             cond(len(pauli_key) != 0, rot, None)(
-                coeff, pauli_key
-            )  # pylint: disable=undefined-loop-variable
+                coeff, pauli_key  # pylint: disable=undefined-loop-variable
+            )
 
     rounds_loop()  # pylint: disable=no-value-for-parameter
 
