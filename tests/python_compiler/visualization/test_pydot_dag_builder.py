@@ -166,6 +166,7 @@ def test_to_string():
     string = dag_builder.to_string()
     assert isinstance(string, str)
 
+    # make sure important things show up in the string
     assert "digraph" in string
     assert "n0" in string
     assert "n1" in string
