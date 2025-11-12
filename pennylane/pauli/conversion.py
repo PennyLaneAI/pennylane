@@ -245,7 +245,7 @@ def _generalized_pauli_decompose(  # pylint: disable=too-many-branches
     return (coeffs, obs)
 
 
-def _generalized_pauli_decompose_sparse(
+def _generalized_pauli_decompose_sparse(  # pylint: disable=too-many-statements,too-many-branches
     matrix, hide_identity=False, wire_order=None, pauli=False, padding=False
 ) -> tuple[qml.typing.TensorLike, list]:
     """Sparse SciPy implementation of the generalized Pauli decomposition."""
