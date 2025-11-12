@@ -25,9 +25,9 @@ pytestmark = [pytest.mark.jax, pytest.mark.capture]
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
 
-# JAX 0.7.2: All tests in this file fail because finite-diff with jax.grad/jacobian
-# requires VJP/transpose rule but we only have JVP. This is an architectural limitation.
-pytest.skip("JAX 0.7.2: finite-diff reverse-mode differentiation not yet supported", allow_module_level=True)
+# JAX 0.7.2: These tests now PASS after removing custom_partial_eval_rule registration.
+# The rule was preventing JAX from auto-transposing JVP to VJP for reverse-mode autodiff.
+# pytest.skip("JAX 0.7.2: finite-diff reverse-mode differentiation not yet supported", allow_module_level=True)
 
 
 def test_warning_float32():

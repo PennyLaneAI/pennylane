@@ -178,7 +178,7 @@ def _qnode_abstract_eval(*avals, qfunc_jaxpr, shots_len, device, **params):
     if shots_len > 0:
         # First try to get concrete shots from params (added for JAX 0.7.2)
         shots = params.get("concrete_shots")
-        
+
         # If not in params, try to extract from avals (for backwards compatibility)
         if shots is None:
             shots_aval = avals[0]
@@ -230,7 +230,16 @@ def _qnode_abstract_eval(*avals, qfunc_jaxpr, shots_len, device, **params):
 # pylint: disable=too-many-arguments
 @debug_logger
 @qnode_prim.def_impl
-def _(*args, qnode, device, execution_config, qfunc_jaxpr, shots_len, batch_dims=None, concrete_shots=None):
+def _(
+    *args,
+    qnode,
+    device,
+    execution_config,
+    qfunc_jaxpr,
+    shots_len,
+    batch_dims=None,
+    concrete_shots=None,
+):
 
     warn(
         "Executing PennyLane programs with capture enabled should be done inside ``qml.qjit``. Native execution of captured programs is an unmaintained experimental feature.",
@@ -309,85 +318,6 @@ def _(*args, qnode, device, execution_config, qfunc_jaxpr, shots_len, batch_dims
     return jax.vmap(partial_eval, batch_dims[(n_consts + shots_len) :])(*all_args)
 
 
-def custom_partial_eval_rule(trace, *tracers, **params):
-    """
-    Custom partial evaluation rule for qnode primitive (JAX 0.7.2+).
-
-    This replaces the deprecated custom_staging_rule API.
-    See capture/intro_to_dynamic_shapes.py for more context and capture.register_custom_staging_rule
-    for the implementation used on other higher order primitives.
-    """
-    shots_len, jaxpr = params["shots_len"], params["qfunc_jaxpr"]
-    device = params["device"]
-    
-    # JAX 0.7.2: JaxprTracer doesn't have .val attribute
-    # Use concrete_shots from params if available, otherwise extract from Literal tracers
-    if shots_len > 0:
-        concrete_shots = params.get("concrete_shots")
-        if concrete_shots is not None:
-            shots_vars = [concrete_shots] if not isinstance(concrete_shots, (list, tuple)) else concrete_shots
-        else:
-            # Extract from tracers if they're Literals
-            shots_vars = []
-            for tracer in tracers[:shots_len]:
-                if isinstance(tracer.aval, jax.core.AbstractValue) and hasattr(tracer.aval, "val"):
-                    shots_vars.append(tracer.aval.val)
-                else:
-                    # If we can't extract concrete value, use None
-                    shots_vars.append(None)
-    else:
-        shots_vars = []
-
-    batch_dims = params.get("batch_dims")
-    # JAX 0.7.2: Compute n_consts from jaxpr instead of using params
-    n_consts = len(jaxpr.constvars)
-    split = n_consts + shots_len
-    batch_shape = (
-        _get_batch_shape(tracers[split:], batch_dims[split:]) if batch_dims is not None else ()
-    )
-
-    new_shapes = _get_shapes_for(
-        *jaxpr.outvars,
-        shots=shots_vars,
-        num_device_wires=len(device.wires),
-        batch_shape=batch_shape,
-    )
-
-    # Create output tracers using JAX 0.7.2 API
-    out_tracers = [pe.JaxprTracer(trace, pe.PartialVal.unknown(aval), None) for aval in new_shapes]
-
-    # JAX 0.7.2: Use new_eqn_recipe instead of manually creating TracingEqn
-    # This is the approach used by JAX's built-in partial_eval rules
-    # pylint: disable=import-outside-toplevel
-    from jax._src import source_info_util
-    from jax._src.interpreters.partial_eval import new_eqn_recipe
-
-    # Get source info from current context
-    name_stack = source_info_util.current_name_stack()[len(trace.name_stack) :]
-    source = source_info_util.current().replace(name_stack=name_stack)
-
-    # Create equation recipe using JAX's new_eqn_recipe
-    eqn = new_eqn_recipe(
-        trace,
-        tracers,  # input tracers
-        out_tracers,  # output tracers
-        qnode_prim,
-        params,
-        jax.core.no_effects,
-        source,
-    )
-
-    # Set the recipe for each output tracer
-    for t in out_tracers:
-        t.recipe = eqn
-
-    return out_tracers
-
-
-# Register with the new API for JAX 0.7.2+
-pe.custom_partial_eval_rules[qnode_prim] = custom_partial_eval_rule
-
-
 # pylint: disable=too-many-arguments
 def _qnode_batching_rule(
     batched_args,
@@ -405,7 +335,7 @@ def _qnode_batching_rule(
 
     This rule exploits the parameter broadcasting feature of the QNode to vectorize the circuit execution.
     """
-    
+
     # JAX 0.7.2: Compute n_consts from jaxpr
     n_consts = len(qfunc_jaxpr.constvars)
 
@@ -414,7 +344,9 @@ def _qnode_batching_rule(
         if _is_scalar_tensor(arg):
             continue
 
-        # Check shots and consts indices
+        # Regardless of their shape, jax.vmap automatically inserts `None` as the batch dimension for constants.
+        # However, if the constant is not a standard JAX type, the batch dimension is not inserted at all.
+        # How to handle this case is still an open question. For now, we raise a warning and give the user full flexibility.
         if idx < (n_consts + shots_len):
             warn(
                 f"Constant or shots argument at index {idx} is not scalar. "
@@ -457,7 +389,7 @@ def _qnode_batching_rule(
     #   - (result, None): indicates result is not batched (shouldn't happen here)
     # Actually, looking at JAX source, we should return the batch axes even if implementation does vmap.
     # The issue might be elsewhere. Let me check if implementation is being called during tracing...
-    
+
     # The batch dimension is at the front (axis 0) for all elements in the result.
     # JAX doesn't expose `out_axes` in the batching rule.
     return result, (0,) * len(result)
@@ -469,6 +401,12 @@ def _qnode_batching_rule(
 
 @debug_logger
 def _finite_diff(args, tangents, **impl_kwargs):
+    """Compute JVP using finite differences.
+
+    This function uses qml.gradients.finite_diff_jvp which computes the JVP
+    using numerical finite differences. The function is made JAX-traceable by
+    ensuring all operations are compatible with JAX arrays.
+    """
     if not jax.config.jax_enable_x64:
         warn(
             "Detected 32 bits precision with finite differences. This can lead to incorrect results."
@@ -679,7 +617,9 @@ def _bind_qnode(qnode, *args, **kwargs):
         # JAX 0.7.2: Store concrete shots values in params for abstract evaluation
         # During vmap batching, the flat_shots arguments become tracers, so we need
         # the concrete values available in params
-        concrete_shots=flat_shots[0] if len(flat_shots) == 1 else flat_shots if flat_shots else None,
+        concrete_shots=(
+            flat_shots[0] if len(flat_shots) == 1 else flat_shots if flat_shots else None
+        ),
     )
 
     if len(flat_shots) > 1:
