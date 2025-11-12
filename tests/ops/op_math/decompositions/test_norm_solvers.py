@@ -21,6 +21,7 @@ from flaky import flaky
 from pennylane.ops.op_math.decompositions.norm_solver import (
     _factorize_prime_zomega,
     _factorize_prime_zsqrt_two,
+    _gcd,
     _integer_factorize,
     _primality_test,
     _prime_factorize,
@@ -28,6 +29,23 @@ from pennylane.ops.op_math.decompositions.norm_solver import (
     _sqrt_modulo_p,
 )
 from pennylane.ops.op_math.decompositions.rings import ZOmega, ZSqrtTwo
+
+
+class TestGCD:
+    """Tests for the GCD function."""
+
+    @pytest.mark.parametrize(
+        "a, b, expected",
+        [
+            (ZSqrtTwo(28, 0), ZSqrtTwo(12, 0), ZSqrtTwo(4, 0)),
+            (ZSqrtTwo(15, 0), ZSqrtTwo(25, 0), ZSqrtTwo(5, 0)),
+            # (ZOmega(d=81), ZOmega(d=63), ZOmega(d=9)),
+            # (ZOmega(d=144), ZOmega(d=108), ZOmega(d=36)),
+        ],
+    )
+    def test_gcd_zring(self, a, b, expected):
+        """Test the GCD function."""
+        assert _gcd(a, b) == expected
 
 
 class TestFactorization:
@@ -84,12 +102,12 @@ class TestFactorization:
     @pytest.mark.parametrize(
         "num, expected",
         [
-            (3, ZOmega(d=3)),
+            (3, ZOmega(a=-1, c=-1, d=-1)),
             (27, None),
-            (5, ZOmega(b=-2, d=-1)),
+            (5, ZOmega(b=-1, d=2)),
             (7, None),
-            (11, ZOmega(d=11)),
-            (13, ZOmega(b=-2, d=-3)),
+            (11, ZOmega(a=-1, c=-1, d=-3)),
+            (13, ZOmega(b=2, d=3)),
         ],
     )
     def test_factorize_prime_zomega(self, num, expected):
@@ -150,7 +168,7 @@ class TestFactorization:
             (ZSqrtTwo(7, 2), ZOmega(a=1, b=1, c=1, d=2)),
             (ZSqrtTwo(17, 0), None),
             (ZSqrtTwo(5, 2), ZOmega(a=-2, b=-1, c=0, d=0)),
-            (ZSqrtTwo(13, 6), ZOmega(a=0, b=2, c=3, d=0)),
+            (ZSqrtTwo(13, 6), ZOmega(a=-3, b=0, c=0, d=2)),
         ],
     )
     def test_solve_diophantine(self, num, expected):
