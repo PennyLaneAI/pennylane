@@ -29,7 +29,7 @@ def approx_poly_degree(
     approx_poly_func: Callable | None = None,
     **fit_kwargs: dict[str, Any],
 ):
-    r"""Approximates a polynomial function of a given degree at value x
+    r"""Compute the minimum degree of a polynomial that fits the data with a given error tolerance.
 
     Args:
         x_vec (tensor_like): x-values for the sample points
