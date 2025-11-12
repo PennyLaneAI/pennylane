@@ -197,14 +197,14 @@ class UCCSD(Operation):
         self,
         weights: TensorLike,
         wires: WiresLike,
-        s_wires: WiresLike | None = None,
-        d_wires: WiresLike | None = None,
+        s_wires: list[list] | None = None,
+        d_wires: list[list] | None = None,
         init_state: Sequence[int] | None = None,
         n_repeats=1,
         id=None,
     ):
-        s_wires = Wires([] if s_wires is None else s_wires)
-        d_wires = Wires([] if d_wires is None else d_wires)
+        s_wires = [] if s_wires is None else s_wires
+        d_wires = [] if d_wires is None else d_wires
         init_state = () if init_state is None else init_state
 
         if (not s_wires) and (not d_wires):
