@@ -17,6 +17,8 @@
 
 * The `~.BasisRotation` graph decomposition was re-written in a qjit friendly way with PennyLane control flow.
   [(#8560)](https://github.com/PennyLaneAI/pennylane/pull/8560)
+  [(#8608)](https://github.com/PennyLaneAI/pennylane/pull/8608)
+  [(#8620)](https://github.com/PennyLaneAI/pennylane/pull/8620)
 
 * The new graph based decompositions system enabled via :func:`~.decomposition.enable_graph` now supports the following
   additional templates.
@@ -202,6 +204,9 @@
 
 * Added `MCM_METHOD` and `POSTSELECT_MODE` `StrEnum` objects to improve validation and handling of configuration strings.
   [(#8596)](https://github.com/PennyLaneAI/pennylane/pull/8596)
+  
+* When program capture is enabled, there is no longer caching of the jaxpr on the QNode.
+  [(#8629)](https://github.com/PennyLaneAI/pennylane/pull/8629)
 
 * The `grad` and `jacobian` primitives now store the function under `fn`. There is also now a single `jacobian_p`
   primitive for use in program capture.

@@ -25,7 +25,7 @@ import warnings
 from collections.abc import Callable, Iterable, Sequence
 from typing import TYPE_CHECKING, Literal, get_args
 
-from cachetools import Cache, LRUCache
+from cachetools import Cache
 
 import pennylane as qml
 from pennylane import math, pytrees
@@ -583,7 +583,6 @@ class QNode:
         self.diff_method = diff_method
         _validate_diff_method(self.device, self.diff_method)
 
-        self.capture_cache: LRUCache = LRUCache(maxsize=1000)
         if isinstance(static_argnums, int):
             static_argnums = (static_argnums,)
         self.static_argnums = sorted(static_argnums)
