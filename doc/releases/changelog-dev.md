@@ -12,6 +12,7 @@
 
 * Added a :func:`~pennylane.measurements.pauli_measure` that takes a Pauli product measurement.
   [(#8461)](https://github.com/PennyLaneAI/pennylane/pull/8461)
+  [(#8631)](https://github.com/PennyLaneAI/pennylane/pull/8631)
 
 <h3>Improvements 🛠</h3>
 
