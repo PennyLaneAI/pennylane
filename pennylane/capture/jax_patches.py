@@ -294,14 +294,8 @@ def _patch_bind_with_trace():
     _original_functions["bind_with_trace"] = core.Primitive.bind_with_trace
 
     def patched_bind_with_trace(self, trace, args, params):
-        """Patched version that handles typeof failures gracefully."""
-        try:
-            in_type = list(map(typeof, args))
-        except Exception:  # pylint: disable=broad-exception-caught
-            # If typeof fails (e.g., with Python lists), just process the primitive
-            return trace.process_primitive(self, args, params)
-        else:
-            return trace.process_primitive(self, args, params)
+        """Patched version that handles typeof failures."""
+        return trace.process_primitive(self, args, params)
 
     # Apply the patch
     core.Primitive.bind_with_trace = patched_bind_with_trace
