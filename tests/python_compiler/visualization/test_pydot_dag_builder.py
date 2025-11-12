@@ -13,6 +13,8 @@
 # limitations under the License.
 """Unit tests for the PyDotDAGBuilder subclass."""
 
+from unittest.mock import MagicMock
+
 import pytest
 
 from pennylane.compiler.python_compiler.visualization.pydot_dag_builder import PyDotDAGBuilder
@@ -132,3 +134,39 @@ def test_add_cluster_with_attrs():
 
     # Check that other defaults are still present
     assert cluster2.get("fontname") == "Helvetica"
+
+
+@pytest.mark.unit
+def test_render(monkeypatch, capsys):
+    """Tests that the `render` method works correctly."""
+    dag_builder = PyDotDAGBuilder()
+
+    # mock out the graph writing functionality
+    mock_write = MagicMock()
+    monkeypatch.setattr(dag_builder.graph, "write", mock_write)
+    dag_builder.render("my_graph.png")
+
+    # make sure the function handles extensions correctly
+    mock_write.assert_called_once_with("my_graph.png", format="png")
+
+    # make sure we get information back to the user
+    captured = capsys.readouterr()
+    assert "Successfully rendered graph to: my_graph.png" in captured.out
+
+
+@pytest.mark.unit
+def test_to_string():
+    """Tests that the `to_string` method works correclty."""
+
+    dag_builder = PyDotDAGBuilder()
+    dag_builder.add_node("n0", "node0")
+    dag_builder.add_node("n1", "node1")
+    dag_builder.add_edge("n0", "n1")
+
+    string = dag_builder.to_string()
+    assert isinstance(string, str)
+
+    assert "digraph" in string
+    assert "n0" in string
+    assert "n1" in string
+    assert "n0 -> n1" in string
