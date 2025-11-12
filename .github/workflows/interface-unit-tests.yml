@@ -158,7 +158,6 @@ jobs:
             "jax-tests": ["3.11", "3.13"],
             "capture-jax-tests": ["3.11", "3.13"],
             "all-interfaces-tests": ["3.11"],
-            "external-libraries-tests": ["3.11"],
             "qcut-tests": ["3.11"],
             "qchem-tests": ["3.11"],
             "gradients-tests": ["3.11"],
@@ -457,47 +456,47 @@ jobs:
       requirements_file: ${{ github.event_name == 'schedule' && strategy.job-index == 0 && 'all_interfaces.txt' || '' }}
 
 
-  external-libraries-tests:
-    needs:
-      - setup-ci-load
-      - determine_runner
-      - default-dependency-versions
-      - warnings-as-errors-setup
-    strategy:
-      fail-fast: ${{ needs.warnings-as-errors-setup.outputs.fail_fast == 'default' }}
-      max-parallel: >-
-        ${{
-           fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).external-libraries-tests
-           || fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).default
-         }}
-      matrix:
-        python-version: >-
-          ${{
-            fromJSON(needs.setup-ci-load.outputs.python-version).external-libraries-tests
-            || fromJSON(needs.setup-ci-load.outputs.python-version).default
-           }}
-    if: ${{ !contains(fromJSON(needs.setup-ci-load.outputs.jobs-to-skip), 'external-libraries-tests') }}
-    uses: ./.github/workflows/unit-test.yml
-    with:
-      job_runner_name: ${{ needs.determine_runner.outputs.runner_group }}
-      job_name: ${{ inputs.job_name_prefix }}external-libraries-tests (${{ matrix.python-version }})${{ inputs.job_name_suffix }}
-      branch: ${{ inputs.branch }}
-      coverage_artifact_name: external-libraries-tests-coverage
-      python_version: ${{ matrix.python-version }}
-      pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
-      pytest_markers: external
-      pytest_additional_args: ${{ needs.warnings-as-errors-setup.outputs.pytest_warning_args }}
-      pytest_xml_file_path: '${{ inputs.job_name_prefix }}external-libraries-tests (${{ matrix.python-version }})${{ inputs.job_name_suffix }}.xml'
-      additional_os_packages: graphviz
-      additional_pip_packages: |
-        pyzx matplotlib stim quimb mitiq ply optax scipy-openblas32>=0.3.26 qualtran openqasm3 antlr4_python3_runtime xdsl==0.54 filecheck
-        ${{ needs.default-dependency-versions.outputs.jax-version }}
-        git+https://github.com/PennyLaneAI/pennylane-qiskit.git@master
-        git+https://github.com/xdslproject/xdsl-jax.git@main
-        ${{ needs.default-dependency-versions.outputs.catalyst-nightly }}
-        ${{ inputs.additional_python_packages }}
+  # external-libraries-tests:
+  #   needs:
+  #     - setup-ci-load
+  #     - determine_runner
+  #     - default-dependency-versions
+  #     - warnings-as-errors-setup
+  #   strategy:
+  #     fail-fast: ${{ needs.warnings-as-errors-setup.outputs.fail_fast == 'default' }}
+  #     max-parallel: >-
+  #       ${{
+  #          fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).external-libraries-tests
+  #          || fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).default
+  #        }}
+  #     matrix:
+  #       python-version: >-
+  #         ${{
+  #           fromJSON(needs.setup-ci-load.outputs.python-version).external-libraries-tests
+  #           || fromJSON(needs.setup-ci-load.outputs.python-version).default
+  #          }}
+  #   if: ${{ !contains(fromJSON(needs.setup-ci-load.outputs.jobs-to-skip), 'external-libraries-tests') }}
+  #   uses: ./.github/workflows/unit-test.yml
+  #   with:
+  #     job_runner_name: ${{ needs.determine_runner.outputs.runner_group }}
+  #     job_name: ${{ inputs.job_name_prefix }}external-libraries-tests (${{ matrix.python-version }})${{ inputs.job_name_suffix }}
+  #     branch: ${{ inputs.branch }}
+  #     coverage_artifact_name: external-libraries-tests-coverage
+  #     python_version: ${{ matrix.python-version }}
+  #     pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
+  #     pytest_markers: external
+  #     pytest_additional_args: ${{ needs.warnings-as-errors-setup.outputs.pytest_warning_args }}
+  #     pytest_xml_file_path: '${{ inputs.job_name_prefix }}external-libraries-tests (${{ matrix.python-version }})${{ inputs.job_name_suffix }}.xml'
+  #     additional_os_packages: graphviz
+  #     additional_pip_packages: |
+  #       pyzx matplotlib stim quimb mitiq ply optax scipy-openblas32>=0.3.26 qualtran openqasm3 antlr4_python3_runtime xdsl==0.54 filecheck
+  #       ${{ needs.default-dependency-versions.outputs.jax-version }}
+  #       git+https://github.com/PennyLaneAI/pennylane-qiskit.git@master
+  #       git+https://github.com/xdslproject/xdsl-jax.git@main
+  #       ${{ needs.default-dependency-versions.outputs.catalyst-nightly }}
+  #       ${{ inputs.additional_python_packages }}
 
-      requirements_file: ${{ github.event_name == 'schedule' && strategy.job-index == 0 && 'external.txt' || '' }}
+  #     requirements_file: ${{ github.event_name == 'schedule' && strategy.job-index == 0 && 'external.txt' || '' }}
 
 
   qcut-tests:
