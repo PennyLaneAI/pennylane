@@ -12,19 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Utility functions for resource estimation."""
+from typing import Any
+from collections.abc import Callable
+
 import numpy as np
 
 
-# pylint: disable=unnecessary-lambda-assignmentm too-many-arguments
+# pylint: disable=unnecessary-lambda-assignment, too-many-arguments
 def approx_poly_degree(
-    x_vec,
-    y_vec,
-    error_tol=1e-6,
-    max_degree=None,
-    min_degree=None,
-    basis=None,
-    approx_poly_func=None,
-    **fit_kwargs,
+    x_vec: np.ndarray,
+    y_vec: np.ndarray,
+    error_tol: float = 1e-6,
+    max_degree: int | None = None,
+    min_degree: int | None = None,
+    basis: str | None = None,
+    approx_poly_func: Callable | None = None,
+    **fit_kwargs: dict[str, Any],
 ):
     r"""Approximates a polynomial function of a given degree at value x
 
