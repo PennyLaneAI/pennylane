@@ -14,9 +14,11 @@
 r"""
 Contains the UCCSD template.
 """
+
 # pylint: disable-msg=too-many-arguments,protected-access,too-many-positional-arguments
 import copy
 from collections import Counter
+from collections.abc import Sequence
 
 import numpy as np
 
@@ -25,7 +27,8 @@ from pennylane.control_flow import for_loop
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.operation import Operation
 from pennylane.ops import BasisState
-from pennylane.wires import Wires
+from pennylane.typing import TensorLike
+from pennylane.wires import Wires, WiresLike
 
 from .fermionic_double_excitation import FermionicDoubleExcitation
 from .fermionic_single_excitation import FermionicSingleExcitation
@@ -191,8 +194,19 @@ class UCCSD(Operation):
     resource_keys = {"num_wires", "n_repeats", "num_d_wires", "num_s_wires"}
 
     def __init__(
-        self, weights, wires, s_wires=None, d_wires=None, init_state=None, n_repeats=1, id=None
+        self,
+        weights: TensorLike,
+        wires: WiresLike,
+        s_wires: WiresLike | None = None,
+        d_wires: WiresLike | None = None,
+        init_state: Sequence[int] | None = None,
+        n_repeats=1,
+        id=None,
     ):
+        s_wires = Wires([] if s_wires is None else s_wires)
+        d_wires = Wires([] if d_wires is None else d_wires)
+        init_state = () if init_state is None else init_state
+
         if (not s_wires) and (not d_wires):
             raise ValueError(
                 f"s_wires and d_wires lists can not be both empty; got ph={s_wires}, pphh={d_wires}"
