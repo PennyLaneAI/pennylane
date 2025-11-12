@@ -350,68 +350,54 @@ class Select(Operation):
     .. details::
         :title: Available decomposition rules
 
-        **multi_control**
+        1. **multi_control**: [Definition of the rule]
 
         .. code-block::
 
             # Example of how to access
             qml.list_decomps(qml.Select)["multi_control"]
 
-        Resources
+        Resources:
 
-        .. code-block::
+            num_gates = 4
 
-            Total wires: 5  
-            algorithmic wires: 4   
-            allocated wires: 1  
-            zero state: 1  
-            any state: 0  
-            Total gates : 22  
-            'Toffoli': 5,  
-            'CNOT': 3,  
-            'X': 8,  
-            'Z': 1,  
-            'S': 2,  
-            'Hadamard': 3  
+            gate_counts = {RX: 2, CZ: 2}
 
-        The following decomposition rule is applied
+            weighted_cost = 4
+
+        The following decomposition rule is applied:
 
         .. figure:: ../../../doc/_static/templates/subroutines/select.png
                     :align: center
                     :width: 70%
                     :target: javascript:void(0);
 
-        **unary**
+        2. **unary**: [Definition of the rule]. `Babbush et al. (2018) <https://arxiv.org/abs/1805.03662>`__
 
         .. code-block::
 
             # Example of how to access
             qml.list_decomps(qml.Select)["unary"]
 
-        Resources
+        Resources:
 
-        .. code-block::
+            For :math:`K` operators this decomposition requires at least :math:`c=\lceil\log_2 K\rceil`
+            control wires (as usual for Select), and :math:`c-1` additional work wires.
 
-            Total wires: 5
-            algorithmic wires: 4
-            allocated wires: 1
-            zero state: 0
-            any state: 0
-            Total gates : 22
-            'Toffoli': 5,
-            'CNOT': 3,
-            'Hadamard': 3
-
-        The following decomposition rule is applied
+        The following decomposition rule is applied:
 
         .. figure:: ../../../doc/_static/templates/subroutines/select.png
                     :align: center
                     :width: 70%
                     :target: javascript:void(0);
-
-        Reference: `Babbush et al. (2018) <https://arxiv.org/abs/1805.03662>`__
+    
 
         **Table version**
+
+        .. code-block::
+
+            # General example of how to access
+            qml.list_decomps(qml.Select)[NAME]
 
         .. list-table::
             :widths: 20 60 20
@@ -421,41 +407,22 @@ class Select(Operation):
               - **Information**
               - **Resources**
             * - multi_control
-
-                .. code-block::
-
-                    # Example of how to access
-                    qml.list_decomps(qml.Select)["multi_control"]
               - .. figure:: ../../../doc/_static/templates/subroutines/select.png
                     :align: center
                     :width: 70%
                     :target: javascript:void(0);
-              - .. code-block::
+              - num_gates = 4
 
-                    Total wires: 5
-                    algorithmic wires: 4
-                    allocated wires: 1
+                gate_counts = {RX: 2, CZ: 2}
+
+                weighted_cost = 4
             * - unary
-
-                .. code-block::
-
-                    # Example of how to access
-                    qml.list_decomps(qml.Select)["unary"]
               - .. figure:: ../../../doc/_static/templates/subroutines/select.png
                     :align: center
                     :width: 70%
                     :target: javascript:void(0);
-              - .. code-block::
-
-                    Total wires: 5  
-                    algorithmic wires: 4   
-                    allocated wires: 1  
-                    zero state: 1  
-                    any state: 0  
-                    Total gates : 22  
-                    'Toffoli': 5,  
-                    'CNOT': 3, 
-                    'Hadamard': 3
+              - For :math:`K` operators this decomposition requires at least :math:`c=\lceil\log_2 K\rceil`
+                control wires (as usual for Select), and :math:`c-1` additional work wires.
     """
 
     resource_keys = {"op_reps", "num_control_wires", "partial", "num_work_wires"}
