@@ -12,8 +12,13 @@
 
 * Added a :func:`~pennylane.measurements.pauli_measure` that takes a Pauli product measurement.
   [(#8461)](https://github.com/PennyLaneAI/pennylane/pull/8461)
+  [(#8631)](https://github.com/PennyLaneAI/pennylane/pull/8631)
 
 <h3>Improvements 🛠</h3>
+
+* `qml.for_loop` will now fall back to a standard Python `for` loop if capturing a condensed, structured loop fails
+  with program capture enabled.
+  [(#8615)](https://github.com/PennyLaneAI/pennylane/pull/8615)
 
 * The `~.BasisRotation` graph decomposition was re-written in a qjit friendly way with PennyLane control flow.
   [(#8560)](https://github.com/PennyLaneAI/pennylane/pull/8560)

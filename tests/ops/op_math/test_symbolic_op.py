@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the SymbolicOp class of qubit operations"""
+
 from copy import copy
 
 import pytest
@@ -195,6 +196,9 @@ class TestProperties:
         mcm = qml.ops.MidMeasure(0)
         with pytest.raises(ValueError, match="Symbolic operators of mid-circuit"):
             _ = SymbolicOp(mcm)
+        ppm = qml.ops.PauliMeasure("XY", wires=[0, 1])
+        with pytest.raises(ValueError, match="Symbolic operators of mid-circuit"):
+            _ = SymbolicOp(ppm)
 
 
 class TestQueuing:
