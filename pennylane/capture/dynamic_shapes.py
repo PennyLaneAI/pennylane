@@ -19,6 +19,7 @@ from collections.abc import Callable, Sequence
 has_jax = True
 try:
     import jax
+    from jax._src import core
     from jax.interpreters import partial_eval as pe
 except ImportError:  # pragma: no cover
     has_jax = False  # pragma: no cover
