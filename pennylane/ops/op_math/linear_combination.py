@@ -21,6 +21,7 @@ import numbers
 from copy import copy
 
 import pennylane as qml
+from pennylane.exceptions import TermsUndefinedError
 from pennylane.operation import Operator
 
 from .sprod import SProd
@@ -210,7 +211,16 @@ class LinearCombination(Sum):
         ([1.0, 2.0, 3.0], [X(0), X(0) @ X(1), X(1) @ X(2)])
 
         """
-        return self.coeffs, self.ops
+        coeffs, ops = [], []
+        for coeff, op in zip(self.coeffs, self.ops, strict=True):
+            try:
+                sub_coeffs, sub_ops = op.terms()
+            except TermsUndefinedError:
+                sub_coeffs, sub_ops = [1], [op]
+            # Don't use list comprehension as to not allocate memory ahead of time.
+            coeffs.extend(coeff * sub_coeff for sub_coeff in sub_coeffs)
+            ops.extend(sub_ops)
+        return coeffs, ops
 
     def compute_grouping(self, grouping_type="qwc", method="lf"):
         """
