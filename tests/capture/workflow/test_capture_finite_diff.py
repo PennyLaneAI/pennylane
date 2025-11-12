@@ -25,10 +25,6 @@ pytestmark = [pytest.mark.jax, pytest.mark.capture]
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
 
-# JAX 0.7.2: These tests now PASS after removing custom_partial_eval_rule registration.
-# The rule was preventing JAX from auto-transposing JVP to VJP for reverse-mode autodiff.
-# pytest.skip("JAX 0.7.2: finite-diff reverse-mode differentiation not yet supported", allow_module_level=True)
-
 
 def test_warning_float32():
     """Test that a warning is raised if trainable inputs are float32."""

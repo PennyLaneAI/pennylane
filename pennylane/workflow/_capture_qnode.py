@@ -329,7 +329,7 @@ def _qnode_batching_rule(
         # How to handle this case is still an open question. For now, we raise a warning and give the user full flexibility.
         if idx < (n_consts + shots_len):
             warn(
-                f"Constant or shots argument at index {idx} is not scalar. "
+                f"Constant argument at index {idx} is not scalar. "
                 "This may lead to unintended behavior or wrong results if the argument is provided "
                 "using parameter broadcasting to a quantum operation that supports batching.",
                 UserWarning,

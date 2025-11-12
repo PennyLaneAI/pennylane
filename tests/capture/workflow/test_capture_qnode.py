@@ -267,11 +267,7 @@ def test_qnode_closure_variables():
 
     jaxpr = jax.make_jaxpr(circuit)(1)
     assert len(jaxpr.eqns[0].invars) == 2  # one closure variable, one arg
-    # JAX 0.7.2: n_consts no longer in params, closure is captured in qfunc_jaxpr.consts
-    qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
-    assert len(qfunc_jaxpr.in_avals) == 1  # only the wire arg
-    # The closure variable is in the consts of the outer jaxpr
-    assert len(jaxpr.consts) == 1  # the closure variable `a`
+    assert jaxpr.eqns[0].params["n_consts"] == 1
 
     out = jax.core.eval_jaxpr(jaxpr.jaxpr, [jnp.array(0.5)], 0)
     assert qml.math.allclose(out, jnp.cos(0.5))
@@ -1011,7 +1007,7 @@ class TestQNodeVmapIntegration:
             qml.RX(const, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.warns(UserWarning, match="Constant or shots argument at index 0 is not scalar"):
+        with pytest.warns(UserWarning, match="Constant argument at index 0 is not scalar. "):
             jax.make_jaxpr(jax.vmap(circuit))(jnp.array([0.1, 0.2]))
 
     def test_vmap_overriding_shots(self):
