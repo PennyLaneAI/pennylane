@@ -514,7 +514,16 @@ class ConvertToMBQCFormalismPass(passes.ModulePass):
                     f"{gate_name} is not supported in the MBQC formalism. Please decompose it into the MBQC gate set."
                 )
 
-    def _convert_single_qubit_gate_subroutine(self, gate_name):
+    def _create_single_qubit_gate_subroutine(self, gate_name: str):
+        """Create a subroutine for a single qubit gate based on the given name.
+        Args:
+            gate_name (str): Name of the gate.
+
+        Returns:
+            The corresponding subroutine (func.FuncOp).
+        """
+        if gate_name not in _MBQC_ONE_QUBIT_GATES:
+            raise NotImplementedError(f"Subroutine for the {gate_name} gate is not supported.")
         input_types = (QubitType(),)
         if gate_name == "RZ":
             input_types += (builtin.Float64Type(),)
@@ -570,7 +579,9 @@ class ConvertToMBQCFormalismPass(passes.ModulePass):
         funcOp.attributes["mbqc_transform"] = builtin.StringAttr.get("y")
         return funcOp
 
-    def _convert_cnot_gate_subroutine(self, gate_name="CNOT"):
+    def _create_cnot_gate_subroutine(self):
+        """Create a subroutine for a CNOT gate."""
+        gate_name = "CNOT"
         input_types = (
             QubitType(),
             QubitType(),
@@ -636,11 +647,11 @@ class ConvertToMBQCFormalismPass(passes.ModulePass):
         subroutine_dict = {}
 
         for gate_name in _MBQC_ONE_QUBIT_GATES:
-            funcOp = self._convert_single_qubit_gate_subroutine(gate_name)
+            funcOp = self._create_single_qubit_gate_subroutine(gate_name)
             module.regions[0].blocks.first.add_op(funcOp)
             subroutine_dict[gate_name] = funcOp
 
-        cnot_funcOp = self._convert_cnot_gate_subroutine()
+        cnot_funcOp = self._create_cnot_gate_subroutine()
         module.regions[0].blocks.first.add_op(cnot_funcOp)
         subroutine_dict["CNOT"] = cnot_funcOp
 
