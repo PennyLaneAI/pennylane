@@ -13,9 +13,14 @@
 # limitations under the License.
 """Contains a transform that computes the frequency spectrum of a quantum
 circuit including classical preprocessing within the QNode."""
+
+from __future__ import annotations
+
 from collections import OrderedDict
 from inspect import signature
 from itertools import product
+from types import EllipsisType
+from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -24,20 +29,27 @@ from pennylane.capture.autograph import wraps
 
 from .utils import get_spectrum, join_spectra
 
+if TYPE_CHECKING:
+    from pennylane.workflow.qnode import QNode
 
-def _process_ids(encoding_args, argnum, qnode):
-    r"""Process the passed ``encoding_args`` and ``argnum`` or infer them from
+
+def _process_ids(
+    encoding_args: dict[str, list[tuple] | EllipsisType] | set[EllipsisType] | None,
+    argnum: list[int] | None,
+    qnode: QNode,
+) -> tuple[OrderedDict[str, list[tuple] | EllipsisType], list[int]]:
+    r"""Mutate the passed ``encoding_args`` and ``argnum`` or infer them from
     the QNode signature.
 
     Args:
-        encoding_args (dict[str, list[tuple]] or set): Parameter index dictionary;
+        encoding_args (dict[str, list[tuple] | EllipsisType] | set[EllipsisType] | None): Parameter index dictionary;
             keys are argument names, values are index tuples for that argument
             or an ``Ellipsis``. If a ``set``, all values are set to ``Ellipsis``
-        argnum (list[int]): Numerical indices for arguments
+        argnum (list[int] | None): Numerical indices for arguments
         qnode (QNode): QNode to infer the ``encoding_args`` and ``argnum`` from
             if both are ``None``
     Returns:
-        OrderedDict[str, list[tuple]]: Ordered parameter index dictionary;
+        OrderedDict[str, list[tuple] | Ellipsis]: Ordered parameter index dictionary;
             keys are argument names, values are index tuples for that argument
             or an ``Ellipsis``
         list[int]: Numerical indices for arguments
