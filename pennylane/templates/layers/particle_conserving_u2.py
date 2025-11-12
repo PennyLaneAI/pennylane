@@ -22,12 +22,6 @@ from pennylane.ops import CNOT, CRX, RZ
 from pennylane.templates.embeddings import BasisEmbedding
 from pennylane.wires import Wires, WiresLike
 
-has_jax = True
-try:
-    import jax.numpy as jnp
-except ModuleNotFoundError:  # pragma: no cover
-    has_jax = False  # pragma: no cover
-
 
 def u2_ex_gate(phi, wires=None):
     r"""Implements the two-qubit exchange gate :math:`U_{2,\mathrm{ex}}` proposed in
@@ -287,14 +281,17 @@ def _particle_conserving_u2_decomposition(weights: list, wires: WiresLike, init_
 
     if isinstance(wires, Wires):
         wires = wires.labels
+        # If we are using capture, then it is going to be problematic to use Wires.
+        # Instead, we need to use the wire labels. Here we have a collection of Wires,
+        # and this line goes through each of them and turns them into their labels.
         nm_wires = list(map(lambda w: w.labels if isinstance(w, Wires) else w, nm_wires))
 
-    if has_jax and capture.enabled():
+    if capture.enabled():
         nm_wires, weights, wires, init_state = (
-            jnp.array(nm_wires),
-            jnp.array(weights),
-            jnp.array(wires),
-            jnp.array(init_state),
+            math.array(nm_wires, like="jax"),
+            math.array(weights, like="jax"),
+            math.array(wires, like="jax"),
+            math.array(init_state, like="jax"),
         )
 
     BasisEmbedding(init_state, wires=wires)
