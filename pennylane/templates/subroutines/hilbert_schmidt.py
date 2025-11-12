@@ -18,7 +18,7 @@ import copy
 from collections import defaultdict
 from collections.abc import Iterable
 
-from pennylane import capture
+from pennylane import capture, math
 from pennylane.control_flow import for_loop
 from pennylane.decomposition import (
     CompressedResourceOp,
@@ -32,12 +32,6 @@ from pennylane.ops import CNOT, Hadamard, QubitUnitary
 from pennylane.queuing import QueuingManager, apply
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
-
-has_jax = True
-try:
-    import jax.numpy as jnp
-except ModuleNotFoundError:  # pragma: no cover
-    has_jax = False  # pragma: no cover
 
 
 class HilbertSchmidt(Operation):
@@ -521,7 +515,7 @@ def _up_to_last_layer(
                 len(operator.wires)
             ):
 
-                if has_jax and capture.enabled() and isinstance(operator.wires, Wires):
+                if capture.enabled() and isinstance(operator.wires, Wires):
                     wire = operator.wires.labels[wire_index]
                 else:
                     wire = operator.wires[wire_index]
@@ -538,15 +532,15 @@ def _up_to_last_layer(
     first_range = range(n_wires // 2)
     second_range = range(n_wires // 2, n_wires)
 
-    if has_jax and capture.enabled():
+    if capture.enabled():
         if isinstance(wires, Wires):
             wires = wires.labels
         wires, u_wires, v_wires, first_range, second_range = (
-            jnp.array(wires),
-            jnp.array(u_wires),
-            jnp.array(v_wires),
-            jnp.array(first_range),
-            jnp.array(second_range),
+            math.array(wires, like="jax"),
+            math.array(u_wires, like="jax"),
+            math.array(v_wires, like="jax"),
+            math.array(first_range, like="jax"),
+            math.array(second_range, like="jax"),
         )
 
     @for_loop(len(first_range))
