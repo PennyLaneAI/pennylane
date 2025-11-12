@@ -17,6 +17,8 @@
 
 * The `~.BasisRotation` graph decomposition was re-written in a qjit friendly way with PennyLane control flow.
   [(#8560)](https://github.com/PennyLaneAI/pennylane/pull/8560)
+  [(#8608)](https://github.com/PennyLaneAI/pennylane/pull/8608)
+  [(#8620)](https://github.com/PennyLaneAI/pennylane/pull/8620)
 
 * The new graph based decompositions system enabled via :func:`~.decomposition.enable_graph` now supports the following
   additional templates.
@@ -27,6 +29,7 @@
   [(#8558)](https://github.com/PennyLaneAI/pennylane/pull/8558)
   [(#8538)](https://github.com/PennyLaneAI/pennylane/pull/8538)  
   [(#8534)](https://github.com/PennyLaneAI/pennylane/pull/8534)
+  [(#8582)](https://github.com/PennyLaneAI/pennylane/pull/8582)
   [(#8543)](https://github.com/PennyLaneAI/pennylane/pull/8543)
   [(#8554)](https://github.com/PennyLaneAI/pennylane/pull/8554)
   
@@ -37,6 +40,7 @@
   - :class:`~.GateFabric`
   - :class:`~.AngleEmbedding`
   - :class:`~.IQPEmbedding`
+  - :class:`~.kUpCCGSD`
   - :class:`~.QAOAEmbedding`
   - :class:`~.BasicEntanglerLayers`
 
@@ -198,6 +202,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* When program capture is enabled, there is no longer caching of the jaxpr on the QNode.
+  [(#8629)](https://github.com/PennyLaneAI/pennylane/pull/8629)
+
 * The `grad` and `jacobian` primitives now store the function under `fn`. There is also now a single `jacobian_p`
   primitive for use in program capture.
   [(#8357)](https://github.com/PennyLaneAI/pennylane/pull/8357)
@@ -257,10 +264,18 @@
   [(#8490)](https://github.com/PennyLaneAI/pennylane/pull/8490)
   [(#8577)](https://github.com/PennyLaneAI/pennylane/pull/8577)
 
+* The constant to convert the length unit Bohr to Angstrom in ``qml.qchem`` is updated to use scipy
+  constants.
+  [(#8537)](https://github.com/PennyLaneAI/pennylane/pull/8537)
+
 * Solovay-Kitaev decomposition using the :func:`~.clifford_t_decompostion` transform
   with ``method="sk"`` or directly via :func:`~.ops.sk_decomposition` now raises a more
   informative ``RuntimeError`` when used with JAX-JIT or :func:`~.qjit`.
   [(#8489)](https://github.com/PennyLaneAI/pennylane/pull/8489)
+
+* The `is_xdsl_pass` function has been added to the `pennylane.compiler.python_compiler.pass_api` module.
+  This function checks if a pass name corresponds to an xDSL implemented pass.
+  [(#8572)](https://github.com/PennyLaneAI/pennylane/pull/8572)
 
 * The :func:`~pennylane.compiler.python_compiler.Compiler.run` method now accepts a string as input,
   which is parsed and transformed with xDSL.
@@ -302,6 +317,10 @@ A warning message has been added to :doc:`Building a plugin <../development/plug
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixes a bug in `default.mixed` device where certain diagonal operations were incorrectly
+  reshaped during application when using broadcasting.
+  [(#8593)](https://github.com/PennyLaneAI/pennylane/pull/8593)
+
 * Add an exception to the warning for unsolved operators within the graph-based decomposition
   system if the unsolved operators are :class:`.allocation.Allocate` or :class:`.allocation.Deallocate`.
   [(#8553)](https://github.com/PennyLaneAI/pennylane/pull/8553)
@@ -334,8 +353,10 @@ This release contains contributions from (in alphabetical order):
 Guillermo Alonso,
 Utkarsh Azad,
 Astral Cai,
+Yushao Chen,
 Marcus Edwards,
 Lillian Frederiksen,
+Soran Jahangiri,
 Christina Lee,
 Joseph Lee,
 Gabriela Sanchez Diaz,
