@@ -407,14 +407,16 @@ class TestDifferentModes:
     def test_automatic_mode_hadamard_obs(self):
         """Test the automatic mode dispatches the correct modes for the scenario."""
 
+        t = np.array(0.0)
+
         dev = qml.device('default.qubit')
 
         @qml.qnode(dev)
         def circuit(x):
-            qml.evolve(qml.X(0) @ qml.X(1) + qml.Z(0) @ qml.Z(1) + qml.H(0), x)
+            qml.evolve(qml.X(0) @ qml.X(1) + qml.Z(0) @ qml.Z(1) + qml.Y(0), x)
             return qml.expval(qml.Z(0))
 
-        batch, fn = qml.gradients.hadamard_grad(circuit, mode="auto")
+        qml.gradients.hadamard_grad(circuit, mode="auto")(t)
 
 
     @pytest.mark.parametrize("mode", ["direct", "reversed-direct"])

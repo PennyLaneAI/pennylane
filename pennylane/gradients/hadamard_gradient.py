@@ -362,6 +362,7 @@ def hadamard_grad(
         "reversed": ("Reversed hadamard test", _reversed_hadamard_test),
         "direct": ("Direct hadamard test", _direct_hadamard_test),
         "reversed-direct": ("Reversed direct hadamard test", _reversed_direct_hadamard_test),
+        "auto": ("Quantum automatic differentiation", _quantum_automatic_differentiation)
     }
     try:
         transform_name, gradient_method = modes[mode]
@@ -547,7 +548,8 @@ def _quantum_automatic_differentiation(tape, trainable_param_idx, aux_wire) -> t
     # different circuits for the controls, can refer to the hamiltonian’s "grouping indices" list: its length gives
     # the number of shots need for the expectations.
     trainable_op, _, _ = tape.get_operation(trainable_param_idx)
-    expectations_shots = len(trainable_op.grouping_indices)
+    trainable_op.base.compute_grouping()  # Note: only works for Hamiltonians made exclusively of Paulis
+    expectations_shots = len(trainable_op.base.grouping_indices)
 
 
 
