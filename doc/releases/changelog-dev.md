@@ -281,9 +281,9 @@
   which is parsed and transformed with xDSL.
   [(#8587)](https://github.com/PennyLaneAI/pennylane/pull/8587)
 
-* The :func:`~pennylane.compiler.python_compiler.transforms.convert_to_mbqc_formalism_pass` supports 
-  :class:`~xdsl.dialects.scf.IndexSwitchOp` in IR and ignores regions that have no body.
-  [(#?)](https://github.com/PennyLaneAI/pennylane/pull/?)
+* The :func:`~pennylane.compiler.python_compiler.transforms.convert_to_mbqc_formalism_pass` now 
+  supports :class:`~xdsl.dialects.scf.IndexSwitchOp` in IR and ignores regions that have no body.
+  [(#8632)](https://github.com/PennyLaneAI/pennylane/pull/8632)
 
 <h3>Documentation 📝</h3>
 
