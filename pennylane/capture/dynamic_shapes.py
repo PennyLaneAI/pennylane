@@ -212,8 +212,7 @@ def register_custom_staging_rule(
         for i, var in enumerate(outvars):
             if hasattr(var.aval, "shape"):
                 # Build shape tuple with Vars from env
-                new_shape = [s if isinstance(s, int) else env[s] for s in var.aval.shape]
-                if all(isinstance(s, int) for s in new_shape):
+                if core.is_constant_shape(var.aval.shape):
                     new_aval = jax.core.ShapedArray(tuple(new_shape), var.aval.dtype)
                 else:
                     new_aval = jax.core.DShapedArray(tuple(new_shape), var.aval.dtype)
