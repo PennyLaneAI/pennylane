@@ -71,6 +71,7 @@ jobs:
           --ignore=pennylane/compiler/python_compiler
           "
           IGNORE_OPTS_CORE="
+          --ignore=pennylane/workflow/interfaces/tensorflow.py
           --ignore=pennylane/control_flow
           --ignore=pennylane/math
           --ignore=pennylane/compiler
@@ -80,7 +81,6 @@ jobs:
           --ignore=pennylane/capture
           --ignore=pennylane/decomposition
           --ignore=pennylane/devices
-          --ignore=pennylane/workflow
           "
           IGNORE_OPTS_AUXILIARY="
           --ignore=pennylane/shadows
