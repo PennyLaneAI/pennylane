@@ -203,6 +203,12 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Updated documentation check workflow to run on pull requests on `v[0-9]+\.[0-9]+\.[0-9]+-docs` branches.
+  [(#8590)](https://github.com/PennyLaneAI/pennylane/pull/8590)
+  
+* When program capture is enabled, there is no longer caching of the jaxpr on the QNode.
+  [(#8629)](https://github.com/PennyLaneAI/pennylane/pull/8629)
+
 * The `grad` and `jacobian` primitives now store the function under `fn`. There is also now a single `jacobian_p`
   primitive for use in program capture.
   [(#8357)](https://github.com/PennyLaneAI/pennylane/pull/8357)
