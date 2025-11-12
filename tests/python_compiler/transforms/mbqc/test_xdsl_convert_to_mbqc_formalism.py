@@ -189,28 +189,28 @@ class TestConvertToMBQCFormalismPass:
             func.func @test_func(%param0: f64) {
                 // CHECK: [[q0:%.+]] = "test.op"() : () -> !quantum.bit
                 %0 = "test.op"() : () -> !quantum.bit
-                // CHECK-NEXT: [[q0:%.+]] = func.call @rz_in_mbqc(%0, %param0) : (!quantum.bit, f64) -> !quantum.bit
+                // CHECK-NEXT: [[q0:%.+]] = func.call @rz_in_mbqc(%param0, %0) : (f64, !quantum.bit) -> !quantum.bit
                 %1 = quantum.custom "RZ"(%param0) %0 : !quantum.bit
                 return
             }
-            // CHECK: func.func private @rz_in_mbqc(%0 : !quantum.bit, %1 : f64) -> !quantum.bit attributes {mbqc_transform = "y"} {
+            // CHECK: func.func private @rz_in_mbqc(%0 : f64, %1 : !quantum.bit) -> !quantum.bit attributes {mbqc_transform = "y"} {
             // CHECK-NEXT:   %2 = arith.constant dense<[true, false, true, false, false, true]> : tensor<6xi1>
             // CHECK-NEXT:   %3 = mbqc.graph_state_prep(%2 : tensor<6xi1>) [init "Hadamard", entangle "CZ"] : !quantum.reg
             // CHECK-NEXT:   %4 = quantum.extract %3[0] : !quantum.reg -> !quantum.bit
             // CHECK-NEXT:   %5 = quantum.extract %3[1] : !quantum.reg -> !quantum.bit
             // CHECK-NEXT:   %6 = quantum.extract %3[2] : !quantum.reg -> !quantum.bit
             // CHECK-NEXT:   %7 = quantum.extract %3[3] : !quantum.reg -> !quantum.bit
-            // CHECK-NEXT:   %8, %9 = quantum.custom "CZ"() %0, %4 : !quantum.bit, !quantum.bit
+            // CHECK-NEXT:   %8, %9 = quantum.custom "CZ"() %1, %4 : !quantum.bit, !quantum.bit
             // CHECK-NEXT:   %10 = arith.constant 0.000000e+00 : f64
             // CHECK-NEXT:   %11, %12 = mbqc.measure_in_basis[XY, %10] %8 : i1, !quantum.bit
             // CHECK-NEXT:   %13, %14 = mbqc.measure_in_basis[XY, %10] %9 : i1, !quantum.bit
             // CHECK-NEXT:   %15 = arith.constant true
             // CHECK-NEXT:   %16 = arith.cmpi eq, %13, %15 : i1
             // CHECK-NEXT:   %17, %18 = scf.if %16 -> (i1, !quantum.bit) {
-            // CHECK-NEXT:     %19, %20 = mbqc.measure_in_basis[XY, %1] %5 : i1, !quantum.bit
+            // CHECK-NEXT:     %19, %20 = mbqc.measure_in_basis[XY, %0] %5 : i1, !quantum.bit
             // CHECK-NEXT:     scf.yield %19, %20 : i1, !quantum.bit
             // CHECK-NEXT:   } else {
-            // CHECK-NEXT:     %21 = arith.negf %1 : f64
+            // CHECK-NEXT:     %21 = arith.negf %0 : f64
             // CHECK-NEXT:     %22, %23 = mbqc.measure_in_basis[XY, %21] %5 : i1, !quantum.bit
             // CHECK-NEXT:     scf.yield %22, %23 : i1, !quantum.bit
             // CHECK-NEXT:   }
@@ -250,75 +250,75 @@ class TestConvertToMBQCFormalismPass:
             func.func @test_func(%param0: f64, %param1: f64, %param2: f64) {
                 // CHECK: [[q0:%.+]] = "test.op"() : () -> !quantum.bit
                 %0 = "test.op"() : () -> !quantum.bit
-                // CHECK-NEXT: [[q0:%.+]] = func.call @rotxzx_in_mbqc(%0, %param0, %param1, %param2) : (!quantum.bit, f64, f64, f64) -> !quantum.bit
+                // CHECK-NEXT: [[q0:%.+]] = func.call @rotxzx_in_mbqc(%param0, %param1, %param2, %0) : (f64, f64, f64, !quantum.bit) -> !quantum.bit
                 %1 = quantum.custom "RotXZX"(%param0, %param1, %param2) %0 : !quantum.bit
                 return
             }
-            // CHECK: func.func private @rotxzx_in_mbqc(%0 : !quantum.bit, %1 : f64, %2 : f64, %3 : f64) -> !quantum.bit attributes {mbqc_transform = "y"} {
-            // CHECK-NEXT:   %4 = arith.constant dense<[true, false, true, false, false, true]> : tensor<6xi1>
-            // CHECK-NEXT:   %5 = mbqc.graph_state_prep(%4 : tensor<6xi1>) [init "Hadamard", entangle "CZ"] : !quantum.reg
-            // CHECK-NEXT:   %6 = quantum.extract %5[0] : !quantum.reg -> !quantum.bit
-            // CHECK-NEXT:   %7 = quantum.extract %5[1] : !quantum.reg -> !quantum.bit
-            // CHECK-NEXT:   %8 = quantum.extract %5[2] : !quantum.reg -> !quantum.bit
-            // CHECK-NEXT:   %9 = quantum.extract %5[3] : !quantum.reg -> !quantum.bit
-            // CHECK-NEXT:   %10, %11 = quantum.custom "CZ"() %0, %6 : !quantum.bit, !quantum.bit
-            // CHECK-NEXT:   %12 = arith.constant 0.000000e+00 : f64
-            // CHECK-NEXT:   %13, %14 = mbqc.measure_in_basis[XY, %12] %10 : i1, !quantum.bit
-            // CHECK-NEXT:   %15 = arith.constant true
-            // CHECK-NEXT:   %16 = arith.cmpi eq, %13, %15 : i1
-            // CHECK-NEXT:   %17, %18 = scf.if %16 -> (i1, !quantum.bit) {
-            // CHECK-NEXT:     %19, %20 = mbqc.measure_in_basis[XY, %1] %11 : i1, !quantum.bit
-            // CHECK-NEXT:     scf.yield %19, %20 : i1, !quantum.bit
-            // CHECK-NEXT:   } else {
-            // CHECK-NEXT:     %21 = arith.negf %1 : f64
-            // CHECK-NEXT:     %22, %23 = mbqc.measure_in_basis[XY, %21] %11 : i1, !quantum.bit
-            // CHECK-NEXT:     scf.yield %22, %23 : i1, !quantum.bit
-            // CHECK-NEXT:   }
-            // CHECK-NEXT:   %24 = arith.constant true
-            // CHECK-NEXT:   %25 = arith.cmpi eq, %17, %24 : i1
-            // CHECK-NEXT:   %26, %27 = scf.if %25 -> (i1, !quantum.bit) {
-            // CHECK-NEXT:     %28, %29 = mbqc.measure_in_basis[XY, %2] %7 : i1, !quantum.bit
-            // CHECK-NEXT:     scf.yield %28, %29 : i1, !quantum.bit
-            // CHECK-NEXT:   } else {
-            // CHECK-NEXT:     %30 = arith.negf %2 : f64
-            // CHECK-NEXT:     %31, %32 = mbqc.measure_in_basis[XY, %30] %7 : i1, !quantum.bit
-            // CHECK-NEXT:     scf.yield %31, %32 : i1, !quantum.bit
-            // CHECK-NEXT:   }
-            // CHECK-NEXT:   %33 = arith.xori %13, %26 : i1
-            // CHECK-NEXT:   %34 = arith.constant true
-            // CHECK-NEXT:   %35 = arith.cmpi eq, %33, %34 : i1
-            // CHECK-NEXT:   %36, %37 = scf.if %35 -> (i1, !quantum.bit) {
-            // CHECK-NEXT:     %38, %39 = mbqc.measure_in_basis[XY, %3] %8 : i1, !quantum.bit
-            // CHECK-NEXT:     scf.yield %38, %39 : i1, !quantum.bit
-            // CHECK-NEXT:   } else {
-            // CHECK-NEXT:     %40 = arith.negf %3 : f64
-            // CHECK-NEXT:     %41, %42 = mbqc.measure_in_basis[XY, %40] %8 : i1, !quantum.bit
-            // CHECK-NEXT:     scf.yield %41, %42 : i1, !quantum.bit
-            // CHECK-NEXT:   }
-            // CHECK-NEXT:   %43 = arith.xori %17, %36 : i1
-            // CHECK-NEXT:   %44 = arith.constant true
-            // CHECK-NEXT:   %45 = arith.cmpi eq, %43, %44 : i1
-            // CHECK-NEXT:   %46 = scf.if %45 -> (!quantum.bit) {
-            // CHECK-NEXT:     %47 = quantum.custom "PauliX"() %9 : !quantum.bit
-            // CHECK-NEXT:     scf.yield %47 : !quantum.bit
-            // CHECK-NEXT:   } else {
-            // CHECK-NEXT:     scf.yield %9 : !quantum.bit
-            // CHECK-NEXT:   }
-            // CHECK-NEXT:   %48 = arith.xori %13, %26 : i1
-            // CHECK-NEXT:   %49 = arith.constant true
-            // CHECK-NEXT:   %50 = arith.cmpi eq, %48, %49 : i1
-            // CHECK-NEXT:   %51 = scf.if %50 -> (!quantum.bit) {
-            // CHECK-NEXT:     %52 = quantum.custom "PauliZ"() %46 : !quantum.bit
-            // CHECK-NEXT:     scf.yield %52 : !quantum.bit
-            // CHECK-NEXT:   } else {
-            // CHECK-NEXT:     scf.yield %46 : !quantum.bit
-            // CHECK-NEXT:   }
-            // CHECK-NEXT:   quantum.dealloc_qb %18 : !quantum.bit
-            // CHECK-NEXT:   quantum.dealloc_qb %27 : !quantum.bit
-            // CHECK-NEXT:   quantum.dealloc_qb %37 : !quantum.bit
-            // CHECK-NEXT:   quantum.dealloc_qb %14 : !quantum.bit
-            // CHECK-NEXT:   func.return %51 : !quantum.bit
-            // CHECK-NEXT: }
+            // CHECK: func.func private @rotxzx_in_mbqc(%0 : f64, %1 : f64, %2 : f64, %3 : !quantum.bit) -> !quantum.bit attributes {mbqc_transform = "y"} {
+            // CHECK-NEXT:  %4 = arith.constant dense<[true, false, true, false, false, true]> : tensor<6xi1>
+            // CHECK-NEXT:  %5 = mbqc.graph_state_prep(%4 : tensor<6xi1>) [init "Hadamard", entangle "CZ"] : !quantum.reg
+            // CHECK-NEXT:  %6 = quantum.extract %5[0] : !quantum.reg -> !quantum.bit
+            // CHECK-NEXT:  %7 = quantum.extract %5[1] : !quantum.reg -> !quantum.bit
+            // CHECK-NEXT:  %8 = quantum.extract %5[2] : !quantum.reg -> !quantum.bit
+            // CHECK-NEXT:  %9 = quantum.extract %5[3] : !quantum.reg -> !quantum.bit
+            // CHECK-NEXT:  %10, %11 = quantum.custom "CZ"() %3, %6 : !quantum.bit, !quantum.bit
+            // CHECK-NEXT:  %12 = arith.constant 0.000000e+00 : f64
+            // CHECK-NEXT:  %13, %14 = mbqc.measure_in_basis[XY, %12] %10 : i1, !quantum.bit
+            // CHECK-NEXT:  %15 = arith.constant true
+            // CHECK-NEXT:  %16 = arith.cmpi eq, %13, %15 : i1
+            // CHECK-NEXT:  %17, %18 = scf.if %16 -> (i1, !quantum.bit) {
+            // CHECK-NEXT:    %19, %20 = mbqc.measure_in_basis[XY, %0] %11 : i1, !quantum.bit
+            // CHECK-NEXT:    scf.yield %19, %20 : i1, !quantum.bit
+            // CHECK-NEXT:  } else {
+            // CHECK-NEXT:    %21 = arith.negf %0 : f64
+            // CHECK-NEXT:    %22, %23 = mbqc.measure_in_basis[XY, %21] %11 : i1, !quantum.bit
+            // CHECK-NEXT:    scf.yield %22, %23 : i1, !quantum.bit
+            // CHECK-NEXT:  }
+            // CHECK-NEXT:  %24 = arith.constant true
+            // CHECK-NEXT:  %25 = arith.cmpi eq, %17, %24 : i1
+            // CHECK-NEXT:  %26, %27 = scf.if %25 -> (i1, !quantum.bit) {
+            // CHECK-NEXT:    %28, %29 = mbqc.measure_in_basis[XY, %1] %7 : i1, !quantum.bit
+            // CHECK-NEXT:    scf.yield %28, %29 : i1, !quantum.bit
+            // CHECK-NEXT:  } else {
+            // CHECK-NEXT:    %30 = arith.negf %1 : f64
+            // CHECK-NEXT:    %31, %32 = mbqc.measure_in_basis[XY, %30] %7 : i1, !quantum.bit
+            // CHECK-NEXT:    scf.yield %31, %32 : i1, !quantum.bit
+            // CHECK-NEXT:  }
+            // CHECK-NEXT:  %33 = arith.xori %13, %26 : i1
+            // CHECK-NEXT:  %34 = arith.constant true
+            // CHECK-NEXT:  %35 = arith.cmpi eq, %33, %34 : i1
+            // CHECK-NEXT:  %36, %37 = scf.if %35 -> (i1, !quantum.bit) {
+            // CHECK-NEXT:    %38, %39 = mbqc.measure_in_basis[XY, %2] %8 : i1, !quantum.bit
+            // CHECK-NEXT:    scf.yield %38, %39 : i1, !quantum.bit
+            // CHECK-NEXT:  } else {
+            // CHECK-NEXT:    %40 = arith.negf %2 : f64
+            // CHECK-NEXT:    %41, %42 = mbqc.measure_in_basis[XY, %40] %8 : i1, !quantum.bit
+            // CHECK-NEXT:    scf.yield %41, %42 : i1, !quantum.bit
+            // CHECK-NEXT:  }
+            // CHECK-NEXT:  %43 = arith.xori %17, %36 : i1
+            // CHECK-NEXT:  %44 = arith.constant true
+            // CHECK-NEXT:  %45 = arith.cmpi eq, %43, %44 : i1
+            // CHECK-NEXT:  %46 = scf.if %45 -> (!quantum.bit) {
+            // CHECK-NEXT:    %47 = quantum.custom "PauliX"() %9 : !quantum.bit
+            // CHECK-NEXT:    scf.yield %47 : !quantum.bit
+            // CHECK-NEXT:  } else {
+            // CHECK-NEXT:    scf.yield %9 : !quantum.bit
+            // CHECK-NEXT:  }
+            // CHECK-NEXT:  %48 = arith.xori %13, %26 : i1
+            // CHECK-NEXT:  %49 = arith.constant true
+            // CHECK-NEXT:  %50 = arith.cmpi eq, %48, %49 : i1
+            // CHECK-NEXT:  %51 = scf.if %50 -> (!quantum.bit) {
+            // CHECK-NEXT:    %52 = quantum.custom "PauliZ"() %46 : !quantum.bit
+            // CHECK-NEXT:    scf.yield %52 : !quantum.bit
+            // CHECK-NEXT:  } else {
+            // CHECK-NEXT:    scf.yield %46 : !quantum.bit
+            // CHECK-NEXT:  }
+            // CHECK-NEXT:  quantum.dealloc_qb %18 : !quantum.bit
+            // CHECK-NEXT:  quantum.dealloc_qb %27 : !quantum.bit
+            // CHECK-NEXT:  quantum.dealloc_qb %37 : !quantum.bit
+            // CHECK-NEXT:  quantum.dealloc_qb %14 : !quantum.bit
+            // CHECK-NEXT:  func.return %51 : !quantum.bit
+            // CHECK-NEXT:}
         """
 
         pipeline = (ConvertToMBQCFormalismPass(),)
