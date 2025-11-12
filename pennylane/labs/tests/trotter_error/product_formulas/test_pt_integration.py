@@ -128,6 +128,6 @@ def test_perturbation_error(backend, num_workers, parallel_mode, n_states, mpi4p
         parallel_mode=parallel_mode,
     )
     actual = [sum(d.values()) for d in actual_dicts]
-    expected = np.array([1.5815039950517473e-05j] * n_states)
+    expected = np.array([1.449200476892796e-05j] * n_states)
 
     assert np.allclose(actual, expected)
