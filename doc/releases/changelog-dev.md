@@ -169,6 +169,12 @@
 
 <h3>Deprecations 👋</h3>
 
+* Maintenance support of NumPy<2.0 is deprecated and will be dropped v0.45.
+  Future versions of PennyLane are not guaranteed to work with NumPy<2.0.
+  We recommend upgrading your version of NumPy to benefit from enhanced support and features.
+  [(#8578)](https://github.com/PennyLaneAI/pennylane/pull/8578)
+  [(#8497)](https://github.com/PennyLaneAI/pennylane/pull/8497)
+
 * `qml.measure`, `qml.measurements.MidMeasureMP`, `qml.measurements.MeasurementValue`,
   and `qml.measurements.get_mcm_predicates` are now located in `qml.ops.mid_measure`.
   `MidMeasureMP` is now renamed to `MidMeasure`.
@@ -211,9 +217,6 @@
 * The `grad` and `jacobian` primitives now store the function under `fn`. There is also now a single `jacobian_p`
   primitive for use in program capture.
   [(#8357)](https://github.com/PennyLaneAI/pennylane/pull/8357)
-
-* Fix all NumPy 1.X `DeprecationWarnings` in our source code.
-  [(#8497)](https://github.com/PennyLaneAI/pennylane/pull/8497)
 
 * Update versions for `pylint`, `isort` and `black` in `format.yml`
   [(#8506)](https://github.com/PennyLaneAI/pennylane/pull/8506)
