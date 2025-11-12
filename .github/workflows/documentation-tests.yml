@@ -94,7 +94,6 @@ jobs:
           --ignore=pennylane/qnn
           --ignore=pennylane/qaoa
           --ignore=pennylane/data
-          --ignore=pennylane/fourier
           --ignore=pennylane/debugging
           --ignore=pennylane/qcut
           --ignore=pennylane/qchem
