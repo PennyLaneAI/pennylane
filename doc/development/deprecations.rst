@@ -30,6 +30,7 @@ Pending deprecations
   ``stopping_condition`` is satisfied.
 
   .. code-block:: python
+
     import pennylane as qml
     from functools import partial
 
@@ -39,6 +40,7 @@ Pending deprecations
         qml.Hadamard(wires=[0])
         qml.Toffoli(wires=[0,1,2])
         return qml.expval(qml.Z(0))
+
 
 * Access to the following functions and classes from the `~pennylane.resources` module are 
   deprecated. Instead, these functions must be imported from the `~pennylane.estimator` module.
@@ -71,6 +73,7 @@ Pending deprecations
   :func:`pennylane.set_shots` transform on the :class:`~.QNode`.
 
   .. code-block:: python
+
     dev = qml.device("default.qubit", wires=2)
 
     @qml.qnode(dev, shots=1000)
