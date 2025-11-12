@@ -19,6 +19,7 @@ from xdsl.ir import Operation
 from ..dialects import quantum
 from .compiler_transform import compiler_transform
 from .passes import PLModulePass
+from .pattern_rewriter import PLPatternRewriter
 
 
 class CancelInverses(PLModulePass):
@@ -57,7 +58,7 @@ class CancelInverses(PLModulePass):
 
 
 @CancelInverses.rewrite_rule(quantum.CustomOp)
-def rewrite_custom_op(self, op, rewriter):
+def rewrite_custom_op(self, op: quantum.CustomOp, rewriter: PLPatternRewriter):
     """Rewrite rule for CustomOp."""
     while isinstance(op, quantum.CustomOp) and op.gate_name.data in self.self_inverses:
         next_user = None
@@ -70,31 +71,27 @@ def rewrite_custom_op(self, op, rewriter):
         if next_user is None:
             break
 
-        for q1, q2 in zip(op.in_qubits, next_user.out_qubits, strict=True):
-            rewriter.replace_all_uses_with(q2, q1)
-        for cq1, cq2 in zip(op.in_ctrl_qubits, next_user.out_ctrl_qubits, strict=True):
-            rewriter.replace_all_uses_with(cq2, cq1)
-        rewriter.erase_op(next_user)
-        rewriter.erase_op(op)
+        rewriter.erase_gate(next_user)
+        rewriter.erase_gate(op)
         op = op.in_qubits[0].owner
 
 
 # We can register more rewrite rules as needed. Here are some
 # dummy rewrite rules to illustrate:
 @CancelInverses.rewrite_rule(quantum.InsertOp)
-def rewrite_insert_op(self, op, rewriter):
+def rewrite_insert_op(self, op: quantum.InsertOp, rewriter: PLPatternRewriter):
     """Rewrite rule for InsertOp."""
     return
 
 
 @CancelInverses.rewrite_rule(quantum.ExtractOp)
-def rewrite_extract_op(self, op, rewriter):
+def rewrite_extract_op(self, op: quantum.ExtractOp, rewriter: PLPatternRewriter):
     """Rewrite rule for ExtractOp."""
     return
 
 
 @CancelInverses.rewrite_rule(quantum.MeasureOp)
-def rewrite_mid_measure_op(self, op, rewriter):
+def rewrite_mid_measure_op(self, op: quantum.MeasureOp, rewriter: PLPatternRewriter):
     """Rewrite rule for MeasureOp."""
     return
 
