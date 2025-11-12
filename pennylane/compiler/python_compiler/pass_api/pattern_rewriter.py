@@ -207,11 +207,12 @@ from ..utils import get_constant_from_ssa
 
 
 _named_observables = (ops.PauliX, ops.PauliY, ops.PauliZ, ops.Identity, ops.Hadamard)
-# TODO: Add PCPhaseOp to list once merged
 _gate_like_ops = (
     quantum.CustomOp,
     quantum.GlobalPhaseOp,
     quantum.MultiRZOp,
+    # TODO: Uncomment once PCPhaseOp is added to Quantum dialect
+    # quantum.PCPhaseOp,
     quantum.QubitUnitaryOp,
 )
 
@@ -382,7 +383,6 @@ class PLPatternRewriter(PatternRewriter):
         Args:
             op (xdsl.ir.Operation): The operation to erase
         """
-        # TODO: Update with PCPhaseOp once added
         if not isinstance(op, _gate_like_ops):
             raise TypeError(
                 f"Cannot erase {op}. 'PLPatternRewriter.erase_op' can only erase "
@@ -444,113 +444,148 @@ class PLPatternRewriter(PatternRewriter):
 
         return out_qubit
 
-    # @staticmethod
-    # def _get_gate_base(gate: Operator):
-    #     """Get the base op of a gate."""
-    #     if not isinstance(gate, (ops.Controlled, ops.Adjoint)):
-    #         return gate, (), (), False
+    @staticmethod
+    def _get_gate_base(gate: Operator):
+        """Get the base op of a gate."""
 
-    #     if isinstance(gate, ops.Controlled):
-    #         base_gate, ctrl_wires, ctrl_vals, adjoint = PLPatternRewriter._get_gate_base(gate.base)
-    #         ctrl_wires = tuple(gate.control_wires) + tuple(ctrl_wires)
-    #         ctrl_vals = tuple(gate.control_values) + tuple(ctrl_vals)
-    #         return base_gate, ctrl_wires, ctrl_vals, adjoint
+        if isinstance(gate, ops.Controlled):
+            base_gate, ctrl_wires, ctrl_vals, adjoint = PLPatternRewriter._get_gate_base(gate.base)
+            ctrl_wires = tuple(gate.control_wires) + tuple(ctrl_wires)
+            ctrl_vals = tuple(gate.control_values) + tuple(ctrl_vals)
+            return base_gate, ctrl_wires, ctrl_vals, adjoint
 
-    #     if isinstance(gate, ops.Adjoint):
-    #         base_gate, ctrl_wires, ctrl_vals, adjoint = PLPatternRewriter._get_gate_base(gate.base)
-    #         adjoint = adjoint ^ True
-    #         return base_gate, tuple(ctrl_wires), tuple(ctrl_vals), adjoint
+        if isinstance(gate, ops.Adjoint):
+            base_gate, ctrl_wires, ctrl_vals, adjoint = PLPatternRewriter._get_gate_base(gate.base)
+            adjoint = adjoint ^ True
+            return base_gate, tuple(ctrl_wires), tuple(ctrl_vals), adjoint
 
-    #     raise CompileError(f"The gate {type(gate).__name__} cannot be inserted into the module.")
+        return gate, (), (), False
 
-    # def insert_gate(
-    #     self, gate: Operator, insertion_point: InsertPoint, params: Sequence[SSAValue] | None = None
-    # ) -> xOperation:
-    #     """Insert a PL gate into the IR at the provided insertion point."""
-    #     # TODO: Add support for StatePrep, BasisState
-    #     gate, ctrl_wires, ctrl_vals, adjoint = self._get_gate_base(gate)
-    #     op_args = {"adjoint": adjoint}
+    def insert_gate(
+        self, gate: Operator, insertion_point: InsertPoint, params: Sequence[SSAValue] | None = None
+    ) -> xOperation:
+        """Insert a PL gate into the IR at the provided insertion point.
 
-    #     if isinstance(gate, ops.QubitUnitary):
-    #         # Create static matrix
-    #         if not params:
-    #             mat = gate.matrix()
-    #             mat_attr = builtin.DenseIntOrFPElementsAttr.from_list(
-    #                 builtin.TensorType(
-    #                     builtin.ComplexType(builtin.Float64Type()), shape=math.shape(mat)
-    #                 ),
-    #                 mat,
-    #             )
-    #             tensorOp = stablehlo.ConstantOp(value=mat_attr)
-    #             self.insert_op(tensorOp, insertion_point=insertion_point)
-    #             insertion_point = InsertPoint.after(tensorOp)
-    #             params = [tensorOp.results[0]]
+        .. note::
 
-    #     # Create static parameters
-    #     elif not params:
-    #         params = []
-    #         for d in gate.data:
-    #             constOp = self.create_scalar_constant(d, insertion_point)
-    #             params.append(constOp.results[0])
-    #             insertion_point = InsertPoint.after(constOp)
+            Inserting state-preparation operations is currently not supported.
 
-    #     # Different gate types may be represented in MLIR by different operations, which may
-    #     # take slightly different arguments
-    #     # TODO: Add PCPhase impl once merged
-    #     match type(gate):
-    #         case ops.GlobalPhase:
-    #             op_class = quantum.GlobalPhaseOp
-    #             assert len(params) == 1
-    #             op_args["params"] = params[0]
-    #         case ops.MultiRZ:
-    #             op_class = quantum.MultiRZOp
-    #             assert len(params) == 1
-    #             op_args["theta"] = params[0]
-    #         case ops.QubitUnitary:
-    #             op_class = quantum.QubitUnitaryOp
-    #             assert len(params) == 1
-    #             op_args["matrix"] = params[0]
-    #         case _:
-    #             op_class = quantum.CustomOp
-    #             op_args["gate_name"] = gate.name
-    #             op_args["params"] = params
+        Args:
+            gate (~pennylane.operation.Operator): The gate to insert. The wires of the gate must be
+                ``QubitType`` ``SSAValue``\ s.
+            insertion_point (InsertPoint): The point where the operation should be inserted.
+            params (Sequence[SSAValue] | None): For parametric gates, the list of ``SSAValue``\ s that
+                should be used as the gate's operands. If not provided, the parameters to ``gate`` will
+                be inserted as constants into the program.
 
-    #     # Add qubits/control qubits to args. GlobalPhaseOp does not take qubits, only
-    #     # control qubits
-    #     if not isinstance(gate, ops.GlobalPhase):
-    #         op_args["in_qubits"] = tuple(gate.wires)
-    #     op_args["in_ctrl_qubits"] = tuple(ctrl_wires) if ctrl_wires else None
-    #     in_ctrl_values = None
+        Returns:
+            xdsl.ir.Operation: The xDSL operation corresponding to the gate being inserted.
+        """
+        # TODO: Add support for StatePrep, BasisState
+        gate, ctrl_wires, ctrl_vals, adjoint = self._get_gate_base(gate)
+        op_args = {}
 
-    #     # Add ctrl values to args
-    #     if ctrl_vals:
-    #         true_cst = None
-    #         false_cst = None
-    #         if any(ctrl_vals):
-    #             true_cst = self.create_scalar_constant(True, insertion_point=insertion_point)
-    #             insertion_point = InsertPoint.after(true_cst)
-    #         if not all(ctrl_vals):
-    #             false_cst = self.create_scalar_constant(False, insertion_point=insertion_point)
-    #             insertion_point = InsertPoint.after(false_cst)
-    #         in_ctrl_values = tuple(
-    #             true_cst.results[0] if v else false_cst.results[0] for v in ctrl_vals
-    #         )
-    #     op_args["in_ctrl_values"] = in_ctrl_values
+        # If the gate is a QubitUnitary and an SSA tensor is not provided as its matrix, then
+        # we need to create a constant matrix SSAValue using the gate's matrix.
+        if isinstance(gate, ops.QubitUnitary) and not params:
+            mat = gate.matrix()
+            mat_attr = builtin.DenseIntOrFPElementsAttr.from_list(
+                builtin.TensorType(
+                    builtin.ComplexType(builtin.Float64Type()), shape=math.shape(mat)
+                ),
+                mat,
+            )
+            constantOp = arith.ConstantOp(value=mat_attr)
+            self.insert_op(constantOp, insertion_point=insertion_point)
+            insertion_point = InsertPoint.after(constantOp)
+            params = [constantOp.results[0]]
 
-    #     gateOp = op_class(**op_args)
-    #     self.insert_op(gateOp, insertion_point=insertion_point)
+        # Create static parameters
+        elif not params:
+            params = []
+            for d in gate.data:
+                try:
+                    d = float(d)
+                except ValueError:
+                    raise TransformError(
+                        "Only values that can be cast into floats can be used as gate "
+                        f"parameters. Got {d}."
+                    )
+                constOp = self.create_scalar_constant(d, insertion_point)
+                params.append(constOp.results[0])
+                insertion_point = InsertPoint.after(constOp)
 
-    #     # Use getattr for in/out_qubits because GlobalPhaseOp does not have in/out_qubits
-    #     for iq, oq in zip(
-    #         getattr(gateOp, "in_qubits", ()) + tuple(gateOp.in_ctrl_qubits),
-    #         getattr(gateOp, "out_qubits", ()) + tuple(gateOp.out_ctrl_qubits),
-    #         strict=True,
-    #     ):
-    #         iq.replace_by_if(oq, lambda use: use.operation != gateOp)
-    #         self.notify_op_modified(gateOp)
-    #         self.ctx.update_qubit(iq, oq)
+            # TODO: Uncomment after PCPhaseOp is added to Quantum dialect
+            # # PCPhase has a `dim` hyperparameter which also needs to be inserted into the IR.
+            # if isinstance(gate, ops.PCPhase):
+            #     constOp = self.create_scalar_constant(float(gate.hyperparameters["dimension"][0]), insertion_point)
+            #     params.append(constOp.results[0])
+            #     insertion_point = InsertPoint.after(constOp)
 
-    #     return gateOp
+        # Different gate types may be represented in MLIR by different operations, which may
+        # take slightly different arguments
+        match type(gate):
+            case ops.GlobalPhase:
+                op_class = quantum.GlobalPhaseOp
+                assert len(params) == 1
+                op_args["params"] = params[0]
+            case ops.MultiRZ:
+                op_class = quantum.MultiRZOp
+                assert len(params) == 1
+                op_args["theta"] = params[0]
+            case ops.QubitUnitary:
+                op_class = quantum.QubitUnitaryOp
+                assert len(params) == 1
+                op_args["matrix"] = params[0]
+            # TODO: Uncomment after PCPhaseOp is added to Quantum dialect
+            # case ops.PCPhase:
+            #     op_class = quantum.PCPhaseOp
+            #     op_args["theta"] = params[0]
+            #     op_args["dim"] = params[1]
+            case _:
+                op_class = quantum.CustomOp
+                op_args["gate_name"] = gate.name
+                op_args["params"] = params
+
+        # Add qubits/control qubits to args. GlobalPhaseOp does not take qubits, only
+        # control qubits
+        if not isinstance(gate, ops.GlobalPhase):
+            op_args["in_qubits"] = tuple(gate.wires)
+        op_args["in_ctrl_qubits"] = tuple(ctrl_wires) if ctrl_wires else None
+        in_ctrl_values = None
+
+        # Add ctrl values to args
+        if ctrl_vals:
+            true_cst = None
+            false_cst = None
+            if any(ctrl_vals):
+                true_cst = self.create_scalar_constant(True, insertion_point=insertion_point)
+                insertion_point = InsertPoint.after(true_cst)
+            if not all(ctrl_vals):
+                false_cst = self.create_scalar_constant(False, insertion_point=insertion_point)
+                insertion_point = InsertPoint.after(false_cst)
+            in_ctrl_values = tuple(
+                true_cst.results[0] if v else false_cst.results[0] for v in ctrl_vals
+            )
+        op_args["in_ctrl_values"] = in_ctrl_values
+        op_args["adjoint"] = adjoint
+
+        gateOp = op_class(**op_args)
+        self.insert_op(gateOp, insertion_point=insertion_point)
+
+        # Use getattr for in/out_qubits because GlobalPhaseOp does not have in/out_qubits
+        for iq, oq in zip(
+            getattr(gateOp, "in_qubits", ()) + tuple(gateOp.in_ctrl_qubits),
+            getattr(gateOp, "out_qubits", ()) + tuple(gateOp.out_ctrl_qubits),
+            strict=True,
+        ):
+            in_qubit_uses = [use for use in iq.uses if use.operation != gateOp]
+            iq.replace_by_if(oq, lambda use: use.operation != gateOp)
+            for use in in_qubit_uses:
+                self.notify_op_modified(use.operation)
+            # self.ctx.update_qubit(iq, oq)
+
+        return gateOp
 
     # def insert_observable(self, obs: Operator, insertion_point: InsertPoint) -> xOperation:
     #     """Insert a PL observable into the IR at the provided insertion point."""
