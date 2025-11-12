@@ -145,7 +145,7 @@ def coefficients(
 
     .. code-block:: python
 
-        @qml.qnode(dev)
+        @qml.qnode(qml.device("default.qubit", wires=2))
         def circuit(inpt):
             qml.RX(inpt[0], wires=0)
             qml.RY(inpt[0], wires=1)
