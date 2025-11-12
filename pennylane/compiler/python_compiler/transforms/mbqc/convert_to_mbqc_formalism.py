@@ -20,7 +20,7 @@ from dataclasses import dataclass
 
 from xdsl import context, passes, pattern_rewriter
 from xdsl.dialects import arith, builtin, func, scf
-from xdsl.dialects.scf import ForOp, IfOp, WhileOp, IndexSwitchOp
+from xdsl.dialects.scf import ForOp, IfOp, IndexSwitchOp, WhileOp
 from xdsl.ir import SSAValue
 from xdsl.ir.core import OpResult
 from xdsl.rewriter import InsertPoint
