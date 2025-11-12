@@ -209,7 +209,27 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> SpecsDict:  # pr
 
         # Note that this only gets transforms manually applied by the user
         tape_transforms = original_qnode.transform_program
-        num_trans_levels = len(tape_transforms) + 1
+
+        if qml.capture.enabled():
+            # If capture is enabled, find the seam where PLxPR transforms end and MLIR passes begin
+            num_trans_levels = 0
+            for i, trans in reversed(list(enumerate(tape_transforms))):
+                dispatcher = trans._transform_dispatcher
+                # TODO: This is a temporary workaround and shouldn't be needed after the "pass name" PR is merged
+                assert (
+                    dispatcher in catalyst.from_plxpr.transforms_to_passes
+                ), f"Transform dispatcher {dispatcher} not registered in transforms_to_passes."
+                if catalyst.from_plxpr.transforms_to_passes[dispatcher][0] is None:
+                    num_trans_levels = i + 1
+                    break
+
+        else:
+            # If capture is NOT enabled, all transforms are tape transforms
+            num_trans_levels = len(tape_transforms)
+
+        num_trans_levels += 1  # Have to include the "no transforms" level
+
+        # Handle tape transforms
         trans_levels = (
             list(range(num_trans_levels))
             if level == "all"
