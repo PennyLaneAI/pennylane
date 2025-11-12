@@ -14,9 +14,11 @@
 r"""
 Contains the k-UpCCGSD template.
 """
+
 # pylint: disable-msg=too-many-arguments,protected-access,too-many-positional-arguments
 import copy
 from collections import defaultdict
+from collections.abc import Sequence
 from itertools import product
 
 import numpy as np
@@ -26,6 +28,7 @@ from pennylane.control_flow import for_loop
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.operation import Operation
 from pennylane.templates.embeddings import BasisEmbedding
+from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 
 from .fermionic_double_excitation import FermionicDoubleExcitation
@@ -212,14 +215,24 @@ class kUpCCGSD(Operation):
     resource_keys = {"num_wires", "k", "s_wires", "d_wires"}
 
     def _flatten(self):
-
         # Do not need to flatten s_wires or d_wires because they are derived hyperparameters
         hyperparameters = tuple(
             (key, self.hyperparameters[key]) for key in ["k", "delta_sz", "init_state"]
         )
         return self.data, (self.wires, hyperparameters)
 
-    def __init__(self, weights, wires, k=1, delta_sz=0, init_state=None, id=None):
+    def __init__(
+        self,
+        weights: TensorLike,
+        wires: WiresLike,
+        init_state: Sequence[int] | None = None,
+        k: int = 1,
+        delta_sz: int = 0,
+        id=None,
+    ):
+        wires = Wires(wires)
+        init_state = () if init_state is None else init_state
+
         if len(wires) < 4:
             raise ValueError(f"Requires at least four wires; got {len(wires)} wires.")
         if len(wires) % 2:
@@ -380,12 +393,10 @@ def _kupccgsd_decomposition(
     init_state: tuple[int],
     delta_sz: int = None,
 ):  # pylint: disable=too-many-arguments, arguments-differ, unused-argument
-
     BasisEmbedding(init_state, wires=wires)
 
     @for_loop(k)
     def layer_loop(layer):
-
         @for_loop(len(d_wires))
         def double_loop(i):
             (w1, w2) = d_wires[i]
