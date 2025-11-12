@@ -141,29 +141,6 @@ def _restore_dict(obj: Any) -> dict:
     return {k: _restore_dict(v) for k, v in obj}
 
 
-def _restore_list(obj: Any) -> list:
-    """Restore list from hashable tuple representation.
-
-    This is the inverse of _make_hashable for lists. When QmlPrimitive.bind() converts
-    lists to tuples for hashability, this function converts them back to lists.
-
-    Args:
-        obj: Tuple representing a list
-
-    Returns:
-        list: Restored list with recursively restored elements
-
-    Example:
-        >>> _restore_list((1, 2, (3, 4)))
-        [1, 2, [3, 4]]
-    """
-    if not isinstance(obj, tuple):
-        return obj
-
-    # Recursively restore nested tuples to lists
-    return [_restore_list(item) for item in obj]
-
-
 # pylint: disable=abstract-method,too-few-public-methods
 class QmlPrimitive(Primitive):
     """A subclass for JAX's Primitive that differentiates between different

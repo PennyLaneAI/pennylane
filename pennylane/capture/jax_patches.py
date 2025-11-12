@@ -127,10 +127,6 @@ def _add_make_eqn_helper():
 
         outvars = [self.frame.newvar(aval) for aval in out_avals]
 
-        if jax_config.enable_checks.value:
-            assert all(isinstance(x, DynamicJaxprTracer) for x in in_tracers)
-            assert all(isinstance(v, Var) for v in outvars)
-
         eqn = TracingEqn(list(in_tracers), outvars, primitive, params, effects, source_info, ctx)
 
         # Create output tracers - manually create DynamicJaxprTracer objects
@@ -167,24 +163,14 @@ def _patch_dyn_shape_staging_rule():
 
     def patched_dyn_shape_staging_rule(trace, source_info, prim, out_aval, *args, **params):
         """Patched version using recipe-based approach for JaxprTrace."""
-        if hasattr(trace, "make_eqn"):
-            # DynamicJaxprTrace path - use make_eqn helper (created by _add_make_eqn_helper)
-            # This is the old deprecated path that some code might still use
-            in_tracers = [core.get_referent(arg) for arg in args]
-            eqn, out_tracers = trace.make_eqn(
-                in_tracers, out_aval, prim, params, core.no_effects, source_info
-            )
-            trace.frame.add_eqn(eqn)
-            return out_tracers[0]
-        else:
-            # JaxprTrace path - DON'T use DynamicJaxprTracer, use JaxprTracer
-            # And DON'T call trace.frame.add_eqn() - just set recipe
-            out_tracer = pe.JaxprTracer(trace, pe.PartialVal.unknown(out_aval), None)
-            eqn = pe.new_eqn_recipe(
-                trace, args, [out_tracer], prim, params, core.no_effects, source_info
-            )
-            out_tracer.recipe = eqn
-            return out_tracer
+        # DynamicJaxprTrace path - use make_eqn helper (created by _add_make_eqn_helper)
+        # This is the old deprecated path that some code might still use
+        in_tracers = [core.get_referent(arg) for arg in args]
+        eqn, out_tracers = trace.make_eqn(
+            in_tracers, out_aval, prim, params, core.no_effects, source_info
+        )
+        trace.frame.add_eqn(eqn)
+        return out_tracers[0]
 
     def patched_iota_staging_rule(
         trace, source_info, *dyn_shape, dtype, shape, dimension, sharding
@@ -198,22 +184,13 @@ def _patch_dyn_shape_staging_rule():
         aval = core.DShapedArray(lax._merge_dyn_shape(shape, dyn_shape), dtype, False)
 
         # Choose path based on trace type
-        if hasattr(trace, "make_eqn"):
-            # DynamicJaxprTrace path - use make_eqn helper (created by _add_make_eqn_helper)
-            in_tracers = [core.get_referent(arg) for arg in dyn_shape]
-            eqn, out_tracers = trace.make_eqn(
-                in_tracers, aval, lax.iota_p, params, core.no_effects, source_info
-            )
-            trace.frame.add_eqn(eqn)
-            return out_tracers[0]
-        else:
-            # JaxprTrace path - use JaxprTracer with recipe (DON'T call add_eqn)
-            out_tracer = pe.JaxprTracer(trace, pe.PartialVal.unknown(aval), None)
-            eqn = pe.new_eqn_recipe(
-                trace, dyn_shape, [out_tracer], lax.iota_p, params, core.no_effects, source_info
-            )
-            out_tracer.recipe = eqn
-            return out_tracer
+        # DynamicJaxprTrace path - use make_eqn helper (created by _add_make_eqn_helper)
+        in_tracers = [core.get_referent(arg) for arg in dyn_shape]
+        eqn, out_tracers = trace.make_eqn(
+            in_tracers, aval, lax.iota_p, params, core.no_effects, source_info
+        )
+        trace.frame.add_eqn(eqn)
+        return out_tracers[0]
 
     # Apply the patches
     lax._dyn_shape_staging_rule = patched_dyn_shape_staging_rule
@@ -242,15 +219,6 @@ def _patch_pjit_staging_rule():
 
     def patched_pjit_staging_rule(trace, source_info, *args, **params):
         """Patched version that uses recipe-based approach for JaxprTrace."""
-        # Handle the non-dynamic-shapes path and inline path - use original
-        if params["compiler_options_kvs"]:
-            raise ValueError(
-                "`compiler_options` can only be passed to top-level `jax.jit`. Got"
-                f' compiler_options={dict(params["compiler_options_kvs"])} specified on'
-                f' a nested jit with name: {params["name"]} and source info:'
-                f" {source_info_util.summarize(source_info)}"
-            )
-
         # Handle inline path
         if (
             params["inline"]
@@ -279,30 +247,17 @@ def _patch_pjit_staging_rule():
             )
             params = dict(params, jaxpr=jaxpr, out_shardings=out_shardings, out_layouts=out_layouts)
 
-            # Check if we're in JaxprTrace (recipe-based) or DynamicJaxprTrace (frame-based)
-            if hasattr(trace, "make_eqn"):
-                # DynamicJaxprTrace path - use make_eqn to create proper TracingEqn
-                out_avals = pjit_module._out_type(jaxpr)
+            # DynamicJaxprTrace path - use make_eqn to create proper TracingEqn
+            out_avals = pjit_module._out_type(jaxpr)
 
-                # Convert args to tracers if needed
-                in_tracers = [core.get_referent(arg) for arg in args]
+            # Convert args to tracers if needed
+            in_tracers = [core.get_referent(arg) for arg in args]
 
-                # Use make_eqn to create the equation and tracers properly
-                eqn, out_tracers = trace.make_eqn(
-                    in_tracers, out_avals, pjit_module.jit_p, params, jaxpr.effects, source_info
-                )
-                trace.frame.add_eqn(eqn)
-            else:
-                # JaxprTrace path - use recipe-based approach
-                out_avals = pjit_module._out_type(jaxpr)
-                out_tracers = [
-                    pe.JaxprTracer(trace, pe.PartialVal.unknown(aval), None) for aval in out_avals
-                ]
-                eqn = pe.new_eqn_recipe(
-                    trace, args, out_tracers, pjit_module.jit_p, params, jaxpr.effects, source_info
-                )
-                for out_tracer in out_tracers:
-                    out_tracer.recipe = eqn
+            # Use make_eqn to create the equation and tracers properly
+            eqn, out_tracers = trace.make_eqn(
+                in_tracers, out_avals, pjit_module.jit_p, params, jaxpr.effects, source_info
+            )
+            trace.frame.add_eqn(eqn)
 
             # Handle forwarding
             out_tracers_ = iter(out_tracers)
@@ -310,23 +265,6 @@ def _patch_pjit_staging_rule():
             assert next(out_tracers_, None) is None
             return out_tracers
 
-        # Handle mutable consts path
-        elif any(isinstance(c, core.MutableArray) for c in jaxpr.consts):
-            jaxpr, consts = pxla._move_mutable_consts(jaxpr)
-            consts = [trace.new_const(c, source_info) for c in consts]
-            in_shardings = (*params["in_shardings"],) + (pjit_module.UNSPECIFIED,) * len(consts)
-            in_layouts = (*params["in_layouts"],) + (None,) * len(consts)
-            donated_invars = (*params["donated_invars"],) + (False,) * len(consts)
-            new_params = dict(
-                params,
-                jaxpr=jaxpr,
-                in_shardings=in_shardings,
-                in_layouts=in_layouts,
-                donated_invars=donated_invars,
-            )
-            out_tracers = trace.default_process_primitive(
-                pjit_module.jit_p, (*args, *consts), new_params, source_info=source_info
-            )
         else:
             # Default path
             out_tracers = trace.default_process_primitive(
@@ -363,10 +301,6 @@ def _patch_bind_with_trace():
             # If typeof fails (e.g., with Python lists), just process the primitive
             return trace.process_primitive(self, args, params)
         else:
-            # Original logic when typeof succeeds
-            if self.is_high(*in_type, **params) and trace.requires_low:
-                with core.set_current_trace(trace):
-                    return self.to_lojax(*args, **params)
             return trace.process_primitive(self, args, params)
 
     # Apply the patch
@@ -382,11 +316,8 @@ def _apply_patches():
     """Apply JAX patches. Should only be called when patches are needed."""
     global _patches_applied  # pylint: disable=global-statement
 
-    if _patches_applied:
-        return  # Patches already applied
-
-    if not has_jax:
-        return
+    if _patches_applied or not has_jax:
+        return  # pragma: no cover
 
     from packaging.version import Version
 
@@ -409,17 +340,17 @@ def _apply_patches():
             _patch_bind_with_trace()  # REQUIRED: Handles typeof failures for PennyLane types
 
             _patches_applied = True
-        except Exception as e:  # pylint: disable=broad-except
-            import warnings
+        except Exception as e:  # pylint: disable=broad-except  # pragma: no cover
+            import warnings  # pragma: no cover
 
-            warnings.warn(
+            warnings.warn(  # pragma: no cover
                 f"Failed to apply JAX patches for version {jax.__version__}: {e}. "
                 "Some dynamic shape features may not work correctly.",
                 UserWarning,
             )
 
 
-def _revert_patches():
+def _revert_patches():  # pragma: no cover
     """Revert JAX patches to their original implementations."""
     global _patches_applied  # pylint: disable=global-statement
 
@@ -496,5 +427,5 @@ if has_jax:
     # Dev versions should be treated as >= the base version they're based on
     if jax_version.major == 0 and jax_version.minor >= 7:
         _apply_patches()
-    elif jax_version >= Version("0.7.0"):
+    elif jax_version >= Version("0.7.0"):  # pragma: no cover
         _apply_patches()

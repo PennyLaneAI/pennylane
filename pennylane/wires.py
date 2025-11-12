@@ -67,17 +67,8 @@ def _process(wires):
         if hasattr(wires, "__class__") and "Literal" in wires.__class__.__name__:
             # Convert Literal to native Python type for processing
             wires = (int(wires) if isinstance(wires, (int, type(wires))) else wires,)
-        elif hasattr(wires, "ndim"):
-            # Standard JAX array
+        else:  # Standard JAX array
             wires = tuple(wires.tolist() if wires.ndim > 0 else (wires.item(),))
-        else:
-            # JAX tracer or other type - try to convert directly
-            try:
-                wires = tuple(wires.tolist() if hasattr(wires, "tolist") else (wires,))
-            except (AttributeError, TypeError):
-                # If all else fails, treat as single wire
-                wires = (wires,)
-                return wires
 
     try:
         # Use tuple conversion as a check for whether `wires` can be iterated over.
