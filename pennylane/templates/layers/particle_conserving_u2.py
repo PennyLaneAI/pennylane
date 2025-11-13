@@ -300,11 +300,11 @@ def _particle_conserving_u2_decomposition(weights: list, wires: WiresLike, init_
     def layers_loop(l):
 
         @for_loop(len(wires))
-        def wires_loop(j):
+        def rz_loop(j):
             wires_ = wires[j]
             RZ(weights[l, j], wires=wires_)
 
-        wires_loop()  # pylint: disable=no-value-for-parameter
+        rz_loop()  # pylint: disable=no-value-for-parameter
 
         @for_loop(len(nm_wires))
         def nm_loop(i):
