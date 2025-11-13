@@ -21,7 +21,6 @@ catalyst = pytest.importorskip("catalyst")
 
 # pylint: disable=wrong-import-position
 from catalyst.ftqc import mbqc_pipeline
-from catalyst.passes.xdsl_plugin import getXDSLPluginAbsolutePath
 
 import pennylane as qml
 from pennylane.compiler.python_compiler.transforms import (
@@ -489,7 +488,6 @@ class TestConvertToMBQCFormalismPass:
 
         @qml.qjit(
             target="mlir",
-            pipelines=mbqc_pipeline(),
             autograph=True,
         )
         @convert_to_mbqc_formalism_pass
@@ -519,15 +517,8 @@ class TestConvertToMBQCFormalismPass:
         """Test that the convert_to_mbqc_formalism_pass end to end on null.qubit."""
         dev = qml.device("null.qubit", wires=1000)
 
-        def loop_func(i):
-            qml.H(i)
-            qml.S(i)
-            RotXZX(0.1, 0.2, 0.3, wires=[i])
-            qml.RZ(phi=0.1, wires=[i])
-
         @qml.qjit(
             target="mlir",
-            pass_plugins=[getXDSLPluginAbsolutePath()],
             pipelines=mbqc_pipeline(),
             autograph=True,
         )
