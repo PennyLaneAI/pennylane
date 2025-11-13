@@ -13,11 +13,11 @@
 # limitations under the License.
 """File that defines the DAGBuilder abstract base class."""
 
-import abc
+from abc import ABC, abstractmethod
 from typing import Any
 
 
-class DAGBuilder(abc.ABC):
+class DAGBuilder(ABC):
     """An abstract base class for building Directed Acyclic Graphs (DAGs).
 
     This class provides a simple interface with three core methods (`add_node`, `add_edge` and `add_cluster`).
@@ -26,7 +26,7 @@ class DAGBuilder(abc.ABC):
     Outputting your graph can be done by overriding `render` and `to_string`.
     """
 
-    @abc.abstractmethod
+    @abstractmethod
     def add_node(
         self, node_id: str, node_label: str, parent_graph_id: str | None = None, **node_attrs: Any
     ) -> None:
@@ -41,7 +41,7 @@ class DAGBuilder(abc.ABC):
         """
         raise NotImplementedError
 
-    @abc.abstractmethod
+    @abstractmethod
     def add_edge(self, from_node_id: str, to_node_id: str, **edge_attrs: Any) -> None:
         """Add a single directed edge between nodes in the graph.
 
@@ -53,7 +53,7 @@ class DAGBuilder(abc.ABC):
         """
         raise NotImplementedError
 
-    @abc.abstractmethod
+    @abstractmethod
     def add_cluster(
         self,
         cluster_id: str,
@@ -72,7 +72,7 @@ class DAGBuilder(abc.ABC):
         """
         raise NotImplementedError
 
-    @abc.abstractmethod
+    @abstractmethod
     def render(self, output_filename: str) -> None:
         """Render the graph to a file.
 
@@ -85,7 +85,7 @@ class DAGBuilder(abc.ABC):
         """
         raise NotImplementedError
 
-    @abc.abstractmethod
+    @abstractmethod
     def to_string(self) -> str:
         """Render the graph as a string.
 
