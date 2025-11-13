@@ -203,7 +203,7 @@ class TestControlled:
             ctrl_op = qre.Controlled(op, ctrl_wires, ctrl_values)
             assert ctrl_op.resource_decomp(**ctrl_op.resource_params) == res
 
-        op = qre.QubitUnitary(num_wires=1)  # no default_adjoint_decomp defined
+        op = qre.QubitUnitary(num_wires=1)  # no default_controlled_decomp defined
         ctrl_op = qre.Controlled(op, num_ctrl_wires=3, num_zero_ctrl=2)
         expected_res = [
             GateCount(qre.resource_rep(qre.X), 4),
