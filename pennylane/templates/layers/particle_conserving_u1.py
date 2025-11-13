@@ -366,7 +366,7 @@ class ParticleConservingU1(Operation):
 
 def _particle_conserving_u1_resources(n_layers: int, num_wires: int):
     # number of pairs of even-indexed of wires
-    num_nm_wires = num_wires-1
+    num_nm_wires = num_wires - 1
 
     resources = {
         resource_rep(BasisEmbedding, num_wires=num_wires): 1,
