@@ -164,6 +164,7 @@ expected_ops_init_kwargs = {
         "in_qubits": (q1, q0),
         "in_ctrl_qubits": (q2,),
         "in_ctrl_values": (i,),
+        "adjoint": False,
     },
     "ProbsOp": {
         "operands": (obs, i, None),
