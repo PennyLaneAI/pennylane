@@ -116,7 +116,7 @@ class TestTemporaryAND:
         Validate the MCM-based decomposition of Adjoint(TemporaryAND).
         """
         sys_wires = [0, 1, 2]
-        work_wires = [3]  # ancilla for deferred measure
+        work_wires = [3]  # auxiliary qubit for deferred measure
         dev = qml.device("default.qubit", wires=sys_wires + work_wires)
 
         rules = qml.list_decomps("Adjoint(TemporaryAND)")
