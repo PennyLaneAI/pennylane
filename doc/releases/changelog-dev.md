@@ -91,6 +91,9 @@
   work wire and :class:`pennylane.TemporaryAND` operators to reduce the resources needed.
   [(#8549)](https://github.com/PennyLaneAI/pennylane/pull/8549)
 
+* The graph-based decomposition system now supports decomposition rules that contains mid-circuit measurements.
+  [(#8079)](https://github.com/PennyLaneAI/pennylane/pull/8079)
+
 <h3>Breaking changes 💔</h3>
 
 * Providing ``num_steps`` to :func:`pennylane.evolve`, :func:`pennylane.exp`, :class:`pennylane.ops.Evolution`,
