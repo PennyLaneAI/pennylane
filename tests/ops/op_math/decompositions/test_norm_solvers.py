@@ -37,13 +37,26 @@ class TestGCD:
     @pytest.mark.parametrize(
         "a, b, expected",
         [
-            (ZSqrtTwo(28, 0), ZSqrtTwo(12, 0), ZSqrtTwo(4, 0)),
-            (ZSqrtTwo(15, 0), ZSqrtTwo(25, 0), ZSqrtTwo(5, 0)),
-            # (ZOmega(d=81), ZOmega(d=63), ZOmega(d=9)),
-            # (ZOmega(d=144), ZOmega(d=108), ZOmega(d=36)),
+            (ZSqrtTwo(28), ZSqrtTwo(12), ZSqrtTwo(4)),
+            (ZSqrtTwo(15), ZSqrtTwo(25), ZSqrtTwo(5)),
+            (ZSqrtTwo(81), ZSqrtTwo(63), ZSqrtTwo(9)),
+            (ZSqrtTwo(144), ZSqrtTwo(108), ZSqrtTwo(36)),
         ],
     )
-    def test_gcd_zring(self, a, b, expected):
+    def test_gcd_zsqrt_two(self, a, b, expected):
+        """Test the GCD function."""
+        assert _gcd(a, b) == expected
+
+    @pytest.mark.parametrize(
+        "a, b, expected",
+        [
+            (ZOmega(d=28), ZOmega(d=12), ZOmega(d=4)),
+            (ZOmega(d=15), ZOmega(d=25), ZOmega(d=5)),
+            (ZOmega(d=81), ZOmega(d=63), ZOmega(d=9)),
+            (ZOmega(d=144), ZOmega(d=108), ZOmega(d=36)),
+        ],
+    )
+    def test_gcd_zomega(self, a, b, expected):
         """Test the GCD function."""
         assert _gcd(a, b) == expected
 
@@ -102,11 +115,11 @@ class TestFactorization:
     @pytest.mark.parametrize(
         "num, expected",
         [
-            (3, ZOmega(a=-1, c=-1, d=-1)),
+            (3, ZOmega(a=1, c=1, d=1)),
             (27, None),
-            (5, ZOmega(b=-1, d=2)),
+            (5, ZOmega(b=2, d=1)),
             (7, None),
-            (11, ZOmega(a=-1, c=-1, d=-3)),
+            (11, ZOmega(a=1, c=1, d=3)),
             (13, ZOmega(b=2, d=3)),
         ],
     )
@@ -165,10 +178,10 @@ class TestFactorization:
             (ZSqrtTwo(2, -1), ZOmega(a=1, b=-1, c=0, d=0)),
             (ZSqrtTwo(7, 0), None),
             (ZSqrtTwo(23, 0), None),
-            (ZSqrtTwo(7, 2), ZOmega(a=1, b=1, c=1, d=2)),
+            (ZSqrtTwo(7, 2), -ZOmega(a=1, b=1, c=1, d=2)),
             (ZSqrtTwo(17, 0), None),
             (ZSqrtTwo(5, 2), ZOmega(a=-2, b=-1, c=0, d=0)),
-            (ZSqrtTwo(13, 6), ZOmega(a=-3, b=0, c=0, d=2)),
+            (ZSqrtTwo(13, 6), ZOmega(a=3, b=0, c=0, d=-2)),
         ],
     )
     def test_solve_diophantine(self, num, expected):
@@ -176,3 +189,23 @@ class TestFactorization:
         assert _solve_diophantine(num) == expected
         if expected is not None:
             assert (expected.conj() * expected).to_sqrt_two() == num
+
+    @pytest.mark.parametrize(
+        "num, expected, factor",
+        [
+            (
+                ZOmega(-26687414, 10541729, 10614512, 40727366),
+                ZOmega(-2332111, -20133911, 30805761, -23432014),
+                52,
+            ),
+            (
+                ZOmega(-22067493351, 22078644868, 52098814989, 16270802723),
+                ZOmega(-21764478939, 70433513740, -5852668010, 4737137864),
+                73,
+            ),
+        ],
+    )
+    def test_solve_diophantine_large_number(self, num, expected, factor):
+        """Test `solve_diophantine` solves diophantine equation."""
+        xi = ZSqrtTwo(2**factor) - num.norm().to_sqrt_two()
+        assert _solve_diophantine(xi) == expected
