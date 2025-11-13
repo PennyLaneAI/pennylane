@@ -816,6 +816,8 @@ class PCPhaseOp(IRDLOperation):
 
     out_ctrl_qubits = var_result_def(QubitType)
 
+    traits = traits_def(NoMemoryEffect())
+
     # pylint: disable=too-many-arguments
     def __init__(
         self,
