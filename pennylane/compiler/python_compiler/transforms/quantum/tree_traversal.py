@@ -57,11 +57,13 @@ def initialize_memref_with_value(dest: SSAValue, value: SSAValue, size: int | SS
     )
     return (c0_index, c1_index, for_op)
 
+
 print_everthing = True
 print_everthing = False
 
+
 def print_mlir(op, msg="", should_print: bool = True):
-    """ Print the MLIR of an operation with a message. """
+    """Print the MLIR of an operation with a message."""
     should_print = print_everthing
     if should_print:
         printer = Printer()
@@ -78,7 +80,7 @@ def print_mlir(op, msg="", should_print: bool = True):
 
 
 def print_ssa_values(values, msg="SSA Values || ", should_print: bool = True):
-    """ Print SSA Values """
+    """Print SSA Values"""
     should_print = print_everthing
     if should_print:
         print(f"// {msg}")
@@ -87,7 +89,7 @@ def print_ssa_values(values, msg="SSA Values || ", should_print: bool = True):
 
 
 @dataclass
-class ProgramSegment: # pylint: disable=too-many-instance-attributes
+class ProgramSegment:  # pylint: disable=too-many-instance-attributes
     """A program segment and associated data."""
 
     ops: list[Operation] = field(default_factory=list)
@@ -171,7 +173,9 @@ class TreeTraversalPattern(RewritePattern):
         self.folded_result_type = builtin.MemRefType(builtin.f64, (builtin.DYNAMIC_INDEX,))
 
     @op_type_rewrite_pattern
-    def match_and_rewrite(self, func_op: func.FuncOp, rewriter: PatternRewriter):  # pylint: disable=arguments-differ
+    def match_and_rewrite(
+        self, func_op: func.FuncOp, rewriter: PatternRewriter
+    ):  # pylint: disable=arguments-differ
         """Transform a quantum function (qnode) to perform tree-traversal simulation."""
         self.original_func_op = func_op
 
@@ -533,9 +537,10 @@ class TreeTraversalPattern(RewritePattern):
                     if isinstance(op, quantum.MeasureOp):
                         op.operands = (old_mcm_operands,)
                         rewriter.notify_op_modified(op)
+                where_to_move_real_mcm.detach()
+                where_to_move_real_mcm.erase()
             else:
                 real_mcm_op.erase()
-
 
         # if segment_change:
         #     print_mlir(new_segment, msg=f"After additional transform for segment {segment.depth}")
@@ -1582,7 +1587,9 @@ class IfOperatorPartitioningPass(RewritePattern):
     IfOpWithDepth = Tuple[scf.IfOp, int]
 
     @op_type_rewrite_pattern
-    def match_and_rewrite(self, op: func.FuncOp, rewriter: PatternRewriter) -> None:  # pylint: disable=arguments-differ
+    def match_and_rewrite(
+        self, op: func.FuncOp, rewriter: PatternRewriter
+    ) -> None:  # pylint: disable=arguments-differ
         """Partition the if operation into separate branches for each operator."""
 
         self.original_func_op = op
@@ -2013,47 +2020,69 @@ class IfOperatorPartitioningPass(RewritePattern):
 
             # Process true region
             true_region = op.true_region
+            have_mcm_nested_if_op = False
             for inner_op in true_region.ops:
-                if isinstance(inner_op, scf.IfOp):
-                    have_nested_if_ops = self.looking_for_nested_if_ops(inner_op)
 
-                    # Recursively split deeper nested IfOps first
-                    if have_nested_if_ops:
-                        self.split_nested_if_ops(inner_op, rewriter, go_deeper=True)
-                        self.split_if_op(inner_op, rewriter)
-                    # Deepest level, split directly
-                    if not have_nested_if_ops:
-                        self.split_if_op(inner_op, rewriter)
+                if isinstance(inner_op, scf.IfOp):
+
+                    have_mcm_nested_if_op = self.detect_mcm_in_if_ops(inner_op)
+                    self.look_and_split_if_ops(inner_op, rewriter)
+
+                if have_mcm_nested_if_op and isinstance(
+                    inner_op, (quantum.CustomOp, quantum.MeasureOp)
+                ):
+                    raise ValueError("Not supported: CustomOp after MCM nested IfOp.")
 
             # Process false region
             false_region = op.false_region
+            have_mcm_nested_if_op = False
             for inner_op in false_region.ops:
                 if isinstance(inner_op, scf.IfOp):
-                    have_nested_if_ops = self.looking_for_nested_if_ops(inner_op)
 
-                    # Recursively split deeper nested IfOps first
-                    if have_nested_if_ops:
-                        self.split_nested_if_ops(inner_op, rewriter, go_deeper=True)
-                        self.split_if_op(inner_op, rewriter)
-                    # Deepest level, split directly
-                    if not have_nested_if_ops:
-                        self.split_if_op(inner_op, rewriter)
+                    have_mcm_nested_if_op = self.detect_mcm_in_if_ops(inner_op)
+
+                    self.look_and_split_if_ops(inner_op, rewriter)
+
+                if have_mcm_nested_if_op and isinstance(
+                    inner_op, (quantum.CustomOp, quantum.MeasureOp)
+                ):
+                    raise ValueError(
+                        "Not supported: CustomOp after nested IfOp with mid-circuit measurement."
+                    )
             return
 
         # Initial call to split nested IfOps in the function
         op_walk = op.walk()
         for current_op in op_walk:
             if isinstance(current_op, scf.IfOp) and self.detect_mcm_in_if_ops(current_op):
-                # if isinstance(current_op, scf.IfOp):
+                self.look_and_split_if_ops(current_op, rewriter)
 
-                have_nested_if_ops = self.looking_for_nested_if_ops(current_op)
+    def look_and_split_if_ops(self, current_op: func.FuncOp, rewriter: PatternRewriter) -> None:
+        """Look for scf.IfOps and split them if they contain measurement-controlled operations."""
 
-                if have_nested_if_ops:
-                    self.split_nested_if_ops(current_op, rewriter, go_deeper=True)
-                    self.split_if_op(current_op, rewriter)
+        mcm_counts = self.count_mcm_in_if_op(current_op)
+        assert mcm_counts[0] < 2 and mcm_counts[1] < 2, "Not support IfOp with more than 2 mcm"
 
-                if not have_nested_if_ops:
-                    self.split_if_op(current_op, rewriter)
+        have_nested_if_ops = self.looking_for_nested_if_ops(current_op)
+
+        # Recursively split deeper nested IfOps first
+        if have_nested_if_ops:
+            self.split_nested_if_ops(current_op, rewriter, go_deeper=True)
+            self.split_if_op(current_op, rewriter)
+        # Deepest level, split directly
+        if not have_nested_if_ops:
+            self.split_if_op(current_op, rewriter)
+
+    def count_mcm_in_if_op(self, op: scf.IfOp) -> list[int]:
+        count_true = 0
+        for inner_op in op.true_region.ops:
+            if isinstance(inner_op, quantum.MeasureOp):
+                count_true += 1
+        count_false = 0
+        for inner_op in op.false_region.ops:
+            if isinstance(inner_op, quantum.MeasureOp):
+                count_false += 1
+        return [count_true, count_false]
 
     def looking_for_nested_if_ops(self, op: scf.IfOp) -> bool:
         for inner_op in op.true_region.ops:
@@ -2319,7 +2348,9 @@ class UnrollLoopPattern(RewritePattern):
         """Initialize UnrollLoopPattern."""
         self.needs_unroll: bool = False
 
-    def match_and_rewrite(self, op: scf.ForOp, rewriter: PatternRewriter) -> None:  # pylint: disable=arguments-differ
+    def match_and_rewrite(
+        self, op: scf.ForOp, rewriter: PatternRewriter
+    ) -> None:  # pylint: disable=arguments-differ
         """Unroll nested scf.ForOps into separate branches for each operator."""
 
         self.needs_unroll = self.detect_mcm_in_loop_ops(op)
@@ -2470,7 +2501,9 @@ class UnrollLoopPattern(RewritePattern):
             )
             i_op.result.name_hint = i_arg.name_hint
 
-            value_mapper: dict[SSAValue, SSAValue] = dict(zip(block_iter_args, iter_args, strict=True))
+            value_mapper: dict[SSAValue, SSAValue] = dict(
+                zip(block_iter_args, iter_args, strict=True)
+            )
             value_mapper[i_arg] = i_op.result
 
             for inner_op in op.body.block.ops:
