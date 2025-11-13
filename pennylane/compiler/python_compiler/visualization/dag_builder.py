@@ -20,7 +20,8 @@ from typing import Any
 class DAGBuilder(abc.ABC):
     """An abstract base class for building Directed Acyclic Graphs (DAGs).
 
-    This class provides a simple interface with three core methods (`add_node`, `add_edge` and `add_cluster`). You can override these methods to implement any backend, like `pydot` or `graphviz` or even `matplotlib`.
+    This class provides a simple interface with three core methods (`add_node`, `add_edge` and `add_cluster`).
+    You can override these methods to implement any backend, like `pydot` or `graphviz` or even `matplotlib`.
 
     Outputting your graph can be done by overriding `render` and `to_string`.
     """
