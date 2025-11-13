@@ -107,7 +107,7 @@ class ResourcesResult:
         # This is the number of allocations WITHIN this region, should be scaled
         self.num_wires *= scalar
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"ResourcesResult(device_name: {self.device_name}, num_wires: {self.num_wires}, operations: {self.quantum_operations}, measurements: {self.quantum_measurements}, PPMs: {self.ppm_operations})"
 
     __str__ = __repr__

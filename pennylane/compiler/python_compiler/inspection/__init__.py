@@ -16,10 +16,17 @@ Visualization functions for PennyLane-xDSL transformations.
 """
 
 
-from .specs_collector import specs_collect
+from .specs_collector import specs_collect, ResourcesResult
 from .specs import mlir_specs
 from .collector import QMLCollector
 from .draw import draw
 from .mlir_graph import generate_mlir_graph
 
-__all__ = ["QMLCollector", "draw", "generate_mlir_graph", "specs_collect", "mlir_specs"]
+__all__ = [
+    "QMLCollector",
+    "draw",
+    "generate_mlir_graph",
+    "specs_collect",
+    "ResourcesResult",
+    "mlir_specs",
+]
