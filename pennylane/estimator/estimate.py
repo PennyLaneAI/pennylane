@@ -434,7 +434,22 @@ def _update_counts_from_compressed_res_op(
 
     params = {key: value for key, value in comp_res_op.params.items() if value is not None}
     filtered_kwargs = {key: value for key, value in kwargs.items() if key not in params}
-    resource_decomp = decomp_func(**params, **filtered_kwargs)
+
+    op_type = comp_res_op.op_type
+    if op_type in (Adjoint, Controlled, Pow):
+        base_cmpr_op = params.pop("base_cmpr_op")
+
+        target_params = base_cmpr_op.params.copy()
+        for k, v in filtered_kwargs.items():
+            if k in target_params and target_params[k] is None:
+                target_params[k] = v
+
+        params["target_resource_params"] = target_params
+
+        resource_decomp = decomp_func(**params)
+    else:
+        resource_decomp = decomp_func(**params, **filtered_kwargs)
+
     qubit_alloc_sum = _sum_allocated_wires(resource_decomp)
 
     for action in resource_decomp:
@@ -517,20 +532,24 @@ def _get_decomposition(
     op_type = comp_res_op.op_type
 
     _SYMBOLIC_DECOMP_MAP = {
-        Adjoint: "_adj_custom_decomps",
-        Controlled: "_ctrl_custom_decomps",
-        Pow: "_pow_custom_decomps",
+        Adjoint: ("_adj_custom_decomps", "adjoint_resource_decomp"),
+        Controlled: ("_ctrl_custom_decomps", "controlled_resource_decomp"),
+        Pow: ("_pow_custom_decomps", "pow_resource_decomp"),
     }
 
     lookup_op_type = op_type
     custom_decomp_dict = config.custom_decomps
+    decomp_func = op_type.resource_decomp
 
     if op_type in _SYMBOLIC_DECOMP_MAP:
-        decomp_attr_name = _SYMBOLIC_DECOMP_MAP[op_type]
+        decomp_attr_name, decomp_method_name = _SYMBOLIC_DECOMP_MAP[op_type]
         custom_decomp_dict = getattr(config, decomp_attr_name)
         lookup_op_type = comp_res_op.params["base_cmpr_op"].op_type
+        decomp_func = custom_decomp_dict.get(
+            lookup_op_type, getattr(lookup_op_type, decomp_method_name)
+        )
 
     kwargs = config.resource_op_precisions.get(lookup_op_type, {})
-    decomp_func = custom_decomp_dict.get(lookup_op_type, op_type.resource_decomp)
+    decomp_func = custom_decomp_dict.get(lookup_op_type, decomp_func)
 
     return decomp_func, kwargs
