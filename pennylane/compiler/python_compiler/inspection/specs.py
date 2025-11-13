@@ -17,34 +17,18 @@
 from __future__ import annotations
 
 import warnings
-from functools import wraps
 from typing import TYPE_CHECKING, Literal
-
-from catalyst.jit import qjit
-from catalyst.passes.xdsl_plugin import getXDSLPluginAbsolutePath
 
 from ..compiler import Compiler
 from .specs_collector import ResourcesResult, specs_collect
+from .xdsl_conversion import get_mlir_module
 
 if TYPE_CHECKING:
     from catalyst.jit import QJIT
-    from xdsl.dialects.builtin import ModuleOp
 
 
 class StopCompilation(Exception):
     """Custom exception to stop compilation early when the desired specs level is reached."""
-
-
-# TODO: This function is identically defined within draw.py
-def _get_mlir_module(qnode: QJIT, args, kwargs) -> ModuleOp:
-    """Ensure the QNode is compiled and return its MLIR module."""
-    if hasattr(qnode, "mlir_module") and qnode.mlir_module is not None:
-        return qnode.mlir_module
-
-    func = getattr(qnode, "user_function", qnode)
-    jitted_qnode = qjit(pass_plugins=[getXDSLPluginAbsolutePath()])(func)
-    jitted_qnode.jit_compile(args, **kwargs)
-    return jitted_qnode.mlir_module
 
 
 def mlir_specs(
@@ -90,7 +74,7 @@ def mlir_specs(
         if max_level is not None and pass_level >= max_level:
             raise StopCompilation("Stopping compilation after reaching max specs level.")
 
-    mlir_module = _get_mlir_module(qnode, args, kwargs)
+    mlir_module = get_mlir_module(qnode, args, kwargs)
     try:
         Compiler.run(mlir_module, callback=_specs_callback)
     except StopCompilation:
