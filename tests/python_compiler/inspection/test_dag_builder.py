@@ -16,7 +16,7 @@
 from typing import Any
 
 import pytest
-
+xdsl = pytest.importorskip("xdsl")
 from pennylane.compiler.python_compiler.visualization.dag_builder import DAGBuilder
 
 
