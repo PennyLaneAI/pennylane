@@ -73,7 +73,7 @@ class DAGBuilder(abc.ABC):
 
     @abc.abstractmethod
     def render(self, output_filename: str) -> None:
-        """Render the graph to a file
+        """Render the graph to a file.
 
         The implementation should ideally infer the output format
         (e.g., 'png', 'svg') from this filename's extension.
