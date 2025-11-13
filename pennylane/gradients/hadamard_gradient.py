@@ -26,6 +26,7 @@ from pennylane.devices.preprocess import decompose
 from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.measurements import ProbabilityMP, expval
 from pennylane.operation import Operator
+from pennylane.ops import Sum
 from pennylane.pauli import PauliWord, pauli_decompose
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import split_to_single_terms
@@ -558,7 +559,12 @@ def _quantum_automatic_differentiation(tape, trainable_param_idx, aux_wire) -> t
     trainable_op.base.compute_grouping()  # Note: only works for Hamiltonians made exclusively of Paulis
     expectations_shots = len(trainable_op.base.grouping_indices)
 
-    standard = expectations_shots * len(generators) <= expectations_shots * len(observables)
+    observable_op = Sum(*observables)
+
+    observable_op.compute_grouping()
+    observables_shots = len(observable_op.grouping_indices)
+
+    standard = observables_shots * len(generators) <= expectations_shots * len(observables)
 
     if direct:
         if standard:

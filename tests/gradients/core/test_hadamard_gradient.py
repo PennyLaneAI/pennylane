@@ -409,7 +409,6 @@ class TestDifferentModes:
             expected = 1 / np.sqrt(2) * (1.0 - 2.0) + 1 / np.sqrt(2) * (3.0 - 4.0)
             assert qml.math.allclose(out, expected)
 
-    # TODO: paramerize with hamiltonians, wires
     def test_automatic_mode(self, mocker):
         """Test the automatic mode dispatches the correct modes for the scenario."""
 
@@ -431,30 +430,30 @@ class TestDifferentModes:
         qml.gradients.hadamard_grad(circuit, mode="auto")(t)
 
         assert standard.call_count == 0
-        assert direct.call_count == 0
+        assert direct.call_count == 1
         assert reverse.call_count == 0
-        assert reversed_direct.call_count == 1
+        assert reversed_direct.call_count == 0
 
         qml.gradients.hadamard_grad(circuit, aux_wire=2, mode="auto")(t)
 
-        assert standard.call_count == 0
-        assert direct.call_count == 0
-        assert reverse.call_count == 1
-        assert reversed_direct.call_count == 1
+        assert standard.call_count == 1
+        assert direct.call_count == 1
+        assert reverse.call_count == 0
+        assert reversed_direct.call_count == 0
 
         @qml.qnode(dev)
         def second_circuit(x):
-            qml.evolve(qml.X(0) @ qml.X(1) + qml.Z(0) @ qml.Z(1), x)
-            return qml.expval(qml.Z(0) @ qml.X(1) + qml.Y(0) + qml.X(0) @ qml.Z(1) + qml.Y(1))
+            qml.evolve(qml.X(0) @ qml.X(1) + qml.Y(2) + qml.Z(0) @ qml.Z(1), x)
+            return qml.expval(qml.Z(0) @ qml.X(1) + qml.Y(0) + qml.X(0) @ qml.Z(1))
 
         qml.gradients.hadamard_grad(second_circuit, mode="auto")(t)
 
-        assert standard.call_count == 0
+        assert standard.call_count == 1
         assert direct.call_count == 1
-        assert reverse.call_count == 1
+        assert reverse.call_count == 0
         assert reversed_direct.call_count == 1
 
-        qml.gradients.hadamard_grad(second_circuit, aux_wire=2, mode="auto")(t)
+        qml.gradients.hadamard_grad(second_circuit, aux_wire=3, mode="auto")(t)
 
         assert standard.call_count == 1
         assert direct.call_count == 1
