@@ -28,12 +28,7 @@ from pennylane.ops.qubit.matrix_ops import _walsh_hadamard_transform
 from .pauli_arithmetic import I, PauliSentence, PauliWord, X, Y, Z, op_map
 from .utils import is_pauli_word
 
-try:
-    import scipy.sparse as sp
-
-    SCIPY_AVAILABLE = True
-except ImportError:
-    SCIPY_AVAILABLE = False
+import scipy.sparse as sp
 
 
 def _generalized_pauli_decompose(  # pylint: disable=too-many-branches
@@ -145,7 +140,7 @@ def _generalized_pauli_decompose(  # pylint: disable=too-many-branches
         [X(0)]
 
     """
-    if SCIPY_AVAILABLE and sp.issparse(matrix):
+    if sp.issparse(matrix):
         return _generalized_pauli_decompose_sparse(
             matrix,
             hide_identity=hide_identity,
@@ -279,7 +274,6 @@ def _generalized_pauli_decompose_sparse(  # pylint: disable=too-many-statements,
             lists of ``(pauli_char, wire)`` pairs (if ``pauli=True``).
 
     Raises:
-        RuntimeError: If SciPy is not available.
         ValueError: If the input has the wrong shape (not square or not a power of two when
             ``padding=False``), or if the matrix is empty.
 
@@ -295,9 +289,6 @@ def _generalized_pauli_decompose_sparse(  # pylint: disable=too-many-statements,
         >>> terms
         [X(0)]
     """
-    if not SCIPY_AVAILABLE:
-        raise RuntimeError("SciPy is required for sparse Pauli decomposition.")
-
     sparse_matrix = sp.coo_matrix(matrix)
     sparse_matrix.sum_duplicates()
     shape = sparse_matrix.shape
@@ -490,7 +481,7 @@ def pauli_decompose(
         1.0 * (Z(0) @ Z(1))
 
     """
-    is_sparse = SCIPY_AVAILABLE and sp.issparse(H)
+    is_sparse = sp.issparse(H)
     shape = H.shape if is_sparse else qml.math.shape(H)
     n = int(math.log2(shape[0])) if is_sparse else int(qml.math.log2(shape[0]))
     N = 2**n
