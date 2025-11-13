@@ -275,6 +275,19 @@ class TestExecutionConfig:
 class TestMCMConfig:
     """Tests for the MCMConfig class."""
 
+    @pytest.mark.parametrize("mcm_method", [None, "deferred"])
+    @pytest.mark.parametrize("postselect_mode", [None, "hw-like"])
+    def test_repr(self, mcm_method, postselect_mode):
+        mcm_config = MCMConfig(mcm_method, postselect_mode)
+
+        output_repr = repr(mcm_config)
+        expected_mcm_method = "'deferred'" if mcm_method else None
+        expected_postselect_mode = "'hw-like'" if postselect_mode else None
+        assert (
+            output_repr
+            == f"MCMConfig(mcm_method={expected_mcm_method}, postselect_mode={expected_postselect_mode})"
+        )
+
     def test_default_values(self):
         """Tests that the default values are as expected."""
         mcm_config = MCMConfig()
