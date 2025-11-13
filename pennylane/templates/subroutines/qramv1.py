@@ -85,10 +85,12 @@ class BBQRAM(qml.operation.Operation):
         portR_wires: Sequence[int],
         # ==
         *,
+        # === TODO: remove?
         mode: str = "quantum",
         select_value: Optional[int] = None,
         qram_value: Optional[int] = None,
         id: Optional[str] = None,
+        # ===
     ):
         if not bitstrings:
             raise ValueError("'bitstrings' cannot be empty.")
