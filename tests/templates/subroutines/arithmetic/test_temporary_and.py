@@ -120,7 +120,7 @@ class TestTemporaryAND:
         work_wires = [3]  # auxiliary qubit for deferred measure
         dev = qml.device("default.qubit", wires=sys_wires + work_wires)
 
-        @qml.qnode(dev, interface=None)
+        @qml.qnode(dev)
         def circuit(a, b):
             qml.BasisState(qml.math.array([a, b, 0], dtype=int), wires=sys_wires)
             qml.TemporaryAND(wires=sys_wires, control_values=control_values)
