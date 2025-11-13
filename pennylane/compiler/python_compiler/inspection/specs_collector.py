@@ -325,3 +325,5 @@ def specs_collect(module) -> ResourcesResult:
         resources.merge_with(_collect_region(func_op.body))
 
     return resources
+
+# FIXME: Remove this line, just trying to cause a merge conflict for testing
