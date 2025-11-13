@@ -254,6 +254,35 @@ class TestQSVT:
         for rule in qml.list_decomps(qml.QSVT):
             _test_decomposition_rule(op, rule)
 
+    @pytest.mark.parametrize(
+        ("UA", "projectors"),
+        [
+            (
+                qml.BlockEncode([[0.1, 0.2], [0.3, 0.4]], wires=[0, 1]),
+                [qml.PCPhase(0.5, dim=2, wires=[0, 1]), qml.PCPhase(0.5, dim=2, wires=[0, 1])],
+            ),
+            (
+                qml.BlockEncode([[0.3, 0.1], [0.2, 0.9]], wires=[0, 1]),
+                [qml.PCPhase(0.5, dim=2, wires=[0, 1]), qml.PCPhase(0.3, dim=2, wires=[0, 1])],
+            ),
+            (
+                qml.Hadamard(wires=0),
+                [qml.RZ(-2 * theta, wires=0) for theta in [1.23, -0.5, 4]],
+            ),
+        ],
+    )
+    def test_decomposition(self, UA, projectors):
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.QSVT.compute_decomposition(UA=UA, projectors=projectors)
+        tape = qml.tape.QuantumScript.from_queue(q)
+
+        # Tests that the decomposition produces the right matrix
+        op_matrix = qml.QSVT.compute_matrix(UA=UA, projectors=projectors)
+        decomp_matrix = qml.matrix(tape, wire_order=tape.wires)
+        assert qml.math.allclose(
+            op_matrix, decomp_matrix
+        ), "decomposition must produce the same matrix as the operator."
+
     def test_wire_order(self):
         """Test that the wire order is preserved."""
 

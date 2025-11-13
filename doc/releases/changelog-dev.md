@@ -12,18 +12,42 @@
 
 * Added a :func:`~pennylane.measurements.pauli_measure` that takes a Pauli product measurement.
   [(#8461)](https://github.com/PennyLaneAI/pennylane/pull/8461)
+  [(#8631)](https://github.com/PennyLaneAI/pennylane/pull/8631)
 
 <h3>Improvements 🛠</h3>
+
+* `qml.for_loop` will now fall back to a standard Python `for` loop if capturing a condensed, structured loop fails
+  with program capture enabled.
+  [(#8615)](https://github.com/PennyLaneAI/pennylane/pull/8615)
+
+* The `~.BasisRotation` graph decomposition was re-written in a qjit friendly way with PennyLane control flow.
+  [(#8560)](https://github.com/PennyLaneAI/pennylane/pull/8560)
+  [(#8608)](https://github.com/PennyLaneAI/pennylane/pull/8608)
+  [(#8620)](https://github.com/PennyLaneAI/pennylane/pull/8620)
 
 * The new graph based decompositions system enabled via :func:`~.decomposition.enable_graph` now supports the following
   additional templates.
   [(#8520)](https://github.com/PennyLaneAI/pennylane/pull/8520)
   [(#8515)](https://github.com/PennyLaneAI/pennylane/pull/8515)
   [(#8516)](https://github.com/PennyLaneAI/pennylane/pull/8516)
-
+  [(#8555)](https://github.com/PennyLaneAI/pennylane/pull/8555)
+  [(#8558)](https://github.com/PennyLaneAI/pennylane/pull/8558)
+  [(#8538)](https://github.com/PennyLaneAI/pennylane/pull/8538)  
+  [(#8534)](https://github.com/PennyLaneAI/pennylane/pull/8534)
+  [(#8582)](https://github.com/PennyLaneAI/pennylane/pull/8582)
+  [(#8543)](https://github.com/PennyLaneAI/pennylane/pull/8543)
+  [(#8554)](https://github.com/PennyLaneAI/pennylane/pull/8554)
+  
   - :class:`~.QSVT`
   - :class:`~.AmplitudeEmbedding`
   - :class:`~.AllSinglesDoubles`
+  - :class:`~.SimplifiedTwoDesign`
+  - :class:`~.GateFabric`
+  - :class:`~.AngleEmbedding`
+  - :class:`~.IQPEmbedding`
+  - :class:`~.kUpCCGSD`
+  - :class:`~.QAOAEmbedding`
+  - :class:`~.BasicEntanglerLayers`
 
 * A new `qml.compiler.python_compiler.utils` submodule has been added, containing general-purpose utilities for
   working with xDSL. This includes a function that extracts the concrete value of scalar, constant SSA values.
@@ -54,6 +78,16 @@
   [(#8464)](https://github.com/PennyLaneAI/pennylane/pull/8464)
 
 * Wires can be specified via `range` with program capture and autograph.
+  [(#8500)](https://github.com/PennyLaneAI/pennylane/pull/8500)
+
+* The :func:`~pennylane.transforms.decompose` transform no longer raises an error if both `gate_set` and
+  `stopping_condition` are provided, or if `gate_set` is a dictionary, when the new graph-based decomposition
+  system is disabled.
+  [(#8532)](https://github.com/PennyLaneAI/pennylane/pull/8532)
+
+* A new decomposition has been added to :class:`pennylane.Toffoli`. This decomposition uses one
+  work wire and :class:`pennylane.TemporaryAND` operators to reduce the resources needed.
+  [(#8549)](https://github.com/PennyLaneAI/pennylane/pull/8549)
 
 <h3>Breaking changes 💔</h3>
 
@@ -147,13 +181,13 @@
   and is being made private, as it is an utility for tree-traversal.
   [(#8466)](https://github.com/PennyLaneAI/pennylane/pull/8466)
 
-* The ``pennylane.operation.Operator.is_hermitian`` property has been deprecated and renamed 
-  to ``pennylane.operation.Operator.is_verified_hermitian`` as it better reflects the functionality of this property. 
-  The deprecated access through ``is_hermitian`` will be removed in PennyLane v0.45. 
-  Alternatively, consider using the ``pennylane.is_hermitian`` function instead as it provides a more reliable check for hermiticity. 
+* The ``pennylane.operation.Operator.is_hermitian`` property has been deprecated and renamed
+  to ``pennylane.operation.Operator.is_verified_hermitian`` as it better reflects the functionality of this property.
+  The deprecated access through ``is_hermitian`` will be removed in PennyLane v0.45.
+  Alternatively, consider using the ``pennylane.is_hermitian`` function instead as it provides a more reliable check for hermiticity.
   Please be aware that it comes with a higher computational cost.
   [(#8494)](https://github.com/PennyLaneAI/pennylane/pull/8494)
-  
+
 * Access to the follow functions and classes from the ``pennylane.resources`` module are deprecated. Instead, these functions must be imported from the ``pennylane.estimator`` module.
   [(#8484)](https://github.com/PennyLaneAI/pennylane/pull/8484)
 
@@ -171,7 +205,51 @@
   or :func:`~pennylane.transforms.defer_measurements` in its preprocess transforms if necessary.
   [(#8467)](https://github.com/PennyLaneAI/pennylane/pull/8467)
 
+* Passing a function to the ``gate_set`` argument in the :func:`~pennylane.transforms.decompose` transform
+  is deprecated. The ``gate_set`` argument expects a static iterable of operator type and/or operator names,
+  and the function should be passed to the ``stopping_condition`` argument instead.
+  [(#8533)](https://github.com/PennyLaneAI/pennylane/pull/8533)
+
+  The example below illustrates how you can provide a function as the ``stopping_condition`` in addition to providing a 
+  ``gate_set``. The decomposition of each operator will then stop once it reaches the gates in the ``gate_set`` or the 
+  ``stopping_condition`` is satisfied.
+
+  ```python
+  import pennylane as qml
+  from functools import partial
+  
+  @partial(qml.transforms.decompose, gate_set={"H", "T", "CNOT"}, stopping_condition=lambda op: len(op.wires) <= 2)
+  @qml.qnode(qml.device("default.qubit"))
+  def circuit():
+      qml.Hadamard(wires=[0])
+      qml.Toffoli(wires=[0,1,2])
+      return qml.expval(qml.Z(0))
+  ```
+  
+  ```pycon
+  >>> print(qml.draw(circuit)())
+  0: ──H────────╭●───────────╭●────╭●──T──╭●─┤  <Z>
+  1: ────╭●─────│─────╭●─────│───T─╰X──T†─╰X─┤
+  2: ──H─╰X──T†─╰X──T─╰X──T†─╰X──T──H────────┤
+  ```
+
 <h3>Internal changes ⚙️</h3>
+
+* In program capture, transforms now have a single transform primitive that have a `transform` param that stores
+  the `TransformDispatcher`. Before, each transform had its own primitive stored on the 
+  `TransformDispatcher._primitive` private property. It proved difficult to keep maintaining dispatch behaviour
+  for every single transform.
+  [(#8576)](https://github.com/PennyLaneAI/pennylane/pull/8576)
+
+* Updated documentation check workflow to run on pull requests on `v[0-9]+\.[0-9]+\.[0-9]+-docs` branches.
+  [(#8590)](https://github.com/PennyLaneAI/pennylane/pull/8590)
+  
+* When program capture is enabled, there is no longer caching of the jaxpr on the QNode.
+  [(#8629)](https://github.com/PennyLaneAI/pennylane/pull/8629)
+
+* The `grad` and `jacobian` primitives now store the function under `fn`. There is also now a single `jacobian_p`
+  primitive for use in program capture.
+  [(#8357)](https://github.com/PennyLaneAI/pennylane/pull/8357)
 
 * Fix all NumPy 1.X `DeprecationWarnings` in our source code.
   [(#8497)](https://github.com/PennyLaneAI/pennylane/pull/8497)
@@ -214,33 +292,83 @@
   been modified to avoid using `numpy.matrix` as this function is deprecated.
   [(#8523)](https://github.com/PennyLaneAI/pennylane/pull/8523)
 
-* The `ftqc` module now includes dummy transforms for several Catalyst/MLIR passes (`to-ppr`, `commute-ppr`, `merge-ppr-ppm`, `pprm-to-mbqc`
-  and `reduce-t-depth`), to allow them to be captured as primitives in PLxPR and mapped to the MLIR passes in Catalyst. This enables using the passes with the unified compiler and program capture.
+* The `ftqc` module now includes dummy transforms for several Catalyst/MLIR passes (`to-ppr`, `commute-ppr`, `merge-ppr-ppm`,
+  `decompose-clifford-ppr`, `decompose-non-clifford-ppr`, `ppr-to-ppm`, `ppr-to-mbqc` and `reduce-t-depth`), to allow them to
+  be captured as primitives in PLxPR and mapped to the MLIR passes in Catalyst. This enables using the passes with the unified
+  compiler and program capture.
   [(#8519)](https://github.com/PennyLaneAI/pennylane/pull/8519)
+  [(#8544)](https://github.com/PennyLaneAI/pennylane/pull/8544)
 
 * The decompositions for several templates have been updated to use
   :class:`~.ops.op_math.ChangeOpBasis`, which makes their decompositions more resource efficient
   by eliminating unnecessary controlled operations. The templates include :class:`~.PhaseAdder`,
   :class:`~.TemporaryAND`, :class:`~.QSVT`, and :class:`~.SelectPauliRot`.
   [(#8490)](https://github.com/PennyLaneAI/pennylane/pull/8490)
+  [(#8577)](https://github.com/PennyLaneAI/pennylane/pull/8577)
+
+* The constant to convert the length unit Bohr to Angstrom in ``qml.qchem`` is updated to use scipy
+  constants.
+  [(#8537)](https://github.com/PennyLaneAI/pennylane/pull/8537)
 
 * Solovay-Kitaev decomposition using the :func:`~.clifford_t_decompostion` transform
   with ``method="sk"`` or directly via :func:`~.ops.sk_decomposition` now raises a more
   informative ``RuntimeError`` when used with JAX-JIT or :func:`~.qjit`.
   [(#8489)](https://github.com/PennyLaneAI/pennylane/pull/8489)
 
+* The `is_xdsl_pass` function has been added to the `pennylane.compiler.python_compiler.pass_api` module.
+  This function checks if a pass name corresponds to an xDSL implemented pass.
+  [(#8572)](https://github.com/PennyLaneAI/pennylane/pull/8572)
+
+* The :func:`~pennylane.compiler.python_compiler.Compiler.run` method now accepts a string as input,
+  which is parsed and transformed with xDSL.
+  [(#8587)](https://github.com/PennyLaneAI/pennylane/pull/8587)
+
 <h3>Documentation 📝</h3>
+
+* Added a "Unified Compiler Cookbook" RST file, along with tutorials, to ``qml.compiler.python_compiler`,
+  which provides a quickstart guide for getting started with xDSL and its integration with PennyLane and
+  Catalyst.
+  [(#8571)](https://github.com/PennyLaneAI/pennylane/pull/8571)
+
+* The documentation of ``qml.transforms.rz_phase_gradient`` has been updated with respect to the
+  sign convention of phase gradient states, how it prepares the phase gradient state in the code
+  example, and the verification of the code example result.
 
 * The code example in the documentation for ``qml.decomposition.register_resources`` has been
   updated to adhere to renamed keyword arguments and default behaviour of ``max_work_wires``.
+  [(#8536)](https://github.com/PennyLaneAI/pennylane/pull/8536)
 
 * The docstring for ``qml.device`` has been updated to include a section on custom decompositions,
+  and a warning about the removal of the ``custom_decomps`` kwarg in v0.45. Additionally, the page
+  :doc:`Building a plugin <../development/plugins>` now includes instructions on using
+  the :func:`~pennylane.devices.preprocess.decompose` transform for device-level decompositions.
+  The documentation for :doc:`Compiling circuits <../introduction/compiling_circuits>` has also been
+  updated with a warning message about ``custom_decomps`` future removal.
+  [(#8492)](https://github.com/PennyLaneAI/pennylane/pull/8492)
+  [(#8564)](https://github.com/PennyLaneAI/pennylane/pull/8564)
+
+A warning message has been added to :doc:`Building a plugin <../development/plugins>`
+  docstring for ``qml.device`` has been updated to include a section on custom decompositions,
   and a warning about the removal of the ``custom_decomps`` kwarg in v0.44. Additionally, the page
   :doc:`Building a plugin <../development/plugins>` now includes instructions on using
   the :func:`~pennylane.devices.preprocess.decompose` transform for device-level decompositions.
   [(#8492)](https://github.com/PennyLaneAI/pennylane/pull/8492)
 
+* Improves documentation in the transforms module and adds documentation testing for it.
+  [(#8557)](https://github.com/PennyLaneAI/pennylane/pull/8557)
+
 <h3>Bug fixes 🐛</h3>
+
+* Fixes a bug in `default.mixed` device where certain diagonal operations were incorrectly
+  reshaped during application when using broadcasting.
+  [(#8593)](https://github.com/PennyLaneAI/pennylane/pull/8593)
+
+* Add an exception to the warning for unsolved operators within the graph-based decomposition
+  system if the unsolved operators are :class:`.allocation.Allocate` or :class:`.allocation.Deallocate`.
+  [(#8553)](https://github.com/PennyLaneAI/pennylane/pull/8553)
+
+* Fixes a bug in `clifford_t_decomposition` with `method="gridsynth"` and qjit, where using cached decomposition with the same parameter causes an error.
+  [(#8535)](https://github.com/PennyLaneAI/pennylane/pull/8535)
 
 * Fixes a bug in :class:`~.SemiAdder` where the results were incorrect when more ``work_wires`` than required were passed.
  [(#8423)](https://github.com/PennyLaneAI/pennylane/pull/8423)
@@ -256,6 +384,9 @@
 * Fixes a bug where a `KeyError` is raised when querying the decomposition rule for an operator in the gate set from a :class:`~pennylane.decomposition.DecompGraphSolution`.
   [(#8526)](https://github.com/PennyLaneAI/pennylane/pull/8526)
 
+* Fixes a bug where mid-circuit measurements were generating incomplete QASM.
+  [(#8556)](https://github.com/PennyLaneAI/pennylane/pull/8556)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -264,12 +395,16 @@ This release contains contributions from (in alphabetical order):
 Guillermo Alonso,
 Utkarsh Azad,
 Astral Cai,
+Yushao Chen,
 Marcus Edwards,
 Lillian Frederiksen,
+Soran Jahangiri,
 Christina Lee,
+Joseph Lee,
 Gabriela Sanchez Diaz,
 Mudit Pandey,
 Shuli Shu,
 Jay Soni,
+nate stemen,
 David Wierichs,
 Hongsheng Zheng
