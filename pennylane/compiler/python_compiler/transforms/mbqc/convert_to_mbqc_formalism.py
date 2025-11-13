@@ -682,7 +682,9 @@ class ConvertToMBQCFormalismPattern(
     # pylint: disable=no-self-use
     @pattern_rewriter.op_type_rewrite_pattern
     def match_and_rewrite(
-        self, root: func.FuncOp | IfOp | WhileOp | ForOp, rewriter: pattern_rewriter.PatternRewriter
+        self,
+        root: func.FuncOp | IfOp | WhileOp | ForOp | IndexSwitchOp,
+        rewriter: pattern_rewriter.PatternRewriter,
     ):
         """Match and rewrite for converting to the MBQC formalism."""
 
