@@ -24,11 +24,10 @@ import pennylane as qml
 from pennylane.math.utils import is_abstract
 from pennylane.ops import Identity, LinearCombination, PauliX, PauliY, PauliZ, Prod, SProd, Sum
 from pennylane.ops.qubit.matrix_ops import _walsh_hadamard_transform
+import scipy.sparse as sp
 
 from .pauli_arithmetic import I, PauliSentence, PauliWord, X, Y, Z, op_map
 from .utils import is_pauli_word
-
-import scipy.sparse as sp
 
 
 def _generalized_pauli_decompose(  # pylint: disable=too-many-branches
