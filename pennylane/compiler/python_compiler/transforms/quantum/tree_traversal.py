@@ -16,18 +16,15 @@
 
 from dataclasses import dataclass, field
 from itertools import chain
-from typing import Dict, List, Tuple, Type, TypeVar
+from typing import List, Tuple, Type, TypeVar
 
-from xdsl import context, passes
+from xdsl import context
 from xdsl.dialects import arith, builtin, func, memref, scf, tensor
 from xdsl.ir import Block, BlockArgument, Operation, Region, SSAValue
 from xdsl.passes import ModulePass
 from xdsl.pattern_rewriter import PatternRewriter, RewritePattern, op_type_rewrite_pattern
 from xdsl.printer import Printer
 from xdsl.rewriter import BlockInsertPoint, InsertPoint
-from xdsl.transforms.canonicalize import CanonicalizationRewritePattern
-from xdsl.transforms.common_subexpression_elimination import cse
-from xdsl.transforms.dead_code_elimination import RemoveUnusedOperations
 
 from pennylane.compiler.python_compiler import compiler_transform
 from pennylane.compiler.python_compiler.dialects import quantum, stablehlo
@@ -62,6 +59,7 @@ def initialize_memref_with_value(dest: SSAValue, value: SSAValue, size: int | SS
 
 
 def print_mlir(op, msg="", should_print: bool = True):
+    """ Print the MLIR of an operation with a message. """
     should_print = False
     if should_print:
         printer = Printer()
@@ -78,6 +76,7 @@ def print_mlir(op, msg="", should_print: bool = True):
 
 
 def print_ssa_values(values, msg="SSA Values || ", should_print: bool = True):
+    """ Print SSA Values """
     should_print = False
     if should_print:
         print(f"// {msg}")
@@ -86,7 +85,7 @@ def print_ssa_values(values, msg="SSA Values || ", should_print: bool = True):
 
 
 @dataclass
-class ProgramSegment:
+class ProgramSegment: # pylint: disable=too-many-instance-attributes
     """A program segment and associated data."""
 
     ops: list[Operation] = field(default_factory=list)
@@ -119,12 +118,6 @@ class TreeTraversalPass(ModulePass):
 
                 unroll_pattern = UnrollLoopPattern()
                 unroll_pattern.match_and_rewrite(op, rewriter)
-
-                # if unroll_pattern.unrolling_applied():
-                #     CanonicalizationRewritePattern().match_and_rewrite(op, rewriter)
-                #     cse(op, rewriter)
-                #     RemoveUnusedOperations().match_and_rewrite(op, rewriter)
-                #     cse(op, rewriter)
 
                 IfOperatorPartitioningPass().match_and_rewrite(op, rewriter)
 
@@ -2421,14 +2414,14 @@ class UnrollLoopPattern(RewritePattern):
             while True:
                 if isinstance(check_bound.owner, arith.ConstantOp):
                     return True, check_bound.owner
-                elif isinstance(check_bound.owner, stablehlo.ConstantOp):
+                if isinstance(check_bound.owner, stablehlo.ConstantOp):
                     return True, check_bound.owner
-                elif isinstance(check_bound, BlockArgument):
+                if isinstance(check_bound, BlockArgument):
                     return False, None
-                elif len(check_bound.owner.operands) == 0:
+                if len(check_bound.owner.operands) == 0:
                     return False, None
-                else:
-                    check_bound = check_bound.owner.operands[0]
+
+                check_bound = check_bound.owner.operands[0]
 
         ub_found, ub_op = find_constant_bound(op.ub)
         lb_found, lb_op = find_constant_bound(op.lb)
@@ -2470,9 +2463,7 @@ class UnrollLoopPattern(RewritePattern):
             )
             i_op.result.name_hint = i_arg.name_hint
 
-            value_mapper: dict[SSAValue, SSAValue] = {
-                arg: val for arg, val in zip(block_iter_args, iter_args, strict=True)
-            }
+            value_mapper: dict[SSAValue, SSAValue] = dict(zip(block_iter_args, iter_args, strict=True))
             value_mapper[i_arg] = i_op.result
 
             for inner_op in op.body.block.ops:
