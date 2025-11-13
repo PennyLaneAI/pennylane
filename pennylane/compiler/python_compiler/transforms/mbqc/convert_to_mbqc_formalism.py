@@ -574,7 +574,8 @@ class ConvertToMBQCFormalismPattern(
             one_wire_adj_matrix_op = None
             two_wire_adj_matrix_op = None
 
-            # Ignore the region if it is empty (i.e., function that has no body)
+            # Continue if the region has no block (i.e., function that has no body, and the body is 
+            # defined in runtime.)
             if not region.blocks:
                 continue
 
