@@ -16,7 +16,7 @@
 from .compiler import Compiler
 from .parser import QuantumParser
 from .pass_api import compiler_transform
-from .visualization import QMLCollector
+from .inspection import QMLCollector
 
 
 __all__ = [
