@@ -579,7 +579,7 @@ class ConvertToMBQCFormalismPass(passes.ModulePass):
             region=region,
         )
         # Add an attribute to the mbqc transform subroutine
-        funcOp.attributes["mbqc_transform"] = builtin.StringAttr.get("y")
+        funcOp.attributes["mbqc_transform"] = builtin.NoneAttr()
         return funcOp
 
     def _create_cnot_gate_subroutine(self):
@@ -637,7 +637,7 @@ class ConvertToMBQCFormalismPass(passes.ModulePass):
             region=region,
         )
         # Add an attribute to the mbqc transform subroutine
-        funcOp.attributes["mbqc_transform"] = builtin.StringAttr.get("y")
+        funcOp.attributes["mbqc_transform"] = builtin.NoneAttr()
         return funcOp
 
     # pylint: disable=no-self-use
