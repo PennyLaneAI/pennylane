@@ -19,7 +19,10 @@ import pytest
 
 from pennylane.compiler.python_compiler.visualization.dag_builder import DAGBuilder
 
-xdsl = pytest.importorskip("xdsl")
+pytestmark = pytest.mark.external
+
+pytest.importorskip("xdsl")
+pytest.importorskip("catalyst")
 
 
 def test_concrete_implementation_works():
