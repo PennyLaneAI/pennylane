@@ -16,6 +16,13 @@
 
 <h3>Improvements 🛠</h3>
 
+* The `ResourcesUndefinedError` has been removed from the `adjoint`, `ctrl`, and `pow` resource
+  decomposition methods of `ResourceOperator`.
+  [(#8598)](https://github.com/PennyLaneAI/pennylane/pull/8598)
+  
+* Add the `PCPhaseOp` operation to the xDSL Quantum dialect.
+  [(#8621)](https://github.com/PennyLaneAI/pennylane/pull/8621)
+
 * `qml.for_loop` will now fall back to a standard Python `for` loop if capturing a condensed, structured loop fails
   with program capture enabled.
   [(#8615)](https://github.com/PennyLaneAI/pennylane/pull/8615)
@@ -37,6 +44,7 @@
   [(#8582)](https://github.com/PennyLaneAI/pennylane/pull/8582)
   [(#8543)](https://github.com/PennyLaneAI/pennylane/pull/8543)
   [(#8554)](https://github.com/PennyLaneAI/pennylane/pull/8554)
+  [(#8595)](https://github.com/PennyLaneAI/pennylane/pull/8595)
   [(#8586)](https://github.com/PennyLaneAI/pennylane/pull/8586)
 
   - :class:`~.QSVT`
@@ -49,6 +57,7 @@
   - :class:`~.kUpCCGSD`
   - :class:`~.QAOAEmbedding`
   - :class:`~.BasicEntanglerLayers`
+  - :class:`~.ParticleConservingU2`
   - :class:`~.ParticleConservingU1`
 
 * A new `qml.compiler.python_compiler.utils` submodule has been added, containing general-purpose utilities for
@@ -328,6 +337,11 @@
 
 * The `_get_decomposition` and `_update_counts_from_compressed_op` methods in `pennylane/estimator/estimate.py` were updated to directly call the base class's `symbolic_resource_decomp` method, simplifying the decomposition pipeline.
   [(#8641)](https://github.com/PennyLaneAI/pennylane/pull/8641)
+  
+* The `convert_to_mbqc_formalism` compilation pass now outlines the operations to represent a gate
+  in the MBQC formalism into subroutines in order to reduce the IR size for large programs.
+  [(#8619)](https://github.com/PennyLaneAI/pennylane/pull/8619)
+
 
 <h3>Documentation 📝</h3>
 
