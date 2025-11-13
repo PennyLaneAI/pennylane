@@ -399,14 +399,14 @@ def _resources_from_pl_ops(
     )
 
 
-def _update_counts_from_compressed_res_op(
+def _update_counts_from_compressed_res_op(  # pylint: disable=too-many-branches
     comp_res_op: CompressedResourceOp,
     gate_counts_dict: dict,
     wire_manager: WireResourceManager,
     gate_set: set[str] | None = None,
     scalar: int = 1,
     config: ResourceConfig | None = None,
-) -> None:  # pylint: disable=too-many-branches
+) -> None:
     """Modifies the `gate_counts_dict` argument by adding the (scaled) resources of the operator provided.
 
     Args:
