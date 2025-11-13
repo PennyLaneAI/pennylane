@@ -106,6 +106,7 @@ def _generalized_pauli_decompose(  # pylint: disable=too-many-branches
     Y('a') @ Y('b'),
     Z('a') @ I('b'),
     Z('a') @ X('b'),
+    Z('a') @ Y('b'),
     Z('a') @ Z('b')]
 
     .. details::
