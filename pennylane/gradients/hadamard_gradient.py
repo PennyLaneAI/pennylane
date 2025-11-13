@@ -558,18 +558,14 @@ def _quantum_automatic_differentiation(tape, trainable_param_idx, aux_wire) -> t
     trainable_op.base.compute_grouping()  # Note: only works for Hamiltonians made exclusively of Paulis
     expectations_shots = len(trainable_op.base.grouping_indices)
 
-    if direct:
-        direct_combinations = expectations_shots * len(generators) * 2
-        reversed_direct_combinations = expectations_shots * len(observables) * 2
+    standard = expectations_shots * len(generators) <= expectations_shots * len(observables)
 
-        if direct_combinations <= reversed_direct_combinations:
+    if direct:
+        if standard:
             return _direct_hadamard_test(tape, trainable_param_idx, aux_wire)
         return _reversed_direct_hadamard_test(tape, trainable_param_idx, aux_wire)
 
-    standard_combinations = expectations_shots * len(generators)
-    reversed_combinations = expectations_shots * len(observables)
-
-    if standard_combinations <= reversed_combinations:
+    if standard:
         return _hadamard_test(tape, trainable_param_idx, aux_wire)
     return _reversed_hadamard_test(tape, trainable_param_idx, aux_wire)
 
