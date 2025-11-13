@@ -95,8 +95,6 @@ class TestCond:
                 conditional.else_if(pred == -3)(elif_fn3)
                 conditional.else_if(pred == -4)(elif_fn4)
                 conditional.otherwise(false_fn)
-                print(conditional.preds)
-                print(pred)
                 return conditional
 
             return qml.cond(
