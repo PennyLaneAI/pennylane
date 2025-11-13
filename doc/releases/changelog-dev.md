@@ -326,6 +326,9 @@
   which is parsed and transformed with xDSL.
   [(#8587)](https://github.com/PennyLaneAI/pennylane/pull/8587)
 
+* The `_get_decomposition` and `_update_counts_from_compressed_op` methods in `pennylane/estimator/estimate.py` were updated to directly call the base class's `symbolic_resource_decomp` method, simplifying the decomposition pipeline.
+  [(#8641)](https://github.com/PennyLaneAI/pennylane/pull/8641)
+
 <h3>Documentation 📝</h3>
 
 * Added a "Unified Compiler Cookbook" RST file, along with tutorials, to ``qml.compiler.python_compiler`,
@@ -401,6 +404,7 @@ Astral Cai,
 Yushao Chen,
 Marcus Edwards,
 Lillian Frederiksen,
+Austin Huang,
 Soran Jahangiri,
 Christina Lee,
 Joseph Lee,
