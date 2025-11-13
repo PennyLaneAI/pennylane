@@ -63,6 +63,9 @@ class DAGBuilder(ABC):
     ) -> None:
         """Add a single cluster to the graph.
 
+        A cluster is a specific type of subgraph where the nodes and edges contained
+        within it are visually and logically grouped.
+
         Args:
             cluster_id (str): Unique cluster ID to identify this cluster.
             cluster_label (str): The text to display on the cluster when rendered.
