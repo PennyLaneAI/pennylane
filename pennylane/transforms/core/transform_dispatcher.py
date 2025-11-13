@@ -165,15 +165,20 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
     # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(
         self,
-        transform,
-        expand_transform=None,
-        classical_cotransform=None,
-        is_informative=False,
-        final_transform=False,
-        use_argnum_in_expand=False,
-        plxpr_transform=None,
+        transform: Callable | None = None,
+        expand_transform: Callable | None = None,
         pass_name: None | str = None,
+        *,
+        classical_cotransform: Callable | None = None,
+        is_informative: bool = False,
+        final_transform: bool = False,
+        use_argnum_in_expand: bool = False,
+        plxpr_transform=None,
     ):
+        if transform is None and pass_name is None:
+            raise ValueError(
+                "Transforms must currently define either a tape transform or a pass_name"
+            )
         self._transform = transform
         self._expand_transform = expand_transform
         self._classical_cotransform = classical_cotransform
@@ -184,7 +189,8 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
         self._pass_name = pass_name
 
         self._use_argnum_in_expand = use_argnum_in_expand
-        functools.update_wrapper(self, transform)
+        if transform:
+            functools.update_wrapper(self, transform)
 
         self._apply_transform = functools.singledispatch(
             functools.partial(specific_apply_transform, self)
@@ -281,7 +287,9 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
         return self._apply_transform(obj, *targs, **tkwargs)
 
     def __repr__(self):
-        return f"<transform: {self._transform.__name__}>"
+        if self._transform:
+            return f"<transform: {self._transform.__name__}>"
+        return f"<transform: {self.pass_name}>"
 
     @property
     def transform(self):
@@ -413,7 +421,11 @@ class TransformContainer:  # pylint: disable=too-many-instance-attributes
         self._use_argnum = use_argnum
 
     def __repr__(self):
-        return f"<{self._transform_dispatcher.transform.__name__}({self._args}, {self._kwargs})>"
+        if self.transform:
+            return (
+                f"<{self._transform_dispatcher.transform.__name__}({self._args}, {self._kwargs})>"
+            )
+        return f"<{self._transform_dispatcher.pass_name}({self._args}, {self._kwargs})>"
 
     def __call__(self, obj):
         return self._transform_dispatcher(obj, *self.args, **self.kwargs)
@@ -444,7 +456,7 @@ class TransformContainer:  # pylint: disable=too-many-instance-attributes
         )
 
     @property
-    def transform(self) -> Callable:
+    def transform(self) -> Callable | None:
         """The stored quantum transform."""
         return self._transform_dispatcher.transform
 
@@ -486,6 +498,8 @@ class TransformContainer:  # pylint: disable=too-many-instance-attributes
 
 @TransformDispatcher.generic_register
 def _apply_to_tape(obj: QuantumScript, transform, *targs, **tkwargs):
+    if transform.transform is None:
+        raise NotImplementedError(f"transform {transform} has no defined tape transform.")
     if transform.expand_transform:
         expanded_tapes, expand_processing = transform.expand_transform(obj, *targs, **tkwargs)
         transformed_tapes = []
