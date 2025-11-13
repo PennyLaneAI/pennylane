@@ -349,7 +349,6 @@ class TestConvertToMBQCFormalismPass:
 
         @qml.qjit(
             target="mlir",
-            pass_plugins=[getXDSLPluginAbsolutePath()],
             pipelines=mbqc_pipeline(),
             autograph=True,
         )
@@ -401,9 +400,8 @@ class TestConvertToMBQCFormalismPass:
 
         @qml.qjit(
             target="mlir",
-            pass_plugins=[getXDSLPluginAbsolutePath()],
             pipelines=mbqc_pipeline(),
-            autograph=False,
+            autograph=True,
         )
         @convert_to_mbqc_formalism_pass
         @qml.set_shots(1000)
@@ -447,7 +445,6 @@ class TestConvertToMBQCFormalismPass:
 
         @qml.qjit(
             target="mlir",
-            pass_plugins=[getXDSLPluginAbsolutePath()],
             pipelines=mbqc_pipeline(),
             autograph=True,
         )
@@ -492,9 +489,8 @@ class TestConvertToMBQCFormalismPass:
 
         @qml.qjit(
             target="mlir",
-            pass_plugins=[getXDSLPluginAbsolutePath()],
             pipelines=mbqc_pipeline(),
-            autograph=False,
+            autograph=True,
         )
         @convert_to_mbqc_formalism_pass
         @qml.set_shots(1000)
@@ -542,7 +538,10 @@ class TestConvertToMBQCFormalismPass:
         @qml.qnode(dev)
         def circuit():
             for i in range(1000):
-                loop_func(i)
+                qml.H(i)
+                qml.S(i)
+                RotXZX(0.1, 0.2, 0.3, wires=[i])
+                qml.RZ(phi=0.1, wires=[i])
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.Z(wires=0))
 

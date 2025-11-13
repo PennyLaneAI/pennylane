@@ -89,7 +89,8 @@
   work wire and :class:`pennylane.TemporaryAND` operators to reduce the resources needed.
   [(#8549)](https://github.com/PennyLaneAI/pennylane/pull/8549)
 
-* The MBQC transform has been outlined in the subroutines in the `convert_to_mbqc_formalism` pass.
+* The `convert_to_mbqc_formalism` compilation pass now outlines the operations to represent a gate
+  in the MBQC formalism into subroutines in order to reduce the IR size for large programs.
   [(#8619)](https://github.com/PennyLaneAI/pennylane/pull/8619)
 
 
