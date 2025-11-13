@@ -249,6 +249,7 @@ class CondCallable:
 
         Alias for ``otherwise_fn``.
         """
+        # used for matching naming with the catalyst version of this class
         return self.otherwise_fn
 
     @property
