@@ -80,6 +80,7 @@ from xdsl.traits import (
     IsTerminator,
     NoMemoryEffect,
     Pure,
+    ReturnLike,
     SingleBlockImplicitTerminator,
 )
 
@@ -161,7 +162,7 @@ class AdjointOp(IRDLOperation):
 
     region = region_def("single_block")
 
-    traits = lazy_traits_def(lambda: (SingleBlockImplicitTerminator(YieldOp),))
+    traits = lazy_traits_def(lambda: (NoMemoryEffect(), SingleBlockImplicitTerminator(YieldOp)))
 
     def __init__(
         self,
@@ -186,8 +187,6 @@ class AllocOp(IRDLOperation):
     nqubits_attr = opt_prop_def(IntegerAttr.constr(type=I64, value=AtLeast(0)))
 
     qreg = result_def(QuregType)
-
-    traits = traits_def(NoMemoryEffect())
 
     def __init__(self, nqubits):
         if isinstance(nqubits, int):
@@ -1091,7 +1090,7 @@ class YieldOp(IRDLOperation):
 
     retvals = var_operand_def(QuregType)
 
-    traits = traits_def(HasParent(AdjointOp), IsTerminator(), Pure())
+    traits = traits_def(HasParent(AdjointOp), IsTerminator(), Pure(), ReturnLike())
 
 
 Quantum = Dialect(
