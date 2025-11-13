@@ -20,35 +20,38 @@ import pytest
 from pennylane.compiler.python_compiler.visualization.dag_builder import DAGBuilder
 
 
-class ConcreteDAGBuilder(DAGBuilder):
-    """Concrete subclass of an ABC for testing purposes."""
-
-    def add_node(
-        self, node_id: str, node_label: str, parent_graph_id: str | None = None, **node_attrs: Any
-    ) -> None:
-        return
-
-    def add_edge(self, from_node_id: str, to_node_id: str, **edge_attrs: Any) -> None:
-        return
-
-    def add_cluster(
-        self,
-        cluster_id: str,
-        cluster_label: str,
-        parent_graph_id: str | None = None,
-        **cluster_attrs: Any,
-    ) -> None:
-        return
-
-    def render(self, output_filename: str) -> None:
-        return
-
-    def to_string(self) -> str:
-        return "test"
-
-
 def test_concrete_implementation_works():
     """Unit test for concrete implementation of abc."""
+
+    class ConcreteDAGBuilder(DAGBuilder):
+        """Concrete subclass of an ABC for testing purposes."""
+
+        def add_node(
+            self,
+            node_id: str,
+            node_label: str,
+            parent_graph_id: str | None = None,
+            **node_attrs: Any,
+        ) -> None:
+            return
+
+        def add_edge(self, from_node_id: str, to_node_id: str, **edge_attrs: Any) -> None:
+            return
+
+        def add_cluster(
+            self,
+            cluster_id: str,
+            cluster_label: str,
+            parent_graph_id: str | None = None,
+            **cluster_attrs: Any,
+        ) -> None:
+            return
+
+        def render(self, output_filename: str) -> None:
+            return
+
+        def to_string(self) -> str:
+            return "test"
 
     dag_builder = ConcreteDAGBuilder()
     # pylint: disable = assignment-from-none
@@ -77,7 +80,6 @@ def test_incomplete_subclass():
     """Tests that an incomplete subclass will fail"""
 
     class IncompleteDAGBuilder(DAGBuilder):
-
         def add_node(self, *args, **kwargs):
             pass
 
