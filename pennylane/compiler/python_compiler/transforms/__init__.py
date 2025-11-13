@@ -14,6 +14,8 @@
 """PennyLane-xDSL transformations API."""
 
 from .mbqc import (
+    add_pauli_tracker_pass,
+    AddPauliTrackerPass,
     convert_to_mbqc_formalism_pass,
     ConvertToMBQCFormalismPass,
     decompose_graph_state_pass,
@@ -55,6 +57,8 @@ __all__ = [
     "split_non_commuting_pass",
     "SplitNonCommutingPass",
     # MBQC
+    "add_pauli_tracker_pass",
+    "AddPauliTrackerPass",
     "convert_to_mbqc_formalism_pass",
     "ConvertToMBQCFormalismPass",
     "decompose_graph_state_pass",
