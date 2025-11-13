@@ -49,7 +49,7 @@ from pennylane.compiler.python_compiler.dialects.quantum import (
     StateOp,
     VarianceOp,
 )
-from pennylane.compiler.python_compiler.visualization.xdsl_conversion import *
+from pennylane.compiler.python_compiler.inspection.xdsl_conversion import *
 
 
 class ResourceType(enum.Enum):

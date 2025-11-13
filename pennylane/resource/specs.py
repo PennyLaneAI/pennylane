@@ -179,7 +179,7 @@ def _specs_qjit_intermediate_passes(
     # pylint: disable=import-outside-toplevel
     from catalyst.from_plxpr import transforms_to_passes
 
-    from pennylane.compiler.python_compiler.visualization import mlir_specs
+    from pennylane.compiler.python_compiler.inspection import mlir_specs
 
     single_level = isinstance(level, int)
     if single_level:
