@@ -133,7 +133,7 @@ class TestTemporaryAND:
         for a in (0, 1):
             for b in (0, 1):
                 probs = circuit(a, b)
-                idx = (a << 2) | (b << 1) | 0
+                idx = (a << 2) | (b << 1)
                 assert qml.math.allclose(
                     probs[idx], 1.0
                 ), f"Failed for a={a}, b={b}, cv={control_values}"
