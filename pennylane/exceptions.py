@@ -193,6 +193,10 @@ class AutoGraphWarning(Warning):
     """Warnings related to PennyLane's AutoGraph submodule."""
 
 
+class CaptureWarning(Warning):
+    """Warnings related to the capture of the program into a condensed PLxPR format."""
+
+
 # =============================================================================
 # Autograph and Compilation Errors
 # =============================================================================
