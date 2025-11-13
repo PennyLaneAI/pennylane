@@ -432,7 +432,7 @@ class TestDecomposeGraphEnabled:
 
         measure_obj_class = MidMeasure if m_type == "mcm" else PauliMeasure
 
-        @qml.register_resources({qml.H: 1, qml.X: 1, measure_obj_class: 1})
+        @qml.register_resources({qml.H: 2, measure_obj_class: 1})
         def _custom_decomp(wires, **_):
             qml.H(wires[0])
             m0 = (
