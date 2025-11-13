@@ -120,15 +120,15 @@ class TreeTraversalPass(ModulePass):
                 unroll_pattern = UnrollLoopPattern()
                 unroll_pattern.match_and_rewrite(op, rewriter)
 
-                if unroll_pattern.unrolling_applied():
-                    CanonicalizationRewritePattern().match_and_rewrite(op, rewriter)
-                    cse(op, rewriter)
-                    RemoveUnusedOperations().match_and_rewrite(op, rewriter)
-                    cse(op, rewriter)
+                # if unroll_pattern.unrolling_applied():
+                #     CanonicalizationRewritePattern().match_and_rewrite(op, rewriter)
+                #     cse(op, rewriter)
+                #     RemoveUnusedOperations().match_and_rewrite(op, rewriter)
+                #     cse(op, rewriter)
 
                 IfOperatorPartitioningPass().match_and_rewrite(op, rewriter)
 
-                print_mlir(module, msg="After If Statement Split Pass", should_print=print_stuff)
+                # print_mlir(module, msg="After If-For Passes", should_print=print_stuff)
 
                 TreeTraversalPattern().match_and_rewrite(op, rewriter)
 
@@ -1087,6 +1087,8 @@ class TreeTraversalPattern(RewritePattern):
         tree_depth = arith.ConstantOp.from_int_and_width(
             len(self.quantum_segments), builtin.IndexType()
         )
+        c1_index = arith.ConstantOp.from_int_and_width(1, builtin.IndexType())
+        updated_tree_depth = arith.AddiOp(tree_depth.results[0], c1_index.results[0])
 
         # initialize stack variables #
 
@@ -1098,7 +1100,7 @@ class TreeTraversalPattern(RewritePattern):
         statevec_stack = memref.AllocOp((tree_depth, statevec_size), (), self.statevec_stack_type)
 
         # probabilities for each branch are tracked here
-        probs_stack = memref.AllocOp((tree_depth,), (), self.probs_stack_type)
+        probs_stack = memref.AllocOp((updated_tree_depth,), (), self.probs_stack_type)
         c1_f64 = arith.ConstantOp(builtin.FloatAttr(1.0, type=builtin.f64))
         length_probs_stack = arith.AddiOp(tree_depth.results[0], c1)
         init_probs_stack_ops = initialize_memref_with_value(
@@ -1127,6 +1129,8 @@ class TreeTraversalPattern(RewritePattern):
         for op in (
             qubit_count,
             tree_depth,
+            c1_index,
+            updated_tree_depth,
             c1,
             statevec_size,
             statevec_stack,

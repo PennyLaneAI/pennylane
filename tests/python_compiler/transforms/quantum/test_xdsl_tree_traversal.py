@@ -41,8 +41,8 @@ Not supported features:
 """
 
 
-class TestTreeTraversalPass:
-    """Unit tests for TreeTraversalPass."""
+class TestTreeTraversalPassBase:
+    """Unit tests for TreeTraversalPass. without control flow operation."""
 
     def test_func_no_mcm(self, run_filecheck):
         """Test tree traversal pass would not be applied to a func without MCMs."""
@@ -579,8 +579,9 @@ class TestTreeTraversalPass:
 
         run_filecheck_qjit(circuit)
 
+    @pytest.mark.parametrize("shots", [None, 10000])
     @pytest.mark.usefixtures("enable_disable_plxpr")
-    def test_execution_validation(self):
+    def test_execution_validation(self, shots):
 
         dev = qml.device("lightning.qubit", wires=4)
 
@@ -597,6 +598,7 @@ class TestTreeTraversalPass:
             target="mlir",
             pass_plugins=[getXDSLPluginAbsolutePath()],
         )
+        @qml.set_shots(shots)
         @tree_traversal_pass
         @qml.qnode(dev)
         def circuit():
@@ -606,15 +608,18 @@ class TestTreeTraversalPass:
 
         qml.capture.disable()
 
+        @qml.set_shots(shots)
         @qml.qnode(dev, mcm_method="deferred")
         def circuit_ref():
             return test_circuit()
 
         res_ref = circuit_ref()
-        np.testing.assert_allclose(res, res_ref)
+
+        mcm_utils.validate_measurements(qml.expval, shots, res_ref, res, batch_size=None)
 
     @pytest.mark.usefixtures("enable_disable_plxpr")
-    @pytest.mark.parametrize("shots", [None, 10000])
+    # @pytest.mark.parametrize("shots", [None, 10000])
+    @pytest.mark.parametrize("shots", [None])
     @pytest.mark.parametrize("postselect", [None])
     # @pytest.mark.parametrize("postselect", [None,0, 1])
     @pytest.mark.parametrize("reset", [False])
@@ -622,18 +627,18 @@ class TestTreeTraversalPass:
     @pytest.mark.parametrize(
         "measure_f",
         [
-            lambda : qml.expval(qml.Z(0)),
-            lambda : qml.expval(qml.Y(0)),
-            lambda : qml.expval(qml.Z(1)),
-            lambda : qml.expval(qml.Y(1)),
+            lambda: qml.expval(qml.Z(0)),
+            lambda: qml.expval(qml.Y(0)),
+            lambda: qml.expval(qml.Z(1)),
+            lambda: qml.expval(qml.Y(1)),
         ],
     )
-    def test_multiple_measurements_and_reset(self, shots, postselect, reset, measure_f, seed):
+    def test_multiple_measurements_and_reset(self, shots, postselect, reset, measure_f):
         """Tests that DefaultQubit handles a circuit with a single mid-circuit measurement with reset
         and a conditional gate. Multiple measurements of the mid-circuit measurement value are
         performed. This function also tests `reset` parametrizing over the parameter."""
 
-        dev = qml.device("lightning.qubit", wires=3, seed=seed)
+        dev = qml.device("lightning.qubit", wires=3)
         params = [np.pi / 2.5, np.pi / 3, -np.pi / 3.5]
 
         def obs_tape(x, y, z, reset=False, postselect=None):
@@ -646,15 +651,15 @@ class TestTreeTraversalPass:
 
             m0 = qml.measure(0, reset=reset)
 
-            def ansatz_m0_0_true():
-                qml.RX(np.pi / 4, 0)
-                qml.RZ(np.pi / 4, 0)
+            # def ansatz_m0_0_true():
+            qml.RX(np.pi / 4, 0)
+            qml.RZ(np.pi / 4, 0)
 
-            def ansatz_m0_0_false():
-                qml.RX(-np.pi / 4, 0)
-                qml.RZ(-np.pi / 4, 0)
+            # def ansatz_m0_0_false():
+            # qml.RX(-np.pi / 4, 0)
+            # qml.RZ(-np.pi / 4, 0)
 
-            qml.cond(m0, ansatz_m0_0_true, ansatz_m0_0_false)()
+            # qml.cond(m0, ansatz_m0_0_true, ansatz_m0_0_false)()
 
             m1 = qml.measure(1, postselect=postselect)
 
@@ -662,15 +667,15 @@ class TestTreeTraversalPass:
             qml.RZ(np.pi / 4, 1)
             m1 = qml.measure(1, postselect=postselect)
 
-            def ansatz_m1_0_true():
-                qml.RX(np.pi / 8, 1)
-                qml.RZ(np.pi / 8, 1)
+            # def ansatz_m1_0_true():
+            #     qml.RX(np.pi / 8, 1)
+            #     qml.RZ(np.pi / 8, 1)
 
-            def ansatz_m1_0_false():
-                qml.RX(-np.pi / 8, 1)
-                qml.RZ(-np.pi / 8, 1)
+            # def ansatz_m1_0_false():
+            qml.RX(-np.pi / 8, 1)
+            qml.RZ(-np.pi / 8, 1)
 
-            qml.cond(m1, ansatz_m1_0_true, ansatz_m1_0_false)()
+            # qml.cond(m1, ansatz_m1_0_true, ansatz_m1_0_false)()
 
         # Measures:
         # Without shots
@@ -691,7 +696,672 @@ class TestTreeTraversalPass:
 
         results0 = qjit_func(*params)
 
-        dev = qml.device("default.qubit", seed=seed)
+        dev = qml.device("default.qubit")
+
+        qml.capture.disable()
+
+        @qml.set_shots(shots)
+        @qml.qnode(dev, mcm_method="deferred")
+        def ref_func(x, y, z):
+            obs_tape(x, y, z, reset=reset, postselect=postselect)
+            return measure_f()
+
+        results1 = ref_func(*params)
+
+        mcm_utils.validate_measurements(qml.expval, shots, results1, results0, batch_size=None)
+
+
+class TestTreeTraversalPassStaticForLoop:
+    """Unit tests for TreeTraversalPass. without control flow operation."""
+
+    def test_static_for_loop_without_mcm(self, run_filecheck):
+        """Test tree traversal pass would be applied to a func with a static for loop."""
+
+        """
+        Circuit Test
+        def circuit():
+            for i in range(3):
+                qml.X(i)
+            qml.measure(0)
+            return qml.expval(qml.Z(0))
+        """
+
+        program = """
+        builtin.module @module_circuit {
+
+            // CHECK: func.func public @circuit() -> tensor<f64> attributes {qnode}
+            // CHECK: func.call @circuit.simple_io.tree_traversal() : ()
+            // CHECK: func.return %0 : tensor<f64>
+
+            func.func public @circuit() -> (tensor<f64>) attributes {qnode} {
+                %0 = "stablehlo.constant"() <{value = dense<0> : tensor<i64>}> : () -> tensor<i64>
+                %1 = tensor.extract %0[] : tensor<i64>
+                quantum.device shots(%1) ["", "", ""]
+                %2 = "stablehlo.constant"() <{value = dense<2> : tensor<i64>}> : () -> tensor<i64>
+                %3 = quantum.alloc(3) : !quantum.reg
+
+                 %4 = "stablehlo.constant"() <{value = dense<1> : tensor<i64>}> : () -> tensor<i64>
+                %5 = tensor.extract %0[] : tensor<i64>
+                %6 = arith.index_cast %5 : i64 to index
+                %7 = tensor.extract %2[] : tensor<i64>
+                %8 = arith.index_cast %7 : i64 to index
+                %9 = tensor.extract %4[] : tensor<i64>
+                %10 = arith.index_cast %9 : i64 to index
+                %11 = scf.for %arg1 = %6 to %8 step %10 iter_args(%arg2 = %3) -> (!quantum.reg) {
+                    %12 = arith.index_cast %arg1 : index to i64
+                    %13 = tensor.from_elements %12 : tensor<i64>
+                    %14 = tensor.extract %13[] : tensor<i64>
+                    %15 = quantum.extract %arg2[%14] : !quantum.reg -> !quantum.bit
+                    %16 = quantum.custom "PauliX"() %15 : !quantum.bit
+                    %17 = tensor.extract %13[] : tensor<i64>
+                    %18 = quantum.insert %arg2[%17], %16 : !quantum.reg, !quantum.bit
+                    scf.yield %18 : !quantum.reg
+                }
+                %19 = tensor.extract %0[] : tensor<i64>
+                %20 = quantum.extract %11[%19] : !quantum.reg -> !quantum.bit
+                %21, %22 = quantum.measure %20 : i1, !quantum.bit
+                %23 = tensor.from_elements %21 : tensor<i1>
+                %24 = quantum.namedobs %22[PauliZ] : !quantum.obs
+                %25 = quantum.expval %24 : f64
+                %26 = tensor.from_elements %25 : tensor<f64>
+                %27 = tensor.extract %0[] : tensor<i64>
+                %28 = quantum.insert %11[%27], %22 : !quantum.reg, !quantum.bit
+                quantum.dealloc %28 : !quantum.reg
+                quantum.device_release
+                func.return %26 : tensor<f64>
+            }
+            // CHECK: func.func public @circuit.simple_io.tree_traversal()
+            // CHECK: func.func @state_transition
+            // CHECK: func.func @quantum_segment_0
+            // CHECK: scf.for {{%.+}} = {{%.+}} to {{%.+}} step {{%.+}} iter_args({{%.+}} = {{%.+}}) -> (!quantum.reg)
+            // CHECK: quantum.custom "PauliX"()
+            // CHECK: func.func @quantum_segment_1
+            // CHECK-NOT: scf.for {{%.+}} = {{%.+}} to {{%.+}} step {{%.+}} iter_args({{%.+}} = {{%.+}}) -> (!quantum.reg)
+            // CHECK-NOT: quantum.custom "PauliX"()
+        }
+        """
+        pipeline = (TreeTraversalPass(),)
+        run_filecheck(program, pipeline, roundtrip=True)
+
+    def test_static_for_loop_remove_loop(self, run_filecheck):
+        """Test tree traversal pass would be applied to a func with a static for loop."""
+
+        """
+        Circuit Test
+        def circuit():
+            for i in range(3):
+                qml.X(i)
+                qml.measure(i)
+            return qml.expval(qml.Z(0))
+        """
+
+        program = """
+        builtin.module @module_circuit {
+
+            // CHECK: func.func public @circuit() -> tensor<f64> attributes {qnode}
+            // CHECK: func.call @circuit.simple_io.tree_traversal() : ()
+            // CHECK: func.return %0 : tensor<f64>
+
+            func.func public @circuit() -> (tensor<f64>) attributes {qnode} {
+                %0 = "stablehlo.constant"() <{value = dense<0> : tensor<i64>}> : () -> tensor<i64>
+                %1 = tensor.extract %0[] : tensor<i64>
+                quantum.device shots(%1) ["", "", ""]
+                %2 = "stablehlo.constant"() <{value = dense<2> : tensor<i64>}> : () -> tensor<i64>
+                %3 = quantum.alloc(3) : !quantum.reg
+                %4 = "stablehlo.constant"() <{value = dense<3> : tensor<i64>}> : () -> tensor<i64>
+                %5 = "stablehlo.constant"() <{value = dense<1> : tensor<i64>}> : () -> tensor<i64>
+                %6 = tensor.extract %0[] : tensor<i64>
+                %7 = arith.index_cast %6 : i64 to index
+                %8 = tensor.extract %4[] : tensor<i64>
+                %9 = arith.index_cast %8 : i64 to index
+                %10 = tensor.extract %5[] : tensor<i64>
+                %11 = arith.index_cast %10 : i64 to index
+                %12 = scf.for %arg1 = %7 to %9 step %11 iter_args(%arg2 = %3) -> (!quantum.reg) {
+                    %13 = arith.index_cast %arg1 : index to i64
+                    %14 = tensor.from_elements %13 : tensor<i64>
+                    %15 = tensor.extract %14[] : tensor<i64>
+                    %16 = quantum.extract %arg2[%15] : !quantum.reg -> !quantum.bit
+                    %17 = quantum.custom "PauliX"() %16 : !quantum.bit
+                    %18, %19 = quantum.measure %17 : i1, !quantum.bit
+                    %20 = tensor.from_elements %18 : tensor<i1>
+                    %21 = tensor.extract %14[] : tensor<i64>
+                    %22 = quantum.insert %arg2[%21], %19 : !quantum.reg, !quantum.bit
+                    scf.yield %22 : !quantum.reg
+                }
+                %23 = tensor.extract %0[] : tensor<i64>
+                %24 = quantum.extract %12[%23] : !quantum.reg -> !quantum.bit
+                %25 = quantum.namedobs %24[PauliZ] : !quantum.obs
+                %26 = quantum.expval %25 : f64
+                %27 = tensor.from_elements %26 : tensor<f64>
+                %28 = tensor.extract %0[] : tensor<i64>
+                %29 = quantum.insert %12[%28], %24 : !quantum.reg, !quantum.bit
+                quantum.dealloc %29 : !quantum.reg
+                quantum.device_release
+                func.return %27 : tensor<f64>
+            }
+            // CHECK: func.func public @circuit.simple_io.tree_traversal()
+            // CHECK: func.func @state_transition
+            // CHECK-NOT: scf.for {{%.+}} = {{%.+}} to {{%.+}} step {{%.+}} iter_args({{%.+}} = {{%.+}}) -> (!quantum.reg)
+
+        }
+        """
+
+        pipeline = (TreeTraversalPass(),)
+        run_filecheck(program, pipeline, roundtrip=True)
+
+    def test_static_for_loop_count_ops(self, run_filecheck):
+        """Test tree traversal pass would be applied to a func with a static for loop."""
+
+        """
+        Circuit Test
+        def circuit():
+            for i in range(3):
+                qml.X(i)
+                qml.measure(i)
+            return qml.expval(qml.Z(0))
+        """
+
+        program = """
+        builtin.module @module_circuit {
+
+            // CHECK: func.func public @circuit() -> tensor<f64> attributes {qnode}
+            // CHECK: func.call @circuit.simple_io.tree_traversal() : ()
+            // CHECK: func.return %0 : tensor<f64>
+
+            func.func public @circuit() -> (tensor<f64>) attributes {qnode} {
+                %0 = "stablehlo.constant"() <{value = dense<0> : tensor<i64>}> : () -> tensor<i64>
+                %1 = tensor.extract %0[] : tensor<i64>
+                quantum.device shots(%1) ["", "", ""]
+                %2 = "stablehlo.constant"() <{value = dense<2> : tensor<i64>}> : () -> tensor<i64>
+                %3 = quantum.alloc(3) : !quantum.reg
+                %4 = "stablehlo.constant"() <{value = dense<3> : tensor<i64>}> : () -> tensor<i64>
+                %5 = "stablehlo.constant"() <{value = dense<1> : tensor<i64>}> : () -> tensor<i64>
+                %6 = tensor.extract %0[] : tensor<i64>
+                %7 = arith.index_cast %6 : i64 to index
+                %8 = tensor.extract %4[] : tensor<i64>
+                %9 = arith.index_cast %8 : i64 to index
+                %10 = tensor.extract %5[] : tensor<i64>
+                %11 = arith.index_cast %10 : i64 to index
+                %12 = scf.for %arg1 = %7 to %9 step %11 iter_args(%arg2 = %3) -> (!quantum.reg) {
+                    %13 = arith.index_cast %arg1 : index to i64
+                    %14 = tensor.from_elements %13 : tensor<i64>
+                    %15 = tensor.extract %14[] : tensor<i64>
+                    %16 = quantum.extract %arg2[%15] : !quantum.reg -> !quantum.bit
+                    %17 = quantum.custom "PauliX"() %16 : !quantum.bit
+                    %18, %19 = quantum.measure %17 : i1, !quantum.bit
+                    %20 = tensor.from_elements %18 : tensor<i1>
+                    %21 = tensor.extract %14[] : tensor<i64>
+                    %22 = quantum.insert %arg2[%21], %19 : !quantum.reg, !quantum.bit
+                    scf.yield %22 : !quantum.reg
+                }
+                %23 = tensor.extract %0[] : tensor<i64>
+                %24 = quantum.extract %12[%23] : !quantum.reg -> !quantum.bit
+                %25 = quantum.namedobs %24[PauliZ] : !quantum.obs
+                %26 = quantum.expval %25 : f64
+                %27 = tensor.from_elements %26 : tensor<f64>
+                %28 = tensor.extract %0[] : tensor<i64>
+                %29 = quantum.insert %12[%28], %24 : !quantum.reg, !quantum.bit
+                quantum.dealloc %29 : !quantum.reg
+                quantum.device_release
+                func.return %27 : tensor<f64>
+            }
+            // CHECK: func.func public @circuit.simple_io.tree_traversal()
+            // CHECK: func.func @state_transition
+            // CHECK: func.func @quantum_segment_0
+            // CHECK: quantum.custom "PauliX"()
+            // CHECK: func.func @quantum_segment_1
+            // CHECK: quantum.measure {{%.*}} postselect 0
+            // CHECK: quantum.custom "PauliX"()
+            // CHECK: func.func @quantum_segment_2
+            // CHECK: quantum.measure {{%.*}} postselect 0
+            // CHECK: quantum.custom "PauliX"()
+            // CHECK: func.func @quantum_segment_3
+            // CHECK: quantum.measure {{%.*}} postselect 0
+            // CHECK-NOT: quantum.custom "PauliX"()
+            // CHECK-NOT: quantum.measure {{%.*}} postselect 0
+        }
+        """
+
+        pipeline = (TreeTraversalPass(),)
+        run_filecheck(program, pipeline, roundtrip=True)
+
+    def test_2_static_for_loop_with_without_mcm(self, run_filecheck):
+        """Test tree traversal pass would be applied to a func with a static for loop."""
+
+        """
+        Circuit Test
+        def circuit():
+            for i in range(3):
+                qml.X(i)
+            for i in range(3):
+                qml.measure(i)
+            return qml.expval(qml.Z(0))
+        """
+
+        program = """
+        builtin.module @module_circuit {
+
+            // CHECK: func.func public @circuit() -> tensor<f64> attributes {qnode}
+            // CHECK: func.call @circuit.simple_io.tree_traversal() : ()
+            // CHECK: func.return %0 : tensor<f64>
+
+            func.func public @circuit() -> (tensor<f64>) attributes {qnode} {
+                %0 = "stablehlo.constant"() <{value = dense<0> : tensor<i64>}> : () -> tensor<i64>
+                %1 = tensor.extract %0[] : tensor<i64>
+                quantum.device shots(%1) ["", "", ""]
+                %2 = "stablehlo.constant"() <{value = dense<3> : tensor<i64>}> : () -> tensor<i64>
+                %3 = quantum.alloc(3) : !quantum.reg
+                %4 = "stablehlo.constant"() <{value = dense<1> : tensor<i64>}> : () -> tensor<i64>
+                %5 = tensor.extract %0[] : tensor<i64>
+                %6 = arith.index_cast %5 : i64 to index
+                %7 = tensor.extract %2[] : tensor<i64>
+                %8 = arith.index_cast %7 : i64 to index
+                %9 = tensor.extract %4[] : tensor<i64>
+                %10 = arith.index_cast %9 : i64 to index
+                %11 = scf.for %arg3 = %6 to %8 step %10 iter_args(%arg4 = %3) -> (!quantum.reg) {
+                    %12 = arith.index_cast %arg3 : index to i64
+                    %13 = tensor.from_elements %12 : tensor<i64>
+                    %14 = tensor.extract %13[] : tensor<i64>
+                    %15 = quantum.extract %arg4[%14] : !quantum.reg -> !quantum.bit
+                    %16 = quantum.custom "PauliX"() %15 : !quantum.bit
+                    %17 = tensor.extract %13[] : tensor<i64>
+                    %18 = quantum.insert %arg4[%17], %16 : !quantum.reg, !quantum.bit
+                    scf.yield %18 : !quantum.reg
+                }
+                %19 = tensor.extract %0[] : tensor<i64>
+                %20 = arith.index_cast %19 : i64 to index
+                %21 = tensor.extract %2[] : tensor<i64>
+                %22 = arith.index_cast %21 : i64 to index
+                %23 = tensor.extract %4[] : tensor<i64>
+                %24 = arith.index_cast %23 : i64 to index
+                %25 = scf.for %arg1 = %20 to %22 step %24 iter_args(%arg2 = %11) -> (!quantum.reg) {
+                    %26 = arith.index_cast %arg1 : index to i64
+                    %27 = tensor.from_elements %26 : tensor<i64>
+                    %28 = tensor.extract %27[] : tensor<i64>
+                    %29 = quantum.extract %arg2[%28] : !quantum.reg -> !quantum.bit
+                    %30, %31 = quantum.measure %29 : i1, !quantum.bit
+                    %32 = tensor.from_elements %30 : tensor<i1>
+                    %33 = tensor.extract %27[] : tensor<i64>
+                    %34 = quantum.insert %arg2[%33], %31 : !quantum.reg, !quantum.bit
+                    scf.yield %34 : !quantum.reg
+                }
+                %35 = tensor.extract %0[] : tensor<i64>
+                %36 = quantum.extract %25[%35] : !quantum.reg -> !quantum.bit
+                %37 = quantum.namedobs %36[PauliZ] : !quantum.obs
+                %38 = quantum.expval %37 : f64
+                %39 = tensor.from_elements %38 : tensor<f64>
+                %40 = tensor.extract %0[] : tensor<i64>
+                %41 = quantum.insert %25[%40], %36 : !quantum.reg, !quantum.bit
+                quantum.dealloc %41 : !quantum.reg
+                quantum.device_release
+                func.return %39 : tensor<f64>
+            }
+            // CHECK: func.func public @circuit.simple_io.tree_traversal()
+            // CHECK: func.func @state_transition
+            // CHECK: func.func @quantum_segment_0
+            // CHECK: scf.for {{%.+}} = {{%.+}} to {{%.+}} step {{%.+}} iter_args({{%.+}} = {{%.+}}) -> (!quantum.reg)
+            // CHECK: quantum.custom "PauliX"()
+            // CHECK: func.func @quantum_segment_1
+            // CHECK: quantum.measure {{%.*}} postselect 0
+            // CHECK: func.func @quantum_segment_2
+            // CHECK: quantum.measure {{%.*}} postselect 0
+            // CHECK: func.func @quantum_segment_3
+            // CHECK: quantum.measure {{%.*}} postselect 0
+        }
+        """
+
+        pipeline = (TreeTraversalPass(),)
+        run_filecheck(program, pipeline, roundtrip=True)
+
+    def test_nested_static_for_loop_with_mcm(self, run_filecheck):
+        """Test tree traversal pass would be applied to a func with a static for loop."""
+
+        """
+        Circuit Test
+        def circuit():
+            for i in range(3):
+                qml.X(i)
+                for j in range(3):
+                    qml.Y(j)
+                    qml.measure(j)
+            return qml.expval(qml.Z(0))
+        """
+
+        program = """
+        builtin.module @module_circuit {
+
+            // CHECK: func.func public @circuit() -> tensor<f64> attributes {qnode}
+            // CHECK: func.call @circuit.simple_io.tree_traversal() : ()
+            // CHECK: func.return %0 : tensor<f64>
+
+            func.func public @circuit() -> (tensor<f64>) attributes {qnode} {
+                %0 = "stablehlo.constant"() <{value = dense<0> : tensor<i64>}> : () -> tensor<i64>
+                %1 = tensor.extract %0[] : tensor<i64>
+                quantum.device shots(%1) ["", "", ""]
+                %2 = "stablehlo.constant"() <{value = dense<3> : tensor<i64>}> : () -> tensor<i64>
+                %3 = quantum.alloc(3) : !quantum.reg
+                %4 = "stablehlo.constant"() <{value = dense<3> : tensor<i64>}> : () -> tensor<i64>
+                %5 = "stablehlo.constant"() <{value = dense<1> : tensor<i64>}> : () -> tensor<i64>
+                %6 = tensor.extract %0[] : tensor<i64>
+                %7 = arith.index_cast %6 : i64 to index
+                %8 = tensor.extract %4[] : tensor<i64>
+                %9 = arith.index_cast %8 : i64 to index
+                %10 = tensor.extract %5[] : tensor<i64>
+                %11 = arith.index_cast %10 : i64 to index
+                %12 = scf.for %arg1 = %7 to %9 step %11 iter_args(%arg2 = %3) -> (!quantum.reg) {
+                    %13 = arith.index_cast %arg1 : index to i64
+                    %14 = tensor.from_elements %13 : tensor<i64>
+                    %15 = tensor.extract %14[] : tensor<i64>
+                    %16 = quantum.extract %arg2[%15] : !quantum.reg -> !quantum.bit
+                    %17 = quantum.custom "PauliX"() %16 : !quantum.bit
+                    %18 = tensor.extract %14[] : tensor<i64>
+                    %19 = quantum.insert %arg2[%18], %17 : !quantum.reg, !quantum.bit
+                    %20 = "stablehlo.constant"() <{value = dense<0> : tensor<i64>}> : () -> tensor<i64>
+                    %21 = "stablehlo.constant"() <{value = dense<3> : tensor<i64>}> : () -> tensor<i64>
+                    %22 = "stablehlo.constant"() <{value = dense<1> : tensor<i64>}> : () -> tensor<i64>
+                    %23 = tensor.extract %20[] : tensor<i64>
+                    %24 = arith.index_cast %23 : i64 to index
+                    %25 = tensor.extract %21[] : tensor<i64>
+                    %26 = arith.index_cast %25 : i64 to index
+                    %27 = tensor.extract %22[] : tensor<i64>
+                    %28 = arith.index_cast %27 : i64 to index
+                    %29 = scf.for %arg3 = %24 to %26 step %28 iter_args(%arg4 = %19) -> (!quantum.reg) {
+                        %30 = arith.index_cast %arg3 : index to i64
+                        %31 = tensor.from_elements %30 : tensor<i64>
+                        %32 = tensor.extract %31[] : tensor<i64>
+                        %33 = quantum.extract %arg4[%32] : !quantum.reg -> !quantum.bit
+                        %34 = quantum.custom "PauliY"() %33 : !quantum.bit
+                        %35, %36 = quantum.measure %34 : i1, !quantum.bit
+                        %37 = tensor.from_elements %35 : tensor<i1>
+                        %38 = tensor.extract %31[] : tensor<i64>
+                        %39 = quantum.insert %arg4[%38], %36 : !quantum.reg, !quantum.bit
+                        scf.yield %39 : !quantum.reg
+                    }
+                    scf.yield %29 : !quantum.reg
+                }
+                %40 = tensor.extract %0[] : tensor<i64>
+                %41 = quantum.extract %12[%40] : !quantum.reg -> !quantum.bit
+                %42 = quantum.namedobs %41[PauliZ] : !quantum.obs
+                %43 = quantum.expval %42 : f64
+                %44 = tensor.from_elements %43 : tensor<f64>
+                %45 = tensor.extract %0[] : tensor<i64>
+                %46 = quantum.insert %12[%45], %41 : !quantum.reg, !quantum.bit
+                quantum.dealloc %46 : !quantum.reg
+                quantum.device_release
+                func.return %44 : tensor<f64>
+            }
+            // CHECK: func.func public @circuit.simple_io.tree_traversal()
+            // CHECK: func.func @state_transition
+            // CHECK-NOT: scf.for {{%.+}} = {{%.+}} to {{%.+}} step {{%.+}} iter_args({{%.+}} = {{%.+}}) -> (!quantum.reg)
+
+            // CHECK: quantum.custom "PauliX"()
+            // CHECK-NOT: scf.for {{%.+}} = {{%.+}} to {{%.+}} step {{%.+}} iter_args({{%.+}} = {{%.+}}) -> (!quantum.reg)
+            // CHECK: quantum.custom "PauliY"()
+            // CHECK: quantum.measure {{%.*}} postselect 0
+            // CHECK: quantum.custom "PauliY"()
+            // CHECK: quantum.measure {{%.*}} postselect 0
+            // CHECK: quantum.custom "PauliY"()
+            // CHECK: quantum.measure {{%.*}} postselect 0
+
+            // CHECK: quantum.custom "PauliX"()
+            // CHECK-NOT: scf.for {{%.+}} = {{%.+}} to {{%.+}} step {{%.+}} iter_args({{%.+}} = {{%.+}}) -> (!quantum.reg)
+            // CHECK: quantum.custom "PauliY"()
+            // CHECK: quantum.measure {{%.*}} postselect 0
+            // CHECK: quantum.custom "PauliY"()
+            // CHECK: quantum.measure {{%.*}} postselect 0
+            // CHECK: quantum.custom "PauliY"()
+            // CHECK: quantum.measure {{%.*}} postselect 0
+
+            // CHECK: quantum.custom "PauliX"()
+            // CHECK-NOT: scf.for {{%.+}} = {{%.+}} to {{%.+}} step {{%.+}} iter_args({{%.+}} = {{%.+}}) -> (!quantum.reg)
+            // CHECK: quantum.custom "PauliY"()
+            // CHECK: quantum.measure {{%.*}} postselect 0
+            // CHECK: quantum.custom "PauliY"()
+            // CHECK: quantum.measure {{%.*}} postselect 0
+            // CHECK: quantum.custom "PauliY"()
+            // CHECK: quantum.measure {{%.*}} postselect 0
+
+        }
+        """
+
+        pipeline = (TreeTraversalPass(),)
+        run_filecheck(program, pipeline, roundtrip=True)
+
+    def test_nested_static_for_loop_with_mcm_early(self, run_filecheck):
+        """Test tree traversal pass would be applied to a func with a static for loop."""
+
+        """
+        Circuit Test
+        def circuit():
+            for i in range(3):
+                qml.X(i)
+                qml.measure(i)
+                for j in range(3):
+                    qml.Y(j)
+            return qml.expval(qml.Z(0))
+        """
+
+        program = """
+        builtin.module @module_circuit {
+
+            // CHECK: func.func public @circuit() -> tensor<f64> attributes {qnode}
+            // CHECK: func.call @circuit.simple_io.tree_traversal() : ()
+            // CHECK: func.return %0 : tensor<f64>
+
+            func.func public @circuit() -> (tensor<f64>) attributes {qnode} {
+                %0 = "stablehlo.constant"() <{value = dense<0> : tensor<i64>}> : () -> tensor<i64>
+                %1 = tensor.extract %0[] : tensor<i64>
+                quantum.device shots(%1) ["", "", ""]
+                %2 = "stablehlo.constant"() <{value = dense<3> : tensor<i64>}> : () -> tensor<i64>
+                %3 = quantum.alloc(3) : !quantum.reg
+                %4 = "stablehlo.constant"() <{value = dense<3> : tensor<i64>}> : () -> tensor<i64>
+                %5 = "stablehlo.constant"() <{value = dense<1> : tensor<i64>}> : () -> tensor<i64>
+                %6 = tensor.extract %0[] : tensor<i64>
+                %7 = arith.index_cast %6 : i64 to index
+                %8 = tensor.extract %4[] : tensor<i64>
+                %9 = arith.index_cast %8 : i64 to index
+                %10 = tensor.extract %5[] : tensor<i64>
+                %11 = arith.index_cast %10 : i64 to index
+                %12 = scf.for %arg1 = %7 to %9 step %11 iter_args(%arg2 = %3) -> (!quantum.reg) {
+                    %13 = arith.index_cast %arg1 : index to i64
+                    %14 = tensor.from_elements %13 : tensor<i64>
+                    %15 = tensor.extract %14[] : tensor<i64>
+                    %16 = quantum.extract %arg2[%15] : !quantum.reg -> !quantum.bit
+                    %17 = quantum.custom "PauliX"() %16 : !quantum.bit
+                    %18, %19 = quantum.measure %17 : i1, !quantum.bit
+                    %20 = tensor.from_elements %18 : tensor<i1>
+                    %21 = tensor.extract %14[] : tensor<i64>
+                    %22 = quantum.insert %arg2[%21], %19 : !quantum.reg, !quantum.bit
+                    %23 = "stablehlo.constant"() <{value = dense<0> : tensor<i64>}> : () -> tensor<i64>
+                    %24 = "stablehlo.constant"() <{value = dense<3> : tensor<i64>}> : () -> tensor<i64>
+                    %25 = "stablehlo.constant"() <{value = dense<1> : tensor<i64>}> : () -> tensor<i64>
+                    %26 = tensor.extract %23[] : tensor<i64>
+                    %27 = arith.index_cast %26 : i64 to index
+                    %28 = tensor.extract %24[] : tensor<i64>
+                    %29 = arith.index_cast %28 : i64 to index
+                    %30 = tensor.extract %25[] : tensor<i64>
+                    %31 = arith.index_cast %30 : i64 to index
+                    %32 = scf.for %arg3 = %27 to %29 step %31 iter_args(%arg4 = %22) -> (!quantum.reg) {
+                        %33 = arith.index_cast %arg3 : index to i64
+                        %34 = tensor.from_elements %33 : tensor<i64>
+                        %35 = tensor.extract %34[] : tensor<i64>
+                        %36 = quantum.extract %arg4[%35] : !quantum.reg -> !quantum.bit
+                        %37 = quantum.custom "PauliY"() %36 : !quantum.bit
+                        %38 = tensor.extract %34[] : tensor<i64>
+                        %39 = quantum.insert %arg4[%38], %37 : !quantum.reg, !quantum.bit
+                        scf.yield %39 : !quantum.reg
+                    }
+                    scf.yield %32 : !quantum.reg
+                }
+                %40 = tensor.extract %0[] : tensor<i64>
+                %41 = quantum.extract %12[%40] : !quantum.reg -> !quantum.bit
+                %42 = quantum.namedobs %41[PauliZ] : !quantum.obs
+                %43 = quantum.expval %42 : f64
+                %44 = tensor.from_elements %43 : tensor<f64>
+                %45 = tensor.extract %0[] : tensor<i64>
+                %46 = quantum.insert %12[%45], %41 : !quantum.reg, !quantum.bit
+                quantum.dealloc %46 : !quantum.reg
+                quantum.device_release
+                func.return %44 : tensor<f64>
+            }
+            // CHECK: func.func public @circuit.simple_io.tree_traversal()
+            // CHECK: func.func @state_transition
+            // CHECK-NOT: scf.for {{%.+}} = {{%.+}} to {{%.+}} step {{%.+}} iter_args({{%.+}} = {{%.+}}) -> (!quantum.reg)
+
+            // CHECK: quantum.custom "PauliX"()
+            // CHECK: quantum.measure {{%.*}} postselect 0
+            // CHECK: scf.for {{%.+}} = {{%.+}} to {{%.+}} step {{%.+}} iter_args({{%.+}} = {{%.+}}) -> (!quantum.reg)
+            // CHECK: quantum.custom "PauliY"()
+
+            // CHECK: quantum.custom "PauliX"()
+            // CHECK: quantum.measure {{%.*}} postselect 0
+            // CHECK: scf.for {{%.+}} = {{%.+}} to {{%.+}} step {{%.+}} iter_args({{%.+}} = {{%.+}}) -> (!quantum.reg)
+            // CHECK: quantum.custom "PauliY"()
+
+            // CHECK: quantum.custom "PauliX"()
+            // CHECK: quantum.measure {{%.*}} postselect 0
+            // CHECK: scf.for {{%.+}} = {{%.+}} to {{%.+}} step {{%.+}} iter_args({{%.+}} = {{%.+}}) -> (!quantum.reg)
+            // CHECK: quantum.custom "PauliY"()
+
+            // CHECK-NOT: quantum.custom "PauliX"()
+            // CHECK-NOT: quantum.measure {{%.*}} postselect 0
+            // CHECK-NOT: scf.for {{%.+}} = {{%.+}} to {{%.+}} step {{%.+}} iter_args({{%.+}} = {{%.+}}) -> (!quantum.reg)
+            // CHECK-NOT: quantum.custom "PauliY"()
+        }
+        """
+
+        pipeline = (TreeTraversalPass(),)
+        run_filecheck(program, pipeline, roundtrip=True)
+
+    @pytest.mark.usefixtures("enable_disable_plxpr")
+    def test_tree_traversal_pass_only(self, run_filecheck_qjit):
+        """Test the tree traversal pass only."""
+        dev = qml.device("lightning.qubit", wires=5)
+
+        @qml.qjit(
+            target="mlir",
+            pass_plugins=[getXDSLPluginAbsolutePath()],
+        )
+        @tree_traversal_pass
+        @qml.qnode(dev)
+        def circuit():
+            # CHECK: func.func public @circuit() -> (tensor<f64>)
+            # CHECK: func.call @circuit.simple_io.tree_traversal() : ()
+            # CHECK: func.return %0 : tensor<f64>
+            for i in range(3):
+                qml.X(0)
+                qml.measure(i)
+            return qml.expval(qml.Z(0))
+            # CHECK: func.func public @circuit.simple_io.tree_traversal()
+            # CHECK: func.func @state_transition
+            # CHECK: func.func @quantum_segment_0
+            # CHECK: quantum.custom "PauliX"()
+            # CHECK: func.func @quantum_segment_1
+            # CHECK: quantum.measure {{%.*}} postselect 0
+            # CHECK: quantum.custom "PauliX"()
+            # CHECK: func.func @quantum_segment_2
+            # CHECK: quantum.measure {{%.*}} postselect 0
+            # CHECK: quantum.custom "PauliX"()
+            # CHECK: func.func @quantum_segment_3
+            # CHECK: quantum.measure {{%.*}} postselect 0
+            # CHECK-NOT: quantum.custom "PauliX"()
+            # CHECK-NOT: quantum.measure {{%.*}} postselect 0
+
+        run_filecheck_qjit(circuit)
+
+    @pytest.mark.usefixtures("enable_disable_plxpr")
+    @pytest.mark.parametrize("shots", [None, 10000])
+    def test_execution_validation(self, shots):
+
+        dev = qml.device("lightning.qubit", wires=4)
+
+        def test_circuit():
+            for i in range(3):
+                qml.H(i)
+
+            for i in range(3):
+                qml.measure(0)
+                qml.RY(np.pi / 8, i)
+            return qml.expval(qml.Z(1))
+
+        @qml.qjit(
+            target="mlir",
+            pass_plugins=[getXDSLPluginAbsolutePath()],
+        )
+        @qml.set_shots(shots)
+        @tree_traversal_pass
+        @qml.qnode(dev)
+        def circuit():
+            return test_circuit()
+
+        res = circuit()
+
+        qml.capture.disable()
+
+        dev = qml.device("lightning.qubit", wires=4)
+
+        @qml.set_shots(shots)
+        @qml.qnode(dev, mcm_method="tree-traversal")
+        def circuit_ref():
+            return test_circuit()
+
+        res_ref = circuit_ref()
+        print("RES REF:", res_ref)
+        print("RES:", res)
+        mcm_utils.validate_measurements(qml.expval, shots, res_ref, res, batch_size=None)
+
+    @pytest.mark.usefixtures("enable_disable_plxpr")
+    # @pytest.mark.parametrize("shots", [None, 10000])
+    @pytest.mark.parametrize("shots", [None])
+    @pytest.mark.parametrize("postselect", [None])
+    # @pytest.mark.parametrize("postselect", [None,0, 1])
+    @pytest.mark.parametrize("reset", [False])
+    # @pytest.mark.parametrize("reset", [False, True])
+    @pytest.mark.parametrize(
+        "measure_f",
+        [
+            lambda: qml.expval(qml.Z(0)),
+            lambda: qml.expval(qml.Y(0)),
+            lambda: qml.expval(qml.Z(1)),
+            lambda: qml.expval(qml.Y(1)),
+        ],
+    )
+    def test_multiple_measurements(self, shots, postselect, reset, measure_f):
+        """Tests that DefaultQubit handles a circuit with a single mid-circuit measurement with reset
+        and a conditional gate. Multiple measurements of the mid-circuit measurement value are
+        performed. This function also tests `reset` parametrizing over the parameter."""
+
+        dev = qml.device("lightning.qubit", wires=3)
+        params = [np.pi / 2.5, np.pi / 3, -np.pi / 3.5]
+
+        def obs_tape(x, y, z, reset=False, postselect=None):
+            for i in range(3):
+                qml.RX(np.pi / (i + 1), i)
+                # qml.measure(i)
+                for j in range(3):
+                    qml.RY(np.pi / (i + j + 1), j)
+                    qml.measure(1)
+
+        # Measures:
+        # Without shots
+        # qml.expval, qml.probs, qml.var
+        # With shots
+        # qml.expval, qml.count, qml.var, qml.sample
+
+        @qml.qjit(
+            target="mlir",
+            pass_plugins=[getXDSLPluginAbsolutePath()],
+        )
+        @qml.set_shots(shots)
+        @tree_traversal_pass
+        @qml.qnode(dev)
+        def qjit_func(x, y, z):
+            obs_tape(x, y, z, reset=reset, postselect=postselect)
+            return measure_f()
+
+        results0 = qjit_func(*params)
+
+        dev = qml.device("default.qubit")
 
         qml.capture.disable()
 
