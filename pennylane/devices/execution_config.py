@@ -162,6 +162,24 @@ class MCMConfig:
             ),
         )
 
+    def __repr__(self):
+        """Custom __repr__ for displaying the MCMConfig."""
+        mcm_method: str | None = (
+            self.mcm_method
+            if self.mcm_method is None or isinstance(self.mcm_method, str)
+            else self.mcm_method.value
+        )
+        postselect_mode: str | None = (
+            self.postselect_mode
+            if self.postselect_mode is None or isinstance(self.postselect_mode, str)
+            else self.postselect_mode.value
+        )
+        if mcm_method:
+            mcm_method = "'" + mcm_method + "'"
+        if postselect_mode:
+            postselect_mode = "'" + postselect_mode + "'"
+        return f"MCMConfig(mcm_method={mcm_method}, postselect_mode={postselect_mode})"
+
 
 # pylint: disable=too-many-instance-attributes
 @dataclass(frozen=True)
