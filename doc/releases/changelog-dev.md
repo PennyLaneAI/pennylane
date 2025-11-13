@@ -16,6 +16,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* The `ResourcesUndefinedError` has been removed from the `adjoint`, `ctrl`, and `pow` resource
+  decomposition methods of `ResourceOperator`.
+  [(#8598)](https://github.com/PennyLaneAI/pennylane/pull/8598)
+
 * `qml.for_loop` will now fall back to a standard Python `for` loop if capturing a condensed, structured loop fails
   with program capture enabled.
   [(#8615)](https://github.com/PennyLaneAI/pennylane/pull/8615)
@@ -401,6 +405,7 @@ Astral Cai,
 Yushao Chen,
 Marcus Edwards,
 Lillian Frederiksen,
+Austin Huang,
 Soran Jahangiri,
 Christina Lee,
 Joseph Lee,
