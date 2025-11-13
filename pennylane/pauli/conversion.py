@@ -291,7 +291,7 @@ def _generalized_pauli_decompose_sparse(  # pylint: disable=too-many-statements,
         ... )
         >>> coeffs
         array([1.+0.j])
-        >>> terms  # doctest: +ELLIPSIS
+        >>> terms
         [X(0)]
     """
     if not SCIPY_AVAILABLE:
@@ -366,7 +366,10 @@ def _generalized_pauli_decompose_sparse(  # pylint: disable=too-many-statements,
     tolerance = 1e-12
     coeffs = []
     obs_terms = []
-    for word in sorted(coeffs_map):
+    for pauli_rep in product("IXYZ", repeat=num_qubits):
+        word = "".join(pauli_rep)
+        if word not in coeffs_map:
+            continue
         coeff = coeffs_map[word]
         if abs(coeff) <= tolerance:
             continue
