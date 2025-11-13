@@ -255,7 +255,7 @@ def _specs_qjit_intermediate_passes(
         else "all"
     )
     if mlir_levels == "all" or len(mlir_levels) > 0:
-        results = mlir_specs(qjit, mlir_levels)(*args, **kwargs)
+        results = mlir_specs(qjit, mlir_levels, *args, **kwargs)
 
         for level_name, res in results.items():
             res_resources = Resources(

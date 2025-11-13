@@ -24,7 +24,7 @@ from catalyst.jit import qjit
 from catalyst.passes.xdsl_plugin import getXDSLPluginAbsolutePath
 
 from ..compiler import Compiler
-from .specs_collector import specs_collect
+from .specs_collector import ResourcesResult, specs_collect
 
 if TYPE_CHECKING:
     from catalyst.jit import QJIT
@@ -48,18 +48,26 @@ def _get_mlir_module(qnode: QJIT, args, kwargs) -> ModuleOp:
 
 
 def mlir_specs(
-    qnode: QJIT, level: None | int | tuple[int] | list[int] | Literal["all"] = None
-) -> callable:
+    qnode: QJIT, level: int | tuple[int] | list[int] | Literal["all"], *args, **kwargs
+) -> ResourcesResult | dict[str, ResourcesResult]:
     """Compute the specs used for a circuit at the level of an MLIR pass.
 
     Args:
         qnode (QNode): The (QJIT'd) qnode to get the specs for
-        level (None | int | tuple[int] | list[int] | "all", optional): The level of the MLIR pass to get the specs for
+        level (int | tuple[int] | list[int] | "all"): The level of the MLIR pass to get the specs for
+        *args: Positional arguments to pass to the QNode
+        **kwargs: Keyword arguments to pass to the QNode
 
     Returns:
-        callable: A callable that returns the specs for the circuit at the specified level
+        ResourcesResult | dict[str, ResourcesResult]: The resources for the circuit at the specified level
     """
-    cache: dict[int, tuple[dict[str, int], str]] = {}
+    cache: dict[int, tuple[ResourcesResult, str]] = {}
+
+    if args or kwargs:
+        warnings.warn(
+            "The `specs` function does not yet support dynamic arguments, so the results may not reflect information provided by the arguments.",
+            UserWarning,
+        )
 
     max_level = level
     if max_level == "all":
@@ -82,26 +90,17 @@ def mlir_specs(
         if max_level is not None and pass_level >= max_level:
             raise StopCompilation("Stopping compilation after reaching max specs level.")
 
-    @wraps(qnode)
-    def wrapper(*args, **kwargs):
-        if args or kwargs:
-            warnings.warn(
-                "The `specs` function does not yet support dynamic arguments.",
-                UserWarning,
-            )
-        mlir_module = _get_mlir_module(qnode, args, kwargs)
-        try:
-            Compiler.run(mlir_module, callback=_specs_callback)
-        except StopCompilation:
-            # We use StopCompilation to interrupt the compilation once we reach
-            # the desired level
-            pass
+    mlir_module = _get_mlir_module(qnode, args, kwargs)
+    try:
+        Compiler.run(mlir_module, callback=_specs_callback)
+    except StopCompilation:
+        # We use StopCompilation to interrupt the compilation once we reach
+        # the desired level
+        pass
 
-        if level == "all":
-            return {f"{cache[lvl][1]} (MLIR-{lvl})": cache[lvl][0] for lvl in sorted(cache.keys())}
-        if isinstance(level, (tuple, list)):
-            return {f"{cache[lvl][1]} (MLIR-{lvl})": cache[lvl][0] for lvl in level if lvl in cache}
-        # Just one level was specified
-        return cache.get(level, cache[max(cache.keys())])[0]
-
-    return wrapper
+    if level == "all":
+        return {f"{cache[lvl][1]} (MLIR-{lvl})": cache[lvl][0] for lvl in sorted(cache.keys())}
+    if isinstance(level, (tuple, list)):
+        return {f"{cache[lvl][1]} (MLIR-{lvl})": cache[lvl][0] for lvl in level if lvl in cache}
+    # Just one level was specified
+    return cache.get(level, cache[max(cache.keys())])[0]
