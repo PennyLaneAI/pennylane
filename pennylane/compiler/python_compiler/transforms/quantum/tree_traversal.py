@@ -57,10 +57,12 @@ def initialize_memref_with_value(dest: SSAValue, value: SSAValue, size: int | SS
     )
     return (c0_index, c1_index, for_op)
 
+print_everthing = True
+print_everthing = False
 
 def print_mlir(op, msg="", should_print: bool = True):
     """ Print the MLIR of an operation with a message. """
-    should_print = False
+    should_print = print_everthing
     if should_print:
         printer = Printer()
         print("-" * 100)
@@ -77,7 +79,7 @@ def print_mlir(op, msg="", should_print: bool = True):
 
 def print_ssa_values(values, msg="SSA Values || ", should_print: bool = True):
     """ Print SSA Values """
-    should_print = False
+    should_print = print_everthing
     if should_print:
         print(f"// {msg}")
         for val in values:
@@ -105,27 +107,27 @@ class TreeTraversalPass(ModulePass):
 
     name = "tree-traversal"
 
-    def apply(self, _ctx: context.Context, module: builtin.ModuleOp) -> None:
+    def apply(self, _ctx: context.Context, op: builtin.ModuleOp) -> None:
         """Apply the tree-traversal pass to all QNode functions in the module."""
 
         print_stuff = False
         print_stuff = True
-        print_mlir(module, msg="Before Tree Traversal Pass", should_print=print_stuff)
+        print_mlir(op, msg="Before Tree Traversal Pass", should_print=print_stuff)
 
-        for op in module.ops:
-            if isinstance(op, func.FuncOp) and "qnode" in op.attributes:
-                rewriter = PatternRewriter(op)
+        for module_op in op.ops:
+            if isinstance(module_op, func.FuncOp) and "qnode" in module_op.attributes:
+                rewriter = PatternRewriter(module_op)
 
                 unroll_pattern = UnrollLoopPattern()
-                unroll_pattern.match_and_rewrite(op, rewriter)
+                unroll_pattern.match_and_rewrite(module_op, rewriter)
 
-                IfOperatorPartitioningPass().match_and_rewrite(op, rewriter)
+                IfOperatorPartitioningPass().match_and_rewrite(module_op, rewriter)
 
-                # print_mlir(module, msg="After If-For Passes", should_print=print_stuff)
+                print_mlir(op, msg="After If-For Passes", should_print=print_stuff)
 
-                TreeTraversalPattern().match_and_rewrite(op, rewriter)
+                TreeTraversalPattern().match_and_rewrite(module_op, rewriter)
 
-        print_mlir(module, msg="After Tree Traversal Pass", should_print=print_stuff)
+        print_mlir(op, msg="After Tree Traversal Pass", should_print=print_stuff)
 
 
 tree_traversal_pass = compiler_transform(TreeTraversalPass)
@@ -169,7 +171,7 @@ class TreeTraversalPattern(RewritePattern):
         self.folded_result_type = builtin.MemRefType(builtin.f64, (builtin.DYNAMIC_INDEX,))
 
     @op_type_rewrite_pattern
-    def match_and_rewrite(self, func_op: func.FuncOp, rewriter: PatternRewriter):
+    def match_and_rewrite(self, func_op: func.FuncOp, rewriter: PatternRewriter):  # pylint: disable=arguments-differ
         """Transform a quantum function (qnode) to perform tree-traversal simulation."""
         self.original_func_op = func_op
 
@@ -278,11 +280,12 @@ class TreeTraversalPattern(RewritePattern):
 
                     # restore qubit values from before the register boundary
                     rewriter.insertion_point = InsertPoint.after(op)
+                    excluded_ops = insert_ops  # Extract to avoid cell-var-from-loop
                     for qb, idx in list(qubit_to_reg_idx.items()):
                         extract_op = quantum.ExtractOp(current_reg, idx)
                         rewriter.insert(extract_op)
                         qb.replace_by_if(
-                            extract_op.qubit, lambda use: use.operation not in insert_ops
+                            extract_op.qubit, lambda use: use.operation not in excluded_ops
                         )
                         qubit_to_reg_idx[extract_op.qubit] = idx
                         del qubit_to_reg_idx[qb]
@@ -513,9 +516,10 @@ class TreeTraversalPattern(RewritePattern):
 
             # Move the real measure IfOp before the mcm inside the inner IfOp
             real_mcm_op.detach()
-            rewriter.insert_op(real_mcm_op, InsertPoint.before(where_to_move_real_mcm))
+            # rewriter.insert_op(real_mcm_op, InsertPoint.before(where_to_move_real_mcm))
 
             if isinstance(where_to_move_real_mcm, quantum.MeasureOp):
+                rewriter.insert_op(real_mcm_op, InsertPoint.before(where_to_move_real_mcm))
                 for new_mcm_use, old_mcm_use in zip(
                     real_mcm_op.results, where_to_move_real_mcm.results
                 ):
@@ -529,6 +533,9 @@ class TreeTraversalPattern(RewritePattern):
                     if isinstance(op, quantum.MeasureOp):
                         op.operands = (old_mcm_operands,)
                         rewriter.notify_op_modified(op)
+            else:
+                real_mcm_op.erase()
+
 
         # if segment_change:
         #     print_mlir(new_segment, msg=f"After additional transform for segment {segment.depth}")
@@ -1575,7 +1582,7 @@ class IfOperatorPartitioningPass(RewritePattern):
     IfOpWithDepth = Tuple[scf.IfOp, int]
 
     @op_type_rewrite_pattern
-    def match_and_rewrite(self, op: func.FuncOp, rewriter: PatternRewriter) -> None:
+    def match_and_rewrite(self, op: func.FuncOp, rewriter: PatternRewriter) -> None:  # pylint: disable=arguments-differ
         """Partition the if operation into separate branches for each operator."""
 
         self.original_func_op = op
@@ -2312,7 +2319,7 @@ class UnrollLoopPattern(RewritePattern):
         """Initialize UnrollLoopPattern."""
         self.needs_unroll: bool = False
 
-    def match_and_rewrite(self, op: scf.ForOp, rewriter: PatternRewriter) -> None:
+    def match_and_rewrite(self, op: scf.ForOp, rewriter: PatternRewriter) -> None:  # pylint: disable=arguments-differ
         """Unroll nested scf.ForOps into separate branches for each operator."""
 
         self.needs_unroll = self.detect_mcm_in_loop_ops(op)
