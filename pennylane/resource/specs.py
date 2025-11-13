@@ -182,10 +182,21 @@ def _specs_qjit_intermediate_passes(
     from pennylane.compiler.python_compiler.inspection import mlir_specs
 
     single_level = isinstance(level, int)
+
+    # Ensure `level` is always in the form of a sorted list (or "all")
     if single_level:
         level = [level]
     elif level != "all":
         level = list(level)
+
+    if level != "all":
+        level_sorted = sorted(level)
+        if level != level_sorted:
+            warnings.warn(
+                "The 'level' argument to qml.specs for QJIT'd QNodes has been sorted to be in ascending order.",
+                UserWarning,
+            )
+            level = level_sorted
 
     resources = {}
 

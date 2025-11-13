@@ -76,7 +76,7 @@ def mlir_specs(
         pass_name = pass_instance.name if hasattr(pass_instance, "name") else pass_instance
         cache[pass_level] = (
             ops,
-            pass_name if pass_level else "No transforms",
+            pass_name if pass_level else "Before MLIR Passes",
         )
 
         if max_level is not None and pass_level >= max_level:
