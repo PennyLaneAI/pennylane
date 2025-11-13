@@ -434,45 +434,6 @@ def _split_static_args(args, static_argnums):
     return tuple(dynamic_args), tuple(static_args)
 
 
-def _get_jaxpr_cache_key(dynamic_args, static_args, kwargs, abstracted_axes):
-    """Create a hash using the arguments and keyword arguments of a QNode.
-
-    The hash is dependent on the abstract evaluation of ``dynamic_args``. For any indices
-    in ``static_args``, the concrete value of the argument will be used to create
-    the hash. If any arguments have dynamic shapes, their abstract axes will be replaced
-    by the respective letter provided in ``abstracted_axes``.
-
-    For keyword arguments, the string representation of the keyword argument
-    dictionary will be used to create the hash.
-
-    Args:
-        dynamic_args (tuple): dynamic positional arguments of the cached qfunc
-        static_args (tuple): static positional arguments of the cached qfunc
-        kwargs (dict): keyword arguments of the cached qfunc
-        abstract_axes (Optional[tuple[dict[int, str]]]): corresponding abstract axes
-            of positional arguments
-
-    Returns:
-        int: hash to be used as the jaxpr cache's key
-    """
-    serialized = "args="
-
-    for i, arg in enumerate(dynamic_args):
-        if abstracted_axes:
-            serialized_shape = tuple(
-                abstracted_axes[i].get(j, s) for j, s in enumerate(qml.math.shape(arg))
-            )
-        else:
-            serialized_shape = qml.math.shape(arg)
-        serialized += f"{serialized_shape},{qml.math.get_dtype_name(arg)};"
-
-    for arg in static_args:
-        serialized += f"{arg};"
-
-    serialized += f";;{kwargs=}"
-    return hash(serialized)
-
-
 def _extract_qfunc_jaxpr(qnode, abstracted_axes, *args, **kwargs):
     """Process the quantum function of a QNode to create a Jaxpr."""
 
@@ -574,27 +535,19 @@ def _bind_qnode(qnode, *args, **kwargs):
     # We compute ``abstracted_axes`` using the flattened arguments because trying to flatten
     # pytree ``abstracted_axes`` causes the abstract axis dictionaries to get flattened, which
     # we don't want to correctly compute the ``cache_key``.
-    dynamic_args, static_args = _split_static_args(args, qnode.static_argnums)
+    dynamic_args = _split_static_args(args, qnode.static_argnums)[0]
     flat_dynamic_args, dynamic_args_struct = jax.tree_util.tree_flatten(dynamic_args)
-    flat_static_args = jax.tree_util.tree_leaves(static_args)
     abstracted_axes, abstract_shapes = qml.capture.determine_abstracted_axes(flat_dynamic_args)
-    cache_key = _get_jaxpr_cache_key(flat_dynamic_args, flat_static_args, kwargs, abstracted_axes)
 
-    if cached_value := qnode.capture_cache.get(cache_key, None):
-        qfunc_jaxpr, config, out_tree = cached_value
-    else:
-        config = construct_execution_config(
-            qnode, resolve=False
-        )()  # no need for args and kwargs as not resolving
+    config = construct_execution_config(qnode, resolve=False)()
+    # no need for args and kwargs as not resolving
 
-        if abstracted_axes:
-            # We unflatten the ``abstracted_axes`` here to be have the same pytree structure
-            # as the original dynamic arguments
-            abstracted_axes = jax.tree_util.tree_unflatten(dynamic_args_struct, abstracted_axes)
+    if abstracted_axes:
+        # We unflatten the ``abstracted_axes`` here to be have the same pytree structure
+        # as the original dynamic arguments
+        abstracted_axes = jax.tree_util.tree_unflatten(dynamic_args_struct, abstracted_axes)
 
-        qfunc_jaxpr, out_tree = _extract_qfunc_jaxpr(qnode, abstracted_axes, *args, **kwargs)
-
-        qnode.capture_cache[cache_key] = (qfunc_jaxpr, config, out_tree)
+    qfunc_jaxpr, out_tree = _extract_qfunc_jaxpr(qnode, abstracted_axes, *args, **kwargs)
 
     flat_shots = tuple(qnode._shots) if qnode._shots else ()  # pylint: disable=protected-access
 
