@@ -252,7 +252,7 @@ def transform(  # pylint: disable=too-many-arguments,too-many-positional-argumen
 
         >>> jax.make_jaxpr(circuit)()
         { lambda ; . let
-            a:AbstractMeasurement(n_wires=None) = cancel_inverses_transform[
+            a:AbstractMeasurement(n_wires=None) = transform[
             args_slice=slice(0, 0, None)
             consts_slice=slice(0, 0, None)
             inner_jaxpr={ lambda ; . let
@@ -266,8 +266,10 @@ def transform(  # pylint: disable=too-many-arguments,too-many-positional-argumen
                 in (d,) }
             targs_slice=slice(0, None, None)
             tkwargs={}
+            transform=<transform: cancel_inverses>
             ]
         in (a,) }
+
 
         As shown, the transform gets applied as a higher-order primitive, with the jaxpr
         representation of the function being transformed stored in the ``inner_jaxpr``

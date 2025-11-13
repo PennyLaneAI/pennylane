@@ -226,7 +226,7 @@ def all_state_postprocessing(results, measurements, wire_order):
 
 
 @transform
-def _conditional_broastcast_expand(tape):
+def _conditional_broadcast_expand(tape):
     """Apply conditional broadcast expansion to the tape if needed."""
     # Currently, default.qubit does not support native parameter broadcasting with
     # shadow operations. We need to expand the tape to include the broadcasted parameters.
@@ -609,7 +609,7 @@ class DefaultQubit(Device):
         transform_program = TransformProgram()
         if config.mcm_config.mcm_method == "deferred":
             transform_program.add_transform(defer_measurements, num_wires=len(self.wires))
-        transform_program.add_transform(transforms_decompose, gate_set=stopping_condition)
+        transform_program.add_transform(transforms_decompose, stopping_condition=stopping_condition)
 
         return transform_program
 
@@ -660,7 +660,7 @@ class DefaultQubit(Device):
             sample_measurements=accepted_sample_measurement,
             name=self.name,
         )
-        transform_program.add_transform(_conditional_broastcast_expand)
+        transform_program.add_transform(_conditional_broadcast_expand)
         if config.mcm_config.mcm_method == "tree-traversal":
             transform_program.add_transform(broadcast_expand)
 
