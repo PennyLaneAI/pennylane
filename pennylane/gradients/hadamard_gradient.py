@@ -362,7 +362,7 @@ def hadamard_grad(
         "reversed": ("Reversed hadamard test", _reversed_hadamard_test),
         "direct": ("Direct hadamard test", _direct_hadamard_test),
         "reversed-direct": ("Reversed direct hadamard test", _reversed_direct_hadamard_test),
-        "auto": ("Quantum automatic differentiation", _quantum_automatic_differentiation)
+        "auto": ("Quantum automatic differentiation", _quantum_automatic_differentiation),
     }
     try:
         transform_name, gradient_method = modes[mode]
@@ -393,7 +393,9 @@ def hadamard_grad(
     # unless using direct or reversed-direct modes
 
     aux_wire = (
-        _get_aux_wire(aux_wire, tape, device_wires) if mode in ["standard", "reversed"] else None
+        _get_aux_wire(aux_wire, tape, device_wires)
+        if mode in ["standard", "reversed"] or (mode == "auto" and aux_wire is not None)
+        else None
     )
 
     g_tapes = []
@@ -549,7 +551,9 @@ def _quantum_automatic_differentiation(tape, trainable_param_idx, aux_wire) -> t
     # the number of shots need for the expectations.
     trainable_op, _, _ = tape.get_operation(trainable_param_idx)
     _, generators = _get_pauli_generators(trainable_op)
-    _, observables = _get_pauli_terms(tape.measurements[0].obs)   # assumes there's only one observable in the tape
+    _, observables = _get_pauli_terms(
+        tape.measurements[0].obs
+    )  # assumes there's only one observable in the tape
 
     trainable_op.base.compute_grouping()  # Note: only works for Hamiltonians made exclusively of Paulis
     expectations_shots = len(trainable_op.base.grouping_indices)
@@ -560,7 +564,7 @@ def _quantum_automatic_differentiation(tape, trainable_param_idx, aux_wire) -> t
 
         if direct_combinations <= reversed_direct_combinations:
             return _direct_hadamard_test(tape, trainable_param_idx, aux_wire)
-        return _reversed_hadamard_test(tape, trainable_param_idx, aux_wire)
+        return _reversed_direct_hadamard_test(tape, trainable_param_idx, aux_wire)
 
     standard_combinations = expectations_shots * len(generators)
     reversed_combinations = expectations_shots * len(observables)
