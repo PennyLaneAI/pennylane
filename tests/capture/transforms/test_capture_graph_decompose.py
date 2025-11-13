@@ -24,6 +24,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.operation import Operation
 
 jax = pytest.importorskip("jax")
@@ -110,7 +111,10 @@ class TestDecomposeInterpreterGraphEnabled:
     def test_callable_gate_set_not_supported(self):
         """Tests that specifying the gate_set as a function raises an error."""
 
-        with pytest.raises(TypeError, match="Specifying gate_set as a function"):
+        with pytest.raises(
+            PennyLaneDeprecationWarning,
+            match="Passing a function to the gate_set argument is deprecated.",
+        ):
             DecomposeInterpreter(gate_set=lambda op: op.name in {"RX", "RZ", "CNOT"})
 
     @pytest.mark.integration
