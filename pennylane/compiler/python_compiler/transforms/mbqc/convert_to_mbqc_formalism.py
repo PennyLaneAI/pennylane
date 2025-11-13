@@ -53,7 +53,7 @@ _MBQC_TWO_QUBIT_GATES = {
     "CNOT",
 }
 
-_MBQC_GATE_SET = _MBQC_ONE_QUBIT_GATES | _MBQC_TWO_QUBIT_GATES
+_MBQC_GATES = _MBQC_ONE_QUBIT_GATES | _MBQC_TWO_QUBIT_GATES
 
 
 @dataclass(frozen=True)
@@ -692,7 +692,7 @@ class ConvertToMBQCFormalismPattern(
 
         for region in root.regions:
             for op in region.ops:
-                if isinstance(op, CustomOp) and op.gate_name.data in _MBQC_GATE_SET:
+                if isinstance(op, CustomOp) and op.gate_name.data in _MBQC_GATES:
                     callee = builtin.SymbolRefAttr(op.gate_name.data.lower() + "_in_mbqc")
                     arguments = []
                     for param in op.params:
