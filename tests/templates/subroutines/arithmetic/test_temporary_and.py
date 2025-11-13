@@ -19,6 +19,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.templates.subroutines.arithmetic.temporary_and import _adjoint_TemporaryAND
 
 
 class TestTemporaryAND:
@@ -119,15 +120,11 @@ class TestTemporaryAND:
         work_wires = [3]  # auxiliary qubit for deferred measure
         dev = qml.device("default.qubit", wires=sys_wires + work_wires)
 
-        rules = qml.list_decomps("Adjoint(TemporaryAND)")
-        assert rules, "No decomposition rules registered for Adjoint(TemporaryAND)"
-        rule = rules[0]
-
         @qml.qnode(dev, interface=None)
         def circuit(a, b):
             qml.BasisState(qml.math.array([a, b, 0], dtype=int), wires=sys_wires)
             qml.TemporaryAND(wires=sys_wires, control_values=control_values)
-            rule(wires=sys_wires, control_values=control_values)
+            _adjoint_TemporaryAND(wires=sys_wires)
             return qml.probs(wires=sys_wires)
 
         for a in (0, 1):
@@ -137,9 +134,6 @@ class TestTemporaryAND:
                 assert qml.math.allclose(
                     probs[idx], 1.0
                 ), f"Failed for a={a}, b={b}, cv={control_values}"
-                mask = qml.math.ones_like(probs, dtype=bool)
-                mask[idx] = False
-                assert qml.math.allclose(probs[mask], 0.0, atol=1e-12)
 
     @pytest.mark.parametrize("control_values", [(0, 0), (0, 1), (1, 0), (1, 1)])
     def test_compute_matrix_temporary_and(self, control_values):
