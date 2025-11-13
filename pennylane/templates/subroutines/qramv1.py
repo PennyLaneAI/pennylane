@@ -57,7 +57,7 @@ def _node_index(level: int, prefix_value: int) -> int:
 # -----------------------------
 # Select-prefix × Bucket-Brigade with explicit bus routing
 # -----------------------------
-class SelectBucketBrigadeBusQRAM(qml.operation.Operation):
+class BBQRAM(qml.operation.Operation):
     r"""Bucket-brigade QRAM with **explicit bus routing** using 3 qubits per node,
     and an optional **select (MSB) prefix**, plus **hybrid** support.
 
@@ -75,13 +75,15 @@ class SelectBucketBrigadeBusQRAM(qml.operation.Operation):
     def __init__(
         self,
         bitstrings: Sequence[str],
-        select_wires: Sequence[int],
+        select_wires: Sequence[int],  # TODO: remove
         qram_wires: Sequence[int],
         target_wires: Sequence[int],
+        # == TODO: combine into work_wires
         bus_wire: int,
         dir_wires: Sequence[int],
         portL_wires: Sequence[int],
         portR_wires: Sequence[int],
+        # ==
         *,
         mode: str = "quantum",
         select_value: Optional[int] = None,
@@ -274,7 +276,7 @@ class SelectBucketBrigadeBusQRAM(qml.operation.Operation):
                 target = self._portL(self.n_k - 1, p >> 1)
             else:
                 target = self._portR(self.n_k - 1, p >> 1)
-            bit = self.bitstrings[p][j] 
+            bit = self.bitstrings[p][j]
             if bit == "1":
                 ops.append(qml.PauliZ(wires = target))
             elif bit == "0":
@@ -355,7 +357,7 @@ def select_bucket_brigade_bus_qram(
     qram_value: Optional[int] = None,
 ):
     """Functional wrapper for SelectBucketBrigadeBusQRAM."""
-    return SelectBucketBrigadeBusQRAM(
+    return BBQRAM(
         bitstrings,
         select_wires=select_wires,
         qram_wires=qram_wires,
