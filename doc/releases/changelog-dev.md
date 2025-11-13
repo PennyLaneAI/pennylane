@@ -16,6 +16,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* Add the `PCPhaseOp` operation to the xDSL Quantum dialect.
+  [(#8621)](https://github.com/PennyLaneAI/pennylane/pull/8621)
+
 * `qml.for_loop` will now fall back to a standard Python `for` loop if capturing a condensed, structured loop fails
   with program capture enabled.
   [(#8615)](https://github.com/PennyLaneAI/pennylane/pull/8615)
@@ -331,6 +334,11 @@
 * The :func:`~pennylane.compiler.python_compiler.transforms.convert_to_mbqc_formalism_pass` now 
   supports :class:`~xdsl.dialects.scf.IndexSwitchOp` in IR and ignores regions that have no body.
   [(#8632)](https://github.com/PennyLaneAI/pennylane/pull/8632)
+
+* The `convert_to_mbqc_formalism` compilation pass now outlines the operations to represent a gate
+  in the MBQC formalism into subroutines in order to reduce the IR size for large programs.
+  [(#8619)](https://github.com/PennyLaneAI/pennylane/pull/8619)
+
 
 <h3>Documentation 📝</h3>
 
