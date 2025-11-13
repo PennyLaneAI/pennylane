@@ -287,7 +287,7 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> SpecsDict:  # pr
 
     device = original_qnode.device
 
-    if isinstance(level, (int, tuple, list)) or level == "all":
+    if isinstance(level, (int, tuple, list, range)) or level == "all":
         if compute_depth:
             warnings.warn(
                 "Cannot calculate circuit depth for intermediate transformations or compilation passes."
