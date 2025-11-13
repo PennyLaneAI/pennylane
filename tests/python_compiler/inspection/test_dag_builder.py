@@ -23,6 +23,7 @@ from pennylane.compiler.python_compiler.visualization.dag_builder import DAGBuil
 def test_concrete_implementation_works():
     """Unit test for concrete implementation of abc."""
 
+    # pylint: disable=unused-argument
     class ConcreteDAGBuilder(DAGBuilder):
         """Concrete subclass of an ABC for testing purposes."""
 
@@ -79,6 +80,7 @@ def test_abc_cannot_be_instantiated():
 def test_incomplete_subclass():
     """Tests that an incomplete subclass will fail"""
 
+    # pylint: disable=too-few-public-methods
     class IncompleteDAGBuilder(DAGBuilder):
         def add_node(self, *args, **kwargs):
             pass
