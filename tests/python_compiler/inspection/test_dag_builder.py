@@ -16,8 +16,10 @@
 from typing import Any
 
 import pytest
-xdsl = pytest.importorskip("xdsl")
+
 from pennylane.compiler.python_compiler.visualization.dag_builder import DAGBuilder
+
+xdsl = pytest.importorskip("xdsl")
 
 
 def test_concrete_implementation_works():
