@@ -21,6 +21,8 @@ from pennylane.transforms.core import TransformError
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
 
+from pennylane.capture.primitives import transform_prim
+
 
 def _find_eq_with_name(jaxpr, name):
     for eq in jaxpr.eqns:
@@ -1092,9 +1094,10 @@ class TestExpandPlxprTransformIntegration:
 
         jaxpr = jax.make_jaxpr(qfunc)()
 
+        assert jaxpr.eqns[0].primitive == transform_prim
         assert (
-            jaxpr.eqns[0].primitive
-            == qml.transforms.optimization.merge_amplitude_embedding._primitive
+            jaxpr.eqns[0].params["transform"]
+            == qml.transforms.optimization.merge_amplitude_embedding
         )
 
         transformed_qfunc = qml.capture.expand_plxpr_transforms(qfunc)

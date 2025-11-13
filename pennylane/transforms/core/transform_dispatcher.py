@@ -31,21 +31,23 @@ from pennylane.tape import QuantumScript
 from pennylane.typing import ResultBatch
 
 
-def _create_transform_primitive(name):
+@functools.lru_cache
+def _create_transform_primitive():
     try:
         # pylint: disable=import-outside-toplevel
         from pennylane.capture.custom_primitives import QmlPrimitive
     except ImportError:
         return None
 
-    transform_prim = QmlPrimitive(name + "_transform")
+    transform_prim = QmlPrimitive("transform")
     transform_prim.multiple_results = True
     transform_prim.prim_type = "transform"
 
+    # pylint: disable=too-many-arguments, disable=unused-argument
     @transform_prim.def_impl
     def _impl(
         *all_args, inner_jaxpr, args_slice, consts_slice, targs_slice, tkwargs
-    ):  # pylint: disable=unused-argument
+    ):
         from pennylane.capture import _restore_slice  # pylint: disable=import-outside-toplevel
 
         args = all_args[_restore_slice(args_slice)]
@@ -224,8 +226,6 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
         )
 
         self._plxpr_transform = plxpr_transform or _create_plxpr_fallback_transform(self._transform)
-        self._primitive = _create_transform_primitive(self._transform.__name__)
-        _register_primitive_for_expansion(self._primitive, self._plxpr_transform)
 
     @property
     def register(self):
@@ -547,7 +547,7 @@ def _capture_apply(obj, transform, *targs, **tkwargs):
         consts_slice = slice(n_args, n_args + n_consts)
         targs_slice = slice(n_args + n_consts, None)
 
-        results = transform._primitive.bind(  # pylint: disable=protected-access
+        results = _create_transform_primitive().bind(  # pylint: disable=protected-access
             *flat_args,
             *jaxpr.consts,
             *targs,
@@ -556,6 +556,7 @@ def _capture_apply(obj, transform, *targs, **tkwargs):
             consts_slice=consts_slice,
             targs_slice=targs_slice,
             tkwargs=tkwargs,
+            transform=transform,
         )
 
         assert flat_qfunc.out_tree is not None
