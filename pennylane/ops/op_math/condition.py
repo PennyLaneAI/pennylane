@@ -203,7 +203,12 @@ class CondCallable:
         self.branch_fns = [true_fn]
         self.otherwise_fn = false_fn
 
-        if len(elifs) > 0 and not isinstance(elifs[0], tuple):
+        if (
+            len(elifs) == 2
+            and not isinstance(elifs[0], (tuple, list))
+            and isinstance(elifs[1], Callable)
+        ):
+            # elifs = (elif_condition, elif_function)
             elifs = (elifs,)
         if elifs:
             elif_preds, elif_fns = list(zip(*elifs))
