@@ -406,7 +406,7 @@ def _update_counts_from_compressed_res_op(
     gate_set: set[str] | None = None,
     scalar: int = 1,
     config: ResourceConfig | None = None,
-) -> None:
+) -> None:  # pylint: disable=too-many-branches
     """Modifies the `gate_counts_dict` argument by adding the (scaled) resources of the operator provided.
 
     Args:
