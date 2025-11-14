@@ -557,13 +557,13 @@ def _quantum_automatic_differentiation(tape, trainable_param_idx, aux_wire) -> t
         tape.measurements[0].obs
     )  # assumes there's only one observable in the tape
 
-    trainable_op.base.compute_grouping()  # Note: only works for Hamiltonians made exclusively of Paulis
-    expectations_shots = len(trainable_op.base.grouping_indices)
+    def _count_shots(paulis):
+        op = Sum(*paulis)
+        op.compute_grouping()
+        return len(op.grouping_indices)
 
-    observable_op = Sum(*observables)
-
-    observable_op.compute_grouping()
-    observables_shots = len(observable_op.grouping_indices)
+    expectations_shots = _count_shots(generators)
+    observables_shots = _count_shots(observables)
 
     standard = observables_shots * len(generators) <= expectations_shots * len(observables)
 

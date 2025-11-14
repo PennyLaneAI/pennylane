@@ -23,9 +23,12 @@ from pennylane.exceptions import QuantumFunctionError
 from pennylane.gradients import hadamard_gradient
 
 
-def grad_fn(tape, dev, fn=qml.gradients.hadamard_grad, **kwargs):
+def grad_fn(tape, dev, fn=qml.gradients.hadamard_grad, mode="standard", **kwargs):
     """Utility function to automate execution and processing of gradient tapes"""
-    tapes, fn = fn(tape, **kwargs)
+    if fn == qml.gradients.hadamard_grad:
+        tapes, fn = fn(tape, mode=mode, **kwargs)
+    else:
+        tapes, fn = fn(tape, **kwargs)
     return fn(dev.execute(tapes)), tapes
 
 
