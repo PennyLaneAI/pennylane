@@ -534,7 +534,7 @@ def get_jax_patches():
 # For backwards compatibility: apply patches globally if explicitly requested
 # This maintains existing behavior but is deprecated in favor of using Patcher
 def apply_patches_globally():
-    """Apply JAX patches globally (deprecated).
+    """Apply JAX patches globally (deprecated, should only used in tests).
 
     This function applies patches at module level for backwards compatibility.
     New code should use get_jax_patches() with the Patcher context manager instead.
@@ -549,7 +549,6 @@ def apply_patches_globally():
     from packaging.version import Version
 
     jax_version = Version(jax.__version__)
-
     if jax_version >= Version("0.7.0"):
         try:
             _add_make_eqn_helper()
