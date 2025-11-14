@@ -134,7 +134,8 @@ class PyDotDAGBuilder(DAGBuilder):
         (e.g., 'png', 'svg') from this filename's extension.
 
         Args:
-            output_filename (str): Desired filename for the rendered graph.
+            output_filename (str): Desired filename for the rendered graph. If no file extension is
+                provided, it will default to a `.png` file.
 
         """
         format = output_filename.split(".")[-1].lower()
@@ -143,7 +144,6 @@ class PyDotDAGBuilder(DAGBuilder):
             output_filename += ".png"
 
         self.graph.write(output_filename, format=format)
-        print(f"Successfully rendered graph to: {output_filename}")
 
     def to_string(self) -> str:
         """Render the graph as a string.
