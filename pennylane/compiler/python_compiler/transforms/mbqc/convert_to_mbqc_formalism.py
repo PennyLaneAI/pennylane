@@ -20,7 +20,7 @@ from dataclasses import dataclass
 
 from xdsl import builder, context, passes, pattern_rewriter
 from xdsl.dialects import arith, builtin, func, scf
-from xdsl.dialects.scf import ForOp, IfOp, WhileOp
+from xdsl.dialects.scf import ForOp, IfOp, IndexSwitchOp, WhileOp
 from xdsl.ir import SSAValue
 from xdsl.ir.core import Block, OpResult, Region
 from xdsl.rewriter import InsertPoint
@@ -682,7 +682,9 @@ class ConvertToMBQCFormalismPattern(
     # pylint: disable=no-self-use
     @pattern_rewriter.op_type_rewrite_pattern
     def match_and_rewrite(
-        self, root: func.FuncOp | IfOp | WhileOp | ForOp, rewriter: pattern_rewriter.PatternRewriter
+        self,
+        root: func.FuncOp | IfOp | WhileOp | ForOp | IndexSwitchOp,
+        rewriter: pattern_rewriter.PatternRewriter,
     ):
         """Match and rewrite for converting to the MBQC formalism."""
 
@@ -691,6 +693,11 @@ class ConvertToMBQCFormalismPattern(
             return
 
         for region in root.regions:
+            # Continue if the region has no block (i.e., function that has no body, and the body is
+            # defined in runtime.)
+            if not region.blocks:
+                continue
+
             for op in region.ops:
                 if isinstance(op, CustomOp) and op.gate_name.data in _MBQC_GATES:
                     callee = builtin.SymbolRefAttr(op.gate_name.data.lower() + "_in_mbqc")
