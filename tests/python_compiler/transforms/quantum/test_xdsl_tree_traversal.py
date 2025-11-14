@@ -1871,7 +1871,7 @@ class TestTreeTraversalPassStaticForLoop:
         and a conditional gate. Multiple measurements of the mid-circuit measurement value are
         performed. This function also tests `reset` parametrizing over the parameter."""
 
-        dev = qml.device("lightning.qubit", wires=3,seed=42)
+        dev = qml.device("lightning.qubit", wires=3, seed=42)
         params = [np.pi / 2.5, np.pi / 3, -np.pi / 3.5]
 
         def obs_tape(x, y, z, reset=False, postselect=None):
