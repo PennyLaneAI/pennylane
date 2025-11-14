@@ -16,6 +16,8 @@ Tests for the Patcher context manager and patching utilities.
 """
 import pytest
 
+import pennylane as qml
+from pennylane.capture.jax_patches import get_jax_patches
 from pennylane.capture.patching import DictPatchWrapper, Patcher
 
 jax = pytest.importorskip("jax")
@@ -162,15 +164,12 @@ class TestGetJaxPatches:
 
     def test_get_jax_patches_returns_tuple(self):
         """Test that get_jax_patches returns a tuple."""
-        from pennylane.capture import get_jax_patches
 
         patches = get_jax_patches()
         assert isinstance(patches, tuple)
 
     def test_patches_with_patcher_context(self):
         """Test that patches can be used with Patcher."""
-        import pennylane as qml
-        from pennylane.capture import Patcher, get_jax_patches
 
         qml.capture.enable()
 
@@ -187,20 +186,28 @@ class TestGetJaxPatches:
     def test_patches_are_temporary(self):
         """Test that patches don't leak outside context."""
         from jax._src.interpreters import partial_eval as pe
+        from jax._src.lax import lax
 
-        from pennylane.capture import Patcher, get_jax_patches
+        # Get the current state before our Patcher context
+        original_dyn_shape = lax._dyn_shape_staging_rule
+        original_iota = lax._iota_staging_rule
 
-        # Check if make_eqn exists before patching
-        has_make_eqn_before = hasattr(pe.DynamicJaxprTrace, "make_eqn")
+        # Get the patches
+        patches = get_jax_patches()
 
-        with Patcher(*get_jax_patches()):
-            # Should have make_eqn inside context
-            assert hasattr(pe.DynamicJaxprTrace, "make_eqn")
+        with Patcher(*patches):
+            # Inside context, functions should be replaced with new patch instances
+            patched_dyn_shape = lax._dyn_shape_staging_rule
+            patched_iota = lax._iota_staging_rule
 
-        # After exiting context, should be back to original state
-        has_make_eqn_after = hasattr(pe.DynamicJaxprTrace, "make_eqn")
+            # These should be different objects from the originals
+            assert patched_dyn_shape is not original_dyn_shape
+            assert patched_iota is not original_iota
 
-        # Note: make_eqn is currently applied globally for backwards compatibility,
-        # so this test documents the current behavior. When global patching is removed,
-        # this should assert: has_make_eqn_after == has_make_eqn_before
-        assert has_make_eqn_after  # Currently always True due to global patching
+        # After exiting context, should be back to the state before our Patcher
+        after_dyn_shape = lax._dyn_shape_staging_rule
+        after_iota = lax._iota_staging_rule
+
+        # Should be restored to what they were before (which may be globally patched versions)
+        assert after_dyn_shape is original_dyn_shape
+        assert after_iota is original_iota
