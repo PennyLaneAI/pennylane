@@ -46,12 +46,12 @@ def _create_transform_primitive():
     # pylint: disable=too-many-arguments, disable=unused-argument
     @transform_prim.def_impl
     def _impl(
-        *all_args, inner_jaxpr, args_slice, consts_slice, targs_slice, tkwargs, transform
+        *all_args, inner_jaxpr, tree_def, tkwargs, transform
     ):  # pylint: disable=unused-argument
-        from pennylane.capture import _restore_slice  # pylint: disable=import-outside-toplevel
+        import jax  # pylint: disable=import-outside-toplevel
 
-        args = all_args[_restore_slice(args_slice)]
-        consts = all_args[_restore_slice(consts_slice)]
+        # Reconstruct the pytree structure (args, consts, targs)
+        args, consts, _ = jax.tree_util.tree_unflatten(tree_def, all_args)
         return capture.eval_jaxpr(inner_jaxpr, consts, *args)
 
     @transform_prim.def_abstract_eval
@@ -512,20 +512,16 @@ def _capture_apply(obj, transform, *targs, **tkwargs):
         jaxpr = jax.make_jaxpr(functools.partial(flat_qfunc, **kwargs))(*args)
         flat_args = jax.tree_util.tree_leaves(args)
 
-        n_args = len(flat_args)
-        n_consts = len(jaxpr.consts)
-        args_slice = slice(0, n_args)
-        consts_slice = slice(n_args, n_args + n_consts)
-        targs_slice = slice(n_args + n_consts, None)
+        # Use pytree structure instead of manual flattening with slices
+        # Pass (args, consts, targs) as a structured pytree to the primitive
+        # tkwargs stays as a parameter (will be made hashable by bind())
+        transform_data = (flat_args, jaxpr.consts, targs)
+        flat_data, tree_def = jax.tree_util.tree_flatten(transform_data)
 
         results = _create_transform_primitive().bind(  # pylint: disable=protected-access
-            *flat_args,
-            *jaxpr.consts,
-            *targs,
+            *flat_data,
             inner_jaxpr=jaxpr.jaxpr,
-            args_slice=args_slice,
-            consts_slice=consts_slice,
-            targs_slice=targs_slice,
+            tree_def=tree_def,
             tkwargs=tkwargs,
             transform=transform,
         )

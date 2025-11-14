@@ -38,16 +38,12 @@ class ExpandTransformsInterpreter(PlxprInterpreter):
 
 @ExpandTransformsInterpreter.register_primitive(_create_transform_primitive())
 def _(
-    self, *invals, inner_jaxpr, args_slice, consts_slice, targs_slice, tkwargs, transform
+    self, *invals, inner_jaxpr, tree_def, tkwargs, transform
 ):  # pylint: disable=too-many-arguments
-    from pennylane.capture import _restore_slice  # pylint: disable=import-outside-toplevel
+    import jax  # pylint: disable=import-outside-toplevel
 
-    args_slice = _restore_slice(args_slice)
-    consts_slice = _restore_slice(consts_slice)
-    targs_slice = _restore_slice(targs_slice)
-    args = invals[args_slice]
-    consts = invals[consts_slice]
-    targs = invals[targs_slice]
+    # Reconstruct the pytree structure (args, consts, targs)
+    args, consts, targs = jax.tree_util.tree_unflatten(tree_def, invals)
 
     def wrapper(*inner_args):
         return copy(self).eval(inner_jaxpr, consts, *inner_args)
