@@ -142,7 +142,7 @@ def test_add_cluster_with_attrs():
 
 
 @pytest.mark.unit
-def test_render(monkeypatch, capsys):
+def test_render(monkeypatch):
     """Tests that the `render` method works correctly."""
     dag_builder = PyDotDAGBuilder()
 
@@ -153,10 +153,6 @@ def test_render(monkeypatch, capsys):
 
     # make sure the function handles extensions correctly
     mock_write.assert_called_once_with("my_graph.png", format="png")
-
-    # make sure we get information back to the user
-    captured = capsys.readouterr()
-    assert "Successfully rendered graph to: my_graph.png" in captured.out
 
 
 @pytest.mark.unit

@@ -28,9 +28,16 @@ class PyDotDAGBuilder(DAGBuilder):
     """A Directed Acyclic Graph builder for the PyDot backend."""
 
     def __init__(self) -> None:
+        """Initialize instance variables."""
+        # Initialize the pydot graph:
+        # - graph_type="digraph": Create a directed graph (edges have arrows).
+        # - rankdir="TB": Set layout direction from Top to Bottom.
+        # - compound="true": Allow edges to connect directly to clusters/subgraphs.
+        # - strict=True": Prevent duplicate edges (e.g., A -> B added twice).
         self.graph: pydot.Dot = pydot.Dot(
             graph_type="digraph", rankdir="TB", compound="true", strict=True
         )
+        # Create context variable to allow nodes to be drawn on nested clusters
         self._subgraphs: dict[str, pydot.Graph] = {}
         # Bottom of the stack should be the base graph itself
         self._subgraphs["__base__"] = self.graph
