@@ -184,11 +184,15 @@ class TestGetJaxPatches:
         qml.capture.disable()
 
     def test_patches_are_temporary(self):
-        """Test that patches don't leak outside context."""
+        """Test that patches don't leak outside context.
+
+        This test verifies that the Patcher context manager properly saves and
+        restores state, ensuring patches are truly temporary and don't leak.
+        """
         from jax._src.interpreters import partial_eval as pe
         from jax._src.lax import lax
 
-        # Get the current state before our Patcher context
+        # Get the current state before our Patcher context (original JAX state)
         original_dyn_shape = lax._dyn_shape_staging_rule
         original_iota = lax._iota_staging_rule
 
@@ -204,10 +208,10 @@ class TestGetJaxPatches:
             assert patched_dyn_shape is not original_dyn_shape
             assert patched_iota is not original_iota
 
-        # After exiting context, should be back to the state before our Patcher
+        # After exiting context, should be back to the original JAX state
         after_dyn_shape = lax._dyn_shape_staging_rule
         after_iota = lax._iota_staging_rule
 
-        # Should be restored to what they were before (which may be globally patched versions)
+        # Should be restored to original state
         assert after_dyn_shape is original_dyn_shape
         assert after_iota is original_iota

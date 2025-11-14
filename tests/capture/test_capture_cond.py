@@ -846,7 +846,7 @@ class TestPytree:
         qml.assert_equal(q.queue[1].base, qml.RX(0.5, 0))
 
 
-@pytest.mark.usefixtures("enable_disable_dynamic_shapes")
+@pytest.mark.usefixtures("enable_disable_dynamic_shapes", "apply_patches_to_dynamic_shape_tests")
 class TestDynamicShapeValidation:
 
     def test_different_outval_types(self):
@@ -925,7 +925,7 @@ class TestDynamicShapeValidation:
             jax.make_jaxpr(f)(True, 4)
 
 
-@pytest.mark.usefixtures("enable_disable_dynamic_shapes")
+@pytest.mark.usefixtures("enable_disable_dynamic_shapes", "apply_patches_to_dynamic_shape_tests")
 class TestDynamicShapes:
 
     def test_cond_no_returns(self):

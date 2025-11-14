@@ -746,7 +746,7 @@ class TestHigherOrderPrimitiveRegistrations:
         assert len(jaxpr2.eqns[0].params["jaxpr"].constvars) == 1
 
 
-@pytest.mark.usefixtures("enable_disable_dynamic_shapes")
+@pytest.mark.usefixtures("enable_disable_dynamic_shapes", "apply_patches_to_dynamic_shape_tests")
 class TestDynamicShapes:
     """Test that our interpreters can handle dynamic array creation."""
 

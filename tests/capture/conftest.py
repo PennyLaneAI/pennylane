@@ -14,21 +14,41 @@
 """
 Pytest configuration for capture tests.
 
-This module applies JAX patches globally for all capture tests.
-The patches are applied at module import time to ensure they are active
-for the entire test session.
+This module provides fixtures for dynamic shape tests that need JAX patches.
 """
+import pytest
 
-# Apply patches at module import time
-try:
-    import jax
+
+@pytest.fixture(scope="function")
+def apply_patches_to_dynamic_shape_tests():
+    """Apply JAX patches for dynamic shape tests using Patcher context manager.
+
+    This fixture applies patches locally to tests that need dynamic shape support.
+    The patches are applied at the beginning of each test and properly removed at the end
+    using the Patcher context manager.
+
+    Usage:
+        @pytest.mark.usefixtures("enable_disable_dynamic_shapes", "apply_patches_to_dynamic_shape_tests")
+        def test_something_with_dynamic_shapes():
+            ...
+    """
+    jax = pytest.importorskip("jax")
+
     from packaging.version import Version
 
     if Version(jax.__version__) >= Version("0.7.0"):
-        from pennylane.capture.jax_patches import apply_patches_globally
+        from pennylane.capture.jax_patches import get_jax_patches
+        from pennylane.capture.patching import Patcher
 
-        # Apply patches globally for tests
-        apply_patches_globally()
-except ImportError:
-    # JAX not available, skip patching
-    pass
+        # Apply patches using Patcher context manager for this test
+        patches = get_jax_patches()
+        patcher = Patcher(*patches)
+        patcher.__enter__()
+
+        try:
+            yield
+        finally:
+            # Properly cleanup patches after test
+            patcher.__exit__(None, None, None)
+    else:
+        yield

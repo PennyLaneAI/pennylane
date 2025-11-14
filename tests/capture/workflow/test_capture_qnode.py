@@ -840,6 +840,7 @@ def test_qnode_jit():
 
 
 # pylint: disable=unused-argument
+@pytest.mark.usefixtures("apply_patches_to_dynamic_shape_tests")
 def test_dynamic_shape_input(enable_disable_dynamic_shapes):
     """Test that the qnode can accept an input with a dynamic shape."""
 
@@ -856,6 +857,7 @@ def test_dynamic_shape_input(enable_disable_dynamic_shapes):
 
 
 # pylint: disable=unused-argument
+@pytest.mark.usefixtures("apply_patches_to_dynamic_shape_tests")
 def test_dynamic_shape_matches_arg(enable_disable_dynamic_shapes):
 
     @qml.qnode(qml.device("default.qubit", wires=4))
