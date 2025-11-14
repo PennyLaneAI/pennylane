@@ -50,6 +50,29 @@ class TestTOML:
             """
             schema = 3
 
+            [compilation]
+
+            supported_mcm_methods = ["blah", "device"]
+            """
+        ],
+        indirect=True,
+    )
+    def test_unrecognized_mcm_method(self, request):
+        """Tests that an error is raised if an unrecognized mcm method is being used."""
+
+        document = load_toml_file(request.node.toml_file)
+        with pytest.raises(
+            ValueError, match="The device's supported mcm methods must be a subset of"
+        ):
+            _ = parse_toml_document(document)
+
+    @pytest.mark.usefixtures("create_temporary_toml_file")
+    @pytest.mark.parametrize(
+        "create_temporary_toml_file",
+        [
+            """
+            schema = 3
+
             [operators.gates]
 
             RY = {}
