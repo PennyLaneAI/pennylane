@@ -28,7 +28,7 @@ from pennylane.allocation import Allocate, Deallocate
 from pennylane.decomposition import DecompositionGraph, enabled_graph
 from pennylane.decomposition.decomposition_graph import DecompGraphSolution
 from pennylane.decomposition.utils import translate_op_alias
-from pennylane.exceptions import DecompositionUndefinedError
+from pennylane.exceptions import DecompositionUndefinedError, PennyLaneDeprecationWarning
 from pennylane.operation import Operator
 from pennylane.ops import Conditional, GlobalPhase
 from pennylane.transforms.core import transform
@@ -330,6 +330,10 @@ def _get_plxpr_decompose():  # pylint: disable=too-many-statements
 
     def decompose_plxpr_to_plxpr(jaxpr, consts, targs, tkwargs, *args):
         """Function for applying the ``decompose`` transform on plxpr."""
+        from pennylane.capture import _restore_dict  # pylint: disable=import-outside-toplevel
+
+        # Restore tkwargs from hashable tuple to dict
+        tkwargs = _restore_dict(tkwargs)
 
         interpreter = DecomposeInterpreter(*targs, **tkwargs)
 
@@ -375,10 +379,9 @@ def decompose(
             target gate set specified as either (1) a sequence of operator types and/or names,
             (2) a dictionary mapping operator types and/or names to their respective costs, in
             which case the total cost will be minimized (only available when the new graph-based
-            decomposition system is enabled), or (3) a function that returns ``True`` if the
-            operator belongs to the target gate set (not supported with the new graph-based
-            decomposition system). If ``None``, the gate set is considered to be all operations in
-            ``qml.ops.__all__``.  See :doc:`quantum operators </introduction/operations>` for this list.
+            decomposition system is enabled). If ``None``, the gate set is considered to be
+            all operations in ``qml.ops.__all__``.  See :doc:`quantum operators </introduction/operations>`
+            for this list.
         stopping_condition (Callable, optional): a function that returns ``True`` if the operator
             does not need to be decomposed. If ``None``, the default stopping condition is whether
             the operator is in the target gate set. See the "Gate Set vs. Stopping Condition"
@@ -454,11 +457,13 @@ def decompose(
     1: ───────────────────────────────├●─┤
     2: ───────────────────────────────╰X─┤
 
-    You can also use a function to build a decomposition gate set:
+    You can also provide a function as the ``stopping_condition`` in addition to providing a ``gate_set``. In this case
+    the operator decomposition will stop once either it is given in terms of the gates in the ``gate_set`` or
+    the ``stopping_condition`` is satisfied.
 
     .. code-block:: python
 
-        @partial(qml.transforms.decompose, gate_set=lambda op: len(op.wires)<=2)
+        @partial(qml.transforms.decompose, gate_set={"H", "T", "CNOT"}, stopping_condition=lambda op: len(op.wires) <= 2)
         @qml.qnode(qml.device("default.qubit"))
         def circuit():
             qml.Hadamard(wires=[0])
@@ -961,12 +966,16 @@ def _(gate_set: NoneType):  # pylint: disable=unused-argument
 
 @_process_gate_set_contains.register
 def _(gate_set: Callable):
-    # This branch exists for backwards compatibility reasons. It was overlooked
-    # as a v0.44 deprecation. It is suggested that providing a function to the
-    # gate_set argument should be deprecated, because only the stopping_condition is supposed to be a function.
-    # The deprecation is proposed in sc-102183
+    # This branch exists for backwards compatibility reasons.
     gate_set_contains = gate_set
     gate_set = set()
+
+    warnings.warn(
+        "Passing a function to the gate_set argument is deprecated. The gate_set "
+        "expects a static iterable of operator types and/or operator names, and the "
+        "function should be passed to the stopping_condition argument instead.",
+        PennyLaneDeprecationWarning,
+    )
 
     if enabled_graph():
         raise TypeError(
