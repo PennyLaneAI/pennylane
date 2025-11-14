@@ -15,7 +15,8 @@
 
 from collections.abc import Callable
 
-from catalyst.from_plxpr import register_transform, transforms_to_passes
+from catalyst.from_plxpr import register_transform
+from catalyst.from_plxpr.from_plxpr import transforms_to_passes
 from xdsl.passes import ModulePass
 
 from pennylane.transforms.core.transform_dispatcher import TransformDispatcher
