@@ -24,7 +24,7 @@ pytest.importorskip("catalyst")
 
 # pylint: disable=wrong-import-position
 # This import needs to be after pytest in order to prevent ImportErrors
-from pennylane.compiler.python_compiler.visualization.dag_builder import DAGBuilder
+from pennylane.compiler.python_compiler.inspection.dag_builder import DAGBuilder
 
 
 def test_concrete_implementation_works():
