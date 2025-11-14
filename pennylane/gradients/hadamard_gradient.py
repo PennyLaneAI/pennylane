@@ -546,10 +546,11 @@ def _quantum_automatic_differentiation(tape, trainable_param_idx, aux_wire) -> t
     direct = not aux_wire
 
     # 2) check if we are doing forward or reversed (switch the generator with the measured op) based how many
-    # combinations there are. Depends on the combinations of expectations and terms in the Hamiltonian.
-    # If the terms in the Hamiltonian are on different wires we can measure them at the same time, but still need
+    # combinations there are. Depends on the combinations of expectations and terms in the Hamiltonian, for example.
+    # i.e. if the terms in the Hamiltonian are on different wires we can measure them at the same time, but still need
     # different circuits for the controls, can refer to the hamiltonian’s "grouping indices" list: its length gives
-    # the number of shots need for the expectations.
+    # the number of shots need for the expectations. See Table III in https://arxiv.org/pdf/2408.05406 for exact
+    # formulas.
     trainable_op, _, _ = tape.get_operation(trainable_param_idx)
     _, generators = _get_pauli_generators(trainable_op)
     _, observables = _get_pauli_terms(
