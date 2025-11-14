@@ -224,7 +224,7 @@ class ApproxTimeEvolution(Operation):
         single_round = []
         with QueuingManager.stop_recording():
             for pw, coeff in hamiltonian.pauli_rep.items():
-                if len(pw) != 0:
+                if len(pw):
                     theta = 2 * time * coeff / n
                     term_str = "".join(pw.values())
                     wires = Wires(pw.keys())
