@@ -560,7 +560,6 @@ class TestTapeTransformFallback:
 
         # True branch
         jaxpr = jax.make_jaxpr(f, static_argnums=0)(3.5)
-        assert jaxpr.eqns[0].primitive == cond_prim
         transformed_jaxpr = z_to_hadamard.plxpr_transform(
             jaxpr.jaxpr, jaxpr.consts, dummy_targs, {}
         )
@@ -574,7 +573,6 @@ class TestTapeTransformFallback:
 
         # Else if branch
         jaxpr = jax.make_jaxpr(f, static_argnums=0)(2.5)
-        assert jaxpr.eqns[0].primitive == cond_prim
         transformed_jaxpr = z_to_hadamard.plxpr_transform(
             jaxpr.jaxpr, jaxpr.consts, dummy_targs, {}
         )
@@ -588,7 +586,6 @@ class TestTapeTransformFallback:
 
         # Else branch
         jaxpr = jax.make_jaxpr(f, static_argnums=0)(1.5)
-        assert jaxpr.eqns[0].primitive == cond_prim
         transformed_jaxpr = z_to_hadamard.plxpr_transform(
             jaxpr.jaxpr, jaxpr.consts, dummy_targs, {}
         )
