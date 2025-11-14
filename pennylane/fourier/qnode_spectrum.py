@@ -336,7 +336,7 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
 
             dev = qml.device("default.qubit", wires=1)
 
-            @qml.qnode(dev, interface='torch')
+            @qml.qnode(dev)
             def circuit(x):
                 qml.RX(0.4*x[0], wires=0)
                 qml.PhaseShift(x[1]*np.pi, wires=0)

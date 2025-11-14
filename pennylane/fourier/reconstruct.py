@@ -589,7 +589,7 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
         >>> with tracker:
         ...     for Y1 in np.arange(-np.pi, np.pi, 20):
         ...         rec["Y"][(1,)](-2.1)
-        tensor(0.0139583, requires_grad=True)
+        tensor(0.013..., requires_grad=True)
         >>> tracker.totals
         {}
 
