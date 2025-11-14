@@ -385,11 +385,6 @@ class TestMitiqIntegration:
         assert res_mitigated.shape == res_ideal.shape
         assert not np.allclose(res_mitigated, res_ideal)
 
-    @pytest.mark.xfail(
-        reason="Mitiq uses removed QuantumScript.to_openqasm. Note that Mitiq should "
-        "no longer raise this error once it has reached v0.48.0 "
-        "as per https://github.com/unitaryfoundation/mitiq/issues/2814."
-    )
     def test_with_reps_per_factor(self):
         """Tests if the expected shape is returned when mitigating a circuit with a reps_per_factor
         set not equal to 1"""
@@ -425,8 +420,6 @@ class TestMitiqIntegration:
             qml.SimplifiedTwoDesign(w1, w2, wires=range(2))
             return qml.expval(qml.PauliZ(0))
 
-        # Raises CircuitConversionError
-        # Note that Mitiq should no longer raise this error once it has reached v0.48.0
         res_mitigated = mitigated_circuit(w1, w2)
 
         res_ideal = ideal_circuit(w1, w2)
