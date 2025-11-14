@@ -150,7 +150,7 @@ class TestDyanmicShapes:
 
 
 @pytest.mark.usefixtures("enable_disable_dynamic_shapes", "apply_patches_to_dynamic_shape_tests")
-def test_custom_staging_rule(enable_disable_dynamic_shapes):
+def test_custom_staging_rule():
     """Test regsitering a custom staging rule for a new primitive."""
     my_prim = jax.extend.core.Primitive("my_prim")
     register_custom_staging_rule(my_prim, lambda params: params["jaxpr"].outvars)
