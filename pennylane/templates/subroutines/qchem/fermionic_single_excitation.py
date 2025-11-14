@@ -14,6 +14,7 @@
 r"""
 Contains the FermionicSingleExcitation template.
 """
+
 import numpy as np
 
 from pennylane import capture, math
@@ -21,6 +22,7 @@ from pennylane.control_flow import for_loop
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.operation import Operation
 from pennylane.ops import CNOT, RX, RZ, Hadamard
+from pennylane.wires import Wires, WiresLike
 
 has_jax = True
 try:
@@ -79,7 +81,7 @@ class FermionicSingleExcitation(Operation):
 
     Args:
         weight (float): angle :math:`\theta` entering the Z rotation acting on wire ``p``
-        wires (Iterable): Wires that the template acts on.
+        wires (WiresLike): Wires that the template acts on.
             The wires represent the subset of orbitals in the interval ``[r, p]``. Must be of
             minimum length 2. The first wire is interpreted as ``r`` and the last wire as ``p``.
             Wires in between are acted on with CNOT gates to compute the parity of the set
@@ -125,7 +127,8 @@ class FermionicSingleExcitation(Operation):
 
     resource_keys = {"num_wires"}
 
-    def __init__(self, weight, wires=None, id=None):
+    def __init__(self, weight: float, wires: WiresLike, *, id=None):
+        wires = Wires(wires)
         if len(wires) < 2:
             raise ValueError(f"expected at least two wires; got {len(wires)}")
 
