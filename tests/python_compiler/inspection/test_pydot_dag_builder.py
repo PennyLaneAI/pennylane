@@ -33,10 +33,11 @@ def test_initialization_defaults():
 
     dag_builder = PyDotDAGBuilder()
 
-    assert isinstance(dag_builder.graph, pydot.Graph)
+    assert isinstance(dag_builder.graph, pydot.Dot)
     assert dag_builder.graph.get_graph_type() == "digraph"
     assert dag_builder.graph.get_rankdir() == "TB"
     assert dag_builder.graph.get_compound() == "true"
+    assert dag_builder.graph.obj_dict["strict"] is True
 
 
 @pytest.mark.unit
@@ -64,6 +65,37 @@ def test_add_edge():
     edge = dag_builder.graph.get_edges()[0]
     assert edge.get_source() == "0"
     assert edge.get_destination() == "1"
+
+
+@pytest.mark.unit
+def test_nested_clusters():
+    """Tests that nested clusters can be made and properly tracked."""
+    dag_builder = PyDotDAGBuilder()
+
+    # Create node
+    dag_builder.add_node("0", "node0")
+
+    # Create cluster
+    dag_builder.add_cluster("c0", "cluster0")
+
+    # Create node inside cluster
+    dag_builder.add_node("1", "node1", parent_graph_id="c0")
+
+    # Verify graph structure
+    root_graph = dag_builder.graph
+
+    # Make sure the base graph has node0
+    assert root_graph.get_node("0"), "Node 0 not found in root graph"
+
+    # Get the cluster and verify it has node1 and not node0
+    cluster_list = root_graph.get_subgraph("cluster_c0")
+    assert cluster_list, "Subgraph 'cluster_c0' not found"
+    cluster_graph = cluster_list[0]  # Get the actual subgraph object
+
+    assert cluster_graph.get_node("1"), "Node 1 not found in cluster 'c0'"
+    assert not cluster_graph.get_node("0"), "Node 1 was incorrectly added to root"
+
+    assert not root_graph.get_node("1"), "Node 1 was incorrectly added to root"
 
 
 @pytest.mark.unit
