@@ -24,7 +24,7 @@ pytest.importorskip("xdsl")
 pytest.importorskip("catalyst")
 
 # pylint: disable=wrong-import-position
-from pennylane.compiler.python_compiler.insepction.pydot_dag_builder import PyDotDAGBuilder
+from pennylane.compiler.python_compiler.inspection.pydot_dag_builder import PyDotDAGBuilder
 
 
 @pytest.mark.unit
