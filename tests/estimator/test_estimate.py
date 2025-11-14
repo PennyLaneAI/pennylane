@@ -27,11 +27,11 @@ from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
     ResourceOperator,
-    ResourcesUndefinedError,
     resource_rep,
 )
 from pennylane.estimator.resources_base import Resources
 from pennylane.estimator.wires_manager import Allocate, Deallocate
+from pennylane.exceptions import ResourcesUndefinedError
 
 # pylint: disable= no-self-use, arguments-differ
 

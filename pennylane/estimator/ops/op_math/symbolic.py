@@ -13,18 +13,17 @@
 # limitations under the License.
 r"""Resource operators for symbolic operations."""
 from collections.abc import Iterable
-from functools import singledispatch
 
 import pennylane.estimator as qre
 from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
     ResourceOperator,
+    _apply_adj,
+    _apply_controlled,
     _dequeue,
     resource_rep,
 )
-from pennylane.estimator.wires_manager import Allocate, Deallocate
-from pennylane.exceptions import ResourcesUndefinedError
 from pennylane.wires import Wires, WiresLike
 
 # pylint: disable=arguments-differ,super-init-not-called, signature-differs
@@ -158,15 +157,7 @@ class Adjoint(ResourceOperator):
             if key in base_params and base_params[key] is None
         )
 
-        try:
-            return base_class.adjoint_resource_decomp(base_params)
-        except ResourcesUndefinedError:
-            gate_lst = []
-            decomp = base_class.resource_decomp(**base_params)
-
-            for gate in decomp[::-1]:  # reverse the order
-                gate_lst.append(_apply_adj(gate))
-            return gate_lst
+        return base_class.adjoint_resource_decomp(target_resource_params=base_params)
 
     @classmethod
     def adjoint_resource_decomp(cls, target_resource_params: dict) -> list[GateCount]:
@@ -365,35 +356,11 @@ class Controlled(ResourceOperator):
             if key in base_params and base_params[key] is None
         )
 
-        try:
-            return base_class.controlled_resource_decomp(
-                num_ctrl_wires=num_ctrl_wires,
-                num_zero_ctrl=num_zero_ctrl,
-                target_resource_params=base_params,
-            )
-        except ResourcesUndefinedError:
-            pass
-
-        gate_lst = []
-        if num_zero_ctrl != 0:
-            x = resource_rep(qre.X)
-            gate_lst.append(GateCount(x, 2 * num_zero_ctrl))
-
-        decomp = base_class.resource_decomp(**base_params)
-        for action in decomp:
-            if isinstance(action, GateCount):
-                gate = action.gate
-                c_gate = cls.resource_rep(
-                    gate,
-                    num_ctrl_wires,
-                    num_zero_ctrl=0,  # we flipped already and added the X gates above
-                )
-                gate_lst.append(GateCount(c_gate, action.count))
-
-            else:  # pragma: no cover
-                gate_lst.append(action)
-
-        return gate_lst
+        return base_class.controlled_resource_decomp(
+            num_ctrl_wires=num_ctrl_wires,
+            num_zero_ctrl=num_zero_ctrl,
+            target_resource_params=base_params,
+        )
 
     @classmethod
     def controlled_resource_decomp(
@@ -580,10 +547,7 @@ class Pow(ResourceOperator):
         if pow_z == 1:
             return [GateCount(base_cmpr_op)]
 
-        try:
-            return base_class.pow_resource_decomp(pow_z=pow_z, target_resource_params=base_params)
-        except ResourcesUndefinedError:
-            return [GateCount(base_cmpr_op, pow_z)]
+        return base_class.pow_resource_decomp(pow_z=pow_z, target_resource_params=base_params)
 
     @classmethod
     def pow_resource_decomp(cls, pow_z: int, target_resource_params: dict) -> list[GateCount]:
@@ -1026,22 +990,18 @@ class ChangeOpBasis(ResourceOperator):
         ]
 
 
-@singledispatch
-def _apply_adj(action):
-    raise TypeError(f"Unsupported type {action}")
-
-
 @_apply_adj.register
 def _(action: GateCount):
     gate = action.gate
     return GateCount(resource_rep(Adjoint, {"base_cmpr_op": gate}), action.count)
 
 
-@_apply_adj.register
-def _(action: Allocate):
-    return Deallocate(action.num_wires)
-
-
-@_apply_adj.register
-def _(action: Deallocate):
-    return Allocate(action.num_wires)
+@_apply_controlled.register
+def _(action: GateCount, num_ctrl_wires, num_zero_ctrl):
+    gate = action.gate
+    c_gate = Controlled.resource_rep(
+        gate,
+        num_ctrl_wires,
+        num_zero_ctrl=num_zero_ctrl,
+    )
+    return GateCount(c_gate, action.count)
