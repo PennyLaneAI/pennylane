@@ -140,7 +140,7 @@ class DeviceCapabilities:  # pylint: disable=too-many-instance-attributes
         _valid_mcm_methods = {item.value for item in MCM_METHOD}
         if not set(self.supported_mcm_methods).issubset(_valid_mcm_methods):
             raise ValueError(
-                f"The device's support mcm methods must be a subset of the following supported mid-circuit measurement methods available: {_valid_mcm_methods}"
+                f"The device's supported mcm methods must be a subset of the following supported mid-circuit measurement methods available: {_valid_mcm_methods}"
             )
 
     def filter(self, finite_shots: bool) -> "DeviceCapabilities":

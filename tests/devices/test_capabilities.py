@@ -61,7 +61,9 @@ class TestTOML:
         """Tests that an error is raised if an unrecognized mcm method is being used."""
 
         document = load_toml_file(request.node.toml_file)
-        with pytest.raises(ValueError, match="'blah' is not a supported mcm method"):
+        with pytest.raises(
+            ValueError, match="The device's supported mcm methods must be a subset of"
+        ):
             _ = parse_toml_document(document)
 
     @pytest.mark.usefixtures("create_temporary_toml_file")
