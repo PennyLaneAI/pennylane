@@ -246,6 +246,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Updated various docstrings to be compatible with the new documentation testing approach.
+  [(#8635)](https://github.com/PennyLaneAI/pennylane/pull/8635)
+  
 * In program capture, transforms now have a single transform primitive that have a `transform` param that stores
   the `TransformDispatcher`. Before, each transform had its own primitive stored on the 
   `TransformDispatcher._primitive` private property. It proved difficult to keep maintaining dispatch behaviour
