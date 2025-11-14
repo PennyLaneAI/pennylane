@@ -21,12 +21,6 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.gradients import hadamard_gradient
-from pennylane.gradients.hadamard_gradient import (
-    _direct_hadamard_test,
-    _hadamard_test,
-    _reversed_direct_hadamard_test,
-    _reversed_hadamard_test,
-)
 
 
 def grad_fn(tape, dev, fn=qml.gradients.hadamard_grad, **kwargs):
