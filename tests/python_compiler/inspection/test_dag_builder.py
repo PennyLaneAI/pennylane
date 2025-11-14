@@ -17,12 +17,14 @@ from typing import Any
 
 import pytest
 
-from pennylane.compiler.python_compiler.visualization.dag_builder import DAGBuilder
-
 pytestmark = pytest.mark.external
 
 pytest.importorskip("xdsl")
 pytest.importorskip("catalyst")
+
+# pylint: disable=wrong-import-position
+# This import needs to be after pytest in order to prevent ImportErrors
+from pennylane.compiler.python_compiler.visualization.dag_builder import DAGBuilder
 
 
 def test_concrete_implementation_works():
