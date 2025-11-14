@@ -236,7 +236,8 @@ def _collect_region(region, loop_warning=False, cond_warning=False) -> Resources
                     warnings.warn(
                         "Specs was unable to determine the number of loop iterations. "
                         "The results will assume the loop runs only once. "
-                        "This may be fixed in some cases by inlining dynamic arguments."
+                        "This may be fixed in some cases by inlining dynamic arguments.",
+                        UserWarning,
                     )
                 loop_warning = True
             resources.merge_with(body_ops)
@@ -247,7 +248,8 @@ def _collect_region(region, loop_warning=False, cond_warning=False) -> Resources
                 warnings.warn(
                     "Specs was unable to determine the number of loop iterations. "
                     "The results will assume the loop runs only once. "
-                    "This may be fixed in some cases by inlining dynamic arguments."
+                    "This may be fixed in some cases by inlining dynamic arguments.",
+                    UserWarning,
                 )
                 loop_warning = True
             body_ops = _collect_region(
@@ -261,7 +263,8 @@ def _collect_region(region, loop_warning=False, cond_warning=False) -> Resources
                 # NOTE: For now we count operations from both branches
                 warnings.warn(
                     "Specs was unable to determine the branch of a conditional. "
-                    "The results will assume both branches of the conditional are run."
+                    "The results will assume both branches of the conditional are run.",
+                    UserWarning,
                 )
                 cond_warning = True
             resources.merge_with(

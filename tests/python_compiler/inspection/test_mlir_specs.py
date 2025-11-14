@@ -20,9 +20,10 @@ pytestmark = pytest.mark.external
 
 pytest.importorskip("xdsl")
 pytest.importorskip("catalyst")
+pytest.importorskip("jax")
 
 # pylint: disable=wrong-import-position
-import jax
+import jax.numpy as jnp
 
 # pylint: disable=wrong-import-position
 from catalyst.passes.xdsl_plugin import getXDSLPluginAbsolutePath
@@ -123,31 +124,48 @@ class TestMLIRSpecs:
 
         return circ
 
-    @pytest.fixture
-    def fixed_loop_circuit(self, pl_ctrl_flow: bool):
-        """Fixture for a circuit."""
+    @pytest.mark.parametrize("level", [3.14, "invalid"])
+    def test_invalid_level_type(self, simple_circuit, level):
+        """Test that requesting an invalid level type raises an error."""
 
-        if pl_ctrl_flow:
+        simple_circuit = qml.qjit(pass_plugins=[getXDSLPluginAbsolutePath()])(simple_circuit)
 
-            @qml.qnode(qml.device("lightning.qubit", wires=2))
-            def circ():
-                @qml.for_loop(range(10))
-                def loop_body(i):
-                    qml.X(i % 2)
+        with pytest.raises(
+            ValueError, match="The `level` argument must be an int, a tuple/list of ints, or 'all'."
+        ):
+            mlir_specs(simple_circuit, level=level)
 
-                loop_body()
+    @pytest.mark.parametrize("level", [10, -1])
+    def test_invalid_int_level(self, simple_circuit, level):
+        """Test that requesting an invalid level raises an error."""
 
-                return qml.probs()
+        simple_circuit = qml.qjit(pass_plugins=[getXDSLPluginAbsolutePath()])(simple_circuit)
 
-        else:
+        with pytest.raises(
+            ValueError, match=f"Requested specs level {level} not found in MLIR pass list."
+        ):
+            mlir_specs(simple_circuit, level=level)
 
-            @qml.qnode(qml.device("lightning.qubit", wires=2))
-            def circ():
-                for i in range(10):
-                    qml.X(i % 2)
-                return qml.state()
+    @pytest.mark.parametrize(
+        "level, expected",
+        [
+            (
+                0,
+                make_static_resources(
+                    quantum_operations={"RX": 2, "RZ": 2, "Hadamard": 2, "CNOT": 2},
+                    quantum_measurements={"probs(0 wires)": 1},
+                    resource_sizes={1: 6, 2: 2},
+                    num_wires=2,
+                ),
+            ),
+        ],
+    )
+    def test_no_passes(self, simple_circuit, level, expected):
+        """Test that if no passes are applied, the circuit resources are the original amount."""
 
-        return circ
+        simple_circuit = qml.qjit(pass_plugins=[getXDSLPluginAbsolutePath()])(simple_circuit)
+        res = mlir_specs(simple_circuit, level=level)
+        assert resources_equal(res, expected, raise_on_mismatch=True)
 
     @pytest.mark.parametrize(
         "level, expected",
@@ -164,21 +182,125 @@ class TestMLIRSpecs:
             (
                 1,
                 make_static_resources(
-                    quantum_operations={"RX": 2, "RZ": 2, "Hadamard": 2, "CNOT": 2},
+                    quantum_operations={"RX": 2, "RZ": 2},
                     quantum_measurements={"probs(0 wires)": 1},
-                    resource_sizes={1: 6, 2: 2},
+                    resource_sizes={1: 4},
+                    num_wires=2,
+                ),
+            ),
+            (
+                2,
+                make_static_resources(
+                    quantum_operations={"RX": 1, "RZ": 1},
+                    quantum_measurements={"probs(0 wires)": 1},
+                    resource_sizes={1: 2},
                     num_wires=2,
                 ),
             ),
         ],
     )
-    def test_no_passes(self, simple_circuit, level, expected):
-        """Test that if no passes are applied, the circuit is still visualized."""
+    def test_basic_passes(self, simple_circuit, level, expected):
+        """Test that when passes are applied, the circuit resources are updated accordingly."""
 
+        simple_circuit = qml.transforms.cancel_inverses(simple_circuit)
+        simple_circuit = qml.transforms.merge_rotations(simple_circuit)
         simple_circuit = qml.qjit(pass_plugins=[getXDSLPluginAbsolutePath()])(simple_circuit)
         res = mlir_specs(simple_circuit, level=level)
         assert resources_equal(res, expected, raise_on_mismatch=True)
 
+    @pytest.mark.parametrize(
+        "pl_ctrl_flow, iters, autograph",
+        [
+            (True, 5, False),
+            (False, 2, False),
+            (True, 3, False),
+            (False, 10, True),
+        ],
+    )
+    def test_fixed_loop(self, pl_ctrl_flow, iters, autograph):
+        """Test that loop resources are counted correctly."""
+
+        if pl_ctrl_flow:
+
+            @qml.qnode(qml.device("lightning.qubit", wires=2))
+            def circ():
+                @qml.for_loop(iters)
+                def loop_body(i):
+                    qml.X(i % 2)
+
+                loop_body()
+
+                return qml.state()
+
+        else:
+
+            @qml.qnode(qml.device("lightning.qubit", wires=2))
+            def circ():
+                for i in range(iters):
+                    qml.X(i % 2)
+                return qml.state()
+
+        expected = make_static_resources(
+            quantum_operations={"PauliX": iters},
+            quantum_measurements={"state": 1},
+            resource_sizes={1: iters},
+            num_wires=2,
+        )
+
+        circ = qml.qjit(pass_plugins=[getXDSLPluginAbsolutePath()], autograph=autograph)(circ)
+        res = mlir_specs(circ, level=0)
+        assert resources_equal(res, expected, raise_on_mismatch=True)
+
+    @pytest.mark.parametrize(
+        "pl_ctrl_flow, iters",
+        [
+            (True, 5),
+            (False, 2),
+        ],
+    )
+    def test_dynamic_for_loop(self, pl_ctrl_flow, iters):
+        """Test that dynamic for loops emit a warning."""
+
+        if pl_ctrl_flow:
+
+            @qml.qnode(qml.device("lightning.qubit", wires=2))
+            def circ(n):
+                @qml.for_loop(n)
+                def loop_body(i):
+                    qml.X(i % 2)
+
+                loop_body()
+
+                return qml.state()
+
+        else:
+
+            @qml.qnode(qml.device("lightning.qubit", wires=2))
+            def circ(n):
+                for i in range(n):
+                    qml.X(i % 2)
+                return qml.state()
+
+        expected = make_static_resources(
+            quantum_operations={"PauliX": 1},
+            quantum_measurements={"state": 1},
+            resource_sizes={1: 1},
+            num_wires=2,
+        )
+
+        circ = qml.qjit(pass_plugins=[getXDSLPluginAbsolutePath()], autograph=True)(circ)
+
+        with pytest.warns(
+            UserWarning,
+            match="Specs was unable to determine the number of loop iterations. "
+            "The results will assume the loop runs only once. "
+            "This may be fixed in some cases by inlining dynamic arguments.",
+        ):
+            res = mlir_specs(circ, 0, iters)
+            assert resources_equal(res, expected, raise_on_mismatch=True)
+
+
+# TODO: May want to separate some of these concerns into testing specs_collect directly
 
 if __name__ == "__main__":
     pytest.main(["-x", __file__])

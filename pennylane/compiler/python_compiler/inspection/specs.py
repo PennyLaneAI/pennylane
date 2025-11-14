@@ -58,6 +58,8 @@ def mlir_specs(
         max_level = None
     elif isinstance(level, (tuple, list)):
         max_level = max(level)
+    elif not isinstance(level, int):
+        raise ValueError("The `level` argument must be an int, a tuple/list of ints, or 'all'.")
 
     def _specs_callback(previous_pass, module, next_pass, pass_level=0):
         """Callback function for gathering circuit specs."""
@@ -84,7 +86,16 @@ def mlir_specs(
 
     if level == "all":
         return {f"{cache[lvl][1]} (MLIR-{lvl})": cache[lvl][0] for lvl in sorted(cache.keys())}
+
     if isinstance(level, (tuple, list)):
+        if any(lvl not in cache for lvl in level):
+            missing = [str(lvl) for lvl in level if lvl not in cache]
+            raise ValueError(
+                f"Requested specs levels {', '.join(missing)} not found in MLIR pass list."
+            )
         return {f"{cache[lvl][1]} (MLIR-{lvl})": cache[lvl][0] for lvl in level if lvl in cache}
+
     # Just one level was specified
-    return cache.get(level, cache[max(cache.keys())])[0]
+    if level not in cache:
+        raise ValueError(f"Requested specs level {level} not found in MLIR pass list.")
+    return cache[level][0]
