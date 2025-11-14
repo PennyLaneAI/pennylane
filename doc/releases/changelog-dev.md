@@ -16,9 +16,16 @@
 
 <h3>Improvements 🛠</h3>
 
+* Add the `PCPhaseOp` operation to the xDSL Quantum dialect.
+  [(#8621)](https://github.com/PennyLaneAI/pennylane/pull/8621)
+
 * `qml.for_loop` will now fall back to a standard Python `for` loop if capturing a condensed, structured loop fails
   with program capture enabled.
   [(#8615)](https://github.com/PennyLaneAI/pennylane/pull/8615)
+
+* `qml.cond` will now use standard Python logic if all predicates have concrete values. A nested
+  control flow primitive will no longer be captured as it is not needed.
+  [(#8634)](https://github.com/PennyLaneAI/pennylane/pull/8634)
 
 * The `~.BasisRotation` graph decomposition was re-written in a qjit friendly way with PennyLane control flow.
   [(#8560)](https://github.com/PennyLaneAI/pennylane/pull/8560)
@@ -327,6 +334,11 @@
 * The :func:`~pennylane.compiler.python_compiler.Compiler.run` method now accepts a string as input,
   which is parsed and transformed with xDSL.
   [(#8587)](https://github.com/PennyLaneAI/pennylane/pull/8587)
+
+* The `convert_to_mbqc_formalism` compilation pass now outlines the operations to represent a gate
+  in the MBQC formalism into subroutines in order to reduce the IR size for large programs.
+  [(#8619)](https://github.com/PennyLaneAI/pennylane/pull/8619)
+
 
 <h3>Documentation 📝</h3>
 
