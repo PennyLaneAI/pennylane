@@ -30,7 +30,10 @@ jnp = jax.numpy
 from pennylane.capture.autograph import run_autograph  # pylint: disable=wrong-import-position
 
 # must be below jax importorskip
-from pennylane.capture.primitives import qnode_prim  # pylint: disable=wrong-import-position
+from pennylane.capture.primitives import (  # pylint: disable=wrong-import-position
+    qnode_prim,
+    transform_prim,
+)
 from pennylane.tape.plxpr_conversion import (  # pylint: disable=wrong-import-position
     CollectOpsandMeas,
 )
@@ -447,7 +450,8 @@ class TestUserTransforms:
 
         jaxpr = jax.make_jaxpr(circuit)(1.5)
         # pylint: disable=protected-access
-        assert jaxpr.eqns[0].primitive == qml.transforms.cancel_inverses._primitive
+        assert jaxpr.eqns[0].primitive == transform_prim
+        assert jaxpr.eqns[0].params["transform"] == qml.transforms.cancel_inverses
         inner_jaxpr = jaxpr.eqns[0].params["inner_jaxpr"]
         assert inner_jaxpr.eqns[0].primitive == qnode_prim
         qfunc_jaxpr = inner_jaxpr.eqns[0].params["qfunc_jaxpr"]
@@ -481,7 +485,8 @@ class TestUserTransforms:
         assert jaxpr.eqns[0].primitive == qnode_prim
         qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
         # pylint: disable=protected-access
-        assert qfunc_jaxpr.eqns[0].primitive == qml.transforms.cancel_inverses._primitive
+        assert qfunc_jaxpr.eqns[0].primitive == transform_prim
+        assert qfunc_jaxpr.eqns[0].params["transform"] == qml.transforms.cancel_inverses
 
         inner_jaxpr = qfunc_jaxpr.eqns[0].params["inner_jaxpr"]
         collector = CollectOpsandMeas()
@@ -514,12 +519,14 @@ class TestUserTransforms:
 
         jaxpr = jax.make_jaxpr(circuit)(1.5)
         # pylint: disable=protected-access
-        assert jaxpr.eqns[0].primitive == qml.transforms.cancel_inverses._primitive
+        assert jaxpr.eqns[0].primitive == transform_prim
+        assert jaxpr.eqns[0].params["transform"] == qml.transforms.cancel_inverses
         inner_jaxpr = jaxpr.eqns[0].params["inner_jaxpr"]
         assert inner_jaxpr.eqns[0].primitive == qnode_prim
         qfunc_jaxpr = inner_jaxpr.eqns[0].params["qfunc_jaxpr"]
 
-        assert qfunc_jaxpr.eqns[0].primitive == qml.transforms.merge_rotations._primitive
+        assert qfunc_jaxpr.eqns[0].primitive == transform_prim
+        assert qfunc_jaxpr.eqns[0].params["transform"] == qml.transforms.merge_rotations
         inner_jaxpr2 = qfunc_jaxpr.eqns[0].params["inner_jaxpr"]
 
         collector = CollectOpsandMeas()
@@ -1526,9 +1533,9 @@ class TestQNodeAutographIntegration:
             return qml.state()
 
         jaxpr = jax.make_jaxpr(c)(3)
-        assert jaxpr.eqns[0].primitive == qml.transforms.merge_rotations._primitive
+        assert jaxpr.eqns[0].params["transform"] == qml.transforms.merge_rotations
         j2 = jaxpr.eqns[0].params["inner_jaxpr"]
-        assert j2.eqns[0].primitive == qml.transforms.cancel_inverses._primitive
+        assert j2.eqns[0].params["transform"] == qml.transforms.cancel_inverses
         j3 = j2.eqns[0].params["inner_jaxpr"]
         assert j3.eqns[0].primitive == qnode_prim
         j4 = j3.eqns[0].params["qfunc_jaxpr"]
@@ -1554,9 +1561,9 @@ class TestQNodeAutographIntegration:
 
         for i in [1, 3]:
 
-            assert jaxpr.eqns[i].primitive == qml.transforms.merge_rotations._primitive
+            assert jaxpr.eqns[i].params["transform"] == qml.transforms.merge_rotations
             j2 = jaxpr.eqns[i].params["inner_jaxpr"]
-            assert j2.eqns[0].primitive == qml.transforms.cancel_inverses._primitive
+            assert j2.eqns[0].params["transform"] == qml.transforms.cancel_inverses
             j3 = j2.eqns[0].params["inner_jaxpr"]
             assert j3.eqns[0].primitive == qnode_prim
             j4 = j3.eqns[0].params["qfunc_jaxpr"]
