@@ -111,6 +111,11 @@
   work wire and :class:`pennylane.TemporaryAND` operators to reduce the resources needed.
   [(#8549)](https://github.com/PennyLaneAI/pennylane/pull/8549)
 
+* Scipy sparse matrices can now be passed directly to :func:`~pennylane.pauli_decompose` without
+  manual conversion to dense arrays. Sparse matrices are processed natively allowing efficient
+  decomposition of large sparse matrices that cannot fit in memory as dense arrays.
+  [(#8612)](https://github.com/PennyLaneAI/pennylane/pull/8612)
+
 <h3>Breaking changes 💔</h3>
 
 * ``QuantumScript.to_openqasm`` has been removed. Please use ``qml.to_openqasm`` instead. This removes duplicated 
@@ -441,6 +446,7 @@ Marcus Edwards,
 Lillian Frederiksen,
 Sengthai Heng,
 Soran Jahangiri,
+Jacob Kitchen,
 Christina Lee,
 Joseph Lee,
 Gabriela Sanchez Diaz,
