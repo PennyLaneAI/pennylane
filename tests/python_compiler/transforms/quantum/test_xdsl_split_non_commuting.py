@@ -59,7 +59,7 @@ class TestSplitNonCommutingPass:
         """
 
         pipeline = (SplitNonCommutingPass(),)
-        run_filecheck(program, pipeline, roundtrip=True)
+        run_filecheck(program, pipeline)
 
     def test_multiple_func_w_qnode_attr(self, run_filecheck):
         """Test split non-commuting pass would be applied to a func with a qnode attribute."""

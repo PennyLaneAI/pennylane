@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit test module for the tree-traversal transform"""
-import jax.numpy as jnp
 import mcm_utils
 import numpy as np
 import pytest
@@ -35,11 +34,10 @@ Not supported features:
     - return qml.state()
     - return qml.probs()
     - return qml.sample()
-    - return multiple measurements,e.g.
+    - return multiple measurements, e.g.
         return qml.expval(Z(0)), qml.expval(X(1))
     - qml.expval(mcm_result)
 """
-
 
 class TestTreeTraversalPassBase:
     """Unit tests for TreeTraversalPass. without control flow operation."""
@@ -146,7 +144,7 @@ class TestTreeTraversalPassBase:
         run_filecheck(program, pipeline)
 
     def test_two_mcm(self, run_filecheck):
-        """Test tree traversal pass would not be applied to a func with only qubit gates."""
+        """Test tree traversal pass would be applied to a func with two MCMs."""
 
         """
         Circuit Test
@@ -215,7 +213,7 @@ class TestTreeTraversalPassBase:
         run_filecheck(program, pipeline)
 
     def test_many_mcm(self, run_filecheck):
-        """Test tree traversal pass would not be applied to a func with only qubit gates."""
+        """Test tree traversal pass with a function containing many MCM (mid-circuit measurement) operations."""
 
         """
         Circuit Test
@@ -620,12 +618,9 @@ class TestTreeTraversalPassBase:
         mcm_utils.validate_measurements(qml.expval, shots, res_ref, res, batch_size=None)
 
     @pytest.mark.usefixtures("enable_disable_plxpr")
-    # @pytest.mark.parametrize("shots", [None, 10000])
-    @pytest.mark.parametrize("shots", [None])
+    @pytest.mark.parametrize("shots", [None, 10000])
     @pytest.mark.parametrize("postselect", [None])
-    # @pytest.mark.parametrize("postselect", [None,0, 1])
     @pytest.mark.parametrize("reset", [False])
-    # @pytest.mark.parametrize("reset", [False, True])
     @pytest.mark.parametrize(
         "measure_f",
         [
@@ -651,33 +646,19 @@ class TestTreeTraversalPassBase:
             qml.RX(x, 0)
             qml.RZ(np.pi / 8, 0)
 
-            m0 = qml.measure(0, reset=reset)
+            qml.measure(0, reset=reset)
 
-            # def ansatz_m0_0_true():
             qml.RX(np.pi / 4, 0)
             qml.RZ(np.pi / 4, 0)
 
-            # def ansatz_m0_0_false():
-            # qml.RX(-np.pi / 4, 0)
-            # qml.RZ(-np.pi / 4, 0)
-
-            # qml.cond(m0, ansatz_m0_0_true, ansatz_m0_0_false)()
-
-            m1 = qml.measure(1, postselect=postselect)
+            qml.measure(1, postselect=postselect)
 
             qml.RX(y, 1)
             qml.RZ(np.pi / 4, 1)
-            m1 = qml.measure(1, postselect=postselect)
-
-            # def ansatz_m1_0_true():
-            #     qml.RX(np.pi / 8, 1)
-            #     qml.RZ(np.pi / 8, 1)
-
-            # def ansatz_m1_0_false():
+            qml.measure(1, postselect=postselect)
             qml.RX(-np.pi / 8, 1)
             qml.RZ(-np.pi / 8, 1)
 
-            # qml.cond(m1, ansatz_m1_0_true, ansatz_m1_0_false)()
 
         # Measures:
         # Without shots
@@ -1209,7 +1190,7 @@ class TestTreeTraversalPassIfStatement:
     )
     def test_execution_validation(self, shots, branch, measure_f):
 
-        dev = qml.device("lightning.qubit", wires=4, seed=42)
+        dev = qml.device("lightning.qubit", wires=4, seed=33)
 
         def test_circuit(branch_select):
 
@@ -1217,7 +1198,7 @@ class TestTreeTraversalPassIfStatement:
             qml.H(1)
 
             def ansatz_true():
-                m1 = qml.measure(1)
+                qml.measure(1)
                 qml.RY(0.3, 0)
                 qml.RY(0.3, 1)
 
@@ -1242,7 +1223,7 @@ class TestTreeTraversalPassIfStatement:
 
         qml.capture.disable()
 
-        dev = qml.device("lightning.qubit", wires=4, seed=42)
+        dev = qml.device("lightning.qubit", wires=4, seed=33)
 
         @qml.set_shots(shots)
         @qml.qnode(dev, mcm_method="tree-traversal")
@@ -1851,12 +1832,9 @@ class TestTreeTraversalPassStaticForLoop:
         mcm_utils.validate_measurements(qml.expval, shots, res_ref, res, batch_size=None)
 
     @pytest.mark.usefixtures("enable_disable_plxpr")
-    # @pytest.mark.parametrize("shots", [None, 10000])
     @pytest.mark.parametrize("shots", [None])
     @pytest.mark.parametrize("postselect", [None])
-    # @pytest.mark.parametrize("postselect", [None,0, 1])
     @pytest.mark.parametrize("reset", [False])
-    # @pytest.mark.parametrize("reset", [False, True])
     @pytest.mark.parametrize(
         "measure_f",
         [

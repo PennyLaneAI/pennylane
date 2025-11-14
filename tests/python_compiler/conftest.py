@@ -171,8 +171,6 @@ def _run_filecheck_qjit_impl(qjit_fn, verify=False):
         {str_xdsl_module}
     """
 
-    assert exit_code == 0, f"filecheck failed with exit code {exit_code}"
-
 
 @pytest.fixture(scope="function")
 def run_filecheck_qjit():

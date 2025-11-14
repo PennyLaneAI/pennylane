@@ -319,8 +319,8 @@ class TreeTraversalPattern(RewritePattern):
                         result_types=[builtin.TensorType(builtin.Float64Type(), [])],
                     )
                     return_op = func.ReturnOp(*tensor_op.results)
-                    for op in (c0, load_op, tensor_op, return_op):
-                        rewriter.insert_op(op, InsertPoint.at_end(self.tt_op.body.block))
+                    for insert_op in (c0, load_op, tensor_op, return_op):
+                        rewriter.insert_op(insert_op, InsertPoint.at_end(self.tt_op.body.block))
 
                 elif isinstance(op, quantum.DeallocOp):
                     # Use the final qreg from while loop for dealloc
