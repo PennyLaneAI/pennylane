@@ -19,7 +19,11 @@ import pytest
 
 from pennylane.compiler.python_compiler.visualization.pydot_dag_builder import PyDotDAGBuilder
 
+pytestmark = pytest.mark.external
+
 pydot = pytest.importorskip("pydot")
+pytest.importorskip("xdsl")
+pytest.importorskip("catalyst")
 
 
 @pytest.mark.unit
