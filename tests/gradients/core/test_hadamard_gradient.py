@@ -20,11 +20,15 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.exceptions import QuantumFunctionError
+from pennylane.gradients import hadamard_gradient
 
 
-def grad_fn(tape, dev, fn=qml.gradients.hadamard_grad, **kwargs):
+def grad_fn(tape, dev, fn=qml.gradients.hadamard_grad, mode="standard", **kwargs):
     """Utility function to automate execution and processing of gradient tapes"""
-    tapes, fn = fn(tape, **kwargs)
+    if fn == qml.gradients.hadamard_grad:
+        tapes, fn = fn(tape, mode=mode, **kwargs)
+    else:
+        tapes, fn = fn(tape, **kwargs)
     return fn(dev.execute(tapes)), tapes
 
 
@@ -401,6 +405,57 @@ class TestDifferentModes:
             out = fn((1.0, 2.0, 3.0, 4.0))
             expected = 1 / np.sqrt(2) * (1.0 - 2.0) + 1 / np.sqrt(2) * (3.0 - 4.0)
             assert qml.math.allclose(out, expected)
+
+    def test_automatic_mode(self, mocker):
+        """Test the automatic mode dispatches the correct modes for the scenario."""
+
+        t = np.array(0.0)
+
+        dev = qml.device("default.qubit")
+
+        # setup mocks
+        standard = mocker.spy(hadamard_gradient, "_hadamard_test")
+        direct = mocker.spy(hadamard_gradient, "_direct_hadamard_test")
+        reverse = mocker.spy(hadamard_gradient, "_reversed_hadamard_test")
+        reversed_direct = mocker.spy(hadamard_gradient, "_reversed_direct_hadamard_test")
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.evolve(qml.X(0) @ qml.X(1) + qml.Z(0) @ qml.Z(1) + qml.Y(0), x)
+            return qml.expval(qml.Z(0))
+
+        qml.gradients.hadamard_grad(circuit, mode="auto")(t)
+
+        assert standard.call_count == 0
+        assert direct.call_count == 1
+        assert reverse.call_count == 0
+        assert reversed_direct.call_count == 0
+
+        qml.gradients.hadamard_grad(circuit, aux_wire=2, mode="auto")(t)
+
+        assert standard.call_count == 1
+        assert direct.call_count == 1
+        assert reverse.call_count == 0
+        assert reversed_direct.call_count == 0
+
+        @qml.qnode(dev)
+        def second_circuit(x):
+            qml.evolve(qml.X(0) @ qml.X(1) + qml.Y(2) + qml.Z(0) @ qml.Z(1), x)
+            return qml.expval(qml.Z(0) @ qml.X(1) + qml.Y(0) + qml.X(0) @ qml.Z(1))
+
+        qml.gradients.hadamard_grad(second_circuit, mode="auto")(t)
+
+        assert standard.call_count == 1
+        assert direct.call_count == 1
+        assert reverse.call_count == 0
+        assert reversed_direct.call_count == 1
+
+        qml.gradients.hadamard_grad(second_circuit, aux_wire=3, mode="auto")(t)
+
+        assert standard.call_count == 1
+        assert direct.call_count == 1
+        assert reverse.call_count == 1
+        assert reversed_direct.call_count == 1
 
     @pytest.mark.parametrize("mode", ["direct", "reversed-direct"])
     def test_no_available_work_wire_direct_methods(self, mode):
