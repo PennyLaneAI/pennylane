@@ -1596,7 +1596,7 @@ class IfOperatorPartitioningPass(RewritePattern):
         # Detect mcm inside If statement
         flat_if = self.detect_mcm_in_if_ops(op)
 
-        print(f"FDX: Should flat: {flat_if}")
+        # print(f"FDX: Should flat: {flat_if}")
         if not flat_if:
             return
 

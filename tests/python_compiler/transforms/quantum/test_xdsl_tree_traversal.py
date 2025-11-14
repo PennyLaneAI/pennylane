@@ -581,9 +581,9 @@ class TestTreeTraversalPassBase:
 
     @pytest.mark.parametrize("shots", [None, 10000])
     @pytest.mark.usefixtures("enable_disable_plxpr")
-    def test_execution_validation(self, shots):
+    def test_result_validation(self, shots):
 
-        dev = qml.device("lightning.qubit", wires=4)
+        dev = qml.device("lightning.qubit", wires=4, seed=42)
 
         def test_circuit():
             qml.RX(1.3, 0)
@@ -607,6 +607,8 @@ class TestTreeTraversalPassBase:
         res = circuit()
 
         qml.capture.disable()
+
+        dev = qml.device("lightning.qubit", wires=4, seed=42)
 
         @qml.set_shots(shots)
         @qml.qnode(dev, mcm_method="deferred")
@@ -633,7 +635,7 @@ class TestTreeTraversalPassBase:
             lambda: qml.expval(qml.Y(1)),
         ],
     )
-    def test_multiple_measurements_and_reset(self, shots, postselect, reset, measure_f):
+    def test_result_validation_multiple_measurements(self, shots, postselect, reset, measure_f):
         """Tests that DefaultQubit handles a circuit with a single mid-circuit measurement with reset
         and a conditional gate. Multiple measurements of the mid-circuit measurement value are
         performed. This function also tests `reset` parametrizing over the parameter."""
@@ -709,6 +711,546 @@ class TestTreeTraversalPassBase:
         results1 = ref_func(*params)
 
         mcm_utils.validate_measurements(qml.expval, shots, results1, results0, batch_size=None)
+
+
+class TestTreeTraversalPassIfStatement:
+    """Unit tests for TreeTraversalPass. with if statement control flow operation."""
+
+    def test_if_statement_with_mcm_true(self, run_filecheck):
+        """Test tree traversal pass would be applied to a func with an if statement."""
+
+        """
+        Circuit Test
+        def circuit():
+            def ansatz_true():
+                m = qml.measure(1)
+                qml.Z(1)
+            def ansatz_false():
+                qml.Y(1)
+            qml.cond(True, ansatz_true, ansatz_false)()
+            return qml.expval(qml.Z(0))
+        """
+
+        program = """
+        builtin.module @module_circuit {
+
+            // CHECK: func.func public @circuit() -> tensor<f64> attributes {qnode}
+            // CHECK: func.call @circuit.simple_io.tree_traversal() : ()
+            // CHECK: func.return %0 : tensor<f64>
+
+            func.func public @circuit() -> (tensor<f64>) attributes {qnode} {
+                %0 = "stablehlo.constant"() <{value = dense<0> : tensor<i64>}> : () -> tensor<i64>
+                %1 = tensor.extract %0[] : tensor<i64>
+                quantum.device shots(%1) ["", "", ""]
+                %2 = "stablehlo.constant"() <{value = dense<2> : tensor<i64>}> : () -> tensor<i64>
+                %3 = quantum.alloc(2) : !quantum.reg
+                %4 = "stablehlo.constant"() <{value = dense<true> : tensor<i1>}> : () -> tensor<i1>
+                %5 = tensor.extract %4[] : tensor<i1>
+                %6 = scf.if %5 -> (!quantum.reg) {
+                    %7 = "stablehlo.constant"() <{value = dense<1> : tensor<i64>}> : () -> tensor<i64>
+                    %8 = tensor.extract %7[] : tensor<i64>
+                    %9 = quantum.extract %3[%8] : !quantum.reg -> !quantum.bit
+                    %10, %11 = quantum.measure %9 : i1, !quantum.bit
+                    %12 = tensor.from_elements %10 : tensor<i1>
+                    %13 = quantum.custom "PauliZ"() %11 : !quantum.bit
+                    %14 = tensor.extract %7[] : tensor<i64>
+                    %15 = quantum.insert %3[%14], %13 : !quantum.reg, !quantum.bit
+                    scf.yield %15 : !quantum.reg
+                } else {
+                    %16 = "stablehlo.constant"() <{value = dense<1> : tensor<i64>}> : () -> tensor<i64>
+                    %17 = tensor.extract %16[] : tensor<i64>
+                    %18 = quantum.extract %3[%17] : !quantum.reg -> !quantum.bit
+                    %19 = quantum.custom "PauliY"() %18 : !quantum.bit
+                    %20 = tensor.extract %16[] : tensor<i64>
+                    %21 = quantum.insert %3[%20], %19 : !quantum.reg, !quantum.bit
+                    scf.yield %21 : !quantum.reg
+                }
+                %22 = tensor.extract %0[] : tensor<i64>
+                %23 = quantum.extract %6[%22] : !quantum.reg -> !quantum.bit
+                %24 = quantum.namedobs %23[PauliZ] : !quantum.obs
+                %25 = quantum.expval %24 : f64
+                %26 = tensor.from_elements %25 : tensor<f64>
+                %27 = tensor.extract %0[] : tensor<i64>
+                %28 = quantum.insert %6[%27], %23 : !quantum.reg, !quantum.bit
+                quantum.dealloc %28 : !quantum.reg
+                quantum.device_release
+                func.return %26 : tensor<f64>
+            }
+            // CHECK: func.func @state_transition
+            // CHECK: func.func @quantum_segment_0
+
+            // CHECK: func.func @quantum_segment_1
+                // Main if statement
+                // CHECK: {{%.+}} = scf.if {{%.+}} -> (!quantum.reg) {
+                    // If statement for mcm
+                    // CHECK: {{%.+}}, {{%.+}} = scf.if {{%.+}} -> (i1, !quantum.bit) {
+                        // CHECK: quantum.measure {{%.+}} : i1, !quantum.bit
+                        // CHECK: scf.yield {{%.+}}, {{%.+}} : i1, !quantum.bit
+                    // CHECK: } else {
+                        // CHECK: quantum.measure {{%.+}} : i1, !quantum.bit
+                        // CHECK: scf.yield {{%.+}}, {{%.+}} : i1, !quantum.bit
+
+                    // Check that mcm results are not leaked outside the mcm if statement
+                    // CHECK-NOT: quantum.measure {{%.+}} : i1, !quantum.bit
+                    // CHECK: scf.yield {{%.+}} : !quantum.reg
+                // CHECK: } else {
+                    // CHECK-NEXT: scf.yield {{%.+}} : !quantum.reg
+
+                // CHECK: }{contain_mcm = "true", partition = "true_branch"}
+                // CHECK-NOT: quantum.measure {{%.+}} : i1, !quantum.bit
+                // CHECK: {{%.+}} = arith.xori {{%.+}}, {{%.+}} : i1
+                // CHECK-NOT: quantum.measure {{%.+}} : i1, !quantum.bit
+
+            // CHECK: func.func @quantum_segment_2
+                // CHECK: {{%.+}} = scf.if {{%.+}} -> (!quantum.reg) {
+                    // CHECK-NOT: {{%.+}}, {{%.+}} = scf.if {{%.+}} -> (i1, !quantum.bit) {
+                    // CHECK: scf.yield {{%.+}} : !quantum.reg
+                // CHECK: } else {
+                    // CHECK: scf.yield {{%.+}} : !quantum.reg
+
+                // CHECK: }{contain_mcm = "true", partition = "false_branch"}
+                // CHECK-NOT: {{%.+}} = arith.xori {{%.+}}, {{%.+}} : i1
+            // CHECK-NOT: func.func @quantum_segment_3
+        }
+        """
+
+        pipeline = (TreeTraversalPass(),)
+        run_filecheck(program, pipeline, roundtrip=True)
+
+    def test_if_statement_with_mcm_false(self, run_filecheck):
+        """Test tree traversal pass would be applied to a func with an if statement."""
+
+        """
+        Circuit Test
+        def circuit():
+            def ansatz_true():
+                qml.Z(1)
+            def ansatz_false():
+                m = qml.measure(1)
+                qml.Y(1)
+            qml.cond(True, ansatz_true, ansatz_false)()
+            return qml.expval(qml.Z(0))
+        """
+
+        program = """
+        builtin.module @module_circuit {
+
+            // CHECK: func.func public @circuit() -> tensor<f64> attributes {qnode}
+            // CHECK: func.call @circuit.simple_io.tree_traversal() : ()
+            // CHECK: func.return %0 : tensor<f64>
+
+            func.func public @circuit() -> (tensor<f64>) attributes {qnode} {
+                %0 = "stablehlo.constant"() <{value = dense<0> : tensor<i64>}> : () -> tensor<i64>
+                %1 = tensor.extract %0[] : tensor<i64>
+                quantum.device shots(%1) ["", "", ""]
+                %2 = "stablehlo.constant"() <{value = dense<2> : tensor<i64>}> : () -> tensor<i64>
+                %3 = quantum.alloc(2) : !quantum.reg
+                %4 = "stablehlo.constant"() <{value = dense<true> : tensor<i1>}> : () -> tensor<i1>
+                %5 = tensor.extract %4[] : tensor<i1>
+                %6 = scf.if %5 -> (!quantum.reg) {
+                    %7 = "stablehlo.constant"() <{value = dense<1> : tensor<i64>}> : () -> tensor<i64>
+                    %8 = tensor.extract %7[] : tensor<i64>
+                    %9 = quantum.extract %3[%8] : !quantum.reg -> !quantum.bit
+                    %10 = quantum.custom "PauliZ"() %9 : !quantum.bit
+                    %11 = tensor.extract %7[] : tensor<i64>
+                    %12 = quantum.insert %3[%11], %10 : !quantum.reg, !quantum.bit
+                    scf.yield %12 : !quantum.reg
+                } else {
+                    %13 = "stablehlo.constant"() <{value = dense<1> : tensor<i64>}> : () -> tensor<i64>
+                    %14 = tensor.extract %13[] : tensor<i64>
+                    %15 = quantum.extract %3[%14] : !quantum.reg -> !quantum.bit
+                    %16, %17 = quantum.measure %15 : i1, !quantum.bit
+                    %18 = tensor.from_elements %16 : tensor<i1>
+                    %19 = quantum.custom "PauliY"() %17 : !quantum.bit
+                    %20 = tensor.extract %13[] : tensor<i64>
+                    %21 = quantum.insert %3[%20], %19 : !quantum.reg, !quantum.bit
+                    scf.yield %21 : !quantum.reg
+                }
+                %22 = tensor.extract %0[] : tensor<i64>
+                %23 = quantum.extract %6[%22] : !quantum.reg -> !quantum.bit
+                %24 = quantum.namedobs %23[PauliZ] : !quantum.obs
+                %25 = quantum.expval %24 : f64
+                %26 = tensor.from_elements %25 : tensor<f64>
+                %27 = tensor.extract %0[] : tensor<i64>
+                %28 = quantum.insert %6[%27], %23 : !quantum.reg, !quantum.bit
+                quantum.dealloc %28 : !quantum.reg
+                quantum.device_release
+                func.return %26 : tensor<f64>
+            }
+            // CHECK: func.func @state_transition
+            // CHECK: func.func @quantum_segment_0
+            // CHECK: func.func @quantum_segment_1
+            // CHECK: {{%.+}} = scf.if {{%.+}} -> (!quantum.reg) {
+            // CHECK-NOT: {{%.+}}, {{%.+}} = scf.if {{%.+}} -> (i1, !quantum.bit) {
+            // CHECK: scf.yield {{%.+}} : !quantum.reg
+            // CHECK: } else {
+            // CHECK: scf.yield {{%.+}} : !quantum.reg
+            // CHECK: }{contain_mcm = "true", partition = "true_branch"}
+            // CHECK: {{%.+}} = arith.xori {{%.+}}, {{%.+}} : i1
+
+            // CHECK: func.func @quantum_segment_2
+                // Main if statement
+                // CHECK: {{%.+}} = scf.if {{%.+}} -> (!quantum.reg) {
+                    // If statement for mcm
+                    // CHECK: {{%.+}}, {{%.+}} = scf.if {{%.+}} -> (i1, !quantum.bit) {
+                        // CHECK: quantum.measure {{%.+}} : i1, !quantum.bit
+                        // CHECK: scf.yield {{%.+}}, {{%.+}} : i1, !quantum.bit
+                    // CHECK: } else {
+                        // CHECK: quantum.measure {{%.+}} : i1, !quantum.bit
+                        // CHECK: scf.yield {{%.+}}, {{%.+}} : i1, !quantum.bit
+
+                    // Check that mcm results are not leaked outside the mcm if statement
+                    // CHECK-NOT: quantum.measure {{%.+}} : i1, !quantum.bit
+                    // CHECK: scf.yield {{%.+}} : !quantum.reg
+                // CHECK: } else {
+                    // CHECK-NEXT: scf.yield {{%.+}} : !quantum.reg
+
+                // CHECK: }{contain_mcm = "true", partition = "false_branch"}
+                // CHECK-NOT: quantum.measure {{%.+}} : i1, !quantum.bit
+
+            // CHECK-NOT: func.func @quantum_segment_3
+        }
+        """
+
+        pipeline = (TreeTraversalPass(),)
+        run_filecheck(program, pipeline, roundtrip=True)
+
+    def test_if_statement_with_mcm_both(self, run_filecheck):
+        """Test tree traversal pass would be applied to a func with an if statement."""
+
+        """
+        Circuit Test
+        def circuit():
+            def ansatz_true():
+                m = qml.measure(1)
+                qml.Z(1)
+            def ansatz_false():
+                m = qml.measure(1)
+                qml.Y(1)
+            qml.cond(True, ansatz_true, ansatz_false)()
+            return qml.expval(qml.Z(0))
+        """
+
+        program = """
+        builtin.module @module_circuit {
+
+            // CHECK: func.func public @circuit() -> tensor<f64> attributes {qnode}
+            // CHECK: func.call @circuit.simple_io.tree_traversal() : ()
+            // CHECK: func.return %0 : tensor<f64>
+
+            func.func public @circuit() -> (tensor<f64>) attributes {qnode} {
+                %0 = "stablehlo.constant"() <{value = dense<0> : tensor<i64>}> : () -> tensor<i64>
+                %1 = tensor.extract %0[] : tensor<i64>
+                quantum.device shots(%1) ["", "", ""]
+                %2 = "stablehlo.constant"() <{value = dense<2> : tensor<i64>}> : () -> tensor<i64>
+                %3 = quantum.alloc(2) : !quantum.reg
+                %4 = "stablehlo.constant"() <{value = dense<true> : tensor<i1>}> : () -> tensor<i1>
+                %5 = tensor.extract %4[] : tensor<i1>
+                %6 = scf.if %5 -> (!quantum.reg) {
+                    %7 = "stablehlo.constant"() <{value = dense<1> : tensor<i64>}> : () -> tensor<i64>
+                    %8 = tensor.extract %7[] : tensor<i64>
+                    %9 = quantum.extract %3[%8] : !quantum.reg -> !quantum.bit
+                    %10, %11 = quantum.measure %9 : i1, !quantum.bit
+                    %12 = tensor.from_elements %10 : tensor<i1>
+                    %13 = quantum.custom "PauliZ"() %11 : !quantum.bit
+                    %14 = tensor.extract %7[] : tensor<i64>
+                    %15 = quantum.insert %3[%14], %13 : !quantum.reg, !quantum.bit
+                    scf.yield %15 : !quantum.reg
+                } else {
+                    %16 = "stablehlo.constant"() <{value = dense<1> : tensor<i64>}> : () -> tensor<i64>
+                    %17 = tensor.extract %16[] : tensor<i64>
+                    %18 = quantum.extract %3[%17] : !quantum.reg -> !quantum.bit
+                    %19, %20 = quantum.measure %18 : i1, !quantum.bit
+                    %21 = tensor.from_elements %19 : tensor<i1>
+                    %22 = quantum.custom "PauliY"() %20 : !quantum.bit
+                    %23 = tensor.extract %16[] : tensor<i64>
+                    %24 = quantum.insert %3[%23], %22 : !quantum.reg, !quantum.bit
+                    scf.yield %24 : !quantum.reg
+                }
+                %25 = tensor.extract %0[] : tensor<i64>
+                %26 = quantum.extract %6[%25] : !quantum.reg -> !quantum.bit
+                %27 = quantum.namedobs %26[PauliZ] : !quantum.obs
+                %28 = quantum.expval %27 : f64
+                %29 = tensor.from_elements %28 : tensor<f64>
+                %30 = tensor.extract %0[] : tensor<i64>
+                %31 = quantum.insert %6[%30], %26 : !quantum.reg, !quantum.bit
+                quantum.dealloc %31 : !quantum.reg
+                quantum.device_release
+                func.return %29 : tensor<f64>
+            }
+
+            // CHECK: func.func @state_transition
+            // CHECK: func.func @quantum_segment_0
+            // CHECK: func.func @quantum_segment_1
+                // Main if statement
+                // CHECK: {{%.+}} = scf.if {{%.+}} -> (!quantum.reg) {
+                    // If statement for mcm
+                    // CHECK: {{%.+}}, {{%.+}} = scf.if {{%.+}} -> (i1, !quantum.bit) {
+                        // CHECK: quantum.measure {{%.+}} : i1, !quantum.bit
+                        // CHECK: scf.yield {{%.+}}, {{%.+}} : i1, !quantum.bit
+                    // CHECK: } else {
+                        // CHECK: quantum.measure {{%.+}} : i1, !quantum.bit
+                        // CHECK: scf.yield {{%.+}}, {{%.+}} : i1, !quantum.bit
+
+                    // Check that mcm results are not leaked outside the mcm if statement
+                    // CHECK-NOT: quantum.measure {{%.+}} : i1, !quantum.bit
+                    // CHECK: scf.yield {{%.+}} : !quantum.reg
+                // CHECK: } else {
+                    // CHECK-NEXT: scf.yield {{%.+}} : !quantum.reg
+
+                // CHECK: }{contain_mcm = "true", partition = "true_branch"}
+                // CHECK-NOT: quantum.measure {{%.+}} : i1, !quantum.bit
+                // CHECK: {{%.+}} = arith.xori {{%.+}}, {{%.+}} : i1
+                // CHECK-NOT: quantum.measure {{%.+}} : i1, !quantum.bit
+
+            // CHECK: func.func @quantum_segment_2
+
+                // Main if statement
+                // CHECK: {{%.+}} = scf.if {{%.+}} -> (!quantum.reg) {
+                    // If statement for mcm
+                    // CHECK: {{%.+}}, {{%.+}} = scf.if {{%.+}} -> (i1, !quantum.bit) {
+                        // CHECK: quantum.measure {{%.+}} : i1, !quantum.bit
+                        // CHECK: scf.yield {{%.+}}, {{%.+}} : i1, !quantum.bit
+                    // CHECK: } else {
+                        // CHECK: quantum.measure {{%.+}} : i1, !quantum.bit
+                        // CHECK: scf.yield {{%.+}}, {{%.+}} : i1, !quantum.bit
+
+                    // Check that mcm results are not leaked outside the mcm if statement
+                    // CHECK-NOT: quantum.measure {{%.+}} : i1, !quantum.bit
+                    // CHECK: scf.yield {{%.+}} : !quantum.reg
+                // CHECK: } else {
+                    // CHECK-NEXT: scf.yield {{%.+}} : !quantum.reg
+
+                // CHECK: }{contain_mcm = "true", partition = "false_branch"}
+                // CHECK-NOT: quantum.measure {{%.+}} : i1, !quantum.bit
+
+            // CHECK-NOT: func.func @quantum_segment_3
+        }
+        """
+
+        pipeline = (TreeTraversalPass(),)
+        run_filecheck(program, pipeline, roundtrip=True)
+
+    def test_if_statement_with_nested_mcm(self, run_filecheck):
+        """Test tree traversal pass would be applied to a func with an if statement."""
+
+        """
+        Circuit Test
+        def circuit():
+            def ansatz_true():
+                qml.Z(0)
+
+                def nested_ansatz_true():
+                    m1 = qml.measure(1)
+                    qml.X( 0)
+                def nested_ansatz_false():
+                    qml.Y( 0)
+                qml.cond(True, nested_ansatz_true, nested_ansatz_false)()
+
+            def ansatz_false():
+                qml.T(0)
+
+            qml.cond(True, ansatz_true, ansatz_false)()
+            qml.S(0)
+
+            return qml.expval(qml.Z(0))
+
+        """
+
+        program = """
+        builtin.module @module_circuit {
+
+            // CHECK: func.func public @circuit() -> tensor<f64> attributes {qnode}
+            // CHECK: func.call @circuit.simple_io.tree_traversal() : ()
+            // CHECK: func.return %0 : tensor<f64>
+
+            func.func public @circuit() -> (tensor<f64>) attributes {qnode} {
+                %0 = "stablehlo.constant"() <{value = dense<0> : tensor<i64>}> : () -> tensor<i64>
+                %1 = tensor.extract %0[] : tensor<i64>
+                quantum.device shots(%1) ["", "", ""]
+                %2 = "stablehlo.constant"() <{value = dense<2> : tensor<i64>}> : () -> tensor<i64>
+                %3 = quantum.alloc(2) : !quantum.reg
+                %4 = "stablehlo.constant"() <{value = dense<true> : tensor<i1>}> : () -> tensor<i1>
+                %5 = tensor.extract %4[] : tensor<i1>
+                %6 = scf.if %5 -> (!quantum.reg) {
+                    %7 = "stablehlo.constant"() <{value = dense<0> : tensor<i64>}> : () -> tensor<i64>
+                    %8 = tensor.extract %7[] : tensor<i64>
+                    %9 = quantum.extract %3[%8] : !quantum.reg -> !quantum.bit
+                    %10 = quantum.custom "PauliZ"() %9 : !quantum.bit
+                    %11 = tensor.extract %7[] : tensor<i64>
+                    %12 = quantum.insert %3[%11], %10 : !quantum.reg, !quantum.bit
+                    %13 = "stablehlo.constant"() <{value = dense<true> : tensor<i1>}> : () -> tensor<i1>
+                    %14 = tensor.extract %13[] : tensor<i1>
+                    %15 = scf.if %14 -> (!quantum.reg) {
+                        %16 = "stablehlo.constant"() <{value = dense<1> : tensor<i64>}> : () -> tensor<i64>
+                        %17 = tensor.extract %16[] : tensor<i64>
+                        %18 = quantum.extract %12[%17] : !quantum.reg -> !quantum.bit
+                        %19, %20 = quantum.measure %18 : i1, !quantum.bit
+                        %21 = tensor.from_elements %19 : tensor<i1>
+                        %22 = "stablehlo.constant"() <{value = dense<0> : tensor<i64>}> : () -> tensor<i64>
+                        %23 = tensor.extract %22[] : tensor<i64>
+                        %24 = quantum.extract %12[%23] : !quantum.reg -> !quantum.bit
+                        %25 = quantum.custom "PauliX"() %24 : !quantum.bit
+                        %26 = tensor.extract %16[] : tensor<i64>
+                        %27 = quantum.insert %12[%26], %20 : !quantum.reg, !quantum.bit
+                        %28 = tensor.extract %22[] : tensor<i64>
+                        %29 = quantum.insert %27[%28], %25 : !quantum.reg, !quantum.bit
+                        scf.yield %29 : !quantum.reg
+                    } else {
+                        %30 = "stablehlo.constant"() <{value = dense<0> : tensor<i64>}> : () -> tensor<i64>
+                        %31 = tensor.extract %30[] : tensor<i64>
+                        %32 = quantum.extract %12[%31] : !quantum.reg -> !quantum.bit
+                        %33 = quantum.custom "PauliY"() %32 : !quantum.bit
+                        %34 = tensor.extract %30[] : tensor<i64>
+                        %35 = quantum.insert %12[%34], %33 : !quantum.reg, !quantum.bit
+                        scf.yield %35 : !quantum.reg
+                    }
+                    scf.yield %15 : !quantum.reg
+                } else {
+                    %36 = "stablehlo.constant"() <{value = dense<0> : tensor<i64>}> : () -> tensor<i64>
+                    %37 = tensor.extract %36[] : tensor<i64>
+                    %38 = quantum.extract %3[%37] : !quantum.reg -> !quantum.bit
+                    %39 = quantum.custom "T"() %38 : !quantum.bit
+                    %40 = tensor.extract %36[] : tensor<i64>
+                    %41 = quantum.insert %3[%40], %39 : !quantum.reg, !quantum.bit
+                    scf.yield %41 : !quantum.reg
+                }
+                %42 = tensor.extract %0[] : tensor<i64>
+                %43 = quantum.extract %6[%42] : !quantum.reg -> !quantum.bit
+                %44 = quantum.custom "S"() %43 : !quantum.bit
+                %45 = quantum.namedobs %44[PauliZ] : !quantum.obs
+                %46 = quantum.expval %45 : f64
+                %47 = tensor.from_elements %46 : tensor<f64>
+                %48 = tensor.extract %0[] : tensor<i64>
+                %49 = quantum.insert %6[%48], %44 : !quantum.reg, !quantum.bit
+                quantum.dealloc %49 : !quantum.reg
+                quantum.device_release
+                func.return %47 : tensor<f64>
+            }
+
+            // CHECK: func.func @state_transition
+            // CHECK: func.func @quantum_segment_0
+
+            // Outer if, true branch
+            // CHECK: func.func @quantum_segment_1
+                // CHECK: {{%.+}}, {{%.+}}, {{%.+}} = scf.if {{%.+}} -> (!quantum.reg, i1, i1) {
+
+                    // CHECK-NOT: quantum.measure {{%.+}} : i1, !quantum.bit
+                    // CHECK: quantum.custom "PauliZ"()
+                    // CHECK-NOT: quantum.measure {{%.+}} : i1, !quantum.bit
+
+                    // CHECK: [[false_branch:%.+]] = arith.xori {{%.+}}, {{%.+}} : i1
+                    // CHECK: scf.yield  {{%.+}}, {{%.+}}, [[false_branch]] : !quantum.reg, i1, i1
+                // CHECK: } else {
+                    // CHECK: [[true_branch_t:%.+]] = arith.constant false
+                    // CHECK: [[false_branch_t:%.+]] = arith.constant false
+                    // CHECK: scf.yield  {{%.+}}, [[false_branch_t]], [[true_branch_t]] : !quantum.reg, i1, i1
+                // CHECK: }{contain_mcm = "true", partition = "true_branch"}
+
+                // CHECK-NOT: quantum.measure {{%.+}} : i1, !quantum.bit
+                // CHECK: func.return
+
+            // Inner if, inside  outer if statement in the true branch
+            // CHECK: func.func @quantum_segment_2({{.*}}, [[if_cond_t:%.+]] : i1{{.*}}) -> (!quantum.reg, i64) {
+                // CHECK: scf.if [[if_cond_t]] -> (!quantum.reg) {
+                    // CHECK: {{%.+}}, {{%.+}} = scf.if {{%.+}} -> (i1, !quantum.bit) {
+                        // CHECK: quantum.measure {{%.+}} : i1, !quantum.bit
+                        // CHECK: scf.yield {{%.+}} {{%.+}} : i1, !quantum.bit
+                    // CHECK } else {
+                        // CHECK: quantum.measure {{%.+}} : i1, !quantum.bit
+                        // CHECK: scf.yield {{%.+}} {{%.+}} : i1, !quantum.bit
+
+                    // CHECK: quantum.custom "PauliX"()
+                    // CHECK: scf.yield {{%.+}} : !quantum.reg
+                // CHECK: } else {
+                    // CHECK: scf.yield {{%.+}} : !quantum.reg
+                // CHECK: }{contain_mcm = "true", partition = "true_branch", flattened = "true"}
+
+            // Inner if, inside  outer if statement in the false branch
+            // CHECK: func.func @quantum_segment_3({{.*}}, [[if_cond_tt:%.+]] : i1, [[if_cond_ttt:%.+]] : i1{{.*}}) -> (!quantum.reg
+                // CHECK scf.if [[if_cond_tt]] -> (!quantum.reg) {
+
+                    // CHECK-NOT: quantum.measure {{%.+}} : i1, !quantum.bit
+                    // CHECK: quantum.custom "PauliY"()
+                    // CHECK-NOT: quantum.measure {{%.+}} : i1, !quantum.bit
+
+                // CHECK: } else {
+                    // CHECK: scf.yield {{%.+}} : !quantum.reg
+                // CHECK: }{contain_mcm = "true", partition = "false_branch", flattened = "true"}
+
+            // Outer if, false branch
+            // CHECK: func.func @quantum_segment_4({{.*}}, [[if_cond_f:%.+]] : i1{{.*}}) -> (!quantum.reg, tensor<f64>) {
+                // CHECK scf.if [[if_cond_f]] -> (!quantum.reg) {
+                    // CHECK-NOT: quantum.measure {{%.+}} : i1, !quantum.bit
+                    // CHECK: quantum.custom "T"()
+                    // CHECK-NOT: quantum.measure {{%.+}} : i1, !quantum.bit
+                // CHECK: } else {
+                    // CHECK: scf.yield {{%.+}} : !quantum.reg
+                // CHECK: }{contain_mcm = "true", partition = "false_branch"}
+
+            // CHECK-NOT: func.func @quantum_segment_5
+        }
+        """
+
+        pipeline = (TreeTraversalPass(),)
+        run_filecheck(program, pipeline, roundtrip=True)
+
+    @pytest.mark.usefixtures("enable_disable_plxpr")
+    @pytest.mark.parametrize("shots", [None, 50000])
+    @pytest.mark.parametrize("branch", [False, True])
+    @pytest.mark.parametrize(
+        "measure_f",
+        [
+            lambda: qml.expval(qml.Z(0)),
+            lambda: qml.expval(qml.Y(0)),
+            lambda: qml.expval(qml.Z(1)),
+            lambda: qml.expval(qml.Y(1)),
+        ],
+    )
+    def test_execution_validation(self, shots, branch, measure_f):
+
+        dev = qml.device("lightning.qubit", wires=4, seed=42)
+
+        def test_circuit(branch_select):
+
+            qml.H(0)
+            qml.H(1)
+
+            def ansatz_true():
+                m1 = qml.measure(1)
+                qml.RY(0.3, 0)
+                qml.RY(0.3, 1)
+
+            def ansatz_false():
+                qml.RY(0.5, 0)
+
+            qml.cond(branch_select, ansatz_true, ansatz_false)()
+
+            return measure_f()
+
+        @qml.qjit(
+            target="mlir",
+            pass_plugins=[getXDSLPluginAbsolutePath()],
+        )
+        @qml.set_shots(shots)
+        @tree_traversal_pass
+        @qml.qnode(dev)
+        def circuit(branch=branch):
+            return test_circuit(branch)
+
+        res = circuit()
+
+        qml.capture.disable()
+
+        dev = qml.device("lightning.qubit", wires=4, seed=42)
+
+        @qml.set_shots(shots)
+        @qml.qnode(dev, mcm_method="tree-traversal")
+        def circuit_ref(branch=branch):
+            return test_circuit(branch)
+
+        res_ref = circuit_ref()
+        mcm_utils.validate_measurements(qml.expval, shots, res_ref, res, batch_size=None)
 
 
 class TestTreeTraversalPassStaticForLoop:
@@ -1306,8 +1848,6 @@ class TestTreeTraversalPassStaticForLoop:
             return test_circuit()
 
         res_ref = circuit_ref()
-        print("RES REF:", res_ref)
-        print("RES:", res)
         mcm_utils.validate_measurements(qml.expval, shots, res_ref, res, batch_size=None)
 
     @pytest.mark.usefixtures("enable_disable_plxpr")
@@ -1331,7 +1871,7 @@ class TestTreeTraversalPassStaticForLoop:
         and a conditional gate. Multiple measurements of the mid-circuit measurement value are
         performed. This function also tests `reset` parametrizing over the parameter."""
 
-        dev = qml.device("lightning.qubit", wires=3)
+        dev = qml.device("lightning.qubit", wires=3,seed=42)
         params = [np.pi / 2.5, np.pi / 3, -np.pi / 3.5]
 
         def obs_tape(x, y, z, reset=False, postselect=None):
@@ -1361,7 +1901,7 @@ class TestTreeTraversalPassStaticForLoop:
 
         results0 = qjit_func(*params)
 
-        dev = qml.device("default.qubit")
+        dev = qml.device("default.qubit", seed=42)
 
         qml.capture.disable()
 
