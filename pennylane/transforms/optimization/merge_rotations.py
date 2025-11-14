@@ -236,6 +236,10 @@ def _get_plxpr_merge_rotations():
     # pylint: disable=redefined-outer-name
     def merge_rotations_plxpr_to_plxpr(jaxpr, consts, _, tkwargs, *args):
         """Function for applying the ``merge_rotations`` transform on plxpr."""
+        from pennylane.capture import _restore_dict  # pylint: disable=import-outside-toplevel
+
+        # Restore tkwargs from hashable tuple to dict
+        tkwargs = _restore_dict(tkwargs)
 
         merge_rotations = MergeRotationsInterpreter(**tkwargs)
 

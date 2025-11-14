@@ -24,7 +24,7 @@ timer.dat
 tmp/*
 benchmark/revisions/
 venv
-.venv*
+*venv*/
 config.toml
 .envrc
 qml_debug.log

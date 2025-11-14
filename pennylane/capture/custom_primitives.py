@@ -15,6 +15,8 @@
 This submodule offers custom primitives for the PennyLane capture module.
 """
 
+# pylint: disable=too-many-return-statements
+
 from enum import Enum
 from typing import Any
 
@@ -43,6 +45,8 @@ def _make_hashable(obj: Any) -> Any:
     Returns:
         Hashable version of the object
     """
+    if isinstance(obj, slice):
+        return (obj.start, obj.stop, obj.step)
 
     # slice is unhashable in 3.11, but hashable in 3.12+
     # so we have to treat it first incase incompatibility among
