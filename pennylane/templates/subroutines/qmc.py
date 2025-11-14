@@ -342,7 +342,9 @@ class QuantumMonteCarlo(Operation):
     resource_keys = {"num_target_wires", "num_estimation_wires", "q_resource_rep"}
 
     @classmethod
-    def _primitive_bind_call(cls, probs, func, target_wires, estimation_wires, id=None):
+    def _primitive_bind_call(
+        cls, probs, func, target_wires, estimation_wires, id=None
+    ):  # pylint: disable=arguments-differ
         # handle target wires and estimation wires
         return cls._primitive.bind(
             probs,
