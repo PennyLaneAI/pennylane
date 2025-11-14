@@ -132,10 +132,6 @@ class HilbertSchmidt(Operation):
     def resource_params(self) -> dict:
         u_ops = self.hyperparameters["U"]
         v_ops = self.hyperparameters["V"]
-        if isinstance(u_ops, Operator):
-            u_ops = [u_ops]
-        if isinstance(v_ops, Operator):
-            v_ops = [v_ops]
         return {
             "num_wires": len(self.wires),
             "u_reps": [resource_rep(type(op_u), **op_u.resource_params) for op_u in u_ops],
@@ -401,10 +397,6 @@ class LocalHilbertSchmidt(HilbertSchmidt):
     def resource_params(self) -> dict:
         u_ops = self.hyperparameters["U"]
         v_ops = self.hyperparameters["V"]
-        if isinstance(u_ops, Operator):
-            u_ops = [u_ops]
-        if isinstance(v_ops, Operator):
-            v_ops = [v_ops]
         return {
             "num_wires": len(self.wires),
             "u_reps": [resource_rep(type(op_u), **op_u.resource_params) for op_u in u_ops],
