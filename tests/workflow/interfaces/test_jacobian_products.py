@@ -52,7 +52,7 @@ hadamard_grad_jpc = TransformJacobianProducts(
     {
         "aux_wire": "aux",
         "mode": "standard",
-    },  # Note: auto mode requires H to be a linear combination of Pauli terms
+    },
 )
 device_jacs = DeviceDerivatives(dev, adjoint_config)
 device_ps_jacs = DeviceDerivatives(dev_ps, ps_config)
