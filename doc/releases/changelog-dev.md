@@ -246,6 +246,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Add workflow to bump Catalyst and Lightning versions in the RC branch, create a new release tag and draft release, tag the RC branch, and create a PR to merge the RC branch into master.
+  [(#8352)](https://github.com/PennyLaneAI/pennylane/pull/8352)
+  
 * In program capture, transforms now have a single transform primitive that have a `transform` param that stores
   the `TransformDispatcher`. Before, each transform had its own primitive stored on the 
   `TransformDispatcher._primitive` private property. It proved difficult to keep maintaining dispatch behaviour
