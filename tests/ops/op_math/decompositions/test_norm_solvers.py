@@ -41,6 +41,8 @@ class TestGCD:
             (ZSqrtTwo(15), ZSqrtTwo(25), ZSqrtTwo(5)),
             (ZSqrtTwo(81), ZSqrtTwo(63), ZSqrtTwo(9)),
             (ZSqrtTwo(144), ZSqrtTwo(108), ZSqrtTwo(36)),
+            (ZSqrtTwo(28, 15), ZSqrtTwo(12, 25), ZSqrtTwo(10, 7)),
+            (ZSqrtTwo(35, 42), ZSqrtTwo(22, 16), ZSqrtTwo(11, 8)),
         ],
     )
     def test_gcd_zsqrt_two(self, a, b, expected):
@@ -54,6 +56,8 @@ class TestGCD:
             (ZOmega(d=15), ZOmega(d=25), ZOmega(d=5)),
             (ZOmega(d=81), ZOmega(d=63), ZOmega(d=9)),
             (ZOmega(d=144), ZOmega(d=108), ZOmega(d=36)),
+            (ZOmega(d=28, b=12), ZOmega(d=32, b=44), ZOmega(d=4)),
+            (ZOmega(a=81, c=63), ZOmega(a=36, c=42), ZOmega(a=3, c=3)),
         ],
     )
     def test_gcd_zomega(self, a, b, expected):
@@ -117,7 +121,7 @@ class TestFactorization:
         [
             (3, ZOmega(a=1, c=1, d=1)),
             (27, None),
-            (5, ZOmega(b=2, d=1)),
+            (5, ZOmega(b=-1, d=2)),
             (7, None),
             (11, ZOmega(a=1, c=1, d=3)),
             (13, ZOmega(b=2, d=3)),
