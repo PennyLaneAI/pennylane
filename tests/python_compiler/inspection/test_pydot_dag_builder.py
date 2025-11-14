@@ -68,8 +68,19 @@ def test_add_edge():
 
 
 @pytest.mark.unit
-def test_nested_clusters():
-    """Tests that nested clusters can be made and properly tracked."""
+def test_add_cluster():
+    """Unit test the 'add_cluster' method."""
+
+    dag_builder = PyDotDAGBuilder()
+    dag_builder.add_cluster("0", "my_cluster")
+
+    assert len(dag_builder.graph.get_subgraphs()) == 1
+    assert dag_builder.graph.get_subgraphs()[0].get_name() == "cluster_0"
+
+
+@pytest.mark.unit
+def test_add_node_to_parent_graph():
+    """Tests that you can add a node to a parent graph."""
     dag_builder = PyDotDAGBuilder()
 
     # Create node
@@ -99,14 +110,48 @@ def test_nested_clusters():
 
 
 @pytest.mark.unit
-def test_add_cluster():
-    """Unit test the 'add_cluster' method."""
-
+def test_add_cluster_to_parent_graph():
+    """Test that you can add a cluster to a parent graph."""
     dag_builder = PyDotDAGBuilder()
-    dag_builder.add_cluster("0", "my_cluster")
 
-    assert len(dag_builder.graph.get_subgraphs()) == 1
-    assert dag_builder.graph.get_subgraphs()[0].get_name() == "cluster_0"
+    # Level 0 (Root)
+    dag_builder.add_node("n_root", "node_root")
+    dag_builder.add_cluster("c0", "cluster_outer")
+
+    # Level 1 (Inside c0)
+    dag_builder.add_node("n_outer", "node_outer", parent_graph_id="c0")
+    dag_builder.add_cluster("c1", "cluster_inner", parent_graph_id="c0")
+
+    # Level 2 (Inside c1)
+    dag_builder.add_node("n_inner", "node_inner", parent_graph_id="c1")
+
+    root_graph = dag_builder.graph
+
+    outer_cluster_list = root_graph.get_subgraph("cluster_c0")
+    assert outer_cluster_list, "Outer cluster 'c0' not found in root"
+    c0 = outer_cluster_list[0]
+
+    inner_cluster_list = c0.get_subgraph("cluster_c1")
+    assert inner_cluster_list, "Inner cluster 'c1' not found in 'c0'"
+    c1 = inner_cluster_list[0]
+
+    # Check Level 0 (Root)
+    assert root_graph.get_node("n_root"), "n_root not found in root"
+    assert root_graph.get_subgraph("cluster_c0"), "c0 not found in root"
+    assert not root_graph.get_node("n_outer"), "n_outer incorrectly found in root"
+    assert not root_graph.get_node("n_inner"), "n_inner incorrectly found in root"
+    assert not root_graph.get_subgraph("cluster_c1"), "c1 incorrectly found in root"
+
+    # Check Level 1 (c0)
+    assert c0.get_node("n_outer"), "n_outer not found in c0"
+    assert c0.get_subgraph("cluster_c1"), "c1 not found in c0"
+    assert not c0.get_node("n_root"), "n_root incorrectly found in c0"
+    assert not c0.get_node("n_inner"), "n_inner incorrectly found in c0"
+
+    # Check Level 2 (c1)
+    assert c1.get_node("n_inner"), "n_inner not found in c1"
+    assert not c1.get_node("n_root"), "n_root incorrectly found in c1"
+    assert not c1.get_node("n_outer"), "n_outer incorrectly found in c1"
 
 
 @pytest.mark.unit
