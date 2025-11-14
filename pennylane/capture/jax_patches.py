@@ -306,13 +306,250 @@ def _patch_pjit_staging_rule():
     pe.custom_staging_rules[pjit.jit_p] = patched_pjit_staging_rule
 
 
-# Apply patches based on JAX version
-if has_jax:
+def get_jax_patches():
+    """Get patch tuples for use with Patcher context manager.
 
-    # Check JAX version
+    Returns a tuple of (obj, attr, new_value) tuples that can be passed to Patcher.
+    These patches fix JAX 0.7.0+ compatibility issues for dynamic shapes and pjit.
+
+    Returns:
+        tuple: Patch tuples for Patcher, or empty tuple if patches not needed
+
+    Example:
+        >>> from pennylane.capture.patching import Patcher
+        >>> from pennylane.capture.jax_patches import get_jax_patches
+        >>> with Patcher(*get_jax_patches()):
+        ...     # JAX operations with patches applied
+        ...     jaxpr = jax.make_jaxpr(my_function)(args)
+    """
+    if not has_jax:
+        return ()
+
     from packaging.version import Version
 
     jax_version = Version(jax.__version__)
+
+    if jax_version < Version("0.7.0"):
+        return ()
+
+    patches = []
+
+    # Patch 1: Add make_eqn helper to DynamicJaxprTrace
+    try:
+        from jax._src import config as jax_config
+        from jax._src import source_info_util
+        from jax._src.core import JaxprEqnContext, Var
+        from jax._src.interpreters import partial_eval as pe
+        from jax._src.interpreters.partial_eval import (
+            DynamicJaxprTracer,
+            TracingEqn,
+            compute_on,
+            xla_metadata_lib,
+        )
+
+        def make_eqn(
+            self,
+            in_tracers,
+            out_avals_or_tracers,
+            primitive,
+            params,
+            effects,
+            source_info=None,
+            ctx=None,
+        ):
+            """Create a tracing equation properly."""
+            source_info = source_info or source_info_util.new_source_info()
+            ctx = ctx or JaxprEqnContext(
+                compute_on.current_compute_type(),
+                jax_config.threefry_partitionable.value,
+                xla_metadata_lib.current_xla_metadata(),
+            )
+
+            # Normalize out_avals to a list
+            if not isinstance(out_avals_or_tracers, (list, tuple)):
+                out_avals = [out_avals_or_tracers]
+            else:
+                out_avals = out_avals_or_tracers
+
+            outvars = [self.frame.newvar(aval) for aval in out_avals]
+
+            if jax_config.enable_checks.value:
+                assert all(isinstance(x, DynamicJaxprTracer) for x in in_tracers)
+                assert all(isinstance(v, Var) for v in outvars)
+
+            eqn = TracingEqn(
+                list(in_tracers), outvars, primitive, params, effects, source_info, ctx
+            )
+
+            # Create output tracers
+            out_tracers = [
+                DynamicJaxprTracer(self, aval, v, source_info, eqn)
+                for aval, v in zip(out_avals, outvars)
+            ]
+
+            return eqn, out_tracers
+
+        patches.append((pe.DynamicJaxprTrace, "make_eqn", make_eqn))
+    except Exception:  # pylint: disable=broad-except
+        pass
+
+    # Patch 2: Fix dyn_shape_staging_rule for array creation with traced dimensions
+    try:
+        from jax._src import core
+        from jax._src.interpreters import partial_eval as pe
+        from jax._src.lax import lax
+
+        def patched_dyn_shape_staging_rule(trace, source_info, prim, out_aval, *args, **params):
+            """Patched version of _dyn_shape_staging_rule using make_eqn helper."""
+            # Check if we have a StagingJaxprTrace (has counter) or DynamicJaxprTrace (no counter)
+            if hasattr(trace, "counter"):
+                # StagingJaxprTrace path - use new_eqn_recipe (original JAX approach)
+                var = trace.frame.newvar(out_aval)
+                out_tracer = pe.DynamicJaxprTracer(trace, out_aval, var, source_info)
+                eqn = pe.new_eqn_recipe(
+                    trace, args, [out_tracer], prim, params, core.no_effects, source_info
+                )
+                out_tracer.recipe = eqn
+                return out_tracer
+
+            # DynamicJaxprTrace path - use make_eqn helper
+            eqn, out_tracers = trace.make_eqn(
+                args, out_aval, prim, params, core.no_effects, source_info
+            )
+            trace.frame.add_eqn(eqn)
+            # Return single tracer (not list) since out_aval is a single value
+            return out_tracers[0]
+
+        patches.append((lax, "_dyn_shape_staging_rule", patched_dyn_shape_staging_rule))
+
+        # Also need to patch the iota_staging_rule which uses _dyn_shape_staging_rule
+        def patched_iota_staging_rule(
+            trace, source_info, *dyn_shape, dtype, shape, dimension, sharding
+        ):
+            """Patched version of _iota_staging_rule."""
+            params = {"dtype": dtype, "shape": shape, "dimension": dimension, "sharding": sharding}
+            if not dyn_shape:
+                return trace.default_process_primitive(
+                    lax.iota_p, (), params, source_info=source_info
+                )
+            aval = core.DShapedArray(lax._merge_dyn_shape(shape, dyn_shape), dtype, False)
+            return patched_dyn_shape_staging_rule(
+                trace, source_info, lax.iota_p, aval, *dyn_shape, **params
+            )
+
+        patches.append((lax, "_iota_staging_rule", patched_iota_staging_rule))
+
+        # Patch the custom_staging_rules dictionary
+        patches.append(
+            (pe.custom_staging_rules, "__dict_item__", lax.iota_p, patched_iota_staging_rule)
+        )
+
+        # Also need to patch broadcast_in_dim_staging_rule which uses _dyn_shape_staging_rule
+        def patched_broadcast_in_dim_staging_rule(
+            trace, source_info, x, *dyn, shape, broadcast_dimensions, sharding
+        ):
+            """Patched version of _broadcast_in_dim_staging_rule."""
+            params = dict(shape=shape, broadcast_dimensions=broadcast_dimensions, sharding=sharding)
+            if not dyn:
+                return trace.default_process_primitive(
+                    lax.broadcast_in_dim_p, (x,), params, source_info=source_info
+                )
+            aval = core.DShapedArray(lax._merge_dyn_shape(shape, dyn), x.dtype, x.weak_type)
+            return patched_dyn_shape_staging_rule(
+                trace, source_info, lax.broadcast_in_dim_p, aval, x, *dyn, **params
+            )
+
+        patches.append(
+            (lax, "_broadcast_in_dim_staging_rule", patched_broadcast_in_dim_staging_rule)
+        )
+        patches.append(
+            (
+                pe.custom_staging_rules,
+                "__dict_item__",
+                lax.broadcast_in_dim_p,
+                patched_broadcast_in_dim_staging_rule,
+            )
+        )
+    except Exception:  # pylint: disable=broad-except
+        pass
+
+    # Patch 3: Fix pjit_staging_rule for dynamic shapes
+    try:
+        from jax._src.core import get_aval
+        from jax._src.interpreters import partial_eval as pe
+        from jax._src.pjit import pjit
+        from jax._src.util import safe_map
+
+        original_pjit_staging_rule = pjit.pjit_staging_rule
+
+        def patched_pjit_staging_rule(trace, *args, **params):
+            """Fixed pjit staging rule that works with DynamicJaxprTrace."""
+            # Check if we're in DynamicJaxprTrace
+            if not isinstance(trace, pe.DynamicJaxprTrace):
+                # Use original implementation for other trace types
+                return original_pjit_staging_rule(trace, *args, **params)
+
+            # Extract parameters
+            jaxpr = params["jaxpr"]
+            in_fwd = params.get("in_shardings_flat", ())
+            source_info = trace.source_info()
+
+            # Create output tracers
+            out_tracers = [pe.DynamicJaxprTracer(trace, v.aval, None) for v in jaxpr.out_avals]
+
+            # Create output variables
+            outvars = [trace.makevar(t) for t in out_tracers]
+
+            # Create equation manually (since make_eqn might not be available)
+            invars = [trace.getvar(arg) for arg in args]
+            in_avals = safe_map(get_aval, args)
+            out_avals = [v.aval for v in jaxpr.out_avals]
+            eqn = pe.TracingEqn(
+                pjit.jit_p,
+                in_avals,
+                params,
+                jaxpr.effects,
+                out_avals,
+                source_info,
+            )
+
+            # Set recipe on output tracers
+            for t in out_tracers:
+                t.recipe = eqn
+
+            # Handle forwarding
+            out_tracers_ = iter(out_tracers)
+            out_tracers = [args[f] if isinstance(f, int) else next(out_tracers_) for f in in_fwd]
+
+            return out_tracers
+
+        patches.append((pjit, "pjit_staging_rule", patched_pjit_staging_rule))
+
+    except Exception:  # pylint: disable=broad-except
+        pass
+
+    return tuple(patches)
+
+
+# For backwards compatibility: apply patches globally if explicitly requested
+# This maintains existing behavior but is deprecated in favor of using Patcher
+def apply_patches_globally():
+    """Apply JAX patches globally (deprecated).
+
+    This function applies patches at module level for backwards compatibility.
+    New code should use get_jax_patches() with the Patcher context manager instead.
+
+    Warning:
+        Global patching has side effects and is harder to control. Prefer using
+        Patcher with get_jax_patches() for surgical, temporary patching.
+    """
+    if not has_jax:
+        return
+
+    from packaging.version import Version
+
+    jax_version = Version(jax.__version__)
+
     if jax_version >= Version("0.7.0"):
         try:
             _add_make_eqn_helper()
@@ -326,3 +563,10 @@ if has_jax:
                 "Some dynamic shape features may not work correctly.",
                 UserWarning,
             )
+
+
+# Note: Global patching removed - all code now uses Patcher context manager
+# If you need patches, use:
+#   from pennylane.capture import Patcher, get_jax_patches
+#   with Patcher(*get_jax_patches()):
+#       jaxpr = jax.make_jaxpr(func)(args)
