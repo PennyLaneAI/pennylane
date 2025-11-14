@@ -12,11 +12,19 @@
 
 * Added a :func:`~pennylane.measurements.pauli_measure` that takes a Pauli product measurement.
   [(#8461)](https://github.com/PennyLaneAI/pennylane/pull/8461)
+  [(#8631)](https://github.com/PennyLaneAI/pennylane/pull/8631)
+
+* Added the Python Compiler pass to compute Mid-Circuit Measurements using the Tree-Traversal algorithm.
+  [(#8545)](https://github.com/PennyLaneAI/pennylane/pull/8545)
 
 * Added the Python Compiler pass to compute Mid-Circuit Measurements using the Tree-Traversal algorithm.
   [(#8545)](https://github.com/PennyLaneAI/pennylane/pull/8545)
 
 <h3>Improvements 🛠</h3>
+
+* Add the `PCPhaseOp` operation to the xDSL Quantum dialect.
+  [(#8621)](https://github.com/PennyLaneAI/pennylane/pull/8621)
+* Added the Python Compiler pass to compute Mid-Circuit Measurements using the Tree-Traversal algorithm.
 
 * `qml.for_loop` will now fall back to a standard Python `for` loop if capturing a condensed, structured loop fails
   with program capture enabled.
@@ -39,6 +47,8 @@
   [(#8582)](https://github.com/PennyLaneAI/pennylane/pull/8582)
   [(#8543)](https://github.com/PennyLaneAI/pennylane/pull/8543)
   [(#8554)](https://github.com/PennyLaneAI/pennylane/pull/8554)
+  [(#8595)](https://github.com/PennyLaneAI/pennylane/pull/8595)
+  [(#8586)](https://github.com/PennyLaneAI/pennylane/pull/8586)
 
   - :class:`~.QSVT`
   - :class:`~.AmplitudeEmbedding`
@@ -50,6 +60,8 @@
   - :class:`~.kUpCCGSD`
   - :class:`~.QAOAEmbedding`
   - :class:`~.BasicEntanglerLayers`
+  - :class:`~.ParticleConservingU2`
+  - :class:`~.ParticleConservingU1`
 
 * A new `qml.compiler.python_compiler.utils` submodule has been added, containing general-purpose utilities for
   working with xDSL. This includes a function that extracts the concrete value of scalar, constant SSA values.
@@ -207,7 +219,42 @@
   or :func:`~pennylane.transforms.defer_measurements` in its preprocess transforms if necessary.
   [(#8467)](https://github.com/PennyLaneAI/pennylane/pull/8467)
 
+* Passing a function to the ``gate_set`` argument in the :func:`~pennylane.transforms.decompose` transform
+  is deprecated. The ``gate_set`` argument expects a static iterable of operator type and/or operator names,
+  and the function should be passed to the ``stopping_condition`` argument instead.
+  [(#8533)](https://github.com/PennyLaneAI/pennylane/pull/8533)
+
+  The example below illustrates how you can provide a function as the ``stopping_condition`` in addition to providing a
+  ``gate_set``. The decomposition of each operator will then stop once it reaches the gates in the ``gate_set`` or the
+  ``stopping_condition`` is satisfied.
+
+  ```python
+  import pennylane as qml
+  from functools import partial
+
+  @partial(qml.transforms.decompose, gate_set={"H", "T", "CNOT"}, stopping_condition=lambda op: len(op.wires) <= 2)
+  @qml.qnode(qml.device("default.qubit"))
+  def circuit():
+      qml.Hadamard(wires=[0])
+      qml.Toffoli(wires=[0,1,2])
+      return qml.expval(qml.Z(0))
+  ```
+
+  ```pycon
+  >>> print(qml.draw(circuit)())
+  0: ──H────────╭●───────────╭●────╭●──T──╭●─┤  <Z>
+  1: ────╭●─────│─────╭●─────│───T─╰X──T†─╰X─┤
+  2: ──H─╰X──T†─╰X──T─╰X──T†─╰X──T──H────────┤
+  ```
+
 <h3>Internal changes ⚙️</h3>
+
+* In program capture, transforms now have a single transform primitive that have a `transform` param that stores
+  the `TransformDispatcher`. Before, each transform had its own primitive stored on the
+  `TransformDispatcher._primitive` private property. It proved difficult to keep maintaining dispatch behaviour
+  for every single transform.
+  [(#8576)](https://github.com/PennyLaneAI/pennylane/pull/8576)
+  [(#8639)](https://github.com/PennyLaneAI/pennylane/pull/8639)
 
 * Updated documentation check workflow to run on pull requests on `v[0-9]+\.[0-9]+\.[0-9]+-docs` branches.
   [(#8590)](https://github.com/PennyLaneAI/pennylane/pull/8590)
@@ -290,6 +337,11 @@
 * The :func:`~pennylane.compiler.python_compiler.Compiler.run` method now accepts a string as input,
   which is parsed and transformed with xDSL.
   [(#8587)](https://github.com/PennyLaneAI/pennylane/pull/8587)
+
+* The `convert_to_mbqc_formalism` compilation pass now outlines the operations to represent a gate
+  in the MBQC formalism into subroutines in order to reduce the IR size for large programs.
+  [(#8619)](https://github.com/PennyLaneAI/pennylane/pull/8619)
+
 
 <h3>Documentation 📝</h3>
 
