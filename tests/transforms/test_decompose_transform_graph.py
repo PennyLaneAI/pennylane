@@ -442,10 +442,15 @@ class TestDecomposeGraphEnabled:
             )
             qml.cond(m0, qml.H)(wires[1])
 
+        @qml.register_resources({qml.H: 3, qml.X: 2, qml.CNOT: 1})
+        def _expensive_decomp(wires, **_):
+            raise NotImplementedError
+
         @partial(
             qml.transforms.decompose,
-            gate_set={qml.RX, qml.RY, qml.RZ, "measure", "ppm"},
-            fixed_decomps={qml.GlobalPhase: null_decomp, CustomOp: _custom_decomp},
+            gate_set={qml.RX, qml.RY, qml.RZ, qml.CNOT, "measure", "ppm"},
+            fixed_decomps={qml.GlobalPhase: null_decomp},
+            alt_decomps={CustomOp: [_custom_decomp, _expensive_decomp]},
         )
         @qml.qnode(qml.device("default.qubit"))
         def circuit():
