@@ -44,6 +44,7 @@
   [(#8582)](https://github.com/PennyLaneAI/pennylane/pull/8582)
   [(#8543)](https://github.com/PennyLaneAI/pennylane/pull/8543)
   [(#8554)](https://github.com/PennyLaneAI/pennylane/pull/8554)
+  [(#8600)](https://github.com/PennyLaneAI/pennylane/pull/8600)
   [(#8601)](https://github.com/PennyLaneAI/pennylane/pull/8601)  
   [(#8595)](https://github.com/PennyLaneAI/pennylane/pull/8595)
   [(#8586)](https://github.com/PennyLaneAI/pennylane/pull/8586)
@@ -59,6 +60,7 @@
   - :class:`~.kUpCCGSD`
   - :class:`~.QAOAEmbedding`
   - :class:`~.BasicEntanglerLayers`
+  - :class:`~.ArbitraryUnitary`
   - :class:`~.ApproxTimeEvolution`
   - :class:`~.ParticleConservingU2`
   - :class:`~.ParticleConservingU1`
