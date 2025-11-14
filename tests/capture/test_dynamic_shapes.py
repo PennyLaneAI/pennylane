@@ -38,7 +38,7 @@ def test_null_if_not_enabled():
     _ = jax.make_jaxpr(f)(jnp.eye(4))
 
 
-@pytest.mark.usefixtures("enable_disable_dynamic_shapes")
+@pytest.mark.usefixtures("enable_disable_dynamic_shapes", "apply_patches_to_dynamic_shape_tests")
 class TestDyanmicShapes:
 
     def test_null_if_no_abstract_shapes(self):
@@ -149,7 +149,8 @@ class TestDyanmicShapes:
         _ = jax.make_jaxpr(f)(list(range(30)))
 
 
-def test_custom_staging_rule(enable_disable_dynamic_shapes):
+@pytest.mark.usefixtures("enable_disable_dynamic_shapes", "apply_patches_to_dynamic_shape_tests")
+def test_custom_staging_rule():
     """Test regsitering a custom staging rule for a new primitive."""
     my_prim = jax.extend.core.Primitive("my_prim")
     register_custom_staging_rule(my_prim, lambda params: params["jaxpr"].outvars)

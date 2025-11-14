@@ -244,7 +244,7 @@ class TestCaptureForLoop:
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
 
 
-@pytest.mark.usefixtures("enable_disable_dynamic_shapes")
+@pytest.mark.usefixtures("enable_disable_dynamic_shapes", "apply_patches_to_dynamic_shape_tests")
 class TestDynamicShapes:
 
     # pylint: disable=unused-argument

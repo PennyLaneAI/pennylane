@@ -345,7 +345,9 @@ class TestGrad:
         assert manual_out_tree == jax.tree_util.tree_flatten(manual_out_flat)[1]
         assert qml.math.allclose(jax_out_flat, manual_out_flat)
 
-    @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
+    @pytest.mark.usefixtures(
+        "enable_disable_dynamic_shapes", "apply_patches_to_dynamic_shape_tests"
+    )
     @pytest.mark.parametrize("same_dynamic_shape", (True, False))
     def test_grad_dynamic_shape_inputs(self, same_dynamic_shape):
         """Test that qml.grad can handle dynamic shapes"""
@@ -633,7 +635,9 @@ class TestJacobian:
         assert manual_out_tree == jax.tree_util.tree_flatten(manual_out_flat)[1]
         assert qml.math.allclose(jax_out_flat, manual_out_flat)
 
-    @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
+    @pytest.mark.usefixtures(
+        "enable_disable_dynamic_shapes", "apply_patches_to_dynamic_shape_tests"
+    )
     @pytest.mark.parametrize("same_dynamic_shape", (True, False))
     def test_jacobian_dynamic_shape_inputs(self, same_dynamic_shape):
         """Test that qml.jacobian can handle dynamic shapes"""

@@ -195,7 +195,7 @@ class TestAdjointQfunc:
         assert qml.math.isclose(out, qml.math.sin(-(0.5 + 0.3)))
 
 
-@pytest.mark.usefixtures("enable_disable_dynamic_shapes")
+@pytest.mark.usefixtures("enable_disable_dynamic_shapes", "apply_patches_to_dynamic_shape_tests")
 class TestAdjointDynamicShapes:
 
     def test_dynamic_shape_input(self):
@@ -483,7 +483,7 @@ class TestCtrlQfunc:
         qml.assert_equal(tape[0], expected)
 
 
-@pytest.mark.usefixtures("enable_disable_dynamic_shapes")
+@pytest.mark.usefixtures("enable_disable_dynamic_shapes", "apply_patches_to_dynamic_shape_tests")
 class TestCtrlDynamicShapeInput:
 
     def test_dynamic_shape_input(self):

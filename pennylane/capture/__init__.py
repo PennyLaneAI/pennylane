@@ -173,6 +173,10 @@ from .dynamic_shapes import determine_abstracted_axes, register_custom_staging_r
 # This must be imported to apply runtime patches to JAX internals
 from . import jax_patches  # pylint: disable=unused-import
 
+# Import Patcher for contextual patching (preferred over global patches)
+from .patching import Patcher, DictPatchWrapper
+from .jax_patches import get_jax_patches
+
 # by defining this here, we avoid
 # E0611: No name 'AbstractOperator' in module 'pennylane.capture' (no-name-in-module)
 # on use of from capture import AbstractOperator
@@ -260,4 +264,7 @@ __all__ = (
     "FlatFn",
     "run_autograph",
     "make_plxpr",
+    "Patcher",
+    "DictPatchWrapper",
+    "get_jax_patches",
 )
