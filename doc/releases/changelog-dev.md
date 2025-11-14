@@ -342,6 +342,9 @@
 
 <h3>Documentation 📝</h3>
 
+* Clarify in the :class:`~.StatePrep` documentation that certain simulators may choose to skip executing the gate itself
+  [(#8651)](https://github.com/PennyLaneAI/pennylane/pull/8651)
+
 * Added a "Unified Compiler Cookbook" RST file, along with tutorials, to ``qml.compiler.python_compiler`,
   which provides a quickstart guide for getting started with xDSL and its integration with PennyLane and
   Catalyst.
