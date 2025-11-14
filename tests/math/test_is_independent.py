@@ -14,7 +14,6 @@
 """
 Unit tests for the :func:`pennylane.math.is_independent` function.
 """
-
 import numpy as np
 
 # pylint: disable=too-few-public-methods
@@ -373,10 +372,7 @@ class TestIsIndependentTorch:
     @pytest.mark.parametrize("func, args", zip(constant_functions, args_constant))
     def test_independent(self, func, args):
         """Tests that an independent function is correctly detected as such."""
-        with pytest.warns(
-            UserWarning,
-            match=r"The function `is_independent` is not *analytically* available for the PyTorch interface. ",
-        ):
+        with pytest.warns(UserWarning, match=r"The function is_independent is only available"):
             assert is_independent(func, self.interface, args)
 
     @pytest.mark.parametrize(
@@ -385,10 +381,7 @@ class TestIsIndependentTorch:
     )
     def test_dependent(self, func, args, exp_fail):
         """Tests that a dependent function is correctly detected as such."""
-        with pytest.warns(
-            UserWarning,
-            match=r"The function `is_independent` is not *analytically* available for the PyTorch interface. ",
-        ):
+        with pytest.warns(UserWarning, match=r"The function is_independent is only available"):
             if exp_fail:
                 assert is_independent(func, self.interface, args)
             else:
@@ -407,20 +400,11 @@ class TestIsIndependentTorch:
         f = lambda x, kw=False: 0.1 * x if kw else 0.2
         jac = lambda x, kw: torch.autograd.functional.jacobian(lambda x: f(x, kw), x)
         args = (torch.tensor(0.2),)
-        with pytest.warns(
-            UserWarning,
-            match=r"The function `is_independent` is not *analytically* available for the PyTorch interface.",
-        ):
+        with pytest.warns(UserWarning, match=r"The function is_independent is only available"):
             assert is_independent(f, self.interface, args)
-        with pytest.warns(
-            UserWarning,
-            match=r"The function `is_independent` is not *analytically* available for the PyTorch interface.",
-        ):
+        with pytest.warns(UserWarning, match=r"The function is_independent is only available"):
             assert not is_independent(f, self.interface, args, {"kw": True})
-        with pytest.warns(
-            UserWarning,
-            match=r"The function `is_independent` is not *analytically* available for the PyTorch interface.",
-        ):
+        with pytest.warns(UserWarning, match=r"The function is_independent is only available"):
             assert is_independent(jac, self.interface, args, {"kw": True})
 
 
