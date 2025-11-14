@@ -32,7 +32,7 @@ class PyDotDAGBuilder(DAGBuilder):
             graph_type="digraph", rankdir="TB", compound="true", strict=True
         )
         self._clusters: dict[str, pydot.Cluster] = {}
-        self._clusters["__root__"] = self.graph
+        self._clusters["__base__"] = self.graph
 
         _default_attrs = {"fontname": "Helvetica", "penwidth": 2}
         self._default_node_attrs: dict = {
@@ -68,7 +68,7 @@ class PyDotDAGBuilder(DAGBuilder):
         """
         node_attrs = {**self._default_node_attrs, **node_attrs}
         node = pydot.Node(node_id, label=node_label, **node_attrs)
-        parent_graph_id = "__root__" if parent_graph_id is None else parent_graph_id
+        parent_graph_id = "__base__" if parent_graph_id is None else parent_graph_id
 
         self._clusters[parent_graph_id].add_node(node)
 
@@ -133,7 +133,7 @@ class PyDotDAGBuilder(DAGBuilder):
 
         self._clusters[cluster_id] = cluster
 
-        parent_graph_id = "__root__" if parent_graph_id is None else parent_graph_id
+        parent_graph_id = "__base__" if parent_graph_id is None else parent_graph_id
         self._clusters[parent_graph_id].add_subgraph(cluster)
 
     def render(self, output_filename: str) -> None:
