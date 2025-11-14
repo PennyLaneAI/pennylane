@@ -260,17 +260,23 @@ def test_integration_for_transform_interpreter(capsys):
     assert captured.out.strip() == "hello world"
 
 
+@pytest.mark.parametrize("use_plugin", [True, False], ids=["with_plugin", "without_plugin"])
 class TestCatalystIntegration:
     """Tests for integration of the Python compiler with Catalyst"""
 
+    @pytest.fixture
+    def plugin_args(self, use_plugin):
+        """Fixture to conditionally provide plugin arguments given the use_plugin parameter."""
+        return {"pass_plugins": [getXDSLPluginAbsolutePath()]} if use_plugin else {}
+
     @pytest.mark.usefixtures("enable_disable_plxpr")
-    def test_integration_catalyst_no_passes_with_capture(self):
+    def test_integration_catalyst_no_passes_with_capture(self, plugin_args):
         """Test that the xDSL plugin can be used even when no passes are applied
         when capture is enabled."""
 
         assert capture_enabled()
 
-        @catalyst.qjit(pass_plugins=[getXDSLPluginAbsolutePath()])
+        @catalyst.qjit(**plugin_args)
         @qml.qnode(qml.device("lightning.qubit", wires=2))
         def f(x):
             qml.RX(x, 0)
@@ -279,13 +285,13 @@ class TestCatalystIntegration:
         out = f(1.5)
         assert jax.numpy.allclose(out, jax.numpy.cos(1.5))
 
-    def test_integration_catalyst_no_passes_no_capture(self):
+    def test_integration_catalyst_no_passes_no_capture(self, plugin_args):
         """Test that the xDSL plugin can be used even when no passes are applied
         when capture is disabled."""
 
         assert not capture_enabled()
 
-        @catalyst.qjit(pass_plugins=[getXDSLPluginAbsolutePath()])
+        @catalyst.qjit(**plugin_args)
         @qml.qnode(qml.device("lightning.qubit", wires=2))
         def f(x):
             qml.RX(x, 0)
@@ -295,13 +301,13 @@ class TestCatalystIntegration:
         assert jax.numpy.allclose(out, jax.numpy.cos(1.5))
 
     @pytest.mark.usefixtures("enable_disable_plxpr")
-    def test_integration_catalyst_xdsl_pass_with_capture(self, capsys):
+    def test_integration_catalyst_xdsl_pass_with_capture(self, capsys, plugin_args):
         """Test that a pass is run via the transform interpreter when using with a
         qjit workflow and capture is enabled."""
 
         assert capture_enabled()
 
-        @catalyst.qjit(pass_plugins=[getXDSLPluginAbsolutePath()])
+        @catalyst.qjit(**plugin_args)
         @hello_world_pass
         @qml.qnode(qml.device("lightning.qubit", wires=2))
         def f(x):
@@ -313,13 +319,13 @@ class TestCatalystIntegration:
         captured = capsys.readouterr()
         assert captured.out.strip() == "hello world"
 
-    def test_integration_catalyst_xdsl_pass_no_capture(self, capsys):
+    def test_integration_catalyst_xdsl_pass_no_capture(self, capsys, plugin_args):
         """Test that a pass is run via the transform interpreter when using with a
         qjit workflow and capture is disabled."""
 
         assert not capture_enabled()
 
-        @catalyst.qjit(pass_plugins=[getXDSLPluginAbsolutePath()])
+        @catalyst.qjit(**plugin_args)
         @apply_pass("hello-world")
         @qml.qnode(qml.device("lightning.qubit", wires=2))
         def f(x):
@@ -332,13 +338,13 @@ class TestCatalystIntegration:
         assert captured.out.strip() == "hello world"
 
     @pytest.mark.usefixtures("enable_disable_plxpr")
-    def test_integration_catalyst_mixed_passes_with_capture(self, capsys):
+    def test_integration_catalyst_mixed_passes_with_capture(self, capsys, plugin_args):
         """Test that both Catalyst and Python compiler passes can be used with qjit
         when capture is enabled."""
 
         assert capture_enabled()
 
-        @catalyst.qjit(pass_plugins=[getXDSLPluginAbsolutePath()])
+        @catalyst.qjit(**plugin_args)
         @hello_world_pass
         @qml.transforms.cancel_inverses
         @qml.qnode(qml.device("lightning.qubit", wires=2))
@@ -353,13 +359,13 @@ class TestCatalystIntegration:
         captured = capsys.readouterr()
         assert captured.out.strip() == "hello world"
 
-    def test_integration_catalyst_mixed_passes_no_capture(self, capsys):
+    def test_integration_catalyst_mixed_passes_no_capture(self, capsys, plugin_args):
         """Test that both Catalyst and Python compiler passes can be used with qjit
         when capture is disabled."""
 
         assert not capture_enabled()
 
-        @catalyst.qjit(pass_plugins=[getXDSLPluginAbsolutePath()])
+        @catalyst.qjit(**plugin_args)
         @apply_pass("hello-world")
         @catalyst_cancel_inverses
         @qml.qnode(qml.device("lightning.qubit", wires=2))
