@@ -107,6 +107,12 @@ class PyDotDAGBuilder(DAGBuilder):
         # Puts the label in a node within the cluster.
         # Ensures that any edges connecting nodes through the cluster
         # boundary don't block the label.
+        # ┌───────────┐
+        # │ ┌───────┐ │
+        # │ │ label │ │
+        # │ └───────┘ │
+        # │           │
+        # └───────────┘
         if cluster_label:
             node_id = f"{cluster_id}_info_node"
             rank_subgraph = pydot.Subgraph()
