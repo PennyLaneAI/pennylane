@@ -16,6 +16,11 @@
 
 <h3>Improvements 🛠</h3>
 
+* `qml.transform` and `TransformDispatcher` now can accept a `pass_name` in addition to or instead 
+  of a `quantum_transform` tape based definition. This `pass_name` will be used with Catalyst and
+  `qjit` to perform the transformation in MLIR or XDSL instead of in the python frontend.
+  [(#8539)](https://github.com/PennyLaneAI/pennylane/pull/8539)
+
 * `qml.for_loop` will now fall back to a standard Python `for` loop if capturing a condensed, structured loop fails
   with program capture enabled.
   [(#8615)](https://github.com/PennyLaneAI/pennylane/pull/8615)

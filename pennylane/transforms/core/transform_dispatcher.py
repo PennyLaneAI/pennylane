@@ -166,9 +166,9 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
     def __init__(
         self,
         transform: Callable | None = None,
-        expand_transform: Callable | None = None,
         pass_name: None | str = None,
         *,
+        expand_transform: Callable | None = None,
         classical_cotransform: Callable | None = None,
         is_informative: bool = False,
         final_transform: bool = False,
@@ -287,9 +287,8 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
         return self._apply_transform(obj, *targs, **tkwargs)
 
     def __repr__(self):
-        if self._transform:
-            return f"<transform: {self._transform.__name__}>"
-        return f"<transform: {self.pass_name}>"
+        name = self._transform.__name__ if self._transform else self.pass_name
+        return f"<transform: {name}>"
 
     @property
     def transform(self):
@@ -421,11 +420,8 @@ class TransformContainer:  # pylint: disable=too-many-instance-attributes
         self._use_argnum = use_argnum
 
     def __repr__(self):
-        if self.transform:
-            return (
-                f"<{self._transform_dispatcher.transform.__name__}({self._args}, {self._kwargs})>"
-            )
-        return f"<{self._transform_dispatcher.pass_name}({self._args}, {self._kwargs})>"
+        name = self.transform.__name__ if self.transform else self.pass_name
+        return f"<{name}({self._args}, {self._kwargs})>"
 
     def __call__(self, obj):
         return self._transform_dispatcher(obj, *self.args, **self.kwargs)
