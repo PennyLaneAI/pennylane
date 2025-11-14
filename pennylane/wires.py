@@ -76,19 +76,21 @@ def _process(wires):
             hash(wires)
         except TypeError as e:
             # if object is not hashable, cannot identify unique wires
-            if str(e).startswith("unhashable"):
+            if "unhashable" in str(e).lower():
                 raise WireError(f"Wires must be hashable; got object of type {type(wires)}.") from e
         return (wires,)
 
+    set_of_wires = None
     try:
         # We need the set for the uniqueness check,
         # so we can use it for hashability check of iterables.
         set_of_wires = set(wires)
     except TypeError as e:
-        if str(e).startswith("unhashable"):
+        if "unhashable" in str(e).lower():
             raise WireError(f"Wires must be hashable; got {wires}.") from e
+        raise e  # if something else goes wrong, reraise
 
-    if len(set_of_wires) != len(tuple_of_wires):
+    if set_of_wires is not None and len(set_of_wires) != len(tuple_of_wires):
         raise WireError(f"Wires must be unique; got {wires}.")
 
     return tuple_of_wires
