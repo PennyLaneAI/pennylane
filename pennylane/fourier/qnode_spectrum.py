@@ -16,7 +16,6 @@ circuit including classical preprocessing within the QNode."""
 
 from __future__ import annotations
 
-from collections import OrderedDict
 from inspect import signature
 from itertools import product
 from types import EllipsisType
@@ -37,7 +36,7 @@ def _process_ids(
     encoding_args: dict[str, list[tuple] | EllipsisType] | set[EllipsisType] | None,
     argnum: list[int] | None,
     qnode: QNode,
-) -> tuple[OrderedDict[str, list[tuple] | EllipsisType], list[int]]:
+) -> tuple[dict[str, list[tuple] | EllipsisType], list[int]]:
     r"""Mutate the passed ``encoding_args`` and ``argnum`` or infer them from
     the QNode signature.
 
@@ -97,7 +96,7 @@ def _process_ids(
     in various combinations:
 
     >>> _process_ids(encoding_args, None, circuit)
-    (OrderedDict([('a', [(1,), (2,)]), ('c', Ellipsis), ('x', [()])]), [0, 2, 3])
+    ({'a': [(1,), (2,)], 'c': Ellipsis, 'x': [()]}, [0, 2, 3])
 
     The first output, ``encoding_args``, essentially is unchanged, it simply was ordered in
     the order of the QNode arguments. The second output, ``argnum``, contains all three
@@ -105,19 +104,19 @@ def _process_ids(
     If we in addition pass ``argnum``, it is ignored:
 
     >>> _process_ids(encoding_args, argnum, circuit)
-    (OrderedDict([('a', [(1,), (2,)]), ('c', Ellipsis), ('x', [()])]), [0, 2, 3])
+    ({'a': [(1,), (2,)], 'c': Ellipsis, 'x': [()]}, [0, 2, 3])
 
     Only if we leave out ``encoding_args`` does it make a difference:
 
     >>> _process_ids(None, argnum, circuit)
-    (OrderedDict([('a', Ellipsis), ('c', Ellipsis)]), [0, 2])
+    ({'a': Ellipsis, 'c': Ellipsis}, [0, 2])
 
     Now only the arguments in ``argnum`` are considered, in particular the ``argnum`` input
     is simply sorted. In ``encoding_args``, all argument names are paired with an ``Ellipsis``.
     If we skip both inputs, all QNode arguments are extracted:
 
     >>> _process_ids(None, None, circuit)
-    (OrderedDict([('a', Ellipsis), ('b', Ellipsis), ('c', Ellipsis)]), [0, 1, 2])
+    ({'a': Ellipsis, 'b': Ellipsis, 'c': Ellipsis}, [0, 1, 2])
 
     Note that ``x`` does not appear here, because it has a default value defined and thus is
     considered a keyword argument.
@@ -129,14 +128,14 @@ def _process_ids(
 
     if encoding_args is None:
         if argnum is None:
-            encoding_args = OrderedDict((name, ...) for name in arg_names_no_def)
+            encoding_args = {name: ... for name in arg_names_no_def}
             argnum = list(range(len(arg_names_no_def)))
         elif np.isscalar(argnum):
-            encoding_args = OrderedDict({arg_names[argnum]: ...})
+            encoding_args = dict({arg_names[argnum]: ...})
             argnum = [argnum]
         else:
             argnum = sorted(argnum)
-            encoding_args = OrderedDict((arg_names[num], ...) for num in argnum)
+            encoding_args = {arg_names[num]: ... for num in argnum}
     else:
         requested_names = set(encoding_args)
         if not all(name in arg_names for name in requested_names):
@@ -145,13 +144,11 @@ def _process_ids(
             )
         # Selection of requested argument names from sorted names
         if isinstance(encoding_args, set):
-            encoding_args = OrderedDict(
-                (name, ...) for name in arg_names if name in requested_names
-            )
+            encoding_args = {name: ... for name in arg_names if name in requested_names}
         else:
-            encoding_args = OrderedDict(
-                (name, encoding_args[name]) for name in arg_names if name in requested_names
-            )
+            encoding_args = {
+                name: encoding_args[name] for name in arg_names if name in requested_names
+            }
         argnum = [arg_names.index(name) for name in encoding_args]
 
     return encoding_args, argnum
