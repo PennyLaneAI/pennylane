@@ -648,7 +648,7 @@ def radial_box(coeffs, n_inputs, ax, show_freqs=True, colour_dict=None, show_fli
             figsize=(15, 8)
         )
 
-        radial_box(coeffs, 2, ax, show_freqs=True, show_fliers=False)
+        qml.fourier.visualize.radial_box(coeffs, 2, ax, show_freqs=True, show_fliers=False)
 
     .. image:: ../../_static/fourier_vis_radial_box.png
         :align: center
