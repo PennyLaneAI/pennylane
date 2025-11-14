@@ -15,6 +15,8 @@
 This submodule offers custom primitives for the PennyLane capture module.
 """
 
+# pylint: disable=too-many-return-statements
+
 from enum import Enum
 from typing import Any
 
@@ -43,6 +45,8 @@ def _make_hashable(obj: Any) -> Any:
     Returns:
         Hashable version of the object
     """
+    if isinstance(obj, slice):
+        return (obj.start, obj.stop, obj.step)
 
     # First, check if the object is already hashable
     try:
@@ -55,9 +59,6 @@ def _make_hashable(obj: Any) -> Any:
     # pylint: disable=import-outside-toplevel,too-many-return-statements
     import jax
     import numpy as np
-
-    if isinstance(obj, slice):
-        return (obj.start, obj.stop, obj.step)
 
     # Check if obj is a JAX tracer - these are already hashable, don't convert
     # Must check before Array check since tracers can also be Array instances

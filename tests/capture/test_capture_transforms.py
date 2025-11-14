@@ -132,6 +132,7 @@ class TestCaptureTransforms:
         assert params["consts_slice"] == (1, 1, None)
         assert params["targs_slice"] == (1, None, None)
         from pennylane.capture.custom_primitives import _restore_dict
+
         assert _restore_dict(params["tkwargs"]) == tkwargs
         assert params["transform"] == z_to_hadamard
 
