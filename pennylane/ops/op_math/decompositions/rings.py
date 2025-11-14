@@ -125,7 +125,8 @@ class ZSqrtTwo:
 
         d = abs(other)
         n1, n2 = (self.a * other.a - 2 * self.b * other.b), (self.b * other.a - self.a * other.b)
-        return self - ZSqrtTwo(round(n1 / d), round(n2 / d)) * other
+        r = ZSqrtTwo(round(n1 / d), round(n2 / d)) * other
+        return self - r if float(self) > float(r) else r - self
 
     @property
     def flatten(self: ZSqrtTwo) -> list[int]:
@@ -288,8 +289,9 @@ class ZOmega:
 
     def __mod__(self, other: ZOmega) -> ZOmega:
         d = abs(other)
-        n = self * other.conj() * ((other * other.conj()).adj2())
-        return ZOmega(*[(s + d // 2) // d for s in n.flatten]) * other - self
+        n = self * other.conj() * (other * other.conj()).adj2()
+        r = other * ZOmega(*[(s + d // 2) // d for s in n.flatten])
+        return self - r if abs(self) > abs(r) else r - self
 
     @classmethod
     def from_sqrt_pair(cls, alpha: ZSqrtTwo, beta: ZSqrtTwo, shift: ZOmega) -> ZOmega:
