@@ -14,10 +14,17 @@
   [(#8461)](https://github.com/PennyLaneAI/pennylane/pull/8461)
   [(#8631)](https://github.com/PennyLaneAI/pennylane/pull/8631)
 
+* Added the Python Compiler pass to compute Mid-Circuit Measurements using the Tree-Traversal algorithm.
+  [(#8545)](https://github.com/PennyLaneAI/pennylane/pull/8545)
+
+* Added the Python Compiler pass to compute Mid-Circuit Measurements using the Tree-Traversal algorithm.
+  [(#8545)](https://github.com/PennyLaneAI/pennylane/pull/8545)
+
 <h3>Improvements 🛠</h3>
 
 * Add the `PCPhaseOp` operation to the xDSL Quantum dialect.
   [(#8621)](https://github.com/PennyLaneAI/pennylane/pull/8621)
+* Added the Python Compiler pass to compute Mid-Circuit Measurements using the Tree-Traversal algorithm.
 
 * `qml.for_loop` will now fall back to a standard Python `for` loop if capturing a condensed, structured loop fails
   with program capture enabled.
@@ -39,7 +46,7 @@
   [(#8516)](https://github.com/PennyLaneAI/pennylane/pull/8516)
   [(#8555)](https://github.com/PennyLaneAI/pennylane/pull/8555)
   [(#8558)](https://github.com/PennyLaneAI/pennylane/pull/8558)
-  [(#8538)](https://github.com/PennyLaneAI/pennylane/pull/8538)  
+  [(#8538)](https://github.com/PennyLaneAI/pennylane/pull/8538)
   [(#8534)](https://github.com/PennyLaneAI/pennylane/pull/8534)
   [(#8582)](https://github.com/PennyLaneAI/pennylane/pull/8582)
   [(#8543)](https://github.com/PennyLaneAI/pennylane/pull/8543)
@@ -230,14 +237,14 @@
   and the function should be passed to the ``stopping_condition`` argument instead.
   [(#8533)](https://github.com/PennyLaneAI/pennylane/pull/8533)
 
-  The example below illustrates how you can provide a function as the ``stopping_condition`` in addition to providing a 
-  ``gate_set``. The decomposition of each operator will then stop once it reaches the gates in the ``gate_set`` or the 
+  The example below illustrates how you can provide a function as the ``stopping_condition`` in addition to providing a
+  ``gate_set``. The decomposition of each operator will then stop once it reaches the gates in the ``gate_set`` or the
   ``stopping_condition`` is satisfied.
 
   ```python
   import pennylane as qml
   from functools import partial
-  
+
   @partial(qml.transforms.decompose, gate_set={"H", "T", "CNOT"}, stopping_condition=lambda op: len(op.wires) <= 2)
   @qml.qnode(qml.device("default.qubit"))
   def circuit():
@@ -245,7 +252,7 @@
       qml.Toffoli(wires=[0,1,2])
       return qml.expval(qml.Z(0))
   ```
-  
+
   ```pycon
   >>> print(qml.draw(circuit)())
   0: ──H────────╭●───────────╭●────╭●──T──╭●─┤  <Z>
@@ -262,7 +269,7 @@
   [(#8635)](https://github.com/PennyLaneAI/pennylane/pull/8635)
   
 * In program capture, transforms now have a single transform primitive that have a `transform` param that stores
-  the `TransformDispatcher`. Before, each transform had its own primitive stored on the 
+  the `TransformDispatcher`. Before, each transform had its own primitive stored on the
   `TransformDispatcher._primitive` private property. It proved difficult to keep maintaining dispatch behaviour
   for every single transform.
   [(#8576)](https://github.com/PennyLaneAI/pennylane/pull/8576)
@@ -270,7 +277,7 @@
 
 * Updated documentation check workflow to run on pull requests on `v[0-9]+\.[0-9]+\.[0-9]+-docs` branches.
   [(#8590)](https://github.com/PennyLaneAI/pennylane/pull/8590)
-  
+
 * When program capture is enabled, there is no longer caching of the jaxpr on the QNode.
   [(#8629)](https://github.com/PennyLaneAI/pennylane/pull/8629)
 
@@ -437,6 +444,7 @@ Sengthai Heng,
 Soran Jahangiri,
 Christina Lee,
 Joseph Lee,
+Luis Alfredo Nuñez Meneses,
 Gabriela Sanchez Diaz,
 Mudit Pandey,
 Shuli Shu,
