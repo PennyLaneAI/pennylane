@@ -246,6 +246,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Added `MCM_METHOD` and `POSTSELECT_MODE` `StrEnum` objects to improve validation and handling of `MCMConfig` creation.
+  [(#8596)](https://github.com/PennyLaneAI/pennylane/pull/8596)
+  
 * Updated various docstrings to be compatible with the new documentation testing approach.
   [(#8635)](https://github.com/PennyLaneAI/pennylane/pull/8635)
   
