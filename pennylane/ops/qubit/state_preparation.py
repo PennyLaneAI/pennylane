@@ -273,6 +273,12 @@ class StatePrep(StatePrepBase):
     .. details::
         :title: Usage Details
 
+        **StatePrep on Simulator Devices**
+        Since simulator devices usually have a representation of the full statevector, they may remove a StatePrep
+        operation that occurs at the beginning of a circuit and simply set the statevector directly. This is a property
+        that improves simulation time but may cause StatePrep to be omitted when inspecting the circuit (e.g. via
+        :func:`qml.draw <pennylane.draw>` or :func:`qml.specs <pennylane.specs>`).
+
         **Differentiating with respect to the state**
 
         Due to non-trivial classical processing to construct the state preparation circuit,
