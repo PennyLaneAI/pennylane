@@ -455,7 +455,7 @@ def _hilbert_schmidt_resources(
     num_wires: int, u_reps: list[CompressedResourceOp], v_wires: list[int]
 ):
     num_first_range = num_wires // 2
-    num_second_range = num_wires - num_wires // 2
+    num_second_range = num_wires - num_first_range
 
     resources = defaultdict(int)
 
