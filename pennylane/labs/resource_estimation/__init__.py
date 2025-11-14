@@ -255,3 +255,4 @@ from .templates import (
     ResourceControlledSequence,
     ResourceIterativeQPE,
 )
+from .resource_utils import approx_poly_degree
