@@ -34,7 +34,6 @@ from pennylane.measurements import (
     CountsMP,
     ExpectationMP,
     MeasurementProcess,
-    MidMeasureMP,
     SampleMeasurement,
     ShadowExpvalMP,
     Shots,
@@ -42,6 +41,7 @@ from pennylane.measurements import (
     StateMP,
 )
 from pennylane.operation import DecompositionUndefinedError
+from pennylane.ops import MidMeasure
 from pennylane.ops.op_math import Conditional
 from pennylane.tape import QuantumScript, QuantumScriptBatch, QuantumScriptOrBatch
 from pennylane.transforms import (
@@ -146,7 +146,7 @@ def stopping_condition(op: Operator, allow_mcms=True) -> bool:
         return constraint(op)
     if op.__class__.__name__[:3] == "Pow" and any(math.requires_grad(d) for d in op.data):
         return False
-    if isinstance(op, MidMeasureMP):
+    if isinstance(op, MidMeasure):
         return allow_mcms
     return op.has_matrix or op.has_sparse_matrix
 
@@ -226,7 +226,7 @@ def all_state_postprocessing(results, measurements, wire_order):
 
 
 @transform
-def _conditional_broastcast_expand(tape):
+def _conditional_broadcast_expand(tape):
     """Apply conditional broadcast expansion to the tape if needed."""
     # Currently, default.qubit does not support native parameter broadcasting with
     # shadow operations. We need to expand the tape to include the broadcasted parameters.
@@ -289,7 +289,7 @@ def adjoint_state_measurements(
 
 def adjoint_ops(op: Operator) -> bool:
     """Specify whether or not an Operator is supported by adjoint differentiation."""
-    return not isinstance(op, (Conditional, MidMeasureMP)) and (
+    return not isinstance(op, (Conditional, MidMeasure)) and (
         op.num_params == 0
         or not any(math.requires_grad(d) for d in op.data)
         or (op.num_params == 1 and op.has_generator)
@@ -609,7 +609,7 @@ class DefaultQubit(Device):
         transform_program = TransformProgram()
         if config.mcm_config.mcm_method == "deferred":
             transform_program.add_transform(defer_measurements, num_wires=len(self.wires))
-        transform_program.add_transform(transforms_decompose, gate_set=stopping_condition)
+        transform_program.add_transform(transforms_decompose, stopping_condition=stopping_condition)
 
         return transform_program
 
@@ -660,7 +660,7 @@ class DefaultQubit(Device):
             sample_measurements=accepted_sample_measurement,
             name=self.name,
         )
-        transform_program.add_transform(_conditional_broastcast_expand)
+        transform_program.add_transform(_conditional_broadcast_expand)
         if config.mcm_config.mcm_method == "tree-traversal":
             transform_program.add_transform(broadcast_expand)
 

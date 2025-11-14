@@ -100,6 +100,7 @@ def phase_polynomial(
                 return basis_state.state_vector().reshape(-1)
 
             input_wf = comp_basis_to_wf(input)
+            tape = qml.tape.make_qscript(circuit)()
             output_wf = qml.matrix(tape, wire_order=range(4)) @ input_wf
 
         The output wavefunction is given by :math:`e^{2i} |1 1 1 1\rangle`, which we can confirm:

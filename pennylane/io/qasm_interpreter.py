@@ -17,8 +17,8 @@ from openqasm3.visitor import QASMNode
 
 from pennylane import ops
 from pennylane.control_flow import for_loop, while_loop
-from pennylane.measurements import MeasurementValue, MidMeasureMP, measure
 from pennylane.operation import Operator
+from pennylane.ops import MeasurementValue, MidMeasure, measure
 
 NON_PARAMETERIZED_GATES = {
     "ID": ops.Identity,
@@ -89,6 +89,7 @@ def _eval_unary_op(operand: any, operator: str, line: int):
     )  # pragma: no cover
 
 
+# pylint: disable = too-many-branches
 def _eval_assignment(lhs: any, operator: str, value: any, line: int):
     """
     Evaluates an assignment.
@@ -136,7 +137,7 @@ def _eval_assignment(lhs: any, operator: str, value: any, line: int):
     return lhs
 
 
-# pylint: disable=too-many-return-statements
+# pylint: disable=too-many-return-statements, too-many-branches
 def _eval_binary_op(lhs: any, operator: str, rhs: any, line: int):
     """
     Evaluates a binary operator.
@@ -671,7 +672,7 @@ class QasmInterpreter:
                 if hasattr(node, "else_block")
                 else None
             ),
-        )(allow_end=(not isinstance(condition, (MeasurementValue, MidMeasureMP))))
+        )(allow_end=(not isinstance(condition, (MeasurementValue, MidMeasure))))
 
     @visit.register(ast.SwitchStatement)
     def visit_switch_statement(self, node: ast.SwitchStatement, context: Context):
@@ -1072,7 +1073,7 @@ class QasmInterpreter:
             context (Context): the current context.
         """
         raise EndProgram(
-            f"The QASM program was terminated om line {node.span.start_line}."
+            f"The QASM program was terminated on line {node.span.start_line}. "
             f"There may be unprocessed QASM code."
         )
 

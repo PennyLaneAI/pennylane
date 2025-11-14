@@ -1,4 +1,4 @@
-# Copyright 2018-2022 Xanadu Quantum Technologies Inc.
+# Copyright 2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -28,9 +28,11 @@ class FirstQuantization(Operation):
 
     To estimate the gate and qubit costs for implementing this method, the number of plane waves,
     the number of electrons and the lattice vectors need to be defined. The costs can then be
-    computed using the functions :func:`~.pennylane.resource.FirstQuantization.gate_cost` and
-    :func:`~.pennylane.resource.FirstQuantization.qubit_cost` with a target error that has the default
-    value of 0.0016 Ha (chemical accuracy). Atomic units are used throughout the class.
+    computed using the functions :func:`~.pennylane.estimator.FirstQuantization.gate_cost` and
+    :func:`~.pennylane.estimator.FirstQuantization.qubit_cost` with a target error that has the default
+    value of 0.0016 Ha (chemical accuracy).
+
+    Atomic units are used throughout the class.
 
     Args:
         n (int): number of plane waves
@@ -48,7 +50,7 @@ class FirstQuantization(Operation):
     >>> vectors = np.array([[10.46219511,  0.00000000,  0.00000000],
     ...                     [ 0.00000000, 10.46219511,  0.00000000],
     ...                     [ 0.00000000,  0.00000000, 10.46219511]])
-    >>> algo = qml.resource.FirstQuantization(n, eta, vectors=vectors)
+    >>> algo = qml.estimator.FirstQuantization(n, eta, vectors=vectors)
     >>> algo.lamb # the 1-Norm of the Hamiltonian
     np.float64(649912.4804278888)
     >>> f"{algo.gates:.1e}" # estimated number of non-Clifford gates
@@ -118,7 +120,7 @@ class FirstQuantization(Operation):
                 / self.omega
                 * np.array([np.cross(vectors[i], vectors[j]) for i, j in [(1, 2), (2, 0), (0, 1)]])
             )
-            bbt = np.matrix(recip_vectors) @ np.matrix(recip_vectors).T
+            bbt = recip_vectors @ recip_vectors.T
             self.cubic = np.linalg.norm(bbt - (recip_vectors**2).max() * np.identity(3)) < 1e-6
 
         self._lamb = self.norm(
@@ -201,7 +203,7 @@ class FirstQuantization(Operation):
 
         >>> n = 3
         >>> br = 8
-        >>> qml.resource.FirstQuantization.success_prob(n, br)
+        >>> qml.estimator.FirstQuantization.success_prob(n, br)
         np.float64(0.9999928850303523)
         """
         if n <= 0:
@@ -246,7 +248,7 @@ class FirstQuantization(Operation):
         >>> eta = 156
         >>> omega = 1145.166
         >>> error = 0.001
-        >>> qml.resource.FirstQuantization.norm(n, eta, omega, error)
+        >>> qml.estimator.FirstQuantization.norm(n, eta, omega, error)
         np.float64(281053.7561251118)
 
         .. details::
@@ -404,7 +406,7 @@ class FirstQuantization(Operation):
         **Example**
 
         >>> lz = 100
-        >>> qml.resource.FirstQuantization._cost_qrom(lz)
+        >>> qml.estimator.FirstQuantization._cost_qrom(lz)
         21
         """
         if lz <= 0 or not isinstance(lz, (int, np.integer)):
@@ -443,7 +445,7 @@ class FirstQuantization(Operation):
         >>> eta = 156
         >>> omega = 169.69608
         >>> error = 0.01
-        >>> qml.resource.FirstQuantization.unitary_cost(n, eta, omega, error)
+        >>> qml.estimator.FirstQuantization.unitary_cost(n, eta, omega, error)
         17033
         """
         if n <= 0:
@@ -531,7 +533,7 @@ class FirstQuantization(Operation):
         >>> eta = 156
         >>> omega = 1145.166
         >>> error = 0.01
-        >>> qml.resource.FirstQuantization.estimation_cost(n, eta, omega, error)
+        >>> qml.estimator.FirstQuantization.estimation_cost(n, eta, omega, error)
         102133985
         """
         if error <= 0.0:
@@ -579,7 +581,7 @@ class FirstQuantization(Operation):
         >>> eta = 156
         >>> omega = 169.69608
         >>> error = 0.01
-        >>> qml.resource.FirstQuantization.gate_cost(n, eta, omega, error)
+        >>> qml.estimator.FirstQuantization.gate_cost(n, eta, omega, error)
         3676557345574
         """
         if n <= 0:
@@ -638,7 +640,7 @@ class FirstQuantization(Operation):
         >>> eta = 156
         >>> omega = 169.69608
         >>> error = 0.01
-        >>> qml.resource.FirstQuantization.qubit_cost(n, eta, omega, error)
+        >>> qml.estimator.FirstQuantization.qubit_cost(n, eta, omega, error)
         4377
         """
         if n <= 0:
@@ -729,7 +731,7 @@ class FirstQuantization(Operation):
             * np.array([np.cross(vectors[i], vectors[j]) for i, j in [(1, 2), (2, 0), (0, 1)]])
         )
 
-        bbt = np.matrix(recip_vectors) @ np.matrix(recip_vectors).T
+        bbt = recip_vectors @ recip_vectors.T
 
         orthogonal = (
             np.linalg.norm(bbt - np.array([np.max(b**2) for b in recip_vectors]) * np.identity(3))
@@ -799,8 +801,7 @@ class FirstQuantization(Operation):
         lambda_u_1 = lambda_u * lambda_nu_1 / lambda_nu
         lambda_v_1 = lambda_v * lambda_nu_1 / lambda_nu
 
-        b_mat = np.matrix(recip_vectors)
-        abs_sum = np.abs(b_mat @ b_mat.T).flatten().sum()
+        abs_sum = np.abs(recip_vectors @ recip_vectors.T).flatten().sum()
 
         # taken from Appendix I.1 of arXiv:2302.07981v1 (2023)
         if orthogonal:
@@ -916,7 +917,7 @@ class FirstQuantization(Operation):
                 * np.pi
                 * eta
                 * 2 ** (2 * n_p - 2)
-                * np.abs(np.matrix(recip_vectors) @ np.matrix(recip_vectors).T).flatten().sum()
+                * np.abs(recip_vectors @ recip_vectors.T).flatten().sum()
                 / error_b
             )
         )
@@ -1011,7 +1012,7 @@ class FirstQuantization(Operation):
                 * np.pi
                 * eta
                 * 2 ** (2 * n_p - 2)
-                * np.abs(np.matrix(recip_vectors) @ np.matrix(recip_vectors).T).flatten().sum()
+                * np.abs(recip_vectors @ recip_vectors.T).flatten().sum()
                 / error_b
             )
         )
