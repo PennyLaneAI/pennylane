@@ -372,7 +372,10 @@ class TestIsIndependentTorch:
     @pytest.mark.parametrize("func, args", zip(constant_functions, args_constant))
     def test_independent(self, func, args):
         """Tests that an independent function is correctly detected as such."""
-        with pytest.warns(UserWarning, match=r"The function is_independent is only available"):
+        with pytest.warns(
+            UserWarning,
+            match=r"The function `is_independent` is not *analytically* available for the PyTorch interface. ",
+        ):
             assert is_independent(func, self.interface, args)
 
     @pytest.mark.parametrize(
