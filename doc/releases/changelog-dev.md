@@ -23,6 +23,10 @@
   with program capture enabled.
   [(#8615)](https://github.com/PennyLaneAI/pennylane/pull/8615)
 
+* `qml.cond` will now use standard Python logic if all predicates have concrete values. A nested
+  control flow primitive will no longer be captured as it is not needed.
+  [(#8634)](https://github.com/PennyLaneAI/pennylane/pull/8634)
+
 * The `~.BasisRotation` graph decomposition was re-written in a qjit friendly way with PennyLane control flow.
   [(#8560)](https://github.com/PennyLaneAI/pennylane/pull/8560)
   [(#8608)](https://github.com/PennyLaneAI/pennylane/pull/8608)
@@ -198,10 +202,10 @@
 * Access to the follow functions and classes from the ``pennylane.resources`` module are deprecated. Instead, these functions must be imported from the ``pennylane.estimator`` module.
   [(#8484)](https://github.com/PennyLaneAI/pennylane/pull/8484)
 
-    - ``qml.estimator.estimate_shots`` in favor of ``qml.resources.estimate_shots``
-    - ``qml.estimator.estimate_error`` in favor of ``qml.resources.estimate_error``
-    - ``qml.estimator.FirstQuantization`` in favor of ``qml.resources.FirstQuantization``
-    - ``qml.estimator.DoubleFactorization`` in favor of ``qml.resources.DoubleFactorization``
+  - ``qml.estimator.estimate_shots`` in favor of ``qml.resources.estimate_shots``
+  - ``qml.estimator.estimate_error`` in favor of ``qml.resources.estimate_error``
+  - ``qml.estimator.FirstQuantization`` in favor of ``qml.resources.FirstQuantization``
+  - ``qml.estimator.DoubleFactorization`` in favor of ``qml.resources.DoubleFactorization``
 
 * ``argnum`` has been renamed ``argnums`` for ``qml.grad``, ``qml.jacobian``, ``qml.jvp`` and ``qml.vjp``.
   [(#8496)](https://github.com/PennyLaneAI/pennylane/pull/8496)
@@ -244,6 +248,9 @@
 
 * Added `MCM_METHOD` and `POSTSELECT_MODE` `StrEnum` objects to improve validation and handling of `MCMConfig` creation.
   [(#8596)](https://github.com/PennyLaneAI/pennylane/pull/8596)
+  
+* Updated various docstrings to be compatible with the new documentation testing approach.
+  [(#8635)](https://github.com/PennyLaneAI/pennylane/pull/8635)
   
 * In program capture, transforms now have a single transform primitive that have a `transform` param that stores
   the `TransformDispatcher`. Before, each transform had its own primitive stored on the 
@@ -334,6 +341,10 @@
   which is parsed and transformed with xDSL.
   [(#8587)](https://github.com/PennyLaneAI/pennylane/pull/8587)
 
+* The :func:`~pennylane.compiler.python_compiler.transforms.convert_to_mbqc_formalism_pass` now 
+  supports :class:`~xdsl.dialects.scf.IndexSwitchOp` in IR and ignores regions that have no body.
+  [(#8632)](https://github.com/PennyLaneAI/pennylane/pull/8632)
+
 * The `convert_to_mbqc_formalism` compilation pass now outlines the operations to represent a gate
   in the MBQC formalism into subroutines in order to reduce the IR size for large programs.
   [(#8619)](https://github.com/PennyLaneAI/pennylane/pull/8619)
@@ -407,13 +418,13 @@ A warning message has been added to :doc:`Building a plugin <../development/plug
 
 This release contains contributions from (in alphabetical order):
 
-
 Guillermo Alonso,
 Utkarsh Azad,
 Astral Cai,
 Yushao Chen,
 Marcus Edwards,
 Lillian Frederiksen,
+Sengthai Heng,
 Soran Jahangiri,
 Christina Lee,
 Joseph Lee,
