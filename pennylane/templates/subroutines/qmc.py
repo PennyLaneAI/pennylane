@@ -342,8 +342,16 @@ class QuantumMonteCarlo(Operation):
     resource_keys = {"num_target_wires", "num_estimation_wires", "q_resource_rep"}
 
     @classmethod
-    def _primitive_bind_call(cls, *args, **kwargs):
-        return cls._primitive.bind(*args, **kwargs)
+    def _primitive_bind_call(cls, probs, func, target_wires, estimation_wires, id=None):
+        # handle target wires and estimation wires
+        return cls._primitive.bind(
+            probs,
+            *target_wires,
+            *estimation_wires,
+            func=func,
+            num_target_wires=len(target_wires),
+            id=id,
+        )
 
     @classmethod
     def _unflatten(cls, data, metadata):
@@ -439,6 +447,16 @@ class QuantumMonteCarlo(Operation):
         ]
 
         return op_list
+
+
+# pylint: disable=protected-access
+if QuantumMonteCarlo._primitive is not None:
+
+    @QuantumMonteCarlo._primitive.def_impl
+    def _quantum_monte_carlo_impl(probs, *wires, func, num_target_wires, id=None):
+        target_wires = wires[:num_target_wires]
+        estimation_wires = wires[num_target_wires:]
+        return type.__call__(QuantumMonteCarlo, probs, func, target_wires, estimation_wires, id)
 
 
 def _quantum_monte_carlo_resources(num_target_wires, num_estimation_wires, q_resource_rep):
