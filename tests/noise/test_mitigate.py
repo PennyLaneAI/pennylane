@@ -386,9 +386,11 @@ class TestMitiqIntegration:
         assert not np.allclose(res_mitigated, res_ideal)
 
     @pytest.mark.xfail(
-        reason="Mitiq uses removed QuantumScript.to_openqasm. Note that Mitiq should "
-        "no longer raise this error once it has reached v0.48.0 "
-        "as per https://github.com/unitaryfoundation/mitiq/issues/2814."
+        reason="Mitiq 0.47.0 uses removed QuantumScript.to_openqasm. Note that Mitiq 0.48.1 "
+        "no longer raises this error as per https://github.com/unitaryfoundation/mitiq/issues/2814. "
+        "However, as there is no stable dependency resolution for qualtran, cirq and mitiq==0.48.1, "
+        "we cannot test this case for the time being. Qualtran should update soon and enable this "
+        "test case to pass."
     )
     def test_with_reps_per_factor(self):
         """Tests if the expected shape is returned when mitigating a circuit with a reps_per_factor
@@ -426,7 +428,7 @@ class TestMitiqIntegration:
             return qml.expval(qml.PauliZ(0))
 
         # Raises CircuitConversionError
-        # Note that Mitiq should no longer raise this error once it has reached v0.48.0
+        # Note that Mitiq should no longer raise this error once it has reached v0.48.1
         res_mitigated = mitigated_circuit(w1, w2)
 
         res_ideal = ideal_circuit(w1, w2)
