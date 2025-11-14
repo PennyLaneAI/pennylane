@@ -341,6 +341,42 @@ class TestConvertToMBQCFormalismPass:
         pipeline = (ConvertToMBQCFormalismPass(),)
         run_filecheck(program, pipeline)
 
+    def test_switch_statement(self, run_filecheck):
+        """Test that the convert_to_mbqc_formalism_pass works correctly with a switch statement."""
+        program = """
+            func.func @test_func(%qubits: !quantum.bit, %l : index) {
+                %0 = scf.index_switch %l -> !quantum.bit 
+                case 0 {
+                    // CHECK-NOT: quantum.custom "Hadamard"()
+                    %q1 = quantum.custom "Hadamard"() %qubits : !quantum.bit
+                    scf.yield %q1 : !quantum.bit
+                }
+                default {
+                    // CHECK-NOT: quantum.custom "S"()
+                    %q2 = quantum.custom "S"() %qubits : !quantum.bit
+                    scf.yield %q2 : !quantum.bit
+                }
+                
+                return
+            }
+        """
+        pipeline = (ConvertToMBQCFormalismPass(),)
+        run_filecheck(program, pipeline)
+
+    def test_function_no_body(self, run_filecheck):
+        """Test that the convert_to_mbqc_formalism_pass works correctly with a function that has no body."""
+        program = """
+            func.func @test_func() {
+                // CHECK: func.func private @func_1(f64, f64, i1) -> f64
+                func.func private @func_1(f64, f64, i1) -> f64
+                // CHECK: func.func private @func_2(memref<?xindex>, f64, f64, i1)
+                func.func private @func_2(memref<?xindex>, f64, f64, i1)
+                return
+            }
+        """
+        pipeline = (ConvertToMBQCFormalismPass(),)
+        run_filecheck(program, pipeline)
+
     @pytest.mark.usefixtures("enable_disable_plxpr")
     def test_gates_in_mbqc_gate_set_lowering(self, run_filecheck_qjit):
         """Test that the convert_to_mbqc_formalism_pass works correctly with qjit and unrolled loops."""
