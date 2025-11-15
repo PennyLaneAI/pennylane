@@ -45,9 +45,13 @@ def _create_transform_primitive():
 
     # pylint: disable=too-many-arguments, disable=unused-argument
     @transform_prim.def_impl
-    def _impl(*all_args, inner_jaxpr, args_slice, consts_slice, targs_slice, tkwargs, transform):
-        args = all_args[args_slice]
-        consts = all_args[consts_slice]
+    def _impl(
+        *all_args, inner_jaxpr, args_slice, consts_slice, targs_slice, tkwargs
+    ):
+        from pennylane.capture import _restore_slice  # pylint: disable=import-outside-toplevel
+
+        args = all_args[_restore_slice(args_slice)]
+        consts = all_args[_restore_slice(consts_slice)]
         return capture.eval_jaxpr(inner_jaxpr, consts, *args)
 
     @transform_prim.def_abstract_eval
@@ -95,6 +99,39 @@ def _create_plxpr_fallback_transform(tape_transform):
         return jax.make_jaxpr(wrapper, abstracted_axes=abstracted_axes)(*abstract_shapes, *args)
 
     return plxpr_fallback_transform
+
+
+def _register_primitive_for_expansion(primitive, plxpr_transform):
+    """Register a transform such that it can be expanded when applied to a function with
+    program capture enabled."""
+    # pylint: disable=import-outside-toplevel
+    try:
+        import jax
+
+        from pennylane.capture.expand_transforms import ExpandTransformsInterpreter
+    except ImportError:
+        return
+
+    @ExpandTransformsInterpreter.register_primitive(primitive)
+    def _(
+        self, *invals, inner_jaxpr, args_slice, consts_slice, targs_slice, tkwargs
+    ):  # pylint: disable=too-many-arguments
+        from pennylane.capture import (  # pylint: disable=import-outside-toplevel
+            _restore_dict,
+            _restore_slice,
+        )
+
+        args = invals[_restore_slice(args_slice)]
+        consts = invals[_restore_slice(consts_slice)]
+        targs = invals[_restore_slice(targs_slice)]
+        tkwargs = _restore_dict(tkwargs)
+
+        def wrapper(*inner_args):
+            return copy(self).eval(inner_jaxpr, consts, *inner_args)
+
+        jaxpr = jax.make_jaxpr(wrapper)(*args)
+        jaxpr = plxpr_transform(jaxpr.jaxpr, jaxpr.consts, targs, tkwargs, *args)
+        return copy(self).eval(jaxpr.jaxpr, jaxpr.consts, *args)
 
 
 def specific_apply_transform(transform, obj, *targs, **tkwargs):
