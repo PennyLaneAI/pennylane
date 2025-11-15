@@ -230,7 +230,7 @@ def probs(wires=None, op=None) -> ProbabilityMP:
 
     **Example:**
 
-    .. code-block:: python3
+    .. code-block:: python
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -260,7 +260,7 @@ def probs(wires=None, op=None) -> ProbabilityMP:
     The order of the output might be different when using ``qml.Hermitian``, as in the
     following example:
 
-    .. code-block:: python3
+    .. code-block:: python
 
         H = 1 / np.sqrt(2) * np.array([[1, 1], [1, -1]])
 
@@ -278,7 +278,7 @@ def probs(wires=None, op=None) -> ProbabilityMP:
     because the probability vector can be expressed in the eigenbasis obtained from
     diagonalizing the matrix of the observable, as in the following example:
 
-    .. code-block:: python3
+    .. code-block:: python
 
         ob = qml.X(0) @ qml.Y(1)
         h = qml.Hermitian(ob.matrix(), wires=[0, 1])
