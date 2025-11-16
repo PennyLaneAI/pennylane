@@ -489,7 +489,8 @@ def pauli_decompose(
         coefficients for each of the :math:`4^n` Pauli words are computed while accounting for the
         phase from each ``PauliY`` term occurring in the word.
 
-        Scipy sparse matrices are also supported:
+        Scipy sparse matrices are also supported and processed natively without converting to
+        dense format, enabling efficient decomposition of large sparse matrices. For example:
 
         >>> import scipy.sparse as sps
         >>> sparse_H = sps.csr_matrix([[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]])
