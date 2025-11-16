@@ -24,10 +24,49 @@ import pennylane as qml
 from pennylane.math.utils import is_abstract
 from pennylane.ops import Identity, LinearCombination, PauliX, PauliY, PauliZ, Prod, SProd, Sum
 from pennylane.ops.qubit.matrix_ops import _walsh_hadamard_transform
-import scipy.sparse as sp
+import scipy.sparse as sps
 
 from .pauli_arithmetic import I, PauliSentence, PauliWord, X, Y, Z, op_map
 from .utils import is_pauli_word
+
+
+def _validate_and_normalize_decomposition_inputs(shape, wire_order=None, is_sparse=False):
+    """Validate matrix shape and wire order for Pauli decomposition.
+
+    Args:
+        shape: Matrix shape tuple (rows, cols)
+        wire_order: Optional list of wires. If None, will be set to range(num_qubits)
+        is_sparse: Whether the matrix is sparse (for additional empty matrix check)
+
+    Returns:
+        tuple: (num_qubits, wire_order) where wire_order is normalized
+
+    Raises:
+        ValueError: If shape is invalid or wire_order is incompatible
+    """
+    if shape[0] != shape[1]:
+        raise ValueError(
+            f"The matrix should be square, got {shape}. Use 'padding=True' for rectangular matrices."
+        )
+
+    if is_sparse and shape[0] == 0:
+        raise ValueError("Cannot decompose an empty matrix.")
+
+    num_qubits = int(math.log2(shape[0]))
+    if shape[0] != 2**num_qubits:
+        raise ValueError(
+            f"Dimension of the matrix should be a power of 2, got {shape}. Use 'padding=True' for these matrices."
+        )
+
+    if wire_order is not None and len(wire_order) != num_qubits:
+        raise ValueError(
+            f"number of wires {len(wire_order)} is not compatible with the number of qubits {num_qubits}"
+        )
+
+    if wire_order is None:
+        wire_order = range(num_qubits)
+
+    return num_qubits, wire_order
 
 
 def _generalized_pauli_decompose(  # pylint: disable=too-many-branches
@@ -45,8 +84,10 @@ def _generalized_pauli_decompose(  # pylint: disable=too-many-branches
     phase from each ``PauliY`` term occurring in the word.
 
     Args:
-        matrix (tensor_like[complex] or scipy.sparse matrix): any matrix M given with a dense or sparse representation.
-            The keyword argument ``padding=True`` should be provided if the dimension of M is not :math:`2^n\times 2^n`.
+        matrix (tensor_like[complex] or scipy.sparse matrix): any matrix M, the keyword argument ``padding=True``
+            should be provided if the dimension of M is not :math:`2^n\times 2^n`. Scipy sparse
+            matrices are also supported and are processed natively without converting to dense format,
+            enabling efficient decomposition of large sparse matrices.
         hide_identity (bool): does not include the Identity observable within
             the tensor products of the decomposition if ``True``.
         wire_order (list[Union[int, str]]): the ordered list of wires with respect
@@ -128,16 +169,19 @@ def _generalized_pauli_decompose(  # pylint: disable=too-many-branches
 
         Scipy sparse matrices are also supported:
 
-        >>> import scipy.sparse as sp
-        >>> sparse_matrix = sp.csr_matrix([[0, 1], [1, 0]])
+        >>> import scipy.sparse as sps
+        >>> # Decompose a 2-qubit sparse matrix: Z(0) @ Z(1) + 0.5 * X(0)
+        >>> sparse_matrix = sps.csr_matrix(
+        ...     [[1, 0, 0.5, 0], [0, -1, 0, 0.5], [0.5, 0, -1, 0], [0, 0.5, 0, 1]]
+        ... )
         >>> coeffs, obs = qml.pauli.conversion._generalized_pauli_decompose(sparse_matrix)
         >>> coeffs
-        array([1.+0.j])
+        array([1. +0.j, 0.5+0.j])
         >>> obs
-        [X(0)]
+        [Z(0) @ Z(1), X(0) @ I(1)]
 
     """
-    if sp.issparse(matrix):
+    if sps.issparse(matrix):
         return _generalized_pauli_decompose_sparse(
             matrix,
             hide_identity=hide_identity,
@@ -163,24 +207,9 @@ def _generalized_pauli_decompose(  # pylint: disable=too-many-branches
             matrix = qml.math.pad(matrix, padding, mode="constant", constant_values=0)
 
     shape = qml.math.shape(matrix)
-    if shape[0] != shape[1]:
-        raise ValueError(
-            f"The matrix should be square, got {shape}. Use 'padding=True' for rectangular matrices."
-        )
-
-    num_qubits = int(qml.math.log2(shape[0]))
-    if shape[0] != 2**num_qubits:
-        raise ValueError(
-            f"Dimension of the matrix should be a power of 2, got {shape}. Use 'padding=True' for these matrices."
-        )
-
-    if wire_order is not None and len(wire_order) != num_qubits:
-        raise ValueError(
-            f"number of wires {len(wire_order)} is not compatible with the number of qubits {num_qubits}"
-        )
-
-    if wire_order is None:
-        wire_order = range(num_qubits)
+    num_qubits, wire_order = _validate_and_normalize_decomposition_inputs(
+        shape, wire_order, is_sparse=False
+    )
 
     # Permute by XORing
     indices = [qml.math.array(range(shape[0]))]
@@ -249,7 +278,7 @@ def _generalized_pauli_decompose_sparse(  # pylint: disable=too-many-statements,
     the ``pauli`` flag.
 
     Args:
-        matrix (scipy.sparse.spmatrix | scipu.sparse.sparray): Any sparse matrix. If its dimension is not
+        matrix (scipy.sparse matrix): Any sparse matrix. If its dimension is not
             :math:`2^n \times 2^n`, use ``padding=True`` to pad with zeros to the next power of two.
         hide_identity (bool): If ``True``, Identity factors are omitted within tensor products
             of the decomposition terms.
@@ -276,17 +305,21 @@ def _generalized_pauli_decompose_sparse(  # pylint: disable=too-many-statements,
 
     Example:
         >>> import pennylane as qml
-        >>> import scipy.sparse as sp
-        >>> sparse_matrix = sp.csr_matrix([[0, 1], [1, 0]])
+        >>> import scipy.sparse as sps
+        >>> # Decompose a 2-qubit sparse matrix: Z(0) @ Z(1) + 0.5 * X(0)
+        >>> # Matrix: [[1, 0, 0.5, 0], [0, -1, 0, 0.5], [0.5, 0, -1, 0], [0, 0.5, 0, 1]]
+        >>> sparse_matrix = sps.csr_matrix(
+        ...     [[1, 0, 0.5, 0], [0, -1, 0, 0.5], [0.5, 0, -1, 0], [0, 0.5, 0, 1]]
+        ... )
         >>> coeffs, terms = qml.pauli.conversion._generalized_pauli_decompose_sparse(
-        ...     sparse_matrix, wire_order=[0]
+        ...     sparse_matrix, wire_order=[0, 1]
         ... )
         >>> coeffs
-        array([1.+0.j])
+        array([1. +0.j, 0.5+0.j])
         >>> terms
-        [X(0)]
+        [Z(0) @ Z(1), X(0) @ I(1)]
     """
-    sparse_matrix = sp.coo_matrix(matrix)
+    sparse_matrix = sps.coo_matrix(matrix)
     sparse_matrix.sum_duplicates()
     shape = sparse_matrix.shape
 
@@ -297,48 +330,42 @@ def _generalized_pauli_decompose_sparse(  # pylint: disable=too-many-statements,
         else:
             target_dim = 2 ** math.ceil(math.log2(max_dim))
         if shape != (target_dim, target_dim):
-            sparse_matrix = sp.coo_matrix(
+            sparse_matrix = sps.coo_matrix(
                 (sparse_matrix.data, (sparse_matrix.row, sparse_matrix.col)),
                 shape=(target_dim, target_dim),
             )
             shape = sparse_matrix.shape
 
-    if shape[0] != shape[1]:
-        raise ValueError(
-            f"The matrix should be square, got {shape}. Use 'padding=True' for rectangular matrices."
-        )
-
-    if shape[0] == 0:
-        raise ValueError("Cannot decompose an empty matrix.")
-
-    num_qubits = int(math.log2(shape[0]))
-    if shape[0] != 2**num_qubits:
-        raise ValueError(
-            f"Dimension of the matrix should be a power of 2, got {shape}. Use 'padding=True' for these matrices."
-        )
-
-    if wire_order is not None and len(wire_order) != num_qubits:
-        raise ValueError(
-            f"number of wires {len(wire_order)} is not compatible with the number of qubits {num_qubits}"
-        )
-    if wire_order is None:
-        wire_order = range(num_qubits)
+    num_qubits, wire_order = _validate_and_normalize_decomposition_inputs(
+        shape, wire_order, is_sparse=True
+    )
 
     coeffs_map: dict[str, complex] = defaultdict(complex)
     rows, cols, data = sparse_matrix.row, sparse_matrix.col, sparse_matrix.data
 
+    # Decompose each nonzero matrix entry into Pauli word contributions
     for row, col, value in zip(rows, cols, data):
         if value == 0:
             continue
         contributions = [("", complex(value))]
+
+        # Process each qubit position (MSB first)
         for wire in range(num_qubits):
             bit_index = num_qubits - 1 - wire
             row_bit = (row >> bit_index) & 1
             col_bit = (col >> bit_index) & 1
+
+            # Determine Pauli operators diagonal (I/Z) or off-diagonal (X/Y)
             if row_bit == col_bit:
-                options = (("I", 0.5), ("Z", (-1) ** row_bit * 0.5))
+                z_coeff = 0.5 if row_bit == 0 else -0.5
+                options = (("I", 0.5), ("Z", z_coeff))
             else:
-                options = (("X", 0.5), ("Y", (-1) ** row_bit * 0.5j))
+                if row_bit == 0:
+                    options = (("X", 0.5), ("Y", 0.5j))
+                else:
+                    options = (("X", 0.5), ("Y", -0.5j))
+
+            # Expand contributions each prefix branches into I/Z or X/Y options
             new_contributions = []
             for prefix, coeff in contributions:
                 for pauli_char, factor in options:
@@ -348,15 +375,11 @@ def _generalized_pauli_decompose_sparse(  # pylint: disable=too-many-statements,
         for word, coeff in contributions:
             coeffs_map[word] += coeff
 
-    tolerance = 1e-12
+    # Filter out coefficients close to zero
     coeffs = []
     obs_terms = []
-    for pauli_rep in product("IXYZ", repeat=num_qubits):
-        word = "".join(pauli_rep)
-        if word not in coeffs_map:
-            continue
-        coeff = coeffs_map[word]
-        if abs(coeff) <= tolerance:
+    for word, coeff in coeffs_map.items():
+        if qml.math.allclose(coeff, 0):
             continue
         if hide_identity and not all(char == I for char in word):
             observables = [(char, wire) for wire, char in zip(wire_order, word) if char != I]
@@ -382,7 +405,9 @@ def pauli_decompose(
     r"""Decomposes a Hermitian matrix into a linear combination of Pauli operators.
 
     Args:
-        H (tensor_like[complex] | scipy.sparse.spmatrix): a Hermitian matrix of dimension :math:`2^n\times 2^n` with dense or sparse representation.
+        H (tensor_like[complex] or scipy.sparse matrix): a Hermitian matrix of dimension :math:`2^n\times 2^n`.
+            Scipy sparse matrices are also supported and are processed natively without converting to dense format,
+            enabling efficient decomposition of large sparse matrices.
         hide_identity (bool): does not include the Identity observable within
             the tensor products of the decomposition if ``True``.
         wire_order (list[Union[int, str]]): the ordered list of wires with respect
@@ -464,16 +489,15 @@ def pauli_decompose(
         coefficients for each of the :math:`4^n` Pauli words are computed while accounting for the
         phase from each ``PauliY`` term occurring in the word.
 
-        Scipy sparse matrices are also supported and processed natively without converting to
-        dense format, enabling efficient decomposition of large sparse matrices. For example:
+        Scipy sparse matrices are also supported:
 
-        >>> import scipy.sparse as sp
-        >>> sparse_H = sp.csr_matrix([[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]])
+        >>> import scipy.sparse as sps
+        >>> sparse_H = sps.csr_matrix([[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]])
         >>> qml.pauli_decompose(sparse_H)
         1.0 * (Z(0) @ Z(1))
 
     """
-    is_sparse = sp.issparse(H)
+    is_sparse = sps.issparse(H)
     shape = H.shape if is_sparse else qml.math.shape(H)
     n = int(math.log2(shape[0])) if is_sparse else int(qml.math.log2(shape[0]))
     N = 2**n
