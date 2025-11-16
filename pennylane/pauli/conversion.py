@@ -336,13 +336,9 @@ def _generalized_pauli_decompose_sparse(  # pylint: disable=too-many-statements,
             row_bit = (row >> bit_index) & 1
             col_bit = (col >> bit_index) & 1
             if row_bit == col_bit:
-                z_coeff = 0.5 if row_bit == 0 else -0.5
-                options = (("I", 0.5), ("Z", z_coeff))
+                options = (("I", 0.5), ("Z", (-1) ** row_bit * 0.5))
             else:
-                if row_bit == 0:
-                    options = (("X", 0.5), ("Y", 0.5j))
-                else:
-                    options = (("X", 0.5), ("Y", -0.5j))
+                options = (("X", 0.5), ("Y", (-1) ** row_bit * 0.5j))
             new_contributions = []
             for prefix, coeff in contributions:
                 for pauli_char, factor in options:
