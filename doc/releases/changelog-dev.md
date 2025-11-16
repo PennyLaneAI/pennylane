@@ -106,9 +106,9 @@
   work wire and :class:`pennylane.TemporaryAND` operators to reduce the resources needed.
   [(#8549)](https://github.com/PennyLaneAI/pennylane/pull/8549)
 
-* Scipy sparse matrices can now be passed directly to :func:`~pennylane.pauli_decompose` without
-  manual conversion to dense arrays. Sparse matrices are processed natively allowing efficient
-  decomposition of large sparse matrices that cannot fit in memory as dense arrays.
+* The :func:`~pennylane.pauli_decompose` now supports decomposing scipy's sparse matrices,
+  allowing for efficient decomposition of large matrices that cannot fit in memory when written as
+  dense arrays.
   [(#8612)](https://github.com/PennyLaneAI/pennylane/pull/8612)
 
 <h3>Breaking changes 💔</h3>
