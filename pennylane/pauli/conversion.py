@@ -388,9 +388,7 @@ def pauli_decompose(
     r"""Decomposes a Hermitian matrix into a linear combination of Pauli operators.
 
     Args:
-        H (tensor_like[complex] or scipy.sparse matrix): a Hermitian matrix of dimension :math:`2^n\times 2^n`.
-            Scipy sparse matrices are also supported and are processed natively without converting to dense format,
-            enabling efficient decomposition of large sparse matrices.
+        H (tensor_like[complex] | scipy.sparse.spmatrix): a Hermitian matrix of dimension :math:`2^n\times 2^n` with dense or sparse representation.
         hide_identity (bool): does not include the Identity observable within
             the tensor products of the decomposition if ``True``.
         wire_order (list[Union[int, str]]): the ordered list of wires with respect
