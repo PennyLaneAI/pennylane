@@ -249,7 +249,7 @@ def _generalized_pauli_decompose_sparse(  # pylint: disable=too-many-statements,
     the ``pauli`` flag.
 
     Args:
-        matrix (scipy.sparse matrix): Any sparse matrix. If its dimension is not
+        matrix (scipy.sparse.spmatrix | scipu.sparse.sparray): Any sparse matrix. If its dimension is not
             :math:`2^n \times 2^n`, use ``padding=True`` to pad with zeros to the next power of two.
         hide_identity (bool): If ``True``, Identity factors are omitted within tensor products
             of the decomposition terms.
