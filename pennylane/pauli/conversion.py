@@ -45,10 +45,8 @@ def _generalized_pauli_decompose(  # pylint: disable=too-many-branches
     phase from each ``PauliY`` term occurring in the word.
 
     Args:
-        matrix (tensor_like[complex] or scipy.sparse matrix): any matrix M, the keyword argument ``padding=True``
-            should be provided if the dimension of M is not :math:`2^n\times 2^n`. Scipy sparse
-            matrices are also supported and are processed natively without converting to dense format,
-            enabling efficient decomposition of large sparse matrices.
+        matrix (tensor_like[complex] or scipy.sparse matrix): any matrix M given with a dense or sparse representation.
+            The keyword argument ``padding=True`` should be provided if the dimension of M is not :math:`2^n\times 2^n`.
         hide_identity (bool): does not include the Identity observable within
             the tensor products of the decomposition if ``True``.
         wire_order (list[Union[int, str]]): the ordered list of wires with respect
