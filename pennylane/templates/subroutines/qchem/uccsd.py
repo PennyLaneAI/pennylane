@@ -89,13 +89,13 @@ class UCCSD(Operation):
             These parameters are the coupled-cluster amplitudes that need to be optimized for each
             single and double excitation generated with the :func:`~.excitations` function.
         wires (WiresLike): wires that the template acts on
-        s_wires (Sequence[Sequence[Any]]): Sequence of lists containing the wires ``[r,...,p]``
+        s_wires (Sequence[Sequence[int]]): Sequence of lists containing the wires ``[r,...,p]``
             resulting from the single excitation
             :math:`\vert r, p \rangle = \hat{c}_p^\dagger \hat{c}_r \vert \mathrm{HF} \rangle`,
             where :math:`\vert \mathrm{HF} \rangle` denotes the Hartee-Fock reference state.
             The first (last) entry ``r`` (``p``) is considered the wire representing the
             occupied (unoccupied) orbital where the electron is annihilated (created).
-        d_wires (Sequence[tuple[Sequence[Any], Sequence[Any]]]): Sequence of lists, each containing two lists that
+        d_wires (Sequence[tuple[Sequence[int], Sequence[int]]]): Sequence of lists, each containing two lists that
             specify the indices ``[s, ...,r]`` and ``[q,..., p]`` defining the double excitation
             :math:`\vert s, r, q, p \rangle = \hat{c}_p^\dagger \hat{c}_q^\dagger \hat{c}_r
             \hat{c}_s \vert \mathrm{HF} \rangle`. The entries ``s`` and ``r`` are wires
