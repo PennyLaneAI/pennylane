@@ -11,8 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""This file contains the implementation of the QMLCollector class,
-which collects and maps PennyLane operations and measurements from xDSL."""
+"""This file contains utility functions for parsing PennyLane objects from xDSL."""
 
 from __future__ import annotations
 
@@ -20,6 +19,9 @@ import inspect
 from collections.abc import Callable
 from typing import TYPE_CHECKING
 
+from catalyst import qjit
+from catalyst.jit import QJIT
+from catalyst.passes.xdsl_plugin import getXDSLPluginAbsolutePath
 from xdsl.dialects.builtin import DenseIntOrFPElementsAttr, IntegerAttr, IntegerType
 from xdsl.dialects.scf import ForOp
 from xdsl.dialects.tensor import ExtractOp as TensorExtractOp
@@ -47,6 +49,8 @@ from ..dialects.quantum import (
 )
 
 if TYPE_CHECKING:
+    from xdsl.dialects.builtin import ModuleOp
+
     from pennylane.measurements import MeasurementProcess
 
 has_jax = True
@@ -54,6 +58,22 @@ try:
     import jax
 except ImportError:
     has_jax = False
+
+
+def get_mlir_module(qnode: QJIT, args, kwargs) -> ModuleOp:
+    """Ensure the QNode is compiled and return its MLIR module."""
+    if hasattr(qnode, "mlir_module") and qnode.mlir_module is not None:
+        return qnode.mlir_module
+
+    func = getattr(qnode, "user_function", qnode)
+
+    compile_options = qnode.compile_options
+    compile_options.autograph = False  # Autograph has already been applied for `user_function`
+    compile_options.pass_plugins.add(getXDSLPluginAbsolutePath())
+
+    jitted_qnode = QJIT(func, compile_options)
+    jitted_qnode.jit_compile(args, **kwargs)
+    return jitted_qnode.mlir_module
 
 
 from_str_to_PL_gate = {
