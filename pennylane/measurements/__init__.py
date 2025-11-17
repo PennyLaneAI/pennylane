@@ -121,7 +121,7 @@ long as they are not collected in a sequence, e.g., ``[m1 + m2, m1 - m2]`` is no
 
 QNodes can be executed as usual when collecting mid-circuit measurement statistics:
 
->>> circ(1.0, 2.0, shots=5)
+>>> qml.set_shots(circ, shots=5)(1.0, 2.0)
 (np.float64(0.2), array([0, 0, 1, 0, 1]))
 
 PennyLane also supports postselecting on mid-circuit measurement outcomes. To learn more, refer to the documentation
