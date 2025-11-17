@@ -398,6 +398,19 @@ class Select(Operation):
 
             # General example of how to access
             qml.list_decomps(qml.Select)[NAME]
+        
+        Decomposition rules
+        ~~~~~~~~~~~~~~~~~~~
+
+        The following decomposition rules are supported
+
+        .. currentmodule:: pennylane.templates.subroutines
+        .. autosummary::
+            :toctree: api
+
+            select._select_decomp_multi_control
+            select._select_decomp_unary
+            select._select_decomp_multi_control_work_wire
 
         .. list-table::
             :widths: 20 60 20
