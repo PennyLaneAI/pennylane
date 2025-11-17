@@ -162,7 +162,7 @@ class AllSinglesDoubles(Operation):
             raise ValueError(f"'weights' tensor must be of shape {exp_shape}; got {weights_shape}.")
 
         if len(hf_state) != len(wires):
-            raise ValueError("Expected length of 'hf_state' to match number of wires (4).")
+            raise ValueError(f"Expected length of 'hf_state' to match number of wires ({len(wires)}).")
 
         if hf_state[0].dtype != np.dtype("int"):
             raise ValueError("Elements of 'hf_state' must be integers.")
