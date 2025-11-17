@@ -169,8 +169,9 @@ class TestAttributes:
         dag_builder.add_node("0", "node0")
         node0 = dag_builder.graph.get_node("0")[0]
         assert node0.get("fontname") == "Times"
-        dag_builder.add_cluster("c0", "cluster0")
-        cluster = dag_builder.graph.get_subgraph("cluster_0")[0]
+
+        dag_builder.add_cluster("1", "cluster0")
+        cluster = dag_builder.graph.get_subgraphs()[0]
         assert cluster.get("fontname") == "Times"
 
     @pytest.mark.unit
