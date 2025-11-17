@@ -18,11 +18,10 @@ from typing import Any
 import numpy as np
 
 
-# pylint: disable=unnecessary-lambda-assignment, too-many-arguments
+# pylint: disable=unnecessary-lambda-assignment, too-many-arguments, not-callable
 def approx_poly_degree(
     target_func: Callable,
-    x_domain: tuple[float, float] = (-1, 1),
-    num_points: int = 1000,
+    x_vec: np.ndarray,
     error_tol: float = 1e-6,
     degrees: tuple[int, int] | None = None,
     basis: str | None = None,
@@ -36,10 +35,8 @@ def approx_poly_degree(
     Args:
         target_func (callable): function to be approximated by the polynomial with signature
             ``(x_vec: np.ndarray) -> np.ndarray``.
-        x_domain (tuple[float, float]): the domain of the target function ``target_func``.
-            Defaults to ``[-1, 1]`` if not specified.
-        num_points (int): number of points to sample from the target function within
-            the ``domain``. Defaults to ``1000``.
+        x_vec (np.ndarray): the domain of the target function ``target_func``, which is used
+            to sample the target function. Minimum length of ``x_vec`` is ``3``.
         error_tol (float): tolerance for the target fitting error. Defaults to ``1e-6``.
             Unless ``loss_func`` is provided, this is the least squares fit error.
         degrees (Tuple[int, int]): tuple of minimum and maximum degrees to consider.
@@ -53,12 +50,12 @@ def approx_poly_degree(
             (root mean squared error), `"linf"` (maximum absolute error), or a custom loss
             function with the signature ``(pred: np.ndarray, target: np.ndarray) -> float``.
             Defaults to ``None``, which means the least squares fit error is used.
-        fit_func (callable | None): function to approximate the polynomial with signature
-            ``(x_vec, y_vec, degree, **fit_kwargs) -> tuple[np.ndarray, float]`` and should return
-            the coefficients of the polynomial and the corresponding loss of the fit. Defaults
-            to ``None``, which will use the NumPy polynomial fitting function corresponding
-            to the ``basis`` keyword argument. Providing a custom function will override
-            the ``basis`` and ``loss_func`` keyword arguments.
+        fit_func (callable | None): function that approximately fits the polynomial and has the signature
+            ``(x_vec: np.ndarray, y_vec: np.ndarray, degree: int, **fit_kwargs) -> tuple[Callable, float]``.
+            It should return a callable for the fit polynomial along with the least squares error of the fit.
+            Defaults to ``None``, which means the NumPy polynomial fitting function corresponding
+            to the ``basis`` keyword argument will be used. Note that, providing a custom function
+            will override the ``basis`` keyword argument.
         project_func (str | callable | None): function to project the dense interval
             based on `x_vec` to a sparse one with ``[x_vec[0], x_vec[-1]]`` as the domain.
             Defaults to ``None``, which means no projection is performed. When ``"uniform"``
@@ -80,7 +77,7 @@ def approx_poly_degree(
     Returns:
         tuple[np.ndarray, float]: the coefficients of the polynomial and the loss of the fit.
     """
-    x_vec = np.linspace(x_domain[0], x_domain[1], num_points)
+    x_vec = np.sort(x_vec)
     y_vec = target_func(x_vec)
 
     if degrees is None:
@@ -93,7 +90,7 @@ def approx_poly_degree(
     if min_degree < 0:
         raise ValueError("min_degree must be non-negative")
 
-    loss_func = _process_loss_func(loss_func)
+    fit_loss = _process_loss_func(loss_func)
 
     fit_func, fit_poly, fit_args = _process_poly_fit(fit_func, basis)
     fit_kwargs |= fit_args
@@ -102,28 +99,33 @@ def approx_poly_degree(
 
     best_loss, best_poly = float("inf"), None
     for degree in range(min_degree, max_degree + 1):
-        x_proj = x_vec if proj_func is None else proj_func(x_vec[0], x_vec[-1], degree + 1) # pylint: disable=not-callable
+        x_proj = x_vec if proj_func is None else proj_func(x_vec[0], x_vec[-1], degree + 1)
         y_proj = y_vec if proj_func is None else target_func(x_proj)
-        
-        coeffs, stats = fit_func(x_proj, y_proj, degree, **fit_kwargs)
+
         if fit_poly is None:
-   
-        poly, stats = approx_poly_func(x_proj, y_vec, degree, **fit_kwargs)
-        if (loss := loss_func(stats)) and loss < best_loss:
+            poly, coeffs, stats = fit_func(x_proj, y_proj, degree, **fit_kwargs)
+        else:
+            coeffs, stats = fit_func(x_proj, y_proj, degree, **fit_kwargs)
+            poly = fit_poly(coeffs, domain=(x_proj[0], x_proj[-1]))
+
+        loss = fit_loss(stats) if loss_func is None else fit_loss(poly(x_vec), y_vec)
+        if loss < best_loss:
             best_loss, best_poly = loss, poly
             if loss <= error_tol:
                 break
 
-    return best_poly, best_loss
+    return degree, best_poly, best_loss
 
 
 def _process_loss_func(loss_func: str | Callable | None) -> Callable:
     """Process the loss function."""
     if loss_func is None:
+
         def _loss_func(x, _: Any = None):
-            if isinstance(x, tuple):
-                return float("inf") if len(x[0]) == 0 else float(x[0][0])
+            if isinstance(x, (tuple, list)):
+                return float(0.0) if len(x[0]) == 0 else float(x[0][0])
             return float(x)
+
         return _loss_func
 
     match loss_func:
@@ -178,6 +180,7 @@ def _process_proj_func(project_func: str | Callable | None, basis: str | None) -
                     return np.linspace
         case _:
             return project_func
+
 
 def _chebyshev_gauss_lobatto(x_min: float, x_max: float, num_points: int) -> np.ndarray:
     """Project the dense interval based on `x_vec` to a sparse one with `[x_vec[0], x_vec[-1]]` as the domain.
