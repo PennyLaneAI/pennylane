@@ -42,17 +42,17 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install Catalyst and Lightning (dev) 
-        run: |
+      - name: Install pip and setuptools
+        run: | 
           python -m pip install --upgrade pip
           pip install --upgrade setuptools
-          pip install --upgrade --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ --pre --no-deps pennylane-catalyst pennylane-lightning
 
+      - name: Install Catalyst and Lightning (dev) 
+        run: |
+          pip install --upgrade --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ --pre --no-deps pennylane-catalyst pennylane-lightning
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install --upgrade setuptools
           pip install --upgrade --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ pennylane-catalyst pennylane-lightning
           pip install -e .
           pip install sybil pytest "jax~=0.6.0" "jaxlib~=0.6.0" torch matplotlib pyzx
@@ -94,7 +94,6 @@ jobs:
           --ignore=pennylane/qnn
           --ignore=pennylane/qaoa
           --ignore=pennylane/data
-          --ignore=pennylane/fourier
           --ignore=pennylane/debugging
           --ignore=pennylane/qcut
           --ignore=pennylane/qchem
