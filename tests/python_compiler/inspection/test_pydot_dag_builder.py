@@ -177,7 +177,7 @@ class TestAttributes:
     @pytest.mark.unit
     def test_add_node_with_attrs(self):
         """Tests that default attributes are applied and can be overridden."""
-        dag_builder = PyDotDAGBuilder()
+        dag_builder = PyDotDAGBuilder(node_attrs={"fillcolor": "lightblue", "penwidth": 3})
 
         # Defaults
         dag_builder.add_node("0", "node0")
