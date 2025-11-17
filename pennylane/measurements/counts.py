@@ -162,7 +162,8 @@ class CountsMP(SampleMeasurement):
             {'00': 2, '10': 1}
 
             However, if ``all_outcomes=True``, this will return:
-            >>> self._samples_to_counts(samples) # doctest: +SKIP
+            >>> mp = qml.counts(all_outcomes=True)
+            >>> mp._samples_to_counts(samples) # doctest: +SKIP
             {'00': 2, '01': 0, '10': 1, '11': 0}
 
             The variable all_outcomes can be set when running measurements.counts, i.e.:
