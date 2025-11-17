@@ -34,7 +34,7 @@ def approx_poly_degree(
 
     Args:
         x_vec (np.ndarray): the domain values for sampling the target function ``target_func``.
-            The minimum length of ``x_vec`` is ``3`` and should be sorted.
+            The minimum length of ``x_vec`` is two and should be sorted.
         target_func (callable): function to be approximated with a polynomial and has the
             signature ``(x_vec: np.ndarray) -> np.ndarray``.
         error_tol (float): tolerance for the target fitting error. Defaults to ``1e-6``.
