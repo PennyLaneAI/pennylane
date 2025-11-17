@@ -20,39 +20,6 @@ global side effects.
 """
 
 
-class DictPatchWrapper:
-    """Wraps a dictionary and key to enable attribute-style patching via Patcher.
-
-    This allows patching dictionary items as if they were attributes on an object.
-
-    Args:
-        d (dict): The dictionary to wrap
-        key: The key in the dictionary to expose as an attribute
-
-    Example:
-        >>> config = {"option": "old_value"}
-        >>> wrapper = DictPatchWrapper(config, "option")
-        >>> with Patcher((wrapper, "option", "new_value")):
-        ...     print(config["option"])  # prints "new_value"
-        >>> print(config["option"])  # prints "old_value"
-    """
-
-    def __init__(self, d, key):
-        self.__dict__["_d"] = d
-        self.__dict__["_key"] = key
-
-    def __getattr__(self, name):
-        if name == self._key:
-            return self._d[self._key]
-        raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
-
-    def __setattr__(self, name, value):
-        if name == self._key:
-            self._d[self._key] = value
-        else:
-            raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
-
-
 class Patcher:
     """Context manager for temporarily patching object attributes.
 

@@ -18,7 +18,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.capture.jax_patches import get_jax_patches
-from pennylane.capture.patching import DictPatchWrapper, Patcher
+from pennylane.capture.patching import Patcher
 
 jax = pytest.importorskip("jax")
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
@@ -109,54 +109,6 @@ class TestPatcher:
 
         # Patch should be restored even though exception was raised
         assert obj.value == "original"
-
-
-class TestDictPatchWrapper:
-    """Tests for the DictPatchWrapper class."""
-
-    def test_basic_wrapping(self):
-        """Test basic dictionary wrapping and attribute access."""
-        config = {"option": "value"}
-        wrapper = DictPatchWrapper(config, "option")
-
-        assert wrapper.option == "value"
-
-    def test_setting_attribute(self):
-        """Test setting wrapped attribute."""
-        config = {"option": "old"}
-        wrapper = DictPatchWrapper(config, "option")
-
-        wrapper.option = "new"
-        assert config["option"] == "new"
-        assert wrapper.option == "new"
-
-    def test_with_patcher(self):
-        """Test using DictPatchWrapper with Patcher."""
-        config = {"setting": "original"}
-        wrapper = DictPatchWrapper(config, "setting")
-
-        assert config["setting"] == "original"
-
-        with Patcher((wrapper, "setting", "patched")):
-            assert config["setting"] == "patched"
-
-        assert config["setting"] == "original"
-
-    def test_invalid_attribute(self):
-        """Test accessing invalid attribute raises AttributeError."""
-        config = {"option": "value"}
-        wrapper = DictPatchWrapper(config, "option")
-
-        with pytest.raises(AttributeError, match="has no attribute 'invalid'"):
-            _ = wrapper.invalid
-
-    def test_setting_invalid_attribute(self):
-        """Test setting invalid attribute raises AttributeError."""
-        config = {"option": "value"}
-        wrapper = DictPatchWrapper(config, "option")
-
-        with pytest.raises(AttributeError, match="has no attribute 'invalid'"):
-            wrapper.invalid = "new"
 
 
 class TestGetJaxPatches:

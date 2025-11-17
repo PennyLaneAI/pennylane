@@ -174,7 +174,7 @@ from .dynamic_shapes import determine_abstracted_axes, register_custom_staging_r
 from . import jax_patches  # pylint: disable=unused-import
 
 # Import Patcher for contextual patching (preferred over global patches)
-from .patching import Patcher, DictPatchWrapper
+from .patching import Patcher
 from .jax_patches import get_jax_patches
 
 # by defining this here, we avoid
@@ -265,6 +265,5 @@ __all__ = (
     "run_autograph",
     "make_plxpr",
     "Patcher",
-    "DictPatchWrapper",
     "get_jax_patches",
 )
