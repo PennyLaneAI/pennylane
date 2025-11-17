@@ -78,7 +78,7 @@ class AllSinglesDoubles(Operation):
             angles entering the :class:`~.pennylane.SingleExcitation` and
             :class:`~.pennylane.DoubleExcitation` operations, in that order
         wires (WiresLike): wires that the template acts on
-        hf_state (list[int]): Length ``len(wires)`` occupation-number vector representing the
+        hf_state (Sequence[int]): Length ``len(wires)`` occupation-number vector representing the
             Hartree-Fock state. ``hf_state`` is used to initialize the wires.
         singles (list[list]): sequence of lists with the indices of the two qubits
             the :class:`~.pennylane.SingleExcitation` operations act on
