@@ -197,17 +197,17 @@ class UCCSD(Operation):
         self,
         weights: TensorLike,
         wires: WiresLike,
-        s_wires: list[list[int]] | None = None,
-        d_wires: list[list[int]] | None = None,
+        s_wires: Sequence[tuple[int]] | None = None,
+        d_wires: Sequence[tuple[int, int]] | None = None,
         init_state: Sequence[int] | None = None,
-        n_repeats=1,
+        n_repeats: int = 1,
         id=None,
     ):
         s_wires = [] if s_wires is None else s_wires
         d_wires = [] if d_wires is None else d_wires
         init_state = () if init_state is None else init_state
 
-        if (not s_wires) and (not d_wires):
+        if (len(s_wires) == 0) and (len(d_wires) == 0):
             raise ValueError(
                 f"s_wires and d_wires lists can not be both empty; got ph={s_wires}, pphh={d_wires}"
             )
