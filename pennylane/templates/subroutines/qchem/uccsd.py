@@ -157,7 +157,7 @@ class UCCSD(Operation):
             # Define the qnode
             @qml.qnode(dev)
             def circuit(params, wires, s_wires, d_wires, hf_state):
-                qml.UCCSD(params, wires, s_wires, d_wires, hf_state)
+                qml.UCCSD(params, wires, hf_state, s_wires, d_wires)
                 return qml.expval(H)
 
             # Define the initial values of the circuit parameters
