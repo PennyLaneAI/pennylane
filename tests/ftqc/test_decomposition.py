@@ -551,9 +551,13 @@ class TestMBQCFormalismConversion:
                 assert isinstance(op, expected_gates)
 
         # diagonalize final measurements, convert to the mbqc formalism, and execute
+        # Diagonalizing gates are added in manually because PennyLane core updated them to include
+        # Adjoint(S) for PauliY, which is not supported in the MBQC stack yet.
+        diagonalizing_gates = {qml.X: [qml.H], qml.Y: [qml.Z, qml.S, qml.H], qml.Z: []}
         res = []
         for obs in (qml.X, qml.Y, qml.Z):
-            ops = base_tape.operations + obs(0).diagonalizing_gates() + obs(1).diagonalizing_gates()
+            diag_gates = diagonalizing_gates[obs]
+            ops = base_tape.operations + [gate(wire) for wire in [0, 1] for gate in diag_gates]
             tape = base_tape.copy(
                 operations=ops, measurements=[qml.sample(wires=[0, 1])], shots=500
             )
