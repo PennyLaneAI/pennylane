@@ -99,31 +99,20 @@ def _specs_qnode(qnode, level, compute_depth, *args, **kwargs) -> list[SpecsDict
     return infos[0] if len(infos) == 1 else infos
 
 
-# NOTE: Some information is missing from specs_qjit compared to specs_qnode
-def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> SpecsDict:  # pragma: no cover
+def _specs_qjit_device_level_tracking(
+    qjit, original_qnode, pass_pipeline_wrapped, compute_depth, *args, **kwargs
+) -> Resources:  # pragma: no cover
     # pylint: disable=import-outside-toplevel
     # Have to import locally to prevent circular imports as well as accounting for Catalyst not being installed
-    # Integration tests for this function are within the Catalyst frontend tests, it is not covered by unit tests
-
-    from catalyst.jit import QJIT
+    import catalyst
+    from catalyst import QJIT
 
     from ..devices import NullQubit
 
-    # TODO: Determine if its possible to have batched QJIT code / how to handle it
-
-    if not isinstance(qjit.original_function, qml.QNode):
-        raise ValueError("qml.specs can only be applied to a QNode or qjit'd QNode")
-
-    original_device = qjit.device
-    info = SpecsDict()
-
-    if level != "device":
-        raise NotImplementedError(f"Unsupported level argument '{level}' for QJIT'd code.")
-
     # When running at the device level, execute on null.qubit directly with resource tracking,
     # which will give resource usage information for after all compiler passes have completed
-
     # TODO: Find a way to inherit all devices args from input
+    original_device = original_qnode.device
     spoofed_dev = NullQubit(
         target_device=original_device,
         wires=original_device.wires,
@@ -136,8 +125,26 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> SpecsDict:  # pr
         warnings.filterwarnings(
             "ignore", category=UserWarning, message="The device's shots value does not match "
         )
-        new_qnode = qjit.original_function.update(device=spoofed_dev)
-    new_qjit = QJIT(new_qnode, copy.copy(qjit.compile_options))
+        if pass_pipeline_wrapped:
+            new_qnode = original_qnode.update(device=spoofed_dev)
+
+            def recursively_add_passes(pass_pipeline):
+                if isinstance(pass_pipeline, catalyst.passes.pass_api.PassPipelineWrapper):
+                    inner_fxn = recursively_add_passes(pass_pipeline.qnode)
+                    new_pass_pipeline = catalyst.passes.pass_api.PassPipelineWrapper(
+                        inner_fxn,
+                        pass_pipeline.pass_name_or_pipeline,
+                        *pass_pipeline.flags,
+                        **pass_pipeline.valued_options,
+                    )
+                    return new_pass_pipeline
+                return new_qnode
+
+            pass_pipeline = recursively_add_passes(qjit.original_function)
+            new_qjit = QJIT(pass_pipeline, copy.copy(qjit.compile_options))
+        else:
+            new_qnode = qjit.original_function.update(device=spoofed_dev)
+            new_qjit = QJIT(new_qnode, copy.copy(qjit.compile_options))
 
     if os.path.exists(_RESOURCE_TRACKING_FILEPATH):
         # TODO: Warn that something has gone wrong here
@@ -150,7 +157,7 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> SpecsDict:  # pr
         with open(_RESOURCE_TRACKING_FILEPATH, encoding="utf-8") as f:
             resource_data = json.load(f)
 
-        info["resources"] = Resources(
+        return Resources(
             num_wires=resource_data["num_wires"],
             num_gates=resource_data["num_gates"],
             gate_types=defaultdict(int, resource_data["gate_types"]),
@@ -158,22 +165,169 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> SpecsDict:  # pr
                 int, {int(k): v for (k, v) in resource_data["gate_sizes"].items()}
             ),
             depth=resource_data["depth"],
-            shots=qjit.original_function.shots,  # TODO: Can this ever be overriden during compilation?
+            shots=original_qnode.shots,  # TODO: Can this ever be overriden during compilation?
         )
     finally:
         # Ensure we clean up the resource tracking file
         if os.path.exists(_RESOURCE_TRACKING_FILEPATH):
             os.remove(_RESOURCE_TRACKING_FILEPATH)
 
-    info["num_device_wires"] = len(original_device.wires)
-    info["device_name"] = original_device.name
+
+def _specs_qjit_intermediate_passes(
+    qjit, original_qnode, level, *args, **kwargs
+) -> Resources:  # pragma: no cover
+    # pylint: disable=import-outside-toplevel
+    from catalyst.from_plxpr import transforms_to_passes
+
+    from pennylane.compiler.python_compiler.inspection import mlir_specs
+
+    single_level = isinstance(level, int)
+
+    # Ensure `level` is always in the form of a sorted list (or "all")
+    if single_level:
+        level = [level]
+    elif level != "all":
+        level = list(level)
+
+    if level != "all":
+        level_sorted = sorted(level)
+        if level != level_sorted:
+            warnings.warn(
+                "The 'level' argument to qml.specs for QJIT'd QNodes has been sorted to be in ascending order.",
+                UserWarning,
+            )
+            level = level_sorted
+
+    resources = {}
+
+    # Note that this only gets transforms manually applied by the user
+    tape_transforms = original_qnode.transform_program
+
+    if qml.capture.enabled():
+        # If capture is enabled, find the seam where PLxPR transforms end and MLIR passes begin
+        num_trans_levels = 0
+        for i, trans in reversed(list(enumerate(tape_transforms))):
+            dispatcher = trans._transform_dispatcher  # pylint: disable=protected-access
+            # TODO: This is a temporary workaround and shouldn't be needed after the "pass name" PR is merged
+            assert (
+                dispatcher in transforms_to_passes
+            ), f"Transform dispatcher {dispatcher} not registered in transforms_to_passes."
+            if transforms_to_passes[dispatcher][0] is None:
+                num_trans_levels = i + 1
+                break
+
+    else:
+        # If capture is NOT enabled, all transforms are tape transforms
+        num_trans_levels = len(tape_transforms)
+
+    num_trans_levels += 1  # Have to include the "no transforms" level
+
+    # Handle tape transforms
+    trans_levels = (
+        list(range(num_trans_levels))
+        if level == "all"
+        else [lvl for lvl in level if lvl < num_trans_levels]
+    )
+
+    # Handle tape transforms
+    for trans_level in trans_levels:
+        # User transforms always come first, so level and trans_level align correctly
+        tape = qml.workflow.construct_tape(original_qnode, level=trans_level)(*args, **kwargs)
+        info = specs_from_tape(tape, False)
+
+        trans_name = (
+            tape_transforms[trans_level - 1].transform.__name__
+            if trans_level > 0
+            else "No transforms"
+        )
+        # If the same transform appears multiple times, append a suffix
+        if trans_name in resources:
+            rep = 2
+            while f"{trans_name}-{rep}" in resources:
+                rep += 1
+            trans_name += f"-{rep}"
+        resources[trans_name] = info["resources"]
+
+    # Handle MLIR levels
+    mlir_levels = (
+        [lvl - num_trans_levels for lvl in level if lvl >= num_trans_levels]
+        if level != "all"
+        else "all"
+    )
+    if mlir_levels == "all" or len(mlir_levels) > 0:
+        results = mlir_specs(qjit, mlir_levels, *args, **kwargs)
+
+        for level_name, res in results.items():
+            res_resources = Resources(
+                num_wires=res.num_wires,
+                num_gates=sum(res.resource_sizes.values()),
+                gate_types=res.quantum_operations | res.ppm_operations,
+                gate_sizes=res.resource_sizes,
+                depth=None,  # Can't get depth for intermediate stages
+                shots=original_qnode.shots,  # TODO: Can this ever be overriden during compilation?
+            )
+            resources[level_name] = res_resources
+
+    # Unpack dictionary to single item if only 1 level was given as input
+    if single_level:
+        resources = next(iter(resources.values()))
+        level = level[0]
+
+    return resources
+
+
+# NOTE: Some information is missing from specs_qjit compared to specs_qnode
+def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> SpecsDict:  # pragma: no cover
+    # pylint: disable=import-outside-toplevel
+    # Have to import locally to prevent circular imports as well as accounting for Catalyst not being installed
+    # Integration tests for this function are within the Catalyst frontend tests, it is not covered by unit tests
+    from catalyst.passes.pass_api import PassPipelineWrapper
+
+    # Unwrap the original QNode if any passes have been applied
+    pass_pipeline_wrapped = False
+    if isinstance(qjit.original_function, PassPipelineWrapper):
+        pass_pipeline_wrapped = True
+        original_qnode = qjit.original_qnode
+    elif isinstance(qjit.original_function, qml.QNode):
+        original_qnode = qjit.original_function
+    else:
+        raise ValueError(
+            "qml.specs can only be applied to a QNode or qjit'd QNode, instead got:",
+            qjit.original_function,
+        )
+
+    device = original_qnode.device
+
+    if isinstance(level, (int, tuple, list, range)) or level == "all":
+        if compute_depth:
+            warnings.warn(
+                "Cannot calculate circuit depth for intermediate transformations or compilation passes."
+                " To compute the depth, please use level='device'.",
+                UserWarning,
+            )
+        resources = _specs_qjit_intermediate_passes(qjit, original_qnode, level, *args, **kwargs)
+
+    elif level == "device":
+        resources = _specs_qjit_device_level_tracking(
+            qjit, original_qnode, pass_pipeline_wrapped, compute_depth, *args, **kwargs
+        )
+
+    else:
+        raise NotImplementedError(f"Unsupported level argument '{level}' for QJIT'd code.")
+
+    info = SpecsDict()
+
+    info["resources"] = resources
+
+    info["num_device_wires"] = len(device.wires)
+    info["device_name"] = device.name
     info["level"] = level
-    info["gradient_options"] = qjit.gradient_kwargs
-    info["interface"] = qjit.original_function.interface
+    info["gradient_options"] = original_qnode.gradient_kwargs
+    info["interface"] = original_qnode.interface
     info["diff_method"] = (
-        _get_absolute_import_path(qjit.diff_method)
-        if callable(qjit.diff_method)
-        else qjit.diff_method
+        _get_absolute_import_path(original_qnode.diff_method)
+        if callable(original_qnode.diff_method)
+        else original_qnode.diff_method
     )
 
     return info
