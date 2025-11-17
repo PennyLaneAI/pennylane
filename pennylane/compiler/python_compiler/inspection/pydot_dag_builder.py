@@ -13,6 +13,7 @@
 # limitations under the License.
 """File that defines the PyDotDAGBuilder subclass of DAGBuilder."""
 
+from collections import ChainMap
 from typing import Any
 
 from .dag_builder import DAGBuilder
@@ -37,9 +38,8 @@ class PyDotDAGBuilder(DAGBuilder):
         self.graph: pydot.Dot = pydot.Dot(
             graph_type="digraph", rankdir="TB", compound="true", strict=True
         )
-        # Create context variable to allow nodes to be drawn on nested clusters
+        # Create context variable to map IDs to Graph objects
         self._subgraphs: dict[str, pydot.Graph] = {}
-        # Bottom of the stack should be the base graph itself
         self._subgraphs["__base__"] = self.graph
 
         _default_attrs = {"fontname": "Helvetica", "penwidth": 2}
@@ -74,7 +74,7 @@ class PyDotDAGBuilder(DAGBuilder):
             **node_attrs (Any): Any additional styling keyword arguments.
 
         """
-        node_attrs = {**self._default_node_attrs, **node_attrs}
+        node_attrs = ChainMap(node_attrs, self._default_node_attrs)
         node = pydot.Node(node_id, label=node_label, **node_attrs)
         parent_graph_id = "__base__" if parent_graph_id is None else parent_graph_id
 
@@ -89,7 +89,7 @@ class PyDotDAGBuilder(DAGBuilder):
             **edge_attrs (Any): Any additional styling keyword arguments.
 
         """
-        edge_attrs = {**self._default_edge_attrs, **edge_attrs}
+        edge_attrs = ChainMap(edge_attrs, self._default_edge_attrs)
         edge = pydot.Edge(from_node_id, to_node_id, **edge_attrs)
         self.graph.add_edge(edge)
 
@@ -112,7 +112,7 @@ class PyDotDAGBuilder(DAGBuilder):
             **cluster_attrs (Any): Any additional styling keyword arguments.
 
         """
-        cluster_attrs = {**self._default_cluster_attrs, **cluster_attrs}
+        cluster_attrs = ChainMap(cluster_attrs, self._default_cluster_attrs)
         cluster = pydot.Cluster(graph_name=cluster_id, **cluster_attrs)
 
         # Puts the label in a node within the cluster.
