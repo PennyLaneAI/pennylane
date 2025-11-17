@@ -52,7 +52,7 @@ class PyDotDAGBuilder(DAGBuilder):
         self.graph: pydot.Dot = pydot.Dot(
             graph_type="digraph", rankdir="TB", compound="true", strict=True
         )
-        # Create context variable to map IDs to Graph objects
+        # Create cache for easy look-up
         self._subgraphs: dict[str, pydot.Graph] = {}
         self._subgraphs["__base__"] = self.graph
 
