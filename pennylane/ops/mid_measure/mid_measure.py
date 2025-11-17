@@ -283,6 +283,11 @@ def measure(
     .. details::
         :title: Postselection
 
+        .. note::
+
+            Currently, postselection support is only available on ``default.qubit``. Using postselection
+            on other devices will raise an error.
+
         Postselection discards outcomes that do not meet the criteria provided by the ``postselect``
         argument. For example, specifying ``postselect=1`` on wire 0 would be equivalent to projecting
         the state vector onto the :math:`|1\rangle` state on wire 0:
@@ -344,11 +349,6 @@ def measure(
 
         >>> qml.set_shots(func, shots=[10, 10])(0.0)
         (array([], shape=(0, 2), dtype=int64), array([], shape=(0, 2), dtype=int64))
-
-        .. note::
-
-            Currently, postselection support is only available on ``default.qubit``. Using postselection
-            on other devices will raise an error.
 
         .. warning::
 
