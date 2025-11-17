@@ -159,7 +159,7 @@ class CountsMP(SampleMeasurement):
             By default, this will return:
             >>> mp = qml.counts()
             >>> mp._samples_to_counts(samples)
-            {'00': 2, '10': 1}
+            {np.str_('00'): np.int64(2), np.str_('10'): np.int64(1)}
 
             However, if ``all_outcomes=True``, this will return:
             >>> mp = qml.counts(all_outcomes=True)
