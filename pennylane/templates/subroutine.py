@@ -70,6 +70,10 @@ class SubroutineOp(Operator):
         super().__init__(wires=wires)
         self.name = subroutine.definition.__name__
 
+    @property
+    def subroutine(self):
+        return self._subroutine
+
     def decomposition(self):
         if queuing.QueuingManager.recording():
             _ = [queuing.apply(op) for op in self._decomp]
@@ -84,6 +88,12 @@ class SubroutineOp(Operator):
 class Subroutine:
     """The definition of a Subroutine, compatible both with program capture and backward
     compatible with operators."""
+
+    def __repr__(self):
+        return f"<Subroutine: {self.definition.__name__}>"
+
+    def __instancecheck__(self, instance) -> bool:
+        return isinstance(instance, SubroutineOp) and instance.subroutine is self
 
     def __init__(
         self,
