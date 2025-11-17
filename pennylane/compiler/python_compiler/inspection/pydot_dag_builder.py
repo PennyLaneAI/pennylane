@@ -103,6 +103,7 @@ class PyDotDAGBuilder(DAGBuilder):
             **node_attrs (Any): Any additional styling keyword arguments.
 
         """
+        # Use ChainMap so you don't need to construct a new dictionary
         node_attrs = ChainMap(node_attrs, self._default_node_attrs)
         node = pydot.Node(node_id, label=node_label, **node_attrs)
         parent_graph_id = "__base__" if parent_graph_id is None else parent_graph_id
@@ -118,6 +119,7 @@ class PyDotDAGBuilder(DAGBuilder):
             **edge_attrs (Any): Any additional styling keyword arguments.
 
         """
+        # Use ChainMap so you don't need to construct a new dictionary
         edge_attrs = ChainMap(edge_attrs, self._default_edge_attrs)
         edge = pydot.Edge(from_node_id, to_node_id, **edge_attrs)
         self.graph.add_edge(edge)
@@ -141,6 +143,7 @@ class PyDotDAGBuilder(DAGBuilder):
             **cluster_attrs (Any): Any additional styling keyword arguments.
 
         """
+        # Use ChainMap so you don't need to construct a new dictionary
         cluster_attrs = ChainMap(cluster_attrs, self._default_cluster_attrs)
         cluster = pydot.Cluster(graph_name=cluster_id, **cluster_attrs)
 
