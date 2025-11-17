@@ -607,23 +607,27 @@ for op_class in SYMMETRIC_REAL_OPS:
     apply_operation.register(op_class)(apply_symmetric_real_op)
 
 
-@apply_operation.register
-def apply_grover(
-    op: qml.GroverOperator,
-    state,
-    is_state_batched: bool = False,
-    debugger=None,
-    **_,
-):
-    """Apply GroverOperator either via a custom matrix-free method (more than 8 operation
-    wires) or via standard matrix based methods (else)."""
-    if len(op.wires) < TENSORDOT_STATE_NDIM_PERF_THRESHOLD:
-        return _apply_operation_default(op, state, is_state_batched, debugger)
-    num_wires = int((len(math.shape(state)) - is_state_batched) / 2)
+if False:
 
-    state = _apply_grover_without_matrix(state, op.wires, is_state_batched)
-    state = _apply_grover_without_matrix(state, [w + num_wires for w in op.wires], is_state_batched)
-    return state
+    @apply_operation.register
+    def apply_grover(
+        op: qml.GroverOperator,
+        state,
+        is_state_batched: bool = False,
+        debugger=None,
+        **_,
+    ):
+        """Apply GroverOperator either via a custom matrix-free method (more than 8 operation
+        wires) or via standard matrix based methods (else)."""
+        if len(op.wires) < TENSORDOT_STATE_NDIM_PERF_THRESHOLD:
+            return _apply_operation_default(op, state, is_state_batched, debugger)
+        num_wires = int((len(math.shape(state)) - is_state_batched) / 2)
+
+        state = _apply_grover_without_matrix(state, op.wires, is_state_batched)
+        state = _apply_grover_without_matrix(
+            state, [w + num_wires for w in op.wires], is_state_batched
+        )
+        return state
 
 
 def apply_diagonal_unitary(op: Operator, state: TensorLike, is_state_batched: bool = False, **_):
