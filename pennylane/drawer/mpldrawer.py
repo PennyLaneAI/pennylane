@@ -1010,7 +1010,7 @@ class MPLDrawer:
             (measure_icon_x, measure_icon_y),
             notch_width + self._notch_pad * 2,
             notch_height + self._notch_pad * 2,
-            theta1=270 if postselect is None else 300,
+            theta1=270 if postselect is None else 320,
             theta2=90,
             **lines_options,
         )
@@ -1021,7 +1021,7 @@ class MPLDrawer:
                 measure_icon_x - self._notch_pad / 2,
                 measure_icon_y - notch_height / 2,
                 str(postselect),
-                fontsize=self.fontsize * 0.5,
+                fontsize=self.fontsize * 0.7,
             )
 
         self.ax.arrow(
