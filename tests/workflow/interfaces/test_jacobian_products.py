@@ -32,13 +32,8 @@ from pennylane.workflow.jacobian_products import (
 )
 
 dev = qml.device("default.qubit")
+dev_lightning = qml.device("lightning.qubit", wires=5)
 adjoint_config = qml.devices.ExecutionConfig(gradient_method="adjoint")
-
-# Try to create Lightning device, use None if not available
-try:
-    dev_lightning = qml.device("lightning.qubit", wires=5)
-except (ImportError, RuntimeError):
-    dev_lightning = None
 dev_ps = ParamShiftDerivativesDevice()
 ps_config = qml.devices.ExecutionConfig(gradient_method="parameter-shift")
 
@@ -58,9 +53,7 @@ device_jacs = DeviceDerivatives(dev, adjoint_config)
 device_ps_jacs = DeviceDerivatives(dev_ps, ps_config)
 device_native_jps = DeviceJacobianProducts(dev, adjoint_config)
 device_ps_native_jps = DeviceJacobianProducts(dev_ps, ps_config)
-
-# Only add Lightning VJPs if Lightning is available
-lightning_vjps = DeviceJacobianProducts(dev_lightning, execution_config=adjoint_config) if dev_lightning else None
+lightning_vjps = DeviceJacobianProducts(dev_lightning, execution_config=adjoint_config)
 
 transform_jpc_matrix = [param_shift_jpc, param_shift_cached_jpc, hadamard_grad_jpc]
 dev_jpc_matrix = [device_jacs, device_ps_jacs]
@@ -72,9 +65,8 @@ jpc_matrix = [
     device_ps_jacs,
     device_native_jps,
     device_ps_native_jps,
+    lightning_vjps,
 ]
-if lightning_vjps:
-    jpc_matrix.append(lightning_vjps)
 
 
 def _accepts_finite_shots(jpc):

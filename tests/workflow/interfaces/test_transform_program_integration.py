@@ -25,19 +25,10 @@ import pennylane as qml
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn
 
-
-# Helper to get available devices for testing
-def _get_device_suite():
-    """Return tuple of available devices for testing."""
-    devices = [qml.device("default.qubit")]
-    try:
-        devices.append(qml.device("lightning.qubit", wires=5))
-    except (ImportError, RuntimeError):
-        pass
-    return tuple(devices)
-
-
-device_suite = _get_device_suite()
+device_suite = (
+    qml.device("default.qubit"),
+    qml.device("lightning.qubit", wires=5),
+)
 
 
 @pytest.mark.all_interfaces
