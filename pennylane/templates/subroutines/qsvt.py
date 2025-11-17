@@ -593,13 +593,14 @@ class QSVT(Operation):
         op_list = []
         UA_adj = copy.copy(UA)
 
-        if QueuingManager.recording():
-            apply(projectors[0])
-        op_list.append(projectors[0])
-
-        for op in projectors[1:-1]:
-            # change_op_basis would queue internally when called in a queuing context.
-            op_list.append(ops.change_op_basis(UA, op, ops.adjoint(UA_adj)))
+        for idx, op in enumerate(projectors[:-1]):
+            if idx % 2 == 0:
+                if QueuingManager.recording():
+                    apply(op)
+                op_list.append(op)
+            else:
+                # change_op_basis would queue internally when called in a queuing context.
+                op_list.append(ops.change_op_basis(UA, op, ops.adjoint(UA_adj)))
 
         if len(projectors) % 2 == 0:
             if QueuingManager.recording():

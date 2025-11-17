@@ -617,7 +617,9 @@ class TestBroadcasting:  # pylint: disable=too-few-public-methods
 
     broadcasted_ops = [
         qml.RX(np.array([np.pi, np.pi / 2, np.pi / 4]), wires=2),
+        qml.RZ(np.array([np.pi, np.pi / 2, np.pi / 4]), wires=2),
         qml.PhaseShift(np.array([np.pi, np.pi / 2, np.pi / 4]), wires=2),
+        qml.CRZ(np.array([np.pi, np.pi / 2, np.pi / 4]), wires=[1, 2]),
         qml.IsingXX(np.array([np.pi, np.pi / 2, np.pi / 4]), wires=[1, 2]),
         qml.QubitUnitary(
             np.array([unitary_group.rvs(8), unitary_group.rvs(8), unitary_group.rvs(8)]),
@@ -630,7 +632,9 @@ class TestBroadcasting:  # pylint: disable=too-few-public-methods
         qml.PauliZ(2),
         qml.CNOT([1, 2]),
         qml.RX(np.pi, wires=2),
+        qml.RZ(np.pi, wires=2),
         qml.PhaseShift(np.pi / 2, wires=2),
+        qml.CRZ(np.pi / 2, wires=[1, 2]),
         qml.IsingXX(np.pi / 2, wires=[1, 2]),
         qml.QubitUnitary(unitary_group.rvs(8), wires=[0, 1, 2]),
     ]
