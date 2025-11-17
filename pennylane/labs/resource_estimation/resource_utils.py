@@ -20,10 +20,10 @@ import numpy as np
 
 # pylint: disable=unnecessary-lambda-assignment, too-many-arguments, not-callable
 def approx_poly_degree(
-    target_func: Callable,
     x_vec: np.ndarray,
+    target_func: Callable,
     error_tol: float = 1e-6,
-    degrees: tuple[int, int] | None = None,
+    degrees: tuple[int, int] | int | None = None,
     basis: str | None = None,
     loss_func: Callable | None = None,
     fit_func: Callable | None = None,
@@ -33,15 +33,15 @@ def approx_poly_degree(
     r"""Compute the minimum degree of a polynomial that fits the data with a given error tolerance.
 
     Args:
-        target_func (callable): function to be approximated by the polynomial with signature
-            ``(x_vec: np.ndarray) -> np.ndarray``.
-        x_vec (np.ndarray): the domain of the target function ``target_func``, which is used
-            to sample the target function. Minimum length of ``x_vec`` is ``3``.
+        x_vec (np.ndarray): the domain values for sampling the target function ``target_func``.
+            The minimum length of ``x_vec`` is ``3`` and should be sorted.
+        target_func (callable): function to be approximated with a polynomial and has the
+            signature ``(x_vec: np.ndarray) -> np.ndarray``.
         error_tol (float): tolerance for the target fitting error. Defaults to ``1e-6``.
             Unless ``loss_func`` is provided, this is the least squares fit error.
-        degrees (Tuple[int, int]): tuple of minimum and maximum degrees to consider.
+        degrees (Tuple[int, int] | int | None): tuple of minimum and maximum degrees to consider.
             Defaults to ``None``, which means all degrees from ``2`` to ``len(x_vec) - 1``
-            will be considered.
+            will be considered. If an integer is provided, it will be used as the maximum degree.
         basis (str): basis to use for the polynomial. Available options are ``"chebyshev"``,
             ``"legendre"``, and ``"hermite"``. Defaults to ``None``, which assumes fitting
             data to a polynomial in the monomial basis.
@@ -82,6 +82,8 @@ def approx_poly_degree(
 
     if degrees is None:
         degrees = (2, len(x_vec) - 1)
+    elif isinstance(degrees, int):
+        degrees = (2, degrees)
 
     min_degree, max_degree = degrees
     if min_degree > max_degree:
@@ -99,8 +101,11 @@ def approx_poly_degree(
 
     best_loss, best_poly = float("inf"), None
     for degree in range(min_degree, max_degree + 1):
-        x_proj = x_vec if proj_func is None else proj_func(x_vec[0], x_vec[-1], degree + 1)
-        y_proj = y_vec if proj_func is None else target_func(x_proj)
+
+        x_proj, y_proj = x_vec, y_vec
+        if proj_func is not None:
+            x_proj = proj_func(x_vec[0], x_vec[-1], degree + 1)
+            y_proj = target_func(x_proj)
 
         if fit_poly is None:
             poly, coeffs, stats = fit_func(x_proj, y_proj, degree, **fit_kwargs)
