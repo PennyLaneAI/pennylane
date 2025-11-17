@@ -22,7 +22,7 @@ Known Limitations
   * Unlike the current tape-based implementation of the transform, it doesn't allow for diagonalization of a subset
     of observables.
   * Unlike the current tape-based implementation of the transform, conversion to measurements based on eigvals
-  and wires (rather than the PauliZ observable) is not currently supported.
+    and wires (rather than the PauliZ observable) is not currently supported.
   * Unlike the tape-based implementation, this pass will NOT raise an error if given a circuit that is invalid because
     it contains non-commuting measurements. It should be assumed that this transform results in incorrect outputs unless
     split_non_commuting is applied to break non-commuting measurements into separate tapes.
@@ -62,6 +62,7 @@ def _generate_mapping():
 
 
 _gate_map, _params_map = _generate_mapping()
+print(_gate_map)
 
 
 def _diagonalize(obs: NamedObsOp) -> bool:
