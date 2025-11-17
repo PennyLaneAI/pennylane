@@ -259,7 +259,7 @@ class TestInputs:
                 [[0, 2]],
                 [[0, 1, 2, 3]],
                 np.array([1, 1, 0, 0, 0]),
-                "Expected length of 'hf_state' to match number of wires \(4\)",
+                r"Expected length of 'hf_state' to match number of wires \(4\)",
             ),
             (
                 np.array([-2.8, 1.6]),
