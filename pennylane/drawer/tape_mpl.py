@@ -173,7 +173,7 @@ def _(op: ops.MidMeasure, drawer, layer, _):
 
 @_add_operation_to_drawer.register
 def _(op: ops.PauliMeasure, drawer, layer, _):
-    drawer.pauli_measure(layer, op.pauli_word, op.wires)
+    drawer.pauli_measure(layer, op.pauli_word, op.wires, op.postselect)
 
 
 @_add_operation_to_drawer.register

@@ -950,7 +950,7 @@ class MPLDrawer:
                 fontsize=(self.fontsize - 2),
             )
 
-    def pauli_measure(self, layer, pauli_word, wires, **kwargs):
+    def pauli_measure(self, layer, pauli_word, wires, postselect, **kwargs):
         """Draw a PauliMeasure at the designated layer."""
 
         box_options = kwargs.get("box_options", {})
@@ -1010,11 +1010,19 @@ class MPLDrawer:
             (measure_icon_x, measure_icon_y),
             notch_width + self._notch_pad * 2,
             notch_height + self._notch_pad * 2,
-            theta1=270,
+            theta1=270 if postselect is None else 300,
             theta2=90,
             **lines_options,
         )
         self._ax.add_patch(arc)
+
+        if postselect is not None:
+            self._ax.text(
+                measure_icon_x - self._notch_pad / 2,
+                measure_icon_y - notch_height / 2,
+                str(postselect),
+                fontsize=self.fontsize * 0.5,
+            )
 
         self.ax.arrow(
             measure_icon_x,
