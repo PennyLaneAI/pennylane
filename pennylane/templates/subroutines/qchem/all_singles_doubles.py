@@ -17,6 +17,7 @@ Contains the AllSinglesDoubles template.
 
 # pylint: disable=too-many-arguments,protected-access
 import copy
+from collections.abc import Sequence
 
 import numpy as np
 
@@ -134,47 +135,41 @@ class AllSinglesDoubles(Operation):
         self,
         weights: TensorLike,
         wires: WiresLike,
-        hf_state: list[int],
-        singles: list[list] | None = None,
-        doubles: list[list] | None = None,
+        hf_state: Sequence[int],
+        singles: Sequence[tuple[int, int]] | None = None,
+        doubles: Sequence[tuple[int, int, int, int]] | None = None,
         id=None,
     ):
-        singles = [] if singles is None else singles
-        doubles = [] if doubles is None else doubles
         wires = Wires(wires)
-
         if len(wires) < 2:
             raise ValueError(
                 f"The number of qubits (wires) can not be less than 2; got len(wires) = {len(wires)}"
             )
 
         if doubles is not None:
-            for d_wires in doubles:
-                if len(d_wires) != 4:
-                    raise ValueError(
-                        f"Expected entries of 'doubles' to be of size 4; got {d_wires} of length {len(d_wires)}"
-                    )
+            if any(len(d_wires) != 4 for d_wires in doubles):
+                raise ValueError("Expected all entries of 'doubles' to be of size 4.")
+        doubles = () if doubles is None else tuple(tuple(d) for d in doubles)
 
         if singles is not None:
-            for s_wires in singles:
-                if len(s_wires) != 2:
-                    raise ValueError(
-                        f"Expected entries of 'singles' to be of size 2; got {s_wires} of length {len(s_wires)}"
-                    )
+            if any(len(s_wires) != 2 for s_wires in singles):
+                raise ValueError("Expected all entries of 'singles' to be of size 2.")
+        singles = () if singles is None else tuple(tuple(s) for s in singles)
 
         weights_shape = math.shape(weights)
         exp_shape = self.shape(singles, doubles)
         if weights_shape != exp_shape:
             raise ValueError(f"'weights' tensor must be of shape {exp_shape}; got {weights_shape}.")
 
-        if hf_state[0].dtype != np.dtype("int"):
-            raise ValueError(f"Elements of 'hf_state' must be integers; got {hf_state[0].dtype}")
+        if len(hf_state) != len(wires):
+            raise ValueError("Expected length of 'hf_state' to match number of wires (4).")
 
-        singles = tuple(tuple(s) for s in singles)
-        doubles = tuple(tuple(d) for d in doubles)
+        if hasattr(hf_state, "dtype") and hf_state[0].dtype != np.dtype("int"):
+            raise ValueError("Elements of 'hf_state' must be integers.")
+        hf_state = tuple(hf_state)
 
         self._hyperparameters = {
-            "hf_state": tuple(hf_state),
+            "hf_state": hf_state,
             "singles": singles,
             "doubles": doubles,
         }
