@@ -99,16 +99,16 @@ class kUpCCGSD(Operation):
     :math:`\theta_{j_\alpha j_\beta}^{i_\alpha i_\beta}` represent the set of variational parameters.
 
     Args:
-        weights (tensor_like): Tensor containing the parameters :math:`\theta_{pr}` and :math:`\theta_{pqrs}`
+        weights (TensorLike): Tensor containing the parameters :math:`\theta_{pr}` and :math:`\theta_{pqrs}`
             entering the Z rotation in :func:`~.FermionicSingleExcitation` and :func:`~.FermionicDoubleExcitation`.
             These parameters are the coupled-cluster amplitudes that need to be optimized for each generalized
             single and pair double excitation terms.
-        wires (Iterable): wires that the template acts on
+        wires (WiresLike): wires that the template acts on
         k (int): Number of times UpCCGSD unitary is repeated.
         delta_sz (int): Specifies the selection rule ``sz[p] - sz[r] = delta_sz``
             for the spin-projection ``sz`` of the orbitals involved in the generalized single excitations.
             ``delta_sz`` can take the values :math:`0` and :math:`\pm 1`.
-        init_state (array[int]): Length ``len(wires)`` occupation-number vector representing the
+        init_state (Sequence[int]): Length ``len(wires)`` occupation-number vector representing the
             HF state. ``init_state`` is used to initialize the wires.
 
     .. details::
