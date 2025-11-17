@@ -23,7 +23,6 @@ are located in the:
 files.
 """
 
-
 import numpy as np
 import pytest
 
@@ -228,6 +227,17 @@ class TestAdditionalCond:
         ):
             m_0 = qml.measure(1)
             qml.cond(m_0, qml.X, qml.measure)(0)
+
+    def test_cond_error_for_ppms(self):
+        """Test that an error is raised if a pauli-product measurement is applied inside
+        a Conditional"""
+
+        with pytest.raises(
+            ConditionalTransformError,
+            match="Only quantum functions that contain no measurements can be applied conditionally.",
+        ):
+            m_0 = qml.measure(1)
+            qml.cond(m_0, qml.pauli_measure)("X", wires=[0])
 
     def test_map_wires(self):
         """Tests the cond.map_wires function."""

@@ -14,6 +14,7 @@
 """
 Tests for snapshots.
 """
+
 from contextlib import nullcontext
 
 import numpy as np
@@ -136,12 +137,6 @@ class TestSnapshotTape:
             "very_important_state": 1,
             2: 2,
         }
-
-    def test_snapshot_fails_with_mcm(self):
-        with pytest.raises(
-            ValueError, match="Mid-circuit measurements can not be used in snapshots"
-        ):
-            qml.Snapshot(measurement=qml.ops.MidMeasure(1))
 
     def test_snapshot_fails_with_non_str_tags(self):
         with pytest.raises(ValueError, match="tags can only be of type 'str'"):
@@ -769,7 +764,6 @@ class TestSnapshotUnsupportedQNode:
 
 
 class TestSnapshotMCMS:
-
     def test_default_qubit_tree_traversal(self):
         """Test that tree-traversal can be used with snapshots on DQ."""
 

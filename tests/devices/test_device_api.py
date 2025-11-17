@@ -166,13 +166,6 @@ class TestSetupExecutionConfig:
                 'Requested MCM method "one-shot" unsupported by the device.',
             ),
             (
-                EXAMPLE_TOML_FILE_ONE_SHOT,
-                "magic",
-                10,
-                None,
-                'Requested MCM method "magic" unsupported by the device.',
-            ),
-            (
                 EXAMPLE_TOML_FILE_ALL_SUPPORT,
                 "tree-traversal",
                 10,
@@ -212,7 +205,6 @@ class TestSetupExecutionConfig:
         "mcm_method, shots, expected_error",
         [
             ("one-shot", None, 'The "one-shot" MCM method is only supported with finite shots.'),
-            ("magic", None, 'Requested MCM method "magic" unsupported by the device.'),
             ("one-shot", 100, None),
         ],
     )
