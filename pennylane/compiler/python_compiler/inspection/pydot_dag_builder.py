@@ -28,8 +28,22 @@ except ImportError:
 class PyDotDAGBuilder(DAGBuilder):
     """A Directed Acyclic Graph builder for the PyDot backend."""
 
-    def __init__(self) -> None:
-        """Initialize instance variables."""
+    def __init__(
+        self,
+        default_attrs: dict | None = None,
+        default_node_attrs: dict | None = None,
+        default_edge_attrs: dict | None = None,
+        default_cluster_attrs: dict | None = None,
+    ) -> None:
+        """Initialize PyDotDAGBuilder instance.
+
+        Args:
+            default_attrs (dict | None): Default attributes to be used for all elements (nodes, edges, clusters) in the graph.
+            default_node_attrs (dict | None): Default attributes for a node.
+            default_edge_attrs (dict | None): Default attributes for an edge.
+            default_cluster_attrs (dict | None): Default attributes for a cluster.
+
+        """
         # Initialize the pydot graph:
         # - graph_type="digraph": Create a directed graph (edges have arrows).
         # - rankdir="TB": Set layout direction from Top to Bottom.
@@ -42,21 +56,38 @@ class PyDotDAGBuilder(DAGBuilder):
         self._subgraphs: dict[str, pydot.Graph] = {}
         self._subgraphs["__base__"] = self.graph
 
-        _default_attrs = {"fontname": "Helvetica", "penwidth": 2}
-        self._default_node_attrs: dict = {
-            **_default_attrs,
-            "shape": "ellipse",
-            "style": "filled",
-            "fillcolor": "lightblue",
-            "color": "lightblue4",
-            "penwidth": 3,
-        }
-        self._default_edge_attrs: dict = {"color": "lightblue4", "penwidth": 3}
-        self._default_cluster_attrs: dict = {
-            **_default_attrs,
-            "shape": "rectangle",
-            "style": "solid",
-        }
+        _default_attrs: dict = (
+            {"fontname": "Helvetica", "penwidth": 2} if default_attrs is None else default_attrs
+        )
+        self._default_node_attrs: dict = (
+            {
+                **_default_attrs,
+                "shape": "ellipse",
+                "style": "filled",
+                "fillcolor": "lightblue",
+                "color": "lightblue4",
+                "penwidth": 3,
+            }
+            if default_node_attrs is None
+            else default_node_attrs
+        )
+        self._default_edge_attrs: dict = (
+            {
+                "color": "lightblue4",
+                "penwidth": 3,
+            }
+            if default_edge_attrs is None
+            else default_edge_attrs
+        )
+        self._default_cluster_attrs: dict = (
+            {
+                **_default_attrs,
+                "shape": "rectangle",
+                "style": "solid",
+            }
+            if default_cluster_attrs is None
+            else default_cluster_attrs
+        )
 
     def add_node(
         self,
