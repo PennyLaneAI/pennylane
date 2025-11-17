@@ -223,7 +223,7 @@ def transform(  # pylint: disable=too-many-arguments
           to the end of the device program and will be last in the overall transform program.
 
     .. details::
-        :title: Transforms with Catalyst and MLIR
+        :title: Transforms with Catalyst
 
         Transforms can be matched with an associated MLIR or XDSL pass via the ``pass_name`` argument.
         These transforms will be lowered into the MLIR and applied as part of the lower level compilation.
