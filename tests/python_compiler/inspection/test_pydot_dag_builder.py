@@ -117,15 +117,15 @@ class TestAddMethods:
         """Test that you can add a cluster to a parent graph."""
         dag_builder = PyDotDAGBuilder()
 
-        # Level 0 (Root)
+        # Level 0 (Root): Adds cluster on top of base graph
         dag_builder.add_node("n_root", "node_root")
         dag_builder.add_cluster("c0", "cluster_outer")
 
-        # Level 1 (Inside c0)
+        # Level 1 (Inside c0): Add node on outer cluster and create new cluster on top
         dag_builder.add_node("n_outer", "node_outer", parent_graph_id="c0")
         dag_builder.add_cluster("c1", "cluster_inner", parent_graph_id="c0")
 
-        # Level 2 (Inside c1)
+        # Level 2 (Inside c1): Add node on second cluster
         dag_builder.add_node("n_inner", "node_inner", parent_graph_id="c1")
 
         root_graph = dag_builder.graph
