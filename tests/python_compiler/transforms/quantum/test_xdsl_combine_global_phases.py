@@ -20,8 +20,6 @@ pytest.importorskip("xdsl")
 pytest.importorskip("catalyst")
 
 # pylint: disable=wrong-import-position
-from catalyst.passes.xdsl_plugin import getXDSLPluginAbsolutePath
-
 import pennylane as qml
 from pennylane.compiler.python_compiler.transforms import (
     CombineGlobalPhasesPass,
@@ -226,7 +224,7 @@ class TestCombineGlobalPhasesIntegration:
         """Test that the CombineGlobalPhasesPass works correctly with qjit."""
         dev = qml.device("lightning.qubit", wires=2)
 
-        @qml.qjit(target="mlir", pass_plugins=[getXDSLPluginAbsolutePath()])
+        @qml.qjit(target="mlir")
         @combine_global_phases_pass
         @qml.qnode(dev)
         def circuit(x: float, y: float):

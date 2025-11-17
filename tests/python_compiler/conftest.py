@@ -183,7 +183,7 @@ def run_filecheck_qjit():
             # Test that the merge_rotations_pass works as expected when used with `qjit`
             dev = qml.device("lightning.qubit", wires=2)
 
-            @qml.qjit(target="mlir", pass_plugins=[getXDSLPluginAbsolutePath()])
+            @qml.qjit(target="mlir")
             @merge_rotations_pass
             @qml.qnode(dev)
             def circuit(x: float, y: float):

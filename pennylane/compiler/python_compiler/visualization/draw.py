@@ -20,7 +20,6 @@ from functools import wraps
 from typing import TYPE_CHECKING
 
 from catalyst import qjit
-from catalyst.passes.xdsl_plugin import getXDSLPluginAbsolutePath
 
 from pennylane.tape import QuantumScript
 
@@ -44,7 +43,7 @@ def _get_mlir_module(qnode: QNode, args, kwargs) -> ModuleOp:
         return qnode.mlir_module
 
     func = getattr(qnode, "user_function", qnode)
-    jitted_qnode = qjit(pass_plugins=[getXDSLPluginAbsolutePath()])(func)
+    jitted_qnode = qjit(func)
     jitted_qnode.jit_compile(args, **kwargs)
     return jitted_qnode.mlir_module
 
