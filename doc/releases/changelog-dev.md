@@ -44,8 +44,13 @@
   [(#8582)](https://github.com/PennyLaneAI/pennylane/pull/8582)
   [(#8543)](https://github.com/PennyLaneAI/pennylane/pull/8543)
   [(#8554)](https://github.com/PennyLaneAI/pennylane/pull/8554)
+  [(#8616)](https://github.com/PennyLaneAI/pennylane/pull/8616)
+  [(#8602)](https://github.com/PennyLaneAI/pennylane/pull/8602)
+  [(#8600)](https://github.com/PennyLaneAI/pennylane/pull/8600)
+  [(#8601)](https://github.com/PennyLaneAI/pennylane/pull/8601)  
   [(#8595)](https://github.com/PennyLaneAI/pennylane/pull/8595)
   [(#8586)](https://github.com/PennyLaneAI/pennylane/pull/8586)
+  [(#8614)](https://github.com/PennyLaneAI/pennylane/pull/8614)
 
   - :class:`~.QSVT`
   - :class:`~.AmplitudeEmbedding`
@@ -57,8 +62,14 @@
   - :class:`~.kUpCCGSD`
   - :class:`~.QAOAEmbedding`
   - :class:`~.BasicEntanglerLayers`
+  - :class:`~.HilbertSchmidt`
+  - :class:`~.LocalHilbertSchmidt`
+  - :class:`~.QuantumMonteCarlo`
+  - :class:`~.ArbitraryUnitary`
+  - :class:`~.ApproxTimeEvolution`
   - :class:`~.ParticleConservingU2`
   - :class:`~.ParticleConservingU1`
+  - :class:`~.CommutingEvolution`
 
 * A new `qml.compiler.python_compiler.utils` submodule has been added, containing general-purpose utilities for
   working with xDSL. This includes a function that extracts the concrete value of scalar, constant SSA values.
@@ -101,6 +112,10 @@
   [(#8549)](https://github.com/PennyLaneAI/pennylane/pull/8549)
 
 <h3>Breaking changes 💔</h3>
+
+* ``QuantumScript.to_openqasm`` has been removed. Please use ``qml.to_openqasm`` instead. This removes duplicated 
+  functionality for converting a circuit to OpenQASM code.
+  [(#8499)](https://github.com/PennyLaneAI/pennylane/pull/8499)
 
 * Providing ``num_steps`` to :func:`pennylane.evolve`, :func:`pennylane.exp`, :class:`pennylane.ops.Evolution`,
   and :class:`pennylane.ops.Exp` has been disallowed. Instead, use :class:`~.TrotterProduct` for approximate
@@ -333,6 +348,10 @@
   with ``method="sk"`` or directly via :func:`~.ops.sk_decomposition` now raises a more
   informative ``RuntimeError`` when used with JAX-JIT or :func:`~.qjit`.
   [(#8489)](https://github.com/PennyLaneAI/pennylane/pull/8489)
+
+* Users can now apply xDSL passes without the need to pass the `pass_plugins` argument to the `qjit` decorator.
+  [(#8572)](https://github.com/PennyLaneAI/pennylane/pull/8572)
+  [(#8573)](https://github.com/PennyLaneAI/pennylane/pull/8573)
 
 * The `is_xdsl_pass` function has been added to the `pennylane.compiler.python_compiler.pass_api` module.
   This function checks if a pass name corresponds to an xDSL implemented pass.
