@@ -108,7 +108,7 @@ class TestAddMethods:
         cluster_graph = cluster_list[0]  # Get the actual subgraph object
 
         assert cluster_graph.get_node("1"), "Node 1 not found in cluster 'c0'"
-        assert not cluster_graph.get_node("0"), "Node 1 was incorrectly added to root"
+        assert not cluster_graph.get_node("0"), "Node 0 was incorrectly added to cluster"
 
         assert not root_graph.get_node("1"), "Node 1 was incorrectly added to root"
 
