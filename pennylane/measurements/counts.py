@@ -157,7 +157,8 @@ class CountsMP(SampleMeasurement):
             >>> samples = math.array(samples)
 
             By default, this will return:
-            >>> self._samples_to_counts(samples) # doctest: +SKIP
+            >>> mp = qml.counts()
+            >>> mp._samples_to_counts(samples)
             {'00': 2, '10': 1}
 
             However, if ``all_outcomes=True``, this will return:
