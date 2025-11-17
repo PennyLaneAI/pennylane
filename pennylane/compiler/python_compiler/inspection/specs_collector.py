@@ -325,6 +325,9 @@ def specs_collect(module) -> ResourcesResult:
         if not isinstance(func_op, func.FuncOp):
             raise ValueError("Expected FuncOp in module body.")
 
+        if func_op.is_declaration:
+            continue  # Skip external function declarations
+
         resources.merge_with(_collect_region(func_op.body))
 
     return resources
