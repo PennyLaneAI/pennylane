@@ -164,7 +164,7 @@ class AllSinglesDoubles(Operation):
         if len(hf_state) != len(wires):
             raise ValueError("Expected length of 'hf_state' to match number of wires (4).")
 
-        if hasattr(hf_state, "dtype") and hf_state[0].dtype != np.dtype("int"):
+        if hf_state[0].dtype != np.dtype("int"):
             raise ValueError("Elements of 'hf_state' must be integers.")
         hf_state = tuple(hf_state)
 
