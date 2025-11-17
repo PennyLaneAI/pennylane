@@ -14,6 +14,7 @@
 """
 Tests for the UCCSD template.
 """
+
 import numpy as np
 
 # pylint: disable=protected-access,too-many-arguments

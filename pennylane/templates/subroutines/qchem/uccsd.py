@@ -197,15 +197,15 @@ class UCCSD(Operation):
         self,
         weights: TensorLike,
         wires: WiresLike,
+        init_state: Sequence[int],
         s_wires: Sequence[tuple[int]] | None = None,
         d_wires: Sequence[tuple[int, int]] | None = None,
-        init_state: Sequence[int] | None = None,
         n_repeats: int = 1,
         id=None,
     ):
+        wires = Wires(wires)
         s_wires = [] if s_wires is None else s_wires
         d_wires = [] if d_wires is None else d_wires
-        init_state = () if init_state is None else init_state
 
         if (len(s_wires) == 0) and (len(d_wires) == 0):
             raise ValueError(
@@ -234,8 +234,11 @@ class UCCSD(Operation):
                 f"Weights tensor must be of shape {(n_repeats,) + expected_shape}; got {shape}."
             )
 
+        if len(init_state) != len(wires):
+            raise ValueError(
+                f"Expected length of 'init_state' to match number of wires ({len(wires)})."
+            )
         init_state = math.toarray(init_state)
-
         if init_state.dtype != np.dtype("int"):
             raise ValueError(f"Elements of 'init_state' must be integers; got {init_state.dtype}")
 
