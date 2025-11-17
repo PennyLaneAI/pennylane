@@ -127,10 +127,12 @@ class TestCaptureTransforms:
         assert (transform_eqn := jaxpr.eqns[0]).primitive == transform_prim
 
         params = transform_eqn.params
-        # JAX 0.7.0 requires hashable params, so slices become tuples
-        assert params["args_slice"] == (0, 1, None)
-        assert params["consts_slice"] == (1, 1, None)
-        assert params["targs_slice"] == (1, None, None)
+        # Check that we're using pytree structure instead of slices
+        assert "tree_def" in params
+        assert "args_slice" not in params
+        assert "consts_slice" not in params
+        assert "targs_slice" not in params
+
         from pennylane.capture.custom_primitives import _restore_dict
 
         assert _restore_dict(params["tkwargs"]) == tkwargs
@@ -159,10 +161,11 @@ class TestCaptureTransforms:
         assert transform_eqn.params["transform"] == z_to_hadamard
 
         params = transform_eqn.params
-        # JAX 0.7.0 requires hashable params, so slices become tuples
-        assert params["args_slice"] == (0, 2, None)
-        assert params["consts_slice"] == (2, 2, None)
-        assert params["targs_slice"] == (2, None, None)
+        # Check that we're using pytree structure instead of slices
+        assert "tree_def" in params
+        assert "args_slice" not in params
+        assert "consts_slice" not in params
+        assert "targs_slice" not in params
         # Dicts are also converted to tuples
         from pennylane.capture.custom_primitives import _restore_dict
 
@@ -249,13 +252,14 @@ class TestCaptureTransforms:
         assert transform_eqn1.params["transform"] == z_to_hadamard
 
         params1 = transform_eqn1.params
-        # JAX 0.7.0 requires hashable params, so slices become tuples
+        # Check that we're using pytree structure instead of slices
         from pennylane.capture.custom_primitives import _restore_dict
 
-        assert params1["args_slice"] == (0, 1, None)
-        assert params1["consts_slice"] == (1, 1, None)
-        assert params1["targs_slice"] == (1, None, None)
-        # Dicts are also converted to tuples
+        assert "tree_def" in params1
+        assert "args_slice" not in params1
+        assert "consts_slice" not in params1
+        assert "targs_slice" not in params1
+        # Dicts are still converted to tuples for hashability
         assert _restore_dict(params1["tkwargs"]) == tkwargs1
 
         inner_jaxpr = params1["inner_jaxpr"]
@@ -263,10 +267,11 @@ class TestCaptureTransforms:
         assert transform_eqn2.params["transform"] == expval_z_obs_to_x_obs
 
         params2 = transform_eqn2.params
-        # JAX 0.7.0 requires hashable params, so slices become tuples
-        assert params2["args_slice"] == (0, 1, None)
-        assert params2["consts_slice"] == (1, 1, None)
-        assert params2["targs_slice"] == (1, None, None)
+        # Check that nested transforms also use pytree structure
+        assert "tree_def" in params2
+        assert "args_slice" not in params2
+        assert "consts_slice" not in params2
+        assert "targs_slice" not in params2
         assert _restore_dict(params2["tkwargs"]) == tkwargs2
 
         inner_inner_jaxpr = params2["inner_jaxpr"]

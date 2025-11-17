@@ -74,16 +74,18 @@ class TestExpandTransformsInterpreter:
 
         def wrapper(*inner_args):
             interpreter = ExpandTransformsInterpreter()
-            invals = [*inner_args, *jaxpr.consts]
+            # Use pytree structure instead of slices
+            import jax
+
+            transform_data = (list(inner_args), list(jaxpr.consts), [])  # (args, consts, targs)
+            flat_data, tree_def = jax.tree_util.tree_flatten(transform_data)
             params = {
                 "inner_jaxpr": jaxpr.jaxpr,
-                "args_slice": slice(0, len(inner_args)),
-                "consts_slice": slice(len(inner_args), len(jaxpr.consts) + len(inner_args)),
-                "targs_slice": slice(len(jaxpr.consts) + len(inner_args), None),
+                "tree_def": tree_def,
                 "tkwargs": {},
                 "transform": dummy_tape_and_plxpr_transform,
             }
-            return custom_handler(interpreter, *invals, **params)
+            return custom_handler(interpreter, *flat_data, **params)
 
         new_jaxpr = jax.make_jaxpr(wrapper)(*args)
         assert all(
