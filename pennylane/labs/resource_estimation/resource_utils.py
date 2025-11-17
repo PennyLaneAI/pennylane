@@ -75,7 +75,7 @@ def approx_poly_degree(
             ``interpolate_func`` to imitate unselected points with zero weights.
 
     Returns:
-        tuple[np.ndarray, float]: the coefficients of the polynomial and the loss of the fit.
+        tuple[float, callable, loss]: the degree of the polynomial, the fit polynomial function, and the loss of the fit.
     """
     x_vec = np.sort(x_vec)
     y_vec = target_func(x_vec)
@@ -103,17 +103,22 @@ def approx_poly_degree(
     for degree in range(min_degree, max_degree + 1):
 
         x_proj, y_proj = x_vec, y_vec
+        x_domain = (x_vec[0], x_vec[-1])
+
         if proj_func is not None:
-            x_proj = proj_func(x_vec[0], x_vec[-1], degree + 1)
+            x_proj = np.sort(proj_func(*x_domain, degree + 1))
             y_proj = target_func(x_proj)
 
         if fit_poly is None:
-            poly, coeffs, stats = fit_func(x_proj, y_proj, degree, **fit_kwargs)
+            poly, stats = fit_func(x_proj, y_proj, degree, **fit_kwargs)
         else:
             coeffs, stats = fit_func(x_proj, y_proj, degree, **fit_kwargs)
-            poly = fit_poly(coeffs, domain=(x_proj[0], x_proj[-1]))
+            poly = fit_poly(coeffs, domain=(-1, 1)).convert(domain=x_domain, window=x_domain)
 
         loss = fit_loss(stats) if loss_func is None else fit_loss(poly(x_vec), y_vec)
+        if loss is None and loss_func is None:
+            loss = np.sum((poly(x_vec) - y_vec) ** 2)
+
         if loss < best_loss:
             best_loss, best_poly = loss, poly
             if loss <= error_tol:
@@ -128,7 +133,7 @@ def _process_loss_func(loss_func: str | Callable | None) -> Callable:
 
         def _loss_func(x, _: Any = None):
             if isinstance(x, (tuple, list)):
-                return float(0.0) if len(x[0]) == 0 else float(x[0][0])
+                return None if len(x[0]) == 0 else float(x[0][0])
             return float(x)
 
         return _loss_func

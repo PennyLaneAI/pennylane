@@ -45,7 +45,9 @@ def test_approx_poly_degree_basis(basis):
         return np.random.RandomState(863).rand(len(x))
 
     x_vec, e_tol = np.sort(np.random.RandomState(123).rand(10)), 1e-2
-    degree, poly, loss = approx_poly_degree(x_vec, target_func, basis=basis, error_tol=e_tol)
+    degree, poly, loss = approx_poly_degree(
+        x_vec, target_func, basis=basis, degrees=10, error_tol=e_tol
+    )
 
     assert isinstance(degree, int)
     assert isinstance(poly, Callable)
@@ -53,8 +55,8 @@ def test_approx_poly_degree_basis(basis):
     assert loss <= e_tol
 
 
-def test_approx_poly_custom():
-    """Test the approx_poly_degree function with a custom fit function"""
+def test_approx_poly_project_func():
+    """Test the approx_poly_degree function with different project functions"""
 
     def morse(x: np.ndarray, x0=1.510, a=2.7968, D=6.610) -> np.ndarray:
         dx = x - x0
@@ -67,9 +69,35 @@ def test_approx_poly_custom():
         x = np.cos(np.pi * k / (n - 1))
         return 0.5 * (a + b) + 0.5 * (b - a) * x
 
-    deg1, poly1, loss1 = approx_poly_degree(x_vec, morse, project_func=cheb_nodes)
-    deg2, poly2, loss2 = approx_poly_degree(x_vec, morse, project_func="gauss-lobatto")
+    deg1, poly1, loss1 = approx_poly_degree(
+        x_vec, morse, basis="chebyshev", project_func=cheb_nodes, degrees=(3, 10)
+    )
+    deg2, poly2, loss2 = approx_poly_degree(
+        x_vec, morse, basis="chebyshev", project_func="gauss-lobatto", degrees=(3, 10)
+    )
 
     assert deg1 == deg2
     assert np.allclose(poly1.coef, poly2.coef)
-    assert np.allclose(loss1, loss2)
+    assert np.allclose(loss1, loss2) and loss1 < 1e-4
+
+
+@pytest.mark.parametrize("loss_func", [None, "mse", "mae", "rmse", "linf"])
+def test_approx_poly_custom_func(loss_func):
+    """Test the approx_poly_degree function with different fit-loss functions"""
+
+    x_vec = np.linspace(0, 1, 1000)
+
+    def target_func(x: np.ndarray) -> np.ndarray:
+        return np.sin(x) * np.exp(-x)
+
+    def fit_func(x: np.ndarray, y: np.ndarray, degree: int) -> tuple[np.ndarray, float]:
+        poly, stats = np.polynomial.laguerre.Laguerre.fit(x, y, degree, full=True)
+        return poly, stats[0]
+
+    deg, poly, loss = approx_poly_degree(
+        x_vec, target_func, error_tol=1e-6, fit_func=fit_func, loss_func=loss_func, degrees=10
+    )
+
+    assert isinstance(deg, int) and deg < 10
+    assert isinstance(poly, np.polynomial.laguerre.Laguerre)
+    assert isinstance(loss, float) and loss < 1e-6
