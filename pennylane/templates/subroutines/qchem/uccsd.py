@@ -78,7 +78,7 @@ class UCCSD(Operation):
         \{\mathrm{H.c.}\}) \Big\}.
 
     Args:
-        weights (tensor_like): Size ``(n_repeats, len(s_wires) + len(d_wires),)`` tensor containing the
+        weights (TensorLike): Size ``(n_repeats, len(s_wires) + len(d_wires),)`` tensor containing the
             parameters (see usage details below) :math:`\theta_{pr}` and :math:`\theta_{pqrs}` entering
             the Z rotation in :func:`~.FermionicSingleExcitation` and :func:`~.FermionicDoubleExcitation`.
             These parameters are the coupled-cluster amplitudes that need to be optimized for each
@@ -88,14 +88,14 @@ class UCCSD(Operation):
             :func:`~.FermionicSingleExcitation` and :func:`~.FermionicDoubleExcitation`.
             These parameters are the coupled-cluster amplitudes that need to be optimized for each
             single and double excitation generated with the :func:`~.excitations` function.
-        wires (Iterable): wires that the template acts on
-        s_wires (Sequence[Sequence]): Sequence of lists containing the wires ``[r,...,p]``
+        wires (WiresLike): wires that the template acts on
+        s_wires (Sequence[Sequence[Any]]): Sequence of lists containing the wires ``[r,...,p]``
             resulting from the single excitation
             :math:`\vert r, p \rangle = \hat{c}_p^\dagger \hat{c}_r \vert \mathrm{HF} \rangle`,
             where :math:`\vert \mathrm{HF} \rangle` denotes the Hartee-Fock reference state.
             The first (last) entry ``r`` (``p``) is considered the wire representing the
             occupied (unoccupied) orbital where the electron is annihilated (created).
-        d_wires (Sequence[Sequence[Sequence]]): Sequence of lists, each containing two lists that
+        d_wires (Sequence[tuple[Sequence[Any], Sequence[Any]]]): Sequence of lists, each containing two lists that
             specify the indices ``[s, ...,r]`` and ``[q,..., p]`` defining the double excitation
             :math:`\vert s, r, q, p \rangle = \hat{c}_p^\dagger \hat{c}_q^\dagger \hat{c}_r
             \hat{c}_s \vert \mathrm{HF} \rangle`. The entries ``s`` and ``r`` are wires
@@ -103,7 +103,7 @@ class UCCSD(Operation):
             while the entries ``q`` and ``p`` correspond to the wires representing two unoccupied
             orbitals where the electrons are created. Wires in-between represent the occupied
             and unoccupied orbitals in the intervals ``[s, r]`` and ``[q, p]``, respectively.
-        init_state (array[int]): Length ``len(wires)`` occupation-number vector representing the
+        init_state (Sequence[int]): Length ``len(wires)`` occupation-number vector representing the
             HF state. ``init_state`` is used to initialize the wires.
         n_repeats (int): Number of times the UCCSD unitary is repeated. The default value is ``1``.
 
@@ -198,8 +198,8 @@ class UCCSD(Operation):
         weights: TensorLike,
         wires: WiresLike,
         init_state: Sequence[int],
-        s_wires: Sequence[tuple[int]] | None = None,
-        d_wires: Sequence[tuple[int, int]] | None = None,
+        s_wires: Sequence[Sequence[int]] | None = None,
+        d_wires: Sequence[tuple[Sequence[int], Sequence[int]]] | None = None,
         n_repeats: int = 1,
         id=None,
     ):
