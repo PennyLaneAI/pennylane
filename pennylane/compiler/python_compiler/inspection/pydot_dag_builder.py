@@ -30,18 +30,18 @@ class PyDotDAGBuilder(DAGBuilder):
 
     def __init__(
         self,
-        default_attrs: dict | None = None,
-        default_node_attrs: dict | None = None,
-        default_edge_attrs: dict | None = None,
-        default_cluster_attrs: dict | None = None,
+        attrs: dict | None = None,
+        node_attrs: dict | None = None,
+        edge_attrs: dict | None = None,
+        cluster_attrs: dict | None = None,
     ) -> None:
         """Initialize PyDotDAGBuilder instance.
 
         Args:
-            default_attrs (dict | None): Default attributes to be used for all elements (nodes, edges, clusters) in the graph.
-            default_node_attrs (dict | None): Default attributes for a node.
-            default_edge_attrs (dict | None): Default attributes for an edge.
-            default_cluster_attrs (dict | None): Default attributes for a cluster.
+            attrs (dict | None): User default attributes to be used for all elements (nodes, edges, clusters) in the graph.
+            node_attrs (dict | None): User default attributes for a node.
+            edge_attrs (dict | None): User default attributes for an edge.
+            cluster_attrs (dict | None): User default attributes for a cluster.
 
         """
         # Initialize the pydot graph:
@@ -56,9 +56,7 @@ class PyDotDAGBuilder(DAGBuilder):
         self._subgraphs: dict[str, pydot.Graph] = {}
         self._subgraphs["__base__"] = self.graph
 
-        _default_attrs: dict = (
-            {"fontname": "Helvetica", "penwidth": 2} if default_attrs is None else default_attrs
-        )
+        _default_attrs: dict = {"fontname": "Helvetica", "penwidth": 2} if attrs is None else attrs
         self._default_node_attrs: dict = (
             {
                 **_default_attrs,
@@ -68,16 +66,16 @@ class PyDotDAGBuilder(DAGBuilder):
                 "color": "lightblue4",
                 "penwidth": 3,
             }
-            if default_node_attrs is None
-            else default_node_attrs
+            if node_attrs is None
+            else node_attrs
         )
         self._default_edge_attrs: dict = (
             {
                 "color": "lightblue4",
                 "penwidth": 3,
             }
-            if default_edge_attrs is None
-            else default_edge_attrs
+            if edge_attrs is None
+            else edge_attrs
         )
         self._default_cluster_attrs: dict = (
             {
@@ -85,8 +83,8 @@ class PyDotDAGBuilder(DAGBuilder):
                 "shape": "rectangle",
                 "style": "solid",
             }
-            if default_cluster_attrs is None
-            else default_cluster_attrs
+            if cluster_attrs is None
+            else cluster_attrs
         )
 
     def add_node(
