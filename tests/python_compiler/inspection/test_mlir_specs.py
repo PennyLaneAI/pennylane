@@ -215,6 +215,87 @@ class TestMLIRSpecs:
         res = mlir_specs(simple_circuit, level=level)
         assert resources_equal(res, expected, raise_on_mismatch=True)
 
+    def test_basic_passes_level_all(self, simple_circuit):
+        """Test that when passes are applied, the circuit resources are updated accordingly."""
+
+        if self.use_plxpr:
+            simple_circuit = qml.transforms.cancel_inverses(simple_circuit)
+            simple_circuit = qml.transforms.merge_rotations(simple_circuit)
+        else:
+            simple_circuit = catalyst.passes.cancel_inverses(simple_circuit)
+            simple_circuit = catalyst.passes.merge_rotations(simple_circuit)
+
+        expected = {
+            "Before MLIR Passes (MLIR-0)": make_static_resources(
+                quantum_operations={"RX": 2, "RZ": 2, "Hadamard": 2, "CNOT": 2},
+                quantum_measurements={"probs(0 wires)": 1},
+                resource_sizes={1: 6, 2: 2},
+                num_wires=2,
+            ),
+            "remove-chained-self-inverse (MLIR-1)": make_static_resources(
+                quantum_operations={"RX": 2, "RZ": 2},
+                quantum_measurements={"probs(0 wires)": 1},
+                resource_sizes={1: 4},
+                num_wires=2,
+            ),
+            "merge-rotations (MLIR-2)": make_static_resources(
+                quantum_operations={"RX": 1, "RZ": 1},
+                quantum_measurements={"probs(0 wires)": 1},
+                resource_sizes={1: 2},
+                num_wires=2,
+            ),
+        }
+
+        simple_circuit = qml.qjit(pass_plugins=[getXDSLPluginAbsolutePath()])(simple_circuit)
+        res = mlir_specs(simple_circuit, level="all")
+
+        assert isinstance(res, dict)
+        assert len(res) == len(expected)
+
+        for lvl, expected_res in expected.items():
+            assert lvl in res.keys()
+            assert resources_equal(res[lvl], expected_res, raise_on_mismatch=True)
+
+    def test_basic_passes_multi_level(self, simple_circuit):
+        """Test that when passes are applied, the circuit resources are updated accordingly."""
+
+        if self.use_plxpr:
+            simple_circuit = qml.transforms.cancel_inverses(simple_circuit)
+            simple_circuit = qml.transforms.merge_rotations(simple_circuit)
+        else:
+            simple_circuit = catalyst.passes.cancel_inverses(simple_circuit)
+            simple_circuit = catalyst.passes.merge_rotations(simple_circuit)
+
+        expected = {
+            "Before MLIR Passes (MLIR-0)": make_static_resources(
+                quantum_operations={"RX": 2, "RZ": 2, "Hadamard": 2, "CNOT": 2},
+                quantum_measurements={"probs(0 wires)": 1},
+                resource_sizes={1: 6, 2: 2},
+                num_wires=2,
+            ),
+            "merge-rotations (MLIR-2)": make_static_resources(
+                quantum_operations={"RX": 1, "RZ": 1},
+                quantum_measurements={"probs(0 wires)": 1},
+                resource_sizes={1: 2},
+                num_wires=2,
+            ),
+        }
+
+        simple_circuit = qml.qjit(pass_plugins=[getXDSLPluginAbsolutePath()])(simple_circuit)
+        res = mlir_specs(simple_circuit, level=[0, 2])
+
+        assert isinstance(res, dict)
+        assert len(res) == len(expected)
+
+        for lvl, expected_res in expected.items():
+            assert lvl in res.keys()
+            assert resources_equal(res[lvl], expected_res, raise_on_mismatch=True)
+
+        with pytest.raises(
+            ValueError, match="Requested specs levels 3 not found in MLIR pass list."
+        ):
+            mlir_specs(simple_circuit, level=[0, 3])
+
     @pytest.mark.parametrize(
         "pl_ctrl_flow, iters, autograph",
         [
