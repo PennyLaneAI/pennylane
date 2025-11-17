@@ -100,7 +100,7 @@ def diagonalize_measurements(tape, supported_base_obs=_default_supported_obs, to
     >>> print(qml.draw(circuit)([np.pi/4, np.pi/4]))
     0: ──RY(0.79)──H────┤ ╭<Z@Z> ╭Var[𝓗(0.50)]
     1: ──RX(0.79)───────┤ ╰<Z@Z> │
-    2: ──Z─────────S──H─┤        ╰Var[𝓗(0.50)]
+    2: ──S†───────────H─┤        ╰Var[𝓗(0.50)]
 
     >>> circuit([np.pi/4, np.pi/4])
     (np.float64(0.5), np.float64(0.749...))
