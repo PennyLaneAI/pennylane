@@ -729,16 +729,16 @@ class TestModifiedTemplates:
         target_wires = range(m + 1)
         estimation_wires = range(m + 1, n + m + 1)
 
-        kwargs = {"func": func, "target_wires": target_wires, "estimation_wires": estimation_wires}
+        kwargs = {"func": func, "id": None, "num_target_wires": 6}
 
-        def qfunc(probs):
-            qml.QuantumMonteCarlo(probs, **kwargs)
+        def qfunc(probs, target_wires, estimation_wires):
+            qml.QuantumMonteCarlo(probs, func, target_wires, estimation_wires)
 
         # Validate inputs
-        qfunc(probs)
+        qfunc(probs, target_wires, estimation_wires)
 
         # Actually test primitive bind
-        jaxpr = jax.make_jaxpr(qfunc)(probs)
+        jaxpr = jax.make_jaxpr(qfunc)(probs, list(target_wires), list(estimation_wires))
 
         assert len(jaxpr.eqns) == 1
 
@@ -750,10 +750,10 @@ class TestModifiedTemplates:
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
 
         with qml.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, probs)
+            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, probs, *target_wires, *estimation_wires)
 
         assert len(q) == 1
-        assert q.queue[0] == qml.QuantumMonteCarlo(probs, **kwargs)
+        assert q.queue[0] == qml.QuantumMonteCarlo(probs, func, target_wires, estimation_wires)
 
     def test_qubitization(self):
         """Test the primitive bind call of Qubitization."""
