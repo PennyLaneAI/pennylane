@@ -23,9 +23,10 @@ pytest.importorskip("catalyst")
 pytest.importorskip("jax")
 
 # pylint: disable=wrong-import-position
-import jax.numpy as jnp
+import catalyst
 
 # pylint: disable=wrong-import-position
+import jax.numpy as jnp
 from catalyst.passes.xdsl_plugin import getXDSLPluginAbsolutePath
 
 import pennylane as qml
@@ -102,9 +103,10 @@ def make_static_resources(
     return res
 
 
-@pytest.mark.usefixtures("enable_disable_plxpr")
 class TestMLIRSpecs:
     """Unit tests for the mlir_specs function in the Python Compiler inspection module."""
+
+    use_plxpr = False
 
     @pytest.fixture
     def simple_circuit(self):
@@ -202,8 +204,13 @@ class TestMLIRSpecs:
     def test_basic_passes(self, simple_circuit, level, expected):
         """Test that when passes are applied, the circuit resources are updated accordingly."""
 
-        simple_circuit = qml.transforms.cancel_inverses(simple_circuit)
-        simple_circuit = qml.transforms.merge_rotations(simple_circuit)
+        if self.use_plxpr:
+            simple_circuit = qml.transforms.cancel_inverses(simple_circuit)
+            simple_circuit = qml.transforms.merge_rotations(simple_circuit)
+        else:
+            simple_circuit = catalyst.passes.cancel_inverses(simple_circuit)
+            simple_circuit = catalyst.passes.merge_rotations(simple_circuit)
+
         simple_circuit = qml.qjit(pass_plugins=[getXDSLPluginAbsolutePath()])(simple_circuit)
         res = mlir_specs(simple_circuit, level=level)
         assert resources_equal(res, expected, raise_on_mismatch=True)
@@ -298,6 +305,137 @@ class TestMLIRSpecs:
         ):
             res = mlir_specs(circ, 0, iters)
             assert resources_equal(res, expected, raise_on_mismatch=True)
+
+    @pytest.mark.parametrize(
+        "pl_ctrl_flow, iters",
+        [
+            (True, 5),
+            (False, 2),
+        ],
+    )
+    def test_while_loop(self, pl_ctrl_flow, iters):
+        """Test that dynamic while loops emit a warning."""
+
+        if pl_ctrl_flow:
+
+            @qml.qnode(qml.device("lightning.qubit", wires=2))
+            def circ(n):
+                def loop_cond(i):
+                    return i < n
+
+                @qml.while_loop(loop_cond)
+                def loop_body(i):
+                    qml.X(i % 2)
+                    return i + 1
+
+                loop_body(0)
+
+                return qml.state()
+
+        else:
+
+            @qml.qnode(qml.device("lightning.qubit", wires=2))
+            def circ(n):
+                i = 0
+                while i < n:
+                    qml.X(i % 2)
+                    i += 1
+                return qml.state()
+
+        expected = make_static_resources(
+            quantum_operations={"PauliX": 1},
+            quantum_measurements={"state": 1},
+            resource_sizes={1: 1},
+            num_wires=2,
+        )
+
+        circ = qml.qjit(pass_plugins=[getXDSLPluginAbsolutePath()], autograph=True)(circ)
+
+        with pytest.warns(
+            UserWarning,
+            match="Specs was unable to determine the number of loop iterations. "
+            "The results will assume the loop runs only once. "
+            "This may be fixed in some cases by inlining dynamic arguments.",
+        ):
+            res = mlir_specs(circ, 0, iters)
+            assert resources_equal(res, expected, raise_on_mismatch=True)
+
+    @pytest.mark.parametrize(
+        "pl_ctrl_flow",
+        [
+            (True),
+            (False),
+        ],
+    )
+    def test_cond(self, pl_ctrl_flow):
+        """Test that conditions emit a warning."""
+
+        if pl_ctrl_flow:
+
+            @qml.qnode(qml.device("lightning.qubit", wires=2))
+            def circ(n):
+                qml.cond(n > 0, qml.X, qml.Z)(0)
+
+                return qml.state()
+
+        else:
+
+            @qml.qnode(qml.device("lightning.qubit", wires=2))
+            def circ(n):
+                if n > 0:
+                    qml.X(0)
+                else:
+                    qml.Z(0)
+                return qml.state()
+
+        expected = make_static_resources(
+            quantum_operations={"PauliX": 1, "PauliZ": 1},
+            quantum_measurements={"state": 1},
+            resource_sizes={1: 2},
+            num_wires=2,
+        )
+
+        circ = qml.qjit(pass_plugins=[getXDSLPluginAbsolutePath()], autograph=True)(circ)
+
+        with pytest.warns(
+            UserWarning,
+            match="Specs was unable to determine the branch of a conditional. "
+            "The results will assume both branches of the conditional are run.",
+        ):
+            n = 3  # Arbitrary value for n
+            res = mlir_specs(circ, 0, n)
+            assert resources_equal(res, expected, raise_on_mismatch=True)
+
+    def test_tape_transforms(self):
+        """Test that tape transforms are handled correctly."""
+        if qml.capture.enabled():
+            pytest.xfail("Currently broken with plxpr enabled.")
+
+        @qml.qnode(qml.device("lightning.qubit", wires=2))
+        def circ():
+            qml.GlobalPhase(0.5)
+            qml.GlobalPhase(1.0)
+            return qml.expval(qml.PauliZ(0))
+
+        circ = qml.transforms.combine_global_phases(circ)
+        circ = qml.qjit(pass_plugins=[getXDSLPluginAbsolutePath()])(circ)
+
+        expected = make_static_resources(
+            quantum_operations={"GlobalPhase": 1},
+            quantum_measurements={"expval(PauliZ)": 1},
+            resource_sizes={0: 1},
+            num_wires=2,
+        )
+
+        res = mlir_specs(circ, level=0)
+        assert resources_equal(res, expected, raise_on_mismatch=True)
+
+
+@pytest.mark.usefixtures("enable_disable_plxpr")
+class TestMLIRSpecsWithPLXPR(TestMLIRSpecs):
+    """Unit tests for the mlir_specs function in the Python Compiler inspection module with plxpr enabled."""
+
+    use_plxpr = True
 
 
 # TODO: May want to separate some of these concerns into testing specs_collect directly
