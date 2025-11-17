@@ -413,6 +413,48 @@ class PLPatternRewriter(PatternRewriter):
 
         return gateOp
 
+    # TODO: Finish implementation
+    def swap_gates(self, op1: xOperation, op2: xOperation) -> None:
+        """Swap two operations in the IR.
+
+        Args:
+            op1 (xdsl.ir.Operation): First operation for the swap
+            op2 (xdsl.ir.Operation): Second operation for the swap
+        """
+        if not (op1 in _gate_like_ops and op2 in _gate_like_ops):
+            raise TransformError(f"Can only swap gates. Got {op1}, {op2}")
+
+        if set(op1.results) | set(op2.operands):
+            pass
+        elif set(op1.operands) | set(op2.results):
+            op1, op2 = op2, op1
+        else:
+            raise TransformError("Cannot swap operations that are not SSA neighbours.")
+
+        # Walk the IR forwards or backwards from the operation with less wires to check if there are
+        # any ops that use the same wires as op1 or op2
+        n_vals1 = [r for r in op1.results if isinstance(r.type, quantum.QubitType)]
+        n_vals2 = [o for o in op2.operands if isinstance(o.type, quantum.QubitType)]
+        # If op1 has less results than op2 has operands, do forward traversal from op1
+        # Else, do backward traversal from op2.
+        if n_vals1 <= n_vals2:
+            pass
+        else:
+            pass
+
+        # Update uses for the swap
+        new_op2 = type(op2).create(
+            operands=(),
+            result_types=(),
+            properties=op2.properties,
+            attributes=op2.attributes,
+            successors=op2.successors,
+            regions=op2.regions,
+        )
+        self.insert_op(new_op2, insertion_point=InsertPoint.before(op1))
+
+        # Reorder the block so that the linear order is valid
+
 
 # pylint: disable=too-few-public-methods
 class PLPatternRewriteWalker(PatternRewriteWalker):
