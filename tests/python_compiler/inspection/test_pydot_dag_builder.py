@@ -156,6 +156,23 @@ class TestAddMethods:
         assert not c1.get_node("n_root"), "n_root incorrectly found in c1"
         assert not c1.get_node("n_outer"), "n_outer incorrectly found in c1"
 
+
+class TestAttributes:
+    """Tests that the attributes for elements in the graph are overridden correctly."""
+
+    @pytest.mark.unit
+    def test_default_graph_attrs(self):
+        """Test that default graph attributes can be set."""
+
+        dag_builder = PyDotDAGBuilder(attrs={"fontname": "Times"})
+
+        dag_builder.add_node("0", "node0")
+        node0 = dag_builder.graph.get_node("0")[0]
+        assert node0.get("fontname") == "Times"
+        dag_builder.add_cluster("c0", "cluster0")
+        cluster = dag_builder.graph.get_subgraph("cluster_0")[0]
+        assert cluster.get("fontname") == "Times"
+
     @pytest.mark.unit
     def test_add_node_with_attrs(self):
         """Tests that default attributes are applied and can be overridden."""
@@ -176,13 +193,13 @@ class TestAddMethods:
     @pytest.mark.unit
     def test_add_edge_with_attrs(self):
         """Tests that default attributes are applied and can be overridden."""
-        dag_builder = PyDotDAGBuilder()
+        dag_builder = PyDotDAGBuilder(edge_attrs={"color": "lightblue4", "penwidth": 3})
 
-        # Defaults
         dag_builder.add_node("0", "node0")
         dag_builder.add_node("1", "node1")
         dag_builder.add_edge("0", "1")
         edge = dag_builder.graph.get_edges()[0]
+        # Defaults defined earlier
         assert edge.get("color") == "lightblue4"
         assert edge.get("penwidth") == 3
 
@@ -195,7 +212,14 @@ class TestAddMethods:
     @pytest.mark.unit
     def test_add_cluster_with_attrs(self):
         """Tests that default cluster attributes are applied and can be overridden."""
-        dag_builder = PyDotDAGBuilder()
+        dag_builder = PyDotDAGBuilder(
+            cluster_attrs={
+                "style": "solid",
+                "fillcolor": None,
+                "penwidth": 2,
+                "fontname": "Helvetica",
+            }
+        )
 
         dag_builder.add_cluster("0", "cluster0")
         cluster1 = dag_builder.graph.get_subgraph("cluster_0")[0]
