@@ -78,7 +78,7 @@ def approx_poly_degree(
     Returns:
         tuple[int, Callable, float]: the degree of the polynomial, the fit polynomial function, and the loss of the fit.
 
-    **Example**
+    **Example:**
 
     This example fits the function :math:`f(x) = x^2` using the monomial basis in the default setting.
 
@@ -211,7 +211,18 @@ def _process_loss_func(loss_func: str | Callable | None) -> Callable:
 def _process_poly_fit(
     fit_func: Callable | None, basis: str | None
 ) -> tuple[Callable, Callable | None]:
-    """Process the polynomial fitting function based on the basis."""
+    """Process the polynomial fitting function based on the basis.
+
+    Args:
+        fit_func (Callable | None): function that approximately fits the polynomial and has the signature:
+            ``f(x_vec: np.ndarray, y_vec: np.ndarray, deg: int, **fit_kwargs) -> tuple[Callable, float]``.
+        basis (str): basis to use for the polynomial. Available options are ``"chebyshev"``,
+            ``"legendre"``, and ``"hermite"``. Defaults to ``None``, which assumes fitting
+            data to a polynomial in the monomial basis.
+
+    Returns:
+        tuple[Callable, Callable | None]: the fit polynomial function and the fit polynomial function.
+    """
     fit_args = {}
     if fit_func is None:
         fit_args["full"] = True
@@ -233,7 +244,18 @@ def _process_poly_fit(
 
 
 def _process_proj_func(project_func: str | Callable | None, basis: str | None) -> Callable | None:
-    """Process the projection function."""
+    """Process the projection function.
+
+    Args:
+        project_func (str | Callable | None): function to project the dense interval
+            based on ``x_vec`` to a sparse one with ``[x_vec[0], x_vec[-1]]`` as the domain.
+        basis (str): basis to use for the polynomial. Available options are ``"chebyshev"``,
+            ``"legendre"``, and ``"hermite"``. Defaults to ``None``, which assumes fitting
+            data to a polynomial in the monomial basis.
+
+    Returns:
+        Callable | None: the projection function.
+    """
     match project_func:
         case "uniform":
             return np.linspace
