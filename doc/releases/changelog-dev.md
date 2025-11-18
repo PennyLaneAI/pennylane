@@ -111,6 +111,9 @@
   work wire and :class:`pennylane.TemporaryAND` operators to reduce the resources needed.
   [(#8549)](https://github.com/PennyLaneAI/pennylane/pull/8549)
 
+* The graph-based decomposition system now supports decomposition rules that contains mid-circuit measurements.
+  [(#8079)](https://github.com/PennyLaneAI/pennylane/pull/8079)
+
 <h3>Breaking changes 💔</h3>
 
 * ``QuantumScript.to_openqasm`` has been removed. Please use ``qml.to_openqasm`` instead. This removes duplicated 
