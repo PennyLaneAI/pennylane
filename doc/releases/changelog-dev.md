@@ -257,7 +257,7 @@
 
 <h3>Internal changes ⚙️</h3>
 
-* Migrated the `pennylane.compiler.python_compiler` submodule to Catalyst. It is now available
+* Migrated the `pennylane.compiler.python_compiler` submodule to Catalyst. It is now accessible
   as `catalyst.python_interface`.
   [(#8662)](https://github.com/PennyLaneAI/pennylane/pull/8662)
 
