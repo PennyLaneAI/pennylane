@@ -35,7 +35,7 @@ def approx_poly_degree(
     Args:
         x_vec (np.ndarray): the domain values for sampling the target function ``target_func``.
             The minimum length of ``x_vec`` is two and is expected to be sorted.
-        target_func (callable): function to be approximated with a polynomial and has the
+        target_func (Callable): function to be approximated with a polynomial and has the
             signature ``f(x_vec: np.ndarray) -> np.ndarray``.
         error_tol (float): tolerance for the target fitting error. Defaults to ``1e-6``.
             Unless ``loss_func`` is provided, this is the least squares fit error.
@@ -45,18 +45,18 @@ def approx_poly_degree(
         basis (str): basis to use for the polynomial. Available options are ``"chebyshev"``,
             ``"legendre"``, and ``"hermite"``. Defaults to ``None``, which assumes fitting
             data to a polynomial in the monomial basis.
-        loss_func (str | callable | None): loss function to use, where available options are
+        loss_func (str | Callable | None): loss function to use, where available options are
             ``"mse"`` (mean squared error), ``"mae"`` (mean absolute error), ``"rmse"``
             (root mean squared error), ``"linf"`` (maximum absolute error), or a custom loss
             function with the signature ``f(pred: np.ndarray, target: np.ndarray) -> float``.
             Defaults to ``None``, which means the least squares fit error is used.
-        fit_func (callable | None): function that approximately fits the polynomial and has the signature
+        fit_func (Callable | None): function that approximately fits the polynomial and has the signature
             ``f(x_vec: np.ndarray, y_vec: np.ndarray, deg: int, **fit_kwargs) -> tuple[Callable, float]``.
             It should return a callable for the fit polynomial along with the least squares error of the fit.
             Defaults to ``None``, which means the NumPy polynomial fitting function corresponding
             to the ``basis`` keyword argument will be used. Note that, providing a custom function
             will override the ``basis`` keyword argument.
-        project_func (str | callable | None): function to project the dense interval
+        project_func (str | Callable | None): function to project the dense interval
             based on ``x_vec`` to a sparse one with ``[x_vec[0], x_vec[-1]]`` as the domain.
             Defaults to ``None``, which means no projection is performed. When ``"uniform"``
             is used, the points are evenly spaced between ``x_vec[0]`` and ``x_vec[-1]``.
@@ -71,11 +71,11 @@ def approx_poly_degree(
 
     Keyword Arguments:
         rcond (float): the relative condition number of the fit.
-        w (tensor_like): weights for the sample points. This is equivalent to using a custom
-            ``interpolate_func`` to imitate unselected points with zero weights.
+        w (np.ndarray): weights for the sample points. This is equivalent to using a custom
+            ``project_func`` to imitate unselected points with zero weights.
 
     Returns:
-        tuple[float, callable, loss]: the degree of the polynomial, the fit polynomial function, and the loss of the fit.
+        tuple[int, Callable, float]: the degree of the polynomial, the fit polynomial function, and the loss of the fit.
 
     **Example**
 
@@ -92,7 +92,7 @@ def approx_poly_degree(
         ... )
         >>> print(degree)
         2
-        >>> print(poly)
+        >>> print(poly) # Monomial polynomial
         3.55271368e-16 + (3.4742413e-16)·x + 1.0·x²
         >>> print(loss) # Sum of squared errors
         2.40281579329135e-29
@@ -101,8 +101,6 @@ def approx_poly_degree(
 
     .. code-block::
 
-        >>> import numpy as np
-        >>> from pennylane.labs.resource_estimation import approx_poly_degree
         >>> x_vec = np.linspace(-1, 1, 100)
         >>> target_func = lambda x: np.sin(3*x) + 0.3*x**2 - 0.1*x
         >>> degree, poly, loss = approx_poly_degree(
@@ -111,19 +109,17 @@ def approx_poly_degree(
         ... )
         >>> print(degree)
         7
-        >>> print(poly)
+        >>> print(poly) # Chebyshev polynomial
         0.15 + 0.57811797·T₁(x) + 0.15·T₂(x) - 0.61812903·T₃(x) +
         (2.43236301e-18)·T₄(x) + 0.08622566·T₅(x) - (9.61838039e-18)·T₆(x) -
         0.00509459·T₇(x)
-        >>> print(loss)
+        >>> print(loss) # Maximum absolute error
         0.0003266957232994083
 
     This example fits the function :math:`f(x) = \sin(x) \exp(-x)` using a custom fit function for the Laguerre basis.
 
     .. code-block::
 
-        >>> import numpy as np
-        >>> from pennylane.labs.resource_estimation import approx_poly_degree
         >>> x_vec = np.linspace(0, 1, 100)
         >>> target_func = lambda x: np.sin(x) * np.exp(-x)
         >>> def fit_func(x, y, deg, **fit_kwargs):
@@ -134,9 +130,9 @@ def approx_poly_degree(
         ... )
         >>> print(degree)
         3
-        >>> print(poly)
+        >>> print(poly) # Laguerre polynomial
         0.71956319 - 2.0816571·L₁(x) + 2.99459653·L₂(x) - 1.63191581·L₃(x)
-        >>> print(loss)
+        >>> print(loss) # Mean squared error
         5.286491415090545e-08
     """
     x_vec = np.sort(x_vec)
