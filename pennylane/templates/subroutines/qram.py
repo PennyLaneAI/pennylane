@@ -49,13 +49,30 @@ def _node_index(level: int, prefix_value: int) -> int:
 class BBQRAM(Operation):
     r"""Bucket-brigade QRAM with **explicit bus routing** using 3 qubits per node.
 
-    Each internal node (level k, prefix p) has:
-      - a direction qubit: ``dir[k,p]`` (stores the routed low-order address bit for level k),
-      - two ports: ``portL[k,p]`` and ``portR[k,p]``.
+    Bucket-brigade QRAM achieves an O(log N) complexity instead of the typical N, where N is the number of
+    memory cells addressed. It does this by reducing the number of nodes that need to be visited in a tree
+    which converts our binary address into a unary address at the leaves. The approach is simply to keep track
+    of the active path as it is constructed by loading the address one bit at a time into a location in the next layer
+    of the tree based on the previous address bit.
 
-    A single top **bus** qubit is reused for both phases:
-      - Address loading (layer-by-layer via CSWAPs; deposit bit into `dir[k,p]`),
-      - Data routing (per-target: swap target↔bus, route down, leaf write, route up, swap back).
+    In this implementation, each node is composed of three qubits: one direction bit ``dir[k,p]`` which stores the routed
+    low-order address bit for level k, and one bit for each child of the node ``portL[k,p]`` and ``portR[k,p]`` that are
+    used for loading the next layers' bits.
+
+    The algorithm is composed of five steps:
+
+        1) load
+        2) route down
+        3) leaf op
+        4) route up
+        5) restore
+
+    The address is first loaded layer-by-layer via CSWAPs, depositing each address bit into the `dir[k,p]`.
+    Data routing is performed per-target. The target is swapped with the bus, routed down, the leaf write operation is
+    performed to correlate the data with the qubit at the leaf of the tree, routing is then done in reverse and we swap
+    back.
+
+    In the end, the target wires' values correspond to the data at the address specified.
 
     Args:
         bitstrings (Sequence[int]): the classical data as a sequence of bitstrings
