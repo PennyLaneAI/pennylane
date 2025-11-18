@@ -500,6 +500,21 @@ def pauli_decompose(
     """
     is_sparse = sps.issparse(H)
     shape = H.shape if is_sparse else qml.math.shape(H)
+    
+    if is_sparse:
+        if shape[0] == 0:
+            raise ValueError("Cannot decompose an empty matrix.")
+        if shape[0] != shape[1]:
+            raise ValueError(
+                f"The matrix should be square, got {shape}. Use 'padding=True' for rectangular matrices."
+            )
+        n = int(math.log2(shape[0]))
+        N = 2**n
+        if shape[0] != N:
+            raise ValueError(
+                f"Dimension of the matrix should be a power of 2, got {shape}. Use 'padding=True' for these matrices."
+            )
+    
     n = int(math.log2(shape[0])) if is_sparse else int(qml.math.log2(shape[0]))
     N = 2**n
 
