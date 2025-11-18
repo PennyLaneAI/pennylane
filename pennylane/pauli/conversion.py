@@ -18,9 +18,9 @@ from collections import defaultdict
 from functools import reduce, singledispatch
 from itertools import product
 from operator import matmul
-import math
 
 import pennylane as qml
+from pennylane import math
 from pennylane.math.utils import is_abstract
 from pennylane.ops import Identity, LinearCombination, PauliX, PauliY, PauliZ, Prod, SProd, Sum
 from pennylane.ops.qubit.matrix_ops import _walsh_hadamard_transform
@@ -500,7 +500,7 @@ def pauli_decompose(
     """
     is_sparse = sps.issparse(H)
     shape = H.shape if is_sparse else qml.math.shape(H)
-    
+
     if is_sparse:
         if shape[0] == 0:
             raise ValueError("Cannot decompose an empty matrix.")
@@ -514,7 +514,7 @@ def pauli_decompose(
             raise ValueError(
                 f"Dimension of the matrix should be a power of 2, got {shape}. Use 'padding=True' for these matrices."
             )
-    
+
     n = int(math.log2(shape[0])) if is_sparse else int(qml.math.log2(shape[0]))
     N = 2**n
 
