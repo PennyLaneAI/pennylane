@@ -19,7 +19,6 @@ import inspect
 from collections.abc import Callable
 from typing import TYPE_CHECKING
 
-from catalyst import qjit
 from catalyst.jit import QJIT
 from catalyst.passes.xdsl_plugin import getXDSLPluginAbsolutePath
 from xdsl.dialects.builtin import DenseIntOrFPElementsAttr, IntegerAttr, IntegerType
