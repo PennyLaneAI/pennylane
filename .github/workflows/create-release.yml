@@ -109,8 +109,8 @@ jobs:
           git checkout -b merge-rc-into-master-$(date +'%Y-%m-%d')
           git config user.name "GitHub Actions Bot"
           git config user.email "<>"
-          git tag -a "${{ inputs.release_version }}" -m "Release version ${{ inputs.release_branch }}"
-          git push origin "${{ inputs.release_version }}"
+          git tag -a "${{ inputs.release_branch }}" -m "Release version ${{ inputs.release_branch }}"
+          git push origin "${{ inputs.release_branch }}"
 
       - name: Merge RC branch into master
         run: |
