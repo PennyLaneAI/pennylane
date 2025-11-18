@@ -264,48 +264,6 @@ def _patch_dyn_shape_staging_rule(apply=True):
         ]
 
 
-# Wrapper functions to extract patches without modifying the original functions
-
-
-def _get_make_eqn_helper_patch():
-    """
-    Get patch tuple for make_eqn helper method.
-
-    Returns:
-        tuple or None: (DynamicJaxprTrace, "make_eqn", make_eqn_function) or None if imports fail
-    """
-    try:
-        return _add_make_eqn_helper(apply=False)
-    except Exception:  # pylint: disable=broad-except
-        return None
-
-
-def _get_dyn_shape_patches():
-    """
-    Get patch tuples for dyn_shape staging rules.
-
-    Returns:
-        list: List of patch tuples or empty list if imports fail
-    """
-    try:
-        return _patch_dyn_shape_staging_rule(apply=False)
-    except Exception:  # pylint: disable=broad-except
-        return []
-
-
-def _get_pjit_patch():
-    """
-    Get patch tuples for pjit staging rule.
-
-    Returns:
-        list: List of patch tuples or empty list if imports fail
-    """
-    try:
-        return _patch_pjit_staging_rule(apply=False)
-    except Exception:  # pylint: disable=broad-except
-        return []
-
-
 def _patch_pjit_staging_rule(apply=True):
     """
     Patch (or just return) pjit_staging_rule to fix dynamic shape handling.
@@ -438,11 +396,8 @@ def get_jax_patches():
     patches = []
 
     # Get all patches from the helper functions
-    make_eqn_patch = _get_make_eqn_helper_patch()
-    if make_eqn_patch:
-        patches.append(make_eqn_patch)
-
-    patches.extend(_get_dyn_shape_patches())
-    patches.extend(_get_pjit_patch())
+    patches.append(_add_make_eqn_helper(apply=False))
+    patches.extend(_patch_dyn_shape_staging_rule(apply=False))
+    patches.extend(_patch_pjit_staging_rule(apply=False))
 
     return tuple(patches)
