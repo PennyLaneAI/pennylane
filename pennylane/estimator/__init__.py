@@ -29,7 +29,7 @@ from .resource_operator import (
 
 from .estimate import estimate
 
-from .ops.identity import Identity, GlobalPhase
+from .ops.identity import Identity, I, GlobalPhase
 
 from .ops.qubit import (
     X,
@@ -37,6 +37,7 @@ from .ops.qubit import (
     Z,
     SWAP,
     Hadamard,
+    H,
     S,
     T,
     PhaseShift,
