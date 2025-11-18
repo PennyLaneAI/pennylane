@@ -36,7 +36,7 @@ def approx_poly_degree(
         x_vec (np.ndarray): the domain values for sampling the target function ``target_func``.
             The minimum length of ``x_vec`` is two and is expected to be sorted.
         target_func (callable): function to be approximated with a polynomial and has the
-            signature ``(x_vec: np.ndarray) -> np.ndarray``.
+            signature ``f(x_vec: np.ndarray) -> np.ndarray``.
         error_tol (float): tolerance for the target fitting error. Defaults to ``1e-6``.
             Unless ``loss_func`` is provided, this is the least squares fit error.
         degrees (Tuple[int, int] | int | None): tuple of minimum and maximum degrees to consider.
@@ -48,10 +48,10 @@ def approx_poly_degree(
         loss_func (str | callable | None): loss function to use, where available options are
             ``"mse"`` (mean squared error), ``"mae"`` (mean absolute error), ``"rmse"``
             (root mean squared error), ``"linf"`` (maximum absolute error), or a custom loss
-            function with the signature ``(pred: np.ndarray, target: np.ndarray) -> float``.
+            function with the signature ``f(pred: np.ndarray, target: np.ndarray) -> float``.
             Defaults to ``None``, which means the least squares fit error is used.
         fit_func (callable | None): function that approximately fits the polynomial and has the signature
-            ``(x_vec: np.ndarray, y_vec: np.ndarray, deg: int, **fit_kwargs) -> tuple[Callable, float]``.
+            ``f(x_vec: np.ndarray, y_vec: np.ndarray, deg: int, **fit_kwargs) -> tuple[Callable, float]``.
             It should return a callable for the fit polynomial along with the least squares error of the fit.
             Defaults to ``None``, which means the NumPy polynomial fitting function corresponding
             to the ``basis`` keyword argument will be used. Note that, providing a custom function
@@ -63,7 +63,7 @@ def approx_poly_degree(
             Whereas, when ``"gauss-lobatto"`` is used, the "Chebyshev/Legendre-Gauss-Lobatto"
             nodes are used for ``basis="chebyshev"/"legendre"``. When a callable is provided,
             it should have the signature
-            ``(x_min: float, x_max: float, num_points: int) -> np.ndarray``.
+            ``f(x_min: float, x_max: float, num_points: int) -> np.ndarray``.
         **fit_kwargs: additional keyword arguments to pass to the `fitting` functions.
             See keyword arguments below for available arguments for the default ``NumPy``
             fitting functions that will be used with ``fit_func=None``. Custom functions
