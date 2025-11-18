@@ -166,13 +166,11 @@ class TestSimpleObservables:
     def test_diagonalization_static_pauliy(self):
         """Test the static compute_diagonalizing_gates method for the PauliY observable."""
         res = qml.PauliY.compute_diagonalizing_gates(wires=1)
-        assert len(res) == 3
-        assert res[0].name == "PauliZ"
-        assert res[1].name == "S"
-        assert res[2].name == "Hadamard"
+        assert len(res) == 2
+        assert res[0].name == "Adjoint(S)"
+        assert res[1].name == "Hadamard"
         assert res[0].wires.tolist() == [1]
         assert res[1].wires.tolist() == [1]
-        assert res[2].wires.tolist() == [1]
 
     def test_diagonalization_static_pauliz(self):
         """Test the static compute_diagonalizing_gates method for the PauliZ observable."""
