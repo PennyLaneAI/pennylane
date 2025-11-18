@@ -154,22 +154,4 @@ def make_plxpr(func: Callable, static_argnums: int | Sequence[int] = (), autogra
     if autograph:
         func = run_autograph(func)
 
-    # pylint: disable=import-outside-toplevel
-    from .jax_patches import get_jax_patches
-    from .patching import Patcher
-
-    # Apply JAX patches contextually
-    patches = get_jax_patches()
-    if patches:
-        # Create a wrapper that applies patches
-        original_func = func
-
-        def patched_make_jaxpr(*args, **make_jaxpr_kwargs):
-            with Patcher(*patches):
-                return jax.make_jaxpr(original_func, static_argnums=static_argnums, **kwargs)(
-                    *args, **make_jaxpr_kwargs
-                )
-
-        return patched_make_jaxpr
-    else:
-        return jax.make_jaxpr(func, static_argnums=static_argnums, **kwargs)
+    return jax.make_jaxpr(func, static_argnums=static_argnums, **kwargs)

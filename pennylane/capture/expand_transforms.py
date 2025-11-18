@@ -23,8 +23,6 @@ import jax
 from pennylane.transforms.core.transform_dispatcher import _create_transform_primitive
 
 from .base_interpreter import PlxprInterpreter
-from .jax_patches import get_jax_patches
-from .patching import Patcher
 
 
 class ExpandTransformsInterpreter(PlxprInterpreter):
@@ -54,10 +52,7 @@ def _(
     def wrapper(*inner_args):
         return copy(self).eval(inner_jaxpr, consts, *inner_args)
 
-    # Apply JAX patches when making jaxpr
-    patches = get_jax_patches()
-    with Patcher(*patches):
-        jaxpr = jax.make_jaxpr(wrapper)(*args)
+    jaxpr = jax.make_jaxpr(wrapper)(*args)
     jaxpr = transform.plxpr_transform(jaxpr.jaxpr, jaxpr.consts, targs, tkwargs, *args)
     return copy(self).eval(jaxpr.jaxpr, jaxpr.consts, *args)
 

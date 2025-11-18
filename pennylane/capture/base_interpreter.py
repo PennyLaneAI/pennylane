@@ -28,8 +28,6 @@ import pennylane as qml
 from pennylane import math
 
 from .flatfn import FlatFn
-from .jax_patches import get_jax_patches
-from .patching import Patcher
 from .primitives import (
     adjoint_transform_prim,
     cond_prim,
@@ -102,9 +100,7 @@ def jaxpr_to_jaxpr(
 
     f = partial(interpreter.eval, jaxpr, consts)
 
-    patches = get_jax_patches()
-    with Patcher(*patches):
-        return jax.make_jaxpr(f)(*args)
+    return jax.make_jaxpr(f)(*args)
 
 
 class PlxprInterpreter:
@@ -356,51 +352,46 @@ class PlxprInterpreter:
             list[TensorLike]: the results of the execution.
 
         """
+        self._env = {}
+        self.setup()
 
-        # Apply patches during evaluation in case we encounter dynamic shapes
-        # or reinterpreting (which involves tracing)
-        patches = get_jax_patches()
-        with Patcher(*patches):
-            self._env = {}
-            self.setup()
+        for arg, invar in zip(args, jaxpr.invars, strict=True):
+            self._env[invar] = arg
+        for const, constvar in zip(consts, jaxpr.constvars, strict=True):
+            self._env[constvar] = const
 
-            for arg, invar in zip(args, jaxpr.invars, strict=True):
-                self._env[invar] = arg
-            for const, constvar in zip(consts, jaxpr.constvars, strict=True):
-                self._env[constvar] = const
+        for eqn in jaxpr.eqns:
+            primitive = eqn.primitive
+            custom_handler = self._primitive_registrations.get(primitive, None)
 
-            for eqn in jaxpr.eqns:
-                primitive = eqn.primitive
-                custom_handler = self._primitive_registrations.get(primitive, None)
+            if custom_handler:
+                invals = [self.read(invar) for invar in eqn.invars]
+                outvals = custom_handler(self, *invals, **eqn.params)
+            elif getattr(primitive, "prim_type", "") == "operator":
+                outvals = self.interpret_operation_eqn(eqn)
+            elif getattr(primitive, "prim_type", "") == "measurement":
+                outvals = self.interpret_measurement_eqn(eqn)
+            else:
+                invals = [self.read(invar) for invar in eqn.invars]
+                subfuns, params = primitive.get_bind_params(eqn.params)
+                outvals = primitive.bind(*subfuns, *invals, **params)
 
-                if custom_handler:
-                    invals = [self.read(invar) for invar in eqn.invars]
-                    outvals = custom_handler(self, *invals, **eqn.params)
-                elif getattr(primitive, "prim_type", "") == "operator":
-                    outvals = self.interpret_operation_eqn(eqn)
-                elif getattr(primitive, "prim_type", "") == "measurement":
-                    outvals = self.interpret_measurement_eqn(eqn)
-                else:
-                    invals = [self.read(invar) for invar in eqn.invars]
-                    subfuns, params = primitive.get_bind_params(eqn.params)
-                    outvals = primitive.bind(*subfuns, *invals, **params)
+            if not primitive.multiple_results:
+                outvals = [outvals]
+            for outvar, outval in zip(eqn.outvars, outvals, strict=True):
+                self._env[outvar] = outval
 
-                if not primitive.multiple_results:
-                    outvals = [outvals]
-                for outvar, outval in zip(eqn.outvars, outvals, strict=True):
-                    self._env[outvar] = outval
-
-            # Read the final result of the Jaxpr from the environment
-            outvals = []
-            for var in jaxpr.outvars:
-                outval = self.read(var)
-                if isinstance(outval, qml.operation.Operator):
-                    outvals.append(self.interpret_operation(outval))
-                else:
-                    outvals.append(outval)
-            self.cleanup()
-            self._env = {}
-            return outvals
+        # Read the final result of the Jaxpr from the environment
+        outvals = []
+        for var in jaxpr.outvars:
+            outval = self.read(var)
+            if isinstance(outval, qml.operation.Operator):
+                outvals.append(self.interpret_operation(outval))
+            else:
+                outvals.append(outval)
+        self.cleanup()
+        self._env = {}
+        return outvals
 
     def __call__(self, f: Callable) -> Callable:
 
@@ -408,11 +399,8 @@ class PlxprInterpreter:
 
         @wraps(f)
         def wrapper(*args, **kwargs):
-
             with qml.QueuingManager.stop_recording():
-                patches = get_jax_patches()
-                with Patcher(*patches):
-                    jaxpr = jax.make_jaxpr(partial(flat_f, **kwargs))(*args)
+                jaxpr = jax.make_jaxpr(partial(flat_f, **kwargs))(*args)
 
             flat_args = jax.tree_util.tree_leaves(args)
             results = self.eval(jaxpr.jaxpr, jaxpr.consts, *flat_args)
@@ -625,9 +613,7 @@ def handle_qnode(self, *invals, shots_len, qnode, device, execution_config, qfun
     args = invals[n_consts:]
 
     f = partial(copy(self).eval, qfunc_jaxpr, consts)
-    patches = get_jax_patches()
-    with Patcher(*patches):
-        new_qfunc_jaxpr = jax.make_jaxpr(f)(*args)
+    new_qfunc_jaxpr = jax.make_jaxpr(f)(*args)
 
     return qnode_prim.bind(
         *shots,

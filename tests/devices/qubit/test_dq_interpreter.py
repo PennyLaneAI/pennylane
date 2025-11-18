@@ -650,7 +650,7 @@ class TestClassicalComponents:
         assert qml.math.allclose(res2, jnp.cos(y))  # false fn = y
 
 
-@pytest.mark.usefixtures("enable_disable_dynamic_shapes", "apply_patches_to_dynamic_shape_tests")
+@pytest.mark.usefixtures("enable_disable_dynamic_shapes")
 class TestDynamicShapes:
     """Tests for creating arrays with a dynamic input."""
 

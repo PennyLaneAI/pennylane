@@ -319,7 +319,7 @@ def test_pytree_input_output():
     assert qml.math.allclose(out["x"], 10)
 
 
-@pytest.mark.usefixtures("enable_disable_dynamic_shapes", "apply_patches_to_dynamic_shape_tests")
+@pytest.mark.usefixtures("enable_disable_dynamic_shapes")
 class TestCaptureWhileLoopDynamicShapes:
 
     def test_while_loop_dynamic_shape_array(self):

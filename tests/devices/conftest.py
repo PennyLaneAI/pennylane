@@ -23,35 +23,6 @@ import pytest
 
 
 @pytest.fixture(scope="function")
-def apply_patches_to_dynamic_shape_tests():
-    """Apply JAX patches for dynamic shape tests using Patcher context manager.
-
-    This fixture applies patches locally to tests that need dynamic shape support.
-    The patches are applied at the beginning of each test and properly removed at the end
-    using the Patcher context manager.
-
-    Usage:
-        @pytest.mark.usefixtures("enable_disable_dynamic_shapes", "apply_patches_to_dynamic_shape_tests")
-        def test_something_with_dynamic_shapes():
-            ...
-    """
-    jax = pytest.importorskip("jax")
-
-    from packaging.version import Version
-
-    if Version(jax.__version__) >= Version("0.7.0"):
-        from pennylane.capture.jax_patches import get_jax_patches
-        from pennylane.capture.patching import Patcher
-
-        # Apply patches using Patcher context manager for this test
-        patches = get_jax_patches()
-        with Patcher(*patches):
-            yield
-    else:
-        yield
-
-
-@pytest.fixture(scope="function")
 def create_temporary_toml_file(request) -> str:
     """Create a temporary TOML file with the given content."""
     content = request.param
