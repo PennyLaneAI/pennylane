@@ -279,10 +279,6 @@ def test_mcm_validation():
         facade.setup_execution_config(config, tape)
 
     with pytest.raises(QuantumFunctionError, match="unsupported by the device"):
-        config = ExecutionConfig(mcm_config=MCMConfig(mcm_method="hello"))
-        facade.setup_execution_config(config, tape)
-
-    with pytest.raises(QuantumFunctionError, match="unsupported by the device"):
         config = ExecutionConfig(mcm_config=MCMConfig(mcm_method="tree-traversal"))
         facade.setup_execution_config(config, tape)
 

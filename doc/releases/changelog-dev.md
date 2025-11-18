@@ -16,9 +16,16 @@
 
 <h3>Improvements 🛠</h3>
 
+* Add the `PCPhaseOp` operation to the xDSL Quantum dialect.
+  [(#8621)](https://github.com/PennyLaneAI/pennylane/pull/8621)
+
 * `qml.for_loop` will now fall back to a standard Python `for` loop if capturing a condensed, structured loop fails
   with program capture enabled.
   [(#8615)](https://github.com/PennyLaneAI/pennylane/pull/8615)
+
+* `qml.cond` will now use standard Python logic if all predicates have concrete values. A nested
+  control flow primitive will no longer be captured as it is not needed.
+  [(#8634)](https://github.com/PennyLaneAI/pennylane/pull/8634)
 
 * The `~.BasisRotation` graph decomposition was re-written in a qjit friendly way with PennyLane control flow.
   [(#8560)](https://github.com/PennyLaneAI/pennylane/pull/8560)
@@ -37,8 +44,13 @@
   [(#8582)](https://github.com/PennyLaneAI/pennylane/pull/8582)
   [(#8543)](https://github.com/PennyLaneAI/pennylane/pull/8543)
   [(#8554)](https://github.com/PennyLaneAI/pennylane/pull/8554)
+  [(#8616)](https://github.com/PennyLaneAI/pennylane/pull/8616)
+  [(#8602)](https://github.com/PennyLaneAI/pennylane/pull/8602)
+  [(#8600)](https://github.com/PennyLaneAI/pennylane/pull/8600)
+  [(#8601)](https://github.com/PennyLaneAI/pennylane/pull/8601)  
   [(#8595)](https://github.com/PennyLaneAI/pennylane/pull/8595)
   [(#8586)](https://github.com/PennyLaneAI/pennylane/pull/8586)
+  [(#8614)](https://github.com/PennyLaneAI/pennylane/pull/8614)
 
   - :class:`~.QSVT`
   - :class:`~.AmplitudeEmbedding`
@@ -50,8 +62,14 @@
   - :class:`~.kUpCCGSD`
   - :class:`~.QAOAEmbedding`
   - :class:`~.BasicEntanglerLayers`
+  - :class:`~.HilbertSchmidt`
+  - :class:`~.LocalHilbertSchmidt`
+  - :class:`~.QuantumMonteCarlo`
+  - :class:`~.ArbitraryUnitary`
+  - :class:`~.ApproxTimeEvolution`
   - :class:`~.ParticleConservingU2`
   - :class:`~.ParticleConservingU1`
+  - :class:`~.CommutingEvolution`
 
 * A new `qml.compiler.python_compiler.utils` submodule has been added, containing general-purpose utilities for
   working with xDSL. This includes a function that extracts the concrete value of scalar, constant SSA values.
@@ -94,6 +112,10 @@
   [(#8549)](https://github.com/PennyLaneAI/pennylane/pull/8549)
 
 <h3>Breaking changes 💔</h3>
+
+* ``QuantumScript.to_openqasm`` has been removed. Please use ``qml.to_openqasm`` instead. This removes duplicated 
+  functionality for converting a circuit to OpenQASM code.
+  [(#8499)](https://github.com/PennyLaneAI/pennylane/pull/8499)
 
 * Providing ``num_steps`` to :func:`pennylane.evolve`, :func:`pennylane.exp`, :class:`pennylane.ops.Evolution`,
   and :class:`pennylane.ops.Exp` has been disallowed. Instead, use :class:`~.TrotterProduct` for approximate
@@ -195,10 +217,10 @@
 * Access to the follow functions and classes from the ``pennylane.resources`` module are deprecated. Instead, these functions must be imported from the ``pennylane.estimator`` module.
   [(#8484)](https://github.com/PennyLaneAI/pennylane/pull/8484)
 
-    - ``qml.estimator.estimate_shots`` in favor of ``qml.resources.estimate_shots``
-    - ``qml.estimator.estimate_error`` in favor of ``qml.resources.estimate_error``
-    - ``qml.estimator.FirstQuantization`` in favor of ``qml.resources.FirstQuantization``
-    - ``qml.estimator.DoubleFactorization`` in favor of ``qml.resources.DoubleFactorization``
+  - ``qml.estimator.estimate_shots`` in favor of ``qml.resources.estimate_shots``
+  - ``qml.estimator.estimate_error`` in favor of ``qml.resources.estimate_error``
+  - ``qml.estimator.FirstQuantization`` in favor of ``qml.resources.FirstQuantization``
+  - ``qml.estimator.DoubleFactorization`` in favor of ``qml.resources.DoubleFactorization``
 
 * ``argnum`` has been renamed ``argnums`` for ``qml.grad``, ``qml.jacobian``, ``qml.jvp`` and ``qml.vjp``.
   [(#8496)](https://github.com/PennyLaneAI/pennylane/pull/8496)
@@ -241,6 +263,12 @@
 
 * Add workflow to bump Catalyst and Lightning versions in the RC branch, create a new release tag and draft release, tag the RC branch, and create a PR to merge the RC branch into master.
   [(#8352)](https://github.com/PennyLaneAI/pennylane/pull/8352)
+  
+* Added `MCM_METHOD` and `POSTSELECT_MODE` `StrEnum` objects to improve validation and handling of `MCMConfig` creation.
+  [(#8596)](https://github.com/PennyLaneAI/pennylane/pull/8596)
+  
+* Updated various docstrings to be compatible with the new documentation testing approach.
+  [(#8635)](https://github.com/PennyLaneAI/pennylane/pull/8635)
   
 * In program capture, transforms now have a single transform primitive that have a `transform` param that stores
   the `TransformDispatcher`. Before, each transform had its own primitive stored on the 
@@ -323,6 +351,10 @@
   informative ``RuntimeError`` when used with JAX-JIT or :func:`~.qjit`.
   [(#8489)](https://github.com/PennyLaneAI/pennylane/pull/8489)
 
+* Users can now apply xDSL passes without the need to pass the `pass_plugins` argument to the `qjit` decorator.
+  [(#8572)](https://github.com/PennyLaneAI/pennylane/pull/8572)
+  [(#8573)](https://github.com/PennyLaneAI/pennylane/pull/8573)
+
 * The `is_xdsl_pass` function has been added to the `pennylane.compiler.python_compiler.pass_api` module.
   This function checks if a pass name corresponds to an xDSL implemented pass.
   [(#8572)](https://github.com/PennyLaneAI/pennylane/pull/8572)
@@ -330,6 +362,15 @@
 * The :func:`~pennylane.compiler.python_compiler.Compiler.run` method now accepts a string as input,
   which is parsed and transformed with xDSL.
   [(#8587)](https://github.com/PennyLaneAI/pennylane/pull/8587)
+
+* The :func:`~pennylane.compiler.python_compiler.transforms.convert_to_mbqc_formalism_pass` now 
+  supports :class:`~xdsl.dialects.scf.IndexSwitchOp` in IR and ignores regions that have no body.
+  [(#8632)](https://github.com/PennyLaneAI/pennylane/pull/8632)
+
+* The `convert_to_mbqc_formalism` compilation pass now outlines the operations to represent a gate
+  in the MBQC formalism into subroutines in order to reduce the IR size for large programs.
+  [(#8619)](https://github.com/PennyLaneAI/pennylane/pull/8619)
+
 
 <h3>Documentation 📝</h3>
 
@@ -399,13 +440,13 @@ A warning message has been added to :doc:`Building a plugin <../development/plug
 
 This release contains contributions from (in alphabetical order):
 
-
 Guillermo Alonso,
 Utkarsh Azad,
 Astral Cai,
 Yushao Chen,
 Marcus Edwards,
 Lillian Frederiksen,
+Sengthai Heng,
 Soran Jahangiri,
 Christina Lee,
 Joseph Lee,
