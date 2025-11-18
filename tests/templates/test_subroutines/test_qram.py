@@ -43,8 +43,8 @@ def bb_quantum(bitstrings, qram_wires, target_wires, bus, dir_wires, portL_wires
             [6, 7, 8],
             [9, 10, 11],
             [12, 13, 14],
-            2,
-            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0],
+            2,  # addressed from the left
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0],  # |110>
         ),
 (
             ["010", "111", "110", "000"],
@@ -55,7 +55,7 @@ def bb_quantum(bitstrings, qram_wires, target_wires, bus, dir_wires, portL_wires
             [6, 7, 8],
             [12, 13, 14],
             1,
-            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0],
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0],  # |111>
         ),
         (
             ["010", "111", "110", "000"],
@@ -66,7 +66,7 @@ def bb_quantum(bitstrings, qram_wires, target_wires, bus, dir_wires, portL_wires
             [12, 13, 14],
             [9, 10, 11],
             0,
-            [0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0],  # |010>
         ),
     ],
 )
