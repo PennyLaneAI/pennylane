@@ -446,36 +446,3 @@ def get_jax_patches():
     patches.extend(_get_pjit_patch())
 
     return tuple(patches)
-
-
-# For backwards compatibility: apply patches globally if explicitly requested
-# This maintains existing behavior but is deprecated in favor of using Patcher
-def apply_patches_globally():
-    """Apply JAX patches globally (deprecated, should only used in tests).
-
-    This function applies patches at module level for backwards compatibility.
-    New code should use get_jax_patches() with the Patcher context manager instead.
-
-    Warning:
-        Global patching has side effects and is harder to control. Prefer using
-        Patcher with get_jax_patches() for surgical, temporary patching.
-    """
-    if not has_jax:
-        return
-
-    from packaging.version import Version
-
-    jax_version = Version(jax.__version__)
-    if jax_version >= Version("0.7.0"):
-        try:
-            _add_make_eqn_helper()
-            _patch_dyn_shape_staging_rule()
-            _patch_pjit_staging_rule()
-        except Exception as e:  # pylint: disable=broad-except
-            import warnings
-
-            warnings.warn(
-                f"Failed to apply JAX patches for version {jax.__version__}: {e}. "
-                "Some dynamic shape features may not work correctly.",
-                UserWarning,
-            )
