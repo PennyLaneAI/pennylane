@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the specs transform"""
+
 # pylint: disable=invalid-sequence-index
 from collections import defaultdict
 from contextlib import nullcontext
-from typing import Optional
 
 import pytest
 
@@ -47,7 +47,6 @@ class TestSpecsTransform:
     """Tests for the transform specs using the QNode"""
 
     def sample_circuit(self):
-
         @qml.transforms.merge_rotations
         @qml.transforms.undo_swaps
         @qml.transforms.cancel_inverses
@@ -195,6 +194,30 @@ class TestSpecsTransform:
 
         assert info["resources"].depth == (6 if compute_depth else None)
 
+    def test_compute_depth_with_condition(self):
+        """Tests that the depth is correct when there is a Conditional."""
+
+        # Tests that a conditional operator is in a different layer from
+        # the mid-circuit measurement that controls it.
+        @qml.qnode(qml.device("default.qubit"))
+        def circuit():
+            m0 = qml.measure(0)
+            qml.cond(m0, qml.Z)(1)
+            return qml.expval(qml.Z(1))
+
+        assert qml.specs(circuit)()["resources"].depth == 2
+
+        # Tests that conditional operator is in the same layer as any other
+        # op that does not have overlapping wires with the target gate.
+        @qml.qnode(qml.device("default.qubit"))
+        def circuit2():
+            m0 = qml.measure(0)
+            qml.X(0)
+            qml.cond(m0, qml.Z)(1)
+            return qml.expval(qml.Z(1))
+
+        assert qml.specs(circuit2)()["resources"].depth == 2
+
     @pytest.mark.parametrize(
         "diff_method, len_info", [("backprop", 12), ("parameter-shift", 13), ("adjoint", 12)]
     )
@@ -221,14 +244,13 @@ class TestSpecsTransform:
         decomposed like the tape.operations."""
 
         class TestDevice(qml.devices.DefaultQubit):
-
             def stopping_condition(self, op):
                 if isinstance(op, qml.QubitUnitary):
                     return False
                 return True
 
             def preprocess_transforms(
-                self, execution_config: Optional[qml.devices.ExecutionConfig] = None
+                self, execution_config: qml.devices.ExecutionConfig | None = None
             ):
                 program = super().preprocess_transforms(execution_config)
                 program.add_transform(
