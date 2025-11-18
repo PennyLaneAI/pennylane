@@ -25,6 +25,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.decomposition.decomposition_rule import null_decomp
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.operation import Operation
 from pennylane.ops import Conditional, MidMeasure, PauliMeasure
 
@@ -112,7 +113,10 @@ class TestDecomposeInterpreterGraphEnabled:
     def test_callable_gate_set_not_supported(self):
         """Tests that specifying the gate_set as a function raises an error."""
 
-        with pytest.raises(TypeError, match="Specifying gate_set as a function"):
+        with pytest.raises(
+            PennyLaneDeprecationWarning,
+            match="Passing a function to the gate_set argument is deprecated.",
+        ):
             DecomposeInterpreter(gate_set=lambda op: op.name in {"RX", "RZ", "CNOT"})
 
     @pytest.mark.integration
@@ -431,9 +435,14 @@ class TestDecomposeInterpreterGraphEnabled:
             )
             qml.cond(m0, qml.H)(wires[1])
 
+        @qml.register_resources({qml.H: 3, qml.X: 2, qml.CNOT: 1})
+        def _expensive_decomp(wires, **_):
+            raise NotImplementedError
+
         @DecomposeInterpreter(
-            gate_set={qml.RX, qml.RY, qml.RZ, "measure", "ppm"},
-            fixed_decomps={qml.GlobalPhase: null_decomp, CustomOp: _custom_decomp},
+            gate_set={qml.RX, qml.RY, qml.RZ, qml.CNOT, "measure", "ppm"},
+            fixed_decomps={qml.GlobalPhase: null_decomp},
+            alt_decomps={CustomOp: [_custom_decomp, _expensive_decomp]},
         )
         def circuit():
             CustomOp(wires=[1, 0])

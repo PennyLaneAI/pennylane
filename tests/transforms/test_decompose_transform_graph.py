@@ -148,14 +148,6 @@ class TestDecomposeGraphEnabled:
     """Tests the decompose transform with graph enabled."""
 
     @pytest.mark.unit
-    def test_callable_gate_set_not_available(self):
-        """Tests that a callable gate set is not available with graph enabled."""
-
-        tape = qml.tape.QuantumScript([])
-        with pytest.raises(TypeError, match="Specifying gate_set as a function"):
-            qml.transforms.decompose(tape, gate_set=lambda op: True)
-
-    @pytest.mark.unit
     def test_none_gate_set_error(self):
         """Tests that an error is raised when gate_set is not provided."""
 
@@ -440,7 +432,7 @@ class TestDecomposeGraphEnabled:
 
         measure_obj_class = MidMeasure if m_type == "mcm" else PauliMeasure
 
-        @qml.register_resources({qml.H: 1, qml.X: 1, measure_obj_class: 1})
+        @qml.register_resources({qml.H: 2, measure_obj_class: 1})
         def _custom_decomp(wires, **_):
             qml.H(wires[0])
             m0 = (
@@ -450,10 +442,15 @@ class TestDecomposeGraphEnabled:
             )
             qml.cond(m0, qml.H)(wires[1])
 
+        @qml.register_resources({qml.H: 3, qml.X: 2, qml.CNOT: 1})
+        def _expensive_decomp(wires, **_):
+            raise NotImplementedError
+
         @partial(
             qml.transforms.decompose,
-            gate_set={qml.RX, qml.RY, qml.RZ, "measure", "ppm"},
-            fixed_decomps={qml.GlobalPhase: null_decomp, CustomOp: _custom_decomp},
+            gate_set={qml.RX, qml.RY, qml.RZ, qml.CNOT, "measure", "ppm"},
+            fixed_decomps={qml.GlobalPhase: null_decomp},
+            alt_decomps={CustomOp: [_custom_decomp, _expensive_decomp]},
         )
         @qml.qnode(qml.device("default.qubit"))
         def circuit():
