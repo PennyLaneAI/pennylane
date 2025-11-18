@@ -31,8 +31,6 @@ _VALID_PAULI_CHARS = "XYZ"
 class PauliMeasure(Operator):
     """A Pauli product measurement."""
 
-    resource_keys = {"pauli_word"}
-
     def __init__(
         self,
         pauli_word: str,
@@ -75,10 +73,6 @@ class PauliMeasure(Operator):
         return f"PauliMeasure('{self.pauli_word}', wires={self.wires.tolist()})"
 
     @property
-    def resource_params(self) -> dict:
-        return {"pauli_word": self.hyperparameters["pauli_word"]}
-
-    @property
     def hash(self) -> int:
         """int: An integer hash uniquely representing the measurement."""
         return hash((self.__class__.__name__, self.pauli_word, tuple(self.wires.tolist()), self.id))
@@ -104,6 +98,7 @@ def _create_pauli_measure_primitive():
 
     @pauli_measure_p.def_impl
     def _pauli_measure_primitive_impl(*wires, pauli_word="", postselect=None):
+        wires = [w if math.is_abstract(w) else int(w) for w in wires]
         return _pauli_measure_impl(wires, pauli_word=pauli_word, postselect=postselect)
 
     @pauli_measure_p.def_abstract_eval
