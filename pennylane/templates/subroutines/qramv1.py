@@ -195,17 +195,16 @@ class BBQRAM(qml.operation.Operation):
                 ops.append(qml.SWAP(wires=[self.bus_wire[0], self._router(0, 0)]))
             else:
                 for p in range(1 << k):
-                    #change to  in_wire later
+                    # change to  in_wire later
                     parent = _node_index(k - 1, p >> 1)
                     if p % 2 == 0:
-                        ops.append(qml.SWAP(wires =[self.portL_wires[parent], self._router(k, p)]))
+                        ops.append(qml.SWAP(wires=[self.portL_wires[parent], self._router(k, p)]))
                     else:
-                        ops.append(qml.SWAP(wires =[self.portR_wires[parent], self._router(k, p)]))
+                        ops.append(qml.SWAP(wires=[self.portR_wires[parent], self._router(k, p)]))
         return ops
-    
+
     def _unmark_routers_via_bus(self) -> list:
         return list(reversed(self._mark_routers_via_bus()))
-  
 
     def _route_bus_down_first_k_levels(self, k_levels: int) -> list:
         """Route the bus down the first `k_levels` of the tree using dir-controlled CSWAPs."""
@@ -280,7 +279,7 @@ class BBQRAM(qml.operation.Operation):
                 target = self._portR(self.n_k - 1, p >> 1)
             bit = self.bitstrings[p][j]
             if bit == "1":
-                ops.append(qml.PauliZ(wires = target))
+                ops.append(qml.PauliZ(wires=target))
             elif bit == "0":
                 pass
         return ops
@@ -302,8 +301,8 @@ class BBQRAM(qml.operation.Operation):
         # 3) address unloading
         ops += self._unmark_routers_via_bus()
         return ops
-    
-    #Not work yet
+
+    # Not work yet
     def _decomp_hybrid(self) -> list:
         ops = []
         # If LSBs are quantum, loadrouters; else skip loading & routing for LSBs
@@ -319,7 +318,7 @@ class BBQRAM(qml.operation.Operation):
             ops.append(qml.SWAP(wires=[tw, self.bus_wire[0]]))
         return ops
 
-    #not work yet
+    # not work yet
     def _decomp_select_only(self) -> list:
         # Degenerate case: n_k == 0, no routers; only select-controlled flips on the bus.
         ops = []
@@ -329,9 +328,13 @@ class BBQRAM(qml.operation.Operation):
             for s in s_range:
                 if self.bitstrings[s][j] != "1":
                     continue
-                sel_ctrls, sel_vals = (self._select_ctrls(s) if self.select_value is None else ([], []))
+                sel_ctrls, sel_vals = (
+                    self._select_ctrls(s) if self.select_value is None else ([], [])
+                )
                 op = qml.PauliX(wires=self.bus_wire[0])
-                ops.append(qml.ctrl(op, control=sel_ctrls, control_values=sel_vals) if sel_ctrls else op)
+                ops.append(
+                    qml.ctrl(op, control=sel_ctrls, control_values=sel_vals) if sel_ctrls else op
+                )
             ops.append(qml.SWAP(wires=[tw, self.bus_wire[0]]))
             return ops
 
@@ -373,6 +376,7 @@ def select_bucket_brigade_bus_qram(
         qram_value=qram_value,
     )
 
+
 # -----------------------------
 # TODOs / Extensions
 # -----------------------------
@@ -381,4 +385,3 @@ def select_bucket_brigade_bus_qram(
 # - fat-tree architecture implementation.
 # - resource analysis.
 # - compatibility with PennyLane qrom implementation.
-

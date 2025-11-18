@@ -25,7 +25,9 @@ performs the leaf write (classical bit flip), then routes back and restores the 
 
 from typing import List, Optional, Sequence
 
-import pennylane as qml
+from pennylane.operation import Operation, Operator
+from pennylane.ops import CSWAP, SWAP, Hadamard, PauliZ, ctrl
+from pennylane.wires import Wires
 
 
 # -----------------------------
@@ -44,7 +46,7 @@ def _node_index(level: int, prefix_value: int) -> int:
 # -----------------------------
 # Select-prefix × Bucket-Brigade with explicit bus routing
 # -----------------------------
-class BBQRAM(qml.operation.Operation):
+class BBQRAM(Operation):
     r"""Bucket-brigade QRAM with **explicit bus routing** using 3 qubits per node.
 
     Each internal node (level k, prefix p) has:
@@ -54,17 +56,66 @@ class BBQRAM(qml.operation.Operation):
     A single top **bus** qubit is reused for both phases:
       - Address loading (layer-by-layer via CSWAPs; deposit bit into `dir[k,p]`),
       - Data routing (per-target: swap target↔bus, route down, leaf write, route up, swap back).
+
+    Args:
+        bitstrings (Sequence[int]): the classical data as a sequence of bitstrings
+        qram_wires (Sequence[int]): stores the index for the entry of the classical data we want to access
+        target_wires (Sequence[int]): where the classical data gets loaded
+        work_wires (Sequence[int]): the bus, direction, left port and right port wires in that order. Each node in the
+            tree contains one address (direction), one left port and one right port wire. The single bus wire is used
+            for address loading and data routing
+
+    Raises:
+        ValueError: if the bitstrings are not provided, the bitstrings are of the wrong length, the target wires are
+            of the wrong length or if there is not one direction wire, one left port wire and one right port wire per node
+
+    **Example:**
+
+    .. code-block:: python
+
+        import pennylane as qml
+        from pennylane.templates.subroutines.qramv1 import select_bucket_brigade_bus_qram
+
+        bitstrings = ["010", "111", "110", "000"]  # 2^2 entries, m=3
+        dev = device("default.qubit")
+
+        @qnode(dev)
+        def bb_quantum():
+            # qram_wires are the 2 LSB address bits.
+            qram_wires   = [0, 1]        # |i> for 4 leaves
+            target_wires = [2, 3, 4]     # m=3
+            bus          = 5             # single bus at the top
+
+            # For n_k=2 → (2^2 - 1) = 3 internal nodes in level order:
+            # (0,0) root; (1,0) left child; (1,1) right child
+            dir_wires    = [6, 7, 8]
+            portL_wires  = [9, 10, 11]
+            portR_wires  = [12, 13, 14]
+
+            # prepare an address, e.g., |10> (index 2)
+            BasisEmbedding(2, wires=qram_wires)
+
+            BBQRAM(
+                bitstrings,
+                qram_wires=qram_wires,    # n_k=2
+                target_wires=target_wires,
+                work_wires=[bus] + dir_wires + portL_wires + portR_wires,
+            )
+            return probs(wires=target_wires)
+
+    >>> print(bb_quantum())
+    [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0]
     """
 
     grad_method = None
 
     def __init__(
-            self,
-            bitstrings: Sequence[str],
-            qram_wires: Sequence[int],
-            target_wires: Sequence[int],
-            work_wires: Sequence[int],
-            id: Optional[str] = None,
+        self,
+        bitstrings: Sequence[str],
+        qram_wires: Sequence[int],
+        target_wires: Sequence[int],
+        work_wires: Sequence[int],
+        id: Optional[str] = None,
     ):
         if not bitstrings:
             raise ValueError("'bitstrings' cannot be empty.")
@@ -74,23 +125,21 @@ class BBQRAM(qml.operation.Operation):
         self.m = next(iter(m_set))
         self.bitstrings = list(bitstrings)
 
-        self.qram_wires = qml.wires.Wires(qram_wires)
+        self.qram_wires = Wires(qram_wires)
 
         self.n_k = len(self.qram_wires)
         if (1 << self.n_k) != len(self.bitstrings):
             raise ValueError("len(bitstrings) must be 2^(len(qram_wires)).")
 
-        self.target_wires = qml.wires.Wires(target_wires)
+        self.target_wires = Wires(target_wires)
         if self.m != len(self.target_wires):
             raise ValueError("len(target_wires) must equal bitstring length.")
 
-        self.bus_wire = qml.wires.Wires(work_wires[0])
+        self.bus_wire = Wires(work_wires[0])
         divider = len(work_wires[1:]) // 3
-        self.dir_wires = qml.wires.Wires(work_wires[1: 1 + divider])
-        self.portL_wires = qml.wires.Wires(
-            work_wires[1 + divider: 1 + divider * 2])
-        self.portR_wires = qml.wires.Wires(
-            work_wires[1 + divider * 2: 1 + divider * 3])
+        self.dir_wires = Wires(work_wires[1 : 1 + divider])
+        self.portL_wires = Wires(work_wires[1 + divider : 1 + divider * 2])
+        self.portR_wires = Wires(work_wires[1 + divider * 2 : 1 + divider * 3])
 
         expected_nodes = (1 << self.n_k) - 1 if self.n_k > 0 else 0
         for name, wires in {
@@ -102,13 +151,12 @@ class BBQRAM(qml.operation.Operation):
                 raise ValueError(f"{name} must have length {expected_nodes}.")
 
         all_wires = (
-                self.select_wires
-                + self.qram_wires
-                + self.target_wires
-                + self.bus_wire
-                + self.dir_wires
-                + self.portL_wires
-                + self.portR_wires
+            list(self.qram_wires)
+            + list(self.target_wires)
+            + list(self.bus_wire)
+            + list(self.dir_wires)
+            + list(self.portL_wires)
+            + list(self.portR_wires)
         )
         super().__init__(wires=all_wires, id=id)
 
@@ -150,20 +198,20 @@ class BBQRAM(qml.operation.Operation):
         ops = []
         for k in range(self.n_k):
             # 1) load a_k into the bus
-            ops.append(qml.SWAP(wires=[self.qram_wires[k], self.bus_wire[0]]))
+            ops.append(SWAP(wires=[self.qram_wires[k], self.bus_wire[0]]))
             # 2) route down k levels
             ops += self._route_bus_down_first_k_levels(k)
             # 3) deposit at level-k node on the active path
             if k == 0:
-                ops.append(qml.SWAP(wires=[self.bus_wire[0], self._router(0, 0)]))
+                ops.append(SWAP(wires=[self.bus_wire[0], self._router(0, 0)]))
             else:
                 for p in range(1 << k):
                     # change to  in_wire later
                     parent = _node_index(k - 1, p >> 1)
                     if p % 2 == 0:
-                        ops.append(qml.SWAP(wires=[self.portL_wires[parent], self._router(k, p)]))
+                        ops.append(SWAP(wires=[self.portL_wires[parent], self._router(k, p)]))
                     else:
-                        ops.append(qml.SWAP(wires=[self.portR_wires[parent], self._router(k, p)]))
+                        ops.append(SWAP(wires=[self.portR_wires[parent], self._router(k, p)]))
         return ops
 
     def _unmark_routers_via_bus(self) -> list:
@@ -179,11 +227,11 @@ class BBQRAM(qml.operation.Operation):
                 R = self._portR(ell, p)
                 d = self._router(ell, p)
                 # dir==1 ⇒ SWAP(in, R)
-                op0 = qml.CSWAP(wires=[d, in_w, R])
+                op0 = CSWAP(wires=[d, in_w, R])
                 ops.append(op0)
                 # dir==0 ⇒ SWAP(in, L)
-                op = qml.SWAP(wires=[in_w, L])
-                ops.append(qml.ctrl(op, control=[d], control_values=[0]))
+                op = SWAP(wires=[in_w, L])
+                ops.append(ctrl(op, control=[d], control_values=[0]))
         return ops
 
     def _route_bus_up_first_k_levels(self, k_levels: int) -> list:
@@ -201,25 +249,25 @@ class BBQRAM(qml.operation.Operation):
                 target = self._portR(self.n_k - 1, p >> 1)
             bit = self.bitstrings[p][j]
             if bit == "1":
-                ops.append(qml.PauliZ(wires=target))
+                ops.append(PauliZ(wires=target))
             elif bit == "0":
                 pass
         return ops
 
     # ---------- Decompositions ----------
-    def decomposition(self) -> List[qml.operation.Operator]:
+    def decomposition(self) -> List[Operator]:
         ops = []
         # 1) address loading
         ops += self._mark_routers_via_bus()
         # 2) For each target bit: load→route down→leaf op→route up→restore (reuse the route bus function)
         for j, tw in enumerate(self.target_wires):
-            ops.append(qml.Hadamard(wires=[tw]))
-            ops.append(qml.SWAP(wires=[tw, self.bus_wire[0]]))
+            ops.append(Hadamard(wires=[tw]))
+            ops.append(SWAP(wires=[tw, self.bus_wire[0]]))
             ops += self._route_bus_down_first_k_levels(len(self.qram_wires))
             ops += self._leaf_ops_for_bit(j)
             ops += self._route_bus_up_first_k_levels(len(self.qram_wires))
-            ops.append(qml.SWAP(wires=[tw, self.bus_wire[0]]))
-            ops.append(qml.Hadamard(wires=[tw]))
+            ops.append(SWAP(wires=[tw, self.bus_wire[0]]))
+            ops.append(Hadamard(wires=[tw]))
         # 3) address unloading
         ops += self._unmark_routers_via_bus()
         return ops
@@ -227,10 +275,10 @@ class BBQRAM(qml.operation.Operation):
 
 # Functional wrapper
 def select_bucket_brigade_bus_qram(
-        bitstrings: Sequence[str],
-        qram_wires: Sequence[int],
-        target_wires: Sequence[int],
-        work_wires: Sequence[int],
+    bitstrings: Sequence[str],
+    qram_wires: Sequence[int],
+    target_wires: Sequence[int],
+    work_wires: Sequence[int],
 ):
     """Functional wrapper for SelectBucketBrigadeBusQRAM."""
     return BBQRAM(
