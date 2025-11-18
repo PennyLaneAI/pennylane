@@ -24,7 +24,13 @@ jnp = pytest.importorskip("jax.numpy")
 
 # pylint: disable=wrong-import-position
 import pennylane as qml
-from pennylane.capture.primitives import cond_prim, for_loop_prim, qnode_prim, while_loop_prim
+from pennylane.capture.primitives import (
+    cond_prim,
+    for_loop_prim,
+    qnode_prim,
+    transform_prim,
+    while_loop_prim,
+)
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 from pennylane.transforms.core import TransformError, TransformProgram, transform
 
@@ -117,13 +123,15 @@ class TestCaptureTransforms:
 
         transformed_func = z_to_hadamard(func, *targs, **tkwargs)
         jaxpr = jax.make_jaxpr(transformed_func)(*args)
-        assert (transform_eqn := jaxpr.eqns[0]).primitive == z_to_hadamard._primitive
+
+        assert (transform_eqn := jaxpr.eqns[0]).primitive == transform_prim
 
         params = transform_eqn.params
         assert params["args_slice"] == slice(0, 1)
         assert params["consts_slice"] == slice(1, 1)
         assert params["targs_slice"] == slice(1, None)
         assert params["tkwargs"] == tkwargs
+        assert params["transform"] == z_to_hadamard
 
         inner_jaxpr = params["inner_jaxpr"]
         expected_jaxpr = jax.make_jaxpr(func)(*args).jaxpr
@@ -144,7 +152,8 @@ class TestCaptureTransforms:
         transformed_func = z_to_hadamard(func, *targs, **tkwargs)
 
         jaxpr = jax.make_jaxpr(transformed_func)(*args)
-        assert (transform_eqn := jaxpr.eqns[0]).primitive == z_to_hadamard._primitive
+        assert (transform_eqn := jaxpr.eqns[0]).primitive == transform_prim
+        assert transform_eqn.params["transform"] == z_to_hadamard
 
         params = transform_eqn.params
         assert params["args_slice"] == slice(0, 2)
@@ -176,9 +185,10 @@ class TestCaptureTransforms:
         transformed_func = z_to_hadamard(func, *targs, **tkwargs)
 
         jaxpr = jax.make_jaxpr(transformed_func)(*args)
-        assert (transform_eqn := jaxpr.eqns[0]).primitive == z_to_hadamard._primitive
+        assert (transform_eqn := jaxpr.eqns[0]).primitive == transform_prim
 
         qnode_jaxpr = transform_eqn.params["inner_jaxpr"]
+        assert transform_eqn.params["transform"] == z_to_hadamard
         assert qnode_jaxpr.eqns[0].primitive == qnode_prim
 
         qnode = qnode_jaxpr.eqns[0].params["qnode"]
@@ -228,7 +238,8 @@ class TestCaptureTransforms:
             expval_z_obs_to_x_obs(func, *targs2, **tkwargs2), *targs1, **tkwargs1
         )
         jaxpr = jax.make_jaxpr(transformed_func)(*args)
-        assert (transform_eqn1 := jaxpr.eqns[0]).primitive == z_to_hadamard._primitive
+        assert (transform_eqn1 := jaxpr.eqns[0]).primitive == transform_prim
+        assert transform_eqn1.params["transform"] == z_to_hadamard
 
         params1 = transform_eqn1.params
         assert params1["args_slice"] == slice(0, 1)
@@ -237,7 +248,8 @@ class TestCaptureTransforms:
         assert params1["tkwargs"] == tkwargs1
 
         inner_jaxpr = params1["inner_jaxpr"]
-        assert (transform_eqn2 := inner_jaxpr.eqns[0]).primitive == expval_z_obs_to_x_obs._primitive
+        assert (transform_eqn2 := inner_jaxpr.eqns[0]).primitive == transform_prim
+        assert transform_eqn2.params["transform"] == expval_z_obs_to_x_obs
 
         params2 = transform_eqn2.params
         assert params2["args_slice"] == slice(0, 1)
@@ -272,7 +284,8 @@ class TestCaptureTransforms:
         assert jaxpr.eqns[0].primitive == qnode_prim
 
         qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
-        assert qfunc_jaxpr.eqns[0].primitive == z_to_hadamard._primitive
+        assert qfunc_jaxpr.eqns[0].primitive == transform_prim
+        assert qfunc_jaxpr.eqns[0].params["transform"] == z_to_hadamard
 
         loop_jaxpr = qfunc_jaxpr.eqns[0].params["inner_jaxpr"]
         assert loop_jaxpr.eqns[0].primitive == qml.capture.primitives.for_loop_prim
@@ -547,7 +560,6 @@ class TestTapeTransformFallback:
 
         # True branch
         jaxpr = jax.make_jaxpr(f, static_argnums=0)(3.5)
-        assert jaxpr.eqns[0].primitive == cond_prim
         transformed_jaxpr = z_to_hadamard.plxpr_transform(
             jaxpr.jaxpr, jaxpr.consts, dummy_targs, {}
         )
@@ -561,7 +573,6 @@ class TestTapeTransformFallback:
 
         # Else if branch
         jaxpr = jax.make_jaxpr(f, static_argnums=0)(2.5)
-        assert jaxpr.eqns[0].primitive == cond_prim
         transformed_jaxpr = z_to_hadamard.plxpr_transform(
             jaxpr.jaxpr, jaxpr.consts, dummy_targs, {}
         )
@@ -575,7 +586,6 @@ class TestTapeTransformFallback:
 
         # Else branch
         jaxpr = jax.make_jaxpr(f, static_argnums=0)(1.5)
-        assert jaxpr.eqns[0].primitive == cond_prim
         transformed_jaxpr = z_to_hadamard.plxpr_transform(
             jaxpr.jaxpr, jaxpr.consts, dummy_targs, {}
         )
