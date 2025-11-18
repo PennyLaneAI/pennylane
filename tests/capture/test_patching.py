@@ -141,12 +141,12 @@ class TestGetJaxPatches:
         This test verifies that the Patcher context manager properly saves and
         restores state, ensuring patches are truly temporary and don't leak.
         """
-        from jax._src.interpreters import partial_eval as pe
+        from jax._src import pjit
         from jax._src.lax import lax
 
         # Get the current state before our Patcher context (original JAX state)
         original_dyn_shape = lax._dyn_shape_staging_rule
-        original_iota = lax._iota_staging_rule
+        original_pjit_staging = pjit.pjit_staging_rule
 
         # Get the patches
         patches = get_jax_patches()
@@ -154,16 +154,16 @@ class TestGetJaxPatches:
         with Patcher(*patches):
             # Inside context, functions should be replaced with new patch instances
             patched_dyn_shape = lax._dyn_shape_staging_rule
-            patched_iota = lax._iota_staging_rule
+            patched_pjit_staging = pjit.pjit_staging_rule
 
             # These should be different objects from the originals
             assert patched_dyn_shape is not original_dyn_shape
-            assert patched_iota is not original_iota
+            assert patched_pjit_staging is not original_pjit_staging
 
         # After exiting context, should be back to the original JAX state
         after_dyn_shape = lax._dyn_shape_staging_rule
-        after_iota = lax._iota_staging_rule
+        after_pjit_staging = pjit.pjit_staging_rule
 
         # Should be restored to original state
         assert after_dyn_shape is original_dyn_shape
-        assert after_iota is original_iota
+        assert after_pjit_staging is original_pjit_staging

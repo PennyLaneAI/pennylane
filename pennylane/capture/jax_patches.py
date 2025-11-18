@@ -213,54 +213,14 @@ def _patch_dyn_shape_staging_rule(apply=True):
         # Return single tracer (not list) since out_aval is a single value
         return out_tracers[0]
 
-    # Also need to patch the iota_staging_rule which uses _dyn_shape_staging_rule
-    def patched_iota_staging_rule(
-        trace, source_info, *dyn_shape, dtype, shape, dimension, sharding
-    ):
-        """Patched version of _iota_staging_rule."""
-        params = {"dtype": dtype, "shape": shape, "dimension": dimension, "sharding": sharding}
-        if not dyn_shape:
-            return trace.default_process_primitive(lax.iota_p, (), params, source_info=source_info)
-        aval = core.DShapedArray(lax._merge_dyn_shape(shape, dyn_shape), dtype, False)
-        return patched_dyn_shape_staging_rule(
-            trace, source_info, lax.iota_p, aval, *dyn_shape, **params
-        )
-
-    # Also need to patch broadcast_in_dim_staging_rule which uses _dyn_shape_staging_rule
-    def patched_broadcast_in_dim_staging_rule(
-        trace, source_info, x, *dyn, shape, broadcast_dimensions, sharding
-    ):
-        """Patched version of _broadcast_in_dim_staging_rule."""
-        params = dict(shape=shape, broadcast_dimensions=broadcast_dimensions, sharding=sharding)
-        if not dyn:
-            return trace.default_process_primitive(
-                lax.broadcast_in_dim_p, (x,), params, source_info=source_info
-            )
-        aval = core.DShapedArray(lax._merge_dyn_shape(shape, dyn), x.dtype, x.weak_type)
-        return patched_dyn_shape_staging_rule(
-            trace, source_info, lax.broadcast_in_dim_p, aval, x, *dyn, **params
-        )
-
     if apply:
-        # Apply the patches
+        # Apply the patch - just patch the core function
         lax._dyn_shape_staging_rule = patched_dyn_shape_staging_rule
-        lax._iota_staging_rule = patched_iota_staging_rule
-        pe.custom_staging_rules[lax.iota_p] = patched_iota_staging_rule
-        lax._broadcast_in_dim_staging_rule = patched_broadcast_in_dim_staging_rule
-        pe.custom_staging_rules[lax.broadcast_in_dim_p] = patched_broadcast_in_dim_staging_rule
         return None
     else:
+        # Return just the core patch - the wrappers will call the patched version
         return [
             (lax, "_dyn_shape_staging_rule", patched_dyn_shape_staging_rule),
-            (lax, "_iota_staging_rule", patched_iota_staging_rule),
-            (pe.custom_staging_rules, "__dict_item__", lax.iota_p, patched_iota_staging_rule),
-            (lax, "_broadcast_in_dim_staging_rule", patched_broadcast_in_dim_staging_rule),
-            (
-                pe.custom_staging_rules,
-                "__dict_item__",
-                lax.broadcast_in_dim_p,
-                patched_broadcast_in_dim_staging_rule,
-            ),
         ]
 
 
