@@ -399,6 +399,49 @@ def _generalized_pauli_decompose_sparse(  # pylint: disable=too-many-statements,
     return (coeffs, obs_terms)
 
 
+def _validate_sparse_matrix_shape(shape):
+    """Validate that a sparse matrix has the correct shape for decomposition.
+    
+    Args:
+        shape: Matrix shape tuple (rows, cols)
+        
+    Raises:
+        ValueError: If shape is invalid for decomposition
+    """
+    if shape[0] == 0:
+        raise ValueError("Cannot decompose an empty matrix.")
+    if shape[0] != shape[1]:
+        raise ValueError(
+            f"The matrix should be square, got {shape}. Use 'padding=True' for rectangular matrices."
+        )
+    n = int(math.log2(shape[0]))
+    N = 2**n
+    if shape[0] != N:
+        raise ValueError(
+            f"Dimension of the matrix should be a power of 2, got {shape}. Use 'padding=True' for these matrices."
+        )
+
+
+def _check_hermitian_sparse(H):
+    """Check if a sparse matrix is Hermitian.
+    
+    Args:
+        H: Sparse matrix to check
+        
+    Raises:
+        ValueError: If the matrix is not Hermitian
+    """
+    adjoint = H.getH() if hasattr(H, "getH") else H.transpose().conjugate()
+    diff = H - adjoint
+    nnz = getattr(diff, "nnz", None)
+    if nnz is None:
+        nnz = diff.count_nonzero()
+    if nnz:
+        max_diff = max(abs(val) for val in diff.data)
+        if max_diff > 1e-8:
+            raise ValueError("The matrix is not Hermitian")
+
+
 def pauli_decompose(
     H, hide_identity=False, wire_order=None, pauli=False, check_hermitian=True
 ) -> LinearCombination | PauliSentence:
@@ -502,18 +545,7 @@ def pauli_decompose(
     shape = H.shape if is_sparse else qml.math.shape(H)
 
     if is_sparse:
-        if shape[0] == 0:
-            raise ValueError("Cannot decompose an empty matrix.")
-        if shape[0] != shape[1]:
-            raise ValueError(
-                f"The matrix should be square, got {shape}. Use 'padding=True' for rectangular matrices."
-            )
-        n = int(math.log2(shape[0]))
-        N = 2**n
-        if shape[0] != N:
-            raise ValueError(
-                f"Dimension of the matrix should be a power of 2, got {shape}. Use 'padding=True' for these matrices."
-            )
+        _validate_sparse_matrix_shape(shape)
 
     n = int(math.log2(shape[0])) if is_sparse else int(qml.math.log2(shape[0]))
     N = 2**n
@@ -524,15 +556,7 @@ def pauli_decompose(
 
         if not is_abstract(H):
             if is_sparse:
-                adjoint = H.getH() if hasattr(H, "getH") else H.transpose().conjugate()
-                diff = H - adjoint
-                nnz = getattr(diff, "nnz", None)
-                if nnz is None:
-                    nnz = diff.count_nonzero()
-                if nnz:
-                    max_diff = max(abs(val) for val in diff.data)
-                    if max_diff > 1e-8:
-                        raise ValueError("The matrix is not Hermitian")
+                _check_hermitian_sparse(H)
             else:
                 if not qml.math.allclose(H, qml.math.conj(qml.math.transpose(H))):
                     raise ValueError("The matrix is not Hermitian")
