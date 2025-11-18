@@ -47,7 +47,7 @@ def _node_index(level: int, prefix_value: int) -> int:
 # Select-prefix × Bucket-Brigade with explicit bus routing
 # -----------------------------
 class BBQRAM(Operation):
-    r"""Bucket-brigade QRAM with **explicit bus routing** using 3 qubits per node.
+    r"""Bucket-brigade QRAM (https://arxiv.org/pdf/0708.1879) with **explicit bus routing** using 3 qubits per node.
 
     Bucket-brigade QRAM achieves an O(log N) complexity instead of the typical N, where N is the number of
     memory cells addressed. It does this by reducing the number of nodes that need to be visited in a tree
