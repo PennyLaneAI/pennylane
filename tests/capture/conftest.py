@@ -42,13 +42,7 @@ def apply_patches_to_dynamic_shape_tests():
 
         # Apply patches using Patcher context manager for this test
         patches = get_jax_patches()
-        patcher = Patcher(*patches)
-        patcher.__enter__()
-
-        try:
+        with Patcher(*patches):
             yield
-        finally:
-            # Properly cleanup patches after test
-            patcher.__exit__(None, None, None)
     else:
         yield
