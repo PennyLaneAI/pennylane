@@ -90,8 +90,8 @@ def test_approx_poly_custom_func(loss_func):
     def target_func(x: np.ndarray) -> np.ndarray:
         return np.sin(x) * np.exp(-x)
 
-    def fit_func(x: np.ndarray, y: np.ndarray, degree: int) -> tuple[np.ndarray, float]:
-        poly, stats = np.polynomial.laguerre.Laguerre.fit(x, y, degree, full=True)
+    def fit_func(x: np.ndarray, y: np.ndarray, deg: int, **__) -> tuple[np.ndarray, float]:
+        poly, stats = np.polynomial.laguerre.Laguerre.fit(x, y, deg, full=True)
         return poly, stats[0]
 
     deg, poly, loss = approx_poly_degree(

@@ -34,7 +34,7 @@ def approx_poly_degree(
 
     Args:
         x_vec (np.ndarray): the domain values for sampling the target function ``target_func``.
-            The minimum length of ``x_vec`` is two and should be sorted.
+            The minimum length of ``x_vec`` is two and is expected to be sorted.
         target_func (callable): function to be approximated with a polynomial and has the
             signature ``(x_vec: np.ndarray) -> np.ndarray``.
         error_tol (float): tolerance for the target fitting error. Defaults to ``1e-6``.
@@ -46,23 +46,23 @@ def approx_poly_degree(
             ``"legendre"``, and ``"hermite"``. Defaults to ``None``, which assumes fitting
             data to a polynomial in the monomial basis.
         loss_func (str | callable | None): loss function to use, where available options are
-            `"mse"` (mean squared error), `"mae"` (mean absolute error), `"rmse"`
-            (root mean squared error), `"linf"` (maximum absolute error), or a custom loss
+            ``"mse"`` (mean squared error), ``"mae"`` (mean absolute error), ``"rmse"``
+            (root mean squared error), ``"linf"`` (maximum absolute error), or a custom loss
             function with the signature ``(pred: np.ndarray, target: np.ndarray) -> float``.
             Defaults to ``None``, which means the least squares fit error is used.
         fit_func (callable | None): function that approximately fits the polynomial and has the signature
-            ``(x_vec: np.ndarray, y_vec: np.ndarray, degree: int, **fit_kwargs) -> tuple[Callable, float]``.
+            ``(x_vec: np.ndarray, y_vec: np.ndarray, deg: int, **fit_kwargs) -> tuple[Callable, float]``.
             It should return a callable for the fit polynomial along with the least squares error of the fit.
             Defaults to ``None``, which means the NumPy polynomial fitting function corresponding
             to the ``basis`` keyword argument will be used. Note that, providing a custom function
             will override the ``basis`` keyword argument.
         project_func (str | callable | None): function to project the dense interval
-            based on `x_vec` to a sparse one with ``[x_vec[0], x_vec[-1]]`` as the domain.
+            based on ``x_vec`` to a sparse one with ``[x_vec[0], x_vec[-1]]`` as the domain.
             Defaults to ``None``, which means no projection is performed. When ``"uniform"``
             is used, the points are evenly spaced between ``x_vec[0]`` and ``x_vec[-1]``.
-            Whereas, when ``"gauss-lobatto"`` is used, the "Chebyshev-Gauss-Lobatto" nodes are
-            used for ``basis="chebyshev"``, and the "Legendre-Gauss-Lobatto" nodes are used for
-            ``basis="legendre"``. When a callable is provided, it should have the signature
+            Whereas, when ``"gauss-lobatto"`` is used, the "Chebyshev/Legendre-Gauss-Lobatto"
+            nodes are used for ``basis="chebyshev"/"legendre"``. When a callable is provided,
+            it should have the signature
             ``(x_min: float, x_max: float, num_points: int) -> np.ndarray``.
         **fit_kwargs: additional keyword arguments to pass to the `fitting` functions.
             See keyword arguments below for available arguments for the default ``NumPy``
@@ -76,6 +76,68 @@ def approx_poly_degree(
 
     Returns:
         tuple[float, callable, loss]: the degree of the polynomial, the fit polynomial function, and the loss of the fit.
+
+    **Example**
+
+    This example fits the function :math:`f(x) = x^2` using the monomial basis in the default setting.
+
+    .. code-block::
+
+        >>> import numpy as np
+        >>> from pennylane.labs.resource_estimation import approx_poly_degree
+        >>> x_vec = np.linspace(-2, 2, 100)
+        >>> target_func = lambda x: x**2
+        >>> degree, poly, loss = approx_poly_degree(
+        ...     x_vec, target_func, degrees=(2, 4), error_tol=1e-6
+        ... )
+        >>> print(degree)
+        2
+        >>> print(poly)
+        3.55271368e-16 + (3.4742413e-16)·x + 1.0·x²
+        >>> print(loss) # Sum of squared errors
+        2.40281579329135e-29
+
+    This example fits the function :math:`f(x) = \sin(3x) + 0.3x^2 - 0.1x` using the Chebyshev basis with the Gauss-Lobatto nodes.
+
+    .. code-block::
+
+        >>> import numpy as np
+        >>> from pennylane.labs.resource_estimation import approx_poly_degree
+        >>> x_vec = np.linspace(-1, 1, 100)
+        >>> target_func = lambda x: np.sin(3*x) + 0.3*x**2 - 0.1*x
+        >>> degree, poly, loss = approx_poly_degree(
+        ...     x_vec, target_func, degrees=(2, 10), error_tol=1e-3,
+        ...     basis="chebyshev", loss_func="linf", project_func="gauss-lobatto"
+        ... )
+        >>> print(degree)
+        7
+        >>> print(poly)
+        0.15 + 0.57811797·T₁(x) + 0.15·T₂(x) - 0.61812903·T₃(x) +
+        (2.43236301e-18)·T₄(x) + 0.08622566·T₅(x) - (9.61838039e-18)·T₆(x) -
+        0.00509459·T₇(x)
+        >>> print(loss)
+        0.0003266957232994083
+
+    This example fits the function :math:`f(x) = \sin(x) \exp(-x)` using a custom fit function for the Laguerre basis.
+
+    .. code-block::
+
+        >>> import numpy as np
+        >>> from pennylane.labs.resource_estimation import approx_poly_degree
+        >>> x_vec = np.linspace(0, 1, 100)
+        >>> target_func = lambda x: np.sin(x) * np.exp(-x)
+        >>> def fit_func(x, y, deg, **fit_kwargs):
+        ...     poly, stats = np.polynomial.laguerre.Laguerre.fit(x, y, deg, full=True)
+        ...     return poly, stats[0]
+        >>> degree, poly, loss = approx_poly_degree(
+        ...     x_vec, target_func, degrees=(3, 10), error_tol=1e-6, fit_func=fit_func, loss_func="mse"
+        ... )
+        >>> print(degree)
+        3
+        >>> print(poly)
+        0.71956319 - 2.0816571·L₁(x) + 2.99459653·L₂(x) - 1.63191581·L₃(x)
+        >>> print(loss)
+        5.286491415090545e-08
     """
     x_vec = np.sort(x_vec)
     y_vec = target_func(x_vec)
@@ -94,7 +156,7 @@ def approx_poly_degree(
 
     fit_loss = _process_loss_func(loss_func)
 
-    fit_func, fit_poly, fit_args = _process_poly_fit(fit_func, basis)
+    fit_func, fit_args = _process_poly_fit(fit_func, basis)
     fit_kwargs |= fit_args
 
     proj_func = _process_proj_func(project_func, basis)
@@ -109,15 +171,13 @@ def approx_poly_degree(
             x_proj = np.sort(proj_func(*x_domain, degree + 1))
             y_proj = target_func(x_proj)
 
-        if fit_poly is None:
-            poly, stats = fit_func(x_proj, y_proj, degree, **fit_kwargs)
-        else:
-            coeffs, stats = fit_func(x_proj, y_proj, degree, **fit_kwargs)
-            poly = fit_poly(coeffs, domain=(-1, 1)).convert(domain=x_domain, window=x_domain)
+        poly, stats = fit_func(
+            x_proj, y_proj, degree, domain=x_domain, window=x_domain, **fit_kwargs
+        )
 
         loss = fit_loss(stats) if loss_func is None else fit_loss(poly(x_vec), y_vec)
         if loss is None and loss_func is None:
-            loss = np.sum((poly(x_vec) - y_vec) ** 2)
+            loss = float(np.sum((poly(x_vec) - y_vec) ** 2))
 
         if loss < best_loss:
             best_loss, best_poly = loss, poly
@@ -155,24 +215,24 @@ def _process_poly_fit(
     fit_func: Callable | None, basis: str | None
 ) -> tuple[Callable, Callable | None]:
     """Process the polynomial fitting function based on the basis."""
-    fit_poly, fit_args = None, {}
+    fit_args = {}
     if fit_func is None:
         fit_args["full"] = True
         match basis:
             case "chebyshev":
-                fit_func = np.polynomial.chebyshev.chebfit
-                fit_poly = np.polynomial.chebyshev.Chebyshev
+                fit_func = np.polynomial.chebyshev.Chebyshev.fit
+                # fit_poly = np.polynomial.chebyshev.Chebyshev
             case "legendre":
-                fit_func = np.polynomial.legendre.legfit
-                fit_poly = np.polynomial.legendre.Legendre
+                fit_func = np.polynomial.legendre.Legendre.fit
+                # fit_poly = np.polynomial.legendre.Legendre
             case "hermite":
-                fit_func = np.polynomial.hermite.hermfit
-                fit_poly = np.polynomial.hermite.Hermite
+                fit_func = np.polynomial.hermite.Hermite.fit
+                # fit_poly = np.polynomial.hermite.Hermite
             case _:
-                fit_func = np.polynomial.polynomial.polyfit
-                fit_poly = np.polynomial.polynomial.Polynomial
+                fit_func = np.polynomial.polynomial.Polynomial.fit
+                # fit_poly = np.polynomial.polynomial.Polynomial
 
-    return fit_func, fit_poly, fit_args
+    return fit_func, fit_args  # fit_poly
 
 
 def _process_proj_func(project_func: str | Callable | None, basis: str | None) -> Callable | None:
