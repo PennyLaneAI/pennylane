@@ -114,6 +114,9 @@
   work wire and :class:`pennylane.TemporaryAND` operators to reduce the resources needed.
   [(#8549)](https://github.com/PennyLaneAI/pennylane/pull/8549)
 
+* The graph-based decomposition system now supports decomposition rules that contains mid-circuit measurements.
+  [(#8079)](https://github.com/PennyLaneAI/pennylane/pull/8079)
+
 <h3>Breaking changes 💔</h3>
 
 * ``QuantumScript.to_openqasm`` has been removed. Please use ``qml.to_openqasm`` instead. This removes duplicated 
@@ -264,6 +267,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Add workflow to bump Catalyst and Lightning versions in the RC branch, create a new release tag and draft release, tag the RC branch, and create a PR to merge the RC branch into master.
+  [(#8352)](https://github.com/PennyLaneAI/pennylane/pull/8352)
+  
 * Added `MCM_METHOD` and `POSTSELECT_MODE` `StrEnum` objects to improve validation and handling of `MCMConfig` creation.
   [(#8596)](https://github.com/PennyLaneAI/pennylane/pull/8596)
   

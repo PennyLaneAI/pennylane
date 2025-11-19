@@ -147,7 +147,7 @@ class TestMLIRGraph:
             tmp_path,
             {
                 "QNode_level_0_no_transforms.svg",
-                "QNode_level_1_after_remove-chained-self-inverse.svg",
+                "QNode_level_1_after_cancel-inverses.svg",
                 "QNode_level_2_after_merge-rotations.svg",
             },
         )
