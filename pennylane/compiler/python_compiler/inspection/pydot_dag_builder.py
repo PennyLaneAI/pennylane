@@ -177,7 +177,7 @@ class PyDotDAGBuilder(DAGBuilder):
         self._subgraphs[parent_graph_id].add_subgraph(cluster)
 
     def render(self, output_filename: str) -> None:
-        """Render the graph to a file
+        """Save the graph to a file.
 
         The implementation should ideally infer the output format
         (e.g., 'png', 'svg') from this filename's extension.
