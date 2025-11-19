@@ -331,13 +331,42 @@ def _equal_operators(
             f"Got {op1.hyperparameters}\n and {op2.hyperparameters}."
         )
 
-    if any(qml.math.is_abstract(d) for d in op1.data + op2.data):
-        # assume all tracers are independent
-        return "Data contains a tracer. Abstract tracers are assumed to be unique."
-    if not all(
-        qml.math.allclose(d1, d2, rtol=rtol, atol=atol) for d1, d2 in zip(op1.data, op2.data)
-    ):
-        return f"op1 and op2 have different data.\nGot {op1.data} and {op2.data}"
+    # Check if data contains abstract tracers
+    # If both parameters are the same tracer object, they're equal
+    # If parameters are different tracers, assume they're different
+    # If parameters are concrete, use allclose for comparison
+    for d1, d2 in zip(op1.data, op2.data):
+        is_abstract_d1 = qml.math.is_abstract(d1)
+        is_abstract_d2 = qml.math.is_abstract(d2)
+
+        if is_abstract_d1 or is_abstract_d2:
+            # At least one is abstract
+            if is_abstract_d1 and is_abstract_d2:
+                # Both abstract - check if same tracer
+                if d1 is not d2:
+                    return "Data contains different abstract tracers. Abstract tracers are assumed to be unique."
+            else:
+                # One abstract, one concrete - they're different
+                return "Data contains mixed abstract and concrete values."
+        else:
+            # Both concrete - but we might be in a tracing context
+            # Try to use numpy's allclose to avoid creating traced operations
+            try:
+                import numpy as np
+
+                # Convert to numpy arrays to avoid tracing
+                d1_np = np.asarray(d1)
+                d2_np = np.asarray(d2)
+                if not np.allclose(d1_np, d2_np, rtol=rtol, atol=atol):
+                    return f"op1 and op2 have different data.\nGot {op1.data} and {op2.data}"
+            except (TypeError, ValueError):
+                # Fall back to qml.math.allclose if numpy conversion fails
+                close_result = qml.math.allclose(d1, d2, rtol=rtol, atol=atol)
+                if qml.math.is_abstract(close_result):
+                    # allclose returned a tracer - assume equal to avoid tracing issues
+                    continue
+                elif not close_result:
+                    return f"op1 and op2 have different data.\nGot {op1.data} and {op2.data}"
 
     if check_trainability:
         for params1, params2 in zip(op1.data, op2.data):
@@ -349,11 +378,40 @@ def _equal_operators(
                     f"{params1} trainability is {params1_train} and {params2} trainability is {params2_train}"
                 )
 
-    if check_interface:
+    if check_interface:  # pylint: disable=too-many-nested-blocks
         for params1, params2 in zip(op1.data, op2.data):
             params1_interface = qml.math.get_interface(params1)
             params2_interface = qml.math.get_interface(params2)
+
+            # Special handling for JAX Literal types vs numpy arrays
+            # In JAX 0.7.2+, Literal types are used more extensively
+            # We consider jax Literals and numpy arrays as compatible interfaces
             if params1_interface != params2_interface:
+                # Check if one is a JAX Literal and the other is numpy
+                is_literal_vs_numpy = (
+                    params1_interface == "jax" and params2_interface == "numpy"
+                ) or (params1_interface == "numpy" and params2_interface == "jax")
+
+                # If it's Literal vs numpy, check if params1 is actually a Literal type
+                if is_literal_vs_numpy:
+                    try:
+                        from jax._src import literals  # pylint: disable=import-outside-toplevel
+
+                        is_literal = isinstance(
+                            params1,
+                            (literals.LiteralInt, literals.LiteralFloat, literals.LiteralArray),
+                        ) or isinstance(
+                            params2,
+                            (literals.LiteralInt, literals.LiteralFloat, literals.LiteralArray),
+                        )
+                        if is_literal:
+                            # Consider them compatible - skip this check
+                            continue
+                    except (ImportError, AttributeError):
+                        # If JAX literals aren't available, fall through to normal check
+                        pass
+
+                # If we get here, interfaces are genuinely different
                 return (
                     "Parameters have different interfaces.\n "
                     f"{params1} interface is {params1_interface} and {params2} interface is {params2_interface}"
@@ -597,11 +655,34 @@ def _equal_sprod(op1: SProd, op2: SProd, **kwargs):
         kwargs["atol"],
     )
 
-    if check_interface:
+    if check_interface:  # pylint: disable=too-many-nested-blocks
         for params1, params2 in zip(op1.data, op2.data):
             params1_interface = qml.math.get_interface(params1)
             params2_interface = qml.math.get_interface(params2)
+
+            # Special handling for JAX Literal types vs numpy/python scalars
             if params1_interface != params2_interface:
+                # Check if one is a JAX Literal and the other is numpy/python
+                is_literal_vs_other = (
+                    params1_interface == "jax" and params2_interface in ("numpy", "python")
+                ) or (params1_interface in ("numpy", "python") and params2_interface == "jax")
+
+                if is_literal_vs_other:
+                    try:
+                        from jax._src import literals  # pylint: disable=import-outside-toplevel
+
+                        is_literal = isinstance(
+                            params1,
+                            (literals.LiteralInt, literals.LiteralFloat, literals.LiteralArray),
+                        ) or isinstance(
+                            params2,
+                            (literals.LiteralInt, literals.LiteralFloat, literals.LiteralArray),
+                        )
+                        if is_literal:
+                            continue
+                    except (ImportError, AttributeError):
+                        pass
+
                 return (
                     "Parameters have different interfaces.\n "
                     f"{params1} interface is {params1_interface} and {params2} interface is {params2_interface}"

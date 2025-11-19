@@ -486,16 +486,24 @@ class Projector(Operator):
         if len(shape) != 1:
             raise ValueError(f"Input state must be one-dimensional; got shape {shape}.")
 
-        if len(state) == len(wires):
+        # In JAX 0.7.2+, LiteralArray types don't have len() method
+        # Convert to native Python types if it's a JAX Literal
+        if hasattr(state, "__class__") and "Literal" in state.__class__.__name__:
+            # For LiteralArray, use shape[0] instead of len()
+            state_len = shape[0] if shape else 1
+        else:
+            state_len = len(state)
+
+        if state_len == len(wires):
             return object.__new__(BasisStateProjector)
 
-        if len(state) == 2 ** len(wires):
+        if state_len == 2 ** len(wires):
             return object.__new__(StateVectorProjector)
 
         raise ValueError(
             "Input state should have the same length as the wires in the case "
             "of a basis state, or 2**len(wires) in case of a state vector. "
-            f"The lengths for the input state and wires are {len(state)} and "
+            f"The lengths for the input state and wires are {state_len} and "
             f"{len(wires)}, respectively."
         )
 
@@ -585,11 +593,19 @@ class BasisStateProjector(Projector, Operation):
                [0., 0., 0., 0.],
                [0., 0., 0., 0.]])
         """
-        shape = (2 ** len(basis_state), 2 ** len(basis_state))
+        # In JAX 0.7.2+, LiteralArray types don't have len() method
+        # Use shape instead when dealing with JAX arrays
+        if hasattr(basis_state, "__class__") and "Literal" in basis_state.__class__.__name__:
+            state_shape = qml.math.shape(basis_state)
+            basis_state_len = state_shape[0] if state_shape else 1
+        else:
+            basis_state_len = len(basis_state)
+
+        shape = (2**basis_state_len, 2**basis_state_len)
         if qml.math.get_interface(basis_state) == "jax":
             idx = 0
             for i, m in enumerate(basis_state):
-                idx = idx + (m << (len(basis_state) - i - 1))
+                idx = idx + (m << (basis_state_len - i - 1))
             mat = qml.math.zeros(shape, like=basis_state)
             return mat.at[idx, idx].set(1.0)
 
@@ -624,13 +640,21 @@ class BasisStateProjector(Projector, Operation):
         >>> BasisStateProjector.compute_eigvals([0, 1])
         array([0., 1., 0., 0.])
         """
+        # In JAX 0.7.2+, LiteralArray types don't have len() method
+        # Use shape instead when dealing with JAX arrays
+        if hasattr(basis_state, "__class__") and "Literal" in basis_state.__class__.__name__:
+            state_shape = qml.math.shape(basis_state)
+            basis_state_len = state_shape[0] if state_shape else 1
+        else:
+            basis_state_len = len(basis_state)
+
         if qml.math.get_interface(basis_state) == "jax":
             idx = 0
             for i, m in enumerate(basis_state):
-                idx = idx + (m << (len(basis_state) - i - 1))
-            eigvals = qml.math.zeros(2 ** len(basis_state), like=basis_state)
+                idx = idx + (m << (basis_state_len - i - 1))
+            eigvals = qml.math.zeros(2**basis_state_len, like=basis_state)
             return eigvals.at[idx].set(1.0)
-        w = np.zeros(2 ** len(basis_state))
+        w = np.zeros(2**basis_state_len)
         idx = int("".join(str(i) for i in basis_state), 2)
         w[idx] = 1
         return w

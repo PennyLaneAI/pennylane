@@ -254,7 +254,7 @@ def custom_staging_rule(
     """
     shots_len, jaxpr = params["shots_len"], params["qfunc_jaxpr"]
     device = params["device"]
-    invars = [jaxpr_trace.getvar(x) for x in tracers]
+    invars = [t.val for t in tracers]
     shots_vars = invars[:shots_len]
 
     batch_dims = params.get("batch_dims")
@@ -269,18 +269,32 @@ def custom_staging_rule(
         num_device_wires=len(device.wires),
         batch_shape=batch_shape,
     )
-    out_tracers = [pe.DynamicJaxprTracer(jaxpr_trace, o) for o in new_shapes]
 
-    eqn = jax.core.new_jaxpr_eqn(
-        invars,
-        [jaxpr_trace.makevar(o) for o in out_tracers],
+    outvars = [jaxpr_trace.frame.newvar(aval) for aval in new_shapes]
+
+    # Create JaxprEqnContext and TracingEqn for JAX 0.7.0
+    # pylint: disable=import-outside-toplevel
+    from jax._src import compute_on, xla_metadata_lib
+    from jax._src.interpreters.partial_eval import JaxprEqnContext, TracingEqn
+
+    ctx = JaxprEqnContext(
+        compute_on.current_compute_type(),
+        jax.config.jax_threefry_partitionable,
+        xla_metadata_lib.current_xla_metadata(),
+    )
+
+    eqn = TracingEqn(
+        list(tracers),  # input tracers
+        outvars,  # output vars
         qnode_prim,
         params,
         jax.core.no_effects,
-        source_info=source_info,
+        source_info,
+        ctx,
     )
-
     jaxpr_trace.frame.add_eqn(eqn)
+
+    out_tracers = [pe.DynamicJaxprTracer(jaxpr_trace, o, v) for o, v in zip(new_shapes, outvars)]
     return out_tracers
 
 
