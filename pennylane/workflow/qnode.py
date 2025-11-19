@@ -309,8 +309,8 @@ class QNode:
         executor_backend (ExecBackends | str): The backend executor for concurrent function execution. This argument
             allows for selective control of how to run data-parallel/task-based parallel functions via a defined execution
             environment. All supported options can be queried using
-            :func:`~.concurrency.executors.get_supported_backends`.
-            The default value is :class:`~.concurrency.executors.native.MP_PoolExec`.
+            :func:`~.concurrency.executors.backends.get_supported_backends`.
+            The default value is :class:`~.concurrency.executors.native.multiproc.MPPoolExec`.
 
     **Example**
 
