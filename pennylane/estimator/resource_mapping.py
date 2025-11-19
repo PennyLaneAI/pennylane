@@ -40,6 +40,7 @@ def _map_term_trotter(op: Operation):
         return qtemps.TrotterProduct(op, time=1, n=1, order=1, check_hermitian=False)
     return qops.op_math.Evolution(op)
 
+
 @singledispatch
 def _map_to_resource_op(op: Operation) -> ResourceOperator:
     r"""Maps an instance of :class:`~.Operation` to its associated :class:`~.estimator.ResourceOperator`.
