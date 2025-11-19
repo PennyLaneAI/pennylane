@@ -134,7 +134,7 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
         qram_wires: Sequence[int],
         target_wires: Sequence[int],
         work_wires: Sequence[int],
-        id: Optional[str] = None,
+        id: str | None = None,
     ):  # pylint: disable=too-many-arguments
         if not bitstrings:
             raise ValueError("'bitstrings' cannot be empty.")
