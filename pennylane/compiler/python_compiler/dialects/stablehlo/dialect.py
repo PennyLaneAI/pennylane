@@ -17,11 +17,11 @@ Extended StableHLO dialect that dynamically includes all upstream operations
 plus custom operations for PennyLane's compiler infrastructure.
 
 This module automatically imports all operations and attributes from the upstream
-xdsl.dialects.stablehlo and adds custom ones without needing to hardcode
+xdsl_jax.dialects.stablehlo and adds custom ones without needing to hardcode
 the upstream operation list.
 """
 
-import xdsl.dialects.stablehlo as xstablehlo
+import xdsl_jax.dialects.stablehlo as xstablehlo
 from xdsl.ir import Dialect
 
 from .attributes import (
@@ -59,6 +59,7 @@ from .elementwise_binary import (
 from .elementwise_other import (
     ClampOp,
     CompareOp,
+    ConstantOp,
     MapOp,
     ReducePrecisionOp,
     SelectOp,
@@ -100,6 +101,7 @@ OPERATIONS = [
     ClampOp,
     CompareOp,
     ComplexOp,
+    ConstantOp,
     ConvertOp,
     CosineOp,
     DivideOp,
@@ -160,7 +162,9 @@ ATTRIBUTES = [
 ]
 
 # Operations/attributes from upstream that should be deleted/replaced in the local version
-UPSTREAM_OPERATIONS_TO_DELETE = []
+UPSTREAM_OPERATIONS_TO_DELETE = [
+    xstablehlo.ConstantOp,
+]
 UPSTREAM_ATTRIBUTES_TO_DELETE = []
 
 

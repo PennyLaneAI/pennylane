@@ -73,6 +73,8 @@ class SymbolicOp(Operator):
     # pylint: disable=super-init-not-called
     def __init__(self, base, id=None):
         self.hyperparameters["base"] = base
+        if isinstance(base, (qml.ops.MidMeasure, qml.ops.PauliMeasure)):
+            raise ValueError("Symbolic operators of mid-circuit measurements are not supported.")
         self._id = id
         self._pauli_rep = None
         self.queue()
@@ -121,8 +123,8 @@ class SymbolicOp(Operator):
         return self.base.has_matrix
 
     @property
-    def is_hermitian(self):
-        return self.base.is_hermitian
+    def is_verified_hermitian(self):
+        return self.base.is_verified_hermitian
 
     @property
     def _queue_category(self):

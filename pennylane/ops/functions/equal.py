@@ -23,11 +23,21 @@ import pennylane as qml
 from pennylane.measurements import MeasurementProcess
 from pennylane.measurements.classical_shadow import ShadowExpvalMP
 from pennylane.measurements.counts import CountsMP
-from pennylane.measurements.mid_measure import MeasurementValue, MidMeasureMP
 from pennylane.measurements.mutual_info import MutualInfoMP
 from pennylane.measurements.vn_entropy import VnEntropyMP
 from pennylane.operation import Operator
-from pennylane.ops import Adjoint, CompositeOp, Conditional, Controlled, Exp, Pow, SProd
+from pennylane.ops import (
+    Adjoint,
+    CompositeOp,
+    Conditional,
+    Controlled,
+    Exp,
+    MeasurementValue,
+    MidMeasure,
+    Pow,
+    SProd,
+)
+from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
 from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.pulse.parametrized_evolution import ParametrizedEvolution
 from pennylane.tape import QuantumScript
@@ -88,11 +98,6 @@ def equal(
     >>> qml.equal(prod1, prod2), qml.equal(prod1, prod3)
     (True, False)
 
-    >>> prod = qml.X(0) @ qml.Y(1)
-    >>> ham = qml.Hamiltonian([1], [qml.X(0) @ qml.Y(1)])
-    >>> qml.equal(prod, ham)
-    True
-
     >>> H1 = qml.Hamiltonian([0.5, 0.5], [qml.Z(0) @ qml.Y(1), qml.Y(1) @ qml.Z(0) @ qml.Identity("a")])
     >>> H2 = qml.Hamiltonian([1], [qml.Z(0) @ qml.Y(1)])
     >>> H3 = qml.Hamiltonian([2], [qml.Z(0) @ qml.Y(1)])
@@ -107,9 +112,9 @@ def equal(
     True
     >>> tape1 = qml.tape.QuantumScript([qml.RX(1.2, wires=0)], [qml.expval(qml.Z(0))])
     >>> tape2 = qml.tape.QuantumScript([qml.RX(1.2 + 1e-6, wires=0)], [qml.expval(qml.Z(0))])
-    >>> qml.equal(tape1, tape2, tol=0, atol=1e-7)
+    >>> qml.equal(tape1, tape2, rtol=0, atol=1e-7)
     False
-    >>> qml.equal(tape1, tape2, tol=0, atol=1e-5)
+    >>> qml.equal(tape1, tape2, rtol=0, atol=1e-5)
     True
 
     .. details::
@@ -125,8 +130,8 @@ def equal(
         >>> qml.equal(op1, op2, check_interface=False, check_trainability=False)
         True
 
-        >>> op3 = qml.RX(np.array(1.2, requires_grad=True), wires=0)
-        >>> op4 = qml.RX(np.array(1.2, requires_grad=False), wires=0)
+        >>> op3 = qml.RX(pnp.array(1.2, requires_grad=True), wires=0)
+        >>> op4 = qml.RX(pnp.array(1.2, requires_grad=False), wires=0)
         >>> qml.equal(op3, op4)
         False
 
@@ -187,12 +192,15 @@ def assert_equal(
     >>> op1 = qml.RX(np.array(0.12), wires=0)
     >>> op2 = qml.RX(np.array(1.23), wires=0)
     >>> qml.assert_equal(op1, op2)
-    AssertionError: op1 and op2 have different data.
-    Got (array(0.12),) and (array(1.23),)
+    Traceback (most recent call last):
+        ...
+    AssertionError: op1 and op2 have different data. Got (array(0.12),) and (array(1.23),)
 
     >>> h1 = qml.Hamiltonian([1, 2], [qml.PauliX(0), qml.PauliY(1)])
     >>> h2 = qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliY(1)])
     >>> qml.assert_equal(h1, h2)
+    Traceback (most recent call last):
+        ...
     AssertionError: op1 and op2 have different operands because op1 and op2 have different scalars. Got 2 and 1
 
     """
@@ -693,13 +701,26 @@ def _equal_measurements(
 
 
 @_equal_dispatch.register
-def _equal_mid_measure(op1: MidMeasureMP, op2: MidMeasureMP, **_):
+def _equal_mid_measure(op1: MidMeasure, op2: MidMeasure, **_):
     return (
         op1.wires == op2.wires
         and op1.id == op2.id
         and op1.reset == op2.reset
         and op1.postselect == op2.postselect
     )
+
+
+@_equal_dispatch.register
+def _equal_pauli_measure(op1: PauliMeasure, op2: PauliMeasure, **_):
+    if op1.wires != op2.wires:
+        return "op1 and op2 have different wires."
+    if op1.postselect != op2.postselect:
+        return "op1 and op2 have different postselect values."
+    if op1.pauli_word != op2.pauli_word:
+        return f"op1 has pauli_word {op1.pauli_word} and op2 has pauli_word {op2.pauli_word}"
+    if op1.id != op2.id:
+        return "op1 and op2 have different identifiers id."
+    return True
 
 
 @_equal_dispatch.register

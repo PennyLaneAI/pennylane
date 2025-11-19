@@ -183,7 +183,7 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
     >>> tape.operations
     [RX(0.432, wires=[0]), RY(0.543, wires=[0]), CNOT(wires=[0, 'a']), RX(0.133, wires=['a'])]
     >>> tape.observables
-    [expval(Z(0))]
+    [Z(0)]
     >>> tape.get_parameters()
     [0.432, 0.543, 0.133]
     >>> tape.wires
@@ -214,14 +214,14 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
     The :class:`~.CircuitGraph` can also be accessed:
 
     >>> tape.graph
-    <pennylane.circuit_graph.CircuitGraph object at 0x7fcc0433a690>
+    <pennylane.circuit_graph.CircuitGraph object at 0x...>
 
     Once constructed, the quantum tape can be executed directly on a supported
     device via the :func:`~.pennylane.execute` function:
 
     >>> dev = qml.device("default.qubit", wires=[0, 'a'])
     >>> qml.execute([tape], dev, diff_method=None)
-    [array([0.77750694])]
+    (np.float64(0.7775069381227451),)
 
     A new tape can be created by passing new parameters along with the indices
     to be updated to :meth:`~pennylane.tape.QuantumScript.bind_new_parameters`:

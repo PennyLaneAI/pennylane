@@ -15,7 +15,7 @@ jobs:
   # exit early with a successful status (no tests will get run).
   determine_if_workflow_should_run:
     name: Determine if QML Labs Unit-Tests need to run
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     if: github.event.pull_request.draft == false
     steps:
       - name: Checkout PR
@@ -37,7 +37,7 @@ jobs:
       - determine_if_workflow_should_run
     uses: ./.github/workflows/determine-workflow-runner.yml
     with:
-      default_runner: ubuntu-latest
+      default_runner: ubuntu-24.04
       force_large_runner: ${{ github.event_name == 'merge_group' }}
   
   default-dependency-versions:

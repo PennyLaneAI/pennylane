@@ -24,7 +24,10 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane.decomposition.decomposition_rule import null_decomp
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.operation import Operation
+from pennylane.ops import Conditional, MidMeasure, PauliMeasure
 
 jax = pytest.importorskip("jax")
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
@@ -110,7 +113,10 @@ class TestDecomposeInterpreterGraphEnabled:
     def test_callable_gate_set_not_supported(self):
         """Tests that specifying the gate_set as a function raises an error."""
 
-        with pytest.raises(TypeError, match="Specifying gate_set as a function"):
+        with pytest.raises(
+            PennyLaneDeprecationWarning,
+            match="Passing a function to the gate_set argument is deprecated.",
+        ):
             DecomposeInterpreter(gate_set=lambda op: op.name in {"RX", "RZ", "CNOT"})
 
     @pytest.mark.integration
@@ -277,7 +283,6 @@ class TestDecomposeInterpreterGraphEnabled:
         """Tests that an adjoint operation is decomposed."""
 
         class CustomOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
-
             resource_keys = set()
 
             @property
@@ -340,7 +345,6 @@ class TestDecomposeInterpreterGraphEnabled:
 
         @DecomposeInterpreter(gate_set={"CNOT", "RX", "RY", "RZ"})
         def f(x, wires):
-
             def true_fn():
                 qml.CRX(x, wires=wires)
 
@@ -377,7 +381,6 @@ class TestDecomposeInterpreterGraphEnabled:
 
         @DecomposeInterpreter(gate_set={"CNOT", "RX", "RY", "RZ"})
         def f(x, wires):
-
             def true_fn():
                 qml.RX(x, wires=wires[1])
 
@@ -409,6 +412,71 @@ class TestDecomposeInterpreterGraphEnabled:
         ]
 
     @pytest.mark.integration
+    @pytest.mark.parametrize("m_type", ["mcm", "ppm"])
+    def test_decompose_with_mcm(self, m_type):
+        """Tests that circuits and decomposition rules containing MCMs and PPMs are supported."""
+
+        class CustomOp(Operation):  # pylint: disable=too-few-public-methods
+            resource_keys = set()
+
+            @property
+            def resource_params(self) -> dict:
+                return {}
+
+        measure_obj_class = MidMeasure if m_type == "mcm" else PauliMeasure
+
+        @qml.register_resources({qml.H: 1, qml.X: 1, measure_obj_class: 1})
+        def _custom_decomp(wires, **_):
+            qml.H(wires[0])
+            m0 = (
+                qml.measure(wires[0])
+                if m_type == "mcm"
+                else qml.pauli_measure("XY", wires=[wires[0], wires[1]])
+            )
+            qml.cond(m0, qml.H)(wires[1])
+
+        @qml.register_resources({qml.H: 3, qml.X: 2, qml.CNOT: 1})
+        def _expensive_decomp(wires, **_):
+            raise NotImplementedError
+
+        @DecomposeInterpreter(
+            gate_set={qml.RX, qml.RY, qml.RZ, qml.CNOT, "measure", "ppm"},
+            fixed_decomps={qml.GlobalPhase: null_decomp},
+            alt_decomps={CustomOp: [_custom_decomp, _expensive_decomp]},
+        )
+        def circuit():
+            CustomOp(wires=[1, 0])
+            m0 = qml.measure(0) if m_type == "mcm" else qml.pauli_measure("XZ", wires=[0, 1])
+            qml.cond(m0, qml.X)(0)
+
+        jaxpr = jax.make_jaxpr(circuit)()
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts)
+        ops = collector.state["ops"]
+
+        def equivalent_circuit():
+            qml.RZ(np.pi, wires=1)
+            qml.RY(np.pi / 2, wires=1)
+            m0 = qml.measure(1) if m_type == "mcm" else qml.pauli_measure("XZ", wires=[1, 0])
+            qml.cond(m0, qml.RZ)(np.pi, wires=0)
+            qml.cond(m0, qml.RY)(np.pi / 2, wires=0)
+            m1 = qml.measure(0) if m_type == "mcm" else qml.pauli_measure("XY", wires=[0, 1])
+            qml.cond(m1, qml.RX)(np.pi, wires=0)
+
+        with qml.queuing.AnnotatedQueue() as q:
+            equivalent_circuit()
+
+        qml.assert_equal(ops[0], q.queue[0])
+        qml.assert_equal(ops[1], q.queue[1])
+        assert isinstance(ops[3], Conditional)
+        assert isinstance(ops[4], Conditional)
+        assert isinstance(ops[6], Conditional)
+        qml.assert_equal(ops[3].base, q.queue[3].base)
+        qml.assert_equal(ops[4].base, q.queue[4].base)
+        qml.assert_equal(ops[6].base, q.queue[6].base)
+        assert isinstance(ops[2], measure_obj_class)
+        assert isinstance(ops[5], measure_obj_class)
+
     @pytest.mark.parametrize(
         "num_work_wires, expected_gate_count",
         [
@@ -489,7 +557,7 @@ class TestDecomposeInterpreterGraphEnabled:
 
         gate_counts = defaultdict(int)
         for op in result.operations:
-            if isinstance(op, qml.measurements.MidMeasureMP):
+            if isinstance(op, qml.ops.MidMeasure):
                 continue
             gate_counts[type(op)] += 1
         assert gate_counts == expected_gate_count

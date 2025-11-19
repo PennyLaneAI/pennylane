@@ -30,7 +30,10 @@ jnp = jax.numpy
 from pennylane.capture.autograph import run_autograph  # pylint: disable=wrong-import-position
 
 # must be below jax importorskip
-from pennylane.capture.primitives import qnode_prim  # pylint: disable=wrong-import-position
+from pennylane.capture.primitives import (  # pylint: disable=wrong-import-position
+    qnode_prim,
+    transform_prim,
+)
 from pennylane.tape.plxpr_conversion import (  # pylint: disable=wrong-import-position
     CollectOpsandMeas,
 )
@@ -418,12 +421,16 @@ class TestShots:
         assert eqn.outvars[1].aval.shape == (2, 1)
 
 
+@pytest.mark.parametrize("disable_around_qnode", (True, False))
 class TestUserTransforms:
     """Integration tests for applying user transforms to a qnode with program capture."""
 
     @pytest.mark.unit
-    def test_captured_program_qnode_transform(self):
+    def test_captured_program_qnode_transform(self, disable_around_qnode):
         """Test that a transformed qnode is captured correctly."""
+
+        if disable_around_qnode:
+            qml.capture.disable()
 
         dev = qml.device("default.qubit", wires=3)
 
@@ -435,9 +442,16 @@ class TestUserTransforms:
             qml.X(0)
             return qml.expval(qml.Z(0))
 
+        assert isinstance(circuit, qml.QNode)
+        assert qml.transforms.cancel_inverses in circuit.transform_program
+
+        if disable_around_qnode:
+            qml.capture.enable()
+
         jaxpr = jax.make_jaxpr(circuit)(1.5)
         # pylint: disable=protected-access
-        assert jaxpr.eqns[0].primitive == qml.transforms.cancel_inverses._primitive
+        assert jaxpr.eqns[0].primitive == transform_prim
+        assert jaxpr.eqns[0].params["transform"] == qml.transforms.cancel_inverses
         inner_jaxpr = jaxpr.eqns[0].params["inner_jaxpr"]
         assert inner_jaxpr.eqns[0].primitive == qnode_prim
         qfunc_jaxpr = inner_jaxpr.eqns[0].params["qfunc_jaxpr"]
@@ -448,8 +462,11 @@ class TestUserTransforms:
         assert collector.state["measurements"] == [qml.expval(qml.Z(0))]
 
     @pytest.mark.unit
-    def test_captured_program_qfunc_transform(self):
+    def test_captured_program_qfunc_transform(self, disable_around_qnode):
         """Test that a qnode with a transformed qfunc is captured correctly."""
+
+        if disable_around_qnode:
+            qml.capture.disable()
 
         dev = qml.device("default.qubit", wires=3)
 
@@ -461,11 +478,15 @@ class TestUserTransforms:
             qml.X(0)
             return qml.expval(qml.Z(0))
 
+        if disable_around_qnode:
+            qml.capture.enable()
+
         jaxpr = jax.make_jaxpr(circuit)(1.5)
         assert jaxpr.eqns[0].primitive == qnode_prim
         qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
         # pylint: disable=protected-access
-        assert qfunc_jaxpr.eqns[0].primitive == qml.transforms.cancel_inverses._primitive
+        assert qfunc_jaxpr.eqns[0].primitive == transform_prim
+        assert qfunc_jaxpr.eqns[0].params["transform"] == qml.transforms.cancel_inverses
 
         inner_jaxpr = qfunc_jaxpr.eqns[0].params["inner_jaxpr"]
         collector = CollectOpsandMeas()
@@ -474,8 +495,11 @@ class TestUserTransforms:
         assert collector.state["measurements"] == [qml.expval(qml.Z(0))]
 
     @pytest.mark.unit
-    def test_captured_program_qnode_qfunc_transform(self):
+    def test_captured_program_qnode_qfunc_transform(self, disable_around_qnode):
         """Test that a transformed qnode with a transformed qfunc is captured correctly."""
+
+        if disable_around_qnode:
+            qml.capture.disable()
 
         dev = qml.device("default.qubit", wires=3)
 
@@ -488,14 +512,21 @@ class TestUserTransforms:
             qml.X(0)
             return qml.expval(qml.Z(0))
 
+        assert isinstance(circuit, qml.QNode)
+
+        if disable_around_qnode:
+            qml.capture.enable()
+
         jaxpr = jax.make_jaxpr(circuit)(1.5)
         # pylint: disable=protected-access
-        assert jaxpr.eqns[0].primitive == qml.transforms.cancel_inverses._primitive
+        assert jaxpr.eqns[0].primitive == transform_prim
+        assert jaxpr.eqns[0].params["transform"] == qml.transforms.cancel_inverses
         inner_jaxpr = jaxpr.eqns[0].params["inner_jaxpr"]
         assert inner_jaxpr.eqns[0].primitive == qnode_prim
         qfunc_jaxpr = inner_jaxpr.eqns[0].params["qfunc_jaxpr"]
 
-        assert qfunc_jaxpr.eqns[0].primitive == qml.transforms.merge_rotations._primitive
+        assert qfunc_jaxpr.eqns[0].primitive == transform_prim
+        assert qfunc_jaxpr.eqns[0].params["transform"] == qml.transforms.merge_rotations
         inner_jaxpr2 = qfunc_jaxpr.eqns[0].params["inner_jaxpr"]
 
         collector = CollectOpsandMeas()
@@ -504,7 +535,7 @@ class TestUserTransforms:
         assert collector.state["measurements"] == [qml.expval(qml.Z(0))]
 
     @pytest.mark.unit
-    def test_device_jaxpr(self, monkeypatch):
+    def test_device_jaxpr(self, monkeypatch, disable_around_qnode):
         """Test that jaxpr recieved by a device when executing a transformed qnode has been
         transformed appropriately."""
 
@@ -516,6 +547,9 @@ class TestUserTransforms:
             nonlocal device_jaxpr
             device_jaxpr = jaxpr
             return [1.0]
+
+        if disable_around_qnode:
+            qml.capture.disable()
 
         dev = qml.device("default.qubit", wires=3)
         monkeypatch.setattr(dev, "eval_jaxpr", dummy_eval_jaxpr)
@@ -529,6 +563,11 @@ class TestUserTransforms:
             qml.X(0)
             return qml.expval(qml.Z(0))
 
+        assert isinstance(circuit, qml.QNode)
+
+        if disable_around_qnode:
+            qml.capture.enable()
+
         _ = circuit(1.5, 2.5, 3.5)
         assert all(
             getattr(eqn.primitive, "prim_type", "") != "transform" for eqn in device_jaxpr.eqns
@@ -540,8 +579,11 @@ class TestUserTransforms:
         assert device_jaxpr.eqns[4].primitive == qml.measurements.ExpectationMP._obs_primitive
 
     @pytest.mark.integration
-    def test_execution(self):
+    def test_execution(self, disable_around_qnode):
         """Test that a transformed qnode is executed correctly."""
+
+        if disable_around_qnode:
+            qml.capture.disable()
 
         dev = qml.device("default.qubit", wires=3)
 
@@ -554,6 +596,9 @@ class TestUserTransforms:
             qml.X(0)
             qml.X(0)
             return qml.expval(qml.Z(0))
+
+        if disable_around_qnode:
+            qml.capture.enable()
 
         res = circuit(1.5)
         expected = jnp.cos(5 * 1.5)
@@ -1473,6 +1518,59 @@ class TestQNodeVmapIntegration:
 class TestQNodeAutographIntegration:
     """Tests for Autograph integration with QNodes."""
 
+    def test_autograph_with_qnode_transforms(self):
+        """Test that autograph can be used when transforms are applied to the qnode."""
+
+        dev = qml.device("default.qubit", wires=[0, 1, 2])
+
+        @qml.capture.run_autograph
+        @qml.transforms.merge_rotations
+        @qml.transforms.cancel_inverses
+        @qml.qnode(dev)
+        def c(n):
+            for i in range(n):
+                qml.H(i)
+            return qml.state()
+
+        jaxpr = jax.make_jaxpr(c)(3)
+        assert jaxpr.eqns[0].params["transform"] == qml.transforms.merge_rotations
+        j2 = jaxpr.eqns[0].params["inner_jaxpr"]
+        assert j2.eqns[0].params["transform"] == qml.transforms.cancel_inverses
+        j3 = j2.eqns[0].params["inner_jaxpr"]
+        assert j3.eqns[0].primitive == qnode_prim
+        j4 = j3.eqns[0].params["qfunc_jaxpr"]
+        assert j4.eqns[0].primitive == qml.capture.primitives.for_loop_prim
+        assert j4.eqns[0].invars[1] is j4.invars[0]
+
+    def test_autograph_on_workflow(self):
+        """Test autograph can be called on a workflow."""
+
+        @qml.transforms.merge_rotations
+        @qml.transforms.cancel_inverses
+        @qml.qnode(qml.device("default.qubit", wires=[0, 1, 2]))
+        def c(n):
+            for i in range(n):
+                qml.H(i)
+            return qml.expval(qml.Z(0))
+
+        @qml.capture.run_autograph
+        def w(n):
+            return c(n + 1) + c(n + 3)
+
+        jaxpr = jax.make_jaxpr(w)(3)
+
+        for i in [1, 3]:
+
+            assert jaxpr.eqns[i].params["transform"] == qml.transforms.merge_rotations
+            j2 = jaxpr.eqns[i].params["inner_jaxpr"]
+            assert j2.eqns[0].params["transform"] == qml.transforms.cancel_inverses
+            j3 = j2.eqns[0].params["inner_jaxpr"]
+            assert j3.eqns[0].primitive == qnode_prim
+            j4 = j3.eqns[0].params["qfunc_jaxpr"]
+            assert j4.eqns[0].primitive == qml.capture.primitives.for_loop_prim
+            # somehow promoted to closure var?
+            assert j4.eqns[0].invars[1] is j4.constvars[0]
+
     @pytest.mark.parametrize("autograph", [True, False])
     def test_python_for_loop(self, autograph):
         """Tests that native Python for loops can be used with the QNode."""
@@ -1657,9 +1755,6 @@ class TestStaticArgnums:
         assert qml.math.allclose(qfunc_jaxpr.eqns[0].invars[0].val, args[0])
         assert qml.math.allclose(qfunc_jaxpr.eqns[1].invars[0].val, args[1])
 
-        # Empty capture_cache so we don't use cached jaxpr
-        circuit.capture_cache.clear()
-
         res = circuit(*args)
         with qml.capture.pause():
             assert qml.math.allclose(res, circuit(*args))
@@ -1685,9 +1780,6 @@ class TestStaticArgnums:
         assert len(qfunc_jaxpr.invars) == len(args[0])
         assert qml.math.allclose(qfunc_jaxpr.eqns[3].invars[0].val, args[1][0])
         assert qml.math.allclose(qfunc_jaxpr.eqns[4].invars[0].val, args[1][1])
-
-        # Empty capture_cache so we don't use cached jaxpr
-        circuit.capture_cache.clear()
 
         res = circuit(*args)
         with qml.capture.pause():
@@ -1726,361 +1818,3 @@ class TestStaticArgnums:
         res = circuit(*args)
         with qml.capture.pause():
             assert qml.math.allclose(res, circuit(*args))
-
-
-class TestQNodeCaptureCaching:
-    """Unit tests for caching QNode executions with program capture."""
-
-    def check_execution_results(self, circuit, *args, **kwargs):
-        """Helper function to compare execution results"""
-        res = circuit(*args, **kwargs)
-        with qml.capture.pause():
-            assert qml.math.allclose(res, circuit(*args, **kwargs))
-
-    def test_caching(self, mocker):
-        """Test that caching works correctly."""
-
-        dev = qml.device("default.qubit", wires=4)
-
-        @qml.qnode(dev)
-        def circuit(x):
-            qml.RX(x, 0)
-            return qml.expval(qml.Z(0))
-
-        spy = mocker.spy(jax, "make_jaxpr")
-        self.check_execution_results(circuit, jnp.array(1.5))
-        spy.assert_called()
-        call_count = spy.call_count
-
-        # Cache hit because arguments are of same type/shape
-        spy.reset_mock()
-        self.check_execution_results(circuit, 100.1)
-        assert spy.call_count == call_count - 1
-
-        # Cache miss because arguments are not of same type/shape
-        spy.reset_mock()
-        self.check_execution_results(circuit, jnp.array(2))
-        assert spy.call_count == call_count
-
-        # Cache hit because arguments are of same type/shape
-        spy.reset_mock()
-        self.check_execution_results(circuit, 10)
-        assert spy.call_count == call_count - 1
-
-    def test_caching_kwargs(self, mocker):
-        """Test that caching works correctly when the QNode has kwargs."""
-
-        dev = qml.device("default.qubit", wires=4)
-
-        @qml.qnode(dev)
-        def circuit(x, y=1):
-            qml.RX(x, 0)
-            qml.RY(y, 1)
-            return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
-
-        spy = mocker.spy(jax, "make_jaxpr")
-        self.check_execution_results(circuit, 1.0, y=1)
-        spy.assert_called()
-        call_count = spy.call_count
-
-        # Cache hit because same arg shape/type and same kwarg
-        spy.reset_mock()
-        self.check_execution_results(circuit, 2.0, y=1)
-        assert spy.call_count == call_count - 1
-
-        # Cache miss because same arg shape/type but different kwarg
-        spy.reset_mock()
-        self.check_execution_results(circuit, 1.0, y=2)
-        assert spy.call_count == call_count
-
-        # Cache hit because same arg shape/type and same kwarg
-        spy.reset_mock()
-        self.check_execution_results(circuit, 2.0, y=2)
-        assert spy.call_count == call_count - 1
-
-    def test_caching_pytree(self, mocker):
-        """Test that caching works correctly for pytree inputs."""
-
-        dev = qml.device("default.qubit", wires=4)
-
-        @qml.qnode(dev)
-        def circuit(x):
-            qml.RX(x[0], 0)
-            qml.RY(x[1], 1)
-            return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
-
-        spy = mocker.spy(jax, "make_jaxpr")
-        self.check_execution_results(circuit, (1.5, 2.5))
-        spy.assert_called()
-        call_count = spy.call_count
-
-        # Cache hit because same arg shape/types
-        spy.reset_mock()
-        self.check_execution_results(circuit, (jnp.array(5.1), 3.5))
-        assert spy.call_count == call_count - 1
-
-        # Cache miss because different arg shape/types
-        spy.reset_mock()
-        self.check_execution_results(circuit, (jnp.array(5.1), 3))
-        assert spy.call_count == call_count
-
-        # Cache hit because same arg shape/types
-        spy.reset_mock()
-        self.check_execution_results(circuit, (3.5, jnp.array(2)))
-        assert spy.call_count == call_count - 1
-
-    def test_caching_static_argnums(self, mocker):
-        """Test that caching works correctly when a QNode has static arguments."""
-
-        dev = qml.device("default.qubit", wires=4)
-
-        @qml.qnode(dev, static_argnums=1)
-        def circuit(x, y):
-            qml.RX(x, 0)
-            qml.RY(y, 1)
-            return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
-
-        spy = mocker.spy(jax, "make_jaxpr")
-        self.check_execution_results(circuit, 1.0, 2.0)
-        spy.assert_called()
-        call_count = spy.call_count
-
-        # Cache hit because same arg shape/type and same static arg
-        spy.reset_mock()
-        self.check_execution_results(circuit, 1.1, 2.0)
-        assert spy.call_count == call_count - 1
-
-        # Cache miss because same arg shape/type but different static arg
-        spy.reset_mock()
-        self.check_execution_results(circuit, 1.1, 2.1)
-        assert spy.call_count == call_count
-
-        # Cache hit because same arg shape/type and same static arg
-        spy.reset_mock()
-        self.check_execution_results(circuit, 1.0, 2.1)
-        assert spy.call_count == call_count - 1
-
-    def test_caching_static_argnums_pytree(self, mocker):
-        """Test that caching works correctly when a QNode has static arguments
-        with pytree inputs."""
-
-        dev = qml.device("default.qubit", wires=4)
-
-        @qml.qnode(dev, static_argnums=1)
-        def circuit(x, y):
-            qml.RX(x[0], 0)
-            qml.RX(x[1], 1)
-            qml.RY(y[0], 0)
-            qml.RY(y[1], 1)
-            return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
-
-        spy = mocker.spy(jax, "make_jaxpr")
-        self.check_execution_results(circuit, (1.5, 2.5), (3.5, 4.5))
-        spy.assert_called()
-        call_count = spy.call_count
-
-        # Cache hit because same arg shape/type and same static args
-        spy.reset_mock()
-        self.check_execution_results(circuit, (4.5, 5.5), (3.5, 4.5))
-        assert spy.call_count == call_count - 1
-
-        # Cache miss because same arg shape/type but different static args
-        spy.reset_mock()
-        self.check_execution_results(circuit, (4.5, 5.5), (3.1, 5.5))
-        assert spy.call_count == call_count
-
-    # pylint: disable=unused-argument
-    def test_caching_dynamic_shapes(self, mocker, enable_disable_dynamic_shapes):
-        """Test that caching works correctly when a QNode has arguments with
-        dynamic shapes."""
-
-        dev = qml.device("default.qubit", wires=4)
-
-        @qml.qnode(dev)
-        def circuit(x):
-            qml.RX(jnp.sum(x), 0)
-            return qml.expval(qml.Z(0))
-
-        spy = mocker.spy(jax, "make_jaxpr")
-        _ = jax.make_jaxpr(circuit, abstracted_axes=("a",))(jnp.arange(10))
-        assert spy.call_count > 1
-
-        # Only one call to make_jaxpr because of the call we make here. If cache is used,
-        # No other calls to make_jaxpr should be made.
-        spy.reset_mock()
-        _ = jax.make_jaxpr(circuit, abstracted_axes=("a",))(jnp.arange(100))
-        assert spy.call_count == 1
-
-        # We changed the dtype, so there will be a cache miss.
-        spy.reset_mock()
-        _ = jax.make_jaxpr(circuit, abstracted_axes=("a",))(jnp.arange(100, dtype=jnp.complex128))
-        assert spy.call_count > 1
-
-    # pylint: disable=unused-argument
-    def test_caching_dynamic_shapes_pytree(self, mocker, enable_disable_dynamic_shapes):
-        """Test that caching works correctly when a QNode has pytree arguments
-        with dynamic shapes."""
-
-        dev = qml.device("default.qubit", wires=4)
-
-        @qml.qnode(dev)
-        def circuit(x):
-            qml.RX(jnp.sum(x["0"]), 0)
-            qml.RY(jnp.sum(x["1"]), 1)
-            return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
-
-        abstracted_axes = ({"0": {0: "a"}, "1": {0: "b"}},)
-        spy = mocker.spy(jax, "make_jaxpr")
-        _ = jax.make_jaxpr(circuit, abstracted_axes=abstracted_axes)(
-            {"0": jnp.arange(10), "1": jnp.arange(100)}
-        )
-        assert spy.call_count > 1
-
-        # Only one call to make_jaxpr because of the call we make here. If cache is used,
-        # No other calls to make_jaxpr should be made.
-        spy.reset_mock()
-        _ = jax.make_jaxpr(circuit, abstracted_axes=abstracted_axes)(
-            {"0": jnp.arange(5), "1": jnp.arange(21)}
-        )
-        assert spy.call_count == 1
-
-        # We changed the dtype, so there will be a cache miss.
-        spy.reset_mock()
-        _ = jax.make_jaxpr(circuit, abstracted_axes=abstracted_axes)(
-            {"0": jnp.arange(5), "1": jnp.arange(21, dtype=jnp.complex128)}
-        )
-        assert spy.call_count > 1
-
-    # pylint: disable=unused-argument
-    @pytest.mark.xfail  # think JAX 0.5.3 broke dynamic shapes and static argnums
-    def test_caching_dynamic_shapes_and_static_argnums(self, mocker, enable_disable_dynamic_shapes):
-        """Test that caching works correctly when a QNode has arguments with
-        dynamic shapes as well as static arguments."""
-
-        dev = qml.device("default.qubit", wires=4)
-
-        @qml.qnode(dev, static_argnums=1)
-        def circuit(x, y):
-            qml.RX(jnp.sum(x), 0)
-            qml.RY(y, 0)
-            return qml.expval(qml.Z(0))
-
-        abstracted_axes = ({0: "a"}, ())
-        spy = mocker.spy(jax, "make_jaxpr")
-        _ = jax.make_jaxpr(circuit, abstracted_axes=abstracted_axes, static_argnums=1)(
-            jnp.arange(10), jnp.array(0.5)
-        )
-        assert spy.call_count > 1
-
-        # Only one call to make_jaxpr because of the call we make here. If cache is used,
-        # No other calls to make_jaxpr should be made.
-        spy.reset_mock()
-        _ = jax.make_jaxpr(circuit, abstracted_axes=abstracted_axes, static_argnums=1)(
-            jnp.arange(100), 3.5
-        )
-        assert spy.call_count == 1
-
-        # We changed the static arguments, so there will be a cache miss.
-        spy.reset_mock()
-        _ = jax.make_jaxpr(circuit, abstracted_axes=abstracted_axes, static_argnums=1)(
-            jnp.arange(100), 9.2
-        )
-        assert spy.call_count > 1
-
-        # We changed the dtype, so there will be a cache miss.
-        spy.reset_mock()
-        _ = jax.make_jaxpr(circuit, abstracted_axes=abstracted_axes, static_argnums=1)(
-            jnp.arange(100, dtype=jnp.complex128), 4.5
-        )
-        assert spy.call_count > 1
-
-    # pylint: disable=unused-argument
-    @pytest.mark.xfail  # think JAX 0.5.3 broke dynamic shapes and static argnums
-    def test_caching_dynamic_shapes_and_static_argnums_pytree(
-        self, mocker, enable_disable_dynamic_shapes
-    ):
-        """Test that caching works correctly when a QNode has pytree arguments
-        with dynamic shapes as well as static arguments."""
-
-        dev = qml.device("default.qubit", wires=4)
-
-        @qml.qnode(dev, static_argnums=1)
-        def circuit(x, y):
-            qml.RX(jnp.sum(x["0"]), 0)
-            qml.RY(y[0], 0)
-            qml.RX(jnp.sum(x["1"]), 1)
-            qml.RY(y[1], 1)
-            return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
-
-        abstracted_axes = ({"0": {0: "a"}, "1": {0: "b"}}, ())
-        spy = mocker.spy(jax, "make_jaxpr")
-        _ = jax.make_jaxpr(circuit, abstracted_axes=abstracted_axes, static_argnums=1)(
-            {"0": jnp.arange(10), "1": jnp.arange(100)}, (3.5, 4.6)
-        )
-        assert spy.call_count > 1
-
-        # Only one call to make_jaxpr because of the call we make here. If cache is used,
-        # No other calls to make_jaxpr should be made.
-        spy.reset_mock()
-        _ = jax.make_jaxpr(circuit, abstracted_axes=abstracted_axes, static_argnums=1)(
-            {"0": jnp.arange(5), "1": jnp.arange(21)}, (3.5, 4.6)
-        )
-        assert spy.call_count == 1
-
-        # We changed the static arguments, so there will be a cache miss.
-        spy.reset_mock()
-        _ = jax.make_jaxpr(circuit, abstracted_axes=abstracted_axes, static_argnums=1)(
-            {"0": jnp.arange(5), "1": jnp.arange(21)}, (8.1, 4.6)
-        )
-        assert spy.call_count > 1
-
-        # We changed the dtype, so there will be a cache miss.
-        spy.reset_mock()
-        _ = jax.make_jaxpr(circuit, abstracted_axes=abstracted_axes, static_argnums=1)(
-            {"0": jnp.arange(5), "1": jnp.arange(21, dtype=jnp.complex128)}, (8.1, 4.6)
-        )
-        assert spy.call_count > 1
-
-    def test_caching_jit(self):
-        """Test that caching does not impact jitting."""
-
-        dev = qml.device("default.qubit", wires=4)
-
-        @qml.qnode(dev)
-        def circuit(x):
-            qml.RX(x, 0)
-            return qml.expval(qml.Z(0))
-
-        jitted_circuit = jax.jit(circuit)
-        args = [jnp.array(1.5), jnp.array(2.5)]
-        res1 = jitted_circuit(args[0])
-        res2 = jitted_circuit(args[1])
-
-        with qml.capture.pause():
-            assert qml.math.allclose(res1, circuit(args[0]))
-            assert qml.math.allclose(res2, circuit(args[1]))
-
-    def test_caching_jit_static_argnums(self):
-        """Test that caching does not impact jitting with static_argnums."""
-
-        dev = qml.device("default.qubit", wires=4)
-
-        @qml.qnode(dev, static_argnums=1)
-        def circuit(x, y):
-            qml.RX(x, 0)
-            qml.RY(y, 1)
-            return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
-
-        jitted_circuit = jax.jit(circuit, static_argnums=1)
-        args = [
-            (jnp.array(1.5), 2.5),
-            (jnp.array(2.5), 2.5),
-            (jnp.array(1.5), 3.5),
-            (jnp.array(2.5), 3.5),
-        ]
-
-        for a in args:
-            res = jitted_circuit(*a)
-
-            with qml.capture.pause():
-                assert qml.math.allclose(res, circuit(*a))

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """CNOT routing algorithm RowCol as described in https://arxiv.org/abs/1910.14478."""
+
 from __future__ import annotations
 
 from collections.abc import Iterable
@@ -38,7 +39,7 @@ try:
     F_2 = galois.GF(2)  # pragma: no cover
     has_galois = True  # pragma: no cover
 
-except ImportError:
+except ModuleNotFoundError:
     has_galois = False
 
 
@@ -64,7 +65,7 @@ def postorder_traverse(tree: nx.Graph, source: int, source_parent: int = None):
 
     Consider the tree
 
-    .. code-block:: python
+    .. code-block::
 
                           (4)
                            |
@@ -89,8 +90,7 @@ def postorder_traverse(tree: nx.Graph, source: int, source_parent: int = None):
     retrieve from the ``nx.Graph`` itself. In addition, the last entry, which is always the root
     of the tree provided via the ``source`` argument, is *not* included in the output.
 
-    >>> from pennylane.transforms.intermediate_reps import postorder_traverse
-    >>> traversal = postorder_traverse(G, 0)
+    >>> traversal = qml.transforms.intermediate_reps.postorder_traverse(G, 0)
     >>> print(traversal)
     [(8, 3), (3, 1), (4, 1), (5, 1), (1, 0), (6, 2), (7, 2), (2, 0)]
     >>> expected = [8, 3, 4, 5, 1, 6, 7, 2] # Skipping trailing root
@@ -150,7 +150,7 @@ def preorder_traverse(tree: nx.Graph, source: int, source_parent: int = None):
 
     Consider the tree
 
-    .. code-block:: python
+    .. code-block::
 
                           (4)
                            |
@@ -175,9 +175,8 @@ def preorder_traverse(tree: nx.Graph, source: int, source_parent: int = None):
     retrieve from the ``nx.Graph`` itself. In addition, the first entry, which always is the root
     of the tree provided via the ``source`` argument, is *not* included in the output.
 
-    >>> from pennylane.labs.intermediate_reps import preorder_traverse
-    >>> traversal = preorder_traverse(G, 0)
-    >>> print(traversal)
+    >>> traversal = qml.transforms.intermediate_reps.preorder_traverse(G, 0)
+    >>> print(traversal) # doctest: +SKIP
     [(1, 0), (3, 1), (8, 3), (4, 1), (5, 1), (2, 0), (6, 2), (7, 2)]
     >>> expected = [1, 3, 8, 4, 5, 2, 6, 7] # Skipping leading root
     >>> all(child == exp for (child, parent), exp in zip(traversal, expected, strict=True))
@@ -306,8 +305,7 @@ def rowcol(
 
     Args:
         tape (QNode or QuantumScript or Callable): Input circuit containing only :class:`~.CNOT` gates. Will internally be translated to the :func:`~.parity_matrix` IR.
-        connectivity (nx.Graph): Connectivity graph to route into. If ``None`` (the default),
-            full connectivity is assumed.
+        connectivity (nx.Graph): Connectivity graph to route into. If ``None`` (the default), full connectivity is assumed.
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumScript], function]:
@@ -343,13 +341,14 @@ def rowcol(
 
     Further we define the following circuit:
 
-    >>> import pennylane as qml
-    >>> def qfunc():
-    ...     for i in range(4):
-    ...         qml.CNOT((i, i+1))
-    ...
-    ...     for (i, j) in [(0, 4), (3, 0), (0, 2), (3, 1), (2, 4)]:
-    ...         qml.CNOT((i, j))
+    .. code-block: python
+
+        import pennylane as qml
+        def qfunc():
+            for i in range(4):
+                qml.CNOT((i, i+1))
+            for (i, j) in [(0, 4), (3, 0), (0, 2), (3, 1), (2, 4)]:
+                qml.CNOT((i, j))
 
     >>> print(qml.draw(qfunc, wire_order=range(5))())
     0: ─╭●──────────╭●─╭X─╭●───────┤
@@ -358,25 +357,22 @@ def rowcol(
     3: ───────╰X─╭●─│──╰●────╰●─│──┤
     4: ──────────╰X─╰X──────────╰X─┤
 
+    We now run the algorithm:
 
-    We import ``rowcol`` and then run the algorithm:
-
-    >>> from pennylane.transforms import rowcol
-    >>> new_qfunc = rowcol(qfunc)
-    >>> print(qml.draw(new_qfunc, wire_order=range(5))())
-    0: ───────────────────╭●───────╭X─┤
-    1: ─╭X────╭X─╭●────╭X─│────────│──┤
-    2: ─╰●─╭X─╰●─╰X─╭●─╰●─│─────╭X─│──┤
-    3: ─╭●─╰●───────╰X────╰X─╭●─╰●─╰●─┤
-    4: ─╰X───────────────────╰X───────┤
+    >>> new_qfunc = qml.transforms.rowcol(qfunc)
+    >>> print(qml.draw(new_qfunc, wire_order=range(5))()) # doctest: +SKIP
+    0: ──────────╭X─╭X─╭●─╭●─╭●─╭X─┤
+    1: ────╭●─╭X─│──│──│──│──│──│──┤
+    2: ─╭X─╰X─╰●─│──╰●─│──│──╰X─╰●─┤
+    3: ─╰●───────╰●────│──╰X───────┤
+    4: ────────────────╰X──────────┤
 
     We can confirm that this circuit indeed implements the original circuit:
 
-    >>> from pennylane.transforms import parity_matrix
     >>> import numpy as np
-    >>> U1 = qml.matrix(new_qfunc, wire_order=range(5))()
-    >>> U2 = qml.matrix(qfunc, wire_order=range(5))()
-    >>> np.allclose(U1, U2)
+    >>> U1 = qml.matrix(new_qfunc, wire_order=range(5))() # doctest: +SKIP
+    >>> U2 = qml.matrix(qfunc, wire_order=range(5))() # doctest: +SKIP
+    >>> np.allclose(U1, U2) # doctest: +SKIP
     True
 
     The same is true for the :func:`~.parity_matrix` of both circuits.

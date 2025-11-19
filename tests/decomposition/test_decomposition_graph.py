@@ -15,6 +15,7 @@
 """Unit tests for the decomposition graph."""
 # pylint: disable=protected-access,no-name-in-module
 
+import warnings
 from unittest.mock import patch
 
 import numpy as np
@@ -42,7 +43,6 @@ from pennylane.operation import Operation
     side_effect=lambda x: decompositions[_to_name(x)],
 )
 class TestDecompositionGraph:
-
     def test_weighted_graph_solve(self, _):
         """Tests solving a simple graph for the optimal decompositions with weighted gates."""
 
@@ -230,6 +230,15 @@ class TestDecompositionGraph:
         # edges from the dummy starting node to the target gate set.
         assert len(graph._graph.edges()) == 11
 
+        solution = graph.solve()
+
+        # verify that is_solved_for returns False for gates in the gate set
+        assert not solution.is_solved_for(qml.RX(0.5, wires=0))
+
+        # verify that the correct error is raised
+        with pytest.raises(DecompositionError, match="is unsolved in this decomposition graph."):
+            solution.decomposition(qml.RX(0.5, wires=0))
+
     def test_graph_solve(self, _):
         """Tests solving a simple graph for the optimal decompositions."""
 
@@ -251,13 +260,25 @@ class TestDecompositionGraph:
         # verify that is_solved_for returns False for non-existent operators
         assert not solution.is_solved_for(qml.Toffoli(wires=[0, 1, 2]))
 
-    def test_decomposition_not_found(self, _):
-        """Tests that the correct error is raised if a decomposition isn't found."""
+    def test_decomposition_not_found_warning(self, _):
+        """Tests that the correct warning is raised if a decomposition isn't found."""
 
         op = qml.Hadamard(wires=[0])
         graph = DecompositionGraph(operations=[op], gate_set={"RX", "RY", "GlobalPhase"})
         with pytest.warns(UserWarning, match="unable to find a decomposition for {'Hadamard'}"):
             graph.solve()
+
+    @pytest.mark.parametrize(
+        "op", [qml.allocation.Allocate(1), qml.allocation.Deallocate(qml.allocation.DynamicWire())]
+    )
+    def test_decomposition_not_found_ignored_op_no_warning(self, _, op):
+        """Tests that no warning is raised if a decomposition isn't found but the unsolved
+        operator type is among specific operators, like Allocate and Deallocate."""
+
+        graph = DecompositionGraph(operations=[op], gate_set={"RX", "RY", "GlobalPhase"})
+        with warnings.catch_warnings(record=True) as record:
+            graph.solve()
+        assert len(record) == 0
 
     def test_lazy_solve(self, _):
         """Tests the lazy keyword argument."""

@@ -385,7 +385,8 @@ class TestInitialization:
         the Hamiltonian are not Hermitian and check_hermitian is True."""
 
         with pytest.raises(
-            ValueError, match="One or more of the terms in the Hamiltonian may not be Hermitian"
+            ValueError,
+            match="One or more of the terms in the Hamiltonian are not verified to be Hermitian.",
         ):
             qml.TrotterProduct(hamiltonian, time=0.5)
 

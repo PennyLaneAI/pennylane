@@ -21,8 +21,8 @@ In addition to quantum circuit transforms, PennyLane also
 supports experimental just-in-time compilation, via the :func:`~.qjit` decorator and
 `Catalyst <https://github.com/pennylaneai/catalyst>`__. This is more general, and
 supports full hybrid compilation --- compiling both the classical and quantum components
-of your workflow into a binary that can be run close to the accelerators.
-that you are using. More details can be found in :doc:`compiling workflows </introduction/compiling_workflows>`.
+of your workflow into a binary that can be run close to the accelerators that you are using. 
+More details can be found in :doc:`compiling workflows </introduction/compiling_workflows>`.
 
 Compilation transforms for circuit optimization
 -----------------------------------------------
@@ -38,7 +38,6 @@ other PennyLane objects.
     ~pennylane.transforms.cancel_inverses
     ~pennylane.transforms.commute_controlled
     ~pennylane.transforms.merge_amplitude_embedding
-    ~pennylane.transforms.cancel_inverses
     ~pennylane.transforms.merge_rotations
     ~pennylane.transforms.pattern_matching
     ~pennylane.transforms.remove_barrier
@@ -187,10 +186,9 @@ or two-qubit gates using a rule:
 
 .. code-block:: python
 
-    # functions in gate_set can only be used with graph decomposition system disabled
     qml.decomposition.disable_graph()
 
-    @partial(decompose, gate_set=lambda op: len(op.wires) <= 2) 
+    @partial(decompose, gate_set={"H", "T", "CNOT"}, stopping_condition=lambda op: len(op.wires) <= 2)
     @qml.qnode(dev)
     def circuit():
         qml.Toffoli(wires=[0,1,2])
@@ -275,6 +273,14 @@ enabled.
 Default behaviour with custom decompositions
 ********************************************
 
+.. warning::
+    The keyword argument for defining custom quantum gate decompositions, ``custom_decomps``,
+    has been deprecated and will be removed in v0.45. Instead, to specify custom decompositions for
+    your operators, use the :func:`qml.transforms.decompose <pennylane.transforms.decompose>` transform with the new
+    graph-based system enabled via :func:`qml.decomposition.enable_graph() <pennylane.decomposition.enable_graph>`.
+    The details on how to define your decomposition rules using the graph decomposition system are described
+    in :ref:`the next section <custom_decomps_with_graph>`.
+
 For example, suppose we would like to implement the following QNode:
 
 .. code-block:: python
@@ -358,6 +364,8 @@ be used.
 
     To have better control over custom decompositions, consider using the graph 
     decompositions system functionality outlined in the next section.
+
+.. _custom_decomps_with_graph:
 
 Custom decompositions with qml.decomposition.enable_graph
 *********************************************************

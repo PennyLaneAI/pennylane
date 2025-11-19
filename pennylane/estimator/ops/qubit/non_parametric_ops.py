@@ -928,7 +928,7 @@ class Y(ResourceOperator):
     The resources for this operation are computed using:
 
     >>> qml.estimator.Y.resource_decomp()
-    [(2 x S), (2 x Z), (2 x Hadamard)]
+    [(1 x S), (1 x Z), (1 x Adjoint(S)), (2 x Hadamard)]
     """
 
     num_wires = 1

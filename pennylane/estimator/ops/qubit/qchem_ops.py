@@ -54,7 +54,7 @@ class SingleExcitation(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> from pennylane import estimator as qre
+    >>> import pennylane.estimator as qre
     >>> se = qre.SingleExcitation()
     >>> print(qre.estimate(se))
     --- Resources: ---

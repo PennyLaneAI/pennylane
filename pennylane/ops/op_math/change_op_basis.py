@@ -159,14 +159,14 @@ class ChangeOpBasis(CompositeOp):
         return op_list
 
     @property
-    def is_hermitian(self):
+    def is_verified_hermitian(self):
         """Check if the product operator is hermitian.
 
         Note, this check is not exhaustive. There can be hermitian operators for which this check
         yields false, which ARE hermitian. So a false result only implies that a more explicit check
         must be performed.
         """
-        return self[1].is_hermitian
+        return self[1].is_verified_hermitian
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
