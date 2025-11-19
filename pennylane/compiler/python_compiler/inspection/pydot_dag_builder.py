@@ -195,7 +195,7 @@ class PyDotDAGBuilder(DAGBuilder):
         self.graph.write(output_filename, format=format)
 
     def to_string(self) -> str:
-        """Render the graph as a string.
+        """Return the graph as a string.
 
         This is typically used to get the graph's representation in a standard string format like DOT.
 
