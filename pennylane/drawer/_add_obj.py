@@ -252,29 +252,17 @@ def _add_global_op(
 
 @_add_obj.register
 def _add_mid_measure_op(
-    op: MidMeasure, layer_str, config, tape_cache=None, skip_grouping_symbols=False
+    op: MidMeasure | PauliMeasure, layer_str, config, tape_cache=None, skip_grouping_symbols=False
 ):
     """Updates ``layer_str`` with ``op`` operation when ``op`` is a
-    ``qml.ops.MidMeasure``."""
-    layer_str = _add_mid_measure_grouping_symbols(op, layer_str, config)
-    label = op.label(decimals=config.decimals, cache=config.cache).replace("\n", "")
-
-    for w in op.wires:
-        layer_str[config.wire_map[w]] += label
-
-    return layer_str
-
-
-@_add_obj.register
-def _add_pauli_measure_op(
-    op: PauliMeasure, layer_str, config, tape_cache=None, skip_grouping_symbols=False
-):
-    """Updates ``layer_str`` with ``op`` operation when ``op`` is a
-    ``qml.ops.PauliMeasure``."""
+    ``qml.ops.MidMeasure`` or a ``qml.ops.PauliMeasure``."""
     layer_str = _add_mid_measure_grouping_symbols(op, layer_str, config)
     layer_str = _add_grouping_symbols(op.wires, layer_str, config)
+    label_kwargs = {"decimals": config.decimals, "cache": config.cache}
     for w in op.wires:
-        label = op.label(wire=w, decimals=config.decimals, cache=config.cache).replace("\n", "")
+        if isinstance(op, PauliMeasure):
+            label_kwargs["wire"] = w
+        label = op.label(**label_kwargs).replace("\n", "")
         layer_str[config.wire_map[w]] += label
     return layer_str
 
