@@ -365,8 +365,8 @@ Other useful templates which do not belong to the previous categories can be fou
     :figure: _static/templates/qrom/qrom_thumbnail.png
 
 .. gallery-item::
-    :description: :doc:`QRAM <../code/api/pennylane.QRAM>`
-    :figure: _static/templates/qrom/qrom_thumbnail.png
+    :description: :doc:`QRAM <../code/api/pennylane.BBQRAM>`
+    :figure: _static/templates/qram/qram_thumbnail.png
 
 .. gallery-item::
     :description: :doc:`PrepSelPrep <../code/api/pennylane.PrepSelPrep>`
