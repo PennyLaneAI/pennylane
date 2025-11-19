@@ -180,12 +180,12 @@ class PyDotDAGBuilder(DAGBuilder):
     def to_file(self, output_filename: str) -> None:
         """Save the graph to a file.
 
-        The implementation should ideally infer the output format
-        (e.g., 'png', 'svg') from this filename's extension.
+        This method will infer the file's format (e.g., 'png', 'svg') from this filename's extension.
+        If no extension is provided, the 'png' format will be the default.
 
         Args:
-            output_filename (str): Desired filename for the graph. If no file extension is
-                provided, it will default to a `.png` file.
+            output_filename (str): Desired filename for the graph. File extension can be included
+                and if no file extension is provided, it will default to a `.png` file.
 
         """
         output_filename_path: pathlib.Path = pathlib.Path(output_filename)
