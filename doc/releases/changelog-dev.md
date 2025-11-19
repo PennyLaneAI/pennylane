@@ -266,6 +266,9 @@
 
 * Bump `autoray` package version to `0.8.2`.
   [(#8674)](https://github.com/PennyLaneAI/pennylane/pull/8674)
+  
+* Update the schedule of nightly TestPyPI uploads to occur at the end rather than the beginning of all week days.
+  [(#8672)](https://github.com/PennyLaneAI/pennylane/pull/8672)
 
 * Add workflow to bump Catalyst and Lightning versions in the RC branch, create a new release tag and draft release, tag the RC branch, and create a PR to merge the RC branch into master.
   [(#8352)](https://github.com/PennyLaneAI/pennylane/pull/8352)
