@@ -445,6 +445,9 @@ A warning message has been added to :doc:`Building a plugin <../development/plug
 * Fixes a bug where mid-circuit measurements were generating incomplete QASM.
   [(#8556)](https://github.com/PennyLaneAI/pennylane/pull/8556)
 
+* Fixes a bug where `qml.specs` incorrectly computes the circuit depth when classically controlled operators are involved.
+  [(#8668)](https://github.com/PennyLaneAI/pennylane/pull/8668)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
