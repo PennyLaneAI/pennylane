@@ -264,7 +264,7 @@ def _temporary_and(wires: WiresLike, **kwargs):
 add_decomps(TemporaryAND, _temporary_and)
 
 
-def _adjoint_temporary_and_resources():
+def _adjoint_temporary_and_resources(base_class=None, base_params=None):
     return {ops.Hadamard: 1, ops.MidMeasure: 1, ops.CZ: 1}
 
 
