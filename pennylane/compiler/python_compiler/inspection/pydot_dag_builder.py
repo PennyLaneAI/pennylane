@@ -13,6 +13,7 @@
 # limitations under the License.
 """File that defines the PyDotDAGBuilder subclass of DAGBuilder."""
 
+import pathlib
 from collections import ChainMap
 from typing import Any
 
@@ -176,23 +177,24 @@ class PyDotDAGBuilder(DAGBuilder):
         parent_graph_id = "__base__" if parent_graph_id is None else parent_graph_id
         self._subgraphs[parent_graph_id].add_subgraph(cluster)
 
-    def render(self, output_filename: str) -> None:
+    def to_file(self, output_filename: str) -> None:
         """Save the graph to a file.
 
         The implementation should ideally infer the output format
         (e.g., 'png', 'svg') from this filename's extension.
 
         Args:
-            output_filename (str): Desired filename for the rendered graph. If no file extension is
+            output_filename (str): Desired filename for the graph. If no file extension is
                 provided, it will default to a `.png` file.
 
         """
-        format = output_filename.split(".")[-1].lower()
-        if not format:
-            format = "png"
-            output_filename += ".png"
+        output_filename_path: pathlib.Path = pathlib.Path(output_filename)
+        if not output_filename_path.suffix:
+            output_filename_path = output_filename_path.with_suffix(".png")
 
-        self.graph.write(output_filename, format=format)
+        format = output_filename_path.suffix[1:].lower()
+
+        self.graph.write(str(output_filename_path), format=format)
 
     def to_string(self) -> str:
         """Return the graph as a string.

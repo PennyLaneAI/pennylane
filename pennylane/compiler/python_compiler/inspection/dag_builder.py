@@ -23,7 +23,7 @@ class DAGBuilder(ABC):
     This class provides a simple interface with three core methods (`add_node`, `add_edge` and `add_cluster`).
     You can override these methods to implement any backend, like `pydot` or `graphviz` or even `matplotlib`.
 
-    Outputting your graph can be done by overriding `render` and `to_string`.
+    Outputting your graph can be done by overriding `to_file` and `to_string`.
     """
 
     @abstractmethod
@@ -76,21 +76,21 @@ class DAGBuilder(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def render(self, output_filename: str) -> None:
-        """Render the graph to a file.
+    def to_file(self, output_filename: str) -> None:
+        """Save the graph to a file.
 
         The implementation should ideally infer the output format
         (e.g., 'png', 'svg') from this filename's extension.
 
         Args:
-            output_filename (str): Desired filename for the rendered graph.
+            output_filename (str): Desired filename for the graph.
 
         """
         raise NotImplementedError
 
     @abstractmethod
     def to_string(self) -> str:
-        """Render the graph as a string.
+        """Return the graph as a string.
 
         This is typically used to get the graph's representation in a standard string format like DOT.
 
