@@ -1183,3 +1183,15 @@ class TestClassicalControl:
         [_, cwire] = ax.lines
         assert cwire.get_xdata() == [-0.075, -0.075, -0.075, 1, 1, 1]
         assert cwire.get_ydata() == [1, 0, 1, 1, 1, 1]
+
+    def test_pauli_measure_mcm_in_parallel(self):
+        """Tests that the classical control wire is not shifted from an MCM."""
+
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.pauli_measure("X", [0])
+            m1 = qml.measure(1)
+            qml.expval(m1)
+        _, ax = tape_mpl(qml.tape.QuantumScript.from_queue(q))
+        [*_, cwire] = ax.lines
+        assert cwire.get_xdata() == [0, 0, 0, 1, 1, 1]
+        assert cwire.get_ydata() == [2, 1, 2, 2, 2, 2]
