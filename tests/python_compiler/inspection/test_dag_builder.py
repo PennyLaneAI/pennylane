@@ -55,7 +55,7 @@ def test_concrete_implementation_works():
         ) -> None:
             return
 
-        def render(self, output_filename: str) -> None:
+        def to_file(self, output_filename: str) -> None:
             return
 
         def to_string(self) -> str:
@@ -66,7 +66,7 @@ def test_concrete_implementation_works():
     node = dag_builder.add_node("0", "node0")
     edge = dag_builder.add_edge("0", "1")
     cluster = dag_builder.add_cluster("0", "cluster0")
-    render = dag_builder.render("test.png")
+    render = dag_builder.to_file("test.png")
     string = dag_builder.to_string()
 
     assert node is None
