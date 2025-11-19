@@ -88,10 +88,12 @@ class PLModulePass(ModulePass):
 
     name: ClassVar[str]
     recursive: bool
+    greedy: bool
     _rewrite_patterns: ClassVar[dict[Operation, RewritePattern]] = {}
 
-    def __init__(self, recursive: bool = True):
+    def __init__(self, recursive: bool = True, greedy: bool = False):
         self.recursive = recursive
+        self.greedy = greedy
 
     @classmethod
     def rewrite_rule(
@@ -129,6 +131,14 @@ class PLModulePass(ModulePass):
     def apply(self, ctx: Context, op: builtin.ModuleOp) -> None:  # pylint: disable=unused-argument
         """Apply the transformation to the input module.
 
+        If ``greedy`` is ``True``, the rewrite rules will be applied greedily, i.e., for each
+        operation in the worklist, we will apply only the first rewrite rule that matches the
+        operation. Otherwise, they will be applied by creating a different worklist for each
+        rewrite rule.
+
+        If ``recursive`` is ``True``, the worklist algorithm will continue applying the rewrite
+        rules until a steady-state is reached.
+
         .. note::
 
             The input module is mutated in-place.
@@ -137,8 +147,14 @@ class PLModulePass(ModulePass):
             ctx: Context containing operation and attribute registrations
             op: Module to which to apply the transform
         """
-        pattern = GreedyRewritePatternApplier(
-            rewrite_patterns=[rp(self) for rp in self._rewrite_patterns.values()]
-        )
-        walker = PatternRewriteWalker(pattern=pattern, apply_recursively=self.recursive)
-        walker.rewrite_module(op)
+        if self.greedy:
+            pattern = GreedyRewritePatternApplier(
+                rewrite_patterns=[rp(self) for rp in self._rewrite_patterns.values()]
+            )
+            walker = PatternRewriteWalker(pattern=pattern, apply_recursively=self.recursive)
+            walker.rewrite_module(op)
+
+        else:
+            for rp in self._rewrite_patterns.values():
+                walker = PatternRewriteWalker(pattern=rp(self), apply_recursively=self.recursive)
+                walker.rewrite_module(op)
