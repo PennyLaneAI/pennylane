@@ -950,7 +950,7 @@ class MPLDrawer:
                 fontsize=(self.fontsize - 2),
             )
 
-    def pauli_measure(self, layer, pauli_word, wires, postselect, **kwargs):
+    def pauli_measure(self, layer, pauli_word, wires, postselect=None, **kwargs):
         """Draw a PauliMeasure at the designated layer."""
 
         box_options = kwargs.get("box_options", {})
