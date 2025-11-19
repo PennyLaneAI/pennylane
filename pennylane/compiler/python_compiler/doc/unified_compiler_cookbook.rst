@@ -709,7 +709,7 @@ module @circuit {
     module attributes {transform.with_named_sequence} {
       transform.named_sequence @__transform_main(%arg0: !transform.op<"builtin.module">) {
         %0 = transform.apply_registered_pass "merge-rotations" to %arg0 : (!transform.op<"builtin.module">) -> !transform.op<"builtin.module">
-        %1 = transform.apply_registered_pass "remove-chained-self-inverse" to %0 : (!transform.op<"builtin.module">) -> !transform.op<"builtin.module">
+        %1 = transform.apply_registered_pass "cancel-inverses" to %0 : (!transform.op<"builtin.module">) -> !transform.op<"builtin.module">
         transform.yield
       }
     }
