@@ -81,19 +81,15 @@ except ImportError:  # pragma: no cover
     has_jax = False  # pragma: no cover
 
 
-def _add_make_eqn_helper(apply=True):
+def _add_make_eqn_helper():
     """
-    Add (or just return) a make_eqn helper method to DynamicJaxprTrace.
+    Return a make_eqn helper method to DynamicJaxprTrace.
 
     This helper properly creates TracingEqn objects, which is needed for JAX 0.7.0
     compatibility. This is based on Catalyst's approach to the same issue.
 
-    Args:
-        apply: If True, apply the patch globally. If False, just return the patch tuple.
-
     Returns:
-        tuple or None: If apply=False, returns (DynamicJaxprTrace, "make_eqn", make_eqn).
-                       If apply=True, returns None after applying patch.
+        tuple: (DynamicJaxprTrace, "make_eqn", make_eqn).
     """
     from jax._src import config as jax_config
     from jax._src import source_info_util
@@ -160,17 +156,12 @@ def _add_make_eqn_helper(apply=True):
 
         return eqn, out_tracers
 
-    if apply:
-        # Add the helper method to DynamicJaxprTrace
-        pe.DynamicJaxprTrace.make_eqn = make_eqn
-        return None
-    else:
-        return (pe.DynamicJaxprTrace, "make_eqn", make_eqn)
+    return (pe.DynamicJaxprTrace, "make_eqn", make_eqn)
 
 
-def _patch_dyn_shape_staging_rule(apply=True):
+def _patch_dyn_shape_staging_rule():
     """
-    Patch (or just return) _dyn_shape_staging_rule to fix dynamic shape handling.
+    Return _dyn_shape_staging_rule patch to fix dynamic shape handling.
 
     The bug in JAX 0.7.0's lax/lax.py lines 267-275 is that it uses:
     - pe.new_jaxpr_eqn instead of proper TracingEqn creation
@@ -181,12 +172,8 @@ def _patch_dyn_shape_staging_rule(apply=True):
 
     The fix uses the make_eqn helper to properly create TracingEqn objects.
 
-    Args:
-        apply: If True, apply patches globally. If False, just return the patch tuples.
-
     Returns:
-        list or None: If apply=False, returns list of patch tuples.
-                      If apply=True, returns None after applying patches.
+        list: List of patch tuples.
     """
     from jax._src import core
     from jax._src.interpreters import partial_eval as pe
@@ -213,20 +200,15 @@ def _patch_dyn_shape_staging_rule(apply=True):
         # Return single tracer (not list) since out_aval is a single value
         return out_tracers[0]
 
-    if apply:
-        # Apply the patch - just patch the core function
-        lax._dyn_shape_staging_rule = patched_dyn_shape_staging_rule
-        return None
-    else:
-        # Return just the core patch - the wrappers will call the patched version
-        return [
-            (lax, "_dyn_shape_staging_rule", patched_dyn_shape_staging_rule),
-        ]
+    # Return just the core patch - the wrappers will call the patched version
+    return [
+        (lax, "_dyn_shape_staging_rule", patched_dyn_shape_staging_rule),
+    ]
 
 
-def _patch_pjit_staging_rule(apply=True):
+def _patch_pjit_staging_rule():
     """
-    Patch (or just return) pjit_staging_rule to fix dynamic shape handling.
+    Return pjit_staging_rule patch to fix dynamic shape handling.
 
     The bug in JAX 0.7.0's pjit.py lines 1894-1898 is that it uses:
     - core.new_jaxpr_eqn instead of pe.new_eqn_recipe
@@ -234,12 +216,8 @@ def _patch_pjit_staging_rule(apply=True):
 
     This causes an AssertionError when add_eqn expects a TracingEqn but gets a JaxprEqn.
 
-    Args:
-        apply: If True, apply patches globally. If False, just return the patch tuples.
-
     Returns:
-        list or None: If apply=False, returns list of patch tuples.
-                      If apply=True, returns None after applying patches.
+        list: List of patch tuples.
     """
     from jax._src import config, core, pjit
     from jax._src.interpreters import partial_eval as pe
@@ -314,17 +292,10 @@ def _patch_pjit_staging_rule(apply=True):
 
         return out_tracers
 
-    if apply:
-        # Apply the patch
-        pjit.pjit_staging_rule = patched_pjit_staging_rule
-        # Also update the custom staging rules dict
-        pe.custom_staging_rules[pjit.jit_p] = patched_pjit_staging_rule
-        return None
-    else:
-        return [
-            (pjit, "pjit_staging_rule", patched_pjit_staging_rule),
-            (pe.custom_staging_rules, "__dict_item__", pjit.jit_p, patched_pjit_staging_rule),
-        ]
+    return [
+        (pjit, "pjit_staging_rule", patched_pjit_staging_rule),
+        (pe.custom_staging_rules, "__dict_item__", pjit.jit_p, patched_pjit_staging_rule),
+    ]
 
 
 def get_jax_patches():
@@ -356,8 +327,8 @@ def get_jax_patches():
     patches = []
 
     # Get all patches from the helper functions
-    patches.append(_add_make_eqn_helper(apply=False))
-    patches.extend(_patch_dyn_shape_staging_rule(apply=False))
-    patches.extend(_patch_pjit_staging_rule(apply=False))
+    patches.append(_add_make_eqn_helper())
+    patches.extend(_patch_dyn_shape_staging_rule())
+    patches.extend(_patch_pjit_staging_rule())
 
     return tuple(patches)
