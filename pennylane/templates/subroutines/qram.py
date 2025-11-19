@@ -122,8 +122,8 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
             )
             return probs(wires=target_wires)
 
-    >>> print(bb_quantum())
-    [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0]  # doctest: +SKIP
+    >>> print(bb_quantum())  # doctest: +SKIP
+    [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0]
     """
 
     grad_method = None
