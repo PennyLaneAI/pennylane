@@ -29,7 +29,7 @@ class MeasurementValue:
     """A class representing unknown measurement outcomes in the qubit model.
 
     Args:
-        measurements (list[MidMeasureMP | PauliMeasure]): The measurement(s) that this object depends on.
+        measurements (list[MidMeasure | PauliMeasure]): The measurement(s) that this object depends on.
         processing_fn (callable | None): A lazy transformation applied to the measurement values.
 
     """

@@ -33,7 +33,6 @@ from pennylane.exceptions import PennyLaneDeprecationWarning, QuantumFunctionErr
 from pennylane.logging import debug_logger
 from pennylane.math import Interface
 from pennylane.measurements import Shots, ShotsLike
-from pennylane.ops import MidMeasure
 from pennylane.queuing import AnnotatedQueue
 from pennylane.tape import QuantumScript
 from pennylane.transforms.core import TransformDispatcher, TransformProgram
@@ -50,7 +49,6 @@ if TYPE_CHECKING:
 
     from pennylane.concurrency.executors import ExecBackends
     from pennylane.devices import Device, LegacyDevice
-    from pennylane.transforms.core import TransformContainer
     from pennylane.typing import Result
     from pennylane.workflow.resolution import SupportedDiffMethods
 
@@ -124,8 +122,8 @@ def _to_qfunc_output_type(results: Result, qfunc_output, has_partitioned_shots: 
 
 
 def _validate_mcm_config(
-    postselect_mode: Literal["hw-like", "fill-shots"] | None,
-    mcm_method: Literal["deferred", "one-shot", "tree-traversal"] | None,
+    postselect_mode: str | None,
+    mcm_method: str | None,
 ) -> None:
     qml.devices.MCMConfig(postselect_mode=postselect_mode, mcm_method=mcm_method)
 
@@ -158,11 +156,7 @@ def _validate_qfunc_output(qfunc_output, measurements) -> None:
             "or a nonempty sequence of measurements."
         )
 
-    terminal_measurements = [m for m in measurements if not isinstance(m, MidMeasure)]
-
-    if any(
-        ret is not m for ret, m in zip(measurement_processes, terminal_measurements, strict=True)
-    ):
+    if any(ret is not m for ret, m in zip(measurement_processes, measurements, strict=True)):
         raise QuantumFunctionError(
             "All measurements must be returned in the order they are measured."
         )
@@ -294,12 +288,12 @@ class QNode:
             (classical) computational overhead during the backwards pass.
         device_vjp (bool): Whether or not to use the device-provided Vector Jacobian Product (VJP).
             A value of ``None`` indicates to use it if the device provides it, but use the full jacobian otherwise.
-        postselect_mode (str): Configuration for handling shots with mid-circuit measurement postselection. If
+        postselect_mode (str | None): Configuration for handling shots with mid-circuit measurement postselection. If
             ``"hw-like"``, invalid shots will be discarded and only results for valid shots will be returned.
             If ``"fill-shots"``, results corresponding to the original number of shots will be returned. The
             default is ``None``, in which case the device will automatically choose the best configuration. For
             usage details, please refer to the :doc:`dynamic quantum circuits page </introduction/dynamic_quantum_circuits>`.
-        mcm_method (str): The strategy for applying mid-circuit measurements.
+        mcm_method (str | None): The strategy for applying mid-circuit measurements.
             Available methods include ``"deferred"`` (to use the deferred
             measurement principle), ``"one-shot"`` (to execute the circuit
             for each shot separately when using finite shots), and
@@ -528,8 +522,8 @@ class QNode:
         cachesize: int = 10000,
         max_diff: int = 1,
         device_vjp: bool | None = False,
-        postselect_mode: Literal["hw-like", "fill-shots"] | None = None,
-        mcm_method: Literal["deferred", "one-shot", "tree-traversal"] | None = None,
+        postselect_mode: str | None = None,
+        mcm_method: str | None = None,
         gradient_kwargs: dict | None = None,
         static_argnums: int | Iterable[int] = (),
         executor_backend: ExecBackends | str | None = None,
