@@ -48,3 +48,4 @@ from .comparators import (
 )
 from .qubitize import QubitizeTHC
 from .select import SelectTHC, SelectPauli
+from .qsp import GQSP

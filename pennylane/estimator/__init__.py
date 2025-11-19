@@ -104,6 +104,7 @@ from .templates import (
     SingleQubitComparator,
     TwoQubitComparator,
     RegisterComparator,
+    GQSP,
 )
 
 from .compact_hamiltonian import (

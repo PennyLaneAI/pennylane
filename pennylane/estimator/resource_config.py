@@ -18,12 +18,13 @@ from collections.abc import Callable
 from enum import StrEnum
 from typing import TYPE_CHECKING
 
-from pennylane.estimator.ops.op_math.controlled_ops import CRX, CRY, CRZ, CRot, ControlledPhaseShift
+from pennylane.estimator.ops.op_math.controlled_ops import CRX, CRY, CRZ, ControlledPhaseShift, CRot
 from pennylane.estimator.ops.qubit.matrix_ops import QubitUnitary
-from pennylane.estimator.ops.qubit.qchem_ops import SingleExcitation
 from pennylane.estimator.ops.qubit.parametric_ops_multi_qubit import MultiRZ, PauliRot
 from pennylane.estimator.ops.qubit.parametric_ops_single_qubit import RX, RY, RZ, Rot
+from pennylane.estimator.ops.qubit.qchem_ops import SingleExcitation
 from pennylane.estimator.templates import (
+    GQSP,
     AliasSampling,
     MPSPrep,
     PrepTHC,
@@ -126,7 +127,7 @@ class ResourceConfig:
             ControlledPhaseShift: {"precision": None},
             QubitUnitary: {"precision": _DEFAULT_PRECISION},
             MultiRZ: {"precision": None},
-            PauliRot:  {"precision": None},
+            PauliRot: {"precision": None},
             SingleExcitation: {"precision": None},
             SelectPauliRot: {"precision": None},
             AliasSampling: {"precision": _DEFAULT_PRECISION},
@@ -146,6 +147,7 @@ class ResourceConfig:
                 "phase_grad_precision": _DEFAULT_PHASEGRAD_PRECISION,
                 "coeff_precision": 1e-3,
             },
+            GQSP: {"rot_precision": None},
         }
         self._custom_decomps = {}
         self._adj_custom_decomps = {}
