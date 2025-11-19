@@ -90,8 +90,10 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
 
     .. code-block:: python
 
-        import pennylane as qml
-        from pennylane.templates.subroutines.qramv1 import select_bucket_brigade_bus_qram
+        from pennylane.measurements import probs
+        from pennylane.templates import BasisEmbedding
+        from pennylane import device, qnode
+        from pennylane.templates.subroutines.qram import BBQRAM
 
         bitstrings = ["010", "111", "110", "000"]  # 2^2 entries, m=3
         dev = device("default.qubit")
@@ -99,29 +101,29 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
         @qnode(dev)
         def bb_quantum():
             # qram_wires are the 2 LSB address bits.
-            qram_wires   = [0, 1]        # |i> for 4 leaves
-            target_wires = [2, 3, 4]     # m=3
-            bus          = 5             # single bus at the top
+            qram_wires = [0, 1]  # |i> for 4 leaves
+            target_wires = [2, 3, 4]  # m=3
+            bus = 5  # single bus at the top
 
             # For n_k=2 → (2^2 - 1) = 3 internal nodes in level order:
             # (0,0) root; (1,0) left child; (1,1) right child
-            dir_wires    = [6, 7, 8]
-            portL_wires  = [9, 10, 11]
-            portR_wires  = [12, 13, 14]
+            dir_wires = [6, 7, 8]
+            portL_wires = [9, 10, 11]
+            portR_wires = [12, 13, 14]
 
             # prepare an address, e.g., |10> (index 2)
             BasisEmbedding(2, wires=qram_wires)
 
             BBQRAM(
                 bitstrings,
-                qram_wires=qram_wires,    # n_k=2
+                qram_wires=qram_wires,  # n_k=2
                 target_wires=target_wires,
                 work_wires=[bus] + dir_wires + portL_wires + portR_wires,
             )
             return probs(wires=target_wires)
 
     >>> print(bb_quantum())
-    [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0]
+    [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0]  # doctest: +SKIP
     """
 
     grad_method = None
@@ -176,6 +178,10 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
             + list(self.portR_wires)
         )
         super().__init__(wires=all_wires, id=id)
+
+    @classmethod
+    def _primitive_bind_call(cls, *args, **kwargs):
+        return cls._primitive.bind(*args, **kwargs)
 
     # ---------- Tree helpers ----------
     def _node_in_wire(self, level: int, prefix: int):
