@@ -46,7 +46,7 @@ def _node_index(level: int, prefix_value: int) -> int:
 # -----------------------------
 # Select-prefix × Bucket-Brigade with explicit bus routing
 # -----------------------------
-class BBQRAM(Operation):
+class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
     r"""Bucket-brigade QRAM (https://arxiv.org/pdf/0708.1879) with **explicit bus routing** using 3 qubits per node.
 
     Bucket-brigade QRAM achieves an O(log N) complexity instead of the typical N, where N is the number of
@@ -133,7 +133,7 @@ class BBQRAM(Operation):
         target_wires: Sequence[int],
         work_wires: Sequence[int],
         id: Optional[str] = None,
-    ):
+    ):  # pylint: disable=too-many-arguments
         if not bitstrings:
             raise ValueError("'bitstrings' cannot be empty.")
         m_set = {len(s) for s in bitstrings}
