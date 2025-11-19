@@ -218,6 +218,16 @@ class TestSpecsTransform:
 
         assert qml.specs(circuit2)()["resources"].depth == 2
 
+        # Tests conditional that depends on multiple measurements
+        @qml.qnode(qml.device("default.qubit"))
+        def circuit3():
+            m0 = qml.measure(0)
+            m1 = qml.pauli_measure("XY", [0, 1])
+            qml.cond(m0 & m1, qml.Z)(2)
+            return qml.expval(qml.Z(2))
+
+        assert qml.specs(circuit3)()["resources"].depth == 3
+
     @pytest.mark.parametrize(
         "diff_method, len_info", [("backprop", 12), ("parameter-shift", 13), ("adjoint", 12)]
     )
