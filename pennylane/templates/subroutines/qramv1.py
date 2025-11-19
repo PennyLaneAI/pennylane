@@ -57,7 +57,7 @@ def _node_index(level: int, prefix_value: int) -> int:
 # -----------------------------
 # Select-prefix × Bucket-Brigade with explicit bus routing
 # -----------------------------
-class BBQRAM(qml.operation.Operation):
+class BBQRAM(qml.operation.Operation):  # pylint: disable=too-many-instance-attributes
     r"""Bucket-brigade QRAM with **explicit bus routing** using 3 qubits per node,
     and an optional **select (MSB) prefix**, plus **hybrid** support.
 
@@ -91,7 +91,7 @@ class BBQRAM(qml.operation.Operation):
         qram_value: Optional[int] = None,
         id: Optional[str] = None,
         # ===
-    ):
+    ):  # pylint: disable=too-many-arguments
         if not bitstrings:
             raise ValueError("'bitstrings' cannot be empty.")
         m_set = {len(s) for s in bitstrings}
@@ -133,9 +133,9 @@ class BBQRAM(qml.operation.Operation):
         self.qram_value = qram_value
         if mode == "hybrid" and (select_value is None and qram_value is None):
             raise ValueError("hybrid mode requires select_value and/or qram_value.")
-        if select_value is not None and not (0 <= select_value < (1 << self.k)):
+        if select_value is not None and not 0 <= select_value < (1 << self.k):
             raise ValueError("select_value out of range.")
-        if qram_value is not None and not (0 <= qram_value < (1 << self.n_k)):
+        if qram_value is not None and not 0 <= qram_value < (1 << self.n_k):
             raise ValueError("qram_value out of range.")
 
         all_wires = (
@@ -228,46 +228,46 @@ class BBQRAM(qml.operation.Operation):
         """Inverse of `_route_bus_down_first_k_levels`."""
         return list(reversed(self._route_bus_down_first_k_levels(k_levels)))
 
-    # # ---------- Data routing (full depth) ----------
-    # def _route_bus_down(self) -> list:
-    #     """Route the bus from root to leaf across all levels using dir-controlled CSWAPs."""
-    #     ops = []
-    #     for k in range(self.n_k):
-    #         for p in range(1 << k):
-    #             in_w = self._node_in_wire(k, p)
-    #             L = self._portL(k, p)
-    #             R = self._portR(k, p)
-    #             d = self._router(k, p)
-    #             if k == 0:
-    #                 upper_ctrls, upper_vals = [], []
-    #             else:
-    #                 upper_ctrls = [self._router(j, p >> (k - j)) for j in range(k)]
-    #                 upper_vals = [(p >> (k - 1 - j)) & 1 for j in range(k)]
-    #             op0 = qml.SWAP(wires=[in_w, L])
-    #             op1 = qml.SWAP(wires=[in_w, R])
-    #             ops.append(
-    #                 qml.ctrl(op0, control=[d] + upper_ctrls, control_values=[0] + upper_vals)
-    #                 if upper_ctrls
-    #                 else qml.ctrl(op0, control=[d], control_values=[0])
-    #             )
-    #             ops.append(
-    #                 qml.ctrl(op1, control=[d] + upper_ctrls, control_values=[1] + upper_vals)
-    #                 if upper_ctrls
-    #                 else qml.ctrl(op1, control=[d], control_values=[1])
-    #             )
-    #     return ops
+    # ---------- Data routing (full depth) ----------
+    def _route_bus_down(self) -> list:
+        """Route the bus from root to leaf across all levels using dir-controlled CSWAPs."""
+        ops = []
+        for k in range(self.n_k):
+            for p in range(1 << k):
+                in_w = self._node_in_wire(k, p)
+                L = self._portL(k, p)
+                R = self._portR(k, p)
+                d = self._router(k, p)
+                if k == 0:
+                    upper_ctrls, upper_vals = [], []
+                else:
+                    upper_ctrls = [self._router(j, p >> (k - j)) for j in range(k)]
+                    upper_vals = [(p >> (k - 1 - j)) & 1 for j in range(k)]
+                op0 = qml.SWAP(wires=[in_w, L])
+                op1 = qml.SWAP(wires=[in_w, R])
+                ops.append(
+                    qml.ctrl(op0, control=[d] + upper_ctrls, control_values=[0] + upper_vals)
+                    if upper_ctrls
+                    else qml.ctrl(op0, control=[d], control_values=[0])
+                )
+                ops.append(
+                    qml.ctrl(op1, control=[d] + upper_ctrls, control_values=[1] + upper_vals)
+                    if upper_ctrls
+                    else qml.ctrl(op1, control=[d], control_values=[1])
+                )
+        return ops
 
-    # def _route_bus_up(self) -> list:
-    #     """Inverse of `_route_bus_down`."""
-    #     return list(reversed(self._route_bus_down()))
+    def _route_bus_up(self) -> list:
+        """Inverse of `_route_bus_down`."""
+        return list(reversed(self._route_bus_down()))
 
-    # # ---------- Select controls----------
-    # def _select_ctrls(self, s: int):
-    #     if self.k == 0:
-    #         return [], []
-    #     ctrls = list(self.select_wires)
-    #     vals = [(s >> (self.k - 1 - j)) & 1 for j in range(self.k)]
-    #     return ctrls, vals
+    # ---------- Select controls----------
+    def _select_ctrls(self, s: int):
+        if self.k == 0:
+            return [], []
+        ctrls = list(self.select_wires)
+        vals = [(s >> (self.k - 1 - j)) & 1 for j in range(self.k)]
+        return ctrls, vals
 
     # ---------- classical data input----------
     def _leaf_ops_for_bit(self, j: int) -> list:
@@ -357,7 +357,7 @@ def select_bucket_brigade_bus_qram(
     mode: str = "quantum",
     select_value: Optional[int] = None,
     qram_value: Optional[int] = None,
-):
+):  # pylint: disable=too-many-arguments
     """Functional wrapper for SelectBucketBrigadeBusQRAM."""
     return BBQRAM(
         bitstrings,
