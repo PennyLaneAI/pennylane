@@ -761,7 +761,7 @@ class TestModifiedTemplates:
             "bitstrings": ["010", "111", "110", "000"],
             "qram_wires": [0, 1],
             "target_wires": [2, 3, 4],
-            "work_wires": [5] + [6, 7, 8] + [12, 13, 14] + [9, 10, 11]
+            "work_wires": [5] + [6, 7, 8] + [12, 13, 14] + [9, 10, 11],
         }
 
         def qfunc():

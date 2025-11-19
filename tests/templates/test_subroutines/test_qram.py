@@ -62,7 +62,7 @@ def bb_quantum(bitstrings, qram_wires, target_wires, work_wires, address):
             2,  # addressed from the left
             [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0],  # |110>
         ),
-(
+        (
             ["010", "111", "110", "000"],
             [0, 1],
             [2, 3, 4],
@@ -87,9 +87,23 @@ def bb_quantum(bitstrings, qram_wires, target_wires, work_wires, address):
     ],
 )
 def test_bb_quantum(
-    bitstrings, qram_wires, target_wires, bus, dir_wires, portL_wires, portR_wires, address, probabilities
+    bitstrings,
+    qram_wires,
+    target_wires,
+    bus,
+    dir_wires,
+    portL_wires,
+    portR_wires,
+    address,
+    probabilities,
 ):  # pylint: disable=too-many-arguments
     assert np.allclose(
         probabilities,
-        bb_quantum(bitstrings, qram_wires, target_wires, [bus] + dir_wires + portL_wires + portR_wires, address),
+        bb_quantum(
+            bitstrings,
+            qram_wires,
+            target_wires,
+            [bus] + dir_wires + portL_wires + portR_wires,
+            address,
+        ),
     )
