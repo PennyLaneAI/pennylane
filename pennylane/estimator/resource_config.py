@@ -138,7 +138,6 @@ class ResourceConfig:
                 "phase_grad_precision": _DEFAULT_PHASEGRAD_PRECISION,
                 "coeff_precision": 1e-3,
             },
-            TrotterPauli: {"pauli_rot_precision": _DEFAULT_PRECISION},
         }
         self._custom_decomps = {}
         self._adj_custom_decomps = {}
