@@ -61,7 +61,11 @@ class ResourceType(enum.Enum):
     PPM = "ppm"
 
     # Extra circuit info
-    OTHER = "other"
+    METADATA = "meta"
+
+    # MLIR data
+    FUNC_CALL = "fcall"
+    CLASSICAL = "classical"
 
 
 class ResourcesResult:
@@ -71,6 +75,7 @@ class ResourcesResult:
         self.quantum_operations: dict[str, int] = defaultdict(int)
         self.quantum_measurements: dict[str, int] = defaultdict(int)
         self.ppm_operations: dict[str, int] = defaultdict(int)
+        self.classical_instructions: dict[str, int] = defaultdict(int)
 
         self.resource_sizes: dict[int, int] = defaultdict(int)
 
@@ -85,6 +90,8 @@ class ResourcesResult:
             self.quantum_measurements[name] += count
         for name, count in other.ppm_operations.items():
             self.ppm_operations[name] += count
+        for name, count in other.classical_instructions.items():
+            self.classical_instructions[name] += count
 
         for size, count in other.resource_sizes.items():
             self.resource_sizes[size] += count
@@ -100,6 +107,8 @@ class ResourcesResult:
             self.quantum_measurements[name] *= scalar
         for name in self.ppm_operations:
             self.ppm_operations[name] *= scalar
+        for name in self.classical_instructions:
+            self.classical_instructions[name] *= scalar
 
         for size in self.resource_sizes:
             self.resource_sizes[size] *= scalar
@@ -116,9 +125,9 @@ class ResourcesResult:
 @singledispatch
 def handle_resource(
     xdsl_op: xdsl.ir.Operation,
-) -> tuple[ResourceType, str, int] | tuple[None, None]:
+) -> tuple[ResourceType, str] | tuple[None, None]:
     # Default handler for unsupported xDSL op types
-    return None, None
+    return ResourceType.CLASSICAL, xdsl_op.name
 
 
 ############################################################
@@ -180,7 +189,21 @@ def _(xdsl_op: PPMeasurementOp | SelectPPMeasurementOp) -> tuple[ResourceType, s
 
 
 ############################################################
-### Other Specs Info
+### Subroutine calls
+############################################################
+
+
+@handle_resource.register
+def _(
+    xdsl_op: func.CallOp,
+) -> tuple[ResourceType, str]:
+    # If these types are matched, parse them with the extra specs handler
+    breakpoint()  # TODO: Remove debugging breakpoint, need to merge this with another branch for testing
+    return ResourceType.FUNC_CALL, xdsl_op.callee
+
+
+############################################################
+### Circuit Metadata
 ############################################################
 
 
@@ -188,21 +211,21 @@ def _(xdsl_op: PPMeasurementOp | SelectPPMeasurementOp) -> tuple[ResourceType, s
 def _(
     xdsl_op: DeviceInitOp | AllocOp | AllocQubitOp,
 ) -> tuple[None, None]:
-    # If these types are matched, parse them with the extra specs handler
-    return ResourceType.OTHER, None
+    # If these types are matched, parse them with the specs metadata handler
+    return ResourceType.METADATA, None
 
 
 @singledispatch
-def handle_extra(xdsl_op: xdsl.ir.Operation, resources: ResourcesResult) -> None:
+def handle_metadata(xdsl_op: xdsl.ir.Operation, resources: ResourcesResult) -> None:
     raise NotImplementedError(f"Unsupported xDSL op: {xdsl_op}")
 
 
-@handle_extra.register
+@handle_metadata.register
 def _(xdsl_op: DeviceInitOp, resources: ResourcesResult) -> None:
     resources.device_name = xdsl_op.device_name.data
 
 
-@handle_extra.register
+@handle_metadata.register
 def _(xdsl_op: AllocQubitOp | AllocOp, resources: ResourcesResult) -> None:
     # TODO: Should be able to handle deallocs as well
     if isinstance(xdsl_op, AllocQubitOp):
@@ -299,9 +322,11 @@ def _collect_region(region, loop_warning=False, cond_warning=False) -> Resources
             case ResourceType.PPM:
                 resources.ppm_operations[resource] += 1
                 resources.resource_sizes[len(op.in_qubits)] += 1
-            case ResourceType.OTHER:
+            case ResourceType.METADATA:
                 # Parse out extra circuit information
-                handle_extra(op, resources)
+                handle_metadata(op, resources)
+            case ResourceType.CLASSICAL:
+                resources.classical_instructions[resource] += 1
             case _:
                 raise NotImplementedError(
                     f"Unsupported resource type {resource_type} for resource {resource}."
@@ -313,7 +338,8 @@ def _collect_region(region, loop_warning=False, cond_warning=False) -> Resources
 def specs_collect(module) -> ResourcesResult:
     """Collect PennyLane resources from the module."""
 
-    resources = ResourcesResult()
+    fxn_to_resources = {}
+    entry_fxn = None
 
     for func_op in module.body.ops:
         # TODO: May need to determine how many times a function is called for functions other than the main circuit
@@ -326,8 +352,23 @@ def specs_collect(module) -> ResourcesResult:
             raise ValueError("Expected FuncOp in module body.")
 
         if func_op.is_declaration:
+            warnings.warn(
+                f"Function {func_op.name.data} is an external declaration. "
+                "Specs cannot analyze external functions, so some data may be missing.",
+                UserWarning,
+            )
             continue  # Skip external function declarations
 
-        resources.merge_with(_collect_region(func_op.body))
+        if "qnode" in func_op.attributes:
+            # The main entrypoint for a qnode is always marked by the `qnode` attribute
+            entry_fxn = func_op.sym_name
 
-    return resources
+        resources = _collect_region(func_op.body)
+        fxn_to_resources[func_op.sym_name] = resources
+
+    if entry_fxn not in fxn_to_resources:
+        raise ValueError("Entry function not found in module.")
+
+    # TODO: Merge resources for function calls within the entry function
+
+    return fxn_to_resources[entry_fxn]
