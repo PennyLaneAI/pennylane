@@ -264,6 +264,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Bump `autoray` package version to `0.8.2`.
+  [(#8674)](https://github.com/PennyLaneAI/pennylane/pull/8674)
+  
 * Update the schedule of nightly TestPyPI uploads to occur at the end rather than the beginning of all week days.
   [(#8672)](https://github.com/PennyLaneAI/pennylane/pull/8672)
 
