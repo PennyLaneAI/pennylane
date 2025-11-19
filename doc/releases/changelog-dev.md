@@ -264,6 +264,12 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Bump `autoray` package version to `0.8.2`.
+  [(#8674)](https://github.com/PennyLaneAI/pennylane/pull/8674)
+  
+* Update the schedule of nightly TestPyPI uploads to occur at the end rather than the beginning of all week days.
+  [(#8672)](https://github.com/PennyLaneAI/pennylane/pull/8672)
+
 * Add workflow to bump Catalyst and Lightning versions in the RC branch, create a new release tag and draft release, tag the RC branch, and create a PR to merge the RC branch into master.
   [(#8352)](https://github.com/PennyLaneAI/pennylane/pull/8352)
   
@@ -438,6 +444,9 @@ A warning message has been added to :doc:`Building a plugin <../development/plug
 
 * Fixes a bug where mid-circuit measurements were generating incomplete QASM.
   [(#8556)](https://github.com/PennyLaneAI/pennylane/pull/8556)
+
+* Fixes a bug where `qml.specs` incorrectly computes the circuit depth when classically controlled operators are involved.
+  [(#8668)](https://github.com/PennyLaneAI/pennylane/pull/8668)
 
 <h3>Contributors ✍️</h3>
 
