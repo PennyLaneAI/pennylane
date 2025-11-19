@@ -75,9 +75,11 @@ class ResourcesResult:
         self.quantum_operations: dict[str, int] = defaultdict(int)
         self.quantum_measurements: dict[str, int] = defaultdict(int)
         self.ppm_operations: dict[str, int] = defaultdict(int)
-        self.classical_instructions: dict[str, int] = defaultdict(int)
 
         self.resource_sizes: dict[int, int] = defaultdict(int)
+
+        self.classical_instructions: dict[str, int] = defaultdict(int)
+        self.function_calls: dict[str, int] = defaultdict(int)
 
         self.device_name = None
         self.num_wires = 0  # More accurately, the number of NEW allocations in this region
@@ -90,11 +92,14 @@ class ResourcesResult:
             self.quantum_measurements[name] += count
         for name, count in other.ppm_operations.items():
             self.ppm_operations[name] += count
-        for name, count in other.classical_instructions.items():
-            self.classical_instructions[name] += count
 
         for size, count in other.resource_sizes.items():
             self.resource_sizes[size] += count
+
+        for name, count in other.classical_instructions.items():
+            self.classical_instructions[name] += count
+        for name, count in other.function_calls.items():
+            self.function_calls[name] += count
 
         self.device_name = self.device_name or other.device_name
         self.num_wires += other.num_wires
@@ -107,17 +112,28 @@ class ResourcesResult:
             self.quantum_measurements[name] *= scalar
         for name in self.ppm_operations:
             self.ppm_operations[name] *= scalar
-        for name in self.classical_instructions:
-            self.classical_instructions[name] *= scalar
 
         for size in self.resource_sizes:
             self.resource_sizes[size] *= scalar
+
+        for name in self.classical_instructions:
+            self.classical_instructions[name] *= scalar
+        for name in self.function_calls:
+            self.function_calls[name] *= scalar
 
         # This is the number of allocations WITHIN this region, should be scaled
         self.num_wires *= scalar
 
     def __repr__(self) -> str:
-        return f"ResourcesResult(device_name: {self.device_name}, num_wires: {self.num_wires}, operations: {self.quantum_operations}, measurements: {self.quantum_measurements}, PPMs: {self.ppm_operations})"
+        return (
+            f"ResourcesResult(device: {self.device_name}, "
+            f"wires: {self.num_wires}, "
+            f"quantum_ops: {sum(self.quantum_operations.values())}, "
+            f"measurements: {sum(self.quantum_measurements.values())}, "
+            f"PPMs: {sum(self.ppm_operations.values())}, "
+            f"classical_instructions: {sum(self.classical_instructions.values())}, "
+            f"fn_calls: {sum(self.function_calls.values())})"
+        )
 
     __str__ = __repr__
 
@@ -198,8 +214,7 @@ def _(
     xdsl_op: func.CallOp,
 ) -> tuple[ResourceType, str]:
     # If these types are matched, parse them with the extra specs handler
-    breakpoint()  # TODO: Remove debugging breakpoint, need to merge this with another branch for testing
-    return ResourceType.FUNC_CALL, xdsl_op.callee
+    return ResourceType.FUNC_CALL, xdsl_op.callee.string_value()
 
 
 ############################################################
@@ -238,6 +253,35 @@ def _(xdsl_op: AllocQubitOp | AllocOp, resources: ResourcesResult) -> None:
 ############################################################
 ### Main Routines
 ############################################################
+
+
+def _resolve_function_calls(
+    fxn: str, fxn_to_resources: dict[str, ResourcesResult]
+) -> ResourcesResult:
+    """Resolve subroutine function calls within the collected resources.
+
+    Note that this function is recursive and modifies the ResourcesResult associated with `fxn`
+    in place. After running, the ResourcesResult object associated with `fxn` will include the
+    resources of any subroutine functions and its function call table will be empty
+    """
+    resources = fxn_to_resources[fxn]
+
+    for called_fxn in list(resources.function_calls.keys()):
+        count = resources.function_calls.pop(called_fxn)
+
+        if called_fxn not in fxn_to_resources:
+            # External function, cannot resolve
+            continue
+
+        called_resources = _resolve_function_calls(called_fxn, fxn_to_resources)
+
+        # Merge the called function's resources into this one
+        called_resources_scaled = ResourcesResult()
+        called_resources_scaled.merge_with(called_resources)
+        called_resources_scaled.multiply_by_scalar(count)
+        resources.merge_with(called_resources_scaled)
+
+    return resources
 
 
 def _collect_region(region, loop_warning=False, cond_warning=False) -> ResourcesResult:
@@ -327,6 +371,8 @@ def _collect_region(region, loop_warning=False, cond_warning=False) -> Resources
                 handle_metadata(op, resources)
             case ResourceType.CLASSICAL:
                 resources.classical_instructions[resource] += 1
+            case ResourceType.FUNC_CALL:
+                resources.function_calls[resource] += 1
             case _:
                 raise NotImplementedError(
                     f"Unsupported resource type {resource_type} for resource {resource}."
@@ -359,16 +405,15 @@ def specs_collect(module) -> ResourcesResult:
             )
             continue  # Skip external function declarations
 
+        resources = _collect_region(func_op.body)
+        fxn_to_resources[func_op.sym_name.data] = resources
+
         if "qnode" in func_op.attributes:
             # The main entrypoint for a qnode is always marked by the `qnode` attribute
-            entry_fxn = func_op.sym_name
-
-        resources = _collect_region(func_op.body)
-        fxn_to_resources[func_op.sym_name] = resources
+            entry_fxn = func_op.sym_name.data
 
     if entry_fxn not in fxn_to_resources:
         raise ValueError("Entry function not found in module.")
 
-    # TODO: Merge resources for function calls within the entry function
-
-    return fxn_to_resources[entry_fxn]
+    a = _resolve_function_calls(entry_fxn, fxn_to_resources)
+    return a
