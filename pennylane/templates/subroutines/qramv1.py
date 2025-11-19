@@ -27,7 +27,9 @@ performs the leaf write (classical bit flip), then routes back and restores the 
 
 from typing import List, Optional, Sequence, Tuple
 
-import pennylane as qml
+from pennylane.operation import Operation, Operator
+from pennylane.ops import CSWAP, SWAP, Hadamard, PauliX, PauliZ, ctrl
+from pennylane.wires import Wires
 
 
 # -----------------------------
@@ -57,7 +59,7 @@ def _node_index(level: int, prefix_value: int) -> int:
 # -----------------------------
 # Select-prefix × Bucket-Brigade with explicit bus routing
 # -----------------------------
-class BBQRAM(qml.operation.Operation):  # pylint: disable=too-many-instance-attributes
+class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
     r"""Bucket-brigade QRAM with **explicit bus routing** using 3 qubits per node,
     and an optional **select (MSB) prefix**, plus **hybrid** support.
 
@@ -100,13 +102,13 @@ class BBQRAM(qml.operation.Operation):  # pylint: disable=too-many-instance-attr
         self.m = next(iter(m_set))
         self.bitstrings = list(bitstrings)
 
-        self.select_wires = qml.wires.Wires(select_wires)
-        self.qram_wires = qml.wires.Wires(qram_wires)
-        self.target_wires = qml.wires.Wires(target_wires)
-        self.bus_wire = qml.wires.Wires([bus_wire])
-        self.dir_wires = qml.wires.Wires(dir_wires)
-        self.portL_wires = qml.wires.Wires(portL_wires)
-        self.portR_wires = qml.wires.Wires(portR_wires)
+        self.select_wires = Wires(select_wires)
+        self.qram_wires = Wires(qram_wires)
+        self.target_wires = Wires(target_wires)
+        self.bus_wire = Wires([bus_wire])
+        self.dir_wires = Wires(dir_wires)
+        self.portL_wires = Wires(portL_wires)
+        self.portR_wires = Wires(portR_wires)
 
         if self.m != len(self.target_wires):
             raise ValueError("len(target_wires) must equal bitstring length.")
@@ -187,25 +189,24 @@ class BBQRAM(qml.operation.Operation):  # pylint: disable=too-many-instance-attr
         ops = []
         for k in range(self.n_k):
             # 1) load a_k into the bus
-            ops.append(qml.SWAP(wires=[self.qram_wires[k], self.bus_wire[0]]))
+            ops.append(SWAP(wires=[self.qram_wires[k], self.bus_wire[0]]))
             # 2) route down k levels
             ops += self._route_bus_down_first_k_levels(k)
             # 3) deposit at level-k node on the active path
             if k == 0:
-                ops.append(qml.SWAP(wires=[self.bus_wire[0], self._router(0, 0)]))
+                ops.append(SWAP(wires=[self.bus_wire[0], self._router(0, 0)]))
             else:
                 for p in range(1 << k):
-                    #change to  in_wire later
+                    # change to  in_wire later
                     parent = _node_index(k - 1, p >> 1)
                     if p % 2 == 0:
-                        ops.append(qml.SWAP(wires =[self.portL_wires[parent], self._router(k, p)]))
+                        ops.append(SWAP(wires=[self.portL_wires[parent], self._router(k, p)]))
                     else:
-                        ops.append(qml.SWAP(wires =[self.portR_wires[parent], self._router(k, p)]))
+                        ops.append(SWAP(wires=[self.portR_wires[parent], self._router(k, p)]))
         return ops
-    
+
     def _unmark_routers_via_bus(self) -> list:
         return list(reversed(self._mark_routers_via_bus()))
-  
 
     def _route_bus_down_first_k_levels(self, k_levels: int) -> list:
         """Route the bus down the first `k_levels` of the tree using dir-controlled CSWAPs."""
@@ -217,11 +218,11 @@ class BBQRAM(qml.operation.Operation):  # pylint: disable=too-many-instance-attr
                 R = self._portR(ell, p)
                 d = self._router(ell, p)
                 # dir==1 ⇒ SWAP(in, R)
-                op0 = qml.CSWAP(wires=[d, in_w, R])
+                op0 = CSWAP(wires=[d, in_w, R])
                 ops.append(op0)
                 # dir==0 ⇒ SWAP(in, L)
-                op = qml.SWAP(wires=[in_w, L])
-                ops.append(qml.ctrl(op, control=[d], control_values=[0]))
+                op = SWAP(wires=[in_w, L])
+                ops.append(ctrl(op, control=[d], control_values=[0]))
         return ops
 
     def _route_bus_up_first_k_levels(self, k_levels: int) -> list:
@@ -243,17 +244,17 @@ class BBQRAM(qml.operation.Operation):  # pylint: disable=too-many-instance-attr
                 else:
                     upper_ctrls = [self._router(j, p >> (k - j)) for j in range(k)]
                     upper_vals = [(p >> (k - 1 - j)) & 1 for j in range(k)]
-                op0 = qml.SWAP(wires=[in_w, L])
-                op1 = qml.SWAP(wires=[in_w, R])
+                op0 = SWAP(wires=[in_w, L])
+                op1 = SWAP(wires=[in_w, R])
                 ops.append(
-                    qml.ctrl(op0, control=[d] + upper_ctrls, control_values=[0] + upper_vals)
+                    ctrl(op0, control=[d] + upper_ctrls, control_values=[0] + upper_vals)
                     if upper_ctrls
-                    else qml.ctrl(op0, control=[d], control_values=[0])
+                    else ctrl(op0, control=[d], control_values=[0])
                 )
                 ops.append(
-                    qml.ctrl(op1, control=[d] + upper_ctrls, control_values=[1] + upper_vals)
+                    ctrl(op1, control=[d] + upper_ctrls, control_values=[1] + upper_vals)
                     if upper_ctrls
-                    else qml.ctrl(op1, control=[d], control_values=[1])
+                    else ctrl(op1, control=[d], control_values=[1])
                 )
         return ops
 
@@ -280,7 +281,7 @@ class BBQRAM(qml.operation.Operation):  # pylint: disable=too-many-instance-attr
                 target = self._portR(self.n_k - 1, p >> 1)
             bit = self.bitstrings[p][j]
             if bit == "1":
-                ops.append(qml.PauliZ(wires = target))
+                ops.append(PauliZ(wires=target))
             elif bit == "0":
                 pass
         return ops
@@ -292,50 +293,54 @@ class BBQRAM(qml.operation.Operation):  # pylint: disable=too-many-instance-attr
         ops += self._mark_routers_via_bus()
         # 2) For each target bit: load→route down→leaf op→route up→restore (reuse the route bus function)
         for j, tw in enumerate(self.target_wires):
-            ops.append(qml.Hadamard(wires=[tw]))
-            ops.append(qml.SWAP(wires=[tw, self.bus_wire[0]]))
+            ops.append(Hadamard(wires=[tw]))
+            ops.append(SWAP(wires=[tw, self.bus_wire[0]]))
             ops += self._route_bus_down_first_k_levels(len(self.qram_wires))
             ops += self._leaf_ops_for_bit(j)
             ops += self._route_bus_up_first_k_levels(len(self.qram_wires))
-            ops.append(qml.SWAP(wires=[tw, self.bus_wire[0]]))
-            ops.append(qml.Hadamard(wires=[tw]))
+            ops.append(SWAP(wires=[tw, self.bus_wire[0]]))
+            ops.append(Hadamard(wires=[tw]))
         # 3) address unloading
         ops += self._unmark_routers_via_bus()
         return ops
-    
-    #Not work yet
+
+    # Not work yet
     def _decomp_hybrid(self) -> list:
         ops = []
         # If LSBs are quantum, loadrouters; else skip loading & routing for LSBs
         if self.qram_value is None:
             ops += self._mark_routers_via_bus()
         for j, tw in enumerate(self.target_wires):
-            ops.append(qml.SWAP(wires=[tw, self.bus_wire[0]]))
+            ops.append(SWAP(wires=[tw, self.bus_wire[0]]))
             if self.qram_value is None:
                 ops += self._route_bus_down_first_k_levels(len(self.qram_wires))
             ops += self._leaf_ops_for_bit(j)
             if self.qram_value is None:
                 ops += self._route_bus_up()
-            ops.append(qml.SWAP(wires=[tw, self.bus_wire[0]]))
+            ops.append(SWAP(wires=[tw, self.bus_wire[0]]))
         return ops
 
-    #not work yet
+    # not work yet
     def _decomp_select_only(self) -> list:
         # Degenerate case: n_k == 0, no routers; only select-controlled flips on the bus.
         ops = []
         for j, tw in enumerate(self.target_wires):
-            ops.append(qml.SWAP(wires=[tw, self.bus_wire[0]]))
+            ops.append(SWAP(wires=[tw, self.bus_wire[0]]))
             s_range = [self.select_value] if self.select_value is not None else range(1 << self.k)
             for s in s_range:
                 if self.bitstrings[s][j] != "1":
                     continue
-                sel_ctrls, sel_vals = (self._select_ctrls(s) if self.select_value is None else ([], []))
-                op = qml.PauliX(wires=self.bus_wire[0])
-                ops.append(qml.ctrl(op, control=sel_ctrls, control_values=sel_vals) if sel_ctrls else op)
-            ops.append(qml.SWAP(wires=[tw, self.bus_wire[0]]))
+                sel_ctrls, sel_vals = (
+                    self._select_ctrls(s) if self.select_value is None else ([], [])
+                )
+                op = PauliX(wires=self.bus_wire[0])
+                ops.append(
+                    ctrl(op, control=sel_ctrls, control_values=sel_vals) if sel_ctrls else op
+                )
+            ops.append(SWAP(wires=[tw, self.bus_wire[0]]))
             return ops
 
-    def decomposition(self) -> List[qml.operation.Operator]:
+    def decomposition(self) -> List[Operator]:
         if self.n_k == 0:
             return self._decomp_select_only()
         if self.mode == "hybrid":
@@ -373,6 +378,7 @@ def select_bucket_brigade_bus_qram(
         qram_value=qram_value,
     )
 
+
 # -----------------------------
 # TODOs / Extensions
 # -----------------------------
@@ -381,4 +387,3 @@ def select_bucket_brigade_bus_qram(
 # - fat-tree architecture implementation.
 # - resource analysis.
 # - compatibility with PennyLane qrom implementation.
-
