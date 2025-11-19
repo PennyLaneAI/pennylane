@@ -658,7 +658,7 @@ def concurrence_involution(op: PauliSentence | np.ndarray | Operator) -> bool:
 
     >>> ops_m = [qml.matrix(op, wire_order=range(3)) for op in ops]
     >>> [even_odd_involution(op_m) for op_m in ops_m]
-    [False, True, True, False]
+    [True, False, True, False]
 
     """
     return _concurrence_involution(op)

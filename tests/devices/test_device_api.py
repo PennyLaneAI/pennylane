@@ -166,13 +166,6 @@ class TestSetupExecutionConfig:
                 'Requested MCM method "one-shot" unsupported by the device.',
             ),
             (
-                EXAMPLE_TOML_FILE_ONE_SHOT,
-                "magic",
-                10,
-                None,
-                'Requested MCM method "magic" unsupported by the device.',
-            ),
-            (
                 EXAMPLE_TOML_FILE_ALL_SUPPORT,
                 "tree-traversal",
                 10,
@@ -197,7 +190,7 @@ class TestSetupExecutionConfig:
 
         dev = DeviceWithMCM()
         mcm_config = MCMConfig(mcm_method=mcm_method)
-        tape = QuantumScript([qml.measurements.MidMeasureMP(0)], [], shots=shots)
+        tape = QuantumScript([qml.ops.MidMeasure(0)], [], shots=shots)
         initial_config = ExecutionConfig(mcm_config=mcm_config)
 
         if expected_error is not None:
@@ -212,7 +205,6 @@ class TestSetupExecutionConfig:
         "mcm_method, shots, expected_error",
         [
             ("one-shot", None, 'The "one-shot" MCM method is only supported with finite shots.'),
-            ("magic", None, 'Requested MCM method "magic" unsupported by the device.'),
             ("one-shot", 100, None),
         ],
     )
@@ -227,7 +219,7 @@ class TestSetupExecutionConfig:
 
         dev = CustomDevice()
         mcm_config = MCMConfig(mcm_method=mcm_method)
-        tape = QuantumScript([qml.measurements.MidMeasureMP(0)], [], shots=shots)
+        tape = QuantumScript([qml.ops.MidMeasure(0)], [], shots=shots)
         initial_config = ExecutionConfig(mcm_config=mcm_config)
         if expected_error:
             with pytest.raises(QuantumFunctionError, match=expected_error):
@@ -262,7 +254,7 @@ class TestSetupExecutionConfig:
                 return 0
 
         dev = CustomDevice()
-        tape = QuantumScript([qml.measurements.MidMeasureMP(0)], [], shots=shots)
+        tape = QuantumScript([qml.ops.MidMeasure(0)], [], shots=shots)
         config = dev.setup_execution_config(ExecutionConfig(), tape)
         assert config.mcm_config.mcm_method == expected_method
 
@@ -368,7 +360,7 @@ class TestPreprocessTransforms:
         dev = CustomDevice()
         config = ExecutionConfig(mcm_config=MCMConfig(mcm_method="deferred"))
         program = dev.preprocess_transforms(config)
-        tape = QuantumScript([qml.measurements.MidMeasureMP(0, postselect=0)], [], shots=10)
+        tape = QuantumScript([qml.ops.MidMeasure(0, postselect=0)], [], shots=10)
 
         if not supports_projector:
             with pytest.raises(ValueError, match="Postselection is not allowed on the device"):

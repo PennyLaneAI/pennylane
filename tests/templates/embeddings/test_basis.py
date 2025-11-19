@@ -26,7 +26,7 @@ def test_standard_validity():
     """Check the operation using the assert_valid function."""
     wires = qml.wires.Wires((0, 1, 2))
     op = qml.BasisEmbedding(features=np.array([1, 1, 1]), wires=wires)
-    qml.ops.functions.assert_valid(op, skip_differentiation=True, heuristic_resources=True)
+    qml.ops.functions.assert_valid(op, skip_differentiation=True)
 
 
 # pylint: disable=protected-access

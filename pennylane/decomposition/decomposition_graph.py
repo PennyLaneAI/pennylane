@@ -34,6 +34,7 @@ import rustworkx as rx
 from rustworkx.visit import DijkstraVisitor, PruneSearch, StopSearch
 
 import pennylane as qml
+from pennylane.allocation import Allocate, Deallocate
 from pennylane.exceptions import DecompositionError
 from pennylane.operation import Operator
 
@@ -56,6 +57,8 @@ from .symbolic_decomposition import (
     to_controlled_qubit_unitary,
 )
 from .utils import translate_op_alias
+
+IGNORED_UNSOLVED_OPS = {Allocate, Deallocate}
 
 
 @dataclass(frozen=True)
@@ -254,6 +257,8 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
     def _construct_graph(self, operations: Iterable[Operator | CompressedResourceOp]):
         """Constructs the decomposition graph."""
         for op in operations:
+            if isinstance(op, qml.ops.Conditional):
+                op = op.base  # decompose the base of a classically controlled operator.
             if isinstance(op, Operator):
                 op = resource_rep(type(op), **op.resource_params)
             idx = self._add_op_node(op, 0)
@@ -487,14 +492,16 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
             visitor=visitor,
         )
         if visitor.unsolved_op_indices:
-            unsolved_ops = [self._graph[op_idx] for op_idx in visitor.unsolved_op_indices]
-            op_names = {op_node.op.name for op_node in unsolved_ops}
-            warnings.warn(
-                f"The graph-based decomposition system is unable to find a decomposition for "
-                f"{op_names} to the target gate set {set(self._gate_set_weights)}. The default "
-                "decomposition (op.decomposition()) for these operators will be used instead.",
-                UserWarning,
-            )
+            unsolved_ops = (self._graph[op_idx].op for op_idx in visitor.unsolved_op_indices)
+            # Remove operators that are to be ignored
+            op_names = {op.name for op in unsolved_ops if op.op_type not in IGNORED_UNSOLVED_OPS}
+            # If unsolved operators are left after filtering for those to be ignored, warn
+            if op_names:
+                warnings.warn(
+                    f"The graph-based decomposition system is unable to find a decomposition for "
+                    f"{op_names} to the target gate set {set(self._gate_set_weights)}.",
+                    UserWarning,
+                )
         return DecompGraphSolution(visitor, self._all_op_indices, self._op_to_op_nodes)
 
 
@@ -553,7 +560,7 @@ class DecompGraphSolution:
         def _is_solved(op_node: _OperatorNode):
             return (
                 op_node in self._all_op_indices
-                and self._all_op_indices[op_node] in visitor.distances
+                and self._all_op_indices[op_node] in visitor.predecessors
             )
 
         def _is_feasible(op_node: _OperatorNode):

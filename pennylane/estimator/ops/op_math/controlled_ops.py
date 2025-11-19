@@ -1352,7 +1352,7 @@ class MultiControlledX(ResourceOperator):
     r"""Resource class for the MultiControlledX gate.
 
     Args:
-        num_ctrl_wires (int): the number of qubits the operation is controlled on
+        num_ctrl_wires (int | None): the number of qubits the operation is controlled on
         num_zero_ctrl (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
         wires (Sequence[int] | None): the wires this operation acts on
 
@@ -1376,12 +1376,21 @@ class MultiControlledX(ResourceOperator):
     The resources for this operation are computed using:
 
     >>> qml.estimator.MultiControlledX.resource_decomp(num_ctrl_wires=5, num_zero_ctrl=2)
-    [(4 x X), AllocWires(3), (3 x TemporaryAND), (3 x Toffoli), (1 x Toffoli), FreeWires(3)]
+    [(4 x X), Allocate(3), (3 x TemporaryAND), (3 x Adjoint(TemporaryAND)), (1 x Toffoli), Deallocate(3)]
     """
 
     resource_keys = {"num_ctrl_wires", "num_zero_ctrl"}
 
-    def __init__(self, num_ctrl_wires: int, num_zero_ctrl: int, wires: WiresLike = None) -> None:
+    def __init__(
+        self, num_ctrl_wires: int | None = None, num_zero_ctrl: int = 0, wires: WiresLike = None
+    ) -> None:
+
+        if num_ctrl_wires is None:
+            if wires is None:
+                raise ValueError("Must provide atleast one of `num_ctrl_wires` and `wires`.")
+
+            num_ctrl_wires = len(wires) - 1
+
         self.num_ctrl_wires = num_ctrl_wires
         self.num_zero_ctrl = num_zero_ctrl
 

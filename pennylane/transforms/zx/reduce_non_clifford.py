@@ -67,9 +67,8 @@ def reduce_non_clifford(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postpr
 
     **Example:**
 
-    .. code-block:: python3
+    .. code-block:: python
 
-        import pennylane as qml
         import pennylane.transforms.zx as zx
 
         dev = qml.device("default.qubit")
@@ -86,12 +85,9 @@ def reduce_non_clifford(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postpr
             qml.RX(y, 1)
             return qml.state()
 
-
-    .. code-block:: pycon
-
-        >>> print(qml.draw(circuit)(3.2, -2.2))
-        0: ──S─╭●─────────────────┤  State
-        1: ────╰X──H──RZ(1.00)──H─┤  State
+    >>> print(qml.draw(circuit)(3.2, -2.2))
+    0: ──S─╭●─────────────────┤  State
+    1: ────╰X──H──RZ(1.00)──H─┤  State
 
 
     .. note::

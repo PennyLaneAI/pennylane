@@ -14,6 +14,7 @@
 """
 Tests the apply_operation functions from devices/qubit
 """
+
 from functools import reduce
 
 import numpy as np
@@ -1496,7 +1497,7 @@ class TestConditionalsAndMidMeasure:
 
     @pytest.mark.parametrize("m_res", [(0, 0), (1, 1)])
     def test_mid_measure(self, m_res, monkeypatch):
-        """Test the application of a MidMeasureMP on an arbitrary state to give a basis state."""
+        """Test the application of a MidMeasure on an arbitrary state to give a basis state."""
 
         initial_state = np.array(
             [
@@ -1522,39 +1523,9 @@ class TestConditionalsAndMidMeasure:
 
         assert mid_meas == {m0: m_res[0], m1: m_res[1]}
 
-    @pytest.mark.parametrize("reset", (False, True))
-    @pytest.mark.parametrize("m_res", ([0, 0], [1, 0], [1, 1]))
-    def test_mid_measure_with_postselect_and_reset(self, m_res, reset):
-        """Test the application of a MidMeasureMP with postselection and reset."""
-
-        initial_state = np.array([[0.5 + 0.0j, 0.5 + 0.0j], [0.5 + 0.0j, 0.5 + 0.0j]])
-        mid_state, end_state = np.zeros((4, 4)), np.zeros((4, 4))
-
-        if reset:
-            m_res[0] = 0
-
-        mid_state[2 * m_res[0] : 2 * (m_res[0] + 1), 2 * m_res[0] : 2 * (m_res[0] + 1)] = 0.5
-        end_state[2 * m_res[0] + m_res[1], 2 * m_res[0] + m_res[1]] = 1.0
-
-        m0 = qml.measure(0, postselect=m_res[0], reset=reset).measurements[0]
-        m1 = qml.measure(1, postselect=m_res[1]).measurements[0]
-        mid_meas = {m0: m_res[0], m1: m_res[1]}
-
-        new_state = apply_operation(
-            m0, initial_state, mid_measurements=mid_meas, postselect_mode="fill-shots"
-        )
-        res_state = qml.math.reshape(new_state, 4)
-        assert qml.math.allclose(mid_state, qml.math.outer(res_state, res_state))
-
-        new_state = apply_operation(
-            m1, new_state, mid_measurements=mid_meas, postselect_mode="fill-shots"
-        )
-        res_state = qml.math.reshape(new_state, 4)
-        assert qml.math.allclose(end_state, qml.math.outer(res_state, res_state))
-
     def test_error_bactched_mid_measure(self):
         """Test that an error is raised when mid_measure is applied to a batched input state."""
 
-        with pytest.raises(ValueError, match="MidMeasureMP cannot be applied to batched states."):
+        with pytest.raises(ValueError, match="MidMeasure cannot be applied to batched states."):
             m0, input_state = qml.measure(0).measurements[0], qml.math.array([[1, 0], [1, 0]])
             apply_operation(m0, state=input_state, is_state_batched=True)

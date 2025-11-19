@@ -38,7 +38,7 @@ def test_standard_validity():
 
     op = qml.MottonenStatePreparation(state_vector=state, wires=range(3))
 
-    qml.ops.functions.assert_valid(op, heuristic_resources=True)
+    qml.ops.functions.assert_valid(op)
 
 
 def compute_theta_reference(alpha):

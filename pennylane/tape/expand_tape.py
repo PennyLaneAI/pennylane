@@ -51,8 +51,9 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
         >>> mps = [qml.expval(qml.X(0)), qml.expval(qml.Y(0))]
         >>> tape = qml.tape.QuantumScript([], mps)
         >>> expand_tape(tape)
-        QuantumFunctionError: Only observables that are qubit-wise commuting Pauli words
-        can be returned on the same wire, some of the following measurements do not commute:
+        Traceback (most recent call last):
+            ...
+        pennylane.exceptions.QuantumFunctionError: Only observables that are qubit-wise commuting Pauli words can be returned on the same wire, some of the following measurements do not commute:
         [expval(X(0)), expval(Y(0))]
 
         Since commutation is determined by pauli word arithmetic, non-pauli words cannot share
@@ -61,8 +62,9 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
         >>> measurements = [qml.expval(qml.Projector([0], 0)), qml.probs(wires=0)]
         >>> tape = qml.tape.QuantumScript([], measurements)
         >>> expand_tape(tape)
-        QuantumFunctionError: Only observables that are qubit-wise commuting Pauli words
-        can be returned on the same wire, some of the following measurements do not commute:
+        Traceback (most recent call last):
+            ...
+        pennylane.exceptions.QuantumFunctionError: Only observables that are qubit-wise commuting Pauli words can be returned on the same wire, some of the following measurements do not commute:
         [expval(Projector(array([0]), wires=[0])), probs(wires=[0])]
 
         For this reason, we recommend the use of :func:`~.pennylane.devices.preprocess.decompose` instead.
@@ -74,17 +76,17 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
         >>> ops = [qml.Permute((2,1,0), wires=(0,1,2)), qml.X(0)]
         >>> measurements = [qml.expval(qml.X(0))]
         >>> tape = qml.tape.QuantumScript(ops, measurements)
-        >>> expanded_tape = expand_Tape(tape)
+        >>> expanded_tape = expand_tape(tape)
         >>> print(expanded_tape.draw())
-        0: ─╭SWAP──Rϕ──RX──Rϕ─┤  <X>
-        2: ─╰SWAP─────────────┤
+        0: ─╭SWAP──RX─╭GlobalPhase─┤  <X>
+        2: ─╰SWAP─────╰GlobalPhase─┤
 
         Specifying a depth greater than one decomposes operations multiple times.
 
         >>> expanded_tape2 = expand_tape(tape, depth=2)
         >>> print(expanded_tape2.draw())
-        0: ─╭●─╭X─╭●──RZ──GlobalPhase──RX──RZ──GlobalPhase─┤  <Z>
-        2: ─╰X─╰●─╰X──────GlobalPhase──────────GlobalPhase─┤
+        0: ─╭●─╭X─╭●──RX─┤  <X>
+        2: ─╰X─╰●─╰X─────┤
 
         The ``stop_at`` callable allows the specification of terminal
         operations that should no longer be decomposed. In this example, the ``X``
@@ -218,6 +220,7 @@ def expand_tape_state_prep(tape, skip_first=True):
     To force expansion, the keyword argument ``skip_first`` can be set to ``False``:
 
     >>> new_tape = qml.tape.expand_tape_state_prep(tape, skip_first=False)
+    >>> new_tape.operations
     [MottonenStatePreparation(array([0, 1]), wires=[0]), Z(1), MottonenStatePreparation(array([1, 0]), wires=[0])]
     """
     first_op = tape.operations[0]

@@ -24,7 +24,13 @@ jax = pytest.importorskip("jax")
 from functools import partial
 
 from pennylane.capture import expand_plxpr_transforms, run_autograph
-from pennylane.capture.primitives import cond_prim, for_loop_prim, qnode_prim, while_loop_prim
+from pennylane.capture.primitives import (
+    cond_prim,
+    for_loop_prim,
+    qnode_prim,
+    transform_prim,
+    while_loop_prim,
+)
 from pennylane.operation import Operation
 from pennylane.transforms.decompose import DecomposeInterpreter
 
@@ -1214,7 +1220,8 @@ class TestExpandPlxprTransformsDynamicDecompositions:
 
         jaxpr = jax.make_jaxpr(circuit)()
 
-        assert jaxpr.eqns[0].primitive == qml.transforms.decompose._primitive
+        assert jaxpr.eqns[0].primitive == transform_prim
+        assert jaxpr.eqns[0].params["transform"] == qml.transforms.decompose
 
         transformed_f = expand_plxpr_transforms(circuit)
         transformed_jaxpr = jax.make_jaxpr(transformed_f)()
@@ -1233,7 +1240,8 @@ class TestExpandPlxprTransformsDynamicDecompositions:
 
         jaxpr = jax.make_jaxpr(circuit)()
 
-        assert jaxpr.eqns[0].primitive == qml.transforms.decompose._primitive
+        assert jaxpr.eqns[0].primitive == transform_prim
+        assert jaxpr.eqns[0].params["transform"] == qml.transforms.decompose
 
         transformed_f = expand_plxpr_transforms(circuit)
         transformed_jaxpr = jax.make_jaxpr(transformed_f)()
@@ -1251,7 +1259,8 @@ class TestExpandPlxprTransformsDynamicDecompositions:
 
         jaxpr = jax.make_jaxpr(circuit)()
 
-        assert jaxpr.eqns[0].primitive == qml.transforms.decompose._primitive
+        assert jaxpr.eqns[0].primitive == transform_prim
+        assert jaxpr.eqns[0].params["transform"] == qml.transforms.decompose
 
         transformed_f = expand_plxpr_transforms(circuit)
         transformed_jaxpr = jax.make_jaxpr(transformed_f)()
@@ -1269,7 +1278,8 @@ class TestExpandPlxprTransformsDynamicDecompositions:
 
         jaxpr = jax.make_jaxpr(circuit)()
 
-        assert jaxpr.eqns[0].primitive == qml.transforms.decompose._primitive
+        assert jaxpr.eqns[0].primitive == transform_prim
+        assert jaxpr.eqns[0].params["transform"] == qml.transforms.decompose
 
         transformed_f = expand_plxpr_transforms(circuit)
         transformed_jaxpr = jax.make_jaxpr(transformed_f)()

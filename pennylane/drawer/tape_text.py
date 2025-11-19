@@ -290,7 +290,8 @@ def tape_text(
         rng = np.random.default_rng(seed=42)
         shape = qml.StronglyEntanglingLayers.shape(n_wires=5, n_layers=5)
         params = rng.random(shape)
-        tape2 = qml.StronglyEntanglingLayers(params, wires=range(5)).expand()
+        op = qml.StronglyEntanglingLayers(params, wires=range(5))
+        tape2 = qml.tape.QuantumScript(op.decomposition())
         print(qml.drawer.tape_text(tape2, max_length=60))
 
 
@@ -374,13 +375,13 @@ def tape_text(
     [0. 0. 1. 0.]
     [0. 0. 0. 1.]]
     >>> cache
-    {'matrices': [tensor([[-1., -0., -0.],
-        [-0., -1., -0.],
-        [-0., -0., -1.]], requires_grad=True), tensor([[1., 0.],
-        [0., 1.]], requires_grad=True), tensor([[1., 0., 0., 0.],
-        [0., 1., 0., 0.],
-        [0., 0., 1., 0.],
-        [0., 0., 0., 1.]], requires_grad=True)], 'tape_offset': 0}
+    {'matrices': [array([[-1., -0., -0.],
+           [-0., -1., -0.],
+           [-0., -0., -1.]]), array([[1., 0.],
+           [0., 1.]]), array([[1., 0., 0., 0.],
+           [0., 1., 0., 0.],
+           [0., 0., 1., 0.],
+           [0., 0., 0., 1.]])], 'tape_offset': 0}
 
     When the provided tape has nested tapes inside, this function is called recursively.
     To maintain numbering of tapes to arbitrary levels of nesting, the ``cache`` keyword
@@ -422,11 +423,9 @@ def tape_text(
     layers = drawable_layers(tape.operations, wire_map=wire_map, bit_map=bit_map)
     num_op_layers = len(layers)
     layers += drawable_layers(tape.measurements, wire_map=wire_map, bit_map=bit_map)
-
     # Update bit map and collect information about connections between mid-circuit measurements,
     # classical conditions, and terminal measurements for processing mid-circuit measurements.
     bit_map, cwire_layers, _ = cwire_connections(layers, bit_map)
-
     # Collect information needed for drawing layers
     config = _Config(
         wire_map=wire_map,

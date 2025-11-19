@@ -107,7 +107,7 @@ def config_path():
 
     **Example**
 
-    >>> config_path()
+    >>> config_path() # doctest: +SKIP
     /home/user/pyenv/lib/python3.10/site-packages/pennylane/logging/log_config.toml
     """
     path = os.path.join(_path, "log_config.toml")

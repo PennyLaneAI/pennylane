@@ -40,7 +40,11 @@ def make_adjoint_decomp(base_decomposition: DecompositionRule):
 
     # pylint: disable=protected-access
     @register_condition(_condition_fn)
-    @register_resources(_resource_fn, work_wires=base_decomposition._work_wire_spec)
+    @register_resources(
+        _resource_fn,
+        work_wires=base_decomposition._work_wire_spec,
+        exact=base_decomposition.exact_resources,
+    )
     def _impl(*params, wires, base, **__):
         # pylint: disable=protected-access
         qml.adjoint(base_decomposition._impl)(*params, wires=wires, **base.hyperparameters)
@@ -213,7 +217,11 @@ def make_controlled_decomp(base_decomposition: DecompositionRule):
 
     # pylint: disable=protected-access,too-many-arguments
     @register_condition(_condition_fn)
-    @register_resources(_resource_fn, work_wires=base_decomposition._work_wire_spec)
+    @register_resources(
+        _resource_fn,
+        work_wires=base_decomposition._work_wire_spec,
+        exact=base_decomposition.exact_resources,
+    )
     def _impl(*params, wires, control_wires, control_values, work_wires, work_wire_type, base, **_):
         zero_control_wires = [w for w, val in zip(control_wires, control_values) if not val]
         for w in zero_control_wires:
@@ -253,7 +261,11 @@ def flip_zero_control(inner_decomp: DecompositionRule) -> DecompositionRule:
 
     # pylint: disable=protected-access
     @register_condition(_condition_fn)
-    @register_resources(_resource_fn, work_wires=inner_decomp._work_wire_spec)
+    @register_resources(
+        _resource_fn,
+        work_wires=inner_decomp._work_wire_spec,
+        exact=inner_decomp.exact_resources,
+    )
     def _impl(*params, wires, control_wires, control_values, **kwargs):
         zero_control_wires = [w for w, val in zip(control_wires, control_values) if not val]
         for w in zero_control_wires:

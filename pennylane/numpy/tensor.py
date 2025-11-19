@@ -89,13 +89,14 @@ class tensor(_np.ndarray):
     or in-place by modifying the ``requires_grad`` attribute:
 
     >>> x.requires_grad = False
+    >>> x
     tensor([0, 1, 2], requires_grad=False)
 
     Since tensors are subclasses of ``np.ndarray``, they can be provided as arguments
     to any PennyLane-wrapped NumPy function:
 
     >>> np.sin(x)
-    tensor([0.        , 0.84147098, 0.90929743], requires_grad=True)
+    tensor([0.        , 0.84147098, 0.90929743], requires_grad=False)
 
     When composing functions of multiple tensors, if at least one input tensor is differentiable,
     then the output will also be differentiable:
@@ -242,7 +243,7 @@ class tensor(_np.ndarray):
         >>> x.unwrap()
         1.543
         >>> type(x.unwrap())
-        float
+        <class 'float'>
 
         The underlying data is **not** copied:
 

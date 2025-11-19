@@ -531,10 +531,10 @@ def pauli_word_to_matrix(pauli_word, wire_map=None):
 
     >>> wire_map = {'a' : 0, 'b' : 1}
     >>> pauli_word = qml.X('a') @ qml.Y('b')
-    >>> pauli_word_to_matrix(pauli_word, wire_map=wire_map)
-    array([[0.+0.j, 0.-0.j, 0.+0.j, 0.-1.j],
+    >>> pauli_word_to_matrix(pauli_word, wire_map=wire_map).astype(np.complex128)
+    array([[0.+0.j, 0.+0.j, 0.+0.j, 0.-1.j],
            [0.+0.j, 0.+0.j, 0.+1.j, 0.+0.j],
-           [0.+0.j, 0.-1.j, 0.+0.j, 0.-0.j],
+           [0.+0.j, 0.-1.j, 0.+0.j, 0.+0.j],
            [0.+1.j, 0.+0.j, 0.+0.j, 0.+0.j]])
     """
     if not is_pauli_word(pauli_word):
@@ -701,7 +701,7 @@ def observables_to_binary_matrix(observables, n_qubits=None, wire_map=None):
 
     **Example**
 
-    >>> observables_to_binary_matrix([X(0) @ Y(2), Z(0) @ Z(1) @ Z(2)])
+    >>> observables_to_binary_matrix([qml.X(0) @ qml.Y(2), qml.Z(0) @ qml.Z(1) @ qml.Z(2)])
     array([[1., 1., 0., 0., 1., 0.],
            [0., 0., 0., 1., 1., 1.]])
     """
@@ -749,11 +749,9 @@ def qwc_complement_adj_matrix(binary_observables):
 
     **Example**
 
-    >>> binary_observables
-    array([[1., 0., 1., 0., 0., 1.],
-           [0., 1., 1., 1., 0., 1.],
-           [0., 0., 0., 1., 0., 0.]])
-
+    >>> binary_observables = np.array([[1,0,1,0,0,1],
+    ...                                [0,1,1,1,0,1],
+    ...                                [0,0,0,1,0,0]])
     >>> qwc_complement_adj_matrix(binary_observables)
     array([[0., 1., 1.],
            [1., 0., 0.],
@@ -838,12 +836,12 @@ def pauli_group(n_qubits, wire_map=None):
     >>> n_qubits = 3
     >>> for p in pauli_group(n_qubits):
     ...     print(p)
-    ...
     I(0)
     Z(2)
     Z(1)
     Z(1) @ Z(2)
     Z(0)
+    ...
 
     The full Pauli group can then be obtained like so:
 
@@ -857,12 +855,12 @@ def pauli_group(n_qubits, wire_map=None):
     >>> wire_map = {'a' : 0, 'b' : 1, 'c' : 2}
     >>> for p in pauli_group(n_qubits, wire_map=wire_map):
     ...     print(p)
-    ...
     I('a')
     Z('c')
     Z('b')
     Z('b') @ Z('c')
     Z('a')
+    ...
 
     """
     # Cover the case where n_qubits may be passed as a float
@@ -1065,8 +1063,8 @@ def diagonalize_qwc_pauli_words(
     **Example**
 
     >>> qwc_group = [qml.X(0) @ qml.Z(1),
-                     qml.X(0) @ qml.Y(3),
-                     qml.Z(1) @ qml.Y(3)]
+    ...              qml.X(0) @ qml.Y(3),
+    ...              qml.Z(1) @ qml.Y(3)]
     >>> diagonalize_qwc_pauli_words(qwc_group)
     ([RY(-1.5707963267948966, wires=[0]), RX(1.5707963267948966, wires=[3])],
      [Z(0) @ Z(1),
@@ -1118,11 +1116,11 @@ def diagonalize_qwc_groupings(qwc_groupings):
     **Example**
 
     >>> qwc_group_1 = [qml.X(0) @ qml.Z(1),
-                       qml.X(0) @ qml.Y(3),
-                       qml.Z(1) @ qml.Y(3)]
+    ...                qml.X(0) @ qml.Y(3),
+    ...                   qml.Z(1) @ qml.Y(3)]
     >>> qwc_group_2 = [qml.Y(0),
-                       qml.Y(0) @ qml.X(2),
-                       qml.X(1) @ qml.Z(3)]
+    ...                qml.Y(0) @ qml.X(2),
+    ...                qml.X(1) @ qml.Z(3)]
     >>> post_rotations, diag_groupings = diagonalize_qwc_groupings([qwc_group_1, qwc_group_2])
     >>> post_rotations
     [[RY(-1.5707963267948966, wires=[0]), RX(1.5707963267948966, wires=[3])],

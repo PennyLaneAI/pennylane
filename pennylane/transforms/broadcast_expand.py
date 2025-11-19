@@ -15,7 +15,8 @@
 broadcasted tape into multiple tapes."""
 
 import pennylane as qml
-from pennylane.measurements import MidMeasureMP, SampleMP
+from pennylane.measurements import SampleMP
+from pennylane.ops import MidMeasure
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn
 
@@ -87,16 +88,12 @@ def broadcast_expand(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postproce
     **Example**
 
     We may use ``broadcast_expand`` on a ``QNode`` to separate it
-    into multiple calculations. For this we will provide ``qml.RX`` with
-    the ``ndim_params`` attribute that allows the operation to detect
-    broadcasting, and set up a simple ``QNode`` with a single operation and
-    returned expectation value:
+    into multiple calculations.
 
-    >>> from pennylane import numpy as np
-    >>> qml.RX.ndim_params = (0,)
+    >>> from pennylane import numpy as pnp
     >>> dev = qml.device("default.qubit", wires=1)
     >>> @qml.qnode(dev)
-    >>> def circuit(x):
+    ... def circuit(x):
     ...     qml.RX(x, wires=0)
     ...     return qml.expval(qml.Z(0))
 
@@ -108,7 +105,7 @@ def broadcast_expand(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postproce
     Let's use the expanded QNode and draw it for broadcasted parameters
     with broadcasting axis of length ``3`` passed to ``qml.RX``:
 
-    >>> x = np.array([0.2, 0.6, 1.0], requires_grad=True)
+    >>> x = np.array([0.2, 0.6, 1.0])
     >>> print(qml.draw(expanded_circuit)(x))
     0: ──RX(0.20)─┤  <Z>
     0: ──RX(0.60)─┤  <Z>
@@ -118,24 +115,24 @@ def broadcast_expand(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postproce
     to the three parameters in the broadcasted input ``x``:
 
     >>> expanded_circuit(x)
-    tensor([0.98006658, 0.82533561, 0.54030231], requires_grad=True)
+    array([0.980..., 0.825..., 0.540...])
 
     We also can call the transform manually on a tape:
 
-    >>> ops = [qml.RX(np.array([0.2, 0.6, 1.0], requires_grad=True), wires=0)]
+    >>> ops = [qml.RX(np.array([0.2, 0.6, 1.0]), wires=0)]
     >>> measurements = [qml.expval(qml.Z(0))]
     >>> tape = qml.tape.QuantumTape(ops, measurements)
     >>> tapes, fn = qml.transforms.broadcast_expand(tape)
     >>> tapes
-    [<QuantumTape: wires=[0], params=1>, <QuantumTape: wires=[0], params=1>, <QuantumTape: wires=[0], params=1>]
-    >>> fn(qml.execute(tapes, qml.device("default.qubit", wires=1), None))
-    tensor([0.98006658, 0.82533561, 0.54030231], requires_grad=True)
+    (<QuantumScript: wires=[0], params=1>, <QuantumScript: wires=[0], params=1>, <QuantumScript: wires=[0], params=1>)
+    >>> fn(qml.execute(tapes, qml.device("default.qubit")))
+    array([0.980..., 0.825..., 0.540...])
     """
     if tape.batch_size is None:
         return (tape,), null_postprocessing
 
     has_postselect = any(
-        op.postselect is not None for op in tape.operations if isinstance(op, MidMeasureMP)
+        op.postselect is not None for op in tape.operations if isinstance(op, MidMeasure)
     )
     has_sample = any(isinstance(op, SampleMP) for op in tape.measurements)
     if has_postselect and has_sample:
