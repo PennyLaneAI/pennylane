@@ -161,13 +161,9 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
         self.portR_wires = Wires(work_wires[1 + divider * 2 : 1 + divider * 3])
 
         expected_nodes = (1 << self.n_k) - 1 if self.n_k > 0 else 0
-        for name, wires in {
-            "dir_wires": self.dir_wires,
-            "portL_wires": self.portL_wires,
-            "portR_wires": self.portR_wires,
-        }.items():
-            if len(wires) != expected_nodes:
-                raise ValueError(f"{name} must have length {expected_nodes}.")
+
+        if len(work_wires) != 1 + 3 * expected_nodes:
+            raise ValueError(f"work_wires must have length {1 + 3 * expected_nodes}.")
 
         all_wires = (
             list(self.qram_wires)

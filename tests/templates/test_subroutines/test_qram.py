@@ -14,6 +14,8 @@
 """
 Unit tests for the :func:`pennylane.template.subroutines.qram` class.
 """
+import re
+
 import numpy as np
 import pytest
 
@@ -107,3 +109,63 @@ def test_bb_quantum(
             address,
         ),
     )
+
+
+
+@pytest.mark.parametrize(
+    ("params", "error", "match"), [
+        (
+            (
+                [],
+                [0, 1],
+                [2, 3, 4],
+                [5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
+            ),
+            ValueError,
+            "bitstrings' cannot be empty."
+        ),
+        (
+            (
+                ["000", "00", "111", "10", "100"],
+                [0, 1],
+                [2, 3, 4],
+                [5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
+            ),
+            ValueError,
+            "All bitstrings must have equal length."
+        ),
+        (
+            (
+                ["000", "111"],
+                [0, 1],
+                [2, 3, 4],
+                [5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
+            ),
+            ValueError,
+            "len(bitstrings) must be 2^(len(qram_wires))."
+        ),
+        (
+            (
+                ["010", "111", "110", "000"],
+                [0, 1],
+                [2, 3],
+                [4, 5, 6, 7, 8, 9, 10, 11, 12, 13],
+            ),
+            ValueError,
+            "len(target_wires) must equal bitstring length."
+        ),
+        (
+            (
+                ["010", "111", "110", "000"],
+                [0, 1],
+                [2, 3, 4],
+                [5, 6, 7, 8, 9, 10, 11, 12, 13],
+            ),
+            ValueError,
+            "work_wires must have length 10."
+        ),
+    ]
+)
+def test_raises(params, error, match):
+    with pytest.raises(error, match=re.escape(match)):
+        BBQRAM(*params)
