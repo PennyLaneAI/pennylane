@@ -14,7 +14,7 @@
 """
 Contains templates for Quantum Signal Processing (QSP) based subroutines.
 """
-from pennylane.estimator.ops.op_math.symbolic import Controlled
+from pennylane.estimator.ops.op_math.symbolic import Adjoint, Controlled
 from pennylane.estimator.ops.qubit.parametric_ops_single_qubit import Rot
 from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
@@ -34,7 +34,8 @@ class GQSP(ResourceOperator):
     Args:
         signal_operator (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): The
             signal operator which encodes the target hamiltonian.
-        poly_deg (int): the degree :math:`d` of the target polynomial transformation
+        poly_deg (int): the maximum positive degree :math:`d` of the polynomial transformation
+        neg_poly_deg (int): the maximum negative degree :math:`k` of the polynomial transformation
         is_controlled (bool): Is ``True`` if the provided ``signal_operator`` is already block-encoded
             via a signle qubit control.
         rot_precision (float, None): The precision with which to apply the general SU(2) rotation gates.
@@ -52,12 +53,13 @@ class GQSP(ResourceOperator):
     >>> import pennylane.estimator as qre
     """
 
-    resource_keys = {"cmpr_signal_op", "poly_deg", "is_controlled", "rot_precision"}
+    resource_keys = {"cmpr_signal_op", "poly_deg", "neg_poly_deg", "is_controlled", "rot_precision"}
 
     def __init__(
         self,
         signal_operator: ResourceOperator,
         poly_deg: int,
+        neg_poly_deg: int = 0,
         is_controlled: bool = True,
         rot_precision: float | None = None,
         wires: WiresLike = None,
@@ -66,6 +68,7 @@ class GQSP(ResourceOperator):
         self.queue()
 
         self.poly_deg = poly_deg
+        self.neg_poly_deg = neg_poly_deg
         self.is_controlled = is_controlled
         self.rot_precision = rot_precision
         self.cmpr_signal_op = signal_operator.resource_rep_from_op()
@@ -91,7 +94,9 @@ class GQSP(ResourceOperator):
             dict: A dictionary containing the resource parameters:
                 * cmpr_signal_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`):
                   The compressed representation of signal operator which encodes the target hamiltonian.
-                * poly_deg (int): the degree :math:`d` of the target polynomial transformation
+                * poly_deg (int): the maximum positive degree :math:`d` of the polynomial transformation
+                * neg_poly_deg (int): the maximum negative degree :math:`k` of the polynomial
+                  transformation
                 * is_controlled (bool): Is ``True`` if the provided ``signal_operator`` is already
                   block-encoded via a signle qubit control.
                 * rot_precision (float, None): The precision with which to apply the general SU(2)
@@ -101,6 +106,7 @@ class GQSP(ResourceOperator):
         return {
             "cmpr_signal_op": self.cmpr_signal_op,
             "poly_deg": self.poly_deg,
+            "neg_poly_deg": self.neg_poly_deg,
             "is_controlled": self.is_controlled,
             "rot_precision": self.rot_precision,
         }
@@ -110,6 +116,7 @@ class GQSP(ResourceOperator):
         cls,
         cmpr_signal_op: CompressedResourceOp,
         poly_deg: int,
+        neg_poly_deg: int,
         is_controlled: bool,
         rot_precision: float | None,
     ):
@@ -119,7 +126,8 @@ class GQSP(ResourceOperator):
         Args:
             cmpr_signal_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`):
                 The compressed representation of signal operator which encodes the target hamiltonian.
-            poly_deg (int): the degree :math:`d` of the target polynomial transformation
+            poly_deg (int): the maximum positive degree :math:`d` of the polynomial transformation
+            neg_poly_deg (int): the maximum negative degree :math:`k` of the polynomial transformation
             is_controlled (bool): Is ``True`` if the provided ``signal_operator`` is already
                 block-encoded via a signle qubit control.
             rot_precision (float, None): The precision with which to apply the general SU(2)
@@ -135,6 +143,7 @@ class GQSP(ResourceOperator):
         params = {
             "cmpr_signal_op": cmpr_signal_op,
             "poly_deg": poly_deg,
+            "neg_poly_deg": neg_poly_deg,
             "is_controlled": is_controlled,
             "rot_precision": rot_precision,
         }
@@ -145,6 +154,7 @@ class GQSP(ResourceOperator):
         cls,
         cmpr_signal_op: CompressedResourceOp,
         poly_deg: int,
+        neg_poly_deg: int,
         is_controlled: bool,
         rot_precision: float | None,
     ):
@@ -154,7 +164,8 @@ class GQSP(ResourceOperator):
         Args:
             cmpr_signal_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`):
                 The compressed representation of signal operator which encodes the target hamiltonian.
-            poly_deg (int): the degree :math:`d` of the target polynomial transformation
+            poly_deg (int): the maximum positive degree :math:`d` of the polynomial transformation
+            neg_poly_deg (int): the maximum negative degree :math:`k` of the polynomial transformation
             is_controlled (bool): Is ``True`` if the provided ``signal_operator`` is already block-encoded
                 via a signle qubit control.
             rot_precision (float, None): The precision with which to apply the general SU(2) rotation gates.
@@ -171,6 +182,7 @@ class GQSP(ResourceOperator):
             in the decomposition.
         """
         rot = Rot.resource_rep(precision=rot_precision)
+        adj_cmpr_signal_op = Adjoint.resource_rep(cmpr_signal_op)
 
         if not is_controlled:
             cmpr_signal_op = Controlled.resource_rep(
@@ -179,4 +191,17 @@ class GQSP(ResourceOperator):
                 num_zero_ctrl=1,
             )
 
-        return [GateCount(rot, poly_deg + 1), GateCount(cmpr_signal_op, poly_deg)]
+            adj_cmpr_signal_op = Controlled.resource_rep(
+                base_cmpr_op=cmpr_signal_op,
+                num_ctrl_wires=1,
+                num_zero_ctrl=0,
+            )
+
+        if neg_poly_deg == 0:
+            return [GateCount(rot, poly_deg + 1), GateCount(cmpr_signal_op, poly_deg)]
+
+        return [
+            GateCount(rot, poly_deg + neg_poly_deg + 1),
+            GateCount(cmpr_signal_op, poly_deg),
+            GateCount(adj_cmpr_signal_op, neg_poly_deg),
+        ]
