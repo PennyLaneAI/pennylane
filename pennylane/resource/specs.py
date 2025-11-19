@@ -27,7 +27,7 @@ import pennylane as qml
 
 from .resource import Resources, SpecsDict, specs_from_tape
 
-_RESOURCE_TRACKING_FILEPATH = "__qml_specs_qjit_resources.json"
+_RESOURCE_TRACKING_FILEPATH_PREFIX = "__qml_specs_qjit_resources"
 
 
 def _get_absolute_import_path(fn):
@@ -109,6 +109,8 @@ def _specs_qjit_device_level_tracking(
 
     from ..devices import NullQubit
 
+    resources_filename = f"{_RESOURCE_TRACKING_FILEPATH_PREFIX}_{hex(id(original_qnode))}.json"
+
     # When running at the device level, execute on null.qubit directly with resource tracking,
     # which will give resource usage information for after all compiler passes have completed
     # TODO: Find a way to inherit all devices args from input
@@ -117,7 +119,7 @@ def _specs_qjit_device_level_tracking(
         target_device=original_device,
         wires=original_device.wires,
         track_resources=True,
-        resources_filename=_RESOURCE_TRACKING_FILEPATH,
+        resources_filename=resources_filename,
         compute_depth=compute_depth,
     )
 
@@ -146,15 +148,15 @@ def _specs_qjit_device_level_tracking(
             new_qnode = qjit.original_function.update(device=spoofed_dev)
             new_qjit = QJIT(new_qnode, copy.copy(qjit.compile_options))
 
-    if os.path.exists(_RESOURCE_TRACKING_FILEPATH):
+    if os.path.exists(resources_filename):
         # TODO: Warn that something has gone wrong here
-        os.remove(_RESOURCE_TRACKING_FILEPATH)
+        os.remove(resources_filename)
 
     try:
         # Execute on null.qubit with resource tracking
         new_qjit(*args, **kwargs)
 
-        with open(_RESOURCE_TRACKING_FILEPATH, encoding="utf-8") as f:
+        with open(resources_filename, encoding="utf-8") as f:
             resource_data = json.load(f)
 
         return Resources(
@@ -169,8 +171,8 @@ def _specs_qjit_device_level_tracking(
         )
     finally:
         # Ensure we clean up the resource tracking file
-        if os.path.exists(_RESOURCE_TRACKING_FILEPATH):
-            os.remove(_RESOURCE_TRACKING_FILEPATH)
+        if os.path.exists(resources_filename):
+            os.remove(resources_filename)
 
 
 def _specs_qjit_intermediate_passes(

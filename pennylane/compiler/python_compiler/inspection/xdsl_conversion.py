@@ -19,7 +19,7 @@ import inspect
 from collections.abc import Callable
 from typing import TYPE_CHECKING
 
-from catalyst.jit import QJIT
+from catalyst.jit import QJIT, qjit
 from catalyst.passes.xdsl_plugin import getXDSLPluginAbsolutePath
 from xdsl.dialects.builtin import DenseIntOrFPElementsAttr, IntegerAttr, IntegerType
 from xdsl.dialects.scf import ForOp
@@ -51,6 +51,7 @@ if TYPE_CHECKING:
     from xdsl.dialects.builtin import ModuleOp
 
     from pennylane.measurements import MeasurementProcess
+    from pennylane.workflow.qnode import QNode
 
 has_jax = True
 try:
@@ -59,18 +60,20 @@ except ImportError:
     has_jax = False
 
 
-def get_mlir_module(qnode: QJIT, args, kwargs) -> ModuleOp:
+def get_mlir_module(qnode: QNode | QJIT, args, kwargs) -> ModuleOp:
     """Ensure the QNode is compiled and return its MLIR module."""
     if hasattr(qnode, "mlir_module") and qnode.mlir_module is not None:
         return qnode.mlir_module
 
-    func = getattr(qnode, "user_function", qnode)
+    if isinstance(qnode, QJIT):
+        compile_options = qnode.compile_options
+        compile_options.autograph = False  # Autograph has already been applied for `user_function`
+        compile_options.pass_plugins.add(getXDSLPluginAbsolutePath())
 
-    compile_options = qnode.compile_options
-    compile_options.autograph = False  # Autograph has already been applied for `user_function`
-    compile_options.pass_plugins.add(getXDSLPluginAbsolutePath())
+        jitted_qnode = QJIT(qnode.user_function, compile_options)
+    else:
+        jitted_qnode = qjit(pass_plugins=[getXDSLPluginAbsolutePath()])(qnode)
 
-    jitted_qnode = QJIT(func, compile_options)
     jitted_qnode.jit_compile(args, **kwargs)
     return jitted_qnode.mlir_module
 
