@@ -111,9 +111,9 @@ def test_bb_quantum(
     )
 
 
-
 @pytest.mark.parametrize(
-    ("params", "error", "match"), [
+    ("params", "error", "match"),
+    [
         (
             (
                 [],
@@ -122,7 +122,7 @@ def test_bb_quantum(
                 [5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
             ),
             ValueError,
-            "bitstrings' cannot be empty."
+            "bitstrings' cannot be empty.",
         ),
         (
             (
@@ -132,7 +132,7 @@ def test_bb_quantum(
                 [5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
             ),
             ValueError,
-            "All bitstrings must have equal length."
+            "All bitstrings must have equal length.",
         ),
         (
             (
@@ -142,7 +142,7 @@ def test_bb_quantum(
                 [5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
             ),
             ValueError,
-            "len(bitstrings) must be 2^(len(qram_wires))."
+            "len(bitstrings) must be 2^(len(qram_wires)).",
         ),
         (
             (
@@ -152,7 +152,7 @@ def test_bb_quantum(
                 [4, 5, 6, 7, 8, 9, 10, 11, 12, 13],
             ),
             ValueError,
-            "len(target_wires) must equal bitstring length."
+            "len(target_wires) must equal bitstring length.",
         ),
         (
             (
@@ -162,9 +162,9 @@ def test_bb_quantum(
                 [5, 6, 7, 8, 9, 10, 11, 12, 13],
             ),
             ValueError,
-            "work_wires must have length 10."
+            "work_wires must have length 10.",
         ),
-    ]
+    ],
 )
 def test_raises(params, error, match):
     with pytest.raises(error, match=re.escape(match)):
