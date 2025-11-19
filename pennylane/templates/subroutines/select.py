@@ -347,6 +347,95 @@ class Select(Operation):
           apply :math:`2^{c-2}` operators each.
           The controlled gate on the right applies the single remaining operator.
 
+    .. details::
+        :title: Available decomposition rules
+
+        1. **multi_control**: [Definition of the rule]
+
+        .. code-block::
+
+            # Example of how to access
+            qml.list_decomps(qml.Select)["multi_control"]
+
+        Resources:
+
+            num_gates = 4
+
+            gate_counts = {RX: 2, CZ: 2}
+
+            weighted_cost = 4
+
+        The following decomposition rule is applied:
+
+        .. figure:: ../../../doc/_static/templates/subroutines/select.png
+                    :align: center
+                    :width: 70%
+                    :target: javascript:void(0);
+
+        2. **unary**: [Definition of the rule]. `Babbush et al. (2018) <https://arxiv.org/abs/1805.03662>`__
+
+        .. code-block::
+
+            # Example of how to access
+            qml.list_decomps(qml.Select)["unary"]
+
+        Resources:
+
+            For :math:`K` operators this decomposition requires at least :math:`c=\lceil\log_2 K\rceil`
+            control wires (as usual for Select), and :math:`c-1` additional work wires.
+
+        The following decomposition rule is applied:
+
+        .. figure:: ../../../doc/_static/templates/subroutines/select.png
+                    :align: center
+                    :width: 70%
+                    :target: javascript:void(0);
+    
+
+        **Table version**
+
+        .. code-block::
+
+            # General example of how to access
+            qml.list_decomps(qml.Select)[NAME]
+        
+        Decomposition rules
+        ~~~~~~~~~~~~~~~~~~~
+
+        The following decomposition rules are supported
+
+        .. currentmodule:: pennylane.templates.subroutines
+        .. autosummary::
+            :toctree: api
+
+            select._select_decomp_multi_control
+            select._select_decomp_unary
+            select._select_decomp_multi_control_work_wire
+
+        .. list-table::
+            :widths: 20 60 20
+            :header-rows: 1
+
+            * - **Decomposition rule**
+              - **Information**
+              - **Resources**
+            * - multi_control
+              - .. figure:: ../../../doc/_static/templates/subroutines/select.png
+                    :align: center
+                    :width: 70%
+                    :target: javascript:void(0);
+              - num_gates = 4
+
+                gate_counts = {RX: 2, CZ: 2}
+
+                weighted_cost = 4
+            * - unary
+              - .. figure:: ../../../doc/_static/templates/subroutines/select.png
+                    :align: center
+                    :width: 70%
+                    :target: javascript:void(0);
+              - For :math:`K` operators this decomposition requires at least :math:`c=\lceil\log_2 K\rceil`
+                control wires (as usual for Select), and :math:`c-1` additional work wires.
     """
 
     resource_keys = {"op_reps", "num_control_wires", "partial", "num_work_wires"}
