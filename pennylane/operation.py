@@ -1655,7 +1655,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         Options are:
             * `"_ops"`
             * `"_measurements"`
-            * `None`
+            * `None` (deprecated)
         """
         return "_ops"
 

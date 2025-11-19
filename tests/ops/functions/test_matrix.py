@@ -178,9 +178,6 @@ class TestSingleOperation:
         expected = reduce(np.kron, [Y, Z, I]) - 0.5 * np.kron(X, np.eye(4))
         assert qml.math.allclose(mat, expected)
 
-    @pytest.mark.xfail(
-        reason="This test will fail because Hamiltonians are not queued to tapes yet!"
-    )
     def test_hamiltonian_qfunc(self):
         """Test that the matrix of a Hamiltonian is correctly returned"""
 

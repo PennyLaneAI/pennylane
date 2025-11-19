@@ -72,8 +72,11 @@ _INSTANCES_TO_TEST = [
     (qml.BlockEncode([[0.1, 0.2], [0.3, 0.4]], wires=[0, 1]), {"skip_differentiation": True}),
     (qml.adjoint(qml.PauliX(0)), {}),
     (qml.adjoint(qml.RX(1.1, 0)), {}),
-    (qml.ops.LinearCombination([1.1, 2.2], [qml.PauliX(0), qml.PauliZ(0)]), {}),
-    (qml.s_prod(1.1, qml.RX(1.1, 0)), {}),
+    (
+        qml.ops.LinearCombination([1.1, 2.2], [qml.PauliX(0), qml.PauliZ(0)]),
+        {"skip_differentiation": True},
+    ),
+    (qml.s_prod(1.1, qml.RX(1.1, 0)), {"skip_differentiation": True}),
     (qml.prod(qml.PauliX(0), qml.PauliY(1), qml.PauliZ(0)), {}),
     (qml.ctrl(qml.RX(1.1, 0), 1), {}),
     (qml.exp(qml.PauliX(0), 1.1), {}),
@@ -85,6 +88,7 @@ _INSTANCES_TO_TEST = [
     (qml.Snapshot(measurement=qml.expval(qml.Z(0)), tag="hi"), {}),
     (qml.Snapshot(tag="tag"), {}),
     (qml.Identity(0), {}),
+    (qml.Hermitian(np.eye(2), wires=[0]), {"skip_differentiation": True}),
     (
         TrotterizedQfunc(
             0.1,

@@ -373,16 +373,6 @@ class Sum(CompositeOp):
 
         return math.expand_matrix(reduced_mat, sum_wires, wire_order=wire_order).asformat(format)
 
-    @property
-    def _queue_category(self):  # don't queue Sum instances because it may not be unitary!
-        """Used for sorting objects into their respective lists in `QuantumTape` objects.
-        This property is a temporary solution that should not exist long-term and should not be
-        used outside of ``QuantumTape._process_queue``.
-
-        Returns: None
-        """
-        return None
-
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_adjoint(self):
