@@ -29,7 +29,7 @@ class TestCancelInverses:
 
     def test_pass_name_defined(self):
         """Test cancel_inverses defines a pass_name."""
-        assert cancel_inverses.pass_name == "remove-chained-self-inverse"
+        assert cancel_inverses.pass_name == "cancel-inverses"
 
     def test_one_qubit_cancel_adjacent_self_inverse(self):
         """Test that a single-qubit circuit with adjacent self-inverse gate cancels."""

@@ -321,7 +321,7 @@ def _try_to_cancel_with_next(current_gate, list_copy):
 @partial(
     transform,
     plxpr_transform=cancel_inverses_plxpr_to_plxpr,
-    pass_name="remove-chained-self-inverse",
+    pass_name="cancel-inverses",
 )
 def cancel_inverses(
     tape: QuantumScript, recursive: bool = True
