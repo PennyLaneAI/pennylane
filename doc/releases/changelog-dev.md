@@ -264,6 +264,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Bump `autoray` package version to `0.8.2`.
+  [(#8674)](https://github.com/PennyLaneAI/pennylane/pull/8674)
+
 * Add workflow to bump Catalyst and Lightning versions in the RC branch, create a new release tag and draft release, tag the RC branch, and create a PR to merge the RC branch into master.
   [(#8352)](https://github.com/PennyLaneAI/pennylane/pull/8352)
   
