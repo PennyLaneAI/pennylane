@@ -1868,7 +1868,10 @@ class TrotterPauli(ResourceOperator):
 
     @classmethod
     def resource_rep(
-        cls, pauli_ham: PauliHamiltonian, num_steps: int, order: int,
+        cls,
+        pauli_ham: PauliHamiltonian,
+        num_steps: int,
+        order: int,
     ) -> CompressedResourceOp:
         """Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
@@ -1892,7 +1895,10 @@ class TrotterPauli(ResourceOperator):
 
     @classmethod
     def resource_decomp(
-        cls, pauli_ham: PauliHamiltonian, num_steps: int, order: int,
+        cls,
+        pauli_ham: PauliHamiltonian,
+        num_steps: int,
+        order: int,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a
         quantum gate and the number of times it occurs in the decomposition.
@@ -1935,9 +1941,7 @@ class TrotterPauli(ResourceOperator):
         k = order // 2
         if (groups := pauli_ham.commuting_groups) is not None:
             num_groups = len(groups)
-            cost_groups = [
-                cls.cost_pauli_group(group) for group in groups
-            ]
+            cost_groups = [cls.cost_pauli_group(group) for group in groups]
 
             gate_count_lst = []
             if order == 1:
@@ -1962,15 +1966,15 @@ class TrotterPauli(ResourceOperator):
 
         pauli_dist = pauli_ham.pauli_dist or (
             {
-                "X" * pauli_ham.max_factors: pauli_ham.num_pauli_words // 3,
-                "Y" * pauli_ham.max_factors: pauli_ham.num_pauli_words // 3,
-                "Z" * pauli_ham.max_factors: (pauli_ham.num_pauli_words // 3)
+                "X" * pauli_ham.max_weight: pauli_ham.num_pauli_words // 3,
+                "Y" * pauli_ham.max_weight: pauli_ham.num_pauli_words // 3,
+                "Z" * pauli_ham.max_weight: (pauli_ham.num_pauli_words // 3)
                 + (pauli_ham.num_pauli_words % 3),
             }
         )
 
         cost_fragments = cls.cost_pauli_group(pauli_dist)
-        fragment_repetition = num_steps if order == 1 else 2 * num_steps * (5**(k-1))
+        fragment_repetition = num_steps if order == 1 else 2 * num_steps * (5 ** (k - 1))
         return [fragment_repetition * gate_count for gate_count in cost_fragments]
 
     @staticmethod

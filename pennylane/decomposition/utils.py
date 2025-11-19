@@ -25,6 +25,10 @@ OP_NAME_ALIASES = {
     "Z": "PauliZ",
     "I": "Identity",
     "H": "Hadamard",
+    "measure": "MidMeasureMP",
+    "MidMeasure": "MidMeasureMP",
+    "ppm": "PauliMeasure",
+    "pauli_measure": "PauliMeasure",
 }
 
 
