@@ -399,7 +399,7 @@ def specs_collect(module) -> ResourcesResult:
 
         if func_op.is_declaration:
             warnings.warn(
-                f"Function {func_op.name.data} is an external declaration. "
+                f"Function {func_op.sym_name.data} is an external declaration. "
                 "Specs cannot analyze external functions, so some data may be missing.",
                 UserWarning,
             )
