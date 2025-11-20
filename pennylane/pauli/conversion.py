@@ -306,7 +306,7 @@ def _generalized_pauli_decompose_sparse(  # pylint: disable=too-many-statements,
         if max_dim == 0:
             target_dim = 1
         else:
-            target_dim = 2 ** math.ceil(math.log2(max_dim))
+            target_dim = int(2 ** math.ceil(math.log2(max_dim)))
         if shape != (target_dim, target_dim):
             sparse_matrix = sps.coo_matrix(
                 (sparse_matrix.data, (sparse_matrix.row, sparse_matrix.col)),
@@ -368,7 +368,10 @@ def _generalized_pauli_decompose_sparse(  # pylint: disable=too-many-statements,
         coeffs.append(coeff)
         obs_terms.append(observables)
 
-    coeffs = qml.math.cast(qml.math.stack(coeffs), complex)
+    if not coeffs:
+        coeffs = qml.math.cast(qml.math.array([], dtype=complex), complex)
+    else:
+        coeffs = qml.math.cast(qml.math.stack(coeffs), complex)
 
     if not pauli:
         with qml.QueuingManager.stop_recording():
@@ -524,7 +527,7 @@ def pauli_decompose(
     if is_sparse:
         _validate_sparse_matrix_shape(shape)
 
-    n = int(math.log2(shape[0])) if is_sparse else int(qml.math.log2(shape[0]))
+    n = int(math.log2(shape[0]))
     N = 2**n
 
     if check_hermitian:
