@@ -24,6 +24,7 @@ class CDFHamiltonian:
     Args:
         num_orbitals (int): number of spatial orbitals
         num_fragments (int): number of fragments in the compressed double-factorized (CDF) representation
+        one_norm (float | None): the one-norm of the Hamiltonian
 
     Returns:
         CDFHamiltonian: An instance of CDFHamiltonian
@@ -34,6 +35,7 @@ class CDFHamiltonian:
 
     num_orbitals: int
     num_fragments: int
+    one_norm: float | None = None
 
 
 @dataclass(frozen=True)
@@ -43,6 +45,7 @@ class THCHamiltonian:
     Args:
         num_orbitals (int): number of spatial orbitals
         tensor_rank (int):  tensor rank of two-body integrals in the tensor hypercontracted (THC) representation
+        one_norm (float | None): the one-norm of the Hamiltonian
 
     Returns:
         THCHamiltonian: An instance of THCHamiltonian
@@ -53,6 +56,7 @@ class THCHamiltonian:
 
     num_orbitals: int
     tensor_rank: int
+    one_norm: float | None = None
 
 
 @dataclass(frozen=True)
@@ -63,6 +67,7 @@ class VibrationalHamiltonian:
         num_modes (int): number of vibrational modes
         grid_size (int): number of grid points used to discretize each mode
         taylor_degree (int): degree of the Taylor expansion used in the vibrational representation
+        one_norm (float | None): the one-norm of the Hamiltonian
 
     Returns:
         VibrationalHamiltonian: An instance of VibrationalHamiltonian
@@ -74,6 +79,7 @@ class VibrationalHamiltonian:
     num_modes: int
     grid_size: int
     taylor_degree: int
+    one_norm: float | None = None
 
 
 @dataclass(frozen=True)
@@ -85,6 +91,7 @@ class VibronicHamiltonian:
         num_states (int): number of vibronic states
         grid_size (int): number of grid points used to discretize each mode
         taylor_degree (int): degree of the Taylor expansion used in the vibronic representation
+        one_norm (float | None): the one-norm of the Hamiltonian
 
     Returns:
         VibronicHamiltonian: An instance of VibronicHamiltonian
@@ -97,3 +104,4 @@ class VibronicHamiltonian:
     num_states: int
     grid_size: int
     taylor_degree: int
+    one_norm: float | None = None
