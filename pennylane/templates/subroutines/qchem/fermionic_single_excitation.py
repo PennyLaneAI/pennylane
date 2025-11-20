@@ -127,8 +127,8 @@ class FermionicSingleExcitation(Operation):
 
     resource_keys = {"num_wires"}
 
-    def __init__(self, weight: float, wires: WiresLike, *, id=None):
-        wires = Wires(wires)
+    def __init__(self, weight: float, wires: WiresLike | None = None, id: str | None = None):
+        wires = Wires([] if wires is None else wires)
         if len(wires) < 2:
             raise ValueError(f"expected at least two wires; got {len(wires)}")
 
