@@ -1278,3 +1278,157 @@ class PrepTHC(ResourceOperator):
         gate_list.append(Deallocate(coeff_register + 2 * m_register + 2 * coeff_precision + 6))
 
         return gate_list
+
+
+class SumOfSlaters(ResourceOperator):
+    r"""Resource class for the SumOfSlaters template.
+
+    The resource operation for preparing an initial state from a Sum of Slater (SOS) determinants
+    representation.
+
+    Args:
+        num_spatial_orbitals (int): the number of spin orbitals in the system (system register size)
+        num_determinants (int): the number of Slater determinants in the sum (index register size)
+        wires (WiresLike | None): the wires the operation acts on
+
+    Resources:
+        The resources for SumOfSlaters rely on a decomposition involving two QROM calls
+        and a series of CNOT gates. This decomposition is based on the routine described
+        in Section III.1 of `arXiv:2310.18410 <https://arxiv.org/abs/2310.18410>`_.
+
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> sos = qre.SumOfSlaters(num_spatial_orbitals=10, num_determinants=100)
+    >>> print(qre.estimate(sos, gate_set={"CNOT", "QROM", "Adjoint(QROM)"}))
+    --- Resources: ---
+    Total gates : ...
+    """
+
+    resource_keys = {"num_spatial_orbitals", "num_determinants"}
+
+    def __init__(
+        self,
+        num_spatial_orbitals: int,
+        num_determinants: int,
+        wires: WiresLike = None,
+    ):
+        self.num_wires = num_spatial_orbitals
+        self.num_spatial_orbitals = num_spatial_orbitals
+        self.num_determinants = num_determinants
+
+        if wires is not None and len(Wires(wires)) != self.num_wires:
+            raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
+        super().__init__(wires=wires)
+
+    @property
+    def resource_params(self) -> dict:
+        r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+        Returns:
+            dict: A dictionary containing the resource parameters:
+                * num_spatial_orbitals (int): the number of spin orbitals in the system
+                * num_determinants (int): the number of Slater determinants in the sum
+        """
+        return {
+            "num_spatial_orbitals": self.num_spatial_orbitals,
+            "num_determinants": self.num_determinants,
+        }
+
+    @classmethod
+    def resource_rep(cls, num_spatial_orbitals: int, num_determinants: int) -> CompressedResourceOp:
+        r"""Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute the resources.
+
+        Args:
+            num_spatial_orbitals (int): the number of spin orbitals in the system
+            num_determinants (int): the number of Slater determinants in the sum
+
+        Returns:
+            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+        """
+        params = {
+            "num_spatial_orbitals": num_spatial_orbitals,
+            "num_determinants": num_determinants,
+        }
+        num_wires = num_spatial_orbitals
+        return CompressedResourceOp(cls, num_wires, params)
+
+    @classmethod
+    def resource_decomp(
+        cls,
+        num_spatial_orbitals: int,
+        num_determinants: int,
+    ) -> list[GateCount]:
+        r"""Returns a list representing the resources of the operator. Each object in the list
+        represents a gate and the number of times it occurs in the circuit.
+
+        Args:
+            num_spatial_orbitals (int): the number of spin orbitals in the system
+            num_determinants (int): the number of Slater determinants in the sum
+
+        Resources:
+            The resources for SumOfSlaters are estimated according to Section III.1 of
+            `arXiv:2310.18410 <https://arxiv.org/abs/2310.18410>`_.
+
+        Returns:
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of
+            ``GateCount`` objects, where each object represents a specific quantum gate and the
+            number of times it appears in the decomposition.
+        """
+        gate_lst = []
+
+        # We have two ancilliary registers: an enumeration register size log(D) and an
+        # identification register size 2logD - 1.
+        enumeration_register_size = int(math.ceil(math.log2(num_determinants)))
+        identification_register_size = 2 * enumeration_register_size - 1
+
+        gate_lst.append(Allocate(enumeration_register_size + identification_register_size))
+
+        # Step 1. Prepare the state in the enumeration register using the Quantum
+        # Read-Only Memory (QROM) state preparation method
+        qrom_amplitudes = qre.QROM.resource_rep(
+            num_bitstrings=num_determinants,
+            size_bitstring=identification_register_size,
+        )
+        gate_lst.append(GateCount(qrom_amplitudes))
+
+        num_spin_orbitals = 2 * num_spatial_orbitals
+
+        # Step 2: Loading the Slater Determinants into the System Register
+        qrom_determinants = qre.QROM.resource_rep(
+            num_bitstrings=num_determinants, size_bitstring=num_spin_orbitals  # 2 * N
+        )
+        gate_lst.append(GateCount(qrom_determinants))
+
+        # Step 3: 3 and 4 upper bound of CNOTs
+        cnot = qre.CNOT.resource_rep()
+        gate_lst.append(GateCount(cnot, count=num_spin_orbitals * identification_register_size))
+
+        # Step 5: Multi-Controlled X's
+        gate_lst.append(
+            GateCount(
+                qre.MultiControlledX.resource_rep(
+                    num_ctrl_wires=identification_register_size, num_zero_ctrl=0  # K controls
+                ),
+                count=num_determinants,  # Repeat for all D determinants
+            )
+        )
+
+        # 6. Uncompute steps 3 and 4.
+        gate_lst.append(
+            GateCount(
+                resource_rep(qre.Adjoint, {"base_cmpr_op": cnot}),
+                count=identification_register_size * num_spin_orbitals,
+            )
+        )
+
+        # 6. Deallocate
+        gate_lst.append(Deallocate(enumeration_register_size + identification_register_size))
+
+        return gate_lst
+
+    @classmethod
+    def tracking_name(cls, num_spatial_orbitals, num_determinants) -> str:
+        return f"SumOfSlaters({num_spatial_orbitals}, {num_determinants}"

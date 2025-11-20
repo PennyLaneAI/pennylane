@@ -31,7 +31,14 @@ from .subroutines import (
 
 from .trotter import TrotterCDF, TrotterProduct, TrotterTHC, TrotterVibrational, TrotterVibronic
 
-from .stateprep import MPSPrep, QROMStatePreparation, UniformStatePrep, AliasSampling, PrepTHC
+from .stateprep import (
+    MPSPrep,
+    QROMStatePreparation,
+    UniformStatePrep,
+    AliasSampling,
+    PrepTHC,
+    SumOfSlaters,
+)
 
 from .comparators import (
     IntegerComparator,
