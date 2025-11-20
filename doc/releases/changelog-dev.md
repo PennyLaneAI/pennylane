@@ -120,6 +120,7 @@
 <h3>Breaking changes 💔</h3>
 
 * `qml.transforms.map_wires` no longer supports plxpr transforms.
+  [(#8683)](https://github.com/PennyLaneAI/pennylane/pull/8683)
 
 * ``QuantumScript.to_openqasm`` has been removed. Please use ``qml.to_openqasm`` instead. This removes duplicated 
   functionality for converting a circuit to OpenQASM code.
