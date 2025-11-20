@@ -264,12 +264,12 @@ def _temporary_and(wires: WiresLike, **kwargs):
 add_decomps(TemporaryAND, _temporary_and)
 
 
-def _adjoint_temporary_and_resources(base_class=None, base_params=None):
+def _adjoint_temporary_and_resources(base_class=None, base_params=None):  # pylint: disable=unused-argument
     return {ops.Hadamard: 1, ops.MidMeasure: 1, ops.CZ: 1}
 
 
 @register_resources(_adjoint_temporary_and_resources)
-def _adjoint_TemporaryAND(wires: WiresLike, **kwargs):
+def _adjoint_TemporaryAND(wires: WiresLike, **kwargs):  # pylint: disable=unused-argument
     r"""The implementation of adjoint TemporaryAND by mid-circuit measurements as found in https://arxiv.org/abs/1805.03662."""
     ops.Hadamard(wires=wires[2])
     m_0 = ops.measure(wires[2], reset=True)
