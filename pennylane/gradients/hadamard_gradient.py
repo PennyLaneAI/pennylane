@@ -557,7 +557,7 @@ def _quantum_automatic_differentiation(tape, trainable_param_idx, aux_wire) -> t
         tape.measurements[0].obs
     )  # assumes there's only one observable in the tape
 
-    if len(tape.measurements):
+    if len(tape.measurements) > 1:
         raise ValueError(
             "A tape with more than one observable was provided to the Quantum Automatic Differentiation algorithm."
         )
