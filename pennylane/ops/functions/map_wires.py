@@ -151,7 +151,7 @@ def processing_fn(res):
     return res[0]
 
 
-@partial(transform)
+@transform
 def _map_wires_transform(
     tape: QuantumScript, wire_map=None, queue=False
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
