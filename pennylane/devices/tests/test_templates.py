@@ -952,7 +952,7 @@ class TestMoleculeTemplates:
 
         @qml.qnode(dev)
         def circuit(params, wires, s_wires, d_wires, hf_state):
-            qml.UCCSD(params, wires, hf_state, s_wires=s_wires, d_wires=d_wires)
+            qml.UCCSD(params, wires, s_wires, d_wires, hf_state)
             return qml.expval(H)
 
         params = np.arange(len(singles) + len(doubles)) / 4

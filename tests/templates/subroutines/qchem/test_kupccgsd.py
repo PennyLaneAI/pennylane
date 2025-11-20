@@ -14,6 +14,7 @@
 """
 Tests for the k-UpCCGSD template.
 """
+
 import numpy as np
 
 # pylint: disable=too-many-arguments,too-few-public-methods
@@ -406,6 +407,14 @@ class TestInputs:
                 0,
                 np.array([1.4, 1.3, 0.0, 0.0]),
                 "Elements of 'init_state' must be integers",
+            ),
+            (
+                np.array([[0.55, 0.72, 0.6, 0.54, 0.42, 0.65]]),
+                [0, 1, 2, 3],
+                1,
+                0,
+                None,
+                "Requires `init_state` to be provided",
             ),
         ],
     )

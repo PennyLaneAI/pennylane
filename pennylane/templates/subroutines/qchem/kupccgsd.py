@@ -225,10 +225,10 @@ class kUpCCGSD(Operation):
         self,
         weights: TensorLike,
         wires: WiresLike,
-        init_state: Sequence[int],
         k: int = 1,
         delta_sz: int = 0,
-        id=None,
+        init_state: Sequence[int] | None = None,
+        id: str | None = None,
     ):
         wires = Wires(wires)
 
@@ -236,12 +236,12 @@ class kUpCCGSD(Operation):
             raise ValueError(f"Requires at least four wires; got {len(wires)} wires.")
         if len(wires) % 2:
             raise ValueError(f"Requires even number of wires; got {len(wires)} wires.")
-
         if k < 1:
             raise ValueError(f"Requires k to be at least 1; got {k}.")
-
         if delta_sz not in [-1, 0, 1]:
             raise ValueError(f"Requires delta_sz to be one of ±1 or 0; got {delta_sz}.")
+        if init_state is None:
+            raise ValueError("Requires `init_state` to be provided.")
 
         s_wires = generalized_singles(list(wires), delta_sz)
         d_wires = generalized_pair_doubles(list(wires))

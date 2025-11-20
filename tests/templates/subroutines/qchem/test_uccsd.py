@@ -379,6 +379,14 @@ class TestInputs:
                 r"Expected length of 'init_state' to match number of wires \(4\)",
             ),
             (
+                np.array([-2.8]),
+                [[0, 2]],
+                [],
+                None,
+                1,
+                r"Requires `init_state` to be provided",
+            ),
+            (
                 np.array([-2.8, 1.6]),
                 [[0, 1, 2]],
                 [],
