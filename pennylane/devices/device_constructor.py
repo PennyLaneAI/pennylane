@@ -110,14 +110,14 @@ def device(name, *args, **kwargs):
     Keyword Args:
         config (pennylane.Configuration): a PennyLane configuration object
             that contains global and/or device specific configurations.
-
-        .. warning::
-            The ``custom_decomps`` keyword argument to ``qml.device`` has been deprecated and will be removed
-            in 0.45. Instead, with ``qml.decomposition.enable_graph()``, new decomposition rules can be defined as
-            quantum functions with registered resources. See :mod:``pennylane.decomposition`` for more details.
-
         custom_decomps (Dict[Union(str, Operator), Callable]): Custom
             decompositions to be applied by the device at runtime.
+
+    .. warning::
+        The ``custom_decomps`` keyword argument to ``qml.device`` has been deprecated and will be removed
+        in 0.45. Instead, with ``qml.decomposition.enable_graph()``, new decomposition rules can be defined as
+        quantum functions with registered resources. See :mod:``pennylane.decomposition`` for more details.
+
 
     All devices must be loaded by specifying their **short-name** as listed above,
     followed by the **wires** (subsystems) you wish to initialize. The ``wires``
