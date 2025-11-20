@@ -415,8 +415,7 @@ def _validate_sparse_matrix_shape(shape):
             f"The matrix should be square, got {shape}. Use 'padding=True' for rectangular matrices."
         )
     n = int(math.log2(shape[0]))
-    N = 2**n
-    if shape[0] != N:
+    if shape[0] != 2 ** n:
         raise ValueError(
             f"Dimension of the matrix should be a power of 2, got {shape}. Use 'padding=True' for these matrices."
         )
