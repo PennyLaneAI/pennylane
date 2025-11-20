@@ -19,6 +19,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as pnp
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 
 @pytest.mark.jax
@@ -195,6 +196,25 @@ class TestDecomposition:
 
         assert np.allclose(res1, res2, atol=tol, rtol=0)
         assert np.allclose(state1, state2, atol=tol, rtol=0)
+
+    DECOMP_PARAMS = [
+        (qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliY(0)]), 0.5, 2),
+        (
+            qml.Hamiltonian(
+                [1, 1],
+                [qml.PauliX(0) @ qml.PauliZ(1), qml.PauliX(0)],
+            ),
+            2,
+            3,
+        ),
+    ]
+
+    @pytest.mark.capture
+    @pytest.mark.parametrize(("hamiltonian", "time", "steps"), DECOMP_PARAMS)
+    def test_decomposition_new(self, hamiltonian, time, steps):
+        op = qml.ApproxTimeEvolution(hamiltonian, time, steps)
+        for rule in qml.list_decomps(qml.ApproxTimeEvolution):
+            _test_decomposition_rule(op, rule)
 
 
 class TestInputs:
