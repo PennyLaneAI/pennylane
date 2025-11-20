@@ -311,11 +311,8 @@ def _get_for_loop_qfunc_prim():
     # pylint: disable=unused-argument
     @for_loop_prim.def_abstract_eval
     def __abstract_eval(start, stop, step, *args, args_slice, abstract_shapes_slice, **_):
-        # Convert tuples back to slices (tuples are used for JAX 0.7.0 hashability)
-        from pennylane.capture import _restore_slice
-
-        args_slice = _restore_slice(args_slice)
-        abstract_shapes_slice = _restore_slice(abstract_shapes_slice)
+        args_slice = slice(*args_slice)
+        abstract_shapes_slice = slice(*abstract_shapes_slice)
         return args[abstract_shapes_slice] + args[args_slice]
 
     return for_loop_prim
