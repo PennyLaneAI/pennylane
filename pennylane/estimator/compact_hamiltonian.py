@@ -117,7 +117,7 @@ class PauliHamiltonian:
         PauliHamiltonian: An instance of PauliHamiltonian
 
     .. seealso::
-        :class:`~.estimator.templates.TrotterPauli`
+        :class:`~.estimator.templates.TrotterPauli`, :class:`~.estimator.templates.SelectPauli`
 
     **Example**
 
@@ -256,22 +256,28 @@ class PauliHamiltonian:
 
     @property
     def num_qubits(self):
+        """The number of qubits the hamiltonian acts on"""
         return self._num_qubits
 
     @property
     def num_pauli_words(self):
+        """The number of Pauli words (or terms) in the sum."""
         return self._num_pauli_words
 
     @property
     def max_weight(self):
+        """The maximum number of Pauli operators (tensored) in any given term in the sum."""
         return self._max_weight
 
     @property
     def pauli_dist(self):
+        """A dictionary representing the distribution of Pauli words in the Hamiltonian"""
         return self._pauli_dist
 
     @property
     def commuting_groups(self):
+        """A list of groups where each group is a distribution of pauli words such that each
+        term in the group commutes with every other term in the group."""
         return self._commuting_groups
 
 
@@ -292,7 +298,7 @@ def _validate_pauli_dist(pauli_dist: dict) -> bool:
 
 
 def _pauli_dist_from_commuting_groups(commuting_groups: tuple[dict]):
-    """Construct the total Pauliword distribution from the commuting groups."""
+    """Construct the total Pauli word distribution from the commuting groups."""
     total_pauli_dist = defaultdict(int)
 
     for group in commuting_groups:

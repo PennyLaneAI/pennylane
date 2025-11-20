@@ -467,9 +467,30 @@ class SelectPauli(ResourceOperator):
 
     **Example**
 
-    The resources for this operation are computed using:
+    The resources for this operation are computed below. Note each of the 25 Pauli strings is
+    treated as an independant term, and thus the Select operation has :math:`L = 25` target operators
+    to apply (see figure 7 of `Babbush et al. (2018) <https://arxiv.org/pdf/1805.03662>`_).
 
     >>> import pennylane.estimator as qre
+    >>> pauli_terms = {"XX":10, "ZZ":10, "Y":5}
+    >>> pauli_ham = qre.PauliHamiltonian(num_qubits=5, pauli_dist=pauli_terms)
+    >>> pauli_ham
+    PauliHamiltonian(num_qubits=5, num_pauli_words=25, max_weight=2)
+    >>> res = qre.estimate(qre.SelectPauli(pauli_ham))
+    >>> print(res)
+    --- Resources: ---
+     Total wires: 14
+       algorithmic wires: 10
+       allocated wires: 4
+         zero state: 4
+         any state: 0
+     Total gates : 292
+       'Toffoli': 24,
+       'CNOT': 93,
+       'X': 48,
+       'Z': 5,
+       'S': 10,
+       'Hadamard': 112
 
     """
 

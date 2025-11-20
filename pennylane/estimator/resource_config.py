@@ -30,7 +30,7 @@ from pennylane.estimator.templates import (
     SelectPauliRot,
     SelectTHC,
 )
-from pennylane.estimator.templates.trotter import TrotterPauli, TrotterVibrational, TrotterVibronic
+from pennylane.estimator.templates.trotter import TrotterVibrational, TrotterVibronic
 
 if TYPE_CHECKING:
     from pennylane.estimator.resource_operator import ResourceOperator
