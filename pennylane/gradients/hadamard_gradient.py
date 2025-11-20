@@ -542,10 +542,9 @@ def _reversed_direct_hadamard_test(tape, trainable_param_idx, aux_wire) -> tuple
 
 
 def _quantum_automatic_differentiation(tape, trainable_param_idx, aux_wire) -> tuple[list, list]:
-    # 1) check if we have a work wire -> direct or standard differentiation
-    direct = not aux_wire
 
-    # 2) check if we are doing forward or reversed (switch the generator with the measured op) based how many
+    # We check if we have a work wire -> direct or standard differentiation.
+    # We also check if we are doing forward or reversed (switch the generator with the measured op) based how many
     # combinations there are. Depends on the combinations of expectations and terms in the Hamiltonian, for example.
     # i.e. if the terms in the Hamiltonian are on different wires we can measure them at the same time, but still need
     # different circuits for the controls, can refer to the hamiltonian’s "grouping indices" list: its length gives
@@ -574,15 +573,16 @@ def _quantum_automatic_differentiation(tape, trainable_param_idx, aux_wire) -> t
         return memoizer
 
     @memoize
-    def _count_shots(pauli_str, pauli_prods):  # pylint: disable=unused-argument
+    def _count_groupings(pauli_str, pauli_prods):  # pylint: disable=unused-argument
         op = Sum(*pauli_prods)
         op.compute_grouping()
         return len(op.grouping_indices)
 
-    expectations_shots = _count_shots(",".join([str(gen) for gen in generators]), generators)
-    observables_shots = _count_shots(",".join([str(obs) for obs in observables]), observables)
+    expectations_groupings = _count_groupings(",".join([str(gen) for gen in generators]), generators)
+    observables_groupings = _count_groupings(",".join([str(obs) for obs in observables]), observables)
 
-    standard = observables_shots * len(generators) <= expectations_shots * len(observables)
+    direct = not aux_wire
+    standard = observables_groupings * len(generators) <= expectations_groupings * len(observables)
     # Logic Table
     # Direct (No Aux) | Standard Order | Function
     # ----------------|----------------|---------
