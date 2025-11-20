@@ -538,14 +538,12 @@ def pauli_decompose(
                 if not qml.math.allclose(H, qml.math.conj(qml.math.transpose(H))):
                     raise ValueError("The matrix is not Hermitian")
 
-    if is_sparse:
-        coeffs, obs = _generalized_pauli_decompose_sparse(
-            H, hide_identity=hide_identity, wire_order=wire_order, pauli=pauli, padding=True
-        )
-    else:
-        coeffs, obs = _generalized_pauli_decompose(
-            H, hide_identity=hide_identity, wire_order=wire_order, pauli=pauli, padding=True
-        )
+    _pauli_decompose = (
+        _generalized_pauli_decompose_sparse if is_sparse else _generalized_pauli_decompose
+    )
+    coeffs, obs = _pauli_decompose(
+        H, hide_identity=hide_identity, wire_order=wire_order, pauli=pauli, padding=True
+    )
 
     if check_hermitian:
         coeffs = qml.math.real(coeffs)
