@@ -228,43 +228,64 @@ def transform(  # pylint: disable=too-many-arguments
         Transforms can be matched with an associated MLIR or XDSL pass via the ``pass_name`` argument.
         These transforms will be lowered into the MLIR and applied as part of the lower level compilation.
 
+        For example, we can create a transform that will apply the ``cancel-inverses`` pass, like the
+        in-built ``qml.transform.cancel_inverses`` transform.
+
         .. code-block:: python
 
+            my_transform = qml.transform(pass_name="cancel-inverses")
+
             @qml.qjit
-            @qml.transform(pass_name="remove-chained-self-inverse")
+            @my_transform
             @qml.qnode(qml.device('lightning.qubit', wires=4))
             def circuit():
                 qml.X(0)
                 qml.X(0)
                 return qml.expval(qml.Z(0))
 
-        For example, we can see that the instruction to apply ``"remove-chained-self-inverse"`` is present in the initial
+        We can see that the instruction to apply ``"cancel-inverses`` is present in the initial
         MLIR.
 
         >>> circuit()
         Array(1., dtype=float64)
-        >>> print(c.mlir[200:600])
-        transform.named_sequence @__transform_main(%arg0: !transform.op<"builtin.module">) {
-            %0 = transform.apply_registered_pass "remove-chained-self-inverse" to %arg0 : (!transform.op<"builtin.module">) -> !transform.op<"builtin.module">
-            transform.yield
-           }
+        >>> print(circuit.mlir[200:600])
+        tensor<f64>
         }
-        func.func public @c() -> tensor<f64> attri
+        module @module_circuit {
+            module attributes {transform.with_named_sequence} {
+            transform.named_sequence @__transform_main(%arg0: !transform.op<"builtin.module">) {
+                %0 = transform.apply_registered_pass "cancel-inverses" to %arg0 : (!transform.op<"builtin.module">) -> !transform.op<"builtin.module">
+                transform.yield
+            }
+            }
+            func.func public @circui
+
+        Transforms can have both tape based and ``pass_name`` based definitions. In that case, the MLIR pass
+        will take precedence when possible.
+
+        .. code-block:: python
+
+            from functools import partial
+
+            @partial(qml.transform, pass_name="my-pass-name")
+            def my_transform(tape):
+                return (tape, ), lambda res: res[0]
 
         Note that any transform with only a ``pass_name`` definition *must* occur after any purely tape-based
         transform, as tape transforms occur prior to lowering to MLIR.
 
         >>> @qml.qjit
         ... @qml.defer_measurements
-        ... @qml.transform(pass_name="remove-chained-self-inverse")
+        ... @qml.transform(pass_name="cancel-inverses")
         ... @qml.qnode(qml.device('lightning.qubit', wires=4))
         ... def c():
         ...     qml.X(0)
         ...     qml.X(0)
         ...     return qml.expval(qml.Z(0))
-        Traceback (Most recent call last):
+        ...
+        Traceback (most recent call last):
             ...
-        ValueError: <remove-chained-self-inverse((), {})> without a tape definition occurs before tape transform <defer_measurements((), {})>.
+        ValueError: <cancel-inverses((), {})> without a tape definition occurs before tape transform <defer_measurements((), {})>.
 
     .. details::
         :title: Transforms with experimental program capture
