@@ -363,8 +363,6 @@ def _generalized_pauli_decompose_sparse(  # pylint: disable=too-many-statements,
             observables = [(char, wire) for wire, char in zip(wire_order, word) if char != I]
         else:
             observables = [(char, wire) for wire, char in zip(wire_order, word)]
-        if not observables:
-            continue
         coeffs.append(coeff)
         obs_terms.append(observables)
 
