@@ -48,6 +48,12 @@ def _make_hashable(obj: Any) -> Any:
     if isinstance(obj, slice):
         return (obj.start, obj.stop, obj.step)
 
+    # slice is unhashable in 3.11, but hashable in 3.12+
+    # so we have to treat it first incase incompatibility among
+    # different Python versions
+    if isinstance(obj, slice):
+        return (obj.start, obj.stop, obj.step)
+
     # First, check if the object is already hashable
     try:
         hash(obj)

@@ -52,6 +52,12 @@ class PennyLaneTransformer(PyToPy):
         # way to handle these in the future.
         # We may also need to check how this interacts with other common function decorators.
         fn = obj
+
+        # The following three inits are necessary in py3.14 to avoid UnboundLocalError
+        new_fn = None
+        module = None
+        source_map = None
+
         if isinstance(obj, qml.QNode):
             fn = obj.func
         elif inspect.isfunction(fn) or inspect.ismethod(fn):
@@ -77,7 +83,7 @@ class PennyLaneTransformer(PyToPy):
             try:
                 new_fn, module, source_map = self.transform_function(fn, user_context)
             except KeyError as e:
-                if "Lambda object" in str(e) and "while_loop" in inspect.getsource(fn):
+                if new_fn is None or "Lambda object" in str(e) and "while_loop" in inspect.getsource(fn):
                     raise AutoGraphError(
                         "AutoGraph currently does not support lambda functions as a loop condition for `qml.while_loop`."
                         " Please define the condition using a named function rather than a lambda function."
