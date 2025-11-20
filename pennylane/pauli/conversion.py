@@ -296,7 +296,9 @@ def _generalized_pauli_decompose_sparse(  # pylint: disable=too-many-statements,
         [Z(0) @ Z(1), X(0) @ I(1)]
     """
     sparse_matrix = sps.coo_matrix(matrix)
-    sparse_matrix.sum_duplicates()  # Sum duplicate (row, col) entries: COO format allows multiple entries for the same position which must be combined before processing
+    # Sum duplicate (row, col) entries as COO format allows multiple entries
+    # for the same position, which must be combined before processing.
+    sparse_matrix.sum_duplicates()
     shape = sparse_matrix.shape
 
     if padding:
