@@ -457,6 +457,21 @@ class TestDifferentModes:
         assert reverse.call_count == 1
         assert reversed_direct.call_count == 1
 
+    def test_automatic_mode_raises(self):
+        """Test the automatic mode raises when the circuit has too many measurements."""
+
+        t = np.array(0.0)
+
+        dev = qml.device("default.qubit")
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.evolve(qml.X(0) @ qml.X(1) + qml.Z(0) @ qml.Z(1) + qml.Y(0), x)
+            return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
+
+        with pytest.raises(ValueError, match="more than one observable"):
+            qml.gradients.hadamard_grad(circuit, mode="auto")(t)
+
     @pytest.mark.parametrize("mode", ["direct", "reversed-direct"])
     def test_no_available_work_wire_direct_methods(self, mode):
         """Test that direct and reversed direct work with no available work wires."""
