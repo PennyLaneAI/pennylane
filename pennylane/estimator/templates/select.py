@@ -62,23 +62,22 @@ class SelectTHC(ResourceOperator):
     The resources for this operation are computed using:
 
     >>> import pennylane.estimator as qre
-    >>> thc_ham =  qre.THCHamiltonian(num_orbitals=20, batched_rotations=10, tensor_rank=40)
-    >>> res = qre.estimate(qre.SelectTHC(thc_ham, rotation_precision=15))
+    >>> thc_ham =  qre.THCHamiltonian(num_orbitals=20, tensor_rank=40)
+    >>> res = qre.estimate(qre.SelectTHC(thc_ham, batched_rotations=10, rotation_precision=15))
     >>> print(res)
     --- Resources: ---
-     Total wires: 371
-        algorithmic wires: 58
-        allocated wires: 313
-             zero state: 313
-             any state: 0
-     Total gates : 1.959E+4
-      'Toffoli': 2.219E+3,
-      'CNOT': 1.058E+4,
-      'X': 268,
-      'Z': 41,
-      'S': 80,
-      'Hadamard': 6.406E+3
-
+     Total wires: 227
+       algorithmic wires: 58
+       allocated wires: 169
+         zero state: 169
+         any state: 0
+     Total gates : 2.534E+4
+       'Toffoli': 2.633E+3,
+       'CNOT': 1.440E+4,
+       'X': 804.0,
+       'Z': 41,
+       'S': 80,
+       'Hadamard': 7.378E+3
     """
 
     resource_keys = {"thc_ham", "batched_rotations", "rotation_precision", "select_swap_depth"}

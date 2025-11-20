@@ -91,6 +91,14 @@
   work wire and :class:`pennylane.TemporaryAND` operators to reduce the resources needed.
   [(#8549)](https://github.com/PennyLaneAI/pennylane/pull/8549)
 
+* :class:`~pennylane.estimator.templates.SelectTHC` template was modified to allow trade-off between qubits and T-gates.
+  [(#8682)](https://github.com/PennyLaneAI/pennylane/pull/8682)
+
+* The `~pennylane.estimator.compact_hamiltonian.CDFHamiltonian`, `~pennylane.estimator.compact_hamiltonian.THCHamiltonian`,
+  `~pennylane.estimator.compact_hamiltonian.VibrationalHamiltonian`, and `~pennylane.estimator.compact_hamiltonian.VibronicHamiltonian`
+  classes were modified to take 1-norm of the Hamiltonian as an optional argument.
+  [(#8682)](https://github.com/PennyLaneAI/pennylane/pull/8682)
+
 <h3>Breaking changes 💔</h3>
 
 * Providing ``num_steps`` to :func:`pennylane.evolve`, :func:`pennylane.exp`, :class:`pennylane.ops.Evolution`,
