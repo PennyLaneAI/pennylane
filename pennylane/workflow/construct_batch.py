@@ -113,6 +113,24 @@ def _validate_level(
     raise ValueError(f"level {level} not recognized. Acceptable types are int, str, and slice.")
 
 
+def _validate_custom_levels(program):
+    protected_options = {"top", "user", "gradient", "device"}
+    found_levels = set()
+    for t in program:
+        if t.transform == marker.transform:
+            level = t.args[0] if t.args else t.kwargs["level"]
+            if level in protected_options:
+                raise ValueError(
+                    f"Found marker for protected level {level}."
+                    f" Protected options are {protected_options}"
+                )
+            if level in found_levels:
+                raise ValueError(
+                    f"Found multiple markers for level {level}. " "Markers should be unique."
+                )
+            found_levels.add(level)
+
+
 def _find_level(program, level):
     found_levels = []
     for idx, t in enumerate(program):
@@ -444,6 +462,7 @@ def construct_batch(
     _validate_level(level)
     is_torch_layer = type(qnode).__name__ == "TorchLayer"
     user_program = qnode.transform_program
+    _validate_custom_levels(user_program)
     num_user_transforms = len(user_program)
 
     def batch_constructor(*args, **kwargs) -> tuple[QuantumScriptBatch, PostprocessingFn]:

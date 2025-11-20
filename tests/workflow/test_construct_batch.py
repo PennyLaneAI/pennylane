@@ -38,7 +38,12 @@ class TestMarker:
         def c():
             return qml.state()
 
-        with pytest.raises(ValueError, match="level bla not found in transform program."):
+        expected = (
+            r"level bla not found in transform program. "
+            r"Builtin options are 'top', 'user', 'device' and 'gradient'."
+            r" Custom levels are \['something'\]."
+        )
+        with pytest.raises(ValueError, match=expected):
             construct_batch(c, level="bla")()
 
     def test_accessing_custom_level(self):
@@ -77,6 +82,49 @@ class TestMarker:
         (tape,), _ = construct_batch(c, level="my_level")()
         expected = qml.tape.QuantumScript([qml.RX(0.2, 0), qml.RX(0.2, 0)], [qml.state()])
         qml.assert_equal(tape, expected)
+
+    def test_execution_with_marker_transform(self):
+        """Test that the marker transform does not effect execution results."""
+
+        @partial(qml.marker, level="my_level")
+        @qml.qnode(qml.device("default.qubit"))
+        def c(x):
+            qml.RX(x, 0)
+            return qml.expval(qml.Z(0))
+
+        res = c(0.5)
+        assert qml.math.allclose(res, np.cos(0.5))
+
+    def test_tape_application(self):
+        """Test that the tape transform leaves the input unaffected."""
+
+        input = qml.tape.QuantumScript([qml.X(0)], [qml.state()])
+        (out,), fn = qml.marker(input, level="level")
+        assert input is out
+        assert fn(("a",)) == "a"
+
+    def test_uniqueness_checking(self):
+        """Test an error is raised if a level is not unique."""
+
+        @partial(qml.marker, level="something")
+        @partial(qml.marker, level="something")
+        @qml.qnode(qml.device("null.qubit"))
+        def c():
+            return qml.state()
+
+        with pytest.raises(ValueError, match="Found multiple markers for level something"):
+            construct_batch(c)()
+
+    def test_protected_levels(self):
+        """Test an error is raised for using a protected level."""
+
+        @partial(qml.marker, level="gradient")
+        @qml.qnode(qml.device("null.qubit"))
+        def c():
+            return qml.state()
+
+        with pytest.raises(ValueError, match="Found marker for protected level gradient."):
+            construct_batch(c)()
 
 
 class TestTransformProgramGetter:
