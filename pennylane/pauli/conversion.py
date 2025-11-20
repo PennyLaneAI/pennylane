@@ -84,10 +84,8 @@ def _generalized_pauli_decompose(  # pylint: disable=too-many-branches
     phase from each ``PauliY`` term occurring in the word.
 
     Args:
-        matrix (tensor_like[complex] or scipy.sparse matrix): any matrix M, the keyword argument ``padding=True``
-            should be provided if the dimension of M is not :math:`2^n\times 2^n`. Scipy sparse
-            matrices are also supported and are processed natively without converting to dense format,
-            enabling efficient decomposition of large sparse matrices.
+        matrix (tensor_like[complex]): any matrix M, the keyword argument ``padding=True``
+            should be provided if the dimension of M is not :math:`2^n\times 2^n`.
         hide_identity (bool): does not include the Identity observable within
             the tensor products of the decomposition if ``True``.
         wire_order (list[Union[int, str]]): the ordered list of wires with respect
@@ -167,29 +165,7 @@ def _generalized_pauli_decompose(  # pylint: disable=too-many-branches
         >>> qml.grad(circuit)(A)
         array([[0.+0.j        , 0.+0.2397...j]])
 
-        Scipy sparse matrices are also supported:
-
-        >>> import scipy.sparse as sps
-        >>> # Decompose a 2-qubit sparse matrix: Z(0) @ Z(1) + 0.5 * X(0)
-        >>> sparse_matrix = sps.csr_matrix(
-        ...     [[1, 0, 0.5, 0], [0, -1, 0, 0.5], [0.5, 0, -1, 0], [0, 0.5, 0, 1]]
-        ... )
-        >>> coeffs, obs = qml.pauli.conversion._generalized_pauli_decompose(sparse_matrix)
-        >>> coeffs
-        array([1. +0.j, 0.5+0.j])
-        >>> obs
-        [Z(0) @ Z(1), X(0) @ I(1)]
-
     """
-    if sps.issparse(matrix):
-        return _generalized_pauli_decompose_sparse(
-            matrix,
-            hide_identity=hide_identity,
-            wire_order=wire_order,
-            pauli=pauli,
-            padding=padding,
-        )
-
     # Ensuring original matrix is not manipulated and we support builtin types.
     matrix = qml.math.convert_like(matrix, next(iter([*matrix[0]]), []))
 
@@ -320,7 +296,7 @@ def _generalized_pauli_decompose_sparse(  # pylint: disable=too-many-statements,
         [Z(0) @ Z(1), X(0) @ I(1)]
     """
     sparse_matrix = sps.coo_matrix(matrix)
-    sparse_matrix.sum_duplicates()
+    sparse_matrix.sum_duplicates()  # Sum duplicate (row, col) entries: COO format allows multiple entries for the same position which must be combined before processing
     shape = sparse_matrix.shape
 
     if padding:
@@ -560,9 +536,14 @@ def pauli_decompose(
                 if not qml.math.allclose(H, qml.math.conj(qml.math.transpose(H))):
                     raise ValueError("The matrix is not Hermitian")
 
-    coeffs, obs = _generalized_pauli_decompose(
-        H, hide_identity=hide_identity, wire_order=wire_order, pauli=pauli, padding=True
-    )
+    if is_sparse:
+        coeffs, obs = _generalized_pauli_decompose_sparse(
+            H, hide_identity=hide_identity, wire_order=wire_order, pauli=pauli, padding=True
+        )
+    else:
+        coeffs, obs = _generalized_pauli_decompose(
+            H, hide_identity=hide_identity, wire_order=wire_order, pauli=pauli, padding=True
+        )
 
     if check_hermitian:
         coeffs = qml.math.real(coeffs)
