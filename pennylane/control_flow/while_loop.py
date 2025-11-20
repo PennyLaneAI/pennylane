@@ -260,6 +260,9 @@ def _get_while_loop_qfunc_prim():
         # Convert tuple back to slice (tuple is used for JAX 0.7.0 hashability)
         return args[slice(*args_slice)]
 
+    return while_loop_prim
+
+
 class WhileLoopCallable:  # pylint:disable=too-few-public-methods
     """Base class to represent a while loop. This class
     when called with an initial state will execute the while
