@@ -989,6 +989,12 @@ def _apply_adj(action):
 
 
 @_apply_adj.register
+def _(action: GateCount):
+    gate = action.gate
+    return GateCount(resource_rep(Adjoint, {"base_cmpr_op": gate}), action.count)
+
+
+@_apply_adj.register
 def _(action: Allocate):
     return Deallocate(action.num_wires)
 
@@ -1001,12 +1007,6 @@ def _(action: Deallocate):
 @singledispatch
 def _apply_controlled(action, num_ctrl_wires, num_zero_ctrl):  # pylint: disable=unused-argument
     return action  # pragma: no cover
-
-
-@_apply_adj.register
-def _(action: GateCount):
-    gate = action.gate
-    return GateCount(resource_rep(Adjoint, {"base_cmpr_op": gate}), action.count)
 
 
 @_apply_controlled.register
