@@ -2083,6 +2083,18 @@ class TrotterPauli(ResourceOperator):
 
     @staticmethod
     def cost_pauli_group(pauli_dist: dict):
+        """Given a dictionary of Pauli words and frequecies, return the cost of exponentiating
+        the group of terms.
+
+        Args:
+            pauli_dist (dict): A dictionary which represents the types of Pauli words in the
+                hamiltonian and their relative frequencies.
+
+        Returns:
+            Iterable[~.pennylane.estimator.resource_operator.GateCount]: The cost of exponentiating
+                a commuting group of Pauli words.
+
+        """
         gate_count_lst = []
         for pauli_word, count in pauli_dist.items():
             gate_count_lst.append(GateCount(PauliRot.resource_rep(pauli_word), count))

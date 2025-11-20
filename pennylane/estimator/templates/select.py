@@ -497,24 +497,20 @@ class SelectPauli(ResourceOperator):
     resource_keys = {"pauli_ham"}
 
     def __init__(self, pauli_ham: PauliHamiltonian, wires: WiresLike = None) -> None:
-        self.queue()
         self.pauli_ham = pauli_ham
 
         num_select_ops = pauli_ham.num_pauli_words
         num_ctrl_wires = math.ceil(math.log2(num_select_ops))
 
         num_wires = pauli_ham.num_qubits + num_ctrl_wires
+        self.num_wires = num_wires
 
-        if wires:
-            self.wires = Wires(wires)
-            if len(self.wires) != num_wires:
-                raise ValueError(
-                    f"Expected {num_wires} wires ({num_ctrl_wires} control + {pauli_ham.num_qubits} target), got {len(self.wires)}."
-                )
-            self.num_wires = num_wires
-        else:
-            self.wires = None
-            self.num_wires = num_wires
+        if wires and (len(self.wires) != num_wires):
+            raise ValueError(
+                f"Expected {num_wires} wires ({num_ctrl_wires} control + {pauli_ham.num_qubits} target), got {len(self.wires)}."
+            )
+
+        super().__init__(wires=wires)
 
     @classmethod
     def resource_decomp(cls, pauli_ham: PauliHamiltonian):  # pylint: disable=unused-argument

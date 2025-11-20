@@ -209,7 +209,7 @@ class PauliHamiltonian:
 
     """
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         num_qubits: int,
         num_pauli_words: int | None = None,
@@ -241,7 +241,7 @@ class PauliHamiltonian:
         if (num_pauli_words is None) or (max_weight is None):
             raise ValueError(
                 "One of the following sets of inputs must be provided (not None) in order to"
-                f" instantiatea valid PauliHamiltonian:\n - `commuting_groups`\n - `pauli_dist`\n"
+                " instantiatea valid PauliHamiltonian:\n - `commuting_groups`\n - `pauli_dist`\n"
                 " - `num_pauli_words` and `max_weight`."
             )
 
