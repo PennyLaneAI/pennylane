@@ -271,7 +271,9 @@ class ResourceOperator(ABC):
         r"""Returns a list of actions that define the resources of the operator."""
 
     @classmethod
-    def adjoint_resource_decomp(cls, target_resource_params: dict | None = None) -> list[GateCount]:
+    def adjoint_resource_decomp(
+        cls, target_resource_params: dict | None = None
+    ) -> list[GateCount]:  # pylint: disable=import-outside-toplevel
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         For ResourceOperators that don't define a `adjoint_resource_decomp`, this will be its
@@ -283,7 +285,7 @@ class ResourceOperator(ABC):
         """
         from pennylane.estimator.ops.op_math.symbolic import (
             _apply_adj,
-        )  # pylint: disable=import-outside-toplevel
+        )
 
         target_resource_params = target_resource_params or {}
         gate_lst = []
@@ -299,7 +301,7 @@ class ResourceOperator(ABC):
         num_ctrl_wires: int,
         num_zero_ctrl: int,
         target_resource_params: dict | None = None,
-    ) -> list[GateCount]:
+    ) -> list[GateCount]:  # pylint: disable=import-outside-toplevel
         r"""Returns a list representing the resources for a controlled version of the operator.
 
         For ResourceOperators that don't define a `controlled_resource_decomp`, this will be its
@@ -315,7 +317,7 @@ class ResourceOperator(ABC):
         """
         from pennylane.estimator.ops.op_math.symbolic import (
             _apply_controlled,
-        )  # pylint: disable=import-outside-toplevel
+        )
 
         target_resource_params = target_resource_params or {}
         gate_lst = []
