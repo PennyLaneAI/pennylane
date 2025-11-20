@@ -199,8 +199,8 @@ class UCCSD(Operation):
         wires: WiresLike,
         s_wires: Sequence[Sequence[int]] | None = None,
         d_wires: Sequence[tuple[Sequence[int], Sequence[int]]] | None = None,
-        n_repeats: int = 1,
         init_state: Sequence[int] | None = None,
+        n_repeats: int = 1,
         id=None,
     ):
         wires = Wires(wires)
