@@ -84,28 +84,6 @@ def _make_hashable(obj: Any) -> Any:
     return obj
 
 
-def _restore_slice(obj: Any) -> Any:
-    """Restore slice objects from hashable tuple representation.
-
-    This is the inverse of _make_hashable for slice objects. When QmlPrimitive.bind()
-    converts slices to tuples for hashability, primitive implementations need to
-    convert them back.
-
-    Args:
-        obj: Object that may be a tuple representation of a slice
-
-    Returns:
-        slice object if obj is a 3-tuple with (start, stop, step), otherwise returns obj unchanged
-    """
-    if isinstance(obj, tuple) and len(obj) == 3:
-        # Tuples representing slices have exactly 3 elements (start, stop, step)
-        # Check if it's likely a slice by checking if elements look like slice components
-        # (None or integers for start/stop/step)
-        if all(x is None or isinstance(x, int) for x in obj):
-            return slice(*obj)
-    return obj
-
-
 def _restore_dict(obj: Any) -> dict:
     """Restore dict from hashable tuple representation.
 

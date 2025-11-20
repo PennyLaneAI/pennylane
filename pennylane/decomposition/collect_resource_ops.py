@@ -81,7 +81,7 @@ def explore_all_branches(self, *invals, jaxpr_branches, consts_slices, args_slic
     """Handle the cond primitive by a flattened python strategy."""
     n_branches = len(jaxpr_branches)
     conditions = invals[:n_branches]
-    args = invals[_restore_slice(args_slice)]
+    args = invals[slice(*args_slice)]
     outvals = ()
     for _, jaxpr, consts_slice in zip(conditions, jaxpr_branches, consts_slices):
         consts = invals[slice(*consts_slice)]

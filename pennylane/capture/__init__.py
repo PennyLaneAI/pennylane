@@ -183,7 +183,6 @@ PlxprInterpreter: type
 expand_plxpr_transforms: Callable[[Callable], Callable]
 eval_jaxpr: Callable
 QmlPrimitive: "Type[jax.extend.core.Primitive]"
-_restore_slice: Callable
 _restore_dict: Callable
 _restore_list: Callable
 
@@ -194,11 +193,6 @@ def __getattr__(key):
         from .custom_primitives import QmlPrimitive
 
         return QmlPrimitive
-
-    if key == "_restore_slice":
-        from .custom_primitives import _restore_slice
-
-        return _restore_slice
 
     if key == "_restore_dict":
         from .custom_primitives import _restore_dict
