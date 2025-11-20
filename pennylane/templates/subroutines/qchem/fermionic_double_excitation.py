@@ -14,7 +14,6 @@
 r"""
 Contains the FermionicDoubleExcitation template.
 """
-
 # pylint: disable=too-many-arguments,protected-access
 import copy
 
@@ -523,18 +522,11 @@ class FermionicDoubleExcitation(Operation):
     def _unflatten(cls, data, metadata) -> "FermionicDoubleExcitation":
         return cls(data[0], wires1=metadata[0], wires2=metadata[1])
 
-    def __init__(
-        self,
-        weight: TensorLike,
-        wires1: WiresLike | None = None,
-        wires2: WiresLike | None = None,
-        id: str | None = None,
-    ):
-        wires1 = Wires([] if wires1 is None else wires1)
-        wires2 = Wires([] if wires2 is None else wires2)
+    def __init__(self, weight: TensorLike, wires1: WiresLike, wires2: WiresLike, *, id=None):
         if len(wires1) < 2:
             raise ValueError(
-                f"expected at least two wires representing the occupied orbitals; got {len(wires1)}"
+                f"expected at least two wires representing the occupied orbitals; "
+                f"got {len(wires1)}"
             )
         if len(wires2) < 2:
             raise ValueError(
