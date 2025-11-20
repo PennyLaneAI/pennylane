@@ -142,7 +142,7 @@ def _find_level(program, level):
                 return idx
     raise ValueError(
         f"level {level} not found in transform program. "
-        "Builtin options are 'top', 'user', 'device' and 'gradient'."
+        "Builtin options are 'top', 'user', 'device', and 'gradient'."
         f" Custom levels are {found_levels}."
     )
 
