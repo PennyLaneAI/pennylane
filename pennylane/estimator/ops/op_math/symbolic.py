@@ -13,17 +13,17 @@
 # limitations under the License.
 r"""Resource operators for symbolic operations."""
 from collections.abc import Iterable
+from functools import singledispatch
 
 import pennylane.estimator as qre
 from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
     ResourceOperator,
-    _apply_adj,
-    _apply_controlled,
     _dequeue,
     resource_rep,
 )
+from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.wires import Wires, WiresLike
 
 # pylint: disable=arguments-differ,super-init-not-called, signature-differs
@@ -988,6 +988,26 @@ class ChangeOpBasis(ResourceOperator):
             GateCount(cmpr_target_op),
             GateCount(cmpr_uncompute_op),
         ]
+
+
+@singledispatch
+def _apply_adj(action):
+    raise TypeError(f"Unsupported type {action}")
+
+
+@_apply_adj.register
+def _(action: Allocate):
+    return Deallocate(action.num_wires)
+
+
+@_apply_adj.register
+def _(action: Deallocate):
+    return Allocate(action.num_wires)
+
+
+@singledispatch
+def _apply_controlled(action, num_ctrl_wires, num_zero_ctrl):  # pylint: disable=unused-argument
+    return action  # pragma: no cover
 
 
 @_apply_adj.register
