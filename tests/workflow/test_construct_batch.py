@@ -28,6 +28,38 @@ from pennylane.transforms.core.transform_program import TransformProgram
 from pennylane.workflow import construct_batch, get_transform_program
 
 
+class TestMarker:
+
+    def test_level_not_found(self):
+        """Test the error message when a requested level is not found."""
+
+        @partial(qml.marker, level="something")
+        @qml.qnode(qml.device("null.qubit"))
+        def c():
+            return qml.state()
+
+        with pytest.raises(ValueError, match="level bla not found in transform program."):
+            construct_batch(c, level="bla")()
+
+    def test_accessing_custom_level(self):
+        """Test that custom levels can be specified and accessed."""
+
+        @qml.transforms.merge_rotations
+        @partial(qml.marker, level="my_level")
+        @qml.transforms.cancel_inverses
+        @qml.qnode(qml.device("null.qubit"))
+        def c():
+            qml.RX(0.2, 0)
+            qml.X(0)
+            qml.X(0)
+            qml.RX(0.2, 0)
+            return qml.state()
+
+        (tape,), _ = construct_batch(c, level="my_level")()
+        expected = qml.tape.QuantumScript([qml.RX(0.2, 0), qml.RX(0.2, 0)], [qml.state()])
+        qml.assert_equal(tape, expected)
+
+
 class TestTransformProgramGetter:
     def test_bad_string_key(self):
         """Test a value error is raised if a bad string key is provided."""
@@ -36,8 +68,8 @@ class TestTransformProgramGetter:
         def circuit():
             return qml.state()
 
-        with pytest.raises(ValueError, match=r"level bah not recognized."):
-            get_transform_program(circuit, level="bah")
+        with pytest.raises(ValueError, match=r"level bla not found in transform program."):
+            get_transform_program(circuit, level="bla")
 
     def test_bad_other_key(self):
         """Test a value error is raised if a bad, unrecognized key is provided."""

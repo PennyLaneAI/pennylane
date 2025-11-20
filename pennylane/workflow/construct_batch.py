@@ -19,7 +19,7 @@ from collections.abc import Callable
 from typing import TYPE_CHECKING, Literal
 
 import pennylane as qml
-from pennylane.transforms.core import TransformProgram
+from pennylane.transforms.core import TransformProgram, transform
 
 from ._setup_transform_program import _setup_transform_program
 from .qnode import _make_execution_config
@@ -31,6 +31,47 @@ if TYPE_CHECKING:
     from pennylane.typing import PostprocessingFn
 
     from .qnode import QNode
+
+
+def null_postprocessing(results):
+    """A null postprocessing function for the null ``marker`` transform."""
+    return results[0]
+
+
+# pylint: disable=unused-argument
+@transform
+def marker(tape, level):
+    """Mark a location in a transform program for easy access with inspectability.
+
+    Args:
+        tape (QuantumScript | QNode | TransformProgram): the object we want to dispatch the transform onto
+        level (str): the label for the level.
+
+    Note that protected level names are ``"top"``, ``"user"``, ``"device"``, and ``"gradient"``.
+
+    .. code-block:: python
+
+        @partial(qml.marker, level="rotations-merged")
+        @qml.transforms.merge_rotations
+        @partial(qml.marker, level="my_level")
+        @qml.transforms.cancel_inverses
+        @qml.qnode(qml.device('null.qubit'))
+        def c():
+            qml.RX(0.2,0)
+            qml.X(0)
+            qml.X(0)
+            qml.RX(0.2, 0)
+            return qml.state()
+
+    >>> print(qml.draw(c, level="my_level")())
+    0: ──RX(0.20)──RX(0.20)─┤  State
+    >>> qml.specs(c, level="my_level")()['resources'].gate_types
+    defaultdict(int, {'RX': 2})
+    >>> print(qml.draw(c, level="rotations-merged")())
+    0: ──RX(0.40)─┤  State
+
+    """
+    return (tape,), null_postprocessing
 
 
 def _get_full_transform_program(qnode: QNode, gradient_fn) -> TransformProgram:
@@ -53,7 +94,7 @@ def _get_full_transform_program(qnode: QNode, gradient_fn) -> TransformProgram:
 
 
 def _validate_level(
-    level: Literal["top", "user", "device", "gradient"] | int | slice,
+    level: str | int | slice,
 ) -> None:
     """Check that the level specification is valid.
 
@@ -64,22 +105,31 @@ def _validate_level(
         ValueError: If the level is not recognized
     """
 
-    if isinstance(level, (int, slice)):
-        return
-
-    if isinstance(level, str):
-        if level not in ("top", "user", "device", "gradient"):
-            raise ValueError(
-                f"level {level} not recognized. Acceptable strings are "
-                "'device', 'top', 'user', and 'gradient'."
-            )
+    if isinstance(level, (int, slice, str)):
         return
 
     raise ValueError(f"level {level} not recognized. Acceptable types are int, str, and slice.")
 
 
+def _find_level(program, level):
+    found_levels = []
+    for idx, t in enumerate(program):
+        if t.transform == marker.transform:
+            found_level = t.args[0] if t.args else t.kwargs["level"]
+            found_levels.append(found_level)
+
+            if found_level == level:
+                return idx
+    raise ValueError(
+        f"level {level} not found in transform program. "
+        "Builtin options are 'top', 'user', 'device' and 'gradient'."
+        f" Custom levels are {found_levels}."
+    )
+
+
 def _get_user_transform_slice(
-    level: Literal["top", "user", "device", "gradient"] | int | slice,
+    program,
+    level: str | int | slice,
     num_user_transforms: int,
 ) -> slice:
     """Interpret the level specification for the initial user transform slice.
@@ -102,6 +152,9 @@ def _get_user_transform_slice(
 
     if level in ("device", "gradient"):
         return slice(0, None)
+
+    if isinstance(level, str):
+        return slice(0, _find_level(program, level))
 
     if isinstance(level, int):
         return slice(0, level)
@@ -271,14 +324,16 @@ def get_transform_program(
     if level == "device":
         level = slice(0, None)
     elif level == "top":
-        level = 0
+        level = slice(0, 0)
     elif level == "user":
         readd_final_transform = True
-        level = num_user
+        level = slice(0, num_user)
     elif level == "gradient":
         readd_final_transform = True
         level = num_user + 1 if has_gradient_expand else num_user
-
+        level = slice(0, level)
+    elif isinstance(level, str):
+        level = slice(0, _find_level(full_transform_program, level))
     if isinstance(level, int):
         level = slice(0, level)
 
@@ -292,7 +347,7 @@ def get_transform_program(
 
 def construct_batch(
     qnode: QNode | TorchLayer,
-    level: Literal["top", "user", "device", "gradient"] | int | slice = "user",
+    level: str | int | slice = "user",
 ) -> Callable:
     """Construct the batch of tapes and post processing for a designated stage in the transform program.
 
@@ -386,7 +441,6 @@ def construct_batch(
     """
     _validate_level(level)
     is_torch_layer = type(qnode).__name__ == "TorchLayer"
-
     user_program = qnode.transform_program
     num_user_transforms = len(user_program)
 
@@ -407,7 +461,7 @@ def construct_batch(
 
         # This should be fine, since the case where `has_gradient_expand==True`
         # only increase 1 to the end of level slice
-        level_slice_initial = _get_user_transform_slice(level, num_user_transforms)
+        level_slice_initial = _get_user_transform_slice(user_program, level, num_user_transforms)
         program = user_program[level_slice_initial]
         user_transformed_tapes, user_post_processing = program((initial_tape,))
 

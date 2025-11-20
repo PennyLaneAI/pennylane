@@ -19,6 +19,8 @@
 
 <h3>Improvements 🛠</h3>
 
+* `qml.marker` allows for easy inspection at particular points in a transform program.
+
 * Add the `PCPhaseOp` operation to the xDSL Quantum dialect.
   [(#8621)](https://github.com/PennyLaneAI/pennylane/pull/8621)
 
