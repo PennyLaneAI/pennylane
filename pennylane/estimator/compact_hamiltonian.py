@@ -238,14 +238,21 @@ class PauliHamiltonian:
             self._num_pauli_words = sum(pauli_dist.values())
             return
 
-        if (num_pauli_words is None) or (max_weight is None):
+        if num_pauli_words is None:
             raise ValueError(
                 "One of the following sets of inputs must be provided (not None) in order to"
-                " instantiatea valid PauliHamiltonian:\n - `commuting_groups`\n - `pauli_dist`\n"
-                " - `num_pauli_words` and `max_weight`."
+                " instantiate a valid PauliHamiltonian:\n - `commuting_groups`\n - `pauli_dist`\n"
+                " - `num_pauli_words`"
             )
 
-        self._max_weight = max_weight
+        if max_weight and (max_weight > num_qubits):
+            raise ValueError(
+                "`max_weight` represents the maximum number of qubits any Pauli word acts upon,"
+                "this value must be less than or equal to the total number of qubits the "
+                f"Hamiltonian acts on. Got `num_qubits` = {num_qubits} and `max_weight` = {max_weight}"
+            )
+
+        self._max_weight = max_weight or num_qubits
         self._num_pauli_words = num_pauli_words
         self._pauli_dist = pauli_dist
         self._commuting_groups = commuting_groups
@@ -291,9 +298,9 @@ def _validate_pauli_dist(pauli_dist: dict) -> bool:
                 f"The keys represent Pauli words and should be strings containing either 'X','Y' or 'Z' characters only. Got {pauli_word} : {freq}"
             )
 
-        if not isinstance(freq, int):
+        if not (isinstance(freq, int) and (type(freq) is not bool) and (freq >= 0)):
             raise ValueError(
-                f"The values represent frequencies and should be integers, got {pauli_word} : {freq}"
+                f"The values represent frequencies and should be positive integers, got {pauli_word} : {freq}"
             )
 
 
