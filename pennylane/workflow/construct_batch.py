@@ -126,7 +126,7 @@ def _validate_custom_levels(program):
                 )
             if level in found_levels:
                 raise ValueError(
-                    f"Found multiple markers for level {level}. " "Markers should be unique."
+                    f"Found multiple markers for level {level}.  Markers should be unique."
                 )
             found_levels.add(level)
 
