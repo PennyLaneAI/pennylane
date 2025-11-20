@@ -20,6 +20,6 @@ def test_my_feature_is_deprecated():
 
     with pytest.warns(
         qml.exceptions.PennyLaneDeprecationWarning,
-        match="The custom_decomps keyword param is deprecated",
+        match="The ``custom_decomps`` keyword argument",
     ):
         _ = qml.device("default.qubit", wires=2, custom_decomps={"CNOT": ion_trap_cnot})
