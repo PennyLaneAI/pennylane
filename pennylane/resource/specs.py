@@ -186,10 +186,10 @@ def _specs_qjit_intermediate_passes(
     # Ensure `level` is always in the form of a sorted list (or "all")
     if single_level:
         level = [level]
-    elif level != "all":
+    elif level not in ("all", "all-mlir"):
         level = list(level)
 
-    if level != "all":
+    if level not in ("all", "all-mlir"):
         level_sorted = sorted(level)
         if level != level_sorted:
             warnings.warn(
@@ -200,58 +200,59 @@ def _specs_qjit_intermediate_passes(
 
     resources = {}
 
-    # Note that this only gets transforms manually applied by the user
-    tape_transforms = original_qnode.transform_program
+    if level != "all-mlir":
+        # Note that this only gets transforms manually applied by the user
+        tape_transforms = original_qnode.transform_program
 
-    if qml.capture.enabled():
-        # If capture is enabled, find the seam where PLxPR transforms end and MLIR passes begin
-        num_trans_levels = 0
-        for i, trans in reversed(list(enumerate(tape_transforms))):
-            dispatcher = trans._transform_dispatcher  # pylint: disable=protected-access
-            # TODO: This is a temporary workaround and shouldn't be needed after the "pass name" PR is merged
-            assert (
-                dispatcher in transforms_to_passes
-            ), f"Transform dispatcher {dispatcher} not registered in transforms_to_passes."
-            if transforms_to_passes[dispatcher][0] is None:
-                num_trans_levels = i + 1
-                break
+        if qml.capture.enabled():
+            # If capture is enabled, find the seam where PLxPR transforms end and MLIR passes begin
+            num_trans_levels = 0
+            for i, trans in reversed(list(enumerate(tape_transforms))):
+                dispatcher = trans._transform_dispatcher  # pylint: disable=protected-access
+                # TODO: This is a temporary workaround and shouldn't be needed after the "pass name" PR is merged
+                assert (
+                    dispatcher in transforms_to_passes
+                ), f"Transform dispatcher {dispatcher} not registered in transforms_to_passes."
+                if transforms_to_passes[dispatcher][0] is None:
+                    num_trans_levels = i + 1
+                    break
 
-    else:
-        # If capture is NOT enabled, all transforms are tape transforms
-        num_trans_levels = len(tape_transforms)
+        else:
+            # If capture is NOT enabled, all transforms are tape transforms
+            num_trans_levels = len(tape_transforms)
 
-    num_trans_levels += 1  # Have to include the "no transforms" level
+        num_trans_levels += 1  # Have to include the "no transforms" level
 
-    # Handle tape transforms
-    trans_levels = (
-        list(range(num_trans_levels))
-        if level == "all"
-        else [lvl for lvl in level if lvl < num_trans_levels]
-    )
-
-    # Handle tape transforms
-    for trans_level in trans_levels:
-        # User transforms always come first, so level and trans_level align correctly
-        tape = qml.workflow.construct_tape(original_qnode, level=trans_level)(*args, **kwargs)
-        info = specs_from_tape(tape, False)
-
-        trans_name = (
-            tape_transforms[trans_level - 1].transform.__name__
-            if trans_level > 0
-            else "No transforms"
+        # Handle tape transforms
+        trans_levels = (
+            list(range(num_trans_levels))
+            if level == "all"
+            else [lvl for lvl in level if lvl < num_trans_levels]
         )
-        # If the same transform appears multiple times, append a suffix
-        if trans_name in resources:
-            rep = 2
-            while f"{trans_name}-{rep}" in resources:
-                rep += 1
-            trans_name += f"-{rep}"
-        resources[trans_name] = info["resources"]
+
+        # Handle tape transforms
+        for trans_level in trans_levels:
+            # User transforms always come first, so level and trans_level align correctly
+            tape = qml.workflow.construct_tape(original_qnode, level=trans_level)(*args, **kwargs)
+            info = specs_from_tape(tape, False)
+
+            trans_name = (
+                tape_transforms[trans_level - 1].transform.__name__
+                if trans_level > 0
+                else "No transforms"
+            )
+            # If the same transform appears multiple times, append a suffix
+            if trans_name in resources:
+                rep = 2
+                while f"{trans_name}-{rep}" in resources:
+                    rep += 1
+                trans_name += f"-{rep}"
+            resources[trans_name] = info["resources"]
 
     # Handle MLIR levels
     mlir_levels = (
         [lvl - num_trans_levels for lvl in level if lvl >= num_trans_levels]
-        if level != "all"
+        if level not in ("all", "all-mlir")
         else "all"
     )
     if mlir_levels == "all" or len(mlir_levels) > 0:
@@ -298,7 +299,7 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> SpecsDict:  # pr
 
     device = original_qnode.device
 
-    if isinstance(level, (int, tuple, list, range)) or level == "all":
+    if isinstance(level, (int, tuple, list, range)) or level in ("all", "all-mlir"):
         if compute_depth:
             warnings.warn(
                 "Cannot calculate circuit depth for intermediate transformations or compilation passes."
