@@ -1,4 +1,4 @@
-name:
+name: Create Release
 on:
   workflow_dispatch:
     inputs:
@@ -110,7 +110,7 @@ jobs:
           git config user.name "GitHub Actions Bot"
           git config user.email "<>"
           git tag -a "${{ inputs.release_branch }}" -m "Release version ${{ inputs.release_branch }}"
-          git push origin "${{ inputs.release_branch }}"
+          git push origin "refs/tags/${{ inputs.release_branch }}"
 
       - name: Merge RC branch into master
         run: |

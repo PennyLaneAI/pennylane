@@ -72,6 +72,13 @@ class PauliMeasure(Operator):
     def __repr__(self) -> str:
         return f"PauliMeasure('{self.pauli_word}', wires={self.wires.tolist()})"
 
+    def label(self, decimals=None, base_label=None, cache=None, wire=None) -> str:
+        """How the pauli-product measurement is represented in diagrams and drawings."""
+        postselect = "" if self.postselect is None else ("₁" if self.postselect == 1 else "₀")
+        if wire is None:
+            return f"┤↗{postselect}{self.pauli_word}├"
+        return f"┤↗{postselect}{self.pauli_word[self.wires.index(wire)]}├"
+
     @property
     def hash(self) -> int:
         """int: An integer hash uniquely representing the measurement."""
