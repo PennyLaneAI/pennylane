@@ -26,7 +26,7 @@ performs the leaf write (classical bit flip), then routes back and restores the 
 from typing import List, Sequence
 
 from pennylane.operation import Operation, Operator
-from pennylane.ops import CSWAP, SWAP, Hadamard, PauliZ, ctrl
+from pennylane.ops import CSWAP, SWAP, Hadamard, PauliX, PauliZ, ctrl
 from pennylane.wires import Wires
 
 
@@ -146,9 +146,10 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
 
         self.qram_wires = Wires(qram_wires)
 
-        self.n_k = len(self.qram_wires)
-        if (1 << self.n_k) != len(self.bitstrings):
-            raise ValueError("len(bitstrings) must be 2^(len(qram_wires)).")
+        if not hasattr(self, "k"):
+            self.n_k = len(self.qram_wires)
+            if (1 << self.n_k) != len(self.bitstrings):
+                raise ValueError("len(bitstrings) must be 2^(len(qram_wires)).")
 
         self.target_wires = Wires(target_wires)
         if self.m != len(self.target_wires):
@@ -292,17 +293,88 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
         return ops
 
 
-# Functional wrapper
-def select_bucket_brigade_bus_qram(
+class SelectOnlyQRAM(BBQRAM):
+
+    def __init__(
+        self,
+        bitstrings,
+        qram_wires: Sequence[int],
+        target_wires: Sequence[int],
+        work_wires: Sequence[int],
+        select_wires: Sequence[int],
+        select_value: int | None,
+        id: str | None = None,
+    ):
+        self.select_wires = Wires(select_wires)
+        self.select_value = select_value
+
+        self.k = len(self.select_wires)
+        self.n_k = len(qram_wires)
+        self.n = self.k + self.n_k
+        if (1 << self.n) != len(bitstrings):
+            raise ValueError("len(bitstrings) must be 2^(len(select_wires)+len(qram_wires)).")
+
+        super().__init__(bitstrings, qram_wires, target_wires, work_wires, id)
+
+    # ---------- Select controls----------
+    def _select_ctrls(self, s: int):
+        if self.k == 0:
+            return [], []
+        ctrls = list(self.select_wires)
+        vals = [(s >> (self.k - 1 - j)) & 1 for j in range(self.k)]
+        return ctrls, vals
+
+    # ---------- Decompositions ----------
+    def decomposition(self) -> list:
+        # Degenerate case: n_k == 0, no routers; only select-controlled flips on the bus.
+        ops = []
+        for j, tw in enumerate(self.target_wires):
+            ops.append(SWAP(wires=[tw, self.bus_wire[0]]))
+            s_range = [self.select_value] if self.select_value is not None else range(1 << self.k)
+            for s in s_range:
+                if self.bitstrings[s][j] != "1":
+                    continue
+                sel_ctrls, sel_vals = (
+                    self._select_ctrls(s) if self.select_value is None else ([], [])
+                )
+                op = PauliX(wires=self.bus_wire[0])
+                ops.append(
+                    ctrl(op, control=sel_ctrls, control_values=sel_vals) if sel_ctrls else op
+                )
+            ops.append(SWAP(wires=[tw, self.bus_wire[0]]))
+            return ops
+
+
+# Functional wrappers
+def bucket_brigade_qram(
     bitstrings: Sequence[str],
     qram_wires: Sequence[int],
     target_wires: Sequence[int],
     work_wires: Sequence[int],
 ):
-    """Functional wrapper for SelectBucketBrigadeBusQRAM."""
+    """Functional wrapper for BBQRAM."""
     return BBQRAM(
         bitstrings=bitstrings,
         qram_wires=qram_wires,
         target_wires=target_wires,
         work_wires=work_wires,
+    )
+
+
+def select_only_qram(
+    bitstrings: Sequence[str],
+    qram_wires: Sequence[int],
+    target_wires: Sequence[int],
+    work_wires: Sequence[int],
+    select_wires: Sequence[int],
+    select_value: int | None,
+):
+    """Functional wrapper for SelectOnlyQRAM."""
+    return SelectOnlyQRAM(
+        bitstrings=bitstrings,
+        qram_wires=qram_wires,
+        target_wires=target_wires,
+        work_wires=work_wires,
+        select_wires=select_wires,
+        select_value=select_value,
     )

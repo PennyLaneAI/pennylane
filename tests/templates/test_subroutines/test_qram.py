@@ -19,7 +19,7 @@ import re
 import numpy as np
 import pytest
 
-from pennylane import device, qnode
+from pennylane import SelectOnlyQRAM, device, qnode
 from pennylane.measurements import probs
 from pennylane.templates import BasisEmbedding
 from pennylane.templates.subroutines.qram import BBQRAM
@@ -169,3 +169,176 @@ def test_bb_quantum(
 def test_raises(params, error, match):
     with pytest.raises(error, match=re.escape(match)):
         BBQRAM(*params)
+
+
+@qnode(dev)
+def select_only_quantum(
+    bitstrings, qram_wires, target_wires, work_wires, select_wires, select_value, address
+):
+    BasisEmbedding(address, wires=qram_wires)
+
+    SelectOnlyQRAM(
+        bitstrings,
+        qram_wires=qram_wires,
+        target_wires=target_wires,
+        work_wires=work_wires,
+        select_wires=select_wires,
+        select_value=select_value,
+    )
+    return probs(wires=target_wires)
+
+
+@pytest.mark.parametrize(
+    (
+        "bitstrings",
+        "qram_wires",
+        "target_wires",
+        "bus",
+        "dir_wires",
+        "portL_wires",
+        "portR_wires",
+        "select_wires",
+        "select_value",
+        "address",
+        "probabilities",
+    ),
+    [
+        (
+            [
+                "010",
+                "111",
+                "110",
+                "000",
+                "010",
+                "111",
+                "110",
+                "000",
+                "010",
+                "111",
+                "110",
+                "000",
+                "010",
+                "111",
+                "110",
+                "000",
+            ],
+            [0, 1],
+            [2, 3, 4],
+            5,
+            [6, 7, 8],
+            [9, 10, 11],
+            [12, 13, 14],
+            [15, 16],
+            1,
+            2,  # addressed from the left
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0],  # |110>
+        ),
+        (
+            [
+                "010",
+                "111",
+                "110",
+                "000",
+                "010",
+                "111",
+                "110",
+                "000",
+                "010",
+                "111",
+                "110",
+                "000",
+                "010",
+                "111",
+                "110",
+                "000",
+            ],
+            [0, 1],
+            [2, 3, 4],
+            5,
+            [11, 10, 9],
+            [6, 7, 8],
+            [12, 13, 14],
+            [15, 16, 17],
+            0,
+            1,
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0],  # |111>
+        ),
+        (
+            [
+                "010",
+                "111",
+                "110",
+                "000",
+                "010",
+                "111",
+                "110",
+                "000",
+                "010",
+                "111",
+                "110",
+                "000",
+                "010",
+                "111",
+                "110",
+                "000",
+            ],
+            [0, 1],
+            [2, 3, 4],
+            5,
+            [6, 7, 8],
+            [12, 13, 14],
+            [9, 10, 11],
+            [15, 16],
+            None,
+            0,
+            [0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0],  # |010>
+        ),
+    ],
+)
+def test_select_only_quantum(
+    bitstrings,
+    qram_wires,
+    target_wires,
+    bus,
+    dir_wires,
+    portL_wires,
+    portR_wires,
+    select_wires,
+    select_value,
+    address,
+    probabilities,
+):  # pylint: disable=too-many-arguments
+    assert np.allclose(
+        probabilities,
+        select_only_quantum(
+            bitstrings,
+            qram_wires,
+            target_wires,
+            [bus] + dir_wires + portL_wires + portR_wires,
+            select_wires,
+            select_value,
+            address,
+        ),
+    )
+
+
+@pytest.mark.parametrize(
+    ("params", "error", "match"),
+    [
+        (
+            (
+                ["000", "111"],
+                [0, 1],
+                [2, 3, 4],
+                [5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
+                [15, 16, 17],
+                1,
+            ),
+            ValueError,
+            "len(bitstrings) must be 2^(len(select_wires)+len(qram_wires)).",
+        ),
+    ],
+)
+def test_raises(params, error, match):
+    with pytest.raises(error, match=re.escape(match)):
+        SelectOnlyQRAM(*params)
