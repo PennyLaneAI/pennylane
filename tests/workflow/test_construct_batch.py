@@ -59,6 +59,25 @@ class TestMarker:
         expected = qml.tape.QuantumScript([qml.RX(0.2, 0), qml.RX(0.2, 0)], [qml.state()])
         qml.assert_equal(tape, expected)
 
+    def test_custom_level_as_arg(self):
+        """Test that custom levels can be specified and accessed."""
+
+        @qml.transforms.cancel_inverses
+        @qml.qnode(qml.device("null.qubit"))
+        def c():
+            qml.RX(0.2, 0)
+            qml.X(0)
+            qml.X(0)
+            qml.RX(0.2, 0)
+            return qml.state()
+
+        c = qml.marker(c, level="my_level")
+        c = qml.transforms.merge_rotations(c)
+
+        (tape,), _ = construct_batch(c, level="my_level")()
+        expected = qml.tape.QuantumScript([qml.RX(0.2, 0), qml.RX(0.2, 0)], [qml.state()])
+        qml.assert_equal(tape, expected)
+
 
 class TestTransformProgramGetter:
     def test_bad_string_key(self):
