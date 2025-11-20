@@ -566,7 +566,13 @@ def _quantum_automatic_differentiation(tape, trainable_param_idx, aux_wire) -> t
     observables_shots = _count_shots(observables)
 
     standard = observables_shots * len(generators) <= expectations_shots * len(observables)
-
+    # Logic Table
+    # Direct (No Aux) | Standard Order | Function
+    # ----------------|----------------|---------
+    # True            | True           | _direct_hadamard_test
+    # True            | False          | _reversed_direct_hadamard_test
+    # False           | True           | _hadamard_test
+    # False           | False          | _reversed_hadamard_test
     if direct:
         if standard:
             return _direct_hadamard_test(tape, trainable_param_idx, aux_wire)
