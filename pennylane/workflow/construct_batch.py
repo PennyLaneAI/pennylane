@@ -51,6 +51,8 @@ def marker(tape, level):
 
     .. code-block:: python
 
+        from functools import partial
+
         @partial(qml.marker, level="rotations-merged")
         @qml.transforms.merge_rotations
         @partial(qml.marker, level="my_level")
@@ -66,7 +68,7 @@ def marker(tape, level):
     >>> print(qml.draw(c, level="my_level")())
     0: ──RX(0.20)──RX(0.20)─┤  State
     >>> qml.specs(c, level="my_level")()['resources'].gate_types
-    defaultdict(int, {'RX': 2})
+    defaultdict(<class 'int'>, {'RX': 2})
     >>> print(qml.draw(c, level="rotations-merged")())
     0: ──RX(0.40)─┤  State
 
