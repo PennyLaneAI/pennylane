@@ -790,7 +790,7 @@ def _get_cond_qfunc_prim():
 
     @cond_prim.def_impl
     def _impl(*all_args, jaxpr_branches, consts_slices, args_slice):
-        args_slice = slice((args_slice)
+        args_slice = slice(*args_slice)
         consts_slices = [slice(*s) for s in consts_slices]
 
         n_branches = len(jaxpr_branches)

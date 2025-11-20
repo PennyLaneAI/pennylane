@@ -497,15 +497,9 @@ def handle_for_loop(
 ):
     """Handle a for loop primitive."""
     # Convert tuples back to slices (tuples are used for JAX 0.7.0 hashability)
-    from pennylane.capture import _restore_slice  # pylint: disable=import-outside-toplevel
-
-    consts_slice = _restore_slice(consts_slice)
-    args_slice = _restore_slice(args_slice)
-    abstract_shapes_slice = _restore_slice(abstract_shapes_slice)
-
-    consts = args[consts_slice]
-    init_state = args[args_slice]
-    abstract_shapes = args[abstract_shapes_slice]
+    consts = args[slice(*consts_slice)]
+    init_state = args[slice(*args_slice)]
+    abstract_shapes = args[slice(*abstract_shapes_slice)]
     new_jaxpr_body_fn = jaxpr_to_jaxpr(
         copy(self), jaxpr_body_fn, consts, *abstract_shapes, start, *init_state
     )
@@ -531,10 +525,8 @@ def handle_for_loop(
 def handle_cond(self, *invals, jaxpr_branches, consts_slices, args_slice):
     """Handle a cond primitive."""
     # Convert tuples back to slices (tuples are used for JAX 0.7.0 hashability)
-    from pennylane.capture import _restore_slice  # pylint: disable=import-outside-toplevel
-
-    args_slice = _restore_slice(args_slice)
-    consts_slices = [_restore_slice(s) for s in consts_slices]
+    args_slice = slice(*args_slice)
+    consts_slices = [slice(*s) for s in consts_slices]
 
     args = invals[args_slice]
 
@@ -574,11 +566,9 @@ def handle_while_loop(
 ):
     """Handle a while loop primitive."""
     # Convert tuples back to slices (tuples are used for JAX 0.7.0 hashability)
-    from pennylane.capture import _restore_slice  # pylint: disable=import-outside-toplevel
-
-    body_slice = _restore_slice(body_slice)
-    cond_slice = _restore_slice(cond_slice)
-    args_slice = _restore_slice(args_slice)
+    body_slice = slice(*body_slice)
+    cond_slice = slice(*cond_slice)
+    args_slice = slice(*args_slice)
 
     consts_body = invals[body_slice]
     consts_cond = invals[cond_slice]
@@ -675,11 +665,9 @@ def flatten_while_loop(
 ):
     """Handle the while loop by a flattened python strategy."""
     # Convert tuples back to slices (tuples are used for JAX 0.7.0 hashability)
-    from pennylane.capture import _restore_slice  # pylint: disable=import-outside-toplevel
-
-    body_slice = _restore_slice(body_slice)
-    cond_slice = _restore_slice(cond_slice)
-    args_slice = _restore_slice(args_slice)
+    body_slice = slice(*body_slice)
+    cond_slice = slice(*cond_slice)
+    args_slice = slice(*args_slice)
 
     consts_body = invals[body_slice]
     consts_cond = invals[cond_slice]
@@ -699,10 +687,8 @@ FlattenedHigherOrderPrimitives[while_loop_prim] = flatten_while_loop
 def flattened_cond(self, *invals, jaxpr_branches, consts_slices, args_slice):
     """Handle the cond primitive by a flattened python strategy."""
     # Convert tuples back to slices (tuples are used for JAX 0.7.0 hashability)
-    from pennylane.capture import _restore_slice  # pylint: disable=import-outside-toplevel
-
-    args_slice = _restore_slice(args_slice)
-    consts_slices = [_restore_slice(s) for s in consts_slices]
+    args_slice = slice(*args_slice)
+    consts_slices = [slice(*s) for s in consts_slices]
 
     n_branches = len(jaxpr_branches)
     conditions = invals[:n_branches]
@@ -728,11 +714,9 @@ def flattened_for(
 ):
     """Handle the for loop by a flattened python strategy."""
     # Convert tuples back to slices (tuples are used for JAX 0.7.0 hashability)
-    from pennylane.capture import _restore_slice  # pylint: disable=import-outside-toplevel
-
-    consts_slice = _restore_slice(consts_slice)
-    args_slice = _restore_slice(args_slice)
-    abstract_shapes_slice = _restore_slice(abstract_shapes_slice)
+    consts_slice = slice(*consts_slice)
+    args_slice = slice(*args_slice)
+    abstract_shapes_slice = slice(*abstract_shapes_slice)
 
     consts = invals[consts_slice]
     init_state = invals[args_slice]

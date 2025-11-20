@@ -48,10 +48,8 @@ def _create_transform_primitive():
     def _impl(
         *all_args, inner_jaxpr, args_slice, consts_slice, targs_slice, tkwargs, transform
     ):  # pylint: disable=unused-argument
-        from pennylane.capture import _restore_slice  # pylint: disable=import-outside-toplevel
-
-        args = all_args[_restore_slice(args_slice)]
-        consts = all_args[_restore_slice(consts_slice)]
+        args = all_args[slice(*args_slice)]
+        consts = all_args[slice(*consts_slice)]
         return capture.eval_jaxpr(inner_jaxpr, consts, *args)
 
     @transform_prim.def_abstract_eval
