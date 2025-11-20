@@ -20,7 +20,7 @@
 <h3>Improvements 🛠</h3>
 
 * The `ResourcesUndefinedError` has been removed from the `adjoint`, `ctrl`, and `pow` resource
-  decomposition methods of `ResourceOperator`.
+  decomposition methods of `ResourceOperator` to avoid using errors as control flow.
   [(#8598)](https://github.com/PennyLaneAI/pennylane/pull/8598)
   
 * Add the `PCPhaseOp` operation to the xDSL Quantum dialect.
