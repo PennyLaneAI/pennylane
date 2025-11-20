@@ -15,7 +15,7 @@
 This module contains functions for computing the Hadamard-test gradient
 of a qubit-based quantum tape.
 """
-from functools import partial
+from functools import lru_cache, partial, wraps
 from itertools import islice
 from typing import Literal
 
@@ -26,7 +26,7 @@ from pennylane.devices.preprocess import decompose
 from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.measurements import ProbabilityMP, expval
 from pennylane.operation import Operator
-from pennylane.ops import Sum
+from pennylane.ops import Prod, Sum
 from pennylane.pauli import PauliWord, pauli_decompose
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import split_to_single_terms
@@ -562,13 +562,25 @@ def _quantum_automatic_differentiation(tape, trainable_param_idx, aux_wire) -> t
             "A tape with more than one observable was provided to the Quantum Automatic Differentiation algorithm."
         )
 
-    def _count_shots(paulis):
-        op = Sum(*paulis)
+    def memoize(func):
+        cache = func.cache = {}
+
+        @wraps(func)
+        def memoizer(pauli_string, pauli_products):
+            if pauli_string not in cache:
+                cache[pauli_string] = func(pauli_string, pauli_products)
+            return cache[pauli_string]
+
+        return memoizer
+
+    @memoize
+    def _count_shots(pauli_str, pauli_prods):  # pylint: disable=unused-argument
+        op = Sum(*pauli_prods)
         op.compute_grouping()
         return len(op.grouping_indices)
 
-    expectations_shots = _count_shots(generators)
-    observables_shots = _count_shots(observables)
+    expectations_shots = _count_shots(",".join([str(gen) for gen in generators]), generators)
+    observables_shots = _count_shots(",".join([str(obs) for obs in observables]), observables)
 
     standard = observables_shots * len(generators) <= expectations_shots * len(observables)
     # Logic Table
