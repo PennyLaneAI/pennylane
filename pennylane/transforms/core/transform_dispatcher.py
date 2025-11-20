@@ -69,10 +69,8 @@ def _create_plxpr_fallback_transform(tape_transform):
         return None
 
     def plxpr_fallback_transform(jaxpr, consts, targs, tkwargs, *args):
-        from pennylane.capture import _restore_dict  # pylint: disable=import-outside-toplevel
-
         # Restore tkwargs from hashable tuple to dict
-        tkwargs = _restore_dict(tkwargs)
+        tkwargs = dict(tkwargs)
 
         def wrapper(*inner_args):
             tape = plxpr_to_tape(jaxpr, consts, *inner_args)

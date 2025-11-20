@@ -428,10 +428,8 @@ def _get_plxpr_defer_measurements():
 
     def defer_measurements_plxpr_to_plxpr(jaxpr, consts, targs, tkwargs, *args):
         """Function for applying the ``defer_measurements`` transform on plxpr."""
-        from pennylane.capture import _restore_dict  # pylint: disable=import-outside-toplevel
-
         # Restore tkwargs from hashable tuple to dict
-        tkwargs = _restore_dict(tkwargs)
+        tkwargs = dict(tkwargs)
 
         if not tkwargs.get("num_wires", None):
             raise ValueError(

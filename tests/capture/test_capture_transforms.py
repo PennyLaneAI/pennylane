@@ -131,9 +131,8 @@ class TestCaptureTransforms:
         assert params["args_slice"] == (0, 1, None)
         assert params["consts_slice"] == (1, 1, None)
         assert params["targs_slice"] == (1, None, None)
-        from pennylane.capture.custom_primitives import _restore_dict
 
-        assert _restore_dict(params["tkwargs"]) == tkwargs
+        assert dict(params["tkwargs"]) == tkwargs
         assert params["transform"] == z_to_hadamard
 
         inner_jaxpr = params["inner_jaxpr"]
@@ -164,9 +163,7 @@ class TestCaptureTransforms:
         assert params["consts_slice"] == (2, 2, None)
         assert params["targs_slice"] == (2, None, None)
         # Dicts are also converted to tuples
-        from pennylane.capture.custom_primitives import _restore_dict
-
-        assert _restore_dict(params["tkwargs"]) == tkwargs
+        assert dict(params["tkwargs"]) == tkwargs
 
         inner_jaxpr = params["inner_jaxpr"]
         expected_jaxpr = jax.make_jaxpr(func)(*args).jaxpr
@@ -250,13 +247,11 @@ class TestCaptureTransforms:
 
         params1 = transform_eqn1.params
         # JAX 0.7.0 requires hashable params, so slices become tuples
-        from pennylane.capture.custom_primitives import _restore_dict
-
         assert params1["args_slice"] == (0, 1, None)
         assert params1["consts_slice"] == (1, 1, None)
         assert params1["targs_slice"] == (1, None, None)
         # Dicts are also converted to tuples
-        assert _restore_dict(params1["tkwargs"]) == tkwargs1
+        assert dict(params1["tkwargs"]) == tkwargs1
 
         inner_jaxpr = params1["inner_jaxpr"]
         assert (transform_eqn2 := inner_jaxpr.eqns[0]).primitive == transform_prim
@@ -267,7 +262,7 @@ class TestCaptureTransforms:
         assert params2["args_slice"] == (0, 1, None)
         assert params2["consts_slice"] == (1, 1, None)
         assert params2["targs_slice"] == (1, None, None)
-        assert _restore_dict(params2["tkwargs"]) == tkwargs2
+        assert dict(params2["tkwargs"]) == tkwargs2
 
         inner_inner_jaxpr = params2["inner_jaxpr"]
         expected_jaxpr = jax.make_jaxpr(func)(*args).jaxpr
