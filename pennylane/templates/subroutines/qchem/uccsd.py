@@ -204,8 +204,8 @@ class UCCSD(Operation):
         id=None,
     ):
         wires = Wires(wires)
-        s_wires = [] if s_wires is None else s_wires
-        d_wires = [] if d_wires is None else d_wires
+        s_wires = () if s_wires is None else s_wires
+        d_wires = () if d_wires is None else d_wires
 
         if (len(s_wires) == 0) and (len(d_wires) == 0):
             raise ValueError(
