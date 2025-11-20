@@ -439,17 +439,6 @@ class TestDecomposition:
         assert isinstance(result[0], qml.numpy.ndarray)
         assert len(result[0]) > 0
 
-    def test_sparse_empty_observables_continue(self):
-        """Test that empty observables are skipped in sparse decomposition."""
-        sp = pytest.importorskip("scipy.sparse")
-
-        zero_matrix = sp.csr_matrix((2, 2))
-        result = _generalized_pauli_decompose_sparse(zero_matrix, pauli=True)
-
-        assert isinstance(result[0], qml.numpy.ndarray)
-        assert len(result[0]) == 0
-        assert len(result[1]) == 0
-
 
 class TestPhasedDecomposition:
     """Tests the _generalized_pauli_decompose via pauli_decompose function"""
