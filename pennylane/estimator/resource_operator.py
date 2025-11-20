@@ -274,14 +274,16 @@ class ResourceOperator(ABC):
     def adjoint_resource_decomp(cls, target_resource_params: dict | None = None) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
 
-        By default, this method decomposes the operator, and then computes the adjoint of each
-        gate in the decomposition.
+        For ResourceOperators that don't define a `adjoint_resource_decomp`, this will be its
+        `adjoint_resource_decomp` method.
 
         Args:
             target_resource_params (dict | None): A dictionary containing the resource parameters
                 of the target operator.
         """
-        from pennylane.estimator.ops.op_math.symbolic import _apply_adj # pylint: disable=import-outside-toplevel
+        from pennylane.estimator.ops.op_math.symbolic import (
+            _apply_adj,
+        )  # pylint: disable=import-outside-toplevel
 
         target_resource_params = target_resource_params or {}
         gate_lst = []
@@ -300,8 +302,8 @@ class ResourceOperator(ABC):
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
-        By default, this method decomposes the operator, and then computes the controlled version
-        of each gate in the decomposition.
+        For ResourceOperators that don't define a `controlled_resource_decomp`, this will be its
+        `controlled_resource_decomp` method.
 
         Args:
             num_ctrl_wires (int): the number of qubits the
@@ -311,7 +313,9 @@ class ResourceOperator(ABC):
             target_resource_params (dict | None): A dictionary containing the resource parameters
                 of the target operator.
         """
-        from pennylane.estimator.ops.op_math.symbolic import _apply_controlled # pylint: disable=import-outside-toplevel
+        from pennylane.estimator.ops.op_math.symbolic import (
+            _apply_controlled,
+        )  # pylint: disable=import-outside-toplevel
 
         target_resource_params = target_resource_params or {}
         gate_lst = []
@@ -332,13 +336,21 @@ class ResourceOperator(ABC):
         r"""Returns a list representing the resources for an operator
         raised to a power.
 
-        By default, this method returns the operator multiplied by the given power.
+        For ResourceOperators that don't define a `pow_resource_decomp`, this will be its
+        `pow_resource_decomp` method. By default, this method returns the operator multiplied
+        by the given power.
 
         Args:
             pow_z (int): exponent that the operator is being raised to
             target_resource_params (dict | None): A dictionary containing the resource parameters
                 of the target operator.
         """
+        if pow_z == 0:
+            return [GateCount(resource_rep(qre_ops.Identity))]
+
+        if pow_z == 1:
+            return [GateCount(base_cmpr_op)]
+
         target_resource_params = target_resource_params or {}
         num_wires = target_resource_params.get("num_wires")
         base_cmpr_op = CompressedResourceOp(cls, num_wires, target_resource_params)

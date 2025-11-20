@@ -15,7 +15,6 @@ r"""Resource operators for symbolic operations."""
 from collections.abc import Iterable
 from functools import singledispatch
 
-import pennylane.estimator as qre
 from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
@@ -540,12 +539,6 @@ class Pow(ResourceOperator):
             for key, value in kwargs.items()
             if key in base_params and base_params[key] is None
         )
-
-        if pow_z == 0:
-            return [GateCount(resource_rep(qre.Identity))]
-
-        if pow_z == 1:
-            return [GateCount(base_cmpr_op)]
 
         return base_class.pow_resource_decomp(pow_z=pow_z, target_resource_params=base_params)
 
