@@ -497,7 +497,7 @@ class FermionicDoubleExcitation(Operation):
             dev = qml.device('default.qubit', wires=5)
 
             @qml.qnode(dev)
-            def circuit(weight, wires1=None, wires2=None):
+            def circuit(weight, wires1, wires2):
                 qml.FermionicDoubleExcitation(weight, wires1=wires1, wires2=wires2)
                 return qml.expval(qml.Z(0))
 
@@ -523,6 +523,8 @@ class FermionicDoubleExcitation(Operation):
         return cls(data[0], wires1=metadata[0], wires2=metadata[1])
 
     def __init__(self, weight: TensorLike, wires1: WiresLike, wires2: WiresLike, *, id=None):
+        wires1 = Wires(wires1)
+        wires2 = Wires(wires2)
         if len(wires1) < 2:
             raise ValueError(
                 f"expected at least two wires representing the occupied orbitals; "
