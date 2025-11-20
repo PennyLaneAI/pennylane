@@ -79,6 +79,7 @@ Resource Hamiltonians
     :toctree: api
     :no-inherited-members:
     :classes-only:
+    :skip: defaultdict
 
 
 QPE Resource Classes
