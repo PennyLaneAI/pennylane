@@ -20,7 +20,11 @@ import pytest
 import pennylane as qml
 from pennylane.ops import Identity, PauliX, PauliY, PauliZ
 from pennylane.pauli import PauliSentence, PauliWord, pauli_sentence
-from pennylane.pauli.conversion import _generalized_pauli_decompose
+from pennylane.pauli.conversion import (
+    _check_hermitian_sparse,
+    _generalized_pauli_decompose,
+    _generalized_pauli_decompose_sparse,
+)
 
 test_hamiltonians = [
     np.array([[2.5, -0.5], [-0.5, 2.5]]),
@@ -365,6 +369,86 @@ class TestDecomposition:
         reconstructed = result.to_mat(range(1))
         expected = np.array([[3.0, 0.0], [0.0, 3.0]])
         assert np.allclose(reconstructed, expected)
+
+    def test_sparse_non_hermitian_check_count_nonzero(self, monkeypatch):
+        """Test that sparse non-Hermitian check uses count_nonzero() when nnz attribute is missing."""
+        sp = pytest.importorskip("scipy.sparse")
+
+        non_hermitian = np.array([[1, 2j], [3j, 4]])
+        sparse_nh = sp.csr_matrix(non_hermitian)
+
+        class NoNNZWrapper:
+            def __init__(self, matrix):
+                self._matrix = matrix
+                self.data = matrix.data
+
+            def __getattr__(self, name):
+                if name == "nnz":
+                    raise AttributeError(f"'{type(self).__name__}' object has no attribute 'nnz'")
+                return getattr(self._matrix, name)
+
+            def count_nonzero(self):
+                return self._matrix.count_nonzero()
+
+        original_sub = sp.csr_matrix.__sub__
+
+        def mock_sub(self, other):
+            result = original_sub(self, other)
+            return NoNNZWrapper(result)
+
+        monkeypatch.setattr(sp.csr_matrix, "__sub__", mock_sub)
+
+        with pytest.raises(ValueError, match="The matrix is not Hermitian"):
+            _check_hermitian_sparse(sparse_nh)
+
+    def test_sparse_padding_target_dim_one(self):
+        """Test that sparse padding with max_dim=0 sets target_dim=1."""
+        sp = pytest.importorskip("scipy.sparse")
+
+        empty_matrix = sp.coo_matrix((0, 0))
+        result = _generalized_pauli_decompose_sparse(empty_matrix, padding=True, pauli=True)
+
+        assert isinstance(result[0], qml.numpy.ndarray)
+        assert len(result[0]) == 0
+        assert len(result[1]) == 0
+
+    def test_sparse_padding_shape_change(self):
+        """Test that sparse padding creates new coo_matrix and updates shape when needed."""
+        sp = pytest.importorskip("scipy.sparse")
+
+        matrix_3x3 = np.array([[1, 0, 0], [0, 2, 0], [0, 0, 3]])
+        sparse_mat = sp.coo_matrix(matrix_3x3)
+
+        result = _generalized_pauli_decompose_sparse(sparse_mat, padding=True, pauli=True)
+
+        assert isinstance(result[0], qml.numpy.ndarray)
+        assert isinstance(result[1], list)
+        assert len(result[0]) > 0
+
+    def test_sparse_zero_value_continue(self):
+        """Test that sparse matrices with explicit zero values are skipped."""
+        sp = pytest.importorskip("scipy.sparse")
+
+        rows = np.array([0, 0, 1])
+        cols = np.array([0, 1, 1])
+        data = np.array([1.0, 0.0, 2.0])
+        sparse_mat = sp.coo_matrix((data, (rows, cols)), shape=(2, 2))
+
+        result = _generalized_pauli_decompose_sparse(sparse_mat, pauli=True)
+
+        assert isinstance(result[0], qml.numpy.ndarray)
+        assert len(result[0]) > 0
+
+    def test_sparse_empty_observables_continue(self):
+        """Test that empty observables are skipped in sparse decomposition."""
+        sp = pytest.importorskip("scipy.sparse")
+
+        zero_matrix = sp.csr_matrix((2, 2))
+        result = _generalized_pauli_decompose_sparse(zero_matrix, pauli=True)
+
+        assert isinstance(result[0], qml.numpy.ndarray)
+        assert len(result[0]) == 0
+        assert len(result[1]) == 0
 
 
 class TestPhasedDecomposition:
