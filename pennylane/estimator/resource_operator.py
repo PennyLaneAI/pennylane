@@ -281,7 +281,7 @@ class ResourceOperator(ABC):
             target_resource_params (dict | None): A dictionary containing the resource parameters
                 of the target operator.
         """
-        from pennylane.estimator.ops.op_math.symbolic import _apply_adj
+        from pennylane.estimator.ops.op_math.symbolic import _apply_adj # pylint: disable=import-outside-toplevel
 
         target_resource_params = target_resource_params or {}
         gate_lst = []
@@ -311,7 +311,7 @@ class ResourceOperator(ABC):
             target_resource_params (dict | None): A dictionary containing the resource parameters
                 of the target operator.
         """
-        from pennylane.estimator.ops.op_math.symbolic import _apply_controlled
+        from pennylane.estimator.ops.op_math.symbolic import _apply_controlled # pylint: disable=import-outside-toplevel
 
         target_resource_params = target_resource_params or {}
         gate_lst = []
