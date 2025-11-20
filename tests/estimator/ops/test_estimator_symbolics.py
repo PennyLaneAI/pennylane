@@ -405,9 +405,16 @@ class TestPow:
             assert pow_op.resource_decomp(**pow_op.resource_params) == res
 
         op = qre.QubitUnitary(num_wires=1)  # no default_pow_decomp defined
-        pow_op = qre.Pow(op, 7)
-        expected_res = [GateCount(op.resource_rep_from_op(), 7)]
-        assert pow_op.resource_decomp(**pow_op.resource_params) == expected_res
+        z_and_expected_res_unitary = (
+            (0, [GateCount(qre.resource_rep(qre.Identity()))]),
+            (1, [GateCount(op.resource_rep_from_op())]),
+            (2, [GateCount(op.resource_rep_from_op(), 2)]),
+            (3, [GateCount(op.resource_rep_from_op(), 3)]),
+        )
+
+        for z, res in z_and_expected_res_unitary:
+            pow_op = qre.Pow(op, z)
+            assert pow_op.resource_decomp(**pow_op.resource_params) == res
 
     @pytest.mark.parametrize("z", (0, 1, 2, 3))
     @pytest.mark.parametrize(
