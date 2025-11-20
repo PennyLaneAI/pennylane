@@ -354,7 +354,7 @@ def get_transform_program(
         level = slice(0, level)
     elif isinstance(level, str):
         level = slice(0, _find_level(full_transform_program, level))
-    if isinstance(level, int):
+    elif isinstance(level, int):
         level = slice(0, level)
 
     resolved_program = full_transform_program[level]
