@@ -40,7 +40,7 @@ class TestMarker:
 
         expected = (
             r"level bla not found in transform program. "
-            r"Builtin options are 'top', 'user', 'device' and 'gradient'."
+            r"Builtin options are 'top', 'user', 'device', and 'gradient'."
             r" Custom levels are \['something'\]."
         )
         with pytest.raises(ValueError, match=expected):
