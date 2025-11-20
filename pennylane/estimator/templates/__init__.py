@@ -39,5 +39,5 @@ from .comparators import (
     TwoQubitComparator,
     RegisterComparator,
 )
-from .qubitize import QubitizeTHC
+from .qubitize import QubitizeTHC, QubitizeDF
 from .select import SelectTHC

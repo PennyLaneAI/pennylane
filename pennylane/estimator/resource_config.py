@@ -27,6 +27,7 @@ from pennylane.estimator.templates import (
     PrepTHC,
     QROMStatePreparation,
     QubitizeTHC,
+    QubitizeDF,
     SelectPauliRot,
     SelectTHC,
 )
@@ -127,6 +128,10 @@ class ResourceConfig:
             SelectTHC: {"rotation_precision": _DEFAULT_BIT_PRECISION},
             PrepTHC: {"coeff_precision": _DEFAULT_BIT_PRECISION},
             QubitizeTHC: {
+                "coeff_precision": _DEFAULT_BIT_PRECISION,
+                "rotation_precision": _DEFAULT_BIT_PRECISION,
+            },
+            QubitizeDF: {
                 "coeff_precision": _DEFAULT_BIT_PRECISION,
                 "rotation_precision": _DEFAULT_BIT_PRECISION,
             },

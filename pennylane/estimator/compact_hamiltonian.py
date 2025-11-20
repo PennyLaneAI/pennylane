@@ -35,6 +35,26 @@ class CDFHamiltonian:
     num_orbitals: int
     num_fragments: int
 
+@dataclass(frozen=True)
+class DFHamiltonian:
+    """For a double-factorized (DF) Hamiltonian, stores the minimum necessary information pertaining to resource estimation.
+
+    Args:
+        num_orbitals (int): number of spatial orbitals
+        num_fragments (int): number of fragments in the compressed double-factorized (CDF) representation
+        num_eigenvectors (int): number of eigenvectors used in the double-factorized (DF) representation
+
+    Returns:
+        CDFHamiltonian: An instance of CDFHamiltonian
+
+    .. seealso::
+        :class:`~.estimator.templates.TrotterCDF`
+    """
+
+    num_orbitals: int
+    num_fragments: int
+    num_eigenvectors: int
+
 
 @dataclass(frozen=True)
 class THCHamiltonian:

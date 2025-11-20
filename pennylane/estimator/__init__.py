@@ -88,6 +88,7 @@ from .templates import (
     IterativeQPE,
     PrepTHC,
     QubitizeTHC,
+    QubitizeDF,
     SelectTHC,
     TrotterCDF,
     TrotterProduct,
