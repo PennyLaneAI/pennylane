@@ -19,11 +19,14 @@ from __future__ import annotations
 
 import inspect
 import logging
-from typing import TYPE_CHECKING, Callable, Literal, Optional
+import warnings
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Literal
 
 from cachetools import Cache
 
 import pennylane as qml
+from pennylane.exceptions import _TF_DEPRECATION_MSG, PennyLaneDeprecationWarning
 from pennylane.math.interface_utils import Interface
 from pennylane.transforms.core import TransformProgram
 
@@ -37,8 +40,6 @@ logger.addHandler(logging.NullHandler())
 
 if TYPE_CHECKING:
     from pennylane.concurrency.executors import ExecBackends
-    from pennylane.devices import Device, LegacyDevice
-    from pennylane.math import InterfaceLike
     from pennylane.tape import QuantumScriptBatch
     from pennylane.transforms.core import TransformDispatcher
     from pennylane.typing import ResultBatch
@@ -46,22 +47,23 @@ if TYPE_CHECKING:
     from pennylane.workflow.resolution import SupportedDiffMethods
 
 
+# pylint: disable=too-many-arguments
 def execute(
     tapes: QuantumScriptBatch,
     device: SupportedDeviceAPIs,
-    diff_method: Optional[Callable | SupportedDiffMethods | TransformDispatcher] = None,
-    interface: Optional[InterfaceLike] = Interface.AUTO,
+    diff_method: Callable | SupportedDiffMethods | TransformDispatcher | None = None,
+    interface: Interface | str | None = Interface.AUTO,
     *,
     grad_on_execution: bool | Literal["best"] = "best",
-    cache: Optional[bool | dict | Cache | Literal["auto"]] = "auto",
+    cache: bool | dict | Cache | Literal["auto"] | None = "auto",
     cachesize: int = 10000,
     max_diff: int = 1,
-    device_vjp: Optional[bool] = False,
-    postselect_mode: Optional[Literal["hw-like", "fill-shots"]] = None,
-    mcm_method: Optional[Literal["deferred", "one-shot", "tree-traversal"]] = None,
-    gradient_kwargs: Optional[dict] = None,
-    transform_program: Optional[TransformProgram] = None,
-    executor_backend: Optional[ExecBackends | str] = None,
+    device_vjp: bool | None = False,
+    postselect_mode: Literal["hw-like", "fill-shots"] | None = None,
+    mcm_method: Literal["deferred", "one-shot", "tree-traversal"] | None = None,
+    gradient_kwargs: dict | None = None,
+    transform_program: TransformProgram | None = None,
+    executor_backend: ExecBackends | str | None = None,
 ) -> ResultBatch:
     """A function for executing a batch of tapes on a device with compatibility for auto-differentiation.
 
@@ -149,25 +151,25 @@ def execute(
 
     Let's execute this cost function while tracking the gradient:
 
-    >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
-    >>> x = np.array([0.5], requires_grad=True)
-    >>> cost_fn(params, x)
-    1.93050682
+    >>> params = pnp.array([0.1, 0.2, 0.3], requires_grad=True)
+    >>> x = pnp.array([0.5], requires_grad=True)
+    >>> print(cost_fn(params, x))
+    1.93...
 
     Since the ``execute`` function is differentiable, we can
     also compute the gradient:
 
-    >>> qml.grad(cost_fn)(params, x)
+    >>> print(qml.grad(cost_fn)(params, x)) # doctest: +SKIP
     (array([-0.0978434 , -0.19767681, -0.29552021]), array([5.37764278e-17]))
 
     Finally, we can also compute any nth-order derivative. Let's compute the Jacobian
     of the gradient (that is, the Hessian):
 
     >>> x.requires_grad = False
-    >>> qml.jacobian(qml.grad(cost_fn))(params, x)
-    array([[-0.97517033,  0.01983384,  0.        ],
-           [ 0.01983384, -0.97517033,  0.        ],
-           [ 0.        ,  0.        , -0.95533649]])
+    >>> print(qml.jacobian(qml.grad(cost_fn))(params, x)) # doctest: +SKIP
+    [[-0.97517033  0.01983384  0.        ]
+     [ 0.01983384 -0.97517033  0.        ]
+     [ 0.          0.         -0.95533649]]
     """
     if not isinstance(device, qml.devices.Device):
         device = qml.devices.LegacyDeviceFacade(device)
@@ -210,6 +212,9 @@ def execute(
     ### Specifying and preprocessing variables ###
 
     interface = _resolve_interface(interface, tapes)
+
+    if interface in {Interface.TF, Interface.TF_AUTOGRAPH}:  # pragma: no cover
+        warnings.warn(_TF_DEPRECATION_MSG, PennyLaneDeprecationWarning, stacklevel=4)
 
     config = qml.devices.ExecutionConfig(
         interface=interface,

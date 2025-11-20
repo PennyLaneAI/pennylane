@@ -16,7 +16,7 @@ An internal module for working with pytrees.
 """
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import Any
 
 import autograd
 
@@ -69,7 +69,7 @@ def unflatten_tuple(data, _) -> tuple:
 
 def unflatten_dict(data, metadata) -> dict:
     """Unflatten a dictionary."""
-    return dict(zip(metadata, data))
+    return dict(zip(metadata, data, strict=True))
 
 
 unflatten_registrations: dict[type, UnflattenFn] = {
@@ -185,12 +185,12 @@ class PyTreeStructure:
     >>> op = qml.adjoint(qml.RX(0.1, 0))
     >>> data, structure = qml.pytrees.flatten(op)
     >>> structure
-    PyTree(AdjointOperation, (), [PyTree(RX, (Wires([0]), ()), [Leaf])])
+    PyTreeStructure(AdjointOperation, (), [PyTreeStructure(RX, (Wires([0]), ()), [PyTreeStructure()])])
 
     A leaf is defined as just a ``PyTreeStructure`` with ``type_=None``.
     """
 
-    type_: Optional[type[Any]] = None
+    type_: type[Any] | None = None
     """The type corresponding to the node. If ``None``, then the structure is a leaf."""
 
     metadata: Metadata = ()
@@ -220,7 +220,7 @@ leaf = PyTreeStructure(None, (), [])
 
 
 def flatten(
-    obj: Any, is_leaf: Optional[Callable[[Any], bool]] = None
+    obj: Any, is_leaf: Callable[[Any], bool] | None = None
 ) -> tuple[list[Any], PyTreeStructure]:
     """Flattens a pytree into leaves and a structure.
 
@@ -245,7 +245,7 @@ def flatten(
     [1.2, 2.3, 3.4]
 
     >>> structure
-    <PyTree(AdjointOperation, (), (<PyTree(Rot, (Wires([0]), ()), (Leaf, Leaf, Leaf))>,))>
+    PyTreeStructure(AdjointOperation, (), [PyTreeStructure(Rot, (Wires([0]), ()), [PyTreeStructure(), PyTreeStructure(), PyTreeStructure()])])
     """
     flatten_fn = flatten_registrations.get(type(obj), None)
     # set the flag is_leaf_node if is_leaf argument is provided and returns true
@@ -296,8 +296,6 @@ def _unflatten(new_data, structure):
     return unflatten_registrations[structure.type_](children, structure.metadata)
 
 
-# TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
-# pylint: disable=no-member
 register_pytree(
     autograd.builtins.list,
     lambda obj: (list(obj), ()),

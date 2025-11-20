@@ -14,11 +14,12 @@
 """
 This submodule defines the symbolic operation that indicates the adjoint of an operator.
 """
-from functools import lru_cache, partial, wraps
-from typing import Callable, overload
+from collections.abc import Callable
+from functools import lru_cache, partial
+from typing import overload
 
 import pennylane as qml
-from pennylane._deprecated_observable import Observable
+from pennylane.capture.autograph import wraps
 from pennylane.compiler import compiler
 from pennylane.math import conj, moveaxis, transpose
 from pennylane.operation import Operation, Operator
@@ -74,6 +75,8 @@ def adjoint(fn, lazy=True):
         But it doesn't support batching of operators:
 
         >>> op = qml.adjoint([qml.RX(1, wires=0), qml.RX(2, wires=0)])
+        Traceback (most recent call last):
+            ...
         ValueError: The object [RX(1, wires=[0]), RX(2, wires=[0])] of type <class 'list'> is not callable.
         This error might occur if you apply adjoint to a list of operations instead of a function or template.
 
@@ -90,7 +93,7 @@ def adjoint(fn, lazy=True):
     >>> print(qml.draw(circuit2)("y"))
     0: ──RY(y)†─┤  <Z>
     >>> print(qml.draw(circuit2, level="device")(0.1))
-    0: ──RY(-0.10)─┤  <Z>
+    0: ──RY(0.10)†─┤  <Z>
 
     The adjoint transforms can also be used to apply the adjoint of
     any quantum function.  In this case, ``adjoint`` accepts a single function and returns
@@ -98,7 +101,7 @@ def adjoint(fn, lazy=True):
 
     We can create a QNode that applies the ``my_ops`` function followed by its adjoint:
 
-    .. code-block:: python3
+    .. code-block:: python
 
         def my_ops(a, wire):
             qml.RX(a, wires=wire)
@@ -138,8 +141,9 @@ def adjoint(fn, lazy=True):
             qml.adjoint(func)()
             return qml.probs()
 
+    >>> import jax.numpy as jnp
     >>> workflow(jnp.pi/2, 3, 0)
-    array([0.5, 0.5])
+    Array([0.5, 0.5], dtype=float64)
 
     .. warning::
 
@@ -159,7 +163,7 @@ def adjoint(fn, lazy=True):
         >>> qml.adjoint(qml.RX, lazy=False)(1.0, wires=0)
         RX(-1.0, wires=[0])
         >>> qml.adjoint(qml.S, lazy=False)(0)
-        Adjoint(S)(wires=[0])
+        Adjoint(S(0))
 
     """
     if active_jit := compiler.active_compiler():
@@ -198,7 +202,7 @@ def _get_adjoint_qfunc_prim():
     adjoint_prim.prim_type = "higher_order"
 
     @adjoint_prim.def_impl
-    def _(*args, jaxpr, lazy, n_consts):
+    def _impl(*args, jaxpr, lazy, n_consts):
         from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 
         consts = args[:n_consts]
@@ -210,7 +214,7 @@ def _get_adjoint_qfunc_prim():
         return []
 
     @adjoint_prim.def_abstract_eval
-    def _(*_, **__):
+    def _abstract_eval(*_, **__):
         return []
 
     return adjoint_prim
@@ -291,7 +295,7 @@ class Adjoint(SymbolicOp):
     array([[1.-0.j, 0.-0.j],
        [0.-0.j, 0.-1.j]])
     >>> qml.generator(Adjoint(qml.RX(1.0, wires=0)))
-    (X(0), 0.5)
+    (X(0), np.float64(0.5))
     >>> Adjoint(qml.RX(1.234, wires=0)).data
     (1.234,)
 
@@ -310,17 +314,6 @@ class Adjoint(SymbolicOp):
         >>> op.grad_method
         'A'
 
-        If the base class is an ``Observable`` instead, the ``Adjoint`` will be an ``Observable`` as
-        well.
-
-        >>> op = Adjoint(1.0 * qml.X(0))
-        >>> isinstance(op, qml.operation.Observable)
-        True
-        >>> isinstance(op, qml.operation.Operation)
-        False
-        >>> Adjoint(qml.X(0)) @ qml.Y(1)
-        (Adjoint(X(0))) @ Y(1)
-
     """
 
     resource_keys = {"base_class", "base_params"}
@@ -332,26 +325,16 @@ class Adjoint(SymbolicOp):
     def _unflatten(cls, data, _):
         return cls(data[0])
 
-    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
-    # pylint: disable=unused-argument
     def __new__(cls, base=None, id=None):
         """Returns an uninitialized type with the necessary mixins.
 
         If the ``base`` is an ``Operation``, this will return an instance of ``AdjointOperation``.
-        If ``Observable`` but not ``Operation``, it will be ``AdjointObs``.
-        And if both, it will be an instance of ``AdjointOpObs``.
 
         """
 
         if isinstance(base, Operation):
-            if isinstance(base, Observable):
-                return object.__new__(AdjointOpObs)
-
             # not an observable
             return object.__new__(AdjointOperation)
-
-        if isinstance(base, Observable):
-            return object.__new__(AdjointObs)
 
         return object.__new__(Adjoint)
 
@@ -489,22 +472,4 @@ class AdjointOperation(Adjoint, Operation):
         return -1 * self.base.generator()
 
 
-class AdjointObs(Adjoint, Observable):
-    """A child of :class:`~.Adjoint` that also inherits from :class:`~.Observable`."""
-
-    def __new__(cls, *_, **__):
-        return object.__new__(cls)
-
-
-# TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
-# pylint: disable=too-many-ancestors
-class AdjointOpObs(AdjointOperation, Observable):
-    """A child of :class:`~.AdjointOperation` that also inherits from :class:`~.Observable."""
-
-    def __new__(cls, *_, **__):
-        return object.__new__(cls)
-
-
 AdjointOperation._primitive = Adjoint._primitive  # pylint: disable=protected-access
-AdjointObs._primitive = Adjoint._primitive  # pylint: disable=protected-access
-AdjointOpObs._primitive = Adjoint._primitive  # pylint: disable=protected-access

@@ -15,7 +15,6 @@
 
 import warnings
 from enum import Enum
-from typing import Literal, Union
 
 import autoray as ar
 
@@ -32,7 +31,33 @@ class Interface(Enum):
     TF_AUTOGRAPH = "tf-autograph"
     AUTO = "auto"
 
-    def get_like(self):
+    @classmethod
+    def _missing_(cls, value) -> "Interface":
+        """Custom lookup to allow users to pass in None or common
+        variants of the interface names."""
+        match value:
+            case None | "scipy":
+                return cls.NUMPY
+            case "jax-python" | "JAX":
+                return cls.JAX
+            case "pytorch":
+                return cls.TORCH
+            case (
+                "tensorflow"
+            ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
+                return cls.TF
+            case (
+                "tensorflow-autograph"
+            ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
+                return cls.TF_AUTOGRAPH
+
+        supported_values = [item.value for item in cls]
+
+        standard_msg = f"'{value}' is not a valid {cls.__name__}."
+        custom_addition = f"Please use one of the supported interfaces: {supported_values}."
+        raise ValueError(f"{standard_msg} {custom_addition}")
+
+    def get_like(self) -> str | None:
         """Maps canonical set of interfaces to those known by autoray."""
         mapping = {
             Interface.AUTOGRAD: "autograd",
@@ -46,40 +71,14 @@ class Interface(Enum):
         }
         return mapping[self]
 
-    def __eq__(self, interface):
+    def __eq__(self, interface) -> bool:
         if isinstance(interface, str):
             raise TypeError("Cannot compare Interface with str")
         return super().__eq__(interface)
 
-    def __hash__(self):
-        # pylint: disable=useless-super-delegation
+    def __hash__(self) -> int:
         return super().__hash__()
 
-
-InterfaceLike = Union[str, Interface, None]
-
-
-INTERFACE_MAP = {
-    None: Interface.NUMPY,
-    "auto": Interface.AUTO,
-    "autograd": Interface.AUTOGRAD,
-    "numpy": Interface.NUMPY,
-    "scipy": Interface.NUMPY,
-    "jax": Interface.JAX,
-    "jax-jit": Interface.JAX_JIT,
-    "jax-python": Interface.JAX,
-    "JAX": Interface.JAX,
-    "torch": Interface.TORCH,
-    "pytorch": Interface.TORCH,
-    "tf": Interface.TF,
-    "tensorflow": Interface.TF,
-    "tensorflow-autograph": Interface.TF_AUTOGRAPH,
-    "tf-autograph": Interface.TF_AUTOGRAPH,
-}
-"""dict[str, str]: maps an allowed interface specification to its canonical name."""
-
-SupportedInterfaceUserInput = Literal[tuple(INTERFACE_MAP.keys())]
-"""list[str]: allowed interface names that the user can input"""
 
 SUPPORTED_INTERFACE_NAMES = list(Interface)
 """list[Interface]: allowed interface names"""
@@ -125,7 +124,9 @@ def get_interface(*values):
 
     interfaces = {_get_interface_of_single_tensor(v) for v in values}
 
-    if len(interfaces - {"numpy", "scipy", "autograd"}) > 1:
+    if (
+        len(interfaces - {"numpy", "scipy", "autograd"}) > 1
+    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)# pragma: no cover (TensorFlow tests were disabled during deprecation)
         # contains multiple non-autograd interfaces
         raise ValueError("Tensors contain mixed types; cannot determine dispatch library")
 
@@ -212,26 +213,3 @@ def get_deep_interface(value):
             return "numpy"
         itr = itr[0]
     return _get_interface_of_single_tensor(itr)
-
-
-def get_canonical_interface_name(user_input: InterfaceLike) -> Interface:
-    """Helper function to get the canonical interface name.
-
-    Args:
-        interface (str, Interface): reference interface
-
-    Raises:
-        ValueError: key does not exist in the interface map
-
-    Returns:
-        Interface: canonical interface
-    """
-
-    if isinstance(user_input, Interface) and user_input in SUPPORTED_INTERFACE_NAMES:
-        return user_input
-    try:
-        return INTERFACE_MAP[user_input]
-    except KeyError as exc:
-        raise ValueError(
-            f"Unknown interface {user_input}. Interface must be one of {SUPPORTED_INTERFACE_NAMES}."
-        ) from exc

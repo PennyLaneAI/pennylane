@@ -14,6 +14,13 @@
 """
 This subpackage contains PennyLane transforms and their building blocks.
 
+.. warning::
+
+    The transforms ``add_noise``, ``insert``, ``mitigate_with_zne``, ``fold_global``, ``poly_extrapolate``, ``richardson_extrapolate``,
+    ``exponential_extrapolate`` have been moved to the :mod:`pennylane.noise` module.
+    Accessing these transforms from the :mod:`pennylane.transforms` module is deprecated
+    and will be removed in v0.44.
+
 .. currentmodule:: pennylane
 
 .. _transforms:
@@ -44,28 +51,58 @@ A set of transforms to perform basic circuit compilation tasks.
 
     ~compile
     ~transforms.cancel_inverses
-    ~transforms.commute_controlled
-    ~transforms.merge_rotations
-    ~transforms.single_qubit_fusion
-    ~transforms.unitary_to_rot
-    ~transforms.merge_amplitude_embedding
-    ~transforms.remove_barrier
-    ~transforms.undo_swaps
-    ~transforms.pattern_matching_optimization
-    ~transforms.transpile
-    ~transforms.decompose
     ~transforms.combine_global_phases
+    ~transforms.commute_controlled
+    ~transforms.decompose
+    ~transforms.merge_amplitude_embedding
+    ~transforms.merge_rotations
+    ~transforms.pattern_matching_optimization
+    ~transforms.remove_barrier
+    ~transforms.match_relative_phase_toffoli
+    ~transforms.match_controlled_iX_gate
+    ~transforms.single_qubit_fusion
+    ~transforms.transpile
+    ~transforms.undo_swaps
+    ~transforms.unitary_to_rot
+    ~transforms.rz_phase_gradient
+    ~transforms.rowcol
 
-There are also utility functions and decompositions available that assist with
-both transforms, and decompositions within the larger PennyLane codebase.
+Compilation transforms using ZX calculus
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+There is a set of transforms that use ZX calculus to optimize circuits.
+
+.. currentmodule:: pennylane.transforms
+.. autosummary::
+    :toctree: api
+
+    zx.optimize_t_count
+    zx.push_hadamards
+    zx.reduce_non_clifford
+    zx.todd
+
+The following utility functions assist when working explicitly with ZX diagrams,
+for example when writing custom ZX compilation passes. Also see the section
+on intermediate representations below.
+
+.. currentmodule:: pennylane
+.. autosummary::
+    :toctree: api
+
+    ~transforms.to_zx
+    ~transforms.from_zx
+
+Other compilation utilities
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+There are additional utility functions and decompositions available that assist with
+both transforms and decompositions within the larger PennyLane codebase.
 
 .. autosummary::
     :toctree: api
 
     ~transforms.set_decomposition
     ~transforms.pattern_matching
-    ~transforms.to_zx
-    ~transforms.from_zx
 
 There are also utility functions that take a circuit and return a DAG.
 
@@ -86,19 +123,6 @@ This transform accepts quantum circuits and decomposes them to the Clifford+T ba
 
     ~clifford_t_decomposition
 
-
-Transforms for error mitigation
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. autosummary::
-    :toctree: api
-
-    ~transforms.mitigate_with_zne
-    ~transforms.fold_global
-    ~transforms.poly_extrapolate
-    ~transforms.richardson_extrapolate
-    ~transforms.exponential_extrapolate
-
 Other transforms
 ~~~~~~~~~~~~~~~~
 
@@ -111,8 +135,6 @@ preprocessing, getting information from a circuit, and more.
 
     ~batch_params
     ~batch_input
-    ~transforms.insert
-    ~transforms.add_noise
     ~defer_measurements
     ~transforms.diagonalize_measurements
     ~transforms.split_non_commuting
@@ -122,6 +144,30 @@ preprocessing, getting information from a circuit, and more.
     ~transforms.convert_to_numpy_parameters
     ~apply_controlled_Q
     ~quantum_monte_carlo
+    ~transforms.resolve_dynamic_wires
+
+Transforms for intermediate representations
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Intermediate representations (IRs) are alternative representations of quantum circuits, typically
+offering a more efficient classical description for special classes of circuits.
+The following functions produce intermediate representations of quantum circuits:
+
+.. autosummary::
+    :toctree: api
+
+    ~transforms.parity_matrix
+    ~transforms.phase_polynomial
+    ~transforms.rowcol
+
+In addition, there are the following utility functions to traverse a graph:
+
+.. currentmodule:: pennylane.transforms
+.. autosummary::
+    :toctree: api
+
+    intermediate_reps.postorder_traverse
+    intermediate_reps.preorder_traverse
 
 Transforms that act only on QNodes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -129,6 +175,7 @@ Transforms that act only on QNodes
 These transforms only accept QNodes, and return new transformed functions
 that compute the desired quantity.
 
+.. currentmodule:: pennylane
 .. autosummary::
     :toctree: api
 
@@ -297,7 +344,6 @@ from .batch_input import batch_input
 from .batch_partial import batch_partial
 from .convert_to_numpy_parameters import convert_to_numpy_parameters
 from .compile import compile
-from .add_noise import add_noise
 
 from .decompositions import clifford_t_decomposition
 from .defer_measurements import defer_measurements
@@ -306,16 +352,9 @@ from .dynamic_one_shot import dynamic_one_shot, is_mcm
 from .sign_expand import sign_expand
 from .split_non_commuting import split_non_commuting
 from .split_to_single_terms import split_to_single_terms
-from .insert_ops import insert
 from .combine_global_phases import combine_global_phases
+from .resolve_dynamic_wires import resolve_dynamic_wires
 
-from .mitigate import (
-    mitigate_with_zne,
-    fold_global,
-    poly_extrapolate,
-    richardson_extrapolate,
-    exponential_extrapolate,
-)
 from .optimization import (
     cancel_inverses,
     commute_controlled,
@@ -326,6 +365,8 @@ from .optimization import (
     undo_swaps,
     pattern_matching,
     pattern_matching_optimization,
+    match_controlled_iX_gate,
+    match_relative_phase_toffoli,
 )
 from .qmc import apply_controlled_Q, quantum_monte_carlo
 from .unitary_to_rot import unitary_to_rot
@@ -345,6 +386,15 @@ from .tape_expand import (
     set_decomposition,
 )
 from .transpile import transpile
-from .zx import to_zx, from_zx
+from .zx import (
+    to_zx,
+    from_zx,
+)
 from .broadcast_expand import broadcast_expand
 from .decompose import decompose
+from .intermediate_reps import (
+    parity_matrix,
+    phase_polynomial,
+    rowcol,
+)
+from .rz_phase_gradient import rz_phase_gradient

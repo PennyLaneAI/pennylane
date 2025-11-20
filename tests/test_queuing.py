@@ -20,7 +20,8 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.queuing import AnnotatedQueue, QueuingError, QueuingManager, WrappedObj
+from pennylane.exceptions import QueuingError
+from pennylane.queuing import AnnotatedQueue, QueuingManager, WrappedObj
 
 
 # pylint: disable=use-implicit-booleaness-not-comparison, unnecessary-dunder-call
@@ -100,23 +101,6 @@ class TestStopRecording:
 
         assert len(tape.operations) == 1
         assert tape.operations[0].name == "Hadamard"
-
-    def test_stop_recording_qnode_qfunc(self):
-        """A QNode with a stop_recording qfunc will result in no quantum measurements."""
-        dev = qml.device("default.qubit", wires=1)
-
-        @qml.qnode(dev)
-        @QueuingManager.stop_recording()
-        def my_circuit():
-            qml.PauliX(wires=0)
-            return qml.expval(qml.PauliZ(0))
-
-        result = my_circuit()
-        assert len(result) == 0
-
-        tape = qml.workflow.construct_tape(my_circuit)()
-        assert len(tape.operations) == 0
-        assert len(tape.measurements) == 0
 
     def test_stop_recording_qnode(self):
         """A stop_recording QNode is unaffected"""
@@ -414,6 +398,16 @@ class TestApplyOp:
 
         assert q1.queue == [op2]
         assert q2.queue == [op1]
+
+    def test_apply_plus_dequeuing(self):
+        """Test that operations queued with qml.apply don't get dequeued by subsequent ops."""
+
+        h = qml.H(0)
+        with qml.queuing.AnnotatedQueue() as q1:
+            op1 = qml.apply(h)
+            op2 = qml.adjoint(h)
+
+        assert q1.queue == [op1, op2]
 
 
 class TestWrappedObj:

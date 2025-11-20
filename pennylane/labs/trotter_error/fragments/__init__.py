@@ -16,3 +16,4 @@
 from .generic_fragments import GenericFragment, generic_fragments
 from .vibrational_fragments import vibrational_fragments
 from .vibronic_fragments import vibronic_fragments
+from .sparse_fragments import sparse_fragments

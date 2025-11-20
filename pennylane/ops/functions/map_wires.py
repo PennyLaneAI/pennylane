@@ -18,7 +18,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from functools import lru_cache, partial
-from typing import TYPE_CHECKING, Union, overload
+from typing import TYPE_CHECKING, overload
 from warnings import warn
 
 import pennylane as qml
@@ -34,7 +34,7 @@ if TYPE_CHECKING:
 
 
 @lru_cache
-def _get_plxpr_map_wires():  # pylint: disable=missing-docstring
+def _get_plxpr_map_wires():
     try:
         # pylint: disable=import-outside-toplevel
         from jax import make_jaxpr
@@ -52,9 +52,9 @@ def _get_plxpr_map_wires():  # pylint: disable=missing-docstring
 
         .. code-block:: python
 
-            import jax
             from pennylane.ops.functions.map_wires import MapWiresInterpreter
 
+            jax.config.update("jax_enable_x64", True)
             qml.capture.enable()
 
             @MapWiresInterpreter(wire_map={0: 1})
@@ -62,13 +62,16 @@ def _get_plxpr_map_wires():  # pylint: disable=missing-docstring
                 qml.Hadamard(wires=0)
                 return qml.expval(qml.PauliZ(0))
 
-        >>> jaxpr = jax.make_jaxpr(circuit)()
+            jaxpr = jax.make_jaxpr(circuit)()
+
+            qml.capture.disable()
+
         >>> jaxpr
         { lambda ; . let
-            _:AbstractOperator() = Hadamard[n_wires=1] 1
-            a:AbstractOperator() = PauliZ[n_wires=1] 1
-            b:AbstractMeasurement(n_wires=None) = expval_obs a
-        in (b,) }
+          _:AbstractOperator() = Hadamard[n_wires=1] 1:i64[]
+          a:AbstractOperator() = PauliZ[n_wires=1] 1:i64[]
+          b:AbstractMeasurement(n_wires=None) = expval_obs a
+          in (b,) }
 
         """
 
@@ -85,13 +88,13 @@ def _get_plxpr_map_wires():  # pylint: disable=missing-docstring
             if not all(isinstance(v, int) and v >= 0 for v in self.wire_map.values()):
                 raise ValueError("Wire map values must be constant positive integers.")
 
-        def interpret_operation(self, op: "qml.operation.Operation"):
+        def interpret_operation(self, op: qml.operation.Operation):
             """Interpret an operation."""
             with qml.capture.pause():
                 op = op.map_wires(self.wire_map)
             return super().interpret_operation(op)
 
-        def interpret_measurement(self, measurement: "qml.measurement.MeasurementProcess"):
+        def interpret_measurement(self, measurement: qml.measurement.MeasurementProcess):
             """Interpret a measurement operation."""
             with qml.capture.pause():
                 measurement = measurement.map_wires(self.wire_map)
@@ -153,7 +156,7 @@ def map_wires(
     input: QuantumScriptBatch, wire_map: dict, queue: bool = False, replace: bool = False
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]: ...
 def map_wires(
-    input: Union[Operator, MeasurementProcess, QuantumScript, QNode, Callable, QuantumScriptBatch],
+    input: Operator | MeasurementProcess | QuantumScript | QNode | Callable | QuantumScriptBatch,
     wire_map: dict,
     queue=False,
     replace=False,
@@ -177,15 +180,17 @@ def map_wires(
 
         ``qml.map_wires`` can be used as a decorator with the help of the ``functools`` module:
 
-        >>> dev = qml.device("default.qubit", wires=1)
-        >>> wire_map = {0: 10}
-        >>>
-        >>> @functools.partial(qml.map_wires, wire_map=wire_map)
-        ... @qml.qnode(dev)
-        ... def func(x):
-        ...     qml.RX(x, wires=0)
-        ...     return qml.expval(qml.Z(0))
-        ...
+        .. code-block:: python
+
+            dev = qml.device("default.qubit")
+            wire_map = {0: 10}
+            import functools
+            @functools.partial(qml.map_wires, wire_map=wire_map)
+            @qml.qnode(dev)
+            def func(x):
+                qml.RX(x, wires=0)
+                return qml.expval(qml.Z(0))
+
         >>> print(qml.draw(func)(0.1))
         10: ──RX(0.10)─┤  <Z>
 
@@ -196,10 +201,18 @@ def map_wires(
 
     >>> op = qml.RX(0.54, wires=0) + qml.X(1) + (qml.Z(2) @ qml.RY(1.23, wires=3))
     >>> op
-    (RX(0.54, wires=[0]) + X(1)) + (Z(2) @ RY(1.23, wires=[3]))
+    (
+        RX(0.54, wires=[0])
+      + X(1)
+      + Z(2) @ RY(1.23, wires=[3])
+    )
     >>> wire_map = {0: 3, 1: 2, 2: 1, 3: 0}
     >>> qml.map_wires(op, wire_map)
-    (RX(0.54, wires=[3]) + X(2)) + (Z(1) @ RY(1.23, wires=[0]))
+    (
+        RX(0.54, wires=[3])
+      + X(2)
+      + Z(1) @ RY(1.23, wires=[0])
+    )
 
     Moreover, ``qml.map_wires`` can be used to change the wires of QNodes or quantum functions:
 
@@ -211,10 +224,10 @@ def map_wires(
     ...
     >>> mapped_circuit = qml.map_wires(circuit, wire_map)
     >>> mapped_circuit()
-    tensor([0.92885434, 0.07114566], requires_grad=True)
+    array([0.92885434, 0.07114566])
     >>> tape = qml.workflow.construct_tape(mapped_circuit)()
     >>> list(tape)
-    [((RX(0.54, wires=[3]) @ X(2)) @ Z(1)) @ RY(1.23, wires=[0]), probs(wires=[3])]
+    [RX(0.54, wires=[3]) @ X(2) @ Z(1) @ RY(1.23, wires=[0]), probs(wires=[3])]
     """
     if isinstance(input, (Operator, MeasurementProcess)):
         if QueuingManager.recording():
@@ -223,7 +236,7 @@ def map_wires(
             if replace:
                 QueuingManager.remove(input)
             if queue:
-                qml.apply(new_op)
+                new_op = qml.apply(new_op)
             return new_op
         return input.map_wires(wire_map=wire_map)
     return _map_wires_transform(input, wire_map=wire_map, queue=queue)

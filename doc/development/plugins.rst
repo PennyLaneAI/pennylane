@@ -25,7 +25,7 @@ In order to define a custom device, you only need to override the :meth:`~.devic
 
 .. code-block:: python
 
-    from pennylane.devices import Device, DefaultExecutionConfig
+    from pennylane.devices import Device, ExecutionConfig
     from pennylane.tape import QuantumScript, QuantumScriptOrBatch
 
     class MyDevice(Device):
@@ -34,7 +34,7 @@ In order to define a custom device, you only need to override the :meth:`~.devic
         def execute(
             self,
             circuits: QuantumScriptOrBatch,
-            execution_config: "ExecutionConfig" = DefaultExecutionConfig
+            execution_config: ExecutionConfig | None = None
         ):
             # your implementation here.
 
@@ -48,7 +48,7 @@ For example:
         def execute(
             self,
             circuits: QuantumScriptOrBatch,
-            execution_config: "ExecutionConfig" = DefaultExecutionConfig
+            execution_config: ExecutionConfig | None = None
         )
             return 0.0 if isinstance(circuits, qml.tape.QuantumScript) else tuple(0.0 for c in circuits)
 
@@ -87,7 +87,21 @@ circuits.
 >>> tape1 = qml.tape.QuantumScript([], [qml.sample(wires=0)], shots=10)
 >>> dev = qml.device('default.qubit')
 >>> dev.execute((tape0, tape1))
-(array([0, 0, 0, 0, 0]), array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0]))
+(array([[0],
+        [0],
+        [0],
+        [0],
+        [0]]),
+ array([[0],
+        [0],
+        [0],
+        [0],
+        [0],
+        [0],
+        [0],
+        [0],
+        [0],
+        [0]]))
 
 The :class:`~.measurements.Shots` class describes the shots. Users can optionally specify a shot vector, or
 different numbers of shots to use when calculating the final expectation value.
@@ -218,6 +232,89 @@ or can include in-built transforms such as:
 * :func:`pennylane.devices.preprocess.validate_multiprocessing_workers`
 * :func:`pennylane.devices.preprocess.validate_adjoint_trainable_params`
 * :func:`pennylane.devices.preprocess.no_sampling`
+  
+Custom Device Decompositions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The :func:`pennylane.devices.preprocess.decompose` transform is typically required as part of the transform program that
+decomposes unsupported operations to the device's native gate set. To define this transform a stopping condition needs
+to be specified. This is a function mapping an operator to a boolean that determines whether the operator should be decomposed.
+
+For example, for a device supporting the ``CNOT``, ``RX`` and ``RZ`` gates, the stopping condition and the decompose transform
+can be specified like so:
+
+.. code-block:: python
+
+    from pennylane.devices.preprocess import decompose
+
+    def stopping_condition(op):
+        return obj.name in {"CNOT", "RX", "RZ"}
+    
+    program.add_transform(decompose, stopping_condition=stopping_condition, name="my_device")
+
+However, if the device native gate set is unreachable with the default decompositions defined in PennyLane,
+an error will be raised. In this case, you may need to override the decompositions of certain operators
+via the ``decomposer`` argument. 
+
+For example, consider a device with ``RX``, ``RY`` and ``IsingXX`` as native gates but we want
+to execute a circuit written in terms of ``CNOT`` s. Then, we can define a decomposition for ``CNOT`` 
+(e.g., ``custom_decomposer``) and pass it to the decomposer kwarg:
+
+.. code-block:: python
+
+    def stopping_condition(op):
+        return op.name in {"IsingXX", "RX", "RY"}
+
+    def custom_decomposer(op):
+        if isinstance(op, qml.CNOT):
+            wires = op.wires
+            return [
+                qml.RY(np.pi/2, wires=wires[0]),
+                qml.IsingXX(np.pi/2, wires=wires),
+                qml.RX(-np.pi/2, wires=wires[0]),
+                qml.RY(-np.pi/2, wires=wires[0]),
+                qml.RY(-np.pi/2, wires=wires[1])
+            ]
+        return op.decomposition()
+    
+    program.add_transform(
+        decompose,
+        stopping_condition=stopping_condition,
+        decomposer=custom_decomposer,
+        name="my_device"
+    )
+
+There is also an experimental graph-based decomposition algorithm (activated via
+:func:`qml.decomposition.enable_graph() <pennylane.decomposition.enable_graph>`) that can
+be leveraged when overriding the decompositions of certain operators. To make your device
+compatible with this new system, the ``target_gates`` kwarg in the :func:`pennylane.devices.preprocess.decompose` transform
+needs to be specified as part of the transform program. Note that the stopping condition function
+defines whether an operator should be decomposed, while the ``target_gates`` defines the set of operator
+types that the graph-based decomposition algorithm needs to target.
+
+In this case, the decomposition for the CNOT needs to be specified as a quantum function, ``decompose_cnot``, and
+registered with ``qml.add_decomps``:
+
+.. code-block:: python
+
+    @qml.register_resources({qml.RY: 3, qml.RX: 1, qml.IsingXX: 1})
+    def decompose_cnot(wires, **_):
+        qml.RY(np.pi/2, wires=wires[0]),
+        qml.IsingXX(np.pi/2, wires=wires),
+        qml.RX(-np.pi/2, wires=wires[0]),
+        qml.RY(-np.pi/2, wires=wires[0]),
+        qml.RY(-np.pi/2, wires=wires[1])
+
+    qml.add_decomps(qml.CNOT, decompose_cnot)
+
+    program.add_transform(
+        decompose,
+        stopping_condition=stopping_condition,
+        decomposer=custom_decomposer,
+        device_wires=[2],
+        target_gates={qml.IsingXX, "RX", "RY"},
+        name="my_device"
+    )
 
 .. _device_capabilities:
 
@@ -457,9 +554,27 @@ the top user level, we aim to allow dynamic configuration of the device.
 >>> config = qml.devices.ExecutionConfig(device_options={"rng": 42})
 >>> tape = qml.tape.QuantumTape([qml.Hadamard(0)], [qml.sample(wires=0)], shots=10)
 >>> dev.execute(tape, config)
-array([1, 0, 1, 1, 0, 1, 1, 1, 0, 0])
+array([[1],
+       [1],
+       [0],
+       [1],
+       [0],
+       [1],
+       [0],
+       [1],
+       [0],
+       [0]])
 >>> dev.execute(tape, config)
-array([1, 0, 1, 1, 0, 1, 1, 1, 0, 0])
+array([[0],
+       [1],
+       [0],
+       [0],
+       [0],
+       [1],
+       [1],
+       [0],
+       [0],
+       [0]])
 
 By pulling options from this dictionary instead of from device properties, we unlock two key
 pieces of functionality:
@@ -546,7 +661,7 @@ to handle a single circuit. See the documentation for each modifier for more det
     @single_tape_support
     class MyDevice(qml.devices.Device):
 
-        def execute(self, circuits, execution_config = qml.devices.DefaultExecutionConfig):
+        def execute(self, circuits, execution_config: ExecutionConfig | None = None):
             return tuple(0.0 for _ in circuits)
 
 >>> dev = MyDevice()

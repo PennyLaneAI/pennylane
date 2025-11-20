@@ -39,7 +39,6 @@ jobs:
           mkdir durations
           jq -s 'add' durations-core-*/*.json > durations/core_tests_durations.json
           jq -s 'add' durations-jax-*/*.json > durations/jax_tests_durations.json
-          jq -s 'add' durations-tf-*/*.json > durations/tf_tests_durations.json
 
       - name: Upload combined durations artifacts
         uses: actions/upload-artifact@v4

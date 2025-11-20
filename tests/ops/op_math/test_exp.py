@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the ``Exp`` class"""
+
 import copy
 import re
 
@@ -19,13 +20,12 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.operation import (
+from pennylane.exceptions import (
     DecompositionUndefinedError,
     GeneratorUndefinedError,
     ParameterFrequenciesUndefinedError,
 )
 from pennylane.ops.op_math import Evolution, Exp
-from pennylane.ops.op_math.exp import trotter_decomp
 
 
 @pytest.mark.parametrize("constructor", (qml.exp, Exp))
@@ -136,13 +136,13 @@ class TestProperties:
 
         assert Exp(qml.RX(1.2, 0), -1.2j)._queue_category == "_ops"
 
-    def test_is_hermitian(self):
+    def test_is_verified_hermitian(self):
         """Test that the op is hermitian if the base is hermitian and the coeff is real."""
-        assert Exp(qml.PauliX(0), -1.0).is_hermitian
+        assert Exp(qml.PauliX(0), -1.0).is_verified_hermitian
 
-        assert not Exp(qml.PauliX(0), 1.0 + 2j).is_hermitian
+        assert not Exp(qml.PauliX(0), 1.0 + 2j).is_verified_hermitian
 
-        assert not Exp(qml.RX(1.2, wires=0)).is_hermitian
+        assert not Exp(qml.RX(1.2, wires=0)).is_verified_hermitian
 
     def test_batching_properties(self):
         """Test the batching properties and methods."""
@@ -401,6 +401,16 @@ class TestDecomposition:
         """Test that the exp of an SProd has a decomposition."""
         op = Exp(qml.s_prod(3, qml.PauliX(0)), 1j)
         assert op.has_decomposition
+        [decomp] = op.decomposition()
+        qml.assert_equal(decomp, qml.RX(-6.0, 0))
+
+    def test_imaginary_coeff_in_operator(self):
+        """Test that the operator can be decomposed if the imaginary coeff is in the operator instead."""
+
+        op = Exp(1j * qml.Z(0) @ qml.Z(1))
+        assert op.has_decomposition
+        [decomp] = op.decomposition()
+        qml.assert_equal(decomp, qml.IsingZZ(-2.0, wires=(0, 1)))
 
     @pytest.mark.parametrize("coeff", (1, 1 + 0.5j))
     def test_non_imag_no_decomposition(self, coeff):
@@ -415,7 +425,7 @@ class TestDecomposition:
 
     def test_non_pauli_word_base_no_decomposition(self):
         """Tests that the decomposition doesn't exist if the base is not a pauli word."""
-        op = Exp(qml.S(0), -0.5j, num_steps=100)
+        op = Exp(qml.S(0), -0.5j)
         assert not op.has_decomposition
         with pytest.raises(
             DecompositionUndefinedError,
@@ -423,7 +433,7 @@ class TestDecomposition:
         ):
             op.decomposition()
 
-        op = Exp(2 * qml.S(0) + qml.PauliZ(1), -0.5j, num_steps=100)
+        op = Exp(2 * qml.S(0) + qml.PauliZ(1), -0.5j)
         assert not op.has_decomposition
         with pytest.raises(
             DecompositionUndefinedError,
@@ -432,20 +442,20 @@ class TestDecomposition:
             op.decomposition()
 
     @pytest.mark.parametrize(
-        "base, base_string",
+        "base, base_string, wires",
         (
-            (qml.prod(qml.PauliZ(0), qml.PauliY(1)), "ZY"),
-            (qml.prod(qml.PauliY(0), qml.Identity(1), qml.PauliZ(2)), "YIZ"),
+            (qml.prod(qml.PauliZ(0), qml.PauliY(1)), "ZY", (0, 1)),
+            (qml.prod(qml.PauliY(0), qml.Identity(1), qml.PauliZ(2)), "YZ", (0, 2)),
         ),
     )
-    def test_decomposition_into_pauli_rot(self, base, base_string):
+    def test_decomposition_into_pauli_rot(self, base, base_string, wires):
         """Check that Exp decomposes into PauliRot if base is a pauli word with more than one term."""
         theta = 3.21
         op = Exp(base, -0.5j * theta)
 
         assert op.has_decomposition
         pr = op.decomposition()[0]
-        qml.assert_equal(pr, qml.PauliRot(3.21, base_string, base.wires))
+        qml.assert_equal(pr, qml.PauliRot(3.21, base_string, wires))
 
     @pytest.mark.parametrize("op_name", all_qubit_operators)
     @pytest.mark.parametrize("str_wires", (True, False))
@@ -494,160 +504,18 @@ class TestDecomposition:
             # exp(qml.GlobalPhase.generator(), phi) decomposes to PauliRot
             # cannot compare GlobalPhase and PauliRot with qml.equal
             assert np.allclose(op.matrix(wire_order=op.wires), dec[0].matrix(wire_order=op.wires))
+        elif op_class is qml.FermionicSWAP:
+            expected = op.map_wires(dict(zip(op.wires, reversed(op.wires))))
+            # simplifying the generator changes the wire order
+            qml.assert_equal(expected, dec[0])
         else:
             qml.assert_equal(op, dec[0])
 
-    def test_trotter_is_used_if_num_steps_is_defined(self):
-        """Test that the Suzuki-Trotter decomposition is used when ``num_steps`` is defined."""
-        phi = 1.23
-        num_steps = 3
-        op = qml.IsingXY(phi, wires=[0, 1])
-        exp = qml.evolve(op.generator(), coeff=-phi, num_steps=num_steps)
-        dec = exp.decomposition()
-        assert qml.math.allclose(
-            qml.matrix(qml.tape.QuantumScript(dec), wire_order=[0, 1]),
-            qml.matrix(exp, wire_order=[0, 1]),
-        )
-        new_phi = (-phi / 2) / num_steps
-        expected_decomp = [
-            qml.IsingXX(new_phi, wires=[0, 1]),
-            qml.IsingYY(new_phi, wires=[0, 1]),
-        ] * num_steps
-        assert len(dec) == len(expected_decomp)
-        for op1, op2 in zip(dec, expected_decomp):
-            qml.assert_equal(op1, op2)
-
-    @pytest.mark.parametrize(
-        ("time", "hamiltonian", "steps", "expected_queue"),
-        [
-            (
-                2,
-                qml.Hamiltonian([1, 1], [qml.PauliX(0) @ qml.PauliX(1), qml.PauliX(1)]),
-                2,
-                [
-                    qml.IsingXX(2.0, wires=[0, 1]),
-                    qml.PauliRot(2.0, "X", wires=[1]),
-                    qml.IsingXX(2.0, wires=[0, 1]),
-                    qml.PauliRot(2.0, "X", wires=[1]),
-                ],
-            ),
-            (
-                2,
-                qml.sum(
-                    qml.s_prod(2, qml.PauliX(0)),
-                    qml.s_prod(0.5, qml.PauliZ(1) @ qml.PauliZ(0)),
-                ),
-                4,
-                [
-                    qml.PauliRot(2.0, "X", wires=[0]),
-                    qml.IsingZZ(0.5, wires=[1, 0]),
-                    qml.PauliRot(2.0, "X", wires=[0]),
-                    qml.IsingZZ(0.5, wires=[1, 0]),
-                    qml.PauliRot(2.0, "X", wires=[0]),
-                    qml.IsingZZ(0.5, wires=[1, 0]),
-                    qml.PauliRot(2.0, "X", wires=[0]),
-                    qml.IsingZZ(0.5, wires=[1, 0]),
-                ],
-            ),
-            (
-                2,
-                qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.Identity(0) @ qml.Identity(1)]),
-                2,
-                [qml.PauliRot(2.0, "X", wires=[0]), qml.PauliRot(2.0, "X", wires=[0])],
-            ),
-        ],
-    )
-    def test_trotter_decomposition(self, time, hamiltonian, steps, expected_queue):
-        """Tests that the sequence of gates implemented in the trotter decomposition is correct"""
-
-        op = qml.exp(hamiltonian, coeff=-1j * time, num_steps=steps)
-        queue = op.decomposition()
-
-        for expected_gate, gate in zip(expected_queue, queue):
-            prep = [gate.parameters, gate.wires]
-            target = [expected_gate.parameters, expected_gate.wires]
-
-            assert prep == target
-
-    def test_trotter_decomposition_raises_error(self):
-        """Test that the trotter decomposition raises an error when no ``num_steps`` is specified."""
-        op = qml.evolve(qml.sum(qml.PauliX(0), qml.PauliY(1)))
-        with pytest.raises(
-            DecompositionUndefinedError,
-            match="Please set a value to ``num_steps`` when instantiating the ``Exp`` operator",
-        ):
-            op.decomposition()
-
-    def test_real_coeff_and_none_num_steps_error(self):
-        """Test that the decomposition raises an error if ``num_steps`` is None and
-        the coefficient has non-zero real part"""
+    def test_real_coeff_error(self):
+        """Test that the decomposition raises an error if the coefficient has non-zero real part"""
         op = qml.exp(qml.sum(qml.PauliX(0), qml.PauliY(1)), 1.23 + 0.5j)
-        msg = (
-            "Please set a value to ``num_steps`` when instantiating the ``Exp`` operator "
-            "if a Suzuki-Trotter decomposition is required. "
-            "Decomposition is not defined for real coefficients of hermitian operators."
-        )
-        with pytest.raises(DecompositionUndefinedError, match=msg):
+        with pytest.raises(DecompositionUndefinedError):
             op.decomposition()
-
-    @pytest.mark.parametrize(
-        "coeff, hamiltonian",
-        [
-            (3j, qml.Hamiltonian([1, 2, 3], [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)])),
-            (3, qml.Hamiltonian([1j, 2j, 3j], [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)])),
-            (-1j, qml.sum(qml.PauliY(1), 3 * qml.prod(qml.PauliX(0), qml.PauliZ(2)))),
-            (
-                -1,
-                qml.sum(
-                    qml.s_prod(1j, qml.PauliY(1)), qml.s_prod(3j, qml.PauliX(0) @ qml.PauliZ(2))
-                ),
-            ),
-        ],
-    )
-    def test_decomposition_matrices(self, coeff, hamiltonian):
-        """Test that the matrix of the decomposed gates is the same as the exponentiated matrix."""
-        op = qml.exp(hamiltonian, coeff, num_steps=100)
-        matrix = qml.prod(*op.decomposition()).matrix()
-        assert qml.math.allclose(matrix, op.matrix())
-
-    @pytest.mark.integration
-    @pytest.mark.usefixtures("enable_graph_decomposition")
-    @pytest.mark.parametrize(
-        "coeff, hamiltonian",
-        [
-            (3j, qml.Hamiltonian([1, 2, 3], [qml.X(0), qml.Y(1), qml.Z(2)])),
-            (3, qml.Hamiltonian([1j, 2j, 3j], [qml.X(0), qml.Y(1), qml.Z(2)])),
-            (-1j, qml.Y(1) + 3 * qml.PauliX(0) @ qml.PauliZ(2)),
-            (-1, 1j * qml.PauliY(1) + 3j * qml.PauliX(0) @ qml.PauliZ(2)),
-            (0.3j, qml.Z(0) @ qml.Y(1)),
-            (0.3j, qml.Z(0)),
-        ],
-    )
-    def test_trotter_decomposition_integration_graph(self, coeff, hamiltonian):
-        """Tests that the trotter decomposition works in the new graph-based system."""
-
-        op = qml.exp(hamiltonian, coeff, num_steps=100)
-        tape = qml.tape.QuantumScript([op])
-
-        [decomp_tape], _ = qml.transforms.decompose(tape, gate_set={"PauliRot"})
-        actual_matrix = qml.matrix(decomp_tape, wire_order=op.wires)
-        expected_matrix = qml.matrix(op, wire_order=op.wires)
-        assert qml.math.allclose(actual_matrix, expected_matrix)
-
-    def test_trotter_decomposition_condition(self):
-        """Tests the condition of the trotter decomposition rule."""
-
-        hamiltonian = qml.RX(0.5, wires=0)
-        op = qml.exp(hamiltonian, coeff=1.5, num_steps=100)
-        assert not trotter_decomp.is_applicable(**op.resource_params)
-
-        hamiltonian = qml.X(0)
-        op = qml.exp(hamiltonian, coeff=1.5)
-        assert not trotter_decomp.is_applicable(**op.resource_params)
-
-        hamiltonian = qml.X(0) + qml.RX(0.5, wires=1)
-        op = qml.exp(hamiltonian, coeff=1.5, num_steps=100)
-        assert not trotter_decomp.is_applicable(**op.resource_params)
 
     @pytest.mark.integration
     @pytest.mark.usefixtures("enable_graph_decomposition")
@@ -656,6 +524,7 @@ class TestDecomposition:
         [
             (0.3j, qml.Z(0) @ qml.Y(1)),
             (0.5, 0.1j * qml.Y(0) @ qml.I(1) @ qml.Z(2)),
+            (0.3j, qml.Z(0)),
         ],
     )
     def test_pauli_decomposition_integration_graph(self, coeff, hamiltonian):
@@ -680,19 +549,15 @@ class TestMiscMethods:
         assert repr(op) == "Exp(3 PauliX)"
 
     # pylint: disable=protected-access
-    @pytest.mark.parametrize("exp_type", (Exp, Evolution))
-    def test_flatten_unflatten(self, exp_type):
-        """Tests the _unflatten and _flatten methods."""
+    @pytest.mark.parametrize("op_class", [Exp, Evolution])
+    def test_flatten_unflatten(self, op_class):
+        """Tests the _unflatten and _flatten methods for the Exp and Evolution operators."""
         base = qml.RX(1.2, wires=0)
-        op = exp_type(base, 2.5, num_steps=5)
+        op = op_class(base, 2.5)
 
-        data, metadata = op._flatten()
+        data, _ = op._flatten()
         assert data[0] is base
         assert data[1] == 2.5
-
-        assert metadata == (5,)
-
-        assert hash(metadata)
 
         new_op = type(op)._unflatten(*op._flatten())
         qml.assert_equal(new_op, op)
@@ -765,13 +630,6 @@ class TestMiscMethods:
         qml.assert_equal(new_op.base, qml.PauliX(0))
         assert new_op.coeff == 0.2
 
-    def test_simplify_num_steps(self):
-        """Test that the number of Trotter steps is conserved after simplification"""
-        base = qml.Z(0) + 1.2 * qml.Z(1)
-        op = Exp(base, coeff=-1.2j, num_steps=2)
-        new_op = op.simplify()
-        assert new_op.num_steps == op.num_steps
-
     def test_simplify_s_prod(self):
         """Tests that when simplification of the base results in an SProd,
         the scalar is included in the coeff rather than the base"""
@@ -843,6 +701,9 @@ class TestIntegration:
         grad = qml.grad(func)(phi)
         assert qml.math.allclose(grad, -np.sin(phi))
 
+    @pytest.mark.xfail(
+        reason="change in lightning broke this test. Temporary patch to unblock CI", strict=False
+    )
     @pytest.mark.jax
     def test_jax_jit_qnode(self):
         """Tests with jax.jit"""

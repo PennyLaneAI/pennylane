@@ -467,7 +467,7 @@ class TestCreateCustomDecompExpandFn:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
-        tape = qml.workflow.construct_batch(circuit, level=None)()[0][0]
+        tape = qml.workflow.construct_batch(circuit, level="device")()[0][0]
         decomp_ops = tape.operations
 
         assert len(decomp_ops) == 7
@@ -494,8 +494,10 @@ class TestCreateCustomDecompExpandFn:
         original_res = original_qnode()
         decomp_res = decomp_qnode()
 
-        original_ops = qml.workflow.construct_batch(original_qnode, level=None)()[0][0].operations
-        decomp_ops = qml.workflow.construct_batch(decomp_qnode, level=None)()[0][0].operations
+        original_ops = qml.workflow.construct_batch(original_qnode, level="device")()[0][
+            0
+        ].operations
+        decomp_ops = qml.workflow.construct_batch(decomp_qnode, level="device")()[0][0].operations
 
         assert np.isclose(original_res, decomp_res)
         assert [
@@ -517,8 +519,10 @@ class TestCreateCustomDecompExpandFn:
         original_qnode = qml.QNode(circuit, original_dev)
         decomp_qnode = qml.QNode(circuit, decomp_dev)
 
-        original_ops = qml.workflow.construct_batch(original_qnode, level=None)()[0][0].operations
-        decomp_ops = qml.workflow.construct_batch(decomp_qnode, level=None)()[0][0].operations
+        original_ops = qml.workflow.construct_batch(original_qnode, level="device")()[0][
+            0
+        ].operations
+        decomp_ops = qml.workflow.construct_batch(decomp_qnode, level="device")()[0][0].operations
 
         original_res = original_qnode()
         decomp_res = decomp_qnode()
@@ -542,7 +546,7 @@ class TestCreateCustomDecompExpandFn:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
-        decomp_ops = qml.workflow.construct_batch(circuit, level=None)()[0][0].operations
+        decomp_ops = qml.workflow.construct_batch(circuit, level="device")()[0][0].operations
 
         assert len(decomp_ops) == 3
 
@@ -583,7 +587,7 @@ class TestCreateCustomDecompExpandFn:
         assert np.allclose(original_grad, decomp_grad)
 
         expected_ops = ["Hadamard", "RZ", "PauliX", "RY", "PauliX", "RZ", "Hadamard"]
-        decomp_ops = qml.workflow.construct_batch(decomp_qnode, level=None)(x)[0][0].operations
+        decomp_ops = qml.workflow.construct_batch(decomp_qnode, level="device")(x)[0][0].operations
         assert all(op.name == name for op, name in zip(decomp_ops, expected_ops))
 
     @pytest.mark.parametrize("device_name", ["default.qubit", "default.mixed"])
@@ -601,7 +605,7 @@ class TestCreateCustomDecompExpandFn:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
-        decomp_ops = qml.workflow.construct_batch(circuit, level=None)()[0][0].operations
+        decomp_ops = qml.workflow.construct_batch(circuit, level="device")()[0][0].operations
 
         assert len(decomp_ops) == 7
 
@@ -641,7 +645,7 @@ class TestCreateCustomDecompExpandFn:
             qml.BasicEntanglerLayers([[0.1, 0.2]], wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
-        decomp_ops = qml.workflow.construct_batch(circuit, level=None)()[0][0].operations
+        decomp_ops = qml.workflow.construct_batch(circuit, level="device")()[0][0].operations
 
         assert len(decomp_ops) == 7
 
@@ -687,7 +691,7 @@ class TestCreateCustomDecompExpandFn:
             qml.BasicEntanglerLayers([[0.1, 0.2]], wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
-        decomp_ops = qml.workflow.construct_batch(circuit, level=None)()[0][0].operations
+        decomp_ops = qml.workflow.construct_batch(circuit, level="device")()[0][0].operations
 
         assert len(decomp_ops) == 5
 
@@ -723,7 +727,7 @@ class TestCreateCustomDecompExpandFn:
             qml.adjoint(qml.RX, lazy=False)(0.2, wires="a")
             return qml.expval(qml.PauliZ("a"))
 
-        decomp_ops = qml.workflow.construct_batch(circuit, level=None)()[0][0].operations
+        decomp_ops = qml.workflow.construct_batch(circuit, level="device")()[0][0].operations
 
         assert len(decomp_ops) == 2
 
@@ -762,7 +766,7 @@ class TestCreateCustomDecompExpandFn:
             qml.ctrl(CustomOp, control=1)(0)
             return qml.expval(qml.PauliZ(0))
 
-        decomp_ops = qml.workflow.construct_batch(circuit, level=None)()[0][0].operations
+        decomp_ops = qml.workflow.construct_batch(circuit, level="device")()[0][0].operations
 
         assert len(decomp_ops) == 2
 
@@ -784,7 +788,7 @@ class TestCreateCustomDecompExpandFn:
             return qml.expval(qml.PauliZ(wires=0))
 
         # Initial test
-        ops = qml.workflow.construct_batch(circuit, level=None)()[0][0].operations
+        ops = qml.workflow.construct_batch(circuit, level="device")()[0][0].operations
 
         assert len(ops) == 1
         assert ops[0].name == "CNOT"
@@ -792,7 +796,9 @@ class TestCreateCustomDecompExpandFn:
 
         # Test within the context manager
         with qml.transforms.set_decomposition({qml.CNOT: custom_cnot}, dev):
-            ops_in_context = qml.workflow.construct_batch(circuit, level=None)()[0][0].operations
+            ops_in_context = qml.workflow.construct_batch(circuit, level="device")()[0][
+                0
+            ].operations
 
             assert dev.custom_expand_fn is not None
 
@@ -802,7 +808,7 @@ class TestCreateCustomDecompExpandFn:
         assert ops_in_context[2].name == "Hadamard"
 
         # Check that afterwards, the device has gone back to normal
-        ops = qml.workflow.construct_batch(circuit, level=None)()[0][0].operations
+        ops = qml.workflow.construct_batch(circuit, level="device")()[0][0].operations
 
         assert len(ops) == 1
         assert ops[0].name == "CNOT"
@@ -827,15 +833,17 @@ class TestCreateCustomDecompExpandFn:
         assert len(tape.operations) == 1
         assert tape.operations[0].name == "CNOT"
 
-        assert dev.preprocess_transforms()[2].transform.__name__ == "decompose"
-        assert dev.preprocess_transforms()[2].kwargs.get("decomposer", None) is None
+        ind = 0 if device == qml.devices.DefaultQubit else 1
+
+        assert dev.preprocess_transforms()[ind].transform.__name__ == "decompose"
+        assert dev.preprocess_transforms()[ind].kwargs.get("decomposer", None) is None
 
         # Test within the context manager
         with qml.transforms.set_decomposition({qml.CNOT: custom_cnot}, dev):
             _ = circuit()
 
-            assert dev.preprocess_transforms()[2].transform.__name__ == "decompose"
-            assert dev.preprocess_transforms()[2].kwargs.get("decomposer", None) is not None
+            assert dev.preprocess_transforms()[ind].transform.__name__ == "decompose"
+            assert dev.preprocess_transforms()[ind].kwargs.get("decomposer", None) is not None
 
         tape = spy.call_args_list[1][0][0][0]
         ops_in_context = tape.operations
@@ -851,8 +859,8 @@ class TestCreateCustomDecompExpandFn:
         ops_in_context = tape.operations
         assert len(tape.operations) == 1
         assert tape.operations[0].name == "CNOT"
-        assert dev.preprocess_transforms()[2].transform.__name__ == "decompose"
-        assert dev.preprocess_transforms()[2].kwargs.get("decomposer", None) is None
+        assert dev.preprocess_transforms()[ind].transform.__name__ == "decompose"
+        assert dev.preprocess_transforms()[ind].kwargs.get("decomposer", None) is None
 
     # pylint: disable=cell-var-from-loop
 
@@ -883,8 +891,9 @@ class TestCreateCustomDecompExpandFn:
 
         custom_decomps = {"Hadamard": custom_hadamard}
         with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
-            decomp_dev = qml.device("default.qubit", shots=shots, custom_decomps=custom_decomps)
+            decomp_dev = qml.device("default.qubit", custom_decomps=custom_decomps)
 
+        @qml.set_shots(shots)
         @qml.qnode(decomp_dev)
         def circuit():
             qml.Hadamard(wires=0)
@@ -893,7 +902,7 @@ class TestCreateCustomDecompExpandFn:
             _ = qml.measure(1)
             return qml.expval(qml.PauliZ(0))
 
-        decomp_ops = qml.workflow.construct_batch(circuit, level=None)()[0][0].operations
+        decomp_ops = qml.workflow.construct_batch(circuit, level="device")()[0][0].operations
 
         assert len(decomp_ops) == 4 if shots is None else 5
 

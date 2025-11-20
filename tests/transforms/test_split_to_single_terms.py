@@ -17,6 +17,7 @@
 # pylint: disable=import-outside-toplevel,unnecessary-lambda
 
 from functools import partial
+from typing import Optional
 
 import numpy as np
 import pytest
@@ -50,7 +51,7 @@ complex_obs_list = [
 class NoTermsDevice(qml.devices.DefaultQubit):
     """A device that builds on default.qubit, but won't accept LinearCombination or Sum"""
 
-    def execute(self, circuits, execution_config=qml.devices.DefaultExecutionConfig):
+    def execute(self, circuits, execution_config: Optional[qml.devices.ExecutionConfig] = None):
         for t in circuits:
             for mp in t.measurements:
                 if mp.obs and isinstance(mp.obs, qml.ops.Sum):
@@ -297,9 +298,9 @@ class TestIntegration:
         coeffs = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
         obs = single_term_obs_list + [qml.I()]  # test constant offset
 
-        dev = NoTermsDevice(wires=2, shots=shots, seed=seed)
+        dev = NoTermsDevice(wires=2, seed=seed)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, shots=shots)
         def circuit(angles):
             qml.RX(angles[0], wires=0)
             qml.RY(angles[1], wires=0)
@@ -366,11 +367,11 @@ class TestIntegration:
     def test_multiple_expval(self, shots, params, expected_results, seed):
         """Tests that a QNode with multiple expval measurements is executed correctly"""
 
-        dev = NoTermsDevice(wires=2, shots=shots, seed=seed)
+        dev = NoTermsDevice(wires=2, seed=seed)
 
         obs_list = complex_obs_list
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, shots=shots)
         def circuit(angles):
             qml.RX(angles[0], wires=0)
             qml.RY(angles[1], wires=0)
@@ -432,11 +433,11 @@ class TestIntegration:
     def test_mixed_measurement_types(self, shots, params, expected_results, seed):
         """Tests that a QNode with mixed measurement types is executed correctly"""
 
-        dev = NoTermsDevice(wires=2, shots=shots, seed=seed)
+        dev = NoTermsDevice(wires=2, seed=seed)
 
         obs_list = complex_obs_list
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, shots=shots)
         def circuit(angles):
             qml.RX(angles[0], wires=0)
             qml.RY(angles[1], wires=0)
@@ -464,12 +465,12 @@ class TestIntegration:
                     assert qml.math.shape(prob_res_0) == (2,)
                     assert qml.math.shape(prob_res_1) == (4,)
                     assert isinstance(counts_res, dict)
-                    assert qml.math.shape(sample_res) == (shots[i],)
+                    assert qml.math.shape(sample_res) == (shots[i], 1)
                 else:
                     assert qml.math.shape(prob_res_0) == (2, 2)
                     assert qml.math.shape(prob_res_1) == (2, 4)
                     assert all(isinstance(_res, dict) for _res in counts_res)
-                    assert qml.math.shape(sample_res) == (2, shots[i])
+                    assert qml.math.shape(sample_res) == (2, shots[i], 1)
 
                 expval_res = res[i][4:]
                 assert qml.math.allclose(expval_res, expected_results, atol=0.05)
@@ -482,12 +483,12 @@ class TestIntegration:
                 assert qml.math.shape(prob_res_0) == (2,)
                 assert qml.math.shape(prob_res_1) == (4,)
                 assert isinstance(counts_res, dict)
-                assert qml.math.shape(sample_res) == (shots,)
+                assert qml.math.shape(sample_res) == (shots, 1)
             else:
                 assert qml.math.shape(prob_res_0) == (2, 2)
                 assert qml.math.shape(prob_res_1) == (2, 4)
                 assert all(isinstance(_res, dict) for _res in counts_res)
-                assert qml.math.shape(sample_res) == (2, shots)
+                assert qml.math.shape(sample_res) == (2, shots, 1)
 
             expval_res = res[4:]
             assert qml.math.allclose(expval_res, expected_results, atol=0.05)
@@ -497,11 +498,11 @@ class TestIntegration:
         """Tests that split_to_single_terms can handle Identity observables (these
         are treated separately as offsets in the transform)"""
 
-        dev = NoTermsDevice(wires=2, shots=shots, seed=seed)
+        dev = NoTermsDevice(wires=2, seed=seed)
         H = qml.Hamiltonian([1.5, 2.5], [qml.I(), qml.I()])
 
         @split_to_single_terms
-        @qml.qnode(dev)
+        @qml.qnode(dev, shots=shots)
         def circuit():
             return qml.expval(H)
 
@@ -513,11 +514,11 @@ class TestIntegration:
         """Tests that split_to_single_terms can handle a combination Identity observables (these
         are treated separately as offsets in the transform) and other observables"""
 
-        dev = NoTermsDevice(wires=2, shots=shots, seed=seed)
+        dev = NoTermsDevice(wires=2, seed=seed)
         H = qml.Hamiltonian([1.5, 2.5], [qml.I(0), qml.Y(0)])
 
         @split_to_single_terms
-        @qml.qnode(dev)
+        @qml.qnode(dev, shots=shots)
         def circuit():
             qml.RX(-np.pi / 2, 0)
             return qml.expval(H)
@@ -551,10 +552,10 @@ class TestDifferentiability:
 
         import pennylane.numpy as pnp
 
-        dev = NoTermsDevice(wires=2, shots=50000, seed=seed)
+        dev = NoTermsDevice(wires=2, seed=seed)
 
         @split_to_single_terms
-        @qml.qnode(dev)
+        @qml.qnode(dev, shots=50000)
         def circuit(coeff1, coeff2):
             qml.RX(np.pi / 4, wires=0)
             qml.RY(np.pi / 4, wires=1)
@@ -573,10 +574,10 @@ class TestDifferentiability:
         import jax
         import jax.numpy as jnp
 
-        dev = NoTermsDevice(wires=2, shots=50000, seed=seed)
+        dev = NoTermsDevice(wires=2, seed=seed)
 
         @partial(split_to_single_terms)
-        @qml.qnode(dev)
+        @qml.qnode(dev, shots=50000)
         def circuit(coeff1, coeff2):
             qml.RX(np.pi / 4, wires=0)
             qml.RY(np.pi / 4, wires=1)
@@ -597,10 +598,10 @@ class TestDifferentiability:
         import torch
         from torch.autograd.functional import jacobian
 
-        dev = NoTermsDevice(wires=2, shots=50000, seed=seed)
+        dev = NoTermsDevice(wires=2, seed=seed)
 
         @split_to_single_terms
-        @qml.qnode(dev)
+        @qml.qnode(dev, shots=50000)
         def circuit(coeff1, coeff2):
             qml.RX(np.pi / 4, wires=0)
             qml.RY(np.pi / 4, wires=1)
@@ -617,9 +618,9 @@ class TestDifferentiability:
 
         import tensorflow as tf
 
-        dev = NoTermsDevice(wires=2, shots=50000, seed=seed)
+        dev = NoTermsDevice(wires=2, seed=seed)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, shots=50000)
         def circuit(coeff1, coeff2):
             qml.RX(np.pi / 4, wires=0)
             qml.RY(np.pi / 4, wires=1)

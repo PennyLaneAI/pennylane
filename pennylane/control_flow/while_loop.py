@@ -31,9 +31,9 @@ from ._loop_abstract_axes import (
 
 
 def while_loop(cond_fn, allow_array_resizing: Literal["auto", True, False] = "auto"):
-    """A :func:`~.qjit` compatible for-loop for PennyLane programs. When
+    """A :func:`~.qjit` compatible while-loop for PennyLane programs. When
     used without :func:`~.qjit` or program capture, this function will fall back to a standard
-    Python for loop.
+    Python while loop.
 
     This decorator provides a functional version of the traditional while loop,
     similar to `jax.lax.while_loop <https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.while_loop.html>`__.
@@ -233,7 +233,7 @@ def _get_while_loop_qfunc_prim():
     register_custom_staging_rule(while_loop_prim, lambda params: params["jaxpr_body_fn"].outvars)
 
     @while_loop_prim.def_impl
-    def _(
+    def _impl(
         *args,
         jaxpr_body_fn,
         jaxpr_cond_fn,
@@ -253,7 +253,7 @@ def _get_while_loop_qfunc_prim():
         return fn_res
 
     @while_loop_prim.def_abstract_eval
-    def _(*args, args_slice, **__):
+    def _abstract_eval(*args, args_slice, **__):
         return args[args_slice]
 
     return while_loop_prim

@@ -14,7 +14,6 @@
 """Functions to prepare a qutrit mixed state."""
 
 from collections.abc import Iterable
-from typing import Union
 
 import pennylane as qml
 from pennylane.operation import StatePrepBase
@@ -23,8 +22,8 @@ from .utils import QUDIT_DIM
 
 
 def create_initial_state(
-    wires: Union[qml.wires.Wires, Iterable],
-    prep_operation: StatePrepBase = None,
+    wires: qml.wires.Wires | Iterable,
+    prep_operation: StatePrepBase | None = None,
     like: str = None,
 ):
     r"""

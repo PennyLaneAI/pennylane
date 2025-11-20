@@ -372,8 +372,7 @@ class ClassicalShadow:
                 number of wires for the reduced state.
             snapshots (Iterable[int] or int): Only compute a subset of local snapshots. For ``snapshots=None`` (default), all local snapshots are taken.
                 In case of an integer, a random subset of that size is taken. The subset can also be explicitly fixed by passing an Iterable with the corresponding indices.
-            alpha (float): order of the Renyi-entropy. Defaults to ``alpha=2``, which corresponds to the purity of the reduced state. This case is straight forward to compute.
-                All other cases ``alpha!=2`` necessitate computing the eigenvalues of the reduced state and thus may lead to longer computations times.
+            alpha (float): order of the Renyi-entropy. Defaults to ``alpha=2``, which corresponds to the purity of the reduced state.
                 Another special case is ``alpha=1``, which corresponds to the von Neumann entropy.
             k (int): Allow to split the snapshots into ``k`` equal parts and estimate the snapshots in a median of means fashion. There is no known advantage to do this for entropies.
                 Thus, ``k=1`` is default and advised.
@@ -406,8 +405,8 @@ class ClassicalShadow:
 
             entropies = [shadow.entropy(wires=[0], alpha=alpha) for alpha in [1., 2., 3.]]
 
-        >>> np.isclose(entropies, entropies[0], atol=1e-2)
-        [ True,  True,  True]
+        >>> print(np.isclose(entropies, entropies[0], atol=5e-2))
+        [ True  True  True]
 
         For non-uniform reduced states that is not the case anymore and the entropy differs for each order ``alpha``:
 

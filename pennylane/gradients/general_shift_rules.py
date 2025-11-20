@@ -84,7 +84,7 @@ def process_shifts(rule, tol=1e-10, batch_duplicates=True):
     return rule[np.lexsort((-np.sign(rule[:, -1]), np.abs(rule[:, -1])))]
 
 
-@functools.lru_cache(maxsize=None)
+@functools.cache
 def eigvals_to_frequencies(eigvals):
     r"""Convert an eigenvalue spectrum to frequency values, defined
     as the the set of positive, unique differences of the eigenvalues in the spectrum.
@@ -105,7 +105,7 @@ def eigvals_to_frequencies(eigvals):
     return tuple({j - i for i, j in itertools.combinations(unique_eigvals, 2)})
 
 
-@functools.lru_cache(maxsize=None)
+@functools.cache
 def frequencies_to_period(frequencies, decimals=5):
     r"""Returns the period of a Fourier series as defined
     by a set of frequencies.
@@ -139,7 +139,7 @@ def frequencies_to_period(frequencies, decimals=5):
     return 2 * np.pi / gcd
 
 
-@functools.lru_cache(maxsize=None)
+@functools.cache
 def _get_shift_rule(frequencies, shifts=None):
     n_freqs = len(frequencies)
     frequencies = math.sort(math.stack(frequencies))
@@ -185,8 +185,6 @@ def _get_shift_rule(frequencies, shifts=None):
         coeffs = -2 * linalg_solve(sin_matrix.T, frequencies)
 
     coeffs = np.concatenate((coeffs, -coeffs))
-    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
-    # pylint: disable=invalid-unary-operand-type
     shifts = np.concatenate((shifts, -shifts))
     return np.stack([coeffs, shifts]).T
 
@@ -244,7 +242,7 @@ def _combine_shift_rules(rules):
     return np.stack(combined_rules)
 
 
-@functools.lru_cache()
+@functools.lru_cache
 def generate_shift_rule(frequencies, shifts=None, order=1):
     r"""Computes the parameter shift rule for a unitary based on its generator's eigenvalue
     frequency spectrum.

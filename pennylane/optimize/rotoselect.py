@@ -49,7 +49,7 @@ class RotoselectOptimizer:
     `Ostaszewski et al. (2021) <https://doi.org/10.22331/q-2021-01-28-391>`_.
 
     Args:
-        possible_generators (list[~.Operation]): List containing the possible
+        possible_generators (list[~.Operation]): list containing the possible
             ``pennylane.ops.qubit`` operators that are allowed in the circuit.
             Default is the set of Pauli rotations :math:`\{R_x, R_y, R_z\}`.
 

@@ -16,26 +16,28 @@ This module contains the set_shots decorator.
 """
 from __future__ import annotations
 
-from collections.abc import Callable, Sequence
-from typing import TYPE_CHECKING, Optional
+from collections.abc import Callable
+from typing import TYPE_CHECKING, overload
 
 from .qnode import QNode
 
-# Sentinel value to distinguish decorator mode from direct calls
-_DECORATOR_MODE = object()
-
 if TYPE_CHECKING:
-    from pennylane.measurements import Shots
+    from pennylane.measurements import ShotsLike
 
 
-def set_shots(
-    qnode: QNode | object = _DECORATOR_MODE,
-    shots: Optional[Shots | int | Sequence[int | tuple[int, int]]] = None,
-) -> QNode | Callable[[QNode], QNode]:
+# Sentinel value to detect when shots parameter is not provided
+_SHOTS_NOT_PROVIDED = object()
+
+
+@overload
+def set_shots(qnode: QNode, shots: ShotsLike) -> QNode: ...
+@overload
+def set_shots(shots: ShotsLike) -> Callable[[QNode], QNode]: ...
+def set_shots(*args, shots: ShotsLike = _SHOTS_NOT_PROVIDED):
     """Transform used to set or update a circuit's shots.
 
     Args:
-        qnode (QNode): The QNode to transform. If not provided, `set_shots` can be used as a decorator directly.
+        qnode (QNode): The QNode to transform. If not provided, ``set_shots`` can be used as a decorator directly.
         shots (None or int or Sequence[int] or Sequence[tuple[int, int]] or pennylane.shots.Shots): The
             number of shots (or a shots vector) that the transformed circuit will execute.
 
@@ -51,40 +53,73 @@ def set_shots(
 
     **Examples**
 
-    Set the number of shots as a decorator:
+    Set the number of shots as a decorator with either a positional or keyword argument:
 
     .. code-block:: python
 
-        @qml.set_shots(shots=2)
+        @qml.set_shots(1_000)
         @qml.qnode(qml.device("default.qubit", wires=1))
-        def circuit():
+        def circuit_sample():
             qml.RX(1.23, wires=0)
             return qml.sample(qml.Z(0))
 
-    Run the circuit:
+    >>> result = circuit_sample()
+    >>> result.shape
+    (1000,)
 
-    >>> circuit()
-    array([1., -1.])
+    Set analytic mode as a decorator (positional argument):
 
-    Update the shots in-line for an existing circuit:
+    .. code-block:: python
 
-    >>> new_circ = qml.set_shots(circuit, shots=(4, 10)) # shot vector
-    >>> new_circ()
+        @qml.set_shots(None)
+        @qml.qnode(qml.device("default.qubit", wires=1))
+        def circuit_expval():
+            qml.RX(1.23, wires=0)
+            return qml.expval(qml.Z(0))
+
+    >>> result = circuit_expval()
+    >>> np.allclose(result, np.cos(1.23))
+    True
+
+    The shots can be updated in-line for an existing circuit:
+
+    >>> new_circ = qml.set_shots(circuit_sample, shots=(4, 10)) # shot vector
+    >>> result = new_circ()
+    >>> a, b = result
+    >>> a.shape
+    (4,)
+    >>> b.shape
+    (10,)
+    >>> result # doctest: +SKIP
     (array([-1.,  1., -1.,  1.]), array([ 1.,  1.,  1., -1.,  1.,  1., -1., -1.,  1.,  1.]))
 
     """
-    # When used as decorator with arguments: @set_shots(shots=...)
-    # This happens when qnode parameter is not provided (decorator mode)
-    if qnode is _DECORATOR_MODE:
+    # Keyword-only case: @set_shots(shots=500) or @set_shots(shots=None)
+    if len(args) == 0 and shots is not _SHOTS_NOT_PROVIDED:
+        return _set_shots_dispatch(shots)
 
-        def decorator(qnode_func):
-            return set_shots(qnode_func, shots)
+    if len(args) == 1 and shots is not _SHOTS_NOT_PROVIDED:
+        # Direct application: set_shots(qnode, shots=500) or set_shots(qnode, shots=None)
+        return _apply_shots_to_qnode(args[0], shots)
+    if len(args) == 1 and shots is _SHOTS_NOT_PROVIDED:
+        # Positional decorator: @set_shots(500) or @set_shots(None)
+        return _set_shots_dispatch(args[0])
+    if len(args) == 2 and shots is _SHOTS_NOT_PROVIDED:
+        return _apply_shots_to_qnode(*args)
+    raise ValueError(f"Invalid arguments to set_shots: {args=}, {shots=}")
 
-        return decorator
 
-    # When called directly with a QNode
-    if isinstance(qnode, QNode):
-        return qnode.update_shots(shots)
+def _set_shots_dispatch(shots_value: ShotsLike) -> Callable[[QNode], QNode]:
+    """Default case: @set_shots(500) - positional shots value"""
 
-    # If qnode is not a QNode (including explicit None), raise error
-    raise ValueError("set_shots can only be applied to QNodes")
+    def positional_decorator(qnode_func: QNode) -> QNode:
+        return _apply_shots_to_qnode(qnode_func, shots_value)
+
+    return positional_decorator
+
+
+def _apply_shots_to_qnode(qnode: QNode, shots: ShotsLike) -> QNode:
+    """Handle direct application to a QNode: set_shots(qnode, shots=500)"""
+    if not isinstance(qnode, QNode):
+        raise ValueError(f"set_shots can only be applied to QNodes, not {type(qnode)} provided.")
+    return qnode.update_shots(shots)

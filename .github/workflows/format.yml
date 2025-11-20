@@ -32,17 +32,18 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.10"
+          python-version: "3.11"
 
-      - name: Install dependencies
-        run: pip install black pylint==2.7.4 isort==5.13.2
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - uses: actions/checkout@v4
+      - name: Install Python dependencies
+        run: pip install --constraint requirements-dev.txt black pylint isort
 
       - name: Run Black
         run: |
-          black -t py310 -t py311 -t py312 -l 100 pennylane/ --check
-          black -t py310 -t py311 -t py312 -l 100 tests/ --check
+          black -t py311 -t py312 -t py313 -l 100 pennylane/ --check
+          black -t py311 -t py312 -t py313 -l 100 tests/ --check
 
       - name: Run isort
         run: |
@@ -51,8 +52,8 @@ jobs:
 
       - name: Run Pylint (source files)
         if: always()
-        run: pylint --rcfile .pylintrc $(find pennylane -name "*.py")
+        run: python -m pylint --rcfile .pylintrc $(find pennylane -name "*.py")
 
       - name: Run Pylint (test files)
         if: always()
-        run: pylint --rcfile tests/.pylintrc $(find tests -name "*.py")
+        run: python -m pylint --rcfile tests/.pylintrc $(find tests -name "*.py")

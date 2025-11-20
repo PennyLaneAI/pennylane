@@ -36,6 +36,8 @@ from pennylane.qchem.vibrational.taylor_ham import (
     taylor_hamiltonian,
 )
 from pennylane.qchem.vibrational.vibrational_class import VibrationalPES
+
+# pylint: disable=no-name-in-module
 from tests.qchem.vibrational.test_ref_files.pes_object import (
     expected_coeffs_x_arr,
     expected_coeffs_y_arr,
@@ -605,6 +607,7 @@ def test_threemode_degs():
 @pytest.mark.usefixtures("skip_if_no_sklearn_support")
 def test_taylor_coeffs():
     """Test that the computer taylor coeffs for Hamiltonian are accurate"""
+    # pylint: disable=unbalanced-tuple-unpacking
     taylor_coeffs_1D, taylor_coeffs_2D, _ = taylor_coeffs(pes_object_3D, 4, 2)
     assert np.allclose(abs(taylor_coeffs_1D), abs(taylor_1D), atol=1e-8)
     assert np.allclose(abs(taylor_coeffs_2D), abs(taylor_2D), atol=1e-8)

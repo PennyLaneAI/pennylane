@@ -69,7 +69,7 @@ Features
 
 - *Best of both worlds*.
   Support for **hybrid quantum and classical** models; connect quantum
-  hardware with PyTorch, TensorFlow, and NumPy.
+  hardware with PyTorch, JAX and NumPy.
 
 ..
 
@@ -202,6 +202,7 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    code/qml_decomposition
    code/qml_debugging
    code/qml_drawer
+   code/qml_estimator
    code/qml_fermi
    code/qml_fourier
    code/qml_gradients
@@ -233,6 +234,7 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    code/qml_capture
    code/qml_concurrency
    code/qml_devices
+   code/qml_exceptions
    code/qml_ftqc
    code/qml_measurements
    code/qml_pytrees

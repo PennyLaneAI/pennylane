@@ -124,8 +124,9 @@ class TestIntegration:
         n_wires = 3
         n_params = 3
 
-        dev = qml.device("default.qubit", wires=n_wires, shots=10000)
+        dev = qml.device("default.qubit", wires=n_wires)
 
+        @qml.set_shots(10000)
         @qml.qnode(dev)
         def circ(params):
             for i in range(n_wires):
@@ -158,7 +159,7 @@ class TestIntegration:
         n_wires = 2
 
         rng = pnp.random.default_rng(seed)
-        dev_hard = qml.device("default.qubit", wires=n_wires + 1, shots=1000, seed=rng)
+        dev_hard = qml.device("default.qubit", wires=n_wires + 1, seed=rng)
 
         def qfunc(params):
             qml.RX(params[1], wires=0)
@@ -168,7 +169,7 @@ class TestIntegration:
 
         params = rng.random(2, requires_grad=True)
 
-        circ_hard = qml.QNode(qfunc, dev_hard)
+        circ_hard = qml.set_shots(qml.QNode(qfunc, dev_hard), shots=1000)
         QFIM_hard = quantum_fisher(circ_hard)(params)
         QFIM1_hard = 4.0 * qml.metric_tensor(circ_hard)(params)
 
@@ -526,7 +527,6 @@ class TestDiffCFIM:
         """
         import jax
         import jax.numpy as jnp
-        import tensorflow as tf
         import torch
 
         dev = qml.device("default.qubit", wires=3)
@@ -560,19 +560,13 @@ class TestDiffCFIM:
         weights = jnp.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0])
         grad_jax = jax.jacobian(classical_fisher(circuit))(weights)
 
-        circuit = qml.QNode(qfunc, dev)
-        weights = tf.Variable([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0])
-        with tf.GradientTape() as tape:
-            loss = classical_fisher(circuit)(weights)
-        grad_tf = tape.jacobian(loss, weights)
-
         # Evaluate and compare
-        grads = [grad_autograd, grad_tf, grad_torch, grad_jax]
+        grads = [grad_autograd, grad_torch, grad_jax]
 
-        is_same = np.zeros((4, 4))
+        is_same = np.zeros((len(grads), len(grads)))
 
         for i, g1 in enumerate(grads):
             for j, g2 in enumerate(grads):
                 is_same[i, j] = np.allclose(g1, g2, atol=1e-6)
 
-        assert np.allclose(is_same, np.ones((4, 4)))
+        assert np.allclose(is_same, np.ones((len(grads), len(grads))))

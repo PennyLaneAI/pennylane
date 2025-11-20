@@ -209,3 +209,19 @@ but are just located in different modules.
 
 .. inheritance-diagram:: pennylane.boolean_fn
     :parts: 1
+
+Noise transforms
+^^^^^^^^^^^^^^^^
+
+.. currentmodule:: pennylane.noise
+
+.. autosummary::
+    :toctree: api
+
+    ~add_noise
+    ~insert
+    ~mitigate_with_zne
+    ~fold_global
+    ~poly_extrapolate
+    ~richardson_extrapolate
+    ~exponential_extrapolate

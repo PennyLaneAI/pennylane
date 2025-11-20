@@ -16,25 +16,32 @@ This module contains the qml.equal function.
 """
 # pylint: disable=too-many-arguments,too-many-return-statements,too-many-branches, too-many-positional-arguments
 
-# TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
-# pylint: disable=unused-argument
 from collections.abc import Iterable
 from functools import singledispatch
-from typing import Union
 
 import pennylane as qml
 from pennylane.measurements import MeasurementProcess
 from pennylane.measurements.classical_shadow import ShadowExpvalMP
 from pennylane.measurements.counts import CountsMP
-from pennylane.measurements.mid_measure import MeasurementValue, MidMeasureMP
 from pennylane.measurements.mutual_info import MutualInfoMP
 from pennylane.measurements.vn_entropy import VnEntropyMP
 from pennylane.operation import Operator
-from pennylane.ops import Adjoint, CompositeOp, Conditional, Controlled, Exp, Pow, SProd
+from pennylane.ops import (
+    Adjoint,
+    CompositeOp,
+    Conditional,
+    Controlled,
+    Exp,
+    MeasurementValue,
+    MidMeasure,
+    Pow,
+    SProd,
+)
+from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
 from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.pulse.parametrized_evolution import ParametrizedEvolution
 from pennylane.tape import QuantumScript
-from pennylane.templates.subroutines import ControlledSequence, PrepSelPrep
+from pennylane.templates.subroutines import QSVT, ControlledSequence, PrepSelPrep, Select
 
 OPERANDS_MISMATCH_ERROR_MESSAGE = "op1 and op2 have different operands because "
 
@@ -42,8 +49,8 @@ BASE_OPERATION_MISMATCH_ERROR_MESSAGE = "op1 and op2 have different base operati
 
 
 def equal(
-    op1: Union[Operator, MeasurementProcess, QuantumScript, PauliWord, PauliSentence],
-    op2: Union[Operator, MeasurementProcess, QuantumScript, PauliWord, PauliSentence],
+    op1: Operator | MeasurementProcess | QuantumScript | PauliWord | PauliSentence,
+    op2: Operator | MeasurementProcess | QuantumScript | PauliWord | PauliSentence,
     check_interface=True,
     check_trainability=True,
     rtol=1e-5,
@@ -91,11 +98,6 @@ def equal(
     >>> qml.equal(prod1, prod2), qml.equal(prod1, prod3)
     (True, False)
 
-    >>> prod = qml.X(0) @ qml.Y(1)
-    >>> ham = qml.Hamiltonian([1], [qml.X(0) @ qml.Y(1)])
-    >>> qml.equal(prod, ham)
-    True
-
     >>> H1 = qml.Hamiltonian([0.5, 0.5], [qml.Z(0) @ qml.Y(1), qml.Y(1) @ qml.Z(0) @ qml.Identity("a")])
     >>> H2 = qml.Hamiltonian([1], [qml.Z(0) @ qml.Y(1)])
     >>> H3 = qml.Hamiltonian([2], [qml.Z(0) @ qml.Y(1)])
@@ -110,9 +112,9 @@ def equal(
     True
     >>> tape1 = qml.tape.QuantumScript([qml.RX(1.2, wires=0)], [qml.expval(qml.Z(0))])
     >>> tape2 = qml.tape.QuantumScript([qml.RX(1.2 + 1e-6, wires=0)], [qml.expval(qml.Z(0))])
-    >>> qml.equal(tape1, tape2, tol=0, atol=1e-7)
+    >>> qml.equal(tape1, tape2, rtol=0, atol=1e-7)
     False
-    >>> qml.equal(tape1, tape2, tol=0, atol=1e-5)
+    >>> qml.equal(tape1, tape2, rtol=0, atol=1e-5)
     True
 
     .. details::
@@ -128,8 +130,8 @@ def equal(
         >>> qml.equal(op1, op2, check_interface=False, check_trainability=False)
         True
 
-        >>> op3 = qml.RX(np.array(1.2, requires_grad=True), wires=0)
-        >>> op4 = qml.RX(np.array(1.2, requires_grad=False), wires=0)
+        >>> op3 = qml.RX(pnp.array(1.2, requires_grad=True), wires=0)
+        >>> op4 = qml.RX(pnp.array(1.2, requires_grad=False), wires=0)
         >>> qml.equal(op3, op4)
         False
 
@@ -158,8 +160,8 @@ def equal(
 
 
 def assert_equal(
-    op1: Union[Operator, MeasurementProcess, QuantumScript],
-    op2: Union[Operator, MeasurementProcess, QuantumScript],
+    op1: Operator | MeasurementProcess | QuantumScript,
+    op2: Operator | MeasurementProcess | QuantumScript,
     check_interface=True,
     check_trainability=True,
     rtol=1e-5,
@@ -190,12 +192,15 @@ def assert_equal(
     >>> op1 = qml.RX(np.array(0.12), wires=0)
     >>> op2 = qml.RX(np.array(1.23), wires=0)
     >>> qml.assert_equal(op1, op2)
-    AssertionError: op1 and op2 have different data.
-    Got (array(0.12),) and (array(1.23),)
+    Traceback (most recent call last):
+        ...
+    AssertionError: op1 and op2 have different data. Got (array(0.12),) and (array(1.23),)
 
     >>> h1 = qml.Hamiltonian([1, 2], [qml.PauliX(0), qml.PauliY(1)])
     >>> h2 = qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliY(1)])
     >>> qml.assert_equal(h1, h2)
+    Traceback (most recent call last):
+        ...
     AssertionError: op1 and op2 have different operands because op1 and op2 have different scalars. Got 2 and 1
 
     """
@@ -210,8 +215,6 @@ def assert_equal(
     )
     if isinstance(dispatch_result, str):
         raise AssertionError(dispatch_result)
-    if not dispatch_result:
-        raise AssertionError(f"{op1} and {op2} are not equal for an unspecified reason.")
 
 
 def _equal(
@@ -221,11 +224,11 @@ def _equal(
     check_trainability=True,
     rtol=1e-5,
     atol=1e-9,
-) -> Union[bool, str]:
+) -> bool | str:
     if not isinstance(op2, type(op1)):
         return f"op1 and op2 are of different types.  Got {type(op1)} and {type(op2)}."
 
-    return _equal_dispatch(
+    dispatch_result = _equal_dispatch(
         op1,
         op2,
         check_interface=check_interface,
@@ -233,6 +236,9 @@ def _equal(
         atol=atol,
         rtol=rtol,
     )
+    if not dispatch_result:
+        return f"{op1} and {op2} are not equal for an unspecified reason."
+    return dispatch_result
 
 
 @singledispatch
@@ -243,7 +249,7 @@ def _equal_dispatch(
     check_trainability=True,
     rtol=1e-5,
     atol=1e-9,
-) -> Union[bool, str]:
+) -> bool | str:
     raise NotImplementedError(f"Comparison of {type(op1)} and {type(op2)} not implemented")
 
 
@@ -695,13 +701,26 @@ def _equal_measurements(
 
 
 @_equal_dispatch.register
-def _equal_mid_measure(op1: MidMeasureMP, op2: MidMeasureMP, **_):
+def _equal_mid_measure(op1: MidMeasure, op2: MidMeasure, **_):
     return (
         op1.wires == op2.wires
         and op1.id == op2.id
         and op1.reset == op2.reset
         and op1.postselect == op2.postselect
     )
+
+
+@_equal_dispatch.register
+def _equal_pauli_measure(op1: PauliMeasure, op2: PauliMeasure, **_):
+    if op1.wires != op2.wires:
+        return "op1 and op2 have different wires."
+    if op1.postselect != op2.postselect:
+        return "op1 and op2 have different postselect values."
+    if op1.pauli_word != op2.pauli_word:
+        return f"op1 has pauli_word {op1.pauli_word} and op2 has pauli_word {op2.pauli_word}"
+    if op1.id != op2.id:
+        return "op1 and op2 have different identifiers id."
+    return True
 
 
 @_equal_dispatch.register
@@ -773,14 +792,15 @@ def _equal_hilbert_schmidt(
         "atol": atol,
         "rtol": rtol,
     }
-    # Check hyperparameters using qml.equal rather than == where necessary
-    if op1.hyperparameters["v_wires"] != op2.hyperparameters["v_wires"]:
+
+    U1 = qml.prod(*op1.hyperparameters["U"])
+    U2 = qml.prod(*op2.hyperparameters["U"])
+    if qml.equal(U1, U2, **equal_kwargs) is False:
         return False
-    if not qml.equal(op1.hyperparameters["u_tape"], op2.hyperparameters["u_tape"], **equal_kwargs):
-        return False
-    if not qml.equal(op1.hyperparameters["v_tape"], op2.hyperparameters["v_tape"], **equal_kwargs):
-        return False
-    if op1.hyperparameters["v_function"] != op2.hyperparameters["v_function"]:
+
+    V1 = qml.prod(*op1.hyperparameters["V"])
+    V2 = qml.prod(*op2.hyperparameters["V"])
+    if qml.equal(V1, V2, **equal_kwargs) is False:
         return False
 
     return True
@@ -795,4 +815,39 @@ def _equal_prep_sel_prep(op1: PrepSelPrep, op2: PrepSelPrep, **kwargs):
         return f"op1 and op2 have different wires. Got {op1.wires} and {op2.wires}."
     if not qml.equal(op1.lcu, op2.lcu):
         return f"op1 and op2 have different lcu. Got {op1.lcu} and {op2.lcu}"
+    return True
+
+
+@_equal_dispatch.register
+def _equal_qsvt(op1: QSVT, op2: QSVT, **kwargs):
+    """Determine whether two QSVT are equal"""
+    if not equal(UA1 := op1.hyperparameters["UA"], UA2 := op2.hyperparameters["UA"], **kwargs):
+        return f"op1 and op2 have different block encodings UA. Got {UA1} and {UA2}."
+    projectors1 = op1.hyperparameters["projectors"]
+    projectors2 = op2.hyperparameters["projectors"]
+    if len(projectors1) != len(projectors2):
+        return f"op1 and op2 have a different number of projectors. Got {projectors1} and {projectors2}."
+    for i, (p1, p2) in enumerate(zip(projectors1, projectors2)):
+        try:
+            assert_equal(p1, p2, **kwargs)
+        except AssertionError as e:
+            return f"op1 and op2 have different projectors at position {i}. Got {p1} and {p2}, which differ: {e}."
+    return True
+
+
+@_equal_dispatch.register
+def _equal_select(op1: Select, op2: Select, **kwargs):
+    """Determine whether two Select are equal"""
+    if op1.control != op2.control:
+        return f"op1 and op2 have different control wires. Got {op1.control} and {op2.control}."
+    t1 = op1.hyperparameters["ops"]
+    t2 = op2.hyperparameters["ops"]
+    if len(t1) != len(t2):
+        return (
+            f"op1 and op2 have different number of target operators. Got {len(t1)} and {len(t2)}."
+        )
+    for idx, (_t1, _t2) in enumerate(zip(t1, t2)):
+        comparer = _equal(_t1, _t2, **kwargs)
+        if isinstance(comparer, str):
+            return f"got different operations at index {idx}: {_t1} and {_t2}. They differ because {comparer}."
     return True

@@ -15,8 +15,9 @@
 This module contains the ``TransformProgram`` class.
 """
 from collections.abc import Sequence
+from copy import copy
 from functools import partial
-from typing import Optional, Union, overload
+from typing import overload
 
 from pennylane.exceptions import TransformError
 from pennylane.tape import QuantumScriptBatch
@@ -29,7 +30,7 @@ from .transform_dispatcher import TransformContainer, TransformDispatcher
 def _batch_postprocessing(
     results: ResultBatch,
     individual_fns: list[PostprocessingFn],
-    slices: Union[list[slice], list[int]],
+    slices: list[slice] | list[int],
 ) -> ResultBatch:
     """Broadcast individual post processing functions onto their respective tapes.
 
@@ -54,7 +55,7 @@ def _batch_postprocessing(
     (3.0, 3.5, 8.0)
 
     """
-    return tuple(fn(results[sl]) for fn, sl in zip(individual_fns, slices))
+    return tuple(fn(results[sl]) for fn, sl in zip(individual_fns, slices, strict=True))
 
 
 def _apply_postprocessing_stack(
@@ -76,7 +77,7 @@ def _apply_postprocessing_stack(
     >>> def postprocessing1(results):
     ...     return (results[0] + results[1], results[2] + results[3])
     >>> def postprocessing2(results):
-    .... return (results[0] + 1, results[1] + 2)
+    ...     return (results[0] + 1, results[1] + 2)
     >>> _apply_postprocessing_stack(results, [postprocessing1])
     (3.0, 7.0)
     >>> _apply_postprocessing_stack(results, [postprocessing2, postprocessing1])
@@ -134,9 +135,9 @@ class TransformProgram:
     >>> program.add_transform(qml.compile)
     >>> program.add_transform(qml.transforms.cancel_inverses)
     >>> [t for t in program]  # Iteration
-    [<compile([], {})>, <cancel_inverses([], {})>]
+    [<compile((), {})>, <cancel_inverses((), {})>]
     >>> program[0]
-    <compile([], {})>
+    <compile((), {})>
     >>> program[::-1]
     TransformProgram(cancel_inverses, compile)
     >>> len(program)
@@ -159,11 +160,14 @@ class TransformProgram:
 
     def __init__(
         self,
-        initial_program: Optional[Sequence[TransformContainer]] = None,
-        cotransform_cache: Optional[CotransformCache] = None,
+        initial_program: Sequence[TransformContainer] | None = None,
+        cotransform_cache: CotransformCache | None = None,
     ):
         self._transform_program = list(initial_program) if initial_program else []
         self.cotransform_cache = cotransform_cache
+
+    def __copy__(self):
+        return TransformProgram(self._transform_program, self.cotransform_cache)
 
     def __iter__(self):
         """list[TransformContainer]: Return an iterator to the underlying transform program."""
@@ -271,16 +275,14 @@ class TransformProgram:
             raise TransformError("Only transform dispatcher can be added to the transform program.")
 
         if transform.expand_transform:
-            self.push_back(TransformContainer(transform.expand_transform, targs, tkwargs))
+            self.push_back(
+                TransformContainer(TransformDispatcher(transform.expand_transform), targs, tkwargs)
+            )
         self.push_back(
             TransformContainer(
-                transform.transform,
+                transform,
                 args=targs,
                 kwargs=tkwargs,
-                classical_cotransform=transform.classical_cotransform,
-                plxpr_transform=transform.plxpr_transform,
-                is_informative=transform.is_informative,
-                final_transform=transform.final_transform,
             )
         )
 
@@ -302,18 +304,16 @@ class TransformProgram:
 
         self.insert_front(
             TransformContainer(
-                transform.transform,
+                transform,
                 args=targs,
                 kwargs=tkwargs,
-                classical_cotransform=transform.classical_cotransform,
-                plxpr_transform=transform.plxpr_transform,
-                is_informative=transform.is_informative,
-                final_transform=transform.final_transform,
             )
         )
 
         if transform.expand_transform:
-            self.insert_front(TransformContainer(transform.expand_transform, targs, tkwargs))
+            self.insert_front(
+                TransformContainer(TransformDispatcher(transform.expand_transform), targs, tkwargs)
+            )
 
     def pop_front(self):
         """Pop the transform container at the beginning of the program.
@@ -426,7 +426,6 @@ class TransformProgram:
             classical_jacobians = []
             for tape_idx, tape in enumerate(tapes):
                 if argnums is not None:
-                    # pylint: disable=unsubscriptable-object
                     tape.trainable_params = argnums[tape_idx]
                 new_tapes, fn = transform(tape, *targs, **tkwargs)
                 execution_tapes.extend(new_tapes)
@@ -499,3 +498,27 @@ class TransformProgram:
         if type(args[0]).__name__ == "Jaxpr":
             return self.__call_jaxpr(*args, **kwargs)
         return self.__call_tapes(*args, **kwargs)
+
+
+@TransformDispatcher.generic_register
+def _apply_to_program(obj: TransformProgram, transform, *targs, **tkwargs):
+    program = copy(obj)
+
+    if transform.expand_transform:
+        # pylint: disable=protected-access
+        program.push_back(
+            TransformContainer(
+                transform.expand_transform,
+                targs,
+                tkwargs,
+                use_argnum=transform._use_argnum_in_expand,
+            )
+        )
+    program.push_back(
+        TransformContainer(
+            transform,
+            args=targs,
+            kwargs=tkwargs,
+        )
+    )
+    return program

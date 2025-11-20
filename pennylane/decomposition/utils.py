@@ -19,17 +19,16 @@ This module implements utility functions for the decomposition module.
 
 import re
 
-
-class DecompositionError(Exception):
-    """Base class for decomposition errors."""
-
-
 OP_NAME_ALIASES = {
     "X": "PauliX",
     "Y": "PauliY",
     "Z": "PauliZ",
     "I": "Identity",
     "H": "Hadamard",
+    "measure": "MidMeasureMP",
+    "MidMeasure": "MidMeasureMP",
+    "ppm": "PauliMeasure",
+    "pauli_measure": "PauliMeasure",
 }
 
 

@@ -13,12 +13,15 @@
 # limitations under the License.
 """For loop."""
 import functools
+import logging
+import warnings
 from typing import Literal
 
 from pennylane import capture
 from pennylane.capture import FlatFn, enabled
 from pennylane.capture.dynamic_shapes import register_custom_staging_rule
 from pennylane.compiler.compiler import AvailableCompilers, active_compiler
+from pennylane.exceptions import CaptureWarning
 
 from ._loop_abstract_axes import (
     add_abstract_shapes,
@@ -27,6 +30,9 @@ from ._loop_abstract_axes import (
     loop_determine_abstracted_axes,
     validate_no_resizing_returns,
 )
+
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
 
 
 def for_loop(
@@ -280,7 +286,9 @@ def _get_for_loop_qfunc_prim():
 
     # pylint: disable=too-many-arguments
     @for_loop_prim.def_impl
-    def _(start, stop, step, *args, jaxpr_body_fn, consts_slice, args_slice, abstract_shapes_slice):
+    def _impl(
+        start, stop, step, *args, jaxpr_body_fn, consts_slice, args_slice, abstract_shapes_slice
+    ):
 
         consts = args[consts_slice]
         init_state = args[args_slice]
@@ -296,7 +304,7 @@ def _get_for_loop_qfunc_prim():
 
     # pylint: disable=unused-argument
     @for_loop_prim.def_abstract_eval
-    def _(start, stop, step, *args, args_slice, abstract_shapes_slice, **_):
+    def _abstract_eval(start, stop, step, *args, args_slice, abstract_shapes_slice, **_):
         return args[abstract_shapes_slice] + args[args_slice]
 
     return for_loop_prim
@@ -393,10 +401,22 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
 
         import jax  # pylint: disable=import-outside-toplevel
 
-        jaxpr_body_fn, abstract_shapes, flat_args, out_tree = self._get_jaxpr(
-            init_state, allow_array_resizing=self.allow_array_resizing
-        )
-
+        try:
+            jaxpr_body_fn, abstract_shapes, flat_args, out_tree = self._get_jaxpr(
+                init_state, allow_array_resizing=self.allow_array_resizing
+            )
+        except Exception as e:  # pylint: disable=broad-exception-caught
+            logger.exception(e, exc_info=True)
+            warnings.warn(
+                (
+                    "Structured capture of qml.for_loop failed with error:"
+                    f"\n\n{e}.\n\nFull error logged at exception level. "
+                    "Use qml.logging.enable_logging() to view."
+                    "\nFalling back to unrolled Python for loop."
+                ),
+                CaptureWarning,
+            )
+            return self._call_capture_disabled(*init_state)
         for_loop_prim = _get_for_loop_qfunc_prim()
 
         consts_slice = slice(0, len(jaxpr_body_fn.consts))
@@ -415,12 +435,16 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
             args_slice=args_slice,
             abstract_shapes_slice=abstract_shapes_slice,
         )
+
         results = results[-out_tree.num_leaves :]
         return jax.tree_util.tree_unflatten(out_tree, results)
 
     def __call__(self, *init_state):
 
-        if enabled():
-            return self._call_capture_enabled(*init_state)
+        start_equals_stop = (
+            isinstance(self.stop, int) and isinstance(self.start, int) and self.stop == self.start
+        )
 
+        if enabled() and not start_equals_stop:
+            return self._call_capture_enabled(*init_state)
         return self._call_capture_disabled(*init_state)

@@ -13,9 +13,9 @@
 # limitations under the License.
 """Transform for merging AmplitudeEmbedding gates in a quantum circuit."""
 
+from collections.abc import Sequence
 from copy import copy
 from functools import lru_cache, partial
-from typing import Sequence
 
 import pennylane as qml
 from pennylane import AmplitudeEmbedding
@@ -29,7 +29,7 @@ from pennylane.typing import PostprocessingFn
 
 # pylint: disable=too-many-statements
 @lru_cache
-def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
+def _get_plxpr_merge_amplitude_embedding():
     try:
         # pylint: disable=import-outside-toplevel
         from jax import make_jaxpr
@@ -227,7 +227,7 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
     # Overwrite the cond primitive so that visited wires can be correctly
     # detected across the different branches.
     @MergeAmplitudeEmbeddingInterpreter.register_primitive(cond_prim)
-    def _(self, *invals, jaxpr_branches, consts_slices, args_slice):
+    def _cond_primitive(self, *invals, jaxpr_branches, consts_slices, args_slice):
         args = invals[args_slice]
 
         new_jaxprs = []
@@ -249,35 +249,29 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
         initial_ops_found = self.state["ops_found"]
         curr_ops_found = self.state["ops_found"]
 
-        for const_slice, jaxpr in zip(consts_slices, jaxpr_branches):
+        for const_slice, jaxpr in zip(consts_slices, jaxpr_branches, strict=True):
             consts = invals[const_slice]
-            if jaxpr is None:
-                new_jaxprs.append(None)
-                new_consts_slices.append(slice(0, 0))
-            else:
-                new_jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr, consts, *args)
+            new_jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr, consts, *args)
 
-                # Update state so far so collisions with
-                # newly seen states from the branches continue to be
-                # detected after the cond
-                curr_wires |= self.state["visited_wires"]
-                curr_dynamic_wires_found = self.state["dynamic_wires_found"]
-                curr_ops_found = self.state["ops_found"]
+            # Update state so far so collisions with
+            # newly seen states from the branches continue to be
+            # detected after the cond
+            curr_wires |= self.state["visited_wires"]
+            curr_dynamic_wires_found = curr_dynamic_wires_found or self.state["dynamic_wires_found"]
+            curr_ops_found = curr_ops_found or self.state["ops_found"]
 
-                # Reset state for the next branch so we don't get false positive collisions
-                # (copy so if state mutates we preserved true initial state)
-                self.state = {
-                    "visited_wires": copy(initial_wires),
-                    "dynamic_wires_found": initial_dynamic_wires_found,
-                    "ops_found": initial_ops_found,
-                }
+            # Reset state for the next branch so we don't get false positive collisions
+            # (copy so if state mutates we preserved true initial state)
+            self.state = {
+                "visited_wires": copy(initial_wires),
+                "dynamic_wires_found": initial_dynamic_wires_found,
+                "ops_found": initial_ops_found,
+            }
 
-                new_jaxprs.append(new_jaxpr.jaxpr)
-                new_consts.extend(new_jaxpr.consts)
-                new_consts_slices.append(
-                    slice(end_const_ind, end_const_ind + len(new_jaxpr.consts))
-                )
-                end_const_ind += len(new_jaxpr.consts)
+            new_jaxprs.append(new_jaxpr.jaxpr)
+            new_consts.extend(new_jaxpr.consts)
+            new_consts_slices.append(slice(end_const_ind, end_const_ind + len(new_jaxpr.consts)))
+            end_const_ind += len(new_jaxpr.consts)
 
         # Reset state to all updates from all branches in the cond
         self.state = {
@@ -297,7 +291,7 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
         )
 
     @MergeAmplitudeEmbeddingInterpreter.register_primitive(measure_prim)
-    def _(self, *invals, **params):
+    def _measure_primitive(self, *invals, **params):
         # Make sure to record that we have visited the wires on this measurement
         # in order to be able to detect potential wire collisions with future AE gates
         self.state["visited_wires"] = self.state["visited_wires"].union(set(invals))
@@ -357,7 +351,8 @@ def merge_amplitude_embedding(tape: QuantumScript) -> tuple[QuantumScriptBatch, 
             return qml.state()
 
     >>> circuit()
-    [1.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j]
+    array([0.+0.j, 0.+0.j, 0.+0.j, 1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j,
+           0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j])
 
     .. details::
         :title: Usage Details
@@ -379,12 +374,10 @@ def merge_amplitude_embedding(tape: QuantumScript) -> tuple[QuantumScriptBatch, 
         >>> optimized_qfunc = qml.transforms.merge_amplitude_embedding(qfunc)
         >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
         >>> print(qml.draw(optimized_qnode)())
-        0: ─╭●──────────────────────┤  State
-        1: ─╰X──────────────────────┤  State
-        2: ─╭AmplitudeEmbedding(M0)─┤  State
-        3: ─╰AmplitudeEmbedding(M0)─┤  State
-        M0 =
-        [0.+0.j 0.+0.j 0.+0.j 1.+0.j]
+        0: ─╭●───┤  State
+        1: ─╰X───┤  State
+        2: ─╭|Ψ⟩─┤  State
+        3: ─╰|Ψ⟩─┤  State
 
     """
     new_operations = []
@@ -415,7 +408,7 @@ def merge_amplitude_embedding(tape: QuantumScript) -> tuple[QuantumScriptBatch, 
         final_batch_size = input_batch_size[0]
 
         # Merge all parameters and qubits into a single one.
-        for w, v, b in zip(input_wires[1:], input_vectors[1:], input_batch_size[1:]):
+        for w, v, b in zip(input_wires[1:], input_vectors[1:], input_batch_size[1:], strict=True):
             final_vector = final_vector[..., :, None] * v[..., None, :]
             final_batch_size = final_batch_size or b
             final_wires = final_wires + w

@@ -21,7 +21,6 @@ import platform
 import subprocess
 from importlib import import_module
 from importlib.util import find_spec
-from typing import Optional
 
 has_toml = False
 toml_libs = ["tomllib", "tomli", "tomlkit"]
@@ -56,7 +55,7 @@ def _add_trace_level():
     lc.trace = trace
 
 
-def _configure_logging(config_file: str, config_override: Optional[dict] = None):
+def _configure_logging(config_file: str, config_override: dict | None = None):
     """
     This method allows custom logging configuration throughout PennyLane.
     All configurations are read through the ``log_config.toml`` file, with additional custom options provided through the ``config_override`` dictionary.
@@ -108,7 +107,7 @@ def config_path():
 
     **Example**
 
-    >>> config_path()
+    >>> config_path() # doctest: +SKIP
     /home/user/pyenv/lib/python3.10/site-packages/pennylane/logging/log_config.toml
     """
     path = os.path.join(_path, "log_config.toml")
@@ -143,7 +142,6 @@ def edit_system_config(wait_on_close=False):
         with subprocess.Popen((editor, config_path())) as p:
             if wait_on_close:  # Only valid when editor is known
                 p.wait()
-    # pylint:disable = superfluous-parens
     elif (s := platform.system()) in ["Linux", "Darwin"]:
         f_cmd = None
         if s == "Linux":

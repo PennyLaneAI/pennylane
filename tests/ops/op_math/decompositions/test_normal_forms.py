@@ -105,9 +105,13 @@ class TestNormalForms:
             ), "SO(3) matrix does not match expected form"
             assert qml.math.allclose(parity_vecs[ix], parity_vec)
 
+    @pytest.mark.jax
     @pytest.mark.parametrize("klen", [1, 2, 5, 6])
     def test_ma_normal_form(self, klen):
         """Test the Matsumoto-Amano normal form decomposition."""
+
+        pytest.importorskip("jax")
+
         clifford_elements = _clifford_group_to_SO3()
         a = int(klen % 2)
         b = qml.math.random.randint(2, size=klen)
@@ -139,7 +143,8 @@ class TestNormalForms:
         for op_ in cl_list[c]:
             so3rep @= op_
 
-        (t_bit, rep_bits, c_bit, phase) = _ma_normal_form(so3mat, compressed=True)
+        # pylint: disable=unbalanced-tuple-unpacking
+        ((t_bit, rep_bits, c_bit), phase) = _ma_normal_form(so3mat, compressed=True)
 
         assert t_bit == a, "T bit does not match expected value"
         assert (rep_bits == b).all(), "Representation bits do not match expected values"

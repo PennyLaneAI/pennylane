@@ -13,11 +13,11 @@
 # limitations under the License.
 """A function to compute the Lie closure of a set of operators"""
 import warnings
+from collections.abc import Iterable
 from copy import copy
 
 # pylint: disable=too-many-arguments
 from itertools import product
-from typing import Iterable, Union
 
 import numpy as np
 
@@ -36,14 +36,14 @@ from pennylane.wires import Wires
 
 
 def lie_closure(
-    generators: Iterable[Union[PauliWord, PauliSentence, Operator, TensorLike]],
+    generators: Iterable[PauliWord | PauliSentence | Operator | TensorLike],
     *,  # force non-positional kwargs of the following
     max_iterations: int = 10000,
     verbose: bool = False,
     pauli: bool = False,
     matrix: bool = False,
     tol: float = None,
-) -> Iterable[Union[PauliWord, PauliSentence, Operator, np.ndarray]]:
+) -> Iterable[PauliWord | PauliSentence | Operator | np.ndarray]:
     r"""Compute the (dynamical) Lie algebra from a set of generators.
 
     The Lie closure, pronounced "Lee" closure, is a way to compute the so-called dynamical Lie algebra (DLA) of a set of generators :math:`\mathcal{G} = \{G_1, .. , G_N\}`.
@@ -94,12 +94,7 @@ def lie_closure(
     >>> ops = [X(0) @ X(1), Z(0), Z(1)]
     >>> dla = qml.lie_closure(ops)
     >>> dla
-    [X(1) @ X(0),
-     Z(0),
-     Z(1),
-     -1.0 * (Y(0) @ X(1)),
-     -1.0 * (X(0) @ Y(1)),
-     -1.0 * (Y(0) @ Y(1))]
+    [X(0) @ X(1), Z(0), Z(1), -1.0 * (Y(0) @ X(1)), -1.0 * (X(0) @ Y(1)), Y(0) @ Y(1)]
 
     Note that we normalize by removing the factors of :math:`2i`, though minus signs are left intact.
 
@@ -118,14 +113,9 @@ def lie_closure(
         ... ]
         >>> dla = qml.lie_closure(ops, pauli=True)
         >>> dla
-        [1.0 * X(0) @ X(1),
-         1.0 * Z(0),
-         1.0 * Z(1),
-         -1.0 * Y(0) @ X(1),
-         -1.0 * X(0) @ Y(1),
-         -1.0 * Y(0) @ Y(1)]
+        [1.0 * X(0) @ X(1), 1.0 * Z(0), 1.0 * Z(1), -1.0 * Y(0) @ X(1), -1.0 * X(0) @ Y(1), 1.0 * Y(0) @ Y(1)]
         >>> type(dla[0])
-        pennylane.pauli.pauli_arithmetic.PauliSentence
+        <class 'pennylane.pauli.pauli_arithmetic.PauliSentence'>
 
         In the case of sums of Pauli operators with many terms, it is often faster to use the matrix representation of the operators rather than
         the semi-analytic :class:`~pennylane.pauli.PauliSentence` or :class:`~Operator` representation.
@@ -247,7 +237,7 @@ def _hermitian_basis(matrices: Iterable[np.ndarray], tol: float = None, subbasis
 
 
 def _lie_closure_matrix(
-    generators: Iterable[Union[PauliWord, PauliSentence, Operator, np.ndarray]],
+    generators: Iterable[PauliWord | PauliSentence | Operator | np.ndarray],
     max_iterations: int = 10000,
     verbose: bool = False,
     tol: float = None,

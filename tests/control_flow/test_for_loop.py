@@ -14,8 +14,25 @@
 """
 Tests for the for_loop
 """
+import pytest
 
 import pennylane as qml
+
+
+@pytest.mark.capture
+@pytest.mark.jax
+def test_early_exit():
+    """Test we exit early when start==stop."""
+    import jax
+
+    @qml.for_loop(0)
+    def inner_loop(i, x):  # pylint: disable=unused-argument
+        x += 1
+        return x
+
+    jaxpr = jax.make_jaxpr(inner_loop)(0)
+    assert len(jaxpr.eqns) == 0
+    assert inner_loop(4) == 4
 
 
 def test_for_loop_python_fallback():

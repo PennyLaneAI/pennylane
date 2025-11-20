@@ -20,7 +20,6 @@ core parametrized gates.
 import functools
 from collections import Counter
 from operator import matmul
-from typing import Optional, Union
 
 import numpy as np
 
@@ -78,7 +77,7 @@ class MultiRZ(Operation):
     def _flatten(self) -> FlatPytree:
         return self.data, (self.wires, tuple())
 
-    def __init__(self, theta: TensorLike, wires: WiresLike, id: Optional[str] = None):
+    def __init__(self, theta: TensorLike, wires: WiresLike, id: str | None = None):
         wires = Wires(wires)
         self.hyperparameters["num_wires"] = len(wires)
         super().__init__(theta, wires=wires, id=id)
@@ -109,11 +108,14 @@ class MultiRZ(Operation):
         tensor([[0.9988-0.0500j, 0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j],
                 [0.0000+0.0000j, 0.9988+0.0500j, 0.0000+0.0000j, 0.0000+0.0000j],
                 [0.0000+0.0000j, 0.0000+0.0000j, 0.9988+0.0500j, 0.0000+0.0000j],
-                [0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j, 0.9988-0.0500j]])
+                [0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j, 0.9988-0.0500j]],
+               dtype=torch.complex128)
         """
         eigs = math.convert_like(qml.pauli.pauli_eigs(num_wires), theta)
 
-        if math.get_interface(theta) == "tensorflow":
+        if (
+            math.get_interface(theta) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             theta = math.cast_like(theta, 1j)
             eigs = math.cast_like(eigs, 1j)
 
@@ -153,11 +155,14 @@ class MultiRZ(Operation):
 
         >>> qml.MultiRZ.compute_eigvals(torch.tensor(0.5), 3)
         tensor([0.9689-0.2474j, 0.9689+0.2474j, 0.9689+0.2474j, 0.9689-0.2474j,
-                0.9689+0.2474j, 0.9689-0.2474j, 0.9689-0.2474j, 0.9689+0.2474j])
+                0.9689+0.2474j, 0.9689-0.2474j, 0.9689-0.2474j, 0.9689+0.2474j],
+               dtype=torch.complex128)
         """
         eigs = math.convert_like(qml.pauli.pauli_eigs(num_wires), theta)
 
-        if math.get_interface(theta) == "tensorflow":
+        if (
+            math.get_interface(theta) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             theta = math.cast_like(theta, 1j)
             eigs = math.cast_like(eigs, 1j)
 
@@ -203,7 +208,7 @@ class MultiRZ(Operation):
     def adjoint(self) -> "MultiRZ":
         return MultiRZ(-self.parameters[0], wires=self.wires)
 
-    def pow(self, z: Union[int, float]) -> list[Operator]:
+    def pow(self, z: int | float) -> list[Operator]:
         return [MultiRZ(self.data[0] * z, wires=self.wires)]
 
     def simplify(self) -> "MultiRZ":
@@ -310,7 +315,7 @@ class PauliRot(Operation):
         theta: TensorLike,
         pauli_word: str,
         wires: WiresLike,
-        id: Optional[str] = None,
+        id: str | None = None,
     ):
         super().__init__(theta, wires=wires, id=id)
 
@@ -340,9 +345,9 @@ class PauliRot(Operation):
 
     def label(
         self,
-        decimals: Optional[int] = None,
-        base_label: Optional[str] = None,
-        cache: Optional[dict] = None,
+        decimals: int | None = None,
+        base_label: str | None = None,
+        cache: dict | None = None,
     ) -> str:
         r"""A customizable string representation of the operator.
 
@@ -364,7 +369,7 @@ class PauliRot(Operation):
         >>> op.label(decimals=2)
         'RXYY\n(0.10)'
         >>> op.label(base_label="PauliRot")
-        'PauliRot\n(0.10)'
+        'PauliRot'
 
         """
         pauli_word = self.hyperparameters["pauli_word"]
@@ -413,8 +418,8 @@ class PauliRot(Operation):
         **Example**
 
         >>> qml.PauliRot.compute_matrix(0.5, 'X')
-        [[9.6891e-01+4.9796e-18j 2.7357e-17-2.4740e-01j]
-         [2.7357e-17-2.4740e-01j 9.6891e-01+4.9796e-18j]]
+        array([[0.96891242+0.j        , 0.        -0.24740396j],
+               [0.        -0.24740396j, 0.96891242+0.j        ]])
         """
         if not PauliRot._check_pauli_word(pauli_word):
             raise ValueError(
@@ -424,7 +429,9 @@ class PauliRot(Operation):
 
         interface = math.get_interface(theta)
 
-        if interface == "tensorflow":
+        if (
+            interface == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             theta = math.cast_like(theta, 1j)
 
         # Simplest case is if the Pauli is the identity matrix
@@ -444,7 +451,9 @@ class PauliRot(Operation):
             math.kron,
             [PauliRot._PAULI_CONJUGATION_MATRICES[gate] for gate in non_identity_gates],
         )
-        if interface == "tensorflow":
+        if (
+            interface == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             conjugation_matrix = math.cast_like(conjugation_matrix, 1j)
         # Note: we use einsum with reverse arguments here because it is not multi-dispatched
         # and the tensordot containing multi_Z_rot_matrix should decide about the interface
@@ -488,9 +497,11 @@ class PauliRot(Operation):
         **Example**
 
         >>> qml.PauliRot.compute_eigvals(torch.tensor(0.5), "X")
-        tensor([0.9689-0.2474j, 0.9689+0.2474j])
+        tensor([0.9689-0.2474j, 0.9689+0.2474j], dtype=torch.complex128)
         """
-        if math.get_interface(theta) == "tensorflow":
+        if (
+            math.get_interface(theta) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             theta = math.cast_like(theta, 1j)
 
         # Identity must be treated specially because its eigenvalues are all the same
@@ -520,12 +531,8 @@ class PauliRot(Operation):
 
         **Example:**
 
-        >>> qml.PauliRot.compute_decomposition(1.2, "XY", wires=(0,1))
-        [H(0),
-        RX(1.5707963267948966, wires=[1]),
-        MultiRZ(1.2, wires=[0, 1]),
-        H(0),
-        RX(-1.5707963267948966, wires=[1])]
+        >>> qml.PauliRot.compute_decomposition(1.2, wires=(0,1), pauli_word="XY")
+        [H(0), RX(1.5707963267948966, wires=[1]), MultiRZ(1.2, wires=[0, 1]), H(0), RX(-1.5707963267948966, wires=[1])]
 
         """
         if isinstance(wires, int):  # Catch cases when the wire is passed as a single int.
@@ -658,21 +665,21 @@ class PCPhase(Operation):
 
     >>> op_13 = qml.PCPhase(1.23, dim=13, wires=[1, 2, 3, 4])
     >>> print(qml.draw(op_13.decomposition)())
-    1: ──GlobalPhase(-1.23)─╭●─────────╭●───────────┤
-    2: ──GlobalPhase(-1.23)─╰Rϕ(-2.46)─├●───────────┤
-    3: ──GlobalPhase(-1.23)────────────├○───────────┤
-    4: ──GlobalPhase(-1.23)──X─────────╰Rϕ(2.46)──X─┤
+    1: ─╭●─────────╭●───────────╭GlobalPhase(-1.23)─┤  
+    2: ─╰Rϕ(-2.46)─├●───────────├GlobalPhase(-1.23)─┤  
+    3: ────────────├○───────────├GlobalPhase(-1.23)─┤  
+    4: ──X─────────╰Rϕ(2.46)──X─╰GlobalPhase(-1.23)─┤
 
     If ``dim`` is a power of two, a single (multi-controlled) ``PhaseShift`` gate is sufficient:
 
     >>> op_16 = qml.PCPhase(1.23, dim=16, wires=range(6))
     >>> print(qml.draw(op_16.decomposition, wire_order=range(6), show_all_wires=True)())
-    0: ──GlobalPhase(1.23)────╭○───────────┤
-    1: ──GlobalPhase(1.23)──X─╰Rϕ(2.46)──X─┤
-    2: ──GlobalPhase(1.23)─────────────────┤
-    3: ──GlobalPhase(1.23)─────────────────┤
-    4: ──GlobalPhase(1.23)─────────────────┤
-    5: ──GlobalPhase(1.23)─────────────────┤
+    0: ────╭○───────────╭GlobalPhase(1.23)─┤  
+    1: ──X─╰Rϕ(2.46)──X─├GlobalPhase(1.23)─┤  
+    2: ─────────────────├GlobalPhase(1.23)─┤  
+    3: ─────────────────├GlobalPhase(1.23)─┤  
+    4: ─────────────────├GlobalPhase(1.23)─┤  
+    5: ─────────────────╰GlobalPhase(1.23)─┤
 
     """
 
@@ -713,7 +720,7 @@ class PCPhase(Operation):
         hyperparameter = (("dim", self.hyperparameters["dimension"][0]),)
         return tuple(self.data), (self.wires, hyperparameter)
 
-    def __init__(self, phi: TensorLike, dim: int, wires: WiresLike, id: Optional[str] = None):
+    def __init__(self, phi: TensorLike, dim: int, wires: WiresLike, id: str | None = None):
         wires = wires if isinstance(wires, Wires) else Wires(wires)
 
         if not (isinstance(dim, int) and (dim <= 2 ** len(wires))):
@@ -734,7 +741,9 @@ class PCPhase(Operation):
         """Get the matrix representation of Pi-controlled phase unitary."""
         d, t = dimension
 
-        if math.get_interface(phi) == "tensorflow":
+        if (
+            math.get_interface(phi) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             p = math.exp(1j * math.cast_like(phi, 1j))
             minus_p = math.exp(-1j * math.cast_like(phi, 1j))
             zeros = math.zeros_like(p)
@@ -764,7 +773,9 @@ class PCPhase(Operation):
         phi = params[0]
         d, t = hyperparams["dimension"]
 
-        if math.get_interface(phi) == "tensorflow":
+        if (
+            math.get_interface(phi) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             phase = math.exp(1j * math.cast_like(phi, 1j))
             minus_phase = math.exp(-1j * math.cast_like(phi, 1j))
             return stack_last([phase if index < d else minus_phase for index in range(t)])
@@ -801,10 +812,10 @@ class PCPhase(Operation):
 
         >>> op_13 = qml.PCPhase(1.23, dim=13, wires=[1, 2, 3, 4])
         >>> print(qml.draw(op_13.decomposition)())
-        1: ──GlobalPhase(-1.23)─╭●─────────╭●───────────┤
-        2: ──GlobalPhase(-1.23)─╰Rϕ(-2.46)─├●───────────┤
-        3: ──GlobalPhase(-1.23)────────────├○───────────┤
-        4: ──GlobalPhase(-1.23)──X─────────╰Rϕ(2.46)──X─┤
+        1: ─╭●─────────╭●───────────╭GlobalPhase(-1.23)─┤  
+        2: ─╰Rϕ(-2.46)─├●───────────├GlobalPhase(-1.23)─┤  
+        3: ────────────├○───────────├GlobalPhase(-1.23)─┤  
+        4: ──X─────────╰Rϕ(2.46)──X─╰GlobalPhase(-1.23)─┤
 
         In the following we provide a detailed example for illustration purposes.
 
@@ -870,10 +881,10 @@ class PCPhase(Operation):
         which concludes the decomposition, now reading:
 
         >>> print(qml.draw(op_3.decomposition)())
-        0: ──GlobalPhase(1.23)────╭○───────────╭○─────────┤
-        1: ──GlobalPhase(1.23)──X─╰Rϕ(2.46)──X─├○─────────┤
-        2: ──GlobalPhase(1.23)─────────────────├●─────────┤
-        3: ──GlobalPhase(1.23)─────────────────╰Rϕ(-2.46)─┤
+        0: ────╭○───────────╭○─────────╭GlobalPhase(1.23)─┤  
+        1: ──X─╰Rϕ(2.46)──X─├○─────────├GlobalPhase(1.23)─┤  
+        2: ─────────────────├●─────────├GlobalPhase(1.23)─┤  
+        3: ─────────────────╰Rϕ(-2.46)─╰GlobalPhase(1.23)─┤
 
         """
         with queuing.AnnotatedQueue() as q:
@@ -891,7 +902,7 @@ class PCPhase(Operation):
         dim, _ = self.hyperparameters["dimension"]
         return PCPhase(-1 * phi, dim=dim, wires=self.wires)
 
-    def pow(self, z: Union[int, float]) -> list[Operator]:
+    def pow(self, z: int | float) -> list[Operator]:
         """Computes the operator raised to z."""
         phi = self.parameters[0]
         dim, _ = self.hyperparameters["dimension"]
@@ -909,9 +920,9 @@ class PCPhase(Operation):
 
     def label(
         self,
-        decimals: Optional[int] = None,
-        base_label: Optional[str] = None,
-        cache: Optional[dict] = None,
+        decimals: int | None = None,
+        base_label: str | None = None,
+        cache: dict | None = None,
     ) -> str:
         """The label of the operator when displayed in a circuit."""
         return super().label(decimals=decimals, base_label=base_label or "∏_ϕ", cache=cache)
@@ -1146,7 +1157,7 @@ class IsingXX(Operation):
     def generator(self) -> "qml.Hamiltonian":
         return qml.Hamiltonian([-0.5], [PauliX(wires=self.wires[0]) @ PauliX(wires=self.wires[1])])
 
-    def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
+    def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
         super().__init__(phi, wires=wires, id=id)
 
     @property
@@ -1182,7 +1193,9 @@ class IsingXX(Operation):
 
         eye = math.eye(4, like=phi)
         rev_eye = math.convert_like(np.eye(4)[::-1].copy(), phi)
-        if math.get_interface(phi) == "tensorflow":
+        if (
+            math.get_interface(phi) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             c = math.cast_like(c, 1j)
             s = math.cast_like(s, 1j)
             eye = math.cast_like(eye, 1j)
@@ -1214,7 +1227,7 @@ class IsingXX(Operation):
         **Example:**
 
         >>> qml.IsingXX.compute_decomposition(1.23, wires=(0,1))
-        [CNOT(wires=[0, 1]), RX(1.23, wires=[0]), CNOT(wires=[0, 1]]
+        [CNOT(wires=[0, 1]), RX(1.23, wires=[0]), CNOT(wires=[0, 1])]
 
         """
         decomp_ops = [
@@ -1228,7 +1241,7 @@ class IsingXX(Operation):
         (phi,) = self.parameters
         return IsingXX(-phi, wires=self.wires)
 
-    def pow(self, z: Union[int, float]) -> list[Operator]:
+    def pow(self, z: int | float) -> list[Operator]:
         return [IsingXX(self.data[0] * z, wires=self.wires)]
 
     def simplify(self) -> "IsingXX":
@@ -1304,7 +1317,7 @@ class IsingYY(Operation):
     def generator(self) -> "qml.Hamiltonian":
         return qml.Hamiltonian([-0.5], [PauliY(wires=self.wires[0]) @ PauliY(wires=self.wires[1])])
 
-    def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
+    def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
         super().__init__(phi, wires=wires, id=id)
 
     @property
@@ -1361,12 +1374,15 @@ class IsingYY(Operation):
         tensor([[0.9689+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.2474j],
                 [0.0000+0.0000j, 0.9689+0.0000j, 0.0000-0.2474j, 0.0000+0.0000j],
                 [0.0000+0.0000j, 0.0000-0.2474j, 0.9689+0.0000j, 0.0000+0.0000j],
-                [0.0000+0.2474j, 0.0000+0.0000j, 0.0000+0.0000j, 0.9689+0.0000j]])
+                [0.0000+0.2474j, 0.0000+0.0000j, 0.0000+0.0000j, 0.9689+0.0000j]],
+               dtype=torch.complex128)
         """
         c = math.cos(phi / 2)
         s = math.sin(phi / 2)
 
-        if math.get_interface(phi) == "tensorflow":
+        if (
+            math.get_interface(phi) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             c = math.cast_like(c, 1j)
             s = math.cast_like(s, 1j)
 
@@ -1392,7 +1408,7 @@ class IsingYY(Operation):
         (phi,) = self.parameters
         return IsingYY(-phi, wires=self.wires)
 
-    def pow(self, z: Union[int, float]) -> list[Operator]:
+    def pow(self, z: int | float) -> list[Operator]:
         return [IsingYY(self.data[0] * z, wires=self.wires)]
 
     def simplify(self) -> "IsingYY":
@@ -1469,7 +1485,7 @@ class IsingZZ(Operation):
     def generator(self) -> "qml.Hamiltonian":
         return qml.Hamiltonian([-0.5], [PauliZ(wires=self.wires[0]) @ PauliZ(wires=self.wires[1])])
 
-    def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
+    def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
         super().__init__(phi, wires=wires, id=id)
 
     @property
@@ -1528,7 +1544,9 @@ class IsingZZ(Operation):
                 [0.0000+0.0000j, 0.0000+0.0000j, 0.9689+0.2474j, 0.0000+0.0000j],
                 [0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j, 0.9689-0.2474j]])
         """
-        if math.get_interface(phi) == "tensorflow":
+        if (
+            math.get_interface(phi) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             p = math.exp(-0.5j * math.cast_like(phi, 1j))
             if math.ndim(p) == 0:
                 return math.diag([p, math.conj(p), math.conj(p), p])
@@ -1572,7 +1590,9 @@ class IsingZZ(Operation):
         >>> qml.IsingZZ.compute_eigvals(torch.tensor(0.5))
         tensor([0.9689-0.2474j, 0.9689+0.2474j, 0.9689+0.2474j, 0.9689-0.2474j])
         """
-        if math.get_interface(phi) == "tensorflow":
+        if (
+            math.get_interface(phi) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             phase = math.exp(-0.5j * math.cast_like(phi, 1j))
             return stack_last([phase, math.conj(phase), math.conj(phase), phase])
 
@@ -1587,7 +1607,7 @@ class IsingZZ(Operation):
         (phi,) = self.parameters
         return IsingZZ(-phi, wires=self.wires)
 
-    def pow(self, z: Union[int, float]) -> list[Operator]:
+    def pow(self, z: int | float) -> list[Operator]:
         return [IsingZZ(self.data[0] * z, wires=self.wires)]
 
     def simplify(self) -> "IsingZZ":
@@ -1681,7 +1701,7 @@ class IsingXY(Operation):
             ],
         )
 
-    def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
+    def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
         super().__init__(phi, wires=wires, id=id)
 
     @property
@@ -1746,7 +1766,9 @@ class IsingXY(Operation):
         c = math.cos(phi / 2)
         s = math.sin(phi / 2)
 
-        if math.get_interface(phi) == "tensorflow":
+        if (
+            math.get_interface(phi) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             c = math.cast_like(c, 1j)
             s = math.cast_like(s, 1j)
 
@@ -1797,7 +1819,9 @@ class IsingXY(Operation):
         >>> qml.IsingXY.compute_eigvals(0.5)
         array([0.96891242+0.24740396j, 0.96891242-0.24740396j,       1.        +0.j        , 1.        +0.j        ])
         """
-        if math.get_interface(phi) == "tensorflow":
+        if (
+            math.get_interface(phi) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             phi = math.cast_like(phi, 1j)
 
         signs = np.array([1, -1, 0, 0])
@@ -1810,7 +1834,7 @@ class IsingXY(Operation):
         (phi,) = self.parameters
         return IsingXY(-phi, wires=self.wires)
 
-    def pow(self, z: Union[int, float]) -> list[Operator]:
+    def pow(self, z: int | float) -> list[Operator]:
         return [IsingXY(self.data[0] * z, wires=self.wires)]
 
     def simplify(self) -> "IsingXY":
@@ -1879,7 +1903,7 @@ class PSWAP(Operation):
     grad_method = "A"
     grad_recipe = ([[0.5, 1, np.pi / 2], [-0.5, 1, -np.pi / 2]],)
 
-    def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
+    def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
         super().__init__(phi, wires=wires, id=id)
 
     @property
@@ -1933,12 +1957,18 @@ class PSWAP(Operation):
         **Example**
 
         >>> qml.PSWAP.compute_matrix(0.5)
-        array([[1.        +0.j, 0.        +0.j        , 0.        +0.j        , 0.        +0.j],
-              [0.        +0.j, 0.        +0.j        , 0.87758256+0.47942554j, 0.        +0.j],
-              [0.        +0.j, 0.87758256+0.47942554j, 0.        +0.j        , 0.        +0.j],
-              [0.        +0.j, 0.        +0.j        , 0.        +0.j        , 1.        +0.j]])
+        array([[1.        +0.j        , 0.        +0.j        ,
+                0.        +0.j        , 0.        +0.j        ],
+               [0.        +0.j        , 0.        +0.j        ,
+                0.87758256+0.47942554j, 0.        +0.j        ],
+               [0.        +0.j        , 0.87758256+0.47942554j,
+                0.        +0.j        , 0.        +0.j        ],
+               [0.        +0.j        , 0.        +0.j        ,
+                0.        +0.j        , 1.        +0.j        ]])
         """
-        if math.get_interface(phi) == "tensorflow":
+        if (
+            math.get_interface(phi) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             phi = math.cast_like(phi, 1j)
 
         e = math.exp(1j * phi)
@@ -1980,9 +2010,12 @@ class PSWAP(Operation):
         **Example**
 
         >>> qml.PSWAP.compute_eigvals(0.5)
-        array([ 1.        +0.j        ,  1.        +0.j,       -0.87758256-0.47942554j,  0.87758256+0.47942554j])
+        array([ 1.        +0.j        ,  1.        +0.j        ,
+               -0.87758256-0.47942554j,  0.87758256+0.47942554j])
         """
-        if math.get_interface(phi) == "tensorflow":
+        if (
+            math.get_interface(phi) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             phi = math.cast_like(phi, 1j)
 
         e = math.exp(1j * phi)
@@ -2065,7 +2098,7 @@ class CPhaseShift00(Operation):
 
     resource_keys = set()
 
-    def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
+    def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
         super().__init__(phi, wires=wires, id=id)
 
     @property
@@ -2074,9 +2107,9 @@ class CPhaseShift00(Operation):
 
     def label(
         self,
-        decimals: Optional[int] = None,
-        base_label: Optional[str] = None,
-        cache: Optional[dict] = None,
+        decimals: int | None = None,
+        base_label: str | None = None,
+        cache: dict | None = None,
     ) -> str:
         return super().label(decimals=decimals, base_label="Rϕ(00)", cache=cache)
 
@@ -2098,12 +2131,14 @@ class CPhaseShift00(Operation):
         **Example**
 
         >>> qml.CPhaseShift00.compute_matrix(torch.tensor(0.5))
-            tensor([[0.8776+0.4794j, 0.0+0.0j, 0.0+0.0j, 0.0+0.0j],
-                    [0.0000+0.0000j, 1.0+0.0j, 0.0+0.0j, 0.0+0.0j],
-                    [0.0000+0.0000j, 0.0+0.0j, 1.0+0.0j, 0.0+0.0j],
-                    [0.0000+0.0000j, 0.0+0.0j, 0.0+0.0j, 1.0+0.0j]])
+        tensor([[0.8776+0.4794j, 0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j],
+                [0.0000+0.0000j, 1.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j],
+                [0.0000+0.0000j, 0.0000+0.0000j, 1.0000+0.0000j, 0.0000+0.0000j],
+                [0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j, 1.0000+0.0000j]])
         """
-        if math.get_interface(phi) == "tensorflow":
+        if (
+            math.get_interface(phi) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             phi = math.cast_like(phi, 1j)
 
         exp_part = math.exp(1j * phi)
@@ -2149,7 +2184,9 @@ class CPhaseShift00(Operation):
         >>> qml.CPhaseShift00.compute_eigvals(torch.tensor(0.5))
         tensor([0.8776+0.4794j, 1.0000+0.0000j, 1.0000+0.0000j, 1.0000+0.0000j])
         """
-        if math.get_interface(phi) == "tensorflow":
+        if (
+            math.get_interface(phi) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             phi = math.cast_like(phi, 1j)
 
         exp_part = math.exp(1j * phi)
@@ -2203,7 +2240,7 @@ class CPhaseShift00(Operation):
     def adjoint(self) -> "CPhaseShift00":
         return CPhaseShift00(-self.data[0], wires=self.wires)
 
-    def pow(self, z: Union[int, float]) -> "CPhaseShift00":
+    def pow(self, z: int | float) -> "CPhaseShift00":
         return [CPhaseShift00(self.data[0] * z, wires=self.wires)]
 
     @property
@@ -2285,7 +2322,7 @@ class CPhaseShift01(Operation):
 
     resource_keys = set()
 
-    def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
+    def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
         super().__init__(phi, wires=wires, id=id)
 
     @property
@@ -2294,9 +2331,9 @@ class CPhaseShift01(Operation):
 
     def label(
         self,
-        decimals: Optional[int] = None,
-        base_label: Optional[str] = None,
-        cache: Optional[dict] = None,
+        decimals: int | None = None,
+        base_label: str | None = None,
+        cache: dict | None = None,
     ) -> str:
         return super().label(decimals=decimals, base_label="Rϕ(01)", cache=cache)
 
@@ -2318,12 +2355,14 @@ class CPhaseShift01(Operation):
         **Example**
 
         >>> qml.CPhaseShift01.compute_matrix(torch.tensor(0.5))
-            tensor([[1.0+0.0j, 0.0000+0.0000j, 0.0+0.0j, 0.0+0.0j],
-                    [0.0+0.0j, 0.8776+0.4794j, 0.0+0.0j, 0.0+0.0j],
-                    [0.0+0.0j, 0.0000+0.0000j, 1.0+0.0j, 0.0+0.0j],
-                    [0.0+0.0j, 0.0000+0.0000j, 0.0+0.0j, 1.0+0.0j]])
+        tensor([[1.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j],
+                [0.0000+0.0000j, 0.8776+0.4794j, 0.0000+0.0000j, 0.0000+0.0000j],
+                [0.0000+0.0000j, 0.0000+0.0000j, 1.0000+0.0000j, 0.0000+0.0000j],
+                [0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j, 1.0000+0.0000j]])
         """
-        if math.get_interface(phi) == "tensorflow":
+        if (
+            math.get_interface(phi) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             phi = math.cast_like(phi, 1j)
 
         exp_part = math.exp(1j * phi)
@@ -2369,7 +2408,9 @@ class CPhaseShift01(Operation):
         >>> qml.CPhaseShift01.compute_eigvals(torch.tensor(0.5))
         tensor([1.0000+0.0000j, 0.8776+0.4794j, 1.0000+0.0000j, 1.0000+0.0000j])
         """
-        if math.get_interface(phi) == "tensorflow":
+        if (
+            math.get_interface(phi) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             phi = math.cast_like(phi, 1j)
 
         exp_part = math.exp(1j * phi)
@@ -2416,7 +2457,7 @@ class CPhaseShift01(Operation):
     def adjoint(self) -> "CPhaseShift01":
         return CPhaseShift01(-self.data[0], wires=self.wires)
 
-    def pow(self, z: Union[int, float]) -> "CPhaseShift01":
+    def pow(self, z: int | float) -> "CPhaseShift01":
         return [CPhaseShift01(self.data[0] * z, wires=self.wires)]
 
     @property
@@ -2495,7 +2536,7 @@ class CPhaseShift10(Operation):
 
     resource_keys = set()
 
-    def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
+    def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
         super().__init__(phi, wires=wires, id=id)
 
     @property
@@ -2504,9 +2545,9 @@ class CPhaseShift10(Operation):
 
     def label(
         self,
-        decimals: Optional[int] = None,
-        base_label: Optional[str] = None,
-        cache: Optional[dict] = None,
+        decimals: int | None = None,
+        base_label: str | None = None,
+        cache: dict | None = None,
     ) -> str:
         return super().label(decimals=decimals, base_label="Rϕ(10)", cache=cache)
 
@@ -2528,12 +2569,14 @@ class CPhaseShift10(Operation):
         **Example**
 
         >>> qml.CPhaseShift10.compute_matrix(torch.tensor(0.5))
-            tensor([[1.0+0.0j, 0.0+0.0j, 0.0000+0.0000j, 0.0+0.0j],
-                    [0.0+0.0j, 1.0+0.0j, 0.0000+0.0000j, 0.0+0.0j],
-                    [0.0+0.0j, 0.0+0.0j, 0.8776+0.4794j, 0.0+0.0j],
-                    [0.0+0.0j, 0.0+0.0j, 0.0000+0.0000j, 1.0+0.0j]])
+        tensor([[1.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j],
+                [0.0000+0.0000j, 1.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j],
+                [0.0000+0.0000j, 0.0000+0.0000j, 0.8776+0.4794j, 0.0000+0.0000j],
+                [0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j, 1.0000+0.0000j]])
         """
-        if math.get_interface(phi) == "tensorflow":
+        if (
+            math.get_interface(phi) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             phi = math.cast_like(phi, 1j)
 
         exp_part = math.exp(1j * phi)
@@ -2579,7 +2622,9 @@ class CPhaseShift10(Operation):
         >>> qml.CPhaseShift10.compute_eigvals(torch.tensor(0.5))
         tensor([1.0000+0.0000j, 1.0000+0.0000j, 0.8776+0.4794j, 1.0000+0.0000j])
         """
-        if math.get_interface(phi) == "tensorflow":
+        if (
+            math.get_interface(phi) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             phi = math.cast_like(phi, 1j)
 
         exp_part = math.exp(1j * phi)
@@ -2626,7 +2671,7 @@ class CPhaseShift10(Operation):
     def adjoint(self) -> "CPhaseShift10":
         return CPhaseShift10(-self.data[0], wires=self.wires)
 
-    def pow(self, z: Union[int, float]):
+    def pow(self, z: int | float):
         return [CPhaseShift10(self.data[0] * z, wires=self.wires)]
 
     @property

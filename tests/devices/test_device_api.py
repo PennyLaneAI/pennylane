@@ -14,12 +14,10 @@
 """
 Tests for the basic default behavior of the Device API.
 """
-from typing import Optional, Union
-
 import pytest
 
 import pennylane as qml
-from pennylane.devices import DefaultExecutionConfig, Device, ExecutionConfig, MCMConfig
+from pennylane.devices import Device, ExecutionConfig, MCMConfig
 from pennylane.devices.capabilities import (
     DeviceCapabilities,
     ExecutionCondition,
@@ -105,7 +103,7 @@ class TestDeviceCapabilities:
 
                 config_filepath = "nonexistent_file.toml"
 
-                def execute(self, circuits, execution_config=DefaultExecutionConfig):
+                def execute(self, circuits, execution_config: ExecutionConfig | None = None):
                     return (0,)
 
 
@@ -168,13 +166,6 @@ class TestSetupExecutionConfig:
                 'Requested MCM method "one-shot" unsupported by the device.',
             ),
             (
-                EXAMPLE_TOML_FILE_ONE_SHOT,
-                "magic",
-                10,
-                None,
-                'Requested MCM method "magic" unsupported by the device.',
-            ),
-            (
                 EXAMPLE_TOML_FILE_ALL_SUPPORT,
                 "tree-traversal",
                 10,
@@ -199,7 +190,7 @@ class TestSetupExecutionConfig:
 
         dev = DeviceWithMCM()
         mcm_config = MCMConfig(mcm_method=mcm_method)
-        tape = QuantumScript([qml.measurements.MidMeasureMP(0)], [], shots=shots)
+        tape = QuantumScript([qml.ops.MidMeasure(0)], [], shots=shots)
         initial_config = ExecutionConfig(mcm_config=mcm_config)
 
         if expected_error is not None:
@@ -214,7 +205,6 @@ class TestSetupExecutionConfig:
         "mcm_method, shots, expected_error",
         [
             ("one-shot", None, 'The "one-shot" MCM method is only supported with finite shots.'),
-            ("magic", None, 'Requested MCM method "magic" unsupported by the device.'),
             ("one-shot", 100, None),
         ],
     )
@@ -224,12 +214,12 @@ class TestSetupExecutionConfig:
         class CustomDevice(Device):
             """A device with only a dummy execute method provided."""
 
-            def execute(self, circuits, execution_config=DefaultExecutionConfig):
+            def execute(self, circuits, execution_config: ExecutionConfig | None = None):
                 return (0,)
 
         dev = CustomDevice()
         mcm_config = MCMConfig(mcm_method=mcm_method)
-        tape = QuantumScript([qml.measurements.MidMeasureMP(0)], [], shots=shots)
+        tape = QuantumScript([qml.ops.MidMeasure(0)], [], shots=shots)
         initial_config = ExecutionConfig(mcm_config=mcm_config)
         if expected_error:
             with pytest.raises(QuantumFunctionError, match=expected_error):
@@ -246,7 +236,7 @@ class TestSetupExecutionConfig:
             (EXAMPLE_TOML_FILE, None, "deferred"),
             (EXAMPLE_TOML_FILE_ONE_SHOT, 10, "one-shot"),
             (EXAMPLE_TOML_FILE_ONE_SHOT, None, "deferred"),
-            (EXAMPLE_TOML_FILE_ALL_SUPPORT, 10, "one-shot"),
+            (EXAMPLE_TOML_FILE_ALL_SUPPORT, 10, "device"),
             (EXAMPLE_TOML_FILE_ALL_SUPPORT, None, "device"),
         ],
         indirect=("create_temporary_toml_file",),
@@ -264,7 +254,7 @@ class TestSetupExecutionConfig:
                 return 0
 
         dev = CustomDevice()
-        tape = QuantumScript([qml.measurements.MidMeasureMP(0)], [], shots=shots)
+        tape = QuantumScript([qml.ops.MidMeasure(0)], [], shots=shots)
         config = dev.setup_execution_config(ExecutionConfig(), tape)
         assert config.mcm_config.mcm_method == expected_method
 
@@ -329,7 +319,7 @@ class TestPreprocessTransforms:
                 self,
                 circuits: QuantumScriptOrBatch,
                 execution_config: ExecutionConfig = None,
-            ) -> Union[Result, ResultBatch]:
+            ) -> Result | ResultBatch:
                 return (0,)
 
         dev = CustomDevice()
@@ -364,13 +354,13 @@ class TestPreprocessTransforms:
                 self,
                 circuits: QuantumScriptOrBatch,
                 execution_config: ExecutionConfig = None,
-            ) -> Union[Result, ResultBatch]:
+            ) -> Result | ResultBatch:
                 return (0,)
 
         dev = CustomDevice()
         config = ExecutionConfig(mcm_config=MCMConfig(mcm_method="deferred"))
         program = dev.preprocess_transforms(config)
-        tape = QuantumScript([qml.measurements.MidMeasureMP(0, postselect=0)], [], shots=10)
+        tape = QuantumScript([qml.ops.MidMeasure(0, postselect=0)], [], shots=10)
 
         if not supports_projector:
             with pytest.raises(ValueError, match="Postselection is not allowed on the device"):
@@ -407,7 +397,7 @@ class TestPreprocessTransforms:
                 self,
                 circuits: QuantumScriptOrBatch,
                 execution_config: ExecutionConfig = None,
-            ) -> Union[Result, ResultBatch]:
+            ) -> Result | ResultBatch:
                 return (0,)
 
         dev = CustomDevice()
@@ -460,7 +450,7 @@ class TestPreprocessTransforms:
                 self,
                 circuits: QuantumScriptOrBatch,
                 execution_config: ExecutionConfig = None,
-            ) -> Union[Result, ResultBatch]:
+            ) -> Result | ResultBatch:
                 return (0,)
 
         dev = CustomDevice()
@@ -532,7 +522,7 @@ class TestPreprocessTransforms:
                 if sum_support:
                     self.capabilities.observables.update({"Sum": OperatorProperties()})
 
-            def execute(self, circuits, execution_config=DefaultExecutionConfig):
+            def execute(self, circuits, execution_config: ExecutionConfig | None = None):
                 return (0,)
 
         dev = CustomDevice()
@@ -542,14 +532,14 @@ class TestPreprocessTransforms:
             assert qml.transforms.split_non_commuting in program
             assert qml.transforms.split_to_single_terms not in program
             for transform_container in program:
-                if transform_container._transform is qml.transforms.split_non_commuting:
+                if transform_container._transform_dispatcher is qml.transforms.split_non_commuting:
                     assert "grouping_strategy" in transform_container._kwargs
                     assert transform_container._kwargs["grouping_strategy"] == "wires"
         elif not non_commuting_obs:
             assert qml.transforms.split_non_commuting in program
             assert qml.transforms.split_to_single_terms not in program
             for transform_container in program:
-                if transform_container._transform is qml.transforms.split_non_commuting:
+                if transform_container._transform_dispatcher is qml.transforms.split_non_commuting:
                     assert "grouping_strategy" in transform_container._kwargs
                     assert transform_container._kwargs["grouping_strategy"] == "qwc"
         elif not sum_support:
@@ -592,7 +582,7 @@ class TestPreprocessTransforms:
                         }
                     )
 
-            def execute(self, circuits, execution_config=DefaultExecutionConfig):
+            def execute(self, circuits, execution_config: ExecutionConfig | None = None):
                 return (0,)
 
         dev = CustomDevice()
@@ -604,11 +594,14 @@ class TestPreprocessTransforms:
         else:
             assert qml.transforms.diagonalize_measurements in program
             for transform_container in program:
-                if transform_container._transform is qml.transforms.diagonalize_measurements:
+                if (
+                    transform_container._transform_dispatcher
+                    is qml.transforms.diagonalize_measurements
+                ):
                     assert transform_container._kwargs["supported_base_obs"] == {
-                        "PauliZ",
-                        "PauliX",
-                        "PauliY",
+                        qml.Z,
+                        qml.X,
+                        qml.Y,
                     }
 
 
@@ -618,7 +611,7 @@ class TestMinimalDevice:
     class MinimalDevice(Device):
         """A device with only a dummy execute method provided."""
 
-        def execute(self, circuits, execution_config=DefaultExecutionConfig):
+        def execute(self, circuits, execution_config: ExecutionConfig | None = None):
             return (0,)
 
     dev = MinimalDevice()
@@ -636,8 +629,6 @@ class TestMinimalDevice:
         [
             (None, None, "<MinimalDevice device at 0x"),
             ([1, 3], None, "<MinimalDevice device (wires=2) at 0x"),
-            (None, [10, 20], "<MinimalDevice device (shots=30) at 0x"),
-            ([1, 3], [10, 20], "<MinimalDevice device (wires=2, shots=30) at 0x"),
         ],
     )
     def test_repr(self, wires, shots, expected):
@@ -649,7 +640,10 @@ class TestMinimalDevice:
 
         assert self.dev.shots == qml.measurements.Shots(None)
 
-        shots_dev = self.MinimalDevice(shots=100)
+        with pytest.warns(
+            qml.exceptions.PennyLaneDeprecationWarning, match="shots on device is deprecated"
+        ):
+            shots_dev = self.MinimalDevice(shots=100)
         assert shots_dev.shots == qml.measurements.Shots(100)
 
         with pytest.raises(
@@ -684,7 +678,7 @@ class TestMinimalDevice:
 
         a = (1,)
         assert fn(a) == (1,)
-        assert config == qml.devices.DefaultExecutionConfig
+        assert config == ExecutionConfig()
 
     def test_preprocess_batch_circuits(self):
         """Test that preprocessing a batch doesn't do anything."""
@@ -773,17 +767,17 @@ def test_device_with_ambiguous_preprocess():
 
             def setup_execution_config(
                 self,
-                config: Optional[ExecutionConfig] = None,
-                circuit: Optional[QuantumScript] = None,
+                config: ExecutionConfig | None = None,
+                circuit: QuantumScript | None = None,
             ) -> ExecutionConfig:
                 return ExecutionConfig()
 
             def preprocess_transforms(
-                self, execution_config: Optional[ExecutionConfig] = None
+                self, execution_config: ExecutionConfig | None = None
             ) -> TransformProgram:
                 return TransformProgram()
 
-            def execute(self, circuits, execution_config: ExecutionConfig = DefaultExecutionConfig):
+            def execute(self, circuits, execution_config: ExecutionConfig = None):
                 return (0,)
 
 
@@ -797,12 +791,10 @@ class TestProvidingDerivatives:
             """A device with a derivative."""
 
             # pylint: disable=unused-argument
-            def execute(self, circuits, execution_config: ExecutionConfig = DefaultExecutionConfig):
+            def execute(self, circuits, execution_config: ExecutionConfig = None):
                 return "a"
 
-            def compute_derivatives(
-                self, circuits, execution_config: ExecutionConfig = DefaultExecutionConfig
-            ):
+            def compute_derivatives(self, circuits, execution_config: ExecutionConfig = None):
                 return ("b",)
 
         dev = WithDerivative()
@@ -822,12 +814,10 @@ class TestProvidingDerivatives:
         class WithJvp(Device):
             """A device with a jvp."""
 
-            def execute(self, circuits, execution_config: ExecutionConfig = DefaultExecutionConfig):
+            def execute(self, circuits, execution_config: ExecutionConfig = None):
                 return "a"
 
-            def compute_jvp(
-                self, circuits, tangents, execution_config: ExecutionConfig = DefaultExecutionConfig
-            ):
+            def compute_jvp(self, circuits, tangents, execution_config: ExecutionConfig = None):
                 return ("c",)
 
         dev = WithJvp()
@@ -844,14 +834,14 @@ class TestProvidingDerivatives:
         class WithVjp(Device):
             """A device with a vjp."""
 
-            def execute(self, circuits, execution_config: ExecutionConfig = DefaultExecutionConfig):
+            def execute(self, circuits, execution_config: ExecutionConfig = None):
                 return "a"
 
             def compute_vjp(
                 self,
                 circuits,
                 cotangents,
-                execution_config: ExecutionConfig = DefaultExecutionConfig,
+                execution_config: ExecutionConfig = None,
             ):
                 return ("c",)
 

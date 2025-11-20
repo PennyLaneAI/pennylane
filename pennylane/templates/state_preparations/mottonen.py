@@ -14,7 +14,6 @@
 r"""
 Contains the MottonenStatePreparation template.
 """
-from typing import Optional
 
 import numpy as np
 
@@ -44,7 +43,7 @@ _walsh_hadamard_matrix = np.array([[1, 1], [1, -1]]) / 2
 _cnot_matrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]).reshape((2,) * 4)
 
 
-def compute_theta(alpha: TensorLike, num_qubits: Optional[int] = None):
+def compute_theta(alpha: TensorLike, num_qubits: int | None = None):
     r"""Maps the input angles ``alpha`` of the multi-controlled rotations decomposition of a
     uniformly controlled rotation to the rotation angles used in the
     `Gray code <https://en.wikipedia.org/wiki/Gray_code>`__ implementation.
@@ -197,30 +196,6 @@ def _apply_uniform_rotation_dagger(gate, alpha, control_wires, target_wire):
         qml.CNOT(wires=[control_wires[control_index], target_wire])
 
 
-def _uniform_rotation_dagger_ops(gate, alpha, control_wires, target_wire):
-    r"""Returns a list of operators that applies a uniformly-controlled rotation to the target qubit.
-
-    Args:
-        gate (.Operation): gate to be applied, needs to have exactly one parameter
-        alpha (tensor_like): angles to decompose the uniformly-controlled rotation into multi-controlled rotations
-        control_wires (array[int]): wires that act as control
-        target_wire (int): wire that acts as target
-
-    Returns:
-          list[.Operator]: sequence of operators defined by this function
-
-    """
-
-    with qml.queuing.AnnotatedQueue() as q:
-        _apply_uniform_rotation_dagger(gate, alpha, control_wires, target_wire)
-
-    if qml.queuing.QueuingManager.recording():
-        for op in q.queue:
-            qml.apply(op)
-
-    return q.queue
-
-
 def _get_alpha_z(omega, n, k):
     r"""Computes the rotation angles required to implement the uniformly-controlled Z rotation
     applied to the :math:`k`th qubit.
@@ -357,6 +332,12 @@ class MottonenStatePreparation(Operation):
 
     """
 
+    resource_keys = frozenset({"num_wires"})
+
+    @property
+    def resource_params(self):
+        return {"num_wires": len(self.wires)}
+
     grad_method = None
     ndim_params = (1,)
 
@@ -383,7 +364,7 @@ class MottonenStatePreparation(Operation):
 
             if not qml.math.is_abstract(state):
                 norm = qml.math.sum(qml.math.abs(state) ** 2)
-                if not qml.math.allclose(norm, 1.0, atol=1e-3):
+                if not (qml.math.is_abstract(norm) or qml.math.allclose(norm, 1.0, atol=1e-3)):
                     raise ValueError(
                         f"State vectors have to be of norm 1.0, vector {i} has squared norm {norm}"
                     )
@@ -414,11 +395,14 @@ class MottonenStatePreparation(Operation):
         **Example**
 
         >>> state_vector = torch.tensor([0.5, 0.5, 0.5, 0.5])
-        >>> qml.MottonenStatePreparation.compute_decomposition(state_vector, wires=["a", "b"])
-        [RY(array(1.57079633), wires=['a']),
-        RY(array(1.57079633), wires=['b']),
+        >>> ops = qml.MottonenStatePreparation.compute_decomposition(state_vector, wires=["a", "b"])
+        >>> from pprint import pprint
+        >>> pprint(ops)
+        [RY(tensor(1.5708, dtype=torch.float64), wires=['a']),
+        RY(tensor(1.5708, dtype=torch.float64), wires=['b']),
         CNOT(wires=['a', 'b']),
         CNOT(wires=['a', 'b'])]
+
         """
         if len(qml.math.shape(state_vector)) > 1:
             raise ValueError(
@@ -459,3 +443,16 @@ class MottonenStatePreparation(Operation):
             op_list.extend([qml.GlobalPhase(global_phase, wires=wires)])
 
         return op_list
+
+
+def _mottonen_resources(num_wires):
+    n = 2**num_wires - 1  # Equal to `sum(2**i for i in range(num_wires))`
+
+    return {qml.GlobalPhase: 1, qml.RY: n, qml.RZ: n, qml.CNOT: 2 * (n - 1)}
+
+
+mottonen_decomp = qml.register_resources(
+    _mottonen_resources, MottonenStatePreparation.compute_decomposition, exact=False
+)
+
+qml.add_decomps(MottonenStatePreparation, mottonen_decomp)

@@ -15,7 +15,7 @@
 
 from __future__ import annotations
 
-from typing import Dict, Sequence, Tuple
+from collections.abc import Sequence
 
 import numpy as np
 from scipy.sparse import csr_array, identity, kron
@@ -81,7 +81,7 @@ class HOState:
 
     @classmethod
     def _vector_from_dict(
-        cls, modes: int, gridpoints: int, coeffs: Dict[Tuple[int], float]
+        cls, modes: int, gridpoints: int, coeffs: dict[tuple[int], float]
     ) -> csr_array:
         """Construct an :class:`~.pennylane.labs.trotter_error.HOState` from a dictionary.
 

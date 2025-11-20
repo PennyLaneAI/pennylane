@@ -22,11 +22,11 @@ images.  If you change the docstring examples, please update this file.
 from __future__ import annotations
 
 from collections import namedtuple
+from collections.abc import Sequence
 from functools import singledispatch
-from typing import TYPE_CHECKING, Optional, Sequence
+from typing import TYPE_CHECKING
 
 from pennylane import ops
-from pennylane.measurements import MidMeasureMP
 
 from .drawable_layers import drawable_layers
 from .mpldrawer import MPLDrawer
@@ -39,8 +39,6 @@ from .utils import (
     unwrap_controls,
 )
 
-# TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
-# pylint: disable=ungrouped-imports
 if TYPE_CHECKING:
     from pennylane.operation import Operator
     from pennylane.tape import QuantumScript
@@ -157,7 +155,7 @@ def _(op: ops.WireCut, drawer, layer, _):
 
 
 @_add_operation_to_drawer.register
-def _(op: MidMeasureMP, drawer, layer, _):
+def _(op: ops.MidMeasure, drawer, layer, _):
     text = None if op.postselect is None else str(int(op.postselect))
     drawer.measure(layer, op.wires[0], text=text)  # assume one wire
 
@@ -299,7 +297,7 @@ def _tape_mpl(tape, wire_order=None, show_all_wires=False, max_length=None, **kw
     layers = drawable_layers(tape.operations, wire_map={i: i for i in tape.wires}, bit_map=bit_map)
 
     for i, layer in enumerate(layers):
-        if any(isinstance(o, MidMeasureMP) and o.reset for o in layer):
+        if any(isinstance(o, ops.MidMeasure) and o.reset for o in layer):
             layers.insert(i + 1, [])
 
     bit_map, cwire_layers, cwire_wires = cwire_connections(layers + [tape.measurements], bit_map)
@@ -334,13 +332,13 @@ def _tape_mpl(tape, wire_order=None, show_all_wires=False, max_length=None, **kw
 # pylint: disable=too-many-arguments
 def tape_mpl(
     tape: QuantumScript,
-    wire_order: Optional[Sequence] = None,
+    wire_order: Sequence | None = None,
     show_all_wires: bool = False,
-    decimals: Optional[int] = None,
-    style: Optional[str] = None,
+    decimals: int | None = None,
+    style: str | None = None,
     *,
-    fig: Optional["mpl.figure.Figure"] = None,
-    max_length: Optional[int] = None,
+    fig: mpl.figure.Figure | None = None,
+    max_length: int | None = None,
     **kwargs,
 ):
     """Produces matplotlib graphic objects (``fig`` and ``ax``) from a tape.
@@ -452,6 +450,8 @@ def tape_mpl(
     users can perform further customization of the graphic.
 
     .. code-block:: python
+
+        import matplotlib.pyplot as plt
 
         fig, ax = qml.drawer.tape_mpl(tape)
         fig.suptitle("My Circuit", fontsize="xx-large")

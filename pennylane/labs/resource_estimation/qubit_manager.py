@@ -13,11 +13,7 @@
 # limitations under the License.
 r"""This module contains the base class for qubit management"""
 
-from typing import Union
-
 import pennylane as qml
-
-# pylint: disable= too-few-public-methods
 
 
 class QubitManager:
@@ -42,7 +38,7 @@ class QubitManager:
 
     """
 
-    def __init__(self, work_wires: Union[int, dict], algo_wires=0, tight_budget=False) -> None:
+    def __init__(self, work_wires: int | dict, algo_wires=0, tight_budget=False) -> None:
 
         if isinstance(work_wires, dict):
             clean_wires = work_wires["clean"]
@@ -161,8 +157,6 @@ class QubitManager:
 class _WireAction:
     """Base class for operations that manage qubit resources."""
 
-    _queue_category = "_resource_qubit_action"
-
     def __init__(self, num_wires):
         self.num_wires = num_wires
         if qml.QueuingManager.recording():
@@ -175,6 +169,11 @@ class _WireAction:
 
     def __eq__(self, other: "_WireAction") -> bool:
         return self.num_wires == other.num_wires
+
+    def __mul__(self, other):
+        if isinstance(other, int):
+            return self.__class__(self.num_wires * other)
+        raise NotImplementedError
 
 
 class AllocWires(_WireAction):

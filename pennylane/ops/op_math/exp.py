@@ -14,6 +14,8 @@
 """
 This submodule defines the symbolic operation that stands for an exponential of an operator.
 """
+
+from functools import lru_cache
 from warnings import warn
 
 import numpy as np
@@ -27,35 +29,69 @@ from pennylane.decomposition import (
     register_resources,
     resource_rep,
 )
-from pennylane.operation import (
+from pennylane.exceptions import (
     DecompositionUndefinedError,
     GeneratorUndefinedError,
-    Operation,
-    Operator,
     OperatorPropertyUndefined,
-    TermsUndefinedError,
 )
+from pennylane.operation import Operation, Operator
 from pennylane.wires import Wires
 
 from .linear_combination import LinearCombination
 from .sprod import SProd
-from .sum import Sum
 from .symbolicop import ScalarSymbolicOp
 
 
-def exp(op, coeff=1, num_steps=None, id=None):
+@lru_cache
+def _get_has_generator_types(num_wires):
+    # Store operator classes with generators
+    has_generator_types = []
+    any_wires_types = []
+    for op_name in qml.ops.qubit.__all__:
+        op_class = getattr(qml.ops.qubit, op_name)
+        if op_class not in {qml.PauliRot, qml.PCPhase} and op_class.has_generator:
+            if op_class.num_wires == num_wires:
+                has_generator_types.append(op_class)
+            elif op_class.num_wires is None:
+                any_wires_types.append(op_class)
+
+    # prioritize types with that exact number of wires over types with any number of wires
+    # ie choose RZ before MultiRZ
+    return has_generator_types + any_wires_types
+
+
+def _find_equal_generator(base, coeff):
+    for op_class in _get_has_generator_types(len(base.wires)):
+        g, c = qml.generator(op_class)(coeff, base.wires)
+        # Some generators are not wire-ordered (e.g. OrbitalRotation)
+        mapped_wires_g = qml.map_wires(g, dict(zip(g.wires, base.wires)))
+
+        if qml.equal(mapped_wires_g, base):
+            # Cancel the coefficients added by the generator
+            coeff = math.real(-1j / c * coeff)
+            return op_class(coeff, g.wires)
+
+        # could have absorbed the coefficient.
+        simplified_g = qml.simplify(qml.s_prod(c, mapped_wires_g))
+
+        if qml.equal(simplified_g, base):
+            coeff = math.real(-1j * coeff)
+            return op_class(coeff, g.wires)
+
+    return None
+
+
+def exp(op, coeff: float = 1.0, id: str | None = None):
     """Take the exponential of an Operator times a coefficient.
 
     Args:
         base (~.operation.Operator): The Operator to be exponentiated
         coeff (float): a scalar coefficient of the operator
-        num_steps (int): The number of steps used in the decomposition of the exponential operator,
-            also known as the Trotter number. If this value is `None` and the Suzuki-Trotter
-            decomposition is needed, an error will be raised.
         id (str): id for the Exp operator. Default is None.
 
     Returns:
        :class:`Exp`: An :class:`~.operation.Operator` representing an operator exponential.
+
 
     .. note::
 
@@ -73,8 +109,10 @@ def exp(op, coeff=1, num_steps=None, id=None):
 
         But it doesn't support batching of operators:
 
-        >>> op = qml.exp([qml.RX(1, wires=0), qml.RX(2, wires=0)], coeff=4)
-        AttributeError: 'list' object has no attribute 'batch_size'
+        >>> qml.exp([qml.RX(1, wires=0), qml.RX(2, wires=0)], coeff=4)
+        Traceback (most recent call last):
+            ...
+        TypeError: base is expected to be of type Operator, but received <class 'list'>
 
     **Example**
 
@@ -101,7 +139,7 @@ def exp(op, coeff=1, num_steps=None, id=None):
     ...     qml.exp(qml.X(0), -0.5j * x)
     ...     return qml.expval(qml.Z(0))
     >>> print(qml.draw(circuit)(1.23))
-    0: ──Exp─┤  <Z>
+    0: ──Exp(0.00-0.61j X)─┤  <Z>
 
     If the base operator is Hermitian and the coefficient is real, then the ``Exp`` operator
     can be measured as an observable:
@@ -110,11 +148,12 @@ def exp(op, coeff=1, num_steps=None, id=None):
     >>> @qml.qnode(qml.device('default.qubit', wires=1))
     ... def circuit():
     ...     return qml.expval(obs)
-    >>> circuit()
-    tensor(20.08553692, requires_grad=True)
+    >>> print(circuit())
+    20.085...
+
 
     """
-    return Exp(op, coeff, num_steps=num_steps, id=id)
+    return Exp(op, coeff, id=id)
 
 
 class Exp(ScalarSymbolicOp, Operation):
@@ -123,9 +162,6 @@ class Exp(ScalarSymbolicOp, Operation):
     Args:
         base (~.operation.Operator): The Operator to be exponentiated
         coeff=1 (Number): A scalar coefficient of the operator.
-        num_steps (int): The number of steps used in the decomposition of the exponential operator,
-            also known as the Trotter number. If this value is `None` and the Suzuki-Trotter
-            decomposition is needed, an error will be raised.
         id (str): id for the Exp operator. Default is None.
 
     **Example**
@@ -153,7 +189,7 @@ class Exp(ScalarSymbolicOp, Operation):
     ...     Exp(qml.X(0), -0.5j * x)
     ...     return qml.expval(qml.Z(0))
     >>> print(qml.draw(circuit)(1.23))
-    0: ──Exp─┤  <Z>
+    0: ──Exp(0.00-0.61j X)─┤  <Z>
 
     If the base operator is Hermitian and the coefficient is real, then the ``Exp`` operator
     can be measured as an observable:
@@ -162,30 +198,29 @@ class Exp(ScalarSymbolicOp, Operation):
     >>> @qml.qnode(qml.device('default.qubit', wires=1))
     ... def circuit():
     ...     return qml.expval(obs)
-    >>> circuit()
-    tensor(20.08553692, requires_grad=True)
+    >>> print(circuit())
+    20.085...
 
     """
 
     control_wires = Wires([])
     _name = "Exp"
 
-    resource_keys = {"base", "num_steps"}
+    resource_keys = {"base"}
 
     def _flatten(self):
-        return (self.base, self.data[0]), (self.num_steps,)
+        return (self.base, self.data[0]), ()
 
     @classmethod
-    def _unflatten(cls, data, metadata):
-        return cls(data[0], data[1], num_steps=metadata[0])
+    def _unflatten(cls, data, metadata):  # pylint: disable=unused-argument
+        base, coeff = data
+        return cls(base, coeff)
 
-    def __init__(self, base, coeff=1, num_steps=None, id=None):
+    def __init__(self, base, coeff=1.0, id=None):
         if not isinstance(base, Operator):
             raise TypeError(f"base is expected to be of type Operator, but received {type(base)}")
         super().__init__(base, scalar=coeff, id=id)
         self.grad_recipe = [None]
-        self.num_steps = num_steps
-        self.hyperparameters["num_steps"] = num_steps
 
     def __repr__(self):
         return (
@@ -208,8 +243,8 @@ class Exp(ScalarSymbolicOp, Operation):
         return self.base.num_params + 1
 
     @property
-    def is_hermitian(self):
-        return self.base.is_hermitian and math.allequal(math.imag(self.coeff), 0)
+    def is_verified_hermitian(self):
+        return self.base.is_verified_hermitian and math.allequal(math.imag(self.coeff), 0)
 
     @property
     def _queue_category(self):
@@ -217,26 +252,28 @@ class Exp(ScalarSymbolicOp, Operation):
 
     @property
     def resource_params(self) -> dict:
-        return {
-            "base": self.base,
-            "num_steps": self.num_steps,
-        }
+        return {"base": self.base}
 
     # pylint: disable=invalid-overridden-method, arguments-renamed
     @property
+    @queuing.QueuingManager.stop_recording()
     def has_decomposition(self):
-        # TODO: Support nested sums in method
-        base = self.base
+        base = self.base.simplify()
         coeff = self.coeff
         if isinstance(base, SProd):
             coeff *= base.scalar
             base = base.base
-        is_pauli_rot = qml.pauli.is_pauli_word(self.base) and math.real(self.coeff) == 0
-        is_hamiltonian = isinstance(base, LinearCombination)
-        is_sum_of_pauli_words = isinstance(base, Sum) and all(
-            qml.pauli.is_pauli_word(o) for o in base
-        )
-        return is_pauli_rot or is_hamiltonian or is_sum_of_pauli_words
+
+        # pylint: disable=unidiomatic-typecheck
+        if type(self) is Exp and not math.is_abstract(coeff) and math.real(coeff):
+            # if type is Evolution, we assume that is is indeed time evolution
+            return False
+
+        if qml.pauli.is_pauli_word(base):
+            return True
+
+        op = _find_equal_generator(base, coeff)
+        return op is not None
 
     def decomposition(self):
         r"""Representation of the operator as a product of other operators. Decomposes into
@@ -251,7 +288,13 @@ class Exp(ScalarSymbolicOp, Operation):
             list[PauliRot]: decomposition of the operator
         """
         with queuing.QueuingManager.stop_recording():
-            d = self._recursive_decomposition(self.base, self.coeff)
+            base = self.base.simplify()  # for things like products of scalar products
+
+            # preferably, this should be added to LinearCombination.simplify
+            if isinstance(base, LinearCombination) and len(base) == 1:
+                _c, _o = base.terms()
+                base = SProd(_c[0], _o[0])
+            d = self._recursive_decomposition(base, self.coeff)
 
         if queuing.QueuingManager.recording():
             for op in d:
@@ -269,30 +312,14 @@ class Exp(ScalarSymbolicOp, Operation):
         Returns:
             List[Operator]: decomposition
         """
-        # Change base to `Sum`/`Prod`
-        if isinstance(base, LinearCombination):
-            base = qml.dot(base.coeffs, base.ops)
-
         if isinstance(base, SProd):
             return self._recursive_decomposition(base.base, base.scalar * coeff)
 
-        if self.num_steps is not None and isinstance(base, Sum):
-            # Apply trotter decomposition
-            coeffs, ops = [1] * len(base), base.operands
-            coeffs = [c * coeff for c in coeffs]
-            return self._trotter_decomposition(ops, coeffs)
-
-        if not math.is_abstract(coeff) and math.real(coeff):
-
+        # pylint: disable=unidiomatic-typecheck
+        if type(self) is Exp and not math.is_abstract(coeff) and math.real(coeff):
             error_msg = f"The decomposition of the {self} operator is not defined."
 
-            if not self.num_steps:  # if num_steps was not set
-                error_msg += (
-                    " Please set a value to ``num_steps`` when instantiating the ``Exp`` operator "
-                    "if a Suzuki-Trotter decomposition is required."
-                )
-
-            if self.base.is_hermitian:
+            if self.base.is_verified_hermitian:
                 error_msg += (
                     " Decomposition is not defined for real coefficients of hermitian operators."
                 )
@@ -302,53 +329,17 @@ class Exp(ScalarSymbolicOp, Operation):
         return self._smart_decomposition(coeff, base)
 
     def _smart_decomposition(self, coeff, base):
-        """Decompose to an operator to an operator with a generator or a PauliRot if possible."""
+        """Decompose to an operator with a generator or a PauliRot if possible."""
 
-        # Store operator classes with generators
-        has_generator_types = []
-        has_generator_types_anywires = []
-        for op_name in qml.ops.qubit.__all__:
-            op_class = getattr(qml.ops.qubit, op_name)
-            if op_class.has_generator:
-                if op_class.num_wires is None:
-                    has_generator_types_anywires.append(op_class)
-                elif op_class.num_wires == len(base.wires):
-                    has_generator_types.append(op_class)
-        # Ensure op_class.num_wires == base.num_wires before op_class.num_wires is None
-        has_generator_types.extend(has_generator_types_anywires)
-
-        for op_class in has_generator_types:
-            # PauliRot and PCPhase have different positional args
-            if op_class not in {qml.PauliRot, qml.PCPhase}:
-                g, c = qml.generator(op_class)(coeff, base.wires)
-                # Some generators are not wire-ordered (e.g. OrbitalRotation)
-                mapped_wires_g = qml.map_wires(g, dict(zip(g.wires, base.wires)))
-
-                if qml.equal(mapped_wires_g, base):
-                    # Cancel the coefficients added by the generator
-                    coeff = math.real(-1j / c * coeff)
-                    return [op_class(coeff, g.wires)]
-
-                # could have absorbed the coefficient.
-                simplified_g = qml.simplify(qml.s_prod(c, mapped_wires_g))
-
-                if qml.equal(simplified_g, base):
-                    # Cancel the coefficients added by the generator
-                    coeff = math.real(-1j * coeff)
-                    return [op_class(coeff, g.wires)]
+        op = _find_equal_generator(base, coeff)
+        if op is not None:
+            return [op]
 
         if qml.pauli.is_pauli_word(base):
             # Check if the exponential can be decomposed into a PauliRot gate
             return self._pauli_rot_decomposition(base, coeff)
 
         error_msg = f"The decomposition of the {self} operator is not defined."
-
-        if not self.num_steps:  # if num_steps was not set
-            error_msg += (
-                " Please set a value to ``num_steps`` when instantiating the ``Exp`` operator "
-                "if a Suzuki-Trotter decomposition is required. "
-            )
-
         raise DecompositionUndefinedError(error_msg)
 
     @staticmethod
@@ -363,37 +354,13 @@ class Exp(ScalarSymbolicOp, Operation):
             List[Operator]: list containing the PauliRot operator
         """
         # Cancel the coefficients added by PauliRot and Ising gates
-        coeff = math.real(2j * coeff)
+        coeff = (
+            math.real(2j * coeff)  # jax has no real_if_close
+            if math.get_interface(coeff) == "jax"
+            else math.real_if_close(2j * coeff)  # only cast to real if close
+        )
         pauli_word = qml.pauli.pauli_word_to_string(base)
-        if pauli_word == "I" * base.num_wires:
-            return []
         return [qml.PauliRot(theta=coeff, pauli_word=pauli_word, wires=base.wires)]
-
-    def _trotter_decomposition(self, ops: list[Operator], coeffs: list[complex]):
-        """Uses the Suzuki-Trotter approximation to decompose the exponential of the linear
-        combination of ``coeffs`` and ``ops``.
-
-        Args:
-            ops (List[Operator]): list of operators of the linear combination
-            coeffs (List[complex]): list of coefficients of the linear combination
-
-        Raises:
-            ValueError: if the Trotter number (``num_steps``) is not defined
-            DecompositionUndefinedError: if the linear combination contains operators that are not
-                Pauli words
-
-        Returns:
-            List[Operator]: a list of operators containing the decomposition
-        """
-        op_list = []
-        for c, op in zip(coeffs, ops):
-            c /= self.num_steps  # divide by trotter number
-            if isinstance(op, SProd):
-                c *= op.scalar
-                op = op.base
-            op_list.extend(self._recursive_decomposition(op, c))
-
-        return op_list * self.num_steps  # apply operators ``num_steps`` times
 
     def matrix(self, wire_order=None):
         coeff_interface = math.get_interface(self.scalar)
@@ -452,9 +419,9 @@ class Exp(ScalarSymbolicOp, Operation):
 
         >>> obs = Exp(qml.X(0), 3)
         >>> qml.eigvals(obs)
-        array([20.08553692,  0.04978707])
+        array([20.08...,  0.049...])
         >>> np.exp(3 * qml.eigvals(qml.X(0)))
-        tensor([20.08553692,  0.04978707], requires_grad=True)
+        array([20.08...,  0.049...])
 
         """
         base_eigvals = math.convert_like(self.base.eigvals(), self.coeff)
@@ -475,16 +442,16 @@ class Exp(ScalarSymbolicOp, Operation):
 
     def simplify(self):
         new_base = self.base.simplify()
-        if isinstance(new_base, qml.ops.op_math.SProd):
-            return Exp(new_base.base, self.coeff * new_base.scalar, self.num_steps)
-        return Exp(new_base, self.coeff, self.num_steps)
+        if isinstance(new_base, SProd):
+            return Exp(new_base.base, self.coeff * new_base.scalar)
+        return Exp(new_base, self.coeff)
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_generator(self):
         if math.is_abstract(self.coeff):
-            return self.base.is_hermitian
-        return self.base.is_hermitian and not np.real(self.coeff)
+            return self.base.is_verified_hermitian
+        return self.base.is_verified_hermitian and not np.real(self.coeff)
 
     def generator(self):
         r"""Generator of an operator that is in single-parameter-form.
@@ -497,8 +464,11 @@ class Exp(ScalarSymbolicOp, Operation):
 
         we get the generator
 
+        >>> U = qml.ops.op_math.Evolution(0.5 * qml.Y(0) + qml.Z(0) @ qml.X(1), 1)
+        >>> print(U)
+        Evolution(-1j 0.5 * Y(0) + Z(0) @ X(1))
         >>> U.generator()
-          0.5 * Y(0) + Z(0) @ X(1)
+        -1 * (0.5 * Y(0) + Z(0) @ X(1))
 
         """
         if self.has_generator:
@@ -511,53 +481,17 @@ class Exp(ScalarSymbolicOp, Operation):
         )
 
 
-def _pauli_rot_decomp_condition(base, num_steps):
-    if num_steps:
-        # If num_steps is explicitly provided, always use the Trotter decomposition
-        return False
+def _pauli_rot_decomp_condition(base):
     with queuing.QueuingManager.stop_recording():
         base = base.simplify()
     # The PauliRot decomposition is only applicable when the base is a Pauli word
     return qml.pauli.is_pauli_word(base)
 
 
-def _pauli_rot_decomp_resource(base, **_):
+def _pauli_rot_decomp_resource(base):
     with queuing.QueuingManager.stop_recording():
         base = base.simplify()
     return {resource_rep(qml.PauliRot, pauli_word=qml.pauli.pauli_word_to_string(base)): 1}
-
-
-def _trotter_decomp_condition(base, num_steps):
-    if not num_steps:
-        return False
-    with queuing.QueuingManager.stop_recording():
-        base = base.simplify()
-    if qml.pauli.is_pauli_word(base):
-        return True
-    try:
-        _, ops = base.terms()
-        return all(qml.pauli.is_pauli_word(ob) for ob in ops)
-    except TermsUndefinedError:
-        return False
-
-
-def _trotter_decomp_resource(base, num_steps):
-
-    with queuing.QueuingManager.stop_recording():
-        base = base.simplify()
-
-    try:
-        _, ops = base.terms()
-    except TermsUndefinedError:
-        ops = [base]  # The condition should've already verified that this is a valid pauli word.
-
-    gate_count = {}
-    for op in ops:
-        pauli_word = qml.pauli.pauli_word_to_string(op)
-        if not all(p == "I" for p in pauli_word):
-            op_rep = resource_rep(qml.PauliRot, pauli_word=pauli_word)
-            gate_count[op_rep] = gate_count.get(op_rep, 0) + num_steps
-    return gate_count
 
 
 @register_condition(_pauli_rot_decomp_condition)
@@ -575,33 +509,4 @@ def pauli_rot_decomp(*params, wires, base, **_):  # pylint: disable=unused-argum
         qml.PauliRot(coeff, pauli_word, base.wires)
 
 
-@register_condition(_trotter_decomp_condition)
-@register_resources(_trotter_decomp_resource)
-def trotter_decomp(*params, wires, base, num_steps):  # pylint: disable=unused-argument
-    """Uses the Suzuki-Trotter approximation to decompose the operator exponential."""
-
-    with queuing.QueuingManager.stop_recording():
-        simplified_base = base.simplify()
-
-    try:
-        coeffs, ops = simplified_base.terms()
-    except TermsUndefinedError:
-        # The condition should've already verified that this is a valid pauli word.
-        coeffs, ops = [1.0], [simplified_base]
-
-    new_coeffs, pauli_words, new_wires = [], [], []
-    for c, op in zip(coeffs, ops):
-        # The 2j cancels the coefficient added by PauliRot
-        c = c * params[0] / num_steps * 2j
-        pauli_word = qml.pauli.pauli_word_to_string(op)
-        if pauli_word != "I" * len(op.wires):
-            new_coeffs.append(c)
-            pauli_words.append(pauli_word)
-            new_wires.append(op.wires)
-
-    for _ in range(num_steps):
-        for c, pauli_word, new_wire in zip(new_coeffs, pauli_words, new_wires):
-            qml.PauliRot(c, pauli_word, new_wire)
-
-
-add_decomps(Exp, trotter_decomp, pauli_rot_decomp)
+add_decomps(Exp, pauli_rot_decomp)

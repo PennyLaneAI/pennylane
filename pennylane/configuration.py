@@ -75,7 +75,7 @@ class Configuration:
         Args:
             filepath (str): path to the configuration file.
         """
-        with open(filepath, "r", encoding="utf8") as f:
+        with open(filepath, encoding="utf8") as f:
             self._config = toml.load(f)
 
     def save(self, filepath):
@@ -134,3 +134,7 @@ class Configuration:
             except KeyError:
                 return {}
         return dct
+
+
+# Look for an existing configuration file
+default_config = Configuration("config.toml")

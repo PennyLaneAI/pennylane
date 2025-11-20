@@ -13,7 +13,6 @@
 # limitations under the License.
 """A function to compute the center of a Lie algebra"""
 from itertools import combinations
-from typing import Union
 
 import numpy as np
 from scipy.linalg import norm, null_space
@@ -64,8 +63,8 @@ def _center_pauli_words(g, pauli):
 
 
 def center(
-    g: list[Union[Operator, PauliWord, PauliSentence]], pauli: bool = False
-) -> list[Union[Operator, PauliSentence]]:
+    g: list[Operator | PauliWord | PauliSentence], pauli: bool = False
+) -> list[Operator | PauliSentence]:
     r"""
     Compute the center of a Lie algebra.
 

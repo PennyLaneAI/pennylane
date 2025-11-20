@@ -14,11 +14,13 @@
 """
 Contains the drawing function.
 """
+
 from __future__ import annotations
 
 import warnings
+from collections.abc import Callable, Sequence
 from functools import wraps
-from typing import TYPE_CHECKING, Callable, Literal, Optional, Sequence, Union
+from typing import TYPE_CHECKING, Literal
 
 from pennylane import math
 from pennylane.tape import make_qscript
@@ -36,6 +38,7 @@ def catalyst_qjit(qnode):
     return qnode.__class__.__name__ == "QJIT" and hasattr(qnode, "user_function")
 
 
+# pylint: disable=too-many-arguments
 def draw(
     qnode,
     wire_order=None,
@@ -45,7 +48,7 @@ def draw(
     max_length=100,
     show_matrices=True,
     show_wire_labels=True,
-    level: Union[None, Literal["top", "user", "device", "gradient"], int, slice] = "gradient",
+    level: Literal["top", "user", "device", "gradient"] | int | slice = "gradient",
 ):
     r"""Create a function that draws the given QNode or quantum function.
 
@@ -59,7 +62,7 @@ def draw(
         max_length (int): Maximum string width (columns) when printing the circuit. Defaults to ``100``.
         show_matrices (bool): Show matrix valued parameters below all circuit diagrams. Defaults to ``False``.
         show_wire_labels (bool): Whether or not to show the wire labels. Defaults to ``True``.
-        level (None, str, int, slice): An indication of what transforms to apply before drawing. Defaults to ``"gradient"``.
+        level (str, int, slice): An indication of what transforms to apply before drawing. Defaults to ``"gradient"``.
             Check :func:`~.workflow.get_transform_program` for more information on the allowed values and usage details of
             this argument.
 
@@ -69,7 +72,7 @@ def draw(
 
     **Example**
 
-    .. code-block:: python3
+    .. code-block:: python
 
         @qml.qnode(qml.device('lightning.qubit', wires=2))
         def circuit(a, w):
@@ -235,9 +238,9 @@ def draw(
         1: ─╰RandomLayers(M0)─├Permute─┤
         2: ───────────────────╰Permute─┤
 
-        To apply all of the transforms, including those carried out by the differentiation method and the device, use ``level=None``:
+        To apply all of the transforms, including those carried out by the differentiation method and the device, use ``level="device"``:
 
-        >>> print(qml.draw(circ, level=None, show_matrices=False)(weights, order))
+        >>> print(qml.draw(circ, level="device", show_matrices=False)(weights, order))
         0: ──RY(1.00)──╭SWAP─┤  <X>
         1: ──RX(20.00)─│─────┤
         2: ────────────╰SWAP─┤
@@ -332,16 +335,17 @@ def draw(
     return wrapper
 
 
+# pylint: disable=too-many-arguments
 def _draw_qnode(
     qnode,
-    wire_order: Optional[Sequence] = None,
+    wire_order: Sequence | None = None,
     show_all_wires: bool = False,
     *,
     decimals=2,
     max_length=100,
     show_matrices=True,
     show_wire_labels=True,
-    level: Union[None, Literal["top", "user", "device", "gradient"], int, slice] = "gradient",
+    level: Literal["top", "user", "device", "gradient"] | int | slice = "gradient",
 ):
     @wraps(qnode)
     def wrapper(*args, **kwargs):
@@ -385,16 +389,17 @@ def _draw_qnode(
     return wrapper
 
 
+# pylint: disable=too-many-arguments
 def draw_mpl(
-    qnode: Union[QNode, Callable],
-    wire_order: Optional[Sequence] = None,
+    qnode: QNode | Callable,
+    wire_order: Sequence | None = None,
     show_all_wires: bool = False,
-    decimals: Optional[int] = None,
-    style: Optional[str] = None,
+    decimals: int | None = None,
+    style: str | None = None,
     *,
-    max_length: Optional[int] = None,
+    max_length: int | None = None,
     fig=None,
-    level: Union[None, Literal["top", "user", "device", "gradient"], int, slice] = "gradient",
+    level: Literal["top", "user", "device", "gradient"] | int | slice = "gradient",
     **kwargs,
 ):
     r"""Draw a qnode with matplotlib
@@ -427,7 +432,7 @@ def draw_mpl(
         show_wire_labels (bool): Whether or not to show the wire labels.
         active_wire_notches (bool): whether or not to add notches indicating active wires.
             Defaults to ``True``.
-        level (None, str, int, slice): An indication of what transforms to apply before drawing.
+        level (str, int, slice): An indication of what transforms to apply before drawing.
             Check :func:`~.workflow.get_transform_program` for more information on the allowed values and usage details of
             this argument.
 
@@ -528,12 +533,12 @@ def draw_mpl(
 
         .. code-block:: python
 
-            def circuit():
+            def deep_circuit():
                 for _ in range(10):
                     qml.X(0)
                 return qml.expval(qml.Z(0))
 
-            [(fig1, ax1), (fig2, ax2)] = qml.draw_mpl(circuit, max_length=5)()
+            [(fig1, ax1), (fig2, ax2)] = qml.draw_mpl(deep_circuit, max_length=5)()
 
         .. figure:: ../../_static/draw_mpl/max_length1.png
                 :align: center
@@ -552,6 +557,8 @@ def draw_mpl(
         users can perform further customization of the graphic.
 
         .. code-block:: python
+
+            import matplotlib.pyplot as plt
 
             fig, ax = qml.draw_mpl(circuit)(1.2345,1.2345)
             fig.suptitle("My Circuit", fontsize="xx-large")
@@ -693,11 +700,11 @@ def draw_mpl(
             :width: 60%
             :target: javascript:void(0);
 
-        To apply all of the transforms, including those carried out by the differentiation method and the device, use ``level=None``:
+        To apply all of the transforms, including those carried out by the differentiation method and the device, use ``level="device"``:
 
         .. code-block:: python
 
-            fig, ax = qml.draw_mpl(circ, level=None)()
+            fig, ax = qml.draw_mpl(circ, level="device")()
             fig.show()
 
         .. figure:: ../../_static/draw_mpl/level_none.png
@@ -778,7 +785,6 @@ def draw_mpl(
         qnode = qnode.user_function
 
     if hasattr(qnode, "construct"):
-
         return _draw_mpl_qnode(
             qnode,
             wire_order=wire_order,
@@ -823,6 +829,7 @@ def draw_mpl(
     return wrapper
 
 
+# pylint: disable=too-many-arguments
 def _draw_mpl_qnode(
     qnode,
     wire_order=None,

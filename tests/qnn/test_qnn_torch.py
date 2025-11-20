@@ -602,7 +602,7 @@ def test_forward_tuple(num_qubits, weight_shapes):
 
 
 @pytest.mark.all_interfaces
-@pytest.mark.parametrize("interface", ["autograd", "jax", "tf"])
+@pytest.mark.parametrize("interface", ["autograd", "jax"])
 def test_invalid_interface_error(interface):
     """Test an error gets raised if input QNode has the wrong interface"""
     dev = qml.device("default.qubit", wires=3)
@@ -619,7 +619,7 @@ def test_invalid_interface_error(interface):
 
 
 @pytest.mark.torch
-@pytest.mark.parametrize("interface", ("auto", "torch", "pytorch"))
+@pytest.mark.parametrize("interface", ("auto", "torch"))
 def test_qnode_interface_not_mutated(interface):
     """Test that the input QNode's interface is not mutated by TorchLayer"""
     dev = qml.device("default.qubit", wires=3)
@@ -632,11 +632,7 @@ def test_qnode_interface_not_mutated(interface):
         return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
     qlayer = TorchLayer(circuit, weight_shapes)
-    assert (
-        qlayer.qnode.interface
-        == circuit.interface
-        == qml.math.get_canonical_interface_name(interface).value
-    )
+    assert qlayer.qnode.interface == circuit.interface == qml.math.Interface(interface).value
 
 
 @pytest.mark.torch
@@ -711,9 +707,9 @@ class TestTorchLayerIntegration:
         state_dict = module.state_dict()
         dict_keys = set(state_dict.keys())
 
-        clayer_weights = set(f"clayer{i + 1}.weight" for i in range(3))
-        clayer_biases = set(f"clayer{i + 1}.bias" for i in range(3))
-        qlayer_params = set(f"qlayer{i + 1}.w{j + 1}" for i in range(2) for j in range(len(w)))
+        clayer_weights = {f"clayer{i + 1}.weight" for i in range(3)}
+        clayer_biases = {f"clayer{i + 1}.bias" for i in range(3)}
+        qlayer_params = {f"qlayer{i + 1}.w{j + 1}" for i in range(2) for j in range(len(w))}
 
         all_params = clayer_weights | clayer_biases | qlayer_params
 

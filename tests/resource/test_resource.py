@@ -21,6 +21,8 @@ from dataclasses import FrozenInstanceError
 import pytest
 
 import pennylane as qml
+from pennylane import estimator, resource
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.measurements import Shots
 from pennylane.operation import Operation
 from pennylane.resource.resource import (
@@ -33,9 +35,30 @@ from pennylane.resource.resource import (
     add_in_series,
     mul_in_parallel,
     mul_in_series,
+    specs_from_tape,
     substitute,
 )
 from pennylane.tape import QuantumScript
+
+_DEPRECATED_CLASSES_FUNCTIONS = (
+    "estimate_shots",
+    "estimate_error",
+    "FirstQuantization",
+    "DoubleFactorization",
+)
+
+
+@pytest.mark.parametrize("item", _DEPRECATED_CLASSES_FUNCTIONS)
+def test_deprecated_items(item):
+    """Test that accessing the items from the resource module raises
+    a deprecation error."""
+    with pytest.warns(
+        PennyLaneDeprecationWarning,
+        match=f"pennylane.{item} is no longer accessible from the resource module",
+    ):
+        cls_or_fn = getattr(resource, item)
+
+    assert cls_or_fn is getattr(estimator, item)
 
 
 class TestResources:
@@ -572,9 +595,13 @@ class TestResourcesOperation:  # pylint: disable=too-few-public-methods
         initialized without a `resources` method."""
 
         class CustomOpNoResource(ResourcesOperation):  # pylint: disable=too-few-public-methods
+            """A custom operation that does not implement the resources method."""
+
             num_wires = 2
 
         class CustomOPWithResources(ResourcesOperation):  # pylint: disable=too-few-public-methods
+            """A custom operation that implements the resources method."""
+
             num_wires = 2
 
             def resources(self):
@@ -695,3 +722,22 @@ def test_scale_dict(scalar):
     result = _scale_dict(d1, scalar)
 
     assert result == expected
+
+
+@pytest.mark.parametrize("compute_depth", (True, False))
+def test_specs_compute_depth(compute_depth):
+    """Test that depth is skipped with `specs_from_tape`."""
+
+    ops = [
+        qml.RX(0.432, wires=0),
+        qml.Rot(0.543, 0, 0.23, wires=0),
+        qml.CNOT(wires=[0, "a"]),
+        qml.RX(0.133, wires=4),
+    ]
+    obs = [qml.expval(qml.PauliX(wires="a")), qml.probs(wires=[0, "a"])]
+
+    tape = QuantumScript(ops=ops, measurements=obs)
+    specs = specs_from_tape(tape, compute_depth=compute_depth)
+
+    assert len(specs) == 4
+    assert specs["resources"].depth == (3 if compute_depth else None)

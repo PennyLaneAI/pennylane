@@ -18,7 +18,8 @@ that do not depend on any parameters.
 # pylint:disable=arguments-differ
 import numpy as np
 
-from pennylane.operation import AdjointUndefinedError, Operation
+from pennylane.exceptions import AdjointUndefinedError
+from pennylane.operation import Operation
 from pennylane.wires import Wires
 
 from .parametric_ops import validate_subspace
@@ -97,7 +98,7 @@ class TShift(Operation):
         **Example**
 
         >>> print(qml.TShift.compute_eigvals())
-        [ -0.5+0.8660254j -0.5-0.8660254j 1. +0.j         ]
+        [-0.5+0.8660254j -0.5-0.8660254j  1. +0.j       ]
         """
         return np.array([OMEGA, OMEGA**2, 1])
 
@@ -513,9 +514,9 @@ class THadamard(Operation):
         **Example**
 
         >>> print(qml.THadamard.compute_matrix(subspace=(0, 2)))
-        array([[ 0.70710678+0.j,  0.        +0.j,  0.70710678+0.j],
-               [ 0.        +0.j,  1.        +0.j,  0.        +0.j],
-               [ 0.70710678+0.j,  0.        +0.j, -0.70710678+0.j]])
+        [[ 0.70710678+0.j  0.        +0.j  0.70710678+0.j]
+         [ 0.        +0.j  1.        +0.j  0.        +0.j]
+         [ 0.70710678+0.j  0.        +0.j -0.70710678+0.j]]
         """
 
         if subspace is None:

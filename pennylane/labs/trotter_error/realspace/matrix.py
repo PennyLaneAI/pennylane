@@ -13,21 +13,16 @@
 # limitations under the License.
 """Private helper functions for converting RealspaceOperator objects to matrices"""
 
-from __future__ import annotations
 
 from functools import reduce
-from typing import TYPE_CHECKING, Tuple, Union
 
 import numpy as np
 import scipy as sp
 
-if TYPE_CHECKING:
-    from pennylane.labs.trotter_error.realspace import RealspaceOperator, RealspaceSum
-
 
 def _position_operator(
     gridpoints: int, sparse: bool = False, basis: str = "realspace"
-) -> Union[np.ndarray, sp.sparse.csr_array]:
+) -> np.ndarray | sp.sparse.csr_array:
     """Returns a matrix representation of the position operator"""
 
     if basis == "realspace":
@@ -61,7 +56,7 @@ def _harmonic_position(gridpoints: int) -> np.ndarray:
 
 def _momentum_operator(
     gridpoints: int, sparse: bool = False, basis: str = "realspace"
-) -> Union[np.ndarray, sp.sparse.csr_array]:
+) -> np.ndarray | sp.sparse.csr_array:
     """Returns a matrix representation of the momentum operator"""
 
     if basis == "realspace":
@@ -102,7 +97,7 @@ def _harmonic_momentum(gridpoints: int) -> np.ndarray:
 
 def _string_to_matrix(
     op: str, gridpoints: int, sparse: bool = False, basis: str = "realspace"
-) -> Union[np.ndarray, sp.sparse.csr_array]:
+) -> np.ndarray | sp.sparse.csr_array:
     """Transforms a string of P's and Q's into a matrix representing the product of position and momenutm operators"""
 
     matrix = _identity(gridpoints, sparse=sparse)
@@ -116,10 +111,10 @@ def _string_to_matrix(
 def _tensor_with_identity(
     modes: int,
     gridpoints: int,
-    index: Tuple[int],
-    ops: Tuple[Union[np.ndarray, sp.sparse.csr_array]],
+    index: tuple[int],
+    ops: tuple[np.ndarray | sp.sparse.csr_array],
     sparse: bool = False,
-) -> Union[np.ndarray, sp.sparse.csr_array]:
+) -> np.ndarray | sp.sparse.csr_array:
     """Tensor the input matrices with the identity"""
     lookup = [_identity(gridpoints, sparse=sparse)] * modes
 
@@ -131,7 +126,7 @@ def _tensor_with_identity(
     return reduce(_kron, lookup[1:], lookup[0])
 
 
-def _identity(dim: int, sparse: bool) -> Union[np.ndarray, sp.sparse.csr_array]:
+def _identity(dim: int, sparse: bool) -> np.ndarray | sp.sparse.csr_array:
     """Return a matrix representation of the identity operator"""
     if sparse:
         return sp.sparse.eye_array(dim, format="csr")
@@ -139,7 +134,7 @@ def _identity(dim: int, sparse: bool) -> Union[np.ndarray, sp.sparse.csr_array]:
     return np.eye(dim)
 
 
-def _kron(a: Union[np.ndarray, sp.sparse.csr_array], b: Union[np.ndarray, sp.sparse.csr_array]):
+def _kron(a: np.ndarray | sp.sparse.csr_array, b: np.ndarray | sp.sparse.csr_array):
     """Return the Kronecker product of two matrices"""
     if isinstance(a, np.ndarray) and isinstance(b, np.ndarray):
         return np.kron(a, b)
@@ -150,7 +145,7 @@ def _kron(a: Union[np.ndarray, sp.sparse.csr_array], b: Union[np.ndarray, sp.spa
     raise TypeError(f"Matrices must both be ndarray or csr_array. Got {type(a)} and {type(b)}.")
 
 
-def _zeros(shape: Tuple[int], sparse: bool = False) -> Union[np.ndarray, sp.sparse.csr_array]:
+def _zeros(shape: tuple[int], sparse: bool = False) -> np.ndarray | sp.sparse.csr_array:
     """Return a matrix representation of the zero operator"""
     if sparse:
         return sp.sparse.csr_array(shape)

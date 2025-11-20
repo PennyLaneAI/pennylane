@@ -95,17 +95,7 @@ def test_composite_ops(op, new_params, expected_op):
     "op, new_params, expected_op",
     [
         (qml.evolve(qml.PauliX(0), 0.5), [-0.5], qml.evolve(qml.PauliX(0), -0.5)),
-        (
-            qml.evolve(qml.PauliX(0), 0.5, num_steps=15),
-            [-0.5],
-            qml.evolve(qml.PauliX(0), -0.5, num_steps=15),
-        ),
         (qml.exp(qml.PauliX(0), 0.5), [-0.5], qml.exp(qml.PauliX(0), -0.5)),
-        (
-            qml.exp(qml.PauliX(0), 0.5, num_steps=15),
-            [-0.5],
-            qml.exp(qml.PauliX(0), -0.5, num_steps=15),
-        ),
         (qml.pow(qml.RX(0.123, 0), 2), [0.456], qml.pow(qml.RX(0.456, 0), 2)),
         (qml.s_prod(0.5, qml.RX(0.123, 0)), [-0.5, 0.456], qml.s_prod(-0.5, qml.RX(0.456, 0))),
         (
@@ -431,8 +421,8 @@ def test_projector(op, new_params, expected_op):
 )
 def test_conditional_ops(op, new_params, expected_op):
     """Test that Conditional ops are bound correctly."""
-    mp0 = qml.measurements.MidMeasureMP(qml.wires.Wires(0), reset=True, id="foo")
-    mv0 = qml.measurements.MeasurementValue([mp0], lambda v: v)
+    mp0 = qml.ops.MidMeasure(qml.wires.Wires(0), reset=True, id="foo")
+    mv0 = qml.ops.MeasurementValue([mp0], lambda v: v)
     cond_op = qml.ops.Conditional(mv0, op)
     new_op = bind_new_parameters(cond_op, new_params)
 

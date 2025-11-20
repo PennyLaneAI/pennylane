@@ -166,3 +166,7 @@ def test_custom_staging_rule(enable_disable_dynamic_shapes):
     assert jaxpr.eqns[0].primitive == my_prim
     assert len(jaxpr.eqns[0].outvars) == 2
     assert jaxpr.eqns[0].outvars[0] is jaxpr.eqns[0].outvars[1].aval.shape[0]
+
+    # doesn't return a dynamic shape unless it needs to
+    assert isinstance(jaxpr.jaxpr.outvars[0].aval, jax.core.ShapedArray)
+    assert isinstance(jaxpr.jaxpr.outvars[1].aval, jax.core.DShapedArray)

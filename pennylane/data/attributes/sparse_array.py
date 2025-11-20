@@ -14,7 +14,7 @@
 """Contains DatasetAttribute definition for ``scipy.sparse.csr_array``."""
 
 from functools import lru_cache
-from typing import Generic, Type, TypeVar, Union, cast
+from typing import Generic, TypeVar, cast
 
 import numpy as np
 from scipy.sparse import (
@@ -37,12 +37,12 @@ from scipy.sparse import (
 from pennylane.data.base.attribute import AttributeInfo, DatasetAttribute
 from pennylane.data.base.hdf5 import HDF5Group
 
-SparseArray = Union[bsr_array, coo_array, csc_array, csr_array, dia_array, dok_array, lil_array]
-SparseMatrix = Union[
-    bsr_matrix, coo_matrix, csc_matrix, csr_matrix, dia_matrix, dok_matrix, lil_matrix
-]
+SparseArray = bsr_array | coo_array | csc_array | csr_array | dia_array | dok_array | lil_array
+SparseMatrix = (
+    bsr_matrix | coo_matrix | csc_matrix | csr_matrix | dia_matrix | dok_matrix | lil_matrix
+)
 
-SparseT = TypeVar("SparseT", bound=Union[SparseArray, SparseMatrix])
+SparseT = TypeVar("SparseT", bound=SparseArray | SparseMatrix)
 
 
 class DatasetSparseArray(Generic[SparseT], DatasetAttribute[HDF5Group, SparseT, SparseT]):
@@ -56,15 +56,15 @@ class DatasetSparseArray(Generic[SparseT], DatasetAttribute[HDF5Group, SparseT, 
         self.info["sparse_array_class"] = type(value).__qualname__
 
     @property
-    def sparse_array_class(self) -> Type[SparseT]:
+    def sparse_array_class(self) -> type[SparseT]:
         """Returns the class of sparse array that will be returned by the ``get_value()``
         method."""
-        return cast(Type[SparseT], self._supported_sparse_dict()[self.info["sparse_array_class"]])
+        return cast(type[SparseT], self._supported_sparse_dict()[self.info["sparse_array_class"]])
 
     @classmethod
     def consumes_types(
         cls,
-    ) -> tuple[Type[Union[SparseArray, SparseMatrix]], ...]:
+    ) -> tuple[type[SparseArray | SparseMatrix], ...]:
         return (
             bsr_array,
             coo_array,
@@ -83,7 +83,7 @@ class DatasetSparseArray(Generic[SparseT], DatasetAttribute[HDF5Group, SparseT, 
         )
 
     @classmethod
-    def py_type(cls, value_type: Type[SparseArray]) -> str:
+    def py_type(cls, value_type: type[SparseArray]) -> str:
         """The module path of sparse array types is private, e.g ``scipy.sparse._csr.csr_array``.
         This method returns the public path e.g ``scipy.sparse.csr_array`` instead."""
 
@@ -98,7 +98,7 @@ class DatasetSparseArray(Generic[SparseT], DatasetAttribute[HDF5Group, SparseT, 
         )
 
         sparse_array_class = cast(
-            Type[SparseT], self._supported_sparse_dict()[info["sparse_array_class"]]
+            type[SparseT], self._supported_sparse_dict()[info["sparse_array_class"]]
         )
         if not isinstance(value, sparse_array_class):
             value = sparse_array_class(value)
@@ -122,6 +122,6 @@ class DatasetSparseArray(Generic[SparseT], DatasetAttribute[HDF5Group, SparseT, 
 
     @classmethod
     @lru_cache(1)
-    def _supported_sparse_dict(cls) -> dict[str, Type[Union[SparseArray, SparseMatrix]]]:
+    def _supported_sparse_dict(cls) -> dict[str, type[SparseArray | SparseMatrix]]:
         """Returns a dict mapping sparse array class names to the class."""
         return {op.__name__: op for op in cls.consumes_types()}

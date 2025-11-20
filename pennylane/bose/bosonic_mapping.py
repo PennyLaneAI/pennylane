@@ -15,7 +15,6 @@
 
 from collections import defaultdict
 from functools import singledispatch
-from typing import Union
 
 import numpy as np
 
@@ -39,7 +38,7 @@ def _get_pauli_op(i, j, qub_id):
 
 
 def binary_mapping(
-    bose_operator: Union[BoseWord, BoseSentence],
+    bose_operator: BoseWord | BoseSentence,
     n_states: int = 2,
     ps: bool = False,
     wire_map: dict = None,
@@ -68,13 +67,13 @@ def binary_mapping(
     >>> qml.binary_mapping(w, n_states=4)
     (
         0.6830127018922193 * X(0)
-      + -0.1830127018922193 * X(0) @ Z(1)
+      + -0.1830127018922193 * (X(0) @ Z(1))
       + -0.6830127018922193j * Y(0)
-      + 0.1830127018922193j * Y(0) @ Z(1)
-      + 0.3535533905932738 * X(0) @ X(1)
-      + -0.3535533905932738j * X(0) @ Y(1)
-      + 0.3535533905932738j * Y(0) @ X(1)
-      + (0.3535533905932738+0j) * Y(0) @ Y(1)
+      + 0.1830127018922193j * (Y(0) @ Z(1))
+      + 0.3535533905932738 * (X(0) @ X(1))
+      + -0.3535533905932738j * (X(0) @ Y(1))
+      + 0.3535533905932738j * (Y(0) @ X(1))
+      + (0.3535533905932738+0j) * (Y(0) @ Y(1))
     )
     """
 
@@ -164,7 +163,7 @@ def _(bose_operator: BoseSentence, n_states, tol=None):
 
 
 def unary_mapping(
-    bose_operator: Union[BoseWord, BoseSentence],
+    bose_operator: BoseWord | BoseSentence,
     n_states: int = 2,
     ps: bool = False,
     wire_map: dict = None,
@@ -192,18 +191,18 @@ def unary_mapping(
     >>> w = qml.BoseWord({(0, 0): "+"})
     >>> qml.unary_mapping(w, n_states=4)
     (
-        0.25 * X(0) @ X(1)
-      + -0.25j * X(0) @ Y(1)
-      + 0.25j * Y(0) @ X(1)
-      + (0.25+0j) * Y(0) @ Y(1)
-      + 0.3535533905932738 * X(1) @ X(2)
-      + -0.3535533905932738j * X(1) @ Y(2)
-      + 0.3535533905932738j * Y(1) @ X(2)
-      + (0.3535533905932738+0j) * Y(1) @ Y(2)
-      + 0.4330127018922193 * X(2) @ X(3)
-      + -0.4330127018922193j * X(2) @ Y(3)
-      + 0.4330127018922193j * Y(2) @ X(3)
-      + (0.4330127018922193+0j) * Y(2) @ Y(3)
+        0.25 * (X(0) @ X(1))
+      + -0.25j * (X(0) @ Y(1))
+      + 0.25j * (Y(0) @ X(1))
+      + (0.25+0j) * (Y(0) @ Y(1))
+      + 0.3535533905932738 * (X(1) @ X(2))
+      + -0.3535533905932738j * (X(1) @ Y(2))
+      + 0.3535533905932738j * (Y(1) @ X(2))
+      + (0.3535533905932738+0j) * (Y(1) @ Y(2))
+      + 0.4330127018922193 * (X(2) @ X(3))
+      + -0.4330127018922193j * (X(2) @ Y(3))
+      + 0.4330127018922193j * (Y(2) @ X(3))
+      + (0.4330127018922193+0j) * (Y(2) @ Y(3))
     )
     """
 
@@ -300,7 +299,7 @@ def _(bose_operator: BoseSentence, n_states, tol=None):
 
 
 def christiansen_mapping(
-    bose_operator: Union[BoseWord, BoseSentence],
+    bose_operator: BoseWord | BoseSentence,
     ps: bool = False,
     wire_map: dict = None,
     tol: float = None,

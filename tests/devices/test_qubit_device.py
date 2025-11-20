@@ -1199,7 +1199,7 @@ class TestNativeMidCircuitMeasurements:
     class MCMDevice(DefaultQubitLegacy):
         def apply(self, *args, **kwargs):
             for op in args[0]:
-                if isinstance(op, qml.measurements.MidMeasureMP):
+                if isinstance(op, qml.ops.MidMeasure):
                     kwargs["mid_measurements"][op] = 0
 
         @classmethod
@@ -1211,11 +1211,11 @@ class TestNativeMidCircuitMeasurements:
     def test_qnode_native_mcm(self, mocker):
         """Tests that the legacy devices may support native MCM execution via the dynamic_one_shot transform."""
 
-        dev = self.MCMDevice(wires=1, shots=100)
+        dev = self.MCMDevice(wires=1)
         dev.operations.add("MidMeasureMP")
         spy = mocker.spy(qml.dynamic_one_shot, "_transform")
 
-        @qml.qnode(dev, interface=None, diff_method=None)
+        @qml.qnode(dev, interface=None, diff_method=None, shots=100)
         def func():
             _ = qml.measure(0)
             return qml.expval(op=qml.PauliZ(0))
@@ -1227,15 +1227,15 @@ class TestNativeMidCircuitMeasurements:
     @pytest.mark.parametrize("postselect_mode", ["hw-like", "fill-shots"])
     def test_postselect_mode_propagates_to_execute(self, monkeypatch, postselect_mode):
         """Test that the specified postselect mode propagates to execution as expected."""
-        dev = self.MCMDevice(wires=1, shots=100)
-        dev.operations.add("MidMeasureMP")
+        dev = self.MCMDevice(wires=1)
+        dev.operations.add("MidMeasure")
         pm_propagated = False
 
         def new_apply(*args, **kwargs):  # pylint: disable=unused-argument
             nonlocal pm_propagated
             pm_propagated = kwargs.get("postselect_mode", -1) == postselect_mode
 
-        @qml.qnode(dev, postselect_mode=postselect_mode)
+        @qml.qnode(dev, postselect_mode=postselect_mode, shots=100)
         def func():
             _ = qml.measure(0, postselect=1)
             return qml.expval(op=qml.PauliZ(0))
@@ -1542,9 +1542,9 @@ class TestResourcesTracker:
     @pytest.mark.autograd
     def test_tracker_grad(self):
         """Test that the tracker can track resources through a gradient computation"""
-        dev = DefaultQubitLegacy(wires=1, shots=100)
+        dev = DefaultQubitLegacy(wires=1)
 
-        @qml.qnode(dev, diff_method="parameter-shift")
+        @qml.qnode(dev, diff_method="parameter-shift", shots=100)
         def circuit(x):
             qml.RX(x, wires=0)  # 2 term parameter shift
             return qml.expval(qml.PauliZ(0))

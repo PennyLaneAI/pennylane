@@ -20,10 +20,28 @@ import copy
 from abc import abstractmethod
 from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import Tuple
+from typing import Any
 
 from pennylane.measurements import Shots, add_shots
 from pennylane.operation import Operation
+from pennylane.tape import QuantumScript
+
+from .error import _compute_algo_error
+
+
+class SpecsDict(dict):
+    """A special dictionary for storing the specs of a circuit. Used to customize ``KeyError`` messages."""
+
+    def __getitem__(self, __k):
+        if __k == "num_diagonalizing_gates":
+            raise KeyError(
+                "num_diagonalizing_gates is no longer in specs due to the ambiguity of the definition "
+                "and extreme performance costs."
+            )
+        try:
+            return super().__getitem__(__k)
+        except KeyError as e:
+            raise KeyError(f"key {__k} not available. Options are {set(self.keys())}") from e
 
 
 @dataclass(frozen=True)
@@ -66,8 +84,8 @@ class Resources:
         >>> r1 = Resources(num_wires=2, num_gates=2, gate_types={'Hadamard': 1, 'CNOT':1}, gate_sizes={1: 1, 2: 1}, depth=2)
         >>> r2 = Resources(num_wires=2, num_gates=2, gate_types={'RX': 1, 'CNOT':1}, gate_sizes={1: 1, 2: 1}, depth=2)
         >>> print(r1 + r2)
-        wires: 2
-        gates: 4
+        num_wires: 2
+        num_gates: 4
         depth: 4
         shots: Shots(total=None)
         gate_types:
@@ -75,8 +93,8 @@ class Resources:
         gate_sizes:
         {1: 2, 2: 2}
         >>> print(r1 * 2)
-        wires: 2
-        gates: 4
+        num_wires: 2
+        num_gates: 4
         depth: 4
         shots: Shots(total=None)
         gate_types:
@@ -107,7 +125,7 @@ class Resources:
 
             First we build two :class:`~.resource.Resources` objects.
 
-            .. code-block:: python3
+            .. code-block:: python
 
                 from pennylane.measurements import Shots
                 from pennylane.resource import Resources
@@ -133,8 +151,8 @@ class Resources:
             Now we print their sum.
 
             >>> print(r1 + r2)
-            wires: 3
-            gates: 4
+            num_wires: 3
+            num_gates: 4
             depth: 3
             shots: Shots(total=35, vector=[10 shots, 5 shots, 2 shots x 10])
             gate_types:
@@ -159,7 +177,7 @@ class Resources:
 
             First we build a :class:`~.resource.Resources` object.
 
-            .. code-block:: python3
+            .. code-block:: python
 
                 from pennylane.measurements import Shots
                 from pennylane.resource import Resources
@@ -176,8 +194,8 @@ class Resources:
             Now we print the product.
 
             >>> print(resources * 2)
-            wires: 2
-            gates: 4
+            num_wires: 2
+            num_gates: 4
             depth: 4
             shots: Shots(total=20)
             gate_types:
@@ -272,7 +290,7 @@ def add_in_series(r1: Resources, r2: Resources) -> Resources:
 
         First we build two :class:`~.resource.Resources` objects.
 
-        .. code-block:: python3
+        .. code-block:: python
 
             from pennylane.measurements import Shots
             from pennylane.resource import Resources
@@ -298,8 +316,8 @@ def add_in_series(r1: Resources, r2: Resources) -> Resources:
         Now we print their sum.
 
         >>> print(qml.resource.add_in_series(r1, r2))
-        wires: 3
-        gates: 4
+        num_wires: 3
+        num_gates: 4
         depth: 3
         shots: Shots(total=35, vector=[10 shots, 5 shots, 2 shots x 10])
         gate_types:
@@ -339,7 +357,7 @@ def add_in_parallel(r1: Resources, r2: Resources) -> Resources:
 
         First we build two :class:`~.resource.Resources` objects.
 
-        .. code-block:: python3
+        .. code-block:: python
 
             from pennylane.measurements import Shots
             from pennylane.resource import Resources
@@ -365,8 +383,8 @@ def add_in_parallel(r1: Resources, r2: Resources) -> Resources:
         Now we print their sum.
 
         >>> print(qml.resource.add_in_parallel(r1, r2))
-        wires: 5
-        gates: 4
+        num_wires: 5
+        num_gates: 4
         depth: 2
         shots: Shots(total=35, vector=[10 shots, 5 shots, 2 shots x 10])
         gate_types:
@@ -407,7 +425,7 @@ def mul_in_series(resources: Resources, scalar: int) -> Resources:
 
         First we build a :class:`~.resource.Resources` object.
 
-        .. code-block:: python3
+        .. code-block:: python
 
             from pennylane.measurements import Shots
             from pennylane.resource import Resources
@@ -424,8 +442,8 @@ def mul_in_series(resources: Resources, scalar: int) -> Resources:
         Now we print the product.
 
         >>> print(qml.resource.mul_in_series(resources, 2))
-        wires: 2
-        gates: 4
+        num_wires: 2
+        num_gates: 4
         depth: 4
         shots: Shots(total=20)
         gate_types:
@@ -465,7 +483,7 @@ def mul_in_parallel(resources: Resources, scalar: int) -> Resources:
 
         First we build a :class:`~.resource.Resources` object.
 
-        .. code-block:: python3
+        .. code-block:: python
 
             from pennylane.measurements import Shots
             from pennylane.resource import Resources
@@ -482,8 +500,8 @@ def mul_in_parallel(resources: Resources, scalar: int) -> Resources:
         Now we print the product.
 
         >>> print(qml.resource.mul_in_parallel(resources, 2))
-        wires: 4
-        gates: 4
+        num_wires: 4
+        num_gates: 4
         depth: 2
         shots: Shots(total=20)
         gate_types:
@@ -503,7 +521,7 @@ def mul_in_parallel(resources: Resources, scalar: int) -> Resources:
     )
 
 
-def substitute(initial_resources: Resources, gate_info: Tuple[str, int], replacement: Resources):
+def substitute(initial_resources: Resources, gate_info: tuple[str, int], replacement: Resources):
     """Replaces a specified gate in a :class:`~.resource.Resources` object with the contents of another :class:`~.resource.Resources` object.
 
     Args:
@@ -520,7 +538,7 @@ def substitute(initial_resources: Resources, gate_info: Tuple[str, int], replace
 
         First we build the :class:`~.resource.Resources`.
 
-        .. code-block:: python3
+        .. code-block:: python
 
             from pennylane.measurements import Shots
             from pennylane.resource import Resources
@@ -550,12 +568,12 @@ def substitute(initial_resources: Resources, gate_info: Tuple[str, int], replace
 
         >>> res = qml.resource.substitute(initial_resources, gate_info, replacement)
         >>> print(res)
-        wires: 2
-        gates: 15
+        num_wires: 2
+        num_gates: 15
         depth: 9
         shots: Shots(total=10)
         gate_types:
-        {'CNOT': 1, 'H': 6, 'S': 8}
+        {'CNOT': 1, 'Hadamard': 6, 'S': 8}
         gate_sizes:
         {1: 14, 2: 1}
     """
@@ -600,6 +618,39 @@ def substitute(initial_resources: Resources, gate_info: Tuple[str, int], replace
     return initial_resources
 
 
+# The reason why this function is not a method of the QuantumScript class is
+# because we don't want a core module (QuantumScript) to depend on an auxiliary module (Resource).
+# The `QuantumScript.specs` property will eventually be deprecated in favor of this function.
+def specs_from_tape(tape: QuantumScript, compute_depth: bool = True) -> SpecsDict[str, Any]:
+    """
+    Extracts the resource information from a quantum circuit (tape).
+
+    The depth of the circuit is computed by default, but can be set to None
+    by setting the `compute_depth` argument to False.
+    This is useful when the depth is not needed, for example, in some
+    resource counting scenarios or heavy circuits where computing depth is expensive.
+
+    Args:
+        tape (.QuantumScript): The quantum circuit for which we extract resources
+        compute_depth (bool): If True, the depth of the circuit is computed and included in the resources.
+            If False, the depth is set to None.
+
+    Returns:
+        (.SpecsDict): The specifications extracted from the workflow
+    """
+    resources = _count_resources(tape, compute_depth=compute_depth)
+    algo_errors = _compute_algo_error(tape)
+
+    return SpecsDict(
+        {
+            "resources": resources,
+            "errors": algo_errors,
+            "num_observables": len(tape.observables),
+            "num_trainable_params": tape.num_params,
+        }
+    )
+
+
 def _combine_dict(dict1: dict, dict2: dict):
     r"""Combines two dictionaries and adds values of common keys."""
     combined_dict = copy.copy(dict1)
@@ -624,19 +675,21 @@ def _scale_dict(dict1: dict, scalar: int):
     return combined_dict
 
 
-def _count_resources(tape) -> Resources:
+def _count_resources(tape: QuantumScript, compute_depth: bool = True) -> Resources:
     """Given a quantum circuit (tape), this function
      counts the resources used by standard PennyLane operations.
 
     Args:
-        tape (.QuantumTape): The quantum circuit for which we count resources
+        tape (.QuantumScript): The quantum circuit for which we count resources
+        compute_depth (bool): If True, the depth of the circuit is computed and included in the resources.
+            If False, the depth is set to None.
 
     Returns:
         (.Resources): The total resources used in the workflow
     """
     num_wires = len(tape.wires)
     shots = tape.shots
-    depth = tape.graph.get_depth()
+    depth = tape.graph.get_depth() if compute_depth else None
 
     num_gates = 0
     gate_types = defaultdict(int)

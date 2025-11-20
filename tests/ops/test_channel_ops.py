@@ -22,8 +22,8 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as pnp
+from pennylane.exceptions import WireError
 from pennylane.ops import channel
-from pennylane.wires import WireError
 
 X = np.array([[0, 1], [1, 0]])
 Y = np.array([[0, -1j], [1j, 0]])
@@ -435,7 +435,7 @@ class TestPhaseFlip:
 
     # TODO: bring back angle 0 when the bug fixed https://github.com/PennyLaneAI/pennylane/pull/6684#issuecomment-2552123064
     @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7)[1:])
-    def test_grad_phaseflip(self, angle):
+    def test_jacobian_phaseflip(self, angle):
         """Test that analytical gradient is computed correctly for different states. Channel
         grad recipes are independent of channel parameter"""
 

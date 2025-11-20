@@ -73,8 +73,8 @@ class AdaptiveOptimizer:
     algorithms such as `ADAPT-VQE <https://www.nature.com/articles/s41467-019-10988-2>`_.
 
     Args:
-        param_steps (int): number of steps for optimizing the parameter of a selected gate
-        stepsize (float): step size for optimizing the parameter of a selected gate
+        param_steps (int): number of steps for optimizing the parameter of a selected gate (default value: 10).
+        stepsize (float): step size for optimizing the parameter of a selected gate (default value: 0.5).
 
     **Example**
 

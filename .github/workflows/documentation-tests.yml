@@ -1,0 +1,109 @@
+name: Documentation Tests
+permissions:
+  contents: read
+
+on:
+  merge_group:
+    types:
+      - checks_requested
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  determine_runner:
+    if: github.event.pull_request.draft == false
+    name: Determine runner type to use
+    uses: ./.github/workflows/determine-workflow-runner.yml
+    with:
+      default_runner: ubuntu-latest
+      force_large_runner: ${{ github.event_name == 'merge_group' }}
+
+  documentation-tests:
+    if: github.event.pull_request.draft == false
+    needs: [determine_runner]
+    runs-on: ${{ needs.determine_runner.outputs.runner_group }}
+
+    name: Documentation Tests on Python 3.11 
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install pip and setuptools
+        run: | 
+          python -m pip install --upgrade pip
+          pip install --upgrade setuptools
+
+      - name: Install Catalyst and Lightning (dev) 
+        run: |
+          pip install --upgrade --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ --pre --no-deps pennylane-catalyst pennylane-lightning
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ pennylane-catalyst pennylane-lightning
+          pip install -e .
+          pip install sybil pytest "jax~=0.6.0" "jaxlib~=0.6.0" torch matplotlib pyzx
+
+      - name: Print Dependencies
+        run: | 
+          python -c "import pennylane as qml; qml.about()"
+          python -m pip list
+
+      # TODO: Remove the --ignore options as layers are tested and verified
+      # to be working correctly.
+      - name: Run documentation tests
+        run: |
+          IGNORE_OPTS_CLOSED="
+          --ignore=pennylane/labs
+          --ignore=pennylane/compiler/python_compiler
+          "
+          IGNORE_OPTS_CORE="
+          --ignore=pennylane/workflow/interfaces/tensorflow.py
+          --ignore=pennylane/control_flow
+          --ignore=pennylane/math
+          --ignore=pennylane/compiler
+          --ignore=pennylane/measurements
+          --ignore=pennylane/ops/qubit
+          --ignore=pennylane/ops/qutrit
+          --ignore=pennylane/capture
+          --ignore=pennylane/decomposition
+          --ignore=pennylane/devices
+          "
+          IGNORE_OPTS_AUXILIARY="
+          --ignore=pennylane/shadows
+          --ignore=pennylane/gradients
+          --ignore=pennylane/optimize
+          --ignore=pennylane/pulse
+          "
+          IGNORE_OPTS_TERTIARY="
+          --ignore=pennylane/io
+          --ignore=pennylane/logging
+          --ignore=pennylane/qnn
+          --ignore=pennylane/qaoa
+          --ignore=pennylane/data
+          --ignore=pennylane/debugging
+          --ignore=pennylane/qcut
+          --ignore=pennylane/qchem
+          "
+
+          IGNORE_OPTS="
+          ${IGNORE_OPTS_CLOSED}
+          ${IGNORE_OPTS_CORE}
+          ${IGNORE_OPTS_AUXILIARY}
+          ${IGNORE_OPTS_TERTIARY}
+          "
+
+          pytest pennylane $IGNORE_OPTS --ignore-glob='*tests*'

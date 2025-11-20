@@ -42,9 +42,9 @@ from pennylane.ops.op_math.decompositions.controlled_decompositions import (
     _ctrl_decomp_bisect_md,
     _ctrl_decomp_bisect_od,
     _decompose_mcx_with_no_worker,
-    _decompose_mcx_with_two_workers,
-    decompose_mcx_with_many_workers,
-    decompose_mcx_with_one_worker,
+    _mcx_two_workers,
+    decompose_mcx_many_workers_explicit,
+    decompose_mcx_one_worker_explicit,
 )
 from pennylane.wires import Wires
 
@@ -775,7 +775,7 @@ class TestControlledUnitaryRecursive:
 class TestMCXDecomposition:
 
     def test_wrong_work_wire_type(self):
-        """Test that an error is raised if the work wire type is not 'clean' or 'dirty'."""
+        """Test that an error is raised if the work wire type is not 'zeroed' or 'borrowed'."""
 
         # pylint: disable=protected-access
         control_wires = [0, 1]
@@ -783,14 +783,18 @@ class TestMCXDecomposition:
 
         # one worker:
         work_wires = 3
-        with pytest.raises(ValueError, match="work_wire_type must be either 'clean' or 'dirty'"):
+        with pytest.raises(
+            ValueError, match="work_wire_type must be either 'zeroed' or 'borrowed'"
+        ):
             qml.MultiControlledX(
                 wires=control_wires + [target_wire],
                 work_wires=work_wires,
                 work_wire_type="blah",
             )
 
-        with pytest.raises(ValueError, match="work_wire_type must be either 'clean' or 'dirty'"):
+        with pytest.raises(
+            ValueError, match="work_wire_type must be either 'zeroed' or 'borrowed'"
+        ):
             qml.MultiControlledX.compute_decomposition(
                 wires=control_wires + [target_wire],
                 work_wires=work_wires,
@@ -798,7 +802,7 @@ class TestMCXDecomposition:
             )
 
     @pytest.mark.unit
-    @pytest.mark.parametrize("work_wire_type", ["clean", "dirty"])
+    @pytest.mark.parametrize("work_wire_type", ["zeroed", "borrowed"])
     @pytest.mark.parametrize("n_ctrl_wires", [3, 4, 5])
     def test_decomposition_with_many_workers(self, n_ctrl_wires, work_wire_type):
         """Test that the decomposed MultiControlledX gate produces the correct matrix."""
@@ -814,12 +818,13 @@ class TestMCXDecomposition:
             work_wire_type=work_wire_type,
         )
         with qml.queuing.AnnotatedQueue() as q:
-            if work_wire_type == "clean":
+            if work_wire_type == "zeroed":
                 qml.Projector([0] * len(work_wires), wires=work_wires)
-            decompose_mcx_with_many_workers(wires=mcx.wires, **mcx.hyperparameters)
+            # pylint: disable=missing-kwoa
+            decompose_mcx_many_workers_explicit(wires=mcx.wires, **mcx.hyperparameters)
 
         # Verify that the resource estimate is correct.
-        resource = decompose_mcx_with_many_workers.compute_resources(**mcx.resource_params)
+        resource = decompose_mcx_many_workers_explicit.compute_resources(**mcx.resource_params)
         expected_gate_counts = {k: v for k, v in resource.gate_counts.items() if v > 0}
         actual_gate_counts = defaultdict(int)
         for _op in q.queue:
@@ -832,7 +837,7 @@ class TestMCXDecomposition:
         tape = qml.tape.QuantumScript.from_queue(q)
         matrix = _tape_to_matrix(tape, wire_order=control_wires + work_wires + [target_wire])
         equivalent_op = mcx
-        if work_wire_type == "clean":
+        if work_wire_type == "zeroed":
             equivalent_op @= qml.Projector([0] * len(work_wires), wires=work_wires)
         expected_matrix = equivalent_op.sparse_matrix(
             wire_order=control_wires + work_wires + [target_wire]
@@ -871,7 +876,7 @@ class TestMCXDecomposition:
         ).T
         assert np.allclose(u, np.eye(2 ** (n_ctrl_wires + 1)))
 
-    @pytest.mark.parametrize("work_wire_type", ["clean", "dirty"])
+    @pytest.mark.parametrize("work_wire_type", ["zeroed", "borrowed"])
     @pytest.mark.parametrize("n_ctrl_wires", [3, 4, 5, 6, 7, 8, 9])
     def test_decomposition_with_one_worker(self, n_ctrl_wires, work_wire_type):
         """Test that the decompose_mcx_with_one_worker is correct."""
@@ -888,12 +893,13 @@ class TestMCXDecomposition:
         )
 
         with qml.queuing.AnnotatedQueue() as q:
-            if work_wire_type == "clean":
+            if work_wire_type == "zeroed":
                 qml.Projector([0], wires=work_wire)
-            decompose_mcx_with_one_worker(wires=mcx.wires, **mcx.hyperparameters)
+            # pylint: disable=missing-kwoa
+            decompose_mcx_one_worker_explicit(wires=mcx.wires, **mcx.hyperparameters)
 
         # Verify that the resource estimate is correct.
-        resource = decompose_mcx_with_one_worker.compute_resources(**mcx.resource_params)
+        resource = decompose_mcx_one_worker_explicit.compute_resources(**mcx.resource_params)
         expected_gate_counts = {k: v for k, v in resource.gate_counts.items() if v > 0}
         actual_gate_counts = defaultdict(int)
         for _op in q.queue:
@@ -909,13 +915,13 @@ class TestMCXDecomposition:
         matrix = _tape_to_matrix(tape, wire_order=all_wires)
 
         equivalent_op = mcx
-        if work_wire_type == "clean":
+        if work_wire_type == "zeroed":
             equivalent_op @= qml.Projector([0], wires=work_wire)
         expected_matrix = equivalent_op.sparse_matrix(wire_order=all_wires)
 
         assert qml.math.allclose(matrix, expected_matrix)
 
-    @pytest.mark.parametrize("work_wire_type", ["clean", "dirty"])
+    @pytest.mark.parametrize("work_wire_type", ["zeroed", "borrowed"])
     @pytest.mark.parametrize("n_ctrl_wires", [3, 4, 5, 6, 7, 8, 9, 10])
     def test_decomposition_with_two_workers(self, n_ctrl_wires, work_wire_type):
         """Test that the decomposed MCX gate using 2 work wires produce the correct matrix."""
@@ -932,12 +938,12 @@ class TestMCXDecomposition:
         )
 
         with qml.queuing.AnnotatedQueue() as q:
-            if work_wire_type == "clean":
+            if work_wire_type == "zeroed":
                 qml.Projector([0, 0], wires=work_wires)
-            _decompose_mcx_with_two_workers(mcx.wires, work_wires, work_wire_type)
+            _mcx_two_workers(mcx.wires, work_wires, work_wire_type)
 
         # Verify that the resource estimate is correct.
-        resource = _decompose_mcx_with_two_workers.compute_resources(**mcx.resource_params)
+        resource = _mcx_two_workers.compute_resources(**mcx.resource_params)
         expected_gate_counts = {k: v for k, v in resource.gate_counts.items() if v > 0}
         actual_gate_counts = defaultdict(int)
         for _op in q.queue:
@@ -953,7 +959,7 @@ class TestMCXDecomposition:
         matrix = _tape_to_matrix(tape, wire_order=all_wires)
 
         equivalent_op = mcx
-        if work_wire_type == "clean":
+        if work_wire_type == "zeroed":
             equivalent_op @= qml.Projector([0, 0], wires=work_wires)
         expected_matrix = equivalent_op.sparse_matrix(wire_order=all_wires)
 
@@ -1023,7 +1029,7 @@ class TestMCXDecomposition:
         for rule in qml.list_decomps(qml.MultiControlledX):
             _test_decomposition_rule(test_mcx, rule)
 
-    @pytest.mark.parametrize("work_wire_type", ["clean", "dirty"])
+    @pytest.mark.parametrize("work_wire_type", ["zeroed", "borrowed"])
     @pytest.mark.parametrize("n_ctrl_wires", range(3, 10))
     def test_integration_multi_controlled_x(self, n_ctrl_wires, work_wire_type):
         """Test that the new decompositions are integrated with the operation."""
@@ -1085,5 +1091,5 @@ class TestMCXDecomposition:
 
         with pytest.raises(ValueError, match="At least 2 work wires are needed"):
             _ = _decompose_mcx_with_two_workers_old(
-                control_wires, target_wire, work_wires, work_wire_type="clean"
+                control_wires, target_wire, work_wires, work_wire_type="zeroed"
             )

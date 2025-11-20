@@ -16,14 +16,26 @@
 Public/internal API for the AutoGraph module.
 """
 
-from .transformer import (
-    autograph_source,
-    run_autograph,
+import functools
+
+from pennylane.exceptions import AutoGraphWarning
+from .transformer import autograph_source, run_autograph, disable_autograph
+
+AUTOGRAPH_WRAPPER_ASSIGNMENTS = tuple(
+    attr for attr in functools.WRAPPER_ASSIGNMENTS if attr != "__module__"
 )
 
-from .ag_primitives import AutoGraphWarning
+
+def wraps(target):
+    """Wrap another function using functools.wraps. For use with AutoGraph, the __module__ attribute
+    should be preserved in order for the AutoGraph conversion allow/block listing to work properly.
+    """
+    return functools.wraps(target, assigned=AUTOGRAPH_WRAPPER_ASSIGNMENTS)
+
 
 __all__ = (
     "autograph_source",
     "run_autograph",
+    "disable_autograph",
+    "wraps",
 )

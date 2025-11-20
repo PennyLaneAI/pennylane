@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Test Jax-based Catalyst-compatible QNG optimizer"""
+# pylint: disable=assignment-from-none
 
 from functools import partial
 
@@ -53,8 +54,7 @@ class TestBasics:
     def test_init_none_state(self):
         """Test that the QNGOptimizerQJIT state is initialized to `None`."""
         opt = qml.QNGOptimizerQJIT()
-        state = opt.init([0.1, 0.2])
-        assert state is None
+        assert opt.init([0.1, 0.2]) is None
 
 
 class TestGradients:

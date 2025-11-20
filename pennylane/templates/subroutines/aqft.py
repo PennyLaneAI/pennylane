@@ -19,8 +19,16 @@ import warnings
 
 import numpy as np
 
-import pennylane as qml
+from pennylane import capture, math
+from pennylane.control_flow import for_loop
+from pennylane.decomposition import (
+    add_decomps,
+    controlled_resource_rep,
+    register_resources,
+    resource_rep,
+)
 from pennylane.operation import Operation
+from pennylane.ops import SWAP, ControlledPhaseShift, Hadamard, PhaseShift, cond
 
 
 class AQFT(Operation):
@@ -41,7 +49,7 @@ class AQFT(Operation):
     The approximate quantum Fourier transform is applied by specifying the corresponding wires and
     the order of approximation:
 
-    .. code-block::
+    .. code-block:: python
 
         wires = 3
         dev = qml.device('default.qubit', wires=wires)
@@ -54,10 +62,9 @@ class AQFT(Operation):
             return qml.state()
 
 
-    .. code-block:: pycon
-
-        >>> circuit_aqft()
-        [ 0.5 +0.j   -0.25-0.25j  0.  +0.j   -0.25+0.25j  0.5 +0.j   -0.25-0.25j   0.  +0.j   -0.25+0.25j]
+    >>> circuit_aqft()
+    array([ 0.5 +0.j  , -0.25-0.25j,  0.  +0.j  , -0.25+0.25j,  0.5 +0.j  ,
+        -0.25-0.25j,  0.  +0.j  , -0.25+0.25j])
 
 
     .. details::
@@ -75,16 +82,16 @@ class AQFT(Operation):
         * ``order`` :math:`= 0`
             This will warn the user that only a Hadamard transform is being applied.
 
-            .. code-block::
+            .. code-block:: python
 
-                @qml.qnode(dev)
+                @qml.qnode(qml.device('default.qubit'))
                 def circ():
                     qml.AQFT(order=0, wires=range(6))
                     return qml.probs()
 
             The resulting circuit is:
 
-            >>> print(qml.draw(circ, level='device')())
+            >>> print(qml.draw(circ, level='device')()) # doctest: +SKIP
             UserWarning: order=0, applying Hadamard transform warnings.warn("order=0, applying Hadamard transform")
             0: ──H─╭SWAP─────────────┤ ╭Probs
             1: ──H─│─────╭SWAP───────┤ ├Probs
@@ -96,9 +103,9 @@ class AQFT(Operation):
         * :math:`0 <` ``order`` :math:`< n-1`
             This is the intended AQFT use case.
 
-            .. code-block::
+            .. code-block:: python
 
-                @qml.qnode(dev)
+                @qml.qnode(qml.device('default.qubit'))
                 def circ():
                     qml.AQFT(order=2, wires=range(4))
                     return qml.probs()
@@ -106,16 +113,18 @@ class AQFT(Operation):
             The resulting circuit is:
 
             >>> print(qml.draw(circ, level='device')())
-            0: ──H─╭Rϕ(1.57)─╭Rϕ(0.79)────────────────────────────────────────╭SWAP───────┤ ╭Probs
-            1: ────╰●────────│──────────H─╭Rϕ(1.57)─╭Rϕ(0.79)─────────────────│─────╭SWAP─┤ ├Probs
-            2: ──────────────╰●───────────╰●────────│──────────H─╭Rϕ(1.57)────│─────╰SWAP─┤ ├Probs
-            3: ─────────────────────────────────────╰●───────────╰●─────────H─╰SWAP───────┤ ╰Probs
+            0: ──H─╭Rϕ(1.57)─╭Rϕ(0.79)────────────────────────────────────────╭SWAP───────┤  Probs
+            1: ────╰●────────│──────────H─╭Rϕ(1.57)─╭Rϕ(0.79)─────────────────│─────╭SWAP─┤  Probs
+            2: ──────────────╰●───────────╰●────────│──────────H─╭Rϕ(1.57)────│─────╰SWAP─┤  Probs
+            3: ─────────────────────────────────────╰●───────────╰●─────────H─╰SWAP───────┤  Probs
 
         * ``order`` :math:`\geq n-1`
             Using the QFT class is recommended in this case. The AQFT operation here is
             equivalent to QFT.
 
     """
+
+    resource_keys = {"num_wires", "order"}
 
     def __init__(self, order, wires=None, id=None):
         n_wires = len(wires)
@@ -140,6 +149,10 @@ class AQFT(Operation):
         super().__init__(wires=wires, id=id)
 
     @property
+    def resource_params(self) -> dict:
+        return {"order": self.hyperparameters["order"], "num_wires": len(self.wires)}
+
+    @property
     def num_params(self):
         return 0
 
@@ -161,7 +174,7 @@ class AQFT(Operation):
         **Example:**
 
         >>> qml.AQFT.compute_decomposition((0, 1, 2), order=1)
-        [H(0), ControlledPhaseShift(1.5707963267948966, wires=[1, 0]), H(1), ControlledPhaseShift(1.5707963267948966, wires=[2, 1]), H(2), SWAP(wires=[0, 2])]
+        [H(0), ControlledPhaseShift(1.57..., wires=Wires([1, 0])), H(1), ControlledPhaseShift(1.57..., wires=Wires([2, 1])), H(2), SWAP(wires=[0, 2])]
 
         """
         n_wires = len(wires)
@@ -169,14 +182,14 @@ class AQFT(Operation):
 
         decomp_ops = []
         for i, wire in enumerate(wires):
-            decomp_ops.append(qml.Hadamard(wire))
+            decomp_ops.append(Hadamard(wire))
             counter = 0
 
             for shift, control_wire in zip(shifts[: len(shifts) - i], wires[i + 1 :]):
                 if counter >= order:
                     break
 
-                op = qml.ControlledPhaseShift(shift, wires=[control_wire, wire])
+                op = ControlledPhaseShift(shift, wires=[control_wire, wire])
                 decomp_ops.append(op)
                 counter = counter + 1
 
@@ -184,7 +197,70 @@ class AQFT(Operation):
         last_half_wires = wires[-(n_wires // 2) :]
 
         for wire1, wire2 in zip(first_half_wires, reversed(last_half_wires)):
-            swap = qml.SWAP(wires=[wire1, wire2])
+            swap = SWAP(wires=[wire1, wire2])
             decomp_ops.append(swap)
 
         return decomp_ops
+
+
+def _AQFT_resources(num_wires, order):
+
+    resources = {}
+
+    resources[resource_rep(Hadamard)] = num_wires
+
+    resources[
+        controlled_resource_rep(
+            PhaseShift,
+            {},
+            num_control_wires=1,
+        )
+    ] = sum(min(num_wires - 1 - i, order) for i in range(num_wires))
+
+    resources[resource_rep(SWAP)] = num_wires // 2
+
+    return dict(resources)
+
+
+@register_resources(_AQFT_resources)
+def _AQFT_decomposition(wires, order):
+    n_wires = len(wires)
+    shifts = [2 * np.pi * 2**-i for i in range(2, n_wires + 1)]
+
+    if capture.enabled():
+        shifts = math.array(shifts, like="jax")
+        wires = math.array(wires, like="jax")
+
+    @for_loop(len(wires))
+    def wire_loop(i):
+        wire = wires[i]
+        Hadamard(wire)
+
+        @for_loop(n_wires - 1 - i)
+        def wires_limited_shift_loop(j):
+            shift = shifts[j]
+            control_wire = wires[i + 1 + j]
+
+            ControlledPhaseShift(shift, wires=[control_wire, wire])
+
+        @for_loop(order)
+        def order_limited_shift_loop(j):
+            shift = shifts[j]
+            control_wire = wires[i + 1 + j]
+
+            ControlledPhaseShift(shift, wires=[control_wire, wire])
+
+        cond(n_wires - 1 - i < order, wires_limited_shift_loop, order_limited_shift_loop)()
+
+    wire_loop()  # pylint: disable=no-value-for-parameter
+
+    @for_loop(len(wires) // 2)
+    def half_wire_loop(k):
+        wire1 = wires[k]
+        wire2 = wires[-k - 1]
+        SWAP(wires=[wire1, wire2])
+
+    half_wire_loop()  # pylint: disable=no-value-for-parameter
+
+
+add_decomps(AQFT, _AQFT_decomposition)

@@ -26,7 +26,9 @@ from pennylane import numpy as pnp
 def generate_cost_fn(ansatz, hamiltonian, device, **kwargs):
     """Generates a QNode and computes the expectation value of a cost Hamiltonian with respect
     to the parameters provided to an ansatz"""
+    shots = kwargs.pop("shots", None)
 
+    @qml.set_shots(shots)  # Set shots for the QNode
     @qml.qnode(device, **kwargs)
     def res(params):
         ansatz(params, wires=device.wires)
@@ -264,7 +266,7 @@ class TestVQE:
         """Test that a Hamiltonian cost function is the same with and without
         grouping optimization when using the Torch interface."""
 
-        dev = qml.device("default.qubit", wires=4, shots=shots)
+        dev = qml.device("default.qubit", wires=4)
 
         hamiltonian1 = copy.copy(big_hamiltonian)
         hamiltonian2 = copy.copy(big_hamiltonian)
@@ -312,7 +314,7 @@ class TestVQE:
         """Test that a Hamiltonian cost function is the same with and without
         grouping optimization when using the TensorFlow interface."""
 
-        dev = qml.device("default.qubit", wires=4, shots=shots)
+        dev = qml.device("default.qubit", wires=4)
 
         hamiltonian1 = copy.copy(big_hamiltonian)
         hamiltonian2 = copy.copy(big_hamiltonian)
@@ -358,7 +360,7 @@ class TestVQE:
         """Test that a Hamiltonian cost function is the same with and without
         grouping optimization when using the autograd interface."""
 
-        dev = qml.device("default.qubit", wires=4, shots=shots)
+        dev = qml.device("default.qubit", wires=4)
 
         hamiltonian1 = copy.copy(big_hamiltonian)
         hamiltonian2 = copy.copy(big_hamiltonian)
@@ -370,6 +372,7 @@ class TestVQE:
             dev,
             interface="autograd",
             diff_method="parameter-shift",
+            shots=shots,
         )
         cost2 = generate_cost_fn(
             qml.templates.StronglyEntanglingLayers,
@@ -377,6 +380,7 @@ class TestVQE:
             dev,
             interface="autograd",
             diff_method="parameter-shift",
+            shots=shots,
         )
 
         shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4)
@@ -774,8 +778,9 @@ class TestNewVQE:
 
         jax.config.update("jax_enable_x64", True)
 
-        dev = qml.device("default.qubit", wires=2, shots=shots)
+        dev = qml.device("default.qubit", wires=2)
 
+        @qml.set_shots(shots)
         @qml.qnode(dev)
         def circuit(weights, coeffs):
             qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1])
@@ -993,7 +998,7 @@ class TestInterfaces:
         params = np.array([a, b])
 
         cost = generate_cost_fn(ansatz, H, dev, interface=interface)
-        dcost = qml.grad(cost, argnum=[0])
+        dcost = qml.grad(cost, argnums=[0])
         res = dcost(params)
 
         expected = [
@@ -1068,7 +1073,6 @@ class TestInterfaces:
     @pytest.mark.all_interfaces
     def test_all_interfaces_gradient_agree(self, tol):
         """Test the gradient agrees across all interfaces"""
-        import tensorflow as tf
         import torch
 
         dev = qml.device("default.qubit", wires=2)
@@ -1080,16 +1084,6 @@ class TestInterfaces:
 
         shape = qml.templates.StronglyEntanglingLayers.shape(3, 2)
         params = np.random.uniform(low=0, high=2 * np.pi, size=shape)
-
-        # TensorFlow interface
-        w = tf.Variable(params)
-        ansatz = qml.templates.layers.StronglyEntanglingLayers
-
-        cost = generate_cost_fn(ansatz, H, dev, interface="tf")
-
-        with tf.GradientTape() as tape:
-            loss = cost(w)
-            res_tf = np.array(tape.gradient(loss, w))
 
         # Torch interface
         w = torch.tensor(params, requires_grad=True)
@@ -1105,8 +1099,7 @@ class TestInterfaces:
         w = params
         ansatz = qml.templates.layers.StronglyEntanglingLayers
         cost = generate_cost_fn(ansatz, H, dev, interface="autograd")
-        dcost = qml.grad(cost, argnum=[0])
+        dcost = qml.grad(cost, argnums=[0])
         res = dcost(w)
 
-        assert np.allclose(res, res_tf, atol=tol, rtol=0)
         assert np.allclose(res, res_torch, atol=tol, rtol=0)
