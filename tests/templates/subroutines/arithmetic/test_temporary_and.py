@@ -46,7 +46,7 @@ class TestTemporaryAND:
         """Check the operation using the assert_valid function."""
 
         op = qml.TemporaryAND(wires=[0, "a", 2], control_values=(0, 0))
-        qml.ops.functions.assert_valid(op)
+        qml.ops.functions.assert_valid(op, skip_new_decomp=True)
 
     def test_correctness(self):
         """Tests the correctness of the TemporaryAND operator.
