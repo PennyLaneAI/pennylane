@@ -26,7 +26,6 @@ from collections import defaultdict
 from dataclasses import dataclass
 from typing import List, Sequence
 
-from pennylane import controlled_resource_rep
 from pennylane.decomposition import resource_rep, register_resources, add_decomps
 from pennylane.operation import Operation, Operator
 from pennylane.ops import CSWAP, SWAP, Hadamard, PauliZ, ctrl
