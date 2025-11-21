@@ -89,7 +89,7 @@ try:
     )
     from jax._src.lax import lax
     from packaging.version import Version
-except ImportError:  # pragma: no cover
+except ModuleNotFoundError:  # pragma: no cover
     has_jax = False  # pragma: no cover
 
 
