@@ -14,6 +14,7 @@
 """
 Contains classes used to compactly store the metadata of various Hamiltonians which are relevant for resource estimation.
 """
+import copy
 from collections import defaultdict
 from dataclasses import dataclass
 
@@ -107,6 +108,7 @@ class PauliHamiltonian:
         num_qubits (int): total number of qubits the hamiltonian acts on
         num_pauli_words (int or None): the number of terms (Pauli words) in the hamiltonian
         max_weight (int or None): the maximum number of factors over all terms in the hamiltonian
+        one_norm (float or None): the one-norm of the hamiltonian
         pauli_dist (dict or None): A dictionary representing the various Pauli words and how
             frequently they appear in the hamiltonian.
         commuting_groups (tuple(dict) or None): A tuple of dictionaries where each entry is a group
@@ -214,10 +216,12 @@ class PauliHamiltonian:
         num_qubits: int,
         num_pauli_words: int | None = None,
         max_weight: int | None = None,
+        one_norm: float | None = None,
         pauli_dist: dict | None = None,
         commuting_groups: tuple[dict] | None = None,
     ):
         self._num_qubits = num_qubits
+        self._one_norm = one_norm
 
         if commuting_groups is not None:
             for group in commuting_groups:
@@ -233,7 +237,7 @@ class PauliHamiltonian:
             _validate_pauli_dist(pauli_dist)
 
             self._pauli_dist = pauli_dist
-            self._commuting_groups = (pauli_dist,)
+            self._commuting_groups = None
             self._max_weight = max(len(pw) for pw in pauli_dist.keys())
             self._num_pauli_words = sum(pauli_dist.values())
             return
@@ -254,12 +258,45 @@ class PauliHamiltonian:
 
         self._max_weight = max_weight or num_qubits
         self._num_pauli_words = num_pauli_words
-        self._pauli_dist = pauli_dist
-        self._commuting_groups = commuting_groups
+        self._pauli_dist = None
+        self._commuting_groups = None
 
     def __repr__(self):
         """The repr dundar method for the PauliHamiltonian class."""
         return f"PauliHamiltonian(num_qubits={self.num_qubits}, num_pauli_words={self.num_pauli_words}, max_weight={self.max_weight})"
+
+    def __eq__(self, other: "PauliHamiltonian"):
+        """Check if two PauliHamiltonians are identical"""
+        return all(
+            (
+                self._num_qubits == other._num_qubits,
+                self._num_pauli_words == other._num_pauli_words,
+                self._max_weight == other._max_weight,
+                self._pauli_dist == other._pauli_dist,
+                self._commuting_groups == other._commuting_groups,
+                self._one_norm == other._one_norm,
+            )
+        )
+
+    def __hash__(self):
+        """Hash function for the compact hamiltonian representation"""
+        if self._commuting_groups is not None:
+            hashable_commuting_groups = tuple(
+                _sort_and_freeze(group) for group in self._commuting_groups
+            )
+        elif self._pauli_dist is not None:
+            hashable_commuting_groups = _sort_and_freeze(self._pauli_dist)
+        else:
+            hashable_commuting_groups = None
+
+        hashable_params = (
+            self._num_qubits,
+            self._num_pauli_words,
+            self._max_weight,
+            hashable_commuting_groups,
+            self._one_norm,
+        )
+        return hash(hashable_params)
 
     @property
     def num_qubits(self):
@@ -277,15 +314,25 @@ class PauliHamiltonian:
         return self._max_weight
 
     @property
+    def one_norm(self):
+        """The one-norm of the Hamiltonian."""
+        return self._one_norm
+
+    @property
     def pauli_dist(self):
         """A dictionary representing the distribution of Pauli words in the Hamiltonian"""
-        return self._pauli_dist
+        return copy.deepcopy(self._pauli_dist)
 
     @property
     def commuting_groups(self):
         """A list of groups where each group is a distribution of pauli words such that each
         term in the group commutes with every other term in the group."""
-        return self._commuting_groups
+        return copy.deepcopy(self._commuting_groups)
+
+
+def _sort_and_freeze(pauli_dist: dict) -> tuple[tuple]:
+    """Map the dictionary into a sorted and hashable tuple"""
+    return tuple((k, pauli_dist[k]) for k in sorted(pauli_dist))
 
 
 def _validate_pauli_dist(pauli_dist: dict) -> bool:

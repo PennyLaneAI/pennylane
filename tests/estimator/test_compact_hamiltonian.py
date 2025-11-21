@@ -76,7 +76,7 @@ class TestPauliHamiltonian:
         assert pauli_ham.pauli_dist == pauli_dist
         assert pauli_ham.num_pauli_words == num_pauli_words
         assert pauli_ham.max_weight == max_weight
-        assert pauli_ham.commuting_groups == (pauli_dist,)
+        assert pauli_ham.commuting_groups is None
 
     @pytest.mark.parametrize(
         "num_qubits, pauli_dist, expected_num_pauli_words, expected_max_weight",
@@ -103,7 +103,7 @@ class TestPauliHamiltonian:
 
         assert pauli_ham.num_qubits == num_qubits
         assert pauli_ham.pauli_dist == pauli_dist
-        assert pauli_ham.commuting_groups == (pauli_dist,)
+        assert pauli_ham.commuting_groups is None
 
         assert pauli_ham.max_weight != overriden_max_weight
         assert pauli_ham.num_pauli_words != overriden_num_pauli_words

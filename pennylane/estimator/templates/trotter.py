@@ -1874,6 +1874,8 @@ class TrotterPauli(ResourceOperator):
             PauliRot {'pauli_string': 'ZZZZ', 'precision': None}: 10
 
         Alternately, the hamiltonian can be constructed by providing the commuting groups of terms.
+        Note, that the order in which the groups are listed matters, keeping the largest groups as
+        the first and last elements of the list will lead to the most reduction in resources.
 
         >>> commuting_groups = (
         ...     {"X":10, "XX":5, "XXXX":3},
@@ -1925,8 +1927,8 @@ class TrotterPauli(ResourceOperator):
 
         if not isinstance(pauli_ham, PauliHamiltonian):
             raise TypeError(
-                f"Unsupported Hamiltonian representation for TrotterPauli."
-                f"This method works with Pauli Hamiltonian, {type(pauli_ham)} provided"
+                "Unsupported Hamiltonian representation for TrotterPauli."
+                f"This method works with PauliHamiltonian, {type(pauli_ham)} provided"
             )
         self.num_steps = num_steps
         self.order = order
