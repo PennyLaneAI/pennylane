@@ -375,10 +375,13 @@ class TestGradientTransformIntegration:
 
             grad_method = None
 
+            # hard coded false in rx
+            has_decomposition = True
+
             @staticmethod
-            def compute_decomposition(x, wires):
+            def compute_decomposition(phi, wires):
                 """Decompose into a qml.RX gate."""
-                return [qml.RX(x, wires=wires)]
+                return [qml.RX(phi, wires=wires)]
 
         @qml.qnode(dev)
         def circuit(weights):

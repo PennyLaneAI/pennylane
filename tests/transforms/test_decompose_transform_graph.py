@@ -423,7 +423,7 @@ class TestDecomposeGraphEnabled:
     def test_decompose_with_mid_measures(self, m_type):
         """Tests that circuits and decomposition rules containing MCMs and PPMs are supported."""
 
-        class CustomOp(Operation):  # pylint: disable=too-few-public-methods
+        class OpWithCustomName4567(Operation):  # pylint: disable=too-few-public-methods
             resource_keys = set()
 
             @property
@@ -450,11 +450,11 @@ class TestDecomposeGraphEnabled:
             qml.transforms.decompose,
             gate_set={qml.RX, qml.RY, qml.RZ, qml.CNOT, "measure", "ppm"},
             fixed_decomps={qml.GlobalPhase: null_decomp},
-            alt_decomps={CustomOp: [_custom_decomp, _expensive_decomp]},
+            alt_decomps={OpWithCustomName4567: [_custom_decomp, _expensive_decomp]},
         )
         @qml.qnode(qml.device("default.qubit"))
         def circuit():
-            CustomOp(wires=[0, 1])
+            OpWithCustomName4567(wires=[0, 1])
             m0 = qml.measure(0) if m_type == "mcm" else qml.pauli_measure("XZ", wires=[0, 1])
             qml.cond(m0, qml.X)(0)
             return qml.probs()
