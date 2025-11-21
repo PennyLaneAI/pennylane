@@ -1738,19 +1738,19 @@ class TrotterVibronic(ResourceOperator):
 
 class TrotterPauli(ResourceOperator):
     r"""An operation representing the Suzuki-Trotter product approximation for the complex matrix
-    exponential of a Hamiltonian represented as a linear combination of tensor products Pauli operators.
+    exponential of a Hamiltonian represented as a linear combination of tensor products of Pauli operators.
 
     The Suzuki-Trotter product formula provides a method to approximate the matrix exponential of
     Hamiltonian expressed as a linear combination of terms which in general do not commute.
-    Consider the Hamiltonian :math:`H = \Sigma^{N}_{j=0} O_{j}`: the product formula is constructed using
-    symmetrized products of the terms in the Hamiltonian. The symmetrized products of order
-    :math:`m \in [1, 2, 4, ..., 2k]` with :math:`k \in \mathbb{N}` are given by:
+    Consider the Hamiltonian :math:`H = \Sigma^{N}_{j=0} \alpha_{j} \cdot O_{j}`: the product formula is
+    constructed using symmetrized products of the terms in the Hamiltonian. The symmetrized products 
+    of order :math:`m \in [1, 2, 4, ..., 2k]` with :math:`k \in \mathbb{N}` are given by:
 
     .. math::
 
         \begin{align}
-            S_{1}(t) &= \Pi_{j=0}^{N} \ e^{i t O_{j}} \\
-            S_{2}(t) &= \Pi_{j=0}^{N} \ e^{i \frac{t}{2} O_{j}} \cdot \Pi_{j=N}^{0} \ e^{i \frac{t}{2} O_{j}} \\
+            S_{1}(t) &= \Pi_{j=0}^{N} \ e^{i t \alpha_{j} O_{j}} \\
+            S_{2}(t) &= \Pi_{j=0}^{N} \ e^{i \frac{t}{2} \alpha_{j} O_{j}} \cdot \Pi_{j=N}^{0} \ e^{i \frac{t}{2} \alpha_{j} O_{j}} \\
             &\vdots \\
             S_{m}(t) &= S_{m-2}(p_{m}t)^{2} \cdot S_{m-2}((1-4p_{m})t) \cdot S_{m-2}(p_{m}t)^{2},
         \end{align}
@@ -1769,10 +1769,30 @@ class TrotterPauli(ResourceOperator):
             the hamiltonian to be approximately exponentiated
         num_steps (int): number of Trotter steps to perform
         order (int): order of the approximation, must be ``1`` or an even number
-        wires (list[int] | None): the wires on which the operator acts
+        wires (WiresLike | None): the wires on which the operator acts
 
     Resources:
-        The resources are defined according to the recursive formula presented above.
+        The resource cost for this subroutine depends on how the Pauli hamiltonian is expressed.
+        Given the hamiltonian :math:`H = \Sigma^{N}_{j=0} \alpha_{j} O_{j}`, each :math:`O_{j}` can 
+        either be a Pauli string (a tensor product of Pauli operators) :math:`O_{j} = \vec{P}_{j}` or 
+        a linear combination of commuting Pauli strings :math:`O_{j} = \Sigma^{M}_{j=0} \beta_{j} \vec{P}_{j}`.
+
+        In the first case, the exponential :math:`e^{i t \alpha_{j} O_{j}} = e^{i t \alpha_{j} \vec{P}_{j}}`
+        is a single generalized Pauli rotation 
+        (:class:`~.pennylane.estimator.ops.qubit.parametric_ops_multi_qubit.PauliRot`). In the second
+        case, the exponential can be expanded using the fact that all operators in the sum commute:
+
+        .. math::
+
+            \begin{align}
+                e^{i t \alpha_{j} O_{j}} &= e^{i t \alpha_{j} (\Sigma^{M}_{k=0} \beta_{k} \vec{P}_{k})}  \\
+                e^{i t \alpha_{j} O_{j}} &= \Pi_{k=0}^{M} e^{i t \alpha_{j} \beta_{k} \vec{P}_{k}}
+            \end{align}
+            
+        Thus, the exponential can be expressed as a product of :math:`M` generalized Pauli rotations.
+        Using these as the cost of each individual exponential, the cost of the entire Suzuki-Trotter
+        product formula is derived below.
+
         The number of times an operator :math:`e^{itO_{j}}` is applied depends on the
         number of Trotter steps (`n`) and the order of the approximation (`m`) and is given by:
 
@@ -1790,37 +1810,109 @@ class TrotterPauli(ResourceOperator):
                 C_{O_{N}} &= n \cdot 5^{\frac{m}{2} - 1}.
             \end{align}
 
-        [TODO Update this!!!]
-        The resources for a single step expansion of compressed double factorized Hamiltonian are
-        calculated based on `arXiv:2506.15784 <https://arxiv.org/abs/2506.15784>`_.
-
-    .. seealso::
-        :class:`~.estimator.compact_hamiltonian.PauliHamiltonian`
-
-    .. seealso:: :class:`~.TrotterProduct`
+    .. seealso:: :class:`~.estimator.compact_hamiltonian.PauliHamiltonian`, :class:`~.TrotterProduct`
 
     **Example**
 
-    The resources for this operation are computed using:
+    The resources for this operation are computed using the code below. Note that each of 
+    the 25 Pauli strings is treated as an individual term in the sum and no grouping into
+    commuting groups of terms is assumed.
 
-    [TODO Update this!!!]
     >>> import pennylane.estimator as qre
-    >>> num_steps, order = (1, 2)
-    >>> cdf_ham = qre.CDFHamiltonian(num_orbitals = 4, num_fragments = 4)
-    >>> res = qre.estimate(qre.TrotterCDF(cdf_ham, num_steps, order))
+    >>> pauli_terms = {"XX": 10, "ZZ":10, "Z":5}     
+    >>> pauli_ham = qre.PauliHamiltonian(num_qubits=5, pauli_dist=pauli_terms)
+    >>> pauli_ham
+    PauliHamiltonian(num_qubits=5, num_pauli_words=25, max_weight=2, one_norm=None)
+    >>> num_steps, order = (10, 2)
+    >>> res = qre.estimate(qre.TrotterPauli(pauli_ham, num_steps, order))
     >>> print(res)
     --- Resources: ---
-     Total wires: 8
-        algorithmic wires: 8
-        allocated wires: 0
+     Total wires: 5
+       algorithmic wires: 5
+       allocated wires: 0
+         zero state: 0
+         any state: 0
+     Total gates : 2.360E+4
+       'T': 2.200E+4,
+       'CNOT': 800,
+       'Hadamard': 800
+    
+    .. details::
+        :title: Usage Details
+
+        Estimating resources for the trotterization of a Pauli hamiltonian depends on how
+        the Pauli hamiltonian was constructed. Specifically, how much information was provided
+        by the user (see :class:`~.estimator.compact_hamiltonian.PauliHamiltonian` for more info).
+
+        If the hamiltonian is constructed with minimal information about the specific Pauli terms:
+
+        >>> pauli_ham = qre.PauliHamiltonian(num_qubits=10, num_pauli_words=30, max_weight=4)
+        >>> pauli_ham
+        PauliHamiltonian(num_qubits=10, num_pauli_words=30, max_weight=4, one_norm=None)
+
+        In this case, we assume an even distribution of X-like, Y-like and Z-like Pauli strings with 
+        maximum weight.
+
+        >>> num_steps, order = (1, 1)
+        >>> res = qre.estimate(
+        ...     qre.TrotterPauli(pauli_ham, num_steps, order),
+        ...     gate_set={'PauliRot'},
+        ... )
+        >>> print(res)
+        --- Resources: ---
+         Total wires: 10
+           algorithmic wires: 10
+           allocated wires: 0
              zero state: 0
              any state: 0
-     Total gates : 2.238E+4
-      'T': 2.075E+4,
-      'CNOT': 448,
-      'Z': 336,
-      'S': 504,
-      'Hadamard': 336
+         Total gates : 30
+           'PauliRot': 30
+        >>> print(res.gate_breakdown())
+        PauliRot total: 30
+            PauliRot {'pauli_string': 'XXXX', 'precision': None}: 10
+            PauliRot {'pauli_string': 'YYYY', 'precision': None}: 10
+            PauliRot {'pauli_string': 'ZZZZ', 'precision': None}: 10
+
+        Alternately, the hamiltonian can be constructed by providing the commuting groups of terms.
+        Note, that the order in which the groups are listed matters, keeping the largest groups as
+        the first and last elements of the list will lead to the most reduction in resources.
+
+        >>> commuting_groups = (
+        ...     {"X":10, "XX":5, "XXXX":3},
+        ...     {"YY": 5, "ZZ":5},
+        ...     {"Z": 2},
+        ... )
+        >>> pauli_ham = qre.PauliHamiltonian(num_qubits=10, commuting_groups=commuting_groups)
+        >>> pauli_ham
+        PauliHamiltonian(num_qubits=10, num_pauli_words=30, max_weight=4, one_norm=None)
+        >>> pauli_ham.commuting_groups
+        ({'X': 10, 'XX': 5, 'XXXX': 3}, {'YY': 5, 'ZZ': 5}, {'Z': 2})
+
+        This often leads to fewer total resources when estimating costs in practice:
+        
+        >>> num_steps, order = (1, 1)
+        >>> res = qre.estimate(
+        ...     qre.TrotterPauli(pauli_ham, num_steps, order),
+        ...     gate_set={'PauliRot'},
+        ... )
+        >>> print(res)
+        --- Resources: ---
+         Total wires: 10
+           algorithmic wires: 10
+           allocated wires: 0
+             zero state: 0
+             any state: 0
+         Total gates : 30
+           'PauliRot': 30
+        >>> print(res.gate_breakdown())
+        PauliRot total: 30
+            PauliRot {'pauli_string': 'X', 'precision': None}: 10
+            PauliRot {'pauli_string': 'XX', 'precision': None}: 5
+            PauliRot {'pauli_string': 'XXXX', 'precision': None}: 3
+            PauliRot {'pauli_string': 'YY', 'precision': None}: 5
+            PauliRot {'pauli_string': 'ZZ', 'precision': None}: 5
+            PauliRot {'pauli_string': 'Z', 'precision': None}: 2
+
     """
 
     resource_keys = {"pauli_ham", "num_steps", "order"}
@@ -1835,8 +1927,8 @@ class TrotterPauli(ResourceOperator):
 
         if not isinstance(pauli_ham, PauliHamiltonian):
             raise TypeError(
-                f"Unsupported Hamiltonian representation for TrotterPauli."
-                f"This method works with Pauli Hamiltonian, {type(pauli_ham)} provided"
+                "Unsupported Hamiltonian representation for TrotterPauli."
+                f"This method works with PauliHamiltonian, {type(pauli_ham)} provided"
             )
         self.num_steps = num_steps
         self.order = order
@@ -1910,8 +2002,28 @@ class TrotterPauli(ResourceOperator):
             order (int): order of the approximation, must be 1 or even.
 
         Resources:
-            The resources are defined according to the recursive formula presented above.
-            The number of times an operator, :math:`e^{itO_{j}}`, is applied depends on the
+            The resource cost for this subroutine depends on how the Pauli hamiltonian is expressed.
+            Given the hamiltonian :math:`H = \Sigma^{N}_{j=0} \alpha_{j} O_{j}`, each :math:`O_{j}` can 
+            either be a Pauli string (a tensor product of Pauli operators) :math:`O_{j} = \vec{P}_{j}` or 
+            a linear combination of commuting Pauli strings :math:`O_{j} = \Sigma^{M}_{j=0} \beta_{j} \vec{P}_{j}`.
+
+            In the first case, the exponential :math:`e^{i t \alpha_{j} O_{j}} = e^{i t \alpha_{j} \vec{P}_{j}}`
+            is a single generalized Pauli rotation 
+            (:class:`~.pennylane.estimator.ops.qubit.parametric_ops_multi_qubit.PauliRot`). In the second
+            case, the exponential can be expanded using the fact that all operators in the sum commute:
+
+            .. math::
+
+                \begin{align}
+                    e^{i t \alpha_{j} O_{j}} &= e^{i t \alpha_{j} (\Sigma^{M}_{k=0} \beta_{k} \vec{P}_{k})}  \\
+                    e^{i t \alpha_{j} O_{j}} &= \Pi_{k=0}^{M} e^{i t \alpha_{j} \beta_{k} \vec{P}_{k}}
+                \end{align}
+                
+            Thus, the exponential can be expressed as a product of :math:`M` generalized Pauli rotations.
+            Using these as the cost of each individual exponential, the cost of the entire Suzuki-Trotter
+            product formula is derived below.
+
+            The number of times an operator :math:`e^{itO_{j}}` is applied depends on the
             number of Trotter steps (`n`) and the order of the approximation (`m`) and is given by:
 
             .. math::
@@ -1928,13 +2040,8 @@ class TrotterPauli(ResourceOperator):
                     C_{O_{N}} &= n \cdot 5^{\frac{m}{2} - 1}.
                 \end{align}
 
-            [TODO Update this!!!]
-            The resources for a single step expansion of compressed double factorized Hamiltonian are
-            calculated based on `arXiv:2506.15784 <https://arxiv.org/abs/2506.15784>`_.
-
-
         Returns:
-            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -1942,13 +2049,12 @@ class TrotterPauli(ResourceOperator):
         if (groups := pauli_ham.commuting_groups) is not None:
             num_groups = len(groups)
             cost_groups = [cls.cost_pauli_group(group) for group in groups]
-
             gate_count_lst = []
             if order == 1:
                 for group_cost_lst in cost_groups:
                     gate_count_lst.extend([num_steps * gate_count for gate_count in group_cost_lst])
 
-                return group_cost_lst
+                return gate_count_lst
 
             for index, group_cost_lst in enumerate(cost_groups):
                 if index == 0:
@@ -1979,6 +2085,18 @@ class TrotterPauli(ResourceOperator):
 
     @staticmethod
     def cost_pauli_group(pauli_dist: dict):
+        """Given a dictionary of Pauli words and frequecies, return the cost of exponentiating
+        the group of terms.
+
+        Args:
+            pauli_dist (dict): A dictionary which represents the types of Pauli words in the
+                hamiltonian and their relative frequencies.
+
+        Returns:
+            Iterable[~.pennylane.estimator.resource_operator.GateCount]: The cost of exponentiating
+                a commuting group of Pauli words.
+
+        """
         gate_count_lst = []
         for pauli_word, count in pauli_dist.items():
             gate_count_lst.append(GateCount(PauliRot.resource_rep(pauli_word), count))

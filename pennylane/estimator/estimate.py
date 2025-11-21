@@ -38,6 +38,7 @@ _SYMBOLIC_DECOMP_MAP = {
     Pow: "_pow_custom_decomps",
 }
 
+
 def estimate(
     workflow: Callable | ResourceOperator | Resources | QNode,
     gate_set: set[str] | None = None,
