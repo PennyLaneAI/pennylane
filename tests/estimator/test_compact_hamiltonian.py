@@ -25,7 +25,7 @@ from pennylane.estimator.compact_hamiltonian import (
     _validate_pauli_dist,
 )
 
-# pylint: too-many-arguments
+# pylint: disable=too-many-arguments
 
 
 class TestPauliHamiltonian:
