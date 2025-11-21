@@ -2,6 +2,10 @@
 
 <h3>New features since last release</h3>
 
+* Added two new classes :class:`~.estimator.PauliHamiltonian` and :class:`~.estimator.TrotterPauli`,
+  which allow users to compactly represent Pauli Hamiltonians and estimate the resources for Trotterization.
+  [(#8546)](https://github.com/PennyLaneAI/pennylane/pull/8546)
+
 * A new decomposition has been added for the Controlled :class:`~.SemiAdder`,
   which is efficient and skips controlling all gates in its decomposition.
   [(#8423)](https://github.com/PennyLaneAI/pennylane/pull/8423)
