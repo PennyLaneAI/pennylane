@@ -22,9 +22,8 @@ depositing each low-order address bit into the node's direction qubit.
 Data phase routes the target qubits down to the selected leaf for each target bit,
 performs the leaf write (classical bit flip), then routes back and restores the target.
 """
-from typing import List, Sequence
-
 from dataclasses import dataclass
+from typing import List, Sequence
 
 from pennylane.operation import Operation, Operator
 from pennylane.ops import CSWAP, SWAP, Hadamard, PauliZ, ctrl
@@ -39,7 +38,7 @@ class _QRAMWires:
 
     qram_wires: Sequence[Wires]
     target_wires: Sequence[Wires]
-    bus_wires: Sequence[Wires]
+    bus_wire: Sequence[Wires]
     dir_wires: Sequence[Wires]
     portL_wires: Sequence[Wires]
     portR_wires: Sequence[Wires]
@@ -50,11 +49,7 @@ class _QRAMWires:
         if level == 0:
             return self.bus_wire[0]
         parent = _node_index(level - 1, prefix >> 1)
-        return (
-            self.portL_wires[parent]
-            if (prefix % 2 == 0)
-            else self.portR_wires[parent]
-        )
+        return self.portL_wires[parent] if (prefix % 2 == 0) else self.portR_wires[parent]
 
     def router(self, level: int, prefix: int):
         return self.dir_wires[_node_index(level, prefix)]
@@ -210,7 +205,9 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
             + list(portR_wires)
         )
 
-        wire_manager = _QRAMWires(qram_wires, target_wires, bus_wire, dir_wires, portL_wires, portR_wires)
+        wire_manager = _QRAMWires(
+            qram_wires, target_wires, bus_wire, dir_wires, portL_wires, portR_wires
+        )
 
         self._hyperparameters = {
             "wire_manager": wire_manager,
@@ -249,14 +246,9 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
         wire_manager = self.hyperparameters["wire_manager"]
         for k in range(self.hyperparameters["n_k"]):
             # 1) load a_k into the bus
-            ops.append(
-                SWAP(
-                    wires=[
-                        wire_manager.qram_wires[k],
-                        wire_manager.bus_wire[0],
-                    ]
-                )
-            )
+            origin = wire_manager.qram_wires[k]
+            target = wire_manager.bus_wire[0]
+            ops.append(SWAP(wires=[origin, target]))
             # 2) route down k levels
             ops += self._route_bus_down_first_k_levels(k)
             # 3) deposit at level-k node on the active path
@@ -267,23 +259,13 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
                     # change to  in_wire later
                     parent = _node_index(k - 1, p >> 1)
                     if p % 2 == 0:
-                        ops.append(
-                            SWAP(
-                                wires=[
-                                    wire_manager.portL_wires[parent],
-                                    wire_manager.router(k, p),
-                                ]
-                            )
-                        )
+                        origin = wire_manager.portL_wires[parent]
+                        target = wire_manager.router(k, p)
+                        ops.append(SWAP(wires=[origin, target]))
                     else:
-                        ops.append(
-                            SWAP(
-                                wires=[
-                                    wire_manager.portR_wires[parent],
-                                    wire_manager.router(k, p),
-                                ]
-                            )
-                        )
+                        origin = wire_manager.portR_wires[parent]
+                        target = wire_manager.router(k, p)
+                        ops.append(SWAP(wires=[origin, target]))
         return ops
 
     def _unmark_routers_via_bus(self) -> list:
