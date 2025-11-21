@@ -214,7 +214,7 @@ def _add_classical_wires(drawer, layers, cwire_layers, cwire_wires):
                 layer_wires += [cwire + drawer.n_wires] * len_diff
             for l, w in zip(layer_ids, layer_wires, strict=True):
                 if l < len(layers) and _ppm_controlled(layers[l]):
-                    l -= drawer.ppm_offset()
+                    l -= drawer.ppm_offset
                 xs.extend([l, l, l])
                 ys.extend([cwire + drawer.n_wires, w, cwire + drawer.n_wires])
 

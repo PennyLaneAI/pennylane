@@ -957,14 +957,16 @@ class MPLDrawer:
         user_text_options = kwargs.get("text_options", {})
         lines_options = kwargs.get("lines_options", {})
         wires = _to_tuple(wires)
+        main_box_ratio = 4 / 5  # the main box has to be narrower to fit eveything
+        notch_box_ratio = 1 - main_box_ratio
 
         box_min = min(wires)
         box_max = max(wires)
         box_center = (box_min + box_max) / 2
 
-        main_box_width = self._box_length * 4 / 5 - 2 * self._pad
+        main_box_width = self._box_length * main_box_ratio - 2 * self._pad
         main_box_height = box_max - box_min + self._box_length - 2 * self._pad
-        notch_width = self._box_length / 5 - 2 * self._notch_pad
+        notch_width = self._box_length * notch_box_ratio - 2 * self._notch_pad
         notch_height = self._box_length / 3 - 2 * self._notch_pad
 
         main_box_x = layer - self._box_length / 2 + self._pad
@@ -995,7 +997,7 @@ class MPLDrawer:
             "zorder": 3,
             "ha": "center",
             "va": "center",
-            "fontsize": self.fontsize * 1.1,
+            "fontsize": self.fontsize if isinstance(self.fontsize, str) else self.fontsize * 1.1,
         }
         text_options.update(user_text_options)
         text_x = main_box_x + main_box_width / 2
@@ -1033,6 +1035,7 @@ class MPLDrawer:
             **lines_options,
         )
 
+    @property
     def ppm_offset(self) -> float:
         """Gets the x-offset for drawing the control wire of a PauliMeasure."""
         return self._box_length / 10
