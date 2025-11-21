@@ -286,7 +286,7 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
                 pass
         return ops
 
-    # ---------- Decompositions ----------
+    # ---------- Decomposition ----------
     def decomposition(self) -> List[Operator]:
         ops = []
         # 1) address loading
@@ -304,3 +304,86 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
         ops += self._unmark_routers_via_bus()
         return ops
 
+
+class HybridQRAM(BBQRAM):
+    """
+    Hybrid QRAM allows a tree of smaller size and with less qubits to be re-used to perform the same operation as
+    a larger tree. The trade-off is between space and time. In the end, the target wires' values correspond to the
+    data at the address specified.
+
+    Args:
+        bitstrings (Sequence[int]): the classical data as a sequence of bitstrings
+        qram_wires (Sequence[int]): stores the index for the entry of the classical data we want to access
+        target_wires (Sequence[int]): where the classical data gets loaded
+        work_wires (Sequence[int]): the bus, direction, left port and right port wires in that order. Each node in the
+            tree contains one address (direction), one left port and one right port wire. The single bus wire is used
+            for address loading and data routing
+        qram_value (int): TODO: can you help me with this description Shifan?
+
+    Raises:
+        ValueError: if the `qram_value` is not between 0 and 1 << len(qram_wires).
+    """
+    def __init__(
+        self,
+        bitstrings: Sequence[str],
+        qram_wires: Sequence[int],
+        target_wires: Sequence[int],
+        work_wires: Sequence[int],
+        qram_value: int | None,
+        id: str | None = None,
+    ):  # pylint: disable=too-many-arguments
+        if qram_value is not None and not 0 <= qram_value < (1 << len(qram_wires)):
+            raise ValueError("qram_value out of range.")
+        super().__init__(bitstrings, qram_wires, target_wires, work_wires, id)
+        self._hyperparameters["qram_value"] = qram_value
+
+    # ---------- Data routing (full depth) ----------
+    def _route_bus_down(self) -> list:
+        """Route the bus from root to leaf across all levels using dir-controlled CSWAPs."""
+        ops = []
+        for k in range(self.hyperparameters["n_k"]):
+            for p in range(1 << k):
+                in_w = self._node_in_wire(k, p)
+                L = self._portL(k, p)
+                R = self._portR(k, p)
+                d = self._router(k, p)
+                if k == 0:
+                    upper_ctrls, upper_vals = [], []
+                else:
+                    upper_ctrls = [self._router(j, p >> (k - j)) for j in range(k)]
+                    upper_vals = [(p >> (k - 1 - j)) & 1 for j in range(k)]
+                op0 = SWAP(wires=[in_w, L])
+                op1 = SWAP(wires=[in_w, R])
+                ops.append(
+                    ctrl(op0, control=[d] + upper_ctrls, control_values=[0] + upper_vals)
+                    if upper_ctrls
+                    else ctrl(op0, control=[d], control_values=[0])
+                )
+                ops.append(
+                    ctrl(op1, control=[d] + upper_ctrls, control_values=[1] + upper_vals)
+                    if upper_ctrls
+                    else ctrl(op1, control=[d], control_values=[1])
+                )
+        return ops
+
+    def _route_bus_up(self) -> list:
+        """Inverse of `_route_bus_down`."""
+        return list(reversed(self._route_bus_down()))
+
+    # ---------- Decomposition ----------
+    def decomposition(self) -> list:
+        ops = []
+        qram_value = self.hyperparameters["qram_value"]
+        bus_wire = self.hyperparameters["bus_wire"]
+        # If LSBs are quantum, loadrouters; else skip loading & routing for LSBs
+        if qram_value is None:
+            ops += self._mark_routers_via_bus()
+        for j, tw in enumerate(self.hyperparameters["target_wires"]):
+            ops.append(SWAP(wires=[tw, bus_wire[0]]))
+            if qram_value is None:
+                ops += self._route_bus_down_first_k_levels(len(self.hyperparameters["qram_wires"]))
+            ops += self._leaf_ops_for_bit(j)
+            if qram_value is None:
+                ops += self._route_bus_up()
+            ops.append(SWAP(wires=[tw, bus_wire[0]]))
+        return ops

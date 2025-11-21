@@ -19,7 +19,7 @@ import re
 import numpy as np
 import pytest
 
-from pennylane import device, qnode
+from pennylane import device, qnode, HybridQRAM
 from pennylane.measurements import probs
 from pennylane.templates import BasisEmbedding
 from pennylane.templates.subroutines.qram import BBQRAM
@@ -169,3 +169,115 @@ def test_bb_quantum(
 def test_raises(params, error, match):
     with pytest.raises(error, match=re.escape(match)):
         BBQRAM(*params)
+
+
+@qnode(dev)
+def hybrid_quantum(bitstrings, qram_wires, target_wires, work_wires, qram_value, address):
+    BasisEmbedding(address, wires=qram_wires)
+
+    HybridQRAM(
+        bitstrings,
+        qram_wires=qram_wires,
+        target_wires=target_wires,
+        work_wires=work_wires,
+        qram_value=qram_value
+    )
+    return probs(wires=target_wires)
+
+
+@pytest.mark.parametrize(
+    (
+        "bitstrings",
+        "qram_wires",
+        "target_wires",
+        "bus",
+        "dir_wires",
+        "portL_wires",
+        "portR_wires",
+        "qram_value",
+        "address",
+        "probabilities",
+    ),
+    [
+        (
+            ["010", "111", "110", "000"],
+            [0, 1],
+            [2, 3, 4],
+            5,
+            [6, 7, 8],
+            [9, 10, 11],
+            [12, 13, 14],
+            1,
+            2,  # addressed from the left
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0],  # |110>
+        ),
+        (
+            ["010", "111", "110", "000"],
+            [0, 1],
+            [2, 3, 4],
+            5,
+            [11, 10, 9],
+            [6, 7, 8],
+            [12, 13, 14],
+            None,
+            1,
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0],  # |111>
+        ),
+        (
+            ["010", "111", "110", "000"],
+            [0, 1],
+            [2, 3, 4],
+            5,
+            [6, 7, 8],
+            [12, 13, 14],
+            [9, 10, 11],
+            2,
+            0,
+            [0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0],  # |010>
+        ),
+    ],
+)
+def test_hybrid_quantum(
+    bitstrings,
+    qram_wires,
+    target_wires,
+    bus,
+    dir_wires,
+    portL_wires,
+    portR_wires,
+    qram_value,
+    address,
+    probabilities,
+):  # pylint: disable=too-many-arguments
+    assert np.allclose(
+        probabilities,
+        hybrid_quantum(
+            bitstrings,
+            qram_wires,
+            target_wires,
+            [bus] + dir_wires + portL_wires + portR_wires,
+            qram_value,
+            address,
+        ),
+    )
+
+
+@pytest.mark.parametrize(
+    ("params", "error", "match"),
+    [
+        (
+            (
+                ["010", "111", "110", "000"],
+                [0, 1],
+                [2, 3, 4],
+                [5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
+                (1 << 2) + 1
+            ),
+            ValueError,
+            "qram_value out of range.",
+        ),
+    ],
+)
+def test_hybrid_raises(params, error, match):
+    with pytest.raises(error, match=re.escape(match)):
+        HybridQRAM(*params)
