@@ -1348,7 +1348,7 @@ class TestDefaultRepresentations:
     def test_decomposition_graph_fallback(self):
         """Test that the first registered decomp can be used if compute_decomposition is not overridden."""
 
-        class CustomOp(qml.operation.Operator):
+        class OpWithACustomName98786(qml.operation.Operator):
             pass
 
         @qml.register_resources({qml.RX: 1})
@@ -1359,9 +1359,9 @@ class TestDefaultRepresentations:
         def decomp2(x, wires):
             qml.RZ(x, wires)
 
-        qml.add_decomps(CustomOp, decomp1, decomp2)
+        qml.add_decomps(OpWithACustomName98786, decomp1, decomp2)
 
-        [out] = CustomOp(0.5, wires=0).decomposition()
+        [out] = OpWithACustomName98786(0.5, wires=0).decomposition()
         qml.assert_equal(out, qml.RX(0.5, wires=0))
 
     def test_matrix_undefined(self):
