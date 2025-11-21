@@ -128,10 +128,10 @@ class TreeTraversalPass(ModulePass):
                 print_mlir(op, msg="After Unroll Loop Passes", should_print=print_stuff)
 
                 IfOperatorPartitioningPattern().match_and_rewrite(op, rewriter)
-                print_mlir(op, msg="After If-For Passes", should_print=print_stuff)
+                # print_mlir(op, msg="After If-For Passes", should_print=print_stuff)
 
                 TreeTraversalPattern().match_and_rewrite(op, rewriter)
-        print_mlir(module_op, msg="After Tree Traversal Pass", should_print=print_stuff)
+        # print_mlir(module_op, msg="After Tree Traversal Pass", should_print=print_stuff)
 
 
 tree_traversal_pass = compiler_transform(TreeTraversalPass)
@@ -2346,9 +2346,10 @@ class UnrollLoopPattern(RewritePattern):
     def __init__(self):
         """Initialize UnrollLoopPattern."""
         self.needs_unroll: bool = False
+        self.for_loop_to_unroll: list[scf.ForOp] = []
 
     def match_and_rewrite(
-        self, op: scf.ForOp, rewriter: PatternRewriter
+        self, op: Operation, rewriter: PatternRewriter
     ) -> None:  # pylint: disable=arguments-differ
         """Unroll nested scf.ForOps into separate branches for each operator."""
 
@@ -2357,83 +2358,43 @@ class UnrollLoopPattern(RewritePattern):
         if not self.needs_unroll:
             return
 
-        self.unroll_nested_loops(op, rewriter)
-        op_walk = op.walk()
-        for nested_op in op_walk:
-            if isinstance(nested_op, scf.ForOp):
-                if not self.detect_mcm_in_loop_ops(nested_op):
-                    continue
-                self.unroll_loop(nested_op, rewriter)
+        # for _for_loop in self.for_loop_to_unroll:
+        #     print_mlir(_for_loop, "ForOp to unroll:")
 
-    def detect_mcm_in_loop_ops(self, op: scf.ForOp) -> bool:
+        neasted_loop_to_unroll = []
+
+        # Looking for parent loops of the loops to unroll
+        for _for_op in self.for_loop_to_unroll:
+
+            neasted_loop_to_unroll.append(_for_op)
+
+            parent_op = _for_op.parent_op()
+            while parent_op != op:
+                if isinstance(parent_op, scf.ForOp):
+
+                    # Keep the most outer loop only once and later unroll from outer to inner
+                    if parent_op in neasted_loop_to_unroll:
+                        neasted_loop_to_unroll.remove(parent_op)
+
+                    neasted_loop_to_unroll.append(parent_op)
+
+                parent_op = parent_op.parent_op()
+
+        for _for_op in neasted_loop_to_unroll:
+            # print_mlir(_for_op, "Last ForOp to unroll:")
+            self.unroll_loop(_for_op,rewriter)
+
+
+    def detect_mcm_in_loop_ops(self, op: Operation) -> bool:
         """Detect if there are mid-circuit measurement operations inside ForOps."""
         op_walk = op.walk()
         for current_op in op_walk:
             if isinstance(current_op, scf.ForOp):
                 for inner_op in current_op.body.ops:
                     if isinstance(inner_op, quantum.MeasureOp):
-                        return True
-        return False
+                        self.for_loop_to_unroll.append(current_op)
 
-    def unroll_nested_loops(self, main_op: scf.ForOp, rewriter: PatternRewriter) -> None:
-        """Unroll nested scf.ForOps into separate branches for each operator."""
-
-        # Check for deepest nested ForOps
-        nested_ForOp = self.get_deepest_for_loops(main_op)
-
-        depth = nested_ForOp[0][1] if nested_ForOp else 0
-        target_for_op = nested_ForOp[0][0] if nested_ForOp else None
-
-        if depth > 1:
-            self.unroll_loop(target_for_op.parent_op(), rewriter)
-            self.unroll_nested_loops(main_op, rewriter)
-
-    def get_deepest_for_loops(self, parent_op: scf.ForOp) -> list[tuple[scf.ForOp, int]]:
-        """Finds the scf.for operation(s) nested at the maximum depth inside the parent_op."""
-
-        deepest_ops_with_depth: List[tuple[scf.ForOp, int]] = [(None, 0)]
-
-        # Start the recursion. We look *inside* the regions of the parent_op.
-        self._find_deepest_for_recursive(parent_op, 0, deepest_ops_with_depth)
-
-        # Extract only the ForOp objects from the list of (ForOp, depth) tuples.
-        return deepest_ops_with_depth
-
-    def _find_deepest_for_recursive(
-        self, op: Operation, current_depth: int, max_depth_ops: List[tuple[scf.ForOp, int]]
-    ) -> None:
-        """
-        Helper function to recursively traverse the IR, tracking the max depth
-        of scf.For operations found so far.
-        """
-        # Iterate over all nested regions (then_region, else_region, etc.)
-        for region in op.regions:
-            for block in region.blocks:
-                for child_op in block.ops:
-
-                    new_depth = current_depth
-
-                    if isinstance(child_op, scf.ForOp):
-                        # Found an ForOp, increase the depth for the ops *inside* its regions.
-                        # This ForOp itself is at 'current_depth + 1'.
-                        new_depth = current_depth + 1
-
-                        # --- Check and Update Max Depth List ---
-
-                        # 1. Is this deeper than the current max? (First find or deeper op)
-                        if not max_depth_ops or new_depth > max_depth_ops[0][1]:
-                            # It's a new maximum depth! Clear the old list and start fresh.
-                            max_depth_ops.clear()
-                            max_depth_ops.append((child_op, new_depth))
-
-                        # 2. Is this at the same depth as the current max? (A tie)
-                        elif new_depth == max_depth_ops[0][1]:
-                            # Add it to the list of winners.
-                            max_depth_ops.append((child_op, new_depth))
-
-                    # Recursively search inside this child op (regardless of its type)
-                    # We pass the potentially *increased* new_depth.
-                    self._find_deepest_for_recursive(child_op, new_depth, max_depth_ops)
+        return len(self.for_loop_to_unroll) > 0
 
     def unroll_loop(self, op: scf.ForOp, rewriter: PatternRewriter) -> None:
         """Unroll an scf.ForOp into separate branches for each operator."""
