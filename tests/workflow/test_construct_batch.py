@@ -65,7 +65,7 @@ class TestMarker:
         qml.assert_equal(tape, expected)
 
     def test_custom_level_as_arg(self):
-        """Test that custom levels can be specified and accessed."""
+        """Test that custom levels can be specified as positional arg and accessed."""
 
         @qml.transforms.cancel_inverses
         @qml.qnode(qml.device("null.qubit"))
@@ -76,7 +76,7 @@ class TestMarker:
             qml.RX(0.2, 0)
             return qml.state()
 
-        c = qml.marker(c, level="my_level")
+        c = qml.marker(c, "my_level")
         c = qml.transforms.merge_rotations(c)
 
         (tape,), _ = construct_batch(c, level="my_level")()
