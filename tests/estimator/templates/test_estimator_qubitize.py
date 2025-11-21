@@ -64,6 +64,9 @@ class TestQubitizeTHC:
             "rotation_precision": None,
         }
 
+        assert len(qre.QubitizeTHC.resource_keys) == len(op.resource_params)
+        assert all(tuple((k in qre.QubitizeTHC.resource_keys) for k in op.resource_params))
+
     @pytest.mark.parametrize(
         "thc_ham, prep_op, select_op, num_wires",
         (
