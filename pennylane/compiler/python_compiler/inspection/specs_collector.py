@@ -24,7 +24,7 @@ from functools import singledispatch
 
 import xdsl
 from xdsl.dialects import func
-from xdsl.dialects.scf import ForOp, IfOp, WhileOp
+from xdsl.dialects.scf import ForOp, IfOp, IndexSwitchOp, WhileOp
 
 from pennylane.compiler.python_compiler.dialects.catalyst import CallbackOp
 from pennylane.compiler.python_compiler.dialects.qec import (
@@ -266,24 +266,24 @@ def _(xdsl_op: AllocQubitOp | AllocOp, resources: ResourcesResult) -> None:
 
 
 def _resolve_function_calls(
-    fxn: str, fxn_to_resources: dict[str, ResourcesResult]
+    func: str, func_to_resources: dict[str, ResourcesResult]
 ) -> ResourcesResult:
     """Resolve subroutine function calls within the collected resources.
 
-    Note that this function is recursive and modifies the ResourcesResult associated with `fxn`
-    in place. After running, the ResourcesResult object associated with `fxn` will include the
+    Note that this function is recursive and modifies the ResourcesResult associated with `func`
+    in place. After running, the ResourcesResult object associated with `func` will include the
     resources of any subroutine functions and its function call table will be empty
     """
-    resources = fxn_to_resources[fxn]
+    resources = func_to_resources[func]
 
-    for called_fxn in list(resources.function_calls.keys()):
-        count = resources.function_calls.pop(called_fxn)
+    for called_func in list(resources.function_calls.keys()):
+        count = resources.function_calls.pop(called_func)
 
-        if called_fxn not in fxn_to_resources:
+        if called_func not in func_to_resources:
             # External function, cannot resolve
             continue
 
-        called_resources = _resolve_function_calls(called_fxn, fxn_to_resources)
+        called_resources = _resolve_function_calls(called_func, func_to_resources)
 
         # Merge the called function's resources into this one
         called_resources_scaled = ResourcesResult()
@@ -337,7 +337,6 @@ def _collect_region(region, loop_warning=False, cond_warning=False) -> Resources
 
         if isinstance(op, IfOp):
             if not cond_warning:
-                # NOTE: For now we count operations from both branches
                 warnings.warn(
                     "Specs was unable to determine the branch of a conditional or switch statement. "
                     "The results will take the maximum resources across all possible branches.",
@@ -358,11 +357,29 @@ def _collect_region(region, loop_warning=False, cond_warning=False) -> Resources
             resources.merge_with(used_resources)
             continue
 
-        resource_type, resource = handle_resource(op)
+        if isinstance(op, IndexSwitchOp):
+            if not cond_warning:
+                warnings.warn(
+                    "Specs was unable to determine the branch of a conditional or switch statement. "
+                    "The results will take the maximum resources across all possible branches.",
+                    UserWarning,
+                )
+                cond_warning = True
 
-        if resource_type is None:
-            # xDSL op type is not a PennyLane resource to be tracked
+            used_resources = _collect_region(
+                op.case_regions[0], loop_warning=loop_warning, cond_warning=cond_warning
+            )
+
+            for region in op.case_regions[1:]:
+                used_resources.merge_with(
+                    _collect_region(region, loop_warning=loop_warning, cond_warning=cond_warning),
+                    method="max",
+                )
+
+            resources.merge_with(used_resources)
             continue
+
+        resource_type, resource = handle_resource(op)
 
         match resource_type:
             case ResourceType.GATE:
@@ -396,8 +413,10 @@ def _collect_region(region, loop_warning=False, cond_warning=False) -> Resources
 def specs_collect(module) -> ResourcesResult:
     """Collect PennyLane resources from the module."""
 
-    fxn_to_resources = {}
-    entry_fxn = None
+    func_to_resources = {}
+    entry_func = None
+
+    func_decl_warning = False
 
     for func_op in module.body.ops:
         # TODO: May need to determine how many times a function is called for functions other than the main circuit
@@ -410,22 +429,24 @@ def specs_collect(module) -> ResourcesResult:
             raise ValueError("Expected FuncOp in module body.")
 
         if func_op.is_declaration:
-            warnings.warn(
-                f"Function {func_op.sym_name.data} is an external declaration. "
-                "Specs cannot analyze external functions, so some data may be missing.",
-                UserWarning,
-            )
+            if not func_decl_warning:
+                warnings.warn(
+                    f"Specs encountered an external function declaration, and could not analyze its contents. "
+                    "Some resource data may be missing.",
+                    UserWarning,
+                )
+                func_decl_warning = True
             continue  # Skip external function declarations
 
         resources = _collect_region(func_op.body)
-        fxn_to_resources[func_op.sym_name.data] = resources
+        func_to_resources[func_op.sym_name.data] = resources
 
         if "qnode" in func_op.attributes:
             # The main entrypoint for a qnode is always marked by the `qnode` attribute
-            entry_fxn = func_op.sym_name.data
+            entry_func = func_op.sym_name.data
 
-    if entry_fxn not in fxn_to_resources:
+    if entry_func not in func_to_resources:
         raise ValueError("Entry function not found in module.")
 
-    a = _resolve_function_calls(entry_fxn, fxn_to_resources)
+    a = _resolve_function_calls(entry_func, func_to_resources)
     return a
