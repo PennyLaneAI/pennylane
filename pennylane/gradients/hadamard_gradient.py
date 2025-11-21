@@ -15,7 +15,7 @@
 This module contains functions for computing the Hadamard-test gradient
 of a qubit-based quantum tape.
 """
-from functools import lru_cache, partial, wraps
+from functools import partial
 from itertools import islice
 from typing import Literal
 
@@ -26,7 +26,7 @@ from pennylane.devices.preprocess import decompose
 from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.measurements import ProbabilityMP, expval
 from pennylane.operation import Operator
-from pennylane.ops import Prod, Sum
+from pennylane.ops import Sum
 from pennylane.pauli import PauliWord, pauli_decompose
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import split_to_single_terms
@@ -552,37 +552,28 @@ def _quantum_automatic_differentiation(tape, trainable_param_idx, aux_wire) -> t
     # formulas.
     trainable_op, _, _ = tape.get_operation(trainable_param_idx)
     _, generators = _get_pauli_generators(trainable_op)
-    _, observables = _get_pauli_terms(
-        tape.measurements[0].obs
-    )  # assumes there's only one observable in the tape
 
-    if len(tape.measurements) > 1:
-        raise ValueError(
-            "A tape with more than one observable was provided to the Quantum Automatic Differentiation algorithm."
-        )
+    observables = []
+    for m in tape.measurements:
+        _, obs = _get_pauli_terms(m.obs)
+        observables += obs
 
-    def memoize(func):
-        cache = func.cache = {}
+    observables = list(set(observables))
 
-        @wraps(func)
-        def memoizer(pauli_string, pauli_products):
-            if pauli_string not in cache:
-                cache[pauli_string] = func(pauli_string, pauli_products)
-            return cache[pauli_string]
-
-        return memoizer
-
-    @memoize
-    def _count_groupings(pauli_str, pauli_prods):  # pylint: disable=unused-argument
-        op = Sum(*pauli_prods)
+    def _count_groupings(paulis):
+        op = Sum(*paulis)
         op.compute_grouping()
         return len(op.grouping_indices)
 
-    expectations_groupings = _count_groupings(",".join([str(gen) for gen in generators]), generators)
-    observables_groupings = _count_groupings(",".join([str(obs) for obs in observables]), observables)
+    expectations_groupings = _count_groupings(generators)
+    observables_groupings = _count_groupings(observables)
 
     direct = not aux_wire
     standard = observables_groupings * len(generators) <= expectations_groupings * len(observables)
+
+    if len(tape.measurements) > 1:
+        standard = True
+
     # Logic Table
     # Direct (No Aux) | Standard Order | Function
     # ----------------|----------------|---------
@@ -590,6 +581,7 @@ def _quantum_automatic_differentiation(tape, trainable_param_idx, aux_wire) -> t
     # True            | False          | _reversed_direct_hadamard_test
     # False           | True           | _hadamard_test
     # False           | False          | _reversed_hadamard_test
+
     if direct:
         if standard:
             return _direct_hadamard_test(tape, trainable_param_idx, aux_wire)
