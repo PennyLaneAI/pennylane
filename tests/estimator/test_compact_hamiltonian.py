@@ -12,19 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Test the construction of the various compact hamiltonian representation data classes.
+Test the construction of the various compact Hamiltonian representation data classes.
 """
 from collections import defaultdict
 
 import pytest
 
 import pennylane.estimator as qre
-from pennylane.estimator import GateCount, resource_rep
 from pennylane.estimator.compact_hamiltonian import (
     _pauli_dist_from_commuting_groups,
     _sort_and_freeze,
     _validate_pauli_dist,
 )
+
+# pylint: too-many-arguments
 
 
 class TestPauliHamiltonian:
@@ -378,11 +379,12 @@ class TestPauliHamiltonian:
         """Test the hash method works as expected"""
         ph1 = qre.PauliHamiltonian(**input_args)
         ph2 = qre.PauliHamiltonian(**input_args)
+        ph3 = qre.PauliHamiltonian(num_qubits=5, num_pauli_words=5)  # some other PauliHamiltonian
 
-        assert hash(ph1) == hash(ph1)
-        assert ph1 == ph1
-        assert hash(ph1) == hash(ph2)
         assert ph1 == ph2
+        assert ph1 != ph3
+        assert hash(ph1) == hash(ph1)
+        assert hash(ph1) == hash(ph2)
 
     def test_hash_and_equality_commuting_groups(self):
         """Test that hash and equality are dependant on

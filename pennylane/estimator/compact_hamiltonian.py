@@ -102,17 +102,18 @@ class VibronicHamiltonian:
 
 
 class PauliHamiltonian:
-    """For a Pauli Hamiltonian, stores the minimum necessary information required for resource estimation.
+    """Stores the minimum necessary information required for resource estimation of a
+    Hamiltonian expressed as a linear combination of tensor products of Pauli operators.
 
     Args:
-        num_qubits (int): total number of qubits the hamiltonian acts on
-        num_pauli_words (int or None): the number of terms (Pauli words) in the hamiltonian
-        max_weight (int or None): the maximum number of factors over all terms in the hamiltonian
-        one_norm (float or None): the one-norm of the hamiltonian
-        pauli_dist (dict or None): A dictionary representing the various Pauli words and how
-            frequently they appear in the hamiltonian.
-        commuting_groups (tuple(dict) or None): A tuple of dictionaries where each entry is a group
-            of terms from the hamiltonian such that all terms in the group commute. Here each
+        num_qubits (int): total number of qubits the Hamiltonian acts on
+        num_pauli_words (int | None): the number of terms (Pauli words) in the Hamiltonian
+        max_weight (int | None): the maximum number of factors over all terms in the Hamiltonian
+        one_norm (float | None): the one-norm of the Hamiltonian
+        pauli_dist (dict | None): A dictionary representing the various Pauli words and how
+            frequently they appear in the Hamiltonian.
+        commuting_groups (tuple(dict) | None): A tuple of dictionaries where each entry is a group
+            of terms from the Hamiltonian such that all terms in the group commute. Here each
             dictionary contains the various Pauli words and how frequently they appear in the group.
 
     Returns:
@@ -155,12 +156,12 @@ class PauliHamiltonian:
         :title: Usage Details
 
         There are three different ways to instantiate the ``PauliHamiltonian`` class depending on how
-        much information is known about the hamiltonian we wish to capture (Note that providing more
+        much information is known about the Hamiltonian we wish to capture (Note that providing more
         information will often lead to more accurate resource estimates).
 
-        Firstly, when we know fairly little about the explicit form of the hamiltonian, we can express
-        it by specifing the number of qubits it acts upon, the total number of terms in the hamiltonian
-        and the maximum weight of a term overall terms in the hamiltonian.
+        Firstly, when we know fairly little about the explicit form of the Hamiltonian, we can express
+        it by specifyng the number of qubits it acts upon, the total number of terms in the Hamiltonian
+        and the maximum weight of a term overall terms in the Hamiltonian.
 
         >>> import pennylane.estimator as qre
         >>> pauli_ham = qre.PauliHamiltonian(
@@ -172,9 +173,9 @@ class PauliHamiltonian:
         >>> pauli_ham
         PauliHamiltonian(num_qubits=10, num_pauli_words=100, max_weight=3, one_norm=0.01)
 
-        If we know approximately how the Pauli words are distributed in the hamiltonian, than we can
-        construct the hamiltonian from this information. Note, if both the ``pauli_dist`` and the
-        ``(num_pauli_words, max_weight)`` are provided, than ``pauli_dist`` will take precedent.
+        If we know approximately how the Pauli words are distributed in the Hamiltonian, then we can
+        construct the Hamiltonian from this information. Note, if both the ``pauli_dist`` and the
+        ``(num_pauli_words, max_weight)`` are provided, then ``pauli_dist`` will take precedence.
         This means that the ``(num_pauli_words, max_weight)`` will be computed from the ``pauli_dist``
         directly.
 
@@ -190,8 +191,8 @@ class PauliHamiltonian:
         {'X': 10, 'XX': 30, 'YY': 10, 'ZZ': 45, 'ZZZ': 5}
 
         Finally, if we also know how to group the terms in the commuting groups of operators, we can
-        construct the hamiltonian by specifying these groups of terms. This input will take precedent
-        over both of the other two methods. Meaning that the attributes
+        construct the Hamiltonian by specifying these groups of terms. This input will take precedence
+        over the other two methods. Meaning that the attributes
         ``(num_pauli_words, max_weight, pauli_dist)`` will all be computed from the ``commuting_groups``
         directly.
 
@@ -283,7 +284,7 @@ class PauliHamiltonian:
         )
 
     def __hash__(self):
-        """Hash function for the compact hamiltonian representation"""
+        """Hash function for the compact Hamiltonian representation"""
         if self._commuting_groups is not None:
             hashable_commuting_groups = tuple(
                 _sort_and_freeze(group) for group in self._commuting_groups
@@ -304,7 +305,7 @@ class PauliHamiltonian:
 
     @property
     def num_qubits(self):
-        """The number of qubits the hamiltonian acts on"""
+        """The number of qubits the Hamiltonian acts on"""
         return self._num_qubits
 
     @property
