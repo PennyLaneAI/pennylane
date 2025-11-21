@@ -216,10 +216,11 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
     def _path_ctrls(self, i_low: int):
         """(controls, values) for the router path to leaf `i_low` (MSB-first across n_k)."""
         ctrls, vals = [], []
-        for k in range(self.hyperparameters["n_k"]):
-            prefix = i_low >> (self.hyperparameters["n_k"] - k)
+        n_k = self.hyperparameters["n_k"]
+        for k in range(n_k):
+            prefix = i_low >> (n_k - k)
             ctrls.append(self._router(k, prefix))
-            vals.append((i_low >> (self.hyperparameters["n_k"] - 1 - k)) & 1)
+            vals.append((i_low >> (n_k - 1 - k)) & 1)
         return ctrls, vals
 
     # ---------- Address Loading via CSWAP routing ----------
@@ -299,11 +300,12 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
     def _leaf_ops_for_bit(self, j: int) -> list:
         """Apply the leaf write for target bit index j."""
         ops = []
-        for p in range(1 << self.hyperparameters["n_k"]):
+        n_k = self.hyperparameters["n_k"]
+        for p in range(1 << n_k):
             if p % 2 == 0:
-                target = self._portL(self.hyperparameters["n_k"] - 1, p >> 1)
+                target = self._portL(n_k - 1, p >> 1)
             else:
-                target = self._portR(self.hyperparameters["n_k"] - 1, p >> 1)
+                target = self._portR(n_k - 1, p >> 1)
             bit = self.hyperparameters["bitstrings"][p][j]
             if bit == "1":
                 ops.append(PauliZ(wires=target))
@@ -314,16 +316,18 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
     # ---------- Decompositions ----------
     def decomposition(self) -> List[Operator]:
         ops = []
+        bus_wire = self.hyperparameters["bus_wire"]
+        qram_wires = self.hyperparameters["qram_wires"]
         # 1) address loading
         ops += self._mark_routers_via_bus()
         # 2) For each target bit: load→route down→leaf op→route up→restore (reuse the route bus function)
         for j, tw in enumerate(self.hyperparameters["target_wires"]):
             ops.append(Hadamard(wires=[tw]))
-            ops.append(SWAP(wires=[tw, self.hyperparameters["bus_wire"][0]]))
-            ops += self._route_bus_down_first_k_levels(len(self.hyperparameters["qram_wires"]))
+            ops.append(SWAP(wires=[tw, bus_wire[0]]))
+            ops += self._route_bus_down_first_k_levels(len(qram_wires))
             ops += self._leaf_ops_for_bit(j)
-            ops += self._route_bus_up_first_k_levels(len(self.hyperparameters["qram_wires"]))
-            ops.append(SWAP(wires=[tw, self.hyperparameters["bus_wire"][0]]))
+            ops += self._route_bus_up_first_k_levels(len(qram_wires))
+            ops.append(SWAP(wires=[tw, bus_wire[0]]))
             ops.append(Hadamard(wires=[tw]))
         # 3) address unloading
         ops += self._unmark_routers_via_bus()
