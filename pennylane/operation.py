@@ -207,7 +207,7 @@ from pennylane.exceptions import (
     TermsUndefinedError,
 )
 from pennylane.math import expand_matrix, is_abstract
-from pennylane.queuing import QueuingManager
+from pennylane.queuing import AnnotatedQueue, QueuingManager
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 
@@ -1404,6 +1404,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         return (
             cls.compute_decomposition != Operator.compute_decomposition
             or cls.decomposition != Operator.decomposition
+            or bool(qml.list_decomps(cls))
         )
 
     def decomposition(self) -> list["Operator"]:
@@ -1418,9 +1419,21 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         Returns:
             list[Operator]: decomposition of the operator
         """
-        return self.compute_decomposition(
-            *self.parameters, wires=self.wires, **self.hyperparameters
-        )
+        if type(self).compute_decomposition != Operator.compute_decomposition:
+            return self.compute_decomposition(
+                *self.parameters, wires=self.wires, **self.hyperparameters
+            )
+        decomps = qml.list_decomps(self)
+        print(decomps)
+        if not decomps:
+            return self.compute_decomposition(
+                *self.parameters, wires=self.wires, **self.hyperparameters
+            )
+        with AnnotatedQueue() as q:
+            decomps[0](*self.data, wires=self.wires, **self.hyperparameters)
+        if QueuingManager.recording():
+            _ = [qml.apply(op) for op in q.queue]
+        return q.queue
 
     @staticmethod
     def compute_decomposition(

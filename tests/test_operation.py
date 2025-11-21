@@ -595,15 +595,30 @@ class TestHasReprProperties:
         assert MyOp.has_decomposition is True
         assert MyOp(0.2, wires=1).has_decomposition is True
 
+    def test_has_decomposition_graph_decomp(self):
+        """Test that an operator provides a decomposition if it has a register graph decomp."""
+
+        class SomeRandomName(qml.operation.Operator):
+            pass
+
+        @qml.register_resources({qml.X: 1})
+        def decomp(x, wires):
+            qml.RX(x, wires)
+
+        qml.add_decomps(SomeRandomName, decomp)
+        assert SomeRandomName.has_decomposition
+        assert SomeRandomName(0.5, wires=0).has_decomposition
+
     def test_has_decomposition_false(self):
         """Test has_decomposition property defaults to false if neither
         `decomposition` nor `compute_decomposition` are overwritten."""
 
-        class MyOp(qml.operation.Operator):
+        class TREWQ(qml.operation.Operator):
             num_wires = 1
 
-        assert MyOp.has_decomposition is False
-        assert MyOp(wires=0).has_decomposition is False
+        print(qml.list_decomps(TREWQ))
+        assert TREWQ.has_decomposition is False
+        assert TREWQ(wires=0).has_decomposition is False
 
     def test_has_diagonalizing_gates_true_compute_diagonalizing_gates(self):
         """Test has_diagonalizing_gates property detects
@@ -1321,10 +1336,34 @@ class TestDefaultRepresentations:
 
     def test_decomposition_undefined(self):
         """Tests that custom error is raised in the default decomposition representation."""
+
+        class Operator_with_no_decomp(Operator):
+            pass
+
+        op = Operator_with_no_decomp(wires=0)
         with pytest.raises(qml.operation.DecompositionUndefinedError):
-            MyOp.compute_decomposition(wires=[1])
+            Operator_with_no_decomp.compute_decomposition(wires=[1])
         with pytest.raises(qml.operation.DecompositionUndefinedError):
             op.decomposition()
+
+    def test_decomposition_graph_fallback(self):
+        """Test that the first registered decomp can be used if compute_decomposition is not overridden."""
+
+        class CustomOp(qml.operation.Operator):
+            pass
+
+        @qml.register_resources({qml.RX: 1})
+        def decomp1(x, wires):
+            qml.RX(x, wires)
+
+        @qml.register_resources({qml.RZ: 1})
+        def decomp2(x, wires):
+            qml.RZ(x, wires)
+
+        qml.add_decomps(CustomOp, decomp1, decomp2)
+
+        [out] = CustomOp(0.5, wires=0).decomposition()
+        qml.assert_equal(out, qml.RX(0.5, wires=0))
 
     def test_matrix_undefined(self):
         """Tests that custom error is raised in the default matrix representation."""
