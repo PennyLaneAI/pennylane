@@ -78,20 +78,20 @@ class TreeTraversalPass(ModulePass):
 
     name = "tree-traversal"
 
-    def apply(self, _ctx: context.Context, op: builtin.ModuleOp) -> None:
+    def apply(self, _ctx: context.Context, module_op: builtin.ModuleOp) -> None:
         """Apply the tree-traversal pass to all QNode functions in the module."""
 
-        for module_op in op.ops:
-            if isinstance(module_op, func.FuncOp) and "qnode" in module_op.attributes:
-                rewriter = PatternRewriter(module_op)
+        for op in module_op.ops:
+            if isinstance(op, func.FuncOp) and "qnode" in op.attributes:
+                rewriter = PatternRewriter(op)
 
                 unroll_pattern = UnrollLoopPattern()
-                unroll_pattern.match_and_rewrite(module_op, rewriter)
+                unroll_pattern.match_and_rewrite(op, rewriter)
 
-                IfOperatorPartitioningPass().match_and_rewrite(module_op, rewriter)
+                IfOperatorPartitioningPass().match_and_rewrite(op, rewriter)
 
 
-                TreeTraversalPattern().match_and_rewrite(module_op, rewriter)
+                TreeTraversalPattern().match_and_rewrite(op, rewriter)
 
 
 tree_traversal_pass = compiler_transform(TreeTraversalPass)
