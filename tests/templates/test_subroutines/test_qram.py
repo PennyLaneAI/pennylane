@@ -1,38 +1,233 @@
-import pennylane as qml
-from pennylane.templates.subroutines.qramv1 import select_bucket_brigade_bus_qram
+# Copyright 2018-2025 Xanadu Quantum Technologies Inc.
 
-bitstrings = ["010", "111", "110", "000"]  # 2^2 entries, m=3
-dev = qml.device("default.qubit")
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""
+Unit tests for the :func:`pennylane.template.subroutines.qram` class.
+"""
+import re
+
+import numpy as np
+import pytest
+from pennylane.decomposition import list_decomps
+
+from pennylane import device, qnode
+from pennylane.measurements import probs
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.templates import BasisEmbedding
+from pennylane.templates.subroutines.qram import BBQRAM
+
+dev = device("default.qubit")
 
 
-@qml.qnode(dev)
-def bb_quantum():
-    # No select (k=0). qram_wires are the 2 LSB address bits.
-    qram_wires = [0, 1]  # |i> for 4 leaves
-    target_wires = [2, 3, 4]  # m=3
-    bus = 5  # single bus at the top
+@qnode(dev)
+def bb_quantum(bitstrings, qram_wires, target_wires, work_wires, address):
+    BasisEmbedding(address, wires=qram_wires)
 
-    # For n_k=2 → (2^2 - 1) = 3 internal nodes in level order:
-    # (0,0) root; (1,0) left child; (1,1) right child
-    dir_wires = [6, 7, 8]
-    portL_wires = [9, 10, 11]
-    portR_wires = [12, 13, 14]
-
-    # prepare an address, e.g., |10> (index 2)
-    qml.BasisEmbedding(2, wires=qram_wires)
-
-    select_bucket_brigade_bus_qram(
+    BBQRAM(
         bitstrings,
-        select_wires=[],  # k=0
-        qram_wires=qram_wires,  # n_k=2
+        qram_wires=qram_wires,
         target_wires=target_wires,
-        bus_wire=bus,
-        dir_wires=dir_wires,
-        portL_wires=portL_wires,
-        portR_wires=portR_wires,
-        mode="quantum",  # fully bb qram, no select wires
+        work_wires=work_wires,
     )
-    return qml.probs(wires=target_wires)
+    return probs(wires=target_wires)
 
 
-print("Quantum bucket-brigade probs:", bb_quantum())
+@pytest.mark.parametrize(
+    (
+        "bitstrings",
+        "qram_wires",
+        "target_wires",
+        "bus",
+        "dir_wires",
+        "portL_wires",
+        "portR_wires",
+        "address",
+        "probabilities",
+    ),
+    [
+        (
+            ["010", "111", "110", "000"],
+            [0, 1],
+            [2, 3, 4],
+            5,
+            [6, 7, 8],
+            [9, 10, 11],
+            [12, 13, 14],
+            2,  # addressed from the left
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0],  # |110>
+        ),
+        (
+            ["010", "111", "110", "000"],
+            [0, 1],
+            [2, 3, 4],
+            5,
+            [11, 10, 9],
+            [6, 7, 8],
+            [12, 13, 14],
+            1,
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0],  # |111>
+        ),
+        (
+            ["010", "111", "110", "000"],
+            [0, 1],
+            [2, 3, 4],
+            5,
+            [6, 7, 8],
+            [12, 13, 14],
+            [9, 10, 11],
+            0,
+            [0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0],  # |010>
+        ),
+    ],
+)
+def test_bb_quantum(
+    bitstrings,
+    qram_wires,
+    target_wires,
+    bus,
+    dir_wires,
+    portL_wires,
+    portR_wires,
+    address,
+    probabilities,
+):  # pylint: disable=too-many-arguments
+    assert np.allclose(
+        probabilities,
+        bb_quantum(
+            bitstrings,
+            qram_wires,
+            target_wires,
+            [bus] + dir_wires + portL_wires + portR_wires,
+            address,
+        ),
+    )
+
+
+@pytest.mark.parametrize(
+    ("params", "error", "match"),
+    [
+        (
+            (
+                [],
+                [0, 1],
+                [2, 3, 4],
+                [5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
+            ),
+            ValueError,
+            "bitstrings' cannot be empty.",
+        ),
+        (
+            (
+                ["000", "00", "111", "10", "100"],
+                [0, 1],
+                [2, 3, 4],
+                [5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
+            ),
+            ValueError,
+            "All bitstrings must have equal length.",
+        ),
+        (
+            (
+                ["000", "111"],
+                [0, 1],
+                [2, 3, 4],
+                [5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
+            ),
+            ValueError,
+            "len(bitstrings) must be 2^(len(qram_wires)).",
+        ),
+        (
+            (
+                ["010", "111", "110", "000"],
+                [0, 1],
+                [2, 3],
+                [4, 5, 6, 7, 8, 9, 10, 11, 12, 13],
+            ),
+            ValueError,
+            "len(target_wires) must equal bitstring length.",
+        ),
+        (
+            (
+                ["010", "111", "110", "000"],
+                [0, 1],
+                [2, 3, 4],
+                [5, 6, 7, 8, 9, 10, 11, 12, 13],
+            ),
+            ValueError,
+            "work_wires must have length 10.",
+        ),
+    ],
+)
+def test_raises(params, error, match):
+    with pytest.raises(error, match=re.escape(match)):
+        BBQRAM(*params)
+
+
+@pytest.mark.parametrize(
+    (
+        "bitstrings",
+        "qram_wires",
+        "target_wires",
+        "bus",
+        "dir_wires",
+        "portL_wires",
+        "portR_wires",
+    ),
+    [
+        (
+            ["010", "111", "110", "000"],
+            [0, 1],
+            [2, 3, 4],
+            5,
+            [6, 7, 8],
+            [9, 10, 11],
+            [12, 13, 14],
+        ),
+        (
+            ["010", "111", "110", "000"],
+            [0, 1],
+            [2, 3, 4],
+            5,
+            [11, 10, 9],
+            [6, 7, 8],
+            [12, 13, 14],
+        ),
+        (
+            ["010", "111", "110", "000"],
+            [0, 1],
+            [2, 3, 4],
+            5,
+            [6, 7, 8],
+            [12, 13, 14],
+            [9, 10, 11],
+        ),
+    ],
+)
+def test_decomposition_new(
+    bitstrings,
+    qram_wires,
+    target_wires,
+    bus,
+    dir_wires,
+    portL_wires,
+    portR_wires,
+):  # pylint: disable=too-many-arguments
+    op = BBQRAM(
+        bitstrings,
+        qram_wires,
+        target_wires,
+        [bus] + dir_wires + portL_wires + portR_wires,
+    )
+
+    for rule in list_decomps(BBQRAM):
+        _test_decomposition_rule(op, rule)

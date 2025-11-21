@@ -25,7 +25,7 @@ Data phase routes the target qubits down to the selected leaf for each target bi
 performs the leaf write (classical bit flip), then routes back and restores the target.
 """
 
-from typing import List, Optional, Sequence, Tuple
+from typing import List, Optional, Sequence
 
 from pennylane.operation import Operation, Operator
 from pennylane.ops import CSWAP, SWAP, Hadamard, PauliX, PauliZ, ctrl
