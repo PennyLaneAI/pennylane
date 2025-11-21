@@ -241,12 +241,9 @@ def _get_while_loop_qfunc_prim():
         cond_slice,
         args_slice,
     ):
-        # Convert tuples back to slices (tuples are used for JAX 0.7.0 hashability)
-        from pennylane.capture import _restore_slice
-
-        body_slice = _restore_slice(body_slice)
-        cond_slice = _restore_slice(cond_slice)
-        args_slice = _restore_slice(args_slice)
+        body_slice = slice(*body_slice)
+        cond_slice = slice(*cond_slice)
+        args_slice = slice(*args_slice)
 
         jaxpr_consts_body = args[body_slice]
         jaxpr_consts_cond = args[cond_slice]
@@ -261,10 +258,7 @@ def _get_while_loop_qfunc_prim():
     @while_loop_prim.def_abstract_eval
     def _abstract_eval(*args, args_slice, **__):
         # Convert tuple back to slice (tuple is used for JAX 0.7.0 hashability)
-        from pennylane.capture import _restore_slice
-
-        args_slice = _restore_slice(args_slice)
-        return args[args_slice]
+        return args[slice(*args_slice)]
 
     return while_loop_prim
 

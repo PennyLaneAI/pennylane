@@ -169,10 +169,6 @@ from .make_plxpr import make_plxpr
 from .autograph import run_autograph, disable_autograph
 from .dynamic_shapes import determine_abstracted_axes, register_custom_staging_rule
 
-# Apply JAX patches for compatibility
-# This must be imported to apply runtime patches to JAX internals
-from . import jax_patches  # pylint: disable=unused-import
-
 # Import Patcher for contextual patching (preferred over global patches)
 from .patching import Patcher
 from .jax_patches import get_jax_patches
@@ -187,9 +183,6 @@ PlxprInterpreter: type
 expand_plxpr_transforms: Callable[[Callable], Callable]
 eval_jaxpr: Callable
 QmlPrimitive: "Type[jax.extend.core.Primitive]"
-_restore_slice: Callable
-_restore_dict: Callable
-_restore_list: Callable
 
 
 # pylint: disable=import-outside-toplevel, redefined-outer-name, too-many-return-statements
@@ -198,21 +191,6 @@ def __getattr__(key):
         from .custom_primitives import QmlPrimitive
 
         return QmlPrimitive
-
-    if key == "_restore_slice":
-        from .custom_primitives import _restore_slice
-
-        return _restore_slice
-
-    if key == "_restore_dict":
-        from .custom_primitives import _restore_dict
-
-        return _restore_dict
-
-    if key == "_restore_list":
-        from .custom_primitives import _restore_list
-
-        return _restore_list
 
     if key == "AbstractOperator":
         from .primitives import _get_abstract_operator

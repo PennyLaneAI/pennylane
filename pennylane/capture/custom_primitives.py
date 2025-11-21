@@ -56,111 +56,21 @@ def _make_hashable(obj: Any) -> Any:
         pass
 
     # Import here to avoid circular dependency and only when needed
-    # pylint: disable=import-outside-toplevel,too-many-return-statements
+    # pylint: disable=import-outside-toplevel
     import jax
     import numpy as np
 
-    # Check if obj is a JAX tracer - these are already hashable, don't convert
-    # Must check before Array check since tracers can also be Array instances
     if isinstance(obj, jax.core.Tracer):
-        return obj
-
-    # Convert arrays (JAX and NumPy) to nested tuples for hashability
-    # Must check before list check since tolist() returns lists
-    if hasattr(jax, "Array") and isinstance(obj, jax.Array):
-        # Recursively convert nested lists from tolist() to tuples
-        return _make_hashable(obj.tolist())
-    if isinstance(obj, np.ndarray):
-        # Recursively convert nested lists from tolist() to tuples
-        return _make_hashable(obj.tolist())
+        raise ValueError("Tracers should never occur in primitive metadata.")
+    if isinstance(obj, np.ndarray) or (hasattr(jax, "Array") and isinstance(obj, jax.Array)):
+        raise ValueError("Arrays should never be in primitive metadata.")
     if isinstance(obj, list):
         return tuple(_make_hashable(item) for item in obj)
     if isinstance(obj, dict):
-        # Sort by str(key) to handle non-comparable keys (e.g., class types like ABCCaptureMeta)
-        # This ensures consistent ordering without requiring keys to implement __lt__
-        return tuple(
-            sorted(((k, _make_hashable(v)) for k, v in obj.items()), key=lambda x: str(x[0]))
-        )
+        # Python 3.7+ maintains dict insertion order, so no need to sort
+        # For the same primitive constructed the same way, keys are always in the same order
+        return tuple((k, _make_hashable(v)) for k, v in obj.items())
     return obj
-
-
-def _restore_slice(obj: Any) -> Any:
-    """Restore slice objects from hashable tuple representation.
-
-    This is the inverse of _make_hashable for slice objects. When QmlPrimitive.bind()
-    converts slices to tuples for hashability, primitive implementations need to
-    convert them back.
-
-    Args:
-        obj: Object that may be a tuple representation of a slice
-
-    Returns:
-        slice object if obj is a 3-tuple with (start, stop, step), otherwise returns obj unchanged
-    """
-    if isinstance(obj, tuple) and len(obj) == 3:
-        # Tuples representing slices have exactly 3 elements (start, stop, step)
-        # Check if it's likely a slice by checking if elements look like slice components
-        # (None or integers for start/stop/step)
-        if all(x is None or isinstance(x, int) for x in obj):
-            return slice(*obj)
-    return obj
-
-
-def _restore_dict(obj: Any) -> dict:
-    """Restore dict from hashable tuple representation.
-
-    This is the inverse of _make_hashable for dicts. When QmlPrimitive.bind() converts
-    dicts to sorted tuples of (key, value) pairs for hashability, this function converts
-    them back to dicts.
-
-    Args:
-        obj: Tuple of (key, value) tuples representing a dict
-
-    Returns:
-        dict: Restored dictionary with recursively restored values
-
-    Example:
-        >>> _restore_dict((('a', 1), ('b', 2)))
-        {'a': 1, 'b': 2}
-    """
-    if not isinstance(obj, tuple):
-        return obj
-
-    # Empty tuple represents empty dict
-    if len(obj) == 0:
-        return {}
-
-    # Check if this tuple is actually a dict representation
-    # (all elements must be 2-tuples to be key-value pairs)
-    if not all(isinstance(item, tuple) and len(item) == 2 for item in obj):
-        # Not a dict representation, return as-is (it's a regular tuple)
-        return obj
-
-    # Convert tuple of (key, value) tuples back to dict, recursively restoring nested values
-    return {k: _restore_dict(v) for k, v in obj}
-
-
-def _restore_list(obj: Any) -> list:
-    """Restore list from hashable tuple representation.
-
-    This is the inverse of _make_hashable for lists. When QmlPrimitive.bind() converts
-    lists to tuples for hashability, this function converts them back to lists.
-
-    Args:
-        obj: Tuple representing a list
-
-    Returns:
-        list: Restored list with recursively restored elements
-
-    Example:
-        >>> _restore_list((1, 2, (3, 4)))
-        [1, 2, [3, 4]]
-    """
-    if not isinstance(obj, tuple):
-        return obj
-
-    # Recursively restore nested tuples to lists
-    return [_restore_list(item) for item in obj]
 
 
 # pylint: disable=abstract-method,too-few-public-methods

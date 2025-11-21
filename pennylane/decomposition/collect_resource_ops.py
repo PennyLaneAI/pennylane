@@ -17,7 +17,13 @@
 from copy import copy
 
 from pennylane.capture.base_interpreter import FlattenedInterpreter
-from pennylane.capture.primitives import adjoint_transform_prim, cond_prim, ctrl_transform_prim
+from pennylane.capture.primitives import (
+    adjoint_transform_prim,
+    cond_prim,
+    ctrl_transform_prim,
+    measure_prim,
+    pauli_measure_prim,
+)
 
 from .resources import adjoint_resource_rep, controlled_resource_rep, resource_rep
 
@@ -32,6 +38,20 @@ class CollectResourceOps(FlattenedInterpreter):
     def interpret_operation(self, op):
         self.state["ops"].add(resource_rep(type(op), **op.resource_params))
         return op
+
+
+@CollectResourceOps.register_primitive(measure_prim)
+def _mid_measure_prim(self, wires, reset, postselect):  # pylint: disable=unused-argument
+    # The purpose of the CollectResourceOps is to collect all operators that
+    # potentially needs to be decomposed, which doesn't apply to MCMs
+    return 0
+
+
+@CollectResourceOps.register_primitive(pauli_measure_prim)
+def _pauli_measure_prim(self, *wires, pauli_word, postselect):  # pylint: disable=unused-argument
+    # The purpose of the CollectResourceOps is to collect all operators that
+    # potentially needs to be decomposed, which doesn't apply to PPMs
+    return 0
 
 
 @CollectResourceOps.register_primitive(adjoint_transform_prim)
@@ -79,14 +99,12 @@ def _ctrl_transform_prim(self, *invals, n_control, jaxpr, n_consts, **params):
 @CollectResourceOps.register_primitive(cond_prim)
 def explore_all_branches(self, *invals, jaxpr_branches, consts_slices, args_slice):
     """Handle the cond primitive by a flattened python strategy."""
-    from pennylane.capture import _restore_slice  # pylint: disable=import-outside-toplevel
-
     n_branches = len(jaxpr_branches)
     conditions = invals[:n_branches]
-    args = invals[_restore_slice(args_slice)]
+    args = invals[slice(*args_slice)]
     outvals = ()
     for _, jaxpr, consts_slice in zip(conditions, jaxpr_branches, consts_slices):
-        consts = invals[_restore_slice(consts_slice)]
+        consts = invals[slice(*consts_slice)]
         dummy = copy(self).eval(jaxpr, consts, *args)
         # The cond_prim may or may not expect outvals, so we need to check whether
         # the first branch returns something significant. If so, we use the return

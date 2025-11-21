@@ -256,10 +256,7 @@ def _get_plxpr_cancel_inverses():  # pylint: disable=too-many-statements
 
     def cancel_inverses_plxpr_to_plxpr(jaxpr, consts, targs, tkwargs, *args):
         """Function for applying the ``cancel_inverses`` transform on plxpr."""
-        from pennylane.capture import _restore_dict  # pylint: disable=import-outside-toplevel
-
-        # Restore tkwargs from hashable tuple to dict
-        tkwargs = _restore_dict(tkwargs)
+        tkwargs = dict(tkwargs)
 
         interpreter = CancelInversesInterpreter(*targs, **tkwargs)
 

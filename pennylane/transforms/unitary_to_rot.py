@@ -73,10 +73,8 @@ def _get_plxpr_unitary_to_rot():
 
     def unitary_to_rot_plxpr_to_plxpr(jaxpr, consts, targs, tkwargs, *args):
         """Function for applying the ``unitary_to_rot`` transform on plxpr."""
-        from pennylane.capture import _restore_dict  # pylint: disable=import-outside-toplevel
-
         # Restore tkwargs from hashable tuple to dict
-        tkwargs = _restore_dict(tkwargs)
+        tkwargs = dict(tkwargs)
 
         interpreter = UnitaryToRotInterpreter(*targs, **tkwargs)
 
