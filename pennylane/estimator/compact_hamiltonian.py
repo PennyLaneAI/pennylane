@@ -102,13 +102,14 @@ class VibronicHamiltonian:
 
 
 class PauliHamiltonian:
-    """Stores the minimum necessary information required for resource estimation of a
+    r"""Stores the minimum necessary information required for resource estimation of a
     Hamiltonian expressed as a linear combination of tensor products of Pauli operators.
 
     Args:
         num_qubits (int): total number of qubits the Hamiltonian acts on
         num_pauli_words (int | None): the number of terms (Pauli words) in the Hamiltonian
-        max_weight (int | None): the maximum number of factors over all terms in the Hamiltonian
+        max_weight (int | None): The maximum number of qubits a term acts upon, over all
+            terms in the linear combination.
         one_norm (float | None): the one-norm of the Hamiltonian
         pauli_dist (dict | None): A dictionary representing the various Pauli words and how
             frequently they appear in the Hamiltonian.
@@ -125,39 +126,45 @@ class PauliHamiltonian:
     **Example**
 
     A ``PauliHamiltonian`` is a compact representation which can be used with compatible templates
-    to obtain resource estimates:
+    to obtain resource estimates. Consider for example the Hamiltonian:
+
+    .. math::
+
+        \hat{H} = 0.1 \cdot \Sigma^{30}_{j=1} \hat{X}_{j} \hat{X}_{j+1}
+        - 0.05 \cdot \Sigma^{30}_{k=1} \hat{Y}_{k} \hat{Y}_{k+1} + 0.25 \cdot \Sigma^{40}_{l=1} \hat{X}_{l}
+
 
     >>> import pennylane.estimator as qre
-    >>> num_steps, order = (10, 2)
     >>> pauli_ham = qre.PauliHamiltonian(
-    ...     num_qubits = 10,
+    ...     num_qubits = 40,
     ...     num_pauli_words = 100,
-    ...     max_weight = 3,
-    ...     one_norm = 0.01,
+    ...     max_weight = 2,
+    ...     one_norm = 14.5,  # (0.1 * 30) + (0.05 * 30) + (0.25 * 40)
     ... )
     >>> pauli_ham
-    PauliHamiltonian(num_qubits=10, num_pauli_words=100, max_weight=3, one_norm=0.01)
+    PauliHamiltonian(num_qubits=40, num_pauli_words=100, max_weight=2, one_norm=14.5)
+    >>> num_steps, order = (10, 2)
     >>> res = qre.estimate(qre.TrotterPauli(pauli_ham, num_steps, order))
     >>> print(res)
     --- Resources: ---
-     Total wires: 10
-       algorithmic wires: 10
+     Total wires: 40
+       algorithmic wires: 40
        allocated wires: 0
          zero state: 0
          any state: 0
-     Total gates : 1.099E+5
+     Total gates : 1.012E+5
        'T': 8.800E+4,
-       'CNOT': 8.000E+3,
-       'Z': 1.980E+3,
-       'S': 3.960E+3,
-       'Hadamard': 7.920E+3
+       'CNOT': 4.000E+3,
+       'Z': 1.320E+3,
+       'S': 2.640E+3,
+       'Hadamard': 5.280E+3
 
     .. details::
         :title: Usage Details
 
         There are three different ways to instantiate the ``PauliHamiltonian`` class depending on how
-        much information is known about the Hamiltonian we wish to capture (Note that providing more
-        information will often lead to more accurate resource estimates).
+        much information is known about the Hamiltonian we wish to capture. Note that providing more
+        information will often lead to more accurate resource estimates.
 
         Firstly, when we know fairly little about the explicit form of the Hamiltonian, we can express
         it by specifyng the number of qubits it acts upon, the total number of terms in the Hamiltonian
@@ -165,13 +172,13 @@ class PauliHamiltonian:
 
         >>> import pennylane.estimator as qre
         >>> pauli_ham = qre.PauliHamiltonian(
-        ...     num_qubits = 10,
+        ...     num_qubits = 40,
         ...     num_pauli_words = 100,
-        ...     max_weight = 3,
-        ...     one_norm = 0.01,
+        ...     max_weight = 2,
+        ...     one_norm = 14.5,  # (0.1 * 30) + (0.05 * 30) + (0.25 * 40)
         ... )
         >>> pauli_ham
-        PauliHamiltonian(num_qubits=10, num_pauli_words=100, max_weight=3, one_norm=0.01)
+        PauliHamiltonian(num_qubits=40, num_pauli_words=100, max_weight=2, one_norm=14.5)
 
         If we know approximately how the Pauli words are distributed in the Hamiltonian, then we can
         construct the Hamiltonian from this information. Note, if both the ``pauli_dist`` and the
@@ -181,14 +188,14 @@ class PauliHamiltonian:
 
         >>> import pennylane.estimator as qre
         >>> pauli_ham = qre.PauliHamiltonian(
-        ...     num_qubits = 10,
-        ...     pauli_dist = {"X":10, "XX":30, "YY":10, "ZZ":45, "ZZZ": 5},
-        ...     one_norm = 0.01,
+        ...     num_qubits = 40,
+        ...     pauli_dist = {"X":40, "XX":30, "YY":30},
+        ...     one_norm = 14.5,  # (0.1 * 30) + (0.05 * 30) + (0.25 * 40)
         ... )
         >>> pauli_ham
-        PauliHamiltonian(num_qubits=10, num_pauli_words=100, max_weight=3, one_norm=0.01)
+        PauliHamiltonian(num_qubits=40, num_pauli_words=100, max_weight=2, one_norm=14.5)
         >>> pauli_ham.pauli_dist
-        {'X': 10, 'XX': 30, 'YY': 10, 'ZZ': 45, 'ZZZ': 5}
+        {'X': 40, 'XX': 30, 'YY': 30}
 
         Finally, if we also know how to group the terms in the commuting groups of operators, we can
         construct the Hamiltonian by specifying these groups of terms. This input will take precedence
@@ -198,21 +205,20 @@ class PauliHamiltonian:
 
         >>> import pennylane.estimator as qre
         >>> commuting_groups = (
-        ...     {"X": 10, "XX": 30},
-        ...     {"YY": 10, "ZZ": 5},
-        ...     {"ZZ": 40, "ZZZ": 5},
+        ...     {"X": 40, "XX": 30},
+        ...     {"YY": 30},
         ... )
         >>> pauli_ham = qre.PauliHamiltonian(
-        ...     num_qubits = 10,
+        ...     num_qubits = 40,
         ...     commuting_groups = commuting_groups,
-        ...     one_norm = 0.01,
+        ...     one_norm = 14.5,
         ... )
         >>> pauli_ham
-        PauliHamiltonian(num_qubits=10, num_pauli_words=100, max_weight=3, one_norm=0.01)
+        PauliHamiltonian(num_qubits=40, num_pauli_words=100, max_weight=2, one_norm=14.5)
         >>> pauli_ham.pauli_dist
-        defaultdict(<class 'int'>, {'X': 10, 'XX': 30, 'YY': 10, 'ZZ': 45, 'ZZZ': 5})
+        defaultdict(<class 'int'>, {'X': 40, 'XX': 30, 'YY': 30})
         >>> pauli_ham.commuting_groups
-        ({'X': 10, 'XX': 30}, {'YY': 10, 'ZZ': 5}, {'ZZ': 40, 'ZZZ': 5})
+        ({'X': 40, 'XX': 30}, {'YY': 30})
 
     """
 
