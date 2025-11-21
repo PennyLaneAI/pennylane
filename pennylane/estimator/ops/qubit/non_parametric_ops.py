@@ -186,6 +186,22 @@ class Hadamard(ResourceOperator):
         return [GateCount(cls.resource_rep())]
 
 
+H = Hadamard
+r"""Hadamard(wires)
+Resource class for the Hadamard gate.
+
+.. seealso:: The equivalent long-form alias :class:`~.Hadamard`
+
+Args:
+    wires (Sequence[int] | int | None): the wire the operation acts on
+
+Resources:
+    The Hadamard gate is treated as a fundamental gate and thus it cannot be decomposed
+    further. Requesting the resources of this gate raises a :class:`~.pennylane.exceptions.ResourcesUndefinedError` error.
+
+"""
+
+
 class S(ResourceOperator):
     r"""Resource class for the S-gate.
 
