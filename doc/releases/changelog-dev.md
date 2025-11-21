@@ -21,6 +21,7 @@
 
 * `Operator.decomposition` will fallback to the first entry in `qml.list_decomps` if the `Operator.compute_decomposition`
   method is not overridden.
+  [(#8686)](https://github.com/PennyLaneAI/pennylane/pull/8686)
 
 * Add the `PCPhaseOp` operation to the xDSL Quantum dialect.
   [(#8621)](https://github.com/PennyLaneAI/pennylane/pull/8621)
