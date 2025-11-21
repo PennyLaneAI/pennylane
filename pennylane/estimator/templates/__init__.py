@@ -47,4 +47,4 @@ from .comparators import (
     RegisterComparator,
 )
 from .qubitize import QubitizeTHC
-from .select import SelectTHC, SelectPauli
+from .select import SelectTHC
