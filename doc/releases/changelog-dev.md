@@ -19,7 +19,9 @@
 
 <h3>Improvements 🛠</h3>
 
-* A new :func:`~.marker` function allows for easy inspection at particular points in a transform program with :func:`~.specs` and :func:`~.draw` instead of having to increment ``level`` by integer amounts.
+* A new :func:`~.marker` function allows for easy inspection at particular points in a transform program
+  with :func:`~.specs` and :func:`~.drawer.draw` instead of having to increment ``level``
+  by integer amounts.
   [(#8684)](https://github.com/PennyLaneAI/pennylane/pull/8684)
   
   The :func:`~.marker` function works like a transform in PennyLane, and can be deployed as a decorator on top of QNodes:
