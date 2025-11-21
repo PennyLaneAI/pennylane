@@ -84,25 +84,35 @@ class ResourcesResult:
         self.device_name = None
         self.num_wires = 0  # More accurately, the number of NEW allocations in this region
 
-    def merge_with(self, other: "ResourcesResult") -> None:
+    def merge_with(self, other: "ResourcesResult", method: str = "sum") -> None:
         """Merge another ResourcesResult into this one."""
+
+        if method == "max":
+            merge_func = max
+        elif method == "min":
+            merge_func = min
+        elif method == "sum":
+            merge_func = lambda a, b: a + b
+        else:
+            raise ValueError(f"Unsupported merge method: '{method}'. Use 'sum', 'max', or 'min'.")
+
         for name, count in other.quantum_operations.items():
-            self.quantum_operations[name] += count
+            self.quantum_operations[name] = merge_func(self.quantum_operations[name], count)
         for name, count in other.quantum_measurements.items():
-            self.quantum_measurements[name] += count
+            self.quantum_measurements[name] = merge_func(self.quantum_measurements[name], count)
         for name, count in other.ppm_operations.items():
-            self.ppm_operations[name] += count
+            self.ppm_operations[name] = merge_func(self.ppm_operations[name], count)
 
         for size, count in other.resource_sizes.items():
-            self.resource_sizes[size] += count
+            self.resource_sizes[size] = merge_func(self.resource_sizes[size], count)
 
         for name, count in other.classical_instructions.items():
-            self.classical_instructions[name] += count
+            self.classical_instructions[name] = merge_func(self.classical_instructions[name], count)
         for name, count in other.function_calls.items():
-            self.function_calls[name] += count
+            self.function_calls[name] = merge_func(self.function_calls[name], count)
 
         self.device_name = self.device_name or other.device_name
-        self.num_wires += other.num_wires
+        self.num_wires = merge_func(self.num_wires, other.num_wires)
 
     def multiply_by_scalar(self, scalar: int) -> None:
         """Multiply all counts by a scalar."""
@@ -329,21 +339,23 @@ def _collect_region(region, loop_warning=False, cond_warning=False) -> Resources
             if not cond_warning:
                 # NOTE: For now we count operations from both branches
                 warnings.warn(
-                    "Specs was unable to determine the branch of a conditional. "
-                    "The results will assume both branches of the conditional are run.",
+                    "Specs was unable to determine the branch of a conditional or switch statement. "
+                    "The results will take the maximum resources across all possible branches.",
                     UserWarning,
                 )
                 cond_warning = True
-            resources.merge_with(
-                _collect_region(
-                    op.true_region, loop_warning=loop_warning, cond_warning=cond_warning
-                )
+
+            used_resources = _collect_region(
+                op.true_region, loop_warning=loop_warning, cond_warning=cond_warning
             )
-            resources.merge_with(
+            used_resources.merge_with(
                 _collect_region(
                     op.false_region, loop_warning=loop_warning, cond_warning=cond_warning
-                )
+                ),
+                method="max",
             )
+
+            resources.merge_with(used_resources)
             continue
 
         resource_type, resource = handle_resource(op)
