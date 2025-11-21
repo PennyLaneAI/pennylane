@@ -70,13 +70,25 @@ Without these patches, any operation creating arrays with traced dimensions woul
 with AssertionError in trace.frame.add_eqn.
 """
 
-# pylint: disable=import-outside-toplevel,too-many-arguments,redefined-outer-name
+# pylint: too-many-arguments,redefined-outer-name
 # pylint: disable=unused-import,no-else-return,unidiomatic-typecheck,use-dict-literal
 # pylint: disable=protected-access
 
 has_jax = True
 try:
     import jax
+    from jax._src import config as jax_config
+    from jax._src import core, pjit, source_info_util
+    from jax._src.core import JaxprEqnContext, Var
+    from jax._src.interpreters import partial_eval as pe
+    from jax._src.interpreters.partial_eval import (
+        DynamicJaxprTracer,
+        TracingEqn,
+        compute_on,
+        xla_metadata_lib,
+    )
+    from jax._src.lax import lax
+    from packaging.version import Version
 except ImportError:  # pragma: no cover
     has_jax = False  # pragma: no cover
 
@@ -88,16 +100,6 @@ def _add_make_eqn_helper():
     This helper properly creates TracingEqn objects, which is needed for JAX 0.7.0
     compatibility. This is based on Catalyst's approach to the same issue.
     """
-    from jax._src import config as jax_config
-    from jax._src import source_info_util
-    from jax._src.core import JaxprEqnContext, Var
-    from jax._src.interpreters import partial_eval as pe
-    from jax._src.interpreters.partial_eval import (
-        DynamicJaxprTracer,
-        TracingEqn,
-        compute_on,
-        xla_metadata_lib,
-    )
 
     def make_eqn(
         self,
@@ -170,9 +172,6 @@ def _patch_dyn_shape_staging_rule():
 
     The fix uses the make_eqn helper to properly create TracingEqn objects.
     """
-    from jax._src import core
-    from jax._src.interpreters import partial_eval as pe
-    from jax._src.lax import lax
 
     def patched_dyn_shape_staging_rule(trace, source_info, prim, out_aval, *args, **params):
         """Patched version of _dyn_shape_staging_rule using make_eqn helper."""
@@ -227,16 +226,13 @@ def _patch_pjit_staging_rule():
 
     This causes an AssertionError when add_eqn expects a TracingEqn but gets a JaxprEqn.
     """
-    from jax._src import config, core, pjit
-    from jax._src.interpreters import partial_eval as pe
-
     # Store the original function
     original_staging_rule = pjit.pjit_staging_rule
 
     def patched_pjit_staging_rule(trace, source_info, *args, **params):
         """Patched version of pjit_staging_rule with dynamic shape fixes."""
         # Use the original implementation for most cases
-        if not config.dynamic_shapes.value:
+        if not jax_config.dynamic_shapes.value:
             return original_staging_rule(trace, source_info, *args, **params)
 
         # Check if we're in the inline path
@@ -308,10 +304,6 @@ def _patch_pjit_staging_rule():
 
 # Apply patches based on JAX version
 if has_jax:
-
-    # Check JAX version
-    from packaging.version import Version
-
     jax_version = Version(jax.__version__)
     if jax_version >= Version("0.7.0"):
         try:
