@@ -22,7 +22,7 @@ from typing import Any
 
 import numpy as np
 
-from pennylane.exceptions import ResourcesUndefinedError
+import pennylane.estimator.ops as qre_ops
 from pennylane.operation import classproperty
 from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
@@ -270,16 +270,31 @@ class ResourceOperator(ABC):
     def resource_decomp(cls, *args, **kwargs) -> list[GateCount]:
         r"""Returns a list of actions that define the resources of the operator."""
 
+    # pylint: disable=import-outside-toplevel
     @classmethod
     def adjoint_resource_decomp(cls, target_resource_params: dict | None = None) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
+
+        For ResourceOperators that don't define a `adjoint_resource_decomp`, this will be its
+        `adjoint_resource_decomp` method.
 
         Args:
             target_resource_params (dict | None): A dictionary containing the resource parameters
                 of the target operator.
         """
-        raise ResourcesUndefinedError
+        from pennylane.estimator.ops.op_math.symbolic import (
+            _apply_adj,
+        )
 
+        target_resource_params = target_resource_params or {}
+        gate_lst = []
+        decomp = cls.resource_decomp(**target_resource_params)
+
+        for gate in decomp[::-1]:  # reverse the order
+            gate_lst.append(_apply_adj(gate))
+        return gate_lst
+
+    # pylint: disable=import-outside-toplevel
     @classmethod
     def controlled_resource_decomp(
         cls,
@@ -289,6 +304,9 @@ class ResourceOperator(ABC):
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
+        For ResourceOperators that don't define a `controlled_resource_decomp`, this will be its
+        `controlled_resource_decomp` method.
+
         Args:
             num_ctrl_wires (int): the number of qubits the
                 operation is controlled on
@@ -297,7 +315,21 @@ class ResourceOperator(ABC):
             target_resource_params (dict | None): A dictionary containing the resource parameters
                 of the target operator.
         """
-        raise ResourcesUndefinedError
+        from pennylane.estimator.ops.op_math.symbolic import (
+            _apply_controlled,
+        )
+
+        target_resource_params = target_resource_params or {}
+        gate_lst = []
+        if num_zero_ctrl != 0:
+            x = resource_rep(qre_ops.X)
+            gate_lst.append(GateCount(x, 2 * num_zero_ctrl))
+
+        decomp = cls.resource_decomp(**target_resource_params)
+        for action in decomp:
+            gate_lst.append(_apply_controlled(action, num_ctrl_wires, 0))
+
+        return gate_lst
 
     @classmethod
     def pow_resource_decomp(
@@ -306,12 +338,26 @@ class ResourceOperator(ABC):
         r"""Returns a list representing the resources for an operator
         raised to a power.
 
+        For ResourceOperators that don't define a `pow_resource_decomp`, this will be its
+        `pow_resource_decomp` method. By default, this method returns the operator multiplied
+        by the given power.
+
         Args:
             pow_z (int): exponent that the operator is being raised to
             target_resource_params (dict | None): A dictionary containing the resource parameters
                 of the target operator.
         """
-        raise ResourcesUndefinedError
+        if pow_z == 0:
+            return [GateCount(resource_rep(qre_ops.Identity))]
+
+        target_resource_params = target_resource_params or {}
+        num_wires = target_resource_params.get("num_wires")
+        base_cmpr_op = CompressedResourceOp(cls, num_wires, target_resource_params)
+
+        if pow_z == 1:
+            return [GateCount(base_cmpr_op)]
+
+        return [GateCount(base_cmpr_op, pow_z)]
 
     def __repr__(self) -> str:
         str_rep = self.__class__.__name__ + "(" + str(self.resource_params) + ")"

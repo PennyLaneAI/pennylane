@@ -21,7 +21,6 @@ import pytest
 import pennylane.estimator as qre
 from pennylane.estimator.resource_operator import GateCount, resource_rep
 from pennylane.estimator.wires_manager import Allocate, Deallocate
-from pennylane.exceptions import ResourcesUndefinedError
 from pennylane.queuing import AnnotatedQueue
 from pennylane.wires import Wires
 
@@ -57,23 +56,15 @@ class TestAdjoint:
             **op.resource_params
         )
 
-        class ResourceDummyS(qre.S):
-            """Dummy class with no default adjoint decomp"""
-
-            @classmethod
-            def adjoint_resource_decomp(cls, target_resource_params=None) -> list[GateCount]:
-                """No default resources"""
-                raise ResourcesUndefinedError
-
-        op = ResourceDummyS()  # no default_adjoint_decomp defined
+        op = qre.QubitUnitary(num_wires=1)  # no default_adjoint_decomp defined
         adj_op = qre.Adjoint(op)
         expected_res = [
             GateCount(
                 qre.resource_rep(
                     qre.Adjoint,
-                    {"base_cmpr_op": qre.resource_rep(qre.T)},
+                    {"base_cmpr_op": qre.resource_rep(qre.RZ)},
                 ),
-                2,
+                1,
             )
         ]
         assert adj_op.resource_decomp(**adj_op.resource_params) == expected_res
@@ -212,27 +203,17 @@ class TestControlled:
             ctrl_op = qre.Controlled(op, ctrl_wires, ctrl_values)
             assert ctrl_op.resource_decomp(**ctrl_op.resource_params) == res
 
-        class ResourceDummyZ(qre.Z):
-            """Dummy class with no default ctrl decomp"""
-
-            @classmethod
-            def controlled_resource_decomp(
-                cls, num_ctrl_wires, num_zero_ctrl, **kwargs
-            ) -> list[GateCount]:
-                """No default resources"""
-                raise ResourcesUndefinedError
-
-        op = ResourceDummyZ()  # no default_ctrl_decomp defined
+        op = qre.QubitUnitary(num_wires=1)  # no default_controlled_decomp defined
         ctrl_op = qre.Controlled(op, num_ctrl_wires=3, num_zero_ctrl=2)
         expected_res = [
             GateCount(qre.resource_rep(qre.X), 4),
             GateCount(
                 qre.Controlled.resource_rep(
-                    qre.resource_rep(qre.S),
+                    qre.resource_rep(qre.RZ),
                     num_ctrl_wires=3,
                     num_zero_ctrl=0,
                 ),
-                2,
+                1,
             ),
         ]
         assert ctrl_op.resource_decomp(**ctrl_op.resource_params) == expected_res
@@ -423,18 +404,17 @@ class TestPow:
             pow_op = qre.Pow(op, z)
             assert pow_op.resource_decomp(**pow_op.resource_params) == res
 
-        class ResourceDummyX(qre.X):
-            """Dummy class with no default pow decomp"""
+        op = qre.QubitUnitary(num_wires=1)  # no default_pow_decomp defined
+        z_and_expected_res_unitary = (
+            (0, [GateCount(qre.resource_rep(qre.Identity()))]),
+            (1, [GateCount(op.resource_rep_from_op())]),
+            (2, [GateCount(op.resource_rep_from_op(), 2)]),
+            (3, [GateCount(op.resource_rep_from_op(), 3)]),
+        )
 
-            @classmethod
-            def pow_resource_decomp(cls, pow_z, **kwargs) -> list[GateCount]:
-                """No default resources"""
-                raise ResourcesUndefinedError
-
-        op = ResourceDummyX()  # no default_pow_decomp defined
-        pow_op = qre.Pow(op, 7)
-        expected_res = [GateCount(op.resource_rep_from_op(), 7)]
-        assert pow_op.resource_decomp(**pow_op.resource_params) == expected_res
+        for z, res in z_and_expected_res_unitary:
+            pow_op = qre.Pow(op, z)
+            assert pow_op.resource_decomp(**pow_op.resource_params) == res
 
     @pytest.mark.parametrize("z", (0, 1, 2, 3))
     @pytest.mark.parametrize(
