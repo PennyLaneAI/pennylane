@@ -61,10 +61,9 @@ def _make_hashable(obj: Any) -> Any:
     import numpy as np
 
     if isinstance(obj, jax.core.Tracer):
-        raise ValueError("tracers should never occur in equation metadata")
-
+        raise ValueError("Tracers should never occur in primitive metadata.")
     if isinstance(obj, np.ndarray) or (hasattr(jax, "Array") and isinstance(obj, jax.Array)):
-        raise ValueError("arrays should never be in metadata")
+        raise ValueError("Arrays should never be in primitive metadata.")
     if isinstance(obj, list):
         return tuple(_make_hashable(item) for item in obj)
     if isinstance(obj, dict):
