@@ -338,16 +338,14 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
 
 def _bucket_brigade_qram_resources(self, bitstrings, num_target_wires, num_qram_wires, n_k):
     resources = defaultdict(int)
-    # 1) address loading
-    resources[resource_rep(CSWAP)] += sum([(1 << ell) for k in range(n_k) for ell in range(k)]) * n_k * 2
-    resources[resource_rep(SWAP)] += sum([(1 if k == 0 else 1 << k)] for k in range(n_k)) * n_k + n_k
-    # 2) For each target bit: load→route down→leaf op→route up→restore (reuse the route bus function)
-    resources[resource_rep(CSWAP)] += sum([(1 << ell) for ell in range(num_qram_wires)]) * num_target_wires * 4
-    resources[resource_rep(SWAP)] += num_target_wires * 2
+    resources[resource_rep(SWAP)] = (
+        sum([1 if k == 0 else 1 << k] for k in range(n_k)) * n_k + n_k
+    ) * 2 + num_target_wires * 2
+    resources[resource_rep(CSWAP)] = (
+        sum([(1 << ell) for ell in range(num_qram_wires)]) * num_target_wires * 4
+        + (sum([(1 << ell) for k in range(n_k) for ell in range(k)]) * n_k * 2) * 2
+    )
     resources[resource_rep(Hadamard)] += num_target_wires * 2
     for j in range(num_target_wires):
         for p in range(1 << n_k):
             resources[resource_rep(PauliZ)] += 1 if bool(bitstrings[p][j]) else 0
-    # 3) address unloading
-    resources[resource_rep(CSWAP)] += sum([(1 << ell) for k in range(n_k) for ell in range(k)]) * n_k * 2
-    resources[resource_rep(SWAP)] += sum([(1 if k == 0 else 1 << k)] for k in range(n_k)) * n_k + n_k
