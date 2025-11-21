@@ -169,7 +169,9 @@ from .make_plxpr import make_plxpr
 from .autograph import run_autograph, disable_autograph
 from .dynamic_shapes import determine_abstracted_axes, register_custom_staging_rule
 
-from . import jax_patches
+# Import Patcher for contextual patching (preferred over global patches)
+from .patching import Patcher
+from .jax_patches import get_jax_patches
 
 # by defining this here, we avoid
 # E0611: No name 'AbstractOperator' in module 'pennylane.capture' (no-name-in-module)
@@ -240,4 +242,6 @@ __all__ = (
     "FlatFn",
     "run_autograph",
     "make_plxpr",
+    "Patcher",
+    "get_jax_patches",
 )
