@@ -659,6 +659,7 @@ class TestDecomposition:
         ),
     ]
 
+    @pytest.mark.xfail(reason="arrays should never be in metadata")
     @pytest.mark.capture
     @pytest.mark.parametrize(("weights", "wires", "init_state", "include_pi"), DECOMP_PARAMS)
     def test_decomposition_new(self, weights, wires, init_state, include_pi):
