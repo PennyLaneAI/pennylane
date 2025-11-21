@@ -116,7 +116,7 @@ def device(name, *args, **kwargs):
     .. warning::
         The ``custom_decomps`` keyword argument to ``qml.device`` has been deprecated and will be removed
         in 0.45. Instead, with ``qml.decomposition.enable_graph()``, new decomposition rules can be defined as
-        quantum functions with registered resources. See :mod:``pennylane.decomposition`` for more details.
+        quantum functions with registered resources. See :mod:`pennylane.decomposition` for more details.
 
 
     All devices must be loaded by specifying their **short-name** as listed above,
