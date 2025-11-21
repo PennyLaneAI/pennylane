@@ -14,6 +14,7 @@
 """
 Tests for the UCCSD template.
 """
+
 import numpy as np
 
 # pylint: disable=protected-access,too-many-arguments
@@ -27,6 +28,18 @@ test_data_decomposition = [
     (
         [[0, 1, 2]],
         [],
+        np.array([3.815]),
+        1,
+        [
+            [0, qml.BasisState, [0, 1, 2, 3, 4, 5], [np.array([1, 1, 0, 0, 0, 0])]],
+            [1, qml.RX, [0], [-np.pi / 2]],
+            [5, qml.RZ, [2], [1.9075]],
+            [6, qml.CNOT, [1, 2], []],
+        ],
+    ),
+    (
+        [[0, 1, 2]],
+        None,
         np.array([3.815]),
         1,
         [
@@ -52,6 +65,20 @@ test_data_decomposition = [
     ),
     (
         [],
+        [[[0, 1], [2, 3, 4, 5]]],
+        np.array([3.815]),
+        1,
+        [
+            [3, qml.RX, [2], [-np.pi / 2]],
+            [29, qml.RZ, [5], [0.476875]],
+            [73, qml.Hadamard, [0], []],
+            [150, qml.RX, [1], [np.pi / 2]],
+            [88, qml.CNOT, [3, 4], []],
+            [121, qml.CNOT, [2, 3], []],
+        ],
+    ),
+    (
+        None,
         [[[0, 1], [2, 3, 4, 5]]],
         np.array([3.815]),
         1,
@@ -167,11 +194,13 @@ test_data_decomposition_new = [
 def test_standard_validity(s_wires, d_wires, weights, n_repeats, _):
     """Test standard validity criteria using assert_valid."""
     cnots = 0
-    for s_wires_ in s_wires:
-        cnots += 4 * (len(s_wires_) - 1)
+    if s_wires is not None:
+        for s_wires_ in s_wires:
+            cnots += 4 * (len(s_wires_) - 1)
 
-    for d_wires_ in d_wires:
-        cnots += 16 * (len(d_wires_[0]) - 1 + len(d_wires_[1]) - 1 + 1)
+    if d_wires is not None:
+        for d_wires_ in d_wires:
+            cnots += 16 * (len(d_wires_[0]) - 1 + len(d_wires_[1]) - 1 + 1)
 
     cnots *= n_repeats
 
@@ -202,14 +231,17 @@ class TestDecomposition:
         and order, the wires the operation acts on and the correct use of parameters
         in the circuit."""
 
-        sqg = (10 * len(s_wires) + 72 * len(d_wires)) * n_repeats
+        sqg = (10 * len(s_wires or []) + 72 * len(d_wires or [])) * n_repeats
 
         cnots = 0
-        for s_wires_ in s_wires:
-            cnots += 4 * (len(s_wires_) - 1)
 
-        for d_wires_ in d_wires:
-            cnots += 16 * (len(d_wires_[0]) - 1 + len(d_wires_[1]) - 1 + 1)
+        if s_wires is not None:
+            for s_wires_ in s_wires:
+                cnots += 4 * (len(s_wires_) - 1)
+
+        if d_wires is not None:
+            for d_wires_ in d_wires:
+                cnots += 16 * (len(d_wires_[0]) - 1 + len(d_wires_[1]) - 1 + 1)
 
         cnots *= n_repeats
 
@@ -344,7 +376,15 @@ class TestInputs:
                 [],
                 np.array([1, 1, 0, 0, 0]),
                 1,
-                "State must be of length 4",
+                r"Expected length of 'init_state' to match number of wires \(4\)",
+            ),
+            (
+                np.array([-2.8]),
+                [[0, 2]],
+                [],
+                None,
+                1,
+                r"Requires `init_state` to be provided",
             ),
             (
                 np.array([-2.8, 1.6]),

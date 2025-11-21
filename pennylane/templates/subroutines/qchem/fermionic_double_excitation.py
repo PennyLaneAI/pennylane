@@ -24,7 +24,8 @@ from pennylane.control_flow import for_loop
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.operation import Operation
 from pennylane.ops import CNOT, RX, RZ, Hadamard
-from pennylane.wires import Wires
+from pennylane.typing import TensorLike
+from pennylane.wires import Wires, WiresLike
 
 has_jax = True
 try:
@@ -447,12 +448,12 @@ class FermionicDoubleExcitation(Operation):
     Usage Details section for more details.
 
     Args:
-        weight (float or tensor_like): angle :math:`\theta` entering the Z rotation acting on wire ``p``
-        wires1 (Iterable): Wires of the qubits representing the subset of occupied orbitals
+        weight (TensorLike): angle :math:`\theta` entering the Z rotation acting on wire ``p``
+        wires1 (WiresLike): Wires of the qubits representing the subset of occupied orbitals
             in the interval ``[s, r]``. The first wire is interpreted as ``s``
             and the last wire as ``r``.
             Wires in between are acted on with CNOT gates to compute the parity of the set of qubits.
-        wires2 (Iterable): Wires of the qubits representing the subset of unoccupied
+        wires2 (WiresLike): Wires of the qubits representing the subset of unoccupied
             orbitals in the interval ``[q, p]``. The first wire is interpreted as ``q`` and
             the last wire is interpreted as ``p``. Wires in between are acted on with CNOT gates
             to compute the parity of the set of qubits.
@@ -496,7 +497,7 @@ class FermionicDoubleExcitation(Operation):
             dev = qml.device('default.qubit', wires=5)
 
             @qml.qnode(dev)
-            def circuit(weight, wires1=None, wires2=None):
+            def circuit(weight, wires1, wires2):
                 qml.FermionicDoubleExcitation(weight, wires1=wires1, wires2=wires2)
                 return qml.expval(qml.Z(0))
 
@@ -521,7 +522,9 @@ class FermionicDoubleExcitation(Operation):
     def _unflatten(cls, data, metadata) -> "FermionicDoubleExcitation":
         return cls(data[0], wires1=metadata[0], wires2=metadata[1])
 
-    def __init__(self, weight, wires1=None, wires2=None, id=None):
+    def __init__(self, weight: TensorLike, wires1: WiresLike, wires2: WiresLike, *, id=None):
+        wires1 = Wires(wires1)
+        wires2 = Wires(wires2)
         if len(wires1) < 2:
             raise ValueError(
                 f"expected at least two wires representing the occupied orbitals; "
