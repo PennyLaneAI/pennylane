@@ -132,9 +132,10 @@ class PauliHamiltonian:
     ...     num_qubits = 10,
     ...     num_pauli_words = 100,
     ...     max_weight = 3,
+    ...     one_norm = 0.01,
     ... )
     >>> pauli_ham
-    PauliHamiltonian(num_qubits=10, num_pauli_words=100, max_weight=3)
+    PauliHamiltonian(num_qubits=10, num_pauli_words=100, max_weight=3, one_norm=0.01)
     >>> res = qre.estimate(qre.TrotterPauli(pauli_ham, num_steps, order))
     >>> print(res)
     --- Resources: ---
@@ -166,9 +167,10 @@ class PauliHamiltonian:
         ...     num_qubits = 10,
         ...     num_pauli_words = 100,
         ...     max_weight = 3,
+        ...     one_norm = 0.01,
         ... )
         >>> pauli_ham
-        PauliHamiltonian(num_qubits=10, num_pauli_words=100, max_weight=3)
+        PauliHamiltonian(num_qubits=10, num_pauli_words=100, max_weight=3, one_norm=0.01)
 
         If we know approximately how the Pauli words are distributed in the hamiltonian, than we can
         construct the hamiltonian from this information. Note, if both the ``pauli_dist`` and the
@@ -180,9 +182,10 @@ class PauliHamiltonian:
         >>> pauli_ham = qre.PauliHamiltonian(
         ...     num_qubits = 10,
         ...     pauli_dist = {"X":10, "XX":30, "YY":10, "ZZ":45, "ZZZ": 5},
+        ...     one_norm = 0.01,
         ... )
         >>> pauli_ham
-        PauliHamiltonian(num_qubits=10, num_pauli_words=100, max_weight=3)
+        PauliHamiltonian(num_qubits=10, num_pauli_words=100, max_weight=3, one_norm=0.01)
         >>> pauli_ham.pauli_dist
         {'X': 10, 'XX': 30, 'YY': 10, 'ZZ': 45, 'ZZZ': 5}
 
@@ -201,9 +204,10 @@ class PauliHamiltonian:
         >>> pauli_ham = qre.PauliHamiltonian(
         ...     num_qubits = 10,
         ...     commuting_groups = commuting_groups,
+        ...     one_norm = 0.01,
         ... )
         >>> pauli_ham
-        PauliHamiltonian(num_qubits=10, num_pauli_words=100, max_weight=3)
+        PauliHamiltonian(num_qubits=10, num_pauli_words=100, max_weight=3, one_norm=0.01)
         >>> pauli_ham.pauli_dist
         defaultdict(<class 'int'>, {'X': 10, 'XX': 30, 'YY': 10, 'ZZ': 45, 'ZZZ': 5})
         >>> pauli_ham.commuting_groups
@@ -263,7 +267,7 @@ class PauliHamiltonian:
 
     def __repr__(self):
         """The repr dundar method for the PauliHamiltonian class."""
-        return f"PauliHamiltonian(num_qubits={self.num_qubits}, num_pauli_words={self.num_pauli_words}, max_weight={self.max_weight})"
+        return f"PauliHamiltonian(num_qubits={self.num_qubits}, num_pauli_words={self.num_pauli_words}, max_weight={self.max_weight}, one_norm={self.one_norm})"
 
     def __eq__(self, other: "PauliHamiltonian"):
         """Check if two PauliHamiltonians are identical"""
@@ -331,7 +335,7 @@ class PauliHamiltonian:
 
 
 def _sort_and_freeze(pauli_dist: dict) -> tuple[tuple]:
-    """Map the dictionary into a sorted and hashable tuple"""
+    """Map a dictionary into a sorted and hashable tuple"""
     return tuple((k, pauli_dist[k]) for k in sorted(pauli_dist))
 
 
