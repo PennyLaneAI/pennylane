@@ -16,9 +16,9 @@ Contains the QSVT template and qsvt wrapper function.
 """
 
 import copy
-import math
+from collections import defaultdict
 from collections.abc import Sequence
-from functools import reduce
+from functools import partial, reduce
 from typing import Literal
 
 import numpy as np
@@ -26,6 +26,12 @@ import scipy
 from numpy.polynomial import Polynomial, chebyshev
 
 from pennylane import math, ops
+from pennylane.decomposition import (
+    add_decomps,
+    adjoint_resource_rep,
+    register_resources,
+    resource_rep,
+)
 from pennylane.operation import Operation, Operator
 from pennylane.queuing import QueuingManager, apply
 from pennylane.typing import TensorLike
@@ -373,7 +379,7 @@ class QSVT(Operation):
 
     >>> q_script = qml.tape.QuantumScript(ops=[qml.QSVT(block_encoding, phase_shifts)])
     >>> print(q_script.expand().draw(decimals=2))
-    0: ──RZ(-2.46)──H──RZ(1.00)──H†──RZ(-8.00)─┤
+    0: ──RZ(-2.46)──(H†)@RZ(1.00)@H──RZ(-8.00)─┤
 
     See the Usage Details section for more examples on implementing QSVT with different block
     encoding methods.
@@ -472,6 +478,8 @@ class QSVT(Operation):
     def _unflatten(cls, data, _) -> "QSVT":
         return cls(*data)
 
+    resource_keys = {"UA", "projectors"}
+
     def __init__(self, UA, projectors, id=None):
         if not isinstance(UA, Operator):
             raise ValueError("Input block encoding must be an Operator")
@@ -484,6 +492,13 @@ class QSVT(Operation):
         total_wires = Wires.all_wires([proj.wires for proj in projectors]) + Wires(UA.wires)
 
         super().__init__(wires=total_wires, id=id)
+
+    @property
+    def resource_params(self) -> dict:
+        return {
+            "UA": self.hyperparameters["UA"],
+            "projectors": self.hyperparameters["projectors"],
+        }
 
     def map_wires(self, wire_map: dict):
         # pylint: disable=protected-access
@@ -579,21 +594,23 @@ class QSVT(Operation):
         UA_adj = copy.copy(UA)
 
         for idx, op in enumerate(projectors[:-1]):
-            if QueuingManager.recording():
-                apply(op)
-            op_list.append(op)
-
             if idx % 2 == 0:
                 if QueuingManager.recording():
-                    apply(UA)
-                op_list.append(UA)
-
+                    apply(op)
+                op_list.append(op)
             else:
-                op_list.append(ops.adjoint(UA_adj))
+                # change_op_basis would queue internally when called in a queuing context.
+                op_list.append(ops.change_op_basis(UA, op, ops.adjoint(UA_adj)))
 
-        if QueuingManager.recording():
-            apply(projectors[-1])
-        op_list.append(projectors[-1])
+        if len(projectors) % 2 == 0:
+            if QueuingManager.recording():
+                apply(UA)
+            op_list.append(UA)
+
+        if len(projectors) > 1:
+            if QueuingManager.recording():
+                apply(projectors[-1])
+            op_list.append(projectors[-1])
 
         return op_list
 
@@ -645,6 +662,39 @@ class QSVT(Operation):
 
         return mat
 
+
+def _QSVT_resources(projectors, UA):
+    resources = defaultdict(int)
+
+    resources.update(
+        {
+            resource_rep(type(UA), **UA.resource_params): np.ceil((len(projectors) - 1) / 2),
+            adjoint_resource_rep(type(UA), base_params=UA.resource_params): (len(projectors) - 1)
+            // 2,
+        }
+    )
+
+    for op in projectors:
+        resources[resource_rep(type(op), **op.resource_params)] += 1
+
+    return dict(resources)
+
+
+@register_resources(_QSVT_resources)
+def _QSVT_decomposition(*_data, UA, projectors, **_kwargs):
+
+    for idx, op in enumerate(projectors[:-1]):
+        op._unflatten(*op._flatten())  # pylint: disable=protected-access
+
+        if idx % 2 == 0:
+            UA._unflatten(*UA._flatten())  # pylint: disable=protected-access
+        else:
+            ops.adjoint(UA)
+
+    projectors[-1]._unflatten(*projectors[-1]._flatten())  # pylint: disable=protected-access
+
+
+add_decomps(QSVT, _QSVT_decomposition)
 
 # pylint: disable=protected-access
 if QSVT._primitive is not None:
@@ -771,22 +821,29 @@ def _cheby_pol(x, degree):
     return math.cos(degree * math.arccos(x))
 
 
-def _poly_func(coeffs, parity, x):
-    r"""Evaluate a polynomial function of a given parity expressed in the Chebyshev basis at value x
+# def _poly_func(coeffs, parity, x):
+#     r"""Evaluate a polynomial function of a given parity expressed in the Chebyshev basis at value x
 
-    Args:
-        coeffs (tensor_like): coefficient of the polynomial function in the Chebyshev basis
-        parity (int): 0 or 1 for odd/even polynomials respectively
-        x (float): point at which to evaluate the polynomial function
+#     Args:
+#         coeffs (tensor_like): coefficient of the polynomial function in the Chebyshev basis
+#         parity (int): 0 or 1 for odd/even polynomials respectively
+#         x (float): point at which to evaluate the polynomial function
 
-    Returns:
-        float: \sum c_kT_{2k} if even else \sum c_kT_{2k+1} if odd where T_k(x)=cos(k \arccos(x))
-    """
+#     Returns:
+#         float: \sum c_kT_{2k} if even else \sum c_kT_{2k+1} if odd where T_k(x)=cos(k \arccos(x))
+#     """
 
-    ind = math.arange(len(coeffs))
-    return sum(coeffs[i] * _cheby_pol(x, degree=2 * i + parity) for i in ind)
+#     ind = math.arange(len(coeffs))
+#     return sum(coeffs[i] * _cheby_pol(x, degree=2 * i + parity) for i in ind)
 
-
+def _poly_func(coeffs, x):
+    """\sum c_kT_{2k} if even else \sum c_kT_{2k+1} if odd where T_k(x)=cos(karccos(x))"""
+    try:
+        from jax import vmap
+        return np.sum(coeffs @ vmap(_cheby_pol, in_axes=(0, None))(np.arange(coeffs.shape[0]), x))
+    except ModuleNotFoundError:
+        return np.sum(coeffs @ math.vectorize(_cheby_pol, excluded=(1,))(np.arange(coeffs.shape[0]), x))
+    
 def _z_rotation(phi, interface):
     r"""Returns the matrix of the `RZ(2 \phi)` gate.
 
@@ -878,99 +935,171 @@ def _grid_pts(degree, interface):
         [math.cos((2 * j - 1) * np.pi / (4 * d)) for j in range(1, d + 1)], like=interface
     )
 
+import jax 
 
-def _qsp_optimization(degree, coeffs_target_func, interface=None):
-    r"""
-    Algorithm 1 in https://arxiv.org/pdf/2002.11649 produces the angle parameters by minimizing the distance between the target and qsp polynomial over the grid
+@jax.jit
+def obj_function(phi, x, y):
+    # Equation (23)
+    obj_func = _qsp_iterate_broadcast(phi, x, 'jax') - y
+    obj_func = np.dot(obj_func, obj_func)
+    return 1 / x.shape[0] * obj_func
 
-    Args:
-        degree (int): degree of polynomial function
-        coeffs_target_func (tensor_like): coefficients of the polynomial function in ascending index order
+@partial(jax.jit, static_argnames=["maxiter", "tol"])
+def optax_opt(initial_guess, x, y, maxiter, tol):
+    import optax
 
-    Returns:
-        tuple[tensor_like, float]: A tuple containing QSP angles and the converged cost function value at QSP angles
-    """
-    parity = degree % 2
+    opt = optax.lbfgs()
+    init_carry = (initial_guess, opt.init(initial_guess))
+    lambda_obj_function = lambda phi: obj_function(phi, x=x, y=y)
+    val_and_grad = optax.value_and_grad_from_state(lambda_obj_function)
 
-    # pylint: disable=import-outside-toplevel
-    try:
-        from jax import jacobian
+    def optimizer_iter_update(carry):
+        x, state = carry
+        val, g = val_and_grad(x, state=state)
+        updates, state = opt.update(g, state, x, value=val, grad=g, value_fn=lambda_obj_function)
+        x = optax.apply_updates(x, updates)
+        return (x, state)
 
-        interface = "jax"
+    def while_loop_cond(params):
+        _, state = params
+        num_iter = optax.tree.get(state, "count")
+        cost_val = optax.tree.get(state, "value")
+        return (num_iter == 0) | ((num_iter < maxiter) & (cost_val > tol))
 
-    except ModuleNotFoundError:
-        from autograd import jacobian
+    carry = jax.lax.while_loop(while_loop_cond, optimizer_iter_update, init_carry)
+    return carry[0]
 
-    grid_points = _grid_pts(degree, interface=interface)
-
+def _qsp_optimization(
+    degree: int, coeffs_target_func, maxiter=30, tol=1e-30
+):
+    """Algorithm 1 in https://arxiv.org/pdf/2002.11649 produces the angle parameters by minimizing the distance between the target and qsp polynomail over the grid"""
+    jax.config.update("jax_enable_x64", True)
+    grid_points = _grid_pts(degree)
     initial_guess = [np.pi / 4] + [0.0] * (degree - 1) + [np.pi / 4]
-    initial_guess = math.array(initial_guess, like=interface)
+    initial_guess = np.array(initial_guess)
+    targets = jax.vmap(_poly_func, in_axes=(None, 0))(coeffs_target_func, grid_points)
 
-    targets = [_poly_func(coeffs=coeffs_target_func, x=x, parity=parity) for x in grid_points]
-    targets = math.array(targets, like=interface)
+    opt_params = optax_opt(initial_guess, grid_points, targets, maxiter, tol)
+    cost_fun = obj_function(opt_params, grid_points, targets)
 
-    def obj_function(phi):
-        # Equation (23) in https://arxiv.org/pdf/2002.11649
+    return opt_params, cost_fun
 
-        # pylint: disable=import-outside-toplevel
-        try:
-            from jax import jit, vmap
+# def _qsp_optimization(degree, coeffs_target_func, interface=None):
+#     r"""
+#     Algorithm 1 in https://arxiv.org/pdf/2002.11649 produces the angle parameters by minimizing the distance between the target and qsp polynomial over the grid
 
-            qsp_iterates = jit(_qsp_iterate_broadcast, static_argnames=["interface"])
+#     Args:
+#         degree (int): degree of polynomial function
+#         coeffs_target_func (tensor_like): coefficients of the polynomial function in ascending index order
 
-            obj_func = (
-                vmap(qsp_iterates, in_axes=(None, 0, None))(phi, grid_points, interface) - targets
-            )
-        except ModuleNotFoundError:
-            obj_func = (
-                math.vectorize(_qsp_iterate_broadcast, excluded=(0, 2))(phi, grid_points, interface)
-                - targets
-            )
+#     Returns:
+#         tuple[tensor_like, float]: A tuple containing QSP angles and the converged cost function value at QSP angles
+#     """
+#     parity = degree % 2
 
-        obj_func = math.dot(obj_func, obj_func)
+#     # pylint: disable=import-outside-toplevel
+#     try:
+#         from jax import jacobian
 
-        return 1 / len(grid_points) * obj_func
+#         interface = "jax"
 
-    try:
-        from jax import jit
+#     except ModuleNotFoundError:
+#         from autograd import jacobian
 
-        obj_function = jit(obj_function)
-    except ModuleNotFoundError:
-        pass
+#     grid_points = _grid_pts(degree, interface=interface)
 
-    results = scipy.optimize.minimize(
-        fun=obj_function,
-        x0=initial_guess,
-        method="L-BFGS-B",  # More efficient than Newton method
-        jac=jacobian(obj_function),
-        tol=1e-15,
-    )
-    phis = results.x
-    cost_func = results.fun
+#     initial_guess = [np.pi / 4] + [0.0] * (degree - 1) + [np.pi / 4]
+#     initial_guess = math.array(initial_guess, like=interface)
 
-    return phis, cost_func
+#     targets = [_poly_func(coeffs=coeffs_target_func, x=x, parity=parity) for x in grid_points]
+#     targets = math.array(targets, like=interface)
 
+#     def obj_function(phi):
+#         # Equation (23) in https://arxiv.org/pdf/2002.11649
 
-def _compute_qsp_angles_iteratively(poly):
-    """Calculates the angles given a polynomial in canonical base
+#         # pylint: disable=import-outside-toplevel
+#         try:
+#             from jax import jit, vmap
 
-    Args:
-        poly (tensor_like): coefficients of the polynomial ordered from lowest to highest power
-    """
+#             qsp_iterates = jit(_qsp_iterate_broadcast, static_argnames=["interface"])
+
+#             obj_func = (
+#                 vmap(qsp_iterates, in_axes=(None, 0, None))(phi, grid_points, interface) - targets
+#             )
+#         except ModuleNotFoundError:
+#             obj_func = (
+#                 math.vectorize(_qsp_iterate_broadcast, excluded=(0, 2))(phi, grid_points, interface)
+#                 - targets
+#             )
+
+#         obj_func = math.dot(obj_func, obj_func)
+
+#         return 1 / len(grid_points) * obj_func
+
+#     try:
+#         from jax import jit
+
+#         obj_function = jit(obj_function)
+#     except ModuleNotFoundError:
+#         pass
+
+#     results = scipy.optimize.minimize(
+#         fun=obj_function,
+#         x0=initial_guess,
+#         method="L-BFGS-B",  # More efficient than Newton method
+#         jac=jacobian(obj_function),
+#         tol=1e-15,
+#     )
+#     phis = results.x
+#     cost_func = results.fun
+
+#     return phis, cost_func
+
+def _compute_qsp_angles_iteratively(
+    poly,
+):
     poly_cheb = chebyshev.poly2cheb(poly)
     degree = len(poly_cheb) - 1
 
-    coeffs_odd = poly_cheb[1::2]
-    coeffs_even = poly_cheb[0::2]
+    # Separate the odd and even parts
+    coeffs_odd = np.copy(poly_cheb)
+    coeffs_odd = coeffs_odd.at[0::2].set(0.0)
+
+    coeffs_even = np.copy(poly_cheb)
+    coeffs_even = coeffs_even.at[1::2].set(0.0)
 
     if np.allclose(coeffs_odd, np.zeros_like(coeffs_odd)):
         coeffs_target_func = math.array(coeffs_even)
+        degree_even = degree - degree % 2
+        degree = degree_even
     else:
         coeffs_target_func = math.array(coeffs_odd)
+        degree_odd = degree + (degree % 2 - 1)
+        degree = degree_odd
 
     angles, *_ = _qsp_optimization(degree=degree, coeffs_target_func=coeffs_target_func)
-
     return angles
+
+# def _compute_qsp_angles_iteratively(poly):
+#     """Calculates the angles given a polynomial in canonical base
+
+#     Args:
+#         poly (tensor_like): coefficients of the polynomial ordered from lowest to highest power
+#     """
+#     poly_cheb = chebyshev.poly2cheb(poly)
+#     degree = len(poly_cheb) - 1
+
+#     coeffs_odd = poly_cheb[1::2]
+#     coeffs_even = poly_cheb[0::2]
+
+#     if np.allclose(coeffs_odd, np.zeros_like(coeffs_odd)):
+#         coeffs_target_func = math.array(coeffs_even)
+#     else:
+#         coeffs_target_func = math.array(coeffs_odd)
+
+#     angles, *_ = _qsp_optimization(degree=degree, coeffs_target_func=coeffs_target_func)
+
+#     return angles
 
 
 def _gqsp_u3_gate(theta, phi, lambd):
