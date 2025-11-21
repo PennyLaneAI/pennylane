@@ -44,14 +44,6 @@ class _QRAMWires:
     portL_wires: Sequence[Wires]
     portR_wires: Sequence[Wires]
 
-    def __init__(self, qram_wires, target_wires, bus_wire, dir_wires, portL_wires, portR_wires):
-        self.qram_wires = qram_wires
-        self.target_wires = target_wires
-        self.bus_wire = bus_wire
-        self.dir_wires = dir_wires
-        self.portL_wires = portL_wires
-        self.portR_wires = portR_wires
-
     # ---------- Tree helpers ----------
     def node_in_wire(self, level: int, prefix: int):
         """The input wire of node (level, prefix): root input is `bus`, else parent's L/R port."""
