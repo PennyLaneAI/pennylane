@@ -88,7 +88,7 @@ class TreeTraversalPass(ModulePass):
                 unroll_pattern = UnrollLoopPattern()
                 unroll_pattern.match_and_rewrite(op, rewriter)
 
-                IfOperatorPartitioningPass().match_and_rewrite(op, rewriter)
+                IfOperatorPartitioningPattern().match_and_rewrite(op, rewriter)
 
 
                 TreeTraversalPattern().match_and_rewrite(op, rewriter)
@@ -1537,7 +1537,7 @@ class TreeTraversalPattern(RewritePattern):
             rewriter.insert_op(op, InsertPoint.at_end(insert_block))
 
 
-class IfOperatorPartitioningPass(RewritePattern):
+class IfOperatorPartitioningPattern(RewritePattern):
     """A rewrite pattern that partitions scf.IfOps containing measurement-controlled
     operations into separate branches for each operator.
     ️"""
@@ -1646,7 +1646,7 @@ class IfOperatorPartitioningPass(RewritePattern):
         """Finds the scf.if operation(s) nested at the maximum depth inside the parent_if_op."""
         # The parent IfOp A is at depth 0, so its immediate children (B, D) are at depth 1.
         # We initialize the search list.
-        deepest_ops_with_depth: List[IfOperatorPartitioningPass.IfOpWithDepth] = [(None, 0)]
+        deepest_ops_with_depth: List[IfOperatorPartitioningPattern.IfOpWithDepth] = [(None, 0)]
 
         # Start the recursion. We look *inside* the regions of the parent_if_op.
         self._find_deepest_if_recursive(parent_if_op, 0, deepest_ops_with_depth)
