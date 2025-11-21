@@ -26,7 +26,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from typing import List, Sequence
 
-from pennylane.decomposition import resource_rep, register_resources, add_decomps
+from pennylane.decomposition import resource_rep, controlled_resource_rep, register_resources, add_decomps
 from pennylane.operation import Operation, Operator
 from pennylane.ops import CSWAP, SWAP, Hadamard, PauliZ, ctrl
 from pennylane.wires import Wires
@@ -352,8 +352,12 @@ def _bucket_brigade_qram_resources(bitstrings, num_target_wires, num_qram_wires,
         sum([1 if k == 0 else 1 << k for k in range(n_k)]) * n_k + n_k
     ) * 2 + num_target_wires * 2
     resources[resource_rep(CSWAP)] = (
-        sum([(1 << ell) for ell in range(num_qram_wires)]) * num_target_wires * 4
-        + (sum([(1 << ell) for k in range(n_k) for ell in range(k)]) * n_k * 2) * 2
+        sum([(1 << ell) for ell in range(num_qram_wires)]) * num_target_wires * 2
+        + (sum([(1 << ell) for k in range(n_k) for ell in range(k)]) * n_k * 2)
+    )
+    resources[controlled_resource_rep(base_class=SWAP, base_params={}, num_control_wires=1, num_zero_control_values=1)] = (
+        sum([(1 << ell) for ell in range(num_qram_wires)]) * num_target_wires * 2
+        + (sum([(1 << ell) for k in range(n_k) for ell in range(k)]) * n_k * 2)
     )
     resources[resource_rep(Hadamard)] += num_target_wires * 2
     for j in range(num_target_wires):
