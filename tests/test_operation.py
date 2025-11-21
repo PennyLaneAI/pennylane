@@ -1364,6 +1364,12 @@ class TestDefaultRepresentations:
         [out] = OpWithACustomName98786(0.5, wires=0).decomposition()
         qml.assert_equal(out, qml.RX(0.5, wires=0))
 
+        with qml.queuing.AnnotatedQueue() as q:
+            OpWithACustomName98786(0.5, wires=0).decomposition()
+
+        assert len(q.queue) == 1
+        qml.assert_equal(q.queue[0], qml.RX(0.5, wires=0))
+
     def test_matrix_undefined(self):
         """Tests that custom error is raised in the default matrix representation."""
         with pytest.raises(qml.operation.MatrixUndefinedError):
