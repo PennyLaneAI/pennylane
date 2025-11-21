@@ -102,7 +102,7 @@ from pennylane.templates.swapnetworks import *
 from pennylane.templates.state_preparations import *
 from pennylane.templates.subroutines import *
 from pennylane import qaoa
-from pennylane.workflow import QNode, qnode, execute, set_shots
+from pennylane.workflow import QNode, qnode, execute, set_shots, marker
 from pennylane import workflow
 
 from pennylane.transforms import (
