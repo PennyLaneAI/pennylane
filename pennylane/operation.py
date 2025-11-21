@@ -1424,7 +1424,6 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
                 *self.parameters, wires=self.wires, **self.hyperparameters
             )
         decomps = qml.list_decomps(self)
-        print(decomps)
         if not decomps:
             return self.compute_decomposition(
                 *self.parameters, wires=self.wires, **self.hyperparameters
