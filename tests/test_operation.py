@@ -616,7 +616,6 @@ class TestHasReprProperties:
         class TREWQ(qml.operation.Operator):
             num_wires = 1
 
-        print(qml.list_decomps(TREWQ))
         assert TREWQ.has_decomposition is False
         assert TREWQ(wires=0).has_decomposition is False
 
