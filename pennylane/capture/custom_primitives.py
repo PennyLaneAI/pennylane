@@ -72,11 +72,9 @@ def _make_hashable(obj: Any) -> Any:
     if isinstance(obj, list):
         return tuple(_make_hashable(item) for item in obj)
     if isinstance(obj, dict):
-        # Sort by str(key) to handle non-comparable keys (e.g., class types like ABCCaptureMeta)
-        # This ensures consistent ordering without requiring keys to implement __lt__
-        return tuple(
-            sorted(((k, _make_hashable(v)) for k, v in obj.items()), key=lambda x: str(x[0]))
-        )
+        # Python 3.7+ maintains dict insertion order, so no need to sort
+        # For the same primitive constructed the same way, keys are always in the same order
+        return tuple((k, _make_hashable(v)) for k, v in obj.items())
     return obj
 
 
