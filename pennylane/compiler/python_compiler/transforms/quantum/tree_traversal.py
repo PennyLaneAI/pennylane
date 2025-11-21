@@ -24,6 +24,7 @@ from xdsl.dialects import arith, builtin, func, memref, scf, tensor
 from xdsl.ir import Block, BlockArgument, Operation, Region, SSAValue
 from xdsl.passes import ModulePass
 from xdsl.pattern_rewriter import PatternRewriter, RewritePattern, op_type_rewrite_pattern
+from xdsl.printer import Printer
 from xdsl.rewriter import BlockInsertPoint, InsertPoint
 
 from pennylane.compiler.python_compiler import compiler_transform
@@ -57,6 +58,37 @@ def initialize_memref_with_value(dest: SSAValue, value: SSAValue, size: int | SS
     )
     return (c0_index, c1_index, for_op)
 
+
+print_everthing = True
+# print_everthing = False
+
+
+def print_mlir(op, msg="", should_print: bool = True):
+    """Print the MLIR of an operation with a message."""
+    should_print = print_everthing
+    if should_print:
+        printer = Printer()
+        print("-" * 100)
+        print(f"// Start || {msg}")
+        if isinstance(op, Region):
+            printer.print_region(op)
+        elif isinstance(op, Block):
+            printer.print_block(op)
+        elif isinstance(op, Operation):
+            printer.print_op(op)
+        print(f"\n// End {msg}")
+        print("-" * 100)
+
+
+def print_ssa_values(values, msg="SSA Values || ", should_print: bool = True):
+    """Print SSA Values"""
+    should_print = print_everthing
+    if should_print:
+        print(f"// {msg}")
+        for val in values:
+            print(f"  - {val}")
+
+
 @dataclass
 class ProgramSegment:  # pylint: disable=too-many-instance-attributes
     """A program segment and associated data."""
@@ -81,17 +113,25 @@ class TreeTraversalPass(ModulePass):
     def apply(self, _ctx: context.Context, module_op: builtin.ModuleOp) -> None:
         """Apply the tree-traversal pass to all QNode functions in the module."""
 
+        print("FDX TreeTraversalPass")
+
+        print_stuff = False
+        print_stuff = True
+        print_mlir(module_op, msg="Before Tree Traversal Pass", should_print=print_stuff)
+
         for op in module_op.ops:
             if isinstance(op, func.FuncOp) and "qnode" in op.attributes:
                 rewriter = PatternRewriter(op)
 
-                unroll_pattern = UnrollLoopPattern()
-                unroll_pattern.match_and_rewrite(op, rewriter)
+                UnrollLoopPattern().match_and_rewrite(op, rewriter)
+
+                print_mlir(op, msg="After Unroll Loop Passes", should_print=print_stuff)
 
                 IfOperatorPartitioningPattern().match_and_rewrite(op, rewriter)
-
+                print_mlir(op, msg="After If-For Passes", should_print=print_stuff)
 
                 TreeTraversalPattern().match_and_rewrite(op, rewriter)
+        print_mlir(module_op, msg="After Tree Traversal Pass", should_print=print_stuff)
 
 
 tree_traversal_pass = compiler_transform(TreeTraversalPass)
@@ -2324,10 +2364,6 @@ class UnrollLoopPattern(RewritePattern):
                 if not self.detect_mcm_in_loop_ops(nested_op):
                     continue
                 self.unroll_loop(nested_op, rewriter)
-
-    def unrolling_applied(self) -> bool:
-        """Check if unrolling was applied."""
-        return self.needs_unroll
 
     def detect_mcm_in_loop_ops(self, op: scf.ForOp) -> bool:
         """Detect if there are mid-circuit measurement operations inside ForOps."""
