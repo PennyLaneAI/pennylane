@@ -183,7 +183,7 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
             "portR_wires": portR_wires,
             "m": m,
             "n_k": n_k,
-            "bitstrings": bitstrings
+            "bitstrings": bitstrings,
         }
 
         super().__init__(wires=all_wires, id=id)
@@ -198,7 +198,11 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
         if level == 0:
             return self.hyperparameters["bus_wire"][0]
         parent = _node_index(level - 1, prefix >> 1)
-        return self.hyperparameters["portL_wires"][parent] if (prefix % 2 == 0) else self.hyperparameters["portR_wires"][parent]
+        return (
+            self.hyperparameters["portL_wires"][parent]
+            if (prefix % 2 == 0)
+            else self.hyperparameters["portR_wires"][parent]
+        )
 
     def _router(self, level: int, prefix: int):
         return self.hyperparameters["dir_wires"][_node_index(level, prefix)]
@@ -230,7 +234,14 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
         ops = []
         for k in range(self.hyperparameters["n_k"]):
             # 1) load a_k into the bus
-            ops.append(SWAP(wires=[self.hyperparameters["qram_wires"][k], self.hyperparameters["bus_wire"][0]]))
+            ops.append(
+                SWAP(
+                    wires=[
+                        self.hyperparameters["qram_wires"][k],
+                        self.hyperparameters["bus_wire"][0],
+                    ]
+                )
+            )
             # 2) route down k levels
             ops += self._route_bus_down_first_k_levels(k)
             # 3) deposit at level-k node on the active path
@@ -241,9 +252,23 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
                     # change to  in_wire later
                     parent = _node_index(k - 1, p >> 1)
                     if p % 2 == 0:
-                        ops.append(SWAP(wires=[self.hyperparameters["portL_wires"][parent], self._router(k, p)]))
+                        ops.append(
+                            SWAP(
+                                wires=[
+                                    self.hyperparameters["portL_wires"][parent],
+                                    self._router(k, p),
+                                ]
+                            )
+                        )
                     else:
-                        ops.append(SWAP(wires=[self.hyperparameters["portR_wires"][parent], self._router(k, p)]))
+                        ops.append(
+                            SWAP(
+                                wires=[
+                                    self.hyperparameters["portR_wires"][parent],
+                                    self._router(k, p),
+                                ]
+                            )
+                        )
         return ops
 
     def _unmark_routers_via_bus(self) -> list:
@@ -303,4 +328,3 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
         # 3) address unloading
         ops += self._unmark_routers_via_bus()
         return ops
-
