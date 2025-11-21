@@ -1364,8 +1364,9 @@ class TestDefaultRepresentations:
         [out] = OpWithACustomName98786(0.5, wires=0).decomposition()
         qml.assert_equal(out, qml.RX(0.5, wires=0))
 
+        op = OpWithACustomName98786(0.5, wires=0)
         with qml.queuing.AnnotatedQueue() as q:
-            OpWithACustomName98786(0.5, wires=0).decomposition()
+            op.decomposition()
 
         assert len(q.queue) == 1
         qml.assert_equal(q.queue[0], qml.RX(0.5, wires=0))
