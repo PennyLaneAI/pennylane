@@ -73,6 +73,8 @@ def _get_plxpr_unitary_to_rot():
 
     def unitary_to_rot_plxpr_to_plxpr(jaxpr, consts, targs, tkwargs, *args):
         """Function for applying the ``unitary_to_rot`` transform on plxpr."""
+        # Restore tkwargs from hashable tuple to dict
+        tkwargs = dict(tkwargs)
 
         interpreter = UnitaryToRotInterpreter(*targs, **tkwargs)
 

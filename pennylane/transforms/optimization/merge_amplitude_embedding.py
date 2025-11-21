@@ -228,7 +228,7 @@ def _get_plxpr_merge_amplitude_embedding():
     # detected across the different branches.
     @MergeAmplitudeEmbeddingInterpreter.register_primitive(cond_prim)
     def _cond_primitive(self, *invals, jaxpr_branches, consts_slices, args_slice):
-        args = invals[args_slice]
+        args = invals[slice(*args_slice)]
 
         new_jaxprs = []
         new_consts = []
@@ -250,7 +250,7 @@ def _get_plxpr_merge_amplitude_embedding():
         curr_ops_found = self.state["ops_found"]
 
         for const_slice, jaxpr in zip(consts_slices, jaxpr_branches, strict=True):
-            consts = invals[const_slice]
+            consts = invals[slice(*const_slice)]
             new_jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr, consts, *args)
 
             # Update state so far so collisions with

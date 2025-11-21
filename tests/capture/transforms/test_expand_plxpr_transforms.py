@@ -77,9 +77,9 @@ class TestExpandTransformsInterpreter:
             invals = [*inner_args, *jaxpr.consts]
             params = {
                 "inner_jaxpr": jaxpr.jaxpr,
-                "args_slice": slice(0, len(inner_args)),
-                "consts_slice": slice(len(inner_args), len(jaxpr.consts) + len(inner_args)),
-                "targs_slice": slice(len(jaxpr.consts) + len(inner_args), None),
+                "args_slice": (0, len(inner_args), None),
+                "consts_slice": (len(inner_args), len(jaxpr.consts) + len(inner_args), None),
+                "targs_slice": (len(jaxpr.consts) + len(inner_args), None, None),
                 "tkwargs": {},
                 "transform": dummy_tape_and_plxpr_transform,
             }

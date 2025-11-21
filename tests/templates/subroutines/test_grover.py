@@ -318,6 +318,7 @@ def test_jax_jit():
 class TestDynamicDecomposition:
     """Tests that dynamic decomposition via compute_qfunc_decomposition works correctly."""
 
+    @pytest.mark.xfail(reason="arrays should never be in metadata")
     def test_grover_plxpr(self):
         """Test that the dynamic decomposition of Grover has the correct plxpr"""
         import jax

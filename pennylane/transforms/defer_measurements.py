@@ -403,7 +403,7 @@ def _get_plxpr_defer_measurements():
             )
 
         conditions = get_mcm_predicates(conditions[:-1])
-        args = invals[args_slice]
+        args = invals[slice(*args_slice)]
 
         for i, (condition, jaxpr) in enumerate(zip(conditions, jaxpr_branches, strict=True)):
 
@@ -412,7 +412,7 @@ def _get_plxpr_defer_measurements():
 
                 for branch, value in condition.items():
                     # When reduce_postselected is True, some branches can be ()
-                    cur_consts = invals[consts_slices[i]]
+                    cur_consts = invals[slice(*consts_slices[i])]
                     qml.cond(value, ctrl_transform_prim.bind)(
                         *cur_consts,
                         *args,
@@ -428,6 +428,8 @@ def _get_plxpr_defer_measurements():
 
     def defer_measurements_plxpr_to_plxpr(jaxpr, consts, targs, tkwargs, *args):
         """Function for applying the ``defer_measurements`` transform on plxpr."""
+        # Restore tkwargs from hashable tuple to dict
+        tkwargs = dict(tkwargs)
 
         if not tkwargs.get("num_wires", None):
             raise ValueError(
