@@ -457,6 +457,30 @@ class TestDifferentModes:
         assert reverse.call_count == 1
         assert reversed_direct.call_count == 1
 
+    def test_automatic_mode_multiple_observables(self, mocker):
+        """Test the automatic mode dispatches the correct modes for the scenario with multiple observables."""
+        t = np.array(0.0)
+
+        dev = qml.device("default.qubit")
+
+        # setup mocks
+        standard = mocker.spy(hadamard_gradient, "_hadamard_test")
+        reverse = mocker.spy(hadamard_gradient, "_reversed_hadamard_test")
+
+        # circuit would normally dispatch the reversed method, but has an extra observable.
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.evolve(qml.X(0) @ qml.X(1) + qml.Y(2) + qml.Z(0) @ qml.Z(1), x)
+            return qml.expval(qml.Z(0) @ qml.X(1) + qml.Y(0) + qml.X(0) @ qml.Z(1)), qml.expval(
+                qml.Z(0)
+            )
+
+        qml.gradients.hadamard_grad(circuit, aux_wire=3, mode="auto")(t)
+
+        assert standard.call_count == 1
+        assert reverse.call_count == 0
+
     @pytest.mark.parametrize("mode", ["direct", "reversed-direct"])
     def test_no_available_work_wire_direct_methods(self, mode):
         """Test that direct and reversed direct work with no available work wires."""
