@@ -14,17 +14,21 @@
   [(#8461)](https://github.com/PennyLaneAI/pennylane/pull/8461)
   [(#8631)](https://github.com/PennyLaneAI/pennylane/pull/8631)
 
-* Added the Python Compiler pass to compute Mid-Circuit Measurements using the Tree-Traversal algorithm.
+* The tree-traversal MCM method (accessed with `mcm_method="tree-traversal"` when creating a QNode) is now 
+  compatible with Catalyst.
   [(#8545)](https://github.com/PennyLaneAI/pennylane/pull/8545)
-
-* Added the Python Compiler pass to compute Mid-Circuit Measurements using the Tree-Traversal algorithm.
-  [(#8545)](https://github.com/PennyLaneAI/pennylane/pull/8545)
-
+  
+  When using `mcm_method="tree-traversal"` within a qjit'd function, there are limitations to consider:
+  
+  * Postselecting and resetting qubits is not supported when performing an MCM with :func:`~.measure <qml.measure>` (i.e., the `postselect` and `reset` arguments).
+  * Statevector-based terminal measurements are not supported (e.g., :func:`~.probs` and :func:`~.state`).
+  * Multiple terminal measurements are not supported (e.g., `return qml.expval(Z(0)), qml.expval(Y(1), qml.expval(X(2)))`).
+  * Terminal measurements acting on MCM values are not supported (e.g., `return qml.expval(m1)`, where `m1` is the result of an MCM with `qml.measure`).
+  * For loops with a dynamic range are not supported.
 <h3>Improvements 🛠</h3>
 
 * Add the `PCPhaseOp` operation to the xDSL Quantum dialect.
   [(#8621)](https://github.com/PennyLaneAI/pennylane/pull/8621)
-* Added the Python Compiler pass to compute Mid-Circuit Measurements using the Tree-Traversal algorithm.
 
 * `qml.for_loop` will now fall back to a standard Python `for` loop if capturing a condensed, structured loop fails
   with program capture enabled.
