@@ -44,7 +44,8 @@
       return qml.state()
   ```
 
-  The string supplied to ``marker`` can then be used as an argument to ``level`` in ``draw`` and ``specs``, showing the cumulative result of applying transforms up to the marker:
+  The string supplied to ``marker`` can then be used as an argument to ``level`` in ``draw``
+  and ``specs``, showing the cumulative result of applying transforms up to the marker:
 
   ```pycon
   >>> print(qml.draw(circuit, level="my-level")())
