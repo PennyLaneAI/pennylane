@@ -128,7 +128,7 @@ class ResourceConfig:
             MultiRZ: {"precision": None},
             PauliRot: {"precision": None},
             SingleExcitation: {"precision": None},
-            SelectPauliRot: {"precision": None},
+            SelectPauliRot: {"precision": _DEFAULT_PRECISION},
             AliasSampling: {"precision": _DEFAULT_PRECISION},
             MPSPrep: {"precision": None},
             QROMStatePreparation: {"precision": _DEFAULT_PRECISION},
