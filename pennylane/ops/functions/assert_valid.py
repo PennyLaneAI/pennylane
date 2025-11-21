@@ -135,7 +135,7 @@ def _check_decomposition_new(op, skip_decomp_matrix_check=False):
             _test_decomposition_rule(ctrl_op, rule, skip_decomp_matrix_check)
 
 
-def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_check: bool):
+def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_check: bool = False):
     """Tests that a decomposition rule is consistent with the operator."""
 
     if not rule.is_applicable(**op.resource_params):
