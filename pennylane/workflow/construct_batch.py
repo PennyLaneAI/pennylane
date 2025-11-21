@@ -47,7 +47,8 @@ def marker(tape, level: str):
         tape (QuantumScript | QNode | TransformProgram): the object we want to dispatch the transform onto
         level (str): the label for the level.
 
-    Note that protected level names are ``"top"``, ``"user"``, ``"device"``, and ``"gradient"``.
+    Note that protected level names are ``"top"``, ``"user"``, ``"device"``, and ``"gradient"``,
+    ``"all"``, and ``"all-mlir"``.
 
     .. code-block:: python
 
@@ -114,7 +115,7 @@ def _validate_level(
 
 
 def _validate_custom_levels(program):
-    protected_options = {"top", "user", "gradient", "device"}
+    protected_options = {"top", "user", "gradient", "device", "all", "all-mlir"}
     found_levels = set()
     for t in program:
         if t.transform == marker.transform:
