@@ -458,7 +458,7 @@ class TransformContainer:  # pylint: disable=too-many-instance-attributes
 
     @property
     def pass_name(self) -> None | str:
-        """Test catalyst pass name."""
+        """The name of the corresponding Catalyst pass, if it exists."""
         return self._transform_dispatcher.pass_name
 
     @property
