@@ -102,6 +102,7 @@ class TestSelectTHC:
                 2,
                 {"algo_wires": 24, "auxiliary_wires": 73, "toffoli_gates": 425},
             ),
+            # These numbers were obtained manually for batched rotations based on the technique described in arXiv:2501.06165
             (
                 qre.THCHamiltonian(58, 160),
                 29,
@@ -164,6 +165,7 @@ class TestSelectTHC:
                 2,
                 {"algo_wires": 27, "auxiliary_wires": 74, "toffoli_gates": 430},
             ),
+            # These numbers were obtained manually for batched rotations based on the technique described in arXiv:2501.06165
             (
                 qre.THCHamiltonian(58, 160),
                 29,
