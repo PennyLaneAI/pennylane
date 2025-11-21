@@ -70,14 +70,26 @@ Without these patches, any operation creating arrays with traced dimensions woul
 with AssertionError in trace.frame.add_eqn.
 """
 
-# pylint: disable=import-outside-toplevel,too-many-arguments,redefined-outer-name
+# pylint: disable=too-many-arguments
 # pylint: disable=unused-import,no-else-return,unidiomatic-typecheck,use-dict-literal
 # pylint: disable=protected-access
 
 has_jax = True
 try:
     import jax
-except ImportError:  # pragma: no cover
+    from jax._src import config as jax_config
+    from jax._src import core, pjit, source_info_util
+    from jax._src.core import JaxprEqnContext, Var
+    from jax._src.interpreters import partial_eval as pe
+    from jax._src.interpreters.partial_eval import (
+        DynamicJaxprTracer,
+        TracingEqn,
+        compute_on,
+        xla_metadata_lib,
+    )
+    from jax._src.lax import lax
+    from packaging.version import Version
+except ModuleNotFoundError:  # pragma: no cover
     has_jax = False  # pragma: no cover
 
 
@@ -91,16 +103,6 @@ def _add_make_eqn_helper():
     Returns:
         tuple: (DynamicJaxprTrace, "make_eqn", make_eqn).
     """
-    from jax._src import config as jax_config
-    from jax._src import source_info_util
-    from jax._src.core import JaxprEqnContext, Var
-    from jax._src.interpreters import partial_eval as pe
-    from jax._src.interpreters.partial_eval import (
-        DynamicJaxprTracer,
-        TracingEqn,
-        compute_on,
-        xla_metadata_lib,
-    )
 
     def make_eqn(
         self,
@@ -175,9 +177,6 @@ def _patch_dyn_shape_staging_rule():
     Returns:
         list: List of patch tuples.
     """
-    from jax._src import core
-    from jax._src.interpreters import partial_eval as pe
-    from jax._src.lax import lax
 
     def patched_dyn_shape_staging_rule(trace, source_info, prim, out_aval, *args, **params):
         """Patched version of _dyn_shape_staging_rule using make_eqn helper."""
@@ -219,16 +218,13 @@ def _patch_pjit_staging_rule():
     Returns:
         list: List of patch tuples.
     """
-    from jax._src import config, core, pjit
-    from jax._src.interpreters import partial_eval as pe
-
     # Store the original function
     original_staging_rule = pjit.pjit_staging_rule
 
     def patched_pjit_staging_rule(trace, source_info, *args, **params):
         """Patched version of pjit_staging_rule with dynamic shape fixes."""
         # Use the original implementation for most cases
-        if not config.dynamic_shapes.value:
+        if not jax_config.dynamic_shapes.value:
             return original_staging_rule(trace, source_info, *args, **params)
 
         # Check if we're in the inline path
@@ -315,13 +311,6 @@ def get_jax_patches():
         ...     jaxpr = jax.make_jaxpr(my_function)(args)
     """
     if not has_jax:
-        return ()
-
-    from packaging.version import Version
-
-    jax_version = Version(jax.__version__)
-
-    if jax_version < Version("0.7.0"):
         return ()
 
     patches = []
