@@ -56,7 +56,7 @@ def _make_hashable(obj: Any) -> Any:
         pass
 
     # Import here to avoid circular dependency and only when needed
-    # pylint: disable=import-outside-toplevel,too-many-return-statements
+    # pylint: disable=import-outside-toplevel
     import jax
     import numpy as np
 
