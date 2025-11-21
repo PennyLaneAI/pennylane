@@ -22,9 +22,12 @@ depositing each low-order address bit into the node's direction qubit.
 Data phase routes the target qubits down to the selected leaf for each target bit,
 performs the leaf write (classical bit flip), then routes back and restores the target.
 """
+from collections import defaultdict
 from dataclasses import dataclass
 from typing import List, Sequence
 
+from pennylane import controlled_resource_rep
+from pennylane.decomposition import resource_rep
 from pennylane.operation import Operation, Operator
 from pennylane.ops import CSWAP, SWAP, Hadamard, PauliZ, ctrl
 from pennylane.wires import Wires
@@ -331,3 +334,95 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
         # 3) address unloading
         ops += self._unmark_routers_via_bus()
         return ops
+
+
+def _bucket_brigade_qram_resources(self, n_k):
+    wire_manager = self.hyperparameters["wire_manager"]
+    bus_wire = wire_manager.bus_wire
+    qram_wires = wire_manager.qram_wires
+    resources = defaultdict(int)
+    # 1) address loading
+    for k in range(n_k):
+        # 1) load a_k into the bus
+        resources[resource_rep(SWAP)] += 1
+        # 2) route down k levels
+        for ell in range(k):
+            for p in range(1 << ell):
+                in_w = wire_manager.node_in_wire(ell, p)
+                L = wire_manager.portL(ell, p)
+                # dir==1 ⇒ SWAP(in, R)
+                resources[resource_rep(CSWAP)] += 1
+                # dir==0 ⇒ SWAP(in, L)
+                resources[
+                    controlled_resource_rep(
+                        base_class=SWAP,
+                        base_params={"wires": [in_w, L]},
+                        num_control_wires=1,
+                        num_zero_control_values=1,
+                    )
+                ] += 1
+        # 3) deposit at level-k node on the active path
+        if k == 0:
+            resources[resource_rep(SWAP)] += 1
+        else:
+            for p in range(1 << k):
+                # change to  in_wire later
+                parent = _node_index(k - 1, p >> 1)
+                if p % 2 == 0:
+                    resources[resource_rep(SWAP)] += 1
+                else:
+                    resources[resource_rep(SWAP)] += 1
+    # 2) For each target bit: load→route down→leaf op→route up→restore (reuse the route bus function)
+    for j, tw in enumerate(wire_manager.target_wires):
+        resources[resource_rep(Hadamard)] += 1
+        resources[resource_rep(SWAP)] += 1
+        for ell in range(len(qram_wires)):
+            for p in range(1 << ell):
+                in_w = wire_manager.node_in_wire(ell, p)
+                L = wire_manager.portL(ell, p)
+                # dir==1 ⇒ SWAP(in, R)
+                resources[resource_rep(CSWAP)] += 1
+                # dir==0 ⇒ SWAP(in, L)
+                resources[
+                    controlled_resource_rep(
+                        base_class=SWAP,
+                        base_params={"wires": [in_w, L]},
+                        num_control_wires=1,
+                        num_zero_control_values=1,
+                    )
+                ] += 1
+        for p in range(1 << n_k):
+            bit = self.hyperparameters["bitstrings"][p][j]
+            if bit == "1":
+                resources[resource_rep(PauliZ)] += 1
+            elif bit == "0":
+                pass
+        for ell in range(len(qram_wires)):
+            for p in range(1 << ell):
+                in_w = wire_manager.node_in_wire(ell, p)
+                L = wire_manager.portL(ell, p)
+                # dir==1 ⇒ SWAP(in, R)
+                resources[resource_rep(CSWAP)] += 1
+                # dir==0 ⇒ SWAP(in, L)
+                resources[
+                    controlled_resource_rep(
+                        base_class=SWAP,
+                        base_params={"wires": [in_w, L]},
+                        num_control_wires=1,
+                        num_zero_control_values=1,
+                    )
+                ] += 1
+        resources[resource_rep(SWAP)] += 1
+        resources[resource_rep(Hadamard)] += 1
+    # 3) address unloading
+    resources[resource_rep(SWAP)] += n_k
+    resources[resource_rep(CSWAP)] += sum([(1 << ell) for ell in range(k)]) * n_k
+    resources[
+        controlled_resource_rep(
+            base_class=SWAP,
+            base_params={},
+            num_control_wires=1,
+            num_zero_control_values=1,
+        )
+    ] += sum([(1 << ell) for ell in range(k)]) * n_k
+    resources[resource_rep(SWAP)] += (1 if k == 0 else 1 << k) * n_k
