@@ -350,12 +350,15 @@
   [(#8519)](https://github.com/PennyLaneAI/pennylane/pull/8519)
   [(#8544)](https://github.com/PennyLaneAI/pennylane/pull/8544)
 
-* The decompositions for several templates have been updated to use
+* The decompositions for several templates and operators have been updated to use
   :class:`~.ops.op_math.ChangeOpBasis`, which makes their decompositions more resource efficient
-  by eliminating unnecessary controlled operations. The templates include :class:`~.PhaseAdder`,
-  :class:`~.TemporaryAND`, :class:`~.QSVT`, and :class:`~.SelectPauliRot`.
+  by eliminating unnecessary controlled operations. The operators include :class:`~.MultiRZ`, 
+  :class:`~.PauliRot`, :class:`~.IsingXX`, :class:`~.IsingYY`, :class:`~.IsingZZ`,
+  :class:`~.IsingXY`. The templates include :class:`~.PhaseAdder`, :class:`~.TemporaryAND`, 
+  :class:`~.QSVT`, and :class:`~.SelectPauliRot`.
   [(#8490)](https://github.com/PennyLaneAI/pennylane/pull/8490)
   [(#8577)](https://github.com/PennyLaneAI/pennylane/pull/8577)
+  [(#8688)](https://github.com/PennyLaneAI/pennylane/pull/8688)
 
 * The constant to convert the length unit Bohr to Angstrom in ``qml.qchem`` is updated to use scipy
   constants.
