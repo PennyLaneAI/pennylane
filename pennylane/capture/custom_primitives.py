@@ -60,13 +60,9 @@ def _make_hashable(obj: Any) -> Any:
     import jax
     import numpy as np
 
-    # Check if obj is a JAX tracer - these are already hashable, don't convert
-    # Must check before Array check since tracers can also be Array instances
     if isinstance(obj, jax.core.Tracer):
         raise ValueError("tracers should never occur in equation metadata")
 
-    # Convert arrays (JAX and NumPy) to nested tuples for hashability
-    # Must check before list check since tolist() returns lists
     if isinstance(obj, np.ndarray) or (hasattr(jax, "Array") and isinstance(obj, jax.Array)):
         raise ValueError("arrays should never be in metadata")
     if isinstance(obj, list):
