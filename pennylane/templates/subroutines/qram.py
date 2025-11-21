@@ -22,12 +22,56 @@ depositing each low-order address bit into the node's direction qubit.
 Data phase routes the target qubits down to the selected leaf for each target bit,
 performs the leaf write (classical bit flip), then routes back and restores the target.
 """
-
 from typing import List, Sequence
+
+from dataclasses import dataclass
 
 from pennylane.operation import Operation, Operator
 from pennylane.ops import CSWAP, SWAP, Hadamard, PauliZ, ctrl
 from pennylane.wires import Wires
+
+
+# -----------------------------
+# Wires Data Structure
+# -----------------------------
+@dataclass
+class _QRAMWires:
+
+    qram_wires: Sequence[Wires]
+    target_wires: Sequence[Wires]
+    bus_wires: Sequence[Wires]
+    dir_wires: Sequence[Wires]
+    portL_wires: Sequence[Wires]
+    portR_wires: Sequence[Wires]
+
+    def __init__(self, qram_wires, target_wires, bus_wire, dir_wires, portL_wires, portR_wires):
+        self.qram_wires = qram_wires
+        self.target_wires = target_wires
+        self.bus_wire = bus_wire
+        self.dir_wires = dir_wires
+        self.portL_wires = portL_wires
+        self.portR_wires = portR_wires
+
+    # ---------- Tree helpers ----------
+    def node_in_wire(self, level: int, prefix: int):
+        """The input wire of node (level, prefix): root input is `bus`, else parent's L/R port."""
+        if level == 0:
+            return self.bus_wire[0]
+        parent = _node_index(level - 1, prefix >> 1)
+        return (
+            self.portL_wires[parent]
+            if (prefix % 2 == 0)
+            else self.portR_wires[parent]
+        )
+
+    def router(self, level: int, prefix: int):
+        return self.dir_wires[_node_index(level, prefix)]
+
+    def portL(self, level: int, prefix: int):
+        return self.portL_wires[_node_index(level, prefix)]
+
+    def portR(self, level: int, prefix: int):
+        return self.portR_wires[_node_index(level, prefix)]
 
 
 # -----------------------------
@@ -174,13 +218,10 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
             + list(portR_wires)
         )
 
+        wire_manager = _QRAMWires(qram_wires, target_wires, bus_wire, dir_wires, portL_wires, portR_wires)
+
         self._hyperparameters = {
-            "qram_wires": qram_wires,
-            "target_wires": target_wires,
-            "bus_wire": bus_wire,
-            "dir_wires": dir_wires,
-            "portL_wires": portL_wires,
-            "portR_wires": portR_wires,
+            "wire_manager": wire_manager,
             "m": m,
             "n_k": n_k,
             "bitstrings": bitstrings,
@@ -192,34 +233,14 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
     def _primitive_bind_call(cls, *args, **kwargs):
         return cls._primitive.bind(*args, **kwargs)
 
-    # ---------- Tree helpers ----------
-    def _node_in_wire(self, level: int, prefix: int):
-        """The input wire of node (level, prefix): root input is `bus`, else parent's L/R port."""
-        if level == 0:
-            return self.hyperparameters["bus_wire"][0]
-        parent = _node_index(level - 1, prefix >> 1)
-        return (
-            self.hyperparameters["portL_wires"][parent]
-            if (prefix % 2 == 0)
-            else self.hyperparameters["portR_wires"][parent]
-        )
-
-    def _router(self, level: int, prefix: int):
-        return self.hyperparameters["dir_wires"][_node_index(level, prefix)]
-
-    def _portL(self, level: int, prefix: int):
-        return self.hyperparameters["portL_wires"][_node_index(level, prefix)]
-
-    def _portR(self, level: int, prefix: int):
-        return self.hyperparameters["portR_wires"][_node_index(level, prefix)]
-
     def _path_ctrls(self, i_low: int):
         """(controls, values) for the router path to leaf `i_low` (MSB-first across n_k)."""
         ctrls, vals = [], []
+        wire_manager = self.hyperparameters["wire_manager"]
         n_k = self.hyperparameters["n_k"]
         for k in range(n_k):
             prefix = i_low >> (n_k - k)
-            ctrls.append(self._router(k, prefix))
+            ctrls.append(wire_manager.router(k, prefix))
             vals.append((i_low >> (n_k - 1 - k)) & 1)
         return ctrls, vals
 
@@ -233,13 +254,14 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
           3) At node (k, path-prefix), SWAP(bus, dir[k, path-prefix])
         """
         ops = []
+        wire_manager = self.hyperparameters["wire_manager"]
         for k in range(self.hyperparameters["n_k"]):
             # 1) load a_k into the bus
             ops.append(
                 SWAP(
                     wires=[
-                        self.hyperparameters["qram_wires"][k],
-                        self.hyperparameters["bus_wire"][0],
+                        wire_manager.qram_wires[k],
+                        wire_manager.bus_wire[0],
                     ]
                 )
             )
@@ -247,7 +269,7 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
             ops += self._route_bus_down_first_k_levels(k)
             # 3) deposit at level-k node on the active path
             if k == 0:
-                ops.append(SWAP(wires=[self.hyperparameters["bus_wire"][0], self._router(0, 0)]))
+                ops.append(SWAP(wires=[wire_manager.bus_wire[0], wire_manager.router(0, 0)]))
             else:
                 for p in range(1 << k):
                     # change to  in_wire later
@@ -256,8 +278,8 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
                         ops.append(
                             SWAP(
                                 wires=[
-                                    self.hyperparameters["portL_wires"][parent],
-                                    self._router(k, p),
+                                    wire_manager.portL_wires[parent],
+                                    wire_manager.router(k, p),
                                 ]
                             )
                         )
@@ -265,8 +287,8 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
                         ops.append(
                             SWAP(
                                 wires=[
-                                    self.hyperparameters["portR_wires"][parent],
-                                    self._router(k, p),
+                                    wire_manager.portR_wires[parent],
+                                    wire_manager.router(k, p),
                                 ]
                             )
                         )
@@ -278,12 +300,13 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
     def _route_bus_down_first_k_levels(self, k_levels: int) -> list:
         """Route the bus down the first `k_levels` of the tree using dir-controlled CSWAPs."""
         ops = []
+        wire_manager = self.hyperparameters["wire_manager"]
         for ell in range(k_levels):
             for p in range(1 << ell):
-                in_w = self._node_in_wire(ell, p)
-                L = self._portL(ell, p)
-                R = self._portR(ell, p)
-                d = self._router(ell, p)
+                in_w = wire_manager.node_in_wire(ell, p)
+                L = wire_manager.portL(ell, p)
+                R = wire_manager.portR(ell, p)
+                d = wire_manager.router(ell, p)
                 # dir==1 ⇒ SWAP(in, R)
                 op0 = CSWAP(wires=[d, in_w, R])
                 ops.append(op0)
@@ -300,12 +323,13 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
     def _leaf_ops_for_bit(self, j: int) -> list:
         """Apply the leaf write for target bit index j."""
         ops = []
+        wire_manager = self.hyperparameters["wire_manager"]
         n_k = self.hyperparameters["n_k"]
         for p in range(1 << n_k):
             if p % 2 == 0:
-                target = self._portL(n_k - 1, p >> 1)
+                target = wire_manager.portL(n_k - 1, p >> 1)
             else:
-                target = self._portR(n_k - 1, p >> 1)
+                target = wire_manager.portR(n_k - 1, p >> 1)
             bit = self.hyperparameters["bitstrings"][p][j]
             if bit == "1":
                 ops.append(PauliZ(wires=target))
@@ -316,12 +340,13 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
     # ---------- Decompositions ----------
     def decomposition(self) -> List[Operator]:
         ops = []
-        bus_wire = self.hyperparameters["bus_wire"]
-        qram_wires = self.hyperparameters["qram_wires"]
+        wire_manager = self.hyperparameters["wire_manager"]
+        bus_wire = wire_manager.bus_wire
+        qram_wires = wire_manager.qram_wires
         # 1) address loading
         ops += self._mark_routers_via_bus()
         # 2) For each target bit: load→route down→leaf op→route up→restore (reuse the route bus function)
-        for j, tw in enumerate(self.hyperparameters["target_wires"]):
+        for j, tw in enumerate(wire_manager.target_wires):
             ops.append(Hadamard(wires=[tw]))
             ops.append(SWAP(wires=[tw, bus_wire[0]]))
             ops += self._route_bus_down_first_k_levels(len(qram_wires))
