@@ -356,7 +356,7 @@ def _validate_pauli_dist(pauli_dist: dict) -> bool:
                 f"The keys represent Pauli words and should be strings containing either 'X','Y' or 'Z' characters only. Got {pauli_word} : {freq}"
             )
 
-        if not (isinstance(freq, int) and (type(freq) is not bool) and (freq >= 0)):
+        if not (isinstance(freq, int) and (not isinstance(freq, bool)) and (freq >= 0)):
             raise ValueError(
                 f"The values represent frequencies and should be positive integers, got {pauli_word} : {freq}"
             )
