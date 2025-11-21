@@ -29,6 +29,8 @@ from xdsl.rewriter import BlockInsertPoint, InsertPoint
 
 from pennylane.compiler.python_compiler import compiler_transform
 from pennylane.compiler.python_compiler.dialects import quantum, stablehlo
+from pennylane.exceptions import CompileError
+
 
 
 ##############################################################################
@@ -2419,9 +2421,9 @@ class UnrollLoopPattern(RewritePattern):
         lb_found, lb_op = find_constant_bound(op.lb)
         step_found, step_op = find_constant_bound(op.step)
 
-        assert (
-            lb_found and ub_found and step_found
-        ), "UnrollLoopPattern: Cannot unroll loop, bounds or step are not constant."
+
+        if not (lb_found and ub_found and step_found):
+            raise CompileError("UnrollLoopPattern: Cannot unroll loop, bounds or step are not constant.")
 
         def check_extract_value(bound: Operation) -> int:
 
