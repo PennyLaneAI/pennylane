@@ -30,7 +30,7 @@ def test_approx_poly_degree():
         return x**2
 
     x_vec = np.array([1, 2, 3, 4, 5])
-    degree, poly, loss = approx_poly_degree(x_vec, target_func, degrees=4)
+    degree, poly, loss = approx_poly_degree(target_func, x_vec, poly_degs=4)
     assert degree == 2
     assert np.allclose(poly.coef, np.array([0, 0, 1]))
     assert np.allclose(loss, 0)
@@ -46,7 +46,7 @@ def test_approx_poly_degree_basis(basis):
 
     x_vec, e_tol = np.sort(np.random.RandomState(123).rand(10)), 1e-2
     degree, poly, loss = approx_poly_degree(
-        x_vec, target_func, basis=basis, degrees=10, error_tol=e_tol
+        target_func, x_vec, basis=basis, poly_degs=10, error_tol=e_tol
     )
 
     assert isinstance(degree, int)
@@ -70,10 +70,10 @@ def test_approx_poly_project_func():
         return 0.5 * (a + b) + 0.5 * (b - a) * x
 
     deg1, poly1, loss1 = approx_poly_degree(
-        x_vec, morse, basis="chebyshev", project_func=cheb_nodes, degrees=(3, 10)
+        morse, x_vec, basis="chebyshev", project_func=cheb_nodes, poly_degs=(3, 10)
     )
     deg2, poly2, loss2 = approx_poly_degree(
-        x_vec, morse, basis="chebyshev", project_func="gauss-lobatto", degrees=(3, 10)
+        morse, x_vec, basis="chebyshev", project_func="gauss-lobatto", poly_degs=(3, 10)
     )
 
     assert deg1 == deg2
@@ -95,7 +95,7 @@ def test_approx_poly_custom_func(loss_func):
         return poly, stats[0]
 
     deg, poly, loss = approx_poly_degree(
-        x_vec, target_func, error_tol=1e-6, fit_func=fit_func, loss_func=loss_func, degrees=10
+        target_func, x_vec, error_tol=1e-6, fit_func=fit_func, loss_func=loss_func, poly_degs=10
     )
 
     assert isinstance(deg, int) and deg < 10
