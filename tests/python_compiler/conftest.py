@@ -134,6 +134,8 @@ def _run_filecheck_qjit_impl(qjit_fn, verify=False):
     if not deps_available:
         return
 
+    program_str = qjit_fn.mlir_module.operation
+
     checks = _get_filecheck_directives(qjit_fn)
     compiler = Compiler()
     mlir_module = compiler.run(qjit_fn.mlir_module)
@@ -144,6 +146,7 @@ def _run_filecheck_qjit_impl(qjit_fn, verify=False):
         binary=False, print_generic_op_form=True, assume_verified=True
     )
     xdsl_module = parse_generic_to_xdsl_module(mod_str)
+    str_xdsl_module = str(xdsl_module)
 
     if verify:
         xdsl_module.verify()
@@ -156,7 +159,17 @@ def _run_filecheck_qjit_impl(qjit_fn, verify=False):
     )
 
     exit_code = matcher.run()
-    assert exit_code == 0, f"filecheck failed with exit code {exit_code}"
+    assert (
+        exit_code == 0
+    ), f"""
+        filecheck failed with exit code {exit_code}.
+
+        Original program string:
+        {program_str}
+
+        Parsed module:
+        {str_xdsl_module}
+    """
 
 
 @pytest.fixture(scope="function")
