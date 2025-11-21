@@ -865,6 +865,32 @@ class TestPauliMeasure:
         assert drawer.ax.texts[1].get_position() == (main_box.get_x() + main_box.get_width() / 2, 1)
         assert drawer.ax.texts[1].get_text() == "Y"
 
+    def test_pauli_measure_skip_wires(self):
+        """Tests PauliMeasure that skips over wires, make sure that the Pauli strings
+        are labeled on the measured wires as opposed to the skipped over wires."""
+
+        drawer = MPLDrawer(1, {0: 0, 1: 1, 2: 2})
+        # wire 1 is covered by the PauliMeasure box but not actually measured.
+        drawer.pauli_measure(0, "XY", [0, 2])
+
+        notch_box = drawer.ax.patches[0]
+        main_box = drawer.ax.patches[1]
+        main_box_ratio = 4 / 5
+        notch_ratio = 1 - main_box_ratio
+
+        assert main_box.get_x() == -drawer._box_length / 2 + drawer._pad
+        assert main_box.get_y() == -drawer._box_length / 2 + drawer._pad
+        assert main_box.get_width() == drawer._box_length * main_box_ratio - 2 * drawer._pad
+        assert main_box.get_height() == 2 + drawer._box_length - 2 * drawer._pad
+
+        self._verify_notch_dimensions(drawer, main_box, notch_box, notch_ratio)
+
+        assert len(drawer.ax.texts) == 2
+        assert drawer.ax.texts[0].get_position() == (main_box.get_x() + main_box.get_width() / 2, 0)
+        assert drawer.ax.texts[0].get_text() == "X"
+        assert drawer.ax.texts[1].get_position() == (main_box.get_x() + main_box.get_width() / 2, 2)
+        assert drawer.ax.texts[1].get_text() == "Y"
+
     @pytest.mark.parametrize("postselect", [0, 1])
     def test_pauli_measure_postselect(self, postselect):
         """Tests drawing a PauliMeasure with postselection."""
