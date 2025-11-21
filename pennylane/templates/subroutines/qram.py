@@ -26,7 +26,7 @@ performs the leaf write (classical bit flip), then routes back and restores the 
 from typing import List, Sequence
 
 from pennylane.operation import Operation, Operator
-from pennylane.ops import CSWAP, SWAP, Hadamard, PauliZ, ctrl
+from pennylane.ops import CSWAP, SWAP, Hadamard, PauliX, PauliZ, ctrl
 from pennylane.wires import Wires
 
 
@@ -146,9 +146,12 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
 
         qram_wires = Wires(qram_wires)
 
-        n_k = len(qram_wires)
-        if (1 << n_k) != len(bitstrings):
-            raise ValueError("len(bitstrings) must be 2^(len(qram_wires)).")
+        if not self.hyperparameters or not "k" in self.hyperparameters:
+            n_k = len(qram_wires)
+            if (1 << n_k) != len(bitstrings):
+                raise ValueError("len(bitstrings) must be 2^(len(qram_wires)).")
+        else:
+            n_k = self.hyperparameters["n_k"]
 
         target_wires = Wires(target_wires)
         if m != len(target_wires):
@@ -174,7 +177,7 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
             + list(portR_wires)
         )
 
-        self._hyperparameters = {
+        self._hyperparameters.update({
             "qram_wires": qram_wires,
             "target_wires": target_wires,
             "bus_wire": bus_wire,
@@ -184,7 +187,7 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
             "m": m,
             "n_k": n_k,
             "bitstrings": bitstrings
-        }
+        })
 
         super().__init__(wires=all_wires, id=id)
 
@@ -304,3 +307,64 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
         ops += self._unmark_routers_via_bus()
         return ops
 
+
+class SelectOnlyQRAM(BBQRAM):
+
+    def __init__(
+        self,
+        bitstrings,
+        qram_wires: Sequence[int],
+        target_wires: Sequence[int],
+        work_wires: Sequence[int],
+        select_wires: Sequence[int],
+        select_value: int | None,
+        id: str | None = None,
+    ):
+        select_wires = Wires(select_wires)
+        select_value = select_value
+
+        k = len(select_wires)
+        n_k = len(qram_wires)
+        n = k + n_k
+        if (1 << n) != len(bitstrings):
+            raise ValueError("len(bitstrings) must be 2^(len(select_wires)+len(qram_wires)).")
+
+        self._hyperparameters = {
+            "n_k": n_k,
+            "k": k,
+            "select_wires": select_wires,
+            "select_value": select_value,
+        }
+
+        super().__init__(bitstrings, qram_wires, target_wires, work_wires, id)
+
+    # ---------- Select controls----------
+    def _select_ctrls(self, s: int):
+        k = self.hyperparameters["k"]
+        if k == 0:
+            return [], []
+        ctrls = list(self.hyperparameters["select_wires"])
+        vals = [(s >> (k - 1 - j)) & 1 for j in range(k)]
+        return ctrls, vals
+
+    # ---------- Decompositions ----------
+    def decomposition(self) -> list:
+        # Degenerate case: n_k == 0, no routers; only select-controlled flips on the bus.
+        ops = []
+        select_value = self.hyperparameters["select_value"]
+        bus_wire = self.hyperparameters["bus_wire"]
+        for j, tw in enumerate(self.hyperparameters["target_wires"]):
+            ops.append(SWAP(wires=[tw, bus_wire[0]]))
+            s_range = [select_value] if select_value is not None else range(1 << self.hyperparameters["k"])
+            for s in s_range:
+                if self.hyperparameters["bitstrings"][s][j] != "1":
+                    continue
+                sel_ctrls, sel_vals = (
+                    self._select_ctrls(s) if select_value is None else ([], [])
+                )
+                op = PauliX(wires=bus_wire[0])
+                ops.append(
+                    ctrl(op, control=sel_ctrls, control_values=sel_vals) if sel_ctrls else op
+                )
+            ops.append(SWAP(wires=[tw, bus_wire[0]]))
+            return ops
