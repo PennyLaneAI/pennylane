@@ -40,7 +40,7 @@ def null_postprocessing(results):
 
 # pylint: disable=unused-argument
 @transform
-def marker(tape, level):
+def marker(tape, level: str):
     """Mark a location in a transform program for easy access with inspectability.
 
     Args:
