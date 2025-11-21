@@ -24,7 +24,8 @@
   by integer amounts.
   [(#8684)](https://github.com/PennyLaneAI/pennylane/pull/8684)
   
-  The :func:`~.marker` function works like a transform in PennyLane, and can be deployed as a decorator on top of QNodes:
+  The :func:`~.marker` function works like a transform in PennyLane, and can be deployed as
+  a decorator on top of QNodes:
   
   ```
   from functools import partial
