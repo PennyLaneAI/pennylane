@@ -141,39 +141,54 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
         m_set = {len(s) for s in bitstrings}
         if len(m_set) != 1:
             raise ValueError("All bitstrings must have equal length.")
-        self.m = next(iter(m_set))
-        self.bitstrings = list(bitstrings)
+        m = next(iter(m_set))
+        bitstrings = list(bitstrings)
 
-        self.qram_wires = Wires(qram_wires)
+        qram_wires = Wires(qram_wires)
 
-        if not hasattr(self, "k"):
-            self.n_k = len(self.qram_wires)
-            if (1 << self.n_k) != len(self.bitstrings):
+        if not self.hyperparameters or not "k" in self.hyperparameters:
+            n_k = len(qram_wires)
+            if (1 << n_k) != len(bitstrings):
                 raise ValueError("len(bitstrings) must be 2^(len(qram_wires)).")
+        else:
+            n_k = self.hyperparameters["n_k"]
 
-        self.target_wires = Wires(target_wires)
-        if self.m != len(self.target_wires):
+        target_wires = Wires(target_wires)
+        if m != len(target_wires):
             raise ValueError("len(target_wires) must equal bitstring length.")
 
-        self.bus_wire = Wires(work_wires[0])
+        bus_wire = Wires(work_wires[0])
         divider = len(work_wires[1:]) // 3
-        self.dir_wires = Wires(work_wires[1 : 1 + divider])
-        self.portL_wires = Wires(work_wires[1 + divider : 1 + divider * 2])
-        self.portR_wires = Wires(work_wires[1 + divider * 2 : 1 + divider * 3])
+        dir_wires = Wires(work_wires[1 : 1 + divider])
+        portL_wires = Wires(work_wires[1 + divider : 1 + divider * 2])
+        portR_wires = Wires(work_wires[1 + divider * 2 : 1 + divider * 3])
 
-        expected_nodes = (1 << self.n_k) - 1 if self.n_k > 0 else 0
+        expected_nodes = (1 << n_k) - 1 if n_k > 0 else 0
 
         if len(work_wires) != 1 + 3 * expected_nodes:
             raise ValueError(f"work_wires must have length {1 + 3 * expected_nodes}.")
 
         all_wires = (
-            list(self.qram_wires)
-            + list(self.target_wires)
-            + list(self.bus_wire)
-            + list(self.dir_wires)
-            + list(self.portL_wires)
-            + list(self.portR_wires)
+            list(qram_wires)
+            + list(target_wires)
+            + list(bus_wire)
+            + list(dir_wires)
+            + list(portL_wires)
+            + list(portR_wires)
         )
+
+        self._hyperparameters.update({
+            "qram_wires": qram_wires,
+            "target_wires": target_wires,
+            "bus_wire": bus_wire,
+            "dir_wires": dir_wires,
+            "portL_wires": portL_wires,
+            "portR_wires": portR_wires,
+            "m": m,
+            "n_k": n_k,
+            "bitstrings": bitstrings
+        })
+
         super().__init__(wires=all_wires, id=id)
 
     @classmethod
@@ -184,26 +199,26 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
     def _node_in_wire(self, level: int, prefix: int):
         """The input wire of node (level, prefix): root input is `bus`, else parent's L/R port."""
         if level == 0:
-            return self.bus_wire[0]
+            return self.hyperparameters["bus_wire"][0]
         parent = _node_index(level - 1, prefix >> 1)
-        return self.portL_wires[parent] if (prefix % 2 == 0) else self.portR_wires[parent]
+        return self.hyperparameters["portL_wires"][parent] if (prefix % 2 == 0) else self.hyperparameters["portR_wires"][parent]
 
     def _router(self, level: int, prefix: int):
-        return self.dir_wires[_node_index(level, prefix)]
+        return self.hyperparameters["dir_wires"][_node_index(level, prefix)]
 
     def _portL(self, level: int, prefix: int):
-        return self.portL_wires[_node_index(level, prefix)]
+        return self.hyperparameters["portL_wires"][_node_index(level, prefix)]
 
     def _portR(self, level: int, prefix: int):
-        return self.portR_wires[_node_index(level, prefix)]
+        return self.hyperparameters["portR_wires"][_node_index(level, prefix)]
 
     def _path_ctrls(self, i_low: int):
         """(controls, values) for the router path to leaf `i_low` (MSB-first across n_k)."""
         ctrls, vals = [], []
-        for k in range(self.n_k):
-            prefix = i_low >> (self.n_k - k)
+        for k in range(self.hyperparameters["n_k"]):
+            prefix = i_low >> (self.hyperparameters["n_k"] - k)
             ctrls.append(self._router(k, prefix))
-            vals.append((i_low >> (self.n_k - 1 - k)) & 1)
+            vals.append((i_low >> (self.hyperparameters["n_k"] - 1 - k)) & 1)
         return ctrls, vals
 
     # ---------- Address Loading via CSWAP routing ----------
@@ -216,22 +231,22 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
           3) At node (k, path-prefix), SWAP(bus, dir[k, path-prefix])
         """
         ops = []
-        for k in range(self.n_k):
+        for k in range(self.hyperparameters["n_k"]):
             # 1) load a_k into the bus
-            ops.append(SWAP(wires=[self.qram_wires[k], self.bus_wire[0]]))
+            ops.append(SWAP(wires=[self.hyperparameters["qram_wires"][k], self.hyperparameters["bus_wire"][0]]))
             # 2) route down k levels
             ops += self._route_bus_down_first_k_levels(k)
             # 3) deposit at level-k node on the active path
             if k == 0:
-                ops.append(SWAP(wires=[self.bus_wire[0], self._router(0, 0)]))
+                ops.append(SWAP(wires=[self.hyperparameters["bus_wire"][0], self._router(0, 0)]))
             else:
                 for p in range(1 << k):
                     # change to  in_wire later
                     parent = _node_index(k - 1, p >> 1)
                     if p % 2 == 0:
-                        ops.append(SWAP(wires=[self.portL_wires[parent], self._router(k, p)]))
+                        ops.append(SWAP(wires=[self.hyperparameters["portL_wires"][parent], self._router(k, p)]))
                     else:
-                        ops.append(SWAP(wires=[self.portR_wires[parent], self._router(k, p)]))
+                        ops.append(SWAP(wires=[self.hyperparameters["portR_wires"][parent], self._router(k, p)]))
         return ops
 
     def _unmark_routers_via_bus(self) -> list:
@@ -262,12 +277,12 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
     def _leaf_ops_for_bit(self, j: int) -> list:
         """Apply the leaf write for target bit index j."""
         ops = []
-        for p in range(1 << self.n_k):
+        for p in range(1 << self.hyperparameters["n_k"]):
             if p % 2 == 0:
-                target = self._portL(self.n_k - 1, p >> 1)
+                target = self._portL(self.hyperparameters["n_k"] - 1, p >> 1)
             else:
-                target = self._portR(self.n_k - 1, p >> 1)
-            bit = self.bitstrings[p][j]
+                target = self._portR(self.hyperparameters["n_k"] - 1, p >> 1)
+            bit = self.hyperparameters["bitstrings"][p][j]
             if bit == "1":
                 ops.append(PauliZ(wires=target))
             elif bit == "0":
@@ -280,13 +295,13 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
         # 1) address loading
         ops += self._mark_routers_via_bus()
         # 2) For each target bit: load→route down→leaf op→route up→restore (reuse the route bus function)
-        for j, tw in enumerate(self.target_wires):
+        for j, tw in enumerate(self.hyperparameters["target_wires"]):
             ops.append(Hadamard(wires=[tw]))
-            ops.append(SWAP(wires=[tw, self.bus_wire[0]]))
-            ops += self._route_bus_down_first_k_levels(len(self.qram_wires))
+            ops.append(SWAP(wires=[tw, self.hyperparameters["bus_wire"][0]]))
+            ops += self._route_bus_down_first_k_levels(len(self.hyperparameters["qram_wires"]))
             ops += self._leaf_ops_for_bit(j)
-            ops += self._route_bus_up_first_k_levels(len(self.qram_wires))
-            ops.append(SWAP(wires=[tw, self.bus_wire[0]]))
+            ops += self._route_bus_up_first_k_levels(len(self.hyperparameters["qram_wires"]))
+            ops.append(SWAP(wires=[tw, self.hyperparameters["bus_wire"][0]]))
             ops.append(Hadamard(wires=[tw]))
         # 3) address unloading
         ops += self._unmark_routers_via_bus()
@@ -305,76 +320,51 @@ class SelectOnlyQRAM(BBQRAM):
         select_value: int | None,
         id: str | None = None,
     ):
-        self.select_wires = Wires(select_wires)
-        self.select_value = select_value
+        select_wires = Wires(select_wires)
+        select_value = select_value
 
-        self.k = len(self.select_wires)
-        self.n_k = len(qram_wires)
-        self.n = self.k + self.n_k
-        if (1 << self.n) != len(bitstrings):
+        k = len(select_wires)
+        n_k = len(qram_wires)
+        n = k + n_k
+        if (1 << n) != len(bitstrings):
             raise ValueError("len(bitstrings) must be 2^(len(select_wires)+len(qram_wires)).")
+
+        self._hyperparameters = {
+            "n_k": n_k,
+            "k": k,
+            "select_wires": select_wires,
+            "select_value": select_value,
+        }
 
         super().__init__(bitstrings, qram_wires, target_wires, work_wires, id)
 
     # ---------- Select controls----------
     def _select_ctrls(self, s: int):
-        if self.k == 0:
+        k = self.hyperparameters["k"]
+        if k == 0:
             return [], []
-        ctrls = list(self.select_wires)
-        vals = [(s >> (self.k - 1 - j)) & 1 for j in range(self.k)]
+        ctrls = list(self.hyperparameters["select_wires"])
+        vals = [(s >> (k - 1 - j)) & 1 for j in range(k)]
         return ctrls, vals
 
     # ---------- Decompositions ----------
     def decomposition(self) -> list:
         # Degenerate case: n_k == 0, no routers; only select-controlled flips on the bus.
         ops = []
-        for j, tw in enumerate(self.target_wires):
-            ops.append(SWAP(wires=[tw, self.bus_wire[0]]))
-            s_range = [self.select_value] if self.select_value is not None else range(1 << self.k)
+        select_value = self.hyperparameters["select_value"]
+        bus_wire = self.hyperparameters["bus_wire"]
+        for j, tw in enumerate(self.hyperparameters["target_wires"]):
+            ops.append(SWAP(wires=[tw, bus_wire[0]]))
+            s_range = [select_value] if select_value is not None else range(1 << self.hyperparameters["k"])
             for s in s_range:
-                if self.bitstrings[s][j] != "1":
+                if self.hyperparameters["bitstrings"][s][j] != "1":
                     continue
                 sel_ctrls, sel_vals = (
-                    self._select_ctrls(s) if self.select_value is None else ([], [])
+                    self._select_ctrls(s) if select_value is None else ([], [])
                 )
-                op = PauliX(wires=self.bus_wire[0])
+                op = PauliX(wires=bus_wire[0])
                 ops.append(
                     ctrl(op, control=sel_ctrls, control_values=sel_vals) if sel_ctrls else op
                 )
-            ops.append(SWAP(wires=[tw, self.bus_wire[0]]))
+            ops.append(SWAP(wires=[tw, bus_wire[0]]))
             return ops
-
-
-# Functional wrappers
-def bucket_brigade_qram(
-    bitstrings: Sequence[str],
-    qram_wires: Sequence[int],
-    target_wires: Sequence[int],
-    work_wires: Sequence[int],
-):
-    """Functional wrapper for BBQRAM."""
-    return BBQRAM(
-        bitstrings=bitstrings,
-        qram_wires=qram_wires,
-        target_wires=target_wires,
-        work_wires=work_wires,
-    )
-
-
-def select_only_qram(
-    bitstrings: Sequence[str],
-    qram_wires: Sequence[int],
-    target_wires: Sequence[int],
-    work_wires: Sequence[int],
-    select_wires: Sequence[int],
-    select_value: int | None,
-):
-    """Functional wrapper for SelectOnlyQRAM."""
-    return SelectOnlyQRAM(
-        bitstrings=bitstrings,
-        qram_wires=qram_wires,
-        target_wires=target_wires,
-        work_wires=work_wires,
-        select_wires=select_wires,
-        select_value=select_value,
-    )
