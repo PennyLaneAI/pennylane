@@ -70,7 +70,7 @@ Without these patches, any operation creating arrays with traced dimensions woul
 with AssertionError in trace.frame.add_eqn.
 """
 
-# pylint: too-many-arguments,redefined-outer-name
+# pylint: disable=too-many-arguments
 # pylint: disable=unused-import,no-else-return,unidiomatic-typecheck,use-dict-literal
 # pylint: disable=protected-access
 
