@@ -18,9 +18,11 @@ import re
 
 import numpy as np
 import pytest
+from pennylane.decomposition import list_decomps
 
 from pennylane import device, qnode
 from pennylane.measurements import probs
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates import BasisEmbedding
 from pennylane.templates.subroutines.qram import BBQRAM
 
@@ -169,3 +171,63 @@ def test_bb_quantum(
 def test_raises(params, error, match):
     with pytest.raises(error, match=re.escape(match)):
         BBQRAM(*params)
+
+
+@pytest.mark.parametrize(
+    (
+        "bitstrings",
+        "qram_wires",
+        "target_wires",
+        "bus",
+        "dir_wires",
+        "portL_wires",
+        "portR_wires",
+    ),
+    [
+        (
+            ["010", "111", "110", "000"],
+            [0, 1],
+            [2, 3, 4],
+            5,
+            [6, 7, 8],
+            [9, 10, 11],
+            [12, 13, 14],
+        ),
+        (
+            ["010", "111", "110", "000"],
+            [0, 1],
+            [2, 3, 4],
+            5,
+            [11, 10, 9],
+            [6, 7, 8],
+            [12, 13, 14],
+        ),
+        (
+            ["010", "111", "110", "000"],
+            [0, 1],
+            [2, 3, 4],
+            5,
+            [6, 7, 8],
+            [12, 13, 14],
+            [9, 10, 11],
+        ),
+    ],
+)
+def test_decomposition_new(
+    bitstrings,
+    qram_wires,
+    target_wires,
+    bus,
+    dir_wires,
+    portL_wires,
+    portR_wires,
+):  # pylint: disable=too-many-arguments
+    op = BBQRAM(
+        bitstrings,
+        qram_wires,
+        target_wires,
+        [bus] + dir_wires + portL_wires + portR_wires,
+    )
+
+    for rule in list_decomps(BBQRAM):
+        _test_decomposition_rule(op, rule)

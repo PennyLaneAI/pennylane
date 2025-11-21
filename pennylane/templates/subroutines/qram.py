@@ -168,8 +168,8 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
         wire_manager = self.hyperparameters["wire_manager"]
         return {
             "bitstrings": self.hyperparameters["bitstrings"],
-            "num_target_wires": wire_manager.target_wires,
-            "num_qram_wires": wire_manager.qram_wires,
+            "num_target_wires": len(wire_manager.target_wires),
+            "num_qram_wires": len(wire_manager.qram_wires),
             "n_k": self.hyperparameters["n_k"],
         }
 
@@ -225,7 +225,6 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
 
         self._hyperparameters = {
             "wire_manager": wire_manager,
-            "m": m,
             "n_k": n_k,
             "bitstrings": bitstrings,
         }
@@ -350,7 +349,7 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
 def _bucket_brigade_qram_resources(bitstrings, num_target_wires, num_qram_wires, n_k):
     resources = defaultdict(int)
     resources[resource_rep(SWAP)] = (
-        sum([1 if k == 0 else 1 << k] for k in range(n_k)) * n_k + n_k
+        sum([1 if k == 0 else 1 << k for k in range(n_k)]) * n_k + n_k
     ) * 2 + num_target_wires * 2
     resources[resource_rep(CSWAP)] = (
         sum([(1 << ell) for ell in range(num_qram_wires)]) * num_target_wires * 4
@@ -360,6 +359,7 @@ def _bucket_brigade_qram_resources(bitstrings, num_target_wires, num_qram_wires,
     for j in range(num_target_wires):
         for p in range(1 << n_k):
             resources[resource_rep(PauliZ)] += 1 if bool(bitstrings[p][j]) else 0
+    return resources
 
 
 def _mark_routers_via_bus_qfunc(wire_manager, n_k):
@@ -439,7 +439,7 @@ def _route_bus_down_first_k_levels_qfunc(wire_manager, k_levels):
 def _route_bus_up_first_k_levels_qfunc(wire_manager, k_levels):
     """Route the bus up the first `k_levels` of the tree using dir-controlled CSWAPs."""
     for ell in range(k_levels - 1, -1, -1):
-        for p in range(1 << ell - 1, -1, -1):
+        for p in range((1 << ell) - 1, -1, -1):
             in_w = wire_manager.node_in_wire(ell, p)
             L = wire_manager.portL(ell, p)
             R = wire_manager.portR(ell, p)
@@ -467,7 +467,7 @@ def _leaf_ops_for_bit_qfunc(wire_manager, bitstrings, n_k, j):
 
 
 @register_resources(_bucket_brigade_qram_resources)
-def _bucket_brigade_qram_decomposition(wire_manager, bitstrings, n_k):
+def _bucket_brigade_qram_decomposition(wires, wire_manager, bitstrings, n_k):  # pylint: disable=unused-argument
     bus_wire = wire_manager.bus_wire
     qram_wires = wire_manager.qram_wires
     # 1) address loading
