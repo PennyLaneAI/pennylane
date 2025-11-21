@@ -147,7 +147,9 @@ class TestTemporaryAND:
         @partial(
             qml.transforms.decompose,
             gate_set=gate_set,
-            fixed_decomps={qml.Select: qml.templates.subroutines.select._select_decomp_unary},
+            fixed_decomps={
+                qml.Select: qml.templates.subroutines.select._select_decomp_unary
+            },  # pylint: disable=protected-access
         )
         def circuit():
             ops = [qml.Z(2) for _ in range(4)]
