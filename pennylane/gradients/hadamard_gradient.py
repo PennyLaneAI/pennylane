@@ -26,6 +26,7 @@ from pennylane.devices.preprocess import decompose
 from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.measurements import ProbabilityMP, expval
 from pennylane.operation import Operator
+from pennylane.ops import Sum
 from pennylane.pauli import PauliWord, pauli_decompose
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import split_to_single_terms
@@ -68,7 +69,7 @@ def _expand_transform_hadamard(
     argnum=None,
     aux_wire=None,
     device_wires=None,
-    mode: Literal["standard", "reversed", "direct", "reversed-direct"] = "standard",
+    mode: Literal["standard", "reversed", "direct", "reversed-direct", "auto"] = "auto",
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Expand function to be applied before hadamard gradient."""
     batch, postprocessing = decompose(
@@ -102,7 +103,7 @@ def hadamard_grad(
     argnum=None,
     aux_wire=None,
     device_wires=None,
-    mode: Literal["standard", "reversed", "direct", "reversed-direct"] = "standard",
+    mode: Literal["standard", "reversed", "direct", "reversed-direct", "auto"] = "auto",
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""Transform a circuit to compute the Hadamard test gradient of all gates
     with respect to their inputs.
@@ -119,8 +120,8 @@ def hadamard_grad(
         device_wires (pennylane.wires.Wires): Wires of the device that are going to be used for the
             gradient. Facilitates finding a default for ``aux_wire`` if ``aux_wire`` is ``None``.
         mode (str): Specifies the gradient computation mode. Accepted values are
-            ``"standard"``, ``"reversed"``, ``"direct"``, and ``"reversed-direct"``. The default
-            is ``"standard"``.
+            ``"standard"``, ``"reversed"``, ``"direct"``, ``"reversed-direct"``, or ``"auto"``. The default
+            is ``"auto"``.
 
     Returns:
         qnode (QNode) or tuple[List[QuantumTape], function]:
@@ -362,6 +363,7 @@ def hadamard_grad(
         "reversed": ("Reversed hadamard test", _reversed_hadamard_test),
         "direct": ("Direct hadamard test", _direct_hadamard_test),
         "reversed-direct": ("Reversed direct hadamard test", _reversed_direct_hadamard_test),
+        "auto": ("Quantum automatic differentiation", _quantum_automatic_differentiation),
     }
     try:
         transform_name, gradient_method = modes[mode]
@@ -392,7 +394,9 @@ def hadamard_grad(
     # unless using direct or reversed-direct modes
 
     aux_wire = (
-        _get_aux_wire(aux_wire, tape, device_wires) if mode in ["standard", "reversed"] else None
+        _get_aux_wire(aux_wire, tape, device_wires)
+        if mode in ["standard", "reversed"] or (mode == "auto" and aux_wire is not None)
+        else None
     )
 
     g_tapes = []
@@ -535,6 +539,57 @@ def _reversed_direct_hadamard_test(tape, trainable_param_idx, aux_wire) -> tuple
         new_coeffs.append(1 / 2 * coeffs[idx])
         new_coeffs.append(-1 / 2 * coeffs[idx])
     return new_batch, new_coeffs
+
+
+def _quantum_automatic_differentiation(tape, trainable_param_idx, aux_wire) -> tuple[list, list]:
+
+    # We check if we have a work wire -> direct or standard differentiation.
+    # We also check if we are doing forward or reversed (switch the generator with the measured op) based how many
+    # combinations there are. Depends on the combinations of expectations and terms in the Hamiltonian, for example.
+    # i.e. if the terms in the Hamiltonian are on different wires we can measure them at the same time, but still need
+    # different circuits for the controls, can refer to the hamiltonian’s "grouping indices" list: its length gives
+    # the number of shots need for the expectations. See Table III in https://arxiv.org/pdf/2408.05406 for exact
+    # formulas.
+    trainable_op, _, _ = tape.get_operation(trainable_param_idx)
+    _, generators = _get_pauli_generators(trainable_op)
+
+    observables = []
+    for m in tape.measurements:
+        _, obs = _get_pauli_terms(m.obs)
+        observables += obs
+
+    observables = list(set(observables))
+
+    def _count_groupings(paulis):
+        op = Sum(*paulis)
+        op.compute_grouping()
+        return len(op.grouping_indices)
+
+    expectations_groupings = _count_groupings(generators)
+    observables_groupings = _count_groupings(observables)
+
+    direct = not aux_wire
+    standard = observables_groupings * len(generators) <= expectations_groupings * len(observables)
+
+    if len(tape.measurements) > 1:
+        standard = True
+
+    # Logic Table
+    # Direct (No Aux) | Standard Order | Function
+    # ----------------|----------------|---------
+    # True            | True           | _direct_hadamard_test
+    # True            | False          | _reversed_direct_hadamard_test
+    # False           | True           | _hadamard_test
+    # False           | False          | _reversed_hadamard_test
+
+    if direct:
+        if standard:
+            return _direct_hadamard_test(tape, trainable_param_idx, aux_wire)
+        return _reversed_direct_hadamard_test(tape, trainable_param_idx, aux_wire)
+
+    if standard:
+        return _hadamard_test(tape, trainable_param_idx, aux_wire)
+    return _reversed_hadamard_test(tape, trainable_param_idx, aux_wire)
 
 
 def _new_measurement(mp, aux_wire, all_wires: Wires):
