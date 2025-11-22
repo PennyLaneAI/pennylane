@@ -115,6 +115,11 @@
   work wire and :class:`pennylane.TemporaryAND` operators to reduce the resources needed.
   [(#8549)](https://github.com/PennyLaneAI/pennylane/pull/8549)
 
+* The :func:`~pennylane.pauli_decompose` now supports decomposing scipy's sparse matrices,
+  allowing for efficient decomposition of large matrices that cannot fit in memory when written as
+  dense arrays.
+  [(#8612)](https://github.com/PennyLaneAI/pennylane/pull/8612)
+
 * The graph-based decomposition system now supports decomposition rules that contains mid-circuit measurements.
   [(#8079)](https://github.com/PennyLaneAI/pennylane/pull/8079)
 
@@ -471,6 +476,7 @@ Marcus Edwards,
 Lillian Frederiksen,
 Sengthai Heng,
 Soran Jahangiri,
+Jacob Kitchen,
 Christina Lee,
 Joseph Lee,
 Gabriela Sanchez Diaz,
