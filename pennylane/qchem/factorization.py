@@ -464,7 +464,7 @@ def _double_factorization_compressed(
         params = (
             {"X": jnp.zeros((1, norb, norb)), "Z": jnp.zeros((1, norb, norb))}
             if init_params is None
-            else {"X": init_params["X"][fidx][None, :], "Z": init_params["X"][fidx][None, :]}
+            else {"X": init_params["X"][fidx][None, :], "Z": init_params["Z"][fidx][None, :]}
         )
         opt_state = optimizer.init(params)
 
