@@ -308,17 +308,17 @@ class CondCallable:
             conditions.append(pred)
             if fn is None:
                 fn = _empty_return_fn
-            f = FlatFn(functools.partial(fn, **kwargs))
+            f = fn if isinstance(fn, FlatFn) else FlatFn(fn)
             if jax.config.jax_dynamic_shapes:
                 f = _add_abstract_shapes(f)
-            jaxpr = jax.make_jaxpr(f, abstracted_axes=abstracted_axes)(*args)
+            jaxpr = jax.make_jaxpr(f, abstracted_axes=abstracted_axes)(*args, **kwargs)
             jaxpr_branches.append(jaxpr.jaxpr)
             consts_slices.append(slice(end_const_ind, end_const_ind + len(jaxpr.consts)))
             consts += jaxpr.consts
             end_const_ind += len(jaxpr.consts)
 
         _validate_jaxpr_returns(jaxpr_branches, self.otherwise_fn)
-        flat_args, _ = jax.tree_util.tree_flatten(args)
+        flat_args, _ = jax.tree_util.tree_flatten((args, kwargs))
         results = cond_prim.bind(
             *conditions,
             *consts,
