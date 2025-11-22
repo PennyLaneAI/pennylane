@@ -25,8 +25,6 @@ pytestmark = pytest.mark.external
 
 xdsl = pytest.importorskip("xdsl")
 catalyst = pytest.importorskip("catalyst")
-from catalyst.passes import xdsl_plugin
-
 import pennylane as qml
 from pennylane.compiler.python_compiler.transforms import (
     MeasurementsFromSamplesPass,
@@ -551,10 +549,7 @@ class TestMeasurementsFromSamplesIntegration:
             return mp(obs(wires=0))
 
         assert expected_res == circuit_ref(), "Sanity check failed, is expected_res correct?"
-        circuit_compiled = qml.qjit(
-            measurements_from_samples_pass(circuit_ref),
-            pass_plugins=[xdsl_plugin.getXDSLPluginAbsolutePath()],
-        )
+        circuit_compiled = qml.qjit(measurements_from_samples_pass(circuit_ref))
 
         assert expected_res == circuit_compiled()
 
@@ -583,10 +578,7 @@ class TestMeasurementsFromSamplesIntegration:
         assert np.array_equal(
             expected_res, circuit_ref()
         ), "Sanity check failed, is expected_res correct?"
-        circuit_compiled = qml.qjit(
-            measurements_from_samples_pass(circuit_ref),
-            pass_plugins=[xdsl_plugin.getXDSLPluginAbsolutePath()],
-        )
+        circuit_compiled = qml.qjit(measurements_from_samples_pass(circuit_ref))
 
         assert np.array_equal(expected_res, circuit_compiled())
 
@@ -621,10 +613,7 @@ class TestMeasurementsFromSamplesIntegration:
             expected_res, circuit_ref()
         ), "Sanity check failed, is expected_res correct?"
 
-        circuit_compiled = qml.qjit(
-            measurements_from_samples_pass(circuit_ref),
-            pass_plugins=[xdsl_plugin.getXDSLPluginAbsolutePath()],
-        )
+        circuit_compiled = qml.qjit(measurements_from_samples_pass(circuit_ref))
 
         assert np.array_equal(expected_res, _counts_catalyst_to_pl(*circuit_compiled()))
 
@@ -651,10 +640,7 @@ class TestMeasurementsFromSamplesIntegration:
             initial_op(wires=0)
             return qml.sample(wires=0)
 
-        circuit_compiled = qml.qjit(
-            measurements_from_samples_pass(circuit_ref),
-            pass_plugins=[xdsl_plugin.getXDSLPluginAbsolutePath()],
-        )
+        circuit_compiled = qml.qjit(measurements_from_samples_pass(circuit_ref))
 
         expected_res = expected_res_base * np.ones(shape=(shots, 1), dtype=int)
 
@@ -695,7 +681,6 @@ class TestMeasurementsFromSamplesIntegration:
         assert expected_res == circuit_ref(), "Sanity check failed, is expected_res correct?"
         circuit_compiled = qml.qjit(
             measurements_from_samples_pass(circuit_ref),
-            pass_plugins=[xdsl_plugin.getXDSLPluginAbsolutePath()],
         )
 
         assert expected_res == circuit_compiled()
@@ -736,10 +721,7 @@ class TestMeasurementsFromSamplesIntegration:
 
         assert expected_res == circuit_ref(), "Sanity check failed, is expected_res correct?"
 
-        circuit_compiled = qml.qjit(
-            measurements_from_samples_pass(circuit_ref),
-            pass_plugins=[xdsl_plugin.getXDSLPluginAbsolutePath()],
-        )
+        circuit_compiled = qml.qjit(measurements_from_samples_pass(circuit_ref))
 
         assert expected_res == circuit_compiled()
 
@@ -770,10 +752,7 @@ class TestMeasurementsFromSamplesIntegration:
         assert np.array_equal(
             expected_res, circuit_ref()
         ), "Sanity check failed, is expected_res correct?"
-        circuit_compiled = qml.qjit(
-            measurements_from_samples_pass(circuit_ref),
-            pass_plugins=[xdsl_plugin.getXDSLPluginAbsolutePath()],
-        )
+        circuit_compiled = qml.qjit(measurements_from_samples_pass(circuit_ref))
 
         assert np.array_equal(expected_res, circuit_compiled())
 
@@ -804,10 +783,7 @@ class TestMeasurementsFromSamplesIntegration:
         assert np.array_equal(
             expected_res, circuit_ref()
         ), "Sanity check failed, is expected_res correct?"
-        circuit_compiled = qml.qjit(
-            measurements_from_samples_pass(circuit_ref),
-            pass_plugins=[xdsl_plugin.getXDSLPluginAbsolutePath()],
-        )
+        circuit_compiled = qml.qjit(measurements_from_samples_pass(circuit_ref))
 
         assert np.array_equal(expected_res, circuit_compiled())
 
@@ -820,7 +796,7 @@ class TestMeasurementsFromSamplesIntegration:
         This use case is not currently supported.
         """
 
-        @qml.qjit(pass_plugins=[xdsl_plugin.getXDSLPluginAbsolutePath()])
+        @qml.qjit
         def workload(shots):
             dev = qml.device("lightning.qubit", wires=1)
 
@@ -838,7 +814,7 @@ class TestMeasurementsFromSamplesIntegration:
         """Test that the measurements_from_samples_pass works correctly with qjit."""
         dev = qml.device("lightning.qubit", wires=2)
 
-        @qml.qjit(target="mlir", pass_plugins=[xdsl_plugin.getXDSLPluginAbsolutePath()])
+        @qml.qjit(target="mlir")
         @measurements_from_samples_pass
         @qml.qnode(dev, shots=25)
         def circuit():
@@ -857,7 +833,7 @@ class TestMeasurementsFromSamplesIntegration:
     def test_integrate_with_decompose(self):
         dev = qml.device("null.qubit", wires=4)
 
-        @qml.qjit(target="mlir", pass_plugins=[xdsl_plugin.getXDSLPluginAbsolutePath()])
+        @qml.qjit(target="mlir")
         @measurements_from_samples_pass
         @partial(
             qml.transforms.decompose,
