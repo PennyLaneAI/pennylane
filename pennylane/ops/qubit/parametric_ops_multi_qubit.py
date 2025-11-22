@@ -26,6 +26,7 @@ import numpy as np
 import pennylane as qml
 from pennylane import math, queuing
 from pennylane.decomposition import add_decomps, controlled_resource_rep, register_resources
+from pennylane.decomposition.resources import change_op_basis_resource_rep, resource_rep
 from pennylane.decomposition.symbolic_decomposition import adjoint_rotation, pow_rotation
 from pennylane.math.decomposition import decomp_int_to_powers_of_two
 from pennylane.operation import FlatPytree, Operation, Operator
@@ -195,11 +196,20 @@ class MultiRZ(Operation):
         [CNOT(wires=[1, 0]), RZ(1.2, wires=[0]), CNOT(wires=[1, 0])]
 
         """
-        ops = [qml.CNOT(wires=(w0, w1)) for w0, w1 in zip(wires[~0:0:-1], wires[~1::-1])]
-        ops.append(RZ(theta, wires=wires[0]))
-        ops += [qml.CNOT(wires=(w0, w1)) for w0, w1 in zip(wires[1:], wires[:~0])]
-
-        return ops
+        if len(wires) == 1:
+            return [qml.RZ(theta, wires=wires[0])]
+        return [
+            qml.change_op_basis(
+                qml.prod(*[qml.CNOT(wires=[wires[i], wires[i - 1]]) for i in range(1, len(wires))]),
+                qml.RZ(theta, wires=wires[0]),
+                qml.prod(
+                    *[
+                        qml.CNOT(wires=[wires[i], wires[i - 1]])
+                        for i in range(len(wires) - 1, 0, -1)
+                    ]
+                ),
+            )
+        ]
 
     @property
     def resource_params(self) -> dict:
@@ -221,23 +231,27 @@ class MultiRZ(Operation):
 
 
 def _multi_rz_decomposition_resources(num_wires):
-    return {qml.RZ: 1, qml.CNOT: 2 * (num_wires - 1)}
+    if num_wires == 1:
+        return {qml.RZ: 1}
+    return {
+        change_op_basis_resource_rep(
+            resource_rep(qml.ops.Prod, resources={resource_rep(qml.CNOT): num_wires - 1}),
+            resource_rep(qml.RZ),
+            resource_rep(qml.ops.Prod, resources={resource_rep(qml.CNOT): num_wires - 1}),
+        ): 1
+    }
 
 
 @register_resources(_multi_rz_decomposition_resources)
 def _multi_rz_decomposition(theta: TensorLike, wires: WiresLike, **__):
-
-    @qml.for_loop(len(wires) - 1, 0, -1)
-    def _pre_cnot(i):
-        qml.CNOT(wires=(wires[i], wires[i - 1]))
-
-    @qml.for_loop(1, len(wires), 1)
-    def _post_cnot(i):
-        qml.CNOT(wires=(wires[i], wires[i - 1]))
-
-    _pre_cnot()  # pylint: disable=no-value-for-parameter
-    qml.RZ(theta, wires=wires[0])
-    _post_cnot()  # pylint: disable=no-value-for-parameter
+    if len(wires) == 1:
+        qml.RZ(theta, wires=wires[0])
+        return
+    qml.change_op_basis(
+        qml.prod(*[qml.CNOT(wires=[wires[i], wires[i - 1]]) for i in range(1, len(wires))]),
+        qml.RZ(theta, wires=wires[0]),
+        qml.prod(*[qml.CNOT(wires=[wires[i], wires[i - 1]]) for i in range(len(wires) - 1, 0, -1)]),
+    )
 
 
 add_decomps(MultiRZ, _multi_rz_decomposition)
@@ -294,9 +308,7 @@ class PauliRot(Operation):
     grad_method = "A"
     parameter_frequencies = [(1,)]
 
-    resource_keys = {
-        "pauli_word",
-    }
+    resource_keys = {"pauli_word"}
 
     _ALLOWED_CHARACTERS = "IXYZ"
 
@@ -535,32 +547,38 @@ class PauliRot(Operation):
         [H(0), RX(1.5707963267948966, wires=[1]), MultiRZ(1.2, wires=[0, 1]), H(0), RX(-1.5707963267948966, wires=[1])]
 
         """
-        if isinstance(wires, int):  # Catch cases when the wire is passed as a single int.
-            wires = [wires]
 
-        # Check for identity and do nothing
-        if set(pauli_word) == {"I"}:
-            return [qml.GlobalPhase(phi=theta / 2)]
+        wires = Wires(wires)
+        active_wire_gates = [(w, g) for w, g in zip(wires, pauli_word) if g != "I"]
 
-        active_wires, active_gates = zip(
-            *[(wire, gate) for wire, gate in zip(wires, pauli_word) if gate != "I"]
-        )
+        if len(active_wire_gates) == 0:
+            return [qml.GlobalPhase(theta / 2)]
 
-        ops = []
-        for wire, gate in zip(active_wires, active_gates):
-            if gate == "X":
-                ops.append(Hadamard(wires=[wire]))
-            elif gate == "Y":
-                ops.append(RX(np.pi / 2, wires=[wire]))
+        active_wires, active_gates = zip(*active_wire_gates)
 
-        ops.append(MultiRZ(theta, wires=list(active_wires)))
+        if len(active_wires) == 0:
+            return [qml.GlobalPhase(theta / 2)]
 
-        for wire, gate in zip(active_wires, active_gates):
-            if gate == "X":
-                ops.append(Hadamard(wires=[wire]))
-            elif gate == "Y":
-                ops.append(RX(-np.pi / 2, wires=[wire]))
-        return ops
+        if set(pauli_word).issubset({"Z", "I"}):
+            return [qml.MultiRZ(theta, wires=active_wires)]
+
+        @qml.prod
+        def _pre():
+            for wire, gate in zip(active_wires, active_gates):
+                if gate == "X":
+                    qml.Hadamard(wires=[wire])
+                elif gate == "Y":
+                    qml.RX(np.pi / 2, wires=[wire])
+
+        @qml.prod
+        def _post():
+            for wire, gate in zip(active_wires, active_gates):
+                if gate == "X":
+                    qml.Hadamard(wires=[wire])
+                elif gate == "Y":
+                    qml.RX(-np.pi / 2, wires=[wire])
+
+        return [qml.change_op_basis(_pre(), qml.MultiRZ(theta, wires=active_wires), _post())]
 
     def adjoint(self):
         return PauliRot(-self.parameters[0], self.hyperparameters["pauli_word"], wires=self.wires)
@@ -573,32 +591,56 @@ def _pauli_rot_resources(pauli_word):
     if set(pauli_word) == {"I"}:
         return {qml.GlobalPhase: 1}
     num_active_wires = len(pauli_word.replace("I", ""))
+    if set(pauli_word).issubset({"I", "Z"}):
+        return {qml.MultiRZ: 1}
+    prod_resource_rep = resource_rep(
+        qml.ops.Prod,
+        resources={
+            resource_rep(qml.Hadamard): pauli_word.count("X"),
+            resource_rep(qml.RX): pauli_word.count("Y"),
+        },
+    )
     return {
-        qml.Hadamard: 2 * pauli_word.count("X"),
-        qml.RX: 2 * pauli_word.count("Y"),
-        qml.resource_rep(qml.MultiRZ, num_wires=num_active_wires): 1,
+        change_op_basis_resource_rep(
+            prod_resource_rep,
+            resource_rep(qml.MultiRZ, num_wires=num_active_wires),
+            prod_resource_rep,
+        ): 1
     }
 
 
 @register_resources(_pauli_rot_resources)
 def _pauli_rot_decomposition(theta, pauli_word, wires, **__):
-    if set(pauli_word) == {"I"}:
+
+    active_wire_gates = [(w, g) for w, g in zip(wires, pauli_word) if g != "I"]
+
+    if len(active_wire_gates) == 0:
         qml.GlobalPhase(theta / 2)
         return
-    active_wires, active_gates = zip(
-        *[(wire, gate) for wire, gate in zip(wires, pauli_word) if gate != "I"]
-    )
-    for wire, gate in zip(active_wires, active_gates):
-        if gate == "X":
-            qml.Hadamard(wires=[wire])
-        elif gate == "Y":
-            qml.RX(np.pi / 2, wires=[wire])
-    qml.MultiRZ(theta, wires=list(active_wires))
-    for wire, gate in zip(active_wires, active_gates):
-        if gate == "X":
-            qml.Hadamard(wires=[wire])
-        elif gate == "Y":
-            qml.RX(-np.pi / 2, wires=[wire])
+
+    active_wires, active_gates = zip(*active_wire_gates)
+
+    @qml.prod
+    def _pre():
+        for wire, gate in zip(active_wires, active_gates):
+            if gate == "X":
+                qml.Hadamard(wires=[wire])
+            elif gate == "Y":
+                qml.RX(np.pi / 2, wires=[wire])
+
+    @qml.prod
+    def _post():
+        for wire, gate in zip(active_wires, active_gates):
+            if gate == "X":
+                qml.Hadamard(wires=[wire])
+            elif gate == "Y":
+                qml.RX(-np.pi / 2, wires=[wire])
+
+    if set(pauli_word).issubset({"I", "Z"}):
+        qml.MultiRZ(theta, wires=active_wires)
+        return
+
+    qml.change_op_basis(_pre(), qml.MultiRZ(theta, wires=active_wires), _post())
 
 
 add_decomps(PauliRot, _pauli_rot_decomposition)
@@ -1230,12 +1272,13 @@ class IsingXX(Operation):
         [CNOT(wires=[0, 1]), RX(1.23, wires=[0]), CNOT(wires=[0, 1])]
 
         """
-        decomp_ops = [
-            qml.CNOT(wires=wires),
-            RX(phi, wires=[wires[0]]),
-            qml.CNOT(wires=wires),
+        return [
+            qml.change_op_basis(
+                qml.CNOT(wires=wires),
+                qml.RX(phi, wires=[wires[0]]),
+                qml.CNOT(wires=wires),
+            )
         ]
-        return decomp_ops
 
     def adjoint(self) -> "IsingXX":
         (phi,) = self.parameters
@@ -1254,14 +1297,12 @@ class IsingXX(Operation):
 
 
 def _isingxx_to_cnot_rx_cnot_resources():
-    return {qml.CNOT: 2, qml.RX: 1}
+    return {change_op_basis_resource_rep(qml.CNOT, qml.RX, qml.CNOT): 1}
 
 
 @register_resources(_isingxx_to_cnot_rx_cnot_resources)
 def _isingxx_to_cnot_rx_cnot(phi: TensorLike, wires: WiresLike, **__):
-    qml.CNOT(wires=wires)
-    qml.RX(phi, wires=[wires[0]])
-    qml.CNOT(wires=wires)
+    qml.change_op_basis(qml.CNOT(wires=wires), qml.RX(phi, wires=[wires[0]]), qml.CNOT(wires=wires))
 
 
 add_decomps(IsingXX, _isingxx_to_cnot_rx_cnot)
@@ -1347,9 +1388,11 @@ class IsingYY(Operation):
 
         """
         return [
-            qml.CY(wires=wires),
-            RY(phi, wires=[wires[0]]),
-            qml.CY(wires=wires),
+            qml.change_op_basis(
+                qml.CY(wires=wires),
+                RY(phi, wires=[wires[0]]),
+                qml.CY(wires=wires),
+            )
         ]
 
     @staticmethod
@@ -1421,14 +1464,16 @@ class IsingYY(Operation):
 
 
 def _isingyy_to_cy_ry_cy_resources():
-    return {qml.CY: 2, RY: 1}
+    return {change_op_basis_resource_rep(qml.CY, qml.RY, qml.CY): 1}
 
 
 @register_resources(_isingyy_to_cy_ry_cy_resources)
 def _isingyy_to_cy_ry_cy(phi: TensorLike, wires: WiresLike, **__):
-    qml.CY(wires=wires)
-    RY(phi, wires=[wires[0]])
-    qml.CY(wires=wires)
+    qml.change_op_basis(
+        qml.CY(wires=wires),
+        RY(phi, wires=[wires[0]]),
+        qml.CY(wires=wires),
+    )
 
 
 add_decomps(IsingYY, _isingyy_to_cy_ry_cy)
@@ -1515,9 +1560,11 @@ class IsingZZ(Operation):
 
         """
         return [
-            qml.CNOT(wires=wires),
-            RZ(phi, wires=[wires[1]]),
-            qml.CNOT(wires=wires),
+            qml.change_op_basis(
+                qml.CNOT(wires=wires),
+                RZ(phi, wires=[wires[1]]),
+                qml.CNOT(wires=wires),
+            )
         ]
 
     @staticmethod
@@ -1620,14 +1667,12 @@ class IsingZZ(Operation):
 
 
 def _isingzz_to_cnot_rz_cnot_resources():
-    return {qml.CNOT: 2, RZ: 1}
+    return {change_op_basis_resource_rep(qml.CNOT, qml.RZ, qml.CNOT): 1}
 
 
 @register_resources(_isingzz_to_cnot_rz_cnot_resources)
 def _isingzz_to_cnot_rz_cnot(phi: TensorLike, wires: WiresLike, **__):
-    qml.CNOT(wires=wires)
-    RZ(phi, wires=[wires[1]])
-    qml.CNOT(wires=wires)
+    qml.change_op_basis(qml.CNOT(wires=wires), RZ(phi, wires=[wires[1]]), qml.CNOT(wires=wires))
 
 
 add_decomps(IsingZZ, _isingzz_to_cnot_rz_cnot)
@@ -1731,12 +1776,11 @@ class IsingXY(Operation):
 
         """
         return [
-            Hadamard(wires=[wires[0]]),
-            qml.CY(wires=wires),
-            RY(phi / 2, wires=[wires[0]]),
-            RX(-phi / 2, wires=[wires[1]]),
-            qml.CY(wires=wires),
-            Hadamard(wires=[wires[0]]),
+            qml.change_op_basis(
+                qml.CY(wires=wires) @ qml.Hadamard(wires=[wires[0]]),
+                RY(phi / 2, wires=[wires[0]]) @ RX(-phi / 2, wires=[wires[1]]),
+                qml.Hadamard(wires=[wires[0]]) @ qml.CY(wires=wires),
+            )
         ]
 
     @staticmethod
@@ -1847,17 +1891,24 @@ class IsingXY(Operation):
 
 
 def _isingxy_to_h_cy_resources():
-    return {Hadamard: 2, qml.CY: 2, RY: 1, RX: 1}
+    return {
+        change_op_basis_resource_rep(
+            resource_rep(qml.ops.Prod, resources={resource_rep(qml.H): 1, resource_rep(qml.CY): 1}),
+            resource_rep(
+                qml.ops.Prod, resources={resource_rep(qml.RY): 1, resource_rep(qml.RX): 1}
+            ),
+            resource_rep(qml.ops.Prod, resources={resource_rep(qml.H): 1, resource_rep(qml.CY): 1}),
+        ): 1
+    }
 
 
 @register_resources(_isingxy_to_h_cy_resources)
 def _isingxy_to_h_cy(phi: TensorLike, wires: WiresLike, **__):
-    Hadamard(wires=[wires[0]])
-    qml.CY(wires=wires)
-    RY(phi / 2, wires=[wires[0]])
-    RX(-phi / 2, wires=[wires[1]])
-    qml.CY(wires=wires)
-    Hadamard(wires=[wires[0]])
+    qml.change_op_basis(
+        qml.CY(wires=wires) @ qml.Hadamard(wires=[wires[0]]),
+        RY(phi / 2, wires=[wires[0]]) @ RX(-phi / 2, wires=[wires[1]]),
+        qml.Hadamard(wires=[wires[0]]) @ qml.CY(wires=wires),
+    )
 
 
 add_decomps(IsingXY, _isingxy_to_h_cy)
@@ -1933,9 +1984,11 @@ class PSWAP(Operation):
         """
         return [
             qml.SWAP(wires=wires),
-            qml.CNOT(wires=wires),
-            PhaseShift(phi, wires=[wires[1]]),
-            qml.CNOT(wires=wires),
+            qml.change_op_basis(
+                qml.CNOT(wires=wires),
+                qml.PhaseShift(phi, wires=[wires[1]]),
+                qml.CNOT(wires=wires),
+            ),
         ]
 
     @staticmethod
@@ -2036,15 +2089,17 @@ class PSWAP(Operation):
 
 
 def _pswap_to_swap_cnot_phaseshift_cnot_resources():
-    return {qml.SWAP: 1, qml.CNOT: 2, PhaseShift: 1}
+    return {qml.SWAP: 1, change_op_basis_resource_rep(qml.CNOT, qml.PhaseShift, qml.CNOT): 1}
 
 
 @register_resources(_pswap_to_swap_cnot_phaseshift_cnot_resources)
 def _pswap_to_swap_cnot_phaseshift_cnot(phi: TensorLike, wires: WiresLike, **__):
     qml.SWAP(wires=wires)
-    qml.CNOT(wires=wires)
-    PhaseShift(phi, wires=[wires[1]])
-    qml.CNOT(wires=wires)
+    qml.change_op_basis(
+        qml.CNOT(wires=wires),
+        qml.PhaseShift(phi, wires=[wires[1]]),
+        qml.CNOT(wires=wires),
+    )
 
 
 add_decomps(PSWAP, _pswap_to_swap_cnot_phaseshift_cnot)
