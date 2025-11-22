@@ -20,6 +20,11 @@
 
 <h3>Improvements 🛠</h3>
 
+* `qml.transform` and `TransformDispatcher` now can accept a `pass_name` in addition to or instead 
+  of a `quantum_transform` tape based definition. This `pass_name` will be used with Catalyst and
+  `qjit` to perform the transformation in MLIR or XDSL instead of in the python frontend.
+  [(#8539)](https://github.com/PennyLaneAI/pennylane/pull/8539)
+
 * Add the `PCPhaseOp` operation to the xDSL Quantum dialect.
   [(#8621)](https://github.com/PennyLaneAI/pennylane/pull/8621)
 

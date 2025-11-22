@@ -166,12 +166,12 @@ class TestTransformContainer:
         )
         assert repr(t1) == "<compile((), {'num_passes': 2})>"
 
-    def test_equality(self):
+    def test_equality_and_hash(self):
         """Tests that we can compare TransformContainer objects with the '==' and '!=' operators."""
 
         t1 = TransformContainer(qml.transforms.compile, kwargs={"num_passes": 2})
         t2 = TransformContainer(qml.transforms.compile, kwargs={"num_passes": 2})
-        t3 = TransformContainer(qml.transforms.transpile, kwargs={"coupling_map": [(0, 1), (1, 2)]})
+        t3 = TransformContainer(qml.transforms.transpile, kwargs={"coupling_map": ((0, 1), (1, 2))})
 
         t5 = TransformContainer(qml.transforms.merge_rotations, args=(1e-6,))
         t6 = TransformContainer(qml.transforms.merge_rotations, args=(1e-7,))
@@ -185,6 +185,10 @@ class TestTransformContainer:
         assert t1 != 2
         assert t5 != t6
         assert t5 != t1
+
+        assert hash(t1) == hash(t2)
+        assert hash(t1) != hash(t3)
+        assert hash(t5) != hash(t6)
 
         # Test equality with the same args
         t5_copy = TransformContainer(qml.transforms.merge_rotations, args=(1e-6,))
@@ -865,3 +869,64 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
                 tape = tape.copy()
                 tape._ops.pop(index)  # pylint:disable=protected-access
                 return [tape], lambda x: x
+
+
+class TestPassName:
+
+    def test_no_pass_name_or_tape_def(self):
+        """Test that an error is raised if neither a tape def or pass name are provided."""
+
+        with pytest.raises(
+            ValueError, match="must currently define either a tape transform or a pass_name"
+        ):
+            qml.transform()
+
+    def test_providing_pass_name_with_tape_def(self):
+        """Test a pass_name and a tape def can both be applied."""
+
+        def my_tape_def(tape):
+            return (tape,), lambda x: x[0]
+
+        t = qml.transform(my_tape_def, "my_pass_name")
+
+        assert t.transform == my_tape_def
+        assert t.pass_name == "my_pass_name"
+
+        assert repr(t) == "<transform: my_tape_def>"
+
+        c = TransformContainer(t)
+        assert repr(c) == "<my_tape_def((), {})>"
+
+    def test_providing_pass_name_without_tape_def(self):
+        """Test that a transform can be defined by a pass_name without a tape based transform."""
+
+        t = qml.transform(pass_name="my_pass_name")
+        assert t.transform is None
+        assert t.pass_name == "my_pass_name"
+
+        assert repr(t) == "<transform: my_pass_name>"
+
+        tape = qml.tape.QuantumScript()
+        with pytest.raises(NotImplementedError, match="has no defined tape transform."):
+            t(tape)
+
+        with pytest.raises(NotImplementedError, match="has no defined tape transform."):
+            t((tape, tape))
+
+        @t
+        @qml.qnode(qml.device("null.qubit"))
+        def c():
+            return qml.expval(qml.Z(0))
+
+        expected_container = TransformContainer(t)
+        assert expected_container.pass_name == "my_pass_name"
+        assert repr(expected_container) == "<my_pass_name((), {})>"
+        assert expected_container.transform is None
+        assert c.transform_program[-1] == expected_container
+        assert repr(c.transform_program) == "TransformProgram(my_pass_name)"
+
+        with pytest.raises(NotImplementedError, match="has no defined tape transform"):
+            c.transform_program((tape,))
+
+        with pytest.raises(NotImplementedError, match="has no defined tape transform"):
+            c()

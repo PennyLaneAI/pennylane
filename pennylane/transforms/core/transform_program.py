@@ -212,7 +212,8 @@ class TransformProgram:
 
     def __repr__(self):
         """The string representation of the transform program class."""
-        contents = ", ".join(f"{transform_c.transform.__name__}" for transform_c in self)
+        gen = (f"{t.transform.__name__ if t.transform else t.pass_name}" for t in self)
+        contents = ", ".join(gen)
         return f"TransformProgram({contents})"
 
     def __eq__(self, other) -> bool:
@@ -427,6 +428,10 @@ class TransformProgram:
             for tape_idx, tape in enumerate(tapes):
                 if argnums is not None:
                     tape.trainable_params = argnums[tape_idx]
+                if transform is None:
+                    raise NotImplementedError(
+                        f"transform {transform_container} has no defined tape transform."
+                    )
                 new_tapes, fn = transform(tape, *targs, **tkwargs)
                 execution_tapes.extend(new_tapes)
 

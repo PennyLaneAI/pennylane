@@ -29,6 +29,11 @@ from pennylane.wires import Wires
 class TestMergeRotations:
     """Test that adjacent rotation gates of the same type will add the angles."""
 
+    def test_defined_pass_name(self):
+        """Test that merge_rotations defines a pass_name."""
+
+        assert merge_rotations.pass_name == "merge-rotations"
+
     @pytest.mark.parametrize(
         ("theta_1", "theta_2", "expected_ops"),
         [
