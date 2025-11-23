@@ -15,6 +15,7 @@
 Unit tests for the equal function.
 Tests are divided by number of parameters and wires different operators take.
 """
+
 import itertools
 import re
 
@@ -29,7 +30,7 @@ from pennylane import numpy as npp
 from pennylane.measurements import ExpectationMP
 from pennylane.measurements.probs import ProbabilityMP
 from pennylane.operation import Operator
-from pennylane.ops import Conditional
+from pennylane.ops import Conditional, PauliMeasure
 from pennylane.ops.functions.equal import (
     BASE_OPERATION_MISMATCH_ERROR_MESSAGE,
     OPERANDS_MISMATCH_ERROR_MESSAGE,
@@ -38,6 +39,7 @@ from pennylane.ops.functions.equal import (
 )
 from pennylane.ops.op_math import Controlled, SymbolicOp
 from pennylane.templates.subroutines import ControlledSequence
+from pennylane.wires import Wires
 
 PARAMETRIZED_OPERATIONS_1P_1W = [
     qml.RX,
@@ -267,7 +269,6 @@ def test_assert_equal_types():
 
 
 def test_assert_equal_unspecified():
-
     # pylint: disable=too-few-public-methods
     class RandomType:
         """dummy type"""
@@ -286,7 +287,6 @@ def test_assert_equal_unspecified():
 
 
 class TestEqual:
-
     def test_identity_equal(self):
         """Test that comparing two Identities always returns True regardless of wires"""
         I1 = qml.Identity()
@@ -1662,11 +1662,11 @@ class TestMeasurementsEqual:
     def test_mid_measure(self):
         """Test that `MidMeasure`s are equal only if their wires
         an id are equal and their `reset` attribute match."""
-        mp = qml.ops.MidMeasure(wires=qml.wires.Wires([0]), reset=True, id="test_id")
+        mp = qml.ops.MidMeasure(wires=Wires([0]), reset=True, id="test_id")
 
-        mp1 = qml.ops.MidMeasure(wires=qml.wires.Wires([1]), reset=True, id="test_id")
-        mp2 = qml.ops.MidMeasure(wires=qml.wires.Wires([0]), reset=False, id="test_id")
-        mp3 = qml.ops.MidMeasure(wires=qml.wires.Wires([0]), reset=True, id="foo")
+        mp1 = qml.ops.MidMeasure(wires=Wires([1]), reset=True, id="test_id")
+        mp2 = qml.ops.MidMeasure(wires=Wires([0]), reset=False, id="test_id")
+        mp3 = qml.ops.MidMeasure(wires=Wires([0]), reset=True, id="foo")
 
         assert qml.equal(mp, mp1) is False
         assert qml.equal(mp, mp2) is False
@@ -1675,10 +1675,26 @@ class TestMeasurementsEqual:
         assert (
             qml.equal(
                 mp,
-                qml.ops.MidMeasure(wires=qml.wires.Wires([0]), reset=True, id="test_id"),
+                qml.ops.MidMeasure(wires=Wires([0]), reset=True, id="test_id"),
             )
             is True
         )
+
+    def test_pauli_measure(self):
+        """Test the equal check of pauli measures."""
+
+        mp = PauliMeasure("XY", wires=Wires([0, 1]), id="test_id")
+
+        mp1 = PauliMeasure("XZ", wires=Wires([0, 1]), id="test_id")
+        mp2 = PauliMeasure("XY", wires=Wires([1, 2]), id="test_id")
+        mp3 = PauliMeasure("XY", wires=Wires([0, 1]), id="foo")
+        mp4 = PauliMeasure("XY", wires=Wires([0, 1]), postselect=1, id="test_id")
+
+        assert qml.equal(mp, mp1) is False
+        assert qml.equal(mp, mp2) is False
+        assert qml.equal(mp, mp3) is False
+        assert qml.equal(mp, mp4) is False
+        assert qml.equal(mp, PauliMeasure("XY", wires=Wires([0, 1]), id="test_id")) is True
 
     def test_equal_measurement_value(self):
         """Test that MeasurementValue's are equal when their measurements are the same."""

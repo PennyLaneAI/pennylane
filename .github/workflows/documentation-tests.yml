@@ -42,13 +42,25 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install dependencies
-        run: |
+      - name: Install pip and setuptools
+        run: | 
           python -m pip install --upgrade pip
           pip install --upgrade setuptools
-          pip install --upgrade --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ --pre pennylane-catalyst
+
+      - name: Install Catalyst and Lightning (dev) 
+        run: |
+          pip install --upgrade --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ --pre --no-deps pennylane-catalyst pennylane-lightning
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ pennylane-catalyst pennylane-lightning
           pip install -e .
           pip install sybil pytest "jax~=0.6.0" "jaxlib~=0.6.0" torch matplotlib pyzx
+
+      - name: Print Dependencies
+        run: | 
+          python -c "import pennylane as qml; qml.about()"
+          python -m pip list
 
       # TODO: Remove the --ignore options as layers are tested and verified
       # to be working correctly.
@@ -59,6 +71,7 @@ jobs:
           --ignore=pennylane/compiler/python_compiler
           "
           IGNORE_OPTS_CORE="
+          --ignore=pennylane/workflow/interfaces/tensorflow.py
           --ignore=pennylane/control_flow
           --ignore=pennylane/math
           --ignore=pennylane/compiler
@@ -68,7 +81,6 @@ jobs:
           --ignore=pennylane/capture
           --ignore=pennylane/decomposition
           --ignore=pennylane/devices
-          --ignore=pennylane/workflow
           "
           IGNORE_OPTS_AUXILIARY="
           --ignore=pennylane/shadows
@@ -82,7 +94,6 @@ jobs:
           --ignore=pennylane/qnn
           --ignore=pennylane/qaoa
           --ignore=pennylane/data
-          --ignore=pennylane/fourier
           --ignore=pennylane/debugging
           --ignore=pennylane/qcut
           --ignore=pennylane/qchem
