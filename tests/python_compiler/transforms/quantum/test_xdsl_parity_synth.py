@@ -57,7 +57,7 @@ class TestParityNetworkSynth:
 
     @staticmethod
     def validate_circuit_entry(entry, exp_len=None):
-        """Validate that an object is a three-tuple consisting of an two integers and a list
+        """Validate that an object is a three-tuple consisting of two integers and a list
         of two-tuples with integers in them, like ``(1, 4, [(0, 2), (1, 0)])``. This constitutes
         the format for circuit entries in the output of ``_parity_network_synth``."""
         assert isinstance(entry, tuple) and len(entry) == 3
