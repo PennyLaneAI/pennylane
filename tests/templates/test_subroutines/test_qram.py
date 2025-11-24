@@ -18,9 +18,9 @@ import re
 
 import numpy as np
 import pytest
-from pennylane.decomposition import list_decomps
 
 from pennylane import device, qnode
+from pennylane.decomposition import list_decomps
 from pennylane.measurements import probs
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates import BasisEmbedding
