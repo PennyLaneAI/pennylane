@@ -208,7 +208,7 @@
 
 * The ``custom_decomps`` keyword argument to ``qml.device`` has been deprecated and will be removed 
   in 0.45. Instead, with ``qml.decomposition.enable_graph()``, new decomposition rules can be defined as 
-  quantum functions with registered resources. See :mod:``pennylane.decomposition`` for more details.
+  quantum functions with registered resources. See :mod:`pennylane.decomposition` for more details.
 
 * `qml.measure`, `qml.measurements.MidMeasureMP`, `qml.measurements.MeasurementValue`,
   and `qml.measurements.get_mcm_predicates` are now located in `qml.ops.mid_measure`.
