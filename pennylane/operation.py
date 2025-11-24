@@ -1437,9 +1437,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
                     # no need for copies if we just use queue method
                     _ = [op.queue() for op in q.queue]
                 return q.queue
-        return self.compute_decomposition(
-            *self.parameters, wires=self.wires, **self.hyperparameters
-        )
+raise DecompositionUndefinedError
 
     @staticmethod
     def compute_decomposition(
