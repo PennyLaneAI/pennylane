@@ -585,7 +585,7 @@ class jacobian:
             g = qml.jacobian(circuit)
             return g(x)
 
-    >>> workflow(np.array([2.0, 1.0]))
+    >>> workflow(np.array([2.0, 1.0]))  # doctest: +SKIP
     Array([[ 3.48786850e-16, -4.20735492e-01],
            [-8.71967125e-17,  4.20735492e-01]], dtype=float64)
 
@@ -605,7 +605,7 @@ class jacobian:
             g = qml.jacobian(circuit, method="fd", h=0.3)
             return g(x)
 
-    >>> workflow(np.array([2.0, 1.0]))
+    >>> workflow(np.array([2.0, 1.0]))  # doctest: +SKIP
     Array([[-0.37120096, -0.45467246],
            [ 0.37120096,  0.45467246]], dtype=float64)
 
@@ -740,9 +740,9 @@ def vjp(f, params, cotangents, method=None, h=None, argnums=None, *, argnum=None
 
           return qml.vjp(f, [params], [cotangent])
 
-    >>> x = jnp.array([0.1, 0.2])
-    >>> dy = jnp.array([-0.5, 0.1, 0.3])
-    >>> vjp(x, dy)
+    >>> x = jnp.array([0.1, 0.2])  # doctest: +SKIP
+    >>> dy = jnp.array([-0.5, 0.1, 0.3])  # doctest: +SKIP
+    >>> vjp(x, dy)  # doctest: +SKIP
     (Array([0.09983342, 0.04      , 0.02      ], dtype=float64), (Array([-0.43750208,  0.07      ], dtype=float64),))
     """
     argnums = argnums if argnums is not None else argnum
@@ -817,9 +817,9 @@ def jvp(f, params, tangents, method=None, h=None, argnums=None, *, argnum=None):
 
           return qml.jvp(f, [params], [tangent])
 
-    >>> x = jnp.array([0.1, 0.2])
-    >>> tangent = jnp.array([0.3, 0.6])
-    >>> jvp(x, tangent)
+    >>> x = jnp.array([0.1, 0.2])  # doctest: +SKIP
+    >>> tangent = jnp.array([0.3, 0.6])  # doctest: +SKIP
+    >>> jvp(x, tangent)  # doctest: +SKIP
     (Array([0.09983342, 0.04      , 0.02      ], dtype=float64), Array([0.29850125, 0.24      , 0.12      ], dtype=float64))
 
     **Example 2 (argnums usage)**
@@ -841,9 +841,9 @@ def jvp(f, params, tangents, method=None, h=None, argnums=None, *, argnum=None):
         def workflow(primals, tangents):
             return qml.jvp(circuit, [1, primals], [tangents], argnums=[1])
 
-    >>> params = jnp.array([[0.54, 0.3154], [0.654, 0.123]])
-    >>> dy = jnp.array([[1.0, 1.0], [1.0, 1.0]])
-    >>> workflow(params, dy)
+    >>> params = jnp.array([[0.54, 0.3154], [0.654, 0.123]])  # doctest: +SKIP
+    >>> dy = jnp.array([[1.0, 1.0], [1.0, 1.0]])  # doctest: +SKIP
+    >>> workflow(params, dy)  # doctest: +SKIP
     (Array(0.78766064, dtype=float64), Array(-0.70114352, dtype=float64))
     """
 

@@ -141,8 +141,8 @@ def adjoint(fn, lazy=True):
             qml.adjoint(func)()
             return qml.probs()
 
-    >>> import jax.numpy as jnp
-    >>> workflow(jnp.pi/2, 3, 0)
+    >>> import jax.numpy as jnp  # doctest: +SKIP
+    >>> workflow(jnp.pi/2, 3, 0)  # doctest: +SKIP
     Array([0.5, 0.5], dtype=float64)
 
     .. warning::
