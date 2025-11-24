@@ -1028,10 +1028,17 @@ class TestDecomposition:
             (
                 qml.IsingXX(0.123, wires=[0, 1]),
                 [
-                    qml.Toffoli(wires=[2, 0, 1]),
-                    qml.CRX(0.123, wires=[2, 0]),
-                    qml.Toffoli(wires=[2, 0, 1]),
+                    Controlled(
+                        qml.change_op_basis(
+                            qml.CNOT([0, 1]), qml.RX(0.123, wires=0), qml.CNOT([0, 1])
+                        ),
+                        control_wires=2,
+                    )
                 ],
+            ),
+            (
+                qml.change_op_basis(qml.CNOT([0, 1]), qml.RX(0.123, wires=0), qml.CNOT([0, 1])),
+                [qml.CNOT([0, 1]), qml.CRX(0.123, wires=[2, 0]), qml.CNOT([0, 1])],
             ),
         ],
     )
