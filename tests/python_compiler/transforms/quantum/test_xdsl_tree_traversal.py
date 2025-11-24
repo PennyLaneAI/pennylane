@@ -1339,28 +1339,30 @@ class TestTreeTraversalPassStaticForLoop:
                 %9 = arith.index_cast %8 : i64 to index
                 %10 = tensor.extract %5[] : tensor<i64>
                 %11 = arith.index_cast %10 : i64 to index
-                %12 = scf.for %arg1 = %7 to %9 step %11 iter_args(%arg2 = %3) -> (!quantum.reg) {
-                    %13 = arith.index_cast %arg1 : index to i64
-                    %14 = tensor.from_elements %13 : tensor<i64>
-                    %15 = tensor.extract %14[] : tensor<i64>
-                    %16 = quantum.extract %arg2[%15] : !quantum.reg -> !quantum.bit
-                    %17 = quantum.custom "PauliX"() %16 : !quantum.bit
-                    %18, %19 = quantum.measure %17 : i1, !quantum.bit
-                    %20 = tensor.from_elements %18 : tensor<i1>
-                    %21 = tensor.extract %14[] : tensor<i64>
-                    %22 = quantum.insert %arg2[%21], %19 : !quantum.reg, !quantum.bit
-                    scf.yield %22 : !quantum.reg
+                %12, %13 = scf.for %arg1 = %7 to %9 step %11 iter_args(%arg2 = %0, %arg3 = %3) -> (tensor<i64>, !quantum.reg) {
+                    %14 = arith.index_cast %arg1 : index to i64
+                    %15 = tensor.from_elements %14 : tensor<i64>
+                    %16 = "stablehlo.constant"() <{value = dense<1> : tensor<i64>}> : () -> tensor<i64>
+                    %17 = "stablehlo.add"(%arg2, %16) : (tensor<i64>, tensor<i64>) -> tensor<i64>
+                    %18 = tensor.extract %15[] : tensor<i64>
+                    %19 = quantum.extract %arg3[%18] : !quantum.reg -> !quantum.bit
+                    %20 = quantum.custom "PauliX"() %19 : !quantum.bit
+                    %21, %22 = quantum.measure %20 : i1, !quantum.bit
+                    %23 = tensor.from_elements %21 : tensor<i1>
+                    %24 = tensor.extract %15[] : tensor<i64>
+                    %25 = quantum.insert %arg3[%24], %22 : !quantum.reg, !quantum.bit
+                    scf.yield %17, %25 : tensor<i64>, !quantum.reg
                 }
-                %23 = tensor.extract %0[] : tensor<i64>
-                %24 = quantum.extract %12[%23] : !quantum.reg -> !quantum.bit
-                %25 = quantum.namedobs %24[PauliZ] : !quantum.obs
-                %26 = quantum.expval %25 : f64
-                %27 = tensor.from_elements %26 : tensor<f64>
-                %28 = tensor.extract %0[] : tensor<i64>
-                %29 = quantum.insert %12[%28], %24 : !quantum.reg, !quantum.bit
-                quantum.dealloc %29 : !quantum.reg
+                %26 = tensor.extract %0[] : tensor<i64>
+                %27 = quantum.extract %13[%26] : !quantum.reg -> !quantum.bit
+                %28 = quantum.namedobs %27[PauliZ] : !quantum.obs
+                %29 = quantum.expval %28 : f64
+                %30 = tensor.from_elements %29 : tensor<f64>
+                %31 = tensor.extract %0[] : tensor<i64>
+                %32 = quantum.insert %13[%31], %27 : !quantum.reg, !quantum.bit
+                quantum.dealloc %32 : !quantum.reg
                 quantum.device_release
-                func.return %27 : tensor<f64>
+                func.return %30 : tensor<f64>
             }
             // CHECK: func.func public @circuit.simple_io.tree_traversal()
             // CHECK: func.func @state_transition
