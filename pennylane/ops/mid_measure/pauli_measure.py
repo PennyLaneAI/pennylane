@@ -117,7 +117,55 @@ def _create_pauli_measure_primitive():
 
 
 def pauli_measure(pauli_word: str, wires: WiresLike, postselect: int | None = None):
-    """Perform a Pauli product measurement."""
+    """Perform a Pauli product measurement.
+
+    .. note::
+
+        The circuits generated from this function are currently not executable on any backend.
+        This function is only for analysis and potential future execution when a suitable backend is
+        available.
+
+    Args:
+        pauli_word (str): The Pauli word to measure.
+        wires (Wires): The wire to measure.
+        postselect (Optional[int]): Which basis state to postselect after a Pauli product
+            measurement. None by default. If postselection is requested, ...
+
+    Returns:
+        MeasurementValue: A reference to the future result of the mid circuit measurement
+
+    Raises:
+        Error: if ...
+
+    Pauli product measurement (PPM) outcomes can be used to conditionally apply operations, and measurement
+    statistics can be gathered and returned by a quantum function.
+
+    The following example illustrates how to incorporate PPM measurements in a qnode:
+
+    **Example:**
+
+    .. code-block:: python
+
+        dev = qml.device("null.qubit", wires=3)
+
+        qml.capture.enable()
+
+        @qml.qnode(dev, mcm_method="deferred")
+        def circuit():
+            qml.Hadamard(0)
+            qml.Hadamard(1)
+
+            m = qml.PauliMeasure("ZZ", wires=[0,1])
+            qml.PauliRot(2*np.pi/8, 'XY',  wires=[0,1]) #notice the 2 times angle factor 
+
+            qml.cond(m, qml.PauliX)(wires=0)
+            return qml.probs(wires=[0,1])
+
+    >>> qml.draw(circuit)()
+
+    .. see-also::
+        catalyst.passes.ppm_compilation
+    """
 
     if capture_enabled():
         primitive = _create_pauli_measure_primitive()
