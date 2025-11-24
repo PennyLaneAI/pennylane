@@ -559,12 +559,7 @@ def _quantum_automatic_differentiation(tape, trainable_param_idx, aux_wire) -> t
         trainable_op, _, _ = tape.get_operation(trainable_param_idx)
         _, generators = _get_pauli_generators(trainable_op)
 
-        observables = []
-        for m in tape.measurements:
-            _, obs = _get_pauli_terms(m.obs)
-            observables += obs
-
-        observables = list(set(observables))
+        _, observables = _get_pauli_terms(tape.measurements[0].obs)
 
         def _count_groupings(paulis):
             op = Sum(*paulis)
