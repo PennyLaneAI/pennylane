@@ -702,6 +702,9 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
 
         # Some operators will overwrite `decomposition` instead of `compute_decomposition`
         # Currently, those are mostly classes from the operator arithmetic module.
+       # if class overrides has_decomposition property, we do not want to
+       # override it here
+
         if (
             cls.compute_decomposition != Operator.compute_decomposition
             or cls.decomposition != Operator.decomposition
