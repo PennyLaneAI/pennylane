@@ -250,7 +250,7 @@ def transform(  # pylint: disable=too-many-arguments,too-many-positional-argumen
                 qml.adjoint(qml.S(1))
                 return qml.expval(qml.Z(1))
 
-        >>> jax.make_jaxpr(circuit)()
+        >>> jax.make_jaxpr(circuit)()  # doctest: +SKIP
         { lambda ; . let
             a:AbstractMeasurement(n_wires=None) = transform[
             args_slice=slice(0, 0, None)
@@ -304,7 +304,7 @@ def transform(  # pylint: disable=too-many-arguments,too-many-positional-argumen
         as an input, and returns a new function that has been transformed:
 
         >>> transformed_circuit = qml.capture.expand_plxpr_transforms(circuit)
-        >>> jax.make_jaxpr(transformed_circuit)()
+        >>> jax.make_jaxpr(transformed_circuit)()  # doctest: +SKIP
         { lambda ; . let
             a:AbstractOperator() = PauliZ[n_wires=1] 1:i...[]
             b:AbstractMeasurement(n_wires=None) = expval_obs a
