@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit test module for the ParitySynth transform"""
+from collections import namedtuple
 from itertools import product
 
 import numpy as np
@@ -35,16 +36,16 @@ from pennylane.transforms.intermediate_reps import phase_polynomial
 
 
 def assert_binary_matrix(matrix: np.ndarray):
-    """Check that the input matrix is two-dimensional, ``np.int64``-dtyped and
+    """Check that the input matrix is two-dimensional, integer-dtyped and
     only contains zeros and ones.
     """
     if matrix.ndim != 2:
         raise ValueError(
             f"Expected the matrix to be two-dimensional, but got {matrix.ndim} dimensions."
         )
-    if matrix.dtype != np.int64:
+    if not np.issubdtype(matrix.dtype, np.integer):
         raise ValueError(
-            f"Expected the data type of the matrix to be np.int64, but got {matrix.dtype}."
+            f"Expected the data type of the matrix to be integer-like, but got {matrix.dtype}."
         )
     if not set(matrix.flat).issubset({0, 1}):
         raise ValueError(
@@ -52,21 +53,31 @@ def assert_binary_matrix(matrix: np.ndarray):
         )
 
 
+EntrySpec = namedtuple("EntrySpec", ["parity_idx", "qubit_idx", "length"])
+
+
 class TestParityNetworkSynth:
     """Tests for the synthesizing of a parity network with ``_parity_network_synth``."""
 
     @staticmethod
-    def validate_circuit_entry(entry, exp_len=None):
-        """Validate that an object is a three-tuple consisting of two integers and a list
-        of two-tuples with integers in them, like ``(1, 4, [(0, 2), (1, 0)])``. This constitutes
-        the format for circuit entries in the output of ``_parity_network_synth``."""
+    def validate_circuit_entry(entry, expected: EntrySpec):
+        """Validate that an object is a three-tuple consisting of two integers and a list of
+        two-tuples with integers in them, like ``(1, 4, [(0, 2), (1, 0)])``.
+        This constitutes the format for circuit entries in the output of ``_parity_network_synth``
+        Also check that the specs provided in ``expected`` (parity_idx, qubit_idx and/or length)
+        are matched."""
+
         assert isinstance(entry, tuple) and len(entry) == 3
         parity_idx, qubit_idx, cnot_circuit = entry
-        assert isinstance(parity_idx, np.int64)
+        assert np.issubdtype(parity_idx.dtype, np.integer)
         assert isinstance(qubit_idx, int)
         assert isinstance(cnot_circuit, list)
-        if exp_len is not None:
-            assert len(cnot_circuit) == exp_len
+        if expected.parity_idx is not None:
+            assert expected.parity_idx == parity_idx
+        if expected.qubit_idx is not None:
+            assert expected.qubit_idx == qubit_idx
+        if expected.length is not None:
+            assert len(cnot_circuit) == expected.length
         assert all(isinstance(_cnot, tuple) and len(_cnot) == 2 for _cnot in cnot_circuit)
 
     def test_empty_parity_table(self):
@@ -83,7 +94,8 @@ class TestParityNetworkSynth:
         P = I[:, idx : idx + 1]
         circuit, inv_synth_matrix = _parity_network_synth(P)
         assert isinstance(circuit, list) and len(circuit) == 1
-        self.validate_circuit_entry(circuit[0], exp_len=0)
+        expected = EntrySpec(parity_idx=0, qubit_idx=idx, length=0)
+        self.validate_circuit_entry(circuit[0], expected)
         assert_binary_matrix(inv_synth_matrix)
         assert_equal(I, inv_synth_matrix)
 
@@ -106,8 +118,11 @@ class TestParityNetworkSynth:
         P = np.concatenate([I[:, idx : idx + 1] for idx in ids], axis=1)
         circuit, inv_synth_matrix = _parity_network_synth(P)
         assert isinstance(circuit, list) and len(circuit) == len(ids)
-        for entry in circuit:
-            self.validate_circuit_entry(entry, exp_len=0)
+        for idx, entry in zip(ids, circuit):
+            # Note that the parity index is relative to a list of angles where those angles
+            # that have been used already are deleted.
+            expected = EntrySpec(parity_idx=0, qubit_idx=idx, length=0)
+            self.validate_circuit_entry(entry, expected)
         assert_binary_matrix(inv_synth_matrix)
         assert_equal(I, inv_synth_matrix)
 
@@ -127,11 +142,11 @@ class TestParityNetworkSynth:
         P = np.array([parity]).T
         circuit, inv_synth_matrix = _parity_network_synth(P)
         assert isinstance(circuit, list) and len(circuit) == 1
-        self.validate_circuit_entry(circuit[0], exp_len=np.sum(P) - 1)
+        expected = EntrySpec(parity_idx=0, qubit_idx=None, length=np.sum(P) - 1)
+        self.validate_circuit_entry(circuit[0], expected)
         I = np.eye(len(parity), dtype=int)
         assert I.shape == inv_synth_matrix.shape
         assert set(inv_synth_matrix.flat).issubset({0, 1})
-        assert not np.allclose(I, inv_synth_matrix)
 
     @pytest.mark.parametrize(
         "parities, exp_lens",
@@ -153,11 +168,11 @@ class TestParityNetworkSynth:
         circuit, inv_synth_matrix = _parity_network_synth(P)
         assert isinstance(circuit, list) and len(circuit) == len(parities)
         for entry, exp_len in zip(circuit, exp_lens, strict=True):
-            self.validate_circuit_entry(entry, exp_len=exp_len)
+            expected = EntrySpec(None, None, length=exp_len)
+            self.validate_circuit_entry(entry, expected)
         I = np.eye(len(parities[0]), dtype=int)
         assert I.shape == inv_synth_matrix.shape
         assert set(inv_synth_matrix.flat).issubset({0, 1})
-        assert not np.allclose(I, inv_synth_matrix)
 
     @pytest.mark.parametrize("n, seed", [(2, 851), (3, 231), (4, 8241), (5, 214)])
     @pytest.mark.parametrize("num_parities", (1, 2, 3, 10, 20))

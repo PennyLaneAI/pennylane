@@ -35,6 +35,24 @@ from ...pass_api import compiler_transform
 
 
 def _apply_dfs_po_circuit(tree, source, P, inv_synth_matrix=None):
+    """Traverse a tree in post-ordering (PO) depth-first search (DFS) ordering and record
+    the corresponding edges into a CNOT circuit. Update the provided parity table with those CNOTs,
+    and if an inverse synthesis matrix is provided, the CNOTs are applied to that matrix as well.
+
+    Args:
+        tree (nx.Graph): Tree graph to traverse. Note that this is a generic graph without
+            tree-specific attributes/information.
+        source (int): Root node of the tree. Only with this information can the ``tree`` be
+            identified as a tree graph.
+        P (np.ndarray): Parity table to which to apply the updates corresponding to the CNOTs.
+        inv_synth_matrix (np.ndarray): (Inverse) parity matrix to which to apply the updates
+            corresponding to the CNOTs as well. If ``None``, no action is performed.
+
+    Returns:
+        list[tuple[int]]: List of tuples corresponding to the depth-first post-order
+        traversal. Each tuple contains two integers, corresponding to two nodes in ``tree``, or
+        equivalently two qubit labels.
+    """
     dfs_po = list(nx.dfs_postorder_nodes(tree, source=source))
     sub_circuit = []
     if inv_synth_matrix is None:
