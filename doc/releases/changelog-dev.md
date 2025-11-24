@@ -16,6 +16,7 @@
   [(#8461)](https://github.com/PennyLaneAI/pennylane/pull/8461)
   [(#8631)](https://github.com/PennyLaneAI/pennylane/pull/8631)
   [(#8623)](https://github.com/PennyLaneAI/pennylane/pull/8623)
+  [(#8663)](https://github.com/PennyLaneAI/pennylane/pull/8663)
 
 <h3>Improvements 🛠</h3>
 
@@ -118,6 +119,9 @@
   [(#8079)](https://github.com/PennyLaneAI/pennylane/pull/8079)
 
 <h3>Breaking changes 💔</h3>
+
+* `qml.transforms.map_wires` no longer supports plxpr transforms.
+  [(#8683)](https://github.com/PennyLaneAI/pennylane/pull/8683)
 
 * ``QuantumScript.to_openqasm`` has been removed. Please use ``qml.to_openqasm`` instead. This removes duplicated 
   functionality for converting a circuit to OpenQASM code.
@@ -383,6 +387,10 @@
   in the MBQC formalism into subroutines in order to reduce the IR size for large programs.
   [(#8619)](https://github.com/PennyLaneAI/pennylane/pull/8619)
 
+* Added a `skip_decomp_matrix_check` argument to :func:`~pennylane.ops.functions.assert_valid` that
+  allows the test to skip the matrix check part of testing a decomposition rule but still verify
+  that the resource function is correct.
+  [(#8687)](https://github.com/PennyLaneAI/pennylane/pull/8687)
 
 <h3>Documentation 📝</h3>
 
