@@ -30,6 +30,7 @@ from pennylane import ops
 from pennylane.compiler.python_compiler.dialects.quantum import (
     CustomOp,
 )
+from pennylane.ftqc.operations import RotXZX
 from pennylane.measurements import counts, expval, probs, sample, state, var
 from pennylane.operation import Operator
 from pennylane.ops import MidMeasure
@@ -83,6 +84,8 @@ from_str_to_PL_gate = {
     for name in ops_all
     if inspect.isclass(getattr(ops, name, None)) and issubclass(getattr(ops, name), Operator)
 }
+
+from_str_to_PL_gate["RotXZX"] = RotXZX  # Include FTQC gates, not in primary module
 
 from_str_to_PL_measurement = {
     "quantum.counts": counts,

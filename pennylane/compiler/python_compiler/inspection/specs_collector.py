@@ -298,7 +298,6 @@ def _(xdsl_op: DeviceInitOp, resources: ResourcesResult) -> None:
 
 @handle_metadata.register
 def _(xdsl_op: AllocQubitOp | AllocOp, resources: ResourcesResult) -> None:
-    # TODO: Should be able to handle deallocs as well
     if isinstance(xdsl_op, AllocQubitOp):
         nallocs = 1
     else:
@@ -442,7 +441,8 @@ def _collect_region(region, loop_warning=False, cond_warning=False) -> Resources
 
             case ResourceType.QEC:
                 resources.qec_operations[resource] += 1
-                resources.resource_sizes[len(op.in_qubits)] += 1
+                if op.name.startswith("ppm."):
+                    resources.resource_sizes[len(op.in_qubits)] += 1
 
             case ResourceType.METADATA:
                 # Parse out extra circuit information
