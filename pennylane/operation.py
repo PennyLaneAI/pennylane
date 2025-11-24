@@ -702,8 +702,8 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
 
         # Some operators will overwrite `decomposition` instead of `compute_decomposition`
         # Currently, those are mostly classes from the operator arithmetic module.
-       # if class overrides has_decomposition property, we do not want to
-       # override it here
+        # if class overrides has_decomposition property, we do not want to
+        # override it here
 
         if (
             cls.compute_decomposition != Operator.compute_decomposition
@@ -1437,7 +1437,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
                     # no need for copies if we just use queue method
                     _ = [op.queue() for op in q.queue]
                 return q.queue
-raise DecompositionUndefinedError
+        raise DecompositionUndefinedError
 
     @staticmethod
     def compute_decomposition(
