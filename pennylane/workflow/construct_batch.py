@@ -48,8 +48,8 @@ def marker(tape, level: str):
         level (str): the label for the level.
 
     .. note::
-    
-        Invalid level names in ``marker`` are ``"top"``, ``"user"``, ``"device"``, and ``"gradient"``, 
+
+        Invalid level names in ``marker`` are ``"top"``, ``"user"``, ``"device"``, and ``"gradient"``,
         ``"all"``, and ``"all-mlir"``, which are internally protected.
 
     .. code-block:: python
