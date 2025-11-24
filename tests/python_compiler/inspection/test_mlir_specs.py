@@ -41,7 +41,7 @@ def resources_equal(
     try:
 
         # actual.device_name == expected.device_name TODO: Don't worry about this one for now
-        assert actual.num_wires == expected.num_wires
+        assert actual.num_allocs == expected.num_allocs
         assert len(actual.quantum_operations) == len(expected.quantum_operations)
         assert len(actual.quantum_measurements) == len(expected.quantum_measurements)
         assert len(actual.qec_operations) == len(expected.qec_operations)
@@ -63,6 +63,10 @@ def resources_equal(
             assert size in actual.resource_sizes
             assert actual.resource_sizes[size] == count
 
+        for name, count in expected.function_calls.items():
+            assert name in actual.function_calls
+            assert actual.function_calls[name] == count
+
     except AssertionError:
         if return_only:
             return False
@@ -76,16 +80,18 @@ def make_static_resources(
     quantum_measurements: dict[str, int] | None = None,
     qec_operations: dict[str, int] | None = None,
     resource_sizes: dict[int, int] | None = None,
+    function_calls: dict[str, int] | None = None,
     device_name: str | None = None,
-    num_wires: int = 0,
+    num_allocs: int = 0,
 ) -> ResourcesResult:
     res = ResourcesResult()
     res.quantum_operations = quantum_operations or {}
     res.quantum_measurements = quantum_measurements or {}
     res.qec_operations = qec_operations or {}
     res.resource_sizes = resource_sizes or {}
+    res.function_calls = function_calls or {}
     res.device_name = device_name
-    res.num_wires = num_wires
+    res.num_allocs = num_allocs
     return res
 
 
@@ -143,7 +149,7 @@ class TestMLIRSpecs:
                     quantum_operations={"RX": 2, "RZ": 2, "Hadamard": 2, "CNOT": 2},
                     quantum_measurements={"probs(0 wires)": 1},
                     resource_sizes={1: 6, 2: 2},
-                    num_wires=2,
+                    num_allocs=2,
                 ),
             ),
         ],
@@ -164,7 +170,7 @@ class TestMLIRSpecs:
                     quantum_operations={"RX": 2, "RZ": 2, "Hadamard": 2, "CNOT": 2},
                     quantum_measurements={"probs(0 wires)": 1},
                     resource_sizes={1: 6, 2: 2},
-                    num_wires=2,
+                    num_allocs=2,
                 ),
             ),
             (
@@ -173,7 +179,7 @@ class TestMLIRSpecs:
                     quantum_operations={"RX": 2, "RZ": 2},
                     quantum_measurements={"probs(0 wires)": 1},
                     resource_sizes={1: 4},
-                    num_wires=2,
+                    num_allocs=2,
                 ),
             ),
             (
@@ -182,7 +188,7 @@ class TestMLIRSpecs:
                     quantum_operations={"RX": 1, "RZ": 1},
                     quantum_measurements={"probs(0 wires)": 1},
                     resource_sizes={1: 2},
-                    num_wires=2,
+                    num_allocs=2,
                 ),
             ),
         ],
@@ -216,19 +222,19 @@ class TestMLIRSpecs:
                 quantum_operations={"RX": 2, "RZ": 2, "Hadamard": 2, "CNOT": 2},
                 quantum_measurements={"probs(0 wires)": 1},
                 resource_sizes={1: 6, 2: 2},
-                num_wires=2,
+                num_allocs=2,
             ),
             "cancel-inverses (MLIR-1)": make_static_resources(
                 quantum_operations={"RX": 2, "RZ": 2},
                 quantum_measurements={"probs(0 wires)": 1},
                 resource_sizes={1: 4},
-                num_wires=2,
+                num_allocs=2,
             ),
             "merge-rotations (MLIR-2)": make_static_resources(
                 quantum_operations={"RX": 1, "RZ": 1},
                 quantum_measurements={"probs(0 wires)": 1},
                 resource_sizes={1: 2},
-                num_wires=2,
+                num_allocs=2,
             ),
         }
 
@@ -257,13 +263,13 @@ class TestMLIRSpecs:
                 quantum_operations={"RX": 2, "RZ": 2, "Hadamard": 2, "CNOT": 2},
                 quantum_measurements={"probs(0 wires)": 1},
                 resource_sizes={1: 6, 2: 2},
-                num_wires=2,
+                num_allocs=2,
             ),
             "merge-rotations (MLIR-2)": make_static_resources(
                 quantum_operations={"RX": 1, "RZ": 1},
                 quantum_measurements={"probs(0 wires)": 1},
                 resource_sizes={1: 2},
-                num_wires=2,
+                num_allocs=2,
             ),
         }
 
@@ -318,7 +324,7 @@ class TestMLIRSpecs:
             quantum_operations={"PauliX": iters},
             quantum_measurements={"state(0 wires)": 1},
             resource_sizes={1: iters},
-            num_wires=2,
+            num_allocs=2,
         )
 
         circ = qml.qjit(pass_plugins=[getXDSLPluginAbsolutePath()], autograph=autograph)(circ)
@@ -359,7 +365,7 @@ class TestMLIRSpecs:
             quantum_operations={"PauliX": 1},
             quantum_measurements={"state(0 wires)": 1},
             resource_sizes={1: 1},
-            num_wires=2,
+            num_allocs=2,
         )
 
         circ = qml.qjit(pass_plugins=[getXDSLPluginAbsolutePath()], autograph=True)(circ)
@@ -413,7 +419,7 @@ class TestMLIRSpecs:
             quantum_operations={"PauliX": 1},
             quantum_measurements={"state(0 wires)": 1},
             resource_sizes={1: 1},
-            num_wires=2,
+            num_allocs=2,
         )
 
         circ = qml.qjit(pass_plugins=[getXDSLPluginAbsolutePath()], autograph=True)(circ)
@@ -459,7 +465,7 @@ class TestMLIRSpecs:
             quantum_operations={"PauliX": 1, "PauliZ": 1},
             quantum_measurements={"state(0 wires)": 1},
             resource_sizes={1: 2},
-            num_wires=2,
+            num_allocs=2,
         )
 
         circ = qml.qjit(pass_plugins=[getXDSLPluginAbsolutePath()], autograph=True)(circ)
@@ -491,7 +497,7 @@ class TestMLIRSpecs:
             quantum_operations={"GlobalPhase": 1},
             quantum_measurements={"expval(PauliZ)": 1},
             resource_sizes={0: 1},
-            num_wires=2,
+            num_allocs=2,
         )
 
         res = mlir_specs(circ, level=0)
