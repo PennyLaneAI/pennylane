@@ -21,7 +21,7 @@
 
 * A new :func:`~.marker` function allows for easy inspection at particular points in a transform program
   with :func:`~.specs` and :func:`~.drawer.draw` instead of having to increment ``level``
-  by integer amounts.
+  by integer amounts when not using any Catalyst passes.
   [(#8684)](https://github.com/PennyLaneAI/pennylane/pull/8684)
   
   The :func:`~.marker` function works like a transform in PennyLane, and can be deployed as
