@@ -359,6 +359,13 @@ class Select(Operation):
 
         Resources:
 
+            .. code-block::
+
+                ops = [qml.X(2), qml.X(3), qml.Y(2), qml.SWAP([2, 3])]
+                op = qml.Select(ops, control=[0,1])
+                rule = qml.list_decomps(qml.Select)["multi_control"]
+                rule.compute_resources(**op.resource_params)
+
             num_gates = 4
 
             gate_counts = {RX: 2, CZ: 2}
