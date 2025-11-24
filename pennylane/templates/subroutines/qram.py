@@ -353,11 +353,11 @@ def _bucket_brigade_qram_resources(bitstrings, num_target_wires, num_qram_wires,
     ) * 2 + num_target_wires * 2
     resources[resource_rep(CSWAP)] = (
         sum([(1 << ell) for ell in range(num_qram_wires)]) * num_target_wires * 2
-        + (sum([(1 << ell) for k in range(n_k) for ell in range(k)]) * n_k * 2)
+        + (sum([(1 << ell) for k in range(n_k) for ell in range(k)]) * 2)
     )
     resources[controlled_resource_rep(base_class=SWAP, base_params={}, num_control_wires=1, num_zero_control_values=1)] = (
         sum([(1 << ell) for ell in range(num_qram_wires)]) * num_target_wires * 2
-        + (sum([(1 << ell) for k in range(n_k) for ell in range(k)]) * n_k * 2)
+        + (sum([(1 << ell) for k in range(n_k) for ell in range(k)]) * 2)
     )
     resources[resource_rep(Hadamard)] += num_target_wires * 2
     for j in range(num_target_wires):
