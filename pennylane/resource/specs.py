@@ -260,7 +260,7 @@ def _specs_qjit_intermediate_passes(
 
         for level_name, res in results.items():
             res_resources = Resources(
-                num_wires=res.num_wires,
+                num_wires=res.num_allocs,
                 num_gates=sum(res.resource_sizes.values()),
                 gate_types=res.quantum_operations | res.qec_operations,
                 gate_sizes=res.resource_sizes,
