@@ -29,7 +29,7 @@ torch==2.8.0
 jinja2>=3.1
 rustworkx>=0.14.0
 networkx==3.1
-requests==2.32.3
+requests==2.32.4
 # we do not pin the sphinx theme, to allow the
 # navbar and header data to be updated at the source
 pennylane-sphinx-theme
