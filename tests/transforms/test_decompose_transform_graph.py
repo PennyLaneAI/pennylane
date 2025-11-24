@@ -371,15 +371,14 @@ class TestDecomposeGraphEnabled:
         tape = qml.tape.QuantumScript(ops)
         [new_tape], _ = qml.transforms.decompose(tape, gate_set={"RZ", "CNOT", "Toffoli"})
         assert new_tape.operations == [
-            # Decomposition of C(CNOT)
-            qml.Toffoli(wires=[2, 1, 0]),
+            qml.CNOT(wires=[1, 0]),
             # Decomposition of C(RZ) -> CRZ
             qml.RZ(0.25, wires=[0]),
             qml.CNOT(wires=[2, 0]),
             qml.RZ(-0.25, wires=[0]),
             qml.CNOT(wires=[2, 0]),
             # Decomposition of C(CNOT)
-            qml.Toffoli(wires=[2, 1, 0]),
+            qml.CNOT(wires=[1, 0]),
         ]
 
     @pytest.mark.integration
