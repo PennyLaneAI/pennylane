@@ -212,9 +212,7 @@ class ResourceConfig:
         Args:
             op_type (type[:class:`~.pennylane.estimator.resource_operator.ResourceOperator`]): the operator class for which
                 to set the precision
-            precision (float | int): The desired precision tolerance. A smaller
-                value corresponds to a higher precision compilation, which may
-                increase the required gate counts. Must be greater than 0.
+            precision (float | int): The desired precision tolerance. Must be greater than 0.
             resource_key (str): the name of the specific precision parameter to be updated
 
         Raises:
