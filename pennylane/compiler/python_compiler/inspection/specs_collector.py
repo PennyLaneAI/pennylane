@@ -24,9 +24,10 @@ from functools import singledispatch
 
 import xdsl
 from xdsl.dialects import func
-from xdsl.dialects.scf import ForOp, IfOp, WhileOp
+from xdsl.dialects.scf import ForOp, IfOp, IndexSwitchOp, WhileOp
 
 from pennylane.compiler.python_compiler.dialects.catalyst import CallbackOp
+from pennylane.compiler.python_compiler.dialects.mbqc import GraphStatePrepOp, MeasureInBasisOp
 from pennylane.compiler.python_compiler.dialects.qec import (
     PPMeasurementOp,
     PPRotationOp,
@@ -35,6 +36,7 @@ from pennylane.compiler.python_compiler.dialects.qec import (
 from pennylane.compiler.python_compiler.dialects.quantum import (
     AllocOp,
     AllocQubitOp,
+    CountsOp,
     CustomOp,
     DeviceInitOp,
     ExpvalOp,
@@ -51,6 +53,48 @@ from pennylane.compiler.python_compiler.dialects.quantum import (
 )
 from pennylane.compiler.python_compiler.inspection.xdsl_conversion import *
 
+# A list of all custom dialect names used by Catalyst for MLIR ops
+# Note that this isn't a complete list, just one where specs *must* support every op
+_CUSTOM_DIALECT_NAMES = frozenset(
+    {
+        "quantum",
+        "qec",
+        "mbqc",
+    }
+)
+
+# TODO: How to handle `gradient` and `mitigation` dialects
+
+# Ops to skip counting as "classical ops", only relevant if these ops would otherwise be
+# counted as classical ops (i.e. they are not already quantum ops, QECs, etc.)
+_SKIPPED_CLASSICAL_OPS = frozenset(
+    {
+        "quantum.compbasis",
+        "quantum.dealloc",
+        "quantum.dealloc_qb",
+        "quantum.device_release",
+        "quantum.extract",
+        "quantum.finalize",
+        "quantum.init",
+        "quantum.insert",
+        "quantum.num_qubits",
+        "quantum.yield",
+        "qec.yield",
+    }
+)
+
+# TODO: Handle these somehow
+_TODO_OPS = [
+    "quantum.adjoint",
+    "quantum.hamiltonian",
+    "quantum.hermitian",
+    "quantum.namedobs",
+    "quantum.tensor",
+    "qec.fabricate",
+    "qec.layer",
+    "qec.prepare",
+]
+
 
 class ResourceType(enum.Enum):
     """Enum for what kind of resource corresponds to a given xDSL operation type."""
@@ -58,14 +102,14 @@ class ResourceType(enum.Enum):
     # Circuit resources
     GATE = "gate"
     MEASUREMENT = "measurement"
-    PPM = "ppm"
+    QEC = "qec"
 
     # Extra circuit info
     METADATA = "meta"
 
     # MLIR data
     FUNC_CALL = "fcall"
-    CLASSICAL = "classical"
+    OTHER = "other"
 
 
 class ResourcesResult:
@@ -74,7 +118,7 @@ class ResourcesResult:
     def __init__(self):
         self.quantum_operations: dict[str, int] = defaultdict(int)
         self.quantum_measurements: dict[str, int] = defaultdict(int)
-        self.ppm_operations: dict[str, int] = defaultdict(int)
+        self.qec_operations: dict[str, int] = defaultdict(int)
 
         self.resource_sizes: dict[int, int] = defaultdict(int)
 
@@ -100,8 +144,8 @@ class ResourcesResult:
             self.quantum_operations[name] = merge_func(self.quantum_operations[name], count)
         for name, count in other.quantum_measurements.items():
             self.quantum_measurements[name] = merge_func(self.quantum_measurements[name], count)
-        for name, count in other.ppm_operations.items():
-            self.ppm_operations[name] = merge_func(self.ppm_operations[name], count)
+        for name, count in other.qec_operations.items():
+            self.qec_operations[name] = merge_func(self.qec_operations[name], count)
 
         for size, count in other.resource_sizes.items():
             self.resource_sizes[size] = merge_func(self.resource_sizes[size], count)
@@ -120,8 +164,8 @@ class ResourcesResult:
             self.quantum_operations[name] *= scalar
         for name in self.quantum_measurements:
             self.quantum_measurements[name] *= scalar
-        for name in self.ppm_operations:
-            self.ppm_operations[name] *= scalar
+        for name in self.qec_operations:
+            self.qec_operations[name] *= scalar
 
         for size in self.resource_sizes:
             self.resource_sizes[size] *= scalar
@@ -140,7 +184,7 @@ class ResourcesResult:
             f"wires: {self.num_wires}, "
             f"quantum_ops: {sum(self.quantum_operations.values())}, "
             f"measurements: {sum(self.quantum_measurements.values())}, "
-            f"PPMs: {sum(self.ppm_operations.values())}, "
+            f"QECs: {sum(self.qec_operations.values())}, "
             f"classical_instructions: {sum(self.classical_instructions.values())}, "
             f"fn_calls: {sum(self.function_calls.values())})"
         )
@@ -153,7 +197,7 @@ def handle_resource(
     xdsl_op: xdsl.ir.Operation,
 ) -> tuple[ResourceType, str] | tuple[None, None]:
     # Default handler for unsupported xDSL op types
-    return ResourceType.CLASSICAL, xdsl_op.name
+    return ResourceType.OTHER, xdsl_op.name
 
 
 ############################################################
@@ -162,21 +206,18 @@ def handle_resource(
 
 
 @handle_resource.register
-def _(xdsl_meas: StateOp) -> tuple[ResourceType, str]:
+def _(xdsl_meas: MeasureOp) -> tuple[ResourceType, str]:
     return ResourceType.MEASUREMENT, xdsl_to_qml_measurement_type(xdsl_meas)
 
 
 @handle_resource.register
-def _(xdsl_meas_op: ExpvalOp | VarianceOp | ProbsOp | SampleOp) -> tuple[ResourceType, str]:
-    obs_op = xdsl_meas_op.obs.owner
+def _(
+    xdsl_meas: CountsOp | ExpvalOp | ProbsOp | SampleOp | StateOp | VarianceOp,
+) -> tuple[ResourceType, str]:
+    obs_op = xdsl_meas.obs.owner
     return ResourceType.MEASUREMENT, xdsl_to_qml_measurement_type(
-        xdsl_meas_op, xdsl_to_qml_measurement_type(obs_op)
+        xdsl_meas, xdsl_to_qml_measurement_type(obs_op)
     )
-
-
-@handle_resource.register
-def _(xdsl_measure: MeasureOp) -> tuple[ResourceType, str]:
-    return ResourceType.MEASUREMENT, xdsl_to_qml_measurement_type(xdsl_measure)
 
 
 ############################################################
@@ -186,14 +227,19 @@ def _(xdsl_measure: MeasureOp) -> tuple[ResourceType, str]:
 
 @handle_resource.register
 def _(
-    xdsl_op: CustomOp | GlobalPhaseOp | QubitUnitaryOp | SetStateOp | MultiRZOp | SetBasisStateOp,
+    xdsl_op: CustomOp | GlobalPhaseOp | MultiRZOp | SetBasisStateOp | SetStateOp | QubitUnitaryOp,
 ) -> tuple[ResourceType, str]:
     return ResourceType.GATE, xdsl_to_qml_op_type(xdsl_op)
 
 
 ############################################################
-### PPM Operations
+### QEC Operations
 ############################################################
+
+
+@handle_resource.register
+def _(xdsl_op: GraphStatePrepOp | MeasureInBasisOp) -> tuple[ResourceType, str]:
+    return ResourceType.QEC, xdsl_op.name
 
 
 @handle_resource.register
@@ -206,12 +252,12 @@ def _(xdsl_op: PPRotationOp) -> tuple[ResourceType, str]:
         s = "PPR-identity"
     else:
         s = f"PPR-pi/{abs(xdsl_op.rotation_kind.value.data)}-w{len(xdsl_op.in_qubits)}"
-    return ResourceType.PPM, s
+    return ResourceType.QEC, s
 
 
 @handle_resource.register
 def _(xdsl_op: PPMeasurementOp | SelectPPMeasurementOp) -> tuple[ResourceType, str]:
-    return ResourceType.PPM, f"PPM-w{len(xdsl_op.in_qubits)}"
+    return ResourceType.QEC, f"PPM-w{len(xdsl_op.in_qubits)}"
 
 
 ############################################################
@@ -266,24 +312,24 @@ def _(xdsl_op: AllocQubitOp | AllocOp, resources: ResourcesResult) -> None:
 
 
 def _resolve_function_calls(
-    fxn: str, fxn_to_resources: dict[str, ResourcesResult]
+    func: str, func_to_resources: dict[str, ResourcesResult]
 ) -> ResourcesResult:
     """Resolve subroutine function calls within the collected resources.
 
-    Note that this function is recursive and modifies the ResourcesResult associated with `fxn`
-    in place. After running, the ResourcesResult object associated with `fxn` will include the
+    Note that this function is recursive and modifies the ResourcesResult associated with `func`
+    in place. After running, the ResourcesResult object associated with `func` will include the
     resources of any subroutine functions and its function call table will be empty
     """
-    resources = fxn_to_resources[fxn]
+    resources = func_to_resources[func]
 
-    for called_fxn in list(resources.function_calls.keys()):
-        count = resources.function_calls.pop(called_fxn)
+    for called_func in list(resources.function_calls.keys()):
+        count = resources.function_calls.pop(called_func)
 
-        if called_fxn not in fxn_to_resources:
+        if called_func not in func_to_resources:
             # External function, cannot resolve
             continue
 
-        called_resources = _resolve_function_calls(called_fxn, fxn_to_resources)
+        called_resources = _resolve_function_calls(called_func, func_to_resources)
 
         # Merge the called function's resources into this one
         called_resources_scaled = ResourcesResult()
@@ -337,7 +383,6 @@ def _collect_region(region, loop_warning=False, cond_warning=False) -> Resources
 
         if isinstance(op, IfOp):
             if not cond_warning:
-                # NOTE: For now we count operations from both branches
                 warnings.warn(
                     "Specs was unable to determine the branch of a conditional or switch statement. "
                     "The results will take the maximum resources across all possible branches.",
@@ -358,11 +403,29 @@ def _collect_region(region, loop_warning=False, cond_warning=False) -> Resources
             resources.merge_with(used_resources)
             continue
 
-        resource_type, resource = handle_resource(op)
+        if isinstance(op, IndexSwitchOp):
+            if not cond_warning:
+                warnings.warn(
+                    "Specs was unable to determine the branch of a conditional or switch statement. "
+                    "The results will take the maximum resources across all possible branches.",
+                    UserWarning,
+                )
+                cond_warning = True
 
-        if resource_type is None:
-            # xDSL op type is not a PennyLane resource to be tracked
+            used_resources = _collect_region(
+                op.case_regions[0], loop_warning=loop_warning, cond_warning=cond_warning
+            )
+
+            for region in op.case_regions[1:]:
+                used_resources.merge_with(
+                    _collect_region(region, loop_warning=loop_warning, cond_warning=cond_warning),
+                    method="max",
+                )
+
+            resources.merge_with(used_resources)
             continue
+
+        resource_type, resource = handle_resource(op)
 
         match resource_type:
             case ResourceType.GATE:
@@ -373,19 +436,38 @@ def _collect_region(region, loop_warning=False, cond_warning=False) -> Resources
                 if hasattr(op, "in_ctrl_qubits"):
                     n_qubits += len(op.in_ctrl_qubits)
                 resources.resource_sizes[n_qubits] += 1
+
             case ResourceType.MEASUREMENT:
                 resources.quantum_measurements[resource] += 1
-            case ResourceType.PPM:
-                resources.ppm_operations[resource] += 1
+
+            case ResourceType.QEC:
+                resources.qec_operations[resource] += 1
                 resources.resource_sizes[len(op.in_qubits)] += 1
+
             case ResourceType.METADATA:
                 # Parse out extra circuit information
                 handle_metadata(op, resources)
-            case ResourceType.CLASSICAL:
+
+            case ResourceType.OTHER:
+                if op.name in _SKIPPED_CLASSICAL_OPS:
+                    continue
+
+                if op.dialect_name() in _CUSTOM_DIALECT_NAMES:
+                    # Unknown custom dialect op, warn the user
+                    warnings.warn(
+                        f"Specs encountered an unknown operation '{op.name}' from the "
+                        f"'{op.dialect_name()}' dialect. Some resource data may be missing.",
+                        UserWarning,
+                    )
+                    continue
+
                 resources.classical_instructions[resource] += 1
+
             case ResourceType.FUNC_CALL:
                 resources.function_calls[resource] += 1
+
             case _:
+                # Should be unreachable
                 raise NotImplementedError(
                     f"Unsupported resource type {resource_type} for resource {resource}."
                 )
@@ -396,8 +478,10 @@ def _collect_region(region, loop_warning=False, cond_warning=False) -> Resources
 def specs_collect(module) -> ResourcesResult:
     """Collect PennyLane resources from the module."""
 
-    fxn_to_resources = {}
-    entry_fxn = None
+    func_to_resources = {}
+    entry_func = None
+
+    func_decl_warning = False
 
     for func_op in module.body.ops:
         # TODO: May need to determine how many times a function is called for functions other than the main circuit
@@ -410,22 +494,24 @@ def specs_collect(module) -> ResourcesResult:
             raise ValueError("Expected FuncOp in module body.")
 
         if func_op.is_declaration:
-            warnings.warn(
-                f"Function {func_op.sym_name.data} is an external declaration. "
-                "Specs cannot analyze external functions, so some data may be missing.",
-                UserWarning,
-            )
+            if not func_decl_warning:
+                warnings.warn(
+                    f"Specs encountered an external function declaration, and could not analyze its contents. "
+                    "Some resource data may be missing.",
+                    UserWarning,
+                )
+                func_decl_warning = True
             continue  # Skip external function declarations
 
         resources = _collect_region(func_op.body)
-        fxn_to_resources[func_op.sym_name.data] = resources
+        func_to_resources[func_op.sym_name.data] = resources
 
         if "qnode" in func_op.attributes:
             # The main entrypoint for a qnode is always marked by the `qnode` attribute
-            entry_fxn = func_op.sym_name.data
+            entry_func = func_op.sym_name.data
 
-    if entry_fxn not in fxn_to_resources:
+    if entry_func not in func_to_resources:
         raise ValueError("Entry function not found in module.")
 
-    a = _resolve_function_calls(entry_fxn, fxn_to_resources)
+    a = _resolve_function_calls(entry_func, func_to_resources)
     return a
