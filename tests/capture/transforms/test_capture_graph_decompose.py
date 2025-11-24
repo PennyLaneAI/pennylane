@@ -561,3 +561,16 @@ class TestDecomposeInterpreterGraphEnabled:
                 continue
             gate_counts[type(op)] += 1
         assert gate_counts == expected_gate_count
+
+    def test_nested_composite_ops(self):
+        """Tests that nested composite operators are decomposed properly."""
+
+        @DecomposeInterpreter(gate_set={qml.X, qml.Y, qml.Z})
+        def f():
+            qml.change_op_basis(
+                qml.prod(qml.X(0), qml.Y(0)), qml.Z(0), qml.prod(qml.Y(0), qml.X(0))
+            )
+
+        plxpr = jax.make_jaxpr(f)()
+        tape = qml.tape.plxpr_to_tape(plxpr.jaxpr, plxpr.consts)
+        assert tape.operations == [qml.Y(0), qml.X(0), qml.Z(0), qml.X(0), qml.Y(0)]
