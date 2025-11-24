@@ -30,7 +30,7 @@ from pennylane import ops
 from pennylane.compiler.python_compiler.dialects.quantum import (
     CustomOp,
 )
-from pennylane.measurements import expval, probs, sample, state, var
+from pennylane.measurements import counts, expval, probs, sample, state, var
 from pennylane.operation import Operator
 from pennylane.ops import MidMeasure
 from pennylane.ops import __all__ as ops_all
@@ -85,6 +85,7 @@ from_str_to_PL_gate = {
 }
 
 from_str_to_PL_measurement = {
+    "quantum.counts": counts,
     "quantum.state": state,
     "quantum.probs": probs,
     "quantum.sample": sample,
@@ -352,10 +353,10 @@ def xdsl_to_qml_op_type(op) -> str:
 
     name_map = {
         "quantum.gphase": "GlobalPhase",
-        "quantum.unitary": "QubitUnitary",
-        "quantum.set_state": "StatePrep",
         "quantum.multirz": "MultiRZ",
         "quantum.set_basis_state": "BasisState",
+        "quantum.set_state": "StatePrep",
+        "quantum.unitary": "QubitUnitary",
     }
 
     if op.name == "quantum.custom":
@@ -427,14 +428,6 @@ def xdsl_to_qml_measurement_type(op, obs_op=None) -> str:
         A string representing the PennyLane measurement.
     """
 
-    resolveable_names = (
-        "quantum.state",
-        "quantum.probs",
-        "quantum.sample",
-        "quantum.expval",
-        "quantum.var",
-    )
-
     if op.name == "quantum.measure":
         gate_name = "MidMeasure"
 
@@ -455,7 +448,7 @@ def xdsl_to_qml_measurement_type(op, obs_op=None) -> str:
         gate_cls = resolve_gate(op.type.data.value)
         gate_name = gate_cls.__name__
 
-    elif op.name in resolveable_names:
+    elif op.name in from_str_to_PL_measurement:
         gate_cls = resolve_measurement(op.name)
         gate_name = gate_cls.__name__
 

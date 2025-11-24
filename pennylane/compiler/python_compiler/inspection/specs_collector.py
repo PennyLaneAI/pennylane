@@ -27,6 +27,7 @@ from xdsl.dialects import func
 from xdsl.dialects.scf import ForOp, IfOp, IndexSwitchOp, WhileOp
 
 from pennylane.compiler.python_compiler.dialects.catalyst import CallbackOp
+from pennylane.compiler.python_compiler.dialects.mbqc import GraphStatePrepOp, MeasureInBasisOp
 from pennylane.compiler.python_compiler.dialects.qec import (
     PPMeasurementOp,
     PPRotationOp,
@@ -35,6 +36,7 @@ from pennylane.compiler.python_compiler.dialects.qec import (
 from pennylane.compiler.python_compiler.dialects.quantum import (
     AllocOp,
     AllocQubitOp,
+    CountsOp,
     CustomOp,
     DeviceInitOp,
     ExpvalOp,
@@ -51,6 +53,48 @@ from pennylane.compiler.python_compiler.dialects.quantum import (
 )
 from pennylane.compiler.python_compiler.inspection.xdsl_conversion import *
 
+# A list of all custom dialect names used by Catalyst for MLIR ops
+# Note that this isn't a complete list, just one where specs *must* support every op
+_CUSTOM_DIALECT_NAMES = frozenset(
+    {
+        "quantum",
+        "qec",
+        "mbqc",
+    }
+)
+
+# TODO: How to handle `gradient` and `mitigation` dialects
+
+# Ops to skip counting as "classical ops", only relevant if these ops would otherwise be
+# counted as classical ops (i.e. they are not already quantum ops, QECs, etc.)
+_SKIPPED_CLASSICAL_OPS = frozenset(
+    {
+        "quantum.compbasis",
+        "quantum.dealloc",
+        "quantum.dealloc_qb",
+        "quantum.device_release",
+        "quantum.extract",
+        "quantum.finalize",
+        "quantum.init",
+        "quantum.insert",
+        "quantum.num_qubits",
+        "quantum.yield",
+        "qec.yield",
+    }
+)
+
+# TODO: Handle these somehow
+_TODO_OPS = [
+    "quantum.adjoint",
+    "quantum.hamiltonian",
+    "quantum.hermitian",
+    "quantum.namedobs",
+    "quantum.tensor",
+    "qec.fabricate",
+    "qec.layer",
+    "qec.prepare",
+]
+
 
 class ResourceType(enum.Enum):
     """Enum for what kind of resource corresponds to a given xDSL operation type."""
@@ -58,14 +102,14 @@ class ResourceType(enum.Enum):
     # Circuit resources
     GATE = "gate"
     MEASUREMENT = "measurement"
-    PPM = "ppm"
+    QEC = "qec"
 
     # Extra circuit info
     METADATA = "meta"
 
     # MLIR data
     FUNC_CALL = "fcall"
-    CLASSICAL = "classical"
+    OTHER = "other"
 
 
 class ResourcesResult:
@@ -74,7 +118,7 @@ class ResourcesResult:
     def __init__(self):
         self.quantum_operations: dict[str, int] = defaultdict(int)
         self.quantum_measurements: dict[str, int] = defaultdict(int)
-        self.ppm_operations: dict[str, int] = defaultdict(int)
+        self.qec_operations: dict[str, int] = defaultdict(int)
 
         self.resource_sizes: dict[int, int] = defaultdict(int)
 
@@ -100,8 +144,8 @@ class ResourcesResult:
             self.quantum_operations[name] = merge_func(self.quantum_operations[name], count)
         for name, count in other.quantum_measurements.items():
             self.quantum_measurements[name] = merge_func(self.quantum_measurements[name], count)
-        for name, count in other.ppm_operations.items():
-            self.ppm_operations[name] = merge_func(self.ppm_operations[name], count)
+        for name, count in other.qec_operations.items():
+            self.qec_operations[name] = merge_func(self.qec_operations[name], count)
 
         for size, count in other.resource_sizes.items():
             self.resource_sizes[size] = merge_func(self.resource_sizes[size], count)
@@ -120,8 +164,8 @@ class ResourcesResult:
             self.quantum_operations[name] *= scalar
         for name in self.quantum_measurements:
             self.quantum_measurements[name] *= scalar
-        for name in self.ppm_operations:
-            self.ppm_operations[name] *= scalar
+        for name in self.qec_operations:
+            self.qec_operations[name] *= scalar
 
         for size in self.resource_sizes:
             self.resource_sizes[size] *= scalar
@@ -140,7 +184,7 @@ class ResourcesResult:
             f"wires: {self.num_wires}, "
             f"quantum_ops: {sum(self.quantum_operations.values())}, "
             f"measurements: {sum(self.quantum_measurements.values())}, "
-            f"PPMs: {sum(self.ppm_operations.values())}, "
+            f"QECs: {sum(self.qec_operations.values())}, "
             f"classical_instructions: {sum(self.classical_instructions.values())}, "
             f"fn_calls: {sum(self.function_calls.values())})"
         )
@@ -153,7 +197,7 @@ def handle_resource(
     xdsl_op: xdsl.ir.Operation,
 ) -> tuple[ResourceType, str] | tuple[None, None]:
     # Default handler for unsupported xDSL op types
-    return ResourceType.CLASSICAL, xdsl_op.name
+    return ResourceType.OTHER, xdsl_op.name
 
 
 ############################################################
@@ -162,21 +206,18 @@ def handle_resource(
 
 
 @handle_resource.register
-def _(xdsl_meas: StateOp) -> tuple[ResourceType, str]:
+def _(xdsl_meas: MeasureOp) -> tuple[ResourceType, str]:
     return ResourceType.MEASUREMENT, xdsl_to_qml_measurement_type(xdsl_meas)
 
 
 @handle_resource.register
-def _(xdsl_meas_op: ExpvalOp | VarianceOp | ProbsOp | SampleOp) -> tuple[ResourceType, str]:
-    obs_op = xdsl_meas_op.obs.owner
+def _(
+    xdsl_meas: CountsOp | ExpvalOp | ProbsOp | SampleOp | StateOp | VarianceOp,
+) -> tuple[ResourceType, str]:
+    obs_op = xdsl_meas.obs.owner
     return ResourceType.MEASUREMENT, xdsl_to_qml_measurement_type(
-        xdsl_meas_op, xdsl_to_qml_measurement_type(obs_op)
+        xdsl_meas, xdsl_to_qml_measurement_type(obs_op)
     )
-
-
-@handle_resource.register
-def _(xdsl_measure: MeasureOp) -> tuple[ResourceType, str]:
-    return ResourceType.MEASUREMENT, xdsl_to_qml_measurement_type(xdsl_measure)
 
 
 ############################################################
@@ -186,14 +227,19 @@ def _(xdsl_measure: MeasureOp) -> tuple[ResourceType, str]:
 
 @handle_resource.register
 def _(
-    xdsl_op: CustomOp | GlobalPhaseOp | QubitUnitaryOp | SetStateOp | MultiRZOp | SetBasisStateOp,
+    xdsl_op: CustomOp | GlobalPhaseOp | MultiRZOp | SetBasisStateOp | SetStateOp | QubitUnitaryOp,
 ) -> tuple[ResourceType, str]:
     return ResourceType.GATE, xdsl_to_qml_op_type(xdsl_op)
 
 
 ############################################################
-### PPM Operations
+### QEC Operations
 ############################################################
+
+
+@handle_resource.register
+def _(xdsl_op: GraphStatePrepOp | MeasureInBasisOp) -> tuple[ResourceType, str]:
+    return ResourceType.QEC, xdsl_op.name
 
 
 @handle_resource.register
@@ -206,12 +252,12 @@ def _(xdsl_op: PPRotationOp) -> tuple[ResourceType, str]:
         s = "PPR-identity"
     else:
         s = f"PPR-pi/{abs(xdsl_op.rotation_kind.value.data)}-w{len(xdsl_op.in_qubits)}"
-    return ResourceType.PPM, s
+    return ResourceType.QEC, s
 
 
 @handle_resource.register
 def _(xdsl_op: PPMeasurementOp | SelectPPMeasurementOp) -> tuple[ResourceType, str]:
-    return ResourceType.PPM, f"PPM-w{len(xdsl_op.in_qubits)}"
+    return ResourceType.QEC, f"PPM-w{len(xdsl_op.in_qubits)}"
 
 
 ############################################################
@@ -390,19 +436,38 @@ def _collect_region(region, loop_warning=False, cond_warning=False) -> Resources
                 if hasattr(op, "in_ctrl_qubits"):
                     n_qubits += len(op.in_ctrl_qubits)
                 resources.resource_sizes[n_qubits] += 1
+
             case ResourceType.MEASUREMENT:
                 resources.quantum_measurements[resource] += 1
-            case ResourceType.PPM:
-                resources.ppm_operations[resource] += 1
+
+            case ResourceType.QEC:
+                resources.qec_operations[resource] += 1
                 resources.resource_sizes[len(op.in_qubits)] += 1
+
             case ResourceType.METADATA:
                 # Parse out extra circuit information
                 handle_metadata(op, resources)
-            case ResourceType.CLASSICAL:
+
+            case ResourceType.OTHER:
+                if op.name in _SKIPPED_CLASSICAL_OPS:
+                    continue
+
+                if op.dialect_name() in _CUSTOM_DIALECT_NAMES:
+                    # Unknown custom dialect op, warn the user
+                    warnings.warn(
+                        f"Specs encountered an unknown operation '{op.name}' from the "
+                        f"'{op.dialect_name()}' dialect. Some resource data may be missing.",
+                        UserWarning,
+                    )
+                    continue
+
                 resources.classical_instructions[resource] += 1
+
             case ResourceType.FUNC_CALL:
                 resources.function_calls[resource] += 1
+
             case _:
+                # Should be unreachable
                 raise NotImplementedError(
                     f"Unsupported resource type {resource_type} for resource {resource}."
                 )
