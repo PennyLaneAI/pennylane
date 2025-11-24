@@ -124,9 +124,10 @@ class ResourcesResult:
 
         self.classical_instructions: dict[str, int] = defaultdict(int)
         self.function_calls: dict[str, int] = defaultdict(int)
+        self._unresolved_function_calls: dict[str, int] = defaultdict(int)
 
         self.device_name = None
-        self.num_wires = 0  # More accurately, the number of NEW allocations in this region
+        self.num_allocs = 0  # The total number of distinct qubits allocated in this region
 
     def merge_with(self, other: "ResourcesResult", method: str = "sum") -> None:
         """Merge another ResourcesResult into this one."""
@@ -154,9 +155,13 @@ class ResourcesResult:
             self.classical_instructions[name] = merge_func(self.classical_instructions[name], count)
         for name, count in other.function_calls.items():
             self.function_calls[name] = merge_func(self.function_calls[name], count)
+        for name, count in other._unresolved_function_calls.items():
+            self._unresolved_function_calls[name] = merge_func(
+                self._unresolved_function_calls[name], count
+            )
 
         self.device_name = self.device_name or other.device_name
-        self.num_wires = merge_func(self.num_wires, other.num_wires)
+        self.num_allocs = merge_func(self.num_allocs, other.num_allocs)
 
     def multiply_by_scalar(self, scalar: int) -> None:
         """Multiply all counts by a scalar."""
@@ -174,14 +179,16 @@ class ResourcesResult:
             self.classical_instructions[name] *= scalar
         for name in self.function_calls:
             self.function_calls[name] *= scalar
+        for name in self._unresolved_function_calls:
+            self._unresolved_function_calls[name] *= scalar
 
         # This is the number of allocations WITHIN this region, should be scaled
-        self.num_wires *= scalar
+        self.num_allocs *= scalar
 
     def __repr__(self) -> str:
         return (
             f"ResourcesResult(device: {self.device_name}, "
-            f"wires: {self.num_wires}, "
+            f"allocs: {self.num_allocs}, "
             f"quantum_ops: {sum(self.quantum_operations.values())}, "
             f"measurements: {sum(self.quantum_measurements.values())}, "
             f"QECs: {sum(self.qec_operations.values())}, "
@@ -302,7 +309,7 @@ def _(xdsl_op: AllocQubitOp | AllocOp, resources: ResourcesResult) -> None:
         nallocs = 1
     else:
         nallocs = xdsl_op.nqubits_attr.value.data
-    resources.num_wires += nallocs
+    resources.num_allocs += nallocs
 
 
 ############################################################
@@ -321,8 +328,8 @@ def _resolve_function_calls(
     """
     resources = func_to_resources[func]
 
-    for called_func in list(resources.function_calls.keys()):
-        count = resources.function_calls.pop(called_func)
+    for called_func in list(resources._unresolved_function_calls.keys()):
+        count = resources._unresolved_function_calls.pop(called_func)
 
         if called_func not in func_to_resources:
             # External function, cannot resolve
@@ -465,6 +472,7 @@ def _collect_region(region, loop_warning=False, cond_warning=False) -> Resources
 
             case ResourceType.FUNC_CALL:
                 resources.function_calls[resource] += 1
+                resources._unresolved_function_calls[resource] += 1
 
             case _:
                 # Should be unreachable
