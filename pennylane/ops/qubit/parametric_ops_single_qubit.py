@@ -98,6 +98,7 @@ class RX(Operation):
 
     @staticmethod
     def compute_decomposition(phi, wires):
+        # dont use graph decomposition for RX-> Rot
         raise DecompositionUndefinedError
 
     @staticmethod
@@ -274,6 +275,7 @@ class RY(Operation):
 
     @staticmethod
     def compute_decomposition(phi, wires):
+        # dont use graph decomposition for RY-> Rot
         raise DecompositionUndefinedError
 
     @staticmethod
@@ -443,6 +445,7 @@ class RZ(Operation):
 
     @staticmethod
     def compute_decomposition(phi, wires):
+        # dont use graph decomposition for RZ-> Rot
         raise DecompositionUndefinedError
 
     @staticmethod

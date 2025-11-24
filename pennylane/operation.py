@@ -698,6 +698,16 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
     """
 
     def __init_subclass__(cls, **_):
+        # turn has_decomposition into a class property if possible
+
+        # Some operators will overwrite `decomposition` instead of `compute_decomposition`
+        # Currently, those are mostly classes from the operator arithmetic module.
+        if (
+            cls.compute_decomposition != Operator.compute_decomposition
+            or cls.decomposition != Operator.decomposition
+        ) and (cls.has_decomposition == Operator.has_decomposition):
+            cls.has_decomposition = True
+
         register_pytree(cls, cls._flatten, cls._unflatten)
         cls._primitive = create_operator_primitive(cls)
 
@@ -1392,20 +1402,12 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
 
         return False
 
-    # pylint: disable=no-self-argument, comparison-with-callable
-    @classproperty
-    def has_decomposition(cls) -> bool:
-        r"""Bool: Whether or not the Operator returns a defined decomposition.
-
-        Note: Child classes may have this as an instance property instead of as a class property.
-        """
-        # Some operators will overwrite `decomposition` instead of `compute_decomposition`
-        # Currently, those are mostly classes from the operator arithmetic module.
-        return (
-            cls.compute_decomposition != Operator.compute_decomposition
-            or cls.decomposition != Operator.decomposition
-            or bool(qml.list_decomps(cls))
-        )
+    @property
+    def has_decomposition(self) -> bool:
+        r"""Bool: Whether or not the Operator returns a defined decomposition."""
+        # if compute_decomposition or decomposition overwritten and property
+        # not overwritten, set as class property during __init_subclass__
+        return any(rule.is_applicable(**self.resource_params) for rule in qml.list_decomps(self))
 
     def decomposition(self) -> list["Operator"]:
         r"""Representation of the operator as a product of other operators.
@@ -1423,16 +1425,18 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
             return self.compute_decomposition(
                 *self.parameters, wires=self.wires, **self.hyperparameters
             )
-        decomps = qml.list_decomps(self)
-        if not decomps:
-            return self.compute_decomposition(
-                *self.parameters, wires=self.wires, **self.hyperparameters
-            )
-        with AnnotatedQueue() as q:
-            decomps[0](*self.data, wires=self.wires, **self.hyperparameters)
-        if QueuingManager.recording():
-            _ = [qml.apply(op) for op in q.queue]
-        return q.queue
+
+        for decomp in qml.list_decomps(self):
+            if decomp.is_applicable(**self.resource_params):
+                with AnnotatedQueue() as q:
+                    decomp(*self.data, wires=self.wires, **self.hyperparameters)
+                if QueuingManager.recording():
+                    # no need for copies if we just use queue method
+                    _ = [op.queue() for op in q.queue]
+                return q.queue
+        return self.compute_decomposition(
+            *self.parameters, wires=self.wires, **self.hyperparameters
+        )
 
     @staticmethod
     def compute_decomposition(
