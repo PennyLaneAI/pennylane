@@ -341,19 +341,10 @@ def _(op: qtemps.QuantumPhaseEstimation):
 def _(op: qtemps.TrotterProduct):
 
     with QueuingManager.stop_recording():
-        res_ops = []
-        for term in op.hyperparameters["base"].operands:
-            mapped_term = _map_term_trotter(term)
-            mapped_term_res = _map_to_resource_op(mapped_term)
-            print(term)
-            print(mapped_term)
-            print(mapped_term_res, "\n---------")
-
-            res_ops.append(mapped_term_res)
-        # res_ops = [
-        #     _map_to_resource_op(_map_term_trotter(term))
-        #     for term in op.hyperparameters["base"].operands
-        # ]
+        res_ops = [
+            _map_to_resource_op(_map_term_trotter(term))
+            for term in op.hyperparameters["base"].operands
+        ]
 
     return re_temps.TrotterProduct(
         first_order_expansion=res_ops,

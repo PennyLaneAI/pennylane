@@ -29,6 +29,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* Improved the resource decomposition of `PauliRot` to match the optimal resources
+  for certain special cases for Pauli strings (e.g for `XX` and `YY` type Pauli strings).
+  [(#8562)](https://github.com/PennyLaneAI/pennylane/pull/8562)
+
 * Add the `PCPhaseOp` operation to the xDSL Quantum dialect.
   [(#8621)](https://github.com/PennyLaneAI/pennylane/pull/8621)
 
