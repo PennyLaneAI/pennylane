@@ -451,12 +451,12 @@ def cond(
 
             return qml.expval(qml.Z(0))
 
-        ansatz_true = circuit(1.4)  # doctest: +SKIP
-        ansatz_false = circuit(1.6)  # doctest: +SKIP
+        ansatz_true = circuit(1.4)
+        ansatz_false = circuit(1.6)
 
-    >>> jnp.allclose(ansatz_true, jnp.cos(1.4))  # doctest: +SKIP
+    >>> jnp.allclose(ansatz_true, jnp.cos(1.4))
     Array(True, dtype=bool)
-    >>> jnp.allclose(ansatz_false, jnp.cos(1.6))  # doctest: +SKIP
+    >>> jnp.allclose(ansatz_false, jnp.cos(1.6))
     Array(True, dtype=bool)
 
     Additional 'else-if' clauses can also be included via the ``elif`` argument:
@@ -479,7 +479,7 @@ def cond(
             qml.cond(x > 2.7, true_fn, false_fn, ((x > 1.4, elif_fn),))()
             return qml.expval(qml.Z(0))
 
-    >>> circuit(1.2)  # doctest: +SKIP
+    >>> circuit(1.2)
     Array(0.13042371, dtype=float64)
 
     .. note::

@@ -148,7 +148,7 @@ def ctrl(op, control: Any, control_values=None, work_wires=None, work_wire_type=
             qml.ctrl(qml.RY(theta, wires=w), control=[cw])
             return qml.probs()
 
-    >>> workflow(jnp.pi/4, 1, 0)  # DOCTEST: +SKIP
+    >>> workflow(jnp.pi/4, 1, 0)
     Array([0.25      , 0.25      , 0.03661165, 0.46338835], dtype=float64)
     """
 
