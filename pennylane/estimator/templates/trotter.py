@@ -2085,7 +2085,7 @@ class TrotterPauli(ResourceOperator):
 
     @staticmethod
     def cost_pauli_group(pauli_dist: dict):
-        """Given a dictionary of Pauli words and frequecies, return the cost of exponentiating
+        """Given a dictionary of Pauli words and frequencies, return the cost of exponentiating
         the group of terms.
 
         Args:
