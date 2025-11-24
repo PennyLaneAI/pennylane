@@ -198,18 +198,14 @@ class MultiRZ(Operation):
         """
         if len(wires) == 1:
             return [qml.RZ(theta, wires=wires[0])]
-        return [
-            qml.change_op_basis(
-                qml.prod(*[qml.CNOT(wires=[wires[i], wires[i - 1]]) for i in range(1, len(wires))]),
-                qml.RZ(theta, wires=wires[0]),
-                qml.prod(
-                    *[
+       cnots = qml.prod(*(qml.CNOT(wires=[wires[i], wires[i - 1]]) for i in range(1, len(wires))))
+       adj_cnots =qml.prod(
+                    *(
                         qml.CNOT(wires=[wires[i], wires[i - 1]])
                         for i in range(len(wires) - 1, 0, -1)
-                    ]
-                ),
-            )
-        ]
+                    )
+                )
+        return [qml.change_op_basis(cnots, qml.RZ(theta, wires=wires[0]), adj_cnots)]
 
     @property
     def resource_params(self) -> dict:
