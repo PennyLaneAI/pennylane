@@ -176,6 +176,12 @@ class TestTransformContainer:
         t5 = TransformContainer(qml.transforms.merge_rotations, args=(1e-6,))
         t6 = TransformContainer(qml.transforms.merge_rotations, args=(1e-7,))
 
+        my_name1 = qml.transform(pass_name="my_name1")
+        my_name2 = qml.transform(pass_name="my_name2")
+        t7 = TransformContainer(my_name1, args=(0.5,))
+        t7_duplicate = TransformContainer(my_name1, args=(0.5,))
+        t8 = TransformContainer(my_name2, args=(0.5,))
+
         # test for equality of identical transformers
         assert t1 == t2
 
@@ -185,10 +191,14 @@ class TestTransformContainer:
         assert t1 != 2
         assert t5 != t6
         assert t5 != t1
+        assert t7 != t8
+        assert t7 == t7_duplicate
 
         assert hash(t1) == hash(t2)
         assert hash(t1) != hash(t3)
         assert hash(t5) != hash(t6)
+        assert hash(t7) == hash(t7_duplicate)
+        assert hash(t7) != hash(t8)
 
         # Test equality with the same args
         t5_copy = TransformContainer(qml.transforms.merge_rotations, args=(1e-6,))

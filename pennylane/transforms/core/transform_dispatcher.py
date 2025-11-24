@@ -398,7 +398,7 @@ class TransformContainer:  # pylint: disable=too-many-instance-attributes
 
     def __hash__(self):
         hashable_dict = tuple((key, value) for key, value in self.kwargs.items())
-        return hash((self.transform, self.args, hashable_dict))
+        return hash((self.transform, self.pass_name, self.args, hashable_dict))
 
     def __init__(
         self,
@@ -445,6 +445,7 @@ class TransformContainer:  # pylint: disable=too-many-instance-attributes
         return (
             self.args == other.args
             and self.transform == other.transform
+            and self.pass_name == other.pass_name
             and self.kwargs == other.kwargs
             and self.classical_cotransform == other.classical_cotransform
             and self.is_informative == other.is_informative
