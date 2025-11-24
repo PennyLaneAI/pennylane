@@ -262,7 +262,7 @@ def _specs_qjit_intermediate_passes(
             res_resources = Resources(
                 num_wires=res.num_wires,
                 num_gates=sum(res.resource_sizes.values()),
-                gate_types=res.quantum_operations | res.ppm_operations,
+                gate_types=res.quantum_operations | res.qec_operations,
                 gate_sizes=res.resource_sizes,
                 depth=None,  # Can't get depth for intermediate stages
                 shots=original_qnode.shots,  # TODO: Can this ever be overriden during compilation?
