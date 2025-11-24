@@ -36,6 +36,8 @@ from pennylane.operation import Operation, Operator
 from pennylane.ops import CSWAP, SWAP, Hadamard, PauliZ, ctrl
 from pennylane.wires import Wires
 
+# pylint: disable=consider-using-generator
+
 
 # -----------------------------
 # Wires Data Structure
@@ -59,12 +61,15 @@ class _QRAMWires:
         return self.portL_wires[parent] if (prefix % 2 == 0) else self.portR_wires[parent]
 
     def router(self, level: int, prefix: int):
+        """Helps with fetching the routing qubits of a node."""
         return self.dir_wires[_node_index(level, prefix)]
 
     def portL(self, level: int, prefix: int):
+        """Helps with fetching the left port qubit of a node."""
         return self.portL_wires[_node_index(level, prefix)]
 
     def portR(self, level: int, prefix: int):
+        """Helps with fetching the right port qubit of a node."""
         return self.portR_wires[_node_index(level, prefix)]
 
 
