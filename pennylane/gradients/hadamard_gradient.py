@@ -550,29 +550,33 @@ def _quantum_automatic_differentiation(tape, trainable_param_idx, aux_wire) -> t
     # different circuits for the controls, can refer to the hamiltonian’s "grouping indices" list: its length gives
     # the number of shots need for the expectations. See Table III in https://arxiv.org/pdf/2408.05406 for exact
     # formulas.
-    trainable_op, _, _ = tape.get_operation(trainable_param_idx)
-    _, generators = _get_pauli_generators(trainable_op)
-
-    observables = []
-    for m in tape.measurements:
-        _, obs = _get_pauli_terms(m.obs)
-        observables += obs
-
-    observables = list(set(observables))
-
-    def _count_groupings(paulis):
-        op = Sum(*paulis)
-        op.compute_grouping()
-        return len(op.grouping_indices)
-
-    expectations_groupings = _count_groupings(generators)
-    observables_groupings = _count_groupings(observables)
 
     direct = not aux_wire
-    standard = observables_groupings * len(generators) <= expectations_groupings * len(observables)
 
     if len(tape.measurements) > 1:
         standard = True
+    else:
+        trainable_op, _, _ = tape.get_operation(trainable_param_idx)
+        _, generators = _get_pauli_generators(trainable_op)
+
+        observables = []
+        for m in tape.measurements:
+            _, obs = _get_pauli_terms(m.obs)
+            observables += obs
+
+        observables = list(set(observables))
+
+        def _count_groupings(paulis):
+            op = Sum(*paulis)
+            op.compute_grouping()
+            return len(op.grouping_indices)
+
+        expectations_groupings = _count_groupings(generators)
+        observables_groupings = _count_groupings(observables)
+
+        standard = observables_groupings * len(generators) <= expectations_groupings * len(
+            observables
+        )
 
     # Logic Table
     # Direct (No Aux) | Standard Order | Function
