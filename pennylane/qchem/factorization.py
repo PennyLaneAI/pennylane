@@ -278,14 +278,25 @@ def factorize(
 
         if cholesky and init_params is None:
             # compute the factors via cholesky decomposition routine
+            # For compressed factorization, we want exactly num_factors, not early stopping
             factors, f_eigvals, f_eigvecs = _double_factorization_cholesky(
-                two, tol_factor, shape, interface, num_factors
+                two, tol_factor=0.0, shape=shape, interface=interface, num_factors=num_factors
             )
+
+            # Ensure eigenvectors are proper rotations (det=+1) rather than reflections (det=-1)
+            # This is necessary because exp(real antisymmetric matrix) always has det=+1
+            f_eigvecs_corrected = []
+            for f_eigvec in f_eigvecs:
+                f_eigvec_copy = f_eigvec.copy()
+                if np.linalg.det(f_eigvec_copy) < 0:
+                    # Flip sign of first column to convert reflection to rotation
+                    f_eigvec_copy[:, 0] *= -1
+                f_eigvecs_corrected.append(f_eigvec_copy)
+
             # compute the core and orbital rotation tensors from the factors
             core_matrices = qml.math.einsum("ti,tj->tij", f_eigvals, f_eigvals)
-            asym_matrices = [sp.linalg.logm(f_eigvec).real for f_eigvec in f_eigvecs]
+            asym_matrices = [sp.linalg.logm(f_eigvec).real for f_eigvec in f_eigvecs_corrected]
             init_params = {"X": asym_matrices, "Z": core_matrices}
-            num_factors = qml.math.shape(core_matrices)[0]
 
         if init_params is not None:
             init_params = {
