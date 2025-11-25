@@ -203,6 +203,9 @@ class UCCSD(Operation):
         n_repeats: int = 1,
         id=None,
     ):
+        if init_state is None:
+            raise ValueError("Requires `init_state` to be provided.")
+
         wires = Wires(wires)
         s_wires = () if s_wires is None else s_wires
         d_wires = () if d_wires is None else d_wires
@@ -234,8 +237,6 @@ class UCCSD(Operation):
                 f"Weights tensor must be of shape {(n_repeats,) + expected_shape}; got {shape}."
             )
 
-        if init_state is None:
-            raise ValueError("Requires `init_state` to be provided.")
         if len(init_state) != len(wires):
             raise ValueError(
                 f"Expected length of 'init_state' to match number of wires ({len(wires)})."
