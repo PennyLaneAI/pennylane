@@ -259,11 +259,16 @@ def _specs_qjit_intermediate_passes(
         results = mlir_specs(qjit, mlir_levels, *args, **kwargs)
 
         for level_name, res in results.items():
+            gate_sizes = defaultdict(int)
+            for _, sizes in res.operations.items():
+                for size, count in sizes.items():
+                    gate_sizes[size] += count
+
             res_resources = Resources(
                 num_wires=res.num_allocs,
-                num_gates=sum(res.resource_sizes.values()),
-                gate_types=res.quantum_operations | res.qec_operations,
-                gate_sizes=res.resource_sizes,
+                num_gates=sum(gate_sizes.values()),
+                gate_types={r: sum(sizes.values()) for r, sizes in res.operations.items()},
+                gate_sizes=gate_sizes,
                 depth=None,  # Can't get depth for intermediate stages
                 shots=original_qnode.shots,  # TODO: Can this ever be overriden during compilation?
             )
