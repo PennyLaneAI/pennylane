@@ -219,8 +219,7 @@ class IfOperatorPartitioningPattern(RewritePattern):
 
             # detach and erase old outer if op
             for hold_op in holder_returns:
-                hold_op.detach()
-                hold_op.erase()
+                rewriter.erase_op(hold_op)
 
     def move_inner_if_op_2_outer(  # pylint: disable=too-many-branches,too-many-arguments,too-many-statements,no-member
         self,
@@ -367,7 +366,7 @@ class IfOperatorPartitioningPattern(RewritePattern):
 
         # Detach and erase old inner IfOp
         if len(inner_results) == 1:
-            inner_op.erase()
+            rewriter.erase_op(inner_op)
         else:
             holder_returns[inner_op] = new_inner_op
             update_unused_cond = False
@@ -436,8 +435,7 @@ class IfOperatorPartitioningPattern(RewritePattern):
         for old_result, new_result in zip(outer_if_op.results, new_outer_if_op.results):
             old_result.replace_by(new_result)
 
-        outer_if_op.detach()
-        outer_if_op.erase()
+        rewriter.erase_op(outer_if_op)
 
         outer_if_op = new_outer_if_op
 
@@ -620,8 +618,8 @@ class IfOperatorPartitioningPattern(RewritePattern):
 
                 # Remove the ops in the original IfOp
                 for if_op in list_op_if[::-1]:
-                    if_op.detach()
-                    if_op.erase()
+
+                    rewriter.erase_op(if_op)
 
     def create_if_op_partition(  # pylint: disable=too-many-arguments
         self,

@@ -382,8 +382,7 @@ class TreeTraversalPattern(RewritePattern):
             rewriter.insert(func.ReturnOp(*result_vals))
 
         for op in reversed(self.original_func_op.body.ops):
-            op.detach()
-            op.erase()
+            rewriter.erase_op(op)
 
         call_op = func.CallOp(
             self.tt_op.sym_name.data,
@@ -397,8 +396,7 @@ class TreeTraversalPattern(RewritePattern):
             rewriter.insert_op(op, InsertPoint.at_end(self.original_func_op.body.block))
 
         # remove simple_io function
-        self.simple_io_func.detach()
-        self.simple_io_func.erase()
+        rewriter.erase_op(self.simple_io_func)
 
     def split_traversal_segments(self, func_op: func.FuncOp, rewriter: PatternRewriter):
         """Split the quantum function into segments separated by measure operations.
@@ -574,10 +572,9 @@ class TreeTraversalPattern(RewritePattern):
                     if isinstance(op, quantum.MeasureOp):
                         op.operands = (old_mcm_operands,)
                         rewriter.notify_op_modified(op)
-                where_to_move_real_mcm.detach()
-                where_to_move_real_mcm.erase()
+                rewriter.erase_op(where_to_move_real_mcm)
             else:
-                real_mcm_op.erase()
+                rewriter.erase_op(real_mcm_op)
 
         return new_segment
 

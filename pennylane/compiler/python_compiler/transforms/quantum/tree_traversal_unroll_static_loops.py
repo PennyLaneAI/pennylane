@@ -162,5 +162,4 @@ class UnrollLoopPattern(RewritePattern):
         for op_res, iter_ssa in zip(op.results, iter_args):
             op_res.replace_by(iter_ssa)
 
-        op.detach()
-        op.erase()
+        rewriter.erase_op(op)
