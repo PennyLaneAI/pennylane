@@ -116,7 +116,7 @@ def prod(*ops, id=None, lazy=True) -> Prod | Callable[..., Prod]:
     Notice how the order in the output appears reversed. However, this is correct because the operators are applied from right to left.
     """
     if len(ops) == 1:
-        if isinstance(ops[0], qml.operation.Operator):
+        if isinstance(ops[0], qml.operation.Operator) or qml.math.is_abstract(ops[0]):
             return ops[0]
 
         fn = ops[0]
