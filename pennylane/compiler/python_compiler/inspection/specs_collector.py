@@ -116,11 +116,8 @@ class ResourcesResult:
     """Class to hold the result of resource collection for a given operation."""
 
     def __init__(self):
-        self.quantum_operations: dict[str, int] = defaultdict(int)
-        self.quantum_measurements: dict[str, int] = defaultdict(int)
-        self.qec_operations: dict[str, int] = defaultdict(int)
-
-        self.resource_sizes: dict[int, int] = defaultdict(int)
+        self.operations: dict[str, dict[int, int]] = defaultdict(lambda: defaultdict(int))
+        self.measurements: dict[str, int] = defaultdict(int)
 
         self.classical_instructions: dict[str, int] = defaultdict(int)
         self.function_calls: dict[str, int] = defaultdict(int)
@@ -141,15 +138,11 @@ class ResourcesResult:
         else:
             raise ValueError(f"Unsupported merge method: '{method}'. Use 'sum', 'max', or 'min'.")
 
-        for name, count in other.quantum_operations.items():
-            self.quantum_operations[name] = merge_func(self.quantum_operations[name], count)
-        for name, count in other.quantum_measurements.items():
-            self.quantum_measurements[name] = merge_func(self.quantum_measurements[name], count)
-        for name, count in other.qec_operations.items():
-            self.qec_operations[name] = merge_func(self.qec_operations[name], count)
-
-        for size, count in other.resource_sizes.items():
-            self.resource_sizes[size] = merge_func(self.resource_sizes[size], count)
+        for name, vals in other.operations.items():
+            for size, count in vals.items():
+                self.operations[name][size] = merge_func(self.operations[name][size], count)
+        for name, count in other.measurements.items():
+            self.measurements[name] = merge_func(self.measurements[name], count)
 
         for name, count in other.classical_instructions.items():
             self.classical_instructions[name] = merge_func(self.classical_instructions[name], count)
@@ -165,15 +158,11 @@ class ResourcesResult:
 
     def multiply_by_scalar(self, scalar: int) -> None:
         """Multiply all counts by a scalar."""
-        for name in self.quantum_operations:
-            self.quantum_operations[name] *= scalar
-        for name in self.quantum_measurements:
-            self.quantum_measurements[name] *= scalar
-        for name in self.qec_operations:
-            self.qec_operations[name] *= scalar
-
-        for size in self.resource_sizes:
-            self.resource_sizes[size] *= scalar
+        for name in self.operations:
+            for size in self.operations[name]:
+                self.operations[name][size] *= scalar
+        for name in self.measurements:
+            self.measurements[name] *= scalar
 
         for name in self.classical_instructions:
             self.classical_instructions[name] *= scalar
@@ -189,10 +178,9 @@ class ResourcesResult:
         return (
             f"ResourcesResult(device: {self.device_name}, "
             f"allocs: {self.num_allocs}, "
-            f"quantum_ops: {sum(self.quantum_operations.values())}, "
-            f"measurements: {sum(self.quantum_measurements.values())}, "
-            f"QECs: {sum(self.qec_operations.values())}, "
-            f"classical_instructions: {sum(self.classical_instructions.values())}, "
+            f"quantum_ops: {sum(sum(vals.values()) for vals in self.operations.values())}, "
+            f"measurements: {sum(self.measurements.values())}, "
+            f"classical_inst: {sum(self.classical_instructions.values())}, "
             f"fn_calls: {sum(self.function_calls.values())})"
         )
 
@@ -435,21 +423,19 @@ def _collect_region(region, loop_warning=False, cond_warning=False) -> Resources
 
         match resource_type:
             case ResourceType.GATE:
-                resources.quantum_operations[resource] += 1
                 n_qubits = 0
                 if hasattr(op, "in_qubits"):
                     n_qubits += len(op.in_qubits)
                 if hasattr(op, "in_ctrl_qubits"):
                     n_qubits += len(op.in_ctrl_qubits)
-                resources.resource_sizes[n_qubits] += 1
+                resources.operations[resource][n_qubits] += 1
 
             case ResourceType.MEASUREMENT:
-                resources.quantum_measurements[resource] += 1
+                resources.measurements[resource] += 1
 
             case ResourceType.QEC:
-                resources.qec_operations[resource] += 1
-                if op.name.startswith("ppm."):
-                    resources.resource_sizes[len(op.in_qubits)] += 1
+                n_qubits = len(op.in_qubits) if hasattr(op, "in_qubits") else 0
+                resources.operations[resource][n_qubits] += 1
 
             case ResourceType.METADATA:
                 # Parse out extra circuit information
