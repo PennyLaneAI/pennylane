@@ -142,7 +142,7 @@ def test_vibrational_instantiation(num_modes, grid_size, taylor_degree, one_norm
         ("4", 10, 3, None),
         (16, 4.5, 2, None),
         (16, 50, "2", None),
-        (4.5, 10, 3, None),
+        (4, 10, 3, "None"),
     ],
 )
 def test_vibrational_invalid_types(
