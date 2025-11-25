@@ -193,7 +193,7 @@ Resource class for the Hadamard gate.
 .. seealso:: The equivalent long-form alias :class:`~.Hadamard`
 
 Args:
-    wires (Sequence[int] | int | None): the wire the operation acts on
+    wires (WiresLike | int | None): the wire the operation acts on
 
 Resources:
     The Hadamard gate is treated as a fundamental gate and thus it cannot be decomposed
