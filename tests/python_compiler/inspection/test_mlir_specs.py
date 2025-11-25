@@ -42,26 +42,18 @@ def resources_equal(
 
         # actual.device_name == expected.device_name TODO: Don't worry about this one for now
         assert actual.num_allocs == expected.num_allocs
-        assert len(actual.quantum_operations) == len(expected.quantum_operations)
-        assert len(actual.quantum_measurements) == len(expected.quantum_measurements)
-        assert len(actual.qec_operations) == len(expected.qec_operations)
-        assert len(actual.resource_sizes) == len(expected.resource_sizes)
+        assert len(actual.operations) == len(expected.operations)
+        assert len(actual.measurements) == len(expected.measurements)
 
-        for name, count in expected.quantum_operations.items():
-            assert name in actual.quantum_operations
-            assert actual.quantum_operations[name] == count
+        for name, val in expected.operations.items():
+            assert name in actual.operations
+            for size, count in val.items():
+                assert size in actual.operations[name]
+                assert actual.operations[name][size] == count
 
-        for name, count in expected.quantum_measurements.items():
-            assert name in actual.quantum_measurements
-            assert actual.quantum_measurements[name] == count
-
-        for name, count in expected.qec_operations.items():
-            assert name in actual.qec_operations
-            assert actual.qec_operations[name] == count
-
-        for size, count in expected.resource_sizes.items():
-            assert size in actual.resource_sizes
-            assert actual.resource_sizes[size] == count
+        for name, count in expected.measurements.items():
+            assert name in actual.measurements
+            assert actual.measurements[name] == count
 
         for name, count in expected.function_calls.items():
             assert name in actual.function_calls
@@ -76,19 +68,15 @@ def resources_equal(
 
 
 def make_static_resources(
-    quantum_operations: dict[str, int] | None = None,
-    quantum_measurements: dict[str, int] | None = None,
-    qec_operations: dict[str, int] | None = None,
-    resource_sizes: dict[int, int] | None = None,
+    operations: dict[str, dict[int, int]] | None = None,
+    measurements: dict[str, int] | None = None,
     function_calls: dict[str, int] | None = None,
     device_name: str | None = None,
     num_allocs: int = 0,
 ) -> ResourcesResult:
     res = ResourcesResult()
-    res.quantum_operations = quantum_operations or {}
-    res.quantum_measurements = quantum_measurements or {}
-    res.qec_operations = qec_operations or {}
-    res.resource_sizes = resource_sizes or {}
+    res.operations = operations or {}
+    res.measurements = measurements or {}
     res.function_calls = function_calls or {}
     res.device_name = device_name
     res.num_allocs = num_allocs
@@ -146,9 +134,8 @@ class TestMLIRSpecs:
             (
                 0,
                 make_static_resources(
-                    quantum_operations={"RX": 2, "RZ": 2, "Hadamard": 2, "CNOT": 2},
-                    quantum_measurements={"probs(0 wires)": 1},
-                    resource_sizes={1: 6, 2: 2},
+                    operations={"RX": {1: 2}, "RZ": {1: 2}, "Hadamard": {1: 2}, "CNOT": {2: 2}},
+                    measurements={"probs(0 wires)": 1},
                     num_allocs=2,
                 ),
             ),
@@ -167,27 +154,24 @@ class TestMLIRSpecs:
             (
                 0,
                 make_static_resources(
-                    quantum_operations={"RX": 2, "RZ": 2, "Hadamard": 2, "CNOT": 2},
-                    quantum_measurements={"probs(0 wires)": 1},
-                    resource_sizes={1: 6, 2: 2},
+                    operations={"RX": {1: 2}, "RZ": {1: 2}, "Hadamard": {1: 2}, "CNOT": {2: 2}},
+                    measurements={"probs(0 wires)": 1},
                     num_allocs=2,
                 ),
             ),
             (
                 1,
                 make_static_resources(
-                    quantum_operations={"RX": 2, "RZ": 2},
-                    quantum_measurements={"probs(0 wires)": 1},
-                    resource_sizes={1: 4},
+                    operations={"RX": {1: 2}, "RZ": {1: 2}},
+                    measurements={"probs(0 wires)": 1},
                     num_allocs=2,
                 ),
             ),
             (
                 2,
                 make_static_resources(
-                    quantum_operations={"RX": 1, "RZ": 1},
-                    quantum_measurements={"probs(0 wires)": 1},
-                    resource_sizes={1: 2},
+                    operations={"RX": {1: 1}, "RZ": {1: 1}},
+                    measurements={"probs(0 wires)": 1},
                     num_allocs=2,
                 ),
             ),
@@ -219,21 +203,18 @@ class TestMLIRSpecs:
 
         expected = {
             "Before MLIR Passes (MLIR-0)": make_static_resources(
-                quantum_operations={"RX": 2, "RZ": 2, "Hadamard": 2, "CNOT": 2},
-                quantum_measurements={"probs(0 wires)": 1},
-                resource_sizes={1: 6, 2: 2},
+                operations={"RX": {1: 2}, "RZ": {1: 2}, "Hadamard": {1: 2}, "CNOT": {2: 2}},
+                measurements={"probs(0 wires)": 1},
                 num_allocs=2,
             ),
             "cancel-inverses (MLIR-1)": make_static_resources(
-                quantum_operations={"RX": 2, "RZ": 2},
-                quantum_measurements={"probs(0 wires)": 1},
-                resource_sizes={1: 4},
+                operations={"RX": {1: 2}, "RZ": {1: 2}},
+                measurements={"probs(0 wires)": 1},
                 num_allocs=2,
             ),
             "merge-rotations (MLIR-2)": make_static_resources(
-                quantum_operations={"RX": 1, "RZ": 1},
-                quantum_measurements={"probs(0 wires)": 1},
-                resource_sizes={1: 2},
+                operations={"RX": {1: 1}, "RZ": {1: 1}},
+                measurements={"probs(0 wires)": 1},
                 num_allocs=2,
             ),
         }
@@ -260,15 +241,13 @@ class TestMLIRSpecs:
 
         expected = {
             "Before MLIR Passes (MLIR-0)": make_static_resources(
-                quantum_operations={"RX": 2, "RZ": 2, "Hadamard": 2, "CNOT": 2},
-                quantum_measurements={"probs(0 wires)": 1},
-                resource_sizes={1: 6, 2: 2},
+                operations={"RX": {1: 2}, "RZ": {1: 2}, "Hadamard": {1: 2}, "CNOT": {2: 2}},
+                measurements={"probs(0 wires)": 1},
                 num_allocs=2,
             ),
             "merge-rotations (MLIR-2)": make_static_resources(
-                quantum_operations={"RX": 1, "RZ": 1},
-                quantum_measurements={"probs(0 wires)": 1},
-                resource_sizes={1: 2},
+                operations={"RX": {1: 1}, "RZ": {1: 1}},
+                measurements={"probs(0 wires)": 1},
                 num_allocs=2,
             ),
         }
@@ -321,9 +300,8 @@ class TestMLIRSpecs:
                 return qml.state()
 
         expected = make_static_resources(
-            quantum_operations={"PauliX": iters},
-            quantum_measurements={"state(0 wires)": 1},
-            resource_sizes={1: iters},
+            operations={"PauliX": {1: iters}},
+            measurements={"state(0 wires)": 1},
             num_allocs=2,
         )
 
@@ -362,9 +340,8 @@ class TestMLIRSpecs:
                 return qml.state()
 
         expected = make_static_resources(
-            quantum_operations={"PauliX": 1},
-            quantum_measurements={"state(0 wires)": 1},
-            resource_sizes={1: 1},
+            operations={"PauliX": {1: 1}},
+            measurements={"state(0 wires)": 1},
             num_allocs=2,
         )
 
@@ -416,9 +393,8 @@ class TestMLIRSpecs:
                 return qml.state()
 
         expected = make_static_resources(
-            quantum_operations={"PauliX": 1},
-            quantum_measurements={"state(0 wires)": 1},
-            resource_sizes={1: 1},
+            operations={"PauliX": {1: 1}},
+            measurements={"state(0 wires)": 1},
             num_allocs=2,
         )
 
@@ -462,9 +438,8 @@ class TestMLIRSpecs:
                 return qml.state()
 
         expected = make_static_resources(
-            quantum_operations={"PauliX": 1, "PauliZ": 1},
-            quantum_measurements={"state(0 wires)": 1},
-            resource_sizes={1: 2},
+            operations={"PauliX": {1: 1}, "PauliZ": {1: 1}},
+            measurements={"state(0 wires)": 1},
             num_allocs=2,
         )
 
@@ -494,9 +469,8 @@ class TestMLIRSpecs:
         circ = qml.qjit(pass_plugins=[getXDSLPluginAbsolutePath()])(circ)
 
         expected = make_static_resources(
-            quantum_operations={"GlobalPhase": 1},
-            quantum_measurements={"expval(PauliZ)": 1},
-            resource_sizes={0: 1},
+            operations={"GlobalPhase": {0: 1}},
+            measurements={"expval(PauliZ)": 1},
             num_allocs=2,
         )
 
