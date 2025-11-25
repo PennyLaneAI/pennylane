@@ -213,7 +213,7 @@ def test_raises(params, error, match):
         ),
     ],
 )
-def test_decomposition_new(
+def test_bb_qram_decomposition_new(
     bitstrings,
     qram_wires,
     target_wires,
@@ -396,3 +396,118 @@ def test_select_only_quantum(
 def test_raises(params, error, match):
     with pytest.raises(error, match=re.escape(match)):
         SelectOnlyQRAM(*params)
+
+
+@pytest.mark.parametrize(
+    (
+        "bitstrings",
+        "qram_wires",
+        "target_wires",
+        "bus",
+        "dir_wires",
+        "portL_wires",
+        "portR_wires",
+        "select_wires",
+        "select_value",
+    ),
+    [
+        (
+            [
+                "010",
+                "111",
+                "110",
+                "000",
+                "010",
+                "111",
+                "110",
+                "000",
+                "010",
+                "111",
+                "110",
+                "000",
+                "010",
+                "111",
+                "110",
+                "000",
+            ],
+            [0, 1],
+            [2, 3, 4],
+            5,
+            [6, 7, 8],
+            [9, 10, 11],
+            [12, 13, 14],
+            [15, 16],
+            1,
+        ),
+        (
+            [
+                "010",
+                "111",
+                "110",
+                "000",
+                "010",
+                "111",
+                "110",
+                "000",
+            ],
+            [0, 1],
+            [2, 3, 4],
+            5,
+            [11, 10, 9],
+            [6, 7, 8],
+            [12, 13, 14],
+            [15],
+            0,
+        ),
+        (
+            [
+                "010",
+                "111",
+                "110",
+                "000",
+                "010",
+                "111",
+                "110",
+                "000",
+                "010",
+                "111",
+                "110",
+                "000",
+                "010",
+                "111",
+                "110",
+                "000",
+            ],
+            [0, 1],
+            [2, 3, 4],
+            5,
+            [6, 7, 8],
+            [12, 13, 14],
+            [9, 10, 11],
+            [15, 16],
+            None,
+        ),
+    ],
+)
+def test_select_decomposition_new(
+    bitstrings,
+    qram_wires,
+    target_wires,
+    bus,
+    dir_wires,
+    portL_wires,
+    portR_wires,
+    select_wires,
+    select_value,
+):  # pylint: disable=too-many-arguments
+    op = SelectOnlyQRAM(
+        bitstrings,
+        qram_wires,
+        target_wires,
+        [bus] + dir_wires + portL_wires + portR_wires,
+        select_wires,
+        select_value
+    )
+
+    for rule in list_decomps(SelectOnlyQRAM):
+        _test_decomposition_rule(op, rule)

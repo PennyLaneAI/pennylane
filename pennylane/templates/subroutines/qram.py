@@ -551,7 +551,7 @@ class SelectOnlyQRAM(BBQRAM):
             "bitstrings": self.hyperparameters["bitstrings"],
             "select_value": self.hyperparameters["select_value"],
             "num_target_wires": len(wire_manager.target_wires),
-            "num_select_wires": len(wire_manager.select_wires),
+            "num_select_wires": len(self.hyperparameters["select_wires"]),
             "k": self.hyperparameters["k"],
         }
 
@@ -601,7 +601,7 @@ def _select_only_qram_resources(bitstrings, select_value, num_target_wires, num_
                 num_sel_ctrls, num_zero_sel_vals = [], []
             else:
                 num_sel_ctrls = num_select_wires
-                num_zero_sel_vals = reduce(lambda acc, nxt: acc + 1 if nxt == 0 else acc, [(s >> (k - 1 - j)) & 1 for j in range(k)])
+                num_zero_sel_vals = reduce(lambda acc, nxt: acc + (nxt == 0), [(s >> (k - 1 - j)) & 1 for j in range(k)], 0)
 
             if num_sel_ctrls > 0:
                 resources[controlled_resource_rep(
@@ -614,7 +614,7 @@ def _select_only_qram_resources(bitstrings, select_value, num_target_wires, num_
 
 
 @register_resources(_select_only_qram_resources)
-def _select_only_qram_decomposition(wires, bitstrings, select_value, wire_manager, k, **_):  # pylint: disable=unused-argument
+def _select_only_qram_decomposition(wires, bitstrings, select_value, select_wires, wire_manager, k, **_):  # pylint: disable=unused-argument
     bus_wire = wire_manager.bus_wire
     for j, tw in enumerate(wire_manager.target_wires):
         SWAP(wires=[tw, bus_wire[0]])
@@ -625,7 +625,7 @@ def _select_only_qram_decomposition(wires, bitstrings, select_value, wire_manage
             if k == 0:
                 sel_ctrls, sel_vals = [], []
             else:
-                sel_ctrls = list(wire_manager.select_wires)
+                sel_ctrls = list(select_wires)
                 sel_vals = [(s >> (k - 1 - j)) & 1 for j in range(k)]
 
             if sel_ctrls:
