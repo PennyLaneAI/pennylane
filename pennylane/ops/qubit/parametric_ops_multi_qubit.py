@@ -586,13 +586,12 @@ def _pauli_rot_resources(pauli_word):
     num_active_wires = len(pauli_word.replace("I", ""))
     if set(pauli_word).issubset({"I", "Z"}):
         return {qml.MultiRZ: 1}
-    prod_resource_rep = resource_rep(
-        qml.ops.Prod,
-        resources={
-            resource_rep(qml.Hadamard): pauli_word.count("X"),
-            resource_rep(qml.RX): pauli_word.count("Y"),
-        },
-    )
+    prod_resources = {}
+    if h_count := pauli_word.count("X"):
+        prod_resources[resource_rep(qml.H)] = h_count
+    if rx_count := pauli_word.count("Y"):
+        prod_resources[resource_rep(qml.RX)] = rx_count
+    prod_resource_rep = resource_rep(qml.ops.Prod, resources=prod_resources)
     return {
         change_op_basis_resource_rep(
             prod_resource_rep,
