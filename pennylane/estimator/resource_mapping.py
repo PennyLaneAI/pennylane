@@ -24,6 +24,7 @@ import pennylane.estimator.templates as re_temps
 import pennylane.ops as qops
 import pennylane.templates as qtemps
 from pennylane.operation import Operation
+from pennylane.ops.functions import simplify
 from pennylane.ops.op_math.adjoint import Adjoint, AdjointOperation
 from pennylane.ops.op_math.controlled import Controlled, ControlledOp
 from pennylane.ops.op_math.pow import Pow, PowOperation
@@ -36,6 +37,8 @@ from .resource_operator import ResourceOperator
 
 def _map_term_trotter(op: Operation):
     """Exponentiate op for trotter decomposition"""
+    if isinstance(op, qops.op_math.SProd):
+        op = simplify(op)
     if isinstance(op, qops.op_math.Sum):
         return qtemps.TrotterProduct(op, time=1, n=1, order=1, check_hermitian=False)
     return qops.op_math.Evolution(op)

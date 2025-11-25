@@ -14,6 +14,7 @@
 """
 Contains classes used to compactly store the metadata of various Hamiltonians which are relevant for resource estimation.
 """
+import copy
 from collections import defaultdict
 from dataclasses import dataclass
 
@@ -101,123 +102,136 @@ class VibronicHamiltonian:
 
 
 class PauliHamiltonian:
-    """For a Pauli Hamiltonian, stores the minimum necessary information required for resource estimation.
+    r"""Stores the minimum necessary information required for resource estimation of a
+    Hamiltonian expressed as a linear combination of tensor products of Pauli operators.
 
     Args:
-        num_qubits (int): total number of qubits the hamiltonian acts on
-        num_pauli_words (int or None): the number of terms (Pauli words) in the hamiltonian
-        max_weight (int or None): the maximum number of factors over all terms in the hamiltonian
-        pauli_dist (dict or None): A dictionary representing the various Pauli words and how
-            frequently they appear in the hamiltonian.
-        commuting_groups (tuple(dict) or None): A tuple of dictionaries where each entry is a group
-            of terms from the hamiltonian such that all terms in the group commute. Here each
+        num_qubits (int): total number of qubits the Hamiltonian acts on
+        num_pauli_words (int | None): the number of terms (Pauli words) in the Hamiltonian
+        max_weight (int | None): The maximum number of qubits a term acts upon, over all
+            terms in the linear combination.
+        one_norm (float | None): the one-norm of the Hamiltonian
+        pauli_dist (dict | None): A dictionary representing the various Pauli words and how
+            frequently they appear in the Hamiltonian.
+        commuting_groups (tuple(dict) | None): A tuple of dictionaries where each entry is a group
+            of terms from the Hamiltonian such that all terms in the group commute. Here each
             dictionary contains the various Pauli words and how frequently they appear in the group.
 
     Returns:
         PauliHamiltonian: An instance of PauliHamiltonian
 
     .. seealso::
-        :class:`~.estimator.templates.TrotterPauli`
+        :class:`~.estimator.templates.TrotterPauli`, :class:`~.estimator.templates.SelectPauli`
 
     **Example**
 
     A ``PauliHamiltonian`` is a compact representation which can be used with compatible templates
-    to obtain resource estimates:
+    to obtain resource estimates. Consider for example the Hamiltonian:
+
+    .. math::
+
+        \hat{H} = 0.1 \cdot \Sigma^{30}_{j=1} \hat{X}_{j} \hat{X}_{j+1}
+        - 0.05 \cdot \Sigma^{30}_{k=1} \hat{Y}_{k} \hat{Y}_{k+1} + 0.25 \cdot \Sigma^{40}_{l=1} \hat{X}_{l}
+
 
     >>> import pennylane.estimator as qre
-    >>> num_steps, order = (10, 2)
     >>> pauli_ham = qre.PauliHamiltonian(
-    ...     num_qubits = 10,
+    ...     num_qubits = 40,
     ...     num_pauli_words = 100,
-    ...     max_weight = 3,
+    ...     max_weight = 2,
+    ...     one_norm = 14.5,  # (0.1 * 30) + (0.05 * 30) + (0.25 * 40)
     ... )
     >>> pauli_ham
-    PauliHamiltonian(num_qubits=10, num_pauli_words=100, max_weight=3)
+    PauliHamiltonian(num_qubits=40, num_pauli_words=100, max_weight=2, one_norm=14.5)
+    >>> num_steps, order = (10, 2)
     >>> res = qre.estimate(qre.TrotterPauli(pauli_ham, num_steps, order))
     >>> print(res)
     --- Resources: ---
-     Total wires: 10
-       algorithmic wires: 10
+     Total wires: 40
+       algorithmic wires: 40
        allocated wires: 0
          zero state: 0
          any state: 0
-     Total gates : 1.099E+5
+     Total gates : 9.596E+4
        'T': 8.800E+4,
-       'CNOT': 8.000E+3,
-       'Z': 1.980E+3,
-       'S': 3.960E+3,
-       'Hadamard': 7.920E+3
+       'CNOT': 4.000E+3,
+       'Z': 1.320E+3,
+       'S': 2.640E+3
 
     .. details::
         :title: Usage Details
 
         There are three different ways to instantiate the ``PauliHamiltonian`` class depending on how
-        much information is known about the hamiltonian we wish to capture (Note that providing more
-        information will often lead to more accurate resource estimates).
+        much information is known about the Hamiltonian we wish to capture. Note that providing more
+        information will often lead to more accurate resource estimates.
 
-        Firstly, when we know fairly little about the explicit form of the hamiltonian, we can express
-        it by specifing the number of qubits it acts upon, the total number of terms in the hamiltonian
-        and the maximum weight of a term overall terms in the hamiltonian.
+        Firstly, when we know fairly little about the explicit form of the Hamiltonian, we can express
+        it by specifyng the number of qubits it acts upon, the total number of terms in the Hamiltonian
+        and the maximum weight of a term overall terms in the Hamiltonian.
 
         >>> import pennylane.estimator as qre
         >>> pauli_ham = qre.PauliHamiltonian(
-        ...     num_qubits = 10,
+        ...     num_qubits = 40,
         ...     num_pauli_words = 100,
-        ...     max_weight = 3,
+        ...     max_weight = 2,
+        ...     one_norm = 14.5,  # (0.1 * 30) + (0.05 * 30) + (0.25 * 40)
         ... )
         >>> pauli_ham
-        PauliHamiltonian(num_qubits=10, num_pauli_words=100, max_weight=3)
+        PauliHamiltonian(num_qubits=40, num_pauli_words=100, max_weight=2, one_norm=14.5)
 
-        If we know approximately how the Pauli words are distributed in the hamiltonian, than we can
-        construct the hamiltonian from this information. Note, if both the ``pauli_dist`` and the
-        ``(num_pauli_words, max_weight)`` are provided, than ``pauli_dist`` will take precedent.
+        If we know approximately how the Pauli words are distributed in the Hamiltonian, then we can
+        construct the Hamiltonian from this information. Note, if both the ``pauli_dist`` and the
+        ``(num_pauli_words, max_weight)`` are provided, then ``pauli_dist`` will take precedence.
         This means that the ``(num_pauli_words, max_weight)`` will be computed from the ``pauli_dist``
         directly.
 
         >>> import pennylane.estimator as qre
         >>> pauli_ham = qre.PauliHamiltonian(
-        ...     num_qubits = 10,
-        ...     pauli_dist = {"X":10, "XX":30, "YY":10, "ZZ":45, "ZZZ": 5},
+        ...     num_qubits = 40,
+        ...     pauli_dist = {"X":40, "XX":30, "YY":30},
+        ...     one_norm = 14.5,  # (0.1 * 30) + (0.05 * 30) + (0.25 * 40)
         ... )
         >>> pauli_ham
-        PauliHamiltonian(num_qubits=10, num_pauli_words=100, max_weight=3)
+        PauliHamiltonian(num_qubits=40, num_pauli_words=100, max_weight=2, one_norm=14.5)
         >>> pauli_ham.pauli_dist
-        {'X': 10, 'XX': 30, 'YY': 10, 'ZZ': 45, 'ZZZ': 5}
+        {'X': 40, 'XX': 30, 'YY': 30}
 
         Finally, if we also know how to group the terms in the commuting groups of operators, we can
-        construct the hamiltonian by specifying these groups of terms. This input will take precedent
-        over both of the other two methods. Meaning that the attributes
+        construct the Hamiltonian by specifying these groups of terms. This input will take precedence
+        over the other two methods. Meaning that the attributes
         ``(num_pauli_words, max_weight, pauli_dist)`` will all be computed from the ``commuting_groups``
         directly.
 
         >>> import pennylane.estimator as qre
         >>> commuting_groups = (
-        ...     {"X": 10, "XX": 30},
-        ...     {"YY": 10, "ZZ": 5},
-        ...     {"ZZ": 40, "ZZZ": 5},
+        ...     {"X": 40, "XX": 30},
+        ...     {"YY": 30},
         ... )
         >>> pauli_ham = qre.PauliHamiltonian(
-        ...     num_qubits = 10,
+        ...     num_qubits = 40,
         ...     commuting_groups = commuting_groups,
+        ...     one_norm = 14.5,
         ... )
         >>> pauli_ham
-        PauliHamiltonian(num_qubits=10, num_pauli_words=100, max_weight=3)
+        PauliHamiltonian(num_qubits=40, num_pauli_words=100, max_weight=2, one_norm=14.5)
         >>> pauli_ham.pauli_dist
-        defaultdict(<class 'int'>, {'X': 10, 'XX': 30, 'YY': 10, 'ZZ': 45, 'ZZZ': 5})
+        defaultdict(<class 'int'>, {'X': 40, 'XX': 30, 'YY': 30})
         >>> pauli_ham.commuting_groups
-        ({'X': 10, 'XX': 30}, {'YY': 10, 'ZZ': 5}, {'ZZ': 40, 'ZZZ': 5})
+        ({'X': 40, 'XX': 30}, {'YY': 30})
 
     """
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         num_qubits: int,
         num_pauli_words: int | None = None,
         max_weight: int | None = None,
+        one_norm: float | None = None,
         pauli_dist: dict | None = None,
         commuting_groups: tuple[dict] | None = None,
     ):
         self._num_qubits = num_qubits
+        self._one_norm = one_norm
 
         if commuting_groups is not None:
             for group in commuting_groups:
@@ -233,46 +247,102 @@ class PauliHamiltonian:
             _validate_pauli_dist(pauli_dist)
 
             self._pauli_dist = pauli_dist
-            self._commuting_groups = (pauli_dist,)
+            self._commuting_groups = None
             self._max_weight = max(len(pw) for pw in pauli_dist.keys())
             self._num_pauli_words = sum(pauli_dist.values())
             return
 
-        if (num_pauli_words is None) or (max_weight is None):
+        if num_pauli_words is None:
             raise ValueError(
                 "One of the following sets of inputs must be provided (not None) in order to"
-                f" instantiatea valid PauliHamiltonian:\n - `commuting_groups`\n - `pauli_dist`\n"
-                " - `num_pauli_words` and `max_weight`."
+                " instantiate a valid PauliHamiltonian:\n - `commuting_groups`\n - `pauli_dist`\n"
+                " - `num_pauli_words`"
             )
 
-        self._max_weight = max_weight
+        if max_weight and (max_weight > num_qubits):
+            raise ValueError(
+                "`max_weight` represents the maximum number of qubits any Pauli word acts upon,"
+                "this value must be less than or equal to the total number of qubits the "
+                f"Hamiltonian acts on. Got `num_qubits` = {num_qubits} and `max_weight` = {max_weight}"
+            )
+
+        self._max_weight = max_weight or num_qubits
         self._num_pauli_words = num_pauli_words
-        self._pauli_dist = pauli_dist
-        self._commuting_groups = commuting_groups
+        self._pauli_dist = None
+        self._commuting_groups = None
 
     def __repr__(self):
         """The repr dundar method for the PauliHamiltonian class."""
-        return f"PauliHamiltonian(num_qubits={self.num_qubits}, num_pauli_words={self.num_pauli_words}, max_weight={self.max_weight})"
+        return f"PauliHamiltonian(num_qubits={self.num_qubits}, num_pauli_words={self.num_pauli_words}, max_weight={self.max_weight}, one_norm={self.one_norm})"
+
+    def __eq__(self, other: "PauliHamiltonian"):
+        """Check if two PauliHamiltonians are identical"""
+        return all(
+            (
+                self._num_qubits == other._num_qubits,
+                self._num_pauli_words == other._num_pauli_words,
+                self._max_weight == other._max_weight,
+                self._pauli_dist == other._pauli_dist,
+                self._commuting_groups == other._commuting_groups,
+                self._one_norm == other._one_norm,
+            )
+        )
+
+    def __hash__(self):
+        """Hash function for the compact Hamiltonian representation"""
+        if self._commuting_groups is not None:
+            hashable_commuting_groups = tuple(
+                _sort_and_freeze(group) for group in self._commuting_groups
+            )
+        elif self._pauli_dist is not None:
+            hashable_commuting_groups = _sort_and_freeze(self._pauli_dist)
+        else:
+            hashable_commuting_groups = None
+
+        hashable_params = (
+            self._num_qubits,
+            self._num_pauli_words,
+            self._max_weight,
+            hashable_commuting_groups,
+            self._one_norm,
+        )
+        return hash(hashable_params)
 
     @property
     def num_qubits(self):
+        """The number of qubits the Hamiltonian acts on"""
         return self._num_qubits
 
     @property
     def num_pauli_words(self):
+        """The number of Pauli words (or terms) in the sum."""
         return self._num_pauli_words
 
     @property
     def max_weight(self):
+        """The maximum number of Pauli operators (tensored) in any given term in the sum."""
         return self._max_weight
 
     @property
+    def one_norm(self):
+        """The one-norm of the Hamiltonian."""
+        return self._one_norm
+
+    @property
     def pauli_dist(self):
-        return self._pauli_dist
+        """A dictionary representing the distribution of Pauli words in the Hamiltonian"""
+        return copy.deepcopy(self._pauli_dist)
 
     @property
     def commuting_groups(self):
-        return self._commuting_groups
+        """A list of groups where each group is a distribution of pauli words such that each
+        term in the group commutes with every other term in the group."""
+        return copy.deepcopy(self._commuting_groups)
+
+
+def _sort_and_freeze(pauli_dist: dict) -> tuple[tuple]:
+    """Map a dictionary into a sorted and hashable tuple"""
+    return tuple((k, pauli_dist[k]) for k in sorted(pauli_dist))
 
 
 def _validate_pauli_dist(pauli_dist: dict) -> bool:
@@ -285,14 +355,14 @@ def _validate_pauli_dist(pauli_dist: dict) -> bool:
                 f"The keys represent Pauli words and should be strings containing either 'X','Y' or 'Z' characters only. Got {pauli_word} : {freq}"
             )
 
-        if not isinstance(freq, int):
+        if not (isinstance(freq, int) and (not isinstance(freq, bool)) and (freq >= 0)):
             raise ValueError(
-                f"The values represent frequencies and should be integers, got {pauli_word} : {freq}"
+                f"The values represent frequencies and should be positive integers, got {pauli_word} : {freq}"
             )
 
 
 def _pauli_dist_from_commuting_groups(commuting_groups: tuple[dict]):
-    """Construct the total Pauliword distribution from the commuting groups."""
+    """Construct the total Pauli word distribution from the commuting groups."""
     total_pauli_dist = defaultdict(int)
 
     for group in commuting_groups:

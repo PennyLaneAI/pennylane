@@ -314,26 +314,28 @@ class PauliRot(ResourceOperator):
             in the decomposition.
         """
         if (set(pauli_string) == {"I"}) or (len(pauli_string) == 0):
-            gp = qre.resource_rep(qre.GlobalPhase)
-            return [GateCount(gp)]
+            return [GateCount(qre.resource_rep(qre.GlobalPhase))]
 
-        # Special Cases:
-        if pauli_string == "X":
-            return [GateCount(qre.resource_rep(qre.RX, {"precision": precision}))]
-        if pauli_string == "Y":
-            return [GateCount(qre.resource_rep(qre.RY, {"precision": precision}))]
-        if pauli_string == "Z":
-            return [GateCount(qre.resource_rep(qre.RZ, {"precision": precision}))]
-        if pauli_string == "XX":  # IsingXX
-            return [
-                GateCount(qre.resource_rep(qre.RX, {"precision": precision})),
-                GateCount(qre.resource_rep(qre.CNOT), count=2),
-            ]
-        if pauli_string == "YY":  # IsingYY
-            return [
-                GateCount(qre.resource_rep(qre.RY, {"precision": precision})),
-                GateCount(qre.resource_rep(qre.CY), count=2),
-            ]
+        # Special cases:
+        if pauli_string in {"X", "Y", "Z", "XX", "YY"}:
+            if pauli_string == "X":
+                special_case_cost = [GateCount(qre.resource_rep(qre.RX, {"precision": precision}))]
+            elif pauli_string == "Y":
+                special_case_cost = [GateCount(qre.resource_rep(qre.RY, {"precision": precision}))]
+            elif pauli_string == "Z":
+                special_case_cost = [GateCount(qre.resource_rep(qre.RZ, {"precision": precision}))]
+            elif pauli_string == "XX":  # IsingXX
+                special_case_cost = [
+                    GateCount(qre.resource_rep(qre.RX, {"precision": precision})),
+                    GateCount(qre.resource_rep(qre.CNOT), count=2),
+                ]
+            else:  # pauli_string == "YY" IsingYY
+                special_case_cost = [
+                    GateCount(qre.resource_rep(qre.RY, {"precision": precision})),
+                    GateCount(qre.resource_rep(qre.CY), count=2),
+                ]
+
+            return special_case_cost
 
         active_wires = len(pauli_string.replace("I", ""))
 

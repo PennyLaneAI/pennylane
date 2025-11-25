@@ -19,7 +19,7 @@ import numpy as np
 
 import pennylane.estimator as qre
 from pennylane.estimator import Allocate, Deallocate
-from pennylane.estimator.compact_hamiltonian import PauliHamiltonian, THCHamiltonian
+from pennylane.estimator.compact_hamiltonian import THCHamiltonian, PauliHamiltonian
 from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
