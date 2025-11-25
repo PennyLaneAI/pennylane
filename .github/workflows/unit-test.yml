@@ -144,7 +144,6 @@ jobs:
       
       - name: Install PennyLane dependencies
         run: |
-          uv --version
           uv pip install --group ci --group dev --upgrade
 
       - name: Install additional PIP packages (Pre-PennyLane)
