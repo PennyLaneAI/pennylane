@@ -157,6 +157,11 @@
 * The graph-based decomposition system now supports decomposition rules that contains mid-circuit measurements.
   [(#8079)](https://github.com/PennyLaneAI/pennylane/pull/8079)
 
+* The `~pennylane.estimator.compact_hamiltonian.CDFHamiltonian`, `~pennylane.estimator.compact_hamiltonian.THCHamiltonian`,
+  `~pennylane.estimator.compact_hamiltonian.VibrationalHamiltonian`, and `~pennylane.estimator.compact_hamiltonian.VibronicHamiltonian`
+  classes were modified to take 1-norm of the Hamiltonian as an optional argument.
+  [(#)](https://github.com/PennyLaneAI/pennylane/pull/)
+
 <h3>Breaking changes 💔</h3>
 
 * `qml.transforms.map_wires` no longer supports plxpr transforms.
