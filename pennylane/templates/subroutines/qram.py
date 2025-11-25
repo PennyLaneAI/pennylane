@@ -100,7 +100,7 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
     `arXiv:0708.1879 <https://arxiv.org/pdf/0708.1879>`__.
 
     Args:
-        bitstrings (Sequence[int]):
+        bitstrings (Sequence[str]):
             The classical data as a sequence of bitstrings. The size of the classical data must be
             :math:`2^{\texttt{len(qram_wires)}}`.
         qram_wires (Sequence[int]):
