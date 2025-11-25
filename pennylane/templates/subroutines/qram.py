@@ -92,33 +92,33 @@ def _node_index(level: int, prefix_value: int) -> int:
 class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
     r"""Bucket-brigade QRAM with **explicit bus routing** using 3 qubits per node.
 
-    Bucket-brigade QRAM achieves an :math:`O(\log N)` complexity instead of the typical :math:`N`, 
-    where :math:`N` is the number of memory cells addressed. It does this by reducing the number of 
-    nodes that need to be visited in a tree which converts our binary address into a unary address 
-    at the leaves. In the end, the target wires' state corresponds to the data at the desired 
-    address. For more theoretical details on how this algorithm works, please consult 
+    Bucket-brigade QRAM achieves an :math:`O(\log N)` complexity instead of the typical :math:`N`,
+    where :math:`N` is the number of memory cells addressed. It does this by reducing the number of
+    nodes that need to be visited in a tree which converts our binary address into a unary address
+    at the leaves. In the end, the target wires' state corresponds to the data at the desired
+    address. For more theoretical details on how this algorithm works, please consult
     `arXiv:0708.1879 <https://arxiv.org/pdf/0708.1879>`__.
 
     Args:
-        bitstrings (Sequence[int]): 
-            The classical data as a sequence of bitstrings. The size of the classical data must be 
+        bitstrings (Sequence[int]):
+            The classical data as a sequence of bitstrings. The size of the classical data must be
             :math:`2^{\texttt{len(qram_wires)}}`.
-        qram_wires (Sequence[int]): 
-            The register that stores the index for the entry of the classical data we want to 
+        qram_wires (Sequence[int]):
+            The register that stores the index for the entry of the classical data we want to
             access.
-        target_wires (Sequence[int]): 
-            The register in which the classical data gets loaded. The size of this register must 
+        target_wires (Sequence[int]):
+            The register in which the classical data gets loaded. The size of this register must
             equal each bitstring length in ``bitstrings``.
-        work_wires (Sequence[int]): 
-            The additional wires required to funnel the desired entry of ``bitstrings`` into the 
-            target register. The size of the ``work_wires`` register must be 
-            :math:`1 + 3 ((1 << \texttt{len(qram_wires)}) - 1)`. More specifically, the 
-            ``work_wires`` register includes the bus, direction, left port and right port wires in 
-            that order. Each node in the tree contains one address (direction), one left port and 
-            one right port wire. The single bus wire is used for address loading and data routing. 
+        work_wires (Sequence[int]):
+            The additional wires required to funnel the desired entry of ``bitstrings`` into the
+            target register. The size of the ``work_wires`` register must be
+            :math:`1 + 3 ((1 << \texttt{len(qram_wires)}) - 1)`. More specifically, the
+            ``work_wires`` register includes the bus, direction, left port and right port wires in
+            that order. Each node in the tree contains one address (direction), one left port and
+            one right port wire. The single bus wire is used for address loading and data routing.
 
     Raises:
-        ValueError: if the ``bitstrings`` are not provided, the ``bitstrings`` are of the wrong 
+        ValueError: if the ``bitstrings`` are not provided, the ``bitstrings`` are of the wrong
         length, the ``target_wires`` are of the size of the ``work_wires`` register is not exactly
         equal to :math:`1 + 3 ((1 << \texttt{len(qram_wires)}) - 1)`.
 
@@ -132,9 +132,9 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
 
         bitstrings = ["010", "111", "110", "000"]
         bitstring_size = 3
-    
+
     The number of wires needed to store a length-4 array is 2, which means that the ``qram_wires``
-    register must contain 2 wires. Additionally, this lets us specify the number of work wires 
+    register must contain 2 wires. Additionally, this lets us specify the number of work wires
     needed.
 
     .. code-block:: python
@@ -143,8 +143,8 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
         num_work_wires = 1 + 3 * ((1 << num_qram_wires) - 1) # 10
 
     Now, we can define all three registers concretely and demonstrate ``BBQRAM`` in practice. In the
-    following circuit, we prepare the state :math:`\vert 2 \rangle = \vert 10 \rangle` on the 
-    ``qram_wires``, which indicates that we would like to access the second (zero-indexed) entry of 
+    following circuit, we prepare the state :math:`\vert 2 \rangle = \vert 10 \rangle` on the
+    ``qram_wires``, which indicates that we would like to access the second (zero-indexed) entry of
     ``bitstrings`` (which is ``"110"``). The ``target_wires`` register should therefore store this
     state after ``BBQRAM`` is applied.
 
@@ -153,8 +153,8 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
         import pennylane as qml
         reg = qml.registers(
             {
-                "qram": num_qram_wires, 
-                "target": bitstring_size, 
+                "qram": num_qram_wires,
+                "target": bitstring_size,
                 "work_wires": num_work_wires
             }
         )
@@ -167,7 +167,7 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
 
             qml.BBQRAM(
                 bitstrings,
-                qram_wires=reg["qram"], 
+                qram_wires=reg["qram"],
                 target_wires=reg["target"],
                 work_wires=reg["work_wires"],
             )
@@ -177,7 +177,7 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
     >>> print(np.round(bb_quantum()))  # doctest: +SKIP
     [0. 0. 0. 0. 0. 0. 1. 0.]
 
-    Note that ``"110"`` in binary is equal to 6 in decimal, which is the only non-zero entry in 
+    Note that ``"110"`` in binary is equal to 6 in decimal, which is the only non-zero entry in
     the ``target_wires`` register.
     """
 
