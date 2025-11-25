@@ -262,6 +262,15 @@ class TestParameterFrequencies:
 
 
 class TestDecompositions:
+
+    @pytest.mark.parametrize("op_class", (qml.RX, qml.RY, qml.RZ))
+    def test_decompositions_undefined(self, op_class):
+        """Test that RX, RY, and RZ don't have Operator.decomposition definitions, even though they
+        have graph decomps."""
+
+        with pytest.raises(qml.exceptions.DecompositionUndefinedError):
+            op_class(0.5, wires=0).decomposition()
+
     @pytest.mark.parametrize("phi", [0.3, np.array([0.4, 2.1, 0.2])])
     def test_phase_decomposition(self, phi, tol):
         """Tests that the decomposition of the Phase gate is correct"""

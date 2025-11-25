@@ -20,6 +20,45 @@
 
 <h3>Improvements 🛠</h3>
 
+* `Operator.decomposition` will fallback to the first entry in `qml.list_decomps` if the `Operator.compute_decomposition`
+  method is not overridden.
+  [(#8686)](https://github.com/PennyLaneAI/pennylane/pull/8686)
+
+* A new :func:`~.marker` function allows for easy inspection at particular points in a transform program
+  with :func:`~.specs` and :func:`~.drawer.draw` instead of having to increment ``level``
+  by integer amounts when not using any Catalyst passes.
+  [(#8684)](https://github.com/PennyLaneAI/pennylane/pull/8684)
+  
+  The :func:`~.marker` function works like a transform in PennyLane, and can be deployed as
+  a decorator on top of QNodes:
+  
+  ```
+  from functools import partial
+
+  @partial(qml.marker, level="rotations-merged")
+  @qml.transforms.merge_rotations
+  @partial(qml.marker, level="my-level")
+  @qml.transforms.cancel_inverses
+  @partial(qml.transforms.decompose, gate_set={qml.RX})
+  @qml.qnode(qml.device('lightning.qubit'))
+  def circuit():
+      qml.RX(0.2,0)
+      qml.X(0)
+      qml.X(0)
+      qml.RX(0.2, 0)
+      return qml.state()
+  ```
+
+  The string supplied to ``marker`` can then be used as an argument to ``level`` in ``draw``
+  and ``specs``, showing the cumulative result of applying transforms up to the marker:
+
+  ```pycon
+  >>> print(qml.draw(circuit, level="my-level")())
+  0: ──RX(0.20)──RX(3.14)──RX(3.14)──RX(0.20)─┤  State
+  >>> print(qml.draw(circuit, level="rotations-merged")())
+  0: ──RX(6.68)─┤  State
+  ```
+
 * Add the `PCPhaseOp` operation to the xDSL Quantum dialect.
   [(#8621)](https://github.com/PennyLaneAI/pennylane/pull/8621)
 
@@ -209,6 +248,10 @@
   [(#8468)](https://github.com/PennyLaneAI/pennylane/pull/8468)
 
 <h3>Deprecations 👋</h3>
+
+* The ``custom_decomps`` keyword argument to ``qml.device`` has been deprecated and will be removed 
+  in 0.45. Instead, with ``qml.decomposition.enable_graph()``, new decomposition rules can be defined as 
+  quantum functions with registered resources. See :mod:`pennylane.decomposition` for more details.
 
 * `qml.measure`, `qml.measurements.MidMeasureMP`, `qml.measurements.MeasurementValue`,
   and `qml.measurements.get_mcm_predicates` are now located in `qml.ops.mid_measure`.
@@ -461,6 +504,12 @@ A warning message has been added to :doc:`Building a plugin <../development/plug
 
 * Fixes a bug where `qml.specs` incorrectly computes the circuit depth when classically controlled operators are involved.
   [(#8668)](https://github.com/PennyLaneAI/pennylane/pull/8668)
+
+* Fixes a bug where an error is raised when trying to decompose a nested composite operator with capture and the new graph system enabled.
+  [(#8695)](https://github.com/PennyLaneAI/pennylane/pull/8695)
+
+* Fixes a bug where :func:`~.change_op_basis` cannot be captured when the `uncompute_op` is left out.
+  [(#8695)](https://github.com/PennyLaneAI/pennylane/pull/8695)
 
 <h3>Contributors ✍️</h3>
 
