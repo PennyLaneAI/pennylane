@@ -23,6 +23,7 @@ from .measurements_from_samples import (
     measurements_from_samples_pass,
 )
 from .merge_rotations import MergeRotationsPass, merge_rotations_pass
+from .tree_traversal import tree_traversal_pass, TreeTraversalPass
 
 from .split_non_commuting import SplitNonCommutingPass, split_non_commuting_pass
 
@@ -37,6 +38,8 @@ __all__ = [
     "MeasurementsFromSamplesPass",
     "merge_rotations_pass",
     "MergeRotationsPass",
+    "tree_traversal_pass",
+    "TreeTraversalPass",
     "split_non_commuting_pass",
     "SplitNonCommutingPass",
 ]

@@ -18,6 +18,17 @@
   [(#8623)](https://github.com/PennyLaneAI/pennylane/pull/8623)
   [(#8663)](https://github.com/PennyLaneAI/pennylane/pull/8663)
 
+* The tree-traversal MCM method (accessed with `mcm_method="tree-traversal"` when creating a QNode) is now 
+  compatible with Catalyst.
+  [(#8545)](https://github.com/PennyLaneAI/pennylane/pull/8545)
+  
+  When using `mcm_method="tree-traversal"` within a qjit'd function, there are limitations to consider:
+  
+  * Postselecting and resetting qubits is not supported when performing an MCM with :func:`~.measure <qml.measure>` (i.e., the `postselect` and `reset` arguments).
+  * Statevector-based terminal measurements are not supported (e.g., :func:`~.probs` and :func:`~.state`).
+  * Multiple terminal measurements are not supported (e.g., `return qml.expval(Z(0)), qml.expval(Y(1), qml.expval(X(2)))`).
+  * Terminal measurements acting on MCM values are not supported (e.g., `return qml.expval(m1)`, where `m1` is the result of an MCM with `qml.measure`).
+  * For loops with a dynamic range are not supported.
 <h3>Improvements 🛠</h3>
 
 * `Operator.decomposition` will fallback to the first entry in `qml.list_decomps` if the `Operator.compute_decomposition`
@@ -82,7 +93,7 @@
   [(#8516)](https://github.com/PennyLaneAI/pennylane/pull/8516)
   [(#8555)](https://github.com/PennyLaneAI/pennylane/pull/8555)
   [(#8558)](https://github.com/PennyLaneAI/pennylane/pull/8558)
-  [(#8538)](https://github.com/PennyLaneAI/pennylane/pull/8538)  
+  [(#8538)](https://github.com/PennyLaneAI/pennylane/pull/8538)
   [(#8534)](https://github.com/PennyLaneAI/pennylane/pull/8534)
   [(#8582)](https://github.com/PennyLaneAI/pennylane/pull/8582)
   [(#8543)](https://github.com/PennyLaneAI/pennylane/pull/8543)
@@ -289,14 +300,14 @@
   and the function should be passed to the ``stopping_condition`` argument instead.
   [(#8533)](https://github.com/PennyLaneAI/pennylane/pull/8533)
 
-  The example below illustrates how you can provide a function as the ``stopping_condition`` in addition to providing a 
-  ``gate_set``. The decomposition of each operator will then stop once it reaches the gates in the ``gate_set`` or the 
+  The example below illustrates how you can provide a function as the ``stopping_condition`` in addition to providing a
+  ``gate_set``. The decomposition of each operator will then stop once it reaches the gates in the ``gate_set`` or the
   ``stopping_condition`` is satisfied.
 
   ```python
   import pennylane as qml
   from functools import partial
-  
+
   @partial(qml.transforms.decompose, gate_set={"H", "T", "CNOT"}, stopping_condition=lambda op: len(op.wires) <= 2)
   @qml.qnode(qml.device("default.qubit"))
   def circuit():
@@ -304,7 +315,7 @@
       qml.Toffoli(wires=[0,1,2])
       return qml.expval(qml.Z(0))
   ```
-  
+
   ```pycon
   >>> print(qml.draw(circuit)())
   0: ──H────────╭●───────────╭●────╭●──T──╭●─┤  <Z>
@@ -330,7 +341,7 @@
   [(#8635)](https://github.com/PennyLaneAI/pennylane/pull/8635)
   
 * In program capture, transforms now have a single transform primitive that have a `transform` param that stores
-  the `TransformDispatcher`. Before, each transform had its own primitive stored on the 
+  the `TransformDispatcher`. Before, each transform had its own primitive stored on the
   `TransformDispatcher._primitive` private property. It proved difficult to keep maintaining dispatch behaviour
   for every single transform.
   [(#8576)](https://github.com/PennyLaneAI/pennylane/pull/8576)
@@ -338,7 +349,7 @@
 
 * Updated documentation check workflow to run on pull requests on `v[0-9]+\.[0-9]+\.[0-9]+-docs` branches.
   [(#8590)](https://github.com/PennyLaneAI/pennylane/pull/8590)
-  
+
 * When program capture is enabled, there is no longer caching of the jaxpr on the QNode.
   [(#8629)](https://github.com/PennyLaneAI/pennylane/pull/8629)
 
@@ -526,6 +537,7 @@ Sengthai Heng,
 Soran Jahangiri,
 Christina Lee,
 Joseph Lee,
+Luis Alfredo Nuñez Meneses,
 Gabriela Sanchez Diaz,
 Mudit Pandey,
 Shuli Shu,

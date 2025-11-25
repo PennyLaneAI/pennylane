@@ -54,6 +54,7 @@ class TestSplitNonCommutingPass:
                     return %from_elements : tensor<f64>
                 }
                 // CHECK: func.func [[dup_func]]
+                // CHECK: quantum.custom "PauliX"()
             }
         """
 
