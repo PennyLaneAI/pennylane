@@ -167,7 +167,8 @@ class AllSinglesDoubles(Operation):
             )
 
         if hf_state[0].dtype != np.dtype("int"):
-            raise ValueError("Elements of 'hf_state' must be integers.")
+        if (hf_dtype := hf_state[0].dtype) != np.dtype("int"):
+            raise ValueError("Elements of 'hf_state' must be integers, got {hf_dtype}.")
         hf_state = tuple(hf_state)
 
         self._hyperparameters = {
