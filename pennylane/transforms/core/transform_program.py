@@ -194,6 +194,31 @@ class TransformProgram:
         return bool(self._transform_program)
 
     def __add__(self, other: "TransformProgram") -> "TransformProgram":
+        # Handle TransformContainer
+        if isinstance(other, TransformContainer):
+            if self.has_final_transform and other.final_transform:
+                raise TransformError("The transform program already has a terminal transform.")
+            
+            transforms = self._transform_program + [other]
+            if self.has_final_transform:
+                transforms.append(transforms.pop(len(self) - 1))
+            
+            return TransformProgram(transforms, cotransform_cache=self.cotransform_cache)
+        
+        # Handle TransformDispatcher
+        if isinstance(other, TransformDispatcher):
+            # Convert dispatcher to container (no args/kwargs)
+            other_container = TransformContainer(other)
+            if self.has_final_transform and other_container.final_transform:
+                raise TransformError("The transform program already has a terminal transform.")
+            
+            transforms = self._transform_program + [other_container]
+            if self.has_final_transform:
+                transforms.append(transforms.pop(len(self) - 1))
+            
+            return TransformProgram(transforms, cotransform_cache=self.cotransform_cache)
+        
+        # Handle TransformProgram
         if self.has_final_transform and other.has_final_transform:
             raise TransformError("The transform program already has a terminal transform.")
 
@@ -209,6 +234,41 @@ class TransformProgram:
         elif other.cotransform_cache:
             cotransform_cache = other.cotransform_cache
         return TransformProgram(transforms, cotransform_cache=cotransform_cache)
+
+    def __rmul__(self, n: int) -> "TransformProgram":
+        """Right multiplication to repeat a program n times.
+
+        Args:
+            n (int): Number of times to repeat this program.
+
+        Returns:
+            TransformProgram: A new program with this program repeated n times.
+        """
+        if isinstance(n, int):
+            if n < 0:
+                raise ValueError("Cannot multiply transform program by negative integer")
+            
+            # Check for final transforms
+            if self.has_final_transform:
+                raise TransformError(
+                    "Cannot multiply a transform program that has a terminal transform."
+                )
+            
+            # Repeat the transforms
+            transforms = self._transform_program * n
+            return TransformProgram(transforms, cotransform_cache=self.cotransform_cache)
+        return NotImplemented
+
+    def __mul__(self, n: int) -> "TransformProgram":
+        """Left multiplication to repeat a program n times.
+
+        Args:
+            n (int): Number of times to repeat this program.
+
+        Returns:
+            TransformProgram: A new program with this program repeated n times.
+        """
+        return self.__rmul__(n)
 
     def __repr__(self):
         """The string representation of the transform program class."""

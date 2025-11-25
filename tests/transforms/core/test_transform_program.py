@@ -337,6 +337,216 @@ class TestTransformProgramDunders:
         p4 = TransformProgram([t1, t4])
         assert p1 != p4
 
+    def test_program_rmul(self):
+        """Test right multiplication of TransformProgram by an integer."""
+        transform1 = TransformContainer(transform=qml.transform(first_valid_transform))
+        program = TransformProgram([transform1])
+
+        # Test n * program
+        result = 3 * program
+        assert isinstance(result, TransformProgram)
+        assert len(result) == 3
+        assert all(t.transform is first_valid_transform for t in result)
+
+        # Test multiplication by 0
+        result = 0 * program
+        assert isinstance(result, TransformProgram)
+        assert len(result) == 0
+
+        # Test multiplication by 1
+        result = 1 * program
+        assert isinstance(result, TransformProgram)
+        assert len(result) == 1
+
+    def test_program_mul(self):
+        """Test left multiplication of TransformProgram by an integer."""
+        transform1 = TransformContainer(transform=qml.transform(first_valid_transform))
+        program = TransformProgram([transform1])
+
+        # Test program * n
+        result = program * 3
+        assert isinstance(result, TransformProgram)
+        assert len(result) == 3
+        assert all(t.transform is first_valid_transform for t in result)
+
+        # Test multiplication by 0
+        result = program * 0
+        assert isinstance(result, TransformProgram)
+        assert len(result) == 0
+
+        # Test multiplication by 1
+        result = program * 1
+        assert isinstance(result, TransformProgram)
+        assert len(result) == 1
+
+    def test_program_rmul_negative_error(self):
+        """Test that negative multiplication raises an error."""
+        transform1 = TransformContainer(transform=qml.transform(first_valid_transform))
+        program = TransformProgram([transform1])
+
+        with pytest.raises(ValueError, match="Cannot multiply transform program by negative integer"):
+            _ = -1 * program
+
+    def test_program_rmul_final_transform_error(self):
+        """Test that multiplying a program with a final transform raises an error."""
+        transform1 = TransformContainer(transform=qml.transform(first_valid_transform))
+        transform2 = TransformContainer(
+            transform=qml.transform(second_valid_transform, final_transform=True)
+        )
+        program = TransformProgram([transform1, transform2])
+
+        with pytest.raises(
+            TransformError, match="Cannot multiply a transform program that has a terminal transform"
+        ):
+            _ = 2 * program
+
+    def test_container_add_container(self):
+        """Test adding two TransformContainers to create a TransformProgram."""
+        container1 = TransformContainer(transform=qml.transform(first_valid_transform))
+        container2 = TransformContainer(transform=qml.transform(second_valid_transform))
+
+        result = container1 + container2
+        assert isinstance(result, TransformProgram)
+        assert len(result) == 2
+        assert result[0].transform is first_valid_transform
+        assert result[1].transform is second_valid_transform
+
+    def test_program_add_container(self):
+        """Test adding a TransformContainer to a TransformProgram."""
+        container1 = TransformContainer(transform=qml.transform(first_valid_transform))
+        container2 = TransformContainer(transform=qml.transform(second_valid_transform))
+        program = TransformProgram([container1])
+
+        result = program + container2
+        assert isinstance(result, TransformProgram)
+        assert len(result) == 2
+        assert result[0].transform is first_valid_transform
+        assert result[1].transform is second_valid_transform
+
+    def test_program_add_dispatcher(self):
+        """Test adding a TransformDispatcher to a TransformProgram."""
+        container1 = TransformContainer(transform=qml.transform(first_valid_transform))
+        dispatcher2 = qml.transform(second_valid_transform)
+        program = TransformProgram([container1])
+
+        result = program + dispatcher2
+        assert isinstance(result, TransformProgram)
+        assert len(result) == 2
+        assert result[0].transform is first_valid_transform
+        assert result[1].transform is second_valid_transform
+
+    def test_container_radd_program(self):
+        """Test right addition of a TransformContainer to a TransformProgram."""
+        container1 = TransformContainer(transform=qml.transform(first_valid_transform))
+        container2 = TransformContainer(transform=qml.transform(second_valid_transform))
+        program = TransformProgram([container1])
+
+        result = container2 + program
+        assert isinstance(result, TransformProgram)
+        assert len(result) == 2
+        assert result[0].transform is second_valid_transform
+        assert result[1].transform is first_valid_transform
+
+    def test_container_mul(self):
+        """Test multiplying a TransformContainer by an integer."""
+        container = TransformContainer(transform=qml.transform(first_valid_transform))
+
+        result = container * 3
+        assert isinstance(result, TransformProgram)
+        assert len(result) == 3
+        assert all(t.transform is first_valid_transform for t in result)
+
+        # Test multiplication by 0
+        result = container * 0
+        assert isinstance(result, TransformProgram)
+        assert len(result) == 0
+
+    def test_container_rmul(self):
+        """Test right multiplication of a TransformContainer by an integer."""
+        container = TransformContainer(transform=qml.transform(first_valid_transform))
+
+        result = 3 * container
+        assert isinstance(result, TransformProgram)
+        assert len(result) == 3
+        assert all(t.transform is first_valid_transform for t in result)
+
+    def test_container_mul_negative_error(self):
+        """Test that negative multiplication of a container raises an error."""
+        container = TransformContainer(transform=qml.transform(first_valid_transform))
+
+        with pytest.raises(ValueError, match="Cannot multiply transform container by negative integer"):
+            _ = container * -1
+
+    def test_dispatcher_add_dispatcher(self):
+        """Test adding two TransformDispatchers to create a TransformProgram."""
+        dispatcher1 = qml.transform(first_valid_transform)
+        dispatcher2 = qml.transform(second_valid_transform)
+
+        result = dispatcher1 + dispatcher2
+        assert isinstance(result, TransformProgram)
+        assert len(result) == 2
+        assert result[0].transform is first_valid_transform
+        assert result[1].transform is second_valid_transform
+
+    def test_dispatcher_add_container(self):
+        """Test adding a TransformDispatcher and a TransformContainer."""
+        dispatcher = qml.transform(first_valid_transform)
+        container = TransformContainer(transform=qml.transform(second_valid_transform))
+
+        result = dispatcher + container
+        assert isinstance(result, TransformProgram)
+        assert len(result) == 2
+        assert result[0].transform is first_valid_transform
+        assert result[1].transform is second_valid_transform
+
+    def test_dispatcher_add_program(self):
+        """Test adding a TransformDispatcher to a TransformProgram."""
+        dispatcher = qml.transform(first_valid_transform)
+        container = TransformContainer(transform=qml.transform(second_valid_transform))
+        program = TransformProgram([container])
+
+        result = dispatcher + program
+        assert isinstance(result, TransformProgram)
+        assert len(result) == 2
+        assert result[0].transform is first_valid_transform
+        assert result[1].transform is second_valid_transform
+
+    def test_dispatcher_radd(self):
+        """Test right addition with a TransformDispatcher."""
+        dispatcher = qml.transform(second_valid_transform)
+        container = TransformContainer(transform=qml.transform(first_valid_transform))
+
+        result = container + dispatcher
+        assert isinstance(result, TransformProgram)
+        assert len(result) == 2
+        assert result[0].transform is first_valid_transform
+        assert result[1].transform is second_valid_transform
+
+    def test_dispatcher_mul(self):
+        """Test multiplying a TransformDispatcher by an integer."""
+        dispatcher = qml.transform(first_valid_transform)
+
+        result = dispatcher * 3
+        assert isinstance(result, TransformProgram)
+        assert len(result) == 3
+        assert all(t.transform is first_valid_transform for t in result)
+
+    def test_dispatcher_rmul(self):
+        """Test right multiplication of a TransformDispatcher by an integer."""
+        dispatcher = qml.transform(first_valid_transform)
+
+        result = 3 * dispatcher
+        assert isinstance(result, TransformProgram)
+        assert len(result) == 3
+        assert all(t.transform is first_valid_transform for t in result)
+
+    def test_dispatcher_mul_negative_error(self):
+        """Test that negative multiplication of a dispatcher raises an error."""
+        dispatcher = qml.transform(first_valid_transform)
+
+        with pytest.raises(ValueError, match="Cannot multiply transform dispatcher by negative integer"):
+            _ = dispatcher * -1
+
 
 class TestTransformProgram:
     """Test the transform program class and its method."""
