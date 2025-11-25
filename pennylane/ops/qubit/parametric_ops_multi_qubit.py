@@ -549,9 +549,6 @@ class PauliRot(Operation):
 
         active_wires, active_gates = zip(*active_wire_gates)
 
-        if len(active_wires) == 0:
-            return [qml.GlobalPhase(theta / 2)]
-
         if set(pauli_word).issubset({"Z", "I"}):
             return [qml.MultiRZ(theta, wires=active_wires)]
 
