@@ -27,6 +27,7 @@ from pennylane.capture.primitives import (
     for_loop_prim,
     jacobian_prim,
     measure_prim,
+    transform_prim,
     while_loop_prim,
 )
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
@@ -830,7 +831,8 @@ class TestSingleQubitFusionPLXPR:
             return qml.expval(qml.Z(0))
 
         jaxpr = jax.make_jaxpr(circuit)()
-        assert jaxpr.eqns[0].primitive == qml.transforms.optimization.single_qubit_fusion._primitive
+        assert jaxpr.eqns[0].primitive == transform_prim
+        assert jaxpr.eqns[0].params["transform"] == qml.transforms.optimization.single_qubit_fusion
 
         transformed_qfunc = qml.capture.expand_plxpr_transforms(circuit)
         transformed_jaxpr = jax.make_jaxpr(transformed_qfunc)()
