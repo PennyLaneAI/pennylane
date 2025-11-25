@@ -161,7 +161,7 @@ def pauli_measure(pauli_word: str, wires: WiresLike, postselect: int | None = No
     2: ──H─╰┤↗Y├──║─┤
              ╚════╝
 
-    .. see-also::
+    .. seealso::
         catalyst.passes.ppm_compilation
     """
 
