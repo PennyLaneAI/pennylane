@@ -142,7 +142,7 @@ jobs:
       
       - name: Install PennyLane dependencies
         run: |
-          uv pip install --group ci --group dev --upgrade
+          uv pip install -e '.[ci,dev]' --upgrade
 
       - name: Install additional PIP packages (Pre-PennyLane)
         shell: bash
