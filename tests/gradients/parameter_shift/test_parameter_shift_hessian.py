@@ -28,7 +28,7 @@ from pennylane.gradients.parameter_shift_hessian import (
 
 
 def test_preprocessing_expansion():
-    """ "Test that preprocessing expands to supported gates."""
+    """Test that the parameter-shift Hessian correctly expands templates into supported gates."""
 
     dev = qml.device("default.qubit")
 
