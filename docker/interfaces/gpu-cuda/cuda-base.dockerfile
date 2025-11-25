@@ -41,9 +41,8 @@ WORKDIR /opt/pennylane
 COPY  . .
 RUN git submodule update --init --recursive \
     && pip install wheel \
-    && pip install -r requirements.txt \
+    && pip install --group default --group dev \
     && python3 -m pip install . \
-    && pip install -r requirements-dev.txt \
     && make test
 
 # create Second small build.

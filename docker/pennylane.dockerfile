@@ -40,9 +40,9 @@ ENV PATH="/opt/venv/bin:$PATH"
 WORKDIR /opt/pennylane
 COPY  . .
 RUN git submodule update --init --recursive
-RUN pip install wheel && pip install -r requirements.txt
+RUN pip install wheel && pip install --group default
 RUN python3 -m pip install .
-RUN pip install -r requirements-dev.txt
+RUN pip install --group dev
 RUN pip install -i https://test.pypi.org/simple/ pennylane-lightning --pre --upgrade
 # hotfix, remove when pyscf 2.1 is released (currently no wheel for python3.10)
 RUN pip install openfermionpyscf || true

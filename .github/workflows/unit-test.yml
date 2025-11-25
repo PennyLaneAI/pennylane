@@ -115,7 +115,7 @@ jobs:
         with:
           version: ${{ inputs.uv_version }}
           enable-cache: true
-          cache-dependency-glob: 'requirements-*.txt'
+          cache-dependency-glob: 'pyproject.toml'
       
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -142,7 +142,7 @@ jobs:
       
       - name: Install PennyLane dependencies
         run: |
-          uv pip install -r requirements-ci.txt -r requirements-dev.txt --upgrade
+          uv pip install --group ci --group dev --upgrade
 
       - name: Install additional PIP packages (Pre-PennyLane)
         shell: bash
