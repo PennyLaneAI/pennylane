@@ -2670,6 +2670,9 @@ class TestPauliRot:
         op2 = qml.PauliRot(0.5, "III", wires=[0, 1, 2])
         qml.ops.functions.assert_valid(op2)
 
+        op3 = qml.PauliRot(0.5, "ZZIZ", wires=[0, 1, 2, 3])
+        qml.ops.functions.assert_valid(op3)
+
     def test_paulirot_repr(self):
         op = qml.PauliRot(1.234, "XYX", wires=(0, 1, 2))
         assert repr(op) == "PauliRot(1.234, XYX, wires=[0, 1, 2])"
