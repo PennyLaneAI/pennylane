@@ -154,6 +154,9 @@
   work wire and :class:`pennylane.TemporaryAND` operators to reduce the resources needed.
   [(#8549)](https://github.com/PennyLaneAI/pennylane/pull/8549)
 
+* A decomposition has been added to the adjoint of :class:`pennylane.TemporaryAND`. This decomposition relies on mid-circuit measurments and does not require any T gates.
+  [(#8633)](https://github.com/PennyLaneAI/pennylane/pull/8633)
+
 * The graph-based decomposition system now supports decomposition rules that contains mid-circuit measurements.
   [(#8079)](https://github.com/PennyLaneAI/pennylane/pull/8079)
 
