@@ -24,6 +24,7 @@ performs the leaf write (classical bit flip), then routes back and restores the 
 """
 from collections import defaultdict
 from dataclasses import dataclass
+from functools import reduce
 from typing import List, Sequence
 
 from pennylane.decomposition import (
@@ -512,6 +513,8 @@ add_decomps(BBQRAM, _bucket_brigade_qram_decomposition)
 
 class SelectOnlyQRAM(BBQRAM):
 
+    resource_keys = { "bitstrings", "select_value", "num_target_wires", "num_select_wires", "k" }
+
     def __init__(
         self,
         bitstrings : Sequence[str],
@@ -539,6 +542,18 @@ class SelectOnlyQRAM(BBQRAM):
         }
 
         super().__init__(bitstrings, qram_wires, target_wires, work_wires, id)
+
+
+    @property
+    def resource_params(self) -> dict:
+        wire_manager = self.hyperparameters["wire_manager"]
+        return {
+            "bitstrings": self.hyperparameters["bitstrings"],
+            "select_value": self.hyperparameters["select_value"],
+            "num_target_wires": len(wire_manager.target_wires),
+            "num_select_wires": len(wire_manager.select_wires),
+            "k": self.hyperparameters["k"],
+        }
 
     # ---------- Select controls----------
     def _select_ctrls(self, s: int):
@@ -571,3 +586,28 @@ class SelectOnlyQRAM(BBQRAM):
                 )
             ops.append(SWAP(wires=[tw, bus_wire[0]]))
             return ops
+
+
+def _select_only_qram_resources(bitstrings, select_value, num_target_wires, num_select_wires, k):
+    resources = defaultdict(int)
+    resources[resource_rep(SWAP)] = 2 * num_target_wires
+    s_range = [select_value] if select_value is not None else range(1 << k)
+
+    for j in range(num_target_wires):
+        for s in s_range:
+            if bitstrings[s][j] != "1":
+                continue
+            if k == 0:
+                num_sel_ctrls, num_zero_sel_vals = [], []
+            else:
+                num_sel_ctrls = num_select_wires
+                num_zero_sel_vals = reduce(lambda acc, nxt: acc + 1 if nxt == 0 else acc, [(s >> (k - 1 - j)) & 1 for j in range(k)])
+
+            if num_sel_ctrls > 0:
+                resources[controlled_resource_rep(
+                    base_class=PauliX, base_params={}, num_control_wires=num_sel_ctrls, num_zero_control_values=num_zero_sel_vals
+                )] += 1
+            else:
+                resources[resource_rep(PauliX)] += 1
+
+    return resources
