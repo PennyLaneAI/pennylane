@@ -48,9 +48,9 @@ class CDFHamiltonian:
             raise TypeError(
                 f"num_fragments must be an integer, got {type(self.num_fragments).__name__}"
             )
-        if self.one_norm is not None and not isinstance(self.one_norm, (float, int)):
+        if self.one_norm is not None and not (isinstance(self.one_norm, (float, int)) and self.one_norm >= 0):
             raise TypeError(
-                f"one_norm must be a float or integer (or None), "
+                f"one_norm must be a positive float or integer (or None), "
                 f"but received type {type(self.one_norm).__name__}"
             )
         if isinstance(self.one_norm, int):
