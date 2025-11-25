@@ -159,9 +159,8 @@ class UnrollLoopPattern(RewritePattern):
                     inner_op_clone = inner_op.clone(value_mapper)
                     rewriter.insert_op(inner_op_clone, InsertPoint.before(op))
 
-        if inner_op_clone is not None or len(range(lb, ub, step)) == 0:
-            for op_res, iter_ssa in zip(op.results, iter_args):
-                op_res.replace_by(iter_ssa)
+        for op_res, iter_ssa in zip(op.results, iter_args):
+            op_res.replace_by(iter_ssa)
 
-            op.detach()
-            op.erase()
+        op.detach()
+        op.erase()
