@@ -20,6 +20,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* `Operator.decomposition` will fallback to the first entry in `qml.list_decomps` if the `Operator.compute_decomposition`
+  method is not overridden.
+  [(#8686)](https://github.com/PennyLaneAI/pennylane/pull/8686)
+
 * A new :func:`~.marker` function allows for easy inspection at particular points in a transform program
   with :func:`~.specs` and :func:`~.drawer.draw` instead of having to increment ``level``
   by integer amounts when not using any Catalyst passes.
