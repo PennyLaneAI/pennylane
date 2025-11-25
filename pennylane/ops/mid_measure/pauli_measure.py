@@ -127,41 +127,39 @@ def pauli_measure(pauli_word: str, wires: WiresLike, postselect: int | None = No
 
     Args:
         pauli_word (str): The Pauli word to measure.
-        wires (Wires): The wire to measure.
-        postselect (Optional[int]): Which basis state to postselect after a Pauli product
-            measurement. None by default. If postselection is requested, ...
+        wires (Wires): The wires the Pauli operators act on.
+        postselect (Optional[int]): Project the state into the subspace corresponding to the Pauli measurement
+            outcome. None by default.
 
     Returns:
-        MeasurementValue: A reference to the future result of the mid circuit measurement
+        MeasurementValue: A reference to the future result of the Pauli product measurement
 
     Raises:
-        Error: if ...
+        ValueError: if the Pauli word has characters other than X, Y and Z.
 
-    Pauli product measurement (PPM) outcomes can be used to conditionally apply operations, and measurement
-    statistics can be gathered and returned by a quantum function.
-
-    The following example illustrates how to incorporate PPM measurements in a qnode:
+    The following example illustrates how to incorporate Pauli product measurements (PPMs) in a qnode:
 
     **Example:**
 
     .. code-block:: python
 
-        dev = qml.device("null.qubit", wires=3)
-
-        qml.capture.enable()
-
-        @qml.qnode(dev, mcm_method="deferred")
+        @qml.qnode(qml.device("null.qubit", wires=3))
         def circuit():
             qml.Hadamard(0)
-            qml.Hadamard(1)
+            qml.Hadamard(2)
 
-            m = qml.PauliMeasure("ZZ", wires=[0,1])
-            qml.PauliRot(2*np.pi/8, 'XY',  wires=[0,1]) #notice the 2 times angle factor 
+            ppm = qml.pauli_measure(pauli_word="XY", wires=[0, 2])
+            qml.cond(ppm, qml.X)(wires=1)
 
-            qml.cond(m, qml.PauliX)(wires=0)
-            return qml.probs(wires=[0,1])
+            return qml.expval(qml.Z(0))
+
+    The PauliX operation on wire `1` will be applied conditionally on the value of the PPM outcome:
 
     >>> qml.draw(circuit)()
+    0: ──H─╭┤↗X├────┤  <Z>
+    1: ────│──────X─┤
+    2: ──H─╰┤↗Y├──║─┤
+             ╚════╝
 
     .. see-also::
         catalyst.passes.ppm_compilation
