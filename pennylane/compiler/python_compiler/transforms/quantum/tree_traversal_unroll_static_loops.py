@@ -108,7 +108,11 @@ class UnrollLoopPattern(RewritePattern):
 
         if not (lb_found and ub_found and step_found):
             raise CompileError(
-                "UnrollLoopPattern: Cannot unroll loop, bounds or step are not constant."
+                "Tree Traversal requires loops containing mid-circuit measurements to have "
+                "constant bounds and step values known at compile time. "
+                "The loop being compiled has dynamic bounds that cannot be determined statically. "
+                "To resolve this issue, ensure that loop bounds are literals or compile-time constants "
+                "(e.g., use `for i in range(5)` instead of `for i in range(n)` where n is a runtime variable)."
             )
 
         def check_extract_value(bound: Operation) -> int:
