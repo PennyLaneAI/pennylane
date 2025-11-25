@@ -350,6 +350,8 @@ class Select(Operation):
     .. details::
         :title: Available decomposition rules
 
+        **Option 1**
+
         1. **multi_control**: [Definition of the rule]
 
         .. code-block::
@@ -399,7 +401,7 @@ class Select(Operation):
                     :target: javascript:void(0);
     
 
-        **Table version**
+        **Option 2**
 
         .. code-block::
 
@@ -418,6 +420,8 @@ class Select(Operation):
             select._select_decomp_multi_control
             select._select_decomp_unary
             select._select_decomp_multi_control_work_wire
+
+        **Option 3**
 
         .. list-table::
             :widths: 20 60 20
