@@ -14,9 +14,11 @@
 r"""
 Contains the UCCSD template.
 """
+
 # pylint: disable-msg=too-many-arguments,protected-access,too-many-positional-arguments
 import copy
 from collections import Counter
+from collections.abc import Sequence
 
 import numpy as np
 
@@ -25,7 +27,8 @@ from pennylane.control_flow import for_loop
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.operation import Operation
 from pennylane.ops import BasisState
-from pennylane.wires import Wires
+from pennylane.typing import TensorLike
+from pennylane.wires import Wires, WiresLike
 
 from .fermionic_double_excitation import FermionicDoubleExcitation
 from .fermionic_single_excitation import FermionicSingleExcitation
@@ -75,7 +78,7 @@ class UCCSD(Operation):
         \{\mathrm{H.c.}\}) \Big\}.
 
     Args:
-        weights (tensor_like): Size ``(n_repeats, len(s_wires) + len(d_wires),)`` tensor containing the
+        weights (TensorLike): Size ``(n_repeats, len(s_wires) + len(d_wires),)`` tensor containing the
             parameters (see usage details below) :math:`\theta_{pr}` and :math:`\theta_{pqrs}` entering
             the Z rotation in :func:`~.FermionicSingleExcitation` and :func:`~.FermionicDoubleExcitation`.
             These parameters are the coupled-cluster amplitudes that need to be optimized for each
@@ -85,14 +88,14 @@ class UCCSD(Operation):
             :func:`~.FermionicSingleExcitation` and :func:`~.FermionicDoubleExcitation`.
             These parameters are the coupled-cluster amplitudes that need to be optimized for each
             single and double excitation generated with the :func:`~.excitations` function.
-        wires (Iterable): wires that the template acts on
-        s_wires (Sequence[Sequence]): Sequence of lists containing the wires ``[r,...,p]``
+        wires (WiresLike): wires that the template acts on
+        s_wires (Sequence[Sequence[int]]): Sequence of lists containing the wires ``[r,...,p]``
             resulting from the single excitation
             :math:`\vert r, p \rangle = \hat{c}_p^\dagger \hat{c}_r \vert \mathrm{HF} \rangle`,
             where :math:`\vert \mathrm{HF} \rangle` denotes the Hartee-Fock reference state.
             The first (last) entry ``r`` (``p``) is considered the wire representing the
             occupied (unoccupied) orbital where the electron is annihilated (created).
-        d_wires (Sequence[Sequence[Sequence]]): Sequence of lists, each containing two lists that
+        d_wires (Sequence[tuple[Sequence[int], Sequence[int]]]): Sequence of lists, each containing two lists that
             specify the indices ``[s, ...,r]`` and ``[q,..., p]`` defining the double excitation
             :math:`\vert s, r, q, p \rangle = \hat{c}_p^\dagger \hat{c}_q^\dagger \hat{c}_r
             \hat{c}_s \vert \mathrm{HF} \rangle`. The entries ``s`` and ``r`` are wires
@@ -100,7 +103,7 @@ class UCCSD(Operation):
             while the entries ``q`` and ``p`` correspond to the wires representing two unoccupied
             orbitals where the electrons are created. Wires in-between represent the occupied
             and unoccupied orbitals in the intervals ``[s, r]`` and ``[q, p]``, respectively.
-        init_state (array[int]): Length ``len(wires)`` occupation-number vector representing the
+        init_state (Sequence[int]): Length ``len(wires)`` occupation-number vector representing the
             HF state. ``init_state`` is used to initialize the wires.
         n_repeats (int): Number of times the UCCSD unitary is repeated. The default value is ``1``.
 
@@ -191,9 +194,23 @@ class UCCSD(Operation):
     resource_keys = {"num_wires", "n_repeats", "num_d_wires", "num_s_wires"}
 
     def __init__(
-        self, weights, wires, s_wires=None, d_wires=None, init_state=None, n_repeats=1, id=None
+        self,
+        weights: TensorLike,
+        wires: WiresLike,
+        s_wires: Sequence[Sequence[int]] | None = None,
+        d_wires: Sequence[tuple[Sequence[int], Sequence[int]]] | None = None,
+        init_state: Sequence[int] | None = None,
+        n_repeats: int = 1,
+        id=None,
     ):
-        if (not s_wires) and (not d_wires):
+        if init_state is None:
+            raise ValueError("Requires `init_state` to be provided.")
+
+        wires = Wires(wires)
+        s_wires = () if s_wires is None else s_wires
+        d_wires = () if d_wires is None else d_wires
+
+        if (len(s_wires) == 0) and (len(d_wires) == 0):
             raise ValueError(
                 f"s_wires and d_wires lists can not be both empty; got ph={s_wires}, pphh={d_wires}"
             )
@@ -220,8 +237,11 @@ class UCCSD(Operation):
                 f"Weights tensor must be of shape {(n_repeats,) + expected_shape}; got {shape}."
             )
 
+        if len(init_state) != len(wires):
+            raise ValueError(
+                f"Expected length of 'init_state' to match number of wires ({len(wires)})."
+            )
         init_state = math.toarray(init_state)
-
         if init_state.dtype != np.dtype("int"):
             raise ValueError(f"Elements of 'init_state' must be integers; got {init_state.dtype}")
 
