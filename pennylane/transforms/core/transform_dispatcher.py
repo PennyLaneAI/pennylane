@@ -190,6 +190,22 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
 
         self._plxpr_transform = plxpr_transform or _create_plxpr_fallback_transform(self._transform)
 
+        self._serialize_options = self._default_serialize_options
+
+    def _default_serialize_options(self, *targs, **tkwargs):
+        """Default method to serialize compiler pass options."""
+        return targs, tkwargs
+
+    def custom_serialize_options(self, fn: Callable) -> None:
+        """Register a custom implementation for serializing pass options"""
+        self._serialize_options = fn
+
+    def serialize_options(self, *targs, **tkwargs):
+        """Serialize compiler pass options. Transforms that use arguments that cannot be
+        embedded into an MLIR ``ApplyRegisteredPassOp`` must override this method so that
+        such arguments can be serialized into a usable format."""
+        return self._serialize_options(*targs, **tkwargs)
+
     @property
     def register(self):
         """Returns a decorator for registering a specific application behavior for a given transform
