@@ -389,7 +389,7 @@ def _expval_pulse_odegen(tape, argnum, atol):
             if _g is None:
                 par_shapes = (nonzero_parshape, next(zero_parshapes))
                 # Make zero representative gradient entry, adapting the shape
-                zero_rep = _make_zero_rep(g, single_measure, partitioned_shots, par_shapes)
+                zero_rep = _make_zero_rep(tape, par_shapes)
                 # Fill in zero-valued gradient entry
                 grads[i] = zero_rep
 

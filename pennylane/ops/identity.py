@@ -301,7 +301,7 @@ class GlobalPhase(Operation):
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    grad_method = None
+    grad_method = "A"
 
     resource_keys = set()
 

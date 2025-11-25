@@ -843,7 +843,7 @@ def _expval_stoch_pulse_grad(tape, argnum, num_split_times, key, use_broadcastin
 
         # g will have been defined at least once (because otherwise all gradients would have
         # been zero), providing a representative for a zero gradient to emulate its type/shape.
-        zero_rep = _make_zero_rep(g, single_measure, has_partitioned_shots)
+        zero_rep = _make_zero_rep(tape)
 
         # Fill in zero-valued gradients
         grads = [zero_rep if g is None else g for g in grads]

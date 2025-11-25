@@ -16,6 +16,7 @@ This module contains functions for computing the parameter-shift gradient
 of a qubit-based quantum tape.
 """
 import warnings
+from collections import namedtuple
 from functools import partial
 
 import numpy as np
@@ -57,7 +58,9 @@ from .gradient_transform import (
 )
 
 # pylint: disable=too-many-arguments,unused-argument
-
+GradientData = namedtuple(
+    "GradientData", ("num_tapes", "coeffs", "fn", "unshifted_coeff", "batch_size")
+)
 
 NONINVOLUTORY_OBS = {
     "Hermitian": lambda obs: obs.__class__(obs.matrix() @ obs.matrix(), wires=obs.wires),
@@ -293,40 +296,20 @@ def _get_operation_recipe(tape, t_idx, shifts, order=1):
     return math.stack([coeffs, mults, shifts]).T
 
 
-def _make_zero_rep(g, single_measure, has_partitioned_shots, par_shapes=None):
-    """Create a zero-valued gradient entry adapted to the measurements and shot_vector
-    of a gradient computation, where g is a previously computed non-zero gradient entry.
-
-    Args:
-        g (tensor_like): Gradient entry that was computed for a different parameter, from which
-            we inherit the shape and data type of the zero-valued entry to create
-        single_measure (bool): Whether the differentiated function returned a single measurement.
-        has_partitioned_shots (bool): Whether the differentiated function used a shot vector.
-        par_shapes (tuple(tuple)): Shapes of the parameter for which ``g`` is the gradient entry,
-            and of the parameter for which to create a zero-valued gradient entry, in this order.
-
-    Returns:
-        tensor_like or tuple(tensor_like) or tuple(tuple(tensor_like)): Zero-valued gradient entry
-        similar to the non-zero gradient entry ``g``, potentially adapted to differences between
-        parameter shapes if ``par_shapes`` were provided.
-
-    """
-    cut_dims, par_shape = (len(par_shapes[0]), par_shapes[1]) if par_shapes else (0, ())
-
-    if par_shapes is None:
-        zero_entry = math.zeros_like
-    else:
-
-        def zero_entry(grad_entry):
-            """Create a gradient entry that is zero and has the correctly modified shape."""
-            new_shape = par_shape + math.shape(grad_entry)[cut_dims:]
-            return math.zeros(new_shape, like=grad_entry)
-
-    if single_measure and not has_partitioned_shots:
-        return zero_entry(g)
-    if single_measure or not has_partitioned_shots:
-        return tuple(map(zero_entry, g))
-    return tuple(tuple(map(zero_entry, shot_comp_g)) for shot_comp_g in g)
+def _make_zero_rep(tape, par_shape=()):
+    par_shape = par_shape or ()
+    results = []
+    for s in tape.shots or [None]:
+        r = []
+        for mp in tape.measurements:
+            shape = mp.shape(s, tape.num_wires) + par_shape
+            if tape.batch_size is not None:
+                shape = (tape.batch_size,) + shape
+            r.append(np.zeros(shape, dtype=mp.numeric_type))
+        results.append(r[0] if len(tape.measurements) == 1 else r)
+    if tape.shots.has_partitioned_shots:
+        return tuple(results)
+    return results[0]
 
 
 # pylint: disable=too-many-positional-arguments
@@ -378,7 +361,7 @@ def expval_param_shift(
     for idx, _ in enumerate(tape.trainable_params):
         if idx not in argnum:
             # parameter has zero gradient
-            gradient_data.append((0, [], None, None, 0))
+            gradient_data.append(GradientData(0, [], None, None, 0))
             continue
 
         op, op_idx, _ = tape.get_operation(idx)
@@ -397,19 +380,28 @@ def expval_param_shift(
                     f"coefficients for expectations, not {tape[op_idx]}"
                 )
 
-        recipe = _choose_recipe(argnum, idx, gradient_recipes, shifts, tape)
-        recipe, at_least_one_unshifted, unshifted_coeff = _extract_unshifted(
-            recipe, at_least_one_unshifted, f0, gradient_tapes, tape
-        )
-        coeffs, multipliers, op_shifts = recipe.T
+        if op.name == "GlobalPhase":
+            # patch to unblock enabling graph decompositions
+            # better integration of global phase should be possible
+            coeffs = []
+            g_tapes = []
+            unshifted_coeff = None
+            batch_size = None
+        else:
+            recipe = _choose_recipe(argnum, idx, gradient_recipes, shifts, tape)
+            recipe, at_least_one_unshifted, unshifted_coeff = _extract_unshifted(
+                recipe, at_least_one_unshifted, f0, gradient_tapes, tape
+            )
+            coeffs, multipliers, op_shifts = recipe.T
 
-        g_tapes = generate_shifted_tapes(tape, idx, op_shifts, multipliers, broadcast)
+            g_tapes = generate_shifted_tapes(tape, idx, op_shifts, multipliers, broadcast)
+            # If broadcast=True, g_tapes only contains one tape. If broadcast=False, all returned
+            # tapes will have the same batch_size=None. Thus we only use g_tapes[0].batch_size here.
+            # If no gradient tapes are returned (e.g. only unshifted term in recipe), batch_size=None
+            batch_size = g_tapes[0].batch_size if broadcast and g_tapes else None
         gradient_tapes.extend(g_tapes)
-        # If broadcast=True, g_tapes only contains one tape. If broadcast=False, all returned
-        # tapes will have the same batch_size=None. Thus we only use g_tapes[0].batch_size here.
-        # If no gradient tapes are returned (e.g. only unshifted term in recipe), batch_size=None
-        batch_size = g_tapes[0].batch_size if broadcast and g_tapes else None
-        gradient_data.append((len(g_tapes), coeffs, None, unshifted_coeff, batch_size))
+
+        gradient_data.append(GradientData(len(g_tapes), coeffs, None, unshifted_coeff, batch_size))
 
     num_measurements = len(tape.measurements)
     single_measure = num_measurements == 1
@@ -440,7 +432,7 @@ def expval_param_shift(
 
         # g will have been defined at least once (because otherwise all gradients would have
         # been zero), providing a representative for a zero gradient to emulate its type/shape.
-        zero_rep = _make_zero_rep(g, single_measure, tape.shots.has_partitioned_shots)
+        zero_rep = _make_zero_rep(tape)
 
         # Fill in zero-valued gradients
         grads = [zero_rep if g is None else g for g in grads]

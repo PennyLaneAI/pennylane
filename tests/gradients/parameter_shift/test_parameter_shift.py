@@ -373,24 +373,29 @@ class TestMakeZeroRep:
     """Test that producing a zero-gradient representative with ``_make_zero_rep`` works."""
 
     # mimic an expectation value or variance, and a probs vector
-    @pytest.mark.parametrize("g", [np.array(0.6), np.array([0.6, 0.9])])
-    def test_single_measure_no_partitioned_shots(self, g):
+    @pytest.mark.parametrize(
+        "mp, expected",
+        ([qml.expval(qml.Z(0)), np.array(0)], [qml.probs(wires=0), np.array([0, 0])]),
+    )
+    def test_single_measure_no_partitioned_shots(self, mp, expected):
         """Test the zero-gradient representative with a single measurement and single shots."""
-        rep = _make_zero_rep(g, single_measure=True, has_partitioned_shots=False)
-        assert isinstance(rep, np.ndarray) and rep.shape == g.shape
-        assert qml.math.allclose(rep, 0.0)
+        tape = qml.tape.QuantumScript([], [mp], shots=None)
+        rep = _make_zero_rep(tape)
+        assert isinstance(rep, np.ndarray) and rep.shape == expected.shape
+        assert qml.math.allclose(rep, expected)
 
     # mimic an expectation value or variance, and a probs vector
     @pytest.mark.parametrize(
-        "g", [(np.array(0.6), np.array(0.4)) * 3, (np.array([0.3, 0.1]), np.array([0.6, 0.9]))]
+        "mp, expected",
+        ([qml.expval(qml.Z(0)), np.array(0)], [qml.probs(wires=0), np.array([0, 0])]),
     )
-    def test_single_measure_partitioned_shots(self, g):
-        """Test the zero-gradient representative with a single measurement and a shot vector."""
-        rep = _make_zero_rep(g, single_measure=True, has_partitioned_shots=True)
-        assert isinstance(rep, tuple) and len(rep) == len(g)
-        for r, _g in zip(rep, g):
-            assert isinstance(r, np.ndarray) and r.shape == _g.shape
-            assert qml.math.allclose(r, 0.0)
+    def test_single_measure_artitioned_shots(self, mp, expected):
+        """Test the zero-gradient representative with a single measurement and single shots."""
+        tape = qml.tape.QuantumScript([], [mp], shots=(10, 10, 10))
+        rep = _make_zero_rep(tape)
+        for r in rep:
+            assert isinstance(rep, np.ndarray) and rep.shape == expected.shape
+            assert qml.math.allclose(r, expected)
 
     # mimic an expectation value, a probs vector, or a mixture of them
     @pytest.mark.parametrize(
