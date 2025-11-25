@@ -158,7 +158,7 @@ Resource class for the Identity gate.
 .. seealso:: The equivalent long-form alias :class:`~.Identity`
 
 Args:
-    wires (Iterable[Any] | None): wire label(s) that the identity acts on
+    wires (WiresLike | None): wire label(s) that the identity acts on
 
 Resources:
     The Identity gate does not require any resources and thus it cannot be decomposed
