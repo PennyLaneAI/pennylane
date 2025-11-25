@@ -312,7 +312,7 @@ class HybridQRAM(BBQRAM):
     data at the address specified.
 
     Args:
-        bitstrings (Sequence[int]): the classical data as a sequence of bitstrings
+        bitstrings (Sequence[str]): the classical data as a sequence of bitstrings
         qram_wires (Sequence[int]): stores the index for the entry of the classical data we want to access
         target_wires (Sequence[int]): where the classical data gets loaded
         work_wires (Sequence[int]): the bus, direction, left port and right port wires in that order. Each node in the
@@ -326,9 +326,9 @@ class HybridQRAM(BBQRAM):
     def __init__(
         self,
         bitstrings: Sequence[str],
-        qram_wires: Sequence[int],
-        target_wires: Sequence[int],
-        work_wires: Sequence[int],
+        qram_wires: WiresLike,
+        target_wires: WiresLike,
+        work_wires: WiresLike,
         qram_value: int | None,
         id: str | None = None,
     ):  # pylint: disable=too-many-arguments
