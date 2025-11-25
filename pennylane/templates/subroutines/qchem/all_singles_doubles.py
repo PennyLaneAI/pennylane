@@ -166,9 +166,8 @@ class AllSinglesDoubles(Operation):
                 f"Expected length of 'hf_state' to match number of wires ({len(wires)})."
             )
 
-        if hf_state[0].dtype != np.dtype("int"):
         if (hf_dtype := hf_state[0].dtype) != np.dtype("int"):
-            raise ValueError("Elements of 'hf_state' must be integers, got {hf_dtype}.")
+            raise ValueError(f"Elements of 'hf_state' must be integers, got {hf_dtype}.")
         hf_state = tuple(hf_state)
 
         self._hyperparameters = {
