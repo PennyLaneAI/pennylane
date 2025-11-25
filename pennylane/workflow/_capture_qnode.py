@@ -534,7 +534,7 @@ def _bind_qnode(qnode, *args, **kwargs):
     # We compute ``abstracted_axes`` using the flattened arguments because trying to flatten
     # pytree ``abstracted_axes`` causes the abstract axis dictionaries to get flattened, which
     # we don't want to correctly compute the ``cache_key``.
-    dynamic_args, _ = _split_static_args(args, qnode.static_argnums)[0]
+    dynamic_args, _ = _split_static_args(args, qnode.static_argnums)
     flat_args = jax.tree_util.tree_leaves((dynamic_args, kwargs))
 
     abstracted_axes, abstract_shapes = qml.capture.determine_abstracted_axes(flat_args)
