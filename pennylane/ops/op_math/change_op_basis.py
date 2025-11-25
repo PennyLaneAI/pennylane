@@ -183,11 +183,7 @@ class ChangeOpBasis(CompositeOp):
     def decomposition(self):
         r"""Decomposition of the product operator is given by each of compute_op, target_op, compute_op† applied in succession."""
         if queuing.QueuingManager.recording():
-            return [
-                pytrees.unflatten(*pytrees.flatten(self[2])),  # pylint: disable=protected-access
-                pytrees.unflatten(*pytrees.flatten(self[1])),  # pylint: disable=protected-access
-                pytrees.unflatten(*pytrees.flatten(self[0])),  # pylint: disable=protected-access
-            ]
+            _ = [op.queue() for op in reversed(self)]
         return list(self[::-1])
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
