@@ -391,6 +391,30 @@ def test_select_only_quantum(
             ValueError,
             "len(bitstrings) must be 2^(len(select_wires)+len(qram_wires)).",
         ),
+        (
+            (
+                ["000", "111", "010", "101"],
+                [0, 1],
+                [2, 3, 4],
+                [5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
+                [],
+                1,
+            ),
+            ValueError,
+            "select_value cannot be used when len(select_wires) == 0.",
+        ),
+        (
+            (
+                ["000", "111", "010", "101", "000", "111", "010", "101"],
+                [0, 1],
+                [2, 3, 4],
+                [5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
+                [15],
+                4,
+            ),
+            ValueError,
+            "select_value must be an integer in [0, 1].",
+        ),
     ],
 )
 def test_raises(params, error, match):
