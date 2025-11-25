@@ -194,7 +194,8 @@ def test_vibronic_instantiation(num_modes, num_states, grid_size, taylor_degree,
         ("4", 2, 10, 3, None),
         (16, 3.5, 50, 2, None),
         (16, 3, "50", 2, None),
-        (4.5, 2, 10, 3, None),
+        (4, 2, 10, 3.5, None),
+        (4, 2, 10, 3, "None"),
     ],
 )
 def test_vibronic_invalid_types(
