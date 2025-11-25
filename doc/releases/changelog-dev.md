@@ -118,6 +118,10 @@
 * The graph-based decomposition system now supports decomposition rules that contains mid-circuit measurements.
   [(#8079)](https://github.com/PennyLaneAI/pennylane/pull/8079)
 
+* PennyLane capture now supports JAX 0.7.0+ by automatically converting unhashable primitive parameters
+  (lists, dicts, slices) to hashable tuples, which is required by the new JAX version.
+  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+
 <h3>Breaking changes 💔</h3>
 
 * `qml.transforms.map_wires` no longer supports plxpr transforms.
