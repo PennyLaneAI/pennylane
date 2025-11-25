@@ -20,7 +20,7 @@ which collects and maps PennyLane operations and measurements from xDSL.
 import enum
 import warnings
 from collections import defaultdict
-from functools import singledispatch
+from functools import partial, singledispatch
 
 import xdsl
 from xdsl.dialects import func
@@ -116,7 +116,7 @@ class ResourcesResult:
     """Class to hold the result of resource collection for a given operation."""
 
     def __init__(self):
-        self.operations: dict[str, dict[int, int]] = defaultdict(lambda: defaultdict(int))
+        self.operations: dict[str, dict[int, int]] = defaultdict(partial(defaultdict, int))
         self.measurements: dict[str, int] = defaultdict(int)
 
         self.classical_instructions: dict[str, int] = defaultdict(int)
@@ -187,6 +187,11 @@ class ResourcesResult:
     __str__ = __repr__
 
 
+############################################################
+### Resource Handlers
+############################################################
+
+
 @singledispatch
 def handle_resource(
     xdsl_op: xdsl.ir.Operation,
@@ -201,17 +206,17 @@ def handle_resource(
 
 
 @handle_resource.register
-def _(xdsl_meas: MeasureOp) -> tuple[ResourceType, str]:
-    return ResourceType.MEASUREMENT, xdsl_to_qml_measurement_type(xdsl_meas)
+def _(xdsl_op: MeasureOp) -> tuple[ResourceType, str]:
+    return ResourceType.MEASUREMENT, xdsl_to_qml_measurement_type(xdsl_op)
 
 
 @handle_resource.register
 def _(
-    xdsl_meas: CountsOp | ExpvalOp | ProbsOp | SampleOp | StateOp | VarianceOp,
+    xdsl_op: CountsOp | ExpvalOp | ProbsOp | SampleOp | StateOp | VarianceOp,
 ) -> tuple[ResourceType, str]:
-    obs_op = xdsl_meas.obs.owner
+    obs_op = xdsl_op.obs.owner
     return ResourceType.MEASUREMENT, xdsl_to_qml_measurement_type(
-        xdsl_meas, xdsl_to_qml_measurement_type(obs_op)
+        xdsl_op, xdsl_to_qml_measurement_type(obs_op)
     )
 
 
@@ -246,13 +251,13 @@ def _(xdsl_op: PPRotationOp) -> tuple[ResourceType, str]:
         ), "Found non-identity PPRotation with pi/0 rotation!"
         s = "PPR-identity"
     else:
-        s = f"PPR-pi/{abs(xdsl_op.rotation_kind.value.data)}-w{len(xdsl_op.in_qubits)}"
+        s = f"PPR-pi/{abs(xdsl_op.rotation_kind.value.data)}"
     return ResourceType.QEC, s
 
 
 @handle_resource.register
-def _(xdsl_op: PPMeasurementOp | SelectPPMeasurementOp) -> tuple[ResourceType, str]:
-    return ResourceType.QEC, f"PPM-w{len(xdsl_op.in_qubits)}"
+def _(_: PPMeasurementOp | SelectPPMeasurementOp) -> tuple[ResourceType, str]:
+    return ResourceType.QEC, "PPM"
 
 
 ############################################################
@@ -275,7 +280,7 @@ def _(
 
 @handle_resource.register
 def _(
-    xdsl_op: DeviceInitOp | AllocOp | AllocQubitOp,
+    _: DeviceInitOp | AllocOp | AllocQubitOp,
 ) -> tuple[None, None]:
     # If these types are matched, parse them with the specs metadata handler
     return ResourceType.METADATA, None
