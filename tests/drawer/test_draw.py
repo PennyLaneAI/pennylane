@@ -1087,6 +1087,23 @@ class TestLevelExpansionStrategy:
         with pytest.warns(UserWarning, match="the level argument is ignored"):
             qml.draw(qfunc, level=None)
 
+    def test_custom_level(self):
+        """Test that we can draw at a custom level."""
+
+        @qml.transforms.merge_rotations
+        @partial(qml.marker, level="my_level")
+        @qml.transforms.cancel_inverses
+        @qml.qnode(qml.device("null.qubit"))
+        def c():
+            qml.RX(0.2, 0)
+            qml.X(0)
+            qml.X(0)
+            qml.RX(0.2, 0)
+            return qml.state()
+
+        expected = "0: ──RX(0.20)──RX(0.20)─┤  State"
+        assert qml.draw(c, level="my_level")() == expected
+
 
 def test_draw_batch_transform():
     """Test that drawing a batch transform works correctly."""
