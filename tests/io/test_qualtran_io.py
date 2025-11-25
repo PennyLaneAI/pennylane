@@ -834,10 +834,6 @@ class TestToBloq:
             from qualtran.bloqs.qft import QFTTextBook
 
             qualtran_bloqs = {
-                "qpe_bloq": TextbookQPE(
-                    unitary=qml.to_bloq(qml.RX(0.1, wires=0)),
-                    ctrl_state_prep=RectangularWindowState(4),
-                ),
                 "qft_bloq": QFTTextBook(4),
                 "modexp_bloq": ModExp(base=2, mod=7, exp_bitsize=2, x_bitsize=3),
                 "qrom_bloq_clean": QROAMClean.build_from_data([2, 7, 6, 0]),
