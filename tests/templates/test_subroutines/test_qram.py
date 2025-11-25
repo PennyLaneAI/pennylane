@@ -506,7 +506,7 @@ def test_select_decomposition_new(
         target_wires,
         [bus] + dir_wires + portL_wires + portR_wires,
         select_wires,
-        select_value
+        select_value,
     )
 
     for rule in list_decomps(SelectOnlyQRAM):
