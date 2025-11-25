@@ -582,7 +582,7 @@ def _pauli_rot_resources(pauli_word):
         return {qml.GlobalPhase: 1}
     num_active_wires = len(pauli_word.replace("I", ""))
     if set(pauli_word).issubset({"I", "Z"}):
-        return {qml.MultiRZ: 1}
+        return {resource_rep(qml.MultiRZ, num_wires=num_active_wires): 1}
     prod_resource_rep = resource_rep(
         qml.ops.Prod,
         resources={
