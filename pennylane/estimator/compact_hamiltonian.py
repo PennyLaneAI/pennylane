@@ -40,18 +40,15 @@ class CDFHamiltonian:
     def __post_init__(self):
         """Checks the types of the inputs."""
 
-        if not isinstance(self.num_orbitals, int):
+        if not isinstance(self.num_orbitals, int) or self.num_orbitals <= 0:
+            raise TypeError(f"num_orbitals must be a positive integer, got {self.num_orbitals}")
+        if not isinstance(self.num_fragments, int) or self.num_fragments <= 0:
+            raise TypeError(f"num_fragments must be a positive integer, got {self.num_fragments}")
+        if self.one_norm is not None and not (
+            isinstance(self.one_norm, (float, int)) and self.one_norm >= 0
+        ):
             raise TypeError(
-                f"num_orbitals must be an integer, got {type(self.num_orbitals).__name__}"
-            )
-        if not isinstance(self.num_fragments, int):
-            raise TypeError(
-                f"num_fragments must be an integer, got {type(self.num_fragments).__name__}"
-            )
-        if self.one_norm is not None and not (isinstance(self.one_norm, (float, int)) and self.one_norm >= 0):
-            raise TypeError(
-                f"one_norm must be a positive float or integer (or None), "
-                f"but received type {type(self.one_norm).__name__}"
+                f"one_norm must be a positive float or integer (or None), but received {self.one_norm}"
             )
         if isinstance(self.one_norm, int):
             object.__setattr__(self, "one_norm", float(self.one_norm))
@@ -80,19 +77,17 @@ class THCHamiltonian:
     def __post_init__(self):
         """Checks the types of the inputs."""
 
-        if not isinstance(self.num_orbitals, int):
-            raise TypeError(
-                f"num_orbitals must be an integer, got {type(self.num_orbitals).__name__}"
-            )
-        if not isinstance(self.tensor_rank, int):
-            raise TypeError(
-                f"tensor_rank must be an integer, got {type(self.tensor_rank).__name__}"
-            )
+        if not isinstance(self.num_orbitals, int) or self.num_orbitals <= 0:
+            raise TypeError(f"num_orbitals must be a positive integer, got {self.num_orbitals}")
+        if not isinstance(self.tensor_rank, int) or self.tensor_rank <= 0:
+            raise TypeError(f"tensor_rank must be an integer, got {self.tensor_rank}")
 
-        if self.one_norm is not None and not isinstance(self.one_norm, (float, int)):
+        if self.one_norm is not None and not (
+            isinstance(self.one_norm, (float, int)) and self.one_norm >= 0
+        ):
             raise TypeError(
                 f"one_norm must be a float or integer (or None), "
-                f"but received type {type(self.one_norm).__name__}"
+                f"but received type {self.one_norm}"
             )
 
         if isinstance(self.one_norm, int):
@@ -124,19 +119,19 @@ class VibrationalHamiltonian:
     def __post_init__(self):
         """Checks the types of the inputs."""
 
-        if not isinstance(self.num_modes, int):
-            raise TypeError(f"num_modes must be an integer, got {type(self.num_modes).__name__}")
-        if not isinstance(self.grid_size, int):
-            raise TypeError(f"grid_size must be an integer, got {type(self.grid_size).__name__}")
-        if not isinstance(self.taylor_degree, int):
-            raise TypeError(
-                f"taylor_degree must be an integer, got {type(self.taylor_degree).__name__}"
-            )
+        if not isinstance(self.num_modes, int) or self.num_modes <= 0:
+            raise TypeError(f"num_modes must be a positive integer, got {self.num_modes}")
+        if not isinstance(self.grid_size, int) or self.grid_size <= 0:
+            raise TypeError(f"grid_size must be a positive integer, got {self.grid_size}")
+        if not isinstance(self.taylor_degree, int) or self.taylor_degree <= 0:
+            raise TypeError(f"taylor_degree must be a positive integer, got {self.taylor_degree}")
 
-        if self.one_norm is not None and not isinstance(self.one_norm, (float, int)):
+        if self.one_norm is not None and not (
+            isinstance(self.one_norm, (float, int)) and self.one_norm >= 0
+        ):
             raise TypeError(
-                f"one_norm must be a float or integer (or None), "
-                f"but received type {type(self.one_norm).__name__}"
+                f"one_norm must be a positive float or integer (or None), "
+                f"but received type {self.one_norm}"
             )
 
         if isinstance(self.one_norm, int):
@@ -170,21 +165,21 @@ class VibronicHamiltonian:
     def __post_init__(self):
         """Checks the types of the inputs."""
 
-        if not isinstance(self.num_modes, int):
-            raise TypeError(f"num_modes must be an integer, got {type(self.num_modes).__name__}")
-        if not isinstance(self.num_states, int):
-            raise TypeError(f"num_states must be an integer, got {type(self.num_states).__name__}")
-        if not isinstance(self.grid_size, int):
-            raise TypeError(f"grid_size must be an integer, got {type(self.grid_size).__name__}")
-        if not isinstance(self.taylor_degree, int):
-            raise TypeError(
-                f"taylor_degree must be an integer, got {type(self.taylor_degree).__name__}"
-            )
+        if not isinstance(self.num_modes, int) or self.num_modes <= 0:
+            raise TypeError(f"num_modes must be a positive integer, got {self.num_modes}")
+        if not isinstance(self.num_states, int) or self.num_states <= 0:
+            raise TypeError(f"num_states must be a positive integer, got {self.num_states}")
+        if not isinstance(self.grid_size, int) or self.grid_size <= 0:
+            raise TypeError(f"grid_size must be a positive integer, got {self.grid_size}")
+        if not isinstance(self.taylor_degree, int) or self.taylor_degree <= 0:
+            raise TypeError(f"taylor_degree must be a positive integer, got {self.taylor_degree}")
 
-        if self.one_norm is not None and not isinstance(self.one_norm, (float, int)):
+        if self.one_norm is not None and not (
+            isinstance(self.one_norm, (float, int)) and self.one_norm >= 0
+        ):
             raise TypeError(
-                f"one_norm must be a float or integer (or None), "
-                f"but received type {type(self.one_norm).__name__}"
+                f"one_norm must be a positive float or integer (or None), "
+                f"but received type {self.one_norm}"
             )
 
         if isinstance(self.one_norm, int):

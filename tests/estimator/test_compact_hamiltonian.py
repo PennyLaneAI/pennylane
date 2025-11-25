@@ -56,6 +56,9 @@ def test_cdf_instantiation(num_orbitals, num_fragments, one_norm):
         (16, 4.5, None),
         (16, 50, "50.0"),
         (4.5, 10, None),
+        (-4, 10, None),
+        (16, -10, None),
+        (16, 50, -5),
     ],
 )
 def test_cdf_invalid_types(invalid_num_orbitals, invalid_num_fragments, invalid_one_norm):
@@ -99,6 +102,9 @@ def test_thc_instantiation(num_orbitals, tensor_rank, one_norm):
         (16, 4.5, None),
         (16, 50, "50.0"),
         (4.5, 10, None),
+        (-4, 10, None),
+        (16, -10, None),
+        (16, 50, -5),
     ],
 )
 def test_thc_invalid_types(invalid_num_orbitals, invalid_tensor_rank, invalid_one_norm):
@@ -143,6 +149,10 @@ def test_vibrational_instantiation(num_modes, grid_size, taylor_degree, one_norm
         (16, 4.5, 2, None),
         (16, 50, "2", None),
         (4, 10, 3, "None"),
+        (-4, 10, 3, None),
+        (16, -10, 2, None),
+        (16, 50, -2, 10.0),
+        (16, 50, 2, -5),
     ],
 )
 def test_vibrational_invalid_types(
@@ -196,6 +206,11 @@ def test_vibronic_instantiation(num_modes, num_states, grid_size, taylor_degree,
         (16, 3, "50", 2, None),
         (4, 2, 10, 3.5, None),
         (4, 2, 10, 3, "None"),
+        (-4, 2, 10, 3, None),
+        (16, -3, 50, 2, None),
+        (16, 3, -50, 2, None),
+        (16, 3, 50, -2, 10.0),
+        (16, 3, 50, 2, -5),
     ],
 )
 def test_vibronic_invalid_types(
