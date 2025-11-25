@@ -611,3 +611,28 @@ def _select_only_qram_resources(bitstrings, select_value, num_target_wires, num_
                 resources[resource_rep(PauliX)] += 1
 
     return resources
+
+
+@register_resources(_select_only_qram_resources)
+def _select_only_qram_decomposition(wires, bitstrings, select_value, wire_manager, k, **_):  # pylint: disable=unused-argument
+    bus_wire = wire_manager.bus_wire
+    for j, tw in enumerate(wire_manager.target_wires):
+        SWAP(wires=[tw, bus_wire[0]])
+        s_range = [select_value] if select_value is not None else range(1 << k)
+        for s in s_range:
+            if bitstrings[s][j] != "1":
+                continue
+            if k == 0:
+                sel_ctrls, sel_vals = [], []
+            else:
+                sel_ctrls = list(wire_manager.select_wires)
+                sel_vals = [(s >> (k - 1 - j)) & 1 for j in range(k)]
+
+            if sel_ctrls:
+                ctrl(PauliX(wires=bus_wire[0]), control=sel_ctrls, control_values=sel_vals)
+            else:
+                PauliX(wires=bus_wire[0])
+        SWAP(wires=[tw, bus_wire[0]])
+
+
+add_decomps(SelectOnlyQRAM, _select_only_qram_decomposition)
