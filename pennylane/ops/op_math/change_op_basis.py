@@ -183,7 +183,7 @@ class ChangeOpBasis(CompositeOp):
     def decomposition(self):
         r"""Decomposition of the product operator is given by each of compute_op, target_op, compute_op† applied in succession."""
         if queuing.QueuingManager.recording():
-            _ = [op.queue() for op in reversed(self)]
+            _ = [queuing.apply(op) for op in reversed(self)]
         return list(self[::-1])
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
