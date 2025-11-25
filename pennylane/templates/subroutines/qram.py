@@ -103,13 +103,13 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
         bitstrings (Sequence[str]):
             The classical data as a sequence of bitstrings. The size of the classical data must be
             :math:`2^{\texttt{len(qram_wires)}}`.
-        qram_wires (Sequence[int]):
+        qram_wires (WiresLike):
             The register that stores the index for the entry of the classical data we want to
             access.
-        target_wires (Sequence[int]):
+        target_wires (WiresLike):
             The register in which the classical data gets loaded. The size of this register must
             equal each bitstring length in ``bitstrings``.
-        work_wires (Sequence[int]):
+        work_wires (WiresLike):
             The additional wires required to funnel the desired entry of ``bitstrings`` into the
             target register. The size of the ``work_wires`` register must be
             :math:`1 + 3 ((1 << \texttt{len(qram_wires)}) - 1)`. More specifically, the
