@@ -506,6 +506,12 @@ A warning message has been added to :doc:`Building a plugin <../development/plug
 * Fixes a bug where `qml.specs` incorrectly computes the circuit depth when classically controlled operators are involved.
   [(#8668)](https://github.com/PennyLaneAI/pennylane/pull/8668)
 
+* Fixes a bug where an error is raised when trying to decompose a nested composite operator with capture and the new graph system enabled.
+  [(#8695)](https://github.com/PennyLaneAI/pennylane/pull/8695)
+
+* Fixes a bug where :func:`~.change_op_basis` cannot be captured when the `uncompute_op` is left out.
+  [(#8695)](https://github.com/PennyLaneAI/pennylane/pull/8695)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
