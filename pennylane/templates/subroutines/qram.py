@@ -34,7 +34,8 @@ from pennylane.decomposition import (
 )
 from pennylane.operation import Operation, Operator
 from pennylane.ops import CSWAP, SWAP, Hadamard, PauliZ, ctrl
-from pennylane.wires import Wires
+from pennylane.wires import Wires, WiresLike
+
 
 # pylint: disable=consider-using-generator
 
@@ -118,10 +119,10 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
     In the end, the target wires' values correspond to the data at the address specified.
 
     Args:
-        bitstrings (Sequence[int]): the classical data as a sequence of bitstrings
-        qram_wires (Sequence[int]): stores the index for the entry of the classical data we want to access
-        target_wires (Sequence[int]): where the classical data gets loaded
-        work_wires (Sequence[int]): the bus, direction, left port and right port wires in that order. Each node in the
+        bitstrings (Sequence[str]): the classical data as a sequence of bitstrings
+        qram_wires (WiresLike): stores the index for the entry of the classical data we want to access
+        target_wires (WiresLike): where the classical data gets loaded
+        work_wires (WiresLike): the bus, direction, left port and right port wires in that order. Each node in the
             tree contains one address (direction), one left port and one right port wire. The single bus wire is used
             for address loading and data routing
 
@@ -186,9 +187,9 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
     def __init__(
         self,
         bitstrings: Sequence[str],
-        qram_wires: Sequence[int],
-        target_wires: Sequence[int],
-        work_wires: Sequence[int],
+        qram_wires: WiresLike,
+        target_wires: WiresLike,
+        work_wires: WiresLike,
         id: str | None = None,
     ):  # pylint: disable=too-many-arguments
         if not bitstrings:
