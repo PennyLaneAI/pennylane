@@ -471,6 +471,10 @@ A warning message has been added to :doc:`Building a plugin <../development/plug
 
 <h3>Bug fixes 🐛</h3>
 
+* The warnings-as-errors CI action was failing due to an incompatibility between `pytest-xdist` and `pytest-benchmark`. 
+  Disabling the benchmark package allows the tests to be collected an executed. 
+  [(#8699)](https://github.com/PennyLaneAI/pennylane/pull/8699)
+
 * Fixes a bug in `default.mixed` device where certain diagonal operations were incorrectly
   reshaped during application when using broadcasting.
   [(#8593)](https://github.com/PennyLaneAI/pennylane/pull/8593)
@@ -516,6 +520,7 @@ Sengthai Heng,
 Soran Jahangiri,
 Christina Lee,
 Joseph Lee,
+Lee J. O'Riordan,
 Gabriela Sanchez Diaz,
 Mudit Pandey,
 Shuli Shu,
