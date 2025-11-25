@@ -466,7 +466,7 @@ class TreeTraversalPattern(RewritePattern):
         values_as_io_index = {v: k for k, v in enumerate(all_segment_io)}
         for idx, segment in enumerate(quantum_segments):
             new_segment = self.clone_ops_into_func(segment, idx, rewriter)
-            new_segment = self.additional_transform_for_segment(new_segment, segment, rewriter)
+            new_segment = self.additional_transform_for_segment(new_segment, rewriter)
             segment.fun = new_segment
             values_as_io_index.update(
                 (x, i + len(all_segment_io)) for i, x in enumerate(segment.outputs)
@@ -479,10 +479,41 @@ class TreeTraversalPattern(RewritePattern):
         self.all_segment_io = all_segment_io
         self.values_as_io_index = values_as_io_index
 
-    def additional_transform_for_segment(  # pylint: disable=too-many-branches
-        self, new_segment: func.FuncOp, segment: ProgramSegment, rewriter: PatternRewriter
+    def additional_transform_for_segment(
+        self, new_segment: func.FuncOp, rewriter: PatternRewriter
     ) -> func.FuncOp:
         """Apply additional transformations to each segment function as needed."""
+
+        # Placeholder for additional transformations per segment
+        new_segment = self.segment_transformation_if_statement(new_segment, rewriter)
+
+        return new_segment
+
+    def segment_transformation_if_statement(self, new_segment: func.FuncOp, rewriter: PatternRewriter) -> func.FuncOp:
+        """Transform nested if-statements containing mid-circuit measurements (MCMs).
+
+        This method handles the case where measurement operations are nested within conditional
+        blocks. It identifies and relocates the "real" measurement operation (the actual quantum
+        measurement) to ensure proper execution order within the tree-traversal simulation.
+
+        The transformation addresses scenarios where:
+        1. A measurement operation is wrapped in an outer if-statement (real_mcm_op)
+        2. Another conditional if-statement contains MCM-related operations (current_if_op)
+        3. These nested structures need to be reorganized for correct tree-traversal behavior
+
+        Returns:
+            The modified function operation with transformed if-statement structure. If no
+            transformation is needed (e.g., no nested MCM structure found), returns the
+            original segment unchanged.
+
+        Implementation Details:
+            - Searches for two distinct IfOps: one containing the real measurement and another
+              marked with "contain_mcm" attribute
+            - Moves the real measurement operation to the appropriate location within the
+              inner if-statement's true branch
+            - Updates quantum register and qubit references to maintain correct data flow
+            - Removes the old measurement operation after replacement to avoid duplication
+        """
 
         real_mcm_op = None
         current_if_op = None
