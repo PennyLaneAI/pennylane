@@ -285,9 +285,9 @@ def measure(
 
         .. note::
 
-            Currently, postselection support is only available on ``default.qubit``, ``lightning.qubit``, ``lightning.gpu``, 
+            Currently, postselection support is only available on ``default.qubit``, ``lightning.qubit``, ``lightning.gpu``,
             and ``lightning.kokkos``. Using postselection on other devices will raise an error.
-            
+
             Additionally, postselection is not supported with the tree-traversal MCM method (accessed via ``mcm_method="tree-traversal"``).
 
         Postselection discards outcomes that do not meet the criteria provided by the ``postselect``

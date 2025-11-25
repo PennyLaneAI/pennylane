@@ -28,11 +28,10 @@ from xdsl.rewriter import InsertPoint
 
 from pennylane.compiler.python_compiler.dialects import quantum
 
-
-
 ##############################################################################
 # Some useful utils
 ##############################################################################
+
 
 class IfOperatorPartitioningPattern(RewritePattern):
     """A rewrite pattern that partitions scf.IfOps containing measurement-controlled
@@ -204,7 +203,7 @@ class IfOperatorPartitioningPattern(RewritePattern):
             where_to_insert = outer_if_op
 
             # Holder for IfOps that are kept for updating SSA values later
-            holder_returns:dict[scf.IfOp, scf.IfOp] = {}
+            holder_returns: dict[scf.IfOp, scf.IfOp] = {}
 
             for inner_op in nested_if_ops:
 

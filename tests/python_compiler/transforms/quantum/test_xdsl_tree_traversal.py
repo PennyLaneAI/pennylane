@@ -39,6 +39,7 @@ Not supported features:
     - qml.expval(mcm_result)
 """
 
+
 class TestTreeTraversalPassBase:
     """Unit tests for TreeTraversalPass. without control flow operation."""
 
@@ -658,7 +659,6 @@ class TestTreeTraversalPassBase:
             qml.measure(1, postselect=postselect)
             qml.RX(-np.pi / 8, 1)
             qml.RZ(-np.pi / 8, 1)
-
 
         # Measures:
         # Without shots

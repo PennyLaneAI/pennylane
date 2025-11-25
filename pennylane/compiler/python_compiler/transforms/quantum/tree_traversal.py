@@ -307,12 +307,11 @@ class TreeTraversalPattern(RewritePattern):
                     def _create_replace_filter(excluded_operations):
                         """Create a filter function to avoid cell-var-from-loop issues."""
                         return lambda use: use.operation not in excluded_operations
+
                     for qb, idx in list(qubit_to_reg_idx.items()):
                         extract_op = quantum.ExtractOp(current_reg, idx)
                         rewriter.insert(extract_op)
-                        qb.replace_by_if(
-                            extract_op.qubit, _create_replace_filter(insert_ops)
-                        )
+                        qb.replace_by_if(extract_op.qubit, _create_replace_filter(insert_ops))
                         qubit_to_reg_idx[extract_op.qubit] = idx
                         del qubit_to_reg_idx[qb]
 
@@ -491,7 +490,9 @@ class TreeTraversalPattern(RewritePattern):
 
         return new_segment
 
-    def segment_transformation_if_statement(self, new_segment: func.FuncOp, rewriter: PatternRewriter) -> func.FuncOp:
+    def segment_transformation_if_statement(
+        self, new_segment: func.FuncOp, rewriter: PatternRewriter
+    ) -> func.FuncOp:
         """Transform nested if-statements containing mid-circuit measurements (MCMs).
 
         This method handles the case where measurement operations are nested within conditional
@@ -577,7 +578,6 @@ class TreeTraversalPattern(RewritePattern):
                 where_to_move_real_mcm.erase()
             else:
                 real_mcm_op.erase()
-
 
         return new_segment
 
@@ -665,7 +665,9 @@ class TreeTraversalPattern(RewritePattern):
             for op in (callOp, yieldOp):
                 rewriter.insert_op(op, InsertPoint.at_end(switchOp.case_regions[case].block))
 
-    def clone_ops_into_func(self, segment: ProgramSegment, counter: int, rewriter: PatternRewriter):  # pylint: disable=no-member
+    def clone_ops_into_func(
+        self, segment: ProgramSegment, counter: int, rewriter: PatternRewriter
+    ):  # pylint: disable=no-member
         """Clone a set of ops into a new function."""
         op_list, input_vals, output_vals = segment.ops, segment.inputs, segment.outputs
         input_vals = [segment.reg_in] + input_vals
@@ -761,7 +763,9 @@ class TreeTraversalPattern(RewritePattern):
         rewriter.insert_op(new_func, InsertPoint.at_end(self.module.body.block))
         return new_func
 
-    def create_state_transition_function(self, rewriter: PatternRewriter):  # pylint: disable=too-many-statements,no-member
+    def create_state_transition_function(
+        self, rewriter: PatternRewriter
+    ):  # pylint: disable=too-many-statements,no-member
         """The created function is used to handle the state transition of the tree traversal.
         [Done] update the visited stack
         [Done] store the state from caling quantum.state
@@ -1195,7 +1199,9 @@ class TreeTraversalPattern(RewritePattern):
         self.visited_stack = visited_stack.results[0]
         self.folded_result = folded_result.results[0]
 
-    def generate_traversal_code(self, rewriter: PatternRewriter):  # pylint: disable=too-many-branches,too-many-statements,no-member
+    def generate_traversal_code(
+        self, rewriter: PatternRewriter
+    ):  # pylint: disable=too-many-branches,too-many-statements,no-member
         """Create the traversal code of the quantum simulation tree."""
         rewriter.insertion_point = InsertPoint.at_end(self.tt_op.body.block)
 
@@ -1390,7 +1396,9 @@ class TreeTraversalPattern(RewritePattern):
         for op in (c2, not_finished, if_op, yield_op):
             rewriter.insert_op(op, InsertPoint.at_end(bodyBlock))
 
-    def initialize_values_from_types(self, types, rewriter: PatternRewriter):  # pylint: disable=too-many-branches
+    def initialize_values_from_types(
+        self, types, rewriter: PatternRewriter
+    ):  # pylint: disable=too-many-branches
         """Generate dummy values for the provided types. Quantum types are treated specially and
         will make use of the quantum.AllocOp reference collected at an earlier stage."""
 

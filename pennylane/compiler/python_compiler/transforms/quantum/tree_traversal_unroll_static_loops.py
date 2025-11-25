@@ -70,8 +70,7 @@ class UnrollLoopPattern(RewritePattern):
 
         for _for_op in neasted_loop_to_unroll:
             # print_mlir(_for_op, "Last ForOp to unroll:")
-            self.unroll_loop(_for_op,rewriter)
-
+            self.unroll_loop(_for_op, rewriter)
 
     def detect_mcm_in_loop_ops(self, op: Operation) -> bool:
         """Detect if there are mid-circuit measurement operations inside ForOps."""
@@ -107,9 +106,10 @@ class UnrollLoopPattern(RewritePattern):
         lb_found, lb_op = find_constant_bound(op.lb)
         step_found, step_op = find_constant_bound(op.step)
 
-
         if not (lb_found and ub_found and step_found):
-            raise CompileError("UnrollLoopPattern: Cannot unroll loop, bounds or step are not constant.")
+            raise CompileError(
+                "UnrollLoopPattern: Cannot unroll loop, bounds or step are not constant."
+            )
 
         def check_extract_value(bound: Operation) -> int:
 
