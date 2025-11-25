@@ -130,10 +130,10 @@ class TreeTraversalPass(ModulePass):
                 print_mlir(op, msg="After Unroll Loop Passes", should_print=print_stuff)
 
                 IfOperatorPartitioningPattern().match_and_rewrite(op, rewriter)
-                # print_mlir(op, msg="After If-For Passes", should_print=print_stuff)
+                print_mlir(op, msg="After If-For Passes", should_print=print_stuff)
 
                 TreeTraversalPattern().match_and_rewrite(op, rewriter)
-        # print_mlir(module_op, msg="After Tree Traversal Pass", should_print=print_stuff)
+        print_mlir(module_op, msg="After Tree Traversal Pass", should_print=print_stuff)
 
 
 tree_traversal_pass = compiler_transform(TreeTraversalPass)
@@ -1633,7 +1633,6 @@ class IfOperatorPartitioningPattern(RewritePattern):
         # Split IfOps into only true branches
         self.split_nested_if_ops(op, rewriter)
 
-
         # Flatten nested IfOps
         self.flatten_nested_IfOps(op, rewriter)
 
@@ -1643,7 +1642,6 @@ class IfOperatorPartitioningPattern(RewritePattern):
     def __init__(self):
         self.module: builtin.ModuleOp = None
         self.original_func_op: func.FuncOp = None
-        self.holder_returns: dict[scf.IfOp, scf.IfOp] = {}
 
     def adding_fake_measureOp(self, op: func.FuncOp, rewriter: PatternRewriter) -> None:
         """Add fake MeasureOp before IfOps that contain measurement-controlled operations."""
@@ -1682,18 +1680,16 @@ class IfOperatorPartitioningPattern(RewritePattern):
                 rewriter.insert_op(q_insert, InsertPoint.before(current_op))
 
                 # Replace the old q_reg with the output of q_insert
-                def _create_exclusion_filter(exclude_extract, exclude_insert):
-                    return lambda use: use.operation not in [exclude_extract, exclude_insert]
                 qreg_if_op[0].replace_by_if(
-                    q_insert.results[0], _create_exclusion_filter(q_extract, q_insert)
+                    q_insert.results[0], lambda use: use.operation not in [q_extract, q_insert]
                 )
 
-    def detect_mcm_in_if_ops(self, op: func.FuncOp) -> bool:
+    def detect_mcm_in_if_ops(self, op: scf.IfOp) -> bool:
         """Detect if there are measurement-controlled operations inside IfOps."""
         op_walk = op.walk()
         for current_op in op_walk:
             if isinstance(current_op, scf.IfOp):
-                # Check if there are measurement-controlled operations inside the IfOp
+                #  Check if there are mid-circuit measurements inside the IfOp
                 for inner_op in current_op.true_region.ops:
                     if isinstance(inner_op, quantum.MeasureOp):
                         return True
@@ -1784,7 +1780,7 @@ class IfOperatorPartitioningPattern(RewritePattern):
             where_to_insert = outer_if_op
 
             # Holder for IfOps that are kept for updating SSA values later
-            self.holder_returns = {}
+            holder_returns:dict[scf.IfOp, scf.IfOp] = {}
 
             for inner_op in nested_if_ops:
 
@@ -1794,11 +1790,12 @@ class IfOperatorPartitioningPattern(RewritePattern):
                     new_outer_if_op_output,
                     new_outer_if_op_output_types,
                     where_to_insert,
+                    holder_returns,
                     rewriter,
                 )
 
             # detach and erase old outer if op
-            for hold_op in self.holder_returns:
+            for hold_op in holder_returns:
                 hold_op.detach()
                 hold_op.erase()
 
@@ -1809,6 +1806,7 @@ class IfOperatorPartitioningPattern(RewritePattern):
         new_outer_if_op_output: list[SSAValue],
         new_outer_if_op_output_types: list[Type],
         where_to_insert: scf.IfOp,
+        holder_returns: dict[scf.IfOp, scf.IfOp],
         rewriter: PatternRewriter,
     ) -> None:
         """Move inner IfOp after the outer IfOp."""
@@ -1920,7 +1918,7 @@ class IfOperatorPartitioningPattern(RewritePattern):
         ):
             hold_return = inner_op.cond.owner
             return_index = list(hold_return.results).index(inner_op.cond)
-            conditional = self.holder_returns[hold_return].results[return_index]
+            conditional = holder_returns[hold_return].results[return_index]
             needs_to_update_conditional = False
 
             for res in hold_return.results:
@@ -1948,10 +1946,10 @@ class IfOperatorPartitioningPattern(RewritePattern):
         if len(inner_results) == 1:
             inner_op.erase()
         else:
-            self.holder_returns[inner_op] = new_inner_op
+            holder_returns[inner_op] = new_inner_op
             update_unused_cond = False
             unused_op = None
-            for op in self.holder_returns:
+            for op in holder_returns:
                 for res in op.results:
                     if inner_op.cond == res:
                         update_unused_cond = True
