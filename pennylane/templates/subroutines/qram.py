@@ -36,7 +36,6 @@ from pennylane.operation import Operation, Operator
 from pennylane.ops import CSWAP, SWAP, Hadamard, PauliZ, ctrl
 from pennylane.wires import Wires, WiresLike
 
-
 # pylint: disable=consider-using-generator
 
 
