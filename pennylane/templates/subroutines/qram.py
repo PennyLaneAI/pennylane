@@ -90,83 +90,95 @@ def _node_index(level: int, prefix_value: int) -> int:
 # Select-prefix × Bucket-Brigade with explicit bus routing
 # -----------------------------
 class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
-    r"""Bucket-brigade QRAM (https://arxiv.org/pdf/0708.1879) with **explicit bus routing** using 3 qubits per node.
+    r"""Bucket-brigade QRAM with **explicit bus routing** using 3 qubits per node.
 
-    Bucket-brigade QRAM achieves an O(log N) complexity instead of the typical N, where N is the number of
-    memory cells addressed. It does this by reducing the number of nodes that need to be visited in a tree
-    which converts our binary address into a unary address at the leaves. The approach is simply to keep track
-    of the active path as it is constructed by loading the address one bit at a time into a location in the next layer
-    of the tree based on the previous address bit.
-
-    In this implementation, each node is composed of three qubits: one direction bit ``dir[k,p]`` which stores the routed
-    low-order address bit for level k, and one bit for each child of the node ``portL[k,p]`` and ``portR[k,p]`` that are
-    used for loading the next layers' bits.
-
-    The algorithm is composed of five steps:
-
-        1) load
-        2) route down
-        3) leaf op
-        4) route up
-        5) restore
-
-    The address is first loaded layer-by-layer via CSWAPs, depositing each address bit into the `dir[k,p]`.
-    Data routing is performed per-target. The target is swapped with the bus, routed down, the leaf write operation is
-    performed to correlate the data with the qubit at the leaf of the tree, routing is then done in reverse and we swap
-    back.
-
-    In the end, the target wires' values correspond to the data at the address specified.
+    Bucket-brigade QRAM achieves an :math:`O(\log N)` complexity instead of the typical :math:`N`,
+    where :math:`N` is the number of memory cells addressed. It does this by reducing the number of
+    nodes that need to be visited in a tree which converts our binary address into a unary address
+    at the leaves. In the end, the target wires' state corresponds to the data at the desired
+    address. For more theoretical details on how this algorithm works, please consult
+    `arXiv:0708.1879 <https://arxiv.org/pdf/0708.1879>`__.
 
     Args:
-        bitstrings (Sequence[str]): the classical data as a sequence of bitstrings
-        qram_wires (WiresLike): stores the index for the entry of the classical data we want to access
-        target_wires (WiresLike): where the classical data gets loaded
-        work_wires (WiresLike): the bus, direction, left port and right port wires in that order. Each node in the
-            tree contains one address (direction), one left port and one right port wire. The single bus wire is used
-            for address loading and data routing
+        bitstrings (Sequence[int]):
+            The classical data as a sequence of bitstrings. The size of the classical data must be
+            :math:`2^{\texttt{len(qram_wires)}}`.
+        qram_wires (Sequence[int]):
+            The register that stores the index for the entry of the classical data we want to
+            access.
+        target_wires (Sequence[int]):
+            The register in which the classical data gets loaded. The size of this register must
+            equal each bitstring length in ``bitstrings``.
+        work_wires (Sequence[int]):
+            The additional wires required to funnel the desired entry of ``bitstrings`` into the
+            target register. The size of the ``work_wires`` register must be
+            :math:`1 + 3 ((1 << \texttt{len(qram_wires)}) - 1)`. More specifically, the
+            ``work_wires`` register includes the bus, direction, left port and right port wires in
+            that order. Each node in the tree contains one address (direction), one left port and
+            one right port wire. The single bus wire is used for address loading and data routing.
 
     Raises:
-        ValueError: if the bitstrings are not provided, the bitstrings are of the wrong length, the target wires are
-            of the wrong length or if there is not one direction wire, one left port wire and one right port wire per node
+        ValueError: if the ``bitstrings`` are not provided, the ``bitstrings`` are of the wrong
+        length, the ``target_wires`` are of the size of the ``work_wires`` register is not exactly
+        equal to :math:`1 + 3 ((1 << \texttt{len(qram_wires)}) - 1)`.
 
     **Example:**
 
+    Consider the following example, where the classical data is a list of four bitstrings (each of
+    length 3):
+
     .. code-block:: python
 
-        from pennylane.measurements import probs
-        from pennylane.templates import BasisEmbedding
-        from pennylane import device, qnode
-        from pennylane.templates.subroutines.qram import BBQRAM
 
-        bitstrings = ["010", "111", "110", "000"]  # 2^2 entries, m=3
-        dev = device("default.qubit")
+        bitstrings = ["010", "111", "110", "000"]
+        bitstring_size = 3
 
-        @qnode(dev)
+    The number of wires needed to store a length-4 array is 2, which means that the ``qram_wires``
+    register must contain 2 wires. Additionally, this lets us specify the number of work wires
+    needed.
+
+    .. code-block:: python
+
+        num_qram_wires = 2 # len(bistrings) = 4 = 2**2
+        num_work_wires = 1 + 3 * ((1 << num_qram_wires) - 1) # 10
+
+    Now, we can define all three registers concretely and demonstrate ``BBQRAM`` in practice. In the
+    following circuit, we prepare the state :math:`\vert 2 \rangle = \vert 10 \rangle` on the
+    ``qram_wires``, which indicates that we would like to access the second (zero-indexed) entry of
+    ``bitstrings`` (which is ``"110"``). The ``target_wires`` register should therefore store this
+    state after ``BBQRAM`` is applied.
+
+    .. code-block:: python
+
+        import pennylane as qml
+        reg = qml.registers(
+            {
+                "qram": num_qram_wires,
+                "target": bitstring_size,
+                "work_wires": num_work_wires
+            }
+        )
+
+        dev = qml.device("default.qubit")
+        @qml.qnode(dev)
         def bb_quantum():
-            # qram_wires are the 2 LSB address bits.
-            qram_wires = [0, 1]  # |i> for 4 leaves
-            target_wires = [2, 3, 4]  # m=3
-            bus = 5  # single bus at the top
-
-            # For n_k=2 → (2^2 - 1) = 3 internal nodes in level order:
-            # (0,0) root; (1,0) left child; (1,1) right child
-            dir_wires = [6, 7, 8]
-            portL_wires = [9, 10, 11]
-            portR_wires = [12, 13, 14]
-
             # prepare an address, e.g., |10> (index 2)
-            BasisEmbedding(2, wires=qram_wires)
+            qml.BasisEmbedding(2, wires=reg["qram"])
 
-            BBQRAM(
+            qml.BBQRAM(
                 bitstrings,
-                qram_wires=qram_wires,  # n_k=2
-                target_wires=target_wires,
-                work_wires=[bus] + dir_wires + portL_wires + portR_wires,
+                qram_wires=reg["qram"],
+                target_wires=reg["target"],
+                work_wires=reg["work_wires"],
             )
-            return probs(wires=target_wires)
+            return qml.probs(wires=reg["target"])
 
-    >>> print(bb_quantum())  # doctest: +SKIP
-    [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0]
+    >>> import numpy as np
+    >>> print(np.round(bb_quantum()))  # doctest: +SKIP
+    [0. 0. 0. 0. 0. 0. 1. 0.]
+
+    Note that ``"110"`` in binary is equal to 6 in decimal, which is the only non-zero entry in
+    the ``target_wires`` register.
     """
 
     grad_method = None
