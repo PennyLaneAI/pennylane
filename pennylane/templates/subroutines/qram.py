@@ -510,64 +510,138 @@ def _bucket_brigade_qram_decomposition(
 add_decomps(BBQRAM, _bucket_brigade_qram_decomposition)
 
 
+
 class SelectOnlyQRAM(BBQRAM):
+    """Select-only QRAM implemented as multi-controlled X on target wires,
+    controlled on all address wires (select_wires + qram_wires).
+
+    Args:
+        work_wires (WiresLike): ignored, as select-only qram doesn't require any work qubits
+        select_wires (WiresLike, optional): actually also not used, but kept for API consistency with hybrid QRAM
+        select_value (int or None, optional): if provided, only entries whose select bits match this value are loaded
+        id (str or None): optional name for the operation
+    """
+
+    grad_method = None
 
     def __init__(
         self,
-        bitstrings : Sequence[str],
+        bitstrings,
         qram_wires: WiresLike,
         target_wires: WiresLike,
-        work_wires: WiresLike,
-        select_wires: WiresLike,
-        select_value: int | None,
+        work_wires: WiresLike,              # kept for API compatibility; ignored
+        select_wires: WiresLike | None = None, # optional; usually ignored
+        select_value: int | None = None, # optional; usually ignored
         id: str | None = None,
     ):
-        select_wires = Wires(select_wires)
-        select_value = select_value
+        # Convert to Wires
+        qram_wires = Wires(qram_wires)
+        target_wires = Wires(target_wires)
+        select_wires = Wires(select_wires) if select_wires is not None else Wires([])
+
+        # ---- Validate bitstrings ----
+        if not bitstrings:
+            raise ValueError("'bitstrings' cannot be empty.")
+
+        m_set = {len(s) for s in bitstrings}
+        if len(m_set) != 1:
+            raise ValueError("All bitstrings must have equal length.")
+        m = next(iter(m_set))
+        bitstrings = list(bitstrings)
 
         k = len(select_wires)
         n_k = len(qram_wires)
-        n = k + n_k
-        if (1 << n) != len(bitstrings):
-            raise ValueError("len(bitstrings) must be 2^(len(select_wires)+len(qram_wires)).")
+        n_total = k + n_k
 
+        if (1 << n_total) != len(bitstrings):
+            raise ValueError(
+                "len(bitstrings) must be 2^(len(select_wires)+len(qram_wires))."
+            )
+
+        if len(target_wires) != m:
+            raise ValueError("len(target_wires) must equal bitstring length.")
+
+        # Validate select_value (if provided)
+        if select_value is not None:
+            if k == 0:
+                raise ValueError(
+                    "select_value cannot be used when len(select_wires) == 0."
+                )
+            max_sel = 1 << k
+            if not (0 <= select_value < max_sel):
+                raise ValueError(
+                    f"select_value must be an integer in [0, {max_sel - 1}]."
+                )
+
+        # Wires actually used by this operation (we ignore work_wires, most time also select_wires)
+        all_wires = list(select_wires) + list(qram_wires) + list(target_wires)
+
+        Operation.__init__(self, wires=all_wires, id=id)
+
+        # Store hyperparameters
         self._hyperparameters = {
-            "n_k": n_k,
-            "k": k,
+            "bitstrings": bitstrings,
+            "qram_wires": qram_wires,
+            "target_wires": target_wires,
             "select_wires": select_wires,
             "select_value": select_value,
+            "k": k,
+            "n_k": n_k,
+            "n_total": n_total,
+            "m": m,
         }
 
-        super().__init__(bitstrings, qram_wires, target_wires, work_wires, id)
+    # ---------- Helpers ----------
+    @staticmethod
+    def _address_bits(addr: int, n: int) -> list[int]:
+        """Return the n-bit pattern (MSB first) for integer `addr`."""
+        return [(addr >> (n - 1 - i)) & 1 for i in range(n)]
 
-    # ---------- Select controls----------
-    def _select_ctrls(self, s: int):
-        k = self.hyperparameters["k"]
-        if k == 0:
-            return [], []
-        ctrls = list(self.hyperparameters["select_wires"])
-        vals = [(s >> (k - 1 - j)) & 1 for j in range(k)]
-        return ctrls, vals
+    # ---------- Decomposition ----------
+    def decomposition(self) -> List[Operator]:
+        bitstrings = self.hyperparameters["bitstrings"]
+        qram_wires = list(self.hyperparameters["qram_wires"])
+        select_wires = list(self.hyperparameters["select_wires"])
+        target_wires = list(self.hyperparameters["target_wires"])
 
-    # ---------- Decompositions ----------
-    def decomposition(self) -> list:
-        # Degenerate case: n_k == 0, no routers; only select-controlled flips on the bus.
-        ops = []
         select_value = self.hyperparameters["select_value"]
-        wire_manager = self.hyperparameters["wire_manager"]
-        bus_wire = wire_manager.bus_wire
-        for j, tw in enumerate(wire_manager.target_wires):
-            ops.append(SWAP(wires=[tw, bus_wire[0]]))
-            s_range = [select_value] if select_value is not None else range(1 << self.hyperparameters["k"])
-            for s in s_range:
-                if self.hyperparameters["bitstrings"][s][j] != "1":
+        n_total = self.hyperparameters["n_total"]
+        k = self.hyperparameters["k"]
+        m = self.hyperparameters["m"]
+
+        # All controls = select bits (MSBs) + qram bits (LSBs)
+        controls = select_wires + qram_wires
+
+        ops: List[Operator] = []
+
+        # Loop over all addresses (0 .. 2^(k+n_k)-1)
+        for addr, bits in enumerate(bitstrings):
+            # If select_value is specified, only implement entries whose
+            # high k bits (select part) match that value.
+            if select_value is not None and k > 0:
+                sel_part = addr >> (n_total - k)
+                if sel_part != select_value:
                     continue
-                sel_ctrls, sel_vals = (
-                    self._select_ctrls(s) if select_value is None else ([], [])
-                )
-                op = PauliX(wires=bus_wire[0])
+
+            control_values = self._address_bits(addr, n_total)
+
+            # For each bit position in the data
+            for j in range(m):
+                if bits[j] != "1":
+                    continue
+
+                # Multi-controlled X on target_wires[j],
+                # controlled on controls matching `control_values`.
+                base_op = PauliX(wires=target_wires[j])
                 ops.append(
-                    ctrl(op, control=sel_ctrls, control_values=sel_vals) if sel_ctrls else op
+                    ctrl(
+                        base_op,
+                        control=controls,
+                        control_values=control_values,
+                    )
                 )
-            ops.append(SWAP(wires=[tw, bus_wire[0]]))
-            return ops
+
+        return ops
+
+
+
