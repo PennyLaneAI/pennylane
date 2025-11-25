@@ -139,7 +139,7 @@ jobs:
 
       - name: Upgrade PIP and install wheel
         run: |
-          uv self update
+          pip install --upgrade
           uv pip install --upgrade pip wheel setuptools>=75.8.1
       
       - name: Install PennyLane dependencies
