@@ -22,5 +22,5 @@ def gridsynth(tape, *, epsilon, ppr_basis):
     The transform itself is only implemented in Catalyst. This is just to enable capture."""
 
     raise NotImplementedError(
-        "This pass (GridSynth) is only implemented when using capture and QJIT. Otherwise, please use qml.transforms.clifford_t_decomposition."
+        "This transform pass (gridsynth) is only implemented when using capture and QJIT. Otherwise, please use qml.transforms.clifford_t_decomposition."
     )
