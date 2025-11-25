@@ -106,16 +106,27 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
     In the end, the target wires' values correspond to the data at the address specified.
 
     Args:
-        bitstrings (Sequence[int]): the classical data as a sequence of bitstrings
-        qram_wires (Sequence[int]): stores the index for the entry of the classical data we want to access
-        target_wires (Sequence[int]): where the classical data gets loaded
-        work_wires (Sequence[int]): the bus, direction, left port and right port wires in that order. Each node in the
-            tree contains one address (direction), one left port and one right port wire. The single bus wire is used
-            for address loading and data routing
+        bitstrings (Sequence[int]): 
+            The classical data as a sequence of bitstrings. The size of the classical data must be 
+            :math:`2^{\texttt{len(qram_wires)}}`.
+        qram_wires (Sequence[int]): 
+            The register that stores the index for the entry of the classical data we want to 
+            access.
+        target_wires (Sequence[int]): 
+            The register in which the classical data gets loaded. The size of this register must 
+            equal each bitstring length in ``bitstrings``.
+        work_wires (Sequence[int]): 
+            The additional wires required to funnel the desired entry of ``bitstrings`` into the 
+            target register. The size of the ``work_wires`` register must be 
+            :math:`1 + 3 (1 << \texttt{len(qram_wires)})`. More specifically, the ``work_wires`` 
+            register includes the bus, direction, left port and right port wires in that order. Each 
+            node in the tree contains one address (direction), one left port and one right port 
+            wire. The single bus wire is used for address loading and data routing. See Usage 
+            Details for more information.
 
     Raises:
-        ValueError: if the bitstrings are not provided, the bitstrings are of the wrong length, the target wires are
-            of the wrong length or if there is not one direction wire, one left port wire and one right port wire per node
+        ValueError: if the ``bitstrings`` are not provided, the ``bitstrings`` are of the wrong 
+        length, the ``target_wires`` are of the wrong length or if there is not one direction wire, one left port wire and one right port wire per node
 
     **Example:**
 
