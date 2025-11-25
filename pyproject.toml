@@ -101,6 +101,20 @@ default = [
     "tach~=0.28.5",
     "diastatic-malt",
 ]
+upload-reports = [
+    "pydantic==2.10.6",
+    "pydantic-settings==2.8.0",
+    "requests==2.32.3",
+]
+[[project.maintainers]]
+name = "Xanadu Quantum Technologies Inc."
+email = "software@xanadu.ai"
+
+[project.urls]
+repository = "https://github.com/PennyLaneAI/pennylane"
+
+[project.optional-dependencies]
+kernels = ["cvxpy", "cvxopt"]
 docs = [
     "pip",
     "appdirs",
@@ -141,20 +155,6 @@ docs = [
     "diastatic-malt",
     "galois",
 ]
-upload-reports = [
-    "pydantic==2.10.6",
-    "pydantic-settings==2.8.0",
-    "requests==2.32.3",
-]
-[[project.maintainers]]
-name = "Xanadu Quantum Technologies Inc."
-email = "software@xanadu.ai"
-
-[project.urls]
-repository = "https://github.com/PennyLaneAI/pennylane"
-
-[project.optional-dependencies]
-kernels = ["cvxpy", "cvxopt"]
 
 [project.scripts]
 pl-device-test = "pennylane.devices.tests:cli"
