@@ -613,27 +613,30 @@ def _pauli_rot_decomposition(theta, pauli_word, wires, **__):
 
     active_wires, active_gates = zip(*active_wire_gates)
 
-    @qml.prod
-    def _pre():
-        for wire, gate in zip(active_wires, active_gates):
-            if gate == "X":
-                qml.Hadamard(wires=[wire])
-            elif gate == "Y":
-                qml.RX(np.pi / 2, wires=[wire])
-
-    @qml.prod
-    def _post():
-        for wire, gate in zip(active_wires, active_gates):
-            if gate == "X":
-                qml.Hadamard(wires=[wire])
-            elif gate == "Y":
-                qml.RX(-np.pi / 2, wires=[wire])
-
     if set(pauli_word).issubset({"I", "Z"}):
         qml.MultiRZ(theta, wires=active_wires)
         return
 
-    qml.change_op_basis(_pre(), qml.MultiRZ(theta, wires=active_wires), _post())
+    # TODO: when prod applied on quantum functions can be properly captured,
+    #       update this part to look the same as in `compute_decomposition`
+    #       (https://github.com/PennyLaneAI/pennylane/issues/8693)
+
+    pre = qml.prod(
+        *[
+            qml.H(w) if g == "X" else qml.RX(np.pi / 2, wires=w)
+            for w, g in zip(active_wires, active_gates)
+            if g in "XY"
+        ]
+    )
+    post = qml.prod(
+        *[
+            qml.H(w) if g == "X" else qml.RX(-np.pi / 2, wires=w)
+            for w, g in zip(active_wires, active_gates)
+            if g in "XY"
+        ]
+    )
+
+    qml.change_op_basis(pre, qml.MultiRZ(theta, wires=active_wires), post)
 
 
 add_decomps(PauliRot, _pauli_rot_decomposition)
