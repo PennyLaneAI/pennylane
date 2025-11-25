@@ -29,6 +29,7 @@ from pennylane.decomposition.symbolic_decomposition import (
     flip_zero_control,
     pow_rotation,
 )
+from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.operation import Operation
 from pennylane.typing import TensorLike
 from pennylane.wires import WiresLike
@@ -92,6 +93,13 @@ class RX(Operation):
     @property
     def resource_params(self) -> dict:
         return {}
+
+    has_decomposition = False
+
+    @staticmethod
+    def compute_decomposition(phi, wires):
+        # dont use graph decomposition for RX-> Rot
+        raise DecompositionUndefinedError
 
     @staticmethod
     def compute_matrix(theta: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
@@ -263,6 +271,13 @@ class RY(Operation):
     def resource_params(self) -> dict:
         return {}
 
+    has_decomposition = False
+
+    @staticmethod
+    def compute_decomposition(phi, wires):
+        # dont use graph decomposition for RY-> Rot
+        raise DecompositionUndefinedError
+
     @staticmethod
     def compute_matrix(theta: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
@@ -425,6 +440,13 @@ class RZ(Operation):
 
     def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
         super().__init__(phi, wires=wires, id=id)
+
+    has_decomposition = False
+
+    @staticmethod
+    def compute_decomposition(phi, wires):
+        # dont use graph decomposition for RZ-> Rot
+        raise DecompositionUndefinedError
 
     @staticmethod
     def compute_matrix(theta: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
