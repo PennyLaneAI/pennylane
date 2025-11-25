@@ -113,10 +113,10 @@ class ChangeOpBasis(CompositeOp):
 
     # pylint: disable=arguments-differ
     @classmethod
-    def _primitive_bind_call(cls, compute_op, target_op, uncompute_op=None, **kwargs):
+    def _primitive_bind_call(cls, compute_op, target_op, uncompute_op=None):
         if uncompute_op is None:
             uncompute_op = adjoint(compute_op)
-        return cls._primitive.bind(compute_op, target_op, uncompute_op, **kwargs)
+        return cls._primitive.bind(compute_op, target_op, uncompute_op)
 
     resource_keys = frozenset({"compute_op", "target_op", "uncompute_op"})
 
