@@ -471,7 +471,7 @@ A warning message has been added to :doc:`Building a plugin <../development/plug
 
 <h3>Bug fixes 🐛</h3>
 
-* Adds a `expand_transform` to `param_shift_hessian` to pre-decompose
+* Adds an `expand_transform` to `param_shift_hessian` to pre-decompose
   operations till they are supported.
   [(#8698)](https://github.com/PennyLaneAI/pennylane/pull/8698)
 
