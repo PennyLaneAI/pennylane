@@ -16,6 +16,7 @@
   [(#8461)](https://github.com/PennyLaneAI/pennylane/pull/8461)
   [(#8631)](https://github.com/PennyLaneAI/pennylane/pull/8631)
   [(#8623)](https://github.com/PennyLaneAI/pennylane/pull/8623)
+  [(#8663)](https://github.com/PennyLaneAI/pennylane/pull/8663)
   [(#8692)](https://github.com/PennyLaneAI/pennylane/pull/8692)
   
   The follo wing example illustrates how to incorporate Pauli product measurements (PPMs) in a qnode:
@@ -42,8 +43,46 @@
            ╚════╝
   ```
 
-
 <h3>Improvements 🛠</h3>
+
+* `Operator.decomposition` will fallback to the first entry in `qml.list_decomps` if the `Operator.compute_decomposition`
+  method is not overridden.
+  [(#8686)](https://github.com/PennyLaneAI/pennylane/pull/8686)
+
+* A new :func:`~.marker` function allows for easy inspection at particular points in a transform program
+  with :func:`~.specs` and :func:`~.drawer.draw` instead of having to increment ``level``
+  by integer amounts when not using any Catalyst passes.
+  [(#8684)](https://github.com/PennyLaneAI/pennylane/pull/8684)
+  
+  The :func:`~.marker` function works like a transform in PennyLane, and can be deployed as
+  a decorator on top of QNodes:
+  
+  ```
+  from functools import partial
+
+  @partial(qml.marker, level="rotations-merged")
+  @qml.transforms.merge_rotations
+  @partial(qml.marker, level="my-level")
+  @qml.transforms.cancel_inverses
+  @partial(qml.transforms.decompose, gate_set={qml.RX})
+  @qml.qnode(qml.device('lightning.qubit'))
+  def circuit():
+      qml.RX(0.2,0)
+      qml.X(0)
+      qml.X(0)
+      qml.RX(0.2, 0)
+      return qml.state()
+  ```
+
+  The string supplied to ``marker`` can then be used as an argument to ``level`` in ``draw``
+  and ``specs``, showing the cumulative result of applying transforms up to the marker:
+
+  ```pycon
+  >>> print(qml.draw(circuit, level="my-level")())
+  0: ──RX(0.20)──RX(3.14)──RX(3.14)──RX(0.20)─┤  State
+  >>> print(qml.draw(circuit, level="rotations-merged")())
+  0: ──RX(6.68)─┤  State
+  ```
 
 * Add the `PCPhaseOp` operation to the xDSL Quantum dialect.
   [(#8621)](https://github.com/PennyLaneAI/pennylane/pull/8621)
@@ -235,6 +274,10 @@
 
 <h3>Deprecations 👋</h3>
 
+* The ``custom_decomps`` keyword argument to ``qml.device`` has been deprecated and will be removed 
+  in 0.45. Instead, with ``qml.decomposition.enable_graph()``, new decomposition rules can be defined as 
+  quantum functions with registered resources. See :mod:`pennylane.decomposition` for more details.
+
 * `qml.measure`, `qml.measurements.MidMeasureMP`, `qml.measurements.MeasurementValue`,
   and `qml.measurements.get_mcm_predicates` are now located in `qml.ops.mid_measure`.
   `MidMeasureMP` is now renamed to `MidMeasure`.
@@ -412,6 +455,10 @@
   in the MBQC formalism into subroutines in order to reduce the IR size for large programs.
   [(#8619)](https://github.com/PennyLaneAI/pennylane/pull/8619)
 
+* Added a `skip_decomp_matrix_check` argument to :func:`~pennylane.ops.functions.assert_valid` that
+  allows the test to skip the matrix check part of testing a decomposition rule but still verify
+  that the resource function is correct.
+  [(#8687)](https://github.com/PennyLaneAI/pennylane/pull/8687)
 
 <h3>Documentation 📝</h3>
 
