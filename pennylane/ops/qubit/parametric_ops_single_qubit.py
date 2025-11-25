@@ -188,7 +188,16 @@ def _rx_to_rz_ry(phi, wires: WiresLike, **__):
     qml.RZ(-np.pi / 2, wires=wires)
 
 
-add_decomps(RX, _rx_to_rot, _rx_to_rz_ry)
+def _rx_to_ppr_resources():
+    return {resource_rep(qml.PauliRot, pauli_word="X"): 1}
+
+
+@register_resources(_rx_to_ppr_resources)
+def _rx_to_ppr(phi, wires, **_):
+    qml.PauliRot(phi, "X", wires=wires)
+
+
+add_decomps(RX, _rx_to_rot, _rx_to_rz_ry, _rx_to_ppr)
 add_decomps("Adjoint(RX)", adjoint_rotation)
 add_decomps("Pow(RX)", pow_rotation)
 
@@ -364,7 +373,16 @@ def _ry_to_rz_rx(phi, wires: WiresLike, **__):
     qml.RZ(np.pi / 2, wires=wires)
 
 
-add_decomps(RY, _ry_to_rot, _ry_to_rz_rx)
+def _ry_to_ppr_resources():
+    return {resource_rep(qml.PauliRot, pauli_word="Y"): 1}
+
+
+@register_resources(_ry_to_ppr_resources)
+def _ry_to_ppr(phi, wires, **_):
+    qml.PauliRot(phi, "Y", wires=wires)
+
+
+add_decomps(RY, _ry_to_rot, _ry_to_rz_rx, _ry_to_ppr)
 add_decomps("Adjoint(RY)", adjoint_rotation)
 add_decomps("Pow(RY)", pow_rotation)
 
@@ -578,7 +596,16 @@ def _rz_to_ry_rx(phi, wires: WiresLike, **__):
     qml.RY(-np.pi / 2, wires=wires)
 
 
-add_decomps(RZ, _rz_to_rot, _rz_to_ry_rx)
+def _rz_to_ppr_resources():
+    return {resource_rep(qml.PauliRot, pauli_word="Z"): 1}
+
+
+@register_resources(_rz_to_ppr_resources)
+def _rz_to_ppr(phi, wires, **_):
+    qml.PauliRot(phi, "Z", wires=wires)
+
+
+add_decomps(RZ, _rz_to_rot, _rz_to_ry_rx, _rz_to_ppr)
 add_decomps("Adjoint(RZ)", adjoint_rotation)
 add_decomps("Pow(RZ)", pow_rotation)
 

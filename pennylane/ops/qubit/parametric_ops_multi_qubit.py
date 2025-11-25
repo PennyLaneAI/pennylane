@@ -26,6 +26,7 @@ import numpy as np
 import pennylane as qml
 from pennylane import math, queuing
 from pennylane.decomposition import add_decomps, controlled_resource_rep, register_resources
+from pennylane.decomposition.resources import resource_rep
 from pennylane.decomposition.symbolic_decomposition import adjoint_rotation, pow_rotation
 from pennylane.math.decomposition import decomp_int_to_powers_of_two
 from pennylane.operation import FlatPytree, Operation, Operator
@@ -2047,7 +2048,24 @@ def _pswap_to_swap_cnot_phaseshift_cnot(phi: TensorLike, wires: WiresLike, **__)
     qml.CNOT(wires=wires)
 
 
-add_decomps(PSWAP, _pswap_to_swap_cnot_phaseshift_cnot)
+def _pswap_to_ppr_resources():
+    return {
+        resource_rep(qml.PauliRot, pauli_word="XX"): 1,
+        resource_rep(qml.PauliRot, pauli_word="YY"): 1,
+        resource_rep(qml.PauliRot, pauli_word="ZZ"): 1,
+        qml.GlobalPhase: 1,
+    }
+
+
+@register_resources(_pswap_to_ppr_resources)
+def _pswap_to_ppr(phi: TensorLike, wires: WiresLike, **__):
+    qml.PauliRot(-np.pi / 2, pauli_word="YY", wires=wires)
+    qml.PauliRot(-np.pi / 2, pauli_word="XX", wires=wires)
+    qml.PauliRot(phi - np.pi / 2, pauli_word="ZZ", wires=wires)
+    qml.GlobalPhase(np.pi / 4 - phi / 2)
+
+
+add_decomps(PSWAP, _pswap_to_swap_cnot_phaseshift_cnot, _pswap_to_ppr)
 add_decomps("Adjoint(PSWAP)", adjoint_rotation)
 
 
