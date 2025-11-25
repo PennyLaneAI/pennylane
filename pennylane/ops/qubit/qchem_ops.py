@@ -903,7 +903,7 @@ def _doublexcit_ppr_resource():
         resource_rep(qml.PauliRot, pauli_word="YXXX"): 1,
         resource_rep(qml.PauliRot, pauli_word="XYYY"): 1,
         resource_rep(qml.PauliRot, pauli_word="XYXX"): 1,
-        resource_rep(qml.PauliRot, pauli_word="XYXX"): 1,
+        resource_rep(qml.PauliRot, pauli_word="XXYX"): 1,
         resource_rep(qml.PauliRot, pauli_word="XXXY"): 1,
     }
 
@@ -916,7 +916,7 @@ def _doublexcit_ppr(phi: TensorLike, wires: WiresLike, **_):
     qml.PauliRot(phi / 8, pauli_word="YXXX", wires=wires)
     qml.PauliRot(-phi / 8, pauli_word="XYYY", wires=wires)
     qml.PauliRot(phi / 8, pauli_word="XYXX", wires=wires)
-    qml.PauliRot(-phi / 8, pauli_word="XYXX", wires=wires)
+    qml.PauliRot(-phi / 8, pauli_word="XXYX", wires=wires)
     qml.PauliRot(-phi / 8, pauli_word="XXXY", wires=wires)
 
 
