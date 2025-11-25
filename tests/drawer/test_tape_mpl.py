@@ -444,6 +444,16 @@ class TestSpecialGates:
         assert ax.patches[0].get_y() == -0.175
         plt.close()
 
+    def test_PauliMeasure(self):
+        """Tests PauliMeasure has correct special handling."""
+
+        m = qml.pauli_measure("XY", wires=[0, 1])
+        tape = QuantumScript(m.measurements)
+        _, ax = tape_mpl(tape)
+        assert len(ax.lines) == 2
+        assert len(ax.texts) == 4
+        plt.close()
+
     def test_MidMeasure_reset(self):
         """Test that a reset mid circuit measurement is correct."""
         m = qml.measure(0, reset=True)
@@ -1162,3 +1172,26 @@ class TestClassicalControl:
         )  # box_length - 2 * pad + 2 *cwire_scaling
 
         plt.close()
+
+    def test_pauli_measure(self):
+        """Tests that the classical control wire from a pauli_measure is shifted."""
+
+        with qml.queuing.AnnotatedQueue() as q:
+            m0 = qml.pauli_measure("X", [0])
+            qml.expval(m0)
+        _, ax = tape_mpl(qml.tape.QuantumScript.from_queue(q))
+        [_, cwire] = ax.lines
+        assert cwire.get_xdata() == [-0.075, -0.075, -0.075, 1, 1, 1]
+        assert cwire.get_ydata() == [1, 0, 1, 1, 1, 1]
+
+    def test_pauli_measure_mcm_in_parallel(self):
+        """Tests that the classical control wire is not shifted from an MCM."""
+
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.pauli_measure("X", [0])
+            m1 = qml.measure(1)
+            qml.expval(m1)
+        _, ax = tape_mpl(qml.tape.QuantumScript.from_queue(q))
+        [*_, cwire] = ax.lines
+        assert cwire.get_xdata() == [0, 0, 0, 1, 1, 1]
+        assert cwire.get_ydata() == [2, 1, 2, 2, 2, 2]
