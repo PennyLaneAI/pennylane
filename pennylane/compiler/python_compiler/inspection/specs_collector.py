@@ -29,11 +29,14 @@ from xdsl.dialects.scf import ForOp, IfOp, IndexSwitchOp, WhileOp
 from pennylane.compiler.python_compiler.dialects.catalyst import CallbackOp
 from pennylane.compiler.python_compiler.dialects.mbqc import GraphStatePrepOp, MeasureInBasisOp
 from pennylane.compiler.python_compiler.dialects.qec import (
+    FabricateOp,
     PPMeasurementOp,
     PPRotationOp,
+    PrepareStateOp,
     SelectPPMeasurementOp,
 )
 from pennylane.compiler.python_compiler.dialects.quantum import (
+    AdjointOp,
     AllocOp,
     AllocQubitOp,
     CountsOp,
@@ -63,11 +66,9 @@ _CUSTOM_DIALECT_NAMES = frozenset(
     }
 )
 
-# TODO: How to handle `gradient` and `mitigation` dialects
-
 # Ops to skip counting as "classical ops", only relevant if these ops would otherwise be
-# counted as classical ops (i.e. they are not already quantum ops, QECs, etc.)
-_SKIPPED_CLASSICAL_OPS = frozenset(
+# counted as classical ops (i.e. they are not already quantum ops, measurements, etc.)
+_SKIPPED_OPS = frozenset(
     {
         "quantum.compbasis",
         "quantum.dealloc",
@@ -75,25 +76,17 @@ _SKIPPED_CLASSICAL_OPS = frozenset(
         "quantum.device_release",
         "quantum.extract",
         "quantum.finalize",
+        "quantum.hamiltonian",
+        "quantum.hermitian",
         "quantum.init",
         "quantum.insert",
+        "quantum.namedobs",
         "quantum.num_qubits",
+        "quantum.tensor",
         "quantum.yield",
         "qec.yield",
     }
 )
-
-# TODO: Handle these somehow
-_TODO_OPS = [
-    "quantum.adjoint",
-    "quantum.hamiltonian",
-    "quantum.hermitian",
-    "quantum.namedobs",
-    "quantum.tensor",
-    "qec.fabricate",
-    "qec.layer",
-    "qec.prepare",
-]
 
 
 class ResourceType(enum.Enum):
@@ -227,9 +220,9 @@ def _(
 
 @handle_resource.register
 def _(
-    xdsl_op: CustomOp | GlobalPhaseOp | MultiRZOp | SetBasisStateOp | SetStateOp | QubitUnitaryOp,
+    _: CustomOp | GlobalPhaseOp | MultiRZOp | SetBasisStateOp | SetStateOp | QubitUnitaryOp,
 ) -> tuple[ResourceType, str]:
-    return ResourceType.GATE, xdsl_to_qml_op_type(xdsl_op)
+    return ResourceType.GATE, None
 
 
 ############################################################
@@ -238,7 +231,9 @@ def _(
 
 
 @handle_resource.register
-def _(xdsl_op: GraphStatePrepOp | MeasureInBasisOp) -> tuple[ResourceType, str]:
+def _(
+    xdsl_op: FabricateOp | GraphStatePrepOp | MeasureInBasisOp | PrepareStateOp,
+) -> tuple[ResourceType, str]:
     return ResourceType.QEC, xdsl_op.name
 
 
@@ -339,15 +334,31 @@ def _resolve_function_calls(
     return resources
 
 
-def _collect_region(region, loop_warning=False, cond_warning=False) -> ResourcesResult:
+def _collect_region(
+    region, loop_warning=False, cond_warning=False, adjoint_mode=False
+) -> ResourcesResult:
     """Collect PennyLane ops and measurements from a region."""
 
     resources = ResourcesResult()
 
     for op in region.ops:
+        if isinstance(op, AdjointOp):
+            resources.merge_with(
+                _collect_region(
+                    op.region,
+                    loop_warning=loop_warning,
+                    cond_warning=cond_warning,
+                    adjoint_mode=not adjoint_mode,
+                )
+            )
+            continue
+
         if isinstance(op, ForOp):
             body_ops = _collect_region(
-                op.body, loop_warning=loop_warning, cond_warning=cond_warning
+                op.body,
+                loop_warning=loop_warning,
+                cond_warning=cond_warning,
+                adjoint_mode=adjoint_mode,
             )
             try:
                 iters = count_static_loop_iterations(op)
@@ -375,7 +386,10 @@ def _collect_region(region, loop_warning=False, cond_warning=False) -> Resources
                 )
                 loop_warning = True
             body_ops = _collect_region(
-                op.after_region, loop_warning=loop_warning, cond_warning=cond_warning
+                op.after_region,
+                loop_warning=loop_warning,
+                cond_warning=cond_warning,
+                adjoint_mode=adjoint_mode,
             )
             resources.merge_with(body_ops)
             continue
@@ -390,11 +404,17 @@ def _collect_region(region, loop_warning=False, cond_warning=False) -> Resources
                 cond_warning = True
 
             used_resources = _collect_region(
-                op.true_region, loop_warning=loop_warning, cond_warning=cond_warning
+                op.true_region,
+                loop_warning=loop_warning,
+                cond_warning=cond_warning,
+                adjoint_mode=adjoint_mode,
             )
             used_resources.merge_with(
                 _collect_region(
-                    op.false_region, loop_warning=loop_warning, cond_warning=cond_warning
+                    op.false_region,
+                    loop_warning=loop_warning,
+                    cond_warning=cond_warning,
+                    adjoint_mode=adjoint_mode,
                 ),
                 method="max",
             )
@@ -412,12 +432,20 @@ def _collect_region(region, loop_warning=False, cond_warning=False) -> Resources
                 cond_warning = True
 
             used_resources = _collect_region(
-                op.case_regions[0], loop_warning=loop_warning, cond_warning=cond_warning
+                op.case_regions[0],
+                loop_warning=loop_warning,
+                cond_warning=cond_warning,
+                adjoint_mode=adjoint_mode,
             )
 
             for region in op.case_regions[1:]:
                 used_resources.merge_with(
-                    _collect_region(region, loop_warning=loop_warning, cond_warning=cond_warning),
+                    _collect_region(
+                        region,
+                        loop_warning=loop_warning,
+                        cond_warning=cond_warning,
+                        adjoint_mode=adjoint_mode,
+                    ),
                     method="max",
                 )
 
@@ -433,6 +461,9 @@ def _collect_region(region, loop_warning=False, cond_warning=False) -> Resources
                     n_qubits += len(op.in_qubits)
                 if hasattr(op, "in_ctrl_qubits"):
                     n_qubits += len(op.in_ctrl_qubits)
+
+                resource = xdsl_to_qml_op_type(op, adjoint_mode=adjoint_mode)
+
                 resources.operations[resource][n_qubits] += 1
 
             case ResourceType.MEASUREMENT:
@@ -447,7 +478,7 @@ def _collect_region(region, loop_warning=False, cond_warning=False) -> Resources
                 handle_metadata(op, resources)
 
             case ResourceType.OTHER:
-                if op.name in _SKIPPED_CLASSICAL_OPS:
+                if op.name in _SKIPPED_OPS:
                     continue
 
                 if op.dialect_name() in _CUSTOM_DIALECT_NAMES:
@@ -483,8 +514,6 @@ def specs_collect(module) -> ResourcesResult:
     func_decl_warning = False
 
     for func_op in module.body.ops:
-        # TODO: May need to determine how many times a function is called for functions other than the main circuit
-
         if isinstance(func_op, CallbackOp):
             # Skip callback ops, which are not part of the quantum circuit itself
             continue
@@ -512,5 +541,4 @@ def specs_collect(module) -> ResourcesResult:
     if entry_func not in func_to_resources:
         raise ValueError("Entry function not found in module.")
 
-    a = _resolve_function_calls(entry_func, func_to_resources)
-    return a
+    return _resolve_function_calls(entry_func, func_to_resources)

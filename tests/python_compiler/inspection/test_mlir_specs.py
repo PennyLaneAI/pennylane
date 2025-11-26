@@ -477,6 +477,85 @@ class TestMLIRSpecs:
         res = mlir_specs(circ, level=0)
         assert resources_equal(res, expected)
 
+    def test_adjoint(self):
+        """Test that adjoint operations are handled correctly."""
+
+        @qml.qnode(qml.device("lightning.qubit", wires=2))
+        def circ():
+            def subroutine():
+                qml.Hadamard(wires=0)
+                qml.CNOT(wires=[0, 1])
+                qml.RZ(0.789, wires=1)
+                qml.adjoint(qml.T)(wires=1)
+
+            qml.adjoint(subroutine)()
+            return qml.probs()
+
+        circ = qml.qjit(pass_plugins=[getXDSLPluginAbsolutePath()])(circ)
+
+        expected = make_static_resources(
+            operations={
+                "Hadamard": {1: 1},
+                "CNOT": {2: 1},
+                "Adjoint(RZ)": {1: 1},
+                "T": {1: 1},
+            },
+            measurements={"probs(0 wires)": 1},
+            num_allocs=2,
+        )
+
+        res = mlir_specs(circ, level=0)
+        assert resources_equal(res, expected)
+
+    def test_hamiltonian(self):
+        """Test that Hamiltonian observables are handled correctly."""
+
+        @qml.qjit
+        @qml.qnode(qml.device("lightning.qubit", wires=2))
+        def circ(i: int):
+
+            coeffs = [0.2, -0.543]
+            obs = [qml.X(0) @ qml.Z(1), qml.Z(i) @ qml.Hadamard(2)]
+            ham = qml.ops.LinearCombination(coeffs, obs)
+
+            return qml.expval(ham), qml.expval(qml.Z(i))
+
+        expected = make_static_resources(
+            operations={},
+            measurements={
+                "expval(PauliZ)": 1,
+                "expval(Hamiltonian(PauliX @ PauliZ, PauliZ @ Hadamard))": 1,
+            },
+            num_allocs=2,
+        )
+
+        res = mlir_specs(circ, level=0, args=(0,))
+        assert resources_equal(res, expected)
+
+    def test_ppr(self):
+        """Test that PPRs are handled correctly."""
+
+        if self.use_plxpr:
+            pytest.xfail("plxpr currently incompatible to_ppr pass")
+
+        pipeline = [("pipe", ["enforce-runtime-invariants-pipeline"])]
+
+        @qml.qjit(pipelines=pipeline, target="mlir")
+        @catalyst.passes.to_ppr
+        @qml.qnode(qml.device("null.qubit", wires=2))
+        def circ():
+            qml.H(0)
+            qml.T(0)
+
+        expected = make_static_resources(
+            operations={"PPR-pi/4": {1: 3}, "PPR-pi/8": {1: 1}},
+            measurements={},
+            num_allocs=2,
+        )
+
+        res = mlir_specs(circ, level=1, args=(0,))
+        assert resources_equal(res, expected)
+
 
 @pytest.mark.usefixtures("enable_disable_plxpr")
 class TestMLIRSpecsWithPLXPR(TestMLIRSpecs):

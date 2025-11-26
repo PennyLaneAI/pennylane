@@ -344,7 +344,7 @@ def xdsl_to_qml_op(op) -> Operator:
     return _apply_adjoint_and_ctrls(gate, op)
 
 
-def xdsl_to_qml_op_type(op) -> str:
+def xdsl_to_qml_op_type(op, adjoint_mode: bool) -> str:
     """Convert an xDSL operation into a string representing a PennyLane class.
 
     Args:
@@ -370,8 +370,14 @@ def xdsl_to_qml_op_type(op) -> str:
     else:
         raise NotImplementedError(f"Unsupported gate: {op.name}")
 
-    if op.properties.get("adjoint"):
+    is_adjoint = op.properties.get("adjoint") is not None
+    if adjoint_mode:
+        # Adjoint-mode means all non-adjoint gates are treated as adjoint, and vice versa
+        is_adjoint = not is_adjoint
+
+    if is_adjoint and not gate_name in ops.qubit.attributes.self_inverses:
         gate_name = f"Adjoint({gate_name})"
+
     if hasattr(op, "in_ctrl_qubits"):
         n_ctrls = len(op.in_ctrl_qubits)
         if n_ctrls == 1:
