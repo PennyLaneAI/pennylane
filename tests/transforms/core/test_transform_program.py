@@ -554,6 +554,168 @@ class TestTransformProgramDunders:
         ):
             _ = dispatcher * -1
 
+    def test_dispatcher_add_invalid_type(self):
+        """Test that adding an invalid type to a dispatcher returns NotImplemented."""
+        dispatcher = qml.transform(first_valid_transform)
+
+        # Test with invalid types - should raise TypeError (Python's default when NotImplemented is returned)
+        with pytest.raises(TypeError):
+            _ = dispatcher + "invalid"
+        with pytest.raises(TypeError):
+            _ = dispatcher + 42
+        with pytest.raises(TypeError):
+            _ = dispatcher + [1, 2, 3]
+
+    def test_dispatcher_radd_invalid_type(self):
+        """Test that right addition with an invalid type returns NotImplemented."""
+        dispatcher = qml.transform(first_valid_transform)
+
+        # Test with invalid types
+        with pytest.raises(TypeError):
+            _ = "invalid" + dispatcher
+        with pytest.raises(TypeError):
+            _ = 42 + dispatcher
+
+    def test_dispatcher_mul_invalid_type(self):
+        """Test that multiplying a dispatcher with an invalid type returns NotImplemented."""
+        dispatcher = qml.transform(first_valid_transform)
+
+        # Test with invalid types
+        with pytest.raises(TypeError):
+            _ = dispatcher * "invalid"
+        with pytest.raises(TypeError):
+            _ = dispatcher * 3.5
+        with pytest.raises(TypeError):
+            _ = dispatcher * [1, 2]
+
+    def test_dispatcher_rmul_invalid_type(self):
+        """Test that right multiplication with an invalid type returns NotImplemented."""
+        dispatcher = qml.transform(first_valid_transform)
+
+        # Test with invalid types
+        with pytest.raises(TypeError):
+            _ = "invalid" * dispatcher
+        with pytest.raises(TypeError):
+            _ = 3.5 * dispatcher
+
+    def test_container_add_invalid_type(self):
+        """Test that adding an invalid type to a container returns NotImplemented."""
+        container = TransformContainer(transform=qml.transform(first_valid_transform))
+
+        # Test with invalid types
+        with pytest.raises(TypeError):
+            _ = container + "invalid"
+        with pytest.raises(TypeError):
+            _ = container + 42
+
+    def test_container_radd_invalid_type(self):
+        """Test that right addition with an invalid type returns NotImplemented."""
+        container = TransformContainer(transform=qml.transform(first_valid_transform))
+
+        # Test with invalid types - only TransformProgram is supported in radd
+        with pytest.raises(TypeError):
+            _ = "invalid" + container
+        with pytest.raises(TypeError):
+            _ = 42 + container
+
+    def test_container_mul_invalid_type(self):
+        """Test that multiplying a container with an invalid type returns NotImplemented."""
+        container = TransformContainer(transform=qml.transform(first_valid_transform))
+
+        # Test with invalid types
+        with pytest.raises(TypeError):
+            _ = container * "invalid"
+        with pytest.raises(TypeError):
+            _ = container * 3.5
+
+    def test_container_rmul_invalid_type(self):
+        """Test that right multiplication with an invalid type returns NotImplemented."""
+        container = TransformContainer(transform=qml.transform(first_valid_transform))
+
+        # Test with invalid types
+        with pytest.raises(TypeError):
+            _ = "invalid" * container
+        with pytest.raises(TypeError):
+            _ = 3.5 * container
+
+    def test_program_mul_invalid_type(self):
+        """Test that multiplying a program with an invalid type returns NotImplemented."""
+        transform1 = TransformContainer(transform=qml.transform(first_valid_transform))
+        program = TransformProgram([transform1])
+
+        # Test with invalid types
+        with pytest.raises(TypeError):
+            _ = program * "invalid"
+        with pytest.raises(TypeError):
+            _ = program * 3.5
+
+    def test_program_rmul_invalid_type(self):
+        """Test that right multiplication with an invalid type returns NotImplemented."""
+        transform1 = TransformContainer(transform=qml.transform(first_valid_transform))
+        program = TransformProgram([transform1])
+
+        # Test with invalid types
+        with pytest.raises(TypeError):
+            _ = "invalid" * program
+        with pytest.raises(TypeError):
+            _ = 3.5 * program
+
+    def test_program_add_container_with_final_transform_error(self):
+        """Test that adding a container with final_transform to a program with final_transform raises error."""
+        container1 = TransformContainer(
+            transform=qml.transform(first_valid_transform, final_transform=True)
+        )
+        container2 = TransformContainer(
+            transform=qml.transform(second_valid_transform, final_transform=True)
+        )
+        program = TransformProgram([container1])
+
+        with pytest.raises(TransformError, match="already has a terminal transform"):
+            _ = program + container2
+
+    def test_program_add_dispatcher_with_final_transform_error(self):
+        """Test that adding a dispatcher with final_transform to a program with final_transform raises error."""
+        container1 = TransformContainer(
+            transform=qml.transform(first_valid_transform, final_transform=True)
+        )
+        dispatcher2 = qml.transform(second_valid_transform, final_transform=True)
+        program = TransformProgram([container1])
+
+        with pytest.raises(TransformError, match="already has a terminal transform"):
+            _ = program + dispatcher2
+
+    def test_program_add_container_maintains_final_transform_at_end(self):
+        """Test that adding a container to a program with final_transform keeps final at end."""
+        container1 = TransformContainer(
+            transform=qml.transform(first_valid_transform, final_transform=True)
+        )
+        container2 = TransformContainer(transform=qml.transform(second_valid_transform))
+        program = TransformProgram([container1])
+
+        result = program + container2
+        assert isinstance(result, TransformProgram)
+        assert len(result) == 2
+        # Final transform should be at the end
+        assert result[0].transform is second_valid_transform
+        assert result[1].transform is first_valid_transform
+        assert result[1].final_transform
+
+    def test_program_add_dispatcher_maintains_final_transform_at_end(self):
+        """Test that adding a dispatcher to a program with final_transform keeps final at end."""
+        container1 = TransformContainer(
+            transform=qml.transform(first_valid_transform, final_transform=True)
+        )
+        dispatcher2 = qml.transform(second_valid_transform)
+        program = TransformProgram([container1])
+
+        result = program + dispatcher2
+        assert isinstance(result, TransformProgram)
+        assert len(result) == 2
+        # Final transform should be at the end
+        assert result[0].transform is second_valid_transform
+        assert result[1].transform is first_valid_transform
+        assert result[1].final_transform
+
 
 class TestTransformProgram:
     """Test the transform program class and its method."""
