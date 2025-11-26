@@ -478,6 +478,10 @@ class SelectOnlyQRAM(Operator):
 
         super().__init__(wires=list(qram_wires) + list(target_wires) + list(select_wires), id=id)
 
+    @classmethod
+    def _primitive_bind_call(cls, *args, **kwargs):
+        return cls._primitive.bind(*args, **kwargs)
+
     # ---------- Helpers ----------
     @staticmethod
     def _address_bits(addr: int, n: int) -> list[int]:
