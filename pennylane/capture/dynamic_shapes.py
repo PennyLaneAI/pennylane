@@ -19,8 +19,7 @@ from collections.abc import Callable, Sequence
 has_jax = True
 try:
     import jax
-    from jax._src import compute_on, config, xla_metadata_lib
-    from jax._src.interpreters.partial_eval import JaxprEqnContext, TracingEqn
+    from jax._src.interpreters.partial_eval import TracingEqn
     from jax.interpreters import partial_eval as pe
 except ImportError:  # pragma: no cover
     has_jax = False  # pragma: no cover
@@ -223,22 +222,26 @@ def register_custom_staging_rule(
         else:
             out_tracers, returned_vars = (), ()
 
-        ctx = JaxprEqnContext(
-            compute_on.current_compute_type(),
-            config.threefry_partitionable.value,
-            xla_metadata_lib.current_xla_metadata(),
-        )
-
-        eqn = TracingEqn(
-            tracers,  # in_tracers (not invars!)
+        # JAX 0.7.0: Use t.val to get var from tracer, and TracingEqn for frame.add_eqn
+        invars = [t.val for t in tracers]
+        eqn = jax.core.new_jaxpr_eqn(
+            invars,
             returned_vars,
             primitive,
             params,
             jax.core.no_effects,
             source_info,
-            ctx,
         )
-        jaxpr_trace.frame.add_eqn(eqn)
+        tracing_eqn = TracingEqn(
+            list(tracers),
+            returned_vars,
+            primitive,
+            params,
+            eqn.effects,
+            source_info,
+            eqn.ctx,
+        )
+        jaxpr_trace.frame.add_eqn(tracing_eqn)
         return out_tracers
 
     pe.custom_staging_rules[primitive] = custom_staging_rule
