@@ -12,14 +12,19 @@
 
 <h4>Pauli product measurements</h4>
 
-* Added a :func:`~pennylane.ops.pauli_measure` that takes a Pauli product measurement.
+* A new :func:`~pennylane.ops.pauli_measure` function that takes a `Pauli product measurement <https://pennylane.ai/compilation/pauli-product-measurement>`_
+  (PPM) is now available.
+  This function unlocks many important applications that rely on expressing the circuit in terms of PPMs
+  and :class:`~.PauliRot`, such as quantum error correction procedures, wile using the familiar API in pennylane.
   [(#8461)](https://github.com/PennyLaneAI/pennylane/pull/8461)
   [(#8631)](https://github.com/PennyLaneAI/pennylane/pull/8631)
   [(#8623)](https://github.com/PennyLaneAI/pennylane/pull/8623)
   [(#8663)](https://github.com/PennyLaneAI/pennylane/pull/8663)
   [(#8692)](https://github.com/PennyLaneAI/pennylane/pull/8692)
   
-  The follo wing example illustrates how to incorporate Pauli product measurements (PPMs) in a qnode:
+  In the following example, a measurement of the ``XY`` Pauli product on wires ``0`` and ``2`` is performed
+  using :func:`~pennylane.ops.pauli_measure`, followed by application of a Pauli X gate conditional on
+  the outcome of the PPM:
 
   ```python
   import pennylane as qml
@@ -42,6 +47,9 @@
   2: ──H─╰┤↗Y├──║─┤
            ╚════╝
   ```
+
+  This new function is currently only for analysis, such as resource estimation, and potential future execution
+  when a suitable backend is available.
 
 <h3>Improvements 🛠</h3>
 

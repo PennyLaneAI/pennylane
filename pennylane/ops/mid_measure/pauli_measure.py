@@ -128,8 +128,8 @@ def pauli_measure(pauli_word: str, wires: WiresLike, postselect: int | None = No
     Args:
         pauli_word (str): The Pauli word to measure.
         wires (Wires): The wires the Pauli operators act on.
-        postselect (Optional[int]): Project the state into the subspace corresponding to the Pauli measurement
-            outcome. None by default.
+        postselect (Optional[int]): The postselection value, one of 0 or 1. It projects the state into a
+            subspace of degenerated states whose eigenvalues are 1 or -1, respectively. None by default.
 
     Returns:
         MeasurementValue: A reference to the future result of the Pauli product measurement
@@ -137,7 +137,8 @@ def pauli_measure(pauli_word: str, wires: WiresLike, postselect: int | None = No
     Raises:
         ValueError: if the Pauli word has characters other than X, Y and Z.
 
-    The following example illustrates how to incorporate Pauli product measurements (PPMs) in a qnode:
+    The following example illustrates how to include a Pauli product measurement (PPM) in a circuit by specifiying
+    the Pauli word and the wires it acts on:
 
     **Example:**
 
@@ -153,7 +154,7 @@ def pauli_measure(pauli_word: str, wires: WiresLike, postselect: int | None = No
 
             return qml.expval(qml.Z(0))
 
-    The PauliX operation on wire `1` will be applied conditionally on the value of the PPM outcome:
+    The PauliX operation on wire ``1`` will be applied conditionally on the value of the PPM outcome:
 
     >>> qml.draw(circuit)()
     0: ──H─╭┤↗X├────┤  <Z>
@@ -162,7 +163,7 @@ def pauli_measure(pauli_word: str, wires: WiresLike, postselect: int | None = No
              ╚════╝
 
     .. seealso::
-        catalyst.passes.ppm_compilation
+        :func:`catalyst.passes.ppm_compilation`
     """
 
     if capture_enabled():
