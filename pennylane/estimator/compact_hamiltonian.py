@@ -144,7 +144,7 @@ class PauliHamiltonian:
     >>> pauli_ham
     PauliHamiltonian(num_qubits=40, num_pauli_words=100, max_weight=2, one_norm=14.5)
 
-    The Hamiltonian can be used as input for other subroutines, like 
+    The Hamiltonian can be used as input for other subroutines, like
     :class:`~.estimator.templates.trotter.TrotterPauli`:
 
     >>> num_steps, order = (10, 2)
