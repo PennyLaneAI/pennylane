@@ -605,7 +605,7 @@ class SelectOnlyQRAM(Operator):
                         control_values=control_values,
                     )
                 )
-            return ops
+        return ops
 
 
 def _select_only_qram_resources(bitstrings, num_qram_wires, n_total):
