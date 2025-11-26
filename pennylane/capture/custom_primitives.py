@@ -47,9 +47,9 @@ def _make_hashable(obj: Any) -> Any:
     """
     if isinstance(obj, slice):
         return (obj.start, obj.stop, obj.step)
-    elif isinstance(obj, list):
+    if isinstance(obj, list):
         return tuple(_make_hashable(item) for item in obj)
-    elif isinstance(obj, dict):
+    if isinstance(obj, dict):
         return tuple((k, _make_hashable(v)) for k, v in obj.items())
 
     return obj
