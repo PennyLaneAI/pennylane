@@ -26,6 +26,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from typing import List, Sequence
 
+from pennylane import math
 from pennylane.decomposition import (
     add_decomps,
     controlled_resource_rep,
@@ -45,12 +46,12 @@ from pennylane.wires import Wires, WiresLike
 @dataclass
 class _QRAMWires:
 
-    qram_wires: Sequence[Wires]
-    target_wires: Sequence[Wires]
-    bus_wire: Sequence[Wires]
-    dir_wires: Sequence[Wires]
-    portL_wires: Sequence[Wires]
-    portR_wires: Sequence[Wires]
+    qram_wires: Wires
+    target_wires: Wires
+    bus_wire: Wires
+    dir_wires: Wires
+    portL_wires: Wires
+    portR_wires: Wires
 
     # ---------- Tree helpers ----------
     def node_in_wire(self, level: int, prefix: int):
@@ -184,16 +185,12 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
 
     grad_method = None
 
-    resource_keys = {"bitstrings", "num_target_wires", "num_qram_wires", "n_k"}
+    resource_keys = {"bitstrings"}
 
     @property
     def resource_params(self) -> dict:
-        wire_manager = self.hyperparameters["wire_manager"]
         return {
             "bitstrings": self.hyperparameters["bitstrings"],
-            "num_target_wires": len(wire_manager.target_wires),
-            "num_qram_wires": len(wire_manager.qram_wires),
-            "n_k": self.hyperparameters["n_k"],
         }
 
     def __init__(
@@ -211,7 +208,6 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
             raise ValueError("All bitstrings must have equal length.")
         m = next(iter(m_set))
         bitstrings = list(bitstrings)
-
         qram_wires = Wires(qram_wires)
 
         n_k = len(qram_wires)
@@ -248,7 +244,6 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
 
         self._hyperparameters = {
             "wire_manager": wire_manager,
-            "n_k": n_k,
             "bitstrings": bitstrings,
         }
 
@@ -262,7 +257,7 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
         """(controls, values) for the router path to leaf `i_low` (MSB-first across n_k)."""
         ctrls, vals = [], []
         wire_manager = self.hyperparameters["wire_manager"]
-        n_k = self.hyperparameters["n_k"]
+        n_k = len(wire_manager.qram_wires)
         for k in range(n_k):
             prefix = i_low >> (n_k - k)
             ctrls.append(wire_manager.router(k, prefix))
@@ -280,7 +275,7 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
         """
         ops = []
         wire_manager = self.hyperparameters["wire_manager"]
-        for k in range(self.hyperparameters["n_k"]):
+        for k in range(len(wire_manager.qram_wires)):
             # 1) load a_k into the bus
             origin = wire_manager.qram_wires[k]
             target = wire_manager.bus_wire[0]
@@ -334,7 +329,7 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
         """Apply the leaf write for target bit index j."""
         ops = []
         wire_manager = self.hyperparameters["wire_manager"]
-        n_k = self.hyperparameters["n_k"]
+        n_k = len(wire_manager.qram_wires)
         for p in range(1 << n_k):
             if p % 2 == 0:
                 target = wire_manager.portL(n_k - 1, p >> 1)
@@ -369,7 +364,10 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
         return ops
 
 
-def _bucket_brigade_qram_resources(bitstrings, num_target_wires, num_qram_wires, n_k):
+def _bucket_brigade_qram_resources(bitstrings):
+    num_target_wires = len(bitstrings[0])
+    num_qram_wires = int(math.log2(len(bitstrings)))
+    n_k = num_qram_wires
     resources = defaultdict(int)
     resources[resource_rep(SWAP)] = (
         sum([1 if k == 0 else (1 << k) for k in range(n_k)]) + n_k
@@ -497,10 +495,11 @@ def _leaf_ops_for_bit_qfunc(wire_manager, bitstrings, n_k, j):
 
 @register_resources(_bucket_brigade_qram_resources)
 def _bucket_brigade_qram_decomposition(
-    wires, wire_manager, bitstrings, n_k
+    wires, wire_manager, bitstrings
 ):  # pylint: disable=unused-argument
     bus_wire = wire_manager.bus_wire
     qram_wires = wire_manager.qram_wires
+    n_k = len(qram_wires)
     # 1) address loading
     _mark_routers_via_bus_qfunc(wire_manager, n_k)
     # 2) For each target bit: load→route down→leaf op→route up→restore (reuse the route bus function)
