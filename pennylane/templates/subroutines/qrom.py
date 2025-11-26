@@ -110,8 +110,7 @@ class QROM(Operation):
         work_wires (Sequence[int]): the auxiliary wires used for the computation
         clean (bool): if True, the work wires are not altered by operator, default is ``True``
 
-    .. seealso::
-        :class:`~.BBQRAM`, :class:`~.QROMStatePreparation`
+    .. seealso:: :class:`~.BBQRAM`, :class:`~.QROMStatePreparation`
 
     .. note::
         QRAM and QROM, though similar, have different applications and purposes. QRAM is intended
