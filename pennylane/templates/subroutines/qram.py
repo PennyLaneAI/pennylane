@@ -34,7 +34,7 @@ from pennylane.decomposition import (
     resource_rep,
 )
 from pennylane.operation import Operation
-from pennylane.ops import CSWAP, SWAP, Hadamard, PauliZ, ctrl
+from pennylane.ops import CSWAP, SWAP, Hadamard, PauliZ, adjoint, ctrl
 from pennylane.wires import Wires, WiresLike
 
 # pylint: disable=consider-using-generator
@@ -93,18 +93,11 @@ def _node_index(level: int, prefix_value: int) -> int:
 class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
     r"""Bucket-brigade QRAM with **explicit bus routing** using 3 qubits per node.
 
-    At a high level, this operator can encode a superposition of bitstrings associated with indices:
-
-    .. math::
-        \text{QRAM} \sum_{i} |i\rangle |0\rangle = \sum_{i} |i\rangle |b_i\rangle,
-
-    where :math:`b_i` is the bitstring associated with index :math:`i`.
-
     Bucket-brigade QRAM achieves an :math:`O(\log N)` complexity instead of the typical :math:`N`,
-    where :math:`N` is the number of bitstrings. It does this by reducing the number of nodes that
-    need to be visited in a tree, which converts a binary address into a unary address at the
-    leaves. In the end, the target wires' state corresponds to the data at the desired address. For
-    more theoretical details on how this algorithm works, please consult
+    where :math:`N` is the number of memory cells addressed. It does this by reducing the number of
+    nodes that need to be visited in a tree which converts our binary address into a unary address
+    at the leaves. In the end, the target wires' state corresponds to the data at the desired
+    address. For more theoretical details on how this algorithm works, please consult
     `arXiv:0708.1879 <https://arxiv.org/pdf/0708.1879>`__.
 
     Args:
@@ -231,16 +224,16 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
         if m != len(target_wires):
             raise ValueError("len(target_wires) must equal bitstring length.")
 
+        expected_nodes = (1 << n_k) - 1 if n_k > 0 else 0
+
+        if len(work_wires) != 1 + 3 * expected_nodes:
+            raise ValueError(f"work_wires must have length {1 + 3 * expected_nodes}.")
+
         bus_wire = Wires(work_wires[0])
         divider = len(work_wires[1:]) // 3
         dir_wires = Wires(work_wires[1 : 1 + divider])
         portL_wires = Wires(work_wires[1 + divider : 1 + divider * 2])
         portR_wires = Wires(work_wires[1 + divider * 2 : 1 + divider * 3])
-
-        expected_nodes = (1 << n_k) - 1 if n_k > 0 else 0
-
-        if len(work_wires) != 1 + 3 * expected_nodes:
-            raise ValueError(f"work_wires must have length {1 + 3 * expected_nodes}.")
 
         all_wires = (
             list(qram_wires)
@@ -269,22 +262,17 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
 
 def _bucket_brigade_qram_resources(bitstrings):
     num_target_wires = len(bitstrings[0])
-    num_qram_wires = int(math.log2(len(bitstrings)))
-    n_k = num_qram_wires
+    n_k = int(math.log2(len(bitstrings)))
     resources = defaultdict(int)
-    resources[resource_rep(SWAP)] = (
-        sum([1 if k == 0 else (1 << k) for k in range(n_k)]) + n_k
-    ) * 2 + num_target_wires * 2
-    resources[resource_rep(CSWAP)] = sum(
-        [(1 << ell) for ell in range(num_qram_wires)]
-    ) * num_target_wires * 2 + (sum([(1 << ell) for k in range(n_k) for ell in range(k)]) * 2)
+    resources[resource_rep(SWAP)] = ((1 << n_k) - 1 + n_k) * 2 + num_target_wires * 2
+    resources[resource_rep(CSWAP)] = ((1 << n_k) - 1) * num_target_wires * 2 + (
+        ((1 << n_k) - 1 - n_k) * 2
+    )
     resources[
         controlled_resource_rep(
             base_class=SWAP, base_params={}, num_control_wires=1, num_zero_control_values=1
         )
-    ] = sum([(1 << ell) for ell in range(num_qram_wires)]) * num_target_wires * 2 + (
-        sum([(1 << ell) for k in range(n_k) for ell in range(k)]) * 2
-    )
+    ] = ((1 << n_k) - 1) * num_target_wires * 2 + (((1 << n_k) - 1 - n_k) * 2)
     resources[resource_rep(Hadamard)] += num_target_wires * 2
     for j in range(num_target_wires):
         for p in range(1 << n_k):
@@ -292,7 +280,7 @@ def _bucket_brigade_qram_resources(bitstrings):
     return resources
 
 
-def _mark_routers_via_bus_qfunc(wire_manager, n_k):
+def _mark_routers_via_bus(wire_manager, n_k):
     """Write low-order address bits into router directions **layer-by-layer** via the bus.
 
     For each low bit a_k (k = 0..n_k-1):
@@ -300,59 +288,27 @@ def _mark_routers_via_bus_qfunc(wire_manager, n_k):
       2) Route bus down k levels (CSWAPs controlled by routers at levels < k)
       3) At node (k, path-prefix), SWAP(bus, dir[k, path-prefix])
     """
-    for k in range(n_k):
+    SWAP([wire_manager.qram_wires[0], wire_manager.bus_wires[0]])
+    SWAP([wire_manager.bus_wire[0], wire_manager.router(0, 0)])
+    for k in range(1, n_k):
         # 1) load a_k into the bus
         origin = wire_manager.qram_wires[k]
         target = wire_manager.bus_wire[0]
         SWAP(wires=[origin, target])
         # 2) route down k levels
-        _route_bus_down_first_k_levels_qfunc(wire_manager, k)
+        _route_bus_down_first_k_levels(wire_manager, k)
         # 3) deposit at level-k node on the active path
-        if k == 0:
-            SWAP(wires=[wire_manager.bus_wire[0], wire_manager.router(0, 0)])
-        else:
-            for p in range(1 << k):
-                # change to  in_wire later
-                parent = _node_index(k - 1, p >> 1)
-                if p % 2 == 0:
-                    origin = wire_manager.portL_wires[parent]
-                    target = wire_manager.router(k, p)
-                    SWAP(wires=[origin, target])
-                else:
-                    origin = wire_manager.portR_wires[parent]
-                    target = wire_manager.router(k, p)
-                    SWAP(wires=[origin, target])
+        for p in range(1 << k):
+            # change to  in_wire later
+            parent = _node_index(k - 1, p >> 1)
+            origin = (
+                wire_manager.portL_wires[parent] if p % 2 == 0 else wire_manager.portR_wires[parent]
+            )
+            target = wire_manager.router(k, p)
+            SWAP(wires=[origin, target])
 
 
-def _unmark_routers_via_bus_qfunc(wire_manager, n_k):
-    """
-    Operations used to write low-order address bits into router directions **layer-by-layer** via the bus, reversed.
-    """
-    for k in range(n_k - 1, -1, -1):
-        # 1) level-k node on the active path
-        if k == 0:
-            SWAP(wires=[wire_manager.bus_wire[0], wire_manager.router(0, 0)])
-        else:
-            for p in range(1 << k - 1, -1, -1):
-                # change to  in_wire later
-                parent = _node_index(k - 1, p >> 1)
-                if p % 2 == 0:
-                    origin = wire_manager.portL_wires[parent]
-                    target = wire_manager.router(k, p)
-                    SWAP(wires=[origin, target])
-                else:
-                    origin = wire_manager.portR_wires[parent]
-                    target = wire_manager.router(k, p)
-                    SWAP(wires=[origin, target])
-        # 2) route up k levels
-        _route_bus_up_first_k_levels_qfunc(wire_manager, k)
-        # 3) reverse load
-        origin = wire_manager.qram_wires[k]
-        target = wire_manager.bus_wire[0]
-        SWAP(wires=[origin, target])
-
-
-def _route_bus_down_first_k_levels_qfunc(wire_manager, k_levels):
+def _route_bus_down_first_k_levels(wire_manager, k_levels):
     """Route the bus down the first `k_levels` of the tree using dir-controlled CSWAPs."""
     for ell in range(k_levels):
         for p in range(1 << ell):
@@ -366,21 +322,7 @@ def _route_bus_down_first_k_levels_qfunc(wire_manager, k_levels):
             ctrl(SWAP(wires=[in_w, L]), control=[d], control_values=[0])
 
 
-def _route_bus_up_first_k_levels_qfunc(wire_manager, k_levels):
-    """Route the bus up the first `k_levels` of the tree using dir-controlled CSWAPs."""
-    for ell in range(k_levels - 1, -1, -1):
-        for p in range((1 << ell) - 1, -1, -1):
-            in_w = wire_manager.node_in_wire(ell, p)
-            L = wire_manager.portL(ell, p)
-            R = wire_manager.portR(ell, p)
-            d = wire_manager.router(ell, p)
-            # dir==0 ⇒ SWAP(in, L)
-            ctrl(SWAP(wires=[in_w, L]), control=[d], control_values=[0])
-            # dir==1 ⇒ SWAP(in, R)
-            CSWAP(wires=[d, in_w, R])
-
-
-def _leaf_ops_for_bit_qfunc(wire_manager, bitstrings, n_k, j):
+def _leaf_ops_for_bit(wire_manager, bitstrings, n_k, j):
     """Apply the leaf write for target bit index j."""
     ops = []
     for p in range(1 << n_k):
@@ -404,18 +346,18 @@ def _bucket_brigade_qram_decomposition(
     qram_wires = wire_manager.qram_wires
     n_k = len(qram_wires)
     # 1) address loading
-    _mark_routers_via_bus_qfunc(wire_manager, n_k)
+    _mark_routers_via_bus(wire_manager, n_k)
     # 2) For each target bit: load→route down→leaf op→route up→restore (reuse the route bus function)
     for j, tw in enumerate(wire_manager.target_wires):
         Hadamard(wires=[tw])
         SWAP(wires=[tw, bus_wire[0]])
-        _route_bus_down_first_k_levels_qfunc(wire_manager, len(qram_wires))
-        _leaf_ops_for_bit_qfunc(wire_manager, bitstrings, n_k, j)
-        _route_bus_up_first_k_levels_qfunc(wire_manager, len(qram_wires))
+        _route_bus_down_first_k_levels(wire_manager, len(qram_wires))
+        _leaf_ops_for_bit(wire_manager, bitstrings, n_k, j)
+        adjoint(_route_bus_down_first_k_levels, lazy=False)(wire_manager, len(qram_wires))
         SWAP(wires=[tw, bus_wire[0]])
         Hadamard(wires=[tw])
     # 3) address unloading
-    _unmark_routers_via_bus_qfunc(wire_manager, n_k)
+    adjoint(_mark_routers_via_bus, lazy=False)(wire_manager, n_k)
 
 
 add_decomps(BBQRAM, _bucket_brigade_qram_decomposition)
