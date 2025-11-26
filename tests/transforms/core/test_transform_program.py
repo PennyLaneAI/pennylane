@@ -717,6 +717,42 @@ class TestTransformProgramDunders:
         assert result[1].transform is first_valid_transform
         assert result[1].final_transform
 
+    def test_dispatcher_radd_with_program_directly(self):
+        """Test dispatcher __radd__ directly with a TransformProgram.
+
+        This tests the branch in dispatcher.__radd__ that handles TransformProgram.
+        In normal usage, this branch is not triggered because TransformProgram.__add__
+        handles dispatchers directly. We call __radd__ directly to ensure coverage.
+        """
+        dispatcher = qml.transform(first_valid_transform)
+        container = TransformContainer(transform=qml.transform(second_valid_transform))
+        program = TransformProgram([container])
+
+        # Directly call __radd__ with a program
+        result = dispatcher.__radd__(program)
+        assert isinstance(result, TransformProgram)
+        assert len(result) == 2
+        assert result[0].transform is second_valid_transform
+        assert result[1].transform is first_valid_transform
+
+    def test_container_radd_with_program_directly(self):
+        """Test container __radd__ directly with a TransformProgram.
+
+        This tests the branch in container.__radd__ that handles TransformProgram.
+        In normal usage, this branch is not triggered because TransformProgram.__add__
+        handles containers directly. We call __radd__ directly to ensure coverage.
+        """
+        container1 = TransformContainer(transform=qml.transform(first_valid_transform))
+        container2 = TransformContainer(transform=qml.transform(second_valid_transform))
+        program = TransformProgram([container2])
+
+        # Directly call __radd__ with a program
+        result = container1.__radd__(program)
+        assert isinstance(result, TransformProgram)
+        assert len(result) == 2
+        assert result[0].transform is second_valid_transform
+        assert result[1].transform is first_valid_transform
+
 
 class TestTransformProgram:
     """Test the transform program class and its method."""
