@@ -66,8 +66,6 @@ _CUSTOM_DIALECT_NAMES = frozenset(
     }
 )
 
-# TODO: How to handle `gradient` and `mitigation` dialects
-
 # Ops to skip counting as "classical ops", only relevant if these ops would otherwise be
 # counted as classical ops (i.e. they are not already quantum ops, measurements, etc.)
 _SKIPPED_OPS = frozenset(
@@ -222,7 +220,7 @@ def _(
 
 @handle_resource.register
 def _(
-    xdsl_op: CustomOp | GlobalPhaseOp | MultiRZOp | SetBasisStateOp | SetStateOp | QubitUnitaryOp,
+    _: CustomOp | GlobalPhaseOp | MultiRZOp | SetBasisStateOp | SetStateOp | QubitUnitaryOp,
 ) -> tuple[ResourceType, str]:
     return ResourceType.GATE, None
 
