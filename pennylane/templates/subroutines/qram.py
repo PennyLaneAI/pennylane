@@ -33,7 +33,7 @@ from pennylane.decomposition import (
     resource_rep,
 )
 from pennylane.operation import Operation, Operator
-from pennylane.ops import CSWAP, SWAP, Hadamard, PauliZ, ctrl
+from pennylane.ops import CSWAP, SWAP, Hadamard, PauliX, PauliZ, ctrl
 from pennylane.wires import Wires, WiresLike
 
 
@@ -506,88 +506,312 @@ def _bucket_brigade_qram_decomposition(
 
 add_decomps(BBQRAM, _bucket_brigade_qram_decomposition)
 
+class HybridQRAM(Operation):
+    r"""Hybrid QRAM combining select-only and bucket-brigade behavior.
 
-class HybridQRAM(BBQRAM):
-    """
-    Hybrid QRAM allows a tree of smaller size and with less qubits to be re-used to perform the same operation as
-    a larger tree. The trade-off is between space and time. In the end, the target wires' values correspond to the
-    data at the address specified.
+    This implements a space–time tradeoff:
+
+    1.Total address bits: n = len(qram_wires)
+    2.Choose an integer k with 0 ≤ k < n.
+      2.1 The first k address bits (high-order) are "select" bits.
+      2.2 The remaining n-k bits (low-order) are routed through a bucket-brigade tree.
+
+    Instead of a full-depth tree of size 2^n leaves, we build a smaller tree of depth n-k
+    (2^(n-k) leaves) and reuse it 2^k times:
+
+        For each prefix s \in {0, …, 2^k - 1}:
+            1. Multi-controlled-X on a "signal" ancilla, controlled by the k select bits
+               being equal to s.
+            2. Conditioned on signal==1, perform a BBQRAM query using only the lower
+               n-k address bits and the sub-table of bitstrings whose prefix is s.
+            3. Uncompute the signal with the same multi-controlled-X.
+
+    In the end, for any full address a = (prefix, suffix), the target wires are loaded with
+    bitstrings[a].
+
+    Wire layout:
+
+      qram_wires: [ sel_0, ..., sel_{k-1}, tree_0, ..., tree_{n-k-1} ]
+      work_wires: [ signal, bus, dir..., portL..., portR... ]  (tree ancillas)
 
     Args:
-        bitstrings (Sequence[str]): the classical data as a sequence of bitstrings
-        qram_wires (Sequence[int]): stores the index for the entry of the classical data we want to access
-        target_wires (Sequence[int]): where the classical data gets loaded
-        work_wires (Sequence[int]): the bus, direction, left port and right port wires in that order. Each node in the
-            tree contains one address (direction), one left port and one right port wire. The single bus wire is used
-            for address loading and data routing
-        qram_value (int): TODO: can you help me with this description Shifan?
-
-    Raises:
-        ValueError: if the `qram_value` is not between 0 and 1 << len(qram_wires).
+        bitstrings (Sequence[str]): classical data table; must have length 2^n where n = len(qram_wires)
+        qram_wires (WiresLike): full address register (length n)
+        target_wires (WiresLike): m target qubits; m must equal bitstring length
+        work_wires (WiresLike): ancillas: [signal, bus, dir..., portL..., portR...] for a tree of depth (n-k)
+        k (int): number of "select" bits taken from the MSB of qram_wires
     """
+
+    grad_method = None
+
     def __init__(
         self,
         bitstrings: Sequence[str],
         qram_wires: WiresLike,
         target_wires: WiresLike,
         work_wires: WiresLike,
-        qram_value: int | None,
+        k: int, #define the select part size, remaining part is tree part
         id: str | None = None,
-    ):  # pylint: disable=too-many-arguments
-        if qram_value is not None and not 0 <= qram_value < (1 << len(qram_wires)):
-            raise ValueError("qram_value out of range.")
-        super().__init__(bitstrings, qram_wires, target_wires, work_wires, id)
-        self._hyperparameters["qram_value"] = qram_value
+    ):
+        
+        if not bitstrings:
+            raise ValueError("'bitstrings' cannot be empty.")
+        m_set = {len(s) for s in bitstrings}
+        if len(m_set) != 1:
+            raise ValueError("All bitstrings must have equal length.")
+        m = next(iter(m_set))
+        bitstrings = list(bitstrings)
 
-    # ---------- Data routing (full depth) ----------
-    def _route_bus_down(self) -> list:
-        """Route the bus from root to leaf across all levels using dir-controlled CSWAPs."""
-        ops = []
-        wire_manager = self.hyperparameters["wire_manager"]
-        for k in range(self.hyperparameters["n_k"]):
-            for p in range(1 << k):
-                in_w = wire_manager.node_in_wire(k, p)
-                L = wire_manager.portL(k, p)
-                R = wire_manager.portR(k, p)
-                d = wire_manager.router(k, p)
-                if k == 0:
-                    upper_ctrls, upper_vals = [], []
-                else:
-                    upper_ctrls = [wire_manager.router(j, p >> (k - j)) for j in range(k)]
-                    upper_vals = [(p >> (k - 1 - j)) & 1 for j in range(k)]
-                op0 = SWAP(wires=[in_w, L])
-                op1 = SWAP(wires=[in_w, R])
-                ops.append(
-                    ctrl(op0, control=[d] + upper_ctrls, control_values=[0] + upper_vals)
-                    if upper_ctrls
-                    else ctrl(op0, control=[d], control_values=[0])
+        qram_wires = Wires(qram_wires)
+        target_wires = Wires(target_wires)
+        work_wires = Wires(work_wires)
+
+        #test wires
+        n_total = len(qram_wires)
+        if n_total == 0:
+            raise ValueError("len(qram_wires) must be > 0.")
+
+        if not (0 <= k < n_total):
+            raise ValueError("k must satisfy 0 <= k < len(qram_wires).")
+
+        if len(target_wires) != m:
+            raise ValueError("len(target_wires) must equal bitstring length.")
+
+        if len(bitstrings) != (1 << n_total):
+            raise ValueError("len(bitstrings) must be 2^(len(qram_wires)).")
+
+        # Split qram_wires into select and tree parts
+        select_wires = Wires(qram_wires[:k])
+        tree_qram_wires = Wires(qram_wires[k:])
+        n_tree = len(tree_qram_wires)
+
+
+        # work_wires = [ signal, bus, dir..., portL..., portR... ] for tree depth n_tree
+        signal_wire = Wires(work_wires[0])
+
+        if n_tree > 0:
+            expected_nodes = (1 << n_tree) - 1
+            expected_len = 1 + 1 + 3 * expected_nodes  # signal + bus + 3 per node
+            if len(work_wires) != expected_len:
+                raise ValueError(
+                    f"work_wires must have length {expected_len} "
+                    f"for k={k} and len(qram_wires)={n_total}."
                 )
-                ops.append(
-                    ctrl(op1, control=[d] + upper_ctrls, control_values=[1] + upper_vals)
-                    if upper_ctrls
-                    else ctrl(op1, control=[d], control_values=[1])
-                )
+
+            bus_wire = Wires(work_wires[1])
+            divider = len(work_wires[2:]) // 3
+            dir_wires = Wires(work_wires[2 : 2 + divider])
+            portL_wires = Wires(work_wires[2 + divider : 2 + 2 * divider])
+            portR_wires = Wires(work_wires[2 + 2 * divider : 2 + 3 * divider])
+        else:
+            # k = n_total-1 ensures n_tree >= 1, so we should never hit this if k < len(qram_wires), this is actually select-only qram
+            bus_wire = Wires([])
+            dir_wires = Wires([])
+            portL_wires = Wires([])
+            portR_wires = Wires([])
+
+        tree_wire_manager = _QRAMWires(
+            tree_qram_wires, target_wires, bus_wire, dir_wires, portL_wires, portR_wires
+        )
+
+        all_wires = list(qram_wires) + list(target_wires) + list(work_wires)
+
+        Operation.__init__(self, wires=all_wires, id=id)
+
+        self._hyperparameters = {
+            "bitstrings": bitstrings,
+            "qram_wires": qram_wires,
+            "select_wires": select_wires,
+            "tree_qram_wires": tree_qram_wires,
+            "target_wires": target_wires,
+            "signal_wire": signal_wire,
+            "tree_wire_manager": tree_wire_manager,
+            "k": k,
+            "n_total": n_total,
+            "n_tree": n_tree,
+            "m": m,
+        }
+
+    # ---------- Helpers ----------
+    @staticmethod
+    def _bits(value: int, length: int) -> list[int]:
+        """Return `length` bits of `value` (MSB first)."""
+        return [(value >> (length - 1 - i)) & 1 for i in range(length)]
+
+    # Tree helpers with signal control
+    def _tree_mark_routers_via_bus_ctrl(self) -> List[Operator]:
+        """Address loading for the tree (n_tree bits), controlled on signal."""
+        ops: List[Operator] = []
+        wm = self.hyperparameters["tree_wire_manager"]
+        n_tree = self.hyperparameters["n_tree"]
+        signal = self.hyperparameters["signal_wire"][0]
+
+        for level in range(n_tree):
+            # SWAP(tree_qram_wires[level], bus) controlled on signal
+            origin = wm.qram_wires[level]
+            target = wm.bus_wire[0]
+            base_swap = SWAP(wires=[origin, target])
+            ops.append(ctrl(base_swap, control=[signal], control_values=[1]))
+
+            # route down qram wires for current levels
+            ops += self._tree_route_bus_down_first_k_levels_ctrl(level)
+
+            # deposit into dir[level, *] along active path
+            if level == 0:
+                base_swap = SWAP(wires=[wm.bus_wire[0], wm.router(0, 0)])
+                ops.append(ctrl(base_swap, control=[signal], control_values=[1]))
+            else:
+                for p in range(1 << level):
+                    parent = _node_index(level - 1, p >> 1)
+                    if p % 2 == 0:
+                        origin = wm.portL_wires[parent]
+                    else:
+                        origin = wm.portR_wires[parent]
+                    target = wm.router(level, p)
+                    base_swap = SWAP(wires=[origin, target])
+                    ops.append(ctrl(base_swap, control=[signal], control_values=[1]))
+
         return ops
 
-    def _route_bus_up(self) -> list:
-        """Inverse of `_route_bus_down`."""
-        return list(reversed(self._route_bus_down()))
+    def _tree_unmark_routers_via_bus_ctrl(self) -> List[Operator]:
+        """Inverse of `_tree_mark_routers_via_bus_ctrl`."""
+        return list(reversed(self._tree_mark_routers_via_bus_ctrl()))
 
-    # ---------- Decomposition ----------
-    def decomposition(self) -> list:
-        ops = []
-        qram_value = self.hyperparameters["qram_value"]
-        wire_manager = self.hyperparameters["wire_manager"]
-        bus_wire = wire_manager.bus_wire
-        # If LSBs are quantum, loadrouters; else skip loading & routing for LSBs
-        if qram_value is None:
-            ops += self._mark_routers_via_bus()
-        for j, tw in enumerate(wire_manager.target_wires):
-            ops.append(SWAP(wires=[tw, bus_wire[0]]))
-            if qram_value is None:
-                ops += self._route_bus_down_first_k_levels(len(wire_manager.qram_wires))
-            ops += self._leaf_ops_for_bit(j)
-            if qram_value is None:
-                ops += self._route_bus_up()
-            ops.append(SWAP(wires=[tw, bus_wire[0]]))
+    def _tree_route_bus_down_first_k_levels_ctrl(self, k_levels: int) -> List[Operator]:
+        """Tree routing down for first `k_levels` levels, controlled on signal."""
+        ops: List[Operator] = []
+        wm = self.hyperparameters["tree_wire_manager"]
+        signal = self.hyperparameters["signal_wire"][0]
+
+        for ell in range(k_levels):
+            for p in range(1 << ell):
+                in_w = wm.node_in_wire(ell, p)
+                L = wm.portL(ell, p)
+                R = wm.portR(ell, p)
+                d = wm.router(ell, p)
+
+                # dir==1: CSWAP(d, in_w, R) — additionally controlled on signal
+                base_cswap = CSWAP(wires=[d, in_w, R])
+                ops.append(ctrl(base_cswap, control=[signal], control_values=[1]))
+
+                # dir==0: SWAP(in_w, L) controlled on (d == 0) and signal == 1
+                base_swap = SWAP(wires=[in_w, L])
+                op = ctrl(base_swap, control=[d], control_values=[0])
+                ops.append(ctrl(op, control=[signal], control_values=[1]))
+
+        return ops
+
+    def _tree_route_bus_up_first_k_levels_ctrl(self, k_levels: int) -> List[Operator]:
+        """Inverse of `_tree_route_bus_down_first_k_levels_ctrl`."""
+        return list(reversed(self._tree_route_bus_down_first_k_levels_ctrl(k_levels)))
+
+    def _tree_leaf_ops_for_bit_block_ctrl(self, j: int, block_index: int) -> List[Operator]:
+        """Leaf write for target bit j, for a given select prefix block, controlled on signal."""
+        ops: List[Operator] = []
+        wm = self.hyperparameters["tree_wire_manager"]
+        n_tree = self.hyperparameters["n_tree"]
+        bitstrings = self.hyperparameters["bitstrings"]
+        signal = self.hyperparameters["signal_wire"][0]
+
+        # For each leaf index p of the tree (n_tree bits)
+        for p in range(1 << n_tree):
+            # physical leaf wire (same pattern as BBQRAM)
+            if p % 2 == 0:
+                target = wm.portL(n_tree - 1, p >> 1)
+            else:
+                target = wm.portR(n_tree - 1, p >> 1)
+
+            # Global address index: (block_index << n_tree) + p
+            addr = (block_index << n_tree) + p
+            bit = bitstrings[addr][j]
+            if bit == "1":
+                base_z = PauliZ(wires=target)
+                ops.append(ctrl(base_z, control=[signal], control_values=[1]))
+
+        return ops
+
+    def _block_tree_query_ops(self, block_index: int) -> List[Operator]:
+        """One BBQRAM-style query of the (n_tree)-depth tree for a fixed select prefix."""
+        ops: List[Operator] = []
+        wm = self.hyperparameters["tree_wire_manager"]
+        n_tree = self.hyperparameters["n_tree"]
+        signal = self.hyperparameters["signal_wire"][0]
+
+        if n_tree == 0:
+            # Degenerate case: no tree; nothing to do here
+            return ops
+
+        # 1) address loading for the tree (controlled on signal)
+        ops += self._tree_mark_routers_via_bus_ctrl()
+
+        # 2) per-target data phase, controlled on signal
+        for j, tw in enumerate(wm.target_wires):
+            # H on target
+            base_h = Hadamard(wires=[tw])
+            ops.append(ctrl(base_h, control=[signal], control_values=[1]))
+
+            # Swap target <-> bus
+            base_swap1 = SWAP(wires=[tw, wm.bus_wire[0]])
+            ops.append(ctrl(base_swap1, control=[signal], control_values=[1]))
+
+            # Route down tree
+            ops += self._tree_route_bus_down_first_k_levels_ctrl(n_tree)
+
+            # Leaf Z ops for this block and bit index j
+            ops += self._tree_leaf_ops_for_bit_block_ctrl(j, block_index)
+
+            # Route back up
+            ops += self._tree_route_bus_up_first_k_levels_ctrl(n_tree)
+
+            # Swap back bus -> target
+            base_swap2 = SWAP(wires=[tw, wm.bus_wire[0]])
+            ops.append(ctrl(base_swap2, control=[signal], control_values=[1]))
+
+            # Final H on target
+            base_h2 = Hadamard(wires=[tw])
+            ops.append(ctrl(base_h2, control=[signal], control_values=[1]))
+
+        # 3) address unloading for the tree (controlled on signal)
+        ops += self._tree_unmark_routers_via_bus_ctrl()
+
+        return ops
+
+    # decomposition
+    def decomposition(self) -> List[Operator]:
+        bitstrings = self.hyperparameters["bitstrings"]
+        k = self.hyperparameters["k"]
+        n_tree = self.hyperparameters["n_tree"]
+        m = self.hyperparameters["m"]
+
+        select_wires = list(self.hyperparameters["select_wires"])
+        signal = self.hyperparameters["signal_wire"][0]
+
+        if len(bitstrings) != (1 << (k + n_tree)):
+            # Should not happen if __init__ checks passed
+            raise ValueError("Inconsistent bitstrings length for hybrid QRAM.")
+
+        ops: List[Operator] = []
+
+        num_blocks = 1 << k if k > 0 else 1
+
+        for block_index in range(num_blocks):
+            # Multi-controlled X to turn signal on when select bits == block_index
+            x_op = PauliX(wires=signal)
+
+            if k > 0:
+                sel_pattern = self._bits(block_index, k)
+                ops.append(ctrl(x_op, control=select_wires, control_values=sel_pattern))
+            else:
+                # No select bits: just flip signal for all addresses
+                ops.append(x_op)
+
+            # Perform one tree query, driven by lower n_tree bits, controlled on signal
+            ops += self._block_tree_query_ops(block_index)
+
+            # Uncompute signal
+            if k > 0:
+                ops.append(ctrl(x_op, control=select_wires, control_values=sel_pattern))
+            else:
+                ops.append(x_op)
+
         return ops
