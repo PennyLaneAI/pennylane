@@ -296,9 +296,7 @@ def _mark_routers_via_bus(wire_manager, n_k):
             # change to  in_wire later
             parent = _node_index(k - 1, p >> 1)
             origin = (
-                wire_manager.portL_wires[parent]
-                if p % 2 == 0
-                else wire_manager.portR_wires[parent]
+                wire_manager.portL_wires[parent] if p % 2 == 0 else wire_manager.portR_wires[parent]
             )
             target = wire_manager.router(k, p)
             SWAP(wires=[origin, target])
