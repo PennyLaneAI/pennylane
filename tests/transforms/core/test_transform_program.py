@@ -384,7 +384,9 @@ class TestTransformProgramDunders:
         transform1 = TransformContainer(transform=qml.transform(first_valid_transform))
         program = TransformProgram([transform1])
 
-        with pytest.raises(ValueError, match="Cannot multiply transform program by negative integer"):
+        with pytest.raises(
+            ValueError, match="Cannot multiply transform program by negative integer"
+        ):
             _ = -1 * program
 
     def test_program_rmul_final_transform_error(self):
@@ -396,7 +398,8 @@ class TestTransformProgramDunders:
         program = TransformProgram([transform1, transform2])
 
         with pytest.raises(
-            TransformError, match="Cannot multiply a transform program that has a terminal transform"
+            TransformError,
+            match="Cannot multiply a transform program that has a terminal transform",
         ):
             _ = 2 * program
 
@@ -474,7 +477,9 @@ class TestTransformProgramDunders:
         """Test that negative multiplication of a container raises an error."""
         container = TransformContainer(transform=qml.transform(first_valid_transform))
 
-        with pytest.raises(ValueError, match="Cannot multiply transform container by negative integer"):
+        with pytest.raises(
+            ValueError, match="Cannot multiply transform container by negative integer"
+        ):
             _ = container * -1
 
     def test_dispatcher_add_dispatcher(self):
@@ -544,7 +549,9 @@ class TestTransformProgramDunders:
         """Test that negative multiplication of a dispatcher raises an error."""
         dispatcher = qml.transform(first_valid_transform)
 
-        with pytest.raises(ValueError, match="Cannot multiply transform dispatcher by negative integer"):
+        with pytest.raises(
+            ValueError, match="Cannot multiply transform dispatcher by negative integer"
+        ):
             _ = dispatcher * -1
 
 

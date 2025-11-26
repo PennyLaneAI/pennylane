@@ -198,26 +198,26 @@ class TransformProgram:
         if isinstance(other, TransformContainer):
             if self.has_final_transform and other.final_transform:
                 raise TransformError("The transform program already has a terminal transform.")
-            
+
             transforms = self._transform_program + [other]
             if self.has_final_transform:
                 transforms.append(transforms.pop(len(self) - 1))
-            
+
             return TransformProgram(transforms, cotransform_cache=self.cotransform_cache)
-        
+
         # Handle TransformDispatcher
         if isinstance(other, TransformDispatcher):
             # Convert dispatcher to container (no args/kwargs)
             other_container = TransformContainer(other)
             if self.has_final_transform and other_container.final_transform:
                 raise TransformError("The transform program already has a terminal transform.")
-            
+
             transforms = self._transform_program + [other_container]
             if self.has_final_transform:
                 transforms.append(transforms.pop(len(self) - 1))
-            
+
             return TransformProgram(transforms, cotransform_cache=self.cotransform_cache)
-        
+
         # Handle TransformProgram
         if self.has_final_transform and other.has_final_transform:
             raise TransformError("The transform program already has a terminal transform.")
@@ -247,13 +247,13 @@ class TransformProgram:
         if isinstance(n, int):
             if n < 0:
                 raise ValueError("Cannot multiply transform program by negative integer")
-            
+
             # Check for final transforms
             if self.has_final_transform:
                 raise TransformError(
                     "Cannot multiply a transform program that has a terminal transform."
                 )
-            
+
             # Repeat the transforms
             transforms = self._transform_program * n
             return TransformProgram(transforms, cotransform_cache=self.cotransform_cache)
