@@ -284,7 +284,9 @@ def _mark_routers_via_bus(wire_manager, n_k):
       2) Route bus down k levels (CSWAPs controlled by routers at levels < k)
       3) At node (k, path-prefix), SWAP(bus, dir[k, path-prefix])
     """
-    for k in range(n_k):
+    SWAP([wire_manager.qram_wires[0], wire_manager.bus_wires[0]])
+    SWAP([wire_manager.bus_wire[0], wire_manager.router(0, 0)])
+    for k in range(1, n_k):
         # 1) load a_k into the bus
         origin = wire_manager.qram_wires[k]
         target = wire_manager.bus_wire[0]
@@ -292,19 +294,16 @@ def _mark_routers_via_bus(wire_manager, n_k):
         # 2) route down k levels
         _route_bus_down_first_k_levels(wire_manager, k)
         # 3) deposit at level-k node on the active path
-        if k == 0:
-            SWAP(wires=[wire_manager.bus_wire[0], wire_manager.router(0, 0)])
-        else:
-            for p in range(1 << k):
-                # change to  in_wire later
-                parent = _node_index(k - 1, p >> 1)
-                origin = (
-                    wire_manager.portL_wires[parent]
-                    if p % 2 == 0
-                    else wire_manager.portR_wires[parent]
-                )
-                target = wire_manager.router(k, p)
-                SWAP(wires=[origin, target])
+        for p in range(1 << k):
+            # change to  in_wire later
+            parent = _node_index(k - 1, p >> 1)
+            origin = (
+                wire_manager.portL_wires[parent]
+                if p % 2 == 0
+                else wire_manager.portR_wires[parent]
+            )
+            target = wire_manager.router(k, p)
+            SWAP(wires=[origin, target])
 
 
 def _route_bus_down_first_k_levels(wire_manager, k_levels):
