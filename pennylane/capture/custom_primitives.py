@@ -15,8 +15,6 @@
 This submodule offers custom primitives for the PennyLane capture module.
 """
 
-# pylint: disable=too-many-return-statements
-
 from enum import Enum
 from typing import Any
 
