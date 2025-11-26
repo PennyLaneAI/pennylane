@@ -369,7 +369,6 @@ class TestGrad:
         assert grad_eqn.primitive == jacobian_prim
 
         shift = 1 if same_dynamic_shape else 2
-        # JAX 0.7.0 requires hashable params, so lists become tuples
         assert grad_eqn.params["argnums"] == (shift, shift + 1)
         assert len(grad_eqn.outvars) == 2
         assert grad_eqn.outvars[0].aval.shape == grad_eqn.invars[shift].aval.shape
@@ -657,7 +656,6 @@ class TestJacobian:
         assert grad_eqn.primitive == jacobian_prim
 
         shift = 1 if same_dynamic_shape else 2
-        # JAX 0.7.0 requires hashable params, so lists become tuples
         assert grad_eqn.params["argnums"] == (shift, shift + 1)
         assert len(grad_eqn.outvars) == 2
 
