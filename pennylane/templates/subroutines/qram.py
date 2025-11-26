@@ -255,18 +255,17 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
 
 def _bucket_brigade_qram_resources(bitstrings):
     num_target_wires = len(bitstrings[0])
-    num_qram_wires = int(math.log2(len(bitstrings)))
-    n_k = num_qram_wires
+    n_k = int(math.log2(len(bitstrings)))
     resources = defaultdict(int)
     resources[resource_rep(SWAP)] = ((1 << n_k) - 1 + n_k) * 2 + num_target_wires * 2
-    resources[resource_rep(CSWAP)] = ((1 << num_qram_wires) - 1) * num_target_wires * 2 + (
+    resources[resource_rep(CSWAP)] = ((1 << n_k) - 1) * num_target_wires * 2 + (
         ((1 << n_k) - 1 - n_k) * 2
     )
     resources[
         controlled_resource_rep(
             base_class=SWAP, base_params={}, num_control_wires=1, num_zero_control_values=1
         )
-    ] = ((1 << num_qram_wires) - 1) * num_target_wires * 2 + (((1 << n_k) - 1 - n_k) * 2)
+    ] = ((1 << n_k) - 1) * num_target_wires * 2 + (((1 << n_k) - 1 - n_k) * 2)
     resources[resource_rep(Hadamard)] += num_target_wires * 2
     for j in range(num_target_wires):
         for p in range(1 << n_k):
