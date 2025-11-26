@@ -120,8 +120,9 @@ def hadamard_grad(
         device_wires (pennylane.wires.Wires): Wires of the device that are going to be used for the
             gradient. Facilitates finding a default for ``aux_wire`` if ``aux_wire`` is ``None``.
         mode (str): Specifies the gradient computation mode. Accepted values are
-            ``"standard"``, ``"reversed"``, ``"direct"``, ``"reversed-direct"``, or ``"auto"``. The default
-            is ``"auto"``.
+            ``"standard"``, ``"reversed"``, ``"direct"``, ``"reversed-direct"``, or ``"auto"``. 
+            The default ``"auto"`` chooses the method that leads to the
+            fewest total executions.
 
     Returns:
         qnode (QNode) or tuple[List[QuantumTape], function]:
