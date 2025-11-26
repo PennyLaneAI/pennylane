@@ -534,8 +534,8 @@ def _cy(wires: WiresLike, **__):
 def _cy_to_ppr_resource():
     return {
         resource_rep(qml.PauliRot, pauli_word="IY"): 1,
-        resource_rep(qml.PauliRot, pauli_word="YI"): 1,
-        resource_rep(qml.PauliRot, pauli_word="YY"): 1,
+        resource_rep(qml.PauliRot, pauli_word="ZI"): 1,
+        resource_rep(qml.PauliRot, pauli_word="ZY"): 1,
         qml.GlobalPhase: 1,
     }
 
@@ -543,8 +543,8 @@ def _cy_to_ppr_resource():
 @register_resources(_cy_to_ppr_resource)
 def _cy_to_ppr(wires: WiresLike, **_):
     qml.PauliRot(-np.pi / 2, "IY", wires=wires)
-    qml.PauliRot(-np.pi / 2, "YI", wires=wires)
-    qml.PauliRot(-np.pi / 2, "YY", wires=wires)
+    qml.PauliRot(-np.pi / 2, "ZI", wires=wires)
+    qml.PauliRot(np.pi / 2, "ZY", wires=wires)
     qml.GlobalPhase(np.pi / 4)
 
 
@@ -679,8 +679,8 @@ def _cz_to_ppr_resource():
 def _cz_to_ppr(wires: WiresLike, **_):
     qml.PauliRot(-np.pi / 2, "IZ", wires=wires)
     qml.PauliRot(-np.pi / 2, "ZI", wires=wires)
-    qml.PauliRot(-np.pi / 2, "ZZ", wires=wires)
-    qml.GlobalPhase(-np.pi / 4)
+    qml.PauliRot(np.pi / 2, "ZZ", wires=wires)
+    qml.GlobalPhase(np.pi / 4)
 
 
 add_decomps(CZ, _cz_to_cps, _cz_to_cnot, _cz_to_ppr)
@@ -1195,6 +1195,7 @@ def _cnot_to_ppr_resource():
         resource_rep(qml.PauliRot, pauli_word="IX"): 1,
         resource_rep(qml.PauliRot, pauli_word="ZI"): 1,
         resource_rep(qml.PauliRot, pauli_word="ZX"): 1,
+        qml.GlobalPhase: 1,
     }
 
 
@@ -1203,7 +1204,7 @@ def _cnot_to_ppr(wires: WiresLike, **_):
     qml.PauliRot(-np.pi / 2, "IX", wires=wires)
     qml.PauliRot(-np.pi / 2, "ZI", wires=wires)
     qml.PauliRot(np.pi / 2, "ZX", wires=wires)
-    qml.GlobalPhase(-np.pi / 4)
+    qml.GlobalPhase(np.pi / 4)
 
 
 add_decomps(CNOT, _cnot_to_cz_h, _cnot_to_ppr)
@@ -1427,8 +1428,8 @@ def _toffoli_to_ppr_resource():
         resource_rep(qml.PauliRot, pauli_word="IZX"): 1,
         resource_rep(qml.PauliRot, pauli_word="ZZX"): 1,
         resource_rep(qml.PauliRot, pauli_word="X"): 1,
-        resource_rep(qml.PauliRot, pauli_word="Z"): 1,
-        resource_rep(qml.PauliRot, pauli_word="Z"): 1,
+        resource_rep(qml.PauliRot, pauli_word="Z"): 2,
+        qml.GlobalPhase: 1,
     }
 
 

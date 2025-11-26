@@ -1763,6 +1763,7 @@ def _swap_to_ppr_resource():
         resource_rep(qml.PauliRot, pauli_word="XX"): 1,
         resource_rep(qml.PauliRot, pauli_word="YY"): 1,
         resource_rep(qml.PauliRot, pauli_word="ZZ"): 1,
+        qml.GlobalPhase: 1,
     }
 
 
