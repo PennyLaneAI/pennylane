@@ -18,11 +18,10 @@ Contains the QSVT template and qsvt wrapper function.
 import copy
 from collections import defaultdict
 from collections.abc import Sequence
-from functools import reduce
+from functools import partial, reduce
 from typing import Literal
 
 import numpy as np
-import scipy
 from numpy.polynomial import Polynomial, chebyshev
 
 from pennylane import math, ops
@@ -40,6 +39,11 @@ from pennylane.wires import Wires
 from .fable import FABLE
 from .prepselprep import PrepSelPrep
 from .qubitization import Qubitization
+
+try:
+    from jax import numpy as jnp, vmap, jit, config, lax
+except ModuleNotFoundError:
+    pass
 
 
 def _pauli_rep_process(A, poly, encoding_wires, block_encoding, angle_solver="root-finding"):
@@ -820,22 +824,10 @@ def _cheby_pol(x, degree):
     """
     return math.cos(degree * math.arccos(x))
 
+def _poly_func(coeffs, x):
+    """\sum c_kT_{k}(x) where T_k(x)=cos(karccos(x))"""
 
-def _poly_func(coeffs, parity, x):
-    r"""Evaluate a polynomial function of a given parity expressed in the Chebyshev basis at value x
-
-    Args:
-        coeffs (tensor_like): coefficient of the polynomial function in the Chebyshev basis
-        parity (int): 0 or 1 for odd/even polynomials respectively
-        x (float): point at which to evaluate the polynomial function
-
-    Returns:
-        float: \sum c_kT_{2k} if even else \sum c_kT_{2k+1} if odd where T_k(x)=cos(k \arccos(x))
-    """
-
-    ind = math.arange(len(coeffs))
-    return sum(coeffs[i] * _cheby_pol(x, degree=2 * i + parity) for i in ind)
-
+    return jnp.sum(coeffs @ vmap(_cheby_pol, in_axes=(None, 0))(x, np.arange(coeffs.shape[0])))
 
 def _z_rotation(phi, interface):
     r"""Returns the matrix of the `RZ(2 \phi)` gate.
@@ -880,9 +872,9 @@ def _qsp_iterate(phi, x, interface):
     Returns:
         tensor_like: 2x2 matrix of operator defined in Theorem (1) of https://arxiv.org/pdf/2002.11649
     """
+   
+    return math.dot(_W_of_x(x=x, interface=interface), _z_rotation(phi=phi, interface=interface))
 
-    a = math.dot(_W_of_x(x=x, interface=interface), _z_rotation(phi=phi, interface=interface))
-    return a
 
 
 def _qsp_iterate_broadcast(phis, x, interface):
@@ -896,15 +888,7 @@ def _qsp_iterate_broadcast(phis, x, interface):
     """
 
     # pylint: disable=import-outside-toplevel
-    try:
-        from jax import vmap
-
-        interface = "jax"
-        qsp_iterate_list = vmap(_qsp_iterate, in_axes=(0, None, None))(phis[1:], x, interface)
-    except ModuleNotFoundError:
-        qsp_iterate_list = math.vectorize(_qsp_iterate, excluded=(1, 2), signature="()->(m,n)")(
-            phis[1:], x, interface
-        )
+    qsp_iterate_list = vmap(_qsp_iterate, in_axes=(0, None, None))(phis[1:], x, interface)
 
     matrix_iterate = reduce(math.dot, qsp_iterate_list)
     matrix_iterate = math.dot(_z_rotation(phi=phis[0], interface=interface), matrix_iterate)
@@ -929,99 +913,94 @@ def _grid_pts(degree, interface):
     )
 
 
-def _qsp_optimization(degree, coeffs_target_func, interface=None):
-    r"""
-    Algorithm 1 in https://arxiv.org/pdf/2002.11649 produces the angle parameters by minimizing the distance between the target and qsp polynomial over the grid
+@jit
+def obj_function(phi, x, y):
+    # Equation (23)
+    obj_func = vmap(_qsp_iterate_broadcast, in_axes=(None, 0, None))(phi, x, 'jax') - y
+    obj_func = jnp.dot(obj_func, obj_func)
+    return 1 / x.shape[0] * obj_func
 
-    Args:
-        degree (int): degree of polynomial function
-        coeffs_target_func (tensor_like): coefficients of the polynomial function in ascending index order
+@partial(jit, static_argnames=["maxiter", "tol"])
+def optax_opt(initial_guess, x, y, maxiter, tol):
+    import optax
 
-    Returns:
-        tuple[tensor_like, float]: A tuple containing QSP angles and the converged cost function value at QSP angles
-    """
-    parity = degree % 2
+    opt = optax.lbfgs()
+    init_carry = (initial_guess, opt.init(initial_guess))
+    lambda_obj_function = lambda phi: obj_function(phi, x=x, y=y)
+    val_and_grad = optax.value_and_grad_from_state(lambda_obj_function)
 
-    # pylint: disable=import-outside-toplevel
-    try:
-        from jax import jacobian
+    def optimizer_iter_update(carry):
+        x, state = carry
+        val, g = val_and_grad(x, state=state)
+        updates, state = opt.update(g, state, x, value=val, grad=g, value_fn=lambda_obj_function)
+        x = optax.apply_updates(x, updates)
+        return (x, state)
 
-        interface = "jax"
+    def while_loop_cond(params):
+        _, state = params
+        num_iter = optax.tree.get(state, "count")
+        cost_val = optax.tree.get(state, "value")
+        return (num_iter == 0) | ((num_iter < maxiter) & (cost_val > tol))
 
-    except ModuleNotFoundError:
-        from autograd import jacobian
+    carry = lax.while_loop(while_loop_cond, optimizer_iter_update, init_carry)
+    return carry[0]
 
-    grid_points = _grid_pts(degree, interface=interface)
-
+def _qsp_optimization(
+    degree: int, coeffs_target_func, maxiter=100, tol=1e-30
+):
+    """Algorithm 1 in https://arxiv.org/pdf/2002.11649 produces the angle parameters by minimizing the distance between the target and qsp polynomail over the grid"""
+    
+    config.update("jax_enable_x64", True)
+    grid_points = _grid_pts(degree, 'jax')
     initial_guess = [np.pi / 4] + [0.0] * (degree - 1) + [np.pi / 4]
-    initial_guess = math.array(initial_guess, like=interface)
+    
+    initial_guess = jnp.array(initial_guess)
+    targets = vmap(_poly_func, in_axes=(None, 0))(coeffs_target_func, grid_points)
 
-    targets = [_poly_func(coeffs=coeffs_target_func, x=x, parity=parity) for x in grid_points]
-    targets = math.array(targets, like=interface)
+    opt_params = optax_opt(initial_guess, grid_points, targets, maxiter, tol)
+    cost_fun = obj_function(opt_params, grid_points, targets)
 
-    def obj_function(phi):
-        # Equation (23) in https://arxiv.org/pdf/2002.11649
+    return opt_params, cost_fun
 
-        # pylint: disable=import-outside-toplevel
-        try:
-            from jax import jit, vmap
 
-            qsp_iterates = jit(_qsp_iterate_broadcast, static_argnames=["interface"])
-
-            obj_func = (
-                vmap(qsp_iterates, in_axes=(None, 0, None))(phi, grid_points, interface) - targets
-            )
-        except ModuleNotFoundError:
-            obj_func = (
-                math.vectorize(_qsp_iterate_broadcast, excluded=(0, 2))(phi, grid_points, interface)
-                - targets
-            )
-
-        obj_func = math.dot(obj_func, obj_func)
-
-        return 1 / len(grid_points) * obj_func
+def _compute_qsp_angles_iteratively(
+    poly,
+):
+    try:
+        import jax 
+    except ModuleNotFoundError:
+        raise ModuleNotFoundError(f"JAX is required but not installed")
 
     try:
-        from jax import jit
-
-        obj_function = jit(obj_function)
+        import optax 
     except ModuleNotFoundError:
-        pass
+        raise ModuleNotFoundError(f"Optax is required but not installed")
 
-    results = scipy.optimize.minimize(
-        fun=obj_function,
-        x0=initial_guess,
-        method="L-BFGS-B",  # More efficient than Newton method
-        jac=jacobian(obj_function),
-        tol=1e-15,
-    )
-    phis = results.x
-    cost_func = results.fun
-
-    return phis, cost_func
-
-
-def _compute_qsp_angles_iteratively(poly):
-    """Calculates the angles given a polynomial in canonical base
-
-    Args:
-        poly (tensor_like): coefficients of the polynomial ordered from lowest to highest power
-    """
+    
     poly_cheb = chebyshev.poly2cheb(poly)
     degree = len(poly_cheb) - 1
 
-    coeffs_odd = poly_cheb[1::2]
-    coeffs_even = poly_cheb[0::2]
+    # Separate the odd and even parts
+    # Replacing the odd/even items by 0 for odd/even parts of the polynomial allows to keep the same array shape
+    # Therefore we avoid second jit-compilation that was triggered if we were to
+    # extract the odd/even coeff arrays separately!
+    coeffs_odd = jax.numpy.copy(poly_cheb)
+    coeffs_odd = coeffs_odd.at[0::2].set(0.0)
+
+    coeffs_even = jax.numpy.copy(poly_cheb)
+    coeffs_even = coeffs_even.at[1::2].set(0.0)
 
     if np.allclose(coeffs_odd, np.zeros_like(coeffs_odd)):
         coeffs_target_func = math.array(coeffs_even)
+        degree_even = degree - degree % 2
+        degree = degree_even
     else:
         coeffs_target_func = math.array(coeffs_odd)
+        degree_odd = degree + (degree % 2 - 1)
+        degree = degree_odd
 
     angles, *_ = _qsp_optimization(degree=degree, coeffs_target_func=coeffs_target_func)
-
     return angles
-
 
 def _gqsp_u3_gate(theta, phi, lambd):
     r"""
