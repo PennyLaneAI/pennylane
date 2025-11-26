@@ -143,6 +143,10 @@ class PauliHamiltonian:
     ... )
     >>> pauli_ham
     PauliHamiltonian(num_qubits=40, num_pauli_words=100, max_weight=2, one_norm=14.5)
+
+    The Hamiltonian can be used as input for other subroutines, like 
+    :class:`~.estimator.templates.trotter.TrotterPauli`:
+
     >>> num_steps, order = (10, 2)
     >>> res = qre.estimate(qre.TrotterPauli(pauli_ham, num_steps, order))
     >>> print(res)
@@ -168,7 +172,7 @@ class PauliHamiltonian:
 
         Firstly, when we know fairly little about the explicit form of the Hamiltonian, we can express
         it by specifyng the number of qubits it acts upon, the total number of terms in the Hamiltonian
-        and the maximum weight of a term overall terms in the Hamiltonian.
+        and the maximum weight of a term in the Hamiltonian.
 
         >>> import pennylane.estimator as qre
         >>> pauli_ham = qre.PauliHamiltonian(
@@ -197,7 +201,7 @@ class PauliHamiltonian:
         >>> pauli_ham.pauli_dist
         {'X': 40, 'XX': 30, 'YY': 30}
 
-        Finally, if we also know how to group the terms in the commuting groups of operators, we can
+        Finally, if we also know how to separate the terms into commuting groups of operators, we can
         construct the Hamiltonian by specifying these groups of terms. This input will take precedence
         over the other two methods. Meaning that the attributes
         ``(num_pauli_words, max_weight, pauli_dist)`` will all be computed from the ``commuting_groups``
