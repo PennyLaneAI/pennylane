@@ -317,6 +317,8 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Updated `pyproject.toml` with project dependencies to replace the requirements files. Updated workflows to use installations from `pyproject.toml`. [(8702)](https://github.com/PennyLaneAI/pennylane/pull/8702)
+
 * Bump `autoray` package version to `0.8.2`.
   [(#8674)](https://github.com/PennyLaneAI/pennylane/pull/8674)
   
