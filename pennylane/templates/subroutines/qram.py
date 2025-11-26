@@ -34,7 +34,7 @@ from pennylane.decomposition import (
     resource_rep,
 )
 from pennylane.operation import Operation
-from pennylane.ops import CSWAP, SWAP, Hadamard, PauliZ, ctrl
+from pennylane.ops import CSWAP, SWAP, Hadamard, PauliZ, adjoint, ctrl
 from pennylane.wires import Wires, WiresLike
 
 # pylint: disable=consider-using-generator
@@ -93,18 +93,11 @@ def _node_index(level: int, prefix_value: int) -> int:
 class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
     r"""Bucket-brigade QRAM with **explicit bus routing** using 3 qubits per node.
 
-    At a high level, this operator can encode a superposition of bitstrings associated with indices:
-
-    .. math::
-        \text{QRAM} \sum_{i} |i\rangle |0\rangle = \sum_{i} |i\rangle |b_i\rangle,
-
-    where :math:`b_i` is the bitstring associated with index :math:`i`.
-
     Bucket-brigade QRAM achieves an :math:`O(\log N)` complexity instead of the typical :math:`N`,
-    where :math:`N` is the number of bitstrings. It does this by reducing the number of nodes that
-    need to be visited in a tree, which converts a binary address into a unary address at the
-    leaves. In the end, the target wires' state corresponds to the data at the desired address. For
-    more theoretical details on how this algorithm works, please consult
+    where :math:`N` is the number of memory cells addressed. It does this by reducing the number of
+    nodes that need to be visited in a tree which converts our binary address into a unary address
+    at the leaves. In the end, the target wires' state corresponds to the data at the desired
+    address. For more theoretical details on how this algorithm works, please consult
     `arXiv:0708.1879 <https://arxiv.org/pdf/0708.1879>`__.
 
     Args:
@@ -130,13 +123,6 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
             length, the ``target_wires`` are of the size of the ``work_wires`` register is not exactly
             equal to :math:`1 + 3 ((1 << \texttt{len(qram_wires)}) - 1)`.
 
-    .. seealso::
-        :class:`~.QROM`, :class:`~.QROMStatePreparation`
-
-    .. note::
-        QRAM and QROM, though similar, have different applications and purposes. QRAM is intended
-        for read-and-write capabilities, where the stored data can be loaded and changed. QROM is
-        designed to only load stored data into a quantum register.
 
     **Example:**
 
@@ -144,6 +130,7 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
     length 3):
 
     .. code-block:: python
+
 
         bitstrings = ["010", "111", "110", "000"]
         bitstring_size = 3
@@ -202,7 +189,9 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
 
     @property
     def resource_params(self) -> dict:
-        return {"bitstrings": self.hyperparameters["bitstrings"]}
+        return {
+            "bitstrings": self.hyperparameters["bitstrings"],
+        }
 
     def __init__(
         self,
@@ -312,23 +301,6 @@ def _mark_routers_via_bus(wire_manager, n_k):
             for p in range(1 << k):
                 # change to  in_wire later
                 parent = _node_index(k - 1, p >> 1)
-                origin = wire_manager.portL_wires[parent] if p % 2 == 0 else wire_manager.portR_wires[parent]
-                target = wire_manager.router(k, p)
-                SWAP(wires=[origin, target])
-
-
-def _unmark_routers_via_bus(wire_manager, n_k):
-    """
-    Operations used to write low-order address bits into router directions **layer-by-layer** via the bus, reversed.
-    """
-    for k in range(n_k - 1, -1, -1):
-        # 1) level-k node on the active path
-        if k == 0:
-            SWAP(wires=[wire_manager.bus_wire[0], wire_manager.router(0, 0)])
-        else:
-            for p in range(1 << k - 1, -1, -1):
-                # change to  in_wire later
-                parent = _node_index(k - 1, p >> 1)
                 if p % 2 == 0:
                     origin = wire_manager.portL_wires[parent]
                     target = wire_manager.router(k, p)
@@ -337,12 +309,6 @@ def _unmark_routers_via_bus(wire_manager, n_k):
                     origin = wire_manager.portR_wires[parent]
                     target = wire_manager.router(k, p)
                     SWAP(wires=[origin, target])
-        # 2) route up k levels
-        _route_bus_up_first_k_levels(wire_manager, k)
-        # 3) reverse load
-        origin = wire_manager.qram_wires[k]
-        target = wire_manager.bus_wire[0]
-        SWAP(wires=[origin, target])
 
 
 def _route_bus_down_first_k_levels(wire_manager, k_levels):
@@ -357,20 +323,6 @@ def _route_bus_down_first_k_levels(wire_manager, k_levels):
             CSWAP(wires=[d, in_w, R])
             # dir==0 ⇒ SWAP(in, L)
             ctrl(SWAP(wires=[in_w, L]), control=[d], control_values=[0])
-
-
-def _route_bus_up_first_k_levels(wire_manager, k_levels):
-    """Route the bus up the first `k_levels` of the tree using dir-controlled CSWAPs."""
-    for ell in range(k_levels - 1, -1, -1):
-        for p in range((1 << ell) - 1, -1, -1):
-            in_w = wire_manager.node_in_wire(ell, p)
-            L = wire_manager.portL(ell, p)
-            R = wire_manager.portR(ell, p)
-            d = wire_manager.router(ell, p)
-            # dir==0 ⇒ SWAP(in, L)
-            ctrl(SWAP(wires=[in_w, L]), control=[d], control_values=[0])
-            # dir==1 ⇒ SWAP(in, R)
-            CSWAP(wires=[d, in_w, R])
 
 
 def _leaf_ops_for_bit(wire_manager, bitstrings, n_k, j):
@@ -404,11 +356,11 @@ def _bucket_brigade_qram_decomposition(
         SWAP(wires=[tw, bus_wire[0]])
         _route_bus_down_first_k_levels(wire_manager, len(qram_wires))
         _leaf_ops_for_bit(wire_manager, bitstrings, n_k, j)
-        _route_bus_up_first_k_levels(wire_manager, len(qram_wires))
+        adjoint(_route_bus_down_first_k_levels, lazy=False)(wire_manager, len(qram_wires))
         SWAP(wires=[tw, bus_wire[0]])
         Hadamard(wires=[tw])
     # 3) address unloading
-    _unmark_routers_via_bus(wire_manager, n_k)
+    adjoint(_mark_routers_via_bus, lazy=False)(wire_manager, n_k)
 
 
 add_decomps(BBQRAM, _bucket_brigade_qram_decomposition)
