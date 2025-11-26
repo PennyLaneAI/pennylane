@@ -9,6 +9,13 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* The ``custom_decomps`` keyword argument to ``qml.device`` has been deprecated and will be removed
+  in 0.45. Instead, with ``qml.decomposition.enable_graph()``, new decomposition rules can be defined as
+  quantum functions with registered resources. See :mod:`pennylane.decomposition` for more details.
+
+  - Deprecated in v0.44
+  - Will be removed in v0.45
+
 * The :attr:`pennylane.operation.Operator.is_hermitian` property has been deprecated and renamed
   to :attr:`pennylane.operation.Operator.is_verified_hermitian` as it better reflects the functionality of this property.
   The deprecated access through ``is_hermitian`` will be removed in PennyLane v0.45.
