@@ -234,7 +234,9 @@ def test_bb_qram_decomposition_new(
 
 
 @qnode(dev)
-def select_only_quantum(bitstrings, qram_wires, target_wires, select_wires, select_value, address):
+def select_only_quantum(
+    bitstrings, qram_wires, target_wires, select_wires, select_value, address
+):  # pylint: disable=too-many-arguments
     BasisEmbedding(address, wires=qram_wires)
 
     SelectOnlyQRAM(
@@ -406,7 +408,7 @@ def test_select_only_quantum(
         ),
     ],
 )
-def test_raises(params, error, match):
+def test_select_only_raises(params, error, match):
     with pytest.raises(error, match=re.escape(match)):
         SelectOnlyQRAM(*params)
 
@@ -426,6 +428,18 @@ def test_raises(params, error, match):
                 "111",
                 "110",
                 "000",
+                "010",
+                "111",
+                "110",
+                "000",
+                "010",
+                "111",
+                "110",
+                "000",
+                "010",
+                "111",
+                "110",
+                "000",
             ],
             [0, 1],
             [2, 3, 4],
@@ -434,6 +448,18 @@ def test_raises(params, error, match):
         ),
         (
             [
+                "010",
+                "111",
+                "110",
+                "000",
+                "010",
+                "111",
+                "110",
+                "000",
+                "010",
+                "111",
+                "110",
+                "000",
                 "010",
                 "111",
                 "110",
@@ -465,6 +491,8 @@ def test_select_decomposition_new(
         bitstrings,
         qram_wires,
         target_wires,
+        select_wires,
+        select_value,
     )
 
     for rule in list_decomps(SelectOnlyQRAM):
