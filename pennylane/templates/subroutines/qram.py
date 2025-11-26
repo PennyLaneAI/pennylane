@@ -218,16 +218,16 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
         if m != len(target_wires):
             raise ValueError("len(target_wires) must equal bitstring length.")
 
+        expected_nodes = (1 << n_k) - 1 if n_k > 0 else 0
+
+        if len(work_wires) != 1 + 3 * expected_nodes:
+            raise ValueError(f"work_wires must have length {1 + 3 * expected_nodes}.")
+
         bus_wire = Wires(work_wires[0])
         divider = len(work_wires[1:]) // 3
         dir_wires = Wires(work_wires[1 : 1 + divider])
         portL_wires = Wires(work_wires[1 + divider : 1 + divider * 2])
         portR_wires = Wires(work_wires[1 + divider * 2 : 1 + divider * 3])
-
-        expected_nodes = (1 << n_k) - 1 if n_k > 0 else 0
-
-        if len(work_wires) != 1 + 3 * expected_nodes:
-            raise ValueError(f"work_wires must have length {1 + 3 * expected_nodes}.")
 
         all_wires = (
             list(qram_wires)
@@ -259,17 +259,15 @@ def _bucket_brigade_qram_resources(bitstrings):
     num_qram_wires = int(math.log2(len(bitstrings)))
     n_k = num_qram_wires
     resources = defaultdict(int)
-    resources[resource_rep(SWAP)] = (
-        sum([1 if k == 0 else (1 << k) for k in range(n_k)]) + n_k
-    ) * 2 + num_target_wires * 2
-    resources[resource_rep(CSWAP)] = sum(
-        [(1 << ell) for ell in range(num_qram_wires)]
-    ) * num_target_wires * 2 + (sum([(1 << ell) for k in range(n_k) for ell in range(k)]) * 2)
+    resources[resource_rep(SWAP)] = ((1 << n_k) - 1 + n_k) * 2 + num_target_wires * 2
+    resources[resource_rep(CSWAP)] = ((1 << num_qram_wires) - 1) * num_target_wires * 2 + (
+        sum([(1 << ell) for k in range(n_k) for ell in range(k)]) * 2
+    )
     resources[
         controlled_resource_rep(
             base_class=SWAP, base_params={}, num_control_wires=1, num_zero_control_values=1
         )
-    ] = sum([(1 << ell) for ell in range(num_qram_wires)]) * num_target_wires * 2 + (
+    ] = ((1 << num_qram_wires) - 1) * num_target_wires * 2 + (
         sum([(1 << ell) for k in range(n_k) for ell in range(k)]) * 2
     )
     resources[resource_rep(Hadamard)] += num_target_wires * 2
@@ -301,14 +299,13 @@ def _mark_routers_via_bus(wire_manager, n_k):
             for p in range(1 << k):
                 # change to  in_wire later
                 parent = _node_index(k - 1, p >> 1)
-                if p % 2 == 0:
-                    origin = wire_manager.portL_wires[parent]
-                    target = wire_manager.router(k, p)
-                    SWAP(wires=[origin, target])
-                else:
-                    origin = wire_manager.portR_wires[parent]
-                    target = wire_manager.router(k, p)
-                    SWAP(wires=[origin, target])
+                origin = (
+                    wire_manager.portL_wires[parent]
+                    if p % 2 == 0
+                    else wire_manager.portR_wires[parent]
+                )
+                target = wire_manager.router(k, p)
+                SWAP(wires=[origin, target])
 
 
 def _route_bus_down_first_k_levels(wire_manager, k_levels):
