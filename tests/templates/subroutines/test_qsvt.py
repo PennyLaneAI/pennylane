@@ -963,6 +963,7 @@ class TestRootFindingSolver:
 
 
 class TestIterativeSolver:
+    @pytest.mark.jax
     @pytest.mark.parametrize(
         "polynomial_coeffs_in_cheby_basis",
         [
@@ -974,15 +975,17 @@ class TestIterativeSolver:
     def test_qsp_on_poly_with_parity(self, polynomial_coeffs_in_cheby_basis):
         """Test that _qsp_optimization returns correct angles"""
         degree = len(polynomial_coeffs_in_cheby_basis) - 1
-        parity = degree % 2
-        if parity:
-            target_polynomial_coeffs = polynomial_coeffs_in_cheby_basis[1::2]
-        else:
-            target_polynomial_coeffs = polynomial_coeffs_in_cheby_basis[0::2]
+        # parity = degree % 2
+        # if parity:
+        #     target_polynomial_coeffs = polynomial_coeffs_in_cheby_basis[1::2]
+        # else:
+        #     target_polynomial_coeffs = polynomial_coeffs_in_cheby_basis[0::2]
+        target_polynomial_coeffs = polynomial_coeffs_in_cheby_basis
         phis, cost_func = _qsp_optimization(degree, target_polynomial_coeffs)
 
-        rng = np.random.default_rng(123)
-        x_point = rng.uniform(size=1, low=-1.0, high=1.0)
+        import jax 
+        key = jax.random.key(123)
+        x_point = jax.random.uniform(key=key, shape=(1,), minval=-1, maxval=1)
 
         x_point = x_point.item()
         # Theorem 4: |\alpha_i-\beta_i|\leq 2\sqrt(cost_func) https://arxiv.org/pdf/2002.11649
@@ -991,27 +994,28 @@ class TestIterativeSolver:
             np.sum(
                 np.array(
                     [
-                        2 * np.sqrt(cost_func) * abs(_cheby_pol(degree=2 * i, x=x_point))
+                        2 * np.sqrt(cost_func) * abs(_cheby_pol(degree=i, x=x_point))
                         for i in range(len(target_polynomial_coeffs))
                     ]
                 )
             )
-            if not parity
-            else np.sum(
-                np.array(
-                    [
-                        2 * np.sqrt(cost_func) * abs(_cheby_pol(degree=2 * i + 1, x=x_point))
-                        for i in range(len(target_polynomial_coeffs))
-                    ]
-                )
-            )
+            # if not parity
+            # else np.sum(
+            #     np.array(
+            #         [
+            #             2 * np.sqrt(cost_func) * abs(_cheby_pol(degree=2 * i + 1, x=x_point))
+            #             for i in range(len(target_polynomial_coeffs))
+            #         ]
+            #     )
+            # )
         )
 
         assert qml.math.isclose(
-            _qsp_iterate_broadcast(phis, x_point, None),
-            _poly_func(coeffs=target_polynomial_coeffs, parity=parity, x=x_point),
+            _qsp_iterate_broadcast(phis, x_point, 'jax'),
+            _poly_func(coeffs=target_polynomial_coeffs, x=x_point),
             atol=tolerance,
         )
+        print(_qsp_iterate_broadcast(phis, x_point, 'jax')-_poly_func(coeffs=target_polynomial_coeffs, x=x_point))
 
     @pytest.mark.parametrize(
         "x, degree",
@@ -1027,17 +1031,19 @@ class TestIterativeSolver:
         coeffs = [0.0] * (degree) + [1.0]
         assert np.isclose(_cheby_pol(x, degree), Chebyshev(coeffs)(x))
 
+    @pytest.mark.jax
     @pytest.mark.parametrize(
-        "coeffs, parity, x",
+        "coeffs, x",
         [
-            (generate_polynomial_coeffs(100, 0), 0, 0.1),
-            (generate_polynomial_coeffs(7, 1), 1, 0.2),
-            (generate_polynomial_coeffs(12, 0), 0, 0.3),
+            (generate_polynomial_coeffs(100, 0),  0.1),
+            (generate_polynomial_coeffs(7, 1),  0.2),
+            (generate_polynomial_coeffs(12, 0), 0.3),
+            (generate_polynomial_coeffs(12, None), 0.4),
         ],
     )
-    def test_poly_func(self, coeffs, parity, x):
+    def test_poly_func(self, coeffs, x):
         """Test internal function _poly_func"""
-        val = _poly_func(coeffs=coeffs[parity::2], parity=parity, x=x)
+        val = _poly_func(coeffs=coeffs, x=x)
         ref = Chebyshev(coeffs)(x)
         assert np.isclose(val, ref)
 
