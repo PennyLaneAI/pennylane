@@ -28,8 +28,8 @@ import jax
 from catalyst.passes.xdsl_plugin import getXDSLPluginAbsolutePath
 
 import pennylane as qml
-from pennylane.compiler.python_compiler.inspection import draw
 from pennylane.compiler.python_compiler.transforms import iterative_cancel_inverses_pass
+from pennylane.compiler.python_compiler.visualization import draw
 
 # pylint: disable=implicit-str-concat, unnecessary-lambda
 

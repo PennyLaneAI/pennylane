@@ -19,19 +19,34 @@ import warnings
 from functools import wraps
 from typing import TYPE_CHECKING
 
+from catalyst import qjit
+from catalyst.passes.xdsl_plugin import getXDSLPluginAbsolutePath
+
 from pennylane.tape import QuantumScript
 
 from ..compiler import Compiler
 from .collector import QMLCollector
-from .xdsl_conversion import get_mlir_module
 
 if TYPE_CHECKING:
+    from xdsl.dialects.builtin import ModuleOp
+
     from pennylane.typing import Callable
     from pennylane.workflow.qnode import QNode
 
 # TODO: This caching mechanism should be improved,
 # because now it relies on a mutable global state
 _cache_store: dict[Callable, dict[int, tuple[str, str]]] = {}
+
+
+def _get_mlir_module(qnode: QNode, args, kwargs) -> ModuleOp:
+    """Ensure the QNode is compiled and return its MLIR module."""
+    if hasattr(qnode, "mlir_module") and qnode.mlir_module is not None:
+        return qnode.mlir_module
+
+    func = getattr(qnode, "user_function", qnode)
+    jitted_qnode = qjit(pass_plugins=[getXDSLPluginAbsolutePath()])(func)
+    jitted_qnode.jit_compile(args, **kwargs)
+    return jitted_qnode.mlir_module
 
 
 def draw(qnode: QNode, *, level: None | int = None) -> Callable:
@@ -75,10 +90,10 @@ def draw(qnode: QNode, *, level: None | int = None) -> Callable:
             warnings.warn(
                 "The `draw` function does not yet support dynamic arguments.\n"
                 "To visualize the circuit with dynamic parameters or wires, please use the\n"
-                "`compiler.python_compiler.inspection.generate_mlir_graph` function instead.",
+                "`compiler.python_compiler.visualization.generate_mlir_graph` function instead.",
                 UserWarning,
             )
-        mlir_module = get_mlir_module(qnode, args, kwargs)
+        mlir_module = _get_mlir_module(qnode, args, kwargs)
         Compiler.run(mlir_module, callback=_draw_callback)
 
         if not cache:

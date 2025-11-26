@@ -11,7 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""This file contains utility functions for parsing PennyLane objects from xDSL."""
+"""This file contains the implementation of the QMLCollector class,
+which collects and maps PennyLane operations and measurements from xDSL."""
 
 from __future__ import annotations
 
@@ -19,10 +20,7 @@ import inspect
 from collections.abc import Callable
 from typing import TYPE_CHECKING
 
-from catalyst.jit import QJIT, qjit
-from catalyst.passes.xdsl_plugin import getXDSLPluginAbsolutePath
 from xdsl.dialects.builtin import DenseIntOrFPElementsAttr, IntegerAttr, IntegerType
-from xdsl.dialects.scf import ForOp
 from xdsl.dialects.tensor import ExtractOp as TensorExtractOp
 from xdsl.ir import SSAValue
 
@@ -30,8 +28,7 @@ from pennylane import ops
 from pennylane.compiler.python_compiler.dialects.quantum import (
     CustomOp,
 )
-from pennylane.ftqc.operations import RotXZX
-from pennylane.measurements import counts, expval, probs, sample, state, var
+from pennylane.measurements import expval, probs, sample, state, var
 from pennylane.operation import Operator
 from pennylane.ops import MidMeasure
 from pennylane.ops import __all__ as ops_all
@@ -49,10 +46,7 @@ from ..dialects.quantum import (
 )
 
 if TYPE_CHECKING:
-    from xdsl.dialects.builtin import ModuleOp
-
     from pennylane.measurements import MeasurementProcess
-    from pennylane.workflow.qnode import QNode
 
 has_jax = True
 try:
@@ -61,34 +55,13 @@ except ImportError:
     has_jax = False
 
 
-def get_mlir_module(qnode: QNode | QJIT, args, kwargs) -> ModuleOp:
-    """Ensure the QNode is compiled and return its MLIR module."""
-    if hasattr(qnode, "mlir_module") and qnode.mlir_module is not None:
-        return qnode.mlir_module
-
-    if isinstance(qnode, QJIT):
-        compile_options = qnode.compile_options
-        compile_options.autograph = False  # Autograph has already been applied for `user_function`
-        compile_options.pass_plugins.add(getXDSLPluginAbsolutePath())
-
-        jitted_qnode = QJIT(qnode.user_function, compile_options)
-    else:
-        jitted_qnode = qjit(pass_plugins=[getXDSLPluginAbsolutePath()])(qnode)
-
-    jitted_qnode.jit_compile(args, **kwargs)
-    return jitted_qnode.mlir_module
-
-
 from_str_to_PL_gate = {
     name: getattr(ops, name)
     for name in ops_all
     if inspect.isclass(getattr(ops, name, None)) and issubclass(getattr(ops, name), Operator)
 }
 
-from_str_to_PL_gate["RotXZX"] = RotXZX  # Include FTQC gates, not in primary module
-
 from_str_to_PL_measurement = {
-    "quantum.counts": counts,
     "quantum.state": state,
     "quantum.probs": probs,
     "quantum.sample": sample,
@@ -168,9 +141,6 @@ def resolve_constant_params(ssa: SSAValue) -> float | int:
     if isinstance(op, TensorExtractOp):
         return resolve_constant_params(op.tensor)
 
-    if not hasattr(op, "name"):
-        raise NotImplementedError(f"Cannot resolve parameters for operation: {op}")
-
     match op.name:
 
         case "arith.addf":
@@ -178,9 +148,6 @@ def resolve_constant_params(ssa: SSAValue) -> float | int:
 
         case "arith.constant":
             return op.value.value.data  # Catalyst
-
-        case "arith.index_cast":
-            return resolve_constant_params(op.input)
 
         case "stablehlo.constant":
             return _extract_dense_constant_value(op)
@@ -199,24 +166,6 @@ def resolve_constant_params(ssa: SSAValue) -> float | int:
 
         case _:
             raise NotImplementedError(f"Cannot resolve parameters for operation: {op}")
-
-
-def count_static_loop_iterations(for_op: ForOp) -> int:
-    """
-    Calculates static loop iterations for a given ForOp.
-
-    Requires that the loop bounds and step are constant values.
-    """
-
-    lower_bound = resolve_constant_params(for_op.lb)
-    upper_bound = resolve_constant_params(for_op.ub)
-    step = resolve_constant_params(for_op.step)
-
-    if upper_bound <= lower_bound:
-        return 0
-
-    num_elements = upper_bound - lower_bound
-    return (num_elements + step - 1) // step
 
 
 def dispatch_wires_extract(op: ExtractOpPL):
@@ -344,49 +293,6 @@ def xdsl_to_qml_op(op) -> Operator:
     return _apply_adjoint_and_ctrls(gate, op)
 
 
-def xdsl_to_qml_op_type(op, adjoint_mode: bool) -> str:
-    """Convert an xDSL operation into a string representing a PennyLane class.
-
-    Args:
-        op: The xDSL operation to convert.
-
-    Returns:
-        A string representing the PennyLane operator.
-    """
-
-    name_map = {
-        "quantum.gphase": "GlobalPhase",
-        "quantum.multirz": "MultiRZ",
-        "quantum.set_basis_state": "BasisState",
-        "quantum.set_state": "StatePrep",
-        "quantum.unitary": "QubitUnitary",
-    }
-
-    if op.name == "quantum.custom":
-        gate_cls = resolve_gate(op.properties.get("gate_name").data)
-        gate_name = gate_cls.__name__
-    elif op.name in name_map:
-        gate_name = name_map[op.name]
-    else:
-        raise NotImplementedError(f"Unsupported gate: {op.name}")
-
-    is_adjoint = op.properties.get("adjoint") is not None
-    if adjoint_mode:
-        # Adjoint-mode means all non-adjoint gates are treated as adjoint, and vice versa
-        is_adjoint = not is_adjoint
-
-    if is_adjoint and not gate_name in ops.qubit.attributes.self_inverses:
-        gate_name = f"Adjoint({gate_name})"
-
-    if hasattr(op, "in_ctrl_qubits"):
-        n_ctrls = len(op.in_ctrl_qubits)
-        if n_ctrls == 1:
-            gate_name = f"C({gate_name})"
-        elif n_ctrls > 1:
-            gate_name = f"{n_ctrls}C({gate_name})"
-    return gate_name
-
-
 def xdsl_to_qml_measurement(op, *args, **kwargs) -> MeasurementProcess | Operator:
     """Convert any xDSL measurement/observable operation to a PennyLane object.
 
@@ -425,46 +331,3 @@ def xdsl_to_qml_measurement(op, *args, **kwargs) -> MeasurementProcess | Operato
 
         case _:
             raise NotImplementedError(f"Unsupported measurement/observable: {op.name}")
-
-
-def xdsl_to_qml_measurement_type(op, obs_op=None) -> str:
-    """Convert any xDSL measurement/observable operation into a string representing a PennyLane class.
-
-    Args:
-        op: The xDSL measurement/observable operation to convert.
-
-    Returns:
-        A string representing the PennyLane measurement.
-    """
-
-    if op.name == "quantum.measure":
-        gate_name = "MidMeasure"
-
-    elif op.name == "quantum.compbasis":
-        # Defines a pseudo-observable to represent measurements in the computational basis
-        # Used within e.g. `probs()`
-        gate_name = f"{len(op.qubits)} wires"
-
-    elif op.name == "quantum.hamiltonian":
-        ops_list = [xdsl_to_qml_measurement_type(term.owner) for term in op.terms]
-        gate_name = f"Hamiltonian({', '.join(ops_list)})"
-
-    elif op.name == "quantum.tensor":
-        ops_list = [xdsl_to_qml_measurement_type(operand.owner) for operand in op.operands]
-        gate_name = " @ ".join(ops_list)
-
-    elif op.name == "quantum.namedobs":
-        gate_cls = resolve_gate(op.type.data.value)
-        gate_name = gate_cls.__name__
-
-    elif op.name in from_str_to_PL_measurement:
-        gate_cls = resolve_measurement(op.name)
-        gate_name = gate_cls.__name__
-
-    else:
-        raise NotImplementedError(f"Unsupported measurement/observable: {op.name}")
-
-    if obs_op != None:
-        gate_name = f"{gate_name}({obs_op})"
-
-    return gate_name

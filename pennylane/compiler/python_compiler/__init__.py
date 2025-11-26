@@ -16,7 +16,7 @@
 from .compiler import Compiler
 from .parser import QuantumParser
 from .pass_api import compiler_transform
-from .inspection import QMLCollector, mlir_specs
+from .visualization import QMLCollector
 
 
 __all__ = [
@@ -24,5 +24,4 @@ __all__ = [
     "compiler_transform",
     "QuantumParser",
     "QMLCollector",
-    "mlir_specs",
 ]
