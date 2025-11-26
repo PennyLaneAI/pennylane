@@ -202,9 +202,7 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
 
     @property
     def resource_params(self) -> dict:
-        return {
-            "bitstrings": self.hyperparameters["bitstrings"],
-        }
+        return {"bitstrings": self.hyperparameters["bitstrings"]}
 
     def __init__(
         self,
