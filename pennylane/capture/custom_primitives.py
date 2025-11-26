@@ -47,29 +47,11 @@ def _make_hashable(obj: Any) -> Any:
     """
     if isinstance(obj, slice):
         return (obj.start, obj.stop, obj.step)
-
-    # First, check if the object is already hashable
-    try:
-        hash(obj)
-        return obj
-    except TypeError:
-        pass
-
-    # Import here to avoid circular dependency and only when needed
-    # pylint: disable=import-outside-toplevel
-    import jax
-    import numpy as np
-
-    if isinstance(obj, jax.core.Tracer):
-        raise ValueError("Tracers should never occur in primitive metadata.")
-    if isinstance(obj, np.ndarray) or (hasattr(jax, "Array") and isinstance(obj, jax.Array)):
-        raise ValueError("Arrays should never be in primitive metadata.")
-    if isinstance(obj, list):
+    elif isinstance(obj, list):
         return tuple(_make_hashable(item) for item in obj)
-    if isinstance(obj, dict):
-        # Python 3.7+ maintains dict insertion order, so no need to sort
-        # For the same primitive constructed the same way, keys are always in the same order
+    elif isinstance(obj, dict):
         return tuple((k, _make_hashable(v)) for k, v in obj.items())
+
     return obj
 
 
