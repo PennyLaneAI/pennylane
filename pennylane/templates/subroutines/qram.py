@@ -312,14 +312,9 @@ def _mark_routers_via_bus_qfunc(wire_manager, n_k):
             for p in range(1 << k):
                 # change to  in_wire later
                 parent = _node_index(k - 1, p >> 1)
-                if p % 2 == 0:
-                    origin = wire_manager.portL_wires[parent]
-                    target = wire_manager.router(k, p)
-                    SWAP(wires=[origin, target])
-                else:
-                    origin = wire_manager.portR_wires[parent]
-                    target = wire_manager.router(k, p)
-                    SWAP(wires=[origin, target])
+                origin = wire_manager.portL_wires[parent] if p % 2 == 0 else wire_manager.portR_wires[parent]
+                target = wire_manager.router(k, p)
+                SWAP(wires=[origin, target])
 
 
 def _unmark_routers_via_bus_qfunc(wire_manager, n_k):
