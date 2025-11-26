@@ -234,13 +234,15 @@ def test_bb_qram_decomposition_new(
 
 
 @qnode(dev)
-def select_only_quantum(bitstrings, qram_wires, target_wires, address):
+def select_only_quantum(bitstrings, qram_wires, target_wires, select_wires, select_value, address):
     BasisEmbedding(address, wires=qram_wires)
 
     SelectOnlyQRAM(
         bitstrings,
         qram_wires=qram_wires,
         target_wires=target_wires,
+        select_wires=select_wires,
+        select_value=select_value,
     )
     return probs(wires=target_wires)
 
@@ -250,6 +252,8 @@ def select_only_quantum(bitstrings, qram_wires, target_wires, address):
         "bitstrings",
         "qram_wires",
         "target_wires",
+        "select_wires",
+        "select_value",
         "address",
         "probabilities",
     ),
@@ -260,9 +264,23 @@ def select_only_quantum(bitstrings, qram_wires, target_wires, address):
                 "111",
                 "110",
                 "000",
+                "010",
+                "111",
+                "110",
+                "000",
+                "010",
+                "111",
+                "110",
+                "000",
+                "010",
+                "111",
+                "110",
+                "000",
             ],
             [0, 1],
             [2, 3, 4],
+            [5, 6],
+            0,
             3,  # addressed from the left
             [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],  # |000>
         ),
@@ -272,9 +290,23 @@ def select_only_quantum(bitstrings, qram_wires, target_wires, address):
                 "111",
                 "110",
                 "000",
+                "010",
+                "111",
+                "110",
+                "000",
+                "010",
+                "111",
+                "110",
+                "000",
+                "010",
+                "111",
+                "110",
+                "000",
             ],
             [0, 1],
             [2, 3, 4],
+            [5, 6],
+            0,  # Note: if this were set to 1, the test would not pass... due to the select.
             2,
             [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0],  # |110>
         ),
@@ -284,9 +316,23 @@ def select_only_quantum(bitstrings, qram_wires, target_wires, address):
                 "111",
                 "110",
                 "000",
+                "010",
+                "111",
+                "110",
+                "000",
+                "010",
+                "111",
+                "110",
+                "000",
+                "010",
+                "111",
+                "110",
+                "000",
             ],
             [0, 1],
             [2, 3, 4],
+            [5, 6],
+            None,
             1,
             [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0],  # |111>
         ),
@@ -299,6 +345,8 @@ def select_only_quantum(bitstrings, qram_wires, target_wires, address):
             ],
             [0, 1],
             [2, 3, 4],
+            [],
+            None,
             0,
             [0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0],  # |010>
         ),
@@ -308,6 +356,8 @@ def test_select_only_quantum(
     bitstrings,
     qram_wires,
     target_wires,
+    select_wires,
+    select_value,
     address,
     probabilities,
 ):  # pylint: disable=too-many-arguments
@@ -317,6 +367,8 @@ def test_select_only_quantum(
             bitstrings,
             qram_wires,
             target_wires,
+            select_wires,
+            select_value,
             address,
         ),
     )
@@ -326,13 +378,31 @@ def test_select_only_quantum(
     ("params", "error", "match"),
     [
         (
+            (["000", "111"], [0, 1], [2, 3, 4], [5, 6], 2),
+            ValueError,
+            "len(bitstrings) must be 2^(len(select_wires)+len(qram_wires)).",
+        ),
+        (
             (
-                ["000", "111"],
+                ["000", "111", "010", "101"],
                 [0, 1],
                 [2, 3, 4],
+                [],
+                1,
             ),
             ValueError,
-            "len(bitstrings) must be 2^(len(qram_wires)).",
+            "select_value cannot be used when len(select_wires) == 0.",
+        ),
+        (
+            (
+                ["000", "111", "010", "101", "000", "111", "010", "101"],
+                [0, 1],
+                [2, 3, 4],
+                [15],
+                4,
+            ),
+            ValueError,
+            "select_value must be an integer in [0, 1].",
         ),
     ],
 )
@@ -346,6 +416,8 @@ def test_raises(params, error, match):
         "bitstrings",
         "qram_wires",
         "target_wires",
+        "select_wires",
+        "select_value",
     ),
     [
         (
@@ -357,6 +429,8 @@ def test_raises(params, error, match):
             ],
             [0, 1],
             [2, 3, 4],
+            [5, 6],
+            0,
         ),
         (
             [
@@ -367,6 +441,8 @@ def test_raises(params, error, match):
             ],
             [0, 1],
             [2, 3, 4],
+            [5, 6],
+            1,
         ),
         (
             [
@@ -377,13 +453,13 @@ def test_raises(params, error, match):
             ],
             [0, 1],
             [2, 3, 4],
+            [],
+            None,
         ),
     ],
 )
 def test_select_decomposition_new(
-    bitstrings,
-    qram_wires,
-    target_wires,
+    bitstrings, qram_wires, target_wires, select_wires, select_value
 ):  # pylint: disable=too-many-arguments
     op = SelectOnlyQRAM(
         bitstrings,
