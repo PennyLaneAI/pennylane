@@ -540,13 +540,9 @@ def _bind_qnode(qnode, *args, **kwargs):
     abstracted_axes, abstract_shapes = qml.capture.determine_abstracted_axes(flat_args)
 
     # no need for args and kwargs as not resolving
-    config = construct_execution_config(qnode, resolve=False)()  
+    config = construct_execution_config(qnode, resolve=False)()
 
     if abstracted_axes:
-        if kwargs:
-            raise NotImplementedError(
-                "jax does not support dynamic shapes and keyword arguments together."
-            )
         # We unflatten the ``abstracted_axes`` here to be have the same pytree structure
         # as the original dynamic arguments
         struct = jax.tree_util.tree_structure(args)
