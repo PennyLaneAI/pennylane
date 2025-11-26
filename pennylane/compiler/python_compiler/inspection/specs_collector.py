@@ -30,7 +30,6 @@ from pennylane.compiler.python_compiler.dialects.catalyst import CallbackOp
 from pennylane.compiler.python_compiler.dialects.mbqc import GraphStatePrepOp, MeasureInBasisOp
 from pennylane.compiler.python_compiler.dialects.qec import (
     FabricateOp,
-    LayerOp,
     PPMeasurementOp,
     PPRotationOp,
     PrepareStateOp,
@@ -70,8 +69,8 @@ _CUSTOM_DIALECT_NAMES = frozenset(
 # TODO: How to handle `gradient` and `mitigation` dialects
 
 # Ops to skip counting as "classical ops", only relevant if these ops would otherwise be
-# counted as classical ops (i.e. they are not already quantum ops, QECs, etc.)
-_SKIPPED_CLASSICAL_OPS = frozenset(
+# counted as classical ops (i.e. they are not already quantum ops, measurements, etc.)
+_SKIPPED_OPS = frozenset(
     {
         "quantum.compbasis",
         "quantum.dealloc",
@@ -79,22 +78,17 @@ _SKIPPED_CLASSICAL_OPS = frozenset(
         "quantum.device_release",
         "quantum.extract",
         "quantum.finalize",
+        "quantum.hamiltonian",
+        "quantum.hermitian",
         "quantum.init",
         "quantum.insert",
+        "quantum.namedobs",
         "quantum.num_qubits",
+        "quantum.tensor",
         "quantum.yield",
         "qec.yield",
     }
 )
-
-# TODO: Handle these somehow
-_TODO_OPS = [
-    "quantum.adjoint",
-    "quantum.hamiltonian",
-    "quantum.hermitian",
-    "quantum.namedobs",
-    "quantum.tensor",
-]
 
 
 class ResourceType(enum.Enum):
@@ -486,7 +480,7 @@ def _collect_region(
                 handle_metadata(op, resources)
 
             case ResourceType.OTHER:
-                if op.name in _SKIPPED_CLASSICAL_OPS:
+                if op.name in _SKIPPED_OPS:
                     continue
 
                 if op.dialect_name() in _CUSTOM_DIALECT_NAMES:
@@ -522,8 +516,6 @@ def specs_collect(module) -> ResourcesResult:
     func_decl_warning = False
 
     for func_op in module.body.ops:
-        # TODO: May need to determine how many times a function is called for functions other than the main circuit
-
         if isinstance(func_op, CallbackOp):
             # Skip callback ops, which are not part of the quantum circuit itself
             continue
@@ -551,5 +543,4 @@ def specs_collect(module) -> ResourcesResult:
     if entry_func not in func_to_resources:
         raise ValueError("Entry function not found in module.")
 
-    a = _resolve_function_calls(entry_func, func_to_resources)
-    return a
+    return _resolve_function_calls(entry_func, func_to_resources)
