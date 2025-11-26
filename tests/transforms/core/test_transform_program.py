@@ -110,6 +110,7 @@ class TestUtilityHelpers:
         assert out2 == (4.0, 9.0)
 
 
+# pylint: disable=too-many-public-methods
 class TestTransformProgramDunders:
     """Test the dunder methods."""
 

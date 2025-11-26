@@ -221,6 +221,25 @@ class TestCaptureTransforms:
         # stay as <Z> if it wasn't transformed
         assert res == [qml.expval(qml.Z(0))]
 
+    def test_transform_primitive_eval_with_args(self):
+        """Test that evaluating jaxpr containing a transform primitive with arguments
+        correctly slices the args and consts using tuple-based slice parameters."""
+
+        def func(x):
+            y = x * 2
+            return y + 1
+
+        targs = (2, 3)
+        tkwargs = {"dummy_kwarg1": "hello", "dummy_kwarg2": "world"}
+
+        transformed_func = z_to_hadamard(func, *targs, **tkwargs)
+        jaxpr = jax.make_jaxpr(transformed_func)(1.5)
+
+        # This should trigger the _impl function with non-empty args_slice
+        res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2.0)
+        # func(2.0) = 2.0 * 2 + 1 = 5.0
+        assert res == [5.0]
+
     def test_multiple_transforms_capture(self):
         """Test that JAXPR containing a transformed qnode primitive is evaluated correctly."""
 

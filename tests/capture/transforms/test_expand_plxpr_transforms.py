@@ -34,6 +34,13 @@ def dummy_tape_only_transform(tape):
     return [tape], lambda res: res[0]
 
 
+@qml.transform
+def dummy_tape_only_transform_with_kwargs(tape, dummy_kwarg1=None, dummy_kwarg2=None):
+    """Transform that uses kwargs but has no custom plxpr_transform, triggering fallback."""
+    # pylint: disable=unused-argument
+    return [tape], lambda res: res[0]
+
+
 def _dummy_plxpr_transform(jaxpr, consts, targs, tkwargs, *args):  # pylint: disable=unused-argument
     """Dummy function to transform plxpr."""
 
@@ -94,6 +101,34 @@ class TestExpandTransformsInterpreter:
             orig_eqn.params == new_eqn.params
             for orig_eqn, new_eqn in zip(jaxpr.eqns, new_jaxpr.eqns, strict=True)
         )
+
+    def test_expand_transforms_interpreter_fallback_with_kwargs(self):
+        """Test that transforms without a custom plxpr_transform use the fallback
+        and correctly convert hashable tkwargs tuple back to dict."""
+
+        @dummy_tape_only_transform_with_kwargs(dummy_kwarg1="foo", dummy_kwarg2="bar")
+        def f():
+            qml.X(0)
+            return qml.expval(qml.Z(0))
+
+        jaxpr = jax.make_jaxpr(f)()
+        assert len(jaxpr.eqns) == 1
+        assert jaxpr.eqns[0].primitive == transform_prim
+        assert jaxpr.eqns[0].params["transform"] == dummy_tape_only_transform_with_kwargs
+
+        # The tkwargs should be stored as a hashable tuple
+        tkwargs = jaxpr.eqns[0].params["tkwargs"]
+        # Can be converted back to dict
+        assert dict(tkwargs) == {"dummy_kwarg1": "foo", "dummy_kwarg2": "bar"}
+
+        # Expanding should work correctly with the fallback transform
+        transformed_f = expand_plxpr_transforms(f)
+        transformed_jaxpr = jax.make_jaxpr(transformed_f)()
+
+        # The fallback transform should produce the same operations
+        assert len(transformed_jaxpr.eqns) == 2
+        assert transformed_jaxpr.eqns[0].primitive == qml.PauliZ._primitive
+        assert transformed_jaxpr.eqns[1].primitive == qml.measurements.ExpectationMP._obs_primitive
 
 
 class TestExpandPlxprTransforms:
