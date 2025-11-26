@@ -793,11 +793,10 @@ class TestModifiedTemplates:
         """Test the primitve bind call of SelectOnlyQRAM."""
 
         kwargs = {
-            "bitstrings": ["010", "111", "110", "000"],
+            "bitstrings": ["010", "111", "110", "000", "010", "111", "110", "000"],
             "qram_wires": [0, 1],
             "target_wires": [2, 3, 4],
-            "work_wires": [5] + [6, 7, 8] + [12, 13, 14] + [9, 10, 11],
-            "select_wires": [12, 13],
+            "select_wires": [12],
             "select_value": 1,
         }
 

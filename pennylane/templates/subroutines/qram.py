@@ -35,7 +35,7 @@ from pennylane.decomposition import (
     resource_rep,
 )
 from pennylane.operation import Operation, Operator
-from pennylane.ops import CSWAP, SWAP, Hadamard, PauliX, PauliZ, ctrl, adjoint
+from pennylane.ops import CSWAP, SWAP, Hadamard, PauliX, PauliZ, adjoint, ctrl
 from pennylane.wires import Wires, WiresLike
 
 # pylint: disable=consider-using-generator, too-many-arguments
@@ -375,7 +375,6 @@ class SelectOnlyQRAM(Operator):
     controlled on all address wires (select_wires + qram_wires).
 
     Args:
-        work_wires (WiresLike): ignored, as select-only qram doesn't require any work qubits
         select_wires (WiresLike, optional): actually also not used, but kept for API consistency with hybrid QRAM
         select_value (int or None, optional): if provided, only entries whose select bits match this value are loaded
         id (str or None): optional name for the operation
