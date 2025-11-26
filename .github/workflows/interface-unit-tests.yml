@@ -109,7 +109,7 @@ jobs:
       - name: Set pytest arguments for setting warnings level
         id: pytest_warning_flags
         env:
-          PYTEST_WARNING_ARGS: -W "${{ inputs.python_warning_level }}" --continue-on-collection-errors {{ inputs.pytest_additional_args }}
+          PYTEST_WARNING_ARGS: -W "${{ inputs.python_warning_level }}" --continue-on-collection-errors "${{ inputs.pytest_additional_args }}"
         run: |
           if [ "${{ inputs.python_warning_level }}" != "default" ]; then
             echo "Setting pytest warning flags"
