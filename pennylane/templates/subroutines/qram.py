@@ -508,7 +508,7 @@ def _bucket_brigade_qram_decomposition(
 add_decomps(BBQRAM, _bucket_brigade_qram_decomposition)
 
 
-class SelectOnlyQRAM(BBQRAM):
+class SelectOnlyQRAM(Operator):
     """Select-only QRAM implemented as multi-controlled X on target wires,
     controlled on all address wires (select_wires + qram_wires).
 
@@ -536,41 +536,28 @@ class SelectOnlyQRAM(BBQRAM):
         bitstrings,
         qram_wires: WiresLike,
         target_wires: WiresLike,
-        work_wires: WiresLike,  # kept for API compatibility; ignored
-        select_wires: WiresLike | None = None,  # optional; usually ignored
-        select_value: int | None = None,  # optional; usually ignored
         id: str | None = None,
     ):
         # Convert to Wires
         qram_wires = Wires(qram_wires)
         target_wires = Wires(target_wires)
-        select_wires = Wires(select_wires) if select_wires is not None else Wires([])
 
         # ---- Validate bitstrings ----
-        k = len(select_wires)
         n_k = len(qram_wires)
-        n_total = k + n_k
+        n_total = n_k
 
         if (1 << n_total) != len(bitstrings):
-            raise ValueError("len(bitstrings) must be 2^(len(select_wires)+len(qram_wires)).")
-
-        # Validate select_value (if provided)
-        if select_value is not None:
-            if k == 0:
-                raise ValueError("select_value cannot be used when len(select_wires) == 0.")
-            max_sel = 1 << k
-            if not (0 <= select_value < max_sel):
-                raise ValueError(f"select_value must be an integer in [0, {max_sel - 1}].")
+            raise ValueError("len(bitstrings) must be 2^(len(qram_wires)).")
 
         self._hyperparameters = {
-            "select_wires": select_wires,
-            "select_value": select_value,
-            "k": k,
+            "bitstrings": bitstrings,
+            "qram_wires": qram_wires,
+            "target_wires": target_wires,
             "n_k": n_k,
             "n_total": n_total,
         }
 
-        super().__init__(bitstrings, qram_wires, target_wires, work_wires)
+        super().__init__(wires=list(qram_wires) + list(target_wires), id=id)
 
     # ---------- Helpers ----------
     @staticmethod
@@ -580,57 +567,31 @@ class SelectOnlyQRAM(BBQRAM):
 
     @property
     def resource_params(self) -> dict:
-        wire_manager = self.hyperparameters["wire_manager"]
         return {
             "bitstrings": self.hyperparameters["bitstrings"],
-            "select_value": self.hyperparameters["select_value"],
-            "num_qram_wires": len(wire_manager.qram_wires),
-            "num_select_wires": len(self.hyperparameters["select_wires"]),
-            "k": self.hyperparameters["k"],
-            "m": self.hyperparameters["m"],
+            "num_qram_wires": len(self.hyperparameters["qram_wires"]),
             "n_total": self.hyperparameters["n_total"],
         }
-
-    # ---------- Select controls----------
-    def _select_ctrls(self, s: int):
-        k = self.hyperparameters["k"]
-        if k == 0:
-            return [], []
-        ctrls = list(self.hyperparameters["select_wires"])
-        vals = [(s >> (k - 1 - j)) & 1 for j in range(k)]
-        return ctrls, vals
 
     # ---------- Decomposition ----------
     def decomposition(self) -> List[Operator]:
         bitstrings = self.hyperparameters["bitstrings"]
-        select_wires = list(self.hyperparameters["select_wires"])
-        wire_manager = self.hyperparameters["wire_manager"]
-        qram_wires = list(wire_manager.qram_wires)
-        target_wires = list(wire_manager.target_wires)
+        qram_wires = list(self.hyperparameters["qram_wires"])
+        target_wires = list(self.hyperparameters["target_wires"])
 
-        select_value = self.hyperparameters["select_value"]
         n_total = self.hyperparameters["n_total"]
-        k = self.hyperparameters["k"]
-        m = self.hyperparameters["m"]
 
-        # All controls = select bits (MSBs) + qram bits (LSBs)
-        controls = select_wires + qram_wires
+        # All controls = qram bits (LSBs)
+        controls = qram_wires
 
         ops: List[Operator] = []
 
         # Loop over all addresses (0 .. 2^(k+n_k)-1)
         for addr, bits in enumerate(bitstrings):
-            # If select_value is specified, only implement entries whose
-            # high k bits (select part) match that value.
-            if select_value is not None and k > 0:
-                sel_part = addr >> (n_total - k)
-                if sel_part != select_value:
-                    continue
-
             control_values = self._address_bits(addr, n_total)
 
             # For each bit position in the data
-            for j in range(m):
+            for j in range(len(bitstrings[0])):
                 if bits[j] != "1":
                     continue
 
@@ -647,16 +608,11 @@ class SelectOnlyQRAM(BBQRAM):
             return ops
 
 
-def _select_only_qram_resources(
-    bitstrings, select_value, num_qram_wires, num_select_wires, k, m, n_total
-):
+def _select_only_qram_resources(bitstrings, num_qram_wires, n_total):
     resources = defaultdict(int)
-    num_controls = num_select_wires + num_qram_wires
+    num_controls = num_qram_wires
 
     for addr, bits in enumerate(bitstrings):
-        if select_value is not None and k > 0 and (addr >> (n_total - k)) != select_value:
-            continue
-
         resources[
             controlled_resource_rep(
                 base_class=PauliX,
@@ -668,37 +624,31 @@ def _select_only_qram_resources(
                     0,
                 ),
             )
-        ] += sum([1 if bits[j] == "1" else 0 for j in range(m)])
+        ] += sum([1 if bits[j] == "1" else 0 for j in range(len(bitstrings[0]))])
 
     return resources
 
 
 @register_resources(_select_only_qram_resources)
 def _select_only_qram_decomposition(
-    wires, bitstrings, select_value, select_wires, wire_manager, m, k, n_total, **_
+    wires, bitstrings, qram_wires, target_wires, n_total, **_
 ):  # pylint: disable=unused-argument
-    controls = select_wires + wire_manager.qram_wires
+    controls = qram_wires
 
     # Loop over all addresses (0 .. 2^(k+n_k)-1)
     for addr, bits in enumerate(bitstrings):
-        # If select_value is specified, only implement entries whose
-        # high k bits (select part) match that value.
-        if select_value is not None and k > 0:
-            sel_part = addr >> (n_total - k)
-            if sel_part != select_value:
-                continue
 
         control_values = [(addr >> (n_total - 1 - i)) & 1 for i in range(n_total)]
 
         # For each bit position in the data
-        for j in range(m):
+        for j in range(len(bitstrings[0])):
             if bits[j] != "1":
                 continue
 
             # Multi-controlled X on target_wires[j],
             # controlled on controls matching `control_values`.
             ctrl(
-                PauliX(wires=wire_manager.target_wires[j]),
+                PauliX(wires=target_wires[j]),
                 control=controls,
                 control_values=control_values,
             )
