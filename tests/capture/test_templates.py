@@ -41,12 +41,6 @@ def normalize_for_comparison(obj):
     if callable(obj):
         return obj
 
-    # Convert arrays (JAX and NumPy) to lists for comparison
-    if hasattr(jax, "Array") and isinstance(obj, jax.Array):
-        return obj.tolist()
-    if isinstance(obj, np.ndarray):
-        return obj.tolist()
-
     # Recursively normalize dictionaries
     if isinstance(obj, dict):
         return {k: normalize_for_comparison(v) for k, v in obj.items()}
@@ -70,7 +64,7 @@ unmodified_templates_cases = [
         qml.BasisEmbedding,
         (),
         {"features": jnp.array([1, 0]), "wires": [2, 3]},
-        marks=pytest.mark.xfail(reason="arrays should never have been in the metadata"),
+        marks=pytest.mark.xfail(reason="arrays should never have been in the metadata [sc-104808]"),
     ),
     (qml.BasisEmbedding, (6, [0, 5, 2]), {"id": "my_id"}),
     (qml.BasisEmbedding, (jnp.array([1, 0, 1]),), {"wires": [0, 2, 3]}),
@@ -98,7 +92,9 @@ unmodified_templates_cases = [
         qml.GateFabric,
         (jnp.zeros((2, 3, 2)),),
         {"include_pi": False, "wires": list(range(8)), "init_state": jnp.ones(8)},
-        marks=pytest.mark.xfail(reason="arrays should never have been in the metadata"),
+        marks=pytest.mark.xfail(
+            reason="arrays should never have been in the metadata, [sc-104808]"
+        ),
     ),
     # (qml.GateFabric, (jnp.zeros((2, 3, 2)), jnp.ones(8)), {"include_pi": False, "wires": list(range(8))}), # Can't even init
     # (qml.GateFabric, (jnp.ones((5, 2, 2)), list(range(6)), jnp.array([0, 0, 1, 1, 0, 1])), {"include_pi": True, "id": "my_id"}), # Can't trace
@@ -109,7 +105,9 @@ unmodified_templates_cases = [
         qml.ParticleConservingU1,
         (jnp.zeros((5, 3, 2)),),
         {"wires": [0, 1, 2, 3], "init_state": jnp.ones(4)},
-        marks=pytest.mark.xfail(reason="arrays should never have been in the metadata"),
+        marks=pytest.mark.xfail(
+            reason="arrays should never have been in the metadata, [sc-104808]"
+        ),
     ),
     # https://github.com/PennyLaneAI/pennylane/issues/5522
     # (qml.ParticleConservingU2, (jnp.ones((3, 3)), [2, 3]), {}),
@@ -118,7 +116,9 @@ unmodified_templates_cases = [
         qml.ParticleConservingU2,
         (jnp.zeros((5, 7)),),
         {"wires": [0, 1, 2, 3], "init_state": jnp.ones(4)},
-        marks=pytest.mark.xfail(reason="arrays should never have been in the metadata"),
+        marks=pytest.mark.xfail(
+            reason="arrays should never have been in the metadata, [sc-104808]"
+        ),
     ),
     (qml.RandomLayers, (jnp.ones((3, 3)), [2, 3]), {}),
     (qml.RandomLayers, (jnp.ones((3, 3)),), {"wires": [3, 2, 1], "ratio_imprim": 0.5}),
@@ -126,7 +126,9 @@ unmodified_templates_cases = [
         qml.RandomLayers,
         (),
         {"weights": jnp.ones((3, 3)), "wires": [3, 2, 1]},
-        marks=pytest.mark.xfail(reason="arrays should never have been in the metadata"),
+        marks=pytest.mark.xfail(
+            reason="arrays should never have been in the metadata, [sc-104808]"
+        ),
     ),
     (qml.RandomLayers, (jnp.ones((3, 3)),), {"wires": [3, 2, 1], "rotations": (qml.RX, qml.RZ)}),
     (qml.RandomLayers, (jnp.ones((3, 3)), [0, 1]), {"rotations": (qml.RX, qml.RZ), "seed": 41}),
@@ -136,13 +138,17 @@ unmodified_templates_cases = [
         qml.SimplifiedTwoDesign,
         (jnp.ones(2),),
         {"weights": jnp.zeros((3, 1, 2)), "wires": [0, 2]},
-        marks=pytest.mark.xfail(reason="arrays should never have been in the metadata"),
+        marks=pytest.mark.xfail(
+            reason="arrays should never have been in the metadata, [sc-104808]"
+        ),
     ),
     pytest.param(
         qml.SimplifiedTwoDesign,
         (),
         {"initial_layer_weights": jnp.ones(2), "weights": jnp.zeros((3, 1, 2)), "wires": [0, 2]},
-        marks=pytest.mark.xfail(reason="arrays should never have been in the metadata"),
+        marks=pytest.mark.xfail(
+            reason="arrays should never have been in the metadata, [sc-104808]"
+        ),
     ),
     (qml.StronglyEntanglingLayers, (jnp.ones((3, 2, 3)), [2, 3]), {"ranges": [1, 1, 1]}),
     (
@@ -154,7 +160,9 @@ unmodified_templates_cases = [
         qml.StronglyEntanglingLayers,
         (),
         {"weights": jnp.ones((3, 3, 3)), "wires": [3, 2, 1]},
-        marks=pytest.mark.xfail(reason="arrays should never have been in the metadata"),
+        marks=pytest.mark.xfail(
+            reason="arrays should never have been in the metadata, [sc-104808]"
+        ),
     ),
     (qml.ArbitraryStatePreparation, (jnp.ones(6), [2, 3]), {}),
     (qml.ArbitraryStatePreparation, (jnp.zeros(14),), {"wires": [3, 2, 0]}),
@@ -162,7 +170,9 @@ unmodified_templates_cases = [
         qml.ArbitraryStatePreparation,
         (),
         {"weights": jnp.ones(2), "wires": [1]},
-        marks=pytest.mark.xfail(reason="arrays should never have been in the metadata"),
+        marks=pytest.mark.xfail(
+            reason="arrays should never have been in the metadata, [sc-104808]"
+        ),
     ),
     (qml.CosineWindow, ([2, 3],), {}),
     (qml.CosineWindow, (), {"wires": [2, 0, 1]}),
@@ -176,7 +186,9 @@ unmodified_templates_cases = [
         qml.MottonenStatePreparation,
         (),
         {"state_vector": jnp.array([1.0, 0.0]), "wires": [1]},
-        marks=pytest.mark.xfail(reason="arrays should never have been in the metadata"),
+        marks=pytest.mark.xfail(
+            reason="arrays should never have been in the metadata, [sc-104808]"
+        ),
     ),
     (qml.AQFT, (1, [0, 1, 2]), {}),
     (qml.AQFT, (2,), {"wires": [0, 1, 2, 3]}),
@@ -189,7 +201,9 @@ unmodified_templates_cases = [
         qml.ArbitraryUnitary,
         (),
         {"weights": jnp.ones(3), "wires": [1]},
-        marks=pytest.mark.xfail(reason="arrays should never have been in the metadata"),
+        marks=pytest.mark.xfail(
+            reason="arrays should never have been in the metadata, [sc-104808]"
+        ),
     ),
     (qml.FABLE, (jnp.eye(4), [2, 3, 0, 1, 5]), {}),
     (qml.FABLE, (jnp.ones((4, 4)),), {"wires": [0, 3, 2, 1, 9]}),
@@ -197,7 +211,9 @@ unmodified_templates_cases = [
         qml.FABLE,
         (),
         {"input_matrix": jnp.array([[1, 1], [1, -1]]) / np.sqrt(2), "wires": [1, 10, 17]},
-        marks=pytest.mark.xfail(reason="arrays should never have been in the metadata"),
+        marks=pytest.mark.xfail(
+            reason="arrays should never have been in the metadata, [sc-104808]"
+        ),
     ),
     (qml.FermionicSingleExcitation, (0.421,), {"wires": [0, 3, 2]}),
     (qml.FlipSign, (7,), {"wires": [0, 3, 2]}),
@@ -859,7 +875,7 @@ class TestModifiedTemplates:
         assert len(q) == 1
         qml.assert_equal(q.queue[0], qml.QROM(**kwargs))
 
-    @pytest.mark.xfail(reason="QROMStatePreparation uses array in metadata")
+    @pytest.mark.xfail(reason="QROMStatePreparation uses array in metadata, [sc-104808]")
     def test_qrom_state_prep(self):
         """Test the primitive bind call of QROMStatePreparation."""
 
