@@ -86,7 +86,7 @@ class THCHamiltonian:
             isinstance(self.one_norm, (float, int)) and self.one_norm >= 0
         ):
             raise TypeError(
-                f"one_norm must be a float or integer (or None), "
+                f"one_norm must be a positive float or integer (or None), "
                 f"but received type {self.one_norm}"
             )
 
