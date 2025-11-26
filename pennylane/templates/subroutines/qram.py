@@ -35,7 +35,7 @@ from pennylane.decomposition import (
     resource_rep,
 )
 from pennylane.operation import Operation, Operator
-from pennylane.ops import CSWAP, SWAP, Hadamard, PauliX, PauliZ, ctrl
+from pennylane.ops import CSWAP, SWAP, Hadamard, PauliX, PauliZ, ctrl, adjoint
 from pennylane.wires import Wires, WiresLike
 
 # pylint: disable=consider-using-generator, too-many-arguments
@@ -283,7 +283,7 @@ def _bucket_brigade_qram_resources(bitstrings):
     return resources
 
 
-def _mark_routers_via_bus_qfunc(wire_manager, n_k):
+def _mark_routers_via_bus(wire_manager, n_k):
     """Write low-order address bits into router directions **layer-by-layer** via the bus.
 
     For each low bit a_k (k = 0..n_k-1):
@@ -297,7 +297,7 @@ def _mark_routers_via_bus_qfunc(wire_manager, n_k):
         target = wire_manager.bus_wire[0]
         SWAP(wires=[origin, target])
         # 2) route down k levels
-        _route_bus_down_first_k_levels_qfunc(wire_manager, k)
+        _route_bus_down_first_k_levels(wire_manager, k)
         # 3) deposit at level-k node on the active path
         if k == 0:
             SWAP(wires=[wire_manager.bus_wire[0], wire_manager.router(0, 0)])
@@ -315,35 +315,7 @@ def _mark_routers_via_bus_qfunc(wire_manager, n_k):
                     SWAP(wires=[origin, target])
 
 
-def _unmark_routers_via_bus_qfunc(wire_manager, n_k):
-    """
-    Operations used to write low-order address bits into router directions **layer-by-layer** via the bus, reversed.
-    """
-    for k in range(n_k - 1, -1, -1):
-        # 1) level-k node on the active path
-        if k == 0:
-            SWAP(wires=[wire_manager.bus_wire[0], wire_manager.router(0, 0)])
-        else:
-            for p in range(1 << k - 1, -1, -1):
-                # change to  in_wire later
-                parent = _node_index(k - 1, p >> 1)
-                if p % 2 == 0:
-                    origin = wire_manager.portL_wires[parent]
-                    target = wire_manager.router(k, p)
-                    SWAP(wires=[origin, target])
-                else:
-                    origin = wire_manager.portR_wires[parent]
-                    target = wire_manager.router(k, p)
-                    SWAP(wires=[origin, target])
-        # 2) route up k levels
-        _route_bus_up_first_k_levels_qfunc(wire_manager, k)
-        # 3) reverse load
-        origin = wire_manager.qram_wires[k]
-        target = wire_manager.bus_wire[0]
-        SWAP(wires=[origin, target])
-
-
-def _route_bus_down_first_k_levels_qfunc(wire_manager, k_levels):
+def _route_bus_down_first_k_levels(wire_manager, k_levels):
     """Route the bus down the first `k_levels` of the tree using dir-controlled CSWAPs."""
     for ell in range(k_levels):
         for p in range(1 << ell):
@@ -357,21 +329,7 @@ def _route_bus_down_first_k_levels_qfunc(wire_manager, k_levels):
             ctrl(SWAP(wires=[in_w, L]), control=[d], control_values=[0])
 
 
-def _route_bus_up_first_k_levels_qfunc(wire_manager, k_levels):
-    """Route the bus up the first `k_levels` of the tree using dir-controlled CSWAPs."""
-    for ell in range(k_levels - 1, -1, -1):
-        for p in range((1 << ell) - 1, -1, -1):
-            in_w = wire_manager.node_in_wire(ell, p)
-            L = wire_manager.portL(ell, p)
-            R = wire_manager.portR(ell, p)
-            d = wire_manager.router(ell, p)
-            # dir==0 ⇒ SWAP(in, L)
-            ctrl(SWAP(wires=[in_w, L]), control=[d], control_values=[0])
-            # dir==1 ⇒ SWAP(in, R)
-            CSWAP(wires=[d, in_w, R])
-
-
-def _leaf_ops_for_bit_qfunc(wire_manager, bitstrings, n_k, j):
+def _leaf_ops_for_bit(wire_manager, bitstrings, n_k, j):
     """Apply the leaf write for target bit index j."""
     ops = []
     for p in range(1 << n_k):
@@ -395,18 +353,18 @@ def _bucket_brigade_qram_decomposition(
     qram_wires = wire_manager.qram_wires
     n_k = len(qram_wires)
     # 1) address loading
-    _mark_routers_via_bus_qfunc(wire_manager, n_k)
+    _mark_routers_via_bus(wire_manager, n_k)
     # 2) For each target bit: load→route down→leaf op→route up→restore (reuse the route bus function)
     for j, tw in enumerate(wire_manager.target_wires):
         Hadamard(wires=[tw])
         SWAP(wires=[tw, bus_wire[0]])
-        _route_bus_down_first_k_levels_qfunc(wire_manager, len(qram_wires))
-        _leaf_ops_for_bit_qfunc(wire_manager, bitstrings, n_k, j)
-        _route_bus_up_first_k_levels_qfunc(wire_manager, len(qram_wires))
+        _route_bus_down_first_k_levels(wire_manager, len(qram_wires))
+        _leaf_ops_for_bit(wire_manager, bitstrings, n_k, j)
+        adjoint(_route_bus_down_first_k_levels, lazy=False)(wire_manager, len(qram_wires))
         SWAP(wires=[tw, bus_wire[0]])
         Hadamard(wires=[tw])
     # 3) address unloading
-    _unmark_routers_via_bus_qfunc(wire_manager, n_k)
+    adjoint(_mark_routers_via_bus, lazy=False)(wire_manager, n_k)
 
 
 add_decomps(BBQRAM, _bucket_brigade_qram_decomposition)
