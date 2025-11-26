@@ -37,7 +37,7 @@ from pennylane.operation import Operation, Operator
 from pennylane.ops import CSWAP, SWAP, Hadamard, PauliX, PauliZ, ctrl
 from pennylane.wires import Wires, WiresLike
 
-# pylint: disable=consider-using-generator
+# pylint: disable=consider-using-generator, too-many-arguments
 
 
 # -----------------------------
@@ -202,7 +202,7 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
 
         qram_wires = Wires(qram_wires)
 
-        if not self.hyperparameters or not "k" in self.hyperparameters:
+        if not self.hyperparameters or "k" not in self.hyperparameters:
             n_k = len(qram_wires)
             if (1 << n_k) != len(bitstrings):
                 raise ValueError("len(bitstrings) must be 2^(len(qram_wires)).")
@@ -558,7 +558,7 @@ class SelectOnlyQRAM(Operator):
             if k == 0:
                 raise ValueError("select_value cannot be used when len(select_wires) == 0.")
             max_sel = 1 << k
-            if not (0 <= select_value < max_sel):
+            if not 0 <= select_value < max_sel:
                 raise ValueError(f"select_value must be an integer in [0, {max_sel - 1}].")
 
         self._hyperparameters = {
