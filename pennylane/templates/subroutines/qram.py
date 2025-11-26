@@ -131,7 +131,6 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
 
     .. code-block:: python
 
-
         bitstrings = ["010", "111", "110", "000"]
         bitstring_size = 3
 
