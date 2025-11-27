@@ -120,7 +120,7 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
 
     Raises:
         ValueError: if the ``bitstrings`` are not provided, the ``bitstrings`` are of the wrong
-            length, the ``target_wires`` are of the wrong size, or the ``work_wires`` register is not exactly
+            length, the ``target_wires`` are of the wrong size, or the ``work_wires`` register size is not exactly
             equal to :math:`1 + 3 ((1 << \texttt{len(qram_wires)}) - 1)`.
 
     .. seealso:: :class:`~.QROM`, :class:`~.QROMStatePreparation`
