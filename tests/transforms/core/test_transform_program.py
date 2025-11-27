@@ -180,60 +180,60 @@ class TestTransformProgramDunders:
         [
             # container + container -> program with 1 then 2
             pytest.param(
-                lambda: TransformContainer(transform=qml.transform(first_valid_transform)),
-                lambda: TransformContainer(transform=qml.transform(second_valid_transform)),
+                TransformContainer(transform=qml.transform(first_valid_transform)),
+                TransformContainer(transform=qml.transform(second_valid_transform)),
                 first_valid_transform,
                 second_valid_transform,
                 id="container+container",
             ),
             # dispatcher + dispatcher -> program with 1 then 2
             pytest.param(
-                lambda: qml.transform(first_valid_transform),
-                lambda: qml.transform(second_valid_transform),
+                qml.transform(first_valid_transform),
+                qml.transform(second_valid_transform),
                 first_valid_transform,
                 second_valid_transform,
                 id="dispatcher+dispatcher",
             ),
             # dispatcher + container -> program with dispatcher then container
             pytest.param(
-                lambda: qml.transform(first_valid_transform),
-                lambda: TransformContainer(transform=qml.transform(second_valid_transform)),
+                qml.transform(first_valid_transform),
+                TransformContainer(transform=qml.transform(second_valid_transform)),
                 first_valid_transform,
                 second_valid_transform,
                 id="dispatcher+container",
             ),
             # container + dispatcher -> program with container then dispatcher
             pytest.param(
-                lambda: TransformContainer(transform=qml.transform(first_valid_transform)),
-                lambda: qml.transform(second_valid_transform),
+                TransformContainer(transform=qml.transform(first_valid_transform)),
+                qml.transform(second_valid_transform),
                 first_valid_transform,
                 second_valid_transform,
                 id="container+dispatcher",
             ),
             # program + container -> new program with container at end
             pytest.param(
-                lambda: TransformProgram(
+                TransformProgram(
                     [TransformContainer(transform=qml.transform(first_valid_transform))]
                 ),
-                lambda: TransformContainer(transform=qml.transform(second_valid_transform)),
+                TransformContainer(transform=qml.transform(second_valid_transform)),
                 first_valid_transform,
                 second_valid_transform,
                 id="program+container",
             ),
             # program + dispatcher -> new program with dispatcher at end
             pytest.param(
-                lambda: TransformProgram(
+                TransformProgram(
                     [TransformContainer(transform=qml.transform(first_valid_transform))]
                 ),
-                lambda: qml.transform(second_valid_transform),
+                qml.transform(second_valid_transform),
                 first_valid_transform,
                 second_valid_transform,
                 id="program+dispatcher",
             ),
             # dispatcher + program -> program with dispatcher first, then program contents
             pytest.param(
-                lambda: qml.transform(first_valid_transform),
-                lambda: TransformProgram(
+                qml.transform(first_valid_transform),
+                TransformProgram(
                     [TransformContainer(transform=qml.transform(second_valid_transform))]
                 ),
                 first_valid_transform,
@@ -242,10 +242,10 @@ class TestTransformProgramDunders:
             ),
             # program + program -> new program with one followed by two
             pytest.param(
-                lambda: TransformProgram(
+                TransformProgram(
                     [TransformContainer(transform=qml.transform(first_valid_transform))]
                 ),
-                lambda: TransformProgram(
+                TransformProgram(
                     [TransformContainer(transform=qml.transform(second_valid_transform))]
                 ),
                 first_valid_transform,
@@ -256,10 +256,7 @@ class TestTransformProgramDunders:
     )
     def test_addition_operations(self, left, right, expected_first, expected_second):
         """Test all addition operations between dispatchers, containers, and programs."""
-        left_obj = left()
-        right_obj = right()
-
-        result = left_obj + right_obj
+        result = left + right
         assert isinstance(result, TransformProgram)
         assert len(result) == 2
         assert result[0].transform is expected_first
@@ -267,45 +264,45 @@ class TestTransformProgramDunders:
 
     # ============ Parametrized multiplication tests ============
     @pytest.mark.parametrize(
-        "obj_factory, n",
+        "obj, n",
         [
             # container * n -> program with container repeated n times
             pytest.param(
-                lambda: TransformContainer(transform=qml.transform(first_valid_transform)),
+                TransformContainer(transform=qml.transform(first_valid_transform)),
                 3,
                 id="container*3",
             ),
             pytest.param(
-                lambda: TransformContainer(transform=qml.transform(first_valid_transform)),
+                TransformContainer(transform=qml.transform(first_valid_transform)),
                 0,
                 id="container*0",
             ),
             pytest.param(
-                lambda: TransformContainer(transform=qml.transform(first_valid_transform)),
+                TransformContainer(transform=qml.transform(first_valid_transform)),
                 1,
                 id="container*1",
             ),
             # dispatcher * n -> program with dispatcher repeated n times
-            pytest.param(lambda: qml.transform(first_valid_transform), 3, id="dispatcher*3"),
-            pytest.param(lambda: qml.transform(first_valid_transform), 0, id="dispatcher*0"),
-            pytest.param(lambda: qml.transform(first_valid_transform), 1, id="dispatcher*1"),
+            pytest.param(qml.transform(first_valid_transform), 3, id="dispatcher*3"),
+            pytest.param(qml.transform(first_valid_transform), 0, id="dispatcher*0"),
+            pytest.param(qml.transform(first_valid_transform), 1, id="dispatcher*1"),
             # n * program -> new program with program repeated n times
             pytest.param(
-                lambda: TransformProgram(
+                TransformProgram(
                     [TransformContainer(transform=qml.transform(first_valid_transform))]
                 ),
                 3,
                 id="program*3",
             ),
             pytest.param(
-                lambda: TransformProgram(
+                TransformProgram(
                     [TransformContainer(transform=qml.transform(first_valid_transform))]
                 ),
                 0,
                 id="program*0",
             ),
             pytest.param(
-                lambda: TransformProgram(
+                TransformProgram(
                     [TransformContainer(transform=qml.transform(first_valid_transform))]
                 ),
                 1,
@@ -313,10 +310,8 @@ class TestTransformProgramDunders:
             ),
         ],
     )
-    def test_multiplication_operations(self, obj_factory, n):
+    def test_multiplication_operations(self, obj, n):
         """Test all multiplication operations for dispatchers, containers, and programs."""
-        obj = obj_factory()
-
         # Test left multiplication (obj * n)
         result = obj * n
         assert isinstance(result, TransformProgram)
@@ -331,77 +326,75 @@ class TestTransformProgramDunders:
 
     # ============ Error tests for invalid types ============
     @pytest.mark.parametrize(
-        "obj_factory, invalid_value",
+        "obj, invalid_value",
         [
-            pytest.param(lambda: qml.transform(first_valid_transform), "invalid", id="disp+str"),
-            pytest.param(lambda: qml.transform(first_valid_transform), 42, id="disp+int"),
-            pytest.param(lambda: qml.transform(first_valid_transform), [1, 2], id="disp+list"),
+            pytest.param(qml.transform(first_valid_transform), "invalid", id="disp+str"),
+            pytest.param(qml.transform(first_valid_transform), 42, id="disp+int"),
+            pytest.param(qml.transform(first_valid_transform), [1, 2], id="disp+list"),
             pytest.param(
-                lambda: TransformContainer(transform=qml.transform(first_valid_transform)),
+                TransformContainer(transform=qml.transform(first_valid_transform)),
                 "invalid",
                 id="cont+str",
             ),
             pytest.param(
-                lambda: TransformContainer(transform=qml.transform(first_valid_transform)),
+                TransformContainer(transform=qml.transform(first_valid_transform)),
                 42,
                 id="cont+int",
             ),
         ],
     )
-    def test_add_invalid_type_raises_error(self, obj_factory, invalid_value):
+    def test_add_invalid_type_raises_error(self, obj, invalid_value):
         """Test that adding invalid types raises TypeError."""
-        obj = obj_factory()
         with pytest.raises(TypeError):
             _ = obj + invalid_value
 
     @pytest.mark.parametrize(
-        "obj_factory, invalid_value",
+        "obj, invalid_value",
         [
-            pytest.param(lambda: qml.transform(first_valid_transform), "invalid", id="str+disp"),
-            pytest.param(lambda: qml.transform(first_valid_transform), 42, id="int+disp"),
+            pytest.param(qml.transform(first_valid_transform), "invalid", id="str+disp"),
+            pytest.param(qml.transform(first_valid_transform), 42, id="int+disp"),
             pytest.param(
-                lambda: TransformContainer(transform=qml.transform(first_valid_transform)),
+                TransformContainer(transform=qml.transform(first_valid_transform)),
                 "invalid",
                 id="str+cont",
             ),
             pytest.param(
-                lambda: TransformContainer(transform=qml.transform(first_valid_transform)),
+                TransformContainer(transform=qml.transform(first_valid_transform)),
                 42,
                 id="int+cont",
             ),
         ],
     )
-    def test_radd_invalid_type_raises_error(self, obj_factory, invalid_value):
+    def test_radd_invalid_type_raises_error(self, obj, invalid_value):
         """Test that right addition with invalid types raises TypeError."""
-        obj = obj_factory()
         with pytest.raises(TypeError):
             _ = invalid_value + obj
 
     @pytest.mark.parametrize(
-        "obj_factory, invalid_value",
+        "obj, invalid_value",
         [
-            pytest.param(lambda: qml.transform(first_valid_transform), "invalid", id="disp*str"),
-            pytest.param(lambda: qml.transform(first_valid_transform), 3.5, id="disp*float"),
-            pytest.param(lambda: qml.transform(first_valid_transform), [1, 2], id="disp*list"),
+            pytest.param(qml.transform(first_valid_transform), "invalid", id="disp*str"),
+            pytest.param(qml.transform(first_valid_transform), 3.5, id="disp*float"),
+            pytest.param(qml.transform(first_valid_transform), [1, 2], id="disp*list"),
             pytest.param(
-                lambda: TransformContainer(transform=qml.transform(first_valid_transform)),
+                TransformContainer(transform=qml.transform(first_valid_transform)),
                 "invalid",
                 id="cont*str",
             ),
             pytest.param(
-                lambda: TransformContainer(transform=qml.transform(first_valid_transform)),
+                TransformContainer(transform=qml.transform(first_valid_transform)),
                 3.5,
                 id="cont*float",
             ),
             pytest.param(
-                lambda: TransformProgram(
+                TransformProgram(
                     [TransformContainer(transform=qml.transform(first_valid_transform))]
                 ),
                 "invalid",
                 id="prog*str",
             ),
             pytest.param(
-                lambda: TransformProgram(
+                TransformProgram(
                     [TransformContainer(transform=qml.transform(first_valid_transform))]
                 ),
                 3.5,
@@ -409,29 +402,28 @@ class TestTransformProgramDunders:
             ),
         ],
     )
-    def test_mul_invalid_type_raises_error(self, obj_factory, invalid_value):
+    def test_mul_invalid_type_raises_error(self, obj, invalid_value):
         """Test that multiplying with invalid types raises TypeError."""
-        obj = obj_factory()
         with pytest.raises(TypeError):
             _ = obj * invalid_value
         with pytest.raises(TypeError):
             _ = invalid_value * obj
 
     @pytest.mark.parametrize(
-        "obj_factory, error_match",
+        "obj, error_match",
         [
             pytest.param(
-                lambda: qml.transform(first_valid_transform),
+                qml.transform(first_valid_transform),
                 "Cannot multiply transform dispatcher by negative integer",
                 id="dispatcher*-1",
             ),
             pytest.param(
-                lambda: TransformContainer(transform=qml.transform(first_valid_transform)),
+                TransformContainer(transform=qml.transform(first_valid_transform)),
                 "Cannot multiply transform container by negative integer",
                 id="container*-1",
             ),
             pytest.param(
-                lambda: TransformProgram(
+                TransformProgram(
                     [TransformContainer(transform=qml.transform(first_valid_transform))]
                 ),
                 "Cannot multiply transform program by negative integer",
@@ -439,9 +431,8 @@ class TestTransformProgramDunders:
             ),
         ],
     )
-    def test_mul_negative_raises_error(self, obj_factory, error_match):
+    def test_mul_negative_raises_error(self, obj, error_match):
         """Test that negative multiplication raises ValueError."""
-        obj = obj_factory()
         with pytest.raises(ValueError, match=error_match):
             _ = obj * -1
 
@@ -553,24 +544,23 @@ class TestTransformProgramDunders:
         assert merged_program2[2].transform is second_valid_transform
 
     @pytest.mark.parametrize(
-        "right_factory",
+        "right",
         [
             pytest.param(
-                lambda: TransformContainer(transform=qml.transform(second_valid_transform)),
+                TransformContainer(transform=qml.transform(second_valid_transform)),
                 id="program+container",
             ),
-            pytest.param(lambda: qml.transform(second_valid_transform), id="program+dispatcher"),
+            pytest.param(qml.transform(second_valid_transform), id="program+dispatcher"),
         ],
     )
-    def test_program_add_maintains_final_transform_at_end(self, right_factory):
+    def test_program_add_maintains_final_transform_at_end(self, right):
         """Test that adding to a program with final_transform keeps final at end."""
         container1 = TransformContainer(
             transform=qml.transform(first_valid_transform, final_transform=True)
         )
         program = TransformProgram([container1])
-        right_obj = right_factory()
 
-        result = program + right_obj
+        result = program + right
         assert isinstance(result, TransformProgram)
         assert len(result) == 2
         # Final transform should be at the end
@@ -579,30 +569,29 @@ class TestTransformProgramDunders:
         assert result[1].final_transform
 
     @pytest.mark.parametrize(
-        "right_factory",
+        "right",
         [
             pytest.param(
-                lambda: TransformContainer(
+                TransformContainer(
                     transform=qml.transform(second_valid_transform, final_transform=True)
                 ),
                 id="program+container_final",
             ),
             pytest.param(
-                lambda: qml.transform(second_valid_transform, final_transform=True),
+                qml.transform(second_valid_transform, final_transform=True),
                 id="program+dispatcher_final",
             ),
         ],
     )
-    def test_program_add_with_both_final_transform_error(self, right_factory):
+    def test_program_add_with_both_final_transform_error(self, right):
         """Test that adding with final_transform to a program with final_transform raises error."""
         container1 = TransformContainer(
             transform=qml.transform(first_valid_transform, final_transform=True)
         )
         program = TransformProgram([container1])
-        right_obj = right_factory()
 
         with pytest.raises(TransformError, match="already has a terminal transform"):
-            _ = program + right_obj
+            _ = program + right
 
     def test_repr_program(self):
         """Test the string representation of a program."""
