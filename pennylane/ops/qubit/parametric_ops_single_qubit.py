@@ -832,7 +832,7 @@ def _phaseshift_to_rz_gp(phi, wires: WiresLike, **__):
     qml.GlobalPhase(-phi / 2)
 
 
-def _controlled_phase_shift_ppr_resource(num_control_wires, **_):
+def _cphase_to_ppr_resource(num_control_wires, **_):
     resources = {
         resource_rep(qml.PauliRot, pauli_word="Z" * i): builtin_math.comb(num_control_wires + 1, i)
         for i in range(1, num_control_wires + 2)
@@ -841,8 +841,8 @@ def _controlled_phase_shift_ppr_resource(num_control_wires, **_):
     return resources
 
 
-@register_resources(_controlled_phase_shift_ppr_resource)
-def _controlled_phase_shift_ppr(theta, wires, **_):
+@register_resources(_cphase_to_ppr_resource)
+def _cphase_to_ppr(theta, wires, **_):
     n = len(wires)
     for l in range(1, n + 1):
         for sub_wires in combinations(wires, l):
