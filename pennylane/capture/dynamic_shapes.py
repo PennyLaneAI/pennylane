@@ -19,7 +19,6 @@ from collections.abc import Callable, Sequence
 has_jax = True
 try:
     import jax
-    from jax._src.interpreters.partial_eval import TracingEqn
     from jax.interpreters import partial_eval as pe
 except ImportError:  # pragma: no cover
     has_jax = False  # pragma: no cover
@@ -166,8 +165,7 @@ def register_custom_staging_rule(
     # and https://github.com/jax-ml/jax/blob/9e62994bce7c7fcbb2f6a50c9ef89526cd2c2be6/jax/_src/lax/lax.py#L208
     # for reference to how jax is handling staging rules for dynamic shapes in v0.4.28
     # JAX 0.6.2 to 0.7.0 introduced breaking changes in custom staging rules for dynamic shapes:
-    # 1. DynamicJaxprTracer constructor now requires the var as 3rd argument (previously created internally)
-    # 2. TracingEqn must be used instead of JaxprEqn for trace.frame.add_eqn
+    # DynamicJaxprTracer constructor now requires the var as 3rd argument (previously created internally)
     #
     # This implementation creates vars first using trace.frame.newvar() before constructing
     # DynamicJaxprTracer instances, fixing dynamic shape support that was broken in JAX 0.7.0.
@@ -222,7 +220,7 @@ def register_custom_staging_rule(
         else:
             out_tracers, returned_vars = (), ()
 
-        # JAX 0.7.0: Use t.val to get var from tracer, and TracingEqn for frame.add_eqn
+        # JAX 0.7.0: Use t.val to get var from tracer
         invars = [t.val for t in tracers]
         eqn = jax.core.new_jaxpr_eqn(
             invars,
