@@ -41,9 +41,19 @@ from .prepselprep import PrepSelPrep
 from .qubitization import Qubitization
 
 try:
-    from jax import numpy as jnp, vmap, jit, config, lax
+    from jax import numpy as jnp, vmap, config, lax
 except ModuleNotFoundError:
     pass
+
+def jit_if_jax_available(f):
+    # thin wrapper around jax.jit
+    # would very much like to move the iterative solver code to 
+    # separate file to get rid of a lot of the try/catch blocks
+    try:
+        from jax import jit
+        return jit(f)
+    except:
+        return f
 
 
 def _pauli_rep_process(A, poly, encoding_wires, block_encoding, angle_solver="root-finding"):
@@ -812,6 +822,7 @@ def _compute_qsp_angle(poly_coeffs):
     return rotation_angles
 
 
+@jit_if_jax_available
 def _cheby_pol(x, degree):
     r"""Return the value of the Chebyshev polynomial cos(degree*arcos(x)) at point x
 
@@ -824,11 +835,14 @@ def _cheby_pol(x, degree):
     """
     return math.cos(degree * math.arccos(x))
 
+@jit_if_jax_available
 def _poly_func(coeffs, x):
     """\sum c_kT_{k}(x) where T_k(x)=cos(karccos(x))"""
 
     return jnp.sum(coeffs @ vmap(_cheby_pol, in_axes=(None, 0))(x, np.arange(coeffs.shape[0])))
 
+
+@jit_if_jax_available
 def _z_rotation(phi, interface):
     r"""Returns the matrix of the `RZ(2 \phi)` gate.
 
@@ -842,6 +856,7 @@ def _z_rotation(phi, interface):
     return math.array([[math.exp(1j * phi), 0.0], [0.0, math.exp(-1j * phi)]], like=interface)
 
 
+@jit_if_jax_available
 def _W_of_x(x, interface):
     r"""Returns the matrix of the operator W(x) defined in Theorem (1) of https://arxiv.org/pdf/2002.11649
 
@@ -861,6 +876,7 @@ def _W_of_x(x, interface):
     )
 
 
+@jit_if_jax_available
 def _qsp_iterate(phi, x, interface):
     r"""
     Signal operator defined as the product of RZ(phi) and W(x)
@@ -876,7 +892,7 @@ def _qsp_iterate(phi, x, interface):
     return math.dot(_W_of_x(x=x, interface=interface), _z_rotation(phi=phi, interface=interface))
 
 
-
+@jit_if_jax_available
 def _qsp_iterate_broadcast(phis, x, interface):
     r"""Eq (13) Resulting unitary of the QSP circuit (on reduced invariant subspace ofc)
 
@@ -913,7 +929,7 @@ def _grid_pts(degree, interface):
     )
 
 
-@jit
+@jit_if_jax_available
 def obj_function(phi, x, y):
     # Equation (23)
     obj_func = vmap(_qsp_iterate_broadcast, in_axes=(None, 0, None))(phi, x, 'jax') - y
