@@ -34,7 +34,7 @@ from pennylane.decomposition import (
     resource_rep,
 )
 from pennylane.operation import Operation, Operator
-from pennylane.ops import CSWAP, SWAP, Hadamard, PauliX, PauliZ, adjoint, ctrl
+from pennylane.ops import CSWAP, SWAP, Hadamard, PauliX, PauliZ, adjoint, ctrl, Controlled
 from pennylane.wires import Wires, WiresLike
 
 # pylint: disable=consider-using-generator
@@ -673,11 +673,33 @@ class HybridQRAM(Operation):
         return ops
 
 
-def _hybrid_qram_resources(num_select_wires, k, n_tree):
+def _hybrid_qram_resources(bitstrings, num_target_wires, num_select_wires, k, n_tree):
     resources = defaultdict(int)
     num_blocks = 1 << k if k > 0 else 1
 
     resources[resource_rep(PauliX)] += (k <= 0) * num_blocks * 2
+
+    if n_tree != 0:
+        resources[controlled_resource_rep(
+            base_class=SWAP, base_params={}, num_control_wires=1, num_zero_control_values=0,
+        )] += (n_tree + (1 << n_tree) - 1 + num_target_wires) * num_blocks + num_blocks * num_target_wires
+
+        resources[controlled_resource_rep(
+            base_class=CSWAP, base_params={}, num_control_wires=1, num_zero_control_values=0,
+        )] += ((1 << n_tree) - 1 - n_tree + ((1 << n_tree) - 1) * num_target_wires) * num_blocks
+
+        resources[
+            controlled_resource_rep(
+                base_class=Controlled,
+                base_params={"base_class": SWAP, "base_params": {}, "num_control_wires": 1,
+                             "num_zero_control_values": 1},
+                num_control_wires=1, num_zero_control_values=0
+            )
+        ] += ((1 << n_tree) - 1 - n_tree + ((1 << n_tree) - 1) * num_target_wires) * num_blocks * 3
+
+        resources[controlled_resource_rep(
+            base_class=Hadamard, base_params={}, num_control_wires=1, num_zero_control_values=0,
+        )] += num_target_wires * num_blocks * 2
 
     for block_index in range(num_blocks):
         resources[
@@ -689,67 +711,13 @@ def _hybrid_qram_resources(num_select_wires, k, n_tree):
             )
         ] += (k > 0) * 2
 
-        wm = self.hyperparameters["tree_wire_manager"]
-        signal = self.hyperparameters["signal_wire"][0]
-
         if n_tree == 0:
             return resources
 
-        ops: List[Operator] = []
-        wm = self.hyperparameters["tree_wire_manager"]
-        signal = self.hyperparameters["signal_wire"][0]
-
-        for level in range(n_tree):
-            # SWAP(tree_qram_wires[level], bus) controlled on signal
-            origin = wm.qram_wires[level]
-            target = wm.bus_wire[0]
-            base_swap = SWAP(wires=[origin, target])
-            ops.append(ctrl(base_swap, control=[signal], control_values=[1]))
-
-            # route down qram wires for current levels
-            ops += self._tree_route_bus_down_first_k_levels_ctrl(level)
-
-            # deposit into dir[level, *] along active path
-            if level == 0:
-                base_swap = SWAP(wires=[wm.bus_wire[0], wm.router(0, 0)])
-                ops.append(ctrl(base_swap, control=[signal], control_values=[1]))
-            else:
-                for p in range(1 << level):
-                    parent = _node_index(level - 1, p >> 1)
-                    if p % 2 == 0:
-                        origin = wm.portL_wires[parent]
-                    else:
-                        origin = wm.portR_wires[parent]
-                    target = wm.router(level, p)
-                    base_swap = SWAP(wires=[origin, target])
-                    ops.append(ctrl(base_swap, control=[signal], control_values=[1]))
-
-        # 2) per-target data phase, controlled on signal
-        for j, tw in enumerate(wm.target_wires):
-            # H on target
-            base_h = Hadamard(wires=[tw])
-            ops.append(ctrl(base_h, control=[signal], control_values=[1]))
-
-            # Swap target <-> bus
-            base_swap1 = SWAP(wires=[tw, wm.bus_wire[0]])
-            ops.append(ctrl(base_swap1, control=[signal], control_values=[1]))
-
-            # Route down tree
-            ops += self._tree_route_bus_down_first_k_levels_ctrl(n_tree)
-
-            # Leaf Z ops for this block and bit index j
-            ops += self._tree_leaf_ops_for_bit_block_ctrl(j, block_index)
-
-            # Route back up
-            ops += self._tree_route_bus_up_first_k_levels_ctrl(n_tree)
-
-            # Swap back bus -> target
-            base_swap2 = SWAP(wires=[tw, wm.bus_wire[0]])
-            ops.append(ctrl(base_swap2, control=[signal], control_values=[1]))
-
-            # Final H on target
-            base_h2 = Hadamard(wires=[tw])
-            ops.append(ctrl(base_h2, control=[signal], control_values=[1]))
+        resources[controlled_resource_rep(
+            base_class=PauliZ, base_params={}, num_control_wires=1, num_zero_control_values=0,
+        )] += sum([bitstrings[(block_index << n_tree) + p][j] == "1" for j in range(num_target_wires) for p in
+                   range(1 << n_tree)])
 
         # 3) address unloading for the tree (controlled on signal)
         ops += self._tree_unmark_routers_via_bus_ctrl()
