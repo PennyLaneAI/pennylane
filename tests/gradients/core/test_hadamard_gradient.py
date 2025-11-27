@@ -418,7 +418,12 @@ class TestDifferentModes:
         standard = mocker.spy(hadamard_gradient, "_hadamard_test")
         reverse = mocker.spy(hadamard_gradient, "_reversed_hadamard_test")
 
-        qml.gradients.hadamard_grad(tape, aux_wire="a")
+        batch, _ = qml.gradients.hadamard_grad(tape, aux_wire="a")
+        assert len(batch) == 3
+        
+        assert qml.CNOT(("a", 0)) in batch[0].operations
+        assert qml.CNOT(("a", 0)) in batch[1].operations
+        assert qml.CY(("a", 0)) in batch[2].operations
 
         standard.assert_called_once()
         reverse.assert_called_once()
