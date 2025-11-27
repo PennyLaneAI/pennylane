@@ -235,7 +235,7 @@ class TransformProgram:
             cotransform_cache = other.cotransform_cache
         return TransformProgram(transforms, cotransform_cache=cotransform_cache)
 
-    def __rmul__(self, n: int) -> "TransformProgram":
+    def __mul__(self, n: int) -> "TransformProgram":
         """Right multiplication to repeat a program n times.
 
         Args:
@@ -248,27 +248,17 @@ class TransformProgram:
             if n < 0:
                 raise ValueError("Cannot multiply transform program by negative integer")
 
-            # Check for final transforms
             if self.has_final_transform:
                 raise TransformError(
                     "Cannot multiply a transform program that has a terminal transform."
                 )
 
-            # Repeat the transforms
             transforms = self._transform_program * n
             return TransformProgram(transforms, cotransform_cache=self.cotransform_cache)
         return NotImplemented
 
-    def __mul__(self, n: int) -> "TransformProgram":
-        """Left multiplication to repeat a program n times.
-
-        Args:
-            n (int): Number of times to repeat this program.
-
-        Returns:
-            TransformProgram: A new program with this program repeated n times.
-        """
-        return self.__rmul__(n)
+    def __rmul__(self, n: int) -> "TransformProgram":
+        return self.__mul__(n)
 
     def __repr__(self):
         """The string representation of the transform program class."""
