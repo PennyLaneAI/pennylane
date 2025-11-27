@@ -269,37 +269,11 @@ def custom_staging_rule(
         num_device_wires=len(device.wires),
         batch_shape=batch_shape,
     )
-
-    # Create output variables for the new equation
-    outvars = [jaxpr_trace.frame.newvar(o) for o in new_shapes]
-
-    # Create JaxprEqnContext and TracingEqn for JAX 0.7.0
-    # pylint: disable=import-outside-toplevel
-    from jax._src import compute_on, config, xla_metadata_lib
-    from jax._src.interpreters.partial_eval import JaxprEqnContext, TracingEqn
-
-    ctx = JaxprEqnContext(
-        compute_on.current_compute_type(),
-        config.threefry_partitionable.value,
-        xla_metadata_lib.current_xla_metadata(),
-    )
-
-    # Create TracingEqn instead of JaxprEqn for JAX 0.7.0
-    eqn = TracingEqn(
-        tracers,  # in_tracers (not invars!)
-        outvars,
-        qnode_prim,
-        params,
-        jax.core.no_effects,
-        source_info,
-        ctx,
+    eqn, out_tracers = jaxpr_trace.make_eqn(
+        tracers, new_shapes, qnode_prim, params, jax.core.no_effects, source_info
     )
 
     jaxpr_trace.frame.add_eqn(eqn)
-
-    # Create output tracers
-    out_tracers = [pe.DynamicJaxprTracer(jaxpr_trace, o, v) for o, v in zip(new_shapes, outvars)]
-
     return out_tracers
 
 
