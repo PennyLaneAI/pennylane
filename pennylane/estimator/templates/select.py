@@ -43,15 +43,16 @@ class SelectTHC(ResourceOperator):
     Args:
         thc_ham (:class:`~pennylane.estimator.compact_hamiltonian.THCHamiltonian`): A tensor hypercontracted
             Hamiltonian on which the select operator is being applied.
-        batched_rotations (int | None): The number of rotation angles to load simultaneously
-            into temporary quantum registers for processing in a batch of Givens rotation circuits.
-            This parameter manages the trade-off between qubit count and gate cost. Default is all angles
-            are loaded at once, resulting in the highest qubit cost but the lowest gate cost.
+        batched_rotations (int | None): The maximum number of rotation angles to load simultaneously
+            into temporary quantum registers for processing in the Givens rotation circuits.
+            The default value of :code:`None` loads all angles at once, where the batch size is equal to
+            the number of orbitals minus one.
         rotation_precision (int | None): The number of bits used to represent the precision for loading
             the rotation angles for basis rotation. If :code:`None` is provided, the default value from the
             :class:`~.pennylane.estimator.resource_config.ResourceConfig` is used.
         select_swap_depth (int | None): A parameter of :class:`~.pennylane.estimator.templates.subroutines.QROM`
-            used to trade-off extra wires for reduced circuit depth. Defaults to :code:`None`, which internally determines the optimal depth.
+            used to trade-off extra wires for reduced circuit depth. Defaults to :code:`None`, which internally
+            determines the optimal depth.
         wires (WiresLike | None): the wires on which the operator acts
 
     Resources:
@@ -63,6 +64,24 @@ class SelectTHC(ResourceOperator):
 
     >>> import pennylane.estimator as qre
     >>> thc_ham =  qre.THCHamiltonian(num_orbitals=20, tensor_rank=40)
+    >>> res = qre.estimate(qre.SelectTHC(thc_ham, rotation_precision=15))
+    >>> print(res)
+    --- Resources: ---
+     Total wires: 371.0
+       algorithmic wires: 58
+       allocated wires: 313.0
+         zero state: 313
+         any state: 0.0
+     Total gates : 1.959E+4
+       'Toffoli': 2.219E+3,
+       'CNOT': 1.058E+4,
+       'X': 268.0,
+       'Z': 41,
+       'S': 80,
+       'Hadamard': 6.406E+3
+
+    Let's also see how the resources change when batched rotations are used:
+
     >>> res = qre.estimate(qre.SelectTHC(thc_ham, batched_rotations=10, rotation_precision=15))
     >>> print(res)
     --- Resources: ---
@@ -78,6 +97,10 @@ class SelectTHC(ResourceOperator):
        'Z': 41,
        'S': 80,
        'Hadamard': 7.378E+3
+
+    We can see that by using batched rotations, the number of allocated wires decreases
+    significantly, at the cost of an increased number of Toffoli gates.
+
     """
 
     resource_keys = {"thc_ham", "batched_rotations", "rotation_precision", "select_swap_depth"}
@@ -134,10 +157,10 @@ class SelectTHC(ResourceOperator):
             dict: A dictionary containing the resource parameters:
                 * thc_ham (:class:`~.pennylane.estimator.compact_hamiltonian.THCHamiltonian`): a tensor hypercontracted
                   Hamiltonian on which the select operator is being applied
-                * batched_rotations (int | None): The number of rotation angles to load simultaneously
-                    into temporary quantum registers for processing in a batch of Givens rotation circuits.
-                    This parameter manages the trade-off between qubit count and gate cost. Default is all angles
-                    are loaded at once, resulting in the highest qubit cost but the lowest gate cost.
+                * batched_rotations (int | None): The maximum number of rotation angles to load simultaneously
+                  into temporary quantum registers for processing in the Givens rotation circuits.
+                  The default value of :code:`None` loads all angles at once, where the batch size is equal to
+                  the number of orbitals minus one.
                 * rotation_precision (int | None): The number of bits used to represent the precision for loading
                   the rotation angles for basis rotation. If :code:`None` is provided, the default value from the
                   :class:`~.pennylane.estimator.resource_config.ResourceConfig` is used.
@@ -165,10 +188,10 @@ class SelectTHC(ResourceOperator):
         Args:
             thc_ham (:class:`~pennylane.estimator.compact_hamiltonian.THCHamiltonian`): A tensor hypercontracted
                 Hamiltonian on which the select operator is being applied.
-            batched_rotations (int | None): The number of rotation angles to load simultaneously
-                into temporary quantum registers for processing in a batch of Givens rotation circuits.
-                This parameter manages the trade-off between qubit count and gate cost. Default is all angles
-                are loaded at once, resulting in the highest qubit cost but the lowest gate cost.
+            batched_rotations (int | None): The maximum number of rotation angles to load simultaneously
+                into temporary quantum registers for processing in the Givens rotation circuits.
+                The default value of :code:`None` loads all angles at once, where the batch size is equal to
+                the number of orbitals minus one.
             rotation_precision (int | None): The number of bits used to represent the precision for loading
                 the rotation angles for basis rotation. If :code:`None` is provided, the default value from the
                 :class:`~.pennylane.estimator.resource_config.ResourceConfig` is used.
@@ -234,10 +257,10 @@ class SelectTHC(ResourceOperator):
         Args:
             thc_ham (:class:`~pennylane.estimator.compact_hamiltonian.THCHamiltonian`): A tensor hypercontracted
                 Hamiltonian on which the select operator is being applied.
-            batched_rotations (int | None): The number of rotation angles to load simultaneously
-                into temporary quantum registers for processing in a batch of Givens rotation circuits.
-                This parameter manages the trade-off between qubit count and gate cost. Default is all angles
-                are loaded at once, resulting in the highest qubit cost but the lowest gate cost.
+            batched_rotations (int | None): The maximum number of rotation angles to load simultaneously
+                into temporary quantum registers for processing in the Givens rotation circuits.
+                The default value of :code:`None` loads all angles at once, where the batch size is equal to
+                the number of orbitals minus one.
             rotation_precision (int | None): The number of bits used to represent the precision for loading
                 the rotation angles for basis rotation. If :code:`None` is provided, the default value from the
                 :class:`~.pennylane.estimator.resource_config.ResourceConfig` is used.
