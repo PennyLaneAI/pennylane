@@ -854,7 +854,7 @@ def _cphase_to_ppr(theta, wires, **_):
 add_decomps(PhaseShift, _phaseshift_to_rz_gp)
 add_decomps("Adjoint(PhaseShift)", adjoint_rotation)
 add_decomps("Pow(PhaseShift)", pow_rotation)
-add_decomps("C(PhaseShift)", flip_zero_control(_controlled_phase_shift_ppr))
+add_decomps("C(PhaseShift)", flip_zero_control(_cphase_to_ppr))
 
 
 class Rot(Operation):
