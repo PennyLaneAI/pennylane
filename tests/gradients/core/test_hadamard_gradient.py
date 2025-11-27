@@ -420,7 +420,7 @@ class TestDifferentModes:
 
         batch, _ = qml.gradients.hadamard_grad(tape, aux_wire="a")
         assert len(batch) == 3
-        
+
         assert qml.CNOT(("a", 0)) in batch[0].operations
         assert qml.CNOT(("a", 0)) in batch[1].operations
         assert qml.CY(("a", 0)) in batch[2].operations
@@ -441,19 +441,19 @@ class TestDifferentModes:
         reverse = mocker.spy(hadamard_gradient, "_reversed_hadamard_test")
         reversed_direct = mocker.spy(hadamard_gradient, "_reversed_direct_hadamard_test")
 
-        op = qml.evolve(qml.X(0) @ qml.X(1) + qml.Z(0) @ qml.Z(1) + qml.Y(0), x)
-        tape = qml.tape.QuantumScript([op], [qml.expval(qml.Z(0)])
-        batch, _ = qml.gradients.hadamard_grad(tape, mode="auto")(t)
-        
-        assert len(batch) == 6 # three terms and no work wire
+        op = qml.evolve(qml.X(0) @ qml.X(1) + qml.Z(0) @ qml.Z(1) + qml.Y(0), t)
+        tape = qml.tape.QuantumScript([op], [qml.expval(qml.Z(0))])
+        batch, _ = qml.gradients.hadamard_grad(tape, mode="auto")
+
+        assert len(batch) == 6  # three terms and no work wire
 
         assert standard.call_count == 0
         assert direct.call_count == 1
         assert reverse.call_count == 0
         assert reversed_direct.call_count == 0
 
-        batch2, _ = qml.gradients.hadamard_grad(tape, aux_wire=2, mode="auto")(t)
-        assert len(batch2) == 3 # three terms and work wire
+        batch2, _ = qml.gradients.hadamard_grad(tape, aux_wire=2, mode="auto")
+        assert len(batch2) == 3  # three terms and work wire
 
         assert standard.call_count == 1
         assert direct.call_count == 1
