@@ -41,7 +41,7 @@
   ```
 
   ```pycon
-  >>> qml.draw(circuit)()
+  >>> print(qml.draw(circuit)())
   0: ──H─╭┤↗X├────┤  <Z>
   1: ────│──────X─┤
   2: ──H─╰┤↗Y├──║─┤
