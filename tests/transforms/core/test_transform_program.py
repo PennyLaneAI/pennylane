@@ -240,6 +240,16 @@ class TestTransformProgramDunders:
                 second_valid_transform,
                 id="dispatcher+program",
             ),
+            # container + program -> program with container first, then program contents
+            pytest.param(
+                TransformContainer(transform=qml.transform(first_valid_transform)),
+                TransformProgram(
+                    [TransformContainer(transform=qml.transform(second_valid_transform))]
+                ),
+                first_valid_transform,
+                second_valid_transform,
+                id="container+program",
+            ),
             # program + program -> new program with one followed by two
             pytest.param(
                 TransformProgram(

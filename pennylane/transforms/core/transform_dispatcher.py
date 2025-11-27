@@ -545,10 +545,10 @@ class TransformContainer:  # pylint: disable=too-many-instance-attributes
         return self._transform_dispatcher.final_transform
 
     def __add__(self, other):
-        """Add two containers or a container and a program to create a TransformProgram.
+        """Add two containers or a container and a dispatcher/program to create a TransformProgram.
 
         Args:
-            other: Another TransformContainer or TransformProgram to add.
+            other: Another TransformContainer, TransformDispatcher, or TransformProgram to add.
 
         Returns:
             TransformProgram: A new program with this container followed by the other.
@@ -558,6 +558,29 @@ class TransformContainer:  # pylint: disable=too-many-instance-attributes
 
         if isinstance(other, TransformContainer):
             return TransformProgram([self, other])
+        if isinstance(other, TransformDispatcher):
+            other_container = TransformContainer(other)
+            return TransformProgram([self, other_container])
+        if isinstance(other, TransformProgram):
+            program = TransformProgram([self])
+            return program + other
+        return NotImplemented
+
+    def __radd__(self, other):
+        """Right addition for container with dispatcher.
+
+        Args:
+            other: A TransformDispatcher to add this container to.
+
+        Returns:
+            TransformProgram: A new program with the other followed by this container.
+        """
+        # Import here to avoid circular import
+        from .transform_program import TransformProgram  # pylint: disable=import-outside-toplevel
+
+        if isinstance(other, TransformDispatcher):
+            other_container = TransformContainer(other)
+            return TransformProgram([other_container, self])
         return NotImplemented
 
     def __mul__(self, n):
