@@ -281,7 +281,7 @@ def _mark_routers_via_bus(wire_manager, n_k):
       2) Route bus down k levels (CSWAPs controlled by routers at levels < k)
       3) At node (k, path-prefix), SWAP(bus, dir[k, path-prefix])
     """
-    SWAP([wire_manager.qram_wires[0], wire_manager.bus_wires[0]])
+    SWAP([wire_manager.qram_wires[0], wire_manager.bus_wire[0]])
     SWAP([wire_manager.bus_wire[0], wire_manager.router(0, 0)])
     for k in range(1, n_k):
         # 1) load a_k into the bus
