@@ -593,7 +593,7 @@ class TestToBloq:
     @pytest.mark.parametrize(
         (
             "op",
-            "qml_call_graph",  # Computed by resources from labs or decompositions
+            "qml_call_graph",
         ),
         [
             (
@@ -690,11 +690,26 @@ class TestToBloq:
             ),
             (
                 qml.ModExp(
+                    x_wires=[0, 1],
+                    output_wires=[2, 3, 4],
+                    base=2,
+                    mod=7,
+                    work_wires=[5, 6, 7, 8, 9],
+                ),
+                {
+                    (qml.Toffoli([0, 1, 2]), True): 8997,
+                    (qml.CNOT([0, 1]), True): 7398,
+                    (qml.Hadamard(0), True): 9756,
+                    (qml.T(0), True): 316800,
+                },
+            ),
+            (
+                qml.ModExp(
                     x_wires=[0, 1, 2],
                     output_wires=[3, 4, 5],
                     base=3,
                     mod=8,
-                    work_wires=[6, 7, 8],
+                    work_wires=[6, 7, 8, 9, 10],
                 ),
                 {
                     (qml.Toffoli([0, 1, 2]), True): 805,
@@ -762,8 +777,12 @@ class TestToBloq:
                 },
             ),
             (
-                qml.StatePrep(state=[0.5, 0.5, 0.5, 0.5], wires=range(2)),
-                {(qml.CNOT([0, 1]), True): 2, (qml.T(0), True): 88},
+                qml.StatePrep(
+                    state=[0.5, 0.5, 0.5, 0.5, 0.25, 0.25, 0.25, 0.25],
+                    wires=range(3),
+                    normalize=True,
+                ),
+                {(qml.CNOT([0, 1]), True): 6, (qml.T(0), True): 132},
             ),
         ],
     )
@@ -776,6 +795,129 @@ class TestToBloq:
 
         call_graph = _get_op_call_graph(op)
         assert dict(call_graph) == bloq_call_graph
+
+    @pytest.mark.parametrize(
+        (
+            "op",
+            "qml_call_graph",
+        ),
+        [
+            (
+                qml.Superposition(
+                    coeffs=np.sqrt(np.array([1 / 3, 1 / 3, 1 / 3])),
+                    bases=np.array([[1, 1, 1], [0, 1, 0], [0, 0, 0]]),
+                    wires=[0, 1, 2],
+                    work_wire=3,
+                ),
+                {
+                    (qml.T(0), True): 132,
+                    (qml.CNOT([0, 1]), True): 6,
+                    (qml.X([0]), True): 4,
+                    (qml.Toffoli([0, 1, 2]), True): 4,
+                    (qml.H(0), True): 6,
+                },
+            ),
+            (
+                qml.QROMStatePreparation(
+                    np.sqrt(np.array([0.5, 0.0, 0.25, 0.25])), [4, 5], [1, 2, 3], [0]
+                ),
+                {
+                    (qml.X([0]), True): 4,
+                    (qml.CNOT([0, 1]), True): 34,
+                    (qml.Toffoli([0, 1, 2]), True): 8,
+                    (qml.H(0), True): 30,
+                    (qml.S(0), True): 6,
+                    (qml.Z(0), True): 3,
+                },
+            ),
+            (
+                qml.QROMStatePreparation(np.array([0.5, -0.5, 0.5, 0.5]), [4, 5], [1, 2, 3], [0]),
+                {
+                    (qml.X(0), True): 14,
+                    (qml.Toffoli([0, 1, 2]), True): 16,
+                    (qml.CNOT([0, 1]), True): 68,
+                    (qml.Hadamard(0), True): 54,
+                    (qml.S(0), True): 6,
+                    (qml.Z(0), True): 3,
+                },
+            ),
+            (
+                qml.QSVT(
+                    UA=qml.H(0),
+                    projectors=[qml.RZ(-2 * theta, wires=0) for theta in (1.23, -0.5, -0.3)],
+                ),
+                {
+                    (qml.T(0), True): 132,
+                    (qml.Hadamard(0), True): 2,
+                },
+            ),
+            (
+                qml.TrotterizedQfunc(
+                    0.1,
+                    *(0.12, -3.45),
+                    qfunc=lambda time, theta, phi, wires, flip: (
+                        qml.RX(time * theta, wires[0]),
+                        qml.RY(time * phi, wires[1]),
+                        qml.CNOT(wires=wires[:2]) if flip else None,
+                    ),
+                    n=1,
+                    order=2,
+                    wires=["a", "b"],
+                    flip=True,
+                ),
+                {
+                    (qml.T(0), True): 176,
+                    (qml.CNOT(wires=[0, 1]), True): 2,
+                },
+            ),
+            (
+                qml.TrotterizedQfunc(
+                    0.1,
+                    *(0.12, -3.45),
+                    qfunc=lambda time, theta, phi, wires, flip: (
+                        qml.RX(time * theta, wires[0]),
+                        qml.RY(time * phi, wires[1]),
+                        qml.CNOT(wires=wires[:2]) if flip else None,
+                    ),
+                    n=1,
+                    order=1,
+                    wires=["a", "b"],
+                    flip=True,
+                ),
+                {
+                    (qml.T(0), True): 88,
+                    (qml.CNOT(wires=[0, 1]), True): 1,
+                },
+            ),
+            (
+                qml.Select(ops=[qml.X(2), qml.QFT(wires=[2, 3, 4])], control=[0, 1]),
+                {
+                    (qml.Toffoli([0, 1, 2]), True): 8,
+                    (qml.CNOT([0, 1]), True): 14,
+                    (qml.Hadamard(0), True): 9,
+                    (qml.T(0), True): 660,
+                    (qml.X(0), True): 2,
+                },
+            ),
+            (
+                qml.StatePrep(
+                    state=[0.5, 0.5, 0.5, 0.5, 0.25, 0.25, 0.25, 0.25],
+                    wires=range(3),
+                    normalize=True,
+                ),
+                {(qml.CNOT([0, 1]), True): 6, (qml.T(0), True): 132},
+            ),
+        ],
+    )
+    def test_to_bloq_call_graph(self, op, qml_call_graph):
+        """ "Tests that the defined call_graphs match the expected decompostions"""
+        bloq_call_graph = {}
+
+        for k, v in qml_call_graph.items():  # k is a tuple of (op, bool)
+            bloq_call_graph[qml.to_bloq(k[0], map_ops=k[1])] = v
+
+        to_bloq_call_graph = qml.to_bloq(op).call_graph()[1]
+        assert bloq_call_graph == to_bloq_call_graph
 
     @pytest.mark.parametrize(
         (
@@ -834,6 +976,10 @@ class TestToBloq:
             from qualtran.bloqs.qft import QFTTextBook
 
             qualtran_bloqs = {
+                "qpe_bloq": TextbookQPE(
+                    unitary=qml.to_bloq(qml.RX(0.1, wires=0)),
+                    ctrl_state_prep=RectangularWindowState(4),
+                ),
                 "qft_bloq": QFTTextBook(4),
                 "modexp_bloq": ModExp(base=2, mod=7, exp_bitsize=2, x_bitsize=3),
                 "qrom_bloq_clean": QROAMClean.build_from_data([2, 7, 6, 0]),
