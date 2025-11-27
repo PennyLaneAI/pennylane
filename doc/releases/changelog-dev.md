@@ -160,6 +160,16 @@
 * The graph-based decomposition system now supports decomposition rules that contains mid-circuit measurements.
   [(#8079)](https://github.com/PennyLaneAI/pennylane/pull/8079)
 
+* New decomposition rules that decompose to :class:`~.PauliRot` are added for the following operators.
+  [(#8700)](https://github.com/PennyLaneAI/pennylane/pull/8700)
+
+  - :class:`~.CRX`, :class:`~.CRY`, :class:`~.CRZ`
+  - :class:`~.ControlledPhaseShift`
+  - :class:`~.IsingXX`, :class:`~.IsingYY`, :class:`~.IsingZZ`
+  - :class:`~.PSWAP`
+  - :class:`~.RX`, :class:`~.RY`, :class:`~.RZ`
+  - :class:`~.SingleExcitation`, :class:`~.DoubleExcitation`
+
 <h3>Breaking changes 💔</h3>
 
 * `qml.transforms.map_wires` no longer supports plxpr transforms.
@@ -540,4 +550,5 @@ Shuli Shu,
 Jay Soni,
 nate stemen,
 David Wierichs,
-Hongsheng Zheng
+Hongsheng Zheng,
+Zinan Zhou
