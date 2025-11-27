@@ -34,13 +34,6 @@ def dummy_tape_only_transform(tape):
     return [tape], lambda res: res[0]
 
 
-@qml.transform
-def dummy_tape_only_transform_with_kwargs(tape, dummy_kwarg1=None, dummy_kwarg2=None):
-    """Transform that uses kwargs but has no custom plxpr_transform, triggering fallback."""
-    # pylint: disable=unused-argument
-    return [tape], lambda res: res[0]
-
-
 def _dummy_plxpr_transform(jaxpr, consts, targs, tkwargs, *args):  # pylint: disable=unused-argument
     """Dummy function to transform plxpr."""
 
