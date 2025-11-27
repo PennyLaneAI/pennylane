@@ -211,12 +211,9 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
         bitstrings = list(bitstrings)
         qram_wires = Wires(qram_wires)
 
-        if not self.hyperparameters or "k" not in self.hyperparameters:
-            n_k = len(qram_wires)
-            if (1 << n_k) != len(bitstrings):
-                raise ValueError("len(bitstrings) must be 2^(len(qram_wires)).")
-        else:
-            n_k = self.hyperparameters["n_k"]
+        n_k = len(qram_wires)
+        if (1 << n_k) != len(bitstrings):
+            raise ValueError("len(bitstrings) must be 2^(len(qram_wires)).")
 
         target_wires = Wires(target_wires)
         if m != len(target_wires):
