@@ -492,14 +492,13 @@ class TestDifferentModes:
 
         # circuit would normally dispatch the reversed method, but has an extra observable.
 
-        @qml.qnode(dev)
-        def circuit(x):
-            qml.evolve(qml.X(0) @ qml.X(1) + qml.Y(2) + qml.Z(0) @ qml.Z(1), x)
-            return qml.expval(qml.Z(0) @ qml.X(1) + qml.Y(0) + qml.X(0) @ qml.Z(1)), qml.expval(
+        op = qml.evolve(qml.X(0) @ qml.X(1) + qml.Y(2) + qml.Z(0) @ qml.Z(1), 0.5)
+        mps = [qml.expval(qml.Z(0) @ qml.X(1) + qml.Y(0) + qml.X(0) @ qml.Z(1)), qml.expval(
                 qml.Z(0)
-            )
-
-        qml.gradients.hadamard_grad(circuit, aux_wire=3, mode="auto")(t)
+            )]
+        tape = qml.tape.QuantumScript([op], [mps])
+        batch, _ = qml.gradients.hadamard_grad(tape, aux_wire=3, mode="auto")
+        assert len(batch) == 3
 
         assert standard.call_count == 1
         assert reverse.call_count == 0
