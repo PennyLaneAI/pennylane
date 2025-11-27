@@ -433,8 +433,6 @@ class TestDifferentModes:
 
         t = np.array(0.0)
 
-        dev = qml.device("default.qubit")
-
         # setup mocks
         standard = mocker.spy(hadamard_gradient, "_hadamard_test")
         direct = mocker.spy(hadamard_gradient, "_direct_hadamard_test")
@@ -482,9 +480,6 @@ class TestDifferentModes:
 
     def test_automatic_mode_multiple_observables(self, mocker):
         """Test the automatic mode dispatches the correct modes for the scenario with multiple observables."""
-        t = np.array(0.0)
-
-        dev = qml.device("default.qubit")
 
         # setup mocks
         standard = mocker.spy(hadamard_gradient, "_hadamard_test")
@@ -493,10 +488,11 @@ class TestDifferentModes:
         # circuit would normally dispatch the reversed method, but has an extra observable.
 
         op = qml.evolve(qml.X(0) @ qml.X(1) + qml.Y(2) + qml.Z(0) @ qml.Z(1), 0.5)
-        mps = [qml.expval(qml.Z(0) @ qml.X(1) + qml.Y(0) + qml.X(0) @ qml.Z(1)), qml.expval(
-                qml.Z(0)
-            )]
-        tape = qml.tape.QuantumScript([op], [mps])
+        mps = [
+            qml.expval(qml.Z(0) @ qml.X(1) + qml.Y(0) + qml.X(0) @ qml.Z(1)),
+            qml.expval(qml.Z(0)),
+        ]
+        tape = qml.tape.QuantumScript([op], mps)
         batch, _ = qml.gradients.hadamard_grad(tape, aux_wire=3, mode="auto")
         assert len(batch) == 3
 
