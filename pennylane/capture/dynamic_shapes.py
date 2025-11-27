@@ -232,16 +232,7 @@ def register_custom_staging_rule(
             jax.core.no_effects,
             source_info,
         )
-        tracing_eqn = TracingEqn(
-            list(tracers),
-            returned_vars,
-            primitive,
-            params,
-            eqn.effects,
-            source_info,
-            eqn.ctx,
-        )
-        jaxpr_trace.frame.add_eqn(tracing_eqn)
+        jaxpr_trace.frame.add_eqn(eqn)
         return out_tracers
 
     pe.custom_staging_rules[primitive] = custom_staging_rule
