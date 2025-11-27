@@ -406,6 +406,23 @@ class TestDifferentModes:
             expected = 1 / np.sqrt(2) * (1.0 - 2.0) + 1 / np.sqrt(2) * (3.0 - 4.0)
             assert qml.math.allclose(out, expected)
 
+    def test_auto_mode_with_multiple_trainable_params(self, mocker):
+        # In this case, the RX gets the standard treatment, but the evolution gets reversed.
+
+        tape = qml.tape.QuantumScript(
+            [qml.RX(0.5, 0), qml.evolve(qml.X(0) + qml.Y(1), 0.5)],
+            [qml.expval(qml.X(0) + qml.Y(0))],
+        )
+
+        # setup mocks
+        standard = mocker.spy(hadamard_gradient, "_hadamard_test")
+        reverse = mocker.spy(hadamard_gradient, "_reversed_hadamard_test")
+
+        qml.gradients.hadamard_grad(tape, aux_wire="a")
+
+        standard.assert_called_once()
+        reverse.assert_called_once()
+
     def test_automatic_mode(self, mocker):
         """Test the automatic mode dispatches the correct modes for the scenario."""
 
