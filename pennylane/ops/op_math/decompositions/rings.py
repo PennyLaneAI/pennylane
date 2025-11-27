@@ -123,10 +123,19 @@ class ZSqrtTwo:
         if isinstance(other, int) or (isinstance(other, float) and other.is_integer()):
             return ZSqrtTwo(self.a % int(other), self.b % int(other))
 
+        if self in (zero := ZSqrtTwo(0, 0), other):
+            return zero
+
         d = abs(other)
         n1, n2 = (self.a * other.a - 2 * self.b * other.b), (self.b * other.a - self.a * other.b)
-        r = ZSqrtTwo(round(n1 / d), round(n2 / d)) * other
-        return self - r if float(self) > float(r) else r - self
+        if (dv := ZSqrtTwo(n1 // d, n2 // d)) != ZSqrtTwo(0, 0):
+            return self - dv * other
+
+        dv_a, dv_b = max(round(n1 / d), dv.a), dv.b
+        if dv_a == dv.a:
+            dv_b = max(round(n2 / d), dv.b)
+
+        return (-1) ** (dv_a != dv.a or dv_b != dv.b) * (self - ZSqrtTwo(dv_a, dv_b) * other)
 
     @property
     def flatten(self: ZSqrtTwo) -> list[int]:

@@ -41,13 +41,18 @@ class TestGCD:
             (ZSqrtTwo(15), ZSqrtTwo(25), ZSqrtTwo(5)),
             (ZSqrtTwo(81), ZSqrtTwo(63), ZSqrtTwo(9)),
             (ZSqrtTwo(144), ZSqrtTwo(108), ZSqrtTwo(36)),
-            (ZSqrtTwo(28, 15), ZSqrtTwo(12, 25), ZSqrtTwo(10, 7)),
+            (ZSqrtTwo(23, 72), ZSqrtTwo(23, 72), ZSqrtTwo(23, 72)),
+            (ZSqrtTwo(28, 15), ZSqrtTwo(12, 25), ZSqrtTwo(58, 41)),
             (ZSqrtTwo(35, 42), ZSqrtTwo(22, 16), ZSqrtTwo(11, 8)),
+            (ZSqrtTwo(-1, 7), ZSqrtTwo(7, 0), ZSqrtTwo(1, 0)),
         ],
     )
     def test_gcd_zsqrt_two(self, a, b, expected):
         """Test the GCD function."""
         assert _gcd(a, b) == expected
+        res1, res2 = a / expected, b / expected
+        assert res1 * expected == a
+        assert res2 * expected == b
 
     @pytest.mark.parametrize(
         "a, b, expected",
@@ -182,7 +187,7 @@ class TestFactorization:
             (ZSqrtTwo(2, -1), ZOmega(a=1, b=-1, c=0, d=0)),
             (ZSqrtTwo(7, 0), None),
             (ZSqrtTwo(23, 0), None),
-            (ZSqrtTwo(7, 2), -ZOmega(a=1, b=1, c=1, d=2)),
+            (ZSqrtTwo(7, 2), -ZOmega(a=1, b=1, c=2, d=-1)),
             (ZSqrtTwo(17, 0), None),
             (ZSqrtTwo(5, 2), ZOmega(a=-2, b=-1, c=0, d=0)),
             (ZSqrtTwo(13, 6), ZOmega(a=3, b=0, c=0, d=-2)),
@@ -199,12 +204,12 @@ class TestFactorization:
         [
             (
                 ZOmega(-26687414, 10541729, 10614512, 40727366),
-                ZOmega(-2332111, -20133911, 30805761, -23432014),
+                ZOmega(-30805761, 23432014, -2332111, -20133911),
                 52,
             ),
             (
                 ZOmega(-22067493351, 22078644868, 52098814989, 16270802723),
-                ZOmega(-21764478939, 70433513740, -5852668010, 4737137864),
+                ZOmega(-4737137864, -21764478939, 70433513740, -5852668010),
                 73,
             ),
         ],
