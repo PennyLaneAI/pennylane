@@ -207,7 +207,7 @@ from pennylane.exceptions import (
     TermsUndefinedError,
 )
 from pennylane.math import expand_matrix, is_abstract
-from pennylane.queuing import QueuingManager
+from pennylane.queuing import AnnotatedQueue, QueuingManager
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 
@@ -698,6 +698,19 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
     """
 
     def __init_subclass__(cls, **_):
+        # turn has_decomposition into a class property if possible
+
+        # Some operators will overwrite `decomposition` instead of `compute_decomposition`
+        # Currently, those are mostly classes from the operator arithmetic module.
+        # if class overrides has_decomposition property, we do not want to
+        # override it here
+
+        if (
+            cls.compute_decomposition != Operator.compute_decomposition
+            or cls.decomposition != Operator.decomposition
+        ) and (cls.has_decomposition == Operator.has_decomposition):
+            cls.has_decomposition = True
+
         register_pytree(cls, cls._flatten, cls._unflatten)
         cls._primitive = create_operator_primitive(cls)
 
@@ -1392,19 +1405,12 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
 
         return False
 
-    # pylint: disable=no-self-argument, comparison-with-callable
-    @classproperty
-    def has_decomposition(cls) -> bool:
-        r"""Bool: Whether or not the Operator returns a defined decomposition.
-
-        Note: Child classes may have this as an instance property instead of as a class property.
-        """
-        # Some operators will overwrite `decomposition` instead of `compute_decomposition`
-        # Currently, those are mostly classes from the operator arithmetic module.
-        return (
-            cls.compute_decomposition != Operator.compute_decomposition
-            or cls.decomposition != Operator.decomposition
-        )
+    @property
+    def has_decomposition(self) -> bool:
+        r"""Bool: Whether or not the Operator returns a defined decomposition."""
+        # if compute_decomposition or decomposition overwritten and property
+        # not overwritten, set as class property during __init_subclass__
+        return any(rule.is_applicable(**self.resource_params) for rule in qml.list_decomps(self))
 
     def decomposition(self) -> list["Operator"]:
         r"""Representation of the operator as a product of other operators.
@@ -1418,9 +1424,20 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         Returns:
             list[Operator]: decomposition of the operator
         """
-        return self.compute_decomposition(
-            *self.parameters, wires=self.wires, **self.hyperparameters
-        )
+        if type(self).compute_decomposition != Operator.compute_decomposition:
+            return self.compute_decomposition(
+                *self.parameters, wires=self.wires, **self.hyperparameters
+            )
+
+        for decomp in qml.list_decomps(self):
+            if decomp.is_applicable(**self.resource_params):
+                with AnnotatedQueue() as q:
+                    decomp(*self.data, wires=self.wires, **self.hyperparameters)
+                if QueuingManager.recording():
+                    # no need for copies if we just use queue method
+                    _ = [op.queue() for op in q.queue]
+                return q.queue
+        raise DecompositionUndefinedError
 
     @staticmethod
     def compute_decomposition(

@@ -510,10 +510,10 @@ class TestCliffordCompile:
     def test_raise_with_cliffordt_decomposition(self):
         """Test that exception is correctly raise when decomposing gates without any decomposition"""
 
-        class CustomOp(qml.operation.Operation):  # pylint: disable=too-few-public-methods
+        class SomethingOp(qml.operation.Operation):  # pylint: disable=too-few-public-methods
             pass
 
-        tape = qml.tape.QuantumScript([CustomOp(wires=[0, 1, 2])])
+        tape = qml.tape.QuantumScript([SomethingOp(wires=[0, 1, 2])])
 
         with pytest.raises(ValueError, match="Cannot unroll"):
             clifford_t_decomposition(tape)
