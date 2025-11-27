@@ -24,7 +24,7 @@
   :class:`~.transforms.core.TransformDispatcher`, :class:`~.transforms.core.TransformContainer`, 
   and :class:`~.transforms.core.TransformProgram` to enable intuitive composition of transform 
   programs using `+` and `*` operators.
-  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+  [(#8703)](https://github.com/PennyLaneAI/pennylane/pull/8703)
 
 * `Operator.decomposition` will fallback to the first entry in `qml.list_decomps` if the `Operator.compute_decomposition`
   method is not overridden.
