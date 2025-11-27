@@ -154,6 +154,9 @@
   work wire and :class:`pennylane.TemporaryAND` operators to reduce the resources needed.
   [(#8549)](https://github.com/PennyLaneAI/pennylane/pull/8549)
 
+* A decomposition has been added to the adjoint of :class:`pennylane.TemporaryAND`. This decomposition relies on mid-circuit measurments and does not require any T gates.
+  [(#8633)](https://github.com/PennyLaneAI/pennylane/pull/8633)
+
 * The graph-based decomposition system now supports decomposition rules that contains mid-circuit measurements.
   [(#8079)](https://github.com/PennyLaneAI/pennylane/pull/8079)
 
@@ -474,6 +477,10 @@ A warning message has been added to :doc:`Building a plugin <../development/plug
 
 <h3>Bug fixes 🐛</h3>
 
+* The warnings-as-errors CI action was failing due to an incompatibility between `pytest-xdist` and `pytest-benchmark`. 
+  Disabling the benchmark package allows the tests to be collected an executed. 
+  [(#8699)](https://github.com/PennyLaneAI/pennylane/pull/8699)
+
 * Adds an `expand_transform` to `param_shift_hessian` to pre-decompose
   operations till they are supported.
   [(#8698)](https://github.com/PennyLaneAI/pennylane/pull/8698)
@@ -529,6 +536,7 @@ Sengthai Heng,
 Soran Jahangiri,
 Christina Lee,
 Joseph Lee,
+Lee J. O'Riordan,
 Gabriela Sanchez Diaz,
 Mudit Pandey,
 Shuli Shu,
