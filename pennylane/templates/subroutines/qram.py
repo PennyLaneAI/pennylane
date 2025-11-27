@@ -123,6 +123,13 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
             length, the ``target_wires`` are of the size of the ``work_wires`` register is not exactly
             equal to :math:`1 + 3 ((1 << \texttt{len(qram_wires)}) - 1)`.
 
+    .. seealso:: :class:`~.QROM`, :class:`~.QROMStatePreparation`
+
+    .. note::
+
+        QRAM and QROM, though similar, have different applications and purposes. QRAM is intended
+        for read-and-write capabilities, where the stored data can be loaded and changed. QROM is
+        designed to only load stored data into a quantum register.
 
     **Example:**
 
