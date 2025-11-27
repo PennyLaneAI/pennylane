@@ -26,7 +26,6 @@ from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates import BasisEmbedding
 from pennylane.templates.subroutines.qram import BBQRAM, HybridQRAM
 
-
 dev = device("default.qubit")
 
 
@@ -243,7 +242,7 @@ def hybrid_quantum(bitstrings, qram_wires, target_wires, work_wires, qram_value,
         qram_wires=qram_wires,
         target_wires=target_wires,
         work_wires=work_wires,
-        qram_value=qram_value
+        qram_value=qram_value,
     )
     return probs(wires=target_wires)
 
@@ -334,7 +333,7 @@ def test_hybrid_quantum(
                 [0, 1],
                 [2, 3, 4],
                 [5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
-                (1 << 2) + 1
+                (1 << 2) + 1,
             ),
             ValueError,
             "qram_value out of range.",
