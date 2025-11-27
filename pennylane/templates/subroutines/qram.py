@@ -475,7 +475,7 @@ def _select_only_qram_resources(
                     0,
                 ),
             )
-        ] += bits[j].count("1")
+        ] += sum([1 if bits[j] == "1" else 0 for j in range(len(bitstrings[0]))])
 
     return resources
 
