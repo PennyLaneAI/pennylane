@@ -174,47 +174,6 @@ class TestTransformProgramDunders:
 
         assert "a" not in program
 
-    def test_repr_program(self):
-        """Test the string representation of a program."""
-        transform_program = TransformProgram()
-
-        transform1 = TransformContainer(transform=qml.transform(first_valid_transform))
-        transform2 = TransformContainer(transform=qml.transform(second_valid_transform))
-
-        transform_program.push_back(transform1)
-        transform_program.push_back(transform2)
-
-        str_program = repr(transform_program)
-        assert (
-            str_program
-            == "TransformProgram("
-            + str(first_valid_transform.__name__)
-            + ", "
-            + str(second_valid_transform.__name__)
-            + ")"
-        )
-
-    def test_equality(self):
-        """Tests that we can compare TransformProgram objects with the '==' and '!=' operators."""
-        t1 = TransformContainer(qml.transforms.compile, kwargs={"num_passes": 2})
-        t2 = TransformContainer(qml.transforms.compile, kwargs={"num_passes": 2})
-        t3 = TransformContainer(qml.transforms.transpile, kwargs={"coupling_map": [(0, 1), (1, 2)]})
-
-        p1 = TransformProgram([t1, t3])
-        p2 = TransformProgram([t2, t3])
-        p3 = TransformProgram([t3, t2])
-
-        # test for equality of identical objects
-        assert p1 == p2
-        # test for inequality of different objects
-        assert p1 != p3
-        assert p1 != t1
-
-        # Test inequality with different transforms
-        t4 = TransformContainer(qml.transforms.transpile, kwargs={"coupling_map": [(0, 1), (2, 3)]})
-        p4 = TransformProgram([t1, t4])
-        assert p1 != p4
-
     # ============ Parametrized addition tests ============
     @pytest.mark.parametrize(
         "left, right, expected_first, expected_second",
@@ -500,7 +459,39 @@ class TestTransformProgramDunders:
         ):
             _ = 2 * program
 
-    # ============ Final transform handling tests ============
+    def test_add_two_programs(self):
+        """Test adding two transform programs"""
+        transform1 = TransformContainer(transform=qml.transform(first_valid_transform))
+        transform2 = TransformContainer(transform=qml.transform(second_valid_transform))
+
+        transform_program1 = TransformProgram()
+        transform_program1.push_back(transform1)
+        transform_program1.push_back(transform1)
+        transform_program1.push_back(transform1)
+
+        transform_program2 = TransformProgram()
+        transform_program1.push_back(transform2)
+        transform_program1.push_back(transform2)
+
+        transform_program = transform_program1 + transform_program2
+
+        assert len(transform_program) == 5
+
+        assert isinstance(transform_program[0], TransformContainer)
+        assert transform_program[0].transform is first_valid_transform
+
+        assert isinstance(transform_program[1], TransformContainer)
+        assert transform_program[1].transform is first_valid_transform
+
+        assert isinstance(transform_program[2], TransformContainer)
+        assert transform_program[2].transform is first_valid_transform
+
+        assert isinstance(transform_program[3], TransformContainer)
+        assert transform_program[3].transform is second_valid_transform
+
+        assert isinstance(transform_program[4], TransformContainer)
+        assert transform_program[4].transform is second_valid_transform
+
     def test_add_both_final_transform_programs(self):
         """Test that an error is raised if two programs are added when both have
         terminal transforms"""
@@ -612,6 +603,47 @@ class TestTransformProgramDunders:
 
         with pytest.raises(TransformError, match="already has a terminal transform"):
             _ = program + right_obj
+
+    def test_repr_program(self):
+        """Test the string representation of a program."""
+        transform_program = TransformProgram()
+
+        transform1 = TransformContainer(transform=qml.transform(first_valid_transform))
+        transform2 = TransformContainer(transform=qml.transform(second_valid_transform))
+
+        transform_program.push_back(transform1)
+        transform_program.push_back(transform2)
+
+        str_program = repr(transform_program)
+        assert (
+            str_program
+            == "TransformProgram("
+            + str(first_valid_transform.__name__)
+            + ", "
+            + str(second_valid_transform.__name__)
+            + ")"
+        )
+
+    def test_equality(self):
+        """Tests that we can compare TransformProgram objects with the '==' and '!=' operators."""
+        t1 = TransformContainer(qml.transforms.compile, kwargs={"num_passes": 2})
+        t2 = TransformContainer(qml.transforms.compile, kwargs={"num_passes": 2})
+        t3 = TransformContainer(qml.transforms.transpile, kwargs={"coupling_map": [(0, 1), (1, 2)]})
+
+        p1 = TransformProgram([t1, t3])
+        p2 = TransformProgram([t2, t3])
+        p3 = TransformProgram([t3, t2])
+
+        # test for equality of identical objects
+        assert p1 == p2
+        # test for inequality of different objects
+        assert p1 != p3
+        assert p1 != t1
+
+        # Test inequality with different transforms
+        t4 = TransformContainer(qml.transforms.transpile, kwargs={"coupling_map": [(0, 1), (2, 3)]})
+        p4 = TransformProgram([t1, t4])
+        assert p1 != p4
 
 
 class TestTransformProgram:
