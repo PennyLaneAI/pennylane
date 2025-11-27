@@ -379,34 +379,32 @@ def hadamard_grad(
         most efficient choice. We don't supply an auxilliary wire, so we are choosing between ``direct``
         and ``reversed-direct`` modes.
 
-        .. code-block:: pycon
-
-            >>> dev = qml.device('default.qubit')
-            >>> @qml.qnode(dev)
-            ... def circuit(x):
-            ...     qml.evolve(qml.X(0) @ qml.X(1), x)
-            ...     return qml.expval(qml.Z(0) @ qml.Z(1) + qml.Y(0))
-            >>> grad = qml.gradients.hadamard_grad(circuit, mode='auto')
-            >>> print(qml.draw(grad)(qml.numpy.array(0.5)))
-            0: ─╭Exp(-0.50j X@X)─╭Exp(-0.79j X@X)─┤ ╭<𝓗>
-            1: ─╰Exp(-0.50j X@X)─╰Exp(-0.79j X@X)─┤ ╰<𝓗>
-
-            0: ─╭Exp(-0.50j X@X)─╭Exp(0.79j X@X)─┤ ╭<𝓗>
-            1: ─╰Exp(-0.50j X@X)─╰Exp(0.79j X@X)─┤ ╰<𝓗>
-
-            >>> grad = qml.gradients.hadamard_grad(circuit, mode='reversed-direct')
-            >>> print(qml.draw(grad)(qml.numpy.array(0.5)))
-            0: ─╭Exp(-0.50j X@X)─╭Exp(-0.79j Z@Z)─┤ ╭<-1.00*X@X>
-            1: ─╰Exp(-0.50j X@X)─╰Exp(-0.79j Z@Z)─┤ ╰<-1.00*X@X>
-
-            0: ─╭Exp(-0.50j X@X)─╭Exp(0.79j Z@Z)─┤ ╭<-1.00*X@X>
-            1: ─╰Exp(-0.50j X@X)─╰Exp(0.79j Z@Z)─┤ ╰<-1.00*X@X>
-
-            0: ─╭Exp(-0.50j X@X)──Exp(-0.79j Y)─┤ ╭<-1.00*X@X>
-            1: ─╰Exp(-0.50j X@X)────────────────┤ ╰<-1.00*X@X>
-
-            0: ─╭Exp(-0.50j X@X)──Exp(0.79j Y)─┤ ╭<-1.00*X@X>
-            1: ─╰Exp(-0.50j X@X)───────────────┤ ╰<-1.00*X@X>
+        >>> dev = qml.device('default.qubit')
+        >>> @qml.qnode(dev)
+        ... def circuit(x):
+        ...     qml.evolve(qml.X(0) @ qml.X(1), x)
+        ...     return qml.expval(qml.Z(0) @ qml.Z(1) + qml.Y(0))
+        >>> grad = qml.gradients.hadamard_grad(circuit, mode='auto')
+        >>> print(qml.draw(grad)(qml.numpy.array(0.5)))
+        0: ─╭Exp(-0.50j X@X)─╭Exp(-0.79j X@X)─┤ ╭<𝓗>
+        1: ─╰Exp(-0.50j X@X)─╰Exp(-0.79j X@X)─┤ ╰<𝓗>
+  
+        0: ─╭Exp(-0.50j X@X)─╭Exp(0.79j X@X)─┤ ╭<𝓗>
+        1: ─╰Exp(-0.50j X@X)─╰Exp(0.79j X@X)─┤ ╰<𝓗>
+  
+        >>> grad = qml.gradients.hadamard_grad(circuit, mode='reversed-direct')
+        >>> print(qml.draw(grad)(qml.numpy.array(0.5)))
+        0: ─╭Exp(-0.50j X@X)─╭Exp(-0.79j Z@Z)─┤ ╭<-1.00*X@X>
+        1: ─╰Exp(-0.50j X@X)─╰Exp(-0.79j Z@Z)─┤ ╰<-1.00*X@X>
+  
+        0: ─╭Exp(-0.50j X@X)─╭Exp(0.79j Z@Z)─┤ ╭<-1.00*X@X>
+        1: ─╰Exp(-0.50j X@X)─╰Exp(0.79j Z@Z)─┤ ╰<-1.00*X@X>
+  
+        0: ─╭Exp(-0.50j X@X)──Exp(-0.79j Y)─┤ ╭<-1.00*X@X>
+        1: ─╰Exp(-0.50j X@X)────────────────┤ ╰<-1.00*X@X>
+  
+        0: ─╭Exp(-0.50j X@X)──Exp(0.79j Y)─┤ ╭<-1.00*X@X>
+        1: ─╰Exp(-0.50j X@X)───────────────┤ ╰<-1.00*X@X>
     """
 
     modes = {
