@@ -969,19 +969,21 @@ class IterativeQPE(ResourceOperator):
 
         gate_counts.append(Deallocate(1))
         return gate_counts
-    
+
+
 class UnaryIterationBasedQPE(ResourceOperator):
     r"""Resource class for UnaryIterationBasedQPE.
 
     Args:
-        unitary (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): the phase estimation operator
+        unitary (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): the unitary operator to run
+            the phase estimation protocol on
         num_iterations (int): the number of iterations
         adj_qft_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator` | None): An optional
             argument to set the subroutine used to perform the adjoint QFT operation.
         wires (Sequence[int], None): the wires the operation acts on
 
     Resources:
-        The resources are obtained from <https://arxiv.org/pdf/2011.03494>`_.
+        The resources are obtained from Fig 2. of Section III of <https://arxiv.org/pdf/2011.03494>`_.
 
     **Example**
 
@@ -1005,7 +1007,9 @@ class UnaryIterationBasedQPE(ResourceOperator):
         self.queue()
 
         unitary = unitary.resource_rep_from_op()
-        adj_qft_cmpr_op = None if adj_qft_cmpr_op is None else adj_qft_cmpr_op.resource_rep_from_op()
+        adj_qft_cmpr_op = (
+            None if adj_qft_cmpr_op is None else adj_qft_cmpr_op.resource_rep_from_op()
+        )
 
         self.unitary = unitary
         self.adj_qft_cmpr_op = adj_qft_cmpr_op
@@ -1029,7 +1033,7 @@ class UnaryIterationBasedQPE(ResourceOperator):
             dict: A dictionary containing the resource parameters:
                 * unitary (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A compressed resource operator, corresponding
                   to the phase estimation operator.
-                * num_iterations (int): the number of wires used for measuring out the phase
+                * num_iterations (int): the number of iterations
                 * adj_qft_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp` | None]): An optional compressed
                   resource operator, corresponding to the adjoint QFT routine. If :code:`None`, the
                   default :class:`~.pennylane.estimator.templates.subroutines.QFT` will be used.
@@ -1054,7 +1058,7 @@ class UnaryIterationBasedQPE(ResourceOperator):
         Args:
             unitary (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A compressed resource operator, corresponding
                 to the phase estimation operator.
-            num_estimation_wires (int): the number of wires used for measuring out the phase
+            num_iterations (int): the number of iterations
             adj_qft_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp` | None): An optional compressed
                 resource operator, corresponding to the adjoint QFT routine. If :code:`None`, the
                 default :class:`~.pennylane.estimator.templates.subroutines.QFT` will be used.
@@ -1067,7 +1071,7 @@ class UnaryIterationBasedQPE(ResourceOperator):
             "num_iterations": num_iterations,
             "adj_qft_cmpr_op": adj_qft_cmpr_op,
         }
-        num_wires = int(math.ceil(math.log2(num_iterations))) + unitary.num_wires # edit
+        num_wires = int(math.ceil(math.log2(num_iterations))) + unitary.num_wires  # edit
         return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
@@ -1077,17 +1081,20 @@ class UnaryIterationBasedQPE(ResourceOperator):
         num_iterations: int,
         adj_qft_cmpr_op: CompressedResourceOp | None = None,
     ):
-        r"""Returns the resources for QPE using a Unary Iteration oracle.
-        
-        Unlike standard QPE which assumes a black-box Controlled-Sequence, this decomposition 
+        r"""Returns the resources for QPE using Unary Iteration.
+
+        Unlike standard QPE which assumes a black-box Controlled-Sequence, this decomposition
         explicitly accounts for the 'Unary Iteration' cost shown in the circuit diagram:
         1. The payload (unitary) is applied N times.
         2. The control logic (Toffolis) is applied ~N times to manage the selection tree.
 
         Args:
-            unitary: The step operator (e.g., the SELECT or Walk operator).
-            num_iterations: The total queries (N).
-            adj_qft_cmpr_op: The QFT resource operator.
+            unitary (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A compressed resource operator, corresponding
+                to the phase estimation operator.
+            num_iterations (int): the number of iterations
+            adj_qft_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp` | None): An optional compressed
+                resource operator, corresponding to the adjoint QFT routine. If :code:`None`, the
+                default :class:`~.pennylane.estimator.templates.subroutines.QFT` will be used.
         """
         num_wires = math.ceil(math.log2(num_iterations))
 
@@ -1102,7 +1109,7 @@ class UnaryIterationBasedQPE(ResourceOperator):
                     "base_cmpr_op": resource_rep(QFT, {"num_wires": num_wires}),
                 },
             )
-        
+
         return [
             GateCount(hadamard, num_wires),
             GateCount(left_elbow, num_iterations - 1),
@@ -1120,7 +1127,7 @@ class UnaryIterationBasedQPE(ResourceOperator):
         r"""Returns the tracking name built with the operator's parameters."""
         base_name = unitary.name
         adj_qft_name = None if adj_qft_cmpr_op is None else adj_qft_cmpr_op.name
-        return f"QPE({base_name}, {num_iterations}, adj_qft={adj_qft_name})"
+        return f"UnaryIterationBasedQPE({base_name}, {num_iterations}, adj_qft={adj_qft_name})"
 
 
 class QFT(ResourceOperator):
