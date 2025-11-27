@@ -728,8 +728,7 @@ class TestTransformProgramDunders:
         container = TransformContainer(transform=qml.transform(second_valid_transform))
         program = TransformProgram([container])
 
-        # Directly call __radd__ with a program
-        result = dispatcher.__radd__(program)
+        result = dispatcher + program
         assert isinstance(result, TransformProgram)
         assert len(result) == 2
         assert result[0].transform is second_valid_transform
@@ -746,8 +745,7 @@ class TestTransformProgramDunders:
         container2 = TransformContainer(transform=qml.transform(second_valid_transform))
         program = TransformProgram([container2])
 
-        # Directly call __radd__ with a program
-        result = container1.__radd__(program)
+        result = container1 + program
         assert isinstance(result, TransformProgram)
         assert len(result) == 2
         assert result[0].transform is second_valid_transform

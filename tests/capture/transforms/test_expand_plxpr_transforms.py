@@ -95,6 +95,7 @@ class TestExpandTransformsInterpreter:
             for orig_eqn, new_eqn in zip(jaxpr.eqns, new_jaxpr.eqns, strict=True)
         )
 
+
 class TestExpandPlxprTransforms:
     """Unit tests for ``expand_plxpr_transforms``."""
 
