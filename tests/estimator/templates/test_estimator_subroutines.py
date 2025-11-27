@@ -1897,3 +1897,132 @@ class TestResourceSelectPauliRot:
                 )
                 == expected_res
             )
+
+
+class TestResourceUnaryIterationBasedQPE:
+    """Test the UnaryIterationBasedQPE class."""
+
+    def test_wire_error(self):
+        """Test that an error is raised when wrong number of wires is provided."""
+        with pytest.raises(ValueError, match="Expected 4 wires, got 3"):
+            qre.UnaryIterationBasedQPE(unitary=qre.X(), num_iterations=8, wires=[0, 1, 2])
+
+    def test_tracking_name(self):
+        """Test that the name of the operator is tracked correctly."""
+        op = qre.UnaryIterationBasedQPE(
+            unitary=qre.X(), num_iterations=8, adj_qft_cmpr_op=qre.QFT(3)
+        )
+        assert (
+            op.tracking_name(resource_rep(qre.X), 8, resource_rep(qre.QFT, {"num_wires": 3}))
+            == "UnaryIterationBasedQPE(X, 8, adj_qft=QFT(3))"
+        )
+
+    @pytest.mark.parametrize(
+        "unitary, n_iter, adj_qft",
+        (
+            (qre.RX(precision=1e-5), 5, None),
+            (qre.X(), 3, qre.QFT(2)),
+            (qre.RZ(), 4, qre.Adjoint(qre.AQFT(3, 2))),
+        ),
+    )
+    def test_resource_params(self, unitary, n_iter, adj_qft):
+        """Test the resource_params method"""
+        unitary_cmpr = unitary.resource_rep_from_op()
+
+        if adj_qft is None:
+            op = qre.UnaryIterationBasedQPE(unitary, n_iter)
+            adj_qft_cmpr = None
+        else:
+            op = qre.UnaryIterationBasedQPE(unitary, n_iter, adj_qft)
+            adj_qft_cmpr = adj_qft.resource_rep_from_op()
+
+        assert op.resource_params == {
+            "unitary": unitary_cmpr,
+            "num_iterations": n_iter,
+            "adj_qft_cmpr_op": adj_qft_cmpr,
+        }
+
+    @pytest.mark.parametrize(
+        "unitary_cmpr, n_iter, adj_qft_cmpr",
+        (
+            (qre.RX.resource_rep(precision=1e-5), 5, None),
+            (qre.X.resource_rep(), 3, qre.QFT.resource_rep(2)),
+            (
+                qre.RZ.resource_rep(),
+                4,
+                qre.Adjoint.resource_rep(qre.AQFT.resource_rep(3, 2)),
+            ),
+        ),
+    )
+    def test_resource_rep(self, unitary_cmpr, n_iter, adj_qft_cmpr):
+        """Test the resource_rep method"""
+        num_estimation_wires = math.ceil(math.log2(n_iter))
+        expected_num_wires = unitary_cmpr.num_wires + num_estimation_wires
+
+        expected = qre.CompressedResourceOp(
+            qre.UnaryIterationBasedQPE,
+            expected_num_wires,
+            {
+                "unitary": unitary_cmpr,
+                "num_iterations": n_iter,
+                "adj_qft_cmpr_op": adj_qft_cmpr,
+            },
+        )
+
+        assert (
+            qre.UnaryIterationBasedQPE.resource_rep(unitary_cmpr, n_iter, adj_qft_cmpr) == expected
+        )
+
+    @pytest.mark.parametrize(
+        "unitary, n_iter, adj_qft_op, expected_res",
+        (
+            (
+                qre.RX(precision=1e-5),
+                5,
+                None,
+                [
+                    GateCount(qre.Hadamard.resource_rep(), 3),
+                    GateCount(resource_rep(qre.Toffoli, {"elbow": "left"}), 4),
+                    GateCount(qre.RX.resource_rep(precision=1e-5), 5),
+                    GateCount(resource_rep(qre.Toffoli, {"elbow": "right"}), 4),
+                    GateCount(
+                        qre.Adjoint.resource_rep(qre.QFT.resource_rep(3)),
+                    ),
+                ],
+            ),
+            (
+                qre.X(),
+                3,
+                qre.QFT(2),
+                [
+                    GateCount(qre.Hadamard.resource_rep(), 2),
+                    GateCount(resource_rep(qre.Toffoli, {"elbow": "left"}), 2),
+                    GateCount(qre.X.resource_rep(), 3),
+                    GateCount(resource_rep(qre.Toffoli, {"elbow": "right"}), 2),
+                    GateCount(qre.QFT.resource_rep(2)),
+                ],
+            ),
+            (
+                qre.RZ(),
+                4,
+                qre.Adjoint(qre.AQFT(3, 2)),
+                [
+                    GateCount(qre.Hadamard.resource_rep(), 2),
+                    GateCount(resource_rep(qre.Toffoli, {"elbow": "left"}), 3),
+                    GateCount(qre.RZ.resource_rep(), 4),
+                    GateCount(resource_rep(qre.Toffoli, {"elbow": "right"}), 3),
+                    GateCount(
+                        qre.Adjoint.resource_rep(qre.AQFT.resource_rep(3, 2)),
+                    ),
+                ],
+            ),
+        ),
+    )
+    def test_resources(self, unitary, n_iter, adj_qft_op, expected_res):
+        """Test that resources method is correct"""
+        op = (
+            qre.UnaryIterationBasedQPE(unitary, n_iter)
+            if adj_qft_op is None
+            else qre.UnaryIterationBasedQPE(unitary, n_iter, adj_qft_op)
+        )
+        assert op.resource_decomp(**op.resource_params) == expected_res

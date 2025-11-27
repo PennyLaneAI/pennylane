@@ -102,6 +102,7 @@ from .templates import (
     SingleQubitComparator,
     TwoQubitComparator,
     RegisterComparator,
+    UnaryIterationBasedQPE,
 )
 
 from .compact_hamiltonian import (
