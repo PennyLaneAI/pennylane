@@ -244,18 +244,18 @@ class TransformProgram:
         Returns:
             TransformProgram: A new program with this program repeated n times.
         """
-        if isinstance(n, int):
-            if n < 0:
-                raise ValueError("Cannot multiply transform program by negative integer")
+        if not isinstance(n, int):
+            return NotImplemented
+        if n < 0:
+            raise ValueError("Cannot multiply transform program by negative integer")
 
-            if self.has_final_transform:
-                raise TransformError(
-                    "Cannot multiply a transform program that has a terminal transform."
-                )
+        if self.has_final_transform:
+            raise TransformError(
+                "Cannot multiply a transform program that has a terminal transform."
+            )
 
-            transforms = self._transform_program * n
-            return TransformProgram(transforms, cotransform_cache=self.cotransform_cache)
-        return NotImplemented
+        transforms = self._transform_program * n
+        return TransformProgram(transforms, cotransform_cache=self.cotransform_cache)
 
     def __rmul__(self, n: int) -> "TransformProgram":
         return self.__mul__(n)
