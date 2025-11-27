@@ -460,12 +460,12 @@ class TestDifferentModes:
         assert reverse.call_count == 0
         assert reversed_direct.call_count == 0
 
-        @qml.qnode(dev)
-        def second_circuit(x):
-            qml.evolve(qml.X(0) @ qml.X(1) + qml.Y(2) + qml.Z(0) @ qml.Z(1), x)
-            return qml.expval(qml.Z(0) @ qml.X(1) + qml.Y(0) + qml.X(0) @ qml.Z(1))
-
-        qml.gradients.hadamard_grad(second_circuit, mode="auto")(t)
+        op = qml.evolve(qml.X(0) @ qml.X(1) + qml.Y(2) + qml.Z(0) @ qml.Z(1), 0.5)
+        mp = qml.expval(qml.Z(0) @ qml.X(1) + qml.Y(0) + qml.X(0) @ qml.Z(1))
+        tape2 = qml.tape.QuantumScript([op], [mp])
+        
+        batch3, _ = qml.gradients.hadamard_grad(tape2, mode="auto")
+        assert len(batch3) == 6 # three terms with no work wire.
 
         assert standard.call_count == 1
         assert direct.call_count == 1
