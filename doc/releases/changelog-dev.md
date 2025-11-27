@@ -155,6 +155,10 @@
 
 <h3>Breaking changes 💔</h3>
 
+* The unified compiler, implemented in the `qml.compiler.python_compiler` submodule, has been removed from PennyLane.
+  It has been migrated to Catalyst, available as `catalyst.python_interface`.
+  [(#8662)](https://github.com/PennyLaneAI/pennylane/pull/8662)
+
 * `qml.transforms.map_wires` no longer supports plxpr transforms.
   [(#8683)](https://github.com/PennyLaneAI/pennylane/pull/8683)
 
