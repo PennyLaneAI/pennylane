@@ -300,8 +300,8 @@ def resource_rep(op_type: type[Operator], **params) -> CompressedResourceOp:
         for rep, count in params["resources"].items():
             addition = rep.params["resources"] if rep.op_type is qml.ops.op_math.Prod else {rep: 1}
             for sub_rep, sub_count in addition.items():
-                if count * sub_count > 0:
-                    resources[sub_rep] += count * sub_count
+                if (total := count * sub_count) > 0:
+                    resources[sub_rep] += total
         params["resources"] = resources
         if len(resources) == 1 and tuple(resources.values())[0] == 1:
             return tuple(resources.keys())[0]
