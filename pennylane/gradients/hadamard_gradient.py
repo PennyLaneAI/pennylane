@@ -304,7 +304,7 @@ def hadamard_grad(
             ...     return qml.expval(qml.Z(0))
             ...
             >>> grad = qml.gradients.hadamard_grad(circuit, mode='reversed')
-            >>> print(qml.draw(grad)(numpy.array(0.5)))
+            >>> print(qml.draw(grad)(qml.numpy.array(0.5)))
             0: ─╭Exp(-0.50j 𝓗)─╭Z────┤ ╭<(-1.00*𝓗)@Y>
             1: ─╰Exp(-0.50j 𝓗)─│─────┤ ├<(-1.00*𝓗)@Y>
             2: ──H─────────────╰●──H─┤ ╰<(-1.00*𝓗)@Y>
@@ -317,7 +317,7 @@ def hadamard_grad(
         .. code-block:: pycon
 
             >>> grad = qml.gradients.hadamard_grad(circuit, mode='direct')
-            >>> print(qml.draw(grad)(numpy.array(0.5)))
+            >>> print(qml.draw(grad)(qml.numpy.array(0.5)))
             0: ─╭Exp(-0.50j 𝓗)──Exp(-0.79j X)─┤  <Z>
             1: ─╰Exp(-0.50j 𝓗)────────────────┤
 
@@ -351,12 +351,60 @@ def hadamard_grad(
         .. code-block:: pycon
 
             >>> grad = qml.gradients.hadamard_grad(circuit, mode='reversed-direct')
-            >>> print(qml.draw(grad)(numpy.array(0.5)))
+            >>> print(qml.draw(grad)(qml.numpy.array(0.5)))
             0: ─╭Exp(-0.50j 𝓗)──Exp(-0.79j Z)─┤ ╭<-1.00*𝓗>
             1: ─╰Exp(-0.50j 𝓗)────────────────┤ ╰<-1.00*𝓗>
 
             0: ─╭Exp(-0.50j 𝓗)──Exp(0.79j Z)─┤ ╭<-1.00*𝓗>
             1: ─╰Exp(-0.50j 𝓗)───────────────┤ ╰<-1.00*𝓗>
+
+        **Auto mode**
+
+        Using auto mode will result in an automatic selection of the method which results in the fewest
+        total executions. This takes into account the number of observables and the number of generators
+        invovled in each problem to choose whether the standard or reversed order is preferred.
+        It also takes into account whether we have one or multiple measurements, and whether we have an
+        auxilliary wire.
+
+        Auxilliary Wire | Standard Order | Method
+        ----------------|----------------|---------
+        False           | True           | Direct Hadamard test
+        False           | False          | Reversed direct Hadamard test
+        True            | True           | Hadamard test
+        True            | False          | Reversed Hadamard test
+
+        i.e. in the below, the direct method is automatically selected. We can verify that it is the
+        most efficient choice. We don't supply an auxilliary wire, so we are choosing between ``direct``
+        and ``reversed-direct`` modes.
+
+        .. code-block:: pycon
+
+            >>> dev = qml.device('default.qubit')
+            >>> @qml.qnode(dev)
+            ... def circuit(x):
+            ...     qml.evolve(qml.X(0) @ qml.X(1), x)
+            ...     return qml.expval(qml.Z(0) @ qml.Z(1) + qml.Y(0))
+            >>> grad = qml.gradients.hadamard_grad(circuit, mode='auto')
+            >>> print(qml.draw(grad)(qml.numpy.array(0.5)))
+            0: ─╭Exp(-0.50j X@X)─╭Exp(-0.79j X@X)─┤ ╭<𝓗>
+            1: ─╰Exp(-0.50j X@X)─╰Exp(-0.79j X@X)─┤ ╰<𝓗>
+
+            0: ─╭Exp(-0.50j X@X)─╭Exp(0.79j X@X)─┤ ╭<𝓗>
+            1: ─╰Exp(-0.50j X@X)─╰Exp(0.79j X@X)─┤ ╰<𝓗>
+
+            >>> grad = qml.gradients.hadamard_grad(circuit, mode='reversed-direct')
+            >>> print(qml.draw(grad)(qml.numpy.array(0.5)))
+            0: ─╭Exp(-0.50j X@X)─╭Exp(-0.79j Z@Z)─┤ ╭<-1.00*X@X>
+            1: ─╰Exp(-0.50j X@X)─╰Exp(-0.79j Z@Z)─┤ ╰<-1.00*X@X>
+
+            0: ─╭Exp(-0.50j X@X)─╭Exp(0.79j Z@Z)─┤ ╭<-1.00*X@X>
+            1: ─╰Exp(-0.50j X@X)─╰Exp(0.79j Z@Z)─┤ ╰<-1.00*X@X>
+
+            0: ─╭Exp(-0.50j X@X)──Exp(-0.79j Y)─┤ ╭<-1.00*X@X>
+            1: ─╰Exp(-0.50j X@X)────────────────┤ ╰<-1.00*X@X>
+
+            0: ─╭Exp(-0.50j X@X)──Exp(0.79j Y)─┤ ╭<-1.00*X@X>
+            1: ─╰Exp(-0.50j X@X)───────────────┤ ╰<-1.00*X@X>
     """
 
     modes = {
