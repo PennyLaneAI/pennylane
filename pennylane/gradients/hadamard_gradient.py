@@ -366,12 +366,14 @@ def hadamard_grad(
         It also takes into account whether we have one or multiple measurements, and whether we have an
         auxilliary wire.
 
-        Auxilliary Wire | Standard Order | Method
-        ----------------|----------------|---------
-        False           | True           | Direct Hadamard test
-        False           | False          | Reversed direct Hadamard test
-        True            | True           | Hadamard test
-        True            | False          | Reversed Hadamard test
+        ===============  ===============  ==============================
+        Auxilliary Wire  Standard Order   Method
+        ===============  ===============  ==============================
+        False            True             Direct Hadamard test
+        False            False            Reversed direct Hadamard test
+        True             True             Hadamard test
+        True             False            Reversed Hadamard test
+        ===============  ===============  ==============================
 
         i.e. in the below, the direct method is automatically selected. We can verify that it is the
         most efficient choice. We don't supply an auxilliary wire, so we are choosing between ``direct``
