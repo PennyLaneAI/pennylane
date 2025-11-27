@@ -844,7 +844,7 @@ def _controlled_phase_shift_ppr_resource(num_control_wires, **_):
 @register_resources(_controlled_phase_shift_ppr_resource)
 def _controlled_phase_shift_ppr(theta, wires, **_):
     n = len(wires)
-    for l in range(n, 0, -1):
+    for l in range(1, n + 1):
         for sub_wires in combinations(wires, l):
             phi = -theta / 2 ** (n - 1) * (-1) ** l
             qml.PauliRot(phi, pauli_word="Z" * l, wires=sub_wires)
