@@ -185,7 +185,7 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
     >>> print(np.round(bb_quantum()))  # doctest: +SKIP
     [0. 0. 0. 0. 0. 0. 1. 0.]
 
-    Note that ``"110"`` in binary is equal to 6 in decimal, which is the only non-zero entry in
+    Note that ``"110"`` in binary is equal to 6 in decimal, which is the position of the only non-zero entry in
     the ``target_wires`` register.
     """
 
