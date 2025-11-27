@@ -2,6 +2,12 @@
 
 <h3>New features since last release</h3>
 
+* A compilation pass written with xDSL called `qml.compiler.python_compiler.transforms.ParitySynthPass`
+  has been added for the experimental xDSL Python compiler integration. This pass resynthesizes
+  subcircuits that form a phase polynomial (``CNOT`` and ``RZ`` gates), using ``ParitySynth`` by
+  [Vandaele et al.](https://arxiv.org/abs/2104.00934)
+  [(#8414)](https://github.com/PennyLaneAI/pennylane/pull/8414)
+
 * A new decomposition has been added for the Controlled :class:`~.SemiAdder`,
   which is efficient and skips controlling all gates in its decomposition.
   [(#8423)](https://github.com/PennyLaneAI/pennylane/pull/8423)
@@ -82,7 +88,7 @@
   [(#8516)](https://github.com/PennyLaneAI/pennylane/pull/8516)
   [(#8555)](https://github.com/PennyLaneAI/pennylane/pull/8555)
   [(#8558)](https://github.com/PennyLaneAI/pennylane/pull/8558)
-  [(#8538)](https://github.com/PennyLaneAI/pennylane/pull/8538)  
+  [(#8538)](https://github.com/PennyLaneAI/pennylane/pull/8538)
   [(#8534)](https://github.com/PennyLaneAI/pennylane/pull/8534)
   [(#8582)](https://github.com/PennyLaneAI/pennylane/pull/8582)
   [(#8543)](https://github.com/PennyLaneAI/pennylane/pull/8543)
@@ -90,7 +96,7 @@
   [(#8616)](https://github.com/PennyLaneAI/pennylane/pull/8616)
   [(#8602)](https://github.com/PennyLaneAI/pennylane/pull/8602)
   [(#8600)](https://github.com/PennyLaneAI/pennylane/pull/8600)
-  [(#8601)](https://github.com/PennyLaneAI/pennylane/pull/8601)  
+  [(#8601)](https://github.com/PennyLaneAI/pennylane/pull/8601)
   [(#8595)](https://github.com/PennyLaneAI/pennylane/pull/8595)
   [(#8586)](https://github.com/PennyLaneAI/pennylane/pull/8586)
   [(#8614)](https://github.com/PennyLaneAI/pennylane/pull/8614)
@@ -124,6 +130,14 @@
   the circuit from scratch. By default, the recursive cancellation is enabled (``recursive=True``).
   To obtain previous behaviour, disable it by setting ``recursive=False``.
   [(#8483)](https://github.com/PennyLaneAI/pennylane/pull/8483)
+
+* The new graph based decompositions system enabled via :func:`~.decomposition.enable_graph` now supports the following
+  additional templates.
+  [(#8520)](https://github.com/PennyLaneAI/pennylane/pull/8520)
+  [(#8515)](https://github.com/PennyLaneAI/pennylane/pull/8515)
+
+  - :class:`~.QSVT`
+  - :class:`~.AmplitudeEmbedding`
 
 * `qml.grad` and `qml.jacobian` now lazily dispatch to catalyst and program
   capture, allowing for `qml.qjit(qml.grad(c))` and `qml.qjit(qml.jacobian(c))` to work.
@@ -165,7 +179,7 @@
 * `qml.transforms.map_wires` no longer supports plxpr transforms.
   [(#8683)](https://github.com/PennyLaneAI/pennylane/pull/8683)
 
-* ``QuantumScript.to_openqasm`` has been removed. Please use ``qml.to_openqasm`` instead. This removes duplicated 
+* ``QuantumScript.to_openqasm`` has been removed. Please use ``qml.to_openqasm`` instead. This removes duplicated
   functionality for converting a circuit to OpenQASM code.
   [(#8499)](https://github.com/PennyLaneAI/pennylane/pull/8499)
 
@@ -292,14 +306,14 @@
   and the function should be passed to the ``stopping_condition`` argument instead.
   [(#8533)](https://github.com/PennyLaneAI/pennylane/pull/8533)
 
-  The example below illustrates how you can provide a function as the ``stopping_condition`` in addition to providing a 
-  ``gate_set``. The decomposition of each operator will then stop once it reaches the gates in the ``gate_set`` or the 
+  The example below illustrates how you can provide a function as the ``stopping_condition`` in addition to providing a
+  ``gate_set``. The decomposition of each operator will then stop once it reaches the gates in the ``gate_set`` or the
   ``stopping_condition`` is satisfied.
 
   ```python
   import pennylane as qml
   from functools import partial
-  
+
   @partial(qml.transforms.decompose, gate_set={"H", "T", "CNOT"}, stopping_condition=lambda op: len(op.wires) <= 2)
   @qml.qnode(qml.device("default.qubit"))
   def circuit():
@@ -307,7 +321,7 @@
       qml.Toffoli(wires=[0,1,2])
       return qml.expval(qml.Z(0))
   ```
-  
+
   ```pycon
   >>> print(qml.draw(circuit)())
   0: ──H────────╭●───────────╭●────╭●──T──╭●─┤  <Z>
@@ -319,21 +333,21 @@
 
 * Bump `autoray` package version to `0.8.2`.
   [(#8674)](https://github.com/PennyLaneAI/pennylane/pull/8674)
-  
+
 * Update the schedule of nightly TestPyPI uploads to occur at the end rather than the beginning of all week days.
   [(#8672)](https://github.com/PennyLaneAI/pennylane/pull/8672)
 
 * Add workflow to bump Catalyst and Lightning versions in the RC branch, create a new release tag and draft release, tag the RC branch, and create a PR to merge the RC branch into master.
   [(#8352)](https://github.com/PennyLaneAI/pennylane/pull/8352)
-  
+
 * Added `MCM_METHOD` and `POSTSELECT_MODE` `StrEnum` objects to improve validation and handling of `MCMConfig` creation.
   [(#8596)](https://github.com/PennyLaneAI/pennylane/pull/8596)
-  
+
 * Updated various docstrings to be compatible with the new documentation testing approach.
   [(#8635)](https://github.com/PennyLaneAI/pennylane/pull/8635)
-  
+
 * In program capture, transforms now have a single transform primitive that have a `transform` param that stores
-  the `TransformDispatcher`. Before, each transform had its own primitive stored on the 
+  the `TransformDispatcher`. Before, each transform had its own primitive stored on the
   `TransformDispatcher._primitive` private property. It proved difficult to keep maintaining dispatch behaviour
   for every single transform.
   [(#8576)](https://github.com/PennyLaneAI/pennylane/pull/8576)
@@ -341,7 +355,7 @@
 
 * Updated documentation check workflow to run on pull requests on `v[0-9]+\.[0-9]+\.[0-9]+-docs` branches.
   [(#8590)](https://github.com/PennyLaneAI/pennylane/pull/8590)
-  
+
 * When program capture is enabled, there is no longer caching of the jaxpr on the QNode.
   [(#8629)](https://github.com/PennyLaneAI/pennylane/pull/8629)
 
@@ -425,7 +439,7 @@
   which is parsed and transformed with xDSL.
   [(#8587)](https://github.com/PennyLaneAI/pennylane/pull/8587)
 
-* The :func:`~pennylane.compiler.python_compiler.transforms.convert_to_mbqc_formalism_pass` now 
+* The :func:`~pennylane.compiler.python_compiler.transforms.convert_to_mbqc_formalism_pass` now
   supports :class:`~xdsl.dialects.scf.IndexSwitchOp` in IR and ignores regions that have no body.
   [(#8632)](https://github.com/PennyLaneAI/pennylane/pull/8632)
 
