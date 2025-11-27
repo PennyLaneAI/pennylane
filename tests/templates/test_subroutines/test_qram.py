@@ -234,7 +234,7 @@ def test_decomposition_new(
 
 
 @qnode(dev)
-def hybrid_quantum(bitstrings, qram_wires, target_wires, work_wires, qram_value, address):
+def hybrid_quantum(bitstrings, qram_wires, target_wires, work_wires, k, address):
     BasisEmbedding(address, wires=qram_wires)
 
     HybridQRAM(
@@ -242,7 +242,7 @@ def hybrid_quantum(bitstrings, qram_wires, target_wires, work_wires, qram_value,
         qram_wires=qram_wires,
         target_wires=target_wires,
         work_wires=work_wires,
-        qram_value=qram_value,
+        k=k,
     )
     return probs(wires=target_wires)
 
@@ -252,11 +252,12 @@ def hybrid_quantum(bitstrings, qram_wires, target_wires, work_wires, qram_value,
         "bitstrings",
         "qram_wires",
         "target_wires",
+        "signal",
         "bus",
         "dir_wires",
         "portL_wires",
         "portR_wires",
-        "qram_value",
+        "k",
         "address",
         "probabilities",
     ),
@@ -266,10 +267,11 @@ def hybrid_quantum(bitstrings, qram_wires, target_wires, work_wires, qram_value,
             [0, 1],
             [2, 3, 4],
             5,
-            [6, 7, 8],
-            [9, 10, 11],
-            [12, 13, 14],
-            1,
+            6,
+            [7, 8, 9],
+            [10, 11, 12],
+            [13, 14, 15],
+            0,
             2,  # addressed from the left
             [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0],  # |110>
         ),
@@ -278,23 +280,12 @@ def hybrid_quantum(bitstrings, qram_wires, target_wires, work_wires, qram_value,
             [0, 1],
             [2, 3, 4],
             5,
-            [11, 10, 9],
-            [6, 7, 8],
-            [12, 13, 14],
-            None,
+            6,
+            [7],
+            [10],
+            [13],
             1,
-            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0],  # |111>
-        ),
-        (
-            ["010", "111", "110", "000"],
-            [0, 1],
-            [2, 3, 4],
-            5,
-            [6, 7, 8],
-            [12, 13, 14],
-            [9, 10, 11],
-            2,
-            0,
+            0,  # addressed from the left
             [0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0],  # |010>
         ),
     ],
@@ -303,11 +294,12 @@ def test_hybrid_quantum(
     bitstrings,
     qram_wires,
     target_wires,
+    signal,
     bus,
     dir_wires,
     portL_wires,
     portR_wires,
-    qram_value,
+    k,
     address,
     probabilities,
 ):  # pylint: disable=too-many-arguments
@@ -317,8 +309,8 @@ def test_hybrid_quantum(
             bitstrings,
             qram_wires,
             target_wires,
-            [bus] + dir_wires + portL_wires + portR_wires,
-            qram_value,
+            [signal] + [bus] + dir_wires + portL_wires + portR_wires,
+            k,
             address,
         ),
     )
