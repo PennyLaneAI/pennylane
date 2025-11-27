@@ -436,12 +436,11 @@ class TestDifferentModes:
         reverse = mocker.spy(hadamard_gradient, "_reversed_hadamard_test")
         reversed_direct = mocker.spy(hadamard_gradient, "_reversed_direct_hadamard_test")
 
-        @qml.qnode(dev)
-        def circuit(x):
-            qml.evolve(qml.X(0) @ qml.X(1) + qml.Z(0) @ qml.Z(1) + qml.Y(0), x)
-            return qml.expval(qml.Z(0))
-
-        qml.gradients.hadamard_grad(circuit, mode="auto")(t)
+        op = qml.evolve(qml.X(0) @ qml.X(1) + qml.Z(0) @ qml.Z(1) + qml.Y(0), x)
+        tape = qml.tape.QuantumScript([op], [qml.expval(qml.Z(0)])
+        batch, _ = qml.gradients.hadamard_grad(tape, mode="auto")(t)
+        
+        assert len(batch) == 6 # three terms and no work wire
 
         assert standard.call_count == 0
         assert direct.call_count == 1
