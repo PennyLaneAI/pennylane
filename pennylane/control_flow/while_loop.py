@@ -257,7 +257,7 @@ def _get_while_loop_qfunc_prim():
 
     @while_loop_prim.def_abstract_eval
     def _abstract_eval(*args, args_slice, **__):
-        # Convert tuple back to slice (tuple is used for JAX 0.7.0 hashability)
+        # Convert tuple back to slice (tuple is used for JAX 0.7.1 hashability)
         return args[slice(*args_slice)]
 
     return while_loop_prim

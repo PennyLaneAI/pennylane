@@ -32,9 +32,9 @@ class PrimitiveType(Enum):
 
 
 def _make_hashable(obj: Any) -> Any:
-    """Convert potentially unhashable objects to hashable equivalents for JAX 0.7.0+.
+    """Convert potentially unhashable objects to hashable equivalents for JAX 0.7.1+.
 
-    JAX 0.7.0 requires all primitive parameters to be hashable. This helper converts
+    JAX 0.7.1 requires all primitive parameters to be hashable. This helper converts
     common unhashable types (list, dict, slice) to hashable tuples.
 
     Args:
@@ -56,7 +56,7 @@ def _make_hashable(obj: Any) -> Any:
 # pylint: disable=abstract-method,too-few-public-methods
 class QmlPrimitive(Primitive):
     """A subclass for JAX's Primitive that differentiates between different
-    classes of primitives and automatically makes parameters hashable for JAX 0.7.0+."""
+    classes of primitives and automatically makes parameters hashable for JAX 0.7.1+."""
 
     _prim_type: PrimitiveType = PrimitiveType.DEFAULT
 
@@ -72,10 +72,10 @@ class QmlPrimitive(Primitive):
         self._prim_type = PrimitiveType(value)
 
     def bind(self, *args, **params):
-        """Bind with automatic parameter hashability conversion for JAX 0.7.0+.
+        """Bind with automatic parameter hashability conversion for JAX 0.7.1+.
 
         Overrides the parent bind method to automatically convert unhashable parameters
-        (like lists, dicts, and slices) to hashable tuples, which is required by JAX 0.7.0+.
+        (like lists, dicts, and slices) to hashable tuples, which is required by JAX 0.7.1+.
         """
         # Convert all parameters to hashable forms
         hashable_params = {k: _make_hashable(v) for k, v in params.items()}

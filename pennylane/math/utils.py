@@ -287,7 +287,7 @@ def cast_like(tensor1, tensor2):
         tensor2 = tensor2[0]
 
     # Check for abstract tensors FIRST before trying to convert to numpy
-    # This is important for JAX 0.7.0+ which has additional tracer types
+    # This is important for JAX 0.7.1+ which has additional tracer types
     if is_abstract(tensor2):
         dtype = tensor2.dtype
     elif isinstance(tensor2, ArrayBox):
@@ -417,7 +417,7 @@ def is_abstract(tensor, like=None):
     if interface == "jax":
         import jax
 
-        # Use jax.core.Tracer as base class to catch all tracer types including new ones in JAX 0.7.0+
+        # Use jax.core.Tracer as base class to catch all tracer types including new ones in JAX 0.7.1+
         # (e.g., LinearizeTracer, JVPTracer, BatchTracer, JaxprTracer, DynamicJaxprTracer, etc.)
         if isinstance(tensor, jax.core.Tracer):
             # Tracer objects will be used when computing gradients or applying transforms.

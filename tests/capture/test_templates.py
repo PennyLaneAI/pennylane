@@ -34,7 +34,7 @@ original_op_bind_code = qml.operation.Operator._primitive_bind_call.__code__
 def normalize_for_comparison(obj):
     """Normalize objects for comparison by converting tuples to lists recursively.
 
-    In JAX 0.7.0, _make_hashable converts lists to tuples for hashability.
+    In JAX 0.7.1, _make_hashable converts lists to tuples for hashability.
     This function reverses that for test comparisons.
     """
     # Don't normalize callables (functions, operators, etc.)
@@ -283,7 +283,7 @@ def test_unmodified_templates(template, args, kwargs):
         wires = (wires,)
     assert eqn.params.pop("n_wires") == len(wires)
     # Check that remaining kwargs are passed properly to the eqn
-    # JAX 0.7.0 converts lists to tuples for hashability, so normalize both sides
+    # JAX 0.7.1 converts lists to tuples for hashability, so normalize both sides
     assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
 
 
@@ -475,7 +475,7 @@ class TestModifiedTemplates:
         eqn = jaxpr.eqns[1]
         assert eqn.primitive == qml.ControlledSequence._primitive
         assert eqn.invars == jaxpr.eqns[0].outvars
-        # JAX 0.7.0 converts lists to tuples for hashability
+        # JAX 0.7.1 converts lists to tuples for hashability
         assert normalize_for_comparison(eqn.params) == normalize_for_comparison(
             {"control": control}
         )
@@ -638,7 +638,7 @@ class TestModifiedTemplates:
         }
         if template is qml.MPS:
             expected_params["offset"] = None
-        # JAX 0.7.0 converts lists to tuples for hashability
+        # JAX 0.7.1 converts lists to tuples for hashability
         assert normalize_for_comparison(eqn.params) == normalize_for_comparison(expected_params)
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
