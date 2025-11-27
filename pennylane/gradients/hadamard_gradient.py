@@ -396,7 +396,7 @@ def hadamard_grad(
         >>> print(qml.draw(grad)(qml.numpy.array(0.5)))
         0: ─╭Exp(-0.50j X@X)─╭Exp(-0.79j Z@Z)─┤ ╭<-1.00*X@X>
         1: ─╰Exp(-0.50j X@X)─╰Exp(-0.79j Z@Z)─┤ ╰<-1.00*X@X>
-
+        <BLANKLINE>
         0: ─╭Exp(-0.50j X@X)─╭Exp(0.79j Z@Z)─┤ ╭<-1.00*X@X>
         1: ─╰Exp(-0.50j X@X)─╰Exp(0.79j Z@Z)─┤ ╰<-1.00*X@X>
         <BLANKLINE>
