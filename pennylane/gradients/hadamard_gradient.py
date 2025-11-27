@@ -399,7 +399,7 @@ def hadamard_grad(
 
         0: ─╭Exp(-0.50j X@X)─╭Exp(0.79j Z@Z)─┤ ╭<-1.00*X@X>
         1: ─╰Exp(-0.50j X@X)─╰Exp(0.79j Z@Z)─┤ ╰<-1.00*X@X>
-
+        <BLANKLINE>
         0: ─╭Exp(-0.50j X@X)──Exp(-0.79j Y)─┤ ╭<-1.00*X@X>
         1: ─╰Exp(-0.50j X@X)────────────────┤ ╰<-1.00*X@X>
         <BLANKLINE>
