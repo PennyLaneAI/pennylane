@@ -15,12 +15,15 @@
 This file contains the implementation of the Prod class which contains logic for
 computing the product between operations.
 """
+from __future__ import annotations
+
 import itertools
 from collections import Counter
+from collections.abc import Callable
 from copy import copy
 from functools import reduce
 from itertools import combinations
-from typing import Union
+from typing import Any, ParamSpec, overload
 
 from scipy.sparse import kron as sparse_kron
 
@@ -42,7 +45,14 @@ MAX_NUM_WIRES_KRON_PRODUCT = 9
 computing the sparse matrix representation."""
 
 
-def prod(*ops, id=None, lazy=True):
+P = ParamSpec("P")
+
+
+@overload
+def prod(*ops: Operator, id=None, lazy=True) -> Prod: ...
+@overload
+def prod(*qfunc: Callable[P, Any], id=None, lazy=True) -> Callable[P, Prod]: ...
+def prod(*ops, id=None, lazy=True) -> Prod | Callable[..., Prod]:
     """Construct an operator which represents the generalized product of the
     operators provided.
 
@@ -106,7 +116,7 @@ def prod(*ops, id=None, lazy=True):
     Notice how the order in the output appears reversed. However, this is correct because the operators are applied from right to left.
     """
     if len(ops) == 1:
-        if isinstance(ops[0], qml.operation.Operator):
+        if isinstance(ops[0], qml.operation.Operator) or qml.math.is_abstract(ops[0]):
             return ops[0]
 
         fn = ops[0]
@@ -386,7 +396,7 @@ class Prod(CompositeOp):
         return new_factors.global_phase, new_factors.factors
 
     @handle_recursion_error
-    def simplify(self) -> Union["Prod", Sum]:
+    def simplify(self) -> Prod | Sum:
         r"""
         Transforms any nested Prod instance into the form :math:`\sum c_i O_i` where
         :math:`c_i` is a scalar coefficient and :math:`O_i` is a single PL operator
