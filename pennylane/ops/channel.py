@@ -125,7 +125,7 @@ class GeneralizedAmplitudeDamping(Channel):
                 \end{bmatrix}
 
     where :math:`\gamma \in [0, 1]` is the probability of damping and :math:`p \in [0, 1]`
-    is the probability of the system being excited by the environment.
+    is the probability of the system being deexcited by the environment.
 
     **Details:**
 
@@ -134,7 +134,7 @@ class GeneralizedAmplitudeDamping(Channel):
 
     Args:
         gamma (float): amplitude damping probability
-        p (float): excitation probability
+        p (float): deexcitation probability
         wires (Sequence[int] or int): the wire the channel acts on
         id (str or None): String representing the operation (optional)
     """
@@ -152,7 +152,7 @@ class GeneralizedAmplitudeDamping(Channel):
 
         Args:
             gamma (float): amplitude damping probability
-            p (float): excitation probability
+            p (float): deexcitation probability
 
         Returns:
             list (array): list of Kraus matrices
