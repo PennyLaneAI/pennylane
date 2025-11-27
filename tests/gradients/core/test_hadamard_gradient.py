@@ -447,7 +447,8 @@ class TestDifferentModes:
         assert reverse.call_count == 0
         assert reversed_direct.call_count == 0
 
-        qml.gradients.hadamard_grad(circuit, aux_wire=2, mode="auto")(t)
+        batch2, _ = qml.gradients.hadamard_grad(tape, aux_wire=2, mode="auto")(t)
+        assert len(batch2) == 3 # three terms and work wire
 
         assert standard.call_count == 1
         assert direct.call_count == 1
