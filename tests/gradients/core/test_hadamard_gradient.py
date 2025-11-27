@@ -489,7 +489,7 @@ class TestDifferentModes:
 
         op = qml.evolve(qml.X(0) @ qml.X(1) + qml.Y(2) + qml.Z(0) @ qml.Z(1), 0.5)
         mps = [
-            qml.expval(qml.Z(0) @ qml.X(1) + qml.Y(0) + qml.X(0) @ qml.Z(1)),
+            qml.expval(qml.Z(0) @ qml.X(1) + qml.Y(0) + qml.X(0) @ qml.H(1)),
             qml.expval(qml.Z(0)),
         ]
         tape = qml.tape.QuantumScript([op], mps)
