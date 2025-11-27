@@ -990,7 +990,19 @@ class UnaryIterationBasedQPE(ResourceOperator):
     The resources for this operation are computed using:
 
     >>> import pennylane.estimator as qre
-    >>> gate_set = {"Hadamard", "Adjoint(QFT(5))", "CRX"}
+    >>> base = qre.RX()
+    >>> print(qre.estimate(qre.UnaryIterationBasedQPE(base, 11)))
+    --- Resources: ---
+    Total wires: 5
+    algorithmic wires: 5
+    allocated wires: 0
+        zero state: 0
+        any state: 0
+    Total gates : 1.322E+3
+    'Toffoli': 20,
+    'T': 1.276E+3,
+    'CNOT': 18,
+    'Hadamard': 8
     """
 
     resource_keys = {"unitary", "num_iterations", "adj_qft_cmpr_op"}
