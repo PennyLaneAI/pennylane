@@ -113,7 +113,7 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
         work_wires (WiresLike):
             The additional wires required to funnel the desired entry of ``bitstrings`` into the
             target register. The size of the ``work_wires`` register must be
-            :math:`1 + 3 ((1 << \texttt{len(qram_wires)}) - 1)`. More specifically, the
+            :math:`1 + 3 ((2^\texttt{len(qram_wires)}) - 1)`. More specifically, the
             ``work_wires`` register includes the bus, direction, left port and right port wires in
             that order. Each node in the tree contains one address (direction), one left port and
             one right port wire. The single bus wire is used for address loading and data routing.
