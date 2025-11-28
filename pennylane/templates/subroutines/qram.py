@@ -534,6 +534,8 @@ def _hybrid_qram_resources(bitstrings, num_target_wires, num_select_wires, k, n_
                     "base_params": {},
                     "num_control_wires": 1,
                     "num_zero_control_values": 1,
+                    "num_work_wires": 0,
+                    "work_wire_type": "zeroed"
                 },
                 num_control_wires=1,
                 num_zero_control_values=0,
@@ -580,7 +582,7 @@ def _hybrid_qram_resources(bitstrings, num_target_wires, num_select_wires, k, n_
                 for p in range(1 << n_tree)
             ]
         )
-
+    return resources
 
 def _bits(value: int, length: int) -> list[int]:
     """Return `length` bits of `value` (MSB first)."""
@@ -698,7 +700,7 @@ def _block_tree_query_ops(bitstrings, block_index: int, tree_wire_manager, n_tre
         ctrl(Hadamard(wires=[tw]), control=[signal], control_values=[1])
 
     # 3) address unloading for the tree (controlled on signal)
-    adjoint(_tree_mark_routers_via_bus_ctrl)(tree_wire_manager, n_tree, signal)
+    adjoint(_tree_mark_routers_via_bus_ctrl, lazy=False)(tree_wire_manager, n_tree, signal)
 
 
 @register_resources(_hybrid_qram_resources)
