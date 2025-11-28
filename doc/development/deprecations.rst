@@ -9,6 +9,13 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* Maintenance support of NumPy<2.0 is deprecated and will be dropped in v0.45.
+  PennyLane v0.45 and beyond are not guaranteed to work with NumPy<2.0.
+  We recommend upgrading your version of NumPy to benefit from enhanced support and features.
+  
+  - Deprecated in v0.44
+  - Will be removed in v0.45
+  
 * The ``custom_decomps`` keyword argument to ``qml.device`` has been deprecated and will be removed
   in 0.45. Instead, with ``qml.decomposition.enable_graph()``, new decomposition rules can be defined as
   quantum functions with registered resources. See :mod:`pennylane.decomposition` for more details.
