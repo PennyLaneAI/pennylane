@@ -401,6 +401,8 @@ class HybridQRAM(Operation):
 
     grad_method = None
 
+    resource_keys = {"bitstrings", "num_target_wires", "num_select_wires", "k", "n_tree"}
+
     def __init__(
         self,
         bitstrings: Sequence[str],
@@ -486,6 +488,16 @@ class HybridQRAM(Operation):
             "n_total": n_total,
             "n_tree": n_tree,
             "m": m,
+        }
+
+    @property
+    def resource_params(self) -> dict:
+        return {
+            "bitstrings": self.hyperparameters["bitstrings"],
+            "num_target_wires": len(self.hyperparameters["target_wires"]),
+            "num_select_wires": len(self.hyperparameters["select_wires"]),
+            "k": self.hyperparameters["k"],
+            "n_tree": self.hyperparameters["n_tree"],
         }
 
 

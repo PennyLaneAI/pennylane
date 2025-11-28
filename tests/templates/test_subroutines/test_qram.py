@@ -213,7 +213,7 @@ def test_raises(params, error, match):
         ),
     ],
 )
-def test_decomposition_new(
+def test_bbqram_decomposition_new(
     bitstrings,
     control_wires,
     target_wires,
@@ -314,3 +314,70 @@ def test_hybrid_quantum(
             address,
         ),
     )
+
+
+@pytest.mark.parametrize(
+    (
+        "bitstrings",
+        "control_wires",
+        "target_wires",
+        "signal",
+        "bus",
+        "dir_wires",
+        "portL_wires",
+        "portR_wires",
+        "k",
+        "address",
+        "probabilities",
+    ),
+    [
+        (
+            ["010", "111", "110", "000"],
+            [0, 1],
+            [2, 3, 4],
+            5,
+            6,
+            [7, 8, 9],
+            [10, 11, 12],
+            [13, 14, 15],
+            0,
+            2,  # addressed from the left
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0],  # |110>
+        ),
+        (
+            ["010", "111", "110", "000"],
+            [0, 1],
+            [2, 3, 4],
+            5,
+            6,
+            [7],
+            [10],
+            [13],
+            1,
+            0,  # addressed from the left
+            [0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0],  # |010>
+        ),
+    ],
+)
+def test_hybrid_decomposition_new(
+    bitstrings,
+    control_wires,
+    target_wires,
+    signal,
+    bus,
+    dir_wires,
+    portL_wires,
+    portR_wires,
+    k,
+    address,
+    probabilities,
+):  # pylint: disable=too-many-arguments
+    op = HybridQRAM(
+        bitstrings,
+        control_wires=control_wires,
+        target_wires=target_wires,
+        work_wires=[signal] + [bus] + dir_wires + portL_wires + portR_wires,
+        k=k,
+    )
+    for rule in list_decomps(HybridQRAM):
+        _test_decomposition_rule(op, rule)
