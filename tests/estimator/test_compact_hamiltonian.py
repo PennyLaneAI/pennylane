@@ -19,19 +19,17 @@ from collections import defaultdict
 import pytest
 
 import pennylane.estimator as qre
-from pennylane.estimator.compact_hamiltonian import (
-    _pauli_dist_from_commuting_groups,
-    _sort_and_freeze,
-    _validate_pauli_dist,
-)
-
 from pennylane.estimator import (
     CDFHamiltonian,
     THCHamiltonian,
     VibrationalHamiltonian,
     VibronicHamiltonian,
 )
-
+from pennylane.estimator.compact_hamiltonian import (
+    _pauli_dist_from_commuting_groups,
+    _sort_and_freeze,
+    _validate_pauli_dist,
+)
 
 # pylint: disable=too-many-arguments
 
