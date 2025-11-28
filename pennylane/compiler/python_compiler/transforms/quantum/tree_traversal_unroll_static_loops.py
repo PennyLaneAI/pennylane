@@ -55,6 +55,7 @@ class UnrollLoopPattern(RewritePattern):
             self.unroll_loop(_for_op, rewriter)
 
     def detect_mcm_in_loop_ops(self, op: Operation) -> bool:
+        """Detect if there are mid-circuit measurement operations inside ForOps."""
         op_walk = op.walk()
         for current_op in op_walk:
             if isinstance(current_op, quantum.MeasureOp):
@@ -62,7 +63,8 @@ class UnrollLoopPattern(RewritePattern):
 
         return len(self.for_loop_to_unroll) > 0
 
-    def collect_all_parent_loops(self, op, stop):
+    def collect_all_parent_loops(self, op: Operation, stop: Operation) -> None:
+        """Collect all parent scf.ForOps of a given operation up to a stop operation."""
         while (op := op.parent_op()) and op != stop:
             if isinstance(op, scf.ForOp):
                 if op in self.for_loop_to_unroll:
