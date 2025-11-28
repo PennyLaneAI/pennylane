@@ -67,10 +67,12 @@ def _specs_qnode(qnode, level, compute_depth, *args, **kwargs) -> SpecsResult:
 
     if len(resources) == 1:
         resources = next(iter(resources.values()))
+    else:
+        level = list(resources.keys())
 
     return SpecsResult(
         resources=resources,
-        num_device_wires=len(qnode.device.wires),
+        num_device_wires=len(qnode.device.wires) if qnode.device.wires is not None else None,
         device_name=qnode.device.name,
         level=level,
         shots=qnode.shots,
@@ -135,8 +137,12 @@ def _specs_qjit_device_level_tracking(
         with open(_RESOURCE_TRACKING_FILEPATH, encoding="utf-8") as f:
             resource_data = json.load(f)
 
-        # TODO: Once measurements are tracked for runtime specs, can include that data here
-        # WARN ABOUT THIS
+        # TODO: Once measurements are tracked for runtime specs, include that data here
+        warnings.warn(
+            "Measurement resource tracking is not yet supported for qjit'd QNodes. "
+            "The returned SpecsResources will have an empty measurements field.",
+            UserWarning,
+        )
         return SpecsResources(
             gate_types=resource_data["gate_types"],
             gate_sizes={int(k): v for (k, v) in resource_data["gate_sizes"].items()},
