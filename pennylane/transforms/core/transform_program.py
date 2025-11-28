@@ -193,26 +193,19 @@ class TransformProgram:
     def __bool__(self) -> bool:
         return bool(self._transform_program)
 
-    def __add__(self, other: "TransformProgram") -> "TransformProgram":
+    def __add__(
+        self, other: "TransformProgram | TransformContainer | TransformDispatcher"
+    ) -> "TransformProgram":
+        # Convert dispatcher to container if needed
+        if isinstance(other, TransformDispatcher):
+            other = TransformContainer(other)
+
         # Handle TransformContainer
         if isinstance(other, TransformContainer):
             if self.has_final_transform and other.final_transform:
                 raise TransformError("The transform program already has a terminal transform.")
 
             transforms = self._transform_program + [other]
-            if self.has_final_transform:
-                transforms.append(transforms.pop(len(self) - 1))
-
-            return TransformProgram(transforms, cotransform_cache=self.cotransform_cache)
-
-        # Handle TransformDispatcher
-        if isinstance(other, TransformDispatcher):
-            # Convert dispatcher to container (no args/kwargs)
-            other_container = TransformContainer(other)
-            if self.has_final_transform and other_container.final_transform:
-                raise TransformError("The transform program already has a terminal transform.")
-
-            transforms = self._transform_program + [other_container]
             if self.has_final_transform:
                 transforms.append(transforms.pop(len(self) - 1))
 
@@ -257,8 +250,76 @@ class TransformProgram:
         transforms = self._transform_program * n
         return TransformProgram(transforms, cotransform_cache=self.cotransform_cache)
 
-    def __rmul__(self, n: int) -> "TransformProgram":
-        return self.__mul__(n)
+    __rmul__ = __mul__
+
+    def __radd__(
+        self, other: "TransformContainer | TransformDispatcher"
+    ) -> "TransformProgram":
+        """Right addition to prepend a transform to the program.
+
+        Args:
+            other: A TransformContainer or TransformDispatcher to prepend.
+
+        Returns:
+            TransformProgram: A new program with the transform prepended.
+        """
+        # Convert dispatcher to container if needed
+        if isinstance(other, TransformDispatcher):
+            other = TransformContainer(other)
+
+        if isinstance(other, TransformContainer):
+            if self.has_final_transform and other.final_transform:
+                raise TransformError("The transform program already has a terminal transform.")
+
+            transforms = [other] + self._transform_program
+            return TransformProgram(transforms, cotransform_cache=self.cotransform_cache)
+
+        return NotImplemented
+
+    def __iadd__(
+        self, other: "TransformProgram | TransformContainer | TransformDispatcher"
+    ) -> "TransformProgram":
+        """In-place addition to append a transform to the program.
+
+        Args:
+            other: A TransformContainer, TransformDispatcher, or TransformProgram to append.
+
+        Returns:
+            TransformProgram: This program with the transform(s) appended.
+        """
+        # Convert dispatcher to container if needed
+        if isinstance(other, TransformDispatcher):
+            other = TransformContainer(other)
+
+        if isinstance(other, TransformContainer):
+            if self.has_final_transform and other.final_transform:
+                raise TransformError("The transform program already has a terminal transform.")
+
+            if self.has_final_transform:
+                # Insert before the final transform
+                self._transform_program.insert(len(self) - 1, other)
+            else:
+                self._transform_program.append(other)
+            return self
+
+        if isinstance(other, TransformProgram):
+            if self.has_final_transform and other.has_final_transform:
+                raise TransformError("The transform program already has a terminal transform.")
+
+            if self.has_final_transform:
+                # Insert all before the final transform
+                for container in other._transform_program:
+                    self._transform_program.insert(len(self) - 1, container)
+            else:
+                self._transform_program.extend(other._transform_program)
+
+            if other.cotransform_cache:
+                if self.cotransform_cache:
+                    raise ValueError("Cannot add two transform programs with cotransform caches.")
+                self.cotransform_cache = other.cotransform_cache
+            return self
+
+        return NotImplemented
 
     def __repr__(self):
         """The string representation of the transform program class."""

@@ -424,7 +424,7 @@ class TestTransformProgramDunders:
         [
             pytest.param(
                 qml.transform(first_valid_transform),
-                "Cannot multiply transform dispatcher by negative integer",
+                "Cannot multiply transform container by negative integer",  # dispatcher delegates to container
                 id="dispatcher*-1",
             ),
             pytest.param(
@@ -633,7 +633,7 @@ class TestTransformProgramDunders:
         container2 = TransformContainer(
             transform=qml.transform(second_valid_transform, final_transform=True)
         )
-        with pytest.raises(TransformError, match="already has a terminal transform"):
+        with pytest.raises(TransformError, match="are final transforms and cannot be combined"):
             _ = container1 + container2
 
     def test_container_add_dispatcher_both_final_error(self):
@@ -642,7 +642,7 @@ class TestTransformProgramDunders:
             transform=qml.transform(first_valid_transform, final_transform=True)
         )
         dispatcher = qml.transform(second_valid_transform, final_transform=True)
-        with pytest.raises(TransformError, match="already has a terminal transform"):
+        with pytest.raises(TransformError, match="are final transforms and cannot be combined"):
             _ = container + dispatcher
 
     def test_container_mul_final_transform_error(self):
@@ -650,8 +650,117 @@ class TestTransformProgramDunders:
         container = TransformContainer(
             transform=qml.transform(first_valid_transform, final_transform=True)
         )
-        with pytest.raises(TransformError, match="already has a terminal transform"):
+        with pytest.raises(
+            TransformError, match="is a final transform and cannot be applied more than once"
+        ):
             _ = container * 2
+
+    # ============ __radd__ tests ============
+    @pytest.mark.parametrize(
+        "left",
+        [
+            pytest.param(
+                TransformContainer(transform=qml.transform(first_valid_transform)),
+                id="container+program",
+            ),
+            pytest.param(qml.transform(first_valid_transform), id="dispatcher+program"),
+        ],
+    )
+    def test_program_radd(self, left):
+        """Test that __radd__ prepends a transform to a program."""
+        container2 = TransformContainer(transform=qml.transform(second_valid_transform))
+        program = TransformProgram([container2])
+
+        result = left + program
+        assert isinstance(result, TransformProgram)
+        assert len(result) == 2
+        assert result[0].transform is first_valid_transform
+        assert result[1].transform is second_valid_transform
+
+    def test_program_radd_with_final_transform_error(self):
+        """Test that __radd__ raises error when adding final to program with final."""
+        container1 = TransformContainer(
+            transform=qml.transform(first_valid_transform, final_transform=True)
+        )
+        container2 = TransformContainer(
+            transform=qml.transform(second_valid_transform, final_transform=True)
+        )
+        program = TransformProgram([container2])
+
+        with pytest.raises(TransformError, match="already has a terminal transform"):
+            _ = container1 + program
+
+    # ============ __iadd__ tests ============
+    def test_program_iadd_container(self):
+        """Test that __iadd__ appends a container in place."""
+        container1 = TransformContainer(transform=qml.transform(first_valid_transform))
+        container2 = TransformContainer(transform=qml.transform(second_valid_transform))
+        program = TransformProgram([container1])
+
+        original_id = id(program)
+        program += container2
+
+        assert id(program) == original_id  # same object
+        assert len(program) == 2
+        assert program[0].transform is first_valid_transform
+        assert program[1].transform is second_valid_transform
+
+    def test_program_iadd_dispatcher(self):
+        """Test that __iadd__ appends a dispatcher in place."""
+        container1 = TransformContainer(transform=qml.transform(first_valid_transform))
+        dispatcher = qml.transform(second_valid_transform)
+        program = TransformProgram([container1])
+
+        original_id = id(program)
+        program += dispatcher
+
+        assert id(program) == original_id
+        assert len(program) == 2
+        assert program[0].transform is first_valid_transform
+        assert program[1].transform is second_valid_transform
+
+    def test_program_iadd_program(self):
+        """Test that __iadd__ extends with another program in place."""
+        container1 = TransformContainer(transform=qml.transform(first_valid_transform))
+        container2 = TransformContainer(transform=qml.transform(second_valid_transform))
+        program1 = TransformProgram([container1])
+        program2 = TransformProgram([container2])
+
+        original_id = id(program1)
+        program1 += program2
+
+        assert id(program1) == original_id
+        assert len(program1) == 2
+        assert program1[0].transform is first_valid_transform
+        assert program1[1].transform is second_valid_transform
+
+    def test_program_iadd_maintains_final_transform_at_end(self):
+        """Test that __iadd__ keeps final transform at the end."""
+        container1 = TransformContainer(
+            transform=qml.transform(first_valid_transform, final_transform=True)
+        )
+        container2 = TransformContainer(transform=qml.transform(second_valid_transform))
+        program = TransformProgram([container1])
+
+        program += container2
+
+        assert len(program) == 2
+        assert program[0].transform is second_valid_transform
+        assert program[1].transform is first_valid_transform
+        assert program[1].final_transform
+
+    def test_program_iadd_with_both_final_transform_error(self):
+        """Test that __iadd__ raises error when adding final to program with final."""
+        container1 = TransformContainer(
+            transform=qml.transform(first_valid_transform, final_transform=True)
+        )
+        container2 = TransformContainer(
+            transform=qml.transform(second_valid_transform, final_transform=True)
+        )
+        program = TransformProgram([container1])
+
+        with pytest.raises(TransformError, match="already has a terminal transform"):
+            program += container2
 
     def test_repr_program(self):
         """Test the string representation of a program."""
