@@ -32,6 +32,7 @@ from pennylane.decomposition import (
     change_op_basis_resource_rep,
     register_condition,
     register_resources,
+    resource_rep,
 )
 from pennylane.decomposition.symbolic_decomposition import (
     adjoint_rotation,
@@ -1885,7 +1886,20 @@ def _crx_to_h_crz(phi: TensorLike, wires: WiresLike, **__):
     qml.Hadamard(wires=wires[1])
 
 
-add_decomps(CRX, _crx_to_rx_cz, _crx_to_rz_ry, _crx_to_h_crz)
+def _crx_to_ppr_resources():
+    return {
+        resource_rep(qml.PauliRot, pauli_word="ZX"): 1,
+        resource_rep(qml.PauliRot, pauli_word="X"): 1,
+    }
+
+
+@register_resources(_crx_to_ppr_resources)
+def _crx_to_ppr(phi: TensorLike, wires: WiresLike, **__):
+    qml.PauliRot(phi / 2, "X", wires=wires[1])
+    qml.PauliRot(-phi / 2, "ZX", wires=wires)
+
+
+add_decomps(CRX, _crx_to_rx_cz, _crx_to_rz_ry, _crx_to_h_crz, _crx_to_ppr)
 add_decomps("Adjoint(CRX)", adjoint_rotation)
 add_decomps("Pow(CRX)", pow_rotation)
 
@@ -2064,7 +2078,20 @@ def _cry(phi: TensorLike, wires: WiresLike, **__):
     qml.CNOT(wires=wires)
 
 
-add_decomps(CRY, _cry)
+def _cry_to_ppr_resources():
+    return {
+        resource_rep(qml.PauliRot, pauli_word="ZY"): 1,
+        resource_rep(qml.PauliRot, pauli_word="Y"): 1,
+    }
+
+
+@register_resources(_cry_to_ppr_resources)
+def _cry_to_ppr(phi: TensorLike, wires: WiresLike, **__):
+    qml.PauliRot(phi / 2, "Y", wires=wires[1])
+    qml.PauliRot(-phi / 2, "ZY", wires=wires)
+
+
+add_decomps(CRY, _cry, _cry_to_ppr)
 add_decomps("Adjoint(CRY)", adjoint_rotation)
 add_decomps("Pow(CRY)", pow_rotation)
 
@@ -2286,7 +2313,20 @@ def _crz(phi: TensorLike, wires: WiresLike, **__):
     qml.CNOT(wires=wires)
 
 
-add_decomps(CRZ, _crz)
+def _crz_to_ppr_resources():
+    return {
+        resource_rep(qml.PauliRot, pauli_word="ZZ"): 1,
+        resource_rep(qml.PauliRot, pauli_word="Z"): 1,
+    }
+
+
+@register_resources(_crz_to_ppr_resources)
+def _crz_to_ppr(phi: TensorLike, wires: WiresLike, **__):
+    qml.PauliRot(phi / 2, "Z", wires=wires[1])
+    qml.PauliRot(-phi / 2, "ZZ", wires=wires)
+
+
+add_decomps(CRZ, _crz, _crz_to_ppr)
 add_decomps("Adjoint(CRZ)", adjoint_rotation)
 add_decomps("Pow(CRZ)", pow_rotation)
 
@@ -2720,7 +2760,23 @@ def _cphase_to_rz_cnot(phi: TensorLike, wires: WiresLike, **__):
     qml.GlobalPhase(-phi / 4)
 
 
-add_decomps(ControlledPhaseShift, _cphase_to_rz_cnot)
+def _cphase_to_ppr_resource():
+    return {
+        qml.GlobalPhase: 1,
+        resource_rep(qml.PauliRot, pauli_word="Z"): 2,
+        resource_rep(qml.PauliRot, pauli_word="ZZ"): 1,
+    }
+
+
+@register_resources(_cphase_to_ppr_resource)
+def _cphase_to_ppr(phi: TensorLike, wires: WiresLike, **__):
+    qml.PauliRot(-phi / 2, pauli_word="ZZ", wires=wires)
+    qml.PauliRot(phi / 2, pauli_word="Z", wires=wires[1])
+    qml.PauliRot(phi / 2, pauli_word="Z", wires=wires[0])
+    qml.GlobalPhase(-phi / 4)
+
+
+add_decomps(ControlledPhaseShift, _cphase_to_rz_cnot, _cphase_to_ppr)
 add_decomps("Adjoint(ControlledPhaseShift)", adjoint_rotation)
 add_decomps("Pow(ControlledPhaseShift)", pow_rotation)
 
