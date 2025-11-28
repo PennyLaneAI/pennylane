@@ -27,13 +27,15 @@ from pennylane.compiler.python_compiler.dialects import quantum, stablehlo
 from pennylane.exceptions import CompileError
 
 
+from .tree_traversal_utils_tmp import print_mlir, print_ssa_values
+
+
 class UnrollLoopPattern(RewritePattern):
     """A rewrite pattern that unrolls scf.ForOps containing measurement-controlled
     operations into separate branches for each operator."""
 
     def __init__(self):
         """Initialize UnrollLoopPattern."""
-        self.needs_unroll: bool = False
         self.for_loop_to_unroll: list[scf.ForOp] = []
 
     def match_and_rewrite(
@@ -41,47 +43,31 @@ class UnrollLoopPattern(RewritePattern):
     ) -> None:  # pylint: disable=arguments-differ
         """Unroll nested scf.ForOps into separate branches for each operator."""
 
-        self.needs_unroll = self.detect_mcm_in_loop_ops(op)
+        needs_unroll = self.detect_mcm_in_loop_ops(op)
 
-        if not self.needs_unroll:
+        if not needs_unroll:
             return
 
         # for _for_loop in self.for_loop_to_unroll:
-        #     print_mlir(_for_loop, "ForOp to unroll:")
+        #     print_mlir(_for_loop, "ForOp to unroll 2:")
 
-        neasted_loop_to_unroll = []
-
-        # Looking for parent loops of the loops to unroll
         for _for_op in self.for_loop_to_unroll:
-
-            neasted_loop_to_unroll.append(_for_op)
-
-            parent_op = _for_op.parent_op()
-            while parent_op != op:
-                if isinstance(parent_op, scf.ForOp):
-
-                    # Keep the most outer loop only once and later unroll from outer to inner
-                    if parent_op in neasted_loop_to_unroll:
-                        neasted_loop_to_unroll.remove(parent_op)
-
-                    neasted_loop_to_unroll.append(parent_op)
-
-                parent_op = parent_op.parent_op()
-
-        for _for_op in neasted_loop_to_unroll:
-            # print_mlir(_for_op, "Last ForOp to unroll:")
             self.unroll_loop(_for_op, rewriter)
 
     def detect_mcm_in_loop_ops(self, op: Operation) -> bool:
-        """Detect if there are mid-circuit measurement operations inside ForOps."""
         op_walk = op.walk()
         for current_op in op_walk:
-            if isinstance(current_op, scf.ForOp):
-                for inner_op in current_op.body.ops:
-                    if isinstance(inner_op, quantum.MeasureOp):
-                        self.for_loop_to_unroll.append(current_op)
+            if isinstance(current_op, quantum.MeasureOp):
+                self.collect_all_parent_loops(current_op, stop=op)
 
         return len(self.for_loop_to_unroll) > 0
+
+    def collect_all_parent_loops(self, op, stop):
+        while (op := op.parent_op()) and op != stop:
+            if isinstance(op, scf.ForOp):
+                if op in self.for_loop_to_unroll:
+                    self.for_loop_to_unroll.remove(op)
+                self.for_loop_to_unroll.append(op)
 
     def unroll_loop(self, op: scf.ForOp, rewriter: PatternRewriter) -> None:
         """Unroll an scf.ForOp into separate branches for each operator."""
