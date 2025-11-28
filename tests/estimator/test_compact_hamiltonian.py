@@ -24,14 +24,29 @@ from pennylane.estimator import (
     VibronicHamiltonian,
 )
 
+# Test that all of compact_hamiltonian classes are frozen
+Test_Hamiltonians = [
+    (CDFHamiltonian, "num_orbitals", {"num_orbitals": 10, "num_fragments": 30}),
+    (THCHamiltonian, "num_orbitals", {"num_orbitals": 10, "tensor_rank": 30}),
+    (VibrationalHamiltonian, "num_modes", {"num_modes": 5, "grid_size": 3, "taylor_degree": 2}),
+    (
+        VibronicHamiltonian,
+        "num_modes",
+        {"num_modes": 5, "num_states": 2, "grid_size": 3, "taylor_degree": 2},
+    ),
+]
 
-def test_CDFHamiltonian_is_frozen():
-    """Verify that the dataclass is immutable (frozen=True)."""
 
-    assert CDFHamiltonian.__dataclass_params__.frozen is True
-    hamiltonian = CDFHamiltonian(num_orbitals=10, num_fragments=30)
+@pytest.mark.parametrize("HamiltonianClass, attr_name, kwargs", Test_Hamiltonians)
+def test_Hamiltonian_is_frozen(HamiltonianClass, attr_name, kwargs):
+    """Verify that all Hamiltonian dataclasses are immutable (frozen=True)."""
+
+    assert HamiltonianClass.__dataclass_params__.frozen is True
+
+    hamiltonian = HamiltonianClass(**kwargs)
+
     with pytest.raises(AttributeError):
-        hamiltonian.num_orbitals = 20
+        setattr(hamiltonian, attr_name, 20)
 
 
 @pytest.mark.parametrize(
@@ -59,6 +74,7 @@ def test_cdf_instantiation(num_orbitals, num_fragments, one_norm):
         (-4, 10, None),
         (16, -10, None),
         (16, 50, -5),
+        (4, -5.5, None),
     ],
 )
 def test_cdf_invalid_types(invalid_num_orbitals, invalid_num_fragments, invalid_one_norm):
@@ -69,15 +85,6 @@ def test_cdf_invalid_types(invalid_num_orbitals, invalid_num_fragments, invalid_
             num_fragments=invalid_num_fragments,
             one_norm=invalid_one_norm,
         )
-
-
-def test_THCHamiltonian_is_frozen():
-    """Verify that the dataclass is immutable (frozen=True)."""
-
-    assert THCHamiltonian.__dataclass_params__.frozen is True
-    hamiltonian = THCHamiltonian(num_orbitals=10, tensor_rank=30)
-    with pytest.raises(AttributeError):
-        hamiltonian.num_orbitals = 20
 
 
 @pytest.mark.parametrize(
@@ -105,6 +112,7 @@ def test_thc_instantiation(num_orbitals, tensor_rank, one_norm):
         (-4, 10, None),
         (16, -10, None),
         (16, 50, -5),
+        (4, -5.5, None),
     ],
 )
 def test_thc_invalid_types(invalid_num_orbitals, invalid_tensor_rank, invalid_one_norm):
@@ -115,15 +123,6 @@ def test_thc_invalid_types(invalid_num_orbitals, invalid_tensor_rank, invalid_on
             tensor_rank=invalid_tensor_rank,
             one_norm=invalid_one_norm,
         )
-
-
-def test_VibrationalHamiltonian_is_frozen():
-    """Verify that the dataclass is immutable (frozen=True)."""
-
-    assert VibrationalHamiltonian.__dataclass_params__.frozen is True
-    hamiltonian = VibrationalHamiltonian(num_modes=10, grid_size=30, taylor_degree=5)
-    with pytest.raises(AttributeError):
-        hamiltonian.num_modes = 20
 
 
 @pytest.mark.parametrize(
@@ -153,6 +152,7 @@ def test_vibrational_instantiation(num_modes, grid_size, taylor_degree, one_norm
         (16, -10, 2, None),
         (16, 50, -2, 10.0),
         (16, 50, 2, -5),
+        (5, -4.5, 1, None),
     ],
 )
 def test_vibrational_invalid_types(
@@ -166,15 +166,6 @@ def test_vibrational_invalid_types(
             taylor_degree=invalid_taylor_degree,
             one_norm=invalid_one_norm,
         )
-
-
-def test_VibronicHamiltonian_is_frozen():
-    """Verify that the dataclass is immutable (frozen=True)."""
-
-    assert VibronicHamiltonian.__dataclass_params__.frozen is True
-    hamiltonian = VibronicHamiltonian(num_modes=10, num_states=2, grid_size=30, taylor_degree=5)
-    with pytest.raises(AttributeError):
-        hamiltonian.num_modes = 20
 
 
 @pytest.mark.parametrize(
@@ -209,7 +200,7 @@ def test_vibronic_instantiation(num_modes, num_states, grid_size, taylor_degree,
         (-4, 2, 10, 3, None),
         (16, -3, 50, 2, None),
         (16, 3, -50, 2, None),
-        (16, 3, 50, -2, 10.0),
+        (16, 3, 50, -2.5, 10.0),
         (16, 3, 50, 2, -5),
     ],
 )
