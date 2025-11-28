@@ -687,10 +687,7 @@ def _hybrid_qram_resources(bitstrings, num_target_wires, num_select_wires, k, n_
                 num_control_wires=1,
                 num_zero_control_values=0,
             )
-        ] += (
-            (n_tree + 2 * (1 << n_tree) * num_target_wires) * num_blocks
-            + n_tree
-        )
+        ] += (n_tree + 2 * (1 << n_tree) * num_target_wires) * num_blocks + n_tree
 
         resources[
             controlled_resource_rep(
@@ -699,9 +696,7 @@ def _hybrid_qram_resources(bitstrings, num_target_wires, num_select_wires, k, n_
                 num_control_wires=1,
                 num_zero_control_values=0,
             )
-        ] += (
-            n_tree * 2 + ((1 << n_tree) - 1) * (num_target_wires + 2)
-        ) * num_blocks
+        ] += (n_tree * 2 + ((1 << n_tree) - 1) * (num_target_wires + 2)) * num_blocks
 
         resources[
             controlled_resource_rep(
@@ -715,9 +710,7 @@ def _hybrid_qram_resources(bitstrings, num_target_wires, num_select_wires, k, n_
                 num_control_wires=1,
                 num_zero_control_values=0,
             )
-        ] += (
-            ((1 << n_tree) - 1) * num_target_wires
-        ) * num_blocks * 3 + (
+        ] += (((1 << n_tree) - 1) * num_target_wires) * num_blocks * 3 + (
             (1 << n_tree) - 1 - n_tree
         ) * num_blocks * 4
 
