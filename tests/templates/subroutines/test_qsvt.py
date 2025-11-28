@@ -983,7 +983,8 @@ class TestIterativeSolver:
         target_polynomial_coeffs = polynomial_coeffs_in_cheby_basis
         phis, cost_func = _qsp_optimization(degree, target_polynomial_coeffs)
 
-        import jax 
+        import jax
+
         key = jax.random.key(123)
         x_point = jax.random.uniform(key=key, shape=(1,), minval=-1, maxval=1)
 
@@ -1011,11 +1012,14 @@ class TestIterativeSolver:
         )
 
         assert qml.math.isclose(
-            _qsp_iterate_broadcast(phis, x_point, 'jax'),
+            _qsp_iterate_broadcast(phis, x_point, "jax"),
             _poly_func(coeffs=target_polynomial_coeffs, x=x_point),
             atol=tolerance,
         )
-        print(_qsp_iterate_broadcast(phis, x_point, 'jax')-_poly_func(coeffs=target_polynomial_coeffs, x=x_point))
+        print(
+            _qsp_iterate_broadcast(phis, x_point, "jax")
+            - _poly_func(coeffs=target_polynomial_coeffs, x=x_point)
+        )
 
     @pytest.mark.parametrize(
         "x, degree",
@@ -1035,8 +1039,8 @@ class TestIterativeSolver:
     @pytest.mark.parametrize(
         "coeffs, x",
         [
-            (generate_polynomial_coeffs(100, 0),  0.1),
-            (generate_polynomial_coeffs(7, 1),  0.2),
+            (generate_polynomial_coeffs(100, 0), 0.1),
+            (generate_polynomial_coeffs(7, 1), 0.2),
             (generate_polynomial_coeffs(12, 0), 0.3),
             (generate_polynomial_coeffs(12, None), 0.4),
         ],
@@ -1048,23 +1052,13 @@ class TestIterativeSolver:
         assert np.isclose(val, ref)
 
     @pytest.mark.parametrize("angle", list([0.1, 0.2, 0.3, 0.4]))
-    @pytest.mark.parametrize(
-        "interface",
-        [
-            'jax'
-        ]
-    )
+    @pytest.mark.parametrize("interface", ["jax"])
     def test_z_rotation(self, angle, interface):
         """Test internal function _z_rotation"""
         assert np.allclose(_z_rotation(angle, interface), qml.RZ.compute_matrix(-2 * angle))
 
     @pytest.mark.parametrize("phi", [0.1, 0.2, 0.3, 0.4])
-    @pytest.mark.parametrize(
-        "interface",
-        [
-            'jax'
-        ]
-    )
+    @pytest.mark.parametrize("interface", ["jax"])
     def test_qsp_iterate(self, phi, interface):
         """Test internal function _qsp_iterate"""
         mtx = _qsp_iterate(0.0, phi, interface)
@@ -1087,12 +1081,7 @@ class TestIterativeSolver:
         assert jnp.isclose(qsp_be, ref)
 
     @pytest.mark.parametrize("x", [0.1, 0.2, 0.3, 0.4])
-    @pytest.mark.parametrize(
-        "interface",
-        [
-            'jax'
-        ]
-    )
+    @pytest.mark.parametrize("interface", ["jax"])
     def test_W_of_x(self, x, interface):
         """Test internal function _W_of_x"""
         mtx = _W_of_x(x, interface)

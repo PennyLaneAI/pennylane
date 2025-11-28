@@ -45,16 +45,18 @@ try:
 except ModuleNotFoundError:
     pass
 
+
 def jit_if_jax_available(f, **kwargs):
     # thin wrapper around jax.jit
-    # would very much like to move the iterative solver code to 
+    # would very much like to move the iterative solver code to
     # separate file to get rid of a lot of the try/catch blocks
-    
+
     try:
         # def jit(**kwargs):
         #     return jit(f, **kwargs)
         # return jit
         from jax import jit
+
         return jit(f, **kwargs)
     except:
         return f
@@ -839,6 +841,7 @@ def _cheby_pol(x, degree):
     """
     return math.cos(degree * math.arccos(x))
 
+
 @jit_if_jax_available
 def _poly_func(coeffs, x):
     """\sum c_kT_{k}(x) where T_k(x)=cos(karccos(x))"""
@@ -892,7 +895,7 @@ def _qsp_iterate(phi, x, interface):
     Returns:
         tensor_like: 2x2 matrix of operator defined in Theorem (1) of https://arxiv.org/pdf/2002.11649
     """
-   
+
     return math.dot(_W_of_x(x=x, interface=interface), _z_rotation(phi=phi, interface=interface))
 
 
@@ -936,9 +939,10 @@ def _grid_pts(degree, interface):
 @jit_if_jax_available
 def obj_function(phi, x, y):
     # Equation (23)
-    obj_func = vmap(_qsp_iterate_broadcast, in_axes=(None, 0, None))(phi, x, 'jax') - y
+    obj_func = vmap(_qsp_iterate_broadcast, in_axes=(None, 0, None))(phi, x, "jax") - y
     obj_func = jnp.dot(obj_func, obj_func)
     return 1 / x.shape[0] * obj_func
+
 
 @partial(jit_if_jax_available, static_argnames=["maxiter", "tol"])
 def optax_opt(initial_guess, x, y, maxiter, tol):
@@ -965,15 +969,14 @@ def optax_opt(initial_guess, x, y, maxiter, tol):
     carry = lax.while_loop(while_loop_cond, optimizer_iter_update, init_carry)
     return carry[0]
 
-def _qsp_optimization(
-    degree: int, coeffs_target_func, maxiter=100, tol=1e-30
-):
+
+def _qsp_optimization(degree: int, coeffs_target_func, maxiter=100, tol=1e-30):
     """Algorithm 1 in https://arxiv.org/pdf/2002.11649 produces the angle parameters by minimizing the distance between the target and qsp polynomail over the grid"""
-    
+
     config.update("jax_enable_x64", True)
-    grid_points = _grid_pts(degree, 'jax')
+    grid_points = _grid_pts(degree, "jax")
     initial_guess = [np.pi / 4] + [0.0] * (degree - 1) + [np.pi / 4]
-    
+
     initial_guess = jnp.array(initial_guess)
     targets = vmap(_poly_func, in_axes=(None, 0))(coeffs_target_func, grid_points)
 
@@ -987,16 +990,15 @@ def _compute_qsp_angles_iteratively(
     poly,
 ):
     try:
-        import jax 
+        import jax
     except ModuleNotFoundError:
         raise ModuleNotFoundError(f"JAX is required but not installed")
 
     try:
-        import optax 
+        import optax
     except ModuleNotFoundError:
         raise ModuleNotFoundError(f"Optax is required but not installed")
 
-    
     poly_cheb = chebyshev.poly2cheb(poly)
     degree = len(poly_cheb) - 1
 
@@ -1021,6 +1023,7 @@ def _compute_qsp_angles_iteratively(
 
     angles, *_ = _qsp_optimization(degree=degree, coeffs_target_func=coeffs_target_func)
     return angles
+
 
 def _gqsp_u3_gate(theta, phi, lambd):
     r"""
