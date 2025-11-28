@@ -17,22 +17,22 @@
 
 from dataclasses import dataclass, field
 from itertools import chain
-from typing import List, Tuple, Type, TypeVar
+from typing import Type, TypeVar
 
 from xdsl import context
 from xdsl.dialects import arith, builtin, func, memref, scf, tensor
-from xdsl.ir import Block, BlockArgument, Operation, Region, SSAValue
+from xdsl.ir import Block, Operation, Region, SSAValue
 from xdsl.passes import ModulePass
 from xdsl.pattern_rewriter import PatternRewriter, RewritePattern, op_type_rewrite_pattern
 from xdsl.printer import Printer
 from xdsl.rewriter import BlockInsertPoint, InsertPoint
 
 from pennylane.compiler.python_compiler import compiler_transform
-from pennylane.compiler.python_compiler.dialects import quantum, stablehlo
-from pennylane.exceptions import CompileError
+from pennylane.compiler.python_compiler.dialects import quantum
 
 from .tree_traversal_if_statements import IfOperatorPartitioningPattern
 from .tree_traversal_unroll_static_loops import UnrollLoopPattern
+from .tree_traversal_utils_tmp import print_mlir, print_ssa_values
 
 
 ##############################################################################
@@ -61,36 +61,6 @@ def initialize_memref_with_value(dest: SSAValue, value: SSAValue, size: int | SS
         lb=c0_index.results[0], ub=size, step=c1_index.results[0], iter_args=[], body=loop_body
     )
     return (c0_index, c1_index, for_op)
-
-
-print_everthing = True
-# print_everthing = False
-
-
-def print_mlir(op, msg="", should_print: bool = True):
-    """Print the MLIR of an operation with a message."""
-    should_print = print_everthing
-    if should_print:
-        printer = Printer()
-        print("-" * 100)
-        print(f"// Start || {msg}")
-        if isinstance(op, Region):
-            printer.print_region(op)
-        elif isinstance(op, Block):
-            printer.print_block(op)
-        elif isinstance(op, Operation):
-            printer.print_op(op)
-        print(f"\n// End {msg}")
-        print("-" * 100)
-
-
-def print_ssa_values(values, msg="SSA Values || ", should_print: bool = True):
-    """Print SSA Values"""
-    should_print = print_everthing
-    if should_print:
-        print(f"// {msg}")
-        for val in values:
-            print(f"  - {val}")
 
 
 @dataclass

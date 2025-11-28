@@ -23,7 +23,7 @@ from .measurements_from_samples import (
     measurements_from_samples_pass,
 )
 from .merge_rotations import MergeRotationsPass, merge_rotations_pass
-from .tree_traversal import tree_traversal_pass, TreeTraversalPass
+from .tree_traversal import TreeTraversalPass, tree_traversal_pass
 
 from .split_non_commuting import SplitNonCommutingPass, split_non_commuting_pass
 
