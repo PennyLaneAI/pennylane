@@ -19,6 +19,12 @@ from collections import defaultdict
 from dataclasses import dataclass
 
 
+def _validate_positive_int(name, value):
+    """Helper to validate positive integers."""
+    if not isinstance(value, int) or value <= 0:
+        raise TypeError(f"{name} must be a positive integer, got {value}")
+
+
 @dataclass(frozen=True)
 class CDFHamiltonian:
     """For a compressed double-factorized (CDF) Hamiltonian, stores the minimum necessary information pertaining to resource estimation.
@@ -26,6 +32,7 @@ class CDFHamiltonian:
     Args:
         num_orbitals (int): number of spatial orbitals
         num_fragments (int): number of fragments in the compressed double-factorized (CDF) representation
+        one_norm (float | None): the one-norm of the Hamiltonian
 
     Returns:
         CDFHamiltonian: An instance of CDFHamiltonian
@@ -36,6 +43,21 @@ class CDFHamiltonian:
 
     num_orbitals: int
     num_fragments: int
+    one_norm: float | None = None
+
+    def __post_init__(self):
+        """Checks the types of the inputs."""
+
+        _validate_positive_int("num_orbitals", self.num_orbitals)
+        _validate_positive_int("num_fragments", self.num_fragments)
+        if self.one_norm is not None and not (
+            isinstance(self.one_norm, (float, int)) and self.one_norm >= 0
+        ):
+            raise TypeError(
+                f"one_norm, if provided, must be a positive float or integer. Instead received {self.one_norm}"
+            )
+        if isinstance(self.one_norm, int):
+            object.__setattr__(self, "one_norm", float(self.one_norm))
 
 
 @dataclass(frozen=True)
@@ -45,6 +67,7 @@ class THCHamiltonian:
     Args:
         num_orbitals (int): number of spatial orbitals
         tensor_rank (int):  tensor rank of two-body integrals in the tensor hypercontracted (THC) representation
+        one_norm (float | None): the one-norm of the Hamiltonian
 
     Returns:
         THCHamiltonian: An instance of THCHamiltonian
@@ -55,6 +78,23 @@ class THCHamiltonian:
 
     num_orbitals: int
     tensor_rank: int
+    one_norm: float | None = None
+
+    def __post_init__(self):
+        """Checks the types of the inputs."""
+
+        _validate_positive_int("num_orbitals", self.num_orbitals)
+        _validate_positive_int("tensor_rank", self.tensor_rank)
+        if self.one_norm is not None and not (
+            isinstance(self.one_norm, (float, int)) and self.one_norm >= 0
+        ):
+            raise TypeError(
+                f"one_norm, if provided, must be a positive float or integer."
+                f" Instead received {self.one_norm}"
+            )
+
+        if isinstance(self.one_norm, int):
+            object.__setattr__(self, "one_norm", float(self.one_norm))
 
 
 @dataclass(frozen=True)
@@ -65,6 +105,7 @@ class VibrationalHamiltonian:
         num_modes (int): number of vibrational modes
         grid_size (int): number of grid points used to discretize each mode
         taylor_degree (int): degree of the Taylor expansion used in the vibrational representation
+        one_norm (float | None): the one-norm of the Hamiltonian
 
     Returns:
         VibrationalHamiltonian: An instance of VibrationalHamiltonian
@@ -76,6 +117,25 @@ class VibrationalHamiltonian:
     num_modes: int
     grid_size: int
     taylor_degree: int
+    one_norm: float | None = None
+
+    def __post_init__(self):
+        """Checks the types of the inputs."""
+
+        _validate_positive_int("num_modes", self.num_modes)
+        _validate_positive_int("grid_size", self.grid_size)
+        _validate_positive_int("taylor_degree", self.taylor_degree)
+
+        if self.one_norm is not None and not (
+            isinstance(self.one_norm, (float, int)) and self.one_norm >= 0
+        ):
+            raise TypeError(
+                f"one_norm, if provided, must be a positive float or integer."
+                f" Instead received {self.one_norm}"
+            )
+
+        if isinstance(self.one_norm, int):
+            object.__setattr__(self, "one_norm", float(self.one_norm))
 
 
 @dataclass(frozen=True)
@@ -87,6 +147,7 @@ class VibronicHamiltonian:
         num_states (int): number of vibronic states
         grid_size (int): number of grid points used to discretize each mode
         taylor_degree (int): degree of the Taylor expansion used in the vibronic representation
+        one_norm (float | None): the one-norm of the Hamiltonian
 
     Returns:
         VibronicHamiltonian: An instance of VibronicHamiltonian
@@ -99,6 +160,26 @@ class VibronicHamiltonian:
     num_states: int
     grid_size: int
     taylor_degree: int
+    one_norm: float | None = None
+
+    def __post_init__(self):
+        """Checks the types of the inputs."""
+
+        _validate_positive_int("num_modes", self.num_modes)
+        _validate_positive_int("num_states", self.num_states)
+        _validate_positive_int("grid_size", self.grid_size)
+        _validate_positive_int("taylor_degree", self.taylor_degree)
+
+        if self.one_norm is not None and not (
+            isinstance(self.one_norm, (float, int)) and self.one_norm >= 0
+        ):
+            raise TypeError(
+                f"one_norm, if provided, must be a positive float or integer."
+                f" Instead received {self.one_norm}"
+            )
+
+        if isinstance(self.one_norm, int):
+            object.__setattr__(self, "one_norm", float(self.one_norm))
 
 
 class PauliHamiltonian:
@@ -143,6 +224,10 @@ class PauliHamiltonian:
     ... )
     >>> pauli_ham
     PauliHamiltonian(num_qubits=40, num_pauli_words=100, max_weight=2, one_norm=14.5)
+
+    The Hamiltonian can be used as input for other subroutines, like
+    :class:`~.estimator.templates.trotter.TrotterPauli`:
+
     >>> num_steps, order = (10, 2)
     >>> res = qre.estimate(qre.TrotterPauli(pauli_ham, num_steps, order))
     >>> print(res)
@@ -163,11 +248,11 @@ class PauliHamiltonian:
 
         There are three different ways to instantiate the ``PauliHamiltonian`` class depending on how
         much information is known about the Hamiltonian we wish to capture. Note that providing more
-        information will often lead to more accurate resource estimates.
+        information will generally lead to more accurate resource estimates.
 
         Firstly, when we know fairly little about the explicit form of the Hamiltonian, we can express
-        it by specifyng the number of qubits it acts upon, the total number of terms in the Hamiltonian
-        and the maximum weight of a term overall terms in the Hamiltonian.
+        it by specifying the number of qubits it acts upon, the total number of terms in the Hamiltonian
+        and the maximum weight of a term in the Hamiltonian.
 
         >>> import pennylane.estimator as qre
         >>> pauli_ham = qre.PauliHamiltonian(
@@ -196,7 +281,7 @@ class PauliHamiltonian:
         >>> pauli_ham.pauli_dist
         {'X': 40, 'XX': 30, 'YY': 30}
 
-        Finally, if we also know how to group the terms in the commuting groups of operators, we can
+        Finally, if we also know how to separate the terms into commuting groups of operators, we can
         construct the Hamiltonian by specifying these groups of terms. This input will take precedence
         over the other two methods. Meaning that the attributes
         ``(num_pauli_words, max_weight, pauli_dist)`` will all be computed from the ``commuting_groups``
@@ -233,46 +318,17 @@ class PauliHamiltonian:
         self._num_qubits = num_qubits
         self._one_norm = one_norm
 
-        if commuting_groups is not None:
-            for group in commuting_groups:
-                _validate_pauli_dist(group)  #  ensure the groups are formatted correctly
+        (max_weight, num_pauli_words, pauli_dist, commuting_groups) = _validate_inputs(
+            num_qubits, num_pauli_words, max_weight, pauli_dist, commuting_groups
+        )
 
-            self._commuting_groups = commuting_groups
-            self._pauli_dist = _pauli_dist_from_commuting_groups(commuting_groups)
-            self._max_weight = max(len(pw) for pw in self.pauli_dist.keys())
-            self._num_pauli_words = sum(self.pauli_dist.values())
-            return
-
-        if pauli_dist is not None:
-            _validate_pauli_dist(pauli_dist)
-
-            self._pauli_dist = pauli_dist
-            self._commuting_groups = None
-            self._max_weight = max(len(pw) for pw in pauli_dist.keys())
-            self._num_pauli_words = sum(pauli_dist.values())
-            return
-
-        if num_pauli_words is None:
-            raise ValueError(
-                "One of the following sets of inputs must be provided (not None) in order to"
-                " instantiate a valid PauliHamiltonian:\n - `commuting_groups`\n - `pauli_dist`\n"
-                " - `num_pauli_words`"
-            )
-
-        if max_weight and (max_weight > num_qubits):
-            raise ValueError(
-                "`max_weight` represents the maximum number of qubits any Pauli word acts upon,"
-                "this value must be less than or equal to the total number of qubits the "
-                f"Hamiltonian acts on. Got `num_qubits` = {num_qubits} and `max_weight` = {max_weight}"
-            )
-
-        self._max_weight = max_weight or num_qubits
+        self._max_weight = max_weight
         self._num_pauli_words = num_pauli_words
-        self._pauli_dist = None
-        self._commuting_groups = None
+        self._pauli_dist = pauli_dist
+        self._commuting_groups = commuting_groups
 
     def __repr__(self):
-        """The repr dundar method for the PauliHamiltonian class."""
+        """The repr dunder method for the PauliHamiltonian class."""
         return f"PauliHamiltonian(num_qubits={self.num_qubits}, num_pauli_words={self.num_pauli_words}, max_weight={self.max_weight}, one_norm={self.one_norm})"
 
     def __eq__(self, other: "PauliHamiltonian"):
@@ -370,3 +426,59 @@ def _pauli_dist_from_commuting_groups(commuting_groups: tuple[dict]):
             total_pauli_dist[pauli_word] += frequency
 
     return total_pauli_dist
+
+
+def _validate_inputs(
+    num_qubits: int,
+    num_pauli_words: int | None,
+    max_weight: int | None,
+    pauli_dist: dict | None,
+    commuting_groups: tuple[dict] | None,
+) -> tuple:
+    """Helper function to validate the inputs of PauliHamiltonian"""
+    if commuting_groups is not None:
+        for group in commuting_groups:
+            _validate_pauli_dist(group)  #  ensure the groups are formatted correctly
+
+        final_commuting_groups = commuting_groups
+        final_pauli_dist = _pauli_dist_from_commuting_groups(commuting_groups)
+        final_max_weight = max(len(pw) for pw in final_pauli_dist.keys())
+        final_num_pauli_words = sum(final_pauli_dist.values())
+        return (
+            final_max_weight,
+            final_num_pauli_words,
+            final_pauli_dist,
+            final_commuting_groups,
+        )
+
+    if pauli_dist is not None:
+        _validate_pauli_dist(pauli_dist)
+
+        final_pauli_dist = pauli_dist
+        final_commuting_groups = None
+        final_max_weight = max(len(pw) for pw in pauli_dist.keys())
+        final_num_pauli_words = sum(pauli_dist.values())
+
+        return (
+            final_max_weight,
+            final_num_pauli_words,
+            final_pauli_dist,
+            final_commuting_groups,
+        )
+
+    if num_pauli_words is None:
+        raise ValueError(
+            "One of the following sets of inputs must be provided (not None) in order to"
+            " instantiate a valid PauliHamiltonian:\n - `commuting_groups`\n - `pauli_dist`\n"
+            " - `num_pauli_words`"
+        )
+
+    if max_weight and (max_weight > num_qubits):
+        raise ValueError(
+            "`max_weight` represents the maximum number of qubits any Pauli word acts upon,"
+            "this value must be less than or equal to the total number of qubits the "
+            f"Hamiltonian acts on. Got `num_qubits` = {num_qubits} and `max_weight` = {max_weight}"
+        )
+
+    final_max_weight = max_weight or num_qubits
+    return (final_max_weight, num_pauli_words, None, None)
