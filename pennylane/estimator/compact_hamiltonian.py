@@ -65,7 +65,7 @@ class THCHamiltonian:
     Args:
         num_orbitals (int): number of spatial orbitals
         tensor_rank (int):  tensor rank of two-body integrals in the tensor hypercontracted (THC) representation
-        one_norm (float | None, optional): the one-norm of the Hamiltonian
+        one_norm (float | None): the one-norm of the Hamiltonian
 
     Returns:
         THCHamiltonian: An instance of THCHamiltonian
