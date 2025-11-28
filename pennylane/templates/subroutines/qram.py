@@ -752,3 +752,116 @@ def _hybrid_qram_resources(bitstrings, num_target_wires, num_select_wires, k, n_
                 for p in range(1 << n_tree)
             ]
         )
+
+
+def _bits(value: int, length: int) -> list[int]:
+    """Return `length` bits of `value` (MSB first)."""
+    return [(value >> (length - 1 - i)) & 1 for i in range(length)]
+
+
+ def _tree_route_bus_down_first_k_levels_ctrl(k_levels: int, tree_wire_manager, signal) -> List[Operator]:
+        """Tree routing down for first `k_levels` levels, controlled on signal."""
+
+        for ell in range(k_levels):
+            for p in range(1 << ell):
+                in_w = tree_wire_manager.node_in_wire(ell, p)
+                L = tree_wire_manager.portL(ell, p)
+                R = tree_wire_manager.portR(ell, p)
+                d = tree_wire_manager.router(ell, p)
+
+                # dir==1: CSWAP(d, in_w, R) — additionally controlled on signal
+                ctrl(CSWAP(wires=[d, in_w, R]), control=[signal], control_values=[1])
+
+                # dir==0: SWAP(in_w, L) controlled on (d == 0) and signal == 1
+                ctrl(ctrl(SWAP(wires=[in_w, L]), control=[d], control_values=[0]), control=[signal], control_values=[1])
+
+
+def _tree_mark_routers_via_bus_ctrl(tree_wire_manager, n_tree, signal):
+    """Address loading for the tree (n_tree bits), controlled on signal."""
+
+    for level in range(n_tree):
+        # SWAP(tree_qram_wires[level], bus) controlled on signal
+        origin = tree_wire_manager.qram_wires[level]
+        target = tree_wire_manager.bus_wire[0]
+        ctrl(SWAP(wires=[origin, target]), control=[signal], control_values=[1])
+
+        # route down qram wires for current levels
+        _tree_route_bus_down_first_k_levels_ctrl(level, tree_wire_manager, signal)
+
+        # deposit into dir[level, *] along active path
+        if level == 0:
+            ctrl(SWAP(wires=[tree_wire_manager.bus_wire[0], tree_wire_manager.router(0, 0)]), control=[signal], control_values=[1])
+        else:
+            for p in range(1 << level):
+                parent = _node_index(level - 1, p >> 1)
+                if p % 2 == 0:
+                    origin = tree_wire_manager.portL_wires[parent]
+                else:
+                    origin = tree_wire_manager.portR_wires[parent]
+                target = tree_wire_manager.router(level, p)
+                ctrl(SWAP(wires=[origin, target]), control=[signal], control_values=[1])
+
+
+def _block_tree_query_ops(block_index: int, tree_wire_manager, n_tree, signal):
+    """One BBQRAM-style query of the (n_tree)-depth tree for a fixed select prefix."""
+
+    if n_tree == 0:
+        # Degenerate case: no tree; nothing to do here
+        return
+
+    # 1) address loading for the tree (controlled on signal)
+    _tree_mark_routers_via_bus_ctrl(tree_wire_manager, n_tree, signal)
+
+    # 2) per-target data phase, controlled on signal
+    for j, tw in enumerate(tree_wire_manager.target_wires):
+        # H on target
+        base_h = Hadamard(wires=[tw])
+        ops.append(ctrl(base_h, control=[signal], control_values=[1]))
+
+        # Swap target <-> bus
+        base_swap1 = SWAP(wires=[tw, wm.bus_wire[0]])
+        ops.append(ctrl(base_swap1, control=[signal], control_values=[1]))
+
+        # Route down tree
+        ops += self._tree_route_bus_down_first_k_levels_ctrl(n_tree)
+
+        # Leaf Z ops for this block and bit index j
+        ops += self._tree_leaf_ops_for_bit_block_ctrl(j, block_index)
+
+        # Route back up
+        ops += self._tree_route_bus_up_first_k_levels_ctrl(n_tree)
+
+        # Swap back bus -> target
+        base_swap2 = SWAP(wires=[tw, wm.bus_wire[0]])
+        ops.append(ctrl(base_swap2, control=[signal], control_values=[1]))
+
+        # Final H on target
+        base_h2 = Hadamard(wires=[tw])
+        ops.append(ctrl(base_h2, control=[signal], control_values=[1]))
+
+    # 3) address unloading for the tree (controlled on signal)
+    ops += self._tree_unmark_routers_via_bus_ctrl()
+
+
+@register_resources(_hybrid_qram_resources)
+def _hybrid_qram_decomposition(bitstrings, tree_wire_manager, k, n_tree, m, select_wires, signal):
+
+    num_blocks = 1 << k if k > 0 else 1
+
+    for block_index in range(num_blocks):
+        # Multi-controlled X to turn signal on when select bits == block_index
+        if k > 0:
+            sel_pattern = _bits(block_index, k)
+            ctrl(PauliX(wires=signal), control=select_wires, control_values=sel_pattern)
+        else:
+            # No select bits: just flip signal for all addresses
+            PauliX(wires=signal)
+
+        # Perform one tree query, driven by lower n_tree bits, controlled on signal
+        _block_tree_query_ops(block_index, tree_wire_manager, n_tree, signal)
+
+        # Uncompute signal
+        if k > 0:
+            ctrl(PauliX(wires=signal), control=select_wires, control_values=sel_pattern)
+        else:
+            PauliX(wires=signal)
