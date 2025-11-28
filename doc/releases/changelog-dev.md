@@ -2,6 +2,10 @@
 
 <h3>New features since last release</h3>
 
+* Quantum Automatic Differentiation implemented to allow automatic selection of optimal
+  Hadamard gradient differentiation methods per [the paper](https://arxiv.org/pdf/2408.05406).
+  [(#8640)](https://github.com/PennyLaneAI/pennylane/pull/8640)
+
 * A new decomposition has been added for the Controlled :class:`~.SemiAdder`,
   which is efficient and skips controlling all gates in its decomposition.
   [(#8423)](https://github.com/PennyLaneAI/pennylane/pull/8423)
@@ -160,6 +164,11 @@
 * The graph-based decomposition system now supports decomposition rules that contains mid-circuit measurements.
   [(#8079)](https://github.com/PennyLaneAI/pennylane/pull/8079)
 
+* The `~pennylane.estimator.compact_hamiltonian.CDFHamiltonian`, `~pennylane.estimator.compact_hamiltonian.THCHamiltonian`,
+  `~pennylane.estimator.compact_hamiltonian.VibrationalHamiltonian`, and `~pennylane.estimator.compact_hamiltonian.VibronicHamiltonian`
+  classes were modified to take the 1-norm of the Hamiltonian as an optional argument.
+  [(#8697)](https://github.com/PennyLaneAI/pennylane/pull/8697)
+
 * New decomposition rules that decompose to :class:`~.PauliRot` are added for the following operators.
   [(#8700)](https://github.com/PennyLaneAI/pennylane/pull/8700)
 
@@ -262,6 +271,12 @@
 
 <h3>Deprecations 👋</h3>
 
+* Maintenance support of NumPy<2.0 is deprecated as of v0.44 and will be completely dropped in v0.45.
+  Future versions of PennyLane will only work with NumPy>=2.0.
+  We recommend upgrading your version of NumPy to benefit from enhanced support and features.
+  [(#8578)](https://github.com/PennyLaneAI/pennylane/pull/8578)
+  [(#8497)](https://github.com/PennyLaneAI/pennylane/pull/8497)
+  
 * The ``custom_decomps`` keyword argument to ``qml.device`` has been deprecated and will be removed 
   in 0.45. Instead, with ``qml.decomposition.enable_graph()``, new decomposition rules can be defined as 
   quantum functions with registered resources. See :mod:`pennylane.decomposition` for more details.
@@ -358,9 +373,6 @@
 * The `grad` and `jacobian` primitives now store the function under `fn`. There is also now a single `jacobian_p`
   primitive for use in program capture.
   [(#8357)](https://github.com/PennyLaneAI/pennylane/pull/8357)
-
-* Fix all NumPy 1.X `DeprecationWarnings` in our source code.
-  [(#8497)](https://github.com/PennyLaneAI/pennylane/pull/8497)
 
 * Update versions for `pylint`, `isort` and `black` in `format.yml`
   [(#8506)](https://github.com/PennyLaneAI/pennylane/pull/8506)
