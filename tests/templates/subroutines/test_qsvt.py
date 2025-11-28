@@ -1051,12 +1051,14 @@ class TestIterativeSolver:
         ref = Chebyshev(coeffs)(x)
         assert np.isclose(val, ref)
 
+    @pytest.mark.jax
     @pytest.mark.parametrize("angle", list([0.1, 0.2, 0.3, 0.4]))
     @pytest.mark.parametrize("interface", ["jax"])
     def test_z_rotation(self, angle, interface):
         """Test internal function _z_rotation"""
         assert np.allclose(_z_rotation(angle, interface), qml.RZ.compute_matrix(-2 * angle))
 
+    @pytest.mark.jax
     @pytest.mark.parametrize("phi", [0.1, 0.2, 0.3, 0.4])
     @pytest.mark.parametrize("interface", ["jax"])
     def test_qsp_iterate(self, phi, interface):
@@ -1080,6 +1082,7 @@ class TestIterativeSolver:
         ref = qml.RX.compute_matrix(-2 * (degree) * np.arccos(x))[0, 0]
         assert jnp.isclose(qsp_be, ref)
 
+    @pytest.mark.jax
     @pytest.mark.parametrize("x", [0.1, 0.2, 0.3, 0.4])
     @pytest.mark.parametrize("interface", ["jax"])
     def test_W_of_x(self, x, interface):
