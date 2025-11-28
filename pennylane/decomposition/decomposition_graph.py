@@ -265,6 +265,8 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
                     idx = self._add_op_node(d, 0)
                     self._original_ops_indices.add(idx)
             else:
+                if isinstance(op, qml.ops.Conditional):
+                    op = op.base  # decompose the base of a classically controlled operator.
                 if isinstance(op, Operator):
                     op = resource_rep(type(op), **op.resource_params)
                 idx = self._add_op_node(op, 0)

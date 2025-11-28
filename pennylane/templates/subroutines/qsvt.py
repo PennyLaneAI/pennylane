@@ -25,7 +25,7 @@ import numpy as np
 import scipy
 from numpy.polynomial import Polynomial, chebyshev
 
-from pennylane import math, ops
+from pennylane import math, ops, pytrees
 from pennylane.decomposition import (
     add_decomps,
     adjoint_resource_rep,
@@ -593,13 +593,14 @@ class QSVT(Operation):
         op_list = []
         UA_adj = copy.copy(UA)
 
-        if QueuingManager.recording():
-            apply(projectors[0])
-        op_list.append(projectors[0])
-
-        for op in projectors[1:-1]:
-            # change_op_basis would queue internally when called in a queuing context.
-            op_list.append(ops.change_op_basis(UA, op, ops.adjoint(UA_adj)))
+        for idx, op in enumerate(projectors[:-1]):
+            if idx % 2 == 0:
+                if QueuingManager.recording():
+                    apply(op)
+                op_list.append(op)
+            else:
+                # change_op_basis would queue internally when called in a queuing context.
+                op_list.append(ops.change_op_basis(UA, op, ops.adjoint(UA_adj)))
 
         if len(projectors) % 2 == 0:
             if QueuingManager.recording():
@@ -683,14 +684,14 @@ def _QSVT_resources(projectors, UA):
 def _QSVT_decomposition(*_data, UA, projectors, **_kwargs):
 
     for idx, op in enumerate(projectors[:-1]):
-        op._unflatten(*op._flatten())  # pylint: disable=protected-access
+        pytrees.unflatten(*pytrees.flatten(op))
 
         if idx % 2 == 0:
-            UA._unflatten(*UA._flatten())  # pylint: disable=protected-access
+            pytrees.unflatten(*pytrees.flatten(UA))
         else:
             ops.adjoint(UA)
 
-    projectors[-1]._unflatten(*projectors[-1]._flatten())  # pylint: disable=protected-access
+    pytrees.unflatten(*pytrees.flatten(projectors[-1]))
 
 
 add_decomps(QSVT, _QSVT_decomposition)
