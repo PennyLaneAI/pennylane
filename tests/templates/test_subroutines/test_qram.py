@@ -30,12 +30,12 @@ dev = device("default.qubit")
 
 
 @qnode(dev)
-def bb_quantum(bitstrings, qram_wires, target_wires, work_wires, address):
-    BasisEmbedding(address, wires=qram_wires)
+def bb_quantum(bitstrings, control_wires, target_wires, work_wires, address):
+    BasisEmbedding(address, wires=control_wires)
 
     BBQRAM(
         bitstrings,
-        qram_wires=qram_wires,
+        control_wires=control_wires,
         target_wires=target_wires,
         work_wires=work_wires,
     )
@@ -45,7 +45,7 @@ def bb_quantum(bitstrings, qram_wires, target_wires, work_wires, address):
 @pytest.mark.parametrize(
     (
         "bitstrings",
-        "qram_wires",
+        "control_wires",
         "target_wires",
         "bus",
         "dir_wires",
@@ -92,7 +92,7 @@ def bb_quantum(bitstrings, qram_wires, target_wires, work_wires, address):
 )
 def test_bb_quantum(
     bitstrings,
-    qram_wires,
+    control_wires,
     target_wires,
     bus,
     dir_wires,
@@ -105,7 +105,7 @@ def test_bb_quantum(
         probabilities,
         bb_quantum(
             bitstrings,
-            qram_wires,
+            control_wires,
             target_wires,
             [bus] + dir_wires + portL_wires + portR_wires,
             address,
@@ -144,7 +144,7 @@ def test_bb_quantum(
                 [5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
             ),
             ValueError,
-            "len(bitstrings) must be 2^(len(qram_wires)).",
+            "len(bitstrings) must be 2^(len(control_wires)).",
         ),
         (
             (
@@ -176,7 +176,7 @@ def test_raises(params, error, match):
 @pytest.mark.parametrize(
     (
         "bitstrings",
-        "qram_wires",
+        "control_wires",
         "target_wires",
         "bus",
         "dir_wires",
@@ -215,7 +215,7 @@ def test_raises(params, error, match):
 )
 def test_decomposition_new(
     bitstrings,
-    qram_wires,
+    control_wires,
     target_wires,
     bus,
     dir_wires,
@@ -224,7 +224,7 @@ def test_decomposition_new(
 ):  # pylint: disable=too-many-arguments
     op = BBQRAM(
         bitstrings,
-        qram_wires,
+        control_wires,
         target_wires,
         [bus] + dir_wires + portL_wires + portR_wires,
     )

@@ -46,7 +46,7 @@ from pennylane.wires import Wires, WiresLike
 @dataclass
 class _QRAMWires:
 
-    qram_wires: Wires
+    control_wires: Wires
     target_wires: Wires
     bus_wire: Wires
     dir_wires: Wires
@@ -202,7 +202,7 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
     def __init__(
         self,
         bitstrings: Sequence[str],
-        qram_wires: WiresLike,
+        control_wires: WiresLike,
         target_wires: WiresLike,
         work_wires: WiresLike,
         id: str | None = None,
@@ -214,9 +214,9 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
             raise ValueError("All bitstrings must have equal length.")
         m = next(iter(m_set))
         bitstrings = list(bitstrings)
-        qram_wires = Wires(qram_wires)
+        control_wires = Wires(control_wires)
 
-        n_k = len(qram_wires)
+        n_k = len(control_wires)
         if (1 << n_k) != len(bitstrings):
             raise ValueError("len(bitstrings) must be 2^(len(control_wires)).")
 
@@ -236,7 +236,7 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
         portR_wires = Wires(work_wires[1 + divider * 2 : 1 + divider * 3])
 
         all_wires = (
-            list(qram_wires)
+            list(control_wires)
             + list(target_wires)
             + list(bus_wire)
             + list(dir_wires)
@@ -245,7 +245,7 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
         )
 
         wire_manager = _QRAMWires(
-            qram_wires, target_wires, bus_wire, dir_wires, portL_wires, portR_wires
+            control_wires, target_wires, bus_wire, dir_wires, portL_wires, portR_wires
         )
 
         self._hyperparameters = {
@@ -288,11 +288,11 @@ def _mark_routers_via_bus(wire_manager, n_k):
       2) Route bus down k levels (CSWAPs controlled by routers at levels < k)
       3) At node (k, path-prefix), SWAP(bus, dir[k, path-prefix])
     """
-    SWAP([wire_manager.qram_wires[0], wire_manager.bus_wire[0]])
+    SWAP([wire_manager.control_wires[0], wire_manager.bus_wire[0]])
     SWAP([wire_manager.bus_wire[0], wire_manager.router(0, 0)])
     for k in range(1, n_k):
         # 1) load a_k into the bus
-        origin = wire_manager.qram_wires[k]
+        origin = wire_manager.control_wires[k]
         target = wire_manager.bus_wire[0]
         SWAP(wires=[origin, target])
         # 2) route down k levels
@@ -343,17 +343,17 @@ def _bucket_brigade_qram_decomposition(
     wires, wire_manager, bitstrings
 ):  # pylint: disable=unused-argument
     bus_wire = wire_manager.bus_wire
-    qram_wires = wire_manager.qram_wires
-    n_k = len(qram_wires)
+    control_wires = wire_manager.control_wires
+    n_k = len(control_wires)
     # 1) address loading
     _mark_routers_via_bus(wire_manager, n_k)
     # 2) For each target bit: load→route down→leaf op→route up→restore (reuse the route bus function)
     for j, tw in enumerate(wire_manager.target_wires):
         Hadamard(wires=[tw])
         SWAP(wires=[tw, bus_wire[0]])
-        _route_bus_down_first_k_levels(wire_manager, len(qram_wires))
+        _route_bus_down_first_k_levels(wire_manager, len(control_wires))
         _leaf_ops_for_bit(wire_manager, bitstrings, n_k, j)
-        adjoint(_route_bus_down_first_k_levels, lazy=False)(wire_manager, len(qram_wires))
+        adjoint(_route_bus_down_first_k_levels, lazy=False)(wire_manager, len(control_wires))
         SWAP(wires=[tw, bus_wire[0]])
         Hadamard(wires=[tw])
     # 3) address unloading
