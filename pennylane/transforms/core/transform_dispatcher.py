@@ -297,11 +297,11 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
             other_container = TransformContainer(other)
             # --- Fix: check if both are final transforms ---
             if self_container.final_transform and other_container.final_transform:
-                raise TransformError("The transform program already has a terminal transform.")
+                raise TransformError(f"Both {self} and {other} are final transforms and cannot be combined.")
             return TransformProgram([self_container, other_container])
         if isinstance(other, TransformContainer):
             if self_container.final_transform and other.final_transform:
-                raise TransformError("The transform program already has a terminal transform.")
+                raise TransformError(f"Both {self} and {other} are final transforms and cannot be combined.")
             return TransformProgram([self_container, other])
         if isinstance(other, TransformProgram):
             program = TransformProgram([self_container])
@@ -325,7 +325,7 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
                 raise ValueError("Cannot multiply transform dispatcher by negative integer")
             # Convert to container (no args/kwargs) and repeat
             if self.final_transform and n > 1:
-                raise TransformError("The transform program already has a terminal transform.")
+                raise TransformError(f"{self} is a final transform and cannot be applied more than once.")
             container = TransformContainer(self)
             return TransformProgram([container] * n)
         return NotImplemented
