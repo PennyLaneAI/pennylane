@@ -157,6 +157,8 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
 
     actual_gate_counts = defaultdict(int)
     for _op in tape.operations:
+        if isinstance(_op, qml.ops.Conditional):
+            _op = _op.base
         resource_rep = qml.resource_rep(type(_op), **_op.resource_params)
         actual_gate_counts[resource_rep] += 1
 

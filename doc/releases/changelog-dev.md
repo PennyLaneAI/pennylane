@@ -2,6 +2,10 @@
 
 <h3>New features since last release</h3>
 
+* Quantum Automatic Differentiation implemented to allow automatic selection of optimal
+  Hadamard gradient differentiation methods per [the paper](https://arxiv.org/pdf/2408.05406).
+  [(#8640)](https://github.com/PennyLaneAI/pennylane/pull/8640)
+
 * A new decomposition has been added for the Controlled :class:`~.SemiAdder`,
   which is efficient and skips controlling all gates in its decomposition.
   [(#8423)](https://github.com/PennyLaneAI/pennylane/pull/8423)
@@ -154,8 +158,21 @@
   work wire and :class:`pennylane.TemporaryAND` operators to reduce the resources needed.
   [(#8549)](https://github.com/PennyLaneAI/pennylane/pull/8549)
 
+* A decomposition has been added to the adjoint of :class:`pennylane.TemporaryAND`. This decomposition relies on mid-circuit measurments and does not require any T gates.
+  [(#8633)](https://github.com/PennyLaneAI/pennylane/pull/8633)
+
 * The graph-based decomposition system now supports decomposition rules that contains mid-circuit measurements.
   [(#8079)](https://github.com/PennyLaneAI/pennylane/pull/8079)
+
+* New decomposition rules that decompose to :class:`~.PauliRot` are added for the following operators.
+  [(#8700)](https://github.com/PennyLaneAI/pennylane/pull/8700)
+
+  - :class:`~.CRX`, :class:`~.CRY`, :class:`~.CRZ`
+  - :class:`~.ControlledPhaseShift`
+  - :class:`~.IsingXX`, :class:`~.IsingYY`, :class:`~.IsingZZ`
+  - :class:`~.PSWAP`
+  - :class:`~.RX`, :class:`~.RY`, :class:`~.RZ`
+  - :class:`~.SingleExcitation`, :class:`~.DoubleExcitation`
 
 <h3>Breaking changes 💔</h3>
 
@@ -471,6 +488,10 @@ A warning message has been added to :doc:`Building a plugin <../development/plug
 
 <h3>Bug fixes 🐛</h3>
 
+* The warnings-as-errors CI action was failing due to an incompatibility between `pytest-xdist` and `pytest-benchmark`. 
+  Disabling the benchmark package allows the tests to be collected an executed. 
+  [(#8699)](https://github.com/PennyLaneAI/pennylane/pull/8699)
+
 * Adds an `expand_transform` to `param_shift_hessian` to pre-decompose
   operations till they are supported.
   [(#8698)](https://github.com/PennyLaneAI/pennylane/pull/8698)
@@ -506,6 +527,12 @@ A warning message has been added to :doc:`Building a plugin <../development/plug
 * Fixes a bug where `qml.specs` incorrectly computes the circuit depth when classically controlled operators are involved.
   [(#8668)](https://github.com/PennyLaneAI/pennylane/pull/8668)
 
+* Fixes a bug where an error is raised when trying to decompose a nested composite operator with capture and the new graph system enabled.
+  [(#8695)](https://github.com/PennyLaneAI/pennylane/pull/8695)
+
+* Fixes a bug where :func:`~.change_op_basis` cannot be captured when the `uncompute_op` is left out.
+  [(#8695)](https://github.com/PennyLaneAI/pennylane/pull/8695)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -520,10 +547,12 @@ Sengthai Heng,
 Soran Jahangiri,
 Christina Lee,
 Joseph Lee,
+Lee J. O'Riordan,
 Gabriela Sanchez Diaz,
 Mudit Pandey,
 Shuli Shu,
 Jay Soni,
 nate stemen,
 David Wierichs,
-Hongsheng Zheng
+Hongsheng Zheng,
+Zinan Zhou
