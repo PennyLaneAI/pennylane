@@ -911,7 +911,7 @@ class TestToBloq:
         ],
     )
     def test_to_bloq_call_graph(self, op, qml_call_graph):
-        """ "Tests that the defined call_graphs match the expected decompostions"""
+        """Tests that the defined call_graphs match the expected decompositions"""
         bloq_call_graph = {}
 
         for k, v in qml_call_graph.items():  # k is a tuple of (op, bool)
