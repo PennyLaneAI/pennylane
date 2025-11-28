@@ -15,7 +15,7 @@
 Contains classes used to compactly store the metadata of various Hamiltonians which are relevant for resource estimation.
 """
 import copy
-from collections import defaultdict
+from collections import Counter
 from dataclasses import dataclass
 
 
@@ -321,7 +321,7 @@ class PauliHamiltonian:
         self._num_qubits = num_qubits
         self._one_norm = one_norm
 
-        (max_weight, num_pauli_words, pauli_dist, commuting_groups) = _validate_inputs(
+        (max_weight, num_pauli_words, pauli_dist, commuting_groups) = _preprocess_inputs(
             num_qubits, num_pauli_words, max_weight, pauli_dist, commuting_groups
         )
 
@@ -428,7 +428,7 @@ def _pauli_dist_from_commuting_groups(commuting_groups: tuple[dict]):
     return total_pauli_dist
 
 
-def _validate_inputs(
+def _preprocess_inputs(
     num_qubits: int,
     num_pauli_words: int | None,
     max_weight: int | None,
