@@ -29,8 +29,9 @@
 
 <h3>Improvements 🛠</h3>
 
-* Improved the resource decomposition of `PauliRot` to match the optimal resources
-  for certain special cases for Pauli strings (e.g for `XX` and `YY` type Pauli strings).
+* Improved :mod:`estimator <pennylane.estimator>`'s
+  resource decomposition of `PauliRot` to match the optimal resources
+  for certain special cases of Pauli strings (e.g. for `XX` and `YY` type Pauli strings).
   [(#8562)](https://github.com/PennyLaneAI/pennylane/pull/8562)
 
 * A new :func:`~.marker` function allows for easy inspection at particular points in a transform program
