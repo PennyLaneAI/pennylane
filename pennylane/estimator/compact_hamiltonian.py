@@ -48,7 +48,7 @@ class CDFHamiltonian:
             isinstance(self.one_norm, (float, int)) and self.one_norm >= 0
         ):
             raise TypeError(
-                f"one_norm must be a positive float or integer (or None), but received {self.one_norm}"
+                f"one_norm, if provided, must be a positive float or integer. Instead received {self.one_norm}"
             )
         if isinstance(self.one_norm, int):
             object.__setattr__(self, "one_norm", float(self.one_norm))
