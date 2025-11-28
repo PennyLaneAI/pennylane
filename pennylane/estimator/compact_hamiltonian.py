@@ -103,7 +103,7 @@ class VibrationalHamiltonian:
         num_modes (int): number of vibrational modes
         grid_size (int): number of grid points used to discretize each mode
         taylor_degree (int): degree of the Taylor expansion used in the vibrational representation
-        one_norm (float | None, optional): the one-norm of the Hamiltonian
+        one_norm (float | None): the one-norm of the Hamiltonian
 
     Returns:
         VibrationalHamiltonian: An instance of VibrationalHamiltonian
