@@ -194,7 +194,9 @@ class PauliHamiltonian:
         one_norm (float | None): the one-norm of the Hamiltonian
         pauli_dist (dict | None): A dictionary representing the various Pauli words and how
             frequently they appear in the Hamiltonian.
-        commuting_groups (tuple(dict) | None): A tuple of dictionaries where each entry is a group
+        commuting_groups (tuple(dict) | None): A tuple of dictionaries where each entry represents
+            a group of Pauli words that mutually commute. Each entry is formatted similarly to the
+            ``pauli_dist`` argument (see the Usage Details section for more information).
             of terms from the Hamiltonian such that all terms in the group commute. Here each
             dictionary contains the various Pauli words and how frequently they appear in the group.
 
