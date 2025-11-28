@@ -605,7 +605,7 @@ class TestTransformProgramDunders:
 
     def test_actual_final_transform_error(self):
         """qml.gradients.param_shift + qml.gradients.hadamard should raise an error since both are final transforms."""
-        with pytest.raises(TransformError, match="already has a terminal transform"):
+        with pytest.raises(TransformError, match="are final transforms and cannot be combined."):
             _ = qml.gradients.param_shift + qml.gradients.hadamard_grad
 
     def test_dispatcher_add_container_both_final_error(self):
@@ -614,13 +614,15 @@ class TestTransformProgramDunders:
         container = TransformContainer(
             transform=qml.transform(second_valid_transform, final_transform=True)
         )
-        with pytest.raises(TransformError, match="already has a terminal transform"):
+        with pytest.raises(TransformError, match="are final transforms and cannot be combined"):
             _ = dispatcher + container
 
     def test_dispatcher_mul_final_transform_error(self):
         """Test that multiplying a final dispatcher by n > 1 raises an error."""
         dispatcher = qml.transform(first_valid_transform, final_transform=True)
-        with pytest.raises(TransformError, match="already has a terminal transform"):
+        with pytest.raises(
+            TransformError, match="is a final transform and cannot be applied more than once"
+        ):
             _ = dispatcher * 2
 
     def test_container_add_container_both_final_error(self):
