@@ -20,8 +20,9 @@ logger = logging.getLogger(__name__)
 
 # pylint: disable=too-many-arguments, too-many-positional-arguments
 
-def _find_active_terms(h_integrals, modals, cutoff):
-    r"""Identifies the active terms in the Hamiltonian, following the equations 20-22
+def _build_active_hamiltonian(h_integrals, modals, cutoff):
+    r"""Identifies the active terms in the Hamiltonian, and converts the sparse Hamiltonian into
+    dense arrays organized by mode. This function is based on the equations 20-22
     in `J. Chem. Theory Comput. 2010, 6, 235–248 <https://pubs.acs.org/doi/10.1021/ct9004454>`_.
     The equation suggests that if mode m is not contained in a Hamiltonian term, it evaluates to zero.
 
@@ -32,14 +33,18 @@ def _find_active_terms(h_integrals, modals, cutoff):
 
     Returns:
         tuple: A tuple containing the following:
-            - dict: dictionary containing the active Hamiltonian terms
-            - dict: dictionary containing the active Hamiltonian terms for all vibrational modes
+            - list[dict]: A list where index 'm' contains the dense tensors for mode 'm'.
             - int: total number of active terms in the Hamiltonian
 
     """
-    active_ham_terms = {}
-    active_num = 0
+    
     nmodes = np.shape(h_integrals[0])[0]
+    active_num = 0
+    
+    collectors = [
+        {"term_map": [], "i": [], "j": [], "coeffs": [], "mask": []} 
+        for _ in range(nmodes)
+    ]
 
     for n, ham_n in enumerate(h_integrals):
         for idx, h_val in np.ndenumerate(ham_n):
@@ -48,96 +53,65 @@ def _find_active_terms(h_integrals, modals, cutoff):
 
             modal_indices = idx[: n + 1]
 
-            # NOTE: here we are taking data from the LOWER triangle only.
-            # Could be safer to use the upper triangle? It's common to store data in the upper triangle.
-            if all(modal_indices[i] > modal_indices[i + 1] for i in range(n)):
-                excitation_indices = idx[n + 1 :]
-                exc_in_modals = True
-                for m_idx, m in enumerate(modal_indices):
-                    # Chemist's notation for excitations: (mode1, mode2, bra1, bra2, ket1, ket2)
-                    i = excitation_indices[m_idx]
-                    j = excitation_indices[m_idx + len(modal_indices)]
-                    if i >= modals[m] or j >= modals[m]:
-                        exc_in_modals = False
-                        break
-                if exc_in_modals:
-                    active_ham_terms[active_num] = [h_val, modal_indices, excitation_indices]
-                    active_num += 1
+            if not all(modal_indices[k] > modal_indices[k + 1] for k in range(n)):
+                continue
 
-    active_mode_terms = {
-        m: [t for t in range(active_num) if m in active_ham_terms[t][1]] for m in range(nmodes)
-    }
-
-    return active_ham_terms, active_mode_terms, active_num
-
-
-def _densify_hamiltonian(active_ham_terms, active_mode_terms, modals, nmodes):
-    """
-    Converts the dictionary-based sparse Hamiltonian into dense arrays organized by mode.
-    
-    Returns:
-        list[dict]: A list where index 'm' contains the dense tensors for mode 'm'.
-    """
-    dense_data = []
-
-    for mode in range(nmodes):
-        # for each mode we will store:
-        term_indices = []  # which row in h_mat corresponds to this term
-        i_indices = []     # excitation index i for Fock[i, j]
-        j_indices = []     # excitation index j for Fock[i, j]
-        coeffs = []        # raw Hamiltonian coefficient
-        masks = []         # boolean mask: which *other* modes are in this term
-
-        # iterate through terms relevant to this mode
-        for term_idx in active_mode_terms[mode]:
-            ham_term = active_ham_terms[term_idx]
-            h_val = ham_term[0]
-            term_modes = ham_term[1]
-            term_excitations = ham_term[2]
+            excitation_indices = idx[n + 1 :]
+            temp_pairs = []
+            term_valid = True
             
-            local_idx = term_modes.index(mode)
+            for m_idx, m in enumerate(modal_indices):
+                # Chemist notation 
+                i = excitation_indices[m_idx]
+                j = excitation_indices[m_idx + len(modal_indices)]
+                if i >= modals[m] or j >= modals[m]:
+                    term_valid = False
+                    break
+                temp_pairs.append((i, j))
             
-            i = term_excitations[local_idx]
-            j = term_excitations[local_idx + len(term_modes)]
+            if not term_valid:
+                continue
 
-            # apply cutoff (filter invalid terms immediately)
-            if i < modals[mode] and j < modals[mode]:
-                term_indices.append(term_idx)
-                i_indices.append(i)
-                j_indices.append(j)
-                coeffs.append(h_val)
+            # this term is valid and should be stored
+            
+            # pre-calculate the interaction mask for this term
+            full_term_mask = np.zeros(nmodes, dtype=bool)
+            full_term_mask[list(modal_indices)] = True
+
+            for m_idx, m in enumerate(modal_indices):
+                i, j = temp_pairs[m_idx]
                 
-                # create interaction mask
-                # row of boolean flags: true if mode 'm' is coupled, false if not.
-                # crucially, the current mode is false (excluded from mean-field product)
-                # NOTE can we further optimize by encoding as binary mask?
-                mask = np.zeros(nmodes, dtype=bool)
-                for m in term_modes:
-                    if m != mode:
-                        mask[m] = True
-                masks.append(mask)
+                collectors[m]["term_map"].append(active_num)
+                collectors[m]["i"].append(i)
+                collectors[m]["j"].append(j)
+                collectors[m]["coeffs"].append(h_val)
+                
+                # create mask for this specific mode (exclude self)
+                m_mask = full_term_mask.copy()
+                m_mask[m] = False
+                collectors[m]["mask"].append(m_mask)
 
-        # convert and store 
-        # NOTE to be moved from np to qml.math
-        if term_indices:
+            active_num += 1
+
+    # convert to arrays
+    # NOTE  should be moved to use qml.math
+    dense_data = []
+    for mode in range(nmodes):
+        c = collectors[mode]
+        if c["term_map"]:
             mode_data = {
-                "term_map": np.array(term_indices, dtype=int),
-                "i": np.array(i_indices, dtype=int),
-                "j": np.array(j_indices, dtype=int),
-                "coeffs": np.array(coeffs, dtype=float),
-                "mask": np.array(masks, dtype=bool),
+                "term_map": np.array(c["term_map"], dtype=int),
+                "i": np.array(c["i"], dtype=int),
+                "j": np.array(c["j"], dtype=int),
+                "coeffs": np.array(c["coeffs"], dtype=float),
+                "mask": np.array(c["mask"], dtype=bool),
                 "empty": False
             }
         else:
-            # handle case whre a mode has no active terms
-            # NOTE can we avoid it?
             mode_data = {"empty": True}
-        
         dense_data.append(mode_data)
 
-    return dense_data
-
-
+    return dense_data, active_num
 
 def _fock_energy(all_modes_data, modals, h_mat, mode_rots):
     r"""Calculates vibrational energy.
@@ -159,7 +133,6 @@ def _fock_energy(all_modes_data, modals, h_mat, mode_rots):
         f = _build_fock(all_modes_data[m], modals[m], h_mat, mode_rots[m])
         e_calc += f[0,0]
     return e_calc
-
 
 def _build_fock(mode_data, modals_count, h_mat, mode_rot):
     """
@@ -191,7 +164,6 @@ def _build_fock(mode_data, modals_count, h_mat, mode_rot):
     
     return fock_matrix
 
-
 def _update_h(h_mat, mode, mode_data, mode_rot):
     """
     Updates H matrix columns using vectorized assignment.
@@ -207,13 +179,10 @@ def _update_h(h_mat, mode, mode_data, mode_rot):
 
 
 def _vscf(h_integrals, modals, cutoff, tol=1e-8, max_iters=10000):
-    
     nmodes = np.shape(h_integrals[0])[0]
 
-    active_ham_terms, active_mode_terms, active_num = _find_active_terms(h_integrals, modals, cutoff)
+    dense_data, active_num = _build_active_hamiltonian(h_integrals, modals, cutoff)
 
-    # pre-compute dense structures
-    dense_data = _densify_hamiltonian(active_ham_terms, active_mode_terms, modals, nmodes)
 
     mode_rots = [np.eye(modals[mode]) for mode in range(nmodes)]
     h_mat = np.zeros((active_num, nmodes))
@@ -242,11 +211,6 @@ def _vscf(h_integrals, modals, cutoff, tol=1e-8, max_iters=10000):
         e0 = enew
 
     return enew, mode_rots
-
-
-
-
-
 
 
 
