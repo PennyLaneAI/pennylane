@@ -2,8 +2,11 @@
 
 <h3>New features since last release</h3>
 
-* Added two new classes :class:`~.estimator.PauliHamiltonian` and :class:`~.estimator.TrotterPauli`,
-  which allow users to compactly represent Pauli Hamiltonians and estimate the resources for Trotterization.
+* Users can now estimate the resources of Trotterization for Pauli Hamiltonians, using the new
+  :class:`estimator.PauliHamiltonian <pennylane.estimator.compact_hamiltonian.PauliHamiltonian>`
+  resource Hamiltonian class and the new
+  :class:`estimator.TrotterPauli <pennylane.estimator.templates.TrotterPauli>`
+  resource operator.
   [(#8546)](https://github.com/PennyLaneAI/pennylane/pull/8546)
 
 * A new decomposition has been added for the Controlled :class:`~.SemiAdder`,
