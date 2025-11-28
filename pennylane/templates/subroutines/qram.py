@@ -34,7 +34,7 @@ from pennylane.decomposition import (
     resource_rep,
 )
 from pennylane.operation import Operation, Operator
-from pennylane.ops import CSWAP, SWAP, Hadamard, PauliX, PauliZ, adjoint, ctrl, Controlled
+from pennylane.ops import CSWAP, SWAP, Controlled, Hadamard, PauliX, PauliZ, adjoint, ctrl
 from pennylane.wires import Wires, WiresLike
 
 # pylint: disable=consider-using-generator
@@ -680,26 +680,59 @@ def _hybrid_qram_resources(bitstrings, num_target_wires, num_select_wires, k, n_
     resources[resource_rep(PauliX)] += (k <= 0) * num_blocks * 2
 
     if n_tree != 0:
-        resources[controlled_resource_rep(
-            base_class=SWAP, base_params={}, num_control_wires=1, num_zero_control_values=0,
-        )] += (n_tree + (1 << n_tree) - 1 + num_target_wires) * num_blocks + num_blocks * (num_target_wires + 1) + n_tree + ((1 << n_tree) - 2) * num_blocks
+        resources[
+            controlled_resource_rep(
+                base_class=SWAP,
+                base_params={},
+                num_control_wires=1,
+                num_zero_control_values=0,
+            )
+        ] += (
+            (n_tree + (1 << n_tree) - 1 + num_target_wires) * num_blocks
+            + num_blocks * (num_target_wires + 1)
+            + n_tree
+            + ((1 << n_tree) - 2) * num_blocks
+        )
 
-        resources[controlled_resource_rep(
-            base_class=CSWAP, base_params={}, num_control_wires=1, num_zero_control_values=0,
-        )] += (((1 << n_tree) - 1 - n_tree) * 2 + ((1 << n_tree) - 1) * num_target_wires) * num_blocks
+        resources[
+            controlled_resource_rep(
+                base_class=CSWAP,
+                base_params={},
+                num_control_wires=1,
+                num_zero_control_values=0,
+            )
+        ] += (
+            ((1 << n_tree) - 1 - n_tree) * 2 + ((1 << n_tree) - 1) * num_target_wires
+        ) * num_blocks
 
         resources[
             controlled_resource_rep(
                 base_class=Controlled,
-                base_params={"base_class": SWAP, "base_params": {}, "num_control_wires": 1,
-                             "num_zero_control_values": 1},
-                num_control_wires=1, num_zero_control_values=0
+                base_params={
+                    "base_class": SWAP,
+                    "base_params": {},
+                    "num_control_wires": 1,
+                    "num_zero_control_values": 1,
+                },
+                num_control_wires=1,
+                num_zero_control_values=0,
             )
-        ] += ((1 << n_tree) - 1 - n_tree + ((1 << n_tree) - 1) * num_target_wires) * num_blocks * 3 + ((1 << n_tree) - 1 - n_tree) * num_blocks
+        ] += (
+            (1 << n_tree) - 1 - n_tree + ((1 << n_tree) - 1) * num_target_wires
+        ) * num_blocks * 3 + (
+            (1 << n_tree) - 1 - n_tree
+        ) * num_blocks
 
-        resources[controlled_resource_rep(
-            base_class=Hadamard, base_params={}, num_control_wires=1, num_zero_control_values=0,
-        )] += num_target_wires * num_blocks * 2
+        resources[
+            controlled_resource_rep(
+                base_class=Hadamard,
+                base_params={},
+                num_control_wires=1,
+                num_zero_control_values=0,
+            )
+        ] += (
+            num_target_wires * num_blocks * 2
+        )
 
     for block_index in range(num_blocks):
         resources[
@@ -707,14 +740,24 @@ def _hybrid_qram_resources(bitstrings, num_target_wires, num_select_wires, k, n_
                 base_class=PauliX,
                 base_params={},
                 num_control_wires=num_select_wires,
-                num_zero_control_values=[(block_index >> (k - 1 - i)) & 1 for i in range(k)]
+                num_zero_control_values=[(block_index >> (k - 1 - i)) & 1 for i in range(k)],
             )
         ] += (k > 0) * 2
 
         if n_tree == 0:
             return resources
 
-        resources[controlled_resource_rep(
-            base_class=PauliZ, base_params={}, num_control_wires=1, num_zero_control_values=0,
-        )] += sum([bitstrings[(block_index << n_tree) + p][j] == "1" for j in range(num_target_wires) for p in
-                   range(1 << n_tree)])
+        resources[
+            controlled_resource_rep(
+                base_class=PauliZ,
+                base_params={},
+                num_control_wires=1,
+                num_zero_control_values=0,
+            )
+        ] += sum(
+            [
+                bitstrings[(block_index << n_tree) + p][j] == "1"
+                for j in range(num_target_wires)
+                for p in range(1 << n_tree)
+            ]
+        )
