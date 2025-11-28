@@ -1048,14 +1048,26 @@ class TestIterativeSolver:
         assert np.isclose(val, ref)
 
     @pytest.mark.parametrize("angle", list([0.1, 0.2, 0.3, 0.4]))
-    def test_z_rotation(self, angle):
+    @pytest.mark.parametrize(
+        "interface",
+        [
+            'jax'
+        ]
+    )
+    def test_z_rotation(self, angle, interface):
         """Test internal function _z_rotation"""
-        assert np.allclose(_z_rotation(angle, None), qml.RZ.compute_matrix(-2 * angle))
+        assert np.allclose(_z_rotation(angle, interface), qml.RZ.compute_matrix(-2 * angle))
 
     @pytest.mark.parametrize("phi", [0.1, 0.2, 0.3, 0.4])
-    def test_qsp_iterate(self, phi):
+    @pytest.mark.parametrize(
+        "interface",
+        [
+            'jax'
+        ]
+    )
+    def test_qsp_iterate(self, phi, interface):
         """Test internal function _qsp_iterate"""
-        mtx = _qsp_iterate(0.0, phi, None)
+        mtx = _qsp_iterate(0.0, phi, interface)
         ref = qml.RX.compute_matrix(-2 * np.arccos(phi))
         assert np.allclose(mtx, ref)
 
@@ -1075,9 +1087,15 @@ class TestIterativeSolver:
         assert jnp.isclose(qsp_be, ref)
 
     @pytest.mark.parametrize("x", [0.1, 0.2, 0.3, 0.4])
-    def test_W_of_x(self, x):
+    @pytest.mark.parametrize(
+        "interface",
+        [
+            'jax'
+        ]
+    )
+    def test_W_of_x(self, x, interface):
         """Test internal function _W_of_x"""
-        mtx = _W_of_x(x, None)
+        mtx = _W_of_x(x, interface)
         ref = qml.RX.compute_matrix(-2 * np.arccos(x))
         assert np.allclose(mtx, ref)
 
