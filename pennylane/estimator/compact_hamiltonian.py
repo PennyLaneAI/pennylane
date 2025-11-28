@@ -145,7 +145,7 @@ class VibronicHamiltonian:
         num_states (int): number of vibronic states
         grid_size (int): number of grid points used to discretize each mode
         taylor_degree (int): degree of the Taylor expansion used in the vibronic representation
-        one_norm (float | None, optional): the one-norm of the Hamiltonian
+        one_norm (float | None): the one-norm of the Hamiltonian
 
     Returns:
         VibronicHamiltonian: An instance of VibronicHamiltonian
