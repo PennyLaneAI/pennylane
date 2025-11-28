@@ -13,7 +13,7 @@
 # limitations under the License.
 """
 Bucket-Brigade QRAM with explicit bus routing for PennyLane, supporting:
-- Bucket-brigade QRAM LSBs (``qram_wires``) using 3-qubits-per-node (dir, portL, portR)
+- Bucket-brigade QRAM LSBs (``control_wires``) using 3-qubits-per-node (dir, portL, portR)
 
 Address loading is performed **layer-by-layer** by routing a single top **bus** qubit
 down to the active node using CSWAPs controlled by already-written upper routers,
@@ -103,8 +103,8 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
     Args:
         bitstrings (Sequence[str]):
             The classical data as a sequence of bitstrings. The size of the classical data must be
-            :math:`2^{\texttt{len(qram_wires)}}`.
-        qram_wires (WiresLike):
+            :math:`2^{\texttt{len(control_wires)}}`.
+        control_wires (WiresLike):
             The register that stores the index for the entry of the classical data we want to
             access.
         target_wires (WiresLike):
@@ -113,7 +113,7 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
         work_wires (WiresLike):
             The additional wires required to funnel the desired entry of ``bitstrings`` into the
             target register. The size of the ``work_wires`` register must be
-            :math:`1 + 3 ((2^\texttt{len(qram_wires)}) - 1)`. More specifically, the
+            :math:`1 + 3 ((2^\texttt{len(control_wires)}) - 1)`. More specifically, the
             ``work_wires`` register includes the bus, direction, left port and right port wires in
             that order. Each node in the tree contains one address (direction), one left port and
             one right port wire. The single bus wire is used for address loading and data routing.
@@ -121,7 +121,7 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
     Raises:
         ValueError: if the ``bitstrings`` are not provided, the ``bitstrings`` are of the wrong
             length, the ``target_wires`` are of the wrong size, or the ``work_wires`` register size is not exactly
-            equal to :math:`1 + 3 ((2^\texttt{len(qram_wires)}) - 1)`.
+            equal to :math:`1 + 3 ((2^\texttt{len(control_wires)}) - 1)`.
 
     .. seealso:: :class:`~.QROM`, :class:`~.QROMStatePreparation`
 
@@ -141,18 +141,18 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
         bitstrings = ["010", "111", "110", "000"]
         bitstring_size = 3
 
-    The number of wires needed to store a length-4 array is 2, which means that the ``qram_wires``
+    The number of wires needed to store a length-4 array is 2, which means that the ``control_wires``
     register must contain 2 wires. Additionally, this lets us specify the number of work wires
     needed.
 
     .. code-block:: python
 
-        num_qram_wires = 2 # len(bistrings) = 4 = 2**2
-        num_work_wires = 1 + 3 * ((1 << num_qram_wires) - 1) # 10
+        num_control_wires = 2 # len(bistrings) = 4 = 2**2
+        num_work_wires = 1 + 3 * ((1 << num_control_wires) - 1) # 10
 
     Now, we can define all three registers concretely and demonstrate ``BBQRAM`` in practice. In the
     following circuit, we prepare the state :math:`\vert 2 \rangle = \vert 10 \rangle` on the
-    ``qram_wires``, which indicates that we would like to access the second (zero-indexed) entry of
+    ``control_wires``, which indicates that we would like to access the second (zero-indexed) entry of
     ``bitstrings`` (which is ``"110"``). The ``target_wires`` register should therefore store this
     state after ``BBQRAM`` is applied.
 
@@ -161,7 +161,7 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
         import pennylane as qml
         reg = qml.registers(
             {
-                "qram": num_qram_wires,
+                "control": num_control_wires,
                 "target": bitstring_size,
                 "work_wires": num_work_wires
             }
@@ -171,11 +171,11 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
         @qml.qnode(dev)
         def bb_quantum():
             # prepare an address, e.g., |10> (index 2)
-            qml.BasisEmbedding(2, wires=reg["qram"])
+            qml.BasisEmbedding(2, wires=reg["control"])
 
             qml.BBQRAM(
                 bitstrings,
-                qram_wires=reg["qram"],
+                control_wires=reg["control"],
                 target_wires=reg["target"],
                 work_wires=reg["work_wires"],
             )
@@ -185,8 +185,8 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
     >>> print(np.round(bb_quantum()))  # doctest: +SKIP
     [0. 0. 0. 0. 0. 0. 1. 0.]
 
-    Note that ``"110"`` in binary is equal to 6 in decimal, which is the position of the only non-zero entry in
-    the ``target_wires`` register.
+    Note that ``"110"`` in binary is equal to 6 in decimal, which is the position of the only
+    non-zero entry in the ``target_wires`` register.
     """
 
     grad_method = None
@@ -218,7 +218,7 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
 
         n_k = len(qram_wires)
         if (1 << n_k) != len(bitstrings):
-            raise ValueError("len(bitstrings) must be 2^(len(qram_wires)).")
+            raise ValueError("len(bitstrings) must be 2^(len(control_wires)).")
 
         target_wires = Wires(target_wires)
         if m != len(target_wires):
