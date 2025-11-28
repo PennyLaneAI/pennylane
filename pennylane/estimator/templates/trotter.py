@@ -2097,8 +2097,7 @@ class TrotterPauli(ResourceOperator):
                 a commuting group of Pauli words.
 
         """
-        gate_count_lst = []
-        for pauli_word, count in pauli_dist.items():
-            gate_count_lst.append(GateCount(PauliRot.resource_rep(pauli_word), count))
-
-        return gate_count_lst
+return [
+    GateCount(PauliRot.resource_rep(pauli_word), count)
+    for pauli_word, count in pauli_dist.items()
+]

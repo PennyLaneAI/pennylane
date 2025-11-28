@@ -422,12 +422,9 @@ def _validate_pauli_dist(pauli_dist: dict) -> bool:
 
 def _pauli_dist_from_commuting_groups(commuting_groups: tuple[dict]):
     """Construct the total Pauli word distribution from the commuting groups."""
-    total_pauli_dist = defaultdict(int)
-
+    total_pauli_dist = Counter()
     for group in commuting_groups:
-        for pauli_word, frequency in group.items():
-            total_pauli_dist[pauli_word] += frequency
-
+        total_pauli_dist.update(group)
     return total_pauli_dist
 
 
