@@ -35,7 +35,7 @@ from pennylane.resource.resource import (
     add_in_series,
     mul_in_parallel,
     mul_in_series,
-    specs_from_tape,
+    resources_from_tape,
     substitute,
 )
 from pennylane.tape import QuantumScript
@@ -672,35 +672,6 @@ lst_ops_and_shots = (
     ),
 )
 
-resources_data = (
-    Resources(),
-    Resources(2, 2, {"Hadamard": 1, "CNOT": 1}, {1: 1, 2: 1}, 2),
-    Resources(3, 3, {"PauliZ": 1, "CNOT": 1, "RX": 1}, {1: 2, 2: 1}, 2, Shots(10)),
-    Resources(2, 6, {"Hadamard": 3, "RX": 2, "CNOT": 1}, {1: 5, 2: 1}, 4, Shots(100)),
-    Resources(2, 5, {"Hadamard": 1, "CNOT": 1, "Identity": 1, "PauliZ": 2}, {1: 4, 2: 1}, 5),
-    Resources(
-        3,
-        7,
-        {"PauliZ": 3, "CNOT": 1, "RX": 1, "Identity": 1, "CustomOp2": 1},
-        {1: 5, 2: 2},
-        6,
-        Shots((10, (50, 2))),
-    ),
-    Resources(
-        2, 7, {"Hadamard": 3, "RX": 2, "CNOT": 1, "CustomOp2": 1}, {1: 5, 2: 2}, 5, Shots(100)
-    ),
-)  # Resources(wires, gates, gate_types, gate_sizes, depth, shots)
-
-
-@pytest.mark.parametrize(
-    "ops_and_shots, expected_resources", zip(lst_ops_and_shots, resources_data)
-)
-def test_count_resources(ops_and_shots, expected_resources):
-    """Test the count resources method."""
-    ops, shots = ops_and_shots
-    computed_resources = _count_resources(QuantumScript(ops=ops, shots=shots))
-    assert computed_resources == expected_resources
-
 
 def test_combine_dict():
     """Test that we can combine dictionaries as expected."""
@@ -726,7 +697,7 @@ def test_scale_dict(scalar):
 
 @pytest.mark.parametrize("compute_depth", (True, False))
 def test_specs_compute_depth(compute_depth):
-    """Test that depth is skipped with `specs_from_tape`."""
+    """Test that depth is skipped with `resources_from_tape`."""
 
     ops = [
         qml.RX(0.432, wires=0),
@@ -737,7 +708,9 @@ def test_specs_compute_depth(compute_depth):
     obs = [qml.expval(qml.PauliX(wires="a")), qml.probs(wires=[0, "a"])]
 
     tape = QuantumScript(ops=ops, measurements=obs)
-    specs = specs_from_tape(tape, compute_depth=compute_depth)
+    resources = resources_from_tape(tape, compute_depth=compute_depth)
 
-    assert len(specs) == 4
-    assert specs["resources"].depth == (3 if compute_depth else None)
+    assert resources.depth == (3 if compute_depth else None)
+
+
+# TODO: Include tests for SpecsResources

@@ -983,7 +983,7 @@ class QuantumScript:
         return self._graph
 
     @property
-    def specs(self) -> "qml.resource.resource.SpecsResult":
+    def specs(self) -> dict[str, Any]:
         """Resource information about a quantum circuit.
 
         Returns:
@@ -1009,10 +1009,11 @@ class QuantumScript:
         {1: 4, 2: 2}
         """
         if self._specs is None:
-            results, errors = qml.resource.resource.resources_from_tape(self, compute_errs=True)
+            resources, errors = qml.resource.resource.resources_from_tape(self, compute_errs=True)
             self._specs = qml.resource.resource.SpecsResult(
-                results=results, errors=errors, shots=self.shots
-            )
+                resources=resources, shots=self.shots
+            ).to_dict()
+            self._specs["errors"] = errors
         return self._specs
 
     # pylint: disable=too-many-arguments, too-many-positional-arguments

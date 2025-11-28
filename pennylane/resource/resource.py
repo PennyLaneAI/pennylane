@@ -92,7 +92,7 @@ class Resources:
     num_gates: int = 0
     gate_types: dict[str, int] = field(default_factory=dict)
     gate_sizes: dict[int, int] = field(default_factory=dict)
-    depth: int | None = None
+    depth: int | None = 0
     shots: Shots = field(default_factory=Shots)
 
     def __add__(self, other: Resources):
@@ -790,8 +790,6 @@ def _count_resources(tape: QuantumScript, compute_depth: bool = True) -> SpecsRe
 
             for n in op_resource.gate_sizes:
                 gate_sizes[n] += op_resource.gate_sizes[n]
-
-            num_gates += sum(op_resource.gate_types.values())
 
         else:
             gate_types[op.name] += 1

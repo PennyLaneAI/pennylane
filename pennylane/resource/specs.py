@@ -18,7 +18,6 @@ import inspect
 import json
 import os
 import warnings
-from collections import defaultdict
 from collections.abc import Callable
 from functools import partial
 
@@ -72,7 +71,7 @@ def _specs_qnode(qnode, level, compute_depth, *args, **kwargs) -> SpecsResult:
 
     return SpecsResult(
         resources=resources,
-        num_device_wires=len(qnode.device.wires),
+        num_device_wires=len(qnode.device.wires) if qnode.device.wires is not None else None,
         device_name=qnode.device.name,
         level=level,
         shots=qnode.shots,

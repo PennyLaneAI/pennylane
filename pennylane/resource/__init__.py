@@ -127,6 +127,8 @@ from .error import AlgorithmicError, ErrorOperation, SpectralNormError
 from .resource import (
     Resources,
     ResourcesOperation,
+    SpecsResources,
+    SpecsResult,
     add_in_series,
     add_in_parallel,
     mul_in_series,
