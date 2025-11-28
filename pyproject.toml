@@ -57,6 +57,7 @@ dev = [
     "rich>=13.7.1",
     "tach==0.28.5",
     "build",
+    "scipy<1.16",
     "pylint~=4.0.0",
     "isort~=7.0.0",
     "black==25.9.0",
@@ -65,7 +66,7 @@ dev = [
     "rustworkx",
     "autoray>=0.8.0",
     "matplotlib",
-    "pandas",
+    "pandas", 
 ]
 default = [
     "numpy~=1.23",
