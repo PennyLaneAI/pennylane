@@ -14,6 +14,7 @@
 """
 Unit tests for the :mod:`pennylane.io.qualtran_io` module.
 """
+# pylint: disable=too-many-public-methods
 import numpy as np
 import pytest
 
