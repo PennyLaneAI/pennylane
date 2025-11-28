@@ -1905,7 +1905,7 @@ class TestResourceUnaryIterationBasedQPE:
     def test_wire_error(self):
         """Test that an error is raised when wrong number of wires is provided."""
         with pytest.raises(ValueError, match="Expected 4 wires, got 3"):
-            qre.UnaryIterationBasedQPE(unitary=qre.X(), num_iterations=8, wires=[0, 1, 2])
+            qre.UnaryIterationBasedQPE(unitary=qre.X(0), num_iterations=8, wires=[0, 1, 2])
 
     def test_tracking_name(self):
         """Test that the name of the operator is tracked correctly."""
