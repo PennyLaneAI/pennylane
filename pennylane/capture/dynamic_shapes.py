@@ -19,6 +19,7 @@ from collections.abc import Callable, Sequence
 has_jax = True
 try:
     import jax
+    from jax._src.interpreters.partial_eval import TracingEqn
     from jax.interpreters import partial_eval as pe
 except ImportError:  # pragma: no cover
     has_jax = False  # pragma: no cover
@@ -222,18 +223,24 @@ def register_custom_staging_rule(
 
         # JAX 0.7.0: Use t.val to get var from tracer
         invars = [t.val for t in tracers]
-        eqn, out_tracers = jaxpr_trace.make_eqn(
-            invars, returned_vars, primitive, params, jax.core.no_effects, source_info
+        eqn = jax.core.new_jaxpr_eqn(
+            invars,
+            returned_vars,
+            primitive,
+            params,
+            jax.core.no_effects,
+            source_info,
         )
-        # eqn = jax.core.new_jaxpr_eqn(
-        #     invars,
-        #     returned_vars,
-        #     primitive,
-        #     params,
-        #     jax.core.no_effects,
-        #     source_info,
-        # )
-        jaxpr_trace.frame.add_eqn(eqn)
+        tracing_eqn = TracingEqn(
+            list(tracers),
+            returned_vars,
+            primitive,
+            params,
+            eqn.effects,
+            source_info,
+            eqn.ctx,
+        )
+        jaxpr_trace.frame.add_eqn(tracing_eqn)
         return out_tracers
 
     pe.custom_staging_rules[primitive] = custom_staging_rule
