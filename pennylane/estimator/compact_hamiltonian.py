@@ -249,10 +249,10 @@ class PauliHamiltonian:
 
         There are three different ways to instantiate the ``PauliHamiltonian`` class depending on how
         much information is known about the Hamiltonian we wish to capture. Note that providing more
-        information will often lead to more accurate resource estimates.
+        information will generally lead to more accurate resource estimates.
 
         Firstly, when we know fairly little about the explicit form of the Hamiltonian, we can express
-        it by specifyng the number of qubits it acts upon, the total number of terms in the Hamiltonian
+        it by specifying the number of qubits it acts upon, the total number of terms in the Hamiltonian
         and the maximum weight of a term in the Hamiltonian.
 
         >>> import pennylane.estimator as qre
@@ -358,7 +358,7 @@ class PauliHamiltonian:
         self._commuting_groups = None
 
     def __repr__(self):
-        """The repr dundar method for the PauliHamiltonian class."""
+        """The repr dunder method for the PauliHamiltonian class."""
         return f"PauliHamiltonian(num_qubits={self.num_qubits}, num_pauli_words={self.num_pauli_words}, max_weight={self.max_weight}, one_norm={self.one_norm})"
 
     def __eq__(self, other: "PauliHamiltonian"):
