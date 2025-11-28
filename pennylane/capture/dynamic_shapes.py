@@ -222,14 +222,17 @@ def register_custom_staging_rule(
 
         # JAX 0.7.0: Use t.val to get var from tracer
         invars = [t.val for t in tracers]
-        eqn = jax.core.new_jaxpr_eqn(
-            invars,
-            returned_vars,
-            primitive,
-            params,
-            jax.core.no_effects,
-            source_info,
+        eqn, out_tracers = jaxpr_trace.make_eqn(
+            invars, returned_vars, primitive, params, jax.core.no_effects, source_info
         )
+        # eqn = jax.core.new_jaxpr_eqn(
+        #     invars,
+        #     returned_vars,
+        #     primitive,
+        #     params,
+        #     jax.core.no_effects,
+        #     source_info,
+        # )
         jaxpr_trace.frame.add_eqn(eqn)
         return out_tracers
 
