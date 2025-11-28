@@ -9,7 +9,7 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
-* Maintenance support of NumPy<2.0 is deprecated and will be dropped v0.45.
+* Maintenance support of NumPy<2.0 is deprecated and will be dropped in v0.45.
   Future versions of PennyLane are not guaranteed to work with NumPy<2.0.
   We recommend upgrading your version of NumPy to benefit from enhanced support and features.
   - Deprecated in v0.44
