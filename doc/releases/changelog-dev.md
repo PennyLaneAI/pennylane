@@ -2,6 +2,10 @@
 
 <h3>New features since last release</h3>
 
+* Quantum Automatic Differentiation implemented to allow automatic selection of optimal
+  Hadamard gradient differentiation methods per [the paper](https://arxiv.org/pdf/2408.05406).
+  [(#8640)](https://github.com/PennyLaneAI/pennylane/pull/8640)
+
 * A new decomposition has been added for the Controlled :class:`~.SemiAdder`,
   which is efficient and skips controlling all gates in its decomposition.
   [(#8423)](https://github.com/PennyLaneAI/pennylane/pull/8423)
@@ -163,6 +167,16 @@
 
 * The graph-based decomposition system now supports decomposition rules that contains mid-circuit measurements.
   [(#8079)](https://github.com/PennyLaneAI/pennylane/pull/8079)
+
+* New decomposition rules that decompose to :class:`~.PauliRot` are added for the following operators.
+  [(#8700)](https://github.com/PennyLaneAI/pennylane/pull/8700)
+
+  - :class:`~.CRX`, :class:`~.CRY`, :class:`~.CRZ`
+  - :class:`~.ControlledPhaseShift`
+  - :class:`~.IsingXX`, :class:`~.IsingYY`, :class:`~.IsingZZ`
+  - :class:`~.PSWAP`
+  - :class:`~.RX`, :class:`~.RY`, :class:`~.RZ`
+  - :class:`~.SingleExcitation`, :class:`~.DoubleExcitation`
 
 <h3>Breaking changes 💔</h3>
 
@@ -545,4 +559,5 @@ Shuli Shu,
 Jay Soni,
 nate stemen,
 David Wierichs,
-Hongsheng Zheng
+Hongsheng Zheng,
+Zinan Zhou
