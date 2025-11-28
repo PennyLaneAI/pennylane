@@ -30,7 +30,7 @@ class CDFHamiltonian:
     Args:
         num_orbitals (int): number of spatial orbitals
         num_fragments (int): number of fragments in the compressed double-factorized (CDF) representation
-        one_norm (float | None, optional): the one-norm of the Hamiltonian
+        one_norm (float | None): the one-norm of the Hamiltonian
 
     Returns:
         CDFHamiltonian: An instance of CDFHamiltonian
