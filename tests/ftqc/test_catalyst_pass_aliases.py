@@ -64,7 +64,8 @@ def test_pass_is_captured(pass_fn):
 
     plxpr = make_plxpr(circ)()
     prim = plxpr.eqns[0].primitive
-    assert prim.name == pass_fn.__name__ + "_transform"
+    assert prim.name == "transform"
+    assert plxpr.eqns[0].params["transform"] == pass_fn
 
 
 @pytest.mark.catalyst

@@ -14,6 +14,7 @@
 """
 Contains the PrepSelPrep template.
 """
+
 # pylint: disable=arguments-differ
 import copy
 
@@ -26,9 +27,11 @@ from pennylane.decomposition import (
 )
 from pennylane.operation import Operation
 from pennylane.ops import GlobalPhase, Prod, StatePrep, change_op_basis, prod
+from pennylane.ops.op_math.composite import CompositeOp
+from pennylane.ops.op_math.symbolicop import SymbolicOp
 from pennylane.queuing import QueuingManager
 from pennylane.templates.embeddings import AmplitudeEmbedding
-from pennylane.wires import Wires
+from pennylane.wires import Wires, WiresLike
 
 from .select import Select
 
@@ -53,7 +56,7 @@ class PrepSelPrep(Operation):
     Args:
         lcu (Union[.Hamiltonian, .Sum, .Prod, .SProd, .LinearCombination]): The operator
             written as a linear combination of unitaries.
-        control (Iterable[Any], Wires): The control qubits for the PrepSelPrep operator.
+        control (WiresLike): The control qubits for the PrepSelPrep operator.
 
     **Example**
 
@@ -90,16 +93,15 @@ class PrepSelPrep(Operation):
 
     grad_method = None
 
-    def __init__(self, lcu, control=None, id=None):
-
+    def __init__(self, lcu: SymbolicOp | CompositeOp, control: WiresLike, id=None) -> None:
         control = Wires(control)
-        self.hyperparameters["lcu"] = lcu
-        self.hyperparameters["control"] = control
         target_wires = lcu.wires
 
         if any(control_wire in target_wires for control_wire in control):
             raise ValueError("Control wires should be different from operation wires.")
 
+        self.hyperparameters["lcu"] = lcu
+        self.hyperparameters["control"] = control
         self.hyperparameters["target_wires"] = target_wires
 
         all_wires = target_wires + control

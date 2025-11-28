@@ -14,6 +14,7 @@
 """
 This module contains code for the main device construction delegation logic.
 """
+import warnings
 from importlib import metadata
 from sys import version_info
 
@@ -22,7 +23,7 @@ from packaging.version import Version
 
 from pennylane._version import __version__
 from pennylane.configuration import default_config
-from pennylane.exceptions import DeviceError
+from pennylane.exceptions import DeviceError, PennyLaneDeprecationWarning
 from pennylane.transforms.tape_expand import _create_decomp_preprocessing, create_decomp_expand_fn
 
 from ._legacy_device import Device as LegacyDevice
@@ -108,9 +109,15 @@ def device(name, *args, **kwargs):
 
     Keyword Args:
         config (pennylane.Configuration): a PennyLane configuration object
-            that contains global and/or device-specific configurations.
+            that contains global and/or device specific configurations.
         custom_decomps (Dict[Union(str, Operator), Callable]): Custom
             decompositions to be applied by the device at runtime.
+
+    .. warning::
+        The ``custom_decomps`` keyword argument to ``qml.device`` has been deprecated and will be removed
+        in 0.45. Instead, with ``qml.decomposition.enable_graph()``, new decomposition rules can be defined as
+        quantum functions with registered resources. See :mod:`pennylane.decomposition` for more details.
+
 
     All devices must be loaded by specifying their **short-name** as listed above,
     followed by the **wires** (subsystems) you wish to initialize. The ``wires``
@@ -287,6 +294,13 @@ def device(name, *args, **kwargs):
         # Once the device is constructed, we set its custom expansion function if
         # any custom decompositions were specified.
         if custom_decomps is not None:
+            warnings.warn(
+                """The ``custom_decomps`` keyword argument to ``qml.device`` has been deprecated and will be removed 
+                in v0.45. Instead, use the graph-based system with ``qml.decomposition.enable_graph()``, and define new decomposition rules as
+                quantum functions with registered resources. See `Decomposition <https://docs.pennylane.ai/en/stable/code/qml_decomposition.html>`_. 
+                for more details.""",
+                PennyLaneDeprecationWarning,
+            )
             if isinstance(dev, LegacyDevice):
                 custom_decomp_expand_fn = create_decomp_expand_fn(custom_decomps, dev)
                 dev.custom_expand(custom_decomp_expand_fn)
