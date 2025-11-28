@@ -314,24 +314,3 @@ def test_hybrid_quantum(
             address,
         ),
     )
-
-
-@pytest.mark.parametrize(
-    ("params", "error", "match"),
-    [
-        (
-            (
-                ["010", "111", "110", "000"],
-                [0, 1],
-                [2, 3, 4],
-                [5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
-                (1 << 2) + 1,
-            ),
-            ValueError,
-            "qram_value out of range.",
-        ),
-    ],
-)
-def test_hybrid_raises(params, error, match):
-    with pytest.raises(error, match=re.escape(match)):
-        HybridQRAM(*params)

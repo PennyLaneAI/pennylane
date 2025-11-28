@@ -690,8 +690,9 @@ def _block_tree_query_ops(bitstrings, block_index: int, tree_wire_manager, n_tre
 
 
 @register_resources(_hybrid_qram_resources)
-def _hybrid_qram_decomposition(bitstrings, tree_wire_manager, k, n_tree, m, select_wires, signal):
+def _hybrid_qram_decomposition(wires, bitstrings, tree_wire_manager, k, n_tree, select_wires, signal_wire, **_):  # pylint: disable=unused-argument
 
+    signal = signal_wire[0]
     num_blocks = 1 << k if k > 0 else 1
 
     for block_index in range(num_blocks):
