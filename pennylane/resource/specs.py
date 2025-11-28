@@ -136,7 +136,7 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> SpecsResult:  # 
             gate_types=resource_data["gate_types"],
             gate_sizes={int(k): v for (k, v) in resource_data["gate_sizes"].items()},
             measurements={},
-            num_wires=resource_data["num_wires"],
+            num_allocs=resource_data["num_wires"],
             depth=resource_data["depth"],
         )
     finally:

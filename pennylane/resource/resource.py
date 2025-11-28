@@ -248,14 +248,14 @@ class SpecsResources:
 
         s += f"{prefix}Gate types:\n"
         if not self.gate_types:
-            return s + prefix + "  No gates.\n"
+            s += prefix + "  No gates.\n"
         else:
             for gate, count in self.gate_types.items():
                 s += f"{prefix}  {gate}: {count}\n"
 
         s += f"\n{prefix}Measurements:\n"
         if not self.measurements:
-            return s + prefix + "  No measurements.\n"
+            s += prefix + "  No measurements.\n"
         else:
             for meas, count in self.measurements.items():
                 s += f"{prefix}  {meas}: {count}\n"
@@ -796,7 +796,7 @@ def _count_resources(tape: QuantumScript, compute_depth: bool = True) -> SpecsRe
             gate_sizes[len(op.wires)] += 1
 
     for meas in tape.measurements:
-        measurements[meas._shortname] += 1
+        measurements[meas._shortname] += 1  # pylint: disable=protected-access
 
     return SpecsResources(
         gate_types=dict(gate_types),
