@@ -247,8 +247,8 @@ class ResourceConfig:
             Certain resource operators may have multiple parameters which tune the precision
             for the operators decomposition. Consider, for example, the
             :class:`~.estimator.templates.trotter.TrotterVibronic` operator. A dictionary of
-            all such parameters for this operator can be found by accessing the
-            ``ResourceConfig.resource_op_precisions[TrotterVibronic]`` dictionary:
+            all such parameters for this operator can be found by accessing a
+            dictionary using ``ResourceConfig.resource_op_precisions``:
 
             >>> import pennylane.estimator as qre
             >>> my_config = qre.ResourceConfig()
