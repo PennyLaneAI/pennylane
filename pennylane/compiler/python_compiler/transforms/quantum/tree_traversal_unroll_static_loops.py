@@ -85,6 +85,11 @@ class UnrollLoopPattern(RewritePattern):
                     return True, check_bound.owner
                 if isinstance(check_bound, BlockArgument):
                     return False, None
+                    # TODO: ^^^^^^^^^^
+                    # JAX sometimes hosts constants out of the regions they are defined in.
+                    # Therefore, we might reach a BlockArgument when tracing back the origin of a bound,
+                    # producing false negatives error here.
+                    # We should trace back to the parent region and search for constants there.
                 if len(check_bound.owner.operands) == 0:
                     return False, None
 
