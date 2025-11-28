@@ -271,3 +271,43 @@ class TestQuantumMonteCarlo:
         res_expected = circuit_expected()
 
         assert np.allclose(res, res_expected)
+
+
+def test_docstring_example():
+
+    m = 5
+    M = 2**m
+
+    xmax = np.pi  # bound to region [-pi, pi]
+    xs = np.linspace(-xmax, xmax, M)
+
+    probs = np.array([norm().pdf(x) for x in xs])
+    probs /= np.sum(probs)
+
+    func = lambda i: np.sin(xs[i]) ** 2
+    r_rotations = np.array([2 * np.arcsin(np.sqrt(func(i))) for i in range(M)])
+
+    from pennylane.templates.state_preparations.mottonen import (
+        _apply_uniform_rotation_dagger as r_unitary_inner,
+    )
+
+    n = 6
+
+    a_wires = range(m)
+    wires = range(m + 1)
+    target_wire = m
+    estimation_wires = range(m + 1, n + m + 1)
+
+    dev = qml.device("default.qubit", wires=n + m + 1)
+
+    def fn():
+        qml.templates.MottonenStatePreparation(np.sqrt(probs), wires=a_wires)
+        r_unitary_inner(qml.RY, r_rotations, control_wires=a_wires[::-1], target_wire=target_wire)
+
+    @qml.qnode(dev)
+    def qmc():
+        qml.quantum_monte_carlo(fn, wires, target_wire, estimation_wires)()
+        return qml.probs(estimation_wires)
+
+    specs = qml.specs(qmc, level="device")()
+    assert specs["resources"].num_gates == 31629
