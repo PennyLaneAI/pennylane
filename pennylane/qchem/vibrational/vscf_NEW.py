@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 # pylint: disable=too-many-arguments, too-many-positional-arguments
 
-def _build_active_hamiltonian(h_integrals, modals, cutoff):
+def _build_active_hamiltonian(h_integrals, modals, cutoff, like=None):
     r"""Identifies the active terms in the Hamiltonian, and converts the sparse Hamiltonian into
     dense arrays organized by mode. This function is based on the equations 20-22
     in `J. Chem. Theory Comput. 2010, 6, 235–248 <https://pubs.acs.org/doi/10.1021/ct9004454>`_.
@@ -30,6 +30,7 @@ def _build_active_hamiltonian(h_integrals, modals, cutoff):
         h_integrals (list[TensorLike[float]]): list of n-mode expansion of Hamiltonian integrals
         modals (list[int]): list containing the maximum number of modals to consider for each mode
         cutoff (float): threshold value for including matrix elements into operator
+        like (TensorLike): if provided, the returned arrays will be converted to the same framework() and device) as `like`
 
     Returns:
         tuple: A tuple containing the following:
@@ -105,10 +106,13 @@ def _build_active_hamiltonian(h_integrals, modals, cutoff):
                 "j": np.array(c["j"], dtype=int),
                 "coeffs": np.array(c["coeffs"], dtype=float),
                 "mask": np.array(c["mask"], dtype=bool),
-                "empty": False
             }
-        else:
-            mode_data = {"empty": True}
+            
+            # Convert to desired framework
+            if like is not None:
+                for key in mode_data:
+                    mode_data[key] = math.convert_like(mode_data[key], like)
+            
         dense_data.append(mode_data)
 
     return dense_data, active_num
@@ -126,21 +130,53 @@ def _fock_energy(all_modes_data, modals, h_mat, mode_rots):
         float: vibrational energy
 
     """
-    nmodes = np.shape(h_mat)[1]
+    nmodes = math.shape(h_mat)[1]
     e_calc = 0.0
     for m in range(nmodes):
         # energy calculation is just F[0,0] in the new basis
         f = _build_fock(all_modes_data[m], modals[m], h_mat, mode_rots[m])
         e_calc += f[0,0]
-    return e_calc
+    return float(e_calc) # casting to avoid framework issues
+
+
+def _accumulate_fock(modals_count, i_idxs, j_idxs, vals, like_tensor):
+    """
+    Backend-agnostic equivalent of np.add.at for the Fock matrix.
+    Uses One-Hot encoding + Einstein Summation to accumulate values.
+    """
+    # 1. Create a range vector [0, 1, ..., M-1]
+    # We use qml.math.cast_like to ensure it's on the correct device/dtype
+    m_range = math.convert_like(np.arange(modals_count), like_tensor)
+    
+    # 2. Create One-Hot Encodings for Rows (i) and Columns (j)
+    # Shape becomes (Num_Terms, Modals)
+    # Logic: (i[:, None] == range[None, :]) -> Boolean Mask -> Float
+    
+    # Expand dims for broadcasting
+    i_expanded = math.reshape(i_idxs, (-1, 1))
+    j_expanded = math.reshape(j_idxs, (-1, 1))
+    range_expanded = math.reshape(m_range, (1, -1))
+    
+    # Create masks and cast to the same type as 'vals' (float)
+    # Note: explicit cast is needed because the comparison returns Bool
+    row_one_hot = math.cast(math.equal(i_expanded, range_expanded), vals.dtype)
+    col_one_hot = math.cast(math.equal(j_expanded, range_expanded), vals.dtype)
+    
+    # 3. Contract: sum_k (val_k * row_oh_ka * col_oh_kb) -> F_ab
+    # 'n' is the term index, 'a' is row index, 'b' is col index
+    fock_matrix = math.einsum('n, na, nb -> ab', vals, row_one_hot, col_one_hot)
+    
+    return fock_matrix
+
 
 def _build_fock(mode_data, modals_count, h_mat, mode_rot):
     """
     Builds the Fock matrix using purely vectorized operations.
     """
     
-    if mode_data["empty"]:
-        return np.zeros((modals_count, modals_count))
+    fock_matrix = math.convert_like(np.zeros((modals_count, modals_count)), h_mat)
+    if len(mode_data) == 0:
+        return fock_matrix
 
     # let's extract the hamiltonian terms that affect the current mode
     subset_h = h_mat[mode_data["term_map"]]
@@ -149,16 +185,20 @@ def _build_fock(mode_data, modals_count, h_mat, mode_rot):
     # If mask is 1: keeps h value. If mask is 0: becomes 1.0 (identity for product).
     mask = mode_data["mask"] # shape (N_terms, N_modes)
     factors = subset_h * mask + (~mask) # using bitwise NOT for bool array ~mask is 1-mask
-    mean_fields = np.prod(factors, axis=1) #collapse to shape (N_terms,)
+    mean_fields = math.prod(factors, axis=1) #collapse to shape (N_terms,)
     
     # let's accumulate into Fock matrix 
-    fock_matrix = np.zeros((modals_count, modals_count))
     vals = mode_data["coeffs"] * mean_fields    # effective H values
     
     # accumulate into sparse locations (i, j)
-    # np.add.at is the vectorized equivalent of `for k: fock[i[k], j[k]] += val[k]`
-    # NOTE can we use qml.math here?
-    np.add.at(fock_matrix, (mode_data["i"], mode_data["j"]), vals)
+    
+    if isinstance(h_mat, np.ndarray):
+        # Use numpy's built-in function if possible for better performance
+        # np.add.at is the vectorized equivalent of `for k: fock[i[k], j[k]] += val[k]`
+        np.add.at(fock_matrix, (mode_data["i"], mode_data["j"]), vals)
+    else:
+        # --- REPLACEMENT FOR np.add.at ---
+        fock_matrix = _accumulate_fock(modals_count, mode_data["i"], mode_data["j"], vals, h_mat)
 
     fock_matrix = mode_rot.T @ fock_matrix @ mode_rot
     
@@ -168,7 +208,7 @@ def _update_h(h_mat, mode, mode_data, mode_rot):
     """
     Updates H matrix columns using vectorized assignment.
     """
-    if mode_data["empty"]:
+    if len(mode_data) == 0:
         return h_mat
 
     u = mode_rot[:, 0]      # ground state coefficients
@@ -178,14 +218,21 @@ def _update_h(h_mat, mode, mode_data, mode_rot):
     return h_mat
 
 
-def _vscf(h_integrals, modals, cutoff, tol=1e-8, max_iters=10000):
+def _vscf(h_integrals, modals, cutoff, like=None, tol=1e-8, max_iters=10000):
+    
     nmodes = np.shape(h_integrals[0])[0]
-
-    dense_data, active_num = _build_active_hamiltonian(h_integrals, modals, cutoff)
-
-
+    
+    
+    
+    dense_data, active_num = _build_active_hamiltonian(h_integrals, modals, cutoff, like)
     mode_rots = [np.eye(modals[mode]) for mode in range(nmodes)]
     h_mat = np.zeros((active_num, nmodes))
+    
+    # eventual switch to GPU 
+    if not like is None:
+        h_mat = math.convert_like(h_mat, like)
+        mode_rots = [math.convert_like(mat, like) for mat in mode_rots]
+
 
     # initialization of the hamiltonian matrix
     for mode in range(nmodes):
@@ -198,17 +245,20 @@ def _vscf(h_integrals, modals, cutoff, tol=1e-8, max_iters=10000):
         
         for mode in range(nmodes):
             fock = _build_fock(dense_data[mode], modals[mode], h_mat, mode_rots[mode])
-            _, eigvec = np.linalg.eigh(fock)
+            _, eigvec = math.linalg.eigh(fock)
             mode_rots[mode] = mode_rots[mode] @ eigvec
             h_mat = _update_h(h_mat, mode, dense_data[mode], mode_rots[mode])
 
         # check convergence
         enew = _fock_energy(dense_data, modals, h_mat, mode_rots)
-
+        
         if np.abs(enew - e0) <= tol:
             return enew, mode_rots
             
         e0 = enew
+
+    if not like is None:
+        mode_rots = [math.convert_like(mat, np.ndarray) for mat in mode_rots]
 
     return enew, mode_rots
 
