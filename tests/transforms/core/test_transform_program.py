@@ -608,6 +608,49 @@ class TestTransformProgramDunders:
         with pytest.raises(TransformError, match="already has a terminal transform"):
             _ = qml.gradients.param_shift + qml.gradients.hadamard_grad
 
+    def test_dispatcher_add_container_both_final_error(self):
+        """Test that adding a final container to a final dispatcher raises an error."""
+        dispatcher = qml.transform(first_valid_transform, final_transform=True)
+        container = TransformContainer(
+            transform=qml.transform(second_valid_transform, final_transform=True)
+        )
+        with pytest.raises(TransformError, match="already has a terminal transform"):
+            _ = dispatcher + container
+
+    def test_dispatcher_mul_final_transform_error(self):
+        """Test that multiplying a final dispatcher by n > 1 raises an error."""
+        dispatcher = qml.transform(first_valid_transform, final_transform=True)
+        with pytest.raises(TransformError, match="already has a terminal transform"):
+            _ = dispatcher * 2
+
+    def test_container_add_container_both_final_error(self):
+        """Test that adding two final containers raises an error."""
+        container1 = TransformContainer(
+            transform=qml.transform(first_valid_transform, final_transform=True)
+        )
+        container2 = TransformContainer(
+            transform=qml.transform(second_valid_transform, final_transform=True)
+        )
+        with pytest.raises(TransformError, match="already has a terminal transform"):
+            _ = container1 + container2
+
+    def test_container_add_dispatcher_both_final_error(self):
+        """Test that adding a final dispatcher to a final container raises an error."""
+        container = TransformContainer(
+            transform=qml.transform(first_valid_transform, final_transform=True)
+        )
+        dispatcher = qml.transform(second_valid_transform, final_transform=True)
+        with pytest.raises(TransformError, match="already has a terminal transform"):
+            _ = container + dispatcher
+
+    def test_container_mul_final_transform_error(self):
+        """Test that multiplying a final container by n > 1 raises an error."""
+        container = TransformContainer(
+            transform=qml.transform(first_valid_transform, final_transform=True)
+        )
+        with pytest.raises(TransformError, match="already has a terminal transform"):
+            _ = container * 2
+
     def test_repr_program(self):
         """Test the string representation of a program."""
         transform_program = TransformProgram()
