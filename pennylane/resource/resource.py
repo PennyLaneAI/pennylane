@@ -19,7 +19,7 @@ from __future__ import annotations
 import copy
 from abc import abstractmethod
 from collections import defaultdict
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field, fields
 from typing import Any
 
 from pennylane.measurements import Shots, add_shots
@@ -27,21 +27,6 @@ from pennylane.operation import Operation
 from pennylane.tape import QuantumScript
 
 from .error import _compute_algo_error
-
-
-class SpecsDict(dict):
-    """A special dictionary for storing the specs of a circuit. Used to customize ``KeyError`` messages."""
-
-    def __getitem__(self, __k):
-        if __k == "num_diagonalizing_gates":
-            raise KeyError(
-                "num_diagonalizing_gates is no longer in specs due to the ambiguity of the definition "
-                "and extreme performance costs."
-            )
-        try:
-            return super().__getitem__(__k)
-        except KeyError as e:
-            raise KeyError(f"key {__k} not available. Options are {set(self.keys())}") from e
 
 
 @dataclass(frozen=True)
@@ -105,9 +90,9 @@ class Resources:
 
     num_wires: int = 0
     num_gates: int = 0
-    gate_types: dict = field(default_factory=dict)
-    gate_sizes: dict = field(default_factory=dict)
-    depth: int = 0
+    gate_types: dict[str, int] = field(default_factory=dict)
+    gate_sizes: dict[int, int] = field(default_factory=dict)
+    depth: int | None = None
     shots: Shots = field(default_factory=Shots)
 
     def __add__(self, other: Resources):
@@ -231,6 +216,111 @@ class Resources:
     def _ipython_display_(self):
         """Displays __str__ in ipython instead of __repr__"""
         print(str(self))
+
+
+# TODO: Would be better to have SpecsResources inherit from Resources directly, but there are too
+# many extra fields that are unwanted. Would be worth refactoring in the future.
+@dataclass(frozen=True)
+class SpecsResources:
+    gate_types: dict[str, int]
+    gate_sizes: dict[int, int]
+    measurements: dict[str, int]
+    num_allocs: int
+    depth: int | None = None
+
+    def __post_init__(self):
+        assert sum(self.gate_types.values()) == sum(self.gate_sizes.values())
+
+    @property
+    def num_gates(self) -> int:
+        return sum(self.gate_types.values())
+
+    def to_pretty_str(self, preindent: int = 0) -> str:
+        """
+        Pretty string representation of the SpecsResources object.
+        """
+        prefix = " " * preindent
+        s = f"{prefix}Total qubit allocations: {self.num_allocs}\n"
+        s += f"{prefix}Total gates: {self.num_gates}\n"
+        s += (
+            f"{prefix}Circuit depth: {self.depth if self.depth is not None else 'Not computed'}\n\n"
+        )
+
+        s += f"{prefix}Gate types:\n"
+        if not self.gate_types:
+            return s + prefix + "  No gates.\n"
+        else:
+            for gate, count in self.gate_types.items():
+                s += f"{prefix}  {gate}: {count}\n"
+
+        s += f"\n{prefix}Measurements:\n"
+        if not self.measurements:
+            return s + prefix + "  No measurements.\n"
+        else:
+            for meas, count in self.measurements.items():
+                s += f"{prefix}  {meas}: {count}\n"
+
+        return s.rstrip("\n")
+
+    # Leave repr and str methods separate for simple and pretty printing
+    def __str__(self) -> str:
+        return self.to_pretty_str()
+
+
+@dataclass(frozen=True)
+class SpecsResult:
+    resources: SpecsResources | dict[int | str, SpecsResources] = None
+    shots: Shots = None
+    device_name: str = None
+    num_device_wires: int = None
+    level: Any = None
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert the SpecsResources to a dictionary."""
+        return asdict(self)
+
+    def __getitem__(self, key):
+        if key in (field.name for field in fields(self)):
+            return getattr(self, key)
+
+        match key:
+            # Fields that used to be included in specs output prior to PL version 0.44
+            case "num_observables":
+                raise KeyError(
+                    "num_observables is no longer in top-level specs and has instead been absorbed into the 'measurements' attribute of the specs's resources."
+                )
+            case "interface" | "diff_method" | "errors" | "num_tape_wires":
+                raise KeyError(f"key '{key}' is no longer included in specs.")
+            case (
+                "gradient_fn"
+                | "gradient_options"
+                | "num_gradient_executions"
+                | "num_trainable_params"
+            ):
+                raise KeyError(
+                    f"key '{key}' is no longer included in specs, as it no longer gathers gradient information."
+                )
+        raise KeyError(
+            f"key '{key}' not available. Options are {[field.name for field in fields(self)]}"
+        )
+
+    # Separate str and repr methods for simple and pretty printing
+    def __str__(self):
+        s = f"Device: {self.device_name}\n"
+        s += f"Device wires: {self.num_device_wires}\n"
+        s += f"Shots: {self.shots}\n"
+        s += f"Level: {self.level}\n\n"
+
+        s += "Resource specifications:\n"
+        if isinstance(self.resources, SpecsResources):
+            s += self.resources.to_pretty_str(preindent=2)
+        else:
+            for level, res in self.resources.items():
+                s += f"Level = {level}:\n"
+                s += res.to_pretty_str(preindent=2)
+                s += "\n" + "-" * 60 + "\n\n"
+
+        return s.rstrip("\n-")
 
 
 class ResourcesOperation(Operation):
@@ -621,7 +711,9 @@ def substitute(initial_resources: Resources, gate_info: tuple[str, int], replace
 # The reason why this function is not a method of the QuantumScript class is
 # because we don't want a core module (QuantumScript) to depend on an auxiliary module (Resource).
 # The `QuantumScript.specs` property will eventually be deprecated in favor of this function.
-def specs_from_tape(tape: QuantumScript, compute_depth: bool = True) -> SpecsDict[str, Any]:
+def resources_from_tape(
+    tape: QuantumScript, compute_depth: bool = True, compute_errs: bool = False
+) -> SpecsResources | tuple[SpecsResources, dict[str, Any]]:
     """
     Extracts the resource information from a quantum circuit (tape).
 
@@ -639,16 +731,12 @@ def specs_from_tape(tape: QuantumScript, compute_depth: bool = True) -> SpecsDic
         (.SpecsDict): The specifications extracted from the workflow
     """
     resources = _count_resources(tape, compute_depth=compute_depth)
-    algo_errors = _compute_algo_error(tape)
 
-    return SpecsDict(
-        {
-            "resources": resources,
-            "errors": algo_errors,
-            "num_observables": len(tape.observables),
-            "num_trainable_params": tape.num_params,
-        }
-    )
+    if compute_errs:
+        algo_errors = _compute_algo_error(tape)
+        return resources, algo_errors
+
+    return resources
 
 
 def _combine_dict(dict1: dict, dict2: dict):
@@ -675,7 +763,7 @@ def _scale_dict(dict1: dict, scalar: int):
     return combined_dict
 
 
-def _count_resources(tape: QuantumScript, compute_depth: bool = True) -> Resources:
+def _count_resources(tape: QuantumScript, compute_depth: bool = True) -> SpecsResources:
     """Given a quantum circuit (tape), this function
      counts the resources used by standard PennyLane operations.
 
@@ -687,12 +775,12 @@ def _count_resources(tape: QuantumScript, compute_depth: bool = True) -> Resourc
     Returns:
         (.Resources): The total resources used in the workflow
     """
+
     num_wires = len(tape.wires)
-    shots = tape.shots
     depth = tape.graph.get_depth() if compute_depth else None
 
-    num_gates = 0
     gate_types = defaultdict(int)
+    measurements = defaultdict(int)
     gate_sizes = defaultdict(int)
     for op in tape.operations:
         if isinstance(op, ResourcesOperation):
@@ -708,6 +796,14 @@ def _count_resources(tape: QuantumScript, compute_depth: bool = True) -> Resourc
         else:
             gate_types[op.name] += 1
             gate_sizes[len(op.wires)] += 1
-            num_gates += 1
 
-    return Resources(num_wires, num_gates, gate_types, gate_sizes, depth, shots)
+    for meas in tape.measurements:
+        measurements[meas._shortname] += 1
+
+    return SpecsResources(
+        gate_types=dict(gate_types),
+        gate_sizes=dict(gate_sizes),
+        measurements=dict(measurements),
+        num_allocs=num_wires,
+        depth=depth,
+    )
