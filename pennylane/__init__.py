@@ -142,7 +142,6 @@ from pennylane.ops.functions import (
     map_wires,
     matrix,
     simplify,
-    iterative_qpe,
     commutator,
     comm,
 )

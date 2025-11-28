@@ -117,6 +117,8 @@ class Subroutine:
         if capture.enabled():
             for wire_argname in self.wire_argnames:
                 register = bound_args.arguments[wire_argname]
+                if isinstance(register, int):
+                    register = [register]
                 if len(register) > 0:
                     bound_args.arguments[wire_argname] = jax.numpy.stack(register)
             return self.subroutine(*bound_args.args, **bound_args.kwargs)
