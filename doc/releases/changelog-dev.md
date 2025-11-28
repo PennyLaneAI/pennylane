@@ -271,7 +271,7 @@
 
 <h3>Deprecations 👋</h3>
 
-* Maintenance support of NumPy<2.0 is deprecated as of v0.44 and will be completely dropped v0.45.
+* Maintenance support of NumPy<2.0 is deprecated as of v0.44 and will be completely dropped in v0.45.
   Future versions of PennyLane will only work with NumPy>=2.0.
   We recommend upgrading your version of NumPy to benefit from enhanced support and features.
   [(#8578)](https://github.com/PennyLaneAI/pennylane/pull/8578)
