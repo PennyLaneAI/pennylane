@@ -14,9 +14,11 @@
 r"""
 Contains the k-UpCCGSD template.
 """
+
 # pylint: disable-msg=too-many-arguments,protected-access,too-many-positional-arguments
 import copy
 from collections import defaultdict
+from collections.abc import Sequence
 from itertools import product
 
 import numpy as np
@@ -26,6 +28,7 @@ from pennylane.control_flow import for_loop
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.operation import Operation
 from pennylane.templates.embeddings import BasisEmbedding
+from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 
 from .fermionic_double_excitation import FermionicDoubleExcitation
@@ -96,16 +99,16 @@ class kUpCCGSD(Operation):
     :math:`\theta_{j_\alpha j_\beta}^{i_\alpha i_\beta}` represent the set of variational parameters.
 
     Args:
-        weights (tensor_like): Tensor containing the parameters :math:`\theta_{pr}` and :math:`\theta_{pqrs}`
+        weights (TensorLike): Tensor containing the parameters :math:`\theta_{pr}` and :math:`\theta_{pqrs}`
             entering the Z rotation in :func:`~.FermionicSingleExcitation` and :func:`~.FermionicDoubleExcitation`.
             These parameters are the coupled-cluster amplitudes that need to be optimized for each generalized
             single and pair double excitation terms.
-        wires (Iterable): wires that the template acts on
+        wires (WiresLike): wires that the template acts on
         k (int): Number of times UpCCGSD unitary is repeated.
         delta_sz (int): Specifies the selection rule ``sz[p] - sz[r] = delta_sz``
             for the spin-projection ``sz`` of the orbitals involved in the generalized single excitations.
             ``delta_sz`` can take the values :math:`0` and :math:`\pm 1`.
-        init_state (array[int]): Length ``len(wires)`` occupation-number vector representing the
+        init_state (Sequence[int]): Length ``len(wires)`` occupation-number vector representing the
             HF state. ``init_state`` is used to initialize the wires.
 
     .. details::
@@ -212,24 +215,33 @@ class kUpCCGSD(Operation):
     resource_keys = {"num_wires", "k", "s_wires", "d_wires"}
 
     def _flatten(self):
-
         # Do not need to flatten s_wires or d_wires because they are derived hyperparameters
         hyperparameters = tuple(
             (key, self.hyperparameters[key]) for key in ["k", "delta_sz", "init_state"]
         )
         return self.data, (self.wires, hyperparameters)
 
-    def __init__(self, weights, wires, k=1, delta_sz=0, init_state=None, id=None):
+    def __init__(
+        self,
+        weights: TensorLike,
+        wires: WiresLike,
+        k: int = 1,
+        delta_sz: int = 0,
+        init_state: Sequence[int] | None = None,
+        id: str | None = None,
+    ):
+        wires = Wires(wires)
+
         if len(wires) < 4:
             raise ValueError(f"Requires at least four wires; got {len(wires)} wires.")
         if len(wires) % 2:
             raise ValueError(f"Requires even number of wires; got {len(wires)} wires.")
-
         if k < 1:
             raise ValueError(f"Requires k to be at least 1; got {k}.")
-
         if delta_sz not in [-1, 0, 1]:
             raise ValueError(f"Requires delta_sz to be one of ±1 or 0; got {delta_sz}.")
+        if init_state is None:
+            raise ValueError("Requires `init_state` to be provided.")
 
         s_wires = generalized_singles(list(wires), delta_sz)
         d_wires = generalized_pair_doubles(list(wires))
@@ -380,12 +392,10 @@ def _kupccgsd_decomposition(
     init_state: tuple[int],
     delta_sz: int = None,
 ):  # pylint: disable=too-many-arguments, arguments-differ, unused-argument
-
     BasisEmbedding(init_state, wires=wires)
 
     @for_loop(k)
     def layer_loop(layer):
-
         @for_loop(len(d_wires))
         def double_loop(i):
             (w1, w2) = d_wires[i]
