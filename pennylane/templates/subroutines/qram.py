@@ -682,11 +682,11 @@ def _hybrid_qram_resources(bitstrings, num_target_wires, num_select_wires, k, n_
     if n_tree != 0:
         resources[controlled_resource_rep(
             base_class=SWAP, base_params={}, num_control_wires=1, num_zero_control_values=0,
-        )] += (n_tree + (1 << n_tree) - 1 + num_target_wires) * num_blocks + num_blocks * num_target_wires
+        )] += (n_tree + (1 << n_tree) - 1 + num_target_wires) * num_blocks + num_blocks * (num_target_wires + 1) + n_tree + ((1 << n_tree) - 2) * num_blocks
 
         resources[controlled_resource_rep(
             base_class=CSWAP, base_params={}, num_control_wires=1, num_zero_control_values=0,
-        )] += ((1 << n_tree) - 1 - n_tree + ((1 << n_tree) - 1) * num_target_wires) * num_blocks
+        )] += (((1 << n_tree) - 1 - n_tree) * 2 + ((1 << n_tree) - 1) * num_target_wires) * num_blocks
 
         resources[
             controlled_resource_rep(
@@ -695,7 +695,7 @@ def _hybrid_qram_resources(bitstrings, num_target_wires, num_select_wires, k, n_
                              "num_zero_control_values": 1},
                 num_control_wires=1, num_zero_control_values=0
             )
-        ] += ((1 << n_tree) - 1 - n_tree + ((1 << n_tree) - 1) * num_target_wires) * num_blocks * 3
+        ] += ((1 << n_tree) - 1 - n_tree + ((1 << n_tree) - 1) * num_target_wires) * num_blocks * 3 + ((1 << n_tree) - 1 - n_tree) * num_blocks
 
         resources[controlled_resource_rep(
             base_class=Hadamard, base_params={}, num_control_wires=1, num_zero_control_values=0,
@@ -718,6 +718,3 @@ def _hybrid_qram_resources(bitstrings, num_target_wires, num_select_wires, k, n_
             base_class=PauliZ, base_params={}, num_control_wires=1, num_zero_control_values=0,
         )] += sum([bitstrings[(block_index << n_tree) + p][j] == "1" for j in range(num_target_wires) for p in
                    range(1 << n_tree)])
-
-        # 3) address unloading for the tree (controlled on signal)
-        ops += self._tree_unmark_routers_via_bus_ctrl()
