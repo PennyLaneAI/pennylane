@@ -34,7 +34,7 @@ from pennylane.measurements import (
     StateMP,
     VarianceMP,
 )
-from pennylane.resource import Resources
+from pennylane.resource import SpecsResources
 from pennylane.tape import QuantumScript
 from pennylane.wires import Wires
 
@@ -1494,10 +1494,28 @@ class TestResourcesTracker:
     )
 
     expected_resources = (
-        Resources(2, 2, {"Hadamard": 1, "CNOT": 1}, {1: 1, 2: 1}, 2, Shots(None)),
-        Resources(3, 3, {"PauliZ": 1, "CNOT": 1, "RX": 1}, {1: 2, 2: 1}, 2, Shots(10)),
-        Resources(2, 6, {"Hadamard": 3, "RX": 2, "CNOT": 1}, {1: 5, 2: 1}, 4, Shots((10, 10, 50))),
-    )  # Resources(wires, gates, gate_types, gate_sizes, depth, shots)
+        SpecsResources(
+            num_allocs=2,
+            gate_types={"Hadamard": 1, "CNOT": 1},
+            gate_sizes={1: 1, 2: 1},
+            measurements={},
+            depth=2,
+        ),
+        SpecsResources(
+            num_allocs=3,
+            gate_types={"PauliZ": 1, "CNOT": 1, "RX": 1},
+            gate_sizes={1: 2, 2: 1},
+            measurements={},
+            depth=2,
+        ),
+        SpecsResources(
+            num_allocs=2,
+            gate_types={"Hadamard": 3, "RX": 2, "CNOT": 1},
+            gate_sizes={1: 5, 2: 1},
+            measurements={},
+            depth=4,
+        ),
+    )
 
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize(
@@ -1523,8 +1541,20 @@ class TestResourcesTracker:
         qs1 = qml.tape.QuantumScript([qml.Hadamard(0), qml.CNOT([0, 1])])
         qs2 = qml.tape.QuantumScript([qml.PauliZ(0), qml.CNOT([0, 1]), qml.RX(1.23, 2)])
 
-        exp_res1 = Resources(2, 2, {"Hadamard": 1, "CNOT": 1}, {1: 1, 2: 1}, 2, Shots(10))
-        exp_res2 = Resources(3, 3, {"PauliZ": 1, "CNOT": 1, "RX": 1}, {1: 2, 2: 1}, 2, Shots(10))
+        exp_res1 = SpecsResources(
+            num_allocs=2,
+            gate_types={"Hadamard": 1, "CNOT": 1},
+            gate_sizes={1: 1, 2: 1},
+            measurements={},
+            depth=2,
+        )
+        exp_res2 = SpecsResources(
+            num_allocs=3,
+            gate_types={"PauliZ": 1, "CNOT": 1, "RX": 1},
+            gate_sizes={1: 2, 2: 1},
+            measurements={},
+            depth=2,
+        )
 
         dev = DefaultQubitLegacy(shots=10, wires=[0, 1, 2])
         with qml.Tracker(dev) as tracker:
@@ -1550,12 +1580,11 @@ class TestResourcesTracker:
             return qml.expval(qml.PauliZ(0))
 
         x = pnp.array(0.1, requires_grad=True)
-        expected_resources = Resources(
-            num_wires=1,
-            num_gates=1,
+        expected_resources = SpecsResources(
+            num_allocs=1,
             gate_types={"RX": 1},
             gate_sizes={1: 1},
-            shots=Shots(100),
+            measurements={"expval": 1},
             depth=1,
         )
 
