@@ -303,25 +303,6 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
             return program + other
         return NotImplemented
 
-    def __radd__(self, other):
-        """Right addition for dispatcher with container or program.
-
-        Args:
-            other: A TransformContainer or TransformProgram to add this dispatcher to.
-
-        Returns:
-            TransformProgram: A new program with the other followed by this dispatcher.
-        """
-        # Import here to avoid circular import
-        from .transform_program import TransformProgram  # pylint: disable=import-outside-toplevel
-
-        # Convert this dispatcher to a container (no args/kwargs)
-        self_container = TransformContainer(self)
-
-        if isinstance(other, TransformContainer):
-            return TransformProgram([other, self_container])
-        return NotImplemented
-
     def __mul__(self, n):
         """Multiply a dispatcher by an integer to create a program with repeated dispatchers.
 
@@ -564,23 +545,6 @@ class TransformContainer:  # pylint: disable=too-many-instance-attributes
         if isinstance(other, TransformProgram):
             program = TransformProgram([self])
             return program + other
-        return NotImplemented
-
-    def __radd__(self, other):
-        """Right addition for container with dispatcher.
-
-        Args:
-            other: A TransformDispatcher to add this container to.
-
-        Returns:
-            TransformProgram: A new program with the other followed by this container.
-        """
-        # Import here to avoid circular import
-        from .transform_program import TransformProgram  # pylint: disable=import-outside-toplevel
-
-        if isinstance(other, TransformDispatcher):
-            other_container = TransformContainer(other)
-            return TransformProgram([other_container, self])
         return NotImplemented
 
     def __mul__(self, n):
