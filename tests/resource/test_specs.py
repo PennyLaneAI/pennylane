@@ -14,23 +14,21 @@
 """Unit tests for the specs transform"""
 
 # pylint: disable=invalid-sequence-index
-from collections import defaultdict
-from contextlib import nullcontext
-
 import pytest
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.tape import QuantumScript, QuantumScriptBatch
-from pennylane.typing import PostprocessingFn
+from pennylane.measurements import Shots
+from pennylane.resource import SpecsResources
 
 devices_list = [
-    (qml.device("default.qubit"), 1),
+    (qml.device("default.qubit"), None),
     (qml.device("default.qubit", wires=2), 2),
 ]
 
 
-def test_error_with_bad_key():
+@pytest.mark.parametrize("key", ["bad_value", 123, "num_observables", "gradient_fn", "interface"])
+def test_error_with_bad_key(key):
     """Test that a helpful error message is raised if key does not exist."""
 
     @qml.qnode(qml.device("null.qubit"))
@@ -38,8 +36,8 @@ def test_error_with_bad_key():
         return qml.state()
 
     out = qml.specs(c)()
-    with pytest.raises(KeyError, match="Options are {"):
-        _ = out["bad_value"]
+    with pytest.raises(KeyError):
+        _ = out[key]
 
 
 @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
@@ -77,8 +75,6 @@ class TestSpecsTransform:
         assert specs["level"] == level
         assert specs["resources"].num_gates == expected_gates
 
-        assert specs["num_trainable_params"] == exptected_train_params
-
     @pytest.mark.parametrize(
         "level1,level2",
         [
@@ -93,54 +89,37 @@ class TestSpecsTransform:
     def test_equivalent_levels(self, level1, level2):
         circ = self.sample_circuit()
 
-        specs1 = qml.specs(circ, level=level1)(0.1)
-        specs2 = qml.specs(circ, level=level2)(0.1)
+        specs1 = qml.specs(circ, level=level1)(0.1).to_dict()
+        specs2 = qml.specs(circ, level=level2)(0.1).to_dict()
 
         del specs1["level"]
         del specs2["level"]
 
         assert specs1 == specs2
 
-    @pytest.mark.parametrize(
-        "diff_method, len_info", [("backprop", 12), ("parameter-shift", 13), ("adjoint", 12)]
-    )
-    def test_empty(self, diff_method, len_info):
+    @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift", "adjoint"])
+    def test_diff_methods(self, diff_method):
         dev = qml.device("default.qubit", wires=1)
 
         @qml.qnode(dev, diff_method=diff_method)
         def circ():
-            return qml.expval(qml.PauliZ(0))
+            pass
 
-        with (
-            pytest.warns(UserWarning, match="gradient of a tape with no trainable parameters")
-            if diff_method == "parameter-shift"
-            else nullcontext()
-        ):
-            info_func = qml.specs(circ)
-            info = info_func()
-        assert len(info) == len_info
+        expected_resources = SpecsResources(
+            gate_types={}, gate_sizes={}, measurements={}, num_allocs=0, depth=0
+        )
 
-        expected_resources = qml.resource.Resources(num_wires=1, gate_types=defaultdict(int))
+        info = qml.specs(circ)()
         assert info["resources"] == expected_resources
-        assert info["num_observables"] == 1
         assert info["num_device_wires"] == 1
-        assert info["diff_method"] == diff_method
-        assert info["num_trainable_params"] == 0
         assert info["device_name"] == dev.name
         assert info["level"] == "gradient"
 
-        if diff_method == "parameter-shift":
-            assert info["num_gradient_executions"] == 0
-            assert info["gradient_fn"] == "pennylane.gradients.parameter_shift.param_shift"
-
-    @pytest.mark.parametrize(
-        "diff_method, len_info", [("backprop", 12), ("parameter-shift", 13), ("adjoint", 12)]
-    )
-    def test_specs(self, diff_method, len_info):
+    def test_specs(self):
         """Test the specs transforms works in standard situations"""
         dev = qml.device("default.qubit", wires=4)
 
-        @qml.qnode(dev, diff_method=diff_method)
+        @qml.qnode(dev)
         def circuit(x, y, add_RY=True):
             qml.RX(x[0], wires=0)
             qml.Toffoli(wires=(0, 1, 2))
@@ -155,24 +134,21 @@ class TestSpecsTransform:
 
         info = qml.specs(circuit)(x, y, add_RY=False)
 
-        assert len(info) == len_info
-
-        gate_sizes = defaultdict(int, {1: 2, 3: 1, 2: 1})
-        gate_types = defaultdict(int, {"RX": 1, "Toffoli": 1, "CRY": 1, "Rot": 1})
-        expected_resources = qml.resource.Resources(
-            num_wires=3, num_gates=4, gate_types=gate_types, gate_sizes=gate_sizes, depth=3
+        gate_sizes = {1: 2, 3: 1, 2: 1}
+        gate_types = {"RX": 1, "Toffoli": 1, "CRY": 1, "Rot": 1}
+        expected_resources = SpecsResources(
+            num_allocs=3,
+            gate_types=gate_types,
+            gate_sizes=gate_sizes,
+            measurements={"expval": 2},
+            depth=3,
         )
         assert info["resources"] == expected_resources
 
-        assert info["num_observables"] == 2
         assert info["num_device_wires"] == 4
-        assert info["diff_method"] == diff_method
-        assert info["num_trainable_params"] == 4
         assert info["device_name"] == dev.name
         assert info["level"] == "gradient"
-
-        if diff_method == "parameter-shift":
-            assert info["num_gradient_executions"] == 6
+        assert info["shots"] == Shots(None)
 
     @pytest.mark.parametrize("compute_depth", [True, False])
     def test_specs_compute_depth(self, compute_depth):
@@ -192,7 +168,7 @@ class TestSpecsTransform:
 
         info = qml.specs(circuit, compute_depth=compute_depth)(x)
 
-        assert info["resources"].depth == (6 if compute_depth else None)
+        assert info.resources.depth == (6 if compute_depth else None)
 
     def test_compute_depth_with_condition(self):
         """Tests that the depth is correct when there is a Conditional."""
@@ -228,25 +204,26 @@ class TestSpecsTransform:
 
         assert qml.specs(circuit3)()["resources"].depth == 3
 
-    @pytest.mark.parametrize(
-        "diff_method, len_info", [("backprop", 12), ("parameter-shift", 13), ("adjoint", 12)]
-    )
-    def test_specs_state(self, diff_method, len_info):
+    def test_specs_state(self):
         """Test specs works when state returned"""
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, diff_method=diff_method)
+        @qml.qnode(dev)
         def circuit():
             return qml.state()
 
         info = qml.specs(circuit)()
-        assert len(info) == len_info
 
-        assert info["resources"] == qml.resource.Resources(gate_types=defaultdict(int))
+        assert info.resources == SpecsResources(
+            gate_types={},
+            gate_sizes={},
+            measurements={"state": 1},
+            num_allocs=0,  # Nothing actually used in this circuit
+            depth=0,
+        )
 
-        assert info["num_observables"] == 1
-        assert info["level"] == "gradient"
+        assert info.level == "gradient"
 
     def test_level_with_diagonalizing_gates(self):
         """Test that when diagonalizing gates includes gates that are decomposed in
@@ -304,17 +281,21 @@ class TestSpecsTransform:
             qml.X(0)
             return qml.expval(H)
 
-        specs_instance = qml.specs(circuit, level=1)(pnp.array([1.23, -1]))
+        specs_output = qml.specs(circuit, level=1)(pnp.array([1.23, -1]))
 
-        assert isinstance(specs_instance, dict)
+        # Check that there is only 1 output
+        assert isinstance(specs_output.resources, SpecsResources)
 
-        specs_list = qml.specs(circuit, level=2)(pnp.array([1.23, -1]))
+        specs_output = qml.specs(circuit, level=2)(pnp.array([1.23, -1]))
 
-        assert len(specs_list) == len(H)
+        assert isinstance(specs_output.resources, dict)
+        assert len(specs_output.resources) == len(H)
 
-        assert specs_list[0]["num_device_wires"] == specs_list[0]["num_tape_wires"] == 2
-        assert specs_list[1]["num_device_wires"] == specs_list[1]["num_tape_wires"] == 3
-        assert specs_list[2]["num_device_wires"] == specs_list[1]["num_tape_wires"] == 3
+        assert specs_output.num_device_wires is None
+
+        assert specs_output.resources[0].num_allocs == 2
+        assert specs_output.resources[1].num_allocs == 3
+        assert specs_output.resources[2].num_allocs == 3
 
     def make_qnode_and_params(self, seed):
         """Generates a qnode and params for use in other tests"""
@@ -334,35 +315,6 @@ class TestSpecsTransform:
 
         return circuit, params
 
-    def test_gradient_transform(self):
-        """Test that a gradient transform is properly labelled"""
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev, diff_method=qml.gradients.param_shift)
-        def circuit():
-            return qml.probs(wires=0)
-
-        with pytest.warns(UserWarning, match="gradient of a tape with no trainable parameters"):
-            info = qml.specs(circuit)()
-        assert info["diff_method"] == "pennylane.gradients.parameter_shift.param_shift"
-        assert info["gradient_fn"] == "pennylane.gradients.parameter_shift.param_shift"
-
-    def test_custom_gradient_transform(self):
-        """Test that a custom gradient transform is properly labelled"""
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.transform
-        def my_transform(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
-            return tape, None
-
-        @qml.qnode(dev, diff_method=my_transform)
-        def circuit():
-            return qml.probs(wires=0)
-
-        info = qml.specs(circuit)()
-        assert info["diff_method"] == "test_specs.my_transform"
-        assert info["gradient_fn"] == "test_specs.my_transform"
-
     @pytest.mark.parametrize(
         "device,num_wires",
         devices_list,
@@ -377,28 +329,6 @@ class TestSpecsTransform:
 
         info = qml.specs(circuit)()
         assert info["num_device_wires"] == num_wires
-
-    def test_no_error_contents_on_device_level(self):
-        coeffs = [0.25, 0.75]
-        ops = [qml.X(0), qml.Z(0)]
-        H = qml.dot(coeffs, ops)
-
-        @qml.qnode(qml.device("default.qubit"))
-        def circuit():
-            qml.Hadamard(0)
-            qml.TrotterProduct(H, time=2.4, order=2)
-
-            return qml.state()
-
-        top_specs = qml.specs(circuit, level="top")()
-        dev_specs = qml.specs(circuit, level="device")()
-
-        assert "SpectralNormError" in top_specs["errors"]
-        assert pnp.allclose(top_specs["errors"]["SpectralNormError"].error, 13.824)
-
-        # At the device level, approximations don't exist anymore and therefore
-        # we should expect an empty errors dictionary.
-        assert dev_specs["errors"] == {}
 
     def test_error_with_non_qnode(self):
         """Test that a helpful error message is raised if the input is not a QNode."""
@@ -458,7 +388,7 @@ class TestSpecsGraphModeExclusive:
         # Work wires calculation should be: device_wires - tape_wires
         if num_device_wires:
             assert specs["num_device_wires"] == num_device_wires
-        assert specs["num_tape_wires"] == 1
+        assert specs["resources"].num_allocs == 1
 
         # Check that the correct decomposition was used
         assert expected_decomp in specs["resources"].gate_types
@@ -491,7 +421,7 @@ class TestSpecsGraphModeExclusive:
 
         # Should report 1 work wire available (2 device wires - 1 tape wire)
         assert specs["num_device_wires"] == 2
-        assert specs["num_tape_wires"] == 1
+        assert specs["resources"].num_allocs == 1
         # Fallback decomposition should be used (H gate)
         assert "Hadamard" in specs["resources"].gate_types
 
@@ -510,4 +440,4 @@ class TestSpecsGraphModeExclusive:
 
         # No work wires available (2 device wires - 2 tape wires = 0)
         assert specs["num_device_wires"] == 2
-        assert specs["num_tape_wires"] == 2
+        assert specs["resources"].num_allocs == 2

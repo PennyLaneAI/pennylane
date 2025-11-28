@@ -21,11 +21,10 @@ import warnings
 from collections import defaultdict
 from collections.abc import Callable
 from functools import partial
-from typing import Any, Literal
 
 import pennylane as qml
 
-from .resource import Resources, SpecsDict, specs_from_tape
+from .resource import SpecsResources, SpecsResult, resources_from_tape
 
 _RESOURCE_TRACKING_FILEPATH = "__qml_specs_qjit_resources.json"
 
@@ -34,7 +33,7 @@ def _get_absolute_import_path(fn):
     return f"{inspect.getmodule(fn).__name__}.{fn.__name__}"
 
 
-def _specs_qnode(qnode, level, compute_depth, *args, **kwargs) -> list[SpecsDict] | SpecsDict:
+def _specs_qnode(qnode, level, compute_depth, *args, **kwargs) -> SpecsResult:
     """Returns information on the structure and makeup of provided QNode.
 
     Dictionary keys:
@@ -60,48 +59,27 @@ def _specs_qnode(qnode, level, compute_depth, *args, **kwargs) -> list[SpecsDict
         dict[str, Union[defaultdict,int]]: dictionaries that contain QNode specifications
     """
 
-    infos = []
+    resources = {}
     batch, _ = qml.workflow.construct_batch(qnode, level=level)(*args, **kwargs)
 
-    # These values are the same for the whole batch, so we can just get them once
-    config = qml.workflow.construct_execution_config(qnode)(*args, **kwargs)
-    gradient_fn = config.gradient_method
+    for i, tape in enumerate(batch):
+        resources[i] = resources_from_tape(tape, compute_depth)
 
-    for tape in batch:
-        info = specs_from_tape(tape, compute_depth)
-        info["num_device_wires"] = len(qnode.device.wires or tape.wires)
-        info["num_tape_wires"] = tape.num_wires
-        info["device_name"] = qnode.device.name
-        info["level"] = level
-        info["gradient_options"] = qnode.gradient_kwargs
-        info["interface"] = qnode.interface
-        info["diff_method"] = (
-            _get_absolute_import_path(qnode.diff_method)
-            if callable(qnode.diff_method)
-            else qnode.diff_method
-        )
+    if len(resources) == 1:
+        resources = next(iter(resources.values()))
 
-        if isinstance(gradient_fn, qml.transforms.core.TransformDispatcher):
-            info["gradient_fn"] = _get_absolute_import_path(gradient_fn)
-
-            try:
-                info["num_gradient_executions"] = len(gradient_fn(tape)[0])
-            except Exception as e:  # pylint: disable=broad-except
-                # In the case of a broad exception, we don't want the `qml.specs` transform
-                # to fail. Instead, we simply indicate that the number of gradient executions
-                # is not supported for the reason specified.
-                info["num_gradient_executions"] = f"NotSupported: {str(e)}"
-        else:
-            info["gradient_fn"] = gradient_fn
-
-        infos.append(info)
-
-    return infos[0] if len(infos) == 1 else infos
+    return SpecsResult(
+        resources=resources,
+        num_device_wires=len(qnode.device.wires),
+        device_name=qnode.device.name,
+        level=level,
+        shots=qnode.shots,
+    )
 
 
 def _specs_qjit_device_level_tracking(
     qjit, original_qnode, pass_pipeline_wrapped, compute_depth, *args, **kwargs
-) -> Resources:  # pragma: no cover
+) -> SpecsResources:  # pragma: no cover
     # pylint: disable=import-outside-toplevel
     # Have to import locally to prevent circular imports as well as accounting for Catalyst not being installed
     import catalyst
@@ -157,15 +135,14 @@ def _specs_qjit_device_level_tracking(
         with open(_RESOURCE_TRACKING_FILEPATH, encoding="utf-8") as f:
             resource_data = json.load(f)
 
-        return Resources(
-            num_wires=resource_data["num_wires"],
-            num_gates=resource_data["num_gates"],
-            gate_types=defaultdict(int, resource_data["gate_types"]),
-            gate_sizes=defaultdict(
-                int, {int(k): v for (k, v) in resource_data["gate_sizes"].items()}
-            ),
+        # TODO: Once measurements are tracked for runtime specs, can include that data here
+        # WARN ABOUT THIS
+        return SpecsResources(
+            gate_types=resource_data["gate_types"],
+            gate_sizes={int(k): v for (k, v) in resource_data["gate_sizes"].items()},
+            measurements={},  # Not tracked at the moment
+            num_allocs=resource_data["num_wires"],
             depth=resource_data["depth"],
-            shots=original_qnode.shots,  # TODO: Can this ever be overriden during compilation?
         )
     finally:
         # Ensure we clean up the resource tracking file
@@ -175,7 +152,7 @@ def _specs_qjit_device_level_tracking(
 
 def _specs_qjit_intermediate_passes(
     qjit, original_qnode, level, *args, **kwargs
-) -> Resources:  # pragma: no cover
+) -> SpecsResources | dict[str, SpecsResources]:  # pragma: no cover
     # pylint: disable=import-outside-toplevel
     from catalyst.from_plxpr import transforms_to_passes
     from catalyst.python_interface.inspection import mlir_specs
@@ -233,7 +210,7 @@ def _specs_qjit_intermediate_passes(
         for trans_level in trans_levels:
             # User transforms always come first, so level and trans_level align correctly
             tape = qml.workflow.construct_tape(original_qnode, level=trans_level)(*args, **kwargs)
-            info = specs_from_tape(tape, False)
+            res = resources_from_tape(tape, False)
 
             trans_name = (
                 tape_transforms[trans_level - 1].transform.__name__
@@ -246,7 +223,7 @@ def _specs_qjit_intermediate_passes(
                 while f"{trans_name}-{rep}" in resources:
                     rep += 1
                 trans_name += f"-{rep}"
-            resources[trans_name] = info["resources"]
+            resources[trans_name] = res
 
     # Handle MLIR levels
     mlir_levels = (
@@ -263,13 +240,12 @@ def _specs_qjit_intermediate_passes(
                 for size, count in sizes.items():
                     gate_sizes[size] += count
 
-            res_resources = Resources(
-                num_wires=res.num_allocs,
-                num_gates=sum(gate_sizes.values()),
+            res_resources = SpecsResources(
                 gate_types={r: sum(sizes.values()) for r, sizes in res.operations.items()},
-                gate_sizes=gate_sizes,
+                gate_sizes=dict(gate_sizes),
+                measurements=dict(res.measurements),
+                num_allocs=res.num_allocs,
                 depth=None,  # Can't get depth for intermediate stages
-                shots=original_qnode.shots,  # TODO: Can this ever be overriden during compilation?
             )
             resources[level_name] = res_resources
 
@@ -282,7 +258,7 @@ def _specs_qjit_intermediate_passes(
 
 
 # NOTE: Some information is missing from specs_qjit compared to specs_qnode
-def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> SpecsDict:  # pragma: no cover
+def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> SpecsResult:  # pragma: no cover
     # pylint: disable=import-outside-toplevel
     # Have to import locally to prevent circular imports as well as accounting for Catalyst not being installed
     # Integration tests for this function are within the Catalyst frontend tests, it is not covered by unit tests
@@ -320,29 +296,20 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> SpecsDict:  # pr
     else:
         raise NotImplementedError(f"Unsupported level argument '{level}' for QJIT'd code.")
 
-    info = SpecsDict()
-
-    info["resources"] = resources
-
-    info["num_device_wires"] = len(device.wires)
-    info["device_name"] = device.name
-    info["level"] = level
-    info["gradient_options"] = original_qnode.gradient_kwargs
-    info["interface"] = original_qnode.interface
-    info["diff_method"] = (
-        _get_absolute_import_path(original_qnode.diff_method)
-        if callable(original_qnode.diff_method)
-        else original_qnode.diff_method
+    return SpecsResult(
+        resources=resources,
+        shots=original_qnode.shots,
+        device_name=device.name,
+        num_device_wires=len(device.wires),
+        level=level,
     )
-
-    return info
 
 
 def specs(
     qnode,
-    level: Literal["top", "user", "device", "gradient"] | int | slice = "gradient",
+    level: str | int | slice = "gradient",
     compute_depth: bool = True,
-) -> Callable[..., list[dict[str, Any]] | dict[str, Any]]:
+) -> Callable[..., SpecsResult]:
     r"""Resource information about a quantum circuit.
 
     This transform converts a QNode into a callable that provides resource information
