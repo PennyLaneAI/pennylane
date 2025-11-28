@@ -23,7 +23,7 @@
   [(#8692)](https://github.com/PennyLaneAI/pennylane/pull/8692)
   
   In the following example, a measurement of the ``XY`` Pauli product on wires ``0`` and ``2`` is performed
-  using :func:`~pennylane.ops.pauli_measure`, followed by application of a Pauli X gate conditional on
+  using :func:`~pennylane.ops.pauli_measure`, followed by application of a :class:`~.PauliX` gate conditional on
   the outcome of the PPM:
 
   ```python
