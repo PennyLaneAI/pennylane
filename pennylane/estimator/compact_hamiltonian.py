@@ -319,43 +319,14 @@ class PauliHamiltonian:
         self._num_qubits = num_qubits
         self._one_norm = one_norm
 
-        if commuting_groups is not None:
-            for group in commuting_groups:
-                _validate_pauli_dist(group)  #  ensure the groups are formatted correctly
+        (max_weight, num_pauli_words, pauli_dist, commuting_groups) = _validate_inputs(
+            num_qubits, num_pauli_words, max_weight, pauli_dist, commuting_groups
+        )
 
-            self._commuting_groups = commuting_groups
-            self._pauli_dist = _pauli_dist_from_commuting_groups(commuting_groups)
-            self._max_weight = max(len(pw) for pw in self.pauli_dist.keys())
-            self._num_pauli_words = sum(self.pauli_dist.values())
-            return
-
-        if pauli_dist is not None:
-            _validate_pauli_dist(pauli_dist)
-
-            self._pauli_dist = pauli_dist
-            self._commuting_groups = None
-            self._max_weight = max(len(pw) for pw in pauli_dist.keys())
-            self._num_pauli_words = sum(pauli_dist.values())
-            return
-
-        if num_pauli_words is None:
-            raise ValueError(
-                "One of the following sets of inputs must be provided (not None) in order to"
-                " instantiate a valid PauliHamiltonian:\n - `commuting_groups`\n - `pauli_dist`\n"
-                " - `num_pauli_words`"
-            )
-
-        if max_weight and (max_weight > num_qubits):
-            raise ValueError(
-                "`max_weight` represents the maximum number of qubits any Pauli word acts upon,"
-                "this value must be less than or equal to the total number of qubits the "
-                f"Hamiltonian acts on. Got `num_qubits` = {num_qubits} and `max_weight` = {max_weight}"
-            )
-
-        self._max_weight = max_weight or num_qubits
+        self._max_weight = max_weight
         self._num_pauli_words = num_pauli_words
-        self._pauli_dist = None
-        self._commuting_groups = None
+        self._pauli_dist = pauli_dist
+        self._commuting_groups = commuting_groups
 
     def __repr__(self):
         """The repr dunder method for the PauliHamiltonian class."""
@@ -456,3 +427,59 @@ def _pauli_dist_from_commuting_groups(commuting_groups: tuple[dict]):
             total_pauli_dist[pauli_word] += frequency
 
     return total_pauli_dist
+
+
+def _validate_inputs(
+    num_qubits: int,
+    num_pauli_words: int | None,
+    max_weight: int | None,
+    pauli_dist: dict | None,
+    commuting_groups: tuple[dict] | None,
+) -> tuple:
+    """Helper function to validate the inputs of PauliHamiltonian"""
+    if commuting_groups is not None:
+        for group in commuting_groups:
+            _validate_pauli_dist(group)  #  ensure the groups are formatted correctly
+
+        final_commuting_groups = commuting_groups
+        final_pauli_dist = _pauli_dist_from_commuting_groups(commuting_groups)
+        final_max_weight = max(len(pw) for pw in final_pauli_dist.keys())
+        final_num_pauli_words = sum(final_pauli_dist.values())
+        return (
+            final_max_weight,
+            final_num_pauli_words,
+            final_pauli_dist,
+            final_commuting_groups,
+        )
+
+    if pauli_dist is not None:
+        _validate_pauli_dist(pauli_dist)
+
+        final_pauli_dist = pauli_dist
+        final_commuting_groups = None
+        final_max_weight = max(len(pw) for pw in pauli_dist.keys())
+        final_num_pauli_words = sum(pauli_dist.values())
+
+        return (
+            final_max_weight,
+            final_num_pauli_words,
+            final_pauli_dist,
+            final_commuting_groups,
+        )
+
+    if num_pauli_words is None:
+        raise ValueError(
+            "One of the following sets of inputs must be provided (not None) in order to"
+            " instantiate a valid PauliHamiltonian:\n - `commuting_groups`\n - `pauli_dist`\n"
+            " - `num_pauli_words`"
+        )
+
+    if max_weight and (max_weight > num_qubits):
+        raise ValueError(
+            "`max_weight` represents the maximum number of qubits any Pauli word acts upon,"
+            "this value must be less than or equal to the total number of qubits the "
+            f"Hamiltonian acts on. Got `num_qubits` = {num_qubits} and `max_weight` = {max_weight}"
+        )
+
+    final_max_weight = max_weight or num_qubits
+    return (final_max_weight, num_pauli_words, None, None)
