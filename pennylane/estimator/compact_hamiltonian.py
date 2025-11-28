@@ -303,7 +303,7 @@ class PauliHamiltonian:
         >>> pauli_ham
         PauliHamiltonian(num_qubits=40, num_pauli_words=100, max_weight=2, one_norm=14.5)
         >>> pauli_ham.pauli_dist
-        defaultdict(<class 'int'>, {'X': 40, 'XX': 30, 'YY': 30})
+        {'X': 40, 'XX': 30, 'YY': 30}
         >>> pauli_ham.commuting_groups
         ({'X': 40, 'XX': 30}, {'YY': 30})
 
@@ -425,7 +425,7 @@ def _pauli_dist_from_commuting_groups(commuting_groups: tuple[dict]):
     total_pauli_dist = Counter()
     for group in commuting_groups:
         total_pauli_dist.update(group)
-    return total_pauli_dist
+    return dict(total_pauli_dist)
 
 
 def _preprocess_inputs(
