@@ -2,7 +2,7 @@
 
 <h3>New features since last release</h3>
 
-* Extended the functionality of :meth:`~.estimator.ResourceConfig.set_precision` by adding 
+* Extended the functionality of :meth:`~.estimator.resource_config.ResourceConfig.set_precision` by adding 
   a keyword argument `resource_key` which allows users to set precisions for a larger variety of 
   resource operators.
   [(#8561)](https://github.com/PennyLaneAI/pennylane/pull/8561)
