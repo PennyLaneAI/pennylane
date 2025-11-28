@@ -603,6 +603,11 @@ class TestTransformProgramDunders:
         with pytest.raises(TransformError, match="already has a terminal transform"):
             _ = program + right
 
+    def test_actual_final_transform_error(self):
+        """qml.gradients.param_shift + qml.gradients.hadamard should raise an error since both are final transforms."""
+        with pytest.raises(TransformError, match="already has a terminal transform"):
+            _ = qml.gradients.param_shift + qml.gradients.hadamard_grad
+
     def test_repr_program(self):
         """Test the string representation of a program."""
         transform_program = TransformProgram()

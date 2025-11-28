@@ -295,8 +295,13 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
 
         if isinstance(other, TransformDispatcher):
             other_container = TransformContainer(other)
+            # --- Fix: check if both are final transforms ---
+            if self_container.final_transform and other_container.final_transform:
+                raise TransformError("The transform program already has a terminal transform.")
             return TransformProgram([self_container, other_container])
         if isinstance(other, TransformContainer):
+            if self_container.final_transform and other.final_transform:
+                raise TransformError("The transform program already has a terminal transform.")
             return TransformProgram([self_container, other])
         if isinstance(other, TransformProgram):
             program = TransformProgram([self_container])
@@ -319,6 +324,8 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
             if n < 0:
                 raise ValueError("Cannot multiply transform dispatcher by negative integer")
             # Convert to container (no args/kwargs) and repeat
+            if self.final_transform and n > 1:
+                raise TransformError("The transform program already has a terminal transform.")
             container = TransformContainer(self)
             return TransformProgram([container] * n)
         return NotImplemented
@@ -538,9 +545,14 @@ class TransformContainer:  # pylint: disable=too-many-instance-attributes
         from .transform_program import TransformProgram  # pylint: disable=import-outside-toplevel
 
         if isinstance(other, TransformContainer):
+            # --- Fix: check if both are final transforms ---
+            if self.final_transform and other.final_transform:
+                raise TransformError("The transform program already has a terminal transform.")
             return TransformProgram([self, other])
         if isinstance(other, TransformDispatcher):
             other_container = TransformContainer(other)
+            if self.final_transform and other_container.final_transform:
+                raise TransformError("The transform program already has a terminal transform.")
             return TransformProgram([self, other_container])
         if isinstance(other, TransformProgram):
             program = TransformProgram([self])
@@ -562,6 +574,8 @@ class TransformContainer:  # pylint: disable=too-many-instance-attributes
         if isinstance(n, int):
             if n < 0:
                 raise ValueError("Cannot multiply transform container by negative integer")
+            if self.final_transform and n > 1:
+                raise TransformError("The transform program already has a terminal transform.")
             return TransformProgram([self] * n)
         return NotImplemented
 
