@@ -26,6 +26,7 @@ from catalyst.passes.xdsl_plugin import getXDSLPluginAbsolutePath
 
 import pennylane as qml
 from pennylane.compiler.python_compiler.transforms import TreeTraversalPass, tree_traversal_pass
+from pennylane.exceptions import CompileError
 
 """
 Not supported features:
@@ -1212,6 +1213,7 @@ class TestTreeTraversalPassIfStatement:
         @qml.qjit(
             target="mlir",
             pass_plugins=[getXDSLPluginAbsolutePath()],
+            autograph=True,
         )
         @qml.set_shots(shots)
         @tree_traversal_pass
@@ -1812,9 +1814,10 @@ class TestTreeTraversalPassStaticForLoop:
         @qml.qjit(
             target="mlir",
             pass_plugins=[getXDSLPluginAbsolutePath()],
+            autograph=True,
         )
-        @qml.set_shots(shots)
         @tree_traversal_pass
+        @qml.set_shots(shots)
         @qml.qnode(dev)
         def circuit():
             return test_circuit()
@@ -1871,6 +1874,7 @@ class TestTreeTraversalPassStaticForLoop:
         @qml.qjit(
             target="mlir",
             pass_plugins=[getXDSLPluginAbsolutePath()],
+            autograph=True,
         )
         @qml.set_shots(shots)
         @tree_traversal_pass
@@ -1894,3 +1898,57 @@ class TestTreeTraversalPassStaticForLoop:
         results1 = ref_func(*params)
 
         mcm_utils.validate_measurements(qml.expval, shots, results1, results0, batch_size=None)
+
+    @pytest.mark.usefixtures("enable_disable_plxpr")
+    def test_error_on_dynamic_loop(self):
+        """Test tree traversal pass raises error on a func with a dynamic for loop."""
+
+        qml.device("lightning.qubit", wires=3)
+
+        @qml.qjit(
+            target="mlir",
+            pass_plugins=[getXDSLPluginAbsolutePath()],
+            autograph=True,
+        )
+        @tree_traversal_pass
+        @qml.qnode(qml.device("lightning.qubit", wires=3))
+        def circuit(n):
+            for i in range(n):
+                qml.X(i)
+                qml.measure(i)
+            return qml.expval(qml.Z(0))
+
+        with pytest.raises(
+            CompileError,
+            match="Tree Traversal requires loops containing mid-circuit measurements to have ",
+        ):
+            circuit(3)
+
+    @pytest.mark.usefixtures("enable_disable_plxpr")
+    def test_error_on_bound_missed(self):
+        """Test tree traversal pass raises error on a func with a dynamic for loop."""
+
+        qml.device("lightning.qubit", wires=3)
+
+        @qml.qjit(
+            target="mlir",
+            pass_plugins=[getXDSLPluginAbsolutePath()],
+            autograph=True,
+        )
+        @tree_traversal_pass
+        @qml.qnode(qml.device("lightning.qubit", wires=3))
+        def circuit(n):
+            if n > 2:
+                k = 2
+            else:
+                k = 3
+
+            for i in range(k):
+                qml.X(i)
+                qml.measure(i)
+            return qml.expval(qml.Z(0))
+
+        with pytest.raises(
+            CompileError, match="the bound seems to come from an operation with regions,"
+        ):
+            circuit(3)

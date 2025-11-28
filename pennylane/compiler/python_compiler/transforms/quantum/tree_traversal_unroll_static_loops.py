@@ -19,13 +19,12 @@ This module contains a rewrite pattern that unrolls static loops containing mid-
 """
 
 from xdsl.dialects import arith, builtin, scf
-from xdsl.ir import BlockArgument, Operation, SSAValue
+from xdsl.ir import Block, Operation, SSAValue
 from xdsl.pattern_rewriter import PatternRewriter, RewritePattern
 from xdsl.rewriter import InsertPoint
 
 from pennylane.compiler.python_compiler.dialects import quantum, stablehlo
 from pennylane.exceptions import CompileError
-
 
 from .tree_traversal_utils_tmp import print_mlir, print_ssa_values
 
@@ -74,26 +73,36 @@ class UnrollLoopPattern(RewritePattern):
     def unroll_loop(self, op: scf.ForOp, rewriter: PatternRewriter) -> None:
         """Unroll an scf.ForOp into separate branches for each operator."""
 
-        def find_constant_bound(bound: SSAValue) -> tuple[bool, Operation | None]:
+        def find_constant_bound(bound: SSAValue) -> tuple[bool, Operation | str]:
             """Find the constant value of a SSA in ForOp bounds"""
 
-            check_bound = bound
-            while True:
-                if isinstance(check_bound.owner, arith.ConstantOp):
-                    return True, check_bound.owner
-                if isinstance(check_bound.owner, stablehlo.ConstantOp):
-                    return True, check_bound.owner
-                if isinstance(check_bound, BlockArgument):
-                    return False, None
-                    # TODO: ^^^^^^^^^^
+            while bound := bound.owner:
+                if isinstance(bound, (arith.ConstantOp, stablehlo.ConstantOp)):
+                    return True, bound
+
+                elif isinstance(bound, Block):
+                    error_msg = "To resolve this issue, ensure that loop bounds are literals or compile-time constants (e.g., use `for i in range(5)` instead of `for i in range(n)` where n is a runtime variable)."
+
+                    return False, error_msg
+                    # TODO: ^^^^^^^^^^^^^^
                     # JAX sometimes hosts constants out of the regions they are defined in.
                     # Therefore, we might reach a BlockArgument when tracing back the origin of a bound,
                     # producing false negatives error here.
                     # We should trace back to the parent region and search for constants there.
-                if len(check_bound.owner.operands) == 0:
-                    return False, None
 
-                check_bound = check_bound.owner.operands[0]
+                elif len(bound.regions) > 0:
+
+                    error_msg = "Additionally, the bound seems to come from an operation with regions, which is not supported. Try to ensure that loop bounds are literals or compile-time constants and do not depend on operations with regions."
+                    return False, error_msg
+
+                elif len(bound.operands) == 0:
+
+                    error_msg = "The bound seems to be derived from an operation different than arith.ConstantOp or stablehlo.ConstantOp."
+                    return False, error_msg
+
+                else:
+                    # check_bound = check_bound.owner.operands[0]
+                    bound = bound.operands[0]
 
         ub_found, ub_op = find_constant_bound(op.ub)
         lb_found, lb_op = find_constant_bound(op.lb)
@@ -104,8 +113,9 @@ class UnrollLoopPattern(RewritePattern):
                 "Tree Traversal requires loops containing mid-circuit measurements to have "
                 "constant bounds and step values known at compile time. "
                 "The loop being compiled has dynamic bounds that cannot be determined statically. "
-                "To resolve this issue, ensure that loop bounds are literals or compile-time constants "
-                "(e.g., use `for i in range(5)` instead of `for i in range(n)` where n is a runtime variable)."
+                + (ub_op + " Error in the upper bound. " if isinstance(ub_op, str) else "")
+                + (lb_op + " Error in the lower bound. " if isinstance(lb_op, str) else "")
+                + (step_op + " Error in the step value. " if isinstance(step_op, str) else "")
             )
 
         def check_extract_value(bound: Operation) -> int:
