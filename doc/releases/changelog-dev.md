@@ -20,7 +20,7 @@
 
 <h3>Improvements 🛠</h3>
 
-* Arithmetic dunder methods (`__add__`, `__radd__`, `__mul__`, `__rmul__`) have been added to 
+* Arithmetic dunder methods (`__add__`, `__mul__`, `__rmul__`) have been added to 
   :class:`~.transforms.core.TransformDispatcher`, :class:`~.transforms.core.TransformContainer`, 
   and :class:`~.transforms.core.TransformProgram` to enable intuitive composition of transform 
   programs using `+` and `*` operators.
