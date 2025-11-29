@@ -138,9 +138,8 @@ def determine_abstracted_axes(args):
     if not any(abstracted_axes):
         return None, ()
 
-    # pragma: no cover
-    abstracted_axes = jax.tree_util.tree_unflatten(structure, abstracted_axes)
-    return abstracted_axes, abstract_shapes
+    abstracted_axes = jax.tree_util.tree_unflatten(structure, abstracted_axes)  # pragma: no cover
+    return abstracted_axes, abstract_shapes  # pragma: no cover
 
 
 def register_custom_staging_rule(

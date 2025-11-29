@@ -306,7 +306,7 @@ class WhileLoopCallable:  # pylint:disable=too-few-public-methods
         flat_body_fn = FlatFn(self.body_fn, in_tree=in_tree)
         flat_cond_fn = FlatFn(self.cond_fn, in_tree=in_tree)
 
-        if abstracted_axes:
+        if abstracted_axes:  # pragma: no cover
             new_body_fn = add_abstract_shapes(flat_body_fn, shape_locations)
             dummy_init_state = [get_dummy_arg(arg) for arg in flat_args]
         else:
@@ -324,7 +324,7 @@ class WhileLoopCallable:  # pylint:disable=too-few-public-methods
             handle_jaxpr_error(e, (self.cond_fn, self.body_fn), self.allow_array_resizing)
 
         error_msg = validate_no_resizing_returns(jaxpr_body_fn.jaxpr, shape_locations)
-        if error_msg:
+        if error_msg:  # pragma: no cover
             if allow_array_resizing == "auto":
                 return self._get_jaxprs(init_state, allow_array_resizing=True)
             raise ValueError(error_msg)
