@@ -48,7 +48,7 @@ def _get_shape_for_array(x, abstract_shapes: list, previous_ints: list) -> dict:
         return {}
 
     abstract_axes = {}
-    for i, s in enumerate(getattr(x, "shape", ())):
+    for i, s in enumerate(getattr(x, "shape", ())):  # pragma: no cover
         if not isinstance(s, int):  #  if not int, then abstract
             found = False
             # check if the shape tracer is one we have already encountered
@@ -138,6 +138,7 @@ def determine_abstracted_axes(args):
     if not any(abstracted_axes):
         return None, ()
 
+    # pragma: no cover
     abstracted_axes = jax.tree_util.tree_unflatten(structure, abstracted_axes)
     return abstracted_axes, abstract_shapes
 
@@ -166,7 +167,8 @@ def register_custom_staging_rule(
     # and https://github.com/jax-ml/jax/blob/9e62994bce7c7fcbb2f6a50c9ef89526cd2c2be6/jax/_src/lax/lax.py#L208
     # for reference to how jax is handling staging rules for dynamic shapes in v0.4.28
     # JAX 0.6.2 to 0.7.0 introduced breaking changes in custom staging rules for dynamic shapes:
-    # DynamicJaxprTracer constructor now requires the var as 3rd argument (previously created internally)
+    # 1. DynamicJaxprTracer constructor now requires the var as 3rd argument (previously created internally)
+    # 2. TracingEqn must be used instead of JaxprEqn for trace.frame.add_eqn
     #
     # This implementation creates vars first using trace.frame.newvar() before constructing
     # DynamicJaxprTracer instances, fixing dynamic shape support that was broken in JAX 0.7.0.
@@ -190,7 +192,7 @@ def register_custom_staging_rule(
         new_shape = [s if isinstance(s, int) else env[s] for s in outvar.aval.shape]
         if all(isinstance(s, int) for s in outvar.aval.shape):
             new_aval = jax.core.ShapedArray(tuple(new_shape), outvar.aval.dtype)
-        else:
+        else:  # pragma: no cover
             new_aval = jax.core.DShapedArray(tuple(new_shape), outvar.aval.dtype)
         # JAX 0.7.0: Create variable first, then pass to DynamicJaxprTracer
         new_var = jaxpr_trace.frame.newvar(new_aval)
@@ -221,7 +223,7 @@ def register_custom_staging_rule(
         else:
             out_tracers, returned_vars = (), ()
 
-        # JAX 0.7.0: Use t.val to get var from tracer
+        # JAX 0.7.0: Use t.val to get var from tracer, and TracingEqn for frame.add_eqn
         invars = [t.val for t in tracers]
         eqn = jax.core.new_jaxpr_eqn(
             invars,

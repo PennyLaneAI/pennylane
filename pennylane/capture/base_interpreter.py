@@ -82,7 +82,7 @@ def _fill_in_shape_with_dyn_shape(dyn_shape: tuple["jax.core.Tracer"], shape: tu
     for s in shape:
         if s is not None:
             new_shape.append(s)
-        else:
+        else:  # pragma: no cover
             # pull from iterable of dynamic shapes
             next_s = next(dyn_shape_iter)
             if not qml.math.is_abstract(next_s):
