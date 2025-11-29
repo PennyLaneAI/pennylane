@@ -299,6 +299,7 @@ def _generalized_pauli_decompose_sparse(  # pylint: disable=too-many-statements,
     # Sum duplicate (row, col) entries as COO format allows multiple entries
     # for the same position, which must be combined before processing.
     sparse_matrix.sum_duplicates()
+    sparse_matrix.eliminate_zeros()
     shape = sparse_matrix.shape
 
     if padding:
@@ -323,8 +324,6 @@ def _generalized_pauli_decompose_sparse(  # pylint: disable=too-many-statements,
 
     # Decompose each nonzero matrix entry into Pauli word contributions
     for row, col, value in zip(rows, cols, data):
-        if value == 0:
-            continue
         contributions = [("", complex(value))]
 
         # Process each qubit position (MSB first)
@@ -380,10 +379,10 @@ def _generalized_pauli_decompose_sparse(  # pylint: disable=too-many-statements,
 
 def _validate_sparse_matrix_shape(shape):
     """Validate that a sparse matrix has the correct shape for decomposition.
-    
+
     Args:
         shape: Matrix shape tuple (rows, cols)
-        
+
     Raises:
         ValueError: If shape is invalid for decomposition
     """
@@ -394,7 +393,7 @@ def _validate_sparse_matrix_shape(shape):
             f"The matrix should be square, got {shape}. Use 'padding=True' for rectangular matrices."
         )
     n = int(math.log2(shape[0]))
-    if shape[0] != 2 ** n:
+    if shape[0] != 2**n:
         raise ValueError(
             f"Dimension of the matrix should be a power of 2, got {shape}. Use 'padding=True' for these matrices."
         )
@@ -402,10 +401,10 @@ def _validate_sparse_matrix_shape(shape):
 
 def _check_hermitian_sparse(H):
     """Check if a sparse matrix is Hermitian.
-    
+
     Args:
         H: Sparse matrix to check
-        
+
     Raises:
         ValueError: If the matrix is not Hermitian
     """
