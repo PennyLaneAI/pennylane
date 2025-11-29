@@ -1010,10 +1010,7 @@ class QuantumScript:
         """
         if self._specs is None:
             resources, errors = qml.resource.resource.resources_from_tape(self, compute_errs=True)
-            self._specs = qml.resource.resource.SpecsResult(
-                resources=resources, shots=self.shots
-            ).to_dict()
-            self._specs["errors"] = errors
+            self._specs = {"resources": resources, "shots": self.shots, "errors": errors}
         return self._specs
 
     # pylint: disable=too-many-arguments, too-many-positional-arguments

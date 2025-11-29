@@ -231,6 +231,29 @@ class SpecsResources:
     def __post_init__(self):
         assert sum(self.gate_types.values()) == sum(self.gate_sizes.values())
 
+    def to_dict(self) -> dict[str, Any]:
+        """Convert the SpecsResources to a dictionary."""
+        return asdict(self)
+
+    def __getitem__(self, key):
+        if key in (field.name for field in fields(self)):
+            return getattr(self, key)
+
+        match key:
+            # Fields that used to be included in specs output prior to PL version 0.44
+            case "shots":
+                raise KeyError(
+                    "shots is no longer included within specs's resources, check the top-level object instead."
+                )
+            case "num_wires":
+                raise KeyError(
+                    "num_wires has been renamed to num_allocs to more accurate describe what it measures."
+                )
+
+        raise KeyError(
+            f"key '{key}' not available. Options are {[field.name for field in fields(self)]}"
+        )
+
     @property
     def num_gates(self) -> int:
         return sum(self.gate_types.values())
