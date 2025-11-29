@@ -142,7 +142,9 @@ def handle_jaxpr_error(
     about 'Incompatible shapes for broadcasting'."""
     import jax  # pylint: disable=import-outside-toplevel
 
-    if "Incompatible shapes for broadcasting" in str(e) and jax.config.jax_dynamic_shapes:  # pragma: no cover
+    if (
+        "Incompatible shapes for broadcasting" in str(e) and jax.config.jax_dynamic_shapes
+    ):  # pragma: no cover
         closures = sum(((fn.__closure__ or ()) for fn in fns), ())
         if any(_has_dynamic_shape(i.cell_contents) for i in closures):
             msg = (
@@ -262,5 +264,11 @@ def loop_determine_abstracted_axes(
     if not any(calculator.abstracted_axes):
         return None, [], []
 
-    abstracted_axes = jax.tree_util.tree_unflatten(structure, calculator.abstracted_axes)  # pragma: no cover
-    return abstracted_axes, calculator.abstract_shapes, calculator.shape_locations  # pragma: no cover
+    abstracted_axes = jax.tree_util.tree_unflatten(
+        structure, calculator.abstracted_axes
+    )  # pragma: no cover
+    return (
+        abstracted_axes,
+        calculator.abstract_shapes,
+        calculator.shape_locations,
+    )  # pragma: no cover
