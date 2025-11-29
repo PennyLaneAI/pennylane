@@ -269,11 +269,11 @@ class SpecsResources:
 
 @dataclass(frozen=True)
 class SpecsResult:
-    resources: SpecsResources | dict[int | str, SpecsResources] = None
-    shots: Shots = None
     device_name: str = None
     num_device_wires: int = None
+    shots: Shots = None
     level: Any = None
+    resources: SpecsResources | dict[int | str, SpecsResources] = None
 
     def to_dict(self) -> dict[str, Any]:
         """Convert the SpecsResources to a dictionary."""

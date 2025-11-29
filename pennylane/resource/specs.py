@@ -25,37 +25,15 @@ import pennylane as qml
 
 from .resource import SpecsResources, SpecsResult, resources_from_tape
 
+# Used for device-level qjit resource tracking
 _RESOURCE_TRACKING_FILEPATH = "__qml_specs_qjit_resources.json"
-
-
-def _get_absolute_import_path(fn):
-    return f"{inspect.getmodule(fn).__name__}.{fn.__name__}"
 
 
 def _specs_qnode(qnode, level, compute_depth, *args, **kwargs) -> SpecsResult:
     """Returns information on the structure and makeup of provided QNode.
 
-    Dictionary keys:
-        * ``"num_operations"`` number of operations in the qnode
-        * ``"num_observables"`` number of observables in the qnode
-        * ``"resources"``: a :class:`~.resource.Resources` object containing resource quantities used by the qnode
-        * ``"errors"``: combined algorithmic errors from the quantum operations executed by the qnode
-        * ``"num_used_wires"``: number of wires used by the circuit
-        * ``"num_device_wires"``: number of wires in device
-        * ``"depth"``: longest path in directed acyclic graph representation
-        * ``"device_name"``: name of QNode device
-        * ``"gradient_options"``: additional configurations for gradient computations
-        * ``"interface"``: autodiff framework to dispatch to for the qnode execution
-        * ``"diff_method"``: a string specifying the differntiation method
-        * ``"gradient_fn"``: executable to compute the gradient of the qnode
-
-    Potential Additional Information:
-        * ``"num_trainable_params"``: number of individual scalars that are trainable
-        * ``"num_gradient_executions"``: number of times circuit will execute when
-                calculating the derivative
-
     Returns:
-        dict[str, Union[defaultdict,int]]: dictionaries that contain QNode specifications
+        dict[SpecsResult]: result object that contains QNode specifications
     """
 
     resources = {}
@@ -167,14 +145,12 @@ def specs(
         qnode (.QNode | .QJIT): the QNode to calculate the specifications for.
 
     Keyword Args:
-        level (str, int, slice): An indication of what transforms to apply before computing the resource information.
-            Check :func:`~.workflow.get_transform_program` for more information on the allowed values and usage details of
-            this argument.
-        compute_depth (bool): Whether to compute the depth of the circuit. If ``False``, the depth will not be included in the returned information.
+        level (str | int | slice | iter[int]): An indication of what transforms to apply before computing the resource information.
+        compute_depth (bool): Whether to compute the depth of the circuit. If ``False``, the depth will not be included in the returned information. Default: True
 
     Returns:
         A function that has the same argument signature as ``qnode``. This function
-        returns a dictionary (or a list of dictionaries) of information about qnode structure.
+        returns a :class:`~.resource.SpecsResult` object containing information about qnode structure.
 
     **Example**
 
@@ -199,27 +175,17 @@ def specs(
 
     >>> from pprint import pprint
     >>> pprint(qml.specs(circuit)(x, add_ry=False))
-    {'device_name': 'default.qubit',
-    'diff_method': 'parameter-shift',
-    'errors': {'SpectralNormError': SpectralNormError(0.42998560822421455)},
-    'gradient_fn': 'pennylane.gradients.parameter_shift.param_shift',
-    'gradient_options': {'shifts': 0.7853981633974483},
-    'interface': 'auto',
-    'level': 'gradient',
-    'num_device_wires': 2,
-    'num_gradient_executions': 2,
-    'num_observables': 1,
-    'num_tape_wires': 2,
-    'num_trainable_params': 1,
-    'resources': Resources(num_wires=2,
-                            num_gates=98,
-                            gate_types=defaultdict(<class 'int'>,
-                                                {'CNOT': 1,
+    SpecsResult(device_name='default.qubit',
+                num_device_wires=2,
+                shots=Shots(total_shots=None, shot_vector=()),
+                level='gradient',
+                resources=SpecsResources(gate_types={'CNOT': 1,
                                                     'Evolution': 96,
-                                                    'RX': 1}),
-                            gate_sizes=defaultdict(<class 'int'>, {1: 97, 2: 1}),
-                            depth=98,
-                            shots=Shots(total_shots=None, shot_vector=()))}
+                                                    'RX': 1},
+                                        gate_sizes={1: 97, 2: 1},
+                                        measurements={'probs': 1},
+                                        num_allocs=2,
+                                        depth=98))
 
     .. details::
         :title: Usage Details
@@ -249,51 +215,49 @@ def specs(
         return the same results:
 
         >>> print(qml.specs(circuit, level=0)(0.1)["resources"])
-        num_wires: 2
-        num_gates: 6
-        depth: 6
-        shots: Shots(total=None)
-        gate_types:
-        {'RandomLayers': 1, 'RX': 2, 'SWAP': 1, 'PauliX': 2}
-        gate_sizes:
-        {2: 2, 1: 4}
+            Total qubit allocations: 2
+            Total gates: 6
+            Circuit depth: 6
+
+            Gate types:
+            RandomLayers: 1
+            RX: 2
+            SWAP: 1
+            PauliX: 2
+
+            Measurements:
+            expval: 1
 
         We then check the resources after applying all transforms:
 
         >>> print(qml.specs(circuit, level="device")(0.1)["resources"])
-        num_wires: 2
-        num_gates: 2
-        depth: 1
-        shots: Shots(total=None)
-        gate_types:
-        {'RY': 1, 'RX': 1}
-        gate_sizes:
-        {1: 2}
+        Total qubit allocations: 2
+        Total gates: 2
+        Circuit depth: 1
+
+        Gate types:
+        RY: 1
+        RX: 1
+
+        Measurements:
+        expval: 1
 
         We can also notice that ``SWAP`` and ``PauliX`` are not present in the circuit if we set ``level=2``:
 
         >>> print(qml.specs(circuit, level=2)(0.1)["resources"])
-        num_wires: 2
-        num_gates: 3
-        depth: 3
-        shots: Shots(total=None)
-        gate_types:
-        {'RandomLayers': 1, 'RX': 2}
-        gate_sizes:
-        {2: 1, 1: 2}
+        Total qubit allocations: 2
+        Total gates: 3
+        Circuit depth: 3
 
-        If we attempt to apply only the ``merge_rotations`` transform, we end up with only one trainable object, which is in ``RandomLayers``:
+        Gate types:
+        RandomLayers: 1
+        RX: 2
 
-        >>> qml.specs(circuit, level=slice(2, 3))(0.1)["num_trainable_params"]
-        1
+        Measurements:
+        expval: 1
 
-        However, if we apply all transforms, ``RandomLayers`` is decomposed into an ``RY`` and an ``RX``, giving us two trainable objects:
-
-        >>> qml.specs(circuit, level="device")(0.1)["num_trainable_params"]
-        2
-
-        If a QNode with a tape-splitting transform is supplied to the function, with the transform included in the desired transforms, a dictionary
-        is returned for each resulting tape:
+        If a QNode with a tape-splitting transform is supplied to the function, with the transform included in the desired transforms, the "resources"
+        object is instead returned as a dictionary with a value for each resulting tape:
 
         .. code-block:: python
 
@@ -307,8 +271,18 @@ def specs(
                 qml.RandomLayers(qml.numpy.array([[1.0, 2.0]]), wires=(0, 1))
                 return qml.expval(H)
 
-        >>> len(qml.specs(circuit, level="user")())
-        2
+        >>> from pprint import pprint
+        >>> pprint(qml.specs(circuit, level="user")()["resources"])
+        {0: SpecsResources(gate_types={'RandomLayers': 1},
+                        gate_sizes={2: 1},
+                        measurements={'expval': 1},
+                        num_allocs=2,
+                        depth=1),
+        1: SpecsResources(gate_types={'RandomLayers': 1},
+                        gate_sizes={2: 1},
+                        measurements={'expval': 1},
+                        num_allocs=3,
+                        depth=1)}
     """
     # pylint: disable=import-outside-toplevel
     # Have to import locally to prevent circular imports as well as accounting for Catalyst not being installed
