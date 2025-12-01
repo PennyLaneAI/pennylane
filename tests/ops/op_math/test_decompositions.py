@@ -978,6 +978,99 @@ samples_su2_su2 = [
     ),
 ]
 
+##############################
+# NEW TESTS FOR 2-CNOT CASE #
+##############################
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize("U", samples_2_cnots)
+def test_compute_num_cnots_identifies_2_cnot(U):
+    """Test that the new Shende–Bullock–Markov criterion correctly
+    classifies 2-CNOT unitaries."""
+    U = qml.math.convert_to_su4(np.array(U))
+    assert _compute_num_cnots(U) == 2
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize("wires", [[0, 1], ["a", "b"], [3, 2], ["c", 0]])
+@pytest.mark.parametrize("U", samples_2_cnots)
+def test_two_qubit_decomposition_2_cnots_gate_count(U, wires):
+    """Test that the dispatcher selects the new 2-CNOT decomposition
+    and that the resulting circuit actually contains exactly 2 CNOTs."""
+    U = qml.math.convert_to_su4(np.array(U))
+
+    ops = two_qubit_decomposition(U, wires=wires)
+
+    # Extract only CNOTs
+    cnot_ops = [op for op in ops if isinstance(op, qml.CNOT)]
+
+    assert len(cnot_ops) == 2, "The 2-CNOT decomposition must emit exactly 2 CNOT gates."
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize("wires", [[0, 1], ["a", "b"], [3, 2], ["c", 0]])
+@pytest.mark.parametrize("U", samples_2_cnots)
+def test_two_qubit_decomposition_2_cnots_correctness(U, wires):
+    """Test that the new 2-CNOT decomposition reconstructs the matrix."""
+
+    # Ensure U is in SU(4)
+    U = qml.math.convert_to_su4(np.array(U))
+
+    # Manually compute invariants to verify against internal logic
+    E = np.array([[1, 1j, 0, 0], [0, 0, 1j, 1], [0, 0, 1j, -1], [1, -1j, 0, 0]]) / np.sqrt(2)
+    E_dag = E.conj().T
+    u_mag = E_dag @ U @ E
+    gamma = u_mag @ u_mag.T
+
+    # Trace Invariants
+    tr_g = np.trace(gamma)
+    tr_g2 = np.trace(gamma @ gamma)
+
+    # Expected cosines from trace
+    sum_cos = -tr_g.real / 2
+    sum_sq_cos = (tr_g2.real + 4) / 4
+    prod_cos = (sum_cos**2 - sum_sq_cos) / 2
+
+    discriminant = sum_cos**2 - 4 * prod_cos
+
+    ops = two_qubit_decomposition(U, wires=wires)
+    assert len(ops) == 8
+
+    tape = qml.tape.QuantumScript(ops)
+    obtained_matrix = qml.matrix(tape, wire_order=wires)
+
+    # Diff check
+    diff = U - obtained_matrix
+    error = np.linalg.norm(diff)
+
+    if error > 1e-5:
+        print(f"\n==== FAILED CASE: {wires} ====")
+        print(f"Error Norm: {error:.6f}")
+        print(f"Trace(gamma): {tr_g:.4f}")
+        print(f"Trace(gamma^2): {tr_g2:.4f}")
+        print(f"Discriminant: {discriminant:.6f} (Should be >= 0)")
+
+        # Check if spectrums match
+        # Get spectrum of U
+        evals_U = np.linalg.eigvals(gamma)
+        evals_U = evals_U[np.lexsort((evals_U.imag, evals_U.real))]  # Sort complex
+
+        # Get spectrum of Obtained
+        o_mag = E_dag @ obtained_matrix @ E
+        gamma_o = o_mag @ o_mag.T
+        evals_O = np.linalg.eigvals(gamma_o)
+        evals_O = evals_O[np.lexsort((evals_O.imag, evals_O.real))]
+
+        print(f"Eigs U: {np.round(evals_U, 3)}")
+        print(f"Eigs O: {np.round(evals_O, 3)}")
+        print(f"Spectrum Match? {np.allclose(evals_U, evals_O, atol=1e-5)}")
+
+        print("Diff Matrix (Top Left 2x2):\n", np.round(diff[:2, :2], 4))
+        print("==============================\n")
+
+    assert check_matrix_equivalence(U, obtained_matrix, atol=1e-7)
+
 
 class TestTwoQubitUnitaryDecomposition:
     """Test that two-qubit unitary operations are correctly decomposed."""
@@ -1013,14 +1106,13 @@ class TestTwoQubitUnitaryDecomposition:
     @pytest.mark.parametrize("U", samples_2_cnots)
     def test_two_qubit_decomposition_2_cnots(self, U, wires):
         """Test that a two-qubit matrix using 2 CNOTs isolation is correctly decomposed."""
-        # NOTE: Currently, we defer to the 3-CNOTs function for the 2-CNOTs case.
 
         U = qml.math.convert_to_su4(np.array(U))
 
         assert _compute_num_cnots(U) == 2
 
         obtained_decomposition = two_qubit_decomposition(U, wires=wires)
-        assert len(obtained_decomposition) == 11  # 8 # 8 would be the count with 2-CNOT circuit
+        assert len(obtained_decomposition) == 8
 
         tape = qml.tape.QuantumScript(obtained_decomposition)
         obtained_matrix = qml.matrix(tape, wire_order=wires)

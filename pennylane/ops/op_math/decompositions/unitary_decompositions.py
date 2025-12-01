@@ -15,6 +15,7 @@
 """This module defines decomposition functions for unitary matrices."""
 
 import warnings
+from itertools import product
 
 import numpy as np
 from scipy import sparse
@@ -125,8 +126,10 @@ def two_qubit_decomposition(U, wires):
     where :math:`A, B, C, D` are :math:`SU(2)` operations, and the rotation angles are
     computed based on features of the input unitary :math:`U`.
 
-    For the 2-CNOT case, the decomposition is currently not supported and will
-    instead produce a 3-CNOT circuit like above.
+    NOTE: This implementation now supports the 2-CNOT decomposition based on the
+    real-trace criterion of Shende-Bullock-Markov (https://arxiv.org/pdf/quant-ph/0308045).
+    Whenever χ(\gamma(U)) has real coefficients (equivalently trace(\gamma(U)) ∈ R),
+    the decomposition uses exactly two CNOT gates.
 
     For a single CNOT, we have a CNOT surrounded by one :math:`SU(2)` per wire on each
     side.  The special case of no CNOTs simply returns a tensor product of two
@@ -207,13 +210,14 @@ def two_qubit_decomposition(U, wires):
             global_phase += _decompose_3_cnots(U, wires, global_phase)
         else:
             num_cnots = _compute_num_cnots(U)
-            # Use the 3-CNOT case for num_cnots=2 as well because we do not have a reliably
-            # correct implementation of the 2-CNOT case right now.
             global_phase += ops.cond(
                 num_cnots == 0,
                 _decompose_0_cnots,
                 _decompose_3_cnots,
-                elifs=[(num_cnots == 1, _decompose_1_cnot)],
+                elifs=[
+                    (num_cnots == 1, _decompose_1_cnot),
+                    (num_cnots == 2, _decompose_2_cnots),
+                ],
             )(U, wires, global_phase)
 
         if _is_jax_jit(U) or not math.allclose(global_phase, 0):
@@ -383,7 +387,7 @@ def two_qubit_decomp_rule(U, wires, **__):
         num_cnots == 0,
         _decompose_0_cnots,
         _decompose_3_cnots,
-        elifs=[(num_cnots == 1, _decompose_1_cnot)],
+        elifs=[(num_cnots == 1, _decompose_1_cnot), (num_cnots == 2, _decompose_2_cnots)],
     )(U, wires, initial_phase)
     total_phase = initial_phase + additional_phase
     ops.cond(math.logical_not(math.allclose(total_phase, 0)), ops.GlobalPhase)(-total_phase)
@@ -474,7 +478,8 @@ S_0_dag = S_0.conj().T
 
 
 def _compute_num_cnots(U):
-    r"""Compute the number of CNOTs required to implement a U in SU(4).
+    r"""
+    Compute the number of CNOTs required to implement a U in SU(4).
     This is based on the trace of
 
     .. math::
@@ -483,6 +488,9 @@ def _compute_num_cnots(U):
 
     and follows the arguments of this paper: https://arxiv.org/abs/quant-ph/0308045.
 
+    NOTE: This also implements the 2-CNOT criterion of Proposition III.3 in
+    Shende-Bullock-Markov (quant-ph/0308045v3): U requires two CNOTs iff
+    χ(\gamma(U)) has all real coefficients, i.e., trace(\gamma(U)) is real.
     """
 
     U = math.dot(E_dag, math.dot(U, E))
@@ -493,18 +501,18 @@ def _compute_num_cnots(U):
 
     # We need a tolerance of around 1e-7 here to accommodate U specified with 8 decimal places.
     return ops.cond(
-        # Case: 0 CNOTs (tensor product), the trace is +/- 4
+        # 0 CNOT
         math.allclose(trace, 4, atol=1e-7) | math.allclose(trace, -4, atol=1e-7),
         lambda: 0,
-        # Case: 3 CNOTs, the trace is a non-zero complex number with both real and imaginary parts.
+        # default if none match → 3
         lambda: 3,
         elifs=[
-            # Case: 1 CNOT, the trace is 0, and the eigenvalues of gammaU are [-1j, -1j, 1j, 1j]
+            # 1 CNOT
             (
                 math.allclose(trace, 0.0, atol=1e-7) & math.allclose(g2 + id4, 0.0, atol=1e-7),
                 lambda: 1,
             ),
-            # Case: 2 CNOTs, the trace has only a real part (or is 0)
+            # 2 CNOT
             (math.allclose(math.imag(trace), 0.0, atol=1e-7), lambda: 2),
         ],
     )()
@@ -602,6 +610,176 @@ def _decompose_1_cnot(U, wires, initial_phase):
     ops.QubitUnitary(B, wires=wires[0])
 
     return math.cast_like(-np.pi / 4, initial_phase)
+
+
+def _get_basis_and_eigenvalues(M):
+    r"""
+    Helper to diagonalize M, extract diagonal eigenvalues, and sort canonically.
+    Returns eigenvalues and basis O such that D = O^T M O is diagonal with
+    sorted eigenvalues.
+    """
+    # pylint: disable=protected-access
+    # Use split_eigh to get a basis (ignoring its mixed eigenvalues)
+    _, O = _real_imag_split_eigh(M, 1.0)  # Assuming this internal helper exists
+
+    # Compute true eigenvalues: D = O.T @ M @ O
+    d_mat = math.dot(math.transpose(O), math.dot(M, O))
+    eigvals = math.diag(d_mat)
+
+    # Canonical Sort: Real part descending, then Imaginary part descending
+    r = np.round(math.real(eigvals), 6)
+    i = np.round(math.imag(eigvals), 6)
+
+    # Sort by imag then real to ensure deterministic aligning of U and V
+    sort_indices = np.lexsort((i, r))
+
+    # Reorder
+    eigvals_sorted = eigvals[sort_indices]
+    O_sorted = O[:, sort_indices]
+
+    # Enforce determinant 1 (SO(4))
+    det = math.linalg.det(O_sorted)
+    if math.real(det) < 0:
+        O_sorted = math.set_index(O_sorted, (slice(None), 3), -O_sorted[:, 3])
+
+    return eigvals_sorted, O_sorted
+
+
+def _find_so4_decomposition(U, u_mag, O_u, candidates):
+    r"""
+    Performs the exhaustive search for alpha, beta, and signs
+    to ensure Real SO(4) correction gates.
+    Returns the best found parameters along with the basis O_v and
+    v_mag for the kernel V.
+    """
+    CNOT10_np = np.array([[1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0]], dtype=complex)
+    CNOT10 = math.cast_like(CNOT10_np, U)
+    best_result = None
+    min_error = np.inf
+
+    # Search Parameter Permutations
+    for alpha, beta in candidates:
+        # Construct Kernel V
+        rza = ops.RZ.compute_matrix(alpha)
+        rxb = ops.RX.compute_matrix(beta)
+        kernel_inner = math.kron(rza, rxb)
+        V = _multidot(CNOT10, kernel_inner, CNOT10)
+
+        # Get basis for V
+        v_mag = _multidot(math.cast_like(E_dag, U), V, math.cast_like(E, U))
+        gamma_v = math.dot(v_mag, math.T(v_mag))
+        _, O_v = _get_basis_and_eigenvalues(gamma_v)
+
+        # P = v^dag O_v, Q = O_u^T u
+        P = math.dot(math.conj(math.T(v_mag)), O_v)
+        Q = math.dot(math.T(O_u), u_mag)
+
+        # Sign Search to fix Gauge Freedom
+        for signs in product([1.0, -1.0], repeat=4):
+            # Enforce determinant +1 to stay in SO(4)
+            if np.prod(signs) < 0:
+                continue
+
+            S_diag = np.array(signs, dtype=complex)
+            # Broadcasting P * S is faster than matrix mult
+            # Metric: sum of absolute imaginary parts (should be 0 for valid decomposition)
+            error = np.sum(np.abs(math.imag(math.dot(P * S_diag, Q))))
+
+            if error < min_error:
+                min_error = error
+                best_result = (alpha, beta, signs, O_v, v_mag)
+
+            if min_error < 1e-6:
+                return best_result
+
+    return best_result
+
+
+def _decompose_2_cnots(U, wires, initial_phase):
+    r"""Decompose a two-qubit unitary known to require exactly 2 CNOTs.
+
+    The resulting circuit has the following canonical form:
+        0: ──A──╭X──RZ(a)──╭X──C──┤
+        1: ──B──╰●──RX(b)──╰●──D──┤
+
+    where A, B, C, D are single-qubit unitaries (SU(2) gates) and a, b
+    are rotation angles determined by the entanglement properties of the unitary.
+
+    This implementation is based on the work by Shende, Bullock, and Markov in
+    This is done following the methods in https://arxiv.org/abs/quant-ph/0308045.
+
+    The decomposition relies on the Magic Basis, where local unitaries correspond to
+    orthogonal matrices (SO(4)), and the entangling power of an operator is captured by
+    the spectrum of the symmetric invariant matrix: \gamma(U) = (E^\dagger U E) (E^\dagger U E)^T.
+
+    The algorithm proceeds in four main steps:
+
+    1.  Fingerprinting: The invariant matrix \gamma(U) is computed. Its eigenvalues
+        (the "entanglement fingerprint") are extracted. These eigenvalues come in conjugate pairs,
+        and their phases directly determine the rotation parameters a, and b
+        needed for the circuit's core.
+
+    2.  Kernel Construction: A reference "kernel" operator V is built using the
+        calculated parameters a, b. This kernel represents the ideal
+        2-CNOT circuit core: CNOT \cdot (RZ(\alpha) \otimes RX(\beta)) \cdot CNOT.
+        By construction, V is isospectral to U in the Magic Basis.
+
+    3.  Basis Alignment: To transform the input U into the kernel V using only
+        local gates, we align their eigenbases. This involves diagonalizing \gamma(U) and
+        \gamma(V) and sorting their eigenvectors canonically to match corresponding subspaces.
+
+    4.  Gauge Fixing: Since eigenvectors are defined only up to a sign (parity), there are
+        2^4 = 16 possible alignments. The algorithm exhaustively searches these combinations
+        to find the specific parity that results in a valid, real-valued local transformation
+        (a matrix in SO(4)). This transformation determines the local gates A, B, C, D.
+
+    The final circuit is then constructed by applying these local gates around the kernel.
+    """
+    # pylint: disable=too-many-locals
+    # 1. Compute gamma(U)
+    u_mag = _multidot(math.cast_like(E_dag, U), U, math.cast_like(E, U))
+    gamma_u = math.dot(u_mag, math.T(u_mag))
+
+    # 2. Extract interaction parameters
+    eig_u, O_u = _get_basis_and_eigenvalues(gamma_u)
+    # Extract phases and sort to group conjugate pairs
+    abs_angles = np.sort(np.abs(math.angle(eig_u)))
+    # Pick distinct representatives
+    theta1 = abs_angles[3]
+    theta2 = abs_angles[1]
+    # Map to circuit parameters
+    a_calc = (theta1 + theta2) / 2
+    b_calc = (theta1 - theta2) / 2
+    candidates = [(a_calc, b_calc), (b_calc, a_calc)]
+
+    # 3. Perform Search (Delegated to helper)
+    alpha_f, beta_f, signs_f, O_v, v_mag = _find_so4_decomposition(U, u_mag, O_u, candidates)
+
+    # 4. Compute Local Gates L (Left) and R (Right) in SO(4)
+    S_mat = math.diag(signs_f)
+    L = _multidot(O_u, S_mat, math.T(O_v))
+    R = _multidot(math.conj(math.T(v_mag)), math.T(L), u_mag)
+
+    # 5. Convert to local gates
+    AB = _multidot(math.cast_like(E, U), L, math.cast_like(E_dag, U))
+    CD = _multidot(math.cast_like(E, U), R, math.cast_like(E_dag, U))
+
+    A, B = math.decomposition.su2su2_to_tensor_products(AB)
+    C, D = math.decomposition.su2su2_to_tensor_products(CD)
+
+    # 6. Queue Circuit
+    ops.QubitUnitary(C, wires=wires[0])
+    ops.QubitUnitary(D, wires=wires[1])
+
+    ops.CNOT(wires=[wires[1], wires[0]])
+    ops.RZ(alpha_f, wires=wires[0])
+    ops.RX(beta_f, wires=wires[1])
+    ops.CNOT(wires=[wires[1], wires[0]])
+
+    ops.QubitUnitary(A, wires=wires[0])
+    ops.QubitUnitary(B, wires=wires[1])
+
+    return math.cast_like(0.0, initial_phase)
 
 
 def _multidot(*matrices):

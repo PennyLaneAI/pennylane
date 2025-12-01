@@ -20,6 +20,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* Added a new decomposition, `_decompose_2_cnots`, for the two-qubit decomposition for `QubitUnitary`. 
+  [(#8666)](https://github.com/PennyLaneAI/pennylane/issues/8666)
+
 * Add the `PCPhaseOp` operation to the xDSL Quantum dialect.
   [(#8621)](https://github.com/PennyLaneAI/pennylane/pull/8621)
 
@@ -478,5 +481,6 @@ Mudit Pandey,
 Shuli Shu,
 Jay Soni,
 nate stemen,
+Theodoros Trochatos,
 David Wierichs,
 Hongsheng Zheng
