@@ -176,7 +176,7 @@ class TestQubitizeTHC:
                 None,
                 2,
                 0,
-                {"algo_wires": 78, "auxiliary_wires": 129, "toffoli_gates": 2182},
+                {"algo_wires": 80, "auxiliary_wires": 149, "toffoli_gates": 2352},
             ),
             (
                 qre.THCHamiltonian(4, 20),
@@ -184,7 +184,7 @@ class TestQubitizeTHC:
                 None,
                 3,
                 2,
-                {"algo_wires": 60, "auxiliary_wires": 51, "toffoli_gates": 906},
+                {"algo_wires": 62, "auxiliary_wires": 59, "toffoli_gates": 972},
             ),
         ),
     )
@@ -201,8 +201,6 @@ class TestQubitizeTHC:
                     thc_ham,
                     prep_op=prep_op,
                     select_op=select_op,
-                    coeff_precision=13,
-                    rotation_precision=13,
                 ),
             )
         )
