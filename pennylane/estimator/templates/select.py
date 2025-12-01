@@ -43,9 +43,8 @@ class SelectTHC(ResourceOperator):
     Args:
         thc_ham (:class:`~pennylane.estimator.compact_hamiltonian.THCHamiltonian`): A tensor hypercontracted
             Hamiltonian on which the select operator is being applied.
-        rotation_precision (int | None): The number of bits used to represent the precision for loading
-            the rotation angles for basis rotation. If :code:`None` is provided, the default value from the
-            :class:`~.pennylane.estimator.resource_config.ResourceConfig` is used.
+        rotation_precision (int): The number of bits used to represent the precision for loading
+            the rotation angles for basis rotation. The default value is set to ``15`` bits.
         select_swap_depth (int | None): A parameter of :class:`~.pennylane.estimator.templates.subroutines.QROM`
             used to trade-off extra wires for reduced circuit depth. Defaults to :code:`None`, which internally determines the optimal depth.
         wires (WiresLike | None): the wires on which the operator acts
@@ -82,7 +81,7 @@ class SelectTHC(ResourceOperator):
     def __init__(
         self,
         thc_ham: THCHamiltonian,
-        rotation_precision: int | None = None,
+        rotation_precision: int = 15,
         select_swap_depth: int | None = None,
         wires: WiresLike | None = None,
     ):
@@ -122,9 +121,8 @@ class SelectTHC(ResourceOperator):
             dict: A dictionary containing the resource parameters:
                 * thc_ham (:class:`~.pennylane.estimator.compact_hamiltonian.THCHamiltonian`): a tensor hypercontracted
                   Hamiltonian on which the select operator is being applied
-                * rotation_precision (int | None): The number of bits used to represent the precision for loading
-                  the rotation angles for basis rotation. If :code:`None` is provided, the default value from the
-                  :class:`~.pennylane.estimator.resource_config.ResourceConfig` is used.
+                * rotation_precision (int): The number of bits used to represent the precision for loading
+                  the rotation angles for basis rotation. The default value is set to ``15`` bits.
                 * select_swap_depth (int | None): A parameter of :class:`~.pennylane.estimator.templates.QROM`
                   used to trade-off extra wires for reduced circuit depth. Defaults to :code:`None`, which internally determines the optimal depth.
         """
@@ -138,7 +136,7 @@ class SelectTHC(ResourceOperator):
     def resource_rep(
         cls,
         thc_ham: THCHamiltonian,
-        rotation_precision: int | None = None,
+        rotation_precision: int = 15,
         select_swap_depth: int | None = None,
     ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
@@ -147,9 +145,8 @@ class SelectTHC(ResourceOperator):
         Args:
             thc_ham (:class:`~pennylane.estimator.compact_hamiltonian.THCHamiltonian`): A tensor hypercontracted
                 Hamiltonian on which the select operator is being applied.
-            rotation_precision (int | None): The number of bits used to represent the precision for loading
-                the rotation angles for basis rotation. If :code:`None` is provided, the default value from the
-                :class:`~.pennylane.estimator.resource_config.ResourceConfig` is used.
+            rotation_precision (int): The number of bits used to represent the precision for loading
+                the rotation angles for basis rotation. The default value is set to ``15`` bits.
             select_swap_depth (int | None): A parameter of :class:`~.pennylane.estimator.templates.QROM`
                 used to trade-off extra wires for reduced circuit depth. Defaults to :code:`None`, which internally determines the optimal depth.
 
@@ -185,7 +182,7 @@ class SelectTHC(ResourceOperator):
     def resource_decomp(
         cls,
         thc_ham,
-        rotation_precision: int | None = None,
+        rotation_precision: int = 15,
         select_swap_depth: int | None = None,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
@@ -200,9 +197,8 @@ class SelectTHC(ResourceOperator):
         Args:
             thc_ham (:class:`~pennylane.estimator.compact_hamiltonian.THCHamiltonian`): A tensor hypercontracted
                 Hamiltonian on which the select operator is being applied.
-            rotation_precision (int | None): The number of bits used to represent the precision for loading
-                the rotation angles for basis rotation. If :code:`None` is provided, the default value from the
-                :class:`~.pennylane.estimator.resource_config.ResourceConfig` is used.
+            rotation_precision (int): The number of bits used to represent the precision for loading
+                the rotation angles for basis rotation. The default value is set to ``15`` bits.
             select_swap_depth (int | None): A parameter of :class:`~.pennylane.estimator.templates.QROM`
                 used to trade-off extra wires for reduced circuit depth. Defaults to :code:`None`, which internally determines the optimal depth.
 
@@ -234,7 +230,7 @@ class SelectTHC(ResourceOperator):
             qre.QROM,
             {
                 "num_bitstrings": tensor_rank + num_orb,
-                "size_bitstring": rotation_precision,
+                "size_bitstring": rotation_precision * (num_orb - 1),
                 "restored": False,
                 "select_swap_depth": select_swap_depth,
             },
@@ -267,7 +263,7 @@ class SelectTHC(ResourceOperator):
             qre.QROM,
             {
                 "num_bitstrings": tensor_rank,
-                "size_bitstring": rotation_precision,
+                "size_bitstring": rotation_precision * (num_orb - 1),
                 "restored": False,
                 "select_swap_depth": select_swap_depth,
             },
@@ -364,7 +360,7 @@ class SelectTHC(ResourceOperator):
             qre.QROM,
             {
                 "num_bitstrings": tensor_rank + num_orb,
-                "size_bitstring": rotation_precision,
+                "size_bitstring": rotation_precision * (num_orb - 1),
                 "restored": False,
                 "select_swap_depth": select_swap_depth,
             },
@@ -397,7 +393,7 @@ class SelectTHC(ResourceOperator):
             qre.QROM,
             {
                 "num_bitstrings": tensor_rank,
-                "size_bitstring": rotation_precision,
+                "size_bitstring": rotation_precision * (num_orb - 1),
                 "restored": False,
                 "select_swap_depth": select_swap_depth,
             },

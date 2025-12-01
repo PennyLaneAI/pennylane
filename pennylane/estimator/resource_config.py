@@ -24,11 +24,8 @@ from pennylane.estimator.ops.qubit.parametric_ops_single_qubit import RX, RY, RZ
 from pennylane.estimator.templates import (
     AliasSampling,
     MPSPrep,
-    PrepTHC,
     QROMStatePreparation,
-    QubitizeTHC,
     SelectPauliRot,
-    SelectTHC,
 )
 from pennylane.estimator.templates.trotter import TrotterVibrational, TrotterVibronic
 
@@ -124,12 +121,6 @@ class ResourceConfig:
             AliasSampling: {"precision": _DEFAULT_PRECISION},
             MPSPrep: {"precision": _DEFAULT_PRECISION},
             QROMStatePreparation: {"precision": _DEFAULT_PRECISION},
-            SelectTHC: {"rotation_precision": _DEFAULT_BIT_PRECISION},
-            PrepTHC: {"coeff_precision": _DEFAULT_BIT_PRECISION},
-            QubitizeTHC: {
-                "coeff_precision": _DEFAULT_BIT_PRECISION,
-                "rotation_precision": _DEFAULT_BIT_PRECISION,
-            },
             TrotterVibronic: {
                 "phase_grad_precision": _DEFAULT_PHASEGRAD_PRECISION,
                 "coeff_precision": 1e-3,

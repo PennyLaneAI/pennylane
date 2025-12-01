@@ -84,13 +84,13 @@ class TestSelectTHC:
                 qre.THCHamiltonian(10, 50),
                 None,
                 None,
-                {"algo_wires": 38, "auxiliary_wires": 163, "toffoli_gates": 1139},
+                {"algo_wires": 38, "auxiliary_wires": 148, "toffoli_gates": 1189},
             ),
             (
                 qre.THCHamiltonian(4, 20),
                 None,
                 2,
-                {"algo_wires": 24, "auxiliary_wires": 73, "toffoli_gates": 425},
+                {"algo_wires": 24, "auxiliary_wires": 103, "toffoli_gates": 545},
             ),
         ),
     )
@@ -129,7 +129,7 @@ class TestSelectTHC:
                 None,
                 2,
                 0,
-                {"algo_wires": 40, "auxiliary_wires": 164, "toffoli_gates": 1142},
+                {"algo_wires": 40, "auxiliary_wires": 149, "toffoli_gates": 1192},
             ),
             (
                 qre.THCHamiltonian(4, 20),
@@ -137,7 +137,7 @@ class TestSelectTHC:
                 2,
                 3,
                 2,
-                {"algo_wires": 27, "auxiliary_wires": 74, "toffoli_gates": 430},
+                {"algo_wires": 27, "auxiliary_wires": 104, "toffoli_gates": 550},
             ),
         ),
     )
