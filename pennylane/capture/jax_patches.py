@@ -95,10 +95,13 @@ except ModuleNotFoundError:  # pragma: no cover
 
 def _add_make_eqn_helper():
     """
-    Add a make_eqn helper method to DynamicJaxprTrace.
+    Return a make_eqn helper method to DynamicJaxprTrace.
 
     This helper properly creates TracingEqn objects, which is needed for JAX 0.7.0
     compatibility. This is based on Catalyst's approach to the same issue.
+
+    Returns:
+        tuple: (DynamicJaxprTrace, "make_eqn", make_eqn).
     """
 
     def make_eqn(
@@ -155,13 +158,12 @@ def _add_make_eqn_helper():
 
         return eqn, out_tracers
 
-    # Add the helper method to DynamicJaxprTrace
-    pe.DynamicJaxprTrace.make_eqn = make_eqn
+    return (pe.DynamicJaxprTrace, "make_eqn", make_eqn)
 
 
 def _patch_dyn_shape_staging_rule():
     """
-    Patch _dyn_shape_staging_rule to fix dynamic shape handling.
+    Return _dyn_shape_staging_rule patch to fix dynamic shape handling.
 
     The bug in JAX 0.7.0's lax/lax.py lines 267-275 is that it uses:
     - pe.new_jaxpr_eqn instead of proper TracingEqn creation
@@ -171,6 +173,9 @@ def _patch_dyn_shape_staging_rule():
     jnp.ones, jnp.zeros, etc.
 
     The fix uses the make_eqn helper to properly create TracingEqn objects.
+
+    Returns:
+        list: List of patch tuples.
     """
 
     def patched_dyn_shape_staging_rule(trace, source_info, prim, out_aval, *args, **params):
@@ -194,37 +199,24 @@ def _patch_dyn_shape_staging_rule():
         # Return single tracer (not list) since out_aval is a single value
         return out_tracers[0]
 
-    # Apply the patch
-    lax._dyn_shape_staging_rule = patched_dyn_shape_staging_rule
-
-    # Also need to patch the iota_staging_rule which uses _dyn_shape_staging_rule
-    def patched_iota_staging_rule(
-        trace, source_info, *dyn_shape, dtype, shape, dimension, sharding
-    ):
-        """Patched version of _iota_staging_rule."""
-        params = {"dtype": dtype, "shape": shape, "dimension": dimension, "sharding": sharding}
-        if not dyn_shape:
-            return trace.default_process_primitive(lax.iota_p, (), params, source_info=source_info)
-        aval = core.DShapedArray(lax._merge_dyn_shape(shape, dyn_shape), dtype, False)
-        return patched_dyn_shape_staging_rule(
-            trace, source_info, lax.iota_p, aval, *dyn_shape, **params
-        )
-
-    lax._iota_staging_rule = patched_iota_staging_rule
-
-    # Update the custom staging rules
-    pe.custom_staging_rules[lax.iota_p] = patched_iota_staging_rule
+    # Return just the core patch - the wrappers will call the patched version
+    return [
+        (lax, "_dyn_shape_staging_rule", patched_dyn_shape_staging_rule),
+    ]
 
 
 def _patch_pjit_staging_rule():
     """
-    Patch pjit_staging_rule to fix dynamic shape handling.
+    Return pjit_staging_rule patch to fix dynamic shape handling.
 
     The bug in JAX 0.7.0's pjit.py lines 1894-1898 is that it uses:
     - core.new_jaxpr_eqn instead of pe.new_eqn_recipe
     - arg.var instead of accessing the correct tracer value
 
     This causes an AssertionError when add_eqn expects a TracingEqn but gets a JaxprEqn.
+
+    Returns:
+        list: List of patch tuples.
     """
     # Store the original function
     original_staging_rule = pjit.pjit_staging_rule
@@ -296,25 +288,36 @@ def _patch_pjit_staging_rule():
 
         return out_tracers
 
-    # Apply the patch
-    pjit.pjit_staging_rule = patched_pjit_staging_rule
-    # Also update the custom staging rules dict
-    pe.custom_staging_rules[pjit.jit_p] = patched_pjit_staging_rule
+    return [
+        (pjit, "pjit_staging_rule", patched_pjit_staging_rule),
+        (pe.custom_staging_rules, "__dict_item__", pjit.jit_p, patched_pjit_staging_rule),
+    ]
 
 
-# Apply patches based on JAX version
-if has_jax:
-    jax_version = Version(jax.__version__)
-    if jax_version >= Version("0.7.0"):
-        try:
-            _add_make_eqn_helper()
-            _patch_dyn_shape_staging_rule()
-            _patch_pjit_staging_rule()
-        except Exception as e:  # pylint: disable=broad-except
-            import warnings
+def get_jax_patches():
+    """Get patch tuples for use with Patcher context manager.
 
-            warnings.warn(
-                f"Failed to apply JAX patches for version {jax.__version__}: {e}. "
-                "Some dynamic shape features may not work correctly.",
-                UserWarning,
-            )
+    Returns a tuple of (obj, attr, new_value) tuples that can be passed to Patcher.
+    These patches fix JAX 0.7.0+ compatibility issues for dynamic shapes and pjit.
+
+    Returns:
+        tuple: Patch tuples for Patcher, or empty tuple if patches not needed
+
+    Example:
+        >>> from pennylane.capture.patching import Patcher
+        >>> from pennylane.capture.jax_patches import get_jax_patches
+        >>> with Patcher(*get_jax_patches()):
+        ...     # JAX operations with patches applied
+        ...     jaxpr = jax.make_jaxpr(my_function)(args)
+    """
+    if not has_jax:
+        return ()
+
+    patches = []
+
+    # Get all patches from the helper functions
+    patches.append(_add_make_eqn_helper())
+    patches.extend(_patch_dyn_shape_staging_rule())
+    patches.extend(_patch_pjit_staging_rule())
+
+    return tuple(patches)

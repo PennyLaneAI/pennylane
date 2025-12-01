@@ -174,8 +174,16 @@ def enable_disable_plxpr():
 def enable_disable_dynamic_shapes():
     jax.config.update("jax_dynamic_shapes", True)
     try:
-        pytest.xfail("Dynamic shapes are about to fail in jax>=0.7.0.")
-        yield
+        from packaging.version import Version
+
+        if Version(jax.__version__) >= Version("0.7.0"):
+            from pennylane.capture.jax_patches import get_jax_patches
+            from pennylane.capture.patching import Patcher
+
+            # Apply patches using Patcher context manager for this test
+            patches = get_jax_patches()
+            with Patcher(*patches):
+                yield
     finally:
         jax.config.update("jax_dynamic_shapes", False)
 
