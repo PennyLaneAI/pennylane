@@ -16,6 +16,7 @@ r"""Contains the MultiplexerStatePreparation template."""
 import numpy as np
 
 import pennylane as qml
+from pennylane import math
 from pennylane.operation import Operation
 from pennylane.wires import Wires
 
@@ -67,20 +68,20 @@ class MultiplexerStatePreparation(Operation):
     # pylint: disable=too-many-positional-arguments
     def __init__(self, state_vector, wires, id=None):  # pylint: disable=too-many-arguments
 
-        n_amplitudes = qml.math.shape(state_vector)[0]
+        n_amplitudes = math.shape(state_vector)[0]
         if n_amplitudes != 2 ** len(Wires(wires)):
             raise ValueError(
                 f"State vectors must be of length {2 ** len(wires)}; vector has length {n_amplitudes}."
             )
 
-        norm = qml.math.linalg.norm(state_vector)
-        if not qml.math.allclose(norm, 1.0, atol=1e-3):
+        norm = math.linalg.norm(state_vector)
+        if not math.allclose(norm, 1.0, atol=1e-3):
             raise ValueError(
                 f"Input state vectors must have a norm 1.0, the vector has squared norm {norm}"
             )
 
         self.state_vector = state_vector
-
+        wires = Wires(wires)
         super().__init__(state_vector, wires=wires, id=id)
 
     @classmethod
@@ -129,36 +130,38 @@ def _multiplexer_state_prep_decomposition(state_vector, wires):  # pylint: disab
         list: List of decomposition operations.
     """
 
-    probs = qml.math.abs(state_vector) ** 2
-    phases = qml.math.angle(state_vector) % (2 * np.pi)
+    probs = math.abs(state_vector) ** 2
+    phases = math.angle(state_vector) % (2 * np.pi)
     eps = 1e-15  # Small constant to avoid division by zero
 
-    num_iterations = int(qml.math.log2(qml.math.shape(probs)[0]))
+    num_iterations = int(math.log2(math.shape(probs)[0]))
 
+    shapes = [[int(2 ** (i + 1)), -1] for i in range(num_iterations)]
     for i in range(num_iterations):
 
-        probs_aux = qml.math.reshape(probs, [1, -1])
+        probs_aux = math.reshape(probs, [1, -1])
 
         # Calculation of the numerator and denominator of the function f(x) (Eq.5 [arXiv:quant-ph/0208112])
         for itx in range(i + 1):
-            probs_denominator = qml.math.sum(probs_aux, axis=1)
-            probs_aux = qml.math.reshape(probs_aux, [int(2 ** (itx + 1)), -1])
-            probs_numerator = qml.math.sum(probs_aux, axis=1)[::2]
+            probs_denominator = math.sum(probs_aux, axis=1)
+            probs_aux = math.reshape(probs_aux, shapes[itx])
+            probs_numerator = math.sum(probs_aux, axis=1)[::2]
 
         # Compute the angles θi
         thetas = [
-            2 * qml.math.arccos(qml.math.sqrt(probs_numerator[j] / (probs_denominator[j] + eps)))
-            for j in range(qml.math.shape(probs_numerator)[0])
+            2 * math.arccos(math.sqrt(probs_numerator[j] / (probs_denominator[j] + eps)))
+            for j in range(math.shape(probs_numerator)[0])
         ]
         # Apply the SelectPauliRot operation to apply the theta rotations
         qml.SelectPauliRot(thetas, target_wire=wires[i], control_wires=wires[:i], rot_axis="Y")
 
-    if not qml.math.allclose(phases, 0.0):
-        # Compute the phases
-        thetas = [1j * phase for phase in phases]
+    if not qml.math.is_abstract(phases):
+        if not math.allclose(phases, 0.0):
+            # Compute the phases
+            thetas = [1j * phase for phase in phases]
 
-        # Apply the DiagonalQubitUnitary operation to encode the phases
-        qml.DiagonalQubitUnitary(qml.math.exp(thetas), wires=wires)
+            # Apply the DiagonalQubitUnitary operation to encode the phases
+            qml.DiagonalQubitUnitary(math.exp(thetas), wires=wires)
 
 
 qml.add_decomps(MultiplexerStatePreparation, _multiplexer_state_prep_decomposition)
