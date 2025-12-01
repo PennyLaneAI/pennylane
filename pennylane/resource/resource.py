@@ -24,6 +24,7 @@ from typing import Any
 
 from pennylane.measurements import Shots, add_shots
 from pennylane.operation import Operation
+from pennylane.ops.op_math import ControlledOp
 from pennylane.tape import QuantumScript
 
 from .error import _compute_algo_error
@@ -948,7 +949,13 @@ def _count_resources(tape: QuantumScript, compute_depth: bool = True) -> SpecsRe
                 gate_sizes[n] += op_resource.gate_sizes[n]
 
         else:
-            gate_types[op.name] += 1
+            gate_name = op.name
+            if type(op) is ControlledOp:
+                n_ctrls = len(op.control_wires)
+                if n_ctrls > 1:
+                    gate_name = f"{n_ctrls}{gate_name}"
+
+            gate_types[gate_name] += 1
             gate_sizes[len(op.wires)] += 1
 
     for meas in tape.measurements:

@@ -1040,6 +1040,18 @@ class TestCountResources:
             ],
             measurements=[qml.probs()],
         ),
+        QuantumScript(
+            ops=[
+                qml.ctrl(op=qml.IsingXX(0.5, wires=[10, 11]), control=range(10)),
+                qml.ctrl(op=qml.IsingXX(0.5, wires=[10, 11]), control=range(5)),
+                qml.ctrl(op=qml.IsingXX(0.5, wires=[10, 11]), control=[0]),
+                qml.CNOT([0, 1]),
+                qml.Toffoli([0, 1, 2]),
+                qml.ctrl(op=qml.PauliX(10), control=[0]),
+                qml.ctrl(op=qml.PauliX(10), control=[0, 1]),
+            ],
+            measurements=[qml.probs()],
+        ),
     )
 
     expected_resources = (
@@ -1052,6 +1064,13 @@ class TestCountResources:
             {"probs": 1},
             3,
             6,
+        ),
+        SpecsResources(
+            {"10C(IsingXX)": 1, "5C(IsingXX)": 1, "C(IsingXX)": 1, "CNOT": 2, "Toffoli": 2},
+            {12: 1, 7: 1, 3: 3, 2: 2},
+            {"probs": 1},
+            12,
+            7,
         ),
     )  # SpecsResources(gate_types, gate_sizes, measurements, num_allocs, depth)
 
