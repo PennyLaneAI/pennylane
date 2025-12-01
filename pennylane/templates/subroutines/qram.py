@@ -34,7 +34,7 @@ from pennylane.decomposition import (
     resource_rep,
 )
 from pennylane.operation import Operation, Operator
-from pennylane.ops import CSWAP, SWAP, Controlled, Hadamard, PauliX, PauliZ, adjoint, ctrl, CNOT
+from pennylane.ops import CNOT, CSWAP, SWAP, Controlled, Hadamard, PauliX, PauliZ, adjoint, ctrl
 from pennylane.wires import Wires, WiresLike
 
 # pylint: disable=consider-using-generator
@@ -517,7 +517,9 @@ def _hybrid_qram_resources(bitstrings, num_target_wires, num_select_wires, k, n_
             )
         ] += ((n_tree + (1 << n_tree) - 1) * 2 + 2 * num_target_wires) * num_blocks
 
-        ccswap_count = (((1 << n_tree) - 1 - n_tree) + ((1 << n_tree) - 1) * num_target_wires) * num_blocks * 2
+        ccswap_count = (
+            (((1 << n_tree) - 1 - n_tree) + ((1 << n_tree) - 1) * num_target_wires) * num_blocks * 2
+        )
 
         resources[
             controlled_resource_rep(
@@ -528,7 +530,7 @@ def _hybrid_qram_resources(bitstrings, num_target_wires, num_select_wires, k, n_
                     "num_control_wires": 1,
                     "num_zero_control_values": 0,
                     "num_work_wires": 0,
-                    "work_wire_type": "borrowed"
+                    "work_wire_type": "borrowed",
                 },
                 num_control_wires=1,
                 num_zero_control_values=0,
@@ -544,7 +546,7 @@ def _hybrid_qram_resources(bitstrings, num_target_wires, num_select_wires, k, n_
                     "num_control_wires": 1,
                     "num_zero_control_values": 1,
                     "num_work_wires": 0,
-                    "work_wire_type": "borrowed"
+                    "work_wire_type": "borrowed",
                 },
                 num_control_wires=1,
                 num_zero_control_values=0,
@@ -595,6 +597,7 @@ def _hybrid_qram_resources(bitstrings, num_target_wires, num_select_wires, k, n_
         )
     return resources
 
+
 def _bits(value: int, length: int) -> list[int]:
     """Return `length` bits of `value` (MSB first)."""
     return [(value >> (length - 1 - i)) & 1 for i in range(length)]
@@ -620,9 +623,7 @@ def _tree_leaf_ops_for_bit_block_ctrl(
             ctrl(PauliZ(wires=target), control=[signal], control_values=[1])
 
 
-def _tree_route_bus_down_first_k_levels_ctrl(
-    k_levels: int, tree_wire_manager, signal
-):
+def _tree_route_bus_down_first_k_levels_ctrl(k_levels: int, tree_wire_manager, signal):
     """Tree routing down for first `k_levels` levels, controlled on signal."""
 
     for ell in range(k_levels):
