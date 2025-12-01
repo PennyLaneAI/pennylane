@@ -381,3 +381,66 @@ def test_hybrid_decomposition_new(
     )
     for rule in list_decomps(HybridQRAM):
         _test_decomposition_rule(op, rule)
+
+
+@pytest.mark.parametrize(
+    ("params", "error", "match"),
+    [
+        (
+            ([], [0, 1], [2, 3, 4], [5, 6, 7, 8, 9, 10, 11, 12, 13, 14], 0),
+            ValueError,
+            "bitstrings' cannot be empty.",
+        ),
+        (
+            (
+                ["000", "00", "111", "10", "100"],
+                [0, 1],
+                [2, 3, 4],
+                [5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
+                1,
+            ),
+            ValueError,
+            "All bitstrings must have equal length.",
+        ),
+        (
+            (["000", "111"], [0, 1], [2, 3, 4], [5, 6, 7, 8, 9, 10, 11, 12, 13, 14], 0),
+            ValueError,
+            "len(bitstrings) must be 2^(len(control_wires)).",
+        ),
+        (
+            (["010", "111", "110", "000"], [0, 1], [2, 3], [4, 5, 6, 7, 8, 9, 10, 11, 12, 13], 1),
+            ValueError,
+            "len(target_wires) must equal bitstring length.",
+        ),
+        (
+            (["010", "111", "110", "000"], [0, 1], [2, 3, 4], [5, 6, 7, 8, 9, 10, 11, 12, 13], 0),
+            ValueError,
+            "work_wires must have length 11",
+        ),
+        (
+            (
+                ["010", "111", "110", "000"],
+                [0, 1],
+                [2, 3, 4],
+                [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+                3,
+            ),
+            ValueError,
+            "k must satisfy 0 <= k < len(control_wires).",
+        ),
+        (
+            (
+                ["010", "111", "110", "000"],
+                [],
+                [2, 3, 4],
+                [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+                0,
+            ),
+            ValueError,
+            "len(control_wires) must be > 0",
+        ),
+    ],
+)
+def test_raises(params, error, match):
+    with pytest.raises(error, match=re.escape(match)):
+        HybridQRAM(*params)
