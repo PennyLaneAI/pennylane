@@ -1,7 +1,7 @@
 absl-py==2.3.1
 annotated-types==0.7.0
 antlr4-python3-runtime==4.13.2
-anyio==4.11.0
+anyio==4.12.0
 anywidget==0.9.21
 appdirs==1.4.4
 argon2-cffi==25.1.0
@@ -16,7 +16,7 @@ autograd==1.8.0
 autoray==0.8.2
 babel==2.17.0
 bartiq==0.9.0
-beautifulsoup4==4.14.2
+beautifulsoup4==4.14.3
 black==25.9.0
 bleach==6.3.0
 blinker==1.9.0
@@ -36,7 +36,7 @@ cotengra==0.7.5
 coverage==7.12.0
 cryptography==46.0.3
 cvxopt==1.3.2
-cvxpy==1.7.3
+cvxpy==1.7.4
 cycler==0.12.1
 cytoolz==1.1.0
 dash==3.3.0
@@ -54,11 +54,11 @@ filecheck==1.0.3
 filelock==3.20.0
 flaky==3.8.1
 Flask==3.1.2
-fonttools==4.60.1
+fonttools==4.61.0
 fqdn==1.5.1
 fxpmath==0.4.9
 galois==0.4.7
-gast==0.6.0
+gast==0.7.0
 gitdb==4.0.12
 GitPython==3.1.45
 graphviz==0.20.3
@@ -79,8 +79,8 @@ ipywidgets==8.1.8
 isoduration==20.11.0
 isort==7.0.0
 itsdangerous==2.2.0
-jax==0.6.2
-jaxlib==0.6.2
+jax==0.7.0
+jaxlib==0.7.0
 jedi==0.19.2
 Jinja2==3.1.6
 joblib==1.5.2
@@ -135,7 +135,7 @@ pandocfilters==1.5.1
 parso==0.8.5
 pathspec==0.12.1
 PennyLane-qiskit @ git+https://github.com/PennyLaneAI/pennylane-qiskit.git@d3b94e31c6d83697f5a764d28c9a681557a6a14e
-pennylane_catalyst==0.14.0.dev38
+pennylane_catalyst==0.14.0.dev45
 pennylane_lightning==0.44.0.dev11
 pennylane_lightning_kokkos==0.44.0.dev11
 pexpect==4.9.0
@@ -155,12 +155,12 @@ pure_eval==0.2.3
 py==1.11.0
 py-cpuinfo==9.0.0
 pycparser==2.23
-pydantic==2.12.4
+pydantic==2.12.5
 pydantic_core==2.41.5
 pydot==3.0.4
 Pygments==2.19.2
 PyJWT==2.10.1
-pylint==4.0.3
+pylint==4.0.4
 pyparsing==3.1.4
 pyperclip==1.11.0
 pyproject_hooks==1.2.0
@@ -196,7 +196,7 @@ rfc3339-validator==0.1.4
 rfc3986-validator==0.1.1
 rfc3987-syntax==1.1.0
 rich==13.9.4
-rpds-py==0.29.0
+rpds-py==0.30.0
 rustworkx==0.17.1
 scipy==1.15.2
 scipy-openblas32==0.3.30.0.8
@@ -204,7 +204,6 @@ scs==3.2.9
 Send2Trash==1.8.3
 six==1.17.0
 smmap==5.0.2
-sniffio==1.3.1
 sortedcontainers==2.4.0
 soupsieve==2.8
 stack-data==0.6.3
@@ -233,7 +232,7 @@ wcwidth==0.2.14
 webcolors==25.10.0
 webencodings==0.5.1
 websocket-client==1.9.0
-Werkzeug==3.1.3
+Werkzeug==3.1.4
 widgetsnbextension==4.0.15
 xdsl==0.55.0
 xdsl-jax @ git+https://github.com/xdslproject/xdsl-jax.git@4412dcd9d9f93878b57b627dc2d0a9310d8a586e

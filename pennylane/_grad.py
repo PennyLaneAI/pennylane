@@ -86,7 +86,9 @@ def _get_jacobian_prim():
 
 
 def _shape(shape, dtype, weak_type=False):
-    if jax.config.jax_dynamic_shapes and any(not isinstance(s, int) for s in shape):
+    if jax.config.jax_dynamic_shapes and any(
+        not isinstance(s, int) for s in shape
+    ):  # pragma: no cover
         return jax.core.DShapedArray(shape, dtype, weak_type=weak_type)
     return jax.core.ShapedArray(shape, dtype, weak_type=weak_type)
 
