@@ -428,12 +428,6 @@ class SelectOnlyQRAM(Operator):
     def _primitive_bind_call(cls, *args, **kwargs):
         return cls._primitive.bind(*args, **kwargs)
 
-    # ---------- Helpers ----------
-    @staticmethod
-    def _address_bits(addr: int, n: int) -> list[int]:
-        """Return the n-bit pattern (MSB first) for integer `addr`."""
-        return [(addr >> (n - 1 - i)) & 1 for i in range(n)]
-
     @property
     def resource_params(self) -> dict:
         return {
