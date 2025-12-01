@@ -1011,16 +1011,16 @@ class UnaryIterationBasedQPE(ResourceOperator):
         self,
         unitary: ResourceOperator,
         num_iterations: int,
-        adj_qft_cmpr_op: ResourceOperator | None = None,
+        adj_qft_op: ResourceOperator | None = None,
         wires: WiresLike | None = None,
     ):
-        remove_ops = [unitary, adj_qft_cmpr_op] if adj_qft_cmpr_op is not None else [unitary]
+        remove_ops = [unitary, adj_qft_op] if adj_qft_op is not None else [unitary]
         _dequeue(remove_ops)
         self.queue()
 
         self.unitary = unitary.resource_rep_from_op()
         adj_qft_cmpr_op = (
-            None if adj_qft_cmpr_op is None else adj_qft_cmpr_op.resource_rep_from_op()
+            None if adj_qft_op is None else adj_qft_op.resource_rep_from_op()
         )
 
         self.adj_qft_cmpr_op = adj_qft_cmpr_op
