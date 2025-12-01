@@ -484,6 +484,10 @@ class HybridQRAM(Operation):
             "k": k,
         }
 
+    @classmethod
+    def _primitive_bind_call(cls, *args, **kwargs):
+        return cls._primitive.bind(*args, **kwargs)
+
     @property
     def resource_params(self) -> dict:
         wire_manager = self.hyperparameters["tree_wire_manager"]

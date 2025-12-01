@@ -234,7 +234,7 @@ def test_bbqram_decomposition_new(
 
 
 @qnode(dev)
-def hybrid_quantum(bitstrings, control_wires, target_wires, work_wires, k, address):
+def hybrid_quantum(bitstrings, control_wires, target_wires, work_wires, k, address):  # pylint: disable=too-many-arguments
     BasisEmbedding(address, wires=control_wires)
 
     HybridQRAM(
@@ -341,8 +341,6 @@ def test_hybrid_quantum(
             [10, 11, 12],
             [13, 14, 15],
             0,
-            2,  # addressed from the left
-            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0],  # |110>
         ),
         (
             ["010", "111", "110", "000"],
@@ -354,8 +352,6 @@ def test_hybrid_quantum(
             [10],
             [13],
             1,
-            0,  # addressed from the left
-            [0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0],  # |010>
         ),
     ],
 )
@@ -369,8 +365,6 @@ def test_hybrid_decomposition_new(
     portL_wires,
     portR_wires,
     k,
-    address,
-    probabilities,
 ):  # pylint: disable=too-many-arguments
     op = HybridQRAM(
         bitstrings,
@@ -441,6 +435,6 @@ def test_hybrid_decomposition_new(
         ),
     ],
 )
-def test_raises(params, error, match):
+def test_hybrid_raises(params, error, match):
     with pytest.raises(error, match=re.escape(match)):
         HybridQRAM(*params)
