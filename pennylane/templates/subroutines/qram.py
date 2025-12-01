@@ -609,7 +609,7 @@ def _bits(value: int, length: int) -> list[int]:
 
 
 def _tree_leaf_ops_for_bit_block_ctrl(
-    bitstrings, j: int, block_index: int, tree_wire_manager, n_tree, signal
+    bitstrings, j, block_index, tree_wire_manager, n_tree, signal
 ):
     """Leaf write for target bit j, for a given select prefix block, controlled on signal."""
 
@@ -628,7 +628,7 @@ def _tree_leaf_ops_for_bit_block_ctrl(
             ctrl(PauliZ(wires=target), control=[signal], control_values=[1])
 
 
-def _tree_route_bus_down_first_k_levels_ctrl(k_levels: int, tree_wire_manager, signal):
+def _tree_route_bus_down_first_k_levels_ctrl(k_levels, tree_wire_manager, signal):
     """Tree routing down for first `k_levels` levels, controlled on signal."""
 
     for ell in range(k_levels):
