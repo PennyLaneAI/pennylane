@@ -80,12 +80,6 @@ dev = [
     "pylint~=4.0.0",
     "isort~=7.0.0",
     "black==25.9.0",
-    "cvxpy",
-    "cvxopt",
-    "rustworkx",
-    "autoray>=0.8.0",
-    "matplotlib",
-    "pandas",
 ]
 default = [
     "numpy~=1.23",
@@ -124,6 +118,7 @@ kernels = ["cvxpy", "cvxopt"]
 docs = [
     "pip",
     "autoray",
+    "jax==0.6.0",
     "jaxlib==0.6.0",
     "mistune==0.8.4",
     "m2r2",
