@@ -99,7 +99,8 @@ def _capture_diff(func, *, argnums=None, scalar_out: bool = False, method=None, 
     if argnums is None:
         argnums = 0
     if argnums_is_int := isinstance(argnums, int):
-        argnums = [argnums]
+        argnums = (argnums,)
+    argnums = tuple(argnums)
 
     if h is None:
         h = 1e-6
@@ -113,6 +114,12 @@ def _capture_diff(func, *, argnums=None, scalar_out: bool = False, method=None, 
     def new_func(*args, **kwargs):
         flat_args, in_trees = zip(*(tree_flatten(arg) for arg in args))
         full_in_tree = treedef_tuple(in_trees)
+
+        if max(argnums) >= len(args):
+            raise ValueError(
+                f"Differentiating with respect to argnums {argnums} requires at least {max(argnums)+1}"
+                f" positional arguments. Got {len(args)} positional arguments."
+            )
 
         # Create a new input tree that only takes inputs marked by argnums into account
         trainable_in_trees = (in_tree for i, in_tree in enumerate(in_trees) if i in argnums)
@@ -142,8 +149,9 @@ def _capture_diff(func, *, argnums=None, scalar_out: bool = False, method=None, 
         jaxpr = jax.make_jaxpr(flat_fn, abstracted_axes=abstracted_axes)(*flat_args, **kwargs)
 
         num_abstract_shapes = len(abstract_shapes)
-        shifted_argnums = [a + num_abstract_shapes for a in flat_argnums]
+        shifted_argnums = tuple(a + num_abstract_shapes for a in flat_argnums)
 
+        flat_inputs, _ = tree_flatten((args, kwargs))
         prim_kwargs = {
             "argnums": shifted_argnums,
             "jaxpr": jaxpr.jaxpr,
@@ -156,7 +164,7 @@ def _capture_diff(func, *, argnums=None, scalar_out: bool = False, method=None, 
         out_flat = _get_jacobian_prim().bind(
             *jaxpr.consts,
             *abstract_shapes,
-            *flat_args,
+            *flat_inputs,
             **prim_kwargs,
         )
 

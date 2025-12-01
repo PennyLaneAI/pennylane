@@ -179,7 +179,7 @@ class TestAdjointQfunc:
             "fn",
             "scalar_out",
         }
-        assert grad_eqn.params["argnums"] == [0]
+        assert grad_eqn.params["argnums"] == (0,)
         assert grad_eqn.params["n_consts"] == 0
         assert grad_eqn.params["method"] == "auto"
         assert grad_eqn.params["h"] == 1e-6
@@ -448,7 +448,7 @@ class TestCtrlQfunc:
             "fn",
             "scalar_out",
         }
-        assert grad_eqn.params["argnums"] == [0]
+        assert grad_eqn.params["argnums"] == (0,)
         assert grad_eqn.params["n_consts"] == 0
         assert grad_eqn.params["method"] == "auto"
         assert grad_eqn.params["h"] == 1e-6
