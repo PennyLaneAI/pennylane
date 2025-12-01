@@ -29,6 +29,7 @@ from pennylane.resource.resource import (
     Resources,
     ResourcesOperation,
     SpecsResources,
+    SpecsResult,
     _combine_dict,
     _count_resources,
     _scale_dict,
@@ -809,6 +810,196 @@ class TestSpecsResources:
         }
 
         assert s.to_dict() == expected
+
+
+class TestSpecsResult:
+
+    def example_specs_result(self):
+        """Generate an example SpecsResult instance."""
+        return SpecsResult(
+            device_name="default.qubit",
+            num_device_wires=5,
+            shots=Shots(1000),
+            level=2,
+            resources=SpecsResources(
+                gate_types={"Hadamard": 2, "CNOT": 1},
+                gate_sizes={1: 2, 2: 1},
+                measurements={"expval": 1},
+                num_allocs=2,
+                depth=2,
+            ),
+        )
+
+    def example_specs_result_multi(self):
+        """Generate an example SpecsResult instance."""
+        return SpecsResult(
+            device_name="default.qubit",
+            num_device_wires=5,
+            shots=Shots(1000),
+            level=[1, 2],
+            resources={
+                1: SpecsResources(
+                    gate_types={"Hadamard": 2, "CNOT": 1},
+                    gate_sizes={1: 2, 2: 1},
+                    measurements={"expval": 1},
+                    num_allocs=2,
+                    depth=2,
+                ),
+                2: SpecsResources(
+                    gate_types={"CNOT": 1},
+                    gate_sizes={2: 1},
+                    measurements={"expval": 1},
+                    num_allocs=2,
+                    depth=1,
+                ),
+            },
+        )
+
+    def test_blank_init(self):
+        """Test that SpecsResults can be instantiated with no arguments."""
+        r = SpecsResult()  # should not raise any errors
+
+        assert r.device_name is None
+        assert r.num_device_wires is None
+        assert r.shots is None
+        assert r.level is None
+        assert r.resources is None
+
+    def test_getitem(self):
+        """Test that SpecsResult supports indexing via __getitem__."""
+
+        r = self.example_specs_result()
+
+        assert r["device_name"] == r.device_name
+        assert r["num_device_wires"] == r.num_device_wires
+        assert r["shots"] == r.shots
+        assert r["level"] == r.level
+        assert r["resources"] == r.resources
+
+    def test_getitem_removed_keys(self):
+        """Test that SpecsResult raises more descriptive KeyErrors for removed keys."""
+
+        r = self.example_specs_result()
+
+        with pytest.raises(
+            KeyError,
+            match="num_observables is no longer in top-level specs and has instead been absorbed into the 'measurements' attribute of the specs's resources.",
+        ):
+            _ = r["num_observables"]
+
+        for key in ("interface", "diff_method", "errors", "num_tape_wires"):
+            with pytest.raises(
+                KeyError,
+                match=f"key '{key}' is no longer included in specs.",
+            ):
+                _ = r[key]
+
+        for key in (
+            "gradient_fn",
+            "gradient_options",
+            "num_gradient_executions",
+            "num_trainable_params",
+        ):
+            with pytest.raises(
+                KeyError,
+                match=f"key '{key}' is no longer included in specs, as specs no longer gathers gradient information.",
+            ):
+                _ = r[key]
+
+        # Check nonexistent key
+        with pytest.raises(
+            KeyError,
+            match="key 'potato' not available. Options are ",
+        ):
+            _ = r["potato"]
+
+    def test_to_dict(self):
+        """Test the to_dict method of SpecsResult."""
+
+        r = self.example_specs_result()
+
+        expected = {
+            "device_name": "default.qubit",
+            "num_device_wires": 5,
+            "shots": Shots(1000),
+            "level": 2,
+            "resources": {
+                "gate_types": {"Hadamard": 2, "CNOT": 1},
+                "gate_sizes": {1: 2, 2: 1},
+                "measurements": {"expval": 1},
+                "num_allocs": 2,
+                "depth": 2,
+                "num_gates": 3,
+            },
+        }
+
+        assert r.to_dict() == expected
+
+        r = self.example_specs_result_multi()
+
+        expected = {
+            "device_name": "default.qubit",
+            "num_device_wires": 5,
+            "shots": Shots(1000),
+            "level": [1, 2],
+            "resources": {
+                1: {
+                    "gate_types": {"Hadamard": 2, "CNOT": 1},
+                    "gate_sizes": {1: 2, 2: 1},
+                    "measurements": {"expval": 1},
+                    "num_allocs": 2,
+                    "depth": 2,
+                    "num_gates": 3,
+                },
+                2: {
+                    "gate_types": {"CNOT": 1},
+                    "gate_sizes": {2: 1},
+                    "measurements": {"expval": 1},
+                    "num_allocs": 2,
+                    "depth": 1,
+                    "num_gates": 1,
+                },
+            },
+        }
+
+        assert r.to_dict() == expected
+
+    def test_str(self):
+        """Test the string representation of a SpecsResult instance."""
+
+        r = self.example_specs_result()
+
+        expected = "Device: default.qubit\n"
+        expected += "Device wires: 5\n"
+        expected += "Shots: Shots(total=1000)\n"
+        expected += "Level: 2\n"
+        expected += "\n"
+        expected += "Resource specifications:\n"
+        expected += r.resources.to_pretty_str(preindent=2)
+
+        assert str(r) == expected
+
+    def test_str_multi(self):
+        """Test the string representation of a SpecsResult instance."""
+
+        r = self.example_specs_result_multi()
+
+        expected = "Device: default.qubit\n"
+        expected += "Device wires: 5\n"
+        expected += "Shots: Shots(total=1000)\n"
+        expected += "Level: [1, 2]\n"
+        expected += "\n"
+        expected += "Resource specifications:\n"
+
+        expected += "Level = 1:\n"
+        expected += r.resources[1].to_pretty_str(preindent=2)
+
+        expected += "\n" + "-" * 60 + "\n\n"
+
+        expected += "Level = 2:\n"
+        expected += r.resources[2].to_pretty_str(preindent=2)
+
+        assert str(r) == expected
 
 
 class TestCountResources:

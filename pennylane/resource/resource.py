@@ -453,7 +453,7 @@ class SpecsResult:
                 | "num_trainable_params"
             ):
                 raise KeyError(
-                    f"key '{key}' is no longer included in specs, as it no longer gathers gradient information."
+                    f"key '{key}' is no longer included in specs, as specs no longer gathers gradient information."
                 )
         raise KeyError(
             f"key '{key}' not available. Options are {[field.name for field in fields(self)]}"
