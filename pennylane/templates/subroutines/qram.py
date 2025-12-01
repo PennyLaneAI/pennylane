@@ -683,7 +683,9 @@ def _tree_mark_routers_via_bus_ctrl(tree_wire_manager, n_tree, k, signal):
                 ctrl(SWAP(wires=[origin, target]), control=[signal], control_values=[1])
 
 
-def _block_tree_query_ops(bitstrings, block_index, tree_wire_manager, n_tree, k, signal):  # pylint: disable=too-many-arguments
+def _block_tree_query_ops(
+    bitstrings, block_index, tree_wire_manager, n_tree, k, signal
+):  # pylint: disable=too-many-arguments
     """One BBQRAM-style query of the (n_tree)-depth tree for a fixed select prefix."""
 
     if n_tree == 0:

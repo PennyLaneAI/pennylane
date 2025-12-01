@@ -234,7 +234,9 @@ def test_bbqram_decomposition_new(
 
 
 @qnode(dev)
-def hybrid_quantum(bitstrings, control_wires, target_wires, work_wires, k, address):  # pylint: disable=too-many-arguments
+def hybrid_quantum(
+    bitstrings, control_wires, target_wires, work_wires, k, address
+):  # pylint: disable=too-many-arguments
     BasisEmbedding(address, wires=control_wires)
 
     HybridQRAM(
