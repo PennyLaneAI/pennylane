@@ -118,8 +118,8 @@ kernels = ["cvxpy", "cvxopt"]
 docs = [
     "pip",
     "autoray",
-    "jax==0.6.0",
-    "jaxlib==0.6.0",
+    "jax==0.7.0",
+    "jaxlib==0.7.0",
     "mistune==0.8.4",
     "m2r2",
     "pygments-github-lexers",
