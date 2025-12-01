@@ -82,7 +82,7 @@ def _fill_in_shape_with_dyn_shape(dyn_shape: tuple["jax.core.Tracer"], shape: tu
     for s in shape:
         if s is not None:
             new_shape.append(s)
-        else:
+        else:  # pragma: no cover
             # pull from iterable of dynamic shapes
             next_s = next(dyn_shape_iter)
             if not qml.math.is_abstract(next_s):
@@ -496,9 +496,10 @@ def handle_for_loop(
     self, start, stop, step, *args, jaxpr_body_fn, consts_slice, args_slice, abstract_shapes_slice
 ):
     """Handle a for loop primitive."""
-    consts = args[consts_slice]
-    init_state = args[args_slice]
-    abstract_shapes = args[abstract_shapes_slice]
+    # Convert tuples back to slices (tuples are used for JAX 0.7.0 hashability)
+    consts = args[slice(*consts_slice)]
+    init_state = args[slice(*args_slice)]
+    abstract_shapes = args[slice(*abstract_shapes_slice)]
     new_jaxpr_body_fn = jaxpr_to_jaxpr(
         copy(self), jaxpr_body_fn, consts, *abstract_shapes, start, *init_state
     )
@@ -523,6 +524,10 @@ def handle_for_loop(
 @PlxprInterpreter.register_primitive(cond_prim)
 def handle_cond(self, *invals, jaxpr_branches, consts_slices, args_slice):
     """Handle a cond primitive."""
+    # Convert tuples back to slices (tuples are used for JAX 0.7.0 hashability)
+    args_slice = slice(*args_slice)
+    consts_slices = [slice(*s) for s in consts_slices]
+
     args = invals[args_slice]
 
     new_jaxprs = []
@@ -560,6 +565,11 @@ def handle_while_loop(
     args_slice,
 ):
     """Handle a while loop primitive."""
+    # Convert tuples back to slices (tuples are used for JAX 0.7.0 hashability)
+    body_slice = slice(*body_slice)
+    cond_slice = slice(*cond_slice)
+    args_slice = slice(*args_slice)
+
     consts_body = invals[body_slice]
     consts_cond = invals[cond_slice]
     init_state = invals[args_slice]
@@ -654,6 +664,11 @@ def flatten_while_loop(
     args_slice,
 ):
     """Handle the while loop by a flattened python strategy."""
+    # Convert tuples back to slices (tuples are used for JAX 0.7.0 hashability)
+    body_slice = slice(*body_slice)
+    cond_slice = slice(*cond_slice)
+    args_slice = slice(*args_slice)
+
     consts_body = invals[body_slice]
     consts_cond = invals[cond_slice]
     init_state = invals[args_slice]
@@ -671,6 +686,10 @@ FlattenedHigherOrderPrimitives[while_loop_prim] = flatten_while_loop
 @FlattenedInterpreter.register_primitive(cond_prim)
 def flattened_cond(self, *invals, jaxpr_branches, consts_slices, args_slice):
     """Handle the cond primitive by a flattened python strategy."""
+    # Convert tuples back to slices (tuples are used for JAX 0.7.0 hashability)
+    args_slice = slice(*args_slice)
+    consts_slices = [slice(*s) for s in consts_slices]
+
     n_branches = len(jaxpr_branches)
     conditions = invals[:n_branches]
     args = invals[args_slice]
@@ -694,6 +713,11 @@ def flattened_for(
     self, start, stop, step, *invals, jaxpr_body_fn, consts_slice, args_slice, abstract_shapes_slice
 ):
     """Handle the for loop by a flattened python strategy."""
+    # Convert tuples back to slices (tuples are used for JAX 0.7.0 hashability)
+    consts_slice = slice(*consts_slice)
+    args_slice = slice(*args_slice)
+    abstract_shapes_slice = slice(*abstract_shapes_slice)
+
     consts = invals[consts_slice]
     init_state = invals[args_slice]
     abstract_shapes = invals[abstract_shapes_slice]
