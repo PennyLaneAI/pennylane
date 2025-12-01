@@ -301,7 +301,6 @@ class TestCtrlQfunc:
         qml.assert_equal(q.queue[0], expected)
 
         assert plxpr.eqns[0].primitive == ctrl_transform_prim
-        # JAX 0.7.0 requires hashable params, so lists become tuples
         assert plxpr.eqns[0].params["control_values"] == (True,)
         assert plxpr.eqns[0].params["n_control"] == 1
         assert plxpr.eqns[0].params["work_wires"] is None
@@ -324,7 +323,6 @@ class TestCtrlQfunc:
         assert len(q) == 1
 
         assert plxpr.eqns[0].primitive == ctrl_transform_prim
-        # JAX 0.7.0 requires hashable params, so lists become tuples
         assert plxpr.eqns[0].params["control_values"] == (True, True)
         assert plxpr.eqns[0].params["n_control"] == 2
         assert plxpr.eqns[0].params["work_wires"] is None
@@ -363,7 +361,6 @@ class TestCtrlQfunc:
         qml.assert_equal(q.queue[0], expected)
         assert len(q) == 1
 
-        # JAX 0.7.0 requires hashable params, so lists become tuples
         assert plxpr.eqns[0].params["control_values"] == (False, True)
         assert plxpr.eqns[0].params["n_control"] == 2
 
@@ -419,7 +416,6 @@ class TestCtrlQfunc:
             qml.assert_equal(q.queue[2], qml.ctrl(qml.S(2), 0))
 
         eqn = jaxpr.eqns[0]
-        # JAX 0.7.0 requires hashable params, so lists become tuples
         assert eqn.params["control_values"] == (True,)
         assert eqn.params["n_consts"] == 0
         assert eqn.params["n_control"] == 1

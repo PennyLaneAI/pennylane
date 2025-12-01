@@ -102,7 +102,7 @@ from pennylane.templates.swapnetworks import *
 from pennylane.templates.state_preparations import *
 from pennylane.templates.subroutines import *
 from pennylane import qaoa
-from pennylane.workflow import QNode, qnode, execute, set_shots
+from pennylane.workflow import QNode, qnode, execute, set_shots, marker
 from pennylane import workflow
 
 from pennylane.transforms import (
@@ -211,6 +211,19 @@ if _find_spec("jax") is not None:
             "Please downgrade JAX to 0.7.0 to avoid runtime errors using "
             "python -m pip install jax==0.7.0 jaxlib==0.7.0",
             RuntimeWarning,
+        )
+
+if _find_spec("numpy") is not None:
+    if (numpy_version := _Version(_metadata_version("numpy"))) < _Version(
+        "2.0.0"
+    ):  # pragma: no cover
+        warnings.warn(
+            "PennyLane v0.44 has dropped maintainence support for NumPy < 2.0.0. "
+            f"You have version {numpy_version} installed. "
+            "Future versions of PennyLane will not work with NumPy<2.0. "
+            "Please consider upgrading NumPy using "
+            "`python -m pip install numpy --upgrade`. ",
+            exceptions.PennyLaneDeprecationWarning,
         )
 
 

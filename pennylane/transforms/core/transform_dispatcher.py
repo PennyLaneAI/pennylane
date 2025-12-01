@@ -45,9 +45,7 @@ def _create_transform_primitive():
 
     # pylint: disable=too-many-arguments, disable=unused-argument
     @transform_prim.def_impl
-    def _impl(
-        *all_args, inner_jaxpr, args_slice, consts_slice, targs_slice, tkwargs, transform
-    ):  # pylint: disable=unused-argument
+    def _impl(*all_args, inner_jaxpr, args_slice, consts_slice, targs_slice, tkwargs, transform):
         args = all_args[slice(*args_slice)]
         consts = all_args[slice(*consts_slice)]
         return capture.eval_jaxpr(inner_jaxpr, consts, *args)

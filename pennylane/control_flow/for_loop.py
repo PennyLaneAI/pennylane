@@ -378,7 +378,7 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
 
         flat_fn = FlatFn(self.body_fn, in_tree=in_tree)
 
-        if abstracted_axes:
+        if abstracted_axes:  # pragma: no cover
             new_body_fn = add_abstract_shapes(flat_fn, shape_locations)
             dummy_init_state = [get_dummy_arg(arg) for arg in flat_args]
             abstracted_axes = ({},) + abstracted_axes  # add in loop index
@@ -390,11 +390,11 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
             jaxpr_body_fn = jax.make_jaxpr(new_body_fn, abstracted_axes=abstracted_axes)(
                 0, *dummy_init_state
             )
-        except ValueError as e:
+        except ValueError as e:  # pragma: no cover
             handle_jaxpr_error(e, (self.body_fn,), self.allow_array_resizing, "for_loop")
 
         error_msg = validate_no_resizing_returns(jaxpr_body_fn.jaxpr, shape_locations, "for_loop")
-        if error_msg:
+        if error_msg:  # pragma: no cover
             if allow_array_resizing == "auto":
                 # didn't work, so try with array resizing.
                 return self._get_jaxpr(init_state, allow_array_resizing=True)

@@ -127,7 +127,6 @@ class TestCaptureTransforms:
         assert (transform_eqn := jaxpr.eqns[0]).primitive == transform_prim
 
         params = transform_eqn.params
-        # JAX 0.7.0 requires hashable params, so slices become tuples
         assert params["args_slice"] == (0, 1, None)
         assert params["consts_slice"] == (1, 1, None)
         assert params["targs_slice"] == (1, None, None)
@@ -158,7 +157,6 @@ class TestCaptureTransforms:
         assert transform_eqn.params["transform"] == z_to_hadamard
 
         params = transform_eqn.params
-        # JAX 0.7.0 requires hashable params, so slices become tuples
         assert params["args_slice"] == (0, 2, None)
         assert params["consts_slice"] == (2, 2, None)
         assert params["targs_slice"] == (2, None, None)
@@ -246,7 +244,6 @@ class TestCaptureTransforms:
         assert transform_eqn1.params["transform"] == z_to_hadamard
 
         params1 = transform_eqn1.params
-        # JAX 0.7.0 requires hashable params, so slices become tuples
         assert params1["args_slice"] == (0, 1, None)
         assert params1["consts_slice"] == (1, 1, None)
         assert params1["targs_slice"] == (1, None, None)
@@ -258,7 +255,6 @@ class TestCaptureTransforms:
         assert transform_eqn2.params["transform"] == expval_z_obs_to_x_obs
 
         params2 = transform_eqn2.params
-        # JAX 0.7.0 requires hashable params, so slices become tuples
         assert params2["args_slice"] == (0, 1, None)
         assert params2["consts_slice"] == (1, 1, None)
         assert params2["targs_slice"] == (1, None, None)
