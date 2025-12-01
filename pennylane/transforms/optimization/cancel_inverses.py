@@ -256,6 +256,7 @@ def _get_plxpr_cancel_inverses():  # pylint: disable=too-many-statements
 
     def cancel_inverses_plxpr_to_plxpr(jaxpr, consts, targs, tkwargs, *args):
         """Function for applying the ``cancel_inverses`` transform on plxpr."""
+        tkwargs = dict(tkwargs)
 
         interpreter = CancelInversesInterpreter(*targs, **tkwargs)
 

@@ -31,23 +31,23 @@ from pennylane.tape import QuantumScript
 from pennylane.typing import ResultBatch
 
 
-def _create_transform_primitive(name):
+@functools.lru_cache
+def _create_transform_primitive():
     try:
         # pylint: disable=import-outside-toplevel
         from pennylane.capture.custom_primitives import QmlPrimitive
     except ImportError:
         return None
 
-    transform_prim = QmlPrimitive(name + "_transform")
+    transform_prim = QmlPrimitive("transform")
     transform_prim.multiple_results = True
     transform_prim.prim_type = "transform"
 
+    # pylint: disable=too-many-arguments, disable=unused-argument
     @transform_prim.def_impl
-    def _impl(
-        *all_args, inner_jaxpr, args_slice, consts_slice, targs_slice, tkwargs
-    ):  # pylint: disable=unused-argument
-        args = all_args[args_slice]
-        consts = all_args[consts_slice]
+    def _impl(*all_args, inner_jaxpr, args_slice, consts_slice, targs_slice, tkwargs, transform):
+        args = all_args[slice(*args_slice)]
+        consts = all_args[slice(*consts_slice)]
         return capture.eval_jaxpr(inner_jaxpr, consts, *args)
 
     @transform_prim.def_abstract_eval
@@ -67,6 +67,8 @@ def _create_plxpr_fallback_transform(tape_transform):
         return None
 
     def plxpr_fallback_transform(jaxpr, consts, targs, tkwargs, *args):
+        # Restore tkwargs from hashable tuple to dict
+        tkwargs = dict(tkwargs)
 
         def wrapper(*inner_args):
             tape = plxpr_to_tape(jaxpr, consts, *inner_args)
@@ -95,33 +97,6 @@ def _create_plxpr_fallback_transform(tape_transform):
         return jax.make_jaxpr(wrapper, abstracted_axes=abstracted_axes)(*abstract_shapes, *args)
 
     return plxpr_fallback_transform
-
-
-def _register_primitive_for_expansion(primitive, plxpr_transform):
-    """Register a transform such that it can be expanded when applied to a function with
-    program capture enabled."""
-    # pylint: disable=import-outside-toplevel
-    try:
-        import jax
-
-        from pennylane.capture.expand_transforms import ExpandTransformsInterpreter
-    except ImportError:
-        return
-
-    @ExpandTransformsInterpreter.register_primitive(primitive)
-    def _(
-        self, *invals, inner_jaxpr, args_slice, consts_slice, targs_slice, tkwargs
-    ):  # pylint: disable=too-many-arguments
-        args = invals[args_slice]
-        consts = invals[consts_slice]
-        targs = invals[targs_slice]
-
-        def wrapper(*inner_args):
-            return copy(self).eval(inner_jaxpr, consts, *inner_args)
-
-        jaxpr = jax.make_jaxpr(wrapper)(*args)
-        jaxpr = plxpr_transform(jaxpr.jaxpr, jaxpr.consts, targs, tkwargs, *args)
-        return copy(self).eval(jaxpr.jaxpr, jaxpr.consts, *args)
 
 
 def specific_apply_transform(transform, obj, *targs, **tkwargs):
@@ -216,8 +191,6 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
         )
 
         self._plxpr_transform = plxpr_transform or _create_plxpr_fallback_transform(self._transform)
-        self._primitive = _create_transform_primitive(self._transform.__name__)
-        _register_primitive_for_expansion(self._primitive, self._plxpr_transform)
 
     @property
     def register(self):
@@ -539,7 +512,7 @@ def _capture_apply(obj, transform, *targs, **tkwargs):
         consts_slice = slice(n_args, n_args + n_consts)
         targs_slice = slice(n_args + n_consts, None)
 
-        results = transform._primitive.bind(  # pylint: disable=protected-access
+        results = _create_transform_primitive().bind(  # pylint: disable=protected-access
             *flat_args,
             *jaxpr.consts,
             *targs,
@@ -548,6 +521,7 @@ def _capture_apply(obj, transform, *targs, **tkwargs):
             consts_slice=consts_slice,
             targs_slice=targs_slice,
             tkwargs=tkwargs,
+            transform=transform,
         )
 
         assert flat_qfunc.out_tree is not None
