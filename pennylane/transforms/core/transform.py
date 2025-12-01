@@ -262,7 +262,7 @@ def transform(  # pylint: disable=too-many-arguments
             func.func public @circui
 
         Transforms can have both tape-based and ``pass_name``-based definitions. In that case, the MLIR pass
-        will take precedence when possible.
+        will take precedence when being ``qjit``'d and only MLIR passes occur after.
 
         .. code-block:: python
 
