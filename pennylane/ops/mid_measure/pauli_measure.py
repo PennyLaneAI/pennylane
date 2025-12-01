@@ -127,7 +127,7 @@ def pauli_measure(pauli_word: str, wires: WiresLike, postselect: int | None = No
 
     .. note::
 
-        The circuits generated from this function are currently not executable on any backend.
+        The circuits comprising this function are currently not executable on any backend.
         This function is only for analysis and potential future execution when a suitable backend is
         available.
 
