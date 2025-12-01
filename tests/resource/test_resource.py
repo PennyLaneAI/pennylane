@@ -794,6 +794,22 @@ class TestSpecsResources:
         assert s.to_pretty_str() == expected
         assert s.to_pretty_str(preindent=4) == expected_indented
 
+    def test_to_dict(self):
+        """Test the to_dict method of SpecsResources."""
+
+        s = self.example_specs_resource()
+
+        expected = {
+            "gate_types": {"Hadamard": 2, "CNOT": 1},
+            "gate_sizes": {1: 2, 2: 1},
+            "measurements": {"expval": 1},
+            "num_allocs": 2,
+            "depth": 2,
+            "num_gates": 3,
+        }
+
+        assert s.to_dict() == expected
+
 
 class TestCountResources:
     class _CustomOpWithResource(ResourcesOperation):  # pylint: disable=too-few-public-methods
@@ -856,7 +872,8 @@ class TestCountResources:
 
     @pytest.mark.parametrize("script, expected_resources", zip(scripts, expected_resources))
     def test_count_resources_no_depth(self, script, expected_resources):
-        """Test the count resources method."""
+        """Test the count resources method with depth disabled."""
+
         computed_resources = _count_resources(script, compute_depth=False)
         expected_resources = SpecsResources(
             gate_types=expected_resources.gate_types,
@@ -864,4 +881,5 @@ class TestCountResources:
             measurements=expected_resources.measurements,
             num_allocs=expected_resources.num_allocs,
         )
+
         assert computed_resources == expected_resources

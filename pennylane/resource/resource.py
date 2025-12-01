@@ -284,7 +284,12 @@ class SpecsResources:
 
     def to_dict(self) -> dict[str, Any]:
         """Convert the SpecsResources to a dictionary."""
-        return asdict(self)
+
+        # Need to explicitly include properties
+        d = asdict(self)
+        d["num_gates"] = self.num_gates
+
+        return d
 
     def __getitem__(self, key):
         if key in (field.name for field in fields(self)):
@@ -418,8 +423,16 @@ class SpecsResult:
     resources: SpecsResources | dict[int | str, SpecsResources] = None
 
     def to_dict(self) -> dict[str, Any]:
-        """Convert the SpecsResources to a dictionary."""
-        return asdict(self)
+        """Convert the SpecsResult to a dictionary."""
+        d = asdict(self)
+
+        # Replace Resources objects with their dict representations
+        if isinstance(self.resources, SpecsResources):
+            d["resources"] = self.resources.to_dict()
+        elif isinstance(self.resources, dict):
+            d["resources"] = {k: v.to_dict() for k, v in self.resources.items()}
+
+        return d
 
     def __getitem__(self, key):
         if key in (field.name for field in fields(self)):
