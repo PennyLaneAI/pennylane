@@ -22,17 +22,17 @@ from functools import partial
 
 import pennylane as qml
 
-from .resource import SpecsResources, SpecsResult, resources_from_tape
+from .resource import CircuitSpecs, SpecsResources, resources_from_tape
 
 # Used for device-level qjit resource tracking
 _RESOURCE_TRACKING_FILEPATH = "__qml_specs_qjit_resources.json"
 
 
-def _specs_qnode(qnode, level, compute_depth, *args, **kwargs) -> SpecsResult:
+def _specs_qnode(qnode, level, compute_depth, *args, **kwargs) -> CircuitSpecs:
     """Returns information on the structure and makeup of provided QNode.
 
     Returns:
-        dict[SpecsResult]: result object that contains QNode specifications
+        CircuitSpecs: result object that contains QNode specifications
     """
 
     resources = {}
@@ -46,7 +46,7 @@ def _specs_qnode(qnode, level, compute_depth, *args, **kwargs) -> SpecsResult:
     else:
         level = list(resources.keys())
 
-    return SpecsResult(
+    return CircuitSpecs(
         resources=resources,
         num_device_wires=len(qnode.device.wires) if qnode.device.wires is not None else None,
         device_name=qnode.device.name,
@@ -121,7 +121,7 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> SpecsResult:  # 
         if os.path.exists(_RESOURCE_TRACKING_FILEPATH):
             os.remove(_RESOURCE_TRACKING_FILEPATH)
 
-    return SpecsResult(
+    return CircuitSpecs(
         resources=resources,
         num_device_wires=len(qjit.original_function.device.wires),
         device_name=qjit.original_function.device.name,
@@ -134,7 +134,7 @@ def specs(
     qnode,
     level: str | int | slice = "gradient",
     compute_depth: bool = True,
-) -> Callable[..., SpecsResult]:
+) -> Callable[..., CircuitSpecs]:
     r"""Resource information about a quantum circuit.
 
     This transform converts a QNode into a callable that provides resource information
@@ -149,7 +149,7 @@ def specs(
 
     Returns:
         A function that has the same argument signature as ``qnode``. This function
-        returns a :class:`~.resource.SpecsResult` object containing information about qnode structure.
+        returns a :class:`~.resource.CircuitSpecs` object containing information about qnode structure.
 
     **Example**
 
@@ -174,17 +174,17 @@ def specs(
 
     >>> from pprint import pprint
     >>> pprint(qml.specs(circuit)(x, add_ry=False))
-    SpecsResult(device_name='default.qubit',
-                num_device_wires=2,
-                shots=Shots(total_shots=None, shot_vector=()),
-                level='gradient',
-                resources=SpecsResources(gate_types={'CNOT': 1,
-                                                    'Evolution': 96,
-                                                    'RX': 1},
-                                        gate_sizes={1: 97, 2: 1},
-                                        measurements={'probs': 1},
-                                        num_allocs=2,
-                                        depth=98))
+    CircuitSpecs(device_name='default.qubit',
+                 num_device_wires=2,
+                 shots=Shots(total_shots=None, shot_vector=()),
+                 level='gradient',
+                 resources=SpecsResources(gate_types={'CNOT': 1,
+                                                     'Evolution': 96,
+                                                     'RX': 1},
+                                          gate_sizes={1: 97, 2: 1},
+                                          measurements={'probs': 1},
+                                          num_allocs=2,
+                                          depth=98))
 
     .. details::
         :title: Usage Details

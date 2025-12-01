@@ -357,7 +357,7 @@ class SpecsResources:
 
 
 @dataclass(frozen=True)
-class SpecsResult:
+class CircuitSpecs:
     """
     Contains resource information about a qnode.
 
@@ -376,8 +376,8 @@ class SpecsResult:
 
         **Example**
 
-        >>> from pennylane.resource import SpecsResources, SpecsResult
-        >>> res = SpecsResult(
+        >>> from pennylane.resource import SpecsResources, CircuitSpecs
+        >>> res = CircuitSpecs(
         ...     device_name="default.qubit",
         ...     num_device_wires=2,
         ...     shots=Shots(1000),
@@ -423,7 +423,7 @@ class SpecsResult:
     resources: SpecsResources | dict[int | str, SpecsResources] = None
 
     def to_dict(self) -> dict[str, Any]:
-        """Convert the SpecsResult to a dictionary."""
+        """Convert the CircuitSpecs to a dictionary."""
         d = asdict(self)
 
         # Replace Resources objects with their dict representations
