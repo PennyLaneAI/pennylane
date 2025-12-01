@@ -81,8 +81,6 @@ from numbers import Number
 from warnings import warn
 
 import jax
-from jax._src import compute_on, config, xla_metadata_lib
-from jax._src.interpreters.partial_eval import JaxprEqnContext, TracingEqn
 from jax.interpreters import ad, batching, mlir
 from jax.interpreters import partial_eval as pe
 
