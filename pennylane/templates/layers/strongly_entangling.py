@@ -221,4 +221,4 @@ def StronglyEntanglingLayers(weights, wires, ranges=None, imprimitive=CNOT):
     layers()  # pylint: disable=no-value-for-parameter
 
 
-StronglyEntanglingLayers.shape = staticmethod(shape)
+StronglyEntanglingLayers.shape = shape
