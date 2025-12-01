@@ -519,12 +519,19 @@ def _hybrid_qram_resources(bitstrings, num_target_wires, num_select_wires, k, n_
 
         resources[
             controlled_resource_rep(
-                base_class=CSWAP,
-                base_params={},
+                base_class=Controlled,
+                base_params={
+                    "base_class": SWAP,
+                    "base_params": {},
+                    "num_control_wires": 1,
+                    "num_zero_control_values": 0,
+                    "num_work_wires": 0,
+                    "work_wire_type": "borrowed"
+                },
                 num_control_wires=1,
                 num_zero_control_values=0,
             )
-        ] += (n_tree * 2 + ((1 << n_tree) - 1) * (num_target_wires + 2)) * num_blocks
+        ] += ((1 << n_tree) - 1 - n_tree) * 2 * num_blocks + ((1 << n_tree) - 1) * 2 * num_target_wires * num_blocks
 
         resources[
             controlled_resource_rep(
@@ -535,7 +542,7 @@ def _hybrid_qram_resources(bitstrings, num_target_wires, num_select_wires, k, n_
                     "num_control_wires": 1,
                     "num_zero_control_values": 1,
                     "num_work_wires": 0,
-                    "work_wire_type": "zeroed"
+                    "work_wire_type": "borrowed"
                 },
                 num_control_wires=1,
                 num_zero_control_values=0,
