@@ -222,6 +222,54 @@ class Resources:
 # many extra fields that are unwanted. Would be worth refactoring in the future.
 @dataclass(frozen=True)
 class SpecsResources:
+    """
+    Contains resource information for a quantum circuit.
+
+    Args:
+        gate_types (dict[str, int]): A dictionary mapping gate names to their counts.
+        gate_sizes (dict[int, int]): A dictionary mapping gate sizes to their counts.
+        measurements (dict[str, int]): A dictionary mapping measurements to their counts.
+        num_allocs (int): The number of unique qubit allocations. With no dynamic wires, this should be equal to the number of device wires.
+        depth (int | None): The depth of the circuit, or None if not computed.
+
+    Properties:
+        num_gates (int): The total number of gates in the circuit (computed from `gate_types`).
+
+    .. details::
+
+        Some helpful methods have been added to this data class to allow pretty-printing, as well as
+        indexing into it as a dictionary. See examples below.
+
+        **Example**
+
+        >>> from pennylane.resource import SpecsResources
+        >>> res = SpecsResources(
+        ...     gate_types={'Hadamard': 1, 'CNOT': 1},
+        ...     gate_sizes={1: 1, 2: 1},
+        ...     measurements={'expval': 1},
+        ...     num_allocs=2,
+        ...     depth=2
+        ... )
+
+        >>> print(res.num_gates)
+        2
+
+        >>> print(res["num_gates"])
+        2
+
+        >>> print(res)
+        Total qubit allocations: 2
+        Total gates: 2
+        Circuit depth: 2
+
+        Gate types:
+          Hadamard: 1
+          CNOT: 1
+
+        Measurements:
+          expval: 1
+    """
+
     gate_types: dict[str, int]
     gate_sizes: dict[int, int]
     measurements: dict[str, int]
@@ -229,15 +277,56 @@ class SpecsResources:
     depth: int | None = None
 
     def __post_init__(self):
-        assert sum(self.gate_types.values()) == sum(self.gate_sizes.values())
+        if sum(self.gate_types.values()) != sum(self.gate_sizes.values()):
+            raise ValueError(
+                "Inconsistent gate counts: `gate_types` and `gate_sizes` describe different amounts of gates."
+            )
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert the SpecsResources to a dictionary."""
+
+        # Need to explicitly include properties
+        d = asdict(self)
+        d["num_gates"] = self.num_gates
+
+        return d
+
+    def __getitem__(self, key):
+        if key in (field.name for field in fields(self)):
+            return getattr(self, key)
+
+        match key:
+            # Fields that used to be included in specs output prior to PL version 0.44
+            case "shots":
+                raise KeyError(
+                    "shots is no longer included within specs's resources, check the top-level object instead."
+                )
+            case "num_wires":
+                raise KeyError(
+                    "num_wires has been renamed to num_allocs to more accurate describe what it measures."
+                )
+            case "num_gates":
+                # As a property, this needs to be handled differently to the true fields
+                return self.num_gates
+
+        raise KeyError(
+            f"key '{key}' not available. Options are {[field.name for field in fields(self)]}"
+        )
 
     @property
     def num_gates(self) -> int:
+        """Total number of gates in the circuit."""
         return sum(self.gate_types.values())
 
     def to_pretty_str(self, preindent: int = 0) -> str:
         """
         Pretty string representation of the SpecsResources object.
+
+        Args:
+            preindent (int): Number of spaces to prepend to each line.
+
+        Returns:
+            str: A pretty representation of this object.
         """
         prefix = " " * preindent
         s = f"{prefix}Total qubit allocations: {self.num_allocs}\n"
@@ -248,14 +337,14 @@ class SpecsResources:
 
         s += f"{prefix}Gate types:\n"
         if not self.gate_types:
-            return s + prefix + "  No gates.\n"
+            s += prefix + "  No gates.\n"
         else:
             for gate, count in self.gate_types.items():
                 s += f"{prefix}  {gate}: {count}\n"
 
         s += f"\n{prefix}Measurements:\n"
         if not self.measurements:
-            return s + prefix + "  No measurements.\n"
+            s += prefix + "  No measurements.\n"
         else:
             for meas, count in self.measurements.items():
                 s += f"{prefix}  {meas}: {count}\n"
@@ -269,15 +358,81 @@ class SpecsResources:
 
 @dataclass(frozen=True)
 class SpecsResult:
-    resources: SpecsResources | dict[int | str, SpecsResources] = None
-    shots: Shots = None
+    """
+    Contains resource information about a qnode.
+
+    Args:
+        device_name (str): The name of the device used.
+        num_device_wires (int): The number of wires on the device.
+        shots (Shots): The shots configuration used.
+        level (Any): The level of the specs (see :func:`~pennylane.specs` for more details).
+        resources (SpecsResources | dict[int | str, SpecsResources]): The resource specifications.
+            Depending on the selected level, this may be be a dictionary of multiple :class:`.SpecsResources` objects.
+
+    .. details::
+
+        Some helpful methods have been added to this data class to allow pretty-printing, as well as
+        indexing into it as a dictionary. See examples below.
+
+        **Example**
+
+        >>> from pennylane.resource import SpecsResources, SpecsResult
+        >>> res = SpecsResult(
+        ...     device_name="default.qubit",
+        ...     num_device_wires=2,
+        ...     shots=Shots(1000),
+        ...     level="device",
+        ...     resources=SpecsResources(
+        ...         gate_types={"RX": 2, "CNOT": 1},
+        ...         gate_sizes={1: 2, 2: 1},
+        ...         measurements={"expval": 1},
+        ...         num_allocs=2,
+        ...         depth=3,
+        ...     ),
+        ... )
+
+        >>> print(res.num_device_wires)
+        2
+
+        >>> print(res["num_device_wires"])
+        2
+
+        >>> print(res)
+        Device: default.qubit
+        Device wires: 2
+        Shots: Shots(total=1000)
+        Level: device
+
+        Resource specifications:
+          Total qubit allocations: 2
+          Total gates: 3
+          Circuit depth: 3
+
+          Gate types:
+            RX: 2
+            CNOT: 1
+
+          Measurements:
+            expval: 1
+    """
+
     device_name: str = None
     num_device_wires: int = None
+    shots: Shots = None
     level: Any = None
+    resources: SpecsResources | dict[int | str, SpecsResources] = None
 
     def to_dict(self) -> dict[str, Any]:
-        """Convert the SpecsResources to a dictionary."""
-        return asdict(self)
+        """Convert the SpecsResult to a dictionary."""
+        d = asdict(self)
+
+        # Replace Resources objects with their dict representations
+        if isinstance(self.resources, SpecsResources):
+            d["resources"] = self.resources.to_dict()
+        elif isinstance(self.resources, dict):
+            d["resources"] = {k: v.to_dict() for k, v in self.resources.items()}
+
+        return d
 
     def __getitem__(self, key):
         if key in (field.name for field in fields(self)):
@@ -298,7 +453,7 @@ class SpecsResult:
                 | "num_trainable_params"
             ):
                 raise KeyError(
-                    f"key '{key}' is no longer included in specs, as it no longer gathers gradient information."
+                    f"key '{key}' is no longer included in specs, as specs no longer gathers gradient information."
                 )
         raise KeyError(
             f"key '{key}' not available. Options are {[field.name for field in fields(self)]}"
@@ -726,9 +881,11 @@ def resources_from_tape(
         tape (.QuantumScript): The quantum circuit for which we extract resources
         compute_depth (bool): If True, the depth of the circuit is computed and included in the resources.
             If False, the depth is set to None.
-
+        compute_errs (bool): If True, algorithmic errors are computed and returned alongside the resources.
+            Defaults to False.
     Returns:
-        (.SpecsDict): The specifications extracted from the workflow
+        (SpecsResources | tuple[SpecsResources, dict[str, Any]]): The resources associated with this tape, optionally
+        with algorithmic errors if `compute_errs` is set to True.
     """
     resources = _count_resources(tape, compute_depth=compute_depth)
 
@@ -764,8 +921,7 @@ def _scale_dict(dict1: dict, scalar: int):
 
 
 def _count_resources(tape: QuantumScript, compute_depth: bool = True) -> SpecsResources:
-    """Given a quantum circuit (tape), this function
-     counts the resources used by standard PennyLane operations.
+    """Given a quantum tape, this function counts the resources used by standard PennyLane operations.
 
     Args:
         tape (.QuantumScript): The quantum circuit for which we count resources
@@ -773,7 +929,7 @@ def _count_resources(tape: QuantumScript, compute_depth: bool = True) -> SpecsRe
             If False, the depth is set to None.
 
     Returns:
-        (.Resources): The total resources used in the workflow
+        (.SpecsResources): The total resources used in the workflow
     """
 
     num_wires = len(tape.wires)
@@ -796,7 +952,7 @@ def _count_resources(tape: QuantumScript, compute_depth: bool = True) -> SpecsRe
             gate_sizes[len(op.wires)] += 1
 
     for meas in tape.measurements:
-        measurements[meas._shortname] += 1
+        measurements[meas._shortname] += 1  # pylint: disable=protected-access
 
     return SpecsResources(
         gate_types=dict(gate_types),

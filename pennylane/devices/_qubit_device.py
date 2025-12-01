@@ -44,7 +44,6 @@ from pennylane.measurements import (
     SampleMeasurement,
     SampleMP,
     ShadowExpvalMP,
-    Shots,
     StateMeasurement,
     StateMP,
     VarianceMP,
@@ -52,7 +51,7 @@ from pennylane.measurements import (
 )
 from pennylane.operation import Operation, Operator, operation_derivative
 from pennylane.ops import MeasurementValue, MidMeasure, Rot, X, Y, Z, adjoint
-from pennylane.resource import Resources
+from pennylane.resource import SpecsResources
 from pennylane.tape import QuantumScript
 from pennylane.wires import Wires
 
@@ -314,16 +313,14 @@ class QubitDevice(Device):
         self._num_executions += 1
 
         if self.tracker.active:
-            shots_from_dev = self._shots if not self.shot_vector else self._raw_shot_sequence
             tape_resources = circuit.specs["resources"]
 
-            resources = Resources(  # temporary until shots get updated on tape !
-                tape_resources.num_wires,
-                tape_resources.num_gates,
-                tape_resources.gate_types,
-                tape_resources.gate_sizes,
-                tape_resources.depth,
-                Shots(shots_from_dev),
+            resources = SpecsResources(
+                num_allocs=tape_resources["num_allocs"],
+                gate_types=tape_resources["gate_types"],
+                gate_sizes=tape_resources["gate_sizes"],
+                measurements=tape_resources["measurements"],
+                depth=tape_resources["depth"],
             )
             self.tracker.update(
                 executions=1, shots=self._shots, results=results, resources=resources

@@ -65,10 +65,10 @@ class TestSpecsTransform:
         return circuit
 
     @pytest.mark.parametrize(
-        "level,expected_gates,exptected_train_params",
-        [(0, 6, 1), (1, 4, 3), (2, 3, 3), (3, 1, 1), ("device", 2, 2)],
+        "level,expected_gates",
+        [(0, 6), (1, 4), (2, 3), (3, 1), ("device", 2)],
     )
-    def test_int_specs_level(self, level, expected_gates, exptected_train_params):
+    def test_int_specs_level(self, level, expected_gates):
         circ = self.sample_circuit()
         specs = qml.specs(circ, level=level)(0.1)
 
