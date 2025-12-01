@@ -26,10 +26,10 @@ from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.measurements import Shots
 from pennylane.operation import Operation
 from pennylane.resource.resource import (
+    CircuitSpecs,
     Resources,
     ResourcesOperation,
     SpecsResources,
-    SpecsResult,
     _combine_dict,
     _count_resources,
     _scale_dict,
@@ -812,11 +812,11 @@ class TestSpecsResources:
         assert s.to_dict() == expected
 
 
-class TestSpecsResult:
+class TestCircuitSpecs:
 
     def example_specs_result(self):
-        """Generate an example SpecsResult instance."""
-        return SpecsResult(
+        """Generate an example CircuitSpecs instance."""
+        return CircuitSpecs(
             device_name="default.qubit",
             num_device_wires=5,
             shots=Shots(1000),
@@ -831,8 +831,8 @@ class TestSpecsResult:
         )
 
     def example_specs_result_multi(self):
-        """Generate an example SpecsResult instance."""
-        return SpecsResult(
+        """Generate an example CircuitSpecs instance."""
+        return CircuitSpecs(
             device_name="default.qubit",
             num_device_wires=5,
             shots=Shots(1000),
@@ -856,8 +856,8 @@ class TestSpecsResult:
         )
 
     def test_blank_init(self):
-        """Test that SpecsResults can be instantiated with no arguments."""
-        r = SpecsResult()  # should not raise any errors
+        """Test that CircuitSpecss can be instantiated with no arguments."""
+        r = CircuitSpecs()  # should not raise any errors
 
         assert r.device_name is None
         assert r.num_device_wires is None
@@ -866,7 +866,7 @@ class TestSpecsResult:
         assert r.resources is None
 
     def test_getitem(self):
-        """Test that SpecsResult supports indexing via __getitem__."""
+        """Test that CircuitSpecs supports indexing via __getitem__."""
 
         r = self.example_specs_result()
 
@@ -877,7 +877,7 @@ class TestSpecsResult:
         assert r["resources"] == r.resources
 
     def test_getitem_removed_keys(self):
-        """Test that SpecsResult raises more descriptive KeyErrors for removed keys."""
+        """Test that CircuitSpecs raises more descriptive KeyErrors for removed keys."""
 
         r = self.example_specs_result()
 
@@ -914,7 +914,7 @@ class TestSpecsResult:
             _ = r["potato"]
 
     def test_to_dict(self):
-        """Test the to_dict method of SpecsResult."""
+        """Test the to_dict method of CircuitSpecs."""
 
         r = self.example_specs_result()
 
@@ -965,7 +965,7 @@ class TestSpecsResult:
         assert r.to_dict() == expected
 
     def test_str(self):
-        """Test the string representation of a SpecsResult instance."""
+        """Test the string representation of a CircuitSpecs instance."""
 
         r = self.example_specs_result()
 
@@ -980,7 +980,7 @@ class TestSpecsResult:
         assert str(r) == expected
 
     def test_str_multi(self):
-        """Test the string representation of a SpecsResult instance."""
+        """Test the string representation of a CircuitSpecs instance."""
 
         r = self.example_specs_result_multi()
 
@@ -1040,6 +1040,18 @@ class TestCountResources:
             ],
             measurements=[qml.probs()],
         ),
+        QuantumScript(
+            ops=[
+                qml.ctrl(op=qml.IsingXX(0.5, wires=[10, 11]), control=range(10)),
+                qml.ctrl(op=qml.IsingXX(0.5, wires=[10, 11]), control=range(5)),
+                qml.ctrl(op=qml.IsingXX(0.5, wires=[10, 11]), control=[0]),
+                qml.CNOT([0, 1]),
+                qml.Toffoli([0, 1, 2]),
+                qml.ctrl(op=qml.PauliX(10), control=[0]),
+                qml.ctrl(op=qml.PauliX(10), control=[0, 1]),
+            ],
+            measurements=[qml.probs()],
+        ),
     )
 
     expected_resources = (
@@ -1052,6 +1064,13 @@ class TestCountResources:
             {"probs": 1},
             3,
             6,
+        ),
+        SpecsResources(
+            {"10C(IsingXX)": 1, "5C(IsingXX)": 1, "C(IsingXX)": 1, "CNOT": 2, "Toffoli": 2},
+            {12: 1, 7: 1, 3: 3, 2: 2},
+            {"probs": 1},
+            12,
+            7,
         ),
     )  # SpecsResources(gate_types, gate_sizes, measurements, num_allocs, depth)
 

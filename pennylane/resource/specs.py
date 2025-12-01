@@ -23,17 +23,17 @@ from functools import partial
 
 import pennylane as qml
 
-from .resource import SpecsResources, SpecsResult, resources_from_tape
+from .resource import CircuitSpecs, SpecsResources, resources_from_tape
 
 # Used for device-level qjit resource tracking
 _RESOURCE_TRACKING_FILEPATH = "__qml_specs_qjit_resources.json"
 
 
-def _specs_qnode(qnode, level, compute_depth, *args, **kwargs) -> SpecsResult:
+def _specs_qnode(qnode, level, compute_depth, *args, **kwargs) -> CircuitSpecs:
     """Returns information on the structure and makeup of provided QNode.
 
     Returns:
-        dict[SpecsResult]: result object that contains QNode specifications
+        CircuitSpecs: result object that contains QNode specifications
     """
 
     resources = {}
@@ -47,7 +47,7 @@ def _specs_qnode(qnode, level, compute_depth, *args, **kwargs) -> SpecsResult:
     else:
         level = list(resources.keys())
 
-    return SpecsResult(
+    return CircuitSpecs(
         resources=resources,
         num_device_wires=len(qnode.device.wires) if qnode.device.wires is not None else None,
         device_name=qnode.device.name,
@@ -58,7 +58,7 @@ def _specs_qnode(qnode, level, compute_depth, *args, **kwargs) -> SpecsResult:
 
 def _specs_qjit_device_level_tracking(
     qjit, original_qnode, pass_pipeline_wrapped, compute_depth, *args, **kwargs
-) -> SpecsResources:  # pragma: no cover
+) -> CircuitSpecs:  # pragma: no cover
     # pylint: disable=import-outside-toplevel
     # Have to import locally to prevent circular imports as well as accounting for Catalyst not being installed
     import catalyst
@@ -120,7 +120,7 @@ def _specs_qjit_device_level_tracking(
             "The returned SpecsResources will have an empty measurements field.",
             UserWarning,
         )
-        return SpecsResources(
+        return CircuitSpecs(
             gate_types=resource_data["gate_types"],
             gate_sizes={int(k): v for (k, v) in resource_data["gate_sizes"].items()},
             measurements={},  # Not tracked at the moment
@@ -131,7 +131,6 @@ def _specs_qjit_device_level_tracking(
         # Ensure we clean up the resource tracking file
         if os.path.exists(_RESOURCE_TRACKING_FILEPATH):
             os.remove(_RESOURCE_TRACKING_FILEPATH)
-
 
 def _specs_qjit_intermediate_passes(
     qjit, original_qnode, level, *args, **kwargs
@@ -279,7 +278,7 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> SpecsResult:  # 
     else:
         raise NotImplementedError(f"Unsupported level argument '{level}' for QJIT'd code.")
 
-    return SpecsResult(
+    return CircuitSpecs(
         resources=resources,
         shots=original_qnode.shots,
         device_name=device.name,
@@ -292,7 +291,7 @@ def specs(
     qnode,
     level: str | int | slice = "gradient",
     compute_depth: bool = True,
-) -> Callable[..., SpecsResult]:
+) -> Callable[..., CircuitSpecs]:
     r"""Resource information about a quantum circuit.
 
     This transform converts a QNode into a callable that provides resource information
@@ -307,7 +306,7 @@ def specs(
 
     Returns:
         A function that has the same argument signature as ``qnode``. This function
-        returns a :class:`~.resource.SpecsResult` object containing information about qnode structure.
+        returns a :class:`~.resource.CircuitSpecs` object containing information about qnode structure.
 
     **Example**
 
@@ -332,17 +331,17 @@ def specs(
 
     >>> from pprint import pprint
     >>> pprint(qml.specs(circuit)(x, add_ry=False))
-    SpecsResult(device_name='default.qubit',
-                num_device_wires=2,
-                shots=Shots(total_shots=None, shot_vector=()),
-                level='gradient',
-                resources=SpecsResources(gate_types={'CNOT': 1,
-                                                    'Evolution': 96,
-                                                    'RX': 1},
-                                        gate_sizes={1: 97, 2: 1},
-                                        measurements={'probs': 1},
-                                        num_allocs=2,
-                                        depth=98))
+    CircuitSpecs(device_name='default.qubit',
+                 num_device_wires=2,
+                 shots=Shots(total_shots=None, shot_vector=()),
+                 level='gradient',
+                 resources=SpecsResources(gate_types={'CNOT': 1,
+                                                     'Evolution': 96,
+                                                     'RX': 1},
+                                          gate_sizes={1: 97, 2: 1},
+                                          measurements={'probs': 1},
+                                          num_allocs=2,
+                                          depth=98))
 
     .. details::
         :title: Usage Details
