@@ -30,7 +30,8 @@ def approx_poly_degree(
     project_func: Callable | None = None,
     **fit_kwargs: dict[str, Any],
 ):
-    r"""Compute the minimum degree of a polynomial that fits the data with a given error tolerance.
+    r"""Compute the minimum degree required to fit a polynomial to the input function with a given
+    error tolerance.
 
     The polynomial is fit to the data using the least squares method in the monomial, Chebyshev,
     Legendre, and Hermite bases. The degree of the polynomial incrementally increased within the
