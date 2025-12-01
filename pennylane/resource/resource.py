@@ -222,6 +222,52 @@ class Resources:
 # many extra fields that are unwanted. Would be worth refactoring in the future.
 @dataclass(frozen=True)
 class SpecsResources:
+    """
+    Contains resource information for a quantum circuit.
+
+    Some helpful methods have been added to this data class to allow pretty-printing, as well as
+    indexing into it as a dictionary. See examples below.
+
+    Args:
+        gate_types (dict[str, int]): A dictionary mapping gate names to their counts.
+        gate_sizes (dict[int, int]): A dictionary mapping gate sizes to their counts.
+        measurements (dict[str, int]): A dictionary mapping measurements to their counts.
+        num_allocs (int): The number of unique qubit allocations. With no dynamic wires, this should be equal to the number of device wires.
+        depth (int | None): The depth of the circuit, or None if not computed.
+
+    Properties:
+        num_gates (int): The total number of gates in the circuit (computed from `gate_types`).
+
+    .. details::
+        **Example**
+        >>> from pennylane.resource import SpecsResources
+        >>> res = SpecsResources(
+        ...     gate_types={'Hadamard': 1, 'CNOT': 1},
+        ...     gate_sizes={1: 1, 2: 1},
+        ...     measurements={'expval': 1},
+        ...     num_allocs=2,
+        ...     depth=2
+        ... )
+
+        >>> print(res.num_gates)
+        2
+
+        >>> print(res["num_gates"])
+        2
+
+        >>> print(res)
+        Total qubit allocations: 2
+        Total gates: 2
+        Circuit depth: 2
+
+        Gate types:
+          Hadamard: 1
+          CNOT: 1
+
+        Measurements:
+          expval: 1
+    """
+
     gate_types: dict[str, int]
     gate_sizes: dict[int, int]
     measurements: dict[str, int]
@@ -249,6 +295,9 @@ class SpecsResources:
                 raise KeyError(
                     "num_wires has been renamed to num_allocs to more accurate describe what it measures."
                 )
+            case "num_gates":
+                # As a property, this needs to be handled differently to the true fields
+                return self.num_gates
 
         raise KeyError(
             f"key '{key}' not available. Options are {[field.name for field in fields(self)]}"
