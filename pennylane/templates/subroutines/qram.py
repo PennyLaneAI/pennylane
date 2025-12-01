@@ -401,7 +401,7 @@ class HybridQRAM(Operation):
 
     grad_method = None
 
-    resource_keys = {"bitstrings", "num_target_wires", "num_select_wires", "k", "n_tree"}
+    resource_keys = {"bitstrings", "num_target_wires", "num_select_wires", "k"}
 
     def __init__(
         self,
@@ -469,7 +469,7 @@ class HybridQRAM(Operation):
             portR_wires = Wires([])
 
         tree_wire_manager = _QRAMWires(
-            tree_control_wires, target_wires, bus_wire, dir_wires, portL_wires, portR_wires
+            control_wires, target_wires, bus_wire, dir_wires, portL_wires, portR_wires
         )
 
         all_wires = list(control_wires) + list(target_wires) + list(work_wires)
@@ -478,36 +478,34 @@ class HybridQRAM(Operation):
 
         self._hyperparameters = {
             "bitstrings": bitstrings,
-            "control_wires": control_wires,
             "select_wires": select_wires,
-            "tree_control_wires": tree_control_wires,
-            "target_wires": target_wires,
             "signal_wire": signal_wire,
             "tree_wire_manager": tree_wire_manager,
             "k": k,
-            "n_total": n_total,
-            "n_tree": n_tree,
-            "m": m,
         }
 
     @property
     def resource_params(self) -> dict:
+        wire_manager = self.hyperparameters["tree_wire_manager"]
+        k = self.hyperparameters["k"]
         return {
             "bitstrings": self.hyperparameters["bitstrings"],
-            "num_target_wires": len(self.hyperparameters["target_wires"]),
+            "num_target_wires": len(wire_manager.target_wires),
             "num_select_wires": len(self.hyperparameters["select_wires"]),
-            "k": self.hyperparameters["k"],
-            "n_tree": self.hyperparameters["n_tree"],
+            "k": k,
+            "num_tree_control_wires": len(wire_manager.control_wires[k:]),
         }
 
 
-def _hybrid_qram_resources(bitstrings, num_target_wires, num_select_wires, k, n_tree):
+def _hybrid_qram_resources(
+    bitstrings, num_target_wires, num_select_wires, k, num_tree_control_wires
+):
     resources = defaultdict(int)
     num_blocks = 1 << k if k > 0 else 1
 
     resources[resource_rep(PauliX)] += (k <= 0) * num_blocks * 2
 
-    if n_tree != 0:
+    if num_tree_control_wires != 0:
         resources[
             controlled_resource_rep(
                 base_class=SWAP,
@@ -515,10 +513,17 @@ def _hybrid_qram_resources(bitstrings, num_target_wires, num_select_wires, k, n_
                 num_control_wires=1,
                 num_zero_control_values=0,
             )
-        ] += ((n_tree + (1 << n_tree) - 1) * 2 + 2 * num_target_wires) * num_blocks
+        ] += (
+            (num_tree_control_wires + (1 << num_tree_control_wires) - 1) * 2 + 2 * num_target_wires
+        ) * num_blocks
 
         ccswap_count = (
-            (((1 << n_tree) - 1 - n_tree) + ((1 << n_tree) - 1) * num_target_wires) * num_blocks * 2
+            (
+                ((1 << num_tree_control_wires) - 1 - num_tree_control_wires)
+                + ((1 << num_tree_control_wires) - 1) * num_target_wires
+            )
+            * num_blocks
+            * 2
         )
 
         resources[
@@ -578,7 +583,7 @@ def _hybrid_qram_resources(bitstrings, num_target_wires, num_select_wires, k, n_
                 )
             ] += (k > 0) * 2
 
-        if n_tree == 0:
+        if num_tree_control_wires == 0:
             return resources
 
         resources[
@@ -590,9 +595,9 @@ def _hybrid_qram_resources(bitstrings, num_target_wires, num_select_wires, k, n_
             )
         ] += sum(
             [
-                bitstrings[(block_index << n_tree) + p][j] == "1"
+                bitstrings[(block_index << num_tree_control_wires) + p][j] == "1"
                 for j in range(num_target_wires)
-                for p in range(1 << n_tree)
+                for p in range(1 << num_tree_control_wires)
             ]
         )
     return resources
@@ -644,12 +649,12 @@ def _tree_route_bus_down_first_k_levels_ctrl(k_levels: int, tree_wire_manager, s
             )
 
 
-def _tree_mark_routers_via_bus_ctrl(tree_wire_manager, n_tree, signal):
+def _tree_mark_routers_via_bus_ctrl(tree_wire_manager, n_tree, k, signal):
     """Address loading for the tree (n_tree bits), controlled on signal."""
 
     for level in range(n_tree):
         # SWAP(tree_control_wires[level], bus) controlled on signal
-        origin = tree_wire_manager.control_wires[level]
+        origin = tree_wire_manager.control_wires[k:][level]
         target = tree_wire_manager.bus_wire[0]
         ctrl(SWAP(wires=[origin, target]), control=[signal], control_values=[1])
 
@@ -674,7 +679,7 @@ def _tree_mark_routers_via_bus_ctrl(tree_wire_manager, n_tree, signal):
                 ctrl(SWAP(wires=[origin, target]), control=[signal], control_values=[1])
 
 
-def _block_tree_query_ops(bitstrings, block_index: int, tree_wire_manager, n_tree, signal):
+def _block_tree_query_ops(bitstrings, block_index, tree_wire_manager, n_tree, k, signal):
     """One BBQRAM-style query of the (n_tree)-depth tree for a fixed select prefix."""
 
     if n_tree == 0:
@@ -682,7 +687,7 @@ def _block_tree_query_ops(bitstrings, block_index: int, tree_wire_manager, n_tre
         return
 
     # 1) address loading for the tree (controlled on signal)
-    _tree_mark_routers_via_bus_ctrl(tree_wire_manager, n_tree, signal)
+    _tree_mark_routers_via_bus_ctrl(tree_wire_manager, n_tree, k, signal)
 
     # 2) per-target data phase, controlled on signal
     for j, tw in enumerate(tree_wire_manager.target_wires):
@@ -712,12 +717,12 @@ def _block_tree_query_ops(bitstrings, block_index: int, tree_wire_manager, n_tre
         ctrl(Hadamard(wires=[tw]), control=[signal], control_values=[1])
 
     # 3) address unloading for the tree (controlled on signal)
-    adjoint(_tree_mark_routers_via_bus_ctrl, lazy=False)(tree_wire_manager, n_tree, signal)
+    adjoint(_tree_mark_routers_via_bus_ctrl, lazy=False)(tree_wire_manager, n_tree, k, signal)
 
 
 @register_resources(_hybrid_qram_resources)
 def _hybrid_qram_decomposition(
-    wires, bitstrings, tree_wire_manager, k, n_tree, select_wires, signal_wire, **_
+    wires, bitstrings, tree_wire_manager, k, select_wires, signal_wire, **_
 ):  # pylint: disable=unused-argument
 
     signal = signal_wire[0]
@@ -733,7 +738,14 @@ def _hybrid_qram_decomposition(
             PauliX(wires=signal)
 
         # Perform one tree query, driven by lower n_tree bits, controlled on signal
-        _block_tree_query_ops(bitstrings, block_index, tree_wire_manager, n_tree, signal)
+        _block_tree_query_ops(
+            bitstrings,
+            block_index,
+            tree_wire_manager,
+            len(tree_wire_manager.control_wires[k:]),
+            k,
+            signal,
+        )
 
         # Uncompute signal
         if k > 0:
