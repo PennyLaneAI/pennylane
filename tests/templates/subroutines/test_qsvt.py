@@ -800,6 +800,7 @@ class TestRootFindingSolver:
         with pytest.raises(AssertionError, match="Invalid conversion"):
             _ = qml.transform_angles(angles, "QFT", "QSVT")
 
+    @pytest.mark.external
     @pytest.mark.parametrize(
         "poly",
         [
@@ -836,7 +837,7 @@ class TestRootFindingSolver:
         expected = sum(coef * (x**i) for i, coef in enumerate(poly))
         assert np.isclose(output.real, expected.real)
 
-    @pytest.mark.jax
+    @pytest.mark.external
     @pytest.mark.parametrize(
         "poly",
         [
@@ -873,6 +874,7 @@ class TestRootFindingSolver:
         expected = sum(coef * (x**i) for i, coef in enumerate(poly))
         assert np.isclose(output.real, expected.real)
 
+    @pytest.mark.external
     @pytest.mark.parametrize(
         "poly",
         [
@@ -963,7 +965,7 @@ class TestRootFindingSolver:
 
 
 class TestIterativeSolver:
-    @pytest.mark.jax
+    @pytest.mark.external
     @pytest.mark.parametrize(
         "polynomial_coeffs_in_cheby_basis",
         [
