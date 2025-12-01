@@ -107,7 +107,6 @@ class ResourceConfig:
 
     def __init__(self) -> None:
         _DEFAULT_PRECISION = 1e-9
-        _DEFAULT_BIT_PRECISION = 15
         _DEFAULT_PHASEGRAD_PRECISION = 1e-6
         self.resource_op_precisions = {
             RX: {"precision": _DEFAULT_PRECISION},
