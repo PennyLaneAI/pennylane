@@ -381,9 +381,7 @@ class SelectOnlyQRAM(Operator):
         "select_value",
         "num_qram_wires",
         "num_select_wires",
-        "k",
         "m",
-        "n_total",
     }
 
     def __init__(
@@ -422,9 +420,6 @@ class SelectOnlyQRAM(Operator):
             "target_wires": target_wires,
             "select_wires": select_wires,
             "select_value": select_value,
-            "k": k,
-            "n_k": n_k,
-            "n_total": n_total,
         }
 
         super().__init__(wires=list(qram_wires) + list(target_wires) + list(select_wires), id=id)
@@ -444,21 +439,21 @@ class SelectOnlyQRAM(Operator):
         return {
             "bitstrings": self.hyperparameters["bitstrings"],
             "num_qram_wires": len(self.hyperparameters["qram_wires"]),
-            "n_total": self.hyperparameters["n_total"],
             "select_value": self.hyperparameters["select_value"],
             "num_select_wires": len(self.hyperparameters["select_wires"]),
-            "k": self.hyperparameters["k"],
         }
 
 
-def _select_only_qram_resources(
-    bitstrings, select_value, num_qram_wires, num_select_wires, k, n_total
-):
+def _select_only_qram_resources(bitstrings, select_value, num_qram_wires, num_select_wires):
     resources = defaultdict(int)
     num_controls = num_select_wires + num_qram_wires
 
     for addr, bits in enumerate(bitstrings):
-        if select_value is not None and k > 0 and (addr >> (n_total - k)) != select_value:
+        if (
+            select_value is not None
+            and num_select_wires > 0
+            and (addr >> num_qram_wires) != select_value
+        ):
             continue
 
         resources[
@@ -468,7 +463,10 @@ def _select_only_qram_resources(
                 num_control_wires=num_controls,
                 num_zero_control_values=reduce(
                     lambda acc, nxt: acc + (nxt == 0),
-                    [(addr >> (n_total - 1 - i)) & 1 for i in range(n_total)],
+                    [
+                        (addr >> (num_select_wires + num_qram_wires - 1 - i)) & 1
+                        for i in range(num_controls)
+                    ],
                     0,
                 ),
             )
@@ -479,9 +477,11 @@ def _select_only_qram_resources(
 
 @register_resources(_select_only_qram_resources)
 def _select_only_qram_decomposition(
-    wires, bitstrings, select_value, select_wires, k, qram_wires, target_wires, n_total, **_
+    wires, bitstrings, select_value, select_wires, qram_wires, target_wires, **_
 ):  # pylint: disable=unused-argument
     controls = select_wires + qram_wires
+    k = len(select_wires)
+    n_total = k + len(qram_wires)
 
     # Loop over all addresses (0 .. 2^(k+n_k)-1)
     for addr, bits in enumerate(bitstrings):
