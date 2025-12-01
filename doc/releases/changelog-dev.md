@@ -184,6 +184,10 @@
 
 <h3>Breaking changes 💔</h3>
 
+* The output format of `qml.specs` has been restructured into a dataclass to streamline the outputs.
+  Some legacy information has been removed from the new output format.
+  [(#8713)](https://github.com/PennyLaneAI/pennylane/pull/8713)
+
 * `qml.transforms.map_wires` no longer supports plxpr transforms.
   [(#8683)](https://github.com/PennyLaneAI/pennylane/pull/8683)
 
