@@ -330,6 +330,8 @@ def _get_plxpr_decompose():  # pylint: disable=too-many-statements
 
     def decompose_plxpr_to_plxpr(jaxpr, consts, targs, tkwargs, *args):
         """Function for applying the ``decompose`` transform on plxpr."""
+        # Restore tkwargs from hashable tuple to dict
+        tkwargs = dict(tkwargs)
 
         interpreter = DecomposeInterpreter(*targs, **tkwargs)
 
