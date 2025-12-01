@@ -271,26 +271,8 @@ def custom_staging_rule(
         num_device_wires=len(device.wires),
         batch_shape=batch_shape,
     )
-
-    # Create output variables for the new equation
-    outvars = [jaxpr_trace.frame.newvar(o) for o in new_shapes]
-
-    # Create JaxprEqnContext and TracingEqn for JAX 0.7.0
-    ctx = JaxprEqnContext(
-        compute_on.current_compute_type(),
-        config.threefry_partitionable.value,
-        xla_metadata_lib.current_xla_metadata(),
-    )
-
-    # Create TracingEqn instead of JaxprEqn for JAX 0.7.0
-    eqn = TracingEqn(
-        tracers,  # in_tracers (not invars!)
-        outvars,
-        qnode_prim,
-        params,
-        jax.core.no_effects,
-        source_info,
-        ctx,
+    eqn, out_tracers = jaxpr_trace.make_eqn(
+        tracers, new_shapes, qnode_prim, params, jax.core.no_effects, source_info
     )
 
     jaxpr_trace.frame.add_eqn(eqn)
@@ -559,7 +541,7 @@ def _bind_qnode(qnode, *args, **kwargs):
     config = construct_execution_config(qnode, resolve=False)()
     # no need for args and kwargs as not resolving
 
-    if abstracted_axes:
+    if abstracted_axes:  # pragma: no cover
         # We unflatten the ``abstracted_axes`` here to be have the same pytree structure
         # as the original dynamic arguments
         abstracted_axes = jax.tree_util.tree_unflatten(dynamic_args_struct, abstracted_axes)

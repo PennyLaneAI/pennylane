@@ -55,7 +55,7 @@ jobs:
         run: |
           pip install --upgrade --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ pennylane-catalyst pennylane-lightning
           pip install -e .
-          # TODO: use 0.7.0 after updating all the documentation
+          # TODO: use 0.7.0 after updating all the documentation 
           pip install sybil pytest "jax~=0.6.0" "jaxlib~=0.6.0" torch matplotlib pyzx
 
       - name: Print Dependencies
