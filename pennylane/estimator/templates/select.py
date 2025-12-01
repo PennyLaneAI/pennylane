@@ -92,7 +92,7 @@ class SelectTHC(ResourceOperator):
                 f"This method works with thc Hamiltonian, {type(thc_ham)} provided"
             )
 
-        if not (isinstance(rotation_precision, int) or rotation_precision is None):
+        if not isinstance(rotation_precision, int):
             raise TypeError(
                 f"`rotation_precision` must be an integer, but type {type(rotation_precision)} was provided."
             )
@@ -160,7 +160,7 @@ class SelectTHC(ResourceOperator):
                 f"This method works with thc Hamiltonian, {type(thc_ham)} provided"
             )
 
-        if not isinstance(rotation_precision, int) and rotation_precision is not None:
+        if not isinstance(rotation_precision, int):
             raise TypeError(
                 f"`rotation_precision` must be an integer, but type {type(rotation_precision)} was provided."
             )
