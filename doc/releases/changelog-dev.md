@@ -345,6 +345,12 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Bump `jax` version to `0.7.1` for `capture` module.
+  [(#8715)](https://github.com/PennyLaneAI/pennylane/pull/8715)
+
+* Bump `jax` version to `0.7.0` for `capture` module.
+  [(#8701)](https://github.com/PennyLaneAI/pennylane/pull/8701)
+
 * Bump `autoray` package version to `0.8.2`.
   [(#8674)](https://github.com/PennyLaneAI/pennylane/pull/8674)
   
