@@ -230,7 +230,7 @@ def transform(  # pylint: disable=too-many-arguments
         properly applied as part of the lower-level compilation.
 
         For example, we can create a transform that will apply the ``cancel-inverses`` pass, like the
-        in-built ``qml.transform.cancel_inverses`` transform.
+        in-built ``qml.transforms.cancel_inverses`` transform.
 
         .. code-block:: python
 
@@ -261,8 +261,9 @@ def transform(  # pylint: disable=too-many-arguments
             }
             func.func public @circui
 
-        Transforms can have both tape-based and ``pass_name``-based definitions. In that case, the MLIR pass
-        will take precedence when being ``qjit``'d and only MLIR passes occur after.
+        Transforms can have both tape-based and ``pass_name``-based definitions. For example, the transform below called
+        ``my_transform`` has both definitions. In this case, the MLIR pass
+        will take precedence when being ``qjit``'d if only MLIR passes can occur after.
 
         .. code-block:: python
 
