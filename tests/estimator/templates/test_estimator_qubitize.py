@@ -158,67 +158,67 @@ class TestQubitizeTHC:
     # The Toffoli and qubit costs are compared here
     # Expected number of Toffolis and wires were obtained from equations 44 and 46  in https://arxiv.org/abs/2011.03494
     # The numbers were adjusted slightly to account for removal of phase gradient state and a different QROM decomposition
-    # @pytest.mark.parametrize(
-    #     "thc_ham, prep_op, select_op, num_ctrl_wires, num_zero_ctrl, expected_res",
-    #     (
-    #         (
-    #             # This test was taken from arXiv:2501.06165, numbers are adjusted to only the walk operator cost without unary iteration
-    #             qre.THCHamiltonian(58, 160),
-    #             qre.PrepTHC(qre.THCHamiltonian(58, 160), coeff_precision=13),
-    #             qre.SelectTHC(qre.THCHamiltonian(58, 160), rotation_precision=13),
-    #             1,
-    #             1,
-    #             {"algo_wires": 184, "auxiliary_wires": 791, "toffoli_gates": 8580},
-    #         ),
-    #         (
-    #             qre.THCHamiltonian(10, 50),
-    #             None,
-    #             None,
-    #             2,
-    #             0,
-    #             {"algo_wires": 80, "auxiliary_wires": 149, "toffoli_gates": 2352},
-    #         ),
-    #         (
-    #             qre.THCHamiltonian(4, 20),
-    #             qre.PrepTHC(qre.THCHamiltonian(4, 20), select_swap_depth=2),
-    #             None,
-    #             3,
-    #             2,
-    #             {"algo_wires": 62, "auxiliary_wires": 59, "toffoli_gates": 972},
-    #         ),
-    #     ),
-    # )
-    # def test_control_resources(
-    #     self, thc_ham, prep_op, select_op, num_ctrl_wires, num_zero_ctrl, expected_res
-    # ):
-    #     """Test that the controlled resource decomposition for QubitizeTHC is correct."""
+    @pytest.mark.parametrize(
+        "thc_ham, prep_op, select_op, num_ctrl_wires, num_zero_ctrl, expected_res",
+        (
+            (
+                # This test was taken from arXiv:2501.06165, numbers are adjusted to only the walk operator cost without unary iteration
+                qre.THCHamiltonian(58, 160),
+                qre.PrepTHC(qre.THCHamiltonian(58, 160), coeff_precision=13),
+                qre.SelectTHC(qre.THCHamiltonian(58, 160), rotation_precision=13),
+                1,
+                1,
+                {"algo_wires": 184, "auxiliary_wires": 752, "toffoli_gates": 8990},
+            ),
+            (
+                qre.THCHamiltonian(10, 50),
+                None,
+                None,
+                2,
+                0,
+                {"algo_wires": 78, "auxiliary_wires": 129, "toffoli_gates": 2182},
+            ),
+            (
+                qre.THCHamiltonian(4, 20),
+                qre.PrepTHC(qre.THCHamiltonian(4, 20), select_swap_depth=2),
+                None,
+                3,
+                2,
+                {"algo_wires": 60, "auxiliary_wires": 51, "toffoli_gates": 906},
+            ),
+        ),
+    )
+    def test_control_resources(
+        self, thc_ham, prep_op, select_op, num_ctrl_wires, num_zero_ctrl, expected_res
+    ):
+        """Test that the controlled resource decomposition for QubitizeTHC is correct."""
 
-    #     wo_cost = qre.estimate(
-    #         qre.Controlled(
-    #             num_ctrl_wires=num_ctrl_wires,
-    #             num_zero_ctrl=num_zero_ctrl,
-    #             base_op=qre.QubitizeTHC(
-    #                 thc_ham,
-    #                 prep_op=prep_op,
-    #                 select_op=select_op,
-    #                 coeff_precision=13,
-    #                 rotation_precision=13,
-    #             ),
-    #         )
-    #     )
+        wo_cost = qre.estimate(
+            qre.Controlled(
+                num_ctrl_wires=num_ctrl_wires,
+                num_zero_ctrl=num_zero_ctrl,
+                base_op=qre.QubitizeTHC(
+                    thc_ham,
+                    prep_op=prep_op,
+                    select_op=select_op,
+                    coeff_precision=13,
+                    rotation_precision=13,
+                ),
+            )
+        )
 
-    #     assert wo_cost.algo_wires == expected_res["algo_wires"]
-    #     assert wo_cost.zeroed_wires + wo_cost.any_state_wires == expected_res["auxiliary_wires"]
-    #     assert wo_cost.gate_counts["Toffoli"] == expected_res["toffoli_gates"]
+        assert wo_cost.algo_wires == expected_res["algo_wires"]
+        assert wo_cost.zeroed_wires + wo_cost.any_state_wires == expected_res["auxiliary_wires"]
+        assert wo_cost.gate_counts["Toffoli"] == expected_res["toffoli_gates"]
 
-    # def test_incompatible_hamiltonian(self):
-    #     """Test that an error is raised for incompatible Hamiltonians."""
-    #     with pytest.raises(
-    #         TypeError, match="Unsupported Hamiltonian representation for QubitizeTHC."
-    #     ):
-    #         qre.QubitizeTHC(qre.CDFHamiltonian(58, 160))
+    def test_incompatible_hamiltonian(self):
+        """Test that an error is raised for incompatible Hamiltonians."""
+        with pytest.raises(
+            TypeError, match="Unsupported Hamiltonian representation for QubitizeTHC."
+        ):
+            qre.QubitizeTHC(qre.CDFHamiltonian(58, 160))
 
-    #     with pytest.raises(
-    #         TypeError, match="Unsupported Hamiltonian representation for QubitizeTHC."
-    #     ):
-    #         qre.QubitizeTHC.resource_rep(qre.CDFHamiltonian(58, 160))
+        with pytest.raises(
+            TypeError, match="Unsupported Hamiltonian representation for QubitizeTHC."
+        ):
+            qre.QubitizeTHC.resource_rep(qre.CDFHamiltonian(58, 160))

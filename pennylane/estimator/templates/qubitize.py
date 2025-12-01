@@ -144,7 +144,6 @@ class QubitizeTHC(ResourceOperator):
             + 8
             + coeff_precision
         )
-        print("from prep: ", 2 * int(np.ceil(math.log2(tensor_rank + 1))) + coeff_precision + 2)
         if wires is not None and len(Wires(wires)) != self.num_wires:
             raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
         super().__init__(wires=wires)

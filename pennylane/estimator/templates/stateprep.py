@@ -969,13 +969,6 @@ class PrepTHC(ResourceOperator):
         # 6 auxiliary account for 2 spin registers, 1 for rotation on auxiliary, 1 flag for success of inequality,
         # 1 flag for one-body vs two-body and 1 to control swap of \mu and \nu registers.
         # The qubits storing output of QROM are stored here as well: 2n_M + \aleph + 2
-        print(
-            "These ones:",
-            2 * int(math.ceil(math.log2(tensor_rank + 1)))
-            + coeff_register
-            + coeff_precision * 2
-            + 8,
-        )
         self.num_wires = (
             4 * int(math.ceil(math.log2(tensor_rank + 1)))
             + coeff_register
