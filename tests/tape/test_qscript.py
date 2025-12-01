@@ -13,7 +13,6 @@
 # limitations under the License.
 """Unit tests for the QuantumScript"""
 import copy
-from collections import defaultdict
 
 import numpy as np
 import pytest

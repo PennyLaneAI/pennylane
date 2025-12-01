@@ -858,9 +858,11 @@ def resources_from_tape(
         tape (.QuantumScript): The quantum circuit for which we extract resources
         compute_depth (bool): If True, the depth of the circuit is computed and included in the resources.
             If False, the depth is set to None.
-
+        compute_errs (bool): If True, algorithmic errors are computed and returned alongside the resources.
+            Defaults to False.
     Returns:
-        (.SpecsDict): The specifications extracted from the workflow
+        (SpecsResources | tuple[SpecsResources, dict[str, Any]]): The resources associated with this tape, optionally
+        with algorithmic errors if `compute_errs` is set to True.
     """
     resources = _count_resources(tape, compute_depth=compute_depth)
 
@@ -896,8 +898,7 @@ def _scale_dict(dict1: dict, scalar: int):
 
 
 def _count_resources(tape: QuantumScript, compute_depth: bool = True) -> SpecsResources:
-    """Given a quantum circuit (tape), this function
-     counts the resources used by standard PennyLane operations.
+    """Given a quantum tape, this function counts the resources used by standard PennyLane operations.
 
     Args:
         tape (.QuantumScript): The quantum circuit for which we count resources
@@ -905,7 +906,7 @@ def _count_resources(tape: QuantumScript, compute_depth: bool = True) -> SpecsRe
             If False, the depth is set to None.
 
     Returns:
-        (.Resources): The total resources used in the workflow
+        (.SpecsResources): The total resources used in the workflow
     """
 
     num_wires = len(tape.wires)

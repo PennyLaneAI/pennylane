@@ -14,7 +14,6 @@
 """Code for resource estimation"""
 
 import copy
-import inspect
 import json
 import os
 import warnings

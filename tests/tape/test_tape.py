@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the QuantumTape"""
+
 # pylint: disable=protected-access,too-few-public-methods
 import copy
-from collections import defaultdict
 
 import numpy as np
 import pytest
