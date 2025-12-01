@@ -213,7 +213,7 @@ class QubitizeTHC(ResourceOperator):
         coeff_register = int(math.ceil(math.log2(num_coeff)))
 
         if coeff_precision is None:
-            coeff_precision = prep_op.params["coeff_precision"] if prep_op else None
+            coeff_precision = prep_op.params["coeff_precision"] if prep_op else 15
 
         # Based on section III D, Eq. 43 in arXiv:2011.03494
         # Numbers have been adjusted to remove the auxilliary wires accounted for by different templates
