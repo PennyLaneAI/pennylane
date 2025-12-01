@@ -327,8 +327,6 @@ def test_hybrid_quantum(
         "portL_wires",
         "portR_wires",
         "k",
-        "address",
-        "probabilities",
     ),
     [
         (
