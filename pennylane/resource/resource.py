@@ -225,9 +225,6 @@ class SpecsResources:
     """
     Contains resource information for a quantum circuit.
 
-    Some helpful methods have been added to this data class to allow pretty-printing, as well as
-    indexing into it as a dictionary. See examples below.
-
     Args:
         gate_types (dict[str, int]): A dictionary mapping gate names to their counts.
         gate_sizes (dict[int, int]): A dictionary mapping gate sizes to their counts.
@@ -239,7 +236,12 @@ class SpecsResources:
         num_gates (int): The total number of gates in the circuit (computed from `gate_types`).
 
     .. details::
+
+        Some helpful methods have been added to this data class to allow pretty-printing, as well as
+        indexing into it as a dictionary. See examples below.
+
         **Example**
+
         >>> from pennylane.resource import SpecsResources
         >>> res = SpecsResources(
         ...     gate_types={'Hadamard': 1, 'CNOT': 1},
@@ -341,6 +343,64 @@ class SpecsResources:
 
 @dataclass(frozen=True)
 class SpecsResult:
+    """
+    Contains resource information about a qnode.
+
+    Args:
+        device_name (str): The name of the device used.
+        num_device_wires (int): The number of wires on the device.
+        shots (Shots): The shots configuration used.
+        level (Any): The level of the specs (see :func:`~pennylane.specs` for more details).
+        resources (SpecsResources | dict[int | str, SpecsResources]): The resource specifications.
+            Depending on the selected level, this may be be a dictionary of multiple :class:`.SpecsResources` objects.
+
+    .. details::
+
+        Some helpful methods have been added to this data class to allow pretty-printing, as well as
+        indexing into it as a dictionary. See examples below.
+
+        **Example**
+
+        >>> from pennylane.resource import SpecsResources, SpecsResult
+        >>> res = SpecsResult(
+        ...     device_name="default.qubit",
+        ...     num_device_wires=2,
+        ...     shots=Shots(1000),
+        ...     level="device",
+        ...     resources=SpecsResources(
+        ...         gate_types={"RX": 2, "CNOT": 1},
+        ...         gate_sizes={1: 2, 2: 1},
+        ...         measurements={"expval": 1},
+        ...         num_allocs=2,
+        ...         depth=3,
+        ...     ),
+        ... )
+
+        >>> print(res.num_device_wires)
+        2
+
+        >>> print(res["num_device_wires"])
+        2
+
+        >>> print(res)
+        Device: default.qubit
+        Device wires: 2
+        Shots: Shots(total=1000)
+        Level: device
+
+        Resource specifications:
+          Total qubit allocations: 2
+          Total gates: 3
+          Circuit depth: 3
+
+          Gate types:
+            RX: 2
+            CNOT: 1
+
+          Measurements:
+            expval: 1
+    """
+
     device_name: str = None
     num_device_wires: int = None
     shots: Shots = None
