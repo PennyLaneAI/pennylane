@@ -80,6 +80,7 @@ dev = [
     "pylint~=4.0.0",
     "isort~=7.0.0",
     "black==25.9.0",
+    "matplotlib"
 ]
 default = [
     "numpy~=1.23",
