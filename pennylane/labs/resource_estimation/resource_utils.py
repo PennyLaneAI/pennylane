@@ -30,37 +30,46 @@ def approx_poly_degree(
     project_func: Callable | None = None,
     **fit_kwargs: dict[str, Any],
 ):
-    r"""Compute the minimum degree of a polynomial that fits the data in the sum with a given error tolerance.
+    r"""Compute the minimum degree of a polynomial that fits the data with a given error tolerance.
+
+    The polynomial is fit to the data using the least squares method in the monomial, Chebyshev,
+    Legendre, and Hermite bases. The degree of the polynomial incrementally increased within the
+    range specified by the ``poly_degs`` keyword argument until the error tolerance (``error_tol``)
+    is met, where it is defined as the least squares fit error unless a custom loss function
+    (``loss_func``) is provided. Users can also specify a custom fitting function (``fit_func``)
+    to use for the polynomial fitting and a custom domain function (``domain_func``) to transform
+    the transform the specified domain ``x_vec`` for the fitting at a given degree. Please
+    look at the examples below for more details.
 
     Args:
         target_func (Callable): function to be approximated with a polynomial and has the
             signature: ``f(x_vec: np.ndarray) -> np.ndarray``.
         x_vec (np.ndarray): the domain values for sampling the target function ``target_func``.
             The minimum length of ``x_vec`` is two and is expected to be sorted.
-        error_tol (float): tolerance for the target fitting error. Defaults to ``1e-6``.
+        error_tol (float | optional): tolerance for the target fitting error. Defaults to ``1e-6``.
             Unless ``loss_func`` is provided, this is the least squares fit error.
-        poly_degs (Tuple[int, int] | int | None): tuple of minimum and maximum degrees to
+        poly_degs (Tuple[int, int] | int | None | optional): tuple of minimum and maximum degrees to
             consider for the polynomial. Defaults to ``None``, which means all degrees from
             ``1`` to ``len(x_vec) - 1`` will be considered. If an integer is provided, it
             will be used as the maximum degree permissible for the approximated polynomial.
         basis (str): basis to use for the polynomial. Available options are ``"chebyshev"``,
             ``"legendre"``, and ``"hermite"``. Defaults to ``None``, which assumes fitting
             data to a polynomial in the monomial basis.
-        loss_func (str | Callable | None): loss function to use, where available options are
-            ``"mse"`` (mean squared error), ``"mae"`` (mean absolute error), ``"rmse"``
+        loss_func (str | Callable | None | optional): loss function to use, where available options
+            are ``"mse"`` (mean squared error), ``"mae"`` (mean absolute error), ``"rmse"``
             (root mean squared error), ``"linf"`` (maximum absolute error), or a custom loss
             function with the signature: ``f(pred: np.ndarray, target: np.ndarray) -> float``.
             Defaults to ``None``, which means the least squares fit error is used.
-        fit_func (Callable | None): function that approximately fits the polynomial and has the signature:
+        fit_func (Callable | None | optional): function that approximately fits the polynomial and has the signature:
             ``f(x_vec: np.ndarray, y_vec: np.ndarray, deg: int, **fit_kwargs) -> tuple[Callable, float]``.
             It should return a callable for the fit polynomial along with the least squares error of the fit.
             Defaults to ``None``, which means the NumPy polynomial fitting function corresponding
             to the ``basis`` keyword argument will be used. Note that, providing a custom function
             will override the ``basis`` keyword argument.
-        domain_func (str | Callable | None): function that uses the domain interval
+        domain_func (str | Callable | None | optional): function that uses the domain interval
             ``[x_vec[0], x_vec[-1]]`` and computes transformed values for sampling within
-            the given domain intervals. Defaults to ``None``, which means no transformation is performed and
-            ``x_vec`` is used. When ``"uniform"`` is given, the points are evenly spaced between
+            the given domain intervals. Defaults to ``None``, which means no transformation is performed
+            and ``x_vec`` is used. When ``"uniform"`` is given, the points are evenly spaced between
             ``x_vec[0]`` and ``x_vec[-1]`` based on the degree of the polynomial being fit.
             Whereas, when ``"gauss-lobatto"`` is used, the "`Chebyshev/Legendre-Gauss-Lobatto
             <https://lorene.obspm.fr/school/polynom.pdf>`_\ " nodes are used for
