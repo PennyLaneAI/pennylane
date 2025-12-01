@@ -225,8 +225,9 @@ def transform(  # pylint: disable=too-many-arguments
     .. details::
         :title: Transforms with Catalyst
 
-        Transforms can be matched with an associated MLIR or XDSL pass via the ``pass_name`` argument.
-        These transforms will be lowered into the MLIR and applied as part of the lower level compilation.
+        If a compilation pass is written in MLIR, using it in a ``qjit``'d workflow requires that
+        it have a transform with a matching ``pass_name``. This ensures that the transform is
+        properly applied as part of the lower-level compilation.
 
         For example, we can create a transform that will apply the ``cancel-inverses`` pass, like the
         in-built ``qml.transform.cancel_inverses`` transform.
