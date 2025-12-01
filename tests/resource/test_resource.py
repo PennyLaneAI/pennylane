@@ -614,66 +614,6 @@ class TestResourcesOperation:  # pylint: disable=too-few-public-methods
         assert CustomOPWithResources(wires=[0, 1])  # shouldn't raise an error
 
 
-class _CustomOpWithResource(ResourcesOperation):  # pylint: disable=too-few-public-methods
-    num_wires = 2
-    name = "CustomOp1"
-
-    def resources(self):
-        return Resources(
-            num_wires=self.num_wires,
-            num_gates=3,
-            gate_types={"Identity": 1, "PauliZ": 2},
-            gate_sizes={1: 3},
-            depth=3,
-        )
-
-
-class _CustomOpWithoutResource(Operation):  # pylint: disable=too-few-public-methods
-    num_wires = 2
-    name = "CustomOp2"
-
-
-lst_ops_and_shots = (
-    ([], Shots(None)),
-    ([qml.Hadamard(0), qml.CNOT([0, 1])], Shots(None)),
-    ([qml.PauliZ(0), qml.CNOT([0, 1]), qml.RX(1.23, 2)], Shots(10)),
-    (
-        [
-            qml.Hadamard(0),
-            qml.RX(1.23, 1),
-            qml.CNOT([0, 1]),
-            qml.RX(4.56, 1),
-            qml.Hadamard(0),
-            qml.Hadamard(1),
-        ],
-        Shots(100),
-    ),
-    ([qml.Hadamard(0), qml.CNOT([0, 1]), _CustomOpWithResource(wires=[1, 0])], Shots(None)),
-    (
-        [
-            qml.PauliZ(0),
-            qml.CNOT([0, 1]),
-            qml.RX(1.23, 2),
-            _CustomOpWithResource(wires=[0, 2]),
-            _CustomOpWithoutResource(wires=[0, 1]),
-        ],
-        Shots((10, (50, 2))),
-    ),
-    (
-        [
-            qml.Hadamard(0),
-            qml.RX(1.23, 1),
-            qml.CNOT([0, 1]),
-            qml.RX(4.56, 1),
-            qml.Hadamard(0),
-            qml.Hadamard(1),
-            _CustomOpWithoutResource(wires=[0, 1]),
-        ],
-        Shots(100),
-    ),
-)
-
-
 def test_combine_dict():
     """Test that we can combine dictionaries as expected."""
     d1 = defaultdict(int, {"a": 2, "b": 4, "c": 6})
@@ -853,3 +793,63 @@ class TestSpecsResources:
         assert str(s) == expected
         assert s.to_pretty_str() == expected
         assert s.to_pretty_str(preindent=4) == expected_indented
+
+
+class TestCountResources:
+    class _CustomOpWithResource(ResourcesOperation):  # pylint: disable=too-few-public-methods
+        num_wires = 2
+        name = "CustomOp1"
+
+        def resources(self):
+            return Resources(
+                num_wires=self.num_wires,
+                num_gates=3,
+                gate_types={"Identity": 1, "PauliZ": 2},
+                gate_sizes={1: 3},
+                depth=3,
+            )
+
+    class _CustomOpWithoutResource(Operation):  # pylint: disable=too-few-public-methods
+        num_wires = 2
+        name = "CustomOp2"
+
+    scripts = (
+        QuantumScript(ops=[], measurements=[]),
+        QuantumScript(
+            ops=[qml.Hadamard(0), qml.CNOT([0, 1])], measurements=[qml.expval(qml.PauliZ(0))]
+        ),
+        QuantumScript(
+            ops=[qml.PauliZ(0), qml.CNOT([0, 1]), qml.RX(1.23, 2)],
+            measurements=[qml.expval(qml.PauliZ(0))],
+            shots=Shots(10),
+        ),
+        QuantumScript(
+            ops=[
+                qml.PauliZ(0),
+                qml.CNOT([0, 1]),
+                qml.RX(1.23, 2),
+                _CustomOpWithResource(wires=[0, 2]),
+                _CustomOpWithoutResource(wires=[0, 1]),
+            ],
+            measurements=[qml.probs()],
+        ),
+    )
+
+    expected_resources = (
+        SpecsResources({}, {}, {}, 0, 0),
+        SpecsResources({"Hadamard": 1, "CNOT": 1}, {1: 1, 2: 1}, {"expval": 1}, 2, 2),
+        SpecsResources({"PauliZ": 1, "CNOT": 1, "RX": 1}, {1: 2, 2: 1}, {"expval": 1}, 3, 2),
+        SpecsResources(
+            {"PauliZ": 3, "CNOT": 1, "RX": 1, "Identity": 1, "CustomOp2": 1},
+            {1: 5, 2: 2},
+            {"probs": 1},
+            3,
+            6,
+        ),
+    )  # SpecsResources(gate_types, gate_sizes, measurements, num_allocs, depth)
+
+    @pytest.mark.parametrize("script, expected_resources", zip(scripts, expected_resources))
+    def test_count_resources(self, script, expected_resources):
+        """Test the count resources method."""
+        computed_resources = _count_resources(script)
+        assert computed_resources == expected_resources
