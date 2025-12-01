@@ -122,7 +122,6 @@ def _multiplexer_state_prep_decomposition(state_vector, wires):  # pylint: disab
     Computes the decomposition operations for the given state vector.
 
     Args:
-
         state_vector (tensor_like): The state vector to prepare.
         wires (Sequence[int]): The wires which the operator acts on.
 
