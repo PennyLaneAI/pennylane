@@ -41,7 +41,9 @@ from .prepselprep import PrepSelPrep
 from .qubitization import Qubitization
 
 try:
-    from jax import numpy as jnp, vmap, config, lax
+    from jax import config, lax
+    from jax import numpy as jnp
+    from jax import vmap
 except ModuleNotFoundError:
     pass
 
