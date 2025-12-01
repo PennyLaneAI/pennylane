@@ -236,6 +236,7 @@ def _get_plxpr_merge_rotations():
     # pylint: disable=redefined-outer-name
     def merge_rotations_plxpr_to_plxpr(jaxpr, consts, _, tkwargs, *args):
         """Function for applying the ``merge_rotations`` transform on plxpr."""
+        tkwargs = dict(tkwargs)
 
         merge_rotations = MergeRotationsInterpreter(**tkwargs)
 
