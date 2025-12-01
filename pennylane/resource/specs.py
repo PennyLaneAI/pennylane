@@ -198,7 +198,7 @@ def _specs_qjit_intermediate_passes(
             trans_name = (
                 tape_transforms[trans_level - 1].transform.__name__
                 if trans_level > 0
-                else "No transforms"
+                else "Before transforms"
             )
             # If the same transform appears multiple times, append a suffix
             if trans_name in resources:
