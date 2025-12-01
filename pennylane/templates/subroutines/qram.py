@@ -34,7 +34,7 @@ from pennylane.decomposition import (
     resource_rep,
 )
 from pennylane.operation import Operation, Operator
-from pennylane.ops import CSWAP, SWAP, Controlled, Hadamard, PauliX, PauliZ, adjoint, ctrl
+from pennylane.ops import CSWAP, SWAP, Controlled, Hadamard, PauliX, PauliZ, adjoint, ctrl, CNOT
 from pennylane.wires import Wires, WiresLike
 
 # pylint: disable=consider-using-generator
@@ -515,7 +515,9 @@ def _hybrid_qram_resources(bitstrings, num_target_wires, num_select_wires, k, n_
                 num_control_wires=1,
                 num_zero_control_values=0,
             )
-        ] += (n_tree + (1 << n_tree) - 1) * 2 * num_blocks + 2 * num_target_wires
+        ] += ((n_tree + (1 << n_tree) - 1) * 2 + 2 * num_target_wires) * num_blocks
+
+        ccswap_count = (((1 << n_tree) - 1 - n_tree) + ((1 << n_tree) - 1) * num_target_wires) * num_blocks * 2
 
         resources[
             controlled_resource_rep(
@@ -531,7 +533,7 @@ def _hybrid_qram_resources(bitstrings, num_target_wires, num_select_wires, k, n_
                 num_control_wires=1,
                 num_zero_control_values=0,
             )
-        ] += (((1 << n_tree) - 1 - n_tree) + ((1 << n_tree) - 1) * num_target_wires) * num_blocks * 2
+        ] += ccswap_count
 
         resources[
             controlled_resource_rep(
@@ -547,9 +549,7 @@ def _hybrid_qram_resources(bitstrings, num_target_wires, num_select_wires, k, n_
                 num_control_wires=1,
                 num_zero_control_values=0,
             )
-        ] += (((1 << n_tree) - 1) * num_target_wires) * num_blocks * 3 + (
-            (1 << n_tree) - 1 - n_tree
-        ) * num_blocks * 4
+        ] += ccswap_count
 
         resources[
             controlled_resource_rep(
@@ -563,14 +563,18 @@ def _hybrid_qram_resources(bitstrings, num_target_wires, num_select_wires, k, n_
         )
 
     for block_index in range(num_blocks):
-        resources[
-            controlled_resource_rep(
-                base_class=PauliX,
-                base_params={},
-                num_control_wires=num_select_wires,
-                num_zero_control_values=[(block_index >> (k - 1 - i)) & 1 for i in range(k)],
-            )
-        ] += (k > 0) * 2
+        zero_control_values = [(block_index >> (k - 1 - i)) & 1 for i in range(k)].count(0)
+        if zero_control_values == [0]:
+            resources[resource_rep(CNOT)] += (k > 0) * 2
+        else:
+            resources[
+                controlled_resource_rep(
+                    base_class=PauliX,
+                    base_params={},
+                    num_control_wires=num_select_wires,
+                    num_zero_control_values=zero_control_values,
+                )
+            ] += (k > 0) * 2
 
         if n_tree == 0:
             return resources
