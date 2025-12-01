@@ -13,7 +13,7 @@
 # limitations under the License.
 """
 Bucket-Brigade QRAM with explicit bus routing for PennyLane, supporting:
-- Bucket-brigade QRAM LSBs (``qram_wires``) using 3-qubits-per-node (dir, portL, portR)
+- Bucket-brigade QRAM LSBs (``control_wires``) using 3-qubits-per-node (dir, portL, portR)
 
 Address loading is performed **layer-by-layer** by routing a single top **bus** qubit
 down to the active node using CSWAPs controlled by already-written upper routers,
@@ -47,7 +47,7 @@ from pennylane.wires import Wires, WiresLike
 @dataclass
 class _QRAMWires:
 
-    qram_wires: Wires
+    control_wires: Wires
     target_wires: Wires
     bus_wire: Wires
     dir_wires: Wires
@@ -104,8 +104,8 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
     Args:
         bitstrings (Sequence[str]):
             The classical data as a sequence of bitstrings. The size of the classical data must be
-            :math:`2^{\texttt{len(qram_wires)}}`.
-        qram_wires (WiresLike):
+            :math:`2^{\texttt{len(control_wires)}}`.
+        control_wires (WiresLike):
             The register that stores the index for the entry of the classical data we want to
             access.
         target_wires (WiresLike):
@@ -114,16 +114,23 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
         work_wires (WiresLike):
             The additional wires required to funnel the desired entry of ``bitstrings`` into the
             target register. The size of the ``work_wires`` register must be
-            :math:`1 + 3 ((1 << \texttt{len(qram_wires)}) - 1)`. More specifically, the
+            :math:`1 + 3 ((2^\texttt{len(control_wires)}) - 1)`. More specifically, the
             ``work_wires`` register includes the bus, direction, left port and right port wires in
             that order. Each node in the tree contains one address (direction), one left port and
             one right port wire. The single bus wire is used for address loading and data routing.
 
     Raises:
         ValueError: if the ``bitstrings`` are not provided, the ``bitstrings`` are of the wrong
-            length, the ``target_wires`` are of the size of the ``work_wires`` register is not exactly
-            equal to :math:`1 + 3 ((1 << \texttt{len(qram_wires)}) - 1)`.
+            length, the ``target_wires`` are of the wrong size, or the ``work_wires`` register size is not exactly
+            equal to :math:`1 + 3 ((2^\texttt{len(control_wires)}) - 1)`.
 
+    .. seealso:: :class:`~.QROM`, :class:`~.QROMStatePreparation`
+
+    .. note::
+
+        QRAM and QROM, though similar, have different applications and purposes. QRAM is intended
+        for read-and-write capabilities, where the stored data can be loaded and changed. QROM is
+        designed to only load stored data into a quantum register.
 
     **Example:**
 
@@ -132,22 +139,21 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
 
     .. code-block:: python
 
-
         bitstrings = ["010", "111", "110", "000"]
         bitstring_size = 3
 
-    The number of wires needed to store a length-4 array is 2, which means that the ``qram_wires``
+    The number of wires needed to store a length-4 array is 2, which means that the ``control_wires``
     register must contain 2 wires. Additionally, this lets us specify the number of work wires
     needed.
 
     .. code-block:: python
 
-        num_qram_wires = 2 # len(bistrings) = 4 = 2**2
-        num_work_wires = 1 + 3 * ((1 << num_qram_wires) - 1) # 10
+        num_control_wires = 2 # len(bistrings) = 4 = 2**2
+        num_work_wires = 1 + 3 * ((1 << num_control_wires) - 1) # 10
 
     Now, we can define all three registers concretely and demonstrate ``BBQRAM`` in practice. In the
     following circuit, we prepare the state :math:`\vert 2 \rangle = \vert 10 \rangle` on the
-    ``qram_wires``, which indicates that we would like to access the second (zero-indexed) entry of
+    ``control_wires``, which indicates that we would like to access the second (zero-indexed) entry of
     ``bitstrings`` (which is ``"110"``). The ``target_wires`` register should therefore store this
     state after ``BBQRAM`` is applied.
 
@@ -156,7 +162,7 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
         import pennylane as qml
         reg = qml.registers(
             {
-                "qram": num_qram_wires,
+                "control": num_control_wires,
                 "target": bitstring_size,
                 "work_wires": num_work_wires
             }
@@ -166,11 +172,11 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
         @qml.qnode(dev)
         def bb_quantum():
             # prepare an address, e.g., |10> (index 2)
-            qml.BasisEmbedding(2, wires=reg["qram"])
+            qml.BasisEmbedding(2, wires=reg["control"])
 
             qml.BBQRAM(
                 bitstrings,
-                qram_wires=reg["qram"],
+                control_wires=reg["control"],
                 target_wires=reg["target"],
                 work_wires=reg["work_wires"],
             )
@@ -180,8 +186,8 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
     >>> print(np.round(bb_quantum()))  # doctest: +SKIP
     [0. 0. 0. 0. 0. 0. 1. 0.]
 
-    Note that ``"110"`` in binary is equal to 6 in decimal, which is the only non-zero entry in
-    the ``target_wires`` register.
+    Note that ``"110"`` in binary is equal to 6 in decimal, which is the position of the only
+    non-zero entry in the ``target_wires`` register.
     """
 
     grad_method = None
@@ -197,7 +203,7 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
     def __init__(
         self,
         bitstrings: Sequence[str],
-        qram_wires: WiresLike,
+        control_wires: WiresLike,
         target_wires: WiresLike,
         work_wires: WiresLike,
         id: str | None = None,
@@ -209,15 +215,20 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
             raise ValueError("All bitstrings must have equal length.")
         m = next(iter(m_set))
         bitstrings = list(bitstrings)
-        qram_wires = Wires(qram_wires)
+        control_wires = Wires(control_wires)
 
-        n_k = len(qram_wires)
+        n_k = len(control_wires)
         if (1 << n_k) != len(bitstrings):
-            raise ValueError("len(bitstrings) must be 2^(len(qram_wires)).")
+            raise ValueError("len(bitstrings) must be 2^(len(control_wires)).")
 
         target_wires = Wires(target_wires)
         if m != len(target_wires):
             raise ValueError("len(target_wires) must equal bitstring length.")
+
+        expected_nodes = (1 << n_k) - 1 if n_k > 0 else 0
+
+        if len(work_wires) != 1 + 3 * expected_nodes:
+            raise ValueError(f"work_wires must have length {1 + 3 * expected_nodes}.")
 
         bus_wire = Wires(work_wires[0])
         divider = len(work_wires[1:]) // 3
@@ -225,13 +236,8 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
         portL_wires = Wires(work_wires[1 + divider : 1 + divider * 2])
         portR_wires = Wires(work_wires[1 + divider * 2 : 1 + divider * 3])
 
-        expected_nodes = (1 << n_k) - 1 if n_k > 0 else 0
-
-        if len(work_wires) != 1 + 3 * expected_nodes:
-            raise ValueError(f"work_wires must have length {1 + 3 * expected_nodes}.")
-
         all_wires = (
-            list(qram_wires)
+            list(control_wires)
             + list(target_wires)
             + list(bus_wire)
             + list(dir_wires)
@@ -240,7 +246,7 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
         )
 
         wire_manager = _QRAMWires(
-            qram_wires, target_wires, bus_wire, dir_wires, portL_wires, portR_wires
+            control_wires, target_wires, bus_wire, dir_wires, portL_wires, portR_wires
         )
 
         self._hyperparameters = {
@@ -257,22 +263,17 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
 
 def _bucket_brigade_qram_resources(bitstrings):
     num_target_wires = len(bitstrings[0])
-    num_qram_wires = int(math.log2(len(bitstrings)))
-    n_k = num_qram_wires
+    n_k = int(math.log2(len(bitstrings)))
     resources = defaultdict(int)
-    resources[resource_rep(SWAP)] = (
-        sum([1 if k == 0 else (1 << k) for k in range(n_k)]) + n_k
-    ) * 2 + num_target_wires * 2
-    resources[resource_rep(CSWAP)] = sum(
-        [(1 << ell) for ell in range(num_qram_wires)]
-    ) * num_target_wires * 2 + (sum([(1 << ell) for k in range(n_k) for ell in range(k)]) * 2)
+    resources[resource_rep(SWAP)] = ((1 << n_k) - 1 + n_k) * 2 + num_target_wires * 2
+    resources[resource_rep(CSWAP)] = ((1 << n_k) - 1) * num_target_wires * 2 + (
+        ((1 << n_k) - 1 - n_k) * 2
+    )
     resources[
         controlled_resource_rep(
             base_class=SWAP, base_params={}, num_control_wires=1, num_zero_control_values=1
         )
-    ] = sum([(1 << ell) for ell in range(num_qram_wires)]) * num_target_wires * 2 + (
-        sum([(1 << ell) for k in range(n_k) for ell in range(k)]) * 2
-    )
+    ] = ((1 << n_k) - 1) * num_target_wires * 2 + (((1 << n_k) - 1 - n_k) * 2)
     resources[resource_rep(Hadamard)] += num_target_wires * 2
     for j in range(num_target_wires):
         for p in range(1 << n_k):
@@ -284,32 +285,28 @@ def _mark_routers_via_bus(wire_manager, n_k):
     """Write low-order address bits into router directions **layer-by-layer** via the bus.
 
     For each low bit a_k (k = 0..n_k-1):
-      1) SWAP(qram_wires[k], bus)
+      1) SWAP(control_wires[k], bus)
       2) Route bus down k levels (CSWAPs controlled by routers at levels < k)
       3) At node (k, path-prefix), SWAP(bus, dir[k, path-prefix])
     """
-    for k in range(n_k):
+    SWAP([wire_manager.control_wires[0], wire_manager.bus_wire[0]])
+    SWAP([wire_manager.bus_wire[0], wire_manager.router(0, 0)])
+    for k in range(1, n_k):
         # 1) load a_k into the bus
-        origin = wire_manager.qram_wires[k]
+        origin = wire_manager.control_wires[k]
         target = wire_manager.bus_wire[0]
         SWAP(wires=[origin, target])
         # 2) route down k levels
         _route_bus_down_first_k_levels(wire_manager, k)
         # 3) deposit at level-k node on the active path
-        if k == 0:
-            SWAP(wires=[wire_manager.bus_wire[0], wire_manager.router(0, 0)])
-        else:
-            for p in range(1 << k):
-                # change to  in_wire later
-                parent = _node_index(k - 1, p >> 1)
-                if p % 2 == 0:
-                    origin = wire_manager.portL_wires[parent]
-                    target = wire_manager.router(k, p)
-                    SWAP(wires=[origin, target])
-                else:
-                    origin = wire_manager.portR_wires[parent]
-                    target = wire_manager.router(k, p)
-                    SWAP(wires=[origin, target])
+        for p in range(1 << k):
+            # change to  in_wire later
+            parent = _node_index(k - 1, p >> 1)
+            origin = (
+                wire_manager.portL_wires[parent] if p % 2 == 0 else wire_manager.portR_wires[parent]
+            )
+            target = wire_manager.router(k, p)
+            SWAP(wires=[origin, target])
 
 
 def _route_bus_down_first_k_levels(wire_manager, k_levels):
@@ -347,17 +344,17 @@ def _bucket_brigade_qram_decomposition(
     wires, wire_manager, bitstrings
 ):  # pylint: disable=unused-argument
     bus_wire = wire_manager.bus_wire
-    qram_wires = wire_manager.qram_wires
-    n_k = len(qram_wires)
+    control_wires = wire_manager.control_wires
+    n_k = len(control_wires)
     # 1) address loading
     _mark_routers_via_bus(wire_manager, n_k)
     # 2) For each target bit: load→route down→leaf op→route up→restore (reuse the route bus function)
     for j, tw in enumerate(wire_manager.target_wires):
         Hadamard(wires=[tw])
         SWAP(wires=[tw, bus_wire[0]])
-        _route_bus_down_first_k_levels(wire_manager, len(qram_wires))
+        _route_bus_down_first_k_levels(wire_manager, len(control_wires))
         _leaf_ops_for_bit(wire_manager, bitstrings, n_k, j)
-        adjoint(_route_bus_down_first_k_levels, lazy=False)(wire_manager, len(qram_wires))
+        adjoint(_route_bus_down_first_k_levels, lazy=False)(wire_manager, len(control_wires))
         SWAP(wires=[tw, bus_wire[0]])
         Hadamard(wires=[tw])
     # 3) address unloading
