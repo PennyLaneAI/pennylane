@@ -127,6 +127,9 @@ class GeneralizedAmplitudeDamping(Channel):
     where :math:`\gamma \in [0, 1]` is the probability of damping and :math:`p \in [0, 1]`
     is the probability of the system being de-excited by the environment.
 
+    This error channel reduced to the :class:`~.AmplitudeDamping` one when the de-excitation
+    probability is :math:`1`.
+
     **Details:**
 
     * Number of wires: 1
