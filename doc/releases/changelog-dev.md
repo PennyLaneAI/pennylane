@@ -171,6 +171,7 @@
 
 * New decomposition rules that decompose to :class:`~.PauliRot` are added for the following operators.
   [(#8700)](https://github.com/PennyLaneAI/pennylane/pull/8700)
+  [(#8704)](https://github.com/PennyLaneAI/pennylane/pull/8704)
 
   - :class:`~.CRX`, :class:`~.CRY`, :class:`~.CRZ`
   - :class:`~.ControlledPhaseShift`
@@ -178,6 +179,8 @@
   - :class:`~.PSWAP`
   - :class:`~.RX`, :class:`~.RY`, :class:`~.RZ`
   - :class:`~.SingleExcitation`, :class:`~.DoubleExcitation`
+  - :class:`~.SWAP`, :class:`~.ISWAP`, :class:`~.SISWAP`
+  - :class:`~.CY`, :class:`~.CZ`, :class:`~.CSWAP`, :class:`~.CNOT`, :class:`~.Toffoli`
 
 <h3>Breaking changes 💔</h3>
 
