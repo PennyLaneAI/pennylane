@@ -315,7 +315,7 @@ class QubitDevice(Device):
         if self.tracker.active:
             tape_resources = circuit.specs["resources"]
 
-            resources = SpecsResources(  # temporary until shots get updated on tape !
+            resources = SpecsResources(
                 num_allocs=tape_resources["num_allocs"],
                 gate_types=tape_resources["gate_types"],
                 gate_sizes=tape_resources["gate_sizes"],
