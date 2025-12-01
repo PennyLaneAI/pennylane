@@ -33,7 +33,7 @@ from pennylane.decomposition import (
     register_resources,
     resource_rep,
 )
-from pennylane.operation import Operation, Operator
+from pennylane.operation import Operation
 from pennylane.ops import CNOT, CSWAP, SWAP, Controlled, Hadamard, PauliX, PauliZ, adjoint, ctrl
 from pennylane.wires import Wires, WiresLike
 
@@ -411,7 +411,7 @@ class HybridQRAM(Operation):
         work_wires: WiresLike,
         k: int,  # define the select part size, remaining part is tree part
         id: str | None = None,
-    ):
+    ):  # pylint: disable=too-many-arguments
 
         if not bitstrings:
             raise ValueError("'bitstrings' cannot be empty.")
@@ -430,7 +430,7 @@ class HybridQRAM(Operation):
         if n_total == 0:
             raise ValueError("len(control_wires) must be > 0.")
 
-        if not (0 <= k < n_total):
+        if not 0 <= k < n_total:
             raise ValueError("k must satisfy 0 <= k < len(control_wires).")
 
         if len(target_wires) != m:
@@ -614,7 +614,7 @@ def _bits(value: int, length: int) -> list[int]:
 
 def _tree_leaf_ops_for_bit_block_ctrl(
     bitstrings, j, block_index, tree_wire_manager, n_tree, signal
-):
+):  # pylint: disable=too-many-arguments
     """Leaf write for target bit j, for a given select prefix block, controlled on signal."""
 
     # For each leaf index p of the tree (n_tree bits)
@@ -683,7 +683,7 @@ def _tree_mark_routers_via_bus_ctrl(tree_wire_manager, n_tree, k, signal):
                 ctrl(SWAP(wires=[origin, target]), control=[signal], control_values=[1])
 
 
-def _block_tree_query_ops(bitstrings, block_index, tree_wire_manager, n_tree, k, signal):
+def _block_tree_query_ops(bitstrings, block_index, tree_wire_manager, n_tree, k, signal):  # pylint: disable=too-many-arguments
     """One BBQRAM-style query of the (n_tree)-depth tree for a fixed select prefix."""
 
     if n_tree == 0:
@@ -727,7 +727,7 @@ def _block_tree_query_ops(bitstrings, block_index, tree_wire_manager, n_tree, k,
 @register_resources(_hybrid_qram_resources)
 def _hybrid_qram_decomposition(
     wires, bitstrings, tree_wire_manager, k, select_wires, signal_wire, **_
-):  # pylint: disable=unused-argument
+):  # pylint: disable=unused-argument, too-many-arguments
 
     signal = signal_wire[0]
     num_blocks = 1 << k if k > 0 else 1
