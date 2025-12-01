@@ -276,10 +276,6 @@ def custom_staging_rule(
     )
 
     jaxpr_trace.frame.add_eqn(eqn)
-
-    # Create output tracers
-    out_tracers = [pe.DynamicJaxprTracer(jaxpr_trace, o, v) for o, v in zip(new_shapes, outvars)]
-
     return out_tracers
 
 
