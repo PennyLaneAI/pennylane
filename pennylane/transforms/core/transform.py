@@ -51,7 +51,7 @@ def transform(  # pylint: disable=too-many-arguments
             * The transform must have the following structure (type hinting is optional): ``my_quantum_transform(tape:
               qml.tape.QuantumScript, ...) -> tuple[qml.tape.QuantumScriptBatch, qml.typing.PostprocessingFn]``
 
-        pass_name  (str | None): the name of the associated MLIR or XDSL pass to be applied when catalyst is used.
+        pass_name  (str | None): the name of the associated compiler-level pass to be applied when Catalyst is used. See Usage Details for more information.
 
     Keyword Args:
         expand_transform=None (Optional[Callable]): An optional expand transform is applied directly before the input
