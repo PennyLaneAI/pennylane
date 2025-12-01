@@ -853,3 +853,15 @@ class TestCountResources:
         """Test the count resources method."""
         computed_resources = _count_resources(script)
         assert computed_resources == expected_resources
+
+    @pytest.mark.parametrize("script, expected_resources", zip(scripts, expected_resources))
+    def test_count_resources_no_depth(self, script, expected_resources):
+        """Test the count resources method."""
+        computed_resources = _count_resources(script, compute_depth=False)
+        expected_resources = SpecsResources(
+            gate_types=expected_resources.gate_types,
+            gate_sizes=expected_resources.gate_sizes,
+            measurements=expected_resources.measurements,
+            num_allocs=expected_resources.num_allocs,
+        )
+        assert computed_resources == expected_resources
