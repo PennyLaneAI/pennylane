@@ -575,6 +575,7 @@ def list_decomps(op: type[Operator] | Operator | str) -> list[DecompositionRule]
         return _decompositions[op.name][:]
     if isinstance(op, type):
         op = op.__name__
+
     return _decompositions[translate_op_alias(op)][:]
 
 

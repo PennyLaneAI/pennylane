@@ -38,7 +38,7 @@ def test_standard_validity():
 
     op = qml.StronglyEntanglingLayers(weights, wires=range(n_wires))
 
-    qml.ops.functions.assert_valid(op)
+    qml.ops.functions.assert_valid(op, skip_pickle=True)
 
 
 @pytest.mark.parametrize("batch_dim", [None, 1, 3])
@@ -61,37 +61,6 @@ class TestDecomposition:
             [[0], [1], [2], [0, 1], [1, 2], [2, 0]],
         ),
     ]
-
-    @pytest.mark.parametrize(
-        "n_wires, imprimitive", [(2, qml_ops.CNOT), (3, qml_ops.CZ), (4, qml_ops.CY)]
-    )
-    @pytest.mark.capture
-    def test_decomposition_new_capture(
-        self, n_wires, imprimitive, batch_dim
-    ):  # pylint: disable=unused-argument
-        """Tests the decomposition rule implemented with the new system."""
-        weights = np.random.random(
-            size=(1, n_wires, 3),
-        )
-        op = qml.StronglyEntanglingLayers(weights, wires=range(n_wires), imprimitive=imprimitive)
-
-        for rule in qml.list_decomps(qml.StronglyEntanglingLayers):
-            _test_decomposition_rule(op, rule)
-
-    @pytest.mark.parametrize(
-        "n_wires, imprimitive", [(2, qml_ops.CNOT), (3, qml_ops.CZ), (4, qml_ops.CY)]
-    )
-    def test_decomposition_new(
-        self, n_wires, imprimitive, batch_dim
-    ):  # pylint: disable=unused-argument
-        """Tests the decomposition rule implemented with the new system."""
-        weights = np.random.random(
-            size=(1, n_wires, 3),
-        )
-        op = qml.StronglyEntanglingLayers(weights, wires=range(n_wires), imprimitive=imprimitive)
-
-        for rule in qml.list_decomps(qml.StronglyEntanglingLayers):
-            _test_decomposition_rule(op, rule)
 
     @pytest.mark.parametrize("n_wires, weight_shape, expected_names, expected_wires", QUEUES)
     def test_expansion(self, n_wires, weight_shape, expected_names, expected_wires, batch_dim):

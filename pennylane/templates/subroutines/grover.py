@@ -14,17 +14,19 @@
 """
 Contains the Grover Operation template.
 """
+from functools import partial
+
 import numpy as np
 
-from pennylane import capture, math
 from pennylane.control_flow import for_loop
-from pennylane.decomposition import add_decomps, register_resources, resource_rep
-from pennylane.operation import Operation
 from pennylane.ops import GlobalPhase, Hadamard, MultiControlledX, PauliZ
-from pennylane.wires import Wires, WiresLike
+from pennylane.wires import WiresLike
+
+from ..subroutine import Subroutine
 
 
-class GroverOperator(Operation):
+@partial(Subroutine, wire_argnames={"wires", "work_wires"})
+def GroverOperator(wires: WiresLike, work_wires: WiresLike = ()):
     r"""Performs the Grover Diffusion Operator.
 
     .. math::
@@ -100,165 +102,10 @@ class GroverOperator(Operation):
 
     """
 
-    grad_method = None
-
-    resource_keys = {"num_wires", "num_work_wires"}
-
-    def __repr__(self):
-        return f"GroverOperator(wires={self.wires.tolist()}, work_wires={self.hyperparameters['work_wires'].tolist()})"
-
-    def _flatten(self):
-        hyperparameters = (("work_wires", self.hyperparameters["work_wires"]),)
-        return tuple(), (self.wires, hyperparameters)
-
-    def __init__(self, wires: WiresLike, work_wires: WiresLike = (), id=None):
-        wires = Wires(wires)
-        work_wires = Wires(() if work_wires is None else work_wires)
-
-        if len(wires) < 2:
-            raise ValueError("GroverOperator must have at least two wires provided.")
-
-        self._hyperparameters = {
-            "n_wires": len(wires),
-            "work_wires": work_wires,
-        }
-
-        super().__init__(wires=wires, id=id)
-
-    @property
-    def resource_params(self) -> dict:
-        return {
-            "num_wires": self.hyperparameters["n_wires"],
-            "num_work_wires": len(self.hyperparameters["work_wires"]),
-        }
-
-    @property
-    def work_wires(self):
-        """Additional auxiliary wires that can be used in the decomposition of :class:`~.MultiControlledX`."""
-        return self.hyperparameters["work_wires"]
-
-    @property
-    def num_params(self):
-        return 0
-
-    @staticmethod
-    def compute_decomposition(
-        wires: WiresLike, work_wires: WiresLike, **kwargs
-    ):  # pylint: disable=arguments-differ,unused-argument
-        r"""Representation of the operator as a product of other operators.
-
-        .. math:: O = O_1 O_2 \dots O_n.
-
-
-
-        .. seealso:: :meth:`~.GroverOperator.decomposition`.
-
-        Args:
-            wires (Any or Iterable[Any]): wires that the operator acts on
-            work_wires (Any or Iterable[Any]): optional auxiliary wires to assist
-                in the decomposition of :class:`~.MultiControlledX`.
-
-        Returns:
-            list[.Operator]: decomposition of the operator
-        """
-        ctrl_values = [0] * (len(wires) - 1)
-
-        op_list = []
-
-        for wire in wires[:-1]:
-            op_list.append(Hadamard(wire))
-
-        op_list.append(PauliZ(wires[-1]))
-        op_list.append(
-            MultiControlledX(
-                control_values=ctrl_values,
-                wires=wires,
-                work_wires=work_wires,
-            )
-        )
-
-        op_list.append(PauliZ(wires[-1]))
-
-        for wire in wires[:-1]:
-            op_list.append(Hadamard(wire))
-
-        op_list.append(GlobalPhase(np.pi, wires))
-
-        return op_list
-
-    # pylint:disable = no-value-for-parameter
-    @staticmethod
-    def compute_qfunc_decomposition(
-        *wires, work_wires, n_wires
-    ):  # pylint: disable=arguments-differ
-        wires = math.array(wires, like="jax")
-        ctrl_values = [0] * (n_wires - 1)
-
-        @for_loop(len(wires) - 1)
-        def hadamard_loop(i):
-            Hadamard(wires[i])
-
-        hadamard_loop()
-        PauliZ(wires[-1])
-        MultiControlledX(
-            control_values=ctrl_values,
-            wires=wires,
-            work_wires=work_wires,
-        )
-        PauliZ(wires[-1])
-        hadamard_loop()
-        GlobalPhase(np.pi, wires=wires[0])
-
-    @staticmethod
-    def compute_matrix(n_wires, work_wires):  # pylint: disable=arguments-differ,unused-argument
-        r"""Representation of the operator as a canonical matrix in the computational basis
-        (static method).
-
-        The canonical matrix is the textbook matrix representation that does not consider wires.
-        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
-
-        .. seealso:: :meth:`.GroverOperator.matrix` and :func:`qml.matrix() <pennylane.matrix>`
-
-        Args:
-            n_wires (int): Number of wires the ``GroverOperator`` acts on
-            work_wires (Any or Iterable[Any]): optional auxiliary wires to assist decompositions.
-                *Unused argument*.
-
-        Returns:
-            tensor_like: matrix representation
-
-        The Grover diffusion operator is :math:`2|+\rangle\langle +| - \mathbb{I}`.
-        The first term is an all-ones matrix multiplied with two times the squared
-        normalization factor of the all-plus state, i.e. all entries of the first term are
-        :math:`2^{1-N}` for :math:`N` wires.
-        """
-        dim = 2**n_wires
-        # Grover diffusion operator. Realize the all-ones entry via broadcasting when subtracting
-        # the second term.
-        return 2 / dim - np.eye(dim)
-
-
-def _grover_operator_resources(num_wires, num_work_wires):
-    return {
-        Hadamard: (num_wires - 1) * 2,
-        PauliZ: 2,
-        GlobalPhase: 1,
-        resource_rep(
-            MultiControlledX,
-            num_control_wires=num_wires - 1,
-            num_zero_control_values=num_wires - 1,
-            num_work_wires=num_work_wires,
-            work_wire_type="borrowed",
-        ): 1,
-    }
-
-
-@register_resources(_grover_operator_resources)
-def _grover_decomposition(wires, work_wires, n_wires):
+    n_wires = len(wires)
+    if n_wires < 2:
+        raise ValueError("GroverOperator must have at least two wires provided.")
     ctrl_values = [0] * (n_wires - 1)
-
-    if capture.enabled():
-        wires = math.array(wires, like="jax")
 
     @for_loop(len(wires) - 1)
     def apply_hadamards(i):
@@ -277,6 +124,3 @@ def _grover_decomposition(wires, work_wires, n_wires):
     apply_hadamards()  # pylint: disable=no-value-for-parameter
 
     GlobalPhase(np.pi, wires=wires[0])
-
-
-add_decomps(GroverOperator, _grover_decomposition)
