@@ -24,7 +24,7 @@ performs the leaf write (classical bit flip), then routes back and restores the 
 """
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import List, Sequence
+from typing import Sequence
 
 from pennylane import math
 from pennylane.decomposition import (
@@ -113,15 +113,15 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
         work_wires (WiresLike):
             The additional wires required to funnel the desired entry of ``bitstrings`` into the
             target register. The size of the ``work_wires`` register must be
-            :math:`1 + 3 ((1 << \texttt{len(control_wires)}) - 1)`. More specifically, the
+            :math:`1 + 3 ((2^\texttt{len(control_wires)}) - 1)`. More specifically, the
             ``work_wires`` register includes the bus, direction, left port and right port wires in
             that order. Each node in the tree contains one address (direction), one left port and
             one right port wire. The single bus wire is used for address loading and data routing.
 
     Raises:
         ValueError: if the ``bitstrings`` are not provided, the ``bitstrings`` are of the wrong
-            length, the ``target_wires`` are of the size of the ``work_wires`` register is not exactly
-            equal to :math:`1 + 3 ((1 << \texttt{len(control_wires)}) - 1)`.
+            length, the ``target_wires`` are of the wrong size, or the ``work_wires`` register size is not exactly
+            equal to :math:`1 + 3 ((2^\texttt{len(control_wires)}) - 1)`.
 
     .. seealso:: :class:`~.QROM`, :class:`~.QROMStatePreparation`
 
@@ -161,7 +161,7 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
         import pennylane as qml
         reg = qml.registers(
             {
-                "qram": num_control_wires,
+                "control": num_control_wires,
                 "target": bitstring_size,
                 "work_wires": num_work_wires
             }
@@ -171,11 +171,11 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
         @qml.qnode(dev)
         def bb_quantum():
             # prepare an address, e.g., |10> (index 2)
-            qml.BasisEmbedding(2, wires=reg["qram"])
+            qml.BasisEmbedding(2, wires=reg["control"])
 
             qml.BBQRAM(
                 bitstrings,
-                control_wires=reg["qram"],
+                control_wires=reg["control"],
                 target_wires=reg["target"],
                 work_wires=reg["work_wires"],
             )
@@ -185,8 +185,8 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
     >>> print(np.round(bb_quantum()))  # doctest: +SKIP
     [0. 0. 0. 0. 0. 0. 1. 0.]
 
-    Note that ``"110"`` in binary is equal to 6 in decimal, which is the only non-zero entry in
-    the ``target_wires`` register.
+    Note that ``"110"`` in binary is equal to 6 in decimal, which is the position of the only
+    non-zero entry in the ``target_wires`` register.
     """
 
     grad_method = None
@@ -602,7 +602,7 @@ def _bits(value: int, length: int) -> list[int]:
 
 def _tree_leaf_ops_for_bit_block_ctrl(
     bitstrings, j: int, block_index: int, tree_wire_manager, n_tree, signal
-) -> List[Operator]:
+):
     """Leaf write for target bit j, for a given select prefix block, controlled on signal."""
 
     # For each leaf index p of the tree (n_tree bits)
@@ -622,7 +622,7 @@ def _tree_leaf_ops_for_bit_block_ctrl(
 
 def _tree_route_bus_down_first_k_levels_ctrl(
     k_levels: int, tree_wire_manager, signal
-) -> List[Operator]:
+):
     """Tree routing down for first `k_levels` levels, controlled on signal."""
 
     for ell in range(k_levels):

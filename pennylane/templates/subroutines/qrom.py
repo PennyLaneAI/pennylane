@@ -105,7 +105,9 @@ class QROM(Operation):
 
     Args:
         bitstrings (list[str]): the bitstrings to be encoded
-        control_wires (Sequence[int]): the wires where the indexes are specified
+        control_wires (WiresLike):
+            The register that stores the index for the entry of the classical data we want to
+            read.
         target_wires (Sequence[int]): the wires where the bitstring is loaded
         work_wires (Sequence[int]): the auxiliary wires used for the computation
         clean (bool): if True, the work wires are not altered by operator, default is ``True``
