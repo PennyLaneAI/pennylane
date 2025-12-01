@@ -107,9 +107,9 @@ class MultiplexerStatePreparation(Operation):
 
 
 def _multiplexer_state_prep_decomposition_resources(num_wires) -> dict:
-    resources = {}
-    for i in range(num_wires):
-        resources[qml.resource_rep(qml.SelectPauliRot, num_wires=i + 1, rot_axis="Y")] = 1
+    resources = dict.fromkeys([
+        qml.resource_rep(qml.SelectPauliRot, num_wires=i + 1, rot_axis="Y") for i in range(num_wires)
+    ], 1)
 
     resources[qml.resource_rep(qml.DiagonalQubitUnitary, num_wires=num_wires)] = 1
 
