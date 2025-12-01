@@ -987,26 +987,29 @@ class QuantumScript:
         """Resource information about a quantum circuit.
 
         Returns:
-            SpecsDict[str, Any]: A dictionary containing the specifications of the quantum script.
+            dict[str, Any]: A dictionary containing the specifications of the quantum script.
 
         **Example**
          >>> ops = [qml.Hadamard(0), qml.RX(0.26, 1), qml.CNOT((1,0)),
          ...         qml.Rot(1.8, -2.7, 0.2, 0), qml.Hadamard(1), qml.CNOT((0, 1))]
          >>> qscript = QuantumScript(ops, [qml.expval(qml.Z(0) @ qml.Z(1))])
 
-        Asking for the specs produces a dictionary of useful information about the circuit:
+        Asking for the specs produces a dictionary of useful information about the circuit.
+        Note that this may return slightly different information than running :func:`~.pennylane.specs` on
+        a qnode directly.
 
-        >>> qscript.specs['num_observables']
-        1
-        >>> print(qscript.specs['resources'])
-        num_wires: 2
-        num_gates: 6
-        depth: 4
-        shots: Shots(total=None)
-        gate_types:
-        {'Hadamard': 2, 'RX': 1, 'CNOT': 2, 'Rot': 1}
-        gate_sizes:
-        {1: 4, 2: 2}
+        >>> from pprint import pprint
+        >>> pprint(qscript.specs['resources'])
+        {'errors': {},
+         'resources': SpecsResources(gate_types={'CNOT': 2,
+                                                 'Hadamard': 2,
+                                                 'RX': 1,
+                                                 'Rot': 1},
+                                     gate_sizes={1: 4, 2: 2},
+                                     measurements={'expval': 1},
+                                     num_allocs=2,
+                                     depth=4),
+         'shots': Shots(total_shots=None, shot_vector=())}
         """
         if self._specs is None:
             resources, errors = qml.resource.resource.resources_from_tape(self, compute_errs=True)
