@@ -277,7 +277,10 @@ class SpecsResources:
     depth: int | None = None
 
     def __post_init__(self):
-        assert sum(self.gate_types.values()) == sum(self.gate_sizes.values())
+        if sum(self.gate_types.values()) != sum(self.gate_sizes.values()):
+            raise ValueError(
+                "Inconsistent gate counts: `gate_types` and `gate_sizes` describe different amounts of gates."
+            )
 
     def to_dict(self) -> dict[str, Any]:
         """Convert the SpecsResources to a dictionary."""
@@ -307,11 +310,18 @@ class SpecsResources:
 
     @property
     def num_gates(self) -> int:
+        """Total number of gates in the circuit."""
         return sum(self.gate_types.values())
 
     def to_pretty_str(self, preindent: int = 0) -> str:
         """
         Pretty string representation of the SpecsResources object.
+
+        Args:
+            preindent (int): Number of spaces to prepend to each line.
+
+        Returns:
+            str: A pretty representation of this object.
         """
         prefix = " " * preindent
         s = f"{prefix}Total qubit allocations: {self.num_allocs}\n"

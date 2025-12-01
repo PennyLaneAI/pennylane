@@ -28,6 +28,7 @@ from pennylane.operation import Operation
 from pennylane.resource.resource import (
     Resources,
     ResourcesOperation,
+    SpecsResources,
     _combine_dict,
     _count_resources,
     _scale_dict,
@@ -713,4 +714,142 @@ def test_specs_compute_depth(compute_depth):
     assert resources.depth == (3 if compute_depth else None)
 
 
-# TODO: Include tests for SpecsResources
+###########################################################################
+##  Tests for specs dataclasses
+###########################################################################
+
+
+class TestSpecsResources:
+    """Test the methods and attributes of the SpecsResource class"""
+
+    def example_specs_resource(self):
+        """Generate an example SpecsResources instance."""
+        return SpecsResources(
+            gate_types={"Hadamard": 2, "CNOT": 1},
+            gate_sizes={1: 2, 2: 1},
+            measurements={"expval": 1},
+            num_allocs=2,
+            depth=2,
+        )
+
+    def test_depth_autoassign(self):
+        """Test that the SpecsResources class auto-assigns depth as None if not provided."""
+
+        s = SpecsResources(
+            gate_types={"Hadamard": 2, "CNOT": 1},
+            gate_sizes={1: 2, 2: 1},
+            measurements={"expval": 1},
+            num_allocs=2,
+        )
+
+        assert s.depth is None
+
+    def test_num_gates(self):
+        """Test that the SpecsResources class handles `num_gates` as expected."""
+
+        with pytest.raises(
+            ValueError,
+            match="Inconsistent gate counts: `gate_types` and `gate_sizes` describe different amounts of gates.",
+        ):
+            # Gate counts don't match
+            _ = SpecsResources(
+                gate_types={"Hadamard": 1}, gate_sizes={1: 2}, measurements={}, num_allocs=0
+            )
+
+        s = self.example_specs_resource()
+
+        assert s.num_gates == 3
+
+    def test_immutable(self):
+        """Test that SpecsResources is immutable."""
+
+        s = self.example_specs_resource()
+
+        with pytest.raises(FrozenInstanceError, match="cannot assign to field"):
+            s.gate_types = {}
+
+        with pytest.raises(FrozenInstanceError, match="cannot assign to field"):
+            s.gate_sizes = {}
+
+        with pytest.raises(FrozenInstanceError, match="cannot assign to field"):
+            s.measurements = {}
+
+        with pytest.raises(FrozenInstanceError, match="cannot assign to field"):
+            s.num_allocs = 1
+
+        with pytest.raises(FrozenInstanceError, match="cannot assign to field"):
+            s.depth = 0
+
+    def test_getitem(self):
+        """Test that SpecsResources supports indexing via __getitem__."""
+
+        s = self.example_specs_resource()
+
+        assert s["gate_types"] == s.gate_types
+        assert s["gate_sizes"] == s.gate_sizes
+        assert s["measurements"] == s.measurements
+        assert s["num_allocs"] == s.num_allocs
+        assert s["depth"] == s.depth
+
+        assert s["num_gates"] == s.num_gates
+
+        # Check removed keys
+        with pytest.raises(
+            KeyError,
+            match="shots is no longer included within specs's resources, check the top-level object instead.",
+        ):
+            _ = s["shots"]
+        with pytest.raises(
+            KeyError,
+            match="num_wires has been renamed to num_allocs to more accurate describe what it measures.",
+        ):
+            _ = s["num_wires"]
+
+        # Try nonexistent key
+        with pytest.raises(
+            KeyError,
+            match="key 'potato' not available. Options are ",
+        ):
+            _ = s["potato"]
+
+    def test_str(self):
+        """Test the string representation of a SpecsResources instance."""
+
+        s = self.example_specs_resource()
+
+        expected = "Total qubit allocations: 2\n"
+        expected += "Total gates: 3\n"
+        expected += "Circuit depth: 2\n"
+        expected += "\n"
+        expected += "Gate types:\n"
+        expected += "  Hadamard: 2\n"
+        expected += "  CNOT: 1\n"
+        expected += "\n"
+        expected += "Measurements:\n"
+        expected += "  expval: 1"
+
+        expected_indented = ("    " + expected.replace("\n", "\n    ")).replace("\n    \n", "\n\n")
+
+        assert str(s) == expected
+        assert s.to_pretty_str() == expected
+        assert s.to_pretty_str(preindent=4) == expected_indented
+
+        # Check with no depth, gates, or measurements
+
+        s = SpecsResources(gate_types={}, gate_sizes={}, measurements={}, num_allocs=0)
+
+        expected = "Total qubit allocations: 0\n"
+        expected += "Total gates: 0\n"
+        expected += "Circuit depth: Not computed\n"
+        expected += "\n"
+        expected += "Gate types:\n"
+        expected += "  No gates.\n"
+        expected += "\n"
+        expected += "Measurements:\n"
+        expected += "  No measurements."
+
+        expected_indented = ("    " + expected.replace("\n", "\n    ")).replace("\n    \n", "\n\n")
+
+        assert str(s) == expected
+        assert s.to_pretty_str() == expected
+        assert s.to_pretty_str(preindent=4) == expected_indented
