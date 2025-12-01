@@ -46,8 +46,8 @@ def _create_transform_primitive():
     # pylint: disable=too-many-arguments, disable=unused-argument
     @transform_prim.def_impl
     def _impl(*all_args, inner_jaxpr, args_slice, consts_slice, targs_slice, tkwargs, transform):
-        args = all_args[args_slice]
-        consts = all_args[consts_slice]
+        args = all_args[slice(*args_slice)]
+        consts = all_args[slice(*consts_slice)]
         return capture.eval_jaxpr(inner_jaxpr, consts, *args)
 
     @transform_prim.def_abstract_eval
@@ -67,6 +67,8 @@ def _create_plxpr_fallback_transform(tape_transform):
         return None
 
     def plxpr_fallback_transform(jaxpr, consts, targs, tkwargs, *args):
+        # Restore tkwargs from hashable tuple to dict
+        tkwargs = dict(tkwargs)
 
         def wrapper(*inner_args):
             tape = plxpr_to_tape(jaxpr, consts, *inner_args)

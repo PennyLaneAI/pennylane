@@ -732,21 +732,23 @@ def _validate_abstract_values(
             f" #{branch_index}: {len(outvals)} vs {len(expected_outvals)} "
             f" for {outvals} and {expected_outvals}"
         )
-        if jax.config.jax_dynamic_shapes:
+        if jax.config.jax_dynamic_shapes:  # pragma: no cover
             msg += "\n This may be due to different sized shapes when dynamic shapes are enabled."
         raise ValueError(msg)
 
     for i, (outval, expected_outval) in enumerate(zip(outvals, expected_outvals)):
         if jax.config.jax_dynamic_shapes:
             # we need to be a bit more manual with the comparison.
-            if type(outval) != type(expected_outval):
+            if type(outval) != type(expected_outval):  # pragma: no cover
                 _aval_mismatch_error(branch_type, branch_index, i, outval, expected_outval)
-            if getattr(outval, "dtype", None) != getattr(expected_outval, "dtype", None):
+            if getattr(outval, "dtype", None) != getattr(
+                expected_outval, "dtype", None
+            ):  # pragma: no cover
                 _aval_mismatch_error(branch_type, branch_index, i, outval, expected_outval)
 
             shape1 = getattr(outval, "shape", ())
             shape2 = getattr(expected_outval, "shape", ())
-            for s1, s2 in zip(shape1, shape2, strict=True):
+            for s1, s2 in zip(shape1, shape2, strict=True):  # pragma: no cover
                 if isinstance(s1, jax.extend.core.Var) != isinstance(s2, jax.extend.core.Var):
                     _aval_mismatch_error(branch_type, branch_index, i, outval, expected_outval)
                 elif isinstance(s1, int) and s1 != s2:
@@ -790,6 +792,9 @@ def _get_cond_qfunc_prim():
 
     @cond_prim.def_impl
     def _impl(*all_args, jaxpr_branches, consts_slices, args_slice):
+        args_slice = slice(*args_slice)
+        consts_slices = [slice(*s) for s in consts_slices]
+
         n_branches = len(jaxpr_branches)
         conditions = all_args[:n_branches]
         args = all_args[args_slice]
