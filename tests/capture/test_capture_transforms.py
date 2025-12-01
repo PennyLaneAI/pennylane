@@ -127,10 +127,11 @@ class TestCaptureTransforms:
         assert (transform_eqn := jaxpr.eqns[0]).primitive == transform_prim
 
         params = transform_eqn.params
-        assert params["args_slice"] == slice(0, 1)
-        assert params["consts_slice"] == slice(1, 1)
-        assert params["targs_slice"] == slice(1, None)
-        assert params["tkwargs"] == tkwargs
+        assert params["args_slice"] == (0, 1, None)
+        assert params["consts_slice"] == (1, 1, None)
+        assert params["targs_slice"] == (1, None, None)
+
+        assert dict(params["tkwargs"]) == tkwargs
         assert params["transform"] == z_to_hadamard
 
         inner_jaxpr = params["inner_jaxpr"]
@@ -156,10 +157,11 @@ class TestCaptureTransforms:
         assert transform_eqn.params["transform"] == z_to_hadamard
 
         params = transform_eqn.params
-        assert params["args_slice"] == slice(0, 2)
-        assert params["consts_slice"] == slice(2, 2)
-        assert params["targs_slice"] == slice(2, None)
-        assert params["tkwargs"] == tkwargs
+        assert params["args_slice"] == (0, 2, None)
+        assert params["consts_slice"] == (2, 2, None)
+        assert params["targs_slice"] == (2, None, None)
+        # Dicts are also converted to tuples
+        assert dict(params["tkwargs"]) == tkwargs
 
         inner_jaxpr = params["inner_jaxpr"]
         expected_jaxpr = jax.make_jaxpr(func)(*args).jaxpr
@@ -242,20 +244,21 @@ class TestCaptureTransforms:
         assert transform_eqn1.params["transform"] == z_to_hadamard
 
         params1 = transform_eqn1.params
-        assert params1["args_slice"] == slice(0, 1)
-        assert params1["consts_slice"] == slice(1, 1)
-        assert params1["targs_slice"] == slice(1, None)
-        assert params1["tkwargs"] == tkwargs1
+        assert params1["args_slice"] == (0, 1, None)
+        assert params1["consts_slice"] == (1, 1, None)
+        assert params1["targs_slice"] == (1, None, None)
+        # Dicts are also converted to tuples
+        assert dict(params1["tkwargs"]) == tkwargs1
 
         inner_jaxpr = params1["inner_jaxpr"]
         assert (transform_eqn2 := inner_jaxpr.eqns[0]).primitive == transform_prim
         assert transform_eqn2.params["transform"] == expval_z_obs_to_x_obs
 
         params2 = transform_eqn2.params
-        assert params2["args_slice"] == slice(0, 1)
-        assert params2["consts_slice"] == slice(1, 1)
-        assert params2["targs_slice"] == slice(1, None)
-        assert params2["tkwargs"] == tkwargs2
+        assert params2["args_slice"] == (0, 1, None)
+        assert params2["consts_slice"] == (1, 1, None)
+        assert params2["targs_slice"] == (1, None, None)
+        assert dict(params2["tkwargs"]) == tkwargs2
 
         inner_inner_jaxpr = params2["inner_jaxpr"]
         expected_jaxpr = jax.make_jaxpr(func)(*args).jaxpr
