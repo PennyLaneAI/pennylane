@@ -145,15 +145,33 @@ def _specs_qjit_intermediate_passes(
     # pylint: disable=import-outside-toplevel
     from catalyst.python_interface.inspection import mlir_specs
 
-    single_level = isinstance(level, int)
+    # Note that this only gets transforms manually applied by the user
+    trans_prog = original_qnode.transform_program
 
-    # Ensure `level` is always in the form of a sorted list (or "all")
-    if single_level:
-        level = [level]
-    elif level not in ("all", "all-mlir"):
-        level = list(level)
+    single_level = isinstance(level, (int, str))
 
+    # Easier to assume level is always a sorted list of int levels (if not "all" or "all-mlir")
     if level not in ("all", "all-mlir"):
+        if single_level:
+            level = [level]
+        else:
+            level = list(level)
+
+        # Convert marker names to the associated level number
+        for i, lvl in enumerate(level):
+            if isinstance(lvl, str):
+                found = False
+                for j, trans in enumerate(trans_prog):
+                    if (
+                        trans.transform == qml.marker.transform
+                        and trans.kwargs.get("level", None) == lvl
+                    ):
+                        level[i] = j
+                        found = True
+                        break
+                if not found:
+                    raise ValueError(f"Transform name '{lvl}' not found in the transform program.")
+
         level_sorted = sorted(level)
         if level != level_sorted:
             warnings.warn(
@@ -165,24 +183,21 @@ def _specs_qjit_intermediate_passes(
     resources = {}
 
     if level != "all-mlir":
-        # Note that this only gets transforms manually applied by the user
-        tape_transforms = original_qnode.transform_program
-
         if qml.capture.enabled():
             # If capture is enabled, find the seam where PLxPR transforms end and MLIR passes begin
             num_trans_levels = 0
 
             # If the pass name is None, it indicates a PLxPR transform which is not recognized by Catalyst
-            for i, trans in reversed(list(enumerate(tape_transforms))):
+            for i, trans in reversed(list(enumerate(trans_prog))):
                 if trans.pass_name is None:
                     num_trans_levels = i + 1
                     break
 
         else:
             # If capture is NOT enabled, all transforms are tape transforms
-            num_trans_levels = len(tape_transforms)
+            num_trans_levels = len(trans_prog)
 
-        num_trans_levels += 1  # Have to include the "no transforms" level
+        num_trans_levels += 1  # Have to include the "before transforms" level
 
         # Handle tape transforms
         trans_levels = (
@@ -198,7 +213,7 @@ def _specs_qjit_intermediate_passes(
             res = resources_from_tape(tape, False)
 
             trans_name = (
-                tape_transforms[trans_level - 1].transform.__name__
+                trans_prog[trans_level - 1].transform.__name__
                 if trans_level > 0
                 else "Before transforms"
             )
@@ -264,7 +279,12 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> CircuitSpecs:  #
 
     device = original_qnode.device
 
-    if isinstance(level, (int, tuple, list, range)) or level in ("all", "all-mlir"):
+    if level == "device":
+        resources = _specs_qjit_device_level_tracking(
+            qjit, original_qnode, pass_pipeline_wrapped, compute_depth, *args, **kwargs
+        )
+
+    elif isinstance(level, (int, tuple, list, range, str)):
         if compute_depth:
             warnings.warn(
                 "Cannot calculate circuit depth for intermediate transformations or compilation passes."
@@ -272,11 +292,6 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> CircuitSpecs:  #
                 UserWarning,
             )
         resources = _specs_qjit_intermediate_passes(qjit, original_qnode, level, *args, **kwargs)
-
-    elif level == "device":
-        resources = _specs_qjit_device_level_tracking(
-            qjit, original_qnode, pass_pipeline_wrapped, compute_depth, *args, **kwargs
-        )
 
     else:
         raise NotImplementedError(f"Unsupported level argument '{level}' for QJIT'd code.")
