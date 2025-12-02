@@ -202,21 +202,17 @@ def _temporary_and(wires: WiresLike, **kwargs):
 
     ops.change_op_basis(
         ops.prod(
-            *[
-                ops.adjoint(ops.T(wires=wires[2])),
-                ops.CNOT(wires=[wires[1], wires[2]]),
-                ops.T(wires=wires[2]),
-                ops.H(wires[2]),
-            ]
+            ops.adjoint(ops.T(wires=wires[2])),
+            ops.CNOT(wires=[wires[1], wires[2]]),
+            ops.T(wires=wires[2]),
+            ops.H(wires[2]),
         ),
         ops.CNOT(wires=[wires[0], wires[2]]),
         ops.prod(
-            *[
-                ops.H(wires[2]),
-                ops.adjoint(ops.T(wires=wires[2])),
-                ops.CNOT(wires=[wires[1], wires[2]]),
-                ops.T(wires=wires[2]),
-            ]
+            ops.H(wires[2]),
+            ops.adjoint(ops.T(wires=wires[2])),
+            ops.CNOT(wires=[wires[1], wires[2]]),
+            ops.T(wires=wires[2]),
         ),
     )
 
