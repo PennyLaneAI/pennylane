@@ -51,7 +51,8 @@ def transform(  # pylint: disable=too-many-arguments
             * The transform must have the following structure (type hinting is optional): ``my_quantum_transform(tape:
               qml.tape.QuantumScript, ...) -> tuple[qml.tape.QuantumScriptBatch, qml.typing.PostprocessingFn]``
 
-        pass_name  (str | None): the name of the associated MLIR pass to be applied when Catalyst is used. See Usage Details for more information.
+        pass_name  (str | None): the name of the associated MLIR pass to be applied when Catalyst is used.
+            See Usage Details for more information.
 
     Keyword Args:
         expand_transform=None (Optional[Callable]): An optional expand transform is applied directly before the input
@@ -244,7 +245,7 @@ def transform(  # pylint: disable=too-many-arguments
                 qml.X(0)
                 return qml.expval(qml.Z(0))
 
-        We can see that the instruction to apply ``"cancel-inverses`` is present in the initial
+        We can see that the instruction to apply ``"cancel-inverses"`` is present in the initial
         MLIR.
 
         >>> circuit()
