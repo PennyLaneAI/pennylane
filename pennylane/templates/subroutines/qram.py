@@ -370,8 +370,8 @@ class HybridQRAM(Operation):
 
     1.Total address bits: n = len(control_wires)
     2.Choose an integer k with 0 ≤ k < n.
-      2.1 The first k address bits (high-order) are "select" bits.
-      2.2 The remaining n-k bits (low-order) are routed through a bucket-brigade tree.
+        2.1 The first k address bits (high-order) are "select" bits.
+        2.2 The remaining n-k bits (low-order) are routed through a bucket-brigade tree.
 
     Instead of a full-depth tree of size 2^n leaves, we build a smaller tree of depth n-k
     (2^(n-k) leaves) and reuse it 2^k times:
@@ -387,7 +387,6 @@ class HybridQRAM(Operation):
     bitstrings[a].
 
     Wire layout:
-
       control_wires: [ sel_0, ..., sel_{k-1}, tree_0, ..., tree_{n-k-1} ]
       work_wires: [ signal, bus, dir..., portL..., portR... ]  (tree ancillas)
 
