@@ -24,6 +24,14 @@
 
 <h3>Improvements 🛠</h3>
 
+* Quantum compilation passes in MLIR and XDSL can now be applied using the core PennyLane transform
+  infrastructure, instead of using Catalyst-specific tools. This is made possible by a new argument in
+  :func:`~pennylane.transform` and `~.TransformDispatcher` called ``pass_name``, which accepts a string
+  corresponding to the name of the compilation pass.
+  The ``pass_name`` argument ensures that the given compilation pass will be used when qjit'ing a
+  workflow, where the pass is performed in MLIR or xDSL.
+  [(#8539)](https://github.com/PennyLaneAI/pennylane/pull/8539)
+
 * `Operator.decomposition` will fallback to the first entry in `qml.list_decomps` if the `Operator.compute_decomposition`
   method is not overridden.
   [(#8686)](https://github.com/PennyLaneAI/pennylane/pull/8686)
