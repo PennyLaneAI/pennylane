@@ -1766,14 +1766,14 @@ class TrotterPauli(ResourceOperator):
 
     Args:
         pauli_ham (:class:`~.pennylane.estimator.compact_hamiltonian.PauliHamiltonian`):
-            the hamiltonian to be approximately exponentiated
+            the Hamiltonian to be approximately exponentiated
         num_steps (int): number of Trotter steps to perform
         order (int): order of the approximation, must be ``1`` or an even number
         wires (WiresLike | None): the wires on which the operator acts
 
     Resources:
-        The resource cost for this subroutine depends on how the Pauli hamiltonian is expressed.
-        Given the hamiltonian :math:`H = \Sigma^{N}_{j=0} \alpha_{j} O_{j}`, each :math:`O_{j}` can 
+        The resource cost for this subroutine depends on how the Pauli Hamiltonian is expressed.
+        Given the Hamiltonian :math:`H = \Sigma^{N}_{j=0} \alpha_{j} O_{j}`, each :math:`O_{j}` can 
         either be a Pauli string (a tensor product of Pauli operators) :math:`O_{j} = \vec{P}_{j}` or 
         a linear combination of commuting Pauli strings :math:`O_{j} = \Sigma^{M}_{j=0} \beta_{j} \vec{P}_{j}`.
 
@@ -1790,7 +1790,7 @@ class TrotterPauli(ResourceOperator):
             \end{align}
             
         Thus, the exponential can be expressed as a product of :math:`M` generalized Pauli rotations.
-        Using these as the cost of each individual exponential, the cost of the entire Suzuki-Trotter
+        Using this as the cost of each individual exponential, the cost of the entire Suzuki-Trotter
         product formula is derived below.
 
         The number of times an operator :math:`e^{itO_{j}}` is applied depends on the
@@ -1798,7 +1798,7 @@ class TrotterPauli(ResourceOperator):
 
         .. math::
 
-            C_{O_j} = 2 * n \cdot 5^{\frac{m}{2} - 1}.
+            C_{O_j} = 2 \cdot n \cdot 5^{\frac{m}{2} - 1}.
 
         Furthermore, because of the symmetric form of the recursive formula, the first and last terms get grouped.
         This reduces the counts for those terms to:
@@ -1839,11 +1839,11 @@ class TrotterPauli(ResourceOperator):
     .. details::
         :title: Usage Details
 
-        Estimating resources for the trotterization of a Pauli hamiltonian depends on how
-        the Pauli hamiltonian was constructed. Specifically, how much information was provided
+        Estimating resources for the trotterization of a Pauli Hamiltonian depends on how
+        the Pauli Hamiltonian was constructed. Specifically, how much information was provided
         by the user (see :class:`~.estimator.compact_hamiltonian.PauliHamiltonian` for more info).
 
-        If the hamiltonian is constructed with minimal information about the specific Pauli terms:
+        If the Hamiltonian is constructed with minimal information about the specific Pauli terms:
 
         >>> pauli_ham = qre.PauliHamiltonian(num_qubits=10, num_pauli_words=30, max_weight=4)
         >>> pauli_ham
@@ -1872,7 +1872,7 @@ class TrotterPauli(ResourceOperator):
             PauliRot {'pauli_string': 'YYYY', 'precision': None}: 10
             PauliRot {'pauli_string': 'ZZZZ', 'precision': None}: 10
 
-        Alternately, the hamiltonian can be constructed by providing the commuting groups of terms.
+        Alternately, the Hamiltonian can be constructed by providing the commuting groups of terms.
         Note, that the order in which the groups are listed matters, keeping the largest groups as
         the first and last elements of the list will lead to the most reduction in resources.
 
@@ -1929,6 +1929,16 @@ class TrotterPauli(ResourceOperator):
                 "Unsupported Hamiltonian representation for TrotterPauli."
                 f"This method works with PauliHamiltonian, {type(pauli_ham)} provided"
             )
+        if (not isinstance(num_steps, int)) or num_steps < 1:
+            raise ValueError(
+                f"`num_steps` is expected to be a positive integer greater than one, got {num_steps}"
+            )
+
+        if not (isinstance(order, int) and order > 0 and (order == 1 or order % 2 == 0)):
+            raise ValueError(
+                f"`order` is expected to be a positive integer and either one or a multiple of two; got {order}"
+            )
+
         self.num_steps = num_steps
         self.order = order
         self.pauli_ham = pauli_ham
@@ -1947,7 +1957,7 @@ class TrotterPauli(ResourceOperator):
         Returns:
             dict: A dictionary containing the resource parameters:
                 * pauli_ham (:class:`~.pennylane.estimator.templates.compact_hamiltonian.PauliHamiltonian`):
-                  The hamiltonian to be approximately exponentiated
+                  The Hamiltonian to be approximately exponentiated
                 * num_steps (int): number of Trotter steps to perform
                 * order (int): order of the approximation, must be 1 or even.
         """
@@ -1965,11 +1975,11 @@ class TrotterPauli(ResourceOperator):
         order: int,
     ) -> CompressedResourceOp:
         """Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation.
+        the Operator that are needed to compute the resources.
 
         Args:
             pauli_ham (:class:`~.pennylane.estimator.templates.compact_hamiltonian.PauliHamiltonian`):
-                The hamiltonian to be approximately exponentiated
+                The Hamiltonian to be approximately exponentiated
             num_steps (int): number of Trotter steps to perform
             order (int): order of the approximation, must be 1 or even.
 
@@ -1996,13 +2006,13 @@ class TrotterPauli(ResourceOperator):
 
         Args:
             pauli_ham (:class:`~.pennylane.estimator.templates.compact_hamiltonian.PauliHamiltonian`):
-                The hamiltonian to be approximately exponentiated
+                The Hamiltonian to be approximately exponentiated
             num_steps (int): number of Trotter steps to perform
             order (int): order of the approximation, must be 1 or even.
 
         Resources:
-            The resource cost for this subroutine depends on how the Pauli hamiltonian is expressed.
-            Given the hamiltonian :math:`H = \Sigma^{N}_{j=0} \alpha_{j} O_{j}`, each :math:`O_{j}` can 
+            The resource cost for this subroutine depends on how the Pauli Hamiltonian is expressed.
+            Given the Hamiltonian :math:`H = \Sigma^{N}_{j=0} \alpha_{j} O_{j}`, each :math:`O_{j}` can 
             either be a Pauli string (a tensor product of Pauli operators) :math:`O_{j} = \vec{P}_{j}` or 
             a linear combination of commuting Pauli strings :math:`O_{j} = \Sigma^{M}_{j=0} \beta_{j} \vec{P}_{j}`.
 
@@ -2089,15 +2099,14 @@ class TrotterPauli(ResourceOperator):
 
         Args:
             pauli_dist (dict): A dictionary which represents the types of Pauli words in the
-                hamiltonian and their relative frequencies.
+                Hamiltonian and their relative frequencies.
 
         Returns:
             Iterable[~.pennylane.estimator.resource_operator.GateCount]: The cost of exponentiating
                 a commuting group of Pauli words.
 
         """
-        gate_count_lst = []
-        for pauli_word, count in pauli_dist.items():
-            gate_count_lst.append(GateCount(PauliRot.resource_rep(pauli_word), count))
-
-        return gate_count_lst
+        return [
+            GateCount(PauliRot.resource_rep(pauli_word), count)
+            for pauli_word, count in pauli_dist.items()
+        ]

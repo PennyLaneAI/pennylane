@@ -20,6 +20,21 @@ from pennylane.wires import Wires, WiresLike
 # pylint: disable=arguments-differ, signature-differs
 
 
+PAULI_ROT_SPECIAL_CASES = {
+    "X": lambda eps: [GateCount(qre.resource_rep(qre.RX, {"precision": eps}))],
+    "Y": lambda eps: [GateCount(qre.resource_rep(qre.RY, {"precision": eps}))],
+    "Z": lambda eps: [GateCount(qre.resource_rep(qre.RZ, {"precision": eps}))],
+    "XX": lambda eps: [
+        GateCount(qre.resource_rep(qre.RX, {"precision": eps})),
+        GateCount(qre.resource_rep(qre.CNOT), count=2),
+    ],
+    "YY": lambda eps: [
+        GateCount(qre.resource_rep(qre.RY, {"precision": eps})),
+        GateCount(qre.resource_rep(qre.CY), count=2),
+    ],
+}
+
+
 class MultiRZ(ResourceOperator):
     r"""Resource class for the MultiRZ gate.
 
@@ -317,25 +332,8 @@ class PauliRot(ResourceOperator):
             return [GateCount(qre.resource_rep(qre.GlobalPhase))]
 
         # Special cases:
-        if pauli_string in {"X", "Y", "Z", "XX", "YY"}:
-            if pauli_string == "X":
-                special_case_cost = [GateCount(qre.resource_rep(qre.RX, {"precision": precision}))]
-            elif pauli_string == "Y":
-                special_case_cost = [GateCount(qre.resource_rep(qre.RY, {"precision": precision}))]
-            elif pauli_string == "Z":
-                special_case_cost = [GateCount(qre.resource_rep(qre.RZ, {"precision": precision}))]
-            elif pauli_string == "XX":  # IsingXX
-                special_case_cost = [
-                    GateCount(qre.resource_rep(qre.RX, {"precision": precision})),
-                    GateCount(qre.resource_rep(qre.CNOT), count=2),
-                ]
-            else:  # pauli_string == "YY" IsingYY
-                special_case_cost = [
-                    GateCount(qre.resource_rep(qre.RY, {"precision": precision})),
-                    GateCount(qre.resource_rep(qre.CY), count=2),
-                ]
-
-            return special_case_cost
+        if pauli_string in PAULI_ROT_SPECIAL_CASES:
+            return PAULI_ROT_SPECIAL_CASES[pauli_string](eps=precision)
 
         active_wires = len(pauli_string.replace("I", ""))
 
