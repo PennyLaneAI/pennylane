@@ -15,6 +15,7 @@ r"""This module contains experimental resource estimation functionality."""
 
 from .non_parametric_ops import (
     Hadamard,
+    H,
     S,
     T,
     X,

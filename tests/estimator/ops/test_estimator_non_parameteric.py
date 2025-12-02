@@ -118,6 +118,10 @@ class TestHadamard:
         op = Hadamard(0)
         assert op.pow_resource_decomp(z) == expected_res
 
+    def test_alias_H(self):
+        """Test that qre.H is an alias for Hadamard."""
+        assert qre.H is Hadamard
+
 
 class TestSWAP:
     """Tests for SWAP resource operator"""

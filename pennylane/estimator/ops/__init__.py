@@ -17,6 +17,7 @@ from .identity import GlobalPhase, Identity
 
 from .qubit import (
     Hadamard,
+    H,
     S,
     SWAP,
     T,
