@@ -53,6 +53,7 @@ class TestQubitizeTHC:
 
         if prep_op is not None:
             prep_op = prep_op.resource_rep_from_op()
+
         if select_op is not None:
             select_op = select_op.resource_rep_from_op()
 
@@ -60,8 +61,8 @@ class TestQubitizeTHC:
             "thc_ham": thc_ham,
             "prep_op": prep_op,
             "select_op": select_op,
-            "coeff_precision": None,
-            "rotation_precision": None,
+            "coeff_precision": prep_op.params["coeff_precision"] if prep_op else 15,
+            "rotation_precision": select_op.params["rotation_precision"] if select_op else 15,
         }
 
     @pytest.mark.parametrize(
@@ -98,6 +99,12 @@ class TestQubitizeTHC:
             coeff_precision = prep_op.params["coeff_precision"]
         else:
             coeff_precision = 15
+
+        if select_op:
+            rotation_precision = select_op.params["rotation_precision"]
+        else:
+            rotation_precision = 15
+
         expected = qre.CompressedResourceOp(
             qre.QubitizeTHC,
             num_wires,
@@ -106,7 +113,7 @@ class TestQubitizeTHC:
                 "prep_op": prep_op,
                 "select_op": select_op,
                 "coeff_precision": coeff_precision,
-                "rotation_precision": None,
+                "rotation_precision": rotation_precision,
             },
         )
         assert (

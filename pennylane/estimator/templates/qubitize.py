@@ -130,11 +130,20 @@ class QubitizeTHC(ResourceOperator):
 
         if coeff_precision is None:
             coeff_precision = prep_op.coeff_precision if prep_op else 15
+        self.coeff_precision = coeff_precision
+
+        if rotation_precision is None:
+            rotation_precision = select_op.rotation_precision if select_op else 15
+        self.rotation_precision = rotation_precision
 
         # Based on section III D, Eq. 43 in arXiv:2011.03494
         # Numbers have been adjusted to remove the auxilliary wires accounted for by different templates
-        # 6 auxiliary wires account for 2 spin registers, 1 for rotation on auxiliary, 1 flag for success of inequality,
-        # 1 flag for one-body vs two-body and 1 to control swap of \mu and \nu registers.
+        # 6 auxiliary wires account for:
+        # - 2 spin registers
+        # - 1 for rotation on auxiliary qubit
+        # - 1 flag for success of inequality,
+        # - 1 flag for one-body vs two-body rotation
+        # - 1 to control swap of \mu and \nu registers.
         # 2*n_M wires are for \mu and \nu registers, where n_M = log_2(tensor_rank+1)
         # coeff_precision wires for the keep register
         # num_orb*2 for state register
@@ -220,11 +229,17 @@ class QubitizeTHC(ResourceOperator):
 
         if coeff_precision is None:
             coeff_precision = prep_op.params["coeff_precision"] if prep_op else 15
+        if rotation_precision is None:
+            rotation_precision = select_op.params["rotation_precision"] if select_op else 15
 
         # Based on section III D, Eq. 43 in arXiv:2011.03494
         # Numbers have been adjusted to remove the auxilliary wires accounted for by different templates
-        # 6 auxiliary wires account for 2 spin registers, 1 for rotation on auxiliary, 1 flag for success of inequality,
-        # 1 flag for one-body vs two-body and 1 to control swap of \mu and \nu registers.
+        # 6 auxiliary wires account for:
+        # - 2 spin registers
+        # - 1 for rotation on auxiliary qubit
+        # - 1 flag for success of inequality,
+        # - 1 flag for one-body vs two-body rotation
+        # - 1 to control swap of \mu and \nu registers.
         # 2*n_M wires are for \mu and \nu registers, where n_M = log_2(tensor_rank+1)
         # coeff_precision wires for the keep register
         # num_orb*2 for state register
@@ -290,30 +305,23 @@ class QubitizeTHC(ResourceOperator):
         tensor_rank = thc_ham.tensor_rank
         m_register = int(np.ceil(np.log2(tensor_rank)))
 
+        select_kwargs = {"thc_ham": thc_ham}
         if rotation_precision:
+            select_kwargs["rotation_precision"] = rotation_precision
+
+        if rotation_precision or select_op is None:
             # Select cost from Figure 5 in arXiv:2011.03494
-            select_op = resource_rep(
-                SelectTHC,
-                {"thc_ham": thc_ham, "rotation_precision": rotation_precision},
-            )
-        else:
-            if not select_op:
-                select_op = resource_rep(SelectTHC, {"thc_ham": thc_ham})
+            select_op = resource_rep(SelectTHC, select_kwargs)
         gate_list.append(GateCount(select_op))
 
+        prep_kwargs = {"thc_ham": thc_ham}
         if coeff_precision:
+            prep_kwargs["coeff_precision"] = coeff_precision
+
+        if coeff_precision or prep_op is None:
             # Prep cost from Figure 3 and 4 in arXiv:2011.03494
-            prep_op = resource_rep(
-                PrepTHC,
-                {"thc_ham": thc_ham, "coeff_precision": coeff_precision},
-            )
-        else:
-            if not prep_op:
-                # Prep cost from Figure 3 and 4 in arXiv:2011.03494
-                prep_op = resource_rep(
-                    PrepTHC,
-                    {"thc_ham": thc_ham},
-                )
+            prep_op = resource_rep(PrepTHC, prep_kwargs)
+
         gate_list.append(GateCount(prep_op))
         gate_list.append(GateCount(resource_rep(Adjoint, {"base_cmpr_op": prep_op})))
 
@@ -370,22 +378,13 @@ class QubitizeTHC(ResourceOperator):
             gate_list.append(Allocate(1))
             gate_list.append(GateCount(mcx, 2))
 
+        select_kwargs = {"thc_ham": thc_ham}
         if rotation_precision:
+            select_kwargs["rotation_precision"] = rotation_precision
+
+        if rotation_precision or select_op is None:
             # Controlled Select cost from Fig 5 in arXiv:2011.03494
-            select_op = resource_rep(
-                SelectTHC,
-                {
-                    "thc_ham": thc_ham,
-                    "rotation_precision": rotation_precision,
-                },
-            )
-        else:
-            if not select_op:
-                # Controlled Select cost from Fig 5 in arXiv:2011.03494
-                select_op = resource_rep(
-                    SelectTHC,
-                    {"thc_ham": thc_ham},
-                )
+            select_op = resource_rep(SelectTHC, select_kwargs)
         gate_list.append(
             GateCount(
                 resource_rep(
@@ -395,19 +394,14 @@ class QubitizeTHC(ResourceOperator):
             )
         )
 
+        prep_kwargs = {"thc_ham": thc_ham}
         if coeff_precision:
+            prep_kwargs["coeff_precision"] = coeff_precision
+
+        if coeff_precision or prep_op is None:
             # Prep cost from Fig 3 and 4 in arXiv:2011.03494
-            prep_op = resource_rep(
-                PrepTHC,
-                {"thc_ham": thc_ham, "coeff_precision": coeff_precision},
-            )
-        else:
-            if not prep_op:
-                # Prep cost from Fig 3 and 4 in arXiv:2011.03494
-                prep_op = resource_rep(
-                    PrepTHC,
-                    {"thc_ham": thc_ham},
-                )
+            prep_op = resource_rep(PrepTHC, prep_kwargs)
+
         gate_list.append(GateCount(prep_op))
         gate_list.append(GateCount(resource_rep(Adjoint, {"base_cmpr_op": prep_op})))
 
