@@ -264,11 +264,11 @@ class SpecsResources:
         Total qubit allocations: 2
         Total gates: 2
         Circuit depth: 2
-
+        <BLANKLINE>
         Gate types:
           Hadamard: 1
           CNOT: 1
-
+        <BLANKLINE>
         Measurements:
           expval: 1
     """
@@ -411,25 +411,25 @@ class CircuitSpecs:
         Device wires: 2
         Shots: Shots(total=1000)
         Level: device
-
+        <BLANKLINE>
         Resource specifications:
           Total qubit allocations: 2
           Total gates: 3
           Circuit depth: 3
-
+        <BLANKLINE>
           Gate types:
             RX: 2
             CNOT: 1
-
+        <BLANKLINE>
           Measurements:
             expval: 1
     """
 
-    device_name: str = None
-    num_device_wires: int = None
-    shots: Shots = None
+    device_name: str | None = None
+    num_device_wires: int | None = None
+    shots: Shots | None= None
     level: Any = None
-    resources: SpecsResources | dict[int | str, SpecsResources] = None
+    resources: SpecsResources | dict[int | str, SpecsResources] | None = None
 
     def to_dict(self) -> dict[str, Any]:
         """Convert the CircuitSpecs to a dictionary."""
