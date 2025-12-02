@@ -14,13 +14,12 @@
 """
 Contains a utility for handling inputs with dynamically shaped arrays.
 """
-from collections.abc import Callable, Sequence
+from collections.abc import Callable
 
 has_jax = True
 try:
     import jax
     from jax._src.interpreters.partial_eval import TracingEqn
-    from jax.interpreters import partial_eval as pe
 
 
 except (ImportError, NameError) as e:  # pragma: no cover

@@ -15,12 +15,12 @@
 Contains the switches to (de)activate the capturing mechanism, and a
 status reporting function on whether it is enabled or not.
 """
+import warnings
 from collections.abc import Callable
 from contextlib import contextmanager
 
 has_jax = True
 is_jax_compatible = True
-import warnings
 
 try:
     import jax  # pylint: disable=unused-import
