@@ -6,7 +6,7 @@ from jax import jit, lax
 from functools import partial
 from typing import NamedTuple, Iterator, Tuple
 import logging
-
+from concurrent.futures import ThreadPoolExecutor
 
 
 from .timers import Timer
@@ -15,19 +15,6 @@ logger = logging.getLogger(__name__)
 
 # Enable 64-bit precision for SCF stability
 jax.config.update("jax_enable_x64", True)
-
-class VSCFData(NamedTuple):
-    """
-    Global Flattened Data Structure.
-    'target_mode' maps every term to the specific mode (Fock matrix) it belongs to.
-    """
-    term_map: jnp.ndarray     # Index into h_mat (row)
-    target_mode: jnp.ndarray  # Index into h_mat (col) / Mode Index
-    i: jnp.ndarray            # Bra index
-    j: jnp.ndarray            # Ket index
-    coeffs: jnp.ndarray       # Raw hamiltonian coefficient
-    mask: jnp.ndarray         # Boolean mask for mean-field product
-
 
 
 class VSCFData(NamedTuple):
@@ -44,153 +31,153 @@ class VSCFData(NamedTuple):
     valid: jnp.ndarray        # boolean enabling partners --> needed bc otherwise buffering padding creates troubles
 
 
+def _process_chunk_static(args):
+    """
+    Static worker function to process a raw slice of the Hamiltonian.
+    Returns the exploded, sparse arrays for this chunk.
+    """
+    # Unpack arguments
+    chunk_vals, start_global_idx, original_shape, n, modals_arr, cutoff, max_partners = args
+    
+    # 1. Sparsity Check
+    local_nonzero = np.nonzero(np.abs(chunk_vals) >= cutoff)[0]
+    if len(local_nonzero) == 0:
+        return None
+
+    vals = chunk_vals[local_nonzero]
+    
+    # 2. Recover Indices
+    global_indices_flat = local_nonzero + start_global_idx
+    subs = np.unravel_index(global_indices_flat, original_shape)
+    indices = np.stack(subs, axis=1)
+
+    num_modes_in_term = n + 1
+    mode_cols = indices[:, :num_modes_in_term]
+    exc_cols = indices[:, num_modes_in_term:]
+
+    # 3. Canonical Filter
+    if num_modes_in_term > 1:
+        is_canonical = np.all(mode_cols[:, :-1] > mode_cols[:, 1:], axis=1)
+        indices = indices[is_canonical]
+        vals = vals[is_canonical]
+        mode_cols = mode_cols[is_canonical]
+        exc_cols = exc_cols[is_canonical]
+    
+    if len(vals) == 0: return None
+
+    # 4. Truncation Filter
+    keep_mask = np.ones(len(vals), dtype=bool)
+    i_cols = exc_cols[:, :num_modes_in_term]
+    j_cols = exc_cols[:, num_modes_in_term:]
+    limits = modals_arr[mode_cols]
+    valid_dims = (i_cols < limits) & (j_cols < limits)
+    keep_mask = np.all(valid_dims, axis=1)
+
+    mode_cols = mode_cols[keep_mask]
+    i_cols = i_cols[keep_mask]
+    j_cols = j_cols[keep_mask]
+    vals = vals[keep_mask]
+    
+    num_valid = len(vals)
+    if num_valid == 0: return None
+
+    # 5. Explosion (Target + Partners)
+    
+    # Repeat values
+    exploded_c = np.repeat(vals, num_modes_in_term)
+    exploded_tgt = mode_cols.flatten()
+    exploded_i = i_cols.flatten()
+    exploded_j = j_cols.flatten()
+    
+    # Partner Generation (The new sparse logic)
+    repeated_modes = np.repeat(mode_cols, num_modes_in_term, axis=0)
+    mask_self = (repeated_modes == exploded_tgt[:, None])
+    raw_partners = repeated_modes[~mask_self]
+    
+    current_n_partners = num_modes_in_term - 1
+    
+    # Create fixed-size partner array filled with -1
+    exploded_p = np.full((len(exploded_tgt), max_partners), -1, dtype=np.int32)
+    
+    if current_n_partners > 0:
+        raw_partners = raw_partners.reshape(-1, current_n_partners)
+        exploded_p[:, :current_n_partners] = raw_partners
+
+    # Valid mask (always True for real data)
+    exploded_v = np.ones(len(exploded_tgt), dtype=bool)
+
+    # Note: We return raw count, main process handles active_num offset
+    return (num_valid, exploded_tgt, exploded_i, exploded_j, exploded_c, exploded_p, exploded_v)
+
+
+
 # we perform data preparation on CPU with numpy, since:
 # most of the integrals are zero --> we would clog PCIe bus transferring empty data.
 # + GPU memory (VRAM) is usally more limited than system RAM
 # + JAX loves static shapes.
-
-def _generate_jacobi_batches(h_integrals, modals, cutoff, max_partners, chunk_size=500_000):
-    r"""
-    Memory-Resilient Generator.
-    Yields VSCFData batches instead of returning one huge object.
-    Prevents CPU RAM explosion during data preparation.
+def _generate_jacobi_batches(h_integrals, modals, cutoff, max_bodies_involved, n_workers=4, chunk_size=50_000):
     """
-    active_num = 0
+    Parallelized Memory-Resilient Generator (Thread-Based).
+    Uses Threads to exploit NumPy's GIL-releasing operations without memory overhead.
+    """
+    max_partners = max(1, max_bodies_involved - 1)
     modals_arr = np.array(modals)
-
-    for ham_n in h_integrals:
+    active_num = 0
+    
+    # 1. Prepare Tasks
+    tasks = []
+    
+    # Optimization: Pre-calculate total size to avoid reallocation issues? 
+    # No, lists are fine for task storage.
+    
+    for n, ham_n in enumerate(h_integrals):
+        original_shape = np.shape(ham_n)
         
-        # 1body terms have len(shape) = 3, 2body = 6 etc
-        num_modes_in_term = len(ham_n.shape)//3 # this number = #bodies 
-        
-        total_elements = np.prod(np.shape(ham_n))
+        # Flattening creates a view (fast)
         flat_ham = np.reshape(ham_n, -1)
+        total_elements = flat_ham.size
         
-        # we process the tensor in flattened chunks to avoid loading/exploding everything at once.
-        # iterate over the tensor in chunks
         for start_idx in range(0, total_elements, chunk_size):
-            
             end_idx = min(start_idx + chunk_size, total_elements)
+            
+            # Slicing a numpy array creates a VIEW, not a copy.
+            # Since we use threads, this view is valid and shared instantly.
             chunk_vals = flat_ham[start_idx:end_idx]
             
-            # exploit sparsity!
-            local_nonzero = np.nonzero(np.abs(chunk_vals) >= cutoff)[0]
-            
-            if len(local_nonzero) == 0:
-                continue
-                
-            vals = chunk_vals[local_nonzero]
-            
-            # calculate global flat indices
-            global_indices_flat = local_nonzero + start_idx
-            
-            # for each element, we store its original indices
-            multidim_indices = np.unravel_index(global_indices_flat, np.shape(ham_n))
-            indices = np.stack(multidim_indices, axis=1)
+            args = (chunk_vals, start_idx, original_shape, n, modals_arr, cutoff, max_partners)
+            tasks.append(args)
 
+    # 2. Execute with ThreadPool
+    # We don't need 'spawn' context because threads live in the same process.
+    with ThreadPoolExecutor(max_workers=n_workers) as executor:
         
-            mode_cols = indices[:, :num_modes_in_term]
-            exc_cols = indices[:, num_modes_in_term:]
-
-            # since the Hamiltonian is symmetric, we can reduce the number of terms to consider
-            if num_modes_in_term > 1: 
-                #if we are in multi-body term, let's keep only the canonical ordering:
-                # e.g. 2-bodies: if a term is (2,1), we keep it. if (1,2), we discard it.
-                is_canonical = np.all(mode_cols[:, :-1] > mode_cols[:, 1:], axis=1) 
-                indices = indices[is_canonical]
-                vals = vals[is_canonical]
-                mode_cols = mode_cols[is_canonical]
-                exc_cols = exc_cols[is_canonical]
-            if len(vals) == 0: 
+        # map preserves order
+        results = executor.map(_process_chunk_static, tasks)
+        
+        for res in results:
+            if res is None:
                 continue
-
-
-            # truncate to active space:
-            # modals_arr -> we may want to use less modals than those calculated in the integral (to speedup)
-            # if integrals contain data for 20 modals, but we only want ot use [4,4,..] then let's filter them.
-            
-            keep_mask = np.ones(len(vals), dtype=bool)
-            i_cols = exc_cols[:, :num_modes_in_term]
-            j_cols = exc_cols[:, num_modes_in_term:]
-            limits = modals_arr[mode_cols]
-            valid_dims = (i_cols < limits) & (j_cols < limits) # let's keep only indices inside limits (active space)
-            keep_mask = np.all(valid_dims, axis=1)
-
-            mode_cols = mode_cols[keep_mask]
-            i_cols = i_cols[keep_mask]
-            j_cols = j_cols[keep_mask]
-            vals = vals[keep_mask]
-            
-            num_valid = len(vals)
-            if num_valid == 0: 
-                continue
-
-            
-            # Data expansion: (safe because chunk_size is limited)
-            # if we had one entry: 
-            #   Modes: [A, B], Val: V
-            # we expand to two entries:
-            #   Entry 1: Target: A, Partners: [A, B], Val: V
-            #   Entry 2: Target: B, Partners: [A, B], Val: V
-            # (recall that num_modes_in_term = #bodies involved in this integral)
-            
-            term_ids = np.arange(active_num, active_num + num_valid)
-            exploded_tm = np.repeat(term_ids, num_modes_in_term)
-            exploded_coeff = np.repeat(vals, num_modes_in_term)
-            exploded_target = mode_cols.flatten()
-            exploded_i = i_cols.flatten()
-            exploded_j = j_cols.flatten()
-            
-            
-            # 2. Partner Index Generation (Vectorized)
-            
-            # Step A: Repeat the mode columns to match explosion
-            # shape: (N * num_modes_in_term, num_modes_in_term)
-            # e.g. Row 0: [A, B], Row 1: [A, B]
-            repeated_modes = np.repeat(mode_cols, num_modes_in_term, axis=0)
-            
-            # Step B: Identify self-interaction (where mode == target)
-            # exploded_target has shape (N * num_modes_in_term,)
-            # We broadcast to identify the diagonal elements
-            mask_self = (repeated_modes == exploded_target[:, None])
-            
-            # Step C: Select only non-self modes (the partners)
-            # This flattens the array to (N * num_modes * (num_modes-1))
-            raw_partners = repeated_modes[~mask_self]
-            
-            # Step D: Reshape back to rows
-            # Each exploded term has exactly (num_modes_in_term - 1) partners
-            current_n_partners = num_modes_in_term - 1
-            
-            if current_n_partners > 0:
-                raw_partners = raw_partners.reshape(-1, current_n_partners)
                 
-                # Step E: Pad with -1 to match 'max_partners' width
-                # Create a buffer filled with -1
-                exploded_partners = np.full((len(exploded_tm), max_partners), -1, dtype=np.int32)
-                
-                # Fill the valid slots
-                exploded_partners[:, :current_n_partners] = raw_partners
-            else:
-                # 1-body terms have 0 partners. Fill with -1.
-                exploded_partners = np.full((len(exploded_tm), max_partners), -1, dtype=np.int32)
-
-            # 3. Valid Mask (Always True for real data)
-            exploded_valid = np.ones(len(exploded_tm), dtype=bool)
+            (num_valid_terms, tgt, i, j, c, p, v) = res
             
-            active_num += num_valid
+            # 3. Post-Process (Offset term_ids)
+            # This is fast scalar math, keep it in the main thread.
+            n_modes_in_this_chunk = len(tgt) // num_valid_terms
             
-            # yield a batch:
-            # the yield keyword turns a function into a function generator. The function generator returns an iterator.
+            new_ids = np.arange(active_num, active_num + num_valid_terms)
+            exploded_tm = np.repeat(new_ids, n_modes_in_this_chunk)
+            
+            active_num += num_valid_terms
+            
             yield (
-                np.array(exploded_tm, dtype=np.int32),
-                np.array(exploded_target, dtype=np.int32),
-                np.array(exploded_i, dtype=np.int32),
-                np.array(exploded_j, dtype=np.int32),
-                np.array(exploded_coeff, dtype=np.float64),
-                np.array(exploded_partners, dtype=np.int32),
-                np.array(exploded_valid, dtype=bool),
-                #active_num # Return current count so we know total active
+                exploded_tm.astype(np.int32),
+                tgt.astype(np.int32),
+                i.astype(np.int32),
+                j.astype(np.int32),
+                c.astype(np.float64),
+                p.astype(np.int32),
+                v.astype(bool),
+                #active_num
             )
 
 
@@ -416,7 +403,7 @@ def scf_step_batched(h_mat, mode_rots, batch_list, modals_tuple, nmodes, max_mod
     return h_mat_next, new_rots, total_energy
 
 
-def vscf(h_integrals, modals, cutoff, tol=1e-8, max_iters=10000, batch_size=20000):
+def vscf(h_integrals, modals, cutoff, tol=1e-8, max_iters=10000, batch_size=20000, n_workers=4):
     nmodes = len(modals)
     
     max_bodies_involved = 0
@@ -438,7 +425,7 @@ def vscf(h_integrals, modals, cutoff, tol=1e-8, max_iters=10000, batch_size=2000
         # rough estimate
         chunk_size = int(batch_size * 1.5)
         
-        raw_gen = _generate_jacobi_batches(h_integrals, modals, cutoff, max_partners, chunk_size)
+        raw_gen = _generate_jacobi_batches(h_integrals, modals, cutoff, max_partners, n_workers, chunk_size)
         buffered_gen = BatchRegularizer(raw_gen, target_size=batch_size, max_partners=max_partners)
         
         # consume data from the generator, and move them to device
