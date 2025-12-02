@@ -1,4 +1,4 @@
-# Copyright 2018-2023 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ from typing import Any
 
 from pennylane.measurements import Shots, add_shots
 from pennylane.operation import Operation
-from pennylane.ops.op_math import ControlledOp
+from pennylane.ops.op_math import Controlled, ControlledOp
 from pennylane.tape import QuantumScript
 
 from .error import _compute_algo_error
@@ -224,7 +224,8 @@ class Resources:
 @dataclass(frozen=True)
 class SpecsResources:
     """
-    Contains resource information for a quantum circuit.
+    Class for storing resource information for a quantum circuit. Contains attributes which store
+    key resources such as gate counts, number of qubit allocations, measurements, and circuit depth.
 
     Args:
         gate_types (dict[str, int]): A dictionary mapping gate names to their counts.
@@ -360,7 +361,8 @@ class SpecsResources:
 @dataclass(frozen=True)
 class CircuitSpecs:
     """
-    Contains resource information about a qnode.
+    Class for storing specifications of a qnode. Contains resource information as well as additional
+    data such as the device, number of shots, and level of the requested specs.
 
     Args:
         device_name (str): The name of the device used.
@@ -950,7 +952,8 @@ def _count_resources(tape: QuantumScript, compute_depth: bool = True) -> SpecsRe
 
         else:
             gate_name = op.name
-            if type(op) is ControlledOp:
+            # pylint: disable=unidiomatic-typecheck
+            if type(op) in (Controlled, ControlledOp):
                 n_ctrls = len(op.control_wires)
                 if n_ctrls > 1:
                     gate_name = f"{n_ctrls}{gate_name}"
