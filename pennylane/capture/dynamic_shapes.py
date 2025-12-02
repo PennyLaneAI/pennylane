@@ -17,7 +17,6 @@ Contains a utility for handling inputs with dynamically shaped arrays.
 from collections.abc import Callable, Sequence
 
 has_jax = True
-jax_version_compatible = False
 try:
     import jax
     from packaging import version
@@ -41,7 +40,6 @@ try:
         from jax._src.interpreters.partial_eval import TracingEqn
         from jax.interpreters import partial_eval as pe
 
-        jax_version_compatible = True
 
 except (ImportError, NameError) as e:  # pragma: no cover
     has_jax = False  # pragma: no cover
