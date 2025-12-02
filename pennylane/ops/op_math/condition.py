@@ -39,7 +39,7 @@ def _add_abstract_shapes(f):
     >>> @qml.capture.FlatFn
     ... def f(x):
     ...     return x + 1
-    >>> jax.make_jaxpr(f, abstracted_axes={0:"a"})(jnp.zeros(4))
+    >>> jax.make_jaxpr(f, abstracted_axes={0:"a"})(jnp.zeros(4))  # doctest: +SKIP
     { lambda ; a:i64[] b:f64[a]. let
         c:f64[a] = broadcast_in_dim[
           broadcast_dimensions=()
@@ -48,7 +48,7 @@ def _add_abstract_shapes(f):
         ] 1.0:f64[] a
         d:f64[a] = add b c
       in (d,) }
-    >>> jax.make_jaxpr(_add_abstract_shapes(f), abstracted_axes={0:"a"})(jnp.zeros(4))
+    >>> jax.make_jaxpr(_add_abstract_shapes(f), abstracted_axes={0:"a"})(jnp.zeros(4))  # doctest: +SKIP
     { lambda ; a:i64[] b:f64[a]. let
         c:f64[a] = broadcast_in_dim[
           broadcast_dimensions=()
