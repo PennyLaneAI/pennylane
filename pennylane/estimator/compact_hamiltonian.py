@@ -191,7 +191,7 @@ class PauliHamiltonian:
         num_pauli_words (int | None): the number of terms (Pauli words) in the Hamiltonian
         max_weight (int | None): The maximum number of qubits a term acts upon, over all
             terms in the linear combination.
-        one_norm (float | None): the one-norm of the Hamiltonian
+        one_norm (float | int | None): the one-norm of the Hamiltonian
         pauli_dist (dict | None): A dictionary representing the various Pauli words and how
             frequently they appear in the Hamiltonian.
         commuting_groups (tuple(dict) | None): A tuple of dictionaries where each entry represents
@@ -319,12 +319,17 @@ class PauliHamiltonian:
         commuting_groups: tuple[dict] | None = None,
     ):
         self._num_qubits = num_qubits
-        self._one_norm = one_norm
+
+        if one_norm is not None and not (isinstance(one_norm, (float, int)) and one_norm >= 0):
+            raise ValueError(
+                f"one_norm, if provided, must be a positive float or integer. Instead received {one_norm}"
+            )
 
         (max_weight, num_pauli_words, pauli_dist, commuting_groups) = _preprocess_inputs(
             num_qubits, num_pauli_words, max_weight, pauli_dist, commuting_groups
         )
 
+        self._one_norm = one_norm
         self._max_weight = max_weight
         self._num_pauli_words = num_pauli_words
         self._pauli_dist = pauli_dist
@@ -351,9 +356,7 @@ class PauliHamiltonian:
         """Hash function for the compact Hamiltonian representation"""
         hashable_param = None
         if self._commuting_groups is not None:
-            hashable_param = tuple(
-                _sort_and_freeze(group) for group in self._commuting_groups
-            )
+            hashable_param = tuple(_sort_and_freeze(group) for group in self._commuting_groups)
         elif self._pauli_dist is not None:
             hashable_param = _sort_and_freeze(self._pauli_dist)
 
@@ -361,7 +364,7 @@ class PauliHamiltonian:
             self._num_qubits,
             self._num_pauli_words,
             self._max_weight,
-            hashable_commuting_groups,
+            hashable_param,
             self._one_norm,
         )
         return hash(hashable_params)
