@@ -106,8 +106,16 @@ def test_vscf_calculation(h_data, h2s_result):
     r"""Test that vscf calculation produces correct energy and rotation matrices"""
 
     vib_energy, rot_matrix = vscf._vscf(h_data, modals=[3, 3, 3], cutoff=1e-8)
+    
+    # Adjust signs of rotation matrix for comparison
+    # The rotation matrices are unique up to sign changes in columns (eigenvectors)
+    original_rots = h2s_result["u_mat"]
+    rot_matrix = np.asarray(rot_matrix)
+    signs = np.sign(original_rots[:, 0]) * np.sign(rot_matrix[:, 0])
+    rot_matrix *= signs[:, np.newaxis]
+    
     assert np.isclose(vib_energy, h2s_result["energy"])
-    assert np.allclose(rot_matrix, h2s_result["u_mat"])
+    assert np.allclose(rot_matrix, original_rots)
 
 
 @pytest.mark.parametrize(
