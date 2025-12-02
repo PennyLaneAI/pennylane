@@ -454,10 +454,8 @@ def cond(
         ansatz_true = circuit(1.4)
         ansatz_false = circuit(1.6)
 
-    >>> jnp.allclose(ansatz_true, jnp.cos(1.4))
-    True
-    >>> jnp.allclose(ansatz_false, jnp.cos(1.6))
-    True
+        assert jnp.allclose(ansatz_true, jnp.cos(1.4))
+        assert jnp.allclose(ansatz_false, jnp.cos(1.6))
 
     Additional 'else-if' clauses can also be included via the ``elif`` argument:
 
