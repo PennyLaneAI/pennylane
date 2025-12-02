@@ -398,7 +398,13 @@ class HybridQRAM(Operation):
 
     grad_method = None
 
-    resource_keys = {"bitstrings", "num_target_wires", "num_select_wires", "k", "num_tree_control_wires"}
+    resource_keys = {
+        "bitstrings",
+        "num_target_wires",
+        "num_select_wires",
+        "k",
+        "num_tree_control_wires",
+    }
 
     def __init__(
         self,
