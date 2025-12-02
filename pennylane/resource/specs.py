@@ -36,6 +36,9 @@ def _specs_qnode(qnode, level, compute_depth, *args, **kwargs) -> CircuitSpecs:
         CircuitSpecs: result object that contains QNode specifications
     """
 
+    if compute_depth is None:
+        compute_depth = True
+
     resources = {}
     batch, _ = qml.workflow.construct_batch(qnode, level=level)(*args, **kwargs)
 
@@ -65,6 +68,9 @@ def _specs_qjit_device_level_tracking(
     from catalyst import QJIT
 
     from ..devices import NullQubit
+
+    if compute_depth is None:
+        compute_depth = True
 
     # When running at the device level, execute on null.qubit directly with resource tracking,
     # which will give resource usage information for after all compiler passes have completed
@@ -137,8 +143,10 @@ def _specs_qjit_intermediate_passes(
     qjit, original_qnode, level, *args, **kwargs
 ) -> SpecsResources | dict[str, SpecsResources]:  # pragma: no cover
     # pylint: disable=import-outside-toplevel
-    from catalyst.from_plxpr import transforms_to_passes
     from catalyst.python_interface.inspection import mlir_specs
+
+    if compute_depth is None:
+        compute_depth = False
 
     single_level = isinstance(level, int)
 
@@ -288,7 +296,7 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> CircuitSpecs:  #
 def specs(
     qnode,
     level: str | int | slice = "gradient",
-    compute_depth: bool = True,
+    compute_depth: bool | None = None,
 ) -> Callable[..., CircuitSpecs]:
     r"""Resource information about a quantum circuit.
 
@@ -299,8 +307,10 @@ def specs(
         qnode (.QNode | .QJIT): the QNode to calculate the specifications for.
 
     Keyword Args:
-        level (str | int | slice | iter[int]): An indication of what transforms to apply before computing the resource information.
-        compute_depth (bool): Whether to compute the depth of the circuit. If ``False``, the depth will not be included in the returned information. Default: True
+        level (str | int | slice | iter[int]): An indication of what transforms to apply before
+        computing the resource information.
+        compute_depth (bool): Whether to compute the depth of the circuit. If ``False``, the depth
+        will not be included in the returned information. Default: True where available.
 
     Returns:
         A function that has the same argument signature as ``qnode``. This function
