@@ -28,9 +28,9 @@ try:
 
     jax_version = version.parse(jax.__version__)
     required_version = version.parse("0.7.0")
-    if jax_version != required_version:
+    if jax_version != required_version:  # pragma: no cover
         is_jax_compatible = False
-except ImportError:
+except ImportError:  # pragma: no cover
     has_jax = False
     is_jax_compatible = False
 
@@ -54,7 +54,7 @@ def _make_switches() -> tuple[Callable[[], None], Callable[[], None], Callable[[
         in a PennyLane Program Representation (plxpr)."""
         if not has_jax:
             raise ImportError("plxpr requires JAX to be installed.")
-        if not is_jax_compatible:
+        if not is_jax_compatible:  # pragma: no cover
             warnings.warn(
                 f"PennyLane requires JAX == 0.7.0 for capture functionality. "
                 f"You have JAX {jax.__version__} installed. "
