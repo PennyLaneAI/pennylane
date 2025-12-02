@@ -263,11 +263,11 @@ def transform(  # pylint: disable=too-many-arguments,too-many-positional-argumen
                 _:AbstractOperator() = Adjoint b
                 c:AbstractOperator() = PauliZ[n_wires=1] 1:i64[]
                 d:AbstractMeasurement(n_wires=None) = expval_obs c
-                in (d,) }
-            targs_slice=slice(0, None, None)
-            tkwargs={}
+              in (d,) }
+            targs_slice=(0, None, None)
+            tkwargs=()
             transform=<transform: cancel_inverses>
-            ]
+          ]  
         in (a,) }
 
 
