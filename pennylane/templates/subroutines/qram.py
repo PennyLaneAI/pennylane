@@ -370,23 +370,23 @@ class HybridQRAM(Operation):
 
     1.Total address bits: n = len(control_wires)
     2.Choose an integer k with 0 ≤ k < n.
-        2.1 The first k address bits (high-order) are "select" bits.
-        2.2 The remaining n-k bits (low-order) are routed through a bucket-brigade tree.
+    2.1 The first k address bits (high-order) are "select" bits.
+    2.2 The remaining n-k bits (low-order) are routed through a bucket-brigade tree.
 
     Instead of a full-depth tree of size 2^n leaves, we build a smaller tree of depth n-k
     (2^(n-k) leaves) and reuse it 2^k times:
 
-        For each prefix s \in {0, …, 2^k - 1}:
-            1. Multi-controlled-X on a "signal" ancilla, controlled by the k select bits being equal to s.
-            2. Conditioned on signal==1, perform a BBQRAM query using only the lower n-k address bits and the sub-table of bitstrings whose prefix is s.
-            3. Uncompute the signal with the same multi-controlled-X.
+    For each prefix s \in {0, …, 2^k - 1}:
+    1. Multi-controlled-X on a "signal" ancilla, controlled by the k select bits being equal to s.
+    2. Conditioned on signal==1, perform a BBQRAM query using only the lower n-k address bits and the sub-table of bitstrings whose prefix is s.
+    3. Uncompute the signal with the same multi-controlled-X.
 
     In the end, for any full address a = (prefix, suffix), the target wires are loaded with
     bitstrings[a].
 
     Wire layout:
-        control_wires: [ sel_0, ..., sel_{k-1}, tree_0, ..., tree_{n-k-1} ]
-        work_wires: [ signal, bus, dir..., portL..., portR... ]  (tree ancillas)
+    control_wires: [ sel_0, ..., sel_{k-1}, tree_0, ..., tree_{n-k-1} ]
+    work_wires: [ signal, bus, dir..., portL..., portR... ]  (tree ancillas)
 
     Args:
         bitstrings (Sequence[str]): classical data table; must have length 2^n where n = len(control_wires)
@@ -572,7 +572,7 @@ def _hybrid_qram_resources(
 
     for block_index in range(num_blocks):
         zero_control_values = [(block_index >> (k - 1 - i)) & 1 for i in range(k)].count(0)
-        if zero_control_values == [0]:
+        if zero_control_values == 0:
             resources[resource_rep(CNOT)] += (k > 0) * 2
         else:
             resources[
