@@ -83,21 +83,21 @@ from warnings import warn
 try:
     import jax
     from packaging import version
-    
+
     # Check JAX version compatibility
     jax_version = version.parse(jax.__version__)
     required_version = version.parse("0.7.0")
-    
+
     if jax_version != required_version:  # pragma: no cover
         raise ImportError(
             f"PennyLane requires JAX == 0.7.0 for capture functionality. "
             f"You have JAX {jax.__version__} installed. "
             f"Please pin JAX by running: pip install --upgrade jax==0.7.0 jaxlib==0.7.0"
         )
-    
+
     from jax.interpreters import ad, batching, mlir
     from jax.interpreters import partial_eval as pe
-    
+
 except (ImportError, NameError) as e:  # pragma: no cover
     raise ImportError(  # pragma: no cover
         f"JAX == 0.7.0 is required to use capture QNode functionality. "
