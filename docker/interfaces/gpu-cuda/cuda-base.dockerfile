@@ -39,6 +39,7 @@ ENV PATH="/opt/venv/bin:$PATH"
 #Setup and Build pennylane
 WORKDIR /opt/pennylane
 COPY  . .
+RUN pip install --upgrade pip
 RUN git submodule update --init --recursive \
     && pip install wheel \
     && pip install --group default --group dev \
