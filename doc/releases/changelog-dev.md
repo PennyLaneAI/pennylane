@@ -548,6 +548,10 @@ A warning message has been added to :doc:`Building a plugin <../development/plug
 * Fixes a bug where :func:`~.change_op_basis` cannot be captured when the `uncompute_op` is left out.
   [(#8695)](https://github.com/PennyLaneAI/pennylane/pull/8695)
 
+* Fixes a bug where decomposition rules are sometimes incorrectly disregarded by the `DecompositionGraph` when a higher level
+  decomposition rule uses dynamically allocated work wires.
+  [(#8725)](https://github.com/PennyLaneAI/pennylane/pull/8725)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
