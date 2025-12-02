@@ -180,10 +180,10 @@ def register_custom_staging_rule(
     # See also capture/intro_to_dynamic_shapes.md for dynamic shapes documentation.
 
     def _tracer_and_outvar(
-        jaxpr_trace: pe.DynamicJaxprTrace,
+        jaxpr_trace,
         outvar: jax.extend.core.Var,
         env: dict[jax.extend.core.Var, jax.extend.core.Var],
-    ) -> tuple[pe.DynamicJaxprTracer, jax.extend.core.Var]:
+    ):
         """
         Create a new tracer and return var from the true branch outvar.
         Returned vars are cached in env for use in future shapes
@@ -191,7 +191,9 @@ def register_custom_staging_rule(
         if not hasattr(outvar.aval, "shape"):
             # JAX 0.7.0: Create variable first, then pass to DynamicJaxprTracer
             new_var = jaxpr_trace.frame.newvar(outvar.aval)
-            out_tracer = pe.DynamicJaxprTracer(jaxpr_trace, outvar.aval, new_var)
+            out_tracer = jax.interpreters.partial_eval.DynamicJaxprTracer(
+                jaxpr_trace, outvar.aval, new_var
+            )
             return out_tracer, new_var
         new_shape = [s if isinstance(s, int) else env[s] for s in outvar.aval.shape]
         if all(isinstance(s, int) for s in outvar.aval.shape):
@@ -200,15 +202,15 @@ def register_custom_staging_rule(
             new_aval = jax.core.DShapedArray(tuple(new_shape), outvar.aval.dtype)
         # JAX 0.7.0: Create variable first, then pass to DynamicJaxprTracer
         new_var = jaxpr_trace.frame.newvar(new_aval)
-        out_tracer = pe.DynamicJaxprTracer(jaxpr_trace, new_aval, new_var)
+        out_tracer = jax.interpreters.partial_eval.DynamicJaxprTracer(
+            jaxpr_trace, new_aval, new_var
+        )
 
         if not isinstance(outvar, jax.extend.core.Literal):
             env[outvar] = new_var
         return out_tracer, new_var
 
-    def custom_staging_rule(
-        jaxpr_trace: pe.DynamicJaxprTrace, source_info, *tracers: pe.DynamicJaxprTracer, **params
-    ) -> Sequence[pe.DynamicJaxprTracer] | pe.DynamicJaxprTracer:
+    def custom_staging_rule(jaxpr_trace, source_info, *tracers, **params):
         """
         Add new jaxpr equation to the jaxpr_trace and return new tracers.
         """
@@ -249,4 +251,4 @@ def register_custom_staging_rule(
         jaxpr_trace.frame.add_eqn(tracing_eqn)
         return out_tracers
 
-    pe.custom_staging_rules[primitive] = custom_staging_rule
+    jax.interpreters.partial_eval.custom_staging_rules[primitive] = custom_staging_rule
