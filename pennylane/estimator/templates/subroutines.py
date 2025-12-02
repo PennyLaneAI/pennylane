@@ -983,7 +983,7 @@ class UnaryIterationBasedQPE(ResourceOperator):
         wires (Sequence[int], None): the wires the operation acts on
 
     Resources:
-        The resources are obtained from Fig 2. of Section III of <https://arxiv.org/pdf/2011.03494>`_.
+        The resources are obtained from Fig 2. in Section III of `arXiv. 2011.03494 <https://arxiv.org/pdf/2011.03494>`_.
 
     **Example**
 
