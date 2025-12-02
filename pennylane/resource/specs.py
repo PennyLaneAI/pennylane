@@ -145,9 +145,6 @@ def _specs_qjit_intermediate_passes(
     # pylint: disable=import-outside-toplevel
     from catalyst.python_interface.inspection import mlir_specs
 
-    if compute_depth is None:
-        compute_depth = False
-
     single_level = isinstance(level, int)
 
     # Ensure `level` is always in the form of a sorted list (or "all")
