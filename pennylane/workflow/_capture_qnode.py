@@ -80,9 +80,30 @@ from functools import partial
 from numbers import Number
 from warnings import warn
 
-import jax
-from jax.interpreters import ad, batching, mlir
-from jax.interpreters import partial_eval as pe
+try:
+    import jax
+    from packaging import version
+    
+    # Check JAX version compatibility
+    jax_version = version.parse(jax.__version__)
+    required_version = version.parse("0.7.0")
+    
+    if jax_version != required_version:
+        raise ImportError(
+            f"PennyLane requires JAX == 0.7.0 for capture functionality. "
+            f"You have JAX {jax.__version__} installed. "
+            f"Please pin JAX by running: pip install --upgrade jax==0.7.0 jaxlib==0.7.0"
+        )
+    
+    from jax.interpreters import ad, batching, mlir
+    from jax.interpreters import partial_eval as pe
+    
+except (ImportError, NameError) as e:
+    raise ImportError(
+        f"JAX == 0.7.0 is required to use capture QNode functionality. "
+        f"Install with: pip install jax==0.7.0 jaxlib==0.7.0"
+        f"Error details: {e}"
+    ) from e
 
 import pennylane as qml
 from pennylane.capture import FlatFn, QmlPrimitive

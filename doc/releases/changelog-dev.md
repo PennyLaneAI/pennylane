@@ -345,6 +345,8 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Improve importing issues error messages for jax versions incompatible.
+
 * Bump `autoray` package version to `0.8.2`.
   [(#8674)](https://github.com/PennyLaneAI/pennylane/pull/8674)
   
