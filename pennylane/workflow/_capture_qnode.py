@@ -86,7 +86,7 @@ try:
     from jax.interpreters import partial_eval as pe
 
 except (ImportError, NameError) as e:  # pragma: no cover
-    return None
+    pass
 
 import pennylane as qml
 from pennylane.capture import FlatFn, QmlPrimitive

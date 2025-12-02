@@ -25,7 +25,6 @@ try:
 
 except (ImportError, NameError) as e:  # pragma: no cover
     has_jax = False
-    return None
 
 
 def _get_shape_for_array(x, abstract_shapes: list, previous_ints: list) -> dict:
