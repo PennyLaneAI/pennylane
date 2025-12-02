@@ -38,7 +38,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install Python dependencies
-        run: pip install --group dev pylint isort black
+        run: pip install --group dev
 
       - name: Run Black
         run: |
