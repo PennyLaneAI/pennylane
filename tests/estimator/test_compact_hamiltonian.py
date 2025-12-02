@@ -251,6 +251,28 @@ class TestPauliHamiltonian:
                 {
                     "num_qubits": 5,
                     "num_pauli_words": 100,
+                    "max_weight": 3,
+                    "one_norm": -1,
+                    "pauli_dist": None,
+                    "commuting_groups": None,
+                },
+                "one_norm, if provided, must be a positive float or integer.",
+            ),
+            (
+                {
+                    "num_qubits": 5,
+                    "num_pauli_words": 100,
+                    "max_weight": 3,
+                    "one_norm": "one",
+                    "pauli_dist": None,
+                    "commuting_groups": None,
+                },
+                "one_norm, if provided, must be a positive float or integer.",
+            ),
+            (
+                {
+                    "num_qubits": 5,
+                    "num_pauli_words": 100,
                     "max_weight": 30,
                     "pauli_dist": None,
                     "commuting_groups": None,

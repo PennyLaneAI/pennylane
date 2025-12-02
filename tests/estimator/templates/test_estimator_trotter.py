@@ -808,6 +808,81 @@ class TestTrotterPauli:
                 ValueError,
                 "Expected 5 wires, got 4",
             ),
+            (
+                qre.PauliHamiltonian(
+                    num_qubits=5,
+                    commuting_groups=(
+                        {"XX": 15, "X": 5},
+                        {"ZZ": 10},
+                        {"YY": 5, "X": 5},
+                    ),
+                ),
+                10,
+                3,
+                ["w1", "w2", "w3", "w4", "w5"],
+                ValueError,
+                "`order` is expected to be a positive integer and either one or a multiple of two",
+            ),
+            (
+                qre.PauliHamiltonian(
+                    num_qubits=5,
+                    commuting_groups=(
+                        {"XX": 15, "X": 5},
+                        {"ZZ": 10},
+                        {"YY": 5, "X": 5},
+                    ),
+                ),
+                10,
+                2.0,
+                ["w1", "w2", "w3", "w4", "w5"],
+                ValueError,
+                "`order` is expected to be a positive integer and either one or a multiple of two",
+            ),
+            (
+                qre.PauliHamiltonian(
+                    num_qubits=5,
+                    commuting_groups=(
+                        {"XX": 15, "X": 5},
+                        {"ZZ": 10},
+                        {"YY": 5, "X": 5},
+                    ),
+                ),
+                10,
+                -2,
+                ["w1", "w2", "w3", "w4", "w5"],
+                ValueError,
+                "`order` is expected to be a positive integer and either one or a multiple of two",
+            ),
+            (
+                qre.PauliHamiltonian(
+                    num_qubits=5,
+                    commuting_groups=(
+                        {"XX": 15, "X": 5},
+                        {"ZZ": 10},
+                        {"YY": 5, "X": 5},
+                    ),
+                ),
+                10.5,
+                4,
+                ["w1", "w2", "w3", "w4", "w5"],
+                ValueError,
+                "`num_steps` is expected to be a positive integer greater than one",
+            ),
+            (
+                qre.PauliHamiltonian(
+                    num_qubits=5,
+                    commuting_groups=(
+                        {"XX": 15, "X": 5},
+                        {"ZZ": 10},
+                        {"YY": 5, "X": 5},
+                    ),
+                ),
+                -5,
+                4,
+                ["w1", "w2", "w3", "w4", "w5"],
+                ValueError,
+                "`num_steps` is expected to be a positive integer greater than one",
+            ),
         ),
     )
     def test_init_raises_error_incompatible_inputs(
