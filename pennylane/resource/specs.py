@@ -166,13 +166,10 @@ def _specs_qjit_intermediate_passes(
         if qml.capture.enabled():
             # If capture is enabled, find the seam where PLxPR transforms end and MLIR passes begin
             num_trans_levels = 0
+
+            # If the pass name is None, it indicates a PLxPR transform which is not recognized by Catalyst
             for i, trans in reversed(list(enumerate(tape_transforms))):
-                dispatcher = trans._transform_dispatcher  # pylint: disable=protected-access
-                # TODO: This is a temporary workaround and shouldn't be needed after the "pass name" PR is merged
-                assert (
-                    dispatcher in transforms_to_passes
-                ), f"Transform dispatcher {dispatcher} not registered in transforms_to_passes."
-                if transforms_to_passes[dispatcher][0] is None:
+                if trans.pass_name is None:
                     num_trans_levels = i + 1
                     break
 
