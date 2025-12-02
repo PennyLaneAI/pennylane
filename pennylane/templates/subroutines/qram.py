@@ -381,7 +381,6 @@ class SelectOnlyQRAM(Operator):
         "select_value",
         "num_qram_wires",
         "num_select_wires",
-        "m",
     }
 
     def __init__(
@@ -441,6 +440,7 @@ class SelectOnlyQRAM(Operator):
 def _select_only_qram_resources(bitstrings, select_value, num_qram_wires, num_select_wires):
     resources = defaultdict(int)
     num_controls = num_select_wires + num_qram_wires
+    n_total = num_qram_wires + num_select_wires
 
     for addr, bits in enumerate(bitstrings):
         if (
@@ -450,23 +450,26 @@ def _select_only_qram_resources(bitstrings, select_value, num_qram_wires, num_se
         ):
             continue
 
+        control_values = [(addr >> (n_total - 1 - i)) & 1 for i in range(n_total)]
+
+        resources[resource_rep(PauliX)] += control_values.count(0) * 2
+
         resources[
             controlled_resource_rep(
                 base_class=PauliX,
                 base_params={},
                 num_control_wires=num_controls,
-                num_zero_control_values=reduce(
-                    lambda acc, nxt: acc + (nxt == 0),
-                    [
-                        (addr >> (num_select_wires + num_qram_wires - 1 - i)) & 1
-                        for i in range(num_controls)
-                    ],
-                    0,
-                ),
+                num_zero_control_values=0,
             )
         ] += bits.count("1")
 
     return resources
+
+
+def _flip_controls(control_wires, control_vals):
+    for i, control_value in enumerate(control_vals):
+        if control_value == 0:
+            PauliX(control_wires[i])
 
 
 @register_resources(_select_only_qram_resources)
@@ -488,6 +491,8 @@ def _select_only_qram_decomposition(
 
         control_values = [(addr >> (n_total - 1 - i)) & 1 for i in range(n_total)]
 
+        _flip_controls(controls, control_values)
+
         # For each bit position in the data
         for j in range(len(bitstrings[0])):
             if bits[j] != "1":
@@ -498,8 +503,9 @@ def _select_only_qram_decomposition(
             ctrl(
                 PauliX(wires=target_wires[j]),
                 control=controls,
-                control_values=control_values,
             )
+
+        _flip_controls(controls, control_values)
 
 
 add_decomps(SelectOnlyQRAM, _select_only_qram_decomposition)
