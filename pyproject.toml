@@ -43,6 +43,25 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Physics",
 ]
 [dependency-groups]
+ci = [
+    "numpy",
+    "scipy",
+    "cvxpy",
+    "cvxopt",
+    "networkx",
+    "rustworkx",
+    "autograd",
+    "tomlkit",
+    "appdirs",
+    "packaging",
+    "autoray>=0.8.0",
+    "matplotlib",
+    "requests",
+    "rich",
+    "diastatic-malt",
+    "pandas",
+    "build"
+]
 dev = [
     "pre-commit>=2.19.0",
     "pytest>=8.4.1",
@@ -62,23 +81,6 @@ dev = [
     "isort~=7.0.0",
     "black==25.9.0",
     "matplotlib",
-    "numpy",
-    "scipy",
-    "cvxpy",
-    "cvxopt",
-    "networkx",
-    "rustworkx",
-    "autograd",
-    "tomlkit",
-    "appdirs",
-    "packaging",
-    "autoray>=0.8.0",
-    "matplotlib",
-    "requests",
-    "rich",
-    "diastatic-malt",
-    "pandas",
-    "build"
 ]
 default = [
     "numpy~=1.23",

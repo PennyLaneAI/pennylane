@@ -93,7 +93,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip wheel setuptools>=75.8.1
-          pip install --group dev --upgrade
+          pip install --group dev --group ci --upgrade
 
       - name: Install Torch
         run: |
