@@ -675,6 +675,111 @@ class TestTransformProgramDunders:
         with pytest.raises(TransformError, match="already has a terminal transform"):
             program += container2
 
+    def test_program_iadd_program_with_both_final_transform_error(self):
+        """Test that __iadd__ raises error when adding program with final to program with final."""
+        container1 = TransformContainer(
+            transform=qml.transform(first_valid_transform, final_transform=True)
+        )
+        container2 = TransformContainer(
+            transform=qml.transform(second_valid_transform, final_transform=True)
+        )
+        program1 = TransformProgram([container1])
+        program2 = TransformProgram([container2])
+
+        with pytest.raises(TransformError, match="already has a terminal transform"):
+            program1 += program2
+
+    def test_program_iadd_program_maintains_final_transform_at_end(self):
+        """Test that __iadd__ with program keeps final transform at the end."""
+        container1 = TransformContainer(
+            transform=qml.transform(first_valid_transform, final_transform=True)
+        )
+        container2 = TransformContainer(transform=qml.transform(second_valid_transform))
+        program1 = TransformProgram([container1])
+        program2 = TransformProgram([container2])
+
+        program1 += program2
+
+        assert len(program1) == 2
+        assert program1[0].transform is second_valid_transform
+        assert program1[1].transform is first_valid_transform
+        assert program1[1].final_transform
+
+    def test_program_iadd_program_with_cotransform_cache(self):
+        """Test that __iadd__ correctly handles cotransform_cache when adding programs."""
+
+        @qml.qnode(qml.device("default.qubit"))
+        def f(*_, **__):
+            return qml.state()
+
+        new_t = qml.transform(
+            qml.gradients.param_shift.transform, classical_cotransform=lambda *args: 0
+        )
+        hybrid_t = TransformContainer(new_t, (), {"hybrid": True})
+
+        # program1 has no cotransform_cache, program2 has cotransform_cache
+        program1 = TransformProgram()
+        program2 = TransformProgram((hybrid_t,))
+        program2.set_classical_component(f, (1,), {"a": 2})
+
+        program1 += program2
+        assert program1.cotransform_cache == CotransformCache(f, (1,), {"a": 2})
+
+    def test_program_iadd_program_with_both_cotransform_cache_error(self):
+        """Test that __iadd__ raises error when both programs have cotransform_cache."""
+
+        @qml.qnode(qml.device("default.qubit"))
+        def f(*_, **__):
+            return qml.state()
+
+        new_t = qml.transform(
+            qml.gradients.param_shift.transform, classical_cotransform=lambda *args: 0
+        )
+        hybrid_t = TransformContainer(new_t, (), {"hybrid": True})
+
+        program1 = TransformProgram((hybrid_t,))
+        program1.set_classical_component(f, (1,), {"a": 2})
+        program2 = TransformProgram((hybrid_t,))
+        program2.set_classical_component(f, (2,), {"b": 3})
+
+        with pytest.raises(
+            ValueError, match="Cannot add two transform programs with cotransform caches"
+        ):
+            program1 += program2
+
+    def test_program_iadd_invalid_type_raises_error(self):
+        """Test that __iadd__ with invalid type raises TypeError."""
+        container = TransformContainer(transform=qml.transform(first_valid_transform))
+        program = TransformProgram([container])
+
+        with pytest.raises(TypeError):
+            program += "invalid"
+
+        with pytest.raises(TypeError):
+            program += 42
+
+    def test_program_add_invalid_type_raises_error(self):
+        """Test that __add__ with invalid type raises TypeError."""
+        container = TransformContainer(transform=qml.transform(first_valid_transform))
+        program = TransformProgram([container])
+
+        with pytest.raises(TypeError):
+            _ = program + "invalid"
+
+        with pytest.raises(TypeError):
+            _ = program + 42
+
+    def test_program_radd_invalid_type_raises_error(self):
+        """Test that __radd__ with invalid type raises TypeError."""
+        container = TransformContainer(transform=qml.transform(first_valid_transform))
+        program = TransformProgram([container])
+
+        with pytest.raises(TypeError):
+            _ = "invalid" + program
+
+        with pytest.raises(TypeError):
+            _ = 42 + program
+
     def test_repr_program(self):
         """Test the string representation of a program."""
         transform_program = TransformProgram()
