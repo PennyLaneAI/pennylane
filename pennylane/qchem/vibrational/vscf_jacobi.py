@@ -16,7 +16,6 @@ logger = logging.getLogger(__name__)
 # Enable 64-bit precision for SCF stability
 jax.config.update("jax_enable_x64", True)
 
-
 class VSCFData(NamedTuple):
     """
     Global Flattened Data Structure.
@@ -30,18 +29,32 @@ class VSCFData(NamedTuple):
     mask: jnp.ndarray         # Boolean mask for mean-field product
 
 
+
+class VSCFData(NamedTuple):
+    """
+    Global Flattened Data Structure.
+    'target_mode' maps every term to the specific mode (Fock matrix) it belongs to.
+    """
+    term_map: jnp.ndarray     # Index into h_mat (row)
+    target_mode: jnp.ndarray  # Index into h_mat (col) / Mode Index
+    i: jnp.ndarray            # Bra index
+    j: jnp.ndarray            # Ket index
+    coeffs: jnp.ndarray       # Raw hamiltonian coefficient
+    partners: jnp.ndarray     # indices of modes this terms interacts with
+    valid: jnp.ndarray        # boolean enabling partners --> needed bc otherwise buffering padding creates troubles
+
+
 # we perform data preparation on CPU with numpy, since:
 # most of the integrals are zero --> we would clog PCIe bus transferring empty data.
 # + GPU memory (VRAM) is usally more limited than system RAM
 # + JAX loves static shapes.
 
-def _generate_jacobi_batches(h_integrals, modals, cutoff, chunk_size=500_000):
+def _generate_jacobi_batches(h_integrals, modals, cutoff, max_partners, chunk_size=500_000):
     r"""
     Memory-Resilient Generator.
     Yields VSCFData batches instead of returning one huge object.
     Prevents CPU RAM explosion during data preparation.
     """
-    nmodes = np.shape(h_integrals[0])[0]
     active_num = 0
     modals_arr = np.array(modals)
 
@@ -129,20 +142,41 @@ def _generate_jacobi_batches(h_integrals, modals, cutoff, chunk_size=500_000):
             exploded_j = j_cols.flatten()
             
             
-            # mask generation: this will be used to compute mean-field products efficiently.
-            # for each exploded entry, we create a boolean mask that is True for all partner modes (False for the current mode)
-            # NOTE this boolean mask could be stored as integer bitmask for memory efficiency, but let's keep it simple for now.
-            # (idk if jax can handle integer bitmasks easily)
+            # 2. Partner Index Generation (Vectorized)
             
-            base_mask = np.zeros((num_valid, nmodes), dtype=bool)
-            rows = np.arange(num_valid)[:, None]
-            base_mask[rows, mode_cols] = True
-            exploded_mask = np.repeat(base_mask, num_modes_in_term, axis=0)
+            # Step A: Repeat the mode columns to match explosion
+            # shape: (N * num_modes_in_term, num_modes_in_term)
+            # e.g. Row 0: [A, B], Row 1: [A, B]
+            repeated_modes = np.repeat(mode_cols, num_modes_in_term, axis=0)
             
-            # logic: set diagonal to false (no self-interaction in mean-field product)
-            # Entry 1 (target A): mask is [False, True]
-            # Entry 2 (target B): mask is [True, False]
-            exploded_mask[np.arange(len(exploded_target)), exploded_target] = False
+            # Step B: Identify self-interaction (where mode == target)
+            # exploded_target has shape (N * num_modes_in_term,)
+            # We broadcast to identify the diagonal elements
+            mask_self = (repeated_modes == exploded_target[:, None])
+            
+            # Step C: Select only non-self modes (the partners)
+            # This flattens the array to (N * num_modes * (num_modes-1))
+            raw_partners = repeated_modes[~mask_self]
+            
+            # Step D: Reshape back to rows
+            # Each exploded term has exactly (num_modes_in_term - 1) partners
+            current_n_partners = num_modes_in_term - 1
+            
+            if current_n_partners > 0:
+                raw_partners = raw_partners.reshape(-1, current_n_partners)
+                
+                # Step E: Pad with -1 to match 'max_partners' width
+                # Create a buffer filled with -1
+                exploded_partners = np.full((len(exploded_tm), max_partners), -1, dtype=np.int32)
+                
+                # Fill the valid slots
+                exploded_partners[:, :current_n_partners] = raw_partners
+            else:
+                # 1-body terms have 0 partners. Fill with -1.
+                exploded_partners = np.full((len(exploded_tm), max_partners), -1, dtype=np.int32)
+
+            # 3. Valid Mask (Always True for real data)
+            exploded_valid = np.ones(len(exploded_tm), dtype=bool)
             
             active_num += num_valid
             
@@ -154,8 +188,9 @@ def _generate_jacobi_batches(h_integrals, modals, cutoff, chunk_size=500_000):
                 np.array(exploded_i, dtype=np.int32),
                 np.array(exploded_j, dtype=np.int32),
                 np.array(exploded_coeff, dtype=np.float64),
-                np.array(exploded_mask, dtype=bool),
-                active_num # Return current count so we know total active
+                np.array(exploded_partners, dtype=np.int32),
+                np.array(exploded_valid, dtype=bool),
+                #active_num # Return current count so we know total active
             )
 
 
@@ -169,18 +204,20 @@ class BatchRegularizer:
     """
 
     def __init__(self, raw_generator: Iterator[VSCFData],
-                 target_size: int, nmodes: int):
+                 target_size: int,  max_partners:int):
+        
         self.raw_gen = raw_generator
         self.target_size = target_size
-        self.nmodes = nmodes
+        self.max_partners = max_partners
 
         # Initialize empty buffers (NumPy arrays)
-        self.tm_buf = np.empty((0,), dtype=np.int32)
-        self.tgt_buf = np.empty((0,), dtype=np.int32)
-        self.i_buf = np.empty((0,), dtype=np.int32)
-        self.j_buf = np.empty((0,), dtype=np.int32)
-        self.c_buf = np.empty((0,), dtype=np.float64)
-        self.m_buf = np.empty((0, nmodes), dtype=bool)
+        self.buf_term_map = np.empty((0,), dtype=np.int32)
+        self.buf_target_mode = np.empty((0,), dtype=np.int32)
+        self.buf_i = np.empty((0,), dtype=np.int32)
+        self.buf_j = np.empty((0,), dtype=np.int32)
+        self.buf_coeffs = np.empty((0,), dtype=np.float64)
+        self.buf_partners = np.empty((0, max_partners), dtype=np.int32)
+        self.buf_valid = np.empty((0,), dtype=bool)
 
     def __iter__(self):
         return self._generator()
@@ -190,60 +227,64 @@ class BatchRegularizer:
         B = self.target_size
 
         batch = VSCFData(
-            term_map=self.tm_buf[:B],
-            target_mode=self.tgt_buf[:B],
-            i=self.i_buf[:B],
-            j=self.j_buf[:B],
-            coeffs=self.c_buf[:B],
-            mask=self.m_buf[:B],
+            term_map=self.buf_term_map[:B],
+            target_mode=self.buf_target_mode[:B],
+            i=self.buf_i[:B],
+            j=self.buf_j[:B],
+            coeffs=self.buf_coeffs[:B],
+            partners=self.buf_partners[:B],
+            valid=self.buf_valid[:B]
         )
 
         # Retain remaining part in buffer by slicing
-        self.tm_buf   = self.tm_buf[B:]
-        self.tgt_buf  = self.tgt_buf[B:]
-        self.i_buf    = self.i_buf[B:]
-        self.j_buf    = self.j_buf[B:]
-        self.c_buf    = self.c_buf[B:]
-        self.m_buf    = self.m_buf[B:]
+        self.buf_term_map = self.buf_term_map[B:]
+        self.buf_target_mode = self.buf_target_mode[B:]
+        self.buf_i = self.buf_i[B:]
+        self.buf_j = self.buf_j[B:]
+        self.buf_coeffs = self.buf_coeffs[B:]
+        self.buf_partners = self.buf_partners[B:]
+        self.buf_valid = self.buf_valid[B:]
 
         return batch
 
     def _emit_padded_last_batch(self):
         """Pad the last partial batch."""
         B = self.target_size
-        L = len(self.tm_buf)
+        L = len(self.buf_term_map)
         pad = B - L
 
         if L == 0:
             return None  # nothing left
 
         batch = VSCFData(
-            term_map=np.pad(self.tm_buf, (0, pad), mode="constant"),
-            target_mode=np.pad(self.tgt_buf, (0, pad), mode="constant"),
-            i=np.pad(self.i_buf, (0, pad), mode="constant"),
-            j=np.pad(self.j_buf, (0, pad), mode="constant"),
-            coeffs=np.pad(self.c_buf, (0, pad), mode="constant"),
-            mask=np.pad(self.m_buf, ((0, pad), (0, 0)), mode="constant"),
+            term_map=np.pad(self.buf_term_map, (0, pad), mode="constant"),
+            target_mode=np.pad(self.buf_target_mode, (0, pad), mode="constant"),
+            i=np.pad(self.buf_i, (0, pad), mode="constant"),
+            j=np.pad(self.buf_j, (0, pad), mode="constant"),
+            coeffs=np.pad(self.buf_coeffs, (0, pad), mode="constant"),
+            partners=np.pad(self.buf_partners, ((0, pad), (0, 0)), mode="constant", constant_values=-1),
+            valid=np.pad(self.buf_valid, (0, pad), mode="constant", constant_values=False)
         )
 
         # clear buffer
-        self.tm_buf = self.tgt_buf = self.i_buf = self.j_buf = self.c_buf = np.empty((0,), dtype=np.int32)
-        self.m_buf = np.empty((0, self.nmodes), dtype=bool)
+        self.buf_term_map = self.buf_target_mode = self.buf_i = self.buf_j = self.buf_coeffs = np.empty((0,), dtype=np.int32)
+        self.buf_valid = np.empty((0, self.max_partners), dtype=bool)
 
         return batch
 
     def _generator(self):
-        for term_map, target_mode, i, j, coeffs, mask, _ in self.raw_gen:
+        for term_map, target_mode, i, j, coeffs, partners, valid in self.raw_gen:
             # Concatenate new chunk
-            self.tm_buf  = np.concatenate([self.tm_buf, term_map])
-            self.tgt_buf = np.concatenate([self.tgt_buf, target_mode])
-            self.i_buf   = np.concatenate([self.i_buf, i])
-            self.j_buf   = np.concatenate([self.j_buf, j])
-            self.c_buf   = np.concatenate([self.c_buf, coeffs])
-            self.m_buf   = np.concatenate([self.m_buf, mask])
+            self.buf_term_map  = np.concatenate([self.buf_term_map, term_map])
+            self.buf_target_mode = np.concatenate([self.buf_target_mode, target_mode])
+            self.buf_i = np.concatenate([self.buf_i, i])
+            self.buf_j = np.concatenate([self.buf_j, j])
+            self.buf_coeffs = np.concatenate([self.buf_coeffs, coeffs])
+            self.buf_partners = np.concatenate([self.buf_partners, partners])
+            self.buf_valid = np.concatenate([self.buf_valid, valid])
 
             # Emit full batches as long as possible
-            while len(self.tm_buf) >= self.target_size:
+            while len(self.buf_term_map) >= self.target_size:
                 yield self._emit_full_batch()
 
         # End-of-stream → emit final padded batch
@@ -266,18 +307,50 @@ def scf_step_batched(h_mat, mode_rots, batch_list, modals_tuple, nmodes, max_mod
     # 1. Loop over Batches (Unrolled by JAX)
     # -----------------------------------------------------------------------
     for batch in batch_list:
-        tm = batch.term_map
-        tgt = batch.target_mode
-        i = batch.i
-        j = batch.j
-        c = batch.coeffs
-        m = batch.mask
+        tm = batch.term_map       # [B]
+        tgt = batch.target_mode   # [B]
+        i = batch.i               # [B]
+        j = batch.j               # [B]
+        c = batch.coeffs          # [B]
+        partners = batch.partners # [B, P] (Contains indices 0..M, or -1)
+        valid = batch.valid       # [B]
         
-        # Standard Mean Field Logic
-        subset_h = h_mat[tm]
-        factors = subset_h * m + (~m)
+        # sparse mean field logic
+        # subset_h = h_mat[tm]
+        # factors = subset_h * m + (~m)
+        # mean_fields = jnp.prod(factors, axis=1)
+        # vals = c * mean_fields
+        
+        # 1. Safe Indexing for Lookup
+        # We need to look up h_mat[tm, partner_idx].
+        # -1 is invalid. We clamp it to 0 so JAX doesn't crash on lookup.
+        # We will mask the result later.
+        lookup_idx = jnp.maximum(partners, 0) 
+        
+        # 2. Gather Mean Field Values
+        # h_mat shape: (N_active_terms, nmodes)
+        # We use advanced indexing:
+        # Rows: tm (broadcasted to [B, P])
+        # Cols: lookup_idx [B, P]
+        # Result shape: [B, P]
+        raw_potentials = h_mat[tm[:, None], lookup_idx]
+        
+        # 3. Apply Mask for Padding (-1)
+        # If partner was -1, the potential should be treated as 1.0 (identity for product)
+        is_real_partner = (partners != -1)
+        
+        # factors: Real potential if valid, else 1.0
+        factors = jnp.where(is_real_partner, raw_potentials, 1.0)
+        
+        # 4. Product across partners
+        # Shape: [B, P] -> [B]
         mean_fields = jnp.prod(factors, axis=1)
-        vals = c * mean_fields
+        
+        # 5. Calculate Final Value
+        # Apply Coeffs * MeanFields * Validity (handle buffer padding)
+        # If valid is False, val becomes 0.0 and adds nothing to Fock matrix
+        vals = c * mean_fields * valid
+        
         
         # Accumulate into global storage
         flat_indices = (tgt * max_modals * max_modals) + (i * max_modals) + j
@@ -346,6 +419,16 @@ def scf_step_batched(h_mat, mode_rots, batch_list, modals_tuple, nmodes, max_mod
 def vscf(h_integrals, modals, cutoff, tol=1e-8, max_iters=10000, batch_size=20000):
     nmodes = len(modals)
     
+    max_bodies_involved = 0
+    for h_data in h_integrals:
+        # 1body terms have len(shape) = 3, 2body = 6 etc
+        num_modes_in_term = len(h_data.shape)//3 # this number = #bodies 
+        max_bodies_involved = max(max_bodies_involved, num_modes_in_term)
+    
+    # we store at most (max_bodies - 1) partners per term.
+    # e.g., for 3-body terms, each target sees 2 partners.
+    max_partners = max(1, max_bodies_involved - 1)
+    
     with Timer("prep", verbose=True):
         
         
@@ -355,13 +438,13 @@ def vscf(h_integrals, modals, cutoff, tol=1e-8, max_iters=10000, batch_size=2000
         # rough estimate
         chunk_size = int(batch_size * 1.5)
         
-        raw_gen = _generate_jacobi_batches(h_integrals, modals, cutoff, chunk_size)
-        buffered_gen = BatchRegularizer(raw_gen, target_size=batch_size, nmodes=nmodes)
+        raw_gen = _generate_jacobi_batches(h_integrals, modals, cutoff, max_partners, chunk_size)
+        buffered_gen = BatchRegularizer(raw_gen, target_size=batch_size, max_partners=max_partners)
         
         # consume data from the generator, and move them to device
         # NOTE: if data preparation becomes a bottleneck, it should be possible to subdivide this step into 
         # parallel CPU computations.
-        for tm, tgt, i, j, c, m in buffered_gen:
+        for tm, tgt, i, j, c, p, v in buffered_gen:
             # move numpy arrays to JAX (GPU if available) immediately
             batch = VSCFData(
                 term_map = jnp.array(tm),
@@ -369,15 +452,16 @@ def vscf(h_integrals, modals, cutoff, tol=1e-8, max_iters=10000, batch_size=2000
                 i = jnp.array(i),
                 j = jnp.array(j),
                 coeffs = jnp.array(c),
-                mask = jnp.array(m)
+                partners= jnp.array(p),
+                valid= jnp.array(v)
             )
-            print(f"{tm.shape}, {tgt.shape}, {i.shape}, {j.shape}, {c.shape}, {m.shape}")
+            #print(f"{tm.shape}, {tgt.shape}, {i.shape}, {j.shape}, {c.shape}, {p.shape}")
             gpu_batches.append(batch)
             
             active_num_final += batch_size
             
             # explicitly delete cpu arrays to free memory
-            del tm, tgt, i, j, c, m
+            del tm, tgt, i, j, c, p, v
     #print(len(gpu_batches))
     logger.debug(f"Data ready. {len(gpu_batches)} batches on device. Total active terms: {active_num_final}")
     
