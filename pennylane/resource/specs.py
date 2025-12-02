@@ -281,6 +281,9 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> CircuitSpecs:  #
     else:
         raise NotImplementedError(f"Unsupported level argument '{level}' for QJIT'd code.")
 
+    if isinstance(resources, dict):
+        level = list(resources.keys())
+
     return CircuitSpecs(
         resources=resources,
         shots=original_qnode.shots,
