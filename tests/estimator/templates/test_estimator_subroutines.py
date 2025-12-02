@@ -1899,20 +1899,20 @@ class TestResourceSelectPauliRot:
             )
 
 
-class TestResourceUnaryIterationBasedQPE:
-    """Test the UnaryIterationBasedQPE class."""
+class TestResourceUnaryIterationQPE:
+    """Test the UnaryIterationQPE class."""
 
     def test_wire_error(self):
         """Test that an error is raised when wrong number of wires is provided."""
         with pytest.raises(ValueError, match="Expected 4 wires, got 3"):
-            qre.UnaryIterationBasedQPE(unitary=qre.X(0), num_iterations=8, wires=[0, 1, 2])
+            qre.UnaryIterationQPE(unitary=qre.X(0), num_iterations=8, wires=[0, 1, 2])
 
     def test_tracking_name(self):
         """Test that the name of the operator is tracked correctly."""
-        op = qre.UnaryIterationBasedQPE(unitary=qre.X(), num_iterations=8, adj_qft_op=qre.QFT(3))
+        op = qre.UnaryIterationQPE(unitary=qre.X(), num_iterations=8, adj_qft_op=qre.QFT(3))
         assert (
             op.tracking_name(resource_rep(qre.X), 8, resource_rep(qre.QFT, {"num_wires": 3}))
-            == "UnaryIterationBasedQPE(X, 8, adj_qft=QFT(3))"
+            == "UnaryIterationQPE(X, 8, adj_qft=QFT(3))"
         )
 
     @pytest.mark.parametrize(
@@ -1928,10 +1928,10 @@ class TestResourceUnaryIterationBasedQPE:
         unitary_cmpr = unitary.resource_rep_from_op()
 
         if adj_qft is None:
-            op = qre.UnaryIterationBasedQPE(unitary, n_iter)
+            op = qre.UnaryIterationQPE(unitary, n_iter)
             adj_qft_cmpr = None
         else:
-            op = qre.UnaryIterationBasedQPE(unitary, n_iter, adj_qft)
+            op = qre.UnaryIterationQPE(unitary, n_iter, adj_qft)
             adj_qft_cmpr = adj_qft.resource_rep_from_op()
 
         assert op.resource_params == {
@@ -1958,7 +1958,7 @@ class TestResourceUnaryIterationBasedQPE:
         expected_num_wires = unitary_cmpr.num_wires + num_estimation_wires
 
         expected = qre.CompressedResourceOp(
-            qre.UnaryIterationBasedQPE,
+            qre.UnaryIterationQPE,
             expected_num_wires,
             {
                 "unitary": unitary_cmpr,
@@ -1967,9 +1967,7 @@ class TestResourceUnaryIterationBasedQPE:
             },
         )
 
-        assert (
-            qre.UnaryIterationBasedQPE.resource_rep(unitary_cmpr, n_iter, adj_qft_cmpr) == expected
-        )
+        assert qre.UnaryIterationQPE.resource_rep(unitary_cmpr, n_iter, adj_qft_cmpr) == expected
 
     @pytest.mark.parametrize(
         "unitary, n_iter, adj_qft_op, expected_res",
@@ -1979,6 +1977,7 @@ class TestResourceUnaryIterationBasedQPE:
                 5,
                 None,
                 [
+                    qre.Allocate(1),
                     GateCount(qre.Hadamard.resource_rep(), 3),
                     GateCount(resource_rep(qre.Toffoli, {"elbow": "left"}), 4),
                     GateCount(qre.RX.resource_rep(precision=1e-5), 5),
@@ -1986,6 +1985,7 @@ class TestResourceUnaryIterationBasedQPE:
                     GateCount(
                         qre.Adjoint.resource_rep(qre.QFT.resource_rep(3)),
                     ),
+                    qre.Deallocate(1),
                 ],
             ),
             (
@@ -1993,11 +1993,13 @@ class TestResourceUnaryIterationBasedQPE:
                 3,
                 qre.QFT(2),
                 [
+                    qre.Allocate(0),
                     GateCount(qre.Hadamard.resource_rep(), 2),
                     GateCount(resource_rep(qre.Toffoli, {"elbow": "left"}), 2),
                     GateCount(qre.X.resource_rep(), 3),
                     GateCount(resource_rep(qre.Toffoli, {"elbow": "right"}), 2),
                     GateCount(qre.QFT.resource_rep(2)),
+                    qre.Deallocate(0),
                 ],
             ),
             (
@@ -2005,6 +2007,7 @@ class TestResourceUnaryIterationBasedQPE:
                 4,
                 qre.Adjoint(qre.AQFT(3, 2)),
                 [
+                    qre.Allocate(0),
                     GateCount(qre.Hadamard.resource_rep(), 2),
                     GateCount(resource_rep(qre.Toffoli, {"elbow": "left"}), 3),
                     GateCount(qre.RZ.resource_rep(), 4),
@@ -2012,6 +2015,7 @@ class TestResourceUnaryIterationBasedQPE:
                     GateCount(
                         qre.Adjoint.resource_rep(qre.AQFT.resource_rep(3, 2)),
                     ),
+                    qre.Deallocate(0),
                 ],
             ),
         ),
@@ -2019,8 +2023,8 @@ class TestResourceUnaryIterationBasedQPE:
     def test_resources(self, unitary, n_iter, adj_qft_op, expected_res):
         """Test that resources method is correct"""
         op = (
-            qre.UnaryIterationBasedQPE(unitary, n_iter)
+            qre.UnaryIterationQPE(unitary, n_iter)
             if adj_qft_op is None
-            else qre.UnaryIterationBasedQPE(unitary, n_iter, adj_qft_op)
+            else qre.UnaryIterationQPE(unitary, n_iter, adj_qft_op)
         )
         assert op.resource_decomp(**op.resource_params) == expected_res

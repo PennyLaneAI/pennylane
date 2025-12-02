@@ -27,7 +27,7 @@ from .subroutines import (
     ControlledSequence,
     QPE,
     IterativeQPE,
-    UnaryIterationBasedQPE,
+    UnaryIterationQPE,
 )
 
 from .trotter import TrotterCDF, TrotterProduct, TrotterTHC, TrotterVibrational, TrotterVibronic

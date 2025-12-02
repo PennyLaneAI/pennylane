@@ -971,8 +971,8 @@ class IterativeQPE(ResourceOperator):
         return gate_counts
 
 
-class UnaryIterationBasedQPE(ResourceOperator):
-    r"""Resource class for UnaryIterationBasedQPE.
+class UnaryIterationQPE(ResourceOperator):
+    r"""Resource class for UnaryIterationQPE.
 
     Args:
         unitary (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): the unitary operator to run
@@ -990,8 +990,8 @@ class UnaryIterationBasedQPE(ResourceOperator):
     The resources for this operation are computed using:
 
     >>> import pennylane.estimator as qre
-    >>> base = qre.RX()
-    >>> print(qre.estimate(qre.UnaryIterationBasedQPE(base, 11)))
+    >>> unitary = qre.RX()
+    >>> print(qre.estimate(qre.UnaryIterationQPE(unitary, 11)))
     --- Resources: ---
     Total wires: 5
     algorithmic wires: 5
@@ -1120,11 +1120,13 @@ class UnaryIterationBasedQPE(ResourceOperator):
             )
 
         return [
+            Allocate(num_wires - 2),
             GateCount(hadamard, num_wires),
             GateCount(left_elbow, num_iterations - 1),
             GateCount(unitary, num_iterations),
             GateCount(right_elbow, num_iterations - 1),
             GateCount(adj_qft_cmpr_op),
+            Deallocate(num_wires - 2),
         ]
 
     @staticmethod
@@ -1136,7 +1138,7 @@ class UnaryIterationBasedQPE(ResourceOperator):
         r"""Returns the tracking name built with the operator's parameters."""
         base_name = unitary.name
         adj_qft_name = None if adj_qft_cmpr_op is None else adj_qft_cmpr_op.name
-        return f"UnaryIterationBasedQPE({base_name}, {num_iterations}, adj_qft={adj_qft_name})"
+        return f"UnaryIterationQPE({base_name}, {num_iterations}, adj_qft={adj_qft_name})"
 
 
 class QFT(ResourceOperator):
