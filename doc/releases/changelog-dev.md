@@ -503,6 +503,10 @@ A warning message has been added to :doc:`Building a plugin <../development/plug
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixes a bug where in `resolve_work_wire_type` we incorrectly returned a value of `zeroed` if `both work_wires` 
+  and `base_work_wires` were empty, causing an incorrect work wire type.
+  [(#8718)](https://github.com/PennyLaneAI/pennylane/pull/8718)
+
 * The warnings-as-errors CI action was failing due to an incompatibility between `pytest-xdist` and `pytest-benchmark`. 
   Disabling the benchmark package allows the tests to be collected an executed. 
   [(#8699)](https://github.com/PennyLaneAI/pennylane/pull/8699)
