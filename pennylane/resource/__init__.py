@@ -1,4 +1,4 @@
-# Copyright 2018-2022 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -24,8 +24,8 @@ The ``resource`` module provides classes and functionality to track the quantum 
     Accessing them from the :mod:`pennylane.resource` module is deprecated and will be removed
     in v0.45.
 
-Circuit specifications
-----------------------
+Circuit Specifications (specs)
+------------------------------
 
 .. currentmodule:: pennylane
 
@@ -33,6 +33,18 @@ Circuit specifications
     :toctree: api
 
     ~specs
+
+Circuit Specs Classes and Utilities
+-----------------------------------
+
+.. currentmodule:: pennylane.resource
+
+.. autosummary::
+    :toctree: api
+
+    ~CircuitSpecs
+    ~SpecsResources
+    ~resources_from_tape
 
 
 Error Tracking
@@ -114,14 +126,18 @@ We can examine the resources by accessing the :code:`resources` key:
 
 >>> resources_lst = tracker.history['resources']
 >>> print(resources_lst[0])
-num_wires: 3
-num_gates: 7
-depth: 5
-shots: Shots(total=100)
-gate_types:
-{'RZ': 1, 'CNOT': 2, 'Hadamard': 2, 'PauliZ': 2}
-gate_sizes:
-{1: 5, 2: 2}
+Total qubit allocations: 3
+Total gates: 7
+Circuit depth: 5
+
+Gate types:
+  RZ: 1
+  CNOT: 2
+  Hadamard: 2
+  PauliZ: 2
+
+Measurements:
+  expval: 1
 """
 from .error import AlgorithmicError, ErrorOperation, SpectralNormError
 from .resource import (
