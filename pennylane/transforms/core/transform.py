@@ -256,12 +256,12 @@ def transform(  # pylint: disable=too-many-arguments,too-many-positional-argumen
             args_slice=(0, 0, None)
             consts_slice=(0, 0, None)
             inner_jaxpr={ lambda ; . let
-                _:AbstractOperator() = PauliX[n_wires=1] 0:i...[]
-                _:AbstractOperator() = S[n_wires=1] 1:i...[]
-                _:AbstractOperator() = PauliX[n_wires=1] 0:i...[]
-                b:AbstractOperator() = S[n_wires=1] 1:i...[]
+                _:AbstractOperator() = PauliX[n_wires=1] 0:i64[]
+                _:AbstractOperator() = S[n_wires=1] 1:i64[]
+                _:AbstractOperator() = PauliX[n_wires=1] 0:i64[]
+                b:AbstractOperator() = S[n_wires=1] 1:i64[]
                 _:AbstractOperator() = Adjoint b
-                c:AbstractOperator() = PauliZ[n_wires=1] 1:i...[]
+                c:AbstractOperator() = PauliZ[n_wires=1] 1:i64[]
                 d:AbstractMeasurement(n_wires=None) = expval_obs c
                 in (d,) }
             targs_slice=slice(0, None, None)
