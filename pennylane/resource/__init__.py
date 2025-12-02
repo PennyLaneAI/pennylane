@@ -44,6 +44,7 @@ Circuit Specs Classes and Utilities
 
     ~CircuitSpecs
     ~SpecsResources
+
     ~resources_from_tape
 
 
@@ -149,6 +150,7 @@ from .resource import (
     add_in_parallel,
     mul_in_series,
     mul_in_parallel,
+    resources_from_tape,
     substitute,
 )
 from .specs import specs
