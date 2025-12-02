@@ -24,7 +24,6 @@ performs the leaf write (classical bit flip), then routes back and restores the 
 """
 from collections import defaultdict
 from dataclasses import dataclass
-from functools import reduce
 from typing import Sequence
 
 from pennylane import math
