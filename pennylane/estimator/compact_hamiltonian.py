@@ -349,14 +349,13 @@ class PauliHamiltonian:
 
     def __hash__(self):
         """Hash function for the compact Hamiltonian representation"""
+        hashable_param = None
         if self._commuting_groups is not None:
-            hashable_commuting_groups = tuple(
+            hashable_param = tuple(
                 _sort_and_freeze(group) for group in self._commuting_groups
             )
         elif self._pauli_dist is not None:
-            hashable_commuting_groups = _sort_and_freeze(self._pauli_dist)
-        else:
-            hashable_commuting_groups = None
+            hashable_param = _sort_and_freeze(self._pauli_dist)
 
         hashable_params = (
             self._num_qubits,
