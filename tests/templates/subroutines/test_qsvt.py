@@ -33,6 +33,7 @@ from pennylane.templates.subroutines.qsvt import (
     _qsp_optimization,
     _W_of_x,
     _z_rotation,
+    jit_if_jax_available,
 )
 
 
@@ -1022,6 +1023,20 @@ class TestIterativeSolver:
             _qsp_iterate_broadcast(phis, x_point, "jax")
             - _poly_func(coeffs=target_polynomial_coeffs, x=x_point)
         )
+
+    def test_jit_if_jax_available(self):
+    
+        def f(x):
+            return x@x
+        
+        jit_wrapped_f = jit_if_jax_available(f)
+        
+        try:
+            import jax
+            assert hasattr(jit_wrapped_f, "lower")
+        except ModuleNotFoundError:
+            assert jit_wrapped_f is f
+
 
     @pytest.mark.parametrize(
         "x, degree",
