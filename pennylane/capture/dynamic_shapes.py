@@ -35,10 +35,9 @@ try:
             stacklevel=2,
         )
         has_jax = False
-    else:
-        # Import JAX components only if version is compatible
-        from jax._src.interpreters.partial_eval import TracingEqn
-        from jax.interpreters import partial_eval as pe
+
+    from jax._src.interpreters.partial_eval import TracingEqn
+    from jax.interpreters import partial_eval as pe
 
 
 except (ImportError, NameError) as e:  # pragma: no cover
