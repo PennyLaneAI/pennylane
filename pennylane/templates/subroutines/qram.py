@@ -444,26 +444,19 @@ class HybridQRAM(Operation):
         # work_wires = [ signal, bus, dir..., portL..., portR... ] for tree depth n_tree
         signal_wire = Wires(work_wires[0])
 
-        if n_tree > 0:
-            expected_nodes = (1 << n_tree) - 1
-            expected_len = 1 + 1 + 3 * expected_nodes  # signal + bus + 3 per node
-            if len(work_wires) != expected_len:
-                raise ValueError(
-                    f"work_wires must have length {expected_len} "
-                    f"for k={k} and len(control_wires)={n_total}."
-                )
+        expected_nodes = (1 << n_tree) - 1
+        expected_len = 1 + 1 + 3 * expected_nodes  # signal + bus + 3 per node
+        if len(work_wires) != expected_len:
+            raise ValueError(
+                f"work_wires must have length {expected_len} "
+                f"for k={k} and len(control_wires)={n_total}."
+            )
 
-            bus_wire = Wires(work_wires[1])
-            divider = len(work_wires[2:]) // 3
-            dir_wires = Wires(work_wires[2 : 2 + divider])
-            portL_wires = Wires(work_wires[2 + divider : 2 + 2 * divider])
-            portR_wires = Wires(work_wires[2 + 2 * divider : 2 + 3 * divider])
-        else:
-            # k = n_total-1 ensures n_tree >= 1, so we should never hit this if k < len(control_wires), this is actually select-only qram
-            bus_wire = Wires([])
-            dir_wires = Wires([])
-            portL_wires = Wires([])
-            portR_wires = Wires([])
+        bus_wire = Wires(work_wires[1])
+        divider = len(work_wires[2:]) // 3
+        dir_wires = Wires(work_wires[2 : 2 + divider])
+        portL_wires = Wires(work_wires[2 + divider : 2 + 2 * divider])
+        portR_wires = Wires(work_wires[2 + 2 * divider : 2 + 3 * divider])
 
         tree_wire_manager = _QRAMWires(
             control_wires, target_wires, bus_wire, dir_wires, portL_wires, portR_wires
@@ -506,69 +499,68 @@ def _hybrid_qram_resources(
 
     resources[resource_rep(PauliX)] += (k <= 0) * num_blocks * 2
 
-    if num_tree_control_wires != 0:
-        resources[
-            controlled_resource_rep(
-                base_class=SWAP,
-                base_params={},
-                num_control_wires=1,
-                num_zero_control_values=0,
-            )
-        ] += (
-            (num_tree_control_wires + (1 << num_tree_control_wires) - 1) * 2 + 2 * num_target_wires
-        ) * num_blocks
-
-        ccswap_count = (
-            (
-                ((1 << num_tree_control_wires) - 1 - num_tree_control_wires)
-                + ((1 << num_tree_control_wires) - 1) * num_target_wires
-            )
-            * num_blocks
-            * 2
+    resources[
+        controlled_resource_rep(
+            base_class=SWAP,
+            base_params={},
+            num_control_wires=1,
+            num_zero_control_values=0,
         )
+    ] += (
+        (num_tree_control_wires + (1 << num_tree_control_wires) - 1) * 2 + 2 * num_target_wires
+    ) * num_blocks
 
-        resources[
-            controlled_resource_rep(
-                base_class=Controlled,
-                base_params={
-                    "base_class": SWAP,
-                    "base_params": {},
-                    "num_control_wires": 1,
-                    "num_zero_control_values": 0,
-                    "num_work_wires": 0,
-                    "work_wire_type": "borrowed",
-                },
-                num_control_wires=1,
-                num_zero_control_values=0,
-            )
-        ] += ccswap_count
-
-        resources[
-            controlled_resource_rep(
-                base_class=Controlled,
-                base_params={
-                    "base_class": SWAP,
-                    "base_params": {},
-                    "num_control_wires": 1,
-                    "num_zero_control_values": 1,
-                    "num_work_wires": 0,
-                    "work_wire_type": "borrowed",
-                },
-                num_control_wires=1,
-                num_zero_control_values=0,
-            )
-        ] += ccswap_count
-
-        resources[
-            controlled_resource_rep(
-                base_class=Hadamard,
-                base_params={},
-                num_control_wires=1,
-                num_zero_control_values=0,
-            )
-        ] += (
-            num_target_wires * num_blocks * 2
+    ccswap_count = (
+        (
+            ((1 << num_tree_control_wires) - 1 - num_tree_control_wires)
+            + ((1 << num_tree_control_wires) - 1) * num_target_wires
         )
+        * num_blocks
+        * 2
+    )
+
+    resources[
+        controlled_resource_rep(
+            base_class=Controlled,
+            base_params={
+                "base_class": SWAP,
+                "base_params": {},
+                "num_control_wires": 1,
+                "num_zero_control_values": 0,
+                "num_work_wires": 0,
+                "work_wire_type": "borrowed",
+            },
+            num_control_wires=1,
+            num_zero_control_values=0,
+        )
+    ] += ccswap_count
+
+    resources[
+        controlled_resource_rep(
+            base_class=Controlled,
+            base_params={
+                "base_class": SWAP,
+                "base_params": {},
+                "num_control_wires": 1,
+                "num_zero_control_values": 1,
+                "num_work_wires": 0,
+                "work_wire_type": "borrowed",
+            },
+            num_control_wires=1,
+            num_zero_control_values=0,
+        )
+    ] += ccswap_count
+
+    resources[
+        controlled_resource_rep(
+            base_class=Hadamard,
+            base_params={},
+            num_control_wires=1,
+            num_zero_control_values=0,
+        )
+    ] += (
+        num_target_wires * num_blocks * 2
+    )
 
     for block_index in range(num_blocks):
         zero_control_values = [(block_index >> (k - 1 - i)) & 1 for i in range(k)].count(0)
@@ -583,9 +575,6 @@ def _hybrid_qram_resources(
                     num_zero_control_values=zero_control_values,
                 )
             ] += (k > 0) * 2
-
-        if num_tree_control_wires == 0:
-            return resources
 
         resources[
             controlled_resource_rep(
@@ -684,10 +673,6 @@ def _block_tree_query_ops(
     bitstrings, block_index, tree_wire_manager, n_tree, k, signal
 ):  # pylint: disable=too-many-arguments
     """One BBQRAM-style query of the (n_tree)-depth tree for a fixed select prefix."""
-
-    if n_tree == 0:
-        # Degenerate case: no tree; nothing to do here
-        return
 
     # 1) address loading for the tree (controlled on signal)
     _tree_mark_routers_via_bus_ctrl(tree_wire_manager, n_tree, k, signal)
