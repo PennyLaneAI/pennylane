@@ -434,7 +434,7 @@ def cond(
 
     In just-in-time (JIT) mode using the :func:`~.qjit` decorator,
 
-    .. code-block::
+    .. code-block:: python
 
         dev = qml.device("lightning.qubit", wires=1)
 
@@ -454,8 +454,8 @@ def cond(
         ansatz_true = circuit(1.4)
         ansatz_false = circuit(1.6)
 
-        assert jnp.allclose(ansatz_true, jnp.cos(1.4))
-        assert jnp.allclose(ansatz_false, jnp.cos(1.6))
+        assert np.allclose(ansatz_true, np.cos(1.4))
+        assert np.allclose(ansatz_false, np.cos(1.6))
 
     Additional 'else-if' clauses can also be included via the ``elif`` argument:
 

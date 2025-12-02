@@ -240,6 +240,7 @@ def transform(  # pylint: disable=too-many-arguments,too-many-positional-argumen
 
         .. code-block:: python
 
+            jax.config.update("jax_enable_x64", True)
             qml.capture.enable()
 
             @qml.transforms.cancel_inverses
@@ -267,7 +268,7 @@ def transform(  # pylint: disable=too-many-arguments,too-many-positional-argumen
             targs_slice=(0, None, None)
             tkwargs=()
             transform=<transform: cancel_inverses>
-          ]  
+          ]
         in (a,) }
 
 
