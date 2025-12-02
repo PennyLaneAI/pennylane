@@ -186,8 +186,9 @@ class TestGeneralizedAmplitudeDamping:
 
         op = channel.GeneralizedAmplitudeDamping
         # check K0 for gamma=0.1, p =0.1
-        expected_K0 = np.array([[0.31622777, 0.0], [0.0, 0.3]])
-        assert np.allclose(op(0.1, 0.1, wires=0).kraus_matrices()[0], expected_K0, atol=tol, rtol=0)
+        # expected_K0 = np.array([[0.31622777, 0.0], [0.0, 0.3]])
+        expected_K0 = np.array([[0.94868330, 0.0], [0.0, 0.3]])
+        assert np.allclose(op(0.1, 0.9, wires=0).kraus_matrices()[0], expected_K0, atol=tol, rtol=0)
 
         # check K3 for gamma=0.1, p=0.5
         expected_K3 = np.array([[0.0, 0.0], [0.2236068, 0.0]])

@@ -101,34 +101,34 @@ class GeneralizedAmplitudeDamping(Channel):
     at finite temperatures, with the following Kraus matrices:
 
     .. math::
-        K_0 = \sqrt{p} \begin{bmatrix}
+        K_0 = \sqrt{1-p} \begin{bmatrix}
                 1 & 0 \\
                 0 & \sqrt{1-\gamma}
                 \end{bmatrix}
 
     .. math::
-        K_1 = \sqrt{p}\begin{bmatrix}
+        K_1 = \sqrt{1-p}\begin{bmatrix}
                 0 & \sqrt{\gamma}  \\
                 0 & 0
                 \end{bmatrix}
 
     .. math::
-        K_2 = \sqrt{1-p}\begin{bmatrix}
+        K_2 = \sqrt{p}\begin{bmatrix}
                 \sqrt{1-\gamma} & 0 \\
                 0 & 1
                 \end{bmatrix}
 
     .. math::
-        K_3 = \sqrt{1-p}\begin{bmatrix}
+        K_3 = \sqrt{p}\begin{bmatrix}
                 0 & 0 \\
                 \sqrt{\gamma} & 0
                 \end{bmatrix}
 
     where :math:`\gamma \in [0, 1]` is the probability of damping and :math:`p \in [0, 1]`
-    is the probability of the system being de-excited by the environment.
+    is the probability of the system being excited by the environment.
 
-    This error channel reduced to the :class:`~.AmplitudeDamping` one when the de-excitation
-    probability is :math:`1`.
+    This error channel reduced to the :class:`~.AmplitudeDamping` one when the excitation
+    probability is :math:`0`.
 
     **Details:**
 
@@ -155,7 +155,7 @@ class GeneralizedAmplitudeDamping(Channel):
 
         Args:
             gamma (float): amplitude damping probability
-            p (float): de-excitation probability
+            p (float): excitation probability
 
         Returns:
             list (array): list of Kraus matrices
@@ -174,15 +174,15 @@ class GeneralizedAmplitudeDamping(Channel):
         if not np.is_abstract(p) and not 0.0 <= p <= 1.0:
             raise ValueError("p must be in the interval [0,1].")
 
-        K0 = np.sqrt(p + np.eps) * np.diag([1, np.sqrt(1 - gamma + np.eps)])
+        K0 = np.sqrt(1 - p + np.eps) * np.diag([1, np.sqrt(1 - gamma + np.eps)])
         K1 = (
-            np.sqrt(p + np.eps)
+            np.sqrt(1 - p + np.eps)
             * np.sqrt(gamma)
             * np.convert_like(np.cast_like(np.array([[0, 1], [0, 0]]), gamma), gamma)
         )
-        K2 = np.sqrt(1 - p + np.eps) * np.diag([np.sqrt(1 - gamma + np.eps), 1])
+        K2 = np.sqrt(p + np.eps) * np.diag([np.sqrt(1 - gamma + np.eps), 1])
         K3 = (
-            np.sqrt(1 - p + np.eps)
+            np.sqrt(p + np.eps)
             * np.sqrt(gamma)
             * np.convert_like(np.cast_like(np.array([[0, 0], [1, 0]]), gamma), gamma)
         )
