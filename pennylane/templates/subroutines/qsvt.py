@@ -44,7 +44,7 @@ try:
     from jax import config, lax
     from jax import numpy as jnp
     from jax import vmap
-except ModuleNotFoundError:
+except ModuleNotFoundError:  # pragma: no cover
     pass
 
 
