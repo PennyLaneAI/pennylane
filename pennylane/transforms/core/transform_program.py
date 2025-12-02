@@ -228,33 +228,7 @@ class TransformProgram:
             cotransform_cache = other.cotransform_cache
         return TransformProgram(transforms, cotransform_cache=cotransform_cache)
 
-    def __mul__(self, n: int) -> "TransformProgram":
-        """Right multiplication to repeat a program n times.
-
-        Args:
-            n (int): Number of times to repeat this program.
-
-        Returns:
-            TransformProgram: A new program with this program repeated n times.
-        """
-        if not isinstance(n, int):
-            return NotImplemented
-        if n < 0:
-            raise ValueError("Cannot multiply transform program by negative integer")
-
-        if self.has_final_transform:
-            raise TransformError(
-                "Cannot multiply a transform program that has a terminal transform."
-            )
-
-        transforms = self._transform_program * n
-        return TransformProgram(transforms, cotransform_cache=self.cotransform_cache)
-
-    __rmul__ = __mul__
-
-    def __radd__(
-        self, other: "TransformContainer | TransformDispatcher"
-    ) -> "TransformProgram":
+    def __radd__(self, other: "TransformContainer | TransformDispatcher") -> "TransformProgram":
         """Right addition to prepend a transform to the program.
 
         Args:
@@ -320,6 +294,30 @@ class TransformProgram:
             return self
 
         return NotImplemented
+
+    def __mul__(self, n: int) -> "TransformProgram":
+        """Right multiplication to repeat a program n times.
+
+        Args:
+            n (int): Number of times to repeat this program.
+
+        Returns:
+            TransformProgram: A new program with this program repeated n times.
+        """
+        if not isinstance(n, int):
+            return NotImplemented
+        if n < 0:
+            raise ValueError("Cannot multiply transform program by negative integer")
+
+        if self.has_final_transform:
+            raise TransformError(
+                "Cannot multiply a transform program that has a terminal transform."
+            )
+
+        transforms = self._transform_program * n
+        return TransformProgram(transforms, cotransform_cache=self.cotransform_cache)
+
+    __rmul__ = __mul__
 
     def __repr__(self):
         """The string representation of the transform program class."""
