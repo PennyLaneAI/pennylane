@@ -364,7 +364,7 @@ add_decomps(BBQRAM, _bucket_brigade_qram_decomposition)
 
 
 class HybridQRAM(Operation):
-    r"""Hybrid QRAM combining select-only and bucket-brigade behavior.
+    """Hybrid QRAM combining select-only and bucket-brigade behavior.
 
     This implements a space–time tradeoff:
 
@@ -377,18 +377,16 @@ class HybridQRAM(Operation):
     (2^(n-k) leaves) and reuse it 2^k times:
 
         For each prefix s \in {0, …, 2^k - 1}:
-            1. Multi-controlled-X on a "signal" ancilla, controlled by the k select bits
-               being equal to s.
-            2. Conditioned on signal==1, perform a BBQRAM query using only the lower
-               n-k address bits and the sub-table of bitstrings whose prefix is s.
+            1. Multi-controlled-X on a "signal" ancilla, controlled by the k select bits being equal to s.
+            2. Conditioned on signal==1, perform a BBQRAM query using only the lower n-k address bits and the sub-table of bitstrings whose prefix is s.
             3. Uncompute the signal with the same multi-controlled-X.
 
     In the end, for any full address a = (prefix, suffix), the target wires are loaded with
     bitstrings[a].
 
     Wire layout:
-      control_wires: [ sel_0, ..., sel_{k-1}, tree_0, ..., tree_{n-k-1} ]
-      work_wires: [ signal, bus, dir..., portL..., portR... ]  (tree ancillas)
+        control_wires: [ sel_0, ..., sel_{k-1}, tree_0, ..., tree_{n-k-1} ]
+        work_wires: [ signal, bus, dir..., portL..., portR... ]  (tree ancillas)
 
     Args:
         bitstrings (Sequence[str]): classical data table; must have length 2^n where n = len(control_wires)
