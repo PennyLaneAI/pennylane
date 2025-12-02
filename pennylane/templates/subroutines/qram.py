@@ -398,7 +398,7 @@ class HybridQRAM(Operation):
 
     grad_method = None
 
-    resource_keys = {"bitstrings", "num_target_wires", "num_select_wires", "k"}
+    resource_keys = {"bitstrings", "num_target_wires", "num_select_wires", "k", "num_tree_control_wires"}
 
     def __init__(
         self,
@@ -495,7 +495,7 @@ def _hybrid_qram_resources(
     bitstrings, num_target_wires, num_select_wires, k, num_tree_control_wires
 ):
     resources = defaultdict(int)
-    num_blocks = 1 << k if k > 0 else 1
+    num_blocks = 1 << k
 
     resources[resource_rep(PauliX)] += (k <= 0) * num_blocks * 2
 
