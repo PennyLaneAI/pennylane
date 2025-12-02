@@ -17,6 +17,12 @@ from collections import defaultdict
 
 from pennylane import numpy as qnp
 from pennylane.labs import resource_estimation as re
+from pennylane.labs.resource_estimation import (
+    ResourceCSWAP,
+    ResourceHadamard,
+    ResourceSWAP,
+    ResourceZ,
+)
 from pennylane.labs.resource_estimation.qubit_manager import AllocWires, FreeWires
 from pennylane.labs.resource_estimation.resource_operator import (
     CompressedResourceOp,
@@ -1059,6 +1065,123 @@ class ResourceQFT(ResourceOperator):
     def tracking_name(num_wires) -> str:
         r"""Returns the tracking name built with the operator's parameters."""
         return f"QFT({num_wires})"
+
+
+class ResourceBBQRAM(ResourceOperator):
+    r"""Resource class for BBQRAM.
+
+    Args:
+        bitstrings (Sequence[str]):
+            The classical memory to retrieve values from.
+        num_wires (int):
+            The number of qubits the operation acts upon.
+        control_wires (WiresLike):
+            The register that stores the index for the entry of the classical data we want to
+            access.
+        target_wires (WiresLike):
+            The register in which the classical data gets loaded. The size of this register must
+            equal each bitstring length in ``bitstrings``.
+        work_wires (WiresLike):
+            The additional wires required to funnel the desired entry of ``bitstrings`` into the
+            target register.
+
+    Resources:
+        The resources are obtained from the BBQRAM implementation in PennyLane. The original publicaiton of
+        the algorithm can be found in `Quantum Random Access Memory <https://arxiv.org/abs/0708.1879>`_.
+
+    .. seealso:: :class:`~.BBQRAM`
+    """
+
+    resource_keys = {"bitstrings", "num_wires"}
+
+    def __init__(
+        self,
+        bitstrings,
+        num_wires,
+        control_wires=None,
+        target_wires=None,
+        work_wires=None,
+    ):
+        all_wires = None
+        if control_wires and target_wires and work_wires:
+            all_wires = list(control_wires) + list(target_wires) + list(work_wires)
+        self.num_wires = num_wires if all_wires is None else len(all_wires)
+        self.bitstrings = bitstrings
+        super().__init__(wires=all_wires)
+
+    @property
+    def resource_params(self) -> dict:
+        r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+        Returns:
+            dict: A dictionary containing the resource parameters:
+                * num_wires (int): the number of qubits the operation acts upon
+        """
+        return {
+            "num_wires": self.num_wires,
+            "bitstrings": self.bitstrings,
+        }
+
+    @classmethod
+    def resource_rep(cls, bitstrings, num_wires):
+        r"""Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute the resources.
+
+        Args:
+            num_wires (int): the number of qubits the operation acts upon
+
+        Returns:
+            CompressedResourceOp: the operator in a compressed representation
+        """
+        params = {"bitstrings": bitstrings, "num_wires": num_wires}
+        return CompressedResourceOp(cls, num_wires, params)
+
+    @classmethod
+    def resource_decomp(cls, bitstrings, num_wires):
+        r"""Returns a list representing the resources of the operator. Each object in the list
+        represents a gate and the number of times it occurs in the circuit.
+
+        Args:
+            bitstrings (Sequence[str]): the classical memory to retrieve values from
+            num_wires (int): the number of qubits the operation acts upon
+
+        Resources:
+            The resources are obtained from the BBQRAM implementation in PennyLane. The original publicaiton of
+            the algorithm can be found in `Quantum Random Access Memory <https://arxiv.org/abs/0708.1879>`_.
+
+        Returns:
+            list[~.pennylane.labs.resource_estimation.GateCount]: A list of GateCount objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
+        """
+        num_target_wires = len(bitstrings[0])
+        n_k = int(math.log2(len(bitstrings)))
+
+        swap = resource_rep(ResourceSWAP)
+        cswap = resource_rep(ResourceCSWAP)
+        hadamard = resource_rep(ResourceHadamard)
+        pauliz = resource_rep(ResourceZ)
+
+        swap_counts = ((1 << n_k) - 1 + n_k) * 2 + num_target_wires * 2
+        cswap_counts = ((1 << n_k) - 1) * num_target_wires * 4 + ((1 << n_k) - 1 - n_k) * 4
+        hadamard_counts = num_target_wires * 2
+
+        pauliz_counts = 0
+        for j in range(num_target_wires):
+            for p in range(1 << n_k):
+                pauliz_counts += 1 if int(bitstrings[p][j]) else 0
+
+        return [
+            GateCount(swap, swap_counts),
+            GateCount(hadamard, hadamard_counts),
+            GateCount(cswap, cswap_counts),
+            GateCount(pauliz, pauliz_counts),
+        ]
+
+    @staticmethod
+    def tracking_name(bitstrings, num_wires) -> str:
+        r"""Returns the tracking name built with the operator's parameters."""
+        return f"BBQRAM({bitstrings}, {num_wires})"
 
 
 class ResourceAQFT(ResourceOperator):
