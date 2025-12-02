@@ -25,7 +25,7 @@ try:
     jax_version = version.parse(jax.__version__)
     required_version = version.parse("0.7.0")
     
-    if jax_version != required_version:
+    if jax_version != required_version:  # pragma: no cover
         import warnings
         warnings.warn(
             f"PennyLane requires JAX == 0.7.0 for capture functionality. "
