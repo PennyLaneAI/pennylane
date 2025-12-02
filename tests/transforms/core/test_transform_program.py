@@ -274,52 +274,15 @@ class TestTransformProgramDunders:
 
     # ============ Parametrized multiplication tests ============
     @pytest.mark.parametrize(
-        "obj, n",
+        "obj",
         [
-            # container * n -> program with container repeated n times
-            pytest.param(
-                TransformContainer(transform=qml.transform(first_valid_transform)),
-                3,
-                id="container*3",
-            ),
-            pytest.param(
-                TransformContainer(transform=qml.transform(first_valid_transform)),
-                0,
-                id="container*0",
-            ),
-            pytest.param(
-                TransformContainer(transform=qml.transform(first_valid_transform)),
-                1,
-                id="container*1",
-            ),
-            # dispatcher * n -> program with dispatcher repeated n times
-            pytest.param(qml.transform(first_valid_transform), 3, id="dispatcher*3"),
-            pytest.param(qml.transform(first_valid_transform), 0, id="dispatcher*0"),
-            pytest.param(qml.transform(first_valid_transform), 1, id="dispatcher*1"),
-            # n * program -> new program with program repeated n times
-            pytest.param(
-                TransformProgram(
-                    [TransformContainer(transform=qml.transform(first_valid_transform))]
-                ),
-                3,
-                id="program*3",
-            ),
-            pytest.param(
-                TransformProgram(
-                    [TransformContainer(transform=qml.transform(first_valid_transform))]
-                ),
-                0,
-                id="program*0",
-            ),
-            pytest.param(
-                TransformProgram(
-                    [TransformContainer(transform=qml.transform(first_valid_transform))]
-                ),
-                1,
-                id="program*1",
-            ),
+            TransformContainer(transform=qml.transform(first_valid_transform)),
+            qml.transform(first_valid_transform),
+            TransformProgram([TransformContainer(transform=qml.transform(first_valid_transform))]),
         ],
+        ids=["container", "dispatcher", "program"],
     )
+    @pytest.mark.parametrize("n", [0, 1, 3])
     def test_multiplication_operations(self, obj, n):
         """Test all multiplication operations for dispatchers, containers, and programs."""
         # Test left multiplication (obj * n)
@@ -336,81 +299,44 @@ class TestTransformProgramDunders:
 
     # ============ Error tests for invalid types ============
     @pytest.mark.parametrize(
-        "obj, invalid_value",
+        "obj",
         [
-            pytest.param(qml.transform(first_valid_transform), "invalid", id="disp+str"),
-            pytest.param(qml.transform(first_valid_transform), 42, id="disp+int"),
-            pytest.param(qml.transform(first_valid_transform), [1, 2], id="disp+list"),
-            pytest.param(
-                TransformContainer(transform=qml.transform(first_valid_transform)),
-                "invalid",
-                id="cont+str",
-            ),
-            pytest.param(
-                TransformContainer(transform=qml.transform(first_valid_transform)),
-                42,
-                id="cont+int",
-            ),
+            qml.transform(first_valid_transform),
+            TransformContainer(transform=qml.transform(first_valid_transform)),
         ],
+        ids=["dispatcher", "container"],
     )
+    @pytest.mark.parametrize("invalid_value", ["invalid", 42, [1, 2]], ids=["str", "int", "list"])
     def test_add_invalid_type_raises_error(self, obj, invalid_value):
         """Test that adding invalid types raises TypeError."""
         with pytest.raises(TypeError):
             _ = obj + invalid_value
 
     @pytest.mark.parametrize(
-        "obj, invalid_value",
+        "obj",
         [
-            pytest.param(qml.transform(first_valid_transform), "invalid", id="str+disp"),
-            pytest.param(qml.transform(first_valid_transform), 42, id="int+disp"),
-            pytest.param(
-                TransformContainer(transform=qml.transform(first_valid_transform)),
-                "invalid",
-                id="str+cont",
-            ),
-            pytest.param(
-                TransformContainer(transform=qml.transform(first_valid_transform)),
-                42,
-                id="int+cont",
-            ),
+            qml.transform(first_valid_transform),
+            TransformContainer(transform=qml.transform(first_valid_transform)),
         ],
+        ids=["dispatcher", "container"],
     )
+    @pytest.mark.parametrize("invalid_value", ["invalid", 42], ids=["str", "int"])
     def test_radd_invalid_type_raises_error(self, obj, invalid_value):
         """Test that right addition with invalid types raises TypeError."""
         with pytest.raises(TypeError):
             _ = invalid_value + obj
 
     @pytest.mark.parametrize(
-        "obj, invalid_value",
+        "obj",
         [
-            pytest.param(qml.transform(first_valid_transform), "invalid", id="disp*str"),
-            pytest.param(qml.transform(first_valid_transform), 3.5, id="disp*float"),
-            pytest.param(qml.transform(first_valid_transform), [1, 2], id="disp*list"),
-            pytest.param(
-                TransformContainer(transform=qml.transform(first_valid_transform)),
-                "invalid",
-                id="cont*str",
-            ),
-            pytest.param(
-                TransformContainer(transform=qml.transform(first_valid_transform)),
-                3.5,
-                id="cont*float",
-            ),
-            pytest.param(
-                TransformProgram(
-                    [TransformContainer(transform=qml.transform(first_valid_transform))]
-                ),
-                "invalid",
-                id="prog*str",
-            ),
-            pytest.param(
-                TransformProgram(
-                    [TransformContainer(transform=qml.transform(first_valid_transform))]
-                ),
-                3.5,
-                id="prog*float",
-            ),
+            qml.transform(first_valid_transform),
+            TransformContainer(transform=qml.transform(first_valid_transform)),
+            TransformProgram([TransformContainer(transform=qml.transform(first_valid_transform))]),
         ],
+        ids=["dispatcher", "container", "program"],
+    )
+    @pytest.mark.parametrize(
+        "invalid_value", ["invalid", 3.5, [1, 2]], ids=["str", "float", "list"]
     )
     def test_mul_invalid_type_raises_error(self, obj, invalid_value):
         """Test that multiplying with invalid types raises TypeError."""
@@ -420,30 +346,17 @@ class TestTransformProgramDunders:
             _ = invalid_value * obj
 
     @pytest.mark.parametrize(
-        "obj, error_match",
+        "obj",
         [
-            pytest.param(
-                qml.transform(first_valid_transform),
-                "Cannot multiply transform container by negative integer",  # dispatcher delegates to container
-                id="dispatcher*-1",
-            ),
-            pytest.param(
-                TransformContainer(transform=qml.transform(first_valid_transform)),
-                "Cannot multiply transform container by negative integer",
-                id="container*-1",
-            ),
-            pytest.param(
-                TransformProgram(
-                    [TransformContainer(transform=qml.transform(first_valid_transform))]
-                ),
-                "Cannot multiply transform program by negative integer",
-                id="program*-1",
-            ),
+            qml.transform(first_valid_transform),
+            TransformContainer(transform=qml.transform(first_valid_transform)),
+            TransformProgram([TransformContainer(transform=qml.transform(first_valid_transform))]),
         ],
+        ids=["dispatcher", "container", "program"],
     )
-    def test_mul_negative_raises_error(self, obj, error_match):
+    def test_mul_negative_raises_error(self, obj):
         """Test that negative multiplication raises ValueError."""
-        with pytest.raises(ValueError, match=error_match):
+        with pytest.raises(ValueError, match="Cannot multiply transform"):
             _ = obj * -1
 
     def test_program_rmul_final_transform_error(self):
