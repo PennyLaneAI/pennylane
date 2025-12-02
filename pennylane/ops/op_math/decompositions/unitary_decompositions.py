@@ -126,7 +126,7 @@ def two_qubit_decomposition(U, wires):
     where :math:`A, B, C, D` are :math:`SU(2)` operations, and the rotation angles are
     computed based on features of the input unitary :math:`U`.
 
-    NOTE: This implementation now supports the 2-CNOT decomposition based on the
+    For the 2-CNOT case, the decomposition is based on the
     real-trace criterion of Shende-Bullock-Markov (https://arxiv.org/pdf/quant-ph/0308045).
     Whenever χ(\gamma(U)) has real coefficients (equivalently trace(\gamma(U)) ∈ R),
     the decomposition uses exactly two CNOT gates.
@@ -210,14 +210,20 @@ def two_qubit_decomposition(U, wires):
             global_phase += _decompose_3_cnots(U, wires, global_phase)
         else:
             num_cnots = _compute_num_cnots(U)
+
+            elifs = [(num_cnots == 1, _decompose_1_cnot)]
+
+            # The 2-CNOT decomposition relies on sorting eigenvalues, which is not supported
+            # with abstract tracers when capture is enabled. In that case, we fall back
+            # to the 3-CNOT decomposition.
+            if not capture.enabled():
+                elifs.append((num_cnots == 2, _decompose_2_cnots))
+
             global_phase += ops.cond(
                 num_cnots == 0,
                 _decompose_0_cnots,
                 _decompose_3_cnots,
-                elifs=[
-                    (num_cnots == 1, _decompose_1_cnot),
-                    (num_cnots == 2, _decompose_2_cnots),
-                ],
+                elifs=elifs,
             )(U, wires, global_phase)
 
         if _is_jax_jit(U) or not math.allclose(global_phase, 0):
@@ -381,13 +387,20 @@ def two_qubit_decomp_rule(U, wires, **__):
 
     U, initial_phase = math.convert_to_su4(U, return_global_phase=True)
     num_cnots = _compute_num_cnots(U)
-    # Use the 3-CNOT case for num_cnots=2 as well because we do not have a reliably
-    # correct implementation of the 2-CNOT case right now.
+
+    elifs = [(num_cnots == 1, _decompose_1_cnot)]
+
+    # The 2-CNOT decomposition relies on sorting eigenvalues, which is not supported
+    # with abstract tracers when capture is enabled. In that case, we fall back
+    # to the 3-CNOT decomposition.
+    if not capture.enabled():
+        elifs.append((num_cnots == 2, _decompose_2_cnots))
+
     additional_phase = ops.cond(
         num_cnots == 0,
         _decompose_0_cnots,
         _decompose_3_cnots,
-        elifs=[(num_cnots == 1, _decompose_1_cnot), (num_cnots == 2, _decompose_2_cnots)],
+        elifs=elifs,
     )(U, wires, initial_phase)
     total_phase = initial_phase + additional_phase
     ops.cond(math.logical_not(math.allclose(total_phase, 0)), ops.GlobalPhase)(-total_phase)
@@ -488,7 +501,7 @@ def _compute_num_cnots(U):
 
     and follows the arguments of this paper: https://arxiv.org/abs/quant-ph/0308045.
 
-    NOTE: This also implements the 2-CNOT criterion of Proposition III.3 in
+    For the 2-CNOT criterion we make use of the Proposition III.3 in
     Shende-Bullock-Markov (quant-ph/0308045v3): U requires two CNOTs iff
     χ(\gamma(U)) has all real coefficients, i.e., trace(\gamma(U)) is real.
     """
@@ -501,18 +514,18 @@ def _compute_num_cnots(U):
 
     # We need a tolerance of around 1e-7 here to accommodate U specified with 8 decimal places.
     return ops.cond(
-        # 0 CNOT
+        # Case: 0 CNOTs (tensor product), the trace is +/- 4
         math.allclose(trace, 4, atol=1e-7) | math.allclose(trace, -4, atol=1e-7),
         lambda: 0,
-        # default if none match → 3
+        # Case: 3 CNOTs, the trace is a non-zero complex number with both real and imaginary parts.
         lambda: 3,
         elifs=[
-            # 1 CNOT
+            # Case: 1 CNOT, the trace is 0, and the eigenvalues of gammaU are [-1j, -1j, 1j, 1j]
             (
                 math.allclose(trace, 0.0, atol=1e-7) & math.allclose(g2 + id4, 0.0, atol=1e-7),
                 lambda: 1,
             ),
-            # 2 CNOT
+            # Case: 2 CNOTs, the trace has only a real part (or is 0)
             (math.allclose(math.imag(trace), 0.0, atol=1e-7), lambda: 2),
         ],
     )()
@@ -620,7 +633,7 @@ def _get_basis_and_eigenvalues(M):
     """
     # pylint: disable=protected-access
     # Use split_eigh to get a basis (ignoring its mixed eigenvalues)
-    _, O = _real_imag_split_eigh(M, 1.0)  # Assuming this internal helper exists
+    _, O = _real_imag_split_eigh(M, 1.0)
 
     # Compute true eigenvalues: D = O.T @ M @ O
     d_mat = math.dot(math.transpose(O), math.dot(M, O))
@@ -680,10 +693,11 @@ def _find_so4_decomposition(U, u_mag, O_u, candidates):
             if np.prod(signs) < 0:
                 continue
 
-            S_diag = np.array(signs, dtype=complex)
+            S_diag = math.cast_like(signs, P)
             # Broadcasting P * S is faster than matrix mult
             # Metric: sum of absolute imaginary parts (should be 0 for valid decomposition)
-            error = np.sum(np.abs(math.imag(math.dot(P * S_diag, Q))))
+            R_trial = math.dot(P * S_diag, Q)
+            error = math.sum(math.abs(math.imag(R_trial)))
 
             if error < min_error:
                 min_error = error
@@ -691,6 +705,13 @@ def _find_so4_decomposition(U, u_mag, O_u, candidates):
 
             if min_error < 1e-6:
                 return best_result
+
+        # FALLBACK CHECK:
+        # If the best error we found is still "large" (e.g., > 1e-5),
+        # then we failed to find a valid Real-valued decomposition.
+        # We return None to signal that 2-CNOT decomposition is likely impossible/unsafe.
+        if min_error > 1e-5:
+            return None
 
     return best_result
 
@@ -753,7 +774,16 @@ def _decompose_2_cnots(U, wires, initial_phase):
     candidates = [(a_calc, b_calc), (b_calc, a_calc)]
 
     # 3. Perform Search (Delegated to helper)
-    alpha_f, beta_f, signs_f, O_v, v_mag = _find_so4_decomposition(U, u_mag, O_u, candidates)
+    result = _find_so4_decomposition(U, u_mag, O_u, candidates)
+
+    # SAFETY FALLBACK to _decompose_3_cnots:
+    # If the 2-CNOT search failed (result is None), it means U is likely
+    # not a 2-CNOT gate (despite trace invariants) or numerical noise is too high.
+    # We fall back to the generic 3-CNOT decomposition to guarantee correctness.
+    if result is None:
+        return _decompose_3_cnots(U, wires, initial_phase)
+
+    alpha_f, beta_f, signs_f, O_v, v_mag = result
 
     # 4. Compute Local Gates L (Left) and R (Right) in SO(4)
     S_mat = math.diag(signs_f)
