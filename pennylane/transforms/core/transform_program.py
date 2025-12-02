@@ -281,9 +281,12 @@ class TransformProgram:
                 raise TransformError("The transform program already has a terminal transform.")
 
             if self.has_final_transform:
-                # Insert all before the final transform
-                for container in other._transform_program:
-                    self._transform_program.insert(len(self) - 1, container)
+                # Remove the final transform
+                final_transform = self._transform_program.pop(-1)
+                # Extend with other's transforms
+                self._transform_program.extend(other._transform_program)
+                # Add the final transform back
+                self._transform_program.append(final_transform)
             else:
                 self._transform_program.extend(other._transform_program)
 
