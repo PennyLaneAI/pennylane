@@ -427,7 +427,7 @@ class CircuitSpecs:
 
     device_name: str | None = None
     num_device_wires: int | None = None
-    shots: Shots | None= None
+    shots: Shots | None = None
     level: Any = None
     resources: SpecsResources | dict[int | str, SpecsResources] | None = None
 
