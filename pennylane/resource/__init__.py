@@ -125,20 +125,22 @@ used in a quantum circuit with custom operations without execution.
 
 We can examine the resources by accessing the :code:`resources` key:
 
->>> resources_lst = tracker.history['resources']
->>> print(resources_lst[0])
-Total qubit allocations: 3
-Total gates: 7
-Circuit depth: 5
+.. code-block:: pycon
 
-Gate types:
-  RZ: 1
-  CNOT: 2
-  Hadamard: 2
-  PauliZ: 2
+    >>> resources_lst = tracker.history['resources']
+    >>> print(resources_lst[0])
+    Total qubit allocations: 3
+    Total gates: 7
+    Circuit depth: 5
 
-Measurements:
-  expval: 1
+    Gate types:
+    RZ: 1
+    CNOT: 2
+    Hadamard: 2
+    PauliZ: 2
+
+    Measurements:
+    expval: 1
 """
 from .error import AlgorithmicError, ErrorOperation, SpectralNormError
 from .resource import (
