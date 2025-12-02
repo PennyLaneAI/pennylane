@@ -1909,9 +1909,7 @@ class TestResourceUnaryIterationBasedQPE:
 
     def test_tracking_name(self):
         """Test that the name of the operator is tracked correctly."""
-        op = qre.UnaryIterationBasedQPE(
-            unitary=qre.X(), num_iterations=8, adj_qft_cmpr_op=qre.QFT(3)
-        )
+        op = qre.UnaryIterationBasedQPE(unitary=qre.X(), num_iterations=8, adj_qft_op=qre.QFT(3))
         assert (
             op.tracking_name(resource_rep(qre.X), 8, resource_rep(qre.QFT, {"num_wires": 3}))
             == "UnaryIterationBasedQPE(X, 8, adj_qft=QFT(3))"
