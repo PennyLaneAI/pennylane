@@ -17,12 +17,6 @@ from collections import defaultdict
 
 from pennylane import numpy as qnp
 from pennylane.labs import resource_estimation as re
-from pennylane.labs.resource_estimation import (
-    ResourceCSWAP,
-    ResourceHadamard,
-    ResourceSWAP,
-    ResourceZ,
-)
 from pennylane.labs.resource_estimation.qubit_manager import AllocWires, FreeWires
 from pennylane.labs.resource_estimation.resource_operator import (
     CompressedResourceOp,
@@ -1157,10 +1151,10 @@ class ResourceBBQRAM(ResourceOperator):
         num_target_wires = len(bitstrings[0])
         n_k = int(math.log2(len(bitstrings)))
 
-        swap = resource_rep(ResourceSWAP)
-        cswap = resource_rep(ResourceCSWAP)
-        hadamard = resource_rep(ResourceHadamard)
-        pauliz = resource_rep(ResourceZ)
+        swap = resource_rep(re.ResourceSWAP)
+        cswap = resource_rep(re.ResourceCSWAP)
+        hadamard = resource_rep(re.ResourceHadamard)
+        pauliz = resource_rep(re.ResourceZ)
 
         swap_counts = ((1 << n_k) - 1 + n_k) * 2 + num_target_wires * 2
         cswap_counts = ((1 << n_k) - 1) * num_target_wires * 4 + ((1 << n_k) - 1 - n_k) * 4
