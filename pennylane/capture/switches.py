@@ -19,10 +19,20 @@ from collections.abc import Callable
 from contextlib import contextmanager
 
 has_jax = True
+is_jax_compatible = True
+import warnings
+
 try:
     import jax  # pylint: disable=unused-import
+    from packaging import version
+
+    jax_version = version.parse(jax.__version__)
+    required_version = version.parse("0.7.0")
+    if jax_version != required_version:
+        is_jax_compatible = False
 except ImportError:
     has_jax = False
+    is_jax_compatible = False
 
 
 def _make_switches() -> tuple[Callable[[], None], Callable[[], None], Callable[[], bool]]:
@@ -44,6 +54,14 @@ def _make_switches() -> tuple[Callable[[], None], Callable[[], None], Callable[[
         in a PennyLane Program Representation (plxpr)."""
         if not has_jax:
             raise ImportError("plxpr requires JAX to be installed.")
+        if not is_jax_compatible:
+            warnings.warn(
+                f"PennyLane requires JAX == 0.7.0 for capture functionality. "
+                f"You have JAX {jax.__version__} installed. "
+                f"Please pin JAX by running: pip install --upgrade jax==0.7.0 jaxlib==0.7.0",
+                UserWarning,
+                stacklevel=2,
+            )
         nonlocal _FEATURE_ENABLED
         _FEATURE_ENABLED = True
 

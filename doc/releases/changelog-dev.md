@@ -353,7 +353,7 @@
 
 <h3>Internal changes ⚙️</h3>
 
-* Improve importing issues error messages for incompatible jax versions.
+* Improve importing issues error messages for incompatible jax versions. Users will now see a more descriptive error message when attempting to use PennyLane capture.
   [(#8723)](https://github.com/PennyLaneAI/pennylane/pull/8723)
 
 * Bump `autoray` package version to `0.8.2`.

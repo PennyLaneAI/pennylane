@@ -19,39 +19,13 @@ from collections.abc import Callable, Sequence
 has_jax = True
 try:
     import jax
-    from packaging import version
-
-    jax_version = version.parse(jax.__version__)
-    required_version = version.parse("0.7.0")
-
-    if jax_version != required_version:  # pragma: no cover
-        import warnings
-
-        warnings.warn(
-            f"PennyLane requires JAX == 0.7.0 for capture functionality. "
-            f"You have JAX {jax.__version__} installed. "
-            f"Please pin JAX by running: pip install --upgrade jax==0.7.0 jaxlib==0.7.0",
-            UserWarning,
-            stacklevel=2,
-        )
-        has_jax = False
-
     from jax._src.interpreters.partial_eval import TracingEqn
     from jax.interpreters import partial_eval as pe
 
 
 except (ImportError, NameError) as e:  # pragma: no cover
-    has_jax = False  # pragma: no cover
-    import warnings
-
-    warnings.warn(
-        f"JAX is not installed or some JAX components are missing. "
-        f"To use JAX-dependent features, install JAX == 0.7.0: "
-        f"pip install --upgrade jax==0.7.0 jaxlib==0.7.0 "
-        f"Error details: {e}",
-        UserWarning,
-        stacklevel=2,
-    )
+    has_jax = False
+    return None
 
 
 def _get_shape_for_array(x, abstract_shapes: list, previous_ints: list) -> dict:
