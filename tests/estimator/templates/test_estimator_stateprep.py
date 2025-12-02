@@ -1703,9 +1703,9 @@ class TestPrepTHC:
     @pytest.mark.parametrize(
         "thc_ham, coeff_prec, selswap_depth, num_wires",
         (
-            (qre.THCHamiltonian(58, 160), 13, 1, 16),
-            (qre.THCHamiltonian(10, 50), None, None, 12),
-            (qre.THCHamiltonian(4, 20), None, 2, 10),
+            (qre.THCHamiltonian(58, 160), 13, 1, 80),
+            (qre.THCHamiltonian(10, 50), 15, None, 73),
+            (qre.THCHamiltonian(4, 20), 15, 2, 66),
         ),
     )
     def test_resource_rep(self, thc_ham, coeff_prec, selswap_depth, num_wires):

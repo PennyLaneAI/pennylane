@@ -966,9 +966,12 @@ class PrepTHC(ResourceOperator):
         num_coeff = num_orb + tensor_rank * (tensor_rank + 1) / 2  # N+M(M+1)/2
         coeff_register = int(math.ceil(math.log2(num_coeff)))
 
-        # 6 auxiliary account for 2 spin registers, 1 for rotation on auxiliary, 1 flag for success of inequality,
+        # 6 auxiliary wires account for 2 spin registers, 1 for rotation on auxiliary, 1 flag for success of inequality,
         # 1 flag for one-body vs two-body and 1 to control swap of \mu and \nu registers.
-        # The qubits storing output of QROM are stored here as well: 2n_M + \aleph + 2
+        # 2*n_M wires are for \mu and \nu registers, where n_M = log_2(tensor_rank+1)
+        # coeff_register for storing the coefficients: num_orb + tensor_rank(tensor_rank+1)/2,
+        # coeff_precision wires for the keep register
+        # The qubits storing output of QROM are stored here as well: 2*n_M + coeff_precision + 2
         self.num_wires = (
             4 * int(math.ceil(math.log2(tensor_rank + 1)))
             + coeff_register
@@ -1024,13 +1027,22 @@ class PrepTHC(ResourceOperator):
                 f"This method works with thc Hamiltonian, {type(thc_ham)} provided"
             )
 
-        if not isinstance(coeff_precision, int) and coeff_precision is not None:
+        if not isinstance(coeff_precision, int):
             raise TypeError(
                 f"`coeff_precision` must be an integer, but type {type(coeff_precision)} was provided."
             )
 
+        num_orb = thc_ham.num_orbitals
         tensor_rank = thc_ham.tensor_rank
-        num_wires = 2 * int(math.ceil(math.log2(tensor_rank + 1)))
+        num_coeff = num_orb + tensor_rank * (tensor_rank + 1) / 2  # N+M(M+1)/2
+        coeff_register = int(math.ceil(math.log2(num_coeff)))
+
+        num_wires = (
+            4 * int(math.ceil(math.log2(tensor_rank + 1)))
+            + coeff_register
+            + coeff_precision * 2
+            + 8
+        )
 
         params = {
             "thc_ham": thc_ham,

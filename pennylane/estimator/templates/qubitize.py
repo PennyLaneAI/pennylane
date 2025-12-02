@@ -132,8 +132,14 @@ class QubitizeTHC(ResourceOperator):
             coeff_precision = prep_op.coeff_precision if prep_op else 15
 
         # Based on section III D, Eq. 43 in arXiv:2011.03494
-        # Numbers have been adjusted to remove the auxilliary qubits accounted for by different templates
-        # Accounts for qubits needed for QROM output for PrepTHC: 2*n_M + \aleph + 2
+        # Numbers have been adjusted to remove the auxilliary wires accounted for by different templates
+        # 6 auxiliary wires account for 2 spin registers, 1 for rotation on auxiliary, 1 flag for success of inequality,
+        # 1 flag for one-body vs two-body and 1 to control swap of \mu and \nu registers.
+        # 2*n_M wires are for \mu and \nu registers, where n_M = log_2(tensor_rank+1)
+        # coeff_precision wires for the keep register
+        # num_orb*2 for state register
+        # coeff_register for storing the coefficients: num_orb + tensor_rank(tensor_rank+1)/2,
+        # The qubits storing output of QROM are stored here as well: 2*n_M + coeff_precision + 2
         self.num_wires = (
             num_orb * 2
             + 4 * int(np.ceil(math.log2(tensor_rank + 1)))
@@ -217,7 +223,13 @@ class QubitizeTHC(ResourceOperator):
 
         # Based on section III D, Eq. 43 in arXiv:2011.03494
         # Numbers have been adjusted to remove the auxilliary wires accounted for by different templates
-        # Accounts for qubits needed for QROM output for PrepTHC: 2*n_M + \aleph + 2
+        # 6 auxiliary wires account for 2 spin registers, 1 for rotation on auxiliary, 1 flag for success of inequality,
+        # 1 flag for one-body vs two-body and 1 to control swap of \mu and \nu registers.
+        # 2*n_M wires are for \mu and \nu registers, where n_M = log_2(tensor_rank+1)
+        # coeff_precision wires for the keep register
+        # num_orb*2 for state register
+        # coeff_register for storing the coefficients: num_orb + tensor_rank(tensor_rank+1)/2,
+        # The qubits storing output of QROM are stored here as well: 2*n_M + coeff_precision + 2
         num_wires = (
             num_orb * 2
             + 4 * int(np.ceil(math.log2(tensor_rank + 1)))
@@ -341,6 +353,9 @@ class QubitizeTHC(ResourceOperator):
         prep_op = target_resource_params["prep_op"]
         select_op = target_resource_params["select_op"]
 
+        coeff_precision = target_resource_params.get("coeff_precision")
+        rotation_precision = target_resource_params.get("rotation_precision")
+
         tensor_rank = thc_ham.tensor_rank
         m_register = int(np.ceil(np.log2(tensor_rank)))
 
@@ -355,13 +370,13 @@ class QubitizeTHC(ResourceOperator):
             gate_list.append(Allocate(1))
             gate_list.append(GateCount(mcx, 2))
 
-        if target_resource_params["rotation_precision"]:
+        if rotation_precision:
             # Controlled Select cost from Fig 5 in arXiv:2011.03494
             select_op = resource_rep(
                 SelectTHC,
                 {
                     "thc_ham": thc_ham,
-                    "rotation_precision": target_resource_params["rotation_precision"],
+                    "rotation_precision": rotation_precision,
                 },
             )
         else:
@@ -380,11 +395,11 @@ class QubitizeTHC(ResourceOperator):
             )
         )
 
-        if target_resource_params["coeff_precision"]:
+        if coeff_precision:
             # Prep cost from Fig 3 and 4 in arXiv:2011.03494
             prep_op = resource_rep(
                 PrepTHC,
-                {"thc_ham": thc_ham, "coeff_precision": target_resource_params["coeff_precision"]},
+                {"thc_ham": thc_ham, "coeff_precision": coeff_precision},
             )
         else:
             if not prep_op:
@@ -396,7 +411,7 @@ class QubitizeTHC(ResourceOperator):
         gate_list.append(GateCount(prep_op))
         gate_list.append(GateCount(resource_rep(Adjoint, {"base_cmpr_op": prep_op})))
 
-        # reflection cost from Eq. 44 in arXiv:2011.03494s
+        # reflection cost from Eq. 44 in arXiv:2011.03494
         coeff_precision = prep_op.params["coeff_precision"]
 
         toffoli = resource_rep(Toffoli)

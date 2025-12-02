@@ -103,9 +103,11 @@ class SelectTHC(ResourceOperator):
         num_orb = thc_ham.num_orbitals
         tensor_rank = thc_ham.tensor_rank
 
-        # num_orb*2 for state register, 2*log(M) for \mu and \nu registers
-        # 6 extras are for 2 spin registers, 1 for rotation on ancilla, 1 flag for success of inequality,
+        # 6 auxiliary wires account for 2 spin registers, 1 for rotation on auxiliary, 1 flag for success of inequality,
         # 1 flag for one-body vs two-body and 1 to control swap of \mu and \nu registers.
+        # 2*n_M wires are for \mu and \nu registers, where n_M = log_2(tensor_rank+1)
+        # coeff_precision wires for the keep register
+        # num_orb*2 for state register
         self.num_wires = num_orb * 2 + 2 * int(np.ceil(math.log2(tensor_rank + 1))) + 6
 
         if wires is not None and len(Wires(wires)) != self.num_wires:
@@ -167,9 +169,11 @@ class SelectTHC(ResourceOperator):
         num_orb = thc_ham.num_orbitals
         tensor_rank = thc_ham.tensor_rank
 
-        # num_orb*2 for state register, 2*log(M) for \mu and \nu registers
-        # 6 extras are for 2 spin registers, 1 for rotation on ancilla, 1 flag for success of inequality,
+        # 6 auxiliary wires account for 2 spin registers, 1 for rotation on auxiliary, 1 flag for success of inequality,
         # 1 flag for one-body vs two-body and 1 to control swap of \mu and \nu registers.
+        # 2*n_M wires are for \mu and \nu registers, where n_M = log_2(tensor_rank+1)
+        # coeff_precision wires for the keep register
+        # num_orb*2 for state register
         num_wires = num_orb * 2 + 2 * int(np.ceil(math.log2(tensor_rank + 1))) + 6
         params = {
             "thc_ham": thc_ham,
