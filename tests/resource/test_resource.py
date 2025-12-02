@@ -994,7 +994,7 @@ class TestCircuitSpecs:
         expected += "Level = 1:\n"
         expected += r.resources[1].to_pretty_str(preindent=2)
 
-        expected += "\n" + "-" * 60 + "\n\n"
+        expected += "\n\n" + "-" * 60 + "\n\n"
 
         expected += "Level = 2:\n"
         expected += r.resources[2].to_pretty_str(preindent=2)

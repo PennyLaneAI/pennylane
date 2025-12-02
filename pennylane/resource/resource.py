@@ -476,7 +476,7 @@ class CircuitSpecs:
             for level, res in self.resources.items():
                 s += f"Level = {level}:\n"
                 s += res.to_pretty_str(preindent=2)
-                s += "\n" + "-" * 60 + "\n\n"
+                s += "\n\n" + "-" * 60 + "\n\n"
 
         return s.rstrip("\n-")
 
