@@ -134,13 +134,13 @@ We can examine the resources by accessing the :code:`resources` key:
     Circuit depth: 5
 
     Gate types:
-    RZ: 1
-    CNOT: 2
-    Hadamard: 2
-    PauliZ: 2
+      RZ: 1
+      CNOT: 2
+      Hadamard: 2
+      PauliZ: 2
 
     Measurements:
-    expval: 1
+      expval: 1
 """
 from .error import AlgorithmicError, ErrorOperation, SpectralNormError
 from .resource import (
