@@ -313,17 +313,11 @@ class QubitDevice(Device):
         self._num_executions += 1
 
         if self.tracker.active:
-            tape_resources = circuit.specs["resources"]
-
-            resources = SpecsResources(
-                num_allocs=tape_resources["num_allocs"],
-                gate_types=tape_resources["gate_types"],
-                gate_sizes=tape_resources["gate_sizes"],
-                measurements=tape_resources["measurements"],
-                depth=tape_resources["depth"],
-            )
             self.tracker.update(
-                executions=1, shots=self._shots, results=results, resources=resources
+                executions=1,
+                shots=self._shots,
+                results=results,
+                resources=circuit.specs["resources"],
             )
             self.tracker.record()
 

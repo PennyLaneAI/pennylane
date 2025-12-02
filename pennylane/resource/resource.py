@@ -216,6 +216,7 @@ class Resources:
 
     def _ipython_display_(self):
         """Displays __str__ in ipython instead of __repr__"""
+        # See https://ipython.readthedocs.io/en/stable/config/integrating.html#custom-methods
         print(str(self))
 
 
@@ -357,6 +358,11 @@ class SpecsResources:
     def __str__(self) -> str:
         return self.to_pretty_str()
 
+    def _ipython_display_(self):
+        """Displays __str__ in ipython instead of __repr__"""
+        # See https://ipython.readthedocs.io/en/stable/config/integrating.html#custom-methods
+        print(str(self))
+
 
 @dataclass(frozen=True)
 class CircuitSpecs:
@@ -479,6 +485,11 @@ class CircuitSpecs:
                 s += "\n\n" + "-" * 60 + "\n\n"
 
         return s.rstrip("\n-")
+
+    def _ipython_display_(self):
+        """Displays __str__ in ipython instead of __repr__"""
+        # See https://ipython.readthedocs.io/en/stable/config/integrating.html#custom-methods
+        print(str(self))
 
 
 class ResourcesOperation(Operation):

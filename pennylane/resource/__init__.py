@@ -132,13 +132,13 @@ We can examine the resources by accessing the :code:`resources` key:
     Total qubit allocations: 3
     Total gates: 7
     Circuit depth: 5
-
+     <BLANKLINE>
     Gate types:
       RZ: 1
       CNOT: 2
       Hadamard: 2
       PauliZ: 2
-
+    <BLANKLINE>
     Measurements:
       expval: 1
 """
