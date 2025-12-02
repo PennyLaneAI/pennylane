@@ -2,6 +2,11 @@
 
 <h3>New features since last release</h3>
 
+* Bucket Brigade QRAM and a Hybrid QRAM variant are implemented to allow for 
+  selection of bitstrings in superposition.
+  [(#8670)](https://github.com/PennyLaneAI/pennylane/pull/8670)
+  [(#8679)](https://github.com/PennyLaneAI/pennylane/pull/8679)
+
 * Quantum Automatic Differentiation implemented to allow automatic selection of optimal
   Hadamard gradient differentiation methods per [the paper](https://arxiv.org/pdf/2408.05406).
   [(#8640)](https://github.com/PennyLaneAI/pennylane/pull/8640)
