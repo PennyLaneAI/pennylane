@@ -582,7 +582,7 @@ def _pauli_rot_resources(pauli_word):
 
 
 @register_resources(_pauli_rot_resources)
-def _pauli_rot_decomposition(theta, pauli_word, wires, **__):
+def _pauli_rot_decomposition(theta: TensorLike, pauli_word: str, wires: WiresLike, **__):
     if set(pauli_word) == {"I"}:
         qml.GlobalPhase(theta / 2)
         return

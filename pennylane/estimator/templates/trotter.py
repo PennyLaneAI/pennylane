@@ -1798,7 +1798,7 @@ class TrotterPauli(ResourceOperator):
 
         .. math::
 
-            C_{O_j} = 2 * n \cdot 5^{\frac{m}{2} - 1}.
+            C_{O_j} = 2 \cdot n \cdot 5^{\frac{m}{2} - 1}.
 
         Furthermore, because of the symmetric form of the recursive formula, the first and last terms get grouped.
         This reduces the counts for those terms to:
@@ -1929,6 +1929,16 @@ class TrotterPauli(ResourceOperator):
                 "Unsupported Hamiltonian representation for TrotterPauli."
                 f"This method works with PauliHamiltonian, {type(pauli_ham)} provided"
             )
+        if (not isinstance(num_steps, int)) or num_steps < 1:
+            raise ValueError(
+                f"`num_steps` is expected to be a positive integer greater than one, got {num_steps}"
+            )
+
+        if not (isinstance(order, int) and order > 0 and (order == 1 or order % 2 == 0)):
+            raise ValueError(
+                f"`order` is expected to be a positive integer and either one or a multiple of two; got {order}"
+            )
+
         self.num_steps = num_steps
         self.order = order
         self.pauli_ham = pauli_ham
@@ -2096,8 +2106,7 @@ class TrotterPauli(ResourceOperator):
                 a commuting group of Pauli words.
 
         """
-        gate_count_lst = []
-        for pauli_word, count in pauli_dist.items():
-            gate_count_lst.append(GateCount(PauliRot.resource_rep(pauli_word), count))
-
-        return gate_count_lst
+        return [
+            GateCount(PauliRot.resource_rep(pauli_word), count)
+            for pauli_word, count in pauli_dist.items()
+        ]

@@ -15,7 +15,7 @@
 Contains classes used to compactly store the metadata of various Hamiltonians which are relevant for resource estimation.
 """
 import copy
-from collections import defaultdict
+from collections import Counter
 from dataclasses import dataclass
 
 
@@ -191,10 +191,12 @@ class PauliHamiltonian:
         num_pauli_words (int | None): the number of terms (Pauli words) in the Hamiltonian
         max_weight (int | None): The maximum number of qubits a term acts upon, over all
             terms in the linear combination.
-        one_norm (float | None): the one-norm of the Hamiltonian
+        one_norm (float | int | None): the one-norm of the Hamiltonian
         pauli_dist (dict | None): A dictionary representing the various Pauli words and how
             frequently they appear in the Hamiltonian.
-        commuting_groups (tuple(dict) | None): A tuple of dictionaries where each entry is a group
+        commuting_groups (tuple(dict) | None): A tuple of dictionaries where each entry represents
+            a group of Pauli words that mutually commute. Each entry is formatted similarly to the
+            ``pauli_dist`` argument (see the Usage Details section for more information).
             of terms from the Hamiltonian such that all terms in the group commute. Here each
             dictionary contains the various Pauli words and how frequently they appear in the group.
 
@@ -300,7 +302,7 @@ class PauliHamiltonian:
         >>> pauli_ham
         PauliHamiltonian(num_qubits=40, num_pauli_words=100, max_weight=2, one_norm=14.5)
         >>> pauli_ham.pauli_dist
-        defaultdict(<class 'int'>, {'X': 40, 'XX': 30, 'YY': 30})
+        {'X': 40, 'XX': 30, 'YY': 30}
         >>> pauli_ham.commuting_groups
         ({'X': 40, 'XX': 30}, {'YY': 30})
 
@@ -316,12 +318,17 @@ class PauliHamiltonian:
         commuting_groups: tuple[dict] | None = None,
     ):
         self._num_qubits = num_qubits
-        self._one_norm = one_norm
 
-        (max_weight, num_pauli_words, pauli_dist, commuting_groups) = _validate_inputs(
+        if one_norm is not None and not (isinstance(one_norm, (float, int)) and one_norm >= 0):
+            raise ValueError(
+                f"one_norm, if provided, must be a positive float or integer. Instead received {one_norm}"
+            )
+
+        (max_weight, num_pauli_words, pauli_dist, commuting_groups) = _preprocess_inputs(
             num_qubits, num_pauli_words, max_weight, pauli_dist, commuting_groups
         )
 
+        self._one_norm = one_norm
         self._max_weight = max_weight
         self._num_pauli_words = num_pauli_words
         self._pauli_dist = pauli_dist
@@ -346,20 +353,17 @@ class PauliHamiltonian:
 
     def __hash__(self):
         """Hash function for the compact Hamiltonian representation"""
+        hashable_param = None
         if self._commuting_groups is not None:
-            hashable_commuting_groups = tuple(
-                _sort_and_freeze(group) for group in self._commuting_groups
-            )
+            hashable_param = tuple(_sort_and_freeze(group) for group in self._commuting_groups)
         elif self._pauli_dist is not None:
-            hashable_commuting_groups = _sort_and_freeze(self._pauli_dist)
-        else:
-            hashable_commuting_groups = None
+            hashable_param = _sort_and_freeze(self._pauli_dist)
 
         hashable_params = (
             self._num_qubits,
             self._num_pauli_words,
             self._max_weight,
-            hashable_commuting_groups,
+            hashable_param,
             self._one_norm,
         )
         return hash(hashable_params)
@@ -419,16 +423,13 @@ def _validate_pauli_dist(pauli_dist: dict) -> bool:
 
 def _pauli_dist_from_commuting_groups(commuting_groups: tuple[dict]):
     """Construct the total Pauli word distribution from the commuting groups."""
-    total_pauli_dist = defaultdict(int)
-
+    total_pauli_dist = Counter()
     for group in commuting_groups:
-        for pauli_word, frequency in group.items():
-            total_pauli_dist[pauli_word] += frequency
-
-    return total_pauli_dist
+        total_pauli_dist.update(group)
+    return dict(total_pauli_dist)
 
 
-def _validate_inputs(
+def _preprocess_inputs(
     num_qubits: int,
     num_pauli_words: int | None,
     max_weight: int | None,
