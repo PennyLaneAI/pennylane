@@ -237,10 +237,6 @@ class TransformProgram:
         Returns:
             TransformProgram: A new program with the transform prepended.
         """
-        # Convert dispatcher to container if needed
-        if isinstance(other, TransformDispatcher):
-            other = TransformContainer(other)
-
         if isinstance(other, TransformContainer):
             if self.has_final_transform and other.final_transform:
                 raise TransformError("The transform program already has a terminal transform.")
