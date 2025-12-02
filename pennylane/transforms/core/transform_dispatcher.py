@@ -538,15 +538,18 @@ class TransformContainer:  # pylint: disable=too-many-instance-attributes
         # Import here to avoid circular import
         from .transform_program import TransformProgram  # pylint: disable=import-outside-toplevel
 
-        if isinstance(n, int):
-            if n < 0:
-                raise ValueError("Cannot multiply transform container by negative integer")
-            if self.final_transform and n > 1:
-                raise TransformError(
-                    f"{self} is a final transform and cannot be applied more than once."
-                )
-            return TransformProgram([self] * n)
-        return NotImplemented
+        if not isinstance(n, int):
+            return NotImplemented
+
+        if n < 0:
+            raise ValueError("Cannot multiply transform container by negative integer")
+
+        if self.final_transform and n > 1:
+            raise TransformError(
+                f"{self} is a final transform and cannot be applied more than once."
+            )
+
+        return TransformProgram([self] * n)
 
     __rmul__ = __mul__
 
