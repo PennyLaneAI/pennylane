@@ -27,6 +27,7 @@ from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.qsvt import (
     _cheby_pol,
     _complementary_poly,
+    _compute_qsp_angles_iteratively,
     _poly_func,
     _qsp_iterate,
     _qsp_iterate_broadcast,
@@ -1036,6 +1037,21 @@ class TestIterativeSolver:
             assert hasattr(jit_wrapped_f, "lower")
         except ModuleNotFoundError:
             assert jit_wrapped_f is f
+
+    @pytest.mark.parametrize(
+        "polynomial_coeffs_in_cheby_basis",
+        [
+            (generate_polynomial_coeffs(10)),
+        ],
+    )
+    def test_raised_exceptions(self, polynomial_coeffs_in_cheby_basis):
+        try:
+            import jax 
+            import optax 
+        except ModuleNotFoundError:
+            with pytest.raises(ModuleNotFoundError, match="JAX and optax are required"):
+                _compute_qsp_angles_iteratively(polynomial_coeffs_in_cheby_basis)
+        
 
 
     @pytest.mark.parametrize(
