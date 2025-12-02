@@ -273,6 +273,7 @@ def measure(
 
         dev = qml.device("default.qubit", seed=1234)
 
+        @qml.set_shots(10)
         @qml.qnode(dev)
         def circuit(x, y):
             qml.RX(x, wires=0)
