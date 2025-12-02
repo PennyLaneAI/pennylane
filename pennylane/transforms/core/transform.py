@@ -313,6 +313,7 @@ def transform(  # pylint: disable=too-many-arguments
 
         .. code-block:: python
 
+            import jax
             jax.config.update("jax_enable_x64", True)
             qml.capture.enable()
 
