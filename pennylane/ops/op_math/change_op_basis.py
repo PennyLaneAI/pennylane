@@ -111,6 +111,9 @@ class ChangeOpBasis(CompositeOp):
             uncompute_op = adjoint(compute_op)
         super().__init__(uncompute_op, target_op, compute_op)
 
+    def _flatten(self):
+        return tuple(reversed(self.operands)), tuple()
+
     # pylint: disable=arguments-differ
     @classmethod
     def _primitive_bind_call(cls, compute_op, target_op, uncompute_op=None):
