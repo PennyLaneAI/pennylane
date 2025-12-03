@@ -15,13 +15,16 @@
 This module contains the transform function/decorator to make your custom transforms compatible with tapes, quantum
 functions and QNodes.
 """
+from collections.abc import Callable
 from typing import get_type_hints
 
 from .transform_dispatcher import TransformDispatcher, TransformError
 
 
-def transform(  # pylint: disable=too-many-arguments,too-many-positional-arguments
-    quantum_transform,
+def transform(  # pylint: disable=too-many-arguments
+    quantum_transform: Callable | None = None,
+    pass_name: None | str = None,
+    *,
     expand_transform=None,
     classical_cotransform=None,
     is_informative=False,
@@ -39,7 +42,7 @@ def transform(  # pylint: disable=too-many-arguments,too-many-positional-argumen
     the created transform.
 
     Args:
-        quantum_transform (Callable): The input quantum transform must be a function that satisfies the
+        quantum_transform (Callable | None): The input quantum transform must be a function that satisfies the
             following requirements:
 
             * Accepts a :class:`~.QuantumTape` as its first input and
@@ -47,6 +50,9 @@ def transform(  # pylint: disable=too-many-arguments,too-many-positional-argumen
 
             * The transform must have the following structure (type hinting is optional): ``my_quantum_transform(tape:
               qml.tape.QuantumScript, ...) -> tuple[qml.tape.QuantumScriptBatch, qml.typing.PostprocessingFn]``
+
+        pass_name  (str | None): the name of the associated MLIR pass to be applied when Catalyst is used.
+            See Usage Details for more information.
 
     Keyword Args:
         expand_transform=None (Optional[Callable]): An optional expand transform is applied directly before the input
@@ -218,6 +224,73 @@ def transform(  # pylint: disable=too-many-arguments,too-many-positional-argumen
           to the end of the device program and will be last in the overall transform program.
 
     .. details::
+        :title: Transforms with Catalyst
+
+        If a compilation pass is written in MLIR, using it in a ``qjit``'d workflow requires that
+        it have a transform with a matching ``pass_name``. This ensures that the transform is
+        properly applied as part of the lower-level compilation.
+
+        For example, we can create a transform that will apply the ``cancel-inverses`` pass, like the
+        in-built ``qml.transforms.cancel_inverses`` transform.
+
+        .. code-block:: python
+
+            my_transform = qml.transform(pass_name="cancel-inverses")
+
+            @qml.qjit
+            @my_transform
+            @qml.qnode(qml.device('lightning.qubit', wires=4))
+            def circuit():
+                qml.X(0)
+                qml.X(0)
+                return qml.expval(qml.Z(0))
+
+        We can see that the instruction to apply ``"cancel-inverses"`` is present in the initial
+        MLIR.
+
+        >>> circuit()
+        Array(1., dtype=float64)
+        >>> print(circuit.mlir[200:600])
+        tensor<f64>
+        }
+        module @module_circuit {
+            module attributes {transform.with_named_sequence} {
+            transform.named_sequence @__transform_main(%arg0: !transform.op<"builtin.module">) {
+                %0 = transform.apply_registered_pass "cancel-inverses" to %arg0 : (!transform.op<"builtin.module">) -> !transform.op<"builtin.module">
+                transform.yield
+            }
+            }
+            func.func public @circui
+
+        Transforms can have both tape-based and ``pass_name``-based definitions. For example, the transform below called
+        ``my_transform`` has both definitions. In this case, the MLIR pass
+        will take precedence when being ``qjit``'d if only MLIR passes can occur after.
+
+        .. code-block:: python
+
+            from functools import partial
+
+            @partial(qml.transform, pass_name="my-pass-name")
+            def my_transform(tape):
+                return (tape, ), lambda res: res[0]
+
+        Note that any transform with only a ``pass_name`` definition *must* occur after any purely tape-based
+        transform, as tape transforms occur prior to lowering to MLIR.
+
+        >>> @qml.qjit
+        ... @qml.defer_measurements
+        ... @qml.transform(pass_name="cancel-inverses")
+        ... @qml.qnode(qml.device('lightning.qubit', wires=4))
+        ... def c():
+        ...     qml.X(0)
+        ...     qml.X(0)
+        ...     return qml.expval(qml.Z(0))
+        ...
+        Traceback (most recent call last):
+            ...
+        ValueError: <cancel-inverses((), {})> without a tape definition occurs before tape transform <defer_measurements((), {})>.
+
+    .. details::
         :title: Transforms with experimental program capture
 
         To define a transform that can be applied directly to plxpr without the need to create ``QuantumScript``\ s, users
@@ -311,24 +384,25 @@ def transform(  # pylint: disable=too-many-arguments,too-many-positional-argumen
         in (b,) }
     """
     # 1: Checks for the transform
-    if not callable(quantum_transform):
-        raise TransformError(
-            f"The function to register, {quantum_transform}, "
-            "does not appear to be a valid Python function or callable."
-        )
-
-    signature_transform = get_type_hints(quantum_transform)
-
-    # 2: Checks for the expand transform
-    if expand_transform is not None:
-        if not callable(expand_transform):
-            raise TransformError("The expand function must be a valid Python function.")
-        signature_expand_transform = get_type_hints(expand_transform)
-
-        if signature_expand_transform != signature_transform:
+    if quantum_transform is not None:
+        if not callable(quantum_transform):
             raise TransformError(
-                "The expand transform must have the same signature as the transform"
+                f"The function to register, {quantum_transform}, "
+                "does not appear to be a valid Python function or callable."
             )
+
+        signature_transform = get_type_hints(quantum_transform)
+
+        # 2: Checks for the expand transform
+        if expand_transform is not None:
+            if not callable(expand_transform):
+                raise TransformError("The expand function must be a valid Python function.")
+            signature_expand_transform = get_type_hints(expand_transform)
+
+            if signature_expand_transform != signature_transform:
+                raise TransformError(
+                    "The expand transform must have the same signature as the transform"
+                )
 
     # 3: Check the classical co-transform
     if classical_cotransform is not None and not callable(classical_cotransform):
@@ -342,4 +416,5 @@ def transform(  # pylint: disable=too-many-arguments,too-many-positional-argumen
         final_transform=final_transform,
         use_argnum_in_expand=use_argnum_in_expand,
         plxpr_transform=plxpr_transform,
+        pass_name=pass_name,
     )
