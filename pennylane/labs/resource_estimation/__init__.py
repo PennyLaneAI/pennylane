@@ -122,6 +122,7 @@ Templates:
     ~ResourceQPE
     ~ResourceIterativeQPE
     ~ResourceControlledSequence
+    ~ResourceHybridQRAM
     ~ResourceQFT
     ~ResourceAQFT
     ~ResourceBasisRotation
@@ -227,6 +228,7 @@ from .templates import (
     ResourcePhaseGradient,
     ResourceOutMultiplier,
     ResourceSemiAdder,
+    ResourceHybridQRAM,
     ResourceQFT,
     ResourceAQFT,
     ResourceBasisRotation,

@@ -1077,20 +1077,23 @@ class ResourceHybridQRAM(ResourceOperator):
     .. seealso:: :class:`~.HybridQRAM`
     """
 
-    resource_keys = {"bitstrings", "num_tree_control_wires", "num_target_wires", "num_select_wires", "k"}
+    resource_keys = {"bitstrings", "num_tree_control_wires", "num_target_wires", "num_select_wires"}
 
-    def __init__(self, bitstrings, num_tree_control_wires, num_target_wires, num_select_wires, k, wires=None):
+    def __init__(
+        self, bitstrings, num_tree_control_wires, num_target_wires, num_select_wires, wires=None
+    ):
         self.num_tree_control_wires = num_tree_control_wires
         self.num_select_wires = num_select_wires
         self.num_target_wires = num_target_wires
 
-        self.k = k
         self.bitstrings = bitstrings
 
         expected_nodes = (1 << num_tree_control_wires) - 1
         num_work_wires = 1 + 1 + 3 * expected_nodes
 
-        self.num_wires = num_tree_control_wires + num_target_wires + num_select_wires + num_work_wires
+        self.num_wires = (
+            num_tree_control_wires + num_target_wires + num_select_wires + num_work_wires
+        )
         super().__init__(wires=wires)
 
     @property
@@ -1106,11 +1109,10 @@ class ResourceHybridQRAM(ResourceOperator):
             "num_tree_control_wires": self.num_tree_control_wires,
             "num_target_wires": self.num_target_wires,
             "num_select_wires": self.num_select_wires,
-            "k": self.k
         }
 
     @classmethod
-    def resource_rep(cls, bitstrings, num_tree_control_wires, num_target_wires, num_select_wires, k):
+    def resource_rep(cls, bitstrings, num_tree_control_wires, num_target_wires, num_select_wires):
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
 
@@ -1119,7 +1121,6 @@ class ResourceHybridQRAM(ResourceOperator):
             num_tree_control_wires (Int): the length p of the second part of the address register (p < n)
             num_target_wires (Int): m target qubits; m must equal bitstring length
             num_select_wires (Int): the length of the first part of the address register (n - p)
-            k (int): number of "select" bits taken from the MSB of control_wires
 
         Returns:
             CompressedResourceOp: the operator in a compressed representation
@@ -1129,18 +1130,21 @@ class ResourceHybridQRAM(ResourceOperator):
             "num_tree_control_wires": num_tree_control_wires,
             "num_target_wires": num_target_wires,
             "num_select_wires": num_select_wires,
-            "k": k
         }
 
         expected_nodes = (1 << num_tree_control_wires) - 1
         num_work_wires = 1 + 1 + 3 * expected_nodes
 
         return CompressedResourceOp(
-            cls, num_tree_control_wires + num_select_wires + num_target_wires + num_work_wires, params
+            cls,
+            num_tree_control_wires + num_select_wires + num_target_wires + num_work_wires,
+            params,
         )
 
     @classmethod
-    def resource_decomp(cls, bitstrings, num_tree_control_wires, num_target_wires, num_select_wires, k):
+    def resource_decomp(
+        cls, bitstrings, num_tree_control_wires, num_target_wires, num_select_wires
+    ):
         r"""Returns a list representing the resources of the operator. Each object in the list
         represents a gate and the number of times it occurs in the circuit.
 
@@ -1149,17 +1153,15 @@ class ResourceHybridQRAM(ResourceOperator):
             num_tree_control_wires (Int): the length p of the second part of the address register (p < n)
             num_target_wires (Int): m target qubits; m must equal bitstring length
             num_select_wires (Int): the length of the first part of the address register (n - p)
-            k (int): number of "select" bits taken from the MSB of control_wires
 
         Returns:
             list[~.pennylane.labs.resource_estimation.GateCount]: A list of GateCount objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
-        num_blocks = 1 << k
+        num_blocks = 1 << num_select_wires
 
         paulix = resource_rep(re.ResourceX)
-        pauliz = resource_rep(re.ResourceZ)
         cnot = resource_rep(re.ResourceCNOT)
         cz = resource_rep(re.ResourceCZ)
         hadamard = resource_rep(re.ResourceHadamard)
@@ -1191,7 +1193,6 @@ class ResourceHybridQRAM(ResourceOperator):
             num_ctrl_wires=1,
             num_ctrl_values=0,
         )
-
 
         paulix_counts = (num_select_wires <= 0) * num_blocks * 2
         hadamard_counts = num_target_wires * num_blocks * 2
@@ -1238,11 +1239,11 @@ class ResourceHybridQRAM(ResourceOperator):
         ]
 
     @staticmethod
-    def tracking_name(bitstrings, num_control_wires, num_select_wires, select_value) -> str:
+    def tracking_name(
+        bitstrings, num_tree_control_wires, num_target_wires, num_select_wires
+    ) -> str:
         r"""Returns the tracking name built with the operator's parameters."""
-        return (
-            f"SelectOnlyQRAM({bitstrings}, {num_control_wires}, {num_select_wires}, {select_value})"
-        )
+        return f"HybridQRAM({bitstrings}, {num_tree_control_wires}, {num_target_wires}, {num_select_wires})"
 
 
 class ResourceAQFT(ResourceOperator):
