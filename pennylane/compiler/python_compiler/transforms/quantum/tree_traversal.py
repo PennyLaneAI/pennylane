@@ -40,7 +40,7 @@ from .tree_traversal_utils_tmp import print_mlir, print_ssa_values
 ##############################################################################
 def initialize_memref_with_value(dest: SSAValue, value: SSAValue, size: int | SSAValue):
     """Initialize a memref with value"""
-    # lb
+    # lower bound
     c0_index = arith.ConstantOp.from_int_and_width(0, builtin.IndexType())
 
     # step
