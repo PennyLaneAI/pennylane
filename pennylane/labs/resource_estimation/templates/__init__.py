@@ -18,6 +18,7 @@ from .subroutines import (
     ResourcePhaseGradient,
     ResourceOutMultiplier,
     ResourceSemiAdder,
+    ResourceSelectOnlyQRAM,
     ResourceQFT,
     ResourceAQFT,
     ResourceBasisRotation,

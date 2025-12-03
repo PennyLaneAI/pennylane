@@ -1067,17 +1067,12 @@ class ResourceSelectOnlyQRAM(ResourceOperator):
     Args:
         bitstrings (Sequence[str]):
             The classical memory to retrieve values from.
-        num_wires (int):
-            The number of qubits the operation acts upon.
-        control_wires (WiresLike, optional):
-            The register that stores the index for the entry of the classical data we want to
+        num_control_wires (WiresLike):
+            The size of the register that stores the index for the entry of the classical data we want to
             access.
-        target_wires (WiresLike, optional):
-            The register in which the classical data gets loaded. The size of this register must
-            equal each bitstring length in ``bitstrings``.
-        select_wires (WiresLike, optional):
-            Wires used to perform the selection.
-        select_value (int or None, optional):
+        num_select_wires (WiresLike):
+            The number of wires used to perform the selection.
+        select_value (int or None):
             If provided, only entries whose select bits match this value are loaded.
 
     Resources:
@@ -1088,24 +1083,13 @@ class ResourceSelectOnlyQRAM(ResourceOperator):
 
     resource_keys = {"bitstrings", "num_wires"}
 
-    def __init__(
-        self,
-        bitstrings,
-        num_wires,
-        control_wires=None,
-        target_wires=None,
-        select_wires=None,
-        select_value=None
-    ):
-        all_wires = None
-        if control_wires and target_wires and select_wires:
-            all_wires = list(control_wires) + list(target_wires) + list(select_wires)
-        self.num_control_wires = len(control_wires)
-        self.num_select_wires = len(select_wires)
+    def __init__(self, bitstrings, num_control_wires, num_select_wires, select_value, wires=None):
+        self.num_control_wires = num_control_wires
+        self.num_select_wires = num_select_wires
         self.select_value = select_value
-        self.num_wires = num_wires if all_wires is None else len(all_wires)
         self.bitstrings = bitstrings
-        super().__init__(wires=all_wires)
+        self.num_wires = num_control_wires + num_select_wires + len(bitstrings[0])
+        super().__init__(wires=wires)
 
     @property
     def resource_params(self) -> dict:
@@ -1119,23 +1103,37 @@ class ResourceSelectOnlyQRAM(ResourceOperator):
             "bitstrings": self.bitstrings,
             "num_control_wires": self.num_control_wires,
             "num_select_wires": self.num_select_wires,
-            "select_value": self.select_value
+            "select_value": self.select_value,
         }
 
     @classmethod
-    def resource_rep(cls, bitstrings, num_wires):
+    def resource_rep(cls, bitstrings, num_control_wires, num_select_wires, select_value):
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
 
         Args:
-            bitstrings (Sequence[str]): the classical memory to retrieve values from
-            num_wires (int): the number of qubits the operation acts upon
+            bitstrings (Sequence[str]):
+                The classical memory to retrieve values from.
+            num_control_wires (WiresLike):
+                The size of the register that stores the index for the entry of the classical data we want to
+                access.
+            num_select_wires (WiresLike):
+                The number of wires used to perform the selection.
+            select_value (int or None):
+                If provided, only entries whose select bits match this value are loaded.
 
         Returns:
             CompressedResourceOp: the operator in a compressed representation
         """
-        params = {"bitstrings": bitstrings, "num_wires": num_wires}
-        return CompressedResourceOp(cls, num_wires, params)
+        params = {
+            "bitstrings": bitstrings,
+            "num_control_wires": num_control_wires,
+            "num_select_wires": num_select_wires,
+            "select_value": select_value,
+        }
+        return CompressedResourceOp(
+            cls, num_control_wires + num_select_wires + len(bitstrings[0]), params
+        )
 
     @classmethod
     def resource_decomp(cls, bitstrings, num_control_wires, num_select_wires, select_value):
@@ -1161,7 +1159,9 @@ class ResourceSelectOnlyQRAM(ResourceOperator):
         n_total = num_control_wires + num_select_wires
 
         paulix = resource_rep(re.ResourceX)
-        mcx = resource_rep(re.ResourceMultiControlledX)
+        mcx = resource_rep(
+            re.ResourceMultiControlledX, {"num_ctrl_wires": n_total, "num_ctrl_values": 0}
+        )
 
         paulix_counts = 0
         mcx_counts = 0
@@ -1185,9 +1185,11 @@ class ResourceSelectOnlyQRAM(ResourceOperator):
         ]
 
     @staticmethod
-    def tracking_name(bitstrings, num_wires) -> str:
+    def tracking_name(bitstrings, num_control_wires, num_select_wires, select_value) -> str:
         r"""Returns the tracking name built with the operator's parameters."""
-        return f"SelectOnlyQRAM({bitstrings}, {num_wires})"
+        return (
+            f"SelectOnlyQRAM({bitstrings}, {num_control_wires}, {num_select_wires}, {select_value})"
+        )
 
 
 class ResourceAQFT(ResourceOperator):
