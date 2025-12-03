@@ -391,6 +391,18 @@ def _(op: qops.IntegerComparator):
     )
 
 
+@_map_to_resource_op.register
+def _(op: qtemps.Reflection):
+    base = op.hyperparameters["base"]
+    ref_wires = op.hyperparameters["reflection_wires"]
+    return re_temps.Reflection(
+        num_wires=len(ref_wires),
+        U=_map_to_resource_op(base),
+        alpha=op.alpha,
+        wires=ref_wires,
+    )
+
+
 # Symbolic Ops:
 @_map_to_resource_op.register
 def _(op: qops.ChangeOpBasis):

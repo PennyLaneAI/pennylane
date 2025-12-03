@@ -2258,3 +2258,393 @@ class SelectPauliRot(ResourceOperator):
             gate_lst.append(GateCount(s_dagg))
 
         return gate_lst
+
+
+class Reflection(ResourceOperator):
+    r"""Resource class for the Reflection operator. Apply a reflection about a state :math:`|\Psi\rangle`.
+
+    This operator works by providing an operation, :math:`U`, that prepares the desired state, :math:`\vert \Psi \rangle`,
+    that we want to reflect about. We can also provide a reflection angle :math:`\alpha`
+    to define the operation in a more generic form:
+
+    .. math::
+
+       R(U, \alpha) = -I + (1 - e^{i\alpha}) |\Psi\rangle \langle \Psi|
+
+    Args:
+        num_wires (int | None): number of wires the operator acts on
+        U (ResourceOperator | None): the operator that prepares the state :math:`|\Psi\rangle`
+        alpha (float | None): the angle of the operator, default is :math:`\pi`
+        wires (Sequence[int], None): The wires the operation acts on.
+
+    Resources:
+        See the decomposition from the PL operator.
+
+    .. seealso:: :class:`~.pennylane.Reflection`
+
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> import pennylane.estimator as qre
+
+    """
+
+    resource_keys = {"alpha", "num_wires", "cmpr_U"}
+
+    def __init__(
+        self,
+        num_wires: int | None = None,
+        U: ResourceOperator | None = None,
+        alpha: float = math.pi,
+        wires: WiresLike = None,
+    ) -> None:
+        self.queue()
+        self.alpha = alpha  # TODO: assert alpha is in [0, 2pi]
+
+        if U is None and num_wires is None:
+            raise ValueError("Must provide atleast one of `num_wires` or `U`")
+
+        if U is not None:
+            _dequeue([U])
+            self.cmpr_U = U.resource_rep_from_op()
+        else:
+            self.cmpr_U = qre.resource_rep(qre.Identity)
+
+        if num_wires is None:
+            self.num_wires = self.cmpr_U.num_wires
+
+        if wires:
+            self.wires = Wires(wires)
+            if len(self.wires) != num_wires:
+                raise ValueError(f"Expected {num_wires} wires, got {len(self.wires)}.")
+        else:
+            self.wires = None
+
+    @classmethod
+    def resource_decomp(cls, num_wires: int, alpha: float, cmpr_U: CompressedResourceOp):
+        r"""The resources for a select implementation taking advantage of the unary iterator trick.
+
+        Args:
+            num_wires (int): number of wires the operator acts on
+            alpha (float): the angle of the operator, default is :math:`\pi`
+            cmpr_U (CompressedResourceOp): the operator that prepares the state :math:`|\Psi\rangle`
+
+        Resources:
+            [TODO] See base PennyLane implemntation
+
+        Returns:
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
+        """
+        gate_types = []
+        x = qre.X.resource_rep()
+        z = qre.Z.resource_rep()
+
+        # -1 * Identity = GlobalPhase(Pi) == X * Z * X * Z
+        gate_types.append(qre.GateCount(x, 2))
+        gate_types.append(qre.GateCount(z, 2))
+        if qnp.isclose(alpha % (2 * math.pi), 0):
+            return gate_types
+
+        base_op = z if qnp.isclose(alpha, math.pi) else qre.PhaseShift.resource_rep()
+        adj_cmpr_U = qre.Adjoint.resource_rep(cmpr_U)
+
+        gate_types.append(qre.GateCount(cmpr_U))  # conjugate with U, U dagger
+        gate_types.append(qre.GateCount(x, 2))  # conjugate base op with Xs
+        if num_wires > 1:
+            ctrl_base_op = qre.Controlled.resource_rep(
+                base_cmpr_op=base_op,
+                num_ctrl_wires=num_wires - 1,
+                num_zero_ctrl=num_wires - 1,
+            )
+            gate_types.append(qre.GateCount(ctrl_base_op))
+        else:
+            gate_types.append(qre.GateCount(base_op))
+
+        gate_types.append(qre.GateCount(adj_cmpr_U))
+        return gate_types
+
+    @classmethod
+    def adjoint_resource_decomp(cls, target_resource_params=None):
+        r"""Returns a list representing the resources for the adjoint of the operator.
+
+        Args:
+            target_resource_params (dict | None): A dictionary containing the resource parameters
+                of the target operator.
+
+        Resources:
+            Reflections are always self-inverse operators. This together with the fact that this is
+            a unitary operator implies that it is self-adjoint.
+
+        Returns:
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
+        """
+        return [GateCount(cls.resource_rep(**target_resource_params))]
+
+    @classmethod
+    def controlled_resource_decomp(cls, num_ctrl_wires, num_zero_ctrl, target_resource_params=None):
+        r"""Returns a list representing the resources for a controlled version of the operator.
+
+        Args:
+            num_ctrl_wires (int): the number of qubits the operation is controlled on
+            num_zero_ctrl (int): the number of control qubits, that are controlled when in
+                the :math:`|0\rangle` state
+            target_resource_params (dict | None): A dictionary containing the resource parameters
+                of the target operator.
+
+        Resources:
+            [TODO]
+
+        Returns:
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
+        """
+        gate_types = []
+        alpha = target_resource_params["alpha"]
+        cmpr_U = target_resource_params["cmpr_U"]
+        num_wires = target_resource_params["num_wires"]
+
+        base_op = (
+            qre.Z.resource_rep() if qnp.isclose(alpha, math.pi) else qre.PhaseShift.resource_rep()
+        )
+
+        x = qre.X.resource_rep()
+        mcx = qre.MultiControlledX.resource_rep(
+            num_ctrl_wires=num_ctrl_wires, num_zero_ctrl=num_zero_ctrl
+        )
+        z = qre.Z.resource_rep()
+        adj_cmpr_U = qre.Adjoint.resource_rep(cmpr_U)
+
+        # Controlled-GlobalPhase(Pi) == MCX * Z * MCX * Z
+        gate_types.append(qre.GateCount(mcx, 2))
+        gate_types.append(qre.GateCount(z, 2))
+        if qnp.isclose(alpha % (2 * math.pi), 0):
+            return gate_types
+
+        gate_types.append(qre.GateCount(cmpr_U))
+
+        if num_zero_ctrl == num_ctrl_wires:  # all zero controls
+            gate_types.append(qre.GateCount(x, 2))  # conjugate base op with Xs
+        else:
+            num_zero_ctrl += 1  # else absorbe Xs into a one control to make it a zero control
+
+        ctrl_base_op = qre.Controlled.resource_rep(  # extended the controls here
+            base_cmpr_op=base_op,
+            num_ctrl_wires=num_wires - 1 + num_ctrl_wires,
+            num_zero_ctrl=num_wires - 1 + num_zero_ctrl,
+        )
+        gate_types.append(qre.GateCount(ctrl_base_op))
+
+        gate_types.append(qre.GateCount(adj_cmpr_U))
+        return gate_types
+
+    @property
+    def resource_params(self) -> dict:
+        r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+        Returns:
+            dict: A dictionary containing the resource parameters:
+                * num_wires (int | None): number of wires the operator acts on
+                * alpha (float | None): the angle of the operator, default is :math:`\pi`
+                * cmpr_U (CompressedResourceOp | None): the operator that prepares the
+                  state :math:`|\Psi\rangle`
+
+        """
+        return {"alpha": self.alpha, "num_wires": self.num_wires, "cmpr_U": self.cmpr_U}
+
+    @classmethod
+    def resource_rep(
+        cls, num_wires: int, alpha: float, cmpr_U: CompressedResourceOp
+    ) -> CompressedResourceOp:
+        r"""Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute a resource estimation.
+
+        Args:
+            num_wires (int): number of wires the operator acts on
+            alpha (float): the angle of the operator, default is :math:`\pi`
+            cmpr_U (CompressedResourceOp): the operator that prepares the state :math:`|\Psi\rangle`
+
+        Returns:
+            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+        """
+        params = {"alpha": alpha, "num_wires": num_wires, "cmpr_U": cmpr_U}
+        return CompressedResourceOp(cls, num_wires, params)
+
+
+class QuantumWalk(ResourceOperator):
+    r"""Resource class for the Quantum Walk operator. This operator is used for qubitization.
+
+    This operator is defined in multiple papers:
+    - Figure 1 in here: https://arxiv.org/pdf/1805.03662
+    - Figure 1 in here: https://arxiv.org/pdf/2011.03494
+
+    Args:
+        prep_op (ResourceOperator): the operator that prepares the coefficients of the LCU
+        sel_op (ResourceOperator): the operator that selectively applies the unitaries of the LCU
+        wires (Sequence[int], None): the wires the operation acts on
+
+    Resources:
+        [TODO]
+
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> import pennylane.estimator as qre
+
+    """
+
+    resource_keys = {"prep", "sel"}
+
+    def __init__(
+        self, prep: ResourceOperator, sel: ResourceOperator, wires: WiresLike = None
+    ) -> None:
+        self.queue()
+        _dequeue([prep, sel])
+
+        self.prep = prep.resource_rep_from_op()
+        self.sel = sel.resource_rep_from_op()
+        self.num_wires = sel.num_wires  # The Walk operator acts on the same set of wires as sel
+
+        prep_wires = prep.wires or Wires([])
+        sel_wires = sel.wires or Wires([])
+        prep_sel_wires = prep_wires + sel_wires
+
+        if wires:
+            self.wires = Wires(wires)
+            if len(self.wires) != self.num_wires:
+                raise ValueError(f"Expected {self.num_wires} wires, got {len(self.wires)}.")
+        elif len(prep_sel_wires) == self.num_wires:  # inherit wires from prep and sel
+            self.wires = prep_sel_wires
+        else:
+            self.wires = None
+
+    @classmethod
+    def resource_decomp(cls, prep: CompressedResourceOp, sel: CompressedResourceOp):
+        r"""The resources for a select implementation taking advantage of the unary iterator trick.
+
+        Args:
+            prep_op (ResourceOperator): A compressed representation for the operator that prepares
+                the coefficients of the LCU.
+            sel_op (ResourceOperator): A compressed representation for the operator that selectively
+                applies the unitaries of the LCU.
+
+        Resources:
+            [TODO] See base PennyLane implemntation
+
+        Returns:
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
+        """
+        num_wires = prep.num_wires  # reflection happens over the prep register
+        prep_dagger = qre.Adjoint.resource_rep(base_cmpr_op=prep)
+        identity_op = qre.Identity.resource_rep()
+        ref_op = Reflection.resource_rep(num_wires=num_wires, alpha=math.pi, cmpr_U=identity_op)
+
+        return [GateCount(prep), GateCount(sel), GateCount(prep_dagger), GateCount(ref_op)]
+
+    @classmethod
+    def adjoint_resource_decomp(cls, target_resource_params=None):
+        r"""Returns a list representing the resources for the adjoint of the operator.
+
+        Args:
+            target_resource_params (dict | None): A dictionary containing the resource parameters
+                of the target operator.
+
+        Resources:
+            [TODO] The cost is the same up to some re-ordering of the application of the gates
+
+        Returns:
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
+        """
+        prep = target_resource_params["prep"]
+        sel = target_resource_params["sel"]
+
+        num_wires = prep.num_wires  # reflection happens over the prep register
+        prep_dagger = qre.Adjoint.resource_rep(base_cmpr_op=prep)
+        identity_op = qre.Identity.resource_rep()
+        ref_op = Reflection.resource_rep(num_wires=num_wires, alpha=math.pi, cmpr_U=identity_op)
+
+        return [GateCount(ref_op), GateCount(prep), GateCount(sel), GateCount(prep_dagger)]
+
+    @classmethod
+    def controlled_resource_decomp(cls, num_ctrl_wires, num_zero_ctrl, target_resource_params=None):
+        r"""Returns a list representing the resources for a controlled version of the operator.
+
+        Args:
+            num_ctrl_wires (int): the number of qubits the
+                operation is controlled on
+            num_zero_ctrl (int): the number of control qubits, that are
+                controlled when in the :math:`|0\rangle` state
+            target_resource_params (dict | None): A dictionary containing the resource parameters
+                of the target operator.
+
+        Resources:
+            [TODO]
+
+        Returns:
+            list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
+        """
+        prep = target_resource_params["prep"]
+        sel = target_resource_params["sel"]
+
+        num_wires = prep.num_wires  # reflection happens over the prep register
+        prep_dagger = qre.Adjoint.resource_rep(base_cmpr_op=prep)
+        identity_op = qre.Identity.resource_rep()
+        ref_op = Reflection.resource_rep(num_wires=num_wires, alpha=math.pi, cmpr_U=identity_op)
+
+        ctrl_sel = qre.Controlled.resource_rep(
+            base_cmpr_op=sel,
+            num_ctrl_wires=num_ctrl_wires,
+            num_zero_ctrl=num_zero_ctrl,
+        )
+        ctrl_ref = qre.Controlled.resource_rep(
+            base_cmpr_op=ref_op,
+            num_ctrl_wires=num_ctrl_wires,
+            num_zero_ctrl=num_zero_ctrl,
+        )
+        # Just need to control reflection and select
+        return [GateCount(prep), GateCount(ctrl_sel), GateCount(prep_dagger), GateCount(ctrl_ref)]
+
+    @property
+    def resource_params(self) -> dict:
+        r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+        Returns:
+            dict: A dictionary containing the resource parameters:
+                * prep (CompressedResourceOp): a compressed representation for the operator that
+                  prepares the coefficients of the LCU
+                * sel (CompressedResourceOp): a compressed representation for the operator that
+                  selectively applies the unitaries of the LCU
+        """
+        return {"prep": self.prep, "sel": self.sel}
+
+    @classmethod
+    def resource_rep(
+        cls, prep: CompressedResourceOp, sel: CompressedResourceOp
+    ) -> CompressedResourceOp:
+        r"""Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute a resource estimation.
+
+        Args:
+            prep_op (ResourceOperator): A compressed representation for the operator that prepares
+                the coefficients of the LCU.
+            sel_op (ResourceOperator): A compressed representation for the operator that selectively
+                applies the unitaries of the LCU.
+
+        Returns:
+            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+        """
+        num_wires = sel.num_wires
+        params = {"prep": prep, "sel": sel}
+        return CompressedResourceOp(cls, num_wires, params)
