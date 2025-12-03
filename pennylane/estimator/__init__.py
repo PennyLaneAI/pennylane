@@ -105,6 +105,9 @@ from .templates import (
     TwoQubitComparator,
     RegisterComparator,
     GQSP,
+    Reflection,
+    QuantumWalk,
+    HamSimGQSP,
 )
 
 from .compact_hamiltonian import (

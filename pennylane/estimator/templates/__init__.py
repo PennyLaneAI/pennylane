@@ -27,6 +27,8 @@ from .subroutines import (
     ControlledSequence,
     QPE,
     IterativeQPE,
+    Reflection,
+    QuantumWalk,
 )
 
 from .trotter import (
@@ -48,4 +50,4 @@ from .comparators import (
 )
 from .qubitize import QubitizeTHC
 from .select import SelectTHC, SelectPauli
-from .qsp import GQSP
+from .qsp import GQSP, HamSimGQSP
