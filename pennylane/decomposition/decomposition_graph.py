@@ -260,6 +260,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         self._graph = rx.PyDiGraph()
 
         # Construct the decomposition graph
+        self._min_work_wires = 0
         self._start = self._graph.add_node(None)
         self._construct_graph(operations)
 
@@ -272,6 +273,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
                 op = resource_rep(type(op), **op.resource_params)
             idx = self._add_op_node(op, 0)
             self._original_ops_indices.add(idx)
+            self._min_work_wires = max(self._min_work_wires, self._graph[idx].min_work_wires)
 
     def _add_op_node(self, op: CompressedResourceOp, num_used_work_wires: int) -> int:
         """Recursively adds an operation node to the graph.
@@ -486,7 +488,9 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
 
         return rules
 
-    def solve(self, num_work_wires: int | None = 0, lazy=True) -> DecompGraphSolution:
+    def solve(
+        self, num_work_wires: int | None = 0, lazy=True, minimize_work_wires=False
+    ) -> DecompGraphSolution:
         """Solves the graph using the Dijkstra search algorithm.
 
         Args:
@@ -495,11 +499,22 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
             lazy (bool): If True, the Dijkstra search will stop once optimal decompositions are
                 found for all operations that the graph was initialized with. Otherwise, the
                 entire graph will be explored.
+            minimize_work_wires (bool): If True, minimize the number of additional work wires used.
 
         Returns:
             DecompGraphSolution
 
         """
+
+        if num_work_wires is not None and num_work_wires < self._min_work_wires:
+            raise DecompositionError(
+                f"The circuit requires at least {self._min_work_wires} work wires to decompose, "
+                f"the graph cannot be solved with {num_work_wires} available work wires."
+            )
+
+        if minimize_work_wires:
+            num_work_wires = self._min_work_wires
+
         visitor = DecompositionSearchVisitor(
             self._graph,
             self._gate_set_weights,
