@@ -15,7 +15,6 @@
 Contains the switches to (de)activate the capturing mechanism, and a
 status reporting function on whether it is enabled or not.
 """
-import warnings
 from collections.abc import Callable
 from contextlib import contextmanager
 
