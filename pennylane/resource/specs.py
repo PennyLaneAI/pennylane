@@ -126,7 +126,7 @@ def _specs_qjit_device_level_tracking(
             "The returned SpecsResources will have an empty measurements field.",
             UserWarning,
         )
-        return CircuitSpecs(
+        return SpecsResources(
             gate_types=resource_data["gate_types"],
             gate_sizes={int(k): v for (k, v) in resource_data["gate_sizes"].items()},
             measurements={},  # Not tracked at the moment
