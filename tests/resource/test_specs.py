@@ -13,6 +13,8 @@
 # limitations under the License.
 """Unit tests for the specs transform"""
 
+from functools import partial
+
 # pylint: disable=invalid-sequence-index
 import pytest
 
@@ -340,6 +342,30 @@ class TestSpecsTransform:
             ValueError, match="qml.specs can only be applied to a QNode or qjit'd QNode"
         ):
             qml.specs(f)()
+
+    def test_custom_level(self):
+        """Test that we can draw at a custom level."""
+
+        @qml.transforms.merge_rotations
+        @partial(qml.marker, level="my_level")
+        @qml.transforms.cancel_inverses
+        @qml.qnode(qml.device("null.qubit"))
+        def c():
+            qml.RX(0.2, 0)
+            qml.X(0)
+            qml.X(0)
+            qml.RX(0.2, 0)
+            return qml.state()
+
+        expected = SpecsResources(
+            num_allocs=1,
+            gate_types={"RX": 2},
+            gate_sizes={1: 2},
+            measurements={"state": 1},
+            depth=2,
+        )
+
+        assert qml.specs(c, level="my_level")()["resources"] == expected
 
 
 @pytest.mark.usefixtures("enable_graph_decomposition")

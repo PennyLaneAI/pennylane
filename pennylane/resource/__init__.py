@@ -125,14 +125,12 @@ to track the resources used in a quantum circuit with custom operations without 
 
 We can examine the resources by accessing the :code:`resources` key:
 
-.. code-block:: pycon
-
     >>> resources_lst = tracker.history['resources']
     >>> print(resources_lst[0])
     Total qubit allocations: 3
     Total gates: 7
     Circuit depth: 5
-     <BLANKLINE>
+    <BLANKLINE>
     Gate types:
       RZ: 1
       CNOT: 2

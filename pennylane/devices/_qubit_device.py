@@ -51,7 +51,6 @@ from pennylane.measurements import (
 )
 from pennylane.operation import Operation, Operator, operation_derivative
 from pennylane.ops import MeasurementValue, MidMeasure, Rot, X, Y, Z, adjoint
-from pennylane.resource import SpecsResources
 from pennylane.tape import QuantumScript
 from pennylane.wires import Wires
 
