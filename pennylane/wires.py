@@ -96,7 +96,6 @@ def _process(wires):
         error_msg = str(e)
         if "unhashable" in error_msg.lower():
             raise WireError(f"Wires must be hashable; got {wires}.") from e
-        raise  # Re-raise if it's a different TypeError
 
     if set_of_wires is not None and len(set_of_wires) != len(tuple_of_wires):
         raise WireError(f"Wires must be unique; got {wires}.")
