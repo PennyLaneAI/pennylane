@@ -415,7 +415,6 @@ class HybridQRAM(Operation):
         "bitstrings",
         "num_target_wires",
         "num_select_wires",
-        "k",
         "num_tree_control_wires",
     }
 
@@ -490,7 +489,6 @@ class HybridQRAM(Operation):
             "select_wires": select_wires,
             "signal_wire": signal_wire,
             "tree_wire_manager": tree_wire_manager,
-            "k": k,
         }
 
     @classmethod
@@ -500,23 +498,20 @@ class HybridQRAM(Operation):
     @property
     def resource_params(self) -> dict:
         wire_manager = self.hyperparameters["tree_wire_manager"]
-        k = self.hyperparameters["k"]
+        k = len(self.hyperparameters["select_wires"])
         return {
             "bitstrings": self.hyperparameters["bitstrings"],
             "num_target_wires": len(wire_manager.target_wires),
-            "num_select_wires": len(self.hyperparameters["select_wires"]),
-            "k": k,
+            "num_select_wires": k,
             "num_tree_control_wires": len(wire_manager.control_wires[k:]),
         }
 
 
-def _hybrid_qram_resources(
-    bitstrings, num_target_wires, num_select_wires, k, num_tree_control_wires
-):
+def _hybrid_qram_resources(bitstrings, num_target_wires, num_select_wires, num_tree_control_wires):
     resources = defaultdict(int)
-    num_blocks = 1 << k
+    num_blocks = 1 << num_select_wires
 
-    resources[resource_rep(PauliX)] += (k <= 0) * num_blocks * 2
+    resources[resource_rep(PauliX)] += (num_select_wires <= 0) * num_blocks * 2
 
     resources[
         controlled_resource_rep(
@@ -582,9 +577,11 @@ def _hybrid_qram_resources(
     )
 
     for block_index in range(num_blocks):
-        zero_control_values = [(block_index >> (k - 1 - i)) & 1 for i in range(k)].count(0)
+        zero_control_values = [
+            (block_index >> (num_select_wires - 1 - i)) & 1 for i in range(num_select_wires)
+        ].count(0)
         if zero_control_values == 0:
-            resources[resource_rep(CNOT)] += (k > 0) * 2
+            resources[resource_rep(CNOT)] += (num_select_wires > 0) * 2
         else:
             resources[
                 controlled_resource_rep(
@@ -593,7 +590,7 @@ def _hybrid_qram_resources(
                     num_control_wires=num_select_wires,
                     num_zero_control_values=zero_control_values,
                 )
-            ] += (k > 0) * 2
+            ] += (num_select_wires > 0) * 2
 
         resources[
             controlled_resource_rep(
@@ -729,8 +726,9 @@ def _block_tree_query_ops(
 
 @register_resources(_hybrid_qram_resources)
 def _hybrid_qram_decomposition(
-    wires, bitstrings, tree_wire_manager, k, select_wires, signal_wire, **_
+    wires, bitstrings, tree_wire_manager, select_wires, signal_wire, **_
 ):  # pylint: disable=unused-argument, too-many-arguments
+    k = len(select_wires)
 
     signal = signal_wire[0]
     num_blocks = 1 << k if k > 0 else 1
