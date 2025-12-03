@@ -289,7 +289,7 @@ def _get_for_loop_qfunc_prim():
     def _impl(
         start, stop, step, *args, jaxpr_body_fn, consts_slice, args_slice, abstract_shapes_slice
     ):
-        # Convert tuples back to slices (tuples are used for JAX 0.7.0 hashability)
+        # Convert tuples back to slices (tuples are used for JAX 0.7.1 hashability)
         consts_slice = slice(*consts_slice)
         args_slice = slice(*args_slice)
         abstract_shapes_slice = slice(*abstract_shapes_slice)
