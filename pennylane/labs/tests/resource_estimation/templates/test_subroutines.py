@@ -785,6 +785,84 @@ class TestResourceIterativeQPE:
         assert op.resource_decomp(**op.resource_params) == expected_res
 
 
+class TestResourceHybridQRAM:
+    """Test the ResourceSelectOnlyQRAM class."""
+
+    @pytest.mark.parametrize(
+        ("bitstrings", "num_tree_control_wires", "num_target_wires", "num_select_wires", "k",),
+        [(["000", "010", "101", "111"], 3, 3, 1, 2)],
+    )
+    def test_resource_params(self, bitstrings, num_tree_control_wires, num_target_wires, num_select_wires, k):
+        """Test that the resource params are correct."""
+        op = plre.ResourceSelectOnlyQRAM(
+            bitstrings, num_tree_control_wires, num_target_wires, num_select_wires, k
+        )
+        assert op.resource_params == {
+            "bitstrings": bitstrings,
+            "num_tree_control_wires": num_tree_control_wires,
+            "num_target_wires": num_target_wires,
+            "num_select_wires": num_select_wires,
+            "k": k
+        }
+
+    @pytest.mark.parametrize(
+        ("bitstrings", "num_wires", "num_control_wires", "num_select_wires", "select_value"),
+        [(["000", "010", "101", "111"], 9, 3, 3, 1)],
+    )
+    def test_resource_rep(
+        self, bitstrings, num_wires, num_control_wires, num_select_wires, select_value
+    ):
+        """Test that the compressed representation is correct."""
+        expected = plre.CompressedResourceOp(
+            plre.ResourceSelectOnlyQRAM,
+            num_wires,
+            {
+                "bitstrings": bitstrings,
+                "num_control_wires": num_control_wires,
+                "num_select_wires": num_select_wires,
+                "select_value": select_value,
+            },
+        )
+        assert (
+            plre.ResourceSelectOnlyQRAM.resource_rep(
+                bitstrings, num_control_wires, num_select_wires, select_value
+            )
+            == expected
+        )
+
+    @pytest.mark.parametrize(
+        "bitstrings, num_control_wires, num_select_wires, select_value, expected_res",
+        (
+            (
+                ["000", "010", "101", "111"],
+                3,
+                3,
+                0,
+                [
+                    GateCount(resource_rep(plre.ResourceX), 40),
+                    GateCount(
+                        resource_rep(
+                            plre.ResourceMultiControlledX,
+                            {"num_ctrl_wires": 6, "num_ctrl_values": 0},
+                        ),
+                        6,
+                    ),
+                ],
+            ),
+        ),
+    )
+    def test_resources(
+        self, bitstrings, num_control_wires, num_select_wires, select_value, expected_res
+    ):
+        """Test that the resources are correct."""
+        assert (
+            plre.ResourceSelectOnlyQRAM.resource_decomp(
+                bitstrings, num_control_wires, num_select_wires, select_value
+            )
+            == expected_res
+        )
+
+
 class TestResourceQFT:
     """Test the ResourceQFT class."""
 

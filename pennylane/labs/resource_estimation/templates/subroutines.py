@@ -1061,6 +1061,136 @@ class ResourceQFT(ResourceOperator):
         return f"QFT({num_wires})"
 
 
+class ResourceHybridQRAM(ResourceOperator):
+    r"""Resource class for HybridQRAM.
+
+    Args:
+        bitstrings (Sequence[str]): classical data table; must have length 2^n where n = len(control_wires)
+        num_tree_control_wires (Int): the length p of the second part of the address register (p < n)
+        num_target_wires (Int): m target qubits; m must equal bitstring length
+        num_select_wires (Int): the length of the first part of the address register (n - p)
+        k (int): number of "select" bits taken from the MSB of control_wires
+
+    Resources:
+        The resources are obtained from the HybridQRAM implementation in PennyLane.
+
+    .. seealso:: :class:`~.HybridQRAM`
+    """
+
+    resource_keys = {"bitstrings", "num_tree_control_wires", "num_target_wires", "num_select_wires", "k"}
+
+    def __init__(self, bitstrings, num_tree_control_wires, num_target_wires, num_select_wires, k, wires=None):
+        self.num_tree_control_wires = num_tree_control_wires
+        self.num_select_wires = num_select_wires
+        self.num_target_wires = num_target_wires
+
+        self.k = k
+        self.bitstrings = bitstrings
+
+        expected_nodes = (1 << num_tree_control_wires) - 1
+        num_work_wires = 1 + 1 + 3 * expected_nodes
+
+        self.num_wires = num_tree_control_wires + num_target_wires + num_select_wires + num_work_wires
+        super().__init__(wires=wires)
+
+    @property
+    def resource_params(self) -> dict:
+        r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+        Returns:
+            dict: A dictionary containing the resource parameters:
+                * num_wires (int): the number of qubits the operation acts upon
+        """
+        return {
+            "bitstrings": self.bitstrings,
+            "num_tree_control_wires": self.num_tree_control_wires,
+            "num_target_wires": self.num_target_wires,
+            "num_select_wires": self.num_select_wires,
+            "k": self.k
+        }
+
+    @classmethod
+    def resource_rep(cls, bitstrings, num_tree_control_wires, num_target_wires, num_select_wires, k):
+        r"""Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute the resources.
+
+        Args:
+            bitstrings (Sequence[str]): classical data table; must have length 2^n where n = len(control_wires)
+            num_tree_control_wires (Int): the length p of the second part of the address register (p < n)
+            num_target_wires (Int): m target qubits; m must equal bitstring length
+            num_select_wires (Int): the length of the first part of the address register (n - p)
+            k (int): number of "select" bits taken from the MSB of control_wires
+
+        Returns:
+            CompressedResourceOp: the operator in a compressed representation
+        """
+        params = {
+            "bitstrings": bitstrings,
+            "num_tree_control_wires": num_tree_control_wires,
+            "num_target_wires": num_target_wires,
+            "num_select_wires": num_select_wires,
+            "k": k
+        }
+
+        expected_nodes = (1 << num_tree_control_wires) - 1
+        num_work_wires = 1 + 1 + 3 * expected_nodes
+
+        return CompressedResourceOp(
+            cls, num_tree_control_wires + num_select_wires + num_target_wires + num_work_wires, params
+        )
+
+    @classmethod
+    def resource_decomp(cls, bitstrings, num_tree_control_wires, num_target_wires, num_select_wires, k):
+        r"""Returns a list representing the resources of the operator. Each object in the list
+        represents a gate and the number of times it occurs in the circuit.
+
+        Args:
+            bitstrings (Sequence[str]): classical data table; must have length 2^n where n = len(control_wires)
+            num_tree_control_wires (Int): the length p of the second part of the address register (p < n)
+            num_target_wires (Int): m target qubits; m must equal bitstring length
+            num_select_wires (Int): the length of the first part of the address register (n - p)
+            k (int): number of "select" bits taken from the MSB of control_wires
+
+        Returns:
+            list[~.pennylane.labs.resource_estimation.GateCount]: A list of GateCount objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
+        """
+        num_blocks = 1 << k
+
+        paulix = resource_rep(re.ResourceX)
+        cswap = resource_rep(re.ResourceCSWAP)
+        zero_controlled_ccswap = resource_rep(re.ResourceCCSWAP)
+
+        paulix_counts = 0
+        mcx_counts = 0
+
+        for addr, bits in enumerate(bitstrings):
+            if (
+                select_value is not None
+                and num_select_wires > 0
+                and (addr >> num_control_wires) != select_value
+            ):
+                continue
+
+            control_values = [(addr >> (n_total - 1 - i)) & 1 for i in range(n_total)]
+
+            paulix_counts += control_values.count(0) * 2
+            mcx_counts += bits.count("1")
+
+        return [
+            GateCount(paulix, paulix_counts),
+            GateCount(mcx, mcx_counts),
+        ]
+
+    @staticmethod
+    def tracking_name(bitstrings, num_control_wires, num_select_wires, select_value) -> str:
+        r"""Returns the tracking name built with the operator's parameters."""
+        return (
+            f"SelectOnlyQRAM({bitstrings}, {num_control_wires}, {num_select_wires}, {select_value})"
+        )
+
+
 class ResourceAQFT(ResourceOperator):
     r"""Resource class for the Approximate QFT.
 
