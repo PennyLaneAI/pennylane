@@ -202,7 +202,7 @@ class TransformProgram:
 
         # Handle TransformContainer
         if isinstance(other, TransformContainer):
-            other = TransformProgram([other])  
+            other = TransformProgram([other])
 
         # Handle TransformProgram
         if isinstance(other, TransformProgram):

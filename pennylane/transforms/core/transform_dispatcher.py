@@ -539,10 +539,9 @@ class TransformContainer:  # pylint: disable=too-many-instance-attributes
             other = TransformContainer(other)
 
         if isinstance(other, TransformContainer):
-            # Import here to avoid circular import
-            from .transform_program import (
-                TransformProgram,  # pylint: disable=import-outside-toplevel
-            )
+            # Import here to avoid circular import\
+            # pylint: disable=import-outside-toplevel
+            from .transform_program import TransformProgram
 
             if self.final_transform and other.final_transform:
                 raise TransformError(
