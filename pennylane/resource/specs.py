@@ -394,18 +394,18 @@ def specs(
         return the same results:
 
         >>> print(qml.specs(circuit, level=0)(0.1)["resources"])
-            Total qubit allocations: 2
-            Total gates: 6
-            Circuit depth: 6
-
-            Gate types:
-            RandomLayers: 1
-            RX: 2
-            SWAP: 1
-            PauliX: 2
-
-            Measurements:
-            expval: 1
+        Total qubit allocations: 2
+        Total gates: 6
+        Circuit depth: 6
+        <BLANKLINE>
+        Gate types:
+          RandomLayers: 1
+          RX: 2
+          SWAP: 1
+          PauliX: 2
+        <BLANKLINE>
+        Measurements:
+          expval: 1
 
         We then check the resources after applying all transforms:
 
@@ -413,13 +413,13 @@ def specs(
         Total qubit allocations: 2
         Total gates: 2
         Circuit depth: 1
-
+        <BLANKLINE>
         Gate types:
-        RY: 1
-        RX: 1
-
+          RY: 1
+          RX: 1
+        <BLANKLINE>
         Measurements:
-        expval: 1
+          expval: 1
 
         We can also notice that ``SWAP`` and ``PauliX`` are not present in the circuit if we set ``level=2``:
 
@@ -427,13 +427,13 @@ def specs(
         Total qubit allocations: 2
         Total gates: 3
         Circuit depth: 3
-
+        <BLANKLINE>
         Gate types:
-        RandomLayers: 1
-        RX: 2
-
+          RandomLayers: 1
+          RX: 2
+        <BLANKLINE>
         Measurements:
-        expval: 1
+          expval: 1
 
         If a QNode with a tape-splitting transform is supplied to the function, with the transform included in the desired transforms, the "resources"
         object is instead returned as a dictionary with a value for each resulting tape:

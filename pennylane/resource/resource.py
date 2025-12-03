@@ -332,27 +332,33 @@ class SpecsResources:
             str: A pretty representation of this object.
         """
         prefix = " " * preindent
-        s = f"{prefix}Total qubit allocations: {self.num_allocs}\n"
-        s += f"{prefix}Total gates: {self.num_gates}\n"
-        s += (
-            f"{prefix}Circuit depth: {self.depth if self.depth is not None else 'Not computed'}\n\n"
+        lines = []
+
+        lines.append(f"{prefix}Total qubit allocations: {self.num_allocs}")
+        lines.append(f"{prefix}Total gates: {self.num_gates}")
+        lines.append(
+            f"{prefix}Circuit depth: {self.depth if self.depth is not None else 'Not computed'}"
         )
 
-        s += f"{prefix}Gate types:\n"
+        lines.append("")  # Blank line
+
+        lines.append(f"{prefix}Gate types:")
         if not self.gate_types:
-            s += prefix + "  No gates.\n"
+            lines.append(prefix + "  No gates.")
         else:
             for gate, count in self.gate_types.items():
-                s += f"{prefix}  {gate}: {count}\n"
+                lines.append(f"{prefix}  {gate}: {count}")
 
-        s += f"\n{prefix}Measurements:\n"
+        lines.append("")  # Blank line
+
+        lines.append(f"{prefix}Measurements:")
         if not self.measurements:
-            s += prefix + "  No measurements.\n"
+            lines.append(prefix + "  No measurements.")
         else:
             for meas, count in self.measurements.items():
-                s += f"{prefix}  {meas}: {count}\n"
+                lines.append(f"{prefix}  {meas}: {count}")
 
-        return s.rstrip("\n")
+        return "\n".join(lines)
 
     # Leave repr and str methods separate for simple and pretty printing
     def __str__(self) -> str:
@@ -470,21 +476,26 @@ class CircuitSpecs:
 
     # Separate str and repr methods for simple and pretty printing
     def __str__(self):
-        s = f"Device: {self.device_name}\n"
-        s += f"Device wires: {self.num_device_wires}\n"
-        s += f"Shots: {self.shots}\n"
-        s += f"Level: {self.level}\n\n"
+        lines = []
 
-        s += "Resource specifications:\n"
+        lines.append(f"Device: {self.device_name}")
+        lines.append(f"Device wires: {self.num_device_wires}")
+        lines.append(f"Shots: {self.shots}")
+        lines.append(f"Level: {self.level}")
+
+        lines.append("")  # Blank line
+
+        lines.append("Resource specifications:")
         if isinstance(self.resources, SpecsResources):
-            s += self.resources.to_pretty_str(preindent=2)
+            lines.append(self.resources.to_pretty_str(preindent=2))
         else:
             for level, res in self.resources.items():
-                s += f"Level = {level}:\n"
-                s += res.to_pretty_str(preindent=2)
-                s += "\n\n" + "-" * 60 + "\n\n"
+                lines.append(f"Level = {level}:")
+                lines.append(res.to_pretty_str(preindent=2))
 
-        return s.rstrip("\n-")
+                lines.append("\n" + "-" * 60 + "\n")  # Separator between levels
+
+        return "\n".join(lines).rstrip("\n-")
 
     def _ipython_display_(self):
         """Displays __str__ in ipython instead of __repr__"""
