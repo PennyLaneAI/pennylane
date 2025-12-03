@@ -112,8 +112,8 @@ def test_vscf_calculation(h_data, h2s_result):
     rot_matrix = np.asarray(rot_matrix)
     signs = np.sign(original_rots[:, 0]) * np.sign(rot_matrix[:, 0])
     rot_matrix *= signs[:, np.newaxis]
-        
-    #assert np.isclose(vib_energy, h2s_result["energy"])
+
+    # assert np.isclose(vib_energy, h2s_result["energy"])
     assert np.allclose(rot_matrix, original_rots)
 
 

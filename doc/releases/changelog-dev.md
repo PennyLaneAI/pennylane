@@ -173,7 +173,7 @@
   [(#8079)](https://github.com/PennyLaneAI/pennylane/pull/8079)
 
 * The `pennylane.qchem.vibrational.vscf.vscf` functionality was refactored using tensorization and jax. VSCF calculation is now much quicker, performing batched computation on GPU while still levereging Hamiltonian sparsity. Helper functions have also been created. Created documentation for `pennylane.qchem.vibrational.vscf.vscf`. Modified tests in `tests.qchem.vibrational.test_vscf.py`, so that eigenvectors sign ambiguity doesn't trigger the test failure. As requested, the main function now only returns the rotations (removed the energy).
-  [(#8661)](https://github.com/PennyLaneAI/pennylane/issues/8661)
+  [(#8727)](https://github.com/PennyLaneAI/pennylane/pull/8727)
 
 * The `~pennylane.estimator.compact_hamiltonian.CDFHamiltonian`, `~pennylane.estimator.compact_hamiltonian.THCHamiltonian`,
   `~pennylane.estimator.compact_hamiltonian.VibrationalHamiltonian`, and `~pennylane.estimator.compact_hamiltonian.VibronicHamiltonian`
