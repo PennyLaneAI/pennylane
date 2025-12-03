@@ -1069,18 +1069,21 @@ class ResourceSelectOnlyQRAM(ResourceOperator):
             The classical memory to retrieve values from.
         num_wires (int):
             The number of qubits the operation acts upon.
-        control_wires (WiresLike):
+        control_wires (WiresLike, optional):
             The register that stores the index for the entry of the classical data we want to
             access.
-        target_wires (WiresLike):
+        target_wires (WiresLike, optional):
             The register in which the classical data gets loaded. The size of this register must
             equal each bitstring length in ``bitstrings``.
+        select_wires (WiresLike, optional):
+            Wires used to perform the selection.
+        select_value (int or None, optional):
+            If provided, only entries whose select bits match this value are loaded.
 
     Resources:
-        The resources are obtained from the BBQRAM implementation in PennyLane. The original publicaiton of
-        the algorithm can be found in `Quantum Random Access Memory <https://arxiv.org/abs/0708.1879>`_.
+        The resources are obtained from the SelectOnlyQRAM implementation in PennyLane.
 
-    .. seealso:: :class:`~.BBQRAM`
+    .. seealso:: :class:`~.SelectOnlyQRAM`
     """
 
     resource_keys = {"bitstrings", "num_wires"}
@@ -1092,10 +1095,14 @@ class ResourceSelectOnlyQRAM(ResourceOperator):
         control_wires=None,
         target_wires=None,
         select_wires=None,
+        select_value=None
     ):
         all_wires = None
         if control_wires and target_wires and select_wires:
             all_wires = list(control_wires) + list(target_wires) + list(select_wires)
+        self.num_control_wires = len(control_wires)
+        self.num_select_wires = len(select_wires)
+        self.select_value = select_value
         self.num_wires = num_wires if all_wires is None else len(all_wires)
         self.bitstrings = bitstrings
         super().__init__(wires=all_wires)
@@ -1109,8 +1116,10 @@ class ResourceSelectOnlyQRAM(ResourceOperator):
                 * num_wires (int): the number of qubits the operation acts upon
         """
         return {
-            "num_wires": self.num_wires,
             "bitstrings": self.bitstrings,
+            "num_control_wires": self.num_control_wires,
+            "num_select_wires": self.num_select_wires,
+            "select_value": self.select_value
         }
 
     @classmethod
@@ -1119,6 +1128,7 @@ class ResourceSelectOnlyQRAM(ResourceOperator):
         the Operator that are needed to compute the resources.
 
         Args:
+            bitstrings (Sequence[str]): the classical memory to retrieve values from
             num_wires (int): the number of qubits the operation acts upon
 
         Returns:
