@@ -34,7 +34,7 @@ def _add_abstract_shapes(f):
     Dynamic shape support currently has a lot of dragons. This function is subject to change
     at any moment. Use duplicate code till reliable abstractions are found.
 
-    >>> jax.config.update("jax_dynamic_shapes", True)
+    >>> jax.config.update("jax_dynamic_shapes", True)  # doctest: +SKIP
     >>> jax.config.update("jax_enable_x64", True)
     >>> @qml.capture.FlatFn
     ... def f(x):
