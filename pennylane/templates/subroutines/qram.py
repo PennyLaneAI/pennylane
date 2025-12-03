@@ -377,7 +377,7 @@ class HybridQRAM(Operation):
     (2^(n-k) leaves) and reuse it 2^k times:
 
     For each prefix s \in {0, …, 2^k - 1}:
-    1. Multi-controlled-X on a "signal" ancilla, controlled by the k select bits being equal to s.
+    1. Multi-controlled-X on a "signal" auxiliary, controlled by the k select bits being equal to s.
     2. Conditioned on signal==1, perform a BBQRAM query using only the lower n-k address bits and the sub-table of bitstrings whose prefix is s.
     3. Uncompute the signal with the same multi-controlled-X.
 
@@ -386,13 +386,13 @@ class HybridQRAM(Operation):
 
     Wire layout:
     control_wires: [ sel_0, ..., sel_{k-1}, tree_0, ..., tree_{n-k-1} ]
-    work_wires: [ signal, bus, dir..., portL..., portR... ]  (tree ancillas)
+    work_wires: [ signal, bus, dir..., portL..., portR... ]  (tree auxiliaries)
 
     Args:
         bitstrings (Sequence[str]): classical data table; must have length 2^n where n = len(control_wires)
         control_wires (WiresLike): full address register (length n)
         target_wires (WiresLike): m target qubits; m must equal bitstring length
-        work_wires (WiresLike): ancillas: [signal, bus, dir..., portL..., portR...] for a tree of depth (n-k)
+        work_wires (WiresLike): auxiliaries: [signal, bus, dir..., portL..., portR...] for a tree of depth (n-k)
         k (int): number of "select" bits taken from the MSB of control_wires
     """
 
