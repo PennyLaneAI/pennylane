@@ -179,7 +179,7 @@ class TreeTraversalPattern(RewritePattern):
             return
 
         # Start with creating a new QNode function that will perform the tree traversal simulation.
-        # We prep the original QNode by ensuring measure boundaries are also register boundaries.
+        # We prep the original QNode by ensuring measure boundaries are also quantum register boundaries.
         self.simple_io_func = self.simplify_quantum_io(func_op, rewriter)
 
         self.setup_traversal_function(self.simple_io_func, rewriter)
