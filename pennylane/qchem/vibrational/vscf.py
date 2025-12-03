@@ -14,7 +14,7 @@
 """This module contains functions to perform VSCF calculation."""
 
 
-
+import time
 import numpy as np
 import jax
 import jax.numpy as jnp
@@ -54,42 +54,42 @@ class DeviceBatches(NamedTuple):
     valid: jnp.ndarray       # (n_batches, B) bool
 
 
-def _hamiltonian_worker(args):
+def _integral_proc_worker(args):
     """
     Worker function to process a raw slice of the Hamiltonian.
     
     Identifies the active terms in the Hamiltonian, following the equations 20-22
-    in `J. Chem. Theory Comput. 2010, 6, 235–248 <https://pubs.acs.org/doi/10.1021/ct9004454>`_.
+    in `J. Chem. Theory Comput. 2010, 6, 235-248 <https://pubs.acs.org/doi/10.1021/ct9004454>`_.
     The equation suggests that if mode m is not contained in a Hamiltonian term, it evaluates to zero.
     
     Args:
-        chunk_ham_vals (TensorLike[float]): a flattened view of the hamiltonian terms to be processed by this worker.
+        chunk_ham_vals (TensorLike[float]): a flattened view of the integrals terms to be processed by this worker.
         start_global_idx (int):             the index of the first element wrt the original flattened array.
         original_shape (tuple):             the shape of the original tensor.
         num_modes_in_term (int):            how many different modes coupled by the same hamiltonian term?
         modals_limits (TensorLike[int]):    max number of modals to be used foreach mode. This can be used to reduce the calculation space.
-        cutoff (float):                     under this value, hamiltonian terms are treated as null. Increasing this parameter greatly improves sparsity.
+        cutoff (float):                     under this value, integrals terms are treated as null. Increasing this parameter greatly improves sparsity.
         max_partners (int):                 the max number of interations with different modes, in the whole Hamiltonian.
     
     Returns exploded arrays for this chunk or None.
     """
-    chunk_ham_vals, start_global_idx, original_shape, num_modes_in_term, modals_limits, cutoff, max_partners = args
+    chunk_integral_vals, start_global_idx, original_shape, num_modes_in_term, modals_limits, cutoff, max_partners = args
     
     # cutoff --> we aim to collect sparse, nonzero entries.
-    local_nonzero = np.nonzero(np.abs(chunk_ham_vals) >= cutoff)[0]
+    local_nonzero = np.nonzero(np.abs(chunk_integral_vals) >= cutoff)[0]
     if len(local_nonzero) == 0:
         return None
 
-    vals = chunk_ham_vals[local_nonzero]
+    vals = chunk_integral_vals[local_nonzero]
     global_indices_flat = local_nonzero + start_global_idx
     subs = np.unravel_index(global_indices_flat, original_shape)
     indices = np.stack(subs, axis=1)
 
-    # the original hamiltonian shape was something like (3,3,5,5,5,5) (2bodies interactions here), where the first indices are for the modes, the latters for the modals.
+    # the original integral shape was something like (3,3,5,5,5,5) (2bodies interactions here), where the first indices are for the modes, the latters for the modals.
     mode_cols = indices[:, :num_modes_in_term]
     exc_cols = indices[:, num_modes_in_term:]
 
-    # canonical filter for multi-body: we leverage the fact that hamiltonian is symmetric. There is no need to read duplicated values.
+    # canonical filter for multi-body: we leverage the fact that integrals are symmetric. There is no need to read duplicated values.
     if num_modes_in_term > 1:
         is_canonical = np.all(mode_cols[:, :-1] > mode_cols[:, 1:], axis=1)
         if not np.all(is_canonical):
@@ -102,7 +102,7 @@ def _hamiltonian_worker(args):
         return None
 
     # truncate to active space limits
-    # (if the user defined less modals than the ones provided by the hamiltonian).
+    # (if the user defined less modals than the ones provided by the integrals).
     i_cols = exc_cols[:, :num_modes_in_term]
     j_cols = exc_cols[:, num_modes_in_term:]
     limits = modals_limits[mode_cols]
@@ -126,7 +126,7 @@ def _hamiltonian_worker(args):
     exploded_j = j_cols.flatten()
 
     # partner generation: fixed-size padded partners array
-    # NOTE: a partner is a mode which is involved in the same hamiltonian term (for >=2bodies couplings)
+    # NOTE: a partner is a mode which is involved in the same integral term (for >=2bodies couplings)
     repeated_modes = np.repeat(mode_cols, num_modes_in_term, axis=0)
     mask_self = (repeated_modes == exploded_targets[:, None])
     raw_partners = repeated_modes[~mask_self]  # flattened partners for all rows
@@ -157,7 +157,7 @@ def _generate_jacobi_batches(h_integrals, modals, cutoff, max_partners, n_worker
     Args:
         h_integrals (list(TensorLike[float])):  list containing Hamiltonian integral matrices [1b_terms, 2b_terms, ...]
         modals (TensorLike[int]):               number of modals to be used foreach mode. This can be used to reduce the calculation space.
-        cutoff (float):                         under this value, hamiltonian terms are treated as null. Increasing this parameter greatly improves sparsity.
+        cutoff (float):                         under this value, integral terms are treated as null. Increasing this parameter greatly improves sparsity.
         max_partners (int):                     the max number of interations with different modes, in the whole Hamiltonian.
         n_workers (int):                        how many workers (threads) to employ to subdivide the computation?
         chunk_size (int):                       how many hamiltonian terms to provide (each time) to each worker?
@@ -183,7 +183,7 @@ def _generate_jacobi_batches(h_integrals, modals, cutoff, max_partners, n_worker
 
     active_num = 0
     with ThreadPoolExecutor(max_workers=n_workers) as exe:
-        for res in exe.map(_hamiltonian_worker, tasks): # here we create (and start the worker)
+        for res in exe.map(_integral_proc_worker, tasks): # here we create (and start the worker)
             if res is None:
                 continue
             num_valid, tgt, i, j, c, p, v = res
@@ -664,6 +664,8 @@ def vscf(h_integrals, modals, cutoff, tol=1e-8, max_iters=10000,
             + \lambda H^{(k)}
 
     """
+    
+    t0 = time.time()
     nmodes = len(modals)
 
     # figure out max bodies involved in the integrals
@@ -749,13 +751,17 @@ def vscf(h_integrals, modals, cutoff, tol=1e-8, max_iters=10000,
     # initial run to populate starting vars
     init_h, init_rots, init_e = step_fn(h_mat, mode_rots)
     loop_state = (init_h, init_rots, init_e, jnp.inf, 0)
+    t1 = time.time()
     
     # run SCF loop using lax.while_loop (jit compiled)
     final_h, final_rots, final_e, _, n_iters = lax.while_loop(cond_fn, body_fn, loop_state)
-
-    logger.debug(f"Converged in {int(n_iters)} iterations to energy {float(final_e):.10f}")
+    t2 = time.time()
+    
+    logger.debug(f"Converged in {int(n_iters)} iterations to energy {float(final_e):.8f}\
+                 \nPreparation time: {t1-t0:.3}s; SCF time: {t2-t1:.3f}s --> total: {t2-t0:.3f}s")
+    # hard copy, so that arrays get back to be mutable (in jax they are immutable)
+    final_rots = np.array(final_rots)
     return final_rots
-
 
 def _rotate_one_body(h1, nmodes, mode_rots, modals):
     r"""Rotates one body integrals.
@@ -1022,7 +1028,7 @@ def vscf_integrals(h_integrals, d_integrals=None, modals=None, cutoff=None, cuto
         max_val = np.max([np.max(np.abs(H)) for H in h_integrals])
         cutoff = max_val * cutoff_ratio
 
-    _, mode_rots = vscf(h_integrals, modals=max_modals, cutoff=cutoff)
+    mode_rots = vscf(h_integrals, modals=max_modals, cutoff=cutoff)
 
     h_data = _rotate_hamiltonian(h_integrals, mode_rots, modals)
 
