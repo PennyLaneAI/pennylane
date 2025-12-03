@@ -368,9 +368,32 @@ class SelectOnlyQRAM(Operator):
     controlled on all address wires (select_wires + control_wires).
 
     Args:
-        select_wires (WiresLike, optional): actually also not used, but kept for API consistency with hybrid QRAM
-        select_value (int or None, optional): if provided, only entries whose select bits match this value are loaded
-        id (str or None): optional name for the operation
+        bitstrings (Sequence[str]):
+            The classical data as a sequence of bitstrings.
+        control_wires (WiresLike):
+            The register that stores the index for the entry of the classical data we want to
+            access.
+        target_wires (WiresLike):
+            The register in which the classical data gets loaded. The size of this register must
+            equal each bitstring length in ``bitstrings``.
+        select_wires (WiresLike, optional):
+            Wires used to perform the selection.
+        select_value (int or None, optional):
+            If provided, only entries whose select bits match this value are loaded.
+        id (str or None):
+            Optional name for the operation.
+
+    Raises:
+        ValueError: if the ``bitstrings`` are of the wrong length, a ``select_value`` is provided without
+        ``select_wires``, or the ``select_value`` is greater than [0, (1 << len(select_wires)) - 1].
+
+    .. seealso:: :class:`~.QROM`, :class:`~.QROMStatePreparation`, :class:`~.BBQRAM`
+
+    .. note::
+
+        QRAM and QROM, though similar, have different applications and purposes. QRAM is intended
+        for read-and-write capabilities, where the stored data can be loaded and changed. QROM is
+        designed to only load stored data into a quantum register.
     """
 
     grad_method = None
