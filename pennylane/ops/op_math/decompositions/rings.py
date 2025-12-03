@@ -123,18 +123,20 @@ class ZSqrtTwo:
         if isinstance(other, int) or (isinstance(other, float) and other.is_integer()):
             return ZSqrtTwo(self.a % int(other), self.b % int(other))
 
-        if self in (zero := ZSqrtTwo(0, 0), other):
+        if self in (zero := ZSqrtTwo(0, 0), other):  # Trivial cases
             return zero
 
         d = abs(other)
         n1, n2 = (self.a * other.a - 2 * self.b * other.b), (self.b * other.a - self.a * other.b)
-        if (dv := ZSqrtTwo(n1 // d, n2 // d)) != ZSqrtTwo(0, 0):
+        if (dv := ZSqrtTwo(n1 // d, n2 // d)) != ZSqrtTwo(0, 0):  # Check if floor division works
             return self - dv * other
 
+        # If floor division leads to a zero divisor, search neighbours.
         dv_a, dv_b = max(round(n1 / d), dv.a), dv.b
         if dv_a == dv.a:
             dv_b = max(round(n2 / d), dv.b)
 
+        # Adjust the sign difference based on the adjusted values.
         return (-1) ** (dv_a != dv.a or dv_b != dv.b) * (self - ZSqrtTwo(dv_a, dv_b) * other)
 
     @property
