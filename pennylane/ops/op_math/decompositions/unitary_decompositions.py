@@ -127,8 +127,8 @@ def two_qubit_decomposition(U, wires):
     computed based on features of the input unitary :math:`U`.
 
     For the 2-CNOT case, the decomposition is based on the
-    real-trace criterion of Shende-Bullock-Markov (https://arxiv.org/pdf/quant-ph/0308045).
-    Whenever χ(\gamma(U)) has real coefficients (equivalently trace(\gamma(U)) ∈ R),
+    real-trace criterion of Proposition III.3 in reference (2).
+    Whenever :math:`trace(\gamma(U))` has real coefficients (equivalently :math:`trace(\gamma(U)`) ∈ R),
     the decomposition uses exactly two CNOT gates.
 
     For a single CNOT, we have a CNOT surrounded by one :math:`SU(2)` per wire on each
@@ -500,10 +500,6 @@ def _compute_num_cnots(U):
         \gamma(U) = (E^\dag U E) (E^\dag U E)^T,
 
     and follows the arguments of this paper: https://arxiv.org/abs/quant-ph/0308045.
-
-    For the 2-CNOT criterion we make use of the Proposition III.3 in
-    Shende-Bullock-Markov (quant-ph/0308045v3): U requires two CNOTs iff
-    χ(\gamma(U)) has all real coefficients, i.e., trace(\gamma(U)) is real.
     """
 
     U = math.dot(E_dag, math.dot(U, E))
@@ -628,7 +624,7 @@ def _decompose_1_cnot(U, wires, initial_phase):
 def _get_basis_and_eigenvalues(M):
     r"""
     Helper to diagonalize M, extract diagonal eigenvalues, and sort canonically.
-    Returns eigenvalues and basis O such that D = O^T M O is diagonal with
+    Returns eigenvalues and basis O such that :math:`D = O^T M O` is diagonal with
     sorted eigenvalues.
     """
     # pylint: disable=protected-access
@@ -661,7 +657,7 @@ def _get_basis_and_eigenvalues(M):
 def _find_so4_decomposition(U, u_mag, O_u, candidates):
     r"""
     Performs the exhaustive search for alpha, beta, and signs
-    to ensure Real SO(4) correction gates.
+    to ensure Real :math:`SO(4)` correction gates.
     Returns the best found parameters along with the basis O_v and
     v_mag for the kernel V.
     """
@@ -723,38 +719,38 @@ def _decompose_2_cnots(U, wires, initial_phase):
         0: ──A──╭X──RZ(a)──╭X──C──┤
         1: ──B──╰●──RX(b)──╰●──D──┤
 
-    where A, B, C, D are single-qubit unitaries (SU(2) gates) and a, b
+    where A, B, C, D are single-qubit unitaries (:math:`SU(2)` gates) and a, b
     are rotation angles determined by the entanglement properties of the unitary.
 
-    This implementation is based on the work by Shende, Bullock, and Markov in
-    This is done following the methods in https://arxiv.org/abs/quant-ph/0308045.
+    This implementation is based on the work by Shende, Bullock, and Markov and
+    this is done following the methods in https://arxiv.org/abs/quant-ph/0308045.
 
     The decomposition relies on the Magic Basis, where local unitaries correspond to
-    orthogonal matrices (SO(4)), and the entangling power of an operator is captured by
-    the spectrum of the symmetric invariant matrix: \gamma(U) = (E^\dagger U E) (E^\dagger U E)^T.
+    orthogonal matrices (:math:`SO(4)`), and the entangling power of an operator is captured by
+    the spectrum (eigenvalues) of the symmetric invariant matrix: :math:`\gamma(U) = (E^\dagger U E) (E^\dagger U E)^T`.
 
     The algorithm proceeds in four main steps:
 
-    1.  Fingerprinting: The invariant matrix \gamma(U) is computed. Its eigenvalues
-        (the "entanglement fingerprint") are extracted. These eigenvalues come in conjugate pairs,
+    1.  The invariant matrix :math:`\gamma(U)` is computed. Its eigenvalues
+        are extracted. These eigenvalues come in conjugate pairs,
         and their phases directly determine the rotation parameters a, and b
         needed for the circuit's core.
 
-    2.  Kernel Construction: A reference "kernel" operator V is built using the
-        calculated parameters a, b. This kernel represents the ideal
-        2-CNOT circuit core: CNOT \cdot (RZ(\alpha) \otimes RX(\beta)) \cdot CNOT.
+    2.  A reference operator V is built using the
+        calculated parameters a, b. This operator represents the ideal
+        2-CNOT circuit core: :math:`CNOT \cdot (RZ(\alpha) \otimes RX(\beta)) \cdot CNOT`.
         By construction, V is isospectral to U in the Magic Basis.
 
-    3.  Basis Alignment: To transform the input U into the kernel V using only
-        local gates, we align their eigenbases. This involves diagonalizing \gamma(U) and
-        \gamma(V) and sorting their eigenvectors canonically to match corresponding subspaces.
+    3.  To transform the input U into V using only
+        local gates, we align their eigenbases. This involves diagonalizing :math:`\gamma(U)` and
+        :math:`\gamma(V)` and sorting their eigenvectors canonically to match corresponding subspaces.
 
-    4.  Gauge Fixing: Since eigenvectors are defined only up to a sign (parity), there are
-        2^4 = 16 possible alignments. The algorithm exhaustively searches these combinations
+    4.  Since eigenvectors are defined only up to a sign (parity), there are
+        :math:`2^4 = 16` possible alignments. The algorithm exhaustively searches these combinations
         to find the specific parity that results in a valid, real-valued local transformation
-        (a matrix in SO(4)). This transformation determines the local gates A, B, C, D.
+        (a matrix in :math:`SO(4)`). This transformation determines the local gates A, B, C, D.
 
-    The final circuit is then constructed by applying these local gates around the kernel.
+    The final circuit is then constructed by applying these local gates around the V.
     """
     # pylint: disable=too-many-locals
     # 1. Compute gamma(U)

@@ -24,7 +24,8 @@
 
 <h3>Improvements 🛠</h3>
 
-* Added a new decomposition, `_decompose_2_cnots`, for the two-qubit decomposition for `QubitUnitary`. 
+* Added a new decomposition, `_decompose_2_cnots`, for the two-qubit decomposition for `QubitUnitary`.
+  It supports the analytical decomposition a two-qubit unitary known to require exactly 2 CNOTs.
   [(#8666)](https://github.com/PennyLaneAI/pennylane/issues/8666)
   
 * `Operator.decomposition` will fallback to the first entry in `qml.list_decomps` if the `Operator.compute_decomposition`
