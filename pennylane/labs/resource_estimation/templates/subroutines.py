@@ -1159,28 +1159,82 @@ class ResourceHybridQRAM(ResourceOperator):
         num_blocks = 1 << k
 
         paulix = resource_rep(re.ResourceX)
+        pauliz = resource_rep(re.ResourceZ)
+        cnot = resource_rep(re.ResourceCNOT)
+        cz = resource_rep(re.ResourceCZ)
+        hadamard = resource_rep(re.ResourceHadamard)
         cswap = resource_rep(re.ResourceCSWAP)
-        zero_controlled_ccswap = resource_rep(re.ResourceCCSWAP)
+        zero_controlled_x = re.ResourceControlled.resource_rep(
+            base_cmpr_op=resource_rep(re.ResourceX),
+            num_ctrl_wires=num_select_wires,
+            num_ctrl_values=1,
+        )
 
-        paulix_counts = 0
-        mcx_counts = 0
+        one_controlled_swap = re.ResourceControlled.resource_rep(
+            base_cmpr_op=resource_rep(re.ResourceSWAP),
+            num_ctrl_wires=1,
+            num_ctrl_values=0,
+        )
+        zero_controlled_swap = re.ResourceControlled.resource_rep(
+            base_cmpr_op=resource_rep(re.ResourceSWAP),
+            num_ctrl_wires=1,
+            num_ctrl_values=1,
+        )
 
-        for addr, bits in enumerate(bitstrings):
-            if (
-                select_value is not None
-                and num_select_wires > 0
-                and (addr >> num_control_wires) != select_value
-            ):
-                continue
+        one_controlled_cswap = re.ResourceControlled.resource_rep(
+            base_cmpr_op=one_controlled_swap,
+            num_ctrl_wires=1,
+            num_ctrl_values=0,
+        )
+        zero_controlled_cswap = re.ResourceControlled.resource_rep(
+            base_cmpr_op=zero_controlled_swap,
+            num_ctrl_wires=1,
+            num_ctrl_values=0,
+        )
 
-            control_values = [(addr >> (n_total - 1 - i)) & 1 for i in range(n_total)]
 
-            paulix_counts += control_values.count(0) * 2
-            mcx_counts += bits.count("1")
+        paulix_counts = (num_select_wires <= 0) * num_blocks * 2
+        hadamard_counts = num_target_wires * num_blocks * 2
+        cnot_counts = 0
+        cz_counts = 0
+        zero_controlled_x_counts = 0
+        cswap_counts = (
+            (num_tree_control_wires + (1 << num_tree_control_wires) - 1) * 2 + 2 * num_target_wires
+        ) * num_blocks
+        ccswap_count = (
+            (
+                ((1 << num_tree_control_wires) - 1 - num_tree_control_wires)
+                + ((1 << num_tree_control_wires) - 1) * num_target_wires
+            )
+            * num_blocks
+            * 2
+        )
+
+        for block_index in range(num_blocks):
+            zero_control_values = [
+                (block_index >> (num_select_wires - 1 - i)) & 1 for i in range(num_select_wires)
+            ].count(0)
+            if zero_control_values == 0:
+                cnot_counts += (num_select_wires > 0) * 2
+            else:
+                zero_controlled_x_counts += (num_select_wires > 0) * 2
+            cz_counts += sum(
+                [
+                    bitstrings[(block_index << num_tree_control_wires) + p][j] == "1"
+                    for j in range(num_target_wires)
+                    for p in range(1 << num_tree_control_wires)
+                ]
+            )
 
         return [
             GateCount(paulix, paulix_counts),
-            GateCount(mcx, mcx_counts),
+            GateCount(hadamard, hadamard_counts),
+            GateCount(cnot, cnot_counts),
+            GateCount(cz, cz_counts),
+            GateCount(zero_controlled_x, zero_controlled_x_counts),
+            GateCount(cswap, cswap_counts),
+            GateCount(one_controlled_cswap, ccswap_count),
+            GateCount(zero_controlled_cswap, ccswap_count),
         ]
 
     @staticmethod
