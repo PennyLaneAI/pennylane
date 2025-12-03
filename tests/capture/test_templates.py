@@ -882,7 +882,7 @@ class TestModifiedTemplates:
 
         kwargs = {
             "bitstrings": ("010", "111", "110", "000", "010", "111", "110", "000"),
-            "qram_wires": (0, 1),
+            "control_wires": (0, 1),
             "target_wires": (2, 3, 4),
             "select_wires": (12),
             "select_value": 1,
