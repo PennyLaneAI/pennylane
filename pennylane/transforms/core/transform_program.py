@@ -202,14 +202,7 @@ class TransformProgram:
 
         # Handle TransformContainer
         if isinstance(other, TransformContainer):
-            if self.has_final_transform and other.final_transform:
-                raise TransformError("The transform program already has a terminal transform.")
-
-            transforms = self._transform_program + [other]
-            if self.has_final_transform:
-                transforms.append(transforms.pop(len(self) - 1))
-
-            return TransformProgram(transforms, cotransform_cache=self.cotransform_cache)
+            other = TransformProgram([other])  
 
         # Handle TransformProgram
         if isinstance(other, TransformProgram):
