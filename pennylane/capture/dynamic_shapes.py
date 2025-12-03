@@ -22,7 +22,7 @@ try:
     from jax._src.interpreters.partial_eval import TracingEqn
 
 
-except (ImportError, NameError) as e:  # pragma: no cover
+except ImportError as e:  # pragma: no cover
     has_jax = False
 
 
