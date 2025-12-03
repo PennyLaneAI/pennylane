@@ -265,15 +265,7 @@ class TransformProgram:
             other = TransformContainer(other)
 
         if isinstance(other, TransformContainer):
-            if self.has_final_transform and other.final_transform:
-                raise TransformError("The transform program already has a terminal transform.")
-
-            if self.has_final_transform:
-                # Insert before the final transform
-                self._transform_program.insert(len(self) - 1, other)
-            else:
-                self._transform_program.append(other)
-            return self
+            other = TransformProgram([other])
 
         if isinstance(other, TransformProgram):
             if self.has_final_transform and other.has_final_transform:
