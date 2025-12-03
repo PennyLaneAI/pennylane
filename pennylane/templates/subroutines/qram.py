@@ -394,6 +394,19 @@ class HybridQRAM(Operation):
         target_wires (WiresLike): m target qubits; m must equal bitstring length
         work_wires (WiresLike): auxiliaries: [signal, bus, dir..., portL..., portR...] for a tree of depth (n-k)
         k (int): number of "select" bits taken from the MSB of control_wires
+
+    Raises:
+        ValueError: if the ``bitstrings`` are not provided, the ``bitstrings`` are of the wrong
+        length, there are no ``control_wires``, ``k`` >= len(``control_wires``), the ``target_wires``
+        are of the wrong length, or the ``work_wires`` are of the wrong length.
+
+    .. seealso:: :class:`~.QROM`, :class:`~.QROMStatePreparation`, :class:`~.BBQRAM`
+
+    .. note::
+
+        QRAM and QROM, though similar, have different applications and purposes. QRAM is intended
+        for read-and-write capabilities, where the stored data can be loaded and changed. QROM is
+        designed to only load stored data into a quantum register.
     """
 
     grad_method = None
