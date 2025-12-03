@@ -353,6 +353,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Improve error handling when using PennyLane's experimental program capture functionality with an incompatible JAX version. 
+  [(#8723)](https://github.com/PennyLaneAI/pennylane/pull/8723)
+
 * Bump `autoray` package version to `0.8.2`.
   [(#8674)](https://github.com/PennyLaneAI/pennylane/pull/8674)
   
