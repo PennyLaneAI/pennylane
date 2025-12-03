@@ -1832,10 +1832,9 @@ class TrotterPauli(ResourceOperator):
        allocated wires: 0
          zero state: 0
          any state: 0
-     Total gates : 2.360E+4
+     Total gates : 2.280E+4
        'T': 2.200E+4,
-       'CNOT': 800,
-       'Hadamard': 800
+       'CNOT': 800
     
     .. details::
         :title: Usage Details

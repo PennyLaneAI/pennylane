@@ -20,6 +20,21 @@ from pennylane.wires import Wires, WiresLike
 # pylint: disable=arguments-differ, signature-differs
 
 
+PAULI_ROT_SPECIAL_CASES = {
+    "X": lambda eps: [GateCount(qre.resource_rep(qre.RX, {"precision": eps}))],
+    "Y": lambda eps: [GateCount(qre.resource_rep(qre.RY, {"precision": eps}))],
+    "Z": lambda eps: [GateCount(qre.resource_rep(qre.RZ, {"precision": eps}))],
+    "XX": lambda eps: [
+        GateCount(qre.resource_rep(qre.RX, {"precision": eps})),
+        GateCount(qre.resource_rep(qre.CNOT), count=2),
+    ],
+    "YY": lambda eps: [
+        GateCount(qre.resource_rep(qre.RY, {"precision": eps})),
+        GateCount(qre.resource_rep(qre.CY), count=2),
+    ],
+}
+
+
 class MultiRZ(ResourceOperator):
     r"""Resource class for the MultiRZ gate.
 
@@ -314,15 +329,11 @@ class PauliRot(ResourceOperator):
             in the decomposition.
         """
         if (set(pauli_string) == {"I"}) or (len(pauli_string) == 0):
-            gp = qre.resource_rep(qre.GlobalPhase)
-            return [GateCount(gp)]
+            return [GateCount(qre.resource_rep(qre.GlobalPhase))]
 
-        if pauli_string == "X":
-            return [GateCount(qre.resource_rep(qre.RX, {"precision": precision}))]
-        if pauli_string == "Y":
-            return [GateCount(qre.resource_rep(qre.RY, {"precision": precision}))]
-        if pauli_string == "Z":
-            return [GateCount(qre.resource_rep(qre.RZ, {"precision": precision}))]
+        # Special cases:
+        if pauli_string in PAULI_ROT_SPECIAL_CASES:
+            return PAULI_ROT_SPECIAL_CASES[pauli_string](eps=precision)
 
         active_wires = len(pauli_string.replace("I", ""))
 

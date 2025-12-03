@@ -37,6 +37,11 @@
 
 <h3>Improvements 🛠</h3>
 
+* Improved :mod:`estimator <pennylane.estimator>`'s
+  resource decomposition of `PauliRot` to match the optimal resources
+  for certain special cases of Pauli strings (e.g. for `XX` and `YY` type Pauli strings).
+  [(#8562)](https://github.com/PennyLaneAI/pennylane/pull/8562)
+
 * Quantum compilation passes in MLIR and XDSL can now be applied using the core PennyLane transform
   infrastructure, instead of using Catalyst-specific tools. This is made possible by a new argument in
   :func:`~pennylane.transform` and `~.TransformDispatcher` called ``pass_name``, which accepts a string
