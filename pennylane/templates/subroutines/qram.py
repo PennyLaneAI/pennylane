@@ -461,7 +461,6 @@ class SelectOnlyQRAM(Operator):
 
 def _select_only_qram_resources(bitstrings, select_value, num_control_wires, num_select_wires):
     resources = defaultdict(int)
-    num_controls = num_select_wires + num_control_wires
     n_total = num_control_wires + num_select_wires
 
     for addr, bits in enumerate(bitstrings):
@@ -480,7 +479,7 @@ def _select_only_qram_resources(bitstrings, select_value, num_control_wires, num
             controlled_resource_rep(
                 base_class=PauliX,
                 base_params={},
-                num_control_wires=num_controls,
+                num_control_wires=n_total,
                 num_zero_control_values=0,
             )
         ] += bits.count("1")
