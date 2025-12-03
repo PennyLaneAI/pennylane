@@ -44,21 +44,10 @@ classifiers = [
 ]
 [dependency-groups]
 ci = [
-    "numpy",
-    "scipy",
     "cvxpy",
     "cvxopt",
-    "networkx",
-    "rustworkx",
-    "autograd",
-    "tomlkit",
-    "appdirs",
-    "packaging",
-    "autoray>=0.8.0",
     "matplotlib",
-    "requests",
     "rich",
-    "diastatic-malt",
     "pandas",
     "build"
 ]
