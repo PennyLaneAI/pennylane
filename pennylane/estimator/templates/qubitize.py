@@ -137,7 +137,7 @@ class QubitizeTHC(ResourceOperator):
         self.rotation_precision = rotation_precision
 
         # Based on section III D, Eq. 43 in arXiv:2011.03494
-        # Numbers have been adjusted to remove the auxilliary wires accounted for by different templates
+        # Numbers have been adjusted to remove the auxiliary wires accounted for by different templates
         # 6 auxiliary wires account for:
         # - 2 spin registers
         # - 1 for rotation on auxiliary qubit
