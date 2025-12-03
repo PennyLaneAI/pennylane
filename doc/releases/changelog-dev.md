@@ -164,6 +164,10 @@
 * The graph-based decomposition system now supports decomposition rules that contains mid-circuit measurements.
   [(#8079)](https://github.com/PennyLaneAI/pennylane/pull/8079)
 
+* The `pennylane.qchem.vibrational.vscf.vscf` functionality was refactored using tensorization and jax. VSCF calculation is now much quicker, performing batched computation on GPU while still levereging Hamiltonian sparsity. Helper functions have also been created. Created documentation for `pennylane.qchem.vibrational.vscf.vscf`. Modified tests in `tests.qchem.vibrational.test_vscf.py`, so that eigenvectors sign ambiguity doesn't trigger the test failure. As requested, the main function now only returns the rotations (removed the energy).
+[(#8661)](https://github.com/PennyLaneAI/pennylane/issues/8661)
+
+
 * New decomposition rules that decompose to :class:`~.PauliRot` are added for the following operators.
   [(#8700)](https://github.com/PennyLaneAI/pennylane/pull/8700)
 
@@ -547,6 +551,7 @@ Sengthai Heng,
 Soran Jahangiri,
 Christina Lee,
 Joseph Lee,
+Pietro Martinello,
 Lee J. O'Riordan,
 Gabriela Sanchez Diaz,
 Mudit Pandey,
