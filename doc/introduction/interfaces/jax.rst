@@ -10,7 +10,7 @@ JAX interface
     
     .. code-block:: bash
 
-        pip install jax~=0.6.0 jaxlib~=0.6.0
+        pip install jax==0.7.1 jaxlib==0.7.1
     
     You can then import PennyLane and JAX as follows:
 
