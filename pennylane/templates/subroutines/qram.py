@@ -365,7 +365,7 @@ add_decomps(BBQRAM, _bucket_brigade_qram_decomposition)
 
 class SelectOnlyQRAM(Operator):
     """Select-only QRAM implemented as multi-controlled X on target wires,
-    controlled on all address wires (select_wires + qram_wires).
+    controlled on all address wires (select_wires + control_wires).
 
     Args:
         select_wires (WiresLike, optional): actually also not used, but kept for API consistency with hybrid QRAM
@@ -378,31 +378,31 @@ class SelectOnlyQRAM(Operator):
     resource_keys = {
         "bitstrings",
         "select_value",
-        "num_qram_wires",
+        "num_control_wires",
         "num_select_wires",
     }
 
     def __init__(
         self,
         bitstrings,
-        qram_wires: WiresLike,
+        control_wires: WiresLike,
         target_wires: WiresLike,
         select_wires: WiresLike | None = None,
         select_value: int | None = None,
         id: str | None = None,
     ):
         # Convert to Wires
-        qram_wires = Wires(qram_wires)
+        control_wires = Wires(control_wires)
         target_wires = Wires(target_wires)
         select_wires = Wires(select_wires) if select_wires is not None else Wires([])
 
         # ---- Validate bitstrings ----
         k = len(select_wires)
-        n_k = len(qram_wires)
+        n_k = len(control_wires)
         n_total = k + n_k
 
         if (1 << n_total) != len(bitstrings):
-            raise ValueError("len(bitstrings) must be 2^(len(select_wires)+len(qram_wires)).")
+            raise ValueError("len(bitstrings) must be 2^(len(select_wires)+len(control_wires)).")
 
             # Validate select_value (if provided)
         if select_value is not None:
@@ -414,13 +414,13 @@ class SelectOnlyQRAM(Operator):
 
         self._hyperparameters = {
             "bitstrings": bitstrings,
-            "qram_wires": qram_wires,
+            "control_wires": control_wires,
             "target_wires": target_wires,
             "select_wires": select_wires,
             "select_value": select_value,
         }
 
-        super().__init__(wires=list(qram_wires) + list(target_wires) + list(select_wires), id=id)
+        super().__init__(wires=list(control_wires) + list(target_wires) + list(select_wires), id=id)
 
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
@@ -430,22 +430,22 @@ class SelectOnlyQRAM(Operator):
     def resource_params(self) -> dict:
         return {
             "bitstrings": self.hyperparameters["bitstrings"],
-            "num_qram_wires": len(self.hyperparameters["qram_wires"]),
+            "num_control_wires": len(self.hyperparameters["control_wires"]),
             "select_value": self.hyperparameters["select_value"],
             "num_select_wires": len(self.hyperparameters["select_wires"]),
         }
 
 
-def _select_only_qram_resources(bitstrings, select_value, num_qram_wires, num_select_wires):
+def _select_only_qram_resources(bitstrings, select_value, num_control_wires, num_select_wires):
     resources = defaultdict(int)
-    num_controls = num_select_wires + num_qram_wires
-    n_total = num_qram_wires + num_select_wires
+    num_controls = num_select_wires + num_control_wires
+    n_total = num_control_wires + num_select_wires
 
     for addr, bits in enumerate(bitstrings):
         if (
             select_value is not None
             and num_select_wires > 0
-            and (addr >> num_qram_wires) != select_value
+            and (addr >> num_control_wires) != select_value
         ):
             continue
 
@@ -473,11 +473,11 @@ def _flip_controls(control_wires, control_vals):
 
 @register_resources(_select_only_qram_resources)
 def _select_only_qram_decomposition(
-    wires, bitstrings, select_value, select_wires, qram_wires, target_wires, **_
+    wires, bitstrings, select_value, select_wires, control_wires, target_wires, **_
 ):  # pylint: disable=unused-argument
-    controls = select_wires + qram_wires
+    controls = select_wires + control_wires
     k = len(select_wires)
-    n_total = k + len(qram_wires)
+    n_total = k + len(control_wires)
 
     # Loop over all addresses (0 .. 2^(k+n_k)-1)
     for addr, bits in enumerate(bitstrings):

@@ -235,13 +235,13 @@ def test_bb_qram_decomposition_new(
 
 @qnode(dev)
 def select_only_quantum(
-    bitstrings, qram_wires, target_wires, select_wires, select_value, address
+    bitstrings, control_wires, target_wires, select_wires, select_value, address
 ):  # pylint: disable=too-many-arguments
-    BasisEmbedding(address, wires=qram_wires)
+    BasisEmbedding(address, wires=control_wires)
 
     SelectOnlyQRAM(
         bitstrings,
-        qram_wires=qram_wires,
+        control_wires=control_wires,
         target_wires=target_wires,
         select_wires=select_wires,
         select_value=select_value,
@@ -252,7 +252,7 @@ def select_only_quantum(
 @pytest.mark.parametrize(
     (
         "bitstrings",
-        "qram_wires",
+        "control_wires",
         "target_wires",
         "select_wires",
         "select_value",
@@ -356,7 +356,7 @@ def select_only_quantum(
 )
 def test_select_only_quantum(
     bitstrings,
-    qram_wires,
+    control_wires,
     target_wires,
     select_wires,
     select_value,
@@ -367,7 +367,7 @@ def test_select_only_quantum(
         probabilities,
         select_only_quantum(
             bitstrings,
-            qram_wires,
+            control_wires,
             target_wires,
             select_wires,
             select_value,
@@ -382,7 +382,7 @@ def test_select_only_quantum(
         (
             (["000", "111"], [0, 1], [2, 3, 4], [5, 6], 2),
             ValueError,
-            "len(bitstrings) must be 2^(len(select_wires)+len(qram_wires)).",
+            "len(bitstrings) must be 2^(len(select_wires)+len(control_wires)).",
         ),
         (
             (
@@ -416,7 +416,7 @@ def test_select_only_raises(params, error, match):
 @pytest.mark.parametrize(
     (
         "bitstrings",
-        "qram_wires",
+        "control_wires",
         "target_wires",
         "select_wires",
         "select_value",
@@ -485,11 +485,11 @@ def test_select_only_raises(params, error, match):
     ],
 )
 def test_select_decomposition_new(
-    bitstrings, qram_wires, target_wires, select_wires, select_value
+    bitstrings, control_wires, target_wires, select_wires, select_value
 ):  # pylint: disable=too-many-arguments
     op = SelectOnlyQRAM(
         bitstrings,
-        qram_wires,
+        control_wires,
         target_wires,
         select_wires,
         select_value,
