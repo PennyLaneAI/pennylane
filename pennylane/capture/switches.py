@@ -56,7 +56,7 @@ def _make_switches() -> tuple[Callable[[], None], Callable[[], None], Callable[[
             raise ImportError("plxpr requires JAX to be installed.")
         if not is_jax_compatible:  # pragma: no cover
             raise ImportError(
-                f"plxpr requires JAX == 0.7.0 to be installed for capture functionality. "
+                f"PennyLane's program capture requires JAX == 0.7.0 to be installed to ensure functionality. "
                 f"You have JAX {jax.__version__} installed. "
                 f"Please pin JAX by running: pip install --upgrade jax==0.7.0 jaxlib==0.7.0"
             )
