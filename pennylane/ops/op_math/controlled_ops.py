@@ -531,24 +531,24 @@ def _cy(wires: WiresLike, **__):
     qml.S(wires=wires[0])
 
 
-def _cy_to_ppr_resource():
-    return {
-        resource_rep(qml.PauliRot, pauli_word="IY"): 1,
-        resource_rep(qml.PauliRot, pauli_word="ZI"): 1,
-        resource_rep(qml.PauliRot, pauli_word="ZY"): 1,
-        qml.GlobalPhase: 1,
-    }
+# def _cy_to_ppr_resource():
+#     return {
+#         resource_rep(qml.PauliRot, pauli_word="IY"): 1,
+#         resource_rep(qml.PauliRot, pauli_word="ZI"): 1,
+#         resource_rep(qml.PauliRot, pauli_word="ZY"): 1,
+#         qml.GlobalPhase: 1,
+#     }
 
 
-@register_resources(_cy_to_ppr_resource)
-def _cy_to_ppr(wires: WiresLike, **_):
-    qml.PauliRot(-np.pi / 2, "IY", wires=wires)
-    qml.PauliRot(-np.pi / 2, "ZI", wires=wires)
-    qml.PauliRot(np.pi / 2, "ZY", wires=wires)
-    qml.GlobalPhase(np.pi / 4)
+# @register_resources(_cy_to_ppr_resource)
+# def _cy_to_ppr(wires: WiresLike, **_):
+#     qml.PauliRot(-np.pi / 2, "IY", wires=wires)
+#     qml.PauliRot(-np.pi / 2, "ZI", wires=wires)
+#     qml.PauliRot(np.pi / 2, "ZY", wires=wires)
+#     qml.GlobalPhase(np.pi / 4)
 
 
-add_decomps(CY, _cy, _cy_to_ppr)
+# add_decomps(CY, _cy, _cy_to_ppr)
 add_decomps("Adjoint(CY)", self_adjoint)
 add_decomps("Pow(CY)", pow_involutory)
 
@@ -666,24 +666,24 @@ def _cz_to_cnot(wires: WiresLike, **__):
     qml.H(wires=wires[1])
 
 
-def _cz_to_ppr_resource():
-    return {
-        resource_rep(qml.PauliRot, pauli_word="IZ"): 1,
-        resource_rep(qml.PauliRot, pauli_word="ZI"): 1,
-        resource_rep(qml.PauliRot, pauli_word="ZZ"): 1,
-        qml.GlobalPhase: 1,
-    }
+# def _cz_to_ppr_resource():
+#     return {
+#         resource_rep(qml.PauliRot, pauli_word="IZ"): 1,
+#         resource_rep(qml.PauliRot, pauli_word="ZI"): 1,
+#         resource_rep(qml.PauliRot, pauli_word="ZZ"): 1,
+#         qml.GlobalPhase: 1,
+#     }
 
 
-@register_resources(_cz_to_ppr_resource)
-def _cz_to_ppr(wires: WiresLike, **_):
-    qml.PauliRot(-np.pi / 2, "IZ", wires=wires)
-    qml.PauliRot(-np.pi / 2, "ZI", wires=wires)
-    qml.PauliRot(np.pi / 2, "ZZ", wires=wires)
-    qml.GlobalPhase(np.pi / 4)
+# @register_resources(_cz_to_ppr_resource)
+# def _cz_to_ppr(wires: WiresLike, **_):
+#     qml.PauliRot(-np.pi / 2, "IZ", wires=wires)
+#     qml.PauliRot(-np.pi / 2, "ZI", wires=wires)
+#     qml.PauliRot(np.pi / 2, "ZZ", wires=wires)
+#     qml.GlobalPhase(np.pi / 4)
 
 
-add_decomps(CZ, _cz_to_cps, _cz_to_cnot, _cz_to_ppr)
+add_decomps(CZ, _cz_to_cps, _cz_to_cnot)
 add_decomps("Adjoint(CZ)", self_adjoint)
 add_decomps("Pow(CZ)", pow_involutory)
 
@@ -835,32 +835,32 @@ def _cswap(wires: WiresLike, **__):
     qml.Toffoli(wires=[wires[0], wires[2], wires[1]])
 
 
-def _cswap_to_ppr_resource():
-    return {
-        resource_rep(qml.PauliRot, pauli_word="ZZZ"): 1,
-        resource_rep(qml.PauliRot, pauli_word="ZYY"): 1,
-        resource_rep(qml.PauliRot, pauli_word="ZXX"): 1,
-        resource_rep(qml.PauliRot, pauli_word="IZZ"): 1,
-        resource_rep(qml.PauliRot, pauli_word="IYY"): 1,
-        resource_rep(qml.PauliRot, pauli_word="IXX"): 1,
-        resource_rep(qml.PauliRot, pauli_word="ZII"): 1,
-        qml.GlobalPhase: 1,
-    }
+# def _cswap_to_ppr_resource():
+#     return {
+#         resource_rep(qml.PauliRot, pauli_word="ZZZ"): 1,
+#         resource_rep(qml.PauliRot, pauli_word="ZYY"): 1,
+#         resource_rep(qml.PauliRot, pauli_word="ZXX"): 1,
+#         resource_rep(qml.PauliRot, pauli_word="IZZ"): 1,
+#         resource_rep(qml.PauliRot, pauli_word="IYY"): 1,
+#         resource_rep(qml.PauliRot, pauli_word="IXX"): 1,
+#         resource_rep(qml.PauliRot, pauli_word="ZII"): 1,
+#         qml.GlobalPhase: 1,
+#     }
 
 
-@register_resources(_cswap_to_ppr_resource)
-def _cswap_to_ppr(wires: WiresLike, **_):
-    qml.PauliRot(-np.pi / 4, "ZZZ", wires=wires)
-    qml.PauliRot(-np.pi / 4, "ZYY", wires=wires)
-    qml.PauliRot(-np.pi / 4, "ZXX", wires=wires)
-    qml.PauliRot(np.pi / 4, "IZZ", wires=wires)
-    qml.PauliRot(np.pi / 4, "IYY", wires=wires)
-    qml.PauliRot(np.pi / 4, "IXX", wires=wires)
-    qml.PauliRot(np.pi / 4, "ZII", wires=wires)
-    qml.GlobalPhase(-np.pi / 8)
+# @register_resources(_cswap_to_ppr_resource)
+# def _cswap_to_ppr(wires: WiresLike, **_):
+#     qml.PauliRot(-np.pi / 4, "ZZZ", wires=wires)
+#     qml.PauliRot(-np.pi / 4, "ZYY", wires=wires)
+#     qml.PauliRot(-np.pi / 4, "ZXX", wires=wires)
+#     qml.PauliRot(np.pi / 4, "IZZ", wires=wires)
+#     qml.PauliRot(np.pi / 4, "IYY", wires=wires)
+#     qml.PauliRot(np.pi / 4, "IXX", wires=wires)
+#     qml.PauliRot(np.pi / 4, "ZII", wires=wires)
+#     qml.GlobalPhase(-np.pi / 8)
 
 
-add_decomps(CSWAP, _cswap, _cswap_to_ppr)
+add_decomps(CSWAP, _cswap)
 add_decomps("Adjoint(CSWAP)", self_adjoint)
 add_decomps("Pow(CSWAP)", pow_involutory)
 
@@ -1190,24 +1190,24 @@ def _cnot_to_cz_h(wires: WiresLike, **__):
     qml.H(wires[1])
 
 
-def _cnot_to_ppr_resource():
-    return {
-        resource_rep(qml.PauliRot, pauli_word="IX"): 1,
-        resource_rep(qml.PauliRot, pauli_word="ZI"): 1,
-        resource_rep(qml.PauliRot, pauli_word="ZX"): 1,
-        qml.GlobalPhase: 1,
-    }
+# def _cnot_to_ppr_resource():
+#     return {
+#         resource_rep(qml.PauliRot, pauli_word="IX"): 1,
+#         resource_rep(qml.PauliRot, pauli_word="ZI"): 1,
+#         resource_rep(qml.PauliRot, pauli_word="ZX"): 1,
+#         qml.GlobalPhase: 1,
+#     }
 
 
-@register_resources(_cnot_to_ppr_resource)
-def _cnot_to_ppr(wires: WiresLike, **_):
-    qml.PauliRot(-np.pi / 2, "IX", wires=wires)
-    qml.PauliRot(-np.pi / 2, "ZI", wires=wires)
-    qml.PauliRot(np.pi / 2, "ZX", wires=wires)
-    qml.GlobalPhase(np.pi / 4)
+# @register_resources(_cnot_to_ppr_resource)
+# def _cnot_to_ppr(wires: WiresLike, **_):
+#     qml.PauliRot(-np.pi / 2, "IX", wires=wires)
+#     qml.PauliRot(-np.pi / 2, "ZI", wires=wires)
+#     qml.PauliRot(np.pi / 2, "ZX", wires=wires)
+#     qml.GlobalPhase(np.pi / 4)
 
 
-add_decomps(CNOT, _cnot_to_cz_h, _cnot_to_ppr)
+add_decomps(CNOT, _cnot_to_cz_h)
 add_decomps("Adjoint(CNOT)", self_adjoint)
 add_decomps("Pow(CNOT)", pow_involutory)
 
@@ -1421,31 +1421,31 @@ def _toffoli(wires: WiresLike, **__):
     CNOT(wires=[wires[0], wires[1]])
 
 
-def _toffoli_to_ppr_resource():
-    return {
-        resource_rep(qml.PauliRot, pauli_word="ZZI"): 1,
-        resource_rep(qml.PauliRot, pauli_word="ZIX"): 1,
-        resource_rep(qml.PauliRot, pauli_word="IZX"): 1,
-        resource_rep(qml.PauliRot, pauli_word="ZZX"): 1,
-        resource_rep(qml.PauliRot, pauli_word="X"): 1,
-        resource_rep(qml.PauliRot, pauli_word="Z"): 2,
-        qml.GlobalPhase: 1,
-    }
+# def _toffoli_to_ppr_resource():
+#     return {
+#         resource_rep(qml.PauliRot, pauli_word="ZZI"): 1,
+#         resource_rep(qml.PauliRot, pauli_word="ZIX"): 1,
+#         resource_rep(qml.PauliRot, pauli_word="IZX"): 1,
+#         resource_rep(qml.PauliRot, pauli_word="ZZX"): 1,
+#         resource_rep(qml.PauliRot, pauli_word="X"): 1,
+#         resource_rep(qml.PauliRot, pauli_word="Z"): 2,
+#         qml.GlobalPhase: 1,
+#     }
 
 
-@register_resources(_toffoli_to_ppr_resource)
-def _toffoli_to_ppr(wires: WiresLike, **_):
-    qml.PauliRot(-np.pi / 4, "ZZI", wires=wires)
-    qml.PauliRot(-np.pi / 4, "ZIX", wires=wires)
-    qml.PauliRot(-np.pi / 4, "IZX", wires=wires)
-    qml.PauliRot(np.pi / 4, "ZZX", wires=wires)
-    qml.PauliRot(np.pi / 4, "X", wires=wires[2])
-    qml.PauliRot(np.pi / 4, "Z", wires=wires[1])
-    qml.PauliRot(np.pi / 4, "Z", wires=wires[0])
-    qml.GlobalPhase(-np.pi / 8)
+# @register_resources(_toffoli_to_ppr_resource)
+# def _toffoli_to_ppr(wires: WiresLike, **_):
+#     qml.PauliRot(-np.pi / 4, "ZZI", wires=wires)
+#     qml.PauliRot(-np.pi / 4, "ZIX", wires=wires)
+#     qml.PauliRot(-np.pi / 4, "IZX", wires=wires)
+#     qml.PauliRot(np.pi / 4, "ZZX", wires=wires)
+#     qml.PauliRot(np.pi / 4, "X", wires=wires[2])
+#     qml.PauliRot(np.pi / 4, "Z", wires=wires[1])
+#     qml.PauliRot(np.pi / 4, "Z", wires=wires[0])
+#     qml.GlobalPhase(-np.pi / 8)
 
 
-add_decomps(Toffoli, _toffoli, _toffoli_to_ppr)
+add_decomps(Toffoli, _toffoli)
 add_decomps("Adjoint(Toffoli)", self_adjoint)
 add_decomps("Pow(Toffoli)", pow_involutory)
 
@@ -1986,20 +1986,20 @@ def _crx_to_h_crz(phi: TensorLike, wires: WiresLike, **__):
     qml.Hadamard(wires=wires[1])
 
 
-def _crx_to_ppr_resources():
-    return {
-        resource_rep(qml.PauliRot, pauli_word="ZX"): 1,
-        resource_rep(qml.PauliRot, pauli_word="X"): 1,
-    }
+# def _crx_to_ppr_resources():
+#     return {
+#         resource_rep(qml.PauliRot, pauli_word="ZX"): 1,
+#         resource_rep(qml.PauliRot, pauli_word="X"): 1,
+#     }
 
 
-@register_resources(_crx_to_ppr_resources)
-def _crx_to_ppr(phi: TensorLike, wires: WiresLike, **__):
-    qml.PauliRot(phi / 2, "X", wires=wires[1])
-    qml.PauliRot(-phi / 2, "ZX", wires=wires)
+# @register_resources(_crx_to_ppr_resources)
+# def _crx_to_ppr(phi: TensorLike, wires: WiresLike, **__):
+#     qml.PauliRot(phi / 2, "X", wires=wires[1])
+#     qml.PauliRot(-phi / 2, "ZX", wires=wires)
 
 
-add_decomps(CRX, _crx_to_rx_cz, _crx_to_rz_ry, _crx_to_h_crz, _crx_to_ppr)
+add_decomps(CRX, _crx_to_rx_cz, _crx_to_rz_ry, _crx_to_h_crz) 
 add_decomps("Adjoint(CRX)", adjoint_rotation)
 add_decomps("Pow(CRX)", pow_rotation)
 
@@ -2178,20 +2178,20 @@ def _cry(phi: TensorLike, wires: WiresLike, **__):
     qml.CNOT(wires=wires)
 
 
-def _cry_to_ppr_resources():
-    return {
-        resource_rep(qml.PauliRot, pauli_word="ZY"): 1,
-        resource_rep(qml.PauliRot, pauli_word="Y"): 1,
-    }
+# def _cry_to_ppr_resources():
+#     return {
+#         resource_rep(qml.PauliRot, pauli_word="ZY"): 1,
+#         resource_rep(qml.PauliRot, pauli_word="Y"): 1,
+#     }
 
 
-@register_resources(_cry_to_ppr_resources)
-def _cry_to_ppr(phi: TensorLike, wires: WiresLike, **__):
-    qml.PauliRot(phi / 2, "Y", wires=wires[1])
-    qml.PauliRot(-phi / 2, "ZY", wires=wires)
+# @register_resources(_cry_to_ppr_resources)
+# def _cry_to_ppr(phi: TensorLike, wires: WiresLike, **__):
+#     qml.PauliRot(phi / 2, "Y", wires=wires[1])
+#     qml.PauliRot(-phi / 2, "ZY", wires=wires)
 
 
-add_decomps(CRY, _cry, _cry_to_ppr)
+add_decomps(CRY, _cry)
 add_decomps("Adjoint(CRY)", adjoint_rotation)
 add_decomps("Pow(CRY)", pow_rotation)
 
@@ -2413,20 +2413,20 @@ def _crz(phi: TensorLike, wires: WiresLike, **__):
     qml.CNOT(wires=wires)
 
 
-def _crz_to_ppr_resources():
-    return {
-        resource_rep(qml.PauliRot, pauli_word="ZZ"): 1,
-        resource_rep(qml.PauliRot, pauli_word="Z"): 1,
-    }
+# def _crz_to_ppr_resources():
+#     return {
+#         resource_rep(qml.PauliRot, pauli_word="ZZ"): 1,
+#         resource_rep(qml.PauliRot, pauli_word="Z"): 1,
+#     }
 
 
-@register_resources(_crz_to_ppr_resources)
-def _crz_to_ppr(phi: TensorLike, wires: WiresLike, **__):
-    qml.PauliRot(phi / 2, "Z", wires=wires[1])
-    qml.PauliRot(-phi / 2, "ZZ", wires=wires)
+# @register_resources(_crz_to_ppr_resources)
+# def _crz_to_ppr(phi: TensorLike, wires: WiresLike, **__):
+#     qml.PauliRot(phi / 2, "Z", wires=wires[1])
+#     qml.PauliRot(-phi / 2, "ZZ", wires=wires)
 
 
-add_decomps(CRZ, _crz, _crz_to_ppr)
+add_decomps(CRZ, _crz)
 add_decomps("Adjoint(CRZ)", adjoint_rotation)
 add_decomps("Pow(CRZ)", pow_rotation)
 
@@ -2857,23 +2857,23 @@ def _cphase_to_rz_cnot(phi: TensorLike, wires: WiresLike, **__):
     qml.GlobalPhase(-phi / 4)
 
 
-def _cphase_to_ppr_resource():
-    return {
-        qml.GlobalPhase: 1,
-        resource_rep(qml.PauliRot, pauli_word="Z"): 2,
-        resource_rep(qml.PauliRot, pauli_word="ZZ"): 1,
-    }
+# def _cphase_to_ppr_resource():
+#     return {
+#         qml.GlobalPhase: 1,
+#         resource_rep(qml.PauliRot, pauli_word="Z"): 2,
+#         resource_rep(qml.PauliRot, pauli_word="ZZ"): 1,
+#     }
 
 
-@register_resources(_cphase_to_ppr_resource)
-def _cphase_to_ppr(phi: TensorLike, wires: WiresLike, **__):
-    qml.PauliRot(-phi / 2, pauli_word="ZZ", wires=wires)
-    qml.PauliRot(phi / 2, pauli_word="Z", wires=wires[1])
-    qml.PauliRot(phi / 2, pauli_word="Z", wires=wires[0])
-    qml.GlobalPhase(-phi / 4)
+# @register_resources(_cphase_to_ppr_resource)
+# def _cphase_to_ppr(phi: TensorLike, wires: WiresLike, **__):
+#     qml.PauliRot(-phi / 2, pauli_word="ZZ", wires=wires)
+#     qml.PauliRot(phi / 2, pauli_word="Z", wires=wires[1])
+#     qml.PauliRot(phi / 2, pauli_word="Z", wires=wires[0])
+#     qml.GlobalPhase(-phi / 4)
 
 
-add_decomps(ControlledPhaseShift, _cphase_to_rz_cnot, _cphase_to_ppr)
+add_decomps(ControlledPhaseShift, _cphase_to_rz_cnot)
 add_decomps("Adjoint(ControlledPhaseShift)", adjoint_rotation)
 add_decomps("Pow(ControlledPhaseShift)", pow_rotation)
 

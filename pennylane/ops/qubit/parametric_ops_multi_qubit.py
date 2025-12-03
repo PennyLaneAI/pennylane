@@ -227,7 +227,7 @@ def _multi_rz_decomposition_resources(num_wires):
 
 @register_resources(_multi_rz_decomposition_resources)
 def _multi_rz_decomposition(theta: TensorLike, wires: WiresLike, **__):
-
+    print(f"MultiRZ decomposition: {theta}, {wires}")
     @qml.for_loop(len(wires) - 1, 0, -1)
     def _pre_cnot(i):
         qml.CNOT(wires=(wires[i], wires[i - 1]))
