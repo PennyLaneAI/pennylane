@@ -288,7 +288,7 @@ class TreeTraversalPattern(RewritePattern):
                     qubit_to_reg_idx[op.out_qubit] = mcm_idx
                     # break
                 case _:
-                    # Handle other operations that might has qreg result
+                    # Handle other operations that might have qreg result
                     # Note that this branch might not be tested so far as adjoint op is not
                     # tested so far.
                     if reg := next(
