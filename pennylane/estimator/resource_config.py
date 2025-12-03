@@ -245,7 +245,7 @@ class ResourceConfig:
             :title: Usage Details
 
             Certain resource operators may have multiple parameters which tune the precision
-            for the operators decomposition. Consider, for example, the
+            for the operator's decomposition. Consider, for example, the
             :class:`~.estimator.templates.trotter.TrotterVibronic` operator. A dictionary of
             all such parameters for this operator can be found by accessing a
             dictionary using ``ResourceConfig.resource_op_precisions``:
