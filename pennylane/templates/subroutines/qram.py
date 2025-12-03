@@ -482,7 +482,7 @@ class HybridQRAM(Operation):
 
         all_wires = list(control_wires) + list(target_wires) + list(work_wires)
 
-        Operation.__init__(self, wires=all_wires, id=id)
+        super().__init__(wires=all_wires, id=id)
 
         self._hyperparameters = {
             "bitstrings": bitstrings,
