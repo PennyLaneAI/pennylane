@@ -87,6 +87,9 @@ class _OperatorNode:
 
     """
 
+    min_work_wires: int = 0
+    """The minimum number of additional work wires required to decompose this operator."""
+
     def __hash__(self) -> int:
         # If the decomposition of an operator does not depend on the availability of work wires
         # at all, we don't need to have multiple nodes representing the same operator with
@@ -119,6 +122,10 @@ class _DecompositionNode:
     work_wire_spec: WorkWireSpec
     num_work_wire_not_available: int
     work_wire_dependent: bool = False
+    min_work_wires: int = 0
+
+    def __post_init__(self):
+        self.min_work_wires = self.min_work_wires or self.work_wire_spec.total
 
     def count(self, op: CompressedResourceOp):
         """Find the number of occurrences of an operator in the decomposition."""
@@ -299,29 +306,36 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
             self._graph.add_edge(self._start, op_node_idx, self._gate_set_weights[op.name])
             return op_node_idx
 
-        update_op_to_work_wire_dependent = False
+        work_wire_dependent = known_work_wire_dependent
+        min_work_wires = -1  # use -1 to represent undetermined work wire requirement
         for decomposition in self._get_decompositions(op):
             d_node = self._add_decomp(decomposition, op_node, op_node_idx, num_used_work_wires)
             # If any of the operator's decompositions depend on work wires, this operator
             # should also depend on work wires.
-            if d_node and d_node.work_wire_dependent and not known_work_wire_dependent:
-                update_op_to_work_wire_dependent = True
+            if d_node and d_node.work_wire_dependent:
+                work_wire_dependent = True
+            if d_node and (min_work_wires == -1 or d_node.min_work_wires < min_work_wires):
+                min_work_wires = d_node.min_work_wires
 
         # If we found that this operator depends on work wires, but it's currently recorded
         # as independent of work wires, we must replace every record of this operator node
         # with a new node with `work_wire_dependent` set to `True`.
-        if update_op_to_work_wire_dependent:
-            new_op_node = replace(op_node, work_wire_dependent=True)
-            self._all_op_indices[new_op_node] = self._all_op_indices.pop(op_node)
-            self._graph[op_node_idx] = new_op_node
-            self._op_to_op_nodes[op].remove(op_node)
-            self._op_to_op_nodes[op].add(new_op_node)
+        if not known_work_wire_dependent and work_wire_dependent:
+            new_op_node = replace(op_node, work_wire_dependent=True, min_work_wires=min_work_wires)
+            self._replace_node(op_node_idx, new_op_node)
             # Also record that this operator type depends on work wires, so in the future
             # when we encounter other instances of the same operator type, we correctly
             # identify it as work-wire dependent.
             self._work_wire_dependent_ops.add(op_node.op)
 
         return op_node_idx
+
+    def _replace_node(self, idx: int, new_node: _OperatorNode) -> None:
+        original_node = self._graph[idx]
+        self._all_op_indices[new_node] = self._all_op_indices.pop(original_node)
+        self._graph[idx] = new_node
+        self._op_to_op_nodes[new_node.op].remove(original_node)
+        self._op_to_op_nodes[new_node.op].add(new_node)
 
     def _add_decomp(
         self,
@@ -349,6 +363,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         if work_wire_spec.total:
             d_node.work_wire_dependent = True
 
+        min_work_wires = -1
         for op in decomp_resource.gate_counts:
             op_node_idx = self._add_op_node(op, num_used_work_wires + work_wire_spec.total)
             self._graph.add_edge(op_node_idx, d_node_idx, (op_node_idx, d_node_idx))
@@ -357,6 +372,11 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
             # any work wires.
             if self._graph[op_node_idx].work_wire_dependent:
                 d_node.work_wire_dependent = True
+            if min_work_wires == -1 or self._graph[op_node_idx].min_work_wires < min_work_wires:
+                min_work_wires = self._graph[op_node_idx].min_work_wires
+
+        if min_work_wires != -1:
+            d_node.min_work_wires += min_work_wires
 
         self._graph.add_edge(d_node_idx, op_idx, 0)
         return d_node
