@@ -212,21 +212,24 @@ class TransformProgram:
             return TransformProgram(transforms, cotransform_cache=self.cotransform_cache)
 
         # Handle TransformProgram
-        if self.has_final_transform and other.has_final_transform:
-            raise TransformError("The transform program already has a terminal transform.")
+        if isinstance(other, TransformProgram):
+            if self.has_final_transform and other.has_final_transform:
+                raise TransformError("The transform program already has a terminal transform.")
 
-        transforms = self._transform_program + other._transform_program
-        if self.has_final_transform:
-            transforms.append(transforms.pop(len(self) - 1))
+            transforms = self._transform_program + other._transform_program
+            if self.has_final_transform:
+                transforms.append(transforms.pop(len(self) - 1))
 
-        cotransform_cache = None
-        if self.cotransform_cache:
-            if other.cotransform_cache:
-                raise ValueError("Cannot add two transform programs with cotransform caches.")
-            cotransform_cache = self.cotransform_cache
-        elif other.cotransform_cache:
-            cotransform_cache = other.cotransform_cache
-        return TransformProgram(transforms, cotransform_cache=cotransform_cache)
+            cotransform_cache = None
+            if self.cotransform_cache:
+                if other.cotransform_cache:
+                    raise ValueError("Cannot add two transform programs with cotransform caches.")
+                cotransform_cache = self.cotransform_cache
+            elif other.cotransform_cache:
+                cotransform_cache = other.cotransform_cache
+            return TransformProgram(transforms, cotransform_cache=cotransform_cache)
+
+        return NotImplemented
 
     def __radd__(self, other: "TransformContainer | TransformDispatcher") -> "TransformProgram":
         """Right addition to prepend a transform to the program.
