@@ -703,8 +703,8 @@ def _find_so4_decomposition(U, u_mag, O_u, candidates):
         # If the best error we found is still "large" (e.g., > 1e-5),
         # then we failed to find a valid Real-valued decomposition.
         # We return None to signal that 2-CNOT decomposition is likely impossible/unsafe.
-        if min_error > 1e-5:
-            return None
+    if min_error > 1e-5:
+        return None
 
     return best_result
 
