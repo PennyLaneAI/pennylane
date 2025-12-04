@@ -991,7 +991,6 @@ class TestResourceQFT:
             "Hadamard": 6,
         }
         assert resources.gate_counts == expected_gates
-        assert resources.algo_wires + resources.zeroed_wires + resources.any_state_wires == 4
         assert resources.algo_wires == 3
         assert resources.any_state_wires == 0
         assert resources.zeroed_wires == 1
