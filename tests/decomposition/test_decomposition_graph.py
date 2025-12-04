@@ -538,31 +538,31 @@ class TestDecompositionGraph:
         class SimpleOp(Operation):  # pylint: disable=too-few-public-methods
             """A simple operation that does not depend on work wires."""
 
-        @qml.register_resources({qml.X: 1})
+        @qml.register_resources({qml.X: 4})
         def _simple_decomp(_):
             raise NotImplementedError
 
         class CustomOp(Operation):  # pylint: disable=too-few-public-methods
             """Another operation."""
 
-        @qml.register_resources({SimpleOp: 1}, work_wires={"zeroed": 2})
+        @qml.register_resources({SimpleOp: 1, qml.CNOT: 4}, work_wires={"zeroed": 2})
         def _custom_decomp(_):
             raise NotImplementedError
 
         class AnotherOp(Operation):  # pylint: disable=too-few-public-methods
             """Some other op."""
 
-        @qml.register_resources({CustomOp: 1}, work_wires={"zeroed": 2})
+        @qml.register_resources({CustomOp: 1, qml.CNOT: 4}, work_wires={"zeroed": 2})
         def _another_decomp(_):
             raise NotImplementedError
 
-        @qml.register_resources({SimpleOp: 3}, work_wires={"zeroed": 3})
+        @qml.register_resources({SimpleOp: 3, qml.CNOT: 4}, work_wires={"zeroed": 3})
         def _yet_another_decomp(_):
             raise NotImplementedError
 
         graph = DecompositionGraph(
             [AnotherOp(0)],
-            gate_set={qml.X},
+            gate_set={qml.X, qml.CNOT},
             alt_decomps={
                 SimpleOp: [_simple_decomp],
                 CustomOp: [_custom_decomp],

@@ -365,20 +365,21 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         if work_wire_spec.total:
             d_node.work_wire_dependent = True
 
-        min_work_wires = -1
+        # For a decomposition rule, the minimum required number of work wires of this decomposition
+        # rule is determined by operator that uses the MOST number of work wires.
+        max_op_min_work_wires = 0
         for op in decomp_resource.gate_counts:
             op_node_idx = self._add_op_node(op, num_used_work_wires + work_wire_spec.total)
             self._graph.add_edge(op_node_idx, d_node_idx, (op_node_idx, d_node_idx))
             # If any of the operators in the decomposition depends on work wires, this
             # decomposition is also dependent on work wires, even it itself does not use
             # any work wires.
-            if self._graph[op_node_idx].work_wire_dependent:
+            op_node = self._graph[op_node_idx]
+            if op_node.work_wire_dependent:
                 d_node.work_wire_dependent = True
-            if min_work_wires == -1 or self._graph[op_node_idx].min_work_wires < min_work_wires:
-                min_work_wires = self._graph[op_node_idx].min_work_wires
+            max_op_min_work_wires = max(op_node.min_work_wires, max_op_min_work_wires)
 
-        if min_work_wires != -1:
-            d_node.min_work_wires += min_work_wires
+        d_node.min_work_wires += max_op_min_work_wires
 
         self._graph.add_edge(d_node_idx, op_idx, 0)
         return d_node
