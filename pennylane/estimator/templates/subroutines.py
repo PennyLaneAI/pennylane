@@ -1034,7 +1034,7 @@ class UnaryIterationQPE(ResourceOperator):
         self.adj_qft_cmpr_op = adj_qft_cmpr_op
         self.num_iterations = num_iterations
 
-        self.num_wires = unitary.num_wires + int(math.ceil(math.log2(num_iterations)))
+        self.num_wires = unitary.num_wires
         if wires:
             self.wires = Wires(wires)
             if base_wires := unitary.wires:
@@ -1104,23 +1104,45 @@ class UnaryIterationQPE(ResourceOperator):
         num_iterations: int,
         adj_qft_cmpr_op: CompressedResourceOp | None = None,
     ):
-        r"""Returns the resources for QPE using Unary Iteration.
+        r"""Returns the resources for Quantum Phase Estimation implemented using Unary Iteration.
 
-        The resources are obtained from Fig 2. in Section III of `arXiv. 2011.03494 <https://arxiv.org/pdf/2011.03494>`_.
+        This method calculates the resources required for QPE where the controlled-unitary operations
+        are replaced with a Select operation implemented using Unary Iteration.
+
+        The decomposition of the unary iteration follows the construction described in Fig. 2 of Section III in
+        `Babbush et al. (2011.03494) <https://arxiv.org/abs/2011.03494>`_.
+
+        Similar to textbook QPE, the resource decomposition comprises the following components:
+
+        1.  Hadamard gates are applied. The number of Hadamard gates corresponds to the number of wires
+            used for phase estimation, which is :math:`\lceil \log_2(L) \rceil`, where :math:`L` is the number of iterations.
+        2.  Unary iteration: "elbow" (or TemporaryAND) operations are applied :math:`L-1` times. This
+            requires the allocation of :math:`\lceil \log_2(N) \rceil - 2` ancilla wires, where :math:`N`
+            is the number of wires.
+        3.  The target unitary :math:`U` is applied :math:`L` times.
+        4.  Adjoint "elbow" operations are applied :math:`L-1` times.
+        5.  An adjoint QFT is performed.
 
         Args:
-            unitary (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A compressed resource operator, corresponding
-                to the phase estimation operator.
+            unitary (~.pennylane.estimator.resource_operator.CompressedResourceOp): A compressed resource operator
+                corresponding to the phase estimation operator :math:`U`.
             num_iterations (int): The total number of times the unitary operator :math:`U` is applied.
-                This is the total query complexity :math:`N` required to reach a target
+                This corresponds to the total query complexity :math:`N` required to reach a target
                 energy precision :math:`\epsilon`.
-            adj_qft_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp` | None): An optional compressed
-                resource operator, corresponding to the adjoint QFT routine. If :code:`None`, the
+            adj_qft_cmpr_op (~.pennylane.estimator.resource_operator.CompressedResourceOp | None): An optional compressed
+                resource operator corresponding to the adjoint QFT routine. If ``None``, the
                 default :class:`~.pennylane.estimator.templates.subroutines.QFT` will be used.
+
+        Returns:
+            list[~.pennylane.estimator.resource_operator.ResourceOp]: A list of resource operations representing
+            the decomposed QPE circuit.
         """
         num_wires = math.ceil(math.log2(num_iterations))
 
         hadamard = resource_rep(qre.Hadamard)
+        x = resource_rep(qre.X)
+        cnot = resource_rep(qre.CNOT)
+        ctrl_unitary = resource_rep(qre.Controlled, {"base_cmpr_op": unitary, "num_ctrl_wires": 1})
         left_elbow = resource_rep(qre.Toffoli, {"elbow": "left"})
         right_elbow = resource_rep(qre.Toffoli, {"elbow": "right"})
 
@@ -1133,13 +1155,15 @@ class UnaryIterationQPE(ResourceOperator):
             )
 
         return [
-            Allocate(num_wires - 2),
+            Allocate(num_wires - 1),
             GateCount(hadamard, num_wires),
             GateCount(left_elbow, num_iterations - 1),
-            GateCount(unitary, num_iterations),
+            GateCount(cnot, num_iterations - 1),
+            GateCount(x, 2 * (num_iterations - 1)),
+            GateCount(ctrl_unitary, num_iterations),
             GateCount(right_elbow, num_iterations - 1),
             GateCount(adj_qft_cmpr_op),
-            Deallocate(num_wires - 2),
+            Deallocate(num_wires - 1),
         ]
 
     @staticmethod
