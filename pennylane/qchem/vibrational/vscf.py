@@ -20,16 +20,14 @@ from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 from typing import NamedTuple
 
+import numpy as np
+
 has_jax = True
 try:  # pragma: no cover
 
     import jax
     import jax.numpy as jnp
-    import numpy as np
     from jax import jit, lax
-
-    jax.config.update("jax_enable_x64", True)
-
 except (ModuleNotFoundError, ImportError) as e:  # pragma: no cover
     has_jax = False
 
@@ -779,6 +777,8 @@ def vscf(
         raise ImportError(
             "Jax is required for performing VSCF. Have a look at the documentation at https://docs.pennylane.ai/en/stable/development/guide/installation.html ."
         )  # pragma: no cover
+
+    jax.config.update("jax_enable_x64", True)
 
     t0 = time.time()
     nmodes = len(modals)
