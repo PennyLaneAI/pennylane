@@ -19,6 +19,7 @@ from functools import reduce, singledispatch
 from itertools import product
 from operator import matmul
 
+import numpy as np
 import scipy.sparse as sps
 
 import pennylane as qml
