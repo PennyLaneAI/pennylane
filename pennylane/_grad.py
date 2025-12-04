@@ -95,8 +95,8 @@ def _get_vjp_prim():
     vjp_prim.prim_type = "higher_order"
 
     @vjp_prim.def_impl
-    def _vjp_impl(*args, **kwargs):
-        raise NotImplementedError
+    def _vjp_impl(*args, jaxpr, fn, method, h, argnums):
+        raise NotImplementedError("qml.vjp must be used together with qml.qjit.")
 
     @vjp_prim.def_abstract_eval
     def _vjp_abstract_eval(*args, jaxpr, fn, method, h, argnums):
