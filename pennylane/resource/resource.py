@@ -22,7 +22,7 @@ from collections import defaultdict
 from dataclasses import asdict, dataclass, field, fields
 from typing import Any
 
-from pennylane.measurements import Shots, add_shots
+from pennylane.measurements import MeasurementProcess, Shots, add_shots
 from pennylane.operation import Operation
 from pennylane.ops.op_math import Controlled, ControlledOp
 from pennylane.tape import QuantumScript
@@ -249,7 +249,7 @@ class SpecsResources:
         >>> res = SpecsResources(
         ...     gate_types={'Hadamard': 1, 'CNOT': 1},
         ...     gate_sizes={1: 1, 2: 1},
-        ...     measurements={'expval': 1},
+        ...     measurements={'expval(PauliZ)': 1},
         ...     num_allocs=2,
         ...     depth=2
         ... )
@@ -270,7 +270,7 @@ class SpecsResources:
           CNOT: 1
         <BLANKLINE>
         Measurements:
-          expval: 1
+          expval(PauliZ): 1
     """
 
     gate_types: dict[str, int]
@@ -400,7 +400,7 @@ class CircuitSpecs:
         ...     resources=SpecsResources(
         ...         gate_types={"RX": 2, "CNOT": 1},
         ...         gate_sizes={1: 2, 2: 1},
-        ...         measurements={"expval": 1},
+        ...         measurements={"expval(PauliZ)": 1},
         ...         num_allocs=2,
         ...         depth=3,
         ...     ),
@@ -428,7 +428,7 @@ class CircuitSpecs:
             CNOT: 1
         <BLANKLINE>
           Measurements:
-            expval: 1
+            expval(PauliZ): 1
     """
 
     device_name: str | None = None
@@ -945,6 +945,36 @@ def _scale_dict(dict1: dict, scalar: int):
     return combined_dict
 
 
+def _obs_to_str(obs) -> str:
+    """Convert an Observable to a string representation for resource counting."""
+    match obs.name:
+        case "Sum":
+            return " + ".join(_obs_to_str(o) for o in obs.operands)
+        case "Prod":
+            return " @ ".join(_obs_to_str(o) for o in obs.operands)
+        case "Hamiltonian" | "LinearCombination":
+            inner = ", ".join(_obs_to_str(o) for o in obs.operands)
+            return f"Hamiltonian({inner})"
+        case "SProd":
+            return _obs_to_str(obs.base)
+        case _:
+            return obs.name
+
+
+def _mp_to_str(mp: MeasurementProcess, num_wires: int) -> str:
+    """Convert a MeasurementProcess to a string representation for resource counting."""
+    meas_name = mp._shortname  # pylint: disable=protected-access
+    if mp.obs is None:
+        meas_wires = len(mp.wires)
+        if meas_wires in (None, 0, num_wires):
+            meas_name += "(all wires)"
+        else:
+            meas_name += f"({meas_wires} wires)"
+    else:
+        meas_name += f"({_obs_to_str(mp.obs)})"
+    return meas_name
+
+
 def _count_resources(tape: QuantumScript, compute_depth: bool = True) -> SpecsResources:
     """Given a quantum tape, this function counts the resources used by standard PennyLane operations.
 
@@ -984,7 +1014,7 @@ def _count_resources(tape: QuantumScript, compute_depth: bool = True) -> SpecsRe
             gate_sizes[len(op.wires)] += 1
 
     for meas in tape.measurements:
-        measurements[meas._shortname] += 1  # pylint: disable=protected-access
+        measurements[_mp_to_str(meas, num_wires)] += 1
 
     return SpecsResources(
         gate_types=dict(gate_types),

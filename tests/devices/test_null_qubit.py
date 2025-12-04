@@ -177,7 +177,7 @@ def test_tracking():
                 num_allocs=2,
                 gate_types={"Hadamard": 1, "FlipSign": 1},
                 gate_sizes={1: 1, 2: 1},
-                measurements={"expval": 1},
+                measurements={"expval(PauliZ)": 1},
                 depth=2,
             )
         ]

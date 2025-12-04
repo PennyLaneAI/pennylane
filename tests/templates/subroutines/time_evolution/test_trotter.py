@@ -721,7 +721,7 @@ class TestResources:
             num_allocs=2,
             gate_types={"Evolution": 30},
             gate_sizes={1: 30},
-            measurements={"expval": 1},
+            measurements={"expval(PauliZ)": 1},
             depth=20,
         )
 

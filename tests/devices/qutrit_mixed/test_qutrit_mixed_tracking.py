@@ -48,7 +48,11 @@ class TestTracking:
             dev.execute(qs)
 
         res = SpecsResources(
-            gate_types={}, gate_sizes={}, measurements={"expval": 1}, depth=0, num_allocs=1
+            gate_types={},
+            gate_sizes={},
+            measurements={"expval(GellMann)": 1},
+            depth=0,
+            num_allocs=1,
         )
 
         assert tracker.history == {
@@ -90,7 +94,7 @@ class TestTracking:
         expected_resources = SpecsResources(
             gate_types={"THadamard": 3, "TAdd": 2, "TRZ": 1},
             gate_sizes={1: 4, 2: 2},
-            measurements={"expval": 2},
+            measurements={"expval(GellMann)": 2},
             num_allocs=3,
             depth=3,
         )

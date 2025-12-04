@@ -24,6 +24,12 @@
 
 <h3>Improvements 🛠</h3>
 
+* Arithmetic dunder methods (`__add__`, `__mul__`, `__rmul__`) have been added to 
+  :class:`~.transforms.core.TransformDispatcher`, :class:`~.transforms.core.TransformContainer`, 
+  and :class:`~.transforms.core.TransformProgram` to enable intuitive composition of transform 
+  programs using `+` and `*` operators.
+  [(#8703)](https://github.com/PennyLaneAI/pennylane/pull/8703)
+
 * Quantum compilation passes in MLIR and XDSL can now be applied using the core PennyLane transform
   infrastructure, instead of using Catalyst-specific tools. This is made possible by a new argument in
   :func:`~pennylane.transform` and `~.TransformDispatcher` called ``pass_name``, which accepts a string
@@ -520,6 +526,9 @@ A warning message has been added to :doc:`Building a plugin <../development/plug
   [(#8557)](https://github.com/PennyLaneAI/pennylane/pull/8557)
 
 <h3>Bug fixes 🐛</h3>
+
+* Update `interface-unit-tests.yml` to use its input parameter `pytest_additional_args` when running pytest.
+  [(#8705)](https://github.com/PennyLaneAI/pennylane/pull/8705)
 
 * Fixes a bug where in `resolve_work_wire_type` we incorrectly returned a value of `zeroed` if `both work_wires` 
   and `base_work_wires` were empty, causing an incorrect work wire type.

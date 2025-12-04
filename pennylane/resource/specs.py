@@ -364,7 +364,7 @@ def specs(
                                                      'Evolution': 96,
                                                      'RX': 1},
                                           gate_sizes={1: 97, 2: 1},
-                                          measurements={'probs': 1},
+                                          measurements={'probs(all wires)': 1},
                                           num_allocs=2,
                                           depth=98))
 
@@ -407,7 +407,7 @@ def specs(
           PauliX: 2
         <BLANKLINE>
         Measurements:
-          expval: 1
+          expval(PauliX + PauliY): 1
 
         We then check the resources after applying all transforms:
 
@@ -421,7 +421,7 @@ def specs(
           RX: 1
         <BLANKLINE>
         Measurements:
-          expval: 1
+          expval(PauliX + PauliY): 1
 
         We can also notice that ``SWAP`` and ``PauliX`` are not present in the circuit if we set ``level=2``:
 
@@ -435,7 +435,7 @@ def specs(
           RX: 2
         <BLANKLINE>
         Measurements:
-          expval: 1
+          expval(PauliX + PauliY): 1
 
         If a QNode with a tape-splitting transform is supplied to the function, with the transform included in the desired transforms, the "resources"
         object is instead returned as a dictionary with a value for each resulting tape:
@@ -456,14 +456,14 @@ def specs(
         >>> pprint(qml.specs(circuit, level="user")()["resources"])
         {0: SpecsResources(gate_types={'RandomLayers': 1},
                            gate_sizes={2: 1},
-                           measurements={'expval': 1},
+                           measurements={'expval(PauliX @ PauliZ)': 1},
                            num_allocs=2,
                            depth=1),
-        1: SpecsResources(gate_types={'RandomLayers': 1},
-                          gate_sizes={2: 1},
-                          measurements={'expval': 1},
-                          num_allocs=3,
-                          depth=1)}
+         1: SpecsResources(gate_types={'RandomLayers': 1},
+                           gate_sizes={2: 1},
+                           measurements={'expval(PauliZ @ PauliY)': 1},
+                           num_allocs=3,
+                           depth=1)}
     """
     # pylint: disable=import-outside-toplevel
     # Have to import locally to prevent circular imports as well as accounting for Catalyst not being installed

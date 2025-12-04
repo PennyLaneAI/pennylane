@@ -953,7 +953,7 @@ def test_specs():
         num_allocs=2,
         gate_types=gate_types,
         gate_sizes=gate_sizes,
-        measurements={"expval": 2},
+        measurements={"expval(PauliZ)": 2},
         depth=3,
     )
     assert info["resources"] == expected_resources
