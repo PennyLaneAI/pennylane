@@ -45,7 +45,7 @@
 * Added the `~pennylane.estimator.templates.UnaryIterationQPE` subroutine in the `pennylane.estimator`
   module. It is a variant of the Quantum Phase Estimation algorithm
   that uses unary iteration, which can reduce T and Toffoli gate counts at the cost of
-  increasing the number of ancilla qubits required.
+  increasing the number of auxiliary qubits required.
   [(#8708)](https://github.com/PennyLaneAI/pennylane/pull/8708)
 
 * A new :func:`~.marker` function allows for easy inspection at particular points in a transform program
