@@ -601,14 +601,22 @@ class TestDecomposeGraphEnabled:
         [result], _ = qml.transforms.resolve_dynamic_wires([decomp], min_int=5)
 
         with qml.queuing.AnnotatedQueue() as q:
+            # The only decomposition rule available for SomeOtherOp
             with qml.allocation.allocate(1, state="zero", restored=True) as work_wires:
                 qml.CNOT([0, work_wires[0]])
+                # The only decomposition available for LargeOpDynamicWireDecomp
                 with qml.allocation.allocate(1, state="zero", restored=True) as sub_work_wires:
                     qml.Toffoli(wires=[0, 1, sub_work_wires[0]])
+                    # At this point, to minimize the number of work wires allocated, we
+                    # select the decomposition rule that does not use any work wires for
+                    # the CustomOpDynamicWireDecomp at the very bottom of the chain
                     _decomp_without_work_wire(wires=[sub_work_wires[0], 2, 3])
                     qml.Toffoli(wires=[0, 1, sub_work_wires[0]])
                     _decomp_without_work_wire(wires=[1, 2, 3])
                 qml.CNOT([0, work_wires[0]])
+            # Since the SomeOtherOp that came before already used two work wires, this
+            # second CustomOpDynamicWireDecomp should be free to use up to two work wires,
+            # and we verify that this is indeed what happens.
             _decomp_with_work_wire(wires=[0, 1, 4])
 
         expected = qml.tape.QuantumScript.from_queue(q)
