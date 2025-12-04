@@ -201,6 +201,8 @@ def transform(  # pylint: disable=too-many-arguments
         This allows us to perform eager input validation and set default values.
 
         >>> my_transform(circuit)
+        Traceback (most recent call last):
+            ...
         TypeError: setup_inputs() missing 1 required positional argument: 'a'
         >>> new_circuit = my_transform(circuit, a=2)
         >>> new_circuit.transform_program[0]
