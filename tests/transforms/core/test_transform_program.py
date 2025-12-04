@@ -1394,6 +1394,98 @@ class TestTransformProgramCall:
         ):
             assert eqn.primitive == expected_primitive
 
+    def test_call_fallback_on_qnode(self):
+        """Test that a TransformProgram can be applied to a QNode using the fallback."""
+
+        program = TransformProgram()
+        program.add_transform(qml.transforms.cancel_inverses)
+        program.add_transform(transform(first_valid_transform), 0)
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(device=dev)
+        def circuit(a):
+            qml.Hadamard(wires=0)
+            qml.PauliX(wires=0)
+            qml.PauliX(wires=0)  # Should be cancelled
+            qml.RZ(a, wires=1)
+            return qml.expval(qml.PauliZ(wires=0))
+
+        # Apply the program to the QNode
+        new_qnode = program(circuit)
+
+        assert isinstance(new_qnode, qml.QNode)
+        # The QNode should have the transforms from the program
+        assert len(new_qnode.transform_program) == 2
+        assert new_qnode.transform_program[0].transform is qml.transforms.cancel_inverses.transform
+        assert new_qnode.transform_program[1].transform is first_valid_transform
+
+    def test_call_fallback_on_qnode_empty_program(self):
+        """Test that an empty program returns the original QNode."""
+
+        program = TransformProgram()
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(device=dev)
+        def circuit():
+            qml.Hadamard(wires=0)
+            return qml.expval(qml.PauliZ(wires=0))
+
+        new_qnode = program(circuit)
+
+        # For empty program, the fallback returns the original object unchanged
+        assert new_qnode is circuit
+
+    def test_call_fallback_on_callable(self):
+        """Test that a TransformProgram can be applied to a callable using the fallback."""
+
+        program = TransformProgram()
+        program.add_transform(transform(first_valid_transform), 0)
+
+        def qfunc():
+            qml.Hadamard(wires=0)
+            return qml.expval(qml.PauliZ(wires=0))
+
+        # Apply the program to a callable
+        transformed_qfunc = program(qfunc)
+
+        assert callable(transformed_qfunc)
+        assert transformed_qfunc is not qfunc
+
+    def test_call_fallback_chain_applies_transforms(self):
+        """Test that the fallback chain-applies each transform in order."""
+
+        # Track how many times each transform is applied
+        call_order = []
+
+        def tracking_transform_1(tape):
+            call_order.append(1)
+            return [tape], lambda x: x[0]
+
+        def tracking_transform_2(tape):
+            call_order.append(2)
+            return [tape], lambda x: x[0]
+
+        program = TransformProgram()
+        program.add_transform(transform(tracking_transform_1))
+        program.add_transform(transform(tracking_transform_2))
+
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(device=dev)
+        def circuit():
+            qml.Hadamard(wires=0)
+            return qml.expval(qml.PauliZ(wires=0))
+
+        # Apply the program - transforms should be in the QNode's transform_program
+        new_qnode = program(circuit)
+
+        assert len(new_qnode.transform_program) == 2
+        # First transform in program should be first in QNode's transform_program
+        assert new_qnode.transform_program[0].transform is tracking_transform_1
+        assert new_qnode.transform_program[1].transform is tracking_transform_2
+
 
 class TestTransformProgramIntegration:
     """Test the transform program and its integration with QNodes"""
