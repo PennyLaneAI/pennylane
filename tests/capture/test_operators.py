@@ -392,7 +392,7 @@ class TestOpmath:
 
         assert isinstance(eqn.outvars[0].aval, AbstractOperator)
         assert eqn.params == {
-            "control_values": [0, 1],
+            "control_values": (0, 1),
             "work_wires": None,
             "work_wire_type": "borrowed",
         }
