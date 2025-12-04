@@ -1,0 +1,185 @@
+# Copyright 2018-2025 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""
+Unit tests for the :func:`pennylane.template.subroutines.iqp` class.
+"""
+import re
+from itertools import combinations
+
+import numpy as np
+import pytest
+from pennylane.devices import device
+
+from pennylane.measurements import probs
+
+from pennylane.wires import Wires
+
+from pennylane import math, qnode
+
+from pennylane.decomposition import list_decomps
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.templates.subroutines.iqp import IQP
+
+
+dev = device("default.qubit")
+
+
+def local_gates(n_qubits: int, max_weight=2):
+    """
+    Generates a gate list for containing all gates whose generators have Pauli weight
+    less or equal than max_weight.
+    :param n_qubits: The number of qubits in the gate list
+    :param max_weight: maximum Pauli weight of gate generators
+    :return (list[list[list[int]]]): gate list
+    """
+    gates = []
+    for weight in math.arange(1, max_weight+1):
+        for gate in combinations(math.arange(n_qubits), weight):
+            gates.append([list(gate)])
+    return gates
+
+
+@qnode(dev)
+def iqp_circuit(wires, gates, params, spin_sym=None, init_gates=None, init_coeffs=None):
+    IQP(
+        wires=wires,
+        gates=gates,
+        params=params,
+        spin_sym=spin_sym,
+        init_gates=init_gates,
+        init_coeffs=init_coeffs
+    )
+    return probs(wires=wires)
+
+
+@pytest.mark.parametrize(
+    ("num_qubits", "gates_fn", "spin_sym", "init_gates_coeffs", "probabilities"),
+    [
+        (
+            2,
+            "local_gates",
+            False,
+            False,
+            [0.928, 0.000, 0.070, 0.000]
+        ),
+        (
+            3,
+            "local_gates",
+            False,
+            True,
+            [0.928, 0.000, 0.070, 0.000]
+        ),
+        (
+            2,
+            "multi_gens",
+            True,
+            False,
+            [0.503, 0.037, 0.426, 0.032]
+        ),
+        (
+            3,
+            "multi_gens",
+            True,
+            True,
+            [0.503, 0.037, 0.426, 0.032]
+        ),
+    ]
+)
+def test_iqp(num_qubits, gates_fn, spin_sym, init_gates_coeffs, probabilities):
+    gates = local_gates(num_qubits, 1)
+    params = math.random.uniform(0, 2 * np.pi, len(gates))
+
+    if gates_fn == "multi_gens":
+        gates = [[gates[0][0], gates[1][0]]] + gates[2:]
+
+    if init_gates_coeffs:
+        init_gates = gates.copy()
+        init_coeffs = math.random.uniform(0, 2 * np.pi, len(init_gates))
+    else:
+        init_gates = None
+        init_coeffs = None
+
+    assert math.allclose(
+        probabilities,
+        iqp_circuit(
+            wires=Wires([i for i in range(num_qubits)]),
+            gates=gates,
+            params=params,
+            spin_sym=spin_sym,
+            init_gates=init_gates,
+            init_coeffs=init_coeffs
+        ),
+    )
+
+
+@pytest.mark.parametrize(
+    ("params", "error", "match"),
+    [
+        (
+            (
+                [0, 1],
+                [[0, 1], [0]],
+                [0],
+                False,
+                None,
+                None
+            ),
+            ValueError,
+            "Number of gates and number of parameters for an Instantaneous Quantum Polynomial circuit must be the same",
+        ),
+        (
+            (
+                [],
+                [[0, 1], [0]],
+                [0, 1],
+                False,
+                None,
+                None
+            ),
+            ValueError,
+            "At least one valid wire",
+        ),
+    ],
+)
+def test_raises(params, error, match):
+    with pytest.raises(error, match=re.escape(match)):
+        IQP(*params)
+
+
+@pytest.mark.parametrize(
+    ("params", "gates", "init_gates", "init_coeffs", "spin_sym", "n_qubits"),
+    [
+        (
+            math.random.uniform(0, 2 * np.pi, 4),
+            local_gates(4, 1),
+            local_gates(4, 1),
+            math.random.uniform(0, 2 * np.pi, len(local_gates(4, 1))),
+            True,
+            4
+        ),
+        (
+            math.random.uniform(0, 2 * np.pi, 6),
+            local_gates(6, 1),
+            local_gates(6, 1),
+            math.random.uniform(0, 2 * np.pi, len(local_gates(6, 1))),
+            True,
+            6
+        ),
+    ],
+)
+def test_decomposition_new(params, gates, init_gates, init_coeffs, spin_sym, n_qubits):
+    op = IQP([i for i in range(n_qubits)], gates, params, init_gates, init_coeffs, spin_sym, n_qubits)
+
+    for rule in list_decomps(IQP):
+        _test_decomposition_rule(op, rule)
