@@ -126,6 +126,8 @@ class _DecompositionNode:
 
     def is_feasible(self, num_work_wires: int | None):
         """Checks whether this decomposition is feasible under a work wire constraint"""
+        if not self.work_wire_dependent:
+            return True
         if num_work_wires is None:
             return True
         return num_work_wires - self.num_work_wire_not_available >= self.work_wire_spec.total
