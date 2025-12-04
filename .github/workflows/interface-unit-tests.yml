@@ -157,13 +157,13 @@ jobs:
             "torch-tests": ["3.11", "3.14"],
             "jax-tests": ["3.11", "3.14"],
             "capture-jax-tests": ["3.11", "3.14"],
-            "all-interfaces-tests": ["3.11"],
-            "external-libraries-tests": ["3.11"],
-            "qcut-tests": ["3.11"],
-            "qchem-tests": ["3.11"],
-            "gradients-tests": ["3.11"],
+            "all-interfaces-tests": ["3.11", "3.14"],
+            "external-libraries-tests": ["3.11", "3.14"],
+            "qcut-tests": ["3.11", "3.14"],
+            "qchem-tests": ["3.11", "3.14"],
+            "gradients-tests": ["3.11", "3.14"],
             "data-tests": ["3.11", "3.14"],
-            "device-tests": ["3.11"]
+            "device-tests": ["3.11", "3.14"]
           }
           EOF
           fi
