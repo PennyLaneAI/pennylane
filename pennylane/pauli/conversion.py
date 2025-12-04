@@ -392,8 +392,7 @@ def _validate_sparse_matrix_shape(shape):
         raise ValueError(
             f"The matrix should be square, got {shape}. Use 'padding=True' for rectangular matrices."
         )
-    n = int(math.log2(shape[0]))
-    if shape[0] != 2**n:
+    if shape[0] & (shape[0] - 1) != 0:  # 2 powers are of 100... binary, minus 1 to get 011..., sharing no common bit; any other integers share at least one bit with their minus one
         raise ValueError(
             f"Dimension of the matrix should be a power of 2, got {shape}. Use 'padding=True' for these matrices."
         )
