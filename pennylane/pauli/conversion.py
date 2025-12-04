@@ -19,12 +19,13 @@ from functools import reduce, singledispatch
 from itertools import product
 from operator import matmul
 
+import scipy.sparse as sps
+
 import pennylane as qml
 from pennylane import math
 from pennylane.math.utils import is_abstract
 from pennylane.ops import Identity, LinearCombination, PauliX, PauliY, PauliZ, Prod, SProd, Sum
 from pennylane.ops.qubit.matrix_ops import _walsh_hadamard_transform
-import scipy.sparse as sps
 
 from .pauli_arithmetic import I, PauliSentence, PauliWord, X, Y, Z, op_map
 from .utils import is_pauli_word
@@ -52,11 +53,14 @@ def _validate_and_normalize_decomposition_inputs(shape, wire_order=None, is_spar
     if is_sparse and shape[0] == 0:
         raise ValueError("Cannot decompose an empty matrix.")
 
-    num_qubits = int(math.log2(shape[0]))
-    if shape[0] != 2**num_qubits:
+    if (
+        shape[0] & (shape[0] - 1) != 0
+    ):  # 2 powers are of 100... binary, minus 1 to get 011..., sharing no common bit; any other integers share at least one bit with their minus one
         raise ValueError(
             f"Dimension of the matrix should be a power of 2, got {shape}. Use 'padding=True' for these matrices."
         )
+
+    num_qubits = int(math.log2(shape[0]))
 
     if wire_order is not None and len(wire_order) != num_qubits:
         raise ValueError(
@@ -392,7 +396,9 @@ def _validate_sparse_matrix_shape(shape):
         raise ValueError(
             f"The matrix should be square, got {shape}. Use 'padding=True' for rectangular matrices."
         )
-    if shape[0] & (shape[0] - 1) != 0:  # 2 powers are of 100... binary, minus 1 to get 011..., sharing no common bit; any other integers share at least one bit with their minus one
+    if (
+        shape[0] & (shape[0] - 1) != 0
+    ):  # 2 powers are of 100... binary, minus 1 to get 011..., sharing no common bit; any other integers share at least one bit with their minus one
         raise ValueError(
             f"Dimension of the matrix should be a power of 2, got {shape}. Use 'padding=True' for these matrices."
         )
