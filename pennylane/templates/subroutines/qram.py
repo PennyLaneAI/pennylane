@@ -655,34 +655,44 @@ def _tree_route_bus_down_first_k_levels_ctrl(k_levels, tree_wire_manager, signal
             )
 
 
+def _swap_controlled_on_signal(tree_wire_manager, signal, level, k):
+    origin = tree_wire_manager.control_wires[k:][level]
+    target = tree_wire_manager.bus_wire[0]
+    ctrl(SWAP(wires=[origin, target]), control=[signal], control_values=[1])
+
+
 def _tree_mark_routers_via_bus_ctrl(tree_wire_manager, n_tree, k, signal):
     """Address loading for the tree (n_tree bits), controlled on signal."""
 
-    for level in range(n_tree):
+    # SWAP(tree_control_wires[0], bus) controlled on signal
+    _swap_controlled_on_signal(tree_wire_manager, signal, 0, k)
+
+    # route down qram wires for level 0
+    _tree_route_bus_down_first_k_levels_ctrl(0, tree_wire_manager, signal)
+
+    # deposit into dir[0, *] along active path
+    ctrl(
+        SWAP(wires=[tree_wire_manager.bus_wire[0], tree_wire_manager.router(0, 0)]),
+        control=[signal],
+        control_values=[1],
+    )
+
+    for level in range(1, n_tree):
         # SWAP(tree_control_wires[level], bus) controlled on signal
-        origin = tree_wire_manager.control_wires[k:][level]
-        target = tree_wire_manager.bus_wire[0]
-        ctrl(SWAP(wires=[origin, target]), control=[signal], control_values=[1])
+        _swap_controlled_on_signal(tree_wire_manager, signal, level, k)
 
         # route down qram wires for current levels
         _tree_route_bus_down_first_k_levels_ctrl(level, tree_wire_manager, signal)
 
         # deposit into dir[level, *] along active path
-        if level == 0:
-            ctrl(
-                SWAP(wires=[tree_wire_manager.bus_wire[0], tree_wire_manager.router(0, 0)]),
-                control=[signal],
-                control_values=[1],
-            )
-        else:
-            for p in range(1 << level):
-                parent = _node_index(level - 1, p >> 1)
-                if p % 2 == 0:
-                    origin = tree_wire_manager.portL_wires[parent]
-                else:
-                    origin = tree_wire_manager.portR_wires[parent]
-                target = tree_wire_manager.router(level, p)
-                ctrl(SWAP(wires=[origin, target]), control=[signal], control_values=[1])
+        for p in range(1 << level):
+            parent = _node_index(level - 1, p >> 1)
+            if p % 2 == 0:
+                origin = tree_wire_manager.portL_wires[parent]
+            else:
+                origin = tree_wire_manager.portR_wires[parent]
+            target = tree_wire_manager.router(level, p)
+            ctrl(SWAP(wires=[origin, target]), control=[signal], control_values=[1])
 
 
 def _block_tree_query_ops(
