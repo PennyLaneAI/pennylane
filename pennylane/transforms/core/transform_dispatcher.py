@@ -286,17 +286,17 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
 
         return generic_apply_transform.register(arg)  # pylint: disable=no-member
 
-    def __call__(self, *args, **tkwargs):
+    def __call__(self, obj=None, *targs, **tkwargs):  # pylint: disable=keyword-arg-before-vararg
         # If called with only keyword arguments (no positional args), return a TransformContainer
         # This enables patterns like: decompose(gate_set=gate_set) + merge_rotations(1e-6)
-        if not args:
+        if obj is None:
             if tkwargs:
-                return TransformContainer(self, args=(), kwargs=tkwargs)
+                return TransformContainer(self, args=targs, kwargs=tkwargs)
             raise TypeError(
-                "TransformDispatcher.__call__() missing 1 required positional argument: 'obj'"
+                f"{self!r} requires at least one argument. "
+                "Provide a tape, qfunc, QNode, or device to transform, "
+                "or provide keyword arguments to create a TransformContainer for composition."
             )
-
-        obj, *targs = args
         return self._apply_transform(obj, *targs, **tkwargs)
 
     def __repr__(self):

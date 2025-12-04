@@ -537,7 +537,7 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
 
         with pytest.raises(
             TypeError,
-            match="missing 1 required positional argument: 'obj'",
+            match="requires at least one argument",
         ):
             dispatched_transform()
 
