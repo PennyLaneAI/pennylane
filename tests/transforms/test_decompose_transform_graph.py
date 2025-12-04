@@ -569,7 +569,7 @@ class TestDecomposeGraphEnabled:
     def test_minimize_work_wires(self):
         """Tests that the number of allocations can be minimized."""
 
-        class SomeOtherOp(Operation):
+        class SomeOtherOp(Operation):  # pylint: disable=too-few-public-methods
             """Some other operation."""
 
         @qml.register_resources(
