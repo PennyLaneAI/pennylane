@@ -129,6 +129,11 @@ def _dummy_register(obj):  # just used for sphinx
     return obj  # pragma: no cover
 
 
+def default_setup_inputs(*args, **kwargs):
+    """A default implementation of setup_inputs that leaves everything unchanged."""
+    return args, kwargs
+
+
 class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
     r"""Converts a transform that has the signature ``(tape -> Sequence(tape), fn)`` to a transform dispatcher
     that can act on :class:`pennylane.tape.QuantumTape`, quantum function, :class:`pennylane.QNode`,
@@ -170,6 +175,7 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
         transform: Callable | None = None,
         pass_name: None | str = None,
         *,
+        setup_inputs: None | Callable = None,
         expand_transform: Callable | None = None,
         classical_cotransform: Callable | None = None,
         is_informative: bool = False,
@@ -191,8 +197,16 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
         self._pass_name = pass_name
 
         self._use_argnum_in_expand = use_argnum_in_expand
+
+        self._setup_inputs = setup_inputs or default_setup_inputs
         if transform:
             functools.update_wrapper(self, transform)
+        elif setup_inputs:
+            functools.update_wrapper(
+                self,
+                setup_inputs,
+                assigned=("__module__", "__annotations__", "__type_params__", "__doc__"),
+            )
 
         self._apply_transform = functools.singledispatch(
             functools.partial(specific_apply_transform, self)
@@ -286,6 +300,7 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
         return generic_apply_transform.register(arg)  # pylint: disable=no-member
 
     def __call__(self, obj, *targs, **tkwargs):
+        targs, tkwargs = self._setup_inputs(*targs, **tkwargs)
         return self._apply_transform(obj, *targs, **tkwargs)
 
     def __repr__(self):

@@ -25,6 +25,7 @@ def transform(  # pylint: disable=too-many-arguments
     quantum_transform: Callable | None = None,
     pass_name: None | str = None,
     *,
+    setup_inputs: None | str = None,
     expand_transform=None,
     classical_cotransform=None,
     is_informative=False,
@@ -410,6 +411,7 @@ def transform(  # pylint: disable=too-many-arguments
 
     return TransformDispatcher(
         quantum_transform,
+        setup_inputs=setup_inputs,
         expand_transform=expand_transform,
         classical_cotransform=classical_cotransform,
         is_informative=is_informative,
