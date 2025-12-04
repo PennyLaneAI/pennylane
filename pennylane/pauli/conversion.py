@@ -417,7 +417,7 @@ def _check_hermitian_sparse(H):
     if nnz:
         max_diff = np.abs(diff.data).max()
         if max_diff > 1e-8:
-            raise ValueError("The matrix is not Hermitian")
+            raise ValueError(f"The matrix is not Hermitian. (max diff: {max_diff})")
 
 
 def pauli_decompose(
