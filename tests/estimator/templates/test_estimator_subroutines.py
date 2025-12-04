@@ -1904,7 +1904,7 @@ class TestResourceUnaryIterationQPE:
 
     def test_wire_error(self):
         """Test that an error is raised when wrong number of wires is provided."""
-        with pytest.raises(ValueError, match="Expected 4 wires, got 3"):
+        with pytest.raises(ValueError, match="Expected 1 wires, got 3"):
             qre.UnaryIterationQPE(unitary=qre.X(0), num_iterations=8, wires=[0, 1, 2])
 
     def test_tracking_name(self):
@@ -1977,15 +1977,22 @@ class TestResourceUnaryIterationQPE:
                 5,
                 None,
                 [
-                    qre.Allocate(1),
+                    qre.Allocate(2),
                     GateCount(qre.Hadamard.resource_rep(), 3),
                     GateCount(resource_rep(qre.Toffoli, {"elbow": "left"}), 4),
-                    GateCount(qre.RX.resource_rep(precision=1e-5), 5),
+                    GateCount(qre.CNOT.resource_rep(), 4),
+                    GateCount(qre.X.resource_rep(), 8),
+                    GateCount(
+                        qre.Controlled.resource_rep(
+                            qre.RX.resource_rep(precision=1e-5), num_ctrl_wires=1, num_zero_ctrl=0
+                        ),
+                        5,
+                    ),
                     GateCount(resource_rep(qre.Toffoli, {"elbow": "right"}), 4),
                     GateCount(
                         qre.Adjoint.resource_rep(qre.QFT.resource_rep(3)),
                     ),
-                    qre.Deallocate(1),
+                    qre.Deallocate(2),
                 ],
             ),
             (
@@ -1993,13 +2000,20 @@ class TestResourceUnaryIterationQPE:
                 3,
                 qre.QFT(2),
                 [
-                    qre.Allocate(0),
+                    qre.Allocate(1),
                     GateCount(qre.Hadamard.resource_rep(), 2),
                     GateCount(resource_rep(qre.Toffoli, {"elbow": "left"}), 2),
-                    GateCount(qre.X.resource_rep(), 3),
+                    GateCount(qre.CNOT.resource_rep(), 2),
+                    GateCount(qre.X.resource_rep(), 4),
+                    GateCount(
+                        qre.Controlled.resource_rep(
+                            qre.X.resource_rep(), num_ctrl_wires=1, num_zero_ctrl=0
+                        ),
+                        3,
+                    ),
                     GateCount(resource_rep(qre.Toffoli, {"elbow": "right"}), 2),
                     GateCount(qre.QFT.resource_rep(2)),
-                    qre.Deallocate(0),
+                    qre.Deallocate(1),
                 ],
             ),
             (
@@ -2007,15 +2021,22 @@ class TestResourceUnaryIterationQPE:
                 4,
                 qre.Adjoint(qre.AQFT(3, 2)),
                 [
-                    qre.Allocate(0),
+                    qre.Allocate(1),
                     GateCount(qre.Hadamard.resource_rep(), 2),
                     GateCount(resource_rep(qre.Toffoli, {"elbow": "left"}), 3),
-                    GateCount(qre.RZ.resource_rep(), 4),
+                    GateCount(qre.CNOT.resource_rep(), 3),
+                    GateCount(qre.X.resource_rep(), 6),
+                    GateCount(
+                        qre.Controlled.resource_rep(
+                            qre.RZ.resource_rep(), num_ctrl_wires=1, num_zero_ctrl=0
+                        ),
+                        4,
+                    ),
                     GateCount(resource_rep(qre.Toffoli, {"elbow": "right"}), 3),
                     GateCount(
                         qre.Adjoint.resource_rep(qre.AQFT.resource_rep(3, 2)),
                     ),
-                    qre.Deallocate(0),
+                    qre.Deallocate(1),
                 ],
             ),
         ),

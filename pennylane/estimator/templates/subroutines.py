@@ -1142,7 +1142,9 @@ class UnaryIterationQPE(ResourceOperator):
         hadamard = resource_rep(qre.Hadamard)
         x = resource_rep(qre.X)
         cnot = resource_rep(qre.CNOT)
-        ctrl_unitary = resource_rep(qre.Controlled, {"base_cmpr_op": unitary, "num_ctrl_wires": 1})
+        ctrl_unitary = resource_rep(
+            qre.Controlled, {"base_cmpr_op": unitary, "num_ctrl_wires": 1, "num_zero_ctrl": 0}
+        )
         left_elbow = resource_rep(qre.Toffoli, {"elbow": "left"})
         right_elbow = resource_rep(qre.Toffoli, {"elbow": "right"})
 
