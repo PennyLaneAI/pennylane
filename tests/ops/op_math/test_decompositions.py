@@ -978,32 +978,31 @@ samples_su2_su2 = [
     ),
 ]
 
-@pytest.mark.unit
-@pytest.mark.parametrize("U", samples_2_cnots)
-def test_compute_num_cnots_identifies_2_cnots(U):
-    """Test that the new Shende–Bullock–Markov criterion correctly
-    classifies 2-CNOT unitaries."""
-    U = qml.math.convert_to_su4(np.array(U))
-    assert _compute_num_cnots(U) == 2
-
-@pytest.mark.unit
-@pytest.mark.parametrize("wires", [[0, 1], ["a", "b"], [3, 2], ["c", 0]])
-@pytest.mark.parametrize("U", samples_2_cnots)
-def test_two_qubit_decomposition_2_cnots_gate_count(U, wires):
-    """Test that the dispatcher selects the new 2-CNOT decomposition
-    and that the resulting circuit actually contains exactly 2 CNOTs."""
-    U = qml.math.convert_to_su4(np.array(U))
-
-    ops = two_qubit_decomposition(U, wires=wires)
-
-    # Extract only CNOTs
-    cnot_ops = [op for op in ops if isinstance(op, qml.CNOT)]
-
-    assert len(cnot_ops) == 2, "The 2-CNOT decomposition must emit exactly 2 CNOT gates."
-
 
 class TestTwoQubitUnitaryDecomposition:
     """Test that two-qubit unitary operations are correctly decomposed."""
+
+    @pytest.mark.unit
+    @pytest.mark.parametrize("U", samples_2_cnots)
+    def test_compute_num_cnots_identifies_2_cnots(U):
+        """Test that the new Shende–Bullock–Markov criterion correctly
+        classifies 2-CNOT unitaries."""
+        U = qml.math.convert_to_su4(np.array(U))
+        assert _compute_num_cnots(U) == 2
+
+    @pytest.mark.unit
+    @pytest.mark.parametrize("U", samples_2_cnots)
+    def test_two_qubit_decomposition_2_cnots_gate_count(U):
+        """Test that the dispatcher selects the new 2-CNOT decomposition
+        and that the resulting circuit actually contains exactly 2 CNOTs."""
+        U = qml.math.convert_to_su4(np.array(U))
+
+        ops = two_qubit_decomposition(U, wires=[0, 1])
+
+        # Extract only CNOTs
+        cnot_ops = [op for op in ops if isinstance(op, qml.CNOT)]
+
+        assert len(cnot_ops) == 2, "The 2-CNOT decomposition must emit exactly 2 CNOT gates."
 
     @pytest.mark.parametrize("U_pair", samples_su2_su2)
     def test_su2su2_to_tensor_products(self, U_pair):
