@@ -48,6 +48,7 @@ from .ops.qubit import (
     PauliRot,
     SingleExcitation,
     QubitUnitary,
+    PCPhase,
 )
 
 from .ops.op_math import (
@@ -108,6 +109,8 @@ from .templates import (
     Reflection,
     QuantumWalk,
     HamSimGQSP,
+    QSVT,
+    QSP,
 )
 
 from .compact_hamiltonian import (
