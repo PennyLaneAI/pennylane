@@ -986,7 +986,7 @@ class UnaryIterationQPE(ResourceOperator):
         unitary (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): the unitary operator to run
             the phase estimation protocol on
         num_iterations (int): The total number of times the unitary operator :math:`U` is applied.
-            This is the total query complexity :math:`N` required to reach a target 
+            This is the total query complexity :math:`N` required to reach a target
             energy precision :math:`\epsilon`.
         adj_qft_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator` | None): An optional
             argument to set the subroutine used to perform the adjoint QFT operation.
@@ -1053,7 +1053,7 @@ class UnaryIterationQPE(ResourceOperator):
                 * unitary (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A compressed resource operator, corresponding
                   to the phase estimation operator.
                 * num_iterations (int): The total number of times the unitary operator :math:`U` is applied.
-                  This is the total query complexity :math:`N` required to reach a target 
+                  This is the total query complexity :math:`N` required to reach a target
                   energy precision :math:`\epsilon`.
                 * adj_qft_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp` | None]): An optional compressed
                   resource operator, corresponding to the adjoint QFT routine. If :code:`None`, the
@@ -1080,7 +1080,7 @@ class UnaryIterationQPE(ResourceOperator):
             unitary (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A compressed resource operator, corresponding
                 to the phase estimation operator.
             num_iterations (int): The total number of times the unitary operator :math:`U` is applied.
-                  This is the total query complexity :math:`N` required to reach a target 
+                  This is the total query complexity :math:`N` required to reach a target
                   energy precision :math:`\epsilon`.
             adj_qft_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp` | None): An optional compressed
                 resource operator, corresponding to the adjoint QFT routine. If :code:`None`, the
@@ -1112,7 +1112,7 @@ class UnaryIterationQPE(ResourceOperator):
             unitary (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A compressed resource operator, corresponding
                 to the phase estimation operator.
             num_iterations (int): The total number of times the unitary operator :math:`U` is applied.
-                This is the total query complexity :math:`N` required to reach a target 
+                This is the total query complexity :math:`N` required to reach a target
                 energy precision :math:`\epsilon`.
             adj_qft_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp` | None): An optional compressed
                 resource operator, corresponding to the adjoint QFT routine. If :code:`None`, the
