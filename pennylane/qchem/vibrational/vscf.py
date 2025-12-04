@@ -18,7 +18,7 @@ import time
 from collections.abc import Iterator
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial
-from typing import NamedTuple
+from typing import Generic, NamedTuple, TypeVar
 
 import numpy as np
 
@@ -37,19 +37,22 @@ logger = logging.getLogger(__name__)
 
 # pylint: disable=too-many-arguments
 
+# Define a generic type variable
+ArrayT = TypeVar("ArrayT")
 
-class VSCFData(NamedTuple):
+
+class VSCFData(NamedTuple, Generic[ArrayT]):
     """
     Unified data container for both Host (NumPy) and Device (JAX).
     """
 
-    term_map: np.ndarray | jnp.ndarray  # int32
-    target_mode: np.ndarray | jnp.ndarray  # int32
-    i: np.ndarray | jnp.ndarray  # int32
-    j: np.ndarray | jnp.ndarray  # int32
-    coeffs: np.ndarray | jnp.ndarray  # float64
-    partners: np.ndarray | jnp.ndarray  # int32
-    valid: np.ndarray | jnp.ndarray  # bool
+    term_map: ArrayT  # int32
+    target_mode: ArrayT  # int32
+    i: ArrayT  # int32
+    j: ArrayT  # int32
+    coeffs: ArrayT  # float64
+    partners: ArrayT  # int32
+    valid: ArrayT  # bool
 
     @classmethod
     def stack_to_device(cls, batch_list: list):
@@ -804,7 +807,7 @@ def vscf(
 
     # pack into fixed-size batches using preallocated growable buffers and regularization of the flow
     packer = BatchRegularizer(raw_gen, target_size=B, max_partners=max_partners)
-    host_batches: list[VSCFData] = list(packer)
+    host_batches: list[VSCFData[np.ndarray]] = list(packer)
 
     n_batches = len(host_batches)
     if n_batches == 0:
@@ -814,7 +817,7 @@ def vscf(
         return 0.0, mode_rots
 
     # compact data and move to GPU
-    device_batches = VSCFData.stack_to_device(host_batches)
+    device_batches: VSCFData[jnp.ndarray] = VSCFData.stack_to_device(host_batches)
 
     # h_mat rows = number of unique term IDs discovered in generator ~ active_num_final/B *? but we tracked active_num_final = n_batches*B
     # max_term_id estimation: we can scan packed_batches to find max term id used
