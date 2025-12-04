@@ -491,32 +491,26 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         assert container_with_kwargs.kwargs == {"key": "value"}
 
     @pytest.mark.parametrize("valid_transform", valid_transforms)
-    def test_combining_transforms_with_args_and_kwargs(self, valid_transform):
-        """Test that transforms called with args/kwargs (not valid dispatch targets) can be
-        combined using the + operator to form a TransformProgram.
+    def test_combining_dispatcher_and_container(self, valid_transform):
+        """Test that a dispatcher can be combined with a container using the + operator."""
 
-        This enables patterns like:
-            decompose(gate_set=gate_set) + merge_rotations(1e-6)
-        """
+        dispatched_transform = qml.transform(valid_transform)
 
-        dispatched_transform1 = qml.transform(valid_transform)
-        dispatched_transform2 = qml.transform(valid_transform)
+        kwargs_container = dispatched_transform(key="value", another="kwarg")
 
-        # Calling transforms with non-dispatch-target args returns TransformContainers
-        container1 = dispatched_transform1(0)
-        container2 = dispatched_transform2(1, key="value")
+        program = dispatched_transform + kwargs_container
+        assert isinstance(program, qml.transforms.core.TransformProgram)
+        assert len(program) == 2
+        assert program[0].args == ()
+        assert program[1].kwargs == {"key": "value", "another": "kwarg"}
 
-        assert isinstance(container1, qml.transforms.core.TransformContainer)
-        assert isinstance(container2, qml.transforms.core.TransformContainer)
+        args_container = dispatched_transform(0)
 
-        # Combining them with + should work
-        program = container1 + container2
+        program = args_container + dispatched_transform
         assert isinstance(program, qml.transforms.core.TransformProgram)
         assert len(program) == 2
         assert program[0].args == (0,)
-        assert program[0].kwargs == {}
-        assert program[1].args == (1,)
-        assert program[1].kwargs == {"key": "value"}
+        assert program[1].args == ()
 
     @pytest.mark.parametrize("valid_transform", valid_transforms)
     def test_kwargs_only_returns_container(self, valid_transform):
@@ -535,13 +529,17 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         assert container.args == ()
         assert container.kwargs == {"key": "value", "another": "kwarg"}
 
-        # This should work in combination with args-only call
-        container2 = dispatched_transform(0)
-        program = container + container2
-        assert isinstance(program, qml.transforms.core.TransformProgram)
-        assert len(program) == 2
-        assert program[0].kwargs == {"key": "value", "another": "kwarg"}
-        assert program[1].args == (0,)
+    @pytest.mark.parametrize("valid_transform", valid_transforms)
+    def test_missing_obj_without_kwargs_errors(self, valid_transform):
+        """Test that calling a dispatcher without arguments raises the expected TypeError."""
+
+        dispatched_transform = qml.transform(valid_transform)
+
+        with pytest.raises(
+            TypeError,
+            match="missing 1 required positional argument: 'obj'",
+        ):
+            dispatched_transform()
 
     def test_queuing_qfunc_transform(self):
         """Test that queuing works with the transformed quantum function."""

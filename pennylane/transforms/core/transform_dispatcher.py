@@ -289,9 +289,9 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
     def __call__(self, obj=None, *targs, **tkwargs):
         # If called with only keyword arguments (no positional args), return a TransformContainer
         # This enables patterns like: decompose(gate_set=gate_set) + merge_rotations(1e-6)
-        if obj is None and tkwargs:
-            return TransformContainer(self, args=(), kwargs=tkwargs)
         if obj is None:
+            if tkwargs:
+                return TransformContainer(self, args=(), kwargs=tkwargs)
             raise TypeError(
                 f"TransformDispatcher.__call__() missing 1 required positional argument: 'obj'"
             )
