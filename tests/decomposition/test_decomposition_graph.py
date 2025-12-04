@@ -502,6 +502,34 @@ class TestDecompositionGraph:
         assert solution.decomposition(op, num_work_wires=None) is _decomp2_with_work_wire
         assert solution.decomposition(small_op, num_work_wires=None) is _decomp_with_work_wire
 
+    def test_non_work_wire_dependent_ops_reused(self, _):
+        """Tests that ops that are not work-wire dependent are not affected by work-wire
+        dependent decomposition rules upstream."""
+
+        class SimpleOp(Operation):  # pylint: disable=too-few-public-methods
+            """A simple operation that does not depend on work wires."""
+
+        @qml.register_resources({qml.X: 1})
+        def _simple_decomp(_):
+            raise NotImplementedError
+
+        class CustomOp(Operation):  # pylint: disable=too-few-public-methods
+            """Another operation."""
+
+        @qml.register_resources({SimpleOp: 1}, work_wires={"zeroed": 1})
+        def _custom_decomp(_):
+            raise NotImplementedError
+
+        graph = DecompositionGraph(
+            [CustomOp(0), SimpleOp(0)],
+            gate_set={qml.X},
+            fixed_decomps={SimpleOp: _simple_decomp, CustomOp: _custom_decomp},
+        )
+        solution = graph.solve()
+
+        assert not solution.is_solved_for(CustomOp(0))
+        assert solution.is_solved_for(SimpleOp(0))
+
 
 @pytest.mark.unit
 @patch(
