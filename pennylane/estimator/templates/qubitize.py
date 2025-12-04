@@ -71,18 +71,18 @@ class QubitizeTHC(ResourceOperator):
     >>> res = qre.estimate(qre.QubitizeTHC(thc_ham, prep_op=prep))
     >>> print(res)
     --- Resources: ---
-     Total wires: 381
-        algorithmic wires: 68
-        allocated wires: 313
-             zero state: 313
+     Total wires: 400
+        algorithmic wires: 102
+        allocated wires: 298
+             zero state: 298
              any state: 0
-     Total gates : 5.628E+4
-      'Toffoli': 3.504E+3,
-      'CNOT': 4.138E+4,
-      'X': 2.071E+3,
+     Total gates : 8.072E+4
+      'Toffoli': 3.250E+3,
+      'CNOT': 6.787E+4,
+      'X': 1.351E+3,
       'Z': 41,
       'S': 80,
-      'Hadamard': 9.213E+3
+      'Hadamard': 8.133E+3
 
     .. details::
         :title: Usage Details

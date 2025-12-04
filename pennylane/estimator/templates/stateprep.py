@@ -924,11 +924,11 @@ class PrepTHC(ResourceOperator):
     >>> res = qre.estimate(qre.PrepTHC(thc_ham, coeff_precision=15))
     >>> print(res)
     --- Resources: ---
-     Total wires: 185
-        algorithmic wires: 12
-        allocated wires: 173
+     Total wires: 187
+        algorithmic wires: 72
+        allocated wires: 115
              zero state: 28
-             any state: 145
+             any state: 87
      Total gates : 1.485E+4
       'Toffoli': 467,
       'CNOT': 1.307E+4,
