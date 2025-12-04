@@ -984,7 +984,7 @@ class TestTwoQubitUnitaryDecomposition:
 
     @pytest.mark.unit
     @pytest.mark.parametrize("U", samples_2_cnots)
-    def test_compute_num_cnots_identifies_2_cnots(U):
+    def test_compute_num_cnots_identifies_2_cnots(self, U):
         """Test that the new Shende–Bullock–Markov criterion correctly
         classifies 2-CNOT unitaries."""
         U = qml.math.convert_to_su4(np.array(U))
@@ -992,7 +992,7 @@ class TestTwoQubitUnitaryDecomposition:
 
     @pytest.mark.unit
     @pytest.mark.parametrize("U", samples_2_cnots)
-    def test_two_qubit_decomposition_2_cnots_gate_count(U):
+    def test_two_qubit_decomposition_2_cnots_gate_count(self, U):
         """Test that the dispatcher selects the new 2-CNOT decomposition
         and that the resulting circuit actually contains exactly 2 CNOTs."""
         U = qml.math.convert_to_su4(np.array(U))
