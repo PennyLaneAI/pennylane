@@ -477,9 +477,6 @@ class BatchRegularizer:
 # ---------------------------------------------------------------------
 # Fused JAX kernel: takes stacked device batches and compiles/performs one big large GPU kernel
 # ---------------------------------------------------------------------
-@partial(
-    jit, static_argnames=["modals_tuple", "nmodes", "max_modals", "P", "B", "n_batches", "damping"]
-)
 def scf_step_batched(
     h_mat,
     mode_rots,
@@ -843,9 +840,13 @@ def vscf(
         B,
     )
 
+    step_fn_static_args = ("modals_tuple", "nmodes", "max_modals", "P", "B", "n_batches", "damping")
+    # This creates a compiled version of the kernel
+    jitted_kernel = jit(scf_step_batched, static_argnames=step_fn_static_args)
+
     # JAX jitted step function
     step_fn = partial(
-        scf_step_batched,
+        jitted_kernel,
         device_batches=device_batches,
         modals_tuple=tuple(modals),
         nmodes=nmodes,
