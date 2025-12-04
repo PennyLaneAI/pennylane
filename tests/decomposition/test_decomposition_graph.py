@@ -520,15 +520,64 @@ class TestDecompositionGraph:
         def _custom_decomp(_):
             raise NotImplementedError
 
+        @qml.register_resources({qml.X: 1})
+        def _another_decomp(_):
+            raise NotImplementedError
+
         graph = DecompositionGraph(
             [CustomOp(0), SimpleOp(0)],
             gate_set={qml.X},
-            fixed_decomps={SimpleOp: _simple_decomp, CustomOp: _custom_decomp},
+            alt_decomps={SimpleOp: [_simple_decomp], CustomOp: [_custom_decomp, _another_decomp]},
         )
         solution = graph.solve()
-
-        assert not solution.is_solved_for(CustomOp(0))
         assert solution.is_solved_for(SimpleOp(0))
+
+    def test_min_work_wires(self, _):
+        """Tests that the graph tracks the minimum number of work wires."""
+
+        class SimpleOp(Operation):  # pylint: disable=too-few-public-methods
+            """A simple operation that does not depend on work wires."""
+
+        @qml.register_resources({qml.X: 4})
+        def _simple_decomp(_):
+            raise NotImplementedError
+
+        class CustomOp(Operation):  # pylint: disable=too-few-public-methods
+            """Another operation."""
+
+        @qml.register_resources({SimpleOp: 1, qml.CNOT: 4}, work_wires={"zeroed": 2})
+        def _custom_decomp(_):
+            raise NotImplementedError
+
+        class AnotherOp(Operation):  # pylint: disable=too-few-public-methods
+            """Some other op."""
+
+        @qml.register_resources({CustomOp: 1, qml.CNOT: 4}, work_wires={"zeroed": 2})
+        def _another_decomp(_):
+            raise NotImplementedError
+
+        @qml.register_resources({SimpleOp: 3, qml.CNOT: 4}, work_wires={"zeroed": 3})
+        def _yet_another_decomp(_):
+            raise NotImplementedError
+
+        graph = DecompositionGraph(
+            [AnotherOp(0)],
+            gate_set={qml.X, qml.CNOT},
+            alt_decomps={
+                SimpleOp: [_simple_decomp],
+                CustomOp: [_custom_decomp],
+                AnotherOp: [_another_decomp, _yet_another_decomp],
+            },
+        )
+        assert graph._min_work_wires == 3
+        with pytest.raises(DecompositionError, match="at least 3 work wires"):
+            graph.solve(num_work_wires=2)
+
+        solution = graph.solve(num_work_wires=None)
+        assert solution.decomposition(AnotherOp(0)) == _another_decomp
+
+        solution = graph.solve(num_work_wires=None, minimize_work_wires=True)
+        assert solution.decomposition(AnotherOp(0), num_work_wires=None) == _yet_another_decomp
 
 
 @pytest.mark.unit
