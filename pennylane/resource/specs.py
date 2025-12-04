@@ -148,7 +148,17 @@ def _specs_qjit_intermediate_passes(
     # Note that this only gets transforms manually applied by the user
     trans_prog = original_qnode.transform_program
 
-    single_level = isinstance(level, (int, str))
+    single_level = isinstance(level, (int, str)) and not level in ("all", "all-mlir")
+
+    # Levels where qml.marker transforms are applied, needed since markers may be applied before or
+    # after the first MLIR transform, and ones after need to be incremented by 1 to account for the
+    # extra lowering pass
+    marker_to_level = {
+        trans.kwargs["level"]: i + 1
+        for i, trans in enumerate(trans_prog)
+        if trans.transform == qml.marker.transform
+    }
+    level_to_marker = {v: k for k, v in marker_to_level.items()}
 
     # Easier to assume level is always a sorted list of int levels (if not "all" or "all-mlir")
     if level not in ("all", "all-mlir"):
@@ -160,17 +170,9 @@ def _specs_qjit_intermediate_passes(
         # Convert marker names to the associated level number
         for i, lvl in enumerate(level):
             if isinstance(lvl, str):
-                found = False
-                for j, trans in enumerate(trans_prog):
-                    if (
-                        trans.transform == qml.marker.transform
-                        and trans.kwargs.get("level", None) == lvl
-                    ):
-                        level[i] = j
-                        found = True
-                        break
-                if not found:
+                if lvl not in marker_to_level:
                     raise ValueError(f"Transform name '{lvl}' not found in the transform program.")
+                level[i] = marker_to_level[lvl]
 
         level_sorted = sorted(level)
         if level != level_sorted:
@@ -199,6 +201,14 @@ def _specs_qjit_intermediate_passes(
 
         num_trans_levels += 1  # Have to include the "before transforms" level
 
+        if level != "all":
+            # Account for off-by-one error
+            # TODO: This is actually currently unused, since markers are tape transforms only
+            level = [
+                lvl + 1 if lvl in level_to_marker and lvl >= num_trans_levels else lvl
+                for lvl in level
+            ]
+
         # Handle tape transforms
         trans_levels = (
             list(range(num_trans_levels))
@@ -212,11 +222,13 @@ def _specs_qjit_intermediate_passes(
             tape = qml.workflow.construct_tape(original_qnode, level=trans_level)(*args, **kwargs)
             res = resources_from_tape(tape, False)
 
-            trans_name = (
-                trans_prog[trans_level - 1].transform.__name__
-                if trans_level > 0
-                else "Before transforms"
-            )
+            if trans_level == 0:
+                trans_name = "Before transforms"
+            elif trans_level in level_to_marker:
+                trans_name = level_to_marker[trans_level]
+            else:
+                trans_name = trans_prog[trans_level - 1].transform.__name__
+
             # If the same transform appears multiple times, append a suffix
             if trans_name in resources:
                 rep = 2
