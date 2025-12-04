@@ -93,11 +93,10 @@ class QubitizeTHC(ResourceOperator):
         the number of bits for loading the coefficients and the rotation angles, respectively.
         The final value is determined by the following precedence:
 
-        * If provided, the precisions from :code:`prep_op` and :code:`select_op` take precedence.
-        * If :code:`prep_op`, and :code:`select_op` are not provided or have the precision value set to `None`,
-          the values for :code:`coeff_precision`, and :code:`rotation_precision` arguments are used.
-        * If both of the above are not specified, the value set in
-          :class:`~.pennylane.estimator.resource_config.ResourceConfig` is used.
+        * If provided, the value from `coeff_precision` and `rotation_precision` is used.
+        * If `coeff_precision` or `rotation_precision` is not provided or is set to `None`,
+          the precisions from :code:`prep_op` and :code:`select_op` take precedence.
+        * If both of the above are not specified, the default value of `15` bits is used.
 
     """
 
@@ -129,10 +128,33 @@ class QubitizeTHC(ResourceOperator):
         num_coeff = num_orb + tensor_rank * (tensor_rank + 1) / 2  # N+M(M+1)/2
         coeff_register = int(math.ceil(math.log2(num_coeff)))
 
+        if coeff_precision is None:
+            coeff_precision = prep_op.coeff_precision if prep_op else 15
+        self.coeff_precision = coeff_precision
+
+        if rotation_precision is None:
+            rotation_precision = select_op.rotation_precision if select_op else 15
+        self.rotation_precision = rotation_precision
+
         # Based on section III D, Eq. 43 in arXiv:2011.03494
-        # Numbers have been adjusted to remove the auxilliary qubits accounted for by different templates
+        # Numbers have been adjusted to remove the auxilliary wires accounted for by different templates
+        # 6 auxiliary wires account for:
+        # - 2 spin registers
+        # - 1 for rotation on auxiliary qubit
+        # - 1 flag for success of inequality,
+        # - 1 flag for one-body vs two-body rotation
+        # - 1 to control swap of \mu and \nu registers.
+        # 2*n_M wires are for \mu and \nu registers, where n_M = log_2(tensor_rank+1)
+        # coeff_precision wires for the keep register
+        # num_orb*2 for state register
+        # coeff_register for storing the coefficients: num_orb + tensor_rank(tensor_rank+1)/2,
+        # The qubits storing output of QROM are stored here as well: 2*n_M + coeff_precision + 2
         self.num_wires = (
-            num_orb * 2 + 2 * int(np.ceil(math.log2(tensor_rank + 1))) + coeff_register + 6
+            num_orb * 2
+            + 4 * int(np.ceil(math.log2(tensor_rank + 1)))
+            + coeff_register
+            + 8
+            + coeff_precision
         )
         if wires is not None and len(Wires(wires)) != self.num_wires:
             raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
@@ -205,9 +227,32 @@ class QubitizeTHC(ResourceOperator):
         num_coeff = num_orb + tensor_rank * (tensor_rank + 1) / 2  # N+M(M+1)/2
         coeff_register = int(math.ceil(math.log2(num_coeff)))
 
+        if coeff_precision is None:
+            coeff_precision = prep_op.params["coeff_precision"] if prep_op else 15
+        if rotation_precision is None:
+            rotation_precision = select_op.params["rotation_precision"] if select_op else 15
+
         # Based on section III D, Eq. 43 in arXiv:2011.03494
         # Numbers have been adjusted to remove the auxilliary wires accounted for by different templates
-        num_wires = num_orb * 2 + 2 * int(np.ceil(math.log2(tensor_rank + 1))) + coeff_register + 6
+        # 6 auxiliary wires account for:
+        # - 2 spin registers
+        # - 1 for rotation on auxiliary qubit
+        # - 1 flag for success of inequality,
+        # - 1 flag for one-body vs two-body rotation
+        # - 1 to control swap of \mu and \nu registers.
+        # 2*n_M wires are for \mu and \nu registers, where n_M = log_2(tensor_rank+1)
+        # coeff_precision wires for the keep register
+        # num_orb*2 for state register
+        # coeff_register for storing the coefficients: num_orb + tensor_rank(tensor_rank+1)/2,
+        # The qubits storing output of QROM are stored here as well: 2*n_M + coeff_precision + 2
+        num_wires = (
+            num_orb * 2
+            + 4 * int(np.ceil(math.log2(tensor_rank + 1)))
+            + coeff_register
+            + 8
+            + coeff_precision
+        )
+
         params = {
             "thc_ham": thc_ham,
             "prep_op": prep_op,
@@ -260,25 +305,28 @@ class QubitizeTHC(ResourceOperator):
         tensor_rank = thc_ham.tensor_rank
         m_register = int(np.ceil(np.log2(tensor_rank)))
 
-        if not select_op:
+        select_kwargs = {"thc_ham": thc_ham}
+        if rotation_precision:
+            select_kwargs["rotation_precision"] = rotation_precision
+
+        if rotation_precision or select_op is None:
             # Select cost from Figure 5 in arXiv:2011.03494
-            select_op = resource_rep(
-                SelectTHC,
-                {"thc_ham": thc_ham, "rotation_precision": rotation_precision},
-            )
+            select_op = resource_rep(SelectTHC, select_kwargs)
         gate_list.append(GateCount(select_op))
 
-        if not prep_op:
+        prep_kwargs = {"thc_ham": thc_ham}
+        if coeff_precision:
+            prep_kwargs["coeff_precision"] = coeff_precision
+
+        if coeff_precision or prep_op is None:
             # Prep cost from Figure 3 and 4 in arXiv:2011.03494
-            prep_op = resource_rep(
-                PrepTHC,
-                {"thc_ham": thc_ham, "coeff_precision": coeff_precision},
-            )
+            prep_op = resource_rep(PrepTHC, prep_kwargs)
+
         gate_list.append(GateCount(prep_op))
         gate_list.append(GateCount(resource_rep(Adjoint, {"base_cmpr_op": prep_op})))
 
         # reflection cost from Eq. 44 in arXiv:2011.03494
-        coeff_precision = prep_op.params["coeff_precision"] or coeff_precision
+        coeff_precision = prep_op.params["coeff_precision"]
 
         toffoli = resource_rep(Toffoli)
         gate_list.append(GateCount(toffoli, 2 * m_register + coeff_precision + 4))
@@ -313,6 +361,9 @@ class QubitizeTHC(ResourceOperator):
         prep_op = target_resource_params["prep_op"]
         select_op = target_resource_params["select_op"]
 
+        coeff_precision = target_resource_params.get("coeff_precision")
+        rotation_precision = target_resource_params.get("rotation_precision")
+
         tensor_rank = thc_ham.tensor_rank
         m_register = int(np.ceil(np.log2(tensor_rank)))
 
@@ -327,13 +378,13 @@ class QubitizeTHC(ResourceOperator):
             gate_list.append(Allocate(1))
             gate_list.append(GateCount(mcx, 2))
 
-        if not select_op:
-            rotation_precision = target_resource_params["rotation_precision"]
+        select_kwargs = {"thc_ham": thc_ham}
+        if rotation_precision:
+            select_kwargs["rotation_precision"] = rotation_precision
+
+        if rotation_precision or select_op is None:
             # Controlled Select cost from Fig 5 in arXiv:2011.03494
-            select_op = resource_rep(
-                SelectTHC,
-                {"thc_ham": thc_ham, "rotation_precision": rotation_precision},
-            )
+            select_op = resource_rep(SelectTHC, select_kwargs)
         gate_list.append(
             GateCount(
                 resource_rep(
@@ -343,20 +394,19 @@ class QubitizeTHC(ResourceOperator):
             )
         )
 
-        if not prep_op:
-            coeff_precision = target_resource_params["coeff_precision"]
+        prep_kwargs = {"thc_ham": thc_ham}
+        if coeff_precision:
+            prep_kwargs["coeff_precision"] = coeff_precision
+
+        if coeff_precision or prep_op is None:
             # Prep cost from Fig 3 and 4 in arXiv:2011.03494
-            prep_op = resource_rep(
-                PrepTHC,
-                {"thc_ham": thc_ham, "coeff_precision": coeff_precision},
-            )
+            prep_op = resource_rep(PrepTHC, prep_kwargs)
+
         gate_list.append(GateCount(prep_op))
         gate_list.append(GateCount(resource_rep(Adjoint, {"base_cmpr_op": prep_op})))
 
-        # reflection cost from Eq. 44 in arXiv:2011.03494s
-        coeff_precision = (
-            prep_op.params["coeff_precision"] or target_resource_params["coeff_precision"]
-        )
+        # reflection cost from Eq. 44 in arXiv:2011.03494
+        coeff_precision = prep_op.params["coeff_precision"]
 
         toffoli = resource_rep(Toffoli)
         gate_list.append(GateCount(toffoli, 2 * m_register + coeff_precision + 4))
