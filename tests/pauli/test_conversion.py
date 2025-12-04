@@ -255,13 +255,13 @@ class TestDecomposition:
 
     def test_sparse_matrix_wire_order(self):
         """Test that wire ordering works with sparse matrices"""
-        import scipy.sparse as sp
+        import scipy.sparse as sps
 
         wire_order = ["a", 0]
         hamiltonian = np.array(
             [[-2, -2 + 1j, -2, -2], [-2 - 1j, 0, 0, -1], [-2, 0, -2, -1], [-2, -1, -1, 0]]
         )
-        sparse_hamiltonian = sp.csr_matrix(hamiltonian)
+        sparse_hamiltonian = sps.csr_matrix(hamiltonian)
 
         h = qml.pauli_decompose(sparse_hamiltonian, wire_order=wire_order)
         ps = qml.pauli_decompose(sparse_hamiltonian, pauli=True, wire_order=wire_order)
