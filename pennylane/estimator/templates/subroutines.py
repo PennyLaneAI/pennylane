@@ -997,22 +997,23 @@ class UnaryIterationQPE(ResourceOperator):
 
     **Example**
 
-    The resources for this operation are computed using:
+    The resources for this operation are computed as follows:
 
     >>> import pennylane.estimator as qre
     >>> unitary = qre.RX()
     >>> print(qre.estimate(qre.UnaryIterationQPE(unitary, 11)))
     --- Resources: ---
-    Total wires: 5
-    algorithmic wires: 5
-    allocated wires: 0
-        zero state: 0
+    Total wires: 4
+    algorithmic wires: 1
+    allocated wires: 3
+        zero state: 3
         any state: 0
-    Total gates : 1.322E+3
+    Total gates : 1.880E+3
     'Toffoli': 20,
-    'T': 1.276E+3,
-    'CNOT': 18,
-    'Hadamard': 8
+    'T': 1.760E+3,
+    'CNOT': 50,
+    'X': 20,
+    'Hadamard': 30
     """
 
     resource_keys = {"unitary", "num_iterations", "adj_qft_cmpr_op"}
@@ -1111,17 +1112,6 @@ class UnaryIterationQPE(ResourceOperator):
 
         The decomposition of the unary iteration follows the construction described in Fig. 2 of Section III in
         `Babbush et al. (2011.03494) <https://arxiv.org/abs/2011.03494>`_.
-
-        Similar to textbook QPE, the resource decomposition comprises the following components:
-
-        1.  Hadamard gates are applied. The number of Hadamard gates corresponds to the number of wires
-            used for phase estimation, which is :math:`\lceil \log_2(L) \rceil`, where :math:`L` is the number of iterations.
-        2.  Unary iteration: "elbow" (or TemporaryAND) operations are applied :math:`L-1` times. This
-            requires the allocation of :math:`\lceil \log_2(N) \rceil - 2` ancilla wires, where :math:`N`
-            is the number of wires.
-        3.  The target unitary :math:`U` is applied :math:`L` times.
-        4.  Adjoint "elbow" operations are applied :math:`L-1` times.
-        5.  An adjoint QFT is performed.
 
         Args:
             unitary (~.pennylane.estimator.resource_operator.CompressedResourceOp): A compressed resource operator
