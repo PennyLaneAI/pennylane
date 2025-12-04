@@ -115,7 +115,7 @@ def transform(  # pylint: disable=too-many-arguments
 
     Now you can use the dispatched transform directly on a :class:`pennylane.QNode`.
 
-    For :class:`pennylane.QNode`, the dispatched transform populates the ``TransformProgram`` of your QNode. The
+    For :class:`pennylane.QNode`, the dispatched transform populates the ``CompilePipeline`` of your QNode. The
     transform and its processing function are applied in the execution.
 
     >>> transformed_qnode = dispatched_transform(qnode_circuit)
@@ -123,14 +123,14 @@ def transform(  # pylint: disable=too-many-arguments
     <QNode: device='<default.qubit device at ...>', interface='auto', diff_method='best', shots='Shots(total=None)'>
 
     >>> transformed_qnode.transform_program
-    TransformProgram(my_quantum_transform)
+    CompilePipeline(my_quantum_transform)
 
     If we apply ``dispatched_transform`` a second time to the :class:`pennylane.QNode`, we would add
     it to the transform program again and therefore the transform would be applied twice before execution.
 
     >>> transformed_qnode = dispatched_transform(transformed_qnode)
     >>> transformed_qnode.transform_program
-    TransformProgram(my_quantum_transform, my_quantum_transform)
+    CompilePipeline(my_quantum_transform, my_quantum_transform)
 
     When a transformed QNode is executed, the QNode's transform program is applied to the generated tape
     and creates a sequence of tapes to be executed. The execution results are then post-processed in the
@@ -194,7 +194,7 @@ def transform(  # pylint: disable=too-many-arguments
         The return of a dispatched transform depends upon which of the above objects is passed as an input:
 
         - For a :class:`~.QNode` input, the underlying transform is added to the QNode's
-          :class:`~.TransformProgram` and the return is the transformed :class:`~.QNode`.
+          :class:`~.CompilePipeline` and the return is the transformed :class:`~.QNode`.
           For each execution of the :class:`pennylane.QNode`, it first applies the transform program on the original captured
           circuit. Then the transformed circuits are executed by a device and finally the post-processing function is
           applied on the results.

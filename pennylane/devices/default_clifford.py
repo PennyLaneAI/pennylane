@@ -45,7 +45,7 @@ from pennylane.pauli import PauliWord, pauli_decompose
 from pennylane.pauli.utils import _binary_matrix_from_pws
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import convert_to_numpy_parameters, defer_measurements, transform
-from pennylane.transforms.core import TransformProgram
+from pennylane.transforms.core import CompilePipeline
 from pennylane.typing import Result, ResultBatch
 
 from .default_qubit import accepted_sample_measurement
@@ -457,7 +457,7 @@ class DefaultClifford(Device):
     def preprocess(
         self,
         execution_config: ExecutionConfig | None = None,
-    ) -> tuple[TransformProgram, ExecutionConfig]:
+    ) -> tuple[CompilePipeline, ExecutionConfig]:
         """This function defines the device transform program to be applied and an updated device configuration.
 
         Args:
@@ -465,7 +465,7 @@ class DefaultClifford(Device):
                 parameters needed to fully describe the execution.
 
         Returns:
-            TransformProgram, ExecutionConfig: A transform program that when called returns QuantumTapes that the device
+            CompilePipeline, ExecutionConfig: A transform program that when called returns QuantumTapes that the device
             can natively execute as well as a postprocessing function to be called after execution, and a configuration with
             unset specifications filled in.
 
@@ -475,7 +475,7 @@ class DefaultClifford(Device):
         if execution_config is None:
             execution_config = ExecutionConfig()
         config = self._setup_execution_config(execution_config)
-        transform_program = TransformProgram()
+        transform_program = CompilePipeline()
 
         transform_program.add_transform(validate_device_wires, self.wires, name=self.name)
         transform_program.add_transform(defer_measurements, allow_postselect=False)

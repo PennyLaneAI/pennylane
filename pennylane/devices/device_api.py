@@ -35,7 +35,7 @@ from pennylane.transforms import (
     split_non_commuting,
     split_to_single_terms,
 )
-from pennylane.transforms.core import TransformDispatcher, TransformError, TransformProgram
+from pennylane.transforms.core import CompilePipeline, TransformDispatcher, TransformError
 from pennylane.typing import Result, ResultBatch, TensorLike
 from pennylane.wires import Wires
 
@@ -264,7 +264,7 @@ class Device(abc.ABC):
     def preprocess(
         self,
         execution_config: ExecutionConfig | None = None,
-    ) -> tuple[TransformProgram, ExecutionConfig]:
+    ) -> tuple[CompilePipeline, ExecutionConfig]:
         """Device preprocessing function.
 
         .. warning::
@@ -280,7 +280,7 @@ class Device(abc.ABC):
                 the execution.
 
         Returns:
-            TransformProgram, ExecutionConfig: A transform program that is called before execution, and a configuration
+            CompilePipeline, ExecutionConfig: A transform program that is called before execution, and a configuration
                 with unset specifications filled in.
 
         Raises:
@@ -320,11 +320,11 @@ class Device(abc.ABC):
         .. code-block:: python
 
                 def preprocess(config):
-                    program = TransformProgram()
+                    program = CompilePipeline()
                     program.add_transform(my_preprocessing_transform)
                     return program, config
 
-        .. seealso:: :func:`~.pennylane.transform.core.transform` and :class:`~.pennylane.transform.core.TransformProgram`
+        .. seealso:: :func:`~.pennylane.transform.core.transform` and :class:`~.pennylane.transform.core.CompilePipeline`
 
         .. details::
             :title: Post processing function and derivatives
@@ -411,14 +411,14 @@ class Device(abc.ABC):
 
     def preprocess_transforms(
         self, execution_config: ExecutionConfig | None = None
-    ) -> TransformProgram:
+    ) -> CompilePipeline:
         """Returns the transform program to preprocess a circuit for execution.
 
         Args:
             execution_config (ExecutionConfig): The execution configuration object
 
         Returns:
-            TransformProgram: A transform program that is called before execution
+            CompilePipeline: A transform program that is called before execution
 
         The transform program is composed of a list of individual transforms, which may include:
 
@@ -452,11 +452,11 @@ class Device(abc.ABC):
         .. code-block:: python
 
             def preprocess(self, config):
-                program = TransformProgram()
+                program = CompilePipeline()
                 program.add_transform(my_preprocessing_transform)
                 return program
 
-        .. seealso:: :func:`~.pennylane.transform.core.transform` and :class:`~.pennylane.transform.core.TransformProgram`
+        .. seealso:: :func:`~.pennylane.transform.core.transform` and :class:`~.pennylane.transform.core.CompilePipeline`
 
         .. details::
             :title: Post processing function and derivatives
@@ -506,12 +506,12 @@ class Device(abc.ABC):
 
         if not self.capabilities:
             # The capabilities are required to construct a default transform program.
-            return TransformProgram()
+            return CompilePipeline()
 
         if not execution_config:
             execution_config = ExecutionConfig()
 
-        program = TransformProgram()
+        program = CompilePipeline()
 
         # First handle mid-circuit measurements because it may add wires. At this point we
         # should assume that the mcm method is already validated and resolved.

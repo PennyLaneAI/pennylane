@@ -25,7 +25,7 @@ from pennylane.devices.capabilities import (
 )
 from pennylane.exceptions import DeviceError, QuantumFunctionError
 from pennylane.tape import QuantumScript, QuantumScriptOrBatch
-from pennylane.transforms.core import TransformProgram
+from pennylane.transforms.core import CompilePipeline
 from pennylane.typing import Result, ResultBatch
 from pennylane.wires import Wires
 
@@ -118,7 +118,7 @@ class TestSetupExecutionConfig:
         class CustomDevice(Device):
 
             def preprocess(self, execution_config=None):
-                return TransformProgram(), default_execution_config
+                return CompilePipeline(), default_execution_config
 
             def execute(self, circuits, execution_config=None):
                 return (0,)
@@ -265,7 +265,7 @@ class TestPreprocessTransforms:
     def test_device_implements_preprocess(self):
         """Tests that the execution config returned by device's preprocess is used."""
 
-        default_transform_program = TransformProgram()
+        default_transform_program = CompilePipeline()
 
         class CustomDevice(Device):
 
@@ -289,7 +289,7 @@ class TestPreprocessTransforms:
 
         dev = DeviceNoCapabilities()
         program = dev.preprocess_transforms()
-        assert program == TransformProgram()
+        assert program == CompilePipeline()
 
     @pytest.mark.usefixtures("create_temporary_toml_file")
     @pytest.mark.parametrize(
@@ -763,7 +763,7 @@ def test_device_with_ambiguous_preprocess():
             """A device with ambiguous preprocess."""
 
             def preprocess(self, execution_config=None):
-                return TransformProgram(), ExecutionConfig()
+                return CompilePipeline(), ExecutionConfig()
 
             def setup_execution_config(
                 self,
@@ -774,8 +774,8 @@ def test_device_with_ambiguous_preprocess():
 
             def preprocess_transforms(
                 self, execution_config: ExecutionConfig | None = None
-            ) -> TransformProgram:
-                return TransformProgram()
+            ) -> CompilePipeline:
+                return CompilePipeline()
 
             def execute(self, circuits, execution_config: ExecutionConfig = None):
                 return (0,)

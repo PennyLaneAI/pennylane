@@ -186,7 +186,7 @@ that compute the desired quantity.
 Transforms developer functions
 ------------------------------
 
-:class:`~.TransformContainer`, :class:`~.TransformDispatcher`, and  :class:`~.TransformProgram` are
+:class:`~.TransformContainer`, :class:`~.TransformDispatcher`, and  :class:`~.CompilePipeline` are
 developer-facing objects that allow the
 creation, dispatching, and composability of transforms. If you would like to make a custom transform, refer
 instead to the documentation of :func:`qml.transform <pennylane.transform>`.
