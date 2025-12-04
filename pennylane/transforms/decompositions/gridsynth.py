@@ -20,8 +20,7 @@ from pennylane.transforms.core import transform
 def gridsynth(tape, *, epsilon, ppr_basis):
     r"""Decomposes RZ and PhaseShift gates into Clifford+T basis or PPR basis.
     
-    A wrapper that allows us to register a primitive that represents the transform during capture.
-    The transform itself is only implemented in Catalyst. This is just to enable capture."""
+    This transform requires QJIT and capture to be enabled. This is a wrapper for the catalyst gridsynth transform pass."""
 
     raise NotImplementedError(
         "This transform pass (gridsynth) is only implemented when using capture and QJIT. Otherwise, please use qml.transforms.clifford_t_decomposition."
