@@ -13,7 +13,6 @@
 # limitations under the License.
 """This module contains functions to perform VSCF calculation."""
 
-
 import logging
 import time
 from collections.abc import Iterator
@@ -21,49 +20,64 @@ from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 from typing import NamedTuple
 
-import jax
-import jax.numpy as jnp
-import numpy as np
-from jax import jit, lax
+has_jax = True
+try:  # pragma: no cover
+
+    import jax
+    import jax.numpy as jnp
+    import numpy as np
+    from jax import jit, lax
+
+    jax.config.update("jax_enable_x64", True)
+
+except (ModuleNotFoundError, ImportError) as e:  # pragma: no cover
+    has_jax = False
+
 
 logger = logging.getLogger(__name__)
-jax.config.update("jax_enable_x64", True)
-
-# pylint: disable=too-many-arguments, too-many-positional-arguments
 
 
-# ---------------------------------------------------------------------
-# Data types used across the module
-# ---------------------------------------------------------------------
-class HostBatches(NamedTuple):
+# pylint: disable=too-many-arguments
+
+
+class VSCFData(NamedTuple):
     """
-    Batched data container: used to move compactly data from the generator to the user (CPU, numpy version)
+    Unified data container for both Host (NumPy) and Device (JAX).
     """
 
-    term_map: np.ndarray  # Host-side: (L,) int32
-    target_mode: np.ndarray  # Host-side: (L,) int32
-    i: np.ndarray  # Host-side: (L,) int32
-    j: np.ndarray  # Host-side: (L,) int32
-    coeffs: np.ndarray  # Host-side: (L,) float64
-    partners: np.ndarray  # Host-side: (L, P) int32 padded with -1
-    valid: (
-        np.ndarray
-    )  # Host-side: (L,) bool  --> this is needed, because otherwise 1body terms would be treated equally to padded data (unvalid)
+    term_map: np.ndarray | jnp.ndarray  # int32
+    target_mode: np.ndarray | jnp.ndarray  # int32
+    i: np.ndarray | jnp.ndarray  # int32
+    j: np.ndarray | jnp.ndarray  # int32
+    coeffs: np.ndarray | jnp.ndarray  # float64
+    partners: np.ndarray | jnp.ndarray  # int32
+    valid: np.ndarray | jnp.ndarray  # bool
 
+    @classmethod
+    def stack_to_device(cls, batch_list: list):
+        """
+        Efficiently stacks a list of host batches and transfers them to the device.
+        """
+        if not batch_list:
+            raise ValueError("Cannot stack empty batch list")
 
-class DeviceBatches(NamedTuple):
-    """
-    Batched data container: used to move compactly data from the generator to the user (Device, Jax version)
-    """
+        # transpose: convert List[NamedTuple] -> Tuple[List[Field]]
+        # this separates term_map, target_mode, etc. into their own lists
+        transposed_data = zip(*batch_list)
 
-    # stacked device arrays: leading axis = n_batches, second = batch size (B)
-    term_map: jnp.ndarray  # (n_batches, B) int32
-    target_mode: jnp.ndarray  # (n_batches, B) int32
-    i: jnp.ndarray  # (n_batches, B) int32
-    j: jnp.ndarray  # (n_batches, B) int32
-    coeffs: jnp.ndarray  # (n_batches, B) float64
-    partners: jnp.ndarray  # (n_batches, B, P) int32
-    valid: jnp.ndarray  # (n_batches, B) bool
+        # stack (CPU) -> transfer (GPU)
+        # we iterate over the 7 fields. For each field, we stack the numpy arrays
+        # into one big block, then send it to JAX.
+        device_arrays = []
+        for field_list in transposed_data:
+            # np.stack creates a single contiguous array in RAM (fast)
+            host_stacked = np.stack(field_list, axis=0)
+
+            # jnp.array performs the host-to-device transfer (PCIe optimization)
+            device_arrays.append(jnp.array(host_stacked))
+
+        # instantiate the class with JAX arrays
+        return cls(*device_arrays)
 
 
 def _integral_proc_worker(args):
@@ -420,7 +434,7 @@ class BatchRegularizer:
         pp = self.buf_partners.take_rows(B)
         vv = self.buf_valid.take(B)
 
-        return HostBatches(tm, tgt, ii, jj, cc, pp, vv)
+        return VSCFData(tm, tgt, ii, jj, cc, pp, vv)  # containers: np.ndarray
 
     def _emit_padded_last_batch(self):
         B = self.target_size
@@ -434,7 +448,7 @@ class BatchRegularizer:
         cc = self.buf_coeffs.pad_and_take_all(B, pad_value=0.0)
         pp = self.buf_partners.pad_and_take_all(B, pad_value=-1)
         vv = self.buf_valid.pad_and_take_all(B, pad_value=False)
-        return HostBatches(tm, tgt, ii, jj, cc, pp, vv)
+        return VSCFData(tm, tgt, ii, jj, cc, pp, vv)  # containers: np.ndarray
 
     def _generator(self):
         for term_map, target_mode, i, j, coeffs, partners, valid in self.raw_gen:
@@ -468,7 +482,7 @@ class BatchRegularizer:
 def scf_step_batched(
     h_mat,
     mode_rots,
-    device_batches: DeviceBatches,
+    device_batches: VSCFData,
     modals_tuple,
     nmodes,
     max_modals,
@@ -761,7 +775,10 @@ def vscf(
 
     """
 
-    # pylint: disable=too-many-statements
+    if not has_jax:
+        raise ImportError(
+            "Jax is required for performing VSCF. Have a look at the documentation at https://docs.pennylane.ai/en/stable/development/guide/installation.html ."
+        )  # pragma: no cover
 
     t0 = time.time()
     nmodes = len(modals)
@@ -787,39 +804,21 @@ def vscf(
 
     # pack into fixed-size batches using preallocated growable buffers and regularization of the flow
     packer = BatchRegularizer(raw_gen, target_size=B, max_partners=max_partners)
-    packed_batches: list[HostBatches] = []
-    active_num_final = 0
-    for pb in packer:
-        packed_batches.append(pb)
-        active_num_final += B  # each packed batch has exactly B entries (last one padded)
+    host_batches: list[VSCFData] = list(packer)
 
-    n_batches = len(packed_batches)
+    n_batches = len(host_batches)
     if n_batches == 0:
-        # nothing to do
+        # handle empty case
         max_modals = max(modals)
         mode_rots = jnp.eye(max_modals)[None, :, :].repeat(nmodes, axis=0)
         return 0.0, mode_rots
 
-    # move stacked batches to device
-    term_map_stack = jnp.stack(
-        [jnp.array(pb.term_map, dtype=jnp.int32) for pb in packed_batches], axis=0
-    )  # (n_batches, B)
-    target_stack = jnp.stack(
-        [jnp.array(pb.target_mode, dtype=jnp.int32) for pb in packed_batches], axis=0
-    )
-    i_stack = jnp.stack([jnp.array(pb.i, dtype=jnp.int32) for pb in packed_batches], axis=0)
-    j_stack = jnp.stack([jnp.array(pb.j, dtype=jnp.int32) for pb in packed_batches], axis=0)
-    coeff_stack = jnp.stack(
-        [jnp.array(pb.coeffs, dtype=jnp.float64) for pb in packed_batches], axis=0
-    )
-    partners_stack = jnp.stack(
-        [jnp.array(pb.partners, dtype=jnp.int32) for pb in packed_batches], axis=0
-    )  # (n_batches, B, P)
-    valid_stack = jnp.stack([jnp.array(pb.valid, dtype=bool) for pb in packed_batches], axis=0)
+    # compact data and move to GPU
+    device_batches = VSCFData.stack_to_device(host_batches)
 
-    device_batches = DeviceBatches(
-        term_map_stack, target_stack, i_stack, j_stack, coeff_stack, partners_stack, valid_stack
-    )
+    # h_mat rows = number of unique term IDs discovered in generator ~ active_num_final/B *? but we tracked active_num_final = n_batches*B
+    # max_term_id estimation: we can scan packed_batches to find max term id used
+    max_term = int(device_batches.term_map.max())
 
     # initialize h_mat and rotations
     max_modals = max(modals)
@@ -829,13 +828,6 @@ def vscf(
         if dim < max_modals:
             mode_rots_np[idx, dim:, dim:] = np.eye(max_modals - dim)
     mode_rots = jnp.array(mode_rots_np)
-
-    # h_mat rows = number of unique term IDs discovered in generator ~ active_num_final/B *? but we tracked active_num_final = n_batches*B
-    # max_term_id estimation: we can scan packed_batches to find max term id used
-    max_term = 0
-    for pb in packed_batches:
-        if pb.term_map.size > 0:
-            max_term = max(max_term, int(pb.term_map.max()))
 
     # if the maximum term ID (integer) that appears in term_map is K, then valid row indices are: 0, 1, ..., K (= K + 1)
     active_terms = max_term + 1
@@ -881,8 +873,8 @@ def vscf(
     t2 = time.time()
 
     logger.debug(
-        "Converged in %i iterations to energy %f:.8f\
-                 \nPreparation time: %f:.3 s; SCF time: %f:.3f s --> total: %f:.3f s",
+        "Converged in %i iterations to energy %f:\
+                 \nPreparation time: %f s; SCF time: %f: s --> total: %f: s",
         int(n_iters),
         float(final_e),
         t1 - t0,
