@@ -19,8 +19,15 @@ from pennylane.transforms.core import transform
 @transform
 def gridsynth(tape, *, epsilon, ppr_basis):
     r"""Decomposes RZ and PhaseShift gates into Clifford+T basis or PPR basis.
-    
-    This transform requires QJIT and capture to be enabled. This is a wrapper for the catalyst gridsynth transform pass."""
+
+    This transform requires QJIT and capture to be enabled. This is a wrapper for the catalyst gridsynth transform pass.
+
+    Args:
+        tape (QNode): A quantum circuit.
+        epsilon (float): The maximum error for the discretization.
+        ppr_basis (bool): If True, decompose into the PPR basis. If False, decompose into the Clifford+T basis.
+
+    """
 
     raise NotImplementedError(
         "This transform pass (gridsynth) is only implemented when using capture and QJIT. Otherwise, please use qml.transforms.clifford_t_decomposition."
