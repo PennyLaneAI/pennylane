@@ -1000,16 +1000,11 @@ class QuantumScript:
 
         >>> from pprint import pprint
         >>> pprint(qscript.specs['resources'])
-        {'errors': {},
-         'resources': SpecsResources(gate_types={'CNOT': 2,
-                                                 'Hadamard': 2,
-                                                 'RX': 1,
-                                                 'Rot': 1},
-                                     gate_sizes={1: 4, 2: 2},
-                                     measurements={'expval(PauliZ @ PauliZ)': 1},
-                                     num_allocs=2,
-                                     depth=4),
-         'shots': Shots(total_shots=None, shot_vector=())}
+        SpecsResources(gate_types={'CNOT': 2, 'Hadamard': 2, 'RX': 1, 'Rot': 1},
+                       gate_sizes={1: 4, 2: 2},
+                       measurements={'expval(PauliZ @ PauliZ)': 1},
+                       num_allocs=2,
+                       depth=4)
         """
         if self._specs is None:
             resources, errors = qml.resource.resource.resources_from_tape(self, compute_errs=True)

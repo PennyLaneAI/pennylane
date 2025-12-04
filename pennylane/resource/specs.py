@@ -274,12 +274,12 @@ def specs(
         >>> pprint(qml.specs(circuit, level="user")()["resources"])
         {0: SpecsResources(gate_types={'RandomLayers': 1},
                            gate_sizes={2: 1},
-                           measurements={'expval(PauliX + PauliY)': 1},
+                           measurements={'expval(PauliX @ PauliZ)': 1},
                            num_allocs=2,
                            depth=1),
          1: SpecsResources(gate_types={'RandomLayers': 1},
                            gate_sizes={2: 1},
-                           measurements={'expval(PauliX + PauliY)': 1},
+                           measurements={'expval(PauliZ @ PauliY)': 1},
                            num_allocs=3,
                            depth=1)}
     """
