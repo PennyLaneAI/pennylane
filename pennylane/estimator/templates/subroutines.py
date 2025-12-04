@@ -478,8 +478,7 @@ class SemiAdder(ResourceOperator):
                         num_zero_ctrl=0,  # we flipped already and added the X gates above
                     )
                     gate_lst.append(GateCount(c_gate, action.count))
-
-                else:  # pragma: no cover
+                else:
                     gate_lst.append(action)
 
             return gate_lst
