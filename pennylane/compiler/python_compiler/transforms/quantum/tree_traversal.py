@@ -15,6 +15,7 @@
 
 """Implementation of the Tree-Traversal MCM simulation method as an xDSL transform in Catalyst."""
 
+from ast import Dict
 from dataclasses import dataclass, field
 from itertools import chain
 
@@ -239,8 +240,8 @@ class TreeTraversalPattern(RewritePattern):
         cloned_fun.sym_name = builtin.StringAttr(func_op.sym_name.data + ".simple_io")
         rewriter.insert_op(cloned_fun, InsertPoint.after(func_op))
 
-        current_reg = None
-        qubit_to_reg_idx = {}
+        current_reg: SSAValue = None
+        qubit_to_reg_idx: Dict[SSAValue, SSAValue | builtin.IntegerAttr] = {}
 
         for op in cloned_fun.body.ops:
             match op:
@@ -354,7 +355,9 @@ class TreeTraversalPattern(RewritePattern):
                     )
                     return_op = func.ReturnOp(*tensor_op.results)
                     for insert_op in (c0, load_op, tensor_op, return_op):
-                        rewriter.insert_op(insert_op, InsertPoint.at_end(self.funcs.tt_op.body.block))
+                        rewriter.insert_op(
+                            insert_op, InsertPoint.at_end(self.funcs.tt_op.body.block)
+                        )
 
                 elif isinstance(op, quantum.DeallocOp):
                     # Use the final qreg from while loop for dealloc
@@ -1127,7 +1130,9 @@ class TreeTraversalPattern(RewritePattern):
         statevec_size = arith.ShLIOp(c1, qubit_count)
 
         # Define statevec_stack as memref<depth x (2^n) x complex<f64>>
-        statevec_stack = memref.AllocOp((tree_depth, statevec_size), (), self.stacks.statevec_stack_type)
+        statevec_stack = memref.AllocOp(
+            (tree_depth, statevec_size), (), self.stacks.statevec_stack_type
+        )
 
         # probabilities for each branch are tracked here
         probs_stack = memref.AllocOp((updated_tree_depth,), (), self.stacks.probs_stack_type)
@@ -1329,7 +1334,9 @@ class TreeTraversalPattern(RewritePattern):
 
         mulf_op = arith.MulfOp(load_probs_op.results[0], load_folded_op.results[0])
         addf_op = arith.AddfOp(mulf_op.results[0], load_parent_folded_op.results[0])
-        store_op = memref.StoreOp.get(addf_op.results[0], self.stacks.folded_result, (current_depth,))
+        store_op = memref.StoreOp.get(
+            addf_op.results[0], self.stacks.folded_result, (current_depth,)
+        )
 
         # folded_result[depth + 1] = 0
         f0 = arith.ConstantOp(builtin.FloatAttr(0.0, type=builtin.f64))
