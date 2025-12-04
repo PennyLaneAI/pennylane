@@ -699,9 +699,6 @@ def _find_so4_decomposition(U, u_mag, O_u, candidates):
                 min_error = error
                 best_result = (alpha, beta, signs, O_v, v_mag)
 
-            # if min_error < 1e-6:
-            #     return best_result
-
         # FALLBACK CHECK:
         # If the best error we found is still "large" (e.g., > 1e-5),
         # then we failed to find a valid Real-valued decomposition.
