@@ -631,16 +631,16 @@ class TreeTraversalPattern(RewritePattern):
 
         # switch op match cases
         for case, segment in enumerate(self.quantum_segments):
-            args = (
-                [branch_type]  # branch_type for postselect logic
-                + [visited_stack]  # visited_stack for visited status
-                + [statevec_stack]  # statevector stack for storing and restoring statevector
-                + [probs_stack]  # probs stack for recording the probability before each segment
-                + [folded_result]  # folded result
-                + [statevec_size]  # statevec size for storing and restoring statevector
-                + [io_args[0]]  # quantum register
-                + [io_args[values_as_io_index[value]] for value in segment.inputs]
-            )
+            args = [
+                branch_type,  # branch_type for postselect logic
+                visited_stack,  # visited_stack for visited status
+                statevec_stack,  # statevector stack for storing and restoring statevector
+                probs_stack,  # probs stack for recording the probability before each segment
+                folded_result,  # folded result
+                statevec_size,  # statevec size for storing and restoring statevector
+                io_args[0],  # quantum register
+                *[io_args[values_as_io_index[value]] for value in segment.inputs],
+            ]
             res_types = [quantum.QuregType()] + [res.type for res in segment.outputs]
             callOp = func.CallOp(self.quantum_segments[case].fun.sym_name.data, args, res_types)
 
@@ -665,13 +665,15 @@ class TreeTraversalPattern(RewritePattern):
             return None
 
         fun_type = builtin.FunctionType.from_lists(
-            [builtin.IndexType()]  #
-            + [self.stacks.visited_stack_type]
-            + [self.stacks.statevec_stack_type]
-            + [self.stacks.probs_stack_type]
-            + [self.stacks.folded_result_type]
-            + [builtin.IndexType()]
-            + [arg.type for arg in input_vals],
+            [
+                builtin.IndexType(),  # branch_type
+                self.stacks.visited_stack_type,
+                self.stacks.statevec_stack_type,
+                self.stacks.probs_stack_type,
+                self.stacks.folded_result_type,
+                builtin.IndexType(),  # statevec_size
+                *[arg.type for arg in input_vals],
+            ],
             [res.type for res in output_vals],
         )
         new_func = func.FuncOp(f"quantum_segment_{counter}", fun_type)
@@ -1570,10 +1572,10 @@ class TreeTraversalPattern(RewritePattern):
 
         statevec_subview = memref.SubviewOp.get(
             statevec_stack,
-            (depth, 0),           # offsets: start at [depth, 0]
-            (1, statevec_size),   # sizes: 1 row, statevec_size columns
-            (1, 1),               # strides
-            state_memref_type,    # Result is 1D memref
+            (depth, 0),  # offsets: start at [depth, 0]
+            (1, statevec_size),  # sizes: 1 row, statevec_size columns
+            (1, 1),  # strides
+            state_memref_type,  # Result is 1D memref
         )
 
         state_comp_basis_op = quantum.ComputationalBasisOp(
@@ -1589,7 +1591,7 @@ class TreeTraversalPattern(RewritePattern):
                 cast_op.results[0],
                 statevec_subview.results[0],
             ],
-            result_types=[None]
+            result_types=[None],
         )
 
         for op in (state_comp_basis_op, cast_op, statevec_subview, state_op):
