@@ -373,10 +373,10 @@ class TestDecomposition:
 
     def test_sparse_non_hermitian_check_count_nonzero(self, monkeypatch):
         """Test that sparse non-Hermitian check uses count_nonzero() when nnz attribute is missing."""
-        sp = pytest.importorskip("scipy.sparse")
+        sps = pytest.importorskip("scipy.sparse")
 
         non_hermitian = np.array([[1, 2j], [3j, 4]])
-        sparse_nh = sp.csr_matrix(non_hermitian)
+        sparse_nh = sps.csr_matrix(non_hermitian)
 
         class NoNNZWrapper:
             def __init__(self, matrix):
@@ -391,13 +391,13 @@ class TestDecomposition:
             def count_nonzero(self):
                 return self._matrix.count_nonzero()
 
-        original_sub = sp.csr_matrix.__sub__
+        original_sub = sps.csr_matrix.__sub__
 
         def mock_sub(self, other):
             result = original_sub(self, other)
             return NoNNZWrapper(result)
 
-        monkeypatch.setattr(sp.csr_matrix, "__sub__", mock_sub)
+        monkeypatch.setattr(sps.csr_matrix, "__sub__", mock_sub)
 
         with pytest.raises(ValueError, match="The matrix is not Hermitian"):
             _check_hermitian_sparse(sparse_nh)
