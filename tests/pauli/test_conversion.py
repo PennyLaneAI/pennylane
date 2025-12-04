@@ -284,9 +284,9 @@ class TestDecomposition:
 
     def test_sparse_matrix_no_dense_conversion(self, monkeypatch):
         """Ensure the sparse path does not densify inputs."""
-        sp = pytest.importorskip("scipy.sparse")
+        sps = pytest.importorskip("scipy.sparse")
 
-        base = sp.csr_matrix(np.diag([1, -1, -1, 1]))
+        base = sps.csr_matrix(np.diag([1, -1, -1, 1]))
         dense_reference = base.toarray().copy()
         expected_sentence = qml.pauli_decompose(dense_reference, pauli=True)
 
