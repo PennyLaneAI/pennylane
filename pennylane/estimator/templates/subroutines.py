@@ -976,7 +976,7 @@ class UnaryIterationQPE(ResourceOperator):
     that uses the unary iteration technique described in `arXiv. 2011.03494 <https://arxiv.org/pdf/2011.03494>`_.
     In this approach, the Select operation is implemented using unary iteration, which reduces
     T and Toffoli gate counts at the cost of increasing the number of auxiliary qubits required. For
-    its typical usage, see the explanation at `<https://pennylane.ai/compilation/unary-iteration>`_.
+    its typical usage, see the explanation `here <https://pennylane.ai/compilation/unary-iteration>`_.
 
     Note, users can also provide a custom adjoint QFT implementation, which can be used to
     further optimize the resource requirements. For example, one could use an approximate QFT implementation
@@ -985,7 +985,7 @@ class UnaryIterationQPE(ResourceOperator):
     Args:
         unitary (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): the unitary operator to run
             the phase estimation protocol on
-        num_iterations (int): The total number of times the unitary operator :math:`U` is 
+        num_iterations (int): The total number of times the unitary operator :math:`U` is
             applied in order to reach a target precision in the eigenvalue estimate.
         adj_qft_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator` | None): An optional
             argument to set the subroutine used to perform the adjoint QFT operation.
@@ -993,6 +993,8 @@ class UnaryIterationQPE(ResourceOperator):
 
     Resources:
         The resources are obtained from Fig 2. in Section III of `arXiv. 2011.03494 <https://arxiv.org/pdf/2011.03494>`_.
+
+    .. seealso:: Related PennyLane operation :class:`~.pennylane.QPE` and explanation of `Unary Iteration <https://pennylane.ai/compilation/unary-iteration>`_.
 
     **Example**
 
@@ -1052,7 +1054,7 @@ class UnaryIterationQPE(ResourceOperator):
             dict: A dictionary containing the resource parameters:
                 * unitary (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A compressed resource operator, corresponding
                   to the phase estimation operator.
-                * num_iterations (int): The total number of times the unitary operator :math:`U` is 
+                * num_iterations (int): The total number of times the unitary operator :math:`U` is
                   applied in order to reach a target precision in the eigenvalue estimate.
                 * adj_qft_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp` | None]): An optional compressed
                   resource operator, corresponding to the adjoint QFT routine. If :code:`None`, the
@@ -1078,7 +1080,7 @@ class UnaryIterationQPE(ResourceOperator):
         Args:
             unitary (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A compressed resource operator, corresponding
                 to the phase estimation operator.
-            num_iterations (int): The total number of times the unitary operator :math:`U` is 
+            num_iterations (int): The total number of times the unitary operator :math:`U` is
                 applied in order to reach a target precision in the eigenvalue estimate.
             adj_qft_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp` | None): An optional compressed
                 resource operator, corresponding to the adjoint QFT routine. If :code:`None`, the
@@ -1113,7 +1115,7 @@ class UnaryIterationQPE(ResourceOperator):
         Args:
             unitary (~.pennylane.estimator.resource_operator.CompressedResourceOp): A compressed resource operator
                 corresponding to the phase estimation operator :math:`U`.
-            num_iterations (int): The total number of times the unitary operator :math:`U` is 
+            num_iterations (int): The total number of times the unitary operator :math:`U` is
                 applied in order to reach a target precision in the eigenvalue estimate.
             adj_qft_cmpr_op (~.pennylane.estimator.resource_operator.CompressedResourceOp | None): An optional compressed
                 resource operator corresponding to the adjoint QFT routine. If ``None``, the
