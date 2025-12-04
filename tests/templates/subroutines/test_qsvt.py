@@ -1026,14 +1026,15 @@ class TestIterativeSolver:
         )
 
     def test_jit_if_jax_available(self):
-    
+
         def f(x):
-            return x@x
-        
+            return x @ x
+
         jit_wrapped_f = jit_if_jax_available(f)
-        
+
         try:
             import jax
+
             assert hasattr(jit_wrapped_f, "lower")
         except ModuleNotFoundError:
             assert jit_wrapped_f is f
@@ -1046,13 +1047,11 @@ class TestIterativeSolver:
     )
     def test_raised_exceptions(self, polynomial_coeffs_in_cheby_basis):
         try:
-            import jax 
-            import optax 
+            import jax
+            import optax
         except ModuleNotFoundError:
             with pytest.raises(ModuleNotFoundError, match="JAX and optax are required"):
                 _compute_qsp_angles_iteratively(polynomial_coeffs_in_cheby_basis)
-        
-
 
     @pytest.mark.parametrize(
         "x, degree",
