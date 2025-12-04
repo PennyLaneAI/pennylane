@@ -303,7 +303,9 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> CircuitSpecs:  #
         resources=resources,
         shots=original_qnode.shots,
         device_name=device.name,
-        num_device_wires=len(device.wires),
+        num_device_wires=(
+            len(original_qnode.device.wires) if original_qnode.device.wires is not None else None
+        ),
         level=level,
     )
 
