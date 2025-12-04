@@ -257,7 +257,7 @@ class TreeTraversalPattern(RewritePattern):
                         qubit_to_reg_idx[op.results[i]] = qubit_to_reg_idx[qb]
                         del qubit_to_reg_idx[qb]
                 case quantum.InsertOp():
-                    assert qubit_to_reg_idx[op.qubit] is op.idx_attr if op.idx_attr else True
+                    assert qubit_to_reg_idx[op.qubit] == op.idx_attr if op.idx_attr else True
                     del qubit_to_reg_idx[op.qubit]
                     # update register since it might have changed
                     op.operands = (current_reg, op.idx, op.qubit)
