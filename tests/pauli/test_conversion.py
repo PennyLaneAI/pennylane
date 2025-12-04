@@ -359,12 +359,12 @@ class TestDecomposition:
 
     def test_sparse_duplicate_entries(self):
         """Test that sparse matrices with duplicate entries are handled correctly."""
-        sp = pytest.importorskip("scipy.sparse")
+        sps = pytest.importorskip("scipy.sparse")
 
         rows = np.array([0, 0, 1])
         cols = np.array([0, 0, 1])
         data = np.array([1.0, 2.0, 3.0])
-        sparse_dup = sp.coo_matrix((data, (rows, cols)), shape=(2, 2))
+        sparse_dup = sps.coo_matrix((data, (rows, cols)), shape=(2, 2))
         result = qml.pauli_decompose(sparse_dup, pauli=True, check_hermitian=False)
         assert isinstance(result, PauliSentence)
         reconstructed = result.to_mat(range(1))
