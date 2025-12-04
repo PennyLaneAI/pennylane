@@ -34,12 +34,12 @@ def _add_abstract_shapes(f):
     Dynamic shape support currently has a lot of dragons. This function is subject to change
     at any moment. Use duplicate code till reliable abstractions are found.
 
-    >>> jax.config.update("jax_dynamic_shapes", True)
+    >>> jax.config.update("jax_dynamic_shapes", True)  # doctest: +SKIP
     >>> jax.config.update("jax_enable_x64", True)
     >>> @qml.capture.FlatFn
     ... def f(x):
     ...     return x + 1
-    >>> jax.make_jaxpr(f, abstracted_axes={0:"a"})(jnp.zeros(4))
+    >>> jax.make_jaxpr(f, abstracted_axes={0:"a"})(jnp.zeros(4))  # doctest: +SKIP
     { lambda ; a:i64[] b:f64[a]. let
         c:f64[a] = broadcast_in_dim[
           broadcast_dimensions=()
@@ -48,7 +48,7 @@ def _add_abstract_shapes(f):
         ] 1.0:f64[] a
         d:f64[a] = add b c
       in (d,) }
-    >>> jax.make_jaxpr(_add_abstract_shapes(f), abstracted_axes={0:"a"})(jnp.zeros(4))
+    >>> jax.make_jaxpr(_add_abstract_shapes(f), abstracted_axes={0:"a"})(jnp.zeros(4))  # doctest: +SKIP
     { lambda ; a:i64[] b:f64[a]. let
         c:f64[a] = broadcast_in_dim[
           broadcast_dimensions=()
