@@ -2,6 +2,9 @@
 
 <h3>New features since last release</h3>
 
+* Added a new transform :func:`~pennylane.transforms.gridsynth` to discretize RZ and PhaseShift gates to Clifford+T or PPR basis. This can be used only with QJIT and program capture enabled.
+  [(#8609)](https://github.com/PennyLaneAI/pennylane/pull/8609)
+
 * Quantum Automatic Differentiation implemented to allow automatic selection of optimal
   Hadamard gradient differentiation methods per [the paper](https://arxiv.org/pdf/2408.05406).
   [(#8640)](https://github.com/PennyLaneAI/pennylane/pull/8640)

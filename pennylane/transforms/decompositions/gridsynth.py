@@ -31,6 +31,6 @@ def gridsynth(tape, *, epsilon, ppr_basis):
 
     """
 
-    raise NotImplementedError(
+    raise NotImplementedError(  # pragma: no cover
         "This transform pass (gridsynth) is only implemented when using capture and QJIT. Otherwise, please use qml.transforms.clifford_t_decomposition."
     )
