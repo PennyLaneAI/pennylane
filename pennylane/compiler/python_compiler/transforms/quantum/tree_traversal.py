@@ -215,7 +215,7 @@ class TreeTraversalPattern(RewritePattern):
 
         self.finalize_traversal_function(rewriter)
 
-    def get_qubit_idx(self, op: Operation) -> builtin.IntegerAttr | SSAValue | None:
+    def get_qubit_idx(self, op: quantum.ExtractOp) -> builtin.IntegerAttr | SSAValue | None:
         """Get the index of the operation."""
         return op.idx if op.idx else op.idx_attr
 
