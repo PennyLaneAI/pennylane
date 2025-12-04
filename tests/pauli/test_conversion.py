@@ -301,7 +301,7 @@ class TestDecomposition:
 
     def test_sparse_large_system_pauli_sentence(self):
         """Validate sparse decomposition on a larger sparse system."""
-        sp = pytest.importorskip("scipy.sparse")
+        sps = pytest.importorskip("scipy.sparse")
 
         num_qubits = 6
         sentence = PauliSentence(
@@ -313,7 +313,7 @@ class TestDecomposition:
         )
 
         dense_matrix = sentence.to_mat(range(num_qubits))
-        sparse_matrix = sp.coo_matrix(dense_matrix)
+        sparse_matrix = sps.coo_matrix(dense_matrix)
 
         result = qml.pauli_decompose(sparse_matrix, pauli=True, check_hermitian=False)
 
