@@ -404,9 +404,9 @@ class TestDecomposition:
 
     def test_sparse_padding_target_dim_one(self):
         """Test that sparse padding with max_dim=0 sets target_dim=1."""
-        sp = pytest.importorskip("scipy.sparse")
+        sps = pytest.importorskip("scipy.sparse")
 
-        empty_matrix = sp.coo_matrix((0, 0))
+        empty_matrix = sps.coo_matrix((0, 0))
         result = _generalized_pauli_decompose_sparse(empty_matrix, padding=True, pauli=True)
 
         assert isinstance(result[0], qml.numpy.ndarray)
