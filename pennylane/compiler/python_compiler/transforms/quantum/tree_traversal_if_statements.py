@@ -618,7 +618,6 @@ class IfOperatorPartitioningPattern(RewritePattern):
 
                 # Remove the ops in the original IfOp
                 for if_op in list_op_if[::-1]:
-
                     rewriter.erase_op(if_op)
 
     def create_if_op_partition(  # pylint: disable=too-many-arguments
@@ -771,21 +770,3 @@ class IfOperatorPartitioningPattern(RewritePattern):
             cloned_op = op.clone(value_mapper)
             target_block.add_op(cloned_op)
 
-            self.update_value_mapper_recursively(op, cloned_op, value_mapper)
-
-    def update_value_mapper_recursively(self, orig_op, cloned_op, value_mapper):
-        """update value_mapper for all operations in operation"""
-        for orig_result, new_result in zip(orig_op.results, cloned_op.results):
-            value_mapper[orig_result] = new_result
-
-        for orig_region, cloned_region in zip(orig_op.regions, cloned_op.regions):
-            self.update_region_value_mapper(orig_region, cloned_region, value_mapper)
-
-    def update_region_value_mapper(self, orig_region, cloned_region, value_mapper):
-        """update value_mapper for all operations in region"""
-        for orig_block, cloned_block in zip(orig_region.blocks, cloned_region.blocks):
-            for orig_arg, cloned_arg in zip(orig_block.args, cloned_block.args):
-                value_mapper[orig_arg] = cloned_arg
-
-            for orig_nested_op, cloned_nested_op in zip(orig_block.ops, cloned_block.ops):
-                self.update_value_mapper_recursively(orig_nested_op, cloned_nested_op, value_mapper)
