@@ -80,7 +80,7 @@ class TestZSqrtTwo:
         ],
     )
     def test_arithmetic_modulo(self, z1, z2, expected):
-        """Test arithmetic operations on ZSqrtTwo."""
+        """Test arithmetic modulo operation on ZSqrtTwo."""
         assert z1 % z2 == expected
 
     def test_arithmetic_errors(self):
@@ -153,6 +153,20 @@ class TestZOmega:
         assert z2.norm() == abs(complex(z2)) * abs(complex(z2.conj()))
         assert (z1 - ZOmega(a=2, b=2, c=2)).to_sqrt_two() == ZSqrtTwo(a=4, b=1)
         assert 1 - ZOmega() == ZOmega(d=1)
+
+    @pytest.mark.parametrize(
+        "z1, z2, expected",
+        [
+            (ZOmega(24, 12, 32, 4), ZOmega(6, 3, 8, 1), ZOmega(0, 0, 0, 0)),
+            (ZOmega(3, -1, 4, 2), ZOmega(1, 2, 0, 3), ZOmega(0, 0, 0, 2)),
+            (ZOmega(0, 0, 0, 0), ZOmega(2, 3, 7, 5), ZOmega(0, 0, 0, 0)),
+            (ZOmega(12, -7, 4, 9), ZOmega(0, 0, 5, -3), ZOmega(1, 1, 1, -1)),
+            (ZOmega(-17, 22, -9, 5), ZOmega(3, -4, 2, -1), ZOmega(-1, 2, -3, 1)),
+        ],
+    )
+    def test_arithmetic_modulo(self, z1, z2, expected):
+        """Test arithmetic modulo operation on ZOmega."""
+        assert z1 % z2 == expected
 
     def test_arithmetic_errors(self):
         """Test that arithmetic operations raise errors for invalid types."""
