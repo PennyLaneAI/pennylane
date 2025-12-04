@@ -415,10 +415,10 @@ class TestDecomposition:
 
     def test_sparse_padding_shape_change(self):
         """Test that sparse padding creates new coo_matrix and updates shape when needed."""
-        sp = pytest.importorskip("scipy.sparse")
+        sps = pytest.importorskip("scipy.sparse")
 
         matrix_3x3 = np.array([[1, 0, 0], [0, 2, 0], [0, 0, 3]])
-        sparse_mat = sp.coo_matrix(matrix_3x3)
+        sparse_mat = sps.coo_matrix(matrix_3x3)
 
         result = _generalized_pauli_decompose_sparse(sparse_mat, padding=True, pauli=True)
 
