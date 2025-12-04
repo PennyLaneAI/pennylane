@@ -342,6 +342,15 @@ class TestDecomposition:
         with pytest.raises(ValueError, match="Cannot decompose an empty matrix"):
             qml.pauli_decompose(empty_matrix, check_hermitian=False)
 
+    def test_sparse_empty_matrix_error_direct(self):
+        """Test that an exception is raised if the sparse matrix is empty when calling
+        _generalized_pauli_decompose_sparse directly with padding=False."""
+        sp = pytest.importorskip("scipy.sparse")
+
+        empty_matrix = sp.csr_matrix((0, 0))
+        with pytest.raises(ValueError, match="Cannot decompose an empty matrix"):
+            _generalized_pauli_decompose_sparse(empty_matrix, padding=False)
+
     @pytest.mark.parametrize("sparse_type", ["csr_matrix", "coo_matrix"])
     def test_sparse_wrong_shape_error(self, sparse_type):
         """Test that an exception is raised if the sparse matrix does not have
