@@ -66,12 +66,6 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Install BLAS/LAPACK libraries for Python 3.14 (required for cvxopt)
-        if: matrix.python-version == '3.14'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libblas-dev liblapack-dev
-
       # Since the self-hosted runner can be re-used. It is best to set up all package
       # installations in a virtual environment that gets cleaned at the end of each workflow run
       - name: Setup Python virtual environment

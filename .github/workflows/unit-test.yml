@@ -122,12 +122,6 @@ jobs:
         with:
           python-version: '${{ inputs.python_version }}'
 
-      - name: Install BLAS/LAPACK libraries for Python 3.14 (required for cvxopt)
-        if: inputs.python_version == '3.14'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libblas-dev liblapack-dev
-
       - name: Install additional os packages
         if: inputs.additional_os_packages != ''
         env:
