@@ -945,7 +945,7 @@ def _scale_dict(dict1: dict, scalar: int):
     return combined_dict
 
 
-def _obs_to_str(obs: Operator) -> str:
+def _obs_to_str(obs) -> str:
     """Convert an Observable to a string representation for resource counting."""
     match obs.name:
         case "Sum":
@@ -963,10 +963,10 @@ def _obs_to_str(obs: Operator) -> str:
 
 def _mp_to_str(mp: MeasurementProcess, num_wires: int) -> str:
     """Convert a MeasurementProcess to a string representation for resource counting."""
-    meas_name = mp._shortname
+    meas_name = mp._shortname  # pylint: disable=protected-access
     if mp.obs is None:
         meas_wires = len(mp.wires)
-        if meas_wires == 0 or meas_wires == num_wires:
+        if meas_wires in (None, 0, num_wires):
             meas_name += "(all wires)"
         else:
             meas_name += f"({meas_wires} wires)"

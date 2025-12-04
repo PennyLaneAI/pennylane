@@ -526,7 +526,7 @@ class TestResourceEstimation:
             num_allocs=2,
             gate_types={},
             gate_sizes={},
-            measurements={"probs(2 wires)": 1},
+            measurements={"probs(all wires)": 1},
             depth=0,
         )
         assert tape.specs["resources"] == expected_resources

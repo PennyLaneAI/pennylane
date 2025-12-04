@@ -613,7 +613,7 @@ class TestInfomationProperties:
             num_allocs=3,
             gate_types=gate_types,
             gate_sizes=gate_sizes,
-            measurements={"expval(PauliZ)": 1, "probs(2 wires)": 1},
+            measurements={"expval(PauliX)": 1, "probs(2 wires)": 1},
             depth=3,
         )
         assert specs["resources"] == expected_resources
