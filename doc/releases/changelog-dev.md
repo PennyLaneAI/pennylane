@@ -359,6 +359,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Calling a transform dispatcher with args that are not a valid dispatch target returns a transform container.
+
+
 * Bump `jax` version to `0.7.1` for `capture` module.
   [(#8715)](https://github.com/PennyLaneAI/pennylane/pull/8715)
 

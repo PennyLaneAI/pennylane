@@ -469,24 +469,79 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         )
 
     @pytest.mark.parametrize("valid_transform", valid_transforms)
-    def test_integration_dispatcher_with_valid_transform_decorator_fails(self, valid_transform):
-        """Test that an error is raised with the transform function."""
+    def test_integration_dispatcher_with_invalid_dispatch_target_returns_container(
+        self, valid_transform
+    ):
+        """Test that calling a transform dispatcher with args that are not a valid dispatch target
+        returns a TransformContainer with the supplied args and kwargs."""
 
         dispatched_transform = qml.transform(valid_transform)
         targs = [0]
 
-        msg = r"Decorating a QNode with @transform_fn\(\*\*transform_kwargs\) has been removed"
-        with pytest.raises(TransformError, match=msg):
+        # Calling with invalid dispatch target should return a TransformContainer
+        container = dispatched_transform(*targs)
+        assert isinstance(container, qml.transforms.core.TransformContainer)
+        assert container.args == (0,)
+        assert container.kwargs == {}
 
-            @dispatched_transform(*targs)
-            @qml.qnode(device=dev)
-            def qnode_circuit(a):  # pylint:disable=unused-variable
-                """QNode circuit."""
-                qml.Hadamard(wires=0)
-                qml.CNOT(wires=[0, 1])
-                qml.PauliX(wires=0)
-                qml.RZ(a, wires=1)
-                return qml.expval(qml.PauliZ(wires=0))
+        # Test with kwargs as well
+        container_with_kwargs = dispatched_transform(1, 2, key="value")
+        assert isinstance(container_with_kwargs, qml.transforms.core.TransformContainer)
+        assert container_with_kwargs.args == (1, 2)
+        assert container_with_kwargs.kwargs == {"key": "value"}
+
+    @pytest.mark.parametrize("valid_transform", valid_transforms)
+    def test_combining_transforms_with_args_and_kwargs(self, valid_transform):
+        """Test that transforms called with args/kwargs (not valid dispatch targets) can be
+        combined using the + operator to form a TransformProgram.
+
+        This enables patterns like:
+            decompose(gate_set=gate_set) + merge_rotations(1e-6)
+        """
+
+        dispatched_transform1 = qml.transform(valid_transform)
+        dispatched_transform2 = qml.transform(valid_transform)
+
+        # Calling transforms with non-dispatch-target args returns TransformContainers
+        container1 = dispatched_transform1(0)
+        container2 = dispatched_transform2(1, key="value")
+
+        assert isinstance(container1, qml.transforms.core.TransformContainer)
+        assert isinstance(container2, qml.transforms.core.TransformContainer)
+
+        # Combining them with + should work
+        program = container1 + container2
+        assert isinstance(program, qml.transforms.core.TransformProgram)
+        assert len(program) == 2
+        assert program[0].args == (0,)
+        assert program[0].kwargs == {}
+        assert program[1].args == (1,)
+        assert program[1].kwargs == {"key": "value"}
+
+    @pytest.mark.parametrize("valid_transform", valid_transforms)
+    def test_kwargs_only_returns_container(self, valid_transform):
+        """Test that calling a transform dispatcher with only kwargs returns a TransformContainer.
+
+        This enables patterns like:
+            decompose(gate_set=gate_set) + merge_rotations(1e-6)
+        where decompose might be called with only keyword arguments.
+        """
+
+        dispatched_transform = qml.transform(valid_transform)
+
+        # Calling with only kwargs should return a TransformContainer
+        container = dispatched_transform(key="value", another="kwarg")
+        assert isinstance(container, qml.transforms.core.TransformContainer)
+        assert container.args == ()
+        assert container.kwargs == {"key": "value", "another": "kwarg"}
+
+        # This should work in combination with args-only call
+        container2 = dispatched_transform(0)
+        program = container + container2
+        assert isinstance(program, qml.transforms.core.TransformProgram)
+        assert len(program) == 2
+        assert program[0].kwargs == {"key": "value", "another": "kwarg"}
+        assert program[1].args == (0,)
 
     def test_queuing_qfunc_transform(self):
         """Test that queuing works with the transformed quantum function."""
