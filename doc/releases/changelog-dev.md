@@ -42,7 +42,7 @@
   method is not overridden.
   [(#8686)](https://github.com/PennyLaneAI/pennylane/pull/8686)
 
-* Added the `UnaryIterationBasedQPE` subroutine in the `pennylane.estimator`
+* Added the `UnaryIterationQPE` subroutine in the `pennylane.estimator`
   module that implements QPE using unary iteration.
   [(#8708)](https://github.com/PennyLaneAI/pennylane/pull/8708)
 
