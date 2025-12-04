@@ -18,7 +18,9 @@ from pennylane.transforms.core import transform
 
 @transform
 def gridsynth(tape, *, epsilon, ppr_basis):
-    r"""A wrapper that allows us to register a primitive that represents the transform during capture.
+    r"""Decomposes RZ and PhaseShift gates into Clifford+T basis or PPR basis.
+    
+    A wrapper that allows us to register a primitive that represents the transform during capture.
     The transform itself is only implemented in Catalyst. This is just to enable capture."""
 
     raise NotImplementedError(
