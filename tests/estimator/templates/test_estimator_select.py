@@ -31,36 +31,37 @@ class TestSelectTHC:
             qre.ControlledSequence(base=qre.SelectTHC(ch, wires=[0, 1, 2]))
 
     @pytest.mark.parametrize(
-        "thc_ham, rotation_prec, selswap_depth",
+        "thc_ham, batched_rotations, rotation_prec, selswap_depth",
         (
-            (qre.THCHamiltonian(58, 160), 13, 1),
-            (qre.THCHamiltonian(10, 50), None, None),
-            (qre.THCHamiltonian(4, 20), None, 2),
+            (qre.THCHamiltonian(58, 160), None, 13, 1),
+            (qre.THCHamiltonian(10, 50), None, None, None),
+            (qre.THCHamiltonian(4, 20), 2, None, 2),
         ),
     )
-    def test_resource_params(self, thc_ham, rotation_prec, selswap_depth):
+    def test_resource_params(self, thc_ham, batched_rotations, rotation_prec, selswap_depth):
         """Test that the resource params for SelectTHC are correct."""
         if rotation_prec:
-            op = qre.SelectTHC(thc_ham, rotation_prec, selswap_depth)
+            op = qre.SelectTHC(thc_ham, batched_rotations, rotation_prec, selswap_depth)
         else:
-            op = qre.SelectTHC(thc_ham, select_swap_depth=selswap_depth)
+            op = qre.SelectTHC(thc_ham, batched_rotations=batched_rotations, select_swap_depth=selswap_depth)
             rotation_prec = 15
 
         assert op.resource_params == {
             "thc_ham": thc_ham,
+            "batched_rotations": batched_rotations,
             "rotation_precision": rotation_prec,
             "select_swap_depth": selswap_depth,
         }
 
     @pytest.mark.parametrize(
-        "thc_ham, rotation_prec, selswap_depth, num_wires",
+        "thc_ham, batched_rotations, rotation_prec, selswap_depth, num_wires",
         (
-            (qre.THCHamiltonian(58, 160), 13, 1, 138),
-            (qre.THCHamiltonian(10, 50), None, None, 38),
-            (qre.THCHamiltonian(4, 20), None, 2, 24),
+            (qre.THCHamiltonian(58, 160), None, 13, 1, 138),
+            (qre.THCHamiltonian(10, 50), None, None, None, 38),
+            (qre.THCHamiltonian(4, 20), 2, None, 2, 24),
         ),
     )
-    def test_resource_rep(self, thc_ham, rotation_prec, selswap_depth, num_wires):
+    def test_resource_rep(self, thc_ham, batched_rotations, rotation_prec, selswap_depth, num_wires):
         """Test that the compressed representation for SelectTHC is correct."""
         if rotation_prec:
             expected = qre.CompressedResourceOp(
@@ -68,22 +69,24 @@ class TestSelectTHC:
                 num_wires,
                 {
                     "thc_ham": thc_ham,
+                    "batched_rotations": batched_rotations,
                     "rotation_precision": rotation_prec,
                     "select_swap_depth": selswap_depth,
                 },
             )
-            assert qre.SelectTHC.resource_rep(thc_ham, rotation_prec, selswap_depth) == expected
+            assert qre.SelectTHC.resource_rep(thc_ham, batched_rotations, rotation_prec, selswap_depth) == expected
         else:
             expected = qre.CompressedResourceOp(
                 qre.SelectTHC,
                 num_wires,
                 {
                     "thc_ham": thc_ham,
+                    "batched_rotations": batched_rotations,
                     "rotation_precision": 15,
                     "select_swap_depth": selswap_depth,
                 },
             )
-            assert qre.SelectTHC.resource_rep(thc_ham, select_swap_depth=selswap_depth) == expected
+            assert qre.SelectTHC.resource_rep(thc_ham, batched_rotations=batched_rotations, select_swap_depth=selswap_depth) == expected
 
     # The Toffoli and qubit costs are compared here
     # Expected number of Toffolis and wires were obtained from Eq. 44 and 46 in https://arxiv.org/abs/2011.03494
