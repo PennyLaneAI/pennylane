@@ -985,7 +985,9 @@ class UnaryIterationQPE(ResourceOperator):
     Args:
         unitary (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): the unitary operator to run
             the phase estimation protocol on
-        num_iterations (int): the number of iterations
+        num_iterations (int): The total number of times the unitary operator :math:`U` is applied.
+            This is the total query complexity :math:`N` required to reach a target 
+            energy precision :math:`\epsilon`.
         adj_qft_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator` | None): An optional
             argument to set the subroutine used to perform the adjoint QFT operation.
         wires (Sequence[int], None): the wires the operation acts on
@@ -1050,7 +1052,9 @@ class UnaryIterationQPE(ResourceOperator):
             dict: A dictionary containing the resource parameters:
                 * unitary (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A compressed resource operator, corresponding
                   to the phase estimation operator.
-                * num_iterations (int): the number of iterations
+                * num_iterations (int): The total number of times the unitary operator :math:`U` is applied.
+                  This is the total query complexity :math:`N` required to reach a target 
+                  energy precision :math:`\epsilon`.
                 * adj_qft_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp` | None]): An optional compressed
                   resource operator, corresponding to the adjoint QFT routine. If :code:`None`, the
                   default :class:`~.pennylane.estimator.templates.subroutines.QFT` will be used.
@@ -1075,7 +1079,9 @@ class UnaryIterationQPE(ResourceOperator):
         Args:
             unitary (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A compressed resource operator, corresponding
                 to the phase estimation operator.
-            num_iterations (int): the number of iterations
+            num_iterations (int): The total number of times the unitary operator :math:`U` is applied.
+                  This is the total query complexity :math:`N` required to reach a target 
+                  energy precision :math:`\epsilon`.
             adj_qft_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp` | None): An optional compressed
                 resource operator, corresponding to the adjoint QFT routine. If :code:`None`, the
                 default :class:`~.pennylane.estimator.templates.subroutines.QFT` will be used.
@@ -1100,15 +1106,14 @@ class UnaryIterationQPE(ResourceOperator):
     ):
         r"""Returns the resources for QPE using Unary Iteration.
 
-        Unlike standard QPE which assumes a black-box Controlled-Sequence, this decomposition
-        explicitly accounts for the 'Unary Iteration' cost shown in the circuit diagram:
-        1. The payload (unitary) is applied N times.
-        2. The control logic (Toffolis) is applied ~N times to manage the selection tree.
+        The resources are obtained from Fig 2. in Section III of `arXiv. 2011.03494 <https://arxiv.org/pdf/2011.03494>`_.
 
         Args:
             unitary (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A compressed resource operator, corresponding
                 to the phase estimation operator.
-            num_iterations (int): the number of iterations
+            num_iterations (int): The total number of times the unitary operator :math:`U` is applied.
+                This is the total query complexity :math:`N` required to reach a target 
+                energy precision :math:`\epsilon`.
             adj_qft_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp` | None): An optional compressed
                 resource operator, corresponding to the adjoint QFT routine. If :code:`None`, the
                 default :class:`~.pennylane.estimator.templates.subroutines.QFT` will be used.
