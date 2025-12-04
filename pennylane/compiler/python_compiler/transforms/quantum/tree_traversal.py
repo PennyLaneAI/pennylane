@@ -1557,57 +1557,40 @@ class TreeTraversalPattern(RewritePattern):
         The behaviour of the generated IR as below:
         ```python
         def store_state(qreg, depth):
-            state = quantum.state(qreg)
-            statevec_stack[depth] = state
+            subview = statevec_stack[depth, :]  # Create 1D view
+            quantum.state(qreg, state_in=subview)
         ```
         """
-        # store the state
-        # cast_op = arith.IndexCastOp(self.statevec_size, builtin.i64)
-        # dynamic_shape = cast_op.results[0]
+        # Create a 1D subview of statevec_stack[depth, :]
+        state_memref_type = builtin.MemRefType(
+            builtin.ComplexType(builtin.f64),
+            (builtin.DYNAMIC_INDEX,),
+            builtin.StridedLayoutAttr([1], None),
+        )
+
+        statevec_subview = memref.SubviewOp.get(
+            statevec_stack,
+            (depth, 0),           # offsets: start at [depth, 0]
+            (1, statevec_size),   # sizes: 1 row, statevec_size columns
+            (1, 1),               # strides
+            state_memref_type,    # Result is 1D memref
+        )
+
         state_comp_basis_op = quantum.ComputationalBasisOp(
             operands=([], [qreg]), result_types=[quantum.ObservableType()]  # (qubits, qreg)
         )
 
         cast_op = arith.IndexCastOp(statevec_size, builtin.i64)
 
+        # StateOp with state_in writes directly to the memref
         state_op = quantum.StateOp(
-            operands=[state_comp_basis_op.results[0], cast_op.results[0], None],
-            result_types=[
-                builtin.TensorType(
-                    builtin.ComplexType(builtin.Float64Type()), [builtin.DYNAMIC_INDEX]
-                )
+            operands=[
+                state_comp_basis_op.results[0],
+                cast_op.results[0],
+                statevec_subview.results[0],
             ],
+            result_types=[None]
         )
 
-        loop_body = Region()
-        loop_block = Block(arg_types=[builtin.IndexType()])  # i parameter
-        loop_body.add_block(loop_block)
-
-        element = tensor.ExtractOp(
-            state_op.results[0],
-            loop_block.args[0],  # i parameter
-            result_type=builtin.ComplexType(builtin.f64),
-        )
-
-        store_op = memref.StoreOp.get(
-            element.results[0], statevec_stack, (depth, loop_block.args[0])
-        )
-
-        yield_op = scf.YieldOp()
-
-        for op in [element, store_op, yield_op]:
-            loop_block.add_op(op)
-
-        c0 = arith.ConstantOp.from_int_and_width(0, builtin.IndexType())
-        c1 = arith.ConstantOp.from_int_and_width(1, builtin.IndexType())
-
-        for_op = scf.ForOp(
-            lb=c0.results[0],
-            ub=statevec_size,
-            step=c1.results[0],  # step = 1
-            iter_args=[],
-            body=loop_body,
-        )
-
-        for op in (state_comp_basis_op, cast_op, state_op, c0, c1, for_op):
+        for op in (state_comp_basis_op, cast_op, statevec_subview, state_op):
             rewriter.insert_op(op, InsertPoint.at_end(insert_block))
