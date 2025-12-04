@@ -230,7 +230,7 @@ class TestDecomposition:
         """Tests that pauli_decompose successfully decomposes sparse matrices"""
         import scipy.sparse as sps
 
-        sparse_class = getattr(sp, sparse_type)
+        sparse_class = getattr(sps, sparse_type)
         sparse_hamiltonian = sparse_class(hamiltonian)
 
         decomposed_coeff, decomposed_obs = qml.pauli_decompose(sparse_hamiltonian).terms()
