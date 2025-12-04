@@ -18,7 +18,7 @@ from functools import partial
 from pennylane.transforms.core import transform
 
 
-@partial(transfrom, pass_name="gridsynth")
+@partial(transform, pass_name="gridsynth")
 def gridsynth(tape, *, epsilon, ppr_basis):
     r"""Decomposes RZ and PhaseShift gates into Clifford+T basis or PPR basis.
 
