@@ -45,7 +45,7 @@ class SelectTHC(ResourceOperator):
             Hamiltonian on which the select operator is being applied.
         batched_rotations (int | None): The maximum number of rotation angles to load simultaneously
             into temporary quantum registers for processing in the Givens rotation circuits.
-            The default value of :code:`None` loads all angles at once, where the batch size is equal to
+            The default value of ``None`` loads all angles at once, where the batch size is equal to
             the number of orbitals minus one.
         rotation_precision (int): The number of bits used to represent the precision for loading
             the rotation angles for basis rotation. The default value is set to ``15`` bits.
