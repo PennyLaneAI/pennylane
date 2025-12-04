@@ -414,7 +414,7 @@ def _check_hermitian_sparse(H):
     if nnz is None:
         nnz = diff.count_nonzero()
     if nnz:
-        max_diff = max(abs(val) for val in diff.data)
+        max_diff = np.abs(diff.data).max()
         if max_diff > 1e-8:
             raise ValueError("The matrix is not Hermitian")
 
