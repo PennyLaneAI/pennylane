@@ -241,10 +241,10 @@ class TestDecomposition:
     @pytest.mark.parametrize("sparse_type", ["csr_matrix", "csr_array"])
     def test_sparse_matrix_to_paulisentence(self, sparse_type):
         """Test that a PauliSentence is returned from sparse matrix with pauli=True"""
-        import scipy.sparse as sp
+        import scipy.sparse as sps
 
         hamiltonian = np.array([[2.5, -0.5], [-0.5, 2.5]])
-        sparse_class = getattr(sp, sparse_type)
+        sparse_class = getattr(sps, sparse_type)
         sparse_hamiltonian = sparse_class(hamiltonian)
 
         ps = qml.pauli_decompose(sparse_hamiltonian, pauli=True)
