@@ -12,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""Resource operators for parametric multi qubit operations."""
+from collections import Counter
 
 import pennylane.estimator as qre
 from pennylane.estimator.resource_operator import CompressedResourceOp, GateCount, ResourceOperator
+from pennylane.math.decomposition import decomp_int_to_powers_of_two
 from pennylane.wires import Wires, WiresLike
 
 # pylint: disable=arguments-differ, signature-differs
@@ -556,3 +558,161 @@ class PauliRot(ResourceOperator):
         pauli_string = target_resource_params["pauli_string"]
         precision = target_resource_params["precision"]
         return [GateCount(cls.resource_rep(pauli_string=pauli_string, precision=precision))]
+
+
+class PCPhase(ResourceOperator):
+    r"""A resource operator representing a projector-controlled phase gate.
+
+    This gate applies a complex phase :math:`e^{i\phi}` to the first :math:`dim`
+    basis vectors of the input state while applying a complex phase :math:`e^{-i \phi}`
+    to the remaining basis vectors. For example, consider the 2-qubit case where ``dim = 3``:
+
+    .. math:: \Pi(\phi) = \begin{bmatrix}
+                e^{i\phi} & 0 & 0 & 0 \\
+                0 & e^{i\phi} & 0 & 0 \\
+                0 & 0 & e^{i\phi} & 0 \\
+                0 & 0 & 0 & e^{-i\phi}
+            \end{bmatrix}.
+
+    This can also be written as :math:`\Pi(\phi) = \exp(i\phi(2\Pi-\mathbb{I}_N))`, where
+    :math:`N=2^n` is the Hilbert space dimension for :math:`n` qubits and :math:`\Pi` is
+    the diagonal projector with ``dim`` ones and ``N-dim`` zeros.
+
+    Args:
+        num_wires (int): the number of wires this operator acts on
+        dim (int): the dimension of the target subspace
+        rotation_precision (float | None): The error threshold for the approximate Clifford + T
+            decomposition of the phase shift gates used to implement this operation. 
+        wires (Sequence[int] | None): the wire the operation acts on
+
+    Resources:
+        [TODO] The methods and decompositions were taken directly from the PennyLane operator
+
+    .. seealso:: The corresponding PennyLane operation :class:`~.pennylane.PCPhase`.
+
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> import pennylane.estimator as qre
+
+    """
+
+    resource_keys = {"num_wires", "dim", "rot_precision"}  # rot --> rotation precision
+
+    def __init__(
+        self,
+        num_wires: int,
+        dim: int,
+        rotation_precision: float | None = None,
+        wires: WiresLike | None = None,
+    ) -> None:
+        self.num_wires = num_wires
+        self.dim = dim
+        self.rot_precision = rotation_precision
+
+        if wires is not None and len(Wires(wires)) != self.num_wires:
+            raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
+        super().__init__(wires=wires)
+
+    @classmethod
+    def resource_decomp(
+        cls, num_wires: int, dim: int, rot_precision: float | None = None
+    ) -> list[GateCount]:
+        r"""Returns a list of GateCount objects representing the operator's resources.
+
+        Args:
+            pauli_string (str): a string describing the pauli operators that define the rotation
+            precision (float | None): error threshold for Clifford + T decomposition of this operation
+
+        Resources:
+            [TODO] The methods and decompositions were taken directly from the PennyLane operator
+
+        Returns:
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
+            where each object represents a specific quantum gate and the number of times it appears
+            in the decomposition.
+        """
+        gate_count = Counter()
+        flipped, *powers_of_two = decomp_int_to_powers_of_two(dim, num_wires + 1)
+        sigma = (-1) ** flipped
+        powers_of_two = [sigma * val for val in powers_of_two]
+
+        n_zero_control_values = 0
+        for i, c_i in enumerate(powers_of_two):
+
+            if c_i != 0:
+                subspace = int(c_i < 0)
+                if flipped:
+                    subspace = 1 - subspace
+                gate_count.update(
+                    cls._ctrl_phase_shift_resource(
+                        subspace,
+                        n_control_wires=i,
+                        n_zero_control_values=n_zero_control_values,
+                        rot_precision=rot_precision,
+                    )
+                )
+
+            d_i = next(iter(val for val in powers_of_two[i + 1 :] if val != 0), None)
+            next_cval = d_i == 1
+            if c_i == 0:
+                next_cval = not next_cval
+            if flipped:
+                next_cval = not next_cval
+            if not next_cval:
+                n_zero_control_values += 1
+
+        gate_count_lst[qre.GlobalPhase.resource_rep()] += 1
+        gate_count_lst = [GateCount(op, count) for op, count in gate_count.items()]
+        return gate_count_lst
+
+    @property
+    def resource_params(self):
+        r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+        Returns:
+            dict: A dictionary containing the resource parameters:
+                * num_wires (int): the number of wires this operator acts on
+                * dim (int): the dimension of the target subspace
+                * rot_precision(float | None): The error threshold for the approximate Clifford + T
+                  decomposition of the phase shift gates used to implement this operation.
+        """
+        return {
+            "num_wires": self.num_wires,
+            "dim": self.dim,
+            "rot_precision": self.rot_precision,
+        }
+
+    @classmethod
+    def resource_rep(cls, num_wires: int, dim: int, rot_precision: float | None = None):
+        """Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute a resource estimation.
+
+        Args:
+            num_wires (int): the number of wires this operator acts on
+            dim (int): the dimension of the target subspace
+            rot_precision(float | None): The error threshold for the approximate Clifford + T
+                decomposition of the phase shift gates used to implement this operation.
+
+        Returns:
+            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`:: the operator in a compressed representation
+        """
+        params = {"num_wires": num_wires, "dim": dim, "rot_precision": rot_precision}
+        return CompressedResourceOp(cls, num_wires, params)
+
+    @staticmethod
+    def _ctrl_phase_shift_resource(subspace, n_control_wires, n_zero_control_values, rot_precision):
+        x = qre.X.resource_rep()
+        phase_shift = qre.PhaseShift.resource_rep(rot_precision)
+
+        if n_control_wires == 0:
+            return {phase_shift: 1}
+        return {
+            qre.Controlled.resource_rep(
+                base_cmpr_op=phase_shift,
+                num_ctrl_wires=n_control_wires,
+                num_zero_ctrl=n_zero_control_values,
+            ): 1,
+            x: 2 * (1 - subspace),
+        }
