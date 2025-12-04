@@ -489,6 +489,9 @@
 
 <h3>Documentation 📝</h3>
 
+* A typo causing a rendering issue in the docstring for :class:`~.QNode` has been fixed.
+  [(#8652)](https://github.com/PennyLaneAI/pennylane/pull/8652)
+
 * Added a "Unified Compiler Cookbook" RST file, along with tutorials, to ``qml.compiler.python_compiler`,
   which provides a quickstart guide for getting started with xDSL and its integration with PennyLane and
   Catalyst.
