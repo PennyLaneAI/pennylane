@@ -218,6 +218,52 @@ class TestControlled:
         ]
         assert ctrl_op.resource_decomp(**ctrl_op.resource_params) == expected_res
 
+    def test_else_block_of_apply_controlled(self):
+        """Test that the else block of the apply_controlled method for code coverage purposes."""
+
+        class DummyOp(qre.ResourceOperator):
+            resource_keys = {"num_wires"}
+
+            def __init__(self, num_wires, wires=None):
+                self.num_wires = num_wires
+                super().__init__(wires=wires)
+
+            @property
+            def resource_params(self) -> dict:
+                return {"num_wires": self.num_wires}
+
+            @classmethod
+            def resource_rep(cls, num_wires) -> qre.CompressedResourceOp:
+                params = {"num_wires": num_wires}
+                return qre.CompressedResourceOp(cls, num_wires, params)
+
+            @classmethod
+            def resource_decomp(cls, num_wires) -> list[GateCount]:
+                return [
+                    Allocate(num_wires),
+                    GateCount(qre.X.resource_rep()),
+                    Deallocate(num_wires),
+                ]
+
+        base_op = DummyOp(num_wires=2)
+        ctrl_op = qre.Controlled(base_op, num_ctrl_wires=2, num_zero_ctrl=1)
+
+        expected_res = [
+            GateCount(qre.X.resource_rep(), 2),
+            qre.Allocate(2),
+            GateCount(
+                qre.Controlled.resource_rep(
+                    qre.X.resource_rep(),
+                    num_ctrl_wires=2,
+                    num_zero_ctrl=0,
+                ),
+                1,
+            ),
+            qre.Deallocate(2),
+        ]
+
+        assert ctrl_op.resource_decomp(**ctrl_op.resource_params) == expected_res
+
     @pytest.mark.parametrize(
         "base_op, ctrl_res, ctrl_ctrl_res",
         (
