@@ -325,10 +325,10 @@ class TestDecomposition:
 
     def test_sparse_non_hermitian(self):
         """Test that sparse non-Hermitian matrices can be decomposed with check_hermitian=False."""
-        sp = pytest.importorskip("scipy.sparse")
+        sps = pytest.importorskip("scipy.sparse")
 
         non_hermitian = np.array([[1, 2j], [3j, 4]])
-        sparse_nh = sp.csr_matrix(non_hermitian)
+        sparse_nh = sps.csr_matrix(non_hermitian)
         result = qml.pauli_decompose(sparse_nh, pauli=True, check_hermitian=False)
         assert isinstance(result, PauliSentence)
         reconstructed = result.to_mat(range(1))
