@@ -227,7 +227,7 @@ class TestDecomposition:
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
     def test_sparse_matrix_decomposition(self, hamiltonian, sparse_type):
         """Tests that pauli_decompose successfully decomposes sparse matrices"""
-        import scipy.sparse as sp
+        import scipy.sparse as sps
 
         sparse_class = getattr(sp, sparse_type)
         sparse_hamiltonian = sparse_class(hamiltonian)
