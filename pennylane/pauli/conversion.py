@@ -410,6 +410,7 @@ def _check_hermitian_sparse(H):
     """
     adjoint = H.getH() if hasattr(H, "getH") else H.transpose().conjugate()
     diff = H - adjoint
+    diff.eliminate_zeros()
     nnz = getattr(diff, "nnz", None)
     if nnz is None:
         nnz = diff.count_nonzero()
