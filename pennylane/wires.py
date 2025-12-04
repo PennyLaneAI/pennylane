@@ -81,9 +81,6 @@ def _process(wires):
                 raise WireError(f"Wires must be hashable; got object of type {type(wires)}.") from e
         return (wires,)
 
-    # Check for hashability and uniqueness
-    # Initialize set_of_wires before try block to ensure it's accessible in Python 3.14+
-    set_of_wires = None
     try:
         # We need the set for the uniqueness check,
         # so we can use it for hashability check of iterables.
@@ -95,7 +92,7 @@ def _process(wires):
         if "unhashable" in str(e):
             raise WireError(f"Wires must be hashable; got {wires}.") from e
 
-    if set_of_wires is not None and len(set_of_wires) != len(tuple_of_wires):
+    if len(set_of_wires) != len(tuple_of_wires):
         raise WireError(f"Wires must be unique; got {wires}.")
 
     return tuple_of_wires
