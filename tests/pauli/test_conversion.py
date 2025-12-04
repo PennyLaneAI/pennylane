@@ -428,12 +428,12 @@ class TestDecomposition:
 
     def test_sparse_zero_value_continue(self):
         """Test that sparse matrices with explicit zero values are skipped."""
-        sp = pytest.importorskip("scipy.sparse")
+        sps = pytest.importorskip("scipy.sparse")
 
         rows = np.array([0, 0, 1])
         cols = np.array([0, 1, 1])
         data = np.array([1.0, 0.0, 2.0])
-        sparse_mat = sp.coo_matrix((data, (rows, cols)), shape=(2, 2))
+        sparse_mat = sps.coo_matrix((data, (rows, cols)), shape=(2, 2))
 
         result = _generalized_pauli_decompose_sparse(sparse_mat, pauli=True)
 
