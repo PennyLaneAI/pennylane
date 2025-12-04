@@ -60,21 +60,21 @@ class TestTracking:
                     num_allocs=1,
                     gate_types={},
                     gate_sizes={},
-                    measurements={"expval": 1},
+                    measurements={"expval(PauliZ)": 1},
                     depth=0,
                 ),
                 SpecsResources(
                     num_allocs=1,
                     gate_types={},
                     gate_sizes={},
-                    measurements={"expval": 1},
+                    measurements={"expval(PauliZ)": 1},
                     depth=0,
                 ),
                 SpecsResources(
                     num_allocs=1,
                     gate_types={},
                     gate_sizes={},
-                    measurements={"expval": 1},
+                    measurements={"expval(PauliZ)": 1},
                     depth=0,
                 ),
             ],
@@ -98,7 +98,7 @@ class TestTracking:
                 num_allocs=1,
                 gate_types={},
                 gate_sizes={},
-                measurements={"expval": 1},
+                measurements={"expval(PauliZ)": 1},
                 depth=0,
             ),
             "errors": {},
@@ -136,7 +136,7 @@ class TestTracking:
                     num_allocs=1,
                     gate_types={},
                     gate_sizes={},
-                    measurements={"expval": 1},
+                    measurements={"expval(PauliZ)": 1},
                     depth=0,
                 )
             ]
@@ -162,7 +162,7 @@ class TestTracking:
             num_allocs=3,
             gate_types={"Hadamard": 3, "CNOT": 2, "RZ": 1},
             gate_sizes={1: 4, 2: 2},
-            measurements={"expval": 2},
+            measurements={"expval(PauliZ)": 1, "expval(PauliY)": 1},
             depth=3,
         )
 

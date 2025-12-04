@@ -668,7 +668,7 @@ class TestSpecsResources:
         return SpecsResources(
             gate_types={"Hadamard": 2, "CNOT": 1},
             gate_sizes={1: 2, 2: 1},
-            measurements={"expval": 1},
+            measurements={"expval(PauliZ)": 1},
             num_allocs=2,
             depth=2,
         )
@@ -679,7 +679,7 @@ class TestSpecsResources:
         s = SpecsResources(
             gate_types={"Hadamard": 2, "CNOT": 1},
             gate_sizes={1: 2, 2: 1},
-            measurements={"expval": 1},
+            measurements={"expval(PauliZ)": 1},
             num_allocs=2,
         )
 
@@ -767,7 +767,7 @@ class TestSpecsResources:
         expected += "  CNOT: 1\n"
         expected += "\n"
         expected += "Measurements:\n"
-        expected += "  expval: 1"
+        expected += "  expval(PauliZ): 1"
 
         expected_indented = ("    " + expected.replace("\n", "\n    ")).replace("\n    \n", "\n\n")
 
@@ -803,7 +803,7 @@ class TestSpecsResources:
         expected = {
             "gate_types": {"Hadamard": 2, "CNOT": 1},
             "gate_sizes": {1: 2, 2: 1},
-            "measurements": {"expval": 1},
+            "measurements": {"expval(PauliZ)": 1},
             "num_allocs": 2,
             "depth": 2,
             "num_gates": 3,
@@ -824,7 +824,7 @@ class TestCircuitSpecs:
             resources=SpecsResources(
                 gate_types={"Hadamard": 2, "CNOT": 1},
                 gate_sizes={1: 2, 2: 1},
-                measurements={"expval": 1},
+                measurements={"expval(PauliZ)": 1},
                 num_allocs=2,
                 depth=2,
             ),
@@ -841,14 +841,14 @@ class TestCircuitSpecs:
                 1: SpecsResources(
                     gate_types={"Hadamard": 2, "CNOT": 1},
                     gate_sizes={1: 2, 2: 1},
-                    measurements={"expval": 1},
+                    measurements={"expval(PauliZ)": 1},
                     num_allocs=2,
                     depth=2,
                 ),
                 2: SpecsResources(
                     gate_types={"CNOT": 1},
                     gate_sizes={2: 1},
-                    measurements={"expval": 1},
+                    measurements={"expval(PauliZ)": 1},
                     num_allocs=2,
                     depth=1,
                 ),
@@ -926,7 +926,7 @@ class TestCircuitSpecs:
             "resources": {
                 "gate_types": {"Hadamard": 2, "CNOT": 1},
                 "gate_sizes": {1: 2, 2: 1},
-                "measurements": {"expval": 1},
+                "measurements": {"expval(PauliZ)": 1},
                 "num_allocs": 2,
                 "depth": 2,
                 "num_gates": 3,
@@ -946,7 +946,7 @@ class TestCircuitSpecs:
                 1: {
                     "gate_types": {"Hadamard": 2, "CNOT": 1},
                     "gate_sizes": {1: 2, 2: 1},
-                    "measurements": {"expval": 1},
+                    "measurements": {"expval(PauliZ)": 1},
                     "num_allocs": 2,
                     "depth": 2,
                     "num_gates": 3,
@@ -954,7 +954,7 @@ class TestCircuitSpecs:
                 2: {
                     "gate_types": {"CNOT": 1},
                     "gate_sizes": {2: 1},
-                    "measurements": {"expval": 1},
+                    "measurements": {"expval(PauliZ)": 1},
                     "num_allocs": 2,
                     "depth": 1,
                     "num_gates": 1,
@@ -1056,19 +1056,21 @@ class TestCountResources:
 
     expected_resources = (
         SpecsResources({}, {}, {}, 0, 0),
-        SpecsResources({"Hadamard": 1, "CNOT": 1}, {1: 1, 2: 1}, {"expval": 1}, 2, 2),
-        SpecsResources({"PauliZ": 1, "CNOT": 1, "RX": 1}, {1: 2, 2: 1}, {"expval": 1}, 3, 2),
+        SpecsResources({"Hadamard": 1, "CNOT": 1}, {1: 1, 2: 1}, {"expval(PauliZ)": 1}, 2, 2),
+        SpecsResources(
+            {"PauliZ": 1, "CNOT": 1, "RX": 1}, {1: 2, 2: 1}, {"expval(PauliZ)": 1}, 3, 2
+        ),
         SpecsResources(
             {"PauliZ": 3, "CNOT": 1, "RX": 1, "Identity": 1, "CustomOp2": 1},
             {1: 5, 2: 2},
-            {"probs": 1},
+            {"probs(all wires)": 1},
             3,
             6,
         ),
         SpecsResources(
             {"10C(IsingXX)": 1, "5C(IsingXX)": 1, "C(IsingXX)": 1, "CNOT": 2, "Toffoli": 2},
             {12: 1, 7: 1, 3: 3, 2: 2},
-            {"probs": 1},
+            {"probs(all wires)": 1},
             12,
             7,
         ),

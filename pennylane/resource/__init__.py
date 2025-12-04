@@ -138,7 +138,7 @@ We can examine the resources by accessing the :code:`resources` key:
       PauliZ: 2
     <BLANKLINE>
     Measurements:
-      expval: 1
+      expval(PauliZ): 1
 """
 from .error import AlgorithmicError, ErrorOperation, SpectralNormError
 from .resource import (

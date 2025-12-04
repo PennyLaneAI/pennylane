@@ -1583,7 +1583,7 @@ class TestResourcesTracker:
             num_allocs=1,
             gate_types={"RX": 1},
             gate_sizes={1: 1},
-            measurements={"expval": 1},
+            measurements={"expval(PauliZ)": 1},
             depth=1,
         )
 

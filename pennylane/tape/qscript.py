@@ -1006,7 +1006,7 @@ class QuantumScript:
                                                  'RX': 1,
                                                  'Rot': 1},
                                      gate_sizes={1: 4, 2: 2},
-                                     measurements={'expval': 1},
+                                     measurements={'expval(PauliZ @ PauliZ)': 1},
                                      num_allocs=2,
                                      depth=4),
          'shots': Shots(total_shots=None, shot_vector=())}

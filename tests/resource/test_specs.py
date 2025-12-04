@@ -142,7 +142,7 @@ class TestSpecsTransform:
             num_allocs=3,
             gate_types=gate_types,
             gate_sizes=gate_sizes,
-            measurements={"expval": 2},
+            measurements={"expval(PauliZ)": 1, "expval(PauliX)": 1},
             depth=3,
         )
         assert info["resources"] == expected_resources
@@ -220,7 +220,7 @@ class TestSpecsTransform:
         assert info.resources == SpecsResources(
             gate_types={},
             gate_sizes={},
-            measurements={"state": 1},
+            measurements={"state(all wires)": 1},
             num_allocs=0,  # Nothing actually used in this circuit
             depth=0,
         )
@@ -343,7 +343,7 @@ class TestSpecsTransform:
             num_allocs=1,
             gate_types={"RX": 2},
             gate_sizes={1: 2},
-            measurements={"state": 1},
+            measurements={"state(all wires)": 1},
             depth=2,
         )
 

@@ -526,7 +526,7 @@ class TestResourceEstimation:
             num_allocs=2,
             gate_types={},
             gate_sizes={},
-            measurements={"probs": 1},
+            measurements={"probs(2 wires)": 1},
             depth=0,
         )
         assert tape.specs["resources"] == expected_resources
@@ -541,7 +541,7 @@ class TestResourceEstimation:
             num_allocs=3,
             gate_types={"RX": 2, "Rot": 1, "CNOT": 1},
             gate_sizes={1: 3, 2: 1},
-            measurements={"expval": 1, "probs": 1},
+            measurements={"expval(PauliX)": 1, "probs(2 wires)": 1},
             depth=3,
         )
         assert specs["resources"] == expected_resources
@@ -573,7 +573,7 @@ class TestResourceEstimation:
             num_allocs=5,
             gate_types={"RX": 2, "Rot": 1, "CNOT": 2, "RZ": 1},
             gate_sizes={1: 4, 2: 2},
-            measurements={"expval": 1, "probs": 1},
+            measurements={"expval(PauliX)": 1, "probs(2 wires)": 1},
             depth=4,
         )
         assert specs2["resources"] == expected_resources
