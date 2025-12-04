@@ -357,6 +357,15 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Bump `jax` version to `0.7.1` for `capture` module.
+  [(#8715)](https://github.com/PennyLaneAI/pennylane/pull/8715)
+
+* Bump `jax` version to `0.7.0` for `capture` module.
+  [(#8701)](https://github.com/PennyLaneAI/pennylane/pull/8701)
+
+* Improve error handling when using PennyLane's experimental program capture functionality with an incompatible JAX version. 
+  [(#8723)](https://github.com/PennyLaneAI/pennylane/pull/8723)
+
 * Bump `autoray` package version to `0.8.2`.
   [(#8674)](https://github.com/PennyLaneAI/pennylane/pull/8674)
   
@@ -440,6 +449,7 @@
   :class:`~.TemporaryAND`, :class:`~.QSVT`, and :class:`~.SelectPauliRot`.
   [(#8490)](https://github.com/PennyLaneAI/pennylane/pull/8490)
   [(#8577)](https://github.com/PennyLaneAI/pennylane/pull/8577)
+  [(#8721)](https://github.com/PennyLaneAI/pennylane/issues/8721)
 
 * The constant to convert the length unit Bohr to Angstrom in ``qml.qchem`` is updated to use scipy
   constants.
@@ -511,6 +521,9 @@ A warning message has been added to :doc:`Building a plugin <../development/plug
 
 <h3>Bug fixes 🐛</h3>
 
+* Update `interface-unit-tests.yml` to use its input parameter `pytest_additional_args` when running pytest.
+  [(#8705)](https://github.com/PennyLaneAI/pennylane/pull/8705)
+
 * Fixes a bug where in `resolve_work_wire_type` we incorrectly returned a value of `zeroed` if `both work_wires` 
   and `base_work_wires` were empty, causing an incorrect work wire type.
   [(#8718)](https://github.com/PennyLaneAI/pennylane/pull/8718)
@@ -559,6 +572,13 @@ A warning message has been added to :doc:`Building a plugin <../development/plug
 
 * Fixes a bug where :func:`~.change_op_basis` cannot be captured when the `uncompute_op` is left out.
   [(#8695)](https://github.com/PennyLaneAI/pennylane/pull/8695)
+
+* Fixes a bug where decomposition rules are sometimes incorrectly disregarded by the `DecompositionGraph` when a higher level
+  decomposition rule uses dynamically allocated work wires.
+  [(#8725)](https://github.com/PennyLaneAI/pennylane/pull/8725)
+
+* Fixes a bug where :class:`~.ops.ChangeOpBasis` is not correctly reconstructed using `qml.pytrees.unflatten(*qml.pytrees.flatten(op))`
+  [(#8721)](https://github.com/PennyLaneAI/pennylane/issues/8721)
 
 <h3>Contributors ✍️</h3>
 
