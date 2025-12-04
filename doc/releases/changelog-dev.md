@@ -42,7 +42,7 @@
   method is not overridden.
   [(#8686)](https://github.com/PennyLaneAI/pennylane/pull/8686)
 
-* Added the `~pennylane.estimator.subroutines.UnaryIterationQPE` subroutine in the `pennylane.estimator`
+* Added the `~pennylane.estimator.templates.UnaryIterationQPE` subroutine in the `pennylane.estimator`
   module. It is a variant of the Quantum Phase Estimation algorithm
   that uses unary iteration technique which reduces T and Toffoli gate counts at the cost of
   increasing the number of ancilla qubits required.
