@@ -271,9 +271,9 @@ class TestDecomposition:
 
     def test_sparse_matrix_hide_identity(self):
         """Tests that hide_identity works correctly with sparse matrices"""
-        import scipy.sparse as sp
+        import scipy.sparse as sps
 
-        H = sp.csr_matrix(np.diag([0, 0, 0, 1]))
+        H = sps.csr_matrix(np.diag([0, 0, 0, 1]))
         _, obs_list = qml.pauli_decompose(H, hide_identity=True).terms()
         tensors = filter(lambda obs: isinstance(obs, qml.ops.Prod), obs_list)
 
