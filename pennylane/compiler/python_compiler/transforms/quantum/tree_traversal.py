@@ -264,15 +264,14 @@ class TreeTraversalPattern(RewritePattern):
                     current_reg = op.out_qreg
                 case quantum.MeasureOp():
                     # find the qubit to be measured and its index
-                    mcm_qubit, mcm_idx = next(
-                        ((qb, idx) for qb, idx in qubit_to_reg_idx.items() if qb == op.in_qubit),
-                        (None, None),
-                    )
-                    if mcm_qubit is None:
+                    mcm_idx = qubit_to_reg_idx.get(op.in_qubit, None)
+                    if mcm_idx is None:
                         raise RuntimeError(
                             f"Could not find qubit {op.in_qubit} in register mapping"
                         )
 
+                    # store the old qubit before processing the measure operation
+                    mcm_qubit = op.in_qubit
                     insert_ops = set()
 
                     # create a register boundary before the measure
