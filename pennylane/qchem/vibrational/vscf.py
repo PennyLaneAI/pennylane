@@ -775,7 +775,7 @@ def vscf(
 
     if not has_jax:
         raise ImportError(
-            "Jax is required for performing VSCF. Have a look at the documentation at https://docs.pennylane.ai/en/stable/development/guide/installation.html ."
+            "Jax is required for performing VSCF. Please install it. You can have a look at the documentation at https://docs.pennylane.ai/en/stable/development/guide/installation.html ."
         )  # pragma: no cover
 
     jax.config.update("jax_enable_x64", True)
