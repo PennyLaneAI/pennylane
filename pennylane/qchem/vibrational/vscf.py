@@ -813,7 +813,7 @@ def vscf(
     if n_batches == 0:
         # handle empty case
         max_modals = max(modals)
-        mode_rots = jnp.eye(max_modals)[None, :, :].repeat(nmodes, axis=0)
+        mode_rots = np.eye(max_modals)[None, :, :].repeat(nmodes, axis=0)
         return 0.0, mode_rots
 
     # compact data and move to GPU
