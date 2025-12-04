@@ -93,6 +93,7 @@ hamiltonian_ps = (
 )
 
 
+# pylint: disable=too-many-public-methods
 class TestDecomposition:
     """Tests the pauli_decompose function"""
 
