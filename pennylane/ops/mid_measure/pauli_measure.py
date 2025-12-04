@@ -119,7 +119,7 @@ def _create_pauli_measure_primitive():
 def pauli_measure(pauli_word: str, wires: WiresLike, postselect: int | None = None):
     """Perform a Pauli product measurement.
 
-    A Pauli product measurement (PPM) is the measurement of a tensor product of Pauli operators.
+    A Pauli product measurement (PPM) is the measurement of a tensor product of Pauli observables.
     
     The eigenvalue of this tensor product is one of 1 or -1, which is mapped to the 0 or 1 outcome of
     the PPM, respectively. After the measurement, the state collapses to the superpositions of all
