@@ -351,8 +351,7 @@ class ResourceOperator(ABC):
             return [GateCount(resource_rep(qre_ops.Identity))]
 
         target_resource_params = target_resource_params or {}
-        num_wires = target_resource_params.get("num_wires")
-        base_cmpr_op = CompressedResourceOp(cls, num_wires, target_resource_params)
+        base_cmpr_op = cls.resource_rep(**target_resource_params)
 
         if pow_z == 1:
             return [GateCount(base_cmpr_op)]
