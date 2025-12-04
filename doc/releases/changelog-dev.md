@@ -17,6 +17,12 @@
   that produces a set of gate names to be used as the target gate set in decompositions.
   [(#8522)](https://github.com/PennyLaneAI/pennylane/pull/8522)
 
+* The :class:`~pennylane.decomposition.DecompositionGraph` now tracks the minimum number of
+  dynamic wire allocations required to solve the circuit, and provides a `minimize_work_wires`
+  option that enables the graph to select the best decomposition rules while minimizing the
+  number of additional allocations of work wires.
+  [(#8729)](https://github.com/PennyLaneAI/pennylane/pull/8729)
+
 <h4>Pauli product measurements</h4>
 
 * Added a :func:`~pennylane.ops.pauli_measure` that takes a Pauli product measurement.
