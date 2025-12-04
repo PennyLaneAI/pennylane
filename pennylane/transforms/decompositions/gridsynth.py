@@ -13,10 +13,12 @@
 # limitations under the License.
 """Alias transform function for the Ross-Selinger decomposition (GridSynth) for qjit + capture."""
 
+from functools import partial
+
 from pennylane.transforms.core import transform
 
 
-@transform
+@partial(transfrom, pass_name="gridsynth")
 def gridsynth(tape, *, epsilon, ppr_basis):
     r"""Decomposes RZ and PhaseShift gates into Clifford+T basis or PPR basis.
 
