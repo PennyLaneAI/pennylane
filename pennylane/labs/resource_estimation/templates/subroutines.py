@@ -952,7 +952,7 @@ class ResourceIQP(ResourceOperator):
                 * num_wires (int): the number of qubits the operation acts upon
         """
         return {
-            "spin_sym":self.spin_sym,
+            "spin_sym": self.spin_sym,
             "gates": self.gates,
             "num_wires": self.num_wires,
             "init_gates": self.init_gates,
@@ -976,12 +976,16 @@ class ResourceIQP(ResourceOperator):
         Returns:
             CompressedResourceOp: the operator in a compressed representation
         """
-        return CompressedResourceOp(cls, num_wires, {
-            "spin_sym":spin_sym,
-            "gates": gates,
-            "num_wires": num_wires,
-            "init_gates": init_gates,
-        })
+        return CompressedResourceOp(
+            cls,
+            num_wires,
+            {
+                "spin_sym": spin_sym,
+                "gates": gates,
+                "num_wires": num_wires,
+                "init_gates": init_gates,
+            },
+        )
 
     @classmethod
     def resource_decomp(cls, num_wires, gates, init_gates, spin_sym) -> list[GateCount]:
@@ -1004,24 +1008,28 @@ class ResourceIQP(ResourceOperator):
             in the decomposition.
         """
         hadamard = resource_rep(re.ResourceHadamard)
-        multi_rz = resource_rep(re.ResourceMultiRZ)
-        pauli_rot = resource_rep(re.ResourcePauliRot)
+        pauli_rot = resource_rep(re.ResourcePauliRot, {"pauli_string": "Y" + "X" * (num_wires - 1)})
 
         hadamard_counts = 2 * num_wires
-        multi_rz_counts = 0
-        pauli_rot_counts = 1 if spin_sym else 0
+        multi_rz_counts = defaultdict(int)
 
         if init_gates is not None:
             for gate in init_gates:
-                multi_rz_counts += len(gate)
+                for gen in gate:
+                    multi_rz_counts[len(gen)] += 1
 
         for gate in gates:
-            multi_rz_counts += len(gate)
+            for gen in gate:
+                multi_rz_counts[len(gen)] += 1
 
-        return [
-            GateCount(hadamard, hadamard_counts),
-            GateCount(multi_rz, multi_rz_counts),
-            GateCount(pauli_rot, pauli_rot_counts),
+        ret = [GateCount(hadamard, hadamard_counts)]
+
+        if spin_sym:
+            ret.append(GateCount(pauli_rot, 1))
+
+        return ret + [
+            GateCount(resource_rep(re.ResourceMultiRZ, {"num_wires": wires}), counts)
+            for (wires, counts) in multi_rz_counts.items()
         ]
 
     @staticmethod

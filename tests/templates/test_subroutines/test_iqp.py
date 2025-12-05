@@ -19,14 +19,12 @@ from itertools import combinations
 
 import numpy as np
 import pytest
-from pennylane.devices import device
 
 from pennylane import math
-
 from pennylane.decomposition import list_decomps
+from pennylane.devices import device
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.iqp import IQP
-
 
 dev = device("default.qubit")
 
@@ -40,7 +38,7 @@ def local_gates(n_qubits: int, max_weight=2):
     :return (list[list[list[int]]]): gate list
     """
     gates = []
-    for weight in math.arange(1, max_weight+1):
+    for weight in math.arange(1, max_weight + 1):
         for gate in combinations(math.arange(n_qubits), weight):
             gates.append([list(gate)])
     return gates
@@ -50,26 +48,12 @@ def local_gates(n_qubits: int, max_weight=2):
     ("params", "error", "match"),
     [
         (
-            (
-                [0, 1],
-                [[0, 1], [0]],
-                [0],
-                False,
-                None,
-                None
-            ),
+            ([0, 1], [[0, 1], [0]], [0], False, None, None),
             ValueError,
             "Number of gates and number of parameters for an Instantaneous Quantum Polynomial circuit must be the same",
         ),
         (
-            (
-                [],
-                [[0, 1], [0]],
-                [0, 1],
-                False,
-                None,
-                None
-            ),
+            ([], [[0, 1], [0]], [0, 1], False, None, None),
             ValueError,
             "At least one valid wire",
         ),
@@ -89,7 +73,7 @@ def test_raises(params, error, match):
             local_gates(4, 1),
             math.random.uniform(0, 2 * np.pi, len(local_gates(4, 1))),
             True,
-            4
+            4,
         ),
         (
             math.random.uniform(0, 2 * np.pi, 6),
@@ -97,12 +81,14 @@ def test_raises(params, error, match):
             local_gates(6, 1),
             math.random.uniform(0, 2 * np.pi, len(local_gates(6, 1))),
             True,
-            6
+            6,
         ),
     ],
 )
 def test_decomposition_new(params, gates, init_gates, init_coeffs, spin_sym, n_qubits):
-    op = IQP([i for i in range(n_qubits)], gates, params, init_gates, init_coeffs, spin_sym, n_qubits)
+    op = IQP(
+        [i for i in range(n_qubits)], gates, params, init_gates, init_coeffs, spin_sym, n_qubits
+    )
 
     for rule in list_decomps(IQP):
         _test_decomposition_rule(op, rule)

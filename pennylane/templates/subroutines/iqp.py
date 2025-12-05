@@ -83,9 +83,7 @@ class IQP(Operation):
         }
 
 
-def _instantaneous_quantum_polynomial_resources(
-    spin_sym, gates, n_qubits, init_gates
-):
+def _instantaneous_quantum_polynomial_resources(spin_sym, gates, n_qubits, init_gates):
     resources = defaultdict(int)
     if spin_sym:
         resources[
