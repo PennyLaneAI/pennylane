@@ -167,6 +167,8 @@ class TestZOmega:
     def test_arithmetic_modulo(self, z1, z2, expected):
         """Test arithmetic modulo operation on ZOmega."""
         assert z1 % z2 == expected
+        r1, r2 = (z1 + (z1 % z2)) % z2, (z1 - (z1 % z2)) % z2
+        assert r1 == ZOmega() or r2 == ZOmega()
 
     def test_arithmetic_errors(self):
         """Test that arithmetic operations raise errors for invalid types."""
