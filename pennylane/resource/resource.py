@@ -232,7 +232,8 @@ class SpecsResources:
         gate_types (dict[str, int]): A dictionary mapping gate names to their counts.
         gate_sizes (dict[int, int]): A dictionary mapping gate sizes to their counts.
         measurements (dict[str, int]): A dictionary mapping measurements to their counts.
-        num_allocs (int): The number of unique qubit allocations. With no dynamic wires, this should be equal to the number of device wires.
+        num_allocs (int): The number of unique qubit allocations. For circuits that do not use
+          dynamic wires, this should be equal to the number of device wires.
         depth (int | None): The depth of the circuit, or None if not computed.
 
     Properties:
@@ -392,27 +393,27 @@ class CircuitSpecs:
         **Example**
 
         >>> from pennylane.resource import SpecsResources, CircuitSpecs
-        >>> res = CircuitSpecs(
-        ...     device_name="default.qubit",
-        ...     num_device_wires=2,
-        ...     shots=Shots(1000),
-        ...     level="device",
-        ...     resources=SpecsResources(
-        ...         gate_types={"RX": 2, "CNOT": 1},
-        ...         gate_sizes={1: 2, 2: 1},
-        ...         measurements={"expval(PauliZ)": 1},
-        ...         num_allocs=2,
-        ...         depth=3,
-        ...     ),
-        ... )
+        >>> specs = CircuitSpecs(
+                device_name="default.qubit",
+                num_device_wires=2,
+                shots=Shots(1000),
+                level="device",
+                resources=SpecsResources(
+                    gate_types={"RX": 2, "CNOT": 1},
+                    gate_sizes={1: 2, 2: 1},
+                    measurements={"expval(PauliZ)": 1},
+                    num_allocs=2,
+                    depth=3,
+                ),
+            )
 
-        >>> print(res.num_device_wires)
+        >>> print(specs.num_device_wires)
         2
 
-        >>> print(res["num_device_wires"])
+        >>> print(specs["num_device_wires"])
         2
 
-        >>> print(res)
+        >>> print(specs)
         Device: default.qubit
         Device wires: 2
         Shots: Shots(total=1000)
@@ -892,7 +893,7 @@ def substitute(initial_resources: Resources, gate_info: tuple[str, int], replace
 # because we don't want a core module (QuantumScript) to depend on an auxiliary module (Resource).
 # The `QuantumScript.specs` property will eventually be deprecated in favor of this function.
 def resources_from_tape(
-    tape: QuantumScript, compute_depth: bool = True, compute_errs: bool = False
+    tape: QuantumScript, compute_depth: bool = True, compute_errors: bool = False
 ) -> SpecsResources | tuple[SpecsResources, dict[str, Any]]:
     """
     Extracts the resource information from a quantum circuit (tape).
@@ -906,15 +907,15 @@ def resources_from_tape(
         tape (.QuantumScript): The quantum circuit for which we extract resources
         compute_depth (bool): If True, the depth of the circuit is computed and included in the resources.
             If False, the depth is set to None.
-        compute_errs (bool): If True, algorithmic errors are computed and returned alongside the resources.
+        compute_errors (bool): If True, algorithmic errors are computed and returned alongside the resources.
             Defaults to False.
     Returns:
         (SpecsResources | tuple[SpecsResources, dict[str, Any]]): The resources associated with this tape, optionally
-        with algorithmic errors if `compute_errs` is set to True.
+        with algorithmic errors if `compute_errors` is set to True.
     """
     resources = _count_resources(tape, compute_depth=compute_depth)
 
-    if compute_errs:
+    if compute_errors:
         algo_errors = _compute_algo_error(tape)
         return resources, algo_errors
 

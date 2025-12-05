@@ -37,7 +37,7 @@ def _specs_qnode(qnode, level, compute_depth, *args, **kwargs) -> CircuitSpecs:
 
     batch, _ = qml.workflow.construct_batch(qnode, level=level)(*args, **kwargs)
 
-    specs = [
+    results = [
         CircuitSpecs(
             resources=resources_from_tape(tape, compute_depth),
             num_device_wires=len(qnode.device.wires) if qnode.device.wires is not None else None,
@@ -48,9 +48,9 @@ def _specs_qnode(qnode, level, compute_depth, *args, **kwargs) -> CircuitSpecs:
         for tape in batch
     ]
 
-    if len(specs) == 1:
-        specs = specs[0]
-    return specs
+    if len(results) == 1:
+        results = results[0]
+    return results
 
 
 # NOTE: Some information is missing from specs_qjit compared to specs_qnode

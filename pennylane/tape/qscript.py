@@ -1007,7 +1007,7 @@ class QuantumScript:
                        depth=4)
         """
         if self._specs is None:
-            resources, errors = qml.resource.resource.resources_from_tape(self, compute_errs=True)
+            resources, errors = qml.resource.resource.resources_from_tape(self, compute_errors=True)
             self._specs = {"resources": resources, "shots": self.shots, "errors": errors}
         return self._specs
 
