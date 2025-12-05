@@ -29,6 +29,7 @@ from xdsl.rewriter import InsertPoint
 from pennylane.compiler.python_compiler.dialects import quantum
 
 from .tree_traversal_utils_tmp import print_mlir, print_ssa_values
+from pennylane.exceptions import CompileError
 
 
 class IfOperatorPartitioningPattern(RewritePattern):
@@ -76,6 +77,8 @@ class IfOperatorPartitioningPattern(RewritePattern):
         self.if_op_with_mcm: List[scf.IfOp] = []
         # Dictionary of outer IfOps with their inner IfOps for flattening
         self.if_op_with_mcm_4_flatten: dict[scf.IfOp, List[scf.IfOp]] = {}
+        # List to track immediate IfOps for each mcm to avoid multiple mcm in same IfOp
+        self.immediate_if_4_mcm: List[scf.IfOp] = []
 
     def adding_fake_measureOp(self, op: func.FuncOp, rewriter: PatternRewriter) -> None:
         """Add fake MeasureOp before IfOps that contain measurement-controlled operations."""
@@ -123,9 +126,75 @@ class IfOperatorPartitioningPattern(RewritePattern):
         op_walk = op.walk()
         for current_op in op_walk:
             if isinstance(current_op, quantum.MeasureOp):
-                self.collect_all_parent_ifs(current_op, self.if_op_with_mcm, stop=op)
+                self.collect_all_parent_ifs_and_check_limits(current_op, self.if_op_with_mcm, stop=op)
+
+        # Check for quantum operations after nested IfOps with mcm
+        self.check_quantum_op_after_nested_if(op)
 
         return len(self.if_op_with_mcm) > 0
+
+    def collect_all_parent_ifs_and_check_limits(self, op: quantum.MeasureOp, collector: List[scf.IfOp], stop: Operation) -> None:
+        """Collect all parent scf.IfOps of a given operation up to a stop operation."""
+
+        immediate_if_found = False
+
+        mcm_op = op
+
+        while (op := op.parent_op()) and op != stop:
+            if isinstance(op, scf.IfOp):
+                if not immediate_if_found:
+                    # Check if the op is in the true or false block of the IfOp
+                    mcm_on_if_region = mcm_op.parent_region() == op.true_region
+
+                    # Check if the mcm share an immediate IfOp with other mcm
+                    if (op,mcm_on_if_region) in self.immediate_if_4_mcm:
+                        raise CompileError(
+                            "Not supported: Multiple mid-circuit measurements within the same immediate If statement. "
+                            "Each If statement can only contain one mid-circuit measurement. "
+                            "Example of unsupported pattern:\n\n"
+                            "  if condition:\n"
+                            "      m1 = measure(q[0])  # First measurement\n"
+                            "      m2 = measure(q[1])  # Second measurement - NOT ALLOWED\n"
+                            "  else:\n"
+                            "      m1 = measure(q[0])  # First measurement\n"
+                            "      m2 = measure(q[1])  # Second measurement - NOT ALLOWED\n\n"
+                            "Please restructure your code to use separate If statements for each measurement."
+                        )
+
+                    self.immediate_if_4_mcm.append((op,mcm_on_if_region))
+                    immediate_if_found = True
+                if op in collector:
+                    collector.remove(op)
+                collector.append(op)
+
+    def check_quantum_op_after_nested_if(self, stop: Operation) -> None:
+        """Check for quantum operations after nested IfOps containing mid-circuit measurements."""
+
+        for if_with_mcm in self.if_op_with_mcm:
+
+            op = if_with_mcm
+
+            while (op := op.parent_op()) and op != stop:
+                if isinstance(op, scf.IfOp):
+
+                    yield_ops =  [op.true_region.ops.last, op.false_region.ops.last]
+
+                    outer_op = if_with_mcm
+
+                    while (outer_op := outer_op.next_op) and outer_op not in yield_ops and outer_op is not None:
+                        if isinstance(outer_op, quantum.CustomOp):
+                            raise CompileError(
+                                "Not supported: Quantum operations after nested If statements containing mid-circuit measurements. "
+                                "Quantum operations cannot be placed after If statements that contain nested If statements with measurements. "
+                                "Example of unsupported pattern:\n\n"
+                                "  if condition1:\n"
+                                "      if condition2:\n"
+                                "          m = measure(q[0])  # Mid-circuit measurement\n"
+                                "      qml.RX(0.5, wires=0)  # Quantum operation after nested If - NOT ALLOWED\n\n"
+                                "Please restructure your code to avoid quantum operations after nested If statements with measurements."
+                            )
+
+
 
     def looking_for_nested_if_ops(self, op: Operation) -> bool:
         """Detect if there are mid-circuit measurement operations inside IfOps."""
@@ -169,7 +238,6 @@ class IfOperatorPartitioningPattern(RewritePattern):
                 if op in collector:
                     collector.remove(op)
                 collector.append(op)
-
 
     def flatten_nested_IfOps(self, rewriter: PatternRewriter) -> None:
         """Flatten nested scf.IfOps into a single level scf.IfOp."""
