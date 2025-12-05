@@ -2,6 +2,12 @@
 
 <h3>New features since last release</h3>
 
+* Users can now set precisions for a larger variety of `ResourceOperator`s in
+  :mod:`estimator <pennylane.estimator>` using
+  :meth:`ResourceConfig.set_precision <pennylane.estimator.resource_config.ResourceConfig.set_precision>`
+  thanks to the addition of the `resource_key` keyword argument.
+  [(#8561)](https://github.com/PennyLaneAI/pennylane/pull/8561)
+
 * Users can now estimate the resources of Trotterization for Pauli Hamiltonians, using the new
   :class:`estimator.PauliHamiltonian <pennylane.estimator.compact_hamiltonian.PauliHamiltonian>`
   resource Hamiltonian class and the new
