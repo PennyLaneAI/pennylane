@@ -299,7 +299,7 @@ class TreeTraversalPattern(RewritePattern):
                     for qb, idx in list(qubit_to_reg_idx.items()):
                         extract_op = quantum.ExtractOp(current_reg, idx)
                         rewriter.insert(extract_op)
-                        qb.replace_by_if(extract_op.qubit, lambda use: use.operation not in excluded_operations)
+                        qb.replace_by_if(extract_op.qubit, lambda use: use.operation not in insert_ops)
                         qubit_to_reg_idx[extract_op.qubit] = idx
                         del qubit_to_reg_idx[qb]
 
