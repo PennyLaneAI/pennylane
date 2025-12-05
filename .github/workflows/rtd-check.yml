@@ -42,7 +42,7 @@ jobs:
       run: |
         pip install --upgrade --no-cache-dir pip setuptools 
         pip install --upgrade --no-cache-dir ${{ env.PIP_PACKAGES_TO_INSTALL }}
-        pip install --exists-action=w --no-cache-dir -r doc/requirements.txt   
+        pip install --upgrade --upgrade-strategy only-if-needed --no-cache-dir .[docs]
         pip install --upgrade --upgrade-strategy only-if-needed --no-cache-dir  .      
 
 
@@ -50,4 +50,3 @@ jobs:
       run: |
         cd doc
         python -m sphinx -T -b html -d ./_build/doctrees -D language=en . ./html --keep-going 
-

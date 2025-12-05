@@ -369,6 +369,8 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Updated `pyproject.toml` with project dependencies to replace the requirements files. Updated workflows to use installations from `pyproject.toml`. [(8702)](https://github.com/PennyLaneAI/pennylane/pull/8702)
+
 * Bump `jax` version to `0.7.1` for `capture` module.
   [(#8715)](https://github.com/PennyLaneAI/pennylane/pull/8715)
 
