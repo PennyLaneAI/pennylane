@@ -20,6 +20,12 @@
   number of additional allocations of work wires.
   [(#8729)](https://github.com/PennyLaneAI/pennylane/pull/8729)
 
+* A new transform called :func:`~.transforms.select_pauli_rot_phase_gradient` has been added, which lets you 
+  realize arbitrary :class:`~.SelectPauliRot` rotations with a phase gradient resource state and 
+  semi-in-place addition (:class:`~.SemiAdder`). This can be a crucial subroutine in FTQC when 
+  sufficient auxiliary wires are available, as it saves on ``T`` gates compared to other schemes.
+  [(#8738)](https://github.com/PennyLaneAI/pennylane/pull/8738)
+
 <h4>Pauli product measurements</h4>
 
 * Added a :func:`~pennylane.ops.pauli_measure` that takes a Pauli product measurement.
