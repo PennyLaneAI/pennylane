@@ -23,7 +23,6 @@ doc/code/api/*
 timer.dat
 tmp/*
 benchmark/revisions/
-venv
 *venv*/
 config.toml
 .envrc

@@ -1779,7 +1779,7 @@ class TrotterPauli(ResourceOperator):
 
         In the first case, the exponential :math:`e^{i t \alpha_{j} O_{j}} = e^{i t \alpha_{j} \vec{P}_{j}}`
         is a single generalized Pauli rotation 
-        (:class:`~.pennylane.estimator.ops.qubit.parametric_ops_multi_qubit.PauliRot`). In the second
+        (:class:`~.estimator.ops.qubit.parametric_ops_multi_qubit.PauliRot`). In the second
         case, the exponential can be expanded using the fact that all operators in the sum commute:
 
         .. math::
@@ -1840,9 +1840,9 @@ class TrotterPauli(ResourceOperator):
     .. details::
         :title: Usage Details
 
-        Estimating resources for the trotterization of a Pauli Hamiltonian depends on how
+        Estimating resources for the Trotterization of a Pauli Hamiltonian depends on how
         the Pauli Hamiltonian was constructed. Specifically, how much information was provided
-        by the user (see :class:`~.estimator.compact_hamiltonian.PauliHamiltonian` for more info).
+        by the user (see :class:`~.estimator.compact_hamiltonian.PauliHamiltonian` for more information).
 
         If the Hamiltonian is constructed with minimal information about the specific Pauli terms:
 
@@ -1873,7 +1873,7 @@ class TrotterPauli(ResourceOperator):
             PauliRot {'pauli_string': 'YYYY', 'precision': None}: 10
             PauliRot {'pauli_string': 'ZZZZ', 'precision': None}: 10
 
-        Alternately, the Hamiltonian can be constructed by providing the commuting groups of terms.
+        Alternatively, the Hamiltonian can be constructed by providing the commuting groups of terms.
         Note, that the order in which the groups are listed matters, keeping the largest groups as
         the first and last elements of the list will lead to the most reduction in resources.
 
