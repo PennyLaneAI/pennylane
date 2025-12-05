@@ -30,14 +30,13 @@
 
 <h3>Improvements 🛠</h3>
 
-<<<<<<< HEAD
 * Added decompositions of the ``RX``, ``RY`` and ``RZ`` rotations into one of the other two, as well
   as basis changing Clifford gates, to the graph-based decomposition system.
   [(#8569)](https://github.com/PennyLaneAI/pennylane/pull/8569)
-=======
-* Arithmetic dunder methods (`__add__`, `__mul__`, `__rmul__`) have been added to 
-  :class:`~.transforms.core.TransformDispatcher`, :class:`~.transforms.core.TransformContainer`, 
-  and :class:`~.transforms.core.TransformProgram` to enable intuitive composition of transform 
+
+* Arithmetic dunder methods (`__add__`, `__mul__`, `__rmul__`) have been added to
+  :class:`~.transforms.core.TransformDispatcher`, :class:`~.transforms.core.TransformContainer`,
+  and :class:`~.transforms.core.TransformProgram` to enable intuitive composition of transform
   programs using `+` and `*` operators.
   [(#8703)](https://github.com/PennyLaneAI/pennylane/pull/8703)
 
@@ -57,10 +56,10 @@
   with :func:`~.specs` and :func:`~.drawer.draw` instead of having to increment ``level``
   by integer amounts when not using any Catalyst passes.
   [(#8684)](https://github.com/PennyLaneAI/pennylane/pull/8684)
-  
+
   The :func:`~.marker` function works like a transform in PennyLane, and can be deployed as
   a decorator on top of QNodes:
-  
+
   ```
   from functools import partial
 
@@ -87,7 +86,6 @@
   >>> print(qml.draw(circuit, level="rotations-merged")())
   0: ──RX(6.68)─┤  State
   ```
->>>>>>> master
 
 * Add the `PCPhaseOp` operation to the xDSL Quantum dialect.
   [(#8621)](https://github.com/PennyLaneAI/pennylane/pull/8621)
@@ -210,14 +208,10 @@
 
 <h3>Breaking changes 💔</h3>
 
-<<<<<<< HEAD
-* ``QuantumScript.to_openqasm`` has been removed. Please use ``qml.to_openqasm`` instead. This removes duplicated
-=======
 * `qml.transforms.map_wires` no longer supports plxpr transforms.
   [(#8683)](https://github.com/PennyLaneAI/pennylane/pull/8683)
 
-* ``QuantumScript.to_openqasm`` has been removed. Please use ``qml.to_openqasm`` instead. This removes duplicated 
->>>>>>> master
+* ``QuantumScript.to_openqasm`` has been removed. Please use ``qml.to_openqasm`` instead. This removes duplicated
   functionality for converting a circuit to OpenQASM code.
   [(#8499)](https://github.com/PennyLaneAI/pennylane/pull/8499)
 
@@ -309,9 +303,9 @@
   We recommend upgrading your version of NumPy to benefit from enhanced support and features.
   [(#8578)](https://github.com/PennyLaneAI/pennylane/pull/8578)
   [(#8497)](https://github.com/PennyLaneAI/pennylane/pull/8497)
-  
-* The ``custom_decomps`` keyword argument to ``qml.device`` has been deprecated and will be removed 
-  in 0.45. Instead, with ``qml.decomposition.enable_graph()``, new decomposition rules can be defined as 
+
+* The ``custom_decomps`` keyword argument to ``qml.device`` has been deprecated and will be removed
+  in 0.45. Instead, with ``qml.decomposition.enable_graph()``, new decomposition rules can be defined as
   quantum functions with registered resources. See :mod:`pennylane.decomposition` for more details.
 
 * `qml.measure`, `qml.measurements.MidMeasureMP`, `qml.measurements.MeasurementValue`,
@@ -381,18 +375,18 @@
 * Bump `jax` version to `0.7.0` for `capture` module.
   [(#8701)](https://github.com/PennyLaneAI/pennylane/pull/8701)
 
-* Improve error handling when using PennyLane's experimental program capture functionality with an incompatible JAX version. 
+* Improve error handling when using PennyLane's experimental program capture functionality with an incompatible JAX version.
   [(#8723)](https://github.com/PennyLaneAI/pennylane/pull/8723)
 
 * Bump `autoray` package version to `0.8.2`.
   [(#8674)](https://github.com/PennyLaneAI/pennylane/pull/8674)
-  
+
 * Update the schedule of nightly TestPyPI uploads to occur at the end rather than the beginning of all week days.
   [(#8672)](https://github.com/PennyLaneAI/pennylane/pull/8672)
 
 * Add workflow to bump Catalyst and Lightning versions in the RC branch, create a new release tag and draft release, tag the RC branch, and create a PR to merge the RC branch into master.
   [(#8352)](https://github.com/PennyLaneAI/pennylane/pull/8352)
-  
+
 * Added `MCM_METHOD` and `POSTSELECT_MODE` `StrEnum` objects to improve validation and handling of `MCMConfig` creation.
   [(#8596)](https://github.com/PennyLaneAI/pennylane/pull/8596)
 
@@ -542,12 +536,12 @@ A warning message has been added to :doc:`Building a plugin <../development/plug
 * Update `interface-unit-tests.yml` to use its input parameter `pytest_additional_args` when running pytest.
   [(#8705)](https://github.com/PennyLaneAI/pennylane/pull/8705)
 
-* Fixes a bug where in `resolve_work_wire_type` we incorrectly returned a value of `zeroed` if `both work_wires` 
+* Fixes a bug where in `resolve_work_wire_type` we incorrectly returned a value of `zeroed` if `both work_wires`
   and `base_work_wires` were empty, causing an incorrect work wire type.
   [(#8718)](https://github.com/PennyLaneAI/pennylane/pull/8718)
 
-* The warnings-as-errors CI action was failing due to an incompatibility between `pytest-xdist` and `pytest-benchmark`. 
-  Disabling the benchmark package allows the tests to be collected an executed. 
+* The warnings-as-errors CI action was failing due to an incompatibility between `pytest-xdist` and `pytest-benchmark`.
+  Disabling the benchmark package allows the tests to be collected an executed.
   [(#8699)](https://github.com/PennyLaneAI/pennylane/pull/8699)
 
 * Adds an `expand_transform` to `param_shift_hessian` to pre-decompose
