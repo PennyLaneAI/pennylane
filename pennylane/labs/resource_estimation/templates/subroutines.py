@@ -917,6 +917,119 @@ class ResourceIterativeQPE(ResourceOperator):
         return gate_counts
 
 
+class ResourceIQP(ResourceOperator):
+    r"""Resource class for IQP.
+
+    Args:
+        num_wires (int): the number of qubits the operation acts upon
+        gates (list[list[list[int]]]): Specification of the trainable gates. Each element of gates corresponds to a
+            unique trainable parameter. Each sublist specifies the generators to which that parameter applies.
+            Generators are specified by listing the qubits on which an X operator acts.
+        init_gates (list[list[list[int]]], optional): A specification of gates of the same form as the gates argument. The
+            parameters of these gates will be defined by init_coeffs later on.
+        spin_sym (bool, optional): If True, the circuit is equivalent to one where the initial state
+            1/sqrt(2)(|00...0> + |11...1>) is used in place of |00...0>.
+        wires (Sequence[int], optional): the wires the operation acts on
+
+    .. seealso:: :class:`~.IQP`
+    """
+
+    resource_keys = {"spin_sym", "gates", "num_wires", "init_gates"}
+
+    def __init__(self, num_wires, gates, init_gates, spin_sym, wires=None) -> None:
+        self.num_wires = num_wires
+        self.spin_sym = spin_sym
+        self.gates = gates
+        self.init_gates = init_gates
+        super().__init__(wires=wires)
+
+    @property
+    def resource_params(self) -> dict:
+        r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+        Returns:
+            dict: A dictionary containing the resource parameters:
+                * num_wires (int): the number of qubits the operation acts upon
+        """
+        return {
+            "spin_sym":self.spin_sym,
+            "gates": self.gates,
+            "num_wires": self.num_wires,
+            "init_gates": self.init_gates,
+        }
+
+    @classmethod
+    def resource_rep(cls, num_wires, gates, init_gates, spin_sym) -> CompressedResourceOp:
+        r"""Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute the resources.
+
+        Args:
+            num_wires (int): the number of qubits the operation acts upon
+            gates (list[list[list[int]]]): Specification of the trainable gates. Each element of gates corresponds to a
+                unique trainable parameter. Each sublist specifies the generators to which that parameter applies.
+                Generators are specified by listing the qubits on which an X operator acts.
+            init_gates (list[list[list[int]]], optional): A specification of gates of the same form as the gates argument. The
+                parameters of these gates will be defined by init_coeffs later on.
+            spin_sym (bool, optional): If True, the circuit is equivalent to one where the initial state
+                1/sqrt(2)(|00...0> + |11...1>) is used in place of |00...0>.
+
+        Returns:
+            CompressedResourceOp: the operator in a compressed representation
+        """
+        return CompressedResourceOp(cls, num_wires, {
+            "spin_sym":spin_sym,
+            "gates": gates,
+            "num_wires": num_wires,
+            "init_gates": init_gates,
+        })
+
+    @classmethod
+    def resource_decomp(cls, num_wires, gates, init_gates, spin_sym) -> list[GateCount]:
+        r"""Returns a list representing the resources of the operator. Each object in the list
+        represents a gate and the number of times it occurs in the circuit.
+
+        Args:
+            num_wires (int): the number of qubits the operation acts upon
+            gates (list[list[list[int]]]): Specification of the trainable gates. Each element of gates corresponds to a
+                unique trainable parameter. Each sublist specifies the generators to which that parameter applies.
+                Generators are specified by listing the qubits on which an X operator acts.
+            init_gates (list[list[list[int]]], optional): A specification of gates of the same form as the gates argument. The
+                parameters of these gates will be defined by init_coeffs later on.
+            spin_sym (bool, optional): If True, the circuit is equivalent to one where the initial state
+                1/sqrt(2)(|00...0> + |11...1>) is used in place of |00...0>.
+
+        Returns:
+            list[~.pennylane.labs.resource_estimation.GateCount]: A list of GateCount objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
+        """
+        hadamard = resource_rep(re.ResourceHadamard)
+        multi_rz = resource_rep(re.ResourceMultiRZ)
+        pauli_rot = resource_rep(re.ResourcePauliRot)
+
+        hadamard_counts = 2 * num_wires
+        multi_rz_counts = 0
+        pauli_rot_counts = 1 if spin_sym else 0
+
+        if init_gates is not None:
+            for gate in init_gates:
+                multi_rz_counts += len(gate)
+
+        for gate in gates:
+            multi_rz_counts += len(gate)
+
+        return [
+            GateCount(hadamard, hadamard_counts),
+            GateCount(multi_rz, multi_rz_counts),
+            GateCount(pauli_rot, pauli_rot_counts),
+        ]
+
+    @staticmethod
+    def tracking_name(num_wires, gates, init_gates, spin_sym) -> str:
+        r"""Returns the tracking name built with the operator's parameters."""
+        return f"IQP({num_wires}, {gates}, {init_gates}, {spin_sym})"
+
+
 class ResourceQFT(ResourceOperator):
     r"""Resource class for QFT.
 

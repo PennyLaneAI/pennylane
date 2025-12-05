@@ -18,7 +18,6 @@ from collections import defaultdict
 
 import numpy as np
 
-from pennylane import math
 from pennylane.decomposition import (
     add_decomps,
     register_resources,
@@ -30,7 +29,7 @@ from pennylane.ops import Hadamard, MultiRZ, PauliRot
 
 class IQP(Operation):
 
-    resource_keys = {"spin_sym", "params", "gates", "n_qubits", "init_gates", "init_coeffs"}
+    resource_keys = {"spin_sym", "gates", "n_qubits", "init_gates"}
 
     def __init__(
         self, wires, gates, params, init_gates=None, init_coeffs=None, spin_sym=None, id=None
@@ -78,16 +77,14 @@ class IQP(Operation):
     def resource_params(self):
         return {
             "spin_sym": self.hyperparameters["spin_sym"],
-            "params": self.hyperparameters["params"],
             "gates": self.hyperparameters["gates"],
             "n_qubits": len(self.wires),
             "init_gates": self.hyperparameters["init_gates"],
-            "init_coeffs": self.hyperparameters["init_coeffs"],
         }
 
 
 def _instantaneous_quantum_polynomial_resources(
-    spin_sym, params, gates, n_qubits, init_gates, init_coeffs
+    spin_sym, gates, n_qubits, init_gates
 ):
     resources = defaultdict(int)
     if spin_sym:
@@ -101,11 +98,11 @@ def _instantaneous_quantum_polynomial_resources(
     resources[resource_rep(Hadamard)] = 2 * n_qubits
 
     if init_gates is not None:
-        for par, gate in zip(init_coeffs, init_gates):
+        for gate in init_gates:
             for gen in gate:
                 resources[resource_rep(MultiRZ, num_wires=len(gen))] += 1
 
-    for par, gate in zip(params, gates):
+    for gate in gates:
         for gen in gate:
             resources[resource_rep(MultiRZ, num_wires=len(gen))] += 1
 

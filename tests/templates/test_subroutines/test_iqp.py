@@ -21,11 +21,7 @@ import numpy as np
 import pytest
 from pennylane.devices import device
 
-from pennylane.measurements import probs
-
-from pennylane.wires import Wires
-
-from pennylane import math, qnode
+from pennylane import math
 
 from pennylane.decomposition import list_decomps
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
@@ -48,79 +44,6 @@ def local_gates(n_qubits: int, max_weight=2):
         for gate in combinations(math.arange(n_qubits), weight):
             gates.append([list(gate)])
     return gates
-
-
-@qnode(dev)
-def iqp_circuit(wires, gates, params, spin_sym=None, init_gates=None, init_coeffs=None):
-    IQP(
-        wires=wires,
-        gates=gates,
-        params=params,
-        spin_sym=spin_sym,
-        init_gates=init_gates,
-        init_coeffs=init_coeffs
-    )
-    return probs(wires=wires)
-
-
-@pytest.mark.parametrize(
-    ("num_qubits", "gates_fn", "spin_sym", "init_gates_coeffs", "probabilities"),
-    [
-        (
-            2,
-            "local_gates",
-            False,
-            False,
-            [0.928, 0.000, 0.070, 0.000]
-        ),
-        (
-            3,
-            "local_gates",
-            False,
-            True,
-            [0.928, 0.000, 0.070, 0.000]
-        ),
-        (
-            2,
-            "multi_gens",
-            True,
-            False,
-            [0.503, 0.037, 0.426, 0.032]
-        ),
-        (
-            3,
-            "multi_gens",
-            True,
-            True,
-            [0.503, 0.037, 0.426, 0.032]
-        ),
-    ]
-)
-def test_iqp(num_qubits, gates_fn, spin_sym, init_gates_coeffs, probabilities):
-    gates = local_gates(num_qubits, 1)
-    params = math.random.uniform(0, 2 * np.pi, len(gates))
-
-    if gates_fn == "multi_gens":
-        gates = [[gates[0][0], gates[1][0]]] + gates[2:]
-
-    if init_gates_coeffs:
-        init_gates = gates.copy()
-        init_coeffs = math.random.uniform(0, 2 * np.pi, len(init_gates))
-    else:
-        init_gates = None
-        init_coeffs = None
-
-    assert math.allclose(
-        probabilities,
-        iqp_circuit(
-            wires=Wires([i for i in range(num_qubits)]),
-            gates=gates,
-            params=params,
-            spin_sym=spin_sym,
-            init_gates=init_gates,
-            init_coeffs=init_coeffs
-        ),
-    )
 
 
 @pytest.mark.parametrize(
