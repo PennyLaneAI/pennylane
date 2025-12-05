@@ -940,7 +940,16 @@ def _grid_pts(degree, interface):
 
 @jit_if_jax_available
 def obj_function(phi, x, y):
-    # Equation (23)
+    """Objective function to be optimized in Equation (23)
+
+    Args:
+        phi (tensor_like): optimization parameters
+        x (tensor_like): grid points over which we optimize
+        y (tensor_like): expected values 
+
+    Returns:
+        float: \frac{\|f_\Phi(x) - y\|^2}{N}
+    """
     obj_func = jax.vmap(_qsp_iterate_broadcast, in_axes=(None, 0, None))(phi, x, "jax") - y
     obj_func = jax.numpy.dot(obj_func, obj_func)
     return 1 / x.shape[0] * obj_func
