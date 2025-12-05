@@ -284,6 +284,30 @@ class TestCond:
             _ = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 1.23)
 
 
+def test_keyword_argument():
+    """Test that keyword arguments are treated as traceable inputs."""
+
+    def f(pred, x):
+
+        @qml.cond(pred)
+        def b(*, x):
+            qml.RX(x, 0)
+
+        @b.otherwise
+        def _(*, x):
+            qml.RZ(x, 0)
+
+        return b(x=x)
+
+    jaxpr = jax.make_jaxpr(f)(True, 0.5)
+    assert jaxpr.eqns[0].primitive == cond_prim
+
+    for j in jaxpr.eqns[0].params["jaxpr_branches"]:
+        # x is an input, not a constvar
+        assert len(j.constvars) == 0
+        assert len(j.invars) == 1
+
+
 class TestCondReturns:
     """Tests for validating the number and types of output variables in conditional functions."""
 
