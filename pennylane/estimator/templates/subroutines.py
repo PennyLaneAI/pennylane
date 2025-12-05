@@ -1103,7 +1103,7 @@ class UnaryIterationQPE(ResourceOperator):
         unitary: CompressedResourceOp,
         num_iterations: int,
         adj_qft_cmpr_op: CompressedResourceOp | None = None,
-    ):
+    ) -> list[GateCount | Allocate | Deallocate]:
         r"""Returns the resources for Quantum Phase Estimation implemented using unary iteration.
 
         This method calculates the resources required for QPE where the controlled-unitary operations
