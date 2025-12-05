@@ -20,8 +20,6 @@ xdsl = pytest.importorskip("xdsl")
 catalyst = pytest.importorskip("catalyst")
 
 # pylint: disable=wrong-import-position
-from catalyst.passes.xdsl_plugin import getXDSLPluginAbsolutePath
-
 import pennylane as qml
 from pennylane.compiler.python_compiler.transforms import (
     SplitNonCommutingPass,
@@ -231,10 +229,7 @@ class TestSplitNonCommutingPass:
             i = i + 1
             return i
 
-        @qml.qjit(
-            target="mlir",
-            pass_plugins=[getXDSLPluginAbsolutePath()],
-        )
+        @qml.qjit(target="mlir")
         @split_non_commuting_pass
         @qml.set_shots(10)
         @qml.qnode(dev)
@@ -277,10 +272,7 @@ class TestSplitNonCommutingPass:
             i = i + 1
             return i
 
-        @qml.qjit(
-            target="mlir",
-            pass_plugins=[getXDSLPluginAbsolutePath()],
-        )
+        @qml.qjit(target="mlir")
         @split_non_commuting_pass
         @qml.qnode(dev)
         def circuit():
@@ -295,9 +287,7 @@ class TestSplitNonCommutingPass:
 
         res = circuit()
 
-        @qml.qjit(
-            target="mlir",
-        )
+        @qml.qjit(target="mlir")
         @qml.qnode(dev)
         def circuit_ref():
             for_fn()

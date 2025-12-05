@@ -20,8 +20,6 @@ pytest.importorskip("xdsl")
 pytest.importorskip("catalyst")
 
 # pylint: disable=wrong-import-position
-from catalyst.passes.xdsl_plugin import getXDSLPluginAbsolutePath
-
 import pennylane as qml
 from pennylane.compiler.python_compiler.transforms import MergeRotationsPass, merge_rotations_pass
 
@@ -229,7 +227,7 @@ class TestMergeRotationsIntegration:
         """Test that the MergeRotationsPass works correctly with qjit."""
         dev = qml.device("lightning.qubit", wires=1)
 
-        @qml.qjit(target="mlir", pass_plugins=[getXDSLPluginAbsolutePath()])
+        @qml.qjit(target="mlir")
         @merge_rotations_pass
         @qml.qnode(dev)
         def circuit(x: float, y: float):

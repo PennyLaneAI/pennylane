@@ -664,10 +664,12 @@ currently rely on JAX’s API to lower to MLIR. This has the special
 effect of lowering to a specific dialect called StableHLO, which is used
 to represent all arithmetic operations present in the program.
 
-Once lowered to MLIR, if the original ``qjit`` decorator specified the
-xDSL pass plugin, we pass control over to the xDSL layer, which applies
-all transforms that were requested by the user. We can request the use
-of the xDSL plugin like so:
+Once lowered to MLIR, if any xDSL registered passes are detected, we pass the control over to 
+the xDSL layer, which automatically detects and applies all xDSL transforms that were requested
+by the user.
+
+However, if you want to manually trigger the xDSL layer without using any xDSL registered passes,
+you can do so by specifying the ``pass_plugins`` parameter:
 
 .. code-block:: python
 
@@ -1003,9 +1005,7 @@ currently accessible as
     qml.capture.enable()
     dev = qml.device("lightning.qubit", wires=1)
 
-    @qml.qjit(
-        pass_plugins=[catalyst.passes.xdsl_plugin.getXDSLPluginAbsolutePath()]
-    )
+    @qml.qjit
     @my_pass
     @qml.qnode(dev)
     def circuit(x):
@@ -1296,8 +1296,6 @@ will explain what is going on.
 
 .. code-block:: python
 
-    from catalyst.passes.xdsl_plugin import getXDSLPluginAbsolutePath
-
     def test_h_to_x_pass_integration(run_filecheck_qjit):
         """Test that Hadamard gets converted into PauliX."""
         # The original program simply applies a Hadamard to a circuit
@@ -1306,7 +1304,7 @@ will explain what is going on.
         # `compiler_transform`. To make sure that the xDSL API works
         # correctly, program capture must be enabled.
         # qml.capture.enable()
-        @qml.qjit(pass_plugins=[getXDSLPluginAbsolutePath])
+        @qml.qjit
         @h_to_x_pass
         def circuit():
             # CHECK: [[q0:%.+]] = "test.op"() : () -> !quantum.bit
