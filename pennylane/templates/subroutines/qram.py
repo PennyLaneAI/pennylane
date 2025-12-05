@@ -33,11 +33,11 @@ from pennylane.decomposition import (
     register_resources,
     resource_rep,
 )
-from pennylane.operation import Operation
-from pennylane.ops import CSWAP, SWAP, Hadamard, PauliZ, adjoint, ctrl
+from pennylane.operation import Operation, Operator
+from pennylane.ops import CSWAP, SWAP, Hadamard, PauliX, PauliZ, adjoint, ctrl
 from pennylane.wires import Wires, WiresLike
 
-# pylint: disable=consider-using-generator
+# pylint: disable=consider-using-generator, too-many-arguments
 
 
 # -----------------------------
@@ -361,3 +361,172 @@ def _bucket_brigade_qram_decomposition(
 
 
 add_decomps(BBQRAM, _bucket_brigade_qram_decomposition)
+
+
+class SelectOnlyQRAM(Operator):
+    """Select-only QRAM implemented as multi-controlled X on target wires,
+    controlled on all address wires (select_wires + control_wires).
+
+    Args:
+        bitstrings (Sequence[str]):
+            The classical data as a sequence of bitstrings.
+        control_wires (WiresLike):
+            The register that stores the index for the entry of the classical data we want to
+            access.
+        target_wires (WiresLike):
+            The register in which the classical data gets loaded. The size of this register must
+            equal each bitstring length in ``bitstrings``.
+        select_wires (WiresLike, optional):
+            Wires used to perform the selection.
+        select_value (int or None, optional):
+            If provided, only entries whose select bits match this value are loaded.
+        id (str or None):
+            Optional name for the operation.
+
+    Raises:
+        ValueError: if the ``bitstrings`` are of the wrong length, a ``select_value`` is provided without
+        ``select_wires``, or the ``select_value`` is greater than [0, (1 << len(select_wires)) - 1].
+
+    .. seealso:: :class:`~.QROM`, :class:`~.QROMStatePreparation`, :class:`~.BBQRAM`
+
+    .. note::
+
+        QRAM and QROM, though similar, have different applications and purposes. QRAM is intended
+        for read-and-write capabilities, where the stored data can be loaded and changed. QROM is
+        designed to only load stored data into a quantum register.
+    """
+
+    grad_method = None
+
+    resource_keys = {
+        "bitstrings",
+        "select_value",
+        "num_control_wires",
+        "num_select_wires",
+    }
+
+    def __init__(
+        self,
+        bitstrings,
+        control_wires: WiresLike,
+        target_wires: WiresLike,
+        select_wires: WiresLike | None = None,
+        select_value: int | None = None,
+        id: str | None = None,
+    ):
+        # Convert to Wires
+        control_wires = Wires(control_wires)
+        target_wires = Wires(target_wires)
+        select_wires = Wires(select_wires) if select_wires is not None else Wires([])
+
+        # ---- Validate bitstrings ----
+        k = len(select_wires)
+        n_k = len(control_wires)
+        n_total = k + n_k
+
+        if (1 << n_total) != len(bitstrings):
+            raise ValueError("len(bitstrings) must be 2^(len(select_wires)+len(control_wires)).")
+
+            # Validate select_value (if provided)
+        if select_value is not None:
+            if k == 0:
+                raise ValueError("select_value cannot be used when len(select_wires) == 0.")
+            max_sel = 1 << k
+            if not 0 <= select_value < max_sel:
+                raise ValueError(f"select_value must be an integer in [0, {max_sel - 1}].")
+
+        self._hyperparameters = {
+            "bitstrings": bitstrings,
+            "control_wires": control_wires,
+            "target_wires": target_wires,
+            "select_wires": select_wires,
+            "select_value": select_value,
+        }
+
+        super().__init__(wires=list(control_wires) + list(target_wires) + list(select_wires), id=id)
+
+    @classmethod
+    def _primitive_bind_call(cls, *args, **kwargs):
+        return cls._primitive.bind(*args, **kwargs)
+
+    @property
+    def resource_params(self) -> dict:
+        return {
+            "bitstrings": self.hyperparameters["bitstrings"],
+            "num_control_wires": len(self.hyperparameters["control_wires"]),
+            "select_value": self.hyperparameters["select_value"],
+            "num_select_wires": len(self.hyperparameters["select_wires"]),
+        }
+
+
+def _select_only_qram_resources(bitstrings, select_value, num_control_wires, num_select_wires):
+    resources = defaultdict(int)
+    n_total = num_control_wires + num_select_wires
+
+    for addr, bits in enumerate(bitstrings):
+        if (
+            select_value is not None
+            and num_select_wires > 0
+            and (addr >> num_control_wires) != select_value
+        ):
+            continue
+
+        control_values = [(addr >> (n_total - 1 - i)) & 1 for i in range(n_total)]
+
+        resources[resource_rep(PauliX)] += control_values.count(0) * 2
+
+        resources[
+            controlled_resource_rep(
+                base_class=PauliX,
+                base_params={},
+                num_control_wires=n_total,
+                num_zero_control_values=0,
+            )
+        ] += bits.count("1")
+
+    return resources
+
+
+def _flip_controls(control_wires, control_vals):
+    for i, control_value in enumerate(control_vals):
+        if control_value == 0:
+            PauliX(control_wires[i])
+
+
+@register_resources(_select_only_qram_resources)
+def _select_only_qram_decomposition(
+    wires, bitstrings, select_value, select_wires, control_wires, target_wires, **_
+):  # pylint: disable=unused-argument
+    controls = select_wires + control_wires
+    k = len(select_wires)
+    n_total = k + len(control_wires)
+
+    # Loop over all addresses (0 .. 2^(k+n_k)-1)
+    for addr, bits in enumerate(bitstrings):
+        # If select_value is specified, only implement entries whose
+        # high k bits (select part) match that value.
+        if select_value is not None and k > 0:
+            sel_part = addr >> (n_total - k)
+            if sel_part != select_value:
+                continue
+
+        control_values = [(addr >> (n_total - 1 - i)) & 1 for i in range(n_total)]
+
+        _flip_controls(controls, control_values)
+
+        # For each bit position in the data
+        for j in range(len(bitstrings[0])):
+            if bits[j] != "1":
+                continue
+
+            # Multi-controlled X on target_wires[j],
+            # controlled on controls matching `control_values`.
+            ctrl(
+                PauliX(wires=target_wires[j]),
+                control=controls,
+            )
+
+        _flip_controls(controls, control_values)
+
+
+add_decomps(SelectOnlyQRAM, _select_only_qram_decomposition)
