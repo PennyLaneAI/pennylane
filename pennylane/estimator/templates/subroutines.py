@@ -971,6 +971,204 @@ class IterativeQPE(ResourceOperator):
         return gate_counts
 
 
+class UnaryIterationQPE(ResourceOperator):
+    r"""Resource class for UnaryIterationQPE. This is a variant of the Quantum Phase Estimation algorithm
+    that uses the unary iteration technique described in `arXiv. 2011.03494 <https://arxiv.org/pdf/2011.03494>`_.
+    In this approach, the Select operation is implemented using unary iteration, which reduces
+    T and Toffoli gate counts at the cost of increasing the number of auxiliary qubits required. For
+    its typical usage, see the explanation `here <https://pennylane.ai/compilation/unary-iteration>`_.
+
+    Note, users can also provide a custom adjoint QFT implementation, which can be used to
+    further optimize the resource requirements. For example, one could use an approximate QFT implementation
+    to reduce the T-gate count further.
+
+    Args:
+        unitary (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): the unitary operator to run
+            the phase estimation protocol on
+        num_iterations (int): The total number of times the unitary operator :math:`U` is
+            applied in order to reach a target precision in the eigenvalue estimate.
+        adj_qft_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator` | None): An optional
+            argument to set the subroutine used to perform the adjoint QFT operation.
+        wires (Sequence[int], None): the wires the operation acts on
+
+    Resources:
+        The resources are obtained from Fig 2. in Section III of `arXiv. 2011.03494 <https://arxiv.org/pdf/2011.03494>`_.
+
+    .. seealso:: Related PennyLane operation :class:`~.pennylane.QPE` and explanation of `Unary Iteration <https://pennylane.ai/compilation/unary-iteration>`_.
+
+    **Example**
+
+    The resources for this operation are computed as follows:
+
+    >>> import pennylane.estimator as qre
+    >>> unitary = qre.RX()
+    >>> print(qre.estimate(qre.UnaryIterationQPE(unitary, 11)))
+    --- Resources: ---
+    Total wires: 4
+    algorithmic wires: 1
+    allocated wires: 3
+        zero state: 3
+        any state: 0
+    Total gates : 1.880E+3
+    'Toffoli': 20,
+    'T': 1.760E+3,
+    'CNOT': 50,
+    'X': 20,
+    'Hadamard': 30
+    """
+
+    resource_keys = {"unitary", "num_iterations", "adj_qft_cmpr_op"}
+
+    def __init__(
+        self,
+        unitary: ResourceOperator,
+        num_iterations: int,
+        adj_qft_op: ResourceOperator | None = None,
+        wires: WiresLike | None = None,
+    ):
+        remove_ops = [unitary, adj_qft_op] if adj_qft_op is not None else [unitary]
+        _dequeue(remove_ops)
+        self.queue()
+
+        self.unitary = unitary.resource_rep_from_op()
+        adj_qft_cmpr_op = None if adj_qft_op is None else adj_qft_op.resource_rep_from_op()
+
+        self.adj_qft_cmpr_op = adj_qft_cmpr_op
+        self.num_iterations = num_iterations
+
+        self.num_wires = unitary.num_wires
+        if wires:
+            self.wires = Wires(wires)
+            if base_wires := unitary.wires:
+                self.wires = Wires.all_wires([self.wires, base_wires])
+            if len(self.wires) != self.num_wires:
+                raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}.")
+        else:
+            self.wires = None
+
+    @property
+    def resource_params(self) -> dict:
+        r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+        Returns:
+            dict: A dictionary containing the resource parameters:
+                * unitary (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A compressed resource operator, corresponding
+                  to the phase estimation operator.
+                * num_iterations (int): The total number of times the unitary operator :math:`U` is
+                  applied in order to reach a target precision in the eigenvalue estimate.
+                * adj_qft_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp` | None]): An optional compressed
+                  resource operator, corresponding to the adjoint QFT routine. If :code:`None`, the
+                  default :class:`~.pennylane.estimator.templates.subroutines.QFT` will be used.
+        """
+
+        return {
+            "unitary": self.unitary,
+            "num_iterations": self.num_iterations,
+            "adj_qft_cmpr_op": self.adj_qft_cmpr_op,
+        }
+
+    @classmethod
+    def resource_rep(
+        cls,
+        unitary: CompressedResourceOp,
+        num_iterations: int,
+        adj_qft_cmpr_op: CompressedResourceOp = None,
+    ) -> CompressedResourceOp:
+        r"""Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute the resources.
+
+        Args:
+            unitary (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A compressed resource operator, corresponding
+                to the phase estimation operator.
+            num_iterations (int): The total number of times the unitary operator :math:`U` is
+                applied in order to reach a target precision in the eigenvalue estimate.
+            adj_qft_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp` | None): An optional compressed
+                resource operator, corresponding to the adjoint QFT routine. If :code:`None`, the
+                default :class:`~.pennylane.estimator.templates.subroutines.QFT` will be used.
+
+        Returns:
+            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+        """
+        params = {
+            "unitary": unitary,
+            "num_iterations": num_iterations,
+            "adj_qft_cmpr_op": adj_qft_cmpr_op,
+        }
+        num_wires = int(math.ceil(math.log2(num_iterations))) + unitary.num_wires  # edit
+        return CompressedResourceOp(cls, num_wires, params)
+
+    @classmethod
+    def resource_decomp(
+        cls,
+        unitary: CompressedResourceOp,
+        num_iterations: int,
+        adj_qft_cmpr_op: CompressedResourceOp | None = None,
+    ) -> list[GateCount | Allocate | Deallocate]:
+        r"""Returns the resources for Quantum Phase Estimation implemented using unary iteration.
+
+        This method calculates the resources required for QPE where the controlled-unitary operations
+        are replaced with a Select operation implemented using unary iteration.
+
+        The decomposition of the unary iteration follows the construction described in Fig. 2 of Section III in
+        `Babbush et al. (2011.03494) <https://arxiv.org/abs/2011.03494>`_.
+
+        Args:
+            unitary (~.pennylane.estimator.resource_operator.CompressedResourceOp): A compressed resource operator
+                corresponding to the phase estimation operator :math:`U`.
+            num_iterations (int): The total number of times the unitary operator :math:`U` is
+                applied in order to reach a target precision in the eigenvalue estimate.
+            adj_qft_cmpr_op (~.pennylane.estimator.resource_operator.CompressedResourceOp | None): An optional compressed
+                resource operator corresponding to the adjoint QFT routine. If ``None``, the
+                default :class:`~.pennylane.estimator.templates.subroutines.QFT` will be used.
+
+        Returns:
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
+        """
+        num_wires = math.ceil(math.log2(num_iterations))
+
+        hadamard = resource_rep(qre.Hadamard)
+        x = resource_rep(qre.X)
+        cnot = resource_rep(qre.CNOT)
+        ctrl_unitary = resource_rep(
+            qre.Controlled, {"base_cmpr_op": unitary, "num_ctrl_wires": 1, "num_zero_ctrl": 0}
+        )
+        left_elbow = resource_rep(qre.Toffoli, {"elbow": "left"})
+        right_elbow = resource_rep(qre.Toffoli, {"elbow": "right"})
+
+        if adj_qft_cmpr_op is None:
+            adj_qft_cmpr_op = resource_rep(
+                qre.Adjoint,
+                {
+                    "base_cmpr_op": resource_rep(QFT, {"num_wires": num_wires}),
+                },
+            )
+
+        return [
+            Allocate(num_wires - 1),
+            GateCount(hadamard, num_wires),
+            GateCount(left_elbow, num_iterations - 1),
+            GateCount(cnot, num_iterations - 1),
+            GateCount(x, 2 * (num_iterations - 1)),
+            GateCount(ctrl_unitary, num_iterations),
+            GateCount(right_elbow, num_iterations - 1),
+            GateCount(adj_qft_cmpr_op),
+            Deallocate(num_wires - 1),
+        ]
+
+    @staticmethod
+    def tracking_name(
+        unitary: CompressedResourceOp,
+        num_iterations: int,
+        adj_qft_cmpr_op: CompressedResourceOp | None = None,
+    ) -> str:
+        r"""Returns the tracking name built with the operator's parameters."""
+        base_name = unitary.name
+        adj_qft_name = None if adj_qft_cmpr_op is None else adj_qft_cmpr_op.name
+        return f"UnaryIterationQPE({base_name}, {num_iterations}, adj_qft={adj_qft_name})"
+
+
 class QFT(ResourceOperator):
     r"""Resource class for QFT.
 

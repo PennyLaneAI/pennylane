@@ -52,6 +52,12 @@
   method is not overridden.
   [(#8686)](https://github.com/PennyLaneAI/pennylane/pull/8686)
 
+* Added the `~pennylane.estimator.templates.UnaryIterationQPE` subroutine in the `pennylane.estimator`
+  module. It is a variant of the Quantum Phase Estimation algorithm
+  that uses unary iteration, which can reduce T and Toffoli gate counts at the cost of
+  increasing the number of auxiliary qubits required.
+  [(#8708)](https://github.com/PennyLaneAI/pennylane/pull/8708)
+
 * A new :func:`~.marker` function allows for easy inspection at particular points in a transform program
   with :func:`~.specs` and :func:`~.drawer.draw` instead of having to increment ``level``
   by integer amounts when not using any Catalyst passes.
@@ -603,6 +609,7 @@ Yushao Chen,
 Marcus Edwards,
 Lillian Frederiksen,
 Sengthai Heng,
+Austin Huang,
 Soran Jahangiri,
 Christina Lee,
 Joseph Lee,
