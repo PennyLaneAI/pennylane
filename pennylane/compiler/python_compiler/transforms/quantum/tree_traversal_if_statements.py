@@ -711,7 +711,7 @@ class IfOperatorPartitioningPattern(RewritePattern):
         """get missing values for ops
         Given a list of operations, return the values that are missing from the operations.
         """
-        ops_walk = list(chain(*[op.walk() for op in ops]))
+        ops_walk = chain.from_iterable(op.walk() for op in ops)
 
         ops_defined_values = set()
         all_operands = set()
@@ -734,7 +734,6 @@ class IfOperatorPartitioningPattern(RewritePattern):
         """get defined values for ops
         Given a list of operations, return the values that are defined by the operations.
         """
-        # ops_walk = list(chain(*[op.walk() for op in ops]))
         ops_walk = []
 
         for op in ops:
@@ -764,7 +763,7 @@ class IfOperatorPartitioningPattern(RewritePattern):
         Noted: It's only consdider the values that are defined in the operations and required by
         the operations after the terminal operation!
         """
-        ops_walk = list(chain(*[op.walk() for op in ops]))
+        ops_walk = chain.from_iterable(op.walk() for op in ops)
 
         ops_defined_values = set()
 
