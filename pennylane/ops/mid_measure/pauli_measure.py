@@ -169,6 +169,21 @@ def pauli_measure(pauli_word: str, wires: WiresLike, postselect: int | None = No
     2: ──H─╰┤↗Y├──║─┤
              ╚════╝
 
+    Additionally, the number of PPM operations in a circuit can be easily inspected with ``qml.specs``
+    were they appear denoted as the ``PauliMeasure`` gate type:
+
+    >>> from pprint import pprint
+    >>> pprint(qml.specs(circuit)()['resources'])
+    Resources(num_wires=3,
+        num_gates=4,
+        gate_types=defaultdict(<class 'int'>,
+                                {'Conditional(PauliX)': 1,
+                                'Hadamard': 2,
+                                'PauliMeasure': 1}),
+        gate_sizes=defaultdict(<class 'int'>, {1: 3, 2: 1}),
+        depth=3,
+        shots=Shots(total_shots=None, shot_vector=()))
+
     .. seealso::
         `Pauli product measurement <https://pennylane.ai/compilation/pauli-product-measurement>`_ and
         :func:`catalyst.passes.ppm_compilation` for documentation and corresponding functionality in Catalyst
