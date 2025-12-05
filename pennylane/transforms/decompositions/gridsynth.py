@@ -25,7 +25,7 @@ def gridsynth(tape, *, epsilon, ppr_basis):
     .. warning::
 
         This transform requires QJIT and capture to be enabled (via :func:`qml.capture.enable() <pennylane.capture.enable>`),
-        as it is a wrapper for Catalyst's ``gridsynth`` compilation pass.
+        as it is a wrapper for Catalyst's ``gridsynth`` compilation pass. Consult the Catalyst documentation for more information.
 
     Args:
         tape (QNode): A quantum circuit.
