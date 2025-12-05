@@ -253,8 +253,9 @@ def specs(
         Measurements:
           expval(PauliX + PauliY): 1
 
-        If a QNode with a tape-splitting transform is supplied to the function, with the transform included in the desired transforms, the "resources"
-        object is instead returned as a dictionary with a value for each resulting tape:
+        If a QNode with a tape-splitting transform is supplied to the function, with the transform included in the
+        desired transforms, the specs output is instead returned as a list with a :class:`~.resource.CircuitSpecs` for
+        each resulting tape:
 
         .. code-block:: python
 
@@ -269,17 +270,25 @@ def specs(
                 return qml.expval(H)
 
         >>> from pprint import pprint
-        >>> pprint(qml.specs(circuit, level="user")()["resources"])
-        {0: SpecsResources(gate_types={'RandomLayers': 1},
-                           gate_sizes={2: 1},
-                           measurements={'expval(PauliX @ PauliZ)': 1},
-                           num_allocs=2,
-                           depth=1),
-         1: SpecsResources(gate_types={'RandomLayers': 1},
-                           gate_sizes={2: 1},
-                           measurements={'expval(PauliZ @ PauliY)': 1},
-                           num_allocs=3,
-                           depth=1)}
+        >>> pprint(qml.specs(circuit, level="user")())
+        [CircuitSpecs(device_name='default.qubit',
+                      num_device_wires=None,
+                      shots=Shots(total_shots=None, shot_vector=()),
+                      level='user',
+                      resources=SpecsResources(gate_types={'RandomLayers': 1},
+                                               gate_sizes={2: 1},
+                                               measurements={'expval(PauliX @ PauliZ)': 1},
+                                               num_allocs=2,
+                                               depth=1)),
+         CircuitSpecs(device_name='default.qubit',
+                      num_device_wires=None,
+                      shots=Shots(total_shots=None, shot_vector=()),
+                      level='user',
+                      resources=SpecsResources(gate_types={'RandomLayers': 1},
+                                               gate_sizes={2: 1},
+                                               measurements={'expval(PauliZ @ PauliY)': 1},
+                                               num_allocs=3,
+                                               depth=1))]
     """
     # pylint: disable=import-outside-toplevel
     # Have to import locally to prevent circular imports as well as accounting for Catalyst not being installed
