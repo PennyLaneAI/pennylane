@@ -427,6 +427,7 @@ def decompose(  # pylint: disable = too-many-positional-arguments
             operations=decomposable_ops,
             target_gates=target_gates,
             num_work_wires=num_available_work_wires,
+            minimize_work_wires=False,
             fixed_decomps=None,
             alt_decomps=None,
         )

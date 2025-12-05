@@ -540,7 +540,9 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
                     f"{op_names} to the target gate set {set(self._gate_set_weights)}.",
                     UserWarning,
                 )
-        return DecompGraphSolution(visitor, self._all_op_indices, self._op_to_op_nodes)
+        return DecompGraphSolution(
+            visitor, self._all_op_indices, self._op_to_op_nodes, num_work_wires
+        )
 
 
 class DecompGraphSolution:
@@ -580,11 +582,13 @@ class DecompGraphSolution:
         visitor: DecompositionSearchVisitor,
         all_op_indices: dict[_OperatorNode, int],
         op_to_op_nodes: dict[CompressedResourceOp, set[_OperatorNode]],
+        num_work_wires: int | None,
     ) -> None:
         self._visitor = visitor
         self._graph = visitor._graph
         self._op_to_op_nodes = op_to_op_nodes
         self._all_op_indices = all_op_indices
+        self.num_work_wires = num_work_wires
 
     def _all_solutions(
         self, visitor: DecompositionSearchVisitor, op: Operator, num_work_wires: int | None

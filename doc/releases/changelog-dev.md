@@ -14,11 +14,12 @@
   that produces a set of gate names to be used as the target gate set in decompositions.
   [(#8522)](https://github.com/PennyLaneAI/pennylane/pull/8522)
 
-* The :class:`~pennylane.decomposition.DecompositionGraph` now tracks the minimum number of
-  dynamic wire allocations required to solve the circuit, and provides a `minimize_work_wires`
-  option that enables the graph to select the best decomposition rules while minimizing the
-  number of additional allocations of work wires.
+* The :func:`~pennylane.transforms.decompose` transform now accepts a `minimize_work_wires` argument. With
+  the new graph-based decomposition system activated via :func:`~pennylane.decomposition.enable_graph`, 
+  and `minimize_work_wires` set to `True`, the decomposition system will select decomposition rules that
+  minimizes the maximum number of simultaneously allocated work wires.
   [(#8729)](https://github.com/PennyLaneAI/pennylane/pull/8729)
+  [(#8734)](https://github.com/PennyLaneAI/pennylane/pull/8734)
 
 <h4>Pauli product measurements</h4>
 
