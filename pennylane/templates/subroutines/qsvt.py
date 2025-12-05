@@ -56,7 +56,7 @@ except ImportError:
 def jit_if_jax_available(f, **kwargs):
     # thin wrapper around jax.jit
     # that jit the function if jax is available
-    # otherwise return the input function 
+    # otherwise return the input function
 
     if is_jax_available:
         return jax.jit(f, **kwargs)
@@ -848,7 +848,9 @@ def _cheby_pol(x, degree):
 def _poly_func(coeffs, x):
     """\sum c_kT_{k}(x) where T_k(x)=cos(karccos(x))"""
 
-    return jax.numpy.sum(coeffs @ jax.vmap(_cheby_pol, in_axes=(None, 0))(x, np.arange(coeffs.shape[0])))
+    return jax.numpy.sum(
+        coeffs @ jax.vmap(_cheby_pol, in_axes=(None, 0))(x, np.arange(coeffs.shape[0]))
+    )
 
 
 @partial(jit_if_jax_available, static_argnames=["interface"])
@@ -945,7 +947,7 @@ def obj_function(phi, x, y):
     Args:
         phi (tensor_like): optimization parameters
         x (tensor_like): grid points over which we optimize
-        y (tensor_like): expected values 
+        y (tensor_like): expected values
 
     Returns:
         float: \frac{\|f_\Phi(x) - y\|^2}{N}
@@ -1005,13 +1007,13 @@ def _compute_qsp_angles_iteratively(
 
     # except ModuleNotFoundError as exc:
     #     raise ModuleNotFoundError("JAX and optax are required") from exc
-    
+
     if not is_jax_available:
         raise ModuleNotFoundError("jax is required!")
-    
+
     if not is_optax_available:
         raise ModuleNotFoundError("optax is required!")
-    
+
     poly_cheb = chebyshev.poly2cheb(poly)
     degree = len(poly_cheb) - 1
 

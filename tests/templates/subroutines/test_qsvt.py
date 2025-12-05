@@ -36,6 +36,7 @@ from pennylane.templates.subroutines.qsvt import (
     _z_rotation,
     jit_if_jax_available,
 )
+
 is_jax_available = True
 is_optax_available = True
 try:
@@ -44,7 +45,7 @@ except ImportError:
     is_jax_available = False
 
 try:
-    import optax #pylint: disable=unused-import
+    import optax  # pylint: disable=unused-import
 except ImportError:
     is_otpax_available = False
 
@@ -999,14 +1000,12 @@ class TestIterativeSolver:
         x_point = x_point.item()
         # Theorem 4: |\alpha_i-\beta_i|\leq 2\sqrt(cost_func) https://arxiv.org/pdf/2002.11649
         # which \implies |target_poly(x)-approx_poly(x)|\leq 2\sqrt(cost_func) \sum_i |T_i(x)|
-        tolerance = (
-            np.sum(
-                np.array(
-                    [
-                        2 * np.sqrt(cost_func) * abs(_cheby_pol(degree=i, x=x_point))
-                        for i in range(len(target_polynomial_coeffs))
-                    ]
-                )
+        tolerance = np.sum(
+            np.array(
+                [
+                    2 * np.sqrt(cost_func) * abs(_cheby_pol(degree=i, x=x_point))
+                    for i in range(len(target_polynomial_coeffs))
+                ]
             )
         )
 
@@ -1046,7 +1045,7 @@ class TestIterativeSolver:
         elif not is_optax_available:
             with pytest.raises(ModuleNotFoundError, match="optax is required!"):
                 _compute_qsp_angles_iteratively(polynomial_coeffs_in_cheby_basis)
-        
+
     @pytest.mark.parametrize(
         "x, degree",
         [
