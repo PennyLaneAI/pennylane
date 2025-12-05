@@ -302,6 +302,8 @@ class ZOmega:
         d = abs(other)
         n = self * other.conj() * (other * other.conj()).adj2()
         r = other * ZOmega(*[(s + d // 2) // d for s in n.flatten])
+        # TODO [sc-105367]: The logic for selecting the remainder needs a bit more
+        # tweaking to ensure the remainder with the smallest norm is selected here.
         return self - r if abs(self) > abs(r) else r - self
 
     @classmethod
