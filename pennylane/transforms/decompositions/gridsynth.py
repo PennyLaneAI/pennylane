@@ -47,7 +47,7 @@ def gridsynth(tape, *, epsilon, ppr_basis):
 
         result = circuit(1.1) # doctest: +SKIP
         gridsynth_circuit = qml.transforms.gridsynth(circuit, epsilon=1e-4) # doctest: +SKIP
-        qjitted_circuit = qml.qjit(decomposed_circuit) # doctest: +SKIP
+        qjitted_circuit = qml.qjit(gridsynth_circuit) # doctest: +SKIP
         approx = qjitted_circuit(1.1) # doctest: +SKIP
 
     >>> result # doctest: +SKIP
@@ -58,7 +58,7 @@ def gridsynth(tape, *, epsilon, ppr_basis):
 
     .. warning::
 
-        Using an ``epsilon`` value smaller than ``1e-7`` may lead to inaccurate results,
+        Using an ``epsilon`` value smaller than ``1e-7`` may lead to inaccurate results or errors,
         due to potential integer overflow in the solver.
 
     .. warning::
