@@ -957,6 +957,8 @@ def _obs_to_str(obs) -> str:
             return f"Hamiltonian({inner})"
         case "SProd":
             return _obs_to_str(obs.base)
+        case "Exp":
+            return f"Exp({_obs_to_str(obs.base)})"
         case _:
             return obs.name
 

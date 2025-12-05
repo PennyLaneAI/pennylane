@@ -227,6 +227,32 @@ class TestSpecsTransform:
 
         assert info.level == "gradient"
 
+    def test_specs_hamiltonian(self):
+        """Test specs works when hamiltonian returned"""
+
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.qnode(dev)
+        def circuit(i: int):
+            coeffs = [0.2, -0.543]
+            obs = [qml.X(0) @ qml.Z(1), qml.Z(i) @ qml.Hadamard(2)]
+            ham1 = qml.ops.LinearCombination(coeffs, obs)
+            ham2 = qml.Hamiltonian([1.0], [qml.exp(1j * qml.Z(0) @ qml.Z(1))])
+            return qml.expval(ham1), qml.expval(ham2)
+
+        info = qml.specs(circuit)(0)
+
+        assert info.resources == SpecsResources(
+            gate_types={},
+            gate_sizes={},
+            measurements={
+                "expval(Hamiltonian(PauliX @ PauliZ, PauliZ @ Hadamard))": 1,
+                "expval(Hamiltonian(Exp(PauliZ @ PauliZ)))": 1,
+            },
+            num_allocs=3,
+            depth=0,
+        )
+
     def test_level_with_diagonalizing_gates(self):
         """Test that when diagonalizing gates includes gates that are decomposed in
         device preprocess, for level=device, any unsupported diagonalizing gates are
