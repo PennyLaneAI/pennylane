@@ -44,7 +44,7 @@ except ImportError:
     is_jax_available = False
 
 try:
-    import optax
+    import optax #pylint: disable=unused-import
 except ImportError:
     is_otpax_available = False
 
@@ -1028,10 +1028,6 @@ class TestIterativeSolver:
         jit_wrapped_f = jit_if_jax_available(f)
 
         if is_jax_available:
-        # try:
-        #     # This is for testing fallback
-        #     import jax  # pylint: disable=unused-import
-
             assert hasattr(jit_wrapped_f, "lower")
         else:
             assert jit_wrapped_f is f
@@ -1043,12 +1039,7 @@ class TestIterativeSolver:
         ],
     )
     def test_raised_exceptions(self, polynomial_coeffs_in_cheby_basis):
-        # try:
-        #     import jax  # pylint: disable=unused-import
-        #     import optax  # pylint: disable=unused-import
-        # except ModuleNotFoundError:
-        #     with pytest.raises(ModuleNotFoundError, match="JAX and optax are required"):
-        #         _compute_qsp_angles_iteratively(polynomial_coeffs_in_cheby_basis)
+
         if not is_jax_available:
             with pytest.raises(ModuleNotFoundError, match="jax is required!"):
                 _compute_qsp_angles_iteratively(polynomial_coeffs_in_cheby_basis)
@@ -1110,12 +1101,11 @@ class TestIterativeSolver:
     @pytest.mark.parametrize("degree", range(2, 6))
     def test_qsp_iterate_broadcast(self, x, degree):
         """Test internal function _qsp_iterate_broadcast"""
-        from jax import numpy as jnp
 
-        phis = jnp.array([np.pi / 4] + [0.0] * (degree - 1) + [-np.pi / 4])
+        phis = jax.numpy.array([np.pi / 4] + [0.0] * (degree - 1) + [-np.pi / 4])
         qsp_be = _qsp_iterate_broadcast(phis, x, "jax")
         ref = qml.RX.compute_matrix(-2 * (degree) * np.arccos(x))[0, 0]
-        assert jnp.isclose(qsp_be, ref)
+        assert jax.numpy.isclose(qsp_be, ref)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("x", [0.1, 0.2, 0.3, 0.4])
@@ -1150,8 +1140,6 @@ class TestIterativeSolver:
     @pytest.mark.jax
     def test_interface_jax(self):
         """Test `poly_to_angles` works with jax"""
-
-        import jax
 
         poly = [0, 1.0, 0, -1 / 2, 0, 1 / 3, 0]
         angles = qml.poly_to_angles(poly, "QSVT")
