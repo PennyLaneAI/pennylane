@@ -165,7 +165,11 @@ class TestZOmega:
         ],
     )
     def test_arithmetic_modulo(self, z1, z2, expected):
-        """Test arithmetic modulo operation on ZOmega."""
+        """Test arithmetic modulo operation on ZOmega.
+
+        NOTE: [sc-105367] This test will need to change once the logic
+        for selecting the remainder with the smallest norm is improved.
+        """
         assert z1 % z2 == expected
         r1, r2 = (z1 + (z1 % z2)) % z2, (z1 - (z1 % z2)) % z2
         assert r1 == ZOmega() or r2 == ZOmega()
