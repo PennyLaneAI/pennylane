@@ -22,7 +22,7 @@ Known Limitations
   * Unlike the current tape-based implementation of the transform, it doesn't allow for diagonalization of a subset
     of observables.
   * Unlike the current tape-based implementation of the transform, conversion to measurements based on eigvals
-  and wires (rather than the PauliZ observable) is not currently supported.
+    and wires (rather than the PauliZ observable) is not currently supported.
   * Unlike the tape-based implementation, this pass will NOT raise an error if given a circuit that is invalid because
     it contains non-commuting measurements. It should be assumed that this transform results in incorrect outputs unless
     split_non_commuting is applied to break non-commuting measurements into separate tapes.
@@ -35,6 +35,7 @@ from xdsl.dialects import arith, builtin
 from xdsl.rewriter import InsertPoint
 
 from pennylane.ops import Hadamard, PauliX, PauliY
+from pennylane.ops.op_math import Adjoint
 
 from ...dialects.quantum import (
     CustomOp,
@@ -51,17 +52,21 @@ from ...pass_api import compiler_transform
 def _generate_mapping():
     _gate_map = {}
     _params_map = {}
+    _adj_map = {}
 
     for op in PauliX(0), PauliY(0), Hadamard(0):
         diagonalizing_gates = op.diagonalizing_gates()
 
-        _gate_map[op.name] = [gate.name for gate in diagonalizing_gates]
+        _gate_map[op.name] = [
+            (gate.base if isinstance(gate, Adjoint) else gate).name for gate in diagonalizing_gates
+        ]
         _params_map[op.name] = [gate.data for gate in diagonalizing_gates]
+        _adj_map[op.name] = [isinstance(gate, Adjoint) for gate in diagonalizing_gates]
 
-    return _gate_map, _params_map
+    return _gate_map, _params_map, _adj_map
 
 
-_gate_map, _params_map = _generate_mapping()
+_gate_map, _params_map, _adj_map = _generate_mapping()
 
 
 def _diagonalize(obs: NamedObsOp) -> bool:
@@ -87,12 +92,13 @@ class DiagonalizeFinalMeasurementsPattern(
 
             diagonalizing_gates = _gate_map[observable.type.data]
             params = _params_map[observable.type.data]
+            adjoints = _adj_map[observable.type.data]
 
             qubit = observable.qubit
 
             insert_point = InsertPoint.before(observable)
 
-            for name, op_data in zip(diagonalizing_gates, params):
+            for name, op_data, adj in zip(diagonalizing_gates, params, adjoints):
                 if op_data:
                     param_ssa_values = []
                     for param in op_data:
@@ -102,9 +108,11 @@ class DiagonalizeFinalMeasurementsPattern(
                         rewriter.insert_op(paramOp, insert_point)
                         param_ssa_values.append(paramOp.results[0])
 
-                    gate = CustomOp(in_qubits=qubit, gate_name=name, params=param_ssa_values)
+                    gate = CustomOp(
+                        in_qubits=qubit, gate_name=name, params=param_ssa_values, adjoint=adj
+                    )
                 else:
-                    gate = CustomOp(in_qubits=qubit, gate_name=name)
+                    gate = CustomOp(in_qubits=qubit, gate_name=name, adjoint=adj)
 
                 rewriter.insert_op(gate, insert_point)
 

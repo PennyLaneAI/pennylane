@@ -151,7 +151,24 @@ class TestSparseOperators:
         )
 
 
+SKIP_ASSERT_VALID = {
+    qml.GlobalPhase: True,
+    qml.QubitUnitary: {"skip_differentiation": True},
+    qml.DiagonalQubitUnitary: {"skip_differentiation": True},
+    qml.ControlledQubitUnitary: {"skip_differentiation": True},
+}
+
+
 class TestOperations:
+
+    @pytest.mark.parametrize("op", ALL_OPERATIONS)
+    def test_assert_valid(self, op):
+        kwargs = SKIP_ASSERT_VALID.get(type(op), {})
+        if kwargs is True:
+            pytest.skip()
+
+        qml.ops.functions.assert_valid(op, **kwargs)
+
     @pytest.mark.parametrize("op", ALL_OPERATIONS + BROADCASTED_OPERATIONS)
     def test_parametrized_op_copy(self, op, tol):
         """Tests that copied parametrized ops function as expected"""

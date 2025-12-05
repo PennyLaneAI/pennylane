@@ -376,17 +376,15 @@ class TestDiagonalizingGates:
 
         assert len(m.diagonalizing_gates()) == 0
 
-    def test_obs_diagonalizing_gates(self):
+    @pytest.mark.parametrize(
+        "op, expected",
+        [(qml.X(0), [qml.H(0)]), (qml.Y(0), [qml.adjoint(qml.S(0)), qml.H(0)]), (qml.Z(0), [])],
+    )
+    def test_obs_diagonalizing_gates(self, op, expected):
         """Test diagonalizing_gates method with and observable."""
-        m = qml.expval(qml.PauliY(0))
-
+        m = qml.expval(op)
         res = m.diagonalizing_gates()
-
-        assert len(res) == 3
-
-        expected_classes = [qml.PauliZ, qml.S, qml.Hadamard]
-        for op, c in zip(res, expected_classes):
-            assert isinstance(op, c)
+        assert all(qml.equal(op, exp_op) for op, exp_op in zip(res, expected, strict=True))
 
 
 class TestSampleMeasurement:
