@@ -37,20 +37,18 @@ def _specs_qnode(qnode, level, compute_depth, *args, **kwargs) -> CircuitSpecs:
 
     batch, _ = qml.workflow.construct_batch(qnode, level=level)(*args, **kwargs)
 
-    results = [
-        CircuitSpecs(
-            resources=resources_from_tape(tape, compute_depth),
-            num_device_wires=len(qnode.device.wires) if qnode.device.wires is not None else None,
-            device_name=qnode.device.name,
-            level=level,
-            shots=qnode.shots,
-        )
-        for tape in batch
-    ]
+    resources = [resources_from_tape(tape, compute_depth) for tape in batch]
 
-    if len(results) == 1:
-        results = results[0]
-    return results
+    if len(resources) == 1:
+        resources = resources[0]
+
+    return CircuitSpecs(
+        resources=resources,
+        num_device_wires=len(qnode.device.wires) if qnode.device.wires is not None else None,
+        device_name=qnode.device.name,
+        level=level,
+        shots=qnode.shots,
+    )
 
 
 # NOTE: Some information is missing from specs_qjit compared to specs_qnode
@@ -132,7 +130,7 @@ def specs(
     qnode,
     level: str | int | slice = "gradient",
     compute_depth: bool = True,
-) -> Callable[..., CircuitSpecs | list[CircuitSpecs]]:
+) -> Callable[..., CircuitSpecs]:
     r"""Resource information about a quantum circuit.
 
     This transform converts a QNode into a callable that provides resource information
@@ -254,8 +252,8 @@ def specs(
           expval(PauliX + PauliY): 1
 
         If a QNode with a tape-splitting transform is supplied to the function, with the transform included in the
-        desired transforms, the specs output is instead returned as a list with a :class:`~.resource.CircuitSpecs` for
-        each resulting tape:
+        desired transforms, the specs output's resources field is instead returned as a list with a
+        :class:`~.resource.CircuitSpecs` for each resulting tape:
 
         .. code-block:: python
 
@@ -271,20 +269,16 @@ def specs(
 
         >>> from pprint import pprint
         >>> pprint(qml.specs(circuit, level="user")())
-        [CircuitSpecs(device_name='default.qubit',
-                      num_device_wires=None,
-                      shots=Shots(total_shots=None, shot_vector=()),
-                      level='user',
-                      resources=SpecsResources(gate_types={'RandomLayers': 1},
+        CircuitSpecs(device_name='default.qubit',
+                     num_device_wires=None,
+                     shots=Shots(total_shots=None, shot_vector=()),
+                     level='user',
+                     resources=[SpecsResources(gate_types={'RandomLayers': 1},
                                                gate_sizes={2: 1},
                                                measurements={'expval(PauliX @ PauliZ)': 1},
                                                num_allocs=2,
                                                depth=1)),
-         CircuitSpecs(device_name='default.qubit',
-                      num_device_wires=None,
-                      shots=Shots(total_shots=None, shot_vector=()),
-                      level='user',
-                      resources=SpecsResources(gate_types={'RandomLayers': 1},
+                                SpecsResources(gate_types={'RandomLayers': 1},
                                                gate_sizes={2: 1},
                                                measurements={'expval(PauliZ @ PauliY)': 1},
                                                num_allocs=3,

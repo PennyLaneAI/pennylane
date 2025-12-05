@@ -437,7 +437,12 @@ class CircuitSpecs:
     num_device_wires: int | None = None
     shots: Shots | None = None
     level: Any = None
-    resources: SpecsResources | dict[int | str, SpecsResources] | None = None
+    resources: (
+        SpecsResources
+        | list[SpecsResources]
+        | dict[int | str, SpecsResources | list[SpecsResources]]
+        | None
+    ) = None
 
     def to_dict(self) -> dict[str, Any]:
         """Convert the CircuitSpecs to a dictionary."""
