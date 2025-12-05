@@ -55,17 +55,12 @@ except ImportError:
 
 def jit_if_jax_available(f, **kwargs):
     # thin wrapper around jax.jit
-    # would very much like to move the iterative solver code to
-    # separate file to get rid of a lot of the try/catch blocks
+    # that jit the function if jax is available
+    # otherwise return the input function 
 
-    try:
-        # def jit(**kwargs):
-        #     return jit(f, **kwargs)
-        # return jit
-        from jax import jit
-
-        return jit(f, **kwargs)
-    except:
+    if is_jax_available:
+        return jax.jit(f, **kwargs)
+    else:
         return f
 
 
