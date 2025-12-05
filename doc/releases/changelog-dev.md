@@ -14,6 +14,12 @@
   that produces a set of gate names to be used as the target gate set in decompositions.
   [(#8522)](https://github.com/PennyLaneAI/pennylane/pull/8522)
 
+* The :class:`~pennylane.decomposition.DecompositionGraph` now tracks the minimum number of
+  dynamic wire allocations required to solve the circuit, and provides a `minimize_work_wires`
+  option that enables the graph to select the best decomposition rules while minimizing the
+  number of additional allocations of work wires.
+  [(#8729)](https://github.com/PennyLaneAI/pennylane/pull/8729)
+
 <h4>Pauli product measurements</h4>
 
 * Added a :func:`~pennylane.ops.pauli_measure` that takes a Pauli product measurement.
@@ -24,6 +30,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* Added a new decomposition, `_decompose_2_cnots`, for the two-qubit decomposition for `QubitUnitary`.
+  It supports the analytical decomposition a two-qubit unitary known to require exactly 2 CNOTs.
+  [(#8666)](https://github.com/PennyLaneAI/pennylane/issues/8666)
+  
 * Arithmetic dunder methods (`__add__`, `__mul__`, `__rmul__`) have been added to 
   :class:`~.transforms.core.TransformDispatcher`, :class:`~.transforms.core.TransformContainer`, 
   and :class:`~.transforms.core.TransformProgram` to enable intuitive composition of transform 
@@ -606,6 +616,7 @@ Mudit Pandey,
 Shuli Shu,
 Jay Soni,
 nate stemen,
+Theodoros Trochatos,
 David Wierichs,
 Hongsheng Zheng,
 Zinan Zhou
