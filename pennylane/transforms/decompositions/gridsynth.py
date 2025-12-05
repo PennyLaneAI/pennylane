@@ -30,8 +30,31 @@ def gridsynth(tape, *, epsilon, ppr_basis):
     Args:
         tape (QNode): A quantum circuit.
         epsilon (float): The maximum error for the discretization.
-        ppr_basis (bool): If True, decompose into the PPR basis. If False, decompose into the Clifford+T basis.
+        ppr_basis (bool): If True, decompose into the PPR basis. If False, decompose into the Clifford+T basis. Note: Simulating with ``ppr_basis=True`` is currently not supported.
 
+    **Example**
+
+    .. code-block:: python
+
+        qml.capture.enable()
+        @qml.qjit
+        @partial(qml.transforms.gridsynth, epsilon=1e-5)
+        @qml.qnode(qml.device("lightning.qubit", wires=1))
+        def circuit(x):
+            qml.Hadamard(0)
+            qml.RZ(x, 0)
+            qml.PhaseShift(x * 0.2, 0)
+            return qml.state()
+
+        result = circuit(1.1)
+
+    >>> result
+    [0.6028324 -0.3695921j  0.50763281+0.49224355j]
+    
+    .. warning::
+
+        Using ``epsilon`` value smaller than ``1e-7`` can lead to overflow in the current implementation, and may lead to errors.
+        
     """
 
     raise NotImplementedError(  # pragma: no cover
