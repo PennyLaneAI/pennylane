@@ -327,7 +327,7 @@ class TestSpecsTransform:
 
         for s in specs_output:
             assert s.level == 2
-            assert s.device == "default.qubit"
+            assert s.device_name == "default.qubit"
             assert s.num_device_wires is None
             assert s.shots == Shots(None)
 
