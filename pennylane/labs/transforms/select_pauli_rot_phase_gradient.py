@@ -2,7 +2,6 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.operation import Operator
-from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
@@ -20,7 +19,6 @@ def _binary_repr_int(phi, precision):
     ]
 
 
-# @QueuingManager.stop_recording()
 def _select_pauli_rot_phase_gradient(
     phis: list,
     control_wires: Wires,
@@ -153,7 +151,7 @@ def select_pauli_rot_phase_gradient(
 
         else:
             operations.append(op)
-    print(operations)
+
     new_tape = tape.copy(operations=operations)
 
     def null_postprocessing(results):
