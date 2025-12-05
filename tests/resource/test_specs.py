@@ -316,20 +316,17 @@ class TestSpecsTransform:
 
         specs_output = qml.specs(circuit, level=2)(pnp.array([1.23, -1]))
 
-        assert isinstance(specs_output, list)
-        resources = [s.resources for s in specs_output]
+        assert isinstance(specs_output.resources, list)
+        assert len(specs_output.resources) == len(H)
 
-        assert len(resources) == len(H)
+        assert specs_output.resources[0].num_allocs == 2
+        assert specs_output.resources[1].num_allocs == 3
+        assert specs_output.resources[2].num_allocs == 3
 
-        assert resources[0].num_allocs == 2
-        assert resources[1].num_allocs == 3
-        assert resources[2].num_allocs == 3
-
-        for s in specs_output:
-            assert s.level == 2
-            assert s.device_name == "default.qubit"
-            assert s.num_device_wires is None
-            assert s.shots == Shots(None)
+        assert specs_output.level == 2
+        assert specs_output.device_name == "default.qubit"
+        assert specs_output.num_device_wires is None
+        assert specs_output.shots == Shots(None)
 
     @pytest.mark.parametrize(
         "device,num_wires",
