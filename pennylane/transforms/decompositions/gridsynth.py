@@ -20,7 +20,7 @@ from pennylane.transforms.core import transform
 
 @partial(transform, pass_name="gridsynth")
 def gridsynth(tape, *, epsilon, ppr_basis):
-    r"""Decomposes RZ and PhaseShift gates into Clifford+T basis or PPR basis.
+    r"""Decomposes RZ and PhaseShift gates into the Clifford+T basis or the PPR basis.
 
     .. warning::
 
@@ -29,7 +29,7 @@ def gridsynth(tape, *, epsilon, ppr_basis):
 
     Args:
         tape (QNode): A quantum circuit.
-        epsilon (float): The maximum error for the discretization.
+        epsilon (float): The maximum permissible operator norm error per rotation gate.
         ppr_basis (bool): If True, decompose into the PPR basis. If False, decompose into the Clifford+T basis. Note: Simulating with ``ppr_basis=True`` is currently not supported.
 
     **Example**
