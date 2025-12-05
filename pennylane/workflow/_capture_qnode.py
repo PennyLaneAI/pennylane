@@ -80,9 +80,13 @@ from functools import partial
 from numbers import Number
 from warnings import warn
 
-import jax
-from jax.interpreters import ad, batching, mlir
-from jax.interpreters import partial_eval as pe
+try:
+    import jax
+    from jax.interpreters import ad, batching, mlir
+    from jax.interpreters import partial_eval as pe
+
+except (ImportError, NameError) as e:  # pragma: no cover
+    pass
 
 import pennylane as qml
 from pennylane.capture import FlatFn, QmlPrimitive
