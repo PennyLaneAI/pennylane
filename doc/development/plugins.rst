@@ -131,7 +131,7 @@ Preprocessing
 
 There are two components of preprocessing circuits for device execution:
 
-1) Create a :class:`~.TransformProgram` capable of turning an arbitrary batch of :class:`~.QuantumScript`\ s into a new batch of tapes supported by the ``execute`` method.
+1) Create a :class:`~.CompilePipeline` capable of turning an arbitrary batch of :class:`~.QuantumScript`\ s into a new batch of tapes supported by the ``execute`` method.
 2) Setup the :class:`~.ExecutionConfig` dataclass by filling in device options and making decisions about differentiation.
 
 These two tasks are performed by :meth:`~.devices.Device.setup_execution_config` and :meth:`~.devices.Device.preprocess_transforms`
@@ -160,9 +160,9 @@ The :meth:`~.devices.Device.preprocess_transforms` method should start with crea
 
 .. code-block:: python
 
-    program = qml.transforms.core.TransformProgram()
+    program = qml.transforms.core.CompilePipeline()
 
-Once a program is created, individual transforms can be added to the program with the :meth:`~.TransformProgram.add_transform` method.
+Once a program is created, individual transforms can be added to the program with the :meth:`~.CompilePipeline.add_transform` method.
 
 .. code-block:: python
 

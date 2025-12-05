@@ -26,7 +26,7 @@ from pennylane.exceptions import DeviceError
 from pennylane.logging import debug_logger, debug_logger_init
 from pennylane.ops import _qutrit__channel__ops__ as channels
 from pennylane.tape import QuantumScript, QuantumScriptOrBatch
-from pennylane.transforms.core import TransformProgram
+from pennylane.transforms.core import CompilePipeline
 from pennylane.typing import Result, ResultBatch
 
 from . import Device
@@ -330,7 +330,7 @@ class DefaultQutritMixed(Device):
     def preprocess(
         self,
         execution_config: ExecutionConfig | None = None,
-    ) -> tuple[TransformProgram, ExecutionConfig]:
+    ) -> tuple[CompilePipeline, ExecutionConfig]:
         """This function defines the device transform program to be applied and an updated device
         configuration.
 
@@ -339,7 +339,7 @@ class DefaultQutritMixed(Device):
                 describing the parameters needed to fully describe the execution.
 
         Returns:
-            TransformProgram, ExecutionConfig: A transform program that when called returns
+            CompilePipeline, ExecutionConfig: A transform program that when called returns
             ``QuantumTape`` objects that the device can natively execute, as well as a postprocessing
             function to be called after execution, and a configuration with unset
             specifications filled in.
@@ -353,7 +353,7 @@ class DefaultQutritMixed(Device):
         if execution_config is None:
             execution_config = ExecutionConfig()
         config = self._setup_execution_config(execution_config)
-        transform_program = TransformProgram()
+        transform_program = CompilePipeline()
 
         transform_program.add_transform(validate_device_wires, self.wires, name=self.name)
         transform_program.add_transform(

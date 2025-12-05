@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains the ``TransformProgram`` class.
+This module contains the ``CompilePipeline`` class.
 """
 from collections.abc import Sequence
 from copy import copy
@@ -102,7 +102,7 @@ def null_postprocessing(results: ResultBatch) -> ResultBatch:
     return results
 
 
-class TransformProgram:
+class CompilePipeline:
     """Class that contains a transform program and the methods to interact with it.
 
     The order of execution is the order in the list containing the containers.
@@ -129,9 +129,9 @@ class TransformProgram:
 
     Programs have several implemented dunder methods for easy manipulation.
 
-    >>> from pennylane.transforms.core.transform_program import TransformProgram
+    >>> from pennylane.transforms.core.transform_program import CompilePipeline
     >>> from copy import copy
-    >>> program = TransformProgram()
+    >>> program = CompilePipeline()
     >>> program.add_transform(qml.compile)
     >>> program.add_transform(qml.transforms.cancel_inverses)
     >>> [t for t in program]  # Iteration
@@ -139,12 +139,12 @@ class TransformProgram:
     >>> program[0]
     <compile((), {})>
     >>> program[::-1]
-    TransformProgram(cancel_inverses, compile)
+    CompilePipeline(cancel_inverses, compile)
     >>> len(program)
     2
     >>> True if program else False
     True
-    >>> True if TransformProgram() else False
+    >>> True if CompilePipeline() else False
     False
     >>> program2 = copy(program)
     >>> program2 == program
@@ -154,7 +154,7 @@ class TransformProgram:
     >>> qml.transforms.split_non_commuting in program
     False
     >>> program + program
-    TransformProgram(compile, cancel_inverses, compile, cancel_inverses)
+    CompilePipeline(compile, cancel_inverses, compile, cancel_inverses)
 
     """
 
@@ -167,7 +167,7 @@ class TransformProgram:
         self.cotransform_cache = cotransform_cache
 
     def __copy__(self):
-        return TransformProgram(self._transform_program, self.cotransform_cache)
+        return CompilePipeline(self._transform_program, self.cotransform_cache)
 
     def __iter__(self):
         """list[TransformContainer]: Return an iterator to the underlying transform program."""
@@ -181,31 +181,31 @@ class TransformProgram:
     def __getitem__(self, idx: int) -> "TransformContainer": ...
 
     @overload
-    def __getitem__(self, idx: slice) -> "TransformProgram": ...
+    def __getitem__(self, idx: slice) -> "CompilePipeline": ...
 
     def __getitem__(self, idx):
         """(TransformContainer, List[TransformContainer]): Return the indexed transform container from underlying
         transform program"""
         if isinstance(idx, slice):
-            return TransformProgram(self._transform_program[idx])
+            return CompilePipeline(self._transform_program[idx])
         return self._transform_program[idx]
 
     def __bool__(self) -> bool:
         return bool(self._transform_program)
 
     def __add__(
-        self, other: "TransformProgram | TransformContainer | TransformDispatcher"
-    ) -> "TransformProgram":
+        self, other: "CompilePipeline | TransformContainer | TransformDispatcher"
+    ) -> "CompilePipeline":
         # Convert dispatcher to container if needed
         if isinstance(other, TransformDispatcher):
             other = TransformContainer(other)
 
         # Handle TransformContainer
         if isinstance(other, TransformContainer):
-            other = TransformProgram([other])
+            other = CompilePipeline([other])
 
-        # Handle TransformProgram
-        if isinstance(other, TransformProgram):
+        # Handle CompilePipeline
+        if isinstance(other, CompilePipeline):
             if self.has_final_transform and other.has_final_transform:
                 raise TransformError("The transform program already has a terminal transform.")
 
@@ -220,47 +220,47 @@ class TransformProgram:
                 cotransform_cache = self.cotransform_cache
             elif other.cotransform_cache:
                 cotransform_cache = other.cotransform_cache
-            return TransformProgram(transforms, cotransform_cache=cotransform_cache)
+            return CompilePipeline(transforms, cotransform_cache=cotransform_cache)
 
         return NotImplemented
 
-    def __radd__(self, other: "TransformContainer | TransformDispatcher") -> "TransformProgram":
+    def __radd__(self, other: "TransformContainer | TransformDispatcher") -> "CompilePipeline":
         """Right addition to prepend a transform to the program.
 
         Args:
             other: A TransformContainer or TransformDispatcher to prepend.
 
         Returns:
-            TransformProgram: A new program with the transform prepended.
+            CompilePipeline: A new program with the transform prepended.
         """
         if isinstance(other, TransformContainer):
             if self.has_final_transform and other.final_transform:
                 raise TransformError("The transform program already has a terminal transform.")
 
             transforms = [other] + self._transform_program
-            return TransformProgram(transforms, cotransform_cache=self.cotransform_cache)
+            return CompilePipeline(transforms, cotransform_cache=self.cotransform_cache)
 
         return NotImplemented
 
     def __iadd__(
-        self, other: "TransformProgram | TransformContainer | TransformDispatcher"
-    ) -> "TransformProgram":
+        self, other: "CompilePipeline | TransformContainer | TransformDispatcher"
+    ) -> "CompilePipeline":
         """In-place addition to append a transform to the program.
 
         Args:
-            other: A TransformContainer, TransformDispatcher, or TransformProgram to append.
+            other: A TransformContainer, TransformDispatcher, or CompilePipeline to append.
 
         Returns:
-            TransformProgram: This program with the transform(s) appended.
+            CompilePipeline: This program with the transform(s) appended.
         """
         # Convert dispatcher to container if needed
         if isinstance(other, TransformDispatcher):
             other = TransformContainer(other)
 
         if isinstance(other, TransformContainer):
-            other = TransformProgram([other])
+            other = CompilePipeline([other])
 
-        if isinstance(other, TransformProgram):
+        if isinstance(other, CompilePipeline):
             if self.has_final_transform and other.has_final_transform:
                 raise TransformError("The transform program already has a terminal transform.")
 
@@ -282,14 +282,14 @@ class TransformProgram:
 
         return NotImplemented
 
-    def __mul__(self, n: int) -> "TransformProgram":
+    def __mul__(self, n: int) -> "CompilePipeline":
         """Right multiplication to repeat a program n times.
 
         Args:
             n (int): Number of times to repeat this program.
 
         Returns:
-            TransformProgram: A new program with this program repeated n times.
+            CompilePipeline: A new program with this program repeated n times.
         """
         if not isinstance(n, int):
             return NotImplemented
@@ -302,7 +302,7 @@ class TransformProgram:
             )
 
         transforms = self._transform_program * n
-        return TransformProgram(transforms, cotransform_cache=self.cotransform_cache)
+        return CompilePipeline(transforms, cotransform_cache=self.cotransform_cache)
 
     __rmul__ = __mul__
 
@@ -310,10 +310,10 @@ class TransformProgram:
         """The string representation of the transform program class."""
         gen = (f"{t.transform.__name__ if t.transform else t.pass_name}" for t in self)
         contents = ", ".join(gen)
-        return f"TransformProgram({contents})"
+        return f"CompilePipeline({contents})"
 
     def __eq__(self, other) -> bool:
-        if not isinstance(other, TransformProgram):
+        if not isinstance(other, CompilePipeline):
             return False
 
         return self._transform_program == other._transform_program
@@ -602,7 +602,7 @@ class TransformProgram:
 
 
 @TransformDispatcher.generic_register
-def _apply_to_program(obj: TransformProgram, transform, *targs, **tkwargs):
+def _apply_to_program(obj: CompilePipeline, transform, *targs, **tkwargs):
     program = copy(obj)
 
     if transform.expand_transform:

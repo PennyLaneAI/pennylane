@@ -1501,7 +1501,7 @@ class TestShots:
         assert updated_qnode._shots == qml.measurements.Shots(75)
 
 
-class TestTransformProgramIntegration:
+class TestCompilePipelineIntegration:
     """Tests for the integration of the transform program with the qnode."""
 
     def test_transform_program_modifies_circuit(self):

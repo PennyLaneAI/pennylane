@@ -32,7 +32,7 @@ from pennylane.capture.primitives import (
     while_loop_prim,
 )
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
-from pennylane.transforms.core import TransformError, TransformProgram, transform
+from pennylane.transforms.core import CompilePipeline, TransformError, transform
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
@@ -194,7 +194,7 @@ class TestCaptureTransforms:
         assert qnode_jaxpr.eqns[0].primitive == qnode_prim
 
         qnode = qnode_jaxpr.eqns[0].params["qnode"]
-        expected_program = TransformProgram()
+        expected_program = CompilePipeline()
         expected_program.add_transform(z_to_hadamard, *targs, **tkwargs)
         # Manually change targs from tuple to list
         expected_program[0]._args = tuple(targs)  # pylint: disable=protected-access

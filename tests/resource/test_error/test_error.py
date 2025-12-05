@@ -247,7 +247,7 @@ class TestSpecAndTracker:
     @staticmethod
     def preprocess(execution_config: qml.devices.ExecutionConfig | None = None):
         """A vanilla preprocesser"""
-        return qml.transforms.core.TransformProgram(), execution_config
+        return qml.transforms.core.CompilePipeline(), execution_config
 
     dev = qml.device("null.qubit", wires=2)
     dev.preprocess = preprocess.__func__

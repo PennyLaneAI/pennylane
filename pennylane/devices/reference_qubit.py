@@ -28,7 +28,7 @@ from pennylane.transforms import (
     diagonalize_measurements,
     split_non_commuting,
 )
-from pennylane.transforms.core import TransformProgram
+from pennylane.transforms.core import CompilePipeline
 from pennylane.typing import Result
 
 from .device_api import Device
@@ -154,7 +154,7 @@ class ReferenceQubit(Device):
             execution_config = ExecutionConfig()
 
         # Here we convert an arbitrary tape into one natively supported by the device
-        program = TransformProgram()
+        program = CompilePipeline()
         program.add_transform(validate_device_wires, wires=self.wires, name="reference.qubit")
         program.add_transform(defer_measurements, allow_postselect=False)
         program.add_transform(split_non_commuting)

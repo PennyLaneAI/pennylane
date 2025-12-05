@@ -53,7 +53,7 @@ from pennylane.transforms import (
     defer_measurements,
     dynamic_one_shot,
 )
-from pennylane.transforms.core import TransformProgram, transform
+from pennylane.transforms.core import CompilePipeline, transform
 from pennylane.typing import PostprocessingFn, Result, ResultBatch, TensorLike
 
 from .device_api import Device
@@ -305,7 +305,7 @@ def _supports_adjoint(circuit, device_wires, device_name):
     if circuit is None:
         return True
 
-    program = TransformProgram()
+    program = CompilePipeline()
     program.add_transform(validate_device_wires, device_wires, name=device_name)
     _add_adjoint_transforms(program, device_wires=device_wires)
 
@@ -320,12 +320,12 @@ def _supports_adjoint(circuit, device_wires, device_name):
     return True
 
 
-def _add_adjoint_transforms(program: TransformProgram, device_vjp=False, device_wires=None) -> None:
+def _add_adjoint_transforms(program: CompilePipeline, device_vjp=False, device_wires=None) -> None:
     """Private helper function for ``preprocess`` that adds the transforms specific
     for adjoint differentiation.
 
     Args:
-        program (TransformProgram): where we will add the adjoint differentiation transforms
+        program (CompilePipeline): where we will add the adjoint differentiation transforms
         device_vjp (bool): whether or not to use the device-provided Vector Jacobian Product (VJP).
         device_wires (Wires): the device wires, used to calculate available work wires
 
@@ -605,8 +605,8 @@ class DefaultQubit(Device):
             return _supports_adjoint(circuit, device_wires=self.wires, device_name=self.name)
         return False
 
-    def _capture_preprocess_transforms(self, config: ExecutionConfig) -> TransformProgram:
-        transform_program = TransformProgram()
+    def _capture_preprocess_transforms(self, config: ExecutionConfig) -> CompilePipeline:
+        transform_program = CompilePipeline()
         if config.mcm_config.mcm_method == "deferred":
             transform_program.add_transform(defer_measurements, num_wires=len(self.wires))
         transform_program.add_transform(transforms_decompose, stopping_condition=stopping_condition)
@@ -616,7 +616,7 @@ class DefaultQubit(Device):
     @debug_logger
     def preprocess_transforms(
         self, execution_config: ExecutionConfig | None = None
-    ) -> TransformProgram:
+    ) -> CompilePipeline:
         """This function defines the device transform program to be applied and an updated device configuration.
 
         Args:
@@ -624,7 +624,7 @@ class DefaultQubit(Device):
                 parameters needed to fully describe the execution.
 
         Returns:
-            TransformProgram:
+            CompilePipeline:
 
         """
         config = execution_config or ExecutionConfig()
@@ -632,7 +632,7 @@ class DefaultQubit(Device):
         if capture.enabled():
             return self._capture_preprocess_transforms(config)
 
-        transform_program = TransformProgram()
+        transform_program = CompilePipeline()
 
         if config.interface == math.Interface.JAX_JIT:
             transform_program.add_transform(no_counts)

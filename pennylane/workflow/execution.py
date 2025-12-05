@@ -28,7 +28,7 @@ from cachetools import Cache
 import pennylane as qml
 from pennylane.exceptions import _TF_DEPRECATION_MSG, PennyLaneDeprecationWarning
 from pennylane.math.interface_utils import Interface
-from pennylane.transforms.core import TransformProgram
+from pennylane.transforms.core import CompilePipeline
 
 from ._setup_transform_program import _setup_transform_program
 from .resolution import _resolve_execution_config, _resolve_interface
@@ -62,7 +62,7 @@ def execute(
     postselect_mode: Literal["hw-like", "fill-shots"] | None = None,
     mcm_method: Literal["deferred", "one-shot", "tree-traversal"] | None = None,
     gradient_kwargs: dict | None = None,
-    transform_program: TransformProgram | None = None,
+    transform_program: CompilePipeline | None = None,
     executor_backend: ExecBackends | str | None = None,
 ) -> ResultBatch:
     """A function for executing a batch of tapes on a device with compatibility for auto-differentiation.
@@ -78,7 +78,7 @@ def execute(
         interface (str, Interface): The interface that will be used for classical auto-differentiation.
             This affects the types of parameters that can exist on the input tapes.
             Available options include ``autograd``, ``torch``, ``tf``, ``jax``, and ``auto``.
-        transform_program(.TransformProgram): A transform program to be applied to the initial tape.
+        transform_program(.CompilePipeline): A transform program to be applied to the initial tape.
         grad_on_execution (bool, str): Whether the gradients should be computed
             on the execution or not. It only applies
             if the device is queried for the gradient; gradient transform
@@ -201,7 +201,7 @@ def execute(
         return ()
 
     ### Apply the user transforms ####
-    transform_program = transform_program or TransformProgram()
+    transform_program = transform_program or CompilePipeline()
     tapes, user_post_processing = transform_program(tapes)
     if transform_program.is_informative:
         return user_post_processing(tapes)

@@ -39,7 +39,7 @@ from pennylane.measurements import (
 )
 from pennylane.ops import MeasurementValue
 from pennylane.tape import QuantumScriptOrBatch
-from pennylane.transforms.core import TransformProgram
+from pennylane.transforms.core import CompilePipeline
 from pennylane.typing import Result, ResultBatch
 
 from . import DefaultQubit, Device
@@ -310,7 +310,7 @@ class NullQubit(Device):
     # pylint: disable=cell-var-from-loop
     def preprocess(
         self, execution_config: ExecutionConfig | None = None
-    ) -> tuple[TransformProgram, ExecutionConfig]:
+    ) -> tuple[CompilePipeline, ExecutionConfig]:
         if execution_config is None:
             execution_config = ExecutionConfig()
 

@@ -35,7 +35,7 @@ from pennylane.math import Interface
 from pennylane.measurements import Shots, ShotsLike
 from pennylane.queuing import AnnotatedQueue
 from pennylane.tape import QuantumScript
-from pennylane.transforms.core import TransformDispatcher, TransformProgram
+from pennylane.transforms.core import CompilePipeline, TransformDispatcher
 from pennylane.typing import TensorLike
 
 from .execution import execute
@@ -602,7 +602,7 @@ class QNode:
 
         self._shots: Shots = device.shots if shots == "unset" else Shots(shots)
         self._shots_override_device: bool = shots != "unset"
-        self._transform_program = TransformProgram()
+        self._transform_program = CompilePipeline()
         functools.update_wrapper(self, func)
 
     def __copy__(self) -> QNode:
@@ -612,7 +612,7 @@ class QNode:
                 setattr(copied_qnode, attr, value)
 
         copied_qnode.execute_kwargs = dict(self.execute_kwargs)
-        copied_qnode._transform_program = qml.transforms.core.TransformProgram(
+        copied_qnode._transform_program = qml.transforms.core.CompilePipeline(
             self.transform_program
         )
         copied_qnode.gradient_kwargs = dict(self.gradient_kwargs)
@@ -657,7 +657,7 @@ class QNode:
         self._interface = Interface(value)
 
     @property
-    def transform_program(self) -> TransformProgram:
+    def transform_program(self) -> CompilePipeline:
         """The transform program used by the QNode."""
         return self._transform_program
 
@@ -746,7 +746,7 @@ class QNode:
             updated_qn._shots_override_device = True
 
         # pylint: disable=protected-access
-        updated_qn._transform_program = qml.transforms.core.TransformProgram(self.transform_program)
+        updated_qn._transform_program = qml.transforms.core.CompilePipeline(self.transform_program)
         return updated_qn
 
     def update_shots(self, shots: int | Shots) -> QNode:
