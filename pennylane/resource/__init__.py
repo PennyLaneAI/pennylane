@@ -35,7 +35,7 @@ Circuit Specifications (specs)
     ~specs
 
 Circuit Specification Classes and Utilities
------------------------------------
+-------------------------------------------
 
 .. currentmodule:: pennylane.resource
 

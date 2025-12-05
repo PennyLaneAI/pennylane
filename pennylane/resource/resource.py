@@ -451,8 +451,13 @@ class CircuitSpecs:
         # Replace Resources objects with their dict representations
         if isinstance(self.resources, SpecsResources):
             d["resources"] = self.resources.to_dict()
+        elif isinstance(self.resources, list):
+            d["resources"] = [r.to_dict() for r in self.resources]
         elif isinstance(self.resources, dict):
-            d["resources"] = {k: v.to_dict() for k, v in self.resources.items()}
+            d["resources"] = {
+                k: (v.to_dict() if isinstance(v, SpecsResources) else [r.to_dict() for r in v])
+                for k, v in self.resources.items()
+            }
 
         return d
 

@@ -831,7 +831,7 @@ class TestCircuitSpecs:
         )
 
     def example_specs_result_multi(self):
-        """Generate an example CircuitSpecs instance."""
+        """Generate an example CircuitSpecs instance with multiple levels and batches."""
         return CircuitSpecs(
             device_name="default.qubit",
             num_device_wires=5,
@@ -839,19 +839,28 @@ class TestCircuitSpecs:
             level=[1, 2],
             resources={
                 1: SpecsResources(
-                    gate_types={"Hadamard": 2, "CNOT": 1},
-                    gate_sizes={1: 2, 2: 1},
-                    measurements={"expval(PauliZ)": 1},
+                    gate_types={"Hadamard": 4, "CNOT": 2},
+                    gate_sizes={1: 4, 2: 2},
+                    measurements={"expval(PauliX)": 1, "expval(PauliZ)": 1},
                     num_allocs=2,
                     depth=2,
                 ),
-                2: SpecsResources(
-                    gate_types={"CNOT": 1},
-                    gate_sizes={2: 1},
-                    measurements={"expval(PauliZ)": 1},
-                    num_allocs=2,
-                    depth=1,
-                ),
+                3: [
+                    SpecsResources(
+                        gate_types={"CNOT": 1},
+                        gate_sizes={2: 1},
+                        measurements={"expval(PauliX)": 1},
+                        num_allocs=2,
+                        depth=1,
+                    ),
+                    SpecsResources(
+                        gate_types={"CNOT": 1},
+                        gate_sizes={2: 1},
+                        measurements={"expval(PauliZ)": 1},
+                        num_allocs=2,
+                        depth=1,
+                    ),
+                ],
             },
         )
 
@@ -944,21 +953,31 @@ class TestCircuitSpecs:
             "level": [1, 2],
             "resources": {
                 1: {
-                    "gate_types": {"Hadamard": 2, "CNOT": 1},
-                    "gate_sizes": {1: 2, 2: 1},
-                    "measurements": {"expval(PauliZ)": 1},
+                    "gate_types": {"Hadamard": 4, "CNOT": 2},
+                    "gate_sizes": {1: 4, 2: 2},
+                    "measurements": {"expval(PauliX)": 1, "expval(PauliZ)": 1},
                     "num_allocs": 2,
                     "depth": 2,
-                    "num_gates": 3,
+                    "num_gates": 6,
                 },
-                2: {
-                    "gate_types": {"CNOT": 1},
-                    "gate_sizes": {2: 1},
-                    "measurements": {"expval(PauliZ)": 1},
-                    "num_allocs": 2,
-                    "depth": 1,
-                    "num_gates": 1,
-                },
+                3: [
+                    {
+                        "gate_types": {"CNOT": 1},
+                        "gate_sizes": {2: 1},
+                        "measurements": {"expval(PauliX)": 1},
+                        "num_allocs": 2,
+                        "depth": 1,
+                        "num_gates": 1,
+                    },
+                    {
+                        "gate_types": {"CNOT": 1},
+                        "gate_sizes": {2: 1},
+                        "measurements": {"expval(PauliZ)": 1},
+                        "num_allocs": 2,
+                        "depth": 1,
+                        "num_gates": 1,
+                    },
+                ],
             },
         }
 
@@ -996,8 +1015,11 @@ class TestCircuitSpecs:
 
         expected += "\n\n" + "-" * 60 + "\n\n"
 
-        expected += "Level = 2:\n"
-        expected += r.resources[2].to_pretty_str(preindent=2)
+        expected += "Level = 3:\n"
+        expected += "  Batched tape 0:\n"
+        expected += r.resources[3][0].to_pretty_str(preindent=4)
+        expected += "\n\n  Batched tape 1:\n"
+        expected += r.resources[3][1].to_pretty_str(preindent=4)
 
         assert str(r) == expected
 
