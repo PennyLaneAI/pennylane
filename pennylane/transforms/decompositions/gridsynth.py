@@ -34,7 +34,7 @@ def gridsynth(tape, *, epsilon, ppr_basis):
 
     **Example**
 
-    .. code-block:: python # doctest: +SKIP
+    .. code-block:: python
 
         qml.capture.enable()
         @qml.qjit
@@ -46,7 +46,7 @@ def gridsynth(tape, *, epsilon, ppr_basis):
             qml.PhaseShift(x * 0.2, 0)
             return qml.state()
 
-    >>> circuit(1.1)
+    >>> circuit(1.1) # doctest: +SKIP
     [0.6028324 -0.3695921j  0.50763281+0.49224355j]
 
     .. warning::
