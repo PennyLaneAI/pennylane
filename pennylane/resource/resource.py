@@ -383,7 +383,8 @@ class CircuitSpecs:
         shots (Shots): The shots configuration used.
         level (Any): The level of the specs (see :func:`~pennylane.specs` for more details).
         resources (SpecsResources | dict[int | str, SpecsResources]): The resource specifications.
-            Depending on the selected level, this may be be a dictionary of multiple :class:`.SpecsResources` objects.
+            Depending on the ``level`` chosen, this may be a single :class:`.SpecsResources` object
+            or a dictionary of multiple :class:`.SpecsResources` objects.
 
     .. details::
 
