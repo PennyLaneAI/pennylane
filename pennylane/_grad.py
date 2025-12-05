@@ -53,14 +53,12 @@ def _get_jacobian_prim():
     jacobian_prim.prim_type = "higher_order"
 
     @jacobian_prim.def_impl
-    def _grad_impl(*args, argnums, jaxpr, n_consts, method, h, scalar_out, fn):
+    def _grad_impl(*args, argnums, jaxpr, method, h, scalar_out, fn):
         if method != "auto":  # pragma: no cover
             raise ValueError(f"Invalid value '{method=}' without QJIT.")
-        consts = args[:n_consts]
-        args = args[n_consts:]
 
         def func(*inner_args):
-            res = jax.core.eval_jaxpr(jaxpr, consts, *inner_args)
+            res = jax.core.eval_jaxpr(jaxpr, [], *inner_args)
             return res[0] if scalar_out else res
 
         if scalar_out:
@@ -71,10 +69,10 @@ def _get_jacobian_prim():
 
     # pylint: disable=unused-argument
     @jacobian_prim.def_abstract_eval
-    def _grad_abstract(*args, argnums, jaxpr, n_consts, method, h, scalar_out, fn):
+    def _grad_abstract(*args, argnums, jaxpr, method, h, scalar_out, fn):
         if scalar_out and not (len(jaxpr.outvars) == 1 and jaxpr.outvars[0].aval.shape == ()):
             raise TypeError("Grad only applies to scalar-output functions. Try jacobian.")
-        in_avals = tuple(args[i + n_consts] for i in argnums)
+        in_avals = tuple(args[i] for i in argnums)
         out_shapes = tuple(outvar.aval.shape for outvar in jaxpr.outvars)
         return [
             _shape(out_shape + in_aval.shape, in_aval.dtype, weak_type=in_aval.weak_type)
@@ -182,12 +180,14 @@ def _capture_diff(func, *, argnums=None, scalar_out: bool = False, method=None, 
         jaxpr = jax.make_jaxpr(flat_fn, abstracted_axes=abstracted_axes)(*flat_args)
 
         num_abstract_shapes = len(abstract_shapes)
-        shifted_argnums = [a + num_abstract_shapes for a in flat_argnums]
+        shift = num_abstract_shapes + len(jaxpr.consts)
+        shifted_argnums = [a + shift for a in flat_argnums]
+        j = jaxpr.jaxpr
+        no_consts_jaxpr = j.replace(constvars=(), invars=j.constvars + j.invars)
 
         prim_kwargs = {
             "argnums": shifted_argnums,
-            "jaxpr": jaxpr.jaxpr,
-            "n_consts": len(jaxpr.consts),
+            "jaxpr": no_consts_jaxpr,
             "fn": func,
             "method": method,
             "h": h,
@@ -219,13 +219,21 @@ def _capture_vjp(func, params, cotangents, *, argnums=None, method=None, h=None)
     flat_cotangents = tree_leaves(cotangents)
     flat_fn = capture.FlatFn(func)
     jaxpr = jax.make_jaxpr(flat_fn)(*params)
+    j = jaxpr.jaxpr
+    no_consts_jaxpr = j.replace(constvars=(), invars=j.constvars + j.invars)
+    shifted_argnums = tuple(i + len(j.consts) for i in flat_argnums)
 
+    if len(flat_cotangents) != len(jaxpr.out_avals):
+        raise ValueError(
+            "The length of cotangents must match the number of"
+            " outputs of the function with qml.vjp."
+        )
     prim_kwargs = {
         "fn": func,
         "method": method,
         "h": h,
-        "argnums": flat_argnums,
-        "jaxpr": jaxpr.jaxpr,
+        "argnums": shifted_argnums,
+        "jaxpr": no_consts_jaxpr,
     }
     out_flat = _get_vjp_prim().bind(*jaxpr.consts, *flat_args, *flat_cotangents, **prim_kwargs)
     assert flat_fn.out_tree is not None, "out_tree should be set after executing flat_fn"
