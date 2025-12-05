@@ -328,6 +328,39 @@ class TestSpecsTransform:
         assert specs_output.num_device_wires is None
         assert specs_output.shots == Shots(None)
 
+        assert specs_output.to_dict() == {
+            "device_name": "default.qubit",
+            "num_device_wires": None,
+            "shots": Shots(None),
+            "level": 2,
+            "resources": [
+                {
+                    "gate_types": {"RandomLayers": 1, "RX": 1, "SWAP": 1, "PauliX": 2},
+                    "gate_sizes": {2: 2, 1: 3},
+                    "measurements": {"expval(PauliX @ PauliZ)": 1},
+                    "num_allocs": 2,
+                    "depth": 5,
+                    "num_gates": 5,
+                },
+                {
+                    "gate_types": {"RandomLayers": 1, "RX": 1, "SWAP": 1, "PauliX": 2},
+                    "gate_sizes": {2: 2, 1: 3},
+                    "measurements": {"expval(PauliZ @ PauliY)": 1},
+                    "num_allocs": 3,
+                    "depth": 5,
+                    "num_gates": 5,
+                },
+                {
+                    "gate_types": {"RandomLayers": 1, "RX": 1, "SWAP": 1, "PauliX": 2},
+                    "gate_sizes": {2: 2, 1: 3},
+                    "measurements": {"expval(PauliY @ PauliX)": 1},
+                    "num_allocs": 3,
+                    "depth": 5,
+                    "num_gates": 5,
+                },
+            ],
+        }
+
         assert (
             str(specs_output)
             == """Device: default.qubit
