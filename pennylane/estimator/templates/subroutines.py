@@ -1122,8 +1122,9 @@ class UnaryIterationQPE(ResourceOperator):
                 default :class:`~.pennylane.estimator.templates.subroutines.QFT` will be used.
 
         Returns:
-            list[~.pennylane.estimator.resource_operator.ResourceOp]: A list of resource operations representing
-            the decomposed QPE circuit.
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
         num_wires = math.ceil(math.log2(num_iterations))
 
