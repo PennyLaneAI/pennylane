@@ -979,11 +979,6 @@ class TestIterativeSolver:
     def test_qsp_on_poly_with_parity(self, polynomial_coeffs_in_cheby_basis):
         """Test that _qsp_optimization returns correct angles"""
         degree = len(polynomial_coeffs_in_cheby_basis) - 1
-        # parity = degree % 2
-        # if parity:
-        #     target_polynomial_coeffs = polynomial_coeffs_in_cheby_basis[1::2]
-        # else:
-        #     target_polynomial_coeffs = polynomial_coeffs_in_cheby_basis[0::2]
         target_polynomial_coeffs = polynomial_coeffs_in_cheby_basis
         phis, cost_func = _qsp_optimization(degree, target_polynomial_coeffs)
 
@@ -1004,15 +999,6 @@ class TestIterativeSolver:
                     ]
                 )
             )
-            # if not parity
-            # else np.sum(
-            #     np.array(
-            #         [
-            #             2 * np.sqrt(cost_func) * abs(_cheby_pol(degree=2 * i + 1, x=x_point))
-            #             for i in range(len(target_polynomial_coeffs))
-            #         ]
-            #     )
-            # )
         )
 
         assert qml.math.isclose(
