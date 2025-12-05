@@ -137,7 +137,9 @@ def _specs_qjit_device_level_tracking(
 
 def _specs_qjit_intermediate_passes(
     qjit, original_qnode, level, *args, **kwargs
-) -> SpecsResources | list[SpecsResources] | dict[str, SpecsResources | list[SpecsResources]]:  # pragma: no cover
+) -> (
+    SpecsResources | list[SpecsResources] | dict[str, SpecsResources | list[SpecsResources]]
+):  # pragma: no cover
     # pylint: disable=import-outside-toplevel
     from catalyst.python_interface.inspection import mlir_specs
 
@@ -215,11 +217,10 @@ def _specs_qjit_intermediate_passes(
         # Handle tape transforms
         for trans_level in trans_levels:
             # User transforms always come first, so level and trans_level align correctly
-            batch, _ = qml.workflow.construct_batch(original_qnode, level=trans_level)(*args, **kwargs)
-            res = [
-                resources_from_tape(tape, False)
-                for tape in batch
-            ]
+            batch, _ = qml.workflow.construct_batch(original_qnode, level=trans_level)(
+                *args, **kwargs
+            )
+            res = [resources_from_tape(tape, False) for tape in batch]
 
             if len(res) == 1:
                 res = res[0]
