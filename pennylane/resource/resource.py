@@ -394,18 +394,19 @@ class CircuitSpecs:
         **Example**
 
         >>> from pennylane.resource import SpecsResources, CircuitSpecs
-        >>> specs = CircuitSpecs(device_name="default.qubit",
-                                 num_device_wires=2,
-                                 shots=Shots(1000),
-                                 level="device",
-                                 resources=SpecsResources(
-                                     gate_types={"RX": 2, "CNOT": 1},
-                                     gate_sizes={1: 2, 2: 1},
-                                     measurements={"expval(PauliZ)": 1},
-                                     num_allocs=2,
-                                     depth=3,
-                                 ),
-            )
+        >>> specs = CircuitSpecs(
+        ...     device_name="default.qubit",
+        ...     num_device_wires=2,
+        ...     shots=Shots(1000),
+        ...     level="device",
+        ...     resources=SpecsResources(
+        ...         gate_types={"RX": 2, "CNOT": 1},
+        ...         gate_sizes={1: 2, 2: 1},
+        ...         measurements={"expval(PauliZ)": 1},
+        ...         num_allocs=2,
+        ...         depth=3,
+        ...     ),
+        ... )
 
         >>> print(specs.num_device_wires)
         2
@@ -486,9 +487,9 @@ class CircuitSpecs:
         if isinstance(res, SpecsResources):
             lines.append(res.to_pretty_str(preindent=2))
         elif isinstance(res, list):
-            for i, res in enumerate(res):
+            for i, r in enumerate(res):
                 lines.append(f"  Batched tape {i}:")
-                lines.append(res.to_pretty_str(preindent=4))
+                lines.append(r.to_pretty_str(preindent=4))
                 lines.append("")  # Blank line
         else:
             raise ValueError(
