@@ -21,6 +21,7 @@ from flaky import flaky
 from pennylane.ops.op_math.decompositions.norm_solver import (
     _factorize_prime_zomega,
     _factorize_prime_zsqrt_two,
+    _gcd,
     _integer_factorize,
     _primality_test,
     _prime_factorize,
@@ -28,6 +29,45 @@ from pennylane.ops.op_math.decompositions.norm_solver import (
     _sqrt_modulo_p,
 )
 from pennylane.ops.op_math.decompositions.rings import ZOmega, ZSqrtTwo
+
+
+class TestGCD:
+    """Tests for the GCD function."""
+
+    @pytest.mark.parametrize(
+        "a, b, expected",
+        [
+            (ZSqrtTwo(28), ZSqrtTwo(12), ZSqrtTwo(4)),
+            (ZSqrtTwo(15), ZSqrtTwo(25), ZSqrtTwo(5)),
+            (ZSqrtTwo(81), ZSqrtTwo(63), ZSqrtTwo(9)),
+            (ZSqrtTwo(144), ZSqrtTwo(108), ZSqrtTwo(36)),
+            (ZSqrtTwo(23, 72), ZSqrtTwo(23, 72), ZSqrtTwo(23, 72)),
+            (ZSqrtTwo(28, 15), ZSqrtTwo(12, 25), ZSqrtTwo(58, 41)),
+            (ZSqrtTwo(35, 42), ZSqrtTwo(22, 16), ZSqrtTwo(11, 8)),
+            (ZSqrtTwo(-1, 7), ZSqrtTwo(7, 0), ZSqrtTwo(1, 0)),
+        ],
+    )
+    def test_gcd_zsqrt_two(self, a, b, expected):
+        """Test the GCD function."""
+        assert _gcd(a, b) == expected
+        res1, res2 = a / expected, b / expected
+        assert res1 * expected == a
+        assert res2 * expected == b
+
+    @pytest.mark.parametrize(
+        "a, b, expected",
+        [
+            (ZOmega(d=28), ZOmega(d=12), ZOmega(d=4)),
+            (ZOmega(d=15), ZOmega(d=25), ZOmega(d=5)),
+            (ZOmega(d=81), ZOmega(d=63), ZOmega(d=9)),
+            (ZOmega(d=144), ZOmega(d=108), ZOmega(d=36)),
+            (ZOmega(d=28, b=12), ZOmega(d=32, b=44), ZOmega(d=4)),
+            (ZOmega(a=81, c=63), ZOmega(a=36, c=42), ZOmega(a=3, c=3)),
+        ],
+    )
+    def test_gcd_zomega(self, a, b, expected):
+        """Test the GCD function."""
+        assert _gcd(a, b) == expected
 
 
 class TestFactorization:
@@ -84,12 +124,12 @@ class TestFactorization:
     @pytest.mark.parametrize(
         "num, expected",
         [
-            (3, ZOmega(d=3)),
+            (3, ZOmega(a=1, c=1, d=1)),
             (27, None),
-            (5, ZOmega(b=-2, d=-1)),
+            (5, ZOmega(b=-1, d=2)),
             (7, None),
-            (11, ZOmega(d=11)),
-            (13, ZOmega(b=-2, d=-3)),
+            (11, ZOmega(a=1, c=1, d=3)),
+            (13, ZOmega(b=2, d=3)),
         ],
     )
     def test_factorize_prime_zomega(self, num, expected):
@@ -147,10 +187,10 @@ class TestFactorization:
             (ZSqrtTwo(2, -1), ZOmega(a=1, b=-1, c=0, d=0)),
             (ZSqrtTwo(7, 0), None),
             (ZSqrtTwo(23, 0), None),
-            (ZSqrtTwo(7, 2), ZOmega(a=1, b=1, c=1, d=2)),
+            (ZSqrtTwo(7, 2), -ZOmega(a=1, b=1, c=2, d=-1)),
             (ZSqrtTwo(17, 0), None),
             (ZSqrtTwo(5, 2), ZOmega(a=-2, b=-1, c=0, d=0)),
-            (ZSqrtTwo(13, 6), ZOmega(a=0, b=2, c=3, d=0)),
+            (ZSqrtTwo(13, 6), ZOmega(a=3, b=0, c=0, d=-2)),
         ],
     )
     def test_solve_diophantine(self, num, expected):
@@ -158,3 +198,23 @@ class TestFactorization:
         assert _solve_diophantine(num) == expected
         if expected is not None:
             assert (expected.conj() * expected).to_sqrt_two() == num
+
+    @pytest.mark.parametrize(
+        "num, expected, factor",
+        [
+            (
+                ZOmega(-26687414, 10541729, 10614512, 40727366),
+                ZOmega(-30805761, 23432014, -2332111, -20133911),
+                52,
+            ),
+            (
+                ZOmega(-22067493351, 22078644868, 52098814989, 16270802723),
+                ZOmega(-4737137864, -21764478939, 70433513740, -5852668010),
+                73,
+            ),
+        ],
+    )
+    def test_solve_diophantine_large_number(self, num, expected, factor):
+        """Test `solve_diophantine` solves diophantine equation."""
+        xi = ZSqrtTwo(2**factor) - num.norm().to_sqrt_two()
+        assert _solve_diophantine(xi) == expected
