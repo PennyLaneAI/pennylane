@@ -50,11 +50,11 @@ def gridsynth(tape, *, epsilon, ppr_basis):
 
     >>> result
     [0.6028324 -0.3695921j  0.50763281+0.49224355j]
-    
+
     .. warning::
 
         Using ``epsilon`` value smaller than ``1e-7`` can lead to overflow in the current implementation, and may lead to errors.
-        
+
     """
 
     raise NotImplementedError(  # pragma: no cover
