@@ -30,6 +30,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* The `ResourcesUndefinedError` has been removed from the `adjoint`, `ctrl`, and `pow` resource
+  decomposition methods of `ResourceOperator` to avoid using errors as control flow.
+  [(#8598)](https://github.com/PennyLaneAI/pennylane/pull/8598)
+  
 * Arithmetic dunder methods (`__add__`, `__mul__`, `__rmul__`) have been added to 
   :class:`~.transforms.core.TransformDispatcher`, :class:`~.transforms.core.TransformContainer`, 
   and :class:`~.transforms.core.TransformProgram` to enable intuitive composition of transform 
@@ -599,6 +603,7 @@ Yushao Chen,
 Marcus Edwards,
 Lillian Frederiksen,
 Sengthai Heng,
+Austin Huang,
 Soran Jahangiri,
 Christina Lee,
 Joseph Lee,
