@@ -292,6 +292,35 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
         name = self._transform.__name__ if self._transform else self.pass_name
         return f"<transform: {name}>"
 
+    def __add__(self, other):
+        """Add two dispatchers or a dispatcher and a container to create a TransformProgram.
+
+        When adding dispatchers, they are converted to containers with no args or kwargs.
+        For dispatcher + program, Python falls back to TransformProgram.__radd__.
+
+        Args:
+            other: Another TransformDispatcher or TransformContainer to add.
+
+        Returns:
+            TransformProgram: A new program with this dispatcher followed by the other.
+        """
+        # Convert this dispatcher to a container (no args/kwargs) and delegate
+        return TransformContainer(self) + other
+
+    def __mul__(self, n):
+        """Multiply a dispatcher by an integer to create a program with repeated dispatchers.
+
+        Args:
+            n (int): Number of times to repeat this dispatcher.
+
+        Returns:
+            TransformProgram: A new program with this dispatcher repeated n times.
+        """
+        # Convert to container (no args/kwargs) and delegate
+        return TransformContainer(self) * n
+
+    __rmul__ = __mul__
+
     @property
     def transform(self):
         """The quantum transform."""
@@ -493,6 +522,62 @@ class TransformContainer:  # pylint: disable=too-many-instance-attributes
     def final_transform(self) -> bool:
         """``True`` if the transform needs to be executed"""
         return self._transform_dispatcher.final_transform
+
+    def __add__(self, other):
+        """Add two containers or a container and a dispatcher to create a TransformProgram.
+
+        For container + program, Python falls back to TransformProgram.__radd__.
+
+        Args:
+            other: Another TransformContainer or TransformDispatcher to add.
+
+        Returns:
+            TransformProgram: A new program with this container followed by the other.
+        """
+        # Convert dispatcher to container if needed
+        if isinstance(other, TransformDispatcher):
+            other = TransformContainer(other)
+
+        if isinstance(other, TransformContainer):
+            # Import here to avoid circular import\
+            # pylint: disable=import-outside-toplevel
+            from .transform_program import TransformProgram
+
+            if self.final_transform and other.final_transform:
+                raise TransformError(
+                    f"Both {self} and {other} are final transforms and cannot be combined."
+                )
+            return TransformProgram([self, other])
+
+        # For TransformProgram, Python falls back to program.__radd__(container)
+        return NotImplemented
+
+    def __mul__(self, n):
+        """Multiply a container by an integer to create a program with repeated containers.
+
+        Args:
+            n (int): Number of times to repeat this container.
+
+        Returns:
+            TransformProgram: A new program with this container repeated n times.
+        """
+        # Import here to avoid circular import
+        from .transform_program import TransformProgram  # pylint: disable=import-outside-toplevel
+
+        if not isinstance(n, int):
+            return NotImplemented
+
+        if n < 0:
+            raise ValueError("Cannot multiply transform container by negative integer")
+
+        if self.final_transform and n > 1:
+            raise TransformError(
+                f"{self} is a final transform and cannot be applied more than once."
+            )
+
+        return TransformProgram([self] * n)
+
+    __rmul__ = __mul__
 
 
 @TransformDispatcher.generic_register
