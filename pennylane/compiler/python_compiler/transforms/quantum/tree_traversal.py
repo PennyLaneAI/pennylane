@@ -161,7 +161,7 @@ class TreeTraversalPass(ModulePass):
 
                 UnrollLoopPattern().match_and_rewrite(op, rewriter)
 
-                print_mlir(op, msg="After Unroll Loop Passes", should_print=print_stuff)
+                # print_mlir(op, msg="After Unroll Loop Passes", should_print=print_stuff)
 
                 IfOperatorPartitioningPattern().match_and_rewrite(op, rewriter)
                 print_mlir(op, msg="After If-For Passes", should_print=print_stuff)
@@ -199,7 +199,7 @@ class TreeTraversalPattern(RewritePattern):
         self.module = get_parent_of_type(func_op, builtin.ModuleOp)
 
         # If no measurements found, no need to apply tree-traversal
-        if not self.check_if_qnode_have_mcm(func_op):
+        if not self.check_if_qnode_has_mcms(func_op):
             return
 
         # Start with creating a new QNode function that will perform the tree traversal simulation.
@@ -220,7 +220,7 @@ class TreeTraversalPattern(RewritePattern):
         """Get the index of the operation."""
         return op.idx if op.idx else op.idx_attr
 
-    def check_if_qnode_have_mcm(self, func_op: func.FuncOp) -> bool:
+    def check_if_qnode_has_mcms(self, func_op: func.FuncOp) -> bool:
         """Check if the QNode function contains any measurement operations."""
         for op in func_op.body.walk():
             if isinstance(op, quantum.MeasureOp):
