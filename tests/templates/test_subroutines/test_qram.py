@@ -24,7 +24,7 @@ from pennylane.decomposition import list_decomps
 from pennylane.measurements import probs
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates import BasisEmbedding
-from pennylane.templates.subroutines.qram import BBQRAM
+from pennylane.templates.subroutines.qram import BBQRAM, HybridQRAM
 
 dev = device("default.qubit")
 
@@ -213,7 +213,7 @@ def test_raises(params, error, match):
         ),
     ],
 )
-def test_decomposition_new(
+def test_bbqram_decomposition_new(
     bitstrings,
     control_wires,
     target_wires,
@@ -231,3 +231,210 @@ def test_decomposition_new(
 
     for rule in list_decomps(BBQRAM):
         _test_decomposition_rule(op, rule)
+
+
+@qnode(dev)
+def hybrid_quantum(
+    bitstrings, control_wires, target_wires, work_wires, k, address
+):  # pylint: disable=too-many-arguments
+    BasisEmbedding(address, wires=control_wires)
+
+    HybridQRAM(
+        bitstrings,
+        control_wires=control_wires,
+        target_wires=target_wires,
+        work_wires=work_wires,
+        k=k,
+    )
+    return probs(wires=target_wires)
+
+
+@pytest.mark.parametrize(
+    (
+        "bitstrings",
+        "control_wires",
+        "target_wires",
+        "signal",
+        "bus",
+        "dir_wires",
+        "portL_wires",
+        "portR_wires",
+        "k",
+        "address",
+        "probabilities",
+    ),
+    [
+        (
+            ["010", "111", "110", "000"],
+            [0, 1],
+            [2, 3, 4],
+            5,
+            6,
+            [7, 8, 9],
+            [10, 11, 12],
+            [13, 14, 15],
+            0,
+            2,  # addressed from the left
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0],  # |110>
+        ),
+        (
+            ["010", "111", "110", "000"],
+            [0, 1],
+            [2, 3, 4],
+            5,
+            6,
+            [7],
+            [10],
+            [13],
+            1,
+            0,  # addressed from the left
+            [0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0],  # |010>
+        ),
+    ],
+)
+def test_hybrid_quantum(
+    bitstrings,
+    control_wires,
+    target_wires,
+    signal,
+    bus,
+    dir_wires,
+    portL_wires,
+    portR_wires,
+    k,
+    address,
+    probabilities,
+):  # pylint: disable=too-many-arguments
+    assert np.allclose(
+        probabilities,
+        hybrid_quantum(
+            bitstrings,
+            control_wires,
+            target_wires,
+            [signal] + [bus] + dir_wires + portL_wires + portR_wires,
+            k,
+            address,
+        ),
+    )
+
+
+@pytest.mark.parametrize(
+    (
+        "bitstrings",
+        "control_wires",
+        "target_wires",
+        "signal",
+        "bus",
+        "dir_wires",
+        "portL_wires",
+        "portR_wires",
+        "k",
+    ),
+    [
+        (
+            ["010", "111", "110", "000"],
+            [0, 1],
+            [2, 3, 4],
+            5,
+            6,
+            [7, 8, 9],
+            [10, 11, 12],
+            [13, 14, 15],
+            0,
+        ),
+        (
+            ["010", "111", "110", "000"],
+            [0, 1],
+            [2, 3, 4],
+            5,
+            6,
+            [7],
+            [10],
+            [13],
+            1,
+        ),
+    ],
+)
+def test_hybrid_decomposition_new(
+    bitstrings,
+    control_wires,
+    target_wires,
+    signal,
+    bus,
+    dir_wires,
+    portL_wires,
+    portR_wires,
+    k,
+):  # pylint: disable=too-many-arguments
+    op = HybridQRAM(
+        bitstrings,
+        control_wires=control_wires,
+        target_wires=target_wires,
+        work_wires=[signal] + [bus] + dir_wires + portL_wires + portR_wires,
+        k=k,
+    )
+    for rule in list_decomps(HybridQRAM):
+        _test_decomposition_rule(op, rule)
+
+
+@pytest.mark.parametrize(
+    ("params", "error", "match"),
+    [
+        (
+            ([], [0, 1], [2, 3, 4], [5, 6, 7, 8, 9, 10, 11, 12, 13, 14], 0),
+            ValueError,
+            "bitstrings' cannot be empty.",
+        ),
+        (
+            (
+                ["000", "00", "111", "10", "100"],
+                [0, 1],
+                [2, 3, 4],
+                [5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
+                1,
+            ),
+            ValueError,
+            "All bitstrings must have equal length.",
+        ),
+        (
+            (["000", "111"], [0, 1], [2, 3, 4], [5, 6, 7, 8, 9, 10, 11, 12, 13, 14], 0),
+            ValueError,
+            "len(bitstrings) must be 2^(len(control_wires)).",
+        ),
+        (
+            (["010", "111", "110", "000"], [0, 1], [2, 3], [4, 5, 6, 7, 8, 9, 10, 11, 12, 13], 1),
+            ValueError,
+            "len(target_wires) must equal bitstring length.",
+        ),
+        (
+            (["010", "111", "110", "000"], [0, 1], [2, 3, 4], [5, 6, 7, 8, 9, 10, 11, 12, 13], 0),
+            ValueError,
+            "work_wires must have length 11",
+        ),
+        (
+            (
+                ["010", "111", "110", "000"],
+                [0, 1],
+                [2, 3, 4],
+                [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+                3,
+            ),
+            ValueError,
+            "k must satisfy 0 <= k < len(control_wires).",
+        ),
+        (
+            (
+                ["010", "111", "110", "000"],
+                [],
+                [2, 3, 4],
+                [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+                0,
+            ),
+            ValueError,
+            "len(control_wires) must be > 0",
+        ),
+    ],
+)
+def test_hybrid_raises(params, error, match):
+    with pytest.raises(error, match=re.escape(match)):
+        HybridQRAM(*params)

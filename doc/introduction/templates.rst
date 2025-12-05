@@ -365,8 +365,12 @@ Other useful templates which do not belong to the previous categories can be fou
     :figure: _static/templates/qrom/qrom_thumbnail.png
 
 .. gallery-item::
-    :description: :doc:`QRAM <../code/api/pennylane.BBQRAM>`
+    :description: :doc:`Bucket Brigade QRAM <../code/api/pennylane.BBQRAM>`
     :figure: _static/templates/qram/bbqram_thumbnail.png
+
+.. gallery-item::
+    :description: :doc:`Hybrid QRAM <../code/api/pennylane.HybridQRAM>`
+    :figure: _static/templates/qram/hybrid_qram_thumbnail.png
 
 .. gallery-item::
     :description: :doc:`PrepSelPrep <../code/api/pennylane.PrepSelPrep>`
