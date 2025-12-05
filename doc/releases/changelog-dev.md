@@ -22,11 +22,43 @@
 
 <h4>Pauli product measurements</h4>
 
-* Added a :func:`~pennylane.ops.pauli_measure` that takes a Pauli product measurement.
+* Expressing `Pauli product measurement <https://pennylane.ai/compilation/pauli-product-measurement>`_
+  (PPMs) in PennyLane is now possible with the new :func:`~pennylane.ops.pauli_measure` function. This
+  functionality allows for seamless surface-code fault-tolerant quantum computing research spurred
+  from `A Game of Surface Codes <http://arxiv.org/abs/1808.02892>`_.
   [(#8461)](https://github.com/PennyLaneAI/pennylane/pull/8461)
   [(#8631)](https://github.com/PennyLaneAI/pennylane/pull/8631)
   [(#8623)](https://github.com/PennyLaneAI/pennylane/pull/8623)
   [(#8663)](https://github.com/PennyLaneAI/pennylane/pull/8663)
+  [(#8692)](https://github.com/PennyLaneAI/pennylane/pull/8692)
+
+  This new function is currently only for analysis on the ``null.qubit`` device, which allows for resource tracking or estimation with :func:`~.specs` or :func:`~.estimator.estimate`, and circuit inspection with qml.draw.
+
+  In the following example, a measurement of the ``XY`` Pauli product on wires ``0`` and ``2`` is performed
+  using :func:`~pennylane.ops.pauli_measure`, followed by application of a :class:`~.PauliX` gate conditional on
+  the outcome of the PPM:
+
+  ```python
+  import pennylane as qml
+  
+  dev = qml.device("null.qubit", wires=3)
+
+  @qml.qnode(dev)
+  def circuit():
+      qml.Hadamard(0)
+      qml.Hadamard(2)
+      ppm = qml.pauli_measure(pauli_word="XY", wires=[0, 2])
+      qml.cond(ppm, qml.X)(wires=1)
+      return qml.expval(qml.Z(0))
+  ```
+
+  ```pycon
+  >>> print(qml.draw(circuit)())
+  0: ──H─╭┤↗X├────┤  <Z>
+  1: ────│──────X─┤
+  2: ──H─╰┤↗Y├──║─┤
+           ╚════╝
+  ```
 
 <h3>Improvements 🛠</h3>
 
