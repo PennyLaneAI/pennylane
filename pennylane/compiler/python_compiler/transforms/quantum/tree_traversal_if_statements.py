@@ -56,7 +56,7 @@ class IfOperatorPartitioningPattern(RewritePattern):
         # print_mlir(op, "Before IfOp Partitioning:")
 
         # Split IfOps into only true branches
-        self.split_if_ops(op, rewriter)
+        self.split_if_ops(rewriter)
 
         # print_mlir(op, "After IfOp Splitting:")
 
@@ -567,88 +567,85 @@ class IfOperatorPartitioningPattern(RewritePattern):
                 nested_if_ops.append(inner_op)
         return len(nested_if_ops) > 0, nested_if_ops
 
-    def split_if_ops(self, op: func.FuncOp, rewriter: PatternRewriter) -> None:
+    def split_if_ops(self, rewriter: PatternRewriter) -> None:
         """Split all scf.IfOps containing mid-circuit measurement operations into separate branches."""
 
         for _if_op in self.if_op_with_mcm:
             self.split_if_op(_if_op, rewriter)
 
-
-    def split_if_op(self, op: func.FuncOp, rewriter: PatternRewriter) -> None:
+    def split_if_op(self, op: scf.IfOp, rewriter: PatternRewriter) -> None:
         """Split an scf.IfOp into separate branches for true and false regions."""
 
-        op_walk = op.walk()
-        for current_op in op_walk:
-            if isinstance(current_op, scf.IfOp):
+        current_op = op
 
-                # Analyze missing values for the IfOp
-                missing_values = self.analyze_missing_values_for_ops([current_op])
+        # Analyze missing values for the IfOp
+        missing_values = self.analyze_missing_values_for_ops([current_op])
 
-                # Get quantum register from missing values
-                qreg_if_op = [mv for mv in missing_values if isinstance(mv.type, quantum.QuregType)]
+        # Get quantum register from missing values
+        qreg_if_op = [mv for mv in missing_values if isinstance(mv.type, quantum.QuregType)]
 
-                # True and False regions
-                true_region = current_op.true_region
-                false_region = current_op.false_region
+        # True and False regions
+        true_region = current_op.true_region
+        false_region = current_op.false_region
 
-                # --------------------------------------------------------------------------
-                # New partitioning logic for True region
-                # --------------------------------------------------------------------------
+        # --------------------------------------------------------------------------
+        # New partitioning logic for True region
+        # --------------------------------------------------------------------------
 
-                value_mapper = {}
+        value_mapper = {}
 
-                attr_dict = {
-                    "contain_mcm": builtin.StringAttr("true"),
-                    "partition": builtin.StringAttr("true_branch"),
-                }
+        attr_dict = {
+            "contain_mcm": builtin.StringAttr("true"),
+            "partition": builtin.StringAttr("true_branch"),
+        }
 
-                new_if_op_4_true = self.create_if_op_partition(
-                    rewriter, true_region, current_op, value_mapper, current_op, attr_dict=attr_dict
-                )
+        new_if_op_4_true = self.create_if_op_partition(
+            rewriter, true_region, current_op, value_mapper, current_op, attr_dict=attr_dict
+        )
 
-                # --------------------------------------------------------------------------
-                # New partitioning logic for False region
-                # --------------------------------------------------------------------------
-                # Add the negation of the condition to the false branch if needed
+        # --------------------------------------------------------------------------
+        # New partitioning logic for False region
+        # --------------------------------------------------------------------------
+        # Add the negation of the condition to the false branch if needed
 
-                true_op = arith.ConstantOp(builtin.IntegerAttr(1, builtin.IntegerType(1)))
-                not_op = arith.XOrIOp(current_op.cond, true_op.result)
+        true_op = arith.ConstantOp(builtin.IntegerAttr(1, builtin.IntegerType(1)))
+        not_op = arith.XOrIOp(current_op.cond, true_op.result)
 
-                # Insert not_op after new_if_op
-                for new_op in [not_op, true_op]:
-                    rewriter.insert_op(new_op, InsertPoint.after(new_if_op_4_true))
+        # Insert not_op after new_if_op
+        for new_op in [not_op, true_op]:
+            rewriter.insert_op(new_op, InsertPoint.after(new_if_op_4_true))
 
-                # --------------------------------------------------------------------------
-                # Create the new IfOp for the false region
-                # --------------------------------------------------------------------------
+        # --------------------------------------------------------------------------
+        # Create the new IfOp for the false region
+        # --------------------------------------------------------------------------
 
-                value_mapper = {qreg_if_op[0]: new_if_op_4_true.results[0]}
+        value_mapper = {qreg_if_op[0]: new_if_op_4_true.results[0]}
 
-                attr_dict = {
-                    "contain_mcm": builtin.StringAttr("true"),
-                    "partition": builtin.StringAttr("false_branch"),
-                }
+        attr_dict = {
+            "contain_mcm": builtin.StringAttr("true"),
+            "partition": builtin.StringAttr("false_branch"),
+        }
 
-                _ = self.create_if_op_partition(
-                    rewriter,
-                    false_region,
-                    new_if_op_4_true,
-                    value_mapper,
-                    not_op,
-                    conditional=not_op.result,
-                    attr_dict=attr_dict,
-                )
+        _ = self.create_if_op_partition(
+            rewriter,
+            false_region,
+            new_if_op_4_true,
+            value_mapper,
+            not_op,
+            conditional=not_op.result,
+            attr_dict=attr_dict,
+        )
 
-                # --------------------------------------------------------------------------
+        # --------------------------------------------------------------------------
 
-                original_if_op_results = current_op.results[0]
-                original_if_op_results.replace_by(qreg_if_op[0])
+        original_if_op_results = current_op.results[0]
+        original_if_op_results.replace_by(qreg_if_op[0])
 
-                list_op_if = list(current_op.walk())
+        list_op_if = list(current_op.walk())
 
-                # Remove the ops in the original IfOp
-                for if_op in list_op_if[::-1]:
-                    rewriter.erase_op(if_op)
+        # Remove the ops in the original IfOp
+        for if_op in list_op_if[::-1]:
+            rewriter.erase_op(if_op)
 
     def create_if_op_partition(  # pylint: disable=too-many-arguments
         self,
