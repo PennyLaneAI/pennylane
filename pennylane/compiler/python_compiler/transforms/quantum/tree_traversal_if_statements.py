@@ -45,20 +45,27 @@ class IfOperatorPartitioningPattern(RewritePattern):
         """Partition the if operation into separate branches for each operator."""
 
         self.original_func_op = op
-        # Detect mcm inside If statement
-        flat_if = self.detect_mcm_in_if_ops_2(op)
 
-        if not flat_if:
+        # Detect mcm inside If statement
+        has_mcm_inside_ifOp = self.detect_mcm_in_if_ops(op)
+
+        if not has_mcm_inside_ifOp:
             return
 
-        print_mlir(op, "Before IfOp Partitioning:")
+        # print_mlir(op, "Before IfOp Partitioning:")
+
         # Split IfOps into only true branches
         self.split_if_ops(op, rewriter)
 
-        print_mlir(op, "After IfOp Splitting:")
+        # print_mlir(op, "After IfOp Splitting:")
 
         # Flatten nested IfOps
-        self.flatten_nested_IfOps(op, rewriter)
+        has_mcm_inside_nested_ifOp = self.looking_for_nested_if_ops(op)
+
+        if has_mcm_inside_nested_ifOp:
+            self.flatten_nested_IfOps(rewriter)
+
+        # print_mlir(op, "After IfOp Flattening:")
 
         # Adding fake MeasureOp before if Op with the attribute contain_mcm = "true"
         self.adding_fake_measureOp(op, rewriter)
@@ -67,6 +74,8 @@ class IfOperatorPartitioningPattern(RewritePattern):
         self.module: builtin.ModuleOp = None
         self.original_func_op: func.FuncOp = None
         self.if_op_with_mcm: List[scf.IfOp] = []
+        # Dictionary of outer IfOps with their inner IfOps for flattening
+        self.if_op_with_mcm_4_flatten: dict[scf.IfOp, List[scf.IfOp]] = {}
 
     def adding_fake_measureOp(self, op: func.FuncOp, rewriter: PatternRewriter) -> None:
         """Add fake MeasureOp before IfOps that contain measurement-controlled operations."""
@@ -109,127 +118,104 @@ class IfOperatorPartitioningPattern(RewritePattern):
                     q_insert.results[0], lambda use: use.operation not in [q_extract, q_insert]
                 )
 
-    def detect_mcm_in_if_ops(self, op: scf.IfOp) -> bool:
-        """Detect if there are measurement-controlled operations inside IfOps."""
-        op_walk = op.walk()
-        for current_op in op_walk:
-            if isinstance(current_op, scf.IfOp):
-                #  Check if there are mid-circuit measurements inside the IfOp
-                for inner_op in current_op.true_region.ops:
-                    if isinstance(inner_op, quantum.MeasureOp):
-                        return True
-                for inner_op in current_op.false_region.ops:
-                    if isinstance(inner_op, quantum.MeasureOp):
-                        return True
-        return False
-
-    def detect_mcm_in_if_ops_2(self, op: scf.IfOp) -> bool:
-        """Detect if there are measurement-controlled operations inside IfOps."""
+    def detect_mcm_in_if_ops(self, op: Operation) -> bool:
+        """Detect if there are mid-circuit measurement operations inside IfOps."""
         op_walk = op.walk()
         for current_op in op_walk:
             if isinstance(current_op, quantum.MeasureOp):
-                self.collect_all_parent_ifs(current_op, stop=op)
+                self.collect_all_parent_ifs(current_op, self.if_op_with_mcm, stop=op)
 
         return len(self.if_op_with_mcm) > 0
 
+    def looking_for_nested_if_ops(self, op: Operation) -> bool:
+        """Detect if there are mid-circuit measurement operations inside IfOps."""
 
-    def collect_all_parent_ifs(self, op: Operation, stop: Operation) -> None:
+        # Collect all nested IfOps with contain_mcm attribute, separated by their nesting chains
+        if_ops_with_contain_mcm = []
+
+        op_walk = op.walk()
+        for current_op in op_walk:
+            if isinstance(current_op, scf.IfOp) and "contain_mcm" in current_op.attributes:
+                inner_if_op_list = [current_op]
+                self.collect_all_parent_ifs(current_op, inner_if_op_list, stop=op)
+                if_ops_with_contain_mcm.append(inner_if_op_list)
+
+
+        # Sort list by length descending to get the deepest nested first
+        if_ops_with_contain_mcm.sort(key=len, reverse=True)
+
+        # Create a dictionary of outer IfOps with their inner IfOps
+        for if_ops_chain in if_ops_with_contain_mcm:
+
+            depth = len(if_ops_chain)
+            if depth < 2:
+                continue
+
+            inner_if_op = if_ops_chain[0]
+            outer_if_op = if_ops_chain[1]
+
+            if outer_if_op in self.if_op_with_mcm_4_flatten:
+                self.if_op_with_mcm_4_flatten[outer_if_op]["inners"].append(inner_if_op)
+            else:
+                self.if_op_with_mcm_4_flatten[outer_if_op] = {"depth": depth, "inners": [inner_if_op], "flattened": False}
+
+        return len(self.if_op_with_mcm_4_flatten) > 0
+
+
+    def collect_all_parent_ifs(self, op: Operation, collector: List[scf.IfOp], stop: Operation) -> None:
         """Collect all parent scf.IfOps of a given operation up to a stop operation."""
         while (op := op.parent_op()) and op != stop:
             if isinstance(op, scf.IfOp):
-                if op in self.if_op_with_mcm:
-                    self.if_op_with_mcm.remove(op)
-                self.if_op_with_mcm.append(op)
+                if op in collector:
+                    collector.remove(op)
+                collector.append(op)
 
-    def flatten_nested_IfOps(self, main_op: func.FuncOp, rewriter: PatternRewriter) -> None:
+
+    def flatten_nested_IfOps(self, rewriter: PatternRewriter) -> None:
         """Flatten nested scf.IfOps into a single level scf.IfOp."""
 
-        # Check for deepest nested IfOps
-        nested_IfOp = self.get_deepest_nested_ifs(main_op)
+        def find_deepest_if_ops_2_flat():
+            """Find all outer IfOps that need to be flattened with their inner IfOps."""
 
-        depth = nested_IfOp[0][1] if nested_IfOp else 0
-        target_if_op = nested_IfOp[0][0] if nested_IfOp else None
+            deepest = 0
+            deepest_op = None
 
-        if depth > 1:
-            self.flatten_if_ops_deep(target_if_op.parent_op(), rewriter)
-            self.flatten_nested_IfOps(main_op, rewriter)
+            for outer_if_op, inner_data in self.if_op_with_mcm_4_flatten.items():
+                depth = inner_data["depth"]
 
-    def get_deepest_nested_ifs(self, parent_if_op: scf.IfOp) -> IfOpWithDepth:
-        """Finds the scf.if operation(s) nested at the maximum depth inside the parent_if_op."""
-        # The parent IfOp A is at depth 0, so its immediate children (B, D) are at depth 1.
-        # We initialize the search list.
-        deepest_ops_with_depth: List[IfOperatorPartitioningPattern.IfOpWithDepth] = [(None, 0)]
+                if depth > deepest and not inner_data["flattened"]:
+                    deepest = depth
+                    deepest_op = outer_if_op
 
-        # Start the recursion. We look *inside* the regions of the parent_if_op.
-        self._find_deepest_if_recursive(parent_if_op, 0, deepest_ops_with_depth)
+            return deepest_op
 
-        # Extract only the IfOp objects from the list of (IfOp, depth) tuples.
-        return deepest_ops_with_depth
+        # Flatten until no more nested IfOps
+        while True:
+            target_outer_if_op = find_deepest_if_ops_2_flat()
 
-    def _find_deepest_if_recursive(
-        self, op: Operation, current_depth: int, max_depth_ops: List[IfOpWithDepth]
-    ) -> None:
-        """
-        Helper function to recursively traverse the IR, tracking the max depth
-        of scf.If operations found so far.
-        """
-        # Iterate over all nested regions (then_region, else_region, etc.)
-        for region in op.regions:
-            for block in region.blocks:
-                for child_op in block.ops:
+            if target_outer_if_op is None:
+                break
 
-                    new_depth = current_depth
+            # Set outer IfOp
+            new_outer_if_op_output = list(target_outer_if_op.results)
+            new_outer_if_op_output_types = [out.type for out in target_outer_if_op.results]
 
-                    if isinstance(child_op, scf.IfOp):
-                        # the if should have the attribute  contain_mcm = "true"
+            where_to_insert = target_outer_if_op
 
-                        contain_mcm = "contain_mcm" in child_op.attributes
-
-                        if not contain_mcm:
-                            continue
-
-                        # Found an IfOp, increase the depth for the ops *inside* its regions.
-                        # This IfOp itself is at 'current_depth + 1'.
-                        new_depth = current_depth + 1
-
-                        # --- Check and Update Max Depth List ---
-
-                        # 1. Is this deeper than the current max? (First find or deeper op)
-                        if not max_depth_ops or new_depth > max_depth_ops[0][1]:
-                            # It's a new maximum depth! Clear the old list and start fresh.
-                            max_depth_ops.clear()
-                            max_depth_ops.append((child_op, new_depth))
-
-                        # 2. Is this at the same depth as the current max? (A tie)
-                        elif new_depth == max_depth_ops[0][1]:
-                            # Add it to the list of winners.
-                            max_depth_ops.append((child_op, new_depth))
-
-                    # Recursively search inside this child op (regardless of its type)
-                    # We pass the potentially *increased* new_depth.
-                    self._find_deepest_if_recursive(child_op, new_depth, max_depth_ops)
-
-    def flatten_if_ops_deep(self, main_op: scf.IfOp, rewriter: PatternRewriter) -> None:
-        """Flatten nested scf.IfOps into a single level scf.IfOp."""
-
-        if isinstance(main_op, scf.IfOp):
-
-            outer_if_op = main_op
-
-            new_outer_if_op_output = list(outer_if_op.results)
-            new_outer_if_op_output_types = [out.type for out in outer_if_op.results]
-
-            _, nested_if_ops = self.get_nested_if_ops(outer_if_op)
-            where_to_insert = outer_if_op
+            # Set inner IfOps
+            inner_if_list = self.if_op_with_mcm_4_flatten[target_outer_if_op]["inners"]
 
             # Holder for IfOps that are kept for updating SSA values later
             holder_returns: dict[scf.IfOp, scf.IfOp] = {}
 
-            for inner_op in nested_if_ops:
+            inner_count = 1
 
-                where_to_insert, outer_if_op = self.move_inner_if_op_2_outer(
+            for inner_op in inner_if_list:
+
+                # Move inner IfOp to outer IfOp
+                new_inner_if_op, new_outer_if_op = self.move_inner_if_op_2_outer(
                     inner_op,
-                    outer_if_op,
+                    target_outer_if_op,
                     new_outer_if_op_output,
                     new_outer_if_op_output_types,
                     where_to_insert,
@@ -237,9 +223,42 @@ class IfOperatorPartitioningPattern(RewritePattern):
                     rewriter,
                 )
 
-            # detach and erase old outer if op
+                # Update references in the if_op_with_mcm_4_flatten dictionary for inner_if_op
+                if new_inner_if_op != inner_op:
+                    # Update the key
+                    if new_inner_if_op in self.if_op_with_mcm_4_flatten:
+                        self.if_op_with_mcm_4_flatten[new_inner_if_op] = self.if_op_with_mcm_4_flatten.pop(inner_op)
+                    # Update any references to inner_op in other inner lists
+                    for value in self.if_op_with_mcm_4_flatten.values():
+                        if inner_op in value["inners"]:
+                            idx = value["inners"].index(inner_op)
+                            value["inners"][idx] = new_inner_if_op
+
+                # Update where_to_insert for next inner IfOp
+                where_to_insert = new_inner_if_op
+
+                # Update target_outer_if_op reference if it has changed
+                if target_outer_if_op != new_outer_if_op:
+                    self.if_op_with_mcm_4_flatten[new_outer_if_op] = self.if_op_with_mcm_4_flatten.pop(target_outer_if_op)
+
+                    # Update target_outer_if_op in any inner_if_list that may refer to it
+                    for value in self.if_op_with_mcm_4_flatten.values():
+                        if target_outer_if_op in value["inners"]:
+                            idx = value["inners"].index(target_outer_if_op)
+                            value["inners"][idx] = new_outer_if_op
+                            value["inners"].insert(idx+inner_count, new_inner_if_op)
+
+                # Update target_outer_if_op for next iteration
+                target_outer_if_op = new_outer_if_op
+
+                inner_count += 1
+
+            # Detach and erase old outer if op
             for hold_op in holder_returns:
                 rewriter.erase_op(hold_op)
+
+            # Mark as flattened
+            self.if_op_with_mcm_4_flatten[target_outer_if_op]["flattened"] = True
 
     def move_inner_if_op_2_outer(  # pylint: disable=too-many-branches,too-many-arguments,too-many-statements,no-member
         self,
