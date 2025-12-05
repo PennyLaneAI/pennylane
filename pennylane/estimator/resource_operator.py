@@ -276,7 +276,7 @@ class ResourceOperator(ABC):
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         For ResourceOperators that don't define a `adjoint_resource_decomp`, this will be the default
-        `adjoint_resource_decomp` method.
+        `adjoint_resource_decomp` method. Every operator in the decomposition will be adjointed.
 
         Args:
             target_resource_params (dict | None): A dictionary containing the resource parameters
@@ -305,7 +305,7 @@ class ResourceOperator(ABC):
         r"""Returns a list representing the resources for a controlled version of the operator.
 
         For ResourceOperators that don't define a `controlled_resource_decomp`, this will be the default
-        `controlled_resource_decomp` method.
+        `controlled_resource_decomp` method. Every operator in the decomposition will be controlled.
 
         Args:
             num_ctrl_wires (int): the number of qubits the
