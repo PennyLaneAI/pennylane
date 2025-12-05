@@ -949,7 +949,7 @@ class TestModifiedTemplates:
     def test_multiplexer_state_prep(self):
         """Test the primitive bind call of MultiplexerStatePreparation."""
 
-        state_vector =  np.array([1 / 2, -1 / 2, 1 / 2, 1j / 2])
+        state_vector = np.array([1 / 2, -1 / 2, 1 / 2, 1j / 2])
         kwargs = {
             "wires": (8, 9),
         }
