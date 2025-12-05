@@ -585,6 +585,27 @@ class TransformProgram:
 
         return cur_jaxpr
 
+    def __call_fallback(self, obj):
+        """Fallback method for applying the transform program to any object.
+
+        This chain-applies each TransformContainer in the program to the input object,
+        allowing the program to work with any object that individual transforms can
+        dispatch onto (e.g., QNodes, devices, callables, etc.).
+
+        Args:
+            obj: The object to transform.
+
+        Returns:
+            The transformed object after all transforms in the program have been applied.
+        """
+        if not self:
+            return obj
+
+        result = obj
+        for container in self:
+            result = container(result)
+        return result
+
     @overload
     def __call__(
         self, jaxpr: "jax.extend.core.Jaxpr", consts: Sequence, *args
@@ -598,7 +619,26 @@ class TransformProgram:
     def __call__(self, *args, **kwargs):
         if type(args[0]).__name__ == "Jaxpr":
             return self.__call_jaxpr(*args, **kwargs)
-        return self.__call_tapes(*args, **kwargs)
+
+        # Check if this is a batch of QuantumScripts or a single QuantumScript
+        # Import here to avoid circular imports
+        from pennylane.tape import QuantumScript  # pylint: disable=import-outside-toplevel
+
+        first_arg = args[0]
+
+        # Single QuantumScript should go through __call_tapes
+        if isinstance(first_arg, QuantumScript):
+            return self.__call_tapes(*args, **kwargs)
+
+        # Sequence of QuantumScripts should go through __call_tapes
+        is_tape_batch = isinstance(first_arg, Sequence) and (
+            not first_arg or isinstance(first_arg[0], QuantumScript)
+        )
+        if is_tape_batch:
+            return self.__call_tapes(*args, **kwargs)
+
+        # Fallback: chain-apply to any other object (QNode, device, callable, etc.)
+        return self.__call_fallback(first_arg)
 
 
 @TransformDispatcher.generic_register
