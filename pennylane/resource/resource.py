@@ -364,7 +364,7 @@ class SpecsResources:
     def __str__(self) -> str:
         return self.to_pretty_str()
 
-    def _ipython_display_(self):
+    def _ipython_display_(self):  # pragma: no cover
         """Displays __str__ in ipython instead of __repr__"""
         # See https://ipython.readthedocs.io/en/stable/config/integrating.html#custom-methods
         print(str(self))
@@ -497,7 +497,7 @@ class CircuitSpecs:
 
         return "\n".join(lines).rstrip("\n-")
 
-    def _ipython_display_(self):
+    def _ipython_display_(self):  # pragma: no cover
         """Displays __str__ in ipython instead of __repr__"""
         # See https://ipython.readthedocs.io/en/stable/config/integrating.html#custom-methods
         print(str(self))
@@ -957,6 +957,8 @@ def _obs_to_str(obs) -> str:
             return f"Hamiltonian({inner})"
         case "SProd":
             return _obs_to_str(obs.base)
+        case "Exp":
+            return f"Exp({_obs_to_str(obs.base)})"
         case _:
             return obs.name
 
