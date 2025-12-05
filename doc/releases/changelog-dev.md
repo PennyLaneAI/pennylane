@@ -2,6 +2,13 @@
 
 <h3>New features since last release</h3>
 
+* Users can now estimate the resources of Trotterization for Pauli Hamiltonians, using the new
+  :class:`estimator.PauliHamiltonian <pennylane.estimator.compact_hamiltonian.PauliHamiltonian>`
+  resource Hamiltonian class and the new
+  :class:`estimator.TrotterPauli <pennylane.estimator.templates.TrotterPauli>`
+  resource operator.
+  [(#8546)](https://github.com/PennyLaneAI/pennylane/pull/8546)
+
 * Quantum Automatic Differentiation implemented to allow automatic selection of optimal
   Hadamard gradient differentiation methods per [the paper](https://arxiv.org/pdf/2408.05406).
   [(#8640)](https://github.com/PennyLaneAI/pennylane/pull/8640)

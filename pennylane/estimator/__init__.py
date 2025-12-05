@@ -94,6 +94,7 @@ from .templates import (
     TrotterTHC,
     TrotterVibrational,
     TrotterVibronic,
+    TrotterPauli,
     MPSPrep,
     QROMStatePreparation,
     UniformStatePrep,
@@ -109,6 +110,7 @@ from .compact_hamiltonian import (
     THCHamiltonian,
     VibronicHamiltonian,
     VibrationalHamiltonian,
+    PauliHamiltonian,
 )
 
 from .measurement import estimate_error, estimate_shots
