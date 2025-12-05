@@ -384,7 +384,7 @@ class PauliHamiltonian:
 
     @property
     def max_weight(self):
-        """The maximum number of Pauli operators in the Pauli word for any given term in the sum.
+        r"""The maximum number of Pauli operators in the Pauli word for any given term in the sum.
         For example, given a hamiltonian :math:`H = \hat{X}_{0} \hat{X}_{1} + \hat{Z}_{0}`. The
         ``max_weight = 2`` because there are atmost two Pauli operators in any term.
         """
