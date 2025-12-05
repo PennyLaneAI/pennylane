@@ -24,7 +24,7 @@ def gridsynth(tape, *, epsilon, ppr_basis):
 
     .. warning::
 
-        This transform requires QJIT and capture to be enabled,
+        This transform requires QJIT and capture to be enabled (via :func:`qml.capture.enable() <pennylane.capture.enable>`),
         as it is a wrapper for Catalyst's ``gridsynth`` compilation pass.
 
     Args:
@@ -57,5 +57,5 @@ def gridsynth(tape, *, epsilon, ppr_basis):
     """
 
     raise NotImplementedError(  # pragma: no cover
-        "This transform pass (gridsynth) is only implemented when using capture and QJIT. Otherwise, please use qml.transforms.clifford_t_decomposition."
+        "This transform pass (gridsynth) is only implemented when using program capture and QJIT. They can be activated by `qml.capture.enable()` and applying the `@qml.qjit` decorator. Otherwise, please use qml.transforms.clifford_t_decomposition."
     )
