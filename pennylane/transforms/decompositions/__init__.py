@@ -14,3 +14,4 @@
 r"""This module contains decompositions for quantum circuits."""
 
 from .clifford_t_transform import clifford_t_decomposition
+from .gridsynth import gridsynth

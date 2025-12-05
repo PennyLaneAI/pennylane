@@ -2,6 +2,11 @@
 
 <h3>New features since last release</h3>
 
+* Users can now perform rapid Clifford+T decomposition with QJIT and program capture enabled,
+  using the new :func:`~pennylane.transforms.gridsynth` compilation pass.
+  This pass discretizes ``RZ`` and ``PhaseShift`` gates to either the Clifford+T basis or to the PPR basis.
+  [(#8609)](https://github.com/PennyLaneAI/pennylane/pull/8609)
+
 * Quantum Automatic Differentiation implemented to allow automatic selection of optimal
   Hadamard gradient differentiation methods per [the paper](https://arxiv.org/pdf/2408.05406).
   [(#8640)](https://github.com/PennyLaneAI/pennylane/pull/8640)
