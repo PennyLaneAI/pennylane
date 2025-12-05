@@ -161,12 +161,13 @@ class TreeTraversalPass(ModulePass):
 
                 UnrollLoopPattern().match_and_rewrite(op, rewriter)
 
-                # print_mlir(op, msg="After Unroll Loop Passes", should_print=print_stuff)
+                print_mlir(op, msg="After Unroll Loop Passes", should_print=print_stuff)
 
                 IfOperatorPartitioningPattern().match_and_rewrite(op, rewriter)
                 print_mlir(op, msg="After If-For Passes", should_print=print_stuff)
 
                 TreeTraversalPattern().match_and_rewrite(op, rewriter)
+                break
         print_mlir(module_op, msg="After Tree Traversal Pass", should_print=print_stuff)
 
 
