@@ -328,6 +328,55 @@ class TestSpecsTransform:
         assert specs_output.num_device_wires is None
         assert specs_output.shots == Shots(None)
 
+        assert (
+            str(specs_output)
+            == """Device: default.qubit
+Device wires: None
+Shots: Shots(total=None)
+Level: 2
+
+Resource specifications:
+  Batched tape 0:
+    Total qubit allocations: 2
+    Total gates: 5
+    Circuit depth: 5
+
+    Gate types:
+      RandomLayers: 1
+      RX: 1
+      SWAP: 1
+      PauliX: 2
+
+    Measurements:
+      expval(PauliX @ PauliZ): 1
+  Batched tape 1:
+    Total qubit allocations: 3
+    Total gates: 5
+    Circuit depth: 5
+
+    Gate types:
+      RandomLayers: 1
+      RX: 1
+      SWAP: 1
+      PauliX: 2
+
+    Measurements:
+      expval(PauliZ @ PauliY): 1
+  Batched tape 2:
+    Total qubit allocations: 3
+    Total gates: 5
+    Circuit depth: 5
+
+    Gate types:
+      RandomLayers: 1
+      RX: 1
+      SWAP: 1
+      PauliX: 2
+
+    Measurements:
+      expval(PauliY @ PauliX): 1"""
+        )
+
     @pytest.mark.parametrize(
         "device,num_wires",
         devices_list,
