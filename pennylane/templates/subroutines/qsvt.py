@@ -995,7 +995,7 @@ def _compute_qsp_angles_iteratively(
         import jax
         import optax
 
-    except ModuleNotFoundError:
+    except ModuleNotFoundError as exc:
         raise ModuleNotFoundError(f"JAX and optax are required")
 
     poly_cheb = chebyshev.poly2cheb(poly)
