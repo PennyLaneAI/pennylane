@@ -277,12 +277,12 @@ def specs(
                                                gate_sizes={2: 1},
                                                measurements={'expval(PauliX @ PauliZ)': 1},
                                                num_allocs=2,
-                                               depth=1)),
+                                               depth=1),
                                 SpecsResources(gate_types={'RandomLayers': 1},
                                                gate_sizes={2: 1},
                                                measurements={'expval(PauliZ @ PauliY)': 1},
                                                num_allocs=3,
-                                               depth=1))]
+                                               depth=1)])
     """
     # pylint: disable=import-outside-toplevel
     # Have to import locally to prevent circular imports as well as accounting for Catalyst not being installed
