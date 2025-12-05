@@ -76,7 +76,8 @@ def _process(wires):
             hash(wires)
         except TypeError as e:
             # if object is not hashable, cannot identify unique wires
-            if str(e).startswith("unhashable"):
+            # Check for unhashable type error - format changed in Python 3.14
+            if "unhashable" in str(e):
                 raise WireError(f"Wires must be hashable; got object of type {type(wires)}.") from e
         return (wires,)
 
@@ -85,7 +86,10 @@ def _process(wires):
         # so we can use it for hashability check of iterables.
         set_of_wires = set(wires)
     except TypeError as e:
-        if str(e).startswith("unhashable"):
+        # Check for unhashable type error - format changed in Python 3.14
+        # Python 3.13: "unhashable type: 'list'"
+        # Python 3.14: "cannot use 'list' as a set element (unhashable type: 'list')"
+        if "unhashable" in str(e):
             raise WireError(f"Wires must be hashable; got {wires}.") from e
 
     if len(set_of_wires) != len(tuple_of_wires):

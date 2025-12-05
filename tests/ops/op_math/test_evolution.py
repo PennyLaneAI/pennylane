@@ -101,21 +101,24 @@ class TestEvolution:
     def test_repr_paulix(self):
         """Test the __repr__ method when the base is a simple observable."""
         op = Evolution(qml.PauliX(0), 3)
-        assert repr(op) == "Evolution(-3j PauliX)"
+        # Python 3.13: "Evolution(-3j PauliX)"
+        # Python 3.14+: "Evolution((-0-3j) PauliX)"
+        assert repr(op) in ["Evolution(-3j PauliX)", "Evolution((-0-3j) PauliX)"]
 
     def test_repr_tensor(self):
         """Test the __repr__ method when the base is a tensor."""
         t = qml.PauliX(0) @ qml.PauliX(1)
         isingxx = Evolution(t, 0.25)
-
-        assert repr(isingxx) == "Evolution(-0.25j X(0) @ X(1))"
+        assert repr(isingxx) in [
+            "Evolution(-0.25j X(0) @ X(1))",
+            "Evolution((-0-0.25j) X(0) @ X(1))",
+        ]
 
     def test_repr_deep_operator(self):
         """Test the __repr__ method when the base is any operator with arithmetic depth > 0."""
         base = qml.S(0) @ qml.X(0)
         op = Evolution(base, 3)
-
-        assert repr(op) == "Evolution(-3j S(0) @ X(0))"
+        assert repr(op) in ["Evolution(-3j S(0) @ X(0))", "Evolution((-0-3j) S(0) @ X(0))"]
 
     @pytest.mark.parametrize(
         "op,decimals,expected",
