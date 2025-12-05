@@ -2,7 +2,9 @@
 
 <h3>New features since last release</h3>
 
-* Added a new transform :func:`~pennylane.transforms.gridsynth` to discretize RZ and PhaseShift gates to Clifford+T or PPR basis. This can be used only with QJIT and program capture enabled.
+* Users can now perform rapid Clifford+T decomposition with QJIT and program capture enabled,
+  using the new :func:`~pennylane.transforms.gridsynth` compilation pass.
+  This pass discretizes ``RZ`` and ``PhaseShift`` gates to either the Clifford+T basis or to the PPR basis.
   [(#8609)](https://github.com/PennyLaneAI/pennylane/pull/8609)
 
 * Quantum Automatic Differentiation implemented to allow automatic selection of optimal
