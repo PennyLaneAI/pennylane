@@ -473,9 +473,8 @@ class TestTreeTraversalPassBase:
             // CHECK: = scf.if {{%.+}} -> (!quantum.reg, i8, i8) {
 
             // Update state-vector memory
-            // CHECK: [[sv0:%.+]] = quantum.state {{%.+}} shape {{%.+}} : tensor<?xcomplex<f64>>
-            // CHECK: [[sv_ptr0:%.+]] = tensor.extract [[sv0]][{{%.+}}] : tensor<?xcomplex<f64>>
-            // CHECK: memref.store [[sv_ptr0]], {{%.+}}[{{%.+}}, {{%.+}}] : memref<?x?xcomplex<f64>>
+            // CHECK: [[memref0:%.+]] = memref.subview {{%.+}}[{{%.+}}, 0] [1, {{%.+}}] [1, 1] : memref<?x?xcomplex<f64>> to memref<?xcomplex<f64>
+            // CHECK: quantum.state {{%.+}} shape {{%.+}} in([[memref0]] : memref<?xcomplex<f64>
 
             // Extract state-vector pointer
             // CHECK: [[q0:%.+]] = memref.subview {{%.+}}[{{%.+}}, 0] [1, {{%.+}}] [1, 1] : memref<?x?xcomplex<f64>> to memref<?xcomplex<f64>
@@ -1179,7 +1178,7 @@ class TestTreeTraversalPassIfStatement:
 
     @pytest.mark.usefixtures("enable_disable_plxpr")
     @pytest.mark.parametrize("shots", [None, 50000])
-    @pytest.mark.parametrize("branch", [False, True])
+    @pytest.mark.parametrize("branch", [0, 1])
     @pytest.mark.parametrize(
         "measure_f",
         [
@@ -1218,10 +1217,10 @@ class TestTreeTraversalPassIfStatement:
         @qml.set_shots(shots)
         @tree_traversal_pass
         @qml.qnode(dev)
-        def circuit(branch=branch):
+        def circuit(branch):
             return test_circuit(branch)
 
-        res = circuit()
+        res = circuit(branch)
 
         qml.capture.disable()
 
