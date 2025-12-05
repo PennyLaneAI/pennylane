@@ -84,12 +84,7 @@ class IfOperatorPartitioningPattern(RewritePattern):
         """Add fake MeasureOp before IfOps that contain measurement-controlled operations."""
         op_walk = op.walk()
         for current_op in op_walk:
-            if isinstance(current_op, scf.IfOp):
-                contain_mcm = "contain_mcm" in current_op.attributes
-
-                if not contain_mcm:
-                    continue
-
+            if isinstance(current_op, scf.IfOp) and "contain_mcm" in current_op.attributes:
                 # Get quantum register from missing values
                 missing_values = self.analyze_missing_values_for_ops([current_op])
                 qreg_if_op = [mv for mv in missing_values if isinstance(mv.type, quantum.QuregType)]
