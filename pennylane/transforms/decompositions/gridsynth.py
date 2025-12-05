@@ -25,7 +25,7 @@ def gridsynth(tape, *, epsilon, ppr_basis):
     .. warning::
 
         This transform requires QJIT and capture to be enabled,
-        as it is a wrapper for the Catalyst ``gridsynth`` compilation pass.
+        as it is a wrapper for Catalyst's ``gridsynth`` compilation pass.
 
     Args:
         tape (QNode): A quantum circuit.
@@ -51,7 +51,8 @@ def gridsynth(tape, *, epsilon, ppr_basis):
 
     .. warning::
 
-        Using ``epsilon`` value smaller than ``1e-7`` can lead to overflow in the current implementation, and may lead to errors.
+        Using an ``epsilon`` value smaller than ``1e-7`` may lead to inaccurate results,
+        due to potential integer overflow in the solver.
 
     """
 
