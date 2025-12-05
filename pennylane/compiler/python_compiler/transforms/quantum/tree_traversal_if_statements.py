@@ -28,9 +28,7 @@ from xdsl.rewriter import InsertPoint
 
 from pennylane.compiler.python_compiler.dialects import quantum
 
-##############################################################################
-# Some useful utils
-##############################################################################
+from .tree_traversal_utils_tmp import print_mlir, print_ssa_values
 
 
 class IfOperatorPartitioningPattern(RewritePattern):
@@ -48,13 +46,16 @@ class IfOperatorPartitioningPattern(RewritePattern):
 
         self.original_func_op = op
         # Detect mcm inside If statement
-        flat_if = self.detect_mcm_in_if_ops(op)
+        flat_if = self.detect_mcm_in_if_ops_2(op)
 
         if not flat_if:
             return
 
+        print_mlir(op, "Before IfOp Partitioning:")
         # Split IfOps into only true branches
-        self.split_nested_if_ops(op, rewriter)
+        self.split_if_ops(op, rewriter)
+
+        print_mlir(op, "After IfOp Splitting:")
 
         # Flatten nested IfOps
         self.flatten_nested_IfOps(op, rewriter)
@@ -65,6 +66,7 @@ class IfOperatorPartitioningPattern(RewritePattern):
     def __init__(self):
         self.module: builtin.ModuleOp = None
         self.original_func_op: func.FuncOp = None
+        self.if_op_with_mcm: List[scf.IfOp] = []
 
     def adding_fake_measureOp(self, op: func.FuncOp, rewriter: PatternRewriter) -> None:
         """Add fake MeasureOp before IfOps that contain measurement-controlled operations."""
@@ -120,6 +122,24 @@ class IfOperatorPartitioningPattern(RewritePattern):
                     if isinstance(inner_op, quantum.MeasureOp):
                         return True
         return False
+
+    def detect_mcm_in_if_ops_2(self, op: scf.IfOp) -> bool:
+        """Detect if there are measurement-controlled operations inside IfOps."""
+        op_walk = op.walk()
+        for current_op in op_walk:
+            if isinstance(current_op, quantum.MeasureOp):
+                self.collect_all_parent_ifs(current_op, stop=op)
+
+        return len(self.if_op_with_mcm) > 0
+
+
+    def collect_all_parent_ifs(self, op: Operation, stop: Operation) -> None:
+        """Collect all parent scf.IfOps of a given operation up to a stop operation."""
+        while (op := op.parent_op()) and op != stop:
+            if isinstance(op, scf.IfOp):
+                if op in self.if_op_with_mcm:
+                    self.if_op_with_mcm.remove(op)
+                self.if_op_with_mcm.append(op)
 
     def flatten_nested_IfOps(self, main_op: func.FuncOp, rewriter: PatternRewriter) -> None:
         """Flatten nested scf.IfOps into a single level scf.IfOp."""
@@ -460,89 +480,12 @@ class IfOperatorPartitioningPattern(RewritePattern):
                 nested_if_ops.append(inner_op)
         return len(nested_if_ops) > 0, nested_if_ops
 
-    def split_nested_if_ops(
-        self, op: func.FuncOp, rewriter: PatternRewriter, go_deeper: bool = False
-    ) -> None:
-        """Recursively split nested scf.IfOps into separate branches for true and false regions."""
+    def split_if_ops(self, op: func.FuncOp, rewriter: PatternRewriter) -> None:
+        """Split all scf.IfOps containing mid-circuit measurement operations into separate branches."""
 
-        if go_deeper and isinstance(op, scf.IfOp):
+        for _if_op in self.if_op_with_mcm:
+            self.split_if_op(_if_op, rewriter)
 
-            # Process true region
-            true_region = op.true_region
-            have_mcm_nested_if_op = False
-            for inner_op in true_region.ops:
-
-                if isinstance(inner_op, scf.IfOp):
-
-                    have_mcm_nested_if_op = self.detect_mcm_in_if_ops(inner_op)
-                    self.look_and_split_if_ops(inner_op, rewriter)
-
-                if have_mcm_nested_if_op and isinstance(
-                    inner_op, (quantum.CustomOp, quantum.MeasureOp)
-                ):
-                    raise ValueError("Not supported: CustomOp after MCM nested IfOp.")
-
-            # Process false region
-            false_region = op.false_region
-            have_mcm_nested_if_op = False
-            for inner_op in false_region.ops:
-                if isinstance(inner_op, scf.IfOp):
-
-                    have_mcm_nested_if_op = self.detect_mcm_in_if_ops(inner_op)
-
-                    self.look_and_split_if_ops(inner_op, rewriter)
-
-                if have_mcm_nested_if_op and isinstance(
-                    inner_op, (quantum.CustomOp, quantum.MeasureOp)
-                ):
-                    raise ValueError(
-                        "Not supported: CustomOp after nested IfOp with mid-circuit measurement."
-                    )
-            return
-
-        # Initial call to split nested IfOps in the function
-        op_walk = op.walk()
-        for current_op in op_walk:
-            if isinstance(current_op, scf.IfOp) and self.detect_mcm_in_if_ops(current_op):
-                self.look_and_split_if_ops(current_op, rewriter)
-
-    def look_and_split_if_ops(self, current_op: func.FuncOp, rewriter: PatternRewriter) -> None:
-        """Look for scf.IfOps and split them if they contain measurement-controlled operations."""
-
-        mcm_counts = self.count_mcm_in_if_op(current_op)
-        assert mcm_counts[0] < 2 and mcm_counts[1] < 2, "Not support IfOp with more than 2 mcm"
-
-        have_nested_if_ops = self.looking_for_nested_if_ops(current_op)
-
-        # Recursively split deeper nested IfOps first
-        if have_nested_if_ops:
-            self.split_nested_if_ops(current_op, rewriter, go_deeper=True)
-            self.split_if_op(current_op, rewriter)
-        # Deepest level, split directly
-        if not have_nested_if_ops:
-            self.split_if_op(current_op, rewriter)
-
-    def count_mcm_in_if_op(self, op: scf.IfOp) -> list[int]:
-        """Count mid-circuit measurements in true and false regions of an IfOp."""
-        count_true = 0
-        for inner_op in op.true_region.ops:
-            if isinstance(inner_op, quantum.MeasureOp):
-                count_true += 1
-        count_false = 0
-        for inner_op in op.false_region.ops:
-            if isinstance(inner_op, quantum.MeasureOp):
-                count_false += 1
-        return [count_true, count_false]
-
-    def looking_for_nested_if_ops(self, op: scf.IfOp) -> bool:
-        """Look for nested IfOps within the given IfOp's regions."""
-        for inner_op in op.true_region.ops:
-            if isinstance(inner_op, scf.IfOp):
-                return True
-        for inner_op in op.false_region.ops:
-            if isinstance(inner_op, scf.IfOp):
-                return True
-        return False
 
     def split_if_op(self, op: func.FuncOp, rewriter: PatternRewriter) -> None:
         """Split an scf.IfOp into separate branches for true and false regions."""
@@ -769,4 +712,3 @@ class IfOperatorPartitioningPattern(RewritePattern):
         for op in ops_to_clone:
             cloned_op = op.clone(value_mapper)
             target_block.add_op(cloned_op)
-
