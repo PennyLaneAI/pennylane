@@ -542,6 +542,8 @@ def _bind_qnode(qnode, *args, **kwargs):
     if abstracted_axes:  # pragma: no cover
         # We unflatten the ``abstracted_axes`` here to be have the same pytree structure
         # as the original dynamic arguments
+        # kwargs and abstracted axes will error out in Jax with NotImplementedError
+        # rely on jax to handle that validation
         struct = jax.tree_util.tree_structure(args)
         abstracted_axes = jax.tree_util.tree_unflatten(struct, abstracted_axes)
 
