@@ -1,3 +1,19 @@
+# Copyright 2018-2025 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+r"""
+Contains the select_pauli_rot transform.
+"""
 import numpy as np
 
 import pennylane as qml
@@ -19,6 +35,7 @@ def _binary_repr_int(phi, precision):
     ]
 
 
+# pylint: disable=too-many-arguments
 def _select_pauli_rot_phase_gradient(
     phis: list,
     control_wires: Wires,
@@ -55,7 +72,7 @@ def _select_pauli_rot_phase_gradient(
         )
     )
 
-    return ops
+    return qml.prod(*ops)
 
 
 @transform
@@ -106,19 +123,21 @@ def select_pauli_rot_phase_gradient(
 
             angles = op.parameters[0]
 
+            pg_op = _select_pauli_rot_phase_gradient(
+                angles,
+                control_wires=control_wires,
+                target_wire=target_wire,
+                angle_wires=angle_wires,
+                phase_grad_wires=phase_grad_wires,
+                work_wires=work_wires,
+            )
+
             match rot_axis:
                 case "X":
                     operations.append(
                         qml.change_op_basis(
                             qml.Hadamard(target_wire),
-                            qml.ops.prod(_select_pauli_rot_phase_gradient)(
-                                angles,
-                                control_wires=control_wires,
-                                target_wire=target_wire,
-                                angle_wires=angle_wires,
-                                phase_grad_wires=phase_grad_wires,
-                                work_wires=work_wires,
-                            ),
+                            pg_op,
                             qml.Hadamard(target_wire),
                         )
                     )
@@ -126,28 +145,12 @@ def select_pauli_rot_phase_gradient(
                     operations.append(
                         qml.change_op_basis(
                             qml.Hadamard(target_wire) @ qml.adjoint(qml.S(target_wire)),
-                            qml.ops.prod(_select_pauli_rot_phase_gradient)(
-                                angles,
-                                control_wires=control_wires,
-                                target_wire=target_wire,
-                                angle_wires=angle_wires,
-                                phase_grad_wires=phase_grad_wires,
-                                work_wires=work_wires,
-                            ),
+                            pg_op,
                             qml.S(target_wire) @ qml.Hadamard(target_wire),
                         )
                     )
                 case "Z":
-                    operations.append(
-                        qml.prod(_select_pauli_rot_phase_gradient)(
-                            angles,
-                            control_wires=control_wires,
-                            target_wire=target_wire,
-                            angle_wires=angle_wires,
-                            phase_grad_wires=phase_grad_wires,
-                            work_wires=work_wires,
-                        )
-                    ),
+                    operations.append(pg_op)
 
         else:
             operations.append(op)
