@@ -147,7 +147,7 @@ def specs(
 
     Returns:
         A function that has the same argument signature as ``qnode``. This function
-        returns a :class:`~.resource.CircuitSpecs` object containing information about qnode structure.
+        returns a :class:`~.resource.CircuitSpecs` object containing the ``qnode`` specifications.
 
     **Example**
 
