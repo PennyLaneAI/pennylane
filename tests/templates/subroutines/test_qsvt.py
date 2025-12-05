@@ -1019,7 +1019,8 @@ class TestIterativeSolver:
         jit_wrapped_f = jit_if_jax_available(f)
 
         try:
-            import jax
+            # This is for testing fallback
+            import jax  # pylint: disable=unused-import
 
             assert hasattr(jit_wrapped_f, "lower")
         except ModuleNotFoundError:
