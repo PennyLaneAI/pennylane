@@ -35,24 +35,22 @@ def _specs_qnode(qnode, level, compute_depth, *args, **kwargs) -> CircuitSpecs:
         CircuitSpecs: result object that contains QNode specifications
     """
 
-    resources = {}
     batch, _ = qml.workflow.construct_batch(qnode, level=level)(*args, **kwargs)
 
-    for i, tape in enumerate(batch):
-        resources[i] = resources_from_tape(tape, compute_depth)
+    specs = [
+        CircuitSpecs(
+            resources=resources_from_tape(tape, compute_depth),
+            num_device_wires=len(qnode.device.wires) if qnode.device.wires is not None else None,
+            device_name=qnode.device.name,
+            level=level,
+            shots=qnode.shots,
+        )
+        for tape in batch
+    ]
 
-    if len(resources) == 1:
-        resources = next(iter(resources.values()))
-    else:
-        level = list(resources.keys())
-
-    return CircuitSpecs(
-        resources=resources,
-        num_device_wires=len(qnode.device.wires) if qnode.device.wires is not None else None,
-        device_name=qnode.device.name,
-        level=level,
-        shots=qnode.shots,
-    )
+    if len(specs) == 1:
+        specs = specs[0]
+    return specs
 
 
 # NOTE: Some information is missing from specs_qjit compared to specs_qnode
@@ -134,7 +132,7 @@ def specs(
     qnode,
     level: str | int | slice = "gradient",
     compute_depth: bool = True,
-) -> Callable[..., CircuitSpecs]:
+) -> Callable[..., CircuitSpecs | list[CircuitSpecs]]:
     r"""Resource information about a quantum circuit.
 
     This transform converts a QNode into a callable that provides resource information
