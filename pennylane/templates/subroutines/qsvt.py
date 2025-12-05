@@ -40,12 +40,24 @@ from .fable import FABLE
 from .prepselprep import PrepSelPrep
 from .qubitization import Qubitization
 
+is_jax_available = True
+is_optax_available = True
 try:
-    from jax import config, lax
-    from jax import numpy as jnp
-    from jax import vmap
-except ModuleNotFoundError:  # pragma: no cover
-    pass
+    import jax
+except ImportError:
+    is_jax_available = False
+
+try:
+    import optax
+except ImportError:
+    is_otpax_available = False
+
+# try:
+#     from jax import config, lax
+#     from jax import numpy as jnp
+#     from jax import vmap
+# except ModuleNotFoundError:  # pragma: no cover
+#     pass
 
 
 def jit_if_jax_available(f, **kwargs):
@@ -848,7 +860,7 @@ def _cheby_pol(x, degree):
 def _poly_func(coeffs, x):
     """\sum c_kT_{k}(x) where T_k(x)=cos(karccos(x))"""
 
-    return jnp.sum(coeffs @ vmap(_cheby_pol, in_axes=(None, 0))(x, np.arange(coeffs.shape[0])))
+    return jax.numpy.sum(coeffs @ jax.vmap(_cheby_pol, in_axes=(None, 0))(x, np.arange(coeffs.shape[0])))
 
 
 @partial(jit_if_jax_available, static_argnames=["interface"])
@@ -913,7 +925,7 @@ def _qsp_iterate_broadcast(phis, x, interface):
     """
 
     # pylint: disable=import-outside-toplevel
-    qsp_iterate_list = vmap(_qsp_iterate, in_axes=(0, None, None))(phis[1:], x, interface)
+    qsp_iterate_list = jax.vmap(_qsp_iterate, in_axes=(0, None, None))(phis[1:], x, interface)
 
     matrix_iterate = reduce(math.dot, qsp_iterate_list)
     matrix_iterate = math.dot(_z_rotation(phi=phis[0], interface=interface), matrix_iterate)
@@ -941,14 +953,13 @@ def _grid_pts(degree, interface):
 @jit_if_jax_available
 def obj_function(phi, x, y):
     # Equation (23)
-    obj_func = vmap(_qsp_iterate_broadcast, in_axes=(None, 0, None))(phi, x, "jax") - y
-    obj_func = jnp.dot(obj_func, obj_func)
+    obj_func = jax.vmap(_qsp_iterate_broadcast, in_axes=(None, 0, None))(phi, x, "jax") - y
+    obj_func = jax.numpy.dot(obj_func, obj_func)
     return 1 / x.shape[0] * obj_func
 
 
 @partial(jit_if_jax_available, static_argnames=["maxiter", "tol"])
 def optax_opt(initial_guess, x, y, maxiter, tol):
-    import optax
 
     opt = optax.lbfgs()
     init_carry = (initial_guess, opt.init(initial_guess))
@@ -968,19 +979,19 @@ def optax_opt(initial_guess, x, y, maxiter, tol):
         cost_val = optax.tree.get(state, "value")
         return (num_iter == 0) | ((num_iter < maxiter) & (cost_val > tol))
 
-    carry = lax.while_loop(while_loop_cond, optimizer_iter_update, init_carry)
+    carry = jax.lax.while_loop(while_loop_cond, optimizer_iter_update, init_carry)
     return carry[0]
 
 
 def _qsp_optimization(degree: int, coeffs_target_func, maxiter=100, tol=1e-30):
     """Algorithm 1 in https://arxiv.org/pdf/2002.11649 produces the angle parameters by minimizing the distance between the target and qsp polynomail over the grid"""
 
-    config.update("jax_enable_x64", True)
+    jax.config.update("jax_enable_x64", True)
     grid_points = _grid_pts(degree, "jax")
     initial_guess = [np.pi / 4] + [0.0] * (degree - 1) + [np.pi / 4]
 
-    initial_guess = jnp.array(initial_guess)
-    targets = vmap(_poly_func, in_axes=(None, 0))(coeffs_target_func, grid_points)
+    initial_guess = jax.numpy.array(initial_guess)
+    targets = jax.vmap(_poly_func, in_axes=(None, 0))(coeffs_target_func, grid_points)
 
     opt_params = optax_opt(initial_guess, grid_points, targets, maxiter, tol)
     cost_fun = obj_function(opt_params, grid_points, targets)
@@ -991,13 +1002,19 @@ def _qsp_optimization(degree: int, coeffs_target_func, maxiter=100, tol=1e-30):
 def _compute_qsp_angles_iteratively(
     poly,
 ):
-    try:
-        import jax
-        import optax
+    # try:
+    #     import jax
+    #     import optax
 
-    except ModuleNotFoundError as exc:
-        raise ModuleNotFoundError("JAX and optax are required") from exc
-
+    # except ModuleNotFoundError as exc:
+    #     raise ModuleNotFoundError("JAX and optax are required") from exc
+    
+    if not is_jax_available:
+        raise ModuleNotFoundError("jax is required!")
+    
+    if not is_optax_available:
+        raise ModuleNotFoundError("optax is required!")
+    
     poly_cheb = chebyshev.poly2cheb(poly)
     degree = len(poly_cheb) - 1
 

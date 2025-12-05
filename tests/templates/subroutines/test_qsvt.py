@@ -36,6 +36,17 @@ from pennylane.templates.subroutines.qsvt import (
     _z_rotation,
     jit_if_jax_available,
 )
+is_jax_available = True
+is_optax_available = True
+try:
+    import jax
+except ImportError:
+    is_jax_available = False
+
+try:
+    import optax
+except ImportError:
+    is_otpax_available = False
 
 
 def qfunc(A):
@@ -982,8 +993,6 @@ class TestIterativeSolver:
         target_polynomial_coeffs = polynomial_coeffs_in_cheby_basis
         phis, cost_func = _qsp_optimization(degree, target_polynomial_coeffs)
 
-        import jax
-
         key = jax.random.key(123)
         x_point = jax.random.uniform(key=key, shape=(1,), minval=-1, maxval=1)
 
@@ -1018,12 +1027,13 @@ class TestIterativeSolver:
 
         jit_wrapped_f = jit_if_jax_available(f)
 
-        try:
-            # This is for testing fallback
-            import jax  # pylint: disable=unused-import
+        if is_jax_available:
+        # try:
+        #     # This is for testing fallback
+        #     import jax  # pylint: disable=unused-import
 
             assert hasattr(jit_wrapped_f, "lower")
-        except ModuleNotFoundError:
+        else:
             assert jit_wrapped_f is f
 
     @pytest.mark.parametrize(
@@ -1033,13 +1043,19 @@ class TestIterativeSolver:
         ],
     )
     def test_raised_exceptions(self, polynomial_coeffs_in_cheby_basis):
-        try:
-            import jax  # pylint: disable=unused-import
-            import optax  # pylint: disable=unused-import
-        except ModuleNotFoundError:
-            with pytest.raises(ModuleNotFoundError, match="JAX and optax are required"):
+        # try:
+        #     import jax  # pylint: disable=unused-import
+        #     import optax  # pylint: disable=unused-import
+        # except ModuleNotFoundError:
+        #     with pytest.raises(ModuleNotFoundError, match="JAX and optax are required"):
+        #         _compute_qsp_angles_iteratively(polynomial_coeffs_in_cheby_basis)
+        if not is_jax_available:
+            with pytest.raises(ModuleNotFoundError, match="jax is required!"):
                 _compute_qsp_angles_iteratively(polynomial_coeffs_in_cheby_basis)
-
+        elif not is_optax_available:
+            with pytest.raises(ModuleNotFoundError, match="optax is required!"):
+                _compute_qsp_angles_iteratively(polynomial_coeffs_in_cheby_basis)
+        
     @pytest.mark.parametrize(
         "x, degree",
         [
