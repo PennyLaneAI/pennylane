@@ -46,8 +46,8 @@ def _create_transform_primitive():
     # pylint: disable=too-many-arguments, disable=unused-argument
     @transform_prim.def_impl
     def _impl(*all_args, inner_jaxpr, args_slice, consts_slice, targs_slice, tkwargs, transform):
-        args = all_args[args_slice]
-        consts = all_args[consts_slice]
+        args = all_args[slice(*args_slice)]
+        consts = all_args[slice(*consts_slice)]
         return capture.eval_jaxpr(inner_jaxpr, consts, *args)
 
     @transform_prim.def_abstract_eval
@@ -67,6 +67,8 @@ def _create_plxpr_fallback_transform(tape_transform):
         return None
 
     def plxpr_fallback_transform(jaxpr, consts, targs, tkwargs, *args):
+        # Restore tkwargs from hashable tuple to dict
+        tkwargs = dict(tkwargs)
 
         def wrapper(*inner_args):
             tape = plxpr_to_tape(jaxpr, consts, *inner_args)
@@ -165,14 +167,20 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
     # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(
         self,
-        transform,
-        expand_transform=None,
-        classical_cotransform=None,
-        is_informative=False,
-        final_transform=False,
-        use_argnum_in_expand=False,
+        transform: Callable | None = None,
+        pass_name: None | str = None,
+        *,
+        expand_transform: Callable | None = None,
+        classical_cotransform: Callable | None = None,
+        is_informative: bool = False,
+        final_transform: bool = False,
+        use_argnum_in_expand: bool = False,
         plxpr_transform=None,
     ):
+        if transform is None and pass_name is None:
+            raise ValueError(
+                "Transforms must currently define either a tape transform or a pass_name"
+            )
         self._transform = transform
         self._expand_transform = expand_transform
         self._classical_cotransform = classical_cotransform
@@ -180,15 +188,22 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
         # is_informative supersedes final_transform
         self._final_transform = is_informative or final_transform
         self._custom_qnode_transform = None
+        self._pass_name = pass_name
 
         self._use_argnum_in_expand = use_argnum_in_expand
-        functools.update_wrapper(self, transform)
+        if transform:
+            functools.update_wrapper(self, transform)
 
         self._apply_transform = functools.singledispatch(
             functools.partial(specific_apply_transform, self)
         )
 
         self._plxpr_transform = plxpr_transform or _create_plxpr_fallback_transform(self._transform)
+
+    @property
+    def pass_name(self) -> None | str:
+        """The name of the equivalent MLIR pass."""
+        return self._pass_name
 
     @property
     def register(self):
@@ -274,7 +289,37 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
         return self._apply_transform(obj, *targs, **tkwargs)
 
     def __repr__(self):
-        return f"<transform: {self._transform.__name__}>"
+        name = self._transform.__name__ if self._transform else self.pass_name
+        return f"<transform: {name}>"
+
+    def __add__(self, other):
+        """Add two dispatchers or a dispatcher and a container to create a TransformProgram.
+
+        When adding dispatchers, they are converted to containers with no args or kwargs.
+        For dispatcher + program, Python falls back to TransformProgram.__radd__.
+
+        Args:
+            other: Another TransformDispatcher or TransformContainer to add.
+
+        Returns:
+            TransformProgram: A new program with this dispatcher followed by the other.
+        """
+        # Convert this dispatcher to a container (no args/kwargs) and delegate
+        return TransformContainer(self) + other
+
+    def __mul__(self, n):
+        """Multiply a dispatcher by an integer to create a program with repeated dispatchers.
+
+        Args:
+            n (int): Number of times to repeat this dispatcher.
+
+        Returns:
+            TransformProgram: A new program with this dispatcher repeated n times.
+        """
+        # Convert to container (no args/kwargs) and delegate
+        return TransformContainer(self) * n
+
+    __rmul__ = __mul__
 
     @property
     def transform(self):
@@ -382,6 +427,10 @@ class TransformContainer:  # pylint: disable=too-many-instance-attributes
     .. seealso:: :func:`~.pennylane.transform`
     """
 
+    def __hash__(self):
+        hashable_dict = tuple((key, value) for key, value in self.kwargs.items())
+        return hash((self.transform, self.pass_name, self.args, hashable_dict))
+
     def __init__(
         self,
         transform: TransformDispatcher,
@@ -402,7 +451,8 @@ class TransformContainer:  # pylint: disable=too-many-instance-attributes
         self._use_argnum = use_argnum
 
     def __repr__(self):
-        return f"<{self._transform_dispatcher.transform.__name__}({self._args}, {self._kwargs})>"
+        name = self.transform.__name__ if self.transform else self.pass_name
+        return f"<{name}({self._args}, {self._kwargs})>"
 
     def __call__(self, obj):
         return self._transform_dispatcher(obj, *self.args, **self.kwargs)
@@ -426,6 +476,7 @@ class TransformContainer:  # pylint: disable=too-many-instance-attributes
         return (
             self.args == other.args
             and self.transform == other.transform
+            and self.pass_name == other.pass_name
             and self.kwargs == other.kwargs
             and self.classical_cotransform == other.classical_cotransform
             and self.is_informative == other.is_informative
@@ -433,9 +484,14 @@ class TransformContainer:  # pylint: disable=too-many-instance-attributes
         )
 
     @property
-    def transform(self) -> Callable:
+    def transform(self) -> Callable | None:
         """The stored quantum transform."""
         return self._transform_dispatcher.transform
+
+    @property
+    def pass_name(self) -> None | str:
+        """The name of the corresponding Catalyst pass, if it exists."""
+        return self._transform_dispatcher.pass_name
 
     @property
     def args(self) -> tuple:
@@ -467,9 +523,67 @@ class TransformContainer:  # pylint: disable=too-many-instance-attributes
         """``True`` if the transform needs to be executed"""
         return self._transform_dispatcher.final_transform
 
+    def __add__(self, other):
+        """Add two containers or a container and a dispatcher to create a TransformProgram.
+
+        For container + program, Python falls back to TransformProgram.__radd__.
+
+        Args:
+            other: Another TransformContainer or TransformDispatcher to add.
+
+        Returns:
+            TransformProgram: A new program with this container followed by the other.
+        """
+        # Convert dispatcher to container if needed
+        if isinstance(other, TransformDispatcher):
+            other = TransformContainer(other)
+
+        if isinstance(other, TransformContainer):
+            # Import here to avoid circular import\
+            # pylint: disable=import-outside-toplevel
+            from .transform_program import TransformProgram
+
+            if self.final_transform and other.final_transform:
+                raise TransformError(
+                    f"Both {self} and {other} are final transforms and cannot be combined."
+                )
+            return TransformProgram([self, other])
+
+        # For TransformProgram, Python falls back to program.__radd__(container)
+        return NotImplemented
+
+    def __mul__(self, n):
+        """Multiply a container by an integer to create a program with repeated containers.
+
+        Args:
+            n (int): Number of times to repeat this container.
+
+        Returns:
+            TransformProgram: A new program with this container repeated n times.
+        """
+        # Import here to avoid circular import
+        from .transform_program import TransformProgram  # pylint: disable=import-outside-toplevel
+
+        if not isinstance(n, int):
+            return NotImplemented
+
+        if n < 0:
+            raise ValueError("Cannot multiply transform container by negative integer")
+
+        if self.final_transform and n > 1:
+            raise TransformError(
+                f"{self} is a final transform and cannot be applied more than once."
+            )
+
+        return TransformProgram([self] * n)
+
+    __rmul__ = __mul__
+
 
 @TransformDispatcher.generic_register
 def _apply_to_tape(obj: QuantumScript, transform, *targs, **tkwargs):
+    if transform.transform is None:
+        raise NotImplementedError(f"transform {transform} has no defined tape transform.")
     if transform.expand_transform:
         expanded_tapes, expand_processing = transform.expand_transform(obj, *targs, **tkwargs)
         transformed_tapes = []

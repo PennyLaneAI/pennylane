@@ -80,9 +80,13 @@ from functools import partial
 from numbers import Number
 from warnings import warn
 
-import jax
-from jax.interpreters import ad, batching, mlir
-from jax.interpreters import partial_eval as pe
+try:
+    import jax
+    from jax.interpreters import ad, batching, mlir
+    from jax.interpreters import partial_eval as pe
+
+except (ImportError, NameError) as e:  # pragma: no cover
+    pass
 
 import pennylane as qml
 from pennylane.capture import FlatFn, QmlPrimitive
@@ -254,7 +258,7 @@ def custom_staging_rule(
     """
     shots_len, jaxpr = params["shots_len"], params["qfunc_jaxpr"]
     device = params["device"]
-    invars = [jaxpr_trace.getvar(x) for x in tracers]
+    invars = [x.val for x in tracers]
     shots_vars = invars[:shots_len]
 
     batch_dims = params.get("batch_dims")
@@ -269,15 +273,8 @@ def custom_staging_rule(
         num_device_wires=len(device.wires),
         batch_shape=batch_shape,
     )
-    out_tracers = [pe.DynamicJaxprTracer(jaxpr_trace, o) for o in new_shapes]
-
-    eqn = jax.core.new_jaxpr_eqn(
-        invars,
-        [jaxpr_trace.makevar(o) for o in out_tracers],
-        qnode_prim,
-        params,
-        jax.core.no_effects,
-        source_info=source_info,
+    eqn, out_tracers = jaxpr_trace.make_eqn(
+        tracers, new_shapes, qnode_prim, params, jax.core.no_effects, source_info
     )
 
     jaxpr_trace.frame.add_eqn(eqn)
@@ -542,7 +539,7 @@ def _bind_qnode(qnode, *args, **kwargs):
     config = construct_execution_config(qnode, resolve=False)()
     # no need for args and kwargs as not resolving
 
-    if abstracted_axes:
+    if abstracted_axes:  # pragma: no cover
         # We unflatten the ``abstracted_axes`` here to be have the same pytree structure
         # as the original dynamic arguments
         abstracted_axes = jax.tree_util.tree_unflatten(dynamic_args_struct, abstracted_axes)
