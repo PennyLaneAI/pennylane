@@ -1034,8 +1034,8 @@ class TestIterativeSolver:
     )
     def test_raised_exceptions(self, polynomial_coeffs_in_cheby_basis):
         try:
-            import jax
-            import optax
+            import jax  # pylint: disable=unused-import
+            import optax  # pylint: disable=unused-import
         except ModuleNotFoundError:
             with pytest.raises(ModuleNotFoundError, match="JAX and optax are required"):
                 _compute_qsp_angles_iteratively(polynomial_coeffs_in_cheby_basis)
