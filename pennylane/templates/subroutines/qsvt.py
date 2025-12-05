@@ -52,13 +52,6 @@ try:
 except ImportError:
     is_otpax_available = False
 
-# try:
-#     from jax import config, lax
-#     from jax import numpy as jnp
-#     from jax import vmap
-# except ModuleNotFoundError:  # pragma: no cover
-#     pass
-
 
 def jit_if_jax_available(f, **kwargs):
     # thin wrapper around jax.jit
