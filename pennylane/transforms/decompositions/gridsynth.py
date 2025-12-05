@@ -29,16 +29,15 @@ def gridsynth(tape, *, epsilon, ppr_basis):
 
     Args:
         tape (QNode): A quantum circuit.
-        epsilon (float): The maximum permissible operator norm error per rotation gate.
-        ppr_basis (bool): If True, decompose into the PPR basis. If False, decompose into the Clifford+T basis. Note: Simulating with ``ppr_basis=True`` is currently not supported.
+        epsilon (float): The maximum permissible operator norm error per rotation gate. Defaults to ``1e-4``.
+        ppr_basis (bool): If True, decompose into the PPR basis. If False, decompose into the Clifford+T basis. Defaults to ``False``.
 
     **Example**
 
-    .. code-block:: python
+    .. code-block:: python # doctest: +SKIP
 
         qml.capture.enable()
-        @qml.qjit
-        @partial(qml.transforms.gridsynth, epsilon=1e-5)
+
         @qml.qnode(qml.device("lightning.qubit", wires=1))
         def circuit(x):
             qml.Hadamard(0)
@@ -46,13 +45,25 @@ def gridsynth(tape, *, epsilon, ppr_basis):
             qml.PhaseShift(x * 0.2, 0)
             return qml.state()
 
-    >>> circuit(1.1) # doctest: +SKIP
+        result = circuit(1.1)
+        gridsynth_circuit = qml.transforms.gridsynth(circuit, epsilon=1e-4)
+        qjitted_circuit = qml.qjit(decomposed_circuit)
+        approx = qjitted_circuit(1.1)
+
+    >>> result # doctest: +SKIP
+    [0.60282587-0.36959568j 0.5076395 +0.49224195j]
+    >>> approx # doctest: +SKIP
     [0.6028324 -0.3695921j  0.50763281+0.49224355j]
+
 
     .. warning::
 
         Using an ``epsilon`` value smaller than ``1e-7`` may lead to inaccurate results,
         due to potential integer overflow in the solver.
+
+    .. warning::
+
+        Note: Simulating with ``ppr_basis=True`` is currently not supported.
 
     """
 
