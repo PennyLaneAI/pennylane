@@ -349,6 +349,7 @@ Resource specifications:
 
     Measurements:
       expval(PauliX @ PauliZ): 1
+
   Batched tape 1:
     Total qubit allocations: 3
     Total gates: 5
@@ -362,6 +363,7 @@ Resource specifications:
 
     Measurements:
       expval(PauliZ @ PauliY): 1
+
   Batched tape 2:
     Total qubit allocations: 3
     Total gates: 5

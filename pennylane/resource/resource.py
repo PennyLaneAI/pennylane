@@ -480,7 +480,7 @@ class CircuitSpecs:
             f"key '{key}' not available. Options are {[field.name for field in fields(self)]}"
         )
 
-    def _print_resources(self, res) -> str:
+    def _resources_to_str(self, res) -> str:
         """Helper for printing resources, prints list or single SpecsResources."""
         lines = []
         if isinstance(res, SpecsResources):
@@ -489,6 +489,7 @@ class CircuitSpecs:
             for i, res in enumerate(res):
                 lines.append(f"  Batched tape {i}:")
                 lines.append(res.to_pretty_str(preindent=4))
+                lines.append("")  # Blank line
         else:
             raise ValueError(
                 "Resources must be either a SpecsResources object or a list of SpecsResources objects."
@@ -511,10 +512,10 @@ class CircuitSpecs:
         if isinstance(self.resources, dict):
             for level, res in self.resources.items():
                 lines.append(f"Level = {level}:")
-                self._print_resources(res)
+                lines.append(self._resources_to_str(res))
                 lines.append("\n" + "-" * 60 + "\n")  # Separator between levels
         else:
-            lines.append(self._print_resources(self.resources))
+            lines.append(self._resources_to_str(self.resources))
 
         return "\n".join(lines).rstrip("\n-")
 
