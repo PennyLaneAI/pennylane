@@ -19,7 +19,7 @@ This module contains a rewrite pattern that partitions if statements containing 
 """
 
 from itertools import chain
-from typing import List, Tuple, Type
+from typing import List, Tuple, Type, Set
 
 from xdsl.dialects import arith, builtin, func, scf
 from xdsl.ir import Block, Operation, Region, SSAValue
@@ -79,37 +79,38 @@ class IfOperatorPartitioningPattern(RewritePattern):
         self.if_op_with_mcm_4_flatten: dict[scf.IfOp, List[scf.IfOp]] = {}
         # List to track immediate IfOps for each mcm to avoid multiple mcm in same IfOp
         self.immediate_if_4_mcm: List[scf.IfOp] = []
+        # Set of IfOps that contain mid-circuit measurements after transforms
+        self.final_if_ops_with_mcm: Set[scf.IfOp] = set()
 
     def adding_fake_measureOp(self, op: func.FuncOp, rewriter: PatternRewriter) -> None:
         """Add fake MeasureOp before IfOps that contain measurement-controlled operations."""
-        op_walk = op.walk()
-        for current_op in op_walk:
-            if isinstance(current_op, scf.IfOp) and "contain_mcm" in current_op.attributes:
-                # Get quantum register from missing values
-                missing_values = self.analyze_missing_values_for_ops([current_op])
-                qreg_from_if_op = [mv for mv in missing_values if isinstance(mv.type, quantum.QuregType)]
 
-                # Extract a quantum.bit from the current qreg
-                # Define a constant index 0
-                c0 = arith.ConstantOp.from_int_and_width(0, builtin.i64)
-                q_extract = quantum.ExtractOp(qreg_from_if_op[0], c0.results[0])
+        for current_op in self.final_if_ops_with_mcm:
+            # Get quantum register from missing values
+            missing_values = self.analyze_missing_values_for_ops([current_op])
+            qreg_from_if_op = [mv for mv in missing_values if isinstance(mv.type, quantum.QuregType)]
 
-                rewriter.insert_op(c0, InsertPoint.before(current_op))
-                rewriter.insert_op(q_extract, InsertPoint.before(current_op))
+            # Extract a quantum.bit from the current qreg
+            # Define a constant index 0
+            c0 = arith.ConstantOp.from_int_and_width(0, builtin.i64)
+            q_extract = quantum.ExtractOp(qreg_from_if_op[0], c0.results[0])
 
-                # Adding a fake operation MeasureOP before the if operation using the extracted qubit
-                measure_op = quantum.MeasureOp(q_extract.results[0])
-                # Add the attribute fake_measure to identify it later
-                measure_op.attributes["fake_measure"] = builtin.StringAttr("true")
-                rewriter.insert_op(measure_op, InsertPoint.before(current_op))
+            rewriter.insert_op(c0, InsertPoint.before(current_op))
+            rewriter.insert_op(q_extract, InsertPoint.before(current_op))
 
-                q_insert = quantum.InsertOp(qreg_from_if_op[0], c0.results[0], measure_op.out_qubit)
-                rewriter.insert_op(q_insert, InsertPoint.before(current_op))
+            # Adding a fake operation MeasureOP before the if operation using the extracted qubit
+            measure_op = quantum.MeasureOp(q_extract.results[0])
+            # Add the attribute fake_measure to identify it later
+            measure_op.attributes["fake_measure"] = builtin.StringAttr("true")
+            rewriter.insert_op(measure_op, InsertPoint.before(current_op))
 
-                # Replace the old q_reg with the output of q_insert
-                qreg_from_if_op[0].replace_by_if(
-                    q_insert.results[0], lambda use: use.operation not in [q_extract, q_insert]
-                )
+            q_insert = quantum.InsertOp(qreg_from_if_op[0], c0.results[0], measure_op.out_qubit)
+            rewriter.insert_op(q_insert, InsertPoint.before(current_op))
+
+            # Replace the old q_reg with the output of q_insert
+            qreg_from_if_op[0].replace_by_if(
+                q_insert.results[0], lambda use: use.operation not in [q_extract, q_insert]
+            )
 
     def detect_mcm_in_if_ops(self, op: Operation) -> bool:
         """Detect if there are mid-circuit measurement operations inside IfOps."""
@@ -199,6 +200,7 @@ class IfOperatorPartitioningPattern(RewritePattern):
                 self.collect_all_parent_ifs(current_op, inner_if_op_list, stop=op)
                 if_ops_with_contain_mcm.append(inner_if_op_list)
 
+                self.final_if_ops_with_mcm.add(current_op)
 
         # Sort list by length descending to get the deepest nested first
         if_ops_with_contain_mcm.sort(key=len, reverse=True)
@@ -292,6 +294,10 @@ class IfOperatorPartitioningPattern(RewritePattern):
                             idx = value["inners"].index(inner_op)
                             value["inners"][idx] = new_inner_if_op
 
+                    if inner_op in self.final_if_ops_with_mcm:
+                        self.final_if_ops_with_mcm.remove(inner_op)
+                        self.final_if_ops_with_mcm.add(new_inner_if_op)
+
                 # Update where_to_insert for next inner IfOp
                 where_to_insert = new_inner_if_op
 
@@ -305,6 +311,10 @@ class IfOperatorPartitioningPattern(RewritePattern):
                             idx = value["inners"].index(target_outer_if_op)
                             value["inners"][idx] = new_outer_if_op
                             value["inners"].insert(idx+inner_count, new_inner_if_op)
+
+                    if target_outer_if_op in self.final_if_ops_with_mcm:
+                        self.final_if_ops_with_mcm.remove(target_outer_if_op)
+                        self.final_if_ops_with_mcm.add(new_outer_if_op)
 
                 # Update target_outer_if_op for next iteration
                 target_outer_if_op = new_outer_if_op
@@ -454,7 +464,7 @@ class IfOperatorPartitioningPattern(RewritePattern):
         rewriter.insert_op(new_inner_op, InsertPoint.after(where_to_insert))
 
         # Update uses of old inner IfOp results to new inner IfOp results
-        new_inner_op_ops = list(chain(*[op.walk() for op in [new_inner_op]]))
+        new_inner_op_ops = list(new_inner_op.walk())
         where_to_insert.results[0].replace_by_if(
             new_inner_op.results[0], lambda use: use.operation not in new_inner_op_ops
         )
@@ -544,29 +554,16 @@ class IfOperatorPartitioningPattern(RewritePattern):
 
         return where_to_insert, outer_if_op
 
-    def get_nested_if_ops(self, op: scf.IfOp) -> tuple[bool, list[scf.IfOp]]:
-        """Get nested IfOps from the given IfOp, checking immediate operations only."""
-        nested_if_ops = []
-        # Only check the immediate operations in the true region (not nested deeper)
-        for inner_op in op.true_region.block.ops:
-            if isinstance(inner_op, scf.IfOp):
-                nested_if_ops.append(inner_op)
-        # Only check the immediate operations in the false region (not nested deeper)
-        for inner_op in op.false_region.block.ops:
-            if isinstance(inner_op, scf.IfOp):
-                nested_if_ops.append(inner_op)
-        return len(nested_if_ops) > 0, nested_if_ops
-
     def split_if_ops(self, rewriter: PatternRewriter) -> None:
         """Split all scf.IfOps containing mid-circuit measurement operations into separate branches."""
 
         for _if_op in self.if_op_with_mcm:
             self.split_if_op(_if_op, rewriter)
 
-    def split_if_op(self, op: scf.IfOp, rewriter: PatternRewriter) -> None:
+    def split_if_op(self, current_op: scf.IfOp, rewriter: PatternRewriter) -> None:
         """Split an scf.IfOp into separate branches for true and false regions."""
 
-        current_op = op
+        current_op
 
         # Analyze missing values for the IfOp
         missing_values = self.analyze_missing_values_for_ops([current_op])
