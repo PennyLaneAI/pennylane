@@ -686,7 +686,7 @@ class IfOperatorPartitioningPattern(RewritePattern):
         )
         rewriter.insert_op(new_if_op_4_true, InsertPoint.after(op_where_insert_after))
 
-        new_if_op_4_true_ops = list(chain(*[op.walk() for op in [new_if_op_4_true]]))
+        new_if_op_4_true_ops = list(new_if_op_4_true.walk())
 
         previous_IfOp.results[0].replace_by_if(
             new_if_op_4_true.results[0], lambda use: use.operation not in new_if_op_4_true_ops
