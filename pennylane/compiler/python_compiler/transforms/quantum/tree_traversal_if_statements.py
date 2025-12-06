@@ -631,11 +631,8 @@ class IfOperatorPartitioningPattern(RewritePattern):
         original_if_op_results = current_op.results[0]
         original_if_op_results.replace_by(qreg_from_if_op[0])
 
-        list_op_if = list(current_op.walk())
-
-        # Remove the ops in the original IfOp
-        for if_op in list_op_if[::-1]:
-            rewriter.erase_op(if_op)
+        # Remove original IfOp
+        rewriter.erase_op(current_op)
 
     def create_if_op_partition(  # pylint: disable=too-many-arguments
         self,
