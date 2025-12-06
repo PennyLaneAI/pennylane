@@ -87,17 +87,12 @@ class IfOperatorPartitioningPattern(RewritePattern):
             if isinstance(current_op, scf.IfOp) and "contain_mcm" in current_op.attributes:
                 # Get quantum register from missing values
                 missing_values = self.analyze_missing_values_for_ops([current_op])
-                qreg_if_op = [mv for mv in missing_values if isinstance(mv.type, quantum.QuregType)]
-
-                # Extract a quantum.bit from the current qreg
-                # Define a constant index 0
-                if not qreg_if_op:
-                    continue
+                qreg_from_if_op = [mv for mv in missing_values if isinstance(mv.type, quantum.QuregType)]
 
                 # Extract a quantum.bit from the current qreg
                 # Define a constant index 0
                 c0 = arith.ConstantOp.from_int_and_width(0, builtin.i64)
-                q_extract = quantum.ExtractOp(qreg_if_op[0], c0.results[0])
+                q_extract = quantum.ExtractOp(qreg_from_if_op[0], c0.results[0])
 
                 rewriter.insert_op(c0, InsertPoint.before(current_op))
                 rewriter.insert_op(q_extract, InsertPoint.before(current_op))
@@ -108,11 +103,11 @@ class IfOperatorPartitioningPattern(RewritePattern):
                 measure_op.attributes["fake_measure"] = builtin.StringAttr("true")
                 rewriter.insert_op(measure_op, InsertPoint.before(current_op))
 
-                q_insert = quantum.InsertOp(qreg_if_op[0], c0.results[0], measure_op.out_qubit)
+                q_insert = quantum.InsertOp(qreg_from_if_op[0], c0.results[0], measure_op.out_qubit)
                 rewriter.insert_op(q_insert, InsertPoint.before(current_op))
 
                 # Replace the old q_reg with the output of q_insert
-                qreg_if_op[0].replace_by_if(
+                qreg_from_if_op[0].replace_by_if(
                     q_insert.results[0], lambda use: use.operation not in [q_extract, q_insert]
                 )
 
@@ -352,22 +347,22 @@ class IfOperatorPartitioningPattern(RewritePattern):
 
         # Replace the qreg from the inner IfOp with the immediate outer IfOp qreg
         # This dont affect the inner IfOp since its qreg is only used in quantum ops inside its regions
-        qreg_if_op_inner = [
+        qreg_from_if_op_inner = [
             mv for mv in missing_values_inner if isinstance(mv.type, quantum.QuregType)
         ]
 
         for result in inner_results:
             if isinstance(result.type, quantum.QuregType):
-                result.replace_by(qreg_if_op_inner[0])
+                result.replace_by(qreg_from_if_op_inner[0])
 
-        qreg_if_op_outer = [
+        qreg_from_if_op_outer = [
             output
             for output in where_to_insert.results
             if isinstance(output.type, quantum.QuregType)
         ]
 
         assert (
-            len(qreg_if_op_outer) == 1
+            len(qreg_from_if_op_outer) == 1
         ), "Expected exactly one quantum register in outer IfOp results."
 
         # Detach inner_op from its parent before modifying
@@ -389,7 +384,7 @@ class IfOperatorPartitioningPattern(RewritePattern):
 
         # Create comprehensive value mapping for all values used in both regions
         value_mapper = {}
-        value_mapper[qreg_if_op_inner[0]] = qreg_if_op_outer[0]
+        value_mapper[qreg_from_if_op_inner[0]] = qreg_from_if_op_outer[0]
 
         inner_true_region = inner_op.true_region
 
@@ -425,7 +420,7 @@ class IfOperatorPartitioningPattern(RewritePattern):
 
             new_false_block = Block()
 
-            value_mapper = {qreg_if_op_inner[0]: qreg_if_op_outer[0]}
+            value_mapper = {qreg_from_if_op_inner[0]: qreg_from_if_op_outer[0]}
             self.clone_operations_to_block(false_ops, new_false_block, value_mapper)
 
         new_if_op_attrs = where_to_insert.attributes.copy()
@@ -577,7 +572,7 @@ class IfOperatorPartitioningPattern(RewritePattern):
         missing_values = self.analyze_missing_values_for_ops([current_op])
 
         # Get quantum register from missing values
-        qreg_if_op = [mv for mv in missing_values if isinstance(mv.type, quantum.QuregType)]
+        qreg_from_if_op = [mv for mv in missing_values if isinstance(mv.type, quantum.QuregType)]
 
         # True and False regions
         true_region = current_op.true_region
@@ -614,7 +609,7 @@ class IfOperatorPartitioningPattern(RewritePattern):
         # Create the new IfOp for the false region
         # --------------------------------------------------------------------------
 
-        value_mapper = {qreg_if_op[0]: new_if_op_4_true.results[0]}
+        value_mapper = {qreg_from_if_op[0]: new_if_op_4_true.results[0]}
 
         attr_dict = {
             "contain_mcm": builtin.StringAttr("true"),
@@ -634,7 +629,7 @@ class IfOperatorPartitioningPattern(RewritePattern):
         # --------------------------------------------------------------------------
 
         original_if_op_results = current_op.results[0]
-        original_if_op_results.replace_by(qreg_if_op[0])
+        original_if_op_results.replace_by(qreg_from_if_op[0])
 
         list_op_if = list(current_op.walk())
 
