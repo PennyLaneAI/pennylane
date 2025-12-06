@@ -18,7 +18,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.resource import Resources
+from pennylane.resource import SpecsResources
 
 
 class TestTracking:
@@ -47,12 +47,20 @@ class TestTracking:
         with qml.Tracker(dev) as tracker:
             dev.execute(qs)
 
+        res = SpecsResources(
+            gate_types={},
+            gate_sizes={},
+            measurements={"expval(GellMann)": 1},
+            depth=0,
+            num_allocs=1,
+        )
+
         assert tracker.history == {
             "batches": [1],
             "executions": [1],
             "simulations": [1],
             "results": [1.0],
-            "resources": [Resources(num_wires=1)],
+            "resources": [res],
             "errors": [{}],
         }
         assert tracker.totals == {
@@ -65,7 +73,7 @@ class TestTracking:
             "executions": 1,
             "simulations": 1,
             "results": 1,
-            "resources": Resources(num_wires=1),
+            "resources": res,
             "errors": {},
         }
 
@@ -83,11 +91,11 @@ class TestTracking:
             [qml.expval(qml.GellMann(1, 8)), qml.expval(qml.GellMann(2, 7))],
         )
 
-        expected_resources = Resources(
-            num_wires=3,
-            num_gates=6,
+        expected_resources = SpecsResources(
             gate_types={"THadamard": 3, "TAdd": 2, "TRZ": 1},
             gate_sizes={1: 4, 2: 2},
+            measurements={"expval(GellMann)": 2},
+            num_allocs=3,
             depth=3,
         )
 

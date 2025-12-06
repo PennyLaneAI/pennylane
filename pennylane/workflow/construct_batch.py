@@ -71,7 +71,7 @@ def marker(tape, level: str):
     >>> print(qml.draw(c, level="my_level")())
     0: ──RX(0.20)──RX(0.20)─┤  State
     >>> qml.specs(c, level="my_level")()['resources'].gate_types
-    defaultdict(<class 'int'>, {'RX': 2})
+    {'RX': 2}
     >>> print(qml.draw(c, level="rotations-merged")())
     0: ──RX(0.40)─┤  State
 

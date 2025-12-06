@@ -527,11 +527,11 @@ def test_tracker():
         "results": 0.0,
     }
     assert np.allclose(tracker.history.pop("results")[0], 0.0)
-    assert tracker.history.pop("resources")[0] == qml.resource.Resources(
-        num_wires=2,
-        num_gates=2,
+    assert tracker.history.pop("resources")[0] == qml.resource.SpecsResources(
+        num_allocs=2,
         gate_types={"Hadamard": 1, "CNOT": 1},
         gate_sizes={1: 1, 2: 1},
+        measurements={"expval(PauliZ)": 1},
         depth=2,
     )
     assert tracker.history == {

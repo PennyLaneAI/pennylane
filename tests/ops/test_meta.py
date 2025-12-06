@@ -58,9 +58,8 @@ class TestBarrier:
         dev = qml.device("default.qubit", wires=3)
         optimized_qfunc = qml.compile(qfunc)
         optimized_qnode = qml.QNode(optimized_qfunc, dev)
-        optimized_gates = qml.specs(optimized_qnode)()["resources"].gate_sizes[1]
 
-        assert optimized_gates == 0
+        assert 1 not in qml.specs(optimized_qnode)()["resources"].gate_sizes
 
     def test_barrier_edge_cases(self):
         r"""Test that the barrier works in edge cases."""
@@ -80,9 +79,7 @@ class TestBarrier:
 
         optimized_qfunc = qml.compile(qfunc)
         optimized_qnode = qml.QNode(optimized_qfunc, dev)
-        optimized_gates = qml.specs(optimized_qnode)()["resources"].gate_sizes[1]
-
-        assert optimized_gates == 0
+        assert 1 not in qml.specs(optimized_qnode)()["resources"].gate_sizes
 
         def qfunc1():
             qml.Hadamard(wires=0)

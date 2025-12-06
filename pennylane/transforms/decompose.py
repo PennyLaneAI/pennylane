@@ -722,7 +722,7 @@ def decompose(
                 return qml.state()
 
         >>> qml.specs(circuit)()["resources"].gate_types
-        defaultdict(<class 'int'>, {'RZ': 12, 'RX': 7, 'GlobalPhase': 6, 'CZ': 3})
+        {'RZ': 12, 'RX': 7, 'GlobalPhase': 6, 'CZ': 3}
         >>> qml.decomposition.disable_graph()
 
     """
