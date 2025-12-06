@@ -131,7 +131,7 @@ def specs(
     level: str | int | slice = "gradient",
     compute_depth: bool = True,
 ) -> Callable[..., CircuitSpecs]:
-    r"""Resource information about a quantum circuit.
+    r"""Provides the specifications of a quantum circuit.
 
     This transform converts a QNode into a callable that provides resource information
     about the circuit after applying the specified amount of transforms/expansions first.
@@ -140,7 +140,7 @@ def specs(
         qnode (.QNode | .QJIT): the QNode to calculate the specifications for.
 
     Keyword Args:
-        level (str | int | slice | iter[int]): An indication of what transforms to apply before computing the resource information.
+        level (str | int | slice | iter[int]): An indication of which transforms to apply before computing the resource information.
         compute_depth (bool): Whether to compute the depth of the circuit. If ``False``, the depth will not be included in the returned information. Default: True
 
     Returns:
