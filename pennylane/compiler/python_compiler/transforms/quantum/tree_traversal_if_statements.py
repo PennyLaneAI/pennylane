@@ -28,7 +28,6 @@ from xdsl.rewriter import InsertPoint
 
 from pennylane.compiler.python_compiler.dialects import quantum
 
-from .tree_traversal_utils_tmp import print_mlir, print_ssa_values
 from pennylane.exceptions import CompileError
 
 
@@ -53,20 +52,14 @@ class IfOperatorPartitioningPattern(RewritePattern):
         if not has_mcm_inside_ifOp:
             return
 
-        # print_mlir(op, "Before IfOp Partitioning:")
-
         # Split IfOps into only true branches
         self.split_if_ops(rewriter)
-
-        # print_mlir(op, "After IfOp Splitting:")
 
         # Flatten nested IfOps
         has_mcm_inside_nested_ifOp = self.looking_for_nested_if_ops(op)
 
         if has_mcm_inside_nested_ifOp:
             self.flatten_nested_IfOps(rewriter)
-
-        # print_mlir(op, "After IfOp Flattening:")
 
         # Adding fake MeasureOp before if Op with the attribute contain_mcm = "true"
         self.adding_fake_measureOp(op, rewriter)
