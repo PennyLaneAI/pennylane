@@ -25,7 +25,6 @@ from xdsl.dialects import arith, builtin, func, memref, scf, tensor
 from xdsl.ir import Block, Operation, Region, SSAValue
 from xdsl.passes import ModulePass
 from xdsl.pattern_rewriter import PatternRewriter, RewritePattern, op_type_rewrite_pattern
-from xdsl.printer import Printer
 from xdsl.rewriter import BlockInsertPoint, InsertPoint
 
 from pennylane.compiler.python_compiler import compiler_transform
@@ -33,7 +32,6 @@ from pennylane.compiler.python_compiler.dialects import quantum
 
 from .tree_traversal_if_statements import IfOperatorPartitioningPattern
 from .tree_traversal_unroll_static_loops import UnrollLoopPattern
-from .tree_traversal_utils_tmp import print_mlir, print_ssa_values
 
 
 ##############################################################################
@@ -149,27 +147,16 @@ class TreeTraversalPass(ModulePass):
     def apply(self, _ctx: context.Context, module_op: builtin.ModuleOp) -> None:
         """Apply the tree-traversal pass to all QNode functions in the module."""
 
-        print("FDX TreeTraversalPass")
-
-        print_stuff = False
-        print_stuff = True
-        print_mlir(module_op, msg="Before Tree Traversal Pass", should_print=print_stuff)
-
         for op in module_op.ops:
             if isinstance(op, func.FuncOp) and "qnode" in op.attributes:
                 rewriter = PatternRewriter(op)
 
                 UnrollLoopPattern().match_and_rewrite(op, rewriter)
 
-                print_mlir(op, msg="After Unroll Loop Passes", should_print=print_stuff)
-
                 IfOperatorPartitioningPattern().match_and_rewrite(op, rewriter)
-                print_mlir(op, msg="After If-For Passes", should_print=print_stuff)
 
                 TreeTraversalPattern().match_and_rewrite(op, rewriter)
                 break
-        print_mlir(module_op, msg="After Tree Traversal Pass", should_print=print_stuff)
-
 
 tree_traversal_pass = compiler_transform(TreeTraversalPass)
 
