@@ -713,7 +713,7 @@ class IfOperatorPartitioningPattern(RewritePattern):
                         ops_defined_values.update(block.args)
 
         missing_values = list(all_operands - ops_defined_values)
-        missing_values = [v for v in missing_values if v is not None]
+        missing_values = [v for v in missing_values]
 
         return missing_values
 
