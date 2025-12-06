@@ -26,9 +26,6 @@ from xdsl.rewriter import InsertPoint
 from pennylane.compiler.python_compiler.dialects import quantum, stablehlo
 from pennylane.exceptions import CompileError
 
-from .tree_traversal_utils_tmp import print_mlir, print_ssa_values
-
-
 class UnrollLoopPattern(RewritePattern):
     """A rewrite pattern that unrolls scf.ForOps containing measurement-controlled
     operations into separate branches for each operator."""
@@ -46,9 +43,6 @@ class UnrollLoopPattern(RewritePattern):
 
         if not needs_unroll:
             return
-
-        # for _for_loop in self.for_loop_to_unroll:
-        #     print_mlir(_for_loop, "ForOp to unroll 2:")
 
         for _for_op in self.for_loop_to_unroll:
             self.unroll_loop(_for_op, rewriter)
