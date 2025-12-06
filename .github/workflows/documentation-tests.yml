@@ -68,7 +68,6 @@ jobs:
         run: |
           IGNORE_OPTS_CLOSED="
           --ignore=pennylane/labs
-          --ignore=pennylane/compiler/python_compiler
           "
           IGNORE_OPTS_CORE="
           --ignore=pennylane/workflow/interfaces/tensorflow.py
