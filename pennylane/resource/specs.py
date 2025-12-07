@@ -330,7 +330,7 @@ def specs(
     level: str | int | slice = "gradient",
     compute_depth: bool | None = None,
 ) -> Callable[..., CircuitSpecs]:
-    r"""Resource information about a quantum circuit.
+    r"""Provides the specifications of a quantum circuit.
 
     This transform converts a QNode into a callable that provides resource information
     about the circuit after applying the specified amount of transforms/expansions first.
@@ -369,19 +369,24 @@ def specs(
             qml.TrotterProduct(Hamiltonian, time=1.0, n=4, order=4)
             return qml.probs(wires=(0,1))
 
-    >>> from pprint import pprint
-    >>> pprint(qml.specs(circuit)(x, add_ry=False))
-    CircuitSpecs(device_name='default.qubit',
-                 num_device_wires=2,
-                 shots=Shots(total_shots=None, shot_vector=()),
-                 level='gradient',
-                 resources=SpecsResources(gate_types={'CNOT': 1,
-                                                     'Evolution': 96,
-                                                     'RX': 1},
-                                          gate_sizes={1: 97, 2: 1},
-                                          measurements={'probs(all wires)': 1},
-                                          num_allocs=2,
-                                          depth=98))
+    >>> print(qml.specs(circuit)(x, add_ry=False))
+    Device: default.qubit
+    Device wires: 2
+    Shots: Shots(total=None)
+    Level: gradient
+    <BLANKLINE>
+    Resource specifications:
+      Total qubit allocations: 2
+      Total gates: 98
+      Circuit depth: 98
+    <BLANKLINE>
+      Gate types:
+        RX: 1
+        CNOT: 1
+        Evolution: 96
+    <BLANKLINE>
+      Measurements:
+        probs(all wires): 1
 
     .. details::
         :title: Usage Details

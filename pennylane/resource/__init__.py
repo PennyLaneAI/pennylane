@@ -18,12 +18,6 @@ The ``resource`` module provides classes and functionality to track the quantum 
 .. seealso::
     The :mod:`~.estimator` module for higher level resource estimation of quantum programs.
 
-.. warning::
-    The functions ``estimate_error``, ``estimate_shots`` and the classes ``DoubleFactorization``,
-    ``FirstQuantization`` have been moved to the :mod:`pennylane.estimator` module.
-    Accessing them from the :mod:`pennylane.resource` module is deprecated and will be removed
-    in v0.45.
-
 Circuit Specifications (specs)
 ------------------------------
 
@@ -47,7 +41,6 @@ Circuit Specification Classes and Utilities
 
     ~resources_from_tape
 
-
 Error Tracking
 --------------
 
@@ -59,6 +52,12 @@ Error Tracking
     ~AlgorithmicError
     ~SpectralNormError
     ~ErrorOperation
+
+.. warning::
+    The functions ``estimate_error``, ``estimate_shots`` and the classes ``DoubleFactorization``,
+    ``FirstQuantization`` have been moved to the :mod:`pennylane.estimator` module.
+    Accessing them from the :mod:`pennylane.resource` module is deprecated and will be removed
+    in v0.45.
 
 Resource Classes
 ----------------

@@ -241,7 +241,7 @@ class SpecsResources:
 
     .. details::
 
-        Some helpful methods have been added to this data class to allow pretty-printing, as well as
+        Methods have been provided to allow pretty-printing, as well as
         indexing into it as a dictionary. See examples below.
 
         **Example**
