@@ -125,10 +125,8 @@ class GeneralizedAmplitudeDamping(Channel):
                 \end{bmatrix}
 
     where :math:`\gamma \in [0, 1]` is the probability of damping and :math:`p \in [0, 1]`
-    is the probability of the system being excited by the environment.
-
-    This error channel reduced to the :class:`~.AmplitudeDamping` one when the excitation
-    probability is :math:`0`.
+    is the probability of the system being excited by the environment (for more details see
+    `arXiv:1903.07747 <https://arxiv.org/abs/1903.07747>`_).
 
     **Details:**
 
