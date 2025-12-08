@@ -1536,7 +1536,7 @@ class TestCompilePipelineIntegration:
         assert tracker.history["resources"][0].gate_types["PauliX"] == 1
         assert tracker.history["resources"][0].gate_types["RX"] == 0
 
-    def tet_transform_program_modifies_results(self):
+    def test_transform_program_modifies_results(self):
         """Test integration with a transform that modifies the result output."""
 
         dev = qml.device("default.qubit", wires=2)
