@@ -612,9 +612,7 @@ class QNode:
                 setattr(copied_qnode, attr, value)
 
         copied_qnode.execute_kwargs = dict(self.execute_kwargs)
-        copied_qnode._transform_program = qml.transforms.core.CompilePipeline(
-            self.transform_program
-        )
+        copied_qnode._transform_program = CompilePipeline(self.transform_program)
         copied_qnode.gradient_kwargs = dict(self.gradient_kwargs)
         return copied_qnode
 
@@ -746,7 +744,7 @@ class QNode:
             updated_qn._shots_override_device = True
 
         # pylint: disable=protected-access
-        updated_qn._transform_program = qml.transforms.core.CompilePipeline(self.transform_program)
+        updated_qn._transform_program = CompilePipeline(self.transform_program)
         return updated_qn
 
     def update_shots(self, shots: int | Shots) -> QNode:
