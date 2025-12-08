@@ -135,7 +135,7 @@ class GeneralizedAmplitudeDamping(Channel):
 
     Args:
         gamma (float): amplitude damping probability
-        p (float): de-excitation probability
+        p (float): excitation probability
         wires (Sequence[int] or int): the wire the channel acts on
         id (str or None): String representing the operation (optional)
     """
@@ -161,10 +161,10 @@ class GeneralizedAmplitudeDamping(Channel):
         **Example**
 
         >>> qml.GeneralizedAmplitudeDamping.compute_kraus_matrices(0.3, 0.6)
-        [array([[0.77459667, 0.        ], [0.        , 0.64807407]]),
-         array([[0.        , 0.42426407], [0.        , 0.        ]]),
-         array([[0.52915026, 0.        ], [0.        , 0.63245553]]),
-         array([[0.        , 0.        ], [0.34641016, 0.        ]])]
+        [array([[0.63245553, 0.        ], [0.        , 0.52915026]]),
+         array([[0.        , 0.34641016], [0.        , 0.        ]]),
+         array([[0.64807407, 0.        ], [0.        , 0.77459667]]),
+         array([[0.        , 0.        ], [0.42426407, 0.        ]])]
         """
         if not np.is_abstract(gamma) and not 0.0 <= gamma <= 1.0:
             raise ValueError("gamma must be in the interval [0,1].")
