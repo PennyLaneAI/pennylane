@@ -20,7 +20,7 @@ from functools import partial
 from typing import overload
 
 from pennylane.exceptions import TransformError
-from pennylane.tape import QuantumScriptBatch
+from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import BatchPostprocessingFn, PostprocessingFn, ResultBatch
 
 from .cotransform_cache import CotransformCache
@@ -585,27 +585,6 @@ class TransformProgram:
 
         return cur_jaxpr
 
-    def __call_fallback(self, obj):
-        """Fallback method for applying the transform program to any object.
-
-        This chain-applies each TransformContainer in the program to the input object,
-        allowing the program to work with any object that individual transforms can
-        dispatch onto (e.g., QNodes, devices, callables, etc.).
-
-        Args:
-            obj: The object to transform.
-
-        Returns:
-            The transformed object after all transforms in the program have been applied.
-        """
-        if not self:
-            return obj
-
-        result = obj
-        for container in self:
-            result = container(result)
-        return result
-
     @overload
     def __call__(
         self, jaxpr: "jax.extend.core.Jaxpr", consts: Sequence, *args
@@ -620,25 +599,29 @@ class TransformProgram:
         if type(args[0]).__name__ == "Jaxpr":
             return self.__call_jaxpr(*args, **kwargs)
 
-        # Check if this is a batch of QuantumScripts or a single QuantumScript
-        # Import here to avoid circular imports
-        from pennylane.tape import QuantumScript  # pylint: disable=import-outside-toplevel
-
         first_arg = args[0]
 
-        # Single QuantumScript should go through __call_tapes
+        # Single QuantumScript: wrap in a tuple, process, then unwrap
         if isinstance(first_arg, QuantumScript):
+            batch, postprocessing = self.__call_tapes((first_arg,))
+            # Return the single tape (not the tuple) if the program is empty or doesn't change batch size
+            if len(batch) == 1:
+                return batch[0], postprocessing
+            return batch, postprocessing
+
+        # Sequence of QuantumScripts: treat as a tape batch
+        if isinstance(first_arg, Sequence):
             return self.__call_tapes(*args, **kwargs)
 
-        # Sequence of QuantumScripts should go through __call_tapes
-        is_tape_batch = isinstance(first_arg, Sequence) and (
-            not first_arg or isinstance(first_arg[0], QuantumScript)
-        )
-        if is_tape_batch:
-            return self.__call_tapes(*args, **kwargs)
+        # For any other object (QNode, device, callable, etc.),
+        # chain-apply each transform using the generic dispatch system
+        if not self:
+            return first_arg
 
-        # Fallback: chain-apply to any other object (QNode, device, callable, etc.)
-        return self.__call_fallback(first_arg)
+        result = first_arg
+        for container in self:
+            result = container(result)
+        return result
 
 
 @TransformDispatcher.generic_register

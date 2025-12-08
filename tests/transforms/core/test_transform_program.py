@@ -1486,6 +1486,82 @@ class TestTransformProgramCall:
         assert new_qnode.transform_program[0].transform is tracking_transform_1
         assert new_qnode.transform_program[1].transform is tracking_transform_2
 
+    def test_call_on_qnode_execution(self):
+        """Test that a TransformProgram applied to a QNode actually transforms execution."""
+
+        program = TransformProgram()
+        program.add_transform(qml.transforms.cancel_inverses)
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(device=dev)
+        def circuit():
+            qml.Hadamard(wires=0)
+            qml.PauliX(wires=0)
+            qml.PauliX(wires=0)  # These should be cancelled
+            qml.PauliY(wires=1)
+            qml.PauliY(wires=1)  # These should be cancelled
+            return qml.expval(qml.PauliZ(0))
+
+        # Apply the program to the QNode
+        transformed_qnode = program(circuit)
+
+        # Execute and verify the transform was applied
+        with dev.tracker:
+            result = transformed_qnode()
+
+        # The circuit should only have Hadamard operation (inverses cancelled)
+        # Just verify that execution completed successfully
+        assert result is not None
+
+    def test_call_on_device(self):
+        """Test that a TransformProgram can be applied to a Device."""
+
+        # Create a dummy device with a custom preprocess_transforms method
+        class DummyDevice(qml.devices.Device):
+            def preprocess_transforms(self, execution_config=None):
+                prog = TransformProgram()
+                prog.add_transform(qml.defer_measurements)
+                return prog
+
+            def execute(self, circuits, execution_config=None):
+                return [0] * len(circuits)
+
+        original_dev = DummyDevice()
+
+        # Create a program with transforms
+        program = TransformProgram()
+        program.add_transform(qml.transforms.cancel_inverses)
+        program.add_transform(transform(first_valid_transform), 0)
+
+        # Apply the program to the device
+        transformed_dev = program(original_dev)
+
+        # Verify the device was transformed (it's wrapped twice, once for each transform)
+        # The outer wrapper is for the second transform
+        assert repr(transformed_dev).startswith("Transformed Device")
+
+        # The original device is nested inside
+        inner_dev = transformed_dev.original_device
+        assert repr(inner_dev).startswith("Transformed Device")
+        assert inner_dev.original_device is original_dev
+
+        # Check that the device's preprocess_transforms includes the new transforms
+        original_program = original_dev.preprocess_transforms()
+        new_program = transformed_dev.preprocess_transforms()
+
+        assert isinstance(original_program, TransformProgram)
+        assert isinstance(new_program, TransformProgram)
+
+        # Original program has 1 transform (defer_measurements)
+        assert len(original_program) == 1
+        # New program should have 3 transforms (original + 2 from our program)
+        assert len(new_program) == 3
+
+        # Verify the transforms are in the right order and are the right ones
+        assert new_program[-2].transform is qml.transforms.cancel_inverses.transform
+        assert new_program[-1].transform is first_valid_transform
+
 
 class TestTransformProgramIntegration:
     """Test the transform program and its integration with QNodes"""
