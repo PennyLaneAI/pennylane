@@ -1779,7 +1779,7 @@ class TrotterPauli(ResourceOperator):
 
         In the first case, the exponential :math:`e^{i t \alpha_{j} O_{j}} = e^{i t \alpha_{j} \vec{P}_{j}}`
         is a single generalized Pauli rotation 
-        (:class:`~.pennylane.estimator.ops.qubit.parametric_ops_multi_qubit.PauliRot`). In the second
+        (:class:`~.estimator.ops.qubit.parametric_ops_multi_qubit.PauliRot`). In the second
         case, the exponential can be expanded using the fact that all operators in the sum commute:
 
         .. math::
@@ -1814,15 +1814,10 @@ class TrotterPauli(ResourceOperator):
 
     **Example**
 
-    The resources for this operation are computed using the code below. Note that each of 
-    the 25 Pauli strings is treated as an individual term in the sum and no grouping into
-    commuting groups of terms is assumed.
+    The resources for this operation are computed using the code below.
 
     >>> import pennylane.estimator as qre
-    >>> pauli_terms = {"XX": 10, "ZZ":10, "Z":5}     
-    >>> pauli_ham = qre.PauliHamiltonian(num_qubits=5, pauli_dist=pauli_terms)
-    >>> pauli_ham
-    PauliHamiltonian(num_qubits=5, num_pauli_words=25, max_weight=2, one_norm=None)
+    >>> pauli_ham = qre.PauliHamiltonian(num_qubits=5, num_pauli_words=25, max_weight=2)
     >>> num_steps, order = (10, 2)
     >>> res = qre.estimate(qre.TrotterPauli(pauli_ham, num_steps, order))
     >>> print(res)
@@ -1832,16 +1827,18 @@ class TrotterPauli(ResourceOperator):
        allocated wires: 0
          zero state: 0
          any state: 0
-     Total gates : 2.280E+4
+     Total gates : 2.396E+4
        'T': 2.200E+4,
-       'CNOT': 800
+       'CNOT': 1.000E+3,
+       'Z': 320,
+       'S': 640
     
     .. details::
         :title: Usage Details
 
-        Estimating resources for the trotterization of a Pauli Hamiltonian depends on how
+        Estimating resources for the Trotterization of a Pauli Hamiltonian depends on how
         the Pauli Hamiltonian was constructed. Specifically, how much information was provided
-        by the user (see :class:`~.estimator.compact_hamiltonian.PauliHamiltonian` for more info).
+        by the user (see :class:`~.estimator.compact_hamiltonian.PauliHamiltonian` for more information).
 
         If the Hamiltonian is constructed with minimal information about the specific Pauli terms:
 
@@ -1852,11 +1849,8 @@ class TrotterPauli(ResourceOperator):
         In this case, we assume an even distribution of X-like, Y-like and Z-like Pauli strings with 
         maximum weight.
 
-        >>> num_steps, order = (1, 1)
-        >>> res = qre.estimate(
-        ...     qre.TrotterPauli(pauli_ham, num_steps, order),
-        ...     gate_set={'PauliRot'},
-        ... )
+        >>> num_steps, order = (1, 2)
+        >>> res = qre.estimate(qre.TrotterPauli(pauli_ham, num_steps, order))
         >>> print(res)
         --- Resources: ---
          Total wires: 10
@@ -1864,15 +1858,43 @@ class TrotterPauli(ResourceOperator):
            allocated wires: 0
              zero state: 0
              any state: 0
-         Total gates : 30
-           'PauliRot': 30
-        >>> print(res.gate_breakdown())
-        PauliRot total: 30
-            PauliRot {'pauli_string': 'XXXX', 'precision': None}: 10
-            PauliRot {'pauli_string': 'YYYY', 'precision': None}: 10
-            PauliRot {'pauli_string': 'ZZZZ', 'precision': None}: 10
+         Total gates : 3.560E+3
+           'T': 2.640E+3,
+           'CNOT': 360,
+           'Z': 80,
+           'S': 160,
+           'Hadamard': 320
 
-        Alternately, the Hamiltonian can be constructed by providing the commuting groups of terms.
+        Alternatively, specifying the Pauli terms when constructing the Hamiltonian will lead
+        to a more accurate description of the Hamiltonian and thus more accurate resource estimates.
+    
+        >>> pauli_terms = {"X":10, "XX":5, "XXXX":3, "YY": 5, "ZZ":5, "Z": 2}
+        >>> pauli_ham = qre.PauliHamiltonian(num_qubits=10, pauli_dist=pauli_terms)
+        >>> pauli_ham
+        PauliHamiltonian(num_qubits=10, num_pauli_words=30, max_weight=4, one_norm=None)
+        >>> pauli_ham.pauli_dist
+        {'X': 10, 'XX': 5, 'XXXX': 3, 'YY': 5, 'ZZ': 5, 'Z': 2}
+
+        Note that each of the 30 Pauli words is treated individually and no seperation into
+        commuting groups of terms is assumed.
+
+        >>> num_steps, order = (1, 2)
+        >>> res = qre.estimate(qre.TrotterPauli(pauli_ham, num_steps, order))
+        >>> print(res)
+        --- Resources: ---
+         Total wires: 10
+           algorithmic wires: 10
+           allocated wires: 0
+             zero state: 0
+             any state: 0
+         Total gates : 2.844E+3
+           'T': 2.640E+3,
+           'CNOT': 96,
+           'Z': 20,
+           'S': 40,
+           'Hadamard': 48
+
+        Finally, the Hamiltonian can be constructed by providing the commuting groups of terms.
         Note, that the order in which the groups are listed matters, keeping the largest groups as
         the first and last elements of the list will lead to the most reduction in resources.
 
@@ -1889,11 +1911,8 @@ class TrotterPauli(ResourceOperator):
 
         This often leads to fewer total resources when estimating costs in practice:
         
-        >>> num_steps, order = (1, 1)
-        >>> res = qre.estimate(
-        ...     qre.TrotterPauli(pauli_ham, num_steps, order),
-        ...     gate_set={'PauliRot'},
-        ... )
+        >>> num_steps, order = num_steps, order = (1, 2)
+        >>> res = qre.estimate(qre.TrotterPauli(pauli_ham, num_steps, order))
         >>> print(res)
         --- Resources: ---
          Total wires: 10
@@ -1901,16 +1920,12 @@ class TrotterPauli(ResourceOperator):
            allocated wires: 0
              zero state: 0
              any state: 0
-         Total gates : 30
-           'PauliRot': 30
-        >>> print(res.gate_breakdown())
-        PauliRot total: 30
-            PauliRot {'pauli_string': 'X', 'precision': None}: 10
-            PauliRot {'pauli_string': 'XX', 'precision': None}: 5
-            PauliRot {'pauli_string': 'XXXX', 'precision': None}: 3
-            PauliRot {'pauli_string': 'YY', 'precision': None}: 5
-            PauliRot {'pauli_string': 'ZZ', 'precision': None}: 5
-            PauliRot {'pauli_string': 'Z', 'precision': None}: 2
+         Total gates : 2.756E+3
+           'T': 2.552E+3,
+           'CNOT': 96,
+           'Z': 20,
+           'S': 40,
+           'Hadamard': 48
 
     """
 

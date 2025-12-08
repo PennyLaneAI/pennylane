@@ -183,8 +183,8 @@ class VibronicHamiltonian:
 
 
 class PauliHamiltonian:
-    r"""Stores the minimum necessary information required for resource estimation of a
-    Hamiltonian expressed as a linear combination of tensor products of Pauli operators.
+    r"""For a Hamiltonian expressed as a linear combination of tensor products of Pauli operators,
+    stores the minimum necessary information pertaining to resource estimation.
 
     Args:
         num_qubits (int): total number of qubits the Hamiltonian acts on
@@ -193,12 +193,14 @@ class PauliHamiltonian:
             terms in the linear combination.
         one_norm (float | int | None): the one-norm of the Hamiltonian
         pauli_dist (dict | None): A dictionary representing the various Pauli words and how
-            frequently they appear in the Hamiltonian.
-        commuting_groups (tuple(dict) | None): A tuple of dictionaries where each entry represents
-            a group of Pauli words that mutually commute. Each entry is formatted similarly to the
-            ``pauli_dist`` argument (see the Usage Details section for more information).
-            of terms from the Hamiltonian such that all terms in the group commute. Here each
-            dictionary contains the various Pauli words and how frequently they appear in the group.
+            frequently they appear in the Hamiltonian (see the ``Usage Details`` section for more
+            information).
+        commuting_groups (tuple(dict) | None): The terms (Pauli words) of the Hamiltonian can be separated into groups such that all
+            terms in a group commute. A group is represented as a dictionary where the keys are
+            Pauli strings (e.g ``"XY" or "ZZ"``) and the values are integers corresponding to how
+            frequently that Pauli word appears in the group (see the ``Usage Details`` section for
+            more information).
+
 
     Returns:
         PauliHamiltonian: An instance of PauliHamiltonian
@@ -216,12 +218,13 @@ class PauliHamiltonian:
         \hat{H} = 0.1 \cdot \Sigma^{30}_{j=1} \hat{X}_{j} \hat{X}_{j+1}
         - 0.05 \cdot \Sigma^{30}_{k=1} \hat{Y}_{k} \hat{Y}_{k+1} + 0.25 \cdot \Sigma^{40}_{l=1} \hat{X}_{l}
 
+    This Hamiltonian is represented in a compact form using ``PauliHamiltonian``:
 
     >>> import pennylane.estimator as qre
     >>> pauli_ham = qre.PauliHamiltonian(
     ...     num_qubits = 40,
     ...     num_pauli_words = 100,
-    ...     max_weight = 2,
+    ...     max_weight = 2,  # each term in pauli_ham acts on at most 2 qubits
     ...     one_norm = 14.5,  # (0.1 * 30) + (0.05 * 30) + (0.25 * 40)
     ... )
     >>> pauli_ham
@@ -261,10 +264,9 @@ class PauliHamiltonian:
         ...     num_qubits = 40,
         ...     num_pauli_words = 100,
         ...     max_weight = 2,
-        ...     one_norm = 14.5,  # (0.1 * 30) + (0.05 * 30) + (0.25 * 40)
         ... )
         >>> pauli_ham
-        PauliHamiltonian(num_qubits=40, num_pauli_words=100, max_weight=2, one_norm=14.5)
+        PauliHamiltonian(num_qubits=40, num_pauli_words=100, max_weight=2, one_norm=None)
 
         If we know approximately how the Pauli words are distributed in the Hamiltonian, then we can
         construct the Hamiltonian from this information. Note, if both the ``pauli_dist`` and the
@@ -276,10 +278,9 @@ class PauliHamiltonian:
         >>> pauli_ham = qre.PauliHamiltonian(
         ...     num_qubits = 40,
         ...     pauli_dist = {"X":40, "XX":30, "YY":30},
-        ...     one_norm = 14.5,  # (0.1 * 30) + (0.05 * 30) + (0.25 * 40)
         ... )
         >>> pauli_ham
-        PauliHamiltonian(num_qubits=40, num_pauli_words=100, max_weight=2, one_norm=14.5)
+        PauliHamiltonian(num_qubits=40, num_pauli_words=100, max_weight=2, one_norm=None)
         >>> pauli_ham.pauli_dist
         {'X': 40, 'XX': 30, 'YY': 30}
 
@@ -297,10 +298,9 @@ class PauliHamiltonian:
         >>> pauli_ham = qre.PauliHamiltonian(
         ...     num_qubits = 40,
         ...     commuting_groups = commuting_groups,
-        ...     one_norm = 14.5,
         ... )
         >>> pauli_ham
-        PauliHamiltonian(num_qubits=40, num_pauli_words=100, max_weight=2, one_norm=14.5)
+        PauliHamiltonian(num_qubits=40, num_pauli_words=100, max_weight=2, one_norm=None)
         >>> pauli_ham.pauli_dist
         {'X': 40, 'XX': 30, 'YY': 30}
         >>> pauli_ham.commuting_groups
@@ -380,7 +380,10 @@ class PauliHamiltonian:
 
     @property
     def max_weight(self):
-        """The maximum number of Pauli operators (tensored) in any given term in the sum."""
+        r"""The maximum number of Pauli operators in the Pauli word for any given term in the sum.
+        For example, given a Hamiltonian :math:`H = \hat{X}_{0} \hat{X}_{1} + \hat{Z}_{0}`, then
+        ``max_weight = 2`` because there are atmost two Pauli operators in any term.
+        """
         return self._max_weight
 
     @property
@@ -395,7 +398,7 @@ class PauliHamiltonian:
 
     @property
     def commuting_groups(self):
-        """A list of groups where each group is a distribution of pauli words such that each
+        """A list of groups where each group is a distribution of Pauli words such that each
         term in the group commutes with every other term in the group."""
         return copy.deepcopy(self._commuting_groups)
 

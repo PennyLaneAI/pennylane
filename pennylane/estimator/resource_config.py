@@ -206,7 +206,7 @@ class ResourceConfig:
 
         This method updates the parameter value for operators that use tolerance parameters
         (e.g., for synthesis error). By default the parameter name is assumed to be ``precision``.
-        It will raise an error if you attempt to set the precision for an operator that is not
+        It will raise an error if users attempt to set the precision for an operator that is not
         configurable. A negative precision will also raise an error.
 
         Args:
@@ -244,11 +244,11 @@ class ResourceConfig:
         .. details::
             :title: Usage Details
 
-            Certain resource operators may have multiple parameters which tune the precision
-            for the operators decomposition. Consider, for example, the
-            :class:`~.estimator.templates.trotter.TrotterVibronic` operator. A dictionary of
-            all such parameters for this operator can be found by accessing a
-            dictionary using ``ResourceConfig.resource_op_precisions``:
+            Some resource operators have multiple parameters which tune the precision
+            of the operator's decomposition. For example, the
+            :class:`~.estimator.templates.trotter.TrotterVibronic` operator has parameters
+            ``phase_grad_precision`` and ``coeff_precision``. A dictionary of all such parameters
+            of an operator can be accessed through ``ResourceConfig.resource_op_precisions``:
 
             >>> import pennylane.estimator as qre
             >>> my_config = qre.ResourceConfig()
