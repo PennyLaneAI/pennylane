@@ -26,7 +26,7 @@ from pennylane.transforms.core import (
     TransformError,
     transform,
 )
-from pennylane.transforms.core.transform_program import (
+from pennylane.transforms.core.compile_pipeline import (
     CotransformCache,
     _apply_postprocessing_stack,
     _batch_postprocessing,

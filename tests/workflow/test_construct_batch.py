@@ -23,8 +23,7 @@ import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
-from pennylane.transforms.core.transform_dispatcher import TransformContainer
-from pennylane.transforms.core.transform_program import CompilePipeline
+from pennylane.transforms.core import CompilePipeline, TransformContainer
 from pennylane.workflow import construct_batch, get_transform_program
 
 
