@@ -367,6 +367,7 @@
 <h3>Internal changes ⚙️</h3>
 
 * `TransformProgram` is available at top level as `qml.TransformProgram`.
+  [(#8742)](https://github.com/PennyLaneAI/pennylane/pull/8742)
 
 * Bump `jax` version to `0.7.1` for `capture` module.
   [(#8715)](https://github.com/PennyLaneAI/pennylane/pull/8715)
