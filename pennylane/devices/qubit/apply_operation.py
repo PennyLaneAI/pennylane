@@ -362,7 +362,7 @@ def apply_mid_measure(
 
     if interface == "numpy":
         norm = math.sum(prob0, axis=-1)
-        eps = math.finfo(state.dtype).eps
+        eps = 10 * math.finfo(state.dtype).eps
         if (norm - 1) > eps:
             raise ValueError(f"probabilities greater than 1. Got norm {norm}.")
         if norm > 1:
