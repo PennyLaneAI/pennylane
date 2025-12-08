@@ -16,6 +16,7 @@
 import copy
 import json
 import os
+import re
 import warnings
 from collections import defaultdict
 from collections.abc import Callable
@@ -171,6 +172,12 @@ def _specs_qjit_intermediate_passes(
                 if lvl not in marker_to_level:
                     raise ValueError(f"Transform name '{lvl}' not found in the transform program.")
                 level[i] = marker_to_level[lvl]
+            elif isinstance(lvl, int):
+                if lvl < 0:
+                    raise ValueError(
+                        "The 'level' argument to qml.specs for QJIT'd QNodes must be non-negative, "
+                        f"got {lvl}."
+                    )
 
         level_sorted = sorted(level)
         if level != level_sorted:
@@ -247,7 +254,14 @@ def _specs_qjit_intermediate_passes(
         else "all"
     )
     if mlir_levels == "all" or len(mlir_levels) > 0:
-        results = mlir_specs(qjit, mlir_levels, *args, **kwargs)
+        try:
+            results = mlir_specs(qjit, mlir_levels, *args, **kwargs)
+        except ValueError as ve:
+            levels = re.match("Requested specs levels (.*) not found in MLIR pass list.", str(ve))
+            bad_levels = [str(int(lvl) + num_trans_levels) for lvl in levels[1].split(", ")]
+            raise ValueError(
+                f"Requested specs levels {', '.join(bad_levels)} not found in MLIR pass list."
+            ) from ve
 
         for level_name, res in results.items():
             gate_sizes = defaultdict(int)
