@@ -15,7 +15,6 @@
 
 """Implementation of the Tree-Traversal MCM simulation method as an xDSL transform in Catalyst."""
 
-from ast import Dict
 from dataclasses import dataclass, field
 from itertools import chain
 
@@ -230,7 +229,7 @@ class TreeTraversalPattern(RewritePattern):
         rewriter.insert_op(cloned_fun, InsertPoint.after(func_op))
 
         current_reg: SSAValue = None
-        qubit_to_reg_idx: Dict[SSAValue, SSAValue | builtin.IntegerAttr] = {}
+        qubit_to_reg_idx: dict[SSAValue, SSAValue | builtin.IntegerAttr] = {}
 
         for op in cloned_fun.body.ops:
             match op:
