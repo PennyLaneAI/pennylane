@@ -120,7 +120,7 @@ def pauli_measure(pauli_word: str, wires: WiresLike, postselect: int | None = No
     """Perform a Pauli product measurement.
 
     A Pauli product measurement (PPM) is the measurement of a tensor product of Pauli observables.
-    
+
     The eigenvalue of this tensor product is one of 1 or -1, which is mapped to the 0 or 1 outcome of
     the PPM, respectively. After the measurement, the state collapses to the superpositions of all
     degenerate eigenstates corresponding to the measured eigenvalue.
@@ -135,7 +135,7 @@ def pauli_measure(pauli_word: str, wires: WiresLike, postselect: int | None = No
         pauli_word (str): The Pauli word to measure.
         wires (Wires): The wires the Pauli operators act on.
         postselect (Optional[int]): The postselection value, one of 0 or 1. It determines which subspace of
-        degenerate eigenstates to postselect after a Pauli product measurement. None by default.
+            degenerate eigenstates to postselect after a Pauli product measurement. None by default.
 
     Returns:
         MeasurementValue: A reference to the future result of the Pauli product measurement
@@ -187,7 +187,7 @@ def pauli_measure(pauli_word: str, wires: WiresLike, postselect: int | None = No
     .. seealso::
         `Pauli product measurement <https://pennylane.ai/compilation/pauli-product-measurement>`_ and
         :func:`catalyst.passes.ppm_compilation` for documentation and corresponding functionality in Catalyst
-        related to compilation of Clifford+T gates into PPMs. 
+        related to compilation of Clifford+T gates into PPMs.
     """
 
     if capture_enabled():
