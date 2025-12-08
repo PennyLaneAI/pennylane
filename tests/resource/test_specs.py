@@ -227,6 +227,28 @@ class TestSpecsTransform:
 
         assert info.level == "gradient"
 
+    def test_specs_mcm(self):
+        """Test specs works when MCMs are used"""
+
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev)
+        def circuit():
+            m0 = qml.measure(0)
+            return qml.sample(m0)
+
+        info = qml.specs(circuit)()
+
+        assert info.resources == SpecsResources(
+            gate_types={"MidMeasureMP": 1},
+            gate_sizes={1: 1},
+            measurements={"sample(mcm)": 1},
+            num_allocs=1,
+            depth=1,
+        )
+
+        assert info.level == "gradient"
+
     def test_specs_hamiltonian(self):
         """Test specs works when hamiltonian returned"""
 
@@ -246,8 +268,8 @@ class TestSpecsTransform:
             gate_types={},
             gate_sizes={},
             measurements={
-                "expval(Hamiltonian(PauliX @ PauliZ, PauliZ @ Hadamard))": 1,
-                "expval(Hamiltonian(Exp(PauliZ @ PauliZ)))": 1,
+                "expval(Hamiltonian(num_wires=3, num_terms=2))": 1,
+                "expval(Hamiltonian(num_wires=2, num_terms=1))": 1,
             },
             num_allocs=3,
             depth=0,

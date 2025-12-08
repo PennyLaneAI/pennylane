@@ -415,7 +415,7 @@ def specs(
         First, we can check the resource information of the QNode without any modifications. Note that ``level=top`` would
         return the same results:
 
-        >>> print(qml.specs(circuit, level=0)(0.1)["resources"])
+        >>> print(qml.specs(circuit, level=0)(0.1).resources)
         Total qubit allocations: 2
         Total gates: 6
         Circuit depth: 6
@@ -431,7 +431,7 @@ def specs(
 
         We then check the resources after applying all transforms:
 
-        >>> print(qml.specs(circuit, level="device")(0.1)["resources"])
+        >>> print(qml.specs(circuit, level="device")(0.1).resources)
         Total qubit allocations: 2
         Total gates: 2
         Circuit depth: 1
@@ -445,7 +445,7 @@ def specs(
 
         We can also notice that ``SWAP`` and ``PauliX`` are not present in the circuit if we set ``level=2``:
 
-        >>> print(qml.specs(circuit, level=2)(0.1)["resources"])
+        >>> print(qml.specs(circuit, level=2)(0.1).resources)
         Total qubit allocations: 2
         Total gates: 3
         Circuit depth: 3
