@@ -366,7 +366,8 @@
 
 <h3>Internal changes ⚙️</h3>
 
-* Now `TransformProgram` can dispatch to anything individual transforms can dispatch onto
+* Now `TransformProgram` can dispatch to anything individual transforms can dispatch onto.
+  [(#8731)](https://github.com/PennyLaneAI/pennylane/pull/8731)
 
 * Bump `jax` version to `0.7.1` for `capture` module.
   [(#8715)](https://github.com/PennyLaneAI/pennylane/pull/8715)
