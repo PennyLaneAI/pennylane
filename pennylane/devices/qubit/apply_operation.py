@@ -360,6 +360,13 @@ def apply_mid_measure(
     slices[axis] = 0
     prob0 = math.real(math.norm(state[tuple(slices)])) ** 2
 
+    if interface == "numpy":
+        norm = math.sum(prob0, axis=-1)
+        if (norm - 1) > 1e-7:
+            raise ValueError(f"probabilities greater than 1. Got norm {norm}.")
+        print(norm)
+        prob0 = prob0 / norm
+
     if prng_key is not None:
         # pylint: disable=import-outside-toplevel
         from jax.random import binomial
