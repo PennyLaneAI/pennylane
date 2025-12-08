@@ -226,7 +226,7 @@ def specs(
           PauliX: 2
         <BLANKLINE>
         Measurements:
-          expval(PauliX + PauliY): 1
+          expval(Sum(num_wires=2, num_terms=2)): 1
 
         We then check the resources after applying all transforms:
 
@@ -240,7 +240,7 @@ def specs(
           RX: 1
         <BLANKLINE>
         Measurements:
-          expval(PauliX + PauliY): 1
+          expval(Sum(num_wires=2, num_terms=2)): 1
 
         We can also notice that ``SWAP`` and ``PauliX`` are not present in the circuit if we set ``level=2``:
 
@@ -254,7 +254,7 @@ def specs(
           RX: 2
         <BLANKLINE>
         Measurements:
-          expval(PauliX + PauliY): 1
+          expval(Sum(num_wires=2, num_terms=2)): 1
 
         If a QNode with a tape-splitting transform is supplied to the function, with the transform included in the
         desired transforms, the specs output's resources field is instead returned as a list with a
@@ -280,12 +280,12 @@ def specs(
                      level='user',
                      resources=[SpecsResources(gate_types={'RandomLayers': 1},
                                                gate_sizes={2: 1},
-                                               measurements={'expval(PauliX @ PauliZ)': 1},
+                                               measurements={'expval(Prod(num_wires=2, num_terms=2))': 1},
                                                num_allocs=2,
                                                depth=1),
                                 SpecsResources(gate_types={'RandomLayers': 1},
                                                gate_sizes={2: 1},
-                                               measurements={'expval(PauliZ @ PauliY)': 1},
+                                               measurements={'expval(Prod(num_wires=2, num_terms=2))': 1},
                                                num_allocs=3,
                                                depth=1)])
     """

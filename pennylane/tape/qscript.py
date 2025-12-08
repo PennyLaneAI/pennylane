@@ -1002,7 +1002,7 @@ class QuantumScript:
         >>> pprint(qscript.specs['resources'])
         SpecsResources(gate_types={'CNOT': 2, 'Hadamard': 2, 'RX': 1, 'Rot': 1},
                        gate_sizes={1: 4, 2: 2},
-                       measurements={'expval(PauliZ @ PauliZ)': 1},
+                       measurements={'expval(Prod(num_wires=2, num_terms=2))': 1},
                        num_allocs=2,
                        depth=4)
         """
