@@ -19,7 +19,6 @@ from ast import Dict
 from dataclasses import dataclass, field
 from itertools import chain
 
-from pennylane.compiler.python_compiler.utils import get_parent_of_type
 from xdsl import context
 from xdsl.dialects import arith, builtin, func, memref, scf, tensor
 from xdsl.ir import Block, Operation, Region, SSAValue
@@ -29,6 +28,7 @@ from xdsl.rewriter import BlockInsertPoint, InsertPoint
 
 from pennylane.compiler.python_compiler import compiler_transform
 from pennylane.compiler.python_compiler.dialects import quantum
+from pennylane.compiler.python_compiler.utils import get_parent_of_type
 
 from .tree_traversal_if_statements import IfOperatorPartitioningPattern
 from .tree_traversal_unroll_static_loops import UnrollLoopPattern
@@ -158,6 +158,7 @@ class TreeTraversalPass(ModulePass):
                 TreeTraversalPattern().match_and_rewrite(op, rewriter)
                 break
 
+
 tree_traversal_pass = compiler_transform(TreeTraversalPass)
 
 
@@ -286,7 +287,9 @@ class TreeTraversalPattern(RewritePattern):
                     for qb, idx in list(qubit_to_reg_idx.items()):
                         extract_op = quantum.ExtractOp(current_reg, idx)
                         rewriter.insert(extract_op)
-                        qb.replace_by_if(extract_op.qubit, lambda use: use.operation not in insert_ops)
+                        qb.replace_by_if(
+                            extract_op.qubit, lambda use: use.operation not in insert_ops
+                        )
                         qubit_to_reg_idx[extract_op.qubit] = idx
                         del qubit_to_reg_idx[qb]
 

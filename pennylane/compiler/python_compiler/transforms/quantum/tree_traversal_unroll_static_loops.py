@@ -28,6 +28,7 @@ from pennylane.exceptions import CompileError
 
 from ...utils import get_constant_from_ssa
 
+
 class UnrollLoopPattern(RewritePattern):
     """A rewrite pattern that unrolls scf.ForOps containing measurement-controlled
     operations into separate branches for each operator."""

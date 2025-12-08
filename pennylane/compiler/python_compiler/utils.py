@@ -20,7 +20,7 @@ from typing import Type, TypeVar
 from xdsl.dialects.arith import ConstantOp as arithConstantOp
 from xdsl.dialects.builtin import ComplexType, ShapedType
 from xdsl.dialects.tensor import ExtractOp as tensorExtractOp
-from xdsl.ir import SSAValue, Operation
+from xdsl.ir import Operation, SSAValue
 
 from .dialects.stablehlo import ConstantOp as hloConstantOp
 

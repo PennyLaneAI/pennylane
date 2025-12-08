@@ -19,7 +19,7 @@ This module contains a rewrite pattern that partitions if statements containing 
 """
 
 from itertools import chain
-from typing import List, Tuple, Type, Set
+from typing import List, Set, Tuple, Type
 
 from xdsl.dialects import arith, builtin, func, scf
 from xdsl.ir import Block, Operation, Region, SSAValue
@@ -27,7 +27,6 @@ from xdsl.pattern_rewriter import PatternRewriter, RewritePattern, op_type_rewri
 from xdsl.rewriter import InsertPoint
 
 from pennylane.compiler.python_compiler.dialects import quantum
-
 from pennylane.exceptions import CompileError
 
 
@@ -81,7 +80,9 @@ class IfOperatorPartitioningPattern(RewritePattern):
         for current_op in self.final_if_ops_with_mcm:
             # Get quantum register from missing values
             missing_values = self.analyze_missing_values_for_ops([current_op])
-            qreg_from_if_op = [mv for mv in missing_values if isinstance(mv.type, quantum.QuregType)]
+            qreg_from_if_op = [
+                mv for mv in missing_values if isinstance(mv.type, quantum.QuregType)
+            ]
 
             # Extract a quantum.bit from the current qreg
             # Define a constant index 0
@@ -110,14 +111,18 @@ class IfOperatorPartitioningPattern(RewritePattern):
         op_walk = op.walk()
         for current_op in op_walk:
             if isinstance(current_op, quantum.MeasureOp):
-                self.collect_all_parent_ifs_and_check_limits(current_op, self.if_op_with_mcm, stop=op)
+                self.collect_all_parent_ifs_and_check_limits(
+                    current_op, self.if_op_with_mcm, stop=op
+                )
 
         # Check for quantum operations after nested IfOps with mcm
         self.check_quantum_op_after_nested_if(op)
 
         return len(self.if_op_with_mcm) > 0
 
-    def collect_all_parent_ifs_and_check_limits(self, op: quantum.MeasureOp, collector: List[scf.IfOp], stop: Operation) -> None:
+    def collect_all_parent_ifs_and_check_limits(
+        self, op: quantum.MeasureOp, collector: List[scf.IfOp], stop: Operation
+    ) -> None:
         """Collect all parent scf.IfOps of a given operation up to a stop operation."""
 
         immediate_if_found = False
@@ -131,7 +136,7 @@ class IfOperatorPartitioningPattern(RewritePattern):
                     mcm_on_if_region = mcm_op.parent_region() == op.true_region
 
                     # Check if the mcm share an immediate IfOp with other mcm
-                    if (op,mcm_on_if_region) in self.immediate_if_4_mcm:
+                    if (op, mcm_on_if_region) in self.immediate_if_4_mcm:
                         raise CompileError(
                             "Not supported: Multiple mid-circuit measurements within the same immediate If statement. "
                             "Each If statement can only contain one mid-circuit measurement. "
@@ -145,7 +150,7 @@ class IfOperatorPartitioningPattern(RewritePattern):
                             "Please restructure your code to use separate If statements for each measurement."
                         )
 
-                    self.immediate_if_4_mcm.append((op,mcm_on_if_region))
+                    self.immediate_if_4_mcm.append((op, mcm_on_if_region))
                     immediate_if_found = True
                 if op in collector:
                     collector.remove(op)
@@ -161,11 +166,15 @@ class IfOperatorPartitioningPattern(RewritePattern):
             while (op := op.parent_op()) and op != stop:
                 if isinstance(op, scf.IfOp):
 
-                    yield_ops =  [op.true_region.ops.last, op.false_region.ops.last]
+                    yield_ops = [op.true_region.ops.last, op.false_region.ops.last]
 
                     outer_op = if_with_mcm
 
-                    while (outer_op := outer_op.next_op) and outer_op not in yield_ops and outer_op is not None:
+                    while (
+                        (outer_op := outer_op.next_op)
+                        and outer_op not in yield_ops
+                        and outer_op is not None
+                    ):
                         if isinstance(outer_op, quantum.CustomOp):
                             raise CompileError(
                                 "Not supported: Quantum operations after nested If statements containing mid-circuit measurements. "
@@ -177,8 +186,6 @@ class IfOperatorPartitioningPattern(RewritePattern):
                                 "      qml.RX(0.5, wires=0)  # Quantum operation after nested If - NOT ALLOWED\n\n"
                                 "Please restructure your code to avoid quantum operations after nested If statements with measurements."
                             )
-
-
 
     def looking_for_nested_if_ops(self, op: Operation) -> bool:
         """Detect if there are mid-circuit measurement operations inside IfOps."""
@@ -211,12 +218,17 @@ class IfOperatorPartitioningPattern(RewritePattern):
             if outer_if_op in self.if_op_with_mcm_4_flatten:
                 self.if_op_with_mcm_4_flatten[outer_if_op]["inners"].append(inner_if_op)
             else:
-                self.if_op_with_mcm_4_flatten[outer_if_op] = {"depth": depth, "inners": [inner_if_op], "flattened": False}
+                self.if_op_with_mcm_4_flatten[outer_if_op] = {
+                    "depth": depth,
+                    "inners": [inner_if_op],
+                    "flattened": False,
+                }
 
         return len(self.if_op_with_mcm_4_flatten) > 0
 
-
-    def collect_all_parent_ifs(self, op: Operation, collector: List[scf.IfOp], stop: Operation) -> None:
+    def collect_all_parent_ifs(
+        self, op: Operation, collector: List[scf.IfOp], stop: Operation
+    ) -> None:
         """Collect all parent scf.IfOps of a given operation up to a stop operation."""
         while (op := op.parent_op()) and op != stop:
             if isinstance(op, scf.IfOp):
@@ -280,7 +292,9 @@ class IfOperatorPartitioningPattern(RewritePattern):
                 if new_inner_if_op != inner_op:
                     # Update the key
                     if new_inner_if_op in self.if_op_with_mcm_4_flatten:
-                        self.if_op_with_mcm_4_flatten[new_inner_if_op] = self.if_op_with_mcm_4_flatten.pop(inner_op)
+                        self.if_op_with_mcm_4_flatten[new_inner_if_op] = (
+                            self.if_op_with_mcm_4_flatten.pop(inner_op)
+                        )
                     # Update any references to inner_op in other inner lists
                     for value in self.if_op_with_mcm_4_flatten.values():
                         if inner_op in value["inners"]:
@@ -296,14 +310,16 @@ class IfOperatorPartitioningPattern(RewritePattern):
 
                 # Update target_outer_if_op reference if it has changed
                 if target_outer_if_op != new_outer_if_op:
-                    self.if_op_with_mcm_4_flatten[new_outer_if_op] = self.if_op_with_mcm_4_flatten.pop(target_outer_if_op)
+                    self.if_op_with_mcm_4_flatten[new_outer_if_op] = (
+                        self.if_op_with_mcm_4_flatten.pop(target_outer_if_op)
+                    )
 
                     # Update target_outer_if_op in any inner_if_list that may refer to it
                     for value in self.if_op_with_mcm_4_flatten.values():
                         if target_outer_if_op in value["inners"]:
                             idx = value["inners"].index(target_outer_if_op)
                             value["inners"][idx] = new_outer_if_op
-                            value["inners"].insert(idx+inner_count, new_inner_if_op)
+                            value["inners"].insert(idx + inner_count, new_inner_if_op)
 
                     if target_outer_if_op in self.final_if_ops_with_mcm:
                         self.final_if_ops_with_mcm.remove(target_outer_if_op)
