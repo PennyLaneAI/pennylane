@@ -37,7 +37,7 @@ from pennylane.operation import Operation, Operator
 from pennylane.ops import CSWAP, SWAP, Hadamard, PauliX, PauliZ, adjoint, ctrl
 from pennylane.wires import Wires, WiresLike
 
-# pylint: disable=consider-using-generator, too-many-arguments
+# pylint: disable=too-many-arguments
 
 
 # -----------------------------
