@@ -402,7 +402,7 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         assert dev.tracker.totals["executions"] == 1
 
         assert isinstance(qnode_transformed, qml.QNode)
-        assert isinstance(qnode_transformed.transform_program, qml.transforms.core.CompilePipeline)
+        assert isinstance(qnode_transformed.transform_program, qml.CompilePipeline)
         assert isinstance(
             qnode_transformed.transform_program.pop_front(), qml.transforms.core.TransformContainer
         )
@@ -438,7 +438,7 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
 
         assert qnode_transformed(0.1) == 4
         assert isinstance(qnode_transformed, qml.QNode)
-        assert isinstance(qnode_transformed.transform_program, qml.transforms.core.CompilePipeline)
+        assert isinstance(qnode_transformed.transform_program, qml.CompilePipeline)
         assert isinstance(
             qnode_transformed.transform_program.pop_front(), qml.transforms.core.TransformContainer
         )
@@ -463,7 +463,7 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
             return qml.expval(qml.PauliZ(wires=0))
 
         assert isinstance(qnode_circuit, qml.QNode)
-        assert isinstance(qnode_circuit.transform_program, qml.transforms.core.CompilePipeline)
+        assert isinstance(qnode_circuit.transform_program, qml.CompilePipeline)
         assert isinstance(
             qnode_circuit.transform_program.pop_front(), qml.transforms.core.TransformContainer
         )
@@ -544,7 +544,7 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         # Applied on a qfunc (return a qfunc)
         qnode_transformed = dispatched_transform(qnode_circuit, 0)
 
-        assert isinstance(qnode_transformed.transform_program, qml.transforms.core.CompilePipeline)
+        assert isinstance(qnode_transformed.transform_program, qml.CompilePipeline)
         expand_transform_container = qnode_transformed.transform_program.pop_front()
         assert isinstance(expand_transform_container, qml.transforms.core.TransformContainer)
         assert expand_transform_container.args == (0,)
@@ -704,7 +704,7 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
             return qml.expval(qml.PauliZ(wires=0))
 
         assert isinstance(qnode1, qml.QNode)
-        assert isinstance(qnode1.transform_program, qml.transforms.core.CompilePipeline)
+        assert isinstance(qnode1.transform_program, qml.CompilePipeline)
         assert isinstance(
             qnode1.transform_program.pop_front(), qml.transforms.core.TransformContainer
         )
@@ -719,7 +719,7 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         qnode2 = dispatched_transform(qnode2, 1)
 
         assert isinstance(qnode2, qml.QNode)
-        assert isinstance(qnode2.transform_program, qml.transforms.core.CompilePipeline)
+        assert isinstance(qnode2.transform_program, qml.CompilePipeline)
         assert isinstance(
             qnode2.transform_program.pop_front(), qml.transforms.core.TransformContainer
         )
@@ -753,7 +753,7 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         class DummyDev(qml.devices.Device):
             # pylint: disable=unused-argument
             def preprocess_transforms(self, execution_config=None):
-                prog = qml.transforms.core.CompilePipeline()
+                prog = qml.CompilePipeline()
                 prog.add_transform(qml.defer_measurements)
                 prog.add_transform(qml.compile)
                 return prog
@@ -772,8 +772,8 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         program = _dev.preprocess_transforms()
         new_program = new_dev.preprocess_transforms()
 
-        assert isinstance(program, qml.transforms.core.CompilePipeline)
-        assert isinstance(new_program, qml.transforms.core.CompilePipeline)
+        assert isinstance(program, qml.CompilePipeline)
+        assert isinstance(new_program, qml.CompilePipeline)
 
         assert len(program) == 2
         assert len(new_program) == 3
@@ -805,8 +805,8 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         config = new_dev.setup_execution_config()
         new_program = new_dev.preprocess_transforms(config)
 
-        assert isinstance(program, qml.transforms.core.CompilePipeline)
-        assert isinstance(new_program, qml.transforms.core.CompilePipeline)
+        assert isinstance(program, qml.CompilePipeline)
+        assert isinstance(new_program, qml.CompilePipeline)
 
         assert len(program) == 3
         assert len(new_program) == 4

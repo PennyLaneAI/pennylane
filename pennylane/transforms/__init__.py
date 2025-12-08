@@ -339,7 +339,7 @@ from pennylane.tape import make_qscript as make_tape
 from pennylane.exceptions import TransformError
 
 # Import the decorators first to prevent circular imports when used in other transforms
-from .core import transform
+from .core import transform, CompilePipeline
 from .batch_params import batch_params
 from .batch_input import batch_input
 from .batch_partial import batch_partial
