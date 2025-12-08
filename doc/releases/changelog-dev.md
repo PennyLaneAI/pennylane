@@ -472,6 +472,10 @@ A warning message has been added to :doc:`Building a plugin <../development/plug
 * Improves documentation in the transforms module and adds documentation testing for it.
   [(#8557)](https://github.com/PennyLaneAI/pennylane/pull/8557)
 
+* The documentation for :class:`~.GeneralizedAmplitudeDamping` has been
+  updated to match the literature convention for the Kraus matrices' definition.
+  [(#8707)](https://github.com/PennyLaneAI/pennylane/pull/8707)
+
 <h3>Bug fixes 🐛</h3>
 
 * The warnings-as-errors CI action was failing due to an incompatibility between `pytest-xdist` and `pytest-benchmark`. 
