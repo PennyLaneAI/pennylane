@@ -1874,7 +1874,7 @@ class TrotterPauli(ResourceOperator):
         >>> pauli_ham
         PauliHamiltonian(num_qubits=10, num_pauli_words=30, max_weight=4, one_norm=None)
         >>> pauli_ham.pauli_dist
-        >>> {'X': 10, 'XX': 5, 'XXXX': 3, 'YY': 5, 'ZZ': 5, 'Z': 2}
+        {'X': 10, 'XX': 5, 'XXXX': 3, 'YY': 5, 'ZZ': 5, 'Z': 2}
 
         Note that each of the 30 Pauli words is treated individually and no seperation into
         commuting groups of terms is assumed.
