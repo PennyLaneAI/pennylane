@@ -1049,7 +1049,7 @@ class TestCountResources:
         ),
         QuantumScript(
             ops=[qml.PauliZ(0), qml.CNOT([0, 1]), qml.RX(1.23, 2)],
-            measurements=[qml.expval(qml.PauliZ(0))],
+            measurements=[qml.expval(qml.exp(qml.PauliZ(0)))],
             shots=Shots(10),
         ),
         QuantumScript(
@@ -1080,7 +1080,7 @@ class TestCountResources:
         SpecsResources({}, {}, {}, 0, 0),
         SpecsResources({"Hadamard": 1, "CNOT": 1}, {1: 1, 2: 1}, {"expval(PauliZ)": 1}, 2, 2),
         SpecsResources(
-            {"PauliZ": 1, "CNOT": 1, "RX": 1}, {1: 2, 2: 1}, {"expval(PauliZ)": 1}, 3, 2
+            {"PauliZ": 1, "CNOT": 1, "RX": 1}, {1: 2, 2: 1}, {"expval(Exp(PauliZ))": 1}, 3, 2
         ),
         SpecsResources(
             {"PauliZ": 3, "CNOT": 1, "RX": 1, "Identity": 1, "CustomOp2": 1},
