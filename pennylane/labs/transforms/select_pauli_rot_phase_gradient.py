@@ -87,6 +87,14 @@ def select_pauli_rot_phase_gradient(
     Because this state is not modified and can be re-used at a later stage, the transform does not prepare it but
     rather assumes it has been prepared on those wires at an earlier stage.
 
+    .. figure:: ../../../doc/_static/multiplexer_QROM.png
+                    :align: center
+                    :width: 70%
+                    :target: javascript:void(0);
+
+    The first two wires correspond to the control register, the next wire is the target qubit, followed by the register
+     equivalent to the angle wires, and finally, the register where the phase gradient is defined.
+
     Note that this operator contains :class:`~.SemiAdder` that requires additional ``work_wires`` for the semi-in-place addition
     :math:`\text{SemiAdder}|x\rangle_\text{ang} |y\rangle_\text{phg} = |x\rangle_\text{ang} |x + y\rangle_\text{phg}`.
 
@@ -107,6 +115,51 @@ def select_pauli_rot_phase_gradient(
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
 
+    **Example**
+
+    .. code-block:: python
+
+        from pennylane.labs.transforms.select_pauli_rot_phase_gradient import *
+        from functools import partial
+        import numpy as np
+
+        precision = 4
+        wire = "targ"
+        angle_wires = [f"ang_{i}" for i in range(precision)]
+        phase_grad_wires = [f"phg_{i}" for i in range(precision)]
+        work_wires = [f"work_{i}" for i in range(precision - 1)]
+
+        def phase_gradient(wires):
+            # prepare phase gradient state
+            for i, w in enumerate(wires):
+                qml.H(w)
+                qml.PhaseShift(-np.pi / 2**i, w)
+
+        @partial(
+            select_pauli_rot_phase_gradient,
+            angle_wires=angle_wires,
+            phase_grad_wires=phase_grad_wires,
+            work_wires=work_wires,
+        )
+        @qml.qnode(qml.device("default.qubit"))
+        def select_pauli_rot_circ(phis, control_wires, target_wire):
+            phase_gradient(phase_grad_wires)  # prepare phase gradient state
+
+            for wire in control_wires:
+                qml.Hadamard(wire)
+
+            qml.SelectPauliRot(phis, control_wires, target_wire, rot_axis="X")
+
+            return qml.probs(wire)
+
+        phis = [
+            (1 / 2 + 1 / 4 + 1 / 8) * 2 * np.pi,
+            (1 / 2 + 1 / 4 + 0 / 8) * 2 * np.pi,
+            (1 / 2 + 0 / 4 + 1 / 8) * 2 * np.pi,
+            (0 / 2 + 1 / 4 + 1 / 8) * 2 * np.pi,
+        ]
+
+        print(select_pauli_rot_circ(phis, control_wires=[0, 1], target_wire=wire))
     """
 
     if len(phase_grad_wires) < len(angle_wires):
