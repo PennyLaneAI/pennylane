@@ -2,6 +2,10 @@
 
 <h3>New features since last release</h3>
 
+* Quantum Automatic Differentiation implemented to allow automatic selection of optimal
+  Hadamard gradient differentiation methods per [the paper](https://arxiv.org/pdf/2408.05406).
+  [(#8640)](https://github.com/PennyLaneAI/pennylane/pull/8640)
+
 * A new decomposition has been added for the Controlled :class:`~.SemiAdder`,
   which is efficient and skips controlling all gates in its decomposition.
   [(#8423)](https://github.com/PennyLaneAI/pennylane/pull/8423)
@@ -9,6 +13,12 @@
 * Added a :meth:`~pennylane.devices.DeviceCapabilities.gate_set` method to :class:`~pennylane.devices.DeviceCapabilities`
   that produces a set of gate names to be used as the target gate set in decompositions.
   [(#8522)](https://github.com/PennyLaneAI/pennylane/pull/8522)
+
+* The :class:`~pennylane.decomposition.DecompositionGraph` now tracks the minimum number of
+  dynamic wire allocations required to solve the circuit, and provides a `minimize_work_wires`
+  option that enables the graph to select the best decomposition rules while minimizing the
+  number of additional allocations of work wires.
+  [(#8729)](https://github.com/PennyLaneAI/pennylane/pull/8729)
 
 <h4>Pauli product measurements</h4>
 
@@ -19,6 +29,24 @@
   [(#8663)](https://github.com/PennyLaneAI/pennylane/pull/8663)
 
 <h3>Improvements 🛠</h3>
+
+* Added a new decomposition, `_decompose_2_cnots`, for the two-qubit decomposition for `QubitUnitary`.
+  It supports the analytical decomposition a two-qubit unitary known to require exactly 2 CNOTs.
+  [(#8666)](https://github.com/PennyLaneAI/pennylane/issues/8666)
+  
+* Arithmetic dunder methods (`__add__`, `__mul__`, `__rmul__`) have been added to 
+  :class:`~.transforms.core.TransformDispatcher`, :class:`~.transforms.core.TransformContainer`, 
+  and :class:`~.transforms.core.TransformProgram` to enable intuitive composition of transform 
+  programs using `+` and `*` operators.
+  [(#8703)](https://github.com/PennyLaneAI/pennylane/pull/8703)
+
+* Quantum compilation passes in MLIR and XDSL can now be applied using the core PennyLane transform
+  infrastructure, instead of using Catalyst-specific tools. This is made possible by a new argument in
+  :func:`~pennylane.transform` and `~.TransformDispatcher` called ``pass_name``, which accepts a string
+  corresponding to the name of the compilation pass.
+  The ``pass_name`` argument ensures that the given compilation pass will be used when qjit'ing a
+  workflow, where the pass is performed in MLIR or xDSL.
+  [(#8539)](https://github.com/PennyLaneAI/pennylane/pull/8539)
 
 * `Operator.decomposition` will fallback to the first entry in `qml.list_decomps` if the `Operator.compute_decomposition`
   method is not overridden.
@@ -58,9 +86,6 @@
   >>> print(qml.draw(circuit, level="rotations-merged")())
   0: ──RX(6.68)─┤  State
   ```
-
-* Add the `PCPhaseOp` operation to the xDSL Quantum dialect.
-  [(#8621)](https://github.com/PennyLaneAI/pennylane/pull/8621)
 
 * `qml.for_loop` will now fall back to a standard Python `for` loop if capturing a condensed, structured loop fails
   with program capture enabled.
@@ -114,10 +139,6 @@
   - :class:`~.ParticleConservingU1`
   - :class:`~.CommutingEvolution`
 
-* A new `qml.compiler.python_compiler.utils` submodule has been added, containing general-purpose utilities for
-  working with xDSL. This includes a function that extracts the concrete value of scalar, constant SSA values.
-  [(#8514)](https://github.com/PennyLaneAI/pennylane/pull/8514)
-
 * Added a keyword argument ``recursive`` to ``qml.transforms.cancel_inverses`` that enables
   recursive cancellation of nested pairs of mutually inverse gates. This makes the transform
   more powerful, because it can cancel larger blocks of inverse gates without having to scan
@@ -160,7 +181,29 @@
 * The graph-based decomposition system now supports decomposition rules that contains mid-circuit measurements.
   [(#8079)](https://github.com/PennyLaneAI/pennylane/pull/8079)
 
+* The `~pennylane.estimator.compact_hamiltonian.CDFHamiltonian`, `~pennylane.estimator.compact_hamiltonian.THCHamiltonian`,
+  `~pennylane.estimator.compact_hamiltonian.VibrationalHamiltonian`, and `~pennylane.estimator.compact_hamiltonian.VibronicHamiltonian`
+  classes were modified to take the 1-norm of the Hamiltonian as an optional argument.
+  [(#8697)](https://github.com/PennyLaneAI/pennylane/pull/8697)
+
+* New decomposition rules that decompose to :class:`~.PauliRot` are added for the following operators.
+  [(#8700)](https://github.com/PennyLaneAI/pennylane/pull/8700)
+  [(#8704)](https://github.com/PennyLaneAI/pennylane/pull/8704)
+
+  - :class:`~.CRX`, :class:`~.CRY`, :class:`~.CRZ`
+  - :class:`~.ControlledPhaseShift`
+  - :class:`~.IsingXX`, :class:`~.IsingYY`, :class:`~.IsingZZ`
+  - :class:`~.PSWAP`
+  - :class:`~.RX`, :class:`~.RY`, :class:`~.RZ`
+  - :class:`~.SingleExcitation`, :class:`~.DoubleExcitation`
+  - :class:`~.SWAP`, :class:`~.ISWAP`, :class:`~.SISWAP`
+  - :class:`~.CY`, :class:`~.CZ`, :class:`~.CSWAP`, :class:`~.CNOT`, :class:`~.Toffoli`
+
 <h3>Breaking changes 💔</h3>
+
+* The unified compiler, implemented in the `qml.compiler.python_compiler` submodule, has been removed from PennyLane.
+  It has been migrated to Catalyst, available as `catalyst.python_interface`.
+  [(#8662)](https://github.com/PennyLaneAI/pennylane/pull/8662)
 
 * `qml.transforms.map_wires` no longer supports plxpr transforms.
   [(#8683)](https://github.com/PennyLaneAI/pennylane/pull/8683)
@@ -252,6 +295,12 @@
 
 <h3>Deprecations 👋</h3>
 
+* Maintenance support of NumPy<2.0 is deprecated as of v0.44 and will be completely dropped in v0.45.
+  Future versions of PennyLane will only work with NumPy>=2.0.
+  We recommend upgrading your version of NumPy to benefit from enhanced support and features.
+  [(#8578)](https://github.com/PennyLaneAI/pennylane/pull/8578)
+  [(#8497)](https://github.com/PennyLaneAI/pennylane/pull/8497)
+  
 * The ``custom_decomps`` keyword argument to ``qml.device`` has been deprecated and will be removed 
   in 0.45. Instead, with ``qml.decomposition.enable_graph()``, new decomposition rules can be defined as 
   quantum functions with registered resources. See :mod:`pennylane.decomposition` for more details.
@@ -317,6 +366,15 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Bump `jax` version to `0.7.1` for `capture` module.
+  [(#8715)](https://github.com/PennyLaneAI/pennylane/pull/8715)
+
+* Bump `jax` version to `0.7.0` for `capture` module.
+  [(#8701)](https://github.com/PennyLaneAI/pennylane/pull/8701)
+
+* Improve error handling when using PennyLane's experimental program capture functionality with an incompatible JAX version. 
+  [(#8723)](https://github.com/PennyLaneAI/pennylane/pull/8723)
+
 * Bump `autoray` package version to `0.8.2`.
   [(#8674)](https://github.com/PennyLaneAI/pennylane/pull/8674)
   
@@ -349,33 +407,11 @@
   primitive for use in program capture.
   [(#8357)](https://github.com/PennyLaneAI/pennylane/pull/8357)
 
-* Fix all NumPy 1.X `DeprecationWarnings` in our source code.
-  [(#8497)](https://github.com/PennyLaneAI/pennylane/pull/8497)
-
 * Update versions for `pylint`, `isort` and `black` in `format.yml`
   [(#8506)](https://github.com/PennyLaneAI/pennylane/pull/8506)
 
 * Reclassifies `registers` as a tertiary module for use with tach.
   [(#8513)](https://github.com/PennyLaneAI/pennylane/pull/8513)
-
-* A new `split_non_commuting_pass` compiler pass has been added to the xDSL transforms. This pass
-  splits quantum functions that measure observables on the same wires into multiple function executions,
-  where each execution measures observables on different wires (using the "wires" grouping strategy).
-  The original function is replaced with calls to these generated functions, and the results are combined
-  appropriately.
-  [(#8531)](https://github.com/PennyLaneAI/pennylane/pull/8531)
-
-* The experimental xDSL implementation of `diagonalize_measurements` has been updated to fix a bug
-  that included the wrong SSA value for final qubit insertion and deallocation at the end of the
-  circuit. A clear error is now also raised when there are observables with overlapping wires.
-  [(#8383)](https://github.com/PennyLaneAI/pennylane/pull/8383)
-
-* Add an `outline_state_evolution_pass` pass to the MBQC xDSL transform, which moves all
-  quantum gate operations to a private callable.
-  [(#8367)](https://github.com/PennyLaneAI/pennylane/pull/8367)
-
-* The experimental xDSL implementation of `measurements_from_samples_pass` has been updated to support `shots` defined by an `arith.constant` operation.
-  [(#8460)](https://github.com/PennyLaneAI/pennylane/pull/8460)
 
 * The :class:`~pennylane.devices.LegacyDeviceFacade` is slightly refactored to implement `setup_execution_config` and `preprocess_transforms`
   separately as opposed to implementing a single `preprocess` method. Additionally, the `mid_circuit_measurements` transform has been removed
@@ -403,6 +439,7 @@
   :class:`~.TemporaryAND`, :class:`~.QSVT`, and :class:`~.SelectPauliRot`.
   [(#8490)](https://github.com/PennyLaneAI/pennylane/pull/8490)
   [(#8577)](https://github.com/PennyLaneAI/pennylane/pull/8577)
+  [(#8721)](https://github.com/PennyLaneAI/pennylane/issues/8721)
 
 * The constant to convert the length unit Bohr to Angstrom in ``qml.qchem`` is updated to use scipy
   constants.
@@ -413,37 +450,12 @@
   informative ``RuntimeError`` when used with JAX-JIT or :func:`~.qjit`.
   [(#8489)](https://github.com/PennyLaneAI/pennylane/pull/8489)
 
-* Users can now apply xDSL passes without the need to pass the `pass_plugins` argument to the `qjit` decorator.
-  [(#8572)](https://github.com/PennyLaneAI/pennylane/pull/8572)
-  [(#8573)](https://github.com/PennyLaneAI/pennylane/pull/8573)
-
-* The `is_xdsl_pass` function has been added to the `pennylane.compiler.python_compiler.pass_api` module.
-  This function checks if a pass name corresponds to an xDSL implemented pass.
-  [(#8572)](https://github.com/PennyLaneAI/pennylane/pull/8572)
-
-* The :func:`~pennylane.compiler.python_compiler.Compiler.run` method now accepts a string as input,
-  which is parsed and transformed with xDSL.
-  [(#8587)](https://github.com/PennyLaneAI/pennylane/pull/8587)
-
-* The :func:`~pennylane.compiler.python_compiler.transforms.convert_to_mbqc_formalism_pass` now 
-  supports :class:`~xdsl.dialects.scf.IndexSwitchOp` in IR and ignores regions that have no body.
-  [(#8632)](https://github.com/PennyLaneAI/pennylane/pull/8632)
-
-* The `convert_to_mbqc_formalism` compilation pass now outlines the operations to represent a gate
-  in the MBQC formalism into subroutines in order to reduce the IR size for large programs.
-  [(#8619)](https://github.com/PennyLaneAI/pennylane/pull/8619)
-
 * Added a `skip_decomp_matrix_check` argument to :func:`~pennylane.ops.functions.assert_valid` that
   allows the test to skip the matrix check part of testing a decomposition rule but still verify
   that the resource function is correct.
   [(#8687)](https://github.com/PennyLaneAI/pennylane/pull/8687)
 
 <h3>Documentation 📝</h3>
-
-* Added a "Unified Compiler Cookbook" RST file, along with tutorials, to ``qml.compiler.python_compiler`,
-  which provides a quickstart guide for getting started with xDSL and its integration with PennyLane and
-  Catalyst.
-  [(#8571)](https://github.com/PennyLaneAI/pennylane/pull/8571)
 
 * The documentation of ``qml.transforms.rz_phase_gradient`` has been updated with respect to the
   sign convention of phase gradient states, how it prepares the phase gradient state in the code
@@ -478,6 +490,13 @@ A warning message has been added to :doc:`Building a plugin <../development/plug
   updated to match the literature convention for the definition of the Kraus matrices.
   [(#8707)](https://github.com/PennyLaneAI/pennylane/pull/8707)
 
+* Update `interface-unit-tests.yml` to use its input parameter `pytest_additional_args` when running pytest.
+  [(#8705)](https://github.com/PennyLaneAI/pennylane/pull/8705)
+
+* Fixes a bug where in `resolve_work_wire_type` we incorrectly returned a value of `zeroed` if `both work_wires` 
+  and `base_work_wires` were empty, causing an incorrect work wire type.
+  [(#8718)](https://github.com/PennyLaneAI/pennylane/pull/8718)
+
 * The warnings-as-errors CI action was failing due to an incompatibility between `pytest-xdist` and `pytest-benchmark`. 
   Disabling the benchmark package allows the tests to be collected an executed. 
   [(#8699)](https://github.com/PennyLaneAI/pennylane/pull/8699)
@@ -500,10 +519,6 @@ A warning message has been added to :doc:`Building a plugin <../development/plug
 * Fixes a bug in :class:`~.SemiAdder` where the results were incorrect when more ``work_wires`` than required were passed.
  [(#8423)](https://github.com/PennyLaneAI/pennylane/pull/8423)
 
-* Fixes a bug in ``QubitUnitaryOp.__init__`` in the unified compiler module that prevented an
-  instance from being constructed.
-  [(#8456)](https://github.com/PennyLaneAI/pennylane/pull/8456)
-
 * Fixes a bug where the deferred measurement method is used silently even if ``mcm_method="one-shot"`` is explicitly requested,
   when a device that extends the ``LegacyDevice`` does not declare support for mid-circuit measurements.
   [(#8486)](https://github.com/PennyLaneAI/pennylane/pull/8486)
@@ -522,6 +537,13 @@ A warning message has been added to :doc:`Building a plugin <../development/plug
 
 * Fixes a bug where :func:`~.change_op_basis` cannot be captured when the `uncompute_op` is left out.
   [(#8695)](https://github.com/PennyLaneAI/pennylane/pull/8695)
+
+* Fixes a bug where decomposition rules are sometimes incorrectly disregarded by the `DecompositionGraph` when a higher level
+  decomposition rule uses dynamically allocated work wires.
+  [(#8725)](https://github.com/PennyLaneAI/pennylane/pull/8725)
+
+* Fixes a bug where :class:`~.ops.ChangeOpBasis` is not correctly reconstructed using `qml.pytrees.unflatten(*qml.pytrees.flatten(op))`
+  [(#8721)](https://github.com/PennyLaneAI/pennylane/issues/8721)
 
 <h3>Contributors ✍️</h3>
 
@@ -543,5 +565,7 @@ Mudit Pandey,
 Shuli Shu,
 Jay Soni,
 nate stemen,
+Theodoros Trochatos,
 David Wierichs,
-Hongsheng Zheng
+Hongsheng Zheng,
+Zinan Zhou
