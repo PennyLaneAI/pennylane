@@ -316,7 +316,6 @@ class TorchLayer(Module):
 
         An example output is shown below:
 
-
         .. code-block:: rst
 
             Average loss over epoch 1: 0.5089
