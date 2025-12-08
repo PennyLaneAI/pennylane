@@ -15,7 +15,7 @@
 r"""This module contains the GraphStatePrep template."""
 
 
-import networkx as nx
+import rustworkx as rx
 
 import pennylane as qml
 from pennylane.operation import Operation
@@ -72,7 +72,7 @@ class GraphStatePrep(Operation):
 
         1. To define more complex starting states not relying on a single ops (``one_qubit_ops``
             and ``two_qubit_ops``).
-        2. Ensure ``wires`` works with multiple dimensional ``nx.Graph()`` object after the wires
+        2. Ensure ``wires`` works with multiple dimensional ``rx.PyGraph()`` object after the wires
            indexing scheme is added to the ``ftqc`` module.
 
     **Example:**
@@ -125,7 +125,7 @@ class GraphStatePrep(Operation):
 
         .. code-block:: python
 
-            import networkx as nx
+            import rustworkx as rx
             from pennylane.ftqc import GraphStatePrep
 
             dev = qml.device("default.qubit")
@@ -138,7 +138,8 @@ class GraphStatePrep(Operation):
         Defining a graph structure and drawing the circuit shows how the graph node labels have been
         mapped to wires:
 
-        >>> g1 = nx.Graph([("a", "b"), ("b", "c"), ("c", "d")])  # (a) -- (b) -- (c) -- (d)
+        >>> g1 = rx.PyGraph()
+        >>> g1.extend_from_edge_list([("a", "b"), ("b", "c"), ("c", "d")])  # (a) -- (b) -- (c) -- (d)
         >>> print(qml.draw(circuit, level="device")(g1, wires=range(4)))
         0: ──H─╭●───────┤  State
         1: ──H─╰Z─╭●────┤  State
@@ -158,7 +159,8 @@ class GraphStatePrep(Operation):
         Drawing the circuit for a graph with the same structure but with different node labels
         gives:
 
-        >>> g2 = nx.Graph([("b", "a"), ("a", "c"), ("c", "d")])  # (b) -- (a) -- (c) -- (d)
+        >>> g2 = rx.PyGraph()
+        >>> g2.extend_from_edge_list([("b", "a"), ("a", "c"), ("c", "d")])  # (b) -- (a) -- (c) -- (d)
         >>> print(qml.draw(circuit, level="device")(g2, wires=range(4)))
         0: ──H─╭Z─╭●────┤  State
         1: ──H─╰●─│─────┤  State
@@ -182,7 +184,7 @@ class GraphStatePrep(Operation):
 
     def __init__(
         self,
-        graph: nx.Graph | QubitGraph,
+        graph: rx.PyGraph | QubitGraph,
         one_qubit_ops: Operation = qml.H,
         two_qubit_ops: Operation = qml.CZ,
         wires: Wires | None = None,
@@ -225,7 +227,7 @@ class GraphStatePrep(Operation):
     @staticmethod
     def compute_decomposition(
         wires: Wires,
-        graph: nx.Graph | QubitGraph,
+        graph: rx.PyGraph | QubitGraph,
         one_qubit_ops: Operation = qml.H,
         two_qubit_ops: Operation = qml.CZ,
     ):  # pylint: disable=arguments-differ
@@ -240,7 +242,7 @@ class GraphStatePrep(Operation):
 
         Args:
             wires (Wires): Wires the decomposition applies on. Wires will be mapped 1:1 to graph nodes.
-            graph (Union[nx.Graph, QubitGraph]): QubitGraph or nx.Graph object mapping qubit to wires.
+            graph (Union[rx.PyGraph, QubitGraph]): QubitGraph or rx.PyGraph object mapping qubit to wires.
             one_qubit_ops (Operation): Operator to prepare the initial state of each qubit. Default to :class:`~.pennylane.H`.
             two_qubit_ops (Operation): Operator to entangle nearest qubits. Default to :class:`~.pennylane.CZ`.
 

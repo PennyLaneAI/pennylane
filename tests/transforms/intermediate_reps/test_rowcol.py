@@ -13,7 +13,7 @@
 # limitations under the License.
 """Tests for the CNOT routing algorithm ROWCOL."""
 # pylint: disable=no-self-use
-import networkx as nx
+import rustworkx as rx
 import numpy as np
 import pytest
 

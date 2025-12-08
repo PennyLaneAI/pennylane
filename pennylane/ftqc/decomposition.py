@@ -16,7 +16,7 @@ Contains functions to convert a PennyLane tape to the textbook MBQC formalism
 """
 from functools import partial, singledispatch
 
-import networkx as nx
+import rustworkx as rx
 
 from pennylane import PhaseShift, adjoint, math, measure
 from pennylane.decomposition import enabled_graph, register_resources
@@ -449,7 +449,7 @@ def _generate_cnot_graph():
     CNOT gate. Raussendorf et al. 2003, Fig. 2a.
     https://doi.org/10.1103/PhysRevA.68.022312"""
     wires = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
-    g = nx.Graph()
+    g = rx.PyGraph()
     g.add_nodes_from(wires)
     g.add_edges_from(
         [

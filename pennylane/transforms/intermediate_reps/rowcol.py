@@ -18,9 +18,8 @@ from __future__ import annotations
 from collections.abc import Iterable
 from typing import TYPE_CHECKING
 
-import networkx as nx
+import rustworkx as rx
 import numpy as np
-from networkx.algorithms.approximation import steiner_tree
 
 import pennylane as qml
 from pennylane.tape import QuantumScript, QuantumScriptBatch
@@ -43,11 +42,11 @@ except ModuleNotFoundError:
     has_galois = False
 
 
-def postorder_traverse(tree: nx.Graph, source: int, source_parent: int = None):
+def postorder_traverse(tree: rx.PyGraph, source: int, source_parent: int = None):
     """Post-order traverse a tree graph, starting from (but excluding) the node ``source``.
 
     Args:
-        tree (nx.Graph): Tree graph to traverse. Must contain ``source``. Must contain
+        tree (rx.PyGraph): Tree graph to traverse. Must contain ``source``. Must contain
             ``source_parent`` if it is not None. Typing assumes integer-labeled nodes.
         source (int): Node to start the traversal from
         source_parent (Optional[int]): Parent node of ``source`` in ``tree``. Should not be provided
@@ -74,10 +73,10 @@ def postorder_traverse(tree: nx.Graph, source: int, source_parent: int = None):
               (7)         (5)
 
     and consider ``(0)`` to be the source, or root, of the tree.
-    We may construct this tree as a ``nx.Graph`` by providing the edge data:
+    We may construct this tree as a ``rx.PyGraph`` by providing the edge data:
 
-    >>> import networkx as nx
-    >>> G = nx.Graph([(0, 1), (0, 2), (1, 3), (1, 4), (1, 5), (2, 6), (2, 7), (3, 8)])
+    >>> import rustworkx as rx
+    >>> G = rx.PyGraph([(0, 1), (0, 2), (1, 3), (1, 4), (1, 5), (2, 6), (2, 7), (3, 8)])
 
     As for every tree traversal, post-order traversal results in a reordering of the nodes of
     the tree, with each node appearing exactly once. Post-order traversing the graph means that
@@ -87,7 +86,7 @@ def postorder_traverse(tree: nx.Graph, source: int, source_parent: int = None):
     The post-order traversal reads ``[8, 3, 4, 5, 1, 6, 7, 2, 0]``.
     For the output convention of this function, each node is accompanied by its
     parent node, because this is useful information needed down the line, and it is not easy to
-    retrieve from the ``nx.Graph`` itself. In addition, the last entry, which is always the root
+    retrieve from the ``rx.PyGraph`` itself. In addition, the last entry, which is always the root
     of the tree provided via the ``source`` argument, is *not* included in the output.
 
     >>> traversal = qml.transforms.intermediate_reps.postorder_traverse(G, 0)
@@ -128,11 +127,11 @@ def postorder_traverse(tree: nx.Graph, source: int, source_parent: int = None):
     return out
 
 
-def preorder_traverse(tree: nx.Graph, source: int, source_parent: int = None):
+def preorder_traverse(tree: rx.PyGraph, source: int, source_parent: int = None):
     """Pre-order traverse a tree graph, starting from (but excluding) the node ``source``.
 
     Args:
-        tree (nx.Graph): Tree graph to traverse. Must contain ``source``. Must contain
+        tree (rx.PyGraph): Tree graph to traverse. Must contain ``source``. Must contain
             ``source_parent`` if it is not None. Typing assumes integer-labeled nodes.
         source (int): Node to start the traversal from
         source_parent (Optional[int]): Parent node of ``source`` in ``tree``. Should not be provided
@@ -159,10 +158,10 @@ def preorder_traverse(tree: nx.Graph, source: int, source_parent: int = None):
               (7)         (5)
 
     and consider ``(0)`` to be the source, or root, of the tree.
-    We may construct this tree as a ``nx.Graph`` by providing the edge data:
+    We may construct this tree as a ``rx.PyGraph`` by providing the edge data:
 
-    >>> import networkx as nx
-    >>> G = nx.Graph([(0, 1), (0, 2), (1, 3), (1, 4), (1, 5), (2, 6), (2, 7), (3, 8)])
+    >>> import rustworkx as rx
+    >>> G = rx.PyGraph([(0, 1), (0, 2), (1, 3), (1, 4), (1, 5), (2, 6), (2, 7), (3, 8)])
 
     As for every tree traversal, pre-order traversal results in a reordering of the nodes of
     the tree, with each node appearing exactly once. Pre-order traversing the graph means that
@@ -172,7 +171,7 @@ def preorder_traverse(tree: nx.Graph, source: int, source_parent: int = None):
     The pre-order traversal reads ``[0, 1, 3, 8, 4, 5, 2, 6, 7]``.
     For the output convention of this function, each node is accompanied by its
     parent node, because this is useful information needed down the line, and it is not easy to
-    retrieve from the ``nx.Graph`` itself. In addition, the first entry, which always is the root
+    retrieve from the ``rx.PyGraph`` itself. In addition, the first entry, which always is the root
     of the tree provided via the ``source`` argument, is *not* included in the output.
 
     >>> traversal = qml.transforms.intermediate_reps.preorder_traverse(G, 0)
@@ -238,13 +237,13 @@ def _get_S(P: TensorLike, idx: int, node_set: Iterable[int], mode: str):
     return S
 
 
-def _eliminate(P: TensorLike, connectivity: nx.Graph, idx: int, mode: str):
+def _eliminate(P: TensorLike, connectivity: rx.PyGraph, idx: int, mode: str):
     """Eliminate the column or row with index ``idx`` of the parity matrix P,
     respecting the connectivity constraints given by ``connectivity``.
 
     Args:
         P (TensorLike): Parity matrix
-        connectivity (nx.Graph): Connectivity graph
+        connectivity (rx.PyGraph): Connectivity graph
         idx (int): Column or row index to eliminate
         mode (str): Whether to eliminate the column (``column``) or row (``row``) of ``P``.
 
@@ -261,6 +260,11 @@ def _eliminate(P: TensorLike, connectivity: nx.Graph, idx: int, mode: str):
 
     cnots = []
     # i.1.1/i.2.1 Find Steiner tree within S (S').
+    try:
+        from networkx.algorithms.approximation import steiner_tree
+    except ImportError as e:
+        raise ImportError("networkx.algorithms.approximation.steiner_tree is required for ROWCOL routing. Please install networkx.") from e
+    
     T = steiner_tree(connectivity, list(S))
 
     # Need post-order nodes in any case
@@ -294,7 +298,7 @@ def _eliminate(P: TensorLike, connectivity: nx.Graph, idx: int, mode: str):
 
 @transform
 def rowcol(
-    tape: QuantumScript, connectivity: nx.Graph = None
+    tape: QuantumScript, connectivity: rx.PyGraph = None
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""CNOT routing algorithm `RowCol <https://pennylane.ai/compilation/rowcol-algorithm>`__.
 
@@ -305,7 +309,7 @@ def rowcol(
 
     Args:
         tape (QNode or QuantumScript or Callable): Input circuit containing only :class:`~.CNOT` gates. Will internally be translated to the :func:`~.parity_matrix` IR.
-        connectivity (nx.Graph): Connectivity graph to route into. If ``None`` (the default), full connectivity is assumed.
+        connectivity (rx.PyGraph): Connectivity graph to route into. If ``None`` (the default), full connectivity is assumed.
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumScript], function]:
@@ -336,8 +340,8 @@ def rowcol(
     and define it in code as a ``networkx.Graph``
     (`networkx documentation <https://networkx.org/documentation/stable/index.html>`__).
 
-    >>> import networkx as nx
-    >>> G = nx.Graph([(0, 3), (1, 2), (2, 3), (3, 4)])
+    >>> import rustworkx as rx
+    >>> G = rx.PyGraph([(0, 3), (1, 2), (2, 3), (3, 4)])
 
     Further we define the following circuit:
 
@@ -402,7 +406,7 @@ def rowcol(
     return [circ], null_postprocessing
 
 
-def _rowcol_parity_matrix(P: np.ndarray, connectivity: nx.Graph = None) -> list[tuple[int]]:
+def _rowcol_parity_matrix(P: np.ndarray, connectivity: rx.PyGraph = None) -> list[tuple[int]]:
     """RowCol algorithm that turns a parity matrix to a list of CNOT operators"""
 
     if not has_galois:  # pragma: no cover
@@ -414,11 +418,11 @@ def _rowcol_parity_matrix(P: np.ndarray, connectivity: nx.Graph = None) -> list[
     n = len(P)
     # If no connectivity is given, assume full connectivity
     if connectivity is None:
-        connectivity = nx.complete_graph(n)
+        connectivity = rx.generators.mesh_graph(n)
         cut_vertices = set()
     else:
         connectivity = connectivity.copy()
-        cut_vertices = set(nx.articulation_points(connectivity))
+        cut_vertices = set(rx.articulation_points(connectivity))
 
     cnots = []
     while connectivity.number_of_nodes() > 1:
@@ -433,7 +437,7 @@ def _rowcol_parity_matrix(P: np.ndarray, connectivity: nx.Graph = None) -> list[
         connectivity.remove_nodes_from([i])
 
         # Recompute cut vertices
-        cut_vertices = set(nx.articulation_points(connectivity))
+        cut_vertices = set(rx.articulation_points(connectivity))
 
     # Assert that the parity matrix was transformed into the identity matrix
     assert np.allclose(np.eye(n), P)

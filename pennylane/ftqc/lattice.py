@@ -20,7 +20,7 @@ from collections.abc import Sequence
 from enum import Enum, auto
 from functools import lru_cache
 
-import networkx as nx
+import rustworkx as rx
 
 
 class Lattice:
@@ -30,7 +30,7 @@ class Lattice:
 
         Args:
             lattice_shape: Name of the lattice shape.
-            graph (nx.Graph): A NetworkX undirected graph object. If provided, `nodes` and `edges` are ignored.
+            graph (rx.PyGraph): A NetworkX undirected graph object. If provided, `nodes` and `edges` are ignored.
             nodes (List): Nodes to construct a graph object. Ignored if `graph` is provided.
             edges (List): Edges to construct the graph. Ignored if `graph` is provided.
         Raises:
@@ -40,7 +40,7 @@ class Lattice:
     # TODOs: To support braiding operations, Lattice should support nodes/edges addition/deletion.
 
     def __init__(
-        self, lattice_shape: str, graph: nx.Graph = None, nodes: list = None, edges: list = None
+        self, lattice_shape: str, graph: rx.PyGraph = None, nodes: list = None, edges: list = None
     ):
         self._lattice_shape = lattice_shape
         if graph is None:
@@ -48,7 +48,7 @@ class Lattice:
                 raise ValueError(
                     "Neither a networkx Graph object nor nodes together with edges are provided."
                 )
-            self._graph = nx.Graph()
+            self._graph = rx.PyGraph()
             self._graph.add_nodes_from(nodes)
             self._graph.add_edges_from(edges)
         else:
@@ -78,7 +78,7 @@ class Lattice:
         return self._graph.edges
 
     @property
-    def graph(self) -> nx.Graph:
+    def graph(self) -> rx.PyGraph:
         r"""Returns the underlying NetworkX graph object representing the lattice."""
         return self._graph
 

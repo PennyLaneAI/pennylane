@@ -17,7 +17,7 @@
 import re
 import uuid
 
-import networkx as nx
+import rustworkx as rx
 import pytest
 import rustworkx as rx
 
@@ -164,7 +164,7 @@ class TestQubitGraphsInitialization:
             ("aux", i) for i in range(9, 17)
         ]  # 8 auxiliary qubits, indexed 9, 10, ..., 16
 
-        expected_graph = nx.Graph()
+        expected_graph = rx.PyGraph()
         expected_graph.add_nodes_from(data_qubits)
         expected_graph.add_nodes_from(aux_qubits)
 
@@ -520,7 +520,7 @@ class TestQubitGraphIndexing:
             qubit[0] = 42
 
         with pytest.raises(TypeError, match="item assignment type must also be a QubitGraph"):
-            qubit[0] = nx.Graph()
+            qubit[0] = rx.PyGraph()
 
 
 class TestQubitGraphNesting:
@@ -529,7 +529,7 @@ class TestQubitGraphNesting:
     @staticmethod
     def _generate_single_node_graph():
         """Return a graph containing a single node with label 0."""
-        graph = nx.Graph()
+        graph = rx.PyGraph()
         graph.add_node(0)
         return graph
 
@@ -607,25 +607,25 @@ class TestQubitGraphRepresentation:
 
     def test_representation_nested(self):
         """Test conversion of a nested QubitGraph to its string representation."""
-        graph = nx.Graph()
+        graph = rx.PyGraph()
         graph.add_node(1)
         q = QubitGraph(graph, id=0)
         assert str(q) == "QubitGraph<id=0, loc=[]>"
         assert str(q[1]) == "QubitGraph<id=1, loc=[0]>"
 
-        graph = nx.Graph()
+        graph = rx.PyGraph()
         graph.add_node("1")
         q = QubitGraph(graph, id=0)
         assert str(q) == "QubitGraph<id=0, loc=[]>"
         assert str(q["1"]) == "QubitGraph<id=1, loc=[0]>"
 
-        graph = nx.Graph()
+        graph = rx.PyGraph()
         graph.add_node((0, 0))
         q = QubitGraph(graph, id=0)
         assert str(q) == "QubitGraph<id=0, loc=[]>"
         assert str(q[(0, 0)]) == "QubitGraph<id=(0, 0), loc=[0]>"
 
-        graph = nx.Graph()
+        graph = rx.PyGraph()
         graph.add_node(("aux", 0))
         q = QubitGraph(graph, id=0)
         assert str(q) == "QubitGraph<id=0, loc=[]>"
@@ -730,7 +730,7 @@ class TestQubitGraphsWarnings:
         q.init_graph_2d_grid(2, 2)
 
         with pytest.warns(UserWarning, match="Attempting to re-initialize a QubitGraph"):
-            g = nx.Graph()
+            g = rx.PyGraph()
             q.init_graph(g)
 
         with pytest.warns(UserWarning, match="Attempting to re-initialize a QubitGraph"):

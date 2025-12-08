@@ -21,7 +21,7 @@ from collections.abc import Callable, Sequence
 from typing import Any
 
 import numpy as np
-from networkx import MultiDiGraph, has_path, weakly_connected_components
+from pennylane._rustworkx_compat import MultiDiGraph, has_path, weakly_connected_components
 
 from pennylane import ops
 from pennylane.measurements import MeasurementProcess

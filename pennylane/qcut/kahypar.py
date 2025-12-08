@@ -22,7 +22,7 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
-from networkx import MultiDiGraph
+from pennylane._rustworkx_compat import MultiDiGraph
 
 from pennylane import math
 from pennylane.operation import Operation

@@ -4,7 +4,7 @@ Contains the transpiler transform.
 
 from functools import partial
 
-import networkx as nx
+import rustworkx as rx
 
 import pennylane as qml
 from pennylane.ops import LinearCombination
@@ -131,15 +131,47 @@ def transpile(
         device_wires = None
         is_default_mixed = False
     # init connectivity graph
-    coupling_graph = (
-        nx.Graph(coupling_map) if not isinstance(coupling_map, nx.Graph) else coupling_map
-    )
+    # Convert to rustworkx PyGraph if needed
+    if not isinstance(coupling_map, rx.PyGraph):
+        # coupling_map should be a list of edges
+        coupling_graph = rx.PyGraph()
+        # Collect all unique nodes from coupling_map
+        nodes = set()
+        if isinstance(coupling_map, list):
+            for edge in coupling_map:
+                nodes.update(edge)
+        else:
+            # Try to treat as graph-like object
+            try:
+                nodes = set(coupling_map.nodes())
+            except AttributeError:
+                nodes = set()
+        
+        # Add nodes
+        node_map = {}
+        for i, node in enumerate(sorted(nodes)):
+            idx = coupling_graph.add_node(node)
+            node_map[node] = idx
+        
+        # Add edges
+        if isinstance(coupling_map, list):
+            for u, v in coupling_map:
+                coupling_graph.add_edge(node_map[u], node_map[v], None)
+        else:
+            try:
+                for u, v in coupling_map.edges():
+                    coupling_graph.add_edge(node_map[u], node_map[v], None)
+            except (AttributeError, TypeError):
+                pass
+    else:
+        coupling_graph = coupling_map
 
     # make sure every wire is present in coupling map
-    if any(wire not in coupling_graph.nodes for wire in tape.wires):
+    graph_nodes = list(coupling_graph.nodes())
+    if any(wire not in graph_nodes for wire in tape.wires):
         wires = tape.wires.tolist()
         raise ValueError(
-            f"Not all wires present in coupling map! wires: {wires}, coupling map: {coupling_graph.nodes}"
+            f"Not all wires present in coupling map! wires: {wires}, coupling map: {graph_nodes}"
         )
 
     if any(isinstance(m.obs, (LinearCombination, qml.ops.Prod)) for m in tape.measurements):
@@ -186,9 +218,10 @@ def transpile(
                 continue
 
             # two-qubit gates which can be handled by the coupling map
+            graph_edges = list(coupling_graph.edge_list())
             if (
-                op.wires in coupling_graph.edges
-                or tuple(reversed(op.wires)) in coupling_graph.edges
+                (op.wires[0], op.wires[1]) in graph_edges
+                or (op.wires[1], op.wires[0]) in graph_edges
             ):
                 gates.append(op)
                 list_op_copy.pop(0)
@@ -202,7 +235,16 @@ def transpile(
             # neighbourhood of q1 via swap operations.
             source_wire, dest_wire = op.wires
 
-            shortest_path = nx.algorithms.shortest_path(coupling_graph, source_wire, dest_wire)
+            try:
+                shortest_path = rx.dijkstra_shortest_paths(coupling_graph, source_wire, dest_wire)[dest_wire]
+            except (rx.NoPathFound, KeyError):
+                shortest_path = []
+            
+            if not shortest_path:
+                # No path found, skip this operation
+                list_op_copy.pop(0)
+                continue
+                
             path_length = len(shortest_path) - 1
             wires_to_swap = [shortest_path[(i - 1) : (i + 1)] for i in range(path_length, 1, -1)]
 

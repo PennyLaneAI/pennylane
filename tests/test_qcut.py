@@ -26,9 +26,14 @@ from pathlib import Path
 
 import numpy as onp
 import pytest
-from networkx import MultiDiGraph
-from networkx import __version__ as networkx_version
-from networkx import number_of_selfloops
+from pennylane._rustworkx_compat import MultiDiGraph, number_of_selfloops
+
+try:
+    import rustworkx as rx
+    rustworkx_version = rx.__version__
+except ImportError:
+    rustworkx_version = "0.0.0"
+    
 from scipy.stats import unitary_group
 
 import pennylane as qml
@@ -4109,7 +4114,7 @@ class TestCutCircuitTransform:
 
         spy.assert_not_called()
 
-    @pytest.mark.skipif(networkx_version[0] >= "3", reason="networkx version 3 breaks this test.")
+    # Note: Previously skipped for networkx version 3, but now using rustworkx
     @pytest.mark.tf
     def test_simple_cut_circuit_tf_jit(self, mocker, use_opt_einsum):
         """

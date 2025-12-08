@@ -20,7 +20,7 @@ import uuid
 import warnings
 from typing import Any
 
-import networkx as nx
+import rustworkx as rx
 
 # Fail-safe for algorithms that traverse the nested graph structure
 # In other words, we should never expect more than this many layers of nested QubitGraphs
@@ -60,7 +60,7 @@ class QubitGraph:
     Create a QubitGraph (with id=0) using a 2x2 Cartesian grid to define the structure of its
     underlying qubits:
 
-    >>> import networkx as nx
+    >>> import rustworkx as rx
     >>> from pennylane.ftqc import QubitGraph
     >>> q = QubitGraph(nx.grid_graph((2,2)), id=0)
     >>> q
@@ -201,7 +201,7 @@ class QubitGraph:
         - Implement tensor-like indexing and slicing.
     """
 
-    def __init__(self, graph: nx.Graph | None = None, id: Any | None = None):
+    def __init__(self, graph: rx.PyGraph | None = None, id: Any | None = None):
         # The identifier for this QubitGraph, e.g. a number, string, tuple, etc.
         # Generate a random uuid if the input is None
         self._id = uuid.uuid4() if id is None else id
@@ -262,7 +262,7 @@ class QubitGraph:
 
         **Example**
 
-        >>> graph = nx.Graph()
+        >>> graph = rx.PyGraph()
         >>> graph.add_node(0)
         >>> q_top = QubitGraph(graph, id="top")
         >>> print(f"{q_top}; {q_top.node_labels}")
@@ -340,7 +340,7 @@ class QubitGraph:
         QubitGraph<id=0, loc=[]>
         >>> q[(0, 1)]
         QubitGraph<id=(0, 1), loc=[0]>
-        >>> graph = nx.Graph()
+        >>> graph = rx.PyGraph()
         >>> graph.add_node("aux")
         >>> q[(0, 1)].init_graph(graph)
         >>> q[(0, 1)]["aux"]
@@ -570,7 +570,7 @@ class QubitGraph:
 
         return False
 
-    def init_graph(self, graph: nx.Graph):
+    def init_graph(self, graph: rx.PyGraph):
         """Initialize the QubitGraph's underlying qubits with the given graph.
 
         Args:
@@ -582,8 +582,8 @@ class QubitGraph:
         This example creates a NetworkX graph with two nodes, labelled 0 and 1, and one edge
         between them, and uses this graph to initialize the graph structure of a QubitGraph:
 
-        >>> import networkx as nx
-        >>> graph = nx.Graph()
+        >>> import rustworkx as rx
+        >>> graph = rx.PyGraph()
         >>> graph.add_edge(0, 1)
         >>> q = QubitGraph(id=0)
         >>> q.init_graph(graph)
@@ -713,7 +713,7 @@ class QubitGraph:
         data_qubits = [("data", i) for i in range(9)]  # 9 data qubits, indexed 0, 1, ..., 8
         aux_qubits = [("aux", i) for i in range(9, 17)]  # 8 aux qubits, indexed 9, 10, ..., 16
 
-        self._graph = nx.Graph()
+        self._graph = rx.PyGraph()
         self._graph.add_nodes_from(data_qubits)
         self._graph.add_nodes_from(aux_qubits)
 
@@ -750,7 +750,7 @@ class QubitGraph:
             self[node] = q
 
     @staticmethod
-    def _copy_graph_structure(graph: nx.Graph):
+    def _copy_graph_structure(graph: rx.PyGraph):
         """Creates a copy of a NetworkX graph, but only the graph structure (nodes and edges), without
         copying the node data.
 
@@ -762,12 +762,12 @@ class QubitGraph:
         """
         assert graph is not None, "Graph object for copying must not be None"
 
-        if isinstance(graph, nx.Graph):
-            # This allows support for other networkx graph types, which all inherit from nx.Graph
+        if isinstance(graph, rx.PyGraph):
+            # This allows support for other networkx graph types, which all inherit from rx.PyGraph
             graph_type = type(graph)
             new_graph = graph_type()
         else:
-            new_graph = nx.Graph()
+            new_graph = rx.PyGraph()
 
         new_graph.add_nodes_from(graph.nodes)
         new_graph.add_edges_from(graph.edges)
@@ -873,7 +873,7 @@ class QubitGraph:
                 "an 'edges' attribute."
             )
 
-        if not isinstance(candidate, nx.Graph):
+        if not isinstance(candidate, rx.PyGraph):
             warnings.warn(
                 f"QubitGraph expects an input graph of type 'networkx.Graph', but got "
                 f"'{type(candidate).__name__}'. Using a graph of another type may result in "

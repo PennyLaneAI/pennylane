@@ -20,7 +20,7 @@ from collections.abc import Sequence
 from dataclasses import InitVar, dataclass
 from typing import Any, ClassVar
 
-from networkx import MultiDiGraph
+from pennylane._rustworkx_compat import MultiDiGraph
 
 from pennylane.devices import Device, LegacyDevice
 from pennylane.ops.meta import WireCut

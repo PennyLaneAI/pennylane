@@ -19,7 +19,7 @@ import copy
 from collections.abc import Callable, Sequence
 from itertools import product
 
-from networkx import MultiDiGraph
+from pennylane._rustworkx_compat import MultiDiGraph
 
 from pennylane import ops
 from pennylane.measurements import ExpectationMP, MeasurementProcess, SampleMP, expval, sample

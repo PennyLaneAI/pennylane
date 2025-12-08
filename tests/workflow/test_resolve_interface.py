@@ -78,19 +78,21 @@ def test_auto_with_jax():
 def test_auto_with_unsupported_interface():
     """Test that 'auto' interface resolves to None correctly."""
     # pylint: disable=import-outside-toplevel
-    import networkx as nx
+    import rustworkx as rx
 
     # pylint: disable=too-few-public-methods
     class DummyCustomGraphOp(qml.operation.Operation):
         """Dummy custom operation for testing purposes."""
 
-        def __init__(self, graph: nx.Graph):
-            super().__init__(graph, wires=graph.nodes)
+        def __init__(self, graph: rx.PyGraph):
+            super().__init__(graph, wires=list(graph.nodes()))
 
         def decomposition(self) -> list:
             return []
 
-    graph = nx.complete_graph(3)
+    graph = rx.PyGraph()
+    graph.add_nodes_from([0, 1, 2])
+    graph.add_edges_from([(0, 1, ""), (0, 2, ""), (1, 2, "")])
     tape = qml.tape.QuantumScript([DummyCustomGraphOp(graph)], [qml.expval(qml.PauliZ(0))])
 
     assert _resolve_interface("auto", [tape]) == Interface.NUMPY

@@ -19,7 +19,7 @@ from collections.abc import Callable
 from functools import partial
 
 import numpy as np
-from networkx import MultiDiGraph
+from pennylane._rustworkx_compat import MultiDiGraph
 
 from pennylane import ops
 from pennylane.measurements import SampleMP, sample

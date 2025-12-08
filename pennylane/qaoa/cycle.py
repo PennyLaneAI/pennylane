@@ -18,7 +18,6 @@ Functionality for finding the maximum weighted cycle of directed graphs.
 import itertools
 from collections.abc import Iterable
 
-import networkx as nx
 import numpy as np
 import rustworkx as rx
 
@@ -26,7 +25,7 @@ from pennylane.operation import Operator
 from pennylane.ops import Identity, LinearCombination, X, Y, Z
 
 
-def edges_to_wires(graph: nx.Graph | rx.PyGraph | rx.PyDiGraph) -> dict[tuple, int]:
+def edges_to_wires(graph: rx.PyGraph | rx.PyGraph | rx.PyDiGraph) -> dict[tuple, int]:
     r"""Maps the edges of a graph to corresponding wires.
 
     **Example**
@@ -62,12 +61,12 @@ def edges_to_wires(graph: nx.Graph | rx.PyGraph | rx.PyDiGraph) -> dict[tuple, i
      (3, 2): 11}
 
     Args:
-        graph (nx.Graph or rx.PyGraph or rx.PyDiGraph): the graph specifying possible edges
+        graph (rx.PyGraph or rx.PyGraph or rx.PyDiGraph): the graph specifying possible edges
 
     Returns:
         Dict[Tuple, int]: a mapping from graph edges to wires
     """
-    if isinstance(graph, nx.Graph):
+    if isinstance(graph, rx.PyGraph):
         return {edge: i for i, edge in enumerate(graph.edges)}
     if isinstance(graph, (rx.PyGraph, rx.PyDiGraph)):
         gnodes = graph.nodes()
@@ -76,11 +75,11 @@ def edges_to_wires(graph: nx.Graph | rx.PyGraph | rx.PyDiGraph) -> dict[tuple, i
             for i, e in enumerate(sorted(graph.edge_list()))
         }
     raise ValueError(
-        f"Input graph must be a nx.Graph or rx.PyGraph or rx.PyDiGraph, got {type(graph).__name__}"
+        f"Input graph must be a rx.PyGraph or rx.PyGraph or rx.PyDiGraph, got {type(graph).__name__}"
     )
 
 
-def wires_to_edges(graph: nx.Graph | rx.PyGraph | rx.PyDiGraph) -> dict[int, tuple]:
+def wires_to_edges(graph: rx.PyGraph | rx.PyGraph | rx.PyDiGraph) -> dict[int, tuple]:
     r"""Maps the wires of a register of qubits to corresponding edges.
 
     **Example**
@@ -116,12 +115,12 @@ def wires_to_edges(graph: nx.Graph | rx.PyGraph | rx.PyDiGraph) -> dict[int, tup
      11: (3, 2)}
 
     Args:
-        graph (nx.Graph or rx.PyGraph or rx.PyDiGraph): the graph specifying possible edges
+        graph (rx.PyGraph or rx.PyGraph or rx.PyDiGraph): the graph specifying possible edges
 
     Returns:
         Dict[Tuple, int]: a mapping from wires to graph edges
     """
-    if isinstance(graph, nx.Graph):
+    if isinstance(graph, rx.PyGraph):
         return {i: edge for i, edge in enumerate(graph.edges)}
     if isinstance(graph, (rx.PyGraph, rx.PyDiGraph)):
         gnodes = graph.nodes()
@@ -130,11 +129,11 @@ def wires_to_edges(graph: nx.Graph | rx.PyGraph | rx.PyDiGraph) -> dict[int, tup
             for i, e in enumerate(sorted(graph.edge_list()))
         }
     raise ValueError(
-        f"Input graph must be a nx.Graph or rx.PyGraph or rx.PyDiGraph, got {type(graph).__name__}"
+        f"Input graph must be a rx.PyGraph or rx.PyGraph or rx.PyDiGraph, got {type(graph).__name__}"
     )
 
 
-def cycle_mixer(graph: nx.DiGraph | rx.PyDiGraph) -> Operator:
+def cycle_mixer(graph: rx.PyDiGraph | rx.PyDiGraph) -> Operator:
     r"""Calculates the cycle-mixer Hamiltonian.
 
     Following methods outlined `here <https://arxiv.org/abs/1709.03489>`__, the
@@ -152,7 +151,7 @@ def cycle_mixer(graph: nx.DiGraph | rx.PyDiGraph) -> Operator:
 
     **Example**
 
-    >>> import networkx as nx
+    >>> import rustworkx as rx
     >>> g = nx.complete_graph(3).to_directed()
     >>> h_m = cycle_mixer(g)
     >>> print(h_m)
@@ -211,14 +210,14 @@ def cycle_mixer(graph: nx.DiGraph | rx.PyDiGraph) -> Operator:
     + (0.25) [Y5 X4 Y0]
 
     Args:
-        graph (nx.DiGraph or rx.PyDiGraph): the directed graph specifying possible edges
+        graph (rx.PyDiGraph or rx.PyDiGraph): the directed graph specifying possible edges
 
     Returns:
         qml.Hamiltonian: the cycle-mixer Hamiltonian
     """
-    if not isinstance(graph, (nx.DiGraph, rx.PyDiGraph)):
+    if not isinstance(graph, (rx.PyDiGraph, rx.PyDiGraph)):
         raise ValueError(
-            f"Input graph must be a nx.DiGraph or rx.PyDiGraph, got {type(graph).__name__}"
+            f"Input graph must be a rx.PyDiGraph or rx.PyDiGraph, got {type(graph).__name__}"
         )
 
     hamiltonian = LinearCombination([], [])
@@ -230,7 +229,7 @@ def cycle_mixer(graph: nx.DiGraph | rx.PyDiGraph) -> Operator:
     return hamiltonian
 
 
-def _partial_cycle_mixer(graph: nx.DiGraph | rx.PyDiGraph, edge: tuple) -> Operator:
+def _partial_cycle_mixer(graph: rx.PyDiGraph | rx.PyDiGraph, edge: tuple) -> Operator:
     r"""Calculates the partial cycle-mixer Hamiltonian for a specific edge.
 
     For an edge :math:`(i, j)`, this function returns:
@@ -241,15 +240,15 @@ def _partial_cycle_mixer(graph: nx.DiGraph | rx.PyDiGraph, edge: tuple) -> Opera
         X_{ij}X_{ik}X_{kj} + Y_{ij}Y_{ik}X_{kj} + Y_{ij}X_{ik}Y_{kj} - X_{ij}Y_{ik}Y_{kj}\right]
 
     Args:
-        graph (nx.DiGraph or rx.PyDiGraph): the directed graph specifying possible edges
+        graph (rx.PyDiGraph or rx.PyDiGraph): the directed graph specifying possible edges
         edge (tuple): a fixed edge
 
     Returns:
         qml.Hamiltonian: the partial cycle-mixer Hamiltonian
     """
-    if not isinstance(graph, (nx.DiGraph, rx.PyDiGraph)):
+    if not isinstance(graph, (rx.PyDiGraph, rx.PyDiGraph)):
         raise ValueError(
-            f"Input graph must be a nx.DiGraph or rx.PyDiGraph, got {type(graph).__name__}"
+            f"Input graph must be a rx.PyDiGraph or rx.PyDiGraph, got {type(graph).__name__}"
         )
 
     coeffs = []
@@ -289,7 +288,7 @@ def _partial_cycle_mixer(graph: nx.DiGraph | rx.PyDiGraph, edge: tuple) -> Opera
     return LinearCombination(coeffs, ops)
 
 
-def loss_hamiltonian(graph: nx.Graph | rx.PyGraph | rx.PyDiGraph) -> Operator:
+def loss_hamiltonian(graph: rx.PyGraph | rx.PyGraph | rx.PyDiGraph) -> Operator:
     r"""Calculates the loss Hamiltonian for the maximum-weighted cycle problem.
 
     We consider the problem of selecting a cycle from a graph that has the greatest product of edge
@@ -329,7 +328,7 @@ def loss_hamiltonian(graph: nx.Graph | rx.PyGraph | rx.PyDiGraph) -> Operator:
 
     **Example**
 
-    >>> import networkx as nx
+    >>> import rustworkx as rx
     >>> g = nx.complete_graph(3).to_directed()
     >>> edge_weight_data = {edge: (i + 1) * 0.5 for i, edge in enumerate(g.edges)}
     >>> for k, v in edge_weight_data.items():
@@ -362,7 +361,7 @@ def loss_hamiltonian(graph: nx.Graph | rx.PyGraph | rx.PyDiGraph) -> Operator:
     )
 
     Args:
-        graph (nx.Graph or rx.PyGraph or rx.PyDiGraph): the graph specifying possible edges
+        graph (rx.PyGraph or rx.PyGraph or rx.PyDiGraph): the graph specifying possible edges
 
     Returns:
         qml.Hamiltonian: the loss Hamiltonian
@@ -371,9 +370,9 @@ def loss_hamiltonian(graph: nx.Graph | rx.PyGraph | rx.PyDiGraph) -> Operator:
         ValueError: if the graph contains self-loops
         KeyError: if one or more edges do not contain weight data
     """
-    if not isinstance(graph, (nx.Graph, rx.PyGraph, rx.PyDiGraph)):
+    if not isinstance(graph, (rx.PyGraph, rx.PyGraph, rx.PyDiGraph)):
         raise ValueError(
-            f"Input graph must be a nx.Graph or rx.PyGraph or rx.PyDiGraph, got {type(graph).__name__}"
+            f"Input graph must be a rx.PyGraph or rx.PyGraph or rx.PyDiGraph, got {type(graph).__name__}"
         )
 
     edges_to_qubits = edges_to_wires(graph)
@@ -445,7 +444,7 @@ def _square_hamiltonian_terms(
     return squared_coeffs, squared_ops
 
 
-def out_flow_constraint(graph: nx.DiGraph | rx.PyDiGraph) -> Operator:
+def out_flow_constraint(graph: rx.PyDiGraph | rx.PyDiGraph) -> Operator:
     r"""Calculates the `out flow constraint <https://1qbit.com/whitepaper/arbitrage/>`__
     Hamiltonian for the maximum-weighted cycle problem.
 
@@ -472,7 +471,7 @@ def out_flow_constraint(graph: nx.DiGraph | rx.PyDiGraph) -> Operator:
     using :func:`~.edges_to_wires`.
 
     Args:
-        graph (nx.DiGraph or rx.PyDiGraph): the directed graph specifying possible edges
+        graph (rx.PyDiGraph or rx.PyDiGraph): the directed graph specifying possible edges
 
     Returns:
         qml.Hamiltonian: the out flow constraint Hamiltonian
@@ -480,12 +479,12 @@ def out_flow_constraint(graph: nx.DiGraph | rx.PyDiGraph) -> Operator:
     Raises:
         ValueError: if the input graph is not directed
     """
-    if not isinstance(graph, (nx.DiGraph, rx.PyDiGraph)):
+    if not isinstance(graph, (rx.PyDiGraph, rx.PyDiGraph)):
         raise ValueError(
-            f"Input graph must be a nx.DiGraph or rx.PyDiGraph, got {type(graph).__name__}"
+            f"Input graph must be a rx.PyDiGraph or rx.PyDiGraph, got {type(graph).__name__}"
         )
 
-    if isinstance(graph, (nx.DiGraph, rx.PyDiGraph)) and not hasattr(graph, "out_edges"):
+    if isinstance(graph, (rx.PyDiGraph, rx.PyDiGraph)) and not hasattr(graph, "out_edges"):
         raise ValueError("Input graph must be directed")
 
     hamiltonian = LinearCombination([], [])
@@ -497,7 +496,7 @@ def out_flow_constraint(graph: nx.DiGraph | rx.PyDiGraph) -> Operator:
     return hamiltonian
 
 
-def net_flow_constraint(graph: nx.DiGraph | rx.PyDiGraph) -> Operator:
+def net_flow_constraint(graph: rx.PyDiGraph | rx.PyDiGraph) -> Operator:
     r"""Calculates the `net flow constraint <https://doi.org/10.1080/0020739X.2010.526248>`__
     Hamiltonian for the maximum-weighted cycle problem.
 
@@ -523,7 +522,7 @@ def net_flow_constraint(graph: nx.DiGraph | rx.PyDiGraph) -> Operator:
 
 
     Args:
-        graph (nx.DiGraph or rx.PyDiGraph): the directed graph specifying possible edges
+        graph (rx.PyDiGraph or rx.PyDiGraph): the directed graph specifying possible edges
 
     Returns:
         qml.Hamiltonian: the net-flow constraint Hamiltonian
@@ -531,14 +530,14 @@ def net_flow_constraint(graph: nx.DiGraph | rx.PyDiGraph) -> Operator:
     Raises:
         ValueError: if the input graph is not directed
     """
-    if isinstance(graph, (nx.DiGraph, rx.PyDiGraph)) and (
+    if isinstance(graph, (rx.PyDiGraph, rx.PyDiGraph)) and (
         not hasattr(graph, "in_edges") or not hasattr(graph, "out_edges")
     ):
         raise ValueError("Input graph must be directed")
 
-    if not isinstance(graph, (nx.DiGraph, rx.PyDiGraph)):
+    if not isinstance(graph, (rx.PyDiGraph, rx.PyDiGraph)):
         raise ValueError(
-            f"Input graph must be a nx.DiGraph or rx.PyDiGraph, got {type(graph).__name__}"
+            f"Input graph must be a rx.PyDiGraph or rx.PyDiGraph, got {type(graph).__name__}"
         )
 
     hamiltonian = LinearCombination([], [])
@@ -550,7 +549,7 @@ def net_flow_constraint(graph: nx.DiGraph | rx.PyDiGraph) -> Operator:
     return hamiltonian
 
 
-def _inner_out_flow_constraint_hamiltonian(graph: nx.DiGraph | rx.PyDiGraph, node: int) -> Operator:
+def _inner_out_flow_constraint_hamiltonian(graph: rx.PyDiGraph | rx.PyDiGraph, node: int) -> Operator:
     r"""Calculates the inner portion of the Hamiltonian in :func:`out_flow_constraint`.
     For a given :math:`i`, this function returns:
 
@@ -561,15 +560,15 @@ def _inner_out_flow_constraint_hamiltonian(graph: nx.DiGraph | rx.PyDiGraph, nod
         ( \sum_{j,(i,j)\in E}\hat{Z}_{ij} )^{2}
 
     Args:
-        graph (nx.DiGraph or rx.PyDiGraph): the directed graph specifying possible edges
+        graph (rx.PyDiGraph or rx.PyDiGraph): the directed graph specifying possible edges
         node: a fixed node
 
     Returns:
         qml.Hamiltonian: The inner part of the out-flow constraint Hamiltonian.
     """
-    if not isinstance(graph, (nx.DiGraph, rx.PyDiGraph)):
+    if not isinstance(graph, (rx.PyDiGraph, rx.PyDiGraph)):
         raise ValueError(
-            f"Input graph must be a nx.DiGraph or rx.PyDiGraph, got {type(graph).__name__}"
+            f"Input graph must be a rx.PyDiGraph or rx.PyDiGraph, got {type(graph).__name__}"
         )
 
     coeffs = []
@@ -617,7 +616,7 @@ def _inner_out_flow_constraint_hamiltonian(graph: nx.DiGraph | rx.PyDiGraph, nod
     return H
 
 
-def _inner_net_flow_constraint_hamiltonian(graph: nx.DiGraph | rx.PyDiGraph, node: int) -> Operator:
+def _inner_net_flow_constraint_hamiltonian(graph: rx.PyDiGraph | rx.PyDiGraph, node: int) -> Operator:
     r"""Calculates the squared inner portion of the Hamiltonian in :func:`net_flow_constraint`.
 
 
@@ -629,15 +628,15 @@ def _inner_net_flow_constraint_hamiltonian(graph: nx.DiGraph | rx.PyDiGraph, nod
         \sum_{j, (i, j) \in E} Z_{ij} + \sum_{j, (j, i) \in E} Z_{ji} \right)^{2}.
 
     Args:
-        graph (nx.DiGraph or rx.PyDiGraph): the directed graph specifying possible edges
+        graph (rx.PyDiGraph or rx.PyDiGraph): the directed graph specifying possible edges
         node: a fixed node
 
     Returns:
         qml.Hamiltonian: The inner part of the net-flow constraint Hamiltonian.
     """
-    if not isinstance(graph, (nx.DiGraph, rx.PyDiGraph)):
+    if not isinstance(graph, (rx.PyDiGraph, rx.PyDiGraph)):
         raise ValueError(
-            f"Input graph must be a nx.DiGraph or rx.PyDiGraph, got {type(graph).__name__}"
+            f"Input graph must be a rx.PyDiGraph or rx.PyDiGraph, got {type(graph).__name__}"
         )
 
     edges_to_qubits = edges_to_wires(graph)

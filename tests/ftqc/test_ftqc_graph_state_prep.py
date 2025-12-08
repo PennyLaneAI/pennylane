@@ -14,7 +14,7 @@
 # pylint: disable=no-name-in-module, no-self-use, protected-access
 """Unit tests for the GraphStatePrep module"""
 
-import networkx as nx
+import rustworkx as rx
 import numpy as np
 import pytest
 
@@ -124,7 +124,7 @@ class TestGraphStatePrep:
                 [5],
                 "chain",
                 None,
-                marks=pytest.mark.xfail(reason="Wires must be specified with nx.Graph objects."),
+                marks=pytest.mark.xfail(reason="Wires must be specified with rx.PyGraph objects."),
             ),
             ([5], "chain", range(5)),
             ([2, 2], "square", range(4)),
@@ -159,7 +159,7 @@ class TestGraphStatePrep:
                 "chain",
                 None,
                 marks=pytest.mark.xfail(
-                    reason="Wires must be specified when building circuit with nx.Graph objects."
+                    reason="Wires must be specified when building circuit with rx.PyGraph objects."
                 ),
             ),
             ([2, 2], "square", [0, 1, 2, 3]),
@@ -168,7 +168,7 @@ class TestGraphStatePrep:
         ],
     )
     def test_circuit_accept_graph_state_prep_with_nx_wires(self, dims, shape, wires):
-        """Test if GraphStatePrep can be created with nx.Graph and user provided wires."""
+        """Test if GraphStatePrep can be created with rx.PyGraph and user provided wires."""
         dev = qml.device("default.qubit")
         lattice = generate_lattice(dims, shape).graph
 
@@ -260,7 +260,7 @@ class TestGraphStatePrep:
         """Test for wire-graph label mismatches."""
         wires = [0, 1, 2, 3]
         edges = [(0, 1), (1, 2), (2, 3)]
-        lattice = nx.Graph()
+        lattice = rx.PyGraph()
         lattice.add_nodes_from(wires)
         lattice.add_edges_from(edges)
         wires.append(5)
@@ -396,12 +396,12 @@ class TestGraphStateInvariantUnderInternalGraphOrdering:
         "graph",
         [
             # Permute the node order in the adjacency list
-            nx.Graph({1: {0, 2}, 2: {1, 3}, 3: {2}, 0: {1}}),
-            nx.Graph({2: {1, 3}, 3: {2}, 0: {1}, 1: {0, 2}}),
-            nx.Graph({3: {2}, 0: {1}, 1: {0, 2}, 2: {1, 3}}),
-            nx.Graph({0: {1}, 1: {0, 2}, 3: {2}, 2: {1, 3}}),
-            nx.Graph({0: {1}, 2: {1, 3}, 1: {0, 2}, 3: {2}}),
-            nx.Graph({1: {0, 2}, 0: {1}, 2: {1, 3}, 3: {2}}),
+            rx.PyGraph({1: {0, 2}, 2: {1, 3}, 3: {2}, 0: {1}}),
+            rx.PyGraph({2: {1, 3}, 3: {2}, 0: {1}, 1: {0, 2}}),
+            rx.PyGraph({3: {2}, 0: {1}, 1: {0, 2}, 2: {1, 3}}),
+            rx.PyGraph({0: {1}, 1: {0, 2}, 3: {2}, 2: {1, 3}}),
+            rx.PyGraph({0: {1}, 2: {1, 3}, 1: {0, 2}, 3: {2}}),
+            rx.PyGraph({1: {0, 2}, 0: {1}, 2: {1, 3}, 3: {2}}),
         ],
     )
     @pytest.mark.parametrize("one_qubit_op", [qml.H, qml.X, qml.Y, qml.Z, qml.S, qml.SX])
@@ -415,7 +415,7 @@ class TestGraphStateInvariantUnderInternalGraphOrdering:
         The graph structure is a 1D chain and the sets of node and wire labels are the same.
         """
         # Graph structure: (0) -- (1) -- (2) -- (3)
-        graph_ref = nx.Graph({0: {1}, 1: {0, 2}, 2: {1, 3}, 3: {2}})
+        graph_ref = rx.PyGraph({0: {1}, 1: {0, 2}, 2: {1, 3}, 3: {2}})
 
         # The sequence of wires is constant
         wires = [0, 1, 2, 3]
@@ -426,12 +426,12 @@ class TestGraphStateInvariantUnderInternalGraphOrdering:
         "graph",
         [
             # Permute the node order in the adjacency list
-            nx.Graph({"b": {"a", "c"}, "c": {"b", "d"}, "d": {"c"}, "a": {"b"}}),
-            nx.Graph({"c": {"b", "d"}, "d": {"c"}, "a": {"b"}, "b": {"a", "c"}}),
-            nx.Graph({"d": {"c"}, "a": {"b"}, "b": {"a", "c"}, "c": {"b", "d"}}),
-            nx.Graph({"a": {"b"}, "b": {"a", "c"}, "d": {"c"}, "c": {"b", "d"}}),
-            nx.Graph({"a": {"b"}, "c": {"b", "d"}, "b": {"a", "c"}, "d": {"c"}}),
-            nx.Graph({"b": {"a", "c"}, "a": {"b"}, "c": {"b", "d"}, "d": {"c"}}),
+            rx.PyGraph({"b": {"a", "c"}, "c": {"b", "d"}, "d": {"c"}, "a": {"b"}}),
+            rx.PyGraph({"c": {"b", "d"}, "d": {"c"}, "a": {"b"}, "b": {"a", "c"}}),
+            rx.PyGraph({"d": {"c"}, "a": {"b"}, "b": {"a", "c"}, "c": {"b", "d"}}),
+            rx.PyGraph({"a": {"b"}, "b": {"a", "c"}, "d": {"c"}, "c": {"b", "d"}}),
+            rx.PyGraph({"a": {"b"}, "c": {"b", "d"}, "b": {"a", "c"}, "d": {"c"}}),
+            rx.PyGraph({"b": {"a", "c"}, "a": {"b"}, "c": {"b", "d"}, "d": {"c"}}),
         ],
     )
     @pytest.mark.parametrize("one_qubit_op", [qml.H, qml.X, qml.Y, qml.Z, qml.S, qml.SX])
@@ -445,7 +445,7 @@ class TestGraphStateInvariantUnderInternalGraphOrdering:
         The graph structure is a 1D chain and the sets of node and wire labels are different.
         """
         # Graph structure: ("a") -- ("b") -- ("c") -- ("d")
-        graph_ref = nx.Graph({"a": {"b"}, "b": {"a", "c"}, "c": {"b", "d"}, "d": {"c"}})
+        graph_ref = rx.PyGraph({"a": {"b"}, "b": {"a", "c"}, "c": {"b", "d"}, "d": {"c"}})
 
         # The sequence of wires is constant
         wires = [0, 1, 2, 3]
@@ -456,12 +456,12 @@ class TestGraphStateInvariantUnderInternalGraphOrdering:
         "graph",
         [
             # Permute the node order in the adjacency list
-            nx.Graph({1: {0, 3}, 2: {0, 3}, 3: {1, 2}, 0: {1, 2}}),
-            nx.Graph({2: {0, 3}, 3: {1, 2}, 0: {1, 2}, 1: {0, 3}}),
-            nx.Graph({3: {1, 2}, 0: {1, 2}, 1: {0, 3}, 2: {0, 3}}),
-            nx.Graph({0: {1, 2}, 1: {0, 3}, 3: {1, 2}, 2: {0, 3}}),
-            nx.Graph({0: {1, 2}, 2: {0, 3}, 1: {0, 3}, 3: {1, 2}}),
-            nx.Graph({1: {0, 3}, 0: {1, 2}, 2: {0, 3}, 3: {1, 2}}),
+            rx.PyGraph({1: {0, 3}, 2: {0, 3}, 3: {1, 2}, 0: {1, 2}}),
+            rx.PyGraph({2: {0, 3}, 3: {1, 2}, 0: {1, 2}, 1: {0, 3}}),
+            rx.PyGraph({3: {1, 2}, 0: {1, 2}, 1: {0, 3}, 2: {0, 3}}),
+            rx.PyGraph({0: {1, 2}, 1: {0, 3}, 3: {1, 2}, 2: {0, 3}}),
+            rx.PyGraph({0: {1, 2}, 2: {0, 3}, 1: {0, 3}, 3: {1, 2}}),
+            rx.PyGraph({1: {0, 3}, 0: {1, 2}, 2: {0, 3}, 3: {1, 2}}),
         ],
     )
     @pytest.mark.parametrize("one_qubit_op", [qml.H, qml.X, qml.Y, qml.Z, qml.S, qml.SX])
@@ -477,7 +477,7 @@ class TestGraphStateInvariantUnderInternalGraphOrdering:
         # Graph structure: (0) -- (1)
         #                   |      |
         #                  (2) -- (3)
-        graph_ref = nx.Graph({0: {1, 2}, 1: {0, 3}, 2: {0, 3}, 3: {1, 2}})
+        graph_ref = rx.PyGraph({0: {1, 2}, 1: {0, 3}, 2: {0, 3}, 3: {1, 2}})
 
         # The sequence of wires is constant
         wires = [0, 1, 2, 3]
@@ -488,7 +488,7 @@ class TestGraphStateInvariantUnderInternalGraphOrdering:
         "graph",
         [
             # Permute the node order in the adjacency list
-            nx.Graph(
+            rx.PyGraph(
                 {
                     (0, 1): {(0, 0), (1, 1)},
                     (1, 0): {(0, 0), (1, 1)},
@@ -496,7 +496,7 @@ class TestGraphStateInvariantUnderInternalGraphOrdering:
                     (0, 0): {(1, 0), (0, 1)},
                 }
             ),
-            nx.Graph(
+            rx.PyGraph(
                 {
                     (1, 0): {(0, 0), (1, 1)},
                     (1, 1): {(0, 1), (1, 0)},
@@ -504,7 +504,7 @@ class TestGraphStateInvariantUnderInternalGraphOrdering:
                     (0, 1): {(0, 0), (1, 1)},
                 }
             ),
-            nx.Graph(
+            rx.PyGraph(
                 {
                     (1, 1): {(0, 1), (1, 0)},
                     (0, 0): {(1, 0), (0, 1)},
@@ -527,7 +527,7 @@ class TestGraphStateInvariantUnderInternalGraphOrdering:
         # Graph structure: (0,0) -- (0,1)
         #                    |        |
         #                  (1,0) -- (1,1)
-        graph_ref = nx.Graph(
+        graph_ref = rx.PyGraph(
             {
                 (0, 0): {(1, 0), (0, 1)},
                 (0, 1): {(0, 0), (1, 1)},
@@ -545,7 +545,7 @@ class TestGraphStateInvariantUnderInternalGraphOrdering:
         "graph",
         [
             # Permute the node order in the adjacency list
-            nx.Graph(
+            rx.PyGraph(
                 {
                     1: {0, 3, 5},
                     2: {0, 3, 6},
@@ -557,7 +557,7 @@ class TestGraphStateInvariantUnderInternalGraphOrdering:
                     0: {1, 2, 4},
                 }
             ),
-            nx.Graph(
+            rx.PyGraph(
                 {
                     2: {0, 3, 6},
                     3: {1, 2, 7},
@@ -569,7 +569,7 @@ class TestGraphStateInvariantUnderInternalGraphOrdering:
                     1: {0, 3, 5},
                 }
             ),
-            nx.Graph(
+            rx.PyGraph(
                 {
                     3: {1, 2, 7},
                     4: {0, 5, 6},
@@ -581,7 +581,7 @@ class TestGraphStateInvariantUnderInternalGraphOrdering:
                     2: {0, 3, 6},
                 }
             ),
-            nx.Graph(
+            rx.PyGraph(
                 {
                     4: {0, 5, 6},
                     5: {1, 4, 7},
@@ -593,7 +593,7 @@ class TestGraphStateInvariantUnderInternalGraphOrdering:
                     3: {1, 2, 7},
                 }
             ),
-            nx.Graph(
+            rx.PyGraph(
                 {
                     5: {1, 4, 7},
                     6: {2, 4, 7},
@@ -605,7 +605,7 @@ class TestGraphStateInvariantUnderInternalGraphOrdering:
                     4: {0, 5, 6},
                 }
             ),
-            nx.Graph(
+            rx.PyGraph(
                 {
                     6: {2, 4, 7},
                     7: {3, 5, 6},
@@ -617,7 +617,7 @@ class TestGraphStateInvariantUnderInternalGraphOrdering:
                     5: {1, 4, 7},
                 }
             ),
-            nx.Graph(
+            rx.PyGraph(
                 {
                     7: {3, 5, 6},
                     0: {1, 2, 4},
@@ -647,7 +647,7 @@ class TestGraphStateInvariantUnderInternalGraphOrdering:
         #                   | (6)---|-(7)
         #                   | /     | /
         #                  (2)-----(3)
-        graph_ref = nx.Graph(
+        graph_ref = rx.PyGraph(
             {
                 0: {1, 2, 4},
                 1: {0, 3, 5},
@@ -697,7 +697,7 @@ class TestGraphStateInvariantUnderInternalGraphOrdering:
         mix of integers and strings) as input to GraphStatePrep raises a TypeError.
         """
         # Graph structure: (0) -- (a) -- (1)
-        graph = nx.Graph({0: {"a"}, "a": (0, 1), 1: {"a"}})
+        graph = rx.PyGraph({0: {"a"}, "a": (0, 1), 1: {"a"}})
         dev = qml.device("default.qubit")
 
         @qml.qnode(dev)

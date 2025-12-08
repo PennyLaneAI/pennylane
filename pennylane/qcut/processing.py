@@ -18,7 +18,7 @@ Processing functions for circuit cutting.
 import string
 from collections.abc import Sequence
 
-from networkx import MultiDiGraph
+from pennylane._rustworkx_compat import MultiDiGraph
 
 from pennylane import math
 from pennylane import numpy as pnp
@@ -277,7 +277,7 @@ def contract_tensors(
     .. code-block:: python
 
         from pennylane.transforms import qcut
-        import networkx as nx
+        from pennylane._rustworkx_compat import MultiDiGraph
         import numpy as np
 
         tensors = [np.arange(4), np.arange(4, 8)]
@@ -291,9 +291,10 @@ def contract_tensors(
 
     .. code-block:: python
 
-        graph = nx.MultiDiGraph(
-            [(0, 1, {"pair": (WrappedObj(meas[0][0]), WrappedObj(prep[1][0]))})]
-        )
+        from pennylane.queuing import WrappedObj
+        graph = MultiDiGraph()
+        graph.add_nodes_from([0, 1])
+        graph.add_edge(0, 1, pair=(WrappedObj(meas[0][0]), WrappedObj(prep[1][0])))
 
     The network can then be contracted using:
 

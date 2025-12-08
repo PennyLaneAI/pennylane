@@ -18,8 +18,7 @@ import heapq
 from collections import OrderedDict
 from functools import partial
 
-import networkx as nx
-from networkx.drawing.nx_pydot import to_pydot
+import rustworkx as rx
 
 import pennylane as qml
 from pennylane.tape import QuantumScript, QuantumScriptBatch
@@ -199,7 +198,7 @@ class CommutationDAG:
     def __init__(self, tape: QuantumScript):
         self.num_wires = len(tape.wires)
         self.node_id = -1
-        self._multi_graph = nx.MultiDiGraph()
+        self._multi_graph = rx.PyDiGraph(multigraph=True)
 
         consecutive_wires = Wires(range(len(tape.wires)))
         wires_map = OrderedDict(zip(tape.wires, consecutive_wires, strict=True))
@@ -310,7 +309,7 @@ class CommutationDAG:
         Returns:
             list[int]: List of the predecessors of the given node.
         """
-        pred = list(nx.ancestors(self._multi_graph, node_id))
+        pred = list(rx.ancestors(self._multi_graph, node_id))
         pred.sort()
         return pred
 
@@ -336,7 +335,7 @@ class CommutationDAG:
         Returns:
             list[int]: List of the successors of the given node.
         """
-        succ = list(nx.descendants(self._multi_graph, node_id))
+        succ = list(rx.descendants(self._multi_graph, node_id))
         succ.sort()
         return succ
 
@@ -365,7 +364,14 @@ class CommutationDAG:
         Args:
             filename (str): The file name which is in PNG format. Default = 'dag.png'
         """
-        draw_graph = nx.MultiDiGraph()
+        try:
+            from networkx.drawing.nx_pydot import to_pydot
+        except ImportError as e:
+            raise ImportError("networkx.drawing.nx_pydot is required for drawing. Please install networkx with pydot support.") from e
+        
+        # For drawing, we need to convert to networkx temporarily
+        import networkx as nx_temp
+        draw_graph = nx_temp.MultiDiGraph()
 
         for node in self.get_nodes():
             wires = ",".join([" " + str(elem) for elem in node[1].op.wires.tolist()])

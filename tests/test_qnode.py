@@ -1100,17 +1100,19 @@ class TestIntegration:
         """Tests that the default interface is set correctly for a QNode."""
 
         # pylint: disable=import-outside-toplevel
-        import networkx as nx
+        import rustworkx as rx
 
         @qml.qnode(qml.device("default.qubit"))
-        def circuit(graph: nx.Graph):
-            for a in graph.nodes:
+        def circuit(graph: rx.PyGraph):
+            for a in graph.nodes():
                 qml.Hadamard(wires=a)
-            for a, b in graph.edges:
+            for a, b in graph.edge_list():
                 qml.CZ(wires=[a, b])
             return qml.expval(qml.PauliZ(0))
 
-        graph = nx.complete_graph(3)
+        graph = rx.PyGraph()
+        graph.add_nodes_from([0, 1, 2])
+        graph.add_edges_from([(0, 1, ""), (0, 2, ""), (1, 2, "")])
         res = circuit(graph)
         assert qml.math.get_interface(res) == "numpy"
 
@@ -1118,7 +1120,7 @@ class TestIntegration:
         """Tests that the default interface is set correctly for a QuantumScript."""
 
         # pylint: disable=import-outside-toplevel
-        import networkx as nx
+        import rustworkx as rx
 
         dev = qml.device("default.qubit")
 
@@ -1126,13 +1128,15 @@ class TestIntegration:
         class DummyCustomGraphOp(qml.operation.Operation):
             """Dummy custom operation for testing purposes."""
 
-            def __init__(self, graph: nx.Graph):
-                super().__init__(graph, wires=graph.nodes)
+            def __init__(self, graph: rx.PyGraph):
+                super().__init__(graph, wires=list(graph.nodes()))
 
             def decomposition(self) -> list:
                 return []
 
-        graph = nx.complete_graph(3)
+        graph = rx.PyGraph()
+        graph.add_nodes_from([0, 1, 2])
+        graph.add_edges_from([(0, 1, ""), (0, 2, ""), (1, 2, "")])
         tape = qml.tape.QuantumScript([DummyCustomGraphOp(graph)], [qml.expval(qml.PauliZ(0))])
         res = qml.execute([tape], dev)
         assert qml.math.get_interface(res) == "numpy"

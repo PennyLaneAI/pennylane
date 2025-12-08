@@ -16,11 +16,11 @@ Unit tests for the :mod:`pennylane.qaoa` submodule.
 """
 import itertools
 
-import networkx as nx
+import rustworkx as rx
 import numpy as np
 import pytest
 import rustworkx as rx
-from networkx import Graph
+# Graph imported via rustworkx as rx.PyGraph
 from scipy.linalg import expm
 from scipy.sparse import csc_matrix, kron
 
@@ -60,7 +60,7 @@ g1_rx = rx.PyGraph()
 g1_rx.add_nodes_from([0, 1, 2])
 g1_rx.add_edges_from([(0, 1, ""), (1, 2, "")])
 
-g2 = nx.Graph([(0, 1), (1, 2), (2, 3)])
+g2 = rx.PyGraph([(0, 1), (1, 2), (2, 3)])
 
 g2_rx = rx.PyGraph()
 g2_rx.add_nodes_from([0, 1, 2, 3])
@@ -354,7 +354,7 @@ class TestMixerHamiltonians:
         graph = [(0, 1), (1, 2)]
 
         with pytest.raises(
-            ValueError, match=r"Input graph must be a nx.Graph or rx.PyGraph object, got list"
+            ValueError, match=r"Input graph must be a rx.PyGraph or rx.PyGraph object, got list"
         ):
             qaoa.xy_mixer(graph)
 
@@ -369,7 +369,7 @@ class TestMixerHamiltonians:
 
         graph = [(0, 1), (1, 2)]
         with pytest.raises(
-            ValueError, match=r"Input graph must be a nx.Graph or rx.PyGraph object"
+            ValueError, match=r"Input graph must be a rx.PyGraph or rx.PyGraph object"
         ):
             qaoa.bit_flip_mixer(graph, 0)
 
@@ -939,7 +939,7 @@ class TestCostHamiltonians:
         ):
             qaoa.edge_driver(g1, ["11", "00", "01"])
 
-        with pytest.raises(ValueError, match=r"Input graph must be a nx.Graph or rx.PyGraph"):
+        with pytest.raises(ValueError, match=r"Input graph must be a rx.PyGraph or rx.PyGraph"):
             qaoa.edge_driver([(0, 1), (1, 2)], ["00", "11"])
 
     @pytest.mark.parametrize(("graph", "reward", "hamiltonian"), make_edge_driver_cost_test_cases())
@@ -952,7 +952,7 @@ class TestCostHamiltonians:
         """Tests that the max weight cycle Hamiltonian throws the correct errors"""
 
         with pytest.raises(
-            ValueError, match=r"Input graph must be a nx.Graph or rx.PyGraph or rx.PyDiGraph"
+            ValueError, match=r"Input graph must be a rx.PyGraph or rx.PyGraph or rx.PyDiGraph"
         ):
             qaoa.max_weight_cycle([(0, 1), (1, 2)])
 
@@ -1313,7 +1313,7 @@ class TestCycles:
         """Test that edges_to_wires raises ValueError"""
         g = [1, 1, 1, 1]
         with pytest.raises(
-            ValueError, match=r"Input graph must be a nx.Graph or rx.PyGraph or rx.PyDiGraph"
+            ValueError, match=r"Input graph must be a rx.PyGraph or rx.PyGraph or rx.PyDiGraph"
         ):
             edges_to_wires(g)
 
@@ -1348,7 +1348,7 @@ class TestCycles:
         """Test that wires_to_edges raises ValueError"""
         g = [1, 1, 1, 1]
         with pytest.raises(
-            ValueError, match=r"Input graph must be a nx.Graph or rx.PyGraph or rx.PyDiGraph"
+            ValueError, match=r"Input graph must be a rx.PyGraph or rx.PyGraph or rx.PyDiGraph"
         ):
             wires_to_edges(g)
 
@@ -1650,7 +1650,7 @@ class TestCycles:
     def test_loss_hamiltonian_error(self):
         """Test if the loss_hamiltonian function raises ValueError"""
         with pytest.raises(
-            ValueError, match=r"Input graph must be a nx.Graph or rx.PyGraph or rx.PyDiGraph"
+            ValueError, match=r"Input graph must be a rx.PyGraph or rx.PyGraph or rx.PyDiGraph"
         ):
             loss_hamiltonian([(0, 1), (1, 2), (0, 2)])
 

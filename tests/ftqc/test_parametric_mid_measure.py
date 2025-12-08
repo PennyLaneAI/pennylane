@@ -541,7 +541,7 @@ class TestMeasureFunctions:
     ):
         """Test that the measure_ functions are captured as expected"""
         import jax
-        import networkx as nx
+        import rustworkx as rx
 
         if angle_type == "numpy":
             angle = np.array(angle)

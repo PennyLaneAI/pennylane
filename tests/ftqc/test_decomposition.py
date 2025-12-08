@@ -16,7 +16,7 @@
 
 from functools import partial
 
-import networkx as nx
+import rustworkx as rx
 import numpy as np
 import pytest
 from flaky import flaky

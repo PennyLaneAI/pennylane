@@ -14,7 +14,7 @@
 # pylint: disable=no-name-in-module, no-self-use, protected-access
 """Unit tests for the lattice module"""
 
-import networkx as nx
+import rustworkx as rx
 import pytest
 
 from pennylane.ftqc import Lattice, generate_lattice
@@ -24,8 +24,8 @@ class TestLattice:
     """Test for the qml.ftqc.Lattice class."""
 
     def test_lattice_creation_with_graph(self):
-        """Test for Lattice object created by a nx.Graph object."""
-        graph = nx.Graph([(0, 1), (1, 2)])
+        """Test for Lattice object created by a rx.PyGraph object."""
+        graph = rx.PyGraph([(0, 1), (1, 2)])
         lattice = Lattice("test", graph=graph)
         assert lattice.shape == "test"
         assert len(lattice.nodes) == 3
@@ -46,7 +46,7 @@ class TestLattice:
 
     def test_get_lattice_shape(self):
         """Test for get_lattice_shape()."""
-        lattice = Lattice("test_shape", nx.Graph())
+        lattice = Lattice("test_shape", rx.PyGraph())
         assert lattice.shape == "test_shape"
 
     def test_get_neighbors(self):
@@ -70,7 +70,7 @@ class TestLattice:
 
     def test_get_graph(self):
         """Test for getting graph."""
-        graph = nx.Graph([(0, 1), (1, 2)])
+        graph = rx.PyGraph([(0, 1), (1, 2)])
         lattice = Lattice("test", graph=graph)
         assert lattice.graph is graph
 

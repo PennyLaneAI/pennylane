@@ -20,7 +20,6 @@ import functools
 import itertools
 from collections.abc import Iterable
 
-import networkx as nx
 import rustworkx as rx
 
 from pennylane.ops import Identity, LinearCombination, X, Y, Z, prod
@@ -68,7 +67,7 @@ def x_mixer(wires: Iterable | Wires):
     return H
 
 
-def xy_mixer(graph: nx.Graph | rx.PyGraph):
+def xy_mixer(graph: rx.PyGraph | rx.PyGraph):
     r"""Creates a generalized SWAP/XY mixer Hamiltonian.
 
     This mixer Hamiltonian is defined as:
@@ -83,7 +82,7 @@ def xy_mixer(graph: nx.Graph | rx.PyGraph):
     Eleanor G. Rieffel, Davide Venturelli, and Rupak Biswas `Algorithms 12.2 (2019) <https://doi.org/10.3390/a12020034>`__.
 
     Args:
-        graph (nx.Graph or rx.PyGraph): A graph defining the collections of wires on which the Hamiltonian acts.
+        graph (rx.PyGraph or rx.PyGraph): A graph defining the collections of wires on which the Hamiltonian acts.
 
     Returns:
         Hamiltonian: Mixer Hamiltonian
@@ -93,7 +92,7 @@ def xy_mixer(graph: nx.Graph | rx.PyGraph):
     The mixer Hamiltonian can be called as follows:
 
     >>> from pennylane import qaoa
-    >>> from networkx import Graph
+    >>> # Graph operations use rustworkx
     >>> graph = Graph([(0, 1), (1, 2)])
     >>> mixer_h = qaoa.xy_mixer(graph)
     >>> print(mixer_h)
@@ -114,9 +113,9 @@ def xy_mixer(graph: nx.Graph | rx.PyGraph):
     + (0.5) [Y1 Y2]
     """
 
-    if not isinstance(graph, (nx.Graph, rx.PyGraph)):
+    if not isinstance(graph, (rx.PyGraph, rx.PyGraph)):
         raise ValueError(
-            f"Input graph must be a nx.Graph or rx.PyGraph object, got {type(graph).__name__}"
+            f"Input graph must be a rx.PyGraph or rx.PyGraph object, got {type(graph).__name__}"
         )
 
     is_rx = isinstance(graph, rx.PyGraph)
@@ -136,7 +135,7 @@ def xy_mixer(graph: nx.Graph | rx.PyGraph):
     return LinearCombination(coeffs, obs)
 
 
-def bit_flip_mixer(graph: nx.Graph | rx.PyGraph, b: int):
+def bit_flip_mixer(graph: rx.PyGraph | rx.PyGraph, b: int):
     r"""Creates a bit-flip mixer Hamiltonian.
 
     This mixer is defined as:
@@ -154,7 +153,7 @@ def bit_flip_mixer(graph: nx.Graph | rx.PyGraph, b: int):
     This mixer was introduced in `Hadfield et al. (2019) <https://doi.org/10.3390/a12020034>`__.
 
     Args:
-         graph (nx.Graph or rx.PyGraph): A graph defining the collections of wires on which the Hamiltonian acts.
+         graph (rx.PyGraph or rx.PyGraph): A graph defining the collections of wires on which the Hamiltonian acts.
          b (int): Either :math:`0` or :math:`1`. When :math:`b=0`, a bit flip is performed on
              vertex :math:`v` only when all neighbouring nodes are in state :math:`|0\rangle`.
              Alternatively, for :math:`b=1`, a bit flip is performed only when all the neighbours of
@@ -168,7 +167,7 @@ def bit_flip_mixer(graph: nx.Graph | rx.PyGraph, b: int):
     The mixer Hamiltonian can be called as follows:
 
     >>> from pennylane import qaoa
-    >>> from networkx import Graph
+    >>> # Graph operations use rustworkx
     >>> graph = Graph([(0, 1), (1, 2)])
     >>> mixer_h = qaoa.bit_flip_mixer(graph, 0)
     >>> mixer_h
@@ -201,9 +200,9 @@ def bit_flip_mixer(graph: nx.Graph | rx.PyGraph, b: int):
     )
     """
 
-    if not isinstance(graph, (nx.Graph, rx.PyGraph)):
+    if not isinstance(graph, (rx.PyGraph, rx.PyGraph)):
         raise ValueError(
-            f"Input graph must be a nx.Graph or rx.PyGraph object, got {type(graph).__name__}"
+            f"Input graph must be a rx.PyGraph or rx.PyGraph object, got {type(graph).__name__}"
         )
 
     if b not in [0, 1]:

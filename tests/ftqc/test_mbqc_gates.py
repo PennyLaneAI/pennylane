@@ -16,7 +16,7 @@
 
 from functools import partial
 
-import networkx as nx
+import rustworkx as rx
 import numpy as np
 import pytest
 
@@ -123,7 +123,7 @@ class TestIndividualGates:
         #                |
         # 9 -- 10 - 11 - 12 - 13 - 14 - 15
         wires = [2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15]
-        g = nx.Graph()
+        g = rx.PyGraph()
         g.add_nodes_from(wires)
         g.add_edges_from(
             [
