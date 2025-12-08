@@ -87,9 +87,6 @@
   0: ──RX(6.68)─┤  State
   ```
 
-* Add the `PCPhaseOp` operation to the xDSL Quantum dialect.
-  [(#8621)](https://github.com/PennyLaneAI/pennylane/pull/8621)
-
 * `qml.for_loop` will now fall back to a standard Python `for` loop if capturing a condensed, structured loop fails
   with program capture enabled.
   [(#8615)](https://github.com/PennyLaneAI/pennylane/pull/8615)
@@ -141,10 +138,6 @@
   - :class:`~.ParticleConservingU2`
   - :class:`~.ParticleConservingU1`
   - :class:`~.CommutingEvolution`
-
-* A new `qml.compiler.python_compiler.utils` submodule has been added, containing general-purpose utilities for
-  working with xDSL. This includes a function that extracts the concrete value of scalar, constant SSA values.
-  [(#8514)](https://github.com/PennyLaneAI/pennylane/pull/8514)
 
 * Added a keyword argument ``recursive`` to ``qml.transforms.cancel_inverses`` that enables
   recursive cancellation of nested pairs of mutually inverse gates. This makes the transform
@@ -212,6 +205,10 @@
   - :class:`~.CY`, :class:`~.CZ`, :class:`~.CSWAP`, :class:`~.CNOT`, :class:`~.Toffoli`
 
 <h3>Breaking changes 💔</h3>
+
+* The unified compiler, implemented in the `qml.compiler.python_compiler` submodule, has been removed from PennyLane.
+  It has been migrated to Catalyst, available as `catalyst.python_interface`.
+  [(#8662)](https://github.com/PennyLaneAI/pennylane/pull/8662)
 
 * `qml.transforms.map_wires` no longer supports plxpr transforms.
   [(#8683)](https://github.com/PennyLaneAI/pennylane/pull/8683)
@@ -421,25 +418,6 @@
 * Reclassifies `registers` as a tertiary module for use with tach.
   [(#8513)](https://github.com/PennyLaneAI/pennylane/pull/8513)
 
-* A new `split_non_commuting_pass` compiler pass has been added to the xDSL transforms. This pass
-  splits quantum functions that measure observables on the same wires into multiple function executions,
-  where each execution measures observables on different wires (using the "wires" grouping strategy).
-  The original function is replaced with calls to these generated functions, and the results are combined
-  appropriately.
-  [(#8531)](https://github.com/PennyLaneAI/pennylane/pull/8531)
-
-* The experimental xDSL implementation of `diagonalize_measurements` has been updated to fix a bug
-  that included the wrong SSA value for final qubit insertion and deallocation at the end of the
-  circuit. A clear error is now also raised when there are observables with overlapping wires.
-  [(#8383)](https://github.com/PennyLaneAI/pennylane/pull/8383)
-
-* Add an `outline_state_evolution_pass` pass to the MBQC xDSL transform, which moves all
-  quantum gate operations to a private callable.
-  [(#8367)](https://github.com/PennyLaneAI/pennylane/pull/8367)
-
-* The experimental xDSL implementation of `measurements_from_samples_pass` has been updated to support `shots` defined by an `arith.constant` operation.
-  [(#8460)](https://github.com/PennyLaneAI/pennylane/pull/8460)
-
 * The :class:`~pennylane.devices.LegacyDeviceFacade` is slightly refactored to implement `setup_execution_config` and `preprocess_transforms`
   separately as opposed to implementing a single `preprocess` method. Additionally, the `mid_circuit_measurements` transform has been removed
   from the preprocess transform program. Instead, the best mcm method is chosen in `setup_execution_config`. By default, the ``_capabilities``
@@ -477,37 +455,12 @@
   informative ``RuntimeError`` when used with JAX-JIT or :func:`~.qjit`.
   [(#8489)](https://github.com/PennyLaneAI/pennylane/pull/8489)
 
-* Users can now apply xDSL passes without the need to pass the `pass_plugins` argument to the `qjit` decorator.
-  [(#8572)](https://github.com/PennyLaneAI/pennylane/pull/8572)
-  [(#8573)](https://github.com/PennyLaneAI/pennylane/pull/8573)
-
-* The `is_xdsl_pass` function has been added to the `pennylane.compiler.python_compiler.pass_api` module.
-  This function checks if a pass name corresponds to an xDSL implemented pass.
-  [(#8572)](https://github.com/PennyLaneAI/pennylane/pull/8572)
-
-* The :func:`~pennylane.compiler.python_compiler.Compiler.run` method now accepts a string as input,
-  which is parsed and transformed with xDSL.
-  [(#8587)](https://github.com/PennyLaneAI/pennylane/pull/8587)
-
-* The :func:`~pennylane.compiler.python_compiler.transforms.convert_to_mbqc_formalism_pass` now 
-  supports :class:`~xdsl.dialects.scf.IndexSwitchOp` in IR and ignores regions that have no body.
-  [(#8632)](https://github.com/PennyLaneAI/pennylane/pull/8632)
-
-* The `convert_to_mbqc_formalism` compilation pass now outlines the operations to represent a gate
-  in the MBQC formalism into subroutines in order to reduce the IR size for large programs.
-  [(#8619)](https://github.com/PennyLaneAI/pennylane/pull/8619)
-
 * Added a `skip_decomp_matrix_check` argument to :func:`~pennylane.ops.functions.assert_valid` that
   allows the test to skip the matrix check part of testing a decomposition rule but still verify
   that the resource function is correct.
   [(#8687)](https://github.com/PennyLaneAI/pennylane/pull/8687)
 
 <h3>Documentation 📝</h3>
-
-* Added a "Unified Compiler Cookbook" RST file, along with tutorials, to ``qml.compiler.python_compiler`,
-  which provides a quickstart guide for getting started with xDSL and its integration with PennyLane and
-  Catalyst.
-  [(#8571)](https://github.com/PennyLaneAI/pennylane/pull/8571)
 
 * The documentation of ``qml.transforms.rz_phase_gradient`` has been updated with respect to the
   sign convention of phase gradient states, how it prepares the phase gradient state in the code
@@ -566,10 +519,6 @@ A warning message has been added to :doc:`Building a plugin <../development/plug
 
 * Fixes a bug in :class:`~.SemiAdder` where the results were incorrect when more ``work_wires`` than required were passed.
  [(#8423)](https://github.com/PennyLaneAI/pennylane/pull/8423)
-
-* Fixes a bug in ``QubitUnitaryOp.__init__`` in the unified compiler module that prevented an
-  instance from being constructed.
-  [(#8456)](https://github.com/PennyLaneAI/pennylane/pull/8456)
 
 * Fixes a bug where the deferred measurement method is used silently even if ``mcm_method="one-shot"`` is explicitly requested,
   when a device that extends the ``LegacyDevice`` does not declare support for mid-circuit measurements.
