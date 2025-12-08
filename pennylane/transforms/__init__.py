@@ -194,8 +194,9 @@ instead to the documentation of :func:`qml.transform <pennylane.transform>`.
 .. autosummary::
     :toctree: api
 
-    ~transforms.core.transform_dispatcher
-    ~transforms.core.transform_program
+    ~transforms.core.TransformContainer
+    ~transforms.core.TransformDispatcher
+    ~transforms.core.TransformError
 
 Transforming circuits
 ---------------------
