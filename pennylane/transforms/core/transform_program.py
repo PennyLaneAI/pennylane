@@ -585,6 +585,34 @@ class TransformProgram:
 
         return cur_jaxpr
 
+    def __call_tape(self, tape: QuantumScript) -> tuple[QuantumScript, BatchPostprocessingFn]:
+        """Apply the transform program to a single QuantumScript.
+
+        Args:
+            tape (QuantumScript): A single quantum tape.
+
+        Returns:
+            tuple: a single tape with postprocessing function.
+        """
+        batch, postprocessing = self.__call_tapes((tape,))
+        return batch[0], postprocessing
+
+    def __call_generic(self, obj):
+        """Apply the transform program to a generic object (QNode, device, callable, etc.).
+
+        This method chain-applies each transform using the generic dispatch system.
+
+        Args:
+            obj: The object to transform (QNode, device, callable, etc.).
+
+        Returns:
+            The transformed object.
+        """
+        result = obj
+        for container in self:
+            result = container(result)
+        return result
+
     @overload
     def __call__(
         self, jaxpr: "jax.extend.core.Jaxpr", consts: Sequence, *args
@@ -601,27 +629,17 @@ class TransformProgram:
 
         first_arg = args[0]
 
-        # Single QuantumScript: wrap in a tuple, process, then unwrap
+        # Single QuantumScript
         if isinstance(first_arg, QuantumScript):
-            batch, postprocessing = self.__call_tapes((first_arg,))
-            # Return the single tape (not the tuple) if the program is empty or doesn't change batch size
-            if len(batch) == 1:
-                return batch[0], postprocessing
-            return batch, postprocessing
+            return self.__call_tape(first_arg)
 
-        # Sequence of QuantumScripts: treat as a tape batch
+        # Sequence of QuantumScripts: QuantumScriptBatch
         if isinstance(first_arg, Sequence):
             return self.__call_tapes(*args, **kwargs)
 
         # For any other object (QNode, device, callable, etc.),
         # chain-apply each transform using the generic dispatch system
-        if not self:
-            return first_arg
-
-        result = first_arg
-        for container in self:
-            result = container(result)
-        return result
+        return self.__call_generic(first_arg)
 
 
 @TransformDispatcher.generic_register
