@@ -30,6 +30,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* Calling a transform dispatcher with args that are not a valid dispatch target returns a transform container.
+[(#8730)](https://github.com/PennyLaneAI/pennylane/pull/8730)
+
 * Added a new decomposition, `_decompose_2_cnots`, for the two-qubit decomposition for `QubitUnitary`.
   It supports the analytical decomposition a two-qubit unitary known to require exactly 2 CNOTs.
   [(#8666)](https://github.com/PennyLaneAI/pennylane/issues/8666)
@@ -365,9 +368,6 @@
   ```
 
 <h3>Internal changes ⚙️</h3>
-
-* Calling a transform dispatcher with args that are not a valid dispatch target returns a transform container.
-[(#8730)](https://github.com/PennyLaneAI/pennylane/pull/8730)
 
 * Bump `jax` version to `0.7.1` for `capture` module.
   [(#8715)](https://github.com/PennyLaneAI/pennylane/pull/8715)
