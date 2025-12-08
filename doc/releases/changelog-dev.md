@@ -2,6 +2,11 @@
 
 <h3>New features since last release</h3>
 
+* Users can now perform rapid Clifford+T decomposition with QJIT and program capture enabled,
+  using the new :func:`~pennylane.transforms.gridsynth` compilation pass.
+  This pass discretizes ``RZ`` and ``PhaseShift`` gates to either the Clifford+T basis or to the PPR basis.
+  [(#8609)](https://github.com/PennyLaneAI/pennylane/pull/8609)
+
 * Quantum Automatic Differentiation implemented to allow automatic selection of optimal
   Hadamard gradient differentiation methods per [the paper](https://arxiv.org/pdf/2408.05406).
   [(#8640)](https://github.com/PennyLaneAI/pennylane/pull/8640)
@@ -14,11 +19,12 @@
   that produces a set of gate names to be used as the target gate set in decompositions.
   [(#8522)](https://github.com/PennyLaneAI/pennylane/pull/8522)
 
-* The :class:`~pennylane.decomposition.DecompositionGraph` now tracks the minimum number of
-  dynamic wire allocations required to solve the circuit, and provides a `minimize_work_wires`
-  option that enables the graph to select the best decomposition rules while minimizing the
-  number of additional allocations of work wires.
+* The :func:`~pennylane.transforms.decompose` transform now accepts a `minimize_work_wires` argument. With
+  the new graph-based decomposition system activated via :func:`~pennylane.decomposition.enable_graph`, 
+  and `minimize_work_wires` set to `True`, the decomposition system will select decomposition rules that
+  minimizes the maximum number of simultaneously allocated work wires.
   [(#8729)](https://github.com/PennyLaneAI/pennylane/pull/8729)
+  [(#8734)](https://github.com/PennyLaneAI/pennylane/pull/8734)
 
 <h4>Pauli product measurements</h4>
 
@@ -489,6 +495,10 @@ A warning message has been added to :doc:`Building a plugin <../development/plug
 
 <h3>Bug fixes 🐛</h3>
 
+* Handles floating point errors in the norm of the state when applying
+  mid circuit measurements.
+  [(#8741)](https://github.com/PennyLaneAI/pennylane/pull/8741)
+
 * Update `interface-unit-tests.yml` to use its input parameter `pytest_additional_args` when running pytest.
   [(#8705)](https://github.com/PennyLaneAI/pennylane/pull/8705)
 
@@ -536,6 +546,10 @@ A warning message has been added to :doc:`Building a plugin <../development/plug
 
 * Fixes a bug where :func:`~.change_op_basis` cannot be captured when the `uncompute_op` is left out.
   [(#8695)](https://github.com/PennyLaneAI/pennylane/pull/8695)
+
+* Fixes a bug in :func:`~qml.ops.rs_decomposition` where correct solution candidates were being rejected
+  due to some incorrect GCD computations.
+  [(#8625)](https://github.com/PennyLaneAI/pennylane/pull/8625)
 
 * Fixes a bug where decomposition rules are sometimes incorrectly disregarded by the `DecompositionGraph` when a higher level
   decomposition rule uses dynamically allocated work wires.
