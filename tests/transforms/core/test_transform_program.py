@@ -1518,7 +1518,7 @@ class TestTransformProgramCall:
         """Test that a TransformProgram can be applied to a Device."""
 
         # Create a dummy device with a custom preprocess_transforms method
-        class DummyDevice(qml.devices.Device):
+        class DummyDevice(qml.devices.Device):  # pylint: disable=unused-argument
             def preprocess_transforms(self, execution_config=None):
                 prog = TransformProgram()
                 prog.add_transform(qml.defer_measurements)
