@@ -560,17 +560,17 @@ class QSP(ResourceOperator):
     degree of the target polynomial transformation ``poly_deg = d``, this template estimates the
     cost of the QSP circuit.
 
-    The circuit is given as follows in the z-convention (``convention="z"``):
+    The circuit is given as follows in the Z-convention (``convention="Z"``):
 
     .. math::
 
-        U_{QSP} = e^{i\phi_{0}Z}\prod^{d}_{k=1}W(a)e^{i\phi_{k}Z} .
+        \hat{U}_{QSP} = e^{i\phi_{0}\hat{Z}}\prod^{d}_{k=1}\hat{W}(a)e^{i\phi_{k}\hat{Z}} .
 
-    The circuit can also be expressed in the x-convention (``convention="x"``):
+    The circuit can also be expressed in the X-convention (``convention="X"``):
 
     .. math::
 
-        U_{QSP} = e^{i\phi_{0}X}\prod^{d}_{k=1}W(a)e^{i\phi_{k}X} .
+        \hat{U}_{QSP} = e^{i\phi_{0}\hat{X}}\prod^{d}_{k=1}\hat{W}(a)e^{i\phi_{k}\hat{X}} .
 
     .. seealso::
 
@@ -579,8 +579,10 @@ class QSP(ResourceOperator):
     Args:
         block_encoding (ResourceOperator): the block encoding operator
         poly_deg (int): the degree of the polynomial transformation being applied
-        convention (str): the convention used by the rotations and the block encoding operator
-        rotation_precision (float | None): the p
+        convention (str): Which of the conventions to use for the rotation operators.
+            The valid conventions are ``"X"`` or ``"Z"``.
+        rotation_precision (float | None): The error threshold for the approximate Clifford + T
+            decomposition of the single qubit rotation gates used to implement this operation.
         wires (Sequence[int], None): the wires the operation acts on
 
     Resources:
@@ -594,22 +596,27 @@ class QSP(ResourceOperator):
     >>> import pennylane.estimator as qre
     """
 
-    resource_keys = {"block_encoding", "poly_deg", "convention"}
+    resource_keys = {"block_encoding", "poly_deg", "convention", "rotation_precision"}
 
     def __init__(
         self,
         block_encoding: ResourceOperator,
         poly_deg: int,
-        convention: str = "z",
+        convention: str = "Z",
+        rotation_precision: float | None = None,
         wires: WiresLike = None,
     ):
         _dequeue(block_encoding)  # remove operator
         if block_encoding.num_wires > 1:
             raise ValueError("The block encoding operator should act on a single qubit!")
 
+        if not (convention in {"Z", "X"}):
+            raise ValueError(f"The valid conventions are 'Z' or 'X'. Got {convention}")
+
         self.block_encoding = block_encoding.resource_rep_from_op()
         self.convention = convention
         self.poly_deg = poly_deg
+        self.rotation_precision = rotation_precision
 
         self.num_wires = 1
         if wires is not None and len(wires) != self.num_wires:
@@ -628,11 +635,14 @@ class QSP(ResourceOperator):
                 * encoding_dims (int | tuple(int)): The subspace (number of rows and columns) where
                   the operator is encoded in the matrix representation of the block encoding operator.
                 * poly_deg (int): the degree of the polynomial transformation being applied
+                * rotation_precision (float | None): The error threshold for the approximate Clifford + T
+                  decomposition of the single qubit rotation gates used to implement this operation.
         """
         return {
             "block_encoding": self.block_encoding,
             "poly_deg": self.poly_deg,
             "convention": self.convention,
+            "rotation_precision": self.rotation_precision,
         }
 
     @classmethod
@@ -641,6 +651,7 @@ class QSP(ResourceOperator):
         block_encoding: CompressedResourceOp,
         poly_deg: int,
         convention: str,
+        rotation_precision: float | None,
     ):
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
@@ -650,6 +661,8 @@ class QSP(ResourceOperator):
                 The block encoding operator.
             poly_deg (int): the degree of the polynomial transformation being applied
             convention (str): specifies the convention used for QSP
+            rotation_precision (float | None): The error threshold for the approximate Clifford + T
+                decomposition of the single qubit rotation gates used to implement this operation.
 
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
@@ -658,6 +671,7 @@ class QSP(ResourceOperator):
             "block_encoding": block_encoding,
             "poly_deg": poly_deg,
             "convention": convention,
+            "rotation_precision": rotation_precision,
         }
         return CompressedResourceOp(cls, num_wires=1, params=params)
 
@@ -665,8 +679,9 @@ class QSP(ResourceOperator):
     def resource_decomp(
         cls,
         block_encoding: CompressedResourceOp,
-        encoding_dims: int,
         poly_deg: int,
+        convention: str,
+        rotation_precision: float,
     ):
         r"""Returns a list representing the resources of the operator. Each object in the list
         represents a gate and the number of times it occurs in the circuit.
@@ -676,6 +691,8 @@ class QSP(ResourceOperator):
                 The block encoding operator.
             poly_deg (int): the degree of the polynomial transformation being applied
             convention (str): specifies the convention used for QSP
+            rotation_precision (float): The error threshold for the approximate Clifford + T
+                decomposition of the single qubit rotation gates used to implement this operation.
 
         Resources:
             The resources are obtained as described in theorem 1 of `A Grand Unification of Quantum Algorithms
@@ -686,11 +703,14 @@ class QSP(ResourceOperator):
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
-        rot_op = RZ.resource_rep()
+        if convention == "Z":
+            rot_op = RZ.resource_rep(rotation_precision)
+        elif convention == "X":
+            rot_op = RX.resource_rep(rotation_precision)
+        else:
+            raise ValueError(f"The valid conventions are 'Z' or 'X'. Got {convention}")
 
         return [
-            GateCount(block_encoding, be_counts),
-            GateCount(block_encoding_adj, be_adj_counts),
-            GateCount(pi, pi_counts),
-            GateCount(pi_tilde, pi_tilde_counts),
+            GateCount(block_encoding, poly_deg),
+            GateCount(rot_op, poly_deg + 1),
         ]
