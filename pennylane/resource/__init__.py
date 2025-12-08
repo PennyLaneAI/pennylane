@@ -94,6 +94,7 @@ to track the resources used in a quantum circuit with custom operations without 
 
     from functools import partial
     from pennylane import numpy as pnp
+    from pennylane.resource import Resources, ResourcesOperation
 
     class MyCustomAlgorithm(ResourcesOperation):
         num_wires = 2
