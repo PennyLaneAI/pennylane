@@ -26,6 +26,8 @@ from xdsl.rewriter import InsertPoint
 from pennylane.compiler.python_compiler.dialects import quantum, stablehlo
 from pennylane.exceptions import CompileError
 
+from ...utils import get_constant_from_ssa
+
 class UnrollLoopPattern(RewritePattern):
     """A rewrite pattern that unrolls scf.ForOps containing measurement-controlled
     operations into separate branches for each operator."""
@@ -67,12 +69,12 @@ class UnrollLoopPattern(RewritePattern):
     def unroll_loop(self, op: scf.ForOp, rewriter: PatternRewriter) -> None:
         """Unroll an scf.ForOp into separate branches for each operator."""
 
-        def find_constant_bound(bound: SSAValue) -> tuple[bool, Operation | str]:
+        def find_constant_bound(bound: SSAValue) -> tuple[bool, str]:
             """Find the constant value of a SSA in ForOp bounds"""
 
             while bound := bound.owner:
                 if isinstance(bound, (arith.ConstantOp, stablehlo.ConstantOp)):
-                    return True, bound
+                    return True, None
 
                 elif isinstance(bound, Block):
                     error_msg = "To resolve this issue, ensure that loop bounds are literals or compile-time constants (e.g., use `for i in range(5)` instead of `for i in range(n)` where n is a runtime variable)."
@@ -98,38 +100,30 @@ class UnrollLoopPattern(RewritePattern):
                     # check_bound = check_bound.owner.operands[0]
                     bound = bound.operands[0]
 
-        ub_found, ub_op = find_constant_bound(op.ub)
-        lb_found, lb_op = find_constant_bound(op.lb)
-        step_found, step_op = find_constant_bound(op.step)
+        ub_found, err_ub = find_constant_bound(op.ub)
+        lb_found, err_lb = find_constant_bound(op.lb)
+        step_found, err_step = find_constant_bound(op.step)
 
         if not (lb_found and ub_found and step_found):
             raise CompileError(
                 "Tree Traversal requires loops containing mid-circuit measurements to have "
                 "constant bounds and step values known at compile time. "
                 "The loop being compiled has dynamic bounds that cannot be determined statically. "
-                + (ub_op + " Error in the upper bound. " if isinstance(ub_op, str) else "")
-                + (lb_op + " Error in the lower bound. " if isinstance(lb_op, str) else "")
-                + (step_op + " Error in the step value. " if isinstance(step_op, str) else "")
+                + (err_ub + " Error in the upper bound. " if isinstance(err_ub, str) else "")
+                + (err_lb + " Error in the lower bound. " if isinstance(err_lb, str) else "")
+                + (err_step + " Error in the step value. " if isinstance(err_step, str) else "")
             )
 
-        def check_extract_value(bound: Operation) -> int:
+        def check_extract_value(bound: SSAValue) -> int:
 
-            is_IntegerAttr: bool = isinstance(bound.value, builtin.IntegerAttr)
-            is_ElementsAttr: bool = isinstance(bound.value, builtin.DenseIntOrFPElementsAttr)
+            if isinstance(bound.owner, arith.IndexCastOp):
+                bound = bound.owner.operands[0]
 
-            assert (
-                is_IntegerAttr or is_ElementsAttr
-            ), "UnrollLoopPattern: The ForOp bound should come from arith.ConstantOp or stablehlo.ConstantOp"
+            return get_constant_from_ssa(bound)
 
-            if is_IntegerAttr:
-                return bound.value.value.data
-
-            # is_ElementsAttr
-            return bound.value.data.data[0]
-
-        lb = check_extract_value(lb_op)
-        ub = check_extract_value(ub_op)
-        step = check_extract_value(step_op)
+        lb = check_extract_value(op.lb)
+        ub = check_extract_value(op.ub)
+        step = check_extract_value(op.step)
 
         iter_args: tuple[SSAValue, ...] = op.iter_args
 
