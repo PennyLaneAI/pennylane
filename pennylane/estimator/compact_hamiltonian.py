@@ -193,13 +193,13 @@ class PauliHamiltonian:
             terms in the linear combination.
         one_norm (float | int | None): the one-norm of the Hamiltonian
         pauli_dist (dict | None): A dictionary representing the various Pauli words and how
-            frequently they appear in the Hamiltonian see the Usage Details section for more
+            frequently they appear in the Hamiltonian (see the ``Usage Details`` section for more
             information).
-        commuting_groups (tuple(dict) | None): A tuple of dictionaries where each entry represents
-            a group of terms from the Hamiltonian such that all terms in the group commute.
-            Here each dictionary contains the various Pauli words and how frequently they appear in
-            the group. Each entry is formatted similarly to the ``pauli_dist`` argument
-            (see the Usage Details section for more information).
+        commuting_groups (tuple(dict) | None): The terms (Pauli words) of the Hamiltonian can be separated into groups such that all
+            terms in a group commute. A group is represented as a dictionary where the keys are
+            Pauli strings (e.g ``"XY" or "ZZ"``) and the values are integers corresponding to how
+            frequently that Pauli word appears in the group (see the ``Usage Details`` section for
+            more information).
 
 
     Returns:
@@ -265,10 +265,9 @@ class PauliHamiltonian:
         ...     num_qubits = 40,
         ...     num_pauli_words = 100,
         ...     max_weight = 2,
-        ...     one_norm = 14.5,  # (0.1 * 30) + (0.05 * 30) + (0.25 * 40)
         ... )
         >>> pauli_ham
-        PauliHamiltonian(num_qubits=40, num_pauli_words=100, max_weight=2, one_norm=14.5)
+        PauliHamiltonian(num_qubits=40, num_pauli_words=100, max_weight=2, one_norm=None)
 
         If we know approximately how the Pauli words are distributed in the Hamiltonian, then we can
         construct the Hamiltonian from this information. Note, if both the ``pauli_dist`` and the
@@ -280,10 +279,9 @@ class PauliHamiltonian:
         >>> pauli_ham = qre.PauliHamiltonian(
         ...     num_qubits = 40,
         ...     pauli_dist = {"X":40, "XX":30, "YY":30},
-        ...     one_norm = 14.5,  # (0.1 * 30) + (0.05 * 30) + (0.25 * 40)
         ... )
         >>> pauli_ham
-        PauliHamiltonian(num_qubits=40, num_pauli_words=100, max_weight=2, one_norm=14.5)
+        PauliHamiltonian(num_qubits=40, num_pauli_words=100, max_weight=2, one_norm=None)
         >>> pauli_ham.pauli_dist
         {'X': 40, 'XX': 30, 'YY': 30}
 
@@ -301,10 +299,9 @@ class PauliHamiltonian:
         >>> pauli_ham = qre.PauliHamiltonian(
         ...     num_qubits = 40,
         ...     commuting_groups = commuting_groups,
-        ...     one_norm = 14.5,
         ... )
         >>> pauli_ham
-        PauliHamiltonian(num_qubits=40, num_pauli_words=100, max_weight=2, one_norm=14.5)
+        PauliHamiltonian(num_qubits=40, num_pauli_words=100, max_weight=2, one_norm=None)
         >>> pauli_ham.pauli_dist
         {'X': 40, 'XX': 30, 'YY': 30}
         >>> pauli_ham.commuting_groups
