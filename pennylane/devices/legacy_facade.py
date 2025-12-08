@@ -123,10 +123,10 @@ def adjoint_ops(op: Operator) -> bool:
     )
 
 
-def _add_adjoint_transforms(program: CompilePipeline, name="adjoint"):
-    """Add the adjoint specific transforms to the transform program."""
-    program.add_transform(no_sampling, name=name)
-    program.add_transform(
+def _add_adjoint_transforms(pipeline: CompilePipeline, name="adjoint"):
+    """Add the adjoint specific transforms to the transform pipeline."""
+    pipeline.add_transform(no_sampling, name=name)
+    pipeline.add_transform(
         decompose,
         stopping_condition=adjoint_ops,
         name=name,
@@ -135,13 +135,13 @@ def _add_adjoint_transforms(program: CompilePipeline, name="adjoint"):
     def accepted_adjoint_measurements(mp):
         return isinstance(mp, ExpectationMP)
 
-    program.add_transform(
+    pipeline.add_transform(
         validate_measurements,
         analytic_measurements=accepted_adjoint_measurements,
         name=name,
     )
-    program.add_transform(broadcast_expand)
-    program.add_transform(validate_adjoint_trainable_params)
+    pipeline.add_transform(broadcast_expand)
+    pipeline.add_transform(validate_adjoint_trainable_params)
 
 
 @single_tape_support
@@ -251,30 +251,30 @@ class LegacyDeviceFacade(Device):
     def preprocess_transforms(
         self, execution_config: ExecutionConfig | None = None
     ) -> CompilePipeline:
-        program = CompilePipeline()
+        pipeline = CompilePipeline()
 
         if not execution_config:
             execution_config = ExecutionConfig()
 
         if execution_config.mcm_config.mcm_method == "deferred":
-            program.add_transform(
+            pipeline.add_transform(
                 defer_measurements,
                 allow_postselect=False,
             )
 
-        program.add_transform(legacy_device_batch_transform, device=self._device)
-        program.add_transform(legacy_device_expand_fn, device=self._device)
+        pipeline.add_transform(legacy_device_batch_transform, device=self._device)
+        pipeline.add_transform(legacy_device_expand_fn, device=self._device)
 
         if _requests_adjoint(execution_config):
-            _add_adjoint_transforms(program, name=f"{self.name} + adjoint")
+            _add_adjoint_transforms(pipeline, name=f"{self.name} + adjoint")
 
         if execution_config.mcm_config.mcm_method == "one-shot":
-            program.add_transform(
+            pipeline.add_transform(
                 dynamic_one_shot,
                 postselect_mode=execution_config.mcm_config.postselect_mode,
             )
 
-        return program
+        return pipeline
 
     def _setup_backprop_config(self, execution_config, tape):
         if not self._validate_backprop_method(tape):
@@ -397,10 +397,10 @@ class LegacyDeviceFacade(Device):
             tape = QuantumScript()
         if not supported_device or bool(tape.shots):
             return False
-        program = CompilePipeline()
-        _add_adjoint_transforms(program, name=f"{self.name} + adjoint")
+        pipeline = CompilePipeline()
+        _add_adjoint_transforms(pipeline, name=f"{self.name} + adjoint")
         try:
-            program((tape,))
+            pipeline((tape,))
         except (
             DecompositionUndefinedError,
             DeviceError,

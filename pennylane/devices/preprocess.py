@@ -213,7 +213,7 @@ def mid_circuit_measurements(
     warnings.warn(
         "The mid_circuit_measurements transform is deprecated. Instead, the device should "
         "determine the best mcm method, and explicitly include qml.transforms.dynamic_one_shot "
-        "or qml.transforms.defer_measurements in the preprocess transform program if needed.",
+        "or qml.transforms.defer_measurements in the preprocess compile pileline if needed.",
         PennyLaneDeprecationWarning,
     )
 

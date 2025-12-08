@@ -195,7 +195,7 @@ instead to the documentation of :func:`qml.transform <pennylane.transform>`.
     :toctree: api
 
     ~transforms.core.transform_dispatcher
-    ~transforms.core.transform_program
+    ~transforms.core.compile_pipeline
 
 Transforming circuits
 ---------------------

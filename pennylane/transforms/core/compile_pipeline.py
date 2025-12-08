@@ -129,7 +129,7 @@ class CompilePipeline:
 
     Programs have several implemented dunder methods for easy manipulation.
 
-    >>> from pennylane.transforms.core.transform_program import CompilePipeline
+    >>> from pennylane.transforms.core.compile_pipeline import CompilePipeline
     >>> from copy import copy
     >>> program = CompilePipeline()
     >>> program.add_transform(qml.compile)
@@ -163,19 +163,19 @@ class CompilePipeline:
         initial_program: Sequence[TransformContainer] | None = None,
         cotransform_cache: CotransformCache | None = None,
     ):
-        self._transform_program = list(initial_program) if initial_program else []
+        self._compile_pipeline = list(initial_program) if initial_program else []
         self.cotransform_cache = cotransform_cache
 
     def __copy__(self):
-        return CompilePipeline(self._transform_program, self.cotransform_cache)
+        return CompilePipeline(self._compile_pipeline, self.cotransform_cache)
 
     def __iter__(self):
         """list[TransformContainer]: Return an iterator to the underlying transform program."""
-        return self._transform_program.__iter__()
+        return self._compile_pipeline.__iter__()
 
     def __len__(self) -> int:
         """int: Return the number transforms in the program."""
-        return len(self._transform_program)
+        return len(self._compile_pipeline)
 
     @overload
     def __getitem__(self, idx: int) -> "TransformContainer": ...
@@ -187,11 +187,11 @@ class CompilePipeline:
         """(TransformContainer, List[TransformContainer]): Return the indexed transform container from underlying
         transform program"""
         if isinstance(idx, slice):
-            return CompilePipeline(self._transform_program[idx])
-        return self._transform_program[idx]
+            return CompilePipeline(self._compile_pipeline[idx])
+        return self._compile_pipeline[idx]
 
     def __bool__(self) -> bool:
-        return bool(self._transform_program)
+        return bool(self._compile_pipeline)
 
     def __add__(
         self, other: "CompilePipeline | TransformContainer | TransformDispatcher"
@@ -209,7 +209,7 @@ class CompilePipeline:
             if self.has_final_transform and other.has_final_transform:
                 raise TransformError("The transform program already has a terminal transform.")
 
-            transforms = self._transform_program + other._transform_program
+            transforms = self._compile_pipeline + other._compile_pipeline
             if self.has_final_transform:
                 transforms.append(transforms.pop(len(self) - 1))
 
@@ -237,7 +237,7 @@ class CompilePipeline:
             if self.has_final_transform and other.final_transform:
                 raise TransformError("The transform program already has a terminal transform.")
 
-            transforms = [other] + self._transform_program
+            transforms = [other] + self._compile_pipeline
             return CompilePipeline(transforms, cotransform_cache=self.cotransform_cache)
 
         return NotImplemented
@@ -266,13 +266,13 @@ class CompilePipeline:
 
             if self.has_final_transform:
                 # Remove the final transform
-                final_transform = self._transform_program.pop(-1)
+                final_transform = self._compile_pipeline.pop(-1)
                 # Extend with other's transforms
-                self._transform_program.extend(other._transform_program)
+                self._compile_pipeline.extend(other._compile_pipeline)
                 # Add the final transform back
-                self._transform_program.append(final_transform)
+                self._compile_pipeline.append(final_transform)
             else:
-                self._transform_program.extend(other._transform_program)
+                self._compile_pipeline.extend(other._compile_pipeline)
 
             if other.cotransform_cache:
                 if self.cotransform_cache:
@@ -301,7 +301,7 @@ class CompilePipeline:
                 "Cannot multiply a transform program that has a terminal transform."
             )
 
-        transforms = self._transform_program * n
+        transforms = self._compile_pipeline * n
         return CompilePipeline(transforms, cotransform_cache=self.cotransform_cache)
 
     __rmul__ = __mul__
@@ -316,11 +316,11 @@ class CompilePipeline:
         if not isinstance(other, CompilePipeline):
             return False
 
-        return self._transform_program == other._transform_program
+        return self._compile_pipeline == other._compile_pipeline
 
     def __contains__(self, obj) -> bool:
         if isinstance(obj, TransformContainer):
-            return obj in self._transform_program
+            return obj in self._compile_pipeline
         if isinstance(obj, TransformDispatcher):
             return any(obj.transform == t.transform for t in self)
         return False
@@ -338,9 +338,9 @@ class CompilePipeline:
         if self.has_final_transform:
             if transform_container.final_transform:
                 raise TransformError("The transform program already has a terminal transform.")
-            self._transform_program.insert(-1, transform_container)
+            self._compile_pipeline.insert(-1, transform_container)
             return
-        self._transform_program.append(transform_container)
+        self._compile_pipeline.append(transform_container)
 
     def insert_front(self, transform_container: TransformContainer):
         """Insert the transform container at the beginning of the program.
@@ -352,7 +352,7 @@ class CompilePipeline:
             raise TransformError(
                 "Informative transforms can only be added at the end of the program."
             )
-        self._transform_program.insert(0, transform_container)
+        self._compile_pipeline.insert(0, transform_container)
 
     def add_transform(self, transform: TransformDispatcher, *targs, **tkwargs):
         """Add a transform (dispatcher) to the end of the program.
@@ -418,7 +418,7 @@ class CompilePipeline:
         Returns:
             TransformContainer: The transform container at the beginning of the program.
         """
-        return self._transform_program.pop(0)
+        return self._compile_pipeline.pop(0)
 
     def get_last(self):
         """Get the last transform container.
@@ -430,7 +430,7 @@ class CompilePipeline:
             TransformError: It raises an error if the program is empty.
         """
         if self:
-            return self._transform_program[-1]
+            return self._compile_pipeline[-1]
         raise TransformError(
             "The transform program is empty and you cannot get the last transform container."
         )
@@ -483,10 +483,10 @@ class CompilePipeline:
 
         """
 
-        i = len(self._transform_program) - 1
+        i = len(self._compile_pipeline) - 1
         found = False
         while i >= 0:
-            t = self._transform_program[i]
+            t = self._compile_pipeline[i]
             if "mid_circuit_measurements" in str(t) and type_to_keep > 0:
                 type_to_keep = 0  # keep this and do not keep the rest
                 found = True
@@ -494,7 +494,7 @@ class CompilePipeline:
                 type_to_keep = 0  # keep this and do not keep the rest
                 found = True
             elif "dynamic_one_shot" in str(t) or "mid_circuit_measurements" in str(t):
-                self._transform_program.pop(i)
+                self._compile_pipeline.pop(i)
             i -= 1
         return found
 

@@ -331,7 +331,7 @@ class DefaultQutritMixed(Device):
         self,
         execution_config: ExecutionConfig | None = None,
     ) -> tuple[CompilePipeline, ExecutionConfig]:
-        """This function defines the device transform program to be applied and an updated device
+        """This function defines the device compile pileline to be applied and an updated device
         configuration.
 
         Args:
@@ -339,7 +339,7 @@ class DefaultQutritMixed(Device):
                 describing the parameters needed to fully describe the execution.
 
         Returns:
-            CompilePipeline, ExecutionConfig: A transform program that when called returns
+            CompilePipeline, ExecutionConfig: A compile pileline that when called returns
             ``QuantumTape`` objects that the device can natively execute, as well as a postprocessing
             function to be called after execution, and a configuration with unset
             specifications filled in.
@@ -353,28 +353,28 @@ class DefaultQutritMixed(Device):
         if execution_config is None:
             execution_config = ExecutionConfig()
         config = self._setup_execution_config(execution_config)
-        transform_program = CompilePipeline()
+        compile_pileline = CompilePipeline()
 
-        transform_program.add_transform(validate_device_wires, self.wires, name=self.name)
-        transform_program.add_transform(
+        compile_pileline.add_transform(validate_device_wires, self.wires, name=self.name)
+        compile_pileline.add_transform(
             decompose,
             stopping_condition=stopping_condition,
             name=self.name,
         )
-        transform_program.add_transform(
+        compile_pileline.add_transform(
             validate_measurements, sample_measurements=accepted_sample_measurement, name=self.name
         )
-        transform_program.add_transform(
+        compile_pileline.add_transform(
             validate_observables, stopping_condition=observable_stopping_condition, name=self.name
         )
 
         if config.gradient_method == "backprop":
-            transform_program.add_transform(no_sampling, name="backprop + default.qutrit")
+            compile_pileline.add_transform(no_sampling, name="backprop + default.qutrit")
 
         if self.readout_errors is not None:
-            transform_program.add_transform(warn_readout_error_state)
+            compile_pileline.add_transform(warn_readout_error_state)
 
-        return transform_program, config
+        return compile_pileline, config
 
     @debug_logger
     def execute(
