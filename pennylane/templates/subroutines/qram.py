@@ -394,6 +394,65 @@ class SelectOnlyQRAM(Operator):
         QRAM and QROM, though similar, have different applications and purposes. QRAM is intended
         for read-and-write capabilities, where the stored data can be loaded and changed. QROM is
         designed to only load stored data into a quantum register.
+
+    **Example:**
+
+    Consider the following example, where the classical data is a list of bitstrings (each of
+    length 3):
+
+    .. code-block:: python
+
+        bitstrings = ["010", "111", "110", "000", "010", "111", "110", "000"]
+        bitstring_size = 3
+
+    We need the number of bitstrings to equal 2^(len(select_wires)+len(control_wires)) so they can be addressed. This
+    tells us the number of control and select wires needed. We can also provide a select value to apply a filter such
+    that only entries whose select bits match this value are loaded.
+
+    .. code-block:: python
+
+        num_control_wires = 2
+        num_select_wires = 1
+        select_value = 0
+
+    Now, we can define all three registers concretely and demonstrate ``SelectOnlyQRAM`` in practice. In the
+    following circuit, we prepare the state :math:`\vert 2 \rangle = \vert 10 \rangle` on the
+    ``control_wires``, which indicates that we would like to access the second (zero-indexed) entry of
+    ``bitstrings`` (which is ``"110"``). The ``target_wires`` register should therefore store this
+    state after ``SelectOnlyQRAM`` is applied.
+
+    .. code-block:: python
+
+        import pennylane as qml
+        reg = qml.registers(
+            {
+                "control": num_control_wires,
+                "target": bitstring_size,
+                "select": num_select_wires
+            }
+        )
+
+        dev = qml.device("default.qubit")
+        @qml.qnode(dev)
+        def select_only_qram():
+            # prepare an address, e.g., |10> (index 2)
+            qml.BasisEmbedding(2, wires=reg["control"])
+
+            qml.SelectOnlyQRAM(
+                bitstrings,
+                control_wires=reg["control"],
+                target_wires=reg["target"],
+                select_wires=reg["select"],
+                select_value=select_value,
+            )
+            return qml.probs(wires=reg["target"])
+
+    >>> import numpy as np
+    >>> print(np.round(select_only_qram()))
+    [0. 0. 0. 0. 0. 0. 1. 0.]
+
+    Note that ``"110"`` in binary is equal to 6 in decimal, which is the position of the only
+    non-zero entry in the ``target_wires`` register.
     """
 
     grad_method = None
