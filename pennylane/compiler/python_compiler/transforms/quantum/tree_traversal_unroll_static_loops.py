@@ -77,7 +77,8 @@ class UnrollLoopPattern(RewritePattern):
                 if isinstance(bound, (arith.ConstantOp, stablehlo.ConstantOp)):
                     return True, None
 
-                elif isinstance(bound, Block):
+                if isinstance(bound, Block):
+
                     error_msg = "To resolve this issue, ensure that loop bounds are literals or compile-time constants (e.g., use `for i in range(5)` instead of `for i in range(n)` where n is a runtime variable)."
 
                     return False, error_msg
@@ -87,19 +88,19 @@ class UnrollLoopPattern(RewritePattern):
                     # producing false negatives error here.
                     # We should trace back to the parent region and search for constants there.
 
-                elif len(bound.regions) > 0:
+                if len(bound.regions) > 0:
 
                     error_msg = "Additionally, the bound seems to come from an operation with regions, which is not supported. Try to ensure that loop bounds are literals or compile-time constants and do not depend on operations with regions."
                     return False, error_msg
 
-                elif len(bound.operands) == 0:
+                if len(bound.operands) == 0:
 
                     error_msg = "The bound seems to be derived from an operation different than arith.ConstantOp or stablehlo.ConstantOp."
                     return False, error_msg
 
-                else:
-                    # check_bound = check_bound.owner.operands[0]
-                    bound = bound.operands[0]
+                bound = bound.operands[0]
+
+            return False, None
 
         ub_found, err_ub = find_constant_bound(op.ub)
         lb_found, err_lb = find_constant_bound(op.lb)

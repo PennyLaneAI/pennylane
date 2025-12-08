@@ -61,7 +61,7 @@ class IfOperatorPartitioningPattern(RewritePattern):
             self.flatten_nested_IfOps(rewriter)
 
         # Adding fake MeasureOp before if Op with the attribute contain_mcm = "true"
-        self.adding_fake_measureOp(op, rewriter)
+        self.adding_fake_measureOp(rewriter)
 
     def __init__(self):
         self.module: builtin.ModuleOp = None
@@ -236,7 +236,7 @@ class IfOperatorPartitioningPattern(RewritePattern):
                     collector.remove(op)
                 collector.append(op)
 
-    def flatten_nested_IfOps(self, rewriter: PatternRewriter) -> None:
+    def flatten_nested_IfOps(self, rewriter: PatternRewriter) -> None: # pylint: disable=too-many-branches
         """Flatten nested scf.IfOps into a single level scf.IfOp."""
 
         def find_deepest_if_ops_2_flat():
@@ -572,8 +572,6 @@ class IfOperatorPartitioningPattern(RewritePattern):
     def split_if_op(self, current_op: scf.IfOp, rewriter: PatternRewriter) -> None:
         """Split an scf.IfOp into separate branches for true and false regions."""
 
-        current_op
-
         # Analyze missing values for the IfOp
         missing_values = self.analyze_missing_values_for_ops([current_op])
 
@@ -719,7 +717,6 @@ class IfOperatorPartitioningPattern(RewritePattern):
                         ops_defined_values.update(block.args)
 
         missing_values = list(all_operands - ops_defined_values)
-        missing_values = [v for v in missing_values]
 
         return missing_values
 

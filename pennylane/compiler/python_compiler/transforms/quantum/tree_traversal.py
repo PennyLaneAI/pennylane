@@ -77,7 +77,7 @@ class ProgramSegment:  # pylint: disable=too-many-instance-attributes
 
 
 @dataclass
-class StackAttributes:
+class StackAttributes: # pylint: disable=too-many-instance-attributes
     """Stack-related attributes and their types for tree traversal."""
 
     # Stack values
