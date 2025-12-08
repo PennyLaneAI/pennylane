@@ -61,9 +61,9 @@ def transform(  # pylint: disable=too-many-arguments
         classical_cotransform=None (Optional[Callable]): A classical co-transform is a function to post-process the classical
             jacobian and the quantum jacobian and has the signature: ``my_cotransform(qjac, cjac, tape) -> tensor_like``
         is_informative=False (bool): Whether or not a transform is informative. If true the transform is queued at the end
-            of the transform program and the tapes or qnode aren't executed.
+            of the compile pipeline and the tapes or qnode aren't executed.
         final_transform=False (bool): Whether or not the transform is terminal. If true the transform is queued at the end
-            of the transform program. ``is_informative`` supersedes ``final_transform``.
+            of the compile pipeline. ``is_informative`` supersedes ``final_transform``.
         use_argnum_in_expand=False (bool): Whether or not to use ``argnum`` of the tape to determine trainable parameters
             during the expansion transform process.
         plxpr_transform=None (Optional[Callable]): Function for transforming plxpr. **Experimental**
@@ -126,15 +126,15 @@ def transform(  # pylint: disable=too-many-arguments
     CompilePipeline(my_quantum_transform)
 
     If we apply ``dispatched_transform`` a second time to the :class:`pennylane.QNode`, we would add
-    it to the transform program again and therefore the transform would be applied twice before execution.
+    it to the compile pipeline again and therefore the transform would be applied twice before execution.
 
     >>> transformed_qnode = dispatched_transform(transformed_qnode)
     >>> transformed_qnode.transform_program
     CompilePipeline(my_quantum_transform, my_quantum_transform)
 
-    When a transformed QNode is executed, the QNode's transform program is applied to the generated tape
+    When a transformed QNode is executed, the QNode's compile pipeline is applied to the generated tape
     and creates a sequence of tapes to be executed. The execution results are then post-processed in the
-    reverse order of the transform program to obtain the final results.
+    reverse order of the compile pipeline to obtain the final results.
 
     .. details::
         :title: Dispatch a transform onto a batch of tapes
@@ -195,7 +195,7 @@ def transform(  # pylint: disable=too-many-arguments
 
         - For a :class:`~.QNode` input, the underlying transform is added to the QNode's
           :class:`~.CompilePipeline` and the return is the transformed :class:`~.QNode`.
-          For each execution of the :class:`pennylane.QNode`, it first applies the transform program on the original captured
+          For each execution of the :class:`pennylane.QNode`, it first applies the compile pipeline on the original captured
           circuit. Then the transformed circuits are executed by a device and finally the post-processing function is
           applied on the results.
 
@@ -219,9 +219,9 @@ def transform(  # pylint: disable=too-many-arguments
           It returns a sequence of :class:`~.QuantumTape` and a processing function to be applied after execution.
           Each tape in the sequence is transformed by the transform.
 
-        - For a :class:`~.devices.Device`, the transform is added to the device's transform program
+        - For a :class:`~.devices.Device`, the transform is added to the device's compile pipeline
           and a transformed :class:`pennylane.devices.Device` is returned. The transform is added
-          to the end of the device program and will be last in the overall transform program.
+          to the end of the device program and will be last in the overall compile pipeline.
 
     .. details::
         :title: Transforms with Catalyst

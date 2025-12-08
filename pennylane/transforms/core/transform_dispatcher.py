@@ -541,7 +541,7 @@ class TransformContainer:  # pylint: disable=too-many-instance-attributes
         if isinstance(other, TransformContainer):
             # Import here to avoid circular import\
             # pylint: disable=import-outside-toplevel
-            from .transform_program import CompilePipeline
+            from .compile_pipeline import CompilePipeline
 
             if self.final_transform and other.final_transform:
                 raise TransformError(
@@ -562,7 +562,7 @@ class TransformContainer:  # pylint: disable=too-many-instance-attributes
             CompilePipeline: A new program with this container repeated n times.
         """
         # Import here to avoid circular import
-        from .transform_program import CompilePipeline  # pylint: disable=import-outside-toplevel
+        from .compile_pipeline import CompilePipeline  # pylint: disable=import-outside-toplevel
 
         if not isinstance(n, int):
             return NotImplemented

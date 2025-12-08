@@ -103,7 +103,7 @@ def null_postprocessing(results: ResultBatch) -> ResultBatch:
 
 
 class CompilePipeline:
-    """Class that contains a transform program and the methods to interact with it.
+    """Class that contains a compile pipeline and the methods to interact with it.
 
     The order of execution is the order in the list containing the containers.
 
@@ -113,9 +113,9 @@ class CompilePipeline:
         cotransform_cache (Optional[CotransformCache]): A named tuple containing the ``qnode``,
             ``args``, and ``kwargs`` required to compute classical cotransforms.
 
-    The main case where one would have to interact directly with a transform program is when developing a
+    The main case where one would have to interact directly with a compile pipeline is when developing a
     :class:`Device <pennylane.devices.Device>`. In this case, the pre-processing method of a device
-    returns a transform program. You should directly refer to the device API documentation for more details.
+    returns a compile pipeline. You should directly refer to the device API documentation for more details.
 
     .. warning::
 
@@ -170,7 +170,7 @@ class CompilePipeline:
         return CompilePipeline(self._compile_pipeline, self.cotransform_cache)
 
     def __iter__(self):
-        """list[TransformContainer]: Return an iterator to the underlying transform program."""
+        """list[TransformContainer]: Return an iterator to the underlying compile pipeline."""
         return self._compile_pipeline.__iter__()
 
     def __len__(self) -> int:
@@ -185,7 +185,7 @@ class CompilePipeline:
 
     def __getitem__(self, idx):
         """(TransformContainer, List[TransformContainer]): Return the indexed transform container from underlying
-        transform program"""
+        compile pipeline"""
         if isinstance(idx, slice):
             return CompilePipeline(self._compile_pipeline[idx])
         return self._compile_pipeline[idx]
@@ -207,7 +207,7 @@ class CompilePipeline:
         # Handle CompilePipeline
         if isinstance(other, CompilePipeline):
             if self.has_final_transform and other.has_final_transform:
-                raise TransformError("The transform program already has a terminal transform.")
+                raise TransformError("The compile pipeline already has a terminal transform.")
 
             transforms = self._compile_pipeline + other._compile_pipeline
             if self.has_final_transform:
@@ -216,7 +216,7 @@ class CompilePipeline:
             cotransform_cache = None
             if self.cotransform_cache:
                 if other.cotransform_cache:
-                    raise ValueError("Cannot add two transform programs with cotransform caches.")
+                    raise ValueError("Cannot add two compile pipelines with cotransform caches.")
                 cotransform_cache = self.cotransform_cache
             elif other.cotransform_cache:
                 cotransform_cache = other.cotransform_cache
@@ -235,7 +235,7 @@ class CompilePipeline:
         """
         if isinstance(other, TransformContainer):
             if self.has_final_transform and other.final_transform:
-                raise TransformError("The transform program already has a terminal transform.")
+                raise TransformError("The compile pipeline already has a terminal transform.")
 
             transforms = [other] + self._compile_pipeline
             return CompilePipeline(transforms, cotransform_cache=self.cotransform_cache)
@@ -262,7 +262,7 @@ class CompilePipeline:
 
         if isinstance(other, CompilePipeline):
             if self.has_final_transform and other.has_final_transform:
-                raise TransformError("The transform program already has a terminal transform.")
+                raise TransformError("The compile pipeline already has a terminal transform.")
 
             if self.has_final_transform:
                 # Remove the final transform
@@ -276,7 +276,7 @@ class CompilePipeline:
 
             if other.cotransform_cache:
                 if self.cotransform_cache:
-                    raise ValueError("Cannot add two transform programs with cotransform caches.")
+                    raise ValueError("Cannot add two compile pipelines with cotransform caches.")
                 self.cotransform_cache = other.cotransform_cache
             return self
 
@@ -294,11 +294,11 @@ class CompilePipeline:
         if not isinstance(n, int):
             return NotImplemented
         if n < 0:
-            raise ValueError("Cannot multiply transform program by negative integer")
+            raise ValueError("Cannot multiply compile pipeline by negative integer")
 
         if self.has_final_transform:
             raise TransformError(
-                "Cannot multiply a transform program that has a terminal transform."
+                "Cannot multiply a compile pipeline that has a terminal transform."
             )
 
         transforms = self._compile_pipeline * n
@@ -307,7 +307,7 @@ class CompilePipeline:
     __rmul__ = __mul__
 
     def __repr__(self):
-        """The string representation of the transform program class."""
+        """The string representation of the compile pipeline class."""
         gen = (f"{t.transform.__name__ if t.transform else t.pass_name}" for t in self)
         contents = ", ".join(gen)
         return f"CompilePipeline({contents})"
@@ -332,12 +332,12 @@ class CompilePipeline:
             transform_container(TransformContainer): A transform represented by its container.
         """
         if not isinstance(transform_container, TransformContainer):
-            raise TransformError("Only transform container can be added to the transform program.")
+            raise TransformError("Only transform container can be added to the compile pipeline.")
 
         # Program can only contain one informative transform and at the end of the program
         if self.has_final_transform:
             if transform_container.final_transform:
-                raise TransformError("The transform program already has a terminal transform.")
+                raise TransformError("The compile pipeline already has a terminal transform.")
             self._compile_pipeline.insert(-1, transform_container)
             return
         self._compile_pipeline.append(transform_container)
@@ -361,7 +361,7 @@ class CompilePipeline:
         ``qml.transforms.transform``, and not a ``TransformContainer``.
 
         Args:
-            transform (TransformDispatcher): The transform to add to the transform program.
+            transform (TransformDispatcher): The transform to add to the compile pipeline.
             *targs: Any additional arguments that are passed to the transform.
 
         Keyword Args:
@@ -369,7 +369,7 @@ class CompilePipeline:
 
         """
         if not isinstance(transform, TransformDispatcher):
-            raise TransformError("Only transform dispatcher can be added to the transform program.")
+            raise TransformError("Only transform dispatcher can be added to the compile pipeline.")
 
         if transform.expand_transform:
             self.push_back(
@@ -387,7 +387,7 @@ class CompilePipeline:
         """Add a transform (dispatcher) to the beginning of the program.
 
         Args:
-            transform(TransformDispatcher): The transform to add to the front of the transform program.
+            transform(TransformDispatcher): The transform to add to the front of the compile pipeline.
             *targs: Any additional arguments that are passed to the transform.
 
         Keyword Args:
@@ -432,11 +432,11 @@ class CompilePipeline:
         if self:
             return self._compile_pipeline[-1]
         raise TransformError(
-            "The transform program is empty and you cannot get the last transform container."
+            "The compile pipeline is empty and you cannot get the last transform container."
         )
 
     def is_empty(self):
-        """Check if the transform program is empty or not.
+        """Check if the compile pipeline is empty or not.
 
         Returns:
             bool: Boolean, True if empty, False otherwise.
@@ -445,7 +445,7 @@ class CompilePipeline:
 
     @property
     def is_informative(self) -> bool:
-        """``True`` if the transform program is informative.
+        """``True`` if the compile pipeline is informative.
 
         Returns:
             bool: Boolean
@@ -454,11 +454,11 @@ class CompilePipeline:
 
     @property
     def has_final_transform(self) -> bool:
-        """``True`` if the transform program has a terminal transform."""
+        """``True`` if the compile pipeline has a terminal transform."""
         return self[-1].final_transform if self else False  # pylint: disable=no-member
 
     def has_classical_cotransform(self) -> bool:
-        """Check if the transform program has some classical cotransforms.
+        """Check if the compile pipeline has some classical cotransforms.
 
         Returns:
             bool: Boolean
