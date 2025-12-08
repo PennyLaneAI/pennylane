@@ -129,7 +129,7 @@ class CompilePipeline:
 
     Programs have several implemented dunder methods for easy manipulation.
 
-    >>> from pennylane.transforms.core.compile_pipeline import CompilePipeline
+    >>> from pennylane import CompilePipeline
     >>> from copy import copy
     >>> program = CompilePipeline()
     >>> program.add_transform(qml.compile)
