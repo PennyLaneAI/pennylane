@@ -364,7 +364,6 @@ def apply_mid_measure(
         norm = math.sum(prob0, axis=-1)
         if (norm - 1) > 1e-7:
             raise ValueError(f"probabilities greater than 1. Got norm {norm}.")
-        print(norm)
         prob0 = prob0 / norm
 
     if prng_key is not None:
