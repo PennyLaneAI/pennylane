@@ -160,7 +160,7 @@ The :meth:`~.devices.Device.preprocess_transforms` method should start with crea
 
 .. code-block:: python
 
-    program = qml.transforms.core.TransformProgram()
+    program = qml.TransformProgram()
 
 Once a program is created, individual transforms can be added to the program with the :meth:`~.TransformProgram.add_transform` method.
 

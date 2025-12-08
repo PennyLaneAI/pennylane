@@ -74,7 +74,7 @@ class TestTransformProgram:
 
         pauli_x_out_container = qml.transforms.core.TransformContainer(just_pauli_x_out)
 
-        transform_program = qml.transforms.core.TransformProgram([pauli_x_out_container])
+        transform_program = qml.TransformProgram([pauli_x_out_container])
 
         tape0 = qml.tape.QuantumScript(
             [qml.Rot(1.2, 2.3, 3.4, wires=0)], [qml.expval(qml.PauliZ(0))]
@@ -119,7 +119,7 @@ class TestTransformProgram:
             return (tape1, tape2), null_postprocessing
 
         scale_shots = qml.transforms.core.TransformContainer(split_shots)
-        program = qml.transforms.core.TransformProgram([scale_shots])
+        program = qml.TransformProgram([scale_shots])
 
         tape = qml.tape.QuantumScript([], [qml.counts(wires=0)], shots=100)
         results = qml.execute((tape,), dev, interface=interface, transform_program=program)[0]
@@ -147,7 +147,7 @@ class TestTransformProgram:
             return new_tapes, sum_measurements
 
         container = qml.transforms.core.TransformContainer(split_sum_terms)
-        prog = qml.transforms.core.TransformProgram((container,))
+        prog = qml.TransformProgram((container,))
 
         op = qml.RX(1.2, 0)
         tape1 = qml.tape.QuantumScript([op], [qml.expval(qml.sum(qml.PauliX(0), qml.PauliZ(0)))])
@@ -196,7 +196,7 @@ class TestTransformProgram:
         just_pauli_x_container = qml.transforms.core.TransformContainer(just_pauli_x_out)
         repeat_operations_container = qml.transforms.core.TransformContainer(repeat_operations)
 
-        prog = qml.transforms.core.TransformProgram(
+        prog = qml.TransformProgram(
             (just_pauli_x_container, repeat_operations_container)
         )
 
@@ -208,7 +208,7 @@ class TestTransformProgram:
         assert dev.tracker.history["resources"][0].gate_types["PauliX"] == 2
         assert qml.math.allclose(results, 1.0)
 
-        prog_reverse = qml.transforms.core.TransformProgram(
+        prog_reverse = qml.TransformProgram(
             (repeat_operations_container, just_pauli_x_container)
         )
 
@@ -238,8 +238,8 @@ class TestTransformProgram:
 
         add_container = qml.transforms.core.TransformContainer(transform_add)
         mul_container = qml.transforms.core.TransformContainer(transform_mul)
-        prog = qml.transforms.core.TransformProgram((add_container, mul_container))
-        prog_reverse = qml.transforms.core.TransformProgram((mul_container, add_container))
+        prog = qml.TransformProgram((add_container, mul_container))
+        prog_reverse = qml.TransformProgram((mul_container, add_container))
 
         tape0 = qml.tape.QuantumScript([], [qml.expval(qml.PauliZ(0))])
         tape1 = qml.tape.QuantumScript([qml.PauliX(0)], [qml.expval(qml.PauliZ(0))])

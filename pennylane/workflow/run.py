@@ -57,7 +57,7 @@ def _construct_tf_autograph_pipeline(
     Args:
         config (qml.devices.ExecutionConfig): resolved execution configuration
         device (qml.devices.Device): a Pennylane device
-        inner_transform_program (qml.transforms.core.TransformProgram): the transformation applied to quantum tapes
+        inner_transform_program (qml.TransformProgram): the transformation applied to quantum tapes
 
     Returns:
         tuple: A tuple containing:
@@ -121,7 +121,7 @@ def _construct_ml_execution_pipeline(
     Args:
         config (qml.devices.ExecutionConfig): resolved execution configuration
         device (qml.devices.Device): a Pennylane device
-        inner_transform_program (qml.transforms.core.TransformProgram): the transformation applied to quantum tapes
+        inner_transform_program (qml.TransformProgram): the transformation applied to quantum tapes
 
     Returns:
         tuple: A tuple containing:

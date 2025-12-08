@@ -59,7 +59,7 @@ def test_device_transform_program():
     config = ExecutionConfig(use_device_gradient=True)
 
     container = qml.transforms.core.TransformContainer(device_transform)
-    device_tp = qml.transforms.core.TransformProgram((container,))
+    device_tp = qml.TransformProgram((container,))
     device = qml.device("default.qubit")
     device.preprocess_transforms = MagicMock(return_value=device_tp)
 
@@ -79,14 +79,14 @@ def test_device_transform_program():
 def test_prune_dynamic_transform():
     """Tests that the helper function prune dynamic transform works."""
 
-    program1 = qml.transforms.core.TransformProgram(
+    program1 = qml.TransformProgram(
         [
             qml.transforms.dynamic_one_shot,
             qml.transforms.split_non_commuting,
             qml.transforms.dynamic_one_shot,
         ]
     )
-    program2 = qml.transforms.core.TransformProgram(
+    program2 = qml.TransformProgram(
         [
             qml.transforms.dynamic_one_shot,
             qml.transforms.split_non_commuting,
@@ -101,14 +101,14 @@ def test_prune_dynamic_transform():
 def test_prune_dynamic_transform_with_mcm():
     """Tests that the helper function prune dynamic transform works with mcm"""
 
-    program1 = qml.transforms.core.TransformProgram(
+    program1 = qml.TransformProgram(
         [
             qml.transforms.dynamic_one_shot,
             qml.transforms.split_non_commuting,
             qml.devices.preprocess.mid_circuit_measurements,
         ]
     )
-    program2 = qml.transforms.core.TransformProgram(
+    program2 = qml.TransformProgram(
         [
             qml.transforms.dynamic_one_shot,
             qml.transforms.split_non_commuting,
