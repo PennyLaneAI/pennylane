@@ -356,7 +356,7 @@ class TestCompilePipelineDunders:
     )
     def test_mul_negative_raises_error(self, obj):
         """Test that negative multiplication raises ValueError."""
-        with pytest.raises(ValueError, match="Cannot multiply transform"):
+        with pytest.raises(ValueError, match=r"Cannot multiply (transform)|(compile)"):
             _ = obj * -1
 
     def test_pipeline_rmul_final_transform_error(self):
@@ -975,7 +975,7 @@ class TestCompilePipeline:
 
         with pytest.raises(
             TransformError,
-            match="Informative transforms can only be added at the end of the pipeline.",
+            match="Informative transforms can only be added at the end of the program.",
         ):
             compile_pipeline.insert_front(transform3)
 
@@ -1005,7 +1005,7 @@ class TestCompilePipeline:
 
         with pytest.raises(
             TransformError,
-            match="Informative transforms can only be added at the end of the pipeline.",
+            match="Informative transforms can only be added at the end of the program.",
         ):
             compile_pipeline.insert_front_transform(transform3)
 
@@ -1100,11 +1100,11 @@ class TestClassicalCotransfroms:
             return qml.expval(qml.Z(0))
 
         circuit = qml.gradients.param_shift(circuit, hybrid=True)
-        circuit.compile_pipeline.set_classical_component(circuit, (arg,), {})
+        circuit.transform_program.set_classical_component(circuit, (arg,), {})
 
         tape = qml.tape.QuantumScript([], [])
         with pytest.raises(QuantumFunctionError, match="No trainable parameters"):
-            circuit.compile_pipeline((tape,))
+            circuit.transform_program((tape,))
 
 
 class TestCompilePipelineCall:
@@ -1418,7 +1418,7 @@ class TestCompilePipelineIntegration:
 
         new_qnode = dispatched_transform(dispatched_transform(qnode_circuit, 0), 0)
 
-        pipeline = new_qnode.compile_pipeline
+        pipeline = new_qnode.transform_program
         transformed_qnode_rep = repr(pipeline)
         assert (
             transformed_qnode_rep
@@ -1453,7 +1453,7 @@ class TestCompilePipelineIntegration:
 
         new_qnode = dispatched_transform_2(dispatched_transform_1(qnode_circuit, 0))
 
-        pipeline = new_qnode.compile_pipeline
+        pipeline = new_qnode.transform_program
         transformed_qnode_rep = repr(pipeline)
         assert (
             transformed_qnode_rep
@@ -1491,7 +1491,7 @@ class TestCompilePipelineIntegration:
 
         new_qnode = dispatched_transform_2(dispatched_transform_1(qnode_circuit, 0), 0)
 
-        pipeline = new_qnode.compile_pipeline
+        pipeline = new_qnode.transform_program
         transformed_qnode_rep = repr(pipeline)
         assert (
             transformed_qnode_rep
