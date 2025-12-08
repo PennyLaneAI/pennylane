@@ -25,6 +25,7 @@ def transform(  # pylint: disable=too-many-arguments
     quantum_transform: Callable | None = None,
     pass_name: None | str = None,
     *,
+    setup_inputs: None | str = None,
     expand_transform=None,
     classical_cotransform=None,
     is_informative=False,
@@ -176,6 +177,47 @@ def transform(  # pylint: disable=too-many-arguments
 
         >>> function1(function2(result))
         np.float64(0.499...)
+
+    .. details::
+        :title: Setup inputs
+
+        The ``setup_inputs`` function will independently applied prior to any application of
+        the transform. This allows for validation of the inputs, separation into positional and
+        keyword arguments, and specification of a call signature and docstring for transforms
+        without a tape definition.
+
+        .. code-block:: python
+
+            def setup_inputs(a, b=1, metadata : str = "my_value"):
+                "Docstring for my_transform."
+                return (a, b), {"metadata": metadata}
+
+            my_transform = qml.transform(pass_name="my_pass", setup_inputs=setup_inputs)
+
+            @qml.qnode(qml.device('default.qubit', wires=4))
+            def circuit():
+                return qml.expval(qml.Z(0))
+
+        This allows us to perform eager input validation and set default values.
+
+        >>> my_transform(circuit)
+        Traceback (most recent call last):
+            ...
+        TypeError: setup_inputs() missing 1 required positional argument: 'a'
+        >>> new_circuit = my_transform(circuit, a=2)
+        >>> new_circuit.transform_program[0]
+        <my_pass((2, 1), {'metadata': 'my_value'})>
+
+        We will also have a docstring and signature. If a tape transform is present, the signature will
+        be determined by that.
+
+        >>> my_transform.__doc__
+        'Docstring for my_transform.'
+        >>> import inspect
+        >>> inspect.signature(my_transform)
+        <Signature (a, b=1, metadata: str = 'my_value')>
+
+
 
     .. details::
         :title: Signature of a transform
@@ -410,6 +452,7 @@ def transform(  # pylint: disable=too-many-arguments
 
     return TransformDispatcher(
         quantum_transform,
+        setup_inputs=setup_inputs,
         expand_transform=expand_transform,
         classical_cotransform=classical_cotransform,
         is_informative=is_informative,
