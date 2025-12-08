@@ -981,8 +981,7 @@ def _obs_to_str(obs) -> str:
         case "Prod":
             return " @ ".join(_obs_to_str(o) for o in obs.operands)
         case "Hamiltonian" | "LinearCombination":
-            inner = ", ".join(_obs_to_str(o) for o in obs.operands)
-            return f"Hamiltonian({inner})"
+            return f"Hamiltonian(num_wires={obs.num_wires}, num_terms={len(obs.operands)})"
         case "SProd":
             return _obs_to_str(obs.base)
         case "Exp":
