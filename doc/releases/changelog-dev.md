@@ -299,6 +299,12 @@
   Instead, please use `QNode.transform_program.push_back(transform_container=transform_container)`.
   [(#8468)](https://github.com/PennyLaneAI/pennylane/pull/8468)
 
+* The `TransformProgram` has been renamed to :class:`~pennylane.transforms.core.CompilePipeline`, and uses of
+  the term "transform program" has been updated to "compile pipeline" across the codebase. The class is still
+  accessible as `TransformProgram` from `pennylane.transforms.core`, but the module `pennylane.transforms.core.transform_program`
+  has been renamed to `pennylane.transforms.core.compile_pipeline`, and the old name is no longer available.
+  [(#8735)](https://github.com/PennyLaneAI/pennylane/pull/8735)
+
 <h3>Deprecations 👋</h3>
 
 * Maintenance support of NumPy<2.0 is deprecated as of v0.44 and will be completely dropped in v0.45.
