@@ -994,7 +994,9 @@ def _obs_to_str(obs) -> str:
 def _mp_to_str(mp: MeasurementProcess, num_wires: int) -> str:
     """Convert a MeasurementProcess to a string representation for resource counting."""
     meas_name = mp._shortname  # pylint: disable=protected-access
-    if mp.obs is None:
+    if mp.mv is not None:
+        meas_name += "(mcm)"
+    elif mp.obs is None:
         meas_wires = len(mp.wires)
         if meas_wires in (None, 0, num_wires):
             meas_name += "(all wires)"
