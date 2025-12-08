@@ -216,15 +216,15 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
         bitstrings = list(bitstrings)
         control_wires = Wires(control_wires)
 
-        n_k = len(control_wires)
-        if (1 << n_k) != len(bitstrings):
+        num_controls = len(control_wires)
+        if (1 << num_controls) != len(bitstrings):
             raise ValueError("len(bitstrings) must be 2^(len(control_wires)).")
 
         target_wires = Wires(target_wires)
         if m != len(target_wires):
             raise ValueError("len(target_wires) must equal bitstring length.")
 
-        expected_nodes = (1 << n_k) - 1 if n_k > 0 else 0
+        expected_nodes = (1 << num_controls) - 1 if num_controls > 0 else 0
 
         if len(work_wires) != 1 + 3 * expected_nodes:
             raise ValueError(f"work_wires must have length {1 + 3 * expected_nodes}.")
@@ -262,35 +262,39 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
 
 def _bucket_brigade_qram_resources(bitstrings):
     num_target_wires = len(bitstrings[0])
-    n_k = int(math.log2(len(bitstrings)))
+    num_controls = int(math.log2(len(bitstrings)))
     resources = defaultdict(int)
-    resources[resource_rep(SWAP)] = ((1 << n_k) - 1 + n_k) * 2 + num_target_wires * 2
-    resources[resource_rep(CSWAP)] = ((1 << n_k) - 1) * num_target_wires * 2 + (
-        ((1 << n_k) - 1 - n_k) * 2
+    resources[resource_rep(SWAP)] = (
+        (1 << num_controls) - 1 + num_controls
+    ) * 2 + num_target_wires * 2
+    resources[resource_rep(CSWAP)] = ((1 << num_controls) - 1) * num_target_wires * 2 + (
+        ((1 << num_controls) - 1 - num_controls) * 2
     )
     resources[
         controlled_resource_rep(
             base_class=SWAP, base_params={}, num_control_wires=1, num_zero_control_values=1
         )
-    ] = ((1 << n_k) - 1) * num_target_wires * 2 + (((1 << n_k) - 1 - n_k) * 2)
+    ] = ((1 << num_controls) - 1) * num_target_wires * 2 + (
+        ((1 << num_controls) - 1 - num_controls) * 2
+    )
     resources[resource_rep(Hadamard)] += num_target_wires * 2
     for j in range(num_target_wires):
-        for p in range(1 << n_k):
+        for p in range(1 << num_controls):
             resources[resource_rep(PauliZ)] += 1 if int(bitstrings[p][j]) else 0
     return resources
 
 
-def _mark_routers_via_bus(wire_manager, n_k):
+def _mark_routers_via_bus(wire_manager, num_controls):
     """Write low-order address bits into router directions **layer-by-layer** via the bus.
 
-    For each low bit a_k (k = 0..n_k-1):
+    For each low bit a_k (k = 0..num_controls-1):
       1) SWAP(control_wires[k], bus)
       2) Route bus down k levels (CSWAPs controlled by routers at levels < k)
       3) At node (k, path-prefix), SWAP(bus, dir[k, path-prefix])
     """
     SWAP([wire_manager.control_wires[0], wire_manager.bus_wire[0]])
     SWAP([wire_manager.bus_wire[0], wire_manager.router(0, 0)])
-    for k in range(1, n_k):
+    for k in range(1, num_controls):
         # 1) load a_k into the bus
         origin = wire_manager.control_wires[k]
         target = wire_manager.bus_wire[0]
@@ -322,14 +326,14 @@ def _route_bus_down_first_k_levels(wire_manager, k_levels):
             ctrl(SWAP(wires=[in_w, L]), control=[d], control_values=[0])
 
 
-def _leaf_ops_for_bit(wire_manager, bitstrings, n_k, j):
+def _leaf_ops_for_bit(wire_manager, bitstrings, num_controls, j):
     """Apply the leaf write for target bit index j."""
     ops = []
-    for p in range(1 << n_k):
+    for p in range(1 << num_controls):
         if p % 2 == 0:
-            target = wire_manager.portL(n_k - 1, p >> 1)
+            target = wire_manager.portL(num_controls - 1, p >> 1)
         else:
-            target = wire_manager.portR(n_k - 1, p >> 1)
+            target = wire_manager.portR(num_controls - 1, p >> 1)
         bit = bitstrings[p][j]
         if bit == "1":
             PauliZ(wires=target)
@@ -344,20 +348,20 @@ def _bucket_brigade_qram_decomposition(
 ):  # pylint: disable=unused-argument
     bus_wire = wire_manager.bus_wire
     control_wires = wire_manager.control_wires
-    n_k = len(control_wires)
+    num_controls = len(control_wires)
     # 1) address loading
-    _mark_routers_via_bus(wire_manager, n_k)
+    _mark_routers_via_bus(wire_manager, num_controls)
     # 2) For each target bit: load→route down→leaf op→route up→restore (reuse the route bus function)
     for j, tw in enumerate(wire_manager.target_wires):
         Hadamard(wires=[tw])
         SWAP(wires=[tw, bus_wire[0]])
         _route_bus_down_first_k_levels(wire_manager, len(control_wires))
-        _leaf_ops_for_bit(wire_manager, bitstrings, n_k, j)
+        _leaf_ops_for_bit(wire_manager, bitstrings, num_controls, j)
         adjoint(_route_bus_down_first_k_levels, lazy=False)(wire_manager, len(control_wires))
         SWAP(wires=[tw, bus_wire[0]])
         Hadamard(wires=[tw])
     # 3) address unloading
-    adjoint(_mark_routers_via_bus, lazy=False)(wire_manager, n_k)
+    adjoint(_mark_routers_via_bus, lazy=False)(wire_manager, num_controls)
 
 
 add_decomps(BBQRAM, _bucket_brigade_qram_decomposition)
@@ -479,18 +483,18 @@ class SelectOnlyQRAM(Operator):
         select_wires = Wires(select_wires) if select_wires is not None else Wires([])
 
         # ---- Validate bitstrings ----
-        k = len(select_wires)
-        n_k = len(control_wires)
-        n_total = k + n_k
+        num_select = len(select_wires)
+        num_controls = len(control_wires)
+        n_total = num_select + num_controls
 
         if (1 << n_total) != len(bitstrings):
             raise ValueError("len(bitstrings) must be 2^(len(select_wires)+len(control_wires)).")
 
             # Validate select_value (if provided)
         if select_value is not None:
-            if k == 0:
+            if num_select == 0:
                 raise ValueError("select_value cannot be used when len(select_wires) == 0.")
-            max_sel = 1 << k
+            max_sel = 1 << num_select
             if not 0 <= select_value < max_sel:
                 raise ValueError(f"select_value must be an integer in [0, {max_sel - 1}].")
 
@@ -557,15 +561,15 @@ def _select_only_qram_decomposition(
     wires, bitstrings, select_value, select_wires, control_wires, target_wires, **_
 ):  # pylint: disable=unused-argument
     controls = select_wires + control_wires
-    k = len(select_wires)
-    n_total = k + len(control_wires)
+    num_select = len(select_wires)
+    n_total = num_select + len(control_wires)
 
-    # Loop over all addresses (0 .. 2^(k+n_k)-1)
+    # Loop over all addresses (0 .. 2^(num_select+num_controls)-1)
     for addr, bits in enumerate(bitstrings):
         # If select_value is specified, only implement entries whose
-        # high k bits (select part) match that value.
-        if select_value is not None and k > 0:
-            sel_part = addr >> (n_total - k)
+        # high num_select bits (select part) match that value.
+        if select_value is not None and num_select > 0:
+            sel_part = addr >> (n_total - num_select)
             if sel_part != select_value:
                 continue
 
