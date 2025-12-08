@@ -492,6 +492,10 @@ A warning message has been added to :doc:`Building a plugin <../development/plug
 
 <h3>Bug fixes 🐛</h3>
 
+* Handles floating point errors in the norm of the state when applying
+  mid circuit measurements.
+  [(#8741)](https://github.com/PennyLaneAI/pennylane/pull/8741)
+
 * Update `interface-unit-tests.yml` to use its input parameter `pytest_additional_args` when running pytest.
   [(#8705)](https://github.com/PennyLaneAI/pennylane/pull/8705)
 
