@@ -60,8 +60,7 @@ def jit_if_jax_available(f, **kwargs):
 
     if is_jax_available:
         return jax.jit(f, **kwargs)
-    else:
-        return f
+    return f
 
 
 def _pauli_rep_process(A, poly, encoding_wires, block_encoding, angle_solver="root-finding"):
