@@ -503,6 +503,142 @@ def specs(
                                                measurements={'expval(Prod(num_wires=2, num_terms=2))': 1},
                                                num_allocs=3,
                                                depth=1)])
+
+    .. details::
+        :title: Using specs on workflows JIT-compiled with ``qml.qjit``
+
+        The available options for `levels` are different for circuits which have been compiled using Catalyst.
+        There are 2 broad types of specs which can be retrieved for compiled qnodes: runtime resource tracking,
+        and pass-by-pass specs for user applied compilation steps.
+
+        *Runtime resource tracking* (specified by ``level="device"``) works by mock-executing the desired
+        workflow and tracking the number of times a given gate has been applied. This mock-execution happens
+        after all compilation steps, and should be highly accurate to the final gatecounts of running on
+        a real device.
+
+        .. code-block:: python
+
+            dev = qml.device("lightning.qubit", wires=3)
+
+            @qml.qjit
+            @qml.transforms.merge_rotations
+            @qml.transforms.cancel_inverses
+            @qml.qnode(dev)
+            def circuit(x):
+                qml.RX(x, wires=0)
+                qml.RX(x, wires=0)
+                qml.X(0)
+                qml.X(0)
+                qml.CNOT([0, 1])
+                return qml.probs()
+
+        >>> print(qml.specs(circuit, level="device")(1.23))
+        Device: lightning.qubit
+        Device wires: None
+        Shots: Shots(total=None)
+        Level: device
+        <BLANKLINE>
+        Resource specifications:
+          Total qubit allocations: 3
+          Total gates: 2
+          Circuit depth: 2
+        <BLANKLINE>
+          Gate types:
+            CNOT: 1
+            RX: 1
+        <BLANKLINE>
+          Measurements:
+            No measurements.
+
+        .. warning::
+            Measurement data is not currently supported with runtime resource tracking, so measurement
+            data may show as missing.
+
+        *Pass-by-pass specs* work by analyzing the intermediate representations of compiled circuits.
+        This can be helpful for determining how circuit resources change after a given transform
+        or compiler pass.
+        This version of specs can be applied by passing one of the following values for the `level` argument:
+          * An int: the desired pass level of a user-applied pass, see the note below
+          * A marker name (str): The name of an applied :func:`qml.marker <pennylane.marker>` pass
+          * An iterable: A list, tuple, etc. containing ints and/or marker names. Should be sorted in
+            ascending pass order
+          * The string "all": To output information about all user-applied transforms and compilation passes
+          * The string "all-mlir": To output information about all compilation passes at the MLIR level only
+
+        .. note::
+            The pass levels only take into account user-applied transforms and compilation passes.
+            Level 0 always corresponds to the original circuit before any user transforms have been applied,
+            and subsequent levels correspond to the order in which user transforms were applied.
+            The following level is the MLIR lowering pass, followed by any MLIR-level compilation passes.
+
+        .. warning::
+            Some resource information from pass-by-pass specs may be estimated, since it is not always
+            possible to determine exact resource usage from intermediate representations.
+
+            Due to similar technical limitations, depth computation is not available for pass-by-pass specs.
+
+        >>> print(qml.specs(circuit, level=0)(1.23))
+        Device: lightning.qubit
+        Device wires: 3
+        Shots: Shots(total=None)
+        Level: ['Before transforms', 'Before MLIR Passes (MLIR-0)', 'cancel-inverses (MLIR-1)', 'merge-rotations (MLIR-2)']
+        <BLANKLINE>
+        Resource specifications:
+        Level = Before transforms:
+          Total qubit allocations: 2
+          Total gates: 5
+          Circuit depth: Not computed
+        <BLANKLINE>
+          Gate types:
+            RX: 2
+            PauliX: 2
+            CNOT: 1
+        <BLANKLINE>
+          Measurements:
+            probs(all wires): 1
+        <BLANKLINE>
+        ------------------------------------------------------------
+        <BLANKLINE>
+        Level = Before MLIR Passes (MLIR-0):
+          Total qubit allocations: 3
+          Total gates: 5
+          Circuit depth: Not computed
+        <BLANKLINE>
+          Gate types:
+            RX: 2
+            PauliX: 2
+            CNOT: 1
+        <BLANKLINE>
+          Measurements:
+            probs(all wires): 1
+        <BLANKLINE>
+        ------------------------------------------------------------
+        <BLANKLINE>
+        Level = cancel-inverses (MLIR-1):
+          Total qubit allocations: 3
+          Total gates: 3
+          Circuit depth: Not computed
+        <BLANKLINE>
+          Gate types:
+            RX: 2
+            CNOT: 1
+        <BLANKLINE>
+          Measurements:
+            probs(all wires): 1
+        <BLANKLINE>
+        ------------------------------------------------------------
+        <BLANKLINE>
+        Level = merge-rotations (MLIR-2):
+          Total qubit allocations: 3
+          Total gates: 2
+          Circuit depth: Not computed
+        <BLANKLINE>
+          Gate types:
+            RX: 1
+            CNOT: 1
+        <BLANKLINE>
+          Measurements:
+            probs(all wires): 1
     """
     # pylint: disable=import-outside-toplevel
     # Have to import locally to prevent circular imports as well as accounting for Catalyst not being installed
