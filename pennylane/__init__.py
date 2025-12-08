@@ -120,6 +120,7 @@ from pennylane.transforms import (
     pattern_matching_optimization,
     clifford_t_decomposition,
 )
+from pennylane.transforms.core import TransformProgram
 from pennylane.noise import (
     add_noise,
     insert,
