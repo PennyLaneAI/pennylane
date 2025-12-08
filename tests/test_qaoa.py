@@ -19,13 +19,27 @@ import itertools
 import rustworkx as rx
 import numpy as np
 import pytest
-import rustworkx as rx
-# Graph imported via rustworkx as rx.PyGraph
 from scipy.linalg import expm
 from scipy.sparse import csc_matrix, kron
 
 import pennylane as qml
 from pennylane import qaoa
+from pennylane._rustworkx_compat import Graph
+
+# Provide rustworkx replacements for networkx functions used in tests
+try:
+    import networkx as nx
+except ImportError:
+    # Create minimal compatibility shims if networkx not available
+    class _NxCompat:
+        @staticmethod
+        def complete_graph(n):
+            """Create a complete graph using rustworkx."""
+            g = rx.generators.mesh_graph(n, list(range(n)))
+            # Add a to_directed method
+            g.to_directed = lambda: rx.generators.directed_mesh_graph(n, list(range(n)))
+            return g
+    nx = _NxCompat()
 from pennylane.qaoa.cycle import (
     _inner_net_flow_constraint_hamiltonian,
     _inner_out_flow_constraint_hamiltonian,

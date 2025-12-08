@@ -19,11 +19,35 @@ import uuid
 
 import rustworkx as rx
 import pytest
-import rustworkx as rx
 
 import pennylane as qml
 from pennylane.ftqc import QubitGraph
 from pennylane.ftqc.qubit_graph import MAX_TRAVERSAL_DEPTH
+
+# Import networkx for compatibility with existing tests that use nx-specific functions
+# But prefer rustworkx equivalents where available
+try:
+    import networkx as nx
+    # Create rustworkx-compatible wrappers for networkx functions
+    def hexagonal_lattice_graph(m, n):
+        return rx.generators.hexagonal_lattice_graph(m, n)
+    def grid_2d_graph(m, n):
+        return rx.generators.grid_graph([m, n])
+    def grid_graph(dims):
+        return rx.generators.grid_graph(dims)
+    def null_graph():
+        return rx.PyGraph()
+except ImportError:
+    # If networkx is not available, use rustworkx directly
+    nx = None
+    def hexagonal_lattice_graph(m, n):
+        return rx.generators.hexagonal_lattice_graph(m, n)
+    def grid_2d_graph(m, n):
+        return rx.generators.grid_graph([m, n])
+    def grid_graph(dims):
+        return rx.generators.grid_graph(dims)
+    def null_graph():
+        return rx.PyGraph()
 
 # pylint: disable=too-few-public-methods
 
@@ -39,7 +63,7 @@ class TestQubitGraphsInitialization:
 
     @pytest.mark.parametrize(
         "graph, id",
-        [(nx.hexagonal_lattice_graph(3, 2), None), (nx.hexagonal_lattice_graph(3, 2), 0)],
+        [(hexagonal_lattice_graph(3, 2), None), (hexagonal_lattice_graph(3, 2), 0)],
     )
     def test_initialization_constructor(self, graph, id):
         """Test that we can initialize a QubitGraph with a user-defined graph of underlying qubits
@@ -61,7 +85,7 @@ class TestQubitGraphsInitialization:
 
     def test_init_graph(self):
         """Test that we can initialize a QubitGraph with a user-defined graph of underlying qubits."""
-        g = nx.hexagonal_lattice_graph(3, 2)
+        g = hexagonal_lattice_graph(3, 2)
         qubit = QubitGraph()
         qubit.init_graph(g)
 
@@ -86,7 +110,7 @@ class TestQubitGraphsInitialization:
         m, n = 2, 3
         qubit.init_graph_2d_grid(m, n)
 
-        expected_graph = nx.grid_2d_graph(m, n)
+        expected_graph = grid_2d_graph(m, n)
         assert set(qubit.node_labels) == set(expected_graph.nodes)
         assert set(qubit.edge_labels) == set(expected_graph.edges)
 
@@ -122,11 +146,11 @@ class TestQubitGraphsInitialization:
 
             qubit0[node] = qubit1
 
-        expected_graph0 = nx.grid_2d_graph(m0, n0)
+        expected_graph0 = grid_2d_graph(m0, n0)
         assert set(qubit0.node_labels) == set(expected_graph0.nodes)
         assert set(qubit0.edge_labels) == set(expected_graph0.edges)
 
-        expected_graph1 = nx.grid_2d_graph(m1, n1)
+        expected_graph1 = grid_2d_graph(m1, n1)
         expected_graph1_nodes_set = set(expected_graph1.nodes)
         expected_graph1_edges_set = set(expected_graph1.edges)
 
@@ -141,7 +165,7 @@ class TestQubitGraphsInitialization:
         n0, n1, n2 = 2, 3, 4
         qubit.init_graph_nd_grid((n0, n1, n2))
 
-        expected_graph = nx.grid_graph((n0, n1, n2))
+        expected_graph = grid_graph((n0, n1, n2))
         assert set(qubit.node_labels) == set(expected_graph.nodes)
         assert set(qubit.edge_labels) == set(expected_graph.edges)
 
@@ -197,7 +221,7 @@ class TestQubitGraphsInitialization:
         """
         # Initialize qubit0 by passing graph to constructor and qubit1 using `init_graph` to cover
         # both graph-initialization methods
-        g = nx.grid_graph((2, 2))
+        g = grid_graph((2, 2))
         qubit0 = QubitGraph(g, id=0)
         qubit1 = QubitGraph(id=1)
         qubit1.init_graph(g)
@@ -307,7 +331,7 @@ class TestQubitGraphConnectivityAttributes:
 
     def test_neighbors(self):
         """Test basic usage of the ``QubitGraph.neighbors`` attribute."""
-        q = QubitGraph(nx.grid_2d_graph(2, 2))
+        q = QubitGraph(grid_2d_graph(2, 2))
 
         assert set(q.neighbors) == set()
 
@@ -325,7 +349,7 @@ class TestQubitGraphOperations:
         q = QubitGraph()
         assert q.graph is None
 
-        q.init_graph(nx.grid_2d_graph(2, 1))
+        q.init_graph(grid_2d_graph(2, 1))
         assert q.graph is not None
 
         q.clear()
@@ -547,7 +571,7 @@ class TestQubitGraphNesting:
         # Case 1: Fully initialized but lowest layer is null graph
         #  -> In this case, lowest layer is both a leaf node and initialized
         qubit1 = QubitGraph(self._generate_single_node_graph())
-        qubit1[0] = QubitGraph(nx.null_graph())
+        qubit1[0] = QubitGraph(null_graph())
 
         assert not qubit1.is_leaf
         assert qubit1[0].is_leaf

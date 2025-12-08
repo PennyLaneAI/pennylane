@@ -658,7 +658,7 @@ def max_weight_cycle(graph: rx.PyGraph | rx.PyGraph | rx.PyDiGraph, constrained:
 
             import pennylane as qml
             import numpy as np
-            import networkx as nx
+            import rustworkx as rx
 
             a = np.random.random((4, 4))
             np.fill_diagonal(a, 0)

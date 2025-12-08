@@ -26,10 +26,18 @@ class MultiDiGraph:
     with existing PennyLane code while using rustworkx as the underlying graph library.
     """
 
-    def __init__(self):
+    def __init__(self, incoming_graph_data=None):
         self._graph = rx.PyDiGraph(multigraph=True)
         self._node_to_index = {}  # Map from node object to integer index
         self._index_to_node = {}  # Map from integer index to node object
+        
+        # Support initialization from edge list like networkx
+        if incoming_graph_data is not None:
+            if isinstance(incoming_graph_data, list):
+                # Assume it's an edge list: [(u, v), (u, v, data), ...]
+                self.add_edges_from(incoming_graph_data)
+            else:
+                raise ValueError("MultiDiGraph initialization only supports edge lists")
 
     def add_node(self, node, **attr):
         """Add a single node and optionally attach attributes."""
@@ -301,3 +309,129 @@ def descendants(G, source):
         
         visited.discard(source_idx)  # Don't include source itself
         return {G._index_to_node[idx] for idx in visited if idx in G._index_to_node}
+
+
+def graph_from_adj_dict(adj_dict):
+    """
+    Create a rustworkx PyGraph from an adjacency dictionary.
+    
+    This is a helper function for test compatibility, as networkx allows
+    creating graphs like: nx.Graph({0: {1, 2}, 1: {0}, 2: {0}})
+    
+    Args:
+        adj_dict (dict): Adjacency dictionary where keys are nodes and values are 
+                        sets/tuples/lists of neighbors
+        
+    Returns:
+        rx.PyGraph: A rustworkx undirected graph
+    """
+    g = rx.PyGraph()
+    node_to_idx = {}
+    
+    # Add all nodes first
+    for node in adj_dict.keys():
+        if node not in node_to_idx:
+            idx = g.add_node(node)
+            node_to_idx[node] = idx
+    
+    # Add edges (avoiding duplicates in undirected graph)
+    edges_added = set()
+    for node, neighbors in adj_dict.items():
+        node_idx = node_to_idx[node]
+        # Handle sets, tuples, and lists of neighbors
+        if not isinstance(neighbors, (set, list, tuple)):
+            neighbors = [neighbors]
+        for neighbor in neighbors:
+            if neighbor not in node_to_idx:
+                neighbor_idx = g.add_node(neighbor)
+                node_to_idx[neighbor] = neighbor_idx
+            else:
+                neighbor_idx = node_to_idx[neighbor]
+            
+            # Create a sorted edge tuple to avoid duplicates
+            edge_tuple = tuple(sorted([node_idx, neighbor_idx]))
+            if edge_tuple not in edges_added:
+                g.add_edge(node_idx, neighbor_idx, None)
+                edges_added.add(edge_tuple)
+    
+    return g
+
+
+def digraph_from_adj_dict(adj_dict):
+    """
+    Create a rustworkx PyDiGraph from an adjacency dictionary.
+    
+    Args:
+        adj_dict (dict): Adjacency dictionary where keys are nodes and values are sets of neighbors
+        
+    Returns:
+        rx.PyDiGraph: A rustworkx directed graph
+    """
+    g = rx.PyDiGraph()
+    node_to_idx = {}
+    
+    # Add all nodes first
+    for node in adj_dict.keys():
+        if node not in node_to_idx:
+            idx = g.add_node(node)
+            node_to_idx[node] = idx
+    
+    # Add edges
+    for node, neighbors in adj_dict.items():
+        node_idx = node_to_idx[node]
+        for neighbor in neighbors:
+            if neighbor not in node_to_idx:
+                neighbor_idx = g.add_node(neighbor)
+                node_to_idx[neighbor] = neighbor_idx
+            else:
+                neighbor_idx = node_to_idx[neighbor]
+            
+            g.add_edge(node_idx, neighbor_idx, None)
+    
+    return g
+
+
+# Graph class that wraps PyGraph for networkx-like initialization
+def Graph(incoming_graph_data=None, multigraph=True):
+    """
+    Create a rustworkx PyGraph with networkx-like initialization support.
+    
+    Examples:
+        >>> g = Graph()  # Empty graph
+        >>> g = Graph([(0, 1), (1, 2)])  # Graph from edge list
+    
+    Args:
+        incoming_graph_data: Optional edge list to initialize graph
+        multigraph: Whether to create a multigraph
+        
+    Returns:
+        rx.PyGraph: A rustworkx graph
+    """
+    g = rx.PyGraph(multigraph=multigraph)
+    
+    if incoming_graph_data is not None:
+        if isinstance(incoming_graph_data, list):
+            # Assume it's an edge list
+            nodes = set()
+            for edge in incoming_graph_data:
+                if len(edge) >= 2:
+                    nodes.add(edge[0])
+                    nodes.add(edge[1])
+            
+            # Add nodes first
+            node_to_idx = {}
+            for node in sorted(nodes):
+                idx = g.add_node(node)
+                node_to_idx[node] = idx
+            
+            # Add edges
+            for edge in incoming_graph_data:
+                if len(edge) >= 2:
+                    u_idx = node_to_idx[edge[0]]
+                    v_idx = node_to_idx[edge[1]]
+                    edge_data = edge[2] if len(edge) > 2 else None
+                    g.add_edge(u_idx, v_idx, edge_data)
+        else:
+            raise ValueError("Graph initialization only supports edge lists")
+    
+    return g

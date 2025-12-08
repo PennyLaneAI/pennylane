@@ -21,6 +21,7 @@ import pytest
 import pennylane as qml
 from pennylane.ftqc import GraphStatePrep, QubitGraph, generate_lattice, make_graph_state
 from pennylane.ops.functions import assert_valid
+from pennylane._rustworkx_compat import graph_from_adj_dict
 
 
 class TestGraphStatePrep:
@@ -396,12 +397,12 @@ class TestGraphStateInvariantUnderInternalGraphOrdering:
         "graph",
         [
             # Permute the node order in the adjacency list
-            rx.PyGraph({1: {0, 2}, 2: {1, 3}, 3: {2}, 0: {1}}),
-            rx.PyGraph({2: {1, 3}, 3: {2}, 0: {1}, 1: {0, 2}}),
-            rx.PyGraph({3: {2}, 0: {1}, 1: {0, 2}, 2: {1, 3}}),
-            rx.PyGraph({0: {1}, 1: {0, 2}, 3: {2}, 2: {1, 3}}),
-            rx.PyGraph({0: {1}, 2: {1, 3}, 1: {0, 2}, 3: {2}}),
-            rx.PyGraph({1: {0, 2}, 0: {1}, 2: {1, 3}, 3: {2}}),
+            graph_from_adj_dict({1: {0, 2}, 2: {1, 3}, 3: {2}, 0: {1}}),
+            graph_from_adj_dict({2: {1, 3}, 3: {2}, 0: {1}, 1: {0, 2}}),
+            graph_from_adj_dict({3: {2}, 0: {1}, 1: {0, 2}, 2: {1, 3}}),
+            graph_from_adj_dict({0: {1}, 1: {0, 2}, 3: {2}, 2: {1, 3}}),
+            graph_from_adj_dict({0: {1}, 2: {1, 3}, 1: {0, 2}, 3: {2}}),
+            graph_from_adj_dict({1: {0, 2}, 0: {1}, 2: {1, 3}, 3: {2}}),
         ],
     )
     @pytest.mark.parametrize("one_qubit_op", [qml.H, qml.X, qml.Y, qml.Z, qml.S, qml.SX])
@@ -415,7 +416,7 @@ class TestGraphStateInvariantUnderInternalGraphOrdering:
         The graph structure is a 1D chain and the sets of node and wire labels are the same.
         """
         # Graph structure: (0) -- (1) -- (2) -- (3)
-        graph_ref = rx.PyGraph({0: {1}, 1: {0, 2}, 2: {1, 3}, 3: {2}})
+        graph_ref = graph_from_adj_dict({0: {1}, 1: {0, 2}, 2: {1, 3}, 3: {2}})
 
         # The sequence of wires is constant
         wires = [0, 1, 2, 3]
@@ -426,12 +427,12 @@ class TestGraphStateInvariantUnderInternalGraphOrdering:
         "graph",
         [
             # Permute the node order in the adjacency list
-            rx.PyGraph({"b": {"a", "c"}, "c": {"b", "d"}, "d": {"c"}, "a": {"b"}}),
-            rx.PyGraph({"c": {"b", "d"}, "d": {"c"}, "a": {"b"}, "b": {"a", "c"}}),
-            rx.PyGraph({"d": {"c"}, "a": {"b"}, "b": {"a", "c"}, "c": {"b", "d"}}),
-            rx.PyGraph({"a": {"b"}, "b": {"a", "c"}, "d": {"c"}, "c": {"b", "d"}}),
-            rx.PyGraph({"a": {"b"}, "c": {"b", "d"}, "b": {"a", "c"}, "d": {"c"}}),
-            rx.PyGraph({"b": {"a", "c"}, "a": {"b"}, "c": {"b", "d"}, "d": {"c"}}),
+            graph_from_adj_dict({"b": {"a", "c"}, "c": {"b", "d"}, "d": {"c"}, "a": {"b"}}),
+            graph_from_adj_dict({"c": {"b", "d"}, "d": {"c"}, "a": {"b"}, "b": {"a", "c"}}),
+            graph_from_adj_dict({"d": {"c"}, "a": {"b"}, "b": {"a", "c"}, "c": {"b", "d"}}),
+            graph_from_adj_dict({"a": {"b"}, "b": {"a", "c"}, "d": {"c"}, "c": {"b", "d"}}),
+            graph_from_adj_dict({"a": {"b"}, "c": {"b", "d"}, "b": {"a", "c"}, "d": {"c"}}),
+            graph_from_adj_dict({"b": {"a", "c"}, "a": {"b"}, "c": {"b", "d"}, "d": {"c"}}),
         ],
     )
     @pytest.mark.parametrize("one_qubit_op", [qml.H, qml.X, qml.Y, qml.Z, qml.S, qml.SX])
@@ -445,7 +446,7 @@ class TestGraphStateInvariantUnderInternalGraphOrdering:
         The graph structure is a 1D chain and the sets of node and wire labels are different.
         """
         # Graph structure: ("a") -- ("b") -- ("c") -- ("d")
-        graph_ref = rx.PyGraph({"a": {"b"}, "b": {"a", "c"}, "c": {"b", "d"}, "d": {"c"}})
+        graph_ref = graph_from_adj_dict({"a": {"b"}, "b": {"a", "c"}, "c": {"b", "d"}, "d": {"c"}})
 
         # The sequence of wires is constant
         wires = [0, 1, 2, 3]
@@ -456,12 +457,12 @@ class TestGraphStateInvariantUnderInternalGraphOrdering:
         "graph",
         [
             # Permute the node order in the adjacency list
-            rx.PyGraph({1: {0, 3}, 2: {0, 3}, 3: {1, 2}, 0: {1, 2}}),
-            rx.PyGraph({2: {0, 3}, 3: {1, 2}, 0: {1, 2}, 1: {0, 3}}),
-            rx.PyGraph({3: {1, 2}, 0: {1, 2}, 1: {0, 3}, 2: {0, 3}}),
-            rx.PyGraph({0: {1, 2}, 1: {0, 3}, 3: {1, 2}, 2: {0, 3}}),
-            rx.PyGraph({0: {1, 2}, 2: {0, 3}, 1: {0, 3}, 3: {1, 2}}),
-            rx.PyGraph({1: {0, 3}, 0: {1, 2}, 2: {0, 3}, 3: {1, 2}}),
+            graph_from_adj_dict({1: {0, 3}, 2: {0, 3}, 3: {1, 2}, 0: {1, 2}}),
+            graph_from_adj_dict({2: {0, 3}, 3: {1, 2}, 0: {1, 2}, 1: {0, 3}}),
+            graph_from_adj_dict({3: {1, 2}, 0: {1, 2}, 1: {0, 3}, 2: {0, 3}}),
+            graph_from_adj_dict({0: {1, 2}, 1: {0, 3}, 3: {1, 2}, 2: {0, 3}}),
+            graph_from_adj_dict({0: {1, 2}, 2: {0, 3}, 1: {0, 3}, 3: {1, 2}}),
+            graph_from_adj_dict({1: {0, 3}, 0: {1, 2}, 2: {0, 3}, 3: {1, 2}}),
         ],
     )
     @pytest.mark.parametrize("one_qubit_op", [qml.H, qml.X, qml.Y, qml.Z, qml.S, qml.SX])
@@ -477,7 +478,7 @@ class TestGraphStateInvariantUnderInternalGraphOrdering:
         # Graph structure: (0) -- (1)
         #                   |      |
         #                  (2) -- (3)
-        graph_ref = rx.PyGraph({0: {1, 2}, 1: {0, 3}, 2: {0, 3}, 3: {1, 2}})
+        graph_ref = graph_from_adj_dict({0: {1, 2}, 1: {0, 3}, 2: {0, 3}, 3: {1, 2}})
 
         # The sequence of wires is constant
         wires = [0, 1, 2, 3]
@@ -697,7 +698,7 @@ class TestGraphStateInvariantUnderInternalGraphOrdering:
         mix of integers and strings) as input to GraphStatePrep raises a TypeError.
         """
         # Graph structure: (0) -- (a) -- (1)
-        graph = rx.PyGraph({0: {"a"}, "a": (0, 1), 1: {"a"}})
+        graph = graph_from_adj_dict({0: {"a"}, "a": (0, 1), 1: {"a"}})
         dev = qml.device("default.qubit")
 
         @qml.qnode(dev)

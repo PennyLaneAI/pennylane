@@ -23,9 +23,58 @@ from pennylane.transforms import parity_matrix, rowcol
 from pennylane.transforms.intermediate_reps import postorder_traverse, preorder_traverse
 from pennylane.transforms.intermediate_reps.rowcol import _rowcol_parity_matrix
 
-path_graph_4 = nx.path_graph(4)
-binary_graph_3 = nx.balanced_tree(2, 3)
-ternary_graph_2 = nx.balanced_tree(3, 2)
+
+def balanced_tree_rx(r, h):
+    """Create a balanced r-ary tree of height h using rustworkx.
+    
+    Args:
+        r: Branching factor (number of children per node)
+        h: Height of the tree
+        
+    Returns:
+        rx.PyGraph: A balanced tree
+    """
+    g = rx.PyGraph()
+    if h == 0:
+        g.add_node(0)
+        return g
+    
+    # Calculate total number of nodes: sum of r^i for i from 0 to h
+    # = (r^(h+1) - 1) / (r - 1)
+    num_nodes = (r ** (h + 1) - 1) // (r - 1)
+    
+    # Add all nodes
+    for i in range(num_nodes):
+        g.add_node(i)
+    
+    # Add edges from parent to children
+    node_idx = 0
+    for level in range(h):
+        nodes_in_level = r ** level
+        for _ in range(nodes_in_level):
+            for child in range(r):
+                child_idx = node_idx * r + child + 1
+                if child_idx < num_nodes:
+                    g.add_edge(node_idx, child_idx, None)
+            node_idx += 1
+    
+    return g
+
+
+def path_graph_rx(n):
+    """Create a path graph with n nodes."""
+    return rx.generators.path_graph(n)
+
+
+def complete_graph_rx(n):
+    """Create a complete graph with n nodes."""
+    return rx.generators.mesh_graph(n, list(range(n)))
+
+
+# Use rustworkx for graph generation
+path_graph_4 = rx.generators.path_graph(4)
+binary_graph_3 = balanced_tree_rx(2, 3)
+ternary_graph_2 = balanced_tree_rx(3, 2)
 
 
 class TestTreeTraversal:
@@ -164,11 +213,11 @@ class TestRowCol:
     def test_connectivity_default(self):
         """Test the connectivity default is used correctly"""
         m1 = _rowcol_parity_matrix(np.array([[1, 0], [1, 1]]), connectivity=None)
-        m2 = _rowcol_parity_matrix(np.array([[1, 0], [1, 1]]), connectivity=nx.complete_graph(2))
+        m2 = _rowcol_parity_matrix(np.array([[1, 0], [1, 1]]), connectivity=complete_graph_rx(2))
         assert np.allclose(m1, m2)
 
     @pytest.mark.parametrize("n", list(range(2, 13)))
-    @pytest.mark.parametrize("connectivity_fn", [nx.path_graph, nx.complete_graph])
+    @pytest.mark.parametrize("connectivity_fn", [path_graph_rx, complete_graph_rx])
     def test_identity(self, n, connectivity_fn):
         """Test with the identity Parity matrix/circuit."""
         P = np.eye(n, dtype=int)
@@ -177,7 +226,7 @@ class TestRowCol:
         assert not cnots
 
     @pytest.mark.parametrize("n", list(range(2, 13)))
-    @pytest.mark.parametrize("connectivity_fn", [nx.path_graph, nx.complete_graph])
+    @pytest.mark.parametrize("connectivity_fn", [path_graph_rx, complete_graph_rx])
     def test_few_commuting_cnots(self, n, connectivity_fn):
         """Test with a few commuting CNOTs."""
         P = np.eye(n, dtype=int)
@@ -208,7 +257,7 @@ class TestRowCol:
         P[0] += P[-1]
         input_P = P.copy()
 
-        connectivity = nx.path_graph(n)
+        connectivity = path_graph_rx(n)
         input_connectivity = connectivity.copy()
         cnots = _rowcol_parity_matrix(P, connectivity)
         assert len(cnots) == 4 * (n - 2)  # Minimal CNOT count for longe-range CNOT
@@ -220,7 +269,7 @@ class TestRowCol:
         assert_respects_connectivity(cnots, connectivity)
 
     @pytest.mark.parametrize("n", list(range(2, 13)))
-    @pytest.mark.parametrize("connectivity_fn", [nx.path_graph, nx.complete_graph])
+    @pytest.mark.parametrize("connectivity_fn", [path_graph_rx, complete_graph_rx])
     @pytest.mark.parametrize("input_depth", [(lambda n: n), (lambda n: n**3)])
     def test_random_circuit(self, n, connectivity_fn, input_depth):
         """Test with a random CNOT circuit."""
@@ -243,7 +292,7 @@ class TestRowCol:
         assert_respects_connectivity(cnots, connectivity)
 
     @pytest.mark.parametrize("n", list(range(2, 14)))
-    @pytest.mark.parametrize("connectivity_fn", [nx.path_graph, nx.complete_graph])
+    @pytest.mark.parametrize("connectivity_fn", [path_graph_rx, complete_graph_rx])
     def test_integration(self, n, connectivity_fn):
         """Test transform function on random CNOT circuits"""
 
