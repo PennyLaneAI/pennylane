@@ -359,7 +359,7 @@ class TestSpecsTransform:
                 {
                     "gate_types": {"RandomLayers": 1, "RX": 1, "SWAP": 1, "PauliX": 2},
                     "gate_sizes": {2: 2, 1: 3},
-                    "measurements": {"expval(PauliX @ PauliZ)": 1},
+                    "measurements": {"expval(Prod(num_wires=2, num_terms=2))": 1},
                     "num_allocs": 2,
                     "depth": 5,
                     "num_gates": 5,
@@ -367,7 +367,7 @@ class TestSpecsTransform:
                 {
                     "gate_types": {"RandomLayers": 1, "RX": 1, "SWAP": 1, "PauliX": 2},
                     "gate_sizes": {2: 2, 1: 3},
-                    "measurements": {"expval(PauliZ @ PauliY)": 1},
+                    "measurements": {"expval(Prod(num_wires=2, num_terms=2))": 1},
                     "num_allocs": 3,
                     "depth": 5,
                     "num_gates": 5,
@@ -375,7 +375,7 @@ class TestSpecsTransform:
                 {
                     "gate_types": {"RandomLayers": 1, "RX": 1, "SWAP": 1, "PauliX": 2},
                     "gate_sizes": {2: 2, 1: 3},
-                    "measurements": {"expval(PauliY @ PauliX)": 1},
+                    "measurements": {"expval(Prod(num_wires=2, num_terms=2))": 1},
                     "num_allocs": 3,
                     "depth": 5,
                     "num_gates": 5,
@@ -403,7 +403,7 @@ Resource specifications:
       PauliX: 2
 
     Measurements:
-      expval(PauliX @ PauliZ): 1
+      expval(Prod(num_wires=2, num_terms=2)): 1
 
   Batched tape 1:
     Total qubit allocations: 3
@@ -417,7 +417,7 @@ Resource specifications:
       PauliX: 2
 
     Measurements:
-      expval(PauliZ @ PauliY): 1
+      expval(Prod(num_wires=2, num_terms=2)): 1
 
   Batched tape 2:
     Total qubit allocations: 3
@@ -431,7 +431,7 @@ Resource specifications:
       PauliX: 2
 
     Measurements:
-      expval(PauliY @ PauliX): 1"""
+      expval(Prod(num_wires=2, num_terms=2)): 1"""
         )
 
     @pytest.mark.parametrize(

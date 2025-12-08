@@ -975,19 +975,18 @@ def _scale_dict(dict1: dict, scalar: int):
 
 def _obs_to_str(obs) -> str:
     """Convert an Observable to a string representation for resource counting."""
-    match obs.name:
-        case "Sum":
-            return " + ".join(_obs_to_str(o) for o in obs.operands)
-        case "Prod":
-            return " @ ".join(_obs_to_str(o) for o in obs.operands)
-        case "Hamiltonian" | "LinearCombination":
-            return f"Hamiltonian(num_wires={obs.num_wires}, num_terms={len(obs.operands)})"
+    name = obs.name
+    match name:
+        case "Hamiltonian" | "LinearCombination" | "Sum" | "Prod":
+            if name == "LinearCombination":
+                name = "Hamiltonian"
+            return f"{name}(num_wires={obs.num_wires}, num_terms={len(obs.operands)})"
         case "SProd":
             return _obs_to_str(obs.base)
         case "Exp":
             return f"Exp({_obs_to_str(obs.base)})"
         case _:
-            return obs.name
+            return name
 
 
 def _mp_to_str(mp: MeasurementProcess, num_wires: int) -> str:
