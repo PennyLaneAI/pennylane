@@ -74,7 +74,7 @@ class IfOperatorPartitioningPattern(RewritePattern):
         # Set of IfOps that contain mid-circuit measurements after transforms
         self.final_if_ops_with_mcm: Set[scf.IfOp] = set()
 
-    def adding_fake_measureOp(self, op: func.FuncOp, rewriter: PatternRewriter) -> None:
+    def adding_fake_measureOp(self, rewriter: PatternRewriter) -> None:
         """Add fake MeasureOp before IfOps that contain measurement-controlled operations."""
 
         for current_op in self.final_if_ops_with_mcm:
