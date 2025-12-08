@@ -57,7 +57,7 @@ from pennylane.qaoa.cycle import (
 
 line_graph = Graph()
 line_graph.add_nodes_from([0, 1, 2])
-line_graph.add_edges_from([(0, 1), (1, 2)])
+line_graph.add_edges_from([(0, 1, None), (1, 2, None)])
 
 graph_rx = rx.PyGraph()
 graph_rx.add_nodes_from([0, 1, 2])
@@ -74,7 +74,7 @@ g1_rx = rx.PyGraph()
 g1_rx.add_nodes_from([0, 1, 2])
 g1_rx.add_edges_from([(0, 1, ""), (1, 2, "")])
 
-g2 = rx.PyGraph([(0, 1), (1, 2), (2, 3)])
+g2 = Graph([(0, 1), (1, 2), (2, 3)])
 
 g2_rx = rx.PyGraph()
 g2_rx.add_nodes_from([0, 1, 2, 3])

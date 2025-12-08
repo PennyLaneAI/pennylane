@@ -18,6 +18,7 @@ import rustworkx as rx
 import pytest
 
 from pennylane.ftqc import Lattice, generate_lattice
+from pennylane._rustworkx_compat import Graph
 
 
 class TestLattice:
@@ -25,7 +26,7 @@ class TestLattice:
 
     def test_lattice_creation_with_graph(self):
         """Test for Lattice object created by a rx.PyGraph object."""
-        graph = rx.PyGraph([(0, 1), (1, 2)])
+        graph = Graph([(0, 1), (1, 2)])
         lattice = Lattice("test", graph=graph)
         assert lattice.shape == "test"
         assert len(lattice.nodes) == 3
@@ -70,7 +71,7 @@ class TestLattice:
 
     def test_get_graph(self):
         """Test for getting graph."""
-        graph = rx.PyGraph([(0, 1), (1, 2)])
+        graph = Graph([(0, 1), (1, 2)])
         lattice = Lattice("test", graph=graph)
         assert lattice.graph is graph
 

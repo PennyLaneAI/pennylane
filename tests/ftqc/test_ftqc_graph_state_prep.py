@@ -260,7 +260,7 @@ class TestGraphStatePrep:
     def test_wires_graph_mismatch(self, one_qubit_ops, two_qubit_ops):
         """Test for wire-graph label mismatches."""
         wires = [0, 1, 2, 3]
-        edges = [(0, 1), (1, 2), (2, 3)]
+        edges = [(0, 1, None), (1, 2, None), (2, 3, None)]
         lattice = rx.PyGraph()
         lattice.add_nodes_from(wires)
         lattice.add_edges_from(edges)
