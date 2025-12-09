@@ -989,7 +989,7 @@ class UnaryIterationQPE(ResourceOperator):
             applied in order to reach a target precision in the eigenvalue estimate.
         adj_qft_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator` | None): An optional
             argument to set the subroutine used to perform the adjoint QFT operation.
-        wires (Sequence[int], None): the wires the operation acts on
+        wires (WiresLike | None): the wires the operation acts on
 
     Resources:
         The resources are obtained from Fig 2. in Section III of `arXiv. 2011.03494 <https://arxiv.org/pdf/2011.03494>`_.
