@@ -14,7 +14,6 @@
 """Unit and integration tests for the compile pipeline."""
 # pylint: disable=no-member
 
-from os import pipe
 
 import pytest
 import rustworkx as rx
