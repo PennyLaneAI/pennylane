@@ -1054,6 +1054,43 @@ class TestTransformProgram:
         ):
             transform_program.push_back(transform2)
 
+    def test_remove_by_container(self):
+        """Test removing a specific TransformContainer from a program."""
+        dispatched_transform = transform(first_valid_transform)
+        container1 = TransformContainer(dispatched_transform)
+        container2 = TransformContainer(dispatched_transform, args=(1,))
+
+        program = TransformProgram([container1, container2])
+        assert len(program) == 2
+
+        program.remove(container1)
+        assert len(program) == 1
+        assert program[0] == container2
+
+    def test_remove_by_dispatcher(self):
+        """Test removing all containers matching a TransformDispatcher from a program."""
+        dispatched_transform = transform(first_valid_transform)
+        container1 = TransformContainer(dispatched_transform)
+        container2 = TransformContainer(dispatched_transform, args=(1,))
+
+        program = TransformProgram([container1, container2])
+        assert len(program) == 2
+
+        program.remove(dispatched_transform)
+        assert len(program) == 0
+
+    def test_remove_invalid_type(self):
+        """Test that removing an invalid type raises TypeError."""
+        dispatched_transform = transform(first_valid_transform)
+        container = TransformContainer(dispatched_transform)
+        program = TransformProgram([container])
+
+        with pytest.raises(TypeError, match="Only TransformContainer or TransformDispatcher"):
+            program.remove("not_a_container_or_dispatcher")
+
+        with pytest.raises(TypeError, match="Only TransformContainer or TransformDispatcher"):
+            program.remove(42)
+
 
 class TestClassicalCotransfroms:
     """Test for handling the classical cotransform component."""

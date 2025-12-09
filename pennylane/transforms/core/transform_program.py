@@ -325,6 +325,21 @@ class TransformProgram:
             return any(obj.transform == t.transform for t in self)
         return False
 
+    def remove(self, obj: TransformContainer | TransformDispatcher):
+        """In place remove the input containers, specifically,
+        1. if the input is a TransformDispatcher, remove all containers matching the dispatcher;
+        2. if the input is a TransformContainer, remove all containers exactly matching the input.
+
+        Args:
+            obj (TransformContainer or TransformDispatcher): The object to remove from the program.
+        """
+        if isinstance(obj, TransformContainer):
+            self._transform_program = [t for t in self._transform_program if t != obj]
+        elif isinstance(obj, TransformDispatcher):
+            self._transform_program = [t for t in self._transform_program if t.transform != obj]
+        else:
+            raise TypeError("Only TransformContainer or TransformDispatcher can be removed.")
+
     def push_back(self, transform_container: TransformContainer):
         """Add a transform (container) to the end of the program.
 

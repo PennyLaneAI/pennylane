@@ -36,6 +36,8 @@
 
 <h3>Improvements 🛠</h3>
 
+* `TransformProgram` now has a new method `remove` to remove all the containers that match a given transform.
+
 * Added a new decomposition, `_decompose_2_cnots`, for the two-qubit decomposition for `QubitUnitary`.
   It supports the analytical decomposition a two-qubit unitary known to require exactly 2 CNOTs.
   [(#8666)](https://github.com/PennyLaneAI/pennylane/issues/8666)
