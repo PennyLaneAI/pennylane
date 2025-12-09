@@ -368,7 +368,7 @@ add_decomps(BBQRAM, _bucket_brigade_qram_decomposition)
 
 
 class SelectOnlyQRAM(Operator):
-    """Select-only QRAM implemented as multi-controlled X on target wires,
+    r"""Select-only QRAM implemented as multi-controlled X on target wires,
     controlled on all address wires (select_wires + control_wires).
 
     Args:
