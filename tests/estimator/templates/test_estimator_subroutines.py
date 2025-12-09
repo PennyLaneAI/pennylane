@@ -1904,7 +1904,7 @@ class TestResourceUnaryIterationQPE:
 
     def test_wire_error(self):
         """Test that an error is raised when wrong number of wires is provided."""
-        with pytest.raises(ValueError, match="Expected 1 wires, got 3"):
+        with pytest.raises(ValueError, match="Expected 5 wires, got 3"):
             qre.UnaryIterationQPE(unitary=qre.X(0), num_iterations=8, wires=[0, 1, 2])
 
     def test_tracking_name(self):
@@ -1954,7 +1954,7 @@ class TestResourceUnaryIterationQPE:
     )
     def test_resource_rep(self, unitary_cmpr, n_iter, adj_qft_cmpr):
         """Test the resource_rep method"""
-        num_estimation_wires = math.ceil(math.log2(n_iter))
+        num_estimation_wires = math.ceil(math.log2(n_iter + 1))
         expected_num_wires = unitary_cmpr.num_wires + num_estimation_wires
 
         expected = qre.CompressedResourceOp(
@@ -2021,7 +2021,7 @@ class TestResourceUnaryIterationQPE:
                 4,
                 qre.Adjoint(qre.AQFT(3, 2)),
                 [
-                    qre.Allocate(1),
+                    qre.Allocate(2),
                     GateCount(qre.Hadamard.resource_rep(), 2),
                     GateCount(resource_rep(qre.Toffoli, {"elbow": "left"}), 3),
                     GateCount(qre.CNOT.resource_rep(), 3),
@@ -2036,7 +2036,7 @@ class TestResourceUnaryIterationQPE:
                     GateCount(
                         qre.Adjoint.resource_rep(qre.AQFT.resource_rep(3, 2)),
                     ),
-                    qre.Deallocate(1),
+                    qre.Deallocate(2),
                 ],
             ),
         ),

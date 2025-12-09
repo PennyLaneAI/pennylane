@@ -1036,7 +1036,8 @@ class UnaryIterationQPE(ResourceOperator):
         self.adj_qft_cmpr_op = adj_qft_cmpr_op
         self.num_iterations = num_iterations
 
-        self.num_wires = unitary.num_wires
+        self.num_wires = int(math.ceil(math.log2(num_iterations + 1))) + unitary.num_wires
+
         if wires:
             self.wires = Wires(wires)
             if base_wires := unitary.wires:
@@ -1094,7 +1095,7 @@ class UnaryIterationQPE(ResourceOperator):
             "num_iterations": num_iterations,
             "adj_qft_cmpr_op": adj_qft_cmpr_op,
         }
-        num_wires = int(math.ceil(math.log2(num_iterations+1))) + unitary.num_wires  # edit
+        num_wires = int(math.ceil(math.log2(num_iterations + 1))) + unitary.num_wires
         return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
@@ -1126,7 +1127,7 @@ class UnaryIterationQPE(ResourceOperator):
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
-        num_wires = math.ceil(math.log2(num_iterations))
+        num_wires = int(math.ceil(math.log2(num_iterations + 1)))
 
         hadamard = resource_rep(qre.Hadamard)
         x = resource_rep(qre.X)
