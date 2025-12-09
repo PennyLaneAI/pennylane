@@ -19,9 +19,10 @@ import re
 import numpy as np
 import pytest
 
-from pennylane import device, qnode
+from pennylane import device, qnode, queuing
 from pennylane.decomposition import list_decomps
 from pennylane.measurements import probs
+from pennylane.ops import CH, CNOT, CSWAP, CZ, SWAP, Controlled, MultiControlledX, X
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates import BasisEmbedding
 from pennylane.templates.subroutines.qram import BBQRAM, HybridQRAM
@@ -262,6 +263,7 @@ def hybrid_quantum(
         "k",
         "address",
         "probabilities",
+        "expected_circuit",
     ),
     [
         (
@@ -276,6 +278,102 @@ def hybrid_quantum(
             0,
             2,  # addressed from the left
             [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0],  # |110>
+            [
+                X(5),
+                CSWAP(wires=[5, 0, 6]),
+                CSWAP(wires=[5, 6, 7]),
+                CSWAP(wires=[5, 1, 6]),
+                Controlled(SWAP(wires=[6, 13]), control_wires=[5, 7]),
+                Controlled(SWAP(wires=[6, 10]), control_wires=[5, 7], control_values=[True, False]),
+                CSWAP(wires=[5, 10, 8]),
+                CSWAP(wires=[5, 13, 9]),
+                CH(wires=[5, 2]),
+                CSWAP(wires=[5, 2, 6]),
+                Controlled(SWAP(wires=[6, 13]), control_wires=[5, 7]),
+                Controlled(SWAP(wires=[6, 10]), control_wires=[5, 7], control_values=[True, False]),
+                Controlled(SWAP(wires=[10, 14]), control_wires=[5, 8]),
+                Controlled(
+                    SWAP(wires=[10, 11]), control_wires=[5, 8], control_values=[True, False]
+                ),
+                Controlled(SWAP(wires=[13, 15]), control_wires=[5, 9]),
+                Controlled(
+                    SWAP(wires=[13, 12]), control_wires=[5, 9], control_values=[True, False]
+                ),
+                CZ(wires=[5, 14]),
+                CZ(wires=[5, 12]),
+                Controlled(
+                    SWAP(wires=[13, 12]), control_wires=[5, 9], control_values=[True, False]
+                ),
+                Controlled(SWAP(wires=[13, 15]), control_wires=[5, 9]),
+                Controlled(
+                    SWAP(wires=[10, 11]), control_wires=[5, 8], control_values=[True, False]
+                ),
+                Controlled(SWAP(wires=[10, 14]), control_wires=[5, 8]),
+                Controlled(SWAP(wires=[6, 10]), control_wires=[5, 7], control_values=[True, False]),
+                Controlled(SWAP(wires=[6, 13]), control_wires=[5, 7]),
+                CSWAP(wires=[5, 2, 6]),
+                CH(wires=[5, 2]),
+                CH(wires=[5, 3]),
+                CSWAP(wires=[5, 3, 6]),
+                Controlled(SWAP(wires=[6, 13]), control_wires=[5, 7]),
+                Controlled(SWAP(wires=[6, 10]), control_wires=[5, 7], control_values=[True, False]),
+                Controlled(SWAP(wires=[10, 14]), control_wires=[5, 8]),
+                Controlled(
+                    SWAP(wires=[10, 11]), control_wires=[5, 8], control_values=[True, False]
+                ),
+                Controlled(SWAP(wires=[13, 15]), control_wires=[5, 9]),
+                Controlled(
+                    SWAP(wires=[13, 12]), control_wires=[5, 9], control_values=[True, False]
+                ),
+                CZ(wires=[5, 11]),
+                CZ(wires=[5, 14]),
+                CZ(wires=[5, 12]),
+                Controlled(
+                    SWAP(wires=[13, 12]), control_wires=[5, 9], control_values=[True, False]
+                ),
+                Controlled(SWAP(wires=[13, 15]), control_wires=[5, 9]),
+                Controlled(
+                    SWAP(wires=[10, 11]), control_wires=[5, 8], control_values=[True, False]
+                ),
+                Controlled(SWAP(wires=[10, 14]), control_wires=[5, 8]),
+                Controlled(SWAP(wires=[6, 10]), control_wires=[5, 7], control_values=[True, False]),
+                Controlled(SWAP(wires=[6, 13]), control_wires=[5, 7]),
+                CSWAP(wires=[5, 3, 6]),
+                CH(wires=[5, 3]),
+                CH(wires=[5, 4]),
+                CSWAP(wires=[5, 4, 6]),
+                Controlled(SWAP(wires=[6, 13]), control_wires=[5, 7]),
+                Controlled(SWAP(wires=[6, 10]), control_wires=[5, 7], control_values=[True, False]),
+                Controlled(SWAP(wires=[10, 14]), control_wires=[5, 8]),
+                Controlled(
+                    SWAP(wires=[10, 11]), control_wires=[5, 8], control_values=[True, False]
+                ),
+                Controlled(SWAP(wires=[13, 15]), control_wires=[5, 9]),
+                Controlled(
+                    SWAP(wires=[13, 12]), control_wires=[5, 9], control_values=[True, False]
+                ),
+                CZ(wires=[5, 14]),
+                Controlled(
+                    SWAP(wires=[13, 12]), control_wires=[5, 9], control_values=[True, False]
+                ),
+                Controlled(SWAP(wires=[13, 15]), control_wires=[5, 9]),
+                Controlled(
+                    SWAP(wires=[10, 11]), control_wires=[5, 8], control_values=[True, False]
+                ),
+                Controlled(SWAP(wires=[10, 14]), control_wires=[5, 8]),
+                Controlled(SWAP(wires=[6, 10]), control_wires=[5, 7], control_values=[True, False]),
+                Controlled(SWAP(wires=[6, 13]), control_wires=[5, 7]),
+                CSWAP(wires=[5, 4, 6]),
+                CH(wires=[5, 4]),
+                CSWAP(wires=[5, 13, 9]),
+                CSWAP(wires=[5, 10, 8]),
+                Controlled(SWAP(wires=[6, 10]), control_wires=[5, 7], control_values=[True, False]),
+                Controlled(SWAP(wires=[6, 13]), control_wires=[5, 7]),
+                CSWAP(wires=[5, 1, 6]),
+                CSWAP(wires=[5, 6, 7]),
+                CSWAP(wires=[5, 0, 6]),
+                X(5),
+            ],
         ),
         (
             ["010", "111", "110", "000"],
@@ -289,6 +387,74 @@ def hybrid_quantum(
             1,
             0,  # addressed from the left
             [0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0],  # |010>
+            [
+                MultiControlledX(wires=[0, 5], control_values=[False]),
+                CSWAP(wires=[5, 1, 6]),
+                CSWAP(wires=[5, 6, 7]),
+                CH(wires=[5, 2]),
+                CSWAP(wires=[5, 2, 6]),
+                Controlled(SWAP(wires=[6, 13]), control_wires=[5, 7]),
+                Controlled(SWAP(wires=[6, 10]), control_wires=[5, 7], control_values=[True, False]),
+                CZ(wires=[5, 13]),
+                Controlled(SWAP(wires=[6, 10]), control_wires=[5, 7], control_values=[True, False]),
+                Controlled(SWAP(wires=[6, 13]), control_wires=[5, 7]),
+                CSWAP(wires=[5, 2, 6]),
+                CH(wires=[5, 2]),
+                CH(wires=[5, 3]),
+                CSWAP(wires=[5, 3, 6]),
+                Controlled(SWAP(wires=[6, 13]), control_wires=[5, 7]),
+                Controlled(SWAP(wires=[6, 10]), control_wires=[5, 7], control_values=[True, False]),
+                CZ(wires=[5, 10]),
+                CZ(wires=[5, 13]),
+                Controlled(SWAP(wires=[6, 10]), control_wires=[5, 7], control_values=[True, False]),
+                Controlled(SWAP(wires=[6, 13]), control_wires=[5, 7]),
+                CSWAP(wires=[5, 3, 6]),
+                CH(wires=[5, 3]),
+                CH(wires=[5, 4]),
+                CSWAP(wires=[5, 4, 6]),
+                Controlled(SWAP(wires=[6, 13]), control_wires=[5, 7]),
+                Controlled(SWAP(wires=[6, 10]), control_wires=[5, 7], control_values=[True, False]),
+                CZ(wires=[5, 13]),
+                Controlled(SWAP(wires=[6, 10]), control_wires=[5, 7], control_values=[True, False]),
+                Controlled(SWAP(wires=[6, 13]), control_wires=[5, 7]),
+                CSWAP(wires=[5, 4, 6]),
+                CH(wires=[5, 4]),
+                CSWAP(wires=[5, 6, 7]),
+                CSWAP(wires=[5, 1, 6]),
+                MultiControlledX(wires=[0, 5], control_values=[False]),
+                CNOT(wires=[0, 5]),
+                CSWAP(wires=[5, 1, 6]),
+                CSWAP(wires=[5, 6, 7]),
+                CH(wires=[5, 2]),
+                CSWAP(wires=[5, 2, 6]),
+                Controlled(SWAP(wires=[6, 13]), control_wires=[5, 7]),
+                Controlled(SWAP(wires=[6, 10]), control_wires=[5, 7], control_values=[True, False]),
+                CZ(wires=[5, 10]),
+                Controlled(SWAP(wires=[6, 10]), control_wires=[5, 7], control_values=[True, False]),
+                Controlled(SWAP(wires=[6, 13]), control_wires=[5, 7]),
+                CSWAP(wires=[5, 2, 6]),
+                CH(wires=[5, 2]),
+                CH(wires=[5, 3]),
+                CSWAP(wires=[5, 3, 6]),
+                Controlled(SWAP(wires=[6, 13]), control_wires=[5, 7]),
+                Controlled(SWAP(wires=[6, 10]), control_wires=[5, 7], control_values=[True, False]),
+                CZ(wires=[5, 10]),
+                Controlled(SWAP(wires=[6, 10]), control_wires=[5, 7], control_values=[True, False]),
+                Controlled(SWAP(wires=[6, 13]), control_wires=[5, 7]),
+                CSWAP(wires=[5, 3, 6]),
+                CH(wires=[5, 3]),
+                CH(wires=[5, 4]),
+                CSWAP(wires=[5, 4, 6]),
+                Controlled(SWAP(wires=[6, 13]), control_wires=[5, 7]),
+                Controlled(SWAP(wires=[6, 10]), control_wires=[5, 7], control_values=[True, False]),
+                Controlled(SWAP(wires=[6, 10]), control_wires=[5, 7], control_values=[True, False]),
+                Controlled(SWAP(wires=[6, 13]), control_wires=[5, 7]),
+                CSWAP(wires=[5, 4, 6]),
+                CH(wires=[5, 4]),
+                CSWAP(wires=[5, 6, 7]),
+                CSWAP(wires=[5, 1, 6]),
+                CNOT(wires=[0, 5]),
+            ],
         ),
     ],
 )
@@ -304,18 +470,19 @@ def test_hybrid_quantum(
     k,
     address,
     probabilities,
+    expected_circuit,
 ):  # pylint: disable=too-many-arguments
-    assert np.allclose(
-        probabilities,
-        hybrid_quantum(
+    with queuing.AnnotatedQueue() as q:
+        real_probs = hybrid_quantum(
             bitstrings,
             control_wires,
             target_wires,
             [signal] + [bus] + dir_wires + portL_wires + portR_wires,
             k,
             address,
-        ),
-    )
+        )
+    assert np.allclose(probabilities, real_probs)
+    assert q.queue == expected_circuit
 
 
 @pytest.mark.parametrize(
