@@ -369,9 +369,9 @@ def specs(
 
     Keyword Args:
         level (str | int | slice | iter[int]): An indication of what transforms to apply before
-        computing the resource information.
+            computing the resource information.
         compute_depth (bool): Whether to compute the depth of the circuit. If ``False``, the depth
-        will not be included in the returned information. Default: True where available.
+            will not be included in the returned information. Default: True where available.
 
     Returns:
         A function that has the same argument signature as ``qnode``. This function
@@ -398,24 +398,26 @@ def specs(
             qml.TrotterProduct(Hamiltonian, time=1.0, n=4, order=4)
             return qml.probs(wires=(0,1))
 
-    >>> print(qml.specs(circuit)(x, add_ry=False))
-    Device: default.qubit
-    Device wires: 2
-    Shots: Shots(total=None)
-    Level: gradient
-    <BLANKLINE>
-    Resource specifications:
-      Total qubit allocations: 2
-      Total gates: 98
-      Circuit depth: 98
-    <BLANKLINE>
-      Gate types:
-        RX: 1
-        CNOT: 1
-        Evolution: 96
-    <BLANKLINE>
-      Measurements:
-        probs(all wires): 1
+    ::
+
+        >>> print(qml.specs(circuit)(x, add_ry=False))
+        Device: default.qubit
+        Device wires: 2
+        Shots: Shots(total=None)
+        Level: gradient
+        <BLANKLINE>
+        Resource specifications:
+          Total qubit allocations: 2
+          Total gates: 98
+          Circuit depth: 98
+        <BLANKLINE>
+          Gate types:
+            RX: 1
+            CNOT: 1
+            Evolution: 96
+        <BLANKLINE>
+          Measurements:
+            probs(all wires): 1
 
     .. details::
         :title: Usage Details
@@ -444,47 +446,53 @@ def specs(
         First, we can check the resource information of the QNode without any modifications. Note that ``level=top`` would
         return the same results:
 
-        >>> print(qml.specs(circuit, level=0)(0.1).resources)
-        Total qubit allocations: 2
-        Total gates: 6
-        Circuit depth: 6
-        <BLANKLINE>
-        Gate types:
-          RandomLayers: 1
-          RX: 2
-          SWAP: 1
-          PauliX: 2
-        <BLANKLINE>
-        Measurements:
-          expval(Sum(num_wires=2, num_terms=2)): 1
+        ::
+
+            >>> print(qml.specs(circuit, level=0)(0.1).resources)
+            Total qubit allocations: 2
+            Total gates: 6
+            Circuit depth: 6
+            <BLANKLINE>
+            Gate types:
+              RandomLayers: 1
+              RX: 2
+              SWAP: 1
+              PauliX: 2
+            <BLANKLINE>
+            Measurements:
+              expval(Sum(num_wires=2, num_terms=2)): 1
 
         We then check the resources after applying all transforms:
 
-        >>> print(qml.specs(circuit, level="device")(0.1).resources)
-        Total qubit allocations: 2
-        Total gates: 2
-        Circuit depth: 1
-        <BLANKLINE>
-        Gate types:
-          RY: 1
-          RX: 1
-        <BLANKLINE>
-        Measurements:
-          expval(Sum(num_wires=2, num_terms=2)): 1
+        ::
+
+            >>> print(qml.specs(circuit, level="device")(0.1).resources)
+            Total qubit allocations: 2
+            Total gates: 2
+            Circuit depth: 1
+            <BLANKLINE>
+            Gate types:
+              RY: 1
+              RX: 1
+            <BLANKLINE>
+            Measurements:
+              expval(Sum(num_wires=2, num_terms=2)): 1
 
         We can also notice that ``SWAP`` and ``PauliX`` are not present in the circuit if we set ``level=2``:
 
-        >>> print(qml.specs(circuit, level=2)(0.1).resources)
-        Total qubit allocations: 2
-        Total gates: 3
-        Circuit depth: 3
-        <BLANKLINE>
-        Gate types:
-          RandomLayers: 1
-          RX: 2
-        <BLANKLINE>
-        Measurements:
-          expval(Sum(num_wires=2, num_terms=2)): 1
+        ::
+
+            >>> print(qml.specs(circuit, level=2)(0.1).resources)
+            Total qubit allocations: 2
+            Total gates: 3
+            Circuit depth: 3
+            <BLANKLINE>
+            Gate types:
+              RandomLayers: 1
+              RX: 2
+            <BLANKLINE>
+            Measurements:
+              expval(Sum(num_wires=2, num_terms=2)): 1
 
         If a QNode with a tape-splitting transform is supplied to the function, with the transform included in the
         desired transforms, the specs output's resources field is instead returned as a list with a
@@ -502,25 +510,27 @@ def specs(
                 qml.RandomLayers(qml.numpy.array([[1.0, 2.0]]), wires=(0, 1))
                 return qml.expval(H)
 
-        >>> from pprint import pprint
-        >>> pprint(qml.specs(circuit, level="user")())
-        CircuitSpecs(device_name='default.qubit',
-                     num_device_wires=None,
-                     shots=Shots(total_shots=None, shot_vector=()),
-                     level='user',
-                     resources=[SpecsResources(gate_types={'RandomLayers': 1},
-                                               gate_sizes={2: 1},
-                                               measurements={'expval(Prod(num_wires=2, num_terms=2))': 1},
-                                               num_allocs=2,
-                                               depth=1),
-                                SpecsResources(gate_types={'RandomLayers': 1},
-                                               gate_sizes={2: 1},
-                                               measurements={'expval(Prod(num_wires=2, num_terms=2))': 1},
-                                               num_allocs=3,
-                                               depth=1)])
+        ::
+
+            >>> from pprint import pprint
+            >>> pprint(qml.specs(circuit, level="user")())
+            CircuitSpecs(device_name='default.qubit',
+                         num_device_wires=None,
+                         shots=Shots(total_shots=None, shot_vector=()),
+                         level='user',
+                         resources=[SpecsResources(gate_types={'RandomLayers': 1},
+                                                   gate_sizes={2: 1},
+                                                   measurements={'expval(Prod(num_wires=2, num_terms=2))': 1},
+                                                   num_allocs=2,
+                                                   depth=1),
+                                    SpecsResources(gate_types={'RandomLayers': 1},
+                                                   gate_sizes={2: 1},
+                                                   measurements={'expval(Prod(num_wires=2, num_terms=2))': 1},
+                                                   num_allocs=3,
+                                                   depth=1)])
 
     .. details::
-        :title: Using specs on workflows JIT-compiled with ``qml.qjit``
+        :title: Using specs on workflows compiled with Catalyst
 
         The available options for `levels` are different for circuits which have been compiled using Catalyst.
         There are 2 broad types of specs which can be retrieved for compiled qnodes: runtime resource tracking,
@@ -549,23 +559,25 @@ def specs(
                 qml.CNOT([0, 1])
                 return qml.probs()
 
-        >>> print(qml.specs(circuit, level="device")(1.23))
-        Device: lightning.qubit
-        Device wires: 3
-        Shots: Shots(total=None)
-        Level: device
-        <BLANKLINE>
-        Resource specifications:
-          Total qubit allocations: 3
-          Total gates: 2
-          Circuit depth: 2
-        <BLANKLINE>
-          Gate types:
-            CNOT: 1
-            RX: 1
-        <BLANKLINE>
-          Measurements:
-            No measurements.
+        ::
+
+            >>> print(qml.specs(circuit, level="device")(1.23))
+            Device: lightning.qubit
+            Device wires: 3
+            Shots: Shots(total=None)
+            Level: device
+            <BLANKLINE>
+            Resource specifications:
+              Total qubit allocations: 3
+              Total gates: 2
+              Circuit depth: 2
+            <BLANKLINE>
+              Gate types:
+                CNOT: 1
+                RX: 1
+            <BLANKLINE>
+              Measurements:
+                No measurements.
 
         .. warning::
             Measurement data is not currently supported with runtime resource tracking, so measurement
@@ -575,12 +587,13 @@ def specs(
         This can be helpful for determining how circuit resources change after a given transform
         or compiler pass.
         This version of specs can be applied by passing one of the following values for the `level` argument:
-          * An int: the desired pass level of a user-applied pass, see the note below
-          * A marker name (str): The name of an applied :func:`qml.marker <pennylane.marker>` pass
-          * An iterable: A list, tuple, etc. containing ints and/or marker names. Should be sorted in
-            ascending pass order
-          * The string "all": To output information about all user-applied transforms and compilation passes
-          * The string "all-mlir": To output information about all compilation passes at the MLIR level only
+
+        * An int: the desired pass level of a user-applied pass, see the note below
+        * A marker name (str): The name of an applied :func:`qml.marker <pennylane.marker>` pass
+        * An iterable: A list, tuple, etc. containing ints and/or marker names. Should be sorted in
+          ascending pass order
+        * The string "all": To output information about all user-applied transforms and compilation passes
+        * The string "all-mlir": To output information about all compilation passes at the MLIR level only
 
         .. note::
             The pass levels only take into account user-applied transforms and compilation passes.
@@ -594,68 +607,70 @@ def specs(
 
             Due to similar technical limitations, depth computation is not available for pass-by-pass specs.
 
-        >>> print(qml.specs(circuit, level="all")(1.23))
-        Device: lightning.qubit
-        Device wires: 3
-        Shots: Shots(total=None)
-        Level: ['Before transforms', 'Before MLIR Passes (MLIR-0)', 'cancel-inverses (MLIR-1)', 'merge-rotations (MLIR-2)']
-        <BLANKLINE>
-        Resource specifications:
-        Level = Before transforms:
-          Total qubit allocations: 2
-          Total gates: 5
-          Circuit depth: Not computed
-        <BLANKLINE>
-          Gate types:
-            RX: 2
-            PauliX: 2
-            CNOT: 1
-        <BLANKLINE>
-          Measurements:
-            probs(all wires): 1
-        <BLANKLINE>
-        ------------------------------------------------------------
-        <BLANKLINE>
-        Level = Before MLIR Passes (MLIR-0):
-          Total qubit allocations: 3
-          Total gates: 5
-          Circuit depth: Not computed
-        <BLANKLINE>
-          Gate types:
-            RX: 2
-            PauliX: 2
-            CNOT: 1
-        <BLANKLINE>
-          Measurements:
-            probs(all wires): 1
-        <BLANKLINE>
-        ------------------------------------------------------------
-        <BLANKLINE>
-        Level = cancel-inverses (MLIR-1):
-          Total qubit allocations: 3
-          Total gates: 3
-          Circuit depth: Not computed
-        <BLANKLINE>
-          Gate types:
-            RX: 2
-            CNOT: 1
-        <BLANKLINE>
-          Measurements:
-            probs(all wires): 1
-        <BLANKLINE>
-        ------------------------------------------------------------
-        <BLANKLINE>
-        Level = merge-rotations (MLIR-2):
-          Total qubit allocations: 3
-          Total gates: 2
-          Circuit depth: Not computed
-        <BLANKLINE>
-          Gate types:
-            RX: 1
-            CNOT: 1
-        <BLANKLINE>
-          Measurements:
-            probs(all wires): 1
+        ::
+
+            >>> print(qml.specs(circuit, level="all")(1.23))
+            Device: lightning.qubit
+            Device wires: 3
+            Shots: Shots(total=None)
+            Level: ['Before transforms', 'Before MLIR Passes (MLIR-0)', 'cancel-inverses (MLIR-1)', 'merge-rotations (MLIR-2)']
+            <BLANKLINE>
+            Resource specifications:
+            Level = Before transforms:
+              Total qubit allocations: 2
+              Total gates: 5
+              Circuit depth: Not computed
+            <BLANKLINE>
+              Gate types:
+                RX: 2
+                PauliX: 2
+                CNOT: 1
+            <BLANKLINE>
+              Measurements:
+                probs(all wires): 1
+            <BLANKLINE>
+            ------------------------------------------------------------
+            <BLANKLINE>
+            Level = Before MLIR Passes (MLIR-0):
+              Total qubit allocations: 3
+              Total gates: 5
+              Circuit depth: Not computed
+            <BLANKLINE>
+              Gate types:
+                RX: 2
+                PauliX: 2
+                CNOT: 1
+            <BLANKLINE>
+              Measurements:
+                probs(all wires): 1
+            <BLANKLINE>
+            ------------------------------------------------------------
+            <BLANKLINE>
+            Level = cancel-inverses (MLIR-1):
+              Total qubit allocations: 3
+              Total gates: 3
+              Circuit depth: Not computed
+            <BLANKLINE>
+              Gate types:
+                RX: 2
+                CNOT: 1
+            <BLANKLINE>
+              Measurements:
+                probs(all wires): 1
+            <BLANKLINE>
+            ------------------------------------------------------------
+            <BLANKLINE>
+            Level = merge-rotations (MLIR-2):
+              Total qubit allocations: 3
+              Total gates: 2
+              Circuit depth: Not computed
+            <BLANKLINE>
+              Gate types:
+                RX: 1
+                CNOT: 1
+            <BLANKLINE>
+              Measurements:
+                probs(all wires): 1
     """
     # pylint: disable=import-outside-toplevel
     # Have to import locally to prevent circular imports as well as accounting for Catalyst not being installed
