@@ -46,8 +46,8 @@
 
 * Arithmetic dunder methods (`__add__`, `__mul__`, `__rmul__`) have been added to
   :class:`~.transforms.core.TransformDispatcher`, :class:`~.transforms.core.TransformContainer`,
-  and :class:`~.transforms.core.TransformProgram` to enable intuitive composition of transform
-  programs using `+` and `*` operators.
+  and :class:`~.transforms.core.CompilePipeline` (previously known as the `TransformProgram`) to 
+  enable intuitive composition of transform programs using `+` and `*` operators.
   [(#8703)](https://github.com/PennyLaneAI/pennylane/pull/8703)
 
 * Quantum compilation passes in MLIR and XDSL can now be applied using the core PennyLane transform
