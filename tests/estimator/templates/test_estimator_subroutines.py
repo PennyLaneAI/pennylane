@@ -2022,7 +2022,7 @@ class TestResourceUnaryIterationQPE:
                 qre.Adjoint(qre.AQFT(3, 2)),
                 [
                     qre.Allocate(2),
-                    GateCount(qre.Hadamard.resource_rep(), 2),
+                    GateCount(qre.Hadamard.resource_rep(), 3),
                     GateCount(resource_rep(qre.Toffoli, {"elbow": "left"}), 3),
                     GateCount(qre.CNOT.resource_rep(), 3),
                     GateCount(qre.X.resource_rep(), 6),
