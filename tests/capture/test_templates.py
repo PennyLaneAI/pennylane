@@ -25,7 +25,6 @@ import pytest
 
 import pennylane as qml
 from pennylane import math
-from tests.templates.test_subroutines.test_iqp import local_gates
 
 jax = pytest.importorskip("jax")
 jnp = jax.numpy
@@ -610,7 +609,7 @@ class TestModifiedTemplates:
             "params": tuple(math.random.uniform(0, 2 * np.pi, 4)),
             "gates": gates,
             "init_gates": gates,
-            "init_coeffs": tuple(math.random.uniform(0, 2 * np.pi, len(local_gates(4, 1)))),
+            "init_coeffs": tuple(math.random.uniform(0, 2 * np.pi, len(gates))),
             "spin_sym": True,
         }
 
