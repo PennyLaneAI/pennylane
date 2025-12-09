@@ -1004,17 +1004,17 @@ class UnaryIterationQPE(ResourceOperator):
     >>> unitary = qre.RX()
     >>> print(qre.estimate(qre.UnaryIterationQPE(unitary, 11)))
     --- Resources: ---
-    Total wires: 4
-    algorithmic wires: 1
-    allocated wires: 3
-        zero state: 3
-        any state: 0
-    Total gates : 1.880E+3
-    'Toffoli': 20,
-    'T': 1.760E+3,
-    'CNOT': 50,
-    'X': 20,
-    'Hadamard': 30
+     Total wires: 8
+       algorithmic wires: 5
+       allocated wires: 3
+         zero state: 3
+         any state: 0
+     Total gates : 1.880E+3
+       'Toffoli': 20,
+       'T': 1.760E+3,
+       'CNOT': 50,
+       'X': 20,
+       'Hadamard': 30
     """
 
     resource_keys = {"unitary", "num_iterations", "adj_qft_cmpr_op"}
