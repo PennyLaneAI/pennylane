@@ -1299,6 +1299,33 @@ class TestTransformProgramCall:
         dummy_results = (1, 2, 3, 4, 5, 1, 1, 1, 1, 1)
         assert fn(dummy_results) == (3, 12, 5)
 
+    def test_call_single_quantumscript_converts_to_batch(self):
+        """Test that calling with a single QuantumScript (not a tuple) converts it to a batch."""
+
+        def identity_transform(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
+            """A transform that returns the tape unchanged."""
+            return (tape,), lambda results: results[0]
+
+        container = TransformContainer(transform(identity_transform))
+        prog = TransformProgram((container,))
+
+        # Create a single QuantumScript (not wrapped in a tuple)
+        single_tape = qml.tape.QuantumScript(
+            [qml.Hadamard(0), qml.CNOT([0, 1])], [qml.expval(qml.PauliZ(0))], shots=50
+        )
+
+        # Call with single QuantumScript - should trigger the isinstance check
+        new_batch, fn = prog(single_tape)
+
+        # Verify it was processed correctly
+        assert len(new_batch) == 1
+        assert isinstance(new_batch, tuple)
+        assert new_batch[0] is single_tape
+
+        # Verify postprocessing works
+        dummy_results = (0.5,)
+        assert fn(dummy_results) == (0.5,)
+
     @pytest.mark.capture
     def test_call_jaxpr_empty(self):
         """Test that calling an empty TransformProgram with jaxpr returns untransformed ClosedJaxpr."""
