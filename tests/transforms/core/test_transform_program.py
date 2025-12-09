@@ -1425,8 +1425,8 @@ class TestTransformProgramCall:
         """Test that a TransformProgram can be applied to a QNode using the fallback."""
 
         program = TransformProgram()
-        program.add_transform(qml.transforms.cancel_inverses)
-        program.add_transform(transform(first_valid_transform), 0)
+        program += qml.transforms.cancel_inverses
+        program += transform(first_valid_transform)(0)
 
         dev = qml.device("default.qubit", wires=2)
 
