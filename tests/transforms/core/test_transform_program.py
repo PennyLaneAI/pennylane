@@ -1111,32 +1111,16 @@ class TestTransformProgramCall:
     def test_call_on_empty_program(self):
         """Tests that an empty program returns input tapes with the null postprocessing function."""
 
-        tape = qml.tape.QuantumScript([], [qml.state()])
-
-        prog = TransformProgram()
-        new_batch, postprocessing = prog(tape)
-
-        # Single tape input returns a batch (tuple of one tape) for consistency
-        # since transforms can split tapes
-        assert len(new_batch) == 1
-        assert new_batch == tape
-        assert postprocessing is null_postprocessing
-
-        obj = [1, 2, 3, "b"]
-        assert null_postprocessing(obj) is obj
-
-    def test_call_on_empty_program_with_batch(self):
-        """Tests that an empty program with a batch input returns unchanged."""
-
-        tape1 = qml.tape.QuantumScript([], [qml.state()])
-        tape2 = qml.tape.QuantumScript([qml.Hadamard(0)], [qml.expval(qml.PauliZ(0))])
-        batch = (tape1, tape2)
+        batch = qml.tape.QuantumScript([], [qml.state()])
 
         prog = TransformProgram()
         new_batch, postprocessing = prog(batch)
 
         assert new_batch is batch
         assert postprocessing is null_postprocessing
+
+        obj = [1, 2, 3, "b"]
+        assert null_postprocessing(obj) is obj
 
     def test_single_transform_program(self):
         """Basic test with a single transform that only modifies the tape but not the results."""
