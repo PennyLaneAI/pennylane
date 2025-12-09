@@ -1094,7 +1094,7 @@ class UnaryIterationQPE(ResourceOperator):
             "num_iterations": num_iterations,
             "adj_qft_cmpr_op": adj_qft_cmpr_op,
         }
-        num_wires = int(math.ceil(math.log2(num_iterations))) + unitary.num_wires  # edit
+        num_wires = int(math.ceil(math.log2(num_iterations+1))) + unitary.num_wires  # edit
         return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
