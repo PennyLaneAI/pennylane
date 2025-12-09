@@ -83,11 +83,11 @@ def select_pauli_rot_phase_gradient(
     using a phase gradient resource state.
 
     For this routine to work, the provided ``phase_grad_wires`` need to hold a phase gradient
-    state :math:`|\nabla Z\rangle = \frac{1}{\sqrt{2^n}} \sum_{m=0}^{2^n-1} e^{2 \pi i \frac{m}{2^n}} |m\rangle`.
+    state :math:`|\nabla Z\rangle = \frac{1}{\sqrt{2^n}} \sum_{m=0}^{2^n-1} e^{-2 \pi i \frac{m}{2^n}} |m\rangle`.
     Because this state is not modified and can be re-used at a later stage, the transform does not prepare it but
     rather assumes it has been prepared on those wires at an earlier stage.
 
-    .. figure:: ../../../doc/_static/multiplexer_QROM.png
+    .. figure:: ../../doc/_static/multiplexer_QROM.png
                     :align: center
                     :width: 70%
                     :target: javascript:void(0);

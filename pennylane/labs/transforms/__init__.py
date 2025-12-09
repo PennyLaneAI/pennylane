@@ -13,7 +13,6 @@
 # limitations under the License.
 r"""
 This subpackage contains experimental PennyLane transforms and their building blocks.
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. currentmodule:: pennylane.labs.transforms
 
