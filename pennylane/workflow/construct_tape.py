@@ -27,7 +27,7 @@ if TYPE_CHECKING:
 
 
 def construct_tape(qnode: QNode, level: str | int | slice = "user") -> Callable[..., QuantumScript]:
-    """Constructs the tape for a designated stage in the transform program.
+    """Constructs the tape for a designated stage in the compile pipeline.
 
     Args:
         qnode (QNode): the qnode we want to get the tapes and post-processing for.
@@ -41,7 +41,7 @@ def construct_tape(qnode: QNode, level: str | int | slice = "user") -> Callable[
     Raises:
         ValueError: if the ``level`` argument corresponds to more than one tape.
 
-    .. seealso:: :func:`pennylane.workflow.get_transform_program` to inspect the contents of the transform program for a specified level.
+    .. seealso:: :func:`pennylane.workflow.get_transform_program` to inspect the contents of the compile pipeline for a specified level.
 
     **Example**
 

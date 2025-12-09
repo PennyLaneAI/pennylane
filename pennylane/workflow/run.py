@@ -47,7 +47,7 @@ if TYPE_CHECKING:
 def _construct_tf_autograph_pipeline(
     config: ExecutionConfig,
     device: Device,
-    inner_transform_program: CompilePipeline,
+    inner_compile_pipeline: CompilePipeline,
 ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
     """Handles the pipeline construction for the TF_AUTOGRAPH interface.
 
@@ -58,13 +58,13 @@ def _construct_tf_autograph_pipeline(
         config (qml.devices.ExecutionConfig): resolved execution configuration
         device (qml.devices.Device): a Pennylane device
 
-        inner_transform_program (qml.CompilePipeline): the transformation applied to quantum tapes
+        inner_compile_pipeline (qml.CompilePipeline): the transformation applied to quantum tapes
     Returns:
         tuple: A tuple containing:
             - `execute_fn`: function to execute quantum tapes
             - `diff_method`: method for computing gradients
     """
-    inner_execute = _make_inner_execute(device, inner_transform_program, config)
+    inner_execute = _make_inner_execute(device, inner_compile_pipeline, config)
 
     def inner_execute_with_empty_jac(tapes, **_):
         return inner_execute(tapes), []
@@ -111,7 +111,7 @@ def _construct_tf_autograph_pipeline(
 def _construct_ml_execution_pipeline(
     config: ExecutionConfig,
     device: Device,
-    inner_transform_program: CompilePipeline,
+    inner_compile_pipeline: CompilePipeline,
 ) -> tuple[JacobianProductCalculator, ExecuteFn]:
     """Constructs the ML execution pipeline for all JPC interfaces.
 
@@ -121,7 +121,7 @@ def _construct_ml_execution_pipeline(
     Args:
         config (qml.devices.ExecutionConfig): resolved execution configuration
         device (qml.devices.Device): a Pennylane device
-        inner_transform_program (qml.CompilePipeline): the transformation applied to quantum tapes
+        inner_compile_pipeline (qml.CompilePipeline): the transformation applied to quantum tapes
 
     Returns:
         tuple: A tuple containing:
@@ -131,8 +131,8 @@ def _construct_ml_execution_pipeline(
     Raises:
         ValueError: If gradients are computed on execution (`grad_on_execution=True`).
     """
-    inner_execute = _make_inner_execute(device, inner_transform_program, config)
-    cache = _cache_transform in inner_transform_program
+    inner_execute = _make_inner_execute(device, inner_compile_pipeline, config)
+    cache = _cache_transform in inner_compile_pipeline
 
     execute_fn = inner_execute
 
@@ -273,7 +273,7 @@ def run(
     tapes: QuantumScriptBatch,
     device: Device,
     config: ExecutionConfig,
-    inner_transform_program: CompilePipeline,
+    inner_compile_pipeline: CompilePipeline,
 ) -> ResultBatch:
     """Execute a batch of quantum scripts on a device with optional gradient computation.
 
@@ -282,13 +282,13 @@ def run(
         device (qml.devices.Device): a Pennylane device
         config (qml.devices.ExecutionConfig): Resolved configuration detailing
             execution and differentiation settings.
-        inner_transform_program (CompilePipeline): The transformation program to apply
+        inner_compile_pipeline (CompilePipeline): The transformation program to apply
             to the quantum scripts before execution.
 
     Returns:
         ResultBatch: results of the execution
     """
-    inner_execute = _make_inner_execute(device, inner_transform_program, config)
+    inner_execute = _make_inner_execute(device, inner_compile_pipeline, config)
 
     # Exiting early if we do not need to deal with an interface boundary
     no_interface_boundary_required = (
@@ -304,7 +304,7 @@ def run(
     ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
 
         execute_fn, diff_method = _construct_tf_autograph_pipeline(
-            config, device, inner_transform_program
+            config, device, inner_compile_pipeline
         )
 
         ml_execute = _get_ml_boundary_execute(
@@ -323,7 +323,7 @@ def run(
 
         return results
 
-    jpc, execute_fn = _construct_ml_execution_pipeline(config, device, inner_transform_program)
+    jpc, execute_fn = _construct_ml_execution_pipeline(config, device, inner_compile_pipeline)
 
     if config.interface == Interface.JAX_JIT and config.derivative_order > 1:
         # no need to use pure callbacks around execute_fn or the jpc when taking

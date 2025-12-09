@@ -915,6 +915,7 @@ class TestShotsIntegration:
         expected_probs = np.array([np.cos(0.25) ** 2, np.sin(0.25) ** 2])
         assert qml.math.allclose(res[1], expected_probs, atol=1 / qml.math.sqrt(shots), rtol=0.03)
 
+    # pylint:disable=not-an-iterable
     @pytest.mark.parametrize("shots", [(10, 10), (10, 15)])
     def test_shot_vectors_single_measurements(self, interface, shots, seed):
         """Test jax-jit can work with shot vectors and returns correct shapes."""
@@ -1622,7 +1623,7 @@ class TestTapeExpansion:
         gradient_kwargs = {}
         if dev_name == "reference.qubit":
             pytest.skip(
-                "Cannot add transform to the transform program in preprocessing"
+                "Cannot add transform to the compile pipeline in preprocessing"
                 "when using mocker.spy on it."
             )
         if dev_name == "param_shift.qubit":

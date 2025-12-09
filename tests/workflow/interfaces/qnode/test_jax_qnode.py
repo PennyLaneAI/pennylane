@@ -1422,7 +1422,7 @@ class TestTapeExpansion:
             tol = TOL_FOR_SPSA
         if dev_name == "reference.qubit":
             pytest.skip(
-                "Cannot add transform to the transform program in preprocessing"
+                "Cannot add transform to the compile pipeline in preprocessing"
                 "when using mocker.spy on it."
             )
 
@@ -1496,7 +1496,7 @@ class TestTapeExpansion:
 
         if dev_name == "reference.qubit":
             pytest.skip(
-                "Cannot added to a transform to the transform program in "
+                "Cannot added to a transform to the compile pipeline in "
                 "preprocessing when using mocker.spy on it."
             )
 

@@ -102,7 +102,7 @@ class TestSignExpand:
 
     @pytest.mark.parametrize(("tape", "output"), zip(TAPES, OUTPUTS))
     def test_hamiltonians_qnode(self, tape, output):
-        """Tests that the sign_expand transform returns the correct value as a transform program"""
+        """Tests that the sign_expand transform returns the correct value as a compile pipeline"""
 
         @qml.transforms.sign_expand
         @qml.qnode(dev)
@@ -129,7 +129,7 @@ class TestSignExpand:
 
     @pytest.mark.parametrize(("tape", "output"), zip(TAPES, OUTPUTS))
     def test_hamiltonians_circuit_impl_qnode(self, tape, output):
-        """Tests that the sign_expand transform returns the correct value as a transform program
+        """Tests that the sign_expand transform returns the correct value as a compile pipeline
         if we do not calculate analytical expectation values of groups but rely on their circuit approximations
         """
 

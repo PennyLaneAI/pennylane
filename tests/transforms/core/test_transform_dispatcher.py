@@ -255,7 +255,7 @@ class TestTransformContainer:
             return qml.state()
 
         new_c = container(c)
-        assert container == new_c.transform_program[0]
+        assert container == new_c.compile_pipeline[0]
 
     def test_construction_fallback(self):
         """Test that a TransformContainer can still be constructed in the old way."""
@@ -520,7 +520,7 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         assert len(tape.circuit) == 5
 
     def test_qnode_with_expand_transform(self):
-        """Test qnode with a transform program and expand transform."""
+        """Test qnode with a compile pipeline and expand transform."""
 
         dispatched_transform = qml.transform(
             first_valid_transform, expand_transform=expand_transform
@@ -544,15 +544,15 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         # Applied on a qfunc (return a qfunc)
         qnode_transformed = dispatched_transform(qnode_circuit, 0)
 
-        assert isinstance(qnode_transformed.transform_program, qml.CompilePipeline)
-        expand_transform_container = qnode_transformed.transform_program.pop_front()
+        assert isinstance(qnode_transformed.compile_pipeline, qml.CompilePipeline)
+        expand_transform_container = qnode_transformed.compile_pipeline.pop_front()
         assert isinstance(expand_transform_container, qml.transforms.core.TransformContainer)
         assert expand_transform_container.args == (0,)
         assert expand_transform_container.kwargs == {}
         assert expand_transform_container.classical_cotransform is None
         assert not expand_transform_container.is_informative
 
-        transform_container = qnode_transformed.transform_program.pop_front()
+        transform_container = qnode_transformed.compile_pipeline.pop_front()
 
         assert isinstance(transform_container, qml.transforms.core.TransformContainer)
         assert transform_container.args == (0,)

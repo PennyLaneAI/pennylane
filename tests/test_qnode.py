@@ -77,7 +77,7 @@ def test_no_measure():
 
 
 def test_copy():
-    """Test that a shallow copy also copies the execute kwargs, gradient kwargs, and transform program."""
+    """Test that a shallow copy also copies the execute kwargs, gradient kwargs, and compile pipeline."""
     dev = CustomDevice()
 
     qn = qml.QNode(dummyfunc, dev)
@@ -184,8 +184,8 @@ class TestUpdate:
         assert new_circuit.diff_method == "adjoint"
         assert new_circuit.execute_kwargs["device_vjp"]
 
-    def test_update_transform_program(self):
-        """Test that the transform program is properly preserved"""
+    def test_update_compile_pipeline(self):
+        """Test that the compile pipeline is properly preserved"""
         dev = qml.device("default.qubit", wires=2)
 
         @qml.transforms.combine_global_phases
@@ -1502,9 +1502,9 @@ class TestShots:
 
 
 class TestCompilePipelineIntegration:
-    """Tests for the integration of the transform program with the qnode."""
+    """Tests for the integration of the compile pipeline with the qnode."""
 
-    def test_transform_program_modifies_circuit(self):
+    def test_compile_pipeline_modifies_circuit(self):
         """Test qnode integration with a transform that turns the circuit into just a pauli x."""
         dev = qml.device("default.qubit", wires=1)
 
@@ -1536,7 +1536,7 @@ class TestCompilePipelineIntegration:
         assert tracker.history["resources"][0].gate_types["PauliX"] == 1
         assert tracker.history["resources"][0].gate_types["RX"] == 0
 
-    def test_transform_program_modifies_results(self):
+    def test_compile_pipeline_modifies_results(self):
         """Test integration with a transform that modifies the result output."""
 
         dev = qml.device("default.qubit", wires=2)

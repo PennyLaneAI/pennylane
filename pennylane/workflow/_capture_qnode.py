@@ -220,7 +220,7 @@ def _(*args, qnode, device, execution_config, qfunc_jaxpr, n_consts, shots_len, 
         qfunc_jaxpr = qfunc_jaxpr.jaxpr
 
     # Expand user transforms applied to the qnode
-    qfunc_jaxpr = qnode.transform_program(qfunc_jaxpr, temp_consts, *temp_args)
+    qfunc_jaxpr = qnode.compile_pipeline(qfunc_jaxpr, temp_consts, *temp_args)
     temp_consts = qfunc_jaxpr.consts
     qfunc_jaxpr = qfunc_jaxpr.jaxpr
 

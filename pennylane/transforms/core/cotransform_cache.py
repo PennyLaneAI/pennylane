@@ -154,13 +154,13 @@ class CotransformCache:
 
     @property
     def _program(self):
-        return self.qnode.transform_program
+        return self.qnode.compile_pipeline
 
     def _get_idx_for_transform(self, transform):
         for i, t in enumerate(self._program):
             if t == transform:
                 return i
-        raise ValueError(f"Could not find {transform} in qnode's transform program.")
+        raise ValueError(f"Could not find {transform} in qnode's compile pipeline.")
 
     def get_classical_jacobian(self, transform: TransformContainer, tape_idx: int):
         """Calculate the classical jacobian for a given transform.
@@ -179,7 +179,7 @@ class CotransformCache:
                 return qml.expval(qml.Z(0)), qml.expval(qml.X(0))
 
 
-            ps_container = c.transform_program[-1]
+            ps_container = c.compile_pipeline[-1]
             x, y = qml.numpy.array(0.5), qml.numpy.array(3.0)
 
             cc = CotransformCache(c, (x, y), {})
@@ -215,7 +215,7 @@ class CotransformCache:
 
             c = qml.gradients.param_shift(c, argnums=[0])
 
-            ps_container = c.transform_program[-1]
+            ps_container = c.compile_pipeline[-1]
             x, y = jax.numpy.array([0.5, 0.7]), jax.numpy.array(3.0)
 
             cc = CotransformCache(c, (x, y), {})

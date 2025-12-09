@@ -606,7 +606,7 @@ def test_qnode_mid_circuit_measurement_not_deferred_device_api(mocker):
     spy.assert_not_called()
 
 
-def test_qnode_transform_program(mocker):
+def test_qnode_compile_pipeline(mocker):
     """Test that qnode transforms are applied before drawing a circuit."""
 
     @qml.compile

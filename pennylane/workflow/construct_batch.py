@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Contains a function extracting the tapes at postprocessing at any stage of a transform program."""
+"""Contains a function extracting the tapes at postprocessing at any stage of a compile pipeline."""
 
 from __future__ import annotations
 
@@ -41,7 +41,7 @@ def null_postprocessing(results):
 # pylint: disable=unused-argument
 @transform
 def marker(tape, level: str):
-    """Mark a location in a transform program for easy access with inspectability.
+    """Mark a location in a compile pipeline for easy access with inspectability.
 
     Args:
         tape (QuantumScript | QNode | CompilePipeline): the object we want to dispatch the transform onto
@@ -79,7 +79,7 @@ def marker(tape, level: str):
     return (tape,), null_postprocessing
 
 
-def _get_full_transform_program(qnode: QNode, gradient_fn) -> CompilePipeline:
+def _get_full_compile_pipeline(qnode: QNode, gradient_fn) -> CompilePipeline:
     program = CompilePipeline(qnode.compile_pipeline)
 
     if getattr(gradient_fn, "expand_transform", False):
@@ -144,7 +144,7 @@ def _find_level(program, level):
             if found_level == level:
                 return idx
     raise ValueError(
-        f"level {level} not found in transform program. "
+        f"level {level} not found in compile pipeline. "
         "Builtin options are 'top', 'user', 'device', and 'gradient'."
         f" Custom levels are {found_levels}."
     )
@@ -165,7 +165,7 @@ def _get_user_transform_slice(
         num_user_transforms: Number of user transforms
 
     Returns:
-        slice: The slice to apply to the user transform program
+        slice: The slice to apply to the user compile pipeline
     """
     if level == "top":
         return slice(0, 0)
@@ -202,7 +202,7 @@ def _get_inner_transform_slice(
         has_gradient_expand: Whether gradient expansion transform exists
 
     Returns:
-        slice: The slice to apply to the remaining transform program
+        slice: The slice to apply to the remaining compile pipeline
     """
     if level == "gradient":
         end_idx = int(has_gradient_expand)
@@ -229,10 +229,10 @@ def get_transform_program(
     level: Literal["top", "user", "device", "gradient"] | int | slice = "device",
     gradient_fn="unset",
 ) -> CompilePipeline:
-    """Extract a transform program at a designated level.
+    """Extract a compile pipeline at a designated level.
 
     Args:
-        qnode (QNode): the qnode to get the transform program for.
+        qnode (QNode): the qnode to get the compile pipeline for.
         level (str, int, slice): An indication of what transforms to use from the full program.
 
             - ``"device"``: Uses the entire transformation pipeline.
@@ -240,12 +240,12 @@ def get_transform_program(
             - ``"user"``: Includes transformations that are manually applied by the user.
             - ``"gradient"``: Extracts the gradient-level tape.
             - ``int``: Can also accept an integer, corresponding to a number of transforms in the program. ``level=0`` corresponds to the start of the program.
-            - ``slice``: Can also accept a ``slice`` object to select an arbitrary subset of the transform program.
+            - ``slice``: Can also accept a ``slice`` object to select an arbitrary subset of the compile pipeline.
 
         gradient_fn (None, str, TransformDispatcher): The processed gradient fn for the workflow.
 
     Returns:
-        CompilePipeline: the transform program corresponding to the requested level.
+        CompilePipeline: the compile pipeline corresponding to the requested level.
 
     .. details::
         :title: Usage Details
@@ -273,7 +273,7 @@ def get_transform_program(
             def circuit():
                 return qml.expval(qml.Z(0))
 
-        By default, we get the full transform program. This can be explicitly specified by ``level="device"``.
+        By default, we get the full compile pipeline. This can be explicitly specified by ``level="device"``.
 
         >>> qml.workflow.get_transform_program(circuit)
         CompilePipeline(cancel_inverses, merge_rotations, _expand_metric_tensor, _expand_transform_param_shift, defer_measurements, decompose, device_resolve_dynamic_wires, validate_device_wires, validate_measurements, _conditional_broadcast_expand, metric_tensor)
@@ -292,7 +292,7 @@ def get_transform_program(
         >>> qml.workflow.get_transform_program(circuit, level="gradient")
         CompilePipeline(cancel_inverses, merge_rotations, _expand_metric_tensor, _expand_transform_param_shift, metric_tensor)
 
-        ``"top"`` and ``0`` both return empty transform programs.
+        ``"top"`` and ``0`` both return empty compile pipelines.
 
         >>> qml.workflow.get_transform_program(circuit, level="top")
         CompilePipeline()
@@ -305,7 +305,7 @@ def get_transform_program(
         CompilePipeline(cancel_inverses, merge_rotations)
 
         ``level`` can also accept a ``slice`` object to select out any arbitrary subset of the
-        transform program.  This allows you to select different starting transforms or strides.
+        compile pipeline.  This allows you to select different starting transforms or strides.
         For example, you can skip the first transform or reverse the order:
 
         >>> qml.workflow.get_transform_program(circuit, level=slice(1,3))
@@ -335,7 +335,7 @@ def get_transform_program(
         )
         gradient_fn = config.gradient_method
     has_gradient_expand = bool(getattr(gradient_fn, "expand_transform", False))
-    full_transform_program = _get_full_transform_program(qnode, gradient_fn)
+    full_compile_pipeline = _get_full_compile_pipeline(qnode, gradient_fn)
 
     num_user = len(qnode.compile_pipeline)
     if qnode.compile_pipeline.has_final_transform:
@@ -356,11 +356,11 @@ def get_transform_program(
         level = num_user + 1 if has_gradient_expand else num_user
         level = slice(0, level)
     elif isinstance(level, str):
-        level = slice(0, _find_level(full_transform_program, level))
+        level = slice(0, _find_level(full_compile_pipeline, level))
     elif isinstance(level, int):
         level = slice(0, level)
 
-    resolved_program = full_transform_program[level]
+    resolved_program = full_compile_pipeline[level]
 
     if qnode.compile_pipeline.has_final_transform and readd_final_transform:
         resolved_program += qnode.compile_pipeline[-1:]
@@ -372,7 +372,7 @@ def construct_batch(
     qnode: QNode | TorchLayer,
     level: str | int | slice = "user",
 ) -> Callable:
-    """Construct the batch of tapes and post processing for a designated stage in the transform program.
+    """Construct the batch of tapes and post processing for a designated stage in the compile pipeline.
 
     Args:
         qnode (QNode): the qnode we want to get the tapes and post-processing for.
@@ -385,7 +385,7 @@ def construct_batch(
             A function with the same call signature as the initial quantum function.
             This function returns a batch (tuple) of tapes and postprocessing function.
 
-    .. seealso:: :func:`pennylane.workflow.get_transform_program` to inspect the contents of the transform program for a specified level.
+    .. seealso:: :func:`pennylane.workflow.get_transform_program` to inspect the contents of the compile pipeline for a specified level.
 
     .. details::
         :title: Usage Details
@@ -443,7 +443,7 @@ def construct_batch(
          X(0),
          expval(X(0) + Y(0))]
 
-        And iterate though stages in the transform program with different integers.
+        And iterate though stages in the compile pipeline with different integers.
         If we request ``level=1``, the ``cancel_inverses`` transform has been applied.
 
         >>> batch, fn = construct_batch(circuit, level=1)(1.23)
@@ -454,7 +454,7 @@ def construct_batch(
          SWAP(wires=[0, 1]),
          expval(X(0) + Y(0))]
 
-        We can also slice into a subset of the transform program.  ``slice(1, None)`` would skip the first user
+        We can also slice into a subset of the compile pipeline.  ``slice(1, None)`` would skip the first user
         transform ``cancel_inverses``:
 
         >>> batch, fn = construct_batch(circuit, level=slice(1,None))(1.23)
@@ -508,13 +508,13 @@ def construct_batch(
         )
 
         # Use _setup_compile_pipeline like execute() does
-        outer_transform_program, inner_transform_program = _setup_compile_pipeline(
+        outer_compile_pipeline, inner_compile_pipeline = _setup_compile_pipeline(
             qnode.device,
             execution_config,
             cache=qnode.execute_kwargs["cache"],
             cachesize=qnode.execute_kwargs["cachesize"],
         )
-        full_transform_program = outer_transform_program + inner_transform_program
+        full_compile_pipeline = outer_compile_pipeline + inner_compile_pipeline
 
         has_gradient_expand = bool(
             getattr(execution_config.gradient_method, "expand_transform", False)
@@ -524,7 +524,7 @@ def construct_batch(
             num_user_transforms,
             has_gradient_expand,
         )
-        resolved_program = full_transform_program[level_slice_inner]
+        resolved_program = full_compile_pipeline[level_slice_inner]
 
         batch, remaining_post_processing = resolved_program(
             user_transformed_tapes

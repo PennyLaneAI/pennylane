@@ -433,8 +433,8 @@ class TestTranspile:
         original_qnode = qml.QNode(qfunc, dev)
         transformed_qnode = transpile(original_qnode, coupling_map=[(0, 1), (1, 2)])
 
-        assert len(transformed_qnode.transform_program) == 1
-        assert transformed_qnode.transform_program[0].kwargs["device"] is dev
+        assert len(transformed_qnode.compile_pipeline) == 1
+        assert transformed_qnode.compile_pipeline[0].kwargs["device"] is dev
 
     def test_qnode_transform_raises_if_device_kwarg(self):
         """Test an error is raised if a device is provided as a keyword argument to a qnode transform."""

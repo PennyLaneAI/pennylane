@@ -1418,7 +1418,7 @@ class TestCompilePipelineIntegration:
 
         new_qnode = dispatched_transform(dispatched_transform(qnode_circuit, 0), 0)
 
-        pipeline = new_qnode.transform_program
+        pipeline = new_qnode.compile_pipeline
         transformed_qnode_rep = repr(pipeline)
         assert (
             transformed_qnode_rep
@@ -1453,7 +1453,7 @@ class TestCompilePipelineIntegration:
 
         new_qnode = dispatched_transform_2(dispatched_transform_1(qnode_circuit, 0))
 
-        pipeline = new_qnode.transform_program
+        pipeline = new_qnode.compile_pipeline
         transformed_qnode_rep = repr(pipeline)
         assert (
             transformed_qnode_rep
@@ -1491,7 +1491,7 @@ class TestCompilePipelineIntegration:
 
         new_qnode = dispatched_transform_2(dispatched_transform_1(qnode_circuit, 0), 0)
 
-        pipeline = new_qnode.transform_program
+        pipeline = new_qnode.compile_pipeline
         transformed_qnode_rep = repr(pipeline)
         assert (
             transformed_qnode_rep

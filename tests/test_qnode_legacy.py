@@ -1083,7 +1083,7 @@ class TestShots:
 
 
 class TestCompilePipelineIntegration:
-    def test_transform_program_modifies_circuit(self):
+    def test_compile_pipeline_modifies_circuit(self):
         """Test qnode integration with a transform that turns the circuit into just a pauli x."""
         dev = DefaultQubitLegacy(wires=1)
 
@@ -1115,7 +1115,7 @@ class TestCompilePipelineIntegration:
         assert tracker.history["resources"][0].gate_types["PauliX"] == 1
         assert tracker.history["resources"][0].gate_types["RX"] == 0
 
-    def tet_transform_program_modifies_results(self):
+    def test_compile_pipeline_modifies_results(self):
         """Test integration with a transform that modifies the result output."""
 
         dev = DefaultQubitLegacy(wires=2)
