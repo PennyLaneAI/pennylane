@@ -1119,7 +1119,7 @@ class TestTransformProgramCall:
         # Single tape input returns a batch (tuple of one tape) for consistency
         # since transforms can split tapes
         assert len(new_batch) == 1
-        assert new_batch[0] is tape
+        assert new_batch == tape
         assert postprocessing is null_postprocessing
 
         obj = [1, 2, 3, "b"]
