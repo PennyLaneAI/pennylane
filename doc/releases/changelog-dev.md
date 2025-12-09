@@ -2,6 +2,10 @@
 
 <h3>New features since last release</h3>
 
+* To support the [paper](https://arxiv.org/pdf/2503.02934), a method to approximate expectation values from Z measurements
+  following Instantaneous Quantum Polynomial (IQP) circuits has been added to the `math` module.
+  [(#8749)](https://github.com/PennyLaneAI/pennylane/pull/8749)
+
 * Quantum Automatic Differentiation implemented to allow automatic selection of optimal
   Hadamard gradient differentiation methods per [the paper](https://arxiv.org/pdf/2408.05406).
   [(#8640)](https://github.com/PennyLaneAI/pennylane/pull/8640)
