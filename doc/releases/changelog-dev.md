@@ -58,7 +58,7 @@
     Measurements:
       probs(all wires): 1
   ```
-  [(#8609)](https://github.com/PennyLaneAI/pennylane/pull/8606)
+  [(#8606)](https://github.com/PennyLaneAI/pennylane/pull/8606)
 
 * Users can now perform rapid Clifford+T decomposition with QJIT and program capture enabled,
   using the new :func:`~pennylane.transforms.gridsynth` compilation pass.
