@@ -979,8 +979,7 @@ class UnaryIterationQPE(ResourceOperator):
      a detailed explanation of its typical usage, see the documentation `here <https://pennylane.ai/compilation/unary-iteration>`_.
 
     Note, users can also provide a custom adjoint QFT implementation, which can be used to
-    further optimize the resource requirements. For example, one could use an approximate QFT implementation
-    to further optimize the resources.
+    further optimize the resource requirements. For example, one could use an approximate QFT implementation.
 
     Args:
         unitary (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): the unitary operator to run
