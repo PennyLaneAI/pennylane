@@ -1563,9 +1563,15 @@ class TestTransformProgramCall:
         with dev.tracker:
             result = transformed_qnode()
 
-        # The circuit should only have Hadamard operation (inverses cancelled)
-        # Just verify that execution completed successfully
-        assert result is not None
+        # Check that the transform was applied: only Hadamard should remain
+        # (X-X and Y-Y pairs should be cancelled)
+        resources = dev.tracker.history["resources"][0]
+        assert resources.gate_types == {"Hadamard": 1}
+        assert resources.num_gates == 1
+        assert resources.depth == 1
+
+        # Check the numerical output: H|0> gives |+>, expectation of Z is 0
+        assert qml.math.allclose(result, 0.0)
 
     def test_call_on_device(self):
         """Test that a TransformProgram can be applied to a Device."""
