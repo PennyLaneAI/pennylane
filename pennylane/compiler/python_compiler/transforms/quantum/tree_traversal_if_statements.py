@@ -236,7 +236,9 @@ class IfOperatorPartitioningPattern(RewritePattern):
                     collector.remove(op)
                 collector.append(op)
 
-    def flatten_nested_IfOps(self, rewriter: PatternRewriter) -> None: # pylint: disable=too-many-branches
+    def flatten_nested_IfOps(
+        self, rewriter: PatternRewriter
+    ) -> None:  # pylint: disable=too-many-branches
         """Flatten nested scf.IfOps into a single level scf.IfOp."""
 
         def find_deepest_if_ops_2_flat():

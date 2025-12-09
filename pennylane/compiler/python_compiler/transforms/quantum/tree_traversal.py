@@ -77,7 +77,7 @@ class ProgramSegment:  # pylint: disable=too-many-instance-attributes
 
 
 @dataclass
-class StackAttributes: # pylint: disable=too-many-instance-attributes
+class StackAttributes:  # pylint: disable=too-many-instance-attributes
     """Stack-related attributes and their types for tree traversal."""
 
     # Stack values
@@ -470,48 +470,42 @@ class TreeTraversalPattern(RewritePattern):
     def segment_transformation_if_statement(
         self, new_segment: func.FuncOp, rewriter: PatternRewriter
     ) -> func.FuncOp:
-        """Transform nested if-statements containing mid-circuit measurements (MCMs).
+        """Transform segments that have if-statements containing mid-circuit measurements.
 
-        This method handles the case where measurement operations are nested within conditional
-        blocks. It identifies and relocates the "real" measurement operation (the actual quantum
-        measurement) to ensure proper execution order within the tree-traversal simulation.
+        This function handles segments where there are two if-statements containing MCMs:
+        1. A "real MCM" if-statement with the `fake_measure` marker - this contains all the
+           logic needed for an MCM in the tree traversal and was added as a placeholder to
+           create the node in the TT.
+        2. An if-statement with the `contain_mcm` marker - this contains the actual MCM
+           provided by the original circuit.
 
-        The transformation addresses scenarios where:
-        1. A measurement operation is wrapped in an outer if-statement (real_mcm_op)
-        2. Another conditional if-statement contains MCM-related operations (current_if_op)
-        3. These nested structures need to be reorganized for correct tree-traversal behavior
+        The transformation replaces the inner MCM (from the original circuit) with the
+        real MCM logic (the placeholder) to preserve the functionality of the tree traversal.
 
-        Returns:
-            The modified function operation with transformed if-statement structure. If no
-            transformation is needed (e.g., no nested MCM structure found), returns the
-            original segment unchanged.
+        Before transformation:
+            - Real MCM if-statement (with `fake_measure` marker) is separate
+            - Inner if-statement (with `contain_mcm` marker) contains the original MCM
 
-        Implementation Details:
-            - Searches for two distinct IfOps: one containing the real measurement and another
-              marked with "contain_mcm" attribute
-            - Moves the real measurement operation to the appropriate location within the
-              inner if-statement's true branch
-            - Updates quantum register and qubit references to maintain correct data flow
-            - Removes the old measurement operation after replacement to avoid duplication
+        After transformation:
+            - Real MCM if-statement is moved inside the `contain_mcm` if-statement
+            - The inner MCM is replaced with the real MCM logic
         """
 
-        real_mcm_op = None
+        real_mcm_logic = None
         current_if_op = None
 
         # Extract the IfOps containing measure operations
         for op in new_segment.body.walk():
-            if isinstance(op, scf.IfOp):
-                if real_mcm_op is None:
-                    real_mcm_op = op
-                    continue
-                contain_mcm = "contain_mcm" in op.attributes
-                if contain_mcm:
-                    current_if_op = op
+            if isinstance(op, scf.IfOp) and "fake_measure" in op.true_region.ops.first.attributes:
+                real_mcm_logic = op
+
+            if isinstance(op, scf.IfOp) and "contain_mcm" in op.attributes:
+                current_if_op = op
 
         if (
             current_if_op is not None
-            and real_mcm_op is not None
-            and current_if_op is not real_mcm_op
+            and real_mcm_logic is not None
+            and current_if_op is not real_mcm_logic
         ):
             where_to_move_real_mcm = None
 
@@ -525,34 +519,35 @@ class TreeTraversalPattern(RewritePattern):
                 where_to_move_real_mcm = current_if_op.true_region.ops.first
 
             # Update the qreg input in the inner IfOp
-            q_bit_mcm = real_mcm_op.results[1]
-            real_mcm_op_mcm_q_bit = real_mcm_op.true_region.ops.first
+            q_bit_mcm = real_mcm_logic.results[1]
+            real_mcm_logic_mcm_q_bit = real_mcm_logic.true_region.ops.first
 
             q_bit_mcm.replace_by_if(
-                real_mcm_op_mcm_q_bit.operands[0], lambda use: use.operation is not real_mcm_op
+                real_mcm_logic_mcm_q_bit.operands[0],
+                lambda use: use.operation is not real_mcm_logic,
             )
 
             # Move the real measure IfOp before the mcm inside the inner IfOp
-            real_mcm_op.detach()
+            real_mcm_logic.detach()
 
             if isinstance(where_to_move_real_mcm, quantum.MeasureOp):
-                rewriter.insert_op(real_mcm_op, InsertPoint.before(where_to_move_real_mcm))
+                rewriter.insert_op(real_mcm_logic, InsertPoint.before(where_to_move_real_mcm))
                 for new_mcm_use, old_mcm_use in zip(
-                    real_mcm_op.results, where_to_move_real_mcm.results
+                    real_mcm_logic.results, where_to_move_real_mcm.results
                 ):
                     old_mcm_use.replace_by_if(
                         new_mcm_use, lambda use: use.operation is not where_to_move_real_mcm
                     )
 
                 old_mcm_operands = where_to_move_real_mcm.operands[0]
-                real_mcm_op_walks = real_mcm_op.walk()
-                for op in real_mcm_op_walks:
+                real_mcm_logic_walks = real_mcm_logic.walk()
+                for op in real_mcm_logic_walks:
                     if isinstance(op, quantum.MeasureOp):
                         op.operands = (old_mcm_operands,)
                         rewriter.notify_op_modified(op)
                 rewriter.erase_op(where_to_move_real_mcm)
             else:
-                rewriter.erase_op(real_mcm_op)
+                rewriter.erase_op(real_mcm_logic)
 
         return new_segment
 
