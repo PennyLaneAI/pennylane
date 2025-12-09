@@ -37,6 +37,39 @@
 <h3>Improvements 🛠</h3>
 
 * `TransformProgram` now has a new method `remove` to remove all the containers that match a given transform.
+  [(#8751)](https://github.com/PennyLaneAI/pennylane/pull/8751)
+
+* In the past, calling a transform with only arguments or keyword but no tapes would raise an error.
+  Now, two transforms can be concatenated naturally as
+
+  ```
+  decompose(gate_set=gate_set) + merge_rotations(1e-6)
+  ```
+
+  [(#8730)](https://github.com/PennyLaneAI/pennylane/pull/8730)
+
+* `@partial` is not needed anymore for using transforms as decorators with arguments.
+  Now, the following two usages are equivalent:
+
+  ```python
+  @partial(qml.transforms.decompose, gate_set={qml.RX, qml.CNOT})
+  @qml.qnode(qml.device('default.qubit', wires=2))
+  def circuit():
+      qml.Hadamard(wires=0)
+      qml.CZ(wires=[0,1])
+      return qml.expval(qml.Z(0))
+  ```
+
+  ```python
+  @qml.transforms.decompose(gate_set={qml.RX, qml.CNOT})
+  @qml.qnode(qml.device('default.qubit', wires=2))
+  def circuit():
+      qml.Hadamard(wires=0)
+      qml.CZ(wires=[0,1])
+      return qml.expval(qml.Z(0))
+  ```
+
+  [(#8730)](https://github.com/PennyLaneAI/pennylane/pull/8730)
 
 * Added a new decomposition, `_decompose_2_cnots`, for the two-qubit decomposition for `QubitUnitary`.
   It supports the analytical decomposition a two-qubit unitary known to require exactly 2 CNOTs.
