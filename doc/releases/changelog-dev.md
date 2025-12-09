@@ -36,8 +36,7 @@
 
 <h3>Improvements 🛠</h3>
 
-* Calling a transform dispatcher with args that are not a valid dispatch target returns
-  Now, two transforms can be concatenated naturally as
+* Now, two transforms can be concatenated naturally as
 
   ```
   decompose(gate_set=gate_set) + merge_rotations(1e-6)
