@@ -184,9 +184,11 @@ Transforms developer functions
 creation, dispatching, and composability of transforms. If you would like to make a custom transform, refer
 instead to the documentation of :func:`qml.transform <pennylane.transform>`.
 
+.. currentmodule:: pennylane
 .. autosummary::
     :toctree: api
 
+    ~CompilePipeline
     ~transforms.core.transform_dispatcher
 
 Transforming circuits
