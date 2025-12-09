@@ -110,16 +110,17 @@ def generic_apply_transform(obj, transform, *targs, **tkwargs):
     """Apply an generic transform to a specific type of object. A singledispatch function
     used by ``TransformDipsatcher.generic_apply_transform``, but with a different order of arguments
     to allow is to be used by singledispatch.
+
+    When called with an object that is not a valid dispatch target (e.g., not a QNode, tape, etc.),
+    this returns a TransformContainer with the supplied args and kwargs. This enables patterns like:
+
+        decompose(gate_set=gate_set) + merge_rotations(1e-6)
+
+    where transforms are called with just configuration parameters and combined into a TransformProgram.
     """
-    #  error out on transform(*targs, **tkwargs)(obj)
-    # in that care, no special dispatch would be found.
-    raise TransformError(
-        "Decorating a QNode with @transform_fn(**transform_kwargs) has been "
-        "removed. Please decorate with @functools.partial(transform_fn, **transform_kwargs) "
-        "instead, or call the transform directly using qnode = transform_fn(qnode, "
-        "**transform_kwargs). Visit the deprecations page for more details: "
-        "https://docs.pennylane.ai/en/stable/development/deprecations.html#completed-deprecation-cycles",
-    )
+    # If the first argument is not a valid dispatch target, return a TransformContainer
+    # with the first argument and any additional args/kwargs stored as transform parameters.
+    return TransformContainer(transform, args=(obj, *targs), kwargs=tkwargs)
 
 
 # pragma: no cover
@@ -285,7 +286,17 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
 
         return generic_apply_transform.register(arg)  # pylint: disable=no-member
 
-    def __call__(self, obj, *targs, **tkwargs):
+    def __call__(self, obj=None, *targs, **tkwargs):  # pylint: disable=keyword-arg-before-vararg
+        # If called with only keyword arguments (no positional args), return a TransformContainer
+        # This enables patterns like: decompose(gate_set=gate_set) + merge_rotations(1e-6)
+        if obj is None:
+            if tkwargs:
+                return TransformContainer(self, args=targs, kwargs=tkwargs)
+            raise TypeError(
+                f"{self!r} requires at least one argument. "
+                "Provide a tape, qfunc, QNode, or device to transform, "
+                "or provide keyword arguments to create a TransformContainer for composition."
+            )
         return self._apply_transform(obj, *targs, **tkwargs)
 
     def __repr__(self):
