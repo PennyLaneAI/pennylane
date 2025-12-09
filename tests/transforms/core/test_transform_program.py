@@ -1494,7 +1494,7 @@ class TestTransformProgramCall:
         """Test that a TransformProgram can be applied to a callable using the fallback."""
 
         program = TransformProgram()
-        program.add_transform(transform(first_valid_transform), 0)
+        program += transform(first_valid_transform)(0)
 
         def qfunc():
             qml.Hadamard(wires=0)
@@ -1521,8 +1521,8 @@ class TestTransformProgramCall:
             return [tape], lambda x: x[0]
 
         program = TransformProgram()
-        program.add_transform(transform(tracking_transform_1))
-        program.add_transform(transform(tracking_transform_2))
+        program += transform(tracking_transform_1)
+        program += transform(tracking_transform_2)
 
         dev = qml.device("default.qubit", wires=1)
 
@@ -1543,7 +1543,7 @@ class TestTransformProgramCall:
         """Test that a TransformProgram applied to a QNode actually transforms execution."""
 
         program = TransformProgram()
-        program.add_transform(qml.transforms.cancel_inverses)
+        program += transform(qml.transforms.cancel_inverses)
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -1586,8 +1586,8 @@ class TestTransformProgramCall:
 
         # Create a program with transforms
         program = TransformProgram()
-        program.add_transform(qml.transforms.cancel_inverses)
-        program.add_transform(transform(first_valid_transform), 0)
+        program += transform(qml.transforms.cancel_inverses)
+        program += transform(first_valid_transform)(0)
 
         # Apply the program to the device
         transformed_dev = program(original_dev)
