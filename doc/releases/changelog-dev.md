@@ -42,6 +42,7 @@
   
 * :class:`~.transforms.core.TransformContainer` has been renamed to :class:`~.transforms.core.BoundTransform`.
   The old name is still available in the same location.
+  [(#8753)](https://github.com/PennyLaneAI/pennylane/pull/8753)
 
 * Arithmetic dunder methods (`__add__`, `__mul__`, `__rmul__`) have been added to 
   :class:`~.transforms.core.TransformDispatcher`, :class:`~.transforms.core.TransformContainer`, 
