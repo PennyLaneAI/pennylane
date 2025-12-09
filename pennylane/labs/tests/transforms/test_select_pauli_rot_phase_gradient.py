@@ -164,5 +164,6 @@ def test_correctness_select_pauli_rot_phase_gradient(rot_axis):
         (0 / 2 + 1 / 4 + 1 / 8) * 2 * np.pi,
     ]
 
+    # pylint: disable=unsubscriptable-object
     expected_probs = select_pauli_rot_circ(phis, control_wires=[0, 1], target_wire=wire)
     assert np.isclose(expected_probs[0], 1)
