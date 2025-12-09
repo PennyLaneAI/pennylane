@@ -87,6 +87,10 @@ class IQP(Operation):
         }
         super().__init__(wires=wires, id=id)
 
+    @classmethod
+    def _primitive_bind_call(cls, *args, **kwargs):
+        return cls._primitive.bind(*args, **kwargs)
+
     @property
     def resource_params(self):
         return {
