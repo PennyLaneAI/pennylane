@@ -974,7 +974,7 @@ class IterativeQPE(ResourceOperator):
 class UnaryIterationQPE(ResourceOperator):
     r"""Resource class for UnaryIterationQPE. This is a variant of the Quantum Phase Estimation algorithm
     that uses the unary iteration technique described in `arXiv.2011.03494 <https://arxiv.org/pdf/2011.03494>`_.
-    In this approach, the Select operation is implemented using unary iteration, which reduces
+    In this approach, the ``Select`` operation is implemented via unary iteration, which reduces
     T and Toffoli gate counts at the cost of increasing the number of auxiliary qubits required. For
      a detailed explanation of its typical usage, see the documentation `here <https://pennylane.ai/compilation/unary-iteration>`_.
 
