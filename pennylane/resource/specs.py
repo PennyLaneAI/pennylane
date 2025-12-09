@@ -155,7 +155,7 @@ def _preprocess_level_input(level, marker_to_level) -> list[int]:
     for i, lvl in enumerate(level):
         if isinstance(lvl, str):
             if lvl not in marker_to_level:
-                raise ValueError(f"Transform name '{lvl}' not found in the transform program.")
+                raise ValueError(f"Marker name '{lvl}' not found in the transform program.")
             level[i] = marker_to_level[lvl]
         elif isinstance(lvl, int):
             if lvl < 0:

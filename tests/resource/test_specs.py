@@ -73,6 +73,16 @@ def test_preprocess_levels(level, output, expect_warnings):
         assert _preprocess_level_input(level, marker_to_level) == output
 
 
+def test_preprocess_levels_invalid():
+    with pytest.raises(
+        ValueError, match="The 'level' argument to qml.specs for QJIT'd QNodes must be non-negative"
+    ):
+        _preprocess_level_input(-1, {})
+
+    with pytest.raises(ValueError, match="Marker name 'foo' not found"):
+        _preprocess_level_input("foo", {})
+
+
 @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 class TestSpecsTransform:
     """Tests for the transform specs using the QNode"""
