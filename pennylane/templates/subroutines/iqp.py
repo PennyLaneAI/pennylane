@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-r"""
+"""
 Contains the IQP template.
 """
 from collections import defaultdict
@@ -28,12 +28,26 @@ from pennylane.ops import Hadamard, MultiRZ, PauliRot
 
 
 class IQP(Operation):
+    """
+    A template that builds an Instantaneous Quantum Polynomial (IQP) circuit.
+
+    In this `IQPOpt <https://arxiv.org/pdf/2501.04776>`__ paper and this
+    `train on classical, deploy on quantum <https://arxiv.org/pdf/2503.02934>`__ paper, tht authors
+    present methods for analytically approximating expectation values coming from measurements following IQP circuits.
+    This allows for the classical training of the parameters of these circuits prior to deploying them to a
+    quantum computer for actual computation.
+
+    Many problems can be cast to be solved via minimizing these expectations, such as showing quantum advantage
+    by calculating the integrals of oscillating functions as detailed
+    `here <https://strawberryfields.ai/photonics/demos/run_iqp.html>`__ (an intractable task classically), thereby
+    making this a useful circuit.
+    """
 
     resource_keys = {"spin_sym", "gates", "n_qubits", "init_gates"}
 
     def __init__(
         self, wires, gates, params, init_gates=None, init_coeffs=None, spin_sym=None, id=None
-    ):
+    ):  # pylint: disable=too-many-arguments
         """
         IQP template corresponding to a parameterized IQP circuit. Based on `IQPopt: Fast optimization of
         instantaneous quantum polynomial circuits in JAX <https://arxiv.org/pdf/2501.04776>`__.
@@ -110,7 +124,7 @@ def _instantaneous_quantum_polynomial_resources(spin_sym, gates, n_qubits, init_
 @register_resources(_instantaneous_quantum_polynomial_resources)
 def _instantaneous_quantum_polynomial_decomposition(
     wires, params, gates, init_gates, init_coeffs, spin_sym
-):  # pylint: disable=unused-argument
+):  # pylint: disable=unused-argument, too-many-arguments
     n_qubits = len(wires)
 
     if spin_sym:
