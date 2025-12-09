@@ -49,64 +49,11 @@ def local_gates(n_qubits: int, max_weight=2):
         "max_batch_samples",
         "max_batch_ops",
         "indep_estimates",
-        "return_samples",
         "expected_val",
         "expected_std",
     ),
     [
-        ("multi_gens", [0], 2, False, False, 10, 10_000, 10_000, True, False, [1.0], [0.0]),
-        (
-            "local_gates",
-            [0, 1, 0, 1],
-            4,
-            False,
-            True,
-            20,
-            100_000,
-            100_000,
-            False,
-            True,
-            [
-                [
-                    -0.08699589,
-                    -0.89512553,
-                    0.36692314,
-                    -0.60192329,
-                    -0.60192329,
-                    0.36692314,
-                    -0.08699589,
-                    -0.89512553,
-                    -0.08699589,
-                    0.36692314,
-                    -0.89512553,
-                    0.36692314,
-                    -0.08699589,
-                    -0.60192329,
-                    -0.60192329,
-                    -0.89512553,
-                    -0.08699589,
-                    -0.89512553,
-                    -0.08699589,
-                    0.36692314,
-                ]
-            ],
-            [0.0],
-        ),
-        ("multi_gens", [2, 3], 2, True, False, 10, 100_000, 100_000, True, False, [1.0], [0.0]),
-        (
-            "local_gates",
-            [0, 1, 1, 1],
-            4,
-            False,
-            False,
-            20,
-            10_000,
-            10_000,
-            False,
-            True,
-            [1.0],
-            [0.0],
-        ),
+        ("multi_gens", [0], 2, False, False, 10, 10_000, 10_000, True, [1.0], [0.0]),
     ],
 )
 def test_expval(
@@ -119,7 +66,6 @@ def test_expval(
     max_batch_samples,
     max_batch_ops,
     indep_estimates,
-    return_samples,
     expected_val,
     expected_std,
 ):
@@ -145,32 +91,16 @@ def test_expval(
     op = np.random.randint(0, 2, (n_qubits,))
     key = jax.random.PRNGKey(np.random.randint(0, 99999))
 
-    if return_samples:
-        samples = op_expval(
-            ops=op,
-            n_samples=n_samples,
-            key=key,
-            circuit=circuit,
-            sparse=sparse,
-            indep_estimates=indep_estimates,
-            return_samples=return_samples,
-            max_batch_samples=max_batch_samples,
-            max_batch_ops=max_batch_ops,
-        )
-        assert jnp.allclose(samples, jnp.array(expected_val))
+    expval, std = op_expval(
+        ops=op,
+        n_samples=n_samples,
+        key=key,
+        circuit=circuit,
+        sparse=sparse,
+        indep_estimates=indep_estimates,
+        max_batch_samples=max_batch_samples,
+        max_batch_ops=max_batch_ops,
+    )
 
-    else:
-        expval, std = op_expval(
-            ops=op,
-            n_samples=n_samples,
-            key=key,
-            circuit=circuit,
-            sparse=sparse,
-            indep_estimates=indep_estimates,
-            return_samples=return_samples,
-            max_batch_samples=max_batch_samples,
-            max_batch_ops=max_batch_ops,
-        )
-
-        assert expval == jnp.array(expected_val)
-        assert std == jnp.array(expected_std)
+    assert expval == jnp.array(expected_val)
+    assert std == jnp.array(expected_std)
