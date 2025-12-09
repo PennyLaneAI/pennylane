@@ -928,10 +928,11 @@ class ResourceIQP(ResourceOperator):
         init_gates (list[list[list[int]]], optional): A specification of gates of the same form as the gates argument. The
             parameters of these gates will be defined by init_params later on.
         spin_sym (bool, optional): If True, the circuit is equivalent to one where the initial state
-            1/sqrt(2)(|00...0> + |11...1>) is used in place of |00...0>.
+            :math:`\frac{1}{\sqrt(2)}(|00\dots0> + |11\dots1>)` is used in place of :math:`|00\dots0>`.
         wires (Sequence[int], optional): the wires the operation acts on
 
     .. seealso:: :class:`~.IQP`
+
     """
 
     resource_keys = {"spin_sym", "gates", "num_wires", "init_gates"}
@@ -971,7 +972,7 @@ class ResourceIQP(ResourceOperator):
             init_gates (list[list[list[int]]], optional): A specification of gates of the same form as the gates argument. The
                 parameters of these gates will be defined by init_params later on.
             spin_sym (bool, optional): If True, the circuit is equivalent to one where the initial state
-                1/sqrt(2)(|00...0> + |11...1>) is used in place of |00...0>.
+                :math:`\frac{1}{\sqrt(2)}(|00\dots0> + |11\dots1>)` is used in place of :math:`|00\dots0>`.
 
         Returns:
             CompressedResourceOp: the operator in a compressed representation
@@ -1000,7 +1001,7 @@ class ResourceIQP(ResourceOperator):
             init_gates (list[list[list[int]]], optional): A specification of gates of the same form as the gates argument. The
                 parameters of these gates will be defined by init_params later on.
             spin_sym (bool, optional): If True, the circuit is equivalent to one where the initial state
-                1/sqrt(2)(|00...0> + |11...1>) is used in place of |00...0>.
+                :math:`\frac{1}{\sqrt(2)}(|00\dots0> + |11\dots1>)` is used in place of :math:`|00\dots0>`.
 
         Returns:
             list[~.pennylane.labs.resource_estimation.GateCount]: A list of GateCount objects, where each object

@@ -62,7 +62,7 @@ class IQP(Operation):
             init_params (list[float], optional): List or array of length len(init_gates) that specifies the fixed parameter
                 values of init_gates.
             spin_sym (bool, optional): If True, the circuit is equivalent to one where the initial state
-                1/sqrt(2)(|00...0> + |11...1>) is used in place of |00...0>.
+                :math:`\frac{1}{\sqrt(2)}(|00\dots0> + |11\dots1>)` is used in place of :math:`|00\dots0>`.
 
         Raises:
             Exception: when gates and params have a different number of elements.
