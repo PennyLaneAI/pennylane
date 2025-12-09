@@ -150,7 +150,7 @@ def select_pauli_rot_phase_gradient(
 
             qml.SelectPauliRot(phis, control_wires, target_wire, rot_axis="X")
 
-            return qml.probs(wire)
+            return qml.probs(target_wire)
 
         phis = [
             (1 / 2 + 1 / 4 + 1 / 8) * 2 * np.pi,
