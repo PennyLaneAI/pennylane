@@ -13,8 +13,6 @@
 # limitations under the License.
 """Tests for null.qubit."""
 
-from collections import defaultdict as dd
-
 import numpy as np
 import pytest
 
@@ -175,11 +173,11 @@ def test_tracking():
         "vjp_batches": [1],
         "execute_and_vjp_batches": [1],
         "resources": [
-            qml.resource.Resources(
-                num_wires=2,
-                num_gates=2,
-                gate_types=dd(int, {"Hadamard": 1, "FlipSign": 1}),
-                gate_sizes=dd(int, {1: 1, 2: 1}),
+            qml.resource.SpecsResources(
+                num_allocs=2,
+                gate_types={"Hadamard": 1, "FlipSign": 1},
+                gate_sizes={1: 1, 2: 1},
+                measurements={"expval(PauliZ)": 1},
                 depth=2,
             )
         ]
