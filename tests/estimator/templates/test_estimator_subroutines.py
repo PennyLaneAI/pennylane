@@ -1919,10 +1919,9 @@ class TestResourceReflection:
         assert op.num_wires == 3
         assert op.cmpr_U == U.resource_rep_from_op()
 
-    def test_init_with_identity(self):
-        """Test that we can instantiate the operator with Identity as U."""
-        U = qre.Identity()
-        op = qre.Reflection(U=U)
+    def test_init_with_num_wires_no_U(self):
+        """Test that we can instantiate the operator with num_wires but without providing U."""
+        op = qre.Reflection(num_wires=1)
         assert op.num_wires == 1
         assert op.cmpr_U == qre.Identity.resource_rep()
 
