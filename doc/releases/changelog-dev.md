@@ -43,6 +43,7 @@
   ```
 
   In the past, calling a transform with only args or kwargs but no tapes will raise an error.
+
   [(#8730)](https://github.com/PennyLaneAI/pennylane/pull/8730)
 
 * `@partial` is not needed anymore for using transforms as decorators with arguments.
