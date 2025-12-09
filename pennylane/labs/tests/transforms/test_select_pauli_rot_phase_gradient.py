@@ -155,7 +155,7 @@ def test_correctness_select_pauli_rot_phase_gradient(rot_axis):
         for wire in control_wires:
             qml.Hadamard(wire)
 
-        return qml.probs(wire)
+        return qml.probs(target_wire)
 
     phis = [
         (1 / 2 + 1 / 4 + 1 / 8) * 2 * np.pi,
@@ -164,4 +164,5 @@ def test_correctness_select_pauli_rot_phase_gradient(rot_axis):
         (0 / 2 + 1 / 4 + 1 / 8) * 2 * np.pi,
     ]
 
-    assert np.isclose(select_pauli_rot_circ(phis, control_wires=[0, 1], target_wire=wire)[0], 1)
+    expected_probs = select_pauli_rot_circ(phis, control_wires=[0, 1], target_wire=wire)
+    assert np.isclose(expected_probs[0], 1)

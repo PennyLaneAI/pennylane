@@ -100,7 +100,7 @@ def select_pauli_rot_phase_gradient(
 
 
     Args:
-        tape (QNode or QuantumTape or Callable): A quantum circuit containing :class:`~.RZ` gates.
+        tape (QNode or QuantumTape or Callable): A quantum circuit containing :class:`~.SelectPauliRot` operators.
         angle_wires (Wires): The qubits that conditionally load the angle :math:`\phi` of
             the :class:`~.SelectPauliRot` gate in binary as a multiple of :math:`2\pi`.
             The length of the ``angle_wires`` implicitly determines the precision
