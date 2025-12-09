@@ -20,7 +20,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from copy import copy
 from functools import partial
-from typing import overload
+from typing import TYPE_CHECKING, overload
 
 from pennylane.exceptions import TransformError
 from pennylane.tape import QuantumScriptBatch
@@ -28,6 +28,9 @@ from pennylane.typing import BatchPostprocessingFn, PostprocessingFn, ResultBatc
 
 from .cotransform_cache import CotransformCache
 from .transform_dispatcher import TransformContainer, TransformDispatcher
+
+if TYPE_CHECKING:
+    import jax
 
 
 def _batch_postprocessing(
@@ -211,10 +214,8 @@ class CompilePipeline:
 
     @overload
     def __getitem__(self, idx: int) -> TransformContainer: ...
-
     @overload
     def __getitem__(self, idx: slice) -> CompilePipeline: ...
-
     def __getitem__(self, idx):
         """(TransformContainer, List[TransformContainer]): Return the indexed transform container from underlying
         compile pipeline"""
@@ -606,8 +607,8 @@ class CompilePipeline:
         return tuple(tapes), postprocessing_fn
 
     def __call_jaxpr(
-        self, jaxpr: "jax.extend.core.Jaxpr", consts: Sequence, *args
-    ) -> "jax.extend.core.ClosedJaxpr":
+        self, jaxpr: jax.extend.core.Jaxpr, consts: Sequence, *args
+    ) -> jax.extend.core.ClosedJaxpr:
         # pylint: disable=import-outside-toplevel
         import jax
 
@@ -620,14 +621,12 @@ class CompilePipeline:
 
     @overload
     def __call__(
-        self, jaxpr: "jax.extend.core.Jaxpr", consts: Sequence, *args
-    ) -> "jax.extend.core.ClosedJaxpr": ...
-
+        self, jaxpr: jax.extend.core.Jaxpr, consts: Sequence, *args
+    ) -> jax.extend.core.ClosedJaxpr: ...
     @overload
     def __call__(
         self, tapes: QuantumScriptBatch
     ) -> tuple[QuantumScriptBatch, BatchPostprocessingFn]: ...
-
     def __call__(self, *args, **kwargs):
         if type(args[0]).__name__ == "Jaxpr":
             return self.__call_jaxpr(*args, **kwargs)
