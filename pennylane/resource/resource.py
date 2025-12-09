@@ -499,7 +499,7 @@ class CircuitSpecs:
         else:
             raise ValueError(
                 "Resources must be either a SpecsResources object or a list of SpecsResources objects."
-            )
+            )  # pragma: no cover
 
         return "\n".join(lines)
 
