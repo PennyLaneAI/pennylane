@@ -179,7 +179,7 @@ def _specs_qjit_intermediate_passes(
 ) -> (
     SpecsResources | list[SpecsResources] | dict[str, SpecsResources | list[SpecsResources]]
 ):  # pragma: no cover
-    # pylint: disable=import-outside-toplevel
+    # pylint: disable=import-outside-toplevel,too-many-branches,too-many-statements
     from catalyst.python_interface.inspection import mlir_specs
 
     # Note that this only gets transforms manually applied by the user
@@ -203,6 +203,7 @@ def _specs_qjit_intermediate_passes(
 
     resources = {}
 
+    # Handle tape/PLxPR transforms
     if level != "all-mlir":
         if qml.capture.enabled():
             # If capture is enabled, find the seam where PLxPR transforms end and MLIR passes begin
@@ -222,7 +223,7 @@ def _specs_qjit_intermediate_passes(
 
         if level != "all":
             # Account for off-by-one error
-            # TODO: This is actually currently unused, since markers are tape transforms only
+            # NOTE: This is actually currently unused, since markers are tape transforms only
             level = [
                 lvl + 1 if lvl in level_to_marker and lvl >= num_trans_levels else lvl
                 for lvl in level
@@ -261,7 +262,7 @@ def _specs_qjit_intermediate_passes(
                 trans_name += f"-{rep}"
             resources[trans_name] = res
 
-    # Handle MLIR levels
+    # Handle MLIR passes
     mlir_levels = (
         [lvl - num_trans_levels for lvl in level if lvl >= num_trans_levels]
         if level not in ("all", "all-mlir")
@@ -531,6 +532,8 @@ def specs(
         a real device.
 
         .. code-block:: python
+
+            qml.capture.enable()  # Enable program capture to allow these transforms to be applied only as MLIR passes
 
             dev = qml.device("lightning.qubit", wires=3)
 
