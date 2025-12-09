@@ -22,7 +22,7 @@ from pennylane._grad import jacobian as autograd_jacobian
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.typing import TensorLike
 
-from .transform_dispatcher import TransformContainer
+from .transform_dispatcher import BoundTransform
 
 
 def _numpy_jac(*_, **__) -> TensorLike:
@@ -162,7 +162,7 @@ class CotransformCache:
                 return i
         raise ValueError(f"Could not find {transform} in qnode's transform program.")
 
-    def get_classical_jacobian(self, transform: TransformContainer, tape_idx: int):
+    def get_classical_jacobian(self, transform: BoundTransform, tape_idx: int):
         """Calculate the classical jacobian for a given transform.
 
         Note that this function assumes that the transform exists at most one in the transform program.
@@ -200,7 +200,7 @@ class CotransformCache:
         classical_jacobian = _jac_map[interface](f, argnums, *self.args, **self.kwargs)
         return classical_jacobian
 
-    def get_argnums(self, transform: TransformContainer) -> list[set[int]] | None:
+    def get_argnums(self, transform: BoundTransform) -> list[set[int]] | None:
         """Calculate the trainable params from the argnums in the transform.
 
         .. code-block:: python

@@ -299,13 +299,13 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
         For dispatcher + program, Python falls back to TransformProgram.__radd__.
 
         Args:
-            other: Another TransformDispatcher or TransformContainer to add.
+            other: Another TransformDispatcher or BoundTransform to add.
 
         Returns:
             TransformProgram: A new program with this dispatcher followed by the other.
         """
         # Convert this dispatcher to a container (no args/kwargs) and delegate
-        return TransformContainer(self) + other
+        return BoundTransform(self) + other
 
     def __mul__(self, n):
         """Multiply a dispatcher by an integer to create a program with repeated dispatchers.
@@ -317,7 +317,7 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
             TransformProgram: A new program with this dispatcher repeated n times.
         """
         # Convert to container (no args/kwargs) and delegate
-        return TransformContainer(self) * n
+        return BoundTransform(self) * n
 
     __rmul__ = __mul__
 
@@ -397,7 +397,7 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
 
         if self.expand_transform:
             qnode.transform_program.push_back(
-                TransformContainer(
+                BoundTransform(
                     TransformDispatcher(self._expand_transform),
                     args=targs,
                     kwargs=tkwargs,
@@ -405,7 +405,7 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
                 )
             )
         qnode.transform_program.push_back(
-            TransformContainer(
+            BoundTransform(
                 self,
                 args=targs,
                 kwargs=tkwargs,
@@ -414,17 +414,58 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
         return qnode
 
 
-class TransformContainer:  # pylint: disable=too-many-instance-attributes
-    """Class to store a quantum transform with its ``args``, ``kwargs`` and classical co-transforms.  Use
-    :func:`~.pennylane.transform`.
+class BoundTransform:  # pylint: disable=too-many-instance-attributes
+    """A transform with bound inputs.
 
-    .. warning::
+    Args:
+        transform: Any transform.
+        args (Sequence[Any]): The positional arguments to use with the transform.
+        kwargs (Dict | None): The keyword arguments for use with the transform.
 
-        This class is developer-facing and should not be used directly. Instead, use
-        :func:`qml.transform <pennylane.transform>` if you would like to make a custom
-        transform.
+    Keyword Args:
+        use_argnum (bool): An advanced option used in conjunction with calculating
+            classical cotransforms of jax workflows.
 
     .. seealso:: :func:`~.pennylane.transform`
+
+    >>> bound_t = BoundTransform(qml.transforms.merge_rotations, (), {"atol": 1e-4})
+    >>> bound_t
+    <merge_rotations((), {'atol': 0.0001})>
+
+    These objects can now directly applied to anything individual transforms can apply to:
+
+    .. code-block:: python
+
+        @bound_t
+        @qml.qnode(qml.device('null.qubit'))
+        def c(x):
+            qml.RX(x, 0)
+            qml.RX(-x + 1e-6, 0)
+            qml.RY(x, 1)
+            qml.RY(-x + 1e-2, 1)
+            return qml.probs(wires=(0,1))
+
+    If we draw this circuit, we can see that the ``merge_rotations`` transforms was applied with a
+    tolerance of ``1e-4``.  The ``RX`` gates sufficiently close to zero disappear, while the ``RY` gates
+    that are further from zero remain.
+
+    >>> print(qml.draw(c)(1.0))
+    0: ───────────┤ ╭Probs
+    1: ──RY(0.01)─┤ ╰Probs
+
+    Repeated versions of the bound transform can be created with multiplication:
+
+    >>> bound_t * 3
+    TransformProgram(merge_rotations, merge_rotations, merge_rotations)
+
+    And it can be used in conjunction with both individual transforms, bound transforms, and
+    transform programs.
+
+    >>> bound_t + qml.transforms.cancel_inverses
+    TransformProgram(merge_rotations, cancel_inverses)
+    >>> bound_t + qml.transforms.cancel_inverses + bound_t
+    TransformProgram(merge_rotations, cancel_inverses, merge_rotations)
+
     """
 
     def __hash__(self):
@@ -436,6 +477,7 @@ class TransformContainer:  # pylint: disable=too-many-instance-attributes
         transform: TransformDispatcher,
         args: tuple | list = (),
         kwargs: None | dict = None,
+        *,
         use_argnum: bool = False,
         **transform_config,
     ):
@@ -471,7 +513,7 @@ class TransformContainer:  # pylint: disable=too-many-instance-attributes
         )
 
     def __eq__(self, other: object) -> bool:
-        if not isinstance(other, TransformContainer):
+        if not isinstance(other, BoundTransform):
             return False
         return (
             self.args == other.args
@@ -485,7 +527,7 @@ class TransformContainer:  # pylint: disable=too-many-instance-attributes
 
     @property
     def transform(self) -> Callable | None:
-        """The stored quantum transform."""
+        """The raw tape transform definition for the transform."""
         return self._transform_dispatcher.transform
 
     @property
@@ -510,17 +552,25 @@ class TransformContainer:  # pylint: disable=too-many-instance-attributes
 
     @property
     def plxpr_transform(self) -> None | Callable:
-        """The stored quantum transform's PLxPR transform."""
+        """**UNMAINTAINED EXPERIMENTAL:** The stored quantum transform's PLxPR transform."""
         return self._transform_dispatcher.plxpr_transform
 
     @property
     def is_informative(self) -> bool:
-        """``True`` if the transform is informative."""
+        """Whether or not a transform is informative. If true the transform is queued at the end
+        of the transform program and the tapes or qnode aren't executed.
+
+        This property is rare, but used by such transforms as ``qml.transforms.commutation_dag``.
+        """
         return self._transform_dispatcher.is_informative
 
     @property
     def final_transform(self) -> bool:
-        """``True`` if the transform needs to be executed"""
+        """Whether or not the transform must be the last one to be executed
+        in a ``CompilePipeline``.
+
+        This property is ``True`` for most gradient transforms.
+        """
         return self._transform_dispatcher.final_transform
 
     def __add__(self, other):
@@ -529,16 +579,16 @@ class TransformContainer:  # pylint: disable=too-many-instance-attributes
         For container + program, Python falls back to TransformProgram.__radd__.
 
         Args:
-            other: Another TransformContainer or TransformDispatcher to add.
+            other: Another BoundTransform or TransformDispatcher to add.
 
         Returns:
             TransformProgram: A new program with this container followed by the other.
         """
         # Convert dispatcher to container if needed
         if isinstance(other, TransformDispatcher):
-            other = TransformContainer(other)
+            other = BoundTransform(other)
 
-        if isinstance(other, TransformContainer):
+        if isinstance(other, BoundTransform):
             # Import here to avoid circular import\
             # pylint: disable=import-outside-toplevel
             from .transform_program import TransformProgram
@@ -750,3 +800,6 @@ def _apply_to_sequence(obj: Sequence, transform, *targs, **tkwargs):
         return tuple(final_results)
 
     return tuple(execution_tapes), processing_fn
+
+
+TransformContainer = BoundTransform

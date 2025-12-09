@@ -40,6 +40,9 @@
   It supports the analytical decomposition a two-qubit unitary known to require exactly 2 CNOTs.
   [(#8666)](https://github.com/PennyLaneAI/pennylane/issues/8666)
   
+* :class:`~.transforms.core.TransformContainer` has been renamed to :class:`~.transforms.core.BoundTransform`.
+  The old name is still available in the same location.
+
 * Arithmetic dunder methods (`__add__`, `__mul__`, `__rmul__`) have been added to 
   :class:`~.transforms.core.TransformDispatcher`, :class:`~.transforms.core.TransformContainer`, 
   and :class:`~.transforms.core.TransformProgram` to enable intuitive composition of transform 

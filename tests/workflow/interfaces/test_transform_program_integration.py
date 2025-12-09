@@ -72,7 +72,7 @@ class TestTransformProgram:
                 qml.tape.QuantumScript([qml.PauliX(0)], tape.measurements),
             ), null_postprocessing
 
-        pauli_x_out_container = qml.transforms.core.TransformContainer(just_pauli_x_out)
+        pauli_x_out_container = qml.transforms.core.BoundTransform(just_pauli_x_out)
 
         transform_program = qml.transforms.core.TransformProgram([pauli_x_out_container])
 
@@ -118,7 +118,7 @@ class TestTransformProgram:
             )
             return (tape1, tape2), null_postprocessing
 
-        scale_shots = qml.transforms.core.TransformContainer(split_shots)
+        scale_shots = qml.transforms.core.BoundTransform(split_shots)
         program = qml.transforms.core.TransformProgram([scale_shots])
 
         tape = qml.tape.QuantumScript([], [qml.counts(wires=0)], shots=100)
@@ -146,7 +146,7 @@ class TestTransformProgram:
 
             return new_tapes, sum_measurements
 
-        container = qml.transforms.core.TransformContainer(split_sum_terms)
+        container = qml.transforms.core.BoundTransform(split_sum_terms)
         prog = qml.transforms.core.TransformProgram((container,))
 
         op = qml.RX(1.2, 0)
@@ -193,8 +193,8 @@ class TestTransformProgram:
             )
             return (new_tape,), null_postprocessing
 
-        just_pauli_x_container = qml.transforms.core.TransformContainer(just_pauli_x_out)
-        repeat_operations_container = qml.transforms.core.TransformContainer(repeat_operations)
+        just_pauli_x_container = qml.transforms.core.BoundTransform(just_pauli_x_out)
+        repeat_operations_container = qml.transforms.core.BoundTransform(repeat_operations)
 
         prog = qml.transforms.core.TransformProgram(
             (just_pauli_x_container, repeat_operations_container)
@@ -236,8 +236,8 @@ class TestTransformProgram:
         def transform_mul(tape: QuantumScript):
             return (tape,), scale_two
 
-        add_container = qml.transforms.core.TransformContainer(transform_add)
-        mul_container = qml.transforms.core.TransformContainer(transform_mul)
+        add_container = qml.transforms.core.BoundTransform(transform_add)
+        mul_container = qml.transforms.core.BoundTransform(transform_mul)
         prog = qml.transforms.core.TransformProgram((add_container, mul_container))
         prog_reverse = qml.transforms.core.TransformProgram((mul_container, add_container))
 

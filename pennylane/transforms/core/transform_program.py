@@ -24,7 +24,7 @@ from pennylane.tape import QuantumScriptBatch
 from pennylane.typing import BatchPostprocessingFn, PostprocessingFn, ResultBatch
 
 from .cotransform_cache import CotransformCache
-from .transform_dispatcher import TransformContainer, TransformDispatcher
+from .transform_dispatcher import BoundTransform, TransformDispatcher
 
 
 def _batch_postprocessing(
@@ -108,7 +108,7 @@ class TransformProgram:
     The order of execution is the order in the list containing the containers.
 
     Args:
-        initial_program (Optional[Sequence[TransformContainer]]): A sequence of transforms with
+        initial_program (Optional[Sequence[BoundTransform]]): A sequence of transforms with
             which to initialize the program.
         cotransform_cache (Optional[CotransformCache]): A named tuple containing the ``qnode``,
             ``args``, and ``kwargs`` required to compute classical cotransforms.
@@ -160,7 +160,7 @@ class TransformProgram:
 
     def __init__(
         self,
-        initial_program: Sequence[TransformContainer] | None = None,
+        initial_program: Sequence[BoundTransform] | None = None,
         cotransform_cache: CotransformCache | None = None,
     ):
         self._transform_program = list(initial_program) if initial_program else []
@@ -170,7 +170,7 @@ class TransformProgram:
         return TransformProgram(self._transform_program, self.cotransform_cache)
 
     def __iter__(self):
-        """list[TransformContainer]: Return an iterator to the underlying transform program."""
+        """list[BoundTransform]: Return an iterator to the underlying transform program."""
         return self._transform_program.__iter__()
 
     def __len__(self) -> int:
@@ -178,13 +178,13 @@ class TransformProgram:
         return len(self._transform_program)
 
     @overload
-    def __getitem__(self, idx: int) -> "TransformContainer": ...
+    def __getitem__(self, idx: int) -> "BoundTransform": ...
 
     @overload
     def __getitem__(self, idx: slice) -> "TransformProgram": ...
 
     def __getitem__(self, idx):
-        """(TransformContainer, List[TransformContainer]): Return the indexed transform container from underlying
+        """(BoundTransform, List[BoundTransform]): Return the indexed transform container from underlying
         transform program"""
         if isinstance(idx, slice):
             return TransformProgram(self._transform_program[idx])
@@ -194,14 +194,14 @@ class TransformProgram:
         return bool(self._transform_program)
 
     def __add__(
-        self, other: "TransformProgram | TransformContainer | TransformDispatcher"
+        self, other: "TransformProgram | BoundTransform | TransformDispatcher"
     ) -> "TransformProgram":
         # Convert dispatcher to container if needed
         if isinstance(other, TransformDispatcher):
-            other = TransformContainer(other)
+            other = BoundTransform(other)
 
-        # Handle TransformContainer
-        if isinstance(other, TransformContainer):
+        # Handle BoundTransform
+        if isinstance(other, BoundTransform):
             other = TransformProgram([other])
 
         # Handle TransformProgram
@@ -224,16 +224,16 @@ class TransformProgram:
 
         return NotImplemented
 
-    def __radd__(self, other: "TransformContainer | TransformDispatcher") -> "TransformProgram":
+    def __radd__(self, other: "BoundTransform | TransformDispatcher") -> "TransformProgram":
         """Right addition to prepend a transform to the program.
 
         Args:
-            other: A TransformContainer or TransformDispatcher to prepend.
+            other: A BoundTransform or TransformDispatcher to prepend.
 
         Returns:
             TransformProgram: A new program with the transform prepended.
         """
-        if isinstance(other, TransformContainer):
+        if isinstance(other, BoundTransform):
             if self.has_final_transform and other.final_transform:
                 raise TransformError("The transform program already has a terminal transform.")
 
@@ -243,21 +243,21 @@ class TransformProgram:
         return NotImplemented
 
     def __iadd__(
-        self, other: "TransformProgram | TransformContainer | TransformDispatcher"
+        self, other: "TransformProgram | BoundTransform | TransformDispatcher"
     ) -> "TransformProgram":
         """In-place addition to append a transform to the program.
 
         Args:
-            other: A TransformContainer, TransformDispatcher, or TransformProgram to append.
+            other: A BoundTransform, TransformDispatcher, or TransformProgram to append.
 
         Returns:
             TransformProgram: This program with the transform(s) appended.
         """
         # Convert dispatcher to container if needed
         if isinstance(other, TransformDispatcher):
-            other = TransformContainer(other)
+            other = BoundTransform(other)
 
-        if isinstance(other, TransformContainer):
+        if isinstance(other, BoundTransform):
             other = TransformProgram([other])
 
         if isinstance(other, TransformProgram):
@@ -319,19 +319,19 @@ class TransformProgram:
         return self._transform_program == other._transform_program
 
     def __contains__(self, obj) -> bool:
-        if isinstance(obj, TransformContainer):
+        if isinstance(obj, BoundTransform):
             return obj in self._transform_program
         if isinstance(obj, TransformDispatcher):
             return any(obj.transform == t.transform for t in self)
         return False
 
-    def push_back(self, transform_container: TransformContainer):
+    def push_back(self, transform_container: BoundTransform):
         """Add a transform (container) to the end of the program.
 
         Args:
-            transform_container(TransformContainer): A transform represented by its container.
+            transform_container(BoundTransform): A transform represented by its container.
         """
-        if not isinstance(transform_container, TransformContainer):
+        if not isinstance(transform_container, BoundTransform):
             raise TransformError("Only transform container can be added to the transform program.")
 
         # Program can only contain one informative transform and at the end of the program
@@ -342,11 +342,11 @@ class TransformProgram:
             return
         self._transform_program.append(transform_container)
 
-    def insert_front(self, transform_container: TransformContainer):
+    def insert_front(self, transform_container: BoundTransform):
         """Insert the transform container at the beginning of the program.
 
         Args:
-            transform_container(TransformContainer): A transform represented by its container.
+            transform_container(BoundTransform): A transform represented by its container.
         """
         if (transform_container.final_transform) and not self.is_empty():
             raise TransformError(
@@ -358,7 +358,7 @@ class TransformProgram:
         """Add a transform (dispatcher) to the end of the program.
 
         Note that this should be a function decorated with/called by
-        ``qml.transforms.transform``, and not a ``TransformContainer``.
+        ``qml.transforms.transform``, and not a ``BoundTransform``.
 
         Args:
             transform (TransformDispatcher): The transform to add to the transform program.
@@ -373,10 +373,10 @@ class TransformProgram:
 
         if transform.expand_transform:
             self.push_back(
-                TransformContainer(TransformDispatcher(transform.expand_transform), targs, tkwargs)
+                BoundTransform(TransformDispatcher(transform.expand_transform), targs, tkwargs)
             )
         self.push_back(
-            TransformContainer(
+            BoundTransform(
                 transform,
                 args=targs,
                 kwargs=tkwargs,
@@ -400,7 +400,7 @@ class TransformProgram:
             )
 
         self.insert_front(
-            TransformContainer(
+            BoundTransform(
                 transform,
                 args=targs,
                 kwargs=tkwargs,
@@ -409,14 +409,14 @@ class TransformProgram:
 
         if transform.expand_transform:
             self.insert_front(
-                TransformContainer(TransformDispatcher(transform.expand_transform), targs, tkwargs)
+                BoundTransform(TransformDispatcher(transform.expand_transform), targs, tkwargs)
             )
 
     def pop_front(self):
         """Pop the transform container at the beginning of the program.
 
         Returns:
-            TransformContainer: The transform container at the beginning of the program.
+            BoundTransform: The transform container at the beginning of the program.
         """
         return self._transform_program.pop(0)
 
@@ -424,7 +424,7 @@ class TransformProgram:
         """Get the last transform container.
 
         Returns:
-            TransformContainer: The last transform in the program.
+            BoundTransform: The last transform in the program.
 
         Raises:
             TransformError: It raises an error if the program is empty.
@@ -608,7 +608,7 @@ def _apply_to_program(obj: TransformProgram, transform, *targs, **tkwargs):
     if transform.expand_transform:
         # pylint: disable=protected-access
         program.push_back(
-            TransformContainer(
+            BoundTransform(
                 transform.expand_transform,
                 targs,
                 tkwargs,
@@ -616,7 +616,7 @@ def _apply_to_program(obj: TransformProgram, transform, *targs, **tkwargs):
             )
         )
     program.push_back(
-        TransformContainer(
+        BoundTransform(
             transform,
             args=targs,
             kwargs=tkwargs,

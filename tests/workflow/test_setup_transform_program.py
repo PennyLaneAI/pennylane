@@ -58,7 +58,7 @@ def test_device_transform_program():
     """Test that the device transform is correctly placed in the transform program."""
     config = ExecutionConfig(use_device_gradient=True)
 
-    container = qml.transforms.core.TransformContainer(device_transform)
+    container = qml.transforms.core.BoundTransform(device_transform)
     device_tp = qml.transforms.core.TransformProgram((container,))
     device = qml.device("default.qubit")
     device.preprocess_transforms = MagicMock(return_value=device_tp)

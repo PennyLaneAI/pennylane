@@ -21,7 +21,7 @@ import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.devices import ExecutionConfig
 from pennylane.tape import QuantumScript
-from pennylane.transforms.core import TransformContainer, TransformProgram
+from pennylane.transforms.core import BoundTransform, TransformProgram
 from pennylane.transforms.optimization import merge_rotations
 from pennylane.workflow import run
 
@@ -30,7 +30,7 @@ class TestNoInterfaceRequired:
 
     def test_numpy_interface(self, seed):
         """Test that tapes are executed correctly with the NumPy interface."""
-        container = TransformContainer(merge_rotations)
+        container = BoundTransform(merge_rotations)
         inner_tp = TransformProgram((container,))
         device = qml.device("default.qubit", seed=seed)
         tapes = [
@@ -51,7 +51,7 @@ class TestNoInterfaceRequired:
     )
     def test_no_gradient_computation_required(self, interface, gradient_method, seed):
         """Test that tapes execute without an ML boundary when no gradient computation is required."""
-        container = TransformContainer(merge_rotations)
+        container = BoundTransform(merge_rotations)
         inner_tp = TransformProgram((container,))
         device = qml.device("default.qubit", seed=seed)
         tapes = [
