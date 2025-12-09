@@ -499,10 +499,13 @@ class TransformProgram:
         return found
 
     def __call_tapes(
-        self, tapes: QuantumScriptBatch
+        self, tapes: QuantumScript | QuantumScriptBatch
     ) -> tuple[QuantumScriptBatch, BatchPostprocessingFn]:
         if not self:
             return tapes, null_postprocessing
+
+        if isinstance(tapes, QuantumScript):
+            tapes = (tapes,)
 
         processing_fns_stack = []
 
@@ -584,20 +587,6 @@ class TransformProgram:
             cur_jaxpr = plxpr_transform(cur_jaxpr.jaxpr, cur_jaxpr.consts, targs, tkwargs, *args)
 
         return cur_jaxpr
-
-    def __call_tape(self, tape: QuantumScript) -> tuple[QuantumScriptBatch, BatchPostprocessingFn]:
-        """Apply the transform program to a single QuantumScript.
-
-        Args:
-            tape (QuantumScript): A single quantum tape.
-
-        Returns:
-            tuple[QuantumScriptBatch, BatchPostprocessingFn]: A batch of tapes and a
-                postprocessing function. Note that a single input tape may be split into
-                multiple tapes by transforms like ``split_non_commuting``, ``hamiltonian_expand``,
-                or gradient transforms.
-        """
-        return self.__call_tapes((tape,))  # returning a batch + postprocessing
 
     def __call_generic(self, obj):
         """Apply the transform program to a generic object (QNode, device, callable, etc.).
