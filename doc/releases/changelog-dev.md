@@ -36,13 +36,12 @@
 
 <h3>Improvements 🛠</h3>
 
-* Now, two transforms can be concatenated naturally as
+* In the past, calling a transform with only arguments or keyword but no tapes would raise an error.
+  Now, two transforms can be concatenated naturally as
 
   ```
   decompose(gate_set=gate_set) + merge_rotations(1e-6)
   ```
-
-  In the past, calling a transform with only args or kwargs but no tapes will raise an error.
 
   [(#8730)](https://github.com/PennyLaneAI/pennylane/pull/8730)
 
