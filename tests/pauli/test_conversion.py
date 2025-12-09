@@ -435,8 +435,8 @@ class TestDecomposition:
         assert isinstance(result[1], list)
         assert len(result[0]) > 0
 
-    def test_sparse_zero_value_continue(self):
-        """Test that sparse matrices with explicit zero values are skipped."""
+    def test_sparse_zero_value_no_crash(self):
+        """Test that sparse matrices with explicit zero values don't cause crashes."""
         sps = pytest.importorskip("scipy.sparse")
 
         rows = np.array([0, 0, 1])
@@ -448,6 +448,29 @@ class TestDecomposition:
 
         assert isinstance(result[0], qml.numpy.ndarray)
         assert len(result[0]) > 0
+
+    def test_sparse_zero_value_skipped(self):
+        """Test that sparse matrices with explicit zero values produce the same result as without them."""
+        sps = pytest.importorskip("scipy.sparse")
+
+        rows = np.array([0, 0, 1])
+        cols = np.array([0, 1, 1])
+        data = np.array([1.0, 0.0, 2.0])
+        sparse_mat = sps.coo_matrix((data, (rows, cols)), shape=(2, 2))
+
+        rows_no_zero = np.array([0, 1])
+        cols_no_zero = np.array([0, 1])
+        data_no_zero = np.array([1.0, 2.0])
+        sparse_mat_no_zero = sps.coo_matrix(
+            (data_no_zero, (rows_no_zero, cols_no_zero)), shape=(2, 2)
+        )
+
+        result_with_zero = _generalized_pauli_decompose_sparse(sparse_mat, pauli=True)
+        result_without_zero = _generalized_pauli_decompose_sparse(sparse_mat_no_zero, pauli=True)
+
+        assert len(result_with_zero[0]) == len(result_without_zero[0])
+        assert np.allclose(result_with_zero[0], result_without_zero[0])
+        assert result_with_zero[1] == result_without_zero[1]
 
 
 class TestPhasedDecomposition:
