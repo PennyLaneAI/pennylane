@@ -14,6 +14,9 @@
 """
 This module contains the ``CompilePipeline`` class.
 """
+
+from __future__ import annotations
+
 from collections.abc import Sequence
 from copy import copy
 from functools import partial
@@ -158,16 +161,45 @@ class CompilePipeline:
 
     """
 
+    @overload
     def __init__(
         self,
-        initial_program: Sequence[TransformContainer] | None = None,
+        transforms: Sequence[TransformContainer],
+        /,
+        *,
+        cotransform_cache: CotransformCache | None = None,
+    ): ...
+    @overload
+    def __init__(
+        self,
+        *transforms: CompilePipeline | TransformContainer | TransformDispatcher,
+        cotransform_cache: CotransformCache | None = None,
+    ): ...
+    def __init__(
+        self,
+        *transforms: CompilePipeline
+        | TransformContainer
+        | TransformDispatcher
+        | Sequence[TransformContainer],
         cotransform_cache: CotransformCache | None = None,
     ):
-        self._compile_pipeline = list(initial_program) if initial_program else []
+        if len(transforms) == 1 and isinstance(transforms[0], Sequence):
+            self._compile_pipeline = list(transforms[0])
+            self.cotransform_cache = None
+            return
+
+        self._compile_pipeline = []
         self.cotransform_cache = cotransform_cache
+        for obj in transforms:
+            if not isinstance(obj, (CompilePipeline, TransformContainer, TransformDispatcher)):
+                raise TypeError(
+                    "CompilePipeline can only be constructed with a series of transforms "
+                    "or compile pipelines, or with a single list of transforms."
+                )
+            self += obj
 
     def __copy__(self):
-        return CompilePipeline(self._compile_pipeline, self.cotransform_cache)
+        return CompilePipeline(self._compile_pipeline, cotransform_cache=self.cotransform_cache)
 
     def __iter__(self):
         """list[TransformContainer]: Return an iterator to the underlying compile pipeline."""
@@ -178,10 +210,10 @@ class CompilePipeline:
         return len(self._compile_pipeline)
 
     @overload
-    def __getitem__(self, idx: int) -> "TransformContainer": ...
+    def __getitem__(self, idx: int) -> TransformContainer: ...
 
     @overload
-    def __getitem__(self, idx: slice) -> "CompilePipeline": ...
+    def __getitem__(self, idx: slice) -> CompilePipeline: ...
 
     def __getitem__(self, idx):
         """(TransformContainer, List[TransformContainer]): Return the indexed transform container from underlying
@@ -194,8 +226,9 @@ class CompilePipeline:
         return bool(self._compile_pipeline)
 
     def __add__(
-        self, other: "CompilePipeline | TransformContainer | TransformDispatcher"
-    ) -> "CompilePipeline":
+        self, other: CompilePipeline | TransformContainer | TransformDispatcher
+    ) -> CompilePipeline:
+
         # Convert dispatcher to container if needed
         if isinstance(other, TransformDispatcher):
             other = TransformContainer(other)
@@ -224,7 +257,7 @@ class CompilePipeline:
 
         return NotImplemented
 
-    def __radd__(self, other: "TransformContainer | TransformDispatcher") -> "CompilePipeline":
+    def __radd__(self, other: TransformContainer | TransformDispatcher) -> CompilePipeline:
         """Right addition to prepend a transform to the program.
 
         Args:
@@ -243,8 +276,8 @@ class CompilePipeline:
         return NotImplemented
 
     def __iadd__(
-        self, other: "CompilePipeline | TransformContainer | TransformDispatcher"
-    ) -> "CompilePipeline":
+        self, other: CompilePipeline | TransformContainer | TransformDispatcher
+    ) -> CompilePipeline:
         """In-place addition to append a transform to the program.
 
         Args:
@@ -282,7 +315,7 @@ class CompilePipeline:
 
         return NotImplemented
 
-    def __mul__(self, n: int) -> "CompilePipeline":
+    def __mul__(self, n: int) -> CompilePipeline:
         """Right multiplication to repeat a program n times.
 
         Args:
@@ -573,7 +606,7 @@ class CompilePipeline:
         return tuple(tapes), postprocessing_fn
 
     def __call_jaxpr(
-        self, jaxpr: "jax.extend.core.Jaxpr", consts: Sequence, *args
+        self, jalpr: "jax.extend.core.Jaxpr", consts: Sequence, *args
     ) -> "jax.extend.core.ClosedJaxpr":
         # pylint: disable=import-outside-toplevel
         import jax
