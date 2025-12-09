@@ -85,10 +85,10 @@ def test_raises(params, error, match):
         ),
     ],
 )
-def test_decomposition_new(params, gates, init_gates, init_coeffs, spin_sym, n_qubits):
-    op = IQP(
-        [i for i in range(n_qubits)], gates, params, init_gates, init_coeffs, spin_sym, n_qubits
-    )
+def test_decomposition_new(
+    params, gates, init_gates, init_coeffs, spin_sym, n_qubits
+):  # pylint: disable=too-many-arguments
+    op = IQP(list(range(n_qubits)), gates, params, init_gates, init_coeffs, spin_sym, n_qubits)
 
     for rule in list_decomps(IQP):
         _test_decomposition_rule(op, rule)
