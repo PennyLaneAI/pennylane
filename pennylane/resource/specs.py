@@ -551,7 +551,7 @@ def specs(
 
         >>> print(qml.specs(circuit, level="device")(1.23))
         Device: lightning.qubit
-        Device wires: None
+        Device wires: 3
         Shots: Shots(total=None)
         Level: device
         <BLANKLINE>
