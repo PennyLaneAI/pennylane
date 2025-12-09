@@ -362,16 +362,17 @@ def specs(
     r"""Provides the specifications of a quantum circuit.
 
     This transform converts a QNode into a callable that provides resource information
-    about the circuit after applying the specified amount of transforms/expansions first.
+    about the circuit after applying the specified transforms, expansions, and passes first.
 
     Args:
         qnode (.QNode | .QJIT): the QNode to calculate the specifications for.
 
     Keyword Args:
-        level (str | int | slice | iter[int]): An indication of what transforms to apply before
+        level (str | int | slice | iter[int]): An indication of what transforms, expansions, and passes to apply before
             computing the resource information.
-        compute_depth (bool): Whether to compute the depth of the circuit. If ``False``, the depth
-            will not be included in the returned information. Default: True where available.
+        compute_depth (bool): Whether to compute the depth of the circuit. If ``False``, circuit
+            depth will not be included in the output. Default: ``None``, meaning ``True`` where
+            depth is available, and ``False`` otherwise.
 
     Returns:
         A function that has the same argument signature as ``qnode``. This function
