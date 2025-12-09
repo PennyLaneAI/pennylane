@@ -87,13 +87,13 @@ def select_pauli_rot_phase_gradient(
     Because this state is not modified and can be re-used at a later stage, the transform does not prepare it but
     rather assumes it has been prepared on those wires at an earlier stage.
 
-    .. figure:: ../../doc/_static/multiplexer_QROM.png
+    .. figure:: ../../_static/multiplexer_QROM.png
                     :align: center
                     :width: 70%
                     :target: javascript:void(0);
 
     The first two wires correspond to the control register, the next wire is the target qubit, followed by the register
-     equivalent to the angle wires, and finally, the register where the phase gradient is defined.
+    equivalent to the angle wires, and finally, the register where the phase gradient is defined.
 
     Note that this operator contains :class:`~.SemiAdder` that requires additional ``work_wires`` for the semi-in-place addition
     :math:`\text{SemiAdder}|x\rangle_\text{ang} |y\rangle_\text{phg} = |x\rangle_\text{ang} |x + y\rangle_\text{phg}`.
