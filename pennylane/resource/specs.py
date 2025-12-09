@@ -577,7 +577,7 @@ def specs(
 
             Due to similar technical limitations, depth computation is not available for pass-by-pass specs.
 
-        >>> print(qml.specs(circuit, level=0)(1.23))
+        >>> print(qml.specs(circuit, level="all")(1.23))
         Device: lightning.qubit
         Device wires: 3
         Shots: Shots(total=None)

@@ -2,6 +2,64 @@
 
 <h3>New features since last release</h3>
 
+* :func:`~pennylane.specs` can now be used to analyze arbitrary compilation passes for
+  workflows compiled with :func:`~pennylane.qjit`.
+
+  ```python
+  @qml.qjit
+  @qml.transforms.merge_rotations
+  @qml.transforms.cancel_inverses
+  @qml.qnode(dev)
+  def circuit(x):
+      qml.RX(x, wires=0)
+      qml.RX(x, wires=0)
+      qml.X(0)
+      qml.X(0)
+      qml.CNOT([0, 1])
+      return qml.probs()
+  ```
+
+  The supplied levels may be individual `int` values, or an iterable of multiple levels.
+  The strings "all" and "all-mlir" are also allowed, and return all user-applied transforms
+  and MLIR passes, or all user-applied MLIR passes only respectively.
+
+  ```pycon
+  >>> print(qml.specs(circuit, level=[1,2])(1.23))
+  Device: lightning.qubit
+  Device wires: 3
+  Shots: Shots(total=None)
+  Level: ['Before MLIR Passes (MLIR-0)', 'cancel-inverses (MLIR-1)']
+  <BLANKLINE>
+  Resource specifications:
+  Level = Before MLIR Passes (MLIR-0):
+    Total qubit allocations: 3
+    Total gates: 5
+    Circuit depth: Not computed
+  <BLANKLINE>
+    Gate types:
+      RX: 2
+      PauliX: 2
+      CNOT: 1
+  <BLANKLINE>
+    Measurements:
+      probs(all wires): 1
+  <BLANKLINE>
+  ------------------------------------------------------------
+  <BLANKLINE>
+  Level = cancel-inverses (MLIR-1):
+    Total qubit allocations: 3
+    Total gates: 3
+    Circuit depth: Not computed
+  <BLANKLINE>
+    Gate types:
+      RX: 2
+      CNOT: 1
+  <BLANKLINE>
+    Measurements:
+      probs(all wires): 1
+  ```
+  [(#8609)](https://github.com/PennyLaneAI/pennylane/pull/8606)
+
 * Users can now perform rapid Clifford+T decomposition with QJIT and program capture enabled,
   using the new :func:`~pennylane.transforms.gridsynth` compilation pass.
   This pass discretizes ``RZ`` and ``PhaseShift`` gates to either the Clifford+T basis or to the PPR basis.
@@ -20,7 +78,7 @@
   [(#8522)](https://github.com/PennyLaneAI/pennylane/pull/8522)
 
 * The :func:`~pennylane.transforms.decompose` transform now accepts a `minimize_work_wires` argument. With
-  the new graph-based decomposition system activated via :func:`~pennylane.decomposition.enable_graph`, 
+  the new graph-based decomposition system activated via :func:`~pennylane.decomposition.enable_graph`,
   and `minimize_work_wires` set to `True`, the decomposition system will select decomposition rules that
   minimizes the maximum number of simultaneously allocated work wires.
   [(#8729)](https://github.com/PennyLaneAI/pennylane/pull/8729)
@@ -39,10 +97,10 @@
 * Added a new decomposition, `_decompose_2_cnots`, for the two-qubit decomposition for `QubitUnitary`.
   It supports the analytical decomposition a two-qubit unitary known to require exactly 2 CNOTs.
   [(#8666)](https://github.com/PennyLaneAI/pennylane/issues/8666)
-  
-* Arithmetic dunder methods (`__add__`, `__mul__`, `__rmul__`) have been added to 
-  :class:`~.transforms.core.TransformDispatcher`, :class:`~.transforms.core.TransformContainer`, 
-  and :class:`~.transforms.core.TransformProgram` to enable intuitive composition of transform 
+
+* Arithmetic dunder methods (`__add__`, `__mul__`, `__rmul__`) have been added to
+  :class:`~.transforms.core.TransformDispatcher`, :class:`~.transforms.core.TransformContainer`,
+  and :class:`~.transforms.core.TransformProgram` to enable intuitive composition of transform
   programs using `+` and `*` operators.
   [(#8703)](https://github.com/PennyLaneAI/pennylane/pull/8703)
 
@@ -62,10 +120,10 @@
   with :func:`~.specs` and :func:`~.drawer.draw` instead of having to increment ``level``
   by integer amounts when not using any Catalyst passes.
   [(#8684)](https://github.com/PennyLaneAI/pennylane/pull/8684)
-  
+
   The :func:`~.marker` function works like a transform in PennyLane, and can be deployed as
   a decorator on top of QNodes:
-  
+
   ```
   from functools import partial
 
@@ -113,7 +171,7 @@
   [(#8516)](https://github.com/PennyLaneAI/pennylane/pull/8516)
   [(#8555)](https://github.com/PennyLaneAI/pennylane/pull/8555)
   [(#8558)](https://github.com/PennyLaneAI/pennylane/pull/8558)
-  [(#8538)](https://github.com/PennyLaneAI/pennylane/pull/8538)  
+  [(#8538)](https://github.com/PennyLaneAI/pennylane/pull/8538)
   [(#8534)](https://github.com/PennyLaneAI/pennylane/pull/8534)
   [(#8582)](https://github.com/PennyLaneAI/pennylane/pull/8582)
   [(#8543)](https://github.com/PennyLaneAI/pennylane/pull/8543)
@@ -121,7 +179,7 @@
   [(#8616)](https://github.com/PennyLaneAI/pennylane/pull/8616)
   [(#8602)](https://github.com/PennyLaneAI/pennylane/pull/8602)
   [(#8600)](https://github.com/PennyLaneAI/pennylane/pull/8600)
-  [(#8601)](https://github.com/PennyLaneAI/pennylane/pull/8601)  
+  [(#8601)](https://github.com/PennyLaneAI/pennylane/pull/8601)
   [(#8595)](https://github.com/PennyLaneAI/pennylane/pull/8595)
   [(#8586)](https://github.com/PennyLaneAI/pennylane/pull/8586)
   [(#8614)](https://github.com/PennyLaneAI/pennylane/pull/8614)
@@ -218,7 +276,7 @@
 * `qml.transforms.map_wires` no longer supports plxpr transforms.
   [(#8683)](https://github.com/PennyLaneAI/pennylane/pull/8683)
 
-* ``QuantumScript.to_openqasm`` has been removed. Please use ``qml.to_openqasm`` instead. This removes duplicated 
+* ``QuantumScript.to_openqasm`` has been removed. Please use ``qml.to_openqasm`` instead. This removes duplicated
   functionality for converting a circuit to OpenQASM code.
   [(#8499)](https://github.com/PennyLaneAI/pennylane/pull/8499)
 
@@ -310,9 +368,9 @@
   We recommend upgrading your version of NumPy to benefit from enhanced support and features.
   [(#8578)](https://github.com/PennyLaneAI/pennylane/pull/8578)
   [(#8497)](https://github.com/PennyLaneAI/pennylane/pull/8497)
-  
-* The ``custom_decomps`` keyword argument to ``qml.device`` has been deprecated and will be removed 
-  in 0.45. Instead, with ``qml.decomposition.enable_graph()``, new decomposition rules can be defined as 
+
+* The ``custom_decomps`` keyword argument to ``qml.device`` has been deprecated and will be removed
+  in 0.45. Instead, with ``qml.decomposition.enable_graph()``, new decomposition rules can be defined as
   quantum functions with registered resources. See :mod:`pennylane.decomposition` for more details.
 
 * `qml.measure`, `qml.measurements.MidMeasureMP`, `qml.measurements.MeasurementValue`,
@@ -351,14 +409,14 @@
   and the function should be passed to the ``stopping_condition`` argument instead.
   [(#8533)](https://github.com/PennyLaneAI/pennylane/pull/8533)
 
-  The example below illustrates how you can provide a function as the ``stopping_condition`` in addition to providing a 
-  ``gate_set``. The decomposition of each operator will then stop once it reaches the gates in the ``gate_set`` or the 
+  The example below illustrates how you can provide a function as the ``stopping_condition`` in addition to providing a
+  ``gate_set``. The decomposition of each operator will then stop once it reaches the gates in the ``gate_set`` or the
   ``stopping_condition`` is satisfied.
 
   ```python
   import pennylane as qml
   from functools import partial
-  
+
   @partial(qml.transforms.decompose, gate_set={"H", "T", "CNOT"}, stopping_condition=lambda op: len(op.wires) <= 2)
   @qml.qnode(qml.device("default.qubit"))
   def circuit():
@@ -366,7 +424,7 @@
       qml.Toffoli(wires=[0,1,2])
       return qml.expval(qml.Z(0))
   ```
-  
+
   ```pycon
   >>> print(qml.draw(circuit)())
   0: ──H────────╭●───────────╭●────╭●──T──╭●─┤  <Z>
@@ -385,26 +443,26 @@
 * Bump `jax` version to `0.7.0` for `capture` module.
   [(#8701)](https://github.com/PennyLaneAI/pennylane/pull/8701)
 
-* Improve error handling when using PennyLane's experimental program capture functionality with an incompatible JAX version. 
+* Improve error handling when using PennyLane's experimental program capture functionality with an incompatible JAX version.
   [(#8723)](https://github.com/PennyLaneAI/pennylane/pull/8723)
 
 * Bump `autoray` package version to `0.8.2`.
   [(#8674)](https://github.com/PennyLaneAI/pennylane/pull/8674)
-  
+
 * Update the schedule of nightly TestPyPI uploads to occur at the end rather than the beginning of all week days.
   [(#8672)](https://github.com/PennyLaneAI/pennylane/pull/8672)
 
 * Add workflow to bump Catalyst and Lightning versions in the RC branch, create a new release tag and draft release, tag the RC branch, and create a PR to merge the RC branch into master.
   [(#8352)](https://github.com/PennyLaneAI/pennylane/pull/8352)
-  
+
 * Added `MCM_METHOD` and `POSTSELECT_MODE` `StrEnum` objects to improve validation and handling of `MCMConfig` creation.
   [(#8596)](https://github.com/PennyLaneAI/pennylane/pull/8596)
-  
+
 * Updated various docstrings to be compatible with the new documentation testing approach.
   [(#8635)](https://github.com/PennyLaneAI/pennylane/pull/8635)
-  
+
 * In program capture, transforms now have a single transform primitive that have a `transform` param that stores
-  the `TransformDispatcher`. Before, each transform had its own primitive stored on the 
+  the `TransformDispatcher`. Before, each transform had its own primitive stored on the
   `TransformDispatcher._primitive` private property. It proved difficult to keep maintaining dispatch behaviour
   for every single transform.
   [(#8576)](https://github.com/PennyLaneAI/pennylane/pull/8576)
@@ -412,7 +470,7 @@
 
 * Updated documentation check workflow to run on pull requests on `v[0-9]+\.[0-9]+\.[0-9]+-docs` branches.
   [(#8590)](https://github.com/PennyLaneAI/pennylane/pull/8590)
-  
+
 * When program capture is enabled, there is no longer caching of the jaxpr on the QNode.
   [(#8629)](https://github.com/PennyLaneAI/pennylane/pull/8629)
 
@@ -506,12 +564,12 @@ A warning message has been added to :doc:`Building a plugin <../development/plug
 * Update `interface-unit-tests.yml` to use its input parameter `pytest_additional_args` when running pytest.
   [(#8705)](https://github.com/PennyLaneAI/pennylane/pull/8705)
 
-* Fixes a bug where in `resolve_work_wire_type` we incorrectly returned a value of `zeroed` if `both work_wires` 
+* Fixes a bug where in `resolve_work_wire_type` we incorrectly returned a value of `zeroed` if `both work_wires`
   and `base_work_wires` were empty, causing an incorrect work wire type.
   [(#8718)](https://github.com/PennyLaneAI/pennylane/pull/8718)
 
-* The warnings-as-errors CI action was failing due to an incompatibility between `pytest-xdist` and `pytest-benchmark`. 
-  Disabling the benchmark package allows the tests to be collected an executed. 
+* The warnings-as-errors CI action was failing due to an incompatibility between `pytest-xdist` and `pytest-benchmark`.
+  Disabling the benchmark package allows the tests to be collected an executed.
   [(#8699)](https://github.com/PennyLaneAI/pennylane/pull/8699)
 
 * Adds an `expand_transform` to `param_shift_hessian` to pre-decompose
