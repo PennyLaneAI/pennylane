@@ -1447,6 +1447,32 @@ class TestTransformProgramCall:
         assert new_qnode.transform_program[0].transform is qml.transforms.cancel_inverses.transform
         assert new_qnode.transform_program[1].transform is first_valid_transform
 
+    def test_call_fallback_on_qnode_already_transformed(self):
+        """Test that a TransformProgram can be applied to a QNode that already has transforms."""
+
+        program = TransformProgram()
+        program += transform(first_valid_transform)(0)
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.transforms.cancel_inverses
+        @qml.qnode(device=dev)
+        def circuit(a):
+            qml.Hadamard(wires=0)
+            qml.PauliX(wires=0)
+            qml.PauliX(wires=0)  # Should be cancelled
+            qml.RZ(a, wires=1)
+            return qml.expval(qml.PauliZ(wires=0))
+
+        # Apply the program to the QNode
+        new_qnode = program(circuit)
+
+        assert isinstance(new_qnode, qml.QNode)
+        # The QNode should have the transforms from the program
+        assert len(new_qnode.transform_program) == 2
+        assert new_qnode.transform_program[0].transform is qml.transforms.cancel_inverses.transform
+        assert new_qnode.transform_program[1].transform is first_valid_transform
+
     def test_call_fallback_on_qnode_empty_program(self):
         """Test that an empty program returns the original QNode."""
 
