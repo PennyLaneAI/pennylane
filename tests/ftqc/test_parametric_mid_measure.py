@@ -31,6 +31,7 @@ from pennylane.ftqc import (
     measure_x,
     measure_y,
 )
+from pennylane.ftqc.lattice import _rx_grid_graph
 from pennylane.ops import MeasurementValue, MidMeasure
 from pennylane.wires import Wires
 
@@ -553,7 +554,7 @@ class TestMeasureFunctions:
                 wire, angle=angle, plane=plane, reset=reset, postselect=postselect
             )
             qml.cond(m, qml.X, qml.Y)(0)
-            qml.ftqc.make_graph_state(nx.grid_graph((4,)), [0, 1, 2, 3])
+            qml.ftqc.make_graph_state(_rx_grid_graph((4,)), [0, 1, 2, 3])
             return qml.expval(qml.Z(2))
 
         plxpr = jax.make_jaxpr(circ)()

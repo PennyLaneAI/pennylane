@@ -34,6 +34,7 @@ from pennylane.ftqc import (
     measure_arbitrary_basis,
     measure_x,
 )
+from pennylane.ftqc.lattice import _rx_grid_graph
 from pennylane.ftqc.decomposition import (
     _rot_to_xzx,
     cnot_corrections,
@@ -165,7 +166,7 @@ class TestGateSetDecomposition:
             qml.StatePrep(state, wires=[0])
 
             # prep graph state
-            GraphStatePrep(nx.grid_graph((4,)), wires=[1, 2, 3, 4])
+            GraphStatePrep(_rx_grid_graph((4,)), wires=[1, 2, 3, 4])
 
             # entangle input and graph state
             qml.CZ([0, 1])

@@ -22,6 +22,7 @@ from collections.abc import Iterable
 
 import rustworkx as rx
 
+from pennylane._rustworkx_compat import Graph
 from pennylane.ops import Identity, LinearCombination, X, Y, Z, prod
 from pennylane.wires import Wires
 
@@ -113,17 +114,30 @@ def xy_mixer(graph: rx.PyGraph | rx.PyGraph):
     + (0.5) [Y1 Y2]
     """
 
-    if not isinstance(graph, (rx.PyGraph, rx.PyGraph)):
+    if not isinstance(graph, (rx.PyGraph, rx.PyGraph, Graph)):
         raise ValueError(
-            f"Input graph must be a rx.PyGraph or rx.PyGraph object, got {type(graph).__name__}"
+            f"Input graph must be a rx.PyGraph or Graph object, got {type(graph).__name__}"
         )
 
     is_rx = isinstance(graph, rx.PyGraph)
-    edges = graph.edge_list() if is_rx else graph.edges
+    is_compat_graph = isinstance(graph, Graph)
+    
+    if is_compat_graph:
+        edges = list(graph.edges())
+    elif is_rx:
+        edges = graph.edge_list()
+    else:
+        edges = graph.edges
 
     # In RX each node is assigned to an integer index starting from 0;
     # thus, we use the following lambda function to get node-values.
-    get_nvalue = lambda i: graph.nodes()[i] if is_rx else i
+    if is_rx:
+        get_nvalue = lambda i: graph.nodes()[i]
+    elif is_compat_graph:
+        # For Graph wrapper, edges already have the node values directly
+        get_nvalue = lambda i: i
+    else:
+        get_nvalue = lambda i: i
 
     coeffs = 2 * [0.5 for e in edges]
 
@@ -200,9 +214,9 @@ def bit_flip_mixer(graph: rx.PyGraph | rx.PyGraph, b: int):
     )
     """
 
-    if not isinstance(graph, (rx.PyGraph, rx.PyGraph)):
+    if not isinstance(graph, (rx.PyGraph, rx.PyGraph, Graph)):
         raise ValueError(
-            f"Input graph must be a rx.PyGraph or rx.PyGraph object, got {type(graph).__name__}"
+            f"Input graph must be a rx.PyGraph or Graph object, got {type(graph).__name__}"
         )
 
     if b not in [0, 1]:
@@ -214,14 +228,25 @@ def bit_flip_mixer(graph: rx.PyGraph | rx.PyGraph, b: int):
     terms = []
 
     is_rx = isinstance(graph, rx.PyGraph)
-    graph_nodes = graph.node_indexes() if is_rx else graph.nodes
-
-    # In RX each node is assigned to an integer index starting from 0;
-    # thus, we use the following lambda function to get node-values.
-    get_nvalue = lambda i: graph.nodes()[i] if is_rx else i
+    is_compat_graph = isinstance(graph, Graph)
+    
+    if is_compat_graph:
+        graph_nodes = list(graph.nodes())
+        get_nvalue = lambda i: i
+    elif is_rx:
+        graph_nodes = graph.node_indexes()
+        get_nvalue = lambda i: graph.nodes()[i]
+    else:
+        graph_nodes = graph.nodes
+        get_nvalue = lambda i: i
 
     for i in graph_nodes:
-        neighbours = sorted(graph.neighbors(i)) if is_rx else list(graph.neighbors(i))
+        if is_compat_graph:
+            neighbours = list(graph.neighbors(i))
+        elif is_rx:
+            neighbours = sorted(graph.neighbors(i))
+        else:
+            neighbours = list(graph.neighbors(i))
         degree = len(neighbours)
 
         n_terms = [[X(get_nvalue(i))]] + [

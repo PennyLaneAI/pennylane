@@ -28,26 +28,58 @@ from pennylane.ftqc.qubit_graph import MAX_TRAVERSAL_DEPTH
 # But prefer rustworkx equivalents where available
 try:
     import networkx as nx
+    from pennylane._rustworkx_compat import CompatPyGraph
+    from pennylane.ftqc.lattice import _rx_grid_graph
+    
     # Create rustworkx-compatible wrappers for networkx functions
+    # that return CompatPyGraph for networkx-like .nodes and .edges access
+    def _wrap_graph(g):
+        """Wrap an rx.PyGraph in a CompatPyGraph for networkx-like access."""
+        wrapped = CompatPyGraph()
+        for idx in g.node_indices():
+            node_data = g[idx]
+            # If node_data is None, use the index as the label
+            label = idx if node_data is None else node_data
+            wrapped.add_node({"_label": label})
+        wrapped.add_edges_from([(u, v, None) for u, v in g.edge_list()])
+        return wrapped
+    
     def hexagonal_lattice_graph(m, n):
-        return rx.generators.hexagonal_lattice_graph(m, n)
+        return _wrap_graph(rx.generators.hexagonal_lattice_graph(m, n))
     def grid_2d_graph(m, n):
-        return rx.generators.grid_graph([m, n])
+        # Use _rx_grid_graph which produces tuple labels like networkx
+        return _wrap_graph(_rx_grid_graph([m, n]))
     def grid_graph(dims):
-        return rx.generators.grid_graph(dims)
+        # Use _rx_grid_graph which produces tuple labels like networkx
+        return _wrap_graph(_rx_grid_graph(list(dims)))
     def null_graph():
-        return rx.PyGraph()
+        return CompatPyGraph()
 except ImportError:
     # If networkx is not available, use rustworkx directly
+    from pennylane._rustworkx_compat import CompatPyGraph
+    from pennylane.ftqc.lattice import _rx_grid_graph
+    
     nx = None
+    
+    def _wrap_graph(g):
+        """Wrap an rx.PyGraph in a CompatPyGraph for networkx-like access."""
+        wrapped = CompatPyGraph()
+        for idx in g.node_indices():
+            node_data = g[idx]
+            # If node_data is None, use the index as the label
+            label = idx if node_data is None else node_data
+            wrapped.add_node({"_label": label})
+        wrapped.add_edges_from([(u, v, None) for u, v in g.edge_list()])
+        return wrapped
+    
     def hexagonal_lattice_graph(m, n):
-        return rx.generators.hexagonal_lattice_graph(m, n)
+        return _wrap_graph(rx.generators.hexagonal_lattice_graph(m, n))
     def grid_2d_graph(m, n):
-        return rx.generators.grid_graph([m, n])
+        return _wrap_graph(_rx_grid_graph([m, n]))
     def grid_graph(dims):
-        return rx.generators.grid_graph(dims)
+        return _wrap_graph(_rx_grid_graph(list(dims)))
     def null_graph():
-        return rx.PyGraph()
+        return CompatPyGraph()
 
 # pylint: disable=too-few-public-methods
 
@@ -188,9 +220,11 @@ class TestQubitGraphsInitialization:
             ("aux", i) for i in range(9, 17)
         ]  # 8 auxiliary qubits, indexed 9, 10, ..., 16
 
-        expected_graph = rx.PyGraph()
-        expected_graph.add_nodes_from(data_qubits)
-        expected_graph.add_nodes_from(aux_qubits)
+        expected_graph = CompatPyGraph()
+        label_to_idx = {}
+        for label in data_qubits + aux_qubits:
+            idx = expected_graph.add_node({"_label": label})
+            label_to_idx[label] = idx
 
         # Adjacency list for connectivity of each auxiliary qubit to its neighbouring data qubits
         aux_adjacency_list = {
@@ -206,7 +240,9 @@ class TestQubitGraphsInitialization:
 
         for aux_node, data_nodes in aux_adjacency_list.items():
             for data_node in data_nodes:
-                expected_graph.add_edge(("aux", aux_node), ("data", data_node))
+                u = label_to_idx[("aux", aux_node)]
+                v = label_to_idx[("data", data_node)]
+                expected_graph.add_edge(u, v, None)
 
         assert set(qubit.node_labels) == set(expected_graph.nodes)
         assert set(qubit.edge_labels) == set(expected_graph.edges)

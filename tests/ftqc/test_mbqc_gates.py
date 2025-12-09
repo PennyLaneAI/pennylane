@@ -22,6 +22,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.ftqc import generate_lattice
+from pennylane._rustworkx_compat import Graph
 
 
 def generate_random_states(n, n_qubit=1, seed=None):
@@ -123,9 +124,8 @@ class TestIndividualGates:
         #                |
         # 9 -- 10 - 11 - 12 - 13 - 14 - 15
         wires = [2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15]
-        g = rx.PyGraph()
-        g.add_nodes_from(wires)
-        g.add_edges_from(
+        # Use Graph wrapper which handles edge weight requirements internally
+        g = Graph(
             [
                 (2, 3),
                 (3, 4),

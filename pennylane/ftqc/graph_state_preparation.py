@@ -202,7 +202,14 @@ class GraphStatePrep(Operation):
         else:
             if wires is None:
                 raise ValueError("Please ensure wires is specified.")
-            if len(wires) != len(set(graph.nodes)):
+            # Handle both CompatPyGraph (with .nodes property) and rx.PyGraph (with .nodes() method)
+            if hasattr(graph, 'nodes') and not callable(graph.nodes):
+                # CompatPyGraph or networkx-like
+                num_nodes = len(set(graph.nodes))
+            else:
+                # rustworkx PyGraph - use node_indices
+                num_nodes = len(graph.node_indices())
+            if len(wires) != num_nodes:
                 raise ValueError(
                     "Please ensure the length of wires objects match that of labels in graph."
                 )
@@ -252,7 +259,15 @@ class GraphStatePrep(Operation):
 
         op_list = []
 
-        nodes = graph.node_labels if isinstance(graph, QubitGraph) else graph.nodes
+        # For QubitGraph use node_labels, for rx.PyGraph use node data (labels)
+        if isinstance(graph, QubitGraph):
+            nodes = graph.node_labels
+        elif hasattr(graph, 'nodes') and not callable(graph.nodes):
+            # CompatPyGraph - use .nodes property which returns labels
+            nodes = list(graph.nodes)
+        else:
+            # rustworkx PyGraph - use node data as labels
+            nodes = [graph[idx] for idx in graph.node_indices()]
         try:
             sorted_nodes = sorted(nodes)
         except TypeError as e:
@@ -265,7 +280,27 @@ class GraphStatePrep(Operation):
 
         wire_map = dict(zip(sorted_nodes, wires))
 
-        edges = graph.edge_labels if isinstance(graph, QubitGraph) else graph.edges
+        # For QubitGraph use edge_labels, for rx.PyGraph use edge data (labels)
+        if isinstance(graph, QubitGraph):
+            edges = graph.edge_labels
+        elif hasattr(graph, 'edges') and not callable(graph.edges):
+            # CompatPyGraph - .edges returns label-based edges via EdgeList
+            # But EdgeList uses edge_list() which returns indices, so we need to convert
+            edges = []
+            for u_idx, v_idx in graph.edge_list():
+                # Get labels from node data
+                u_data = graph[u_idx]
+                v_data = graph[v_idx]
+                u_label = u_data.get("_label", u_idx) if isinstance(u_data, dict) else u_data
+                v_label = v_data.get("_label", v_idx) if isinstance(v_data, dict) else v_data
+                edges.append((u_label, v_label))
+        else:
+            # rustworkx PyGraph - convert indices to labels using node data
+            edges = []
+            for u_idx, v_idx in graph.edge_list():
+                u_label = graph[u_idx]
+                v_label = graph[v_idx]
+                edges.append((u_label, v_label))
         edges = [(wire_map[edge[0]], wire_map[edge[1]]) for edge in edges]
 
         for wire in wires:

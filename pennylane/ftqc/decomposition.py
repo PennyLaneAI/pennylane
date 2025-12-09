@@ -29,6 +29,7 @@ from pennylane.transforms import decompose, transform
 
 from .conditional_measure import cond_measure
 from .graph_state_preparation import make_graph_state
+from .lattice import _rx_grid_graph
 from .operations import RotXZX
 from .parametric_midmeasure import measure_arbitrary_basis, measure_x, measure_y
 from .utils import QubitMgr, parity
@@ -127,7 +128,7 @@ def queue_single_qubit_gate(q_mgr, op, in_wire, diagonalize_mcms):
     graph_wires = q_mgr.acquire_qubits(4)
     wires = [in_wire] + graph_wires
 
-    make_graph_state(nx.grid_graph((4,)), wires=graph_wires)
+    make_graph_state(_rx_grid_graph((4,)), wires=graph_wires)
     CZ([wires[0], wires[1]])
 
     measurements = queue_measurements(op, wires, diagonalize_mcms)

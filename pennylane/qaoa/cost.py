@@ -20,6 +20,7 @@ from collections.abc import Iterable
 
 import rustworkx as rx
 
+from pennylane._rustworkx_compat import Graph
 from pennylane.ops import Identity, LinearCombination, Z
 from pennylane.wires import Wires
 
@@ -34,6 +35,35 @@ from .mixers import bit_flip_mixer, x_mixer
 
 ########################
 # Hamiltonian components
+
+
+def _is_valid_graph(graph):
+    """Check if graph is a valid graph type (rx.PyGraph, rx.PyDiGraph, or Graph wrapper)."""
+    return isinstance(graph, (rx.PyGraph, rx.PyDiGraph, Graph))
+
+
+def _get_graph_info(graph):
+    """Get graph edges and node accessor function.
+    
+    Returns:
+        tuple: (edges, get_nvalue_func, is_compat_graph)
+    """
+    is_compat_graph = isinstance(graph, Graph)
+    is_rx = isinstance(graph, (rx.PyGraph, rx.PyDiGraph))
+    
+    if is_compat_graph:
+        edges = list(graph.edges())
+        # For Graph wrapper, edges already have the node values directly
+        get_nvalue = lambda i: i
+    elif is_rx:
+        edges = graph.edge_list()
+        # In RX each node is assigned to an integer index starting from 0
+        get_nvalue = lambda i: graph.nodes()[i]
+    else:
+        edges = graph.edges
+        get_nvalue = lambda i: i
+    
+    return edges, get_nvalue, is_compat_graph
 
 
 def bit_driver(wires: Iterable | Wires, b: int):
@@ -172,21 +202,17 @@ def edge_driver(graph: rx.PyGraph | rx.PyGraph, reward: list):
             "'reward' cannot contain either '10' or '01', must contain neither or both."
         )
 
-    if not isinstance(graph, (rx.PyGraph, rx.PyGraph)):
+    if not _is_valid_graph(graph):
         raise ValueError(
-            f"Input graph must be a rx.PyGraph or rx.PyGraph, got {type(graph).__name__}"
+            f"Input graph must be a rx.PyGraph or Graph, got {type(graph).__name__}"
         )
 
     coeffs = []
     ops = []
 
-    is_rx = isinstance(graph, rx.PyGraph)
-    graph_nodes = graph.nodes()
-    graph_edges = sorted(graph.edge_list()) if is_rx else graph.edges
-
-    # In RX each node is assigned to an integer index starting from 0;
-    # thus, we use the following lambda function to get node-values.
-    get_nvalue = lambda i: graph_nodes[i] if is_rx else i
+    edges, get_nvalue, is_compat_graph = _get_graph_info(graph)
+    graph_nodes = list(graph.nodes()) if is_compat_graph else graph.nodes()
+    graph_edges = edges if is_compat_graph else (sorted(graph.edge_list()) if isinstance(graph, rx.PyGraph) else graph.edges)
 
     if len(reward) == 0 or len(reward) == 4:
         coeffs = [1 for _ in graph_nodes]
@@ -286,18 +312,14 @@ def maxcut(graph: rx.PyGraph | rx.PyGraph):
     1 * X(0) + 1 * X(1) + 1 * X(2)
     """
 
-    if not isinstance(graph, (rx.PyGraph, rx.PyGraph)):
+    if not _is_valid_graph(graph):
         raise ValueError(
-            f"Input graph must be a rx.PyGraph or rx.PyGraph, got {type(graph).__name__}"
+            f"Input graph must be a rx.PyGraph or Graph, got {type(graph).__name__}"
         )
 
-    is_rx = isinstance(graph, rx.PyGraph)
-    graph_nodes = graph.nodes()
-    graph_edges = sorted(graph.edge_list()) if is_rx else graph.edges
-
-    # In RX each node is assigned to an integer index starting from 0;
-    # thus, we use the following lambda function to get node-values.
-    get_nvalue = lambda i: graph_nodes[i] if is_rx else i
+    edges, get_nvalue, is_compat_graph = _get_graph_info(graph)
+    graph_nodes = list(graph.nodes()) if is_compat_graph else graph.nodes()
+    graph_edges = edges
 
     identity_h = LinearCombination(
         [-0.5 for e in graph_edges],
@@ -367,12 +389,13 @@ def max_independent_set(graph: rx.PyGraph | rx.PyGraph, constrained: bool = True
 
     """
 
-    if not isinstance(graph, (rx.PyGraph, rx.PyGraph)):
+    if not _is_valid_graph(graph):
         raise ValueError(
-            f"Input graph must be a rx.PyGraph or rx.PyGraph, got {type(graph).__name__}"
+            f"Input graph must be a rx.PyGraph or Graph, got {type(graph).__name__}"
         )
 
-    graph_nodes = graph.nodes()
+    _, _, is_compat_graph = _get_graph_info(graph)
+    graph_nodes = list(graph.nodes()) if is_compat_graph else graph.nodes()
 
     if constrained:
         cost_h = bit_driver(graph_nodes, 1)
@@ -448,12 +471,13 @@ def min_vertex_cover(graph: rx.PyGraph | rx.PyGraph, constrained: bool = True):
 
     """
 
-    if not isinstance(graph, (rx.PyGraph, rx.PyGraph)):
+    if not _is_valid_graph(graph):
         raise ValueError(
-            f"Input graph must be a rx.PyGraph or rx.PyGraph, got {type(graph).__name__}"
+            f"Input graph must be a rx.PyGraph or Graph, got {type(graph).__name__}"
         )
 
-    graph_nodes = graph.nodes()
+    _, _, is_compat_graph = _get_graph_info(graph)
+    graph_nodes = list(graph.nodes()) if is_compat_graph else graph.nodes()
 
     if constrained:
         cost_h = bit_driver(graph_nodes, 0)
@@ -531,15 +555,29 @@ def max_clique(graph: rx.PyGraph | rx.PyGraph, constrained: bool = True):
 
     """
 
-    if not isinstance(graph, (rx.PyGraph, rx.PyGraph)):
+    if not _is_valid_graph(graph):
         raise ValueError(
-            f"Input graph must be a rx.PyGraph or rx.PyGraph, got {type(graph).__name__}"
+            f"Input graph must be a rx.PyGraph or Graph, got {type(graph).__name__}"
         )
 
-    graph_nodes = graph.nodes()
-    graph_complement = (
-        rx.complement(graph) if isinstance(graph, rx.PyGraph) else nx.complement(graph)
-    )
+    _, _, is_compat_graph = _get_graph_info(graph)
+    graph_nodes = list(graph.nodes()) if is_compat_graph else graph.nodes()
+    
+    # Get complement graph
+    if is_compat_graph:
+        # For Graph wrapper, convert to rx.PyGraph first
+        rx_graph = rx.PyGraph()
+        for node in graph.nodes():
+            rx_graph.add_node(node)
+        for u, v in graph.edges():
+            rx_graph.add_edge(
+                list(graph.nodes()).index(u),
+                list(graph.nodes()).index(v),
+                None
+            )
+        graph_complement = rx.complement(rx_graph)
+    else:
+        graph_complement = rx.complement(graph)
 
     if constrained:
         cost_h = bit_driver(graph_nodes, 1)
@@ -691,9 +729,9 @@ def max_weight_cycle(graph: rx.PyGraph | rx.PyGraph | rx.PyDiGraph, constrained:
         can be prepared using :class:`~.BasisState` or simple :class:`~.PauliX` rotations on the
         ``0`` and ``3`` wires.
     """
-    if not isinstance(graph, (rx.PyGraph, rx.PyGraph, rx.PyDiGraph)):
+    if not isinstance(graph, (rx.PyGraph, rx.PyDiGraph, Graph)):
         raise ValueError(
-            f"Input graph must be a rx.PyGraph or rx.PyGraph or rx.PyDiGraph, got {type(graph).__name__}"
+            f"Input graph must be a rx.PyGraph, rx.PyDiGraph or Graph, got {type(graph).__name__}"
         )
 
     mapping = wires_to_edges(graph)

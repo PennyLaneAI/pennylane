@@ -489,7 +489,7 @@ class TestGraphStateInvariantUnderInternalGraphOrdering:
         "graph",
         [
             # Permute the node order in the adjacency list
-            rx.PyGraph(
+            graph_from_adj_dict(
                 {
                     (0, 1): {(0, 0), (1, 1)},
                     (1, 0): {(0, 0), (1, 1)},
@@ -497,7 +497,7 @@ class TestGraphStateInvariantUnderInternalGraphOrdering:
                     (0, 0): {(1, 0), (0, 1)},
                 }
             ),
-            rx.PyGraph(
+            graph_from_adj_dict(
                 {
                     (1, 0): {(0, 0), (1, 1)},
                     (1, 1): {(0, 1), (1, 0)},
@@ -505,7 +505,7 @@ class TestGraphStateInvariantUnderInternalGraphOrdering:
                     (0, 1): {(0, 0), (1, 1)},
                 }
             ),
-            rx.PyGraph(
+            graph_from_adj_dict(
                 {
                     (1, 1): {(0, 1), (1, 0)},
                     (0, 0): {(1, 0), (0, 1)},
@@ -528,7 +528,7 @@ class TestGraphStateInvariantUnderInternalGraphOrdering:
         # Graph structure: (0,0) -- (0,1)
         #                    |        |
         #                  (1,0) -- (1,1)
-        graph_ref = rx.PyGraph(
+        graph_ref = graph_from_adj_dict(
             {
                 (0, 0): {(1, 0), (0, 1)},
                 (0, 1): {(0, 0), (1, 1)},
@@ -546,7 +546,7 @@ class TestGraphStateInvariantUnderInternalGraphOrdering:
         "graph",
         [
             # Permute the node order in the adjacency list
-            rx.PyGraph(
+            graph_from_adj_dict(
                 {
                     1: {0, 3, 5},
                     2: {0, 3, 6},
@@ -558,7 +558,7 @@ class TestGraphStateInvariantUnderInternalGraphOrdering:
                     0: {1, 2, 4},
                 }
             ),
-            rx.PyGraph(
+            graph_from_adj_dict(
                 {
                     2: {0, 3, 6},
                     3: {1, 2, 7},
@@ -570,7 +570,7 @@ class TestGraphStateInvariantUnderInternalGraphOrdering:
                     1: {0, 3, 5},
                 }
             ),
-            rx.PyGraph(
+            graph_from_adj_dict(
                 {
                     3: {1, 2, 7},
                     4: {0, 5, 6},
@@ -582,7 +582,7 @@ class TestGraphStateInvariantUnderInternalGraphOrdering:
                     2: {0, 3, 6},
                 }
             ),
-            rx.PyGraph(
+            graph_from_adj_dict(
                 {
                     4: {0, 5, 6},
                     5: {1, 4, 7},
@@ -594,7 +594,7 @@ class TestGraphStateInvariantUnderInternalGraphOrdering:
                     3: {1, 2, 7},
                 }
             ),
-            rx.PyGraph(
+            graph_from_adj_dict(
                 {
                     5: {1, 4, 7},
                     6: {2, 4, 7},
@@ -606,7 +606,7 @@ class TestGraphStateInvariantUnderInternalGraphOrdering:
                     4: {0, 5, 6},
                 }
             ),
-            rx.PyGraph(
+            graph_from_adj_dict(
                 {
                     6: {2, 4, 7},
                     7: {3, 5, 6},
@@ -618,7 +618,7 @@ class TestGraphStateInvariantUnderInternalGraphOrdering:
                     5: {1, 4, 7},
                 }
             ),
-            rx.PyGraph(
+            graph_from_adj_dict(
                 {
                     7: {3, 5, 6},
                     0: {1, 2, 4},
@@ -648,7 +648,7 @@ class TestGraphStateInvariantUnderInternalGraphOrdering:
         #                   | (6)---|-(7)
         #                   | /     | /
         #                  (2)-----(3)
-        graph_ref = rx.PyGraph(
+        graph_ref = graph_from_adj_dict(
             {
                 0: {1, 2, 4},
                 1: {0, 3, 5},

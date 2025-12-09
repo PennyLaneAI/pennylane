@@ -21,6 +21,8 @@ import warnings
 from typing import Any
 
 import rustworkx as rx
+from pennylane._rustworkx_compat import CompatPyGraph
+from pennylane.ftqc.lattice import _rx_grid_graph
 
 # Fail-safe for algorithms that traverse the nested graph structure
 # In other words, we should never expect more than this many layers of nested QubitGraphs
@@ -632,7 +634,9 @@ class QubitGraph:
             self._warn_reinitialization()
             return
 
-        self._graph = nx.grid_2d_graph(m, n)
+        # Use rustworkx-based grid generator and wrap for networkx-like access
+        base_graph = _rx_grid_graph([m, n])
+        self._graph = self._wrap_rx_graph(base_graph)
         self._initialize_all_nodes_as_qubit_graph()
 
     def init_graph_nd_grid(self, dim: list[int] | tuple[int]):
@@ -675,7 +679,9 @@ class QubitGraph:
             self._warn_reinitialization()
             return
 
-        self._graph = nx.grid_graph(dim)
+        # Use rustworkx-based grid generator and wrap for networkx-like access
+        base_graph = _rx_grid_graph(dim)
+        self._graph = self._wrap_rx_graph(base_graph)
         self._initialize_all_nodes_as_qubit_graph()
 
     def init_graph_surface_code_17(self):
@@ -713,9 +719,12 @@ class QubitGraph:
         data_qubits = [("data", i) for i in range(9)]  # 9 data qubits, indexed 0, 1, ..., 8
         aux_qubits = [("aux", i) for i in range(9, 17)]  # 8 aux qubits, indexed 9, 10, ..., 16
 
-        self._graph = rx.PyGraph()
-        self._graph.add_nodes_from(data_qubits)
-        self._graph.add_nodes_from(aux_qubits)
+        self._graph = CompatPyGraph()
+        # Add nodes with label stored in a dict format
+        label_to_idx = {}
+        for label in data_qubits + aux_qubits:
+            idx = self._graph.add_node({"_label": label})
+            label_to_idx[label] = idx
 
         # Adjacency list showing the connectivity of each auxiliary qubit to its neighbouring data qubits
         aux_adjacency_list = {
@@ -731,7 +740,9 @@ class QubitGraph:
 
         for aux_node, data_nodes in aux_adjacency_list.items():
             for data_node in data_nodes:
-                self._graph.add_edge(("aux", aux_node), ("data", data_node))
+                u = label_to_idx[("aux", aux_node)]
+                v = label_to_idx[("data", data_node)]
+                self._graph.add_edge(u, v, None)
 
         self._initialize_all_nodes_as_qubit_graph()
 
@@ -740,37 +751,88 @@ class QubitGraph:
         QubitGraph objects. This function also sets the ``parent`` attribute appropriately.
         """
         assert self._graph is not None, "Underlying qubit graph object must not be None"
-        assert hasattr(
-            self._graph, "nodes"
-        ), "Underlying qubit graph object must have 'nodes' attribute"
+        
+        # Handle both CompatPyGraph (with .nodes property) and rx.PyGraph (with .nodes() method)
+        if hasattr(self._graph, 'nodes') and not callable(self._graph.nodes):
+            # CompatPyGraph - nodes is a property/view
+            node_iter = self._graph.nodes
+        else:
+            # rx.PyGraph - iterate over node indices and get node data
+            node_iter = (self._graph[idx] for idx in self._graph.node_indices())
 
-        for node in self._graph.nodes:
+        for node in node_iter:
             q = QubitGraph(id=node)
             q._parent = self  # pylint: disable=protected-access
             self[node] = q
 
     @staticmethod
+    def _wrap_rx_graph(graph: rx.PyGraph) -> CompatPyGraph:
+        """Wrap a rustworkx PyGraph in a CompatPyGraph for networkx-like access.
+        
+        The node data in the original graph (e.g., coordinate tuples) becomes the node labels,
+        and node data is initialized as a dictionary for attribute storage.
+        
+        Args:
+            graph (rx.PyGraph): The graph to wrap.
+            
+        Returns:
+            CompatPyGraph: A wrapped graph with .nodes and .edges properties.
+        """
+        wrapped = CompatPyGraph()
+        # Copy nodes - store the original node data as both the label (for lookup) and in a dict
+        # Format: {"_label": original_data, ...other_attrs...}
+        for idx in graph.node_indices():
+            label = graph[idx]
+            wrapped.add_node({"_label": label})
+        # Copy edges
+        wrapped.add_edges_from([(u, v, None) for u, v in graph.edge_list()])
+        return wrapped
+
+    @staticmethod
     def _copy_graph_structure(graph: rx.PyGraph):
-        """Creates a copy of a NetworkX graph, but only the graph structure (nodes and edges), without
+        """Creates a copy of a rustworkx graph, but only the graph structure (nodes and edges), without
         copying the node data.
 
         Args:
-            graph (networkx.Graph): The graph to copy. Must not be None.
+            graph: The graph to copy. Must not be None. Can be a rustworkx PyGraph or a
+                   generic graph-like object with `nodes` and `edges` attributes.
 
         Returns:
-            networkx.Graph: A new graph with the same structure but empty node attributes.
+            CompatPyGraph: A new graph with the same structure but empty node attributes.
         """
         assert graph is not None, "Graph object for copying must not be None"
 
-        if isinstance(graph, rx.PyGraph):
-            # This allows support for other networkx graph types, which all inherit from rx.PyGraph
-            graph_type = type(graph)
-            new_graph = graph_type()
-        else:
-            new_graph = rx.PyGraph()
+        # Always create a CompatPyGraph for networkx-like node access
+        new_graph = CompatPyGraph()
 
-        new_graph.add_nodes_from(graph.nodes)
-        new_graph.add_edges_from(graph.edges)
+        # Handle rustworkx PyGraph
+        if hasattr(graph, "node_indices"):
+            # In rustworkx, node_indices() returns the node indices
+            # Each node starts with an empty dict for attributes, preserving the label
+            for idx in graph.node_indices():
+                node_data = graph[idx]
+                # Extract the label from node data
+                if isinstance(node_data, dict) and "_label" in node_data:
+                    label = node_data["_label"]
+                else:
+                    label = node_data  # Use node data itself as label
+                new_graph.add_node({"_label": label})
+            
+            # edge_list() returns list of (source_idx, target_idx) tuples
+            new_graph.add_edges_from([(u, v, None) for u, v in graph.edge_list()])
+        else:
+            # Handle generic graph-like objects with .nodes and .edges attributes
+            # Build label-to-index mapping
+            label_to_idx = {}
+            for node in graph.nodes:
+                idx = new_graph.add_node({"_label": node})
+                label_to_idx[node] = idx
+            
+            for edge in graph.edges:
+                if len(edge) >= 2:
+                    u, v = edge[0], edge[1]
+                    if u in label_to_idx and v in label_to_idx:
+                        new_graph.add_edge(label_to_idx[u], label_to_idx[v], None)
 
         return new_graph
 

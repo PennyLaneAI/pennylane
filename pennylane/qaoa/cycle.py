@@ -21,6 +21,7 @@ from collections.abc import Iterable
 import numpy as np
 import rustworkx as rx
 
+from pennylane._rustworkx_compat import Graph
 from pennylane.operation import Operator
 from pennylane.ops import Identity, LinearCombination, X, Y, Z
 
@@ -115,13 +116,13 @@ def wires_to_edges(graph: rx.PyGraph | rx.PyGraph | rx.PyDiGraph) -> dict[int, t
      11: (3, 2)}
 
     Args:
-        graph (rx.PyGraph or rx.PyGraph or rx.PyDiGraph): the graph specifying possible edges
+        graph (rx.PyGraph or rx.PyDiGraph or Graph): the graph specifying possible edges
 
     Returns:
         Dict[Tuple, int]: a mapping from wires to graph edges
     """
-    if isinstance(graph, rx.PyGraph):
-        return {i: edge for i, edge in enumerate(graph.edges)}
+    if isinstance(graph, Graph):
+        return {i: edge for i, edge in enumerate(graph.edges())}
     if isinstance(graph, (rx.PyGraph, rx.PyDiGraph)):
         gnodes = graph.nodes()
         return {
@@ -129,7 +130,7 @@ def wires_to_edges(graph: rx.PyGraph | rx.PyGraph | rx.PyDiGraph) -> dict[int, t
             for i, e in enumerate(sorted(graph.edge_list()))
         }
     raise ValueError(
-        f"Input graph must be a rx.PyGraph or rx.PyGraph or rx.PyDiGraph, got {type(graph).__name__}"
+        f"Input graph must be a rx.PyGraph, rx.PyDiGraph or Graph, got {type(graph).__name__}"
     )
 
 

@@ -26,20 +26,15 @@ import pennylane as qml
 from pennylane import qaoa
 from pennylane._rustworkx_compat import Graph
 
-# Provide rustworkx replacements for networkx functions used in tests
+# Check if networkx is available
+_HAS_NETWORKX = True
 try:
     import networkx as nx
 except ImportError:
-    # Create minimal compatibility shims if networkx not available
-    class _NxCompat:
-        @staticmethod
-        def complete_graph(n):
-            """Create a complete graph using rustworkx."""
-            g = rx.generators.mesh_graph(n, list(range(n)))
-            # Add a to_directed method
-            g.to_directed = lambda: rx.generators.directed_mesh_graph(n, list(range(n)))
-            return g
-    nx = _NxCompat()
+    _HAS_NETWORKX = False
+    # Minimal shim for tests that specifically need networkx
+    nx = None
+
 from pennylane.qaoa.cycle import (
     _inner_net_flow_constraint_hamiltonian,
     _inner_out_flow_constraint_hamiltonian,
@@ -368,7 +363,7 @@ class TestMixerHamiltonians:
         graph = [(0, 1), (1, 2)]
 
         with pytest.raises(
-            ValueError, match=r"Input graph must be a rx.PyGraph or rx.PyGraph object, got list"
+            ValueError, match=r"Input graph must be a rx.PyGraph or Graph object, got list"
         ):
             qaoa.xy_mixer(graph)
 
@@ -383,7 +378,7 @@ class TestMixerHamiltonians:
 
         graph = [(0, 1), (1, 2)]
         with pytest.raises(
-            ValueError, match=r"Input graph must be a rx.PyGraph or rx.PyGraph object"
+            ValueError, match=r"Input graph must be a rx.PyGraph or Graph object"
         ):
             qaoa.bit_flip_mixer(graph, 0)
 
@@ -765,14 +760,8 @@ def make_edge_driver_cost_test_cases():
 
 def make_max_weighted_cycle_test_cases():
     """Generates the test cases for the maximum weighted cycle problem"""
-
-    digraph_complete = nx.complete_graph(3).to_directed()
-    complete_edge_weight_data = {
-        edge: (i + 1) * 0.5 for i, edge in enumerate(digraph_complete.edges)
-    }
-    for _k, _v in complete_edge_weight_data.items():
-        digraph_complete[_k[0]][_k[1]]["weight"] = _v
-
+    
+    # Use rustworkx directed mesh graph for both cases
     digraph_complete_rx = rx.generators.directed_mesh_graph(3, [0, 1, 2])
     complete_edge_weight_data = {
         edge: (i + 1) * 0.5 for i, edge in enumerate(sorted(digraph_complete_rx.edge_list()))
@@ -780,7 +769,7 @@ def make_max_weighted_cycle_test_cases():
     for _k, _v in complete_edge_weight_data.items():
         digraph_complete_rx.update_edge(_k[0], _k[1], {"weight": _v})
 
-    digraphs = [digraph_complete] * 2
+    digraphs = [digraph_complete_rx] * 2
 
     mwc_constrained = [True, False]
 
@@ -918,7 +907,7 @@ def make_max_weighted_cycle_test_cases():
 
     mixer_hamiltonians = [qml.Hamiltonian(mixer_coeffs[i], mixer_terms[i]) for i in range(2)]
 
-    mappings = [qaoa.cycle.wires_to_edges(digraph_complete)] * 2
+    mappings = [qaoa.cycle.wires_to_edges(digraph_complete_rx)] * 2
 
     return list(zip(digraphs, mwc_constrained, cost_hamiltonians, mixer_hamiltonians, mappings))
 

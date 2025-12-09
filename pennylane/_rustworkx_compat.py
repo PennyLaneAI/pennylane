@@ -16,6 +16,7 @@ Compatibility layer for rustworkx to provide networkx-like MultiDiGraph API.
 """
 
 import rustworkx as rx
+import numpy as np
 
 
 class MultiDiGraph:
@@ -313,7 +314,7 @@ def descendants(G, source):
 
 def graph_from_adj_dict(adj_dict):
     """
-    Create a rustworkx PyGraph from an adjacency dictionary.
+    Create a rustworkx CompatPyGraph from an adjacency dictionary.
     
     This is a helper function for test compatibility, as networkx allows
     creating graphs like: nx.Graph({0: {1, 2}, 1: {0}, 2: {0}})
@@ -323,15 +324,15 @@ def graph_from_adj_dict(adj_dict):
                         sets/tuples/lists of neighbors
         
     Returns:
-        rx.PyGraph: A rustworkx undirected graph
+        CompatPyGraph: A rustworkx undirected graph with networkx-like API
     """
-    g = rx.PyGraph()
+    g = CompatPyGraph()
     node_to_idx = {}
     
-    # Add all nodes first
+    # Add all nodes first - store the label in the node data dict
     for node in adj_dict.keys():
         if node not in node_to_idx:
-            idx = g.add_node(node)
+            idx = g.add_node({"_label": node})
             node_to_idx[node] = idx
     
     # Add edges (avoiding duplicates in undirected graph)
@@ -343,7 +344,7 @@ def graph_from_adj_dict(adj_dict):
             neighbors = [neighbors]
         for neighbor in neighbors:
             if neighbor not in node_to_idx:
-                neighbor_idx = g.add_node(neighbor)
+                neighbor_idx = g.add_node({"_label": neighbor})
                 node_to_idx[neighbor] = neighbor_idx
             else:
                 neighbor_idx = node_to_idx[neighbor]
@@ -391,47 +392,453 @@ def digraph_from_adj_dict(adj_dict):
     return g
 
 
-# Graph class that wraps PyGraph for networkx-like initialization
-def Graph(incoming_graph_data=None, multigraph=True):
+def _is_numpy_array_sequence(data):
+    """Check if data is a tuple/list of numpy arrays representing edges."""
+    if not isinstance(data, (tuple, list)):
+        return False
+    if len(data) == 0:
+        return False
+    # Check if all elements are numpy arrays or array-like with at least 2 elements
+    for item in data:
+        if hasattr(item, '__len__') and hasattr(item, '__getitem__'):
+            if len(item) < 2:
+                return False
+        else:
+            return False
+    return True
+
+
+def _edges_from_numpy_arrays(data):
     """
-    Create a rustworkx PyGraph with networkx-like initialization support.
+    Convert a tuple/list of numpy arrays to edge tuples.
+    
+    Each array should contain exactly 2 elements: [source, target]
+    
+    Args:
+        data: Tuple or list of numpy arrays/sequences
+        
+    Returns:
+        list: List of (source, target) edge tuples
+    """
+    edges = []
+    for item in data:
+        if len(item) >= 2:
+            edges.append((item[0], item[1]))
+    return edges
+
+
+class NodeDict:
+    """
+    A dict-like wrapper for rustworkx PyGraph nodes that provides networkx-like access.
+    
+    This allows code like `graph.nodes[key]["attr"]` to work with rustworkx graphs.
+    
+    Supports both integer index-based access and label-based access where labels
+    are either the node data values (for simple graphs) or the "_label" key in
+    node data dicts (for networkx-compatible graphs).
+    """
+    
+    def __init__(self, graph, label_to_index=None):
+        self._graph = graph
+        # Build mapping from node labels to indices for label-based access
+        if label_to_index is not None:
+            self._label_to_index = label_to_index
+        else:
+            self._label_to_index = {}
+            for idx in graph.node_indices():
+                node_data = graph[idx]
+                # If node data is a dict with "_label" key, use that as the label
+                if isinstance(node_data, dict) and "_label" in node_data:
+                    try:
+                        self._label_to_index[node_data["_label"]] = idx
+                    except TypeError:
+                        pass  # Not hashable
+                # If node data is a hashable non-dict value, use it as the label
+                elif node_data is not None and not isinstance(node_data, dict):
+                    try:
+                        self._label_to_index[node_data] = idx
+                    except TypeError:
+                        pass  # Not hashable
+    
+    def _resolve_key(self, key):
+        """Resolve a key to an integer index.
+        
+        First checks if key is a known label, then checks if it's a valid index.
+        This allows integer labels that differ from their indices.
+        """
+        # First check if key is a known label
+        if key in self._label_to_index:
+            return self._label_to_index[key]
+        # Then check if it's a valid integer index
+        if isinstance(key, int) and key in self._graph.node_indices():
+            return key
+        raise KeyError(f"Node {key} not found")
+    
+    def __getitem__(self, key):
+        """Get node data by index or label."""
+        idx = self._resolve_key(key)
+        try:
+            return self._graph[idx]
+        except IndexError as e:
+            raise KeyError(f"Node {key} not found") from e
+    
+    def __setitem__(self, key, value):
+        """Set node data by index or label."""
+        idx = self._resolve_key(key)
+        self._graph[idx] = value
+    
+    def __len__(self):
+        """Return the number of nodes."""
+        return len(self._graph.node_indices())
+    
+    def __iter__(self):
+        """Iterate over node labels (or indices if no labels)."""
+        if self._label_to_index:
+            return iter(self._label_to_index.keys())
+        return iter(self._graph.node_indices())
+    
+    def __contains__(self, key):
+        """Check if node exists by index or label."""
+        # Check label first, then index
+        if key in self._label_to_index:
+            return True
+        if isinstance(key, int):
+            return key in self._graph.node_indices()
+        return False
+
+
+class EdgeList:
+    """
+    A list-like wrapper for rustworkx PyGraph edges that provides networkx-like access.
+    
+    This allows code like `for edge in graph.edges` to work with rustworkx graphs.
+    """
+    
+    def __init__(self, graph):
+        self._graph = graph
+    
+    def _index_to_label(self, idx):
+        """Convert an integer index to its label (if any)."""
+        node_data = self._graph[idx]
+        if isinstance(node_data, dict) and "_label" in node_data:
+            return node_data["_label"]
+        return node_data if node_data is not None else idx
+    
+    def __iter__(self):
+        """Iterate over edges as (source_label, target_label) tuples."""
+        for u_idx, v_idx in self._graph.edge_list():
+            yield (self._index_to_label(u_idx), self._index_to_label(v_idx))
+    
+    def __len__(self):
+        """Return the number of edges."""
+        return self._graph.num_edges()
+    
+    def __contains__(self, edge):
+        """Check if edge exists."""
+        if len(edge) >= 2:
+            return self._graph.has_edge(edge[0], edge[1])
+        return False
+
+
+class CompatPyGraph(rx.PyGraph):
+    """
+    A rustworkx PyGraph subclass that provides networkx-like node access via a `.nodes` property.
+    
+    This allows existing code that uses `graph.nodes[key]["attr"]` to work with rustworkx.
+    """
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._edges_view = None
+        self._label_to_index = None
+    
+    def _get_label_to_index(self):
+        """Build and return a mapping from labels to indices."""
+        if self._label_to_index is None:
+            self._label_to_index = {}
+            for idx in self.node_indices():
+                node_data = self[idx]
+                if isinstance(node_data, dict) and "_label" in node_data:
+                    try:
+                        self._label_to_index[node_data["_label"]] = idx
+                    except TypeError:
+                        pass
+                elif node_data is not None and not isinstance(node_data, dict):
+                    try:
+                        self._label_to_index[node_data] = idx
+                    except TypeError:
+                        pass
+        return self._label_to_index
+    
+    def _resolve_to_index(self, node):
+        """Resolve a node label or index to an integer index."""
+        if isinstance(node, int):
+            return node
+        label_map = self._get_label_to_index()
+        if node in label_map:
+            return label_map[node]
+        raise KeyError(f"Node {node} not found")
+    
+    def _index_to_label(self, idx):
+        """Convert an integer index to its label (if any)."""
+        node_data = self[idx]
+        if isinstance(node_data, dict) and "_label" in node_data:
+            return node_data["_label"]
+        return node_data if node_data is not None else idx
+    
+    def neighbors(self, node):
+        """Get neighbors of a node, accepting either index or label.
+        
+        Returns neighbor labels (not indices) for consistency with networkx.
+        """
+        idx = self._resolve_to_index(node)
+        for neighbor_idx in super().neighbors(idx):
+            yield self._index_to_label(neighbor_idx)
+    
+    @property
+    def adj(self):
+        """Return an adjacency dict view for networkx compatibility.
+        
+        Returns a dict where keys are node labels and values are dicts of neighbor labels.
+        This mimics networkx's adj property.
+        """
+        result = {}
+        for idx in self.node_indices():
+            label = self._index_to_label(idx)
+            neighbors_dict = {}
+            for neighbor_idx in super().neighbors(idx):
+                neighbor_label = self._index_to_label(neighbor_idx)
+                neighbors_dict[neighbor_label] = {}
+            result[label] = neighbors_dict
+        return result
+    
+    def __iter__(self):
+        """Iterate over node labels (like networkx)."""
+        for idx in self.node_indices():
+            yield self._index_to_label(idx)
+    
+    @property  
+    def nodes(self):
+        """Return a dict-like view of nodes.
+        
+        Note: Creates a fresh view each time to ensure label mappings are current.
+        """
+        return NodeDict(self)
+    
+    @property
+    def edges(self):
+        """Return a list-like view of edges."""
+        if self._edges_view is None:
+            self._edges_view = EdgeList(self)
+        return self._edges_view
+        return self._edges_view
+
+
+class Graph:
+    """
+    A networkx.Graph-like wrapper around rustworkx.PyGraph.
+    
+    Provides a more familiar API for users coming from networkx.
+    
+    Supported initialization formats:
+    - Empty graph: Graph()
+    - Edge list: Graph([(0, 1), (1, 2)])
+    - Edge list with data: Graph([(0, 1, {'weight': 1}), (1, 2, {})])
+    - Numpy array edges: Graph((np.array([0, 1]), np.array([1, 2])))
     
     Examples:
         >>> g = Graph()  # Empty graph
         >>> g = Graph([(0, 1), (1, 2)])  # Graph from edge list
-    
-    Args:
-        incoming_graph_data: Optional edge list to initialize graph
-        multigraph: Whether to create a multigraph
-        
-    Returns:
-        rx.PyGraph: A rustworkx graph
+        >>> g = Graph((np.array([0, 1]), np.array([1, 2])))  # From numpy arrays
     """
-    g = rx.PyGraph(multigraph=multigraph)
     
-    if incoming_graph_data is not None:
-        if isinstance(incoming_graph_data, list):
-            # Assume it's an edge list
-            nodes = set()
-            for edge in incoming_graph_data:
-                if len(edge) >= 2:
-                    nodes.add(edge[0])
-                    nodes.add(edge[1])
-            
-            # Add nodes first
-            node_to_idx = {}
-            for node in sorted(nodes):
-                idx = g.add_node(node)
-                node_to_idx[node] = idx
-            
-            # Add edges
-            for edge in incoming_graph_data:
-                if len(edge) >= 2:
-                    u_idx = node_to_idx[edge[0]]
-                    v_idx = node_to_idx[edge[1]]
-                    edge_data = edge[2] if len(edge) > 2 else None
-                    g.add_edge(u_idx, v_idx, edge_data)
-        else:
-            raise ValueError("Graph initialization only supports edge lists")
+    def __init__(self, incoming_graph_data=None):
+        self._graph = rx.PyGraph(multigraph=False)
+        self._node_to_index = {}  # Map from node object to integer index
+        self._index_to_node = {}  # Map from integer index to node object
+        
+        if incoming_graph_data is not None:
+            if isinstance(incoming_graph_data, list):
+                # Standard edge list: [(0, 1), (1, 2), ...]
+                self.add_edges_from(incoming_graph_data)
+            elif _is_numpy_array_sequence(incoming_graph_data):
+                # Tuple/list of numpy arrays: (np.array([0, 1]), np.array([1, 2]))
+                edges = _edges_from_numpy_arrays(incoming_graph_data)
+                self.add_edges_from(edges)
+            elif isinstance(incoming_graph_data, dict):
+                # Adjacency dictionary: {0: {1, 2}, 1: {0, 2}, 2: {0, 1}}
+                self._init_from_adj_dict(incoming_graph_data)
+            else:
+                raise ValueError(
+                    f"Graph initialization does not support type {type(incoming_graph_data)}. "
+                    "Supported formats: edge list [(u, v), ...], "
+                    "numpy array tuple (np.array([u, v]), ...), "
+                    "or adjacency dict {u: {v, w}, ...}"
+                )
     
-    return g
+    def _init_from_adj_dict(self, adj_dict):
+        """Initialize from an adjacency dictionary."""
+        # Add all nodes first
+        for node in adj_dict.keys():
+            self.add_node(node)
+        
+        # Add edges (avoiding duplicates in undirected graph)
+        edges_added = set()
+        for node, neighbors in adj_dict.items():
+            node_idx = self._node_to_index[node]
+            # Handle sets, tuples, and lists of neighbors
+            if not isinstance(neighbors, (set, list, tuple)):
+                neighbors = [neighbors]
+            for neighbor in neighbors:
+                if neighbor not in self._node_to_index:
+                    self.add_node(neighbor)
+                neighbor_idx = self._node_to_index[neighbor]
+                
+                # Create a sorted edge tuple to avoid duplicates
+                edge_tuple = tuple(sorted([node_idx, neighbor_idx]))
+                if edge_tuple not in edges_added:
+                    self._graph.add_edge(node_idx, neighbor_idx, None)
+                    edges_added.add(edge_tuple)
+    
+    def add_node(self, node, **attr):
+        """Add a single node."""
+        if node not in self._node_to_index:
+            idx = self._graph.add_node(node)
+            self._node_to_index[node] = idx
+            self._index_to_node[idx] = node
+    
+    def add_nodes_from(self, nodes):
+        """Add multiple nodes."""
+        for node in nodes:
+            if isinstance(node, tuple) and len(node) == 2:
+                # (node, attr_dict) format
+                self.add_node(node[0])
+            else:
+                self.add_node(node)
+    
+    def add_edge(self, u, v, **attr):
+        """Add an edge between u and v."""
+        if u not in self._node_to_index:
+            self.add_node(u)
+        if v not in self._node_to_index:
+            self.add_node(v)
+        
+        u_idx = self._node_to_index[u]
+        v_idx = self._node_to_index[v]
+        
+        # Check if edge already exists (undirected)
+        if not self._graph.has_edge(u_idx, v_idx):
+            self._graph.add_edge(u_idx, v_idx, attr if attr else None)
+    
+    def add_edges_from(self, edges):
+        """Add multiple edges."""
+        for edge in edges:
+            if len(edge) == 2:
+                u, v = edge
+                self.add_edge(u, v)
+            elif len(edge) == 3:
+                u, v, data = edge
+                if isinstance(data, dict):
+                    self.add_edge(u, v, **data)
+                else:
+                    self.add_edge(u, v)
+    
+    def nodes(self, data=False):
+        """Return nodes."""
+        if data:
+            return [(self._index_to_node[idx], {}) for idx in self._graph.node_indices()]
+        return list(self._node_to_index.keys())
+    
+    def edges(self, data=False):
+        """Return edges."""
+        result = []
+        seen = set()
+        for u_idx, v_idx, edge_data in self._graph.weighted_edge_list():
+            # Normalize edge representation for undirected graph
+            edge_key = tuple(sorted([u_idx, v_idx]))
+            if edge_key in seen:
+                continue
+            seen.add(edge_key)
+            
+            u = self._index_to_node[u_idx]
+            v = self._index_to_node[v_idx]
+            if data:
+                result.append((u, v, edge_data if edge_data else {}))
+            else:
+                result.append((u, v))
+        return result
+    
+    def __len__(self):
+        """Return number of nodes."""
+        return len(self._node_to_index)
+    
+    def __iter__(self):
+        """Iterate over nodes."""
+        return iter(self._node_to_index.keys())
+    
+    def __contains__(self, node):
+        """Check if node is in graph."""
+        return node in self._node_to_index
+    
+    def number_of_nodes(self):
+        """Return the number of nodes."""
+        return len(self._node_to_index)
+    
+    def number_of_edges(self):
+        """Return the number of edges."""
+        return self._graph.num_edges()
+    
+    def has_edge(self, u, v):
+        """Return True if edge (u, v) exists."""
+        if u not in self._node_to_index or v not in self._node_to_index:
+            return False
+        u_idx = self._node_to_index[u]
+        v_idx = self._node_to_index[v]
+        return self._graph.has_edge(u_idx, v_idx)
+    
+    def neighbors(self, node):
+        """Return neighbors of node."""
+        if node not in self._node_to_index:
+            raise KeyError(f"Node {node} not in graph")
+        node_idx = self._node_to_index[node]
+        return [self._index_to_node[idx] for idx in self._graph.neighbors(node_idx)]
+    
+    def degree(self, node=None):
+        """Return degree of node(s)."""
+        if node is not None:
+            if node not in self._node_to_index:
+                raise KeyError(f"Node {node} not in graph")
+            node_idx = self._node_to_index[node]
+            return self._graph.degree(node_idx)
+        # Return dict of all degrees
+        return {self._index_to_node[idx]: self._graph.degree(idx) 
+                for idx in self._graph.node_indices()}
+    
+    def copy(self):
+        """Return a copy of the graph."""
+        new_graph = Graph()
+        new_graph._graph = self._graph.copy()
+        new_graph._node_to_index = self._node_to_index.copy()
+        new_graph._index_to_node = self._index_to_node.copy()
+        return new_graph
+
+    def edge_list(self):
+        """Return list of edges as (source_idx, target_idx) tuples.
+        
+        This provides compatibility with rustworkx.PyGraph.edge_list().
+        """
+        return list(self._graph.edge_list())
+
+    def node_indices(self):
+        """Return list of node indices.
+        
+        This provides compatibility with rustworkx.PyGraph.node_indices().
+        """
+        return list(self._graph.node_indices())
+
+    def __getitem__(self, idx):
+        """Get node data at index.
+        
+        This provides compatibility with rustworkx.PyGraph.__getitem__().
+        """
+        return self._graph[idx]
