@@ -350,14 +350,10 @@ class Select(Operation):
     .. details::
         :title: Available decomposition rules
 
-        **Option 1**
-
-        1. **multi_control**: [Definition of the rule]
-
         .. code-block::
 
-            # Example of how to access
-            qml.list_decomps(qml.Select)["multi_control"]
+            # General example of how to access
+            qml.list_decomps(qml.Select)["name_of_rule"]
 
         Resources:
 
@@ -374,43 +370,6 @@ class Select(Operation):
 
             weighted_cost = 4
 
-        The following decomposition rule is applied:
-
-        .. figure:: ../../../doc/_static/templates/subroutines/select.png
-                    :align: center
-                    :width: 70%
-                    :target: javascript:void(0);
-
-        2. **unary**: [Definition of the rule]. `Babbush et al. (2018) <https://arxiv.org/abs/1805.03662>`__
-
-        .. code-block::
-
-            # Example of how to access
-            qml.list_decomps(qml.Select)["unary"]
-
-        Resources:
-
-            For :math:`K` operators this decomposition requires at least :math:`c=\lceil\log_2 K\rceil`
-            control wires (as usual for Select), and :math:`c-1` additional work wires.
-
-        The following decomposition rule is applied:
-
-        .. figure:: ../../../doc/_static/templates/subroutines/select.png
-                    :align: center
-                    :width: 70%
-                    :target: javascript:void(0);
-    
-
-        **Option 2**
-
-        .. code-block::
-
-            # General example of how to access
-            qml.list_decomps(qml.Select)[NAME]
-        
-        Decomposition rules
-        ~~~~~~~~~~~~~~~~~~~
-
         The following decomposition rules are supported
 
         .. currentmodule:: pennylane.templates.subroutines
@@ -420,8 +379,19 @@ class Select(Operation):
             select._select_decomp_multi_control
             select._select_decomp_unary
             select._select_decomp_multi_control_work_wire
+        
+        .. list-table::
+            :widths: 20 60
+            :header-rows: 1
 
-        **Option 3**
+        * - Rule Name
+          - Details
+        * - :meth:`~.Select.compute_decomposition`
+          - **Default/Standard.** Simple decomposition based on a conditional rotation and basis rotation, scales well for small registers.
+        * - :func:`~.select_ladder_decomposition`
+          - **Scaling: O(n\*2^n).** Uses a controlled-ladder structure, which can optimize for specific hardware constraints but is resource-intensive for large qubit numbers.
+        * - :func:`~.select_gray_code_decomposition`
+          - **Resource Estimate: 2\*2^n CNOTs.** A optimized approach using Gray codes to reduce the number of two-qubit gates, beneficial for noise reduction.
 
         .. list-table::
             :widths: 20 60 20
