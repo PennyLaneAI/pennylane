@@ -60,7 +60,7 @@ class TestSingleReturnExecute:
             device=dev,
             diff_method=None,
             interface=interface,
-            transform_program=program,
+            compile_pipeline=program,
         )
 
         assert res[0].shape == (2**wires,)
@@ -1253,7 +1253,7 @@ class TestDeviceNewUnits:
             match="not accepted for analytic simulation on default.qubit",
         ):
             program = dev.preprocess_transforms()
-            qml.execute(tapes=[tape], device=dev, diff_method=None, transform_program=program)
+            qml.execute(tapes=[tape], device=dev, diff_method=None, compile_pipeline=program)
 
     def test_state_return_with_other_types(self):
         """Test that an exception is raised when a state is returned along with another return
@@ -1283,7 +1283,7 @@ class TestDeviceNewUnits:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         program = dev.preprocess_transforms()
-        res = qml.execute(tapes=[tape], device=dev, diff_method=None, transform_program=program)
+        res = qml.execute(tapes=[tape], device=dev, diff_method=None, compile_pipeline=program)
         assert res == (0,)
 
     def test_custom_wire_labels_error(self):
@@ -1297,5 +1297,5 @@ class TestDeviceNewUnits:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         program = dev.preprocess_transforms()
-        res = qml.execute(tapes=[tape], device=dev, diff_method=None, transform_program=program)
+        res = qml.execute(tapes=[tape], device=dev, diff_method=None, compile_pipeline=program)
         assert res == (0,)

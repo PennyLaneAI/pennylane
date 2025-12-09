@@ -187,7 +187,7 @@ class TestCliffordCompile:
         dev = qml.device("default.qubit")
         transform_program = dev.preprocess_transforms()
         res1, res2 = qml.execute(
-            [old_tape, new_tape], device=dev, transform_program=transform_program
+            [old_tape, new_tape], device=dev, compile_pipeline=transform_program
         )
         qml.math.isclose(res1, tape_fn([res2]), atol=1e-2)
 
@@ -208,7 +208,7 @@ class TestCliffordCompile:
         dev = qml.device("default.qubit")
         transform_program = dev.preprocess_transforms()
         res1, res2 = qml.execute(
-            [old_tape, new_tape], device=dev, transform_program=transform_program
+            [old_tape, new_tape], device=dev, compile_pipeline=transform_program
         )
         qml.math.isclose(res1, tape_fn([res2]), atol=1e-2)
 
@@ -338,7 +338,7 @@ class TestCliffordCompile:
         dev = qml.device("default.qubit")
         transform_program = dev.preprocess_transforms()
         res1, res2 = qml.execute(
-            [old_tape, new_tape], device=dev, transform_program=transform_program
+            [old_tape, new_tape], device=dev, compile_pipeline=transform_program
         )
         qml.math.isclose(res1, tape_fn([res2]), atol=1e-2)
 
@@ -366,7 +366,7 @@ class TestCliffordCompile:
         dev = qml.device("default.qubit")
         transform_program = dev.preprocess_transforms()
         res1, res2 = qml.execute(
-            [old_tape, new_tape], device=dev, transform_program=transform_program
+            [old_tape, new_tape], device=dev, compile_pipeline=transform_program
         )
         qml.math.isclose(res1, tape_fn([res2]), atol=1e-2)
 

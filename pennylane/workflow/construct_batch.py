@@ -21,7 +21,7 @@ from typing import TYPE_CHECKING, Literal
 import pennylane as qml
 from pennylane.transforms.core import CompilePipeline, transform
 
-from ._setup_transform_program import _setup_transform_program
+from ._setup_compile_pipeline import _setup_compile_pipeline
 from .qnode import _make_execution_config
 from .resolution import _resolve_execution_config
 
@@ -80,7 +80,7 @@ def marker(tape, level: str):
 
 
 def _get_full_transform_program(qnode: QNode, gradient_fn) -> CompilePipeline:
-    program = CompilePipeline(qnode.transform_program)
+    program = CompilePipeline(qnode.compile_pipeline)
 
     if getattr(gradient_fn, "expand_transform", False):
         program.add_transform(
@@ -337,8 +337,8 @@ def get_transform_program(
     has_gradient_expand = bool(getattr(gradient_fn, "expand_transform", False))
     full_transform_program = _get_full_transform_program(qnode, gradient_fn)
 
-    num_user = len(qnode.transform_program)
-    if qnode.transform_program.has_final_transform:
+    num_user = len(qnode.compile_pipeline)
+    if qnode.compile_pipeline.has_final_transform:
         # final transform is placed after device transforms
         num_user -= 1
 
@@ -362,8 +362,8 @@ def get_transform_program(
 
     resolved_program = full_transform_program[level]
 
-    if qnode.transform_program.has_final_transform and readd_final_transform:
-        resolved_program += qnode.transform_program[-1:]
+    if qnode.compile_pipeline.has_final_transform and readd_final_transform:
+        resolved_program += qnode.compile_pipeline[-1:]
 
     return resolved_program
 
@@ -464,7 +464,7 @@ def construct_batch(
     """
     _validate_level(level)
     is_torch_layer = type(qnode).__name__ == "TorchLayer"
-    user_program = qnode.transform_program
+    user_program = qnode.compile_pipeline
     _validate_custom_levels(user_program)
     num_user_transforms = len(user_program)
 
@@ -507,8 +507,8 @@ def construct_batch(
             tapes=user_transformed_tapes,  # Use the user-transformed tapes
         )
 
-        # Use _setup_transform_program like execute() does
-        outer_transform_program, inner_transform_program = _setup_transform_program(
+        # Use _setup_compile_pipeline like execute() does
+        outer_transform_program, inner_transform_program = _setup_compile_pipeline(
             qnode.device,
             execution_config,
             cache=qnode.execute_kwargs["cache"],

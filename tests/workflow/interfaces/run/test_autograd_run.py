@@ -25,7 +25,7 @@ import pennylane as qml
 # pylint: disable=no-name-in-module
 from conftest import atol_for_shots, get_device, test_matrix
 from pennylane import numpy as pnp
-from pennylane.workflow import _resolve_execution_config, _setup_transform_program, run
+from pennylane.workflow import _resolve_execution_config, _setup_compile_pipeline, run
 
 
 @pytest.mark.autograd
@@ -46,7 +46,7 @@ class TestAutogradRun:
             tape2 = qml.tape.QuantumScript(ops2, [qml.expval(qml.PauliZ("a"))], shots=shots)
 
             resolved_config = _resolve_execution_config(config, device, [tape1, tape2])
-            inner_tp = _setup_transform_program(device, resolved_config)[1]
+            inner_tp = _setup_compile_pipeline(device, resolved_config)[1]
             return run([tape1, tape2], device, resolved_config, inner_tp)
 
         a = pnp.array(0.1, requires_grad=True)
@@ -78,7 +78,7 @@ class TestAutogradRun:
         def cost(a):
             tape = qml.tape.QuantumScript([qml.RY(a, 0)], [qml.expval(qml.PauliZ(0))], shots=shots)
             resolved_config = _resolve_execution_config(config, device, [tape])
-            inner_tp = _setup_transform_program(device, resolved_config)[1]
+            inner_tp = _setup_compile_pipeline(device, resolved_config)[1]
             return run([tape], device, resolved_config, inner_tp)[0]
 
         a = pnp.array(0.1, requires_grad=True)
@@ -104,7 +104,7 @@ class TestAutogradRun:
             m = [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))]
             tape = qml.tape.QuantumScript(ops, m, shots=shots)
             resolved_config = _resolve_execution_config(config, device, [tape])
-            inner_tp = _setup_transform_program(device, resolved_config)[1]
+            inner_tp = _setup_compile_pipeline(device, resolved_config)[1]
             return autograd.numpy.hstack(run([tape], device, resolved_config, inner_tp)[0])
 
         a = pnp.array(0.1, requires_grad=True)
