@@ -143,4 +143,4 @@ def test_decomposition_contents(
         iqp_circuit(params, gates, init_gates, init_coeffs, spin_sym, n_qubits)
 
     for op, expected in zip(q.queue, expected_circuit):
-        assert type(op) == expected
+        assert isinstance(op, expected)
