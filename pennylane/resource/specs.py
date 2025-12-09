@@ -136,6 +136,44 @@ def _specs_qjit_device_level_tracking(
             os.remove(_RESOURCE_TRACKING_FILEPATH)
 
 
+def _preprocess_level_input(level, marker_to_level) -> list[int]:
+    """Preprocesses the level input to always return a sorted list of integers.
+
+    Args:
+        level (str | int | slice | iter[int | str]): The level input to preprocess
+        marker_to_level (dict[str, int]): Mapping from marker names to their associated level numbers
+    Returns:
+        list[int]: The preprocessed level input
+    """
+
+    if isinstance(level, (int, str)):
+        level = [level]
+    else:
+        level = list(level)
+
+    # Convert marker names to the associated level number
+    for i, lvl in enumerate(level):
+        if isinstance(lvl, str):
+            if lvl not in marker_to_level:
+                raise ValueError(f"Transform name '{lvl}' not found in the transform program.")
+            level[i] = marker_to_level[lvl]
+        elif isinstance(lvl, int):
+            if lvl < 0:
+                raise ValueError(
+                    "The 'level' argument to qml.specs for QJIT'd QNodes must be non-negative, "
+                    f"got {lvl}."
+                )
+
+    level_sorted = sorted(level)
+    if level != level_sorted:
+        warnings.warn(
+            "The 'level' argument to qml.specs for QJIT'd QNodes has been sorted to be in ascending order.",
+            UserWarning,
+        )
+
+    return level_sorted
+
+
 def _specs_qjit_intermediate_passes(
     qjit, original_qnode, level, *args, **kwargs
 ) -> (
@@ -161,31 +199,7 @@ def _specs_qjit_intermediate_passes(
 
     # Easier to assume level is always a sorted list of int levels (if not "all" or "all-mlir")
     if level not in ("all", "all-mlir"):
-        if single_level:
-            level = [level]
-        else:
-            level = list(level)
-
-        # Convert marker names to the associated level number
-        for i, lvl in enumerate(level):
-            if isinstance(lvl, str):
-                if lvl not in marker_to_level:
-                    raise ValueError(f"Transform name '{lvl}' not found in the transform program.")
-                level[i] = marker_to_level[lvl]
-            elif isinstance(lvl, int):
-                if lvl < 0:
-                    raise ValueError(
-                        "The 'level' argument to qml.specs for QJIT'd QNodes must be non-negative, "
-                        f"got {lvl}."
-                    )
-
-        level_sorted = sorted(level)
-        if level != level_sorted:
-            warnings.warn(
-                "The 'level' argument to qml.specs for QJIT'd QNodes has been sorted to be in ascending order.",
-                UserWarning,
-            )
-            level = level_sorted
+        level = _preprocess_level_input(level, marker_to_level)
 
     resources = {}
 
