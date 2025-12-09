@@ -19,9 +19,10 @@ import re
 import numpy as np
 import pytest
 
-from pennylane import device, qnode
+from pennylane import device, qnode, queuing
 from pennylane.decomposition import list_decomps
 from pennylane.measurements import probs
+from pennylane.ops import MultiControlledX, Toffoli, X
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates import BasisEmbedding
 from pennylane.templates.subroutines.qram import BBQRAM, SelectOnlyQRAM
@@ -258,6 +259,7 @@ def select_only_quantum(
         "select_value",
         "address",
         "probabilities",
+        "expected_circuit",
     ),
     [
         (
@@ -285,6 +287,38 @@ def select_only_quantum(
             0,
             3,  # addressed from the left
             [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],  # |000>
+            [
+                X(5),
+                X(6),
+                X(0),
+                X(1),
+                MultiControlledX(wires=[5, 6, 0, 1, 3], control_values=[True, True, True, True]),
+                X(5),
+                X(6),
+                X(0),
+                X(1),
+                X(5),
+                X(6),
+                X(0),
+                MultiControlledX(wires=[5, 6, 0, 1, 2], control_values=[True, True, True, True]),
+                MultiControlledX(wires=[5, 6, 0, 1, 3], control_values=[True, True, True, True]),
+                MultiControlledX(wires=[5, 6, 0, 1, 4], control_values=[True, True, True, True]),
+                X(5),
+                X(6),
+                X(0),
+                X(5),
+                X(6),
+                X(1),
+                MultiControlledX(wires=[5, 6, 0, 1, 2], control_values=[True, True, True, True]),
+                MultiControlledX(wires=[5, 6, 0, 1, 3], control_values=[True, True, True, True]),
+                X(5),
+                X(6),
+                X(1),
+                X(5),
+                X(6),
+                X(5),
+                X(6),
+            ],
         ),
         (
             [
@@ -311,6 +345,38 @@ def select_only_quantum(
             0,  # Note: if this were set to 1, the test would not pass... due to the select.
             2,
             [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0],  # |110>
+            [
+                X(5),
+                X(6),
+                X(0),
+                X(1),
+                MultiControlledX(wires=[5, 6, 0, 1, 3], control_values=[True, True, True, True]),
+                X(5),
+                X(6),
+                X(0),
+                X(1),
+                X(5),
+                X(6),
+                X(0),
+                MultiControlledX(wires=[5, 6, 0, 1, 2], control_values=[True, True, True, True]),
+                MultiControlledX(wires=[5, 6, 0, 1, 3], control_values=[True, True, True, True]),
+                MultiControlledX(wires=[5, 6, 0, 1, 4], control_values=[True, True, True, True]),
+                X(5),
+                X(6),
+                X(0),
+                X(5),
+                X(6),
+                X(1),
+                MultiControlledX(wires=[5, 6, 0, 1, 2], control_values=[True, True, True, True]),
+                MultiControlledX(wires=[5, 6, 0, 1, 3], control_values=[True, True, True, True]),
+                X(5),
+                X(6),
+                X(1),
+                X(5),
+                X(6),
+                X(5),
+                X(6),
+            ],
         ),
         (
             [
@@ -337,6 +403,96 @@ def select_only_quantum(
             None,
             1,
             [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0],  # |111>
+            [
+                X(5),
+                X(6),
+                X(0),
+                X(1),
+                MultiControlledX(wires=[5, 6, 0, 1, 3], control_values=[True, True, True, True]),
+                X(5),
+                X(6),
+                X(0),
+                X(1),
+                X(5),
+                X(6),
+                X(0),
+                MultiControlledX(wires=[5, 6, 0, 1, 2], control_values=[True, True, True, True]),
+                MultiControlledX(wires=[5, 6, 0, 1, 3], control_values=[True, True, True, True]),
+                MultiControlledX(wires=[5, 6, 0, 1, 4], control_values=[True, True, True, True]),
+                X(5),
+                X(6),
+                X(0),
+                X(5),
+                X(6),
+                X(1),
+                MultiControlledX(wires=[5, 6, 0, 1, 2], control_values=[True, True, True, True]),
+                MultiControlledX(wires=[5, 6, 0, 1, 3], control_values=[True, True, True, True]),
+                X(5),
+                X(6),
+                X(1),
+                X(5),
+                X(6),
+                X(5),
+                X(6),
+                X(5),
+                X(0),
+                X(1),
+                MultiControlledX(wires=[5, 6, 0, 1, 3], control_values=[True, True, True, True]),
+                X(5),
+                X(0),
+                X(1),
+                X(5),
+                X(0),
+                MultiControlledX(wires=[5, 6, 0, 1, 2], control_values=[True, True, True, True]),
+                MultiControlledX(wires=[5, 6, 0, 1, 3], control_values=[True, True, True, True]),
+                MultiControlledX(wires=[5, 6, 0, 1, 4], control_values=[True, True, True, True]),
+                X(5),
+                X(0),
+                X(5),
+                X(1),
+                MultiControlledX(wires=[5, 6, 0, 1, 2], control_values=[True, True, True, True]),
+                MultiControlledX(wires=[5, 6, 0, 1, 3], control_values=[True, True, True, True]),
+                X(5),
+                X(1),
+                X(5),
+                X(5),
+                X(6),
+                X(0),
+                X(1),
+                MultiControlledX(wires=[5, 6, 0, 1, 3], control_values=[True, True, True, True]),
+                X(6),
+                X(0),
+                X(1),
+                X(6),
+                X(0),
+                MultiControlledX(wires=[5, 6, 0, 1, 2], control_values=[True, True, True, True]),
+                MultiControlledX(wires=[5, 6, 0, 1, 3], control_values=[True, True, True, True]),
+                MultiControlledX(wires=[5, 6, 0, 1, 4], control_values=[True, True, True, True]),
+                X(6),
+                X(0),
+                X(6),
+                X(1),
+                MultiControlledX(wires=[5, 6, 0, 1, 2], control_values=[True, True, True, True]),
+                MultiControlledX(wires=[5, 6, 0, 1, 3], control_values=[True, True, True, True]),
+                X(6),
+                X(1),
+                X(6),
+                X(6),
+                X(0),
+                X(1),
+                MultiControlledX(wires=[5, 6, 0, 1, 3], control_values=[True, True, True, True]),
+                X(0),
+                X(1),
+                X(0),
+                MultiControlledX(wires=[5, 6, 0, 1, 2], control_values=[True, True, True, True]),
+                MultiControlledX(wires=[5, 6, 0, 1, 3], control_values=[True, True, True, True]),
+                MultiControlledX(wires=[5, 6, 0, 1, 4], control_values=[True, True, True, True]),
+                X(0),
+                X(1),
+                MultiControlledX(wires=[5, 6, 0, 1, 2], control_values=[True, True, True, True]),
+                MultiControlledX(wires=[5, 6, 0, 1, 3], control_values=[True, True, True, True]),
+                X(1),
+            ],
         ),
         (
             [
@@ -351,6 +507,22 @@ def select_only_quantum(
             None,
             0,
             [0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0],  # |010>
+            [
+                X(0),
+                X(1),
+                Toffoli(wires=[0, 1, 3]),
+                X(0),
+                X(1),
+                X(0),
+                Toffoli(wires=[0, 1, 2]),
+                Toffoli(wires=[0, 1, 3]),
+                Toffoli(wires=[0, 1, 4]),
+                X(0),
+                X(1),
+                Toffoli(wires=[0, 1, 2]),
+                Toffoli(wires=[0, 1, 3]),
+                X(1),
+            ],
         ),
     ],
 )
@@ -362,18 +534,19 @@ def test_select_only_quantum(
     select_value,
     address,
     probabilities,
+    expected_circuit,
 ):  # pylint: disable=too-many-arguments
-    assert np.allclose(
-        probabilities,
-        select_only_quantum(
+    with queuing.AnnotatedQueue() as q:
+        real_probs = select_only_quantum(
             bitstrings,
             control_wires,
             target_wires,
             select_wires,
             select_value,
             address,
-        ),
-    )
+        )
+    assert np.allclose(probabilities, real_probs)
+    assert q.queue == expected_circuit
 
 
 @pytest.mark.parametrize(
