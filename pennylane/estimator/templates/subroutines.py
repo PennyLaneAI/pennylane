@@ -1052,9 +1052,9 @@ class UnaryIterationQPE(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * unitary (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A compressed resource operator, corresponding
-                  to the phase estimation operator.
-                * num_iterations (int): The total number of times the unitary operator :math:`U` is
+                * unitary (~.pennylane.estimator.resource_operator.CompressedResourceOp): A compressed resource operator
+                  corresponding to the phase estimation operator :math:`U`.
+                * num_iterations (int): The total number of times the phase estimation operator :math:`U` is
                   applied in order to reach a target precision in the eigenvalue estimate.
                 * adj_qft_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp` | None]): An optional compressed
                   resource operator, corresponding to the adjoint QFT routine. If :code:`None`, the
@@ -1078,9 +1078,9 @@ class UnaryIterationQPE(ResourceOperator):
         the Operator that are needed to compute the resources.
 
         Args:
-            unitary (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A compressed resource operator, corresponding
-                to the phase estimation operator.
-            num_iterations (int): The total number of times the unitary operator :math:`U` is
+            unitary (~.pennylane.estimator.resource_operator.CompressedResourceOp): A compressed resource operator
+                corresponding to the phase estimation operator :math:`U`.
+            num_iterations (int): The total number of times the phase estimation operator :math:`U` is
                 applied in order to reach a target precision in the eigenvalue estimate.
             adj_qft_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp` | None): An optional compressed
                 resource operator, corresponding to the adjoint QFT routine. If :code:`None`, the
@@ -1115,7 +1115,7 @@ class UnaryIterationQPE(ResourceOperator):
         Args:
             unitary (~.pennylane.estimator.resource_operator.CompressedResourceOp): A compressed resource operator
                 corresponding to the phase estimation operator :math:`U`.
-            num_iterations (int): The total number of times the unitary operator :math:`U` is
+            num_iterations (int): The total number of times the phase estimation operator :math:`U` is
                 applied in order to reach a target precision in the eigenvalue estimate.
             adj_qft_cmpr_op (~.pennylane.estimator.resource_operator.CompressedResourceOp | None): An optional compressed
                 resource operator corresponding to the adjoint QFT routine. If ``None``, the
