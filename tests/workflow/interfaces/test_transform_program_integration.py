@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Integration tests for the transform program and the execution pipeline.
+"""Integration tests for the compile pipeline and the execution pipeline.
 
 Differentiability tests are still in the ml-framework specific files.
 """
@@ -33,11 +33,11 @@ device_suite = (
 
 @pytest.mark.all_interfaces
 class TestCompilePipeline:
-    """Non differentiability tests for the transform program keyword argument."""
+    """Non differentiability tests for the compile pipeline keyword argument."""
 
     @pytest.mark.parametrize("interface", (None, "autograd", "jax", "torch"))
-    def test_transform_program_none(self, interface):
-        """Test that if no transform program is provided, null default behavior is used."""
+    def test_compile_pipeline_none(self, interface):
+        """Test that if no compile pipeline is provided, null default behavior is used."""
 
         dev = qml.devices.DefaultQubit()
 
@@ -45,7 +45,7 @@ class TestCompilePipeline:
         tape1 = qml.tape.QuantumScript([qml.RY(2.0, 0)], [qml.state()])
 
         with dev.tracker as tracker:
-            results = qml.execute((tape0, tape1), dev, transform_program=None, interface=interface)
+            results = qml.execute((tape0, tape1), dev, compile_pipeline=None, interface=interface)
 
         assert qml.math.allclose(results[0], np.cos(1.0))
         assert qml.math.allclose(results[1], np.array([np.cos(1.0), np.sin(1.0)]))
@@ -56,8 +56,8 @@ class TestCompilePipeline:
         assert tracker.history["resources"][1].gate_types["RY"] == 1
 
     @pytest.mark.parametrize("interface", (None, "autograd", "jax", "torch"))
-    def test_transform_program_modifies_circuit(self, interface):
-        """Integration tests for a transform program that modifies the input tapes."""
+    def test_compile_pipeline_modifies_circuit(self, interface):
+        """Integration tests for a compile pipeline that modifies the input tapes."""
 
         dev = qml.devices.DefaultQubit()
 
@@ -74,7 +74,7 @@ class TestCompilePipeline:
 
         pauli_x_out_container = qml.transforms.core.TransformContainer(just_pauli_x_out)
 
-        transform_program = qml.CompilePipeline([pauli_x_out_container])
+        compile_pipeline = qml.CompilePipeline([pauli_x_out_container])
 
         tape0 = qml.tape.QuantumScript(
             [qml.Rot(1.2, 2.3, 3.4, wires=0)], [qml.expval(qml.PauliZ(0))]
@@ -85,7 +85,7 @@ class TestCompilePipeline:
 
         with dev.tracker as tracker:
             results = qml.execute(
-                (tape0, tape1), dev, transform_program=transform_program, interface=interface
+                (tape0, tape1), dev, compile_pipeline=compile_pipeline, interface=interface
             )
 
         assert qml.math.allclose(results[0], -1.0)
@@ -122,7 +122,7 @@ class TestCompilePipeline:
         program = qml.CompilePipeline([scale_shots])
 
         tape = qml.tape.QuantumScript([], [qml.counts(wires=0)], shots=100)
-        results = qml.execute((tape,), dev, interface=interface, transform_program=program)[0]
+        results = qml.execute((tape,), dev, interface=interface, compile_pipeline=program)[0]
 
         assert results[0] == {"0": 50}
         assert results[1] == {"0": 200}
@@ -159,7 +159,7 @@ class TestCompilePipeline:
         )
         with dev.tracker:
             results = qml.execute(
-                (tape1, tape2, tape3), dev, interface=interface, transform_program=prog, cache=True
+                (tape1, tape2, tape3), dev, interface=interface, compile_pipeline=prog, cache=True
             )
 
         assert qml.math.allclose(results[0], np.cos(1.2))
@@ -169,7 +169,7 @@ class TestCompilePipeline:
         assert dev.tracker.totals["executions"] == 7
 
     def test_chained_preprocessing(self):
-        """Test a transform program with two transforms where their order affects the output."""
+        """Test a compile pipeline with two transforms where their order affects the output."""
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -201,7 +201,7 @@ class TestCompilePipeline:
         tape1 = qml.tape.QuantumScript([qml.RX(1.2, 0)], [qml.expval(qml.PauliZ(0))])
 
         with dev.tracker:
-            results = qml.execute((tape1,), dev, transform_program=prog)
+            results = qml.execute((tape1,), dev, compile_pipeline=prog)
 
         assert dev.tracker.history["resources"][0].gate_types["PauliX"] == 2
         assert qml.math.allclose(results, 1.0)
@@ -209,7 +209,7 @@ class TestCompilePipeline:
         prog_reverse = qml.CompilePipeline((repeat_operations_container, just_pauli_x_container))
 
         with dev.tracker:
-            results = qml.execute((tape1,), dev, transform_program=prog_reverse)
+            results = qml.execute((tape1,), dev, compile_pipeline=prog_reverse)
 
         assert dev.tracker.history["resources"][0].gate_types["PauliX"] == 1
         assert qml.math.allclose(results, -1.0)
@@ -240,7 +240,7 @@ class TestCompilePipeline:
         tape0 = qml.tape.QuantumScript([], [qml.expval(qml.PauliZ(0))])
         tape1 = qml.tape.QuantumScript([qml.PauliX(0)], [qml.expval(qml.PauliZ(0))])
 
-        results = qml.execute((tape0, tape1), dev, interface=interface, transform_program=prog)
+        results = qml.execute((tape0, tape1), dev, interface=interface, compile_pipeline=prog)
 
         # 1.0 * 2.0 + 1.0
         assert qml.math.allclose(results[0], 3.0)
@@ -248,7 +248,7 @@ class TestCompilePipeline:
         assert qml.math.allclose(results[1], -1.0)
 
         results_reverse = qml.execute(
-            (tape0, tape1), dev, interface=interface, transform_program=prog_reverse
+            (tape0, tape1), dev, interface=interface, compile_pipeline=prog_reverse
         )
 
         # (1.0 + 1.0) * 2.0 = 4.0

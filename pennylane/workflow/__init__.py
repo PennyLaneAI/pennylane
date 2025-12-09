@@ -58,5 +58,5 @@ from .resolution import (
 )
 from .set_shots import set_shots
 from ._cache_transform import _cache_transform
-from ._setup_transform_program import _setup_transform_program
+from ._setup_compile_pipeline import _setup_compile_pipeline
 from .run import run

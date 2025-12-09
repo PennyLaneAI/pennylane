@@ -396,7 +396,7 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
         qnode = copy(qnode)
 
         if self.expand_transform:
-            qnode.transform_program.push_back(
+            qnode.compile_pipeline.push_back(
                 TransformContainer(
                     TransformDispatcher(self._expand_transform),
                     args=targs,
@@ -404,7 +404,7 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
                     use_argnum=self._use_argnum_in_expand,
                 )
             )
-        qnode.transform_program.push_back(
+        qnode.compile_pipeline.push_back(
             TransformContainer(
                 self,
                 args=targs,

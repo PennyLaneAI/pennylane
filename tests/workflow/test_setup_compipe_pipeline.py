@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Unit tests for the `qml.workflow.resolution._setup_transform_program` helper function"""
+"""Unit tests for the `qml.workflow.resolution._setup_compile_pipeline` helper function"""
 
 from dataclasses import replace
 from unittest.mock import MagicMock
@@ -19,9 +19,9 @@ from unittest.mock import MagicMock
 import pennylane as qml
 from pennylane.devices import ExecutionConfig
 from pennylane.transforms.core import CompilePipeline
-from pennylane.workflow._setup_transform_program import (
+from pennylane.workflow._setup_compile_pipeline import (
     _prune_dynamic_transform,
-    _setup_transform_program,
+    _setup_compile_pipeline,
 )
 
 
@@ -44,18 +44,18 @@ def device_transform(tape):
 
 
 def test_gradient_expand_transform():
-    """Test if gradient expand transform is added to the full_transform_program."""
+    """Test if gradient expand transform is added to the full_compile_pipeline."""
     config = ExecutionConfig(gradient_method=qml.gradients.param_shift)
 
     device = qml.device("default.qubit")
 
-    full_tp, _ = _setup_transform_program(device, config)
+    full_tp, _ = _setup_compile_pipeline(device, config)
 
     assert repr(full_tp) == "CompilePipeline(_expand_transform_param_shift)"
 
 
-def test_device_transform_program():
-    """Test that the device transform is correctly placed in the transform program."""
+def test_device_compile_pipeline():
+    """Test that the device transform is correctly placed in the compile pipeline."""
     config = ExecutionConfig(use_device_gradient=True)
 
     container = qml.transforms.core.TransformContainer(device_transform)
@@ -63,14 +63,14 @@ def test_device_transform_program():
     device = qml.device("default.qubit")
     device.preprocess_transforms = MagicMock(return_value=device_tp)
 
-    full_tp, inner_tp = _setup_transform_program(device, config)
+    full_tp, inner_tp = _setup_compile_pipeline(device, config)
 
     assert repr(full_tp) == "CompilePipeline(device_transform)"
     assert inner_tp.is_empty()
 
     config = replace(config, use_device_gradient=False)
 
-    full_tp, inner_tp = _setup_transform_program(device, config)
+    full_tp, inner_tp = _setup_compile_pipeline(device, config)
 
     assert full_tp.is_empty()
     assert repr(inner_tp) == "CompilePipeline(device_transform)"
@@ -126,7 +126,7 @@ def test_interface_data_not_supported():
     config = ExecutionConfig(interface="autograd", gradient_method="adjoint")
     device = qml.device("default.qubit")
 
-    full_tp, inner_tp = _setup_transform_program(device, config)
+    full_tp, inner_tp = _setup_compile_pipeline(device, config)
 
     assert full_tp.is_empty()
     assert qml.transforms.convert_to_numpy_parameters in inner_tp
@@ -138,7 +138,7 @@ def test_interface_data_supported():
 
     device = qml.device("default.mixed", wires=1)
 
-    _, inner_tp = _setup_transform_program(device, config)
+    _, inner_tp = _setup_compile_pipeline(device, config)
 
     assert qml.transforms.convert_to_numpy_parameters not in inner_tp
 
@@ -146,7 +146,7 @@ def test_interface_data_supported():
 
     device = qml.device("default.qubit")
 
-    _, inner_tp = _setup_transform_program(device, config)
+    _, inner_tp = _setup_compile_pipeline(device, config)
 
     assert qml.transforms.convert_to_numpy_parameters not in inner_tp
 
@@ -154,7 +154,7 @@ def test_interface_data_supported():
 
     device = qml.device("default.qubit")
 
-    _, inner_tp = _setup_transform_program(device, config)
+    _, inner_tp = _setup_compile_pipeline(device, config)
 
     assert qml.transforms.convert_to_numpy_parameters not in inner_tp
 
@@ -162,7 +162,7 @@ def test_interface_data_supported():
         convert_to_numpy=False, interface="jax", gradient_method=qml.gradients.param_shift
     )
 
-    _, inner_tp = _setup_transform_program(device, config)
+    _, inner_tp = _setup_compile_pipeline(device, config)
     assert qml.transforms.convert_to_numpy_parameters not in inner_tp
 
 
@@ -172,12 +172,12 @@ def test_cache_handling():
     device = qml.device("default.qubit")
     device.preprocess_transforms = MagicMock(return_value=CompilePipeline())
 
-    full_tp, inner_tp = _setup_transform_program(device, config, cache=True)
+    full_tp, inner_tp = _setup_compile_pipeline(device, config, cache=True)
 
     assert repr(inner_tp) == "CompilePipeline(_cache_transform)"
     assert full_tp.is_empty()
 
-    full_tp, inner_tp = _setup_transform_program(device, config, cache=False)
+    full_tp, inner_tp = _setup_compile_pipeline(device, config, cache=False)
 
     assert full_tp.is_empty()
     assert inner_tp.is_empty()

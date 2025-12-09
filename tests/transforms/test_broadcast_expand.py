@@ -110,7 +110,7 @@ class TestBroadcastExpand:
     @pytest.mark.parametrize("params", parameters)
     @pytest.mark.parametrize("obs, exp_fn", observables_and_exp_fns)
     def test_expansion_qnode(self, params, obs, exp_fn, seed):
-        """Test that the transform integrates correctly with the transform program"""
+        """Test that the transform integrates correctly with the compile pipeline"""
 
         @qml.transforms.broadcast_expand
         @qml.qnode(get_device(seed=seed))

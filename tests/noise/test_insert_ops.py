@@ -427,7 +427,7 @@ def test_insert_dev(dev_name):
 
     program = dev.preprocess_transforms()
     res_without_noise = qml.execute(
-        [in_tape], dev, qml.gradients.param_shift, transform_program=program
+        [in_tape], dev, qml.gradients.param_shift, compile_pipeline=program
     )
 
     new_dev = insert(dev, qml.PhaseShift, 0.4)
@@ -435,7 +435,7 @@ def test_insert_dev(dev_name):
     tapes, _ = new_program([in_tape])
     tape = tapes[0]
     res_with_noise = qml.execute(
-        [in_tape], new_dev, qml.gradients.param_shift, transform_program=new_program
+        [in_tape], new_dev, qml.gradients.param_shift, compile_pipeline=new_program
     )
 
     with qml.queuing.AnnotatedQueue() as q_tape_exp:

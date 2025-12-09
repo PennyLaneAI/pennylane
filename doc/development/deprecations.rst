@@ -218,7 +218,7 @@ Completed deprecation cycles
   - Removed in v0.44
 
 * The ``qml.QNode.add_transform`` method is removed.
-  Instead, please use ``QNode.transform_program.push_back(transform_container=transform_container)``.
+  Instead, please use ``QNode.compile_pipeline.push_back(transform_container=transform_container)``.
 
   - Deprecated in v0.43
   - Removed in v0.44

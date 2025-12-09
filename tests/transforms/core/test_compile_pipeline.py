@@ -1100,11 +1100,11 @@ class TestClassicalCotransfroms:
             return qml.expval(qml.Z(0))
 
         circuit = qml.gradients.param_shift(circuit, hybrid=True)
-        circuit.transform_program.set_classical_component(circuit, (arg,), {})
+        circuit.compile_pipeline.set_classical_component(circuit, (arg,), {})
 
         tape = qml.tape.QuantumScript([], [])
         with pytest.raises(QuantumFunctionError, match="No trainable parameters"):
-            circuit.transform_program((tape,))
+            circuit.compile_pipeline((tape,))
 
 
 class TestCompilePipelineCall:
@@ -1418,7 +1418,7 @@ class TestCompilePipelineIntegration:
 
         new_qnode = dispatched_transform(dispatched_transform(qnode_circuit, 0), 0)
 
-        pipeline = new_qnode.transform_program
+        pipeline = new_qnode.compile_pipeline
         transformed_qnode_rep = repr(pipeline)
         assert (
             transformed_qnode_rep
@@ -1453,7 +1453,7 @@ class TestCompilePipelineIntegration:
 
         new_qnode = dispatched_transform_2(dispatched_transform_1(qnode_circuit, 0))
 
-        pipeline = new_qnode.transform_program
+        pipeline = new_qnode.compile_pipeline
         transformed_qnode_rep = repr(pipeline)
         assert (
             transformed_qnode_rep
@@ -1491,7 +1491,7 @@ class TestCompilePipelineIntegration:
 
         new_qnode = dispatched_transform_2(dispatched_transform_1(qnode_circuit, 0), 0)
 
-        pipeline = new_qnode.transform_program
+        pipeline = new_qnode.compile_pipeline
         transformed_qnode_rep = repr(pipeline)
         assert (
             transformed_qnode_rep

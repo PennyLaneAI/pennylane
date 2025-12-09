@@ -1083,7 +1083,7 @@ class TestShots:
 
 
 class TestCompilePipelineIntegration:
-    def test_transform_program_modifies_circuit(self):
+    def test_compile_pipeline_modifies_circuit(self):
         """Test qnode integration with a transform that turns the circuit into just a pauli x."""
         dev = DefaultQubitLegacy(wires=1)
 
@@ -1104,7 +1104,7 @@ class TestCompilePipelineIntegration:
             qml.RX(x, 0)
             return qml.expval(qml.PauliZ(0))
 
-        assert circuit.transform_program[0].transform == just_pauli_x_out.transform
+        assert circuit.compile_pipeline[0].transform == just_pauli_x_out.transform
 
         assert qml.math.allclose(circuit(0.1), -1)
 
@@ -1115,7 +1115,7 @@ class TestCompilePipelineIntegration:
         assert tracker.history["resources"][0].gate_types["PauliX"] == 1
         assert tracker.history["resources"][0].gate_types["RX"] == 0
 
-    def tet_transform_program_modifies_results(self):
+    def test_compile_pipeline_modifies_results(self):
         """Test integration with a transform that modifies the result output."""
 
         dev = DefaultQubitLegacy(wires=2)
@@ -1135,8 +1135,8 @@ class TestCompilePipelineIntegration:
             qml.RX(x, 0)
             return qml.expval(qml.PauliZ(0))
 
-        assert circuit.transform_program[0].transform == pin_result.transform
-        assert circuit.transform_program[0].kwargs == {"requested_result": 3.0}
+        assert circuit.compile_pipeline[0].transform == pin_result.transform
+        assert circuit.compile_pipeline[0].kwargs == {"requested_result": 3.0}
 
         assert qml.math.allclose(circuit(0.1), 3.0)
 

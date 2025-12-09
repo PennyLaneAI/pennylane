@@ -38,7 +38,7 @@ class TestMarker:
             return qml.state()
 
         expected = (
-            r"level bla not found in transform program. "
+            r"level bla not found in compile pipeline. "
             r"Builtin options are 'top', 'user', 'device', and 'gradient'."
             r" Custom levels are \['something'\]."
         )
@@ -134,7 +134,7 @@ class TestCompilePipelineGetter:
         def circuit():
             return qml.state()
 
-        with pytest.raises(ValueError, match=r"level bla not found in transform program."):
+        with pytest.raises(ValueError, match=r"level bla not found in compile pipeline."):
             get_transform_program(circuit, level="bla")
 
     def test_bad_other_key(self):
@@ -148,7 +148,7 @@ class TestCompilePipelineGetter:
             get_transform_program(circuit, level=["bah"])
 
     def test_get_transform_program_diff_method_transform(self):
-        """Tests for the transform program when the diff_method is a transform."""
+        """Tests for the compile pipeline when the diff_method is a transform."""
 
         dev = qml.device("default.qubit", wires=4)
 
@@ -241,7 +241,7 @@ class TestCompilePipelineGetter:
         assert full_prog == expected
 
     def test_get_transform_program_legacy_device_interface(self):
-        """Test the contents of the transform program with the legacy device interface."""
+        """Test the contents of the compile pipeline with the legacy device interface."""
 
         dev = DefaultQubitLegacy(wires=5)
 

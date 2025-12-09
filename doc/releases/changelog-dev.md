@@ -300,7 +300,7 @@
   [(#8468)](https://github.com/PennyLaneAI/pennylane/pull/8468)
 
 * The `qml.QNode.add_transform` method is removed.
-  Instead, please use `QNode.transform_program.push_back(transform_container=transform_container)`.
+  Instead, please use `QNode.compile_pipeline.push_back(transform_container=transform_container)`.
   [(#8468)](https://github.com/PennyLaneAI/pennylane/pull/8468)
 
 * The `TransformProgram` has been renamed to :class:`~pennylane.transforms.core.CompilePipeline`, and uses of

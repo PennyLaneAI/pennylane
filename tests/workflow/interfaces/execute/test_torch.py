@@ -552,7 +552,7 @@ class TestTorchExecuteIntegration:
                 grad_on_execution=execute_kwargs.get("grad_on_execution", None),
             )
             program = device.preprocess_transforms(execution_config=config)
-            return execute([tape], device, **execute_kwargs, transform_program=program)[0]
+            return execute([tape], device, **execute_kwargs, compile_pipeline=program)[0]
 
         a = torch.tensor(0.1, requires_grad=False)
         p = torch.tensor([0.1, 0.2, 0.3], requires_grad=True)

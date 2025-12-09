@@ -438,7 +438,7 @@ class QNSPSAOptimizer:
         program = cost.device.preprocess_transforms()
 
         loss_curr, loss_next = execute(
-            [tape_loss_curr, tape_loss_next], cost.device, None, transform_program=program
+            [tape_loss_curr, tape_loss_next], cost.device, None, compile_pipeline=program
         )
 
         # self.k has been updated earlier

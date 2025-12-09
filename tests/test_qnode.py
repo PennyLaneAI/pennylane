@@ -77,7 +77,7 @@ def test_no_measure():
 
 
 def test_copy():
-    """Test that a shallow copy also copies the execute kwargs, gradient kwargs, and transform program."""
+    """Test that a shallow copy also copies the execute kwargs, gradient kwargs, and compile pipeline."""
     dev = CustomDevice()
 
     qn = qml.QNode(dummyfunc, dev)
@@ -85,8 +85,8 @@ def test_copy():
     assert copied_qn is not qn
     assert copied_qn.execute_kwargs == qn.execute_kwargs
     assert copied_qn.execute_kwargs is not qn.execute_kwargs
-    assert list(copied_qn.transform_program) == list(qn.transform_program)
-    assert copied_qn.transform_program is not qn.transform_program
+    assert list(copied_qn.compile_pipeline) == list(qn.compile_pipeline)
+    assert copied_qn.compile_pipeline is not qn.compile_pipeline
     assert copied_qn.gradient_kwargs == qn.gradient_kwargs
     assert copied_qn.gradient_kwargs is not qn.gradient_kwargs
 
@@ -184,8 +184,8 @@ class TestUpdate:
         assert new_circuit.diff_method == "adjoint"
         assert new_circuit.execute_kwargs["device_vjp"]
 
-    def test_update_transform_program(self):
-        """Test that the transform program is properly preserved"""
+    def test_update_compile_pipeline(self):
+        """Test that the compile pipeline is properly preserved"""
         dev = qml.device("default.qubit", wires=2)
 
         @qml.transforms.combine_global_phases
@@ -197,11 +197,11 @@ class TestUpdate:
             qml.RY(x, wires=1)
             return qml.expval(qml.PauliZ(1))
 
-        assert qml.transforms.combine_global_phases in circuit.transform_program
-        assert len(circuit.transform_program) == 1
+        assert qml.transforms.combine_global_phases in circuit.compile_pipeline
+        assert len(circuit.compile_pipeline) == 1
         new_circuit = circuit.update(diff_method="parameter-shift")
         assert new_circuit.diff_method == "parameter-shift"
-        assert circuit.transform_program == new_circuit.transform_program
+        assert circuit.compile_pipeline == new_circuit.compile_pipeline
 
 
 class TestInitialization:
@@ -1502,9 +1502,9 @@ class TestShots:
 
 
 class TestCompilePipelineIntegration:
-    """Tests for the integration of the transform program with the qnode."""
+    """Tests for the integration of the compile pipeline with the qnode."""
 
-    def test_transform_program_modifies_circuit(self):
+    def test_compile_pipeline_modifies_circuit(self):
         """Test qnode integration with a transform that turns the circuit into just a pauli x."""
         dev = qml.device("default.qubit", wires=1)
 
@@ -1525,7 +1525,7 @@ class TestCompilePipelineIntegration:
             qml.RX(x, 0)
             return qml.expval(qml.PauliZ(0))
 
-        assert circuit.transform_program[0].transform == just_pauli_x_out.transform
+        assert circuit.compile_pipeline[0].transform == just_pauli_x_out.transform
 
         assert qml.math.allclose(circuit(0.1), -1)
 
@@ -1536,7 +1536,7 @@ class TestCompilePipelineIntegration:
         assert tracker.history["resources"][0].gate_types["PauliX"] == 1
         assert tracker.history["resources"][0].gate_types["RX"] == 0
 
-    def test_transform_program_modifies_results(self):
+    def test_compile_pipeline_modifies_results(self):
         """Test integration with a transform that modifies the result output."""
 
         dev = qml.device("default.qubit", wires=2)
@@ -1556,8 +1556,8 @@ class TestCompilePipelineIntegration:
             qml.RX(x, 0)
             return qml.expval(qml.PauliZ(0))
 
-        assert circuit.transform_program[0].transform == pin_result.transform
-        assert circuit.transform_program[0].kwargs == {"requested_result": 3.0}
+        assert circuit.compile_pipeline[0].transform == pin_result.transform
+        assert circuit.compile_pipeline[0].kwargs == {"requested_result": 3.0}
 
         assert qml.math.allclose(circuit(0.1), 3.0)
 

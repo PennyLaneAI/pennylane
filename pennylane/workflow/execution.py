@@ -30,7 +30,7 @@ from pennylane.exceptions import _TF_DEPRECATION_MSG, PennyLaneDeprecationWarnin
 from pennylane.math.interface_utils import Interface
 from pennylane.transforms.core import CompilePipeline
 
-from ._setup_transform_program import _setup_transform_program
+from ._setup_compile_pipeline import _setup_compile_pipeline
 from .resolution import _resolve_execution_config, _resolve_interface
 from .run import run
 
@@ -62,7 +62,7 @@ def execute(
     postselect_mode: Literal["hw-like", "fill-shots"] | None = None,
     mcm_method: Literal["deferred", "one-shot", "tree-traversal"] | None = None,
     gradient_kwargs: dict | None = None,
-    transform_program: CompilePipeline | None = None,
+    compile_pipeline: CompilePipeline | None = None,
     executor_backend: ExecBackends | str | None = None,
 ) -> ResultBatch:
     """A function for executing a batch of tapes on a device with compatibility for auto-differentiation.
@@ -78,7 +78,7 @@ def execute(
         interface (str, Interface): The interface that will be used for classical auto-differentiation.
             This affects the types of parameters that can exist on the input tapes.
             Available options include ``autograd``, ``torch``, ``tf``, ``jax``, and ``auto``.
-        transform_program(.CompilePipeline): A transform program to be applied to the initial tape.
+        compile_pipeline (.CompilePipeline): A compile pipeline to be applied to the initial tape.
         grad_on_execution (bool, str): Whether the gradients should be computed
             on the execution or not. It only applies
             if the device is queried for the gradient; gradient transform
@@ -201,9 +201,9 @@ def execute(
         return ()
 
     ### Apply the user transforms ####
-    transform_program = transform_program or CompilePipeline()
-    tapes, user_post_processing = transform_program(tapes)
-    if transform_program.is_informative:
+    compile_pipeline = compile_pipeline or CompilePipeline()
+    tapes, user_post_processing = compile_pipeline(tapes)
+    if compile_pipeline.is_informative:
         return user_post_processing(tapes)
 
     if not tapes:
@@ -228,7 +228,7 @@ def execute(
     )
     config = _resolve_execution_config(config, device, tapes)
 
-    outer_transform, inner_transform = _setup_transform_program(device, config, cache, cachesize)
+    outer_transform, inner_transform = _setup_compile_pipeline(device, config, cache, cachesize)
 
     #### Executing the configured setup #####
     tapes, outer_post_processing = outer_transform(tapes)

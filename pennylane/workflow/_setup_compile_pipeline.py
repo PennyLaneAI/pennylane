@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Contains a function for setting up the inner and outer transform programs for execution of a QNode."""
+"""Contains a function for setting up the inner and outer compile pipelines for execution of a QNode."""
 
 from __future__ import annotations
 
@@ -36,7 +36,7 @@ def _prune_dynamic_transform(
     """Ensure a single ``dynamic_one_shot`` transform is applied.
 
     Sometimes device preprocess contains a ``mid_circuit_measurements`` transform, which will
-    be added to the inner transform program. If the user then applies a ``dynamic_one_shot``
+    be added to the inner compile pipeline. If the user then applies a ``dynamic_one_shot``
     manually, it will duplicate the ``mid_circuit_measurements`` transform. This function ensures
     that there is only one ``dynamic_one_shot`` transform in the outer and inner transform
     programs combined.
@@ -59,44 +59,43 @@ def _prune_dynamic_transform(
     outer_transform.prune_dynamic_transform(type_to_keep)
 
 
-def _setup_transform_program(
+def _setup_compile_pipeline(
     device: Device,
     resolved_execution_config: ExecutionConfig,
     cache: Cache | dict | Literal["auto"] | bool = None,
     cachesize: int = 10000,
 ) -> tuple[CompilePipeline, CompilePipeline]:
-    """Sets-up the outer and inner transform programs for execution.
+    """Sets-up the outer and inner compile pipelines for execution.
 
     Args:
-        user_transform_program (CompilePipeline): the user's transform program
         device (Device): a Pennylane device
         resolved_execution_config (ExecutionConfig): the resolved execution config
         cache (None, bool, dict, Cache): Whether to cache evaluations. This can result in
-        a significant reduction in quantum evaluations during gradient computations. Defaults to ``None``.
+            a significant reduction in quantum evaluations during gradient computations. Defaults to ``None``.
         cachesize (int): The size of the cache. Defaults to 10000.
 
     Returns:
-        tuple[CompilePipeline, CompilePipeline]: tuple containing the outer and inner transform programs.
+        tuple[CompilePipeline, CompilePipeline]: tuple containing the outer and inner compile pipelines.
     """
 
-    device_transform_program = device.preprocess_transforms(resolved_execution_config)
+    device_compile_pipeline = device.preprocess_transforms(resolved_execution_config)
 
-    outer_transform_program = CompilePipeline()
-    inner_transform_program = CompilePipeline()
+    outer_compile_pipeline = CompilePipeline()
+    inner_compile_pipeline = CompilePipeline()
 
     # Add the gradient expand to the program if necessary
     if getattr(resolved_execution_config.gradient_method, "expand_transform", False):
-        outer_transform_program.add_transform(
+        outer_compile_pipeline.add_transform(
             transform(resolved_execution_config.gradient_method.expand_transform),
             **resolved_execution_config.gradient_keyword_arguments,
         )
     if resolved_execution_config.use_device_gradient:
-        outer_transform_program += device_transform_program
+        outer_compile_pipeline += device_compile_pipeline
     else:
-        inner_transform_program += device_transform_program
+        inner_compile_pipeline += device_compile_pipeline
 
-    # Making sure dynamic_one_shot occurs at most once between the inner and outer transform programs
-    _prune_dynamic_transform(outer_transform_program, inner_transform_program)
+    # Making sure dynamic_one_shot occurs at most once between the inner and outer compile pipelines
+    _prune_dynamic_transform(outer_compile_pipeline, inner_compile_pipeline)
 
     # If caching is desired but an explicit cache is not provided, use an ``LRUCache``.
     if cache == "auto":
@@ -118,8 +117,8 @@ def _setup_transform_program(
         or resolved_execution_config.gradient_method == "backprop"
     )
     if not interface_data_supported:
-        inner_transform_program.add_transform(convert_to_numpy_parameters)
+        inner_compile_pipeline.add_transform(convert_to_numpy_parameters)
     if cache is not None:
-        inner_transform_program.add_transform(_cache_transform, cache=cache)
+        inner_compile_pipeline.add_transform(_cache_transform, cache=cache)
 
-    return outer_transform_program, inner_transform_program
+    return outer_compile_pipeline, inner_compile_pipeline
