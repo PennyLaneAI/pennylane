@@ -579,15 +579,13 @@ def _select_only_qram_decomposition(
 
         # For each bit position in the data
         for j in range(len(bitstrings[0])):
-            if bits[j] != "1":
-                continue
-
-            # Multi-controlled X on target_wires[j],
-            # controlled on controls matching `control_values`.
-            ctrl(
-                PauliX(wires=target_wires[j]),
-                control=controls,
-            )
+            if bits[j] == "1":
+                # Multi-controlled X on target_wires[j],
+                # controlled on controls matching `control_values`.
+                ctrl(
+                    PauliX(wires=target_wires[j]),
+                    control=controls,
+                )
 
         _flip_controls(controls, control_values)
 
