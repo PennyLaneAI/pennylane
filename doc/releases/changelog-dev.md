@@ -212,6 +212,10 @@
 
 <h3>Breaking changes 💔</h3>
 
+* The output format of `qml.specs` has been restructured into a dataclass to streamline the outputs.
+  Some legacy information has been removed from the new output format.
+  [(#8713)](https://github.com/PennyLaneAI/pennylane/pull/8713)
+
 * The unified compiler, implemented in the `qml.compiler.python_compiler` submodule, has been removed from PennyLane.
   It has been migrated to Catalyst, available as `catalyst.python_interface`.
   [(#8662)](https://github.com/PennyLaneAI/pennylane/pull/8662)
@@ -376,6 +380,10 @@
   ```
 
 <h3>Internal changes ⚙️</h3>
+
+* `qml.cond`, the `QNode`, transforms, `qml.grad`, and `qml.jacobian` no longer treat all keyword arguments as static
+  arguments. They are instead treated as dynamic, numerical inputs, matching the behaviour of Jax and Catalyst.
+  [(#8290)](https://github.com/PennyLaneAI/pennylane/pull/8290)
 
 * To adjust to the Python 3.14, some error messages expectations have been updated in tests; `get_type_str` added a special branch to handle `Union`.
   [(#8568)](https://github.com/PennyLaneAI/pennylane/pull/8568)
