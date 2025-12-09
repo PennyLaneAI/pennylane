@@ -2,6 +2,11 @@
 
 <h3>New features since last release</h3>
 
+* To support the [paper](https://arxiv.org/pdf/2503.02934), a new template has been added that builds an Instantaneous 
+  Quantum Polynomial (`~.IQP`) circuit, and a `~.ResourceOperator` has been added that allows us to estimate the resources 
+  required to run an `~.IQP` circuit in theory.
+  [(#8748)](https://github.com/PennyLaneAI/pennylane/pull/8748)
+
 * Quantum Automatic Differentiation implemented to allow automatic selection of optimal
   Hadamard gradient differentiation methods per [the paper](https://arxiv.org/pdf/2408.05406).
   [(#8640)](https://github.com/PennyLaneAI/pennylane/pull/8640)
