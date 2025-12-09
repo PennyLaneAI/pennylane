@@ -606,7 +606,7 @@ class CompilePipeline:
         return tuple(tapes), postprocessing_fn
 
     def __call_jaxpr(
-        self, jalpr: "jax.extend.core.Jaxpr", consts: Sequence, *args
+        self, jaxpr: "jax.extend.core.Jaxpr", consts: Sequence, *args
     ) -> "jax.extend.core.ClosedJaxpr":
         # pylint: disable=import-outside-toplevel
         import jax
