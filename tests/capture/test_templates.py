@@ -609,7 +609,7 @@ class TestModifiedTemplates:
             "params": tuple(math.random.uniform(0, 2 * np.pi, 4)),
             "gates": gates,
             "init_gates": gates,
-            "init_coeffs": tuple(math.random.uniform(0, 2 * np.pi, len(gates))),
+            "init_params": tuple(math.random.uniform(0, 2 * np.pi, len(gates))),
             "spin_sym": True,
         }
 

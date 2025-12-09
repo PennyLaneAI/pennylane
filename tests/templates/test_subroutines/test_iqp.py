@@ -67,7 +67,7 @@ def test_raises(params, error, match):
 
 
 @pytest.mark.parametrize(
-    ("params", "gates", "init_gates", "init_coeffs", "spin_sym", "n_qubits"),
+    ("params", "gates", "init_gates", "init_params", "spin_sym", "n_qubits"),
     [
         (
             math.random.uniform(0, 2 * np.pi, 4),
@@ -88,9 +88,9 @@ def test_raises(params, error, match):
     ],
 )
 def test_decomposition_new(
-    params, gates, init_gates, init_coeffs, spin_sym, n_qubits
+    params, gates, init_gates, init_params, spin_sym, n_qubits
 ):  # pylint: disable=too-many-arguments
-    op = IQP(list(range(n_qubits)), gates, params, init_gates, init_coeffs, spin_sym, n_qubits)
+    op = IQP(list(range(n_qubits)), gates, params, init_gates, init_params, spin_sym, n_qubits)
 
     for rule in list_decomps(IQP):
         _test_decomposition_rule(op, rule)
@@ -98,14 +98,14 @@ def test_decomposition_new(
 
 @qnode(dev)
 def iqp_circuit(
-    params, gates, init_gates, init_coeffs, spin_sym, n_qubits
+    params, gates, init_gates, init_params, spin_sym, n_qubits
 ):  # pylint: disable=too-many-arguments
-    IQP(list(range(n_qubits)), gates, params, init_gates, init_coeffs, spin_sym, n_qubits)
+    IQP(list(range(n_qubits)), gates, params, init_gates, init_params, spin_sym, n_qubits)
     return probs(wires=list(range(n_qubits)))
 
 
 @pytest.mark.parametrize(
-    ("params", "gates", "init_gates", "init_coeffs", "spin_sym", "n_qubits", "expected_circuit"),
+    ("params", "gates", "init_gates", "init_params", "spin_sym", "n_qubits", "expected_circuit"),
     [
         (
             math.random.uniform(0, 2 * np.pi, 4),
@@ -137,10 +137,10 @@ def iqp_circuit(
     ],
 )
 def test_decomposition_contents(
-    params, gates, init_gates, init_coeffs, spin_sym, n_qubits, expected_circuit
+    params, gates, init_gates, init_params, spin_sym, n_qubits, expected_circuit
 ):  # pylint: disable=too-many-arguments
     with queuing.AnnotatedQueue() as q:
-        iqp_circuit(params, gates, init_gates, init_coeffs, spin_sym, n_qubits)
+        iqp_circuit(params, gates, init_gates, init_params, spin_sym, n_qubits)
 
     for op, expected in zip(q.queue, expected_circuit):
         assert isinstance(op, expected)

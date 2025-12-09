@@ -926,7 +926,7 @@ class ResourceIQP(ResourceOperator):
             unique trainable parameter. Each sublist specifies the generators to which that parameter applies.
             Generators are specified by listing the qubits on which an X operator acts.
         init_gates (list[list[list[int]]], optional): A specification of gates of the same form as the gates argument. The
-            parameters of these gates will be defined by init_coeffs later on.
+            parameters of these gates will be defined by init_params later on.
         spin_sym (bool, optional): If True, the circuit is equivalent to one where the initial state
             1/sqrt(2)(|00...0> + |11...1>) is used in place of |00...0>.
         wires (Sequence[int], optional): the wires the operation acts on
@@ -969,7 +969,7 @@ class ResourceIQP(ResourceOperator):
                 unique trainable parameter. Each sublist specifies the generators to which that parameter applies.
                 Generators are specified by listing the qubits on which an X operator acts.
             init_gates (list[list[list[int]]], optional): A specification of gates of the same form as the gates argument. The
-                parameters of these gates will be defined by init_coeffs later on.
+                parameters of these gates will be defined by init_params later on.
             spin_sym (bool, optional): If True, the circuit is equivalent to one where the initial state
                 1/sqrt(2)(|00...0> + |11...1>) is used in place of |00...0>.
 
@@ -998,7 +998,7 @@ class ResourceIQP(ResourceOperator):
                 unique trainable parameter. Each sublist specifies the generators to which that parameter applies.
                 Generators are specified by listing the qubits on which an X operator acts.
             init_gates (list[list[list[int]]], optional): A specification of gates of the same form as the gates argument. The
-                parameters of these gates will be defined by init_coeffs later on.
+                parameters of these gates will be defined by init_params later on.
             spin_sym (bool, optional): If True, the circuit is equivalent to one where the initial state
                 1/sqrt(2)(|00...0> + |11...1>) is used in place of |00...0>.
 
