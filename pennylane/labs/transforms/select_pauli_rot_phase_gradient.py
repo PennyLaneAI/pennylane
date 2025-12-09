@@ -87,7 +87,7 @@ def select_pauli_rot_phase_gradient(
     Because this state is not modified and can be re-used at a later stage, the transform does not prepare it but
     rather assumes it has been prepared on those wires at an earlier stage.
 
-    .. figure:: ../../_static/multiplexer_QROM.png
+    .. figure:: ../../../_static/multiplexer_QROM.png
                     :align: center
                     :width: 70%
                     :target: javascript:void(0);
