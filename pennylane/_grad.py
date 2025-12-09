@@ -221,7 +221,7 @@ def _capture_vjp(func, params, cotangents, *, argnums=None, method=None, h=None)
     jaxpr = jax.make_jaxpr(flat_fn)(*params)
     j = jaxpr.jaxpr
     no_consts_jaxpr = j.replace(constvars=(), invars=j.constvars + j.invars)
-    shifted_argnums = tuple(i + len(j.consts) for i in flat_argnums)
+    shifted_argnums = tuple(i + len(jaxpr.consts) for i in flat_argnums)
 
     if len(flat_cotangents) != len(jaxpr.out_avals):
         raise ValueError(
