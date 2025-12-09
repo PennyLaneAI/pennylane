@@ -623,12 +623,8 @@ class TransformProgram:
 
         first_arg = args[0]
 
-        # Single QuantumScript
-        if isinstance(first_arg, QuantumScript):
-            return self.__call_tape(first_arg)
-
         # Sequence of QuantumScripts: QuantumScriptBatch
-        if isinstance(first_arg, Sequence):
+        if isinstance(first_arg, QuantumScript) or isinstance(first_arg, Sequence):
             return self.__call_tapes(*args, **kwargs)
 
         # For any other object (QNode, device, callable, etc.),
