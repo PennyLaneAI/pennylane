@@ -48,7 +48,7 @@ class IQP(Operation):
     def __init__(
         self, wires, gates, params, init_gates=None, init_params=None, spin_sym=None, id=None
     ):  # pylint: disable=too-many-arguments
-        """
+        r"""
         IQP template corresponding to a parameterized IQP circuit. Based on `IQPopt: Fast optimization of
         instantaneous quantum polynomial circuits in JAX <https://arxiv.org/pdf/2501.04776>`__.
 
