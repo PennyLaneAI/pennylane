@@ -375,6 +375,9 @@
 * Now `TransformProgram` can dispatch to anything individual transforms can dispatch onto.
   [(#8731)](https://github.com/PennyLaneAI/pennylane/pull/8731)
 
+* To adjust to the Python 3.14, some error messages expectations have been updated in tests; `get_type_str` added a special branch to handle `Union`.
+  [(#8568)](https://github.com/PennyLaneAI/pennylane/pull/8568)
+
 * Bump `jax` version to `0.7.1` for `capture` module.
   [(#8715)](https://github.com/PennyLaneAI/pennylane/pull/8715)
 
