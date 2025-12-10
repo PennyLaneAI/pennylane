@@ -192,12 +192,11 @@ class TestMapWiresCallables:
     @pytest.mark.jax
     def test_jitting_simplified_qfunc(self):
         """Test that we can jit qnodes that have a mapped quantum function."""
-        from functools import partial
 
         import jax
 
         @jax.jit
-        @partial(qml.map_wires, wire_map=wire_map)
+        @qml.map_wires(wire_map=wire_map)
         @qml.qnode(qml.device("default.qubit", wires=5))
         def circuit(x):
             qml.adjoint(qml.RX(x, wires=0))
