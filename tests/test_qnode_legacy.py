@@ -28,7 +28,7 @@ from pennylane import QNode
 from pennylane import numpy as pnp
 from pennylane import qnode
 from pennylane.exceptions import PennyLaneDeprecationWarning, QuantumFunctionError
-from pennylane.resource import Resources
+from pennylane.resource import SpecsResources
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn
 
@@ -218,7 +218,15 @@ class TestValidation:
             "shots": [None],
             "batches": [1],
             "batch_len": [1],
-            "resources": [Resources(1, 1, {"RX": 1}, {1: 1}, 1)],
+            "resources": [
+                SpecsResources(
+                    num_allocs=1,
+                    gate_types={"RX": 1},
+                    gate_sizes={1: 1},
+                    measurements={"expval(PauliZ)": 1},
+                    depth=1,
+                )
+            ],
         }
 
     def test_autograd_interface_device_switched_no_warnings(self):
@@ -1113,7 +1121,7 @@ class TestCompilePipelineIntegration:
 
         assert tracker.totals["executions"] == 1
         assert tracker.history["resources"][0].gate_types["PauliX"] == 1
-        assert tracker.history["resources"][0].gate_types["RX"] == 0
+        assert "RX" not in tracker.history["resources"][0].gate_types
 
     def tet_transform_program_modifies_results(self):
         """Test integration with a transform that modifies the result output."""

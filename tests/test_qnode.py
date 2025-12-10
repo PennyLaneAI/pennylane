@@ -1534,7 +1534,7 @@ class TestCompilePipelineIntegration:
 
         assert tracker.totals["executions"] == 1
         assert tracker.history["resources"][0].gate_types["PauliX"] == 1
-        assert tracker.history["resources"][0].gate_types["RX"] == 0
+        assert "RX" not in tracker.history["resources"][0].gate_types
 
     def test_transform_program_modifies_results(self):
         """Test integration with a transform that modifies the result output."""
