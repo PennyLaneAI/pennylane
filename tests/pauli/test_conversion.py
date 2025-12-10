@@ -336,9 +336,9 @@ class TestDecomposition:
 
     def test_sparse_empty_matrix_error(self):
         """Test that an exception is raised if the sparse matrix is empty."""
-        sp = pytest.importorskip("scipy.sparse")
+        sps = pytest.importorskip("scipy.sparse")
 
-        empty_matrix = sp.csr_matrix((0, 0))
+        empty_matrix = sps.csr_matrix((0, 0))
         with pytest.raises(ValueError, match="Cannot decompose an empty matrix"):
             qml.pauli_decompose(empty_matrix, check_hermitian=False)
 
@@ -355,9 +355,9 @@ class TestDecomposition:
     def test_sparse_wrong_shape_error(self, sparse_type):
         """Test that an exception is raised if the sparse matrix does not have
         the correct shape"""
-        sp = pytest.importorskip("scipy.sparse")
+        sps = pytest.importorskip("scipy.sparse")
 
-        sparse_class = getattr(sp, sparse_type)
+        sparse_class = getattr(sps, sparse_type)
         non_square = sparse_class(np.ones((4, 2)))
         with pytest.raises(ValueError, match="The matrix should be square"):
             qml.pauli_decompose(non_square, check_hermitian=False)
