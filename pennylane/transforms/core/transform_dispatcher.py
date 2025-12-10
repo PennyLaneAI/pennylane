@@ -475,7 +475,7 @@ class BoundTransform:  # pylint: disable=too-many-instance-attributes
     CompilePipeline(merge_rotations, merge_rotations, merge_rotations)
 
     And it can be used in conjunction with both individual transforms, bound transforms, and
-    transform programs.
+    compile pipelines.
 
     >>> bound_t + qml.transforms.cancel_inverses
     CompilePipeline(merge_rotations, cancel_inverses)
@@ -568,7 +568,10 @@ class BoundTransform:  # pylint: disable=too-many-instance-attributes
 
     @property
     def plxpr_transform(self) -> None | Callable:
-        """**UNMAINTAINED EXPERIMENTAL**: The stored quantum transform's PLxPR transform."""
+        """The stored quantum transform's PLxPR transform.
+
+        **UNMAINTAINED AND EXPERIMENTAL**
+        """
         return self._transform_dispatcher.plxpr_transform
 
     @property

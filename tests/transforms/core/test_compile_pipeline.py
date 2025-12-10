@@ -1293,7 +1293,7 @@ class TestCompilePipelineCall:
             """A transform that returns the tape unchanged."""
             return (tape,), lambda results: results[0]
 
-        container = TransformContainer(transform(identity_transform))
+        container = BoundTransform(transform(identity_transform))
         prog = CompilePipeline((container,))
 
         # Create a single QuantumScript (not wrapped in a tuple)
