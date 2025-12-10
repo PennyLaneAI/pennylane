@@ -22,7 +22,7 @@
   [(#8663)](https://github.com/PennyLaneAI/pennylane/pull/8663)
   [(#8692)](https://github.com/PennyLaneAI/pennylane/pull/8692)
 
-  This new function is currently only for analysis on the ``null.qubit`` device, which allows for resource tracking or estimation with :func:`~.specs` or :func:`~.estimator.estimate`, and circuit inspection with qml.draw.
+  This new function is currently only for analysis on the ``null.qubit`` device, which allows for resource tracking or estimation with :func:`~.specs` or :func:`~.estimator.estimate`, and circuit inspection with :func:`~.draw`.
 
   In the following example, a measurement of the ``XY`` Pauli product on wires ``0`` and ``2`` is performed
   using :func:`~.pauli_measure`, followed by application of a :class:`~.PauliX` gate conditional on
