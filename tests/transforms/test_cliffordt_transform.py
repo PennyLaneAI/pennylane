@@ -195,7 +195,7 @@ class TestCliffordCompile:
         old_tape = qml.tape.make_qscript(circuit)()
 
         [new_tape], tape_fn = clifford_t_decomposition(
-            old_tape, method="gridsynth", eps_per_rot=1e-2
+            old_tape, method="gridsynth", epsilon_per_rot=1e-2
         )
 
         assert all(

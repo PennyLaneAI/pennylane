@@ -467,7 +467,7 @@ def clifford_t_decomposition(
         cache_eps_rtol (Optional[float]): The relative tolerance for ``epsilon`` values between which the cache may be reused.
             Defaults to ``0.0``, which means that a cached decomposition will be used if it is as precise as the requested error.
             If ``None`` is provided, the cached decomposition will be used if it is `at least as precise` as the requested error.
-        eps_per_rot (Optional[float]): The maximum permissible operator norm error per rotation gate. Defaults to ``None``,
+        epsilon_per_rot (Optional[float]): The maximum permissible operator norm error per rotation gate. Defaults to ``None``,
             which means that the error given by ``epsilon`` is distributed equally across all rotation gates.
         **method_kwargs: Keyword argument to pass options for the ``method`` used for decompositions.
 
