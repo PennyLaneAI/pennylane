@@ -286,11 +286,11 @@ def op_expval(
     and/or max_batch_samples to a fixed value.
 
     Args:
-        params (jnp.ndarray): The parameters of the trainable gates of the circuit.
         ops (jnp.ndarray): Array specifying the operator/s for which to estimate the expectation values.
         n_samples (int): Number of samples used to calculate the IQP expectation values. Higher values result in
             higher precision.
         key (Array): Jax key to control the randomness of the process.
+        circuit (IQP): The circuit after which expectations are taken.
         indep_estimates (bool): Whether to use independent estimates of the ops in a batch.
         return_samples (bool): if True, an extended array that contains the values of the estimator for each
             of the n_samples samples is returned.
