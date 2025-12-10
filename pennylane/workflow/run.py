@@ -38,7 +38,7 @@ from .jacobian_products import (
 if TYPE_CHECKING:
     from pennylane.devices import Device, ExecutionConfig
     from pennylane.tape import QuantumScriptBatch
-    from pennylane.transforms.core import TransformProgram
+    from pennylane.transforms.core import CompilePipeline
     from pennylane.typing import ResultBatch
 
     ExecuteFn = Callable[[QuantumScriptBatch], ResultBatch]
@@ -47,7 +47,7 @@ if TYPE_CHECKING:
 def _construct_tf_autograph_pipeline(
     config: ExecutionConfig,
     device: Device,
-    inner_transform_program: TransformProgram,
+    inner_transform_program: CompilePipeline,
 ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
     """Handles the pipeline construction for the TF_AUTOGRAPH interface.
 
@@ -57,8 +57,8 @@ def _construct_tf_autograph_pipeline(
     Args:
         config (qml.devices.ExecutionConfig): resolved execution configuration
         device (qml.devices.Device): a Pennylane device
-        inner_transform_program (qml.transforms.core.TransformProgram): the transformation applied to quantum tapes
 
+        inner_transform_program (qml.CompilePipeline): the transformation applied to quantum tapes
     Returns:
         tuple: A tuple containing:
             - `execute_fn`: function to execute quantum tapes
@@ -111,7 +111,7 @@ def _construct_tf_autograph_pipeline(
 def _construct_ml_execution_pipeline(
     config: ExecutionConfig,
     device: Device,
-    inner_transform_program: TransformProgram,
+    inner_transform_program: CompilePipeline,
 ) -> tuple[JacobianProductCalculator, ExecuteFn]:
     """Constructs the ML execution pipeline for all JPC interfaces.
 
@@ -121,7 +121,7 @@ def _construct_ml_execution_pipeline(
     Args:
         config (qml.devices.ExecutionConfig): resolved execution configuration
         device (qml.devices.Device): a Pennylane device
-        inner_transform_program (qml.transforms.core.TransformProgram): the transformation applied to quantum tapes
+        inner_transform_program (qml.CompilePipeline): the transformation applied to quantum tapes
 
     Returns:
         tuple: A tuple containing:
@@ -252,7 +252,7 @@ def _make_inner_execute(device, inner_transform, execution_config=None) -> Calla
         """Execution that occurs within a ML framework boundary.
 
         Closure Variables:
-            inner_transform(TransformProgram): a transform to apply to a set of tapes
+            inner_transform(CompilePipeline): a transform to apply to a set of tapes
             expand_fn (Callable[[QuantumScript], QuantumScript]): A device preprocessing step
             device (qml.devices.Device): a Pennylane device
         """
@@ -273,7 +273,7 @@ def run(
     tapes: QuantumScriptBatch,
     device: Device,
     config: ExecutionConfig,
-    inner_transform_program: TransformProgram,
+    inner_transform_program: CompilePipeline,
 ) -> ResultBatch:
     """Execute a batch of quantum scripts on a device with optional gradient computation.
 
@@ -282,7 +282,7 @@ def run(
         device (qml.devices.Device): a Pennylane device
         config (qml.devices.ExecutionConfig): Resolved configuration detailing
             execution and differentiation settings.
-        inner_transform_program (TransformProgram): The transformation program to apply
+        inner_transform_program (CompilePipeline): The transformation program to apply
             to the quantum scripts before execution.
 
     Returns:
