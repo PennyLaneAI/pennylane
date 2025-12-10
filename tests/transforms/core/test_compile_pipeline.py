@@ -863,6 +863,13 @@ class TestCompilePipelineConstruction:
         )
         assert len(pipeline) == 4
 
+    def test_invalid_object_in_transforms(self):
+        """Tests that an error is raised when something is not a transform."""
+
+        with pytest.raises(TypeError, match="CompilePipeline can only be constructed"):
+            # map_wires is not a transform
+            CompilePipeline(qml.transforms.cancel_inverses, qml.map_wires)
+
 
 class TestCompilePipeline:
     """Test the compile pipeline class and its method."""
