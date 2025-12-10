@@ -134,7 +134,7 @@ def pauli_measure(pauli_word: str, wires: WiresLike, postselect: int | None = No
     Args:
         pauli_word (str): The Pauli word to measure.
         wires (Wires): The wires the Pauli operators act on.
-        postselect (Optional[int]): The postselection value, one of 0 or 1. It determines which subspace of
+        postselect (Optional[int]): The postselection value, one of ``0`` or ``1``. It determines which subspace of
             degenerate eigenstates to postselect after a Pauli product measurement. None by default.
 
     Returns:
