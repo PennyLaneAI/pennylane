@@ -14,6 +14,7 @@
 """Unit and integration tests for the compile pipeline."""
 # pylint: disable=no-member
 
+
 import pytest
 import rustworkx as rx
 
@@ -822,21 +823,56 @@ class TestCompilePipelineDunders:
         assert p1 != p4
 
 
-class TestCompilePipeline:
-    """Test the compile pipeline class and its method."""
+class TestCompilePipelineConstruction:
+    """Tests the different ways to initialize a CompilePipeline."""
 
     def test_empty_pipeline(self):
         """Test an empty pipeline."""
+
         pipeline = CompilePipeline()
         assert pipeline.is_empty()
+        assert pipeline.cotransform_cache is None
         assert len(pipeline) == 0
 
-        with pytest.raises(
-            TransformError,
-            match="The compile pipeline is empty and you cannot get the last "
-            "transform container.",
-        ):
+        with pytest.raises(TransformError, match="The compile pipeline is empty"):
             pipeline.get_last()
+
+    def test_list_of_transforms(self):
+        """Tests constructing a CompilePipeline with a list of transforms."""
+
+        pipeline = CompilePipeline(
+            [
+                TransformContainer(qml.transforms.compile),
+                TransformContainer(qml.transforms.decompose),
+                TransformContainer(qml.transforms.cancel_inverses),
+            ]
+        )
+        assert len(pipeline) == 3
+
+    def test_variable_length_arguments(self):
+        """Tests constructing a CompilePipeline with a mixed series of things."""
+
+        another_pipeline = CompilePipeline(
+            qml.transforms.cancel_inverses,
+            qml.transforms.diagonalize_measurements,
+        )
+        pipeline = CompilePipeline(
+            qml.transforms.cancel_inverses,
+            another_pipeline,
+            TransformContainer(qml.transforms.decompose, kwargs={"gate_set": {qml.Rot, qml.CNOT}}),
+        )
+        assert len(pipeline) == 4
+
+    def test_invalid_object_in_transforms(self):
+        """Tests that an error is raised when something is not a transform."""
+
+        with pytest.raises(TypeError, match="CompilePipeline can only be constructed"):
+            # map_wires is not a transform
+            CompilePipeline(qml.transforms.cancel_inverses, qml.map_wires)
+
+
+class TestCompilePipeline:
+    """Test the compile pipeline class and its method."""
 
     def test_get_last(self):
         """Tests the get_last method"""
