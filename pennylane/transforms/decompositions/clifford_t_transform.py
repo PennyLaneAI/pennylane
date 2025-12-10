@@ -439,7 +439,7 @@ def clifford_t_decomposition(
     method="gridsynth",
     cache_size=1000,
     cache_eps_rtol=0.0,
-    eps_per_rot=None,
+    epsilon_per_rot=None,
     **method_kwargs,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""Decomposes a circuit into the Clifford+T basis.
@@ -477,19 +477,19 @@ def clifford_t_decomposition(
 
     **Keyword Arguments**
 
-    - Solovay-Kitaev decomposition --
-        **max_depth** (int), **basis_set** (list[str]), **basis_length** (int) -- arguments for the ``"sk"`` method,
-        where the decomposition is performed using the :func:`~.sk_decomposition` method.
-
     - Ross-Selinger (``gridsynth``) decomposition --
         **max_search_trials** (int), **max_factoring_trials** (int) -- arguments for the ``"gridsynth"`` method,
         where the decomposition is performed using the :func:`~.rs_decomposition` method.
+
+    - Solovay-Kitaev decomposition --
+        **max_depth** (int), **basis_set** (list[str]), **basis_length** (int) -- arguments for the ``"sk"`` method,
+        where the decomposition is performed using the :func:`~.sk_decomposition` method.
 
     Raises:
         ValueError: If a gate operation does not have a decomposition when required.
         NotImplementedError: If chosen decomposition ``method`` is not supported.
 
-    .. seealso:: :func:`~.rs_decomposition` and :func:`~.sk_decomposition` for Ross-Selinger and Solovay-Kitaev decomposition methods, respectively.
+    .. seealso:: :func:`~.rs_decomposition` and :func:`~.sk_decomposition` for the Ross-Selinger and Solovay-Kitaev decomposition methods, respectively.
 
     **Example**
 
@@ -574,8 +574,8 @@ def clifford_t_decomposition(
 
         # Compute the per-gate epsilon value
         epsilon /= number_ops or 1
-        if eps_per_rot is not None:
-            epsilon = eps_per_rot
+        if epsilon_per_rot is not None:
+            epsilon = epsilon_per_rot
 
         # _CACHED_DECOMPOSE is a global variable that caches the decomposition function,
         # where the implementation of each function should have the following signature:
