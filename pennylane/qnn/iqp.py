@@ -18,7 +18,7 @@ import numpy as np
 from scipy.sparse import csr_matrix, dok_matrix
 
 from pennylane import IQP
-from pennylane.math import array, mean, sqrt
+from pennylane.math import array
 
 has_jax = True
 try:
@@ -128,7 +128,9 @@ def _op_expval_indep(
         expvals = []
         for op in ops:
             key, val = update(key, op)
-            expvals.append(val[0])  # TODO: this is going to be the wrong shape for later concatenation
+            expvals.append(
+                val[0]
+            )  # TODO: this is going to be the wrong shape for later concatenation
 
         return array(expvals)
 
@@ -290,7 +292,9 @@ def op_expval(
     spin_sym = circuit.hyperparameters["spin_sym"]
 
     if not has_jax:
-        raise ImportError("JAX is required for use of IQP expectation value estimation.")  # pragma: no cover
+        raise ImportError(
+            "JAX is required for use of IQP expectation value estimation."
+        )  # pragma: no cover
 
     if max_batch_ops is None:
         max_batch_ops = len(ops)
