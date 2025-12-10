@@ -446,7 +446,7 @@ class BoundTransform:  # pylint: disable=too-many-instance-attributes
             return qml.probs(wires=(0,1))
 
     If we draw this circuit, we can see that the ``merge_rotations`` transforms was applied with a
-    tolerance of ``1e-4``.  The ``RX`` gates sufficiently close to zero disappear, while the ``RY` gates
+    tolerance of ``1e-4``.  The ``RX`` gates sufficiently close to zero disappear, while the ``RY`` gates
     that are further from zero remain.
 
     >>> print(qml.draw(c)(1.0))
