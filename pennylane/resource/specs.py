@@ -362,7 +362,7 @@ def specs(
     r"""Provides the specifications of a quantum circuit.
 
     This transform converts a QNode into a callable that provides resource information
-    about the circuit after applying the specified transforms, expansions, and passes first.
+    about the circuit after applying the specified transforms, expansions, and/or compilation passes.
 
     Args:
         qnode (.QNode | .QJIT): the QNode to calculate the specifications for.
@@ -444,7 +444,7 @@ def specs(
                 qml.X(0)
                 return qml.expval(qml.X(0) + qml.Y(1))
 
-        First, we can check the resource information of the QNode without any modifications. Note that ``level=top`` would
+        First, we can check the resource information of the QNode without any modifications by specifying ``level=0``. Note that ``level=top`` would
         return the same results:
 
         ::
@@ -463,7 +463,7 @@ def specs(
             Measurements:
               expval(Sum(num_wires=2, num_terms=2)): 1
 
-        We then check the resources after applying all transforms:
+        We can then check the resources after applying all transforms with ``level="device"`` (which, in this particular example, would be equivalent to ``level=3``):
 
         ::
 
@@ -533,9 +533,9 @@ def specs(
     .. details::
         :title: Using specs on workflows compiled with Catalyst
 
-        The available options for `levels` are different for circuits which have been compiled using Catalyst.
-        There are 2 broad types of specs which can be retrieved for compiled qnodes: runtime resource tracking,
-        and pass-by-pass specs for user applied compilation steps.
+        The available options for ``levels`` are different for circuits which have been compiled using Catalyst.
+        There are 2 broad ways to use ``specs`` on compiled QNodes: runtime resource tracking,
+        and pass-by-pass specs for user applied compilation passes.
 
         *Runtime resource tracking* (specified by ``level="device"``) works by mock-executing the desired
         workflow and tracking the number of times a given gate has been applied. This mock-execution happens
@@ -584,12 +584,12 @@ def specs(
             Measurement data is not currently supported with runtime resource tracking, so measurement
             data may show as missing.
 
-        *Pass-by-pass specs* work by analyzing the intermediate representations of compiled circuits.
+        *Pass-by-pass specs* can be obtained by analyzing the intermediate representations of compiled circuits.
         This can be helpful for determining how circuit resources change after a given transform
-        or compiler pass.
+        or compilation pass.
         This version of specs can be applied by passing one of the following values for the `level` argument:
 
-        * An int: the desired pass level of a user-applied pass, see the note below
+        * An ``int``: the desired pass level of a user-applied pass, see the note below
         * A marker name (str): The name of an applied :func:`qml.marker <pennylane.marker>` pass
         * An iterable: A list, tuple, etc. containing ints and/or marker names. Should be sorted in
           ascending pass order
@@ -597,16 +597,20 @@ def specs(
         * The string "all-mlir": To output information about all compilation passes at the MLIR level only
 
         .. note::
-            The pass levels only take into account user-applied transforms and compilation passes.
+            The level arguments only take into account user-applied transforms and compilation passes.
             Level 0 always corresponds to the original circuit before any user transforms have been applied,
-            and subsequent levels correspond to the order in which user transforms were applied.
+            and incremental levels correspond to the order in which user transforms were applied.
             The following level is the MLIR lowering pass, followed by any MLIR-level compilation passes.
 
         .. warning::
             Some resource information from pass-by-pass specs may be estimated, since it is not always
             possible to determine exact resource usage from intermediate representations.
+            For example, resources contained in a ``for`` loop with a non-static range or a ``while`` loop will only be counted as if one iteration occurred.
+            Additionally, resources contained in conditional branches from ``if`` or ``switch`` statements will take a union of resources over all branches, providing a tight upper-bound.
 
             Due to similar technical limitations, depth computation is not available for pass-by-pass specs.
+            
+            Here is an example using ``level="all"`` on the circuit from the previous code example:
 
         ::
 
