@@ -76,16 +76,11 @@ def test_expval(
     if gates_fn == "multi_gens":
         gates = [[gates[0][0], gates[1][0]]] + gates[2:]
 
-    init_gates = gates.copy()
-    init_coeffs = np.random.uniform(0, 2 * np.pi, len(init_gates))
-
     circuit = IQP(
-        wires=[q for q in range(n_qubits)],
-        gates=gates,
-        params=params,
+        num_wires=n_qubits,
+        pattern=gates,
+        weights=params,
         spin_sym=spin_sym,
-        init_coeffs=init_coeffs,
-        init_gates=init_gates,
     )
 
     op = np.random.randint(0, 2, (n_qubits,))

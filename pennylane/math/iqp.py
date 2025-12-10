@@ -28,36 +28,18 @@ except ImportError as e:
     has_jax = False
 
 
-def _len_gen(gates, init_gates):
-    len_gen_init = 0
-    if init_gates is not None:
-        len_gen_init = sum(1 for gate in init_gates for _ in gate)
-
-    return sum(1 for gate in gates for _ in gate) + len_gen_init, len_gen_init
+def _len_gen(gates):
+    return sum(1 for gate in gates for _ in gate)
 
 
-def _trans_coeff(gates, init_gates, generators):
-    len_gen, len_gen_init = _len_gen(gates, init_gates)
-
-    if init_gates is not None:
-        # Matrix that transforms the static parameters (initial coefficients) into a vector of size generators so it can be summed with the variational parameters
-        trans_coeff = np.zeros((len_gen, len(init_gates)))
-        i = len(generators) - len_gen_init
-        for j, gens in enumerate(init_gates):
-            for gen in gens:
-                trans_coeff[i, j] = 1
-                i += 1
-        return jnp.array(trans_coeff)
-
-
-def _par_transform(gates, init_gates):
+def _par_transform(gates):
     """
     Creates the transformation matrix from the number of independent parameters to the number of total generators
     """
-    len_gen, len_gen_init = _len_gen(gates, init_gates)
+    len_gen = _len_gen(gates)
 
     par_transform = (
-        False if max([len(gate) for gate in gates]) == 1 and init_gates is None else True
+        False if max([len(gate) for gate in gates]) == 1 else True
     )
 
     if par_transform:
@@ -93,8 +75,8 @@ def _gate_lists_to_arrays(gate_lists: list, n_qubits: int) -> list:
     return gate_arrays
 
 
-def _generators_sp(gates, init_gates, n_qubits):
-    len_gen, len_gen_init = _len_gen(gates, init_gates)
+def _generators_sp(gates, n_qubits):
+    len_gen = _len_gen(gates)
 
     generators_dok = dok_matrix((len_gen, n_qubits), dtype="float64")
     i = 0
@@ -104,31 +86,17 @@ def _generators_sp(gates, init_gates, n_qubits):
                 generators_dok[i, j] = 1
             i += 1
 
-    if init_gates is not None:
-        for gate in init_gates:
-            for gen in gate:
-                for j in gen:
-                    generators_dok[i, j] = 1
-                i += 1
-
     # convert to csr format
     return generators_dok.tocsr()
 
 
-def _generators(gates, init_gates, n_qubits):
+def _generators(gates, n_qubits):
     gates_as_arrays = _gate_lists_to_arrays(gates, n_qubits)
 
     generators = []
     for gens in gates_as_arrays:
         for gen in gens:
             generators.append(gen)
-
-    if init_gates is not None:
-        init_gates_as_arrays = _gate_lists_to_arrays(init_gates, n_qubits)
-
-        for gens in init_gates_as_arrays:
-            for gen in gens:
-                generators.append(gen)
 
     return jnp.array(generators)
 
@@ -142,7 +110,6 @@ def _op_expval_indep(
     key: array,
     sparse: bool,
     return_samples,
-    init_coeffs: list = None,
 ) -> list:
     """
     Batch evaluate an array of ops in the same way as self.op_expval_batch, but using independent randomness
@@ -158,7 +125,6 @@ def _op_expval_indep(
             ops=op,
             n_samples=n_samples,
             key=key1,
-            init_coeffs=init_coeffs,
             spin_sym=False,
             return_samples=return_samples,
         )
@@ -196,8 +162,6 @@ def _op_expval_batch(
     ops: array,
     n_samples: int,
     key: array,
-    init_gates: list = None,
-    init_coeffs: list = None,
     spin_sym: bool = False,
     sparse: bool = False,
     indep_estimates: bool = False,
@@ -215,8 +179,6 @@ def _op_expval_batch(
         ops (jnp.ndarray): Operator/s for those we want to know the expected value.
         n_samples (int): Number of samples used to calculate the IQP expectation value.
         key (Array): Jax key to control the randomness of the process.
-        init_coeffs (list[float], optional): List or array of length len(init_gates) that specifies the fixed parameter
-            values of init_gates.
         indep_estimates (bool): Whether to use independent estimates of the ops in a batch (takes longer).
         return_samples (bool): if True, an extended array that contains the values of the estimator for each
             of the n_samples samples is returned.
@@ -235,23 +197,18 @@ def _op_expval_batch(
             key=key,
             sparse=sparse,
             return_samples=return_samples,
-            init_coeffs=init_coeffs,
         )
 
     samples = jax.random.randint(key, (n_samples, n_qubits), 0, 2)
 
-    generators = _generators(gates, init_gates, n_qubits)
-    par_transform, trans_par = _par_transform(gates, init_gates)
-    trans_coeff = _trans_coeff(gates, init_gates, generators)
+    generators = _generators(gates, n_qubits)
+    par_transform, trans_par = _par_transform(gates)
 
     effective_params = trans_par @ params if par_transform else params
-    effective_params = (
-        effective_params + trans_coeff @ init_coeffs if init_gates is not None else effective_params
-    )
 
     if sparse or isinstance(ops, csr_matrix):
 
-        generators_sp = _generators_sp(gates, init_gates, n_qubits)
+        generators_sp = _generators_sp(gates, n_qubits)
 
         if isinstance(ops, csr_matrix):
             samples = csr_matrix(samples)
@@ -334,8 +291,6 @@ def op_expval(
         n_samples (int): Number of samples used to calculate the IQP expectation values. Higher values result in
             higher precision.
         key (Array): Jax key to control the randomness of the process.
-        init_coeffs (list[float], optional): List or array of length len(init_gates) that specifies the fixed parameter
-            values of init_gates.
         indep_estimates (bool): Whether to use independent estimates of the ops in a batch.
         return_samples (bool): if True, an extended array that contains the values of the estimator for each
             of the n_samples samples is returned.
@@ -346,11 +301,9 @@ def op_expval(
         list: List of Vectors. The expected value of each op and its standard deviation.
     """
 
-    init_coeffs = jnp.array(circuit.hyperparameters["init_coeffs"])
-    gates = circuit.hyperparameters["gates"]
-    params = jnp.array(circuit.hyperparameters["params"])
+    gates = circuit.hyperparameters["pattern"]
+    params = jnp.array(circuit.hyperparameters["weights"])
     n_qubits = len(circuit.wires)
-    init_gates = circuit.hyperparameters["init_gates"]
     spin_sym = circuit.hyperparameters["spin_sym"]
 
     if not has_jax:
@@ -367,8 +320,6 @@ def op_expval(
 
     expvals = jnp.empty((0, n_samples))
 
-    init_coeffs = jnp.array(init_coeffs) if init_coeffs is not None else None
-
     for batch_ops in jnp.array_split(ops, np.ceil(ops.shape[0] / max_batch_ops)):
         tmp_expvals = jnp.empty((len(batch_ops), 0))
         for i in range(np.ceil(n_samples / max_batch_samples).astype(jnp.int64)):
@@ -381,8 +332,6 @@ def op_expval(
                 ops=batch_ops,
                 n_samples=batch_n_samples,
                 key=subkey,
-                init_gates=init_gates,
-                init_coeffs=init_coeffs,
                 spin_sym=spin_sym,
                 sparse=sparse,
                 indep_estimates=indep_estimates,
