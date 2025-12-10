@@ -169,7 +169,7 @@ def pauli_measure(pauli_word: str, wires: WiresLike, postselect: int | None = No
     2: ──H─╰┤↗Y├──║─┤
              ╚════╝
 
-    Additionally, the number of PPM operations in a circuit can be easily inspected with ``qml.specs``
+    Additionally, the number of PPM operations in a circuit can be easily inspected with :func:`~.specs`
     were they appear denoted as the ``PauliMeasure`` gate type:
 
     >>> from pprint import pprint
