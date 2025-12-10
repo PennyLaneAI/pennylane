@@ -20,9 +20,11 @@ from itertools import combinations
 import numpy as np
 import pytest
 
-from pennylane import math
+from pennylane import math, qnode, queuing
 from pennylane.decomposition import list_decomps
 from pennylane.devices import device
+from pennylane.measurements import probs
+from pennylane.ops import H, MultiRZ, PauliRot
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.iqp import IQP
 
@@ -65,7 +67,7 @@ def test_raises(params, error, match):
 
 
 @pytest.mark.parametrize(
-    ("params", "gates", "init_gates", "init_coeffs", "spin_sym", "n_qubits"),
+    ("params", "gates", "init_gates", "init_params", "spin_sym", "n_qubits"),
     [
         (
             math.random.uniform(0, 2 * np.pi, 4),
@@ -85,10 +87,60 @@ def test_raises(params, error, match):
         ),
     ],
 )
-def test_decomposition_new(params, gates, init_gates, init_coeffs, spin_sym, n_qubits):
-    op = IQP(
-        [i for i in range(n_qubits)], gates, params, init_gates, init_coeffs, spin_sym, n_qubits
-    )
+def test_decomposition_new(
+    params, gates, init_gates, init_params, spin_sym, n_qubits
+):  # pylint: disable=too-many-arguments
+    op = IQP(list(range(n_qubits)), gates, params, init_gates, init_params, spin_sym, n_qubits)
 
     for rule in list_decomps(IQP):
         _test_decomposition_rule(op, rule)
+
+
+@qnode(dev)
+def iqp_circuit(
+    params, gates, init_gates, init_params, spin_sym, n_qubits
+):  # pylint: disable=too-many-arguments
+    IQP(list(range(n_qubits)), gates, params, init_gates, init_params, spin_sym, n_qubits)
+    return probs(wires=list(range(n_qubits)))
+
+
+@pytest.mark.parametrize(
+    ("params", "gates", "init_gates", "init_params", "spin_sym", "n_qubits", "expected_circuit"),
+    [
+        (
+            math.random.uniform(0, 2 * np.pi, 4),
+            local_gates(4, 1),
+            local_gates(4, 1),
+            math.random.uniform(0, 2 * np.pi, len(local_gates(4, 1))),
+            True,
+            4,
+            [
+                PauliRot,
+                H,
+                H,
+                H,
+                H,
+                MultiRZ,
+                MultiRZ,
+                MultiRZ,
+                MultiRZ,
+                MultiRZ,
+                MultiRZ,
+                MultiRZ,
+                MultiRZ,
+                H,
+                H,
+                H,
+                H,
+            ],
+        ),
+    ],
+)
+def test_decomposition_contents(
+    params, gates, init_gates, init_params, spin_sym, n_qubits, expected_circuit
+):  # pylint: disable=too-many-arguments
+    with queuing.AnnotatedQueue() as q:
+        iqp_circuit(params, gates, init_gates, init_params, spin_sym, n_qubits)
+
+    for op, expected in zip(q.queue, expected_circuit):
+        assert isinstance(op, expected)
