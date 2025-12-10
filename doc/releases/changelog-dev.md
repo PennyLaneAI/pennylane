@@ -26,10 +26,9 @@
   [(#8729)](https://github.com/PennyLaneAI/pennylane/pull/8729)
   [(#8734)](https://github.com/PennyLaneAI/pennylane/pull/8734)
 
-* A new transform called :func:`~.transforms.select_pauli_rot_phase_gradient` has been added, which lets you 
-  realize arbitrary :class:`~.SelectPauliRot` rotations with a phase gradient resource state and 
-  semi-in-place addition (:class:`~.SemiAdder`). This can be a crucial subroutine in FTQC when 
-  sufficient auxiliary wires are available, as it saves on ``T`` gates compared to other schemes.
+* A new transform :func:`~.transforms.select_pauli_rot_phase_gradient` has been added. It allows 
+  implementing arbitrary :class:`~.SelectPauliRot` rotations with a phase gradient resource state and 
+  semi-in-place addition (:class:`~.SemiAdder`).
   [(#8738)](https://github.com/PennyLaneAI/pennylane/pull/8738)
 
 <h4>Pauli product measurements</h4>
