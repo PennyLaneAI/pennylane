@@ -176,12 +176,10 @@ def pauli_measure(pauli_word: str, wires: WiresLike, postselect: int | None = No
     Total qubit allocations: 3
     Total gates: 4
     Circuit depth: 3
-
     Gate types:
       Hadamard: 2
       PauliMeasure: 1
       Conditional(PauliX): 1
-
     Measurements:
       expval(PauliZ): 1
 
