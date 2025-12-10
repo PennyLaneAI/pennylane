@@ -68,7 +68,7 @@ def test_expval(
     indep_estimates,
     expected_val,
     expected_std,
-):
+):  # pylint: disable=too-many-arguments
     import jax
     import jax.numpy as jnp
 
