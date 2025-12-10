@@ -41,7 +41,7 @@
   [(#8663)](https://github.com/PennyLaneAI/pennylane/pull/8663)
   [(#8692)](https://github.com/PennyLaneAI/pennylane/pull/8692)
 
-  The new :func:`~.pauli_measure` function is currently only for analysis on the ``null.qubit`` device, which allows for resource tracking with :func:`~.specs` and circuit inspection with :func:`~.draw`.
+  The new :func:`~.pauli_measure` function is currently only for analysis on the ``null.qubit`` device, which allows for resource tracking with :func:`~.specs` and circuit inspection with :func:`~.drawer.draw`.
 
   In the following example, a measurement of the ``XY`` Pauli product on wires ``0`` and ``2`` is performed
   using :func:`~.pauli_measure`, followed by application of a :class:`~.PauliX` gate conditional on
@@ -76,14 +76,18 @@
 
   ```pycon
   >>> print(qml.specs(circuit)()['resources'])
-  num_wires: 3
-  num_gates: 5
-  depth: 4
-  shots: Shots(total=None)
-  gate_types:
-  {'Hadamard': 2, 'PauliRot': 1, 'PauliMeasure': 1, 'Conditional(PauliX)': 1}
-  gate_sizes:
-  {1: 3, 3: 1, 2: 1}
+  Total qubit allocations: 3
+  Total gates: 5
+  Circuit depth: 4
+
+  Gate types:
+    Hadamard: 2
+    PauliRot: 1
+    PauliMeasure: 1
+    Conditional(PauliX): 1
+
+  Measurements:
+    expval(PauliZ): 1
   ```
 
 <h3>Improvements 🛠</h3>

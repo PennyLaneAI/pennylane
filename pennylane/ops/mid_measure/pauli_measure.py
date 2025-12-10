@@ -145,7 +145,7 @@ def pauli_measure(pauli_word: str, wires: WiresLike, postselect: int | None = No
         ValueError: if the number of wires does not match the length of the Pauli word.
 
     **Example:**
-    
+
     The following example illustrates how to include a Pauli product measurement (PPM) in a circuit by specifiying
     the Pauli word and the wires it acts on.
 
@@ -172,17 +172,18 @@ def pauli_measure(pauli_word: str, wires: WiresLike, postselect: int | None = No
     Additionally, the number of PPM operations in a circuit can be easily inspected with :func:`~.specs`
     where they are denoted as a :class:`~.ops.mid_measure.pauli_measure.PauliMeasure` gate type:
 
-    >>> from pprint import pprint
-    >>> pprint(qml.specs(circuit)()['resources'])
-    Resources(num_wires=3,
-        num_gates=4,
-        gate_types=defaultdict(<class 'int'>,
-                                {'Conditional(PauliX)': 1,
-                                'Hadamard': 2,
-                                'PauliMeasure': 1}),
-        gate_sizes=defaultdict(<class 'int'>, {1: 3, 2: 1}),
-        depth=3,
-        shots=Shots(total_shots=None, shot_vector=()))
+    >>> print(qml.specs(circuit)()['resources'])
+    Total qubit allocations: 3
+    Total gates: 4
+    Circuit depth: 3
+
+    Gate types:
+      Hadamard: 2
+      PauliMeasure: 1
+      Conditional(PauliX): 1
+
+    Measurements:
+      expval(PauliZ): 1
 
     .. seealso::
         For more information on Pauli product measurements, check out the `Quantum Compilation hub <https://pennylane.ai/compilation/pauli-product-measurement>`_ and
