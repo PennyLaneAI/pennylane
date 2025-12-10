@@ -161,7 +161,7 @@ def pauli_measure(pauli_word: str, wires: WiresLike, postselect: int | None = No
 
             return qml.expval(qml.Z(0))
 
-    The PauliX operation on wire ``1`` will be applied conditionally on the value of the PPM outcome:
+    The``X`` operation on wire ``1`` will be applied conditionally on the value of the PPM outcome:
 
     >>> print(qml.draw(circuit)())
     0: ──H─╭┤↗X├────┤  <Z>
