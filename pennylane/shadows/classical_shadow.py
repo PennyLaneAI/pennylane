@@ -405,8 +405,8 @@ class ClassicalShadow:
 
             entropies = [shadow.entropy(wires=[0], alpha=alpha) for alpha in [1., 2., 3.]]
 
-        >>> np.isclose(entropies, entropies[0], atol=1e-2)
-        [ True,  True,  True]
+        >>> print(np.isclose(entropies, entropies[0], atol=5e-2))
+        [ True  True  True]
 
         For non-uniform reduced states that is not the case anymore and the entropy differs for each order ``alpha``:
 

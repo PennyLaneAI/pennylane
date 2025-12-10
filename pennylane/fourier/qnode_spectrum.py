@@ -13,9 +13,13 @@
 # limitations under the License.
 """Contains a transform that computes the frequency spectrum of a quantum
 circuit including classical preprocessing within the QNode."""
-from collections import OrderedDict
+
+from __future__ import annotations
+
 from inspect import signature
 from itertools import product
+from types import EllipsisType
+from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -24,20 +28,27 @@ from pennylane.capture.autograph import wraps
 
 from .utils import get_spectrum, join_spectra
 
+if TYPE_CHECKING:
+    from pennylane.workflow.qnode import QNode
 
-def _process_ids(encoding_args, argnum, qnode):
-    r"""Process the passed ``encoding_args`` and ``argnum`` or infer them from
+
+def _process_ids(
+    encoding_args: dict[str, list[tuple] | EllipsisType] | set[EllipsisType] | None,
+    argnum: list[int] | None,
+    qnode: QNode,
+) -> tuple[dict[str, list[tuple] | EllipsisType], list[int]]:
+    r"""Mutate the passed ``encoding_args`` and ``argnum`` or infer them from
     the QNode signature.
 
     Args:
-        encoding_args (dict[str, list[tuple]] or set): Parameter index dictionary;
+        encoding_args (dict[str, list[tuple] | EllipsisType] | set[EllipsisType] | None): Parameter index dictionary;
             keys are argument names, values are index tuples for that argument
             or an ``Ellipsis``. If a ``set``, all values are set to ``Ellipsis``
-        argnum (list[int]): Numerical indices for arguments
+        argnum (list[int] | None): Numerical indices for arguments
         qnode (QNode): QNode to infer the ``encoding_args`` and ``argnum`` from
             if both are ``None``
     Returns:
-        OrderedDict[str, list[tuple]]: Ordered parameter index dictionary;
+        OrderedDict[str, list[tuple] | Ellipsis]: Ordered parameter index dictionary;
             keys are argument names, values are index tuples for that argument
             or an ``Ellipsis``
         list[int]: Numerical indices for arguments
@@ -67,8 +78,8 @@ def _process_ids(encoding_args, argnum, qnode):
 
     As an example, consider the qnode
 
-    >>> @qml.qnode(dev)
-    >>> def circuit(a, b, c, x=2):
+    >>> @qml.qnode(qml.device("default.qubit", wires=1))
+    ... def circuit(a, b, c, x=2):
     ...     return qml.expval(qml.X(0))
 
     which takes arguments:
@@ -85,7 +96,7 @@ def _process_ids(encoding_args, argnum, qnode):
     in various combinations:
 
     >>> _process_ids(encoding_args, None, circuit)
-    (OrderedDict([('a', [(1,), (2,)]), ('c', Ellipsis), ('x', [()])]), [0, 2, 3])
+    ({'a': [(1,), (2,)], 'c': Ellipsis, 'x': [()]}, [0, 2, 3])
 
     The first output, ``encoding_args``, essentially is unchanged, it simply was ordered in
     the order of the QNode arguments. The second output, ``argnum``, contains all three
@@ -93,19 +104,19 @@ def _process_ids(encoding_args, argnum, qnode):
     If we in addition pass ``argnum``, it is ignored:
 
     >>> _process_ids(encoding_args, argnum, circuit)
-    (OrderedDict([('a', [(1,), (2,)]), ('c', Ellipsis), ('x', [()])]), [0, 2, 3])
+    ({'a': [(1,), (2,)], 'c': Ellipsis, 'x': [()]}, [0, 2, 3])
 
     Only if we leave out ``encoding_args`` does it make a difference:
 
     >>> _process_ids(None, argnum, circuit)
-    (OrderedDict([('a', Ellipsis), ('c', Ellipsis)]), [0, 2])
+    ({'a': Ellipsis, 'c': Ellipsis}, [0, 2])
 
     Now only the arguments in ``argnum`` are considered, in particular the ``argnum`` input
     is simply sorted. In ``encoding_args``, all argument names are paired with an ``Ellipsis``.
     If we skip both inputs, all QNode arguments are extracted:
 
     >>> _process_ids(None, None, circuit)
-    (OrderedDict([('a', Ellipsis), ('b', Ellipsis), ('c', Ellipsis)]), [0, 1, 2])
+    ({'a': Ellipsis, 'b': Ellipsis, 'c': Ellipsis}, [0, 1, 2])
 
     Note that ``x`` does not appear here, because it has a default value defined and thus is
     considered a keyword argument.
@@ -117,14 +128,14 @@ def _process_ids(encoding_args, argnum, qnode):
 
     if encoding_args is None:
         if argnum is None:
-            encoding_args = OrderedDict((name, ...) for name in arg_names_no_def)
+            encoding_args = {name: ... for name in arg_names_no_def}
             argnum = list(range(len(arg_names_no_def)))
         elif np.isscalar(argnum):
-            encoding_args = OrderedDict({arg_names[argnum]: ...})
+            encoding_args = dict({arg_names[argnum]: ...})
             argnum = [argnum]
         else:
             argnum = sorted(argnum)
-            encoding_args = OrderedDict((arg_names[num], ...) for num in argnum)
+            encoding_args = {arg_names[num]: ... for num in argnum}
     else:
         requested_names = set(encoding_args)
         if not all(name in arg_names for name in requested_names):
@@ -133,13 +144,11 @@ def _process_ids(encoding_args, argnum, qnode):
             )
         # Selection of requested argument names from sorted names
         if isinstance(encoding_args, set):
-            encoding_args = OrderedDict(
-                (name, ...) for name in arg_names if name in requested_names
-            )
+            encoding_args = {name: ... for name in arg_names if name in requested_names}
         else:
-            encoding_args = OrderedDict(
-                (name, encoding_args[name]) for name in arg_names if name in requested_names
-            )
+            encoding_args = {
+                name: encoding_args[name] for name in arg_names if name in requested_names
+            }
         argnum = [arg_names.index(name) for name in encoding_args]
 
     return encoding_args, argnum
@@ -252,15 +261,16 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
 
     This circuit looks as follows:
 
-    >>> from pennylane import numpy as pnp
     >>> x = pnp.array([1., 2., 3.])
     >>> y = pnp.array([0.1, 0.3, 0.5])
     >>> z = pnp.array(-1.8)
-    >>> w = pnp.random.random((2, n_qubits, 3))
+    >>> rng = pnp.random.default_rng(seed=42)
+    >>> w = rng.random((2, n_qubits, 3))
+    >>> w = pnp.array(w)
     >>> print(qml.draw(circuit)(x, y, z, w))
-    0: ──RX(0.50)──Rot(0.09,0.46,0.54)──RY(0.23)──Rot(0.59,0.22,0.05)──RX(-1.80)─┤  <Z>
-    1: ──RX(1.00)──Rot(0.98,0.61,0.07)──RY(0.69)──Rot(0.62,0.00,0.28)──RX(-1.80)─┤
-    2: ──RX(1.50)──Rot(0.65,0.07,0.36)──RY(1.15)──Rot(0.74,0.27,0.24)──RX(-1.80)─┤
+    0: ──RX(0.50)──Rot(0.77,0.44,0.86)──RY(0.23)──Rot(0.45,0.37,0.93)──RX(-1.80)─┤  <Z>
+    1: ──RX(1.00)──Rot(0.70,0.09,0.98)──RY(0.69)──Rot(0.64,0.82,0.44)──RX(-1.80)─┤
+    2: ──RX(1.50)──Rot(0.76,0.79,0.13)──RY(1.15)──Rot(0.23,0.55,0.06)──RX(-1.80)─┤
 
     Applying the ``qnode_spectrum`` function to the circuit for
     the non-trainable parameters, we obtain:
@@ -268,9 +278,9 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
     >>> res = qml.fourier.qnode_spectrum(circuit, argnum=[0, 1, 2])(x, y, z, w)
     >>> for inp, freqs in res.items():
     ...     print(f"{inp}: {freqs}")
-    "x": {(0,): [-0.5, 0.0, 0.5], (1,): [-0.5, 0.0, 0.5], (2,): [-0.5, 0.0, 0.5]}
-    "y": {(0,): [-2.3, 0.0, 2.3], (1,): [-2.3, 0.0, 2.3], (2,): [-2.3, 0.0, 2.3]}
-    "z": {(): [-3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0]}
+    x: {(0,): [np.float64(-0.5), 0.0, np.float64(0.5)], (1,): [np.float64(-0.5), 0.0, np.float64(0.5)], (2,): [np.float64(-0.5), 0.0, np.float64(0.5)]}
+    y: {(0,): [np.float64(-2.3), 0.0, np.float64(2.3)], (1,): [np.float64(-2.3), 0.0, np.float64(2.3)], (2,): [np.float64(-2.3), 0.0, np.float64(2.3)]}
+    z: {(): [np.float64(-3.0), np.float64(-2.0), np.float64(-1.0), 0.0, np.float64(1.0), np.float64(2.0), np.float64(3.0)]}
 
     .. note::
         While the Fourier spectrum usually does not depend
@@ -288,7 +298,7 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
         >>> res = qml.fourier.qnode_spectrum(circuit, argnum=[0])(x, y, z, w)
         >>> for inp, freqs in res.items():
         ...     print(f"{inp}: {freqs}")
-        "x": {(0,): [-0.5, 0.0, 0.5], (1,): [-0.5, 0.0, 0.5], (2,): [-0.5, 0.0, 0.5]}
+        x: {(0,): [np.float64(-0.5), 0.0, np.float64(0.5)], (1,): [np.float64(-0.5), 0.0, np.float64(0.5)], (2,): [np.float64(-0.5), 0.0, np.float64(0.5)]}
 
         Selecting arguments by name instead of index is possible via the
         ``encoding_args`` argument:
@@ -296,7 +306,7 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
         >>> res = qml.fourier.qnode_spectrum(circuit, encoding_args={"y"})(x, y, z, w)
         >>> for inp, freqs in res.items():
         ...     print(f"{inp}: {freqs}")
-        "y": {(0,): [-2.3, 0.0, 2.3], (1,): [-2.3, 0.0, 2.3], (2,): [-2.3, 0.0, 2.3]}
+        y: {(0,): [np.float64(-2.3), 0.0, np.float64(2.3)], (1,): [np.float64(-2.3), 0.0, np.float64(2.3)], (2,): [np.float64(-2.3), 0.0, np.float64(2.3)]}
 
         Note that for array-valued arguments the spectrum for each element of the array
         is computed. A more fine-grained control is available by passing index tuples
@@ -306,7 +316,7 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
         >>> res = qml.fourier.qnode_spectrum(circuit, encoding_args=encoding_args)(x, y, z, w)
         >>> for inp, freqs in res.items():
         ...     print(f"{inp}: {freqs}")
-        "y": {(0,): [-2.3, 0.0, 2.3], (2,): [-2.3, 0.0, 2.3]}
+        y: {(0,): [np.float64(-2.3), 0.0, np.float64(2.3)], (2,): [np.float64(-2.3), 0.0, np.float64(2.3)]}
 
         .. warning::
             The ``qnode_spectrum`` function checks whether the classical preprocessing between
@@ -324,21 +334,19 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
 
         .. code-block:: python
 
-            import tensorflow as tf
-
             dev = qml.device("default.qubit", wires=1)
 
-            @qml.qnode(dev, interface='tf')
+            @qml.qnode(dev)
             def circuit(x):
                 qml.RX(0.4*x[0], wires=0)
                 qml.PhaseShift(x[1]*np.pi, wires=0)
                 return qml.expval(qml.Z(0))
 
-            x = tf.Variable([1., 2.])
+            x = torch.tensor([1.0, 3.0], requires_grad=True)
             res = qml.fourier.qnode_spectrum(circuit)(x)
 
         >>> print(res)
-        {"x": {(0,): [-0.4, 0.0, 0.4], (1,): [-3.14159, 0.0, 3.14159]}}
+        {'x': {(0,): [np.float64(-0.40...), 0.0, np.float64(0.40...)], (1,): [np.float64(-3.14...), 0.0, np.float64(3.14...)]}}
 
         Finally, compare ``qnode_spectrum`` with :func:`~.circuit_spectrum`, using
         the following circuit.
@@ -358,14 +366,14 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
         First, note that we assigned ``id`` labels to the gates for which we will use
         ``circuit_spectrum``. This allows us to choose these gates in the computation:
 
-        >>> x, y, z = pnp.array(0.1, 0.2, 0.3)
+        >>> x, y, z = pnp.array([0.1, 0.2, 0.3])
         >>> circuit_spec_fn = qml.fourier.circuit_spectrum(circuit, encoding_gates=["x","y0","y1"])
         >>> circuit_spec = circuit_spec_fn(x, y, z)
         >>> for _id, spec in circuit_spec.items():
         ...     print(f"{_id}: {spec}")
-        x: [-1.0, 0, 1.0]
-        y0: [-1.0, 0, 1.0]
-        y1: [-1.0, 0, 1.0]
+        x: [np.float64(-1.0), 0, np.float64(1.0)]
+        y0: [np.float64(-1.0), 0, np.float64(1.0)]
+        y1: [np.float64(-1.0), 0, np.float64(1.0)]
 
         As we can see, the preprocessing in the QNode is not included in the simple spectrum.
         In contrast, the output of ``qnode_spectrum`` is:
@@ -373,8 +381,8 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
         >>> adv_spec = qml.fourier.qnode_spectrum(circuit, encoding_args={"y", "z"})(x, y, z)
         >>> for _id, spec in adv_spec.items():
         ...     print(f"{_id}: {spec}")
-        y: {(): [-2.3, 0.0, 2.3]}
-        z: {(): [-1.0, 0.0, 1.0]}
+        y: {(): [np.float64(-2.3), 0.0, np.float64(2.3)]}
+        z: {(): [np.float64(-1.0), 0.0, np.float64(1.0)]}
 
         Note that the values of the output are dictionaries instead of the spectrum lists, that
         they include the prefactors introduced by classical preprocessing, and
