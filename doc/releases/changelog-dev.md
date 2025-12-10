@@ -34,6 +34,10 @@
   [(#8623)](https://github.com/PennyLaneAI/pennylane/pull/8623)
   [(#8663)](https://github.com/PennyLaneAI/pennylane/pull/8663)
 
+* A new template :class:`~.MultiplexerStatePreparation` has been added. This template allows prepare arbitrary states
+  using :class:`~.SelectPauliRot` operations.
+  [(#8581)](https://github.com/PennyLaneAI/pennylane/pull/8581)
+
 <h3>Improvements 🛠</h3>
 
 * In the past, calling a transform with only arguments or keyword but no tapes would raise an error.
