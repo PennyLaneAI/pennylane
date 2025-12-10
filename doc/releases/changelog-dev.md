@@ -335,6 +335,10 @@
   Instead, please use `QNode.transform_program.push_back(transform_container=transform_container)`.
   [(#8468)](https://github.com/PennyLaneAI/pennylane/pull/8468)
 
+* The custom call graphs for resource estimation have been removed. Call graphs are now
+  computed using the `pennylane.estimator` module, which may lead to different results.
+  [(#8390)](https://github.com/PennyLaneAI/pennylane/pull/8390)
+
 <h3>Deprecations 👋</h3>
 
 * Maintenance support of NumPy<2.0 is deprecated as of v0.44 and will be completely dropped in v0.45.
@@ -609,6 +613,7 @@ Yushao Chen,
 Marcus Edwards,
 Lillian Frederiksen,
 Sengthai Heng,
+Austin Huang,
 Soran Jahangiri,
 Christina Lee,
 Joseph Lee,

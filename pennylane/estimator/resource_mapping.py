@@ -61,7 +61,7 @@ def _map_to_resource_op(op: Operation) -> ResourceOperator:
         if len(decomp) == 1:
             return _map_to_resource_op(decomp[0])
 
-        decomp_wires = Wires.all_wires([d_op.wires for d_op in decomp])
+        decomp_wires = op.wires
         return re_ops.Prod(tuple(_map_to_resource_op(d_op) for d_op in decomp), wires=decomp_wires)
 
     raise NotImplementedError(
