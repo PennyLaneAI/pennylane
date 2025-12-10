@@ -14,17 +14,23 @@
 """
 This module contains the ``CompilePipeline`` class.
 """
+
+from __future__ import annotations
+
 from collections.abc import Sequence
 from copy import copy
 from functools import partial
-from typing import overload
+from typing import TYPE_CHECKING, overload
 
 from pennylane.exceptions import TransformError
-from pennylane.tape import QuantumScriptBatch
+from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import BatchPostprocessingFn, PostprocessingFn, ResultBatch
 
 from .cotransform_cache import CotransformCache
 from .transform_dispatcher import TransformContainer, TransformDispatcher
+
+if TYPE_CHECKING:
+    import jax
 
 
 def _batch_postprocessing(
@@ -158,16 +164,45 @@ class CompilePipeline:
 
     """
 
+    @overload
     def __init__(
         self,
-        initial_program: Sequence[TransformContainer] | None = None,
+        transforms: Sequence[TransformContainer],
+        /,
+        *,
+        cotransform_cache: CotransformCache | None = None,
+    ): ...
+    @overload
+    def __init__(
+        self,
+        *transforms: CompilePipeline | TransformContainer | TransformDispatcher,
+        cotransform_cache: CotransformCache | None = None,
+    ): ...
+    def __init__(
+        self,
+        *transforms: CompilePipeline
+        | TransformContainer
+        | TransformDispatcher
+        | Sequence[TransformContainer],
         cotransform_cache: CotransformCache | None = None,
     ):
-        self._compile_pipeline = list(initial_program) if initial_program else []
+        if len(transforms) == 1 and isinstance(transforms[0], Sequence):
+            self._compile_pipeline = list(transforms[0])
+            self.cotransform_cache = cotransform_cache
+            return
+
+        self._compile_pipeline = []
         self.cotransform_cache = cotransform_cache
+        for obj in transforms:
+            if not isinstance(obj, (CompilePipeline, TransformContainer, TransformDispatcher)):
+                raise TypeError(
+                    "CompilePipeline can only be constructed with a series of transforms "
+                    "or compile pipelines, or with a single list of transforms."
+                )
+            self += obj
 
     def __copy__(self):
-        return CompilePipeline(self._compile_pipeline, self.cotransform_cache)
+        return CompilePipeline(self._compile_pipeline, cotransform_cache=self.cotransform_cache)
 
     def __iter__(self):
         """list[TransformContainer]: Return an iterator to the underlying compile pipeline."""
@@ -178,11 +213,9 @@ class CompilePipeline:
         return len(self._compile_pipeline)
 
     @overload
-    def __getitem__(self, idx: int) -> "TransformContainer": ...
-
+    def __getitem__(self, idx: int) -> TransformContainer: ...
     @overload
-    def __getitem__(self, idx: slice) -> "CompilePipeline": ...
-
+    def __getitem__(self, idx: slice) -> CompilePipeline: ...
     def __getitem__(self, idx):
         """(TransformContainer, List[TransformContainer]): Return the indexed transform container from underlying
         compile pipeline"""
@@ -194,8 +227,9 @@ class CompilePipeline:
         return bool(self._compile_pipeline)
 
     def __add__(
-        self, other: "CompilePipeline | TransformContainer | TransformDispatcher"
-    ) -> "CompilePipeline":
+        self, other: CompilePipeline | TransformContainer | TransformDispatcher
+    ) -> CompilePipeline:
+
         # Convert dispatcher to container if needed
         if isinstance(other, TransformDispatcher):
             other = TransformContainer(other)
@@ -224,7 +258,7 @@ class CompilePipeline:
 
         return NotImplemented
 
-    def __radd__(self, other: "TransformContainer | TransformDispatcher") -> "CompilePipeline":
+    def __radd__(self, other: TransformContainer | TransformDispatcher) -> CompilePipeline:
         """Right addition to prepend a transform to the program.
 
         Args:
@@ -243,8 +277,8 @@ class CompilePipeline:
         return NotImplemented
 
     def __iadd__(
-        self, other: "CompilePipeline | TransformContainer | TransformDispatcher"
-    ) -> "CompilePipeline":
+        self, other: CompilePipeline | TransformContainer | TransformDispatcher
+    ) -> CompilePipeline:
         """In-place addition to append a transform to the program.
 
         Args:
@@ -282,7 +316,7 @@ class CompilePipeline:
 
         return NotImplemented
 
-    def __mul__(self, n: int) -> "CompilePipeline":
+    def __mul__(self, n: int) -> CompilePipeline:
         """Right multiplication to repeat a program n times.
 
         Args:
@@ -499,10 +533,13 @@ class CompilePipeline:
         return found
 
     def __call_tapes(
-        self, tapes: QuantumScriptBatch
+        self, tapes: QuantumScript | QuantumScriptBatch
     ) -> tuple[QuantumScriptBatch, BatchPostprocessingFn]:
         if not self:
             return tapes, null_postprocessing
+
+        if isinstance(tapes, QuantumScript):
+            tapes = (tapes,)
 
         processing_fns_stack = []
 
@@ -573,8 +610,8 @@ class CompilePipeline:
         return tuple(tapes), postprocessing_fn
 
     def __call_jaxpr(
-        self, jaxpr: "jax.extend.core.Jaxpr", consts: Sequence, *args
-    ) -> "jax.extend.core.ClosedJaxpr":
+        self, jaxpr: jax.extend.core.Jaxpr, consts: Sequence, *args
+    ) -> jax.extend.core.ClosedJaxpr:
         # pylint: disable=import-outside-toplevel
         import jax
 
@@ -585,20 +622,46 @@ class CompilePipeline:
 
         return cur_jaxpr
 
+    def __call_generic(self, obj):
+        """Apply the transform program to a generic object (QNode, device, callable, etc.).
+
+        This method chain-applies each transform using the generic dispatch system.
+
+        Args:
+            obj: The object to transform (QNode, device, callable, etc.).
+
+        Returns:
+            The transformed object.
+        """
+        result = obj
+        for container in self:
+            result = container(result)
+        return result
+
     @overload
     def __call__(
-        self, jaxpr: "jax.extend.core.Jaxpr", consts: Sequence, *args
-    ) -> "jax.extend.core.ClosedJaxpr": ...
+        self, jaxpr: jax.extend.core.Jaxpr, consts: Sequence, *args
+    ) -> jax.extend.core.ClosedJaxpr: ...
+    @overload
+    def __call__(self, tape: QuantumScript) -> tuple[QuantumScriptBatch, BatchPostprocessingFn]: ...
 
     @overload
     def __call__(
         self, tapes: QuantumScriptBatch
     ) -> tuple[QuantumScriptBatch, BatchPostprocessingFn]: ...
-
     def __call__(self, *args, **kwargs):
         if type(args[0]).__name__ == "Jaxpr":
             return self.__call_jaxpr(*args, **kwargs)
-        return self.__call_tapes(*args, **kwargs)
+
+        first_arg = args[0]
+
+        # Sequence of QuantumScripts: QuantumScriptBatch
+        if isinstance(first_arg, (QuantumScript, Sequence)):
+            return self.__call_tapes(*args, **kwargs)
+
+        # For any other object (QNode, device, callable, etc.),
+        # chain-apply each transform using the generic dispatch system
+        return self.__call_generic(first_arg)
 
 
 @TransformDispatcher.generic_register
