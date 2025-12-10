@@ -83,7 +83,8 @@ def _check_decomposition(op, skip_wire_mapping):
             orig_decomp = op.decomposition()
             for mapped_op, orig_op in zip(mapped_decomp, orig_decomp):
                 assert (
-                    mapped_op.wires == qml.map_wires(orig_op, wire_map).wires
+                    mapped_op.wires
+                    == qml.map_wires(orig_op, wire_map).wires  # pylint: disable=no-member
                 ), "Operators in decomposition of wire-mapped operator must have mapped wires."
     else:
         failure_comment = "If has_decomposition is False, then decomposition must raise a ``DecompositionUndefinedError``."
