@@ -183,18 +183,19 @@ class VibronicHamiltonian:
 
 
 class PauliHamiltonian:
-    r"""For a Hamiltonian expressed as a linear combination of tensor products of Pauli operators,
-    stores the minimum necessary information pertaining to resource estimation.
+    r"""Stores the minimum necessary information required to estimate resources for a Hamiltonian
+    expressed as a linear combination of tensor products of Pauli operators.
 
     Args:
         num_qubits (int): total number of qubits the Hamiltonian acts on
-        pauli_terms (dict | Iterable(dict)): A dictionary or a list of dictionaries representing the
-            various terms (Pauli words) of the Hamiltonian. The dictionary keys are Pauli strings
-            (e.g ``"XY" or "ZZ"``) and the values are integers corresponding to how frequently that
-            Pauli word appears in the Hamiltonian. The terms of the Hamiltonian can also be separated
-            into groups such that all operators in the group commute. These groups can be specified
-            by providing ``pauli_terms`` as a list of dictionaries (see the ``Usage Details`` section
-            below for more information).
+        pauli_terms (dict | Iterable(dict)): A representation for all of the terms (Pauli words) of
+            the Hamiltonian. The terms of the Hamiltonian can also be separated into groups such
+            that all Pauli words in a group commute. When a single dictionary is provided, it should
+            represent all the terms of the Hamiltonian where the dictionary keys are Pauli strings
+            (e.g ``"XY"`` or ``"Z"``) and the values are integers corresponding to how frequently
+            that Pauli word appears in the Hamiltonian. When a list of dictionaries is provided,
+            each dictionary is interpreted as a commuting group of terms. See the ``Usage Details``
+            section below for more information.
         one_norm (float | int | None): the one-norm of the Hamiltonian
 
     Returns:
@@ -251,17 +252,17 @@ class PauliHamiltonian:
         groups of terms directly.
 
         >>> import pennylane.estimator as qre
-        >>> commuting_groups = (
+        >>> commuting_groups = [
         ...     {"X": 40, "XX": 30}, # first commuting group
         ...     {"YY": 30}, # second commuting group
-        ... )
+        ... ]
         >>> pauli_ham = qre.PauliHamiltonian(
         ...     num_qubits = 40,
         ...     pauli_terms = commuting_groups,
         ...     one_norm = 14.5,  # (|0.1| * 30) + (|-0.05| * 30) + (|0.25| * 40)
         ... )
         >>> pauli_ham
-        PauliHamiltonian(num_qubits=40, one_norm=14.5, pauli_terms=({'X': 40, 'XX': 30}, {'YY': 30}))
+        PauliHamiltonian(num_qubits=40, one_norm=14.5, pauli_terms=[{'X': 40, 'XX': 30}, {'YY': 30}])
 
         Note that providing more information will generally lead to more accurate resource estimates.
 
@@ -287,7 +288,7 @@ class PauliHamiltonian:
         self,
         num_qubits: int,
         pauli_terms: dict | Iterable[dict],
-        one_norm: float | None = None,
+        one_norm: int | float | None = None,
     ):
         self._num_qubits = num_qubits
         if one_norm is not None and not (isinstance(one_norm, (float, int)) and one_norm >= 0):
