@@ -922,7 +922,7 @@ class ResourceIQP(ResourceOperator):
 
     Args:
         num_wires (int): the number of qubits the operation acts upon
-        gates (list[list[list[int]]]): Specification of the trainable gates. Each element of gates corresponds to a
+        pattern (list[list[list[int]]]): Specification of the trainable gates. Each element of gates corresponds to a
             unique trainable parameter. Each sublist specifies the generators to which that parameter applies.
             Generators are specified by listing the qubits on which an X operator acts.
         spin_sym (bool, optional): If True, the circuit is equivalent to one where the initial state
@@ -933,12 +933,12 @@ class ResourceIQP(ResourceOperator):
 
     """
 
-    resource_keys = {"spin_sym", "gates", "num_wires"}
+    resource_keys = {"spin_sym", "pattern", "num_wires"}
 
-    def __init__(self, num_wires, gates, spin_sym, wires=None) -> None:
+    def __init__(self, num_wires, pattern, spin_sym, wires=None) -> None:
         self.num_wires = num_wires
         self.spin_sym = spin_sym
-        self.gates = gates
+        self.pattern = pattern
         super().__init__(wires=wires)
 
     @property
@@ -951,18 +951,18 @@ class ResourceIQP(ResourceOperator):
         """
         return {
             "spin_sym": self.spin_sym,
-            "gates": self.gates,
+            "pattern": self.pattern,
             "num_wires": self.num_wires,
         }
 
     @classmethod
-    def resource_rep(cls, num_wires, gates, spin_sym) -> CompressedResourceOp:
+    def resource_rep(cls, num_wires, pattern, spin_sym) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
 
         Args:
             num_wires (int): the number of qubits the operation acts upon
-            gates (list[list[list[int]]]): Specification of the trainable gates. Each element of gates corresponds to a
+            pattern (list[list[list[int]]]): Specification of the trainable gates. Each element of gates corresponds to a
                 unique trainable parameter. Each sublist specifies the generators to which that parameter applies.
                 Generators are specified by listing the qubits on which an X operator acts.
             spin_sym (bool, optional): If True, the circuit is equivalent to one where the initial state
@@ -976,19 +976,19 @@ class ResourceIQP(ResourceOperator):
             num_wires,
             {
                 "spin_sym": spin_sym,
-                "gates": gates,
+                "pattern": pattern,
                 "num_wires": num_wires,
             },
         )
 
     @classmethod
-    def resource_decomp(cls, num_wires, gates, spin_sym) -> list[GateCount]:
+    def resource_decomp(cls, num_wires, pattern, spin_sym) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object in the list
         represents a gate and the number of times it occurs in the circuit.
 
         Args:
             num_wires (int): the number of qubits the operation acts upon
-            gates (list[list[list[int]]]): Specification of the trainable gates. Each element of gates corresponds to a
+            pattern (list[list[list[int]]]): Specification of the trainable gates. Each element of gates corresponds to a
                 unique trainable parameter. Each sublist specifies the generators to which that parameter applies.
                 Generators are specified by listing the qubits on which an X operator acts.
             spin_sym (bool, optional): If True, the circuit is equivalent to one where the initial state
@@ -1005,7 +1005,7 @@ class ResourceIQP(ResourceOperator):
         hadamard_counts = 2 * num_wires
         multi_rz_counts = defaultdict(int)
 
-        for gate in gates:
+        for gate in pattern:
             for gen in gate:
                 multi_rz_counts[len(gen)] += 1
 
@@ -1020,9 +1020,9 @@ class ResourceIQP(ResourceOperator):
         ]
 
     @staticmethod
-    def tracking_name(num_wires, gates, spin_sym) -> str:
+    def tracking_name(num_wires, pattern, spin_sym) -> str:
         r"""Returns the tracking name built with the operator's parameters."""
-        return f"IQP({num_wires}, {gates}, {spin_sym})"
+        return f"IQP({num_wires}, {pattern}, {spin_sym})"
 
 
 class ResourceQFT(ResourceOperator):

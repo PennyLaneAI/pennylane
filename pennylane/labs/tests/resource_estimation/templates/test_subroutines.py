@@ -789,7 +789,7 @@ class TestResourceIQP:
     """Test the ResourceIQP class."""
 
     @pytest.mark.parametrize(
-        ("num_wires", "gates", "spin_sym"),
+        ("num_wires", "pattern", "spin_sym"),
         [
             (4, [[[0]], [[1]], [[2]], [[3]]], False),
             (
@@ -799,17 +799,17 @@ class TestResourceIQP:
             ),
         ],
     )
-    def test_resource_params(self, num_wires, gates, spin_sym):
+    def test_resource_params(self, num_wires, pattern, spin_sym):
         """Test that the resource params are correct."""
-        op = plre.ResourceIQP(num_wires, gates, spin_sym)
+        op = plre.ResourceIQP(num_wires, pattern, spin_sym)
         assert op.resource_params == {
             "spin_sym": spin_sym,
-            "gates": gates,
+            "pattern": pattern,
             "num_wires": num_wires,
         }
 
     @pytest.mark.parametrize(
-        ("num_wires", "gates", "spin_sym"),
+        ("num_wires", "pattern", "spin_sym"),
         [
             (4, [[[0]], [[1]], [[2]], [[3]]], False),
             (
@@ -819,24 +819,24 @@ class TestResourceIQP:
             ),
         ],
     )
-    def test_resource_rep(self, num_wires, gates, spin_sym):
+    def test_resource_rep(self, num_wires, pattern, spin_sym):
         """Test that the compressed representation is correct."""
         expected = plre.CompressedResourceOp(
             plre.ResourceIQP,
             num_wires,
             {
                 "num_wires": num_wires,
-                "gates": gates,
+                "pattern": pattern,
                 "spin_sym": spin_sym,
             },
         )
         assert (
-            plre.ResourceIQP.resource_rep(num_wires=num_wires, gates=gates, spin_sym=spin_sym)
+            plre.ResourceIQP.resource_rep(num_wires=num_wires, pattern=pattern, spin_sym=spin_sym)
             == expected
         )
 
     @pytest.mark.parametrize(
-        ("num_wires", "gates", "spin_sym", "expected_res"),
+        ("num_wires", "pattern", "spin_sym", "expected_res"),
         [
             (
                 4,
@@ -859,9 +859,9 @@ class TestResourceIQP:
             ),
         ],
     )
-    def test_resources(self, num_wires, gates, spin_sym, expected_res):
+    def test_resources(self, num_wires, pattern, spin_sym, expected_res):
         """Test that the resources are correct."""
-        assert plre.ResourceIQP.resource_decomp(num_wires, gates, spin_sym) == expected_res
+        assert plre.ResourceIQP.resource_decomp(num_wires, pattern, spin_sym) == expected_res
 
 
 class TestResourceQFT:

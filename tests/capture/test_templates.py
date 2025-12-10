@@ -598,16 +598,16 @@ class TestModifiedTemplates:
     def test_iqp(self):
         """Test the primitive bind call of IQP."""
 
-        gates = []
+        pattern = []
         for weight in math.arange(1, 2):
             for gate in combinations(math.arange(4), weight):
-                gates.append(tuple(tuple(gate)))
-        gates = tuple(gates)
+                pattern.append(tuple(tuple(gate)))
+        pattern = tuple(pattern)
 
         kwargs = {
-            "wires": (0, 1, 2, 3),
-            "params": tuple(math.random.uniform(0, 2 * np.pi, 4)),
-            "gates": gates,
+            "num_wires": 4,
+            "weights": tuple(math.random.uniform(0, 2 * np.pi, 4)),
+            "pattern": pattern,
             "spin_sym": True,
         }
 

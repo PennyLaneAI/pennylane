@@ -50,12 +50,12 @@ def local_gates(n_qubits: int, max_weight=2):
     ("params", "error", "match"),
     [
         (
-            ([0, 1], [[0, 1], [0]], [0], False),
+            (2, [[0, 1], [0]], [0], False),
             ValueError,
             "Number of gates and number of parameters for an Instantaneous Quantum Polynomial circuit must be the same",
         ),
         (
-            ([], [[0, 1], [0]], [0, 1], False),
+            (0, [[0, 1], [0]], [0, 1], False),
             ValueError,
             "At least one valid wire",
         ),
@@ -67,7 +67,7 @@ def test_raises(params, error, match):
 
 
 @pytest.mark.parametrize(
-    ("params", "gates", "spin_sym", "n_qubits"),
+    ("weights", "pattern", "spin_sym", "n_qubits"),
     [
         (
             math.random.uniform(0, 2 * np.pi, 4),
@@ -83,21 +83,21 @@ def test_raises(params, error, match):
         ),
     ],
 )
-def test_decomposition_new(params, gates, spin_sym, n_qubits):  # pylint: disable=too-many-arguments
-    op = IQP(list(range(n_qubits)), gates, params, spin_sym)
+def test_decomposition_new(weights, pattern, spin_sym, n_qubits):  # pylint: disable=too-many-arguments
+    op = IQP(n_qubits, pattern, weights, spin_sym)
 
     for rule in list_decomps(IQP):
         _test_decomposition_rule(op, rule)
 
 
 @qnode(dev)
-def iqp_circuit(params, gates, spin_sym, n_qubits):  # pylint: disable=too-many-arguments
-    IQP(list(range(n_qubits)), gates, params, spin_sym)
+def iqp_circuit(weights, pattern, spin_sym, n_qubits):  # pylint: disable=too-many-arguments
+    IQP(n_qubits, pattern, weights, spin_sym)
     return probs(wires=list(range(n_qubits)))
 
 
 @pytest.mark.parametrize(
-    ("params", "gates", "spin_sym", "n_qubits", "expected_circuit"),
+    ("weights", "pattern", "spin_sym", "n_qubits", "expected_circuit"),
     [
         (
             math.random.uniform(0, 2 * np.pi, 4),
@@ -123,10 +123,10 @@ def iqp_circuit(params, gates, spin_sym, n_qubits):  # pylint: disable=too-many-
     ],
 )
 def test_decomposition_contents(
-    params, gates, spin_sym, n_qubits, expected_circuit
+    weights, pattern, spin_sym, n_qubits, expected_circuit
 ):  # pylint: disable=too-many-arguments
     with queuing.AnnotatedQueue() as q:
-        iqp_circuit(params, gates, spin_sym, n_qubits)
+        iqp_circuit(weights, pattern, spin_sym, n_qubits)
 
     for op, expected in zip(q.queue, expected_circuit):
         assert isinstance(op, expected)
