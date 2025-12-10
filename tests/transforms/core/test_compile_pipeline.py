@@ -1032,7 +1032,6 @@ class TestCompilePipeline:
 
         t_normal = TransformContainer(qml.transform(second_valid_transform))
         compile_pipeline.push_back(t_normal)
-        print(compile_pipeline)
         assert len(compile_pipeline) == 2
         assert compile_pipeline[0] is t_normal
         assert compile_pipeline[1] is transform1
