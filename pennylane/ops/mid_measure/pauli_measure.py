@@ -144,10 +144,10 @@ def pauli_measure(pauli_word: str, wires: WiresLike, postselect: int | None = No
         ValueError: if the Pauli word has characters other than X, Y and Z.
         ValueError: if the number of wires does not match the length of the Pauli word.
 
-    The following example illustrates how to include a Pauli product measurement (PPM) in a circuit by specifiying
-    the Pauli word and the wires it acts on:
-
     **Example:**
+    
+    The following example illustrates how to include a Pauli product measurement (PPM) in a circuit by specifiying
+    the Pauli word and the wires it acts on.
 
     .. code-block:: python
 
