@@ -12,7 +12,7 @@
 
 <h4>Pauli product measurements</h4>
 
-* Expressing `Pauli product measurement <https://pennylane.ai/compilation/pauli-product-measurement>`_
+* Writing circuits in terms of `Pauli product measurements<https://pennylane.ai/compilation/pauli-product-measurement>`_
   (PPMs) in PennyLane is now possible with the new :func:`~.pauli_measure` function. This
   functionality allows for seamless surface-code fault-tolerant quantum computing research spurred
   from `A Game of Surface Codes <http://arxiv.org/abs/1808.02892>`_.
