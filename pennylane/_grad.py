@@ -94,7 +94,15 @@ def _get_vjp_prim():
 
     @vjp_prim.def_impl
     def _vjp_impl(*args, jaxpr, fn, method, h, argnums):
-        raise NotImplementedError("qml.vjp must be used together with qml.qjit.")
+        params = args[: len(jaxpr.invars)]
+        dy = list(args[len(jaxpr.invars) :])
+
+        def func(*inner_args):
+            return jax.core.eval_jaxpr(jaxpr, [], *inner_args)
+
+        res, vjp_fn = jax.vjp(func, *params)
+        dparams = vjp_fn(dy)
+        return res + [dparams[i] for i in argnums]
 
     @vjp_prim.def_abstract_eval
     def _vjp_abstract_eval(*args, jaxpr, fn, method, h, argnums):
