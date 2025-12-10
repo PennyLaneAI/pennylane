@@ -789,89 +789,79 @@ class TestResourceIQP:
     """Test the ResourceIQP class."""
 
     @pytest.mark.parametrize(
-        ("num_wires", "gates", "init_gates", "spin_sym"),
+        ("num_wires", "pattern", "spin_sym"),
         [
-            (4, [[[0]], [[1]], [[2]], [[3]]], [[[3]], [[1]], [[2]], [[0]]], False),
+            (4, [[[0]], [[1]], [[2]], [[3]]], False),
             (
                 6,
-                [[[0]], [[1]], [[2]], [[3]], [[4]], [[5]]],
                 [[[0]], [[4]], [[3]], [[2]], [[1]], [[5]]],
                 True,
             ),
         ],
     )
-    def test_resource_params(self, num_wires, gates, init_gates, spin_sym):
+    def test_resource_params(self, num_wires, pattern, spin_sym):
         """Test that the resource params are correct."""
-        op = plre.ResourceIQP(num_wires, gates, init_gates, spin_sym)
+        op = plre.ResourceIQP(num_wires, pattern, spin_sym)
         assert op.resource_params == {
             "spin_sym": spin_sym,
-            "gates": gates,
+            "pattern": pattern,
             "num_wires": num_wires,
-            "init_gates": init_gates,
         }
 
     @pytest.mark.parametrize(
-        ("num_wires", "gates", "init_gates", "spin_sym"),
+        ("num_wires", "pattern", "spin_sym"),
         [
-            (4, [[[0]], [[1]], [[2]], [[3]]], [[[3]], [[1]], [[2]], [[0]]], False),
+            (4, [[[0]], [[1]], [[2]], [[3]]], False),
             (
                 6,
                 [[[0]], [[1]], [[2]], [[3]], [[4]], [[5]]],
-                [[[0]], [[4]], [[3]], [[2]], [[1]], [[5]]],
                 True,
             ),
         ],
     )
-    def test_resource_rep(self, num_wires, gates, init_gates, spin_sym):
+    def test_resource_rep(self, num_wires, pattern, spin_sym):
         """Test that the compressed representation is correct."""
         expected = plre.CompressedResourceOp(
             plre.ResourceIQP,
             num_wires,
             {
                 "num_wires": num_wires,
-                "gates": gates,
-                "init_gates": init_gates,
+                "pattern": pattern,
                 "spin_sym": spin_sym,
             },
         )
         assert (
-            plre.ResourceIQP.resource_rep(
-                num_wires=num_wires, gates=gates, init_gates=init_gates, spin_sym=spin_sym
-            )
+            plre.ResourceIQP.resource_rep(num_wires=num_wires, pattern=pattern, spin_sym=spin_sym)
             == expected
         )
 
     @pytest.mark.parametrize(
-        ("num_wires", "gates", "init_gates", "spin_sym", "expected_res"),
+        ("num_wires", "pattern", "spin_sym", "expected_res"),
         [
             (
                 4,
                 [[[0]], [[1]], [[2]], [[3]]],
-                [[[3]], [[1]], [[2]], [[0]]],
                 False,
                 [
                     GateCount(resource_rep(plre.ResourceHadamard), 8),
-                    GateCount(resource_rep(plre.ResourceMultiRZ, {"num_wires": 1}), 8),
+                    GateCount(resource_rep(plre.ResourceMultiRZ, {"num_wires": 1}), 4),
                 ],
             ),
             (
                 6,
                 [[[0]], [[1]], [[2]], [[3]], [[4]], [[5]]],
-                [[[0]], [[4]], [[3]], [[2]], [[1]], [[5]]],
                 True,
                 [
                     GateCount(resource_rep(plre.ResourceHadamard), 12),
                     GateCount(resource_rep(plre.ResourcePauliRot, {"pauli_string": "YXXXXX"}), 1),
-                    GateCount(resource_rep(plre.ResourceMultiRZ, {"num_wires": 1}), 12),
+                    GateCount(resource_rep(plre.ResourceMultiRZ, {"num_wires": 1}), 6),
                 ],
             ),
         ],
     )
-    def test_resources(self, num_wires, gates, init_gates, spin_sym, expected_res):
+    def test_resources(self, num_wires, pattern, spin_sym, expected_res):
         """Test that the resources are correct."""
-        assert (
-            plre.ResourceIQP.resource_decomp(num_wires, gates, init_gates, spin_sym) == expected_res
-        )
+        assert plre.ResourceIQP.resource_decomp(num_wires, pattern, spin_sym) == expected_res
 
 
 class TestResourceQFT:
