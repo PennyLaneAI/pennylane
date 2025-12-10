@@ -12,17 +12,16 @@
 
 <h4>Pauli product measurements</h4>
 
-* Writing circuits in terms of `Pauli product measurements<https://pennylane.ai/compilation/pauli-product-measurement>`_
-  (PPMs) in PennyLane is now possible with the new :func:`~.pauli_measure` function. This
-  functionality allows for seamless surface-code fault-tolerant quantum computing research spurred
-  from `A Game of Surface Codes <http://arxiv.org/abs/1808.02892>`_.
+* Writing circuits in terms of `Pauli product measurements <https://pennylane.ai/compilation/pauli-product-measurement>`_
+  (PPMs) in PennyLane is now possible with the new :func:`~.pauli_measure` function.
+  Using this function in tandem with :class:`~.PauliRot` to represent Pauli product rotations (PPRs) allows for seamless surface-code fault-tolerant quantum computing research spurred from `A Game of Surface Codes <http://arxiv.org/abs/1808.02892>`_.
   [(#8461)](https://github.com/PennyLaneAI/pennylane/pull/8461)
   [(#8631)](https://github.com/PennyLaneAI/pennylane/pull/8631)
   [(#8623)](https://github.com/PennyLaneAI/pennylane/pull/8623)
   [(#8663)](https://github.com/PennyLaneAI/pennylane/pull/8663)
   [(#8692)](https://github.com/PennyLaneAI/pennylane/pull/8692)
 
-  This new function is currently only for analysis on the ``null.qubit`` device, which allows for resource tracking or estimation with :func:`~.specs` or :func:`~.estimator.estimate`, and circuit inspection with :func:`~.draw`.
+  The new :func:`~.pauli_measure` function is currently only for analysis on the ``null.qubit`` device, which allows for resource tracking with :func:`~.specs` and circuit inspection with :func:`~.draw`.
 
   In the following example, a measurement of the ``XY`` Pauli product on wires ``0`` and ``2`` is performed
   using :func:`~.pauli_measure`, followed by application of a :class:`~.PauliX` gate conditional on
@@ -37,6 +36,7 @@
   def circuit():
       qml.Hadamard(0)
       qml.Hadamard(2)
+      qml.PauliRot(np.pi / 4, pauli_word="XYZ", wires=[0, 1, 2])
       ppm = qml.pauli_measure(pauli_word="XY", wires=[0, 2])
       qml.cond(ppm, qml.X)(wires=1)
       return qml.expval(qml.Z(0))
@@ -44,10 +44,26 @@
 
   ```pycon
   >>> print(qml.draw(circuit)())
-  0: ──H─╭┤↗X├────┤  <Z>
-  1: ────│──────X─┤
-  2: ──H─╰┤↗Y├──║─┤
-           ╚════╝
+  0: ──H─╭RXYZ(0.79)─╭┤↗X├────┤  <Z>
+  1: ────├RXYZ(0.79)─│──────X─┤
+  2: ──H─╰RXYZ(0.79)─╰┤↗Y├──║─┤
+                       ╚════╝
+  ```
+
+  By appliying the :func:`~.specs` function to the circuit above, you can easily determine its resource information.
+  In this case, in addition to other gates, we can see that the circuit includes one PPR and one PPM operation (represented
+  by the :class:`~.PauliRot` and :class:`~.ops.mid_measure.pauli_measure.PauliMeasure` gate types):
+
+  ```pycon
+  >>> print(qml.specs(circuit)()['resources'])
+  num_wires: 3
+  num_gates: 5
+  depth: 4
+  shots: Shots(total=None)
+  gate_types:
+  {'Hadamard': 2, 'PauliRot': 1, 'PauliMeasure': 1, 'Conditional(PauliX)': 1}
+  gate_sizes:
+  {1: 3, 3: 1, 2: 1}
   ```
 
 <h3>Improvements 🛠</h3>

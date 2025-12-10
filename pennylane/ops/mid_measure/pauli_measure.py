@@ -161,7 +161,7 @@ def pauli_measure(pauli_word: str, wires: WiresLike, postselect: int | None = No
 
             return qml.expval(qml.Z(0))
 
-    The``X`` operation on wire ``1`` will be applied conditionally on the value of the PPM outcome:
+    The ``X`` operation on wire ``1`` will be applied conditionally on the value of the PPM outcome:
 
     >>> print(qml.draw(circuit)())
     0: ──H─╭┤↗X├────┤  <Z>
@@ -170,7 +170,7 @@ def pauli_measure(pauli_word: str, wires: WiresLike, postselect: int | None = No
              ╚════╝
 
     Additionally, the number of PPM operations in a circuit can be easily inspected with :func:`~.specs`
-    where they are denoted as a :class:`~.PauliMeasure` gate type:
+    where they are denoted as a :class:`~.ops.mid_measure.pauli_measure.PauliMeasure` gate type:
 
     >>> from pprint import pprint
     >>> pprint(qml.specs(circuit)()['resources'])
