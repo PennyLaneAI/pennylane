@@ -467,15 +467,15 @@ class BoundTransform:  # pylint: disable=too-many-instance-attributes
     Repeated versions of the bound transform can be created with multiplication:
 
     >>> bound_t * 3
-    TransformProgram(merge_rotations, merge_rotations, merge_rotations)
+    CompilePipeline(merge_rotations, merge_rotations, merge_rotations)
 
     And it can be used in conjunction with both individual transforms, bound transforms, and
     transform programs.
 
     >>> bound_t + qml.transforms.cancel_inverses
-    TransformProgram(merge_rotations, cancel_inverses)
+    CompilePipeline(merge_rotations, cancel_inverses)
     >>> bound_t + qml.transforms.cancel_inverses + bound_t
-    TransformProgram(merge_rotations, cancel_inverses, merge_rotations)
+    CompilePipeline(merge_rotations, cancel_inverses, merge_rotations)
 
     """
 
