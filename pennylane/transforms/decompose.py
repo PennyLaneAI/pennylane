@@ -90,6 +90,7 @@ def _get_plxpr_decompose():  # pylint: disable=too-many-statements
             stopping_condition=None,
             max_expansion=None,
             max_work_wires=0,
+            minimize_work_wires=False,
             fixed_decomps=None,
             alt_decomps=None,
         ):  # pylint: disable=too-many-arguments
@@ -107,6 +108,7 @@ def _get_plxpr_decompose():  # pylint: disable=too-many-statements
             self._target_gate_names = None
             self._fixed_decomps, self._alt_decomps = fixed_decomps, alt_decomps
             self._max_work_wires = max_work_wires
+            self._minimize_work_wires = minimize_work_wires
 
             # We use a ChainMap to store the environment frames, which allows us to push and pop
             # environments without copying the interpreter instance when we evaluate a jaxpr of
@@ -235,9 +237,11 @@ def _get_plxpr_decompose():  # pylint: disable=too-many-statements
                         operations,
                         self._gate_set,
                         self._max_work_wires,
+                        self._minimize_work_wires,
                         self._fixed_decomps,
                         self._alt_decomps,
                     )
+                    self._max_work_wires = self._decomp_graph_solution.num_work_wires
 
             for eq in jaxpr.eqns:
                 prim_type = getattr(eq.primitive, "prim_type", "")
@@ -331,6 +335,8 @@ def _get_plxpr_decompose():  # pylint: disable=too-many-statements
 
     def decompose_plxpr_to_plxpr(jaxpr, consts, targs, tkwargs, *args):
         """Function for applying the ``decompose`` transform on plxpr."""
+        # Restore tkwargs from hashable tuple to dict
+        tkwargs = dict(tkwargs)
 
         interpreter = DecomposeInterpreter(*targs, **tkwargs)
 
@@ -353,6 +359,7 @@ def decompose(
     stopping_condition=None,
     max_expansion=None,
     max_work_wires: int | None = 0,
+    minimize_work_wires: bool = False,
     fixed_decomps: dict | None = None,
     alt_decomps: dict | None = None,
 ):  # pylint: disable=too-many-arguments
@@ -387,6 +394,8 @@ def decompose(
             If ``None``, the circuit will be decomposed until the target gate set is reached.
         max_work_wires (int): The maximum number of work wires that can be simultaneously
             allocated. If ``None``, assume an infinite number of work wires. Defaults to ``0``.
+        minimize_work_wires (bool): If ``True``, minimize the number of work wires simultaneously
+            allocated throughout the circuit. Defaults to ``False``.
         fixed_decomps (Dict[Type[Operator], DecompositionRule]): a dictionary mapping operator types
             to custom decomposition rules. A decomposition rule is a quantum function decorated with
             :func:`~pennylane.register_resources`. The custom decomposition rules specified here
@@ -721,7 +730,7 @@ def decompose(
                 return qml.state()
 
         >>> qml.specs(circuit)()["resources"].gate_types
-        defaultdict(<class 'int'>, {'RZ': 12, 'RX': 7, 'GlobalPhase': 6, 'CZ': 3})
+        {'RZ': 12, 'RX': 7, 'GlobalPhase': 6, 'CZ': 3}
         >>> qml.decomposition.disable_graph()
 
     """
@@ -747,9 +756,11 @@ def decompose(
             tape.operations,
             gate_set,
             num_work_wires=max_work_wires,
+            minimize_work_wires=minimize_work_wires,
             fixed_decomps=fixed_decomps,
             alt_decomps=alt_decomps,
         )
+        max_work_wires = decomp_graph_solution.num_work_wires
 
     try:
         new_ops = [
@@ -1030,13 +1041,18 @@ def _resolve_gate_set(
     return gate_set, _stopping_condition
 
 
-def _construct_and_solve_decomp_graph(
-    operations, target_gates, num_work_wires, fixed_decomps, alt_decomps
+def _construct_and_solve_decomp_graph(  # pylint: disable=too-many-arguments
+    operations,
+    target_gates,
+    num_work_wires,
+    minimize_work_wires,
+    fixed_decomps,
+    alt_decomps,
 ):
     """Create and solve a DecompositionGraph instance to optimize the decomposition."""
 
     # Create the decomposition graph
-    decomp_graph = DecompositionGraph(
+    graph = DecompositionGraph(
         operations,
         target_gates,
         fixed_decomps=fixed_decomps,
@@ -1044,4 +1060,4 @@ def _construct_and_solve_decomp_graph(
     )
 
     # Find the efficient pathways to the target gate set
-    return decomp_graph.solve(num_work_wires=num_work_wires)
+    return graph.solve(num_work_wires=num_work_wires, minimize_work_wires=minimize_work_wires)
