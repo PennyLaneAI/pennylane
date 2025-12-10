@@ -31,7 +31,7 @@ class TestNoInterfaceRequired:
     def test_numpy_interface(self, seed):
         """Test that tapes are executed correctly with the NumPy interface."""
         container = TransformContainer(merge_rotations)
-        inner_tp = CompilePipeline((container,))
+        inner_tp = CompilePipeline(container)
         device = qml.device("default.qubit", seed=seed)
         tapes = [
             QuantumScript(
@@ -52,7 +52,7 @@ class TestNoInterfaceRequired:
     def test_no_gradient_computation_required(self, interface, gradient_method, seed):
         """Test that tapes execute without an ML boundary when no gradient computation is required."""
         container = TransformContainer(merge_rotations)
-        inner_tp = CompilePipeline((container,))
+        inner_tp = CompilePipeline(container)
         device = qml.device("default.qubit", seed=seed)
         tapes = [
             QuantumScript(
