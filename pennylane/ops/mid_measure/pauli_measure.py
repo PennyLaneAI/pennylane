@@ -131,6 +131,10 @@ def pauli_measure(pauli_word: str, wires: WiresLike, postselect: int | None = No
         This function is only for analysis using the ``null.qubit`` device and potential future execution when a suitable backend is
         available.
 
+    .. seealso::
+        For more information on Pauli product measurements, check out the `Quantum Compilation hub <https://pennylane.ai/compilation/pauli-product-measurement>`_ and
+        :func:`catalyst.passes.ppm_compilation` for compiling these circuits with Catalyst.
+
     Args:
         pauli_word (str): The Pauli word to measure.
         wires (Wires): The wires that the Pauli word acts on.
@@ -182,10 +186,6 @@ def pauli_measure(pauli_word: str, wires: WiresLike, postselect: int | None = No
       Conditional(PauliX): 1
     Measurements:
       expval(PauliZ): 1
-
-    .. seealso::
-        For more information on Pauli product measurements, check out the `Quantum Compilation hub <https://pennylane.ai/compilation/pauli-product-measurement>`_ and
-        :func:`catalyst.passes.ppm_compilation` for compiling these circuits with Catalyst.
     """
 
     if capture_enabled():
