@@ -46,18 +46,18 @@ class IQP(Operation):
     resource_keys = {"spin_sym", "pattern", "num_wires"}
 
     def __init__(
-        self, num_wires, pattern, weights, spin_sym=None, id=None
+        self, weights, num_wires, pattern, spin_sym=None, id=None
     ):  # pylint: disable=too-many-arguments
         r"""
         IQP template corresponding to a parameterized IQP circuit. Based on `IQPopt: Fast optimization of
         instantaneous quantum polynomial circuits in JAX <https://arxiv.org/pdf/2501.04776>`__.
 
         Args:
+            weights (list): The parameters of the IQP gates.
             num_wires (int): Number of wires in the circuit.
             pattern (list[list[list[int]]]): Specification of the trainable gates. Each element of gates corresponds to a
                 unique trainable parameter. Each sublist specifies the generators to which that parameter applies.
                 Generators are specified by listing the qubits on which an X operator acts.
-            weights (list): The parameters of the IQP gates.
             spin_sym (bool, optional): If True, the circuit is equivalent to one where the initial state
                 :math:`\frac{1}{\sqrt(2)}(|00\dots0> + |11\dots1>)` is used in place of :math:`|00\dots0>`.
 

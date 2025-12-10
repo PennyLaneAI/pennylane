@@ -50,12 +50,12 @@ def local_gates(n_qubits: int, max_weight=2):
     ("params", "error", "match"),
     [
         (
-            (2, [[0, 1], [0]], [0], False),
+            ([0], 2, [[0, 1], [0]], False),
             ValueError,
             "Number of gates and number of parameters for an Instantaneous Quantum Polynomial circuit must be the same",
         ),
         (
-            (0, [[0, 1], [0]], [0, 1], False),
+            ([0, 1], 0, [[0, 1], [0]], False),
             ValueError,
             "At least one valid wire",
         ),
@@ -86,7 +86,7 @@ def test_raises(params, error, match):
 def test_decomposition_new(
     weights, pattern, spin_sym, n_qubits
 ):  # pylint: disable=too-many-arguments
-    op = IQP(n_qubits, pattern, weights, spin_sym)
+    op = IQP(weights, n_qubits, pattern, spin_sym)
 
     for rule in list_decomps(IQP):
         _test_decomposition_rule(op, rule)
@@ -94,7 +94,7 @@ def test_decomposition_new(
 
 @qnode(dev)
 def iqp_circuit(weights, pattern, spin_sym, n_qubits):  # pylint: disable=too-many-arguments
-    IQP(n_qubits, pattern, weights, spin_sym)
+    IQP(weights, n_qubits, pattern, spin_sym)
     return probs(wires=list(range(n_qubits)))
 
 
