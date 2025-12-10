@@ -84,10 +84,12 @@ def map_wires(
 
         .. code-block:: python
 
+            import functools
+
             dev = qml.device("default.qubit")
             wire_map = {0: 10}
 
-            @qml.map_wires(wire_map=wire_map)
+            @functools.partial(qml.map_wires, wire_map=wire_map)
             @qml.qnode(dev)
             def func(x):
                 qml.RX(x, wires=0)
