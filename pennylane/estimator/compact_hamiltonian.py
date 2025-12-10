@@ -17,6 +17,12 @@ Contains classes used to compactly store the metadata of various Hamiltonians wh
 from dataclasses import dataclass
 
 
+def _validate_positive_int(name, value):
+    """Helper to validate positive integers."""
+    if not isinstance(value, int) or value <= 0:
+        raise TypeError(f"{name} must be a positive integer, got {value}")
+
+
 @dataclass(frozen=True)
 class CDFHamiltonian:
     """For a compressed double-factorized (CDF) Hamiltonian, stores the minimum necessary information pertaining to resource estimation.
@@ -24,6 +30,7 @@ class CDFHamiltonian:
     Args:
         num_orbitals (int): number of spatial orbitals
         num_fragments (int): number of fragments in the compressed double-factorized (CDF) representation
+        one_norm (float | None): the one-norm of the Hamiltonian
 
     Returns:
         CDFHamiltonian: An instance of CDFHamiltonian
@@ -34,6 +41,21 @@ class CDFHamiltonian:
 
     num_orbitals: int
     num_fragments: int
+    one_norm: float | None = None
+
+    def __post_init__(self):
+        """Checks the types of the inputs."""
+
+        _validate_positive_int("num_orbitals", self.num_orbitals)
+        _validate_positive_int("num_fragments", self.num_fragments)
+        if self.one_norm is not None and not (
+            isinstance(self.one_norm, (float, int)) and self.one_norm >= 0
+        ):
+            raise TypeError(
+                f"one_norm, if provided, must be a positive float or integer. Instead received {self.one_norm}"
+            )
+        if isinstance(self.one_norm, int):
+            object.__setattr__(self, "one_norm", float(self.one_norm))
 
 
 @dataclass(frozen=True)
@@ -43,6 +65,7 @@ class THCHamiltonian:
     Args:
         num_orbitals (int): number of spatial orbitals
         tensor_rank (int):  tensor rank of two-body integrals in the tensor hypercontracted (THC) representation
+        one_norm (float | None): the one-norm of the Hamiltonian
 
     Returns:
         THCHamiltonian: An instance of THCHamiltonian
@@ -53,6 +76,23 @@ class THCHamiltonian:
 
     num_orbitals: int
     tensor_rank: int
+    one_norm: float | None = None
+
+    def __post_init__(self):
+        """Checks the types of the inputs."""
+
+        _validate_positive_int("num_orbitals", self.num_orbitals)
+        _validate_positive_int("tensor_rank", self.tensor_rank)
+        if self.one_norm is not None and not (
+            isinstance(self.one_norm, (float, int)) and self.one_norm >= 0
+        ):
+            raise TypeError(
+                f"one_norm, if provided, must be a positive float or integer."
+                f" Instead received {self.one_norm}"
+            )
+
+        if isinstance(self.one_norm, int):
+            object.__setattr__(self, "one_norm", float(self.one_norm))
 
 
 @dataclass(frozen=True)
@@ -63,6 +103,7 @@ class VibrationalHamiltonian:
         num_modes (int): number of vibrational modes
         grid_size (int): number of grid points used to discretize each mode
         taylor_degree (int): degree of the Taylor expansion used in the vibrational representation
+        one_norm (float | None): the one-norm of the Hamiltonian
 
     Returns:
         VibrationalHamiltonian: An instance of VibrationalHamiltonian
@@ -74,6 +115,25 @@ class VibrationalHamiltonian:
     num_modes: int
     grid_size: int
     taylor_degree: int
+    one_norm: float | None = None
+
+    def __post_init__(self):
+        """Checks the types of the inputs."""
+
+        _validate_positive_int("num_modes", self.num_modes)
+        _validate_positive_int("grid_size", self.grid_size)
+        _validate_positive_int("taylor_degree", self.taylor_degree)
+
+        if self.one_norm is not None and not (
+            isinstance(self.one_norm, (float, int)) and self.one_norm >= 0
+        ):
+            raise TypeError(
+                f"one_norm, if provided, must be a positive float or integer."
+                f" Instead received {self.one_norm}"
+            )
+
+        if isinstance(self.one_norm, int):
+            object.__setattr__(self, "one_norm", float(self.one_norm))
 
 
 @dataclass(frozen=True)
@@ -85,6 +145,7 @@ class VibronicHamiltonian:
         num_states (int): number of vibronic states
         grid_size (int): number of grid points used to discretize each mode
         taylor_degree (int): degree of the Taylor expansion used in the vibronic representation
+        one_norm (float | None): the one-norm of the Hamiltonian
 
     Returns:
         VibronicHamiltonian: An instance of VibronicHamiltonian
@@ -97,3 +158,23 @@ class VibronicHamiltonian:
     num_states: int
     grid_size: int
     taylor_degree: int
+    one_norm: float | None = None
+
+    def __post_init__(self):
+        """Checks the types of the inputs."""
+
+        _validate_positive_int("num_modes", self.num_modes)
+        _validate_positive_int("num_states", self.num_states)
+        _validate_positive_int("grid_size", self.grid_size)
+        _validate_positive_int("taylor_degree", self.taylor_degree)
+
+        if self.one_norm is not None and not (
+            isinstance(self.one_norm, (float, int)) and self.one_norm >= 0
+        ):
+            raise TypeError(
+                f"one_norm, if provided, must be a positive float or integer."
+                f" Instead received {self.one_norm}"
+            )
+
+        if isinstance(self.one_norm, int):
+            object.__setattr__(self, "one_norm", float(self.one_norm))

@@ -143,7 +143,7 @@ def _ctrl_transform_prim(self, *invals, n_control, jaxpr, n_consts, **params):
 def _cond_primitive(self, *all_args, jaxpr_branches, consts_slices, args_slice):
     n_branches = len(jaxpr_branches)
     conditions = all_args[:n_branches]
-    args = all_args[args_slice]
+    args = all_args[slice(*args_slice)]
 
     # Find predicates that use mid-circuit measurements. We don't check the last
     # condition as that is always `True`.
@@ -157,7 +157,7 @@ def _cond_primitive(self, *all_args, jaxpr_branches, consts_slices, args_slice):
         conditions = get_mcm_predicates(mcm_conditions)
 
     for pred, jaxpr, const_slice in zip(conditions, jaxpr_branches, consts_slices):
-        consts = all_args[const_slice]
+        consts = all_args[slice(*const_slice)]
         if isinstance(pred, MeasurementValue):
             if jaxpr.outvars:
                 outvals = [v.aval for v in jaxpr.outvars]

@@ -1501,7 +1501,7 @@ class TestShots:
         assert updated_qnode._shots == qml.measurements.Shots(75)
 
 
-class TestTransformProgramIntegration:
+class TestCompilePipelineIntegration:
     """Tests for the integration of the transform program with the qnode."""
 
     def test_transform_program_modifies_circuit(self):
@@ -1534,9 +1534,9 @@ class TestTransformProgramIntegration:
 
         assert tracker.totals["executions"] == 1
         assert tracker.history["resources"][0].gate_types["PauliX"] == 1
-        assert tracker.history["resources"][0].gate_types["RX"] == 0
+        assert "RX" not in tracker.history["resources"][0].gate_types
 
-    def tet_transform_program_modifies_results(self):
+    def test_transform_program_modifies_results(self):
         """Test integration with a transform that modifies the result output."""
 
         dev = qml.device("default.qubit", wires=2)
