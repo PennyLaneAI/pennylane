@@ -16,17 +16,17 @@ on:
         description: The version of JAX to use for testing
         required: false
         type: string
-        default: '0.6.2'
+        default: '0.7.1'
       catalyst_jax_version:
         description: The version of JAX to use for testing along with Catalyst
         required: false
         type: string
-        default: '0.6.2'
+        default: '0.7.1'
       torch_version:
         description: The version of PyTorch to use for testing
         required: false
         type: string
-        default: '2.8.0'
+        default: '2.9.0'
     outputs:
       jax-version:
         description: The version of JAX to use
