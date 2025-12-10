@@ -25,11 +25,14 @@ from pennylane.wires import Wires
 
 
 def _binary_repr_int(phi, precision):
-    # Reasoning for +1e-10 term:
-    # due to the division by pi, we obtain 14.999.. instead of 15 for, e.g., (1, 1, 1, 1) pi
-    # at the same time, we want to floor off any additional floats when converting to the desired precision,
-    # e.g. representing (1, 1, 1, 1) with only 3 digits we want to obtain (1, 1, 1)
-    # so overall we floor but make sure we add a little term to not accidentally write 14 when the result is 14.999..
+    """
+    Reasoning for +1e-10 term:
+    due to the division by pi, we obtain 14.999.. instead of 15 for, e.g., (1, 1, 1, 1) pi
+    at the same time, we want to floor off any additional floats when converting to the desired precision,
+    e.g. representing (1, 1, 1, 1) with only 3 digits we want to obtain (1, 1, 1)
+    so overall we floor but make sure we add a little term to not accidentally write 14 when the result is 14.999..
+    """
+
     return bin(int(np.floor(2**precision * phi / (4 * np.pi) + 1e-10)) + 2 * 2**precision)[
         -precision:
     ]
