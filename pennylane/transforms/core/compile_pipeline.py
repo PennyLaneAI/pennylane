@@ -368,9 +368,9 @@ class CompilePipeline:
             obj (TransformContainer or TransformDispatcher): The object to remove from the program.
         """
         if isinstance(obj, TransformContainer):
-            self._transform_program = [t for t in self._transform_program if t != obj]
+            self._compile_pipeline = [t for t in self._compile_pipeline if t != obj]
         elif isinstance(obj, TransformDispatcher):
-            self._transform_program = [t for t in self._transform_program if t.transform != obj]
+            self._compile_pipeline = [t for t in self._compile_pipeline if t.transform != obj.transform]
         else:
             raise TypeError("Only TransformContainer or TransformDispatcher can be removed.")
 
