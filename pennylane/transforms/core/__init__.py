@@ -18,9 +18,4 @@ from .transform_dispatcher import TransformDispatcher, TransformContainer, Trans
 from .compile_pipeline import CompilePipeline
 
 
-def __getattr__(key):
-    if key == "TransformProgram":
-        return CompilePipeline
-    raise AttributeError(
-        f"module 'pennylane.transforms.core' has no attribute '{key}'"
-    )  # pragma: no cover
+TransformProgram = CompilePipeline
