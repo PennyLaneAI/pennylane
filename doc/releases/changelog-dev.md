@@ -26,10 +26,6 @@
   [(#8729)](https://github.com/PennyLaneAI/pennylane/pull/8729)
   [(#8734)](https://github.com/PennyLaneAI/pennylane/pull/8734)
 
-* The :class:`~pennylane.transforms.core.CompilePipeline` (previously known as `TransformProgram`)
-  is available at the top level namespace as `qml.CompilePipeline`.
-  [(#8735)](https://github.com/PennyLaneAI/pennylane/pull/8735)
-
 <h4>Pauli product measurements</h4>
 
 * Added a :func:`~pennylane.ops.pauli_measure` that takes a Pauli product measurement.
@@ -38,12 +34,17 @@
   [(#8623)](https://github.com/PennyLaneAI/pennylane/pull/8623)
   [(#8663)](https://github.com/PennyLaneAI/pennylane/pull/8663)
 
-<h3>Improvements 🛠</h3>
+<h4> Compile Pipeline and Transforms </h4>
+
+* Arithmetic dunder methods (`__add__`, `__mul__`, `__rmul__`) have been added to 
+  :class:`~.transforms.core.TransformDispatcher`, :class:`~.transforms.core.TransformContainer`, 
+  and :class:`~.CompilePipeline` (previously known as the `TransformProgram`) to enable intuitive composition of transform programs using `+` and `*` operators.
+  [(#8703)](https://github.com/PennyLaneAI/pennylane/pull/8703)
 
 * In the past, calling a transform with only arguments or keyword but no tapes would raise an error.
   Now, two transforms can be concatenated naturally as
 
-  ```
+  ```python
   decompose(gate_set=gate_set) + merge_rotations(1e-6)
   ```
 
@@ -72,20 +73,30 @@
 
   [(#8730)](https://github.com/PennyLaneAI/pennylane/pull/8730)
 
-* Added a new decomposition, `_decompose_2_cnots`, for the two-qubit decomposition for `QubitUnitary`.
-  It supports the analytical decomposition a two-qubit unitary known to require exactly 2 CNOTs.
-  [(#8666)](https://github.com/PennyLaneAI/pennylane/issues/8666)
+* The `TransformProgram` has been renamed to :class:`~pennylane.transforms.core.CompilePipeline`, and uses of
+  the term "transform program" has been updated to "compile pipeline" across the codebase. The class is still
+  accessible as `TransformProgram` from `pennylane.transforms.core`, but the module `pennylane.transforms.core.transform_program`
+  has been renamed to `pennylane.transforms.core.compile_pipeline`, and the old name is no longer available.
+  [(#8735)](https://github.com/PennyLaneAI/pennylane/pull/8735)
 
-* Arithmetic dunder methods (`__add__`, `__mul__`, `__rmul__`) have been added to
-  :class:`~.transforms.core.TransformDispatcher`, :class:`~.transforms.core.TransformContainer`,
-  and :class:`~.transforms.core.CompilePipeline` (previously known as the `TransformProgram`) to 
-  enable intuitive composition of transform programs using `+` and `*` operators.
-  [(#8703)](https://github.com/PennyLaneAI/pennylane/pull/8703)
+* The :class:`~pennylane.transforms.core.CompilePipeline` (previously known as `TransformProgram`)
+  is available at the top level namespace as `qml.CompilePipeline`.
+  [(#8735)](https://github.com/PennyLaneAI/pennylane/pull/8735)
+
+* Now `CompilePipeline` can dispatch to anything individual transforms can dispatch onto, including
+  QNodes.
+  [(#8731)](https://github.com/PennyLaneAI/pennylane/pull/8731)
 
 * The :class:`~.CompilePipeline` (previously known as the `TransformProgram`) can now be constructed
   more flexibility with a variable number of arguments that are of types `TransformDispatcher`,
   `TransformContainer`, or other `CompilePipeline`s.
   [(#8750)](https://github.com/PennyLaneAI/pennylane/pull/8750)
+
+<h3>Improvements 🛠</h3>
+
+* Added a new decomposition, `_decompose_2_cnots`, for the two-qubit decomposition for `QubitUnitary`.
+  It supports the analytical decomposition a two-qubit unitary known to require exactly 2 CNOTs.
+  [(#8666)](https://github.com/PennyLaneAI/pennylane/issues/8666)
 
 * Quantum compilation passes in MLIR and XDSL can now be applied using the core PennyLane transform
   infrastructure, instead of using Catalyst-specific tools. This is made possible by a new argument in

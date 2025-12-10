@@ -23,7 +23,7 @@ from functools import partial
 from typing import TYPE_CHECKING, overload
 
 from pennylane.exceptions import TransformError
-from pennylane.tape import QuantumScriptBatch
+from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import BatchPostprocessingFn, PostprocessingFn, ResultBatch
 
 from .cotransform_cache import CotransformCache
@@ -533,10 +533,13 @@ class CompilePipeline:
         return found
 
     def __call_tapes(
-        self, tapes: QuantumScriptBatch
+        self, tapes: QuantumScript | QuantumScriptBatch
     ) -> tuple[QuantumScriptBatch, BatchPostprocessingFn]:
         if not self:
             return tapes, null_postprocessing
+
+        if isinstance(tapes, QuantumScript):
+            tapes = (tapes,)
 
         processing_fns_stack = []
 
@@ -619,10 +622,29 @@ class CompilePipeline:
 
         return cur_jaxpr
 
+    def __call_generic(self, obj):
+        """Apply the transform program to a generic object (QNode, device, callable, etc.).
+
+        This method chain-applies each transform using the generic dispatch system.
+
+        Args:
+            obj: The object to transform (QNode, device, callable, etc.).
+
+        Returns:
+            The transformed object.
+        """
+        result = obj
+        for container in self:
+            result = container(result)
+        return result
+
     @overload
     def __call__(
         self, jaxpr: jax.extend.core.Jaxpr, consts: Sequence, *args
     ) -> jax.extend.core.ClosedJaxpr: ...
+    @overload
+    def __call__(self, tape: QuantumScript) -> tuple[QuantumScriptBatch, BatchPostprocessingFn]: ...
+
     @overload
     def __call__(
         self, tapes: QuantumScriptBatch
@@ -630,7 +652,16 @@ class CompilePipeline:
     def __call__(self, *args, **kwargs):
         if type(args[0]).__name__ == "Jaxpr":
             return self.__call_jaxpr(*args, **kwargs)
-        return self.__call_tapes(*args, **kwargs)
+
+        first_arg = args[0]
+
+        # Sequence of QuantumScripts: QuantumScriptBatch
+        if isinstance(first_arg, (QuantumScript, Sequence)):
+            return self.__call_tapes(*args, **kwargs)
+
+        # For any other object (QNode, device, callable, etc.),
+        # chain-apply each transform using the generic dispatch system
+        return self.__call_generic(first_arg)
 
 
 @TransformDispatcher.generic_register
