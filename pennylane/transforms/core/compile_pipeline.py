@@ -188,7 +188,7 @@ class CompilePipeline:
     ):
         if len(transforms) == 1 and isinstance(transforms[0], Sequence):
             self._compile_pipeline = list(transforms[0])
-            self.cotransform_cache = None
+            self.cotransform_cache = cotransform_cache
             return
 
         self._compile_pipeline = []
