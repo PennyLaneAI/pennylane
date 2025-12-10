@@ -18,7 +18,7 @@ from unittest.mock import MagicMock
 
 import pennylane as qml
 from pennylane.devices import ExecutionConfig
-from pennylane.transforms.core import TransformProgram
+from pennylane.transforms.core import CompilePipeline
 from pennylane.workflow._setup_transform_program import (
     _prune_dynamic_transform,
     _setup_transform_program,
@@ -51,7 +51,7 @@ def test_gradient_expand_transform():
 
     full_tp, _ = _setup_transform_program(device, config)
 
-    assert repr(full_tp) == "TransformProgram(_expand_transform_param_shift)"
+    assert repr(full_tp) == "CompilePipeline(_expand_transform_param_shift)"
 
 
 def test_device_transform_program():
@@ -59,13 +59,13 @@ def test_device_transform_program():
     config = ExecutionConfig(use_device_gradient=True)
 
     container = qml.transforms.core.BoundTransform(device_transform)
-    device_tp = qml.transforms.core.TransformProgram((container,))
+    device_tp = qml.CompilePipeline((container,))
     device = qml.device("default.qubit")
     device.preprocess_transforms = MagicMock(return_value=device_tp)
 
     full_tp, inner_tp = _setup_transform_program(device, config)
 
-    assert repr(full_tp) == "TransformProgram(device_transform)"
+    assert repr(full_tp) == "CompilePipeline(device_transform)"
     assert inner_tp.is_empty()
 
     config = replace(config, use_device_gradient=False)
@@ -73,20 +73,20 @@ def test_device_transform_program():
     full_tp, inner_tp = _setup_transform_program(device, config)
 
     assert full_tp.is_empty()
-    assert repr(inner_tp) == "TransformProgram(device_transform)"
+    assert repr(inner_tp) == "CompilePipeline(device_transform)"
 
 
 def test_prune_dynamic_transform():
     """Tests that the helper function prune dynamic transform works."""
 
-    program1 = qml.transforms.core.TransformProgram(
+    program1 = qml.CompilePipeline(
         [
             qml.transforms.dynamic_one_shot,
             qml.transforms.split_non_commuting,
             qml.transforms.dynamic_one_shot,
         ]
     )
-    program2 = qml.transforms.core.TransformProgram(
+    program2 = qml.CompilePipeline(
         [
             qml.transforms.dynamic_one_shot,
             qml.transforms.split_non_commuting,
@@ -101,14 +101,14 @@ def test_prune_dynamic_transform():
 def test_prune_dynamic_transform_with_mcm():
     """Tests that the helper function prune dynamic transform works with mcm"""
 
-    program1 = qml.transforms.core.TransformProgram(
+    program1 = qml.CompilePipeline(
         [
             qml.transforms.dynamic_one_shot,
             qml.transforms.split_non_commuting,
             qml.devices.preprocess.mid_circuit_measurements,
         ]
     )
-    program2 = qml.transforms.core.TransformProgram(
+    program2 = qml.CompilePipeline(
         [
             qml.transforms.dynamic_one_shot,
             qml.transforms.split_non_commuting,
@@ -170,11 +170,11 @@ def test_cache_handling():
     """Test that caching is handled correctly."""
     config = ExecutionConfig()
     device = qml.device("default.qubit")
-    device.preprocess_transforms = MagicMock(return_value=TransformProgram())
+    device.preprocess_transforms = MagicMock(return_value=CompilePipeline())
 
     full_tp, inner_tp = _setup_transform_program(device, config, cache=True)
 
-    assert repr(inner_tp) == "TransformProgram(_cache_transform)"
+    assert repr(inner_tp) == "CompilePipeline(_cache_transform)"
     assert full_tp.is_empty()
 
     full_tp, inner_tp = _setup_transform_program(device, config, cache=False)
