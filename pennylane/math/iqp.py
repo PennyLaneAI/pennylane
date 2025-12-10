@@ -148,7 +148,7 @@ def _op_expval_indep(
     return op_expvals[0], op_expvals[1]
 
 
-# pylint: disable=too-many-arguments, too-many-branches
+# pylint: disable=too-many-arguments, too-many-branches, too-many-statements
 def _op_expval_batch(
     gates: list,
     params: array,
@@ -245,9 +245,9 @@ def _op_expval_batch(
             samples_len = samples.shape[0]
 
     if spin_sym:
-        try:
+        if sparse or isinstance(ops, csr_matrix):
             shape = (len(ops_sum), samples_len)
-        except Exception:
+        else:
             shape = (samples_len,)
 
         ini_spin_sym = (
