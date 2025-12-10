@@ -26,11 +26,6 @@
   [(#8729)](https://github.com/PennyLaneAI/pennylane/pull/8729)
   [(#8734)](https://github.com/PennyLaneAI/pennylane/pull/8734)
 
-* A new transform :func:`~.transforms.select_pauli_rot_phase_gradient` has been added. It allows 
-  implementing arbitrary :class:`~.SelectPauliRot` rotations with a phase gradient resource state and 
-  semi-in-place addition (:class:`~.SemiAdder`).
-  [(#8738)](https://github.com/PennyLaneAI/pennylane/pull/8738)
-
 <h4>Pauli product measurements</h4>
 
 * Added a :func:`~pennylane.ops.pauli_measure` that takes a Pauli product measurement.
@@ -307,6 +302,14 @@
 * The `qml.QNode.add_transform` method is removed.
   Instead, please use `QNode.transform_program.push_back(transform_container=transform_container)`.
   [(#8468)](https://github.com/PennyLaneAI/pennylane/pull/8468)
+
+<h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
+
+* A new transform :func:`~.transforms.select_pauli_rot_phase_gradient` has been added. It allows 
+  implementing arbitrary :class:`~.SelectPauliRot` rotations with a phase gradient resource state and 
+  semi-in-place addition (:class:`~.SemiAdder`).
+  [(#8738)](https://github.com/PennyLaneAI/pennylane/pull/8738)
+
 
 <h3>Deprecations 👋</h3>
 
