@@ -42,7 +42,7 @@ COPY  . .
 RUN pip install --upgrade pip
 RUN git submodule update --init --recursive \
     && pip install wheel \
-    && pip install --group default --group dev \
+    && pip install --group docker --group dev \
     && python3 -m pip install . \
     && make test
 

@@ -41,7 +41,7 @@ WORKDIR /opt/pennylane
 COPY  . .
 RUN git submodule update --init --recursive
 RUN pip install --upgrade pip
-RUN pip install wheel && pip install --group default
+RUN pip install wheel && pip install --group docker
 RUN python3 -m pip install .
 RUN pip install --group dev
 RUN pip install -i https://test.pypi.org/simple/ pennylane-lightning --pre --upgrade
