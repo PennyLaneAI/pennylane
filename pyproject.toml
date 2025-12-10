@@ -15,7 +15,7 @@ dependencies = [
     "rustworkx>=0.14.0",
     "autograd",
     "appdirs",
-    "autoray==0.8.0",
+    "autoray==0.8.2",
     "cachetools",
     "pennylane-lightning>=0.43",
     "requests",
@@ -39,6 +39,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Programming Language :: Python :: 3 :: Only",
     "Topic :: Scientific/Engineering :: Physics",
 ]

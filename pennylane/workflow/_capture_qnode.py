@@ -80,9 +80,13 @@ from functools import partial
 from numbers import Number
 from warnings import warn
 
-import jax
-from jax.interpreters import ad, batching, mlir
-from jax.interpreters import partial_eval as pe
+try:
+    import jax
+    from jax.interpreters import ad, batching, mlir
+    from jax.interpreters import partial_eval as pe
+
+except (ImportError, NameError) as e:  # pragma: no cover
+    pass
 
 import pennylane as qml
 from pennylane.capture import FlatFn, QmlPrimitive
@@ -254,7 +258,7 @@ def custom_staging_rule(
     """
     shots_len, jaxpr = params["shots_len"], params["qfunc_jaxpr"]
     device = params["device"]
-    invars = [jaxpr_trace.getvar(x) for x in tracers]
+    invars = [x.val for x in tracers]
     shots_vars = invars[:shots_len]
 
     batch_dims = params.get("batch_dims")
@@ -269,15 +273,8 @@ def custom_staging_rule(
         num_device_wires=len(device.wires),
         batch_shape=batch_shape,
     )
-    out_tracers = [pe.DynamicJaxprTracer(jaxpr_trace, o) for o in new_shapes]
-
-    eqn = jax.core.new_jaxpr_eqn(
-        invars,
-        [jaxpr_trace.makevar(o) for o in out_tracers],
-        qnode_prim,
-        params,
-        jax.core.no_effects,
-        source_info=source_info,
+    eqn, out_tracers = jaxpr_trace.make_eqn(
+        tracers, new_shapes, qnode_prim, params, jax.core.no_effects, source_info
     )
 
     jaxpr_trace.frame.add_eqn(eqn)
@@ -434,55 +431,15 @@ def _split_static_args(args, static_argnums):
     return tuple(dynamic_args), tuple(static_args)
 
 
-def _get_jaxpr_cache_key(dynamic_args, static_args, kwargs, abstracted_axes):
-    """Create a hash using the arguments and keyword arguments of a QNode.
-
-    The hash is dependent on the abstract evaluation of ``dynamic_args``. For any indices
-    in ``static_args``, the concrete value of the argument will be used to create
-    the hash. If any arguments have dynamic shapes, their abstract axes will be replaced
-    by the respective letter provided in ``abstracted_axes``.
-
-    For keyword arguments, the string representation of the keyword argument
-    dictionary will be used to create the hash.
-
-    Args:
-        dynamic_args (tuple): dynamic positional arguments of the cached qfunc
-        static_args (tuple): static positional arguments of the cached qfunc
-        kwargs (dict): keyword arguments of the cached qfunc
-        abstract_axes (Optional[tuple[dict[int, str]]]): corresponding abstract axes
-            of positional arguments
-
-    Returns:
-        int: hash to be used as the jaxpr cache's key
-    """
-    serialized = "args="
-
-    for i, arg in enumerate(dynamic_args):
-        if abstracted_axes:
-            serialized_shape = tuple(
-                abstracted_axes[i].get(j, s) for j, s in enumerate(qml.math.shape(arg))
-            )
-        else:
-            serialized_shape = qml.math.shape(arg)
-        serialized += f"{serialized_shape},{qml.math.get_dtype_name(arg)};"
-
-    for arg in static_args:
-        serialized += f"{arg};"
-
-    serialized += f";;{kwargs=}"
-    return hash(serialized)
-
-
 def _extract_qfunc_jaxpr(qnode, abstracted_axes, *args, **kwargs):
     """Process the quantum function of a QNode to create a Jaxpr."""
 
-    qfunc = partial(qnode.func, **kwargs) if kwargs else qnode.func
-    flat_fn = FlatFn(qfunc)
+    flat_fn = FlatFn(qnode.func)
 
     try:
         qfunc_jaxpr = jax.make_jaxpr(
             flat_fn, abstracted_axes=abstracted_axes, static_argnums=qnode.static_argnums
-        )(*args)
+        )(*args, **kwargs)
     except (
         jax.errors.TracerArrayConversionError,
         jax.errors.TracerIntegerConversionError,
@@ -574,27 +531,23 @@ def _bind_qnode(qnode, *args, **kwargs):
     # We compute ``abstracted_axes`` using the flattened arguments because trying to flatten
     # pytree ``abstracted_axes`` causes the abstract axis dictionaries to get flattened, which
     # we don't want to correctly compute the ``cache_key``.
-    dynamic_args, static_args = _split_static_args(args, qnode.static_argnums)
-    flat_dynamic_args, dynamic_args_struct = jax.tree_util.tree_flatten(dynamic_args)
-    flat_static_args = jax.tree_util.tree_leaves(static_args)
-    abstracted_axes, abstract_shapes = qml.capture.determine_abstracted_axes(flat_dynamic_args)
-    cache_key = _get_jaxpr_cache_key(flat_dynamic_args, flat_static_args, kwargs, abstracted_axes)
+    dynamic_args, _ = _split_static_args(args, qnode.static_argnums)
+    flat_args = jax.tree_util.tree_leaves((dynamic_args, kwargs))
 
-    if cached_value := qnode.capture_cache.get(cache_key, None):
-        qfunc_jaxpr, config, out_tree = cached_value
-    else:
-        config = construct_execution_config(
-            qnode, resolve=False
-        )()  # no need for args and kwargs as not resolving
+    abstracted_axes, abstract_shapes = qml.capture.determine_abstracted_axes(flat_args)
 
-        if abstracted_axes:
-            # We unflatten the ``abstracted_axes`` here to be have the same pytree structure
-            # as the original dynamic arguments
-            abstracted_axes = jax.tree_util.tree_unflatten(dynamic_args_struct, abstracted_axes)
+    # no need for args and kwargs as not resolving
+    config = construct_execution_config(qnode, resolve=False)()
 
-        qfunc_jaxpr, out_tree = _extract_qfunc_jaxpr(qnode, abstracted_axes, *args, **kwargs)
+    if abstracted_axes:  # pragma: no cover
+        # We unflatten the ``abstracted_axes`` here to be have the same pytree structure
+        # as the original dynamic arguments
+        # kwargs and abstracted axes will error out in Jax with NotImplementedError
+        # rely on jax to handle that validation
+        struct = jax.tree_util.tree_structure(args)
+        abstracted_axes = jax.tree_util.tree_unflatten(struct, abstracted_axes)
 
-        qnode.capture_cache[cache_key] = (qfunc_jaxpr, config, out_tree)
+    qfunc_jaxpr, out_tree = _extract_qfunc_jaxpr(qnode, abstracted_axes, *args, **kwargs)
 
     flat_shots = tuple(qnode._shots) if qnode._shots else ()  # pylint: disable=protected-access
 
@@ -602,7 +555,7 @@ def _bind_qnode(qnode, *args, **kwargs):
         *flat_shots,
         *qfunc_jaxpr.consts,
         *abstract_shapes,
-        *flat_dynamic_args,
+        *flat_args,
         shots_len=len(flat_shots),
         qnode=qnode,
         device=qnode.device,
