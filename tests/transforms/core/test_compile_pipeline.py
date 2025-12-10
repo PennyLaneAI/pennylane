@@ -1286,6 +1286,33 @@ class TestCompilePipelineCall:
         dummy_results = (1, 2, 3, 4, 5, 1, 1, 1, 1, 1)
         assert fn(dummy_results) == (3, 12, 5)
 
+    def test_call_single_quantumscript_converts_to_batch(self):
+        """Test that calling with a single QuantumScript (not a tuple) converts it to a batch."""
+
+        def identity_transform(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
+            """A transform that returns the tape unchanged."""
+            return (tape,), lambda results: results[0]
+
+        container = TransformContainer(transform(identity_transform))
+        prog = CompilePipeline((container,))
+
+        # Create a single QuantumScript (not wrapped in a tuple)
+        single_tape = qml.tape.QuantumScript(
+            [qml.Hadamard(0), qml.CNOT([0, 1])], [qml.expval(qml.PauliZ(0))], shots=50
+        )
+
+        # Call with single QuantumScript - should trigger the isinstance check
+        new_batch, fn = prog(single_tape)
+
+        # Verify it was processed correctly
+        assert len(new_batch) == 1
+        assert isinstance(new_batch, tuple)
+        assert new_batch[0] is single_tape
+
+        # Verify postprocessing works
+        dummy_results = (0.5,)
+        assert fn(dummy_results) == (0.5,)
+
     @pytest.mark.capture
     def test_call_jaxpr_empty(self):
         """Test that calling an empty CompilePipeline with jaxpr returns untransformed ClosedJaxpr."""
@@ -1380,6 +1407,208 @@ class TestCompilePipelineCall:
             transformed_jaxpr.eqns, expected_primitives, strict=True
         ):
             assert eqn.primitive == expected_primitive
+
+    def test_call_fallback_on_qnode(self):
+        """Test that a CompilePipeline can be applied to a QNode using the fallback."""
+
+        program = CompilePipeline()
+        program += qml.transforms.cancel_inverses
+        program += transform(first_valid_transform)(0)
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(device=dev)
+        def circuit(a):
+            qml.Hadamard(wires=0)
+            qml.PauliX(wires=0)
+            qml.PauliX(wires=0)  # Should be cancelled
+            qml.RZ(a, wires=1)
+            return qml.expval(qml.PauliZ(wires=0))
+
+        # Apply the program to the QNode
+        new_qnode = program(circuit)
+
+        assert isinstance(new_qnode, qml.QNode)
+        # The QNode should have the transforms from the program
+        assert len(new_qnode.transform_program) == 2
+        assert new_qnode.transform_program[0].transform is qml.transforms.cancel_inverses.transform
+        assert new_qnode.transform_program[1].transform is first_valid_transform
+
+    def test_call_fallback_on_qnode_already_transformed(self):
+        """Test that a CompilePipeline can be applied to a QNode that already has transforms."""
+
+        program = CompilePipeline()
+        program += transform(first_valid_transform)(0)
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.transforms.cancel_inverses
+        @qml.qnode(device=dev)
+        def circuit(a):
+            qml.Hadamard(wires=0)
+            qml.PauliX(wires=0)
+            qml.PauliX(wires=0)  # Should be cancelled
+            qml.RZ(a, wires=1)
+            return qml.expval(qml.PauliZ(wires=0))
+
+        # Apply the program to the QNode
+        new_qnode = program(circuit)
+
+        assert isinstance(new_qnode, qml.QNode)
+        # The QNode should have the transforms from the program
+        assert len(new_qnode.transform_program) == 2
+        assert new_qnode.transform_program[0].transform is qml.transforms.cancel_inverses.transform
+        assert new_qnode.transform_program[1].transform is first_valid_transform
+
+    def test_call_fallback_on_qnode_empty_program(self):
+        """Test that an empty program returns the original QNode."""
+
+        program = CompilePipeline()
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(device=dev)
+        def circuit():
+            qml.Hadamard(wires=0)
+            return qml.expval(qml.PauliZ(wires=0))
+
+        new_qnode = program(circuit)
+
+        # For empty program, the fallback returns the original object unchanged
+        assert new_qnode is circuit
+
+    def test_call_fallback_on_callable(self):
+        """Test that a CompilePipeline can be applied to a callable using the fallback."""
+
+        program = CompilePipeline()
+        program += transform(first_valid_transform)(0)
+
+        def qfunc():
+            qml.Hadamard(wires=0)
+            return qml.expval(qml.PauliZ(wires=0))
+
+        # Apply the program to a callable
+        transformed_qfunc = program(qfunc)
+
+        assert callable(transformed_qfunc)
+        assert transformed_qfunc is not qfunc
+
+    def test_call_fallback_chain_applies_transforms(self):
+        """Test that the fallback chain-applies each transform in order."""
+
+        # Track how many times each transform is applied
+        call_order = []
+
+        def tracking_transform_1(tape):
+            call_order.append(1)
+            return [tape], lambda x: x[0]
+
+        def tracking_transform_2(tape):
+            call_order.append(2)
+            return [tape], lambda x: x[0]
+
+        program = CompilePipeline()
+        program += transform(tracking_transform_1)
+        program += transform(tracking_transform_2)
+
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(device=dev)
+        def circuit():
+            qml.Hadamard(wires=0)
+            return qml.expval(qml.PauliZ(wires=0))
+
+        # Apply the program - transforms should be in the QNode's transform_program
+        new_qnode = program(circuit)
+
+        assert len(new_qnode.transform_program) == 2
+        # First transform in program should be first in QNode's transform_program
+        assert new_qnode.transform_program[0].transform is tracking_transform_1
+        assert new_qnode.transform_program[1].transform is tracking_transform_2
+
+    def test_call_on_qnode_execution(self):
+        """Test that a CompilePipeline applied to a QNode actually transforms execution."""
+
+        program = CompilePipeline()
+        program += transform(qml.transforms.cancel_inverses)
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(device=dev)
+        def circuit():
+            qml.Hadamard(wires=0)
+            qml.PauliX(wires=0)
+            qml.PauliX(wires=0)  # These should be cancelled
+            qml.PauliY(wires=1)
+            qml.PauliY(wires=1)  # These should be cancelled
+            return qml.expval(qml.PauliZ(0))
+
+        # Apply the program to the QNode
+        transformed_qnode = program(circuit)
+
+        # Execute and verify the transform was applied
+        with dev.tracker:
+            result = transformed_qnode()
+
+        # Check that the transform was applied: only Hadamard should remain
+        # (X-X and Y-Y pairs should be cancelled)
+        resources = dev.tracker.history["resources"][0]
+        assert resources.gate_types == {"Hadamard": 1}
+        assert resources.num_gates == 1
+        assert resources.depth == 1
+
+        # Check the numerical output: H|0> gives |+>, expectation of Z is 0
+        assert qml.math.allclose(result, 0.0)
+
+    def test_call_on_device(self):
+        """Test that a CompilePipeline can be applied to a Device."""
+
+        # Create a dummy device with a custom preprocess_transforms method
+        class DummyDevice(qml.devices.Device):
+            def preprocess_transforms(
+                self, execution_config=None
+            ):  # pylint: disable=unused-argument
+                prog = CompilePipeline()
+                prog.add_transform(qml.defer_measurements)
+                return prog
+
+            def execute(self, circuits, execution_config=None):  # pylint: disable=unused-argument
+                return [0] * len(circuits)
+
+        original_dev = DummyDevice()
+
+        # Create a program with transforms
+        program = CompilePipeline()
+        program += transform(qml.transforms.cancel_inverses)
+        program += transform(first_valid_transform)(0)
+
+        # Apply the program to the device
+        transformed_dev = program(original_dev)
+
+        # Verify the device was transformed (it's wrapped twice, once for each transform)
+        # The outer wrapper is for the second transform
+        assert repr(transformed_dev).startswith("Transformed Device")
+
+        # The original device is nested inside
+        inner_dev = transformed_dev.original_device
+        assert repr(inner_dev).startswith("Transformed Device")
+        assert inner_dev.original_device is original_dev
+
+        # Check that the device's preprocess_transforms includes the new transforms
+        original_program = original_dev.preprocess_transforms()
+        new_program = transformed_dev.preprocess_transforms()
+
+        assert isinstance(original_program, CompilePipeline)
+        assert isinstance(new_program, CompilePipeline)
+
+        # Original program has 1 transform (defer_measurements)
+        assert len(original_program) == 1
+        # New program should have 3 transforms (original + 2 from our program)
+        assert len(new_program) == 3
+
+        # Verify the transforms are in the right order and are the right ones
+        assert new_program[-2].transform is qml.transforms.cancel_inverses.transform
+        assert new_program[-1].transform is first_valid_transform
 
 
 class TestCompilePipelineIntegration:
