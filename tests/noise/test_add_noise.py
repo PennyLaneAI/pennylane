@@ -404,7 +404,7 @@ class TestAddNoiseLevels:
         ],
     )
     def test_add_noise_level(self, level1, level2):
-        """Test that add_noise can be inserted to correct level in the TransformProgram"""
+        """Test that add_noise can be inserted to correct level in the CompilePipeline"""
         dev = qml.device("default.mixed", wires=2)
 
         @qml.metric_tensor
@@ -437,7 +437,7 @@ class TestAddNoiseLevels:
             assert t1 == t2
 
     def test_add_noise_level_with_final(self):
-        """Test that add_noise can be inserted in the TransformProgram with a final transform"""
+        """Test that add_noise can be inserted in the CompilePipeline with a final transform"""
         dev = qml.device("default.mixed", wires=2)
 
         @qml.metric_tensor

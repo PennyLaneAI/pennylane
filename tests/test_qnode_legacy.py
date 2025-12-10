@@ -1090,7 +1090,7 @@ class TestShots:
         assert tape.shots.shot_vector == shot_vector
 
 
-class TestTransformProgramIntegration:
+class TestCompilePipelineIntegration:
     def test_transform_program_modifies_circuit(self):
         """Test qnode integration with a transform that turns the circuit into just a pauli x."""
         dev = DefaultQubitLegacy(wires=1)

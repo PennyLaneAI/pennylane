@@ -37,7 +37,7 @@ from pennylane.operation import Operator
 from pennylane.ops import MidMeasure
 from pennylane.tape import QuantumScript
 from pennylane.transforms import broadcast_expand, defer_measurements, dynamic_one_shot
-from pennylane.transforms.core import TransformProgram, transform
+from pennylane.transforms.core import CompilePipeline, transform
 from pennylane.wires import Wires
 
 from ._legacy_device import Device as LegacyDevice
@@ -123,10 +123,10 @@ def adjoint_ops(op: Operator) -> bool:
     )
 
 
-def _add_adjoint_transforms(program: TransformProgram, name="adjoint"):
-    """Add the adjoint specific transforms to the transform program."""
-    program.add_transform(no_sampling, name=name)
-    program.add_transform(
+def _add_adjoint_transforms(pipeline: CompilePipeline, name="adjoint"):
+    """Add the adjoint specific transforms to the transform pipeline."""
+    pipeline.add_transform(no_sampling, name=name)
+    pipeline.add_transform(
         decompose,
         stopping_condition=adjoint_ops,
         name=name,
@@ -135,13 +135,13 @@ def _add_adjoint_transforms(program: TransformProgram, name="adjoint"):
     def accepted_adjoint_measurements(mp):
         return isinstance(mp, ExpectationMP)
 
-    program.add_transform(
+    pipeline.add_transform(
         validate_measurements,
         analytic_measurements=accepted_adjoint_measurements,
         name=name,
     )
-    program.add_transform(broadcast_expand)
-    program.add_transform(validate_adjoint_trainable_params)
+    pipeline.add_transform(broadcast_expand)
+    pipeline.add_transform(validate_adjoint_trainable_params)
 
 
 @single_tape_support
@@ -156,7 +156,7 @@ class LegacyDeviceFacade(Device):
     >>> legacy_dev = DefaultQutrit(wires=2)
     >>> new_dev = LegacyDeviceFacade(legacy_dev)
     >>> new_dev.preprocess()
-    (TransformProgram(legacy_device_batch_transform, legacy_device_expand_fn, defer_measurements),
+    (CompilePipeline(legacy_device_batch_transform, legacy_device_expand_fn, defer_measurements),
     ExecutionConfig(grad_on_execution=None, use_device_gradient=None, use_device_jacobian_product=None,
     gradient_method=None, gradient_keyword_arguments={}, device_options={}, interface=<Interface.NUMPY: 'numpy'>,
     derivative_order=1, mcm_config=MCMConfig(mcm_method=None, postselect_mode=None)))
@@ -250,31 +250,31 @@ class LegacyDeviceFacade(Device):
 
     def preprocess_transforms(
         self, execution_config: ExecutionConfig | None = None
-    ) -> TransformProgram:
-        program = TransformProgram()
+    ) -> CompilePipeline:
+        pipeline = CompilePipeline()
 
         if not execution_config:
             execution_config = ExecutionConfig()
 
         if execution_config.mcm_config.mcm_method == "deferred":
-            program.add_transform(
+            pipeline.add_transform(
                 defer_measurements,
                 allow_postselect=False,
             )
 
-        program.add_transform(legacy_device_batch_transform, device=self._device)
-        program.add_transform(legacy_device_expand_fn, device=self._device)
+        pipeline.add_transform(legacy_device_batch_transform, device=self._device)
+        pipeline.add_transform(legacy_device_expand_fn, device=self._device)
 
         if _requests_adjoint(execution_config):
-            _add_adjoint_transforms(program, name=f"{self.name} + adjoint")
+            _add_adjoint_transforms(pipeline, name=f"{self.name} + adjoint")
 
         if execution_config.mcm_config.mcm_method == "one-shot":
-            program.add_transform(
+            pipeline.add_transform(
                 dynamic_one_shot,
                 postselect_mode=execution_config.mcm_config.postselect_mode,
             )
 
-        return program
+        return pipeline
 
     def _setup_backprop_config(self, execution_config, tape):
         if not self._validate_backprop_method(tape):
@@ -397,10 +397,10 @@ class LegacyDeviceFacade(Device):
             tape = QuantumScript()
         if not supported_device or bool(tape.shots):
             return False
-        program = TransformProgram()
-        _add_adjoint_transforms(program, name=f"{self.name} + adjoint")
+        pipeline = CompilePipeline()
+        _add_adjoint_transforms(pipeline, name=f"{self.name} + adjoint")
         try:
-            program((tape,))
+            pipeline((tape,))
         except (
             DecompositionUndefinedError,
             DeviceError,

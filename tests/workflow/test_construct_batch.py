@@ -21,8 +21,7 @@ import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
-from pennylane.transforms.core.transform_dispatcher import TransformContainer
-from pennylane.transforms.core.transform_program import TransformProgram
+from pennylane.transforms.core import CompilePipeline, TransformContainer
 from pennylane.workflow import construct_batch, get_transform_program
 
 
@@ -125,7 +124,7 @@ class TestMarker:
             construct_batch(c)()
 
 
-class TestTransformProgramGetter:
+class TestCompilePipelineGetter:
     def test_bad_string_key(self):
         """Test a value error is raised if a bad string key is provided."""
 
@@ -167,20 +166,20 @@ class TestTransformProgramGetter:
         )
 
         p0 = get_transform_program(circuit, level=0)
-        assert isinstance(p0, TransformProgram)
+        assert isinstance(p0, CompilePipeline)
         assert len(p0) == 0
 
         p0 = get_transform_program(circuit, level="top")
-        assert isinstance(p0, TransformProgram)
+        assert isinstance(p0, CompilePipeline)
         assert len(p0) == 0
 
         p_grad = get_transform_program(circuit, level="gradient")
-        assert isinstance(p_grad, TransformProgram)
+        assert isinstance(p_grad, CompilePipeline)
         assert len(p_grad) == 4
-        assert p_grad == TransformProgram([expected_p0, expected_p1, expected_p2, ps_expand_fn])
+        assert p_grad == CompilePipeline([expected_p0, expected_p1, expected_p2, ps_expand_fn])
 
         p_dev = get_transform_program(circuit, level="device")
-        assert isinstance(p_grad, TransformProgram)
+        assert isinstance(p_grad, CompilePipeline)
         p_default = get_transform_program(circuit)
         assert p_dev == p_default
 
@@ -234,7 +233,7 @@ class TestTransformProgramGetter:
         config = dev.setup_execution_config(config)
         dev_program = dev.preprocess_transforms(config)
 
-        expected = TransformProgram()
+        expected = CompilePipeline()
         expected.add_transform(qml.transforms.split_non_commuting)
         expected += dev_program
         assert full_prog == expected
@@ -253,7 +252,7 @@ class TestTransformProgramGetter:
         program = get_transform_program(circuit)
 
         m1 = TransformContainer(qml.transforms.merge_rotations)
-        assert program[:1] == TransformProgram([m1])
+        assert program[:1] == CompilePipeline([m1])
 
         m2 = TransformContainer(qml.devices.legacy_facade.legacy_device_batch_transform)
         assert program[1].transform == m2.transform
