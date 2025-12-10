@@ -290,20 +290,20 @@ def _single_excitation_decomp(phi: TensorLike, wires: WiresLike, **__):
     qml.Hadamard(wires[0])
 
 
-def _single_excitation_ppr_resource():
-    return {
-        resource_rep(qml.PauliRot, pauli_word="XY"): 1,
-        resource_rep(qml.PauliRot, pauli_word="YX"): 1,
-    }
+# def _single_excitation_ppr_resource():
+#     return {
+#         resource_rep(qml.PauliRot, pauli_word="XY"): 1,
+#         resource_rep(qml.PauliRot, pauli_word="YX"): 1,
+#     }
 
 
-@register_resources(_single_excitation_ppr_resource)
-def _single_excitation_ppr(phi: TensorLike, wires: WiresLike, **__):
-    qml.PauliRot(phi / 2, "YX", wires=wires)
-    qml.PauliRot(-phi / 2, "XY", wires=wires)
+# @register_resources(_single_excitation_ppr_resource)
+# def _single_excitation_ppr(phi: TensorLike, wires: WiresLike, **__):
+#     qml.PauliRot(phi / 2, "YX", wires=wires)
+#     qml.PauliRot(-phi / 2, "XY", wires=wires)
 
 
-add_decomps(SingleExcitation, _single_excitation_decomp, _single_excitation_ppr)
+add_decomps(SingleExcitation, _single_excitation_decomp)
 add_decomps("Adjoint(SingleExcitation)", adjoint_rotation)
 add_decomps("Pow(SingleExcitation)", pow_rotation)
 

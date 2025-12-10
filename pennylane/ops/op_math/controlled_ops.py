@@ -2413,20 +2413,20 @@ def _crz(phi: TensorLike, wires: WiresLike, **__):
     qml.CNOT(wires=wires)
 
 
-def _crz_to_ppr_resources():
-    return {
-        resource_rep(qml.PauliRot, pauli_word="ZZ"): 1,
-        resource_rep(qml.PauliRot, pauli_word="Z"): 1,
-    }
+# def _crz_to_ppr_resources():
+#     return {
+#         resource_rep(qml.PauliRot, pauli_word="ZZ"): 1,
+#         resource_rep(qml.PauliRot, pauli_word="Z"): 1,
+#     }
 
 
-@register_resources(_crz_to_ppr_resources)
-def _crz_to_ppr(phi: TensorLike, wires: WiresLike, **__):
-    qml.PauliRot(phi / 2, "Z", wires=wires[1])
-    qml.PauliRot(-phi / 2, "ZZ", wires=wires)
+# @register_resources(_crz_to_ppr_resources)
+# def _crz_to_ppr(phi: TensorLike, wires: WiresLike, **__):
+#     qml.PauliRot(phi / 2, "Z", wires=wires[1])
+#     qml.PauliRot(-phi / 2, "ZZ", wires=wires)
 
 
-add_decomps(CRZ, _crz, _crz_to_ppr)
+add_decomps(CRZ, _crz)
 add_decomps("Adjoint(CRZ)", adjoint_rotation)
 add_decomps("Pow(CRZ)", pow_rotation)
 
