@@ -15,7 +15,6 @@
 
 import inspect
 from collections.abc import Callable, Sequence
-from functools import partial
 
 import pytest
 from default_qubit_legacy import DefaultQubitLegacy
@@ -452,7 +451,7 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         dispatched_transform = qml.transform(valid_transform)
         targs = [0]
 
-        @partial(dispatched_transform, targs=targs)
+        @dispatched_transform(targs=targs)
         @qml.qnode(device=dev)
         def qnode_circuit(a):
             """QNode circuit."""
@@ -749,7 +748,7 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
             history.append((targs, tkwargs))
             return self.default_qnode_transform(qnode, targs, tkwargs)
 
-        @partial(dispatched_transform, index=0)
+        @dispatched_transform(index=0)
         @qml.qnode(dev)
         def qnode1():
             """QNode circuit."""

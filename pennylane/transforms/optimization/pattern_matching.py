@@ -85,9 +85,7 @@ def pattern_matching_optimization(
 
     .. code-block:: python
 
-        from functools import partial
-
-        @partial(pattern_matching_optimization, pattern_tapes = [pattern])
+        @pattern_matching_optimization(pattern_tapes = [pattern])
         @qml.qnode(device=dev)
         def circuit():
             qml.S(wires=0)

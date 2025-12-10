@@ -99,13 +99,11 @@
   a decorator on top of QNodes:
   
   ```
-  from functools import partial
-
-  @partial(qml.marker, level="rotations-merged")
+  @qml.marker(level="rotations-merged")
   @qml.transforms.merge_rotations
-  @partial(qml.marker, level="my-level")
+  @qml.marker(level="my-level")
   @qml.transforms.cancel_inverses
-  @partial(qml.transforms.decompose, gate_set={qml.RX})
+  @qml.transforms.decompose(gate_set={qml.RX})
   @qml.qnode(qml.device('lightning.qubit'))
   def circuit():
       qml.RX(0.2,0)
@@ -389,9 +387,8 @@
 
   ```python
   import pennylane as qml
-  from functools import partial
   
-  @partial(qml.transforms.decompose, gate_set={"H", "T", "CNOT"}, stopping_condition=lambda op: len(op.wires) <= 2)
+  @qml.transforms.decompose(gate_set={"H", "T", "CNOT"}, stopping_condition=lambda op: len(op.wires) <= 2)
   @qml.qnode(qml.device("default.qubit"))
   def circuit():
       qml.Hadamard(wires=[0])

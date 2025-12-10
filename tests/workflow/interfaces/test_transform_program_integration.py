@@ -16,7 +16,6 @@
 Differentiability tests are still in the ml-framework specific files.
 """
 import copy
-from functools import partial
 
 import numpy as np
 import pytest
@@ -266,7 +265,7 @@ class TestTransformProgram:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @partial(qml.gradients.param_shift, argnums=[0, 1])
+        @qml.gradients.param_shift(argnums=[0, 1])
         @qml.transforms.split_non_commuting
         @qml.qnode(device=dev, interface="jax")
         def circuit(x, y):

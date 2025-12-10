@@ -15,7 +15,7 @@
 Unit tests for the get_unitary_matrix transform
 """
 # pylint: disable=too-few-public-methods,too-many-function-args
-from functools import partial, reduce
+from functools import reduce
 from warnings import catch_warnings
 
 import pytest
@@ -467,7 +467,7 @@ class TestCustomWireOrdering:
         expected_matrix = np.kron(RY(x), np.kron(X, np.kron(Z, I)))
         assert np.allclose(testcircuit1(x), expected_matrix)
 
-        @partial(qml.matrix, wire_order=[1, 0, 2])
+        @qml.matrix(wire_order=[1, 0, 2])
         @qml.qnode(dev)
         def testcircuit2(x):
             qml.PauliX(wires=0)
@@ -673,7 +673,7 @@ class TestInterfaces:
         """Test with tensorflow interface"""
         import tensorflow as tf
 
-        @partial(qml.matrix, wire_order=[0, 1, 2])
+        @qml.matrix(wire_order=[0, 1, 2])
         def circuit(beta, theta):
             qml.RZ(beta, wires=0)
             qml.RZ(theta[0], wires=1)
@@ -729,7 +729,7 @@ class TestInterfaces:
     def test_autograd(self):
         """Test with autograd interface"""
 
-        @partial(qml.matrix, wire_order=[0, 1, 2])
+        @qml.matrix(wire_order=[0, 1, 2])
         def circuit(theta):
             qml.RZ(theta[0], wires=0)
             qml.RZ(theta[1], wires=1)
@@ -783,7 +783,7 @@ class TestInterfaces:
 
         from jax import numpy as jnp
 
-        @partial(qml.matrix, wire_order=[0, 1, 2])
+        @qml.matrix(wire_order=[0, 1, 2])
         def circuit(theta):
             qml.RZ(theta[0], wires=0)
             qml.RZ(theta[1], wires=1)

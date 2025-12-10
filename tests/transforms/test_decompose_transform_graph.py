@@ -15,7 +15,6 @@
 """Tests the ``decompose`` transform with the new experimental graph-based decomposition system."""
 
 from collections import defaultdict
-from functools import partial
 
 import numpy as np
 import pytest
@@ -446,8 +445,7 @@ class TestDecomposeGraphEnabled:
         def _expensive_decomp(wires, **_):
             raise NotImplementedError
 
-        @partial(
-            qml.transforms.decompose,
+        @qml.transforms.decompose(
             gate_set={qml.RX, qml.RY, qml.RZ, qml.CNOT, "measure", "ppm"},
             fixed_decomps={qml.GlobalPhase: null_decomp},
             alt_decomps={OpWithCustomName4567: [_custom_decomp, _expensive_decomp]},
@@ -632,7 +630,7 @@ class TestDecomposeGraphEnabled:
 def test_decompose_qnode():
     """Tests that the decompose transform works with a QNode."""
 
-    @partial(qml.transforms.decompose, gate_set={"CZ", "Hadamard"})
+    @qml.transforms.decompose(gate_set={"CZ", "Hadamard"})
     @qml.qnode(qml.device("default.qubit", wires=2))
     def circuit():
         qml.CNOT(wires=[0, 1])

@@ -15,7 +15,6 @@
 Unit tests for conversion and helper methods used in `pennylane.transforms.zx`
 """
 import sys
-from functools import partial
 
 import numpy as np
 import pytest
@@ -553,7 +552,7 @@ class TestConvertersZX:
         """Test the QNode decorator."""
         dev = qml.device("default.qubit", wires=2)
 
-        @partial(qml.transforms.to_zx, expand_measurements=True)
+        @qml.transforms.to_zx(expand_measurements=True)
         @qml.qnode(device=dev)
         def circuit(p):
             qml.RZ(p[0], wires=1)
@@ -576,7 +575,7 @@ class TestConvertersZX:
         """Test the QNode decorator."""
         dev = qml.device("default.qubit", wires=2)
 
-        @partial(qml.transforms.to_zx, expand_measurements=True)
+        @qml.transforms.to_zx(expand_measurements=True)
         @qml.qnode(device=dev)
         def circuit():
             qml.PauliZ(wires=0)
