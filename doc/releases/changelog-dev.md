@@ -5,7 +5,7 @@
 * To support the [IQP paper](https://arxiv.org/pdf/2503.02934), a new template has been added that builds an Instantaneous 
   Quantum Polynomial (`~.IQP`) circuit, and a `~.ResourceOperator` has been added that allows us to estimate the resources 
   required to run an `~.IQP` circuit in theory. A method to approximate expectation values from Z measurements
-  following Instantaneous Quantum Polynomial (IQP) circuits has also been added to the `math` module.
+  following `~.IQP` circuits has also been added to the `math` module.
   [(#8748)](https://github.com/PennyLaneAI/pennylane/pull/8748)
   [(#8749)](https://github.com/PennyLaneAI/pennylane/pull/8749)
 
