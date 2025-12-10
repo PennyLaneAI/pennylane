@@ -370,7 +370,9 @@ class CompilePipeline:
         if isinstance(obj, TransformContainer):
             self._compile_pipeline = [t for t in self._compile_pipeline if t != obj]
         elif isinstance(obj, TransformDispatcher):
-            self._compile_pipeline = [t for t in self._compile_pipeline if t.transform != obj.transform]
+            self._compile_pipeline = [
+                t for t in self._compile_pipeline if t.transform != obj.transform
+            ]
         else:
             raise TypeError("Only TransformContainer or TransformDispatcher can be removed.")
 
