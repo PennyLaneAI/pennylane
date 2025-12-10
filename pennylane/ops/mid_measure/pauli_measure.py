@@ -186,8 +186,7 @@ def pauli_measure(pauli_word: str, wires: WiresLike, postselect: int | None = No
 
     .. seealso::
         For more information on Pauli product measurements, check out the `Quantum Compilation hub <https://pennylane.ai/compilation/pauli-product-measurement>`_ and
-        :func:`catalyst.passes.ppm_compilation` for documentation and corresponding functionality in Catalyst
-        related to compilation of Clifford+T gates into PPMs.
+        :func:`catalyst.passes.ppm_compilation` for compiling these circuits with Catalyst.
     """
 
     if capture_enabled():
