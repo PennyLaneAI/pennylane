@@ -189,12 +189,12 @@ class PauliHamiltonian:
     Args:
         num_qubits (int): total number of qubits the Hamiltonian acts on
         pauli_terms (dict | Iterable(dict)): A dictionary or a list of dictionaries representing the
-            various terms (Pauli words) of the Hamiltonian. A dictionary keys are Pauli strings
+            various terms (Pauli words) of the Hamiltonian. The dictionary keys are Pauli strings
             (e.g ``"XY" or "ZZ"``) and the values are integers corresponding to how frequently that
             Pauli word appears in the Hamiltonian. The terms of the Hamiltonian can also be separated
             into groups such that all operators in the group commute. These groups can be specified
             by providing ``pauli_terms`` as a list of dictionaries (see the ``Usage Details`` section
-            for more information).
+            below for more information).
         one_norm (float | int | None): the one-norm of the Hamiltonian
 
     Returns:
@@ -252,8 +252,8 @@ class PauliHamiltonian:
 
         >>> import pennylane.estimator as qre
         >>> commuting_groups = (
-        ...     {"X": 40, "XX": 30},
-        ...     {"YY": 30},
+        ...     {"X": 40, "XX": 30}, # first commuting group
+        ...     {"YY": 30}, # second commuting group
         ... )
         >>> pauli_ham = qre.PauliHamiltonian(
         ...     num_qubits = 40,
