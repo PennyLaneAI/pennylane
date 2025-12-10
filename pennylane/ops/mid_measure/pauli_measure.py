@@ -185,7 +185,7 @@ def pauli_measure(pauli_word: str, wires: WiresLike, postselect: int | None = No
         shots=Shots(total_shots=None, shot_vector=()))
 
     .. seealso::
-        `Pauli product measurement <https://pennylane.ai/compilation/pauli-product-measurement>`_ and
+        For more information on Pauli product measurements, check out the `Quantum Compilation hub <https://pennylane.ai/compilation/pauli-product-measurement>`_ and
         :func:`catalyst.passes.ppm_compilation` for documentation and corresponding functionality in Catalyst
         related to compilation of Clifford+T gates into PPMs.
     """
