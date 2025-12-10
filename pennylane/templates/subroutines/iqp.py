@@ -75,9 +75,6 @@ class IQP(Operation):
         if not isinstance(wires, int) and len(wires) == 0:
             raise ValueError("At least one valid wire is required.")
 
-        if isinstance(wires, int):
-            wires = [wires]
-
         self._hyperparameters = {
             "spin_sym": spin_sym,
             "params": params,
