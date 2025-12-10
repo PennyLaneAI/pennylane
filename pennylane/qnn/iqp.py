@@ -105,7 +105,6 @@ def _op_expval_indep(
     n_samples: int,
     key: array,
     sparse: bool,
-    return_samples,
 ) -> list:
     """
     Batch evaluate an array of ops in the same way as self.op_expval_batch, but using independent randomness
@@ -122,30 +121,20 @@ def _op_expval_indep(
             n_samples=n_samples,
             key=key1,
             spin_sym=False,
-            return_samples=return_samples,
         )
         return key2, expval
 
     if sparse:
         expvals = []
-        stds = []
         for op in ops:
             key, val = update(key, op)
-            if return_samples:
-                expvals.append(val[0])
-            else:
-                expvals.append(val[0][0])
-                stds.append(val[1][0])
+            expvals.append(val[0])  # TODO: this is going to be the wrong shape for later concatenation
 
-        if return_samples:
-            return array(expvals)
-        return array(expvals), array(stds) / sqrt(n_samples)
+        return array(expvals)
 
     _, op_expvals = jax.lax.scan(update, key, ops)
 
-    if return_samples:
-        return op_expvals
-    return op_expvals[0], op_expvals[1]
+    return op_expvals
 
 
 # pylint: disable=too-many-arguments, too-many-branches, too-many-statements
@@ -159,7 +148,6 @@ def _op_expval_batch(
     spin_sym: bool = False,
     sparse: bool = False,
     indep_estimates: bool = False,
-    return_samples: bool = False,
 ) -> list:
     """Estimate the expectation values of a batch of Pauli-Z type operators. A set of l operators must be specified
     by an array of shape (l,n_qubits), where each row is a binary vector that specifies on which qubit a Pauli Z
@@ -192,7 +180,6 @@ def _op_expval_batch(
             n_samples=n_samples,
             key=key,
             sparse=sparse,
-            return_samples=return_samples,
         )
 
     samples = jax.random.randint(key, (n_samples, n_qubits), 0, 2)
@@ -260,9 +247,7 @@ def _op_expval_batch(
     par_ops_gates = 2 * effective_params * ops_gen
     expvals = ini_spin_sym * jnp.cos(par_ops_gates @ samples_gates.T)
 
-    if return_samples:
-        return expvals
-    return mean(expvals, axis=-1), jnp.std(expvals, axis=-1, ddof=1) / sqrt(n_samples)
+    return expvals
 
 
 # pylint: disable=too-many-arguments
@@ -273,7 +258,6 @@ def op_expval(
     circuit: IQP,
     sparse: bool = False,
     indep_estimates: bool = False,
-    return_samples: bool = False,
     max_batch_ops: int = None,
     max_batch_samples: int = None,
 ) -> list:
@@ -293,8 +277,6 @@ def op_expval(
         key (Array): Jax key to control the randomness of the process.
         circuit (IQP): The circuit after which expectations are taken.
         indep_estimates (bool): Whether to use independent estimates of the ops in a batch.
-        return_samples (bool): if True, an extended array that contains the values of the estimator for each
-            of the n_samples samples is returned.
         max_batch_ops (int): Maximum number of operators in a batch. Defaults to None, which means taking all ops at once.
         max_batch_samples (int): Maximum number of samples in a batch. Defaults to None, which means taking all n_samples at once.
 
@@ -336,11 +318,8 @@ def op_expval(
                 spin_sym=spin_sym,
                 sparse=sparse,
                 indep_estimates=indep_estimates,
-                return_samples=True,
             )
             tmp_expvals = jnp.concatenate((tmp_expvals, batch_expval), axis=-1)
         expvals = jnp.concatenate((expvals, tmp_expvals), axis=0)
 
-    if return_samples:
-        return expvals
     return jnp.mean(expvals, axis=-1), jnp.std(expvals, axis=-1, ddof=1) / jnp.sqrt(n_samples)

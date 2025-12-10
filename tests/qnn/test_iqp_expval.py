@@ -56,6 +56,7 @@ def local_gates(n_qubits: int, max_weight=2):
         ("multi_gens", [0], 2, True, False, 10, 10_000, 10_000, True, [1.0], [0.0]),
         ("local_gates", [0], 1, False, True, 10, 10_000, 10_000, False, [1.0], [0.0]),
         ("multi_gens", [0], 2, True, False, 10, None, None, True, [1.0], [0.0]),
+        # ("multi_gens", [0], 2, True, True, 10, None, None, True, [1.0], [0.0]),
     ],
 )
 def test_expval(
