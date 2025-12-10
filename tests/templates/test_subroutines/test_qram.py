@@ -19,12 +19,13 @@ import re
 import numpy as np
 import pytest
 
-from pennylane import device, qnode
+from pennylane import device, qnode, queuing
 from pennylane.decomposition import list_decomps
 from pennylane.measurements import probs
+from pennylane.ops import MultiControlledX, Toffoli, X
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates import BasisEmbedding
-from pennylane.templates.subroutines.qram import BBQRAM
+from pennylane.templates.subroutines.qram import BBQRAM, SelectOnlyQRAM
 
 dev = device("default.qubit")
 
@@ -213,7 +214,7 @@ def test_raises(params, error, match):
         ),
     ],
 )
-def test_decomposition_new(
+def test_bb_qram_decomposition_new(
     bitstrings,
     control_wires,
     target_wires,
@@ -230,4 +231,442 @@ def test_decomposition_new(
     )
 
     for rule in list_decomps(BBQRAM):
+        _test_decomposition_rule(op, rule)
+
+
+@qnode(dev)
+def select_only_quantum(
+    bitstrings, control_wires, target_wires, select_wires, select_value, address
+):  # pylint: disable=too-many-arguments
+    BasisEmbedding(address, wires=control_wires)
+
+    SelectOnlyQRAM(
+        bitstrings,
+        control_wires=control_wires,
+        target_wires=target_wires,
+        select_wires=select_wires,
+        select_value=select_value,
+    )
+    return probs(wires=target_wires)
+
+
+@pytest.mark.parametrize(
+    (
+        "bitstrings",
+        "control_wires",
+        "target_wires",
+        "select_wires",
+        "select_value",
+        "address",
+        "probabilities",
+        "expected_circuit",
+    ),
+    [
+        (
+            [
+                "010",
+                "111",
+                "110",
+                "000",
+                "010",
+                "111",
+                "110",
+                "000",
+                "010",
+                "111",
+                "110",
+                "000",
+                "010",
+                "111",
+                "110",
+                "000",
+            ],
+            [0, 1],
+            [2, 3, 4],
+            [5, 6],
+            0,
+            3,  # addressed from the left
+            [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],  # |000>
+            [
+                X(5),
+                X(6),
+                X(0),
+                X(1),
+                MultiControlledX(wires=[5, 6, 0, 1, 3], control_values=[True, True, True, True]),
+                X(5),
+                X(6),
+                X(0),
+                X(1),
+                X(5),
+                X(6),
+                X(0),
+                MultiControlledX(wires=[5, 6, 0, 1, 2], control_values=[True, True, True, True]),
+                MultiControlledX(wires=[5, 6, 0, 1, 3], control_values=[True, True, True, True]),
+                MultiControlledX(wires=[5, 6, 0, 1, 4], control_values=[True, True, True, True]),
+                X(5),
+                X(6),
+                X(0),
+                X(5),
+                X(6),
+                X(1),
+                MultiControlledX(wires=[5, 6, 0, 1, 2], control_values=[True, True, True, True]),
+                MultiControlledX(wires=[5, 6, 0, 1, 3], control_values=[True, True, True, True]),
+                X(5),
+                X(6),
+                X(1),
+                X(5),
+                X(6),
+                X(5),
+                X(6),
+            ],
+        ),
+        (
+            [
+                "010",
+                "111",
+                "110",
+                "000",
+                "010",
+                "111",
+                "110",
+                "000",
+                "010",
+                "111",
+                "110",
+                "000",
+                "010",
+                "111",
+                "110",
+                "000",
+            ],
+            [0, 1],
+            [2, 3, 4],
+            [5, 6],
+            0,  # Note: if this were set to 1, the test would not pass... due to the select.
+            2,
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0],  # |110>
+            [
+                X(5),
+                X(6),
+                X(0),
+                X(1),
+                MultiControlledX(wires=[5, 6, 0, 1, 3], control_values=[True, True, True, True]),
+                X(5),
+                X(6),
+                X(0),
+                X(1),
+                X(5),
+                X(6),
+                X(0),
+                MultiControlledX(wires=[5, 6, 0, 1, 2], control_values=[True, True, True, True]),
+                MultiControlledX(wires=[5, 6, 0, 1, 3], control_values=[True, True, True, True]),
+                MultiControlledX(wires=[5, 6, 0, 1, 4], control_values=[True, True, True, True]),
+                X(5),
+                X(6),
+                X(0),
+                X(5),
+                X(6),
+                X(1),
+                MultiControlledX(wires=[5, 6, 0, 1, 2], control_values=[True, True, True, True]),
+                MultiControlledX(wires=[5, 6, 0, 1, 3], control_values=[True, True, True, True]),
+                X(5),
+                X(6),
+                X(1),
+                X(5),
+                X(6),
+                X(5),
+                X(6),
+            ],
+        ),
+        (
+            [
+                "010",
+                "111",
+                "110",
+                "000",
+                "010",
+                "111",
+                "110",
+                "000",
+                "010",
+                "111",
+                "110",
+                "000",
+                "010",
+                "111",
+                "110",
+                "000",
+            ],
+            [0, 1],
+            [2, 3, 4],
+            [5, 6],
+            None,
+            1,
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0],  # |111>
+            [
+                X(5),
+                X(6),
+                X(0),
+                X(1),
+                MultiControlledX(wires=[5, 6, 0, 1, 3], control_values=[True, True, True, True]),
+                X(5),
+                X(6),
+                X(0),
+                X(1),
+                X(5),
+                X(6),
+                X(0),
+                MultiControlledX(wires=[5, 6, 0, 1, 2], control_values=[True, True, True, True]),
+                MultiControlledX(wires=[5, 6, 0, 1, 3], control_values=[True, True, True, True]),
+                MultiControlledX(wires=[5, 6, 0, 1, 4], control_values=[True, True, True, True]),
+                X(5),
+                X(6),
+                X(0),
+                X(5),
+                X(6),
+                X(1),
+                MultiControlledX(wires=[5, 6, 0, 1, 2], control_values=[True, True, True, True]),
+                MultiControlledX(wires=[5, 6, 0, 1, 3], control_values=[True, True, True, True]),
+                X(5),
+                X(6),
+                X(1),
+                X(5),
+                X(6),
+                X(5),
+                X(6),
+                X(5),
+                X(0),
+                X(1),
+                MultiControlledX(wires=[5, 6, 0, 1, 3], control_values=[True, True, True, True]),
+                X(5),
+                X(0),
+                X(1),
+                X(5),
+                X(0),
+                MultiControlledX(wires=[5, 6, 0, 1, 2], control_values=[True, True, True, True]),
+                MultiControlledX(wires=[5, 6, 0, 1, 3], control_values=[True, True, True, True]),
+                MultiControlledX(wires=[5, 6, 0, 1, 4], control_values=[True, True, True, True]),
+                X(5),
+                X(0),
+                X(5),
+                X(1),
+                MultiControlledX(wires=[5, 6, 0, 1, 2], control_values=[True, True, True, True]),
+                MultiControlledX(wires=[5, 6, 0, 1, 3], control_values=[True, True, True, True]),
+                X(5),
+                X(1),
+                X(5),
+                X(5),
+                X(6),
+                X(0),
+                X(1),
+                MultiControlledX(wires=[5, 6, 0, 1, 3], control_values=[True, True, True, True]),
+                X(6),
+                X(0),
+                X(1),
+                X(6),
+                X(0),
+                MultiControlledX(wires=[5, 6, 0, 1, 2], control_values=[True, True, True, True]),
+                MultiControlledX(wires=[5, 6, 0, 1, 3], control_values=[True, True, True, True]),
+                MultiControlledX(wires=[5, 6, 0, 1, 4], control_values=[True, True, True, True]),
+                X(6),
+                X(0),
+                X(6),
+                X(1),
+                MultiControlledX(wires=[5, 6, 0, 1, 2], control_values=[True, True, True, True]),
+                MultiControlledX(wires=[5, 6, 0, 1, 3], control_values=[True, True, True, True]),
+                X(6),
+                X(1),
+                X(6),
+                X(6),
+                X(0),
+                X(1),
+                MultiControlledX(wires=[5, 6, 0, 1, 3], control_values=[True, True, True, True]),
+                X(0),
+                X(1),
+                X(0),
+                MultiControlledX(wires=[5, 6, 0, 1, 2], control_values=[True, True, True, True]),
+                MultiControlledX(wires=[5, 6, 0, 1, 3], control_values=[True, True, True, True]),
+                MultiControlledX(wires=[5, 6, 0, 1, 4], control_values=[True, True, True, True]),
+                X(0),
+                X(1),
+                MultiControlledX(wires=[5, 6, 0, 1, 2], control_values=[True, True, True, True]),
+                MultiControlledX(wires=[5, 6, 0, 1, 3], control_values=[True, True, True, True]),
+                X(1),
+            ],
+        ),
+        (
+            [
+                "010",
+                "111",
+                "110",
+                "000",
+            ],
+            [0, 1],
+            [2, 3, 4],
+            [],
+            None,
+            0,
+            [0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0],  # |010>
+            [
+                X(0),
+                X(1),
+                Toffoli(wires=[0, 1, 3]),
+                X(0),
+                X(1),
+                X(0),
+                Toffoli(wires=[0, 1, 2]),
+                Toffoli(wires=[0, 1, 3]),
+                Toffoli(wires=[0, 1, 4]),
+                X(0),
+                X(1),
+                Toffoli(wires=[0, 1, 2]),
+                Toffoli(wires=[0, 1, 3]),
+                X(1),
+            ],
+        ),
+    ],
+)
+def test_select_only_quantum(
+    bitstrings,
+    control_wires,
+    target_wires,
+    select_wires,
+    select_value,
+    address,
+    probabilities,
+    expected_circuit,
+):  # pylint: disable=too-many-arguments
+    with queuing.AnnotatedQueue() as q:
+        real_probs = select_only_quantum(
+            bitstrings,
+            control_wires,
+            target_wires,
+            select_wires,
+            select_value,
+            address,
+        )
+    assert np.allclose(probabilities, real_probs)
+    assert q.queue == expected_circuit
+
+
+@pytest.mark.parametrize(
+    ("params", "error", "match"),
+    [
+        (
+            (["000", "111"], [0, 1], [2, 3, 4], [5, 6], 2),
+            ValueError,
+            "len(bitstrings) must be 2^(len(select_wires)+len(control_wires)).",
+        ),
+        (
+            (
+                ["000", "111", "010", "101"],
+                [0, 1],
+                [2, 3, 4],
+                [],
+                1,
+            ),
+            ValueError,
+            "select_value cannot be used when len(select_wires) == 0.",
+        ),
+        (
+            (
+                ["000", "111", "010", "101", "000", "111", "010", "101"],
+                [0, 1],
+                [2, 3, 4],
+                [15],
+                4,
+            ),
+            ValueError,
+            "select_value must be an integer in [0, 1].",
+        ),
+    ],
+)
+def test_select_only_raises(params, error, match):
+    with pytest.raises(error, match=re.escape(match)):
+        SelectOnlyQRAM(*params)
+
+
+@pytest.mark.parametrize(
+    (
+        "bitstrings",
+        "control_wires",
+        "target_wires",
+        "select_wires",
+        "select_value",
+    ),
+    [
+        (
+            [
+                "010",
+                "111",
+                "110",
+                "000",
+                "010",
+                "111",
+                "110",
+                "000",
+                "010",
+                "111",
+                "110",
+                "000",
+                "010",
+                "111",
+                "110",
+                "000",
+            ],
+            [0, 1],
+            [2, 3, 4],
+            [5, 6],
+            0,
+        ),
+        (
+            [
+                "010",
+                "111",
+                "110",
+                "000",
+                "010",
+                "111",
+                "110",
+                "000",
+                "010",
+                "111",
+                "110",
+                "000",
+                "010",
+                "111",
+                "110",
+                "000",
+            ],
+            [0, 1],
+            [2, 3, 4],
+            [5, 6],
+            1,
+        ),
+        (
+            [
+                "010",
+                "111",
+                "110",
+                "000",
+            ],
+            [0, 1],
+            [2, 3, 4],
+            [],
+            None,
+        ),
+    ],
+)
+def test_select_decomposition_new(
+    bitstrings, control_wires, target_wires, select_wires, select_value
+):  # pylint: disable=too-many-arguments
+    op = SelectOnlyQRAM(
+        bitstrings,
+        control_wires,
+        target_wires,
+        select_wires,
+        select_value,
+    )
+
+    for rule in list_decomps(SelectOnlyQRAM):
         _test_decomposition_rule(op, rule)
