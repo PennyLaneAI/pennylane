@@ -34,7 +34,13 @@
   [(#8623)](https://github.com/PennyLaneAI/pennylane/pull/8623)
   [(#8663)](https://github.com/PennyLaneAI/pennylane/pull/8663)
 
-<h3>Improvements 🛠</h3>
+<h4> Compile Pipeline and Transforms </h4>
+
+* Arithmetic dunder methods (`__add__`, `__mul__`, `__rmul__`) have been added to 
+  :class:`~.transforms.core.TransformDispatcher`, :class:`~.transforms.core.TransformContainer`, 
+  and :class:`~.transforms.core.TransformProgram` to enable intuitive composition of transform 
+  programs using `+` and `*` operators.
+  [(#8703)](https://github.com/PennyLaneAI/pennylane/pull/8703)
 
 * In the past, calling a transform with only arguments or keyword but no tapes would raise an error.
   Now, two transforms can be concatenated naturally as
@@ -68,15 +74,14 @@
 
   [(#8730)](https://github.com/PennyLaneAI/pennylane/pull/8730)
 
+* Now `TransformProgram` can dispatch to anything individual transforms can dispatch onto.
+  [(#8731)](https://github.com/PennyLaneAI/pennylane/pull/8731)
+
+<h3>Improvements 🛠</h3>
+
 * Added a new decomposition, `_decompose_2_cnots`, for the two-qubit decomposition for `QubitUnitary`.
   It supports the analytical decomposition a two-qubit unitary known to require exactly 2 CNOTs.
   [(#8666)](https://github.com/PennyLaneAI/pennylane/issues/8666)
-  
-* Arithmetic dunder methods (`__add__`, `__mul__`, `__rmul__`) have been added to 
-  :class:`~.transforms.core.TransformDispatcher`, :class:`~.transforms.core.TransformContainer`, 
-  and :class:`~.transforms.core.TransformProgram` to enable intuitive composition of transform 
-  programs using `+` and `*` operators.
-  [(#8703)](https://github.com/PennyLaneAI/pennylane/pull/8703)
 
 * Quantum compilation passes in MLIR and XDSL can now be applied using the core PennyLane transform
   infrastructure, instead of using Catalyst-specific tools. This is made possible by a new argument in
@@ -407,9 +412,6 @@
   ```
 
 <h3>Internal changes ⚙️</h3>
-
-* Now `TransformProgram` can dispatch to anything individual transforms can dispatch onto.
-  [(#8731)](https://github.com/PennyLaneAI/pennylane/pull/8731)
 
 * `qml.cond`, the `QNode`, transforms, `qml.grad`, and `qml.jacobian` no longer treat all keyword arguments as static
   arguments. They are instead treated as dynamic, numerical inputs, matching the behaviour of Jax and Catalyst.
