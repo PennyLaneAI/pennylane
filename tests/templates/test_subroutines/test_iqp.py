@@ -50,12 +50,12 @@ def local_gates(n_qubits: int, max_weight=2):
     ("params", "error", "match"),
     [
         (
-            ([0, 1], [[0, 1], [0]], [0], False, None, None),
+            ([0, 1], [[0, 1], [0]], [0], False),
             ValueError,
             "Number of gates and number of parameters for an Instantaneous Quantum Polynomial circuit must be the same",
         ),
         (
-            ([], [[0, 1], [0]], [0, 1], False, None, None),
+            ([], [[0, 1], [0]], [0, 1], False),
             ValueError,
             "At least one valid wire",
         ),
@@ -67,51 +67,41 @@ def test_raises(params, error, match):
 
 
 @pytest.mark.parametrize(
-    ("params", "gates", "init_gates", "init_params", "spin_sym", "n_qubits"),
+    ("params", "gates", "spin_sym", "n_qubits"),
     [
         (
             math.random.uniform(0, 2 * np.pi, 4),
             local_gates(4, 1),
-            local_gates(4, 1),
-            math.random.uniform(0, 2 * np.pi, len(local_gates(4, 1))),
             True,
             4,
         ),
         (
             math.random.uniform(0, 2 * np.pi, 6),
             local_gates(6, 1),
-            local_gates(6, 1),
-            math.random.uniform(0, 2 * np.pi, len(local_gates(6, 1))),
             True,
             6,
         ),
     ],
 )
-def test_decomposition_new(
-    params, gates, init_gates, init_params, spin_sym, n_qubits
-):  # pylint: disable=too-many-arguments
-    op = IQP(list(range(n_qubits)), gates, params, init_gates, init_params, spin_sym, n_qubits)
+def test_decomposition_new(params, gates, spin_sym, n_qubits):  # pylint: disable=too-many-arguments
+    op = IQP(list(range(n_qubits)), gates, params, spin_sym)
 
     for rule in list_decomps(IQP):
         _test_decomposition_rule(op, rule)
 
 
 @qnode(dev)
-def iqp_circuit(
-    params, gates, init_gates, init_params, spin_sym, n_qubits
-):  # pylint: disable=too-many-arguments
-    IQP(list(range(n_qubits)), gates, params, init_gates, init_params, spin_sym, n_qubits)
+def iqp_circuit(params, gates, spin_sym, n_qubits):  # pylint: disable=too-many-arguments
+    IQP(list(range(n_qubits)), gates, params, spin_sym)
     return probs(wires=list(range(n_qubits)))
 
 
 @pytest.mark.parametrize(
-    ("params", "gates", "init_gates", "init_params", "spin_sym", "n_qubits", "expected_circuit"),
+    ("params", "gates", "spin_sym", "n_qubits", "expected_circuit"),
     [
         (
             math.random.uniform(0, 2 * np.pi, 4),
             local_gates(4, 1),
-            local_gates(4, 1),
-            math.random.uniform(0, 2 * np.pi, len(local_gates(4, 1))),
             True,
             4,
             [
@@ -120,10 +110,6 @@ def iqp_circuit(
                 H,
                 H,
                 H,
-                MultiRZ,
-                MultiRZ,
-                MultiRZ,
-                MultiRZ,
                 MultiRZ,
                 MultiRZ,
                 MultiRZ,
@@ -137,10 +123,10 @@ def iqp_circuit(
     ],
 )
 def test_decomposition_contents(
-    params, gates, init_gates, init_params, spin_sym, n_qubits, expected_circuit
+    params, gates, spin_sym, n_qubits, expected_circuit
 ):  # pylint: disable=too-many-arguments
     with queuing.AnnotatedQueue() as q:
-        iqp_circuit(params, gates, init_gates, init_params, spin_sym, n_qubits)
+        iqp_circuit(params, gates, spin_sym, n_qubits)
 
     for op, expected in zip(q.queue, expected_circuit):
         assert isinstance(op, expected)

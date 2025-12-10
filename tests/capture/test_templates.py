@@ -608,8 +608,6 @@ class TestModifiedTemplates:
             "wires": (0, 1, 2, 3),
             "params": tuple(math.random.uniform(0, 2 * np.pi, 4)),
             "gates": gates,
-            "init_gates": gates,
-            "init_params": tuple(math.random.uniform(0, 2 * np.pi, len(gates))),
             "spin_sym": True,
         }
 

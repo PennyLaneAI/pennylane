@@ -925,8 +925,6 @@ class ResourceIQP(ResourceOperator):
         gates (list[list[list[int]]]): Specification of the trainable gates. Each element of gates corresponds to a
             unique trainable parameter. Each sublist specifies the generators to which that parameter applies.
             Generators are specified by listing the qubits on which an X operator acts.
-        init_gates (list[list[list[int]]], optional): A specification of gates of the same form as the gates argument. The
-            parameters of these gates will be defined by init_params later on.
         spin_sym (bool, optional): If True, the circuit is equivalent to one where the initial state
             :math:`\frac{1}{\sqrt(2)}(|00\dots0> + |11\dots1>)` is used in place of :math:`|00\dots0>`.
         wires (Sequence[int], optional): the wires the operation acts on
@@ -935,13 +933,12 @@ class ResourceIQP(ResourceOperator):
 
     """
 
-    resource_keys = {"spin_sym", "gates", "num_wires", "init_gates"}
+    resource_keys = {"spin_sym", "gates", "num_wires"}
 
-    def __init__(self, num_wires, gates, init_gates, spin_sym, wires=None) -> None:
+    def __init__(self, num_wires, gates, spin_sym, wires=None) -> None:
         self.num_wires = num_wires
         self.spin_sym = spin_sym
         self.gates = gates
-        self.init_gates = init_gates
         super().__init__(wires=wires)
 
     @property
@@ -956,11 +953,10 @@ class ResourceIQP(ResourceOperator):
             "spin_sym": self.spin_sym,
             "gates": self.gates,
             "num_wires": self.num_wires,
-            "init_gates": self.init_gates,
         }
 
     @classmethod
-    def resource_rep(cls, num_wires, gates, init_gates, spin_sym) -> CompressedResourceOp:
+    def resource_rep(cls, num_wires, gates, spin_sym) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
 
@@ -969,8 +965,6 @@ class ResourceIQP(ResourceOperator):
             gates (list[list[list[int]]]): Specification of the trainable gates. Each element of gates corresponds to a
                 unique trainable parameter. Each sublist specifies the generators to which that parameter applies.
                 Generators are specified by listing the qubits on which an X operator acts.
-            init_gates (list[list[list[int]]], optional): A specification of gates of the same form as the gates argument. The
-                parameters of these gates will be defined by init_params later on.
             spin_sym (bool, optional): If True, the circuit is equivalent to one where the initial state
                 :math:`\frac{1}{\sqrt(2)}(|00\dots0> + |11\dots1>)` is used in place of :math:`|00\dots0>`.
 
@@ -984,12 +978,11 @@ class ResourceIQP(ResourceOperator):
                 "spin_sym": spin_sym,
                 "gates": gates,
                 "num_wires": num_wires,
-                "init_gates": init_gates,
             },
         )
 
     @classmethod
-    def resource_decomp(cls, num_wires, gates, init_gates, spin_sym) -> list[GateCount]:
+    def resource_decomp(cls, num_wires, gates, spin_sym) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object in the list
         represents a gate and the number of times it occurs in the circuit.
 
@@ -998,8 +991,6 @@ class ResourceIQP(ResourceOperator):
             gates (list[list[list[int]]]): Specification of the trainable gates. Each element of gates corresponds to a
                 unique trainable parameter. Each sublist specifies the generators to which that parameter applies.
                 Generators are specified by listing the qubits on which an X operator acts.
-            init_gates (list[list[list[int]]], optional): A specification of gates of the same form as the gates argument. The
-                parameters of these gates will be defined by init_params later on.
             spin_sym (bool, optional): If True, the circuit is equivalent to one where the initial state
                 :math:`\frac{1}{\sqrt(2)}(|00\dots0> + |11\dots1>)` is used in place of :math:`|00\dots0>`.
 
@@ -1013,11 +1004,6 @@ class ResourceIQP(ResourceOperator):
 
         hadamard_counts = 2 * num_wires
         multi_rz_counts = defaultdict(int)
-
-        if init_gates is not None:
-            for gate in init_gates:
-                for gen in gate:
-                    multi_rz_counts[len(gen)] += 1
 
         for gate in gates:
             for gen in gate:
@@ -1034,9 +1020,9 @@ class ResourceIQP(ResourceOperator):
         ]
 
     @staticmethod
-    def tracking_name(num_wires, gates, init_gates, spin_sym) -> str:
+    def tracking_name(num_wires, gates, spin_sym) -> str:
         r"""Returns the tracking name built with the operator's parameters."""
-        return f"IQP({num_wires}, {gates}, {init_gates}, {spin_sym})"
+        return f"IQP({num_wires}, {gates}, {spin_sym})"
 
 
 class ResourceQFT(ResourceOperator):

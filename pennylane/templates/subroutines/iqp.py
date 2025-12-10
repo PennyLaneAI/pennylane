@@ -43,10 +43,10 @@ class IQP(Operation):
     making this a useful circuit.
     """
 
-    resource_keys = {"spin_sym", "gates", "n_qubits", "init_gates"}
+    resource_keys = {"spin_sym", "gates", "n_qubits"}
 
     def __init__(
-        self, wires, gates, params, init_gates=None, init_params=None, spin_sym=None, id=None
+        self, wires, gates, params, spin_sym=None, id=None
     ):  # pylint: disable=too-many-arguments
         r"""
         IQP template corresponding to a parameterized IQP circuit. Based on `IQPopt: Fast optimization of
@@ -57,10 +57,6 @@ class IQP(Operation):
                 unique trainable parameter. Each sublist specifies the generators to which that parameter applies.
                 Generators are specified by listing the qubits on which an X operator acts.
             params (list): The parameters of the IQP gates.
-            init_gates (list[list[list[int]]], optional): A specification of gates of the same form as the gates argument. The
-                parameters of these gates will be defined by init_params later on.
-            init_params (list[float], optional): List or array of length len(init_gates) that specifies the fixed parameter
-                values of init_gates.
             spin_sym (bool, optional): If True, the circuit is equivalent to one where the initial state
                 :math:`\frac{1}{\sqrt(2)}(|00\dots0> + |11\dots1>)` is used in place of :math:`|00\dots0>`.
 
@@ -79,8 +75,6 @@ class IQP(Operation):
             "spin_sym": spin_sym,
             "params": params,
             "gates": gates,
-            "init_gates": init_gates,
-            "init_params": init_params,
         }
         super().__init__(wires=wires, id=id)
 
@@ -94,11 +88,10 @@ class IQP(Operation):
             "spin_sym": self.hyperparameters["spin_sym"],
             "gates": self.hyperparameters["gates"],
             "n_qubits": len(self.wires),
-            "init_gates": self.hyperparameters["init_gates"],
         }
 
 
-def _instantaneous_quantum_polynomial_resources(spin_sym, gates, n_qubits, init_gates):
+def _instantaneous_quantum_polynomial_resources(spin_sym, gates, n_qubits):
     resources = defaultdict(int)
     if spin_sym:
         resources[
@@ -110,11 +103,6 @@ def _instantaneous_quantum_polynomial_resources(spin_sym, gates, n_qubits, init_
 
     resources[resource_rep(Hadamard)] = 2 * n_qubits
 
-    if init_gates is not None:
-        for gate in init_gates:
-            for gen in gate:
-                resources[resource_rep(MultiRZ, num_wires=len(gen))] += 1
-
     for gate in gates:
         for gen in gate:
             resources[resource_rep(MultiRZ, num_wires=len(gen))] += 1
@@ -124,7 +112,7 @@ def _instantaneous_quantum_polynomial_resources(spin_sym, gates, n_qubits, init_
 
 @register_resources(_instantaneous_quantum_polynomial_resources)
 def _instantaneous_quantum_polynomial_decomposition(
-    wires, params, gates, init_gates, init_params, spin_sym
+    wires, params, gates, spin_sym
 ):  # pylint: disable=unused-argument, too-many-arguments
     n_qubits = len(wires)
 
@@ -133,11 +121,6 @@ def _instantaneous_quantum_polynomial_decomposition(
 
     for i in range(n_qubits):
         Hadamard(i)
-
-    if init_gates is not None:
-        for par, gate in zip(init_params, init_gates):
-            for gen in gate:
-                MultiRZ(2 * par, wires=gen)
 
     for par, gate in zip(params, gates):
         for gen in gate:
