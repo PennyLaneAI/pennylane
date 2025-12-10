@@ -1308,7 +1308,7 @@ class TestCompilePipelineCall:
             return (tape,), lambda results: results[0]
 
         container = TransformContainer(transform(identity_transform))
-        prog = TransformProgram((container,))
+        prog = CompilePipeline((container,))
 
         # Create a single QuantumScript (not wrapped in a tuple)
         single_tape = qml.tape.QuantumScript(
@@ -1423,9 +1423,9 @@ class TestCompilePipelineCall:
             assert eqn.primitive == expected_primitive
 
     def test_call_fallback_on_qnode(self):
-        """Test that a TransformProgram can be applied to a QNode using the fallback."""
+        """Test that a CompilePipeline can be applied to a QNode using the fallback."""
 
-        program = TransformProgram()
+        program = CompilePipeline()
         program += qml.transforms.cancel_inverses
         program += transform(first_valid_transform)(0)
 
@@ -1449,9 +1449,9 @@ class TestCompilePipelineCall:
         assert new_qnode.transform_program[1].transform is first_valid_transform
 
     def test_call_fallback_on_qnode_already_transformed(self):
-        """Test that a TransformProgram can be applied to a QNode that already has transforms."""
+        """Test that a CompilePipeline can be applied to a QNode that already has transforms."""
 
-        program = TransformProgram()
+        program = CompilePipeline()
         program += transform(first_valid_transform)(0)
 
         dev = qml.device("default.qubit", wires=2)
@@ -1477,7 +1477,7 @@ class TestCompilePipelineCall:
     def test_call_fallback_on_qnode_empty_program(self):
         """Test that an empty program returns the original QNode."""
 
-        program = TransformProgram()
+        program = CompilePipeline()
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -1492,9 +1492,9 @@ class TestCompilePipelineCall:
         assert new_qnode is circuit
 
     def test_call_fallback_on_callable(self):
-        """Test that a TransformProgram can be applied to a callable using the fallback."""
+        """Test that a CompilePipeline can be applied to a callable using the fallback."""
 
-        program = TransformProgram()
+        program = CompilePipeline()
         program += transform(first_valid_transform)(0)
 
         def qfunc():
@@ -1521,7 +1521,7 @@ class TestCompilePipelineCall:
             call_order.append(2)
             return [tape], lambda x: x[0]
 
-        program = TransformProgram()
+        program = CompilePipeline()
         program += transform(tracking_transform_1)
         program += transform(tracking_transform_2)
 
@@ -1541,9 +1541,9 @@ class TestCompilePipelineCall:
         assert new_qnode.transform_program[1].transform is tracking_transform_2
 
     def test_call_on_qnode_execution(self):
-        """Test that a TransformProgram applied to a QNode actually transforms execution."""
+        """Test that a CompilePipeline applied to a QNode actually transforms execution."""
 
-        program = TransformProgram()
+        program = CompilePipeline()
         program += transform(qml.transforms.cancel_inverses)
 
         dev = qml.device("default.qubit", wires=2)
@@ -1575,14 +1575,14 @@ class TestCompilePipelineCall:
         assert qml.math.allclose(result, 0.0)
 
     def test_call_on_device(self):
-        """Test that a TransformProgram can be applied to a Device."""
+        """Test that a CompilePipeline can be applied to a Device."""
 
         # Create a dummy device with a custom preprocess_transforms method
         class DummyDevice(qml.devices.Device):
             def preprocess_transforms(
                 self, execution_config=None
             ):  # pylint: disable=unused-argument
-                prog = TransformProgram()
+                prog = CompilePipeline()
                 prog.add_transform(qml.defer_measurements)
                 return prog
 
@@ -1592,7 +1592,7 @@ class TestCompilePipelineCall:
         original_dev = DummyDevice()
 
         # Create a program with transforms
-        program = TransformProgram()
+        program = CompilePipeline()
         program += transform(qml.transforms.cancel_inverses)
         program += transform(first_valid_transform)(0)
 
@@ -1612,8 +1612,8 @@ class TestCompilePipelineCall:
         original_program = original_dev.preprocess_transforms()
         new_program = transformed_dev.preprocess_transforms()
 
-        assert isinstance(original_program, TransformProgram)
-        assert isinstance(new_program, TransformProgram)
+        assert isinstance(original_program, CompilePipeline)
+        assert isinstance(new_program, CompilePipeline)
 
         # Original program has 1 transform (defer_measurements)
         assert len(original_program) == 1
