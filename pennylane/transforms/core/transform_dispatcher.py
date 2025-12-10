@@ -568,7 +568,7 @@ class BoundTransform:  # pylint: disable=too-many-instance-attributes
 
     @property
     def plxpr_transform(self) -> None | Callable:
-        """**UNMAINTAINED EXPERIMENTAL:** The stored quantum transform's PLxPR transform."""
+        """**UNMAINTAINED EXPERIMENTAL**: The stored quantum transform's PLxPR transform."""
         return self._transform_dispatcher.plxpr_transform
 
     @property
