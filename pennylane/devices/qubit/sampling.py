@@ -515,7 +515,7 @@ def _sample_probs_numpy(probs, shots, num_wires, is_state_batched, rng):
     norm_err = qml.math.abs(norm - 1.0)
     cutoff = 1e-07
 
-    norm_err = norm_err[..., np.newaxis] if not is_state_batched else norm_err
+    norm_err = norm_err if is_state_batched else norm_err[..., np.newaxis]
     if qml.math.any(norm_err > cutoff):
         raise ValueError("probabilities do not sum to 1")
 
