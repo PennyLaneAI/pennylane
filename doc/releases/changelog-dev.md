@@ -78,6 +78,12 @@
 
   [(#8730)](https://github.com/PennyLaneAI/pennylane/pull/8730)
 
+* The `TransformProgram` has been renamed to :class:`~pennylane.transforms.core.CompilePipeline`, and uses of
+  the term "transform program" has been updated to "compile pipeline" across the codebase. The class is still
+  accessible as `TransformProgram` from `pennylane.transforms.core`, but the module `pennylane.transforms.core.transform_program`
+  has been renamed to `pennylane.transforms.core.compile_pipeline`, and the old name is no longer available.
+  [(#8735)](https://github.com/PennyLaneAI/pennylane/pull/8735)
+
 * Now `CompilePipeline` can dispatch to anything individual transforms can dispatch onto, including
   QNodes.
   [(#8731)](https://github.com/PennyLaneAI/pennylane/pull/8731)
@@ -344,12 +350,6 @@
 * The `qml.QNode.add_transform` method is removed.
   Instead, please use `QNode.transform_program.push_back(transform_container=transform_container)`.
   [(#8468)](https://github.com/PennyLaneAI/pennylane/pull/8468)
-
-* The `TransformProgram` has been renamed to :class:`~pennylane.transforms.core.CompilePipeline`, and uses of
-  the term "transform program" has been updated to "compile pipeline" across the codebase. The class is still
-  accessible as `TransformProgram` from `pennylane.transforms.core`, but the module `pennylane.transforms.core.transform_program`
-  has been renamed to `pennylane.transforms.core.compile_pipeline`, and the old name is no longer available.
-  [(#8735)](https://github.com/PennyLaneAI/pennylane/pull/8735)
 
 <h3>Deprecations 👋</h3>
 
