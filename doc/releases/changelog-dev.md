@@ -74,7 +74,8 @@
 
   [(#8730)](https://github.com/PennyLaneAI/pennylane/pull/8730)
 
-* Now `TransformProgram` can dispatch to anything individual transforms can dispatch onto.
+* Now `CompilePipeline` can dispatch to anything individual transforms can dispatch onto, including
+  QNodes.
   [(#8731)](https://github.com/PennyLaneAI/pennylane/pull/8731)
 
 <h3>Improvements 🛠</h3>
