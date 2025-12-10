@@ -88,21 +88,16 @@
   QNodes.
   [(#8731)](https://github.com/PennyLaneAI/pennylane/pull/8731)
 
+* :class:`~.transforms.core.TransformContainer` has been renamed to :class:`~.transforms.core.BoundTransform`.
+  The old name is still available in the same location.
+  [(#8753)](https://github.com/PennyLaneAI/pennylane/pull/8753)
+
 <h3>Improvements 🛠</h3>
 
 * Added a new decomposition, `_decompose_2_cnots`, for the two-qubit decomposition for `QubitUnitary`.
   It supports the analytical decomposition a two-qubit unitary known to require exactly 2 CNOTs.
   [(#8666)](https://github.com/PennyLaneAI/pennylane/issues/8666)
 
-* :class:`~.transforms.core.TransformContainer` has been renamed to :class:`~.transforms.core.BoundTransform`.
-  The old name is still available in the same location.
-  [(#8753)](https://github.com/PennyLaneAI/pennylane/pull/8753)
-
-* Arithmetic dunder methods (`__add__`, `__mul__`, `__rmul__`) have been added to
-  :class:`~.transforms.core.TransformDispatcher`, :class:`~.transforms.core.TransformContainer`,
-  and :class:`~.transforms.core.CompilePipeline` (previously known as the `TransformProgram`) to 
-  enable intuitive composition of transform programs using `+` and `*` operators.
-  [(#8703)](https://github.com/PennyLaneAI/pennylane/pull/8703)
 
 * Quantum compilation passes in MLIR and XDSL can now be applied using the core PennyLane transform
   infrastructure, instead of using Catalyst-specific tools. This is made possible by a new argument in
