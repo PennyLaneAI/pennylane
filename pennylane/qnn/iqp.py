@@ -308,7 +308,7 @@ def op_expval(
     spin_sym = circuit.hyperparameters["spin_sym"]
 
     if not has_jax:
-        raise ImportError("JAX is required for use of IQP expectation value estimation.")
+        raise ImportError("JAX is required for use of IQP expectation value estimation.")  # pragma: no cover
 
     if max_batch_ops is None:
         max_batch_ops = len(ops)
