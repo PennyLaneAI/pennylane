@@ -729,7 +729,7 @@ class TestTrotterPauli:
             (
                 qre.PauliHamiltonian(
                     num_qubits=5,
-                    num_pauli_words=35,
+                    pauli_terms={"XXXXX": 11, "YYYYY": 11, "ZZZZZ": 13},
                 ),
                 1,
                 1,
@@ -739,7 +739,7 @@ class TestTrotterPauli:
             (
                 qre.PauliHamiltonian(
                     num_qubits=4,
-                    pauli_dist={"XX": 10, "YY": 10, "Z": 5},
+                    pauli_terms={"XX": 10, "YY": 10, "Z": 5},
                 ),
                 10,
                 2,
@@ -749,7 +749,7 @@ class TestTrotterPauli:
             (
                 qre.PauliHamiltonian(
                     num_qubits=5,
-                    commuting_groups=(
+                    pauli_terms=(
                         {"XX": 15, "X": 5},
                         {"ZZ": 10},
                         {"YY": 5, "X": 5},
@@ -796,7 +796,7 @@ class TestTrotterPauli:
             (
                 qre.PauliHamiltonian(
                     num_qubits=5,
-                    commuting_groups=(
+                    pauli_terms=(
                         {"XX": 15, "X": 5},
                         {"ZZ": 10},
                         {"YY": 5, "X": 5},
@@ -811,7 +811,7 @@ class TestTrotterPauli:
             (
                 qre.PauliHamiltonian(
                     num_qubits=5,
-                    commuting_groups=(
+                    pauli_terms=(
                         {"XX": 15, "X": 5},
                         {"ZZ": 10},
                         {"YY": 5, "X": 5},
@@ -826,7 +826,7 @@ class TestTrotterPauli:
             (
                 qre.PauliHamiltonian(
                     num_qubits=5,
-                    commuting_groups=(
+                    pauli_terms=(
                         {"XX": 15, "X": 5},
                         {"ZZ": 10},
                         {"YY": 5, "X": 5},
@@ -841,7 +841,7 @@ class TestTrotterPauli:
             (
                 qre.PauliHamiltonian(
                     num_qubits=5,
-                    commuting_groups=(
+                    pauli_terms=(
                         {"XX": 15, "X": 5},
                         {"ZZ": 10},
                         {"YY": 5, "X": 5},
@@ -856,7 +856,7 @@ class TestTrotterPauli:
             (
                 qre.PauliHamiltonian(
                     num_qubits=5,
-                    commuting_groups=(
+                    pauli_terms=(
                         {"XX": 15, "X": 5},
                         {"ZZ": 10},
                         {"YY": 5, "X": 5},
@@ -871,7 +871,7 @@ class TestTrotterPauli:
             (
                 qre.PauliHamiltonian(
                     num_qubits=5,
-                    commuting_groups=(
+                    pauli_terms=(
                         {"XX": 15, "X": 5},
                         {"ZZ": 10},
                         {"YY": 5, "X": 5},
@@ -899,7 +899,7 @@ class TestTrotterPauli:
             (
                 qre.PauliHamiltonian(
                     num_qubits=5,
-                    num_pauli_words=35,
+                    pauli_terms={"XXXXX": 11, "YYYYY": 11, "ZZZZZ": 13},
                 ),
                 1,
                 1,
@@ -910,7 +910,7 @@ class TestTrotterPauli:
                     params={
                         "pauli_ham": qre.PauliHamiltonian(
                             num_qubits=5,
-                            num_pauli_words=35,
+                            pauli_terms={"XXXXX": 11, "YYYYY": 11, "ZZZZZ": 13},
                         ),
                         "num_steps": 1,
                         "order": 1,
@@ -920,7 +920,7 @@ class TestTrotterPauli:
             (
                 qre.PauliHamiltonian(
                     num_qubits=4,
-                    pauli_dist={"XX": 10, "YY": 10, "Z": 5},
+                    pauli_terms={"XX": 10, "YY": 10, "Z": 5},
                 ),
                 10,
                 2,
@@ -931,7 +931,7 @@ class TestTrotterPauli:
                     params={
                         "pauli_ham": qre.PauliHamiltonian(
                             num_qubits=4,
-                            pauli_dist={"XX": 10, "YY": 10, "Z": 5},
+                            pauli_terms={"XX": 10, "YY": 10, "Z": 5},
                         ),
                         "num_steps": 10,
                         "order": 2,
@@ -941,7 +941,7 @@ class TestTrotterPauli:
             (
                 qre.PauliHamiltonian(
                     num_qubits=5,
-                    commuting_groups=(
+                    pauli_terms=(
                         {"XX": 15, "X": 5},
                         {"ZZ": 10},
                         {"YY": 5, "X": 5},
@@ -956,7 +956,7 @@ class TestTrotterPauli:
                     params={
                         "pauli_ham": qre.PauliHamiltonian(
                             num_qubits=5,
-                            commuting_groups=(
+                            pauli_terms=(
                                 {"XX": 15, "X": 5},
                                 {"ZZ": 10},
                                 {"YY": 5, "X": 5},
@@ -983,8 +983,7 @@ class TestTrotterPauli:
             (
                 qre.PauliHamiltonian(
                     num_qubits=5,
-                    num_pauli_words=3,
-                    max_weight=3,
+                    pauli_terms={"XXX": 1, "YYY": 1, "ZZZ": 1},
                 ),
                 1,
                 1,
@@ -997,8 +996,7 @@ class TestTrotterPauli:
             (
                 qre.PauliHamiltonian(
                     num_qubits=5,
-                    num_pauli_words=3,
-                    max_weight=3,
+                    pauli_terms={"XXX": 1, "YYY": 1, "ZZZ": 1},
                 ),
                 1,
                 2,
@@ -1011,8 +1009,7 @@ class TestTrotterPauli:
             (
                 qre.PauliHamiltonian(
                     num_qubits=5,
-                    num_pauli_words=3,
-                    max_weight=3,
+                    pauli_terms={"XXX": 1, "YYY": 1, "ZZZ": 1},
                 ),
                 10,
                 4,
@@ -1023,7 +1020,7 @@ class TestTrotterPauli:
                 ],
             ),
             (
-                qre.PauliHamiltonian(num_qubits=5, pauli_dist={"XX": 2, "YY": 1, "Z": 3}),
+                qre.PauliHamiltonian(num_qubits=5, pauli_terms={"XX": 2, "YY": 1, "Z": 3}),
                 1,
                 1,
                 [
@@ -1033,7 +1030,7 @@ class TestTrotterPauli:
                 ],
             ),
             (
-                qre.PauliHamiltonian(num_qubits=5, pauli_dist={"XX": 2, "YY": 1, "Z": 3}),
+                qre.PauliHamiltonian(num_qubits=5, pauli_terms={"XX": 2, "YY": 1, "Z": 3}),
                 1,
                 2,
                 [
@@ -1043,7 +1040,7 @@ class TestTrotterPauli:
                 ],
             ),
             (
-                qre.PauliHamiltonian(num_qubits=5, pauli_dist={"XX": 2, "YY": 1, "Z": 3}),
+                qre.PauliHamiltonian(num_qubits=5, pauli_terms={"XX": 2, "YY": 1, "Z": 3}),
                 10,
                 4,
                 [
@@ -1055,7 +1052,7 @@ class TestTrotterPauli:
             (
                 qre.PauliHamiltonian(
                     num_qubits=5,
-                    commuting_groups=({"XX": 1}, {"YY": 2}, {"ZZ": 3, "Z": 1}),
+                    pauli_terms=({"XX": 1}, {"YY": 2}, {"ZZ": 3, "Z": 1}),
                 ),
                 1,
                 1,
@@ -1069,7 +1066,7 @@ class TestTrotterPauli:
             (
                 qre.PauliHamiltonian(
                     num_qubits=5,
-                    commuting_groups=({"XX": 1}, {"YY": 2}, {"ZZ": 3, "Z": 1}),
+                    pauli_terms=({"XX": 1}, {"YY": 2}, {"ZZ": 3, "Z": 1}),
                 ),
                 1,
                 2,
@@ -1083,7 +1080,7 @@ class TestTrotterPauli:
             (
                 qre.PauliHamiltonian(
                     num_qubits=5,
-                    commuting_groups=({"XX": 1}, {"YY": 2}, {"ZZ": 3, "Z": 1}),
+                    pauli_terms=({"XX": 1}, {"YY": 2}, {"ZZ": 3, "Z": 1}),
                 ),
                 10,
                 2,
@@ -1097,7 +1094,7 @@ class TestTrotterPauli:
             (
                 qre.PauliHamiltonian(
                     num_qubits=5,
-                    commuting_groups=(
+                    pauli_terms=(
                         {"YY": 2},
                         {"ZZ": 3, "Z": 1},
                         {"XX": 1},
@@ -1115,7 +1112,7 @@ class TestTrotterPauli:
             (
                 qre.PauliHamiltonian(
                     num_qubits=5,
-                    commuting_groups=(
+                    pauli_terms=(
                         {"YY": 2},
                         {"ZZ": 3, "Z": 1},
                         {"XX": 1},
@@ -1140,7 +1137,7 @@ class TestTrotterPauli:
     def test_cost_pauli_group(self):
         """Test that cost_pauli_group function generates the cost of
         exponentiating a group of Pauli terms as expected."""
-        pauli_dist = {"X": 5, "XX": 1, "YZ": 3, "XYZ": 0, "ZZZ": 10}
+        pauli_terms = {"X": 5, "XX": 1, "YZ": 3, "XYZ": 0, "ZZZ": 10}
         expected_cost = [
             GateCount(qre.PauliRot.resource_rep("X"), 5),
             GateCount(qre.PauliRot.resource_rep("XX")),
@@ -1149,4 +1146,4 @@ class TestTrotterPauli:
             GateCount(qre.PauliRot.resource_rep("ZZZ"), 10),
         ]
 
-        assert qre.TrotterPauli.cost_pauli_group(pauli_dist) == expected_cost
+        assert qre.TrotterPauli.cost_pauli_group(pauli_terms) == expected_cost
