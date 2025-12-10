@@ -83,7 +83,9 @@ def test_raises(params, error, match):
         ),
     ],
 )
-def test_decomposition_new(weights, pattern, spin_sym, n_qubits):  # pylint: disable=too-many-arguments
+def test_decomposition_new(
+    weights, pattern, spin_sym, n_qubits
+):  # pylint: disable=too-many-arguments
     op = IQP(n_qubits, pattern, weights, spin_sym)
 
     for rule in list_decomps(IQP):
