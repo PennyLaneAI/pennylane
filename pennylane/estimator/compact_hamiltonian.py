@@ -246,9 +246,9 @@ class PauliHamiltonian:
     .. details::
         :title: Usage Details
 
-        There are three different ways to instantiate the ``PauliHamiltonian`` class depending on how
-        much information is known about the Hamiltonian. If we know how to separate the terms into commuting groups of operators, we can construct the
-        Hamiltonian by specifying these groups of terms.
+        The terms of the Hamiltonian can also be separated into groups such that all operators in
+        the group commute. Users can instantiate the ``PauliHamiltonian`` by specifying these
+        groups of terms directly.
 
         >>> import pennylane.estimator as qre
         >>> commuting_groups = (

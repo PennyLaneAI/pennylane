@@ -1832,7 +1832,7 @@ class TrotterPauli(ResourceOperator):
        'CNOT': 96,
        'Z': 20,
        'S': 40,
-       'Hadamard': 128,
+       'Hadamard': 128
     
     .. details::
         :title: Usage Details
