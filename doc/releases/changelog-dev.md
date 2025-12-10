@@ -20,11 +20,15 @@
   [(#8522)](https://github.com/PennyLaneAI/pennylane/pull/8522)
 
 * The :func:`~pennylane.transforms.decompose` transform now accepts a `minimize_work_wires` argument. With
-  the new graph-based decomposition system activated via :func:`~pennylane.decomposition.enable_graph`, 
+  the new graph-based decomposition system activated via :func:`~pennylane.decomposition.enable_graph`,
   and `minimize_work_wires` set to `True`, the decomposition system will select decomposition rules that
   minimizes the maximum number of simultaneously allocated work wires.
   [(#8729)](https://github.com/PennyLaneAI/pennylane/pull/8729)
   [(#8734)](https://github.com/PennyLaneAI/pennylane/pull/8734)
+
+* The :class:`~pennylane.transforms.core.CompilePipeline` (previously known as `TransformProgram`)
+  is available at the top level namespace as `qml.CompilePipeline`.
+  [(#8735)](https://github.com/PennyLaneAI/pennylane/pull/8735)
 
 <h4>Pauli product measurements</h4>
 
@@ -71,11 +75,11 @@
 * Added a new decomposition, `_decompose_2_cnots`, for the two-qubit decomposition for `QubitUnitary`.
   It supports the analytical decomposition a two-qubit unitary known to require exactly 2 CNOTs.
   [(#8666)](https://github.com/PennyLaneAI/pennylane/issues/8666)
-  
-* Arithmetic dunder methods (`__add__`, `__mul__`, `__rmul__`) have been added to 
-  :class:`~.transforms.core.TransformDispatcher`, :class:`~.transforms.core.TransformContainer`, 
-  and :class:`~.transforms.core.TransformProgram` to enable intuitive composition of transform 
-  programs using `+` and `*` operators.
+
+* Arithmetic dunder methods (`__add__`, `__mul__`, `__rmul__`) have been added to
+  :class:`~.transforms.core.TransformDispatcher`, :class:`~.transforms.core.TransformContainer`,
+  and :class:`~.transforms.core.CompilePipeline` (previously known as the `TransformProgram`) to 
+  enable intuitive composition of transform programs using `+` and `*` operators.
   [(#8703)](https://github.com/PennyLaneAI/pennylane/pull/8703)
 
 * Quantum compilation passes in MLIR and XDSL can now be applied using the core PennyLane transform
@@ -94,10 +98,10 @@
   with :func:`~.specs` and :func:`~.drawer.draw` instead of having to increment ``level``
   by integer amounts when not using any Catalyst passes.
   [(#8684)](https://github.com/PennyLaneAI/pennylane/pull/8684)
-  
+
   The :func:`~.marker` function works like a transform in PennyLane, and can be deployed as
   a decorator on top of QNodes:
-  
+
   ```
   from functools import partial
 
@@ -145,7 +149,7 @@
   [(#8516)](https://github.com/PennyLaneAI/pennylane/pull/8516)
   [(#8555)](https://github.com/PennyLaneAI/pennylane/pull/8555)
   [(#8558)](https://github.com/PennyLaneAI/pennylane/pull/8558)
-  [(#8538)](https://github.com/PennyLaneAI/pennylane/pull/8538)  
+  [(#8538)](https://github.com/PennyLaneAI/pennylane/pull/8538)
   [(#8534)](https://github.com/PennyLaneAI/pennylane/pull/8534)
   [(#8582)](https://github.com/PennyLaneAI/pennylane/pull/8582)
   [(#8543)](https://github.com/PennyLaneAI/pennylane/pull/8543)
@@ -153,7 +157,7 @@
   [(#8616)](https://github.com/PennyLaneAI/pennylane/pull/8616)
   [(#8602)](https://github.com/PennyLaneAI/pennylane/pull/8602)
   [(#8600)](https://github.com/PennyLaneAI/pennylane/pull/8600)
-  [(#8601)](https://github.com/PennyLaneAI/pennylane/pull/8601)  
+  [(#8601)](https://github.com/PennyLaneAI/pennylane/pull/8601)
   [(#8595)](https://github.com/PennyLaneAI/pennylane/pull/8595)
   [(#8586)](https://github.com/PennyLaneAI/pennylane/pull/8586)
   [(#8614)](https://github.com/PennyLaneAI/pennylane/pull/8614)
@@ -250,7 +254,7 @@
 * `qml.transforms.map_wires` no longer supports plxpr transforms.
   [(#8683)](https://github.com/PennyLaneAI/pennylane/pull/8683)
 
-* ``QuantumScript.to_openqasm`` has been removed. Please use ``qml.to_openqasm`` instead. This removes duplicated 
+* ``QuantumScript.to_openqasm`` has been removed. Please use ``qml.to_openqasm`` instead. This removes duplicated
   functionality for converting a circuit to OpenQASM code.
   [(#8499)](https://github.com/PennyLaneAI/pennylane/pull/8499)
 
@@ -335,6 +339,12 @@
   Instead, please use `QNode.transform_program.push_back(transform_container=transform_container)`.
   [(#8468)](https://github.com/PennyLaneAI/pennylane/pull/8468)
 
+* The `TransformProgram` has been renamed to :class:`~pennylane.transforms.core.CompilePipeline`, and uses of
+  the term "transform program" has been updated to "compile pipeline" across the codebase. The class is still
+  accessible as `TransformProgram` from `pennylane.transforms.core`, but the module `pennylane.transforms.core.transform_program`
+  has been renamed to `pennylane.transforms.core.compile_pipeline`, and the old name is no longer available.
+  [(#8735)](https://github.com/PennyLaneAI/pennylane/pull/8735)
+
 <h3>Deprecations 👋</h3>
 
 * Maintenance support of NumPy<2.0 is deprecated as of v0.44 and will be completely dropped in v0.45.
@@ -342,9 +352,9 @@
   We recommend upgrading your version of NumPy to benefit from enhanced support and features.
   [(#8578)](https://github.com/PennyLaneAI/pennylane/pull/8578)
   [(#8497)](https://github.com/PennyLaneAI/pennylane/pull/8497)
-  
-* The ``custom_decomps`` keyword argument to ``qml.device`` has been deprecated and will be removed 
-  in 0.45. Instead, with ``qml.decomposition.enable_graph()``, new decomposition rules can be defined as 
+
+* The ``custom_decomps`` keyword argument to ``qml.device`` has been deprecated and will be removed
+  in 0.45. Instead, with ``qml.decomposition.enable_graph()``, new decomposition rules can be defined as
   quantum functions with registered resources. See :mod:`pennylane.decomposition` for more details.
 
 * `qml.measure`, `qml.measurements.MidMeasureMP`, `qml.measurements.MeasurementValue`,
@@ -383,14 +393,14 @@
   and the function should be passed to the ``stopping_condition`` argument instead.
   [(#8533)](https://github.com/PennyLaneAI/pennylane/pull/8533)
 
-  The example below illustrates how you can provide a function as the ``stopping_condition`` in addition to providing a 
-  ``gate_set``. The decomposition of each operator will then stop once it reaches the gates in the ``gate_set`` or the 
+  The example below illustrates how you can provide a function as the ``stopping_condition`` in addition to providing a
+  ``gate_set``. The decomposition of each operator will then stop once it reaches the gates in the ``gate_set`` or the
   ``stopping_condition`` is satisfied.
 
   ```python
   import pennylane as qml
   from functools import partial
-  
+
   @partial(qml.transforms.decompose, gate_set={"H", "T", "CNOT"}, stopping_condition=lambda op: len(op.wires) <= 2)
   @qml.qnode(qml.device("default.qubit"))
   def circuit():
@@ -398,7 +408,7 @@
       qml.Toffoli(wires=[0,1,2])
       return qml.expval(qml.Z(0))
   ```
-  
+
   ```pycon
   >>> print(qml.draw(circuit)())
   0: ──H────────╭●───────────╭●────╭●──T──╭●─┤  <Z>
@@ -421,26 +431,26 @@
 * Bump `jax` version to `0.7.0` for `capture` module.
   [(#8701)](https://github.com/PennyLaneAI/pennylane/pull/8701)
 
-* Improve error handling when using PennyLane's experimental program capture functionality with an incompatible JAX version. 
+* Improve error handling when using PennyLane's experimental program capture functionality with an incompatible JAX version.
   [(#8723)](https://github.com/PennyLaneAI/pennylane/pull/8723)
 
 * Bump `autoray` package version to `0.8.2`.
   [(#8674)](https://github.com/PennyLaneAI/pennylane/pull/8674)
-  
+
 * Update the schedule of nightly TestPyPI uploads to occur at the end rather than the beginning of all week days.
   [(#8672)](https://github.com/PennyLaneAI/pennylane/pull/8672)
 
 * Add workflow to bump Catalyst and Lightning versions in the RC branch, create a new release tag and draft release, tag the RC branch, and create a PR to merge the RC branch into master.
   [(#8352)](https://github.com/PennyLaneAI/pennylane/pull/8352)
-  
+
 * Added `MCM_METHOD` and `POSTSELECT_MODE` `StrEnum` objects to improve validation and handling of `MCMConfig` creation.
   [(#8596)](https://github.com/PennyLaneAI/pennylane/pull/8596)
-  
+
 * Updated various docstrings to be compatible with the new documentation testing approach.
   [(#8635)](https://github.com/PennyLaneAI/pennylane/pull/8635)
-  
+
 * In program capture, transforms now have a single transform primitive that have a `transform` param that stores
-  the `TransformDispatcher`. Before, each transform had its own primitive stored on the 
+  the `TransformDispatcher`. Before, each transform had its own primitive stored on the
   `TransformDispatcher._primitive` private property. It proved difficult to keep maintaining dispatch behaviour
   for every single transform.
   [(#8576)](https://github.com/PennyLaneAI/pennylane/pull/8576)
@@ -448,7 +458,7 @@
 
 * Updated documentation check workflow to run on pull requests on `v[0-9]+\.[0-9]+\.[0-9]+-docs` branches.
   [(#8590)](https://github.com/PennyLaneAI/pennylane/pull/8590)
-  
+
 * When program capture is enabled, there is no longer caching of the jaxpr on the QNode.
   [(#8629)](https://github.com/PennyLaneAI/pennylane/pull/8629)
 
@@ -542,12 +552,12 @@ A warning message has been added to :doc:`Building a plugin <../development/plug
 * Update `interface-unit-tests.yml` to use its input parameter `pytest_additional_args` when running pytest.
   [(#8705)](https://github.com/PennyLaneAI/pennylane/pull/8705)
 
-* Fixes a bug where in `resolve_work_wire_type` we incorrectly returned a value of `zeroed` if `both work_wires` 
+* Fixes a bug where in `resolve_work_wire_type` we incorrectly returned a value of `zeroed` if `both work_wires`
   and `base_work_wires` were empty, causing an incorrect work wire type.
   [(#8718)](https://github.com/PennyLaneAI/pennylane/pull/8718)
 
-* The warnings-as-errors CI action was failing due to an incompatibility between `pytest-xdist` and `pytest-benchmark`. 
-  Disabling the benchmark package allows the tests to be collected an executed. 
+* The warnings-as-errors CI action was failing due to an incompatibility between `pytest-xdist` and `pytest-benchmark`.
+  Disabling the benchmark package allows the tests to be collected an executed.
   [(#8699)](https://github.com/PennyLaneAI/pennylane/pull/8699)
 
 * Adds an `expand_transform` to `param_shift_hessian` to pre-decompose

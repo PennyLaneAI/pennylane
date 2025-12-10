@@ -97,7 +97,7 @@ def _jax_argnums_to_tape_trainable(qnode, argnums, program, args, kwargs):
     Args:
         qnode(qml.QNode): the quantum node.
         argnums(int, list[int]): the parameters that we want to set as trainable (on the QNode level).
-        program(qml.transforms.core.TransformProgram): the transform program to be applied on the tape.
+        program(qml.CompilePipeline): the compile pipeline to be applied on the tape.
 
     Return:
         list[float, jax.JVPTracer]: List of parameters where the trainable one are `JVPTracer`.
@@ -139,7 +139,7 @@ class CotransformCache:
     be used to calculate the argnums and classical jacobian for the application
     of a transform.
 
-    This class is an a implementation component for `TransformProgram`.
+    This class is an a implementation component for `CompilePipeline`.
     """
 
     def __init__(self, qnode, args, kwargs):
@@ -165,7 +165,7 @@ class CotransformCache:
     def get_classical_jacobian(self, transform: TransformContainer, tape_idx: int):
         """Calculate the classical jacobian for a given transform.
 
-        Note that this function assumes that the transform exists at most one in the transform program.
+        Note that this function assumes that the transform exists at most one in the compile pipeline.
         Given transforms with classical cotransforms tend to be final transforms, this is a safe bet.
 
         .. code-block:: python
