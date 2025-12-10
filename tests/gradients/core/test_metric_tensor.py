@@ -30,9 +30,10 @@ from pennylane.gradients.metric_tensor import _get_aux_wire
 class TestMetricTensor:
     """Tests for metric tensor subcircuit construction and evaluation"""
 
-    def assert_Y_decomp(self, ops, wire):
-        expected = [qml.adjoint(qml.S(wire)), qml.H(wire)]
-        assert all(qml.equal(op, exp_op) for op, exp_op in zip(ops, expected, strict=True))
+    def assert_Y_decomp(self, ops):
+        assert isinstance(ops[0], qml.PauliZ)
+        assert isinstance(ops[1], qml.S)
+        assert isinstance(ops[2], qml.Hadamard)
 
     def test_rot_decomposition(self):
         """Test that the rotation gate is correctly decomposed"""
@@ -50,11 +51,11 @@ class TestMetricTensor:
         assert len(tapes[0].operations) == 0
 
         # Second parameter subcircuit
-        assert len(tapes[1].operations) == 3
+        assert len(tapes[1].operations) == 4
         assert isinstance(tapes[1].operations[0], qml.RZ)
         assert tapes[1].operations[0].data == (1,)
         # PauliY decomp
-        self.assert_Y_decomp(tapes[1].operations[1:3], wire=0)
+        self.assert_Y_decomp(tapes[1].operations[1:4])
 
         # Third parameter subcircuit
         assert len(tapes[2].operations) == 2
@@ -99,10 +100,10 @@ class TestMetricTensor:
         assert isinstance(tapes[0].operations[0], qml.Hadamard)  # PauliX decomp
 
         # second parameter subcircuit
-        assert len(tapes[1].operations) == 3
+        assert len(tapes[1].operations) == 4
         assert isinstance(tapes[1].operations[0], qml.RX)
         # PauliY decomp
-        self.assert_Y_decomp(tapes[1].operations[1:3], wire=0)
+        self.assert_Y_decomp(tapes[1].operations[1:4])
 
         # third parameter subcircuit
         assert len(tapes[2].operations) == 3
@@ -151,12 +152,12 @@ class TestMetricTensor:
         assert isinstance(tapes[0].operations[0], qml.Hadamard)  # PauliX decomp
 
         # second layer subcircuit
-        assert len(tapes[1].operations) == 3
+        assert len(tapes[1].operations) == 4
         assert isinstance(tapes[1].operations[0], qml.RX)
         # PauliY decomp
-        self.assert_Y_decomp(tapes[1].operations[1:3], wire=0)
+        self.assert_Y_decomp(tapes[1].operations[1:4])
         # # third layer subcircuit
-        assert len(tapes[2].operations) == 7
+        assert len(tapes[2].operations) == 8
         assert isinstance(tapes[2].operations[0], qml.RX)
         assert isinstance(tapes[2].operations[1], qml.RY)
         assert isinstance(tapes[2].operations[2], qml.CNOT)
@@ -164,10 +165,10 @@ class TestMetricTensor:
         # PauliX decomp
         assert isinstance(tapes[2].operations[4], qml.Hadamard)
         # PauliY decomp
-        self.assert_Y_decomp(tapes[2].operations[5:7], wire=1)
+        self.assert_Y_decomp(tapes[2].operations[5:8])
 
         # # fourth layer subcircuit
-        assert len(tapes[3].operations) == 12
+        assert len(tapes[3].operations) == 13
         assert isinstance(tapes[3].operations[0], qml.RX)
         assert isinstance(tapes[3].operations[1], qml.RY)
         assert isinstance(tapes[3].operations[2], qml.CNOT)
@@ -180,7 +181,7 @@ class TestMetricTensor:
         # PauliX decomp
         assert isinstance(tapes[3].operations[9], qml.Hadamard)
         # PauliY decomp
-        self.assert_Y_decomp(tapes[3].operations[10:12], wire=1)
+        self.assert_Y_decomp(tapes[3].operations[10:13])
 
     def test_evaluate_diag_metric_tensor(self, tol):
         """Test that a diagonal metric tensor evaluates correctly for

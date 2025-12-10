@@ -294,7 +294,7 @@ class QuantumScript:
 
         >>> tape = qml.tape.QuantumScript([], [qml.expval(qml.X(0)), qml.var(qml.Y(1))])
         >>> tape.diagonalizing_gates
-        [H(0), Adjoint(S(1)), H(1)]
+        [H(0), Z(1), S(1), H(1)]
 
         .. warning::
             If the tape contains multiple observables acting on the same wire,
@@ -305,7 +305,7 @@ class QuantumScript:
 
             >>> tape = qml.tape.QuantumScript([], [qml.expval(qml.X(0)), qml.var(qml.Y(0))])
             >>> tape.diagonalizing_gates
-            [H(0), Adjoint(S(0)), H(0)]
+            [H(0), Z(0), S(0), H(0)]
 
             If it is relevant for your application, applying
             :func:`~.pennylane.transforms.split_non_commuting` to a tape will split it into multiple
@@ -315,7 +315,7 @@ class QuantumScript:
 
         >>> tape = qml.tape.QuantumScript([], [qml.expval(qml.X(0)+qml.Y(1))])
         >>> tape.diagonalizing_gates
-        [H(0), Adjoint(S(1)), H(1)]
+        [H(0), Z(1), S(1), H(1)]
 
         However, for operators that contain multiple terms on the same wire, a single diagonalizing
         operator will be returned that diagonalizes the full operator as a unit:
