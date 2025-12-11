@@ -14,10 +14,13 @@
 """
 This module contains the ``CompilePipeline`` class.
 """
+
+from __future__ import annotations
+
 from collections.abc import Sequence
 from copy import copy
 from functools import partial
-from typing import overload
+from typing import TYPE_CHECKING, overload
 
 from pennylane.exceptions import TransformError
 from pennylane.tape import QuantumScript, QuantumScriptBatch
@@ -25,6 +28,9 @@ from pennylane.typing import BatchPostprocessingFn, PostprocessingFn, ResultBatc
 
 from .cotransform_cache import CotransformCache
 from .transform_dispatcher import BoundTransform, TransformDispatcher
+
+if TYPE_CHECKING:
+    import jax
 
 
 def _batch_postprocessing(
@@ -158,16 +164,45 @@ class CompilePipeline:
 
     """
 
+    @overload
     def __init__(
         self,
-        initial_program: Sequence[BoundTransform] | None = None,
+        transforms: Sequence[TransformContainer],
+        /,
+        *,
+        cotransform_cache: CotransformCache | None = None,
+    ): ...
+    @overload
+    def __init__(
+        self,
+        *transforms: CompilePipeline | TransformContainer | TransformDispatcher,
+        cotransform_cache: CotransformCache | None = None,
+    ): ...
+    def __init__(
+        self,
+        *transforms: CompilePipeline
+        | BoundTransform
+        | TransformDispatcher
+        | Sequence[BoundTransform],
         cotransform_cache: CotransformCache | None = None,
     ):
-        self._compile_pipeline = list(initial_program) if initial_program else []
+        if len(transforms) == 1 and isinstance(transforms[0], Sequence):
+            self._compile_pipeline = list(transforms[0])
+            self.cotransform_cache = cotransform_cache
+            return
+
+        self._compile_pipeline = []
         self.cotransform_cache = cotransform_cache
+        for obj in transforms:
+            if not isinstance(obj, (CompilePipeline, TransformContainer, TransformDispatcher)):
+                raise TypeError(
+                    "CompilePipeline can only be constructed with a series of transforms "
+                    "or compile pipelines, or with a single list of transforms."
+                )
+            self += obj
 
     def __copy__(self):
-        return CompilePipeline(self._compile_pipeline, self.cotransform_cache)
+        return CompilePipeline(self._compile_pipeline, cotransform_cache=self.cotransform_cache)
 
     def __iter__(self):
         """list[BoundTransform]: Return an iterator to the underlying compile pipeline."""
@@ -178,11 +213,9 @@ class CompilePipeline:
         return len(self._compile_pipeline)
 
     @overload
-    def __getitem__(self, idx: int) -> "BoundTransform": ...
-
+    def __getitem__(self, idx: int) -> BoundTransform: ...
     @overload
-    def __getitem__(self, idx: slice) -> "CompilePipeline": ...
-
+    def __getitem__(self, idx: slice) -> CompilePipeline: ...
     def __getitem__(self, idx):
         """(BoundTransform, List[BoundTransform]): Return the indexed transform container from underlying
         compile pipeline"""
@@ -194,8 +227,9 @@ class CompilePipeline:
         return bool(self._compile_pipeline)
 
     def __add__(
-        self, other: "CompilePipeline | BoundTransform | TransformDispatcher"
-    ) -> "CompilePipeline":
+        self, other: CompilePipeline | BoundTransform | TransformDispatcher
+    ) -> CompilePipeline:
+
         # Convert dispatcher to container if needed
         if isinstance(other, TransformDispatcher):
             other = BoundTransform(other)
@@ -224,7 +258,7 @@ class CompilePipeline:
 
         return NotImplemented
 
-    def __radd__(self, other: "BoundTransform | TransformDispatcher") -> "CompilePipeline":
+    def __radd__(self, other: BoundTransform | TransformDispatcher) -> CompilePipeline:
         """Right addition to prepend a transform to the program.
 
         Args:
@@ -243,8 +277,8 @@ class CompilePipeline:
         return NotImplemented
 
     def __iadd__(
-        self, other: "CompilePipeline | BoundTransform | TransformDispatcher"
-    ) -> "CompilePipeline":
+        self, other: CompilePipeline | BoundTransform | TransformDispatcher
+    ) -> CompilePipeline:
         """In-place addition to append a transform to the program.
 
         Args:
@@ -282,7 +316,7 @@ class CompilePipeline:
 
         return NotImplemented
 
-    def __mul__(self, n: int) -> "CompilePipeline":
+    def __mul__(self, n: int) -> CompilePipeline:
         """Right multiplication to repeat a program n times.
 
         Args:
@@ -576,8 +610,8 @@ class CompilePipeline:
         return tuple(tapes), postprocessing_fn
 
     def __call_jaxpr(
-        self, jaxpr: "jax.extend.core.Jaxpr", consts: Sequence, *args
-    ) -> "jax.extend.core.ClosedJaxpr":
+        self, jaxpr: jax.extend.core.Jaxpr, consts: Sequence, *args
+    ) -> jax.extend.core.ClosedJaxpr:
         # pylint: disable=import-outside-toplevel
         import jax
 
@@ -606,9 +640,8 @@ class CompilePipeline:
 
     @overload
     def __call__(
-        self, jaxpr: "jax.extend.core.Jaxpr", consts: Sequence, *args
-    ) -> "jax.extend.core.ClosedJaxpr": ...
-
+        self, jaxpr: jax.extend.core.Jaxpr, consts: Sequence, *args
+    ) -> jax.extend.core.ClosedJaxpr: ...
     @overload
     def __call__(self, tape: QuantumScript) -> tuple[QuantumScriptBatch, BatchPostprocessingFn]: ...
 
@@ -616,7 +649,6 @@ class CompilePipeline:
     def __call__(
         self, tapes: QuantumScriptBatch
     ) -> tuple[QuantumScriptBatch, BatchPostprocessingFn]: ...
-
     def __call__(self, *args, **kwargs):
         if type(args[0]).__name__ == "Jaxpr":
             return self.__call_jaxpr(*args, **kwargs)

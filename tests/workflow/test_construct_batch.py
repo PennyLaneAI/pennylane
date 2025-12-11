@@ -178,7 +178,7 @@ class TestCompilePipelineGetter:
         p_grad = get_transform_program(circuit, level="gradient")
         assert isinstance(p_grad, CompilePipeline)
         assert len(p_grad) == 4
-        assert p_grad == CompilePipeline([expected_p0, expected_p1, expected_p2, ps_expand_fn])
+        assert p_grad == CompilePipeline(expected_p0, expected_p1, expected_p2, ps_expand_fn)
 
         p_dev = get_transform_program(circuit, level="device")
         assert isinstance(p_grad, CompilePipeline)
