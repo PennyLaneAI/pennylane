@@ -25,6 +25,8 @@ jobs:
     needs:
       - tests
       - determine_runner
+    env:
+      UV_SYSTEM_PYTHON: 1
     steps:
       - uses: actions/checkout@v4
         with:
@@ -40,7 +42,7 @@ jobs:
         with:
           version: 0.6.5
           enable-cache: true  
-          
+
       - name: Build PennyLane wheel
         run: |
           uv pip install build

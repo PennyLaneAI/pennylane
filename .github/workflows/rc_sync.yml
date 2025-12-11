@@ -21,6 +21,8 @@ jobs:
   sync:
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
+    env:
+      UV_SYSTEM_PYTHON: 1
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
@@ -40,7 +42,7 @@ jobs:
         with:
           version: 0.6.5
           enable-cache: true  
-          
+
       # Ensure setuptools is up-to-date for pyproject.toml processing
       - name: Install latest setuptools 
         run: |
