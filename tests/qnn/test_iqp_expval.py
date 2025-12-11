@@ -55,8 +55,32 @@ def local_gates(n_qubits: int, max_weight=2):
         "expected_std",
     ),
     [
-        ([[1, 0], [0, 1]], "multi_gens", [0.54], 2, True, False, 10_000, 10_000, 10_000, True, [0.0]),
-        ([[0, 1], [0, 1]], "local_gates", [0.3], 1, False, True, 10_000, 10_000, 10_000, False, [0.0]),
+        (
+            [[1, 0], [0, 1]],
+            "multi_gens",
+            [0.54],
+            2,
+            True,
+            False,
+            10_000,
+            10_000,
+            10_000,
+            True,
+            [0.0],
+        ),
+        (
+            [[0, 1], [0, 1]],
+            "local_gates",
+            [0.3],
+            1,
+            False,
+            True,
+            10_000,
+            10_000,
+            10_000,
+            False,
+            [0.0],
+        ),
         ([[1, 0], [0, 1]], "multi_gens", [-0.41], 2, True, False, 10_000, None, None, True, [0.0]),
         ([[1, 0], [1, 0]], "multi_gens", [0.0], 2, True, True, 10_000, None, None, True, [0.0]),
     ],
@@ -100,9 +124,7 @@ def test_expval(
     dev = device("default.qubit")
 
     @qnode(dev)
-    def iqp_circuit(
-        weights, pattern, spin_sym, n_qubits, ops
-    ):
+    def iqp_circuit(weights, pattern, spin_sym, n_qubits, ops):
         IQP(weights, n_qubits, pattern, spin_sym)
 
         expectation_operators = []
