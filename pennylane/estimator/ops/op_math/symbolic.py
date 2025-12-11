@@ -985,11 +985,20 @@ class ChangeOpBasis(ResourceOperator):
 
 @singledispatch
 def apply_adj(action):
-    """
-    Applies adjoint logic:
-    - Wraps gates in Adjoint.
-    - Converts between Allocate with Deallocate.
-    - Raises TypeError for unknown types.
+    """Create the adjoint of a resource-tracking gate.
+
+    For a :class:`~.GateCount`, it wraps
+    the gate in :class:`~.Adjoint`. For :class:`~.Allocate` and
+    :class:`~.Deallocate`, it converts one to the other.
+
+    Args:
+        action (GateCount or Allocate or Deallocate): The gate to be adjointed.
+
+    Returns:
+        GateCount or Allocate or Deallocate.
+
+    Raises:
+        TypeError: if the gate is of an unsupported type.
     """
     raise TypeError(f"Unsupported type {action}")
 
@@ -1012,8 +1021,20 @@ def _(action: Deallocate):
 
 @singledispatch
 def apply_controlled(action, num_ctrl_wires, num_zero_ctrl):  # pylint: disable=unused-argument
-    """
-    Wraps gate in Controlled if gate is not Allocate or Deallocate.
+    """Create the controlled version of a resource-tracking gate.
+
+    For a :class:`~.GateCount`, it wraps
+    the gate in :class:`~.Controlled`. Other actions like :class:`~.Allocate`
+    and :class:`~.Deallocate` are returned unchanged.
+
+    Args:
+        action (GateCount or Allocate or Deallocate): The gate to be controlled.
+        num_ctrl_wires (int): The number of qubits to control the operation on.
+        num_zero_ctrl (int): The number of control qubits that are controlled on the
+            :math:`|0\\rangle` state.
+
+    Returns:
+        GateCount or Allocate or Deallocate.
     """
     return action
 
