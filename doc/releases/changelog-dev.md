@@ -106,7 +106,7 @@
   and :class:`~.CompilePipeline` (previously known as the `TransformProgram`) to enable intuitive composition of transform programs using `+` and `*` operators.
   [(#8703)](https://github.com/PennyLaneAI/pennylane/pull/8703)
 
-* `TransformProgram` now has a new method `remove` to remove all the containers that match a given transform.
+* `TransformProgram` now has a new method `remove` to remove all bound transforms that match the input.
   [(#8751)](https://github.com/PennyLaneAI/pennylane/pull/8751)
 
 * In the past, calling a transform with only arguments or keyword but no tapes would raise an error.
