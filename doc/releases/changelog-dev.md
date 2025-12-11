@@ -152,7 +152,7 @@
 * `CompilePipeline` (previously known as the `TransformProgram`) can now be directly applied to anything that an individual transform can be applied on, including `QNode`s.
   [(#8731)](https://github.com/PennyLaneAI/pennylane/pull/8731)
 
-* :class:`~.transforms.core.BoundTransform` has been renamed to :class:`~.transforms.core.BoundTransform`.
+* :class:`~.transforms.core.TransformContainer` has been renamed to :class:`~.transforms.core.BoundTransform`.
   The old name is still available in the same location.
   [(#8753)](https://github.com/PennyLaneAI/pennylane/pull/8753)
 
