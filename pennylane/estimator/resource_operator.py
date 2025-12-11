@@ -279,8 +279,8 @@ class ResourceOperator(ABC):
         ``adjoint_resource_decomp`` method.
 
         Resources:
-            The resources for the control of an operator is to return the base decomposition of the operator with every
-            operator adjointed.
+            The resources for the adjoint of an operator are obtained by tracking the adjoint of each gate in the base
+            resource decomposition of the operator.
 
         Args:
             target_resource_params (dict | None): A dictionary containing the resource parameters
