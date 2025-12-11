@@ -855,8 +855,8 @@ class TestCompilePipelineConstruction:
         """Tests that an error is raised when something is not a transform."""
 
         with pytest.raises(TypeError, match="CompilePipeline can only be constructed"):
-            # map_wires is not a transform
-            CompilePipeline(qml.transforms.cancel_inverses, qml.map_wires)
+            # matrix is not a transform
+            CompilePipeline(qml.transforms.cancel_inverses, qml.matrix)
 
 
 class TestCompilePipeline:

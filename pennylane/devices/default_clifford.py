@@ -356,13 +356,11 @@ class DefaultClifford(Device):
             import pennylane as qml
             import numpy as np
 
-            from functools import partial
-
             dev = qml.device("default.clifford", seed=42)
 
             num_wires = 3
 
-            @partial(qml.set_shots, shots=1024)
+            @qml.set_shots(shots=1024)
             @qml.qnode(dev)
             def circuit():
                 qml.Hadamard(wires=[0])
