@@ -209,22 +209,25 @@ class TestGeneralizedAmplitudeDamping:
     def expected_jac_fn(gamma, p):
         return (
             [
-                qml.math.sqrt(1-p)
+                qml.math.sqrt(1 - p)
                 * qml.math.array([[0, 0], [0, -1 / (2 * qml.math.sqrt(1 - gamma))]]),
-                qml.math.sqrt(1-p) * qml.math.array([[0, 1 / (2 * qml.math.sqrt(gamma))], [0, 0]]),
+                qml.math.sqrt(1 - p)
+                * qml.math.array([[0, 1 / (2 * qml.math.sqrt(gamma))], [0, 0]]),
                 qml.math.sqrt(p)
                 * qml.math.array([[-1 / (2 * qml.math.sqrt(1 - gamma)), 0], [0, 0]]),
-                qml.math.sqrt(p)
-                * qml.math.array([[0, 0], [1 / (2 * qml.math.sqrt(gamma)), 0]]),
+                qml.math.sqrt(p) * qml.math.array([[0, 0], [1 / (2 * qml.math.sqrt(gamma)), 0]]),
             ],
             [
-                -1 / (2 * qml.math.sqrt(1-p))
+                -1
+                / (2 * qml.math.sqrt(1 - p))
                 * qml.math.array([[1, 0], [0, qml.math.sqrt(1 - gamma)]]),
-                - 1 / (2 * qml.math.sqrt(1-p)) * qml.math.array([[0, qml.math.sqrt(gamma)], [0, 0]]),
-                1 / (2 * qml.math.sqrt(p))
+                -1
+                / (2 * qml.math.sqrt(1 - p))
+                * qml.math.array([[0, qml.math.sqrt(gamma)], [0, 0]]),
+                1
+                / (2 * qml.math.sqrt(p))
                 * qml.math.array([[qml.math.sqrt(1 - gamma), 0], [0, 1]]),
-                1 / (2 * qml.math.sqrt(p))
-                * qml.math.array([[0, 0], [qml.math.sqrt(gamma), 0]]),
+                1 / (2 * qml.math.sqrt(p)) * qml.math.array([[0, 0], [qml.math.sqrt(gamma), 0]]),
             ],
         )
 
