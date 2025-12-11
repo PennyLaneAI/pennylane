@@ -7,7 +7,7 @@ from typing import Any
 
 from requests import post
 
-GRAPHQL_URL = https://staging.cloud.pennylane.ai/graphql
+GRAPHQL_URL = "https://staging.cloud.pennylane.ai/graphql"
 
 
 class GraphQLError(BaseException):
