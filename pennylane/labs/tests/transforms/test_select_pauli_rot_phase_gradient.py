@@ -76,8 +76,8 @@ def test_units_select_pauli_rot_phase_gradient(p):
         work_wires=work_wires,
     )
 
-    for op in ops:
-        assert op.name in ["QROM", "SemiAdder", "MultiControlledX", "Adjoint(QROM)"]
+    for op, exp_name in zip(ops, ["QROM", "MultiControlledX", "SemiAdder",  "MultiControlledX", "Adjoint(QROM)"], strict=True):
+        assert op.name==exp_name
 
 
 def test_wire_validation():
@@ -100,14 +100,7 @@ def test_wire_validation():
         )
 
 
-@pytest.mark.parametrize(
-    "rot_axis",
-    [
-        "Z",
-        "X",
-        "Y",
-    ],
-)
+@pytest.mark.parametrize("rot_axis", ["Z", "X", "Y"])
 def test_correctness_select_pauli_rot_phase_gradient(rot_axis):
     """Test that decomposition produce the correct solution"""
 
@@ -117,12 +110,6 @@ def test_correctness_select_pauli_rot_phase_gradient(rot_axis):
     phase_grad_wires = [f"phg_{i}" for i in range(precision)]
     work_wires = [f"work_{i}" for i in range(precision - 1)]
 
-    def phase_gradient(wires):
-        # prepare phase gradient state
-        for i, w in enumerate(wires):
-            qml.H(w)
-            qml.PhaseShift(-np.pi / 2**i, w)
-
     @partial(
         select_pauli_rot_phase_gradient,
         angle_wires=angle_wires,
@@ -131,7 +118,7 @@ def test_correctness_select_pauli_rot_phase_gradient(rot_axis):
     )
     @qml.qnode(qml.device("default.qubit"))
     def select_pauli_rot_circ(phis, control_wires, target_wire):
-        phase_gradient(phase_grad_wires)  # prepare phase gradient state
+        prepare_phase_gradient(phase_grad_wires)  # prepare phase gradient state
 
         for wire in control_wires:
             qml.Hadamard(wire)
