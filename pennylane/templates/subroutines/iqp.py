@@ -32,8 +32,8 @@ class IQP(Operation):
     A template that builds an Instantaneous Quantum Polynomial (IQP) circuit.
 
     In this `IQPOpt <https://arxiv.org/pdf/2501.04776>`__ paper and this
-    `train on classical, deploy on quantum <https://arxiv.org/pdf/2503.02934>`__ paper, tht authors
-    present methods for analytically approximating expectation values coming from measurements following IQP circuits.
+    `train on classical, deploy on quantum <https://arxiv.org/pdf/2503.02934>`__ paper, the authors
+    present methods for analytically approximating expectation values coming from measurements made on IQP circuits.
     This allows for the classical training of the parameters of these circuits prior to deploying them to a
     quantum computer for actual computation.
 
@@ -54,7 +54,7 @@ class IQP(Operation):
         Args:
             weights (list): The parameters of the IQP gates.
             num_wires (int): Number of wires in the circuit.
-            pattern (list[list[list[int]]]): Specification of the trainable gates. Each element of gates corresponds to a
+            pattern (list[list[list[int]]]): Specification of the trainable gates. Each element of pattern corresponds to a
                 unique trainable parameter. Each sublist specifies the generators to which that parameter applies.
                 Generators are specified by listing the qubits on which an X operator acts.
             spin_sym (bool, optional): If True, the circuit is equivalent to one where the initial state
