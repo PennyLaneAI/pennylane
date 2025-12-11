@@ -142,22 +142,21 @@ class TestAdjoint:
         assert qre.Adjoint.tracking_name(qre.S.resource_rep()) == "Adjoint(S)"
         assert qre.Adjoint.tracking_name(qre.CNOT.resource_rep()) == "Adjoint(CNOT)"
 
-    # pylint: disable=protected-access, import-outside-toplevel
+    # pylint: import-outside-toplevel
     def test_apply_adj(self):
         """Test that the apply_adj method is working correctly."""
-        from pennylane.estimator.ops.op_math.symbolic import _apply_adj
+        from pennylane.estimator.ops.op_math.symbolic import apply_adj
 
-        assert _apply_adj(Allocate(1)) == Deallocate(1)
-        assert _apply_adj(Deallocate(1)) == Allocate(1)
+        assert apply_adj(Allocate(1)) == Deallocate(1)
+        assert apply_adj(Deallocate(1)) == Allocate(1)
 
         expected_res = GateCount(qre.Adjoint.resource_rep(qre.T.resource_rep()), 1)
-        assert _apply_adj(GateCount(qre.T.resource_rep(), 1)) == expected_res
+        assert apply_adj(GateCount(qre.T.resource_rep(), 1)) == expected_res
 
-    # pylint: disable=protected-access
     def test_apply_adj_raises_error_on_unknown_type(self):
         """Test that the apply_adj method is working correctly."""
         with pytest.raises(TypeError):
-            qre.ops.op_math.symbolic._apply_adj(1)
+            qre.ops.op_math.symbolic.apply_adj(1)
 
 
 class TestControlled:

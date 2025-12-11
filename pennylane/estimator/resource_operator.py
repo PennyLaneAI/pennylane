@@ -282,35 +282,16 @@ class ResourceOperator(ABC):
             target_resource_params (dict | None): A dictionary containing the resource parameters
                 of the target operator.
         """
-        from pennylane.estimator.ops.op_math.symbolic import Adjoint
-        from pennylane.estimator.wires_manager import Allocate, Deallocate
-
-        def _apply_adj(action):
-            """
-            Applies adjoint logic:
-            - Generally, gates are wrapped by Adjoint.
-            - Allocate and Deallocate are converted to each other.
-            - Raises TypeError for unknown types.
-            """
-            if isinstance(action, GateCount):
-                gate = action.gate
-                return GateCount(resource_rep(Adjoint, {"base_cmpr_op": gate}), action.count)
-
-            if isinstance(action, Allocate):
-                return Deallocate(action.num_wires)
-
-            if isinstance(action, Deallocate):
-                return Allocate(action.num_wires)
-
-            raise TypeError(f"Unsupported type {action}")
-
+        from pennylane.estimator.ops.op_math.symbolic import (
+            apply_adj,
+        )
 
         target_resource_params = target_resource_params or {}
         gate_lst = []
         decomp = cls.resource_decomp(**target_resource_params)
 
         for gate in decomp[::-1]:  # reverse the order
-            gate_lst.append(_apply_adj(gate))
+            gate_lst.append(apply_adj(gate))
         return gate_lst
 
     # pylint: disable=import-outside-toplevel
@@ -334,24 +315,9 @@ class ResourceOperator(ABC):
             target_resource_params (dict | None): A dictionary containing the resource parameters
                 of the target operator.
         """
-        from pennylane.estimator.ops.op_math.symbolic import Controlled
-        from functools import singledispatch
-
-        def _apply_controlled(action, num_ctrl_wires, num_zero_ctrl):
-            """
-            If action is a GateCount, it wraps the gate with Controlled.
-            Otherwise, it returns the action unchanged (e.g. for Allocate or Deallocate).
-            """
-            if isinstance(action, GateCount):
-                gate = action.gate
-                c_gate = Controlled.resource_rep(
-                    gate,
-                    num_ctrl_wires,
-                    num_zero_ctrl=num_zero_ctrl,
-                )
-                return GateCount(c_gate, action.count)
-            
-            return action
+        from pennylane.estimator.ops.op_math.symbolic import (
+            apply_controlled,
+        )
 
         target_resource_params = target_resource_params or {}
         gate_lst = []
@@ -361,7 +327,7 @@ class ResourceOperator(ABC):
 
         decomp = cls.resource_decomp(**target_resource_params)
         for action in decomp:
-            gate_lst.append(_apply_controlled(action, num_ctrl_wires, 0))
+            gate_lst.append(apply_controlled(action, num_ctrl_wires, 0))
 
         return gate_lst
 

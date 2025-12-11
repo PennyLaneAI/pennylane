@@ -13,6 +13,7 @@
 # limitations under the License.
 r"""Resource operators for symbolic operations."""
 from collections.abc import Iterable
+from functools import singledispatch
 
 from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
@@ -21,6 +22,7 @@ from pennylane.estimator.resource_operator import (
     _dequeue,
     resource_rep,
 )
+from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.wires import Wires, WiresLike
 
 # pylint: disable=arguments-differ,super-init-not-called, signature-differs
@@ -979,3 +981,49 @@ class ChangeOpBasis(ResourceOperator):
             GateCount(cmpr_target_op),
             GateCount(cmpr_uncompute_op),
         ]
+
+
+@singledispatch
+def apply_adj(action):
+    """
+    Applies adjoint logic:
+    - Wraps gates in Adjoint.
+    - Converts between Allocate with Deallocate.
+    - Raises TypeError for unknown types.
+    """
+    raise TypeError(f"Unsupported type {action}")
+
+
+@apply_adj.register
+def _(action: GateCount):
+    gate = action.gate
+    return GateCount(resource_rep(Adjoint, {"base_cmpr_op": gate}), action.count)
+
+
+@apply_adj.register
+def _(action: Allocate):
+    return Deallocate(action.num_wires)
+
+
+@apply_adj.register
+def _(action: Deallocate):
+    return Allocate(action.num_wires)
+
+
+@singledispatch
+def apply_controlled(action, num_ctrl_wires, num_zero_ctrl):  # pylint: disable=unused-argument
+    """
+    Wraps gate in Controlled if gate is not Allocate or Deallocate.
+    """
+    return action
+
+
+@apply_controlled.register
+def _(action: GateCount, num_ctrl_wires, num_zero_ctrl):
+    gate = action.gate
+    c_gate = Controlled.resource_rep(
+        gate,
+        num_ctrl_wires,
+        num_zero_ctrl=num_zero_ctrl,
+    )
+    return GateCount(c_gate, action.count)
