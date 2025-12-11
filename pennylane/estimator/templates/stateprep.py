@@ -1018,7 +1018,7 @@ class PrepTHC(ResourceOperator):
         Args:
             thc_ham (:class:`~pennylane.estimator.compact_hamiltonian.THCHamiltonian`): a tensor hypercontracted
                 Hamiltonian for which the state is being prepared
-            coeff_precision (int | None): The number of bits used to represent the precision for loading
+            coeff_precision (int): The number of bits used to represent the precision for loading
                 the coefficients of Hamiltonian. The default value is set to ``15`` bits.
             select_swap_depth (int | None): A parameter of :class:`~.pennylane.estimator.templates.QROM`
                 used to trade-off extra wires for reduced circuit depth. Defaults to :code:`None`, which internally determines the optimal depth.
@@ -1078,7 +1078,7 @@ class PrepTHC(ResourceOperator):
         Args:
             thc_ham (:class:`~pennylane.estimator.compact_hamiltonian.THCHamiltonian`): a tensor hypercontracted
                 Hamiltonian for which the walk operator is being created
-            coeff_precision (int | None): The number of bits used to represent the precision for loading
+            coeff_precision (int): The number of bits used to represent the precision for loading
                 the coefficients of the Hamiltonian. The default value is set to ``15`` bits.
             select_swap_depth (int | None): A parameter of :class:`~.pennylane.estimator.templates.QROM`
                 used to trade-off extra qubits for reduced circuit depth. Defaults to :code:`None`, which internally determines the optimal depth.

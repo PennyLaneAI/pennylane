@@ -145,7 +145,6 @@ class QubitizeTHC(ResourceOperator):
         # - 1 flag for one-body vs two-body rotation
         # - 1 to control swap of \mu and \nu registers.
         # 2*n_M wires are for \mu and \nu registers, where n_M = log_2(tensor_rank+1)
-        # coeff_precision wires for the keep register
         # num_orb*2 for state register
         # coeff_register for storing the coefficients: num_orb + tensor_rank(tensor_rank+1)/2,
         # The qubits storing output of QROM are stored here as well: 2*n_M + coeff_precision + 2
@@ -240,8 +239,7 @@ class QubitizeTHC(ResourceOperator):
         # - 1 flag for success of inequality,
         # - 1 flag for one-body vs two-body rotation
         # - 1 to control swap of \mu and \nu registers.
-        # 2*n_M wires are for \mu and \nu registers, where n_M = log_2(tensor_rank+1)
-        # coeff_precision wires for the keep register
+        # 2*n_M wiresare for \mu and \nu registers, where n_M = log_2(tensor_rank+1)
         # num_orb*2 for state register
         # coeff_register for storing the coefficients: num_orb + tensor_rank(tensor_rank+1)/2,
         # The qubits storing output of QROM are stored here as well: 2*n_M + coeff_precision + 2

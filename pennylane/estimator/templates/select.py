@@ -179,7 +179,6 @@ class SelectTHC(ResourceOperator):
         # - 1 flag for one-body vs two-body rotation
         # - 1 to control swap of \mu and \nu registers.
         # 2*n_M wires are for \mu and \nu registers, where n_M = log_2(tensor_rank+1)
-        # coeff_precision wires for the keep register
         # num_orb*2 for state register
         num_wires = num_orb * 2 + 2 * int(np.ceil(math.log2(tensor_rank + 1))) + 6
         params = {
