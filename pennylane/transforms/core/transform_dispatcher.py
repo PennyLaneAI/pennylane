@@ -110,16 +110,17 @@ def generic_apply_transform(obj, transform, *targs, **tkwargs):
     """Apply an generic transform to a specific type of object. A singledispatch function
     used by ``TransformDipsatcher.generic_apply_transform``, but with a different order of arguments
     to allow is to be used by singledispatch.
+
+    When called with an object that is not a valid dispatch target (e.g., not a QNode, tape, etc.),
+    this returns a TransformContainer with the supplied args and kwargs. This enables patterns like:
+
+        decompose(gate_set=gate_set) + merge_rotations(1e-6)
+
+    where transforms are called with just configuration parameters and combined into a CompilePipeline
     """
-    #  error out on transform(*targs, **tkwargs)(obj)
-    # in that care, no special dispatch would be found.
-    raise TransformError(
-        "Decorating a QNode with @transform_fn(**transform_kwargs) has been "
-        "removed. Please decorate with @functools.partial(transform_fn, **transform_kwargs) "
-        "instead, or call the transform directly using qnode = transform_fn(qnode, "
-        "**transform_kwargs). Visit the deprecations page for more details: "
-        "https://docs.pennylane.ai/en/stable/development/deprecations.html#completed-deprecation-cycles",
-    )
+    # If the first argument is not a valid dispatch target, return a TransformContainer
+    # with the first argument and any additional args/kwargs stored as transform parameters.
+    return TransformContainer(transform, args=(obj, *targs), kwargs=tkwargs)
 
 
 # pragma: no cover
@@ -285,7 +286,17 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
 
         return generic_apply_transform.register(arg)  # pylint: disable=no-member
 
-    def __call__(self, obj, *targs, **tkwargs):
+    def __call__(self, obj=None, *targs, **tkwargs):  # pylint: disable=keyword-arg-before-vararg
+        # If called with only keyword arguments (no positional args), return a TransformContainer
+        # This enables patterns like: decompose(gate_set=gate_set) + merge_rotations(1e-6)
+        if obj is None:
+            if tkwargs:
+                return TransformContainer(self, args=targs, kwargs=tkwargs)
+            raise TypeError(
+                f"{self!r} requires at least one argument. "
+                "Provide a tape, qfunc, QNode, or device to transform, "
+                "or provide keyword arguments to create a TransformContainer for composition."
+            )
         return self._apply_transform(obj, *targs, **tkwargs)
 
     def __repr__(self):
@@ -293,16 +304,16 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
         return f"<transform: {name}>"
 
     def __add__(self, other):
-        """Add two dispatchers or a dispatcher and a container to create a TransformProgram.
+        """Add two dispatchers or a dispatcher and a container to create a CompilePipeline.
 
         When adding dispatchers, they are converted to containers with no args or kwargs.
-        For dispatcher + program, Python falls back to TransformProgram.__radd__.
+        For dispatcher + program, Python falls back to CompilePipeline.__radd__.
 
         Args:
             other: Another TransformDispatcher or TransformContainer to add.
 
         Returns:
-            TransformProgram: A new program with this dispatcher followed by the other.
+            CompilePipeline: A new program with this dispatcher followed by the other.
         """
         # Convert this dispatcher to a container (no args/kwargs) and delegate
         return TransformContainer(self) + other
@@ -314,7 +325,7 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
             n (int): Number of times to repeat this dispatcher.
 
         Returns:
-            TransformProgram: A new program with this dispatcher repeated n times.
+            CompilePipeline: A new program with this dispatcher repeated n times.
         """
         # Convert to container (no args/kwargs) and delegate
         return TransformContainer(self) * n
@@ -524,15 +535,15 @@ class TransformContainer:  # pylint: disable=too-many-instance-attributes
         return self._transform_dispatcher.final_transform
 
     def __add__(self, other):
-        """Add two containers or a container and a dispatcher to create a TransformProgram.
+        """Add two containers or a container and a dispatcher to create a CompilePipeline.
 
-        For container + program, Python falls back to TransformProgram.__radd__.
+        For container + program, Python falls back to CompilePipeline.__radd__.
 
         Args:
             other: Another TransformContainer or TransformDispatcher to add.
 
         Returns:
-            TransformProgram: A new program with this container followed by the other.
+            CompilePipeline: A new program with this container followed by the other.
         """
         # Convert dispatcher to container if needed
         if isinstance(other, TransformDispatcher):
@@ -541,15 +552,15 @@ class TransformContainer:  # pylint: disable=too-many-instance-attributes
         if isinstance(other, TransformContainer):
             # Import here to avoid circular import\
             # pylint: disable=import-outside-toplevel
-            from .transform_program import TransformProgram
+            from .compile_pipeline import CompilePipeline
 
             if self.final_transform and other.final_transform:
                 raise TransformError(
                     f"Both {self} and {other} are final transforms and cannot be combined."
                 )
-            return TransformProgram([self, other])
+            return CompilePipeline([self, other])
 
-        # For TransformProgram, Python falls back to program.__radd__(container)
+        # For CompilePipeline, Python falls back to program.__radd__(container)
         return NotImplemented
 
     def __mul__(self, n):
@@ -559,10 +570,10 @@ class TransformContainer:  # pylint: disable=too-many-instance-attributes
             n (int): Number of times to repeat this container.
 
         Returns:
-            TransformProgram: A new program with this container repeated n times.
+            CompilePipeline: A new program with this container repeated n times.
         """
         # Import here to avoid circular import
-        from .transform_program import TransformProgram  # pylint: disable=import-outside-toplevel
+        from .compile_pipeline import CompilePipeline  # pylint: disable=import-outside-toplevel
 
         if not isinstance(n, int):
             return NotImplemented
@@ -575,7 +586,7 @@ class TransformContainer:  # pylint: disable=too-many-instance-attributes
                 f"{self} is a final transform and cannot be applied more than once."
             )
 
-        return TransformProgram([self] * n)
+        return CompilePipeline([self] * n)
 
     __rmul__ = __mul__
 
@@ -615,7 +626,7 @@ def _capture_apply(obj, transform, *targs, **tkwargs):
         import jax  # pylint: disable=import-outside-toplevel
 
         flat_qfunc = capture.flatfn.FlatFn(obj)
-        jaxpr = jax.make_jaxpr(functools.partial(flat_qfunc, **kwargs))(*args)
+        jaxpr = jax.make_jaxpr(flat_qfunc)(*args, **kwargs)
         flat_args = jax.tree_util.tree_leaves(args)
 
         n_args = len(flat_args)
