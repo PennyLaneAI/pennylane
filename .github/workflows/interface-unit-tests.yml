@@ -799,6 +799,12 @@ jobs:
           path: .github/test-reports
           merge-multiple: true
 
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: 0.6.5
+          enable-cache: true  
+          
       - name: Upload Test Failure Reports
         env:
           PENNYLANE_OSS_SERVER_ENDPOINT_URL: ${{ secrets.test_report_server_endpoint_url }}

@@ -39,9 +39,15 @@ jobs:
       with:
         python-version: ${{ env.PYTHON_VERSION }}
 
+    - name: Install uv
+      uses: astral-sh/setup-uv@v5
+      with:
+        version: 0.6.5
+        enable-cache: true  
+
     - name: Install dependencies
       run: |
-        pip install --upgrade --no-cache-dir pip setuptools uv
+        pip install --upgrade --no-cache-dir pip setuptools 
         uv pip install --upgrade --no-cache-dir ${{ env.PIP_PACKAGES_TO_INSTALL }}
         uv pip install --no-cache-dir -r doc/requirements.txt   
         uv pip install --upgrade --no-cache-dir  .      

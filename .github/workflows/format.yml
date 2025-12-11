@@ -36,9 +36,15 @@ jobs:
 
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: 0.6.5
+          enable-cache: true        
         
       - name: Install Python dependencies
-        run: pip install --constraint requirements-dev.txt black pylint isort
+        run: uv pip install --constraint requirements-dev.txt black pylint isort
 
       - name: Run Black
         run: |
