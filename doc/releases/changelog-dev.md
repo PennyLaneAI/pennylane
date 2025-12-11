@@ -159,6 +159,11 @@
 
 <h3>Improvements 🛠</h3>
 
+* Improved :mod:`estimator <pennylane.estimator>`'s
+  resource decomposition of `PauliRot` to match the optimal resources
+  for certain special cases of Pauli strings (e.g. for `XX` and `YY` type Pauli strings).
+  [(#8562)](https://github.com/PennyLaneAI/pennylane/pull/8562)
+
 * Added a new decomposition, `_decompose_2_cnots`, for the two-qubit decomposition for `QubitUnitary`.
   It supports the analytical decomposition a two-qubit unitary known to require exactly 2 CNOTs.
   [(#8666)](https://github.com/PennyLaneAI/pennylane/issues/8666)

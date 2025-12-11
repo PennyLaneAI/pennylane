@@ -1827,12 +1827,12 @@ class TrotterPauli(ResourceOperator):
        allocated wires: 0
          zero state: 0
          any state: 0
-     Total gates : 2.924E+3
+     Total gates : 2.844E+3
        'T': 2.640E+3,
        'CNOT': 96,
        'Z': 20,
        'S': 40,
-       'Hadamard': 128
+       'Hadamard': 48
     
     .. details::
         :title: Usage Details
@@ -1849,7 +1849,7 @@ class TrotterPauli(ResourceOperator):
         ...     {"Z": 2},
         ... )
         >>> pauli_ham = qre.PauliHamiltonian(num_qubits=10, pauli_terms=commuting_groups)        
-        >>> num_steps, order = num_steps, order = (1, 2)
+        >>> num_steps, order = (1, 2)
         >>> res = qre.estimate(qre.TrotterPauli(pauli_ham, num_steps, order))
         >>> print(res)
         --- Resources: ---
@@ -1858,12 +1858,12 @@ class TrotterPauli(ResourceOperator):
            allocated wires: 0
              zero state: 0
              any state: 0
-         Total gates : 2.836E+3
+         Total gates : 2.756E+3
            'T': 2.552E+3,
            'CNOT': 96,
            'Z': 20,
            'S': 40,
-           'Hadamard': 128
+           'Hadamard': 48
 
     """
 
