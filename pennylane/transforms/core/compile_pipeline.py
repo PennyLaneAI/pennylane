@@ -359,6 +359,23 @@ class CompilePipeline:
             return any(obj.transform == t.transform for t in self)
         return False
 
+    def remove(self, obj: BoundTransform | TransformDispatcher):
+        """In place remove the input containers, specifically,
+        1. if the input is a TransformDispatcher, remove all containers matching the dispatcher;
+        2. if the input is a BoundTransform, remove all containers exactly matching the input.
+
+        Args:
+            obj (BoundTransform or TransformDispatcher): The object to remove from the program.
+        """
+        if isinstance(obj, BoundTransform):
+            self._compile_pipeline = [t for t in self._compile_pipeline if t != obj]
+        elif isinstance(obj, TransformDispatcher):
+            self._compile_pipeline = [
+                t for t in self._compile_pipeline if t.transform != obj.transform
+            ]
+        else:
+            raise TypeError("Only BoundTransform or TransformDispatcher can be removed.")
+
     def push_back(self, transform_container: BoundTransform):
         """Add a transform (container) to the end of the program.
 
