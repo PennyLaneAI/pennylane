@@ -16,8 +16,6 @@ Integration tests for the draw transform
 """
 
 # pylint: disable=import-outside-toplevel
-from functools import partial
-
 import pytest
 
 import pennylane as qml
@@ -204,7 +202,7 @@ class TestMatrixParameters:
     def test_matrix_parameters_batch_transform(self):
         """Test matrix parameters only printed once after a batch transform."""
 
-        @partial(qml.gradients.param_shift, shifts=[(0.2,)])
+        @qml.gradients.param_shift(shifts=[(0.2,)])
         @qml.qnode(qml.device("default.qubit", wires=2))
         def matrices_circuit(x):
             qml.StatePrep([1.0, 0.0, 0.0, 0.0], wires=(0, 1))
@@ -1087,11 +1085,28 @@ class TestLevelExpansionStrategy:
         with pytest.warns(UserWarning, match="the level argument is ignored"):
             qml.draw(qfunc, level=None)
 
+    def test_custom_level(self):
+        """Test that we can draw at a custom level."""
+
+        @qml.transforms.merge_rotations
+        @qml.marker(level="my_level")
+        @qml.transforms.cancel_inverses
+        @qml.qnode(qml.device("null.qubit"))
+        def c():
+            qml.RX(0.2, 0)
+            qml.X(0)
+            qml.X(0)
+            qml.RX(0.2, 0)
+            return qml.state()
+
+        expected = "0: ──RX(0.20)──RX(0.20)─┤  State"
+        assert qml.draw(c, level="my_level")() == expected
+
 
 def test_draw_batch_transform():
     """Test that drawing a batch transform works correctly."""
 
-    @partial(qml.gradients.param_shift, shifts=[(0.2,)])
+    @qml.gradients.param_shift(shifts=[(0.2,)])
     @qml.qnode(qml.device("default.qubit", wires=1))
     def circ(x):
         qml.Hadamard(wires=0)

@@ -40,9 +40,9 @@ class ExpandTransformsInterpreter(PlxprInterpreter):
 def _(
     self, *invals, inner_jaxpr, args_slice, consts_slice, targs_slice, tkwargs, transform
 ):  # pylint: disable=too-many-arguments
-    args = invals[args_slice]
-    consts = invals[consts_slice]
-    targs = invals[targs_slice]
+    args = invals[slice(*args_slice)]
+    consts = invals[slice(*consts_slice)]
+    targs = invals[slice(*targs_slice)]
 
     def wrapper(*inner_args):
         return copy(self).eval(inner_jaxpr, consts, *inner_args)

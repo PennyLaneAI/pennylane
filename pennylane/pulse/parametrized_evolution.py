@@ -418,7 +418,7 @@ class ParametrizedEvolution(Operation):
         if not has_jax:
             raise ImportError(
                 "Module jax is required for the ``ParametrizedEvolution`` class. "
-                "You can install jax via: pip install jax~=0.6.0"
+                "You can install jax via: pip install jax==0.7.1"
             )
         # Need to cast all elements inside params to `jnp.arrays` to make sure they are not cast
         # to `np.arrays` inside `Operator.__init__`
@@ -511,7 +511,7 @@ class ParametrizedEvolution(Operation):
         if not has_jax:
             raise ImportError(
                 "Module jax is required for the ``ParametrizedEvolution`` class. "
-                "You can install jax via: pip install jax~=0.6.0"
+                "You can install jax via: pip install jax==0.7.1"
             )
         if not self.has_matrix:
             raise ValueError(

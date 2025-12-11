@@ -403,31 +403,35 @@ def _get_plxpr_defer_measurements():
             )
 
         conditions = get_mcm_predicates(conditions[:-1])
-        args = invals[args_slice]
+        args = invals[slice(*args_slice)]
 
         for i, (condition, jaxpr) in enumerate(zip(conditions, jaxpr_branches, strict=True)):
 
             if isinstance(condition, MeasurementValue):
                 control_wires = Wires([m.wires[0] for m in condition.measurements])
-
                 for branch, value in condition.items():
                     # When reduce_postselected is True, some branches can be ()
-                    cur_consts = invals[consts_slices[i]]
-                    qml.cond(value, ctrl_transform_prim.bind)(
-                        *cur_consts,
-                        *args,
-                        *control_wires,
+                    cur_consts = invals[slice(*consts_slices[i])]
+                    _f = partial(
+                        ctrl_transform_prim.bind,
                         jaxpr=jaxpr,
                         n_control=len(control_wires),
                         control_values=branch,
                         work_wires=None,
                         n_consts=len(cur_consts),
                     )
+                    qml.cond(value, _f)(
+                        *cur_consts,
+                        *args,
+                        *control_wires,
+                    )
 
         return [None] * len(jaxpr_branches[0].outvars)
 
     def defer_measurements_plxpr_to_plxpr(jaxpr, consts, targs, tkwargs, *args):
         """Function for applying the ``defer_measurements`` transform on plxpr."""
+        # Restore tkwargs from hashable tuple to dict
+        tkwargs = dict(tkwargs)
 
         if not tkwargs.get("num_wires", None):
             raise ValueError(
@@ -648,13 +652,12 @@ def defer_measurements(
 
             .. code-block:: python
 
-                from functools import partial
                 import jax
 
                 qml.capture.enable()
 
                 @qml.capture.expand_plxpr_transforms
-                @partial(qml.defer_measurements, num_wires=1)
+                @qml.defer_measurements(num_wires=1)
                 def f(n):
                     qml.measure(n)
 
@@ -686,14 +689,13 @@ def defer_measurements(
 
           .. code-block:: python
 
-              from functools import partial
               import jax
               import jax.numpy as jnp
 
               qml.capture.enable()
 
               @qml.capture.expand_plxpr_transforms
-              @partial(qml.defer_measurements, num_wires=10)
+              @qml.defer_measurements(num_wires=10)
               def f():
                   m0 = qml.measure(0)
 
