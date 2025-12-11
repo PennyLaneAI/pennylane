@@ -312,8 +312,8 @@ class ResourceOperator(ABC):
         ``controlled_resource_decomp`` method.
 
         Resources:
-            The resources for the control of an operator is to return the base decomposition of the operator with every
-            operator controlled.
+            The resources for the controlled operator are obtained by controlling (with the same number of control 
+            wires and zero controlled values) each gate in the base operator's resource decomposition.
 
         Args:
             num_ctrl_wires (int): the number of qubits the
