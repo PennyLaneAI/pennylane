@@ -15,6 +15,7 @@
 Tests for select resource operators.
 """
 from collections import defaultdict
+
 import pytest
 
 import pennylane.estimator as qre

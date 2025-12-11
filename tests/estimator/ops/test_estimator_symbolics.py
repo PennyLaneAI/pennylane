@@ -599,6 +599,7 @@ class TestChangeOpBasis:
         cb_op = qre.ChangeOpBasis(qre.X(), qre.Y(), qre.Z())
         assert cb_op.wires is None
 
+    # pylint: disable=too-many-arguments
     @pytest.mark.parametrize(
         "compute_op, target_op, uncompute_op, expected_res",
         (
