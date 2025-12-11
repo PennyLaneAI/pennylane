@@ -19,8 +19,10 @@ from collections import defaultdict
 import pytest
 
 import pennylane.estimator as qre
+from pennylane.estimator.ops.op_math.symbolic import apply_adj
 from pennylane.estimator.resource_operator import GateCount, resource_rep
 from pennylane.estimator.wires_manager import Allocate, Deallocate
+
 from pennylane.queuing import AnnotatedQueue
 from pennylane.wires import Wires
 
@@ -144,15 +146,13 @@ class TestAdjoint:
 
     def test_apply_adj(self):
         """Test that the apply_adj method is working correctly."""
-        from pennylane.estimator.ops.op_math.symbolic import apply_adj
-
         assert apply_adj(Allocate(1)) == Deallocate(1)
         assert apply_adj(Deallocate(1)) == Allocate(1)
 
         expected_res = GateCount(qre.Adjoint.resource_rep(qre.T.resource_rep()), 1)
         assert apply_adj(GateCount(qre.T.resource_rep(), 1)) == expected_res
 
-    def test_apply_adj_raises_error_on_unknown_type(self):
+    def test_raises_error_on_unknown_type(self):
         """Test that the apply_adj method is working correctly."""
         with pytest.raises(TypeError):
             qre.ops.op_math.symbolic.apply_adj(1)
