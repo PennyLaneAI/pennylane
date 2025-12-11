@@ -180,7 +180,8 @@ that compute the desired quantity.
 Transforms developer functions
 ------------------------------
 
-:class:`~.TransformContainer` and :class:`~.TransformDispatcher` are developer-facing objects that allow the
+:class:`~.TransformDispatcher` is a
+developer-facing objects that allow the
 creation, dispatching, and composability of transforms. If you would like to make a custom transform, refer
 instead to the documentation of :func:`qml.transform <pennylane.transform>`.
 
