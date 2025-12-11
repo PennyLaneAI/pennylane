@@ -237,12 +237,11 @@ class PauliHamiltonian:
        allocated wires: 0
          zero state: 0
          any state: 0
-     Total gates : 9.880E+4
+     Total gates : 9.400E+4
        'T': 8.800E+4,
        'CNOT': 2.400E+3,
        'Z': 1.200E+3,
-       'S': 2.400E+3,
-       'Hadamard': 4.800E+3
+       'S': 2.400E+3
 
     .. details::
         :title: Usage Details
@@ -275,12 +274,11 @@ class PauliHamiltonian:
            allocated wires: 0
              zero state: 0
              any state: 0
-         Total gates : 5.266E+4
+         Total gates : 5.014E+4
            'T': 4.708E+4,
            'CNOT': 1.260E+3,
            'Z': 600,
-           'S': 1.200E+3,
-           'Hadamard': 2.520E+3
+           'S': 1.200E+3
 
     """
 
