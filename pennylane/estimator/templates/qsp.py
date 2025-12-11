@@ -60,13 +60,15 @@ class GQSP(ResourceOperator):
     >>> print(qre.estimate(gqsp))
     --- Resources: ---
      Total wires: 2
-        algorithmic wires: 2
-        allocated wires: 0
-             zero state: 0
-             any state: 0
-     Total gates : 17
-      'Rot': 9,
-      'Controlled': 8
+       algorithmic wires: 2
+       allocated wires: 0
+         zero state: 0
+         any state: 0
+     Total gates : 1.438E+3
+       'T': 1.396E+3,
+       'CNOT': 16,
+       'X': 10,
+       'Hadamard': 16
 
     """
 
@@ -236,13 +238,15 @@ class HamiltonianGQSP(ResourceOperator):
     >>> print(qre.estimate(hamsim))
     --- Resources: ---
      Total wires: 2
-        algorithmic wires: 2
-        allocated wires: 0
-             zero state: 0
-             any state: 0
-     Total gates : 13
-      'Rot': 7,
-      'Controlled': 6
+       algorithmic wires: 2
+       allocated wires: 0
+         zero state: 0
+         any state: 0
+     Total gates : 1.110E+3
+       'T': 1.080E+3,
+       'CNOT': 12,
+       'X': 6,
+       'Hadamard': 12
 
     """
 

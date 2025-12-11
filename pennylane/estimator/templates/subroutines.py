@@ -2292,14 +2292,15 @@ class Reflection(ResourceOperator):
     >>> print(qre.estimate(ref_op))
     --- Resources: ---
      Total wires: 1
-        algorithmic wires: 1
-        allocated wires: 0
-             zero state: 0
-             any state: 0
-     Total gates : 7
-      'X': 4,
-      'Z': 2,
-      'Hadamard': 1
+       algorithmic wires: 1
+       allocated wires: 0
+         zero state: 0
+         any state: 0
+     Total gates : 52
+       'T': 44,
+       'X': 4,
+       'Z': 2,
+       'Hadamard': 2
 
     """
 
@@ -2516,15 +2517,14 @@ class QuantumWalk(ResourceOperator):
     >>> print(qre.estimate(qw_op))
     --- Resources: ---
      Total wires: 1
-        algorithmic wires: 1
-        allocated wires: 0
-             zero state: 0
-             any state: 0
+       algorithmic wires: 1
+       allocated wires: 0
+         zero state: 0
+         any state: 0
      Total gates : 10
-      'X': 4,
-      'Z': 3,
-      'Hadamard': 2,
-      'PhaseShift': 1
+       'X': 4,
+       'Z': 4,
+       'Hadamard': 2
 
     """
 

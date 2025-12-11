@@ -475,21 +475,18 @@ class SelectPauli(ResourceOperator):
     >>> select_pauli = qre.SelectPauli(pauli_ham)
     >>> print(qre.estimate(select_pauli))
     --- Resources: ---
-    Total wires: 6
-        algorithmic wires: 6
-        allocated wires: 2
-        zero state: 2
-        any state: 0
-    Total gates : 16
-    'CNOT': 3,
-    'CY': 2,
-    'CZ': 2,
-    'X': 4,
-    'TemporaryAND': 2,
-    'Adjoint(TemporaryAND)': 2,
-    'Allocate': 1,
-    'Deallocate': 1
-
+     Total wires: 7
+       algorithmic wires: 6
+       allocated wires: 1
+         zero state: 1
+         any state: 0
+     Total gates : 27
+       'Toffoli': 2,
+       'CNOT': 8,
+       'X': 4,
+       'Z': 1,
+       'S': 2,
+       'Hadamard': 10
     """
 
     resource_keys = {"pauli_ham"}
