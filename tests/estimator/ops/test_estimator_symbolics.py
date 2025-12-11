@@ -142,7 +142,6 @@ class TestAdjoint:
         assert qre.Adjoint.tracking_name(qre.S.resource_rep()) == "Adjoint(S)"
         assert qre.Adjoint.tracking_name(qre.CNOT.resource_rep()) == "Adjoint(CNOT)"
 
-    # pylint: import-outside-toplevel
     def test_apply_adj(self):
         """Test that the apply_adj method is working correctly."""
         from pennylane.estimator.ops.op_math.symbolic import apply_adj
