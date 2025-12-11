@@ -587,7 +587,7 @@ def specs(
         *Pass-by-pass specs* can be obtained by analyzing the intermediate representations of compiled circuits.
         This can be helpful for determining how circuit resources change after a given transform
         or compilation pass.
-        This version of specs can be applied by passing one of the following values for the `level` argument:
+        Using ``specs`` in this way can be done by providing one of the following values for the ``level`` argument:
 
         * An ``int``: the desired pass level of a user-applied pass, see the note below
         * A marker name (str): The name of an applied :func:`qml.marker <pennylane.marker>` pass
