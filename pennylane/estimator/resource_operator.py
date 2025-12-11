@@ -275,8 +275,8 @@ class ResourceOperator(ABC):
     def adjoint_resource_decomp(cls, target_resource_params: dict | None = None) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
 
-        For ResourceOperators that don't define a `adjoint_resource_decomp`, this will be the default
-        `adjoint_resource_decomp` method. Every operator in the decomposition will be adjointed.
+        For ``ResourceOperators`` that don't define a ``adjoint_resource_decomp``, this will be the default
+        ``adjoint_resource_decomp`` method.
 
         Args:
             target_resource_params (dict | None): A dictionary containing the resource parameters
