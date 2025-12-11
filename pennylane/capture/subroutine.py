@@ -17,7 +17,7 @@ import copy
 has_jax = True
 try:
     import jax
-    from jax.experimental.pjit import pjit_p
+    from jax._src.pjit import jit_p as pjit_p
 
     quantum_subroutine_p = copy.deepcopy(pjit_p)
     quantum_subroutine_p.name = "quantum_subroutine_p"
@@ -126,14 +126,14 @@ def subroutine(func, static_argnames=None, abstracted_axes=None):
     if not has_jax:
         raise ImportError("jax is required for use of subroutine")
 
-    old_pjit = jax._src.pjit.pjit_p
+    old_pjit = jax._src.pjit.jit_p
 
     @wraps(func)
     def inside(*args, **kwargs):
         with Patcher(
             (
                 jax._src.pjit,
-                "pjit_p",
+                "jit_p",
                 old_pjit,
             ),
         ):
@@ -145,7 +145,7 @@ def subroutine(func, static_argnames=None, abstracted_axes=None):
         with Patcher(
             (
                 jax._src.pjit,
-                "pjit_p",
+                "jit_p",
                 quantum_subroutine_p,
             ),
         ):
