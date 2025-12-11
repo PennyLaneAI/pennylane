@@ -90,8 +90,8 @@ class TestPreprocess:
         config = qml.device("default.qubit").setup_execution_config()
         assert config.mcm_config.mcm_method == "deferred"
 
-    def test_transform_program(self):
-        """Test that the transform program returned by preprocess has the correct transforms."""
+    def test_compile_pipeline(self):
+        """Test that the compile pipeline returned by preprocess has the correct transforms."""
         dev = qml.device("default.qubit", wires=1)
 
         # Default config
