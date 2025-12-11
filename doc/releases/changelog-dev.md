@@ -626,6 +626,7 @@ A warning message has been added to :doc:`Building a plugin <../development/plug
 
 This release contains contributions from (in alphabetical order):
 
+Runor Agbaire,
 Guillermo Alonso,
 Utkarsh Azad,
 Astral Cai,

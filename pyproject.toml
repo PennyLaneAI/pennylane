@@ -83,7 +83,7 @@ docker = [
 upload-reports = [
     "pydantic==2.10.6",
     "pydantic-settings==2.8.0",
-    "requests==2.32.3",
+    "requests==2.32.4",
 ]
 [[project.maintainers]]
 name = "Xanadu Quantum Technologies Inc."
@@ -99,6 +99,8 @@ docs = [
     "jaxlib==0.7.0",
     "mistune==0.8.4",
     "m2r2",
+    # TODO: Remove once galois becomes compatible with latest numpy 
+    "numpy>=2.0,<=2.2",
     "pygments-github-lexers",
     "pyzx",
     "docutils==0.20",
@@ -111,14 +113,17 @@ docs = [
     "sphinxcontrib-qthelp==2.0.0",
     "sphinxcontrib-htmlhelp==2.1.0",
     "sphinxcontrib-serializinghtml==2.0.0",
-    "torch==2.8.0",
+    "torch==2.9.0",
+    "tensorflow==2.19",
+    "tensornetwork==0.3",
     "jinja2>=3.1",
     "networkx==3.1",
     "pennylane-sphinx-theme",
     "tomli~=2.0.0",
     "sphinxext-opengraph==0.9.0",
-    "matplotlib==3.8.0",
+    "matplotlib==3.10.0",
     "galois",
+    "requests==2.32.3"
 ]
 
 [project.scripts]
