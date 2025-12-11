@@ -107,7 +107,7 @@ from .templates import (
     GQSP,
     Reflection,
     QuantumWalk,
-    HamSimGQSP,
+    HamiltonianGQSP,
 )
 
 from .compact_hamiltonian import (

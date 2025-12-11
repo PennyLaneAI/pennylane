@@ -393,19 +393,19 @@ class TestGQSP:
         assert decomp[2].count == neg_poly_deg
 
 
-class TestHamSimGQSP:
-    """Test the HamSimGQSP class."""
+class TestHamiltonianGQSP:
+    """Test the HamiltonianGQSP class."""
 
     def test_wire_error(self):
         """Test that an error is raised when wrong number of wires is provided."""
         op = qre.RX(0.1, wires=0)
         with pytest.raises(ValueError, match="Expected 2 wires, got 1"):
-            qre.HamSimGQSP(op, time=1.0, one_norm=1.0, approximation_error=0.1, wires=[0])
+            qre.HamiltonianGQSP(op, time=1.0, one_norm=1.0, approximation_error=0.1, wires=[0])
 
     def test_resource_params(self):
-        """Test that the resource params for HamSimGQSP are correct."""
+        """Test that the resource params for HamiltonianGQSP are correct."""
         op = qre.RX(0.1, wires=0)
-        hamsim = qre.HamSimGQSP(op, time=1.0, one_norm=2.0, approximation_error=0.01)
+        hamsim = qre.HamiltonianGQSP(op, time=1.0, one_norm=2.0, approximation_error=0.01)
 
         assert hamsim.resource_params["time"] == 1.0
         assert hamsim.resource_params["one_norm"] == 2.0
@@ -413,12 +413,12 @@ class TestHamSimGQSP:
         assert hamsim.resource_params["walk_op"].op_type == qre.RX
 
     def test_resource_rep(self):
-        """Test that the compressed representation for HamSimGQSP is correct."""
+        """Test that the compressed representation for HamiltonianGQSP is correct."""
         op = qre.RX(0.1, wires=0)
         cmpr_op = op.resource_rep_from_op()
 
         expected = qre.CompressedResourceOp(
-            qre.HamSimGQSP,
+            qre.HamiltonianGQSP,
             2,
             {
                 "walk_op": cmpr_op,
@@ -427,11 +427,11 @@ class TestHamSimGQSP:
                 "approximation_error": 0.01,
             },
         )
-        assert qre.HamSimGQSP.resource_rep(cmpr_op, 1.0, 2.0, 0.01) == expected
+        assert qre.HamiltonianGQSP.resource_rep(cmpr_op, 1.0, 2.0, 0.01) == expected
 
     def test_degree_of_poly_approx(self):
         """Test degree_of_poly_approx returns a positive integer."""
-        deg = qre.HamSimGQSP.degree_of_poly_approx(time=1.0, one_norm=1.0, epsilon=0.1)
+        deg = qre.HamiltonianGQSP.degree_of_poly_approx(time=1.0, one_norm=1.0, epsilon=0.1)
         assert isinstance(deg, int)
         assert deg > 0
 
@@ -440,7 +440,7 @@ class TestHamSimGQSP:
         op = qre.RX(0.1, wires=0)
         cmpr_op = op.resource_rep_from_op()
 
-        decomp = qre.HamSimGQSP.resource_decomp(
+        decomp = qre.HamiltonianGQSP.resource_decomp(
             cmpr_op, time=1.0, one_norm=1.0, approximation_error=0.1
         )
         assert len(decomp) == 1

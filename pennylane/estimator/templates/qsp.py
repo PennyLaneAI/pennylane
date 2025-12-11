@@ -208,7 +208,7 @@ class GQSP(ResourceOperator):
         ]
 
 
-class HamSimGQSP(ResourceOperator):
+class HamiltonianGQSP(ResourceOperator):
     r"""Resource class for performing hamiltonian simulation using GQSP.
 
     Args:
@@ -232,7 +232,7 @@ class HamSimGQSP(ResourceOperator):
     >>> time = 1.0
     >>> one_norm = 1.0
     >>> approx_error = 0.01
-    >>> hamsim = qre.HamSimGQSP(walk_op, time, one_norm, approx_error)
+    >>> hamsim = qre.HamiltonianGQSP(walk_op, time, one_norm, approx_error)
     >>> print(qre.estimate(hamsim))
     --- Resources: ---
      Total wires: 2
