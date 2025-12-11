@@ -34,11 +34,11 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install Python dependencies
-        run: pip install --constraint requirements-dev.txt black pylint isort
-
       - name: Checkout repository
         uses: actions/checkout@v4
+        
+      - name: Install Python dependencies
+        run: pip install --constraint requirements-dev.txt black pylint isort
 
       - name: Run Black
         run: |
