@@ -23,7 +23,7 @@ import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
-from pennylane.transforms.core import CompilePipeline, TransformContainer
+from pennylane.transforms.core import BoundTransform, CompilePipeline
 from pennylane.workflow import construct_batch, get_transform_program
 
 
@@ -159,11 +159,11 @@ class TestCompilePipelineGetter:
         def circuit():
             return qml.expval(qml.PauliZ(0))
 
-        expected_p0 = TransformContainer(qml.transforms.cancel_inverses)
-        expected_p1 = TransformContainer(qml.transforms.merge_rotations, kwargs={"atol": 1e-5})
-        expected_p2 = TransformContainer(qml.transforms.compile, kwargs={"num_passes": 2})
+        expected_p0 = BoundTransform(qml.transforms.cancel_inverses)
+        expected_p1 = BoundTransform(qml.transforms.merge_rotations, kwargs={"atol": 1e-5})
+        expected_p2 = BoundTransform(qml.transforms.compile, kwargs={"num_passes": 2})
 
-        ps_expand_fn = TransformContainer(
+        ps_expand_fn = BoundTransform(
             qml.transform(qml.gradients.param_shift.expand_transform), kwargs={"shifts": 2}
         )
 
@@ -253,10 +253,10 @@ class TestCompilePipelineGetter:
 
         program = get_transform_program(circuit)
 
-        m1 = TransformContainer(qml.transforms.merge_rotations)
+        m1 = BoundTransform(qml.transforms.merge_rotations)
         assert program[:1] == CompilePipeline([m1])
 
-        m2 = TransformContainer(qml.devices.legacy_facade.legacy_device_batch_transform)
+        m2 = BoundTransform(qml.devices.legacy_facade.legacy_device_batch_transform)
         assert program[1].transform == m2.transform
         assert program[1].kwargs["device"] == dev
 
