@@ -162,6 +162,9 @@
 * :class:`~.transforms.core.TransformDispatcher` has been renamed to :class:`~.transforms.core.Transform`.
   [(#8765)](https://github.com/PennyLaneAI/pennylane/pull/8756)
 
+* The `final_transform` property of the :class:`~.transforms.core.BoundTransform` has been renamed to `is_final_transform` to better follow the naming convention for boolean properties.
+  [(#8765)](https://github.com/PennyLaneAI/pennylane/pull/8756)
+
 * The :class:`~.CompilePipeline` (previously known as the `TransformProgram`) can now be constructed
   more flexibility with a variable number of arguments that are of types `Transform`, `BoundTransform`,
   or other `CompilePipeline`s.

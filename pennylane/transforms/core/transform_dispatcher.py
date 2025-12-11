@@ -358,7 +358,7 @@ class Transform:  # pylint: disable=too-many-instance-attributes
         return self._is_informative
 
     @property
-    def final_transform(self):
+    def is_final_transform(self):
         """``True`` if the transformed tapes must be executed."""
         return self._final_transform
 
@@ -524,7 +524,7 @@ class BoundTransform:  # pylint: disable=too-many-instance-attributes
                 self._transform_dispatcher._classical_cotransform,
                 self._transform_dispatcher._plxpr_transform,
                 self._transform_dispatcher._is_informative,
-                self._transform_dispatcher.final_transform,
+                self._transform_dispatcher.is_final_transform,
             )
         )
 
@@ -590,7 +590,7 @@ class BoundTransform:  # pylint: disable=too-many-instance-attributes
 
         This property is ``True`` for most gradient transforms.
         """
-        return self._transform_dispatcher.final_transform
+        return self._transform_dispatcher.is_final_transform
 
     def __add__(self, other):
         """Add two containers or a container and a dispatcher to create a CompilePipeline.

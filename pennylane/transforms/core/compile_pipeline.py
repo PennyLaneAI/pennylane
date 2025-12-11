@@ -436,7 +436,7 @@ class CompilePipeline:
             **tkwargs: Any additional keyword arguments that are passed to the transform.
 
         """
-        if transform.final_transform and not self.is_empty():
+        if transform.is_final_transform and not self.is_empty():
             raise TransformError(
                 "Informative transforms can only be added at the end of the program."
             )
