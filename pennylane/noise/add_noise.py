@@ -20,7 +20,7 @@ from pennylane.devices.preprocess import decompose, null_postprocessing
 from pennylane.operation import DecompositionUndefinedError, Operator
 from pennylane.ops import Adjoint
 from pennylane.tape import make_qscript
-from pennylane.transforms.core import TransformContainer, transform
+from pennylane.transforms.core import BoundTransform, transform
 from pennylane.workflow import get_transform_program
 
 from .conditionals import partial_wires
@@ -273,7 +273,7 @@ def custom_qnode_wrapper(self, qnode, targs, tkwargs):
 
     cqnode._transform_program = compile_pipeline
     cqnode.transform_program.push_back(
-        TransformContainer(
+        BoundTransform(
             self,
             targs,
             {**tkwargs},
