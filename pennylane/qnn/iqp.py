@@ -98,12 +98,12 @@ def _generators(gates, n_qubits):
 
 # pylint: disable=too-many-arguments
 def _op_expval_indep(
-    gates: array,
+    gates: list,
     n_qubits: int,
-    params: array,
-    ops: array,
+    params: list,
+    ops: list,
     n_samples: int,
-    key: array,
+    key: list,
     sparse: bool,
 ) -> list:
     """
@@ -143,11 +143,11 @@ def _op_expval_indep(
 # pylint: disable=too-many-arguments, too-many-branches, too-many-statements
 def _op_expval_batch(
     gates: list,
-    params: array,
+    params: list,
     n_qubits: int,
-    ops: array,
+    ops: list,
     n_samples: int,
-    key: array,
+    key: list,
     spin_sym: bool = False,
     sparse: bool = False,
     indep_estimates: bool = False,
@@ -255,9 +255,9 @@ def _op_expval_batch(
 
 # pylint: disable=too-many-arguments
 def op_expval(
-    ops: array,
+    ops: list,
     n_samples: int,
-    key: array,
+    key: list,
     circuit: IQP,
     sparse: bool = False,
     indep_estimates: bool = False,
