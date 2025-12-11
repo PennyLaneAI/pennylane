@@ -102,8 +102,9 @@
 <h4> Compile Pipeline and Transforms </h4>
 
 * Arithmetic dunder methods (`__add__`, `__mul__`, `__rmul__`) have been added to 
-  :class:`~.transforms.core.Transform`, :class:`~.transforms.core.TransformContainer`, 
-  and :class:`~.CompilePipeline` (previously known as the `TransformProgram`) to enable intuitive composition of transform programs using `+` and `*` operators.
+  :class:`~.transforms.core.Transform`, :class:`~.transforms.core.BoundTransform`, 
+  and :class:`~.CompilePipeline` (previously known as the `TransformProgram`) to 
+  enable intuitive composition of transform programs using `+` and `*` operators.
   [(#8703)](https://github.com/PennyLaneAI/pennylane/pull/8703)
 
 * In the past, calling a transform with only arguments or keyword but no tapes would raise an error.
@@ -151,15 +152,16 @@
 * `CompilePipeline` (previously known as the `TransformProgram`) can now be directly applied to anything that an individual transform can be applied on, including `QNode`s.
   [(#8731)](https://github.com/PennyLaneAI/pennylane/pull/8731)
 
-* :class:`~.transforms.core.TransformContainer` has been renamed to :class:`~.transforms.core.BoundTransform`.
+* :class:`~.transforms.core.BoundTransform` has been renamed to :class:`~.transforms.core.BoundTransform`.
   The old name is still available in the same location.
   [(#8753)](https://github.com/PennyLaneAI/pennylane/pull/8753)
 
 * :class:`~.transforms.core.TransformDispatcher` has been renamed to :class:`~.transforms.core.Transform`.
+  [(#8765)](https://github.com/PennyLaneAI/pennylane/pull/8756)
 
 * The :class:`~.CompilePipeline` (previously known as the `TransformProgram`) can now be constructed
-  more flexibility with a variable number of arguments that are of types `Transform`,
-  `TransformContainer`, or other `CompilePipeline`s.
+  more flexibility with a variable number of arguments that are of types `Transform`, `BoundTransform`,
+  or other `CompilePipeline`s.
   [(#8750)](https://github.com/PennyLaneAI/pennylane/pull/8750)
 
 <h3>Improvements 🛠</h3>
