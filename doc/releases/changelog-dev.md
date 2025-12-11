@@ -2,6 +2,11 @@
 
 <h3>New features since last release</h3>
 
+* Bucket Brigade QRAM and a Hybrid QRAM variant are implemented to allow for 
+  selection of bitstrings in superposition.
+  [(#8670)](https://github.com/PennyLaneAI/pennylane/pull/8670)
+  [(#8679)](https://github.com/PennyLaneAI/pennylane/pull/8679)
+
 * Users can now perform rapid Clifford+T decomposition with QJIT and program capture enabled,
   using the new :func:`~pennylane.transforms.gridsynth` compilation pass.
   This pass discretizes ``RZ`` and ``PhaseShift`` gates to either the Clifford+T basis or to the PPR basis.
