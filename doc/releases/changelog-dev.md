@@ -611,6 +611,9 @@
 
 <h3>Documentation 📝</h3>
 
+* A note clarifying the way the factors of a ``~.ChangeOpBasis`` are iterated in reverse has been
+  added to the documentation of ``~.ChangeOpBasis``.
+
 * The documentation of ``qml.transforms.rz_phase_gradient`` has been updated with respect to the
   sign convention of phase gradient states, how it prepares the phase gradient state in the code
   example, and the verification of the code example result.
