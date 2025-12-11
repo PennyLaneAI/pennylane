@@ -1105,7 +1105,7 @@ class TestCompilePipeline:
     def test_remove_invalid_type(self):
         """Test that removing an invalid type raises TypeError."""
         dispatched_transform = transform(first_valid_transform)
-        container = TransformContainer(dispatched_transform)
+        container = BoundTransform(dispatched_transform)
         program = CompilePipeline([container])
 
         with pytest.raises(TypeError, match="Only TransformContainer or TransformDispatcher"):
