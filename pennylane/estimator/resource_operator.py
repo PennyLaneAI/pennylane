@@ -350,9 +350,9 @@ class ResourceOperator(ABC):
         ``pow_resource_decomp`` method.
 
         Resources:
-            The resources for the control of an operator is to return the base decomposition of the operator with every
-            operator raised to the given power. For a power of zero, the identity operator is returned. For a power of one,
-            the base operator is returned.
+            The resources for an operator raised to some power are obtained by taking the base resource
+            decomposition of the operator and tracking each gate raised to the given power. For a power of 
+            zero, the identity operator is returned. For a power of one, the base operator is returned.
 
         Args:
             pow_z (int): exponent that the operator is being raised to
