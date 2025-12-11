@@ -48,7 +48,7 @@ def diff_eqn_assertions(eqn, scalar_out, argnums=None, n_consts=0, fn=None):
         "fn",
         "scalar_out",
     }
-    assert eqn.params["argnums"] == argnums
+    assert eqn.params["argnums"] == tuple(argnums)
     assert eqn.params["n_consts"] == n_consts
     assert eqn.params["method"] == "auto"
     assert eqn.params["h"] == 1e-6
@@ -57,28 +57,53 @@ def diff_eqn_assertions(eqn, scalar_out, argnums=None, n_consts=0, fn=None):
         assert eqn.params["fn"] == fn
 
 
-class TestGrad:
-    """Tests for capturing `qml.grad`."""
+@pytest.mark.parametrize("grad_fn", (qml.grad, qml.jacobian))
+class TestGradJacobian:
+    """Test for capturing both qml.grad and qml.jacobian."""
 
-    @pytest.mark.parametrize("grad_fn", (qml.grad, qml.jacobian))
+    @pytest.mark.parametrize("argnums", (1, 2, (0, 1)))
+    def test_error_on_big_argnum(self, grad_fn, argnums):
+
+        with pytest.raises(ValueError, match="Differentiating with respect to argnums"):
+            grad_fn(lambda x, y, z: y * x**2 + z, argnums=argnums)(jnp.array(0.5), y=2.0, z=2.0)
+
     def test_error_on_bad_h(self, grad_fn):
         """Test that an error is raised if h is not a Number."""
 
         with pytest.raises(ValueError, match="Invalid h value"):
             grad_fn(lambda x: x**2, h="something")(0.5)
 
-    @pytest.mark.parametrize("grad_fn", (qml.grad, qml.jacobian))
     def test_error_on_bad_method(self, grad_fn):
         """Test that an error is raised for an unsupported grad_fn."""
 
         with pytest.raises(ValueError, match="Got unrecognized method"):
             jax.make_jaxpr(grad_fn(lambda x: x**2, method="param-shift"))(0.5)
 
-    @pytest.mark.parametrize("grad_fn", (qml.grad, qml.jacobian))
     def test_error_method_execution(self, grad_fn):
         """Test that non-auto methods raise an error during plxpr execution."""
         with pytest.raises(ValueError, match="Invalid value"):
             grad_fn(lambda x: x**2, method="fd")(0.5)
+
+    def test_dynamic_kwarg(self, grad_fn):
+        """Test that numerical kwargs are still treated like inputs."""
+
+        def f(x, y):
+            return y * x**2
+
+        def w(x, y):
+            return grad_fn(f)(x, y=y)
+
+        jaxpr = jax.make_jaxpr(w)(0.5, y=jnp.array(2.0))
+        assert len(jaxpr.eqns[0].invars) == 2
+        fn_jaxpr = jaxpr.eqns[0].params["jaxpr"]
+        assert len(fn_jaxpr.invars) == 2
+        assert len(fn_jaxpr.constvars) == 0
+
+        assert len(jaxpr.eqns[0].outvars) == 1  # just derivative of x
+
+
+class TestGrad:
+    """Tests for capturing `qml.grad`."""
 
     @pytest.mark.parametrize("argnums", ([0, 1], [0], [1], 0, 1))
     def test_classical_grad(self, argnums):

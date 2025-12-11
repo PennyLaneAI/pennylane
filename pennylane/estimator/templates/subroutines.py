@@ -2311,6 +2311,7 @@ class Reflection(ResourceOperator):
         else:
             self.cmpr_U = qre.resource_rep(qre.Identity)
 
+        self.num_wires = num_wires
         if num_wires is None:
             self.num_wires = self.cmpr_U.num_wires
 

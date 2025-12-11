@@ -1779,7 +1779,7 @@ class TrotterPauli(ResourceOperator):
 
         In the first case, the exponential :math:`e^{i t \alpha_{j} O_{j}} = e^{i t \alpha_{j} \vec{P}_{j}}`
         is a single generalized Pauli rotation 
-        (:class:`~.pennylane.estimator.ops.qubit.parametric_ops_multi_qubit.PauliRot`). In the second
+        (:class:`~.estimator.ops.qubit.parametric_ops_multi_qubit.PauliRot`). In the second
         case, the exponential can be expanded using the fact that all operators in the sum commute:
 
         .. math::
@@ -1814,65 +1814,32 @@ class TrotterPauli(ResourceOperator):
 
     **Example**
 
-    The resources for this operation are computed using the code below. Note that each of 
-    the 25 Pauli strings is treated as an individual term in the sum and no grouping into
-    commuting groups of terms is assumed.
+    The resources for this operation are computed using the code below.
 
-    >>> import pennylane.estimator as qre
-    >>> pauli_terms = {"XX": 10, "ZZ":10, "Z":5}     
-    >>> pauli_ham = qre.PauliHamiltonian(num_qubits=5, pauli_dist=pauli_terms)
-    >>> pauli_ham
-    PauliHamiltonian(num_qubits=5, num_pauli_words=25, max_weight=2, one_norm=None)
-    >>> num_steps, order = (10, 2)
+    >>> pauli_terms = {"X":10, "XX":5, "XXXX":3, "YY": 5, "ZZ":5, "Z": 2}
+    >>> pauli_ham = qre.PauliHamiltonian(num_qubits=10, pauli_terms=pauli_terms)
+    >>> num_steps, order = (1, 2)
     >>> res = qre.estimate(qre.TrotterPauli(pauli_ham, num_steps, order))
     >>> print(res)
     --- Resources: ---
-     Total wires: 5
-       algorithmic wires: 5
+     Total wires: 10
+       algorithmic wires: 10
        allocated wires: 0
          zero state: 0
          any state: 0
-     Total gates : 2.280E+4
-       'T': 2.200E+4,
-       'CNOT': 800
+     Total gates : 2.844E+3
+       'T': 2.640E+3,
+       'CNOT': 96,
+       'Z': 20,
+       'S': 40,
+       'Hadamard': 48
     
     .. details::
         :title: Usage Details
 
-        Estimating resources for the trotterization of a Pauli Hamiltonian depends on how
-        the Pauli Hamiltonian was constructed. Specifically, how much information was provided
-        by the user (see :class:`~.estimator.compact_hamiltonian.PauliHamiltonian` for more info).
-
-        If the Hamiltonian is constructed with minimal information about the specific Pauli terms:
-
-        >>> pauli_ham = qre.PauliHamiltonian(num_qubits=10, num_pauli_words=30, max_weight=4)
-        >>> pauli_ham
-        PauliHamiltonian(num_qubits=10, num_pauli_words=30, max_weight=4, one_norm=None)
-
-        In this case, we assume an even distribution of X-like, Y-like and Z-like Pauli strings with 
-        maximum weight.
-
-        >>> num_steps, order = (1, 1)
-        >>> res = qre.estimate(
-        ...     qre.TrotterPauli(pauli_ham, num_steps, order),
-        ...     gate_set={'PauliRot'},
-        ... )
-        >>> print(res)
-        --- Resources: ---
-         Total wires: 10
-           algorithmic wires: 10
-           allocated wires: 0
-             zero state: 0
-             any state: 0
-         Total gates : 30
-           'PauliRot': 30
-        >>> print(res.gate_breakdown())
-        PauliRot total: 30
-            PauliRot {'pauli_string': 'XXXX', 'precision': None}: 10
-            PauliRot {'pauli_string': 'YYYY', 'precision': None}: 10
-            PauliRot {'pauli_string': 'ZZZZ', 'precision': None}: 10
-
-        Alternately, the Hamiltonian can be constructed by providing the commuting groups of terms.
+        Estimating resources for the Trotterization of a Pauli Hamiltonian depends on how
+        the Pauli Hamiltonian was constructed. Specifically, if the terms of the Hamiltonian were 
+        separated into commuting groups (see :class:`~.estimator.compact_hamiltonian.PauliHamiltonian` for more information).
         Note, that the order in which the groups are listed matters, keeping the largest groups as
         the first and last elements of the list will lead to the most reduction in resources.
 
@@ -1881,19 +1848,9 @@ class TrotterPauli(ResourceOperator):
         ...     {"YY": 5, "ZZ":5},
         ...     {"Z": 2},
         ... )
-        >>> pauli_ham = qre.PauliHamiltonian(num_qubits=10, commuting_groups=commuting_groups)
-        >>> pauli_ham
-        PauliHamiltonian(num_qubits=10, num_pauli_words=30, max_weight=4, one_norm=None)
-        >>> pauli_ham.commuting_groups
-        ({'X': 10, 'XX': 5, 'XXXX': 3}, {'YY': 5, 'ZZ': 5}, {'Z': 2})
-
-        This often leads to fewer total resources when estimating costs in practice:
-        
-        >>> num_steps, order = (1, 1)
-        >>> res = qre.estimate(
-        ...     qre.TrotterPauli(pauli_ham, num_steps, order),
-        ...     gate_set={'PauliRot'},
-        ... )
+        >>> pauli_ham = qre.PauliHamiltonian(num_qubits=10, pauli_terms=commuting_groups)        
+        >>> num_steps, order = (1, 2)
+        >>> res = qre.estimate(qre.TrotterPauli(pauli_ham, num_steps, order))
         >>> print(res)
         --- Resources: ---
          Total wires: 10
@@ -1901,16 +1858,12 @@ class TrotterPauli(ResourceOperator):
            allocated wires: 0
              zero state: 0
              any state: 0
-         Total gates : 30
-           'PauliRot': 30
-        >>> print(res.gate_breakdown())
-        PauliRot total: 30
-            PauliRot {'pauli_string': 'X', 'precision': None}: 10
-            PauliRot {'pauli_string': 'XX', 'precision': None}: 5
-            PauliRot {'pauli_string': 'XXXX', 'precision': None}: 3
-            PauliRot {'pauli_string': 'YY', 'precision': None}: 5
-            PauliRot {'pauli_string': 'ZZ', 'precision': None}: 5
-            PauliRot {'pauli_string': 'Z', 'precision': None}: 2
+         Total gates : 2.756E+3
+           'T': 2.552E+3,
+           'CNOT': 96,
+           'Z': 20,
+           'S': 40,
+           'Hadamard': 48
 
     """
 
@@ -2055,50 +2008,43 @@ class TrotterPauli(ResourceOperator):
             in the decomposition.
         """
         k = order // 2
-        if (groups := pauli_ham.commuting_groups) is not None:
-            num_groups = len(groups)
-            cost_groups = [cls.cost_pauli_group(group) for group in groups]
-            gate_count_lst = []
-            if order == 1:
-                for group_cost_lst in cost_groups:
-                    gate_count_lst.extend([num_steps * gate_count for gate_count in group_cost_lst])
+        pauli_terms = pauli_ham.pauli_terms
 
-                return gate_count_lst
+        if isinstance(pauli_terms, dict):
+            cost_fragments = cls.cost_pauli_group(pauli_terms)
+            fragment_repetition = num_steps if order == 1 else 2 * num_steps * (5 ** (k - 1))
+            return [fragment_repetition * gate_count for gate_count in cost_fragments]
 
-            for index, group_cost_lst in enumerate(cost_groups):
-                if index == 0:
-                    fragment_repetition = num_steps * (5 ** (k - 1)) + 1
-                elif index == num_groups - 1:
-                    fragment_repetition = num_steps * (5 ** (k - 1))
-                else:
-                    fragment_repetition = 2 * num_steps * (5 ** (k - 1))
-
-                gate_count_lst.extend(
-                    [fragment_repetition * gate_count for gate_count in group_cost_lst]
-                )
+        num_groups = len(pauli_terms)  # commuting groups
+        cost_groups = [cls.cost_pauli_group(group) for group in pauli_terms]
+        gate_count_lst = []
+        if order == 1:
+            for group_cost_lst in cost_groups:
+                gate_count_lst.extend([num_steps * gate_count for gate_count in group_cost_lst])
 
             return gate_count_lst
 
-        pauli_dist = pauli_ham.pauli_dist or (
-            {
-                "X" * pauli_ham.max_weight: pauli_ham.num_pauli_words // 3,
-                "Y" * pauli_ham.max_weight: pauli_ham.num_pauli_words // 3,
-                "Z" * pauli_ham.max_weight: (pauli_ham.num_pauli_words // 3)
-                + (pauli_ham.num_pauli_words % 3),
-            }
-        )
+        for index, group_cost_lst in enumerate(cost_groups):
+            if index == 0:
+                fragment_repetition = num_steps * (5 ** (k - 1)) + 1
+            elif index == num_groups - 1:
+                fragment_repetition = num_steps * (5 ** (k - 1))
+            else:
+                fragment_repetition = 2 * num_steps * (5 ** (k - 1))
 
-        cost_fragments = cls.cost_pauli_group(pauli_dist)
-        fragment_repetition = num_steps if order == 1 else 2 * num_steps * (5 ** (k - 1))
-        return [fragment_repetition * gate_count for gate_count in cost_fragments]
+            gate_count_lst.extend(
+                [fragment_repetition * gate_count for gate_count in group_cost_lst]
+            )
+
+        return gate_count_lst
 
     @staticmethod
-    def cost_pauli_group(pauli_dist: dict):
+    def cost_pauli_group(pauli_terms: dict):
         """Given a dictionary of Pauli words and frequencies, return the cost of exponentiating
         the group of terms.
 
         Args:
-            pauli_dist (dict): A dictionary which represents the types of Pauli words in the
+            pauli_terms (dict): A dictionary which represents the types of Pauli words in the
                 Hamiltonian and their relative frequencies.
 
         Returns:
@@ -2108,5 +2054,5 @@ class TrotterPauli(ResourceOperator):
         """
         return [
             GateCount(PauliRot.resource_rep(pauli_word), count)
-            for pauli_word, count in pauli_dist.items()
+            for pauli_word, count in pauli_terms.items()
         ]

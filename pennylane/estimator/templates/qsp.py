@@ -332,7 +332,7 @@ class HamSimGQSP(ResourceOperator):
 
     @staticmethod
     def degree_of_poly_approx(time, one_norm, epsilon):
-        """Obtain the maximum degree of the polynomial approximation required
+        r"""Obtain the maximum degree of the polynomial approximation required
         to approximate e^(iht * cos(theta)) within error epsilon
 
         Args:

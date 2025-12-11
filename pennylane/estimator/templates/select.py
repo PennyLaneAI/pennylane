@@ -14,6 +14,7 @@
 r"""Resource operators for select templates."""
 
 import math
+from collections import defaultdict
 
 import numpy as np
 
@@ -479,9 +480,7 @@ class SelectPauli(ResourceOperator):
         self.queue()
         self.pauli_ham = pauli_ham
 
-        num_select_ops = pauli_ham.num_pauli_words
-        num_ctrl_wires = math.ceil(math.log2(num_select_ops))
-
+        num_ctrl_wires = math.ceil(math.log2(pauli_ham.num_terms))
         num_wires = pauli_ham.num_qubits + num_ctrl_wires
 
         if wires:
@@ -522,7 +521,15 @@ class SelectPauli(ResourceOperator):
         l_elbow = resource_rep(qre.TemporaryAND)
         r_elbow = resource_rep(qre.Adjoint, {"base_cmpr_op": l_elbow})
 
-        num_ops = pauli_ham.num_pauli_words
+        pauli_terms = pauli_ham.pauli_terms
+        if not isinstance(pauli_terms, dict):
+            commuting_groups = pauli_terms
+            pauli_terms = defaultdict(int)
+            for group in commuting_groups:
+                for pw, freq in group.items():
+                    pauli_terms[pw] += freq
+
+        num_ops = pauli_ham.num_terms
         work_qubits = math.ceil(math.log2(num_ops)) - 1
 
         gate_types.append(Allocate(work_qubits))
@@ -531,26 +538,19 @@ class SelectPauli(ResourceOperator):
         cy = qre.CY.resource_rep()
         op_counts = [0, 0, 0]  # cx, cy, cz counts
 
-        if (pauli_dist := pauli_ham.pauli_dist) is not None:
-            for pw, freq in pauli_dist.items():
-                x_count, y_count, z_count = (0, 0, 0)
-                for pauli_op in pw:
-                    if pauli_op == "X":
-                        x_count += 1
-                    elif pauli_op == "Y":
-                        y_count += 1
-                    else:
-                        z_count += 1
+        for pw, freq in pauli_terms.items():
+            x_count, y_count, z_count = (0, 0, 0)
+            for pauli_op in pw:
+                if pauli_op == "X":
+                    x_count += 1
+                elif pauli_op == "Y":
+                    y_count += 1
+                else:
+                    z_count += 1
 
-                op_counts[0] += x_count * freq
-                op_counts[1] += y_count * freq
-                op_counts[2] += z_count * freq
-        else:
-            op_counts[0] = pauli_ham.max_weight * (pauli_ham.num_pauli_words // 3)
-            op_counts[1] = pauli_ham.max_weight * (pauli_ham.num_pauli_words // 3)
-            op_counts[2] = pauli_ham.max_weight * (
-                (pauli_ham.num_pauli_words // 3) + (pauli_ham.num_pauli_words % 3)
-            )
+            op_counts[0] += x_count * freq
+            op_counts[1] += y_count * freq
+            op_counts[2] += z_count * freq
 
         gate_types.append(GateCount(cnot, op_counts[0]))
         gate_types.append(GateCount(cy, op_counts[1]))
@@ -628,8 +628,16 @@ class SelectPauli(ResourceOperator):
                 gate_types.append(GateCount(x, 2))
 
         # Cost Single-Controlled Select (Unary Iterator)
-        num_ops = pauli_ham.num_pauli_words
-        work_qubits = math.ceil(math.log2(num_ops)) - 1
+        pauli_terms = pauli_ham.pauli_terms
+        if not isinstance(pauli_terms, dict):
+            commuting_groups = pauli_terms
+            pauli_terms = defaultdict(int)
+            for group in commuting_groups:
+                for pw, freq in group.items():
+                    pauli_terms[pw] += freq
+
+        num_ops = pauli_ham.num_terms
+        work_qubits = math.ceil(math.log2(num_ops))
 
         gate_types.append(Allocate(work_qubits))
 
@@ -637,26 +645,19 @@ class SelectPauli(ResourceOperator):
         cy = qre.CY.resource_rep()
         op_counts = [0, 0, 0]  # cx, cy, cz counts
 
-        if (pauli_dist := pauli_ham.pauli_dist) is not None:
-            for pw, freq in pauli_dist.items():
-                x_count, y_count, z_count = (0, 0, 0)
-                for pauli_op in pw:
-                    if pauli_op == "X":
-                        x_count += 1
-                    elif pauli_op == "Y":
-                        y_count += 1
-                    else:
-                        z_count += 1
+        for pw, freq in pauli_terms.items():
+            x_count, y_count, z_count = (0, 0, 0)
+            for pauli_op in pw:
+                if pauli_op == "X":
+                    x_count += 1
+                elif pauli_op == "Y":
+                    y_count += 1
+                else:
+                    z_count += 1
 
-                op_counts[0] += x_count * freq
-                op_counts[1] += y_count * freq
-                op_counts[2] += z_count * freq
-        else:
-            op_counts[0] = pauli_ham.max_weight * (pauli_ham.num_pauli_words // 3)
-            op_counts[1] = pauli_ham.max_weight * (pauli_ham.num_pauli_words // 3)
-            op_counts[2] = pauli_ham.max_weight * (
-                (pauli_ham.num_pauli_words // 3) + (pauli_ham.num_pauli_words % 3)
-            )
+            op_counts[0] += x_count * freq
+            op_counts[1] += y_count * freq
+            op_counts[2] += z_count * freq
 
         gate_types.append(GateCount(cnot, op_counts[0]))
         gate_types.append(GateCount(cy, op_counts[1]))
@@ -701,9 +702,7 @@ class SelectPauli(ResourceOperator):
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
-        num_select_ops = pauli_ham.num_pauli_words
-        num_ctrl_wires = math.ceil(math.log2(num_select_ops))
-
+        num_ctrl_wires = math.ceil(math.log2(pauli_ham.num_terms))
         num_wires = pauli_ham.num_qubits + num_ctrl_wires
         params = {"pauli_ham": pauli_ham}
         return CompressedResourceOp(cls, num_wires, params)

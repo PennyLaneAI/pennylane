@@ -13,7 +13,6 @@
 # limitations under the License.
 """Unit tests for the QuantumScript"""
 import copy
-from collections import defaultdict
 
 import numpy as np
 import pytest
@@ -590,15 +589,13 @@ class TestInfomationProperties:
         qs = QuantumScript()
         assert qs._specs is None
 
-        assert qs.specs["resources"] == qml.resource.Resources()
-
-        assert qs.specs["num_observables"] == 0
-        assert qs.specs["num_trainable_params"] == 0
-
-        with pytest.raises(KeyError, match="is no longer in specs"):
-            _ = qs.specs["num_diagonalizing_gates"]
-
-        assert len(qs.specs) == 4
+        assert qs.specs["resources"] == qml.resource.SpecsResources(
+            num_allocs=0,
+            gate_types={},
+            gate_sizes={},
+            measurements={},
+            depth=0,
+        )
 
         assert qs._specs is qs.specs
 
@@ -610,16 +607,16 @@ class TestInfomationProperties:
         specs = qs.specs
         assert qs._specs is specs
 
-        assert len(specs) == 4
-
-        gate_types = defaultdict(int, {"RX": 2, "Rot": 1, "CNOT": 1})
-        gate_sizes = defaultdict(int, {1: 3, 2: 1})
-        expected_resources = qml.resource.Resources(
-            num_wires=3, num_gates=4, gate_types=gate_types, gate_sizes=gate_sizes, depth=3
+        gate_types = {"RX": 2, "Rot": 1, "CNOT": 1}
+        gate_sizes = {1: 3, 2: 1}
+        expected_resources = qml.resource.SpecsResources(
+            num_allocs=3,
+            gate_types=gate_types,
+            gate_sizes=gate_sizes,
+            measurements={"expval(PauliX)": 1, "probs(2 wires)": 1},
+            depth=3,
         )
         assert specs["resources"] == expected_resources
-        assert specs["num_observables"] == 2
-        assert specs["num_trainable_params"] == 5
 
     @pytest.mark.parametrize(
         "shots, total_shots, shot_vector",

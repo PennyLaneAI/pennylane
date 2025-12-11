@@ -243,9 +243,17 @@ class PauliRot(ResourceOperator):
         When the :code:`pauli_string` is a single Pauli operator (:code:`X, Y, Z, Identity`)
         the cost is the associated single qubit rotation (:code:`RX, RY, RZ, GlobalPhase`).
 
-        The resources come from Section VIII (Figures 3 & 4) of `The Bravyi-Kitaev transformation
-        for quantum computation of electronic structure <https://arxiv.org/abs/1208.5986>`_ paper,
-        in combination with the following identities:
+        If the :code:`pauli_string` is :code:`XX`, the cost is determined according to the Ising-XX
+        decomposition. Specifically, the resources are one :code:`RX` gate at the specified precision
+        and two :code:`CNOT` gates.
+        
+        If the :code:`pauli_string` is :code:`YY`, the cost is determined according to the Ising-YY
+        decomposition. Specifically, the resources are one :code:`RY` gate at the specified precision
+        and two :code:`CY` gates.
+
+        For any general Pauli string the resources come from Section VIII (Figures 3 & 4) of
+        `The Bravyi-Kitaev transformation for quantum computation of electronic structure
+        <https://arxiv.org/abs/1208.5986>`_ paper, in combination with the following identities:
 
         .. math::
 
@@ -308,9 +316,17 @@ class PauliRot(ResourceOperator):
             When the :code:`pauli_string` is a single Pauli operator (:code:`X, Y, Z, Identity`)
             the cost is the associated single qubit rotation (:code:`RX, RY, RZ, GlobalPhase`).
 
-            The resources come from Section VIII (Figures 3 & 4) of `The Bravyi-Kitaev transformation
-            for quantum computation of electronic structure <https://arxiv.org/abs/1208.5986>`_ paper,
-            in combination with the following identity:
+            If the :code:`pauli_string` is :code:`XX`, the cost is determined according to the Ising-XX
+            decomposition. Specifically, the resources are one :code:`RX` gate at the specified precision
+            and two :code:`CNOT` gates.
+            
+            If the :code:`pauli_string` is :code:`YY`, the cost is determined according to the Ising-YY
+            decomposition. Specifically, the resources are one :code:`RY` gate at the specified precision
+            and two :code:`CY` gates.
+
+            For any general Pauli string the resources come from Section VIII (Figures 3 & 4) of
+            `The Bravyi-Kitaev transformation for quantum computation of electronic structure
+            <https://arxiv.org/abs/1208.5986>`_ paper, in combination with the following identities:
 
             .. math::
 
