@@ -30,6 +30,8 @@ jobs:
     if: github.event.pull_request.draft == false
     needs: [determine_runner]
     runs-on: ${{ needs.determine_runner.outputs.runner_group }}
+    env:
+      UV_SYSTEM_PYTHON: 1
 
     name: Documentation Tests on Python 3.11 
 
@@ -60,7 +62,7 @@ jobs:
       - name: Print Dependencies
         run: | 
           python -c "import pennylane as qml; qml.about()"
-          python -m pip list
+          uv pip list
 
       # TODO: Remove the --ignore options as layers are tested and verified
       # to be working correctly.
@@ -105,4 +107,4 @@ jobs:
           ${IGNORE_OPTS_TERTIARY}
           "
 
-          pytest pennylane $IGNORE_OPTS --ignore-glob='*tests*'
+          uv run pytest pennylane $IGNORE_OPTS --ignore-glob='*tests*'

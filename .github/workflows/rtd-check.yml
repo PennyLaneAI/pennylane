@@ -17,10 +17,11 @@ jobs:
   rtd_check:
     runs-on: ubuntu-24.04
     env:
-      PYTHON_VERSION: "3.10"
+      PYTHON_VERSION: "3.11"
       # Space separated list of packages to install for each package manager
       PIP_PACKAGES_TO_INSTALL: "sphinx"
       APT_PACKAGES_TO_INSTALL: "graphviz"
+      UV_SYSTEM_PYTHON: 1      
     steps:
     - name: Checkout Repo
       uses: actions/checkout@v4
@@ -42,8 +43,8 @@ jobs:
       run: |
         pip install --upgrade --no-cache-dir pip setuptools uv
         uv pip install --upgrade --no-cache-dir ${{ env.PIP_PACKAGES_TO_INSTALL }}
-        uv pip install --exists-action=w --no-cache-dir -r doc/requirements.txt   
-        uv pip install --upgrade --upgrade-strategy only-if-needed --no-cache-dir  .      
+        uv pip install --no-cache-dir -r doc/requirements.txt   
+        uv pip install --upgrade --no-cache-dir  .      
 
 
     - name: Build Sphinx HTML
