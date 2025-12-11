@@ -127,9 +127,7 @@ def _op_expval_indep(
         expvals = []
         for op in ops:
             key, val = update(key, op)
-            expvals.append(
-                val[0]
-            )  # TODO: this is going to be the wrong shape for later concatenation
+            expvals.append(val[0])
 
         return array(expvals)
 
@@ -153,7 +151,7 @@ def _op_expval_batch(
     """Estimate the expectation values of a batch of Pauli-Z type operators. A set of l operators must be specified
     by an array of shape (l,n_qubits), where each row is a binary vector that specifies on which qubit a Pauli Z
     operator acts.
-    The expectation values are estimated using a randomized method whose precision in controlled by n_samples,
+    The expectation values are estimated using a randomized method whose precision is controlled by n_samples,
     with larger values giving higher precision. Estimates are unbiased, however may be correlated. To request
     uncorrelated estimate, use indep_estimates=True at the cost of larger runtime.
 
