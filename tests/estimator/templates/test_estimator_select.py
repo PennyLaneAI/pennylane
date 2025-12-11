@@ -15,6 +15,7 @@
 Tests for select resource operators.
 """
 from collections import defaultdict
+
 import pytest
 
 import pennylane.estimator as qre
@@ -315,6 +316,73 @@ class TestSelectPauli:
         if num_ctrl_wires > 1:
             mcx_rep = qre.MultiControlledX.resource_rep(num_ctrl_wires, num_zero_ctrl)
             assert res_dict[mcx_rep] == 2
+
+    def test_init_with_wires(self):
+        """Test initialization with wires."""
+        ph = qre.PauliHamiltonian(2, {"X": 1, "Z": 1})
+        wires = [0, 1, 2]
+        op = qre.SelectPauli(ph, wires=wires)
+        assert list(op.wires) == wires
+
+    def test_resources_commuting_groups(self):
+        """Test resource decomposition with commuting groups."""
+        # Equivalent to {"X": 1, "Z": 1}
+        groups = [{"X": 1}, {"Z": 1}]
+        ph = qre.PauliHamiltonian(2, groups)
+        op = qre.SelectPauli(ph)
+        res = op.resource_decomp(ph)
+
+        res_dict = defaultdict(int)
+        for item in res:
+            if isinstance(item, qre.GateCount):
+                res_dict[item.gate] += item.count
+            elif isinstance(item, (qre.Allocate, qre.Deallocate)):
+                res_dict[type(item)] += 1
+
+        assert res_dict[qre.CNOT.resource_rep()] == 2
+        assert res_dict[qre.CZ.resource_rep()] == 1
+        assert res_dict[qre.X.resource_rep()] == 2
+
+    def test_controlled_resources_commuting_groups(self):
+        """Test controlled resource decomposition with commuting groups."""
+        groups = [{"X": 1}, {"Z": 1}]
+        ph = qre.PauliHamiltonian(2, groups)
+        op = qre.SelectPauli(ph)
+        # num_ctrl_wires=1, num_zero_ctrl=0
+        res = op.controlled_resource_decomp(1, 0, op.resource_params)
+
+        res_dict = defaultdict(int)
+        for item in res:
+            if isinstance(item, qre.GateCount):
+                res_dict[item.gate] += item.count
+            elif isinstance(item, (qre.Allocate, qre.Deallocate)):
+                res_dict[type(item)] += 1
+
+        assert res_dict[qre.CNOT.resource_rep()] == 2
+        assert res_dict[qre.CZ.resource_rep()] == 1
+        assert res_dict[qre.X.resource_rep()] == 2
+
+    def test_controlled_resources_cleanup(self):
+        """Test that cleanup is performed correctly when num_ctrl_wires > 1."""
+        ph = qre.PauliHamiltonian(2, {"X": 1, "Z": 1})
+        op = qre.SelectPauli(ph)
+        # num_ctrl_wires=2, num_zero_ctrl=0
+        res = op.controlled_resource_decomp(2, 0, op.resource_params)
+
+        # Check that we have 2 MCX gates (one alloc, one cleanup)
+        mcx_rep = qre.MultiControlledX.resource_rep(2, 0)
+        mcx_count = sum(
+            item.count for item in res if isinstance(item, qre.GateCount) and item.gate == mcx_rep
+        )
+        assert mcx_count == 2
+
+        # Check Deallocate count (one for work qubits, one for control cleanup)
+        dealloc_count = sum(1 for item in res if isinstance(item, qre.Deallocate))
+        # work_qubits = ceil(log2(2)) = 1.
+        # Allocate(1) for work qubits.
+        # Allocate(1) for control aux.
+        # So 2 Allocates, 2 Deallocates.
+        assert dealloc_count == 2
 
 
 class TestGQSP:

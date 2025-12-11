@@ -215,7 +215,7 @@ class HamiltonianGQSP(ResourceOperator):
     r"""Resource class for performing hamiltonian simulation using GQSP.
 
     Args:
-        walk_op (ResourceOperator): the quantum walk operator
+        walk_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): the quantum walk operator
         time (float): the simulation time
         one_norm (float): one norm of the hamiltonian
         approximation_error (float): the tolerance for error in the polynomial approximation of :math:`e^{it\cos{theta}}`
