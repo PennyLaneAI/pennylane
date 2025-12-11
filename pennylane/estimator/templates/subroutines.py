@@ -2273,7 +2273,7 @@ class Reflection(ResourceOperator):
 
     Args:
         num_wires (int | None): number of wires the operator acts on
-        U (ResourceOperator | None): the operator that prepares the state :math:`|\Psi\rangle`
+        U (:class:`~.pennylane.estimator.resource_operator.ResourceOperator` | None): the operator that prepares the state :math:`|\Psi\rangle`
         alpha (float | None): the angle of the operator, default is :math:`\pi`
         wires (Sequence[int], None): The wires the operation acts on.
 
