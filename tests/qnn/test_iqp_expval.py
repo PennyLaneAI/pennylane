@@ -101,7 +101,7 @@ def test_expval(
     @qnode(dev)
     def iqp_circuit(
         weights, pattern, spin_sym, n_qubits, ops
-    ):  # pylint: disable=too-many-arguments
+    ):
         IQP(weights, n_qubits, pattern, spin_sym)
 
         expectation_operators = []

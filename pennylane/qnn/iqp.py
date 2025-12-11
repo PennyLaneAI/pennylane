@@ -265,7 +265,7 @@ def op_expval(
     max_batch_ops: int = None,
     max_batch_samples: int = None,
 ) -> list:
-    """Estimate the expectation values of a batch of Pauli-Z type operators. A set of l operators must be specified
+    r"""Estimate the expectation values of a batch of Pauli-Z type operators. A set of l operators must be specified
     by an array of shape (l,n_qubits), where each row is a binary vector that specifies on which qubit a Pauli Z
     operator acts.
     The expectation values are estimated using a randomized method whose precision in controlled by n_samples,
