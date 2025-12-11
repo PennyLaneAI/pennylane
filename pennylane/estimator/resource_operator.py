@@ -304,8 +304,8 @@ class ResourceOperator(ABC):
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
-        For ResourceOperators that don't define a `controlled_resource_decomp`, this will be the default
-        `controlled_resource_decomp` method. Every operator in the decomposition will be controlled.
+        For ``ResourceOperators`` that don't define a ``controlled_resource_decomp``, this will be the default
+        ``controlled_resource_decomp`` method. 
 
         Args:
             num_ctrl_wires (int): the number of qubits the
