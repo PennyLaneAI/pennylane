@@ -2343,7 +2343,7 @@ class Reflection(ResourceOperator):
         Args:
             num_wires (int): number of wires the operator acts on
             alpha (float): the angle of the operator, default is :math:`\pi`
-            cmpr_U (CompressedResourceOp): the operator that prepares the state :math:`|\Psi\rangle`
+            cmpr_U (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): the operator that prepares the state :math:`|\Psi\rangle`
 
         Resources:
             [TODO] See base PennyLane implemntation
@@ -2466,7 +2466,7 @@ class Reflection(ResourceOperator):
             dict: A dictionary containing the resource parameters:
                 * num_wires (int | None): number of wires the operator acts on
                 * alpha (float | None): the angle of the operator, default is :math:`\pi`
-                * cmpr_U (CompressedResourceOp | None): the operator that prepares the
+                * cmpr_U (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp` | None): the operator that prepares the
                   state :math:`|\Psi\rangle`
 
         """
@@ -2482,7 +2482,7 @@ class Reflection(ResourceOperator):
         Args:
             num_wires (int): number of wires the operator acts on
             alpha (float): the angle of the operator, default is :math:`\pi`
-            cmpr_U (CompressedResourceOp): the operator that prepares the state :math:`|\Psi\rangle`
+            cmpr_U (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): the operator that prepares the state :math:`|\Psi\rangle`
 
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
