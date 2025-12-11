@@ -830,9 +830,9 @@ class TestCompilePipelineConstruction:
 
         pipeline = CompilePipeline(
             [
-                TransformContainer(qml.transforms.compile),
-                TransformContainer(qml.transforms.decompose),
-                TransformContainer(qml.transforms.cancel_inverses),
+                BoundTransform(qml.transforms.compile),
+                BoundTransform(qml.transforms.decompose),
+                BoundTransform(qml.transforms.cancel_inverses),
             ]
         )
         assert len(pipeline) == 3
@@ -847,7 +847,7 @@ class TestCompilePipelineConstruction:
         pipeline = CompilePipeline(
             qml.transforms.cancel_inverses,
             another_pipeline,
-            TransformContainer(qml.transforms.decompose, kwargs={"gate_set": {qml.Rot, qml.CNOT}}),
+            BoundTransform(qml.transforms.decompose, kwargs={"gate_set": {qml.Rot, qml.CNOT}}),
         )
         assert len(pipeline) == 4
 

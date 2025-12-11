@@ -167,7 +167,7 @@ class CompilePipeline:
     @overload
     def __init__(
         self,
-        transforms: Sequence[TransformContainer],
+        transforms: Sequence[BoundTransform],
         /,
         *,
         cotransform_cache: CotransformCache | None = None,
@@ -175,7 +175,7 @@ class CompilePipeline:
     @overload
     def __init__(
         self,
-        *transforms: CompilePipeline | TransformContainer | TransformDispatcher,
+        *transforms: CompilePipeline | BoundTransform | TransformDispatcher,
         cotransform_cache: CotransformCache | None = None,
     ): ...
     def __init__(
@@ -194,7 +194,7 @@ class CompilePipeline:
         self._compile_pipeline = []
         self.cotransform_cache = cotransform_cache
         for obj in transforms:
-            if not isinstance(obj, (CompilePipeline, TransformContainer, TransformDispatcher)):
+            if not isinstance(obj, (CompilePipeline, BoundTransform, TransformDispatcher)):
                 raise TypeError(
                     "CompilePipeline can only be constructed with a series of transforms "
                     "or compile pipelines, or with a single list of transforms."
