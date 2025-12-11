@@ -33,7 +33,7 @@ class IQP(Operation):
 
     In this `IQPOpt <https://arxiv.org/pdf/2501.04776>`__ paper and this
     `train on classical, deploy on quantum <https://arxiv.org/pdf/2503.02934>`__ paper, the authors
-    present methods for analytically approximating expectation values coming from measurements following IQP circuits.
+    present methods for analytically approximating expectation values coming from measurements made on IQP circuits.
     This allows for the classical training of the parameters of these circuits prior to deploying them to a
     quantum computer for actual computation.
 
