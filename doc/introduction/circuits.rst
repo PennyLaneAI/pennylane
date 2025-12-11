@@ -256,11 +256,9 @@ The shots can be configured for a QNode using the :func:`~pennylane.set_shots` t
 
 .. code-block:: python
 
-    from functools import partial
-
     dev = qml.device('default.qubit', wires=2)
 
-    @partial(qml.set_shots, shots=10)
+    @qml.set_shots(shots=10)
     def circuit(x):
         qml.RX(x, wires=0)
         qml.CNOT([0, 1])
@@ -282,7 +280,7 @@ Consider
 
 .. code-block:: python
 
-    @partial(qml.set_shots, shots=[5, 10, 1000])
+    @qml.set_shots(shots=[5, 10, 1000])
     @qml.qnode(dev)
     def circuit(x):
         qml.RX(x, wires=0)

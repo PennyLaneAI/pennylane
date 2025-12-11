@@ -41,7 +41,7 @@ should be taken together. A "Combination measurement process" higher order primi
 We will also need to figure out how to implement splitting up a circuit with non-commuting measurements into
 multiple circuits.
 
->>> @partial(qml.set_shots, shots=5)
+>>> @qml.set_shots(shots=5)
 ... @qml.qnode(qml.device('default.qubit', seed=42, wires=1))
 ... def circuit():
 ...     qml.H(0)
