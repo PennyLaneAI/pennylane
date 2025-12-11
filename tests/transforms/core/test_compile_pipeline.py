@@ -1091,7 +1091,7 @@ class TestCompilePipeline:
         assert program[0] == container2
 
     def test_remove_by_dispatcher(self):
-        """Test removing all containers matching a TransformDispatcher from a program."""
+        """Test removing all containers matching a Transform from a program."""
         dispatched_transform = transform(first_valid_transform)
         container1 = BoundTransform(dispatched_transform)
         container2 = BoundTransform(dispatched_transform, args=(1,))
@@ -1108,10 +1108,10 @@ class TestCompilePipeline:
         container = BoundTransform(dispatched_transform)
         program = CompilePipeline([container])
 
-        with pytest.raises(TypeError, match="Only BoundTransform or TransformDispatcher"):
+        with pytest.raises(TypeError, match="Only BoundTransform or Transform"):
             program.remove("not_a_container_or_dispatcher")
 
-        with pytest.raises(TypeError, match="Only BoundTransform or TransformDispatcher"):
+        with pytest.raises(TypeError, match="Only BoundTransform or Transform"):
             program.remove(42)
 
 
