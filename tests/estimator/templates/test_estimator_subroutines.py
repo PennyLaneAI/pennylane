@@ -2174,6 +2174,15 @@ class TestResourceQuantumWalk:
         op = qre.QuantumWalk(prep, sel)
         assert op.num_wires == sel.num_wires
 
+    def test_init_wires_inherited_success(self):
+        """Test that wires are inherited from prep and sel when they match num_wires."""
+        prep = qre.Hadamard(wires=0)
+        sel = qre.Select([qre.X(wires=1), qre.Z(wires=1)], wires=[0])
+        op = qre.QuantumWalk(prep, sel)
+
+        assert op.wires == qml.wires.Wires([0, 1])
+        assert op.num_wires == 2
+
     @pytest.mark.parametrize(
         "prep, sel",
         (
