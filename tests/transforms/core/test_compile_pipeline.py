@@ -1093,8 +1093,8 @@ class TestCompilePipeline:
     def test_remove_by_dispatcher(self):
         """Test removing all containers matching a TransformDispatcher from a program."""
         dispatched_transform = transform(first_valid_transform)
-        container1 = TransformContainer(dispatched_transform)
-        container2 = TransformContainer(dispatched_transform, args=(1,))
+        container1 = BoundTransformdispatched_transform)
+        container2 = BoundTransform(dispatched_transform, args=(1,))
 
         program = CompilePipeline([container1, container2])
         assert len(program) == 2
