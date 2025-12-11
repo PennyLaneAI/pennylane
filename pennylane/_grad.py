@@ -31,7 +31,6 @@ from pennylane.exceptions import CompileError, PennyLaneDeprecationWarning
 
 make_vjp = unary_to_nary(_make_vjp)
 
-
 has_jax = True
 try:
     import jax
@@ -218,8 +217,41 @@ def _capture_diff(func, *, argnums=None, scalar_out: bool = False, method=None, 
     return new_func
 
 
+def _validate_cotangents(cotangents, out_avals):
+    from jax._src.api import _dtype
+
+    def get_shape(x):
+        return x.shape if hasattr(x, "shape") else jax.numpy.shape(x)
+
+    if len(cotangents) != len(out_avals):
+        raise ValueError(
+            "The length of cotangents must match the number of"
+            " outputs of the function with qml.vjp."
+        )
+    for p, t in zip(cotangents, out_avals):
+        if _dtype(p) != _dtype(t):
+            raise TypeError(
+                "function output params and cotangents arguments to qml.vjp do not match; "
+                "dtypes must be equal. "
+                f"Got function output params dtype {_dtype(p)} and so expected cotangent dtype "
+                f"{_dtype(p)}, but got cotangent dtype {_dtype(t)} instead."
+            )
+
+        if get_shape(p) != get_shape(t):
+            raise ValueError(
+                "qml.vjp called with different function output params and cotangent "
+                f"shapes; got function output params shape {get_shape(p)} and cotangent shape "
+                f"{get_shape(t)}"
+            )
+
+
 def _capture_vjp(func, params, cotangents, *, argnums=None, method=None, h=None):
     from jax.tree_util import tree_leaves, tree_unflatten  # pylint: disable=import-outside-toplevel
+
+    if argnums is None:
+        argnums = [0]
+    elif isinstance(argnums, int):
+        argnums = [argnums]
 
     h = _setup_h(h)
     method = _setup_method(method)
@@ -231,11 +263,8 @@ def _capture_vjp(func, params, cotangents, *, argnums=None, method=None, h=None)
     no_consts_jaxpr = j.replace(constvars=(), invars=j.constvars + j.invars)
     shifted_argnums = tuple(i + len(jaxpr.consts) for i in flat_argnums)
 
-    if len(flat_cotangents) != len(jaxpr.out_avals):
-        raise ValueError(
-            "The length of cotangents must match the number of"
-            " outputs of the function with qml.vjp."
-        )
+    _validate_cotangents(flat_cotangents, jaxpr.out_avals)
+
     prim_kwargs = {
         "fn": func,
         "method": method,
