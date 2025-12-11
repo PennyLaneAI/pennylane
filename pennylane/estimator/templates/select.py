@@ -29,7 +29,7 @@ from pennylane.estimator.resource_operator import (
 )
 from pennylane.wires import Wires, WiresLike
 
-# pylint: disable= signature-differs, arguments-differ
+# pylint: disable=arguments-differ,super-init-not-called, signature-differs
 
 
 class SelectTHC(ResourceOperator):
