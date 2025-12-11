@@ -471,6 +471,24 @@ class SelectPauli(ResourceOperator):
     The resources for this operation are computed using:
 
     >>> import pennylane.estimator as qre
+    >>> pauli_ham = qre.PauliHamiltonian(num_qubits=4, pauli_terms={"XY": 1, "Z": 2})
+    >>> select_pauli = qre.SelectPauli(pauli_ham)
+    >>> print(qre.estimate(select_pauli))
+    --- Resources: ---
+    Total wires: 6
+        algorithmic wires: 6
+        allocated wires: 2
+        zero state: 2
+        any state: 0
+    Total gates : 16
+    'CNOT': 3,
+    'CY': 2,
+    'CZ': 2,
+    'X': 4,
+    'TemporaryAND': 2,
+    'Adjoint(TemporaryAND)': 2,
+    'Allocate': 1,
+    'Deallocate': 1
 
     """
 

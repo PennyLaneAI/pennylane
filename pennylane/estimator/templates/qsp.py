@@ -24,9 +24,10 @@ from pennylane.estimator.resource_operator import (
     GateCount,
     ResourceOperator,
     _dequeue,
-    resource_rep,
 )
 from pennylane.wires import Wires, WiresLike
+
+# pylint: disable=arguments-differ,super-init-not-called, signature-differs
 
 
 class GQSP(ResourceOperator):
@@ -52,6 +53,21 @@ class GQSP(ResourceOperator):
     The resources for this operation are computed using:
 
     >>> import pennylane.estimator as qre
+    >>> signal_op = qre.RX(0.1, wires=0)
+    >>> poly_deg = 5
+    >>> neg_poly_deg = 3
+    >>> gqsp = qre.GQSP(signal_op, poly_deg, neg_poly_deg)
+    >>> print(qre.estimate(gqsp))
+    --- Resources: ---
+     Total wires: 2
+        algorithmic wires: 2
+        allocated wires: 0
+             zero state: 0
+             any state: 0
+     Total gates : 17
+      'Rot': 9,
+      'Controlled': 8
+
     """
 
     resource_keys = {"cmpr_signal_op", "poly_deg", "neg_poly_deg", "rot_precision"}
@@ -212,6 +228,22 @@ class HamSimGQSP(ResourceOperator):
     The resources for this operation are computed using:
 
     >>> import pennylane.estimator as qre
+    >>> walk_op = qre.RX(0.1, wires=0)
+    >>> time = 1.0
+    >>> one_norm = 1.0
+    >>> approx_error = 0.01
+    >>> hamsim = qre.HamSimGQSP(walk_op, time, one_norm, approx_error)
+    >>> print(qre.estimate(hamsim))
+    --- Resources: ---
+     Total wires: 2
+        algorithmic wires: 2
+        allocated wires: 0
+             zero state: 0
+             any state: 0
+     Total gates : 13
+      'Rot': 7,
+      'Controlled': 6
+
     """
 
     resource_keys = {"walk_op", "time", "one_norm", "approximation_error"}
