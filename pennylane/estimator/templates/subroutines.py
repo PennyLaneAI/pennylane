@@ -2499,8 +2499,8 @@ class QuantumWalk(ResourceOperator):
     - Figure 1 in here: https://arxiv.org/pdf/2011.03494
 
     Args:
-        prep_op (ResourceOperator): the operator that prepares the coefficients of the LCU
-        sel_op (ResourceOperator): the operator that selectively applies the unitaries of the LCU
+        prep_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): the operator that prepares the coefficients of the LCU
+        sel_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): the operator that selectively applies the unitaries of the LCU
         wires (Sequence[int], None): the wires the operation acts on
 
     Resources:
@@ -2558,9 +2558,9 @@ class QuantumWalk(ResourceOperator):
         r"""The resources for a select implementation taking advantage of the unary iterator trick.
 
         Args:
-            prep_op (ResourceOperator): A compressed representation for the operator that prepares
+            prep_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): A compressed representation for the operator that prepares
                 the coefficients of the LCU.
-            sel_op (ResourceOperator): A compressed representation for the operator that selectively
+            sel_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): A compressed representation for the operator that selectively
                 applies the unitaries of the LCU.
 
         Resources:
@@ -2651,9 +2651,9 @@ class QuantumWalk(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * prep (CompressedResourceOp): a compressed representation for the operator that
+                * prep (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): a compressed representation for the operator that
                   prepares the coefficients of the LCU
-                * sel (CompressedResourceOp): a compressed representation for the operator that
+                * sel (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): a compressed representation for the operator that
                   selectively applies the unitaries of the LCU
         """
         return {"prep": self.prep, "sel": self.sel}
@@ -2666,9 +2666,9 @@ class QuantumWalk(ResourceOperator):
         the Operator that are needed to compute a resource estimation.
 
         Args:
-            prep_op (ResourceOperator): A compressed representation for the operator that prepares
+            prep_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): A compressed representation for the operator that prepares
                 the coefficients of the LCU.
-            sel_op (ResourceOperator): A compressed representation for the operator that selectively
+            sel_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): A compressed representation for the operator that selectively
                 applies the unitaries of the LCU.
 
         Returns:
