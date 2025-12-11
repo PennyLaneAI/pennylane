@@ -29,7 +29,7 @@ from pennylane.estimator.resource_operator import (
 )
 from pennylane.wires import Wires, WiresLike
 
-# pylint: disable= signature-differs, arguments-differ
+# pylint: disable=arguments-differ,super-init-not-called, signature-differs
 
 
 class SelectTHC(ResourceOperator):
@@ -471,7 +471,22 @@ class SelectPauli(ResourceOperator):
     The resources for this operation are computed using:
 
     >>> import pennylane.estimator as qre
-
+    >>> pauli_ham = qre.PauliHamiltonian(num_qubits=4, pauli_terms={"XY": 1, "Z": 2})
+    >>> select_pauli = qre.SelectPauli(pauli_ham)
+    >>> print(qre.estimate(select_pauli))
+    --- Resources: ---
+     Total wires: 7
+       algorithmic wires: 6
+       allocated wires: 1
+         zero state: 1
+         any state: 0
+     Total gates : 27
+       'Toffoli': 2,
+       'CNOT': 8,
+       'X': 4,
+       'Z': 1,
+       'S': 2,
+       'Hadamard': 10
     """
 
     resource_keys = {"pauli_ham"}

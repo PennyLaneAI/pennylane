@@ -2287,6 +2287,20 @@ class Reflection(ResourceOperator):
     The resources for this operation are computed using:
 
     >>> import pennylane.estimator as qre
+    >>> U = qre.Hadamard(wires=0)
+    >>> ref_op = qre.Reflection(U=U, alpha=0.1)
+    >>> print(qre.estimate(ref_op))
+    --- Resources: ---
+     Total wires: 1
+       algorithmic wires: 1
+       allocated wires: 0
+         zero state: 0
+         any state: 0
+     Total gates : 52
+       'T': 44,
+       'X': 4,
+       'Z': 2,
+       'Hadamard': 2
 
     """
 
@@ -2497,6 +2511,20 @@ class QuantumWalk(ResourceOperator):
     The resources for this operation are computed using:
 
     >>> import pennylane.estimator as qre
+    >>> prep_op = qre.Hadamard(wires=0)
+    >>> sel_op = qre.Z(wires=0)
+    >>> qw_op = qre.QuantumWalk(prep_op, sel_op)
+    >>> print(qre.estimate(qw_op))
+    --- Resources: ---
+     Total wires: 1
+       algorithmic wires: 1
+       allocated wires: 0
+         zero state: 0
+         any state: 0
+     Total gates : 10
+       'X': 4,
+       'Z': 4,
+       'Hadamard': 2
 
     """
 

@@ -699,3 +699,52 @@ class TestChangeOpBasis:
             op.resource_rep(cmpr_compute_op, cmpr_target_op, cmpr_uncompute_op, num_wires)
             == expected
         )
+
+    @pytest.mark.parametrize(
+        "compute_op, target_op, uncompute_op, num_ctrl_wires, num_zero_ctrl",
+        (
+            (
+                qre.S(wires=0),
+                qre.X(wires=0),
+                qre.S(wires=0),
+                1,
+                0,
+            ),
+            (
+                qre.Hadamard(wires=0),
+                qre.Z(wires=0),
+                None,
+                2,
+                1,
+            ),
+        ),
+    )
+    def test_controlled_resource_decomp(
+        self, compute_op, target_op, uncompute_op, num_ctrl_wires, num_zero_ctrl
+    ):
+        """Test that the controlled resource decomposition is correct."""
+        cb_op = qre.ChangeOpBasis(compute_op, target_op, uncompute_op)
+
+        res = cb_op.controlled_resource_decomp(num_ctrl_wires, num_zero_ctrl, cb_op.resource_params)
+
+        cmpr_compute_op = compute_op.resource_rep_from_op()
+        cmpr_target_op = target_op.resource_rep_from_op()
+
+        if uncompute_op:
+            cmpr_uncompute_op = uncompute_op.resource_rep_from_op()
+        else:
+            cmpr_uncompute_op = resource_rep(qre.Adjoint, {"base_cmpr_op": cmpr_compute_op})
+
+        expected_ctrl_target = resource_rep(
+            qre.Controlled,
+            {
+                "base_cmpr_op": cmpr_target_op,
+                "num_ctrl_wires": num_ctrl_wires,
+                "num_zero_ctrl": num_zero_ctrl,
+            },
+        )
+
+        assert len(res) == 3
+        assert res[0] == GateCount(cmpr_compute_op)
+        assert res[1] == GateCount(expected_ctrl_target)
+        assert res[2] == GateCount(cmpr_uncompute_op)

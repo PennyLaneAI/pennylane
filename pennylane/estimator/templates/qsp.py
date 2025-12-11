@@ -25,9 +25,10 @@ from pennylane.estimator.resource_operator import (
     GateCount,
     ResourceOperator,
     _dequeue,
-    resource_rep,
 )
 from pennylane.wires import Wires, WiresLike
+
+# pylint: disable=arguments-differ,super-init-not-called, signature-differs, too-many-arguments
 
 
 class GQSP(ResourceOperator):
@@ -53,6 +54,23 @@ class GQSP(ResourceOperator):
     The resources for this operation are computed using:
 
     >>> import pennylane.estimator as qre
+    >>> signal_op = qre.RX(0.1, wires=0)
+    >>> poly_deg = 5
+    >>> neg_poly_deg = 3
+    >>> gqsp = qre.GQSP(signal_op, poly_deg, neg_poly_deg)
+    >>> print(qre.estimate(gqsp))
+    --- Resources: ---
+     Total wires: 2
+       algorithmic wires: 2
+       allocated wires: 0
+         zero state: 0
+         any state: 0
+     Total gates : 1.438E+3
+       'T': 1.396E+3,
+       'CNOT': 16,
+       'X': 10,
+       'Hadamard': 16
+
     """
 
     resource_keys = {"cmpr_signal_op", "poly_deg", "neg_poly_deg", "rot_precision"}
@@ -193,7 +211,7 @@ class GQSP(ResourceOperator):
         ]
 
 
-class HamSimGQSP(ResourceOperator):
+class HamiltonianGQSP(ResourceOperator):
     r"""Resource class for performing hamiltonian simulation using GQSP.
 
     Args:
@@ -212,6 +230,24 @@ class HamSimGQSP(ResourceOperator):
     The resources for this operation are computed using:
 
     >>> import pennylane.estimator as qre
+    >>> walk_op = qre.RX(0.1, wires=0)
+    >>> time = 1.0
+    >>> one_norm = 1.0
+    >>> approx_error = 0.01
+    >>> hamsim = qre.HamiltonianGQSP(walk_op, time, one_norm, approx_error)
+    >>> print(qre.estimate(hamsim))
+    --- Resources: ---
+     Total wires: 2
+       algorithmic wires: 2
+       allocated wires: 0
+         zero state: 0
+         any state: 0
+     Total gates : 1.110E+3
+       'T': 1.080E+3,
+       'CNOT': 12,
+       'X': 6,
+       'Hadamard': 12
+
     """
 
     resource_keys = {"walk_op", "time", "one_norm", "approximation_error"}
