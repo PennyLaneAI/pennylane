@@ -18,12 +18,12 @@ import numpy as np
 from scipy.sparse import csr_matrix, dok_matrix
 
 from pennylane import IQP
-from pennylane.math import array
 
 has_jax = True
 try:
     import jax
     import jax.numpy as jnp
+    from jax.numpy import array
 except ImportError as e:
     has_jax = False
 
@@ -121,6 +121,7 @@ def _op_expval_indep(
             n_samples=n_samples,
             key=key1,
             spin_sym=False,
+            sparse=sparse,
         )
         return key2, expval
 

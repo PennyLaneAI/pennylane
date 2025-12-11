@@ -17,8 +17,10 @@ from itertools import combinations
 import numpy as np
 import pytest
 
-from pennylane import IQP
+from pennylane import IQP, device, qnode
 from pennylane.math import arange
+from pennylane.measurements import expval
+from pennylane.ops import PauliZ
 from pennylane.qnn.iqp import op_expval
 
 
@@ -49,14 +51,13 @@ def local_gates(n_qubits: int, max_weight=2):
         "max_batch_samples",
         "max_batch_ops",
         "indep_estimates",
-        "expected_val",
         "expected_std",
     ),
     [
-        ("multi_gens", [0], 2, True, False, 10, 10_000, 10_000, True, [1.0], [0.0]),
-        ("local_gates", [0], 1, False, True, 10, 10_000, 10_000, False, [1.0], [0.0]),
-        ("multi_gens", [0], 2, True, False, 10, None, None, True, [1.0], [0.0]),
-        # ("multi_gens", [0], 2, True, True, 10, None, None, True, [1.0], [0.0]),
+        ("multi_gens", [0.54], 2, True, False, 10, 10_000, 10_000, True, [0.0]),
+        ("local_gates", [0.3], 1, False, True, 10, 10_000, 10_000, False, [0.0]),
+        ("multi_gens", [-0.41], 2, True, False, 10, None, None, True, [0.0]),
+        ("multi_gens", [0.0], 2, True, True, 10, None, None, True, [0.0]),
     ],
 )
 def test_expval(
@@ -69,7 +70,6 @@ def test_expval(
     max_batch_samples,
     max_batch_ops,
     indep_estimates,
-    expected_val,
     expected_std,
 ):  # pylint: disable=too-many-arguments
     import jax
@@ -86,11 +86,11 @@ def test_expval(
         spin_sym=spin_sym,
     )
 
-    op = np.random.randint(0, 2, (n_qubits,))
+    ops = jnp.array([[1, 0], [0, 1]])
     key = jax.random.PRNGKey(np.random.randint(0, 99999))
 
-    expval, std = op_expval(
-        ops=op,
+    exp_val, std = op_expval(
+        ops=ops,
         n_samples=n_samples,
         key=key,
         circuit=circuit,
@@ -100,5 +100,22 @@ def test_expval(
         max_batch_ops=max_batch_ops,
     )
 
-    assert expval == jnp.array(expected_val)
-    assert std == jnp.array(expected_std)
+    dev = device("default.qubit")
+
+    @qnode(dev)
+    def iqp_circuit(
+        weights, pattern, spin_sym, n_qubits, ops
+    ):  # pylint: disable=too-many-arguments
+        IQP(weights, n_qubits, pattern, spin_sym)
+
+        expectation_operators = []
+        for l in ops:
+            for i, qubit in enumerate(l):
+                if qubit == 1:
+                    expectation_operators.append(expval(PauliZ(i)))
+
+        return expectation_operators
+
+    simulated_exp_val = jnp.array(iqp_circuit(params, gates, spin_sym, n_qubits, ops))
+    assert np.allclose(exp_val, simulated_exp_val)
+    assert np.allclose(std, jnp.array(expected_std))
