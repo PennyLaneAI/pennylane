@@ -56,7 +56,8 @@ class IQP(Operation):
             num_wires (int): Number of wires in the circuit.
             pattern (list[list[list[int]]]): Specification of the trainable gates. Each element of pattern corresponds to a
                 unique trainable parameter. Each sublist specifies the generators to which that parameter applies.
-                Generators are specified by listing the qubits on which an X operator acts.
+                Generators are specified by listing the qubits on which an X operator acts. For example, `pattern` might
+                be [[[0], [1]], [[2]], [[3]], [[4]]].
             spin_sym (bool, optional): If True, the circuit is equivalent to one where the initial state
                 :math:`\frac{1}{\sqrt(2)}(|00\dots0> + |11\dots1>)` is used in place of :math:`|00\dots0>`.
 
