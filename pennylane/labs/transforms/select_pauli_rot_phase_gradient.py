@@ -59,7 +59,7 @@ def _select_pauli_rot_phase_gradient(
         )] + [qml.ctrl(qml.X(wire), control=target_wire, control_values=[0]) for wire in phase_grad_wires]
 
     return qml.change_op_basis(
-        qml.prod(*ops),
+        qml.prod(*ops[::-1]),
         qml.SemiAdder(angle_wires, phase_grad_wires, work_wires[: len(angle_wires) - 1])
     )
 
@@ -81,8 +81,9 @@ def select_pauli_rot_phase_gradient(
                     :width: 70%
                     :target: javascript:void(0);
 
-    The first two wires correspond to the multiplexing register, the next wire is the target qubit, followed by the register
-    equivalent to the angle wires, and finally, the register where the phase gradient is defined.
+    The first two wires correspond to the multiplexing register, the next wire is the target qubit. This is followed by
+    the register equivalent to the angle wires, which has a length of :math:`b`, and finally, the register where the
+    phase gradient is defined.
 
     Note that this operator contains :class:`~.SemiAdder` that typically uses additional ``work_wires`` for the semi-in-place addition
     :math:`\text{SemiAdder}|x\rangle_\text{ang} |y\rangle_\text{phg} = |x\rangle_\text{ang} |x + y\rangle_\text{phg}`.
@@ -92,14 +93,13 @@ def select_pauli_rot_phase_gradient(
         tape (QNode or QuantumTape or Callable): A quantum circuit containing :class:`~.SelectPauliRot` operators.
         angle_wires (Wires): The qubits that conditionally load the angle :math:`\phi` of
             the :class:`~.SelectPauliRot` gate in binary as a multiple of :math:`2\pi`.
-            The length of the ``angle_wires`` implicitly determines the precision
+            The length of the ``angle_wires`` , i.e. :math:`b`, implicitly determines the precision
             with which the angle is represented.
             E.g., :math:`(2^{-1} + 2^{-2} + 2^{-3}) 2\pi` is exactly represented by three bits as ``111``.
         phase_grad_wires (Wires): Qubits with the catalytic phase gradient state prepared on them.
-            Needs to be at least the length of ``angle_wires`` and will only
-            use the first ``len(angle_wires)``.
+            Needs to be at least :math:`b` wires and will only use the first :math:`b`.
         work_wires (Wires): Additional work wires to realize the :class:`~.SemiAdder` and :class:`~.QROM`.
-            Needs to be at least ``b-1`` wires, where ``b=len(phase_grad_wires)`` is the precision of the angle :math:`\phi`.
+            Needs to be at least :math:`b-1` wires.
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
@@ -108,7 +108,7 @@ def select_pauli_rot_phase_gradient(
 
     .. code-block:: python
 
-        from pennylane.labs.transforms.select_pauli_rot_phase_gradient import *
+        from pennylane.labs.transforms.select_pauli_rot_phase_gradient import select_pauli_rot_phase_gradient
         from functools import partial
         import numpy as np
 

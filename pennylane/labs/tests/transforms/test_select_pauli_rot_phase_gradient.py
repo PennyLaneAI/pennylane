@@ -67,7 +67,7 @@ def test_units_select_pauli_rot_phase_gradient(p):
     phase_grad_wires = qml.wires.Wires([f"qft_{i}" for i in range(p)])
     work_wires = qml.wires.Wires([f"work_{i}" for i in range(p - 1)])
 
-    ops = _select_pauli_rot_phase_gradient(
+    op = _select_pauli_rot_phase_gradient(
         phis,
         control_wires=control_wires,
         target_wire=wire,
@@ -76,14 +76,21 @@ def test_units_select_pauli_rot_phase_gradient(p):
         work_wires=work_wires,
     )
 
-    for op, exp_name in zip(ops, ["QROM", "MultiControlledX", "SemiAdder",  "MultiControlledX", "Adjoint(QROM)"], strict=True):
-        assert op.name==exp_name
+    assert op.name == "ChangeOpBasis"
+
+    # It iterates the ops in reverse order
+    for g, exp_name in zip(op, ["Adjoint(Prod)", "SemiAdder",  "Prod"], strict=True):
+        assert g.name==exp_name
+
+    for g, exp_name in zip(op.hyperparameters["operands"][-1], ["MultiControlledX"] * p + ["QROM"] , strict=True):
+        assert g.name==exp_name
+
 
 
 def test_wire_validation():
     """Test that an error is raised when phg wires are fewer than angle wires"""
 
-    circ = qml.tape.QuantumScript([qml.SelectPauliRot([0.5, 0.5], [0], 1)])
+    circ = qml.tape.QuantumScript([qml.SelectPauliRot([0.2, -0.4], [0], 1)])
 
     angle_wires = qml.wires.Wires([f"angle_{i}" for i in range(3)])
     phase_grad_wires = qml.wires.Wires([f"phg_{i}" for i in range(2)])
