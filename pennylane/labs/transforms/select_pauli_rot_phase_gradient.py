@@ -54,28 +54,14 @@ def _select_pauli_rot_phase_gradient(
     precision = len(angle_wires)
     binary_int = [_binary_repr_int(phi, precision) for phi in phis]
 
-    ops = []
-    ops.append(
-        qml.QROM(
+    ops = [qml.QROM(
             binary_int, control_wires, angle_wires, work_wires=work_wires[len(angle_wires) - 1 :]
-        )
+        )] + [qml.ctrl(qml.X(wire), control=target_wire, control_values=[0]) for wire in phase_grad_wires]
+
+    return qml.change_op_basis(
+        qml.prod(*ops),
+        qml.SemiAdder(angle_wires, phase_grad_wires, work_wires[: len(angle_wires) - 1])
     )
-
-    for wire in phase_grad_wires:
-        ops.append(qml.ctrl(qml.X(wire), control=target_wire, control_values=[0]))
-
-    ops.append(qml.SemiAdder(angle_wires, phase_grad_wires, work_wires[: len(angle_wires) - 1]))
-
-    for wire in phase_grad_wires:
-        ops.append(qml.ctrl(qml.X(wire), control=target_wire, control_values=[0]))
-
-    ops.append(
-        qml.adjoint(qml.QROM)(
-            binary_int, control_wires, angle_wires, work_wires=work_wires[len(angle_wires) - 1 :]
-        )
-    )
-
-    return qml.prod(*ops)
 
 
 @transform
