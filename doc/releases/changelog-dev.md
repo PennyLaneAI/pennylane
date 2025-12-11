@@ -26,30 +26,77 @@
   [(#8729)](https://github.com/PennyLaneAI/pennylane/pull/8729)
   [(#8734)](https://github.com/PennyLaneAI/pennylane/pull/8734)
 
-* The :class:`~pennylane.transforms.core.CompilePipeline` (previously known as `TransformProgram`)
-  is available at the top level namespace as `qml.CompilePipeline`.
-  [(#8735)](https://github.com/PennyLaneAI/pennylane/pull/8735)
-
 <h4>Pauli product measurements</h4>
 
-* Added a :func:`~pennylane.ops.pauli_measure` that takes a Pauli product measurement.
+* Writing circuits in terms of `Pauli product measurements <https://pennylane.ai/compilation/pauli-product-measurement>`_
+  (PPMs) in PennyLane is now possible with the new :func:`~.pauli_measure` function.
+  Using this function in tandem with :class:`~.PauliRot` to represent Pauli product rotations (PPRs) unlocks surface-code fault-tolerant quantum computing research spurred from `A Game of Surface Codes <http://arxiv.org/abs/1808.02892>`_.
   [(#8461)](https://github.com/PennyLaneAI/pennylane/pull/8461)
   [(#8631)](https://github.com/PennyLaneAI/pennylane/pull/8631)
   [(#8623)](https://github.com/PennyLaneAI/pennylane/pull/8623)
   [(#8663)](https://github.com/PennyLaneAI/pennylane/pull/8663)
+  [(#8692)](https://github.com/PennyLaneAI/pennylane/pull/8692)
+
+  The new :func:`~.pauli_measure` function is currently only for analysis on the ``null.qubit`` device, which allows for resource tracking with :func:`~.specs` and circuit inspection with :func:`~.drawer.draw`.
+
+  In the following example, a measurement of the ``XY`` Pauli product on wires ``0`` and ``2`` is performed
+  using :func:`~.pauli_measure`, followed by application of a :class:`~.PauliX` gate conditional on
+  the outcome of the PPM:
+
+  ```python
+  import pennylane as qml
+  
+  dev = qml.device("null.qubit", wires=3)
+
+  @qml.qnode(dev)
+  def circuit():
+      qml.Hadamard(0)
+      qml.Hadamard(2)
+      qml.PauliRot(np.pi / 4, pauli_word="XYZ", wires=[0, 1, 2])
+      ppm = qml.pauli_measure(pauli_word="XY", wires=[0, 2])
+      qml.cond(ppm, qml.X)(wires=1)
+      return qml.expval(qml.Z(0))
+  ```
+
+  ```pycon
+  >>> print(qml.draw(circuit)())
+  0: ──H─╭RXYZ(0.79)─╭┤↗X├────┤  <Z>
+  1: ────├RXYZ(0.79)─│──────X─┤
+  2: ──H─╰RXYZ(0.79)─╰┤↗Y├──║─┤
+                       ╚════╝
+  ```
+
+  By appliying the :func:`~.specs` function to the circuit above, you can easily determine its resource information.
+  In this case, in addition to other gates, we can see that the circuit includes one PPR and one PPM operation (represented
+  by the :class:`~.PauliRot` and :class:`~.ops.mid_measure.pauli_measure.PauliMeasure` gate types):
+
+  ```pycon
+  >>> print(qml.specs(circuit)()['resources'])
+  Total qubit allocations: 3
+  Total gates: 5
+  Circuit depth: 4
+
+  Gate types:
+    Hadamard: 2
+    PauliRot: 1
+    PauliMeasure: 1
+    Conditional(PauliX): 1
+
+  Measurements:
+    expval(PauliZ): 1
+  ```
 
 <h4> Compile Pipeline and Transforms </h4>
 
 * Arithmetic dunder methods (`__add__`, `__mul__`, `__rmul__`) have been added to 
   :class:`~.transforms.core.TransformDispatcher`, :class:`~.transforms.core.TransformContainer`, 
-  and :class:`~.transforms.core.TransformProgram` to enable intuitive composition of transform 
-  programs using `+` and `*` operators.
+  and :class:`~.CompilePipeline` (previously known as the `TransformProgram`) to enable intuitive composition of transform programs using `+` and `*` operators.
   [(#8703)](https://github.com/PennyLaneAI/pennylane/pull/8703)
 
 * In the past, calling a transform with only arguments or keyword but no tapes would raise an error.
   Now, two transforms can be concatenated naturally as
 
-  ```
+  ```python
   decompose(gate_set=gate_set) + merge_rotations(1e-6)
   ```
 
@@ -84,9 +131,18 @@
   has been renamed to `pennylane.transforms.core.compile_pipeline`, and the old name is no longer available.
   [(#8735)](https://github.com/PennyLaneAI/pennylane/pull/8735)
 
+* The :class:`~pennylane.transforms.core.CompilePipeline` (previously known as `TransformProgram`)
+  is available at the top level namespace as `qml.CompilePipeline`.
+  [(#8735)](https://github.com/PennyLaneAI/pennylane/pull/8735)
+
 * Now `CompilePipeline` can dispatch to anything individual transforms can dispatch onto, including
   QNodes.
   [(#8731)](https://github.com/PennyLaneAI/pennylane/pull/8731)
+
+* The :class:`~.CompilePipeline` (previously known as the `TransformProgram`) can now be constructed
+  more flexibility with a variable number of arguments that are of types `TransformDispatcher`,
+  `TransformContainer`, or other `CompilePipeline`s.
+  [(#8750)](https://github.com/PennyLaneAI/pennylane/pull/8750)
 
 <h3>Improvements 🛠</h3>
 
