@@ -18,7 +18,7 @@ functions and QNodes.
 from collections.abc import Callable
 from typing import get_type_hints
 
-from .transform_dispatcher import TransformDispatcher, TransformError
+from .transform_dispatcher import Transform, TransformError
 
 
 def transform(  # pylint: disable=too-many-arguments
@@ -31,7 +31,7 @@ def transform(  # pylint: disable=too-many-arguments
     final_transform=False,
     use_argnum_in_expand=False,
     plxpr_transform=None,
-) -> TransformDispatcher:
+) -> Transform:
     r"""Generalizes a function that transforms tapes to work with additional circuit-like objects such as a
     :class:`~.QNode`.
 
@@ -70,7 +70,7 @@ def transform(  # pylint: disable=too-many-arguments
 
     Returns:
 
-        .TransformDispatcher: Returns a transform dispatcher object that that can transform any
+        .Transform: Returns a transform dispatcher object that that can transform any
         circuit-like object in PennyLane.
 
     **Example**
@@ -408,7 +408,7 @@ def transform(  # pylint: disable=too-many-arguments
     if classical_cotransform is not None and not callable(classical_cotransform):
         raise TransformError("The classical co-transform must be a valid Python function.")
 
-    return TransformDispatcher(
+    return Transform(
         quantum_transform,
         expand_transform=expand_transform,
         classical_cotransform=classical_cotransform,

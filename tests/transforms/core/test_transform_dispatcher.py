@@ -24,7 +24,7 @@ import pennylane as qml
 from pennylane.tape import QuantumScript, QuantumScriptBatch, QuantumTape
 from pennylane.transforms.core import (
     BoundTransform,
-    TransformDispatcher,
+    Transform,
     TransformError,
 )
 from pennylane.typing import PostprocessingFn, TensorLike
@@ -261,20 +261,18 @@ class TestBoundTransform:
         c = BoundTransform(first_valid_transform, is_informative=True)
 
         # pylint: disable=protected-access
-        assert isinstance(c._transform_dispatcher, TransformDispatcher)
+        assert isinstance(c._transform_dispatcher, Transform)
         assert c.is_informative
         assert c._transform_dispatcher.is_informative  # pylint: disable=protected-access
 
     def test_error_if_extra_kwargs_when_dispatcher(self):
-        """Test that a ValueError is raised if extra kwargs are passed when a TransformDispatcher is provided."""
+        """Test that a ValueError is raised if extra kwargs are passed when a Transform is provided."""
 
-        with pytest.raises(
-            ValueError, match="cannot be passed if a TransformDispatcher is provided"
-        ):
+        with pytest.raises(ValueError, match="cannot be passed if a Transform is provided"):
             _ = BoundTransform(qml.transform(first_valid_transform), is_informative=True)
 
 
-class TestTransformDispatcherExtension:
+class TestTransformExtension:
     @pytest.mark.parametrize("explicit_type", (True, False))
     def test_generic_register(self, explicit_type):
         """Test that generic_register can register behavior for a new object."""
@@ -290,9 +288,9 @@ class TestTransformDispatcherExtension:
             return Subroutine(new_tape.operations)
 
         if explicit_type:
-            TransformDispatcher.generic_register(Subroutine)(subroutine_func)
+            Transform.generic_register(Subroutine)(subroutine_func)
         else:
-            TransformDispatcher.generic_register(subroutine_func)
+            Transform.generic_register(subroutine_func)
 
         @qml.transform
         def dummy_transform(tape, op, n_times):
@@ -338,7 +336,7 @@ class TestTransformDispatcherExtension:
         qml.assert_equal(generic_output, qml.tape.QuantumScript([qml.X(0), qml.X(1), qml.X(2)]))
 
 
-class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
+class TestTransform:  # pylint: disable=too-many-public-methods
     """Test the transform function (validate and dispatch)."""
 
     @pytest.mark.catalyst
