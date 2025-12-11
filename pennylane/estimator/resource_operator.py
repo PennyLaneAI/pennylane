@@ -338,9 +338,8 @@ class ResourceOperator(ABC):
         r"""Returns a list representing the resources for an operator
         raised to a power.
 
-        For ResourceOperators that don't define a `pow_resource_decomp`, this will be its
-        `pow_resource_decomp` method. By default, this method returns the operator multiplied
-        by the given power.
+        For ``ResourceOperators`` that don't define a ``pow_resource_decomp``, this will be its
+        ``pow_resource_decomp`` method.
 
         Args:
             pow_z (int): exponent that the operator is being raised to
