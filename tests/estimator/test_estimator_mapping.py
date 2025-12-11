@@ -23,7 +23,7 @@ import pennylane.estimator as re_ops
 import pennylane.estimator.templates as re_temps
 import pennylane.ops as qops
 import pennylane.templates as qtemps
-from pennylane.estimator.resource_mapping import _map_to_resource_op
+from pennylane.estimator.resource_mapping import _map_term_trotter, _map_to_resource_op
 from pennylane.operation import Operation
 
 # pylint: disable= no-self-use,too-few-public-methods
@@ -180,6 +180,43 @@ class TestMapToResourceOp:
                         re_ops.RX(wires=[0]),
                         re_ops.RZ(wires=[1]),
                         re_ops.PauliRot("YYY", wires=[0, 2, 1]),
+                    ],
+                    num_steps=10,
+                    order=2,
+                ),
+            ),
+            (  # Nested sums in the TrotterProduct
+                qml.TrotterProduct(
+                    qml.dot(
+                        [0.25, 0.75],
+                        [
+                            qml.prod(qml.Z(0), qml.Z(1)),
+                            qml.dot([0.1, -2.3], [qml.X(0), qml.prod(qml.X(0), qml.X(1))]),
+                        ],
+                    ),
+                    time=1.0,
+                    n=10,
+                    order=2,
+                ),
+                re_temps.TrotterProduct(
+                    first_order_expansion=[
+                        re_ops.Prod(
+                            res_ops=(
+                                re_ops.CNOT([0, 1]),
+                                re_ops.RZ(wires=[1]),
+                                re_ops.CNOT([0, 1]),
+                            ),
+                        ),
+                        re_temps.TrotterProduct(
+                            first_order_expansion=[
+                                re_ops.RX(wires=[0]),
+                                re_ops.Prod(
+                                    (re_ops.CNOT([0, 1]), re_ops.RX(wires=[1]), re_ops.CNOT([0, 1]))
+                                ),
+                            ],
+                            num_steps=1,
+                            order=1,
+                        ),
                     ],
                     num_steps=10,
                     order=2,
@@ -363,3 +400,55 @@ class TestMapToResourceOp:
             re_ops.CNOT(wires=[0, 1])
 
         assert re_ops.estimate(actual_circ)() == re_ops.estimate(expected_circ)()
+
+
+@pytest.mark.parametrize(
+    "op, mapped_op",
+    (
+        (
+            qml.X(0),
+            qops.Evolution(qml.X(0)),
+        ),
+        (
+            0.5 * qml.X(0),
+            qops.Evolution(qops.op_math.SProd(0.5, qml.X(0))),
+        ),
+        (
+            qops.op_math.SProd(3.4, 0.5 * qml.X(0)),
+            qops.Evolution(qops.op_math.SProd(1.7, qml.X(0))),
+        ),
+        (
+            1.23 * (qml.X(0) @ qml.Y(1)),
+            qops.Evolution(qops.op_math.SProd(1.23, (qml.X(0) @ qml.Y(1)))),
+        ),
+        (
+            qml.dot([1.23, -4.5], [qml.Z(0), qml.Z(1) @ qml.Z(2)]),
+            qtemps.TrotterProduct(
+                hamiltonian=qops.op_math.Sum(
+                    qops.op_math.SProd(1.23, qml.Z(0)),
+                    qops.op_math.SProd(-4.5, qml.Z(1) @ qml.Z(2)),
+                ),
+                n=1,
+                order=1,
+                time=1,
+                check_hermitian=False,
+            ),
+        ),
+        (
+            2 * qml.dot([1.23, -4.5], [qml.Z(0), qml.Z(1) @ qml.Z(2)]),
+            qtemps.TrotterProduct(
+                hamiltonian=qops.op_math.Sum(
+                    qops.op_math.SProd(2.46, qml.Z(0)),
+                    qops.op_math.SProd(-9.0, qml.Z(1) @ qml.Z(2)),
+                ),
+                n=1,
+                order=1,
+                time=1,
+                check_hermitian=False,
+            ),
+        ),
+    ),
+)
+def test_map_term_trotter(op, mapped_op):
+    """Test the private _map_term_trotter function"""
+    assert _map_term_trotter(op) == mapped_op
