@@ -42,6 +42,7 @@ def local_gates(n_qubits: int, max_weight=2):
 @pytest.mark.jax
 @pytest.mark.parametrize(
     (
+        "ops",
         "gates_fn",
         "params",
         "n_qubits",
@@ -54,13 +55,14 @@ def local_gates(n_qubits: int, max_weight=2):
         "expected_std",
     ),
     [
-        ("multi_gens", [0.54], 2, True, False, 10, 10_000, 10_000, True, [0.0]),
-        ("local_gates", [0.3], 1, False, True, 10, 10_000, 10_000, False, [0.0]),
-        ("multi_gens", [-0.41], 2, True, False, 10, None, None, True, [0.0]),
-        ("multi_gens", [0.0], 2, True, True, 10, None, None, True, [0.0]),
+        ([[1, 0], [0, 1]], "multi_gens", [0.54], 2, True, False, 10_000, 10_000, 10_000, True, [0.0]),
+        ([[0, 1], [0, 1]], "local_gates", [0.3], 1, False, True, 10_000, 10_000, 10_000, False, [0.0]),
+        ([[1, 0], [0, 1]], "multi_gens", [-0.41], 2, True, False, 10_000, None, None, True, [0.0]),
+        ([[1, 0], [1, 0]], "multi_gens", [0.0], 2, True, True, 10_000, None, None, True, [0.0]),
     ],
 )
 def test_expval(
+    ops,
     gates_fn,
     params,
     n_qubits,
@@ -79,11 +81,10 @@ def test_expval(
     if gates_fn == "multi_gens":
         gates = [[gates[0][0], gates[1][0]]] + gates[2:]
 
-    ops = jnp.array([[1, 0], [0, 1]])
     key = jax.random.PRNGKey(np.random.randint(0, 99999))
 
     exp_val, std = op_expval(
-        ops=ops,
+        ops=jnp.array(ops),
         n_samples=n_samples,
         key=key,
         num_wires=n_qubits,
