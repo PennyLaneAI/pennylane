@@ -278,6 +278,10 @@ class ResourceOperator(ABC):
         For ``ResourceOperators`` that don't define a ``adjoint_resource_decomp``, this will be the default
         ``adjoint_resource_decomp`` method.
 
+        Resources:
+            The resources for the control of an operator is to return the base decomposition of the operator with every
+            operator adjointed.
+
         Args:
             target_resource_params (dict | None): A dictionary containing the resource parameters
                 of the target operator.
@@ -306,6 +310,10 @@ class ResourceOperator(ABC):
 
         For ``ResourceOperators`` that don't define a ``controlled_resource_decomp``, this will be the default
         ``controlled_resource_decomp`` method.
+
+        Resources:
+            The resources for the control of an operator is to return the base decomposition of the operator with every
+            operator controlled.
 
         Args:
             num_ctrl_wires (int): the number of qubits the
@@ -340,6 +348,11 @@ class ResourceOperator(ABC):
 
         For ``ResourceOperators`` that don't define a ``pow_resource_decomp``, this will be its
         ``pow_resource_decomp`` method.
+
+        Resources:
+            The resources for the control of an operator is to return the base decomposition of the operator with every
+            operator raised to the given power. For a power of zero, the identity operator is returned. For a power of one,
+            the base operator is returned.
 
         Args:
             pow_z (int): exponent that the operator is being raised to
