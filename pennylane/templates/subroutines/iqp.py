@@ -37,10 +37,9 @@ class IQP(Operation):
     This allows for the classical training of the parameters of these circuits prior to deploying them to a
     quantum computer for actual computation.
 
-    Many problems can be cast to be solved via minimizing these expectations, such as showing quantum advantage
-    by calculating the integrals of oscillating functions as detailed
-    `here <https://strawberryfields.ai/photonics/demos/run_iqp.html>`__ (an intractable task classically), thereby
-    making this a useful circuit.
+    Certain computational problems such as generative machine learning and combinatorial optimization can be cast as
+    a minimization over functions of these expectation values. Since these circuits are also expected to be hard to
+    sample from using classical algorithms, they can potentially lead to a quantum advantage.
     """
 
     resource_keys = {"spin_sym", "pattern", "num_wires"}
