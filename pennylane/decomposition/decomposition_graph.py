@@ -87,6 +87,9 @@ class _OperatorNode:
 
     """
 
+    min_work_wires: int = 0
+    """The minimum number of additional work wires required to decompose this operator."""
+
     def __hash__(self) -> int:
         # If the decomposition of an operator does not depend on the availability of work wires
         # at all, we don't need to have multiple nodes representing the same operator with
@@ -119,6 +122,10 @@ class _DecompositionNode:
     work_wire_spec: WorkWireSpec
     num_work_wire_not_available: int
     work_wire_dependent: bool = False
+    min_work_wires: int = 0
+
+    def __post_init__(self):
+        self.min_work_wires = self.min_work_wires or self.work_wire_spec.total
 
     def count(self, op: CompressedResourceOp):
         """Find the number of occurrences of an operator in the decomposition."""
@@ -126,6 +133,8 @@ class _DecompositionNode:
 
     def is_feasible(self, num_work_wires: int | None):
         """Checks whether this decomposition is feasible under a work wire constraint"""
+        if not self.work_wire_dependent:
+            return True
         if num_work_wires is None:
             return True
         return num_work_wires - self.num_work_wire_not_available >= self.work_wire_spec.total
@@ -251,6 +260,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         self._graph = rx.PyDiGraph()
 
         # Construct the decomposition graph
+        self._min_work_wires = 0
         self._start = self._graph.add_node(None)
         self._construct_graph(operations)
 
@@ -263,6 +273,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
                 op = resource_rep(type(op), **op.resource_params)
             idx = self._add_op_node(op, 0)
             self._original_ops_indices.add(idx)
+            self._min_work_wires = max(self._min_work_wires, self._graph[idx].min_work_wires)
 
     def _add_op_node(self, op: CompressedResourceOp, num_used_work_wires: int) -> int:
         """Recursively adds an operation node to the graph.
@@ -297,29 +308,36 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
             self._graph.add_edge(self._start, op_node_idx, self._gate_set_weights[op.name])
             return op_node_idx
 
-        update_op_to_work_wire_dependent = False
+        work_wire_dependent = known_work_wire_dependent
+        min_work_wires = -1  # use -1 to represent undetermined work wire requirement
         for decomposition in self._get_decompositions(op):
             d_node = self._add_decomp(decomposition, op_node, op_node_idx, num_used_work_wires)
             # If any of the operator's decompositions depend on work wires, this operator
             # should also depend on work wires.
-            if d_node and d_node.work_wire_dependent and not known_work_wire_dependent:
-                update_op_to_work_wire_dependent = True
+            if d_node and d_node.work_wire_dependent:
+                work_wire_dependent = True
+            if d_node and (min_work_wires == -1 or d_node.min_work_wires < min_work_wires):
+                min_work_wires = d_node.min_work_wires
 
         # If we found that this operator depends on work wires, but it's currently recorded
         # as independent of work wires, we must replace every record of this operator node
         # with a new node with `work_wire_dependent` set to `True`.
-        if update_op_to_work_wire_dependent:
-            new_op_node = replace(op_node, work_wire_dependent=True)
-            self._all_op_indices[new_op_node] = self._all_op_indices.pop(op_node)
-            self._graph[op_node_idx] = new_op_node
-            self._op_to_op_nodes[op].remove(op_node)
-            self._op_to_op_nodes[op].add(new_op_node)
+        if not known_work_wire_dependent and work_wire_dependent:
+            new_op_node = replace(op_node, work_wire_dependent=True, min_work_wires=min_work_wires)
+            self._replace_node(op_node_idx, new_op_node)
             # Also record that this operator type depends on work wires, so in the future
             # when we encounter other instances of the same operator type, we correctly
             # identify it as work-wire dependent.
             self._work_wire_dependent_ops.add(op_node.op)
 
         return op_node_idx
+
+    def _replace_node(self, idx: int, new_node: _OperatorNode) -> None:
+        original_node = self._graph[idx]
+        self._all_op_indices[new_node] = self._all_op_indices.pop(original_node)
+        self._graph[idx] = new_node
+        self._op_to_op_nodes[new_node.op].remove(original_node)
+        self._op_to_op_nodes[new_node.op].add(new_node)
 
     def _add_decomp(
         self,
@@ -347,14 +365,21 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         if work_wire_spec.total:
             d_node.work_wire_dependent = True
 
+        # For a decomposition rule, the minimum required number of work wires of this decomposition
+        # rule is determined by operator that uses the MOST number of work wires.
+        max_op_min_work_wires = 0
         for op in decomp_resource.gate_counts:
             op_node_idx = self._add_op_node(op, num_used_work_wires + work_wire_spec.total)
             self._graph.add_edge(op_node_idx, d_node_idx, (op_node_idx, d_node_idx))
             # If any of the operators in the decomposition depends on work wires, this
             # decomposition is also dependent on work wires, even it itself does not use
             # any work wires.
-            if self._graph[op_node_idx].work_wire_dependent:
+            op_node = self._graph[op_node_idx]
+            if op_node.work_wire_dependent:
                 d_node.work_wire_dependent = True
+            max_op_min_work_wires = max(op_node.min_work_wires, max_op_min_work_wires)
+
+        d_node.min_work_wires += max_op_min_work_wires
 
         self._graph.add_edge(d_node_idx, op_idx, 0)
         return d_node
@@ -464,7 +489,9 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
 
         return rules
 
-    def solve(self, num_work_wires: int | None = 0, lazy=True) -> DecompGraphSolution:
+    def solve(
+        self, num_work_wires: int | None = 0, lazy=True, minimize_work_wires=False
+    ) -> DecompGraphSolution:
         """Solves the graph using the Dijkstra search algorithm.
 
         Args:
@@ -473,11 +500,22 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
             lazy (bool): If True, the Dijkstra search will stop once optimal decompositions are
                 found for all operations that the graph was initialized with. Otherwise, the
                 entire graph will be explored.
+            minimize_work_wires (bool): If True, minimize the number of additional work wires used.
 
         Returns:
             DecompGraphSolution
 
         """
+
+        if num_work_wires is not None and num_work_wires < self._min_work_wires:
+            raise DecompositionError(
+                f"The circuit requires at least {self._min_work_wires} work wires to decompose, "
+                f"the graph cannot be solved with {num_work_wires} available work wires."
+            )
+
+        if minimize_work_wires:
+            num_work_wires = self._min_work_wires
+
         visitor = DecompositionSearchVisitor(
             self._graph,
             self._gate_set_weights,
@@ -502,7 +540,9 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
                     f"{op_names} to the target gate set {set(self._gate_set_weights)}.",
                     UserWarning,
                 )
-        return DecompGraphSolution(visitor, self._all_op_indices, self._op_to_op_nodes)
+        return DecompGraphSolution(
+            visitor, self._all_op_indices, self._op_to_op_nodes, num_work_wires
+        )
 
 
 class DecompGraphSolution:
@@ -542,11 +582,13 @@ class DecompGraphSolution:
         visitor: DecompositionSearchVisitor,
         all_op_indices: dict[_OperatorNode, int],
         op_to_op_nodes: dict[CompressedResourceOp, set[_OperatorNode]],
+        num_work_wires: int | None,
     ) -> None:
         self._visitor = visitor
         self._graph = visitor._graph
         self._op_to_op_nodes = op_to_op_nodes
         self._all_op_indices = all_op_indices
+        self.num_work_wires = num_work_wires
 
     def _all_solutions(
         self, visitor: DecompositionSearchVisitor, op: Operator, num_work_wires: int | None
