@@ -55,7 +55,7 @@ class IQP(Operation):
         Args:
             weights (list): The parameters of the IQP gates.
             num_wires (int): Number of wires in the circuit.
-            pattern (list[list[list[int]]]): Specification of the trainable gates. Each element of gates corresponds to a
+            pattern (list[list[list[int]]]): Specification of the trainable gates. Each element of pattern corresponds to a
                 unique trainable parameter. Each sublist specifies the generators to which that parameter applies.
                 Generators are specified by listing the qubits on which an X operator acts.
             spin_sym (bool, optional): If True, the circuit is equivalent to one where the initial state
