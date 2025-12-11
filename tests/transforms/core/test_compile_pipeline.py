@@ -478,7 +478,7 @@ class TestCompilePipelineDunders:
         # Final transform should be at the end
         assert result[0].transform is second_valid_transform
         assert result[1].transform is first_valid_transform
-        assert result[1].final_transform
+        assert result[1].is_final_transform
 
     @pytest.mark.parametrize(
         "right",
@@ -649,7 +649,7 @@ class TestCompilePipelineDunders:
         assert len(pipeline) == 2
         assert pipeline[0].transform is second_valid_transform
         assert pipeline[1].transform is first_valid_transform
-        assert pipeline[1].final_transform
+        assert pipeline[1].is_final_transform
 
     def test_pipeline_iadd_with_both_final_transform_error(self):
         """Test that __iadd__ raises error when adding final to pipeline with final."""
@@ -692,7 +692,7 @@ class TestCompilePipelineDunders:
         assert len(pipeline1) == 2
         assert pipeline1[0].transform is second_valid_transform
         assert pipeline1[1].transform is first_valid_transform
-        assert pipeline1[1].final_transform
+        assert pipeline1[1].is_final_transform
 
     def test_pipeline_iadd_pipeline_with_cotransform_cache(self):
         """Test that __iadd__ correctly handles cotransform_cache when adding pipelines."""

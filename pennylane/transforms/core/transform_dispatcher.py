@@ -538,7 +538,7 @@ class BoundTransform:  # pylint: disable=too-many-instance-attributes
             and self.kwargs == other.kwargs
             and self.classical_cotransform == other.classical_cotransform
             and self.is_informative == other.is_informative
-            and self.final_transform == other.final_transform
+            and self.is_final_transform == other.is_final_transform
         )
 
     @property
@@ -584,7 +584,7 @@ class BoundTransform:  # pylint: disable=too-many-instance-attributes
         return self._transform_dispatcher.is_informative
 
     @property
-    def final_transform(self) -> bool:
+    def is_final_transform(self) -> bool:
         """Whether or not the transform must be the last one to be executed
         in a ``CompilePipeline``.
 
@@ -612,7 +612,7 @@ class BoundTransform:  # pylint: disable=too-many-instance-attributes
             # pylint: disable=import-outside-toplevel
             from .compile_pipeline import CompilePipeline
 
-            if self.final_transform and other.final_transform:
+            if self.is_final_transform and other.is_final_transform:
                 raise TransformError(
                     f"Both {self} and {other} are final transforms and cannot be combined."
                 )
@@ -639,7 +639,7 @@ class BoundTransform:  # pylint: disable=too-many-instance-attributes
         if n < 0:
             raise ValueError("Cannot multiply transform container by negative integer")
 
-        if self.final_transform and n > 1:
+        if self.is_final_transform and n > 1:
             raise TransformError(
                 f"{self} is a final transform and cannot be applied more than once."
             )

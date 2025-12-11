@@ -227,7 +227,7 @@ class TestBoundTransform:
         assert container.classical_cotransform is None
         assert container.plxpr_transform is not None  # tape fallback
         assert not container.is_informative
-        assert not container.final_transform
+        assert not container.is_final_transform
 
     def test_dispatch_container(self):
         """Test that transform containers can be called on objects with their various stored args and kwargs."""

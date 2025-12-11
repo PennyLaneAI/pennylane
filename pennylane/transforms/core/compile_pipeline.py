@@ -263,7 +263,7 @@ class CompilePipeline:
             CompilePipeline: A new program with the transform prepended.
         """
         if isinstance(other, BoundTransform):
-            if self.has_final_transform and other.final_transform:
+            if self.has_final_transform and other.is_final_transform:
                 raise TransformError("The compile pipeline already has a terminal transform.")
 
             transforms = [other] + self._compile_pipeline
@@ -380,7 +380,7 @@ class CompilePipeline:
 
         # Program can only contain one informative transform and at the end of the program
         if self.has_final_transform:
-            if transform_container.final_transform:
+            if transform_container.is_final_transform:
                 raise TransformError("The compile pipeline already has a terminal transform.")
             self._compile_pipeline.insert(-1, transform_container)
             return
@@ -392,7 +392,7 @@ class CompilePipeline:
         Args:
             transform_container(BoundTransform): A transform represented by its container.
         """
-        if (transform_container.final_transform) and not self.is_empty():
+        if (transform_container.is_final_transform) and not self.is_empty():
             raise TransformError(
                 "Informative transforms can only be added at the end of the program."
             )
@@ -495,7 +495,7 @@ class CompilePipeline:
     @property
     def has_final_transform(self) -> bool:
         """``True`` if the compile pipeline has a terminal transform."""
-        return self[-1].final_transform if self else False  # pylint: disable=no-member
+        return self[-1].is_final_transform if self else False  # pylint: disable=no-member
 
     def has_classical_cotransform(self) -> bool:
         """Check if the compile pipeline has some classical cotransforms.
