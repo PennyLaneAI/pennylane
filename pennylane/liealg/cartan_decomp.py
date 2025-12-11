@@ -60,19 +60,13 @@ def cartan_decomp(
     >>> generators = [X(0) @ X(1), Z(0), Z(1)]
     >>> g = qml.lie_closure(generators)
     >>> g
-    [X(0) @ X(1),
-     Z(0),
-     Z(1),
-     -1.0 * (Y(0) @ X(1)),
-     -1.0 * (X(0) @ Y(1)),
-     -1.0 * (Y(0) @ Y(1))]
+    [X(0) @ X(1), Z(0), Z(1), -1.0 * (Y(0) @ X(1)), -1.0 * (X(0) @ Y(1)), Y(0) @ Y(1)]
 
     We compute the Cartan decomposition with respect to the :func:`~concurrence_involution`.
 
     >>> k, m = cartan_decomp(g, concurrence_involution)
     >>> k, m
-    ([-1.0 * (Y(0) @ X(1)), -1.0 * (X(0) @ Y(1))],
-     [X(0) @ X(1), Z(0), Z(1), -1.0 * (Y(0) @ Y(1))])
+    ([-1.0 * (Y(0) @ X(1)), -1.0 * (X(0) @ Y(1))], [X(0) @ X(1), Z(0), Z(1), Y(0) @ Y(1)])
 
     We can check the validity of the decomposition using :func:`~check_cartan_decomp`.
 
@@ -84,11 +78,7 @@ def cartan_decomp(
     >>> from pennylane.liealg import check_cartan_decomp
     >>> k, m = cartan_decomp(g, even_odd_involution)
     >>> k, m
-    ([Z(0), Z(1)],
-     [X(0) @ X(1),
-      -1.0 * (Y(0) @ X(1)),
-      -1.0 * (X(0) @ Y(1)),
-      -1.0 * (Y(0) @ Y(1))])
+     ([Z(0), Z(1)], [X(0) @ X(1), -1.0 * (Y(0) @ X(1)), -1.0 * (X(0) @ Y(1)), Y(0) @ Y(1)])
     >>> check_cartan_decomp(k, m)
     True
     """
@@ -242,19 +232,13 @@ def check_cartan_decomp(
     >>> generators = [X(0) @ X(1), Z(0), Z(1)]
     >>> g = qml.lie_closure(generators)
     >>> g
-    [X(0) @ X(1),
-     Z(0),
-     Z(1),
-     -1.0 * (Y(0) @ X(1)),
-     -1.0 * (X(0) @ Y(1)),
-     -1.0 * (Y(0) @ Y(1))]
+    [X(0) @ X(1), Z(0), Z(1), -1.0 * (Y(0) @ X(1)), -1.0 * (X(0) @ Y(1)), Y(0) @ Y(1)]
 
     We compute the Cartan decomposition with respect to the :func:`~concurrence_involution`.
 
     >>> k, m = cartan_decomp(g, concurrence_involution)
     >>> k, m
-    ([-1.0 * (Y(0) @ X(1)), -1.0 * (X(0) @ Y(1))],
-     [X(0) @ X(1), Z(0), Z(1), -1.0 * (Y(0) @ Y(1))])
+    ([-1.0 * (Y(0) @ X(1)), -1.0 * (X(0) @ Y(1))], [X(0) @ X(1), Z(0), Z(1), Y(0) @ Y(1)])
 
     We can check the validity of the decomposition using ``check_cartan_decomp``.
 

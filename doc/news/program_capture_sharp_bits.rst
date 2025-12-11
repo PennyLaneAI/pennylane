@@ -4,6 +4,12 @@
 Program capture sharp bits
 ==========================
 
+.. warning:: 
+
+    Program capture is an experimental feature under active development.
+    Bugs and unexpected behaviour may occur, and breaking changes are possible in future releases.
+    Execution without catalyst is no longer being developed or maintained.
+
 Program capture is a new feature of PennyLane that allows for compactly expressing 
 details about hybrid workflows, including quantum operations, classical processing, 
 structured control flow, and dynamicism.
@@ -775,6 +781,24 @@ the condition is ``False``, a ``false_fn`` must be provided:
 
         m0 = qml.measure(0)
         qml.cond(m0, true_fn=true_branch, false_fn=false_branch)(4)
+
+        return qml.expval(qml.X(0))
+
+>>> circuit()
+Array(0., dtype=float32)
+
+Or the ``true_fn`` itself can be an operator type itself:
+
+.. code-block:: python
+
+    import pennylane as qml
+
+    qml.capture.enable()
+
+    @qml.qnode(qml.device("default.qubit", wires=2))
+    def circuit():
+        m0 = qml.measure(0)
+        qml.cond(m0, true_fn=qml.X)(0)
 
         return qml.expval(qml.X(0))
 

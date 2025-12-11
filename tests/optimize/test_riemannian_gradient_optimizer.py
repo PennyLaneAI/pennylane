@@ -357,7 +357,7 @@ def test_example_shots():
         observables=[qml.PauliX(0), qml.PauliZ(1), qml.PauliY(0) @ qml.PauliX(1)],
     )
 
-    @qml.qnode(qml.device("default.qubit", wires=2, shots=1000), diff_method=None)
+    @qml.qnode(qml.device("default.qubit", wires=2), diff_method=None, shots=1000)
     def quant_fun():
         qml.RX(0.1, wires=[0])
         qml.RY(0.5, wires=[1])

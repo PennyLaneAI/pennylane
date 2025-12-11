@@ -64,7 +64,7 @@ class QROMStatePreparation(Operation):
 
     **Example**
 
-    .. code-block::
+    .. code-block:: python
 
         import numpy as np
 
@@ -86,7 +86,7 @@ class QROMStatePreparation(Operation):
         >>> circuit()
         array([0.5 , 0.  , 0.25, 0.25])
 
-    .. seealso:: :class:`~.QROM`
+    .. seealso:: :class:`~.QROM`, :class:`~.BBQRAM`
 
     .. details::
         :title: Usage Details

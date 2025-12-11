@@ -26,12 +26,12 @@ from pennylane.exceptions import DeviceError
 from pennylane.logging import debug_logger, debug_logger_init
 from pennylane.ops import _qutrit__channel__ops__ as channels
 from pennylane.tape import QuantumScript, QuantumScriptOrBatch
-from pennylane.transforms.core import TransformProgram
+from pennylane.transforms.core import CompilePipeline
 from pennylane.typing import Result, ResultBatch
 
 from . import Device
 from .default_qutrit import DefaultQutrit
-from .execution_config import DefaultExecutionConfig, ExecutionConfig
+from .execution_config import ExecutionConfig
 from .modifiers import simulator_tracking, single_tape_support
 from .preprocess import (
     decompose,
@@ -69,11 +69,6 @@ def stopping_condition(op: qml.operation.Operator) -> bool:
     """Specify whether an Operator object is supported by the device."""
     expected_set = DefaultQutrit.operations | {"Snapshot"} | channels
     return op.name in expected_set
-
-
-def stopping_condition_shots(op: qml.operation.Operator) -> bool:
-    """Specify whether an Operator object is supported by the device with shots."""
-    return stopping_condition(op)
 
 
 def accepted_sample_measurement(m: qml.measurements.MeasurementProcess) -> bool:
@@ -146,7 +141,7 @@ class DefaultQutritMixed(Device):
     Args:
         wires (int, Iterable[Number, str]): Number of wires present on the device, or iterable that
             contains unique labels for the wires as numbers (i.e., ``[-1, 0, 2]``) or strings
-            (``['ancilla', 'q1', 'q2']``). Default ``None`` if not specified.
+            (``['auxiliary', 'q1', 'q2']``). Default ``None`` if not specified.
         shots (int, Sequence[int], Sequence[Union[int, Sequence[int]]]): The default number of shots
             to use in executions involving this device.
         seed (Union[str, None, int, array_like[int], SeedSequence, BitGenerator, Generator, jax.random.PRNGKey]): A
@@ -334,9 +329,9 @@ class DefaultQutritMixed(Device):
     @debug_logger
     def preprocess(
         self,
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
-    ) -> tuple[TransformProgram, ExecutionConfig]:
-        """This function defines the device transform program to be applied and an updated device
+        execution_config: ExecutionConfig | None = None,
+    ) -> tuple[CompilePipeline, ExecutionConfig]:
+        """This function defines the device compile pileline to be applied and an updated device
         configuration.
 
         Args:
@@ -344,7 +339,7 @@ class DefaultQutritMixed(Device):
                 describing the parameters needed to fully describe the execution.
 
         Returns:
-            TransformProgram, ExecutionConfig: A transform program that when called returns
+            CompilePipeline, ExecutionConfig: A compile pileline that when called returns
             ``QuantumTape`` objects that the device can natively execute, as well as a postprocessing
             function to be called after execution, and a configuration with unset
             specifications filled in.
@@ -355,37 +350,40 @@ class DefaultQutritMixed(Device):
         * Supports any qutrit channel that provides Kraus matrices
 
         """
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         config = self._setup_execution_config(execution_config)
-        transform_program = TransformProgram()
+        compile_pileline = CompilePipeline()
 
-        transform_program.add_transform(validate_device_wires, self.wires, name=self.name)
-        transform_program.add_transform(
+        compile_pileline.add_transform(validate_device_wires, self.wires, name=self.name)
+        compile_pileline.add_transform(
             decompose,
             stopping_condition=stopping_condition,
-            stopping_condition_shots=stopping_condition_shots,
             name=self.name,
         )
-        transform_program.add_transform(
+        compile_pileline.add_transform(
             validate_measurements, sample_measurements=accepted_sample_measurement, name=self.name
         )
-        transform_program.add_transform(
+        compile_pileline.add_transform(
             validate_observables, stopping_condition=observable_stopping_condition, name=self.name
         )
 
         if config.gradient_method == "backprop":
-            transform_program.add_transform(no_sampling, name="backprop + default.qutrit")
+            compile_pileline.add_transform(no_sampling, name="backprop + default.qutrit")
 
         if self.readout_errors is not None:
-            transform_program.add_transform(warn_readout_error_state)
+            compile_pileline.add_transform(warn_readout_error_state)
 
-        return transform_program, config
+        return compile_pileline, config
 
     @debug_logger
     def execute(
         self,
         circuits: QuantumScriptOrBatch,
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+        execution_config: ExecutionConfig | None = None,
     ) -> Result | ResultBatch:
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         interface = (
             execution_config.interface
             if execution_config.gradient_method in {"best", "backprop", None}

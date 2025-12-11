@@ -26,9 +26,9 @@ from pennylane.capture.primitives import (
     cond_prim,
     ctrl_transform_prim,
     for_loop_prim,
-    grad_prim,
     jacobian_prim,
     qnode_prim,
+    transform_prim,
     while_loop_prim,
 )
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
@@ -286,12 +286,12 @@ class TestHigherOrderPrimitiveIntegration:
                 return qml.expval(qml.Z(0))
 
             @cond_f.else_if(n > 1)
-            def _():
+            def _else_if():
                 qml.QubitUnitary(U, 1)
                 return qml.expval(qml.Y(0))
 
             @cond_f.otherwise
-            def _():
+            def _else():
                 qml.QubitUnitary(U, 2)
                 return qml.expval(qml.X(0))
 
@@ -357,7 +357,7 @@ class TestHigherOrderPrimitiveIntegration:
 
         jaxpr = jax.make_jaxpr(f)(1.0, 2.0, 3.0)
 
-        assert jaxpr.eqns[0].primitive == grad_prim
+        assert jaxpr.eqns[0].primitive == jacobian_prim
 
         grad_jaxpr = jaxpr.eqns[0].params["jaxpr"]
         qfunc_jaxpr = grad_jaxpr.eqns[0].params["qfunc_jaxpr"]
@@ -385,6 +385,7 @@ class TestHigherOrderPrimitiveIntegration:
         jaxpr = jax.make_jaxpr(f)(1.0, 2.0, 3.0)
 
         assert jaxpr.eqns[0].primitive == jacobian_prim
+        assert not jaxpr.eqns[0].params["scalar_out"]
 
         grad_jaxpr = jaxpr.eqns[0].params["jaxpr"]
         qfunc_jaxpr = grad_jaxpr.eqns[0].params["qfunc_jaxpr"]
@@ -444,7 +445,8 @@ class TestExpandPlxprTransformIntegration:
         U = qml.Rot(1.0, 2.0, 3.0, wires=0)
         jaxpr = jax.make_jaxpr(f)(U.matrix())
 
-        assert jaxpr.eqns[0].primitive == qml.transforms.unitary_to_rot._primitive
+        assert jaxpr.eqns[0].primitive == transform_prim
+        assert jaxpr.eqns[0].params["transform"] == qml.transforms.unitary_to_rot
 
         transformed_f = qml.capture.expand_plxpr_transforms(f)
         transformed_jaxpr = jax.make_jaxpr(transformed_f)(U.matrix())

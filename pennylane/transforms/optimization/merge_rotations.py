@@ -114,7 +114,6 @@ def _get_plxpr_merge_rotations():
                     self.previous_ops[w] = op
                 return
 
-            # pylint: disable = unidiomatic-typecheck
             # Can't use `isinstance` since op could be a subclass of type(previous_op)
             can_merge = op.wires == previous_op.wires and type(op) == type(previous_op)
             if not can_merge:
@@ -237,6 +236,7 @@ def _get_plxpr_merge_rotations():
     # pylint: disable=redefined-outer-name
     def merge_rotations_plxpr_to_plxpr(jaxpr, consts, _, tkwargs, *args):
         """Function for applying the ``merge_rotations`` transform on plxpr."""
+        tkwargs = dict(tkwargs)
 
         merge_rotations = MergeRotationsInterpreter(**tkwargs)
 
@@ -251,7 +251,7 @@ def _get_plxpr_merge_rotations():
 MergeRotationsInterpreter, merge_rotations_plxpr_to_plxpr = _get_plxpr_merge_rotations()
 
 
-@partial(transform, plxpr_transform=merge_rotations_plxpr_to_plxpr)
+@partial(transform, plxpr_transform=merge_rotations_plxpr_to_plxpr, pass_name="merge-rotations")
 def merge_rotations(
     tape: QuantumScript, atol=1e-8, include_gates=None
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
@@ -293,7 +293,7 @@ def merge_rotations(
             return qml.expval(qml.Z(0))
 
     >>> circuit(0.1, 0.2, 0.3)
-    0.9553364891256055
+    np.float64(0.955...)
 
     .. details::
         :title: Details on merging ``Rot`` gates
@@ -342,7 +342,7 @@ def merge_rotations(
         By inspection, we can combine the two ``RX`` rotations on the first qubit.
         On the second qubit, we have a cumulative angle of 0, and the gates will cancel.
 
-        >>> optimized_qfunc = merge_rotations()(qfunc)
+        >>> optimized_qfunc = merge_rotations(qfunc)
         >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
         >>> print(qml.draw(optimized_qnode)(1, 2, 3))
         0: ──RX(3.00)────╭RZ(3.00)─┤  <Z>
@@ -353,7 +353,7 @@ def merge_rotations(
         merge using the ``include_gates`` argument. For example, if in the above
         circuit we wanted only to merge the "RX" gates, we could do so as follows:
 
-        >>> optimized_qfunc = merge_rotations(include_gates=["RX"])(qfunc)
+        >>> optimized_qfunc = merge_rotations(qfunc, include_gates=["RX"])
         >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
         >>> print(qml.draw(optimized_qnode)(1, 2, 3))
         0: ──RX(3.00)───────────╭RZ(3.00)────────────┤  <Z>

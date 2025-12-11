@@ -125,7 +125,7 @@ class TestSampleState:
     """Test that the sample_state function works as expected"""
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow"])
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch"])
     def test_sample_state_basic(self, interface, two_qutrit_pure_state):
         """Tests that the returned samples are as expected."""
         state = math.array(two_qutrit_pure_state, like=interface)
@@ -265,11 +265,11 @@ class TestMeasureWithSamples:
         result0 = measure_with_samples(mp0, state, shots=shots)
         result1 = measure_with_samples(mp1, state, shots=shots)
 
-        assert result0.shape == (shots.total_shots,)
+        assert result0.shape == (shots.total_shots, 1)
         assert result0.dtype == np.int64
         assert np.all(result0 == 0)
 
-        assert result1.shape == (shots.total_shots,)
+        assert result1.shape == (shots.total_shots, 1)
         assert result1.dtype == np.int64
         assert len(np.unique(result1)) == 3
 
@@ -463,7 +463,7 @@ class TestBroadcasting:
         measurement = qml.counts(wires=[0, 1])
         res = measure_with_samples(measurement, state, shots, is_state_batched=True, rng=rng)
 
-        assert res.shape == (3,)
+        assert len(res) == 3
         assert list(res[0].keys()) == ["11"]
         assert list(res[1].keys()) == ["00", "12"]
         assert list(res[2].keys()) == ["01", "10", "21", "22"]

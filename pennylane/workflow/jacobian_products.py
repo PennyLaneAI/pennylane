@@ -41,10 +41,10 @@ def _compute_vjps(jacs, dys, tapes):
     f = {True: qml.gradients.compute_vjp_multi, False: qml.gradients.compute_vjp_single}
 
     vjps = []
-    for jac, dy, t in zip(jacs, dys, tapes):
+    for jac, dy, t in zip(jacs, dys, tapes, strict=True):
         multi = len(t.measurements) > 1
         if t.shots.has_partitioned_shots:
-            shot_vjps = [f[multi](d, j) for d, j in zip(dy, jac)]
+            shot_vjps = [f[multi](d, j) for d, j in zip(dy, jac, strict=True)]
             vjps.append(qml.math.sum(qml.math.stack(shot_vjps), axis=0))
         else:
             vjps.append(f[multi](dy, jac))
@@ -67,7 +67,7 @@ def _compute_jvps(jacs, tangents, tapes):
     f = {True: qml.gradients.compute_jvp_multi, False: qml.gradients.compute_jvp_single}
 
     jvps = []
-    for jac, dx, t in zip(jacs, tangents, tapes):
+    for jac, dx, t in zip(jacs, tangents, tapes, strict=True):
         multi = len(t.measurements) > 1
         if len(t.trainable_params) == 0:
             jvps.append(_zero_jvp(t))
@@ -108,12 +108,15 @@ class JacobianProductCalculator(abc.ABC):
         >>> tangents0 = (1.5, )
         >>> tangents1 = (2.0, )
         >>> tangents = (tangents0, tangents1)
+        >>> device = qml.device('default.qubit')
+        >>> config = qml.devices.ExecutionConfig()
+        >>> jpc = DeviceDerivatives(device, config)
         >>> results, jvps = jpc.execute_and_compute_jvp(batch, tangents)
         >>> expected_results = (np.cos(0.1), np.cos(0.2))
         >>> qml.math.allclose(results, expected_results)
         True
         >>> jvps
-        (array(-0.14975012), array(-0.39733866))
+        (array(-0.149...), array(-0.3973...))
         >>> expected_jvps = 1.5 * -np.sin(0.1), 2.0 * -np.sin(0.2)
         >>> qml.math.allclose(jvps, expected_jvps)
         True
@@ -150,7 +153,7 @@ class JacobianProductCalculator(abc.ABC):
         >>> dys = (dy0, dy1)
         >>> vjps = jpc.compute_vjp(batch, dys)
         >>> vjps
-        (array([-0.04991671]), array([2.54286107]))
+        (array([-0.049...]), array([2.542...]))
         >>> expected_vjp0 = 0.5 * -np.sin(0.1)
         >>> qml.math.allclose(vjps[0], expected_vjp0)
         True
@@ -180,7 +183,7 @@ class JacobianProductCalculator(abc.ABC):
         >>> tape1 = qml.tape.QuantumScript([qml.RY(0.2, wires=0)], [qml.expval(qml.Z(0)), qml.expval(qml.X(0))])
         >>> batch = (tape0, tape1)
         >>> jpc.compute_jacobian(batch)
-        (array(-0.09983342), (array(-0.19866933), array(0.98006658)))
+        (array(-0.0998...), (array(-0.198...), array(0.980...)))
 
         While this method could support non-scalar parameters in theory, no implementation currently supports
         jacobians with non-scalar parameters.
@@ -205,9 +208,9 @@ class JacobianProductCalculator(abc.ABC):
         >>> batch = (tape0, tape1)
         >>> results, jacs = jpc.execute_and_compute_jacobian(batch)
         >>> results
-        (0.9950041652780258, (0.9800665778412417, 0.19866933079506116))
+        (np.float64(0.995...), (np.float64(0.980...), np.float64(0.198...)))
         >>> jacs
-        (array(-0.09983342), (array(-0.19866933), array(0.98006658)))
+        (array(-0.099...), (array(-0.198...), array(0.980...)))
 
         While this method could support non-scalar parameters in theory, no implementation currently supports
         jacobians with non-scalar parameters.
@@ -373,13 +376,14 @@ class DeviceDerivatives(JacobianProductCalculator):
 
     >>> device = qml.device('default.qubit')
     >>> config = qml.devices.ExecutionConfig(gradient_method="adjoint")
-    >>> jpc = DeviceDerivatives(device, config, {})
+    >>> jpc = DeviceDerivatives(device, config)
 
     This same class can also be used with the old device interface.
 
     >>> device = qml.device('lightning.qubit', wires=5)
     >>> gradient_kwargs = {"method": "adjoint_jacobian"}
-    >>> jpc_lightning = DeviceDerivatives(device, gradient_kwargs=gradient_kwargs)
+    >>> config = qml.devices.ExecutionConfig(gradient_keyword_arguments=gradient_kwargs)
+    >>> jpc_lightning = DeviceDerivatives(device, config)
 
     **Technical comments on caching and calculating the gradients on execution:**
 
@@ -395,25 +399,23 @@ class DeviceDerivatives(JacobianProductCalculator):
     When a forward pass with :meth:`~.execute_and_cache_jacobian` is called, both the results and the jacobian for the object are stored.
 
     >>> tape = qml.tape.QuantumScript([qml.RX(1.0, wires=0)], [qml.expval(qml.Z(0))])
-    >>> batch = (tape, )
+    >>> batch = (tape,)
     >>> with device.tracker:
-    ...     results = jpc.execute_and_cache_jacobian(batch )
+    ...     results = jpc.execute_and_cache_jacobian(batch)
     >>> results
-    (0.5403023058681398,)
-    >>> device.tracker.totals
-    {'execute_and_derivative_batches': 1, 'executions': 1, 'derivatives': 1}
+    (np.float64(0.540...,)
     >>> jpc._jacs_cache
-    LRUCache({5660934048: (array(-0.84147098),)}, maxsize=10, currsize=1)
+    LRUCache({(<QuantumScript: wires=[0], params=1>,): (array(-0.841...),)}, maxsize=10, currsize=1)
 
     Then when the vjp, jvp, or jacobian is requested, that cached value is used instead of requesting from
     the device again.
 
     >>> with device.tracker:
     ...     vjp = jpc.compute_vjp(batch , (0.5, ) )
-    >>> vjp
-    (array([-0.42073549]),)
     >>> device.tracker.totals
     {}
+    >>> vjp
+    (array([-0.4207...]),)
 
     """
 
@@ -425,9 +427,6 @@ class DeviceDerivatives(JacobianProductCalculator):
         device: qml.devices.Device,
         execution_config: qml.devices.ExecutionConfig | None = None,
     ):
-        if execution_config is None:
-            execution_config = qml.devices.DefaultExecutionConfig
-
         if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
             logger.debug(
                 "DeviceDerivatives created with (%s, %s)",
@@ -521,7 +520,7 @@ class DeviceDerivatives(JacobianProductCalculator):
         >>> qml.math.allclose(results, expected_results)
         True
         >>> jvps
-        (array(-0.14975012), array(-0.39733866))
+        (array(-0.149...), array(-0.397...))
         >>> expected_jvps = 1.5 * -np.sin(0.1), 2.0 * -np.sin(0.2)
         >>> qml.math.allclose(jvps, expected_jvps)
         True
@@ -563,7 +562,7 @@ class DeviceDerivatives(JacobianProductCalculator):
         >>> dys = (dy0, dy1)
         >>> vjps = jpc.compute_vjp(batch, dys)
         >>> vjps
-        (array([-0.04991671]), array([2.54286107]))
+        (array([-0.0499...]), array([2.54...]))
         >>> expected_vjp0 = 0.5 * -np.sin(0.1)
         >>> qml.math.allclose(vjps[0], expected_vjp0)
         True
@@ -607,7 +606,7 @@ class DeviceDerivatives(JacobianProductCalculator):
         >>> tape1 = qml.tape.QuantumScript([qml.RY(0.2, wires=0)], [qml.expval(qml.Z(0)), qml.expval(qml.X(0))])
         >>> batch = (tape0, tape1)
         >>> jpc.compute_jacobian(batch)
-        (array(-0.09983342), (array(-0.19866933), array(0.98006658)))
+        (array(-0.0998...), (array(-0.198...), array(0.980...)))
 
         While this method could support non-scalar parameters in theory, no implementation currently supports
         jacobians with non-scalar parameters.
@@ -694,7 +693,7 @@ class DeviceJacobianProducts(JacobianProductCalculator):
         dy = qml.math.unwrap(dy)
         vjps = self._device.compute_vjp(numpy_tapes, dy, self._execution_config)
         res = []
-        for t, r in zip(tapes, vjps):
+        for t, r in zip(tapes, vjps, strict=True):
             if len(t.trainable_params) == 1 and qml.math.shape(r) == ():
                 res.append((r,))
             else:

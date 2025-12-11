@@ -15,13 +15,13 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
-from cachetools import LRUCache
+from cachetools import Cache, LRUCache
 
 from pennylane.math import Interface
 from pennylane.transforms.convert_to_numpy_parameters import convert_to_numpy_parameters
-from pennylane.transforms.core import TransformProgram, transform
+from pennylane.transforms.core import CompilePipeline, transform
 
 from ._cache_transform import _cache_transform
 
@@ -30,7 +30,9 @@ if TYPE_CHECKING:
     from pennylane.devices.execution_config import ExecutionConfig
 
 
-def _prune_dynamic_transform(outer_transform: TransformProgram, inner_transform: TransformProgram):
+def _prune_dynamic_transform(
+    outer_transform: CompilePipeline, inner_transform: CompilePipeline
+) -> None:
     """Ensure a single ``dynamic_one_shot`` transform is applied.
 
     Sometimes device preprocess contains a ``mid_circuit_measurements`` transform, which will
@@ -60,13 +62,13 @@ def _prune_dynamic_transform(outer_transform: TransformProgram, inner_transform:
 def _setup_transform_program(
     device: Device,
     resolved_execution_config: ExecutionConfig,
-    cache=None,
-    cachesize=10000,
-) -> tuple[TransformProgram, TransformProgram]:
+    cache: Cache | dict | Literal["auto"] | bool = None,
+    cachesize: int = 10000,
+) -> tuple[CompilePipeline, CompilePipeline]:
     """Sets-up the outer and inner transform programs for execution.
 
     Args:
-        user_transform_program (TransformProgram): the user's transform program
+        user_transform_program (CompilePipeline): the user's transform program
         device (Device): a Pennylane device
         resolved_execution_config (ExecutionConfig): the resolved execution config
         cache (None, bool, dict, Cache): Whether to cache evaluations. This can result in
@@ -74,13 +76,13 @@ def _setup_transform_program(
         cachesize (int): The size of the cache. Defaults to 10000.
 
     Returns:
-        tuple[TransformProgram, TransformProgram]: tuple containing the outer and inner transform programs.
+        tuple[CompilePipeline, CompilePipeline]: tuple containing the outer and inner transform programs.
     """
 
     device_transform_program = device.preprocess_transforms(resolved_execution_config)
 
-    outer_transform_program = TransformProgram()
-    inner_transform_program = TransformProgram()
+    outer_transform_program = CompilePipeline()
+    inner_transform_program = CompilePipeline()
 
     # Add the gradient expand to the program if necessary
     if getattr(resolved_execution_config.gradient_method, "expand_transform", False):

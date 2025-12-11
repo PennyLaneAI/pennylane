@@ -32,10 +32,10 @@ device_suite = (
 
 
 @pytest.mark.all_interfaces
-class TestTransformProgram:
+class TestCompilePipeline:
     """Non differentiability tests for the transform program keyword argument."""
 
-    @pytest.mark.parametrize("interface", (None, "autograd", "jax", "tf", "torch"))
+    @pytest.mark.parametrize("interface", (None, "autograd", "jax", "torch"))
     def test_transform_program_none(self, interface):
         """Test that if no transform program is provided, null default behavior is used."""
 
@@ -55,7 +55,7 @@ class TestTransformProgram:
         assert tracker.history["resources"][0].gate_types["RX"] == 1
         assert tracker.history["resources"][1].gate_types["RY"] == 1
 
-    @pytest.mark.parametrize("interface", (None, "autograd", "jax", "tf", "torch"))
+    @pytest.mark.parametrize("interface", (None, "autograd", "jax", "torch"))
     def test_transform_program_modifies_circuit(self, interface):
         """Integration tests for a transform program that modifies the input tapes."""
 
@@ -64,6 +64,7 @@ class TestTransformProgram:
         def null_postprocessing(results):
             return results[0]
 
+        @qml.transform
         def just_pauli_x_out(
             tape: QuantumScript,
         ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
@@ -73,7 +74,7 @@ class TestTransformProgram:
 
         pauli_x_out_container = qml.transforms.core.TransformContainer(just_pauli_x_out)
 
-        transform_program = qml.transforms.core.TransformProgram([pauli_x_out_container])
+        transform_program = qml.CompilePipeline(pauli_x_out_container)
 
         tape0 = qml.tape.QuantumScript(
             [qml.Rot(1.2, 2.3, 3.4, wires=0)], [qml.expval(qml.PauliZ(0))]
@@ -96,7 +97,7 @@ class TestTransformProgram:
         assert tracker.history["resources"][1].gate_types["PauliX"] == 1
         assert tracker.history["resources"][1].num_gates == 1
 
-    @pytest.mark.parametrize("interface", (None, "autograd", "jax", "tf", "torch"))
+    @pytest.mark.parametrize("interface", (None, "autograd", "jax", "torch"))
     def test_shot_distributing_transform(self, interface):
         """Test a transform that creates a batch of tapes with different shots.
 
@@ -107,6 +108,7 @@ class TestTransformProgram:
         def null_postprocessing(results):
             return results
 
+        @qml.transform
         def split_shots(tape):
             tape1 = qml.tape.QuantumScript(
                 tape.operations, tape.measurements, shots=tape.shots.total_shots // 2
@@ -117,7 +119,7 @@ class TestTransformProgram:
             return (tape1, tape2), null_postprocessing
 
         scale_shots = qml.transforms.core.TransformContainer(split_shots)
-        program = qml.transforms.core.TransformProgram([scale_shots])
+        program = qml.CompilePipeline(scale_shots)
 
         tape = qml.tape.QuantumScript([], [qml.counts(wires=0)], shots=100)
         results = qml.execute((tape,), dev, interface=interface, transform_program=program)[0]
@@ -125,7 +127,7 @@ class TestTransformProgram:
         assert results[0] == {"0": 50}
         assert results[1] == {"0": 200}
 
-    @pytest.mark.parametrize("interface", (None, "autograd", "jax", "tf", "torch"))
+    @pytest.mark.parametrize("interface", (None, "autograd", "jax", "torch"))
     @pytest.mark.parametrize("dev", device_suite)
     def test_ragged_batch_sizes(self, dev, interface):
         """Test a transform that splits input tapes up into different sizes."""
@@ -134,6 +136,7 @@ class TestTransformProgram:
         def sum_measurements(results):
             return sum(results)
 
+        @qml.transform
         def split_sum_terms(tape):
             sum_obj = tape.measurements[0].obs
             new_tapes = tuple(
@@ -144,7 +147,7 @@ class TestTransformProgram:
             return new_tapes, sum_measurements
 
         container = qml.transforms.core.TransformContainer(split_sum_terms)
-        prog = qml.transforms.core.TransformProgram((container,))
+        prog = qml.CompilePipeline(container)
 
         op = qml.RX(1.2, 0)
         tape1 = qml.tape.QuantumScript([op], [qml.expval(qml.sum(qml.PauliX(0), qml.PauliZ(0)))])
@@ -173,6 +176,7 @@ class TestTransformProgram:
         def null_postprocessing(results):
             return results[0]
 
+        @qml.transform
         def just_pauli_x_out(
             tape: QuantumScript,
         ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
@@ -180,6 +184,7 @@ class TestTransformProgram:
                 qml.tape.QuantumScript([qml.PauliX(0)], tape.measurements),
             ), null_postprocessing
 
+        @qml.transform
         def repeat_operations(
             tape: QuantumScript,
         ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
@@ -191,9 +196,7 @@ class TestTransformProgram:
         just_pauli_x_container = qml.transforms.core.TransformContainer(just_pauli_x_out)
         repeat_operations_container = qml.transforms.core.TransformContainer(repeat_operations)
 
-        prog = qml.transforms.core.TransformProgram(
-            (just_pauli_x_container, repeat_operations_container)
-        )
+        prog = qml.CompilePipeline(just_pauli_x_container, repeat_operations_container)
 
         tape1 = qml.tape.QuantumScript([qml.RX(1.2, 0)], [qml.expval(qml.PauliZ(0))])
 
@@ -203,9 +206,7 @@ class TestTransformProgram:
         assert dev.tracker.history["resources"][0].gate_types["PauliX"] == 2
         assert qml.math.allclose(results, 1.0)
 
-        prog_reverse = qml.transforms.core.TransformProgram(
-            (repeat_operations_container, just_pauli_x_container)
-        )
+        prog_reverse = qml.CompilePipeline(repeat_operations_container, just_pauli_x_container)
 
         with dev.tracker:
             results = qml.execute((tape1,), dev, transform_program=prog_reverse)
@@ -213,7 +214,7 @@ class TestTransformProgram:
         assert dev.tracker.history["resources"][0].gate_types["PauliX"] == 1
         assert qml.math.allclose(results, -1.0)
 
-    @pytest.mark.parametrize("interface", (None, "autograd", "jax", "tf", "torch"))
+    @pytest.mark.parametrize("interface", (None, "autograd", "jax", "torch"))
     @pytest.mark.parametrize("dev", device_suite)
     def test_chained_postprocessing(self, dev, interface):
         def add_one(results):
@@ -222,17 +223,19 @@ class TestTransformProgram:
         def scale_two(results):
             return results[0] * 2.0
 
+        @qml.transform
         def transform_add(tape: QuantumScript):
             """A valid transform."""
             return (tape,), add_one
 
+        @qml.transform
         def transform_mul(tape: QuantumScript):
             return (tape,), scale_two
 
         add_container = qml.transforms.core.TransformContainer(transform_add)
         mul_container = qml.transforms.core.TransformContainer(transform_mul)
-        prog = qml.transforms.core.TransformProgram((add_container, mul_container))
-        prog_reverse = qml.transforms.core.TransformProgram((mul_container, add_container))
+        prog = qml.CompilePipeline(add_container, mul_container)
+        prog_reverse = qml.CompilePipeline(mul_container, add_container)
 
         tape0 = qml.tape.QuantumScript([], [qml.expval(qml.PauliZ(0))])
         tape1 = qml.tape.QuantumScript([qml.PauliX(0)], [qml.expval(qml.PauliZ(0))])

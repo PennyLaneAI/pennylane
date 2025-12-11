@@ -22,7 +22,8 @@ from collections.abc import Callable, Sequence
 from multiprocessing import get_context
 from typing import Any
 
-from ..base import ExecBackendConfig
+from pennylane.concurrency.executors.base import ExecBackendConfig
+
 from .api import PyNativeExec
 
 

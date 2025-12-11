@@ -202,8 +202,6 @@ def transpile(
             # neighbourhood of q1 via swap operations.
             source_wire, dest_wire = op.wires
 
-            # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
-            # pylint: disable=too-many-function-args
             shortest_path = nx.algorithms.shortest_path(coupling_graph, source_wire, dest_wire)
             path_length = len(shortest_path) - 1
             wires_to_swap = [shortest_path[(i - 1) : (i + 1)] for i in range(path_length, 1, -1)]
@@ -251,7 +249,7 @@ def _transpile_qnode(self, qnode, targs, tkwargs):
     """Custom qnode transform for ``transpile``."""
     if tkwargs.get("device", None):
         raise ValueError(
-            "Cannot provide a 'device' value directly to the defer_measurements decorator "
+            "Cannot provide a 'device' value directly to the transpile decorator "
             "when transforming a QNode."
         )
 

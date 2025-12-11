@@ -20,8 +20,6 @@ from typing import Any
 
 import autograd
 
-import pennylane.queuing
-
 has_jax = True
 try:
     import jax.tree_util as jax_tree_util
@@ -69,7 +67,7 @@ def unflatten_tuple(data, _) -> tuple:
 
 def unflatten_dict(data, metadata) -> dict:
     """Unflatten a dictionary."""
-    return dict(zip(metadata, data))
+    return dict(zip(metadata, data, strict=True))
 
 
 unflatten_registrations: dict[type, UnflattenFn] = {
@@ -185,7 +183,7 @@ class PyTreeStructure:
     >>> op = qml.adjoint(qml.RX(0.1, 0))
     >>> data, structure = qml.pytrees.flatten(op)
     >>> structure
-    PyTree(AdjointOperation, (), [PyTree(RX, (Wires([0]), ()), [Leaf])])
+    PyTreeStructure(AdjointOperation, (), [PyTreeStructure(RX, (Wires([0]), ()), [PyTreeStructure()])])
 
     A leaf is defined as just a ``PyTreeStructure`` with ``type_=None``.
     """
@@ -245,7 +243,7 @@ def flatten(
     [1.2, 2.3, 3.4]
 
     >>> structure
-    <PyTree(AdjointOperation, (), (<PyTree(Rot, (Wires([0]), ()), (Leaf, Leaf, Leaf))>,))>
+    PyTreeStructure(AdjointOperation, (), [PyTreeStructure(Rot, (Wires([0]), ()), [PyTreeStructure(), PyTreeStructure(), PyTreeStructure()])])
     """
     flatten_fn = flatten_registrations.get(type(obj), None)
     # set the flag is_leaf_node if is_leaf argument is provided and returns true
@@ -285,8 +283,7 @@ def unflatten(data: list[Any], structure: PyTreeStructure) -> Any:
     Adjoint(Rot(-2, -3, -4, wires=[0]))
 
     """
-    with pennylane.queuing.QueuingManager.stop_recording():
-        return _unflatten(iter(data), structure)
+    return _unflatten(iter(data), structure)
 
 
 def _unflatten(new_data, structure):
@@ -296,8 +293,6 @@ def _unflatten(new_data, structure):
     return unflatten_registrations[structure.type_](children, structure.metadata)
 
 
-# TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
-# pylint: disable=no-member
 register_pytree(
     autograd.builtins.list,
     lambda obj: (list(obj), ()),

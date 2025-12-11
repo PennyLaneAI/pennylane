@@ -16,6 +16,7 @@ Pytest configuration file for ops.functions submodule.
 
 Generates parametrizations of operators to test in test_assert_valid.py.
 """
+
 from inspect import getmembers, isclass
 
 import numpy as np
@@ -24,9 +25,10 @@ import pytest
 import pennylane as qml
 from pennylane.exceptions import DeviceError
 from pennylane.operation import Channel, Operation, Operator, StatePrepBase
+from pennylane.ops.op_math import ChangeOpBasis
 from pennylane.ops.op_math.adjoint import Adjoint, AdjointOperation
 from pennylane.ops.op_math.pow import PowOperation
-from pennylane.templates.subroutines.trotter import TrotterizedQfunc
+from pennylane.templates.subroutines.time_evolution.trotter import TrotterizedQfunc
 
 
 def _trotterize_qfunc_dummy(time, theta, phi, wires, flip=False):
@@ -37,16 +39,16 @@ def _trotterize_qfunc_dummy(time, theta, phi, wires, flip=False):
 
 
 _INSTANCES_TO_TEST = [
+    (qml.ops.MidMeasure(wires=0), {"skip_capture": True}),
+    (qml.ops.PauliMeasure("X", wires=0), {"skip_capture": True}),
+    (ChangeOpBasis(qml.T(0), qml.PauliZ(0)), {}),
     (qml.sum(qml.PauliX(0), qml.PauliZ(0)), {}),
     (qml.sum(qml.X(0), qml.X(0), qml.Z(0), qml.Z(0)), {}),
-    (qml.BasisState([1], wires=[0]), {"skip_differentiation": True, "heuristic_resources": True}),
-    (
-        qml.ControlledQubitUnitary(np.eye(2), wires=[1, 0]),
-        {"skip_differentiation": True, "heuristic_resources": True},
-    ),
+    (qml.BasisState([1], wires=[0]), {"skip_differentiation": True}),
+    (qml.ControlledQubitUnitary(np.eye(2), wires=[1, 0]), {"skip_differentiation": True}),
     (
         qml.ControlledQubitUnitary(np.eye(4), wires=[1, 2, 0], control_values=[0]),
-        {"skip_differentiation": True, "heuristic_resources": True},
+        {"skip_differentiation": True},
     ),
     (
         qml.QubitChannel([np.array([[1, 0], [0, 0.8]]), np.array([[0, 0.6], [0, 0]])], wires=0),
@@ -56,17 +58,11 @@ _INSTANCES_TO_TEST = [
     (qml.Projector([1], 0), {"skip_differentiation": True}),
     (qml.Projector([1, 0], 0), {"skip_differentiation": True}),
     (qml.DiagonalQubitUnitary([1, 1, 1, 1], wires=[0, 1]), {"skip_differentiation": True}),
-    (
-        qml.QubitUnitary(np.eye(2), wires=[0]),
-        {"skip_differentiation": True, "heuristic_resources": True},
-    ),
-    (
-        qml.QubitUnitary(np.eye(4), wires=[0, 1]),
-        {"skip_differentiation": True, "heuristic_resources": True},
-    ),
+    (qml.QubitUnitary(np.eye(2), wires=[0]), {"skip_differentiation": True}),
+    (qml.QubitUnitary(np.eye(4), wires=[0, 1]), {"skip_differentiation": True}),
     (
         qml.QubitUnitary(qml.Rot.compute_matrix(0.1, 0.2, 0.3), wires=[0]),
-        {"skip_differentiation": True, "heuristic_resources": True},
+        {"skip_differentiation": True},
     ),
     (qml.SpecialUnitary([1, 1, 1], 0), {"skip_differentiation": True}),
     (qml.IntegerComparator(1, wires=[0, 1]), {"skip_differentiation": True}),
@@ -84,7 +80,7 @@ _INSTANCES_TO_TEST = [
     (qml.pow(qml.IsingXX(1.1, [0, 1]), 2.5), {}),
     (qml.ops.Evolution(qml.PauliX(0), 5.2), {}),
     (qml.QutritBasisState([1, 2, 0], wires=[0, 1, 2]), {"skip_differentiation": True}),
-    (qml.resource.FirstQuantization(1, 2, 1), {}),
+    (qml.estimator.FirstQuantization(1, 2, 1), {}),
     (qml.prod(qml.RX(1.1, 0), qml.RY(2.2, 0), qml.RZ(3.3, 1)), {}),
     (qml.Snapshot(measurement=qml.expval(qml.Z(0)), tag="hi"), {}),
     (qml.Snapshot(tag="tag"), {}),
@@ -156,7 +152,7 @@ _INSTANCES_TO_FAIL = [
         ValueError,  # binding parameters fail, and more
     ),
     (
-        qml.resource.DoubleFactorization(np.eye(2), np.arange(16).reshape((2,) * 4)),
+        qml.estimator.DoubleFactorization(np.eye(2), np.arange(16).reshape((2,) * 4)),
         TypeError,  # op.eigvals is a list (overwritten in the init)
     ),
 ]

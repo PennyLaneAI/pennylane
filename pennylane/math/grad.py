@@ -72,7 +72,7 @@ def grad(f: Callable, argnums: Sequence[int] | int = 0) -> Callable:
         interface = get_interface(*args)
 
         if interface == "autograd":
-            g = _autograd_grad(f, argnum=argnums)(*args, **kwargs)
+            g = _autograd_grad(f, argnums=argnums)(*args, **kwargs)
             return g[0] if argnums_integer else g
 
         if interface == "jax":
@@ -87,7 +87,9 @@ def grad(f: Callable, argnums: Sequence[int] | int = 0) -> Callable:
             g = tuple(args[i].grad for i in argnums)
             return g[0] if argnums_integer else g
 
-        if interface == "tensorflow":
+        if (
+            interface == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             import tensorflow as tf
 
             with tf.GradientTape() as tape:
@@ -128,7 +130,9 @@ def _torch_jac(f, argnums, args, kwargs):
 
 
 # pylint: disable=import-outside-toplevel
-def _tensorflow_jac(f, argnums, args, kwargs):
+def _tensorflow_jac(
+    f, argnums, args, kwargs
+):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
     """Calculate a jacobian via tensorflow"""
     import tensorflow as tf
 
@@ -228,7 +232,7 @@ def jacobian(f: Callable, argnums: Sequence[int] | int = 0) -> Callable:
         interface = get_interface(*args)
 
         if interface == "autograd":
-            return _autograd_jacobian(f, argnum=argnums)(*args, **kwargs)
+            return _autograd_jacobian(f, argnums=argnums)(*args, **kwargs)
 
         if interface == "jax":
             import jax
@@ -238,7 +242,9 @@ def jacobian(f: Callable, argnums: Sequence[int] | int = 0) -> Callable:
         if interface == "torch":
             return _torch_jac(f, argnums, args, kwargs)
 
-        if interface == "tensorflow":
+        if (
+            interface == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             return _tensorflow_jac(f, argnums, args, kwargs)
 
         raise ValueError(f"Interface {interface} is not differentiable.")

@@ -71,8 +71,6 @@ class RealspaceCoeffs:
     def _from_tree(cls, tree: _RealspaceTree):
         """Initialize directly from a ``_RealspaceTree`` object."""
         rs_coeffs = cls.__new__(cls)
-        # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
-        # pylint: disable=protected-access
         rs_coeffs._tree = tree
         return rs_coeffs
 

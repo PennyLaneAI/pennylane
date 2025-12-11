@@ -22,7 +22,7 @@ from collections.abc import Callable, Sequence
 from functools import partial
 from typing import Any
 
-from ..base import ExecBackendConfig, IntExec
+from pennylane.concurrency.executors.base import ExecBackendConfig, IntExec
 
 
 class PyNativeExec(IntExec, abc.ABC):

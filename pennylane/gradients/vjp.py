@@ -120,8 +120,6 @@ def compute_vjp_single(dy, jac, num=None):
     # TODO: Excplictly catalogue and update raises for known types.
 
     # Single measurement with a single param
-    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
-    # pylint: disable=no-member
     if not isinstance(jac, (tuple, list, autograd.builtins.SequenceBox)):
         # No trainable parameters
         if jac.shape == (0,):
@@ -148,7 +146,10 @@ def compute_vjp_single(dy, jac, num=None):
             jac = math.reshape(math.stack(jac), (1, -1))
             try:
                 res = dy_row @ jac
-            except Exception:  # pylint: disable=broad-except
+            # pylint: disable=broad-except
+            except (
+                Exception
+            ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
                 res = math.tensordot(jac, dy_row, [[0], [0]])
 
         # Single measurement with dimension e.g. probs
@@ -156,7 +157,10 @@ def compute_vjp_single(dy, jac, num=None):
             jac = math.reshape(math.stack(jac), (-1, num))
             try:
                 res = jac @ dy_row
-            except Exception:  # pylint: disable=broad-except
+            # pylint: disable=broad-except
+            except (
+                Exception
+            ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
                 res = math.tensordot(jac, dy_row, [[1], [0]])
 
     return res
@@ -202,8 +206,6 @@ def compute_vjp_multi(dy, jac, num=None):
         return None
 
     # Single parameter
-    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
-    # pylint: disable=no-member
     if not isinstance(jac[0], (tuple, autograd.builtins.SequenceBox)):
         res = []
         for d, j_ in zip(dy, jac):
@@ -220,7 +222,9 @@ def compute_vjp_multi(dy, jac, num=None):
             if len(dy_shape) > 1:  # multiple values exist per observable output
                 return math.array(math.einsum("ij,i...j", dy, jac), like=dy[0])
 
-            if dy_interface == "tensorflow":
+            if (
+                dy_interface == "tensorflow"
+            ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
                 # TF needs a different path for Hessian support
                 return math.array(
                     math.einsum("i,i...", dy, jac, like=dy[0]), like=dy[0]
@@ -528,7 +532,9 @@ def batch_vjp(tapes, dys, gradient_fn, reduction="append", gradient_kwargs=None)
 
             if isinstance(reduction, str):
                 getattr(vjps, reduction)(vjp_)
-            elif callable(reduction):
+            elif callable(
+                reduction
+            ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
                 reduction(vjps, vjp_)
 
         return vjps

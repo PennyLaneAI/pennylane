@@ -26,7 +26,7 @@ if TYPE_CHECKING:
     from pennylane.workflow.qnode import QNode
 
 
-def get_best_diff_method(qnode: QNode):
+def get_best_diff_method(qnode: QNode) -> str:
     """Returns a function that computes the 'best' differentiation method
     for a particular QNode.
 

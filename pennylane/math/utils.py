@@ -133,7 +133,7 @@ def _allclose_mixed(a, b, rtol=1e-05, atol=1e-08, b_is_sparse=True):
     dense_coords = dense.nonzero()
     sparse_coords = sparse.nonzero()
 
-    coord_diff = set(zip(*dense_coords)) ^ set(zip(*sparse_coords))
+    coord_diff = set(zip(*dense_coords, strict=True)) ^ set(zip(*sparse_coords, strict=True))
     if coord_diff:
         return False
 
@@ -285,12 +285,15 @@ def cast_like(tensor1, tensor2):
     """
     if isinstance(tensor2, tuple) and len(tensor2) > 0:
         tensor2 = tensor2[0]
-    if isinstance(tensor2, ArrayBox):
-        dtype = ar.to_numpy(tensor2._value).dtype.type  # pylint: disable=protected-access
-    elif not is_abstract(tensor2):
-        dtype = ar.to_numpy(tensor2).dtype.type
-    else:
+
+    # Check for abstract tensors FIRST before trying to convert to numpy
+    # This is important for JAX 0.7.0+ which has additional tracer types
+    if is_abstract(tensor2):
         dtype = tensor2.dtype
+    elif isinstance(tensor2, ArrayBox):
+        dtype = ar.to_numpy(tensor2._value).dtype.type  # pylint: disable=protected-access
+    else:
+        dtype = ar.to_numpy(tensor2).dtype.type
     return cast(tensor1, dtype)
 
 
@@ -413,24 +416,20 @@ def is_abstract(tensor, like=None):
 
     if interface == "jax":
         import jax
-        from jax.interpreters.partial_eval import DynamicJaxprTracer
 
-        if isinstance(
-            tensor,
-            (
-                jax.interpreters.ad.JVPTracer,
-                jax.interpreters.batching.BatchTracer,
-                jax.interpreters.partial_eval.JaxprTracer,
-            ),
-        ):
+        # Use jax.core.Tracer as base class to catch all tracer types including new ones in JAX 0.7.0+
+        # (e.g., LinearizeTracer, JVPTracer, BatchTracer, JaxprTracer, DynamicJaxprTracer, etc.)
+        if isinstance(tensor, jax.core.Tracer):
             # Tracer objects will be used when computing gradients or applying transforms.
             # If the value of the tracer is known, jax.core.is_concrete will return True.
             # Otherwise, it will be abstract.
             return not jax.core.is_concrete(tensor)
 
-        return isinstance(tensor, DynamicJaxprTracer)
+        return False
 
-    if interface == "tensorflow":
+    if (
+        interface == "tensorflow"
+    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
         import tensorflow as tf
         from tensorflow.python.framework.ops import EagerTensor
 
@@ -517,7 +516,9 @@ def requires_grad(tensor, interface=None):
     """
     interface = interface or math.get_interface(tensor)
 
-    if interface == "tensorflow":
+    if (
+        interface == "tensorflow"
+    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
         import tensorflow as tf
 
         should_record_backprop = import_should_record_backprop()
@@ -569,7 +570,9 @@ def in_backprop(tensor, interface=None):
     """
     interface = interface or math.get_interface(tensor)
 
-    if interface == "tensorflow":
+    if (
+        interface == "tensorflow"
+    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
         import tensorflow as tf
 
         should_record_backprop = import_should_record_backprop()

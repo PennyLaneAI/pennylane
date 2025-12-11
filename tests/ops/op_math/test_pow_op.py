@@ -108,6 +108,15 @@ class TestConstructor:
 
         assert original_op not in q.queue
 
+    def test_simplify_squared(self):
+        """Test that an op without a special pow method can still be simplified when raised to an integer power."""
+
+        class DummyOp(qml.operation.Operator):
+            pass
+
+        simplified = (DummyOp(0) ** 2).simplify()
+        qml.assert_equal(simplified, DummyOp(0) @ DummyOp(0))
+
 
 @pytest.mark.parametrize("power_method", [Pow, pow_using_dunder_method, qml.pow])
 class TestInheritanceMixins:
@@ -352,10 +361,10 @@ class TestProperties:
             """Dummy operator."""
 
             num_wires = 1
-            is_hermitian = value
+            is_verified_hermitian = value
 
         op: Pow = power_method(base=DummyOp(1), z=2.5)
-        assert op.is_hermitian is value
+        assert op.is_verified_hermitian is value
 
     def test_queue_category(self, power_method):
         """Test that the queue category `"_ops"` carries over."""
@@ -546,7 +555,7 @@ class TestMiscMethods:
         op = Pow(base, -1.2)
 
         cache = {"matrices": []}
-        assert op.label(decimals=2, cache=cache) == "U(M0)⁻¹⋅²"
+        assert op.label(decimals=2, cache=cache) == "U\n(M0)⁻¹⋅²"
         assert len(cache["matrices"]) == 1
 
     def test_eigvals(self):

@@ -28,6 +28,8 @@ from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
 
+from .helper import _needs_pyzx
+
 
 def _toffoli_clifford_t_decomp(wires):
     """Return the explicit Clifford+T decomposition of the Toffoli gate,
@@ -99,6 +101,7 @@ class EdgeType:  # pylint: disable=too-few-public-methods
     HADAMARD = 2
 
 
+@_needs_pyzx
 def to_zx(tape, expand_measurements=False):
     """This transform converts a PennyLane quantum tape to a ZX-Graph in the `PyZX framework <https://pyzx.readthedocs.io/en/latest/>`_.
     The graph can be optimized and transformed by well-known ZX-calculus reductions.
@@ -113,6 +116,9 @@ def to_zx(tape, expand_measurements=False):
 
         The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
         will provide the ZX graph in the form of a PyZX graph.
+
+    Raises:
+        ModuleNotFoundError: if the required ``pyzx`` package is not installed.
 
     **Example**
 
@@ -147,7 +153,7 @@ def to_zx(tape, expand_measurements=False):
     It is now a PyZX graph and can apply function from the framework on your Graph, for example you can draw it:
 
     >>> pyzx.draw_matplotlib(g)
-    <Figure size 800x200 with 1 Axes>
+    <Figure size ... with 1 Axes>
 
     Alternatively you can use the transform directly on a quantum tape and get PyZX graph.
 
@@ -283,8 +289,7 @@ def to_zx(tape, expand_measurements=False):
 
             wires = qml.wires.Wires([4, 3, 0, 2, 1])
             wires_map = dict(zip(tape_opt.wires, wires))
-            tapes_opt_reorder, fn = qml.map_wires(input=tape_opt, wire_map=wires_map)[0][0]
-            tape_opt_reorder = fn(tapes_opt_reorder)
+            tape_opt_reorder = qml.map_wires(input=tape_opt, wire_map=wires_map)[0][0]
 
             @qml.qnode(device=dev)
             def mod_5_4():
@@ -292,13 +297,14 @@ def to_zx(tape, expand_measurements=False):
                     qml.apply(g)
                 return qml.expval(qml.Z(0))
 
-        >>> mod_5_4()
-        tensor(1., requires_grad=True)
+        >>> result = mod_5_4()
+        >>> print(result) # doctest: +SKIP
+        1.0
 
     .. note::
 
-        It is a PennyLane adapted and reworked `circuit_to_graph <https://github.com/Quantomatic/pyzx/blob/master/pyzx/circuit/graphparser.py>`_
-        function.
+        This function is a PennyLane adaptation to `circuit_to_graph <https://github.com/zxcalc/pyzx/blob/master/pyzx/circuit/graphparser.py#L89>`_.
+        It requires the `pyzx <https://pyzx.readthedocs.io/en/latest/>`_ external package to be installed.
 
     .. note::
 
@@ -323,17 +329,10 @@ def _to_zx_transform(
     tape: QuantumScript, expand_measurements=False
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Private function to convert a PennyLane tape to a `PyZX graph <https://pyzx.readthedocs.io/en/latest/>`_ ."""
-    # Avoid to make PyZX a requirement for PennyLane.
-    try:
-        # pylint: disable=import-outside-toplevel
-        import pyzx
-        from pyzx.circuit.gates import TargetMapper
-        from pyzx.graph import Graph
-
-    except ImportError as Error:
-        raise ImportError(
-            "This feature requires PyZX. It can be installed with: pip install pyzx"
-        ) from Error
+    # pylint: disable=import-outside-toplevel
+    import pyzx
+    from pyzx.circuit.gates import TargetMapper
+    from pyzx.graph import Graph
 
     # Dictionary of gates (PennyLane to PyZX circuit)
     gate_types = {
@@ -368,7 +367,7 @@ def _to_zx_transform(
         # Map the wires to consecutive wires
 
         consecutive_wires = Wires(range(len(res[0].wires)))
-        consecutive_wires_map = OrderedDict(zip(res[0].wires, consecutive_wires))
+        consecutive_wires_map = OrderedDict(zip(res[0].wires, consecutive_wires, strict=True))
         mapped_tapes, fn = qml.map_wires(input=res[0], wire_map=consecutive_wires_map)
         mapped_tape = fn(mapped_tapes)
 
@@ -384,7 +383,7 @@ def _to_zx_transform(
 
         # Expand the tape to be compatible with PyZX and add rotations first for measurements
         stop_crit = qml.BooleanFn(lambda obj: isinstance(obj, Operator) and obj.name in gate_types)
-        mapped_tape = qml.tape.tape.expand_tape(
+        mapped_tape = qml.tape.expand_tape(
             mapped_tape, depth=10, stop_at=stop_crit, expand_measurements=expand_measurements
         )
 
@@ -457,7 +456,6 @@ def from_zx(graph, decompose_phases=True):
 
     .. code-block:: python
 
-        import pyzx
         dev = qml.device('default.qubit', wires=2)
 
         @qml.transforms.to_zx
@@ -480,14 +478,16 @@ def from_zx(graph, decompose_phases=True):
 
     You can check that the operations are similar but some were decomposed in the process.
 
-    >>> pennylane_tape.operations
+    >>> ops = pennylane_tape.operations
+    >>> from pprint import pprint
+    >>> pprint(ops)
     [Z(0),
      T(0),
-     RX(0.1, wires=[1]),
+     RX(0.10..., wires=[1]),
      Z(0),
      Adjoint(T(0)),
      Z(1),
-     RZ(0.3, wires=[0]),
+     RZ(0.30..., wires=[0]),
      X(0),
      CNOT(wires=[1, 0]),
      CNOT(wires=[0, 1]),

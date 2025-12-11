@@ -33,6 +33,7 @@ General Execution Errors
 .. autosummary::
     :toctree: api
 
+    ~AllocationError
     ~CaptureError
     ~DeviceError
     ~QuantumFunctionError
@@ -80,6 +81,10 @@ User Warnings
 # =============================================================================
 # General Execution and Quantum Function Errors
 # =============================================================================
+
+
+class AllocationError(RuntimeError):
+    """An error arising from trying handling a dynamically allocated wire."""
 
 
 class CaptureError(Exception):
@@ -167,6 +172,10 @@ class ParameterFrequenciesUndefinedError(OperatorPropertyUndefined):
     does not have parameter_frequencies"""
 
 
+class ResourcesUndefinedError(Exception):
+    r"""Exception to be raised when a ``ResourceOperator`` does not implement resource_decomp"""
+
+
 # =============================================================================
 # Warnings
 # =============================================================================
@@ -182,6 +191,10 @@ class ExperimentalWarning(UserWarning):
 
 class AutoGraphWarning(Warning):
     """Warnings related to PennyLane's AutoGraph submodule."""
+
+
+class CaptureWarning(Warning):
+    """Warnings related to the capture of the program into a condensed PLxPR format."""
 
 
 # =============================================================================
@@ -208,3 +221,10 @@ class InvalidCapabilitiesError(Exception):
 class NonDifferentiableError(Exception):
     """Exception raised if attempting to differentiate non-trainable
     :class:`~.tensor` using Autograd."""
+
+
+_TF_DEPRECATION_MSG = (
+    "Support for the TensorFlow interface is deprecated and will be removed in v0.44. "
+    "Future versions of PennyLane are not guaranteed to work with TensorFlow. "
+    "Please migrate your workflows to JAX or Pytorch to benefit from enhanced support and features."
+)

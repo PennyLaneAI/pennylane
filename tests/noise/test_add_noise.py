@@ -393,32 +393,6 @@ class TestAddNoiseInterface:
 class TestAddNoiseLevels:
     """Tests for custom insertion of add_noise transform at correct level."""
 
-    def test_level_none_deprecation(self):
-        """Test that using level=None raises a deprecation warning."""
-        dev = qml.device("default.mixed", wires=2)
-
-        @qml.metric_tensor
-        @qml.transforms.undo_swaps
-        @qml.transforms.merge_rotations
-        @qml.transforms.cancel_inverses
-        @qml.qnode(dev, diff_method="parameter-shift", gradient_kwargs={"shifts": np.pi / 4})
-        def f(w, x, y, z):
-            qml.RX(w, wires=0)
-            qml.RY(x, wires=1)
-            qml.CNOT(wires=[0, 1])
-            qml.RY(y, wires=0)
-            qml.RX(z, wires=1)
-            return qml.expval(qml.Z(0) @ qml.Z(1))
-
-        fcond = qml.noise.op_eq(qml.RX)
-        fcall = qml.noise.partial_wires(qml.PhaseDamping, 0.4)
-        noise_model = qml.NoiseModel({fcond: fcall})
-        with pytest.warns(
-            qml.exceptions.PennyLaneDeprecationWarning,
-            match="`level=None` is deprecated",
-        ):
-            add_noise(f, noise_model=noise_model, level=None)
-
     @pytest.mark.parametrize(
         "level1, level2",
         [
@@ -431,7 +405,7 @@ class TestAddNoiseLevels:
         ],
     )
     def test_add_noise_level(self, level1, level2):
-        """Test that add_noise can be inserted to correct level in the TransformProgram"""
+        """Test that add_noise can be inserted to correct level in the CompilePipeline"""
         dev = qml.device("default.mixed", wires=2)
 
         @qml.metric_tensor
@@ -464,7 +438,7 @@ class TestAddNoiseLevels:
             assert t1 == t2
 
     def test_add_noise_level_with_final(self):
-        """Test that add_noise can be inserted in the TransformProgram with a final transform"""
+        """Test that add_noise can be inserted in the CompilePipeline with a final transform"""
         dev = qml.device("default.mixed", wires=2)
 
         @qml.metric_tensor

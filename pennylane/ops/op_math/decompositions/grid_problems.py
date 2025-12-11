@@ -275,7 +275,7 @@ class EllipseState:
             grid_op = grid_op * GridOp.from_string("X")
 
         if abs(self.bias) > 2:
-            n = int(math.floor((1 - sign * self.bias) / 4))
+            n = int(round((1 - sign * self.bias) / 4))
             grid_op = grid_op * (GridOp.from_string("U") ** n)
 
         n_grid_op = GridOp.from_string("I")
@@ -283,6 +283,16 @@ class EllipseState:
 
         if abs(new_state.bias) > 1:
             new_state, k = new_state.apply_shift_op()
+
+            if new_state.e2.b < 0:
+                grid_op_z = GridOp.from_string("Z")
+                new_state = new_state.apply_grid_op(grid_op_z)
+                n_grid_op = n_grid_op * grid_op_z
+
+            if (new_state.e1.z + new_state.e2.z) < 0:  # pragma: no cover
+                grid_op_x = GridOp.from_string("X")
+                new_state = new_state.apply_grid_op(grid_op_x)
+                n_grid_op = n_grid_op * grid_op_x
 
         e1, e2 = new_state.e1, new_state.e2
 
@@ -292,11 +302,11 @@ class EllipseState:
             if e1.b >= 0:
                 if e1.z <= 0.3 and e2.z >= 0.8:
                     n_grid_op = n_grid_op * GridOp.from_string("K")
-                elif e1.z >= 0.3 and e2.z >= 0.3:
-                    n = int(max(1, math.floor((_LAMBDA ** min(e1.z, e2.z)) / _SQRT2)))
-                    n_grid_op = n_grid_op * (GridOp.from_string("A") ** n)
                 elif e1.z >= 0.8 and e2.z <= 0.3:
                     n_grid_op = n_grid_op * GridOp.from_string("K").adj2()
+                elif e1.z >= 0.3 and e2.z >= 0.3:
+                    n = int(max(1, math.floor((_LAMBDA ** min(e1.z, e2.z)) / 2)))
+                    n_grid_op = n_grid_op * (GridOp.from_string("A") ** n)
                 else:  # pragma: no cover
                     raise ValueError(f"Skew couldn't be reduced for the state {new_state}")
             else:

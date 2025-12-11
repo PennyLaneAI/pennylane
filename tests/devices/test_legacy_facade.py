@@ -14,6 +14,7 @@
 """
 Contains unit tests for the LegacyDeviceFacade class.
 """
+
 # pylint: disable=protected-access
 import copy
 
@@ -22,13 +23,13 @@ import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
-from pennylane.devices.execution_config import ExecutionConfig
+from pennylane.devices.execution_config import ExecutionConfig, MCMConfig
 from pennylane.devices.legacy_facade import (
     LegacyDeviceFacade,
     legacy_device_batch_transform,
     legacy_device_expand_fn,
 )
-from pennylane.exceptions import DeviceError
+from pennylane.exceptions import DeviceError, PennyLaneDeprecationWarning, QuantumFunctionError
 
 
 class DummyDevice(qml.devices.LegacyDevice):
@@ -42,6 +43,9 @@ class DummyDevice(qml.devices.LegacyDevice):
     observables = {"PauliX", "PauliY", "PauliZ"}
     operations = {"Rot", "RX", "RY", "RZ", "PauliX", "PauliY", "PauliZ", "CNOT"}
     pennylane_requires = 0.38
+
+    def __init__(self, wires=1, shots=None, *, analytic=None):
+        super().__init__(wires=wires, shots=shots, analytic=analytic)
 
     def reset(self):
         pass
@@ -84,7 +88,12 @@ def test_copy():
 def test_shots():
     """Test the shots behavior of a dummy legacy device."""
     legacy_dev = DummyDevice(shots=(100, 100))
-    dev = LegacyDeviceFacade(legacy_dev)
+    # Expect a deprecation warning when wrapping a legacy device with shots
+    with pytest.warns(
+        PennyLaneDeprecationWarning,
+        match="Setting shots on device is deprecated",
+    ):
+        dev = LegacyDeviceFacade(legacy_dev)
 
     assert dev.shots == qml.measurements.Shots((100, 100))
 
@@ -122,22 +131,27 @@ def test_debugger():
     assert qml.math.allclose(res["execution_results"], 0)
 
 
-def test_shot_distribution():
+@pytest.mark.parametrize(
+    "execution_config",
+    (None, ExecutionConfig(gradient_keyword_arguments={"method": "new_gradient"})),
+)
+def test_shot_distribution(execution_config):
     """Test that different numbers of shots in a batch all get executed."""
 
     class DummyJacobianDevice(DummyDevice):
-
         _capabilities = {"provides_jacobian": True}
 
-        def adjoint_jacobian(self, circuit):  # pylint: disable=unused-argument
+        def new_gradient(self, circuit):  # pylint: disable=unused-argument
             return 0
+
+        def jacobian(self, circuit):  # pylint: disable=unused-argument
+            return 1
 
     dev = LegacyDeviceFacade(DummyJacobianDevice())
 
     tape1 = qml.tape.QuantumScript([], [qml.expval(qml.Z(0))], shots=5)
     tape2 = qml.tape.QuantumScript([], [qml.expval(qml.Z(0))], shots=100)
 
-    execution_config = ExecutionConfig(gradient_keyword_arguments={"method": "adjoint_jacobian"})
     with dev.tracker:
         dev.execute((tape1, tape2))
     assert dev.tracker.history["shots"] == [5, 100]
@@ -215,14 +229,22 @@ def test_basic_properties():
 def test_preprocessing_program():
     """Test the population of the preprocessing program."""
 
-    dev = DummyDevice(wires=(0, 1))
-    program = LegacyDeviceFacade(dev).preprocess_transforms()
+    m0 = qml.measure(0)
+    tape = qml.tape.QuantumScript(
+        [qml.X(0), qml.IsingXX(0.5, (0, 1)), *m0.measurements],
+        [qml.expval(qml.Hamiltonian([1, 1], [qml.X(0), qml.Y(0)]))],
+    )
 
+    dev = DummyDevice(wires=(0, 1))
+    facade = LegacyDeviceFacade(dev)
+    config = facade.setup_execution_config(circuit=tape)
+    program = facade.preprocess_transforms(config)
+
+    assert program[0].transform == qml.defer_measurements.transform  # pylint: disable=no-member
     assert (
-        program[0].transform == legacy_device_batch_transform.transform
+        program[1].transform == legacy_device_batch_transform.transform
     )  # pylint: disable=no-member
-    assert program[1].transform == legacy_device_expand_fn.transform  # pylint: disable=no-member
-    assert program[2].transform == qml.defer_measurements.transform  # pylint: disable=no-member
+    assert program[2].transform == legacy_device_expand_fn.transform  # pylint: disable=no-member
 
     m0 = qml.measure(0)
     tape = qml.tape.QuantumScript(
@@ -242,6 +264,77 @@ def test_preprocessing_program():
     assert tape2.shots == qml.measurements.Shots(50)
 
     assert qml.math.allclose(fn((1.0, 2.0)), 3.0)
+
+
+def test_mcm_validation():
+    """Tests that the setup_execution_config correctly validates mcm methods."""
+
+    dev = DummyDevice(wires=[0, 1])
+    facade = LegacyDeviceFacade(dev)
+
+    m0 = qml.measure(0)
+    tape = qml.tape.QuantumScript([qml.X, *m0.measurements], [qml.expval(qml.Z(0))])
+    with pytest.raises(QuantumFunctionError, match="only supported with finite shots"):
+        config = ExecutionConfig(mcm_config=MCMConfig(mcm_method="one-shot"))
+        facade.setup_execution_config(config, tape)
+
+    with pytest.raises(QuantumFunctionError, match="unsupported by the device"):
+        config = ExecutionConfig(mcm_config=MCMConfig(mcm_method="tree-traversal"))
+        facade.setup_execution_config(config, tape)
+
+
+def test_mcm_resolution_when_supported():
+    """Tests resolution of the mcm method when mcm is supported."""
+
+    class MidMeasureDev(DummyDevice):
+        """A dummy device that supports mid circuit measurements."""
+
+        _capabilities = {"supports_mid_measure": True}
+
+    dev = MidMeasureDev(wires=[0, 1])
+    facade = LegacyDeviceFacade(dev)
+
+    m0 = qml.measure(0)
+    tape = qml.tape.QuantumScript([qml.X, *m0.measurements], [qml.expval(qml.Z(0))], shots=100)
+    config = ExecutionConfig(mcm_config=MCMConfig(mcm_method="one-shot"))
+    config = facade.setup_execution_config(config, tape)
+    assert config.mcm_config.mcm_method == "one-shot"
+
+    config = ExecutionConfig()
+    config = facade.setup_execution_config(config, tape)
+    assert config.mcm_config.mcm_method == "one-shot"
+
+
+@pytest.mark.usefixtures("create_temporary_toml_file")
+@pytest.mark.parametrize(
+    "create_temporary_toml_file",
+    [
+        """
+        schema = 3
+
+        [compilation]
+
+        supported_mcm_methods = ["one-shot"]
+        """
+    ],
+    indirect=True,
+)
+def test_mcm_resolution_toml_present(request):
+    """Tests resolution of the mcm methods when a toml file is provided."""
+
+    dev = DummyDevice(wires=[0, 1])
+    dev.config_filepath = request.node.toml_file  # pylint: disable=attribute-defined-outside-init
+    facade = LegacyDeviceFacade(dev)
+
+    m0 = qml.measure(0)
+    tape = qml.tape.QuantumScript([qml.X, *m0.measurements], [qml.expval(qml.Z(0))], shots=100)
+    config = ExecutionConfig(mcm_config=MCMConfig(mcm_method="one-shot"))
+    config = facade.setup_execution_config(config, tape)
+    assert config.mcm_config.mcm_method == "one-shot"
+
+    config = ExecutionConfig()
+    config = facade.setup_execution_config(config, tape)
+    assert config.mcm_config.mcm_method == "one-shot"
 
 
 def test_preprocessing_program_supports_mid_measure():
@@ -294,13 +387,16 @@ class TestGradientSupport:
         assert not dev.supports_derivatives(ExecutionConfig(gradient_method="param_shift"))
 
         with pytest.raises(DeviceError):
-            dev.preprocess(ExecutionConfig(gradient_method="device"))
+            config = dev.setup_execution_config(ExecutionConfig(gradient_method="device"))
+            dev.preprocess(config)
 
         with pytest.raises(DeviceError):
-            dev.preprocess(ExecutionConfig(gradient_method="adjoint"))
+            config = dev.setup_execution_config(ExecutionConfig(gradient_method="adjoint"))
+            dev.preprocess(config)
 
         with pytest.raises(DeviceError):
-            dev.preprocess(ExecutionConfig(gradient_method="backprop"))
+            config = dev.setup_execution_config(ExecutionConfig(gradient_method="backprop"))
+            dev.preprocess(config)
 
     def test_adjoint_support(self):
         """Test that the facade can handle devices that support adjoint."""
@@ -381,7 +477,6 @@ class TestGradientSupport:
         """Test that backpropagation is not supported with SparseHamiltonian."""
 
         class BackpropDevice(DummyDevice):
-
             _capabilities = {"passthru_interface": "autograd"}
 
         H = qml.SparseHamiltonian(qml.X.compute_sparse_matrix(), wires=0)
@@ -397,7 +492,6 @@ class TestGradientSupport:
         """Test that if the passthru interface is set, no substitution occurs."""
 
         class BackpropDevice(DummyDevice):
-
             _capabilities = {"passthru_interface": "autograd"}
 
         dev = LegacyDeviceFacade(BackpropDevice(wires=2, shots=None))

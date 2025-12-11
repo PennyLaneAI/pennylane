@@ -16,30 +16,62 @@ This module contains the transform dispatcher and the transform container.
 """
 import functools
 import os
-import types
 import warnings
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from copy import copy
 
-import pennylane as qml
 from pennylane import capture, math
 from pennylane.capture.autograph import wraps
 from pennylane.exceptions import TransformError
+from pennylane.measurements import MeasurementProcess
+from pennylane.operation import Operator
+from pennylane.pytrees import flatten
 from pennylane.queuing import AnnotatedQueue, QueuingManager, apply
+from pennylane.tape import QuantumScript
 from pennylane.typing import ResultBatch
+
+
+@functools.lru_cache
+def _create_transform_primitive():
+    try:
+        # pylint: disable=import-outside-toplevel
+        from pennylane.capture.custom_primitives import QmlPrimitive
+    except ImportError:
+        return None
+
+    transform_prim = QmlPrimitive("transform")
+    transform_prim.multiple_results = True
+    transform_prim.prim_type = "transform"
+
+    # pylint: disable=too-many-arguments, disable=unused-argument
+    @transform_prim.def_impl
+    def _impl(*all_args, inner_jaxpr, args_slice, consts_slice, targs_slice, tkwargs, transform):
+        args = all_args[slice(*args_slice)]
+        consts = all_args[slice(*consts_slice)]
+        return capture.eval_jaxpr(inner_jaxpr, consts, *args)
+
+    @transform_prim.def_abstract_eval
+    def _abstract_eval(*_, inner_jaxpr, **__):
+        return [out.aval for out in inner_jaxpr.outvars]
+
+    return transform_prim
 
 
 def _create_plxpr_fallback_transform(tape_transform):
     # pylint: disable=import-outside-toplevel
     try:
         import jax
+
+        from pennylane.tape import plxpr_to_tape
     except ImportError:
         return None
 
     def plxpr_fallback_transform(jaxpr, consts, targs, tkwargs, *args):
+        # Restore tkwargs from hashable tuple to dict
+        tkwargs = dict(tkwargs)
 
         def wrapper(*inner_args):
-            tape = qml.tape.plxpr_to_tape(jaxpr, consts, *inner_args)
+            tape = plxpr_to_tape(jaxpr, consts, *inner_args)
             with capture.pause():
                 tapes, _ = tape_transform(tape, *targs, **tkwargs)
 
@@ -67,99 +99,35 @@ def _create_plxpr_fallback_transform(tape_transform):
     return plxpr_fallback_transform
 
 
-def _register_primitive_for_expansion(primitive, plxpr_transform):
-    """Register a transform such that it can be expanded when applied to a function with
-    program capture enabled."""
-    # pylint: disable=import-outside-toplevel
-    try:
-        import jax
-
-        from pennylane.capture.expand_transforms import ExpandTransformsInterpreter
-    except ImportError:
-        return
-
-    @ExpandTransformsInterpreter.register_primitive(primitive)
-    def _(
-        self, *invals, inner_jaxpr, args_slice, consts_slice, targs_slice, tkwargs
-    ):  # pylint: disable=too-many-arguments,missing-docstring
-        args = invals[args_slice]
-        consts = invals[consts_slice]
-        targs = invals[targs_slice]
-
-        def wrapper(*inner_args):
-            return copy(self).eval(inner_jaxpr, consts, *inner_args)
-
-        jaxpr = jax.make_jaxpr(wrapper)(*args)
-        jaxpr = plxpr_transform(jaxpr.jaxpr, jaxpr.consts, targs, tkwargs, *args)
-        return copy(self).eval(jaxpr.jaxpr, jaxpr.consts, *args)
+def specific_apply_transform(transform, obj, *targs, **tkwargs):
+    """The default behavior for TransformDispatcher._apply_transform. By default, it dispatches to the
+    generic registration."""
+    return transform.generic_apply_transform(obj, *targs, **tkwargs)
 
 
-def _preprocess_device(original_device, transform, targs, tkwargs):
-    class TransformedDevice(type(original_device)):
-        """A transformed device with updated preprocess method."""
+@functools.singledispatch
+def generic_apply_transform(obj, transform, *targs, **tkwargs):
+    """Apply an generic transform to a specific type of object. A singledispatch function
+    used by ``TransformDipsatcher.generic_apply_transform``, but with a different order of arguments
+    to allow is to be used by singledispatch.
 
-        def __init__(self, original_device, transform, targs, tkwargs):
-            for key, value in original_device.__dict__.items():
-                self.__setattr__(key, value)
-            self.transform = transform
-            self.targs = targs
-            self.tkwargs = tkwargs
-            self._original_device = original_device
+    When called with an object that is not a valid dispatch target (e.g., not a QNode, tape, etc.),
+    this returns a TransformContainer with the supplied args and kwargs. This enables patterns like:
 
-        def __repr__(self):
-            return f"Transformed Device({original_device.__repr__()} with additional preprocess transform {self.transform})"
+        decompose(gate_set=gate_set) + merge_rotations(1e-6)
 
-        def preprocess(
-            self,
-            execution_config: qml.devices.ExecutionConfig = qml.devices.DefaultExecutionConfig,
-        ):
-            """This function updates the original device transform program to be applied."""
-            program, config = self.original_device.preprocess(execution_config)
-            program.push_back(
-                TransformContainer(self.transform, args=self.targs, kwargs=self.tkwargs)
-            )
-            return program, config
-
-        @property
-        def original_device(self):
-            """Return the original device."""
-            return self._original_device
-
-    return TransformedDevice(original_device, transform, targs, tkwargs)
+    where transforms are called with just configuration parameters and combined into a CompilePipeline
+    """
+    # If the first argument is not a valid dispatch target, return a TransformContainer
+    # with the first argument and any additional args/kwargs stored as transform parameters.
+    return TransformContainer(transform, args=(obj, *targs), kwargs=tkwargs)
 
 
-def _preprocess_transforms_device(original_device, transform, targs, tkwargs):
-    class TransformedDevice(type(original_device)):
-        """A transformed device with updated preprocess method."""
-
-        def __init__(self, original_device, transform, targs, tkwargs):
-            for key, value in original_device.__dict__.items():
-                self.__setattr__(key, value)
-            self.transform = transform
-            self.targs = targs
-            self.tkwargs = tkwargs
-            self._original_device = original_device
-
-        def __repr__(self):
-            return f"Transformed Device({original_device.__repr__()} with additional preprocess transform {self.transform})"
-
-        def preprocess_transforms(
-            self,
-            execution_config: qml.devices.ExecutionConfig = qml.devices.DefaultExecutionConfig,
-        ):
-            """This function updates the original device transform program to be applied."""
-            program = self.original_device.preprocess_transforms(execution_config)
-            program.push_back(
-                TransformContainer(self.transform, args=self.targs, kwargs=self.tkwargs)
-            )
-            return program
-
-        @property
-        def original_device(self):
-            """Return the original device."""
-            return self._original_device
-
-    return TransformedDevice(original_device, transform, targs, tkwargs)
+# pragma: no cover
+def _dummy_register(obj):  # just used for sphinx
+    if isinstance(obj, type):  # pragma: no cover
+        return lambda arg: arg  # pragma: no cover
+    return obj  # pragma: no cover
 
 
 class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
@@ -191,6 +159,8 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
             )
 
             args[0].custom_qnode_transform = lambda x: x
+            args[0].register = _dummy_register
+
             return args[0]
 
         return super().__new__(cls)
@@ -198,104 +168,169 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
     # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(
         self,
-        transform,
-        expand_transform=None,
-        classical_cotransform=None,
-        is_informative=False,
-        final_transform=False,
-        use_argnum_in_expand=False,
+        transform: Callable | None = None,
+        pass_name: None | str = None,
+        *,
+        expand_transform: Callable | None = None,
+        classical_cotransform: Callable | None = None,
+        is_informative: bool = False,
+        final_transform: bool = False,
+        use_argnum_in_expand: bool = False,
         plxpr_transform=None,
     ):
+        if transform is None and pass_name is None:
+            raise ValueError(
+                "Transforms must currently define either a tape transform or a pass_name"
+            )
         self._transform = transform
         self._expand_transform = expand_transform
         self._classical_cotransform = classical_cotransform
         self._is_informative = is_informative
         # is_informative supersedes final_transform
         self._final_transform = is_informative or final_transform
-        self._qnode_transform = self.default_qnode_transform
+        self._custom_qnode_transform = None
+        self._pass_name = pass_name
 
         self._use_argnum_in_expand = use_argnum_in_expand
-        functools.update_wrapper(self, transform)
+        if transform:
+            functools.update_wrapper(self, transform)
 
-        self._plxpr_transform = plxpr_transform or _create_plxpr_fallback_transform(self._transform)
-        self._primitive = _create_transform_primitive(self._transform.__name__)
-        _register_primitive_for_expansion(self._primitive, self._plxpr_transform)
-
-    def __call__(
-        self, *targs, **tkwargs
-    ):  # pylint: disable=too-many-return-statements,too-many-branches
-        obj = None
-
-        if targs:
-            # assume the first argument passed to the transform
-            # is the object we wish to transform
-            obj, *targs = targs
-
-        if isinstance(obj, qml.tape.QuantumScript):
-            if self._expand_transform:
-                expanded_tapes, expand_processing = self._expand_transform(obj, *targs, **tkwargs)
-                transformed_tapes = []
-                processing_and_slices = []
-                start = 0
-                for tape in expanded_tapes:
-                    intermediate_tapes, post_processing_fn = self._transform(
-                        tape, *targs, **tkwargs
-                    )
-                    transformed_tapes.extend(intermediate_tapes)
-                    end = start + len(intermediate_tapes)
-                    processing_and_slices.append(tuple([post_processing_fn, slice(start, end)]))
-                    start = end
-
-                def processing_fn(results):
-                    processed_results = [fn(results[slice]) for fn, slice in processing_and_slices]
-                    return expand_processing(processed_results)
-
-            else:
-                transformed_tapes, processing_fn = self._transform(obj, *targs, **tkwargs)
-
-            if self.is_informative:
-                return processing_fn(transformed_tapes)
-            return transformed_tapes, processing_fn
-
-        if isinstance(obj, qml.workflow.QNode):
-            if capture.enabled():
-                new_qnode = self.default_qnode_transform(obj, targs, tkwargs)
-                return self._capture_callable_transform(new_qnode, targs, tkwargs)
-            return self._qnode_transform(obj, targs, tkwargs)
-
-        if isinstance(obj, qml.devices.Device):
-            return self._device_transform(obj, targs, tkwargs)
-
-        if obj.__class__.__name__ == "QJIT":
-            raise TransformError(
-                "Functions that are wrapped / decorated with qjit cannot subsequently be"
-                f" transformed with a PennyLane transform (attempted {self})."
-                f" For the desired affect, ensure that qjit is applied after {self}."
-            )
-
-        if callable(obj):
-            if capture.enabled():
-                return self._capture_callable_transform(obj, targs, tkwargs)
-            return self._qfunc_transform(obj, targs, tkwargs)
-
-        if isinstance(obj, Sequence) and all(isinstance(q, qml.tape.QuantumScript) for q in obj):
-            return self._batch_transform(obj, targs, tkwargs)
-
-        # Input is not a QNode nor a quantum tape nor a device.
-        # Assume Python decorator syntax:
-        #
-        # result = some_transform(*transform_args)(qnode)(*qnode_args)
-
-        raise TransformError(
-            "Decorating a QNode with @transform_fn(**transform_kwargs) has been "
-            "removed. Please decorate with @functools.partial(transform_fn, **transform_kwargs) "
-            "instead, or call the transform directly using qnode = transform_fn(qnode, "
-            "**transform_kwargs). Visit the deprecations page for more details: "
-            "https://docs.pennylane.ai/en/stable/development/deprecations.html#completed-deprecation-cycles",
+        self._apply_transform = functools.singledispatch(
+            functools.partial(specific_apply_transform, self)
         )
 
+        self._plxpr_transform = plxpr_transform or _create_plxpr_fallback_transform(self._transform)
+
+    @property
+    def pass_name(self) -> None | str:
+        """The name of the equivalent MLIR pass."""
+        return self._pass_name
+
+    @property
+    def register(self):
+        """Returns a decorator for registering a specific application behavior for a given transform
+        and a new class.
+
+        .. code-block:: python
+
+            @qml.transform
+            def printer(tape):
+                print("I have a tape: ", tape)
+                return (tape, ), lambda x: x[0]
+
+            @printer.register
+            def _(obj: qml.operation.Operator, *targs, **tkwargs):
+                print("I have an operator:", obj)
+                return obj
+
+        >>> printer(qml.X(0))
+        I have an operator: X(0)
+        X(0)
+
+
+        """
+        return self._apply_transform.register
+
+    def generic_apply_transform(self, obj, *targs, **tkwargs):
+        """generic_apply_transform(obj, *targs, **tkwargs)
+        Generic application of a transform that forms the default for all transforms.
+
+        Args:
+            obj: The object we want to transform
+            *targs: The arguments for the transform
+            **tkwargs: The keyword arguments for the transform.
+
+        """
+        return generic_apply_transform(obj, self, *targs, **tkwargs)
+
+    @staticmethod
+    def generic_register(arg=None):
+        """Returns a decorator for registering a default application behavior for a transform for a new class.
+
+        Given a special new class, we can register how transforms should apply to them via:
+
+        .. code-block:: python
+
+            class Subroutine:
+
+                def __repr__(self):
+                    return f"<Subroutine: {self.ops}>"
+
+                def __init__(self, ops):
+                    self.ops = ops
+
+            from pennylane.transforms.core import TransformDispatcher
+
+            @TransformDispatcher.generic_register
+            def apply_to_subroutine(obj: Subroutine, transform, *targs, **tkwargs):
+                tape = qml.tape.QuantumScript(obj.ops)
+                batch, _ = transform(tape, *targs, **tkwargs)
+                return Subroutine(batch[0].operations)
+
+        >>> qml.transforms.cancel_inverses(Subroutine([qml.Y(0), qml.X(0), qml.X(0)]))
+        <Subroutine: [Y(0)]>
+
+        The type can also be explicitly provided like:
+
+        .. code-block:: python
+
+            @TransformDispatcher.generic_register(Subroutine)
+            def apply_to_subroutine(obj: Subroutine, transform, *targs, **tkwargs):
+                tape = qml.tape.QuantumScript(obj.ops)
+                batch, _ = transform(tape, *targs, **tkwargs)
+                return Subroutine(batch[0].operations)
+
+        to more explicitly force registration for a given type.
+
+        """
+
+        return generic_apply_transform.register(arg)  # pylint: disable=no-member
+
+    def __call__(self, obj=None, *targs, **tkwargs):  # pylint: disable=keyword-arg-before-vararg
+        # If called with only keyword arguments (no positional args), return a TransformContainer
+        # This enables patterns like: decompose(gate_set=gate_set) + merge_rotations(1e-6)
+        if obj is None:
+            if tkwargs:
+                return TransformContainer(self, args=targs, kwargs=tkwargs)
+            raise TypeError(
+                f"{self!r} requires at least one argument. "
+                "Provide a tape, qfunc, QNode, or device to transform, "
+                "or provide keyword arguments to create a TransformContainer for composition."
+            )
+        return self._apply_transform(obj, *targs, **tkwargs)
+
     def __repr__(self):
-        return f"<transform: {self._transform.__name__}>"
+        name = self._transform.__name__ if self._transform else self.pass_name
+        return f"<transform: {name}>"
+
+    def __add__(self, other):
+        """Add two dispatchers or a dispatcher and a container to create a CompilePipeline.
+
+        When adding dispatchers, they are converted to containers with no args or kwargs.
+        For dispatcher + program, Python falls back to CompilePipeline.__radd__.
+
+        Args:
+            other: Another TransformDispatcher or TransformContainer to add.
+
+        Returns:
+            CompilePipeline: A new program with this dispatcher followed by the other.
+        """
+        # Convert this dispatcher to a container (no args/kwargs) and delegate
+        return TransformContainer(self) + other
+
+    def __mul__(self, n):
+        """Multiply a dispatcher by an integer to create a program with repeated dispatchers.
+
+        Args:
+            n (int): Number of times to repeat this dispatcher.
+
+        Returns:
+            CompilePipeline: A new program with this dispatcher repeated n times.
+        """
+        # Convert to container (no args/kwargs) and delegate
+        return TransformContainer(self) * n
+
+    __rmul__ = __mul__
 
     @property
     def transform(self):
@@ -333,7 +368,7 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
 
         **Example**
 
-        .. code-block:: python
+        .. code-block:: python3
 
             @transform
             def my_transform(tape, *targs, **tkwargs):
@@ -342,8 +377,9 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
 
             @my_transform.custom_qnode_transform
             def my_custom_qnode_wrapper(self, qnode, targs, tkwargs):
-                tkwargs = {**tkwargs, shots=100}
-                return self.default_qnode_transform(qnode, targs, tkwargs)
+                new_tkwargs = dict(tkwargs)
+                new_tkwargs['shots'] = 100
+                return self.generic_apply_transform(qnode, *targs, **new_tkwargs)
 
         The custom QNode execution wrapper must have arguments
         ``self`` (the batch transform object), ``qnode`` (the input QNode
@@ -353,23 +389,27 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
         It should return a QNode that accepts the *same* arguments as the
         input QNode with the transform applied.
 
-        The default :meth:`~.default_qnode_transform` method may be called
+        The default :meth:`~.generic_apply_transform` method may be called
         if only pre- or post-processing dependent on QNode arguments is required.
         """
-        self._qnode_transform = types.MethodType(fn, self)
+        # unfortunately, we don't have access to qml.QNode here, or in the places where
+        # transforms are defining custom qnode transforms, so we still need to have this
+        # "hold onto until later" approach
+        # potentially can remove this patch by moving source code
+        self._custom_qnode_transform = fn
 
     def default_qnode_transform(self, qnode, targs, tkwargs):
         """
         The default method that takes in a QNode and returns another QNode
         with the transform applied.
         """
-
+        # same comment as custom_qnode_transform :(
         qnode = copy(qnode)
 
         if self.expand_transform:
             qnode.transform_program.push_back(
                 TransformContainer(
-                    self._expand_transform,
+                    TransformDispatcher(self._expand_transform),
                     args=targs,
                     kwargs=tkwargs,
                     use_argnum=self._use_argnum_in_expand,
@@ -377,147 +417,12 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
             )
         qnode.transform_program.push_back(
             TransformContainer(
-                self._transform,
+                self,
                 args=targs,
                 kwargs=tkwargs,
-                classical_cotransform=self._classical_cotransform,
-                plxpr_transform=self._plxpr_transform,
-                is_informative=self._is_informative,
-                final_transform=self._final_transform,
             )
         )
         return qnode
-
-    def _capture_callable_transform(self, qfunc, targs, tkwargs):
-        """Apply the transform on a quantum function when program capture is enabled"""
-
-        @wraps(qfunc)
-        def qfunc_transformed(*args, **kwargs):
-            import jax  # pylint: disable=import-outside-toplevel
-
-            flat_qfunc = capture.flatfn.FlatFn(qfunc)
-            jaxpr = jax.make_jaxpr(functools.partial(flat_qfunc, **kwargs))(*args)
-            flat_args = jax.tree_util.tree_leaves(args)
-
-            n_args = len(flat_args)
-            n_consts = len(jaxpr.consts)
-            args_slice = slice(0, n_args)
-            consts_slice = slice(n_args, n_args + n_consts)
-            targs_slice = slice(n_args + n_consts, None)
-
-            results = self._primitive.bind(
-                *flat_args,
-                *jaxpr.consts,
-                *targs,
-                inner_jaxpr=jaxpr.jaxpr,
-                args_slice=args_slice,
-                consts_slice=consts_slice,
-                targs_slice=targs_slice,
-                tkwargs=tkwargs,
-            )
-
-            assert flat_qfunc.out_tree is not None
-            return jax.tree_util.tree_unflatten(flat_qfunc.out_tree, results)
-
-        return qfunc_transformed
-
-    def _qfunc_transform(self, qfunc, targs, tkwargs):
-        """Apply the transform on a quantum function."""
-
-        @wraps(qfunc)
-        def qfunc_transformed(*args, **kwargs):
-            with AnnotatedQueue() as q:
-                qfunc_output = qfunc(*args, **kwargs)
-
-            tape = qml.tape.QuantumScript.from_queue(q)
-            with QueuingManager.stop_recording():
-                transformed_tapes, processing_fn = self._transform(tape, *targs, **tkwargs)
-
-            if len(transformed_tapes) != 1:
-                raise TransformError(
-                    "Impossible to dispatch your transform on quantum function, because more than "
-                    "one tape is returned"
-                )
-
-            transformed_tape = transformed_tapes[0]
-
-            if self.is_informative:
-                return processing_fn(transformed_tapes)
-
-            for op in transformed_tape.circuit:
-                apply(op)
-
-            mps = transformed_tape.measurements
-
-            if not mps:
-                return qfunc_output
-
-            if isinstance(qfunc_output, qml.measurements.MeasurementProcess):
-                return tuple(mps) if len(mps) > 1 else mps[0]
-
-            if isinstance(qfunc_output, (tuple, list)):
-                return type(qfunc_output)(mps)
-
-            interface = math.get_interface(qfunc_output)
-            return math.asarray(mps, like=interface)
-
-        return qfunc_transformed
-
-    def _device_transform(self, original_device, targs, tkwargs):
-        """Apply the transform on a device"""
-        if self._expand_transform:
-            raise TransformError("Device transform does not support expand transforms.")
-        if self._is_informative:
-            raise TransformError("Device transform does not support informative transforms.")
-        if self._final_transform:
-            raise TransformError("Device transform does not support final transforms.")
-
-        if type(original_device).preprocess != qml.devices.Device.preprocess:
-            return _preprocess_device(original_device, self.transform, targs, tkwargs)
-
-        return _preprocess_transforms_device(original_device, self.transform, targs, tkwargs)
-
-    def _batch_transform(self, original_batch, targs, tkwargs):
-        """Apply the transform on a batch of tapes."""
-        execution_tapes = []
-        batch_fns = []
-        tape_counts = []
-
-        for t in original_batch:
-            # Preprocess the tapes by applying transforms
-            # to each tape, and storing corresponding tapes
-            # for execution, processing functions, and list of tape lengths.
-            new_tapes, fn = self(t, *targs, **tkwargs)
-            execution_tapes.extend(new_tapes)
-            batch_fns.append(fn)
-            tape_counts.append(len(new_tapes))
-
-        def processing_fn(res: ResultBatch) -> ResultBatch:
-            """Applies a batch of post-processing functions to results.
-
-            Args:
-                res (ResultBatch): the results of executing a batch of circuits.
-
-            Returns:
-                ResultBatch: results that have undergone classical post processing.
-
-            Closure variables:
-                tape_counts: the number of tapes outputted from each application of the transform.
-                batch_fns: the post processing functions to apply to each sub-batch.
-
-            """
-            count = 0
-            final_results = []
-
-            for f, s in zip(batch_fns, tape_counts):
-                # apply any batch transform post-processing
-                new_res = f(res[count : count + s])
-                final_results.append(new_res)
-                count += s
-
-            return tuple(final_results)
-
-        return tuple(execution_tapes), processing_fn
 
 
 class TransformContainer:  # pylint: disable=too-many-instance-attributes
@@ -533,39 +438,46 @@ class TransformContainer:  # pylint: disable=too-many-instance-attributes
     .. seealso:: :func:`~.pennylane.transform`
     """
 
+    def __hash__(self):
+        hashable_dict = tuple((key, value) for key, value in self.kwargs.items())
+        return hash((self.transform, self.pass_name, self.args, hashable_dict))
+
     def __init__(
         self,
-        transform,
-        args=None,
-        kwargs=None,
-        classical_cotransform=None,
-        plxpr_transform=None,
-        is_informative=False,
-        final_transform=False,
-        use_argnum=False,
-    ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
-        self._transform = transform
-        self._args = args or []
+        transform: TransformDispatcher,
+        args: tuple | list = (),
+        kwargs: None | dict = None,
+        use_argnum: bool = False,
+        **transform_config,
+    ):
+        if not isinstance(transform, TransformDispatcher):
+            transform = TransformDispatcher(transform, **transform_config)
+        elif transform_config:
+            raise ValueError(
+                f"transform_config kwargs {transform_config} cannot be passed if a TransformDispatcher is provided."
+            )
+        self._transform_dispatcher = transform
+        self._args = tuple(args)
         self._kwargs = kwargs or {}
-        self._classical_cotransform = classical_cotransform
-        self._plxpr_transform = plxpr_transform
-        self._is_informative = is_informative
-        self._final_transform = is_informative or final_transform
         self._use_argnum = use_argnum
 
     def __repr__(self):
-        return f"<{self._transform.__name__}({self._args}, {self._kwargs})>"
+        name = self.transform.__name__ if self.transform else self.pass_name
+        return f"<{name}({self._args}, {self._kwargs})>"
+
+    def __call__(self, obj):
+        return self._transform_dispatcher(obj, *self.args, **self.kwargs)
 
     def __iter__(self):
         return iter(
             (
-                self._transform,
+                self._transform_dispatcher.transform,
                 self._args,
                 self._kwargs,
-                self._classical_cotransform,
-                self._plxpr_transform,
-                self._is_informative,
-                self.final_transform,
+                self._transform_dispatcher._classical_cotransform,
+                self._transform_dispatcher._plxpr_transform,
+                self._transform_dispatcher._is_informative,
+                self._transform_dispatcher.final_transform,
             )
         )
 
@@ -575,6 +487,7 @@ class TransformContainer:  # pylint: disable=too-many-instance-attributes
         return (
             self.args == other.args
             and self.transform == other.transform
+            and self.pass_name == other.pass_name
             and self.kwargs == other.kwargs
             and self.classical_cotransform == other.classical_cotransform
             and self.is_informative == other.is_informative
@@ -582,62 +495,269 @@ class TransformContainer:  # pylint: disable=too-many-instance-attributes
         )
 
     @property
-    def transform(self):
+    def transform(self) -> Callable | None:
         """The stored quantum transform."""
-        return self._transform
+        return self._transform_dispatcher.transform
 
     @property
-    def args(self):
+    def pass_name(self) -> None | str:
+        """The name of the corresponding Catalyst pass, if it exists."""
+        return self._transform_dispatcher.pass_name
+
+    @property
+    def args(self) -> tuple:
         """The stored quantum transform's ``args``."""
         return self._args
 
     @property
-    def kwargs(self):
+    def kwargs(self) -> dict:
         """The stored quantum transform's ``kwargs``."""
         return self._kwargs
 
     @property
-    def classical_cotransform(self):
+    def classical_cotransform(self) -> None | Callable:
         """The stored quantum transform's classical co-transform."""
-        return self._classical_cotransform
+        return self._transform_dispatcher.classical_cotransform
 
     @property
-    def plxpr_transform(self):
+    def plxpr_transform(self) -> None | Callable:
         """The stored quantum transform's PLxPR transform."""
-        return self._plxpr_transform
+        return self._transform_dispatcher.plxpr_transform
 
     @property
-    def is_informative(self):
+    def is_informative(self) -> bool:
         """``True`` if the transform is informative."""
-        return self._is_informative
+        return self._transform_dispatcher.is_informative
 
     @property
-    def final_transform(self):
+    def final_transform(self) -> bool:
         """``True`` if the transform needs to be executed"""
-        return self._final_transform
+        return self._transform_dispatcher.final_transform
+
+    def __add__(self, other):
+        """Add two containers or a container and a dispatcher to create a CompilePipeline.
+
+        For container + program, Python falls back to CompilePipeline.__radd__.
+
+        Args:
+            other: Another TransformContainer or TransformDispatcher to add.
+
+        Returns:
+            CompilePipeline: A new program with this container followed by the other.
+        """
+        # Convert dispatcher to container if needed
+        if isinstance(other, TransformDispatcher):
+            other = TransformContainer(other)
+
+        if isinstance(other, TransformContainer):
+            # Import here to avoid circular import\
+            # pylint: disable=import-outside-toplevel
+            from .compile_pipeline import CompilePipeline
+
+            if self.final_transform and other.final_transform:
+                raise TransformError(
+                    f"Both {self} and {other} are final transforms and cannot be combined."
+                )
+            return CompilePipeline([self, other])
+
+        # For CompilePipeline, Python falls back to program.__radd__(container)
+        return NotImplemented
+
+    def __mul__(self, n):
+        """Multiply a container by an integer to create a program with repeated containers.
+
+        Args:
+            n (int): Number of times to repeat this container.
+
+        Returns:
+            CompilePipeline: A new program with this container repeated n times.
+        """
+        # Import here to avoid circular import
+        from .compile_pipeline import CompilePipeline  # pylint: disable=import-outside-toplevel
+
+        if not isinstance(n, int):
+            return NotImplemented
+
+        if n < 0:
+            raise ValueError("Cannot multiply transform container by negative integer")
+
+        if self.final_transform and n > 1:
+            raise TransformError(
+                f"{self} is a final transform and cannot be applied more than once."
+            )
+
+        return CompilePipeline([self] * n)
+
+    __rmul__ = __mul__
 
 
-def _create_transform_primitive(name):
-    try:
-        # pylint: disable=import-outside-toplevel
-        from pennylane.capture.custom_primitives import QmlPrimitive
-    except ImportError:
-        return None
+@TransformDispatcher.generic_register
+def _apply_to_tape(obj: QuantumScript, transform, *targs, **tkwargs):
+    if transform.transform is None:
+        raise NotImplementedError(f"transform {transform} has no defined tape transform.")
+    if transform.expand_transform:
+        expanded_tapes, expand_processing = transform.expand_transform(obj, *targs, **tkwargs)
+        transformed_tapes = []
+        processing_and_slices = []
+        start = 0
+        for tape in expanded_tapes:
+            intermediate_tapes, post_processing_fn = transform.transform(tape, *targs, **tkwargs)
+            transformed_tapes.extend(intermediate_tapes)
+            end = start + len(intermediate_tapes)
+            processing_and_slices.append(tuple([post_processing_fn, slice(start, end)]))
+            start = end
 
-    transform_prim = QmlPrimitive(name + "_transform")
-    transform_prim.multiple_results = True
-    transform_prim.prim_type = "transform"
+        def processing_fn(results):
+            processed_results = [fn(results[slice]) for fn, slice in processing_and_slices]
+            return expand_processing(processed_results)
 
-    @transform_prim.def_impl
-    def _(
-        *all_args, inner_jaxpr, args_slice, consts_slice, targs_slice, tkwargs
-    ):  # pylint: disable=unused-argument
-        args = all_args[args_slice]
-        consts = all_args[consts_slice]
-        return capture.eval_jaxpr(inner_jaxpr, consts, *args)
+    else:
+        transformed_tapes, processing_fn = transform.transform(obj, *targs, **tkwargs)
 
-    @transform_prim.def_abstract_eval
-    def _(*_, inner_jaxpr, **__):
-        return [out.aval for out in inner_jaxpr.outvars]
+    if transform.is_informative:
+        return processing_fn(transformed_tapes)
 
-    return transform_prim
+    return transformed_tapes, processing_fn
+
+
+def _capture_apply(obj, transform, *targs, **tkwargs):
+    @wraps(obj)
+    def qfunc_transformed(*args, **kwargs):
+        import jax  # pylint: disable=import-outside-toplevel
+
+        flat_qfunc = capture.flatfn.FlatFn(obj)
+        jaxpr = jax.make_jaxpr(flat_qfunc)(*args, **kwargs)
+        flat_args = jax.tree_util.tree_leaves(args)
+
+        n_args = len(flat_args)
+        n_consts = len(jaxpr.consts)
+        args_slice = slice(0, n_args)
+        consts_slice = slice(n_args, n_args + n_consts)
+        targs_slice = slice(n_args + n_consts, None)
+
+        results = _create_transform_primitive().bind(  # pylint: disable=protected-access
+            *flat_args,
+            *jaxpr.consts,
+            *targs,
+            inner_jaxpr=jaxpr.jaxpr,
+            args_slice=args_slice,
+            consts_slice=consts_slice,
+            targs_slice=targs_slice,
+            tkwargs=tkwargs,
+            transform=transform,
+        )
+
+        assert flat_qfunc.out_tree is not None
+        return jax.tree_util.tree_unflatten(flat_qfunc.out_tree, results)
+
+    return qfunc_transformed
+
+
+@TransformDispatcher.generic_register
+def apply_to_callable(obj: Callable, transform, *targs, **tkwargs):
+    """Apply a transform to a Callable object."""
+    if obj.__class__.__name__ == "QJIT":
+        raise TransformError(
+            "Functions that are wrapped / decorated with qjit cannot subsequently be"
+            f" transformed with a PennyLane transform (attempted {transform})."
+            f" For the desired affect, ensure that qjit is applied after {transform}."
+        )
+
+    @functools.wraps(obj)
+    def qfunc_transformed(*args, **kwargs):
+        if capture.enabled():
+            return _capture_apply(obj, transform, *targs, **tkwargs)(*args, **kwargs)
+
+        # removes the argument to the qfuncs from the active queuing context.
+        leaves, _ = flatten((args, kwargs), lambda obj: isinstance(obj, Operator))
+        for l in leaves:
+            if isinstance(l, Operator):
+                QueuingManager.remove(l)
+
+        with AnnotatedQueue() as q:
+            qfunc_output = obj(*args, **kwargs)
+
+        tape = QuantumScript.from_queue(q)
+
+        with QueuingManager.stop_recording():
+            if transform.is_informative:
+                transformed_tapes, processing_fn = transform.transform(tape, *targs, **tkwargs)
+            else:
+                transformed_tapes, processing_fn = transform(tape, *targs, **tkwargs)
+
+        if len(transformed_tapes) != 1:
+            raise TransformError(
+                "Impossible to dispatch your transform on quantum function, because more than "
+                "one tape is returned"
+            )
+
+        transformed_tape = transformed_tapes[0]
+
+        if transform.is_informative:
+            return processing_fn(transformed_tapes)
+
+        for op in transformed_tape.operations:
+            apply(op)
+
+        mps = [apply(mp) for mp in transformed_tape.measurements]
+
+        if not mps:
+            return qfunc_output
+
+        if isinstance(qfunc_output, MeasurementProcess):
+            return tuple(mps) if len(mps) > 1 else mps[0]
+
+        if isinstance(qfunc_output, (tuple, list)):
+            return type(qfunc_output)(mps)
+
+        interface = math.get_interface(qfunc_output)
+        return math.asarray(mps, like=interface)
+
+    return qfunc_transformed
+
+
+@TransformDispatcher.generic_register
+def _apply_to_sequence(obj: Sequence, transform, *targs, **tkwargs):
+    if not all(isinstance(t, QuantumScript) for t in obj):
+        raise TransformError(
+            f"Transforms can only apply to sequences of QuantumScript, not {type(obj[0])}"
+        )
+    execution_tapes = []
+    batch_fns = []
+    tape_counts = []
+
+    for t in obj:
+        # Preprocess the tapes by applying transforms
+        # to each tape, and storing corresponding tapes
+        # for execution, processing functions, and list of tape lengths.
+        new_tapes, fn = transform(t, *targs, **tkwargs)
+        execution_tapes.extend(new_tapes)
+        batch_fns.append(fn)
+        tape_counts.append(len(new_tapes))
+
+    def processing_fn(res: ResultBatch) -> ResultBatch:
+        """Applies a batch of post-processing functions to results.
+
+        Args:
+            res (ResultBatch): the results of executing a batch of circuits.
+
+        Returns:
+            ResultBatch: results that have undergone classical post processing.
+
+        Closure variables:
+            tape_counts: the number of tapes outputted from each application of the transform.
+            batch_fns: the post processing functions to apply to each sub-batch.
+
+        """
+        count = 0
+        final_results = []
+
+        for f, s in zip(batch_fns, tape_counts):
+            # apply any batch transform post-processing
+            new_res = f(res[count : count + s])
+            final_results.append(new_res)
+            count += s
+
+        return tuple(final_results)
+
+    return tuple(execution_tapes), processing_fn

@@ -14,8 +14,10 @@
 """
 This module contains the :class:`Wires` class, which takes care of wire bookkeeping.
 """
+
 import functools
 import itertools
+import uuid
 from collections.abc import Hashable, Iterable, Sequence
 from importlib import import_module, util
 
@@ -44,7 +46,7 @@ def _process(wires):
     and turned into a tuple. Otherwise, `wires` is interpreted as a single wire label.
 
     The only exception to this are strings, which are always interpreted as a single
-    wire label, so users can address wires with labels such as `"ancilla"`.
+    wire label, so users can address wires with labels such as `"auxiliary"`.
 
     Any type can be a wire label, as long as it is hashable. We need this to establish
     the uniqueness of two labels. For example, `0` and `0.` are interpreted as
@@ -74,7 +76,8 @@ def _process(wires):
             hash(wires)
         except TypeError as e:
             # if object is not hashable, cannot identify unique wires
-            if str(e).startswith("unhashable"):
+            # Check for unhashable type error - format changed in Python 3.14
+            if "unhashable" in str(e):
                 raise WireError(f"Wires must be hashable; got object of type {type(wires)}.") from e
         return (wires,)
 
@@ -83,7 +86,10 @@ def _process(wires):
         # so we can use it for hashability check of iterables.
         set_of_wires = set(wires)
     except TypeError as e:
-        if str(e).startswith("unhashable"):
+        # Check for unhashable type error - format changed in Python 3.14
+        # Python 3.13: "unhashable type: 'list'"
+        # Python 3.14: "cannot use 'list' as a set element (unhashable type: 'list')"
+        if "unhashable" in str(e):
             raise WireError(f"Wires must be hashable; got {wires}.") from e
 
     if len(set_of_wires) != len(tuple_of_wires):
@@ -729,3 +735,29 @@ WiresLike = Wires | Iterable[Hashable] | Hashable
 
 # Register Wires as a PyTree-serializable class
 register_pytree(Wires, Wires._flatten, Wires._unflatten)  # pylint: disable=protected-access
+
+
+class DynamicWire:
+    """A wire whose concrete value will be determined later during a compilation step or execution.
+
+    Multiple dynamic wires can correspond to the same device wire as long as they are properly allocated and
+    deallocated.
+
+    Args:
+        key (uuid.UUID or None): An optional UUID key to identify the dynamic wire. If None, a random UUID will be generated.
+
+    """
+
+    def __init__(self, key: uuid.UUID | None = None):
+        self.key = key or uuid.uuid4()
+
+    def __eq__(self, other):
+        if not isinstance(other, DynamicWire):
+            return False
+        return self.key == other.key
+
+    def __hash__(self):
+        return hash(("DynamicWire", self.key))
+
+    def __repr__(self):
+        return "<DynamicWire>"

@@ -1,4 +1,4 @@
-# Copyright 2018-2023 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,10 +19,15 @@ from __future__ import annotations
 import copy
 from abc import abstractmethod
 from collections import defaultdict
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field, fields
+from typing import Any
 
-from pennylane.measurements import Shots, add_shots
+from pennylane.measurements import MeasurementProcess, Shots, add_shots
 from pennylane.operation import Operation
+from pennylane.ops.op_math import Controlled, ControlledOp
+from pennylane.tape import QuantumScript
+
+from .error import _compute_algo_error
 
 
 @dataclass(frozen=True)
@@ -65,8 +70,8 @@ class Resources:
         >>> r1 = Resources(num_wires=2, num_gates=2, gate_types={'Hadamard': 1, 'CNOT':1}, gate_sizes={1: 1, 2: 1}, depth=2)
         >>> r2 = Resources(num_wires=2, num_gates=2, gate_types={'RX': 1, 'CNOT':1}, gate_sizes={1: 1, 2: 1}, depth=2)
         >>> print(r1 + r2)
-        wires: 2
-        gates: 4
+        num_wires: 2
+        num_gates: 4
         depth: 4
         shots: Shots(total=None)
         gate_types:
@@ -74,8 +79,8 @@ class Resources:
         gate_sizes:
         {1: 2, 2: 2}
         >>> print(r1 * 2)
-        wires: 2
-        gates: 4
+        num_wires: 2
+        num_gates: 4
         depth: 4
         shots: Shots(total=None)
         gate_types:
@@ -86,9 +91,9 @@ class Resources:
 
     num_wires: int = 0
     num_gates: int = 0
-    gate_types: dict = field(default_factory=dict)
-    gate_sizes: dict = field(default_factory=dict)
-    depth: int = 0
+    gate_types: dict[str, int] = field(default_factory=dict)
+    gate_sizes: dict[int, int] = field(default_factory=dict)
+    depth: int | None = 0
     shots: Shots = field(default_factory=Shots)
 
     def __add__(self, other: Resources):
@@ -106,7 +111,7 @@ class Resources:
 
             First we build two :class:`~.resource.Resources` objects.
 
-            .. code-block:: python3
+            .. code-block:: python
 
                 from pennylane.measurements import Shots
                 from pennylane.resource import Resources
@@ -132,8 +137,8 @@ class Resources:
             Now we print their sum.
 
             >>> print(r1 + r2)
-            wires: 3
-            gates: 4
+            num_wires: 3
+            num_gates: 4
             depth: 3
             shots: Shots(total=35, vector=[10 shots, 5 shots, 2 shots x 10])
             gate_types:
@@ -158,7 +163,7 @@ class Resources:
 
             First we build a :class:`~.resource.Resources` object.
 
-            .. code-block:: python3
+            .. code-block:: python
 
                 from pennylane.measurements import Shots
                 from pennylane.resource import Resources
@@ -175,8 +180,8 @@ class Resources:
             Now we print the product.
 
             >>> print(resources * 2)
-            wires: 2
-            gates: 4
+            num_wires: 2
+            num_gates: 4
             depth: 4
             shots: Shots(total=20)
             gate_types:
@@ -211,6 +216,318 @@ class Resources:
 
     def _ipython_display_(self):
         """Displays __str__ in ipython instead of __repr__"""
+        # See https://ipython.readthedocs.io/en/stable/config/integrating.html#custom-methods
+        print(str(self))
+
+
+# TODO: Would be better to have SpecsResources inherit from Resources directly, but there are too
+# many extra fields that are unwanted. Would be worth refactoring in the future.
+@dataclass(frozen=True)
+class SpecsResources:
+    """
+    Class for storing resource information for a quantum circuit. Contains attributes which store
+    key resources such as gate counts, number of qubit allocations, measurements, and circuit depth.
+
+    Args:
+        gate_types (dict[str, int]): A dictionary mapping gate names to their counts.
+        gate_sizes (dict[int, int]): A dictionary mapping gate sizes to their counts.
+        measurements (dict[str, int]): A dictionary mapping measurements to their counts.
+        num_allocs (int): The number of unique qubit allocations. For circuits that do not use
+          dynamic wires, this should be equal to the number of device wires.
+        depth (int | None): The depth of the circuit, or None if not computed.
+
+    Properties:
+        num_gates (int): The total number of gates in the circuit (computed from `gate_types`).
+
+    .. details::
+
+        Methods have been provided to allow pretty-printing, as well as
+        indexing into it as a dictionary. See examples below.
+
+        **Example**
+
+        >>> from pennylane.resource import SpecsResources
+        >>> res = SpecsResources(
+        ...     gate_types={'Hadamard': 1, 'CNOT': 1},
+        ...     gate_sizes={1: 1, 2: 1},
+        ...     measurements={'expval(PauliZ)': 1},
+        ...     num_allocs=2,
+        ...     depth=2
+        ... )
+
+        >>> print(res.num_gates)
+        2
+
+        >>> print(res["num_gates"])
+        2
+
+        >>> print(res)
+        Total qubit allocations: 2
+        Total gates: 2
+        Circuit depth: 2
+        <BLANKLINE>
+        Gate types:
+          Hadamard: 1
+          CNOT: 1
+        <BLANKLINE>
+        Measurements:
+          expval(PauliZ): 1
+    """
+
+    gate_types: dict[str, int]
+    gate_sizes: dict[int, int]
+    measurements: dict[str, int]
+    num_allocs: int
+    depth: int | None = None
+
+    def __post_init__(self):
+        if sum(self.gate_types.values()) != sum(self.gate_sizes.values()):
+            raise ValueError(
+                "Inconsistent gate counts: `gate_types` and `gate_sizes` describe different amounts of gates."
+            )
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert the SpecsResources to a dictionary."""
+
+        # Need to explicitly include properties
+        d = asdict(self)
+        d["num_gates"] = self.num_gates
+
+        return d
+
+    def __getitem__(self, key):
+        if key in (field.name for field in fields(self)):
+            return getattr(self, key)
+
+        match key:
+            # Fields that used to be included in specs output prior to PL version 0.44
+            case "shots":
+                raise KeyError(
+                    "shots is no longer included within specs's resources, check the top-level object instead."
+                )
+            case "num_wires":
+                raise KeyError(
+                    "num_wires has been renamed to num_allocs to more accurate describe what it measures."
+                )
+            case "num_gates":
+                # As a property, this needs to be handled differently to the true fields
+                return self.num_gates
+
+        raise KeyError(
+            f"key '{key}' not available. Options are {[field.name for field in fields(self)]}"
+        )
+
+    @property
+    def num_gates(self) -> int:
+        """Total number of gates in the circuit."""
+        return sum(self.gate_types.values())
+
+    def to_pretty_str(self, preindent: int = 0) -> str:
+        """
+        Pretty string representation of the SpecsResources object.
+
+        Args:
+            preindent (int): Number of spaces to prepend to each line.
+
+        Returns:
+            str: A pretty representation of this object.
+        """
+        prefix = " " * preindent
+        lines = []
+
+        lines.append(f"{prefix}Total qubit allocations: {self.num_allocs}")
+        lines.append(f"{prefix}Total gates: {self.num_gates}")
+        lines.append(
+            f"{prefix}Circuit depth: {self.depth if self.depth is not None else 'Not computed'}"
+        )
+
+        lines.append("")  # Blank line
+
+        lines.append(f"{prefix}Gate types:")
+        if not self.gate_types:
+            lines.append(prefix + "  No gates.")
+        else:
+            for gate, count in self.gate_types.items():
+                lines.append(f"{prefix}  {gate}: {count}")
+
+        lines.append("")  # Blank line
+
+        lines.append(f"{prefix}Measurements:")
+        if not self.measurements:
+            lines.append(prefix + "  No measurements.")
+        else:
+            for meas, count in self.measurements.items():
+                lines.append(f"{prefix}  {meas}: {count}")
+
+        return "\n".join(lines)
+
+    # Leave repr and str methods separate for simple and pretty printing
+    def __str__(self) -> str:
+        return self.to_pretty_str()
+
+    def _ipython_display_(self):  # pragma: no cover
+        """Displays __str__ in ipython instead of __repr__"""
+        # See https://ipython.readthedocs.io/en/stable/config/integrating.html#custom-methods
+        print(str(self))
+
+
+@dataclass(frozen=True)
+class CircuitSpecs:
+    """
+    Class for storing specifications of a qnode. Contains resource information as well as additional
+    data such as the device, number of shots, and level of the requested specs.
+
+    Args:
+        device_name (str): The name of the device used.
+        num_device_wires (int): The number of wires on the device.
+        shots (Shots): The shots configuration used.
+        level (Any): The level of the specs (see :func:`~pennylane.specs` for more details).
+        resources (SpecsResources | dict[int | str, SpecsResources]): The resource specifications.
+            Depending on the ``level`` chosen, this may be a single :class:`.SpecsResources` object
+            or a dictionary of multiple :class:`.SpecsResources` objects.
+
+    .. details::
+
+        Some helpful methods have been added to this data class to allow pretty-printing, as well as
+        indexing into it as a dictionary. See examples below.
+
+        **Example**
+
+        >>> from pennylane.resource import SpecsResources, CircuitSpecs
+        >>> specs = CircuitSpecs(
+        ...     device_name="default.qubit",
+        ...     num_device_wires=2,
+        ...     shots=Shots(1000),
+        ...     level="device",
+        ...     resources=SpecsResources(
+        ...         gate_types={"RX": 2, "CNOT": 1},
+        ...         gate_sizes={1: 2, 2: 1},
+        ...         measurements={"expval(PauliZ)": 1},
+        ...         num_allocs=2,
+        ...         depth=3,
+        ...     ),
+        ... )
+
+        >>> print(specs.num_device_wires)
+        2
+
+        >>> print(specs["num_device_wires"])
+        2
+
+        >>> print(specs)
+        Device: default.qubit
+        Device wires: 2
+        Shots: Shots(total=1000)
+        Level: device
+        <BLANKLINE>
+        Resource specifications:
+          Total qubit allocations: 2
+          Total gates: 3
+          Circuit depth: 3
+        <BLANKLINE>
+          Gate types:
+            RX: 2
+            CNOT: 1
+        <BLANKLINE>
+          Measurements:
+            expval(PauliZ): 1
+    """
+
+    device_name: str | None = None
+    num_device_wires: int | None = None
+    shots: Shots | None = None
+    level: Any = None
+    resources: (
+        SpecsResources
+        | list[SpecsResources]
+        | dict[int | str, SpecsResources | list[SpecsResources]]
+        | None
+    ) = None
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert the CircuitSpecs to a dictionary."""
+        d = asdict(self)
+
+        # Replace Resources objects with their dict representations
+        if isinstance(self.resources, SpecsResources):
+            d["resources"] = self.resources.to_dict()
+        elif isinstance(self.resources, list):
+            d["resources"] = [r.to_dict() for r in self.resources]
+        elif isinstance(self.resources, dict):
+            d["resources"] = {
+                k: (v.to_dict() if isinstance(v, SpecsResources) else [r.to_dict() for r in v])
+                for k, v in self.resources.items()
+            }
+
+        return d
+
+    def __getitem__(self, key):
+        if key in (field.name for field in fields(self)):
+            return getattr(self, key)
+
+        match key:
+            # Fields that used to be included in specs output prior to PL version 0.44
+            case "num_observables":
+                raise KeyError(
+                    "num_observables is no longer in top-level specs and has instead been absorbed into the 'measurements' attribute of the specs's resources."
+                )
+            case "interface" | "diff_method" | "errors" | "num_tape_wires":
+                raise KeyError(f"key '{key}' is no longer included in specs.")
+            case (
+                "gradient_fn"
+                | "gradient_options"
+                | "num_gradient_executions"
+                | "num_trainable_params"
+            ):
+                raise KeyError(
+                    f"key '{key}' is no longer included in specs, as specs no longer gathers gradient information."
+                )
+        raise KeyError(
+            f"key '{key}' not available. Options are {[field.name for field in fields(self)]}"
+        )
+
+    def _resources_to_str(self, res) -> str:
+        """Helper for printing resources, prints list or single SpecsResources."""
+        lines = []
+        if isinstance(res, SpecsResources):
+            lines.append(res.to_pretty_str(preindent=2))
+        elif isinstance(res, list):
+            for i, r in enumerate(res):
+                lines.append(f"  Batched tape {i}:")
+                lines.append(r.to_pretty_str(preindent=4))
+                lines.append("")  # Blank line
+        else:
+            raise ValueError(
+                "Resources must be either a SpecsResources object or a list of SpecsResources objects."
+            )  # pragma: no cover
+
+        return "\n".join(lines)
+
+    # Separate str and repr methods for simple and pretty printing
+    def __str__(self):
+        lines = []
+
+        lines.append(f"Device: {self.device_name}")
+        lines.append(f"Device wires: {self.num_device_wires}")
+        lines.append(f"Shots: {self.shots}")
+        lines.append(f"Level: {self.level}")
+
+        lines.append("")  # Blank line
+
+        lines.append("Resource specifications:")
+        if isinstance(self.resources, dict):
+            for level, res in self.resources.items():
+                lines.append(f"Level = {level}:")
+                lines.append(self._resources_to_str(res))
+                lines.append("\n" + "-" * 60 + "\n")  # Separator between levels
+        else:
+            lines.append(self._resources_to_str(self.resources))
+
+        return "\n".join(lines).rstrip("\n-")
+
+    def _ipython_display_(self):  # pragma: no cover
+        """Displays __str__ in ipython instead of __repr__"""
+        # See https://ipython.readthedocs.io/en/stable/config/integrating.html#custom-methods
         print(str(self))
 
 
@@ -271,7 +588,7 @@ def add_in_series(r1: Resources, r2: Resources) -> Resources:
 
         First we build two :class:`~.resource.Resources` objects.
 
-        .. code-block:: python3
+        .. code-block:: python
 
             from pennylane.measurements import Shots
             from pennylane.resource import Resources
@@ -297,8 +614,8 @@ def add_in_series(r1: Resources, r2: Resources) -> Resources:
         Now we print their sum.
 
         >>> print(qml.resource.add_in_series(r1, r2))
-        wires: 3
-        gates: 4
+        num_wires: 3
+        num_gates: 4
         depth: 3
         shots: Shots(total=35, vector=[10 shots, 5 shots, 2 shots x 10])
         gate_types:
@@ -338,7 +655,7 @@ def add_in_parallel(r1: Resources, r2: Resources) -> Resources:
 
         First we build two :class:`~.resource.Resources` objects.
 
-        .. code-block:: python3
+        .. code-block:: python
 
             from pennylane.measurements import Shots
             from pennylane.resource import Resources
@@ -364,8 +681,8 @@ def add_in_parallel(r1: Resources, r2: Resources) -> Resources:
         Now we print their sum.
 
         >>> print(qml.resource.add_in_parallel(r1, r2))
-        wires: 5
-        gates: 4
+        num_wires: 5
+        num_gates: 4
         depth: 2
         shots: Shots(total=35, vector=[10 shots, 5 shots, 2 shots x 10])
         gate_types:
@@ -406,7 +723,7 @@ def mul_in_series(resources: Resources, scalar: int) -> Resources:
 
         First we build a :class:`~.resource.Resources` object.
 
-        .. code-block:: python3
+        .. code-block:: python
 
             from pennylane.measurements import Shots
             from pennylane.resource import Resources
@@ -423,8 +740,8 @@ def mul_in_series(resources: Resources, scalar: int) -> Resources:
         Now we print the product.
 
         >>> print(qml.resource.mul_in_series(resources, 2))
-        wires: 2
-        gates: 4
+        num_wires: 2
+        num_gates: 4
         depth: 4
         shots: Shots(total=20)
         gate_types:
@@ -464,7 +781,7 @@ def mul_in_parallel(resources: Resources, scalar: int) -> Resources:
 
         First we build a :class:`~.resource.Resources` object.
 
-        .. code-block:: python3
+        .. code-block:: python
 
             from pennylane.measurements import Shots
             from pennylane.resource import Resources
@@ -481,8 +798,8 @@ def mul_in_parallel(resources: Resources, scalar: int) -> Resources:
         Now we print the product.
 
         >>> print(qml.resource.mul_in_parallel(resources, 2))
-        wires: 4
-        gates: 4
+        num_wires: 4
+        num_gates: 4
         depth: 2
         shots: Shots(total=20)
         gate_types:
@@ -519,7 +836,7 @@ def substitute(initial_resources: Resources, gate_info: tuple[str, int], replace
 
         First we build the :class:`~.resource.Resources`.
 
-        .. code-block:: python3
+        .. code-block:: python
 
             from pennylane.measurements import Shots
             from pennylane.resource import Resources
@@ -549,12 +866,12 @@ def substitute(initial_resources: Resources, gate_info: tuple[str, int], replace
 
         >>> res = qml.resource.substitute(initial_resources, gate_info, replacement)
         >>> print(res)
-        wires: 2
-        gates: 15
+        num_wires: 2
+        num_gates: 15
         depth: 9
         shots: Shots(total=10)
         gate_types:
-        {'CNOT': 1, 'H': 6, 'S': 8}
+        {'CNOT': 1, 'Hadamard': 6, 'S': 8}
         gate_sizes:
         {1: 14, 2: 1}
     """
@@ -599,6 +916,39 @@ def substitute(initial_resources: Resources, gate_info: tuple[str, int], replace
     return initial_resources
 
 
+# The reason why this function is not a method of the QuantumScript class is
+# because we don't want a core module (QuantumScript) to depend on an auxiliary module (Resource).
+# The `QuantumScript.specs` property will eventually be deprecated in favor of this function.
+def resources_from_tape(
+    tape: QuantumScript, compute_depth: bool = True, compute_errors: bool = False
+) -> SpecsResources | tuple[SpecsResources, dict[str, Any]]:
+    """
+    Extracts the resource information from a quantum circuit (tape).
+
+    The depth of the circuit is computed by default, but can be set to None
+    by setting the `compute_depth` argument to False.
+    This is useful when the depth is not needed, for example, in some
+    resource counting scenarios or heavy circuits where computing depth is expensive.
+
+    Args:
+        tape (.QuantumScript): The quantum circuit for which we extract resources
+        compute_depth (bool): If True, the depth of the circuit is computed and included in the resources.
+            If False, the depth is set to None.
+        compute_errors (bool): If True, algorithmic errors are computed and returned alongside the resources.
+            Defaults to False.
+    Returns:
+        (SpecsResources | tuple[SpecsResources, dict[str, Any]]): The resources associated with this tape, optionally
+        with algorithmic errors if `compute_errors` is set to True.
+    """
+    resources = _count_resources(tape, compute_depth=compute_depth)
+
+    if compute_errors:
+        algo_errors = _compute_algo_error(tape)
+        return resources, algo_errors
+
+    return resources
+
+
 def _combine_dict(dict1: dict, dict2: dict):
     r"""Combines two dictionaries and adds values of common keys."""
     combined_dict = copy.copy(dict1)
@@ -623,22 +973,55 @@ def _scale_dict(dict1: dict, scalar: int):
     return combined_dict
 
 
-def _count_resources(tape) -> Resources:
-    """Given a quantum circuit (tape), this function
-     counts the resources used by standard PennyLane operations.
+def _obs_to_str(obs) -> str:
+    """Convert an Observable to a string representation for resource counting."""
+    name = obs.name
+    match name:
+        case "Hamiltonian" | "LinearCombination" | "Sum" | "Prod":
+            if name == "LinearCombination":
+                name = "Hamiltonian"
+            return f"{name}(num_wires={obs.num_wires}, num_terms={len(obs.operands)})"
+        case "SProd":
+            return _obs_to_str(obs.base)
+        case "Exp":
+            return f"Exp({_obs_to_str(obs.base)})"
+        case _:
+            return name
+
+
+def _mp_to_str(mp: MeasurementProcess, num_wires: int) -> str:
+    """Convert a MeasurementProcess to a string representation for resource counting."""
+    meas_name = mp._shortname  # pylint: disable=protected-access
+    if mp.mv is not None:
+        meas_name += "(mcm)"
+    elif mp.obs is None:
+        meas_wires = len(mp.wires)
+        if meas_wires in (None, 0, num_wires):
+            meas_name += "(all wires)"
+        else:
+            meas_name += f"({meas_wires} wires)"
+    else:
+        meas_name += f"({_obs_to_str(mp.obs)})"
+    return meas_name
+
+
+def _count_resources(tape: QuantumScript, compute_depth: bool = True) -> SpecsResources:
+    """Given a quantum tape, this function counts the resources used by standard PennyLane operations.
 
     Args:
-        tape (.QuantumTape): The quantum circuit for which we count resources
+        tape (.QuantumScript): The quantum circuit for which we count resources
+        compute_depth (bool): If True, the depth of the circuit is computed and included in the resources.
+            If False, the depth is set to None.
 
     Returns:
-        (.Resources): The total resources used in the workflow
+        (.SpecsResources): The total resources used in the workflow
     """
-    num_wires = len(tape.wires)
-    shots = tape.shots
-    depth = tape.graph.get_depth()
 
-    num_gates = 0
+    num_wires = len(tape.wires)
+    depth = tape.graph.get_depth() if compute_depth else None
+
     gate_types = defaultdict(int)
+    measurements = defaultdict(int)
     gate_sizes = defaultdict(int)
     for op in tape.operations:
         if isinstance(op, ResourcesOperation):
@@ -649,11 +1032,24 @@ def _count_resources(tape) -> Resources:
             for n in op_resource.gate_sizes:
                 gate_sizes[n] += op_resource.gate_sizes[n]
 
-            num_gates += sum(op_resource.gate_types.values())
-
         else:
-            gate_types[op.name] += 1
-            gate_sizes[len(op.wires)] += 1
-            num_gates += 1
+            gate_name = op.name
+            # pylint: disable=unidiomatic-typecheck
+            if type(op) in (Controlled, ControlledOp):
+                n_ctrls = len(op.control_wires)
+                if n_ctrls > 1:
+                    gate_name = f"{n_ctrls}{gate_name}"
 
-    return Resources(num_wires, num_gates, gate_types, gate_sizes, depth, shots)
+            gate_types[gate_name] += 1
+            gate_sizes[len(op.wires)] += 1
+
+    for meas in tape.measurements:
+        measurements[_mp_to_str(meas, num_wires)] += 1
+
+    return SpecsResources(
+        gate_types=dict(gate_types),
+        gate_sizes=dict(gate_sizes),
+        measurements=dict(measurements),
+        num_allocs=num_wires,
+        depth=depth,
+    )

@@ -48,8 +48,8 @@ To use the ``CustomFunction`` class, we call it with the static ``apply`` method
 >>> res
 tensor(4., grad_fn=<CustomFunctionBackward>)
 >>> res.backward()
->>> val.grad
 Calculating the gradient with x=2.0, dy=1.0, exponent=2
+>>> val.grad
 tensor(4.)
 
 Note that for custom functions, the output of ``forward`` and the output of ``backward`` are flattened iterables of
@@ -114,8 +114,6 @@ def _recursive_conj(dy):
     return tuple(_recursive_conj(d) for d in dy)
 
 
-# TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
-# pylint: disable=abstract-method
 @pytreeify
 class ExecuteTapes(torch.autograd.Function):
     """The signature of this ``torch.autograd.Function`` is designed to
@@ -134,14 +132,14 @@ class ExecuteTapes(torch.autograd.Function):
     ``tapes``; this function should always be called
     with the parameters extracted directly from the tapes as follows:
 
-    >>> parameters = [p for t in tapes for p in t.get_parameters()]
-    >>> kwargs = {"tapes": tapes, "execute_fn": execute_fn, "jpc": jpc}
-    >>> ExecuteTapes.apply(kwargs, *parameters)
+    .. code-block:: python3
+
+        parameters = [p for t in tapes for p in t.get_parameters()]
+        kwargs = {"tapes": tapes, "execute_fn": execute_fn, "jpc": jpc}
+        ExecuteTapes.apply(kwargs, *parameters)
 
     """
 
-    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
-    # pylint: disable=arguments-differ
     @staticmethod
     def forward(ctx, kwargs, *parameters):
         """Implements the forward pass batch tape evaluation."""

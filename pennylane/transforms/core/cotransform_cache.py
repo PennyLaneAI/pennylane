@@ -32,11 +32,13 @@ def _numpy_jac(*_, **__) -> TensorLike:
 def _autograd_jac(classical_function, argnums, *args, **kwargs) -> TensorLike:
     if not math.get_trainable_indices(args) and argnums is None:
         raise QuantumFunctionError("No trainable parameters.")
-    return autograd_jacobian(classical_function, argnum=argnums)(*args, **kwargs)
+    return autograd_jacobian(classical_function, argnums=argnums)(*args, **kwargs)
 
 
 # pylint: disable=import-outside-toplevel, unused-argument
-def _tf_jac(classical_function, argnums, *args, **kwargs) -> TensorLike:
+def _tf_jac(
+    classical_function, argnums, *args, **kwargs
+) -> TensorLike:  # pragma: no cover (TensorFlow tests were disabled during deprecation)
     if not math.get_trainable_indices(args):
         raise QuantumFunctionError("No trainable parameters.")
     import tensorflow as tf
@@ -95,7 +97,7 @@ def _jax_argnums_to_tape_trainable(qnode, argnums, program, args, kwargs):
     Args:
         qnode(qml.QNode): the quantum node.
         argnums(int, list[int]): the parameters that we want to set as trainable (on the QNode level).
-        program(qml.transforms.core.TransformProgram): the transform program to be applied on the tape.
+        program(qml.CompilePipeline): the compile pipeline to be applied on the tape.
 
     Return:
         list[float, jax.JVPTracer]: List of parameters where the trainable one are `JVPTracer`.
@@ -124,7 +126,7 @@ def _get_interface(qnode, args, kwargs) -> str:
     if qnode.interface == "auto":
         interface = math.get_interface(*args, *list(kwargs.values()))
         try:
-            interface = math.get_canonical_interface_name(interface).value
+            interface = math.Interface(interface).value
         except ValueError:
             interface = "numpy"
     else:
@@ -137,7 +139,7 @@ class CotransformCache:
     be used to calculate the argnums and classical jacobian for the application
     of a transform.
 
-    This class is an a implementation component for `TransformProgram`.
+    This class is an a implementation component for `CompilePipeline`.
     """
 
     def __init__(self, qnode, args, kwargs):
@@ -163,7 +165,7 @@ class CotransformCache:
     def get_classical_jacobian(self, transform: TransformContainer, tape_idx: int):
         """Calculate the classical jacobian for a given transform.
 
-        Note that this function assumes that the transform exists at most one in the transform program.
+        Note that this function assumes that the transform exists at most one in the compile pipeline.
         Given transforms with classical cotransforms tend to be final transforms, this is a safe bet.
 
         .. code-block:: python
@@ -189,7 +191,7 @@ class CotransformCache:
         transform_index = self._get_idx_for_transform(transform)
         if not transform.classical_cotransform:
             return None
-        argnums = self._program[-1].kwargs.get("argnums", None)  # pylint: disable=no-member
+        argnums = self._program[-1].kwargs.get("argnums", None)
 
         interface = _get_interface(self.qnode, self.args, self.kwargs)
 
@@ -233,7 +235,7 @@ class CotransformCache:
             )
 
         transform = self._program[transform_index]
-        argnums = self._program[-1].kwargs.get("argnums", None)  # pylint: disable=no-member
+        argnums = self._program[-1].kwargs.get("argnums", None)
 
         if argnums is None and math.get_interface(self.args[0]) != "jax":
             raise QuantumFunctionError("No trainable parameters.")

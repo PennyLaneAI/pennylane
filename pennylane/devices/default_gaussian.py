@@ -21,19 +21,18 @@ It implements the necessary :class:`~pennylane.devices._legacy_device.Device` me
 :mod:`continuous-variable Gaussian operations <pennylane.ops.cv>`, and provides a very simple simulation of a
 Gaussian-based quantum circuit architecture.
 """
-import cmath
-
 # pylint: disable=attribute-defined-outside-init,too-many-arguments
+import cmath
 import math
 
 import numpy as np
 from scipy.special import factorial as fac
 
 import pennylane as qml
+from pennylane._version import __version__
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.ops import Identity
 
-from .._version import __version__
 from ._legacy_device import Device
 
 # tolerance for numerical errors
@@ -518,33 +517,27 @@ def photon_number(cov, mu, params, hbar=2.0):
     return ex, var
 
 
-def homodyne(phi=None):
+def homodyne(phi: float | None = None):
     """Function factory that returns the Homodyne expectation of a one mode state.
 
     Args:
-        phi (float): the default phase space axis to perform the Homodyne measurement
+        phi (Optional[float]): the default phase space axis to perform the Homodyne measurement
 
     Returns:
         function: A function that accepts a single mode means vector, covariance matrix,
         and phase space angle phi, and returns the quadrature expectation
         value and variance.
     """
-    if phi is not None:
 
-        def _homodyne(cov, mu, params, hbar=2.0):
-            """Arbitrary angle homodyne expectation."""
-            # pylint: disable=unused-argument
-            rot = rotation(phi)
-            muphi = rot.T @ mu
-            covphi = rot.T @ cov @ rot
-            return muphi[0], covphi[0, 0]
-
-        return _homodyne
-
+    # pylint: disable=unused-argument
     def _homodyne(cov, mu, params, hbar=2.0):
-        """Arbitrary angle homodyne expectation."""
-        # pylint: disable=unused-argument
-        rot = rotation(params[0])
+        """Calculates the arbitrary angle homodyne expectation."""
+
+        # Use the fixed outer `phi` if it was provided,
+        # otherwise use the dynamic `phi` from the parameters.
+        measurement_phi = phi if phi is not None else params[0]
+
+        rot = rotation(measurement_phi)
         muphi = rot.T @ mu
         covphi = rot.T @ cov @ rot
         return muphi[0], covphi[0, 0]
@@ -645,7 +638,7 @@ class DefaultGaussian(Device):
     Args:
         wires (int, Iterable[Number, str]): Number of subsystems represented by the device,
             or iterable that contains unique labels for the subsystems as numbers (i.e., ``[-1, 0, 2]``)
-            or strings (``['ancilla', 'q1', 'q2']``). Default 1 if not specified.
+            or strings (``['auxiliary', 'q1', 'q2']``). Default 1 if not specified.
         shots (None, int): How many times the circuit should be evaluated (or sampled) to estimate
             the expectation values. If ``None``, the results are analytically computed and hence deterministic.
         hbar (float): (default 2) the value of :math:`\hbar` in the commutation

@@ -18,22 +18,20 @@ core parametrized gates.
 """
 # pylint: disable=arguments-differ
 import functools
+import math as builtin_math
+from itertools import combinations
 
 import numpy as np
 import scipy as sp
 
 import pennylane as qml
-from pennylane.decomposition import (
-    add_decomps,
-    register_condition,
-    register_resources,
-    resource_rep,
-)
+from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.decomposition.symbolic_decomposition import (
     adjoint_rotation,
     flip_zero_control,
     pow_rotation,
 )
+from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.operation import Operation
 from pennylane.typing import TensorLike
 from pennylane.wires import WiresLike
@@ -98,6 +96,13 @@ class RX(Operation):
     def resource_params(self) -> dict:
         return {}
 
+    has_decomposition = False
+
+    @staticmethod
+    def compute_decomposition(phi, wires):
+        # dont use graph decomposition for RX-> Rot
+        raise DecompositionUndefinedError
+
     @staticmethod
     def compute_matrix(theta: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
@@ -122,7 +127,9 @@ class RX(Operation):
         c = qml.math.cos(theta / 2)
         s = qml.math.sin(theta / 2)
 
-        if qml.math.get_interface(theta) == "tensorflow":
+        if (
+            qml.math.get_interface(theta) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             c = qml.math.cast_like(c, 1j)
             s = qml.math.cast_like(s, 1j)
 
@@ -183,7 +190,16 @@ def _rx_to_rz_ry(phi, wires: WiresLike, **__):
     qml.RZ(-np.pi / 2, wires=wires)
 
 
-add_decomps(RX, _rx_to_rot, _rx_to_rz_ry)
+def _rx_to_ppr_resources():
+    return {resource_rep(qml.PauliRot, pauli_word="X"): 1}
+
+
+@register_resources(_rx_to_ppr_resources)
+def _rx_to_ppr(phi, wires, **_):
+    qml.PauliRot(phi, "X", wires=wires)
+
+
+add_decomps(RX, _rx_to_rot, _rx_to_rz_ry, _rx_to_ppr)
 add_decomps("Adjoint(RX)", adjoint_rotation)
 add_decomps("Pow(RX)", pow_rotation)
 
@@ -266,6 +282,13 @@ class RY(Operation):
     def resource_params(self) -> dict:
         return {}
 
+    has_decomposition = False
+
+    @staticmethod
+    def compute_decomposition(phi, wires):
+        # dont use graph decomposition for RY-> Rot
+        raise DecompositionUndefinedError
+
     @staticmethod
     def compute_matrix(theta: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
@@ -285,13 +308,15 @@ class RY(Operation):
         **Example**
 
         >>> qml.RY.compute_matrix(torch.tensor(0.5))
-        tensor([[ 0.9689, -0.2474],
-                [ 0.2474,  0.9689]])
+        tensor([[ 0.9689+0.j, -0.2474-0.j],
+                [ 0.2474+0.j,  0.9689+0.j]])
         """
 
         c = qml.math.cos(theta / 2)
         s = qml.math.sin(theta / 2)
-        if qml.math.get_interface(theta) == "tensorflow":
+        if (
+            qml.math.get_interface(theta) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             c = qml.math.cast_like(c, 1j)
             s = qml.math.cast_like(s, 1j)
         # The following avoids casting an imaginary quantity to reals when backpropagating
@@ -350,7 +375,16 @@ def _ry_to_rz_rx(phi, wires: WiresLike, **__):
     qml.RZ(np.pi / 2, wires=wires)
 
 
-add_decomps(RY, _ry_to_rot, _ry_to_rz_rx)
+def _ry_to_ppr_resources():
+    return {resource_rep(qml.PauliRot, pauli_word="Y"): 1}
+
+
+@register_resources(_ry_to_ppr_resources)
+def _ry_to_ppr(phi, wires, **_):
+    qml.PauliRot(phi, "Y", wires=wires)
+
+
+add_decomps(RY, _ry_to_rot, _ry_to_rz_rx, _ry_to_ppr)
 add_decomps("Adjoint(RY)", adjoint_rotation)
 add_decomps("Pow(RY)", pow_rotation)
 
@@ -427,6 +461,13 @@ class RZ(Operation):
     def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
         super().__init__(phi, wires=wires, id=id)
 
+    has_decomposition = False
+
+    @staticmethod
+    def compute_decomposition(phi, wires):
+        # dont use graph decomposition for RZ-> Rot
+        raise DecompositionUndefinedError
+
     @staticmethod
     def compute_matrix(theta: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
@@ -448,7 +489,9 @@ class RZ(Operation):
         tensor([[0.9689-0.2474j, 0.0000+0.0000j],
                 [0.0000+0.0000j, 0.9689+0.2474j]])
         """
-        if qml.math.get_interface(theta) == "tensorflow":
+        if (
+            qml.math.get_interface(theta) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             p = qml.math.exp(-0.5j * qml.math.cast_like(theta, 1j))
             z = qml.math.zeros_like(p)
 
@@ -496,7 +539,9 @@ class RZ(Operation):
         >>> qml.RZ.compute_eigvals(torch.tensor(0.5))
         tensor([0.9689-0.2474j, 0.9689+0.2474j])
         """
-        if qml.math.get_interface(theta) == "tensorflow":
+        if (
+            qml.math.get_interface(theta) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             phase = qml.math.exp(-0.5j * qml.math.cast_like(theta, 1j))
             return qml.math.stack([phase, qml.math.conj(phase)], axis=-1)
 
@@ -553,7 +598,16 @@ def _rz_to_ry_rx(phi, wires: WiresLike, **__):
     qml.RY(-np.pi / 2, wires=wires)
 
 
-add_decomps(RZ, _rz_to_rot, _rz_to_ry_rx)
+def _rz_to_ppr_resources():
+    return {resource_rep(qml.PauliRot, pauli_word="Z"): 1}
+
+
+@register_resources(_rz_to_ppr_resources)
+def _rz_to_ppr(phi, wires, **_):
+    qml.PauliRot(phi, "Z", wires=wires)
+
+
+add_decomps(RZ, _rz_to_rot, _rz_to_ry_rx, _rz_to_ppr)
 add_decomps("Adjoint(RZ)", adjoint_rotation)
 add_decomps("Pow(RZ)", pow_rotation)
 
@@ -661,10 +715,12 @@ class PhaseShift(Operation):
         **Example**
 
         >>> qml.PhaseShift.compute_matrix(torch.tensor(0.5))
-        tensor([[0.9689-0.2474j, 0.0000+0.0000j],
-                [0.0000+0.0000j, 0.9689+0.2474j]])
+        tensor([[1.0000+0.0000j, 0.0000+0.0000j],
+                [0.0000+0.0000j, 0.8776+0.4794j]])
         """
-        if qml.math.get_interface(phi) == "tensorflow":
+        if (
+            qml.math.get_interface(phi) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             p = qml.math.exp(1j * qml.math.cast_like(phi, 1j))
             ones = qml.math.ones_like(p)
             zeros = qml.math.zeros_like(p)
@@ -707,7 +763,9 @@ class PhaseShift(Operation):
         >>> qml.PhaseShift.compute_eigvals(torch.tensor(0.5))
         tensor([1.0000+0.0000j, 0.8776+0.4794j])
         """
-        if qml.math.get_interface(phi) == "tensorflow":
+        if (
+            qml.math.get_interface(phi) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             phase = qml.math.exp(1j * qml.math.cast_like(phi, 1j))
             return stack_last([qml.math.ones_like(phase), phase])
 
@@ -774,48 +832,29 @@ def _phaseshift_to_rz_gp(phi, wires: WiresLike, **__):
     qml.GlobalPhase(-phi / 2)
 
 
+def _cphase_to_ppr_resource(num_control_wires, **_):
+    resources = {
+        resource_rep(qml.PauliRot, pauli_word="Z" * i): builtin_math.comb(num_control_wires + 1, i)
+        for i in range(1, num_control_wires + 2)
+    }
+    resources[resource_rep(qml.GlobalPhase)] = 1
+    return resources
+
+
+@register_resources(_cphase_to_ppr_resource)
+def _cphase_to_ppr(theta, wires, **_):
+    n = len(wires)
+    for l in range(1, n + 1):
+        for sub_wires in combinations(wires, l):
+            phi = -theta / 2 ** (n - 1) * (-1) ** l
+            qml.PauliRot(phi, pauli_word="Z" * l, wires=sub_wires)
+    qml.GlobalPhase(-theta / 2**n)
+
+
 add_decomps(PhaseShift, _phaseshift_to_rz_gp)
 add_decomps("Adjoint(PhaseShift)", adjoint_rotation)
 add_decomps("Pow(PhaseShift)", pow_rotation)
-
-
-def _controlled_phaseshift_condition(*_, num_control_wires, num_work_wires, work_wire_type, **__):
-    return num_control_wires == 1 or (num_work_wires > 0 and work_wire_type == "clean")
-
-
-def _controlled_phaseshift_resource(*_, num_control_wires, num_work_wires, work_wire_type, **__):
-    if num_control_wires == 1:
-        return {qml.ControlledPhaseShift: 1}
-    return {
-        resource_rep(
-            qml.MultiControlledX,
-            num_control_wires=num_control_wires,
-            num_zero_control_values=0,
-            num_work_wires=num_work_wires - 1,
-            work_wire_type=work_wire_type,
-        ): 2,
-        qml.ControlledPhaseShift: 1,
-    }
-
-
-@register_condition(_controlled_phaseshift_condition)
-@register_resources(_controlled_phaseshift_resource)
-def _controlled_phase_shift_decomp(*params, wires, control_wires, work_wires, work_wire_type, **__):
-
-    if len(control_wires) == 1:
-        qml.ControlledPhaseShift(*params, wires=wires)
-        return
-
-    qml.MultiControlledX(
-        wires=wires[:-1] + work_wires[0], work_wires=work_wires[1:], work_wire_type=work_wire_type
-    )
-    qml.ControlledPhaseShift(*params, wires=[work_wires[0], wires[-1]])
-    qml.MultiControlledX(
-        wires=wires[:-1] + work_wires[0], work_wires=work_wires[1:], work_wire_type=work_wire_type
-    )
-
-
-add_decomps("C(PhaseShift)", flip_zero_control(_controlled_phase_shift_decomp))
+add_decomps("C(PhaseShift)", flip_zero_control(_cphase_to_ppr))
 
 
 class Rot(Operation):
@@ -918,7 +957,9 @@ class Rot(Operation):
         s = qml.math.sin(theta / 2)
 
         # If anything is not tensorflow, it has to be casted and then
-        if interface == "tensorflow":
+        if (
+            interface == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             phi = qml.math.cast_like(qml.math.asarray(phi, like=interface), 1j)
             omega = qml.math.cast_like(qml.math.asarray(omega, like=interface), 1j)
             c = qml.math.cast_like(qml.math.asarray(c, like=interface), 1j)
@@ -1138,7 +1179,9 @@ class U1(Operation):
         tensor([[1.0000+0.0000j, 0.0000+0.0000j],
                 [0.0000+0.0000j, 0.8776+0.4794j]])
         """
-        if qml.math.get_interface(phi) == "tensorflow":
+        if (
+            qml.math.get_interface(phi) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             phi = qml.math.cast_like(phi, 1j)
             fac = qml.math.cast_like([0, 1], 1j)
         else:
@@ -1287,7 +1330,9 @@ class U2(Operation):
         interface = qml.math.get_interface(phi, delta)
 
         # If anything is not tensorflow, it has to be casted and then
-        if interface == "tensorflow":
+        if (
+            interface == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             phi = qml.math.cast_like(qml.math.asarray(phi, like=interface), 1j)
             delta = qml.math.cast_like(qml.math.asarray(delta, like=interface), 1j)
 
@@ -1320,9 +1365,7 @@ class U2(Operation):
         **Example:**
 
         >>> qml.U2.compute_decomposition(1.23, 2.34, wires=0)
-        [Rot(2.34, 1.5707963267948966, -2.34, wires=[0]),
-        PhaseShift(2.34, wires=[0]),
-        PhaseShift(1.23, wires=[0])]
+        [Rot(2.34, np.float64(1.5707963267948966), -2.34, wires=[0]), PhaseShift(2.34, wires=[0]), PhaseShift(1.23, wires=[0])]
 
         """
         pi_half = qml.math.ones_like(delta) * (np.pi / 2)
@@ -1477,7 +1520,9 @@ class U3(Operation):
         s = qml.math.sin(theta / 2)
 
         # If anything is not tensorflow, it has to be casted and then
-        if interface == "tensorflow":
+        if (
+            interface == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             phi = qml.math.cast_like(qml.math.asarray(phi, like=interface), 1j)
             delta = qml.math.cast_like(qml.math.asarray(delta, like=interface), 1j)
             c = qml.math.cast_like(qml.math.asarray(c, like=interface), 1j)

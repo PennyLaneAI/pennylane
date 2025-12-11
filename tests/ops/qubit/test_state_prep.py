@@ -40,7 +40,7 @@ def test_assert_valid():
     """Tests that BasisState operators are valid"""
 
     op = qml.BasisState(np.array([0, 1]), wires=[0, 1])
-    qml.ops.functions.assert_valid(op, skip_differentiation=True, heuristic_resources=True)
+    qml.ops.functions.assert_valid(op, skip_differentiation=True)
 
     def abstract_check(state):
         op = qml.BasisState(state, wires=[0, 1])
@@ -100,11 +100,11 @@ def test_labelling_matrix_cache(op, mat, base):
     assert op.label() == base
 
     cache = {"matrices": []}
-    assert op.label(cache=cache) == f"{base}(M0)"
+    assert op.label(cache=cache) == f"{base}\n(M0)"
     assert qml.math.allclose(cache["matrices"][0], mat)
 
     cache = {"matrices": [0, mat, 0]}
-    assert op.label(cache=cache) == f"{base}(M1)"
+    assert op.label(cache=cache) == f"{base}\n(M1)"
     assert len(cache["matrices"]) == 3
 
 
@@ -276,7 +276,7 @@ class TestStateVector:
         assert np.array_equal(ket, expected)
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch", "tensorflow"])
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
     def test_StatePrep_state_vector_preserves_parameter_type(self, interface):
         """Tests that given an array of some type, the resulting state vector is also that type."""
         qsv_op = qml.StatePrep(qml.math.array([0, 0, 0, 1], like=interface), wires=[1, 2])
@@ -284,7 +284,7 @@ class TestStateVector:
         assert qml.math.get_interface(qsv_op.state_vector(wire_order=[0, 1, 2])) == interface
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch", "tensorflow"])
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
     def test_StatePrep_state_vector_preserves_parameter_type_broadcasted(self, interface):
         """Tests that given an array of some type, the resulting state vector is also that type."""
         qsv_op = qml.StatePrep(
@@ -457,7 +457,7 @@ class TestStateVector:
         assert not np.any(basis_state)
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch", "tensorflow"])
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
     @pytest.mark.parametrize("dtype_like", [0, 0.0])
     def test_BasisState_state_vector_preserves_parameter_type(self, interface, dtype_like):
         """Tests that given an array of some type, the resulting state_vector is also that type."""

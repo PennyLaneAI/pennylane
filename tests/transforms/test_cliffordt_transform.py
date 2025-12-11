@@ -13,6 +13,8 @@
 # limitations under the License.
 """Unit tests for the Clifford+T transform."""
 
+# pylint: disable=too-many-public-methods
+
 import math
 from functools import reduce
 
@@ -110,6 +112,40 @@ def circuit_6():
     return qml.expval(qml.PauliZ(0))
 
 
+def circuit_7():
+    """Circuit 7 with RX, RY, and RZ"""
+    qml.RX(PI / 3, wires=0)
+    qml.RZ(PI / 5, wires=0)
+    qml.RY(PI / 8, wires=0)
+    return qml.expval(qml.PauliZ(0))
+
+
+def circuit_8():
+    """Circuit 8 with only RZ and CNOT"""
+    qml.RZ(PI / 8, wires=0)
+    qml.CNOT(wires=[0, 1])
+    qml.RZ(PI / 2, wires=1)
+    return qml.expval(qml.PauliZ(1))
+
+
+def circuit_9(num_repeat, rand_angles):
+    """Circuit 9 with a repeated operations"""
+    for angle in rand_angles:
+        for idx in range(num_repeat):
+            qml.RZ(angle, idx)
+        for idx in range(num_repeat):
+            qml.CNOT([idx, (idx + 1) % num_repeat])
+    return qml.expval(qml.Z(0))
+
+
+def circuit_10():
+    """Circuit 10 with two RZs with same parameter that are not merged"""
+    qml.RZ(0.5, 0)
+    qml.T(0)
+    qml.RZ(0.5, 0)
+    return qml.expval(qml.Z(0))
+
+
 class TestCliffordCompile:
     """Unit tests for clifford compilation function."""
 
@@ -176,6 +212,45 @@ class TestCliffordCompile:
         )
         qml.math.isclose(res1, tape_fn([res2]), atol=1e-2)
 
+    @pytest.mark.catalyst
+    @pytest.mark.jax
+    @pytest.mark.external
+    @pytest.mark.parametrize("circuit", [circuit_7, circuit_8, circuit_10])
+    def test_decomposition_with_rs_qjit(self, circuit):
+        """Test decomposition for the Clifford transform with Ross-Selinger method with QJIT enabled."""
+
+        pytest.importorskip("jax")
+        pytest.importorskip("catalyst")
+
+        dev = qml.device("lightning.qubit", wires=4)
+        qnode_cir = qml.qnode(dev)(circuit)
+        decomp_cir = clifford_t_decomposition(qnode_cir, method="gridsynth")
+        qjit_cir = qml.qjit(decomp_cir)
+
+        res1, res2 = decomp_cir(), qjit_cir()
+        assert qml.math.isclose(res1, res2, atol=1e-2)
+
+    @pytest.mark.catalyst
+    @pytest.mark.jax
+    @pytest.mark.external
+    @pytest.mark.parametrize("circuit", [circuit_1, circuit_10])
+    def test_decomposition_with_rs_qjit_repeated_decomp(self, circuit):
+        """Test decomposition for multiple Clifford transforms with Ross-Selinger method with QJIT enabled with repeated parameters."""
+
+        pytest.importorskip("jax")
+        pytest.importorskip("catalyst")
+
+        dev = qml.device("lightning.qubit", wires=4)
+        qnode_cir = qml.qnode(dev)(circuit)
+        decomp_cir = clifford_t_decomposition(qnode_cir, method="gridsynth")
+        qjit_cir = qml.qjit(decomp_cir)
+
+        decomp_cir_copy = clifford_t_decomposition(qnode_cir, method="gridsynth")
+        qjit_cir_copy = qml.qjit(decomp_cir_copy)
+
+        res1, res2 = qjit_cir(), qjit_cir_copy()
+        assert qml.math.isclose(res1, res2, atol=1e-2)
+
     def test_qnode_decomposition(self):
         """Test decomposition for the Clifford transform applied to a QNode."""
 
@@ -188,14 +263,14 @@ class TestCliffordCompile:
             return qml.expval(qml.PauliZ(0))
 
         original_qnode = qml.QNode(qfunc, dev)
-        transfmd_qnode = qml.QNode(
+        transformed_qnode = qml.QNode(
             clifford_t_decomposition(qfunc, max_depth=3, basis_length=10), dev
         )
 
-        res1, res2 = original_qnode(), transfmd_qnode()
+        res1, res2 = original_qnode(), transformed_qnode()
         assert qml.math.isclose(res1, res2, atol=1e-2)
 
-        tape = qml.workflow.construct_tape(transfmd_qnode)()
+        tape = qml.workflow.construct_tape(transformed_qnode)()
 
         assert all(
             isinstance(op, _CLIFFORD_PHASE_GATES)
@@ -435,10 +510,10 @@ class TestCliffordCompile:
     def test_raise_with_cliffordt_decomposition(self):
         """Test that exception is correctly raise when decomposing gates without any decomposition"""
 
-        class CustomOp(qml.operation.Operation):  # pylint: disable=too-few-public-methods
+        class SomethingOp(qml.operation.Operation):  # pylint: disable=too-few-public-methods
             pass
 
-        tape = qml.tape.QuantumScript([CustomOp(wires=[0, 1, 2])])
+        tape = qml.tape.QuantumScript([SomethingOp(wires=[0, 1, 2])])
 
         with pytest.raises(ValueError, match="Cannot unroll"):
             clifford_t_decomposition(tape)
@@ -498,7 +573,6 @@ class TestCliffordCompile:
         )
 
         import jax
-        import tensorflow as tf
         import torch
 
         funres = []
@@ -508,19 +582,12 @@ class TestCliffordCompile:
             # Autograd Interface
             A = qml.numpy.array(coeffs)
             fres_numpy = qcirc(A)
-            grad_numpy = qml.grad(qcirc, argnum=0)(A)
+            grad_numpy = qml.grad(qcirc, argnums=0)(A)
 
             # Jax Interface
             A = jax.numpy.array(coeffs)
             fres_jax = qcirc(A)
             grad_jax = jax.grad(qcirc, argnums=0)(A)
-
-            # Tensorflow Interface
-            A = tf.Variable(qml.numpy.array(coeffs))
-            with tf.GradientTape() as tape:
-                loss = qcirc(A)
-            grad_tflow = tape.gradient(loss, A)
-            fres_tflow = loss
 
             # PyTorch Interface
             A = torch.tensor(coeffs, requires_grad=True)
@@ -529,22 +596,44 @@ class TestCliffordCompile:
             grad_torch = A.grad
             fres_torch = result
 
-            funres.append([fres_numpy, fres_jax, fres_torch, fres_tflow])
-            igrads.append([grad_numpy, grad_jax, grad_torch, grad_tflow])
+            funres.append([fres_numpy, fres_jax, fres_torch])
+            igrads.append([grad_numpy, grad_jax, grad_torch])
 
         # Compare results
         assert all(qml.math.allclose(res1, res2, atol=1e-2) for res1, res2 in zip(*funres))
         assert all(qml.math.allclose(res1, res2, atol=1e-2) for res1, res2 in zip(*igrads))
 
+    @pytest.mark.jax
+    def test_abstract_wires(self):
+        """Tests that rotations do not merge across operators with abstract wires."""
 
-def circuit_7(num_repeat, rand_angles):
-    """Circuit 7 with a repeated operations"""
-    for angle in rand_angles:
-        for idx in range(num_repeat):
-            qml.RZ(angle, idx)
-        for idx in range(num_repeat):
-            qml.CNOT([idx, (idx + 1) % num_repeat])
-    return qml.expval(qml.Z(0))
+        import jax
+
+        @jax.jit
+        def f(w):
+            tape = qml.tape.QuantumScript(
+                [
+                    qml.RX(0.5, wires=0),
+                    qml.CNOT([w, 1]),
+                    qml.RX(0.5, wires=0),
+                ]
+            )
+            [tape], _ = clifford_t_decomposition(tape)
+            return len(tape.operations)
+
+        @jax.jit
+        def f2(w):
+            tape = qml.tape.QuantumScript(
+                [
+                    qml.CNOT([w, 1]),
+                    qml.RX(0.5, wires=0),
+                    qml.RX(0.5, wires=0),
+                ]
+            )
+            [tape], _ = clifford_t_decomposition(tape)
+            return len(tape.operations)
+
+        assert f(0) > f2(0)
 
 
 class TestCliffordCached:
@@ -559,11 +648,11 @@ class TestCliffordCached:
         clt2._CLIFFORD_T_CACHE = None
 
         num_angles = 1
-        rand_angles = qml.math.random.random.rand(num_angles)
+        rand_angles = qml.math.random.rand(num_angles)
         rand_angles = qml.math.concatenate((rand_angles, -rand_angles))
 
         num_repeat = 2
-        old_tape = qml.tape.make_qscript(circuit_7)(num_repeat, rand_angles)
+        old_tape = qml.tape.make_qscript(circuit_9)(num_repeat, rand_angles)
         _ = clifford_t_decomposition(old_tape, epsilon=10)
 
         assert isinstance(clt2._CLIFFORD_T_CACHE, _CachedCallable)
@@ -572,7 +661,7 @@ class TestCliffordCached:
         assert cache_info.hits == 2 * num_angles * (num_repeat - 1)
 
         num_repeat = 2
-        old_tape = qml.tape.make_qscript(circuit_7)(num_repeat, rand_angles)
+        old_tape = qml.tape.make_qscript(circuit_9)(num_repeat, rand_angles)
         _ = clifford_t_decomposition(old_tape, epsilon=10)
 
         assert isinstance(clt2._CLIFFORD_T_CACHE, _CachedCallable)
@@ -581,7 +670,7 @@ class TestCliffordCached:
         assert cache_info.hits == 2 * num_angles * (2 * num_repeat - 1)
 
         num_repeat = 2
-        old_tape = qml.tape.make_qscript(circuit_7)(num_repeat, rand_angles)
+        old_tape = qml.tape.make_qscript(circuit_9)(num_repeat, rand_angles)
         _ = clifford_t_decomposition(old_tape, cache_size=100)
 
         assert isinstance(clt2._CLIFFORD_T_CACHE, _CachedCallable)
@@ -603,6 +692,29 @@ class TestCliffordCached:
             assert _map_wires(qml.X(0), wire) == qml.X(wire)
         assert _map_wires.cache_info().hits == 5
         assert _map_wires.cache_info().misses == 10
+
+    # pylint: disable=protected-access, import-outside-toplevel, reimported
+    def test_cached_with_rtol(self):
+        """Test that caches are correctly identified as compatible or
+        incompatible with a relative threshold for epsilon."""
+
+        import pennylane.transforms.decompositions.clifford_t_transform as clt2
+
+        clt2._CLIFFORD_T_CACHE = None
+
+        cache1 = _CachedCallable(method="gridsynth", epsilon=1e-5, cache_size=100)
+
+        assert cache1.compatible(
+            method="gridsynth", epsilon=1e-3, cache_size=100, cache_eps_rtol=99, is_qjit=False
+        )
+
+        assert not cache1.compatible(
+            method="gridsynth", epsilon=9e-6, cache_size=100, cache_eps_rtol=99, is_qjit=False
+        )
+
+        assert not cache1.compatible(
+            method="gridsynth", epsilon=1e-4, cache_size=100, cache_eps_rtol=1e-1, is_qjit=False
+        )
 
 
 class TestCatalyst:
@@ -626,3 +738,46 @@ class TestCatalyst:
 
         results = circuit()
         assert results[0] and not results[1]
+
+    @pytest.mark.catalyst
+    @pytest.mark.jax
+    @pytest.mark.external
+    def test_decomposition_with_rs_qjit_dynamic_param(self):
+        """Test clifford T decomposition with qjit and dynamic parameters."""
+
+        pytest.importorskip("jax")
+        pytest.importorskip("catalyst")
+
+        def circuit(angle, qb):
+            qml.H(qb)
+            qml.CNOT([qb, qb + 1])
+            qml.RX(angle * 0.37, qb)
+            qml.RZ(angle * 0.27, qb + 1)
+            qml.RY(angle * 0.73, qb)
+            qml.CNOT([qb + 1, qb])
+            qml.H(qb)
+            return qml.expval(qml.Z(0) @ qml.Z(1))
+
+        dev = qml.device("lightning.qubit", wires=2)
+        decomposed_cir = qml.QNode(clifford_t_decomposition(circuit, method="gridsynth"), dev)
+        qjit_cir = qml.qjit(decomposed_cir)
+
+        angle, qb = PI, 0
+        default_res, qjit_res = decomposed_cir(angle, qb), qjit_cir(angle, qb)
+
+        assert qml.math.allclose(default_res, qjit_res, atol=1e-2)
+
+    @pytest.mark.external
+    @pytest.mark.catalyst
+    def test_decomposition_with_sk_qjit_raise(self):
+        """Test decomposition for the Clifford transform with Solovay-Kitaev method
+        with QJIT enabled raises an error."""
+
+        pytest.importorskip("jax")
+        pytest.importorskip("catalyst")
+
+        dev = qml.device("lightning.qubit", wires=4)
+        qnode_cir = qml.qnode(dev)(circuit_7)
+        decomp_cir = clifford_t_decomposition(qnode_cir, method="sk")
+        with pytest.raises(RuntimeError, match=r"Solovay-Kitaev decomposition"):
+            _ = qml.qjit(decomp_cir)()

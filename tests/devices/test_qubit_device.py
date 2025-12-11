@@ -30,11 +30,10 @@ from pennylane.measurements import (
     MeasurementProcess,
     ProbabilityMP,
     SampleMP,
-    Shots,
     StateMP,
     VarianceMP,
 )
-from pennylane.resource import Resources
+from pennylane.resource import SpecsResources
 from pennylane.tape import QuantumScript
 from pennylane.wires import Wires
 
@@ -1199,7 +1198,7 @@ class TestNativeMidCircuitMeasurements:
     class MCMDevice(DefaultQubitLegacy):
         def apply(self, *args, **kwargs):
             for op in args[0]:
-                if isinstance(op, qml.measurements.MidMeasureMP):
+                if isinstance(op, qml.ops.MidMeasure):
                     kwargs["mid_measurements"][op] = 0
 
         @classmethod
@@ -1211,11 +1210,11 @@ class TestNativeMidCircuitMeasurements:
     def test_qnode_native_mcm(self, mocker):
         """Tests that the legacy devices may support native MCM execution via the dynamic_one_shot transform."""
 
-        dev = self.MCMDevice(wires=1, shots=100)
+        dev = self.MCMDevice(wires=1)
         dev.operations.add("MidMeasureMP")
         spy = mocker.spy(qml.dynamic_one_shot, "_transform")
 
-        @qml.qnode(dev, interface=None, diff_method=None)
+        @qml.qnode(dev, interface=None, diff_method=None, shots=100)
         def func():
             _ = qml.measure(0)
             return qml.expval(op=qml.PauliZ(0))
@@ -1227,15 +1226,15 @@ class TestNativeMidCircuitMeasurements:
     @pytest.mark.parametrize("postselect_mode", ["hw-like", "fill-shots"])
     def test_postselect_mode_propagates_to_execute(self, monkeypatch, postselect_mode):
         """Test that the specified postselect mode propagates to execution as expected."""
-        dev = self.MCMDevice(wires=1, shots=100)
-        dev.operations.add("MidMeasureMP")
+        dev = self.MCMDevice(wires=1)
+        dev.operations.add("MidMeasure")
         pm_propagated = False
 
         def new_apply(*args, **kwargs):  # pylint: disable=unused-argument
             nonlocal pm_propagated
             pm_propagated = kwargs.get("postselect_mode", -1) == postselect_mode
 
-        @qml.qnode(dev, postselect_mode=postselect_mode)
+        @qml.qnode(dev, postselect_mode=postselect_mode, shots=100)
         def func():
             _ = qml.measure(0, postselect=1)
             return qml.expval(op=qml.PauliZ(0))
@@ -1494,10 +1493,28 @@ class TestResourcesTracker:
     )
 
     expected_resources = (
-        Resources(2, 2, {"Hadamard": 1, "CNOT": 1}, {1: 1, 2: 1}, 2, Shots(None)),
-        Resources(3, 3, {"PauliZ": 1, "CNOT": 1, "RX": 1}, {1: 2, 2: 1}, 2, Shots(10)),
-        Resources(2, 6, {"Hadamard": 3, "RX": 2, "CNOT": 1}, {1: 5, 2: 1}, 4, Shots((10, 10, 50))),
-    )  # Resources(wires, gates, gate_types, gate_sizes, depth, shots)
+        SpecsResources(
+            num_allocs=2,
+            gate_types={"Hadamard": 1, "CNOT": 1},
+            gate_sizes={1: 1, 2: 1},
+            measurements={},
+            depth=2,
+        ),
+        SpecsResources(
+            num_allocs=3,
+            gate_types={"PauliZ": 1, "CNOT": 1, "RX": 1},
+            gate_sizes={1: 2, 2: 1},
+            measurements={},
+            depth=2,
+        ),
+        SpecsResources(
+            num_allocs=2,
+            gate_types={"Hadamard": 3, "RX": 2, "CNOT": 1},
+            gate_sizes={1: 5, 2: 1},
+            measurements={},
+            depth=4,
+        ),
+    )
 
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize(
@@ -1523,8 +1540,20 @@ class TestResourcesTracker:
         qs1 = qml.tape.QuantumScript([qml.Hadamard(0), qml.CNOT([0, 1])])
         qs2 = qml.tape.QuantumScript([qml.PauliZ(0), qml.CNOT([0, 1]), qml.RX(1.23, 2)])
 
-        exp_res1 = Resources(2, 2, {"Hadamard": 1, "CNOT": 1}, {1: 1, 2: 1}, 2, Shots(10))
-        exp_res2 = Resources(3, 3, {"PauliZ": 1, "CNOT": 1, "RX": 1}, {1: 2, 2: 1}, 2, Shots(10))
+        exp_res1 = SpecsResources(
+            num_allocs=2,
+            gate_types={"Hadamard": 1, "CNOT": 1},
+            gate_sizes={1: 1, 2: 1},
+            measurements={},
+            depth=2,
+        )
+        exp_res2 = SpecsResources(
+            num_allocs=3,
+            gate_types={"PauliZ": 1, "CNOT": 1, "RX": 1},
+            gate_sizes={1: 2, 2: 1},
+            measurements={},
+            depth=2,
+        )
 
         dev = DefaultQubitLegacy(shots=10, wires=[0, 1, 2])
         with qml.Tracker(dev) as tracker:
@@ -1542,20 +1571,19 @@ class TestResourcesTracker:
     @pytest.mark.autograd
     def test_tracker_grad(self):
         """Test that the tracker can track resources through a gradient computation"""
-        dev = DefaultQubitLegacy(wires=1, shots=100)
+        dev = DefaultQubitLegacy(wires=1)
 
-        @qml.qnode(dev, diff_method="parameter-shift")
+        @qml.qnode(dev, diff_method="parameter-shift", shots=100)
         def circuit(x):
             qml.RX(x, wires=0)  # 2 term parameter shift
             return qml.expval(qml.PauliZ(0))
 
         x = pnp.array(0.1, requires_grad=True)
-        expected_resources = Resources(
-            num_wires=1,
-            num_gates=1,
+        expected_resources = SpecsResources(
+            num_allocs=1,
             gate_types={"RX": 1},
             gate_sizes={1: 1},
-            shots=Shots(100),
+            measurements={"expval(PauliZ)": 1},
             depth=1,
         )
 

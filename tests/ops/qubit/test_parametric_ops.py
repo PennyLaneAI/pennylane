@@ -262,6 +262,15 @@ class TestParameterFrequencies:
 
 
 class TestDecompositions:
+
+    @pytest.mark.parametrize("op_class", (qml.RX, qml.RY, qml.RZ))
+    def test_decompositions_undefined(self, op_class):
+        """Test that RX, RY, and RZ don't have Operator.decomposition definitions, even though they
+        have graph decomps."""
+
+        with pytest.raises(qml.exceptions.DecompositionUndefinedError):
+            op_class(0.5, wires=0).decomposition()
+
     @pytest.mark.parametrize("phi", [0.3, np.array([0.4, 2.1, 0.2])])
     def test_phase_decomposition(self, phi, tol):
         """Tests that the decomposition of the Phase gate is correct"""
@@ -722,19 +731,6 @@ class TestDecompositions:
         exp[..., lam_pos, lam_pos] = lam
 
         assert np.allclose(decomposed_matrix, exp)
-
-    @pytest.mark.parametrize("work_wire_type", ["clean", "dirty"])
-    def test_controlled_phase_shift_decomp_new(self, work_wire_type):
-        """tests the new controlled phase shift decomposition"""
-
-        op = qml.ctrl(
-            qml.PhaseShift(0.123, wires=0),
-            control=[1, 2, 3],
-            work_wires=[4, 5],
-            work_wire_type=work_wire_type,
-        )
-        for rule in qml.list_decomps("C(PhaseShift)"):
-            _test_decomposition_rule(op, rule)
 
 
 pswap_angles = list(np.linspace(-np.pi, np.pi, 11)) + [np.linspace(-1, 1, 11)]
@@ -3482,13 +3478,13 @@ class TestSimplify:
             unsimplified_res = circuit(False, wires, *parameters, **hyperparams)
             simplified_res = circuit(True, wires, *parameters, **hyperparams)
 
-            unsimplified_grad = qml.grad(circuit, argnum=list(range(2, 2 + len(parameters))))(
+            unsimplified_grad = qml.grad(circuit, argnums=list(range(2, 2 + len(parameters))))(
                 False,
                 wires,
                 *parameters,
                 **hyperparams,
             )
-            simplified_grad = qml.grad(circuit, argnum=list(range(2, 2 + len(parameters))))(
+            simplified_grad = qml.grad(circuit, argnums=list(range(2, 2 + len(parameters))))(
                 True,
                 wires,
                 *parameters,

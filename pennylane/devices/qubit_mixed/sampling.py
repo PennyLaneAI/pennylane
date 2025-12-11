@@ -20,9 +20,8 @@ from collections.abc import Callable
 import numpy as np
 
 import pennylane as qml
-from pennylane import math
 from pennylane.devices.qubit.sampling import _group_measurements, jax_random_split, sample_probs
-from pennylane.measurements import CountsMP, ExpectationMP, SampleMeasurement, Shots
+from pennylane.measurements import ExpectationMP, SampleMeasurement, Shots
 from pennylane.measurements.classical_shadow import ClassicalShadowMP, ShadowExpvalMP
 from pennylane.ops import LinearCombination, Sum
 from pennylane.typing import TensorLike
@@ -87,15 +86,7 @@ def _measure_with_samples_diagonalizing_gates(
     wires = qml.wires.Wires(range(total_indices))
 
     def _process_single_shot(samples):
-        processed = []
-        for mp in mps:
-            res = mp.process_samples(samples, wires)
-            if not isinstance(mp, CountsMP):
-                res = math.squeeze(res)
-
-            processed.append(res)
-
-        return tuple(processed)
+        return tuple(mp.process_samples(samples, wires) for mp in mps)
 
     prng_key, _ = jax_random_split(prng_key)
     samples = sample_state(

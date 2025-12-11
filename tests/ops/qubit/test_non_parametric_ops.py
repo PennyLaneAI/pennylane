@@ -46,6 +46,7 @@ from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, lil_matrix
 from scipy.stats import unitary_group
 
 import pennylane as qml
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.wires import Wires
 
 # Non-parametrized operations and their matrix representation
@@ -819,6 +820,22 @@ class TestMultiControlledX:
         # pylint: disable=unnecessary-dunder-call
         op_repr = qml.MultiControlledX(wires=wires, control_values=control_values).__repr__()
         assert op_repr == f"MultiControlledX(wires={wires}, control_values={control_values})"
+
+    @pytest.mark.parametrize("num_work_wires", [0, 1, 2, 3])
+    @pytest.mark.parametrize("num_control_wires", [2, 3, 4, 5, 6])
+    @pytest.mark.parametrize("work_wire_type", ["borrowed", "zeroed"])
+    def test_decomposition_rules_with_work_wires(
+        self, num_work_wires, num_control_wires, work_wire_type
+    ):
+        """Tests the decomposition rules of MCX when work wires are specified."""
+        work_wires = range(num_control_wires + 1, num_work_wires + num_control_wires + 1)
+        op = qml.MultiControlledX(
+            range(num_control_wires + 1),
+            work_wires=work_wires,
+            work_wire_type=work_wire_type,
+        )
+        for rule in qml.list_decomps(qml.MultiControlledX):
+            _test_decomposition_rule(op, rule)
 
 
 period_two_ops = (

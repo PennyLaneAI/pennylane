@@ -18,8 +18,10 @@ functions. The purpose is to convert imperative style code to functional or grap
 """
 import copy
 import functools
+import operator
 from collections.abc import Callable, Iterator
-from typing import Any, SupportsIndex
+from numbers import Number
+from typing import Any, SupportsIndex, Union
 
 from malt.core import config as ag_config
 from malt.impl import api as ag_api
@@ -34,6 +36,7 @@ has_jax = True
 try:
     import jax
     import jax.numpy as jnp
+    from jax.interpreters.partial_eval import DynamicJaxprTracer
 except ImportError:  # pragma: no cover
     has_jax = False
 
@@ -43,7 +46,57 @@ __all__ = [
     "for_stmt",
     "while_stmt",
     "converted_call",
+    "and_",
+    "or_",
+    "not_",
+    "set_item",
+    "update_item_with_op",
 ]
+
+
+def set_item(
+    target: Union["DynamicJaxprTracer", list],
+    index: Union[int, "DynamicJaxprTracer"],
+    x: Union[Number, "DynamicJaxprTracer"],
+):
+    """An implementation of the AutoGraph 'set_item' function."""
+
+    if qml.math.is_abstract(target):
+        target = target.at[index].set(x)
+    else:
+        target[index] = x
+
+    return target
+
+
+def update_item_with_op(
+    target: Union["DynamicJaxprTracer", list],
+    index: Union[int, "DynamicJaxprTracer"],
+    x: Union[Number, "DynamicJaxprTracer"],
+    op: str,
+):
+    """An implementation of the AutoGraph 'update_item_with_op' function."""
+
+    gast_op_map = {"mult": "multiply", "div": "divide", "add": "add", "sub": "add", "pow": "power"}
+    inplace_operation_map = {
+        "mult": "mul",
+        "div": "truediv",
+        "add": "add",
+        "sub": "add",
+        "pow": "pow",
+    }
+    if op == "sub":
+        x = -x
+
+    if qml.math.is_abstract(target):
+        if isinstance(index, slice):
+            target = getattr(target.at[index.start : index.stop : index.step], gast_op_map[op])(x)
+        else:
+            target = getattr(target.at[index], gast_op_map[op])(x)
+    else:
+        # Use Python's in-place operator
+        target[index] = getattr(operator, f"__i{inplace_operation_map[op]}__")(target[index], x)
+    return target
 
 
 def _assert_results(results, var_names):
@@ -223,7 +276,7 @@ def for_stmt(
     # (for example because the user forgot to use a list instead of an array)
     # The PennyLane autograph implementation does not currently fall back to a Python loop in this case,
     # but this has been implemented in Catalyst and could be extended to this. It does, however, require an
-    # active qeueing context.
+    # active queuing context.
 
     exception_raised = None
     init_state = get_state()
@@ -318,6 +371,39 @@ def while_stmt(loop_test, loop_body, get_state, set_state, symbol_names, _opts):
     set_state(results)
 
 
+def _logical_op(*args, jax_fn: Callable, python_fn: Callable):
+    """A helper function to implement logical operations in a way that is compatible with both
+    JAX and Python. It checks if any of the arguments are undefined, and raises an error if so.
+    Otherwise, it applies the specified logical operation using either JAX or Python functions."""
+
+    values = [arg() if callable(arg) else arg for arg in args]
+
+    if any(qml.math.is_abstract(val) for val in values):
+        result = jax_fn(*values)
+    else:
+        result = python_fn(*values)
+
+    return result
+
+
+def and_(a, b):
+    """A wrapper for the AutoGraph 'and' operator. It returns the result of the logical 'and'
+    operation between two values, `a` and `b`. If either value is undefined, it raises an error."""
+    return _logical_op(a, b, jax_fn=jax.numpy.logical_and, python_fn=lambda x, y: x and y)
+
+
+def or_(a, b):
+    """A wrapper for the AutoGraph 'or' operator. It returns the result of the logical 'or'
+    operation between two values, `a` and `b`. If either value is undefined, it raises an error."""
+    return _logical_op(a, b, jax_fn=jax.numpy.logical_or, python_fn=lambda x, y: x or y)
+
+
+def not_(a):
+    """A wrapper for the AutoGraph 'not' operator. It returns the result of the logical 'not'
+    operation on a value `a`. If `a` is undefined, it raises an error."""
+    return _logical_op(a, jax_fn=jax.numpy.logical_not, python_fn=lambda x: not x)
+
+
 # Prevent autograph from converting PennyLane and Catalyst library code, this can lead to many
 # issues such as always tracing through code that should only be executed conditionally. We might
 # have to be even more restrictive in the future to prevent issues if necessary.
@@ -377,28 +463,37 @@ def converted_call(fn, args, kwargs, caller_fn_scope=None, options=None):
         (ag_config, "CONVERSION_RULES", module_allowlist),
         (ag_py_builtins, "BUILTIN_FUNCTIONS_MAP", py_builtins_map),
     ):
-        # Using qml.ops.op_math.adjoint points to the adjoint function
-        # and importing this at the top of the file creates circular imports
-        # pylint: disable=import-outside-toplevel, protected-access
-        from pennylane.ops.op_math.adjoint import _capture_adjoint_transform
-
         # HOTFIX: pass through calls of known PennyLane wrapper functions
         if fn in (
-            _capture_adjoint_transform,
-            qml.ops.op_math.controlled._capture_ctrl_transform,
+            qml.adjoint,
+            qml.ctrl,
             qml.grad,
             qml.jacobian,
             qml.vjp,
             qml.jvp,
         ):
-            assert args and callable(args[0])
+            if not args:
+                raise ValueError(f"{fn.__name__} requires at least one argument")
+
+            is_abstract_operator = qml.math.is_abstract(args[0]) and isinstance(
+                args[0].aval, qml.capture.primitives.AbstractOperator
+            )
+            # If first argument is already an operator, pass it through directly
+            if isinstance(args[0], qml.operation.Operator) or (
+                is_abstract_operator and fn in {qml.adjoint, qml.ctrl}
+            ):
+                return ag_converted_call(fn, args, kwargs, caller_fn_scope, options)
+
+            # Otherwise, handle the callable case
             wrapped_fn = args[0]
+            if not callable(wrapped_fn):
+                raise ValueError(
+                    f"First argument to {fn.__name__} must be callable or an Operation"
+                )
 
             @functools.wraps(wrapped_fn)
-            def passthrough_wrapper(*inner_args, **inner_kwargs):
-                return converted_call(
-                    wrapped_fn, inner_args, inner_kwargs, caller_fn_scope, options
-                )
+            def passthrough_wrapper(*args, **kwargs):
+                return converted_call(wrapped_fn, args, kwargs, caller_fn_scope, options)
 
             return fn(
                 passthrough_wrapper,
@@ -495,8 +590,6 @@ class PEnumerate(enumerate):
 
     def __init__(self, iterable, start=0):
 
-        # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
-        # pylint: disable=super-init-not-called
         # TODO: original enumerate constructor cannot be called as it causes some tests to break
         self.iteration_target = iterable
         self.start_idx = start

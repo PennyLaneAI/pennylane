@@ -15,6 +15,7 @@
 This submodule contains the discrete-variable quantum operations that do
 not depend on any parameters.
 """
+
 from collections.abc import Hashable, Sequence
 
 # pylint: disable=arguments-differ
@@ -124,8 +125,6 @@ class WireCut(Operation):
                 f"{self.name}: wrong number of wires. At least one wire has to be provided."
             )
 
-    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
-    # pylint: disable=unused-argument
     @staticmethod
     def compute_decomposition(wires: WiresLike):
         r"""Representation of the operator as a product of other operators (static method).
@@ -187,11 +186,11 @@ class Snapshot(Operation):
 
     **Example**
 
-    .. code-block:: python3
+    .. code-block:: python
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit", seed=42)
 
-        @qml.qnode(dev, interface=None)
+        @qml.qnode(dev)
         def circuit():
             qml.Snapshot(measurement=qml.expval(qml.Z(0)))
             qml.Hadamard(wires=0)
@@ -201,16 +200,17 @@ class Snapshot(Operation):
             m = qml.Snapshot("samples", qml.sample(), shots=5)
             return qml.expval(qml.X(0))
 
-    >>> qml.snapshots(circuit)()
-    {0: 1.0,
-    'very_important_state': array([0.70710678+0.j, 0.        +0.j, 0.70710678+0.j, 0.        +0.j]),
-    2: array([0.70710678+0.j, 0.        +0.j, 0.        +0.j, 0.70710678+0.j]),
-    'samples': array([[1, 1],
-            [1, 1],
-            [1, 1],
-            [1, 1],
-            [1, 1]]),
-    'execution_results': 0.0}
+    >>> from pprint import pprint
+    >>> pprint(qml.snapshots(circuit)())
+    {0: np.float64(1.0),
+     2: array([0.70710678+0.j, 0.        +0.j, 0.        +0.j, 0.70710678+0.j]),
+     'execution_results': np.float64(0.0),
+     'samples': array([[1, 1],
+                       [0, 0],
+                       [1, 1],
+                       [1, 1],
+                       [0, 0]]),
+     'very_important_state': array([0.70710678+0.j, 0.        +0.j, 0.70710678+0.j, 0.        +0.j])}
 
     .. seealso:: :func:`~.snapshots`
     """
@@ -230,16 +230,15 @@ class Snapshot(Operation):
         measurement=None,
         shots: Literal["workflow"] | None | int | Sequence[int] = "workflow",
     ):
-        if tag and not isinstance(tag, str):
+        if tag is not None and not isinstance(tag, (str, int)):
+            # ints are validated in snapshot transform, as the snapshot
+            # transform adds int tags
             raise ValueError("Snapshot tags can only be of type 'str'")
-        self.tag = tag
 
         if measurement is None:
             measurement = qml.state()
         if isinstance(measurement, qml.measurements.StateMP) and shots == "workflow":
             shots = None  # always use analytic with state
-        if isinstance(measurement, qml.measurements.MidMeasureMP):
-            raise ValueError("Mid-circuit measurements can not be used in snapshots.")
         if isinstance(measurement, qml.measurements.MeasurementProcess):
             qml.queuing.QueuingManager.remove(measurement)
         else:
@@ -248,11 +247,26 @@ class Snapshot(Operation):
                 f"an instance of {qml.measurements.MeasurementProcess}"
             )
 
+        self.hyperparameters["tag"] = tag
         self.hyperparameters["measurement"] = measurement
         self.hyperparameters["shots"] = (
             shots if shots == "workflow" else qml.measurements.Shots(shots)
         )
         super().__init__(wires=measurement.wires)
+
+    def __repr__(self):
+        return f"<Snapshot: tag={self.tag}, measurement={self.hyperparameters['measurement']}, shots={self.hyperparameters['shots']}>"
+
+    @property
+    def tag(self) -> None | str | int:
+        """The tag for the snapshot."""
+        return self.hyperparameters["tag"]
+
+    def update_tag(self, new_tag: int | None | str):
+        """Create a new snapshot with an updated tag."""
+        new_op = copy(self)
+        new_op.hyperparameters["tag"] = new_tag
+        return new_op
 
     def label(self, decimals=None, base_label=None, cache=None):
         return "|Snap|"
@@ -264,16 +278,15 @@ class Snapshot(Operation):
     def _unflatten(cls, data, metadata):
         return cls(tag=metadata[0], measurement=data[0], shots=metadata[1])
 
-    # pylint: disable=W0613
     @staticmethod
     def compute_decomposition(*params, wires=None, **hyperparameters):
         return []
 
     def _controlled(self, _):
-        return Snapshot(tag=self.tag, **self.hyperparameters)
+        return Snapshot(**self.hyperparameters)
 
     def adjoint(self):
-        return Snapshot(tag=self.tag, **self.hyperparameters)
+        return Snapshot(**self.hyperparameters)
 
     def map_wires(self, wire_map: dict[Hashable, Hashable]) -> "Snapshot":
         new_measurement = self.hyperparameters["measurement"].map_wires(wire_map)

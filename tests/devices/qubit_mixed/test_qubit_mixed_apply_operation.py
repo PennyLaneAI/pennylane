@@ -617,7 +617,9 @@ class TestBroadcasting:  # pylint: disable=too-few-public-methods
 
     broadcasted_ops = [
         qml.RX(np.array([np.pi, np.pi / 2, np.pi / 4]), wires=2),
+        qml.RZ(np.array([np.pi, np.pi / 2, np.pi / 4]), wires=2),
         qml.PhaseShift(np.array([np.pi, np.pi / 2, np.pi / 4]), wires=2),
+        qml.CRZ(np.array([np.pi, np.pi / 2, np.pi / 4]), wires=[1, 2]),
         qml.IsingXX(np.array([np.pi, np.pi / 2, np.pi / 4]), wires=[1, 2]),
         qml.QubitUnitary(
             np.array([unitary_group.rvs(8), unitary_group.rvs(8), unitary_group.rvs(8)]),
@@ -630,7 +632,9 @@ class TestBroadcasting:  # pylint: disable=too-few-public-methods
         qml.PauliZ(2),
         qml.CNOT([1, 2]),
         qml.RX(np.pi, wires=2),
+        qml.RZ(np.pi, wires=2),
         qml.PhaseShift(np.pi / 2, wires=2),
+        qml.CRZ(np.pi / 2, wires=[1, 2]),
         qml.IsingXX(np.pi / 2, wires=[1, 2]),
         qml.QubitUnitary(unitary_group.rvs(8), wires=[0, 1, 2]),
     ]
@@ -893,6 +897,24 @@ class TestDensityMatrix:
         expected = math.stack([expected_single] * batch_size, axis=0)
 
         assert math.allclose(result, expected)
+
+    @pytest.mark.parametrize("num_q", num_qubits)
+    def test_batched_eigvals(self, num_q, ml_framework):
+        """Test applying density matrix with batched eigenvalues"""
+
+        density_matrix = get_valid_density_matrix(num_q)
+        density_matrix = math.asarray(density_matrix, like=ml_framework)
+        density_matrix = math.cast(density_matrix, dtype=complex)
+
+        batched_params = math.asarray([0, 1, 2], like=ml_framework)
+        op = qml.RX(batched_params, wires=0)
+
+        shape = (2,) * (2 * num_q)
+        state = math.zeros(shape, like=ml_framework)
+        state = math.cast(state, dtype=complex)
+
+        result = apply_operation(op, state)
+        assert result.shape == (len(batched_params),) + shape
 
     def test_partial_trace_single_qubit_update(self, ml_framework):
         """Minimal test for partial tracing when applying QubitDensityMatrix to a subset of wires."""

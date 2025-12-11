@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 #
 # PennyLane documentation build configuration file, created by
 # sphinx-quickstart on Tue Apr 17 11:43:51 2018.
@@ -15,7 +14,11 @@
 import os
 import re
 import sys
+from docutils import nodes
 from datetime import datetime
+from sphinx.util import logging
+
+logger = logging.getLogger(__name__)
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -48,7 +51,7 @@ extensions = [
     "sphinx_copybutton",
     "sphinxext.opengraph",
     "m2r2",
-    "sphinx_automodapi.smart_resolver"
+    "sphinx_automodapi.smart_resolver",
 ]
 
 # Open Graph metadata
@@ -330,3 +333,59 @@ autodoc_typehints = "none"
 
 # inheritance_diagram graphviz attributes
 inheritance_node_attrs = dict(color="lightskyblue1", style="filled")
+
+
+# pylint: disable=unused-argument
+def add_noindex_to_estimator_stubs(app, docname, source):
+    """Dynamically add :noindex: to estimator stubs during the build process."""
+    if not docname.startswith("code/api/"):
+        return
+
+    content = source[0]
+    # Update the regex to match either ops or templates
+    if not re.search(r"\bpennylane\.estimator\.(ops|templates)\b", content):
+        return
+
+    def _add_noindex_func(match):
+        """Replacement function for re.sub to add :noindex: idempotently."""
+        directive_block = match.group(0)
+        if ":noindex:" in directive_block:
+            return directive_block
+        return f"{match.group(1)}\n   :noindex:{match.group(2)}"
+
+    # TODO [sc-99226]: Replace with :no-index-entry: when support for sphinx >=8.2 is available.
+    new_content, num_subs = re.subn(
+        r"(^\s*\.\.\s+auto(?:class|function|method)::.*?)(\n\s*($|\S.*))",
+        _add_noindex_func,
+        content,
+        flags=re.MULTILINE | re.DOTALL,
+    )
+
+    if num_subs:
+        source[0] = new_content
+        logger.info(f"[add_noindex] Patched {docname} with :noindex: directive.")
+
+
+def add_links_to_estimator_table(app, doctree, fromdocname):
+    """Replace literal names in automodsumm tables with links to stub HTML files."""
+    if "qml_estimator" not in fromdocname:
+        return
+    # Define the modules and their corresponding table indices
+    modules = {3: "ops", 4: "templates"}
+    for table_idx, module_name in modules.items():
+        table = doctree.traverse(nodes.table)[table_idx]
+        for literal in table.traverse(nodes.literal):
+            name = literal.astext()
+            url = f"code/api/pennylane.estimator.{module_name}.{name}"
+            refuri = app.builder.get_relative_uri(fromdocname, url)
+            refnode = nodes.reference('', refuri=refuri)
+            refnode += nodes.literal(text=name)
+            literal.parent.replace(literal, refnode)
+            logger.info(
+                f"[add_noindex_links] Linked pennylane.estimator.{module_name}.{name} to {refuri}")
+
+
+def setup(app):
+    """Sphinx entry point for this extension."""
+    app.connect('source-read', add_noindex_to_estimator_stubs)
+    app.connect("doctree-resolved", add_links_to_estimator_table)

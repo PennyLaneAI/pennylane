@@ -88,11 +88,11 @@ Whether you're exploring quantum machine learning (QML), quantum computing, or q
 
 ### Key Resources:
 
-* [Research-oriented Demos](https://pennylane.ai/qml/demonstrations.html)
+* [Research-oriented Demos](https://pennylane.ai/qml/demonstrations)
 * [Learn Quantum Programming](https://pennylane.ai/qml/) with the [Codebook](https://pennylane.ai/codebook/) and [Coding Challenges](https://pennylane.ai/challenges/)
-* [Frequently Asked Questions](https://pennylane.ai/faq.html)
-* [Glossary](https://pennylane.ai/qml/glossary.html)
-* [Videos](https://pennylane.ai/qml/videos.html)
+* [Frequently Asked Questions](https://pennylane.ai/faq)
+* [Glossary](https://pennylane.ai/qml/glossary)
+* [Videos](https://pennylane.ai/qml/videos)
 
 
 You can also check out our [documentation](https://pennylane.readthedocs.io) for [quickstart
@@ -103,7 +103,7 @@ quantum device.
 
 ## Demos
 
-Take a deeper dive into quantum computing by exploring cutting-edge algorithms using PennyLane and quantum hardware. [Explore PennyLane demos](https://pennylane.ai/qml/demonstrations.html).
+Take a deeper dive into quantum computing by exploring cutting-edge algorithms using PennyLane and quantum hardware. [Explore PennyLane demos](https://pennylane.ai/qml/demonstrations).
 
 <a href="https://pennylane.ai/qml/demonstrations">
   <img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/master/doc/_static/readme/demos.png" width="900px">

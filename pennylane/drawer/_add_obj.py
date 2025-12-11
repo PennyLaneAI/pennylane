@@ -25,9 +25,6 @@ Usage:
 The `_add_obj` function is automatically invoked by the text drawer when rendering a quantum circuit. Users typically do not need to call it directly.
 """
 
-# TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
-# pylint: disable=unused-argument
-
 from functools import singledispatch
 
 from pennylane.measurements import (
@@ -35,15 +32,23 @@ from pennylane.measurements import (
     DensityMatrixMP,
     ExpectationMP,
     MeasurementProcess,
-    MidMeasureMP,
     ProbabilityMP,
     SampleMP,
     StateMP,
     VarianceMP,
 )
 from pennylane.operation import Operator
-from pennylane.ops import Conditional, Controlled, GlobalPhase, Identity
+from pennylane.ops import (
+    Adjoint,
+    Conditional,
+    Controlled,
+    GlobalPhase,
+    Identity,
+    MidMeasure,
+    PauliMeasure,
+)
 from pennylane.tape import QuantumScript
+from pennylane.templates.subroutines import TemporaryAND
 
 
 def _add_cond_grouping_symbols(op, layer_str, config):
@@ -77,7 +82,7 @@ def _add_cond_grouping_symbols(op, layer_str, config):
     return layer_str
 
 
-def _add_grouping_symbols(op_wires, layer_str, config):
+def _add_grouping_symbols(op_wires, layer_str, config, closing=False):
     """Adds symbols indicating the extent of a given sequence of wires.
     Does nothing if the sequence has length 0 or 1."""
 
@@ -87,18 +92,24 @@ def _add_grouping_symbols(op_wires, layer_str, config):
     mapped_wires = [config.wire_map[w] for w in op_wires]
     min_w, max_w = min(mapped_wires), max(mapped_wires)
 
-    layer_str[min_w] = "╭"
-    layer_str[max_w] = "╰"
+    if closing:
+        layer_str[min_w] += "╮"
+        layer_str[max_w] += "╯"
 
-    for w in range(min_w + 1, max_w):
-        layer_str[w] = "├" if w in mapped_wires else "│"
+        for w in range(min_w + 1, max_w):
+            layer_str[w] += "┤" if w in mapped_wires else "│"
+    else:
+        layer_str[min_w] = "╭"
+        layer_str[max_w] = "╰"
+
+        for w in range(min_w + 1, max_w):
+            layer_str[w] = "├" if w in mapped_wires else "│"
 
     return layer_str
 
 
 def _add_mid_measure_grouping_symbols(op, layer_str, config):
-    """Adds symbols indicating the extent of a given object for mid-measure
-    operators"""
+    """Adds symbols indicating the extent of a given object for mid-measure operators"""
     if op not in config.bit_map:
         return layer_str
 
@@ -159,6 +170,48 @@ def _add_controlled_global_op(obj, layer_str, config):
     return layer_str
 
 
+def _add_elbow_core(obj, layer_str, config):
+    cvals = obj.hyperparameters["control_values"]
+    mapped_wires = [config.wire_map[w] for w in obj.wires]
+    layer_str[mapped_wires[0]] += "●" if cvals[0] else "○"
+    layer_str[mapped_wires[1]] += "●" if cvals[1] else "○"
+    layer_str[mapped_wires[2]] += "⊕"
+    return layer_str, mapped_wires
+
+
+@_add_obj.register
+def _add_left_elbow(
+    obj: TemporaryAND, layer_str, config, tape_cache=None, skip_grouping_symbols=False
+):
+    """Updates ``layer_str`` with ``op`` operation of type ``TemporaryAND``,
+    also known as left elbow."""
+    if not skip_grouping_symbols:
+        layer_str = _add_grouping_symbols(obj.wires, layer_str, config)
+    layer_str, _ = _add_elbow_core(obj, layer_str, config)
+    return layer_str
+
+
+def _add_right_elbow(obj: TemporaryAND, layer_str, config):
+    """Updates ``layer_str`` with ``op`` operation of type ``Adjoint(TemporaryAND)``,
+    also known as right elbow."""
+    layer_str, mapped_wires = _add_elbow_core(obj, layer_str, config)
+    # Fill with "─" on intermediate wires the elbow does not act on, to shift "|" correctly
+    for w in range(min(mapped_wires) + 1, max(mapped_wires)):
+        if w not in mapped_wires:
+            layer_str[w] += "─"
+    return _add_grouping_symbols(obj.wires, layer_str, config, closing=True)
+
+
+@_add_obj.register
+def _add_adjoint(obj: Adjoint, layer_str, config, tape_cache=None, skip_grouping_symbols=False):
+    """Updates ``layer_str`` with ``op`` operation of type Adjoint. Currently
+    only differs from ``_add_op`` if the base of the adjoint op is a ``TemporaryAND``,
+    making the overall object a right elbow."""
+    if isinstance(obj.base, TemporaryAND):
+        return _add_right_elbow(obj.base, layer_str, config)
+    return _add_op(obj, layer_str, config, tape_cache, skip_grouping_symbols)
+
+
 @_add_obj.register
 def _add_op(obj: Operator, layer_str, config, tape_cache=None, skip_grouping_symbols=False):
     """Updates ``layer_str`` with ``op`` operation."""
@@ -199,23 +252,25 @@ def _add_global_op(
 
 @_add_obj.register
 def _add_mid_measure_op(
-    op: MidMeasureMP, layer_str, config, tape_cache=None, skip_grouping_symbols=False
+    op: MidMeasure | PauliMeasure, layer_str, config, tape_cache=None, skip_grouping_symbols=False
 ):
     """Updates ``layer_str`` with ``op`` operation when ``op`` is a
-    ``qml.measurements.MidMeasureMP``."""
+    ``qml.ops.MidMeasure`` or a ``qml.ops.PauliMeasure``."""
     layer_str = _add_mid_measure_grouping_symbols(op, layer_str, config)
-    label = op.label(decimals=config.decimals, cache=config.cache).replace("\n", "")
-
+    layer_str = _add_grouping_symbols(op.wires, layer_str, config)
+    label_kwargs = {"decimals": config.decimals, "cache": config.cache}
     for w in op.wires:
+        if isinstance(op, PauliMeasure):
+            label_kwargs["wire"] = w
+        label = op.label(**label_kwargs).replace("\n", "")
         layer_str[config.wire_map[w]] += label
-
     return layer_str
 
 
 @_add_obj.register
 def _add_tape(obj: QuantumScript, layer_str, config, tape_cache, skip_grouping_symbols=False):
     layer_str = _add_grouping_symbols(obj.wires, layer_str, config)
-    label = f"Tape:{config.cache['tape_offset']+len(tape_cache)}"
+    label = f"Tape:{config.cache['tape_offset'] + len(tape_cache)}"
     for w in obj.wires:
         layer_str[config.wire_map[w]] += label
     tape_cache.append(obj)
@@ -256,7 +311,7 @@ def _add_cwire_measurement(m, layer_str, config):
     mcms = [v.measurements[0] for v in m.mv] if isinstance(m.mv, list) else m.mv.measurements
     layer_str = _add_cwire_measurement_grouping_symbols(mcms, layer_str, config)
 
-    mv_label = "MCM"
+    mv_label = "PPM" if isinstance(mcms[0], PauliMeasure) else "MCM"
     meas_label = measurement_label_map[type(m)](mv_label)
 
     n_wires = len(config.wire_map)

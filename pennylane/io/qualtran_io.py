@@ -15,9 +15,6 @@
 This submodule contains the adapter class for Qualtran-PennyLane interoperability.
 """
 
-# TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
-# pylint: disable=unused-argument
-
 from collections import defaultdict
 from functools import cached_property, singledispatch, wraps
 
@@ -32,7 +29,7 @@ from pennylane.operation import Operation, Operator
 from pennylane.queuing import AnnotatedQueue, QueuingManager
 from pennylane.registers import registers
 from pennylane.tape import make_qscript
-from pennylane.templates.state_preparations.superposition import _assign_states
+from pennylane.templates.state_preparations.superposition import order_states
 from pennylane.wires import WiresLike
 from pennylane.workflow import construct_tape
 from pennylane.workflow.qnode import QNode
@@ -52,7 +49,7 @@ except (ModuleNotFoundError, ImportError) as import_error:
 
 
 @singledispatch
-def _get_op_call_graph(op):
+def _get_op_call_graph(op):  # pylint: disable=unused-argument
     """Return call graph for PennyLane Operator. If the call graph is not implemented,
     return ``None``, which means we will build the call graph via decomposition"""
 
@@ -124,7 +121,7 @@ def _(op: qtemps.state_preparations.Superposition):
     size_basis_state = len(bases[0])  # assuming they are all the same size
 
     dic_state = dict(zip(bases, coeffs))
-    perms = _assign_states(bases)
+    perms = order_states(bases)
     new_dic_state = {perms[key]: val for key, val in dic_state.items() if key in perms}
 
     sorted_coefficients = [
@@ -387,7 +384,6 @@ def _(op: qtemps.subroutines.ModExp):
     num_work_wires = len(op.hyperparameters["work_wires"])
     num_x_wires = len(op.hyperparameters["x_wires"])
 
-    mult_resources = {}
     if mod == 2**num_x_wires:
         num_aux_wires = num_x_wires
         num_aux_swap = num_x_wires
@@ -407,12 +403,13 @@ def _(op: qtemps.subroutines.ModExp):
 
     cnot = qt_gates.CNOT()
 
-    mult_resources = {}
-    mult_resources[qft] = 2
-    mult_resources[qft_dag] = 2
-    mult_resources[sequence] = 1
-    mult_resources[sequence_dag] = 1
-    mult_resources[cnot] = min(num_x_wires, num_aux_swap)
+    mult_resources = {
+        qft: 2,
+        qft_dag: 2,
+        sequence: 1,
+        sequence_dag: 1,
+        cnot: min(num_x_wires, num_aux_swap),
+    }
 
     gate_types = defaultdict(int, {})
     ctrl_spec = CtrlSpec(cvs=[1])
@@ -1042,8 +1039,6 @@ class FromBloq(Operation):
         matrix = bloq.tensor_contract()
         return matrix.shape == (2 ** len(self.wires), 2 ** len(self.wires))
 
-    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
-    # pylint: disable=no-method-argument
     def compute_matrix(*params, **hyperparams):  # pylint: disable=no-self-argument
         bloq = hyperparams["bloq"]
         matrix = bloq.tensor_contract()
@@ -1149,7 +1144,7 @@ def _gather_input_soqs(bb: "qt.BloqBuilder", op_quregs, qreg_to_qvar):
     return qvars_in
 
 
-class ToBloq(Bloq):  # pylint:disable=useless-object-inheritance (Inherit qt.Bloq optionally)
+class ToBloq(Bloq):
     r"""
     An adapter to convert a PennyLane :class:`~.QNode`, ``Qfunc``, or :class:`~.Operation` to a
     `Qualtran Bloq <https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library>`__.
@@ -1225,7 +1220,7 @@ class ToBloq(Bloq):  # pylint:disable=useless-object-inheritance (Inherit qt.Blo
             num_wires = len(make_qscript(self.op)(**self._kwargs).wires)
         return qt.Signature([qt.Register("qubits", qt.QBit(), shape=num_wires)])
 
-    def decompose_bloq(self):  # pylint:disable=too-many-branches
+    def decompose_bloq(self):
         """Decompose the bloq using the op's decomposition or the tape of the QNode"""
         try:
             if isinstance(self.op, QNode):

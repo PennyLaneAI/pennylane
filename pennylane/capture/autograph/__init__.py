@@ -19,7 +19,7 @@ Public/internal API for the AutoGraph module.
 import functools
 
 from pennylane.exceptions import AutoGraphWarning
-from .transformer import autograph_source, run_autograph
+from .transformer import autograph_source, run_autograph, disable_autograph
 
 AUTOGRAPH_WRAPPER_ASSIGNMENTS = tuple(
     attr for attr in functools.WRAPPER_ASSIGNMENTS if attr != "__module__"
@@ -36,5 +36,6 @@ def wraps(target):
 __all__ = (
     "autograph_source",
     "run_autograph",
+    "disable_autograph",
     "wraps",
 )

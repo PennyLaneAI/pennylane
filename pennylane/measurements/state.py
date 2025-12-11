@@ -66,7 +66,9 @@ class StateMP(StateMeasurement):
             dtype = str(state.dtype)
             if "complex" in dtype:
                 return state
-            if math.get_interface(state) == "tensorflow":
+            if (
+                math.get_interface(state) == "tensorflow"
+            ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
                 return math.cast(state, "complex128")
             floating_single = "float32" in dtype or "complex64" in dtype
             return math.cast(state, "complex64" if floating_single else "complex128")

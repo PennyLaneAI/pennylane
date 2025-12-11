@@ -15,7 +15,6 @@
 Tests for the pennylane.qnn.torch module.
 """
 import math
-from collections import defaultdict
 from unittest import mock
 
 import numpy as np
@@ -602,7 +601,7 @@ def test_forward_tuple(num_qubits, weight_shapes):
 
 
 @pytest.mark.all_interfaces
-@pytest.mark.parametrize("interface", ["autograd", "jax", "tf"])
+@pytest.mark.parametrize("interface", ["autograd", "jax"])
 def test_invalid_interface_error(interface):
     """Test an error gets raised if input QNode has the wrong interface"""
     dev = qml.device("default.qubit", wires=3)
@@ -619,7 +618,7 @@ def test_invalid_interface_error(interface):
 
 
 @pytest.mark.torch
-@pytest.mark.parametrize("interface", ("auto", "torch", "pytorch"))
+@pytest.mark.parametrize("interface", ("auto", "torch"))
 def test_qnode_interface_not_mutated(interface):
     """Test that the input QNode's interface is not mutated by TorchLayer"""
     dev = qml.device("default.qubit", wires=3)
@@ -632,11 +631,7 @@ def test_qnode_interface_not_mutated(interface):
         return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
     qlayer = TorchLayer(circuit, weight_shapes)
-    assert (
-        qlayer.qnode.interface
-        == circuit.interface
-        == qml.math.get_canonical_interface_name(interface).value
-    )
+    assert qlayer.qnode.interface == circuit.interface == qml.math.Interface(interface).value
 
 
 @pytest.mark.torch
@@ -952,16 +947,16 @@ def test_specs():
 
     info = qml.specs(qlayer)(x)
 
-    gate_sizes = defaultdict(int, {1: 1, 2: 2})
-    gate_types = defaultdict(int, {"AngleEmbedding": 1, "RX": 1, "StronglyEntanglingLayers": 1})
-    expected_resources = qml.resource.Resources(
-        num_wires=2, num_gates=3, gate_types=gate_types, gate_sizes=gate_sizes, depth=3
+    gate_sizes = {1: 1, 2: 2}
+    gate_types = {"AngleEmbedding": 1, "RX": 1, "StronglyEntanglingLayers": 1}
+    expected_resources = qml.resource.SpecsResources(
+        num_allocs=2,
+        gate_types=gate_types,
+        gate_sizes=gate_sizes,
+        measurements={"expval(PauliZ)": 2},
+        depth=3,
     )
     assert info["resources"] == expected_resources
 
-    assert info["num_observables"] == 2
     assert info["num_device_wires"] == 3
-    assert info["num_tape_wires"] == 2
-    assert info["num_trainable_params"] == 2
-    assert info["interface"] == "torch"
     assert info["device_name"] == "default.qubit"

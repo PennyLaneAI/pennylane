@@ -42,7 +42,7 @@ class CompactHamiltonian:
     >>> import pennylane.labs.resource_estimation as plre
     >>> compact_ham = plre.CompactHamiltonian.thc(num_orbitals=8, tensor_rank=40)
     >>> trotter_thc = plre.ResourceTrotterTHC(compact_ham, num_steps=100, order=2)
-    >>> res = plre.estimate_resources(trotter_thc)
+    >>> res = plre.estimate(trotter_thc)
     >>> print(res)
     --- Resources: ---
      Total qubits: 80

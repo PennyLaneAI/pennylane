@@ -19,7 +19,6 @@ import numpy as np
 import pennylane as qml
 from pennylane.measurements import (
     ClassicalShadowMP,
-    CountsMP,
     ExpectationMP,
     SampleMeasurement,
     ShadowExpvalMP,
@@ -308,15 +307,7 @@ def _measure_with_samples_diagonalizing_gates(
     wires = qml.wires.Wires(range(total_indices))
 
     def _process_single_shot(samples):
-        processed = []
-        for mp in mps:
-            res = mp.process_samples(samples, wires)
-            if not isinstance(mp, CountsMP):
-                res = qml.math.squeeze(res)
-
-            processed.append(res)
-
-        return tuple(processed)
+        return tuple(mp.process_samples(samples, wires) for mp in mps)
 
     try:
         prng_key, _ = jax_random_split(prng_key)
@@ -524,7 +515,7 @@ def _sample_probs_numpy(probs, shots, num_wires, is_state_batched, rng):
     norm_err = qml.math.abs(norm - 1.0)
     cutoff = 1e-07
 
-    norm_err = norm_err[..., np.newaxis] if not is_state_batched else norm_err
+    norm_err = norm_err if is_state_batched else norm_err[..., np.newaxis]
     if qml.math.any(norm_err > cutoff):
         raise ValueError("probabilities do not sum to 1")
 

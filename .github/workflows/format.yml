@@ -36,8 +36,8 @@ jobs:
 
       - name: Install dependencies
         run: pip install black pylint==2.7.4 isort==5.13.2
-
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
       - name: Run Black
         run: |
@@ -51,8 +51,8 @@ jobs:
 
       - name: Run Pylint (source files)
         if: always()
-        run: pylint --rcfile .pylintrc $(find pennylane -name "*.py")
+        run: python -m pylint --rcfile .pylintrc $(find pennylane -name "*.py")
 
       - name: Run Pylint (test files)
         if: always()
-        run: pylint --rcfile tests/.pylintrc $(find tests -name "*.py")
+        run: python -m pylint --rcfile tests/.pylintrc $(find tests -name "*.py")

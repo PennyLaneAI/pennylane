@@ -14,6 +14,7 @@
 """
 This module contains the QNode class and qnode decorator.
 """
+
 from __future__ import annotations
 
 import copy
@@ -24,17 +25,17 @@ import warnings
 from collections.abc import Callable, Iterable, Sequence
 from typing import TYPE_CHECKING, Literal, get_args
 
-from cachetools import Cache, LRUCache
+from cachetools import Cache
 
 import pennylane as qml
 from pennylane import math, pytrees
 from pennylane.exceptions import PennyLaneDeprecationWarning, QuantumFunctionError
 from pennylane.logging import debug_logger
-from pennylane.math import Interface, get_canonical_interface_name
-from pennylane.measurements import MidMeasureMP, Shots
+from pennylane.math import Interface
+from pennylane.measurements import Shots, ShotsLike
 from pennylane.queuing import AnnotatedQueue
 from pennylane.tape import QuantumScript
-from pennylane.transforms.core import TransformDispatcher, TransformProgram
+from pennylane.transforms.core import CompilePipeline, TransformDispatcher
 from pennylane.typing import TensorLike
 
 from .execution import execute
@@ -44,17 +45,17 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 if TYPE_CHECKING:
+    from typing import TypeAlias
+
     from pennylane.concurrency.executors import ExecBackends
     from pennylane.devices import Device, LegacyDevice
-    from pennylane.math import SupportedInterfaceUserInput
-    from pennylane.transforms.core import TransformContainer
     from pennylane.typing import Result
     from pennylane.workflow.resolution import SupportedDiffMethods
 
-    SupportedDeviceAPIs = LegacyDevice | Device
+    SupportedDeviceAPIs: TypeAlias = LegacyDevice | Device
 
 
-def _convert_to_interface(result, interface: Interface):
+def _convert_to_interface(result: Result, interface: Interface) -> Result:
     """
     Recursively convert a result to the given interface.
     """
@@ -72,7 +73,9 @@ def _convert_to_interface(result, interface: Interface):
 
 
 def _make_execution_config(
-    circuit: QNode | None, diff_method=None, mcm_config=None
+    circuit: QNode | None,
+    diff_method: str | None = None,
+    mcm_config: qml.devices.MCMConfig | None = None,
 ) -> qml.devices.ExecutionConfig:
     circuit_interface = getattr(circuit, "interface", Interface.NUMPY.value)
     execute_kwargs = getattr(circuit, "execute_kwargs", {})
@@ -93,8 +96,7 @@ def _make_execution_config(
     )
 
 
-def _to_qfunc_output_type(results: Result, qfunc_output, has_partitioned_shots) -> Result:
-
+def _to_qfunc_output_type(results: Result, qfunc_output, has_partitioned_shots: bool) -> Result:
     if has_partitioned_shots:
         return tuple(_to_qfunc_output_type(r, qfunc_output, False) for r in results)
 
@@ -119,7 +121,10 @@ def _to_qfunc_output_type(results: Result, qfunc_output, has_partitioned_shots) 
     return pytrees.unflatten(results, qfunc_output_structure)
 
 
-def _validate_mcm_config(postselect_mode: str, mcm_method: str) -> None:
+def _validate_mcm_config(
+    postselect_mode: str | None,
+    mcm_method: str | None,
+) -> None:
     qml.devices.MCMConfig(postselect_mode=postselect_mode, mcm_method=mcm_method)
 
 
@@ -151,9 +156,7 @@ def _validate_qfunc_output(qfunc_output, measurements) -> None:
             "or a nonempty sequence of measurements."
         )
 
-    terminal_measurements = [m for m in measurements if not isinstance(m, MidMeasureMP)]
-
-    if any(ret is not m for ret, m in zip(measurement_processes, terminal_measurements)):
+    if any(ret is not m for ret, m in zip(measurement_processes, measurements, strict=True)):
         raise QuantumFunctionError(
             "All measurements must be returned in the order they are measured."
         )
@@ -197,7 +200,7 @@ class QNode:
     the quantum circuit.
 
     Args:
-        func (callable): a quantum function
+        func (Callable): a quantum function
         device (~.Device): a PennyLane-compatible device
         interface (str): The interface that will be used for classical backpropagation.
             This affects the types of objects that can be passed to/returned from the QNode. See
@@ -285,26 +288,24 @@ class QNode:
             (classical) computational overhead during the backwards pass.
         device_vjp (bool): Whether or not to use the device-provided Vector Jacobian Product (VJP).
             A value of ``None`` indicates to use it if the device provides it, but use the full jacobian otherwise.
-        postselect_mode (str): Configuration for handling shots with mid-circuit measurement postselection. If
+        postselect_mode (str | None): Configuration for handling shots with mid-circuit measurement postselection. If
             ``"hw-like"``, invalid shots will be discarded and only results for valid shots will be returned.
             If ``"fill-shots"``, results corresponding to the original number of shots will be returned. The
             default is ``None``, in which case the device will automatically choose the best configuration. For
             usage details, please refer to the :doc:`dynamic quantum circuits page </introduction/dynamic_quantum_circuits>`.
-        mcm_method (str): Strategy to use when executing circuits with mid-circuit measurements. Use ``"deferred"``
-            to apply the deferred measurements principle (using the :func:`~pennylane.defer_measurements` transform),
-            or ``"one-shot"`` if using finite shots to execute the circuit for each shot separately.
-            ``default.qubit`` also supports ``"tree-traversal"`` which visits the tree of possible MCM sequences
-            as the name suggests. If not provided,
-            the device will determine the best choice automatically. For usage details, please refer to the
-            :doc:`dynamic quantum circuits page </introduction/dynamic_quantum_circuits>`.
+        mcm_method (str | None): The strategy for applying mid-circuit measurements.
+            Available methods include ``"deferred"`` (to use the deferred
+            measurement principle), ``"one-shot"`` (to execute the circuit
+            for each shot separately when using finite shots), and
+            ``"tree-traversal"`` (visits the tree of possible MCM sequences,
+            only supported on ``default.qubit`` and ``lightning.qubit``).
+            If not provided, the device will select the method automatically.
+            For usage details, refer to the :doc:`dynamic quantum circuits page </introduction/dynamic_quantum_circuits>`.
         gradient_kwargs (dict): A dictionary of keyword arguments that are passed to the differentiation
             method. Please refer to the :mod:`qml.gradients <.gradients>` module for details
             on supported options for your chosen gradient transform.
         static_argnums (int | Sequence[int]): *Only applicable when the experimental capture mode is enabled.*
             An ``int`` or collection of ``int``\ s that specify which positional arguments to treat as static.
-        autograph (bool): *Only applicable when the experimental capture mode is enabled.* Whether to use AutoGraph to
-            convert Python control flow to native PennyLane control flow. For more information, refer to
-            :doc:`Autograph </development/autograph>`. Defaults to ``True``.
         executor_backend (ExecBackends | str): The backend executor for concurrent function execution. This argument
             allows for selective control of how to run data-parallel/task-based parallel functions via a defined execution
             environment. All supported options can be queried using
@@ -356,14 +357,12 @@ class QNode:
 
         >>> x = np.array([np.pi / 6, np.pi * 3 / 4, np.pi * 7 / 6])
         >>> circuit(x)
-        tensor([ 0.8660254 , -0.70710678, -0.8660254 ], requires_grad=True)
+        array([ 0.866... , -0.707..., -0.866...])
 
         The resulting array contains the QNode evaluations at the single values:
 
         >>> [circuit(x_val) for x_val in x]
-        [tensor(0.8660254, requires_grad=True),
-         tensor(-0.70710678, requires_grad=True),
-         tensor(-0.8660254, requires_grad=True)]
+        [np.float64(0.866...), np.float64(-0.707...), np.float64(-0.866...)]
 
         In addition to the results being stacked into one ``tensor`` already, the broadcasted
         execution actually is performed in one simulation of the quantum circuit, instead of
@@ -437,8 +436,7 @@ class QNode:
 
         .. code-block:: python
 
-            dev = qml.device("default.qubit", wires=4)
-            @qml.qnode(dev)
+            @qml.qnode(qml.device("default.qubit", wires=4))
             def circuit(x, y, U):
                 qml.QubitUnitary(U, wires=[0, 1, 2, 3])
                 qml.RX(x, wires=0)
@@ -447,25 +445,24 @@ class QNode:
                 qml.RY(y, wires=3)
                 return qml.expval(qml.Z(0) @ qml.X(1) @ qml.Z(2) @ qml.Z(3))
 
-
             x = np.array([0.4, 2.1, -1.3])
             y = 2.71
-            U = np.stack([unitary_group.rvs(16) for _ in range(3)])
+            gates = [qml.X(0), qml.Y(1), qml.Z(3)]
+            U = np.stack([g.matrix(wire_order=range(4)) for g in gates])
 
         This circuit takes three arguments, and the first two are used twice each. ``x`` and
         ``U`` will lead to a batch size of ``3`` for the ``RX`` rotations and the multi-qubit
         unitary, respectively. The input ``y`` is a ``float`` value and will be used together with
         all three values in ``x`` and ``U``. We obtain three output values:
 
-        >>> circuit(x, y, U)
-        tensor([-0.06939911,  0.26051235, -0.20361048], requires_grad=True)
+        >>> result = circuit(x, y, U)
+        >>> result
+        array([ 0.322...,  0.0968..., -0.027...])
 
         This is equivalent to iterating over all broadcasted arguments using ``zip``:
 
         >>> [circuit(x_val, y, U_val) for x_val, U_val in zip(x, U)]
-        [tensor(-0.06939911, requires_grad=True),
-         tensor(0.26051235, requires_grad=True),
-         tensor(-0.20361048, requires_grad=True)]
+        [np.float64(0.322...), np.float64(0.0968...), np.float64(-0.0271...)]
 
         In the same way it is possible to broadcast multiple arguments of a single operator,
         for example:
@@ -487,7 +484,7 @@ class QNode:
 
         .. code-block:: python
 
-            @qml.qnode(dev)
+            @qml.qnode(qml.device("default.qubit"))
             def circuit_unpacking(x):
                 qml.RX(x[0], wires=0)
                 qml.RY(x[1], wires=1)
@@ -500,7 +497,7 @@ class QNode:
         and a batch size of ``2``:
 
         >>> circuit_unpacking(x)
-        tensor([0.02162852, 0.30239696], requires_grad=True)
+        array([0.021..., 0.302...])
 
         If we were to iterate manually over the parameter settings, we probably would put the
         batching axis in ``x`` first. This is not the behaviour with parameter broadcasting
@@ -516,21 +513,21 @@ class QNode:
         self,
         func: Callable,
         device: SupportedDeviceAPIs,
-        interface: SupportedInterfaceUserInput = Interface.AUTO,
+        interface: str | Interface = Interface.AUTO,
         diff_method: TransformDispatcher | SupportedDiffMethods = "best",
         *,
+        shots: ShotsLike | Literal["unset"] = "unset",
         grad_on_execution: bool | Literal["best"] = "best",
         cache: Cache | dict | Literal["auto"] | bool = "auto",
         cachesize: int = 10000,
         max_diff: int = 1,
         device_vjp: bool | None = False,
-        postselect_mode: Literal["hw-like", "fill-shots"] | None = None,
-        mcm_method: Literal["deferred", "one-shot", "tree-traversal"] | None = None,
+        postselect_mode: str | None = None,
+        mcm_method: str | None = None,
         gradient_kwargs: dict | None = None,
         static_argnums: int | Iterable[int] = (),
-        autograph: bool = True,
         executor_backend: ExecBackends | str | None = None,
-    ):
+    ) -> None:
         self._init_args = locals()
         del self._init_args["self"]
 
@@ -572,16 +569,14 @@ class QNode:
             self._qfunc_uses_shots_arg = False
 
         # input arguments
-        self._autograph = autograph
         self.func = func
-        self.device = device
-        self._interface = get_canonical_interface_name(interface)
+        self.device: Device = device
+        self._interface = Interface(interface)
         if self._interface in (Interface.JAX, Interface.JAX_JIT):
             _validate_jax_version()
         self.diff_method = diff_method
         _validate_diff_method(self.device, self.diff_method)
 
-        self.capture_cache = LRUCache(maxsize=1000)
         if isinstance(static_argnums, int):
             static_argnums = (static_argnums,)
         self.static_argnums = sorted(static_argnums)
@@ -605,9 +600,9 @@ class QNode:
         self._gradient_fn = None
         self.gradient_kwargs = gradient_kwargs
 
-        self._shots: Shots = device.shots
-        self._shots_override_device: bool = False
-        self._transform_program = TransformProgram()
+        self._shots: Shots = device.shots if shots == "unset" else Shots(shots)
+        self._shots_override_device: bool = shots != "unset"
+        self._transform_program = CompilePipeline()
         functools.update_wrapper(self, func)
 
     def __copy__(self) -> QNode:
@@ -617,23 +612,37 @@ class QNode:
                 setattr(copied_qnode, attr, value)
 
         copied_qnode.execute_kwargs = dict(self.execute_kwargs)
-        copied_qnode._transform_program = qml.transforms.core.TransformProgram(
-            self.transform_program
-        )
+        copied_qnode._transform_program = CompilePipeline(self.transform_program)
         copied_qnode.gradient_kwargs = dict(self.gradient_kwargs)
         return copied_qnode
 
     def __repr__(self) -> str:
         """String representation."""
         if not isinstance(self.device, qml.devices.LegacyDeviceFacade):
-            return f"<QNode: device='{self.device}', interface='{self.interface}', diff_method='{self.diff_method}'>"
+            return f"<QNode: device='{self.device}', interface='{self.interface}', diff_method='{self.diff_method}', shots='{self.shots}'>"
 
-        detail = "<QNode: wires={}, device='{}', interface='{}', diff_method='{}'>"
+        detail = "<QNode: wires={}, device='{}', interface='{}', diff_method='{}', shots='{}'>"
         return detail.format(
             self.device.num_wires,
             self.device.short_name,
             self.interface,
             self.diff_method,
+            self.shots,
+        )
+
+    @property
+    def shots(self) -> Shots:
+        """Default shots for execution workflows.
+
+        Note that this property is not able to be set directly; only `set_shots` can modify it.
+
+        """
+        return self._shots
+
+    @shots.setter
+    def shots(self, _):
+        raise AttributeError(
+            "Shots cannot be set on a qnode instance. You can set shots with `qml.set_shots`."
         )
 
     @property
@@ -642,31 +651,13 @@ class QNode:
         return "jax" if qml.capture.enabled() else self._interface.value
 
     @interface.setter
-    def interface(self, value: SupportedInterfaceUserInput):
-        self._interface = get_canonical_interface_name(value)
+    def interface(self, value: str):
+        self._interface = Interface(value)
 
     @property
-    def transform_program(self) -> TransformProgram:
+    def transform_program(self) -> CompilePipeline:
         """The transform program used by the QNode."""
         return self._transform_program
-
-    @debug_logger
-    def add_transform(self, transform_container: TransformContainer):
-        """Add a transform (container) to the transform program.
-
-        .. warning::
-
-            This method is deprecated and will be removed in v0.43. Instead, please use :meth:`~.TransformProgram.push_back` on
-            the ``QNode.transform_program`` property to add transforms to the transform program.
-
-        .. warning:: This is a developer facing feature and is called when a transform is applied on a QNode.
-        """
-        warnings.warn(
-            "The `qml.QNode.add_transform` method is deprecated and will be removed in v0.43. "
-            "Instead, please use `QNode.transform_program.push_back(transform_container=transform_container)`.",
-            PennyLaneDeprecationWarning,
-        )
-        self._transform_program.push_back(transform_container=transform_container)
 
     def update(self, **kwargs) -> QNode:
         """Returns a new QNode instance but with updated settings (e.g., a different `diff_method`). Any settings not specified will retain their original value.
@@ -727,31 +718,33 @@ class QNode:
         original_init_args["gradient_kwargs"] = original_init_args["gradient_kwargs"] or {}
         # nested dictionary update
         new_gradient_kwargs = kwargs.pop("gradient_kwargs", {})
-        old_gradient_kwargs = original_init_args.get("gradient_kwargs").copy()
+        old_gradient_kwargs = (original_init_args.get("gradient_kwargs", {})).copy()
         old_gradient_kwargs.update(new_gradient_kwargs)
         kwargs["gradient_kwargs"] = old_gradient_kwargs
 
-        # pylint: disable=protected-access
-        old_shots = self._shots
+        old_shots = self.shots
         # set shots issue
-        if "device" in kwargs:
-            if old_shots != kwargs["device"].shots:
-                warnings.warn(
-                    "The device's shots value does not match the QNode's shots value. "
-                    "This may lead to unexpected behavior. Use `set_shots` to update the QNode's shots.",
-                    UserWarning,
-                )
+        if (
+            not self._shots_override_device
+            and "device" in kwargs
+            and old_shots != kwargs["device"].shots
+        ):
+            warnings.warn(
+                "The device's shots value does not match the QNode's shots value. "
+                "This may lead to unexpected behaviour. Use `set_shots` to update the QNode's shots.",
+                UserWarning,
+            )
 
         original_init_args.update(kwargs)
         updated_qn = QNode(**original_init_args)
         # pylint: disable=protected-access
-        if updated_qn._shots != old_shots:
+        if updated_qn.shots != old_shots:
             updated_qn._set_shots(old_shots)
         if self._shots_override_device:
             updated_qn._shots_override_device = True
 
         # pylint: disable=protected-access
-        updated_qn._transform_program = qml.transforms.core.TransformProgram(self.transform_program)
+        updated_qn._transform_program = CompilePipeline(self.transform_program)
         return updated_qn
 
     def update_shots(self, shots: int | Shots) -> QNode:
@@ -783,14 +776,17 @@ class QNode:
         self._shots = Shots(shots)
         self._shots_override_device = True
 
-    @debug_logger
-    def construct(self, args, kwargs) -> qml.tape.QuantumScript:
-        """Call the quantum function with a tape context, ensuring the operations get queued."""
-        kwargs = copy.copy(kwargs)
+    def _get_shots(self, kwargs: dict) -> Shots:
+        """
+        Note that this mutates kwargs to remove shots from it.
+        """
+        if self._qfunc_uses_shots_arg:
+            return self.shots
         if "shots" in kwargs:
             # NOTE: at removal, remember to remove the userwarning below as well
             warnings.warn(
-                "'shots' specified on call to a QNode is deprecated and will be removed in v0.44. Use qml.set_shots instead.",
+                "Specifying 'shots' when executing a QNode is deprecated and will be removed in "
+                "v0.44. Please set shots on QNode initialization, or use qml.set_shots instead.",
                 PennyLaneDeprecationWarning,
                 stacklevel=2,
             )
@@ -803,10 +799,15 @@ class QNode:
                     stacklevel=2,
                 )
 
-        if self._qfunc_uses_shots_arg or self._shots_override_device:  # QNode._shots precedency:
-            shots = self._shots
-        else:
-            shots = kwargs.pop("shots", self._shots)
+        if self._shots_override_device:  # QNode.shots precedency:
+            return self.shots
+        return kwargs.pop("shots", self.shots)
+
+    @debug_logger
+    def construct(self, args, kwargs) -> qml.tape.QuantumScript:
+        """Call the quantum function with a tape context, ensuring the operations get queued."""
+        kwargs = copy.copy(kwargs)
+        shots = self._get_shots(kwargs)
 
         # Before constructing the tape, we pass the device to the
         # debugger to ensure they are compatible if there are any
@@ -828,7 +829,6 @@ class QNode:
         return tape
 
     def _impl_call(self, *args, **kwargs) -> Result:
-
         # construct the tape
         tape = self.construct(args, kwargs)
 
@@ -853,7 +853,7 @@ class QNode:
             and not self._transform_program.is_informative
             and self.interface != "auto"
         ):
-            res = _convert_to_interface(res, math.get_canonical_interface_name(self.interface))
+            res = _convert_to_interface(res, math.Interface(self.interface))
 
         return _to_qfunc_output_type(res, self._qfunc_output, tape.shots.has_partitioned_shots)
 
@@ -865,10 +865,21 @@ class QNode:
         return self._impl_call(*args, **kwargs)
 
 
-def qnode(device, **kwargs):
+def qnode(device, **kwargs) -> Callable[[Callable], QNode]:
     """Docstring will be updated below."""
     return functools.partial(QNode, device=device, **kwargs)
 
 
 qnode.__doc__ = QNode.__doc__
 qnode.__signature__ = inspect.signature(QNode)
+
+
+# pylint: disable=protected-access
+@TransformDispatcher.generic_register
+def apply_transform_to_qnode(obj: QNode, transform, *targs, **tkwargs) -> QNode:
+    """The default behavior for applying a transform to a QNode."""
+    if transform._custom_qnode_transform:
+        return transform._custom_qnode_transform(transform, obj, targs, tkwargs)
+    new_qnode = copy.copy(obj)
+    new_qnode._transform_program = transform(new_qnode.transform_program, *targs, **tkwargs)
+    return new_qnode

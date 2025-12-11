@@ -19,7 +19,7 @@ import pennylane as qml
 from pennylane import math
 from pennylane.devices.qubit_mixed import get_final_state, measure_final_state, simulate
 
-ml_interfaces = ["numpy", "autograd", "jax", "torch", "tensorflow"]
+ml_interfaces = ["numpy", "autograd", "jax", "torch"]
 
 
 # pylint: disable=too-few-public-methods

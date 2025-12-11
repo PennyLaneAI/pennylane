@@ -74,7 +74,7 @@ def commutation_dag(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postproces
 
     >>> nodes = dag.get_nodes()
     >>> nodes
-    NodeDataView({0: <pennylane.transforms.commutation_dag.CommutationDAGNode object at 0x7f461c4bb580>, ...}, data='node')
+    NodeDataView({0: <pennylane.transforms.commutation_dag.CommutationDAGNode object at ...>, ...}, data='node')
 
     You can also access specific nodes (of type :class:`~.CommutationDAGNode`) by using the :meth:`~.get_node`
     method. See :class:`~.CommutationDAGNode` for a list of available
@@ -82,7 +82,7 @@ def commutation_dag(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postproces
 
     >>> second_node = dag.get_node(2)
     >>> second_node
-    <pennylane.transforms.commutation_dag.CommutationDAGNode object at 0x136f8c4c0>
+    <pennylane.transforms.commutation_dag.CommutationDAGNode object at ...>
     >>> second_node.op
     CNOT(wires=[1, 2])
     >>> second_node.successors
@@ -202,7 +202,7 @@ class CommutationDAG:
         self._multi_graph = nx.MultiDiGraph()
 
         consecutive_wires = Wires(range(len(tape.wires)))
-        wires_map = OrderedDict(zip(tape.wires, consecutive_wires))
+        wires_map = OrderedDict(zip(tape.wires, consecutive_wires, strict=True))
 
         for operation in tape.operations:
             operation = qml.map_wires(operation, wire_map=wires_map)

@@ -17,8 +17,8 @@ from openqasm3.visitor import QASMNode
 
 from pennylane import ops
 from pennylane.control_flow import for_loop, while_loop
-from pennylane.measurements import MeasurementValue, MidMeasureMP, measure
 from pennylane.operation import Operator
+from pennylane.ops import MeasurementValue, MidMeasure, measure
 
 NON_PARAMETERIZED_GATES = {
     "ID": ops.Identity,
@@ -80,15 +80,16 @@ def _eval_unary_op(operand: any, operator: str, line: int):
     if operator == "!":
         return not operand
     if operator == "-":
-        return -operand  # pylint: disable=invalid-unary-operand-type
+        return -operand
     if operator == "~":
-        return ~operand  # pylint: disable=invalid-unary-operand-type
+        return ~operand
     # we shouldn't ever get this error if the parser did its job right
     raise SyntaxError(  # pragma: no covers
         f"Invalid operator {operator} encountered in unary expression " f"on line {line}."
     )  # pragma: no cover
 
 
+# pylint: disable = too-many-branches
 def _eval_assignment(lhs: any, operator: str, value: any, line: int):
     """
     Evaluates an assignment.
@@ -136,7 +137,7 @@ def _eval_assignment(lhs: any, operator: str, value: any, line: int):
     return lhs
 
 
-# pylint: disable=too-many-return-statements
+# pylint: disable=too-many-return-statements, too-many-branches
 def _eval_binary_op(lhs: any, operator: str, rhs: any, line: int):
     """
     Evaluates a binary operator.
@@ -368,9 +369,7 @@ class Context:
             return CONSTANTS[name]
         raise TypeError(f"Attempt to use undeclared variable {name} in {self.name}")
 
-    def update_var(
-        self, value: any, name: str, operator: str, line: int
-    ):  # pylint: disable=too-many-branches
+    def update_var(self, value: any, name: str, operator: str, line: int):
         """
         Updates a variable, or raises if it is constant.
         Args:
@@ -673,7 +672,7 @@ class QasmInterpreter:
                 if hasattr(node, "else_block")
                 else None
             ),
-        )(allow_end=(not isinstance(condition, (MeasurementValue, MidMeasureMP))))
+        )(allow_end=(not isinstance(condition, (MeasurementValue, MidMeasure))))
 
     @visit.register(ast.SwitchStatement)
     def visit_switch_statement(self, node: ast.SwitchStatement, context: Context):
@@ -1074,7 +1073,7 @@ class QasmInterpreter:
             context (Context): the current context.
         """
         raise EndProgram(
-            f"The QASM program was terminated om line {node.span.start_line}."
+            f"The QASM program was terminated on line {node.span.start_line}. "
             f"There may be unprocessed QASM code."
         )
 
@@ -1454,9 +1453,7 @@ class QasmInterpreter:
         return ret
 
     @visit.register(ast.BinaryExpression)
-    def visit_binary_expression(
-        self, node: ast.BinaryExpression, context: Context
-    ):  # pylint: disable=too-many-branches, too-many-return-statements
+    def visit_binary_expression(self, node: ast.BinaryExpression, context: Context):
         """
         Registers a binary expression.
 

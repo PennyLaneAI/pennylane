@@ -185,10 +185,7 @@ class TestMeasurements:
         """Test sample measurements with different shots and wire configurations."""
         shots = Shots(num_shots)
         result = measure_with_samples([qml.sample(wires=wires)], two_qubit_pure_state, shots)[0]
-        if len(wires) == 1:
-            expected_shape = (num_shots,)
-        else:
-            expected_shape = (num_shots, len(wires))
+        expected_shape = (num_shots, len(wires))
         assert result.shape == expected_shape, f"Result shape mismatch: {result.shape}"
         # Additional assertions to check the validity of the samples
         valid_values = [0, 1]
@@ -502,7 +499,7 @@ class TestJaxSampling:
         result = measure_with_samples([mp], state, shots, prng_key=prng_key)[0]
 
         # The result should be zeros
-        assert result.shape == (10,)
+        assert result.shape == (10, 1)
         assert jnp.all(result == 0), f"Measurement results contain non-zero values: {result}"
 
     @pytest.mark.jax

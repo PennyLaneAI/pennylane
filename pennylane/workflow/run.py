@@ -22,6 +22,7 @@ from functools import partial
 from typing import TYPE_CHECKING
 
 import pennylane as qml
+from pennylane import math
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.math import Interface
 from pennylane.workflow import _cache_transform
@@ -35,18 +36,19 @@ from .jacobian_products import (
 )
 
 if TYPE_CHECKING:
+    from pennylane.devices import Device, ExecutionConfig
     from pennylane.tape import QuantumScriptBatch
-    from pennylane.transforms.core import TransformProgram
+    from pennylane.transforms.core import CompilePipeline
     from pennylane.typing import ResultBatch
 
     ExecuteFn = Callable[[QuantumScriptBatch], ResultBatch]
 
 
 def _construct_tf_autograph_pipeline(
-    config: qml.devices.ExecutionConfig,
-    device: qml.devices.Device,
-    inner_transform_program: TransformProgram,
-):
+    config: ExecutionConfig,
+    device: Device,
+    inner_transform_program: CompilePipeline,
+):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
     """Handles the pipeline construction for the TF_AUTOGRAPH interface.
 
     This function determines the execution function (`execute_fn`) and gradient method specifically
@@ -55,8 +57,8 @@ def _construct_tf_autograph_pipeline(
     Args:
         config (qml.devices.ExecutionConfig): resolved execution configuration
         device (qml.devices.Device): a Pennylane device
-        inner_transform_program (qml.transforms.core.TransformProgram): the transformation applied to quantum tapes
 
+        inner_transform_program (qml.CompilePipeline): the transformation applied to quantum tapes
     Returns:
         tuple: A tuple containing:
             - `execute_fn`: function to execute quantum tapes
@@ -107,9 +109,9 @@ def _construct_tf_autograph_pipeline(
 
 
 def _construct_ml_execution_pipeline(
-    config: qml.devices.ExecutionConfig,
-    device: qml.devices.Device,
-    inner_transform_program: TransformProgram,
+    config: ExecutionConfig,
+    device: Device,
+    inner_transform_program: CompilePipeline,
 ) -> tuple[JacobianProductCalculator, ExecuteFn]:
     """Constructs the ML execution pipeline for all JPC interfaces.
 
@@ -119,7 +121,7 @@ def _construct_ml_execution_pipeline(
     Args:
         config (qml.devices.ExecutionConfig): resolved execution configuration
         device (qml.devices.Device): a Pennylane device
-        inner_transform_program (qml.transforms.core.TransformProgram): the transformation applied to quantum tapes
+        inner_transform_program (qml.CompilePipeline): the transformation applied to quantum tapes
 
     Returns:
         tuple: A tuple containing:
@@ -178,7 +180,7 @@ def _construct_ml_execution_pipeline(
 
 # pylint: disable=import-outside-toplevel
 def _get_ml_boundary_execute(
-    resolved_execution_config: qml.devices.ExecutionConfig, differentiable=False
+    resolved_execution_config: ExecutionConfig, differentiable=False
 ) -> Callable:
     """Imports and returns the function that handles the interface boundary for a given machine learning framework.
 
@@ -201,12 +203,16 @@ def _get_ml_boundary_execute(
             case Interface.AUTOGRAD:
                 from .interfaces.autograd import autograd_execute as ml_boundary
 
-            case Interface.TF_AUTOGRAPH:
+            case (
+                Interface.TF_AUTOGRAPH
+            ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
                 from .interfaces.tensorflow_autograph import execute as ml_boundary
 
                 ml_boundary = partial(ml_boundary, grad_on_execution=grad_on_execution)
 
-            case Interface.TF:
+            case (
+                Interface.TF
+            ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
                 from .interfaces.tensorflow import tf_execute as full_ml_boundary
 
                 ml_boundary = partial(full_ml_boundary, differentiable=differentiable)
@@ -246,7 +252,7 @@ def _make_inner_execute(device, inner_transform, execution_config=None) -> Calla
         """Execution that occurs within a ML framework boundary.
 
         Closure Variables:
-            inner_transform(TransformProgram): a transform to apply to a set of tapes
+            inner_transform(CompilePipeline): a transform to apply to a set of tapes
             expand_fn (Callable[[QuantumScript], QuantumScript]): A device preprocessing step
             device (qml.devices.Device): a Pennylane device
         """
@@ -265,9 +271,9 @@ def _make_inner_execute(device, inner_transform, execution_config=None) -> Calla
 
 def run(
     tapes: QuantumScriptBatch,
-    device: qml.devices.Device,
-    config: qml.devices.ExecutionConfig,
-    inner_transform_program: TransformProgram,
+    device: Device,
+    config: ExecutionConfig,
+    inner_transform_program: CompilePipeline,
 ) -> ResultBatch:
     """Execute a batch of quantum scripts on a device with optional gradient computation.
 
@@ -276,7 +282,7 @@ def run(
         device (qml.devices.Device): a Pennylane device
         config (qml.devices.ExecutionConfig): Resolved configuration detailing
             execution and differentiation settings.
-        inner_transform_program (TransformProgram): The transformation program to apply
+        inner_transform_program (CompilePipeline): The transformation program to apply
             to the quantum scripts before execution.
 
     Returns:
@@ -293,7 +299,9 @@ def run(
         return results
 
     # TODO: Prune once support for tf-autograph is dropped
-    if config.interface == Interface.TF_AUTOGRAPH:
+    if (
+        config.interface == Interface.TF_AUTOGRAPH
+    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
 
         execute_fn, diff_method = _construct_tf_autograph_pipeline(
             config, device, inner_transform_program
@@ -303,8 +311,6 @@ def run(
             config,
             differentiable=config.derivative_order > 1,
         )
-        # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
-        # pylint: disable=unexpected-keyword-arg, too-many-function-args
         results = ml_execute(
             tapes,
             device,
@@ -334,7 +340,7 @@ def run(
     if config.interface in {Interface.JAX, Interface.JAX_JIT}:
         for tape in tapes:
             params = tape.get_parameters(trainable_only=False)
-            tape.trainable_params = qml.math.get_trainable_indices(params)
+            tape.trainable_params = math.get_trainable_indices(params)
 
     results = ml_execute(tapes, execute_fn, jpc, device=device)
     return results

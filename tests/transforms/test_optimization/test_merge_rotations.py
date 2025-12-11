@@ -29,6 +29,11 @@ from pennylane.wires import Wires
 class TestMergeRotations:
     """Test that adjacent rotation gates of the same type will add the angles."""
 
+    def test_defined_pass_name(self):
+        """Test that merge_rotations defines a pass_name."""
+
+        assert merge_rotations.pass_name == "merge-rotations"
+
     @pytest.mark.parametrize(
         ("theta_1", "theta_2", "expected_ops"),
         [
@@ -449,6 +454,39 @@ class TestMergeRotationsInterfaces:
         res = qfunc()
 
         assert qml.math.allclose(res, [1.0])
+
+    @pytest.mark.jax
+    def test_merge_rotations_abstract_wires(self):
+        """Tests that rotations do not merge across operators with abstract wires."""
+
+        import jax
+
+        @jax.jit
+        def f(w):
+            tape = qml.tape.QuantumScript(
+                [
+                    qml.RX(0.5, wires=0),
+                    qml.CNOT([w, 1]),
+                    qml.RX(0.5, wires=0),
+                ]
+            )
+            [tape], _ = merge_rotations(tape)
+            return len(tape.operations)
+
+        @jax.jit
+        def f2(w):
+            tape = qml.tape.QuantumScript(
+                [
+                    qml.CNOT([w, 1]),
+                    qml.RX(0.5, wires=0),
+                    qml.RX(0.5, wires=0),
+                ]
+            )
+            [tape], _ = merge_rotations(tape)
+            return len(tape.operations)
+
+        assert f(0) == 3
+        assert f2(0) == 2
 
 
 ### Tape

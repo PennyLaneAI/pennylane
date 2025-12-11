@@ -14,13 +14,6 @@
 """
 This subpackage contains PennyLane transforms and their building blocks.
 
-.. warning::
-
-    The transforms ``add_noise``, ``insert``, ``mitigate_with_zne``, ``fold_global``, ``poly_extrapolate``, ``richardson_extrapolate``,
-    ``exponential_extrapolate`` have been moved to the :mod:`pennylane.noise` module.
-    Accessing these transforms from the :mod:`pennylane.transforms` module is deprecated
-    and will be removed in v0.44.
-
 .. currentmodule:: pennylane
 
 .. _transforms:
@@ -64,17 +57,45 @@ A set of transforms to perform basic circuit compilation tasks.
     ~transforms.transpile
     ~transforms.undo_swaps
     ~transforms.unitary_to_rot
+    ~transforms.rz_phase_gradient
+    ~transforms.rowcol
 
-There are also utility functions and decompositions available that assist with
-both transforms, and decompositions within the larger PennyLane codebase.
+Compilation transforms using ZX calculus
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+There is a set of transforms that use ZX calculus to optimize circuits.
+
+.. currentmodule:: pennylane.transforms
+.. autosummary::
+    :toctree: api
+
+    zx.optimize_t_count
+    zx.push_hadamards
+    zx.reduce_non_clifford
+    zx.todd
+
+The following utility functions assist when working explicitly with ZX diagrams,
+for example when writing custom ZX compilation passes. Also see the section
+on intermediate representations below.
+
+.. currentmodule:: pennylane
+.. autosummary::
+    :toctree: api
+
+    ~transforms.to_zx
+    ~transforms.from_zx
+
+Other compilation utilities
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+There are additional utility functions and decompositions available that assist with
+both transforms and decompositions within the larger PennyLane codebase.
 
 .. autosummary::
     :toctree: api
 
     ~transforms.set_decomposition
     ~transforms.pattern_matching
-    ~transforms.to_zx
-    ~transforms.from_zx
 
 There are also utility functions that take a circuit and return a DAG.
 
@@ -94,6 +115,7 @@ This transform accepts quantum circuits and decomposes them to the Clifford+T ba
     :toctree: api
 
     ~clifford_t_decomposition
+    ~gridsynth
 
 Other transforms
 ~~~~~~~~~~~~~~~~
@@ -118,12 +140,36 @@ preprocessing, getting information from a circuit, and more.
     ~quantum_monte_carlo
     ~transforms.resolve_dynamic_wires
 
+Transforms for intermediate representations
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Intermediate representations (IRs) are alternative representations of quantum circuits, typically
+offering a more efficient classical description for special classes of circuits.
+The following functions produce intermediate representations of quantum circuits:
+
+.. autosummary::
+    :toctree: api
+
+    ~transforms.parity_matrix
+    ~transforms.phase_polynomial
+    ~transforms.rowcol
+
+In addition, there are the following utility functions to traverse a graph:
+
+.. currentmodule:: pennylane.transforms
+.. autosummary::
+    :toctree: api
+
+    intermediate_reps.postorder_traverse
+    intermediate_reps.preorder_traverse
+
 Transforms that act only on QNodes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 These transforms only accept QNodes, and return new transformed functions
 that compute the desired quantity.
 
+.. currentmodule:: pennylane
 .. autosummary::
     :toctree: api
 
@@ -134,16 +180,16 @@ that compute the desired quantity.
 Transforms developer functions
 ------------------------------
 
-:class:`~.TransformContainer`, :class:`~.TransformDispatcher`, and  :class:`~.TransformProgram` are
-developer-facing objects that allow the
+:class:`~.TransformContainer` and :class:`~.TransformDispatcher` are developer-facing objects that allow the
 creation, dispatching, and composability of transforms. If you would like to make a custom transform, refer
 instead to the documentation of :func:`qml.transform <pennylane.transform>`.
 
+.. currentmodule:: pennylane
 .. autosummary::
     :toctree: api
 
+    ~CompilePipeline
     ~transforms.core.transform_dispatcher
-    ~transforms.core.transform_program
 
 Transforming circuits
 ---------------------
@@ -286,14 +332,14 @@ from pennylane.tape import make_qscript as make_tape
 from pennylane.exceptions import TransformError
 
 # Import the decorators first to prevent circular imports when used in other transforms
-from .core import transform
+from .core import transform, CompilePipeline
 from .batch_params import batch_params
 from .batch_input import batch_input
 from .batch_partial import batch_partial
 from .convert_to_numpy_parameters import convert_to_numpy_parameters
 from .compile import compile
 
-from .decompositions import clifford_t_decomposition
+from .decompositions import clifford_t_decomposition, gridsynth
 from .defer_measurements import defer_measurements
 from .diagonalize_measurements import diagonalize_measurements
 from .dynamic_one_shot import dynamic_one_shot, is_mcm
@@ -334,34 +380,15 @@ from .tape_expand import (
     set_decomposition,
 )
 from .transpile import transpile
-from .zx import to_zx, from_zx
+from .zx import (
+    to_zx,
+    from_zx,
+)
 from .broadcast_expand import broadcast_expand
 from .decompose import decompose
-
-
-def __getattr__(name):
-    if name in {
-        "add_noise",
-        "insert",
-        "mitigate_with_zne",
-        "fold_global",
-        "poly_extrapolate",
-        "richardson_extrapolate",
-        "exponential_extrapolate",
-    }:
-
-        # pylint: disable=import-outside-toplevel
-        import warnings
-        from pennylane import exceptions
-        from pennylane import noise
-
-        warnings.warn(
-            f"pennylane.{name} is no longer accessible from the transforms module \
-                and must be imported as pennylane.noise.{name}. \
-                    Support for access through this module will be removed in v0.44.",
-            exceptions.PennyLaneDeprecationWarning,
-        )
-
-        return getattr(noise, name)
-
-    raise AttributeError(f"module 'pennylane' has no attribute '{name}'")  # pragma: no cover
+from .intermediate_reps import (
+    parity_matrix,
+    phase_polynomial,
+    rowcol,
+)
+from .rz_phase_gradient import rz_phase_gradient

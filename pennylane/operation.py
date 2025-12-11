@@ -179,13 +179,14 @@ these objects are located in ``pennylane.ops.qubit.attributes``, not ``pennylane
     ~ops.qubit.attributes.symmetric_over_control_wires
 
 """
+
 # pylint: disable=access-member-before-definition
 import abc
 import copy
 import warnings
 from collections.abc import Callable, Hashable, Iterable
 from functools import lru_cache
-from typing import Any, Literal, Optional, Union
+from typing import Any, ClassVar, Literal, Optional, Union
 
 import numpy as np
 from scipy.sparse import spmatrix
@@ -200,12 +201,13 @@ from pennylane.exceptions import (
     GeneratorUndefinedError,
     MatrixUndefinedError,
     ParameterFrequenciesUndefinedError,
+    PennyLaneDeprecationWarning,
     PowUndefinedError,
     SparseMatrixUndefinedError,
     TermsUndefinedError,
 )
 from pennylane.math import expand_matrix, is_abstract
-from pennylane.queuing import QueuingManager
+from pennylane.queuing import AnnotatedQueue, QueuingManager
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 
@@ -341,7 +343,7 @@ def create_operator_primitive(
     primitive.prim_type = "operator"
 
     @primitive.def_impl
-    def _(*args, **kwargs):
+    def _impl(*args, **kwargs):
         if "n_wires" not in kwargs:
             return type.__call__(operator_type, *args, **kwargs)
         n_wires = kwargs.pop("n_wires")
@@ -357,7 +359,7 @@ def create_operator_primitive(
     abstract_type = _get_abstract_operator()
 
     @primitive.def_abstract_eval
-    def _(*_, **__):
+    def _abstract_eval(*_, **__):
         return abstract_type()
 
     return primitive
@@ -680,9 +682,47 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
     Optional[jax.extend.core.Primitive]
     """
 
+    resource_keys: ClassVar[set | frozenset] = set()
+    """The set of parameters that affects the resource requirement of the operator.
+
+    All decomposition rules for this operator class are expected to have a resource function
+    that accepts keyword arguments that match these keys exactly. The :func:`~pennylane.resource_rep`
+    function will also expect keyword arguments that match these keys when called with this
+    operator type.
+
+    The default implementation is an empty set, which is suitable for most operators.
+
+    .. seealso::
+        :meth:`~.Operator.resource_params`
+
+    """
+
     def __init_subclass__(cls, **_):
+        # turn has_decomposition into a class property if possible
+
+        # Some operators will overwrite `decomposition` instead of `compute_decomposition`
+        # Currently, those are mostly classes from the operator arithmetic module.
+        # if class overrides has_decomposition property, we do not want to
+        # override it here
+
+        if (
+            cls.compute_decomposition != Operator.compute_decomposition
+            or cls.decomposition != Operator.decomposition
+        ) and (cls.has_decomposition == Operator.has_decomposition):
+            cls.has_decomposition = True
+
         register_pytree(cls, cls._flatten, cls._unflatten)
         cls._primitive = create_operator_primitive(cls)
+
+        if cls.is_hermitian != Operator.is_hermitian:
+            warnings.warn(
+                "The `is_hermitian` property is deprecated and has been renamed to `is_verified_hermitian` "
+                "as it better reflects the functionality of this property. The deprecated access through `is_hermitian` "
+                "will be removed in PennyLane v0.45. Alternatively, consider using the `pennylane.is_hermitian` "
+                "function instead as it provides a more reliable check for hermiticity. Please be aware that it comes "
+                "with a higher computational cost. ",
+                PennyLaneDeprecationWarning,
+            )
 
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
@@ -702,6 +742,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
             tuple,
             qml.wires.Wires,
             range,
+            qml.capture.autograph.ag_primitives.PRange,
             set,
             *array_types,
         )
@@ -735,8 +776,11 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         cls = self.__class__
         copied_op = cls.__new__(cls)
         copied_op.data = copy.copy(self.data)
+        # pylint: disable=attribute-defined-outside-init
+        if hasattr(self, "_hyperparameters"):
+            copied_op._hyperparameters = copy.copy(self._hyperparameters)
         for attr, value in vars(self).items():
-            if attr != "data":
+            if attr not in {"data", "_hyperparameters"}:
                 setattr(copied_op, attr, value)
 
         return copied_op
@@ -1009,18 +1053,18 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
 
         >>> op = qml.RX(1.23456, wires=0)
         >>> op.label()
-        "RX"
+        'RX'
         >>> op.label(base_label="my_label")
-        "my_label"
+        'my_label'
         >>> op = qml.RX(1.23456, wires=0, id="test_data")
         >>> op.label()
-        "RX("test_data")"
+        'RX\n("test_data")'
         >>> op.label(decimals=2)
-        "RX\n(1.23,"test_data")"
+        'RX\n(1.23,"test_data")'
         >>> op.label(base_label="my_label")
-        "my_label("test_data")"
+        'my_label\n("test_data")'
         >>> op.label(decimals=2, base_label="my_label")
-        "my_label\n(1.23,"test_data")"
+        'my_label\n(1.23,"test_data")'
 
         If the operation has a matrix-valued parameter and a cache dictionary is provided,
         unique matrices will be cached in the ``'matrices'`` key list. The label will contain
@@ -1029,13 +1073,13 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         >>> op2 = qml.QubitUnitary(np.eye(2), wires=0)
         >>> cache = {'matrices': []}
         >>> op2.label(cache=cache)
-        'U(M0)'
+        'U\n(M0)'
         >>> cache['matrices']
         [tensor([[1., 0.],
          [0., 1.]], requires_grad=True)]
         >>> op3 = qml.QubitUnitary(np.eye(4), wires=(0,1))
         >>> op3.label(cache=cache)
-        'U(M1)'
+        'U\n(M1)'
         >>> cache['matrices']
         [tensor([[1., 0.],
                 [0., 1.]], requires_grad=True),
@@ -1050,56 +1094,45 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         if self.num_params == 0:
             return op_label if self._id is None else f'{op_label}("{self._id}")'
 
-        params = self.parameters
-        shape0 = qml.math.shape(params[0])
-        if len(shape0) != 0:
-            # assume that if the first parameter is matrix-valued, there is only a single parameter
-            # this holds true for all current operations and templates unless parameter broadcasting
-            # is used
-            # TODO[dwierichs]: Implement a proper label for broadcasted operators
-            if (
-                cache is None
-                or not isinstance(cache.get("matrices", None), list)
-                or len(params) != 1
-            ):
-                return op_label if self._id is None else f'{op_label}("{self._id}")'
-
-            for i, mat in enumerate(cache["matrices"]):
-                if shape0 == qml.math.shape(mat) and qml.math.allclose(params[0], mat):
-                    str_wo_id = f"{op_label}(M{i})"
-                    break
-            else:
-                mat_num = len(cache["matrices"])
-                cache["matrices"].append(params[0])
-                str_wo_id = f"{op_label}(M{mat_num})"
-
-            return str_wo_id if self._id is None else f'{str_wo_id[:-1]},"{self._id}")'
-
-        if decimals is None:
-            return op_label if self._id is None else f'{op_label}("{self._id}")'
-
         def _format(x):
-            try:
-                return format(qml.math.toarray(x), f".{decimals}f")
-            except ValueError:
-                # If the parameter can't be displayed as a float
-                return format(x)
+            """Format a scalar parameter or retrieve/store a matrix-valued parameter
+            from/to cache, formatting its position in the cache as parameter string."""
+            if len(qml.math.shape(x)) == 0:
+                # Scalar case
+                if decimals is None:
+                    return ""
+                try:
+                    return format(qml.math.toarray(x), f".{decimals}f")
+                except ValueError:
+                    # If the parameter can't be displayed as a float
+                    return format(x)
 
-        param_string = ",\n".join(_format(p) for p in params)
+            if cache is None or not isinstance(mat_cache := cache.get("matrices", None), list):
+                # No caching; matrices are not printed out fully, so no printing of this parameter
+                return ""
 
-        return (
-            f"{op_label}\n({param_string})"
-            if self._id is None
-            else f'{op_label}\n({param_string},"{self._id}")'
-        )
+            # Retrieve matrix location in cache, or write the matrix to cache as new entry
+            for i, mat in enumerate(mat_cache):
+                if qml.math.shape(x) == qml.math.shape(mat) and qml.math.allclose(x, mat):
+                    return f"M{i}"
+            mat_num = len(mat_cache)
+            mat_cache.append(x)
+            return f"M{mat_num}"
 
-    def __init__(
-        self,
-        *params: TensorLike,
-        wires: WiresLike | None = None,
-        id: str | None = None,
-    ):
+        # Format each parameter individually, excluding those that lead to empty strings
+        param_strings = [out for p in self.parameters if (out := _format(p)) != ""]
+        inner_string = ",\n".join(param_strings)
+        # Include operation's id in string
+        if self._id is not None:
+            if inner_string == "":
+                inner_string = f'"{self._id}"'
+            else:
+                inner_string = f'{inner_string},"{self._id}"'
+        if inner_string == "":
+            return f"{op_label}"
+        return f"{op_label}\n({inner_string})"
 
+    def __init__(self, *params: TensorLike, wires: WiresLike | None = None, id: str | None = None):
         self._name: str = self.__class__.__name__  #: str: name of the operator
         self._id: str = id
         self._pauli_rep: qml.pauli.PauliSentence | None = (
@@ -1159,7 +1192,9 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
 
         try:
             ndims = tuple(qml.math.ndim(p) for p in params)
-        except ValueError as e:
+        except (
+            ValueError
+        ) as e:  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             # TODO:[dwierichs] When using tf.function with an input_signature that contains
             # an unknown-shaped input, ndim() will not be able to determine the number of
             # dimensions because they are not specified yet. Failing example: Let `fun` be
@@ -1184,7 +1219,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         if ndims != self.ndim_params:
             ndims_matches = [
                 (ndim == exp_ndim, ndim == exp_ndim + 1)
-                for ndim, exp_ndim in zip(ndims, self.ndim_params)
+                for ndim, exp_ndim in zip(ndims, self.ndim_params, strict=True)
             ]
             if not all(correct or batched for correct, batched in ndims_matches):
                 raise ValueError(
@@ -1193,7 +1228,9 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
                 )
 
             first_dims = [
-                qml.math.shape(p)[0] for (_, batched), p in zip(ndims_matches, params) if batched
+                qml.math.shape(p)[0]
+                for (_, batched), p in zip(ndims_matches, params, strict=True)
+                if batched
             ]
             if not qml.math.allclose(first_dims, first_dims[0]):
                 raise ValueError(
@@ -1284,41 +1321,96 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
 
     @property
     def is_hermitian(self) -> bool:
-        """This property determines if an operator is likely hermitian.
+        """This property determines if an operator is verified to be Hermitian.
 
-        .. note:: It is recommended to use the :func:`~.is_hermitian` function.
-            Although this function may be expensive to calculate,
-            the ``op.is_hermitian`` property can lead to technically incorrect results.
+        .. warning::
 
-        If this property returns ``True``, the operator is guaranteed to
-        be hermitian, but if it returns ``False``, the operator may still be hermitian.
+            The ``is_hermitian`` property is deprecated and has been renamed to ``is_verified_hermitian``
+            as it better reflects the functionality of this property. The deprecated access through ``is_hermitian``
+            will be removed in PennyLane v0.45. Alternatively, consider using the :func:`~.is_hermitian`
+            function instead as it provides a more reliable check for hermiticity. Please be aware that it comes
+            with a higher computational cost.
 
-        As an example, consider the following edge case:
+        .. note::
+
+            This property provides a fast, non-exhaustive check used for internal
+            optimizations. It relies on quick, provable shortcuts (e.g., operator
+            properties) rather than a full, computationally expensive check.
+
+            For a definitive check, use the :func:`pennylane.is_hermitian` function.
+            Please note that this comes with increased computational cost.
+
+        Returns:
+            bool: The property will return ``True`` if the operator is guaranteed to be Hermitian and
+            ``False`` if the check is inconclusive and the operator may or may not be Hermitian.
+
+        Consider this operator,
 
         >>> op = (qml.X(0) @ qml.Y(0) - qml.X(0) @ qml.Z(0)) * 1j
-        >>> op.is_hermitian
+
+        In this case, Hermicity cannot be verified and leads to an inconclusive result:
+
+        >>> op.is_verified_hermitian # inconclusive
         False
 
-        On the contrary, the :func:`~.is_hermitian` function will give the correct answer:
+        However, using :func:`pennylane.is_hermitian` will give the correct answer:
 
-        >>> qml.is_hermitian(op)
+        >>> qml.is_hermitian(op) # definitive
         True
+
         """
+        warnings.warn(
+            "The `is_hermitian` property is deprecated and has been renamed to `is_verified_hermitian` "
+            "as it better reflects the functionality of this property. The deprecated access through `is_hermitian` "
+            "will be removed in PennyLane v0.45. Alternatively, consider using the `pennylane.is_hermitian` "
+            "function instead as it provides a more reliable check for hermiticity. Please be aware that it comes "
+            "with a higher computational cost. ",
+            PennyLaneDeprecationWarning,
+        )
+
+        return self.is_verified_hermitian
+
+    @property
+    def is_verified_hermitian(self) -> bool:
+        """This property determines if an operator is verified to be Hermitian.
+
+        .. note::
+
+            This property provides a fast, non-exhaustive check used for internal
+            optimizations. It relies on quick, provable shortcuts (e.g., operator
+            properties) rather than a full, computationally expensive check.
+
+            For a definitive check, use the :func:`pennylane.is_hermitian` function.
+            Please note that this comes with increased computational cost.
+
+        Returns:
+            bool: The property will return ``True`` if the operator is guaranteed to be Hermitian and
+            ``False`` if the check is inconclusive and the operator may or may not be Hermitian.
+
+        Consider this operator,
+
+        >>> op = (qml.X(0) @ qml.Y(0) - qml.X(0) @ qml.Z(0)) * 1j
+
+        In this case, Hermicity cannot be verified and leads to an inconclusive result:
+
+        >>> op.is_verified_hermitian # inconclusive
+        False
+
+        However, using :func:`pennylane.is_hermitian` will give the correct answer:
+
+        >>> qml.is_hermitian(op) # definitive
+        True
+
+        """
+
         return False
 
-    # pylint: disable=no-self-argument, comparison-with-callable
-    @classproperty
-    def has_decomposition(cls) -> bool:
-        r"""Bool: Whether or not the Operator returns a defined decomposition.
-
-        Note: Child classes may have this as an instance property instead of as a class property.
-        """
-        # Some operators will overwrite `decomposition` instead of `compute_decomposition`
-        # Currently, those are mostly classes from the operator arithmetic module.
-        return (
-            cls.compute_decomposition != Operator.compute_decomposition
-            or cls.decomposition != Operator.decomposition
-        )
+    @property
+    def has_decomposition(self) -> bool:
+        r"""Bool: Whether or not the Operator returns a defined decomposition."""
+        # if compute_decomposition or decomposition overwritten and property
+        # not overwritten, set as class property during __init_subclass__
+        return any(rule.is_applicable(**self.resource_params) for rule in qml.list_decomps(self))
 
     def decomposition(self) -> list["Operator"]:
         r"""Representation of the operator as a product of other operators.
@@ -1332,9 +1424,20 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         Returns:
             list[Operator]: decomposition of the operator
         """
-        return self.compute_decomposition(
-            *self.parameters, wires=self.wires, **self.hyperparameters
-        )
+        if type(self).compute_decomposition != Operator.compute_decomposition:
+            return self.compute_decomposition(
+                *self.parameters, wires=self.wires, **self.hyperparameters
+            )
+
+        for decomp in qml.list_decomps(self):
+            if decomp.is_applicable(**self.resource_params):
+                with AnnotatedQueue() as q:
+                    decomp(*self.data, wires=self.wires, **self.hyperparameters)
+                if QueuingManager.recording():
+                    # no need for copies if we just use queue method
+                    _ = [op.queue() for op in q.queue]
+                return q.queue
+        raise DecompositionUndefinedError
 
     @staticmethod
     def compute_decomposition(
@@ -1395,23 +1498,6 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
 
         raise DecompositionUndefinedError
 
-    @classproperty
-    def resource_keys(self) -> set | frozenset:  # pylint: disable=no-self-use
-        """The set of parameters that affects the resource requirement of the operator.
-
-        All decomposition rules for this operator class are expected to have a resource function
-        that accepts keyword arguments that match these keys exactly. The :func:`~pennylane.resource_rep`
-        function will also expect keyword arguments that match these keys when called with this
-        operator type.
-
-        The default implementation is an empty set, which is suitable for most operators.
-
-        .. seealso::
-            :meth:`~.Operator.resource_params`
-
-        """
-        return set()
-
     @property
     def resource_params(self) -> dict:
         """A dictionary containing the minimal information needed to compute a
@@ -1427,25 +1513,22 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         The ``MultiRZ`` has non-empty ``resource_keys``:
 
         >>> qml.MultiRZ.resource_keys
-        {"num_wires"}
+        {'num_wires'}
 
         The ``resource_params`` of an instance of ``MultiRZ`` will contain the number of wires:
 
         >>> op = qml.MultiRZ(0.5, wires=[0, 1])
         >>> op.resource_params
-        {"num_wires": 2}
+        {'num_wires': 2}
 
         Note that another ``MultiRZ`` may have different parameters but the same ``resource_params``:
 
         >>> op2 = qml.MultiRZ(0.7, wires=[1, 2])
         >>> op2.resource_params
-        {"num_wires": 2}
+        {'num_wires': 2}
 
         """
-        # For most operators, this should just be an empty dictionary, but a default
-        # implementation is intentionally not provided so that each operator class is
-        # forced to explicitly define its resource params.
-        raise NotImplementedError(f"{self.__class__.__name__}.resource_params undefined!")
+        return {}
 
     # pylint: disable=no-self-argument, comparison-with-callable
     @classproperty
@@ -1527,7 +1610,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
 
         we get the generator
 
-        >>> U.generator()
+        >>> U.generator() # doctest: +SKIP
         0.5 * Y(0) + Z(0) @ X(1)
 
         The generator may also be provided in the form of a dense or sparse Hamiltonian
@@ -1714,7 +1797,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         """The negation operation of an Operator object."""
         return qml.s_prod(scalar=-1, operator=self, lazy=False)
 
-    def __pow__(self, other: TensorLike):
+    def __pow__(self, other: TensorLike) -> "Operator":
         r"""The power operation of an Operator object."""
         if isinstance(other, TensorLike):
             return qml.pow(self, z=other)
@@ -1748,8 +1831,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
 
         >>> op = qml.ctrl(qml.U2(3.4, 4.5, wires="a"), ("b", "c") )
         >>> op._flatten()
-        ((U2(3.4, 4.5, wires=['a']),),
-        (Wires(['b', 'c']), (True, True), Wires([])))
+        ((U2(3.4, 4.5, wires=['a']),), (Wires(['b', 'c']), (True, True), Wires([]), 'borrowed'))
 
         """
         hashable_hyperparameters = tuple(
@@ -1774,6 +1856,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         >>> op._flatten()
         ((1.2, 2.3, 3.4), (Wires([0]), ()))
         >>> qml.Rot._unflatten(*op._flatten())
+        Rot(1.2, 2.3, 3.4, wires=[0])
         >>> op = qml.PauliRot(1.2, "XY", wires=(0,1))
         >>> op._flatten()
         ((1.2,), (Wires([0, 1]), (('pauli_word', 'XY'),)))
@@ -1909,7 +1992,7 @@ class Operation(Operator):
 
         >>> op = qml.CRot(0.4, 0.1, 0.3, wires=[0, 1])
         >>> op.parameter_frequencies
-        [(0.5, 1), (0.5, 1), (0.5, 1)]
+        [(0.5, 1.0), (0.5, 1.0), (0.5, 1.0)]
 
         For operators that define a generator, the parameter frequencies are directly
         related to the eigenvalues of the generator:
@@ -1920,7 +2003,7 @@ class Operation(Operator):
         >>> gen = qml.generator(op, format="observable")
         >>> gen_eigvals = qml.eigvals(gen)
         >>> qml.gradients.eigvals_to_frequencies(tuple(gen_eigvals))
-        (1.0,)
+        (np.float64(1.0),)
 
         For more details on this relationship, see :func:`.eigvals_to_frequencies`.
         """
@@ -2004,8 +2087,10 @@ class Channel(Operation, abc.ABC):
         **Example**
 
         >>> qml.AmplitudeDamping.compute_kraus_matrices(0.1)
-        [array([[1., 0.], [0., 0.9486833]]),
-         array([[0., 0.31622777], [0., 0.]])]
+        [array([[1.       , 0.       ],
+                [0.       , 0.9486833]]),
+         array([[0.        , 0.31622777],
+                [0.        , 0.        ]])]
         """
         raise NotImplementedError
 
@@ -2020,8 +2105,10 @@ class Channel(Operation, abc.ABC):
 
         >>> U = qml.AmplitudeDamping(0.1, wires=1)
         >>> U.kraus_matrices()
-        [array([[1., 0.], [0., 0.9486833]]),
-         array([[0., 0.31622777], [0., 0.]])]
+        [array([[1.       , 0.       ],
+                [0.       , 0.9486833]]),
+         array([[0.        , 0.31622777],
+                [0.        , 0.        ]])]
         """
         return self.compute_kraus_matrices(*self.parameters, **self.hyperparameters)
 
@@ -2281,7 +2368,7 @@ class CVObservable(CV, Operator):
            can be useful for some applications where the instance has to be identified
     """
 
-    is_hermitian = True
+    is_verified_hermitian = True
 
     def queue(self, context=QueuingManager):
         """Avoids queuing the observable."""
@@ -2377,7 +2464,7 @@ if not isinstance(obj, Operator) or not obj.has_generator:
     return False
 try:
     generator = obj.generator()
-    _, ops = generator.terms() 
+    _, ops = generator.terms()
     return len(ops) > 1
 except TermsUndefinedError:
     return False
