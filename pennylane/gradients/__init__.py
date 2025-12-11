@@ -103,7 +103,7 @@ and takes into account the circuit, device, autodiff framework, and metadata
 
     dev = qml.device("default.qubit")
 
-    @partial(qml.set_shots, shots=1000)
+    @qml.set_shots(shots=1000)
     @qml.qnode(dev, interface="tf")
     def circuit(weights):
         ...
