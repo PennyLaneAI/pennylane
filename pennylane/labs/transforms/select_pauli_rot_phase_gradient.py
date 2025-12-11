@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-Contains the select_pauli_rot transform.
+Contains the ``select_pauli_rot_phase_gradient`` transform.
 """
 import numpy as np
 
@@ -85,8 +85,8 @@ def select_pauli_rot_phase_gradient(
     r"""Quantum function transform to decompose all instances of :class:`~.SelectPauliRot` gates into additions
     using a phase gradient resource state.
 
-    For this routine to work, the provided ``phase_grad_wires`` need to hold a phase gradient
-    state :math:`|\nabla Z\rangle = \frac{1}{\sqrt{2^n}} \sum_{m=0}^{2^n-1} e^{-2 \pi i \frac{m}{2^n}} |m\rangle`.
+    For this routine to work, the provided ``phase_grad_wires`` need to hold the phase gradient
+    state :math:`|\nabla_Z\rangle = \frac{1}{\sqrt{2^n}} \sum_{m=0}^{2^n-1} e^{-2 \pi i \frac{m}{2^n}} |m\rangle`.
     Because this state is not modified and can be re-used at a later stage, the transform does not prepare it but
     rather assumes it has been prepared on those wires at an earlier stage.
 
@@ -95,10 +95,10 @@ def select_pauli_rot_phase_gradient(
                     :width: 70%
                     :target: javascript:void(0);
 
-    The first two wires correspond to the control register, the next wire is the target qubit, followed by the register
+    The first two wires correspond to the multiplexing register, the next wire is the target qubit, followed by the register
     equivalent to the angle wires, and finally, the register where the phase gradient is defined.
 
-    Note that this operator contains :class:`~.SemiAdder` that requires additional ``work_wires`` for the semi-in-place addition
+    Note that this operator contains :class:`~.SemiAdder` that typically uses additional ``work_wires`` for the semi-in-place addition
     :math:`\text{SemiAdder}|x\rangle_\text{ang} |y\rangle_\text{phg} = |x\rangle_\text{ang} |x + y\rangle_\text{phg}`.
 
 
@@ -109,7 +109,7 @@ def select_pauli_rot_phase_gradient(
             The length of the ``angle_wires`` implicitly determines the precision
             with which the angle is represented.
             E.g., :math:`(2^{-1} + 2^{-2} + 2^{-3}) 2\pi` is exactly represented by three bits as ``111``.
-        phase_grad_wires (Wires): The catalyst qubits with a phase gradient state prepared on them.
+        phase_grad_wires (Wires): Qubits with the catalytic phase gradient state prepared on them.
             Needs to be at least the length of ``angle_wires`` and will only
             use the first ``len(angle_wires)``.
         work_wires (Wires): Additional work wires to realize the :class:`~.SemiAdder` and :class:`~.QROM`.
@@ -167,7 +167,7 @@ def select_pauli_rot_phase_gradient(
 
     if len(phase_grad_wires) < len(angle_wires):
         raise ValueError(
-            f"phase_grad_wires needs to be at least as large as angle_wires. Got {len(phase_grad_wires)} phase_grad_wires, which is fewer than the {len(angle_wires)} angle wires."
+            f"phase_grad_wires needs to be at least as large as angle_wires. Got {len(phase_grad_wires)} phase_grad_wires, which is fewer than the {len(angle_wires)} angle_wires."
         )
 
     operations = []
