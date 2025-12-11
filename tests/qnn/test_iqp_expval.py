@@ -79,13 +79,6 @@ def test_expval(
     if gates_fn == "multi_gens":
         gates = [[gates[0][0], gates[1][0]]] + gates[2:]
 
-    circuit = IQP(
-        num_wires=n_qubits,
-        pattern=gates,
-        weights=params,
-        spin_sym=spin_sym,
-    )
-
     ops = jnp.array([[1, 0], [0, 1]])
     key = jax.random.PRNGKey(np.random.randint(0, 99999))
 
@@ -93,7 +86,10 @@ def test_expval(
         ops=ops,
         n_samples=n_samples,
         key=key,
-        circuit=circuit,
+        num_wires=n_qubits,
+        pattern=gates,
+        weights=params,
+        spin_sym=spin_sym,
         sparse=sparse,
         indep_estimates=indep_estimates,
         max_batch_samples=max_batch_samples,

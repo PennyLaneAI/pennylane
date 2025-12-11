@@ -17,8 +17,6 @@ This submodule defines methods for estimating the expectations of Pauli-Z operat
 import numpy as np
 from scipy.sparse import csr_matrix, dok_matrix
 
-from pennylane import IQP
-
 has_jax = True
 try:
     import jax
@@ -258,7 +256,10 @@ def op_expval(
     ops: list,
     n_samples: int,
     key: list,
-    circuit: IQP,
+    num_wires: int,
+    pattern: list[list[list[int]]],
+    weights: list[float],
+    spin_sym: bool = False,
     sparse: bool = False,
     indep_estimates: bool = False,
     max_batch_ops: int = None,
@@ -278,7 +279,14 @@ def op_expval(
         n_samples (int): Number of samples used to calculate the IQP expectation values. Higher values result in
             higher precision.
         key (Array): Jax key to control the randomness of the process.
-        circuit (IQP): The circuit after which expectations are taken.
+        num_wires (int): Number of wires in the circuit.
+        pattern (list[list[list[int]]]): Specification of the trainable gates. Each element of pattern corresponds to a
+            unique trainable parameter. Each sublist specifies the generators to which that parameter applies.
+            Generators are specified by listing the qubits on which an X operator acts. For example, `pattern` might
+            be [[[0], [1]], [[2]], [[3]], [[4]]].
+        weights (list): The parameters of the IQP gates.
+        spin_sym (bool, optional): If True, the circuit is equivalent to one where the initial state
+            :math:`\frac{1}{\sqrt(2)}(|00\dots0> + |11\dots1>)` is used in place of :math:`|00\dots0>`.
         indep_estimates (bool): Whether to use independent estimates of the ops in a batch.
         max_batch_ops (int): Maximum number of operators in a batch. Defaults to None, which means taking all ops at once.
         max_batch_samples (int): Maximum number of samples in a batch. Defaults to None, which means taking all n_samples at once.
@@ -287,10 +295,7 @@ def op_expval(
         list: List of Vectors. The expected value of each op and its standard deviation.
     """
 
-    gates = circuit.hyperparameters["pattern"]
-    params = jnp.array(circuit.hyperparameters["weights"])
-    n_qubits = len(circuit.wires)
-    spin_sym = circuit.hyperparameters["spin_sym"]
+    params = jnp.array(weights)
 
     if not has_jax:
         raise ImportError(
@@ -314,9 +319,9 @@ def op_expval(
             batch_n_samples = min(max_batch_samples, n_samples - i * max_batch_samples)
             key, subkey = jax.random.split(key, 2)
             batch_expval = _op_expval_batch(
-                gates=gates,
+                gates=pattern,
                 params=params,
-                n_qubits=n_qubits,
+                n_qubits=num_wires,
                 ops=batch_ops,
                 n_samples=batch_n_samples,
                 key=subkey,
