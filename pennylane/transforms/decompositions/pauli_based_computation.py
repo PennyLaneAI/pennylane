@@ -25,9 +25,8 @@ def to_ppr(tape):
 
     .. warning::
 
-        This transform requires QJIT and capture to be enabled (via :func:`qml.capture.enable() <pennylane.capture.enable>`),
-        as it is a wrapper for Catalyst's ``to_ppr`` compilation pass designed to only work with
-        program capture is enabled.
+        This transform requires decorating the QNode with :func:`@qml.qjit <pennylane.qjit>` and for
+        program capture to be enabled via :func:`qml.capture.enable() <pennylane.capture.enable>`.
 
     Clifford gates are defined as :math:`\exp(-{iP\tfrac{\pi}{4}})`, where :math:`P` is a Pauli word.
     Non-Clifford gates are defined as :math:`\exp(-{iP\tfrac{\pi}{8}})`.
@@ -115,9 +114,8 @@ def commute_ppr(tape, *, max_pauli_size=0):
 
     .. warning::
 
-        This transform requires QJIT and capture to be enabled (via :func:`qml.capture.enable() <pennylane.capture.enable>`),
-        as it is a wrapper for Catalyst's ``commute_ppr`` compilation pass designed to only work with
-        program capture is enabled.
+        This transform requires decorating the QNode with :func:`@qml.qjit <pennylane.qjit>` and for
+        program capture to be enabled via :func:`qml.capture.enable() <pennylane.capture.enable>`.
 
     For more information on PPRs, check out the
     `Compilation Hub <https://pennylane.ai/compilation/pauli-product-measurement>`_.
@@ -211,9 +209,8 @@ def merge_ppr_ppm(tape=None, *, max_pauli_size=0):
 
     .. warning::
 
-        This transform requires QJIT and capture to be enabled (via :func:`qml.capture.enable() <pennylane.capture.enable>`),
-        as it is a wrapper for Catalyst's ``commute_ppr`` compilation pass designed to only work with
-        program capture is enabled.
+        This transform requires decorating the QNode with :func:`@qml.qjit <pennylane.qjit>` and for
+        program capture to be enabled via :func:`qml.capture.enable() <pennylane.capture.enable>`.
 
     For more information on PPRs and PPMs, check out
     the `Compilation Hub <https://pennylane.ai/compilation/pauli-product-measurement>`_.
@@ -297,9 +294,8 @@ def ppr_to_ppm(tape=None, *, decompose_method="pauli-corrected", avoid_y_measure
 
     .. warning::
 
-        This transform requires QJIT and capture to be enabled (via :func:`qml.capture.enable() <pennylane.capture.enable>`),
-        as it is a wrapper for Catalyst's ``ppr_to_ppm`` compilation pass designed to only work with
-        program capture is enabled.
+        This transform requires decorating the QNode with :func:`@qml.qjit <pennylane.qjit>` and for
+        program capture to be enabled via :func:`qml.capture.enable() <pennylane.capture.enable>`.
 
     This pass is used to decompose both non-Clifford and Clifford PPRs into PPMs. The non-Clifford
     PPRs (:math:`\theta = \tfrac{\pi}{8}`) are decomposed first, then Clifford PPRs
@@ -407,9 +403,8 @@ def ppm_compilation(
 
     .. warning::
 
-        This transform requires QJIT and capture to be enabled (via :func:`qml.capture.enable() <pennylane.capture.enable>`),
-        as it is a wrapper for Catalyst's ``ppm_compilation`` compilation pass designed to only work with
-        program capture is enabled.
+        This transform requires decorating the QNode with :func:`@qml.qjit <pennylane.qjit>` and for
+        program capture to be enabled via :func:`qml.capture.enable() <pennylane.capture.enable>`.
 
     This pass combines multiple sub-passes:
 
@@ -521,9 +516,8 @@ def reduce_t_depth(qnode):
 
     .. warning::
 
-        This transform requires QJIT and capture to be enabled (via :func:`qml.capture.enable() <pennylane.capture.enable>`),
-        as it is a wrapper for Catalyst's ``commute_ppr`` compilation pass designed to only work with
-        program capture is enabled.
+        This transform requires decorating the QNode with :func:`@qml.qjit <pennylane.qjit>` and for
+        program capture to be enabled via :func:`qml.capture.enable() <pennylane.capture.enable>`.
 
     .. note::
 
