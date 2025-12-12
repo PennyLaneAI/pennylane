@@ -92,34 +92,45 @@ class TestSelectTHC:
     # Expected number of Toffolis and wires were obtained from Eq. 44 and 46 in https://arxiv.org/abs/2011.03494
     # The numbers were adjusted slightly to account for removal of phase gradient state and a different QROM decomposition
     @pytest.mark.parametrize(
-        "thc_ham, rotation_prec, selswap_depth, expected_res",
+        "thc_ham, batched_rotations, rotation_prec, selswap_depth, expected_res",
         (
             (
                 qre.THCHamiltonian(58, 160),
+                None,
                 13,
                 1,
                 {"algo_wires": 138, "auxiliary_wires": 752, "toffoli_gates": 5997},
             ),
             (
                 qre.THCHamiltonian(10, 50),
+                None,
                 15,
                 None,
                 {"algo_wires": 38, "auxiliary_wires": 148, "toffoli_gates": 1189},
             ),
             (
                 qre.THCHamiltonian(4, 20),
+                None,
                 15,
                 2,
                 {"algo_wires": 24, "auxiliary_wires": 103, "toffoli_gates": 545},
             ),
+            # These numbers were obtained manually for batched rotations based on the technique described in arXiv:2501.06165
+            (
+                qre.THCHamiltonian(58, 160),
+                29,
+                13,
+                None,
+                {"algo_wires": 138, "auxiliary_wires": 388, "toffoli_gates": 7493},
+            ),
         ),
     )
-    def test_resources(self, thc_ham, rotation_prec, selswap_depth, expected_res):
+    def test_resources(self, thc_ham, batched_rotations, rotation_prec, selswap_depth, expected_res):
         """Test that the resource decompostion for SelectTHC is correct."""
 
         select_cost = qre.estimate(
             qre.SelectTHC(
-                thc_ham, rotation_precision=rotation_prec, select_swap_depth=selswap_depth
+                thc_ham, batched_rotations=batched_rotations, rotation_precision=rotation_prec, select_swap_depth=selswap_depth
             )
         )
         assert select_cost.algo_wires == expected_res["algo_wires"]
@@ -133,10 +144,11 @@ class TestSelectTHC:
     # Expected number of Toffolis and wires were obtained from Eq. 44 and 46 in https://arxiv.org/abs/2011.03494
     # The numbers were adjusted slightly to account for removal of phase gradient state and a different QROM decomposition
     @pytest.mark.parametrize(
-        "thc_ham, rotation_prec, selswap_depth, num_ctrl_wires, num_zero_ctrl, expected_res",
+        "thc_ham, batched_rotations, rotation_prec, selswap_depth, num_ctrl_wires, num_zero_ctrl, expected_res",
         (
             (
                 qre.THCHamiltonian(58, 160),
+                None,
                 13,
                 1,
                 1,
@@ -145,6 +157,7 @@ class TestSelectTHC:
             ),
             (
                 qre.THCHamiltonian(10, 50),
+                None,
                 15,
                 None,
                 2,
@@ -153,16 +166,27 @@ class TestSelectTHC:
             ),
             (
                 qre.THCHamiltonian(4, 20),
+                None,
                 15,
                 2,
                 3,
                 2,
                 {"algo_wires": 27, "auxiliary_wires": 104, "toffoli_gates": 550},
             ),
+            # These numbers were obtained manually for batched rotations based on the technique described in arXiv:2501.06165
+            (
+                qre.THCHamiltonian(58, 160),
+                29,
+                13,
+                None,
+                1,
+                1,
+                {"algo_wires": 139, "auxiliary_wires": 388, "toffoli_gates": 7494},
+            ),
         ),
     )
     def test_controlled_resources(
-        self, thc_ham, rotation_prec, selswap_depth, num_ctrl_wires, num_zero_ctrl, expected_res
+        self, thc_ham, batched_rotations, rotation_prec, selswap_depth, num_ctrl_wires, num_zero_ctrl, expected_res
     ):
         """Test that the controlled resource decompostion for SelectTHC is correct."""
 
@@ -171,7 +195,7 @@ class TestSelectTHC:
                 num_ctrl_wires=num_ctrl_wires,
                 num_zero_ctrl=num_zero_ctrl,
                 base_op=qre.SelectTHC(
-                    thc_ham, rotation_precision=rotation_prec, select_swap_depth=selswap_depth
+                    thc_ham, batched_rotations=batched_rotations, rotation_precision=rotation_prec, select_swap_depth=selswap_depth
                 ),
             )
         )

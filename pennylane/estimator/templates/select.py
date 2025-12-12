@@ -299,10 +299,11 @@ class SelectTHC(ResourceOperator):
         if batched_rotations == num_orb - 1:
             restore_qrom = False
 
-        num_givens_blocks = np.ceil((num_orb - 1) / batched_rotations)
+        num_givens_blocks = int(np.ceil((num_orb - 1) / batched_rotations))
 
         # Data output for rotations
         gate_list.append(Allocate(rotation_precision * batched_rotations))
+        print(tensor_rank+num_orb, rotation_precision, batched_rotations, restore_qrom, select_swap_depth, num_givens_blocks)
 
         # QROM to load rotation angles for 2-body integrals
         qrom_twobody = resource_rep(
@@ -328,7 +329,7 @@ class SelectTHC(ResourceOperator):
                 "num_zero_ctrl": 0,
             },
         )
-        gate_list.append(GateCount(semiadder, batched_rotations))
+        gate_list.append(GateCount(semiadder, num_orb-1))
 
         # Adjoint of QROM for 2-body integrals Eq. 34 in arXiv:2011.03494
         gate_list.append(GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": qrom_twobody})))
@@ -377,7 +378,7 @@ class SelectTHC(ResourceOperator):
 
         # 1 cswap between the spin registers
         gate_list.append(qre.GateCount(cswap, 1))
-        gate_list.append(Deallocate(rotation_precision * (num_orb - 1)))
+        gate_list.append(Deallocate(rotation_precision * batched_rotations))
 
         return gate_list
 
@@ -410,6 +411,7 @@ class SelectTHC(ResourceOperator):
         thc_ham = target_resource_params["thc_ham"]
         rotation_precision = target_resource_params["rotation_precision"]
         select_swap_depth = target_resource_params["select_swap_depth"]
+        batched_rotations = target_resource_params["batched_rotations"]
 
         num_orb = thc_ham.num_orbitals
         tensor_rank = thc_ham.tensor_rank
@@ -431,20 +433,29 @@ class SelectTHC(ResourceOperator):
         cswap = resource_rep(qre.CSWAP)
         gate_list.append(GateCount(cswap, 4 * num_orb))
 
+        if batched_rotations is None:
+            batched_rotations = num_orb - 1
+
+        restore_qrom = True
+        if batched_rotations == num_orb - 1:
+            restore_qrom = False
+
+        num_givens_blocks = int(np.ceil((num_orb - 1) / batched_rotations))
+
         # Data output for rotations
-        gate_list.append(Allocate(rotation_precision * (num_orb - 1)))
+        gate_list.append(Allocate(rotation_precision * batched_rotations))
 
         # QROM for loading rotation angles for 2-body integrals
         qrom_twobody = resource_rep(
             qre.QROM,
             {
                 "num_bitstrings": tensor_rank + num_orb,
-                "size_bitstring": rotation_precision * (num_orb - 1),
-                "restored": False,
+                "size_bitstring": rotation_precision * batched_rotations,
+                "restored": restore_qrom,
                 "select_swap_depth": select_swap_depth,
             },
         )
-        gate_list.append(GateCount(qrom_twobody))
+        gate_list.append(GateCount(qrom_twobody, num_givens_blocks))
 
         # Cost for rotations by adding the rotations into the phase gradient state
         semiadder = resource_rep(
@@ -472,12 +483,12 @@ class SelectTHC(ResourceOperator):
             qre.QROM,
             {
                 "num_bitstrings": tensor_rank,
-                "size_bitstring": rotation_precision * (num_orb - 1),
-                "restored": False,
+                "size_bitstring": rotation_precision * batched_rotations,
+                "restored": restore_qrom,
                 "select_swap_depth": select_swap_depth,
             },
         )
-        gate_list.append(GateCount(qrom_onebody))
+        gate_list.append(GateCount(qrom_onebody, num_givens_blocks))
 
         # Cost for rotations by adding the rotations into the phase gradient state
         gate_list.append(GateCount(semiadder, num_orb - 1))
@@ -515,7 +526,7 @@ class SelectTHC(ResourceOperator):
         # 1 cswap between the spin registers
         gate_list.append(qre.GateCount(cswap, 1))
 
-        gate_list.append(Deallocate(rotation_precision * (num_orb - 1)))
+        gate_list.append(Deallocate(rotation_precision * batched_rotations))
 
         if num_ctrl_wires > 1:
             gate_list.append(Deallocate(1))
