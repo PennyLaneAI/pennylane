@@ -600,9 +600,10 @@ def specs(
 
             Due to similar technical limitations, depth computation is not available for pass-by-pass specs.
 
-            Here is an example using ``level="all"`` on the circuit from the previous code example:
+        Here is an example using ``level="all"`` on the circuit from the previous code example:
 
-        >>> print(qml.specs(circuit, level="all")(1.23))
+        >>> all_specs = qml.specs(circuit, level="all")(1.23)
+        >>> print(all_specs)
         Device: lightning.qubit
         Device wires: 3
         Shots: Shots(total=None)
@@ -664,6 +665,28 @@ def specs(
         <BLANKLINE>
           Measurements:
             probs(all wires): 1
+
+        When invoked with ``"all"`` as above, the returned :class:`~.resource.CircuitSpecs` object's
+        ``resources`` field is a dictionary mapping level names to their associated :class:`~.resource.SpecsResources`
+        object. The keys to this dictionary are returned as the ``level`` attribute of the :class:`~.resource.CircuitSpecs`
+        object.
+
+        >>> print(all_specs.level)
+        ['Before transforms', 'Before MLIR Passes (MLIR-0)', 'cancel-inverses (MLIR-1)', 'merge-rotations (MLIR-2)']
+
+        The resources associated with a particular level can be accessed using the returned level name as follows:
+
+        >>> print(all_specs.resources['merge-rotations (MLIR-2)'])
+        Total wire allocations: 3
+        Total gates: 2
+        Circuit depth: Not computed
+        <BLANKLINE>
+        Gate types:
+          RX: 1
+          CNOT: 1
+        <BLANKLINE>
+        Measurements:
+          probs(all wires): 1
     """
     # pylint: disable=import-outside-toplevel
     # Have to import locally to prevent circular imports as well as accounting for Catalyst not being installed
