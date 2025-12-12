@@ -392,6 +392,7 @@ class CommutationDAG:
         for edge in self.get_edges():
             draw_graph.add_edge(edge[0], edge[1])
 
+        # pylint: disable=import-outside-toplevel
         from networkx.drawing.nx_pydot import to_pydot
 
         dot = to_pydot(draw_graph)

@@ -607,11 +607,10 @@ def fragment_graph(graph):
             cut_edges.append((node1, node2, wire_key))
             graph_copy.remove_edge(node1, node2, key=wire_key)
 
-    from networkx import weakly_connected_components
+    # pylint: disable=import-outside-toplevel
+    from networkx import MultiDiGraph, weakly_connected_components
 
     subgraph_nodes = weakly_connected_components(graph_copy)
-    from networkx import MultiDiGraph
-
     subgraphs = tuple(MultiDiGraph(graph_copy.subgraph(n)) for n in subgraph_nodes)
 
     communication_graph = MultiDiGraph()
@@ -643,7 +642,7 @@ def fragment_graph(graph):
     prepare_nodes_removed = []
 
     for i, s in enumerate(subgraphs):
-        from networkx import has_path
+        from networkx import has_path  # pylint: disable=import-outside-toplevel
 
         if any(has_path(communication_graph, i, t) for t in terminal_indices):
             subgraphs_connected_to_measurements.append(s)

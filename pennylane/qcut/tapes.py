@@ -67,7 +67,7 @@ def tape_to_graph(tape: QuantumScript):
     >>> qml.qcut.tape_to_graph(tape)
     <networkx.classes.multidigraph.MultiDiGraph at 0x7fe41cbd7210>
     """
-    from networkx import MultiDiGraph
+    from networkx import MultiDiGraph  # pylint: disable=import-outside-toplevel
 
     graph = MultiDiGraph()
 

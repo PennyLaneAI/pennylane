@@ -41,7 +41,7 @@ except ModuleNotFoundError:
     has_galois = False
 
 
-def postorder_traverse(tree: nx.Graph, source: int, source_parent: int = None):
+def postorder_traverse(tree, source: int, source_parent: int | None = None):
     """Post-order traverse a tree graph, starting from (but excluding) the node ``source``.
 
     Args:
@@ -126,7 +126,7 @@ def postorder_traverse(tree: nx.Graph, source: int, source_parent: int = None):
     return out
 
 
-def preorder_traverse(tree: nx.Graph, source: int, source_parent: int = None):
+def preorder_traverse(tree, source: int, source_parent: int = None):
     """Pre-order traverse a tree graph, starting from (but excluding) the node ``source``.
 
     Args:
@@ -236,7 +236,7 @@ def _get_S(P: TensorLike, idx: int, node_set: Iterable[int], mode: str):
     return S
 
 
-def _eliminate(P: TensorLike, connectivity: nx.Graph, idx: int, mode: str):
+def _eliminate(P: TensorLike, connectivity, idx: int, mode: str):
     """Eliminate the column or row with index ``idx`` of the parity matrix P,
     respecting the connectivity constraints given by ``connectivity``.
 
@@ -259,6 +259,7 @@ def _eliminate(P: TensorLike, connectivity: nx.Graph, idx: int, mode: str):
 
     cnots = []
     # i.1.1/i.2.1 Find Steiner tree within S (S').
+    # pylint: disable=import-outside-toplevel
     from networkx.algorithms.approximation import steiner_tree
 
     T = steiner_tree(connectivity, list(S))
@@ -400,7 +401,7 @@ def rowcol(tape: QuantumScript, connectivity=None) -> tuple[QuantumScriptBatch, 
     return [circ], null_postprocessing
 
 
-def _rowcol_parity_matrix(P: np.ndarray, connectivity: nx.Graph | None = None) -> list[tuple[int]]:
+def _rowcol_parity_matrix(P: np.ndarray, connectivity) -> list[tuple[int]]:
     """RowCol algorithm that turns a parity matrix to a list of CNOT operators"""
     import networkx as nx  # pylint: disable=import-outside-toplevel
 
