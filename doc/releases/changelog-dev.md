@@ -640,6 +640,10 @@ A warning message has been added to :doc:`Building a plugin <../development/plug
 
 <h3>Bug fixes 🐛</h3>
 
+* The :class:`~.GeneralizedAmplitudeDamping` error channel method has been
+  updated to match the literature convention for the definition of the Kraus matrices.
+  [(#8707)](https://github.com/PennyLaneAI/pennylane/pull/8707)
+
 * Handles floating point errors in the norm of the state when applying
   mid circuit measurements.
   [(#8741)](https://github.com/PennyLaneAI/pennylane/pull/8741)
