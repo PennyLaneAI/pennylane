@@ -2338,7 +2338,8 @@ class Reflection(ResourceOperator):
 
     @classmethod
     def resource_decomp(cls, num_wires: int, alpha: float, cmpr_U: CompressedResourceOp):
-        r"""The resources for a select implementation taking advantage of the unary iterator trick.
+        r"""Returns a list representing the resources of the operator. Each object in the list
+        represents a gate and the number of times it occurs in the circuit.
 
         Args:
             num_wires (int): number of wires the operator acts on
@@ -2555,12 +2556,13 @@ class QuantumWalk(ResourceOperator):
 
     @classmethod
     def resource_decomp(cls, prep: CompressedResourceOp, sel: CompressedResourceOp):
-        r"""The resources for a select implementation taking advantage of the unary iterator trick.
+        r"""Returns a list representing the resources of the operator. Each object in the list
+        represents a gate and the number of times it occurs in the circuit.
 
         Args:
-            prep_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): A compressed representation for the operator that prepares
+            prep (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A compressed representation for the operator that prepares
                 the coefficients of the LCU.
-            sel_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): A compressed representation for the operator that selectively
+            sel (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A compressed representation for the operator that selectively
                 applies the unitaries of the LCU.
 
         Resources:
@@ -2666,9 +2668,9 @@ class QuantumWalk(ResourceOperator):
         the Operator that are needed to compute a resource estimation.
 
         Args:
-            prep_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): A compressed representation for the operator that prepares
+            prep (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A compressed representation for the operator that prepares
                 the coefficients of the LCU.
-            sel_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): A compressed representation for the operator that selectively
+            sel (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A compressed representation for the operator that selectively
                 applies the unitaries of the LCU.
 
         Returns:

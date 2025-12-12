@@ -139,8 +139,6 @@ class GQSP(ResourceOperator):
                 The compressed representation of signal operator which encodes the target hamiltonian.
             poly_deg (int): the maximum positive degree :math:`d` of the polynomial transformation
             neg_poly_deg (int): the maximum negative degree :math:`k` of the polynomial transformation
-            is_controlled (bool): Is ``True`` if the provided ``signal_operator`` is already
-                block-encoded via a signle qubit control.
             rot_precision (float, None): The precision with which to apply the general SU(2)
                 rotation gates.
 
@@ -173,8 +171,6 @@ class GQSP(ResourceOperator):
             poly_deg (int): the maximum positive degree :math:`d` of the polynomial transformation
             neg_poly_deg (int): the maximum negative degree :math:`k` of the polynomial transformation
             rot_precision (float, None): The precision with which to apply the general SU(2) rotation gates.
-            wires (Sequence[int], None): The wires the operation acts on. This includes both the wires of the
-                signal operator and the control wire required for block-encoding.
 
         Resources:
             The resources are obtained as described in theorem 3 of `Generalized Quantum Signal Processing
