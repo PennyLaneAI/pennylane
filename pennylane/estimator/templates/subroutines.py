@@ -1000,7 +1000,9 @@ class UnaryIterationQPE(ResourceOperator):
     The resources for this operation are computed as follows:
 
     >>> import pennylane.estimator as qre
-    >>> walk_operator = qre.RX()
+    >>> thc_ham = qre.THCHamiltonian(num_orbitals=20, tensor_rank=40)
+    >>> prep = qre.PrepTHC(thc_ham, coeff_precision=20, select_swap_depth=2)
+    >>> walk_operator = qre.QubitizeTHC(thc_ham, prep_op=prep)
     >>> print(qre.estimate(qre.UnaryIterationQPE(walk_operator, 11)))
     --- Resources: ---
      Total wires: 8
