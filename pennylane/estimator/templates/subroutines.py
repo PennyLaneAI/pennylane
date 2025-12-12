@@ -1005,17 +1005,19 @@ class UnaryIterationQPE(ResourceOperator):
     >>> walk_operator = qre.QubitizeTHC(thc_ham, prep_op=prep)
     >>> print(qre.estimate(qre.UnaryIterationQPE(walk_operator, 11)))
     --- Resources: ---
-     Total wires: 8
-       algorithmic wires: 5
-       allocated wires: 3
-         zero state: 3
-         any state: 0
-     Total gates : 1.880E+3
-       'Toffoli': 20,
-       'T': 1.760E+3,
-       'CNOT': 50,
-       'X': 20,
-       'Hadamard': 30
+    Total wires: 1417
+      algorithmic wires: 72
+      allocated wires: 1345
+        zero state: 1345
+        any state: 0
+    Total gates : 6.200E+5
+      'Toffoli': 3.858E+4,
+      'T': 792,
+      'CNOT': 4.552E+5,
+      'X': 2.282E+4,
+      'Z': 440,
+      'S': 880,
+      'Hadamard': 1.014E+5
     """
 
     resource_keys = {"walk_operator", "num_iterations", "adj_qft_cmpr_op"}
