@@ -1000,12 +1000,6 @@ def _qsp_optimization(degree: int, coeffs_target_func, maxiter=100, tol=1e-30):
 def _compute_qsp_angles_iteratively(
     poly,
 ):
-    # try:
-    #     import jax
-    #     import optax
-
-    # except ModuleNotFoundError as exc:
-    #     raise ModuleNotFoundError("JAX and optax are required") from exc
 
     if not is_jax_available:
         raise ModuleNotFoundError("jax is required!")
