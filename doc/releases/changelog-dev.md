@@ -166,6 +166,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* The `ResourcesUndefinedError` has been removed from the `adjoint`, `ctrl`, and `pow` resource
+  decomposition methods of `ResourceOperator` to avoid using errors as control flow.
+  [(#8598)](https://github.com/PennyLaneAI/pennylane/pull/8598)
+  
 * Improved :mod:`estimator <pennylane.estimator>`'s
   resource decomposition of `PauliRot` to match the optimal resources
   for certain special cases of Pauli strings (e.g. for `XX` and `YY` type Pauli strings).
@@ -718,6 +722,7 @@ Yushao Chen,
 Marcus Edwards,
 Lillian Frederiksen,
 Sengthai Heng,
+Austin Huang,
 Soran Jahangiri,
 Jacob Kitchen,
 Christina Lee,

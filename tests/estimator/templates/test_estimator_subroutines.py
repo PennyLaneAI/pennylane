@@ -23,7 +23,6 @@ import pennylane.estimator as qre
 from pennylane.estimator import GateCount, resource_rep
 from pennylane.estimator.resource_config import ResourceConfig
 from pennylane.estimator.wires_manager import Allocate, Deallocate
-from pennylane.exceptions import ResourcesUndefinedError
 
 # pylint: disable=no-self-use,too-many-arguments
 
@@ -228,6 +227,24 @@ class TestResourceSemiAdder:
         (
             (
                 1,
+                1,
+                1,
+                [
+                    GateCount(resource_rep(qre.X), 2),
+                    GateCount(
+                        resource_rep(
+                            qre.Controlled,
+                            {
+                                "base_cmpr_op": resource_rep(qre.CNOT),
+                                "num_ctrl_wires": 1,
+                                "num_zero_ctrl": 0,
+                            },
+                        )
+                    ),
+                ],
+            ),
+            (
+                1,
                 0,
                 5,
                 [
@@ -296,17 +313,6 @@ class TestResourceSemiAdder:
             num_zero_ctrl=num_zero_ctrl,
         )
         assert op.resource_decomp(**op.resource_params) == expected_res
-
-    @pytest.mark.parametrize("max_register_size", (-1, 0, 2))
-    def test_resources_controlled_error(self, max_register_size):
-        """Test that the controlled_resource_decomp raises correct errors."""
-
-        with pytest.raises(ResourcesUndefinedError):
-            qre.SemiAdder.controlled_resource_decomp(
-                num_ctrl_wires=1,
-                num_zero_ctrl=0,
-                target_resource_params={"max_register_size": max_register_size},
-            )
 
 
 class TestResourceControlledSequence:
@@ -970,6 +976,24 @@ class TestResourceQFT:
     def test_resources_phasegrad(self, num_wires, expected_res):
         """Test that the resources are correct for phase gradient method."""
         assert qre.QFT.phase_grad_resource_decomp(num_wires) == expected_res
+
+    def test_phase_grad_resource_decomp_estimate(self):
+        """Test the resource estimation with QFT.phase_grad_resource_decomp."""
+        config = qre.ResourceConfig()
+        config.set_decomp(qre.QFT, qre.QFT.phase_grad_resource_decomp)
+
+        op = qre.QFT(3)
+        resources = qre.estimate(op, config=config)
+
+        expected_gates = {
+            "Toffoli": 5,
+            "CNOT": 6,
+            "Hadamard": 6,
+        }
+        assert resources.gate_counts == expected_gates
+        assert resources.algo_wires == 3
+        assert resources.any_state_wires == 0
+        assert resources.zeroed_wires == 1
 
 
 class TestResourceAQFT:
