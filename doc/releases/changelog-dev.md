@@ -4,8 +4,10 @@
 
 * To support the [IQP paper](https://arxiv.org/pdf/2503.02934), a new template has been added that builds an Instantaneous 
   Quantum Polynomial (`~.IQP`) circuit, and a `~.ResourceOperator` has been added that allows us to estimate the resources 
-  required to run an `~.IQP` circuit in theory.
+  required to run an `~.IQP` circuit in theory. A method to approximate expectation values from Z measurements
+  following `~.IQP` circuits has also been added to the `math` module.
   [(#8748)](https://github.com/PennyLaneAI/pennylane/pull/8748)
+  [(#8749)](https://github.com/PennyLaneAI/pennylane/pull/8749)
 
 * Users can now set precisions for a larger variety of `ResourceOperator`s in
   :mod:`estimator <pennylane.estimator>` using
