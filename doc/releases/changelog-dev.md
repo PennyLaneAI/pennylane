@@ -2,6 +2,64 @@
 
 <h3>New features since last release</h3>
 
+* :func:`~pennylane.specs` can now be used to analyze arbitrary compilation passes for
+  workflows compiled with :func:`~pennylane.qjit`.
+
+  ```python
+  @qml.qjit
+  @qml.transforms.merge_rotations
+  @qml.transforms.cancel_inverses
+  @qml.qnode(dev)
+  def circuit(x):
+      qml.RX(x, wires=0)
+      qml.RX(x, wires=0)
+      qml.X(0)
+      qml.X(0)
+      qml.CNOT([0, 1])
+      return qml.probs()
+  ```
+
+  The supplied levels may be individual `int` values, or an iterable of multiple levels.
+  The strings ``"all"`` and ``"all-mlir"`` are also allowed, and return all user-applied transforms
+  and MLIR passes, or all user-applied MLIR passes only respectively.
+
+  ```pycon
+  >>> print(qml.specs(circuit, level=[1,2])(1.23))
+  Device: lightning.qubit
+  Device wires: 3
+  Shots: Shots(total=None)
+  Level: ['Before MLIR Passes (MLIR-0)', 'cancel-inverses (MLIR-1)']
+  <BLANKLINE>
+  Resource specifications:
+  Level = Before MLIR Passes (MLIR-0):
+    Total wire allocations: 3
+    Total gates: 5
+    Circuit depth: Not computed
+  <BLANKLINE>
+    Gate types:
+      RX: 2
+      PauliX: 2
+      CNOT: 1
+  <BLANKLINE>
+    Measurements:
+      probs(all wires): 1
+  <BLANKLINE>
+  ------------------------------------------------------------
+  <BLANKLINE>
+  Level = cancel-inverses (MLIR-1):
+    Total wire allocations: 3
+    Total gates: 3
+    Circuit depth: Not computed
+  <BLANKLINE>
+    Gate types:
+      RX: 2
+      CNOT: 1
+  <BLANKLINE>
+    Measurements:
+      probs(all wires): 1
+  ```
+  [(#8606)](https://github.com/PennyLaneAI/pennylane/pull/8606)
+
 * Users can now set precisions for a larger variety of `ResourceOperator`s in
   :mod:`estimator <pennylane.estimator>` using
   :meth:`ResourceConfig.set_precision <pennylane.estimator.resource_config.ResourceConfig.set_precision>`
@@ -58,7 +116,7 @@
 
   ```python
   import pennylane as qml
-  
+
   dev = qml.device("null.qubit", wires=3)
 
   @qml.qnode(dev)
@@ -85,7 +143,7 @@
 
   ```pycon
   >>> print(qml.specs(circuit)()['resources'])
-  Total qubit allocations: 3
+  Total wire allocations: 3
   Total gates: 5
   Circuit depth: 4
 
@@ -101,8 +159,8 @@
 
 <h4> Compile Pipeline and Transforms </h4>
 
-* Arithmetic dunder methods (`__add__`, `__mul__`, `__rmul__`) have been added to 
-  :class:`~.transforms.core.TransformDispatcher`, :class:`~.transforms.core.TransformContainer`, 
+* Arithmetic dunder methods (`__add__`, `__mul__`, `__rmul__`) have been added to
+  :class:`~.transforms.core.TransformDispatcher`, :class:`~.transforms.core.TransformContainer`,
   and :class:`~.CompilePipeline` (previously known as the `TransformProgram`) to enable intuitive composition of transform programs using `+` and `*` operators.
   [(#8703)](https://github.com/PennyLaneAI/pennylane/pull/8703)
 
@@ -324,7 +382,7 @@
   allowing for efficient decomposition of large matrices that cannot fit in memory when written as
   dense arrays.
   [(#8612)](https://github.com/PennyLaneAI/pennylane/pull/8612)
-  
+
 * A decomposition has been added to the adjoint of :class:`pennylane.TemporaryAND`. This decomposition relies on mid-circuit measurments and does not require any T gates.
   [(#8633)](https://github.com/PennyLaneAI/pennylane/pull/8633)
 
