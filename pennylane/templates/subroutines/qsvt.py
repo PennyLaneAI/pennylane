@@ -54,9 +54,10 @@ except ImportError:
 
 
 def jit_if_jax_available(f, **kwargs):
-    # thin wrapper around jax.jit
-    # that jit the function if jax is available
-    # otherwise return the input function
+    r"""thin wrapper around jax.jit
+    that jit the function if jax is available
+    otherwise return the input function
+    """
 
     if is_jax_available:
         return jax.jit(f, **kwargs)
