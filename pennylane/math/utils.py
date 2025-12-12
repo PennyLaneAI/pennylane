@@ -292,6 +292,8 @@ def cast_like(tensor1, tensor2):
         dtype = tensor2.dtype
     elif isinstance(tensor2, ArrayBox):
         dtype = ar.to_numpy(tensor2._value).dtype.type  # pylint: disable=protected-access
+    elif hasattr(tensor2, "dtype"):
+        dtype = tensor2.dtype
     else:
         dtype = ar.to_numpy(tensor2).dtype.type
     return cast(tensor1, dtype)

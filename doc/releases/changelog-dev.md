@@ -640,6 +640,8 @@ A warning message has been added to :doc:`Building a plugin <../development/plug
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixes a bug when `torch.vmap` is used with native parameter broadcasting and `qml.RZ`.
+
 * The :class:`~.GeneralizedAmplitudeDamping` error channel method has been
   updated to match the literature convention for the definition of the Kraus matrices.
   [(#8707)](https://github.com/PennyLaneAI/pennylane/pull/8707)
