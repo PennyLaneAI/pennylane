@@ -26,15 +26,15 @@ from pennylane.qnn.iqp import op_expval
 
 def local_gates(n_qubits: int, max_weight=2):
     """
-    Generates a gate list for containing all gates whose generators have Pauli weight
+    Generates a gate list for an IqpSimulator object containing all gates whose generators have Pauli weight
     less or equal than max_weight.
     :param n_qubits: The number of qubits in the gate list
     :param max_weight: maximum Pauli weight of gate generators
-    :return (list[list[list[int]]]): gate list
+    :return (list[list[list[int]]]): gate list object for IqpSimulator
     """
     gates = []
-    for weight in arange(1, max_weight + 1):
-        for gate in combinations(arange(n_qubits), weight):
+    for weight in np.arange(1, max_weight + 1):
+        for gate in combinations(np.arange(n_qubits), weight):
             gates.append([list(gate)])
     return gates
 
@@ -52,7 +52,6 @@ def local_gates(n_qubits: int, max_weight=2):
         "max_batch_samples",
         "max_batch_ops",
         "indep_estimates",
-        "expected_std",
     ),
     [
         (
@@ -66,23 +65,21 @@ def local_gates(n_qubits: int, max_weight=2):
             10_000,
             10_000,
             True,
-            [0.0],
         ),
         (
             [[0, 1], [0, 1]],
             "local_gates",
-            [0.3],
-            1,
+            [0.3, 0.2],
+            2,
             False,
             True,
             10_000,
             10_000,
             10_000,
             False,
-            [0.0],
         ),
-        ([[1, 0], [0, 1]], "multi_gens", [-0.41], 2, True, False, 10_000, None, None, True, [0.0]),
-        ([[1, 0], [1, 0]], "multi_gens", [0.0], 2, True, True, 10_000, None, None, True, [0.0]),
+        ([[1, 0], [0, 1]], "multi_gens", [-0.41], 2, True, False, 10_000, None, None, True),
+        ([[1, 0], [1, 0]], "multi_gens", [0.2], 2, True, True, 10_000, None, None, True),
     ],
 )
 def test_expval(
@@ -96,7 +93,6 @@ def test_expval(
     max_batch_samples,
     max_batch_ops,
     indep_estimates,
-    expected_std,
 ):  # pylint: disable=too-many-arguments
     import jax
     import jax.numpy as jnp
@@ -136,5 +132,6 @@ def test_expval(
         return expectation_operators
 
     simulated_exp_val = jnp.array(iqp_circuit(params, gates, spin_sym, n_qubits, ops))
-    assert np.allclose(exp_val, simulated_exp_val)
-    assert np.allclose(std, jnp.array(expected_std))
+
+    for i, val in enumerate(simulated_exp_val):
+        assert np.isclose(val, exp_val[i], atol=std[i] * 4)

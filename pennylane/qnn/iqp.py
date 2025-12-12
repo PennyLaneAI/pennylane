@@ -103,6 +103,7 @@ def _op_expval_indep(
     n_samples: int,
     key: list,
     sparse: bool,
+    spin_sym: bool,
 ) -> list:
     """
     Batch evaluate an array of ops in the same way as self.op_expval_batch, but using independent randomness
@@ -118,7 +119,8 @@ def _op_expval_indep(
             ops=op,
             n_samples=n_samples,
             key=key1,
-            spin_sym=False,
+            spin_sym=spin_sym,
+            indep_estimates=False,
             sparse=sparse,
         )
         return key2, expval
@@ -179,6 +181,7 @@ def _op_expval_batch(
             n_samples=n_samples,
             key=key,
             sparse=sparse,
+            spin_sym=spin_sym,
         )
 
     samples = jax.random.randint(key, (n_samples, n_qubits), 0, 2)
@@ -231,9 +234,9 @@ def _op_expval_batch(
             samples_len = samples.shape[0]
 
     if spin_sym:
-        if sparse or isinstance(ops, csr_matrix):
+        try:
             shape = (len(ops_sum), samples_len)
-        else:
+        except TypeError:
             shape = (samples_len,)
 
         ini_spin_sym = (
