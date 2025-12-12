@@ -27,7 +27,7 @@ from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import BatchPostprocessingFn, PostprocessingFn, ResultBatch
 
 from .cotransform_cache import CotransformCache
-from .transform_dispatcher import BoundTransform, TransformDispatcher
+from .transform_dispatcher import BoundTransform, Transform
 
 if TYPE_CHECKING:
     import jax
@@ -175,15 +175,12 @@ class CompilePipeline:
     @overload
     def __init__(
         self,
-        *transforms: CompilePipeline | BoundTransform | TransformDispatcher,
+        *transforms: CompilePipeline | BoundTransform | Transform,
         cotransform_cache: CotransformCache | None = None,
     ): ...
     def __init__(
         self,
-        *transforms: CompilePipeline
-        | BoundTransform
-        | TransformDispatcher
-        | Sequence[BoundTransform],
+        *transforms: CompilePipeline | BoundTransform | Transform | Sequence[BoundTransform],
         cotransform_cache: CotransformCache | None = None,
     ):
         if len(transforms) == 1 and isinstance(transforms[0], Sequence):
@@ -194,7 +191,7 @@ class CompilePipeline:
         self._compile_pipeline = []
         self.cotransform_cache = cotransform_cache
         for obj in transforms:
-            if not isinstance(obj, (CompilePipeline, BoundTransform, TransformDispatcher)):
+            if not isinstance(obj, (CompilePipeline, BoundTransform, Transform)):
                 raise TypeError(
                     "CompilePipeline can only be constructed with a series of transforms "
                     "or compile pipelines, or with a single list of transforms."
@@ -226,12 +223,10 @@ class CompilePipeline:
     def __bool__(self) -> bool:
         return bool(self._compile_pipeline)
 
-    def __add__(
-        self, other: CompilePipeline | BoundTransform | TransformDispatcher
-    ) -> CompilePipeline:
+    def __add__(self, other: CompilePipeline | BoundTransform | Transform) -> CompilePipeline:
 
         # Convert dispatcher to container if needed
-        if isinstance(other, TransformDispatcher):
+        if isinstance(other, Transform):
             other = BoundTransform(other)
 
         # Handle BoundTransform
@@ -258,17 +253,17 @@ class CompilePipeline:
 
         return NotImplemented
 
-    def __radd__(self, other: BoundTransform | TransformDispatcher) -> CompilePipeline:
+    def __radd__(self, other: BoundTransform | Transform) -> CompilePipeline:
         """Right addition to prepend a transform to the program.
 
         Args:
-            other: A BoundTransform or TransformDispatcher to prepend.
+            other: A BoundTransform or Transform to prepend.
 
         Returns:
             CompilePipeline: A new program with the transform prepended.
         """
         if isinstance(other, BoundTransform):
-            if self.has_final_transform and other.final_transform:
+            if self.has_final_transform and other.is_final_transform:
                 raise TransformError("The compile pipeline already has a terminal transform.")
 
             transforms = [other] + self._compile_pipeline
@@ -276,19 +271,17 @@ class CompilePipeline:
 
         return NotImplemented
 
-    def __iadd__(
-        self, other: CompilePipeline | BoundTransform | TransformDispatcher
-    ) -> CompilePipeline:
+    def __iadd__(self, other: CompilePipeline | BoundTransform | Transform) -> CompilePipeline:
         """In-place addition to append a transform to the program.
 
         Args:
-            other: A BoundTransform, TransformDispatcher, or CompilePipeline to append.
+            other: A BoundTransform, Transform, or CompilePipeline to append.
 
         Returns:
             CompilePipeline: This program with the transform(s) appended.
         """
         # Convert dispatcher to container if needed
-        if isinstance(other, TransformDispatcher):
+        if isinstance(other, Transform):
             other = BoundTransform(other)
 
         if isinstance(other, BoundTransform):
@@ -355,26 +348,26 @@ class CompilePipeline:
     def __contains__(self, obj) -> bool:
         if isinstance(obj, BoundTransform):
             return obj in self._compile_pipeline
-        if isinstance(obj, TransformDispatcher):
+        if isinstance(obj, Transform):
             return any(obj.transform == t.transform for t in self)
         return False
 
-    def remove(self, obj: BoundTransform | TransformDispatcher):
+    def remove(self, obj: BoundTransform | Transform):
         """In place remove the input containers, specifically,
-        1. if the input is a TransformDispatcher, remove all containers matching the dispatcher;
+        1. if the input is a Transform, remove all containers matching the dispatcher;
         2. if the input is a BoundTransform, remove all containers exactly matching the input.
 
         Args:
-            obj (BoundTransform or TransformDispatcher): The object to remove from the program.
+            obj (BoundTransform or Transform): The object to remove from the program.
         """
         if isinstance(obj, BoundTransform):
             self._compile_pipeline = [t for t in self._compile_pipeline if t != obj]
-        elif isinstance(obj, TransformDispatcher):
+        elif isinstance(obj, Transform):
             self._compile_pipeline = [
                 t for t in self._compile_pipeline if t.transform != obj.transform
             ]
         else:
-            raise TypeError("Only BoundTransform or TransformDispatcher can be removed.")
+            raise TypeError("Only BoundTransform or Transform can be removed.")
 
     def push_back(self, transform_container: BoundTransform):
         """Add a transform (container) to the end of the program.
@@ -387,7 +380,7 @@ class CompilePipeline:
 
         # Program can only contain one informative transform and at the end of the program
         if self.has_final_transform:
-            if transform_container.final_transform:
+            if transform_container.is_final_transform:
                 raise TransformError("The compile pipeline already has a terminal transform.")
             self._compile_pipeline.insert(-1, transform_container)
             return
@@ -399,33 +392,31 @@ class CompilePipeline:
         Args:
             transform_container(BoundTransform): A transform represented by its container.
         """
-        if (transform_container.final_transform) and not self.is_empty():
+        if (transform_container.is_final_transform) and not self.is_empty():
             raise TransformError(
                 "Informative transforms can only be added at the end of the program."
             )
         self._compile_pipeline.insert(0, transform_container)
 
-    def add_transform(self, transform: TransformDispatcher, *targs, **tkwargs):
+    def add_transform(self, transform: Transform, *targs, **tkwargs):
         """Add a transform (dispatcher) to the end of the program.
 
         Note that this should be a function decorated with/called by
         ``qml.transforms.transform``, and not a ``BoundTransform``.
 
         Args:
-            transform (TransformDispatcher): The transform to add to the compile pipeline.
+            transform (Transform): The transform to add to the compile pipeline.
             *targs: Any additional arguments that are passed to the transform.
 
         Keyword Args:
             **tkwargs: Any additional keyword arguments that are passed to the transform.
 
         """
-        if not isinstance(transform, TransformDispatcher):
+        if not isinstance(transform, Transform):
             raise TransformError("Only transform dispatcher can be added to the compile pipeline.")
 
         if transform.expand_transform:
-            self.push_back(
-                BoundTransform(TransformDispatcher(transform.expand_transform), targs, tkwargs)
-            )
+            self.push_back(BoundTransform(Transform(transform.expand_transform), targs, tkwargs))
         self.push_back(
             BoundTransform(
                 transform,
@@ -434,18 +425,18 @@ class CompilePipeline:
             )
         )
 
-    def insert_front_transform(self, transform: TransformDispatcher, *targs, **tkwargs):
+    def insert_front_transform(self, transform: Transform, *targs, **tkwargs):
         """Add a transform (dispatcher) to the beginning of the program.
 
         Args:
-            transform(TransformDispatcher): The transform to add to the front of the compile pipeline.
+            transform(Transform): The transform to add to the front of the compile pipeline.
             *targs: Any additional arguments that are passed to the transform.
 
         Keyword Args:
             **tkwargs: Any additional keyword arguments that are passed to the transform.
 
         """
-        if transform.final_transform and not self.is_empty():
+        if transform.is_final_transform and not self.is_empty():
             raise TransformError(
                 "Informative transforms can only be added at the end of the program."
             )
@@ -459,9 +450,7 @@ class CompilePipeline:
         )
 
         if transform.expand_transform:
-            self.insert_front(
-                BoundTransform(TransformDispatcher(transform.expand_transform), targs, tkwargs)
-            )
+            self.insert_front(BoundTransform(Transform(transform.expand_transform), targs, tkwargs))
 
     def pop_front(self):
         """Pop the transform container at the beginning of the program.
@@ -506,7 +495,7 @@ class CompilePipeline:
     @property
     def has_final_transform(self) -> bool:
         """``True`` if the compile pipeline has a terminal transform."""
-        return self[-1].final_transform if self else False  # pylint: disable=no-member
+        return self[-1].is_final_transform if self else False  # pylint: disable=no-member
 
     def has_classical_cotransform(self) -> bool:
         """Check if the compile pipeline has some classical cotransforms.
@@ -681,7 +670,7 @@ class CompilePipeline:
         return self.__call_generic(first_arg)
 
 
-@TransformDispatcher.generic_register
+@Transform.generic_register
 def _apply_to_program(obj: CompilePipeline, transform, *targs, **tkwargs):
     program = copy(obj)
 
@@ -703,3 +692,6 @@ def _apply_to_program(obj: CompilePipeline, transform, *targs, **tkwargs):
         )
     )
     return program
+
+
+TransformProgram = CompilePipeline

@@ -100,7 +100,7 @@ def _create_plxpr_fallback_transform(tape_transform):
 
 
 def specific_apply_transform(transform, obj, *targs, **tkwargs):
-    """The default behavior for TransformDispatcher._apply_transform. By default, it dispatches to the
+    """The default behavior for Transform._apply_transform. By default, it dispatches to the
     generic registration."""
     return transform.generic_apply_transform(obj, *targs, **tkwargs)
 
@@ -130,7 +130,7 @@ def _dummy_register(obj):  # just used for sphinx
     return obj  # pragma: no cover
 
 
-class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
+class Transform:  # pylint: disable=too-many-instance-attributes
     r"""Converts a transform that has the signature ``(tape -> Sequence(tape), fn)`` to a transform dispatcher
     that can act on :class:`pennylane.tape.QuantumTape`, quantum function, :class:`pennylane.QNode`,
     :class:`pennylane.devices.Device`.
@@ -259,9 +259,9 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
                 def __init__(self, ops):
                     self.ops = ops
 
-            from pennylane.transforms.core import TransformDispatcher
+            from pennylane.transforms.core import Transform
 
-            @TransformDispatcher.generic_register
+            @Transform.generic_register
             def apply_to_subroutine(obj: Subroutine, transform, *targs, **tkwargs):
                 tape = qml.tape.QuantumScript(obj.ops)
                 batch, _ = transform(tape, *targs, **tkwargs)
@@ -274,7 +274,7 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
 
         .. code-block:: python
 
-            @TransformDispatcher.generic_register(Subroutine)
+            @Transform.generic_register(Subroutine)
             def apply_to_subroutine(obj: Subroutine, transform, *targs, **tkwargs):
                 tape = qml.tape.QuantumScript(obj.ops)
                 batch, _ = transform(tape, *targs, **tkwargs)
@@ -310,7 +310,7 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
         For dispatcher + program, Python falls back to CompilePipeline.__radd__.
 
         Args:
-            other: Another TransformDispatcher or BoundTransform to add.
+            other: Another Transform or BoundTransform to add.
 
         Returns:
             CompilePipeline: A new program with this dispatcher followed by the other.
@@ -358,7 +358,7 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
         return self._is_informative
 
     @property
-    def final_transform(self):
+    def is_final_transform(self):
         """``True`` if the transformed tapes must be executed."""
         return self._final_transform
 
@@ -409,7 +409,7 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
         if self.expand_transform:
             qnode.transform_program.push_back(
                 BoundTransform(
-                    TransformDispatcher(self._expand_transform),
+                    Transform(self._expand_transform),
                     args=targs,
                     kwargs=tkwargs,
                     use_argnum=self._use_argnum_in_expand,
@@ -490,18 +490,18 @@ class BoundTransform:  # pylint: disable=too-many-instance-attributes
 
     def __init__(
         self,
-        transform: TransformDispatcher,
+        transform: Transform,
         args: tuple | list = (),
         kwargs: None | dict = None,
         *,
         use_argnum: bool = False,
         **transform_config,
     ):
-        if not isinstance(transform, TransformDispatcher):
-            transform = TransformDispatcher(transform, **transform_config)
+        if not isinstance(transform, Transform):
+            transform = Transform(transform, **transform_config)
         elif transform_config:
             raise ValueError(
-                f"transform_config kwargs {transform_config} cannot be passed if a TransformDispatcher is provided."
+                f"transform_config kwargs {transform_config} cannot be passed if a Transform is provided."
             )
         self._transform_dispatcher = transform
         self._args = tuple(args)
@@ -524,7 +524,7 @@ class BoundTransform:  # pylint: disable=too-many-instance-attributes
                 self._transform_dispatcher._classical_cotransform,
                 self._transform_dispatcher._plxpr_transform,
                 self._transform_dispatcher._is_informative,
-                self._transform_dispatcher.final_transform,
+                self._transform_dispatcher.is_final_transform,
             )
         )
 
@@ -538,7 +538,7 @@ class BoundTransform:  # pylint: disable=too-many-instance-attributes
             and self.kwargs == other.kwargs
             and self.classical_cotransform == other.classical_cotransform
             and self.is_informative == other.is_informative
-            and self.final_transform == other.final_transform
+            and self.is_final_transform == other.is_final_transform
         )
 
     @property
@@ -584,13 +584,13 @@ class BoundTransform:  # pylint: disable=too-many-instance-attributes
         return self._transform_dispatcher.is_informative
 
     @property
-    def final_transform(self) -> bool:
+    def is_final_transform(self) -> bool:
         """Whether or not the transform must be the last one to be executed
         in a ``CompilePipeline``.
 
         This property is ``True`` for most gradient transforms.
         """
-        return self._transform_dispatcher.final_transform
+        return self._transform_dispatcher.is_final_transform
 
     def __add__(self, other):
         """Add two containers or a container and a dispatcher to create a CompilePipeline.
@@ -598,13 +598,13 @@ class BoundTransform:  # pylint: disable=too-many-instance-attributes
         For container + program, Python falls back to CompilePipeline.__radd__.
 
         Args:
-            other: Another BoundTransform or TransformDispatcher to add.
+            other: Another BoundTransform or Transform to add.
 
         Returns:
             CompilePipeline: A new program with this container followed by the other.
         """
         # Convert dispatcher to container if needed
-        if isinstance(other, TransformDispatcher):
+        if isinstance(other, Transform):
             other = BoundTransform(other)
 
         if isinstance(other, BoundTransform):
@@ -612,7 +612,7 @@ class BoundTransform:  # pylint: disable=too-many-instance-attributes
             # pylint: disable=import-outside-toplevel
             from .compile_pipeline import CompilePipeline
 
-            if self.final_transform and other.final_transform:
+            if self.is_final_transform and other.is_final_transform:
                 raise TransformError(
                     f"Both {self} and {other} are final transforms and cannot be combined."
                 )
@@ -639,7 +639,7 @@ class BoundTransform:  # pylint: disable=too-many-instance-attributes
         if n < 0:
             raise ValueError("Cannot multiply transform container by negative integer")
 
-        if self.final_transform and n > 1:
+        if self.is_final_transform and n > 1:
             raise TransformError(
                 f"{self} is a final transform and cannot be applied more than once."
             )
@@ -649,7 +649,7 @@ class BoundTransform:  # pylint: disable=too-many-instance-attributes
     __rmul__ = __mul__
 
 
-@TransformDispatcher.generic_register
+@Transform.generic_register
 def _apply_to_tape(obj: QuantumScript, transform, *targs, **tkwargs):
     if transform.transform is None:
         raise NotImplementedError(f"transform {transform} has no defined tape transform.")
@@ -711,7 +711,7 @@ def _capture_apply(obj, transform, *targs, **tkwargs):
     return qfunc_transformed
 
 
-@TransformDispatcher.generic_register
+@Transform.generic_register
 def apply_to_callable(obj: Callable, transform, *targs, **tkwargs):
     """Apply a transform to a Callable object."""
     if obj.__class__.__name__ == "QJIT":
@@ -774,7 +774,7 @@ def apply_to_callable(obj: Callable, transform, *targs, **tkwargs):
     return qfunc_transformed
 
 
-@TransformDispatcher.generic_register
+@Transform.generic_register
 def _apply_to_sequence(obj: Sequence, transform, *targs, **tkwargs):
     if not all(isinstance(t, QuantumScript) for t in obj):
         raise TransformError(
@@ -822,3 +822,4 @@ def _apply_to_sequence(obj: Sequence, transform, *targs, **tkwargs):
 
 
 TransformContainer = BoundTransform
+TransformDispatcher = Transform

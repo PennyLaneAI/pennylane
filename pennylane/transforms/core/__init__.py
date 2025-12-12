@@ -15,12 +15,10 @@ r"""This module contains the experimental transforms building blocks (core)."""
 
 from .transform import transform
 from .transform_dispatcher import (
-    TransformDispatcher,
+    Transform,
     TransformContainer,
     TransformError,
     BoundTransform,
+    TransformDispatcher,
 )
-from .compile_pipeline import CompilePipeline
-
-
-TransformProgram = CompilePipeline
+from .compile_pipeline import CompilePipeline, TransformProgram
