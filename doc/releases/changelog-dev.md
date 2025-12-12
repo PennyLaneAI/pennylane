@@ -181,6 +181,8 @@
   work wire and :class:`pennylane.TemporaryAND` operators to reduce the resources needed.
   [(#8549)](https://github.com/PennyLaneAI/pennylane/pull/8549)
 
+* :class:`~pennylane.estimator.templates.SelectTHC` template was modified to allow trade-off between qubits and T-gates.
+  [(#8682)](https://github.com/PennyLaneAI/pennylane/pull/8682)
 * A decomposition has been added to the adjoint of :class:`pennylane.TemporaryAND`. This decomposition relies on mid-circuit measurments and does not require any T gates.
   [(#8633)](https://github.com/PennyLaneAI/pennylane/pull/8633)
 
