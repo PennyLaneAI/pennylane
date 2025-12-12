@@ -2,6 +2,13 @@
 
 <h3>New features since last release</h3>
 
+* A new template for building an Instantaneous Quantum Polynomial (`~.IQP`) circuit has been added along with a 
+  lightweight version (based on the :class:`~.estimator.resource_operator.ResourceOperator` class) to rapidly 
+  estimate its resources. This unlocks easily estimating the resources of the IQP circuit introduced in the 
+  `Train on classical, deploy on quantum <https://arxiv.org/abs/2503.02934>`_ work for generative quantum machine 
+  learning.
+  [(#8748)](https://github.com/PennyLaneAI/pennylane/pull/8748)
+
 * Users can now set precisions for a larger variety of `ResourceOperator`s in
   :mod:`estimator <pennylane.estimator>` using
   :meth:`ResourceConfig.set_precision <pennylane.estimator.resource_config.ResourceConfig.set_precision>`
