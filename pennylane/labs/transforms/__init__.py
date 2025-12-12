@@ -1,4 +1,4 @@
-# Copyright 2024 Xanadu Quantum Technologies Inc.
+# Copyright 2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,29 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-.. currentmodule:: pennylane
+This subpackage contains experimental PennyLane transforms and their building blocks.
 
-This module contains experimental features enabling
-advanced quantum computing research.
-
-.. currentmodule:: pennylane.labs
-
-Modules
-~~~~~~~
+.. currentmodule:: pennylane.labs.transforms
 
 .. autosummary::
     :toctree: api
 
-    dla
-    resource_estimation
-    transforms
-    trotter_error
+    ~select_pauli_rot_phase_gradient
 
 """
 
-from pennylane.labs import dla
-from pennylane.labs import resource_estimation
-from pennylane.labs import transforms
-from pennylane.labs import trotter_error
-
-__all__ = []
+from .select_pauli_rot_phase_gradient import select_pauli_rot_phase_gradient
