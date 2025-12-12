@@ -427,7 +427,7 @@ class QSVT(ResourceOperator):
         :func:`~.qsvt` and :class:`~.QSVT`.
 
     Args:
-        block_encoding (ResourceOperator): the block encoding operator
+        block_encoding (:class:`~.estimator.resource_operator.ResourceOperator`): the block encoding operator
         encoding_dims (int | tuple(int)): The subspace (number of rows and columns) where the operator
             is encoded in the matrix representation of the block encoding operator.
         poly_deg (int): the degree of the polynomial transformation being applied
@@ -622,7 +622,7 @@ class QSP(ResourceOperator):
         :func:`~.qsvt` and :class:`~.QSVT`.
 
     Args:
-        block_encoding (ResourceOperator): the block encoding operator
+        block_encoding (:class:`~.estimator.resource_operator.ResourceOperator`): the block encoding operator
         poly_deg (int): the degree of the polynomial transformation being applied
         convention (str): Which of the conventions to use for the rotation operators.
             The valid conventions are ``"X"`` or ``"Z"``.
