@@ -58,6 +58,26 @@ class IQP(Operation):
 
     Raises:
         Exception: when pattern and weights have a different number of elements.
+
+    **Example:**
+
+    Below is an example of a 2-qubit IQP circuit. At this small scale, a state vector simulation is tractable.
+
+    .. code-block:: python
+
+        dev = qml.device("default.qubit")
+
+        @qml.qnode(dev)
+        def iqp_circuit(weights, pattern, spin_sym):
+            qml.IQP(weights, 2, pattern, spin_sym)
+            return [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))]
+
+    >>> iqp_circuit([0.89, 0.54], [[[0]], [[1]]], False)
+    [-0.20768100160878344, 0.47132836417373947]
+
+    >>> print(qml.draw(iqp_circuit, level="device")([0.89, 0.54], [[[0]], [[1]]], False))
+    0: ──H──MultiRZ(1.78)──H─┤  <Z>
+    1: ──H──MultiRZ(1.08)──H─┤  <Z>
     """
 
     resource_keys = {"spin_sym", "pattern", "num_wires"}
