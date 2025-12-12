@@ -73,7 +73,7 @@ class IQP(Operation):
             return [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))]
 
     >>> iqp_circuit([0.89, 0.54], [[[0]], [[1]]], False)
-    [-0.20768100160878344, 0.47132836417373947]
+    [np.float64(-0.20768100160878344), np.float64(0.47132836417373947)]
 
     >>> print(qml.draw(iqp_circuit, level="device")([0.89, 0.54], [[[0]], [[1]]], False))
     0: ──H──MultiRZ(1.78)──H─┤  <Z>
