@@ -611,6 +611,16 @@ class PCPhase(ResourceOperator):
     The resources for this operation are computed using:
 
     >>> import pennylane.estimator as qre
+    >>> pc_phase = qre.PCPhase(num_wires=2, dim=2, rotation_precision=1e-5)
+    >>> print(qre.estimate(pc_phase))
+    --- Resources: ---
+     Total wires: 2
+       algorithmic wires: 2
+       allocated wires: 0
+         zero state: 0
+         any state: 0
+     Total gates : 28
+       'T': 28
 
     """
 
@@ -638,8 +648,10 @@ class PCPhase(ResourceOperator):
         r"""Returns a list of GateCount objects representing the operator's resources.
 
         Args:
-            pauli_string (str): a string describing the pauli operators that define the rotation
-            precision (float | None): error threshold for Clifford + T decomposition of this operation
+            num_wires (int): the number of wires this operator acts on
+            dim (int): the dimension of the target subspace
+            rot_precision (float | None): The error threshold for the approximate Clifford + T
+                decomposition of the phase shift gates used to implement this operation.
 
         Resources:
             [TODO] The methods and decompositions were taken directly from the PennyLane operator

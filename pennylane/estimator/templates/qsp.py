@@ -442,6 +442,19 @@ class QSVT(ResourceOperator):
     The resources for this operation are computed using:
 
     >>> import pennylane.estimator as qre
+    >>> block_encoding = qre.RX(0.1, wires=0)
+    >>> encoding_dims = (2, 2)
+    >>> poly_deg = 3
+    >>> qsvt = qre.QSVT(block_encoding, encoding_dims, poly_deg)
+    >>> print(qre.estimate(qsvt))
+    --- Resources: ---
+     Total wires: 1
+       algorithmic wires: 1
+       allocated wires: 0
+         zero state: 0
+         any state: 0
+     Total gates : 39
+       'T': 39
     """
 
     resource_keys = {"block_encoding", "encoding_dims", "poly_deg"}
@@ -626,6 +639,18 @@ class QSP(ResourceOperator):
     The resources for this operation are computed using:
 
     >>> import pennylane.estimator as qre
+    >>> block_encoding = qre.RX(0.1, wires=0)
+    >>> poly_deg = 3
+    >>> qsp = qre.QSP(block_encoding, poly_deg, convention="Z", rotation_precision=1e-5)
+    >>> print(qre.estimate(qsp))
+    --- Resources: ---
+     Total wires: 1
+       algorithmic wires: 1
+       allocated wires: 0
+         zero state: 0
+         any state: 0
+     Total gates : 151
+       'T': 151
     """
 
     resource_keys = {"block_encoding", "poly_deg", "convention", "rotation_precision"}
