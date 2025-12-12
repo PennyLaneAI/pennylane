@@ -134,4 +134,4 @@ def test_expval(
     simulated_exp_val = jnp.array(iqp_circuit(params, gates, spin_sym, n_qubits, ops))
 
     for i, val in enumerate(simulated_exp_val):
-        assert np.isclose(val, exp_val[i], atol=std[i] * 4)
+        assert np.isclose(val, exp_val[i], atol=std[i] * 2)
