@@ -348,7 +348,7 @@ class Resources:
 
         Returns:
             int: The total number of gates. This is the sum of all of the counts of gates
-                tracked in the `gate_counts` dictionary.
+                tracked in the ``gate_counts`` dictionary.
         """
         return sum(self.gate_counts.values())
 
