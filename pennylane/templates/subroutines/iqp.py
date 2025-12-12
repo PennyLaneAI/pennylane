@@ -29,7 +29,7 @@ from pennylane.ops import Hadamard, MultiRZ, PauliRot
 
 class IQP(Operation):
     """
-    A template that builds an Instantaneous Quantum Polynomial (IQP) circuit. The gates of these circuits are given by
+    A template that builds an Instantaneous Quantum Polynomial (IQP) circuit. The gates of these circuits correspond
     to multi-qubit X rotations, whose generators are given by tensor products of Pauli X operators.
 
     In this `IQPOpt <https://arxiv.org/pdf/2501.04776>`__ paper and this
