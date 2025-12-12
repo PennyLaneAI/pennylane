@@ -47,7 +47,7 @@ except ImportError:
 try:
     import optax  # pylint: disable=unused-import
 except ImportError:
-    is_otpax_available = False
+    is_optax_available = False
 
 
 def qfunc(A):
