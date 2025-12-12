@@ -111,7 +111,7 @@ def select_pauli_rot_phase_gradient(
 
     .. code-block:: python
 
-        from pennylane.labs.transforms.select_pauli_rot_phase_gradient import select_pauli_rot_phase_gradient
+        from pennylane.labs.transforms import select_pauli_rot_phase_gradient
         from functools import partial
         import numpy as np
 
