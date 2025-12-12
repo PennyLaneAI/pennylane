@@ -29,7 +29,7 @@ from pennylane.operation import Operation
 
 # pylint: disable=too-many-positional-arguments
 def kahypar_cut(
-    graphs,
+    graph,
     num_fragments: int,
     imbalance: int = None,
     edge_weights: None | list[int | float] = None,
