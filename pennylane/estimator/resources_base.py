@@ -83,7 +83,7 @@ class Resources:
         RX {'precision': 1e-06}: 1
     Toffoli total: 64
         Toffoli {'elbow': None}: 4
-        Toffoli {'elbow': 'left'}: 6
+        Toffoli {'elbow': 'left'}: 60
     T total: 856
     CNOT total: 589
     Hadamard total: 601
