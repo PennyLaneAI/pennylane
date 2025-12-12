@@ -690,7 +690,12 @@ def max_weight_cycle(graph: nx_Graph | rx.PyGraph | rx.PyDiGraph, constrained: b
         can be prepared using :class:`~.BasisState` or simple :class:`~.PauliX` rotations on the
         ``0`` and ``3`` wires.
     """
-    _validate_graph(graph)
+    import networkx as nx  # pylint: disable=import-outside-toplevel
+
+    if not isinstance(graph, (nx.Graph, rx.PyGraph, rx.PyDiGraph)):
+        raise ValueError(
+            f"Input graph must be a nx.Graph, rx.PyGraph, or rx.PyDiGraph, got {type(graph).__name__}"
+        )
     mapping = wires_to_edges(graph)
 
     if constrained:
