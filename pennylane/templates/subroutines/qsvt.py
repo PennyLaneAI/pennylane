@@ -845,7 +845,7 @@ def _cheby_pol(x, degree):
 
 @jit_if_jax_available
 def _poly_func(coeffs, x):
-    """\sum c_kT_{k}(x) where T_k(x)=cos(karccos(x))"""
+    r"""\sum c_kT_{k}(x) where T_k(x)=cos(karccos(x))"""
 
     return jax.numpy.sum(
         coeffs @ jax.vmap(_cheby_pol, in_axes=(None, 0))(x, np.arange(coeffs.shape[0]))
@@ -941,7 +941,7 @@ def _grid_pts(degree, interface):
 
 @jit_if_jax_available
 def obj_function(phi, x, y):
-    """Objective function to be optimized in Equation (23)
+    r"""Objective function to be optimized in Equation (23)
 
     Args:
         phi (tensor_like): optimization parameters
@@ -982,7 +982,7 @@ def optax_opt(initial_guess, x, y, maxiter, tol):
 
 
 def _qsp_optimization(degree: int, coeffs_target_func, maxiter=100, tol=1e-30):
-    """Algorithm 1 in https://arxiv.org/pdf/2002.11649 produces the angle parameters by minimizing the distance between the target and qsp polynomial over the grid"""
+    r"""Algorithm 1 in https://arxiv.org/pdf/2002.11649 produces the angle parameters by minimizing the distance between the target and qsp polynomial over the grid"""
 
     jax.config.update("jax_enable_x64", True)
     grid_points = _grid_pts(degree, "jax")
