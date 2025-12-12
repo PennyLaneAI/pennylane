@@ -1082,7 +1082,7 @@ class UnaryIterationQPE(ResourceOperator):
         the Operator that are needed to compute the resources.
 
         Args:
-            walk_operator (~.pennylane.estimator.resource_operator.CompressedResourceOp): A compressed resource operator
+            walk_operator (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A compressed resource operator
                 corresponding to the phase estimation operator :math:`W`.
             num_iterations (int): The total number of times the phase estimation operator :math:`W` is
                 applied in order to reach a target precision in the eigenvalue estimate.
