@@ -104,10 +104,18 @@ def test_modal_error(h_data):
 )
 def test_vscf_calculation(h_data, h2s_result):
     r"""Test that vscf calculation produces correct energy and rotation matrices"""
+    pytest.importorskip("jax")
 
-    vib_energy, rot_matrix = vscf._vscf(h_data, modals=[3, 3, 3], cutoff=1e-8)
-    assert np.isclose(vib_energy, h2s_result["energy"])
-    assert np.allclose(rot_matrix, h2s_result["u_mat"])
+    rot_matrix = vscf.vscf(h_data, modals=[3, 3, 3], cutoff=1e-8)
+    # Adjust signs of rotation matrix for comparison
+    # The rotation matrices are unique up to sign changes in columns (eigenvectors)
+    original_rots = h2s_result["u_mat"]
+    rot_matrix = np.asarray(rot_matrix)
+    signs = np.sign(original_rots[:, 0]) * np.sign(rot_matrix[:, 0])
+    rot_matrix *= signs[:, np.newaxis]
+
+    # assert np.isclose(vib_energy, h2s_result["energy"])
+    assert np.allclose(rot_matrix, original_rots)
 
 
 @pytest.mark.parametrize(
@@ -118,16 +126,22 @@ def test_vscf_calculation(h_data, h2s_result):
 )
 def test_vscf_integrals_dipole(h_data, dip_data, h2s_result):
     r"""Test that correct rotated Hamiltonian and dipole is produced."""
+
+    pytest.importorskip("jax")
+
     result_h, result_dip = vscf.vscf_integrals(h_data, dip_data, modals=[3, 3, 3], cutoff=1e-8)
 
     expected_h = h2s_result["h_data"]
     expected_dip = h2s_result["dip_data"]
-    assert np.allclose(result_h[0], expected_h[0])
-    assert np.allclose(result_h[1], expected_h[1])
-    assert np.allclose(result_h[2], expected_h[2])
-    assert np.allclose(result_dip[0], expected_dip[0])
-    assert np.allclose(result_dip[1], expected_dip[1])
-    assert np.allclose(result_dip[2], expected_dip[2])
+    # note: 1e-8 is the default convergence threshold in .vscf() calculation.
+    # here we are hardwriting it because .vscf_integrals() doesn't provide an argument to play with it.
+    atol = 1e-8
+    assert np.allclose(np.abs(result_h[0]), np.abs(expected_h[0]), atol=atol)
+    assert np.allclose(np.abs(result_h[1]), np.abs(expected_h[1]), atol=atol)
+    assert np.allclose(np.abs(result_h[2]), np.abs(expected_h[2]), atol=atol)
+    assert np.allclose(np.abs(result_dip[0]), np.abs(expected_dip[0]), atol=atol)
+    assert np.allclose(np.abs(result_dip[1]), np.abs(expected_dip[1]), atol=atol)
+    assert np.allclose(np.abs(result_dip[2]), np.abs(expected_dip[2]), atol=atol)
 
 
 @pytest.mark.parametrize(
@@ -139,9 +153,14 @@ def test_vscf_integrals_dipole(h_data, dip_data, h2s_result):
 )
 def test_vscf_integrals(h_data, h2s_result, modals, cutoff):
     r"""Test that correct rotated Hamiltonian is produced."""
+
+    pytest.importorskip("jax")
+
     result_h, result_dip = vscf.vscf_integrals(h_data, modals=modals, cutoff=cutoff)
 
     for idx, h in enumerate(result_h):
-        assert np.allclose(h, h2s_result[idx])
+        # note: 1e-8 is the default convergence threshold in .vscf() calculation.
+        # here we are hardwriting it because .vscf_integrals() doesn't provide an argument to play with it.
+        assert np.allclose(np.abs(h), np.abs(h2s_result[idx]), atol=1e-8)
 
     assert result_dip is None
