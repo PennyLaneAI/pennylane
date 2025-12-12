@@ -1121,7 +1121,7 @@ class UnaryIterationQPE(ResourceOperator):
                 corresponding to the phase estimation operator :math:`W`.
             num_iterations (int): The total number of times the phase estimation operator :math:`W` is
                 applied in order to reach a target precision in the eigenvalue estimate.
-            adj_qft_cmpr_op (~.pennylane.estimator.resource_operator.CompressedResourceOp | None): An optional compressed
+            adj_qft_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp` | None): An optional compressed
                 resource operator corresponding to the adjoint QFT routine. If ``None``, the
                 default :class:`~.pennylane.estimator.templates.subroutines.QFT` will be used.
 
