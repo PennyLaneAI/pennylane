@@ -67,12 +67,12 @@ class Resources:
        allocated wires: 121
          zero state: 58
          any state: 63
-     Total gates : 2.248E+3
+     Total gates : 2.112E+3
        'RX': 2,
-       'Toffoli': 65,
-       'T': 868,
-       'CNOT': 639,
-       'Hadamard': 674
+       'Toffoli': 64,
+       'T': 856,
+       'CNOT': 589,
+       'Hadamard': 601
 
     You can also access a more detailed breakdown of resources using the
     :meth:`~.estimator.resources_base.Resources.gate_breakdown` method
@@ -81,12 +81,12 @@ class Resources:
     RX total: 2
         RX {'precision': 1e-08}: 1
         RX {'precision': 1e-06}: 1
-    Toffoli total: 65
+    Toffoli total: 64
         Toffoli {'elbow': None}: 4
-        Toffoli {'elbow': 'left'}: 61
-    T total: 868
-    CNOT total: 639
-    Hadamard total: 674
+        Toffoli {'elbow': 'left'}: 6
+    T total: 856
+    CNOT total: 589
+    Hadamard total: 601
 
     """
 

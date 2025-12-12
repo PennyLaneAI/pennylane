@@ -1659,11 +1659,11 @@ class QROM(ResourceOperator):
         allocated wires: 3
         zero state: 3
         any state: 0
-    Total gates : 178
-    'Toffoli': 16,
-    'CNOT': 72,
-    'X': 34,
-    'Hadamard': 56
+    Total gates : 85
+    'Toffoli': 8,
+    'CNOT': 36,
+    'X': 17,
+    'Hadamard': 24
     """
 
     resource_keys = {
