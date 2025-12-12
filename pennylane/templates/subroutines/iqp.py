@@ -78,6 +78,8 @@ class IQP(Operation):
     >>> print(qml.draw(iqp_circuit, level="device")([0.89, 0.54], [[[0]], [[1]]], False))
     0: ──H──MultiRZ(1.78)──H─┤  <Z>
     1: ──H──MultiRZ(1.08)──H─┤  <Z>
+
+    .. seealso:: `IQP tutorial <https://pennylane.ai/qml/demos/tutorial_iqp_circuit_optimization_jax#parameterized-iqp-circuits>`__
     """
 
     resource_keys = {"spin_sym", "pattern", "num_wires"}
