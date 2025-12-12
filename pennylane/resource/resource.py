@@ -226,13 +226,13 @@ class Resources:
 class SpecsResources:
     """
     Class for storing resource information for a quantum circuit. Contains attributes which store
-    key resources such as gate counts, number of qubit allocations, measurements, and circuit depth.
+    key resources such as gate counts, number of wire allocations, measurements, and circuit depth.
 
     Args:
         gate_types (dict[str, int]): A dictionary mapping gate names to their counts.
         gate_sizes (dict[int, int]): A dictionary mapping gate sizes to their counts.
         measurements (dict[str, int]): A dictionary mapping measurements to their counts.
-        num_allocs (int): The number of unique qubit allocations. For circuits that do not use
+        num_allocs (int): The number of unique wire allocations. For circuits that do not use
           dynamic wires, this should be equal to the number of device wires.
         depth (int | None): The depth of the circuit, or None if not computed.
 
@@ -262,7 +262,7 @@ class SpecsResources:
         2
 
         >>> print(res)
-        Total qubit allocations: 2
+        Total wire allocations: 2
         Total gates: 2
         Circuit depth: 2
         <BLANKLINE>
@@ -335,7 +335,7 @@ class SpecsResources:
         prefix = " " * preindent
         lines = []
 
-        lines.append(f"{prefix}Total qubit allocations: {self.num_allocs}")
+        lines.append(f"{prefix}Total wire allocations: {self.num_allocs}")
         lines.append(f"{prefix}Total gates: {self.num_gates}")
         lines.append(
             f"{prefix}Circuit depth: {self.depth if self.depth is not None else 'Not computed'}"
@@ -423,7 +423,7 @@ class CircuitSpecs:
         Level: device
         <BLANKLINE>
         Resource specifications:
-          Total qubit allocations: 2
+          Total wire allocations: 2
           Total gates: 3
           Circuit depth: 3
         <BLANKLINE>

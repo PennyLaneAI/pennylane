@@ -32,7 +32,7 @@
   <BLANKLINE>
   Resource specifications:
   Level = Before MLIR Passes (MLIR-0):
-    Total qubit allocations: 3
+    Total wire allocations: 3
     Total gates: 5
     Circuit depth: Not computed
   <BLANKLINE>
@@ -47,7 +47,7 @@
   ------------------------------------------------------------
   <BLANKLINE>
   Level = cancel-inverses (MLIR-1):
-    Total qubit allocations: 3
+    Total wire allocations: 3
     Total gates: 3
     Circuit depth: Not computed
   <BLANKLINE>
@@ -116,7 +116,7 @@
 
   ```python
   import pennylane as qml
-  
+
   dev = qml.device("null.qubit", wires=3)
 
   @qml.qnode(dev)
@@ -143,7 +143,7 @@
 
   ```pycon
   >>> print(qml.specs(circuit)()['resources'])
-  Total qubit allocations: 3
+  Total wire allocations: 3
   Total gates: 5
   Circuit depth: 4
 
@@ -159,8 +159,8 @@
 
 <h4> Compile Pipeline and Transforms </h4>
 
-* Arithmetic dunder methods (`__add__`, `__mul__`, `__rmul__`) have been added to 
-  :class:`~.transforms.core.TransformDispatcher`, :class:`~.transforms.core.TransformContainer`, 
+* Arithmetic dunder methods (`__add__`, `__mul__`, `__rmul__`) have been added to
+  :class:`~.transforms.core.TransformDispatcher`, :class:`~.transforms.core.TransformContainer`,
   and :class:`~.CompilePipeline` (previously known as the `TransformProgram`) to enable intuitive composition of transform programs using `+` and `*` operators.
   [(#8703)](https://github.com/PennyLaneAI/pennylane/pull/8703)
 
@@ -365,7 +365,7 @@
   allowing for efficient decomposition of large matrices that cannot fit in memory when written as
   dense arrays.
   [(#8612)](https://github.com/PennyLaneAI/pennylane/pull/8612)
-  
+
 * A decomposition has been added to the adjoint of :class:`pennylane.TemporaryAND`. This decomposition relies on mid-circuit measurments and does not require any T gates.
   [(#8633)](https://github.com/PennyLaneAI/pennylane/pull/8633)
 

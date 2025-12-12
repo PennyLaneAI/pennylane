@@ -433,7 +433,7 @@ Level: 2
 
 Resource specifications:
   Batched tape 0:
-    Total qubit allocations: 2
+    Total wire allocations: 2
     Total gates: 5
     Circuit depth: 5
 
@@ -447,7 +447,7 @@ Resource specifications:
       expval(Prod(num_wires=2, num_terms=2)): 1
 
   Batched tape 1:
-    Total qubit allocations: 3
+    Total wire allocations: 3
     Total gates: 5
     Circuit depth: 5
 
@@ -461,7 +461,7 @@ Resource specifications:
       expval(Prod(num_wires=2, num_terms=2)): 1
 
   Batched tape 2:
-    Total qubit allocations: 3
+    Total wire allocations: 3
     Total gates: 5
     Circuit depth: 5
 

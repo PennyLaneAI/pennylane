@@ -408,7 +408,7 @@ def specs(
     Level: gradient
     <BLANKLINE>
     Resource specifications:
-      Total qubit allocations: 2
+      Total wire allocations: 2
       Total gates: 98
       Circuit depth: 98
     <BLANKLINE>
@@ -448,7 +448,7 @@ def specs(
         return the same results:
 
         >>> print(qml.specs(circuit, level=0)(0.1).resources)
-        Total qubit allocations: 2
+        Total wire allocations: 2
         Total gates: 6
         Circuit depth: 6
         <BLANKLINE>
@@ -464,7 +464,7 @@ def specs(
         We can then check the resources after applying all transforms with ``level="device"`` (which, in this particular example, would be equivalent to ``level=3``):
 
         >>> print(qml.specs(circuit, level="device")(0.1).resources)
-        Total qubit allocations: 2
+        Total wire allocations: 2
         Total gates: 2
         Circuit depth: 1
         <BLANKLINE>
@@ -478,7 +478,7 @@ def specs(
         We can also notice that ``SWAP`` and ``PauliX`` are not present in the circuit if we set ``level=2``:
 
         >>> print(qml.specs(circuit, level=2)(0.1).resources)
-        Total qubit allocations: 2
+        Total wire allocations: 2
         Total gates: 3
         Circuit depth: 3
         <BLANKLINE>
@@ -559,7 +559,7 @@ def specs(
         Level: device
         <BLANKLINE>
         Resource specifications:
-          Total qubit allocations: 3
+          Total wire allocations: 3
           Total gates: 2
           Circuit depth: 2
         <BLANKLINE>
@@ -610,7 +610,7 @@ def specs(
         <BLANKLINE>
         Resource specifications:
         Level = Before transforms:
-          Total qubit allocations: 2
+          Total wire allocations: 2
           Total gates: 5
           Circuit depth: Not computed
         <BLANKLINE>
@@ -625,7 +625,7 @@ def specs(
         ------------------------------------------------------------
         <BLANKLINE>
         Level = Before MLIR Passes (MLIR-0):
-          Total qubit allocations: 3
+          Total wire allocations: 3
           Total gates: 5
           Circuit depth: Not computed
         <BLANKLINE>
@@ -640,7 +640,7 @@ def specs(
         ------------------------------------------------------------
         <BLANKLINE>
         Level = cancel-inverses (MLIR-1):
-          Total qubit allocations: 3
+          Total wire allocations: 3
           Total gates: 3
           Circuit depth: Not computed
         <BLANKLINE>
@@ -654,7 +654,7 @@ def specs(
         ------------------------------------------------------------
         <BLANKLINE>
         Level = merge-rotations (MLIR-2):
-          Total qubit allocations: 3
+          Total wire allocations: 3
           Total gates: 2
           Circuit depth: Not computed
         <BLANKLINE>
