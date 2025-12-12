@@ -92,7 +92,6 @@ to track the resources used in a quantum circuit with custom operations without 
 
 .. code-block:: python
 
-    from functools import partial
     from pennylane import numpy as pnp
     from pennylane.resource import Resources, ResourcesOperation
 
@@ -110,7 +109,7 @@ to track the resources used in a quantum circuit with custom operations without 
 
     dev = qml.device("null.qubit", wires=[0, 1, 2])
 
-    @partial(qml.set_shots, shots=100)
+    @qml.set_shots(shots=100)
     @qml.qnode(dev)
     def circuit(theta):
         qml.RZ(theta, wires=0)

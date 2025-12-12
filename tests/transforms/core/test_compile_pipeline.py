@@ -855,8 +855,8 @@ class TestCompilePipelineConstruction:
         """Tests that an error is raised when something is not a transform."""
 
         with pytest.raises(TypeError, match="CompilePipeline can only be constructed"):
-            # map_wires is not a transform
-            CompilePipeline(qml.transforms.cancel_inverses, qml.map_wires)
+            # matrix is not a transform
+            CompilePipeline(qml.transforms.cancel_inverses, qml.matrix)
 
 
 class TestCompilePipeline:
@@ -1076,6 +1076,43 @@ class TestCompilePipeline:
             TransformError, match="The compile pipeline already has a terminal transform."
         ):
             compile_pipeline.push_back(transform2)
+
+    def test_remove_by_container(self):
+        """Test removing a specific TransformContainer from a program."""
+        dispatched_transform = transform(first_valid_transform)
+        container1 = BoundTransform(dispatched_transform)
+        container2 = BoundTransform(dispatched_transform, args=(1,))
+
+        program = CompilePipeline([container1, container2])
+        assert len(program) == 2
+
+        program.remove(container1)
+        assert len(program) == 1
+        assert program[0] == container2
+
+    def test_remove_by_dispatcher(self):
+        """Test removing all containers matching a TransformDispatcher from a program."""
+        dispatched_transform = transform(first_valid_transform)
+        container1 = BoundTransform(dispatched_transform)
+        container2 = BoundTransform(dispatched_transform, args=(1,))
+
+        program = CompilePipeline([container1, container2])
+        assert len(program) == 2
+
+        program.remove(dispatched_transform)
+        assert len(program) == 0
+
+    def test_remove_invalid_type(self):
+        """Test that removing an invalid type raises TypeError."""
+        dispatched_transform = transform(first_valid_transform)
+        container = BoundTransform(dispatched_transform)
+        program = CompilePipeline([container])
+
+        with pytest.raises(TypeError, match="Only BoundTransform or TransformDispatcher"):
+            program.remove("not_a_container_or_dispatcher")
+
+        with pytest.raises(TypeError, match="Only BoundTransform or TransformDispatcher"):
+            program.remove(42)
 
 
 class TestClassicalCotransfroms:

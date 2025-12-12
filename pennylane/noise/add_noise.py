@@ -74,8 +74,6 @@ def add_noise(tape, noise_model, level="user"):
 
     .. code-block:: python
 
-        from functools import partial
-
         dev = qml.device("default.mixed", wires=2)
 
         fcond1 = qml.noise.op_eq(qml.RX) & qml.noise.wires_in([0, 1])
@@ -92,7 +90,7 @@ def add_noise(tape, noise_model, level="user"):
             {fcond1: noise1, fcond2: noise2}, {fcond3: noise3}, t1=2.0, t2=0.2
         )
 
-        @partial(qml.noise.add_noise, noise_model=noise_model)
+        @qml.noise.add_noise(noise_model=noise_model)
         @qml.qnode(dev)
         def circuit(w, x, y, z):
             qml.RX(w, wires=0)
