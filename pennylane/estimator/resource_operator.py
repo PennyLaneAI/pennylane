@@ -312,7 +312,7 @@ class ResourceOperator(ABC):
         ``controlled_resource_decomp`` method.
 
         Resources:
-            The resources for the controlled operator are obtained by controlling (with the same number of control 
+            The resources for the controlled operator are obtained by controlling (with the same number of control
             wires and zero controlled values) each gate in the base operator's resource decomposition.
 
         Args:
@@ -351,7 +351,7 @@ class ResourceOperator(ABC):
 
         Resources:
             The resources for an operator raised to some power are obtained by taking the base resource
-            decomposition of the operator and tracking each gate raised to the given power. For a power of 
+            decomposition of the operator and tracking each gate raised to the given power. For a power of
             zero, the identity operator is returned. For a power of one, the base operator is returned.
 
         Args:

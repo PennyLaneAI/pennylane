@@ -984,7 +984,7 @@ class ChangeOpBasis(ResourceOperator):
 
 
 @singledispatch
-def apply_adj(action):
+def apply_adj(action: GateCount | Allocate | Deallocate) -> GateCount | Allocate | Deallocate:
     """Create the adjoint of a resource-tracking gate.
 
     For a :class:`~.GateCount`, it wraps
@@ -1020,7 +1020,7 @@ def _(action: Deallocate):
 
 
 @singledispatch
-def apply_controlled(action, num_ctrl_wires, num_zero_ctrl):  # pylint: disable=unused-argument
+def apply_controlled(action: GateCount | Allocate | Deallocate, num_ctrl_wires: int, num_zero_ctrl: int) -> GateCount | Allocate | Deallocate:  # pylint: disable=unused-argument
     """Create the controlled version of a resource-tracking gate.
 
     For a :class:`~.GateCount`, it wraps
