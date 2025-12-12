@@ -106,8 +106,8 @@ There are also utility functions that take a circuit and return a DAG.
     ~transforms.CommutationDAG
     ~transforms.CommutationDAGNode
 
-Transform for Clifford+T decomposition
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Transforms for Clifford+T decomposition and Pauli-based computation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This transform accepts quantum circuits and decomposes them to the Clifford+T basis.
 
@@ -116,6 +116,13 @@ This transform accepts quantum circuits and decomposes them to the Clifford+T ba
 
     ~clifford_t_decomposition
     ~gridsynth
+    ~to_ppr
+    ~commute_ppr
+    ~ppr_to_ppm
+    ~merge_ppr_ppm
+    ~ppm_compilation
+    ~reduce_t_depth
+
 
 Other transforms
 ~~~~~~~~~~~~~~~~

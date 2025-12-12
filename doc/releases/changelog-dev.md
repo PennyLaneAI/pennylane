@@ -99,6 +99,11 @@
     expval(PauliZ): 1
   ```
 
+* Catalyst compilation passes designed for Pauli-based computation are now available in PennyLane, 
+  providing accessibility for logical compilation research by directly integrating with 
+  :func:`~.pauli_measure` and :class:`~.PauliRot` operations.
+   
+
 <h4> Compile Pipeline and Transforms </h4>
 
 * Arithmetic dunder methods (`__add__`, `__mul__`, `__rmul__`) have been added to 
