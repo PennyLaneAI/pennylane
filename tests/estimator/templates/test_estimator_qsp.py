@@ -14,8 +14,9 @@
 """Tests for Quantum Signal Processing (QSP) resource operators."""
 
 import pytest
+
 import pennylane.estimator as qre
-from pennylane.estimator.resource_operator import ResourceOperator, CompressedResourceOp
+from pennylane.estimator.resource_operator import CompressedResourceOp, ResourceOperator
 
 
 class DummyOp(ResourceOperator):
@@ -31,6 +32,7 @@ class DummyOp(ResourceOperator):
     def resource_rep(cls):
         return CompressedResourceOp(cls, 1, {})
 
+    # pylint: disable=unused-argument
     @classmethod
     def resource_decomp(cls, **kwargs):
         return []
@@ -165,6 +167,7 @@ class TestQSP:
             def resource_rep(cls):
                 return CompressedResourceOp(cls, 2, {})
 
+            # pylint: disable=unused-argument
             @classmethod
             def resource_decomp(cls, **kwargs):
                 return []
