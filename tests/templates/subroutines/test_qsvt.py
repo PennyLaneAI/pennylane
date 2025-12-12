@@ -1014,11 +1014,7 @@ class TestIterativeSolver:
             _poly_func(coeffs=target_polynomial_coeffs, x=x_point),
             atol=tolerance,
         )
-        print(
-            _qsp_iterate_broadcast(phis, x_point, "jax")
-            - _poly_func(coeffs=target_polynomial_coeffs, x=x_point)
-        )
-
+        
     def test_jit_if_jax_available(self):
 
         def f(x):
