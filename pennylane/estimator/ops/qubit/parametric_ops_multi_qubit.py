@@ -679,7 +679,7 @@ class PCPhase(ResourceOperator):
             if not next_cval:
                 n_zero_control_values += 1
 
-        gate_count_lst[qre.GlobalPhase.resource_rep()] += 1
+        gate_count[qre.GlobalPhase.resource_rep()] += 1
         gate_count_lst = [GateCount(op, count) for op, count in gate_count.items()]
         return gate_count_lst
 
