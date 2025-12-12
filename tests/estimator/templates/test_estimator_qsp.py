@@ -52,6 +52,12 @@ class TestQSVT:
         ):
             qre.QSVT(op, encoding_dims=(1, 2, 3), poly_deg=2)
 
+    def test_init_encoding_dims_tuple_len_1(self):
+        """Test that encoding_dims is correctly handled when it is a tuple of length 1."""
+        op = DummyOp(wires=[0])
+        qsvt = qre.QSVT(op, encoding_dims=(2,), poly_deg=2)
+        assert qsvt.resource_params["encoding_dims"] == (2, 2)
+
     def test_init_wires_mismatch(self):
         """Test that an error is raised when wires don't match block encoding."""
         op = DummyOp(wires=[0])

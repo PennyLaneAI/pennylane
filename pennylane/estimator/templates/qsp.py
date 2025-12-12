@@ -689,9 +689,8 @@ class QSP(ResourceOperator):
             dict: A dictionary containing the resource parameters:
                 * block_encoding (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`):
                   The block encoding operator.
-                * encoding_dims (int | tuple(int)): The subspace (number of rows and columns) where
-                  the operator is encoded in the matrix representation of the block encoding operator.
                 * poly_deg (int): the degree of the polynomial transformation being applied
+                * convention (str): Which of the conventions to use for the rotation operators.
                 * rotation_precision (float | None): The error threshold for the approximate Clifford + T
                   decomposition of the single qubit rotation gates used to implement this operation.
         """
