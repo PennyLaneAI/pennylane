@@ -33,8 +33,8 @@ def local_gates(n_qubits: int, max_weight=2):
     :return (list[list[list[int]]]): gate list object for IqpSimulator
     """
     gates = []
-    for weight in np.arange(1, max_weight + 1):
-        for gate in combinations(np.arange(n_qubits), weight):
+    for weight in arange(1, max_weight + 1):
+        for gate in combinations(arange(n_qubits), weight):
             gates.append([list(gate)])
     return gates
 
