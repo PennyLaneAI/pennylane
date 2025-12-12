@@ -21,6 +21,7 @@ jobs:
       # Space separated list of packages to install for each package manager
       PIP_PACKAGES_TO_INSTALL: "sphinx"
       APT_PACKAGES_TO_INSTALL: "graphviz"
+      UV_SYSTEM_PYTHON: 1      
     steps:
     - name: Checkout Repo
       uses: actions/checkout@v4
@@ -38,16 +39,21 @@ jobs:
       with:
         python-version: ${{ env.PYTHON_VERSION }}
 
+    - name: Install uv
+      uses: astral-sh/setup-uv@v5
+      with:
+        version: 0.6.5
+        enable-cache: true  
+
     - name: Install dependencies
       run: |
         pip install --upgrade --no-cache-dir pip setuptools 
-        pip install --upgrade --no-cache-dir ${{ env.PIP_PACKAGES_TO_INSTALL }}
-        pip install --exists-action=w --no-cache-dir -r doc/requirements.txt   
-        pip install --upgrade --upgrade-strategy only-if-needed --no-cache-dir  .      
+        uv pip install --upgrade --no-cache-dir ${{ env.PIP_PACKAGES_TO_INSTALL }}
+        uv pip install --no-cache-dir -r doc/requirements.txt   
+        uv pip install --upgrade --no-cache-dir  .      
 
 
     - name: Build Sphinx HTML
       run: |
         cd doc
         python -m sphinx -T -b html -d ./_build/doctrees -D language=en . ./html --keep-going 
-
