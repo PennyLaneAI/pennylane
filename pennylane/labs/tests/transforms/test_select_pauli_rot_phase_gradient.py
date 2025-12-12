@@ -36,18 +36,20 @@ def prepare_phase_gradient(wires):
     return ops
 
 
-@pytest.mark.parametrize("string", list(product([0, 1], repeat=4)))
-@pytest.mark.parametrize("p", [2, 3, 4])
-def test_binary_repr_int(string, p):
-    """Test that the binary representation or approximation of the angle is correct
+@pytest.mark.parametrize(
+    "phi, p, expected",
+    [
+        (1 / 2 * 4 * np.pi, 2, "10"),
+        (1 / 2 * 4 * np.pi, 3, "100"),
+        ((1 / 2 + 1 / 8 + 1 / 16) * 4 * np.pi, 2, "11"),
+        ((1 / 2 + 1 / 8 + 1 / 16 + 1 / 32) * 4 * np.pi, 3, "110"),
+        ((1 / 2 + 1 / 8 + 1 / 16 + 1 / 32) * 4 * np.pi, 5, "10111"),
+    ],
+)
+def test_binary_repr_int(phi, expected, p):
+    """Test that the binary representation or approximation of the angle is correct"""
 
-    In particular, this tests that phi = (c1 2^-1 + c2 2^-2 + .. + cp 2^-p + ... + 2^-N) 4pi
-    is correctly represented as (c1, c2, .., cp) for precision p
-    """
-    phi = np.sum([c * 2 ** (-i - 1) for i, c in enumerate(string)]) * 4 * np.pi
-    string_str = "".join([str(i) for i in string])
-
-    assert string_str[:p] == _binary_repr_int(phi, p)
+    assert expected == _binary_repr_int(phi, p)
 
 
 @pytest.mark.parametrize("p", [2, 3, 4])
@@ -79,12 +81,13 @@ def test_units_select_pauli_rot_phase_gradient(p):
     assert op.name == "ChangeOpBasis"
 
     # It iterates the ops in reverse order
-    for g, exp_name in zip(op, ["Adjoint(Prod)", "SemiAdder",  "Prod"], strict=True):
-        assert g.name==exp_name
+    for g, exp_name in zip(op, ["Adjoint(Prod)", "SemiAdder", "Prod"], strict=True):
+        assert g.name == exp_name
 
-    for g, exp_name in zip(op.hyperparameters["operands"][-1], ["MultiControlledX"] * p + ["QROM"] , strict=True):
-        assert g.name==exp_name
-
+    for g, exp_name in zip(
+        op.hyperparameters["operands"][-1], ["MultiControlledX"] * p + ["QROM"], strict=True
+    ):
+        assert g.name == exp_name
 
 
 def test_wire_validation():
@@ -106,9 +109,42 @@ def test_wire_validation():
             work_wires=work_wires,
         )
 
+    with pytest.raises(
+        ValueError, match="work_wires needs to be at least as large as angle_wires - 1"
+    ):
+        _ = select_pauli_rot_phase_gradient(
+            circ,
+            angle_wires=angle_wires[:2],
+            phase_grad_wires=phase_grad_wires,
+            work_wires=[],
+        )
 
+
+@pytest.mark.parametrize(
+    "phis",
+    [
+        [
+            (1 + 1 / 2 + 1 / 4 + 1 / 8) * 2 * np.pi,
+            (8 - 1 / 2 + 1 / 4 + 0 / 8) * 2 * np.pi,
+            (1 + 1 / 2 + 0 / 4 + 1 / 8) * 2 * np.pi,
+            (-0 / 2 + 1 / 4 + 1 / 8) * 2 * np.pi,
+        ],
+        [
+            (2 + 1 / 2 + 1 / 4 + 1 / 8) * 2 * np.pi,
+            (4 - 8 - 1 / 2 + 1 / 4 + 0 / 8) * 2 * np.pi,
+            (1 + 1 / 2 + 1 / 4 + 1 / 8) * 2 * np.pi,
+            (-1 - 0 / 2 + 1 / 4 + 1 / 8) * 2 * np.pi,
+        ],
+        [
+            (12 + 1 / 2 + 1 / 4 + 0 / 8) * 2 * np.pi,
+            (-8 - 1 / 2 + 0 / 4 + 0 / 8) * 2 * np.pi,
+            (1 + 1 / 2 + 0 / 4 + 1 / 8) * 2 * np.pi,
+            (-1 - 1 / 2 + 1 / 4 + 1 / 8) * 2 * np.pi,
+        ],
+    ],
+)
 @pytest.mark.parametrize("rot_axis", ["Z", "X", "Y"])
-def test_correctness_select_pauli_rot_phase_gradient(rot_axis):
+def test_correctness_select_pauli_rot_phase_gradient(phis, rot_axis):
     """Test that decomposition produce the correct solution"""
 
     precision = 4
@@ -150,13 +186,6 @@ def test_correctness_select_pauli_rot_phase_gradient(rot_axis):
             qml.Hadamard(wire)
 
         return qml.probs([target_wire] + control_wires + angle_wires)
-
-    phis = [
-        (1 / 2 + 1 / 4 + 1 / 8) * 2 * np.pi,
-        (1 / 2 + 1 / 4 + 0 / 8) * 2 * np.pi,
-        (1 / 2 + 0 / 4 + 1 / 8) * 2 * np.pi,
-        (0 / 2 + 1 / 4 + 1 / 8) * 2 * np.pi,
-    ]
 
     # pylint: disable=unsubscriptable-object
     expected_probs = select_pauli_rot_circ(phis, control_wires=[0, 1], target_wire=wire)

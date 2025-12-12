@@ -32,10 +32,9 @@ def _binary_repr_int(phi, precision):
     e.g. representing (1, 1, 1, 1) with only 3 digits we want to obtain (1, 1, 1)
     so overall we floor but make sure we add a little term to not accidentally write 14 when the result is 14.999..
     """
-
-    return bin(int(np.floor(2**precision * phi / (4 * np.pi) + 1e-10)) + 2 * 2**precision)[
-        -precision:
-    ]
+    phi = phi % (4 * np.pi)
+    phi_round = 2 ** (-precision) * np.ceil(2**precision * phi / (2 * np.pi))
+    return bin(int(np.floor(2**precision * phi_round / 2 + 1e-10)) + 2 * 2**precision)[-precision:]
 
 
 # pylint: disable=too-many-arguments
@@ -54,13 +53,17 @@ def _select_pauli_rot_phase_gradient(
     precision = len(angle_wires)
     binary_int = [_binary_repr_int(phi, precision) for phi in phis]
 
-    ops = [qml.QROM(
+    ops = [
+        qml.QROM(
             binary_int, control_wires, angle_wires, work_wires=work_wires[len(angle_wires) - 1 :]
-        )] + [qml.ctrl(qml.X(wire), control=target_wire, control_values=[0]) for wire in phase_grad_wires]
+        )
+    ] + [
+        qml.ctrl(qml.X(wire), control=target_wire, control_values=[0]) for wire in phase_grad_wires
+    ]
 
     return qml.change_op_basis(
         qml.prod(*ops[::-1]),
-        qml.SemiAdder(angle_wires, phase_grad_wires, work_wires[: len(angle_wires) - 1])
+        qml.SemiAdder(angle_wires, phase_grad_wires, work_wires[: len(angle_wires) - 1]),
     )
 
 
@@ -154,6 +157,11 @@ def select_pauli_rot_phase_gradient(
     if len(phase_grad_wires) < len(angle_wires):
         raise ValueError(
             f"phase_grad_wires needs to be at least as large as angle_wires. Got {len(phase_grad_wires)} phase_grad_wires, which is fewer than the {len(angle_wires)} angle_wires."
+        )
+
+    if len(work_wires) < len(angle_wires) - 1:
+        raise ValueError(
+            f"work_wires needs to be at least as large as angle_wires - 1. Got {len(work_wires)} work_wires, which is fewer than the {len(angle_wires) - 1}."
         )
 
     operations = []
