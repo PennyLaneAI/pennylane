@@ -24,6 +24,7 @@ from pennylane.estimator.ops.qubit.parametric_ops_multi_qubit import MultiRZ, Pa
 from pennylane.estimator.ops.qubit.parametric_ops_single_qubit import RX, RY, RZ, Rot
 from pennylane.estimator.ops.qubit.qchem_ops import SingleExcitation
 from pennylane.estimator.templates import (
+    GQSP,
     AliasSampling,
     MPSPrep,
     PrepTHC,
@@ -146,6 +147,7 @@ class ResourceConfig:
                 "phase_grad_precision": _DEFAULT_PHASEGRAD_PRECISION,
                 "coeff_precision": 1e-3,
             },
+            GQSP: {"rot_precision": None},
         }
         self._custom_decomps = {}
         self._adj_custom_decomps = {}

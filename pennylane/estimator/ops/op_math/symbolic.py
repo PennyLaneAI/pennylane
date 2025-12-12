@@ -1025,6 +1025,43 @@ class ChangeOpBasis(ResourceOperator):
             GateCount(cmpr_uncompute_op),
         ]
 
+    @classmethod
+    def controlled_resource_decomp(cls, num_ctrl_wires, num_zero_ctrl, target_resource_params=None):
+        r"""Returns a list representing the resources for a controlled version of the operator.
+
+        Args:
+            num_ctrl_wires (int): The number of control qubits to further control the base
+                controlled operation upon.
+            num_zero_ctrl (int): The subset of those control qubits which further control
+                the base controlled operation, which are controlled when in the :math:`|0\rangle` state.
+            target_resource_params (dict): A dictionary containing the resource parameters of the
+                target operator.
+
+        Resources:
+            [TODO: polish this] The resources are derived by noticing that if the target op is not applied,
+            then the compute and uncompute operators will cancel eachother. Thus we only need to control
+            the application of the target op to obtain a controlled decomposition of the change of basis op.
+
+        Returns:
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
+        """
+        compute_op = target_resource_params["cmpr_compute_op"]
+        target_op = target_resource_params["cmpr_target_op"]
+        uncompute_op = target_resource_params["cmpr_uncompute_op"]
+
+        ctrl_target_op = Controlled.resource_rep(
+            base_cmpr_op=target_op,
+            num_ctrl_wires=num_ctrl_wires,
+            num_zero_ctrl=num_zero_ctrl,
+        )
+        return [
+            GateCount(compute_op),
+            GateCount(ctrl_target_op),
+            GateCount(uncompute_op),
+        ]
+
 
 @singledispatch
 def _apply_adj(action):

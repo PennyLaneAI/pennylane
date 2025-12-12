@@ -35,11 +35,11 @@ class TestPauliHamiltonian:
     """Unit tests for the PauliHamiltonian class"""
 
     @pytest.mark.parametrize(
-        "num_qubits, pauli_terms, one_norm",
+        "num_qubits, pauli_terms, one_norm, num_terms",
         (
-            (5, {"XX": 10, "YY": 10, "Z": 5}, 0.01),
-            (10, {"X": 20, "YZY": 7, "ZXX": 3}, None),
-            (50, {"XXXXX": 10, "Z": 5}, 10.5),
+            (5, {"XX": 10, "YY": 10, "Z": 5}, 0.01, 25),
+            (10, {"X": 20, "YZY": 7, "ZXX": 3}, None, 30),
+            (50, {"XXXXX": 10, "Z": 5}, 10.5, 15),
             (
                 5,
                 (
@@ -47,6 +47,7 @@ class TestPauliHamiltonian:
                     {"ZZ": 10},
                 ),
                 0.01,
+                25,
             ),
             (
                 10,
@@ -56,15 +57,17 @@ class TestPauliHamiltonian:
                     {"YY": 5, "X": 5},
                 ),
                 None,
+                40,
             ),
             (
                 50,
                 ({"XXXXX": 10, "X": 3},),
                 10.5,
+                13,
             ),
         ),
     )
-    def test_init(self, num_qubits, pauli_terms, one_norm):
+    def test_init(self, num_qubits, pauli_terms, one_norm, num_terms):
         """Test that we can instantiate a PauliHamiltonian"""
         pauli_ham = qre.PauliHamiltonian(
             num_qubits=num_qubits,
@@ -75,6 +78,7 @@ class TestPauliHamiltonian:
         assert pauli_ham.num_qubits == num_qubits
         assert pauli_ham.pauli_terms == pauli_terms
         assert pauli_ham.one_norm == one_norm
+        assert pauli_ham.num_terms == num_terms
 
     @pytest.mark.parametrize(
         "input_args, error_message",
