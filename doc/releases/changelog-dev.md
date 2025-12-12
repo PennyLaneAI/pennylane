@@ -174,7 +174,7 @@
   Users can more easily access the total number of terms (Pauli words) from the `PauliHamiltonian` object directly.
   [(#8761)](https://github.com/PennyLaneAI/pennylane/pull/8761)
 
-* Improved the resource decomposition for the ``~.pennylane.estimator.QROM`` class. The cost has
+* Improved the resource decomposition for the :class:`~pennylane.estimator.QROM` class. The cost has
   been reduced in cases when users specify `restored = True` and `sel_swap_depth = 1`.
   [(#8761)](https://github.com/PennyLaneAI/pennylane/pull/8761)
 

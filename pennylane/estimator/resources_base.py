@@ -334,14 +334,22 @@ class Resources:
 
     @property
     def total_wires(self) -> int:
-        """The total number of wires counted. This is the sum of ``zeroed_wires``, ``any_state_wires``
-        and ``algo_wires``.
+        """The total number of wires counted.
+
+        Returns:
+            int: The total number of wires tracked. This is the sum of ``zeroed_wires``,
+                ``any_state_wires`` and ``algo_wires``.
         """
         return self.zeroed_wires + self.any_state_wires + self.algo_wires
 
     @property
     def total_gates(self) -> int:
-        """The total number of gates."""
+        """The total number of gates.
+
+        Returns:
+            int: The total number of gates. This is the sum of all of the counts of gates
+                tracked in the `gate_counts` dictionary.
+        """
         return sum(self.gate_counts.values())
 
     def __str__(self):
