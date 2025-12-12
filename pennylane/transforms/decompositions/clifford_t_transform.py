@@ -431,14 +431,15 @@ class _CachedCallable:
         return self.decompose_fn(op)
 
 
-# pylint: disable=too-many-branches,too-many-statements
+# pylint: disable=too-many-branches, too-many-statements, too-many-arguments
 @transform
 def clifford_t_decomposition(
     tape: QuantumScript,
     epsilon=1e-4,
-    method="sk",
+    method="gridsynth",
     cache_size=1000,
-    cache_eps_rtol=None,
+    cache_eps_rtol=0.0,
+    epsilon_per_rot=None,
     **method_kwargs,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""Decomposes a circuit into the Clifford+T basis.
@@ -458,12 +459,16 @@ def clifford_t_decomposition(
 
     Args:
         tape (QNode or QuantumTape or Callable): The quantum circuit to be decomposed.
-        epsilon (float): The maximum permissible operator norm error of the complete circuit decomposition. Defaults to ``0.0001``.
+        epsilon (float): The maximum permissible operator norm error of the complete circuit decomposition.
+            Defaults to ``0.0001``. In case the ``eps_per_rot`` is provided, it overrides this value.
         method (str): Method to be used for Clifford+T decomposition. Default value is ``"sk"`` for Solovay-Kitaev. Alternatively,
             the Ross-Selinger algorithm can be used with ``"gridsynth"``.
         cache_size (int): The size of the cache built for the decomposition function based on the angle. Defaults to ``1000``.
         cache_eps_rtol (Optional[float]): The relative tolerance for ``epsilon`` values between which the cache may be reused.
-            Defaults to ``None``, which means that a cached decomposition will be used if it is `at least as precise` as the requested error.
+            Defaults to ``0.0``, which means that a cached decomposition will be used if it is as precise as the requested error.
+            If ``None`` is provided, the cached decomposition will be used if it is `at least as precise` as the requested error.
+        epsilon_per_rot (Optional[float]): The maximum permissible operator norm error per rotation gate. Defaults to ``None``,
+            which means that the error given by ``epsilon`` is distributed equally across all rotation gates.
         **method_kwargs: Keyword argument to pass options for the ``method`` used for decompositions.
 
     Returns:
@@ -472,19 +477,19 @@ def clifford_t_decomposition(
 
     **Keyword Arguments**
 
-    - Solovay-Kitaev decomposition --
-        **max_depth** (int), **basis_set** (list[str]), **basis_length** (int) -- arguments for the ``"sk"`` method,
-        where the decomposition is performed using the :func:`~.sk_decomposition` method.
-
     - Ross-Selinger (``gridsynth``) decomposition --
         **max_search_trials** (int), **max_factoring_trials** (int) -- arguments for the ``"gridsynth"`` method,
         where the decomposition is performed using the :func:`~.rs_decomposition` method.
+
+    - Solovay-Kitaev decomposition --
+        **max_depth** (int), **basis_set** (list[str]), **basis_length** (int) -- arguments for the ``"sk"`` method,
+        where the decomposition is performed using the :func:`~.sk_decomposition` method.
 
     Raises:
         ValueError: If a gate operation does not have a decomposition when required.
         NotImplementedError: If chosen decomposition ``method`` is not supported.
 
-    .. seealso:: :func:`~.rs_decomposition` and :func:`~.sk_decomposition` for Ross-Selinger and Solovay-Kitaev decomposition methods, respectively.
+    .. seealso:: :func:`~.rs_decomposition` and :func:`~.sk_decomposition` for the Ross-Selinger and Solovay-Kitaev decomposition methods, respectively.
 
     **Example**
 
@@ -569,6 +574,8 @@ def clifford_t_decomposition(
 
         # Compute the per-gate epsilon value
         epsilon /= number_ops or 1
+        if epsilon_per_rot is not None:
+            epsilon = epsilon_per_rot
 
         # _CACHED_DECOMPOSE is a global variable that caches the decomposition function,
         # where the implementation of each function should have the following signature:
