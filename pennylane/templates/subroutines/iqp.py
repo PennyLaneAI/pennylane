@@ -28,7 +28,7 @@ from pennylane.ops import Hadamard, MultiRZ, PauliRot
 
 
 class IQP(Operation):
-    """
+    r"""
     A template that builds an Instantaneous Quantum Polynomial (IQP) circuit. The gates of these circuits correspond
     to multi-qubit X rotations, whose generators are given by tensor products of Pauli X operators.
 
@@ -41,6 +41,23 @@ class IQP(Operation):
     Certain computational problems such as generative machine learning and combinatorial optimization can be cast as
     a minimization over functions of these expectation values. Since these circuits are also believed to be hard to
     sample from using classical algorithms, they can potentially lead to a quantum advantage.
+
+    Args:
+        weights (list): The parameters of the IQP gates.
+        num_wires (int): Number of wires in the circuit.
+        pattern (list[list[list[int]]]): Specification of the trainable gates. Each element of `pattern` corresponds to a
+            unique trainable parameter. Each sublist specifies the generators to which that parameter applies.
+            Generators are specified by listing the qubits on which an X operator acts. For example, the `pattern`
+            `[[[0]], [[1]], [[2]], [[3]]]` specifies a circuit with single qubit rotations on the first four qubits, each
+            with its own trainable parameter. The `pattern` `[[[0],[1]], [[2],[3]]]` correspond to a circuit with two
+            trainable parameters with generators :math:`X_0+X_1` and :math:`X_2+X_3` respectively. A circuit with a
+            single trainable gate with generator :math:`X_0\otimes X_1` corresponds to the `pattern`
+            `[[[0,1]]]`.
+        spin_sym (bool, optional): If True, the circuit is equivalent to one where the initial state
+            :math:`\frac{1}{\sqrt(2)}(|00\dots0> + |11\dots1>)` is used in place of :math:`|00\dots0>`.
+
+    Raises:
+        Exception: when pattern and weights have a different number of elements.
     """
 
     resource_keys = {"spin_sym", "pattern", "num_wires"}
@@ -48,27 +65,6 @@ class IQP(Operation):
     def __init__(
         self, weights, num_wires, pattern, spin_sym=None, id=None
     ):  # pylint: disable=too-many-arguments
-        r"""
-        IQP template corresponding to a parameterized IQP circuit. Based on `IQPopt: Fast optimization of
-        instantaneous quantum polynomial circuits in JAX <https://arxiv.org/pdf/2501.04776>`__.
-
-        Args:
-            weights (list): The parameters of the IQP gates.
-            num_wires (int): Number of wires in the circuit.
-            pattern (list[list[list[int]]]): Specification of the trainable gates. Each element of `pattern` corresponds to a
-                unique trainable parameter. Each sublist specifies the generators to which that parameter applies.
-                Generators are specified by listing the qubits on which an X operator acts. For example, the `pattern`
-                `[[[0]], [[1]], [[2]], [[3]]]` specifies a circuit with single qubit rotations on the first four qubits, each
-                with its own trainable parameter. The `pattern` `[[[0],[1]], [[2],[3]]]` correspond to a circuit with two
-                trainable parameters with generators :math:`X_0+X_1` and :math:`X_2+X_3` respectively. A circuit with a
-                single trainable gate with generator :math:`X_0\otimes X_1` corresponds to the `pattern`
-                `[[[0,1]]]`.
-            spin_sym (bool, optional): If True, the circuit is equivalent to one where the initial state
-                :math:`\frac{1}{\sqrt(2)}(|00\dots0> + |11\dots1>)` is used in place of :math:`|00\dots0>`.
-
-        Raises:
-            Exception: when pattern and weights have a different number of elements.
-        """
         if len(pattern) != len(weights):
             raise ValueError(
                 f"Number of gates and number of parameters for an Instantaneous Quantum Polynomial circuit must be the same, got {len(pattern)} gates and {len(weights)} weights."
