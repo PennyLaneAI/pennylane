@@ -193,7 +193,7 @@ def graph_to_tape(graph) -> QuantumScript:
 
         for meas in copy_meas:
             meas = ops.functions.map_wires(meas, wire_map=wire_map)
-            obs = meas.obs
+            obs = meas.obs  # pylint: disable=no-member
             observables.append(obs)
 
             if measurement_type is SampleMP:
