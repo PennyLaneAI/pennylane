@@ -14,7 +14,6 @@
 """
 Tests for capturing a qnode into jaxpr.
 """
-from functools import partial
 
 # pylint: disable=protected-access
 import pytest
@@ -549,7 +548,7 @@ class TestUserTransforms:
         dev = qml.device("default.qubit", wires=3)
         monkeypatch.setattr(dev, "eval_jaxpr", dummy_eval_jaxpr)
 
-        @partial(qml.transforms.decompose, gate_set=[qml.RX, qml.RY, qml.RZ])
+        @qml.transforms.decompose(gate_set=[qml.RX, qml.RY, qml.RZ])
         @qml.qnode(dev)
         @qml.transforms.cancel_inverses
         def circuit(x, y, z):

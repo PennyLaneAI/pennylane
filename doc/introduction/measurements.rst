@@ -83,13 +83,12 @@ by a ``Hadamard`` and ``CNOT`` gate.
 
 .. code-block:: python
 
-    from functools import partial
     import pennylane as qml
     from pennylane import numpy as np
 
     dev = qml.device("default.qubit", wires=2)
 
-    @partial(qml.set_shots, shots=1000)
+    @qml.set_shots(shots=1000)
     @qml.qnode(dev)
     def circuit():
         qml.Hadamard(wires=0)
@@ -148,11 +147,9 @@ The previous example will be modified as follows:
 
 .. code-block:: python
 
-    from functools import partial
-
     dev = qml.device("default.qubit", wires=2)
 
-    @partial(qml.set_shots, shots=1000)
+    @qml.set_shots(shots=1000)
     @qml.qnode(dev)
     def circuit():
         qml.Hadamard(wires=0)
@@ -170,7 +167,7 @@ Similarly, if the observable is not provided, the count of the observed computat
 
     dev = qml.device("default.qubit", wires=2)
 
-    @partial(qml.set_shots, shots=1000)
+    @qml.set_shots(shots=1000)
     @qml.qnode(dev)
     def circuit():
         qml.Hadamard(wires=0)
@@ -191,7 +188,7 @@ For example, we could run the previous circuit with ``all_outcomes=True``:
 
     dev = qml.device("default.qubit", wires=2)
 
-    @partial(qml.set_shots, shots=1000)
+    @qml.set_shots(shots=1000)
     @qml.qnode(dev)
     def circuit():
         qml.Hadamard(wires=0)
@@ -269,7 +266,7 @@ can also be directly applied to a QNode.
 
     dev = qml.device("default.qubit", wires=1)
 
-    @partial(qml.set_shots, shots=10)
+    @qml.set_shots(shots=10)
     @qml.qnode(dev)
     def circuit(x, y):
         qml.RX(x, wires=0)

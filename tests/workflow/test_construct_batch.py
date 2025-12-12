@@ -16,8 +16,6 @@ Contains tests for the `qml.workflow.get_transform_program` getter and `construc
 
 """
 
-from functools import partial
-
 import numpy as np
 import pytest
 from default_qubit_legacy import DefaultQubitLegacy
@@ -32,7 +30,7 @@ class TestMarker:
     def test_level_not_found(self):
         """Test the error message when a requested level is not found."""
 
-        @partial(qml.marker, level="something")
+        @qml.marker(level="something")
         @qml.qnode(qml.device("null.qubit"))
         def c():
             return qml.state()
@@ -49,7 +47,7 @@ class TestMarker:
         """Test that custom levels can be specified and accessed."""
 
         @qml.transforms.merge_rotations
-        @partial(qml.marker, level="my_level")
+        @qml.marker(level="my_level")
         @qml.transforms.cancel_inverses
         @qml.qnode(qml.device("null.qubit"))
         def c():
@@ -85,7 +83,7 @@ class TestMarker:
     def test_execution_with_marker_transform(self):
         """Test that the marker transform does not effect execution results."""
 
-        @partial(qml.marker, level="my_level")
+        @qml.marker(level="my_level")
         @qml.qnode(qml.device("default.qubit"))
         def c(x):
             qml.RX(x, 0)
@@ -105,8 +103,8 @@ class TestMarker:
     def test_uniqueness_checking(self):
         """Test an error is raised if a level is not unique."""
 
-        @partial(qml.marker, level="something")
-        @partial(qml.marker, level="something")
+        @qml.marker(level="something")
+        @qml.marker(level="something")
         @qml.qnode(qml.device("null.qubit"))
         def c():
             return qml.state()
@@ -117,7 +115,7 @@ class TestMarker:
     def test_protected_levels(self):
         """Test an error is raised for using a protected level."""
 
-        @partial(qml.marker, level="gradient")
+        @qml.marker(level="gradient")
         @qml.qnode(qml.device("null.qubit"))
         def c():
             return qml.state()
@@ -152,8 +150,8 @@ class TestCompilePipelineGetter:
 
         dev = qml.device("default.qubit", wires=4)
 
-        @partial(qml.transforms.compile, num_passes=2)
-        @partial(qml.transforms.merge_rotations, atol=1e-5)
+        @qml.transforms.compile(num_passes=2)
+        @qml.transforms.merge_rotations(atol=1e-5)
         @qml.transforms.cancel_inverses
         @qml.qnode(dev, diff_method="parameter-shift", gradient_kwargs={"shifts": 2})
         def circuit():
@@ -477,7 +475,7 @@ class TestConstructBatch:
         """Test a user transform that creates multiple tapes."""
 
         @qml.transforms.split_non_commuting
-        @partial(qml.set_shots, shots=10)
+        @qml.set_shots(shots=10)
         @qml.qnode(qml.device("default.qubit"))
         def circuit():
             qml.S(0)
@@ -526,7 +524,7 @@ class TestConstructBatch:
 
         with pytest.warns(UserWarning, match="Detected 'shots' as an argument"):
 
-            @partial(qml.set_shots, shots=100)
+            @qml.set_shots(shots=100)
             @qml.qnode(dev)
             def circuit(shots):
                 for _ in range(shots):
