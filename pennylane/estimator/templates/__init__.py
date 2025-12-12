@@ -27,6 +27,7 @@ from .subroutines import (
     ControlledSequence,
     QPE,
     IterativeQPE,
+    UnaryIterationQPE,
 )
 
 from .trotter import (
