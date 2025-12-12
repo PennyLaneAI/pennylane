@@ -28,6 +28,31 @@ from pennylane.wires import Wires
 # pylint: disable=no-self-use, too-few-public-methods
 
 
+class DummyOp(qre.ResourceOperator):
+    resource_keys = {"num_wires"}
+
+    def __init__(self, num_wires, wires=None):
+        self.num_wires = num_wires
+        super().__init__(wires=wires)
+
+    @property
+    def resource_params(self) -> dict:
+        return {"num_wires": self.num_wires}
+
+    @classmethod
+    def resource_rep(cls, num_wires) -> qre.CompressedResourceOp:
+        params = {"num_wires": num_wires}
+        return qre.CompressedResourceOp(cls, num_wires, params)
+
+    @classmethod
+    def resource_decomp(cls, num_wires) -> list[GateCount]:
+        return [
+            Allocate(num_wires),
+            GateCount(qre.X.resource_rep()),
+            Deallocate(num_wires),
+        ]
+
+
 class TestAdjoint:
     """Tests for the Adjoint resource Op"""
 
@@ -57,16 +82,18 @@ class TestAdjoint:
             **op.resource_params
         )
 
-        op = qre.QubitUnitary(num_wires=1)  # no default_adjoint_decomp defined
+        op = DummyOp(num_wires=1)  # no default_adjoint_decomp defined
         adj_op = qre.Adjoint(op)
         expected_res = [
+            Allocate(1),
             GateCount(
                 qre.resource_rep(
                     qre.Adjoint,
-                    {"base_cmpr_op": qre.resource_rep(qre.RZ)},
+                    {"base_cmpr_op": qre.X.resource_rep()},
                 ),
                 1,
-            )
+            ),
+            Deallocate(1),
         ]
         assert adj_op.resource_decomp(**adj_op.resource_params) == expected_res
 
@@ -200,47 +227,25 @@ class TestControlled:
             ctrl_op = qre.Controlled(op, ctrl_wires, ctrl_values)
             assert ctrl_op.resource_decomp(**ctrl_op.resource_params) == res
 
-        op = qre.QubitUnitary(num_wires=1)  # no default_controlled_decomp defined
+        op = DummyOp(num_wires=1)  # no default_controlled_decomp defined
         ctrl_op = qre.Controlled(op, num_ctrl_wires=3, num_zero_ctrl=2)
         expected_res = [
             GateCount(qre.resource_rep(qre.X), 4),
+            Allocate(1),
             GateCount(
                 qre.Controlled.resource_rep(
-                    qre.resource_rep(qre.RZ),
+                    qre.resource_rep(qre.X),
                     num_ctrl_wires=3,
                     num_zero_ctrl=0,
                 ),
                 1,
             ),
+            Deallocate(1),
         ]
         assert ctrl_op.resource_decomp(**ctrl_op.resource_params) == expected_res
 
     def test_else_block_of_apply_controlled(self):
         """Test that the else block of the apply_controlled method for code coverage purposes."""
-
-        class DummyOp(qre.ResourceOperator):
-            resource_keys = {"num_wires"}
-
-            def __init__(self, num_wires, wires=None):
-                self.num_wires = num_wires
-                super().__init__(wires=wires)
-
-            @property
-            def resource_params(self) -> dict:
-                return {"num_wires": self.num_wires}
-
-            @classmethod
-            def resource_rep(cls, num_wires) -> qre.CompressedResourceOp:
-                params = {"num_wires": num_wires}
-                return qre.CompressedResourceOp(cls, num_wires, params)
-
-            @classmethod
-            def resource_decomp(cls, num_wires) -> list[GateCount]:
-                return [
-                    Allocate(num_wires),
-                    GateCount(qre.X.resource_rep()),
-                    Deallocate(num_wires),
-                ]
 
         base_op = DummyOp(num_wires=2)
         ctrl_op = qre.Controlled(base_op, num_ctrl_wires=2, num_zero_ctrl=1)
@@ -447,7 +452,7 @@ class TestPow:
             pow_op = qre.Pow(op, z)
             assert pow_op.resource_decomp(**pow_op.resource_params) == res
 
-        op = qre.QubitUnitary(num_wires=1)  # no default_pow_decomp defined
+        op = DummyOp(num_wires=1)  # no default_pow_decomp defined
         z_and_expected_res_unitary = (
             (0, [GateCount(qre.resource_rep(qre.Identity()))]),
             (1, [GateCount(op.resource_rep_from_op())]),
