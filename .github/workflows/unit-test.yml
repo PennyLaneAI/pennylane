@@ -26,7 +26,7 @@ on:
         description: The version of uv (docs.astral.sh/uv/) to use to install dependencies
         required: false
         type: string
-        default: 0.6.5
+        default: 0.9.12
       job_runner_name:
         description: The name of the runner to use for the job
         required: false
@@ -115,7 +115,7 @@ jobs:
         with:
           version: ${{ inputs.uv_version }}
           enable-cache: true
-          cache-dependency-glob: 'requirements-*.txt'
+          cache-dependency-glob: 'pyproject.toml'
       
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -138,11 +138,12 @@ jobs:
           done <<< "$ADDITIONAL_OS_PACKAGES"
 
       - name: Upgrade PIP and install wheel
-        run: uv pip install --upgrade pip wheel setuptools>=75.8.1
+        run: |
+          uv pip install --upgrade pip wheel setuptools>=75.8.1
       
       - name: Install PennyLane dependencies
         run: |
-          uv pip install -r requirements-ci.txt -r requirements-dev.txt --upgrade
+          uv pip install --group dev --group ci --upgrade
 
       - name: Install additional PIP packages (Pre-PennyLane)
         shell: bash

@@ -525,6 +525,8 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Updated `pyproject.toml` with project dependencies to replace the requirements files. Updated workflows to use installations from `pyproject.toml`. [(8702)](https://github.com/PennyLaneAI/pennylane/pull/8702)
+
 * `qml.cond`, the `QNode`, transforms, `qml.grad`, and `qml.jacobian` no longer treat all keyword arguments as static
   arguments. They are instead treated as dynamic, numerical inputs, matching the behaviour of Jax and Catalyst.
   [(#8290)](https://github.com/PennyLaneAI/pennylane/pull/8290)
@@ -723,6 +725,7 @@ A warning message has been added to :doc:`Building a plugin <../development/plug
 
 This release contains contributions from (in alphabetical order):
 
+Runor Agbaire,
 Guillermo Alonso,
 Utkarsh Azad,
 Astral Cai,

@@ -510,7 +510,7 @@ All the requirements can be installed via:
 
 .. code-block:: console
 
-    $ pip install -r doc/requirements.txt
+    $ pip install --group docs
 
 To build the HTML documentation, go to the top-level directory and run
 

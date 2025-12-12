@@ -80,4 +80,4 @@ pre-commit quality checks. Those can be installed easily via ``pip``:
 
 .. code-block:: bash
 
-    python -m pip install -r requirements-dev.txt
+    python -m pip install --group dev
