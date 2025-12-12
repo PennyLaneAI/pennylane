@@ -14,8 +14,6 @@
 """
 Tests for select resource operators.
 """
-from collections import defaultdict
-
 import pytest
 
 import pennylane.estimator as qre
@@ -196,51 +194,84 @@ class TestSelectPauli:
 
     def test_wire_error(self):
         """Test that an error is raised when wrong number of wires is provided."""
-        ph = qre.PauliHamiltonian(2, {"X": 1, "Z": 1})
+        pauli_ham = qre.PauliHamiltonian(2, {"X": 1, "Z": 1})
         with pytest.raises(ValueError, match=r"Expected 3 wires \(1 control \+ 2 target\), got 2"):
-            qre.SelectPauli(ph, wires=[0, 1])
+            qre.SelectPauli(pauli_ham, wires=[0, 1])
 
     def test_resource_params(self):
         """Test that the resource params for SelectPauli are correct."""
-        ph = qre.PauliHamiltonian(2, {"X": 1, "Z": 1})
-        op = qre.SelectPauli(ph)
-        assert op.resource_params == {"pauli_ham": ph}
+        pauli_ham = qre.PauliHamiltonian(2, {"X": 1, "Z": 1})
+        op = qre.SelectPauli(pauli_ham)
+        assert op.resource_params == {"pauli_ham": pauli_ham}
 
     def test_resource_rep(self):
         """Test that the compressed representation for SelectPauli is correct."""
-        ph = qre.PauliHamiltonian(2, {"X": 1, "Z": 1})
-        expected = qre.CompressedResourceOp(qre.SelectPauli, 3, {"pauli_ham": ph})
-        assert qre.SelectPauli.resource_rep(ph) == expected
+        pauli_ham = qre.PauliHamiltonian(2, {"X": 1, "Z": 1})
+        expected = qre.CompressedResourceOp(qre.SelectPauli, 3, {"pauli_ham": pauli_ham})
+        assert qre.SelectPauli.resource_rep(pauli_ham) == expected
 
     @pytest.mark.parametrize(
         "pauli_ham, expected_res",
         (
             (
                 qre.PauliHamiltonian(2, {"X": 1, "Z": 1}),
-                {
-                    qre.CNOT: 2,
-                    qre.CZ: 1,
-                    qre.X: 2,
-                    qre.resource_rep(qre.TemporaryAND): 1,
-                    qre.resource_rep(
-                        qre.Adjoint, {"base_cmpr_op": qre.resource_rep(qre.TemporaryAND)}
-                    ): 1,
-                },
+                [
+                    qre.Allocate(0),
+                    qre.GateCount(qre.resource_rep(qre.CNOT), 1),
+                    qre.GateCount(qre.resource_rep(qre.CY), 0),
+                    qre.GateCount(qre.resource_rep(qre.CZ), 1),
+                    qre.GateCount(qre.resource_rep(qre.X), 2),
+                    qre.GateCount(qre.resource_rep(qre.CNOT), 1),
+                    qre.GateCount(qre.resource_rep(qre.TemporaryAND), 1),
+                    qre.GateCount(
+                        qre.resource_rep(
+                            qre.Adjoint,
+                            {"base_cmpr_op": qre.resource_rep(qre.TemporaryAND)},
+                        ),
+                        1,
+                    ),
+                    qre.Deallocate(0),
+                ],
             ),
             (
                 qre.PauliHamiltonian(3, {"XY": 1, "Z": 2, "Y": 1}),
-                {
-                    qre.CNOT: 4,
-                    qre.CY: 2,
-                    qre.CZ: 2,
-                    qre.X: 6,
-                    qre.resource_rep(qre.TemporaryAND): 3,
-                    qre.resource_rep(
-                        qre.Adjoint, {"base_cmpr_op": qre.resource_rep(qre.TemporaryAND)}
-                    ): 3,
-                    qre.Allocate: 1,
-                    qre.Deallocate: 1,
-                },
+                [
+                    qre.Allocate(1),
+                    qre.GateCount(qre.resource_rep(qre.CNOT), 1),
+                    qre.GateCount(qre.resource_rep(qre.CY), 2),
+                    qre.GateCount(qre.resource_rep(qre.CZ), 2),
+                    qre.GateCount(qre.resource_rep(qre.X), 6),
+                    qre.GateCount(qre.resource_rep(qre.CNOT), 3),
+                    qre.GateCount(qre.resource_rep(qre.TemporaryAND), 3),
+                    qre.GateCount(
+                        qre.resource_rep(
+                            qre.Adjoint,
+                            {"base_cmpr_op": qre.resource_rep(qre.TemporaryAND)},
+                        ),
+                        3,
+                    ),
+                    qre.Deallocate(1),
+                ],
+            ),
+            (
+                qre.PauliHamiltonian(2, [{"X": 1}, {"Z": 1}]),
+                [
+                    qre.Allocate(0),
+                    qre.GateCount(qre.resource_rep(qre.CNOT), 1),
+                    qre.GateCount(qre.resource_rep(qre.CY), 0),
+                    qre.GateCount(qre.resource_rep(qre.CZ), 1),
+                    qre.GateCount(qre.resource_rep(qre.X), 2),
+                    qre.GateCount(qre.resource_rep(qre.CNOT), 1),
+                    qre.GateCount(qre.resource_rep(qre.TemporaryAND), 1),
+                    qre.GateCount(
+                        qre.resource_rep(
+                            qre.Adjoint,
+                            {"base_cmpr_op": qre.resource_rep(qre.TemporaryAND)},
+                        ),
+                        1,
+                    ),
+                    qre.Deallocate(0),
+                ],
             ),
         ),
     )
@@ -248,141 +279,128 @@ class TestSelectPauli:
         """Test that the resource decompostion for SelectPauli is correct."""
         op = qre.SelectPauli(pauli_ham)
         res = op.resource_decomp(pauli_ham)
-
-        res_dict = defaultdict(int)
-        for item in res:
-            if isinstance(item, qre.GateCount):
-                res_dict[item.gate] += item.count
-            elif isinstance(item, (qre.Allocate, qre.Deallocate)):
-                res_dict[type(item)] += 1
-
-        for key, val in expected_res.items():
-            if isinstance(key, type) and issubclass(key, (qre.Allocate, qre.Deallocate)):
-                assert res_dict[key] == val
-            elif isinstance(key, qre.CompressedResourceOp):
-                assert res_dict[key] == val
-            elif isinstance(key, type) and issubclass(key, qre.ResourceOperator):
-                assert res_dict[key.resource_rep()] == val
+        assert res == expected_res
 
     def test_adjoint_resources(self):
         """Test that the adjoint resource decomposition is correct."""
-        ph = qre.PauliHamiltonian(2, {"X": 1, "Z": 1})
-        op = qre.SelectPauli(ph)
+        pauli_ham = qre.PauliHamiltonian(2, {"X": 1, "Z": 1})
+        op = qre.SelectPauli(pauli_ham)
         res = op.adjoint_resource_decomp(op.resource_params)
 
         assert len(res) == 1
-        assert res[0].gate == qre.SelectPauli.resource_rep(ph)
+        assert res[0].gate == qre.SelectPauli.resource_rep(pauli_ham)
         assert res[0].count == 1
 
-    @pytest.mark.parametrize("num_ctrl_wires, num_zero_ctrl", ((1, 0), (1, 1), (2, 0)))
-    def test_controlled_resources(self, num_ctrl_wires, num_zero_ctrl):
+    @pytest.mark.parametrize(
+        "pauli_ham, num_ctrl_wires, num_zero_ctrl, expected_res",
+        (
+            (
+                qre.PauliHamiltonian(2, {"X": 1, "Z": 1}),
+                1,
+                0,
+                [
+                    qre.Allocate(1),
+                    qre.GateCount(qre.resource_rep(qre.CNOT), 1),
+                    qre.GateCount(qre.resource_rep(qre.CY), 0),
+                    qre.GateCount(qre.resource_rep(qre.CZ), 1),
+                    qre.GateCount(qre.resource_rep(qre.X), 2),
+                    qre.GateCount(qre.resource_rep(qre.CNOT), 1),
+                    qre.GateCount(qre.resource_rep(qre.TemporaryAND), 1),
+                    qre.GateCount(
+                        qre.resource_rep(
+                            qre.Adjoint,
+                            {"base_cmpr_op": qre.resource_rep(qre.TemporaryAND)},
+                        ),
+                        1,
+                    ),
+                    qre.Deallocate(1),
+                ],
+            ),
+            (
+                qre.PauliHamiltonian(2, {"X": 1, "Z": 1}),
+                1,
+                1,
+                [
+                    qre.GateCount(qre.resource_rep(qre.X), 2),
+                    qre.Allocate(1),
+                    qre.GateCount(qre.resource_rep(qre.CNOT), 1),
+                    qre.GateCount(qre.resource_rep(qre.CY), 0),
+                    qre.GateCount(qre.resource_rep(qre.CZ), 1),
+                    qre.GateCount(qre.resource_rep(qre.X), 2),
+                    qre.GateCount(qre.resource_rep(qre.CNOT), 1),
+                    qre.GateCount(qre.resource_rep(qre.TemporaryAND), 1),
+                    qre.GateCount(
+                        qre.resource_rep(
+                            qre.Adjoint,
+                            {"base_cmpr_op": qre.resource_rep(qre.TemporaryAND)},
+                        ),
+                        1,
+                    ),
+                    qre.Deallocate(1),
+                ],
+            ),
+            (
+                qre.PauliHamiltonian(2, {"X": 1, "Z": 1}),
+                2,
+                0,
+                [
+                    qre.Allocate(1),
+                    qre.GateCount(qre.MultiControlledX.resource_rep(2, 0), 1),
+                    qre.Allocate(1),
+                    qre.GateCount(qre.resource_rep(qre.CNOT), 1),
+                    qre.GateCount(qre.resource_rep(qre.CY), 0),
+                    qre.GateCount(qre.resource_rep(qre.CZ), 1),
+                    qre.GateCount(qre.resource_rep(qre.X), 2),
+                    qre.GateCount(qre.resource_rep(qre.CNOT), 1),
+                    qre.GateCount(qre.resource_rep(qre.TemporaryAND), 1),
+                    qre.GateCount(
+                        qre.resource_rep(
+                            qre.Adjoint,
+                            {"base_cmpr_op": qre.resource_rep(qre.TemporaryAND)},
+                        ),
+                        1,
+                    ),
+                    qre.Deallocate(1),
+                    qre.GateCount(qre.MultiControlledX.resource_rep(2, 0), 1),
+                    qre.Deallocate(1),
+                ],
+            ),
+            (
+                qre.PauliHamiltonian(2, [{"X": 1}, {"Z": 1}]),
+                1,
+                0,
+                [
+                    qre.Allocate(1),
+                    qre.GateCount(qre.resource_rep(qre.CNOT), 1),
+                    qre.GateCount(qre.resource_rep(qre.CY), 0),
+                    qre.GateCount(qre.resource_rep(qre.CZ), 1),
+                    qre.GateCount(qre.resource_rep(qre.X), 2),
+                    qre.GateCount(qre.resource_rep(qre.CNOT), 1),
+                    qre.GateCount(qre.resource_rep(qre.TemporaryAND), 1),
+                    qre.GateCount(
+                        qre.resource_rep(
+                            qre.Adjoint,
+                            {"base_cmpr_op": qre.resource_rep(qre.TemporaryAND)},
+                        ),
+                        1,
+                    ),
+                    qre.Deallocate(1),
+                ],
+            ),
+        ),
+    )
+    def test_controlled_resources(self, pauli_ham, num_ctrl_wires, num_zero_ctrl, expected_res):
         """Test that the controlled resource decomposition is correct."""
-        ph = qre.PauliHamiltonian(2, {"X": 1, "Z": 1})
-        op = qre.SelectPauli(ph)
+        op = qre.SelectPauli(pauli_ham)
         res = op.controlled_resource_decomp(num_ctrl_wires, num_zero_ctrl, op.resource_params)
-
-        res_dict = defaultdict(int)
-        for item in res:
-            if isinstance(item, qre.GateCount):
-                res_dict[item.gate] += item.count
-            elif isinstance(item, (qre.Allocate, qre.Deallocate)):
-                res_dict[type(item)] += 1
-
-        # Common counts for ph with work_qubits=1
-        assert res_dict[qre.CNOT.resource_rep()] == 2
-        assert res_dict[qre.CZ.resource_rep()] == 1
-        assert res_dict[qre.resource_rep(qre.TemporaryAND)] == 1
-        assert (
-            res_dict[
-                qre.resource_rep(qre.Adjoint, {"base_cmpr_op": qre.resource_rep(qre.TemporaryAND)})
-            ]
-            == 1
-        )
-
-        # X count
-        expected_x = 2
-        if num_zero_ctrl == 1 and num_ctrl_wires == 1:
-            expected_x += 2
-        assert res_dict[qre.X.resource_rep()] == expected_x
-
-        # Allocate/Deallocate count
-        expected_alloc = 1
-        if num_ctrl_wires > 1:
-            expected_alloc += 1
-        assert res_dict[qre.Allocate] == expected_alloc
-        assert res_dict[qre.Deallocate] == expected_alloc
-
-        # MCX
-        if num_ctrl_wires > 1:
-            mcx_rep = qre.MultiControlledX.resource_rep(num_ctrl_wires, num_zero_ctrl)
-            assert res_dict[mcx_rep] == 2
+        assert res == expected_res
 
     def test_init_with_wires(self):
         """Test initialization with wires."""
-        ph = qre.PauliHamiltonian(2, {"X": 1, "Z": 1})
+        pauli_ham = qre.PauliHamiltonian(2, {"X": 1, "Z": 1})
         wires = [0, 1, 2]
-        op = qre.SelectPauli(ph, wires=wires)
+        op = qre.SelectPauli(pauli_ham, wires=wires)
         assert list(op.wires) == wires
-
-    def test_resources_commuting_groups(self):
-        """Test resource decomposition with commuting groups."""
-        # Equivalent to {"X": 1, "Z": 1}
-        groups = [{"X": 1}, {"Z": 1}]
-        ph = qre.PauliHamiltonian(2, groups)
-        op = qre.SelectPauli(ph)
-        res = op.resource_decomp(ph)
-
-        res_dict = defaultdict(int)
-        for item in res:
-            if isinstance(item, qre.GateCount):
-                res_dict[item.gate] += item.count
-            elif isinstance(item, (qre.Allocate, qre.Deallocate)):
-                res_dict[type(item)] += 1
-
-        assert res_dict[qre.CNOT.resource_rep()] == 2
-        assert res_dict[qre.CZ.resource_rep()] == 1
-        assert res_dict[qre.X.resource_rep()] == 2
-
-    def test_controlled_resources_commuting_groups(self):
-        """Test controlled resource decomposition with commuting groups."""
-        groups = [{"X": 1}, {"Z": 1}]
-        ph = qre.PauliHamiltonian(2, groups)
-        op = qre.SelectPauli(ph)
-        # num_ctrl_wires=1, num_zero_ctrl=0
-        res = op.controlled_resource_decomp(1, 0, op.resource_params)
-
-        res_dict = defaultdict(int)
-        for item in res:
-            if isinstance(item, qre.GateCount):
-                res_dict[item.gate] += item.count
-            elif isinstance(item, (qre.Allocate, qre.Deallocate)):
-                res_dict[type(item)] += 1
-
-        assert res_dict[qre.CNOT.resource_rep()] == 2
-        assert res_dict[qre.CZ.resource_rep()] == 1
-        assert res_dict[qre.X.resource_rep()] == 2
-
-    def test_controlled_resources_cleanup(self):
-        """Test that cleanup is performed correctly when num_ctrl_wires > 1."""
-        ph = qre.PauliHamiltonian(2, {"X": 1, "Z": 1})
-        op = qre.SelectPauli(ph)
-        # num_ctrl_wires=2, num_zero_ctrl=0
-        res = op.controlled_resource_decomp(2, 0, op.resource_params)
-
-        # Check that we have 2 MCX gates (one alloc, one cleanup)
-        mcx_rep = qre.MultiControlledX.resource_rep(2, 0)
-        mcx_count = sum(
-            item.count for item in res if isinstance(item, qre.GateCount) and item.gate == mcx_rep
-        )
-        assert mcx_count == 2
-
-        # Check Deallocate count (one for work qubits, one for control cleanup)
-        dealloc_count = sum(1 for item in res if isinstance(item, qre.Deallocate))
-        # work_qubits = ceil(log2(2)) = 1.
-        # Allocate(1) for work qubits.
-        # Allocate(1) for control aux.
-        # So 2 Allocates, 2 Deallocates.
-        assert dealloc_count == 2
 
 
 class TestGQSP:
@@ -435,30 +453,55 @@ class TestGQSP:
         )
         assert qre.GQSP.resource_rep(cmpr_op, poly_deg, neg_poly_deg, rot_precision) == expected
 
-    def test_resources(self):
+    @pytest.mark.parametrize(
+        "poly_deg, neg_poly_deg, expected_res",
+        (
+            (
+                5,
+                0,
+                [
+                    qre.GateCount(qre.Rot.resource_rep(), 6),
+                    qre.GateCount(
+                        qre.Controlled.resource_rep(
+                            base_cmpr_op=qre.RX.resource_rep(0.1),
+                            num_ctrl_wires=1,
+                            num_zero_ctrl=1,
+                        ),
+                        5,
+                    ),
+                ],
+            ),
+            (
+                5,
+                3,
+                [
+                    qre.GateCount(qre.Rot.resource_rep(), 9),
+                    qre.GateCount(
+                        qre.Controlled.resource_rep(
+                            base_cmpr_op=qre.RX.resource_rep(0.1),
+                            num_ctrl_wires=1,
+                            num_zero_ctrl=1,
+                        ),
+                        5,
+                    ),
+                    qre.GateCount(
+                        qre.Controlled.resource_rep(
+                            base_cmpr_op=qre.Adjoint.resource_rep(qre.RX.resource_rep(0.1)),
+                            num_ctrl_wires=1,
+                            num_zero_ctrl=0,
+                        ),
+                        3,
+                    ),
+                ],
+            ),
+        ),
+    )
+    def test_resources(self, poly_deg, neg_poly_deg, expected_res):
         """Test the resource decomposition."""
         op = qre.RX(0.1, wires=0)
-        poly_deg = 5
-        neg_poly_deg = 0
-
         cmpr_op = op.resource_rep_from_op()
         decomp = qre.GQSP.resource_decomp(cmpr_op, poly_deg, neg_poly_deg, None)
-
-        assert len(decomp) == 2
-        assert decomp[0].gate.op_type == qre.Rot
-        assert decomp[0].count == poly_deg + 1
-        assert decomp[1].gate.op_type == qre.Controlled
-        assert decomp[1].count == poly_deg
-
-        neg_poly_deg = 3
-        decomp = qre.GQSP.resource_decomp(cmpr_op, poly_deg, neg_poly_deg, None)
-        assert len(decomp) == 3
-        assert decomp[0].gate.op_type == qre.Rot
-        assert decomp[0].count == poly_deg + neg_poly_deg + 1
-        assert decomp[1].gate.op_type == qre.Controlled
-        assert decomp[1].count == poly_deg
-        assert decomp[2].gate.op_type == qre.Controlled
-        assert decomp[2].count == neg_poly_deg
+        assert decomp == expected_res
 
 
 class TestHamiltonianGQSP:
