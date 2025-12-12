@@ -14,13 +14,18 @@
 """
 This module contains the qml.iterative_qpe function.
 """
-
+from functools import partial
 
 import numpy as np
 
-import pennylane as qml
+from pennylane import ops
+from pennylane.capture import enabled as capture_enabled
+from pennylane.control_flow import for_loop
+
+from ..subroutine import Subroutine
 
 
+@partial(Subroutine, wire_argnames=["aux_wire"], static_argnames=frozenset({"iters"}))
 def iterative_qpe(base, aux_wire, iters):
     r"""Performs the `iterative quantum phase estimation <https://arxiv.org/pdf/quant-ph/0610214.pdf>`_ circuit.
 
@@ -73,35 +78,35 @@ def iterative_qpe(base, aux_wire, iters):
                                                                  ╚══════════════════════╩═════════════════════════║═══════╡ ├Sample[MCM]
                                                                                                                   ╚═══════╡ ╰Sample[MCM]
     """
-    if qml.capture.enabled():
-        measurements = qml.math.zeros(iters, dtype=int, like="jax")
+    if capture_enabled():
+        measurements = np.zeros(iters, dtype=int)
     else:
         measurements = [0] * iters
 
     def measurement_loop(i, measurements, target):
         # closure: aux_wire, iters, target
 
-        qml.Hadamard(wires=aux_wire)
-        qml.ctrl(qml.pow(target, z=2 ** (iters - i - 1)), control=aux_wire)
+        ops.Hadamard(wires=aux_wire)
+        ops.ctrl(ops.pow(target, z=2 ** (iters - i - 1)), control=aux_wire)
 
         def conditional_loop(j):
             # closure: measurements, iters, i, aux_wire
             meas = measurements[iters - i + j]
 
             def cond_func():
-                qml.PhaseShift(-2.0 * np.pi / (2 ** (j + 2)), wires=aux_wire)
+                ops.PhaseShift(-2.0 * np.pi / (2 ** (j + 2)), wires=aux_wire)
 
-            qml.cond(meas, cond_func)()
+            ops.cond(meas, cond_func)()
 
-        qml.for_loop(i)(conditional_loop)()
+        for_loop(i)(conditional_loop)()
 
-        qml.Hadamard(wires=aux_wire)
-        m = qml.measure(wires=aux_wire, reset=True)
-        if qml.capture.enabled():
+        ops.Hadamard(wires=aux_wire)
+        m = ops.measure(wires=aux_wire, reset=True)
+        if capture_enabled():
             measurements = measurements.at[iters - i - 1].set(m)
         else:
             measurements[iters - i - 1] = m
 
         return measurements, target
 
-    return qml.for_loop(iters)(measurement_loop)(measurements, base)[0]
+    return for_loop(iters)(measurement_loop)(measurements, base)[0]

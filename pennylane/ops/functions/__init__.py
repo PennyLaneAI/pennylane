@@ -33,7 +33,6 @@ This module contains functions that act on operators and tapes.
     ~map_wires
     ~matrix
     ~simplify
-    ~iterative_qpe
     ~commutator
     ~comm
 
@@ -49,7 +48,6 @@ from .generator import generator
 from .is_commuting import is_commuting
 from .is_hermitian import is_hermitian
 from .is_unitary import is_unitary
-from .iterative_qpe import iterative_qpe
 from .map_wires import map_wires
 from .matrix import matrix
 from .simplify import simplify
