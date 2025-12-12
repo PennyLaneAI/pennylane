@@ -13,8 +13,6 @@
 # limitations under the License.
 """Unit tests for the specs transform"""
 
-from functools import partial
-
 # pylint: disable=invalid-sequence-index
 import pytest
 
@@ -505,7 +503,7 @@ Resource specifications:
         """Test that we can draw at a custom level."""
 
         @qml.transforms.merge_rotations
-        @partial(qml.marker, level="my_level")
+        @qml.marker(level="my_level")
         @qml.transforms.cancel_inverses
         @qml.qnode(qml.device("null.qubit"))
         def c():

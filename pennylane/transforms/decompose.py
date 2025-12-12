@@ -446,9 +446,7 @@ def decompose(
 
     .. code-block:: python
 
-        from functools import partial
-
-        @partial(qml.transforms.decompose, gate_set={qml.Toffoli, "RX", "RZ"})
+        @qml.transforms.decompose(gate_set={qml.Toffoli, "RX", "RZ"})
         @qml.qnode(qml.device("default.qubit"))
         def circuit():
             qml.Hadamard(wires=[0])
@@ -468,7 +466,7 @@ def decompose(
 
     .. code-block:: python
 
-        @partial(qml.transforms.decompose, gate_set={"H", "T", "CNOT"}, stopping_condition=lambda op: len(op.wires) <= 2)
+        @qml.transforms.decompose(gate_set={"H", "T", "CNOT"}, stopping_condition=lambda op: len(op.wires) <= 2)
         @qml.qnode(qml.device("default.qubit"))
         def circuit():
             qml.Hadamard(wires=[0])
@@ -578,8 +576,7 @@ def decompose(
 
         .. code-block:: python
 
-            @partial(
-                qml.transforms.decompose,
+            @qml.transforms.decompose(
                 gate_set={qml.Toffoli: 1.23, qml.RX: 4.56, qml.CZ: 0.01, qml.H: 420, qml.CRZ: 100}
             )
             @qml.qnode(qml.device("default.qubit"))
@@ -595,8 +592,7 @@ def decompose(
 
         .. code-block:: python
 
-            @partial(
-                qml.transforms.decompose,
+            @qml.transforms.decompose(
                 gate_set={qml.Toffoli: 1.23, qml.RX: 4.56, qml.CZ: 0.01, qml.H: 0.1, qml.CRZ: 0.1}
             )
             @qml.qnode(qml.device("default.qubit"))
@@ -631,7 +627,6 @@ def decompose(
 
         .. code-block:: python
 
-            from functools import partial
             import pennylane as qml
 
             qml.decomposition.enable_graph()
@@ -652,8 +647,7 @@ def decompose(
 
         .. code-block:: python
 
-            @partial(
-                qml.transforms.decompose,
+            @qml.transforms.decompose(
                 gate_set={qml.RZ, qml.RY, qml.GlobalPhase, qml.CNOT},
                 stopping_condition=stopping_condition,
             )
@@ -716,8 +710,7 @@ def decompose(
                 qml.RY(np.pi/2, wires[1])
                 qml.Z(wires[1])
 
-            @partial(
-                qml.transforms.decompose,
+            @qml.transforms.decompose(
                 gate_set={"RX", "RZ", "CZ", "GlobalPhase"},
                 alt_decomps={qml.CNOT: [my_cnot1, my_cnot2]},
                 fixed_decomps={qml.IsingXX: isingxx_decomp},

@@ -54,11 +54,9 @@ def marker(tape, level: str):
 
     .. code-block:: python
 
-        from functools import partial
-
-        @partial(qml.marker, level="rotations-merged")
+        @qml.marker(level="rotations-merged")
         @qml.transforms.merge_rotations
-        @partial(qml.marker, level="my_level")
+        @qml.marker(level="my_level")
         @qml.transforms.cancel_inverses
         @qml.qnode(qml.device('null.qubit'))
         def c():
