@@ -334,7 +334,7 @@ class Resources:
 
     @property
     def total_wires(self) -> int:
-        """The total number of wires counted. The sum of ``zeroed_wires``, ``any_state_wires``
+        """The total number of wires counted. This is the sum of ``zeroed_wires``, ``any_state_wires``
         and ``algo_wires``.
         """
         return self.zeroed_wires + self.any_state_wires + self.algo_wires

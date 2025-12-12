@@ -348,7 +348,7 @@ class PauliHamiltonian:
 
     @property
     def num_terms(self) -> int:
-        """The total number of terms (Pauli words) in the Hamiltonian."""
+        """The total number of Pauli words in the Hamiltonian."""
         if isinstance(self._pauli_terms, dict):
             return sum(self._pauli_terms.values())
 
