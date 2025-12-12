@@ -350,73 +350,73 @@ class Select(Operation):
     .. details::
         :title: Available decomposition rules
 
+        To access a given rule do:
+
         .. code-block::
 
             # General example of how to access
-            qml.list_decomps(qml.Select)["name_of_rule"]
+            rule = qml.list_decomps(qml.Select)["name_of_rule"]
 
-        Resources:
+        and use it like:
 
-            .. code-block::
+        .. code-block::
 
-                ops = [qml.X(2), qml.X(3), qml.Y(2), qml.SWAP([2, 3])]
-                op = qml.Select(ops, control=[0,1])
-                rule = qml.list_decomps(qml.Select)["multi_control"]
-                rule.compute_resources(**op.resource_params)
+            qml.decomposition.enable_graph()
 
-            num_gates = 4
-
-            gate_counts = {RX: 2, CZ: 2}
-
-            weighted_cost = 4
+            @partial(qml.transforms.decompose, gate_set={...}, fixed_decomps={qml.Select: rule})
+            @qml.qnode(qml.device("lighning.qubit", wires=3))
+            def circuit():
+                qml.Select(ops, control=[0,1])
+                return qml.probs()
 
         The following decomposition rules are supported
-
-        .. currentmodule:: pennylane.templates.subroutines
-        .. autosummary::
-            :toctree: api
-
-            select._select_decomp_multi_control
-            select._select_decomp_unary
-            select._select_decomp_multi_control_work_wire
         
         .. list-table::
             :widths: 20 60
             :header-rows: 1
 
-        * - Rule Name
-          - Details
-        * - :meth:`~.Select.compute_decomposition`
-          - **Default/Standard.** Simple decomposition based on a conditional rotation and basis rotation, scales well for small registers.
-        * - :func:`~.select_ladder_decomposition`
-          - **Scaling: O(n\*2^n).** Uses a controlled-ladder structure, which can optimize for specific hardware constraints but is resource-intensive for large qubit numbers.
-        * - :func:`~.select_gray_code_decomposition`
-          - **Resource Estimate: 2\*2^n CNOTs.** A optimized approach using Gray codes to reduce the number of two-qubit gates, beneficial for noise reduction.
-
-        .. list-table::
-            :widths: 20 60 20
-            :header-rows: 1
-
-            * - **Decomposition rule**
-              - **Information**
-              - **Resources**
-            * - multi_control
-              - .. figure:: ../../../doc/_static/templates/subroutines/select.png
-                    :align: center
-                    :width: 70%
-                    :target: javascript:void(0);
-              - num_gates = 4
-
-                gate_counts = {RX: 2, CZ: 2}
-
-                weighted_cost = 4
-            * - unary
-              - .. figure:: ../../../doc/_static/templates/subroutines/select.png
-                    :align: center
-                    :width: 70%
-                    :target: javascript:void(0);
-              - For :math:`K` operators this decomposition requires at least :math:`c=\lceil\log_2 K\rceil`
-                control wires (as usual for Select), and :math:`c-1` additional work wires.
+            * - **Rule Name**
+              - **Details**
+            * - :func:`multi_control <pennylane.templates.subroutines.select._select_decomp_multi_control>`
+              - Multi-controlled gate decomposition
+                
+                .. code-block::
+              
+                    num_wires: 4
+                    num_gates: 6
+                    depth: 6
+                    shots: Shots(total=None)
+                    gate_types:
+                    {'MultiControlledX': 5, 'ControlledQubitUnitary': 1}
+                    gate_sizes:
+                    {3: 3, 4: 3}
+                    num_wires: 4
+            * - :func:`unary <pennylane.templates.subroutines.select>`
+              - Unary iterator
+                
+                .. code-block::
+                
+                    num_wires: 4
+                    num_gates: 16
+                    depth: 14
+                    shots: Shots(total=None)
+                    gate_types:
+                    {'MultiControlledX': 5, 'PauliX': 2, 'CNOT': 4, 'QubitUnitary': 4, 'ControlledPhaseShift': 1}
+                    gate_sizes:
+                    {3: 2, 1: 6, 2: 5, 4: 3}
+            * - :func:`multi_control_work_wire <pennylane.templates.subroutines.select._select_decomp_multi_control_work_wire>`
+              - Multi-controlled gate decomposition where an auxiliary qubit is employed to encode whether the control condition is satisfied.
+              
+                .. code-block::
+                    
+                    num_wires: 4
+                    num_gates: 16
+                    depth: 14
+                    shots: Shots(total=None)
+                    gate_types:
+                    {'MultiControlledX': 5, 'PauliX': 2, 'CNOT': 4, 'QubitUnitary': 4, 'ControlledPhaseShift': 1}
+                    gate_sizes:
+                    {3: 2, 1: 6, 2: 5, 4: 3}
     """
 
     resource_keys = {"op_reps", "num_control_wires", "partial", "num_work_wires"}
