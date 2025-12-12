@@ -65,18 +65,18 @@ class SelectTHC(ResourceOperator):
     >>> res = qre.estimate(qre.SelectTHC(thc_ham, rotation_precision=15))
     >>> print(res)
     --- Resources: ---
-     Total wires: 371
+     Total wires: 356
         algorithmic wires: 58
-        allocated wires: 313
-             zero state: 313
-             any state: 0
-     Total gates : 1.959E+4
-      'Toffoli': 2.219E+3,
-      'CNOT': 1.058E+4,
-      'X': 268,
+        allocated wires: 298
+          zero state: 298
+          any state: 0
+     Total gates : 4.698E+4
+      'Toffoli': 2.249E+3,
+      'CNOT': 3.764E+4,
+      'X': 388,
       'Z': 41,
       'S': 80,
-      'Hadamard': 6.406E+3
+      'Hadamard': 6.586E+3
 
     Let's also see how the resources change when batched rotations are used:
 
@@ -144,7 +144,6 @@ class SelectTHC(ResourceOperator):
         # - 1 flag for one-body vs two-body rotation
         # - 1 to control swap of \mu and \nu registers.
         # 2*n_M wires are for \mu and \nu registers, where n_M = log_2(tensor_rank+1)
-        # coeff_precision wires for the keep register
         # num_orb*2 for state register
         self.num_wires = num_orb * 2 + 2 * int(np.ceil(math.log2(tensor_rank + 1))) + 6
 
@@ -232,7 +231,6 @@ class SelectTHC(ResourceOperator):
         # - 1 flag for one-body vs two-body rotation
         # - 1 to control swap of \mu and \nu registers.
         # 2*n_M wires are for \mu and \nu registers, where n_M = log_2(tensor_rank+1)
-        # coeff_precision wires for the keep register
         # num_orb*2 for state register
         num_wires = num_orb * 2 + 2 * int(np.ceil(math.log2(tensor_rank + 1))) + 6
         params = {
@@ -305,8 +303,8 @@ class SelectTHC(ResourceOperator):
         gate_list.append(Allocate(rotation_precision * batched_rotations))
         print(tensor_rank+num_orb, rotation_precision, batched_rotations, restore_qrom, select_swap_depth, num_givens_blocks)
 
-        # QROM to load rotation angles for 2-body integrals
-        qrom_twobody = resource_rep(
+        # QROM to load rotation angles for both 1-body and 2-body integrals
+        qrom_full = resource_rep(
             qre.QROM,
             {
                 "num_bitstrings": tensor_rank + num_orb,
@@ -315,7 +313,7 @@ class SelectTHC(ResourceOperator):
                 "select_swap_depth": select_swap_depth,
             },
         )
-        gate_list.append(GateCount(qrom_twobody, num_givens_blocks))
+        gate_list.append(GateCount(qrom_full, num_givens_blocks))
 
         # Cost for rotations by adding the rotations into the phase gradient state
         semiadder = resource_rep(
@@ -331,15 +329,15 @@ class SelectTHC(ResourceOperator):
         )
         gate_list.append(GateCount(semiadder, num_orb-1))
 
-        # Adjoint of QROM for 2-body integrals Eq. 34 in arXiv:2011.03494
-        gate_list.append(GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": qrom_twobody})))
-        # Adjoint of semiadder for 2-body integrals
+        # Adjoint of QROM for loading both 1-body and 2-body integrals Eq. 34 in arXiv:2011.03494
+        gate_list.append(GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": qrom_full})))
+        # Adjoint of semiadder for 1-body and 2-body integrals
         gate_list.append(
             GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": semiadder}), num_orb - 1)
         )
 
-        # QROM to load rotation angles for one body integrals
-        qrom_onebody = resource_rep(
+        # QROM to load rotation angles for two body integrals
+        qrom_twobody = resource_rep(
             qre.QROM,
             {
                 "num_bitstrings": tensor_rank,
@@ -348,7 +346,7 @@ class SelectTHC(ResourceOperator):
                 "select_swap_depth": select_swap_depth,
             },
         )
-        gate_list.append(GateCount(qrom_onebody, num_givens_blocks))
+        gate_list.append(GateCount(qrom_twobody, num_givens_blocks))
 
         # Cost for rotations by adding the rotations into the phase gradient state
         gate_list.append(GateCount(semiadder, num_orb - 1))
@@ -362,10 +360,10 @@ class SelectTHC(ResourceOperator):
         gate_list.append(GateCount(s, 2 * num_orb))
         gate_list.append(GateCount(s_dagg, 2 * num_orb))
 
-        # Adjoint of QROM for one body integrals Eq. 35 in arXiv:2011.03494
-        gate_list.append(GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": qrom_onebody})))
+        # Adjoint of QROM for two body integrals Eq. 35 in arXiv:2011.03494
+        gate_list.append(GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": qrom_twobody})))
 
-        # Adjoint of semiadder for one body integrals
+        # Adjoint of semiadder for two body integrals
         gate_list.append(
             GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": semiadder}), num_orb - 1)
         )
@@ -445,8 +443,8 @@ class SelectTHC(ResourceOperator):
         # Data output for rotations
         gate_list.append(Allocate(rotation_precision * batched_rotations))
 
-        # QROM for loading rotation angles for 2-body integrals
-        qrom_twobody = resource_rep(
+        # QROM for loading rotation angles for 1-body and 2-body integrals
+        qrom_full = resource_rep(
             qre.QROM,
             {
                 "num_bitstrings": tensor_rank + num_orb,
@@ -455,7 +453,7 @@ class SelectTHC(ResourceOperator):
                 "select_swap_depth": select_swap_depth,
             },
         )
-        gate_list.append(GateCount(qrom_twobody, num_givens_blocks))
+        gate_list.append(GateCount(qrom_full, num_givens_blocks))
 
         # Cost for rotations by adding the rotations into the phase gradient state
         semiadder = resource_rep(
@@ -471,15 +469,15 @@ class SelectTHC(ResourceOperator):
         )
         gate_list.append(GateCount(semiadder, num_orb - 1))
 
-        # Adjoint of QROM for 2-body integrals Eq. 34 in arXiv:2011.03494
-        gate_list.append(GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": qrom_twobody})))
-        # Adjoint of semiadder for 2-body integrals
+        # Adjoint of QROM for 1-body and 2-body integrals Eq. 34 in arXiv:2011.03494
+        gate_list.append(GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": qrom_full})))
+        # Adjoint of semiadder for 1-body and 2-body integrals
         gate_list.append(
             GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": semiadder}), num_orb - 1)
         )
 
-        # QROM for loading rotation angles for one body integrals
-        qrom_onebody = resource_rep(
+        # QROM for loading rotation angles for two body integrals
+        qrom_twobody = resource_rep(
             qre.QROM,
             {
                 "num_bitstrings": tensor_rank,
@@ -488,7 +486,7 @@ class SelectTHC(ResourceOperator):
                 "select_swap_depth": select_swap_depth,
             },
         )
-        gate_list.append(GateCount(qrom_onebody, num_givens_blocks))
+        gate_list.append(GateCount(qrom_twobody, num_givens_blocks))
 
         # Cost for rotations by adding the rotations into the phase gradient state
         gate_list.append(GateCount(semiadder, num_orb - 1))
@@ -502,9 +500,9 @@ class SelectTHC(ResourceOperator):
         gate_list.append(GateCount(s, 2 * num_orb))
         gate_list.append(GateCount(s_dagg, 2 * num_orb))
 
-        # Adjoint of QROM for one body integrals Eq. 35 in arXiv:2011.03494
-        gate_list.append(GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": qrom_onebody})))
-        # Adjoint of semiadder for one body integrals
+        # Adjoint of QROM for two body integrals Eq. 35 in arXiv:2011.03494
+        gate_list.append(GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": qrom_twobody})))
+        # Adjoint of semiadder for two body integrals
         gate_list.append(
             GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": semiadder}), num_orb - 1)
         )

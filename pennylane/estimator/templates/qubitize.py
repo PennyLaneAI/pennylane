@@ -71,18 +71,18 @@ class QubitizeTHC(ResourceOperator):
     >>> res = qre.estimate(qre.QubitizeTHC(thc_ham, prep_op=prep))
     >>> print(res)
     --- Resources: ---
-     Total wires: 381
-        algorithmic wires: 68
-        allocated wires: 313
-             zero state: 313
+     Total wires: 400
+        algorithmic wires: 102
+        allocated wires: 298
+             zero state: 298
              any state: 0
-     Total gates : 5.628E+4
-      'Toffoli': 3.504E+3,
-      'CNOT': 4.138E+4,
-      'X': 2.071E+3,
+     Total gates : 8.072E+4
+      'Toffoli': 3.250E+3,
+      'CNOT': 6.787E+4,
+      'X': 1.351E+3,
       'Z': 41,
       'S': 80,
-      'Hadamard': 9.213E+3
+      'Hadamard': 8.133E+3
 
     .. details::
         :title: Usage Details
@@ -93,10 +93,10 @@ class QubitizeTHC(ResourceOperator):
         the number of bits for loading the coefficients and the rotation angles, respectively.
         The final value is determined by the following precedence:
 
-        * If provided, the value from `coeff_precision` and `rotation_precision` is used.
-        * If `coeff_precision` or `rotation_precision` is not provided or is set to `None`,
+        * If provided, the value from :code:`coeff_precision` and :code:`rotation_precision` is used.
+        * If :code:`coeff_precision` or :code:`rotation_precision` is not provided or is set to `None`,
           the precisions from :code:`prep_op` and :code:`select_op` take precedence.
-        * If both of the above are not specified, the default value of `15` bits is used.
+        * If both of the above are not specified, the default value of :code:`15` bits is used.
 
     """
 
@@ -145,7 +145,6 @@ class QubitizeTHC(ResourceOperator):
         # - 1 flag for one-body vs two-body rotation
         # - 1 to control swap of \mu and \nu registers.
         # 2*n_M wires are for \mu and \nu registers, where n_M = log_2(tensor_rank+1)
-        # coeff_precision wires for the keep register
         # num_orb*2 for state register
         # coeff_register for storing the coefficients: num_orb + tensor_rank(tensor_rank+1)/2,
         # The qubits storing output of QROM are stored here as well: 2*n_M + coeff_precision + 2
@@ -240,8 +239,7 @@ class QubitizeTHC(ResourceOperator):
         # - 1 flag for success of inequality,
         # - 1 flag for one-body vs two-body rotation
         # - 1 to control swap of \mu and \nu registers.
-        # 2*n_M wires are for \mu and \nu registers, where n_M = log_2(tensor_rank+1)
-        # coeff_precision wires for the keep register
+        # 2*n_M wiresare for \mu and \nu registers, where n_M = log_2(tensor_rank+1)
         # num_orb*2 for state register
         # coeff_register for storing the coefficients: num_orb + tensor_rank(tensor_rank+1)/2,
         # The qubits storing output of QROM are stored here as well: 2*n_M + coeff_precision + 2
