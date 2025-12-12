@@ -1785,7 +1785,7 @@ class QROM(ResourceOperator):
         swap_restored_prefactor = 1
         select_restored_prefactor = 1
 
-        if restored:
+        if restored and (W_opt > 1):
             gate_cost.append(GateCount(hadamard, 2 * size_bitstring))
             swap_restored_prefactor = 4
             select_restored_prefactor = 2
@@ -1815,13 +1815,14 @@ class QROM(ResourceOperator):
             )
 
         # SWAP cost:
-        ctrl_swap = resource_rep(qre.CSWAP)
-        gate_cost.append(
-            GateCount(ctrl_swap, swap_restored_prefactor * (W_opt - 1) * size_bitstring)
-        )
+        if W_opt > 1:
+            ctrl_swap = resource_rep(qre.CSWAP)
+            gate_cost.append(
+                GateCount(ctrl_swap, swap_restored_prefactor * (W_opt - 1) * size_bitstring)
+            )
 
-        if restored:
-            gate_cost.append(Deallocate((W_opt - 1) * size_bitstring))  # release Swap registers
+            if restored:
+                gate_cost.append(Deallocate((W_opt - 1) * size_bitstring))  # release Swap registers
 
         return gate_cost
 
@@ -1861,7 +1862,7 @@ class QROM(ResourceOperator):
         swap_restored_prefactor = 1
         select_restored_prefactor = 1
 
-        if restored:
+        if restored and (W_opt > 1):
             gate_cost.append(GateCount(hadamard, 2 * size_bitstring))
             swap_restored_prefactor = 4
             select_restored_prefactor = 2
@@ -1891,21 +1892,22 @@ class QROM(ResourceOperator):
             )
 
         # SWAP cost:
-        w = math.ceil(math.log2(W_opt))
-        ctrl_swap = qre.CSWAP.resource_rep()
-        gate_cost.append(Allocate(1))  # need one temporary qubit for l/r-elbow to control SWAP
+        if W_opt > 1:
+            w = math.ceil(math.log2(W_opt))
+            ctrl_swap = qre.CSWAP.resource_rep()
+            gate_cost.append(Allocate(1))  # need one temporary qubit for l/r-elbow to control SWAP
 
-        gate_cost.append(GateCount(l_elbow, w))
-        gate_cost.append(
-            GateCount(ctrl_swap, swap_restored_prefactor * (W_opt - 1) * size_bitstring)
-        )
-        gate_cost.append(GateCount(r_elbow, w))
-
-        gate_cost.append(Deallocate(1))  # temp wires
-        if restored:
+            gate_cost.append(GateCount(l_elbow, w))
             gate_cost.append(
-                Deallocate((W_opt - 1) * size_bitstring)
-            )  # release Swap registers + temp wires
+                GateCount(ctrl_swap, swap_restored_prefactor * (W_opt - 1) * size_bitstring)
+            )
+            gate_cost.append(GateCount(r_elbow, w))
+
+            gate_cost.append(Deallocate(1))  # temp wires
+            if restored:
+                gate_cost.append(
+                    Deallocate((W_opt - 1) * size_bitstring)
+                )  # release Swap registers + temp wires
         return gate_cost
 
     @classmethod

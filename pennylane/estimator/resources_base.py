@@ -332,14 +332,28 @@ class Resources:
 
         return gate_counts
 
+    @property
+    def total_wires(self) -> int:
+        """The total number of wires counted. The sum of ``zeroed_wires``, ``any_state_wires``
+        and ``algo_wires``.
+        """
+        return self.zeroed_wires + self.any_state_wires + self.algo_wires
+
+    @property
+    def total_gates(self) -> int:
+        """The total number of gates."""
+        return sum(self.gate_counts.values())
+
     def __str__(self):
         """Generates a string representation of the Resources object."""
-
-        total_wires = self.algo_wires + self.zeroed_wires + self.any_state_wires
-        total_gates = sum(self.gate_counts.values())
-
-        total_gates_str = str(total_gates) if total_gates <= 999 else f"{Decimal(total_gates):.3E}"
-        total_wires_str = str(total_wires) if total_wires <= 9999 else f"{Decimal(total_wires):.3E}"
+        total_gates_str = (
+            str(self.total_gates) if self.total_gates <= 999 else f"{Decimal(self.total_gates):.3E}"
+        )
+        total_wires_str = (
+            str(self.total_wires)
+            if self.total_wires <= 9999
+            else f"{Decimal(self.total_wires):.3E}"
+        )
 
         items = "--- Resources: ---\n"
         items += f" Total wires: {total_wires_str}\n"

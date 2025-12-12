@@ -346,6 +346,15 @@ class PauliHamiltonian:
         """A dictionary representing the distribution of Pauli words in the Hamiltonian"""
         return copy.deepcopy(self._pauli_terms)
 
+    @property
+    def num_terms(self) -> int:
+        """The total number of terms (Pauli words) in the Hamiltonian."""
+        if isinstance(self._pauli_terms, dict):
+            return sum(self._pauli_terms.values())
+
+        # Commuting groups are provided
+        return sum(sum(group.values()) for group in self._pauli_terms)
+
 
 def _sort_and_freeze(pauli_terms: dict) -> tuple[tuple]:
     """Map a dictionary into a sorted and hashable tuple"""
