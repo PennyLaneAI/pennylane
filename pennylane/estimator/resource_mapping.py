@@ -24,6 +24,7 @@ import pennylane.estimator.templates as re_temps
 import pennylane.ops as qops
 import pennylane.templates as qtemps
 from pennylane.operation import Operation
+from pennylane.ops.functions import simplify
 from pennylane.ops.op_math.adjoint import Adjoint, AdjointOperation
 from pennylane.ops.op_math.controlled import Controlled, ControlledOp
 from pennylane.ops.op_math.pow import Pow, PowOperation
@@ -32,6 +33,15 @@ from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
 
 from .resource_operator import ResourceOperator
+
+
+def _map_term_trotter(op: Operation):
+    """Exponentiate op for trotter decomposition"""
+    if isinstance(op, qops.op_math.SProd):
+        op = simplify(op)
+    if isinstance(op, qops.op_math.Sum):
+        return qtemps.TrotterProduct(op, time=1, n=1, order=1, check_hermitian=False)
+    return qops.op_math.Evolution(op)
 
 
 @singledispatch
@@ -332,8 +342,8 @@ def _(op: qtemps.TrotterProduct):
 
     with QueuingManager.stop_recording():
         res_ops = [
-            _map_to_resource_op(qops.Evolution(term))
-            for term in op.hyperparameters["base"].terms()[1]
+            _map_to_resource_op(_map_term_trotter(term))
+            for term in op.hyperparameters["base"].operands
         ]
 
     return re_temps.TrotterProduct(

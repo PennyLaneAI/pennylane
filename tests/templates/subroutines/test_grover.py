@@ -394,8 +394,6 @@ class TestDynamicDecomposition:
     ):  # pylint:disable=too-many-arguments, too-many-positional-arguments
         """Test that Grover gives correct result after dynamic decomposition."""
 
-        from functools import partial
-
         import jax
 
         from pennylane.transforms.decompose import DecomposeInterpreter
@@ -413,7 +411,7 @@ class TestDynamicDecomposition:
 
         with qml.capture.pause():
 
-            @partial(qml.transforms.decompose, max_expansion=max_expansion, gate_set=gate_set)
+            @qml.transforms.decompose(max_expansion=max_expansion, gate_set=gate_set)
             @qml.qnode(device=qml.device("default.qubit", wires=5))
             def circuit_comparison():
                 qml.GroverOperator(wires=wires, work_wires=work_wires)
