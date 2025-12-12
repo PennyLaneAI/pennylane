@@ -537,6 +537,23 @@ class TestPCPhase:
                     qre.GateCount(qre.GlobalPhase.resource_rep(), 1),
                 ],
             ),
+            (
+                2,
+                3,
+                1e-5,
+                [
+                    qre.GateCount(
+                        qre.Controlled.resource_rep(
+                            base_cmpr_op=qre.PhaseShift.resource_rep(1e-5),
+                            num_ctrl_wires=1,
+                            num_zero_ctrl=0,
+                        ),
+                        1,
+                    ),
+                    qre.GateCount(qre.X.resource_rep(), 0),
+                    qre.GateCount(qre.GlobalPhase.resource_rep(), 1),
+                ],
+            ),
         ],
     )
     def test_resources(self, num_wires, dim, rot_precision, expected_res):
