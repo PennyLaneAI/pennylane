@@ -1019,10 +1019,11 @@ def _(action: Deallocate):
     return Allocate(action.num_wires)
 
 
+# pylint: disable=unused-argument
 @singledispatch
 def apply_controlled(
     action: GateCount | Allocate | Deallocate, num_ctrl_wires: int, num_zero_ctrl: int
-) -> GateCount | Allocate | Deallocate:  # pylint: disable=unused-argument
+) -> GateCount | Allocate | Deallocate:
     """Create the controlled version of a resource-tracking gate.
 
     For a :class:`~.GateCount`, it wraps
