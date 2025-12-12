@@ -23,7 +23,7 @@ def to_ppr(tape):
     r"""A quantum compilation pass that converts Clifford+T gates into Pauli Product Rotation (PPR)
     gates.
 
-    .. warning::
+    .. note::
 
         This transform requires decorating the QNode with :func:`@qml.qjit <pennylane.qjit>` and for
         program capture to be enabled via :func:`qml.capture.enable() <pennylane.capture.enable>`.
@@ -112,7 +112,7 @@ def commute_ppr(tape, *, max_pauli_size=0):
     :math:`\exp(-{iP\tfrac{\pi}{4}})`, past non-Clifford PPRs gates,
     :math:`\exp(-{iP\tfrac{\pi}{8}})`, where :math:`P` is a Pauli word.
 
-    .. warning::
+    .. note::
 
         This transform requires decorating the QNode with :func:`@qml.qjit <pennylane.qjit>` and for
         program capture to be enabled via :func:`qml.capture.enable() <pennylane.capture.enable>`.
@@ -207,7 +207,7 @@ def merge_ppr_ppm(tape=None, *, max_pauli_size=0):
     A quantum compilation pass that absorbs Clifford Pauli product rotation (PPR) operations,
     :math:`\exp{-iP\tfrac{\pi}{4}}`, into the final Pauli product measurements (PPMs).
 
-    .. warning::
+    .. note::
 
         This transform requires decorating the QNode with :func:`@qml.qjit <pennylane.qjit>` and for
         program capture to be enabled via :func:`qml.capture.enable() <pennylane.capture.enable>`.
@@ -292,7 +292,7 @@ def ppr_to_ppm(tape=None, *, decompose_method="pauli-corrected", avoid_y_measure
     A quantum compilation pass that decomposes Pauli product rotations (PPRs),
     :math:`P(\theta) = \exp(-iP\theta)`, into Pauli product measurements (PPMs).
 
-    .. warning::
+    .. note::
 
         This transform requires decorating the QNode with :func:`@qml.qjit <pennylane.qjit>` and for
         program capture to be enabled via :func:`qml.capture.enable() <pennylane.capture.enable>`.
@@ -401,7 +401,7 @@ def ppm_compilation(
     A quantum compilation pass that transforms Clifford+T gates into Pauli product measurements
     (PPMs).
 
-    .. warning::
+    .. note::
 
         This transform requires decorating the QNode with :func:`@qml.qjit <pennylane.qjit>` and for
         program capture to be enabled via :func:`qml.capture.enable() <pennylane.capture.enable>`.
@@ -514,7 +514,7 @@ def reduce_t_depth(qnode):
     commute). For more details, see Figure 6 of
     `A Game of Surface Codes <https://arXiv:1808.02892v3>`_.
 
-    .. warning::
+    .. note::
 
         This transform requires decorating the QNode with :func:`@qml.qjit <pennylane.qjit>` and for
         program capture to be enabled via :func:`qml.capture.enable() <pennylane.capture.enable>`.
