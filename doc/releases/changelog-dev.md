@@ -726,6 +726,10 @@
 * Fixes a bug where :class:`~.ops.ChangeOpBasis` is not correctly reconstructed using `qml.pytrees.unflatten(*qml.pytrees.flatten(op))`
   [(#8721)](https://github.com/PennyLaneAI/pennylane/issues/8721)
 
+* Fixes a bug where :class:`~.estimator.SelectTHC`, `~.estimator.QubitizeTHC`, `~.estimator.PrepTHC` are not accounting for auxiliary
+  wires correctly.
+  [(#8719)](https://github.com/PennyLaneAI/pennylane/pull/8719)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -734,6 +738,7 @@ Guillermo Alonso,
 Utkarsh Azad,
 Astral Cai,
 Yushao Chen,
+Diksha Dhawan,
 Marcus Edwards,
 Lillian Frederiksen,
 Sengthai Heng,
