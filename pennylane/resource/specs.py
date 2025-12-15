@@ -187,9 +187,7 @@ def _specs_qjit_intermediate_passes(
 
     single_level = isinstance(level, (int, str)) and not level in ("all", "all-mlir")
 
-    # Levels where qml.marker transforms are applied, needed since markers may be applied before or
-    # after the first MLIR transform, and ones after need to be incremented by 1 to account for the
-    # extra lowering pass
+    # Maps to convert back and forth between marker name and int level
     marker_to_level = {
         trans.kwargs["level"]: i + 1
         for i, trans in enumerate(trans_prog)
@@ -223,6 +221,8 @@ def _specs_qjit_intermediate_passes(
 
         if level != "all":
             # Account for off-by-one error
+            # Needed since levels after MLIR lowering need to be incremented by 1 to account for the inserted lowering
+            # pass (the marker map does not account for when the lowering pass takes place)
             # NOTE: This is actually currently unused, since markers are tape transforms only
             level = [
                 lvl + 1 if lvl in level_to_marker and lvl >= num_trans_levels else lvl
