@@ -117,22 +117,23 @@ class IQP(Operation):
             layers.append(pauli_mat)
 
         hadamard = Hadamard.compute_matrix()
-
-        for i in range(num_wires):
-            h_mat = expand_matrix(hadamard, i, wires)
-            layers.append(h_mat)
+        h_layer = hadamard
+        for i in range(1, num_wires):
+            h_layer = math.kron(h_layer, hadamard)
+        layers.append(h_layer)
 
         for par, gate in zip(weights, pattern):
             for gen in gate:
                 rz_mat = expand_matrix(MultiRZ.compute_matrix(2 * par, len(gen)), gen, wires)
                 layers.append(rz_mat)
 
-        for i in range(num_wires):
-            h_mat = expand_matrix(hadamard, i, wires)
-            layers.append(h_mat)
+        h_layer = hadamard
+        for i in range(1, num_wires):
+            h_layer = math.kron(h_layer, hadamard)
+        layers.append(h_layer)
 
         return reduce(
-            lambda acc, curr: math.matmul(acc, curr), layers
+            lambda acc, curr: math.matmul(acc, curr), layers[::-1]
         )
 
 
