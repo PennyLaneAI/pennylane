@@ -453,6 +453,8 @@
   has been renamed to `pennylane.transforms.core.compile_pipeline`, and the old name is no longer available.
   [(#8735)](https://github.com/PennyLaneAI/pennylane/pull/8735)
 
+* The `max_work_wires` argument of the :func:`~pennylane.transforms.decompose` transform has been renamed to `num_work_wires`.
+
 <h3>Deprecations 👋</h3>
 
 * Maintenance support of NumPy<2.0 is deprecated as of v0.44 and will be completely dropped in v0.45.
@@ -628,7 +630,7 @@
   example, and the verification of the code example result.
 
 * The code example in the documentation for ``qml.decomposition.register_resources`` has been
-  updated to adhere to renamed keyword arguments and default behaviour of ``max_work_wires``.
+  updated to adhere to renamed keyword arguments and default behaviour of ``num_work_wires``.
   [(#8536)](https://github.com/PennyLaneAI/pennylane/pull/8536)
 
 * The docstring for ``qml.device`` has been updated to include a section on custom decompositions,
