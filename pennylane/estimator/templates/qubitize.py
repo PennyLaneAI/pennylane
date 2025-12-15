@@ -93,8 +93,8 @@ class QubitizeTHC(ResourceOperator):
         the number of bits for loading the coefficients and the rotation angles, respectively.
         The final value is determined by the following precedence:
 
-        * If provided, the value from :code:`coeff_precision` and :code:`rotation_precision` is used.
-        * If :code:`coeff_precision` or :code:`rotation_precision` is not provided or is set to `None`,
+        * If provided, the values from :code:`coeff_precision` and :code:`rotation_precision` are used.
+        * If :code:`coeff_precision` or :code:`rotation_precision` are not provided or are set to `None`,
           the precisions from :code:`prep_op` and :code:`select_op` take precedence.
         * If both of the above are not specified, the default value of :code:`15` bits is used.
 
