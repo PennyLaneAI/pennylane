@@ -32,16 +32,6 @@ from .parity_matrix import parity_matrix
 if TYPE_CHECKING:
     from pennylane.typing import TensorLike
 
-try:
-    import galois
-
-    # Create the Galois number field F_2, in which we can create arrays in _get_S.
-    F_2 = galois.GF(2)  # pragma: no cover
-    has_galois = True  # pragma: no cover
-
-except ModuleNotFoundError:
-    has_galois = False
-
 
 def postorder_traverse(tree: nx.Graph, source: int, source_parent: int = None):
     """Post-order traverse a tree graph, starting from (but excluding) the node ``source``.
@@ -221,15 +211,62 @@ def _update(P: TensorLike, cnots: list[tuple[int]], control: int, target: int):
     return P, cnots
 
 
+def _solve_linear_system_z2(A: np.ndarray, b: np.ndarray) -> np.ndarray:
+    """Solve the linear system of equations A.x=b over the Booleans/Z_2.
+    This is a simple implementation based on the pseudocode
+    on Wikipedia https://en.wikipedia.org/wiki/Gaussian_elimination#Gauss%E2%80%93Jordan_elimination.
+
+    Args:
+        A (np.ndarray): Square matrix with coefficients (0 or 1).
+        b (np.ndarray): Coefficient vector with same length as ``A`` and entries 0 or 1.
+
+    Returns:
+        np.ndarray: Solution vector with same length as ``A`` and ``b`` and entries 0 or 1.
+    """
+    h = 0
+    k = 0
+    m, n = A.shape
+    assert n == m == len(b)
+
+    # Create augmented matrix for Gauss-Jordan elimination.
+    A = np.hstack([A, b.reshape((n, 1))])
+    while h < n and k < n:
+        # Find next row with non-zero entry in ``k``th column
+        i_max = next(iter(i for i in range(h, n) if A[i, k] == 1), None)
+        # If no such entry was found, this column already is compatible with row-echelon form
+        # Move to the next column.
+        if i_max is None:
+            k += 1
+            continue
+
+        # Swap rows
+        A[[h, i_max]] = A[[i_max, h]]
+
+        # Iterate through rows and add current row with index ``h`` to them if they
+        # have a 1 in the current column with index ``k``.
+        for i in range(n):
+            if i == h:  # Exclude the ``h``th row itself of course.
+                continue
+            if A[i, k] == 0:  # No need to do anything if the target entry already is zero.
+                continue
+            # We use addition of rows modulo 2, which is implementable with bitwise xor, or ``^``.
+            A[i] ^= A[h]
+        # Next row and column.
+        h += 1
+        k += 1
+
+    # Solution is written into the last column of the (augmented) matrix
+    return A[:, -1]
+
+
 def _get_S(P: TensorLike, idx: int, node_set: Iterable[int], mode: str):
     # Find S (S') either by simply extracting a column or by solving a linear system for the row
     if mode == "column":
         b = P[:, idx]
     else:
-        P = F_2(P)
-        e_i = F_2.Zeros(len(P))
+        e_i = np.zeros(len(P), dtype=int)
         e_i[idx] = 1
-        b = np.linalg.solve(P.T, e_i)  # This solve step is over F_2!
+        b = _solve_linear_system_z2(P.T, e_i)
     S = set(np.where(b)[0])
     # Add the node ``idx`` itself
     S.add(idx)
@@ -312,14 +349,7 @@ def rowcol(
         the transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
 
     Raises:
-        ImportError: if the required ``galois`` package is not installed (``pip install galois``).
         TypeError: if the input quantum circuit is not a CNOT circuit.
-
-    .. note::
-
-        This function requires the package ``galois`` to be installed. It can be installed via
-        ``pip install galois``, for details see
-        `its documentation <https://mhostetter.github.io/galois/latest/>`__.
 
     **Example**
 
@@ -380,11 +410,6 @@ def rowcol(
     Please see `the compilation page on RowCol <https://pennylane.ai/compilation/rowcol-algorithm>`__ for more details and step-by-step explanations of the algorithm.
 
     """
-    if not has_galois:  # pragma: no cover
-        raise ImportError(
-            "rowcol requires the package galois. You can install it with pip install galois."
-        )  # pragma: no cover
-
     wire_order = tape.wires
     P = parity_matrix(tape, wire_order=wire_order)
 
@@ -404,12 +429,6 @@ def rowcol(
 
 def _rowcol_parity_matrix(P: np.ndarray, connectivity: nx.Graph = None) -> list[tuple[int]]:
     """RowCol algorithm that turns a parity matrix to a list of CNOT operators"""
-
-    if not has_galois:  # pragma: no cover
-        raise ImportError(
-            "rowcol requires the package galois. You can install it with pip install galois."
-        )  # pragma: no cover
-
     P = P.copy()
     n = len(P)
     # If no connectivity is given, assume full connectivity
