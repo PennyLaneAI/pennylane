@@ -101,7 +101,7 @@ def to_ppr(tape):
 
     """
 
-    raise NotImplementedError(  
+    raise NotImplementedError(
         "The to_ppr compilation pass has no tape implementation, and can only be applied when decorating the entire worfklow with @qml.qjit and when it is placed after all transforms that only have a tape implementation."
     )
 
@@ -196,7 +196,7 @@ def commute_ppr(tape, *, max_pauli_size=0):
 
     """
 
-    raise NotImplementedError(  
+    raise NotImplementedError(
         "The commute_ppr compilation pass has no tape implementation, and can only be applied when decorating the entire worfklow with @qml.qjit and when it is placed after all transforms that only have a tape implementation."
     )
 
@@ -281,7 +281,7 @@ def merge_ppr_ppm(tape=None, *, max_pauli_size=0):
     If a merging resulted in a PPM acting on more than ``max_pauli_size`` qubits, that merging
     operation would be skipped.
     """
-    raise NotImplementedError(  
+    raise NotImplementedError(
         "The merge_ppr_ppm compilation pass has no tape implementation, and can only be applied when decorating the entire worfklow with @qml.qjit and when it is placed after all transforms that only have a tape implementation."
     )
 
@@ -388,7 +388,7 @@ def ppr_to_ppm(tape=None, *, decompose_method="pauli-corrected", avoid_y_measure
     :math:`P(\tfrac{\pi}{2}) = \exp(-iP\tfrac{\pi}{2}) = P`. Pauli operators can be commuted to the
     end of the circuit and absorbed into terminal measurements.
     """
-    raise NotImplementedError(  
+    raise NotImplementedError(
         "The ppr_to_ppm compilation pass has no tape implementation, and can only be applied when decorating the entire worfklow with @qml.qjit and when it is placed after all transforms that only have a tape implementation."
     )
 
@@ -500,7 +500,7 @@ def ppm_compilation(
     ``max_pauli_size`` qubits (here, ``max_pauli_size = 2``), that commutation or merge would be
     skipped.
     """
-    raise NotImplementedError(  
+    raise NotImplementedError(
         "The ppm_compilation compilation pass has no tape implementation, and can only be applied when decorating the entire worfklow with @qml.qjit and when it is placed after all transforms that only have a tape implementation."
     )
 
@@ -588,6 +588,6 @@ def reduce_t_depth(qnode):
         . . .
     """
 
-    raise NotImplementedError(  
+    raise NotImplementedError(
         "The reduce_t_depth compilation pass has no tape implementation, and can only be applied when decorating the entire worfklow with @qml.qjit and when it is placed after all transforms that only have a tape implementation."
     )

@@ -101,7 +101,11 @@
 
 * Catalyst compilation passes designed for Pauli-based computation are now available in PennyLane, 
   providing accessibility for logical compilation research by directly integrating with 
-  :func:`~.pauli_measure` and :class:`~.PauliRot` operations.
+  :func:`~.pauli_measure` and :class:`~.PauliRot` operations. This includes 
+  :func:`pennylane.transforms.to_ppr`, :func:`pennylane.transforms.commute_ppr`, 
+  :func:`pennylane.transforms.ppr_to_ppm`, 
+  :func:`pennylane.transforms.merge_ppr_ppm`, :func:`pennylane.transforms.ppm_compilation`, 
+  :func:`pennylane.transforms.reduce_t_depth`, 
   [(#8762)](https://github.com/PennyLaneAI/pennylane/pull/8762)
    
 
