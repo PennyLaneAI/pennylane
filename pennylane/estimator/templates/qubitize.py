@@ -96,7 +96,7 @@ class QubitizeTHC(ResourceOperator):
         * If provided, the values from :code:`coeff_precision` and :code:`rotation_precision` are used.
         * If :code:`coeff_precision` or :code:`rotation_precision` are not provided or are set to `None`,
           the precisions from :code:`prep_op` and :code:`select_op` take precedence.
-        * If both of the above are not specified, the default value of :code:`15` bits is used.
+        * If both of the above are not specified, the default value of ``15`` bits is used.
 
     """
 
