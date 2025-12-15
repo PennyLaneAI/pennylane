@@ -102,7 +102,7 @@
 <h4> Compile Pipeline and Transforms </h4>
 
 * Arithmetic dunder methods (`__add__`, `__mul__`, `__rmul__`) have been added to 
-  :class:`~.transforms.core.Transform`, :class:`~.transforms.core.BoundTransform`, 
+  :class:`~.transforms.core.transform`, :class:`~.transforms.core.BoundTransform`, 
   and :class:`~.CompilePipeline` (previously known as the `TransformProgram`) to 
   enable intuitive composition of transform programs using `+` and `*` operators.
   [(#8703)](https://github.com/PennyLaneAI/pennylane/pull/8703)
@@ -163,7 +163,7 @@
 * :class:`~.transforms.core.TransformDispatcher` has been merged with :class:`~.transforms.core.transform`.
   [(#8765)](https://github.com/PennyLaneAI/pennylane/pull/8756)
 
-* The `final_transform` property of the :class:`~.transforms.core.BoundTransform` has been renamed to `is_final_transform` to better follow the naming convention for boolean properties.
+* The `final_transform` property of the :class:`~.transforms.core.BoundTransform` has been renamed to `is_final_transform` to better follow the naming convention for boolean properties. The `transform` property of the :class:`~.transform` and :class:`~.transforms.core.BoundTransform` has been renamed to `tape_transform` to avoid ambiguity.
   [(#8765)](https://github.com/PennyLaneAI/pennylane/pull/8756)
 
 * The :class:`~.CompilePipeline` (previously known as the `TransformProgram`) can now be constructed
