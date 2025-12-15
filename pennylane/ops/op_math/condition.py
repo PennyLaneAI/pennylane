@@ -293,6 +293,14 @@ class CondCallable:
         flat_true_fn = FlatFn(true_fn)
         branches = [(self.preds[0], flat_true_fn), *elifs, (True, self.otherwise_fn)]
 
+        static_string_kwargs = {}
+        for kwarg in kwargs:
+            print(type(kwarg), kwarg)
+            if type(kwarg) == str:
+                static_string_kwargs[kwarg] = kwargs[kwarg]
+        for kwarg in static_string_kwargs:
+            del kwargs[kwarg]
+
         # consts go after the len(branches) conditions, first const at len(branches)
         end_const_ind = len(branches)
         conditions = []
@@ -311,6 +319,8 @@ class CondCallable:
             f = fn if isinstance(fn, FlatFn) else FlatFn(fn)
             if jax.config.jax_dynamic_shapes:
                 f = _add_abstract_shapes(f)
+            f = functools.partial(f, **static_string_kwargs)
+
             jaxpr = jax.make_jaxpr(f, abstracted_axes=abstracted_axes)(*args, **kwargs)
             jaxpr_branches.append(jaxpr.jaxpr)
             consts_slices.append(slice(end_const_ind, end_const_ind + len(jaxpr.consts)))
