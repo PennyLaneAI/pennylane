@@ -103,14 +103,11 @@ class SelectTHC(ResourceOperator):
         num_orb = thc_ham.num_orbitals
         tensor_rank = thc_ham.tensor_rank
 
-        # 6 auxiliary wires account for:
-        # - 2 spin registers
-        # - 1 for rotation on auxiliary qubit
-        # - 1 flag for success of inequality
-        # - 1 flag for one-body vs two-body rotation
-        # - 1 to control swap of \mu and \nu registers.
+        # Based on section III D in arXiv:2011.03494
+        # Algorithmic wires for the walk operator, auxiliary wires are accounted for by the QROM
+        # and SemiAdder operators.
         # 2*n_M wires are for \mu and \nu registers, where n_M = log_2(tensor_rank+1)
-        # num_orb*2 for state register
+        # num_orb*2 for state register and 6 are flags.
         self.num_wires = num_orb * 2 + 2 * int(np.ceil(math.log2(tensor_rank + 1))) + 6
 
         if wires is not None and len(Wires(wires)) != self.num_wires:
@@ -172,14 +169,6 @@ class SelectTHC(ResourceOperator):
         num_orb = thc_ham.num_orbitals
         tensor_rank = thc_ham.tensor_rank
 
-        # 6 auxiliary wires account for:
-        # - 2 spin registers
-        # - 1 for rotation on auxiliary qubit
-        # - 1 flag for success of inequality
-        # - 1 flag for one-body vs two-body rotation
-        # - 1 to control swap of \mu and \nu registers.
-        # 2*n_M wires are for \mu and \nu registers, where n_M = log_2(tensor_rank+1)
-        # num_orb*2 for state register
         num_wires = num_orb * 2 + 2 * int(np.ceil(math.log2(tensor_rank + 1))) + 6
         params = {
             "thc_ham": thc_ham,

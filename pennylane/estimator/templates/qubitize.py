@@ -136,18 +136,12 @@ class QubitizeTHC(ResourceOperator):
             rotation_precision = select_op.rotation_precision if select_op else 15
         self.rotation_precision = rotation_precision
 
-        # Based on section III D, Eq. 43 in arXiv:2011.03494
-        # Numbers have been adjusted to remove the auxiliary wires accounted for by different templates
-        # 6 auxiliary wires account for:
-        # - 2 spin registers
-        # - 1 for rotation on auxiliary qubit
-        # - 1 flag for success of inequality,
-        # - 1 flag for one-body vs two-body rotation
-        # - 1 to control swap of \mu and \nu registers.
-        # 2*n_M wires are for \mu and \nu registers, where n_M = log_2(tensor_rank+1)
-        # num_orb*2 for state register
-        # coeff_register for storing the coefficients: num_orb + tensor_rank(tensor_rank+1)/2,
-        # The qubits storing output of QROM are stored here as well: 2*n_M + coeff_precision + 2
+        # Based on section III D in arXiv:2011.03494
+        # Algorithmic wires for the walk operator, auxiliary wires are accounted for by the respective
+        # templates which include QROM, SemiAdder, SelectTHC.
+        # The total algorithmic qubits are thus given by : N + 2*n_M + ceil(log(d)) + \aleph + 6 + m
+        # where \aleph is coeff_precision, m = 2n_M + \aleph + 2, N = 2*num_orb,
+        # d = num_orb + tensor_rank(tensor_rank+1)/2, and n_M = log_2(tensor_rank+1)
         self.num_wires = (
             num_orb * 2
             + 4 * int(np.ceil(math.log2(tensor_rank + 1)))
@@ -231,18 +225,6 @@ class QubitizeTHC(ResourceOperator):
         if rotation_precision is None:
             rotation_precision = select_op.params["rotation_precision"] if select_op else 15
 
-        # Based on section III D, Eq. 43 in arXiv:2011.03494
-        # Numbers have been adjusted to remove the auxiliary wires accounted for by different templates
-        # 6 auxiliary wires account for:
-        # - 2 spin registers
-        # - 1 for rotation on auxiliary qubit
-        # - 1 flag for success of inequality,
-        # - 1 flag for one-body vs two-body rotation
-        # - 1 to control swap of \mu and \nu registers.
-        # 2*n_M wiresare for \mu and \nu registers, where n_M = log_2(tensor_rank+1)
-        # num_orb*2 for state register
-        # coeff_register for storing the coefficients: num_orb + tensor_rank(tensor_rank+1)/2,
-        # The qubits storing output of QROM are stored here as well: 2*n_M + coeff_precision + 2
         num_wires = (
             num_orb * 2
             + 4 * int(np.ceil(math.log2(tensor_rank + 1)))
