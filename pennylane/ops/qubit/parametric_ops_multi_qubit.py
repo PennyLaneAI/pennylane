@@ -590,18 +590,16 @@ def _pauli_rot_decomposition(theta: TensorLike, wires: WiresLike, pauli_word: st
     active_wires = [wire for idx, wire in enumerate(wires) if pauli_word[idx] != "I"]
     active_gates = [gate for gate in pauli_word if gate != "I"]
 
-    for idx in range(len(active_wires)):
-        wire = active_wires[idx]
+    for idx, wire in enumerate(active_wires):
         gate = active_gates[idx]
         if gate == "X":
             qml.Hadamard(wires=[wire])
         elif gate == "Y":
             qml.RX(np.pi / 2, wires=[wire])
-    
+
     qml.MultiRZ(theta, wires=active_wires)
 
-    for idx in range(len(active_wires)):
-        wire = active_wires[idx]
+    for idx, wire in enumerate(active_wires):
         gate = active_gates[idx]
         if gate == "X":
             qml.Hadamard(wires=[wire])
