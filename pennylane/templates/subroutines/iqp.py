@@ -72,7 +72,7 @@ class IQP(Operation):
             qml.IQP(weights, 2, pattern, spin_sym)
             return [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))]
 
-    >>> iqp_circuit([0.89, 0.54], [[[0]], [[1]]], False)
+    >>> iqp_circuit(weights=[0.89, 0.54], pattern=[[[0]], [[1]]], spin_sym=False)
     [np.float64(-0.20768100160878344), np.float64(0.47132836417373947)]
 
     >>> print(qml.draw(iqp_circuit, level="device")([0.89, 0.54], [[[0]], [[1]]], False))
