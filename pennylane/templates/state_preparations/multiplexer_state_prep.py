@@ -59,7 +59,7 @@ class MultiplexerStatePreparation(Operation):
         >>> np.round(circuit(), 2)
         array([0.5 , 0.  , 0.25, 0.25])
 
-    .. seealso:: :class:`~.SelectPauliRot`
+    .. seealso:: :class:`~.SelectPauliRot` for how to break down the main building blocks of this template.
 
     """
 
@@ -139,9 +139,9 @@ def _multiplexer_state_prep_decomposition(state_vector, wires):  # pylint: disab
 
     num_iterations = int(math.log2(math.shape(probs)[0]))
 
-    shapes = [[int(2 ** (i + 1)), -1] for i in range(num_iterations)]
+    shapes = []
     for i in range(num_iterations):
-
+        shapes.append([int(2 ** (i + 1)), -1])
         probs_aux = math.reshape(probs, [1, -1])
 
         # Calculation of the numerator and denominator of the function f(x) (Eq.5 [arXiv:quant-ph/0208112])
@@ -165,6 +165,10 @@ def _multiplexer_state_prep_decomposition(state_vector, wires):  # pylint: disab
 
             # Apply the DiagonalQubitUnitary operation to encode the phases
             qml.DiagonalQubitUnitary(math.exp(thetas), wires=wires)
+
+    else:
+        thetas = [1j * phase for phase in phases]
+        qml.DiagonalQubitUnitary(math.exp(thetas), wires=wires)
 
 
 qml.add_decomps(MultiplexerStatePreparation, _multiplexer_state_prep_decomposition)
