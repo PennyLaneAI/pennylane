@@ -349,7 +349,7 @@ class CompilePipeline:
         if isinstance(obj, BoundTransform):
             return obj in self._compile_pipeline
         if isinstance(obj, transform):
-            return any(obj.transform == t.tape_transform for t in self)
+            return any(obj.tape_transform == t.tape_transform for t in self)
         return False
 
     def remove(self, obj: BoundTransform | transform):
@@ -364,7 +364,7 @@ class CompilePipeline:
             self._compile_pipeline = [t for t in self._compile_pipeline if t != obj]
         elif isinstance(obj, transform):
             self._compile_pipeline = [
-                t for t in self._compile_pipeline if t.tape_transform != obj.transform
+                t for t in self._compile_pipeline if t.tape_transform != obj.tape_transform
             ]
         else:
             raise TypeError("Only BoundTransform or transform can be removed.")
@@ -402,7 +402,7 @@ class CompilePipeline:
         """Add a transform to the end of the program.
 
         Note that this should be a function decorated with/called by
-        ``qml.transforms.transform``, and not a ``BoundTransform``.
+        ``qml.transforms.tape_transform``, and not a ``BoundTransform``.
 
         Args:
             _transform (transform): The transform to add to the compile pipeline.
