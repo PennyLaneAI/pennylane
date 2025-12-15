@@ -153,33 +153,7 @@
   resource operator.
   [(#8546)](https://github.com/PennyLaneAI/pennylane/pull/8546)
 
-<h3>Improvements 🛠</h3>
-
-<h4>Resource estimation</h4>
-
-* Added `Resources.total_wires` and `Resources.total_gates` properties to the 
-  ``qml.estimator.Resources`` class. Users can more easily access these quantities from the `Resources` object directly.
-  [(#8761)](https://github.com/PennyLaneAI/pennylane/pull/8761)
-
-* Added `PauliHamiltonian.num_terms` property to the ``qml.estimator.PauliHamiltonian`` class.
-  Users can more easily access the total number of terms (Pauli words) from the `PauliHamiltonian` object directly.
-  [(#8761)](https://github.com/PennyLaneAI/pennylane/pull/8761)
-
-* Improved the resource decomposition for the :class:`~pennylane.estimator.QROM` class. The cost has
-  been reduced in cases when users specify `restored = True` and `sel_swap_depth = 1`.
-  [(#8761)](https://github.com/PennyLaneAI/pennylane/pull/8761)
-
-* Improved :mod:`estimator <pennylane.estimator>`'s
-  resource decomposition of `PauliRot` to match the optimal resources
-  for certain special cases of Pauli strings (e.g. for `XX` and `YY` type Pauli strings).
-  [(#8562)](https://github.com/PennyLaneAI/pennylane/pull/8562)
-
-* Users can now estimate the resources for quantum circuits that contain or decompose into
-  any of the following symbolic operators: :class:`~.ChangeOpBasis`, :class:`~.Prod`,
-  :class:`~.Controlled`, :class:`~.ControlledOp`, :class:`~.Pow`, and :class:`~.Adjoint`.
-  [(#8464)](https://github.com/PennyLaneAI/pennylane/pull/8464)
-
-<h4>Inspecting your compilation pipeline</h4>
+<h4>Seamless resource tracking and circuit visualization for compiled programs </h4>
 
 * A new :func:`~.marker` function allows for easy inspection at particular points in a transform program
   with :func:`~.specs` and :func:`~.drawer.draw` instead of having to increment ``level``
@@ -213,6 +187,32 @@
   >>> print(qml.draw(circuit, level="rotations-merged")())
   0: ──RX(6.68)─┤  State
   ```
+
+<h3>Improvements 🛠</h3>
+
+<h4>Resource estimation</h4>
+
+* Added `Resources.total_wires` and `Resources.total_gates` properties to the 
+  ``qml.estimator.Resources`` class. Users can more easily access these quantities from the `Resources` object directly.
+  [(#8761)](https://github.com/PennyLaneAI/pennylane/pull/8761)
+
+* Added `PauliHamiltonian.num_terms` property to the ``qml.estimator.PauliHamiltonian`` class.
+  Users can more easily access the total number of terms (Pauli words) from the `PauliHamiltonian` object directly.
+  [(#8761)](https://github.com/PennyLaneAI/pennylane/pull/8761)
+
+* Improved the resource decomposition for the :class:`~pennylane.estimator.QROM` class. The cost has
+  been reduced in cases when users specify `restored = True` and `sel_swap_depth = 1`.
+  [(#8761)](https://github.com/PennyLaneAI/pennylane/pull/8761)
+
+* Improved :mod:`estimator <pennylane.estimator>`'s
+  resource decomposition of `PauliRot` to match the optimal resources
+  for certain special cases of Pauli strings (e.g. for `XX` and `YY` type Pauli strings).
+  [(#8562)](https://github.com/PennyLaneAI/pennylane/pull/8562)
+
+* Users can now estimate the resources for quantum circuits that contain or decompose into
+  any of the following symbolic operators: :class:`~.ChangeOpBasis`, :class:`~.Prod`,
+  :class:`~.Controlled`, :class:`~.ControlledOp`, :class:`~.Pow`, and :class:`~.Adjoint`.
+  [(#8464)](https://github.com/PennyLaneAI/pennylane/pull/8464)
 
 <h4>Decompositions</h4>
 
