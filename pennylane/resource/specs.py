@@ -465,6 +465,22 @@ def specs(
         Measurements:
           expval(Sum(num_wires=2, num_terms=2)): 1
 
+        We can analyze the effects of, for example, applying the first two transforms
+        (:func:`~pennylane.transforms.cancel_inverses` and :func:`~pennylane.transforms.undo_swaps`) by setting
+        ``level=2``. The result will show that ``SWAP`` and ``PauliX`` are not present in the circuit:
+
+        >>> print(qml.specs(circuit, level=2)(0.1).resources)
+        Total wire allocations: 2
+        Total gates: 3
+        Circuit depth: 3
+        <BLANKLINE>
+        Gate types:
+          RandomLayers: 1
+          RX: 2
+        <BLANKLINE>
+        Measurements:
+          expval(Sum(num_wires=2, num_terms=2)): 1
+
         We can then check the resources after applying all transforms with ``level="device"`` (which, in this particular example, would be equivalent to ``level=3``):
 
         >>> print(qml.specs(circuit, level="device")(0.1).resources)
@@ -475,20 +491,6 @@ def specs(
         Gate types:
           RY: 1
           RX: 1
-        <BLANKLINE>
-        Measurements:
-          expval(Sum(num_wires=2, num_terms=2)): 1
-
-        We can also notice that ``SWAP`` and ``PauliX`` are not present in the circuit if we set ``level=2``:
-
-        >>> print(qml.specs(circuit, level=2)(0.1).resources)
-        Total wire allocations: 2
-        Total gates: 3
-        Circuit depth: 3
-        <BLANKLINE>
-        Gate types:
-          RandomLayers: 1
-          RX: 2
         <BLANKLINE>
         Measurements:
           expval(Sum(num_wires=2, num_terms=2)): 1
