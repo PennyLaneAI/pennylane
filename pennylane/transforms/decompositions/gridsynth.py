@@ -24,7 +24,8 @@ def gridsynth(tape, *, epsilon=1e-4, ppr_basis=False):
 
     .. warning::
 
-        This transform requires QJIT as it is a frontend for Catalyst's ``gridsynth`` compilation pass.
+        This transform must be applied within a workflow compiled with :func:`pennylane.qjit`, 
+        as it is a frontend for Catalyst's ``gridsynth`` compilation pass.
         Consult the Catalyst documentation for more information.
 
     Args:
@@ -64,5 +65,5 @@ def gridsynth(tape, *, epsilon=1e-4, ppr_basis=False):
     """
 
     raise NotImplementedError(
-        "This transform pass (gridsynth) has no tape based implementation. It can only be applied to QJIT-ed workflows after all purely tape transforms. For a tape transform, please use qml.transforms.clifford_t_decomposition."
+        "The gridsynth compilation pass has no tape implementation, and can only be applied when decorating the entire worfklow with @qml.qjit and when it is placed after all transforms that only have a tape implementation."
     )
