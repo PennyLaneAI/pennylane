@@ -25,6 +25,7 @@ from pennylane.decomposition import (
     register_resources,
     resource_rep,
 )
+from pennylane.math import expand_matrix
 from pennylane.operation import Operation
 from pennylane.ops import Hadamard, MultiRZ, PauliRot
 from pennylane.typing import TensorLike
@@ -102,44 +103,37 @@ class IQP(Operation):
             "spin_sym": spin_sym,
             "weights": weights,
             "pattern": pattern,
+            "num_wires": num_wires,
         }
         super().__init__(wires=range(num_wires), id=id)
 
-    def compute_matrix(self) -> TensorLike:
-        num_wires = len(self.wires)
+    @staticmethod
+    def compute_matrix(weights, num_wires, pattern, spin_sym) -> TensorLike:
         layers = []
+        wires = list(range(num_wires))
 
-        if self.hyperparameters["spin_sym"]:
+        if spin_sym:
             pauli_mat = PauliRot.compute_matrix(2 * np.pi / 4, "Y" + "X" * (num_wires - 1))
             layers.append(pauli_mat)
 
-        id = math.identity(n=2)
         hadamard = Hadamard.compute_matrix()
 
         for i in range(num_wires):
-            h_mat = []
-            for j in range(num_wires):
-                if i == j:
-                    h_mat.append(hadamard)
-                else:
-                    h_mat.append(id)
+            h_mat = expand_matrix(hadamard, i, wires)
+            layers.append(h_mat)
 
-            layer = reduce(
-                lambda acc, curr: math.kron(acc, curr), h_mat
-            )
-            layers.append(layer)
-
-        mat = reduce(
-            lambda acc, curr: acc @ curr, layers
-        )
-
-        for par, gate in zip(self.hyperparameters["weights"], self.hyperparameters["pattern"]):
+        for par, gate in zip(weights, pattern):
             for gen in gate:
-                MultiRZ.compute_matrix(2 * par, len(gen))
+                rz_mat = expand_matrix(MultiRZ.compute_matrix(2 * par, len(gen)), gen, wires)
+                layers.append(rz_mat)
 
         for i in range(num_wires):
-            Hadamard(i)
+            h_mat = expand_matrix(hadamard, i, wires)
+            layers.append(h_mat)
 
+        return reduce(
+            lambda acc, curr: math.matmul(acc, curr), layers
+        )
 
 
     @classmethod
@@ -176,7 +170,7 @@ def _instantaneous_quantum_polynomial_resources(spin_sym, pattern, num_wires):
 
 @register_resources(_instantaneous_quantum_polynomial_resources)
 def _instantaneous_quantum_polynomial_decomposition(
-    wires, weights, pattern, spin_sym
+    wires, weights, pattern, spin_sym, **__
 ):  # pylint: disable=unused-argument, too-many-arguments
     num_wires = len(wires)
 
