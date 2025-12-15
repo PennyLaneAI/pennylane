@@ -138,7 +138,95 @@ def _op_expval_indep(
     return op_expvals
 
 
-# pylint: disable=too-many-arguments, too-many-branches, too-many-statements
+def _sparse_samples(generators_sp, samples, spin_sym):
+    samples_gates = samples.dot(generators_sp.T)
+    samples_gates.data = 2 * (samples_gates.data % 2)
+    samples_gates = samples_gates.toarray()
+    samples_gates = 1 - samples_gates
+
+    samples_sum = []
+    samples_len = 0
+
+    if spin_sym:
+        samples_sum = np.squeeze(np.asarray(samples.sum(axis=-1)))
+        samples_len = samples.shape[0]
+    del samples
+
+    return samples_gates, samples_sum, samples_len
+
+
+def _sparse_ops(generators_sp, ops, spin_sym):
+    ops_gen = ops.dot(generators_sp.T)
+    ops_gen.data %= 2
+    ops_gen = ops_gen.toarray()
+
+    ops_sum = []
+
+    if spin_sym:
+        ops_sum = np.squeeze(np.asarray(ops.sum(axis=-1)))
+    del ops
+
+    return ops_gen, ops_sum
+
+
+def _to_csr(generators, ops, samples, generators_sp=None):
+    if isinstance(ops, csr_matrix):
+        samples = csr_matrix(samples)
+        if generators_sp is None:
+            generators_sp = csr_matrix(generators)
+    else:
+        ops = csr_matrix(ops)
+        samples = csr_matrix(samples)
+
+    return samples, generators_sp, ops
+
+
+def _effective_params(gates, params):
+    par_transform = max(len(gate) for gate in gates) != 1
+    if par_transform:
+        effective_params = _par_transform(gates) @ params
+    else:
+        effective_params = params
+    return effective_params
+
+
+def _dense_samples(generators, samples, spin_sym):
+    samples_gates = 1 - 2 * ((samples @ generators.T) % 2)
+
+    samples_sum = []
+    samples_len = 0
+
+    if spin_sym:
+        samples_sum = samples.sum(axis=-1)
+        samples_len = samples.shape[0]
+
+    return samples_gates, samples_sum, samples_len
+
+
+def _dense_ops(generators, ops, spin_sym):
+    ops_gen = (ops @ generators.T) % 2
+
+    ops_sum = 0
+
+    if spin_sym:
+        ops_sum = ops.sum(axis=-1)
+
+    return ops_gen, ops_sum
+
+
+def _ini_spin_sym(ops_sum, samples_sum, samples_len, spin_sym):
+    if spin_sym:
+        try:
+            shape = (len(ops_sum), samples_len)
+        except TypeError:
+            shape = (samples_len,)
+
+        return 2 - jnp.repeat(ops_sum, samples_len).reshape(shape) % 2 - 2 * (samples_sum % 2)
+
+    return 1
+
+
+# pylint: disable=too-many-arguments
 def _op_expval_batch(
     gates: list,
     params: list,
@@ -187,64 +275,21 @@ def _op_expval_batch(
     samples = jax.random.randint(key, (n_samples, n_qubits), 0, 2)
 
     generators = _generators(gates, n_qubits)
-    par_transform = max(len(gate) for gate in gates) != 1
-    if par_transform:
-        effective_params = _par_transform(gates) @ params
-    else:
-        effective_params = params
-
-    ops_sum = []
-    samples_len = 0
-    samples_sum = []
+    effective_params = _effective_params(gates, params)
 
     if sparse or isinstance(ops, csr_matrix):
 
         generators_sp = _generators_sp(gates, n_qubits)
+        samples, generators_sp, ops = _to_csr(generators, ops, samples, generators_sp)
 
-        if isinstance(ops, csr_matrix):
-            samples = csr_matrix(samples)
-            if generators_sp is None:
-                generators_sp = csr_matrix(generators)
-        else:
-            ops = csr_matrix(ops)
-            samples = csr_matrix(samples)
-
-        ops_gen = ops.dot(generators_sp.T)
-        ops_gen.data %= 2
-        ops_gen = ops_gen.toarray()
-
-        samples_gates = samples.dot(generators_sp.T)
-        samples_gates.data = 2 * (samples_gates.data % 2)
-        samples_gates = samples_gates.toarray()
-        samples_gates = 1 - samples_gates
-
-        if spin_sym:
-            ops_sum = np.squeeze(np.asarray(ops.sum(axis=-1)))
-            samples_sum = np.squeeze(np.asarray(samples.sum(axis=-1)))
-            samples_len = samples.shape[0]
-        del ops
-        del samples
+        samples_gates, samples_sum, samples_len = _sparse_samples(generators_sp, samples, spin_sym)
+        ops_gen, ops_sum = _sparse_ops(generators_sp, ops, spin_sym)
 
     else:
-        ops_gen = (ops @ generators.T) % 2
-        samples_gates = 1 - 2 * ((samples @ generators.T) % 2)
-        if spin_sym:
-            ops_sum = ops.sum(axis=-1)
-            samples_sum = samples.sum(axis=-1)
-            samples_len = samples.shape[0]
+        samples_gates, samples_sum, samples_len = _dense_samples(generators, samples, spin_sym)
+        ops_gen, ops_sum = _dense_ops(generators, ops, spin_sym)
 
-    if spin_sym:
-        try:
-            shape = (len(ops_sum), samples_len)
-        except TypeError:
-            shape = (samples_len,)
-
-        ini_spin_sym = (
-            2 - jnp.repeat(ops_sum, samples_len).reshape(shape) % 2 - 2 * (samples_sum % 2)
-        )
-
-    else:
-        ini_spin_sym = 1
+    ini_spin_sym = _ini_spin_sym(ops_sum, samples_sum, samples_len, spin_sym)
 
     par_ops_gates = 2 * effective_params * ops_gen
     expvals = ini_spin_sym * jnp.cos(par_ops_gates @ samples_gates.T)
