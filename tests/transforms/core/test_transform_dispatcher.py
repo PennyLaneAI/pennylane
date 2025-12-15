@@ -23,8 +23,8 @@ import pennylane as qml
 from pennylane.tape import QuantumScript, QuantumScriptBatch, QuantumTape
 from pennylane.transforms.core import (
     BoundTransform,
-    Transform,
     TransformError,
+    transform,
 )
 from pennylane.typing import PostprocessingFn, TensorLike
 
@@ -260,14 +260,14 @@ class TestBoundTransform:
         c = BoundTransform(first_valid_transform, is_informative=True)
 
         # pylint: disable=protected-access
-        assert isinstance(c._transform_dispatcher, Transform)
+        assert isinstance(c._transform, transform)
         assert c.is_informative
-        assert c._transform_dispatcher.is_informative  # pylint: disable=protected-access
+        assert c._transform.is_informative  # pylint: disable=protected-access
 
     def test_error_if_extra_kwargs_when_dispatcher(self):
         """Test that a ValueError is raised if extra kwargs are passed when a Transform is provided."""
 
-        with pytest.raises(ValueError, match="cannot be passed if a Transform is provided"):
+        with pytest.raises(ValueError, match="cannot be passed if a transform is provided"):
             _ = BoundTransform(qml.transform(first_valid_transform), is_informative=True)
 
 
@@ -281,15 +281,15 @@ class TestTransformExtension:
             def __init__(self, ops):
                 self.ops = ops
 
-        def subroutine_func(obj: Subroutine, transform, *targs, **tkwargs):
+        def subroutine_func(obj: Subroutine, _transform, *targs, **tkwargs):
             tape = qml.tape.QuantumScript(obj.ops)
-            [new_tape], _ = transform(tape, *targs, **tkwargs)
+            [new_tape], _ = _transform(tape, *targs, **tkwargs)
             return Subroutine(new_tape.operations)
 
         if explicit_type:
-            Transform.generic_register(Subroutine)(subroutine_func)
+            transform.generic_register(Subroutine)(subroutine_func)
         else:
-            Transform.generic_register(subroutine_func)
+            transform.generic_register(subroutine_func)
 
         @qml.transform
         def dummy_transform(tape, op, n_times):
@@ -822,7 +822,7 @@ class TestTransform:  # pylint: disable=too-many-public-methods
         assert len(program) == 2
         assert len(new_program) == 3
 
-        assert new_program[-1].transform is valid_transform
+        assert new_program[-1].tape_transform is valid_transform
 
         @qml.qnode(new_dev)
         def circuit():
@@ -855,7 +855,7 @@ class TestTransform:  # pylint: disable=too-many-public-methods
         assert len(program) == 3
         assert len(new_program) == 4
 
-        assert new_program[-1].transform is valid_transform
+        assert new_program[-1].tape_transform is valid_transform
 
         @qml.qnode(new_dev)
         def circuit():
@@ -975,7 +975,7 @@ class TestPassName:
         expected_container = BoundTransform(t)
         assert expected_container.pass_name == "my_pass_name"
         assert repr(expected_container) == "<my_pass_name((), {})>"
-        assert expected_container.transform is None
+        assert expected_container.tape_transform is None
         assert c.transform_program[-1] == expected_container
         assert repr(c.transform_program) == "CompilePipeline(my_pass_name)"
 

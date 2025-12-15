@@ -432,7 +432,7 @@ class TestAddNoiseLevels:
 
         assert len(transform_level1) == len(transform_level2) + bool(level1 == "user")
         for t1, t2 in zip(transform_level1, transform_level2):
-            if t1.transform.__name__ == t2.transform.__name__ == "expand_fn":
+            if t1.transform.__name__ == t2.tape_transform.__name__ == "expand_fn":
                 continue
             assert t1 == t2
 
@@ -463,5 +463,5 @@ class TestAddNoiseLevels:
         transform_level2 = qml.workflow.get_transform_program(noisy_qnode)
 
         assert len(transform_level1) == len(transform_level2) - 1
-        assert transform_level2[4].transform == add_noise.transform
-        assert transform_level2[-1].transform == qml.metric_tensor.transform
+        assert transform_level2[4].tape_transform == add_noise.transform
+        assert transform_level2[-1].tape_transform == qml.metric_tensor.transform

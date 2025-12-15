@@ -129,7 +129,7 @@ class TestValidation:
 
         with pytest.raises(
             ValueError,
-            match="Differentiation method 5 must be a str, Transform, or None",
+            match="Differentiation method 5 must be a str, transform, or None",
         ):
             QNode(dummyfunc, dev, interface="autograd", diff_method=5)
 
@@ -1143,7 +1143,7 @@ class TestCompilePipelineIntegration:
             qml.RX(x, 0)
             return qml.expval(qml.PauliZ(0))
 
-        assert circuit.transform_program[0].transform == pin_result.transform
+        assert circuit.transform_program[0].tape_transform == pin_result.transform
         assert circuit.transform_program[0].kwargs == {"requested_result": 3.0}
 
         assert qml.math.allclose(circuit(0.1), 3.0)

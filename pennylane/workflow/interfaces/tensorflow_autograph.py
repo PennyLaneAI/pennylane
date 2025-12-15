@@ -250,7 +250,7 @@ def execute(
 
             else:
                 # Need to compute the Jacobians on the backward pass (accumulation="backward")
-                if isinstance(gradient_fn, qml.transforms.core.Transform):
+                if isinstance(gradient_fn, qml.transforms.core.transform):
                     # Gradient function is a gradient transform.
 
                     # Generate and execute the required gradient tapes

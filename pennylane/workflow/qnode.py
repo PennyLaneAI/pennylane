@@ -35,7 +35,7 @@ from pennylane.math import Interface
 from pennylane.measurements import Shots, ShotsLike
 from pennylane.queuing import AnnotatedQueue
 from pennylane.tape import QuantumScript
-from pennylane.transforms.core import CompilePipeline, Transform
+from pennylane.transforms.core import CompilePipeline, transform
 from pennylane.typing import TensorLike
 
 from .execution import execute
@@ -162,7 +162,7 @@ def _validate_qfunc_output(qfunc_output, measurements) -> None:
         )
 
 
-def _validate_diff_method(device: SupportedDeviceAPIs, diff_method: str | Transform) -> None:
+def _validate_diff_method(device: SupportedDeviceAPIs, diff_method: str | transform) -> None:
     if diff_method is None:
         return
 
@@ -177,7 +177,7 @@ def _validate_diff_method(device: SupportedDeviceAPIs, diff_method: str | Transf
         )
     if isinstance(diff_method, str) and diff_method in tuple(get_args(SupportedDiffMethods)):
         return
-    if isinstance(diff_method, Transform):
+    if isinstance(diff_method, transform):
         return
 
     raise QuantumFunctionError(
@@ -228,8 +228,8 @@ class QNode:
             * ``"auto"``: The QNode automatically detects the interface from the input values of
               the quantum function.
 
-        diff_method (str or .Transform): The method of differentiation to use in
-            the created QNode. Can either be a :class:`~.Transform`, which includes all
+        diff_method (str or .transform): The method of differentiation to use in
+            the created QNode. Can either be a :class:`~.transform`, which includes all
             quantum gradient transforms in the :mod:`qml.gradients <.gradients>` module, or a string. The following
             strings are allowed:
 
@@ -512,7 +512,7 @@ class QNode:
         func: Callable,
         device: SupportedDeviceAPIs,
         interface: str | Interface = Interface.AUTO,
-        diff_method: Transform | SupportedDiffMethods = "best",
+        diff_method: transform | SupportedDiffMethods = "best",
         *,
         shots: ShotsLike | Literal["unset"] = "unset",
         grad_on_execution: bool | Literal["best"] = "best",
@@ -873,11 +873,11 @@ qnode.__signature__ = inspect.signature(QNode)
 
 
 # pylint: disable=protected-access
-@Transform.generic_register
-def apply_transform_to_qnode(obj: QNode, transform, *targs, **tkwargs) -> QNode:
+@transform.generic_register
+def apply_transform_to_qnode(obj: QNode, _transform, *targs, **tkwargs) -> QNode:
     """The default behavior for applying a transform to a QNode."""
-    if transform._custom_qnode_transform:
-        return transform._custom_qnode_transform(transform, obj, targs, tkwargs)
+    if _transform._custom_qnode_transform:
+        return _transform._custom_qnode_transform(_transform, obj, targs, tkwargs)
     new_qnode = copy.copy(obj)
-    new_qnode._transform_program = transform(new_qnode.transform_program, *targs, **tkwargs)
+    new_qnode._transform_program = _transform(new_qnode.transform_program, *targs, **tkwargs)
     return new_qnode

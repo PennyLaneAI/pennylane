@@ -160,14 +160,14 @@
   The old name is still available in the same location.
   [(#8753)](https://github.com/PennyLaneAI/pennylane/pull/8753)
 
-* :class:`~.transforms.core.TransformDispatcher` has been renamed to :class:`~.transforms.core.Transform`.
+* :class:`~.transforms.core.TransformDispatcher` has been merged with :class:`~.transforms.core.transform`.
   [(#8765)](https://github.com/PennyLaneAI/pennylane/pull/8756)
 
 * The `final_transform` property of the :class:`~.transforms.core.BoundTransform` has been renamed to `is_final_transform` to better follow the naming convention for boolean properties.
   [(#8765)](https://github.com/PennyLaneAI/pennylane/pull/8756)
 
 * The :class:`~.CompilePipeline` (previously known as the `TransformProgram`) can now be constructed
-  more flexibility with a variable number of arguments that are of types `Transform`, `BoundTransform`,
+  more flexibility with a variable number of arguments that are of types `transform`, `BoundTransform`,
   or other `CompilePipeline`s.
   [(#8750)](https://github.com/PennyLaneAI/pennylane/pull/8750)
 
@@ -196,7 +196,7 @@
 
 * Quantum compilation passes in MLIR and XDSL can now be applied using the core PennyLane transform
   infrastructure, instead of using Catalyst-specific tools. This is made possible by a new argument in
-  :func:`~pennylane.transform` and `~.Transform` called ``pass_name``, which accepts a string
+  :func:`~pennylane.transform` and `~.transform` called ``pass_name``, which accepts a string
   corresponding to the name of the compilation pass.
   The ``pass_name`` argument ensures that the given compilation pass will be used when qjit'ing a
   workflow, where the pass is performed in MLIR or xDSL.
@@ -302,8 +302,8 @@
   capture, allowing for `qml.qjit(qml.grad(c))` and `qml.qjit(qml.jacobian(c))` to work.
   [(#8382)](https://github.com/PennyLaneAI/pennylane/pull/8382)
 
-* Both the generic and transform-specific application behavior of a `qml.transforms.core.Transform`
-  can be overwritten with `Transform.generic_register` and `my_transform.register`.
+* Both the generic and transform-specific application behavior of a `qml.transforms.core.transform`
+  can be overwritten with `transform.generic_register` and `my_transform.register`.
   [(#7797)](https://github.com/PennyLaneAI/pennylane/pull/7797)
 
 * With capture enabled, measurements can now be performed on Operator instances passed as closure
@@ -564,8 +564,8 @@
   [(#8635)](https://github.com/PennyLaneAI/pennylane/pull/8635)
 
 * In program capture, transforms now have a single transform primitive that have a `transform` param that stores
-  the `Transform`. Before, each transform had its own primitive stored on the
-  `Transform._primitive` private property. It proved difficult to keep maintaining dispatch behaviour
+  the `transform`. Before, each transform had its own primitive stored on the
+  `transform._primitive` private property. It proved difficult to keep maintaining dispatch behaviour
   for every single transform.
   [(#8576)](https://github.com/PennyLaneAI/pennylane/pull/8576)
   [(#8639)](https://github.com/PennyLaneAI/pennylane/pull/8639)

@@ -24,7 +24,7 @@ from pennylane.gradients.gradient_transform import (
     _validate_gradient_methods,
     choose_trainable_param_indices,
 )
-from pennylane.transforms.core import Transform
+from pennylane.transforms.core import transform
 
 
 def test_supported_gradient_kwargs():
@@ -40,7 +40,7 @@ def test_supported_gradient_kwargs():
         if attr in methods_to_skip:
             continue
         obj = getattr(qml.gradients, attr)
-        if isinstance(obj, Transform):
+        if isinstance(obj, transform):
             grad_transforms.append(obj)
 
     # Collect arguments of all gradient transforms

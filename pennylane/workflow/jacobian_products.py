@@ -239,12 +239,12 @@ class NoGradients(JacobianProductCalculator):
 
 
 class TransformJacobianProducts(JacobianProductCalculator):
-    """Compute VJPs, JVPs and Jacobians via a gradient transform :class:`~.Transform`.
+    """Compute VJPs, JVPs and Jacobians via a gradient transform :class:`~.transform`.
 
     Args:
         inner_execute (Callable[[Tuple[QuantumTape]], ResultBatch]): a function that
             executes the batch of circuits and returns their results.
-        gradient_transform (.Transform): the gradient transform to use.
+        gradient_transform (.transform): the gradient transform to use.
         gradient_kwargs (dict): Any keyword arguments for the gradient transform.
 
     Keyword Args:
@@ -270,7 +270,7 @@ class TransformJacobianProducts(JacobianProductCalculator):
     def __init__(
         self,
         inner_execute: Callable,
-        gradient_transform: qml.transforms.core.Transform,
+        gradient_transform: qml.transforms.core.transform,
         gradient_kwargs: dict | None = None,
         cache_full_jacobian: bool = False,
     ):

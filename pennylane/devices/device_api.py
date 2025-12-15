@@ -35,7 +35,7 @@ from pennylane.transforms import (
     split_non_commuting,
     split_to_single_terms,
 )
-from pennylane.transforms.core import CompilePipeline, Transform, TransformError
+from pennylane.transforms.core import CompilePipeline, TransformError, transform
 from pennylane.typing import Result, ResultBatch, TensorLike
 from pennylane.wires import Wires
 
@@ -1078,14 +1078,14 @@ def _default_mcm_method(capabilities: DeviceCapabilities, shots_present: bool) -
     return "deferred"
 
 
-def _preprocess_device(original_device, transform, targs, tkwargs):
+def _preprocess_device(original_device, _transform, targs, tkwargs):
     class TransformedDevice(type(original_device)):
         """A transformed device with updated preprocess method."""
 
-        def __init__(self, original_device, transform, targs, tkwargs):
+        def __init__(self, original_device, _transform, targs, tkwargs):
             for key, value in original_device.__dict__.items():
                 self.__setattr__(key, value)
-            self.transform = transform
+            self.transform = _transform
             self.targs = targs
             self.tkwargs = tkwargs
             self._original_device = original_device
@@ -1107,17 +1107,17 @@ def _preprocess_device(original_device, transform, targs, tkwargs):
             """Return the original device."""
             return self._original_device
 
-    return TransformedDevice(original_device, transform, targs, tkwargs)
+    return TransformedDevice(original_device, _transform, targs, tkwargs)
 
 
-def _preprocess_transforms_device(original_device, transform, targs, tkwargs):
+def _preprocess_transforms_device(original_device, _transform, targs, tkwargs):
     class TransformedDevice(type(original_device)):
         """A transformed device with updated preprocess_transforms method."""
 
-        def __init__(self, original_device, transform, targs, tkwargs):
+        def __init__(self, original_device, _transform, targs, tkwargs):
             for key, value in original_device.__dict__.items():
                 self.__setattr__(key, value)
-            self.transform = transform
+            self.transform = _transform
             self.targs = targs
             self.tkwargs = tkwargs
             self._original_device = original_device
@@ -1139,20 +1139,20 @@ def _preprocess_transforms_device(original_device, transform, targs, tkwargs):
             """Return the original device."""
             return self._original_device
 
-    return TransformedDevice(original_device, transform, targs, tkwargs)
+    return TransformedDevice(original_device, _transform, targs, tkwargs)
 
 
-@Transform.generic_register
-def apply_to_device(obj: Device, transform, *targs, **tkwargs):
+@transform.generic_register
+def apply_to_device(obj: Device, _transform, *targs, **tkwargs):
     """Apply the transform on a device"""
-    if transform.expand_transform:
+    if _transform.expand_transform:
         raise TransformError("Device transform does not support expand transforms.")
-    if transform.is_informative:
+    if _transform.is_informative:
         raise TransformError("Device transform does not support informative transforms.")
-    if transform.is_final_transform:
+    if _transform.is_final_transform:
         raise TransformError("Device transform does not support final transforms.")
 
     if type(obj).preprocess != Device.preprocess:
-        return _preprocess_device(obj, transform, targs, tkwargs)
+        return _preprocess_device(obj, _transform, targs, tkwargs)
 
-    return _preprocess_transforms_device(obj, transform, targs, tkwargs)
+    return _preprocess_transforms_device(obj, _transform, targs, tkwargs)
