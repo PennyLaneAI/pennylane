@@ -136,12 +136,11 @@ class QubitizeTHC(ResourceOperator):
             rotation_precision = select_op.rotation_precision if select_op else 15
         self.rotation_precision = rotation_precision
 
-        # Based on section III D in arXiv:2011.03494
-        # Algorithmic wires for the walk operator, auxiliary wires are accounted for by the respective
-        # templates which include QROM, SemiAdder, SelectTHC.
-        # The total algorithmic qubits are thus given by : N + 2*n_M + ceil(log(d)) + \aleph + 6 + m
+        # Algorithmic wires for the walk operator, based on section III D in arXiv:2011.03494.
+        # The auxiliary wires are excluded and accounted for by the included templates: QROM, SemiAdder, SelectTHC.
+        # The total algorithmic qubits are thus given by: N + 2*n_M + ceil(log(d)) + \aleph + 6 + m
         # where \aleph is coeff_precision, m = 2n_M + \aleph + 2, N = 2*num_orb,
-        # d = num_orb + tensor_rank(tensor_rank+1)/2, and n_M = log_2(tensor_rank+1)
+        # d = num_orb + tensor_rank(tensor_rank+1)/2, and n_M = log_2(tensor_rank+1).
         self.num_wires = (
             num_orb * 2
             + 4 * int(np.ceil(math.log2(tensor_rank + 1)))
