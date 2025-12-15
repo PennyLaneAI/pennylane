@@ -157,7 +157,7 @@
   - :class:`~.SWAP`, :class:`~.ISWAP`, :class:`~.SISWAP`
   - :class:`~.CY`, :class:`~.CZ`, :class:`~.CSWAP`, :class:`~.CNOT`, :class:`~.Toffoli`
 
-<h4>Resource estimation</h4>
+<h4>Analyzing your algorithms quickly and easily with resource estimation</h4>
 
 * Users can now set precisions for a larger variety of `ResourceOperator`s in
   :mod:`estimator <pennylane.estimator>` using
@@ -194,7 +194,7 @@
 
 <h3>Improvements 🛠</h3>
 
-<h4>Other improvements</h4>
+<h4>Resource estimation</h4>
 
 * Added `Resources.total_wires` and `Resources.total_gates` properties to the 
   ``qml.estimator.Resources`` class. Users can more easily access these quantities from the `Resources` object directly.
@@ -213,13 +213,12 @@
   for certain special cases of Pauli strings (e.g. for `XX` and `YY` type Pauli strings).
   [(#8562)](https://github.com/PennyLaneAI/pennylane/pull/8562)
 
-* Added a new decomposition, `_decompose_2_cnots`, for the two-qubit decomposition for `QubitUnitary`.
-  It supports the analytical decomposition a two-qubit unitary known to require exactly 2 CNOTs.
-  [(#8666)](https://github.com/PennyLaneAI/pennylane/issues/8666)
+* Users can now estimate the resources for quantum circuits that contain or decompose into
+  any of the following symbolic operators: :class:`~.ChangeOpBasis`, :class:`~.Prod`,
+  :class:`~.Controlled`, :class:`~.ControlledOp`, :class:`~.Pow`, and :class:`~.Adjoint`.
+  [(#8464)](https://github.com/PennyLaneAI/pennylane/pull/8464)
 
-* `Operator.decomposition` will fallback to the first entry in `qml.list_decomps` if the `Operator.compute_decomposition`
-  method is not overridden.
-  [(#8686)](https://github.com/PennyLaneAI/pennylane/pull/8686)
+<h4>Inspecting your compilation pipeline</h4>
 
 * A new :func:`~.marker` function allows for easy inspection at particular points in a transform program
   with :func:`~.specs` and :func:`~.drawer.draw` instead of having to increment ``level``
@@ -254,13 +253,15 @@
   0: ──RX(6.68)─┤  State
   ```
 
-* `qml.for_loop` will now fall back to a standard Python `for` loop if capturing a condensed, structured loop fails
-  with program capture enabled.
-  [(#8615)](https://github.com/PennyLaneAI/pennylane/pull/8615)
+<h4>Decompositions</h4>
 
-* `qml.cond` will now use standard Python logic if all predicates have concrete values. A nested
-  control flow primitive will no longer be captured as it is not needed.
-  [(#8634)](https://github.com/PennyLaneAI/pennylane/pull/8634)
+* Added a new decomposition, `_decompose_2_cnots`, for the two-qubit decomposition for `QubitUnitary`.
+  It supports the analytical decomposition a two-qubit unitary known to require exactly 2 CNOTs.
+  [(#8666)](https://github.com/PennyLaneAI/pennylane/issues/8666)
+
+* `Operator.decomposition` will fallback to the first entry in `qml.list_decomps` if the `Operator.compute_decomposition`
+  method is not overridden.
+  [(#8686)](https://github.com/PennyLaneAI/pennylane/pull/8686)
 
 * The `~.BasisRotation` graph decomposition was re-written in a qjit friendly way with PennyLane control flow.
   [(#8560)](https://github.com/PennyLaneAI/pennylane/pull/8560)
@@ -306,6 +307,31 @@
   - :class:`~.ParticleConservingU1`
   - :class:`~.CommutingEvolution`
 
+* A new decomposition has been added to :class:`pennylane.Toffoli`. This decomposition uses one
+  work wire and :class:`pennylane.TemporaryAND` operators to reduce the resources needed.
+  [(#8549)](https://github.com/PennyLaneAI/pennylane/pull/8549)
+
+* The :func:`~pennylane.pauli_decompose` now supports decomposing scipy's sparse matrices,
+  allowing for efficient decomposition of large matrices that cannot fit in memory when written as
+  dense arrays.
+  [(#8612)](https://github.com/PennyLaneAI/pennylane/pull/8612)
+  
+* A decomposition has been added to the adjoint of :class:`pennylane.TemporaryAND`. This decomposition relies on mid-circuit measurments and does not require any T gates.
+  [(#8633)](https://github.com/PennyLaneAI/pennylane/pull/8633)
+
+* The graph-based decomposition system now supports decomposition rules that contains mid-circuit measurements.
+  [(#8079)](https://github.com/PennyLaneAI/pennylane/pull/8079)
+
+<h4>Other improvements</h4>
+
+* `qml.for_loop` will now fall back to a standard Python `for` loop if capturing a condensed, structured loop fails
+  with program capture enabled.
+  [(#8615)](https://github.com/PennyLaneAI/pennylane/pull/8615)
+
+* `qml.cond` will now use standard Python logic if all predicates have concrete values. A nested
+  control flow primitive will no longer be captured as it is not needed.
+  [(#8634)](https://github.com/PennyLaneAI/pennylane/pull/8634)
+
 * Added a keyword argument ``recursive`` to ``qml.transforms.cancel_inverses`` that enables
   recursive cancellation of nested pairs of mutually inverse gates. This makes the transform
   more powerful, because it can cancel larger blocks of inverse gates without having to scan
@@ -325,11 +351,6 @@
   variables from outside the workflow scope.
   [(#8504)](https://github.com/PennyLaneAI/pennylane/pull/8504)
 
-* Users can now estimate the resources for quantum circuits that contain or decompose into
-  any of the following symbolic operators: :class:`~.ChangeOpBasis`, :class:`~.Prod`,
-  :class:`~.Controlled`, :class:`~.ControlledOp`, :class:`~.Pow`, and :class:`~.Adjoint`.
-  [(#8464)](https://github.com/PennyLaneAI/pennylane/pull/8464)
-
 * Wires can be specified via `range` with program capture and autograph.
   [(#8500)](https://github.com/PennyLaneAI/pennylane/pull/8500)
 
@@ -337,21 +358,6 @@
   `stopping_condition` are provided, or if `gate_set` is a dictionary, when the new graph-based decomposition
   system is disabled.
   [(#8532)](https://github.com/PennyLaneAI/pennylane/pull/8532)
-
-* A new decomposition has been added to :class:`pennylane.Toffoli`. This decomposition uses one
-  work wire and :class:`pennylane.TemporaryAND` operators to reduce the resources needed.
-  [(#8549)](https://github.com/PennyLaneAI/pennylane/pull/8549)
-
-* The :func:`~pennylane.pauli_decompose` now supports decomposing scipy's sparse matrices,
-  allowing for efficient decomposition of large matrices that cannot fit in memory when written as
-  dense arrays.
-  [(#8612)](https://github.com/PennyLaneAI/pennylane/pull/8612)
-  
-* A decomposition has been added to the adjoint of :class:`pennylane.TemporaryAND`. This decomposition relies on mid-circuit measurments and does not require any T gates.
-  [(#8633)](https://github.com/PennyLaneAI/pennylane/pull/8633)
-
-* The graph-based decomposition system now supports decomposition rules that contains mid-circuit measurements.
-  [(#8079)](https://github.com/PennyLaneAI/pennylane/pull/8079)
 
 * The `~pennylane.estimator.compact_hamiltonian.CDFHamiltonian`, `~pennylane.estimator.compact_hamiltonian.THCHamiltonian`,
   `~pennylane.estimator.compact_hamiltonian.VibrationalHamiltonian`, and `~pennylane.estimator.compact_hamiltonian.VibronicHamiltonian`
