@@ -203,19 +203,14 @@ def _specs_qjit_intermediate_passes(
 
     # Handle tape/PLxPR transforms
     if level != "all-mlir":
-        if qml.capture.enabled():
-            # If capture is enabled, find the seam where PLxPR transforms end and MLIR passes begin
-            num_trans_levels = 0
+        # If capture is enabled, find the seam where PLxPR transforms end and MLIR passes begin
+        num_trans_levels = 0
 
-            # If the pass name is None, it indicates a PLxPR transform which is not recognized by Catalyst
-            for i, trans in reversed(list(enumerate(trans_prog))):
-                if trans.pass_name is None:
-                    num_trans_levels = i + 1
-                    break
-
-        else:
-            # If capture is NOT enabled, all transforms are tape transforms
-            num_trans_levels = len(trans_prog)
+        # If the pass name is None, it indicates a PLxPR transform which is not recognized by Catalyst
+        for i, trans in reversed(list(enumerate(trans_prog))):
+            if trans.pass_name is None:
+                num_trans_levels = i + 1
+                break
 
         num_trans_levels += 1  # Have to include the "before transforms" level
 
