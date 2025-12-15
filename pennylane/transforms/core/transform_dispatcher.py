@@ -145,10 +145,10 @@ class transform:  # pylint: disable=too-many-instance-attributes
             that satisfies the following requirements:
 
             * Accepts a :class:`~.QuantumScript` as its first input and returns a sequence
-            of :class:`~.QuantumScript` and a processing function.
+              of :class:`~.QuantumScript` and a processing function.
 
             * The transform must have the following structure (type hinting is optional):
-            ``my_tape_transform(tape: qml.tape.QuantumScript, ...) -> tuple[qml.tape.QuantumScriptBatch, qml.typing.PostprocessingFn]``
+              ``my_tape_transform(tape: qml.tape.QuantumScript, ...) -> tuple[qml.tape.QuantumScriptBatch, qml.typing.PostprocessingFn]``
 
         pass_name (str | None): the name of the associated MLIR pass to be applied when
             Catalyst is used. See Usage Details for more information.
