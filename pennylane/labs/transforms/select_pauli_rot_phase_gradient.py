@@ -151,7 +151,8 @@ def select_pauli_rot_phase_gradient(
             (0 / 2 + 1 / 4 + 1 / 8) * 2 * np.pi,
         ]
 
-        print(select_pauli_rot_circ(phis, control_wires=[0, 1], target_wire=wire))
+    >>> print(select_pauli_rot_circ(phis, control_wires=[0, 1], target_wire=wire))
+    [0.41161165 0.58838835]
     """
 
     if len(phase_grad_wires) < len(angle_wires):

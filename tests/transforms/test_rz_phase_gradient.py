@@ -13,7 +13,6 @@
 # limitations under the License.
 
 """Tests for the transform ``qml.transform.rz_phase_gradient``"""
-from itertools import product
 
 import numpy as np
 import pytest
