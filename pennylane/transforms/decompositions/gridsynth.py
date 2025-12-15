@@ -24,7 +24,8 @@ def gridsynth(tape, *, epsilon=1e-4, ppr_basis=False):
 
     .. warning::
 
-        This transform requires QJIT as it is a wrapper for Catalyst's ``gridsynth`` compilation pass. Consult the Catalyst documentation for more information.
+        This transform requires QJIT as it is a frontend for Catalyst's ``gridsynth`` compilation pass.
+        Consult the Catalyst documentation for more information.
 
     Args:
         tape (QNode): A quantum circuit.

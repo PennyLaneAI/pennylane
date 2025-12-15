@@ -26,8 +26,6 @@ def test_not_implemented():
         NotImplementedError,
         match=r"This transform pass \(gridsynth\) has no tape based implementation. It can only be applied to QJIT-ed workflows after all purely tape transforms. For a tape transform, please use qml.transforms.clifford_t_decomposition.",
     ):
-        with qml.tape.QuantumTape() as tape:
-            qml.RZ(0.5, wires=0)
-            qml.PhaseShift(0.2, wires=0)
+       tape = qml.tape.QuantumScript([qml.RZ(0.5, wires=0), qml.PhaseShift(0.2, wires=0)])
 
         gridsynth(tape)
