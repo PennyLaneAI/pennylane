@@ -773,7 +773,7 @@ class BoundTransform:  # pylint: disable=too-many-instance-attributes
     .. code-block:: python
 
         @bound_t
-        @qml.qnode(qml.device('null.qubit'))
+        @qml.qnode(qml.device('null.qubit', wires=2))
         def c(x):
             qml.RX(x, 0)
             qml.RX(-x + 1e-6, 0)
