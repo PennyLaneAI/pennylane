@@ -43,7 +43,9 @@ class TestSelectTHC:
         if rotation_prec:
             op = qre.SelectTHC(thc_ham, batched_rotations, rotation_prec, selswap_depth)
         else:
-            op = qre.SelectTHC(thc_ham, batched_rotations=batched_rotations, select_swap_depth=selswap_depth)
+            op = qre.SelectTHC(
+                thc_ham, batched_rotations=batched_rotations, select_swap_depth=selswap_depth
+            )
             rotation_prec = 15
 
         assert op.resource_params == {
@@ -61,7 +63,9 @@ class TestSelectTHC:
             (qre.THCHamiltonian(4, 20), 2, None, 2, 24),
         ),
     )
-    def test_resource_rep(self, thc_ham, batched_rotations, rotation_prec, selswap_depth, num_wires):
+    def test_resource_rep(
+        self, thc_ham, batched_rotations, rotation_prec, selswap_depth, num_wires
+    ):
         """Test that the compressed representation for SelectTHC is correct."""
         if rotation_prec:
             expected = qre.CompressedResourceOp(
@@ -74,7 +78,10 @@ class TestSelectTHC:
                     "select_swap_depth": selswap_depth,
                 },
             )
-            assert qre.SelectTHC.resource_rep(thc_ham, batched_rotations, rotation_prec, selswap_depth) == expected
+            assert (
+                qre.SelectTHC.resource_rep(thc_ham, batched_rotations, rotation_prec, selswap_depth)
+                == expected
+            )
         else:
             expected = qre.CompressedResourceOp(
                 qre.SelectTHC,
@@ -86,7 +93,12 @@ class TestSelectTHC:
                     "select_swap_depth": selswap_depth,
                 },
             )
-            assert qre.SelectTHC.resource_rep(thc_ham, batched_rotations=batched_rotations, select_swap_depth=selswap_depth) == expected
+            assert (
+                qre.SelectTHC.resource_rep(
+                    thc_ham, batched_rotations=batched_rotations, select_swap_depth=selswap_depth
+                )
+                == expected
+            )
 
     # The Toffoli and qubit costs are compared here
     # Expected number of Toffolis and wires were obtained from Eq. 44 and 46 in https://arxiv.org/abs/2011.03494
@@ -125,12 +137,17 @@ class TestSelectTHC:
             ),
         ),
     )
-    def test_resources(self, thc_ham, batched_rotations, rotation_prec, selswap_depth, expected_res):
+    def test_resources(
+        self, thc_ham, batched_rotations, rotation_prec, selswap_depth, expected_res
+    ):
         """Test that the resource decompostion for SelectTHC is correct."""
 
         select_cost = qre.estimate(
             qre.SelectTHC(
-                thc_ham, batched_rotations=batched_rotations, rotation_precision=rotation_prec, select_swap_depth=selswap_depth
+                thc_ham,
+                batched_rotations=batched_rotations,
+                rotation_precision=rotation_prec,
+                select_swap_depth=selswap_depth,
             )
         )
         assert select_cost.algo_wires == expected_res["algo_wires"]
@@ -186,7 +203,14 @@ class TestSelectTHC:
         ),
     )
     def test_controlled_resources(
-        self, thc_ham, batched_rotations, rotation_prec, selswap_depth, num_ctrl_wires, num_zero_ctrl, expected_res
+        self,
+        thc_ham,
+        batched_rotations,
+        rotation_prec,
+        selswap_depth,
+        num_ctrl_wires,
+        num_zero_ctrl,
+        expected_res,
     ):
         """Test that the controlled resource decompostion for SelectTHC is correct."""
 
@@ -195,7 +219,10 @@ class TestSelectTHC:
                 num_ctrl_wires=num_ctrl_wires,
                 num_zero_ctrl=num_zero_ctrl,
                 base_op=qre.SelectTHC(
-                    thc_ham, batched_rotations=batched_rotations, rotation_precision=rotation_prec, select_swap_depth=selswap_depth
+                    thc_ham,
+                    batched_rotations=batched_rotations,
+                    rotation_precision=rotation_prec,
+                    select_swap_depth=selswap_depth,
                 ),
             )
         )
@@ -231,3 +258,17 @@ class TestSelectTHC:
             match=f"`rotation_precision` must be an integer, but type {type(2.5)} was provided.",
         ):
             qre.SelectTHC.resource_rep(qre.THCHamiltonian(58, 160), rotation_precision=2.5)
+
+    def test_value_error_batched_rotations(self):
+        "Test that an error is raised when wrong value is provided for batched rotations."
+        with pytest.raises(
+            ValueError,
+            match="`batched_rotations` must be a positive integer less than the number of orbitals 58, but got 60.",
+        ):
+            qre.SelectTHC(qre.THCHamiltonian(58, 160), batched_rotations=60)
+
+        with pytest.raises(
+            ValueError,
+            match="`batched_rotations` must be a positive integer less than the number of orbitals 58, but got 0.5.",
+        ):
+            qre.SelectTHC.resource_rep(qre.THCHamiltonian(58, 160), batched_rotations=0.5)

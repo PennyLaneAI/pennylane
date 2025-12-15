@@ -28,7 +28,7 @@ from pennylane.estimator.resource_operator import (
 )
 from pennylane.wires import Wires, WiresLike
 
-# pylint: disable= signature-differs, arguments-differ
+# pylint: disable= signature-differs, arguments-differ, too-many-arguments
 
 
 class SelectTHC(ResourceOperator):
@@ -50,11 +50,12 @@ class SelectTHC(ResourceOperator):
         rotation_precision (int): The number of bits used to represent the precision for loading
             the rotation angles for basis rotation. The default value is set to ``15`` bits.
         select_swap_depth (int | None): A parameter of :class:`~.pennylane.estimator.templates.subroutines.QROM`
-            used to trade-off extra wires for reduced circuit depth. Defaults to :code:`None`, which internally determines the optimal depth.
+            used to trade-off extra wires for reduced circuit depth. Defaults to :code:`None`, which determines the optimal depth.
         wires (WiresLike | None): the wires on which the operator acts
 
     Resources:
-        The resources are calculated based on Figure 5 in `arXiv:2011.03494 <https://arxiv.org/abs/2011.03494>`_
+        The resources are calculated based on Figure 5 in `arXiv:2011.03494 <https://arxiv.org/abs/2011.03494>`_ and
+        Figure 4 in `arXiv:2501.06165 <https://arxiv.org/abs/2501.06165>`_.
 
     **Example**
 
@@ -83,18 +84,18 @@ class SelectTHC(ResourceOperator):
     >>> res = qre.estimate(qre.SelectTHC(thc_ham, batched_rotations=10, rotation_precision=15))
     >>> print(res)
     --- Resources: ---
-     Total wires: 227
+     Total wires: 221
        algorithmic wires: 58
-       allocated wires: 169
-         zero state: 169
+       allocated wires: 163
+         zero state: 163
          any state: 0
-     Total gates : 2.534E+4
+    Total gates : 6.836E+4
        'Toffoli': 2.633E+3,
-       'CNOT': 1.440E+4,
-       'X': 804.0,
+       'CNOT': 5.490E+4,
+       'X': 1.164E+3,
        'Z': 41,
        'S': 80,
-       'Hadamard': 7.378E+3
+       'Hadamard': 9.538E+3
 
     We can see that by using batched rotations, the number of allocated wires decreases
     significantly, at the cost of an increased number of Toffoli gates.
@@ -124,7 +125,9 @@ class SelectTHC(ResourceOperator):
             )
 
         if batched_rotations is not None and (
-            batched_rotations <= 0 or batched_rotations > thc_ham.num_orbitals - 1
+            not isinstance(batched_rotations, int)
+            or batched_rotations <= 0
+            or batched_rotations > thc_ham.num_orbitals - 1
         ):
             raise ValueError(
                 f"`batched_rotations` must be a positive integer less than the number of orbitals {thc_ham.num_orbitals}, but got {batched_rotations}."
@@ -215,7 +218,9 @@ class SelectTHC(ResourceOperator):
             )
 
         if batched_rotations is not None and (
-            batched_rotations <= 0 or batched_rotations > thc_ham.num_orbitals - 1
+            not isinstance(batched_rotations, int)
+            or batched_rotations <= 0
+            or batched_rotations > thc_ham.num_orbitals - 1
         ):
             raise ValueError(
                 f"`batched_rotations` must be a positive integer less than the number of orbitals {thc_ham.num_orbitals}, but got {batched_rotations}."
@@ -271,7 +276,8 @@ class SelectTHC(ResourceOperator):
                 used to trade-off extra wires for reduced circuit depth. Defaults to :code:`None`, which internally determines the optimal depth.
 
         Resources:
-            The resources are calculated based on Figure 5 in `arXiv:2011.03494 <https://arxiv.org/abs/2011.03494>`_.
+            The resources are calculated based on Figure 5 in `arXiv:2011.03494 <https://arxiv.org/abs/2011.03494>`_ and
+            Figure 4 in `arXiv:2501.06165 <https://arxiv.org/abs/2501.06165>`_.
             The resources are modified to remove the control from the Select operation.
 
         Returns:
@@ -301,7 +307,6 @@ class SelectTHC(ResourceOperator):
 
         # Data output for rotations
         gate_list.append(Allocate(rotation_precision * batched_rotations))
-        print(tensor_rank+num_orb, rotation_precision, batched_rotations, restore_qrom, select_swap_depth, num_givens_blocks)
 
         # QROM to load rotation angles for both 1-body and 2-body integrals
         qrom_full = resource_rep(
@@ -327,7 +332,7 @@ class SelectTHC(ResourceOperator):
                 "num_zero_ctrl": 0,
             },
         )
-        gate_list.append(GateCount(semiadder, num_orb-1))
+        gate_list.append(GateCount(semiadder, num_orb - 1))
 
         # Adjoint of QROM for loading both 1-body and 2-body integrals Eq. 34 in arXiv:2011.03494
         gate_list.append(GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": qrom_full})))
