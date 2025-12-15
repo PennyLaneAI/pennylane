@@ -118,7 +118,7 @@ def _validate_custom_levels(program):
     protected_options = {"top", "user", "gradient", "device", "all", "all-mlir"}
     found_levels = set()
     for t in program:
-        if t.transform == marker.transform:
+        if t.tape_transform == marker.tape_transform:
             level = t.args[0] if t.args else t.kwargs["level"]
             if level in protected_options:
                 raise ValueError(
@@ -135,7 +135,7 @@ def _validate_custom_levels(program):
 def _find_level(program, level):
     found_levels = []
     for idx, t in enumerate(program):
-        if t.transform == marker.transform:
+        if t.tape_transform == marker.tape_transform:
             found_level = t.args[0] if t.args else t.kwargs["level"]
             found_levels.append(found_level)
 
