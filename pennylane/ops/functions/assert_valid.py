@@ -24,6 +24,7 @@ from string import ascii_lowercase
 
 import numpy as np
 import scipy.sparse
+from sympy import print_gtk
 
 import pennylane as qml
 from pennylane.decomposition import DecompositionRule

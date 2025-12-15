@@ -27,7 +27,7 @@ from pennylane.decomposition import (
 )
 from pennylane.math import expand_matrix
 from pennylane.operation import Operation
-from pennylane.ops import Hadamard, MultiRZ, PauliRot
+from pennylane.ops import Hadamard, MultiRZ, PauliRot, PauliX
 from pennylane.typing import TensorLike
 
 
@@ -117,21 +117,11 @@ class IQP(Operation):
             pauli_mat = PauliRot.compute_matrix(2 * np.pi / 4, "Y" + "X" * (num_wires - 1))
             layers.append(pauli_mat)
 
-        hadamard = Hadamard.compute_matrix()
-        h_layer = hadamard
-        for _ in range(1, num_wires):
-            h_layer = math.kron(h_layer, hadamard)
-        layers.append(h_layer)
-
         for par, gate in zip(weights, pattern):
             for gen in gate:
-                rz_mat = expand_matrix(MultiRZ.compute_matrix(2 * par, len(gen)), gen, wires)
-                layers.append(rz_mat)
-
-        h_layer = hadamard
-        for _ in range(1, num_wires):
-            h_layer = math.kron(h_layer, hadamard)
-        layers.append(h_layer)
+                x_mat = reduce(math.kron, [PauliX.compute_matrix() for _ in gen])
+                rx_mat = math.expm(-1j * par * expand_matrix(x_mat, gen, wires))
+                layers.append(rx_mat)
 
         return reduce(math.matmul, layers[::-1])
 
