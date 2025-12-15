@@ -76,9 +76,6 @@ class RX(Gate):
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
-    ndim_params = (0,)
-    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
-
     basis = "X"
     grad_method = "A"
     parameter_frequencies = [(1,)]
@@ -257,9 +254,6 @@ class RY(Gate):
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
-    ndim_params = (0,)
-    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
-
     basis = "Y"
     grad_method = "A"
     parameter_frequencies = [(1,)]
@@ -433,9 +427,6 @@ class RZ(Gate):
     num_wires = 1
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
-
-    ndim_params = (0,)
-    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
     basis = "Z"
     grad_method = "A"
@@ -650,9 +641,6 @@ class PhaseShift(Gate):
     num_wires = 1
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
-
-    ndim_params = (0,)
-    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
     basis = "Z"
     grad_method = "A"
@@ -869,9 +857,6 @@ class Rot(Gate):
     num_wires = 1
     num_params = 3
     """int: Number of trainable parameters that the operator depends on."""
-
-    ndim_params = (0, 0, 0)
-    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
     grad_method = "A"
     parameter_frequencies = [(1,), (1,), (1,)]
@@ -1108,9 +1093,6 @@ class U1(Gate):
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
-    ndim_params = (0,)
-    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
-
     grad_method = "A"
     parameter_frequencies = [(1,)]
 
@@ -1251,9 +1233,6 @@ class U2(Gate):
     num_wires = 1
     num_params = 2
     """int: Number of trainable parameters that the operator depends on."""
-
-    ndim_params = (0, 0)
-    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
     grad_method = "A"
     parameter_frequencies = [(1,), (1,)]
@@ -1419,9 +1398,6 @@ class U3(Gate):
     num_wires = 1
     num_params = 3
     """int: Number of trainable parameters that the operator depends on."""
-
-    ndim_params = (0, 0, 0)
-    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
     grad_method = "A"
     parameter_frequencies = [(1,), (1,), (1,)]

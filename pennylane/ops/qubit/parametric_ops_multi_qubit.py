@@ -29,7 +29,7 @@ from pennylane.decomposition import add_decomps, controlled_resource_rep, regist
 from pennylane.decomposition.resources import resource_rep
 from pennylane.decomposition.symbolic_decomposition import adjoint_rotation, pow_rotation
 from pennylane.math.decomposition import decomp_int_to_powers_of_two
-from pennylane.operation import FlatPytree, Operation, Operator
+from pennylane.operation import FlatPytree, Gate, Operation, Operator
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 
@@ -1110,7 +1110,7 @@ def _decompose_pcphase(phi, wires, dimension):
 add_decomps(PCPhase, _decompose_pcphase)
 
 
-class IsingXX(Operation):
+class IsingXX(Gate):
     r"""
     Ising XX coupling gate
 
@@ -1147,11 +1147,6 @@ class IsingXX(Operation):
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
-    ndim_params = (0,)
-    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
-
-    resource_keys = set()
-
     grad_method = "A"
     parameter_frequencies = [(1,)]
 
@@ -1160,10 +1155,6 @@ class IsingXX(Operation):
 
     def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
         super().__init__(phi, wires=wires, id=id)
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     @staticmethod
     def compute_matrix(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
@@ -1279,7 +1270,7 @@ add_decomps("Adjoint(IsingXX)", adjoint_rotation)
 add_decomps("Pow(IsingXX)", pow_rotation)
 
 
-class IsingYY(Operation):
+class IsingYY(Gate):
     r"""
     Ising YY coupling gate
 
@@ -1316,11 +1307,6 @@ class IsingYY(Operation):
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
-    ndim_params = (0,)
-    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
-
-    resource_keys = set()
-
     grad_method = "A"
     parameter_frequencies = [(1,)]
 
@@ -1329,10 +1315,6 @@ class IsingYY(Operation):
 
     def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
         super().__init__(phi, wires=wires, id=id)
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     @staticmethod
     def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list[Operator]:
@@ -1455,7 +1437,7 @@ add_decomps("Adjoint(IsingYY)", adjoint_rotation)
 add_decomps("Pow(IsingYY)", pow_rotation)
 
 
-class IsingZZ(Operation):
+class IsingZZ(Gate):
     r"""
     Ising ZZ coupling gate
 
@@ -1493,11 +1475,6 @@ class IsingZZ(Operation):
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
-    ndim_params = (0,)
-    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
-
-    resource_keys = set()
-
     grad_method = "A"
     parameter_frequencies = [(1,)]
 
@@ -1506,10 +1483,6 @@ class IsingZZ(Operation):
 
     def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
         super().__init__(phi, wires=wires, id=id)
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     @staticmethod
     def compute_decomposition(phi: TensorLike, wires: WiresLike):
@@ -1663,7 +1636,7 @@ add_decomps("Adjoint(IsingZZ)", adjoint_rotation)
 add_decomps("Pow(IsingZZ)", pow_rotation)
 
 
-class IsingXY(Operation):
+class IsingXY(Gate):
     r"""
     Ising (XX + YY) coupling gate
 
@@ -1711,11 +1684,6 @@ class IsingXY(Operation):
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
-    ndim_params = (0,)
-    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
-
-    resource_keys = set()
-
     grad_method = "A"
     parameter_frequencies = [(0.5, 1.0)]
 
@@ -1731,10 +1699,6 @@ class IsingXY(Operation):
 
     def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
         super().__init__(phi, wires=wires, id=id)
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     @staticmethod
     def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list[Operator]:
@@ -1893,7 +1857,7 @@ add_decomps("Adjoint(IsingXY)", adjoint_rotation)
 add_decomps("Pow(IsingXY)", pow_rotation)
 
 
-class PSWAP(Operation):
+class PSWAP(Gate):
     r"""Phase SWAP gate
 
     .. math:: PSWAP(\phi) = \begin{bmatrix}
@@ -1923,20 +1887,11 @@ class PSWAP(Operation):
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
-    ndim_params = (0,)
-    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
-
-    resource_keys = set()
-
     grad_method = "A"
     grad_recipe = ([[0.5, 1, np.pi / 2], [-0.5, 1, -np.pi / 2]],)
 
     def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
         super().__init__(phi, wires=wires, id=id)
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     @staticmethod
     def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list[Operator]:
@@ -2096,7 +2051,7 @@ add_decomps(PSWAP, _pswap_to_swap_cnot_phaseshift_cnot, _pswap_to_ppr)
 add_decomps("Adjoint(PSWAP)", adjoint_rotation)
 
 
-class CPhaseShift00(Operation):
+class CPhaseShift00(Gate):
     r"""
     A qubit controlled phase shift.
 
@@ -2132,23 +2087,14 @@ class CPhaseShift00(Operation):
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
-    ndim_params = (0,)
-    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
-
     grad_method = "A"
     parameter_frequencies = [(1,)]
 
     def generator(self) -> "qml.Projector":
         return qml.Projector(np.array([0, 0]), wires=self.wires)
 
-    resource_keys = set()
-
     def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
         super().__init__(phi, wires=wires, id=id)
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     def label(
         self,
@@ -2320,7 +2266,7 @@ add_decomps("Adjoint(CPhaseShift00)", adjoint_rotation)
 add_decomps("Pow(CPhaseShift00)", pow_rotation)
 
 
-class CPhaseShift01(Operation):
+class CPhaseShift01(Gate):
     r"""
     A qubit controlled phase shift.
 
@@ -2356,23 +2302,13 @@ class CPhaseShift01(Operation):
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
-    ndim_params = (0,)
-    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
-
     grad_method = "A"
-    parameter_frequencies = [(1,)]
 
     def generator(self) -> "qml.Projector":
         return qml.Projector(np.array([0, 1]), wires=self.wires)
 
-    resource_keys = set()
-
     def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
         super().__init__(phi, wires=wires, id=id)
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     def label(
         self,
@@ -2535,7 +2471,7 @@ add_decomps("Adjoint(CPhaseShift01)", adjoint_rotation)
 add_decomps("Pow(CPhaseShift01)", pow_rotation)
 
 
-class CPhaseShift10(Operation):
+class CPhaseShift10(Gate):
     r"""
     A qubit controlled phase shift.
 
@@ -2570,23 +2506,14 @@ class CPhaseShift10(Operation):
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
-    ndim_params = (0,)
-    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
-
     grad_method = "A"
     parameter_frequencies = [(1,)]
 
     def generator(self) -> "qml.Projector":
         return qml.Projector(np.array([1, 0]), wires=self.wires)
 
-    resource_keys = set()
-
     def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
         super().__init__(phi, wires=wires, id=id)
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     def label(
         self,

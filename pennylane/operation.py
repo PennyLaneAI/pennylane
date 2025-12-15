@@ -2069,6 +2069,13 @@ class Gate(Operation):
             raise ValueError(
                 "Gate's must have a fixed integer number of parameters set ahead of time."
             )
+        if cls.ndim_params == Operator.ndim_params:  # pylint: disable=comparison-with-callable
+            cls.ndim_params = tuple(0 for _ in range(cls.num_params))
+        else:
+            raise ValueError(
+                "Gate's must only have scalar parameter inputs. ndim_params is"
+                "automatically set to this default and cannot be overwritten."
+            )
         return super().__init_subclass__(**_)
 
     resource_keys = frozenset()
