@@ -2,6 +2,10 @@
 
 <h3>New features since last release</h3>
 
+* Bucket Brigade QRAM is implemented as a template :class:`~.BBQRAM` to allow for selection of bitstrings in 
+  superposition.
+  [(#8670)](https://github.com/PennyLaneAI/pennylane/pull/8670)
+
 * Users can now set precisions for a larger variety of `ResourceOperator`s in
   :mod:`estimator <pennylane.estimator>` using
   :meth:`ResourceConfig.set_precision <pennylane.estimator.resource_config.ResourceConfig.set_precision>`
