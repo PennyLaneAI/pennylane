@@ -198,12 +198,12 @@ def estimate(
            allocated wires: 121
              zero state: 58
              any state: 63
-         Total gates : 1.271E+3
-           'Toffoli': 65,
+         Total gates : 1.150E+3
+           'Toffoli': 64,
            'T': 88,
-           'CNOT': 639,
-           'X': 195,
-           'Hadamard': 284
+           'CNOT': 589,
+           'X': 192,
+           'Hadamard': 217
 
         In the above example, a total of 121 work wires were allocated (in the zeroed state) to
         perform the decomposition of the ``AliasSampling``, 58 of which were restored to the
@@ -218,12 +218,12 @@ def estimate(
            allocated wires: 150
              zero state: 87
              any state: 63
-         Total gates : 1.271E+3
-           'Toffoli': 65,
+         Total gates : 1.150E+3
+           'Toffoli': 64,
            'T': 88,
-           'CNOT': 639,
-           'X': 195,
-           'Hadamard': 284
+           'CNOT': 589,
+           'X': 192,
+           'Hadamard': 217
 
         In this case, you have the option to treat this pre-allocated pool of work wires as the
         only work wires available, by setting ``tight_wires_budget=True``, then an error is
