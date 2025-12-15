@@ -2,8 +2,9 @@
 
 <h3>New features since last release</h3>
 
-* :func:`~pennylane.specs` can now be used to analyze arbitrary compilation passes for
-  workflows compiled with :func:`~pennylane.qjit`.
+* Resource tracking with :func:`~pennylane.specs` can now be used to analyze the pass-by-pass impact of arbitrary 
+  compilation passes on workflows compiled with :func:`~pennylane.qjit`.
+  [(#8606)](https://github.com/PennyLaneAI/pennylane/pull/8606)
   Consider the following :func:`qjit <pennylane.qjit>`'d circuit with two compilation passes applied:
   ```python
   @qml.qjit
