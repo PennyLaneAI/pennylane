@@ -31,9 +31,6 @@ def _len_gen(gates):
 
 
 def _par_transform(gates):
-    """
-    Creates the transformation matrix from the number of independent parameters to the number of total generators
-    """
     len_gen = _len_gen(gates)
 
     # Transformation matrix from the number of independent parameters to the number of total generators
@@ -48,15 +45,6 @@ def _par_transform(gates):
 
 
 def _gate_lists_to_arrays(gate_lists: list, n_qubits: int) -> list:
-    """Transforms the gates parameter into a list of arrays of 0s and 1s.
-
-    Args:
-        gate_lists (list[list[list[int]]]): Gates list for IqpSimulator object.
-        n_qubits (int): number of qubits in the return arrays
-
-    Returns:
-        list: Gates parameter in list of arrays form.
-    """
 
     gate_arrays = []
     for gates in gate_lists:
@@ -238,27 +226,6 @@ def _op_expval_batch(
     sparse: bool = False,
     indep_estimates: bool = False,
 ) -> list:
-    """Estimate the expectation values of a batch of Pauli-Z type operators. A set of l operators must be specified
-    by an array of shape (l,n_qubits), where each row is a binary vector that specifies on which qubit a Pauli Z
-    operator acts.
-    The expectation values are estimated using a randomized method whose precision is controlled by n_samples,
-    with larger values giving higher precision. Estimates are unbiased, however may be correlated. To request
-    uncorrelated estimate, use indep_estimates=True at the cost of larger runtime.
-
-    Args:
-        params (jnp.ndarray): The parameters of the IQP gates.
-        ops (jnp.ndarray): Operator/s for those we want to know the expected value.
-        n_samples (int): Number of samples used to calculate the IQP expectation value.
-        key (Array): Jax key to control the randomness of the process.
-        indep_estimates (bool): Whether to use independent estimates of the ops in a batch (takes longer).
-        return_samples (bool): if True, an extended array that contains the values of the estimator for each
-            of the n_samples samples is returned.
-
-    Returns:
-        list: List of Vectors. The expected value of each op and its standard deviation.
-    """
-
-    # TODO: refactor and break up into functions with less branches
 
     if indep_estimates:
         return _op_expval_indep(
@@ -326,10 +293,14 @@ def op_expval(
             higher precision.
         key (Array): Jax key to control the randomness of the process.
         num_wires (int): Number of wires in the circuit.
-        pattern (list[list[list[int]]]): Specification of the trainable gates. Each element of pattern corresponds to a
+        pattern (list[list[list[int]]]): Specification of the trainable gates. Each element of `pattern` corresponds to a
             unique trainable parameter. Each sublist specifies the generators to which that parameter applies.
-            Generators are specified by listing the qubits on which an X operator acts. For example, `pattern` might
-            be [[[0], [1]], [[2]], [[3]], [[4]]].
+            Generators are specified by listing the qubits on which an X operator acts. For example, the `pattern`
+            `[[[0]], [[1]], [[2]], [[3]]]` specifies a circuit with single qubit rotations on the first four qubits, each
+            with its own trainable parameter. The `pattern` `[[[0],[1]], [[2],[3]]]` correspond to a circuit with two
+            trainable parameters with generators :math:`X_0+X_1` and :math:`X_2+X_3` respectively. A circuit with a
+            single trainable gate with generator :math:`X_0\otimes X_1` corresponds to the `pattern`
+            `[[[0,1]]]`.
         weights (list): The parameters of the IQP gates.
         spin_sym (bool, optional): If True, the circuit is equivalent to one where the initial state
             :math:`\frac{1}{\sqrt(2)}(|00\dots0> + |11\dots1>)` is used in place of :math:`|00\dots0>`.
@@ -339,6 +310,26 @@ def op_expval(
 
     Returns:
         list: List of Vectors. The expected value of each op and its standard deviation.
+
+    **Example:**
+
+    .. code-block:: python
+
+        key = jax.random.PRNGKey(np.random.randint(0, 99999))
+
+        exp_val, std = op_expval(
+            ops=jnp.array([[1, 0], [0, 1]]),
+            n_samples=10_000,
+            key=key,
+            num_wires=n_qubits,
+            pattern=[[[0], [1]]],
+            weights=[0.54],
+            spin_sym=True,
+            sparse=False,
+            indep_estimates=True,
+            max_batch_samples=10_000,
+            max_batch_ops=10_000,
+        )
     """
 
     params = jnp.array(weights)
