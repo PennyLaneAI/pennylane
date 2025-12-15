@@ -827,8 +827,8 @@ class TestDeviceDifferentiation:
         x = np.array(np.pi / 7)
         qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
 
-        transform_program = dev.preprocess_transforms(config)
-        [qs], _ = transform_program((qs,))
+        compile_pipeline = dev.preprocess_transforms(config)
+        [qs], _ = compile_pipeline((qs,))
         actual_grad = dev.compute_derivatives([qs], config)
         assert actual_grad == (np.array(0.0),)
 

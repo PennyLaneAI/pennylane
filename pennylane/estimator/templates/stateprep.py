@@ -189,12 +189,12 @@ class AliasSampling(ResourceOperator):
         allocated wires: 126
         zero state: 58
         any state: 68
-    Total gates : 6.505E+3
-    'Toffoli': 272,
+    Total gates : 3.796E+3
+    'Toffoli': 174,
     'T': 88,
-    'CNOT': 4.646E+3,
-    'X': 595,
-    'Hadamard': 904
+    'CNOT': 2.600E+3,
+    'X': 398,
+    'Hadamard': 536
     """
 
     resource_keys = {"num_coeffs", "precision"}

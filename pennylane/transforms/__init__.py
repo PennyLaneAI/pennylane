@@ -180,16 +180,17 @@ that compute the desired quantity.
 Transforms developer functions
 ------------------------------
 
-:class:`~.TransformContainer`, :class:`~.TransformDispatcher`, and  :class:`~.TransformProgram` are
+:class:`~.TransformDispatcher` is a
 developer-facing objects that allow the
 creation, dispatching, and composability of transforms. If you would like to make a custom transform, refer
 instead to the documentation of :func:`qml.transform <pennylane.transform>`.
 
+.. currentmodule:: pennylane
 .. autosummary::
     :toctree: api
 
+    ~CompilePipeline
     ~transforms.core.transform_dispatcher
-    ~transforms.core.transform_program
 
 Transforming circuits
 ---------------------
@@ -276,19 +277,19 @@ passes on a QNode to maximize gate reduction before execution.
 
 .. code-block:: python
 
-        dev = qml.device("default.qubit", wires=1)
+    dev = qml.device("default.qubit", wires=1)
 
-        @qml.transforms.merge_rotations
-        @qml.transforms.cancel_inverses
-        @qml.qnode(device=dev)
-        def circuit(x, y):
-            qml.Hadamard(wires=0)
-            qml.Hadamard(wires=0)
-            qml.RX(x, wires=0)
-            qml.RY(y, wires=0)
-            qml.RZ(y, wires=0)
-            qml.RY(x, wires=0)
-            return qml.expval(qml.Z(0))
+    @qml.transforms.merge_rotations
+    @qml.transforms.cancel_inverses
+    @qml.qnode(device=dev)
+    def circuit(x, y):
+        qml.Hadamard(wires=0)
+        qml.Hadamard(wires=0)
+        qml.RX(x, wires=0)
+        qml.RY(y, wires=0)
+        qml.RZ(y, wires=0)
+        qml.RY(x, wires=0)
+        return qml.expval(qml.Z(0))
 
 In this example, inverses are canceled, leading to the removal of two Hadamard gates. Subsequently, rotations are
 merged into a single :class:`qml.Rot` gate. Consequently, two transforms are successfully applied to the circuit.
@@ -297,27 +298,25 @@ merged into a single :class:`qml.Rot` gate. Consequently, two transforms are suc
 Passing arguments to transforms
 -------------------------------
 
-We can decorate a QNode with ``@partial(transform_fn, **transform_kwargs)`` to provide additional keyword arguments to a transform function.
+We can decorate a QNode with ``@transform_fn(**transform_kwargs)`` to provide additional keyword arguments to a transform function.
 In the following example, we pass the keyword argument ``grouping_strategy="wires"`` to the :func:`~.split_non_commuting` quantum transform,
 which splits a circuit into tapes measuring groups of commuting observables.
 
 .. code-block:: python
 
-        from functools import partial
+    dev = qml.device("default.qubit", wires=2)
 
-        dev = qml.device("default.qubit", wires=2)
-
-        @partial(qml.transforms.split_non_commuting, grouping_strategy="wires")
-        @qml.qnode(dev)
-        def circuit(params):
-            qml.RX(params[0], wires=0)
-            qml.RZ(params[1], wires=1)
-            return [
-                qml.expval(qml.X(0)),
-                qml.expval(qml.Y(1)),
-                qml.expval(qml.Z(0) @ qml.Z(1)),
-                qml.expval(qml.X(0) @ qml.Z(1) + 0.5 * qml.Y(1) + qml.Z(0)),
-            ]
+    @qml.transforms.split_non_commuting(grouping_strategy="wires")
+    @qml.qnode(dev)
+    def circuit(params):
+        qml.RX(params[0], wires=0)
+        qml.RZ(params[1], wires=1)
+        return [
+            qml.expval(qml.X(0)),
+            qml.expval(qml.Y(1)),
+            qml.expval(qml.Z(0) @ qml.Z(1)),
+            qml.expval(qml.X(0) @ qml.Z(1) + 0.5 * qml.Y(1) + qml.Z(0)),
+        ]
 
 Additional information
 ----------------------
@@ -332,7 +331,7 @@ from pennylane.tape import make_qscript as make_tape
 from pennylane.exceptions import TransformError
 
 # Import the decorators first to prevent circular imports when used in other transforms
-from .core import transform
+from .core import transform, CompilePipeline
 from .batch_params import batch_params
 from .batch_input import batch_input
 from .batch_partial import batch_partial
