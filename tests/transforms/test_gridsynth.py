@@ -20,12 +20,18 @@ import pennylane as qml
 from pennylane.transforms.decompositions import gridsynth
 
 
-def test_not_implemented():
-    """Test that NotImplementedError is raised when trying to use gridsynth on tape."""
-    with pytest.raises(
-        NotImplementedError,
-        match=r"This transform pass \(gridsynth\) has no tape based implementation. It can only be applied to QJIT-ed workflows after all purely tape transforms. For a tape transform, please use qml.transforms.clifford_t_decomposition.",
-    ):
-       tape = qml.tape.QuantumScript([qml.RZ(0.5, wires=0), qml.PhaseShift(0.2, wires=0)])
+class TestGridsynth:
+    def test_not_implemented(self):
+        """Test that NotImplementedError is raised when trying to use gridsynth on tape."""
 
-        gridsynth(tape)
+        tape = qml.tape.QuantumScript([qml.RZ(0.5, wires=0), qml.PhaseShift(0.2, wires=0)])
+
+        with pytest.raises(
+            NotImplementedError,
+            match=r"This transform pass \(gridsynth\) has no tape based implementation. It can only be applied to QJIT-ed workflows after all purely tape transforms. For a tape transform, please use qml.transforms.clifford_t_decomposition.",
+        ):
+            gridsynth(tape)
+
+    def test_pass_name(self):
+        """Test the pass name is set on the gridsynth transform."""
+        assert gridsynth.pass_name == "gridsynth"
