@@ -293,9 +293,9 @@ class CondCallable:
         flat_true_fn = FlatFn(true_fn)
         branches = [(self.preds[0], flat_true_fn), *elifs, (True, self.otherwise_fn)]
 
+        # To process kwargs of type str, these should not be traced.
         static_string_kwargs = {}
         for kwarg in kwargs:
-            print(type(kwarg), kwarg)
             if type(kwarg) == str:
                 static_string_kwargs[kwarg] = kwargs[kwarg]
         for kwarg in static_string_kwargs:
