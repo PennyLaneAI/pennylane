@@ -28,7 +28,7 @@ to one or many new circuits alongside associated classical post-processing.
 .. autosummary::
     :toctree: api
 
-    ~transforms.core.transform
+    ~transform
 
 Transforms library
 ------------------

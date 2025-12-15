@@ -659,7 +659,7 @@ class transform:  # pylint: disable=too-many-instance-attributes
 
     @property
     def tape_transform(self):
-        """The quantum transform."""
+        """The tape transform."""
         return self._tape_transform
 
     @property
@@ -863,6 +863,9 @@ class BoundTransform:  # pylint: disable=too-many-instance-attributes
     def tape_transform(self) -> Callable | None:
         """The raw tape transform definition for the transform."""
         return self._transform.tape_transform
+
+    # # TODO: remove this once Catalyst is updated
+    # transform = tape_transform
 
     @property
     def pass_name(self) -> None | str:
