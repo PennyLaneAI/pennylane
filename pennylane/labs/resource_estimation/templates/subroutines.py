@@ -929,6 +929,43 @@ class ResourceIQP(ResourceOperator):
             :math:`\frac{1}{\sqrt(2)}(|00\dots0> + |11\dots1>)` is used in place of :math:`|00\dots0>`.
         wires (Sequence[int], optional): the wires the operation acts on
 
+    **Example:**
+
+    We can inspect the resources used by an IQP subroutine by using `qml.specs`.
+
+    .. code-block:: python
+
+        import pennylane as qml
+
+        @qml.qnode(qml.device('lightning.qubit'))
+        def circuit():
+            qml.IQP(
+                weights=math.random.uniform(0, 2 * np.pi, 4),
+                pattern=[[[0]], [[1]], [[2]], [[3]]],
+                spin_sym=True,
+                num_wires=4,
+            )
+            return qml.state()
+
+    >>> print(qml.specs(circuit, level="device")())
+    Device: lightning.qubit
+    Device wires: None
+    Shots: Shots(total=None)
+    Level: device
+
+    Resource specifications:
+      Total qubit allocations: 4
+      Total gates: 13
+      Circuit depth: 4
+
+      Gate types:
+        PauliRot: 1
+        Hadamard: 8
+        MultiRZ: 4
+
+      Measurements:
+        state(all wires): 1
+
     .. seealso:: :class:`~.IQP`
 
     """
