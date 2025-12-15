@@ -28,8 +28,8 @@
   [(#8623)](https://github.com/PennyLaneAI/pennylane/pull/8623)
   [(#8663)](https://github.com/PennyLaneAI/pennylane/pull/8663)
 
-* A new template :class:`~.MultiplexerStatePreparation` has been added. This template allows prepare arbitrary states
-  using :class:`~.SelectPauliRot` operations.
+* A new template :class:`~.MultiplexerStatePreparation` has been added. This template allows preparing arbitrary states
+  using the :class:`~.SelectPauliRot` operations.
   [(#8581)](https://github.com/PennyLaneAI/pennylane/pull/8581)
 
 <h3>Improvements 🛠</h3>
