@@ -15,8 +15,10 @@
 Contains the IQP template.
 """
 from collections import defaultdict
+from functools import reduce
 
 import numpy as np
+from pennylane import math
 
 from pennylane.decomposition import (
     add_decomps,
@@ -25,6 +27,7 @@ from pennylane.decomposition import (
 )
 from pennylane.operation import Operation
 from pennylane.ops import Hadamard, MultiRZ, PauliRot
+from pennylane.typing import TensorLike
 
 
 class IQP(Operation):
@@ -101,6 +104,43 @@ class IQP(Operation):
             "pattern": pattern,
         }
         super().__init__(wires=range(num_wires), id=id)
+
+    def compute_matrix(self) -> TensorLike:
+        num_wires = len(self.wires)
+        layers = []
+
+        if self.hyperparameters["spin_sym"]:
+            pauli_mat = PauliRot.compute_matrix(2 * np.pi / 4, "Y" + "X" * (num_wires - 1))
+            layers.append(pauli_mat)
+
+        id = math.identity(n=2)
+        hadamard = Hadamard.compute_matrix()
+
+        for i in range(num_wires):
+            h_mat = []
+            for j in range(num_wires):
+                if i == j:
+                    h_mat.append(hadamard)
+                else:
+                    h_mat.append(id)
+
+            layer = reduce(
+                lambda acc, curr: math.kron(acc, curr), h_mat
+            )
+            layers.append(layer)
+
+        mat = reduce(
+            lambda acc, curr: acc @ curr, layers
+        )
+
+        for par, gate in zip(self.hyperparameters["weights"], self.hyperparameters["pattern"]):
+            for gen in gate:
+                MultiRZ.compute_matrix(2 * par, len(gen))
+
+        for i in range(num_wires):
+            Hadamard(i)
+
+
 
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
