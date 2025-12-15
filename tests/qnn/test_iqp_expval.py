@@ -134,4 +134,7 @@ def test_expval(
     simulated_exp_val = jnp.array(iqp_circuit(params, gates, spin_sym, n_qubits, ops))
 
     for i, val in enumerate(simulated_exp_val):
-        assert np.isclose(val, exp_val[i], atol=std[i] * 2)
+        # Due to the distribution, we expect the simulated and the approximated values to be within 2 standard
+        # deviations 96% of the time. We can instead check they are withing 3 standard deviations, which should
+        # be True 99.8% of the time, minimizing stochastic failures.
+        assert np.isclose(val, exp_val[i], atol=std[i] * 3)
