@@ -32,7 +32,7 @@ from pennylane.decomposition.symbolic_decomposition import (
     pow_rotation,
 )
 from pennylane.exceptions import DecompositionUndefinedError
-from pennylane.operation import Operation
+from pennylane.operation import Gate
 from pennylane.typing import TensorLike
 from pennylane.wires import WiresLike
 
@@ -49,7 +49,7 @@ def _can_replace(x, y):
     return not qml.math.is_abstract(x) and not qml.math.requires_grad(x) and qml.math.allclose(x, y)
 
 
-class RX(Operation):
+class RX(Gate):
     r"""
     The single qubit X rotation
 
@@ -79,22 +79,15 @@ class RX(Operation):
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_keys = set()
-
     basis = "X"
     grad_method = "A"
     parameter_frequencies = [(1,)]
-    resource_keys = set()
 
     def generator(self) -> "qml.Hamiltonian":
         return qml.Hamiltonian([-0.5], [PauliX(wires=self.wires)])
 
     def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
         super().__init__(phi, wires=wires, id=id)
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     has_decomposition = False
 
@@ -237,7 +230,7 @@ def _controlled_rx_decomp(*params, wires, control_wires, work_wires, work_wire_t
 add_decomps("C(RX)", flip_zero_control(_controlled_rx_decomp))
 
 
-class RY(Operation):
+class RY(Gate):
     r"""
     The single qubit Y rotation
 
@@ -270,17 +263,12 @@ class RY(Operation):
     basis = "Y"
     grad_method = "A"
     parameter_frequencies = [(1,)]
-    resource_keys = set()
 
     def generator(self) -> "qml.Hamiltonian":
         return qml.Hamiltonian([-0.5], [PauliY(wires=self.wires)])
 
     def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
         super().__init__(phi, wires=wires, id=id)
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     has_decomposition = False
 
@@ -419,7 +407,7 @@ def _controlled_ry_decomp(*params, wires, control_wires, work_wires, work_wire_t
 add_decomps("C(RY)", flip_zero_control(_controlled_ry_decomp))
 
 
-class RZ(Operation):
+class RZ(Gate):
     r"""
     The single qubit Z rotation
 
@@ -448,8 +436,6 @@ class RZ(Operation):
 
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
-
-    resource_keys = set()
 
     basis = "Z"
     grad_method = "A"
@@ -555,10 +541,6 @@ class RZ(Operation):
     def adjoint(self) -> "RZ":
         return RZ(-self.data[0], wires=self.wires)
 
-    @property
-    def resource_params(self) -> dict:
-        return {}
-
     def pow(self, z: int | float) -> list["qml.operation.Operator"]:
         return [RZ(self.data[0] * z, wires=self.wires)]
 
@@ -642,7 +624,7 @@ def _controlled_rz_decomp(*params, wires, control_wires, work_wires, work_wire_t
 add_decomps("C(RZ)", flip_zero_control(_controlled_rz_decomp))
 
 
-class PhaseShift(Operation):
+class PhaseShift(Gate):
     r"""
     Arbitrary single qubit local phase shift
 
@@ -672,15 +654,9 @@ class PhaseShift(Operation):
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_keys = set()
-
     basis = "Z"
     grad_method = "A"
     parameter_frequencies = [(1,)]
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     def generator(self) -> "qml.Projector":
         return qml.Projector(np.array([1]), wires=self.wires)
@@ -857,7 +833,7 @@ add_decomps("Pow(PhaseShift)", pow_rotation)
 add_decomps("C(PhaseShift)", flip_zero_control(_cphase_to_ppr))
 
 
-class Rot(Operation):
+class Rot(Gate):
     r"""
     Arbitrary single qubit rotation
 
@@ -897,12 +873,8 @@ class Rot(Operation):
     ndim_params = (0, 0, 0)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_keys = set()
-
     grad_method = "A"
     parameter_frequencies = [(1,), (1,), (1,)]
-
-    resource_keys = set()
 
     # pylint: disable=too-many-positional-arguments
     def __init__(
@@ -914,10 +886,6 @@ class Rot(Operation):
         id: str | None = None,
     ):
         super().__init__(phi, theta, omega, wires=wires, id=id)
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     @staticmethod
     def compute_matrix(
@@ -1109,7 +1077,7 @@ def _controlled_rot_decomp(
 add_decomps("C(Rot)", flip_zero_control(_controlled_rot_decomp))
 
 
-class U1(Operation):
+class U1(Gate):
     r"""
     U1 gate.
 
@@ -1146,17 +1114,11 @@ class U1(Operation):
     grad_method = "A"
     parameter_frequencies = [(1,)]
 
-    resource_keys = set()
-
     def generator(self) -> "qml.Projector":
         return qml.Projector(np.array([1]), wires=self.wires)
 
     def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
         super().__init__(phi, wires=wires, id=id)
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     @staticmethod
     def compute_matrix(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
@@ -1249,7 +1211,7 @@ add_decomps("Adjoint(U1)", adjoint_rotation)
 add_decomps("Pow(U1)", pow_rotation)
 
 
-class U2(Operation):
+class U2(Gate):
     r"""
     U2 gate.
 
@@ -1296,14 +1258,8 @@ class U2(Operation):
     grad_method = "A"
     parameter_frequencies = [(1,), (1,)]
 
-    resource_keys = set()
-
     def __init__(self, phi: TensorLike, delta: TensorLike, wires: WiresLike, id: str | None = None):
         super().__init__(phi, delta, wires=wires, id=id)
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     @staticmethod
     def compute_matrix(phi: TensorLike, delta: TensorLike) -> TensorLike:
@@ -1422,7 +1378,7 @@ def _adjoint_u2(phi, delta, wires, **__):
 add_decomps("Adjoint(U2)", _adjoint_u2)
 
 
-class U3(Operation):
+class U3(Gate):
     r"""
     Arbitrary single qubit unitary.
 
@@ -1470,8 +1426,6 @@ class U3(Operation):
     grad_method = "A"
     parameter_frequencies = [(1,), (1,), (1,)]
 
-    resource_keys = set()
-
     # pylint: disable=too-many-positional-arguments
     def __init__(
         self,
@@ -1482,10 +1436,6 @@ class U3(Operation):
         id: str | None = None,
     ):
         super().__init__(theta, phi, delta, wires=wires, id=id)
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     @staticmethod
     def compute_matrix(theta: TensorLike, phi: TensorLike, delta: TensorLike) -> TensorLike:

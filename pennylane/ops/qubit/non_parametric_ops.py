@@ -40,14 +40,14 @@ from pennylane.decomposition.symbolic_decomposition import (
     pow_involutory,
     self_adjoint,
 )
-from pennylane.operation import Operation
+from pennylane.operation import Gate
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 
 INV_SQRT2 = 1 / qml.math.sqrt(2)
 
 
-class Hadamard(Operation):
+class Hadamard(Gate):
     r"""Hadamard(wires)
     The Hadamard operator
 
@@ -73,8 +73,6 @@ class Hadamard(Operation):
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
-    resource_keys = set()
-
     def __init__(self, wires: WiresLike, id: str | None = None):
         super().__init__(wires=wires, id=id)
 
@@ -96,10 +94,6 @@ class Hadamard(Operation):
     @property
     def name(self) -> str:
         return "Hadamard"
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     @staticmethod
     @lru_cache
@@ -305,7 +299,7 @@ def _controlled_hadamard(wires, control_wires, work_wires, work_wire_type, **__)
 add_decomps("C(Hadamard)", flip_zero_control(_controlled_hadamard))
 
 
-class PauliX(Operation):
+class PauliX(Gate):
     r"""
     The Pauli X operator
 
@@ -329,8 +323,6 @@ class PauliX(Operation):
     """int: Number of trainable parameters that the operator depends on."""
 
     basis = "X"
-
-    resource_keys = set()
 
     batch_size = None
 
@@ -366,10 +358,6 @@ class PauliX(Operation):
     @property
     def name(self) -> str:
         return "PauliX"
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     @staticmethod
     @lru_cache
@@ -587,7 +575,7 @@ def _controlled_x_decomp(
 add_decomps("C(PauliX)", _controlled_x_decomp)
 
 
-class PauliY(Operation):
+class PauliY(Gate):
     r"""
     The Pauli Y operator
 
@@ -611,8 +599,6 @@ class PauliY(Operation):
 
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
-
-    resource_keys = set()
 
     basis = "Y"
 
@@ -649,10 +635,6 @@ class PauliY(Operation):
     @property
     def name(self) -> str:
         return "PauliY"
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     @staticmethod
     @lru_cache
@@ -843,7 +825,7 @@ def _controlled_y_decomp(*_, wires, control_wires, work_wires, work_wire_type, *
 add_decomps("C(PauliY)", flip_zero_control(_controlled_y_decomp))
 
 
-class PauliZ(Operation):
+class PauliZ(Gate):
     r"""
     The Pauli Z operator
 
@@ -866,13 +848,9 @@ class PauliZ(Operation):
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
-    resource_keys = set()
-
     basis = "Z"
 
     batch_size = None
-
-    resource_keys = set()
 
     @property
     def pauli_rep(self):
@@ -903,10 +881,6 @@ class PauliZ(Operation):
     @property
     def name(self) -> str:
         return "PauliZ"
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     @staticmethod
     @lru_cache
@@ -1118,7 +1092,7 @@ def _controlled_z_decomp(*_, wires, control_wires, work_wires, work_wire_type, *
 add_decomps("C(PauliZ)", flip_zero_control(_controlled_z_decomp))
 
 
-class S(Operation):
+class S(Gate):
     r"""S(wires)
     The single-qubit phase gate
 
@@ -1144,8 +1118,6 @@ class S(Operation):
 
     batch_size = None
 
-    resource_keys = set()
-
     @property
     def pauli_rep(self):
         if self._pauli_rep is None:
@@ -1163,10 +1135,6 @@ class S(Operation):
         if isinstance(wire, str):
             return f"S('{wire}')"
         return f"S({wire})"
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     @staticmethod
     @lru_cache
@@ -1287,7 +1255,7 @@ def _pow_s(wires, z, **_):
 add_decomps("Pow(S)", make_pow_decomp_with_period(4), _pow_s, _pow_s_to_t, _pow_s_to_z)
 
 
-class T(Operation):
+class T(Gate):
     r"""T(wires)
     The single-qubit T gate
 
@@ -1313,8 +1281,6 @@ class T(Operation):
 
     batch_size = None
 
-    resource_keys = set()
-
     @property
     def pauli_rep(self):
         if self._pauli_rep is None:
@@ -1332,10 +1298,6 @@ class T(Operation):
         if isinstance(wire, str):
             return f"T('{wire}')"
         return f"T({wire})"
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     @staticmethod
     @lru_cache
@@ -1444,7 +1406,7 @@ def _pow_t(wires, z, **_):
 add_decomps("Pow(T)", make_pow_decomp_with_period(8), _pow_t)
 
 
-class SX(Operation):
+class SX(Gate):
     r"""SX(wires)
     The single-qubit Square-Root X operator.
 
@@ -1467,12 +1429,6 @@ class SX(Operation):
     """int: Number of trainable parameters that the operator depends on."""
 
     basis = "X"
-
-    resource_keys = set()
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     @property
     def pauli_rep(self):
@@ -1610,7 +1566,7 @@ def _pow_sx(wires, z, **_):
 add_decomps("Pow(SX)", make_pow_decomp_with_period(4), _pow_sx_to_x, _pow_sx)
 
 
-class SWAP(Operation):
+class SWAP(Gate):
     r"""SWAP(wires)
     The swap operator
 
@@ -1635,7 +1591,6 @@ class SWAP(Operation):
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
-    resource_keys = set()
     batch_size = None
 
     @property
@@ -1733,10 +1688,6 @@ class SWAP(Operation):
             qml.CNOT(wires=[wires[0], wires[1]]),
         ]
 
-    @property
-    def resource_params(self) -> dict:
-        return {}
-
     def pow(self, z: int | float) -> list[qml.operation.Operator]:
         return super().pow(z % 2)
 
@@ -1813,7 +1764,7 @@ def _controlled_swap_decomp(*_, wires, control_wires, work_wires, work_wire_type
 add_decomps("C(SWAP)", flip_zero_control(_controlled_swap_decomp))
 
 
-class ECR(Operation):
+class ECR(Gate):
     r""" ECR(wires)
 
     An echoed RZX(:math:`\pi/2`) gate.
@@ -1839,12 +1790,6 @@ class ECR(Operation):
     num_params = 0
 
     batch_size = None
-
-    resource_keys = set()
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     @property
     def pauli_rep(self):
@@ -1982,7 +1927,7 @@ add_decomps("Adjoint(ECR)", self_adjoint)
 add_decomps("Pow(ECR)", pow_involutory)
 
 
-class ISWAP(Operation):
+class ISWAP(Gate):
     r"""ISWAP(wires)
     The i-swap operator
 
@@ -2007,11 +1952,6 @@ class ISWAP(Operation):
     """int: Number of trainable parameters that the operator depends on."""
 
     batch_size = None
-    resource_keys = set()
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     @property
     def pauli_rep(self):
@@ -2165,7 +2105,7 @@ def _pow_iswap_to_zz(wires, **__):
 add_decomps("Pow(ISWAP)", make_pow_decomp_with_period(4), _pow_iswap_to_zz, _pow_iswap_to_siswap)
 
 
-class SISWAP(Operation):
+class SISWAP(Gate):
     r"""SISWAP(wires)
     The square root of i-swap operator. Can also be accessed as ``qml.SQISW``
 
@@ -2190,11 +2130,6 @@ class SISWAP(Operation):
     """int: Number of trainable parameters that the operator depends on."""
 
     batch_size = None
-    resource_keys = set()
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     @property
     def pauli_rep(self):
