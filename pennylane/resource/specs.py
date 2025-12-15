@@ -379,9 +379,9 @@ def specs(
         A function that has the same argument signature as ``qnode``. This function returns a
         :class:`~.resource.CircuitSpecs` object containing the ``qnode`` specifications, including gate and
         measurement data, wire allocations, device information, shots, and more.
-        
-    .. warning:: 
-    
+
+    .. warning::
+
         Computing circuit depth is computationally expensive and can lead to slower ``specs`` calculations. If circuit depth is not needed, set ``compute_depth=False``.
 
     **Example**
@@ -594,7 +594,7 @@ def specs(
             The level arguments only take into account user-applied transforms and compilation passes.
             Level 0 always corresponds to the original circuit before any user transforms have been applied,
             and incremental levels correspond to the aggregate of user transforms in the order in which they were applied.
-            
+
             In addition, ``"all"`` may show an MLIR "lowering" pass that indicates that the program had to be lowered into MLIR for further compilation with Catalyst. If such a pass is returned, it will be placed after all tape transforms but before all other MLIR passes.
 
         .. warning::
