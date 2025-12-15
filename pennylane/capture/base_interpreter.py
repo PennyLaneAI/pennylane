@@ -35,6 +35,7 @@ from .primitives import (
     for_loop_prim,
     jacobian_prim,
     qnode_prim,
+    quantum_subroutine_p,
     while_loop_prim,
 )
 
@@ -618,6 +619,10 @@ def handle_qnode(self, *invals, shots_len, qnode, device, execution_config, qfun
     )
 
 
+@PlxprInterpreter.register_primitive(quantum_subroutine_p)
+def _(self, *invals, jaxpr, **params):
+    return copy(self).eval(jaxpr.jaxpr, jaxpr.consts, *invals)
+
 @PlxprInterpreter.register_primitive(jacobian_prim)
 def handle_jacobian(self, *invals, jaxpr, n_consts, **params):
     """Handle the jacobian primitive."""
@@ -651,6 +656,11 @@ def _pjit_primitive(self, *invals, jaxpr, **params):
 
     subfuns, params = pjit_p.get_bind_params({"jaxpr": jaxpr, **params})
     return pjit_p.bind(*subfuns, *invals, **params)
+
+
+@FlattenedInterpreter.register_primitive(quantum_subroutine_p)
+def _(self, *invals, jaxpr, **params):
+    return copy(self).eval(jaxpr.jaxpr, jaxpr.consts, *invals)
 
 
 @FlattenedInterpreter.register_primitive(while_loop_prim)

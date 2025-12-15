@@ -14,23 +14,71 @@
 r"""
 Contains the StronglyEntanglingLayers template.
 """
+from functools import partial
+
 # pylint: disable=too-many-arguments
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
-from pennylane.decomposition import add_decomps, register_resources
-from pennylane.operation import Operation
 from pennylane.ops import CNOT, Rot
 from pennylane.ops.op_math import cond
-from pennylane.wires import Wires
 
-has_jax = True
-try:
-    from jax import numpy as jnp
-except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
-    has_jax = False  # pragma: no cover
+from ..subroutine import Subroutine
 
 
-class StronglyEntanglingLayers(Operation):
+def _validation(weights, wires):
+    _shape = math.shape(weights)[-3:]
+
+    if _shape[1] != len(wires):
+        raise ValueError(
+            f"Weights tensor must have second dimension of length {len(wires)}; got {_shape[1]}"
+        )
+
+    if _shape[2] != 3:
+        raise ValueError(f"Weights tensor must have third dimension of length 3; got {_shape[2]}")
+
+
+def _setup_ranges(weights, wires, ranges):
+    shape = math.shape(weights)[-3:]
+    if ranges is None:
+        if len(wires) > 1:
+            # tile ranges with iterations of range(1, n_wires)
+            return tuple((l % (len(wires) - 1)) + 1 for l in range(shape[0]))
+        return (0,) * shape[0]
+    ranges = tuple(ranges)
+    if len(ranges) != shape[0]:
+        raise ValueError(f"Range sequence must be of length {shape[0]}; got {len(ranges)}")
+    for r in ranges:
+        if r % len(wires) == 0:
+            raise ValueError(
+                f"Ranges must not be zero nor divisible by the number of wires; got {r}"
+            )
+    return ranges
+
+
+def shape(n_layers, n_wires):
+    r"""Returns the expected shape of the weights tensor.
+
+    Args:
+        n_layers (int): number of layers
+        n_wires (int): number of wires
+
+    Returns:
+        tuple[int]: shape
+    """
+
+    return n_layers, n_wires, 3
+
+
+def SEL_setup(weights, wires, ranges=None, imprimitive=CNOT):
+    if ranges is not None:
+        ranges = tuple(ranges)
+    if imprimitive is None:
+        imprimitive = CNOT
+    return (weights, wires), {"ranges": ranges, "imprimitive": imprimitive}
+
+
+@partial(Subroutine, static_argnames={"ranges", "imprimitive"}, setup_inputs=SEL_setup)
+def StronglyEntanglingLayers(weights, wires, ranges=None, imprimitive=CNOT):
     r"""Layers consisting of single qubit rotations and entanglers, inspired by the circuit-centric classifier design
     `arXiv:1804.00633 <https://arxiv.org/abs/1804.00633>`_.
 
@@ -142,203 +190,29 @@ class StronglyEntanglingLayers(Operation):
             weights = np.random.random(size=shape)
 
     """
-
-    grad_method = None
-
-    resource_keys = {"imprimitive", "n_wires", "n_layers"}
-
-    def __init__(self, weights, wires, ranges=None, imprimitive=CNOT, id=None):
-        shape = math.shape(weights)[-3:]
-
-        if shape[1] != len(wires):
-            raise ValueError(
-                f"Weights tensor must have second dimension of length {len(wires)}; got {shape[1]}"
-            )
-
-        if shape[2] != 3:
-            raise ValueError(
-                f"Weights tensor must have third dimension of length 3; got {shape[2]}"
-            )
-
-        if ranges is None:
-            if len(wires) > 1:
-                # tile ranges with iterations of range(1, n_wires)
-                ranges = tuple((l % (len(wires) - 1)) + 1 for l in range(shape[0]))
-            else:
-                ranges = (0,) * shape[0]
-        else:
-            ranges = tuple(ranges)
-            if len(ranges) != shape[0]:
-                raise ValueError(f"Range sequence must be of length {shape[0]}; got {len(ranges)}")
-            for r in ranges:
-                if r % len(wires) == 0:
-                    raise ValueError(
-                        f"Ranges must not be zero nor divisible by the number of wires; got {r}"
-                    )
-
-        self._hyperparameters = {"ranges": ranges, "imprimitive": imprimitive or CNOT}
-
-        super().__init__(weights, wires=wires, id=id)
-
-    @property
-    def resource_params(self) -> dict:
-        return {
-            "imprimitive": self.hyperparameters["imprimitive"],
-            "n_wires": len(self.wires),
-            "n_layers": math.shape(self.data)[-3],
-        }
-
-    @property
-    def num_params(self):
-        return 1
-
-    @staticmethod
-    def compute_decomposition(
-        weights, wires, ranges, imprimitive=CNOT
-    ):  # pylint: disable=arguments-differ
-        r"""Representation of the operator as a product of other operators.
-
-        .. math:: O = O_1 O_2 \dots O_n.
-
-
-
-        .. seealso:: :meth:`~.StronglyEntanglingLayers.decomposition`.
-
-        Args:
-            weights (tensor_like): weight tensor
-            wires (Any or Iterable[Any]): wires that the operator acts on
-            ranges (Sequence[int]): sequence determining the range hyperparameter for each subsequent layer
-            imprimitive (pennylane.ops.Operation): two-qubit gate to use
-
-        Returns:
-            list[.Operator]: decomposition of the operator
-
-        **Example**
-
-        >>> weights = torch.tensor([[[-0.2, 0.1, -0.4], [1.2, -2., -0.4]]])
-        >>> ranges = (1,)
-        >>> ops = qml.StronglyEntanglingLayers.compute_decomposition(weights, wires=["a", "b"], ranges=ranges, imprimitive=qml.CNOT)
-        >>> from pprint import pprint
-        >>> pprint(ops)
-        [Rot(tensor(-0.2000), tensor(0.1000), tensor(-0.4000), wires=['a']),
-        Rot(tensor(1.2000), tensor(-2.), tensor(-0.4000), wires=['b']),
-        CNOT(wires=['a', 'b']),
-        CNOT(wires=['b', 'a'])]
-
-        """
-        n_layers = math.shape(weights)[-3]
-        wires = Wires(wires)
-        op_list = []
-
-        for l in range(n_layers):
-            for i in range(len(wires)):  # pylint: disable=consider-using-enumerate
-                op_list.append(
-                    Rot(
-                        weights[..., l, i, 0],
-                        weights[..., l, i, 1],
-                        weights[..., l, i, 2],
-                        wires=wires[i],
-                    )
-                )
-
-            if len(wires) > 1:
-                for i in range(len(wires)):
-                    act_on = wires.subset([i, i + ranges[l]], periodic_boundary=True)
-                    op_list.append(imprimitive(wires=act_on))
-
-        return op_list
-
-    @staticmethod
-    def shape(n_layers, n_wires):
-        r"""Returns the expected shape of the weights tensor.
-
-        Args:
-            n_layers (int): number of layers
-            n_wires (int): number of wires
-
-        Returns:
-            tuple[int]: shape
-        """
-
-        return n_layers, n_wires, 3
-
-    # pylint:disable = no-value-for-parameter
-    @staticmethod
-    def compute_qfunc_decomposition(
-        weights, *wires, ranges, imprimitive
-    ):  # pylint: disable=arguments-differ
-        wires = math.array(wires, like="jax")
-        ranges = math.array(ranges, like="jax")
-
-        n_wires = len(wires)
-        n_layers = weights.shape[0]
-
-        @for_loop(n_layers)
-        def layers(l):
-
-            @for_loop(n_wires)
-            def rot_loop(i):
-                Rot(
-                    weights[l, i, 0],
-                    weights[l, i, 1],
-                    weights[l, i, 2],
-                    wires=wires[i],
-                )
-
-            def imprim_true():
-
-                @for_loop(n_wires)
-                def imprimitive_loop(i):
-                    act_on = math.array([i, i + ranges[l]], like="jax") % n_wires
-                    imprimitive(wires=wires[act_on])
-
-                imprimitive_loop()
-
-            def imprim_false():
-                pass
-
-            rot_loop()
-            cond(n_wires > 1, imprim_true, imprim_false)()
-
-        layers()
-
-
-def _strongly_entangling_resources(imprimitive, n_wires, n_layers):
-    resources = {}
-
-    resources[Rot] = n_wires * n_layers
-    if n_wires > 1:
-        resources[imprimitive] = n_wires * n_layers
-
-    return resources
-
-
-@register_resources(_strongly_entangling_resources)
-def _strongly_entangling_decomposition(weights, wires, ranges, imprimitive):
-
-    if capture.enabled() and has_jax:
-        wires = jnp.array(wires)
-        ranges = jnp.array(ranges)
-        weights = jnp.array(weights)
+    _validation(weights, wires)
+    ranges = _setup_ranges(weights, wires, ranges)
+    if capture.enabled():
+        ranges = math.stack(ranges, like="jax")
 
     n_wires = len(wires)
-    n_layers = weights.shape[0]
+    n_layers = weights.shape[-3]
 
     @for_loop(n_layers)
     def layers(l):
         @for_loop(n_wires)
         def rot_loop(i):
             Rot(
-                weights[l, i, 0],
-                weights[l, i, 1],
-                weights[l, i, 2],
+                weights[..., l, i, 0],
+                weights[..., l, i, 1],
+                weights[..., l, i, 2],
                 wires=wires[i],
             )
 
         def imprim_true():
             @for_loop(n_wires)
             def imprimitive_loop(i):
-                if capture.enabled() and has_jax:
+                if capture.enabled():
                     act_on = math.array([i, i + ranges[l]], like="jax") % n_wires
                 else:
                     act_on = wires.subset([i, i + ranges[l]], periodic_boundary=True)
@@ -355,4 +229,4 @@ def _strongly_entangling_decomposition(weights, wires, ranges, imprimitive):
     layers()  # pylint: disable=no-value-for-parameter
 
 
-add_decomps(StronglyEntanglingLayers, _strongly_entangling_decomposition)
+StronglyEntanglingLayers.shape = shape

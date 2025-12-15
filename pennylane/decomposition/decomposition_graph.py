@@ -267,10 +267,18 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
     def _construct_graph(self, operations: Iterable[Operator | CompressedResourceOp]):
         """Constructs the decomposition graph."""
         for op in operations:
-            if isinstance(op, qml.ops.Conditional):
-                op = op.base  # decompose the base of a classically controlled operator.
-            if isinstance(op, Operator):
-                op = resource_rep(type(op), **op.resource_params)
+            if isinstance(op, qml.templates.SubroutineOp):
+                decomp = op.decomposition()
+                for d in decomp:
+                    if isinstance(op, Operator):
+                        d = resource_rep(type(d), **d.resource_params)
+                    idx = self._add_op_node(d, 0)
+                    self._original_ops_indices.add(idx)
+            else:
+                if isinstance(op, qml.ops.Conditional):
+                    op = op.base  # decompose the base of a classically controlled operator.
+                if isinstance(op, Operator):
+                    op = resource_rep(type(op), **op.resource_params)
             idx = self._add_op_node(op, 0)
             self._original_ops_indices.add(idx)
             self._min_work_wires = max(self._min_work_wires, self._graph[idx].min_work_wires)

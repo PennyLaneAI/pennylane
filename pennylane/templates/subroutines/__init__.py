@@ -16,6 +16,7 @@ Subroutines are the most basic template, consisting of a collection of quantum o
 any of the characteristics of other templates (i.e. to prepare a specific state, to be repeated or to encode features).
 """
 
+from .iterative_qpe import iterative_qpe
 from .arbitrary_unitary import ArbitraryUnitary
 from .time_evolution import (
     ApproxTimeEvolution,
@@ -117,4 +118,5 @@ __all__ = [
     "SemiAdder",
     "Elbow",
     "TemporaryAND",
+    "iterative_qpe",
 ]
