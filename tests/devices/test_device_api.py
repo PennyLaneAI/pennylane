@@ -25,7 +25,7 @@ from pennylane.devices.capabilities import (
 )
 from pennylane.exceptions import DeviceError, QuantumFunctionError
 from pennylane.tape import QuantumScript, QuantumScriptOrBatch
-from pennylane.transforms.core import TransformProgram
+from pennylane.transforms.core import CompilePipeline
 from pennylane.typing import Result, ResultBatch
 from pennylane.wires import Wires
 
@@ -118,7 +118,7 @@ class TestSetupExecutionConfig:
         class CustomDevice(Device):
 
             def preprocess(self, execution_config=None):
-                return TransformProgram(), default_execution_config
+                return CompilePipeline(), default_execution_config
 
             def execute(self, circuits, execution_config=None):
                 return (0,)
@@ -166,13 +166,6 @@ class TestSetupExecutionConfig:
                 'Requested MCM method "one-shot" unsupported by the device.',
             ),
             (
-                EXAMPLE_TOML_FILE_ONE_SHOT,
-                "magic",
-                10,
-                None,
-                'Requested MCM method "magic" unsupported by the device.',
-            ),
-            (
                 EXAMPLE_TOML_FILE_ALL_SUPPORT,
                 "tree-traversal",
                 10,
@@ -212,7 +205,6 @@ class TestSetupExecutionConfig:
         "mcm_method, shots, expected_error",
         [
             ("one-shot", None, 'The "one-shot" MCM method is only supported with finite shots.'),
-            ("magic", None, 'Requested MCM method "magic" unsupported by the device.'),
             ("one-shot", 100, None),
         ],
     )
@@ -273,19 +265,19 @@ class TestPreprocessTransforms:
     def test_device_implements_preprocess(self):
         """Tests that the execution config returned by device's preprocess is used."""
 
-        default_transform_program = TransformProgram()
+        default_compile_pipeline = CompilePipeline()
 
         class CustomDevice(Device):
 
             def preprocess(self, execution_config=None):
-                return default_transform_program, ExecutionConfig()
+                return default_compile_pipeline, ExecutionConfig()
 
             def execute(self, circuits, execution_config=None):
                 return (0,)
 
         dev = CustomDevice()
         program = dev.preprocess_transforms()
-        assert program is default_transform_program
+        assert program is default_compile_pipeline
 
     def test_device_no_capabilities(self):
         """Tests if the device does not declare capabilities."""
@@ -297,7 +289,7 @@ class TestPreprocessTransforms:
 
         dev = DeviceNoCapabilities()
         program = dev.preprocess_transforms()
-        assert program == TransformProgram()
+        assert program == CompilePipeline()
 
     @pytest.mark.usefixtures("create_temporary_toml_file")
     @pytest.mark.parametrize(
@@ -332,11 +324,11 @@ class TestPreprocessTransforms:
 
         dev = CustomDevice()
         config = ExecutionConfig(mcm_config=MCMConfig(mcm_method=mcm_method))
-        transform_program = dev.preprocess_transforms(config)
+        compile_pipeline = dev.preprocess_transforms(config)
         if expected_transform:
-            assert expected_transform in transform_program
+            assert expected_transform in compile_pipeline
         for other_transform in mcm_transforms - {expected_transform}:
-            assert other_transform not in transform_program
+            assert other_transform not in compile_pipeline
 
     @pytest.mark.usefixtures("create_temporary_toml_file")
     @pytest.mark.parametrize(
@@ -771,7 +763,7 @@ def test_device_with_ambiguous_preprocess():
             """A device with ambiguous preprocess."""
 
             def preprocess(self, execution_config=None):
-                return TransformProgram(), ExecutionConfig()
+                return CompilePipeline(), ExecutionConfig()
 
             def setup_execution_config(
                 self,
@@ -782,8 +774,8 @@ def test_device_with_ambiguous_preprocess():
 
             def preprocess_transforms(
                 self, execution_config: ExecutionConfig | None = None
-            ) -> TransformProgram:
-                return TransformProgram()
+            ) -> CompilePipeline:
+                return CompilePipeline()
 
             def execute(self, circuits, execution_config: ExecutionConfig = None):
                 return (0,)

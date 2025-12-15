@@ -2,8 +2,8 @@ name: Build nightly PennyLane releases for TestPyPI
 
 on:
   schedule:
-    # Run every weekday at 5:50 EDT (cron is in UTC)
-    - cron: "50 9 * * 1-5"
+    # Run Tuesday-Saturday at 01:00 EDT (cron is in UTC)
+    - cron: "0 5 * * 2-6"
   workflow_dispatch:
 
 jobs:

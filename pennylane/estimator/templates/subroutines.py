@@ -479,9 +479,6 @@ class SemiAdder(ResourceOperator):
                     )
                     gate_lst.append(GateCount(c_gate, action.count))
 
-                else:  # pragma: no cover
-                    gate_lst.append(action)
-
             return gate_lst
         gate_lst = []
 

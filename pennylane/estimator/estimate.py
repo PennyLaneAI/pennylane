@@ -32,6 +32,12 @@ from .wires_manager import Allocate, Deallocate, WireResourceManager
 
 # pylint: disable=too-many-arguments
 
+_SYMBOLIC_DECOMP_MAP = {
+    Adjoint: "_adj_custom_decomps",
+    Controlled: "_ctrl_custom_decomps",
+    Pow: "_pow_custom_decomps",
+}
+
 
 def estimate(
     workflow: Callable | ResourceOperator | Resources | QNode,
@@ -537,13 +543,6 @@ def _get_decomposition_function_and_kwargs(
         A tuple containing the decomposition function and its associated kwargs.
     """
     op_type = comp_res_op.op_type
-
-    _SYMBOLIC_DECOMP_MAP = {
-        Adjoint: ("_adj_custom_decomps", "adjoint_resource_decomp"),
-        Controlled: ("_ctrl_custom_decomps", "controlled_resource_decomp"),
-        Pow: ("_pow_custom_decomps", "pow_resource_decomp"),
-    }
-
     lookup_op_type = op_type
     custom_decomp_dict = config.custom_decomps
     decomp_func = op_type.resource_decomp

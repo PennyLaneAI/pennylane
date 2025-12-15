@@ -35,7 +35,7 @@ from pennylane.math import Interface
 from pennylane.measurements import Shots, ShotsLike
 from pennylane.queuing import AnnotatedQueue
 from pennylane.tape import QuantumScript
-from pennylane.transforms.core import TransformDispatcher, TransformProgram
+from pennylane.transforms.core import CompilePipeline, TransformDispatcher
 from pennylane.typing import TensorLike
 
 from .execution import execute
@@ -122,8 +122,8 @@ def _to_qfunc_output_type(results: Result, qfunc_output, has_partitioned_shots: 
 
 
 def _validate_mcm_config(
-    postselect_mode: Literal["hw-like", "fill-shots"] | None,
-    mcm_method: Literal["deferred", "one-shot", "tree-traversal"] | None,
+    postselect_mode: str | None,
+    mcm_method: str | None,
 ) -> None:
     qml.devices.MCMConfig(postselect_mode=postselect_mode, mcm_method=mcm_method)
 
@@ -288,12 +288,12 @@ class QNode:
             (classical) computational overhead during the backwards pass.
         device_vjp (bool): Whether or not to use the device-provided Vector Jacobian Product (VJP).
             A value of ``None`` indicates to use it if the device provides it, but use the full jacobian otherwise.
-        postselect_mode (str): Configuration for handling shots with mid-circuit measurement postselection. If
+        postselect_mode (str | None): Configuration for handling shots with mid-circuit measurement postselection. If
             ``"hw-like"``, invalid shots will be discarded and only results for valid shots will be returned.
             If ``"fill-shots"``, results corresponding to the original number of shots will be returned. The
             default is ``None``, in which case the device will automatically choose the best configuration. For
             usage details, please refer to the :doc:`dynamic quantum circuits page </introduction/dynamic_quantum_circuits>`.
-        mcm_method (str): The strategy for applying mid-circuit measurements.
+        mcm_method (str | None): The strategy for applying mid-circuit measurements.
             Available methods include ``"deferred"`` (to use the deferred
             measurement principle), ``"one-shot"`` (to execute the circuit
             for each shot separately when using finite shots), and
@@ -522,8 +522,8 @@ class QNode:
         cachesize: int = 10000,
         max_diff: int = 1,
         device_vjp: bool | None = False,
-        postselect_mode: Literal["hw-like", "fill-shots"] | None = None,
-        mcm_method: Literal["deferred", "one-shot", "tree-traversal"] | None = None,
+        postselect_mode: str | None = None,
+        mcm_method: str | None = None,
         gradient_kwargs: dict | None = None,
         static_argnums: int | Iterable[int] = (),
         executor_backend: ExecBackends | str | None = None,
@@ -602,7 +602,7 @@ class QNode:
 
         self._shots: Shots = device.shots if shots == "unset" else Shots(shots)
         self._shots_override_device: bool = shots != "unset"
-        self._transform_program = TransformProgram()
+        self._transform_program = CompilePipeline()
         functools.update_wrapper(self, func)
 
     def __copy__(self) -> QNode:
@@ -612,9 +612,7 @@ class QNode:
                 setattr(copied_qnode, attr, value)
 
         copied_qnode.execute_kwargs = dict(self.execute_kwargs)
-        copied_qnode._transform_program = qml.transforms.core.TransformProgram(
-            self.transform_program
-        )
+        copied_qnode._transform_program = CompilePipeline(self.transform_program)
         copied_qnode.gradient_kwargs = dict(self.gradient_kwargs)
         return copied_qnode
 
@@ -657,7 +655,7 @@ class QNode:
         self._interface = Interface(value)
 
     @property
-    def transform_program(self) -> TransformProgram:
+    def transform_program(self) -> CompilePipeline:
         """The transform program used by the QNode."""
         return self._transform_program
 
@@ -746,7 +744,7 @@ class QNode:
             updated_qn._shots_override_device = True
 
         # pylint: disable=protected-access
-        updated_qn._transform_program = qml.transforms.core.TransformProgram(self.transform_program)
+        updated_qn._transform_program = CompilePipeline(self.transform_program)
         return updated_qn
 
     def update_shots(self, shots: int | Shots) -> QNode:

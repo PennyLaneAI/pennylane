@@ -1501,7 +1501,7 @@ class TestShots:
         assert updated_qnode._shots == qml.measurements.Shots(75)
 
 
-class TestTransformProgramIntegration:
+class TestCompilePipelineIntegration:
     """Tests for the integration of the transform program with the qnode."""
 
     def test_transform_program_modifies_circuit(self):
@@ -1534,9 +1534,9 @@ class TestTransformProgramIntegration:
 
         assert tracker.totals["executions"] == 1
         assert tracker.history["resources"][0].gate_types["PauliX"] == 1
-        assert tracker.history["resources"][0].gate_types["RX"] == 0
+        assert "RX" not in tracker.history["resources"][0].gate_types
 
-    def tet_transform_program_modifies_results(self):
+    def test_transform_program_modifies_results(self):
         """Test integration with a transform that modifies the result output."""
 
         dev = qml.device("default.qubit", wires=2)
@@ -1550,7 +1550,7 @@ class TestTransformProgramIntegration:
 
             return (tape,), postprocessing
 
-        @partial(pin_result, requested_result=3.0)
+        @pin_result(requested_result=3.0)
         @qml.qnode(dev, interface=None, diff_method=None)
         def circuit(x):
             qml.RX(x, 0)
@@ -1631,8 +1631,8 @@ class TestTransformProgramIntegration:
         def shift_output(tape: QuantumScript, shift) -> tuple[QuantumScriptBatch, PostprocessingFn]:
             return (tape,), partial(add_shift, shift=shift)
 
-        @partial(shift_output, shift=1.0)
-        @partial(scale_output, factor=2.0)
+        @shift_output(shift=1.0)
+        @scale_output(factor=2.0)
         @qml.qnode(dev, interface=None, diff_method=None)
         def circuit1():
             return qml.expval(qml.PauliZ(0))
@@ -1640,8 +1640,8 @@ class TestTransformProgramIntegration:
         # first add one, then scale by 2.0.  Outer postprocessing transforms are applied first
         assert qml.math.allclose(circuit1(), 4.0)
 
-        @partial(scale_output, factor=2.0)
-        @partial(shift_output, shift=1.0)
+        @scale_output(factor=2.0)
+        @shift_output(shift=1.0)
         @qml.qnode(dev, interface=None, diff_method=None)
         def circuit2():
             return qml.expval(qml.PauliZ(0))
@@ -1664,7 +1664,7 @@ class TestTransformProgramIntegration:
                 qml.tape.QuantumScript(tape.operations, tape.measurements, shots=n),
             ), num_of_shots_from_sample
 
-        @partial(use_n_shots, n=100)
+        @use_n_shots(n=100)
         @qml.qnode(dev, interface=None, diff_method=None)
         def circuit():
             return qml.sample(wires=0)
@@ -1790,7 +1790,7 @@ class TestMCMConfiguration:
             _ = qml.measure(0, postselect=1)
             return qml.sample(wires=[0, 1])
 
-        with pytest.raises(ValueError, match="Invalid postselection mode 'foo'"):
+        with pytest.raises(ValueError, match="'foo' is not a valid postselect_mode"):
             _ = qml.set_shots(qml.QNode(f, dev, postselect_mode="foo"), shots=shots)
 
     @pytest.mark.jax
@@ -2161,7 +2161,7 @@ class TestSetShots:
         """Test set_shots with partial decorator syntax."""
         dev = qml.device("default.qubit", wires=1)
 
-        @partial(set_shots, shots=50)
+        @set_shots(shots=50)
         @qml.set_shots(10)
         @qml.qnode(dev)
         def circuit():
@@ -2232,7 +2232,7 @@ class TestSetShots:
         """Test set_shots with None for analytic mode."""
         dev = qml.device("default.qubit", wires=1)
 
-        @partial(set_shots, shots=None)
+        @set_shots(shots=None)
         @qml.set_shots(100)
         @qml.qnode(dev)
         def circuit():
@@ -2294,7 +2294,7 @@ class TestSetShots:
         """Test set_shots works correctly with measurements that require shots."""
         dev = qml.device("default.qubit", wires=2)
 
-        @partial(set_shots, shots=1000)
+        @set_shots(shots=1000)
         @qml.qnode(dev)
         def circuit():
             qml.Hadamard(wires=0)
@@ -2448,7 +2448,7 @@ class TestSetShots:
         """Test that no warning is raised if set_shots is called but the shots value is unchanged."""
         dev = qml.device("default.qubit")
 
-        @partial(qml.set_shots, shots=100)
+        @qml.set_shots(shots=100)
         @qml.qnode(dev)
         def circuit():
             return qml.sample(qml.PauliZ(0))

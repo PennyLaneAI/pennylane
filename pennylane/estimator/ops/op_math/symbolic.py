@@ -13,17 +13,16 @@
 # limitations under the License.
 r"""Resource operators for symbolic operations."""
 from collections.abc import Iterable
+from functools import singledispatch
 
-import pennylane.estimator as qre
 from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
     ResourceOperator,
-    _apply_adj,
-    _apply_controlled,
     _dequeue,
     resource_rep,
 )
+from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.wires import Wires, WiresLike
 
 # pylint: disable=arguments-differ,super-init-not-called, signature-differs
@@ -549,12 +548,6 @@ class Pow(ResourceOperator):
             if key in base_params and base_params[key] is None
         )
 
-        if pow_z == 0:
-            return [GateCount(resource_rep(qre.Identity))]
-
-        if pow_z == 1:
-            return [GateCount(base_cmpr_op)]
-
         return base_class.pow_resource_decomp(pow_z=pow_z, target_resource_params=base_params)
 
     @classmethod
@@ -998,13 +991,66 @@ class ChangeOpBasis(ResourceOperator):
         ]
 
 
-@_apply_adj.register
+@singledispatch
+def apply_adj(action: GateCount | Allocate | Deallocate) -> GateCount | Allocate | Deallocate:
+    """Create the adjoint of a resource-tracking gate.
+
+    For a :class:`~.GateCount`, it wraps
+    the gate in :class:`~.Adjoint`. For :class:`~.Allocate` and
+    :class:`~.Deallocate`, it converts one to the other.
+
+    Args:
+        action (GateCount or Allocate or Deallocate): The gate to be adjointed.
+
+    Returns:
+        GateCount or Allocate or Deallocate.
+
+    Raises:
+        TypeError: if the gate is of an unsupported type.
+    """
+    raise TypeError(f"Unsupported type {action}")
+
+
+@apply_adj.register
 def _(action: GateCount):
     gate = action.gate
     return GateCount(resource_rep(Adjoint, {"base_cmpr_op": gate}), action.count)
 
 
-@_apply_controlled.register
+@apply_adj.register
+def _(action: Allocate):
+    return Deallocate(action.num_wires)
+
+
+@apply_adj.register
+def _(action: Deallocate):
+    return Allocate(action.num_wires)
+
+
+# pylint: disable=unused-argument
+@singledispatch
+def apply_controlled(
+    action: GateCount | Allocate | Deallocate, num_ctrl_wires: int, num_zero_ctrl: int
+) -> GateCount | Allocate | Deallocate:
+    """Create the controlled version of a resource-tracking gate.
+
+    For a :class:`~.GateCount`, it wraps
+    the gate in :class:`~.Controlled`. Other actions like :class:`~.Allocate`
+    and :class:`~.Deallocate` are returned unchanged.
+
+    Args:
+        action (GateCount or Allocate or Deallocate): The gate to be controlled.
+        num_ctrl_wires (int): The number of qubits to control the operation on.
+        num_zero_ctrl (int): The number of control qubits that are controlled on the
+            :math:`|0\\rangle` state.
+
+    Returns:
+        GateCount or Allocate or Deallocate.
+    """
+    return action
+
+
+@apply_controlled.register
 def _(action: GateCount, num_ctrl_wires, num_zero_ctrl):
     gate = action.gate
     c_gate = Controlled.resource_rep(

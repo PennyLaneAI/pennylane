@@ -18,7 +18,6 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from collections.abc import Hashable, Iterable
-from functools import singledispatch
 from typing import Any
 
 import numpy as np
@@ -29,27 +28,6 @@ from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
 
 from .resources_base import Resources
-from .wires_manager import Allocate, Deallocate
-
-
-@singledispatch
-def _apply_adj(action):
-    raise TypeError(f"Unsupported type {action}")
-
-
-@_apply_adj.register
-def _(action: Allocate):
-    return Deallocate(action.num_wires)
-
-
-@_apply_adj.register
-def _(action: Deallocate):
-    return Allocate(action.num_wires)
-
-
-@singledispatch
-def _apply_controlled(action, num_ctrl_wires, num_zero_ctrl):  # pylint: disable=unused-argument
-    return action  # pragma: no cover
 
 
 class CompressedResourceOp:
@@ -292,25 +270,35 @@ class ResourceOperator(ABC):
     def resource_decomp(cls, *args, **kwargs) -> list[GateCount]:
         r"""Returns a list of actions that define the resources of the operator."""
 
+    # pylint: disable=import-outside-toplevel
     @classmethod
     def adjoint_resource_decomp(cls, target_resource_params: dict | None = None) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
 
-        By default, this method decomposes the operator, and then computes the adjoint of each
-        gate in the decomposition.
+        For ``ResourceOperators`` that don't define a ``adjoint_resource_decomp``, this will be the default
+        ``adjoint_resource_decomp`` method.
+
+        Resources:
+            The resources for the adjoint of an operator are obtained by tracking the adjoint of each gate in the base
+            resource decomposition of the operator.
 
         Args:
             target_resource_params (dict | None): A dictionary containing the resource parameters
                 of the target operator.
         """
+        from pennylane.estimator.ops.op_math.symbolic import (
+            apply_adj,
+        )
+
         target_resource_params = target_resource_params or {}
         gate_lst = []
         decomp = cls.resource_decomp(**target_resource_params)
 
         for gate in decomp[::-1]:  # reverse the order
-            gate_lst.append(_apply_adj(gate))
+            gate_lst.append(apply_adj(gate))
         return gate_lst
 
+    # pylint: disable=import-outside-toplevel
     @classmethod
     def controlled_resource_decomp(
         cls,
@@ -320,8 +308,12 @@ class ResourceOperator(ABC):
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
-        By default, this method decomposes the operator, and then computes the controlled version
-        of each gate in the decomposition.
+        For ``ResourceOperators`` that don't define a ``controlled_resource_decomp``, this will be the default
+        ``controlled_resource_decomp`` method.
+
+        Resources:
+            The resources for the controlled operator are obtained by controlling (with the same number of control
+            wires and zero controlled values) each gate in the base operator's resource decomposition.
 
         Args:
             num_ctrl_wires (int): the number of qubits the
@@ -331,6 +323,10 @@ class ResourceOperator(ABC):
             target_resource_params (dict | None): A dictionary containing the resource parameters
                 of the target operator.
         """
+        from pennylane.estimator.ops.op_math.symbolic import (
+            apply_controlled,
+        )
+
         target_resource_params = target_resource_params or {}
         gate_lst = []
         if num_zero_ctrl != 0:
@@ -339,7 +335,7 @@ class ResourceOperator(ABC):
 
         decomp = cls.resource_decomp(**target_resource_params)
         for action in decomp:
-            gate_lst.append(_apply_controlled(action, num_ctrl_wires, 0))
+            gate_lst.append(apply_controlled(action, num_ctrl_wires, 0))
 
         return gate_lst
 
@@ -350,16 +346,28 @@ class ResourceOperator(ABC):
         r"""Returns a list representing the resources for an operator
         raised to a power.
 
-        By default, this method returns the operator multiplied by the given power.
+        For ``ResourceOperators`` that don't define a ``pow_resource_decomp``, this will be its
+        ``pow_resource_decomp`` method.
+
+        Resources:
+            The resources for an operator raised to some power are obtained by taking the base resource
+            decomposition of the operator and tracking each gate raised to the given power. For a power of
+            zero, the identity operator is returned. For a power of one, the base operator is returned.
 
         Args:
             pow_z (int): exponent that the operator is being raised to
             target_resource_params (dict | None): A dictionary containing the resource parameters
                 of the target operator.
         """
+        if pow_z == 0:
+            return [GateCount(resource_rep(qre_ops.Identity))]
+
         target_resource_params = target_resource_params or {}
-        num_wires = target_resource_params.get("num_wires")
-        base_cmpr_op = CompressedResourceOp(cls, num_wires, target_resource_params)
+        base_cmpr_op = cls.resource_rep(**target_resource_params)
+
+        if pow_z == 1:
+            return [GateCount(base_cmpr_op)]
+
         return [GateCount(base_cmpr_op, pow_z)]
 
     def __repr__(self) -> str:
