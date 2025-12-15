@@ -296,7 +296,7 @@ class CondCallable:
         # To process kwargs of type str, these should not be traced.
         static_string_kwargs = {}
         for key, value in kwargs.items():
-            if type(key) == str:
+            if type(value) == str:
                 static_string_kwargs[key] = value
         for key in static_string_kwargs:
             del kwargs[key]
