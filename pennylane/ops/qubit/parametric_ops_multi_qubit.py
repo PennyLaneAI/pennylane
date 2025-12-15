@@ -25,6 +25,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane import math, queuing
+from pennylane.capture.autograph import disable_autograph
 from pennylane.decomposition import add_decomps, controlled_resource_rep, register_resources
 from pennylane.decomposition.resources import resource_rep
 from pennylane.decomposition.symbolic_decomposition import adjoint_rotation, pow_rotation
@@ -582,6 +583,7 @@ def _pauli_rot_resources(pauli_word):
 
 
 @register_resources(_pauli_rot_resources)
+@disable_autograph
 def _pauli_rot_decomposition(theta: TensorLike, wires: WiresLike, pauli_word: str, **__):
     if set(pauli_word) == {"I"}:
         qml.GlobalPhase(theta / 2)
