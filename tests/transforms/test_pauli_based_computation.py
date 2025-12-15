@@ -44,7 +44,7 @@ class TestPBCTransforms:
     def test_not_implemented(self, pbc_transform, pass_name):
         """Test that NotImplementedError is raised when trying to use gridsynth on tape."""
 
-        tape = qml.tape.QuantumScript([qml.T(wires=0), qml.PhaseShift(0.2, wires=0)])
+        tape = qml.tape.QuantumScript([qml.T(wires=0), qml.PauliRot(0.1, "Y", wires=0)])
 
         with pytest.raises(
             NotImplementedError,
