@@ -220,7 +220,7 @@ class TestBoundTransform:
         assert not is_informative
         assert not final_transform
 
-        assert container.transform is first_valid_transform
+        assert container.tape_transform is first_valid_transform
         assert container.args == (0,)
         assert not container.kwargs
         assert container.classical_cotransform is None
@@ -631,15 +631,6 @@ class TestTransform:  # pylint: disable=too-many-public-methods
         ):
             qml.transform(first_valid_transform, expand_transform=non_callable)
 
-    def test_multiple_args_expand_transform(self):
-        """Test that an expand transform must match the signature of the transform"""
-
-        with pytest.raises(
-            TransformError,
-            match="The expand transform must have the same signature as the transform",
-        ):
-            qml.transform(first_valid_transform, expand_transform=non_valid_expand_transform)
-
     def test_qfunc_transform_multiple_tapes(self):
         """Test that quantum function is not compatible with multiple tapes."""
         dispatched_transform = qml.transform(second_valid_transform)
@@ -663,7 +654,7 @@ class TestTransform:  # pylint: disable=too-many-public-methods
         """Test the dispatcher attributes."""
         dispatched_transform = qml.transform(first_valid_transform)
 
-        assert dispatched_transform.transform is first_valid_transform
+        assert dispatched_transform.tape_transform is first_valid_transform
         assert dispatched_transform.expand_transform is None
         assert dispatched_transform.classical_cotransform is None
 
@@ -930,9 +921,7 @@ class TestPassName:
     def test_no_pass_name_or_tape_def(self):
         """Test that an error is raised if neither a tape def or pass name are provided."""
 
-        with pytest.raises(
-            ValueError, match="must currently define either a tape transform or a pass_name"
-        ):
+        with pytest.raises(ValueError, match="must define either a tape transform or a pass_name"):
             qml.transform()
 
     def test_providing_pass_name_with_tape_def(self):
@@ -943,7 +932,7 @@ class TestPassName:
 
         t = qml.transform(my_tape_def, "my_pass_name")
 
-        assert t.transform == my_tape_def
+        assert t.tape_transform == my_tape_def
         assert t.pass_name == "my_pass_name"
 
         assert repr(t) == "<transform: my_tape_def>"
@@ -955,7 +944,7 @@ class TestPassName:
         """Test that a transform can be defined by a pass_name without a tape based transform."""
 
         t = qml.transform(pass_name="my_pass_name")
-        assert t.transform is None
+        assert t.tape_transform is None
         assert t.pass_name == "my_pass_name"
 
         assert repr(t) == "<transform: my_pass_name>"

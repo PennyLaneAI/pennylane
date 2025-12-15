@@ -521,6 +521,9 @@ class transform:  # pylint: disable=too-many-instance-attributes
                 "not appear to be a valid Python function or callable."
             )
 
+        if expand_transform is not None and not callable(expand_transform):
+            raise TransformError("The expand function must be a valid Python function.")
+
         if classical_cotransform is not None and not callable(classical_cotransform):
             raise TransformError("The classical co-transform must be a valid Python function.")
 
@@ -634,6 +637,8 @@ class transform:  # pylint: disable=too-many-instance-attributes
                 "Provide a tape, qfunc, QNode, or device to transform, "
                 "or provide keyword arguments to create a BoundTransform for composition."
             )
+        if not args and kwargs:
+            return BoundTransform(self, kwargs=kwargs)
         return self._apply_transform(*args, **kwargs)
 
     def __repr__(self):
