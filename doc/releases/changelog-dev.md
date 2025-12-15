@@ -102,6 +102,7 @@
 * Catalyst compilation passes designed for Pauli-based computation are now available in PennyLane, 
   providing accessibility for logical compilation research by directly integrating with 
   :func:`~.pauli_measure` and :class:`~.PauliRot` operations.
+  [(#8762)](https://github.com/PennyLaneAI/pennylane/pull/8762)
    
 
 <h4> Compile Pipeline and Transforms </h4>
