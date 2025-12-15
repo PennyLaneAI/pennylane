@@ -24,7 +24,7 @@ def gridsynth(tape, *, epsilon=1e-4, ppr_basis=False):
 
     .. warning::
 
-        This transform must be applied within a workflow compiled with :func:`pennylane.qjit`, 
+        This transform must be applied within a workflow compiled with :func:`pennylane.qjit`,
         as it is a frontend for Catalyst's ``gridsynth`` compilation pass.
         Consult the Catalyst documentation for more information.
 
