@@ -23,13 +23,7 @@ dependencies = [
     "typing_extensions",
     "packaging",
     "diastatic-malt",
-    "numpy~=1.23",
-    "cvxpy~=1.2",
-    "cvxopt~=1.3.0",
-    "matplotlib~=3.5",
-    "opt-einsum~=3.3",
-    "tomli~=2.0.0",
-    "tach~=0.28.5",
+    "numpy"
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
