@@ -69,7 +69,15 @@ def shape(n_layers, n_wires):
     return n_layers, n_wires, 3
 
 
-@partial(Subroutine, static_argnames={"ranges", "imprimitive"})
+def SEL_setup(weights, wires, ranges=None, imprimitive=CNOT):
+    if ranges is not None:
+        ranges = tuple(ranges)
+    if imprimitive is None:
+        imprimitive = CNOT
+    return (weights, wires), {"ranges": ranges, "imprimitive": imprimitive}
+
+
+@partial(Subroutine, static_argnames={"ranges", "imprimitive"}, setup_inputs=SEL_setup)
 def StronglyEntanglingLayers(weights, wires, ranges=None, imprimitive=CNOT):
     r"""Layers consisting of single qubit rotations and entanglers, inspired by the circuit-centric classifier design
     `arXiv:1804.00633 <https://arxiv.org/abs/1804.00633>`_.
@@ -188,16 +196,16 @@ def StronglyEntanglingLayers(weights, wires, ranges=None, imprimitive=CNOT):
         ranges = math.stack(ranges, like="jax")
 
     n_wires = len(wires)
-    n_layers = weights.shape[0]
+    n_layers = weights.shape[-3]
 
     @for_loop(n_layers)
     def layers(l):
         @for_loop(n_wires)
         def rot_loop(i):
             Rot(
-                weights[l, i, 0],
-                weights[l, i, 1],
-                weights[l, i, 2],
+                weights[..., l, i, 0],
+                weights[..., l, i, 1],
+                weights[..., l, i, 2],
                 wires=wires[i],
             )
 
