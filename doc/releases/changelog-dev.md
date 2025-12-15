@@ -166,6 +166,18 @@
 
 <h3>Improvements 🛠</h3>
 
+* Added `Resources.total_wires` and `Resources.total_gates` properties to the 
+  ``qml.estimator.Resources`` class. Users can more easily access these quantities from the `Resources` object directly.
+  [(#8761)](https://github.com/PennyLaneAI/pennylane/pull/8761)
+
+* Added `PauliHamiltonian.num_terms` property to the ``qml.estimator.PauliHamiltonian`` class.
+  Users can more easily access the total number of terms (Pauli words) from the `PauliHamiltonian` object directly.
+  [(#8761)](https://github.com/PennyLaneAI/pennylane/pull/8761)
+
+* Improved the resource decomposition for the :class:`~pennylane.estimator.QROM` class. The cost has
+  been reduced in cases when users specify `restored = True` and `sel_swap_depth = 1`.
+  [(#8761)](https://github.com/PennyLaneAI/pennylane/pull/8761)
+
 * Improved :mod:`estimator <pennylane.estimator>`'s
   resource decomposition of `PauliRot` to match the optimal resources
   for certain special cases of Pauli strings (e.g. for `XX` and `YY` type Pauli strings).
@@ -609,9 +621,11 @@
   that the resource function is correct.
   [(#8687)](https://github.com/PennyLaneAI/pennylane/pull/8687)
 
-* Disabling autograph for the PauliRot decomposition rule since it is incompatible with autograph. Also, 
-  `str` type keyword argument to a function will be now considered as a static arugment when tracing through
-  `qml.cond()`.
+* Disabled autograph for the PauliRot decomposition rule as it should not be used with autograph. 
+  [(#8765)](https://github.com/PennyLaneAI/pennylane/pull/8765)
+
+*  `str` type keyword argument to a function will be now considered as a static arugment when tracing 
+  through `qml.cond()`.
   [(#8765)](https://github.com/PennyLaneAI/pennylane/pull/8765)
 
 <h3>Documentation 📝</h3>
