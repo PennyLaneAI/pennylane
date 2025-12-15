@@ -16,7 +16,6 @@
 Differentiability tests are still in the ml-framework specific files.
 """
 import copy
-from functools import partial
 
 import numpy as np
 import pytest
@@ -72,7 +71,7 @@ class TestCompilePipeline:
                 qml.tape.QuantumScript([qml.PauliX(0)], tape.measurements),
             ), null_postprocessing
 
-        pauli_x_out_container = qml.transforms.core.TransformContainer(just_pauli_x_out)
+        pauli_x_out_container = qml.transforms.core.BoundTransform(just_pauli_x_out)
 
         transform_program = qml.CompilePipeline(pauli_x_out_container)
 
@@ -118,7 +117,7 @@ class TestCompilePipeline:
             )
             return (tape1, tape2), null_postprocessing
 
-        scale_shots = qml.transforms.core.TransformContainer(split_shots)
+        scale_shots = qml.transforms.core.BoundTransform(split_shots)
         program = qml.CompilePipeline(scale_shots)
 
         tape = qml.tape.QuantumScript([], [qml.counts(wires=0)], shots=100)
@@ -146,7 +145,7 @@ class TestCompilePipeline:
 
             return new_tapes, sum_measurements
 
-        container = qml.transforms.core.TransformContainer(split_sum_terms)
+        container = qml.transforms.core.BoundTransform(split_sum_terms)
         prog = qml.CompilePipeline(container)
 
         op = qml.RX(1.2, 0)
@@ -193,8 +192,8 @@ class TestCompilePipeline:
             )
             return (new_tape,), null_postprocessing
 
-        just_pauli_x_container = qml.transforms.core.TransformContainer(just_pauli_x_out)
-        repeat_operations_container = qml.transforms.core.TransformContainer(repeat_operations)
+        just_pauli_x_container = qml.transforms.core.BoundTransform(just_pauli_x_out)
+        repeat_operations_container = qml.transforms.core.BoundTransform(repeat_operations)
 
         prog = qml.CompilePipeline(just_pauli_x_container, repeat_operations_container)
 
@@ -232,8 +231,8 @@ class TestCompilePipeline:
         def transform_mul(tape: QuantumScript):
             return (tape,), scale_two
 
-        add_container = qml.transforms.core.TransformContainer(transform_add)
-        mul_container = qml.transforms.core.TransformContainer(transform_mul)
+        add_container = qml.transforms.core.BoundTransform(transform_add)
+        mul_container = qml.transforms.core.BoundTransform(transform_mul)
         prog = qml.CompilePipeline(add_container, mul_container)
         prog_reverse = qml.CompilePipeline(mul_container, add_container)
 
@@ -262,7 +261,7 @@ class TestCompilePipeline:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @partial(qml.gradients.param_shift, argnums=[0, 1])
+        @qml.gradients.param_shift(argnums=[0, 1])
         @qml.transforms.split_non_commuting
         @qml.qnode(device=dev, interface="jax")
         def circuit(x, y):
