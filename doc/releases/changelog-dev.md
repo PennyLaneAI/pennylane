@@ -4,7 +4,7 @@
 
 * :func:`~pennylane.specs` can now be used to analyze arbitrary compilation passes for
   workflows compiled with :func:`~pennylane.qjit`.
-
+  Consider the following :func:`qjit <pennylane.qjit>`'d circuit with two compilation passes applied:
   ```python
   @qml.qjit
   @qml.transforms.merge_rotations
@@ -19,12 +19,12 @@
       return qml.probs()
   ```
 
-  The supplied levels may be individual `int` values, or an iterable of multiple levels.
-  The strings ``"all"`` and ``"all-mlir"`` are also allowed, and return all user-applied transforms
-  and MLIR passes, or all user-applied MLIR passes only respectively.
+  The supplied ``level`` to :func:`pennylane.specs` may be individual `int` values, or an iterable of multiple levels. 
+  Additionally, the strings ``"all"`` and ``"all-mlir"`` are allowed, returning circuit resources for all user-applied transforms
+  and MLIR passes, or all user-applied MLIR passes only, respectively.
 
   ```pycon
-  >>> print(qml.specs(circuit, level=[1,2])(1.23))
+  >>> print(qml.specs(circuit, level=[1, 2])(1.23))
   Device: lightning.qubit
   Device wires: 3
   Shots: Shots(total=None)
