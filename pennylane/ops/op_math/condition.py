@@ -295,11 +295,11 @@ class CondCallable:
 
         # To process kwargs of type str, these should not be traced.
         static_string_kwargs = {}
-        for kwarg in kwargs:
-            if type(kwarg) == str:
-                static_string_kwargs[kwarg] = kwargs[kwarg]
-        for kwarg in static_string_kwargs:
-            del kwargs[kwarg]
+        for key, value in kwargs.items():
+            if type(key) == str:
+                static_string_kwargs[key] = value
+        for key in static_string_kwargs:
+            del kwargs[key]
 
         # consts go after the len(branches) conditions, first const at len(branches)
         end_const_ind = len(branches)
