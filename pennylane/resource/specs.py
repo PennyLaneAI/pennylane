@@ -597,7 +597,8 @@ def specs(
             Level 0 always corresponds to the original circuit before any user transforms have been applied,
             and incremental levels correspond to the aggregate of user transforms in the order in which they were applied.
 
-            In addition, ``"all"`` may show an MLIR "lowering" pass that indicates that the program had to be lowered into MLIR for further compilation with Catalyst. If such a pass is returned, it will be placed after all tape transforms but before all other MLIR passes.
+            In addition, ``"all"`` may show an MLIR "lowering" pass that indicates that the program had to be lowered into MLIR for further compilation with Catalyst.
+            If such a pass is returned, it will be placed after all tape transforms but before all other MLIR passes.
 
         .. warning::
             Some resource information from pass-by-pass specs may be estimated, since it is not always
