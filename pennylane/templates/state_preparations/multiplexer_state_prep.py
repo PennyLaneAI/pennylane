@@ -59,7 +59,7 @@ class MultiplexerStatePreparation(Operation):
         >>> np.round(circuit(), 2)
         array([0.5 , 0.  , 0.25, 0.25])
 
-    .. seealso:: :class:`~.SelectPauliRot` for how to break down the main building blocks of this template.
+    .. seealso:: :class:`~.SelectPauliRot` for a description of the main building blocks in this template and how to break them down.
 
     """
 
