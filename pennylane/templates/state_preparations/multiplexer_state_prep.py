@@ -33,7 +33,7 @@ class MultiplexerStatePreparation(Operation):
 
     Raises:
         ValueError: If the length of the input state vector array is not :math:`2^n` where :math:`n` is an integer, or if
-            its norm is not equal to one.
+            its norm is not one.
 
     **Example**
 
@@ -74,8 +74,7 @@ class MultiplexerStatePreparation(Operation):
                 f"State vectors must be of length {2 ** len(wires)}; vector has length {n_amplitudes}."
             )
 
-        norm = math.linalg.norm(state_vector)
-        if not math.allclose(norm, 1.0, atol=1e-3):
+        if not math.allclose(math.linalg.norm(state_vector), 1.0, atol=1e-3):
             raise ValueError(
                 f"Input state vectors must have a norm 1.0, the vector has squared norm {norm}"
             )
