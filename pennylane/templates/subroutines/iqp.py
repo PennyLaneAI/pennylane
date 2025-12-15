@@ -18,8 +18,8 @@ from collections import defaultdict
 from functools import reduce
 
 import numpy as np
-from pennylane import math
 
+from pennylane import math
 from pennylane.decomposition import (
     add_decomps,
     register_resources,
@@ -107,6 +107,7 @@ class IQP(Operation):
         }
         super().__init__(wires=range(num_wires), id=id)
 
+    # pylint: disable=arguments-differ
     @staticmethod
     def compute_matrix(weights, num_wires, pattern, spin_sym) -> TensorLike:
         layers = []
@@ -118,7 +119,7 @@ class IQP(Operation):
 
         hadamard = Hadamard.compute_matrix()
         h_layer = hadamard
-        for i in range(1, num_wires):
+        for _ in range(1, num_wires):
             h_layer = math.kron(h_layer, hadamard)
         layers.append(h_layer)
 
@@ -128,14 +129,11 @@ class IQP(Operation):
                 layers.append(rz_mat)
 
         h_layer = hadamard
-        for i in range(1, num_wires):
+        for _ in range(1, num_wires):
             h_layer = math.kron(h_layer, hadamard)
         layers.append(h_layer)
 
-        return reduce(
-            lambda acc, curr: math.matmul(acc, curr), layers[::-1]
-        )
-
+        return reduce(math.matmul, layers[::-1])
 
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
