@@ -59,7 +59,6 @@
     Measurements:
       probs(all wires): 1
   ```
-  [(#8606)](https://github.com/PennyLaneAI/pennylane/pull/8606)
 
 * Users can now set precisions for a larger variety of `ResourceOperator`s in
   :mod:`estimator <pennylane.estimator>` using
