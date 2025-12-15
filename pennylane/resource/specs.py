@@ -372,8 +372,8 @@ def specs(
             computing the resource information. See :func:`~pennylane.workflow.get_transform_program` for more details
             on the available levels. Default is ``"gradient"``.
         compute_depth (bool): Whether to compute the depth of the circuit. If ``False``, circuit
-            depth will not be included in the output. Default: ``None``, meaning ``True`` where
-            depth is available, and ``False`` otherwise.
+            depth will not be included in the output. By default, ``specs`` will always attempt to calculate circuit
+            depth (behaves as ``True``), except where not available, such as in pass-by-pass specs in MLIR.
 
     Returns:
         A function that has the same argument signature as ``qnode``. This function returns a
