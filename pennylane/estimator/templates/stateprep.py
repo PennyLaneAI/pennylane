@@ -189,12 +189,12 @@ class AliasSampling(ResourceOperator):
         allocated wires: 126
         zero state: 58
         any state: 68
-    Total gates : 6.505E+3
-    'Toffoli': 272,
+    Total gates : 3.796E+3
+    'Toffoli': 174,
     'T': 88,
-    'CNOT': 4.646E+3,
-    'X': 595,
-    'Hadamard': 904
+    'CNOT': 2.600E+3,
+    'X': 398,
+    'Hadamard': 536
     """
 
     resource_keys = {"num_coeffs", "precision"}
@@ -966,16 +966,11 @@ class PrepTHC(ResourceOperator):
         num_coeff = num_orb + tensor_rank * (tensor_rank + 1) / 2  # N+M(M+1)/2
         coeff_register = int(math.ceil(math.log2(num_coeff)))
 
-        # 6 auxiliary wires account for:
-        # - 2 spin registers
-        # - 1 for rotation on auxiliary qubit
-        # - 1 flag for success of inequality
-        # - 1 flag for one-body vs two-body rotations
-        # - 1 to control swap of \mu and \nu registers.
-        # 2*n_M wires are for \mu and \nu registers, where n_M = log_2(tensor_rank+1)
-        # coeff_register for storing the coefficients: num_orb + tensor_rank(tensor_rank+1)/2,
-        # coeff_precision wires for the keep register
-        # The qubits storing output of QROM are stored here as well: 2*n_M + coeff_precision + 2
+        # Based on section III D in arXiv:2011.03494
+        # Algorithmic wires for the walk operator, auxiliary wires are accounted for by the QROM operator
+        # The total algorithmic qubits are thus given by : 2*n_M + ceil(log(d)) + 2*\aleph + 6 + m
+        # where \aleph is coeff_precision, m = 2n_M + \aleph + 2, N = 2*num_orb,
+        # d = num_orb + tensor_rank(tensor_rank+1)/2, and n_M = log_2(tensor_rank+1)
         self.num_wires = (
             4 * int(math.ceil(math.log2(tensor_rank + 1)))
             + coeff_register
@@ -1041,16 +1036,6 @@ class PrepTHC(ResourceOperator):
         num_coeff = num_orb + tensor_rank * (tensor_rank + 1) / 2  # N+M(M+1)/2
         coeff_register = int(math.ceil(math.log2(num_coeff)))
 
-        # 6 auxiliary wires account for:
-        # - 2 spin registers
-        # - 1 for rotation on auxiliary qubit
-        # - 1 flag for success of inequality
-        # - 1 flag for one-body vs two-body rotations
-        # - 1 to control swap of \mu and \nu registers.
-        # 2*n_M wires are for \mu and \nu registers, where n_M = log_2(tensor_rank+1)
-        # coeff_register for storing the coefficients: num_orb + tensor_rank(tensor_rank+1)/2,
-        # coeff_precision wires for the keep register
-        # The qubits storing output of QROM are stored here as well: 2*n_M + coeff_precision + 2
         num_wires = (
             4 * int(math.ceil(math.log2(tensor_rank + 1)))
             + coeff_register

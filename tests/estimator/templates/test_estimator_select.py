@@ -115,6 +115,7 @@ class TestSelectTHC:
             ),
             (
                 qre.THCHamiltonian(10, 50),
+                15,
                 None,
                 15,
                 None,
