@@ -73,7 +73,7 @@ class IQP(Operation):
 
         @qml.qnode(dev)
         def iqp_circuit(weights, pattern, spin_sym):
-            qml.IQP(weights, 2, pattern, spin_sym)
+            qml.IQP(weights=weights, num_wires=2, pattern=pattern, spin_sym=spin_sym)
             return [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))]
 
     >>> iqp_circuit(weights=[0.89, 0.54], pattern=[[[0]], [[1]]], spin_sym=False)  # doctest: +SKIP
