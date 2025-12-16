@@ -16,10 +16,11 @@
 
 <h4>Pauli-based computation </h4>
 
-* Users can now perform rapid Clifford+T decomposition with QJIT and program capture enabled,
-  using the new :func:`~pennylane.transforms.gridsynth` compilation pass.
+* Users can now perform rapid Clifford+T decomposition with :func:`pennylane.qjit` using the new 
+  :func:`~pennylane.transforms.gridsynth` compilation pass.
   This pass discretizes ``RZ`` and ``PhaseShift`` gates to either the Clifford+T basis or to the PPR basis.
   [(#8609)](https://github.com/PennyLaneAI/pennylane/pull/8609)
+  [(#8764)](https://github.com/PennyLaneAI/pennylane/pull/8764)
 
 * Writing circuits in terms of `Pauli product measurements <https://pennylane.ai/compilation/pauli-product-measurement>`_
   (PPMs) in PennyLane is now possible with the new :func:`~.pauli_measure` function.
@@ -93,6 +94,10 @@
   - :class:`~.CY`, :class:`~.CZ`, :class:`~.CSWAP`, :class:`~.CNOT`, :class:`~.Toffoli`
 
 <h4>Compile Pipeline and Transforms </h4>
+
+* Added decompositions of the ``RX``, ``RY`` and ``RZ`` rotations into one of the other two, as well
+  as basis changing Clifford gates, to the graph-based decomposition system.
+  [(#8569)](https://github.com/PennyLaneAI/pennylane/pull/8569)
 
 * Arithmetic dunder methods (`__add__`, `__mul__`, `__rmul__`) have been added to 
   :class:`~.transforms.core.TransformDispatcher`, :class:`~.transforms.core.TransformContainer`, 
@@ -380,6 +385,13 @@
   classes were modified to take the 1-norm of the Hamiltonian as an optional argument.
   [(#8697)](https://github.com/PennyLaneAI/pennylane/pull/8697)
 
+<h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
+
+* A new transform :func:`~.transforms.select_pauli_rot_phase_gradient` has been added. It allows 
+  implementing arbitrary :class:`~.SelectPauliRot` rotations with a phase gradient resource state and 
+  semi-in-place addition (:class:`~.SemiAdder`).
+  [(#8738)](https://github.com/PennyLaneAI/pennylane/pull/8738)
+
 <h3>Breaking changes 💔</h3>
 
 * The output format of `qml.specs` has been restructured into a dataclass to streamline the outputs.
@@ -491,7 +503,7 @@
 * `qml.cond`, the `QNode`, transforms, `qml.grad`, and `qml.jacobian` no longer treat all keyword arguments as static
   arguments. They are instead treated as dynamic, numerical inputs, matching the behaviour of Jax and Catalyst.
   [(#8290)](https://github.com/PennyLaneAI/pennylane/pull/8290)
-
+  
 <h3>Deprecations 👋</h3>
 
 * Maintenance support of NumPy<2.0 is deprecated as of v0.44 and will be completely dropped in v0.45.
@@ -561,7 +573,9 @@
 <h3>Internal changes ⚙️</h3>
 
 * To adjust to the Python 3.14, some error messages expectations have been updated in tests; `get_type_str` added a special branch to handle `Union`.
+  The import of networkx is softened to not occur on import of pennylane to work around a bug in Python 3.14.1.
   [(#8568)](https://github.com/PennyLaneAI/pennylane/pull/8568)
+  [(#8737)](https://github.com/PennyLaneAI/pennylane/pull/8737)
 
 * Bump `jax` version to `0.7.1` for `capture` module.
   [(#8715)](https://github.com/PennyLaneAI/pennylane/pull/8715)
@@ -641,6 +655,10 @@
   [(#8687)](https://github.com/PennyLaneAI/pennylane/pull/8687)
 
 <h3>Documentation 📝</h3>
+
+* A note clarifying that the factors of a ``~.ChangeOpBasis`` are iterated in reverse order has been
+  added to the documentation of ``~.ChangeOpBasis``.
+  [(#8757)](https://github.com/PennyLaneAI/pennylane/pull/8757)
 
 * The documentation of ``qml.transforms.rz_phase_gradient`` has been updated with respect to the
   sign convention of phase gradient states, how it prepares the phase gradient state in the code
@@ -738,6 +756,10 @@ A warning message has been added to :doc:`Building a plugin <../development/plug
 * Fixes a bug where :class:`~.ops.ChangeOpBasis` is not correctly reconstructed using `qml.pytrees.unflatten(*qml.pytrees.flatten(op))`
   [(#8721)](https://github.com/PennyLaneAI/pennylane/issues/8721)
 
+* Fixes a bug where :class:`~.estimator.SelectTHC`, `~.estimator.QubitizeTHC`, `~.estimator.PrepTHC` are not accounting for auxiliary
+  wires correctly.
+  [(#8719)](https://github.com/PennyLaneAI/pennylane/pull/8719)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -746,6 +768,7 @@ Guillermo Alonso,
 Utkarsh Azad,
 Astral Cai,
 Yushao Chen,
+Diksha Dhawan,
 Marcus Edwards,
 Lillian Frederiksen,
 Sengthai Heng,
