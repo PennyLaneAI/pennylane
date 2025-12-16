@@ -2128,8 +2128,8 @@ class TestResourceReflection:
         )
 
 
-class TestResourceQuantumWalk:
-    """Test the QuantumWalk class."""
+class TestResourceQubitization:
+    """Test the Qubitization class."""
 
     def test_wire_error(self):
         """Test that an error is raised when wrong number of wires is provided."""
@@ -2138,20 +2138,20 @@ class TestResourceQuantumWalk:
             [qre.X(), qre.Y(), qre.Z()]
         )  # has 4 wires (3 ops + 2 ctrl, but ops share wires)
         with pytest.raises(ValueError, match="Expected .* wires, got"):
-            qre.QuantumWalk(prep, sel, wires=[0])
+            qre.Qubitization(prep, sel, wires=[0])
 
     def test_init_wires_inherited(self):
         """Test that wires are inherited from prep and sel when possible."""
         prep = qre.QFT(2, wires=[0, 1])
         sel = qre.Select([qre.X(wires=2), qre.Y(wires=2)], wires=[3, 2])
-        op = qre.QuantumWalk(prep, sel)
+        op = qre.Qubitization(prep, sel)
         assert op.num_wires == sel.num_wires
 
     def test_init_wires_inherited_success(self):
         """Test that wires are inherited from prep and sel when they match num_wires."""
         prep = qre.Hadamard(wires=0)
         sel = qre.Select([qre.X(wires=1), qre.Z(wires=1)], wires=[0])
-        op = qre.QuantumWalk(prep, sel)
+        op = qre.Qubitization(prep, sel)
 
         assert op.wires == qml.wires.Wires([0, 1])
         assert op.num_wires == 2
@@ -2166,7 +2166,7 @@ class TestResourceQuantumWalk:
     )
     def test_resource_params(self, prep, sel):
         """Test that the resource params are correct."""
-        op = qre.QuantumWalk(prep, sel)
+        op = qre.Qubitization(prep, sel)
         assert op.resource_params == {
             "prep": prep.resource_rep_from_op(),
             "sel": sel.resource_rep_from_op(),
@@ -2191,58 +2191,39 @@ class TestResourceQuantumWalk:
     def test_resource_rep(self, prep_cmpr, sel_cmpr):
         """Test that the compressed representation is correct."""
         expected = qre.CompressedResourceOp(
-            qre.QuantumWalk,
+            qre.Qubitization,
             sel_cmpr.num_wires,
             {"prep": prep_cmpr, "sel": sel_cmpr},
         )
-        assert qre.QuantumWalk.resource_rep(prep_cmpr, sel_cmpr) == expected
+        assert qre.Qubitization.resource_rep(prep_cmpr, sel_cmpr) == expected
 
     @pytest.mark.parametrize(
-        "prep_cmpr, sel_cmpr, expected_res",
+        "prep_cmpr, sel_cmpr",
         (
             (
                 qre.QFT.resource_rep(3),
                 qre.Select.resource_rep(
                     (qre.X.resource_rep(), qre.Y.resource_rep(), qre.Z.resource_rep()), 4
                 ),
-                [
-                    GateCount(qre.QFT.resource_rep(3)),
-                    GateCount(
-                        qre.Select.resource_rep(
-                            (qre.X.resource_rep(), qre.Y.resource_rep(), qre.Z.resource_rep()), 4
-                        )
-                    ),
-                    GateCount(qre.Adjoint.resource_rep(qre.QFT.resource_rep(3))),
-                    GateCount(
-                        qre.Reflection.resource_rep(
-                            num_wires=3,
-                            alpha=math.pi,
-                            cmpr_U=qre.Identity.resource_rep(),
-                        )
-                    ),
-                ],
             ),
             (
                 qre.Hadamard.resource_rep(),
                 qre.Select.resource_rep((qre.Z.resource_rep(),), 1),
-                [
-                    GateCount(qre.Hadamard.resource_rep()),
-                    GateCount(qre.Select.resource_rep((qre.Z.resource_rep(),), 1)),
-                    GateCount(qre.Adjoint.resource_rep(qre.Hadamard.resource_rep())),
-                    GateCount(
-                        qre.Reflection.resource_rep(
-                            num_wires=1,
-                            alpha=math.pi,
-                            cmpr_U=qre.Identity.resource_rep(),
-                        )
-                    ),
-                ],
             ),
         ),
     )
-    def test_resources(self, prep_cmpr, sel_cmpr, expected_res):
+    def test_resources(self, prep_cmpr, sel_cmpr):
         """Test that the resources are correct."""
-        assert qre.QuantumWalk.resource_decomp(prep_cmpr, sel_cmpr) == expected_res
+        ref_op = qre.Reflection.resource_rep(
+            num_wires=prep_cmpr.num_wires,
+            alpha=math.pi,
+            cmpr_U=prep_cmpr,
+        )
+        expected_res = [
+            GateCount(sel_cmpr),
+            GateCount(ref_op),
+        ]
+        assert qre.Qubitization.resource_decomp(prep_cmpr, sel_cmpr) == expected_res
 
     @pytest.mark.parametrize(
         "prep_cmpr, sel_cmpr",
@@ -2259,19 +2240,15 @@ class TestResourceQuantumWalk:
     def test_adjoint_resources(self, prep_cmpr, sel_cmpr):
         """Test that the adjoint resources are correct."""
         target_params = {"prep": prep_cmpr, "sel": sel_cmpr}
-        identity_op = qre.Identity.resource_rep()
         ref_op = qre.Reflection.resource_rep(
-            num_wires=prep_cmpr.num_wires, alpha=math.pi, cmpr_U=identity_op
+            num_wires=prep_cmpr.num_wires, alpha=math.pi, cmpr_U=prep_cmpr
         )
-        prep_dagger = qre.Adjoint.resource_rep(base_cmpr_op=prep_cmpr)
 
         expected = [
             GateCount(ref_op),
-            GateCount(prep_cmpr),
             GateCount(sel_cmpr),
-            GateCount(prep_dagger),
         ]
-        assert qre.QuantumWalk.adjoint_resource_decomp(target_params) == expected
+        assert qre.Qubitization.adjoint_resource_decomp(target_params) == expected
 
     @pytest.mark.parametrize(
         "num_ctrl_wires, num_zero_ctrl, prep_cmpr, sel_cmpr",
@@ -2293,11 +2270,9 @@ class TestResourceQuantumWalk:
     def test_controlled_resources(self, num_ctrl_wires, num_zero_ctrl, prep_cmpr, sel_cmpr):
         """Test that the controlled resources are correct."""
         target_params = {"prep": prep_cmpr, "sel": sel_cmpr}
-        identity_op = qre.Identity.resource_rep()
         ref_op = qre.Reflection.resource_rep(
-            num_wires=prep_cmpr.num_wires, alpha=math.pi, cmpr_U=identity_op
+            num_wires=prep_cmpr.num_wires, alpha=math.pi, cmpr_U=prep_cmpr
         )
-        prep_dagger = qre.Adjoint.resource_rep(base_cmpr_op=prep_cmpr)
 
         ctrl_sel = qre.Controlled.resource_rep(
             base_cmpr_op=sel_cmpr,
@@ -2311,12 +2286,10 @@ class TestResourceQuantumWalk:
         )
 
         expected = [
-            GateCount(prep_cmpr),
             GateCount(ctrl_sel),
-            GateCount(prep_dagger),
             GateCount(ctrl_ref),
         ]
         assert (
-            qre.QuantumWalk.controlled_resource_decomp(num_ctrl_wires, num_zero_ctrl, target_params)
+            qre.Qubitization.controlled_resource_decomp(num_ctrl_wires, num_zero_ctrl, target_params)
             == expected
         )

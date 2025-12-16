@@ -2516,8 +2516,8 @@ class Reflection(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, params)
 
 
-class QuantumWalk(ResourceOperator):
-    r"""Resource class for the Quantum Walk operator. This operator is used for qubitization.
+class Qubitization(ResourceOperator):
+    r"""Resource class for the Qubitization operator.
 
     This operator is defined in multiple papers:
     - Figure 1 in here: https://arxiv.org/pdf/1805.03662
@@ -2529,7 +2529,9 @@ class QuantumWalk(ResourceOperator):
         wires (Sequence[int], None): the wires the operation acts on
 
     Resources:
-        [TODO]
+        The resources are obtained from equation (9) in `Babbush et al. (2018) <https://arxiv.org/pdf/1805.03662>`_.
+        Specifically, the walk operator is defined as :math:`W = R \cdot S`, where :math:`R` is a reflection about the state prepared by
+        the prepare operator, and :math:`S` is the select operator. The cost is therefore 1 Select + 1 Reflection.
 
     **Example**
 
@@ -2538,7 +2540,7 @@ class QuantumWalk(ResourceOperator):
     >>> import pennylane.estimator as qre
     >>> prep_op = qre.Hadamard(wires=0)
     >>> sel_op = qre.Z(wires=0)
-    >>> qw_op = qre.QuantumWalk(prep_op, sel_op)
+    >>> qw_op = qre.Qubitization(prep_op, sel_op)
     >>> print(qre.estimate(qw_op))
     --- Resources: ---
      Total wires: 1
@@ -2590,7 +2592,9 @@ class QuantumWalk(ResourceOperator):
                 applies the unitaries of the LCU.
 
         Resources:
-            [TODO] See base PennyLane implemntation
+            The resources are obtained from equation (9) in `Babbush et al. (2018) <https://arxiv.org/pdf/1805.03662>`_.
+            Specifically, the walk operator is defined as :math:`W = R \cdot S`, where :math:`R` is a reflection about the state prepared by
+            the prepare operator, and :math:`S` is the select operator.
 
         Returns:
             list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
@@ -2598,11 +2602,9 @@ class QuantumWalk(ResourceOperator):
             in the decomposition.
         """
         num_wires = prep.num_wires  # reflection happens over the prep register
-        prep_dagger = qre.Adjoint.resource_rep(base_cmpr_op=prep)
-        identity_op = qre.Identity.resource_rep()
-        ref_op = Reflection.resource_rep(num_wires=num_wires, alpha=math.pi, cmpr_U=identity_op)
+        ref_op = Reflection.resource_rep(num_wires=num_wires, alpha=math.pi, cmpr_U=prep)
 
-        return [GateCount(prep), GateCount(sel), GateCount(prep_dagger), GateCount(ref_op)]
+        return [GateCount(sel), GateCount(ref_op)]
 
     @classmethod
     def adjoint_resource_decomp(cls, target_resource_params=None):
@@ -2613,7 +2615,8 @@ class QuantumWalk(ResourceOperator):
                 of the target operator.
 
         Resources:
-            [TODO] The cost is the same up to some re-ordering of the application of the gates
+            Reflections are self-adjoint, and the Select operator is also self-adjoint.
+            So the adjoint of this operator has the same resources, just applied in reverse order.
 
         Returns:
             list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
@@ -2624,11 +2627,9 @@ class QuantumWalk(ResourceOperator):
         sel = target_resource_params["sel"]
 
         num_wires = prep.num_wires  # reflection happens over the prep register
-        prep_dagger = qre.Adjoint.resource_rep(base_cmpr_op=prep)
-        identity_op = qre.Identity.resource_rep()
-        ref_op = Reflection.resource_rep(num_wires=num_wires, alpha=math.pi, cmpr_U=identity_op)
+        ref_op = Reflection.resource_rep(num_wires=num_wires, alpha=math.pi, cmpr_U=prep)
 
-        return [GateCount(ref_op), GateCount(prep), GateCount(sel), GateCount(prep_dagger)]
+        return [GateCount(ref_op), GateCount(sel)]
 
     @classmethod
     def controlled_resource_decomp(cls, num_ctrl_wires, num_zero_ctrl, target_resource_params=None):
@@ -2643,7 +2644,7 @@ class QuantumWalk(ResourceOperator):
                 of the target operator.
 
         Resources:
-            [TODO]
+            The resources are obtained from Figure 1 in `Babbush et al. (2018) <https://arxiv.org/pdf/1805.03662>`_.
 
         Returns:
             list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
@@ -2654,9 +2655,7 @@ class QuantumWalk(ResourceOperator):
         sel = target_resource_params["sel"]
 
         num_wires = prep.num_wires  # reflection happens over the prep register
-        prep_dagger = qre.Adjoint.resource_rep(base_cmpr_op=prep)
-        identity_op = qre.Identity.resource_rep()
-        ref_op = Reflection.resource_rep(num_wires=num_wires, alpha=math.pi, cmpr_U=identity_op)
+        ref_op = Reflection.resource_rep(num_wires=num_wires, alpha=math.pi, cmpr_U=prep)
 
         ctrl_sel = qre.Controlled.resource_rep(
             base_cmpr_op=sel,
@@ -2668,8 +2667,8 @@ class QuantumWalk(ResourceOperator):
             num_ctrl_wires=num_ctrl_wires,
             num_zero_ctrl=num_zero_ctrl,
         )
-        # Just need to control reflection and select
-        return [GateCount(prep), GateCount(ctrl_sel), GateCount(prep_dagger), GateCount(ctrl_ref)]
+
+        return [GateCount(ctrl_sel), GateCount(ctrl_ref)]
 
     @property
     def resource_params(self) -> dict:

@@ -28,7 +28,7 @@ from .subroutines import (
     QPE,
     IterativeQPE,
     Reflection,
-    QuantumWalk,
+    Qubitization,
 )
 
 from .trotter import (
