@@ -15,6 +15,7 @@
 """Tests for the transform ``qml.transform.select_pauli_rot_phase_gradient``"""
 
 from functools import partial
+
 import numpy as np
 import pytest
 
