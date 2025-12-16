@@ -212,8 +212,8 @@ def _update(P: TensorLike, cnots: list[tuple[int]], control: int, target: int):
 
 
 def _solve_regular_linear_system_z2(A: np.ndarray, b: np.ndarray) -> np.ndarray:
-    """Solve the linear system of equations A.x=b over the Booleans/Z_2, where A is assumed
-    to be regular, i.e., non-singular.
+    r"""Solve the linear system of equations A.x=b over the Booleans/:math:`\mathbb{Z}_2`,
+    where A is assumed to be regular, i.e., non-singular.
     This is a simple implementation based on the pseudocode
     on Wikipedia https://en.wikipedia.org/wiki/Gaussian_elimination#Pseudocode
     with simplifications based on the regularity of A (we always find a next pivot and have
@@ -226,6 +226,30 @@ def _solve_regular_linear_system_z2(A: np.ndarray, b: np.ndarray) -> np.ndarray:
 
     Returns:
         np.ndarray: Solution vector with same length as ``A`` and ``b`` and entries 0 or 1.
+
+    **Example**
+
+    Consider a simple regular Boolean matrix ``A`` and a coefficient vector ``b``:
+
+    >>> A = np.array([[1, 0, 0], [0, 1, 1], [1, 0, 1]])
+    >>> b = np.array([1, 1, 1])
+
+    Then we can solve the system ``A@x=b`` for ``x`` over :math:`\mathbb{Z}_2` with the
+    Gauss-Jordan elimination of the extended matrix ``A | b``. This is done by
+    ``_solve_regular_linear_system_z2``:
+
+    >>> from pennylane.transforms.intermediate_reps.rowcol import _solve_regular_linear_system_z2
+    >>> x = _solve_regular_linear_system_z2(A, b)
+    >>> print(x)
+    [1 1 0]
+
+    Indeed, we can verify that ``A@x=b`` (over :math:`\mathbb{Z}_2`):
+
+    >>> print(np.allclose((A @ x)%2, b))
+    True
+
+    Note that the solution is unique due to the assumption that ``A`` is regular. The regularity
+    is used in the algorithm to simplify its logic.
     """
     n = len(A)
     # Create augmented matrix for Gauss-Jordan elimination.
