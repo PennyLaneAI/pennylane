@@ -368,7 +368,7 @@ class CompilePipeline:
             obj (BoundTransform or Transform): The object to remove from the program.
         """
         if not isinstance(obj, (Transform, BoundTransform)):
-            raise TypeError("Only BoundTransform or transform can be removed.")
+            raise TypeError("Only BoundTransform or Transform can be removed.")
 
         i = len(self) - 1
         while i >= 0:
