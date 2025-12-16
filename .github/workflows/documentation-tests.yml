@@ -59,7 +59,7 @@ jobs:
           uv pip install --upgrade --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ --index-strategy unsafe-first-match --prerelease=allow pennylane-catalyst pennylane-lightning
       - name: Install dependencies
         run: |
-          uv pip install --upgrade --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ --index-strategy unsafe-first-match pennylane-catalyst pennylane-lightning
+          # uv pip install --upgrade --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ --index-strategy unsafe-first-match pennylane-catalyst pennylane-lightning
           uv pip install -e .
           uv pip install sybil pytest "jax==0.7.1" "jaxlib==0.7.1" torch matplotlib pyzx                  
 
