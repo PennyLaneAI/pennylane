@@ -157,7 +157,7 @@ class TestMultiplexerStatePreparation:
 
         import torch
 
-        state = [1 / 2, -1 / 2, 1j / 2, -1j / 2]
+        state = torch.tensor([1 / 2, -1 / 2, 1j / 2, -1j / 2])
 
         wires = range(2)
         dev = qml.device("default.qubit", wires=2)
@@ -198,7 +198,7 @@ class TestMultiplexerStatePreparation:
 
         import tensorflow as tf
 
-        state = [1 / 2, -1 / 2, 1 / 2, -1 / 2]
+        state = tf.Variable([1 / 2, -1 / 2, 1 / 2, -1 / 2])
 
         wires = range(2)
         dev = qml.device("default.qubit", wires=6)
