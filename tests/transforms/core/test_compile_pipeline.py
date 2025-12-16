@@ -1066,10 +1066,10 @@ class TestCompilePipeline:
         container = BoundTransform(dispatched_transform)
         program = CompilePipeline([container])
 
-        with pytest.raises(TypeError, match="Only BoundTransform or transform"):
+        with pytest.raises(TypeError, match="Only BoundTransform or Transform"):
             program.remove("not_a_container_or_dispatcher")
 
-        with pytest.raises(TypeError, match="Only BoundTransform or transform"):
+        with pytest.raises(TypeError, match="Only BoundTransform or Transform"):
             program.remove(42)
 
 

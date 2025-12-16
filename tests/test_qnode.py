@@ -381,7 +381,7 @@ class TestValidation:
 
         with pytest.raises(
             ValueError,
-            match="Differentiation method 5 must be a str, transform, or None",
+            match="Differentiation method 5 must be a str, Transform, or None",
         ):
             QNode(dummyfunc, dev, interface="autograd", diff_method=5)
 
