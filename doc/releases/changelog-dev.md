@@ -464,7 +464,11 @@
   implementing arbitrary :class:`~.SelectPauliRot` rotations with a phase gradient resource state and 
   semi-in-place addition (:class:`~.SemiAdder`).
   [(#8738)](https://github.com/PennyLaneAI/pennylane/pull/8738)
-  
+
+* A new function :func:`~.pennylane.labs.resource_estimation.approx_poly_degree` has been added. It allows
+  computing the minimum degree of the polynomial that fits the input function within the given error tolerance.
+  [(#8625)](https://github.com/PennyLaneAI/pennylane/pull/8625)
+
 <h3>Deprecations 👋</h3>
 
 * Maintenance support of NumPy<2.0 is deprecated as of v0.44 and will be completely dropped in v0.45.

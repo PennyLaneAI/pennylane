@@ -24,23 +24,22 @@ def approx_poly_degree(
     x_vec: np.ndarray,
     error_tol: float = 1e-6,
     poly_degs: tuple[int, int] | int | None = None,
-    basis: str | None = None,
+    basis: str = "monomial",
     loss_func: Callable | None = None,
     fit_func: Callable | None = None,
     project_func: Callable | None = None,
     **fit_kwargs: dict[str, Any],
 ):
-    r"""Compute the minimum degree required to fit a polynomial to the input function with a given
+    r"""Compute the minimum degree of the polynomial that fits the input function within the given
     error tolerance.
 
     The polynomial is fit to the data using the least squares method in the monomial, Chebyshev,
-    Legendre, and Hermite bases. The degree of the polynomial incrementally increased within the
+    Legendre, or Hermite bases. The degree of the polynomial is incrementally increased within the
     range specified by the ``poly_degs`` keyword argument until the error tolerance (``error_tol``)
     is met, where it is defined as the least squares fit error unless a custom loss function
     (``loss_func``) is provided. Users can also specify a custom fitting function (``fit_func``)
     to use for the polynomial fitting and a custom domain function (``domain_func``) to transform
-    the transform the specified domain ``x_vec`` for the fitting at a given degree. Please
-    look at the examples below for more details.
+    the specified domain ``x_vec`` for the fitting. Please look at the examples below for more details.
 
     Args:
         target_func (Callable): function to be approximated with a polynomial and has the
@@ -54,7 +53,7 @@ def approx_poly_degree(
             ``1`` to ``len(x_vec) - 1`` will be considered. If an integer is provided, it
             will be used as the maximum degree permissible for the approximated polynomial.
         basis (str): basis to use for the polynomial. Available options are ``"chebyshev"``,
-            ``"legendre"``, and ``"hermite"``. Defaults to ``None``, which assumes fitting
+            ``"legendre"``, and ``"hermite"``. Defaults to ``monomial``, which means fitting
             data to a polynomial in the monomial basis.
         loss_func (str | Callable | None | optional): loss function to use, where available options
             are ``"mse"`` (mean squared error), ``"mae"`` (mean absolute error), ``"rmse"``
