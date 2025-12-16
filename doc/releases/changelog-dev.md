@@ -123,9 +123,16 @@
   CompilePipeline(merge_rotations, cancel_inverses)
   ```
 
-* :class:`~.CompilePipeline` (previously known as the `TransformProgram`) now has a `remove` method
-  which removes all matching transforms from the pipeline.
+* The following changes are made to the API of the :class:`~.CompilePipeline` (previously known as the `TransformProgram`)
   [(#8751)](https://github.com/PennyLaneAI/pennylane/pull/8751)
+  [(#8774)](https://github.com/PennyLaneAI/pennylane/pull/8774)
+  
+  - `push_back` is renamed to `append`, and it now accepts both :class:`~.transforms.core.Transform` and :class:`~.trasnforms.core.BoundTransform`.
+  - `insert_front` and `insert_front_transform` are removed in favour of a new `insert` method which inserts a transform at any given index.
+  - `get_last` is removed, use `pipeline[-1]` to access the last transform instead.
+  - `pop_front` is removed in favour of a new `pop` method which removes the transform at any given index.
+  - `is_empty` is removed, use `bool(pipeline)` or `len(pipeline) == 0` to check if `pipeline` is empty.
+  - Added a `remove` method which removes all matching transforms from the pipeline.
 
 * A :class:`~.CompilePipeline` (previously known as the `TransformProgram`) can now be applied directly on a :class:`~.QNode`.
   [(#8731)](https://github.com/PennyLaneAI/pennylane/pull/8731)
@@ -785,6 +792,10 @@ A warning message has been added to :doc:`Building a plugin <../development/plug
 * Fixes a bug where :class:`~.estimator.SelectTHC`, `~.estimator.QubitizeTHC`, `~.estimator.PrepTHC` are not accounting for auxiliary
   wires correctly.
   [(#8719)](https://github.com/PennyLaneAI/pennylane/pull/8719)
+
+* Fixes a bug where the associated `expand_transform` does not stay with the original :class:`~.transforms.core.Transform` in a :class:`~.CompilePipeline`
+  during manipulations of the `CompilePipeline`.
+  [(#8774)](https://github.com/PennyLaneAI/pennylane/pull/8774)
 
 <h3>Contributors ✍️</h3>
 

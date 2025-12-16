@@ -436,7 +436,7 @@ class CompilePipeline:
         if expand_transform := transform.expand_transform:
             self._compile_pipeline.insert(index, expand_transform)
 
-    def pop(self, index: int):
+    def pop(self, index: int = -1):
         """Pop the transform container at a given index of the program.
 
         Args:
