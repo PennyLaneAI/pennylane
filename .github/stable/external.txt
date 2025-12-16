@@ -57,7 +57,6 @@ Flask==3.1.2
 fonttools==4.60.1
 fqdn==1.5.1
 fxpmath==0.4.9
-galois==0.4.7
 gast==0.6.0
 gitdb==4.0.12
 GitPython==3.1.45
