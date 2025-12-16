@@ -73,24 +73,24 @@ def local_gates(n_qubits: int, max_weight=2):
             [0.3, 0.2],
             2,
             False,
+            False,
+            10_000,
+            10_000,
+            10_000,
+            False,
+        ),
+        (
+            [1],
+            "local_gates",
+            [0.3],
+            1,
+            False,
             True,
             10_000,
             10_000,
             10_000,
             False,
         ),
-        # (
-        #     [1],
-        #     "local_gates",
-        #     [0.3],
-        #     1,
-        #     False,
-        #     True,
-        #     10_000,
-        #     10_000,
-        #     10_000,
-        #     False,
-        # ),
         (
             [[0, 1], [0, 1]],
             "local_gates",
@@ -152,12 +152,21 @@ def test_expval(
         IQP(weights, n_qubits, pattern, spin_sym)
 
         expectation_operators = []
-        for l in ops:
-            for i, qubit in enumerate(l):
-                if qubit == 1:
-                    expectation_operators.append(expval(PauliZ(i)))
+        if not isinstance(ops, csr_matrix):
+            for l in ops:
+                for i, qubit in enumerate(l):
+                    if qubit == 1:
+                        expectation_operators.append(expval(PauliZ(i)))
+        else:
+            rows, cols = ops.nonzero()
+            for row, col in zip(rows, cols):
+                if ops[row, col] == 1:
+                    expectation_operators.append(expval(PauliZ(col)))
 
         return expectation_operators
+
+    if len(ops.shape) == 1:
+        ops = ops.reshape(1, -1)
 
     simulated_exp_val = jnp.array(iqp_circuit(params, gates, spin_sym, n_qubits, ops))
 
