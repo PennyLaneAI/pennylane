@@ -176,10 +176,9 @@ def draw(
 
         .. code-block:: python
 
-            from functools import partial
             from pennylane import numpy as np
 
-            @partial(qml.gradients.param_shift, shifts=[(0.1,)])
+            @qml.gradients.param_shift(shifts=[(0.1,)])
             @qml.qnode(qml.device('default.qubit', wires=1))
             def transformed_circuit(x):
                 qml.RX(x, wires=0)
