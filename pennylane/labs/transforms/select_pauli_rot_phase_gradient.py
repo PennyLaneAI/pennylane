@@ -95,7 +95,7 @@ def select_pauli_rot_phase_gradient(
             the :class:`~.SelectPauliRot` gate in binary as a multiple of :math:`2\pi`.
             The length of the ``angle_wires`` , i.e. :math:`b`, implicitly determines the precision
             with which the angle is represented.
-            E.g., :math:`(2^{-1} + 2^{-2} + 2^{-3}) 2\pi` is exactly represented by three bits as ``111``.
+            E.g., :math:`(1 \cdot 2^{-1} + 0 \cdot 2^{-2} + 1 \cdot 2^{-3}) 2\pi` is represented by three bits as ``101``.
         phase_grad_wires (Wires): Qubits with the catalytic phase gradient state prepared on them.
             Needs to be at least :math:`b` wires and will only use the first :math:`b`.
         work_wires (Wires): Additional work wires to realize the :class:`~.SemiAdder` and :class:`~.QROM`.
