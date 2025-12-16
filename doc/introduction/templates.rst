@@ -123,7 +123,7 @@ state preparation is typically used as the first operation.
     :figure: _static/templates/tensornetworks/MPS_template.png
 
 .. gallery-item::
-    :description: :doc:`MultiplexerStatePrep <../code/api/pennylane.MultiplexerStatePrep>`
+    :description: :doc:`MultiplexerStatePreparation <../code/api/pennylane.MultiplexerStatePreparation>`
     :figure: _static/templates/state_preparations/multiplexerSP_template.png
 
 
