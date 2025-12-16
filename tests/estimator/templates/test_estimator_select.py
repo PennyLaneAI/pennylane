@@ -40,7 +40,12 @@ class TestSelectTHC:
     )
     def test_resource_params(self, thc_ham, rotation_prec, selswap_depth):
         """Test that the resource params for SelectTHC are correct."""
-        op = qre.SelectTHC(thc_ham, rotation_prec, selswap_depth)
+        if rotation_prec:
+            op = qre.SelectTHC(thc_ham, rotation_prec, selswap_depth)
+        else:
+            op = qre.SelectTHC(thc_ham, select_swap_depth=selswap_depth)
+            rotation_prec = 15
+
         assert op.resource_params == {
             "thc_ham": thc_ham,
             "rotation_precision": rotation_prec,
@@ -57,16 +62,28 @@ class TestSelectTHC:
     )
     def test_resource_rep(self, thc_ham, rotation_prec, selswap_depth, num_wires):
         """Test that the compressed representation for SelectTHC is correct."""
-        expected = qre.CompressedResourceOp(
-            qre.SelectTHC,
-            num_wires,
-            {
-                "thc_ham": thc_ham,
-                "rotation_precision": rotation_prec,
-                "select_swap_depth": selswap_depth,
-            },
-        )
-        assert qre.SelectTHC.resource_rep(thc_ham, rotation_prec, selswap_depth) == expected
+        if rotation_prec:
+            expected = qre.CompressedResourceOp(
+                qre.SelectTHC,
+                num_wires,
+                {
+                    "thc_ham": thc_ham,
+                    "rotation_precision": rotation_prec,
+                    "select_swap_depth": selswap_depth,
+                },
+            )
+            assert qre.SelectTHC.resource_rep(thc_ham, rotation_prec, selswap_depth) == expected
+        else:
+            expected = qre.CompressedResourceOp(
+                qre.SelectTHC,
+                num_wires,
+                {
+                    "thc_ham": thc_ham,
+                    "rotation_precision": 15,
+                    "select_swap_depth": selswap_depth,
+                },
+            )
+            assert qre.SelectTHC.resource_rep(thc_ham, select_swap_depth=selswap_depth) == expected
 
     # The Toffoli and qubit costs are compared here
     # Expected number of Toffolis and wires were obtained from Eq. 44 and 46 in https://arxiv.org/abs/2011.03494
@@ -82,15 +99,15 @@ class TestSelectTHC:
             ),
             (
                 qre.THCHamiltonian(10, 50),
+                15,
                 None,
-                None,
-                {"algo_wires": 38, "auxiliary_wires": 163, "toffoli_gates": 1139},
+                {"algo_wires": 38, "auxiliary_wires": 148, "toffoli_gates": 1189},
             ),
             (
                 qre.THCHamiltonian(4, 20),
-                None,
+                15,
                 2,
-                {"algo_wires": 24, "auxiliary_wires": 73, "toffoli_gates": 425},
+                {"algo_wires": 24, "auxiliary_wires": 103, "toffoli_gates": 545},
             ),
         ),
     )
@@ -125,19 +142,19 @@ class TestSelectTHC:
             ),
             (
                 qre.THCHamiltonian(10, 50),
-                None,
+                15,
                 None,
                 2,
                 0,
-                {"algo_wires": 40, "auxiliary_wires": 164, "toffoli_gates": 1142},
+                {"algo_wires": 40, "auxiliary_wires": 149, "toffoli_gates": 1192},
             ),
             (
                 qre.THCHamiltonian(4, 20),
-                None,
+                15,
                 2,
                 3,
                 2,
-                {"algo_wires": 27, "auxiliary_wires": 74, "toffoli_gates": 430},
+                {"algo_wires": 27, "auxiliary_wires": 104, "toffoli_gates": 550},
             ),
         ),
     )

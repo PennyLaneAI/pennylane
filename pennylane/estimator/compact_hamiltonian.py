@@ -347,10 +347,12 @@ class PauliHamiltonian:
         return copy.deepcopy(self._pauli_terms)
 
     @property
-    def num_terms(self):
-        """The total number of Pauli terms in the Hamiltonian."""
+    def num_terms(self) -> int:
+        """The total number of Pauli words in the Hamiltonian."""
         if isinstance(self._pauli_terms, dict):
             return sum(self._pauli_terms.values())
+
+        # Commuting groups are provided
         return sum(sum(group.values()) for group in self._pauli_terms)
 
 

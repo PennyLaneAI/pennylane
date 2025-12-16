@@ -107,7 +107,7 @@ from .templates import (
     RegisterComparator,
     GQSP,
     Reflection,
-    QuantumWalk,
+    Qubitization,
     HamiltonianGQSP,
     QSVT,
     QSP,

@@ -1038,9 +1038,10 @@ class ChangeOpBasis(ResourceOperator):
                 target operator.
 
         Resources:
-            [TODO: polish this] The resources are derived by noticing that if the target op is not applied,
-            then the compute and uncompute operators will cancel eachother. Thus we only need to control
-            the application of the target op to obtain a controlled decomposition of the change of basis op.
+            The resources are derived from the identity :math:`C(U V U^\dagger) = U C(V) U^\dagger`.
+            Since the compute and uncompute operators cancel each other out when the control is off,
+            we only need to control the target operation :math:`V`. The compute and uncompute operations
+            remain uncontrolled.
 
         Returns:
             list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
