@@ -454,9 +454,8 @@ class SampleMeasurement(MeasurementProcess):
 
     We can now execute it in a QNode:
 
-    >>> from functools import partial
     >>> dev = qml.device("default.qubit", wires=2)
-    >>> @partial(qml.set_shots, shots=1000)
+    >>> @qml.set_shots(shots=1000)
     ... @qml.qnode(dev)
     ... def circuit():
     ...     qml.X(0)
