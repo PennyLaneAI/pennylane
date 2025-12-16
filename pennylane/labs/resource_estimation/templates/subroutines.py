@@ -952,17 +952,14 @@ class ResourceIQP(ResourceOperator):
     Device wires: None
     Shots: Shots(total=None)
     Level: device
-
     Resource specifications:
       Total qubit allocations: 4
       Total gates: 13
       Circuit depth: 4
-
       Gate types:
         PauliRot: 1
         Hadamard: 8
         MultiRZ: 4
-
       Measurements:
         state(all wires): 1
 
