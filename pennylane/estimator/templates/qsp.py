@@ -390,10 +390,9 @@ class QSVT(ResourceOperator):
     r"""Implements the `Quantum Singular Value Transformation <https://arxiv.org/abs/1806.01838>`_
     (QSVT) circuit.
 
-    Given a :class:`~.estimator.resource_operator.ResourceOperator` :math:`U`, which block encodes
-    the matrix :math:`A` in the top left with subspace dimension ``dims = (A_n, A_m)``; and the degree
-    of the target polynomial transformation ``poly_deg = d``, this template applies a
-    circuit for the quantum singular value transformation as follows.
+    This template estimates the resources for a QSVT circuit of degree :math:`d` (``poly_deg``).
+    The circuit uses a :class:`~.estimator.resource_operator.ResourceOperator` :math:`U` that block
+    encodes a matrix :math:`A` in its top-left block with dimensions ``encoding_dims`` :math:`(A_n, A_m)`.
 
     When the degree of the polynomial is odd, the QSVT circuit is defined as:
 
@@ -403,7 +402,7 @@ class QSVT(ResourceOperator):
         \tilde{\Pi}_{\phi_{2k+1}}U\right].
 
 
-    And when the number of degree is even:
+    And when the degree is even:
 
     .. math::
 
@@ -600,10 +599,9 @@ class QSP(ResourceOperator):
     r"""Implements the `Quantum Signal Processing <https://arxiv.org/pdf/2105.02859>`_
     (QSP) circuit.
 
-    Given a single qubit :class:`~.estimator.resource_operator.ResourceOperator` :math:`W(a)`, which
-    block encodes the value :math:`a` as the top left entry in the matrix representation; and the
-    degree of the target polynomial transformation ``poly_deg = d``, this template estimates the
-    cost of the QSP circuit.
+    This template estimates the resources for a QSP circuit of degree :math:`d` (``poly_deg``).
+    The circuit uses a single-qubit :class:`~.estimator.resource_operator.ResourceOperator`
+    :math:`W(a)` that block encodes a scalar value :math:`a` in its top-left entry.
 
     The circuit is given as follows in the Z-convention (``convention="Z"``):
 
