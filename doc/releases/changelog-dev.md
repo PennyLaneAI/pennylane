@@ -15,10 +15,11 @@
   resource operator.
   [(#8546)](https://github.com/PennyLaneAI/pennylane/pull/8546)
 
-* Users can now perform rapid Clifford+T decomposition with QJIT and program capture enabled,
-  using the new :func:`~pennylane.transforms.gridsynth` compilation pass.
+* Users can now perform rapid Clifford+T decomposition with :func:`pennylane.qjit` using the new 
+  :func:`~pennylane.transforms.gridsynth` compilation pass.
   This pass discretizes ``RZ`` and ``PhaseShift`` gates to either the Clifford+T basis or to the PPR basis.
   [(#8609)](https://github.com/PennyLaneAI/pennylane/pull/8609)
+  [(#8764)](https://github.com/PennyLaneAI/pennylane/pull/8764)
 
 * Quantum Automatic Differentiation implemented to allow automatic selection of optimal
   Hadamard gradient differentiation methods per [the paper](https://arxiv.org/pdf/2408.05406).
@@ -719,6 +720,10 @@ A warning message has been added to :doc:`Building a plugin <../development/plug
 * Fixes a bug where :class:`~.ops.ChangeOpBasis` is not correctly reconstructed using `qml.pytrees.unflatten(*qml.pytrees.flatten(op))`
   [(#8721)](https://github.com/PennyLaneAI/pennylane/issues/8721)
 
+* Fixes a bug where :class:`~.estimator.SelectTHC`, `~.estimator.QubitizeTHC`, `~.estimator.PrepTHC` are not accounting for auxiliary
+  wires correctly.
+  [(#8719)](https://github.com/PennyLaneAI/pennylane/pull/8719)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -727,6 +732,7 @@ Guillermo Alonso,
 Utkarsh Azad,
 Astral Cai,
 Yushao Chen,
+Diksha Dhawan,
 Marcus Edwards,
 Lillian Frederiksen,
 Sengthai Heng,
