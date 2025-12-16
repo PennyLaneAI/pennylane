@@ -61,7 +61,7 @@ class IQP(Operation):
             :math:`\frac{1}{\sqrt(2)}(|00\dots0> + |11\dots1>)` is used in place of :math:`|00\dots0>`.
 
     Raises:
-        Exception: when pattern and weights have a different number of elements.
+        Exception: when ``pattern`` and ``weights`` have a different number of elements.
 
     **Example:**
 
