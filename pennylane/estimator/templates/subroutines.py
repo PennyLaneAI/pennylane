@@ -1823,6 +1823,9 @@ class QROM(ResourceOperator):
 
             if restored:
                 gate_cost.append(Deallocate((W_opt - 1) * size_bitstring))  # release Swap registers
+            else:
+                gate_cost.append(GateCount(x, (W_opt - 1) * size_bitstring))  # measure and reset
+                gate_cost.append(Deallocate((W_opt - 1) * size_bitstring))  # release swap registers
 
         return gate_cost
 
@@ -1997,6 +2000,131 @@ class QROM(ResourceOperator):
             "select_swap_depth": self.select_swap_depth,
             "restored": self.restored,
         }
+
+    @classmethod
+    def _ctrl_T(cls, L_opt, num_bit_flips, count=1):
+        """Constructs the control-T subroutine as defined in appendix A and B."""
+        x = resource_rep(qre.X)
+        cnot = resource_rep(qre.CNOT)
+        l_elbow = resource_rep(qre.TemporaryAND)
+        r_elbow = resource_rep(qre.Adjoint, {"base_cmpr_op": l_elbow})
+
+        gate_cost = []
+
+        if L_opt > 1:
+            gate_cost.append(
+                GateCount(x, count * (2 * (L_opt - 2) + 1))
+            )  # conjugate 0 controlled toffolis + 1 extra X gate from un-controlled unary iterator decomp
+            gate_cost.append(
+                GateCount(
+                    cnot,
+                    count * (L_opt - 2)
+                    + count * num_bit_flips,
+                )  # num CNOTs in unary iterator trick   +   each unitary in the select is just a CNOT
+            )
+            gate_cost.append(GateCount(l_elbow, count * (L_opt - 2)))
+            gate_cost.append(GateCount(r_elbow, count * (L_opt - 2)))
+
+        else:
+            gate_cost.append(
+                GateCount(
+                    x, count * num_bit_flips
+                )  # each unitary in the select is just an X gate to load the data
+            )
+        return gate_cost
+
+    @classmethod
+    def _ctrl_S(cls, num_ctrl_wires, count=1):
+        """Constructs the control-S subroutine as defined in figure 8 excluding the initial X gate."""
+        num_ctrl_swaps = 2**num_ctrl_wires - 1
+        return [qre.GateCount(qre.resource_rep(qre.CSWAP), count * num_ctrl_swaps)]
+
+    @classmethod
+    def _ctrl_S_adj(cls, num_ctrl_wires, count=1):
+        """Constructs the control-S^adj subroutine as defined in figure 10 excluding the terminal X gate."""
+        h = qre.resource_rep(qre.Hadamard)
+        cz = qre.resource_rep(qre.CZ)
+        cnot = qre.resource_rep(qre.CNOT)
+
+        num_ops = 2**num_ctrl_wires - 1
+        return [qre.GateCount(h, count * num_ops), qre.GateCount(cz, count * num_ops), qre.GateCount(cnot, count * num_ops)]
+
+    @classmethod
+    def adjoint_resource_decomp(
+        cls,
+        target_resource_params: dict
+    ):
+        """This decomposition is based on Appendix C of this reference: https://quantum-journal.org/papers/q-2019-12-02-208/pdf/ """
+
+        num_bitstrings = target_resource_params["num_bitstrings"]
+        size_bitstring = target_resource_params["size_bitstring"]
+        num_bit_flips = target_resource_params.get("num_bit_flips", None)
+        select_swap_depth = target_resource_params.get("select_swap_depth", None)
+        restored = target_resource_params.get("restored", True)
+
+        gate_lst = []
+        x = resource_rep(qre.X)
+        z = resource_rep(qre.Z)
+        had = qre.resource_rep(qre.Hadamard)
+
+        ## -------- Compute the width (output + swap registers) and length (unary iter entries) of the QROM: --------
+        if select_swap_depth:
+            max_depth = 2 ** math.ceil(math.log2(num_bitstrings))
+            select_swap_depth = min(max_depth, select_swap_depth)  # truncate depth beyond max depth
+
+        k = select_swap_depth or qre.QROM._t_optimized_select_swap_width(
+            num_bitstrings, size_bitstring
+        )
+        l = math.ceil(math.log2(k))         # number of qubits in |l> register
+
+        H = math.ceil(num_bitstrings / k)   # number of columns of data
+        h = math.ceil(math.log2(H))         # number of qubits in |h> register
+
+        ## -------- Measure output register, Reset qubits and Construct fixup table: --------
+        gate_lst.append(qre.GateCount(had, size_bitstring))  # see the bottom of Figure 5.
+
+        ## -------- Allocate all auxiliary qubits: --------
+        num_alloc_wires = k  # Swap registers
+        if H > 1:
+            num_alloc_wires += h - 1  # + work_wires for UI trick
+
+        gate_lst.append(qre.Allocate(num_alloc_wires))
+
+        ## -------- Cost assuming clean auxiliary qubits (Figure 6.): --------
+        if not restored:
+            gate_lst.append(GateCount(x, 2))
+            gate_lst.append(GateCount(had, 2 * k))
+
+            num_bit_flips = (k * H) // 2
+
+            ctrl_S_decomp = cls._ctrl_S(num_ctrl_wires = l)
+            ctrl_S_adj_decomp = cls._ctrl_S_adj(num_ctrl_wires = l)
+            ctrl_T_decomp = cls._ctrl_T(L_opt=H, num_bit_flips = num_bit_flips)
+
+            gate_lst.extend(ctrl_S_decomp)
+            gate_lst.extend(ctrl_S_adj_decomp)
+            gate_lst.extend(ctrl_T_decomp)
+
+
+        ## -------- Cost assuming dirty auxiliary qubits (Figure 7.): --------
+        else:
+            gate_lst.append(GateCount(z, 2))
+            gate_lst.append(GateCount(had, 2))
+
+            num_bit_flips = (k * H) // 2
+
+            ctrl_S_decomp = cls._ctrl_S(num_ctrl_wires = l, count = 2)
+            ctrl_S_adj_decomp = cls._ctrl_S_adj(num_ctrl_wires = l, count = 2)
+            ctrl_T_decomp = cls._ctrl_T(L_opt=H, num_bit_flips = num_bit_flips, count = 2)
+
+            gate_lst.extend(ctrl_S_decomp)
+            gate_lst.extend(ctrl_S_adj_decomp)
+            gate_lst.extend(ctrl_T_decomp)
+
+        ## -------- Deallocate all auxiliary qubits: --------
+        gate_lst.append(qre.Deallocate(num_alloc_wires))
+
+        return gate_lst
 
     @classmethod
     def resource_rep(

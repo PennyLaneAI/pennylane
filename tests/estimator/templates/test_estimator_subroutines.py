@@ -1397,6 +1397,8 @@ class TestResourceQROM:
                     ),
                     qre.Deallocate(5),
                     GateCount(qre.CSWAP.resource_rep(), 5),
+                    GateCount(qre.X.resource_rep(), 5),
+                    qre.Deallocate(5),
                 ],
             ),
             (
@@ -1423,12 +1425,14 @@ class TestResourceQROM:
                 12,
                 2,
                 5,
-                128,  # This will get turncated to 16 as the max depth
+                128,  # This will get truncated to 16 as the max depth
                 False,
                 [
                     qre.Allocate(30),
                     GateCount(qre.X.resource_rep(), 5),
                     GateCount(qre.CSWAP.resource_rep(), 30),
+                    GateCount(qre.X.resource_rep(), 30),
+                    qre.Deallocate(30),
                 ],
             ),
             (

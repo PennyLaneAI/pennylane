@@ -107,7 +107,7 @@ class TestSelectTHC:
                 qre.THCHamiltonian(4, 20),
                 15,
                 2,
-                {"algo_wires": 24, "auxiliary_wires": 103, "toffoli_gates": 545},
+                {"algo_wires": 24, "auxiliary_wires": 93, "toffoli_gates": 457},
             ),
         ),
     )
@@ -154,7 +154,7 @@ class TestSelectTHC:
                 2,
                 3,
                 2,
-                {"algo_wires": 27, "auxiliary_wires": 104, "toffoli_gates": 550},
+                {"algo_wires": 27, "auxiliary_wires": 94, "toffoli_gates": 462},
             ),
         ),
     )
