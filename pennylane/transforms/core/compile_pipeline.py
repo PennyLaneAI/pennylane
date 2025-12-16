@@ -402,7 +402,7 @@ class CompilePipeline:
         """Add a transform to the end of the program.
 
         Note that this should be a function decorated with/called by
-        ``qml.transforms.tape_transform``, and not a ``BoundTransform``.
+        ``qml.transform``, and not a ``BoundTransform``.
 
         Args:
             transform (Transform): The transform to add to the compile pipeline.
