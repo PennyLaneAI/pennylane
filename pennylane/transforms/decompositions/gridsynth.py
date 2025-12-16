@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Alias transform function for the Ross-Selinger decomposition (GridSynth) for qjit + capture."""
+"""Alias transform function for the Ross-Selinger decomposition (GridSynth) for qjit."""
 
 from functools import partial
 
@@ -19,13 +19,14 @@ from pennylane.transforms.core import transform
 
 
 @partial(transform, pass_name="gridsynth")
-def gridsynth(tape, *, epsilon, ppr_basis):
+def gridsynth(tape, *, epsilon=1e-4, ppr_basis=False):
     r"""Decomposes RZ and PhaseShift gates into the Clifford+T basis or the PPR basis.
 
     .. warning::
 
-        This transform requires QJIT and capture to be enabled (via :func:`qml.capture.enable() <pennylane.capture.enable>`),
-        as it is a wrapper for Catalyst's ``gridsynth`` compilation pass. Consult the Catalyst documentation for more information.
+        This transform must be applied within a workflow compiled with :func:`pennylane.qjit`,
+        as it is a frontend for Catalyst's ``gridsynth`` compilation pass.
+        Consult the Catalyst documentation for more information.
 
     Args:
         tape (QNode): A quantum circuit.
@@ -35,8 +36,6 @@ def gridsynth(tape, *, epsilon, ppr_basis):
     **Example**
 
     .. code-block:: python
-
-        qml.capture.enable()
 
         @qml.qnode(qml.device("lightning.qubit", wires=1))
         def circuit(x):
@@ -65,6 +64,6 @@ def gridsynth(tape, *, epsilon, ppr_basis):
 
     """
 
-    raise NotImplementedError(  # pragma: no cover
-        "This transform pass (gridsynth) is only implemented when using program capture and QJIT. They can be activated by `qml.capture.enable()` and applying the `@qml.qjit` decorator. Otherwise, please use qml.transforms.clifford_t_decomposition."
+    raise NotImplementedError(
+        "The gridsynth compilation pass has no tape implementation, and can only be applied when decorating the entire worfklow with @qml.qjit and when it is placed after all transforms that only have a tape implementation."
     )
