@@ -19,13 +19,14 @@ from functools import partial
 import pytest
 
 import pennylane as qml
-from pennylane.capture.primitives import vjp_prim
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 jax = pytest.importorskip("jax")
 
 jnp = pytest.importorskip("jax.numpy")
+
+from pennylane.capture.primitives import vjp_prim  # pylint: disable=wrong-import-position
 
 
 class TestErrors:
