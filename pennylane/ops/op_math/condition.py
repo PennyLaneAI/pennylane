@@ -311,7 +311,6 @@ class CondCallable:
             f = fn if isinstance(fn, FlatFn) else FlatFn(fn)
             if jax.config.jax_dynamic_shapes:
                 f = _add_abstract_shapes(f)
-
             jaxpr = jax.make_jaxpr(f, abstracted_axes=abstracted_axes)(*args, **kwargs)
             jaxpr_branches.append(jaxpr.jaxpr)
             consts_slices.append(slice(end_const_ind, end_const_ind + len(jaxpr.consts)))
