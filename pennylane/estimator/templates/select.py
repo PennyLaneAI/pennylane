@@ -89,13 +89,13 @@ class SelectTHC(ResourceOperator):
        allocated wires: 163
          zero state: 163
          any state: 0
-    Total gates : 6.836E+4
-       'Toffoli': 2.633E+3,
-       'CNOT': 5.490E+4,
-       'X': 1.164E+3,
+    Total gates : 4.175E+4
+       'Toffoli': 2.345E+3,
+       'CNOT': 3.183E+4,
+       'X': 582,
        'Z': 41,
        'S': 80,
-       'Hadamard': 9.538E+3
+       'Hadamard': 6.874E+3
 
     We can see that by using batched rotations, the number of allocated wires decreases
     significantly, at the cost of an increased number of Toffoli gates.
