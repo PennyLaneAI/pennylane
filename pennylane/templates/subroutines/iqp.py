@@ -52,11 +52,11 @@ class IQP(Operation):
         pattern (list[list[list[int]]]): Specification of the trainable gates. Each element of ``pattern`` corresponds to a
             unique trainable parameter. Each sublist specifies the generators to which that parameter applies.
             Generators are specified by listing the qubits on which an X operator acts. For example, the ``pattern``
-            `[[[0]], [[1]], [[2]], [[3]]]` specifies a circuit with single qubit rotations on the first four qubits, each
-            with its own trainable parameter. The `pattern` `[[[0],[1]], [[2],[3]]]` correspond to a circuit with two
+            ``[[[0]], [[1]], [[2]], [[3]]]`` specifies a circuit with single qubit rotations on the first four qubits, each
+            with its own trainable parameter. The ``pattern`` ``[[[0],[1]], [[2],[3]]]`` correspond to a circuit with two
             trainable parameters with generators :math:`X_0+X_1` and :math:`X_2+X_3` respectively. A circuit with a
-            single trainable gate with generator :math:`X_0\otimes X_1` corresponds to the `pattern`
-            `[[[0,1]]]`.
+            single trainable gate with generator :math:`X_0\otimes X_1` corresponds to the ``pattern``
+            ``[[[0,1]]]``.
         spin_sym (bool, optional): If True, the circuit is equivalent to one where the initial state
             :math:`\frac{1}{\sqrt(2)}(|00\dots0> + |11\dots1>)` is used in place of :math:`|00\dots0>`.
 
