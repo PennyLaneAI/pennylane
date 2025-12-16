@@ -263,7 +263,7 @@ def _solve_regular_linear_system_z2(A: np.ndarray, b: np.ndarray) -> np.ndarray:
             raise ValueError(
                 "Did not find next pivot in Gauss-Jordan elimination, indicating a singular "
                 "matrix. Only regular matrices are supported by _solve_regular_linear_system_z2 "
-                "in RowCol. Extended matrix at time of error:\n{A}"
+                f"in RowCol. Extended matrix at time of error:\n{A}"
             )
 
         # Swap rows
