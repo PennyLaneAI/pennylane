@@ -624,10 +624,6 @@
 * Disabled autograph for the PauliRot decomposition rule as it should not be used with autograph. 
   [(#8765)](https://github.com/PennyLaneAI/pennylane/pull/8765)
 
-*  `str` type keyword argument to a function will be now considered as a static arugment when tracing 
-  through `qml.cond()`.
-  [(#8765)](https://github.com/PennyLaneAI/pennylane/pull/8765)
-
 <h3>Documentation 📝</h3>
 
 * The documentation of ``qml.transforms.rz_phase_gradient`` has been updated with respect to the

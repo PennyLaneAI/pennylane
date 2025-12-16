@@ -284,16 +284,6 @@ class TestCond:
             _ = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 1.23)
 
 
-def test_static_string_keyword_argument():
-    """Test that string keyword arguments are treated as static."""
-
-    def f(pred):
-        return qml.cond(pred, qml.PauliRot)(theta=np.pi / 2, wires=0, pauli_word="X")
-
-    jaxpr = jax.make_jaxpr(f)(True)
-    assert jaxpr.eqns[0].params["jaxpr_branches"][0].eqns[0].params["pauli_word"] == "X"
-
-
 def test_keyword_argument():
     """Test that keyword arguments are treated as traceable inputs."""
 
