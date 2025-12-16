@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the QuantumTape"""
+
 # pylint: disable=protected-access,too-few-public-methods
 import copy
-from collections import defaultdict
 
 import numpy as np
 import pytest
@@ -522,14 +522,14 @@ class TestResourceEstimation:
         """Test specs attribute on an empty tape"""
         tape = make_empty_tape
 
-        gate_types = defaultdict(int)
-        expected_resources = qml.resource.Resources(num_wires=2, gate_types=gate_types)
+        expected_resources = qml.resource.SpecsResources(
+            num_allocs=2,
+            gate_types={},
+            gate_sizes={},
+            measurements={"probs(all wires)": 1},
+            depth=0,
+        )
         assert tape.specs["resources"] == expected_resources
-
-        assert tape.specs["num_observables"] == 1
-        assert tape.specs["num_trainable_params"] == 0
-
-        assert len(tape.specs) == 4
 
     def test_specs_tape(self, make_tape):
         """Tests that regular tapes return correct specifications"""
@@ -537,16 +537,14 @@ class TestResourceEstimation:
 
         specs = tape.specs
 
-        assert len(specs) == 4
-
-        gate_sizes = defaultdict(int, {1: 3, 2: 1})
-        gate_types = defaultdict(int, {"RX": 2, "Rot": 1, "CNOT": 1})
-        expected_resources = qml.resource.Resources(
-            num_wires=3, num_gates=4, gate_types=gate_types, gate_sizes=gate_sizes, depth=3
+        expected_resources = qml.resource.SpecsResources(
+            num_allocs=3,
+            gate_types={"RX": 2, "Rot": 1, "CNOT": 1},
+            gate_sizes={1: 3, 2: 1},
+            measurements={"expval(PauliX)": 1, "probs(2 wires)": 1},
+            depth=3,
         )
         assert specs["resources"] == expected_resources
-        assert specs["num_observables"] == 2
-        assert specs["num_trainable_params"] == 5
 
     def test_specs_add_to_tape(self, make_extendible_tape):
         """Test that tapes return correct specs after adding to them."""
@@ -554,18 +552,14 @@ class TestResourceEstimation:
         tape = make_extendible_tape
         specs1 = tape.specs
 
-        assert len(specs1) == 4
-
-        gate_sizes = defaultdict(int, {1: 3, 2: 1})
-        gate_types = defaultdict(int, {"RX": 2, "Rot": 1, "CNOT": 1})
-
-        expected_resoures = qml.resource.Resources(
-            num_wires=3, num_gates=4, gate_types=gate_types, gate_sizes=gate_sizes, depth=3
+        expected_resources = qml.resource.SpecsResources(
+            num_allocs=3,
+            gate_types={"RX": 2, "Rot": 1, "CNOT": 1},
+            gate_sizes={1: 3, 2: 1},
+            measurements={},
+            depth=3,
         )
-        assert specs1["resources"] == expected_resoures
-
-        assert specs1["num_observables"] == 0
-        assert specs1["num_trainable_params"] == 5
+        assert specs1["resources"] == expected_resources
 
         with tape as tape:
             qml.CNOT(wires=[0, 1])
@@ -575,18 +569,14 @@ class TestResourceEstimation:
 
         specs2 = tape.specs
 
-        assert len(specs2) == 4
-
-        gate_sizes = defaultdict(int, {1: 4, 2: 2})
-        gate_types = defaultdict(int, {"RX": 2, "Rot": 1, "CNOT": 2, "RZ": 1})
-
-        expected_resoures = qml.resource.Resources(
-            num_wires=5, num_gates=6, gate_types=gate_types, gate_sizes=gate_sizes, depth=4
+        expected_resources = qml.resource.SpecsResources(
+            num_allocs=5,
+            gate_types={"RX": 2, "Rot": 1, "CNOT": 2, "RZ": 1},
+            gate_sizes={1: 4, 2: 2},
+            measurements={"expval(PauliX)": 1, "probs(2 wires)": 1},
+            depth=4,
         )
-        assert specs2["resources"] == expected_resoures
-
-        assert specs2["num_observables"] == 2
-        assert specs2["num_trainable_params"] == 6
+        assert specs2["resources"] == expected_resources
 
 
 class TestParameters:

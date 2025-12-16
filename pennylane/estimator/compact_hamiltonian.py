@@ -14,7 +14,9 @@
 """
 Contains classes used to compactly store the metadata of various Hamiltonians which are relevant for resource estimation.
 """
+import copy
 from dataclasses import dataclass
+from typing import Iterable
 
 
 def _validate_positive_int(name, value):
@@ -178,3 +180,202 @@ class VibronicHamiltonian:
 
         if isinstance(self.one_norm, int):
             object.__setattr__(self, "one_norm", float(self.one_norm))
+
+
+class PauliHamiltonian:
+    r"""Stores the minimum necessary information required to estimate resources for a Hamiltonian
+    expressed as a linear combination of tensor products of Pauli operators.
+
+    Args:
+        num_qubits (int): total number of qubits the Hamiltonian acts on
+        pauli_terms (dict | Iterable(dict)): A representation for all of the terms (Pauli words) of
+            the Hamiltonian. The terms of the Hamiltonian can also be separated into groups such
+            that all Pauli words in a group commute. When a single dictionary is provided, it should
+            represent all the terms of the Hamiltonian where the dictionary keys are Pauli strings
+            (e.g ``"XY"`` or ``"Z"``) and the values are integers corresponding to how frequently
+            that Pauli word appears in the Hamiltonian. When a list of dictionaries is provided,
+            each dictionary is interpreted as a commuting group of terms. See the ``Usage Details``
+            section below for more information.
+        one_norm (float | int | None): the one-norm of the Hamiltonian
+
+    Returns:
+        PauliHamiltonian: An instance of PauliHamiltonian
+
+    .. seealso::
+        :class:`~.estimator.templates.trotter.TrotterPauli`
+
+    **Example**
+
+    A ``PauliHamiltonian`` is a compact representation which can be used with compatible templates
+    to obtain resource estimates. Consider for example the Hamiltonian:
+
+    .. math::
+
+        \hat{H} = 0.1 \cdot \Sigma^{30}_{j=1} \hat{X}_{j} \hat{X}_{j+1}
+        - 0.05 \cdot \Sigma^{30}_{k=1} \hat{Y}_{k} \hat{Y}_{k+1} + 0.25 \cdot \Sigma^{40}_{l=1} \hat{X}_{l}
+
+    This Hamiltonian is represented in a compact form using ``PauliHamiltonian``:
+
+    >>> import pennylane.estimator as qre
+    >>> pauli_ham = qre.PauliHamiltonian(
+    ...     num_qubits = 40,
+    ...     pauli_terms = {"X":40, "XX":30, "YY":30},
+    ...     one_norm = 14.5,  # (|0.1| * 30) + (|-0.05| * 30) + (|0.25| * 40)
+    ... )
+    >>> pauli_ham
+    PauliHamiltonian(num_qubits=40, one_norm=14.5, pauli_terms={'X': 40, 'XX': 30, 'YY': 30})
+
+    The Hamiltonian can be used as input for other subroutines, like
+    :class:`~.estimator.templates.trotter.TrotterPauli`:
+
+    >>> num_steps, order = (10, 2)
+    >>> res = qre.estimate(qre.TrotterPauli(pauli_ham, num_steps, order))
+    >>> print(res)
+    --- Resources: ---
+     Total wires: 40
+       algorithmic wires: 40
+       allocated wires: 0
+         zero state: 0
+         any state: 0
+     Total gates : 9.400E+4
+       'T': 8.800E+4,
+       'CNOT': 2.400E+3,
+       'Z': 1.200E+3,
+       'S': 2.400E+3
+
+    .. details::
+        :title: Usage Details
+
+        The terms of the Hamiltonian can also be separated into groups such that all operators in
+        the group commute. Users can instantiate the ``PauliHamiltonian`` by specifying these
+        groups of terms directly.
+
+        >>> import pennylane.estimator as qre
+        >>> commuting_groups = [
+        ...     {"X": 40, "XX": 30}, # first commuting group
+        ...     {"YY": 30}, # second commuting group
+        ... ]
+        >>> pauli_ham = qre.PauliHamiltonian(
+        ...     num_qubits = 40,
+        ...     pauli_terms = commuting_groups,
+        ...     one_norm = 14.5,  # (|0.1| * 30) + (|-0.05| * 30) + (|0.25| * 40)
+        ... )
+        >>> pauli_ham
+        PauliHamiltonian(num_qubits=40, one_norm=14.5, pauli_terms=[{'X': 40, 'XX': 30}, {'YY': 30}])
+
+        Note that providing more information will generally lead to more accurate resource estimates.
+
+        >>> num_steps, order = (10, 2)
+        >>> res = qre.estimate(qre.TrotterPauli(pauli_ham, num_steps, order))
+        >>> print(res)
+        --- Resources: ---
+         Total wires: 40
+           algorithmic wires: 40
+           allocated wires: 0
+             zero state: 0
+             any state: 0
+         Total gates : 5.014E+4
+           'T': 4.708E+4,
+           'CNOT': 1.260E+3,
+           'Z': 600,
+           'S': 1.200E+3
+
+    """
+
+    def __init__(
+        self,
+        num_qubits: int,
+        pauli_terms: dict | Iterable[dict],
+        one_norm: int | float | None = None,
+    ):
+        self._num_qubits = num_qubits
+        if one_norm is not None and not (isinstance(one_norm, (float, int)) and one_norm >= 0):
+            raise ValueError(
+                f"one_norm, if provided, must be a positive float or integer. Instead received {one_norm}"
+            )
+
+        if isinstance(pauli_terms, dict):
+            _validate_pauli_terms(pauli_terms)
+        else:
+            for group in pauli_terms:
+                _validate_pauli_terms(group)
+
+        self._one_norm = one_norm
+        self._pauli_terms = pauli_terms
+
+    def __repr__(self):
+        """The repr dunder method for the PauliHamiltonian class."""
+        return f"PauliHamiltonian(num_qubits={self.num_qubits}, one_norm={self.one_norm}, pauli_terms={self.pauli_terms})"
+
+    def __eq__(self, other: "PauliHamiltonian"):
+        """Check if two PauliHamiltonians are identical"""
+        return all(
+            (
+                self._num_qubits == other._num_qubits,
+                self._pauli_terms == other._pauli_terms,
+                self._one_norm == other._one_norm,
+            )
+        )
+
+    def __hash__(self):
+        """Hash function for the compact Hamiltonian representation"""
+        if isinstance(self._pauli_terms, dict):
+            hashable_param = _sort_and_freeze(self._pauli_terms)
+        else:
+            hashable_param = tuple(_sort_and_freeze(group) for group in self._pauli_terms)
+
+        hashable_params = (
+            self._num_qubits,
+            hashable_param,
+            self._one_norm,
+        )
+        return hash(hashable_params)
+
+    @property
+    def num_qubits(self):
+        """The number of qubits the Hamiltonian acts on"""
+        return self._num_qubits
+
+    @property
+    def one_norm(self):
+        """The one-norm of the Hamiltonian."""
+        return self._one_norm
+
+    @property
+    def pauli_terms(self):
+        """A dictionary representing the distribution of Pauli words in the Hamiltonian"""
+        return copy.deepcopy(self._pauli_terms)
+
+    @property
+    def num_terms(self) -> int:
+        """The total number of Pauli words in the Hamiltonian."""
+        if isinstance(self._pauli_terms, dict):
+            return sum(self._pauli_terms.values())
+
+        # Commuting groups are provided
+        return sum(sum(group.values()) for group in self._pauli_terms)
+
+
+def _sort_and_freeze(pauli_terms: dict) -> tuple[tuple]:
+    """Map a dictionary into a sorted and hashable tuple"""
+    return tuple((k, pauli_terms[k]) for k in sorted(pauli_terms))
+
+
+def _validate_pauli_terms(pauli_terms: dict) -> bool:
+    """Validate that the ``pauli_terms`` is formatted as expected"""
+    if not isinstance(pauli_terms, dict):
+        raise TypeError(
+            f"Expected `pauli_terms` to be a dictionary or an iterable of dictionaries. got {pauli_terms}"
+        )
+    for pauli_word, freq in pauli_terms.items():
+        if (not isinstance(pauli_word, str)) or (
+            not all(char in {"X", "Y", "Z"} for char in pauli_word)
+        ):
+            raise ValueError(
+                f"The keys represent Pauli words and should be strings containing either 'X','Y' or 'Z' characters only. Got {pauli_word} : {freq}"
+            )
+
+        if not (isinstance(freq, int) and (not isinstance(freq, bool)) and (freq >= 0)):
+            raise ValueError(
+                f"The values represent frequencies and should be positive integers, got {pauli_word} : {freq}"
+            )
