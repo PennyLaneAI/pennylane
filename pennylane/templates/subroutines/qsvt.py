@@ -1006,7 +1006,7 @@ def _compute_qsp_angles_iteratively(
         raise ModuleNotFoundError("jax is required!")
 
     if not is_optax_available:
-        raise ModuleNotFoundError("optax is required!")
+        raise ModuleNotFoundError("optax is required!")  # pragma: no cover
 
     poly_cheb = chebyshev.poly2cheb(poly)
     degree = len(poly_cheb) - 1
