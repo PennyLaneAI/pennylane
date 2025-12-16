@@ -107,9 +107,8 @@
   [(#8569)](https://github.com/PennyLaneAI/pennylane/pull/8569)
 
 * Arithmetic dunder methods (`__add__`, `__mul__`, `__rmul__`) have been added to 
-  :class:`~.transforms.core.transform`, :class:`~.transforms.core.BoundTransform`, 
-  and :class:`~.CompilePipeline` (previously known as the `TransformProgram`) to 
-  enable intuitive composition of transform programs using `+` and `*` operators.
+  :class:`~.transforms.core.TransformDispatcher`, :class:`~.transforms.core.TransformContainer`, 
+  and :class:`~.CompilePipeline` (previously known as the `TransformProgram`) to enable intuitive composition of transform programs using `+` and `*` operators.
   [(#8703)](https://github.com/PennyLaneAI/pennylane/pull/8703)
 
 * `TransformProgram` now has a new method `remove` to remove all bound transforms that match the input.
@@ -158,22 +157,16 @@
   is available at the top level namespace as `qml.CompilePipeline`.
   [(#8735)](https://github.com/PennyLaneAI/pennylane/pull/8735)
 
-* `CompilePipeline` (previously known as the `TransformProgram`) can now be directly applied to anything that an individual transform can be applied on, including `QNode`s.
+* Now `CompilePipeline` can dispatch to anything individual transforms can dispatch onto, including
+  QNodes.
   [(#8731)](https://github.com/PennyLaneAI/pennylane/pull/8731)
 
 * :class:`~.transforms.core.TransformContainer` has been renamed to :class:`~.transforms.core.BoundTransform`.
   The old name is still available in the same location.
   [(#8753)](https://github.com/PennyLaneAI/pennylane/pull/8753)
-
-* :class:`~.transforms.core.TransformDispatcher` has been merged with :class:`~.transforms.core.transform`.
-  [(#8765)](https://github.com/PennyLaneAI/pennylane/pull/8756)
-
-* The `final_transform` property of the :class:`~.transforms.core.BoundTransform` has been renamed to `is_final_transform` to better follow the naming convention for boolean properties. The `transform` property of the :class:`~.transform` and :class:`~.transforms.core.BoundTransform` has been renamed to `tape_transform` to avoid ambiguity.
-  [(#8765)](https://github.com/PennyLaneAI/pennylane/pull/8756)
-
 * The :class:`~.CompilePipeline` (previously known as the `TransformProgram`) can now be constructed
-  more flexibility with a variable number of arguments that are of types `transform`, `BoundTransform`,
-  or other `CompilePipeline`s.
+  more flexibility with a variable number of arguments that are of types `TransformDispatcher`,
+  `TransformContainer`, or other `CompilePipeline`s.
   [(#8750)](https://github.com/PennyLaneAI/pennylane/pull/8750)
 
 <h3>Improvements 🛠</h3>
@@ -201,7 +194,7 @@
 
 * Quantum compilation passes in MLIR and XDSL can now be applied using the core PennyLane transform
   infrastructure, instead of using Catalyst-specific tools. This is made possible by a new argument in
-  :func:`~pennylane.transform` and `~.transform` called ``pass_name``, which accepts a string
+  :func:`~pennylane.transform` and `~.TransformDispatcher` called ``pass_name``, which accepts a string
   corresponding to the name of the compilation pass.
   The ``pass_name`` argument ensures that the given compilation pass will be used when qjit'ing a
   workflow, where the pass is performed in MLIR or xDSL.
@@ -307,8 +300,8 @@
   capture, allowing for `qml.qjit(qml.grad(c))` and `qml.qjit(qml.jacobian(c))` to work.
   [(#8382)](https://github.com/PennyLaneAI/pennylane/pull/8382)
 
-* Both the generic and transform-specific application behavior of a `qml.transforms.core.transform`
-  can be overwritten with `transform.generic_register` and `my_transform.register`.
+* Both the generic and transform-specific application behavior of a `qml.transforms.core.TransformDispatcher`
+  can be overwritten with `TransformDispatcher.generic_register` and `my_transform.register`.
   [(#7797)](https://github.com/PennyLaneAI/pennylane/pull/7797)
 
 * With capture enabled, measurements can now be performed on Operator instances passed as closure
@@ -578,8 +571,8 @@
   [(#8635)](https://github.com/PennyLaneAI/pennylane/pull/8635)
 
 * In program capture, transforms now have a single transform primitive that have a `transform` param that stores
-  the `transform`. Before, each transform had its own primitive stored on the
-  `transform._primitive` private property. It proved difficult to keep maintaining dispatch behaviour
+  the `TransformDispatcher`. Before, each transform had its own primitive stored on the
+  `TransformDispatcher._primitive` private property. It proved difficult to keep maintaining dispatch behaviour
   for every single transform.
   [(#8576)](https://github.com/PennyLaneAI/pennylane/pull/8576)
   [(#8639)](https://github.com/PennyLaneAI/pennylane/pull/8639)
@@ -665,7 +658,7 @@
   [(#8492)](https://github.com/PennyLaneAI/pennylane/pull/8492)
   [(#8564)](https://github.com/PennyLaneAI/pennylane/pull/8564)
 
-* A warning message has been added to :doc:`Building a plugin <../development/plugins>`
+A warning message has been added to :doc:`Building a plugin <../development/plugins>`
   docstring for ``qml.device`` has been updated to include a section on custom decompositions,
   and a warning about the removal of the ``custom_decomps`` kwarg in v0.44. Additionally, the page
   :doc:`Building a plugin <../development/plugins>` now includes instructions on using
