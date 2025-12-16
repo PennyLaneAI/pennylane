@@ -214,7 +214,7 @@ def _update(P: TensorLike, cnots: list[tuple[int]], control: int, target: int):
 def _solve_linear_system_z2(A: np.ndarray, b: np.ndarray) -> np.ndarray:
     """Solve the linear system of equations A.x=b over the Booleans/Z_2.
     This is a simple implementation based on the pseudocode
-    on Wikipedia https://en.wikipedia.org/wiki/Gaussian_elimination#Gauss%E2%80%93Jordan_elimination.
+    on Wikipedia https://en.wikipedia.org/wiki/Gaussian_elimination#Prototype
 
     Args:
         A (np.ndarray): Square matrix with coefficients (0 or 1).
@@ -245,14 +245,14 @@ def _solve_linear_system_z2(A: np.ndarray, b: np.ndarray) -> np.ndarray:
         A[[k, i_max]] = A[[i_max, k]]
 
         # Iterate through rows and add current row with index ``h`` to them if they
-        # have a 1 in the current column with index ``k``.
+        # have a 1 in the current column with index ``k``
         for i in range(n):
-            if i == k:  # Exclude the ``k``th row itself of course.
+            if i == k:  # Exclude the ``k``th row itself
                 continue
-            if A[i, k] == 0:  # No need to do anything if the target entry already is zero.
+            if A[i, k] == 0:  # No need to do anything if the target entry already is zero
                 continue
             # We use addition of rows modulo 2, which is implementable with bitwise xor, or ``^``.
-            A[i] ^= A[k]
+            A[i, k:] ^= A[k, k:]
 
     # Solution is written into the last column of the (augmented) matrix
     return A[:, -1]
