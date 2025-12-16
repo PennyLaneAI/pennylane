@@ -2280,7 +2280,17 @@ class Reflection(ResourceOperator):
         wires (Sequence[int], None): The wires the operation acts on.
 
     Resources:
-        See the decomposition from the PL operator.
+        The resources are derived from the decomposition :math:`R(U, \alpha) = U R(\alpha) U^\dagger`.
+        The center block :math:`R(\alpha) = -I + (1 - e^{i\alpha})|0\rangle\langle 0|` is implemented
+        using a multi-controlled phase shift:
+
+        .. math::
+
+            R(\alpha) = I \otimes X(0) \text{Controlled}(\text{PhaseShift}(0), \text{control}=[1, \dots], \text{values}=[1, \dots]) X(0)
+
+        In the special case where :math:`\alpha = \pi`, the phase shift becomes a Z gate.
+        If :math:`\alpha = 0` or :math:`\alpha = 2\pi`, the center block cancels out, leaving :math:`-I`.
+        The cost for :math:`-I` is calculated as :math:`X Z X Z = -I`.
 
     .. seealso:: :class:`~.pennylane.Reflection`
 
@@ -2349,7 +2359,13 @@ class Reflection(ResourceOperator):
             cmpr_U (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): the operator that prepares the state :math:`|\Psi\rangle`
 
         Resources:
-            [TODO] See base PennyLane implemntation
+            The resources are derived from the decomposition :math:`R(U, \alpha) = U R(\alpha) U^\dagger`.
+            The center block :math:`R(\alpha)` is implemented as a multi-controlled phase shift sandwiched
+            by X gates on the target wire.
+
+            If :math:`\alpha = \pi`, the phase shift is replaced by a Z gate.
+            If :math:`\alpha = 0` or :math:`\alpha = 2\pi`, the operator simplifies to :math:`-I`,
+            which costs :math:`X Z X Z`.
 
         Returns:
             list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
@@ -2415,7 +2431,13 @@ class Reflection(ResourceOperator):
                 of the target operator.
 
         Resources:
-            [TODO]
+            The controlled decomposition simplifies by observing that :math:`R(U, \alpha) = U R(\alpha) U^\dagger`
+            is a change of basis. Thus, we only need to control the center block :math:`R(\alpha)`,
+            not the :math:`U` or :math:`U^\dagger` operations.
+
+            Controlling :math:`R(\alpha)` involves controlling the global phase :math:`-I` and the
+            multi-controlled phase shift. The global phase :math:`-I` is controlled using
+            :math:`MCX \cdot Z \cdot MCX \cdot Z`.
 
         Returns:
             list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
