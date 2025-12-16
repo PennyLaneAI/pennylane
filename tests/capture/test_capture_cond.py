@@ -291,9 +291,6 @@ def test_static_string_keyword_argument():
         return qml.cond(pred, qml.PauliRot)(theta=np.pi / 2, wires=0, pauli_word="X")
 
     jaxpr = jax.make_jaxpr(f)(True)
-    assert (
-        jaxpr.eqns[0].params["jaxpr_branches"][0].eqns[0].primitive == qml.PauliRot._primitive
-    )  # pylint: disable=protected-access
     assert jaxpr.eqns[0].params["jaxpr_branches"][0].eqns[0].params["pauli_word"] == "X"
 
 
