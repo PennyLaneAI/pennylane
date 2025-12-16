@@ -483,7 +483,7 @@ class Transform:  # pylint: disable=too-many-instance-attributes
         in (b,) }
     """
 
-    def __new__(cls, *args, **__):
+    def __new__(cls, *args, **__) -> Transform:
         if os.environ.get("SPHINX_BUILD") == "1":
             # If called during a Sphinx documentation build,
             # simply return the original function rather than
