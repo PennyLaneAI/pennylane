@@ -74,7 +74,8 @@ class MultiplexerStatePreparation(Operation):
                 f"State vectors must be of length {2 ** len(wires)}; vector has length {n_amplitudes}."
             )
 
-        if not math.allclose(math.linalg.norm(state_vector), 1.0, atol=1e-3):
+        norm = math.linalg.norm(state_vector)
+        if not math.allclose(norm, 1.0, atol=1e-3):
             raise ValueError(
                 f"Input state vectors must have a norm 1.0, the vector has squared norm {norm}"
             )
