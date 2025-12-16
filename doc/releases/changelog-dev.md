@@ -15,7 +15,7 @@
   resource operator.
   [(#8546)](https://github.com/PennyLaneAI/pennylane/pull/8546)
 
-* Users can now perform rapid Clifford+T decomposition with :func:`pennylane.qjit` using the new 
+* Users can now perform rapid Clifford+T decomposition with :func:`pennylane.qjit` using the new
   :func:`~pennylane.transforms.gridsynth` compilation pass.
   This pass discretizes ``RZ`` and ``PhaseShift`` gates to either the Clifford+T basis or to the PPR basis.
   [(#8609)](https://github.com/PennyLaneAI/pennylane/pull/8609)
@@ -59,7 +59,7 @@
 
   ```python
   import pennylane as qml
-  
+
   dev = qml.device("null.qubit", wires=3)
 
   @qml.qnode(dev)
@@ -102,8 +102,8 @@
 
 <h4> Compile Pipeline and Transforms </h4>
 
-* Arithmetic dunder methods (`__add__`, `__mul__`, `__rmul__`) have been added to 
-  :class:`~.transforms.core.TransformDispatcher`, :class:`~.transforms.core.TransformContainer`, 
+* Arithmetic dunder methods (`__add__`, `__mul__`, `__rmul__`) have been added to
+  :class:`~.transforms.core.TransformDispatcher`, :class:`~.transforms.core.TransformContainer`,
   and :class:`~.CompilePipeline` (previously known as the `TransformProgram`) to enable intuitive composition of transform programs using `+` and `*` operators.
   [(#8703)](https://github.com/PennyLaneAI/pennylane/pull/8703)
 
@@ -167,7 +167,12 @@
 
 <h3>Improvements 🛠</h3>
 
-* Added `Resources.total_wires` and `Resources.total_gates` properties to the 
+* Added a custom solver to :func:`~.transforms.intermediate_reps.rowcol` for linear systems
+  over :math:`\mathbb{Z}_2` based on Gauss-Jordan elimination. This removes the need to install
+  the ``galois`` package for this single function and provides a minor performance improvement.
+  [(#8771)](https://github.com/PennyLaneAI/pennylane/pull/8771)
+
+* Added `Resources.total_wires` and `Resources.total_gates` properties to the
   ``qml.estimator.Resources`` class. Users can more easily access these quantities from the `Resources` object directly.
   [(#8761)](https://github.com/PennyLaneAI/pennylane/pull/8761)
 
@@ -325,7 +330,7 @@
   allowing for efficient decomposition of large matrices that cannot fit in memory when written as
   dense arrays.
   [(#8612)](https://github.com/PennyLaneAI/pennylane/pull/8612)
-  
+
 * A decomposition has been added to the adjoint of :class:`pennylane.TemporaryAND`. This decomposition relies on mid-circuit measurments and does not require any T gates.
   [(#8633)](https://github.com/PennyLaneAI/pennylane/pull/8633)
 
@@ -508,7 +513,7 @@
 
   ```python
   import pennylane as qml
-  
+
   @qml.transforms.decompose(gate_set={"H", "T", "CNOT"}, stopping_condition=lambda op: len(op.wires) <= 2)
   @qml.qnode(qml.device("default.qubit"))
   def circuit():
