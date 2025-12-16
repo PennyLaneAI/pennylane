@@ -211,10 +211,14 @@ def _update(P: TensorLike, cnots: list[tuple[int]], control: int, target: int):
     return P, cnots
 
 
-def _solve_linear_system_z2(A: np.ndarray, b: np.ndarray) -> np.ndarray:
-    """Solve the linear system of equations A.x=b over the Booleans/Z_2.
+def _solve_regular_linear_system_z2(A: np.ndarray, b: np.ndarray) -> np.ndarray:
+    """Solve the linear system of equations A.x=b over the Booleans/Z_2, where A is assumed
+    to be regular, i.e., non-singular.
     This is a simple implementation based on the pseudocode
     on Wikipedia https://en.wikipedia.org/wiki/Gaussian_elimination#Pseudocode
+    with simplifications based on the regularity of A (we always find a next pivot and have
+    static runtime) and on the Boolean number field we work over (this simplifies the logic
+    behind what a scalar multiple of a row can look like to Boolean program logic).
 
     Args:
         A (np.ndarray): Square matrix with coefficients (0 or 1).
@@ -223,28 +227,25 @@ def _solve_linear_system_z2(A: np.ndarray, b: np.ndarray) -> np.ndarray:
     Returns:
         np.ndarray: Solution vector with same length as ``A`` and ``b`` and entries 0 or 1.
     """
-    m, n = A.shape
-    assert n == m == len(b)
-
+    n = len(A)
     # Create augmented matrix for Gauss-Jordan elimination.
     # This also creates a copy so that the input ``A`` is not modified in place
     A = np.hstack([A, b.reshape((n, 1))])
     for k in range(n):
         # Find next row with non-zero entry in ``k``th column
         i_max = next(iter(i for i in range(k, n) if A[i, k] == 1), None)
-        # If no such entry was found, this column already is compatible with row-echelon form
-        # This only happens for underdetermined systems, which we don't expect to find here
+        # This only happens for underdetermined systems, whereas we assume A to be regular
         if i_max is None:
             raise ValueError(
-                "Did not find next pivot in Gauss-Jordan elimination, indicating a singular matrix."
-                "Singular matrices are not expected nor supported within RowCol."
-                "Extended matrix at time of error:\n{A}"
+                "Did not find next pivot in Gauss-Jordan elimination, indicating a singular "
+                "matrix. Only regular matrices are supported by _solve_regular_linear_system_z2 "
+                "in RowCol. Extended matrix at time of error:\n{A}"
             )
 
         # Swap rows
         A[[k, i_max]] = A[[i_max, k]]
 
-        # Iterate through rows and add current row with index ``h`` to them if they
+        # Iterate through rows and add current row with index ``k`` to them if they
         # have a 1 in the current column with index ``k``
         for i in range(n):
             if i == k:  # Exclude the ``k``th row itself
@@ -265,7 +266,7 @@ def _get_S(P: TensorLike, idx: int, node_set: Iterable[int], mode: str):
     else:
         e_i = np.zeros(len(P), dtype=int)
         e_i[idx] = 1
-        b = _solve_linear_system_z2(P.T, e_i)
+        b = _solve_regular_linear_system_z2(P.T, e_i)
     S = set(np.where(b)[0])
     # Add the node ``idx`` itself
     S.add(idx)

@@ -23,7 +23,7 @@ from pennylane.transforms import parity_matrix, rowcol
 from pennylane.transforms.intermediate_reps import postorder_traverse, preorder_traverse
 from pennylane.transforms.intermediate_reps.rowcol import (
     _rowcol_parity_matrix,
-    _solve_linear_system_z2,
+    _solve_regular_linear_system_z2,
 )
 
 path_graph_4 = nx.path_graph(4)
@@ -158,8 +158,8 @@ def _make_random_regular_matrix(n, random_ops, rs: np.random.RandomState):
     return P % 2  # Make into binary matrix
 
 
-class TestSolveLinearSystemZ2:
-    """Tests for the helper method ``_solve_linear_system_z2``."""
+class TestSolveRegularLinearSystemZ2:
+    """Tests for the helper method ``_solve_regular_linear_system_z2``."""
 
     @pytest.mark.parametrize(
         "A",
@@ -178,7 +178,7 @@ class TestSolveLinearSystemZ2:
         x = rs.randint(0, 2, (len(A),))
         b = (A @ x) % 2
         with pytest.raises(ValueError, match="not find next pivot"):
-            _ = _solve_linear_system_z2(A, b)
+            _ = _solve_regular_linear_system_z2(A, b)
 
     @pytest.mark.parametrize("n", [1, 4, 5, 10, 13, 28, 102])
     def test_with_random_matrix(self, n, seed):
@@ -189,7 +189,7 @@ class TestSolveLinearSystemZ2:
         A = _make_random_regular_matrix(n, random_ops, rs)
         x = rs.randint(0, 2, (n,))
         b = (A @ x) % 2
-        x_sol = _solve_linear_system_z2(A, b)
+        x_sol = _solve_regular_linear_system_z2(A, b)
         assert x_sol.shape == (n,) and x_sol.dtype == np.int64
         assert set(x_sol).issubset({0, 1})
         assert np.allclose(x_sol, x)
