@@ -648,14 +648,24 @@ class transform:  # pylint: disable=too-many-instance-attributes
 
     def __add__(self, other):
         """Add two transforms to create a CompilePipeline."""
+
+        if not isinstance(other, (transform, BoundTransform)):
+            return NotImplemented
+
+        # Technically this is checked in the CompilePipeline dunders but we still
+        # do it here to raise a more informative error message.
+        if self.is_final_transform and other.is_final_transform:
+            raise TransformError(
+                f"Both {self} and {other} are final transforms and cannot be combined."
+            )
+
         if self.expand_transform:
             # pylint: disable=import-outside-toplevel
             from .compile_pipeline import CompilePipeline
 
             pipeline = CompilePipeline([])
-            pipeline += self
-            pipeline += other
-            return pipeline
+            pipeline.append(self)
+            return pipeline + other
 
         # Convert this transform to a BoundTransform (no args/kwargs) and delegate
         return BoundTransform(self) + other
@@ -667,7 +677,7 @@ class transform:  # pylint: disable=too-many-instance-attributes
             from .compile_pipeline import CompilePipeline
 
             pipeline = CompilePipeline([])
-            pipeline += self
+            pipeline.append(self)
             return pipeline * n
 
         # Convert to container (no args/kwargs) and delegate
@@ -952,8 +962,8 @@ class BoundTransform:  # pylint: disable=too-many-instance-attributes
             )
 
         pipeline = CompilePipeline([])
-        pipeline += self
-        pipeline += other
+        pipeline.append(self)
+        pipeline.append(other)
         return pipeline
 
     def __mul__(self, n):
@@ -974,7 +984,7 @@ class BoundTransform:  # pylint: disable=too-many-instance-attributes
             )
 
         pipeline = CompilePipeline([])
-        pipeline += self
+        pipeline.append(self)
         return pipeline * n
 
     __rmul__ = __mul__

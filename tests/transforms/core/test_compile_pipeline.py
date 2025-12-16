@@ -780,12 +780,12 @@ class TestCompilePipelineConstruction:
         """Test an empty pipeline."""
 
         pipeline = CompilePipeline()
-        assert pipeline.is_empty()
+        assert not pipeline
         assert pipeline.cotransform_cache is None
         assert len(pipeline) == 0
 
-        with pytest.raises(TransformError, match="The compile pipeline is empty"):
-            pipeline.get_last()
+        with pytest.raises(IndexError):
+            _ = pipeline[-1]
 
     def test_list_of_transforms(self):
         """Tests constructing a CompilePipeline with a list of transforms."""
@@ -829,16 +829,16 @@ class TestCompilePipeline:
         pipeline = CompilePipeline()
         pipeline.add_transform(transform(first_valid_transform))
         pipeline.add_transform(transform(second_valid_transform))
-        assert pipeline.get_last() == BoundTransform(transform(second_valid_transform))
+        assert pipeline[-1] == BoundTransform(transform(second_valid_transform))
 
-    def test_push_back(self):
+    def test_append(self):
         """Test to push back multiple transforms into a pipeline and also the different methods of a pipeline."""
         compile_pipeline = CompilePipeline()
 
         transform1 = BoundTransform(transform(first_valid_transform))
         compile_pipeline.append(transform1)
 
-        assert not compile_pipeline.is_empty()
+        assert compile_pipeline
         assert len(compile_pipeline) == 1
         assert isinstance(compile_pipeline[0], BoundTransform)
         assert compile_pipeline[0].tape_transform is first_valid_transform
@@ -846,7 +846,7 @@ class TestCompilePipeline:
         transform2 = BoundTransform(transform(second_valid_transform))
         compile_pipeline.append(transform2)
 
-        assert not compile_pipeline.is_empty()
+        assert compile_pipeline
         assert len(compile_pipeline) == 2
         assert isinstance(compile_pipeline[1], BoundTransform)
         assert compile_pipeline[1].tape_transform is second_valid_transform
@@ -859,10 +859,7 @@ class TestCompilePipeline:
         assert sub_pipeline_transforms[0] is transform1
         assert sub_pipeline_transforms[1] is transform2
 
-        with pytest.raises(
-            TransformError,
-            match="Only transform container can be added to the compile pipeline.",
-        ):
+        with pytest.raises(TransformError, match="does not appear to be a valid Python function"):
             compile_pipeline.append(10.0)
 
     def test_add_transform(self):
@@ -872,7 +869,7 @@ class TestCompilePipeline:
         transform1 = transform(first_valid_transform)
         compile_pipeline.add_transform(transform1)
 
-        assert not compile_pipeline.is_empty()
+        assert compile_pipeline
         assert len(compile_pipeline) == 1
         assert isinstance(compile_pipeline[0], BoundTransform)
         assert compile_pipeline[0].tape_transform is first_valid_transform
@@ -880,7 +877,7 @@ class TestCompilePipeline:
         transform2 = transform(second_valid_transform)
         compile_pipeline.add_transform(transform2)
 
-        assert not compile_pipeline.is_empty()
+        assert compile_pipeline
         assert len(compile_pipeline) == 2
         assert isinstance(compile_pipeline[1], BoundTransform)
         assert compile_pipeline[1].tape_transform is second_valid_transform
@@ -893,10 +890,7 @@ class TestCompilePipeline:
         assert sub_pipeline_transforms[0].tape_transform is first_valid_transform
         assert sub_pipeline_transforms[1].tape_transform is second_valid_transform
 
-        with pytest.raises(
-            TransformError,
-            match="Only transform dispatcher can be added to the compile pipeline.",
-        ):
+        with pytest.raises(TransformError, match="Only transforms can be added"):
             compile_pipeline.add_transform(10.0)
 
     def test_add_transform_with_expand(self):
@@ -906,7 +900,7 @@ class TestCompilePipeline:
         transform1 = transform(first_valid_transform, expand_transform=expand_transform)
         compile_pipeline.add_transform(transform1)
 
-        assert not compile_pipeline.is_empty()
+        assert compile_pipeline
         assert len(compile_pipeline) == 2
         assert isinstance(compile_pipeline[0], BoundTransform)
         assert compile_pipeline[0].tape_transform is expand_transform
@@ -921,14 +915,14 @@ class TestCompilePipeline:
         transform1 = BoundTransform(transform(first_valid_transform))
         compile_pipeline.append(transform1)
 
-        assert not compile_pipeline.is_empty()
+        assert compile_pipeline
         assert len(compile_pipeline) == 1
         assert isinstance(compile_pipeline[0], BoundTransform)
         assert compile_pipeline[0].tape_transform is first_valid_transform
 
-        transform_container = compile_pipeline.pop_front()
+        transform_container = compile_pipeline.pop(0)
 
-        assert compile_pipeline.is_empty()
+        assert not compile_pipeline
         assert transform_container is transform1
 
     def test_insert_front(self):
@@ -938,15 +932,15 @@ class TestCompilePipeline:
         transform1 = BoundTransform(transform(first_valid_transform))
         compile_pipeline.append(transform1)
 
-        assert not compile_pipeline.is_empty()
+        assert compile_pipeline
         assert len(compile_pipeline) == 1
         assert isinstance(compile_pipeline[0], BoundTransform)
         assert compile_pipeline[0].tape_transform is first_valid_transform
 
         transform2 = BoundTransform(transform(second_valid_transform))
-        compile_pipeline.insert_front(transform2)
+        compile_pipeline.insert(0, transform2)
 
-        assert not compile_pipeline.is_empty()
+        assert compile_pipeline
         assert len(compile_pipeline) == 2
         assert isinstance(compile_pipeline[0], BoundTransform)
         assert compile_pipeline[0] is transform2
@@ -955,28 +949,26 @@ class TestCompilePipeline:
 
         transform3 = BoundTransform(transform(second_valid_transform, is_informative=True))
 
-        with pytest.raises(
-            TransformError,
-            match="Informative transforms can only be added at the end of the program.",
-        ):
-            compile_pipeline.insert_front(transform3)
+        with pytest.raises(TransformError, match="can only be added to the end"):
+            compile_pipeline.insert(0, transform3)
 
     def test_insert_transform(self):
         """Test to insert a transform (dispatcher) at the beginning of a compile pipeline."""
+
         compile_pipeline = CompilePipeline()
 
         transform1 = transform(first_valid_transform)
-        compile_pipeline.insert_front_transform(transform1)
+        compile_pipeline.insert(0, transform1)
 
-        assert not compile_pipeline.is_empty()
+        assert compile_pipeline
         assert len(compile_pipeline) == 1
         assert isinstance(compile_pipeline[0], BoundTransform)
         assert compile_pipeline[0].tape_transform is first_valid_transform
 
         transform2 = transform(second_valid_transform)
-        compile_pipeline.insert_front_transform(transform2)
+        compile_pipeline.insert(0, transform2)
 
-        assert not compile_pipeline.is_empty()
+        assert compile_pipeline
         assert len(compile_pipeline) == 2
         assert isinstance(compile_pipeline[0], BoundTransform)
         assert compile_pipeline[0].tape_transform is second_valid_transform
@@ -985,20 +977,17 @@ class TestCompilePipeline:
 
         transform3 = transform(second_valid_transform, is_informative=True)
 
-        with pytest.raises(
-            TransformError,
-            match="Informative transforms can only be added at the end of the program.",
-        ):
-            compile_pipeline.insert_front_transform(transform3)
+        with pytest.raises(TransformError, match="can only be added to the end"):
+            compile_pipeline.insert(0, transform3)
 
     def test_insert_transform_with_expand(self):
         """Test to insert front a transform with expand into a pipeline."""
         compile_pipeline = CompilePipeline()
 
         transform1 = transform(first_valid_transform, expand_transform=expand_transform)
-        compile_pipeline.insert_front_transform(transform1)
+        compile_pipeline.insert(0, transform1)
 
-        assert not compile_pipeline.is_empty()
+        assert compile_pipeline
         assert len(compile_pipeline) == 2
         assert isinstance(compile_pipeline[0], BoundTransform)
         assert compile_pipeline[0].tape_transform is expand_transform
@@ -1050,6 +1039,7 @@ class TestCompilePipeline:
 
     def test_remove_by_dispatcher(self):
         """Test removing all containers matching a Transform from a program."""
+
         dispatched_transform = transform(first_valid_transform)
         container1 = BoundTransform(dispatched_transform)
         container2 = BoundTransform(dispatched_transform, args=(1,))
@@ -1680,7 +1670,7 @@ class TestCompilePipelineIntegration:
             + ")"
         )
 
-        assert not pipeline.is_empty()
+        assert pipeline
         assert len(pipeline) == 2
         assert pipeline[0].tape_transform is first_valid_transform
         assert pipeline[1].tape_transform is first_valid_transform
@@ -1715,7 +1705,7 @@ class TestCompilePipelineIntegration:
             + ")"
         )
 
-        assert not pipeline.is_empty()
+        assert pipeline
         assert len(pipeline) == 2
         assert pipeline[0].tape_transform is first_valid_transform
         assert pipeline[1].tape_transform is informative_transform
@@ -1753,7 +1743,7 @@ class TestCompilePipelineIntegration:
             + ")"
         )
 
-        assert not pipeline.is_empty()
+        assert pipeline
         assert len(pipeline) == 2
         assert pipeline[0].tape_transform is first_valid_transform
         assert pipeline[1].tape_transform is second_valid_transform
