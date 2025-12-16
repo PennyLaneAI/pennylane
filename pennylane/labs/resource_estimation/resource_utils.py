@@ -138,7 +138,7 @@ def approx_poly_degree(
         ...     poly, stats = np.polynomial.laguerre.Laguerre.fit(x, y, deg, full=True)
         ...     return poly, stats[0]
         >>> degree, poly, loss = approx_poly_degree(
-        ...     x_vec, target_func, poly_degs=(3, 10), error_tol=1e-6, fit_func=fit_func, loss_func="mse"
+        ...     target_func, x_vec, poly_degs=(3, 10), error_tol=1e-6, fit_func=fit_func, loss_func="mse"
         ... )
         >>> print(degree)
         3
@@ -219,17 +219,15 @@ def _process_loss_func(loss_func: str | Callable | None) -> Callable:
             return loss_func
 
 
-def _process_poly_fit(
-    fit_func: Callable | None, basis: str | None
-) -> tuple[Callable, Callable | None]:
+def _process_poly_fit(fit_func: Callable | None, basis: str) -> tuple[Callable, Callable | None]:
     """Process the polynomial fitting function based on the basis.
 
     Args:
         fit_func (Callable | None): function that approximately fits the polynomial and has the signature:
             ``f(x_vec: np.ndarray, y_vec: np.ndarray, deg: int, **fit_kwargs) -> tuple[Callable, float]``.
         basis (str): basis to use for the polynomial. Available options are ``"chebyshev"``,
-            ``"legendre"``, and ``"hermite"``. Defaults to ``None``, which assumes fitting
-            data to a polynomial in the monomial basis.
+            ``"legendre"``, ``"hermite"``, and ``"monomial"``. Any other basis will default
+            to using ``np.polynomial.Polynomial.fit`` as the fitting function unless otherwise provided.
 
     Returns:
         tuple[Callable, Callable | None]: the fit polynomial function and the fit polynomial function.
@@ -238,6 +236,8 @@ def _process_poly_fit(
     if fit_func is None:
         fit_args["full"] = True
         match basis:
+            case "monomial":
+                fit_func = np.polynomial.polynomial.Polynomial.fit
             case "chebyshev":
                 fit_func = np.polynomial.chebyshev.Chebyshev.fit
             case "legendre":
@@ -250,15 +250,15 @@ def _process_poly_fit(
     return fit_func, fit_args
 
 
-def _process_proj_func(project_func: str | Callable | None, basis: str | None) -> Callable | None:
+def _process_proj_func(project_func: str | Callable | None, basis: str) -> Callable | None:
     """Process the projection function.
 
     Args:
         project_func (str | Callable | None): function to project the dense interval
             based on ``x_vec`` to a sparse one with ``[x_vec[0], x_vec[-1]]`` as the domain.
         basis (str): basis to use for the polynomial. Available options are ``"chebyshev"``,
-            ``"legendre"``, and ``"hermite"``. Defaults to ``None``, which assumes fitting
-            data to a polynomial in the monomial basis.
+            ``"legendre"``, ``"hermite"``, and ``"monomial"``. Any other basis will default
+            to using the ``np.linspace`` as the projection function unless otherwise provided.
 
     Returns:
         Callable | None: the projection function.
@@ -268,6 +268,8 @@ def _process_proj_func(project_func: str | Callable | None, basis: str | None) -
             return np.linspace
         case "gauss-lobatto":
             match basis:
+                case "monomial":
+                    return np.linspace
                 case "chebyshev":
                     return _chebyshev_gauss_lobatto
                 case "legendre":
