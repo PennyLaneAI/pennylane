@@ -171,6 +171,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* `qml.vjp` can now be captured into plxpr with program capture for integration with Catalyst.
+  [(#8736)](https://github.com/PennyLaneAI/pennylane/pull/8736)
+
 * Added `Resources.total_wires` and `Resources.total_gates` properties to the 
   ``qml.estimator.Resources`` class. Users can more easily access these quantities from the `Resources` object directly.
   [(#8761)](https://github.com/PennyLaneAI/pennylane/pull/8761)

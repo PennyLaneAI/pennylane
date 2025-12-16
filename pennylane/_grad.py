@@ -125,6 +125,12 @@ def _args_and_argnums(args, argnums):
         argnums = (argnums,)
     argnums = tuple(argnums)
 
+    if max(argnums) >= len(args):
+        raise ValueError(
+            f"Differentiating with respect to argnums {argnums} requires at least {max(argnums)+1}"
+            f" positional arguments. Got {len(args)} positional arguments."
+        )
+
     from jax.tree_util import tree_flatten, treedef_tuple  # pylint: disable=import-outside-toplevel
 
     flat_args, in_trees = zip(*(tree_flatten(arg) for arg in args))
@@ -172,7 +178,7 @@ def _setup_method(method):
 def _capture_diff(func, *, argnums=None, scalar_out: bool = False, method=None, h=None):
     """Capture-compatible gradient computation."""
     # pylint: disable=import-outside-toplevel
-    from jax.tree_util import tree_leaves, tree_unflatten
+    from jax.tree_util import tree_flatten, tree_leaves, tree_unflatten
 
     h = _setup_h(h)
     method = _setup_method(method)
@@ -221,7 +227,7 @@ def _capture_diff(func, *, argnums=None, scalar_out: bool = False, method=None, 
 
 
 def _validate_cotangents(cotangents, out_avals):
-    from jax._src.api import _dtype
+    from jax._src.api import _dtype  # pylint: disable=import-outside-toplevel
 
     def get_shape(x):
         return x.shape if hasattr(x, "shape") else jax.numpy.shape(x)
@@ -827,14 +833,14 @@ def vjp(f, params, cotangents, method=None, h=None, argnums=None, *, argnum=None
 
     Args:
         f(Callable): Function-like object to calculate VJP for
-        params(List[Array]): List (or a tuple) of arguments for `f` specifying the point to calculate
+        params(Sequence[Array]): List (or a tuple) of arguments for `f` specifying the point to calculate
                              VJP at. A subset of these parameters are declared as
                              differentiable by listing their indices in the ``argnums`` parameter.
         cotangents(List[Array]): List (or a tuple) of tangent values to use in VJP. The list size
                                  and shapes must match the size and shape of ``f`` outputs.
         method(str): Differentiation method to use, same as in :func:`~.grad`.
         h (float): the step-size value for the finite-difference (``"fd"``) method
-        argnums (Union[int, List[int]]): the params' indices to differentiate.
+        argnums (Union[int, List[int]]): the params' indices to differentiate. Defaults to ``(0, )``.
 
     Returns:
         Tuple[Array]: Return values of ``f`` paired with the VJP values.
