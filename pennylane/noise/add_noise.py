@@ -272,12 +272,6 @@ def custom_qnode_wrapper(self, qnode, targs, tkwargs):
     compile_pipeline = get_transform_program(qnode, level=level)
 
     cqnode._transform_program = compile_pipeline
-    cqnode.transform_program.push_back(
-        BoundTransform(
-            self,
-            targs,
-            {**tkwargs},
-        )
-    )
+    cqnode.transform_program.append(BoundTransform(self, targs, {**tkwargs}))
 
     return cqnode
