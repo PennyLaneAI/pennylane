@@ -214,7 +214,7 @@ def _update(P: TensorLike, cnots: list[tuple[int]], control: int, target: int):
 def _solve_linear_system_z2(A: np.ndarray, b: np.ndarray) -> np.ndarray:
     """Solve the linear system of equations A.x=b over the Booleans/Z_2.
     This is a simple implementation based on the pseudocode
-    on Wikipedia https://en.wikipedia.org/wiki/Gaussian_elimination#Prototype
+    on Wikipedia https://en.wikipedia.org/wiki/Gaussian_elimination#Pseudocode
 
     Args:
         A (np.ndarray): Square matrix with coefficients (0 or 1).

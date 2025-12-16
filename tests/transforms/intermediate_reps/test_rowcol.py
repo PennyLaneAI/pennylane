@@ -144,11 +144,18 @@ class TestTreeTraversal:
 
 
 def _make_random_regular_matrix(n, random_ops, rs: np.random.RandomState):
+    """Create a random regular (=non-singular) binary matrix.
+    This is done by performing random row additions on the identity matrix, preserving
+    the regularity of the identity matrix itself.
+
+    In the picture of quantum circuits, we are computing the parity matrix of a random CNOT
+    circuit.
+    """
     P = np.eye(n, dtype=int)
     for _ in range(random_ops):
-        i, j = rs.choice(n, size=2, replace=False)
-        P[i] += P[j]
-    return P % 2
+        i, j = rs.choice(n, size=2, replace=False)  # Random pair of rows
+        P[i] += P[j]  # Add second sampled row to first sampled row
+    return P % 2  # Make into binary matrix
 
 
 class TestSolveLinearSystemZ2:
