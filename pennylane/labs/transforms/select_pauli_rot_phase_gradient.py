@@ -33,8 +33,8 @@ def _binary_repr_int(phi, precision):
     so overall we floor but make sure we add a little term to not accidentally write 14 when the result is 14.999..
     """
     phi = phi % (4 * np.pi)
-    phi_round = 2 ** (-precision) * np.round(2**precision * phi / (2 * np.pi))
-    return bin(int(np.floor(2**precision * phi_round / 2 + 1e-10)) + 2 * 2**precision)[-precision:]
+    phi_round = np.round(2**precision * phi / (2 * np.pi))
+    return bin(int(np.floor(phi_round / 2 + 1e-10)) + 2 * 2**precision)[-precision:]
 
 
 # pylint: disable=too-many-arguments
