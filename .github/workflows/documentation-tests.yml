@@ -56,7 +56,7 @@ jobs:
 
       - name: Install Catalyst and Lightning (dev) 
         run: |
-          uv pip install --upgrade --extra-index-url https://test.pypi.org/simple/ --index-url https://pypi.org/simple/ --index-strategy first-index --prerelease=allow pennylane-catalyst pennylane-lightning
+          uv pip install --upgrade --extra-index-url https://test.pypi.org/simple/ --index-url https://pypi.org/simple/ --index-strategy first-index --prerelease=allow --no-deps pennylane-catalyst pennylane-lightning
           uv pip install --upgrade --index-url https://test.pypi.org/simple/  --pre --no-deps pennylane-catalyst pennylane-lightning --force-reinstall --index-strategy first-index  
       - name: Install dependencies
         run: |
