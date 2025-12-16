@@ -17,7 +17,7 @@ This module contains the autograd wrappers :class:`grad` and :func:`jacobian`
 import inspect
 import numbers
 import warnings
-from functools import lru_cache, partial, wraps
+from functools import lru_cache, wraps
 
 from autograd import jacobian as _jacobian
 from autograd.core import make_vjp as _make_vjp
@@ -122,7 +122,8 @@ def _args_and_argnums(args, argnums):
     if argnums is None:
         argnums = 0
     if argnums_is_int := isinstance(argnums, int):
-        argnums = [argnums]
+        argnums = (argnums,)
+    argnums = tuple(argnums)
 
     from jax.tree_util import tree_flatten, treedef_tuple  # pylint: disable=import-outside-toplevel
 
@@ -182,9 +183,10 @@ def _capture_diff(func, *, argnums=None, scalar_out: bool = False, method=None, 
         flat_args, flat_argnums, full_in_tree, trainable_in_tree = _args_and_argnums(args, _argnums)
 
         # Create fully flattened function (flat inputs & outputs)
-        flat_fn = capture.FlatFn(partial(func, **kwargs) if kwargs else func, full_in_tree)
+        flat_fn = capture.FlatFn(func, full_in_tree)
+
         abstracted_axes, abstract_shapes = capture.determine_abstracted_axes(tuple(flat_args))
-        jaxpr = jax.make_jaxpr(flat_fn, abstracted_axes=abstracted_axes)(*flat_args)
+        jaxpr = jax.make_jaxpr(flat_fn, abstracted_axes=abstracted_axes)(*flat_args, **kwargs)
 
         num_abstract_shapes = len(abstract_shapes)
         shift = num_abstract_shapes + len(jaxpr.consts)
@@ -192,6 +194,7 @@ def _capture_diff(func, *, argnums=None, scalar_out: bool = False, method=None, 
         j = jaxpr.jaxpr
         no_consts_jaxpr = j.replace(constvars=(), invars=j.constvars + j.invars)
 
+        flat_inputs, _ = tree_flatten((args, kwargs))
         prim_kwargs = {
             "argnums": shifted_argnums,
             "jaxpr": no_consts_jaxpr,
@@ -203,7 +206,7 @@ def _capture_diff(func, *, argnums=None, scalar_out: bool = False, method=None, 
         out_flat = _get_jacobian_prim().bind(
             *jaxpr.consts,
             *abstract_shapes,
-            *flat_args,
+            *flat_inputs,
             **prim_kwargs,
         )
 

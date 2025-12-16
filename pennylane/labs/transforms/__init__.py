@@ -11,13 +11,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+r"""
+This subpackage contains experimental PennyLane transforms and their building blocks.
+
+.. currentmodule:: pennylane.labs.transforms
+
+.. autosummary::
+    :toctree: api
+
+    ~select_pauli_rot_phase_gradient
+
 """
-Visualization functions for PennyLane-xDSL transformations.
-"""
 
-
-from .collector import QMLCollector
-from .draw import draw
-from .mlir_graph import generate_mlir_graph
-
-__all__ = ["QMLCollector", "draw", "generate_mlir_graph"]
+from .select_pauli_rot_phase_gradient import select_pauli_rot_phase_gradient

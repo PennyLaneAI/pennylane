@@ -44,10 +44,10 @@ def test_mid_circuit_measurement_preprocessing():
     tape = qml.tape.QuantumScript(ops, [qml.expval(qml.Z(0))], shots=1000)
 
     # Process the tape with the device's preprocess method
-    transform_program, _ = dev.preprocess()
+    compile_pipeline, _ = dev.preprocess()
 
-    # Apply the transform program to the tape
-    processed_tapes, _ = transform_program([tape])
+    # Apply the compile pipeline to the tape
+    processed_tapes, _ = compile_pipeline([tape])
 
     # There should be one processed tape
     assert len(processed_tapes) == 1, "Expected exactly one processed tape."
