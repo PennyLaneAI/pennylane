@@ -56,11 +56,11 @@ jobs:
 
       - name: Install Catalyst and Lightning (dev) 
         run: |
-          uv pip install --upgrade --extra-index-url https://test.pypi.org/simple/ --index-url https://pypi.org/simple/ --index-strategy first-index --prerelease=allow --no-deps pennylane-catalyst pennylane-lightning
+          uv pip install --upgrade --extra-index-url https://test.pypi.org/simple/ --index-url https://pypi.org/simple/ --index-strategy first-index --pre --no-deps pennylane-catalyst pennylane-lightning
 
       - name: Install dependencies
         run: |
-          uv pip install --upgrade --extra-index-url https://test.pypi.org/simple/ --index-url https://pypi.org/simple/ --index-strategy first-index pennylane-catalyst pennylane-lightning
+          # uv pip install --upgrade --extra-index-url https://test.pypi.org/simple/ --index-url https://pypi.org/simple/ pennylane-catalyst pennylane-lightning
           uv pip install -e .
           uv pip install sybil pytest "jax==0.7.1" "jaxlib==0.7.1" torch matplotlib pyzx                  
 
