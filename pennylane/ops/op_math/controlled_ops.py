@@ -283,6 +283,8 @@ class CH(Gate, ControlledOp):
         wires (Sequence[int]): the wires the operation acts on
     """
 
+    ndim_params = ()
+
     num_wires = 2
     """int: Number of wires that the operation acts on."""
 
@@ -416,6 +418,8 @@ class CY(Gate, ControlledOp):
         id (str): custom label given to an operator instance,
             can be useful for some applications where the instance has to be identified.
     """
+
+    ndim_params = ()
 
     num_wires = 2
     """int: Number of wires that the operator acts on."""
@@ -558,6 +562,8 @@ class CZ(Gate, ControlledOp):
         wires (Sequence[int]): the wires the operation acts on
     """
 
+    ndim_params = ()
+
     num_wires = 2
     """int: Number of wires that the operator acts on."""
 
@@ -687,6 +693,8 @@ class CSWAP(Gate, ControlledOp):
     Args:
         wires (Sequence[int]): the wires the operation acts on
     """
+
+    ndim_params = ()
 
     num_wires = 3
     """int : Number of wires that the operation acts on."""
@@ -856,6 +864,8 @@ class CCZ(Gate, ControlledOp):
     Args:
         wires (Sequence[int]): the subsystem the gate acts on
     """
+
+    ndim_params = ()
 
     @classmethod
     def _primitive_bind_call(cls, wires, id=None):
@@ -1049,6 +1059,8 @@ class CNOT(Gate, ControlledOp):
 
     name = "CNOT"
 
+    ndim_params = ()
+
     def _flatten(self):
         return tuple(), (self.wires,)
 
@@ -1193,6 +1205,8 @@ class Toffoli(Gate, ControlledOp):
     """int: Number of trainable parameters that the operator depends on."""
 
     name = "Toffoli"
+
+    ndim_params = ()
 
     def _flatten(self):
         return tuple(), (self.wires,)
@@ -1455,6 +1469,8 @@ class MultiControlledX(ControlledOp):
         unchanged.
 
     """
+
+    ndim_params = ()
 
     is_self_inverse = True
     """bool: Whether or not the operator is self-inverse."""
@@ -1764,6 +1780,8 @@ class CRX(Gate, ControlledOp):
         id (str or None): String representing the operation (optional)
     """
 
+    ndim_params = (0,)
+
     num_wires = 2
     """int: Number of wires that the operation acts on."""
 
@@ -1978,6 +1996,8 @@ class CRY(Gate, ControlledOp):
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
+    ndim_params = (0,)
+
     name = "CRY"
     parameter_frequencies = [(0.5, 1.0)]
 
@@ -2165,6 +2185,8 @@ class CRZ(Gate, ControlledOp):
 
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
+
+    ndim_params = (0,)
 
     name = "CRZ"
     parameter_frequencies = [(0.5, 1.0)]
@@ -2388,6 +2410,8 @@ class CRot(Gate, ControlledOp):
     num_params = 3
     """int: Number of trainable parameters that the operator depends on."""
 
+    ndim_params = (0, 0, 0)
+
     name = "CRot"
     parameter_frequencies = [(0.5, 1.0), (0.5, 1.0), (0.5, 1.0)]
 
@@ -2591,6 +2615,8 @@ class ControlledPhaseShift(Gate, ControlledOp):
 
     name = "ControlledPhaseShift"
     parameter_frequencies = [(1,)]
+
+    ndim_params = (0,)
 
     def __init__(self, phi, wires, id=None):
         # We use type.__call__ instead of calling the class directly so that we don't bind the

@@ -2071,7 +2071,7 @@ class Gate(Operation):
             )
         if cls.ndim_params == Operator.ndim_params:  # pylint: disable=comparison-with-callable
             cls.ndim_params = tuple(0 for _ in range(cls.num_params))
-        else:
+        elif any(dim != 0 for dim in cls.ndim_params):
             raise ValueError(
                 "Gate's must only have scalar parameter inputs. ndim_params is"
                 "automatically set to this default and cannot be overwritten."
