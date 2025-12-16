@@ -132,7 +132,7 @@ def _dummy_register(obj):  # just used for sphinx
     return obj  # pragma: no cover
 
 
-class transform:  # pylint: disable=too-many-instance-attributes
+class Transform:  # pylint: disable=too-many-instance-attributes
     r"""Generalizes a function that transforms tapes to work with additional circuit-like
     objects such as a :class:`~.QNode`.
 
@@ -961,7 +961,7 @@ class BoundTransform:  # pylint: disable=too-many-instance-attributes
     __rmul__ = __mul__
 
 
-@transform.generic_register
+@Transform.generic_register
 def _apply_to_tape(obj: QuantumScript, _transform, *targs, **tkwargs):
     if _transform.tape_transform is None:
         raise NotImplementedError(f"transform {_transform} has no defined tape transform.")
@@ -1025,7 +1025,7 @@ def _capture_apply(obj, _transform, *targs, **tkwargs):
     return qfunc_transformed
 
 
-@transform.generic_register
+@Transform.generic_register
 def apply_to_callable(obj: Callable, _transform, *targs, **tkwargs):
     """Apply a transform to a Callable object."""
     if obj.__class__.__name__ == "QJIT":
@@ -1090,7 +1090,7 @@ def apply_to_callable(obj: Callable, _transform, *targs, **tkwargs):
     return qfunc_transformed
 
 
-@transform.generic_register
+@Transform.generic_register
 def _apply_to_sequence(obj: Sequence, _transform, *targs, **tkwargs):
     if not all(isinstance(t, QuantumScript) for t in obj):
         raise TransformError(
@@ -1138,4 +1138,5 @@ def _apply_to_sequence(obj: Sequence, _transform, *targs, **tkwargs):
 
 
 TransformContainer = BoundTransform
-TransformDispatcher = transform
+TransformDispatcher = Transform
+transform = Transform
