@@ -74,11 +74,12 @@ class MultiplexerStatePreparation(Operation):
                 f"State vectors must be of length {2 ** len(wires)}; vector has length {n_amplitudes}."
             )
 
-        norm = math.linalg.norm(state_vector)
-        if not math.allclose(norm, 1.0, atol=1e-3):
-            raise ValueError(
-                f"Input state vectors must have a norm 1.0, the vector has squared norm {norm}"
-            )
+        if not qml.math.is_abstract(state_vector):
+            norm = math.linalg.norm(state_vector)
+            if not math.allclose(norm, 1.0, atol=1e-3):
+                raise ValueError(
+                    f"Input state vectors must have a norm 1.0, the vector has squared norm {norm}"
+                )
 
         self.state_vector = state_vector
         wires = Wires(wires)
@@ -156,6 +157,8 @@ def _multiplexer_state_prep_decomposition(state_vector, wires):  # pylint: disab
             for j in range(math.shape(probs_numerator)[0])
         ]
         # Apply the SelectPauliRot operation to apply the theta rotations
+
+        thetas = qml.math.stack(thetas)
         qml.SelectPauliRot(thetas, target_wire=wires[i], control_wires=wires[:i], rot_axis="Y")
 
     if not qml.math.is_abstract(phases):
@@ -168,6 +171,7 @@ def _multiplexer_state_prep_decomposition(state_vector, wires):  # pylint: disab
 
     else:
         thetas = [1j * phase for phase in phases]
+        thetas = qml.math.stack(thetas)
         qml.DiagonalQubitUnitary(math.exp(thetas), wires=wires)
 
 

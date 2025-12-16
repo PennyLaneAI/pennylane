@@ -227,3 +227,29 @@ class TestMultiplexerStatePreparation:
         output = dev.execute(tape[0])[0]
 
         assert qml.math.allclose(output, output_tf)
+
+    @pytest.mark.jax
+    def test_jit(self):
+        """Tests the template correctly compiles with JAX JIT."""
+        import jax
+
+        state = jax.numpy.array([1 / 2j, -1 / 2, 1 / 2, -1 / 2])
+
+        wires = range(2)
+        dev = qml.device("default.qubit", wires=6)
+
+        @qml.qnode(dev)
+        def circuit(state):
+
+            for wire in wires:
+                qml.Hadamard(wire)
+
+            qml.MultiplexerStatePreparation(
+                state,
+                wires=wires,
+            )
+            return qml.probs(wires)
+
+        jit_circuit = jax.jit(circuit)
+
+        assert qml.math.allclose(circuit(state), jit_circuit(state))
