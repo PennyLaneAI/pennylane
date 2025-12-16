@@ -307,7 +307,7 @@ def get_transform_program(
         For example, you can skip the first transform or reverse the order:
 
         >>> qml.workflow.get_transform_program(circuit, level=slice(1,3))
-        CompilePipeline(merge_rotations, _expand_metric_tensor)
+        CompilePipeline(merge_rotations, _expand_transform_param_shift)
         >>> qml.workflow.get_transform_program(circuit, level=slice(None, None, -1))
         CompilePipeline(metric_tensor, _expand_metric_tensor, _conditional_broadcast_expand, validate_measurements, validate_device_wires, device_resolve_dynamic_wires, decompose, defer_measurements, _expand_transform_param_shift, merge_rotations, cancel_inverses)
 
@@ -318,9 +318,9 @@ def get_transform_program(
         >>> grad_prog = qml.workflow.get_transform_program(circuit, level="gradient")
         >>> dev_prog = qml.workflow.get_transform_program(circuit, level="device")
         >>> grad_prog[len(user_prog) - 1 : -1]
-        CompilePipeline(_expand_transform_param_shift)
+        CompilePipeline(_expand_metric_tensor)
         >>> dev_prog[len(grad_prog) - 1 : -1]
-        CompilePipeline(defer_measurements, decompose, device_resolve_dynamic_wires, validate_device_wires, validate_measurements, _conditional_broadcast_expand)
+        CompilePipeline(decompose, device_resolve_dynamic_wires, validate_device_wires, validate_measurements, _conditional_broadcast_expand, _expand_metric_tensor)
 
     """
     _validate_level(level)
