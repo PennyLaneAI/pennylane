@@ -628,8 +628,9 @@
 
 <h3>Documentation 📝</h3>
 
-* A note clarifying the way the factors of a ``~.ChangeOpBasis`` are iterated in reverse has been
+* A note clarifying that the factors of a ``~.ChangeOpBasis`` are iterated in reverse order has been
   added to the documentation of ``~.ChangeOpBasis``.
+  [(#8757)](https://github.com/PennyLaneAI/pennylane/pull/8757)
 
 * The documentation of ``qml.transforms.rz_phase_gradient`` has been updated with respect to the
   sign convention of phase gradient states, how it prepares the phase gradient state in the code
