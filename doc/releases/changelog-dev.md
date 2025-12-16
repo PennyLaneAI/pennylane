@@ -639,6 +639,9 @@
   that the resource function is correct.
   [(#8687)](https://github.com/PennyLaneAI/pennylane/pull/8687)
 
+* Disabled autograph for the PauliRot decomposition rule as it should not be used with autograph. 
+  [(#8765)](https://github.com/PennyLaneAI/pennylane/pull/8765)
+
 <h3>Documentation 📝</h3>
 
 * A note clarifying that the factors of a ``~.ChangeOpBasis`` are iterated in reverse order has been
@@ -758,6 +761,7 @@ Marcus Edwards,
 Lillian Frederiksen,
 Sengthai Heng,
 Soran Jahangiri,
+Jeffrey Kam,
 Jacob Kitchen,
 Christina Lee,
 Joseph Lee,
