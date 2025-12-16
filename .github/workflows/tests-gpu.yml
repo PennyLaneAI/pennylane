@@ -117,7 +117,7 @@ jobs:
         run: uv pip install -i https://test.pypi.org/simple/ PennyLane-Lightning --pre --upgrade
 
       - name: Run tests
-        run: uv pytest -m "${{ env.SUITE }}" tests
+        run: pytest -m "${{ env.SUITE }}" tests
 
       # Cleans up the working directory so subsequent jobs on same runner get a clean working directory
       # This step runs even if any of the previous steps fail
@@ -129,4 +129,4 @@ jobs:
           rm -rf .git
           rm -rf .gitignore
           rm -rf .github
-          uv pip cache purge
+          pip cache purge
