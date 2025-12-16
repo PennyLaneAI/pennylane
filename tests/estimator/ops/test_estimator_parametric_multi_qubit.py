@@ -254,12 +254,77 @@ class TestPauliRot:
         assert op_resource_type.resource_decomp(**op_resource_params) == expected
 
     @pytest.mark.parametrize(
-        "pauli_string, expected", (("X", qre.RX), ("Y", qre.RY), ("Z", qre.RZ))
+        "pauli_string, precision, expected",
+        (
+            (
+                "X",
+                None,
+                [qre.GateCount(qre.RX.resource_rep(precision=None))],
+            ),
+            (
+                "Y",
+                None,
+                [qre.GateCount(qre.RY.resource_rep(precision=None))],
+            ),
+            (
+                "Z",
+                None,
+                [qre.GateCount(qre.RZ.resource_rep(precision=None))],
+            ),
+            (
+                "XX",
+                None,
+                [
+                    qre.GateCount(qre.RX.resource_rep(precision=None)),
+                    qre.GateCount(qre.CNOT.resource_rep(), 2),
+                ],
+            ),
+            (
+                "YY",
+                None,
+                [
+                    qre.GateCount(qre.RY.resource_rep(precision=None)),
+                    qre.GateCount(qre.CY.resource_rep(), 2),
+                ],
+            ),
+            (
+                "X",
+                1e-3,
+                [qre.GateCount(qre.RX.resource_rep(precision=1e-3))],
+            ),
+            (
+                "Y",
+                1e-3,
+                [qre.GateCount(qre.RY.resource_rep(precision=1e-3))],
+            ),
+            (
+                "Z",
+                1e-3,
+                [qre.GateCount(qre.RZ.resource_rep(precision=1e-3))],
+            ),
+            (
+                "XX",
+                1e-3,
+                [
+                    qre.GateCount(qre.RX.resource_rep(precision=1e-3)),
+                    qre.GateCount(qre.CNOT.resource_rep(), 2),
+                ],
+            ),
+            (
+                "YY",
+                1e-3,
+                [
+                    qre.GateCount(qre.RY.resource_rep(precision=1e-3)),
+                    qre.GateCount(qre.CY.resource_rep(), 2),
+                ],
+            ),
+        ),
     )
-    def test_resource_decomp_single_pauli_string(self, pauli_string, expected):
-        """Test that the resources method produces the correct result for a single pauli string."""
-        expected = [qre.GateCount(expected.resource_rep(precision=1e-3))]
-        assert qre.PauliRot.resource_decomp(pauli_string=pauli_string, precision=1e-3) == expected
+    def test_resource_decomp_special_cases(self, pauli_string, expected, precision):
+        """Test that the resources method produces the correct result for all special cases."""
+        assert (
+            qre.PauliRot.resource_decomp(pauli_string=pauli_string, precision=precision) == expected
+        )
 
     @pytest.mark.parametrize("precision", (None, 1e-3))
     @pytest.mark.parametrize("pauli_word", pauli_words)
