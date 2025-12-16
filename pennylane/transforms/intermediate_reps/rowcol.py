@@ -223,37 +223,36 @@ def _solve_linear_system_z2(A: np.ndarray, b: np.ndarray) -> np.ndarray:
     Returns:
         np.ndarray: Solution vector with same length as ``A`` and ``b`` and entries 0 or 1.
     """
-    h = 0
-    k = 0
     m, n = A.shape
     assert n == m == len(b)
 
     # Create augmented matrix for Gauss-Jordan elimination.
+    # This also creates a copy so that the input ``A`` is not modified in place
     A = np.hstack([A, b.reshape((n, 1))])
-    while h < n and k < n:
+    for k in range(n):
         # Find next row with non-zero entry in ``k``th column
-        i_max = next(iter(i for i in range(h, n) if A[i, k] == 1), None)
+        i_max = next(iter(i for i in range(k, n) if A[i, k] == 1), None)
         # If no such entry was found, this column already is compatible with row-echelon form
-        # Move to the next column.
+        # This only happens for underdetermined systems, which we don't expect to find here
         if i_max is None:
-            k += 1
-            continue
+            raise ValueError(
+                "Did not find next pivot in Gauss-Jordan elimination, indicating a singular matrix."
+                "Singular matrices are not expected nor supported within RowCol."
+                "Extended matrix at time of error:\n{A}"
+            )
 
         # Swap rows
-        A[[h, i_max]] = A[[i_max, h]]
+        A[[k, i_max]] = A[[i_max, k]]
 
         # Iterate through rows and add current row with index ``h`` to them if they
         # have a 1 in the current column with index ``k``.
         for i in range(n):
-            if i == h:  # Exclude the ``h``th row itself of course.
+            if i == k:  # Exclude the ``k``th row itself of course.
                 continue
             if A[i, k] == 0:  # No need to do anything if the target entry already is zero.
                 continue
             # We use addition of rows modulo 2, which is implementable with bitwise xor, or ``^``.
-            A[i] ^= A[h]
-        # Next row and column.
-        h += 1
-        k += 1
+            A[i] ^= A[k]
 
     # Solution is written into the last column of the (augmented) matrix
     return A[:, -1]
