@@ -44,8 +44,8 @@ is_jax_available = True
 is_optax_available = True
 try:
     import jax
-except ImportError:
-    is_jax_available = False
+except ImportError:  # pragma: no cover
+    is_jax_available = False  # pragma: no cover
 
 try:
     import optax
