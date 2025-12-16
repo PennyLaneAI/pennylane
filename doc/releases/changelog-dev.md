@@ -15,10 +15,11 @@
   resource operator.
   [(#8546)](https://github.com/PennyLaneAI/pennylane/pull/8546)
 
-* Users can now perform rapid Clifford+T decomposition with QJIT and program capture enabled,
-  using the new :func:`~pennylane.transforms.gridsynth` compilation pass.
+* Users can now perform rapid Clifford+T decomposition with :func:`pennylane.qjit` using the new 
+  :func:`~pennylane.transforms.gridsynth` compilation pass.
   This pass discretizes ``RZ`` and ``PhaseShift`` gates to either the Clifford+T basis or to the PPR basis.
   [(#8609)](https://github.com/PennyLaneAI/pennylane/pull/8609)
+  [(#8764)](https://github.com/PennyLaneAI/pennylane/pull/8764)
 
 * Quantum Automatic Differentiation implemented to allow automatic selection of optimal
   Hadamard gradient differentiation methods per [the paper](https://arxiv.org/pdf/2408.05406).
@@ -100,6 +101,10 @@
   ```
 
 <h4> Compile Pipeline and Transforms </h4>
+
+* Added decompositions of the ``RX``, ``RY`` and ``RZ`` rotations into one of the other two, as well
+  as basis changing Clifford gates, to the graph-based decomposition system.
+  [(#8569)](https://github.com/PennyLaneAI/pennylane/pull/8569)
 
 * Arithmetic dunder methods (`__add__`, `__mul__`, `__rmul__`) have been added to 
   :class:`~.transforms.core.transform`, :class:`~.transforms.core.BoundTransform`, 
@@ -460,6 +465,13 @@
   has been renamed to `pennylane.transforms.core.compile_pipeline`, and the old name is no longer available.
   [(#8735)](https://github.com/PennyLaneAI/pennylane/pull/8735)
 
+<h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
+
+* A new transform :func:`~.transforms.select_pauli_rot_phase_gradient` has been added. It allows 
+  implementing arbitrary :class:`~.SelectPauliRot` rotations with a phase gradient resource state and 
+  semi-in-place addition (:class:`~.SemiAdder`).
+  [(#8738)](https://github.com/PennyLaneAI/pennylane/pull/8738)
+  
 <h3>Deprecations 👋</h3>
 
 * Maintenance support of NumPy<2.0 is deprecated as of v0.44 and will be completely dropped in v0.45.
@@ -537,7 +549,9 @@
   [(#8290)](https://github.com/PennyLaneAI/pennylane/pull/8290)
 
 * To adjust to the Python 3.14, some error messages expectations have been updated in tests; `get_type_str` added a special branch to handle `Union`.
+  The import of networkx is softened to not occur on import of pennylane to work around a bug in Python 3.14.1.
   [(#8568)](https://github.com/PennyLaneAI/pennylane/pull/8568)
+  [(#8737)](https://github.com/PennyLaneAI/pennylane/pull/8737)
 
 * Bump `jax` version to `0.7.1` for `capture` module.
   [(#8715)](https://github.com/PennyLaneAI/pennylane/pull/8715)
@@ -629,6 +643,10 @@
   [(#8687)](https://github.com/PennyLaneAI/pennylane/pull/8687)
 
 <h3>Documentation 📝</h3>
+
+* A note clarifying that the factors of a ``~.ChangeOpBasis`` are iterated in reverse order has been
+  added to the documentation of ``~.ChangeOpBasis``.
+  [(#8757)](https://github.com/PennyLaneAI/pennylane/pull/8757)
 
 * The documentation of ``qml.transforms.rz_phase_gradient`` has been updated with respect to the
   sign convention of phase gradient states, how it prepares the phase gradient state in the code

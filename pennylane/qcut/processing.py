@@ -18,8 +18,6 @@ Processing functions for circuit cutting.
 import string
 from collections.abc import Sequence
 
-from networkx import MultiDiGraph
-
 from pennylane import math
 from pennylane import numpy as pnp
 from pennylane import pauli
@@ -29,7 +27,7 @@ from .utils import MeasureNode, PrepareNode
 
 def qcut_processing_fn(
     results: Sequence[Sequence],
-    communication_graph: MultiDiGraph,
+    communication_graph,
     prepare_nodes: Sequence[Sequence[PrepareNode]],
     measure_nodes: Sequence[Sequence[MeasureNode]],
     use_opt_einsum: bool = False,
@@ -79,9 +77,7 @@ def qcut_processing_fn(
     return result
 
 
-def qcut_processing_fn_sample(
-    results: Sequence, communication_graph: MultiDiGraph, shots: int
-) -> list:
+def qcut_processing_fn_sample(results: Sequence, communication_graph, shots: int) -> list:
     """
     Function to postprocess samples for the :func:`cut_circuit_mc() <pennylane.cut_circuit_mc>`
     transform. This removes superfluous mid-circuit measurement samples from fragment
@@ -117,7 +113,7 @@ def qcut_processing_fn_sample(
 
 def qcut_processing_fn_mc(
     results: Sequence,
-    communication_graph: MultiDiGraph,
+    communication_graph,
     settings: pnp.ndarray,
     shots: int,
     classical_processing_fn: callable,
@@ -217,7 +213,7 @@ def _get_symbol(i):
 # pylint: disable=too-many-branches
 def contract_tensors(
     tensors: Sequence,
-    communication_graph: MultiDiGraph,
+    communication_graph,
     prepare_nodes: Sequence[Sequence[PrepareNode]],
     measure_nodes: Sequence[Sequence[MeasureNode]],
     use_opt_einsum: bool = False,
