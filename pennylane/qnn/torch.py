@@ -114,12 +114,11 @@ class TorchLayer(Module):
 
         .. code-block::
 
-            from functools import partial
             def print_output_shape(measurements):
                 n_qubits = 2
                 dev = qml.device("default.qubit", wires=n_qubits)
 
-                @partial(qml.set_shots, shots=100)
+                @qml.set_shots(shots=100)
                 @qml.qnode(dev)
                 def qnode(inputs, weights):
                     qml.templates.AngleEmbedding(inputs, wires=range(n_qubits))

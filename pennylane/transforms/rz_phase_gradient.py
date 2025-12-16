@@ -113,8 +113,6 @@ def rz_phase_gradient(
 
     .. code-block:: python
 
-        from functools import partial
-
         from pennylane.transforms.rz_phase_gradient import rz_phase_gradient
 
         precision = 3
@@ -131,8 +129,7 @@ def rz_phase_gradient(
                 qml.H(w)
                 qml.PhaseShift(-np.pi/2**i, w)
 
-        @partial(
-            rz_phase_gradient,
+        @rz_phase_gradient(
             angle_wires=angle_wires,
             phase_grad_wires=phase_grad_wires,
             work_wires=work_wires,

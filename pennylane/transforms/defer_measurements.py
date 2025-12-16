@@ -652,13 +652,12 @@ def defer_measurements(
 
             .. code-block:: python
 
-                from functools import partial
                 import jax
 
                 qml.capture.enable()
 
                 @qml.capture.expand_plxpr_transforms
-                @partial(qml.defer_measurements, num_wires=1)
+                @qml.defer_measurements(num_wires=1)
                 def f(n):
                     qml.measure(n)
 
@@ -690,14 +689,13 @@ def defer_measurements(
 
           .. code-block:: python
 
-              from functools import partial
               import jax
               import jax.numpy as jnp
 
               qml.capture.enable()
 
               @qml.capture.expand_plxpr_transforms
-              @partial(qml.defer_measurements, num_wires=10)
+              @qml.defer_measurements(num_wires=10)
               def f():
                   m0 = qml.measure(0)
 
