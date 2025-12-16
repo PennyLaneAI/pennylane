@@ -537,6 +537,10 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* `qml.cond` will also accept a partial of an operator type as the true function without a false function
+  when capture is enabled.
+  [(#8776)](https://github.com/PennyLaneAI/pennylane/pull/8776)
+
 * `qml.cond`, the `QNode`, transforms, `qml.grad`, and `qml.jacobian` no longer treat all keyword arguments as static
   arguments. They are instead treated as dynamic, numerical inputs, matching the behaviour of Jax and Catalyst.
   [(#8290)](https://github.com/PennyLaneAI/pennylane/pull/8290)
@@ -634,6 +638,9 @@
   allows the test to skip the matrix check part of testing a decomposition rule but still verify
   that the resource function is correct.
   [(#8687)](https://github.com/PennyLaneAI/pennylane/pull/8687)
+
+* Disabled autograph for the PauliRot decomposition rule as it should not be used with autograph. 
+  [(#8765)](https://github.com/PennyLaneAI/pennylane/pull/8765)
 
 <h3>Documentation 📝</h3>
 
@@ -754,6 +761,7 @@ Marcus Edwards,
 Lillian Frederiksen,
 Sengthai Heng,
 Soran Jahangiri,
+Jeffrey Kam,
 Jacob Kitchen,
 Christina Lee,
 Joseph Lee,
