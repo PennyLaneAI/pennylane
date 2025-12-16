@@ -306,6 +306,7 @@ def op_expval(
             :math:`\frac{1}{\sqrt(2)}(|00\dots0> + |11\dots1>)` is used in place of :math:`|00\dots0>`.
         indep_estimates (bool): Whether to use independent estimates of the ops in a batch.
         max_batch_ops (int): Maximum number of operators in a batch. Defaults to None, which means taking all ops at once.
+            Can only be used if ``ops`` is a jnp.array.
         max_batch_samples (int): Maximum number of samples in a batch. Defaults to None, which means taking all n_samples at once.
 
     Returns:
@@ -338,6 +339,19 @@ def op_expval(
         raise ImportError(
             "JAX is required for use of IQP expectation value estimation."
         )  # pragma: no cover
+
+    # do not batch ops if ops is sparse
+    if isinstance(ops, csr_matrix):
+        return _op_expval_batch(
+            gates=pattern,
+            params=params,
+            n_qubits=num_wires,
+            ops=ops,
+            n_samples=n_samples,
+            key=key,
+            indep_estimates=indep_estimates,
+            spin_sym=spin_sym,
+        )
 
     if max_batch_ops is None:
         max_batch_ops = len(ops)

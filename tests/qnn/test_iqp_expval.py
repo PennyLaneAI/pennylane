@@ -16,6 +16,7 @@ from itertools import combinations
 
 import numpy as np
 import pytest
+from scipy.sparse import csr_matrix
 
 from pennylane import IQP, device, qnode
 from pennylane.math import arange
@@ -67,6 +68,30 @@ def local_gates(n_qubits: int, max_weight=2):
             True,
         ),
         (
+            csr_matrix([[0, 1], [1, 0]]),
+            "local_gates",
+            [0.3, 0.2],
+            2,
+            False,
+            True,
+            10_000,
+            10_000,
+            10_000,
+            False,
+        ),
+        # (
+        #     [1],
+        #     "local_gates",
+        #     [0.3],
+        #     1,
+        #     False,
+        #     True,
+        #     10_000,
+        #     10_000,
+        #     10_000,
+        #     False,
+        # ),
+        (
             [[0, 1], [0, 1]],
             "local_gates",
             [0.3, 0.2],
@@ -103,8 +128,11 @@ def test_expval(
 
     key = jax.random.PRNGKey(np.random.randint(0, 99999))
 
+    if not isinstance(ops, csr_matrix):
+        ops = jnp.array(ops)
+
     exp_val, std = op_expval(
-        ops=jnp.array(ops),
+        ops=ops,
         n_samples=n_samples,
         key=key,
         num_wires=n_qubits,
