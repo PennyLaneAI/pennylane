@@ -167,7 +167,7 @@
   to `is_final_transform` to better follow the naming convention for boolean properties. The `transform` 
   property of the :class:`~.transforms.core.Transform` and :class:`~.transforms.core.BoundTransform` 
   has been renamed to `tape_transform` to avoid ambiguity.
-  [(#8765)](https://github.com/PennyLaneAI/pennylane/pull/8756)
+  [(#8756)](https://github.com/PennyLaneAI/pennylane/pull/8756)
 
 <h4>Analyzing your algorithms quickly and easily with resource estimation</h4>
 
