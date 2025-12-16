@@ -270,7 +270,7 @@ class TransformJacobianProducts(JacobianProductCalculator):
     def __init__(
         self,
         inner_execute: Callable,
-        gradient_transform: qml.transforms.core.transform,
+        gradient_transform: qml.transform,
         gradient_kwargs: dict | None = None,
         cache_full_jacobian: bool = False,
     ):

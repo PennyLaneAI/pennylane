@@ -23,8 +23,8 @@ import pennylane as qml
 from pennylane.tape import QuantumScript, QuantumScriptBatch, QuantumTape
 from pennylane.transforms.core import (
     BoundTransform,
+    Transform,
     TransformError,
-    transform,
 )
 from pennylane.typing import PostprocessingFn, TensorLike
 
@@ -260,7 +260,7 @@ class TestBoundTransform:
         c = BoundTransform(first_valid_transform, is_informative=True)
 
         # pylint: disable=protected-access
-        assert isinstance(c._transform, transform)
+        assert isinstance(c._transform, Transform)
         assert c.is_informative
         assert c._transform.is_informative  # pylint: disable=protected-access
 
@@ -281,15 +281,15 @@ class TestTransformExtension:
             def __init__(self, ops):
                 self.ops = ops
 
-        def subroutine_func(obj: Subroutine, _transform, *targs, **tkwargs):
+        def subroutine_func(obj: Subroutine, transform, *targs, **tkwargs):
             tape = qml.tape.QuantumScript(obj.ops)
-            [new_tape], _ = _transform(tape, *targs, **tkwargs)
+            [new_tape], _ = transform(tape, *targs, **tkwargs)
             return Subroutine(new_tape.operations)
 
         if explicit_type:
-            transform.generic_register(Subroutine)(subroutine_func)
+            Transform.generic_register(Subroutine)(subroutine_func)
         else:
-            transform.generic_register(subroutine_func)
+            Transform.generic_register(subroutine_func)
 
         @qml.transform
         def dummy_transform(tape, op, n_times):

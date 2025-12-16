@@ -101,14 +101,14 @@ def _create_plxpr_fallback_transform(tape_transform):
     return plxpr_fallback_transform
 
 
-def specific_apply_transform(_transform, obj, *targs, **tkwargs):
+def specific_apply_transform(transform, obj, *targs, **tkwargs):
     """The default behavior for transform._apply_transform. By default, it dispatches to the
     generic registration."""
-    return _transform.generic_apply_transform(obj, *targs, **tkwargs)
+    return transform.generic_apply_transform(obj, *targs, **tkwargs)
 
 
 @singledispatch
-def generic_apply_transform(obj, _transform, *targs, **tkwargs):
+def generic_apply_transform(obj, transform, *targs, **tkwargs):
     """Apply an generic transform to a specific type of object. A singledispatch function
     used by ``TransformDipsatcher.generic_apply_transform``, but with a different order of arguments
     to allow is to be used by singledispatch.
@@ -122,7 +122,7 @@ def generic_apply_transform(obj, _transform, *targs, **tkwargs):
     """
     # If the first argument is not a valid dispatch target, return a BoundTransform
     # with the first argument and any additional args/kwargs stored as transform parameters.
-    return BoundTransform(_transform, args=(obj, *targs), kwargs=tkwargs)
+    return BoundTransform(transform, args=(obj, *targs), kwargs=tkwargs)
 
 
 # pragma: no cover
@@ -132,7 +132,7 @@ def _dummy_register(obj):  # just used for sphinx
     return obj  # pragma: no cover
 
 
-class transform:  # pylint: disable=too-many-instance-attributes
+class Transform:  # pylint: disable=too-many-instance-attributes
     r"""Generalizes a function that transforms tapes to work with additional circuit-like
     objects such as a :class:`~.QNode`.
 
@@ -208,7 +208,7 @@ class transform:  # pylint: disable=too-many-instance-attributes
 
     We first apply ``transform`` to ``my_quantum_transform``:
 
-    >>> dispatched_transform = transform(my_quantum_transform)
+    >>> dispatched_transform = qml.transform(my_quantum_transform)
 
     Now you can use the dispatched transform directly on a :class:`pennylane.QNode`.
 
@@ -649,7 +649,7 @@ class transform:  # pylint: disable=too-many-instance-attributes
     def __add__(self, other):
         """Add two transforms to create a CompilePipeline."""
 
-        if not isinstance(other, (transform, BoundTransform)):
+        if not isinstance(other, (Transform, BoundTransform)):
             return NotImplemented
 
         # Technically this is checked in the CompilePipeline dunders but we still
@@ -826,20 +826,20 @@ class BoundTransform:  # pylint: disable=too-many-instance-attributes
 
     def __init__(
         self,
-        _transform: transform,
+        transform: Transform,
         args: tuple | list = (),
         kwargs: None | dict = None,
         *,
         use_argnum: bool = False,
         **transform_config,
     ):
-        if not isinstance(_transform, transform):
-            _transform = transform(_transform, **transform_config)
+        if not isinstance(transform, Transform):
+            transform = Transform(transform, **transform_config)
         elif transform_config:
             raise ValueError(
                 f"transform_config kwargs {transform_config} cannot be passed if a transform is provided."
             )
-        self._transform = _transform
+        self._transform = transform
         self._args = tuple(args)
         self._kwargs = kwargs or {}
         self._use_argnum = use_argnum
@@ -949,7 +949,7 @@ class BoundTransform:  # pylint: disable=too-many-instance-attributes
     def __add__(self, other):
         """Add two transforms to create a CompilePipeline."""
 
-        if not isinstance(other, (transform, BoundTransform)):
+        if not isinstance(other, (Transform, BoundTransform)):
             return NotImplemented
 
         # Import here to avoid circular import
@@ -990,17 +990,17 @@ class BoundTransform:  # pylint: disable=too-many-instance-attributes
     __rmul__ = __mul__
 
 
-@transform.generic_register
-def _apply_to_tape(obj: QuantumScript, _transform, *targs, **tkwargs):
-    if _transform.tape_transform is None:
-        raise NotImplementedError(f"transform {_transform} has no defined tape transform.")
-    if _transform.expand_transform:
-        expanded_tapes, expand_processing = _transform.expand_transform(obj, *targs, **tkwargs)
+@Transform.generic_register
+def _apply_to_tape(obj: QuantumScript, transform, *targs, **tkwargs):
+    if transform.tape_transform is None:
+        raise NotImplementedError(f"transform {transform} has no defined tape transform.")
+    if transform.expand_transform:
+        expanded_tapes, expand_processing = transform.expand_transform(obj, *targs, **tkwargs)
         transformed_tapes = []
         processing_and_slices = []
         start = 0
         for tape in expanded_tapes:
-            intermediate_tapes, post_processing_fn = _transform.tape_transform(
+            intermediate_tapes, post_processing_fn = transform.tape_transform(
                 tape, *targs, **tkwargs
             )
             transformed_tapes.extend(intermediate_tapes)
@@ -1013,15 +1013,15 @@ def _apply_to_tape(obj: QuantumScript, _transform, *targs, **tkwargs):
             return expand_processing(processed_results)
 
     else:
-        transformed_tapes, processing_fn = _transform.tape_transform(obj, *targs, **tkwargs)
+        transformed_tapes, processing_fn = transform.tape_transform(obj, *targs, **tkwargs)
 
-    if _transform.is_informative:
+    if transform.is_informative:
         return processing_fn(transformed_tapes)
 
     return transformed_tapes, processing_fn
 
 
-def _capture_apply(obj, _transform, *targs, **tkwargs):
+def _capture_apply(obj, transform, *targs, **tkwargs):
     @autograph.wraps(obj)
     def qfunc_transformed(*args, **kwargs):
         import jax  # pylint: disable=import-outside-toplevel
@@ -1045,7 +1045,7 @@ def _capture_apply(obj, _transform, *targs, **tkwargs):
             consts_slice=consts_slice,
             targs_slice=targs_slice,
             tkwargs=tkwargs,
-            transform=_transform,
+            transform=transform,
         )
 
         assert flat_qfunc.out_tree is not None
@@ -1054,20 +1054,20 @@ def _capture_apply(obj, _transform, *targs, **tkwargs):
     return qfunc_transformed
 
 
-@transform.generic_register
-def apply_to_callable(obj: Callable, _transform, *targs, **tkwargs):
+@Transform.generic_register
+def apply_to_callable(obj: Callable, transform, *targs, **tkwargs):
     """Apply a transform to a Callable object."""
     if obj.__class__.__name__ == "QJIT":
         raise TransformError(
             "Functions that are wrapped / decorated with qjit cannot subsequently be"
-            f" transformed with a PennyLane transform (attempted {_transform})."
-            f" For the desired affect, ensure that qjit is applied after {_transform}."
+            f" transformed with a PennyLane transform (attempted {transform})."
+            f" For the desired affect, ensure that qjit is applied after {transform}."
         )
 
     @wraps(obj)
     def qfunc_transformed(*args, **kwargs):
         if capture.enabled():
-            return _capture_apply(obj, _transform, *targs, **tkwargs)(*args, **kwargs)
+            return _capture_apply(obj, transform, *targs, **tkwargs)(*args, **kwargs)
 
         # removes the argument to the qfuncs from the active queuing context.
         leaves, _ = flatten((args, kwargs), lambda obj: isinstance(obj, Operator))
@@ -1081,12 +1081,10 @@ def apply_to_callable(obj: Callable, _transform, *targs, **tkwargs):
         tape = QuantumScript.from_queue(q)
 
         with QueuingManager.stop_recording():
-            if _transform.is_informative:
-                transformed_tapes, processing_fn = _transform.tape_transform(
-                    tape, *targs, **tkwargs
-                )
+            if transform.is_informative:
+                transformed_tapes, processing_fn = transform.tape_transform(tape, *targs, **tkwargs)
             else:
-                transformed_tapes, processing_fn = _transform(tape, *targs, **tkwargs)
+                transformed_tapes, processing_fn = transform(tape, *targs, **tkwargs)
 
         if len(transformed_tapes) != 1:
             raise TransformError(
@@ -1096,7 +1094,7 @@ def apply_to_callable(obj: Callable, _transform, *targs, **tkwargs):
 
         transformed_tape = transformed_tapes[0]
 
-        if _transform.is_informative:
+        if transform.is_informative:
             return processing_fn(transformed_tapes)
 
         for op in transformed_tape.operations:
@@ -1119,8 +1117,8 @@ def apply_to_callable(obj: Callable, _transform, *targs, **tkwargs):
     return qfunc_transformed
 
 
-@transform.generic_register
-def _apply_to_sequence(obj: Sequence, _transform, *targs, **tkwargs):
+@Transform.generic_register
+def _apply_to_sequence(obj: Sequence, transform, *targs, **tkwargs):
     if not all(isinstance(t, QuantumScript) for t in obj):
         raise TransformError(
             f"Transforms can only apply to sequences of QuantumScript, not {type(obj[0])}"
@@ -1133,7 +1131,7 @@ def _apply_to_sequence(obj: Sequence, _transform, *targs, **tkwargs):
         # Preprocess the tapes by applying transforms
         # to each tape, and storing corresponding tapes
         # for execution, processing functions, and list of tape lengths.
-        new_tapes, fn = _transform(t, *targs, **tkwargs)
+        new_tapes, fn = transform(t, *targs, **tkwargs)
         execution_tapes.extend(new_tapes)
         batch_fns.append(fn)
         tape_counts.append(len(new_tapes))
@@ -1167,4 +1165,4 @@ def _apply_to_sequence(obj: Sequence, _transform, *targs, **tkwargs):
 
 
 TransformContainer = BoundTransform
-TransformDispatcher = transform
+TransformDispatcher = Transform

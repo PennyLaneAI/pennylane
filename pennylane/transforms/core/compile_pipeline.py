@@ -28,7 +28,7 @@ from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import BatchPostprocessingFn, PostprocessingFn, ResultBatch
 
 from .cotransform_cache import CotransformCache
-from .transform_dispatcher import BoundTransform, transform
+from .transform_dispatcher import BoundTransform, Transform
 
 if TYPE_CHECKING:
     import jax
@@ -176,12 +176,12 @@ class CompilePipeline:
     @overload
     def __init__(
         self,
-        *transforms: CompilePipeline | BoundTransform | transform,
+        *transforms: CompilePipeline | BoundTransform | Transform,
         cotransform_cache: CotransformCache | None = None,
     ): ...
     def __init__(
         self,
-        *transforms: CompilePipeline | BoundTransform | transform | Sequence[BoundTransform],
+        *transforms: CompilePipeline | BoundTransform | Transform | Sequence[BoundTransform],
         cotransform_cache: CotransformCache | None = None,
     ):
         if len(transforms) == 1 and isinstance(transforms[0], Sequence):
@@ -192,7 +192,7 @@ class CompilePipeline:
         self._compile_pipeline = []
         self.cotransform_cache = cotransform_cache
         for obj in transforms:
-            if not isinstance(obj, (CompilePipeline, BoundTransform, transform)):
+            if not isinstance(obj, (CompilePipeline, BoundTransform, Transform)):
                 raise TypeError(
                     "CompilePipeline can only be constructed with a series of transforms "
                     "or compile pipelines, or with a single list of transforms."
@@ -224,10 +224,10 @@ class CompilePipeline:
     def __bool__(self) -> bool:
         return bool(self._compile_pipeline)
 
-    def __add__(self, other: CompilePipeline | BoundTransform | transform) -> CompilePipeline:
+    def __add__(self, other: CompilePipeline | BoundTransform | Transform) -> CompilePipeline:
 
         # Convert dispatcher to container if needed
-        if isinstance(other, transform):
+        if isinstance(other, Transform):
             other = BoundTransform(other)
 
         # Handle BoundTransform
@@ -257,7 +257,7 @@ class CompilePipeline:
 
         return NotImplemented
 
-    def __radd__(self, other: BoundTransform | transform) -> CompilePipeline:
+    def __radd__(self, other: BoundTransform | Transform) -> CompilePipeline:
         """Right addition to prepend a transform to the program.
 
         Args:
@@ -266,7 +266,7 @@ class CompilePipeline:
         Returns:
             CompilePipeline: A new program with the transform prepended.
         """
-        if isinstance(other, transform):
+        if isinstance(other, Transform):
             other = BoundTransform(other)
 
         if not isinstance(other, BoundTransform):
@@ -281,17 +281,17 @@ class CompilePipeline:
         transforms += self._compile_pipeline
         return CompilePipeline(transforms, cotransform_cache=self.cotransform_cache)
 
-    def __iadd__(self, other: CompilePipeline | BoundTransform | transform) -> CompilePipeline:
+    def __iadd__(self, other: CompilePipeline | BoundTransform | Transform) -> CompilePipeline:
         """In-place addition to append a transform to the program.
 
         Args:
-            other: A BoundTransform, transform, or CompilePipeline to append.
+            other: A BoundTransform, Transform, or CompilePipeline to append.
 
         Returns:
             CompilePipeline: This program with the transform(s) appended.
         """
         # Convert dispatcher to container if needed
-        if isinstance(other, transform):
+        if isinstance(other, Transform):
             other = BoundTransform(other)
 
         if isinstance(other, BoundTransform):
@@ -355,25 +355,25 @@ class CompilePipeline:
     def __contains__(self, obj) -> bool:
         if isinstance(obj, BoundTransform):
             return obj in self._compile_pipeline
-        if isinstance(obj, transform):
+        if isinstance(obj, Transform):
             return any(obj.tape_transform == t.tape_transform for t in self)
         return False
 
-    def remove(self, obj: BoundTransform | transform):
+    def remove(self, obj: BoundTransform | Transform):
         """In place remove the input containers, specifically,
         1. if the input is a transform, remove all containers matching the dispatcher;
         2. if the input is a BoundTransform, remove all containers exactly matching the input.
 
         Args:
-            obj (BoundTransform or transform): The object to remove from the program.
+            obj (BoundTransform or Transform): The object to remove from the program.
         """
-        if not isinstance(obj, (transform, BoundTransform)):
+        if not isinstance(obj, (Transform, BoundTransform)):
             raise TypeError("Only BoundTransform or transform can be removed.")
 
         i = len(self) - 1
         while i >= 0:
             # pylint: disable=protected-access
-            if (isinstance(obj, transform) and obj == self[i]._transform) or self[i] == obj:
+            if (isinstance(obj, Transform) and obj == self[i]._transform) or self[i] == obj:
                 removed = self.pop(i)
                 # Remove the associated expand_transform if present
                 if i > 0 and removed.expand_transform == self[i - 1]:
@@ -381,7 +381,7 @@ class CompilePipeline:
                     i -= 1
             i -= 1
 
-    def append(self, _transform: BoundTransform | transform):
+    def append(self, _transform: BoundTransform | Transform):
         """Add a transform to the end of the program.
 
         Args:
@@ -399,25 +399,25 @@ class CompilePipeline:
                 self._compile_pipeline.append(expand_transform)
             self._compile_pipeline.append(_transform)
 
-    def add_transform(self, _transform: transform, *targs, **tkwargs):
+    def add_transform(self, transform: Transform, *targs, **tkwargs):
         """Add a transform to the end of the program.
 
         Note that this should be a function decorated with/called by
-        ``qml.transforms.tape_transform``, and not a ``BoundTransform``.
+        ``qml.transform``, and not a ``BoundTransform``.
 
         Args:
-            _transform (transform): The transform to add to the compile pipeline.
+            transform (Transform): The transform to add to the compile pipeline.
             *targs: Any additional arguments that are passed to the transform.
 
         Keyword Args:
             **tkwargs: Any additional keyword arguments that are passed to the transform.
 
         """
-        if not isinstance(_transform, transform):
+        if not isinstance(transform, Transform):
             raise TransformError("Only transforms can be added to the compile pipeline.")
-        self.append(BoundTransform(_transform, args=targs, kwargs=tkwargs))
+        self.append(BoundTransform(transform, args=targs, kwargs=tkwargs))
 
-    def insert(self, index: int, _transform: transform | BoundTransform):
+    def insert(self, index: int, transform: Transform | BoundTransform):
         """Insert a transform at a given index.
 
         Args:
@@ -425,15 +425,15 @@ class CompilePipeline:
             _transform (transform or BoundTransform): the transform to insert
 
         """
-        if not isinstance(_transform, BoundTransform):
-            _transform = BoundTransform(_transform)
+        if not isinstance(transform, BoundTransform):
+            transform = BoundTransform(transform)
 
         # Program can only contain one informative transform and at the end of the program
-        if self and _transform.is_final_transform:
+        if self and transform.is_final_transform:
             raise TransformError("Terminal transform can only be added to the end of the pipeline.")
 
-        self._compile_pipeline.insert(index, _transform)
-        if expand_transform := _transform.expand_transform:
+        self._compile_pipeline.insert(index, transform)
+        if expand_transform := transform.expand_transform:
             self._compile_pipeline.insert(index, expand_transform)
 
     def pop(self, index: int):
@@ -518,7 +518,7 @@ class CompilePipeline:
         processing_fns_stack = []
 
         for bound_transform in self:
-            _transform, targs, tkwargs, cotransform, _, _, _ = bound_transform
+            transform, targs, tkwargs, cotransform, _, _, _ = bound_transform
             tkwargs = {
                 key: value for key, value in tkwargs.items() if key not in {"argnums", "hybrid"}
             }
@@ -535,11 +535,11 @@ class CompilePipeline:
             for tape_idx, tape in enumerate(tapes):
                 if argnums is not None:
                     tape.trainable_params = argnums[tape_idx]
-                if _transform is None:
+                if transform is None:
                     raise NotImplementedError(
                         f"transform {bound_transform} has no defined tape transform."
                     )
-                new_tapes, fn = _transform(tape, *targs, **tkwargs)
+                new_tapes, fn = transform(tape, *targs, **tkwargs)
                 execution_tapes.extend(new_tapes)
 
                 fns.append(fn)
@@ -638,10 +638,10 @@ class CompilePipeline:
         return self.__call_generic(first_arg)
 
 
-@transform.generic_register
-def _apply_to_program(obj: CompilePipeline, _transform, *targs, **tkwargs):
+@Transform.generic_register
+def _apply_to_program(obj: CompilePipeline, transform, *targs, **tkwargs):
     program = copy(obj)
-    program.append(BoundTransform(_transform, args=targs, kwargs=tkwargs))
+    program.append(BoundTransform(transform, args=targs, kwargs=tkwargs))
     return program
 
 
