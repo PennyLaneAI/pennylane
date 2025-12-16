@@ -453,7 +453,7 @@
   has been renamed to `pennylane.transforms.core.compile_pipeline`, and the old name is no longer available.
   [(#8735)](https://github.com/PennyLaneAI/pennylane/pull/8735)
 
-* The `max_work_wires` argument of the :func:`~pennylane.transforms.decompose` transform has been renamed to `num_work_wires`.
+* The ``max_work_wires`` argument of the :func:`~pennylane.transforms.decompose` transform has been renamed to ``num_work_wires``.
   [(#8769)](https://github.com/PennyLaneAI/pennylane/pull/8769)
 
 <h3>Deprecations 👋</h3>
