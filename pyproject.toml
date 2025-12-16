@@ -114,7 +114,6 @@ docs = [
     "sphinxcontrib-htmlhelp==2.1.0",
     "sphinxcontrib-serializinghtml==2.0.0",
     "torch==2.9.0",
-    "tensorflow==2.19",
     "tensornetwork==0.3",
     "jinja2>=3.1",
     "networkx==3.1",
