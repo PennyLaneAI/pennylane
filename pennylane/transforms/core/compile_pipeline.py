@@ -18,6 +18,7 @@ This module contains the ``CompilePipeline`` class.
 from __future__ import annotations
 
 from collections.abc import Sequence
+from contextlib import contextmanager
 from copy import copy
 from functools import partial
 from typing import TYPE_CHECKING, overload
@@ -199,7 +200,7 @@ class CompilePipeline:
             self += obj
 
     def __copy__(self):
-        return CompilePipeline(self._compile_pipeline, cotransform_cache=self.cotransform_cache)
+        return CompilePipeline(self._compile_pipeline[:], cotransform_cache=self.cotransform_cache)
 
     def __iter__(self):
         """list[BoundTransform]: Return an iterator to the underlying compile pipeline."""
@@ -231,16 +232,19 @@ class CompilePipeline:
 
         # Handle BoundTransform
         if isinstance(other, BoundTransform):
-            other = CompilePipeline([other])
+            transforms = [other]
+            if expand_transform := other.expand_transform:
+                transforms.insert(0, expand_transform)
+            other = CompilePipeline(transforms)
 
         # Handle CompilePipeline
         if isinstance(other, CompilePipeline):
             if self.has_final_transform and other.has_final_transform:
                 raise TransformError("The compile pipeline already has a terminal transform.")
 
-            transforms = self._compile_pipeline + other._compile_pipeline
-            if self.has_final_transform:
-                transforms.append(transforms.pop(len(self) - 1))
+            transforms = self._compile_pipeline[:]
+            with _exclude_terminal_transform(transforms):
+                transforms.extend(other._compile_pipeline)
 
             cotransform_cache = None
             if self.cotransform_cache:
@@ -262,14 +266,17 @@ class CompilePipeline:
         Returns:
             CompilePipeline: A new program with the transform prepended.
         """
-        if isinstance(other, BoundTransform):
-            if self.has_final_transform and other.is_final_transform:
-                raise TransformError("The compile pipeline already has a terminal transform.")
+        if not isinstance(other, BoundTransform):
+            return NotImplemented
 
-            transforms = [other] + self._compile_pipeline
-            return CompilePipeline(transforms, cotransform_cache=self.cotransform_cache)
+        if self.has_final_transform and other.is_final_transform:
+            raise TransformError("The compile pipeline already has a terminal transform.")
 
-        return NotImplemented
+        transforms = [other]
+        if expand_transform := other.expand_transform:
+            transforms.insert(0, expand_transform)
+        transforms += self._compile_pipeline
+        return CompilePipeline(transforms, cotransform_cache=self.cotransform_cache)
 
     def __iadd__(self, other: CompilePipeline | BoundTransform | transform) -> CompilePipeline:
         """In-place addition to append a transform to the program.
@@ -285,26 +292,23 @@ class CompilePipeline:
             other = BoundTransform(other)
 
         if isinstance(other, BoundTransform):
-            other = CompilePipeline([other])
+            transforms = [other]
+            if expand_transform := other.expand_transform:
+                transforms.insert(0, expand_transform)
+            other = CompilePipeline(transforms)
 
         if isinstance(other, CompilePipeline):
             if self.has_final_transform and other.has_final_transform:
                 raise TransformError("The compile pipeline already has a terminal transform.")
 
-            if self.has_final_transform:
-                # Remove the final transform
-                final_transform = self._compile_pipeline.pop(-1)
-                # Extend with other's transforms
-                self._compile_pipeline.extend(other._compile_pipeline)
-                # Add the final transform back
-                self._compile_pipeline.append(final_transform)
-            else:
+            with _exclude_terminal_transform(self._compile_pipeline):
                 self._compile_pipeline.extend(other._compile_pipeline)
 
             if other.cotransform_cache:
                 if self.cotransform_cache:
                     raise ValueError("Cannot add two compile pipelines with cotransform caches.")
                 self.cotransform_cache = other.cotransform_cache
+
             return self
 
         return NotImplemented
@@ -360,43 +364,37 @@ class CompilePipeline:
         Args:
             obj (BoundTransform or transform): The object to remove from the program.
         """
-        if isinstance(obj, BoundTransform):
-            self._compile_pipeline = [t for t in self._compile_pipeline if t != obj]
-        elif isinstance(obj, transform):
-            self._compile_pipeline = [
-                t for t in self._compile_pipeline if t.tape_transform != obj.tape_transform
-            ]
-        else:
+        if not isinstance(obj, (transform, BoundTransform)):
             raise TypeError("Only BoundTransform or transform can be removed.")
 
-    def push_back(self, transform_container: BoundTransform):
-        """Add a transform (container) to the end of the program.
+        i = len(self) - 1
+        while i >= 0:
+            if (isinstance(obj, transform) and obj == self[i].tape_transform) or self[i] == obj:
+                removed = self.pop(i)
+                i -= 1
+                # Remove the associated expand_transform if present
+                if i >= 0 and removed.expand_transform == self[i]:
+                    self.pop(i)
+                    i -= 1
+            i -= 1
+
+    def append(self, bound_transform: BoundTransform):
+        """Add a transform to the end of the program.
 
         Args:
             transform_container(BoundTransform): A transform represented by its container.
         """
-        if not isinstance(transform_container, BoundTransform):
-            raise TransformError("Only transform container can be added to the compile pipeline.")
+        if not isinstance(bound_transform, BoundTransform):
+            raise TransformError("Only BoundTransform can be added to the compile pipeline.")
 
         # Program can only contain one informative transform and at the end of the program
-        if self.has_final_transform:
-            if transform_container.is_final_transform:
-                raise TransformError("The compile pipeline already has a terminal transform.")
-            self._compile_pipeline.insert(-1, transform_container)
-            return
-        self._compile_pipeline.append(transform_container)
+        if self.has_final_transform and bound_transform.is_final_transform:
+            raise TransformError("The compile pipeline already has a terminal transform.")
 
-    def insert_front(self, transform_container: BoundTransform):
-        """Insert the transform container at the beginning of the program.
-
-        Args:
-            transform_container(BoundTransform): A transform represented by its container.
-        """
-        if (transform_container.is_final_transform) and not self.is_empty():
-            raise TransformError(
-                "Informative transforms can only be added at the end of the program."
-            )
-        self._compile_pipeline.insert(0, transform_container)
+        with _exclude_terminal_transform(self._compile_pipeline):
+            if expand_transform := bound_transform.expand_transform:
+                self._compile_pipeline.append(expand_transform)
+            self._compile_pipeline.append(bound_transform)
 
     def add_transform(self, _transform: transform, *targs, **tkwargs):
         """Add a transform to the end of the program.
@@ -413,65 +411,23 @@ class CompilePipeline:
 
         """
         if not isinstance(_transform, transform):
-            raise TransformError("Only transform dispatcher can be added to the compile pipeline.")
+            raise TransformError("Only transforms can be added to the compile pipeline.")
+        self.append(BoundTransform(_transform, args=targs, kwargs=tkwargs))
 
-        if _transform.expand_transform:
-            self.push_back(BoundTransform(transform(_transform.expand_transform), targs, tkwargs))
-        self.push_back(BoundTransform(_transform, args=targs, kwargs=tkwargs))
-
-    def insert_front_transform(self, _transform: transform, *targs, **tkwargs):
-        """Add a transform to the beginning of the program.
+    def pop(self, index: int):
+        """Pop the transform container at a given index of the program.
 
         Args:
-            transform (transform): The transform to add to the front of the compile pipeline.
-            *targs: Any additional arguments that are passed to the transform.
-
-        Keyword Args:
-            **tkwargs: Any additional keyword arguments that are passed to the transform.
-
-        """
-        if _transform.is_final_transform and not self.is_empty():
-            raise TransformError(
-                "Informative transforms can only be added at the end of the program."
-            )
-
-        self.insert_front(BoundTransform(_transform, args=targs, kwargs=tkwargs))
-
-        if _transform.expand_transform:
-            self.insert_front(
-                BoundTransform(transform(_transform.expand_transform), targs, tkwargs)
-            )
-
-    def pop_front(self):
-        """Pop the transform container at the beginning of the program.
+            index (int): the index of the transform to remove.
 
         Returns:
-            BoundTransform: The transform container at the beginning of the program.
+            BoundTransform: The removed transform.
+
         """
-        return self._compile_pipeline.pop(0)
-
-    def get_last(self):
-        """Get the last transform container.
-
-        Returns:
-            BoundTransform: The last transform in the program.
-
-        Raises:
-            TransformError: It raises an error if the program is empty.
-        """
-        if self:
-            return self._compile_pipeline[-1]
-        raise TransformError(
-            "The compile pipeline is empty and you cannot get the last transform container."
-        )
-
-    def is_empty(self):
-        """Check if the compile pipeline is empty or not.
-
-        Returns:
-            bool: Boolean, True if empty, False otherwise.
-        """
-        return len(self) == 0
+        _transform = self._compile_pipeline.pop(index)
+        if index > 0 and _transform.expand_transform == self._compile_pipeline[index - 1]:
+            self._compile_pipeline.pop(index - 1)
+        return _transform
 
     @property
     def is_informative(self) -> bool:
@@ -663,19 +619,19 @@ class CompilePipeline:
 @transform.generic_register
 def _apply_to_program(obj: CompilePipeline, _transform, *targs, **tkwargs):
     program = copy(obj)
-
-    if _transform.expand_transform:
-        # pylint: disable=protected-access
-        program.push_back(
-            BoundTransform(
-                _transform.expand_transform,
-                targs,
-                tkwargs,
-                use_argnum=_transform._use_argnum_in_expand,
-            )
-        )
-    program.push_back(BoundTransform(_transform, args=targs, kwargs=tkwargs))
+    program.append(BoundTransform(_transform, args=targs, kwargs=tkwargs))
     return program
+
+
+@contextmanager
+def _exclude_terminal_transform(transforms: list[BoundTransform]):
+    terminal_transforms = []
+    if transforms and transforms[-1].is_final_transform:
+        terminal_transforms.append(transforms.pop())
+        if transforms and terminal_transforms[0].expand_transform == transforms[-1]:
+            terminal_transforms.insert(0, transforms.pop())
+    yield
+    transforms.extend(terminal_transforms)
 
 
 TransformProgram = CompilePipeline

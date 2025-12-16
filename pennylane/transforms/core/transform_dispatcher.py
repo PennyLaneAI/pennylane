@@ -574,7 +574,6 @@ class transform:  # pylint: disable=too-many-instance-attributes
         I have an operator: X(0)
         X(0)
 
-
         """
         return self._apply_transform.register
 
@@ -649,11 +648,28 @@ class transform:  # pylint: disable=too-many-instance-attributes
 
     def __add__(self, other):
         """Add two transforms to create a CompilePipeline."""
+        if self.expand_transform:
+            # pylint: disable=import-outside-toplevel
+            from .compile_pipeline import CompilePipeline
+
+            pipeline = CompilePipeline([])
+            pipeline += self
+            pipeline += other
+            return pipeline
+
         # Convert this transform to a BoundTransform (no args/kwargs) and delegate
         return BoundTransform(self) + other
 
     def __mul__(self, n):
         """Multiply by an integer to create a compile pipeline with this transform repeated."""
+        if self.expand_transform:
+            # pylint: disable=import-outside-toplevel
+            from .compile_pipeline import CompilePipeline
+
+            pipeline = CompilePipeline([])
+            pipeline += self
+            return pipeline * n
+
         # Convert to container (no args/kwargs) and delegate
         return BoundTransform(self) * n
 
@@ -731,17 +747,7 @@ class transform:  # pylint: disable=too-many-instance-attributes
         """
         # same comment as custom_qnode_transform :(
         qnode = copy(qnode)
-
-        if self.expand_transform:
-            qnode.transform_program.push_back(
-                BoundTransform(
-                    transform(self._expand_transform),
-                    args=targs,
-                    kwargs=tkwargs,
-                    use_argnum=self._use_argnum_in_expand,
-                )
-            )
-        qnode.transform_program.push_back(BoundTransform(self, args=targs, kwargs=tkwargs))
+        qnode.transform_program.append(BoundTransform(self, args=targs, kwargs=tkwargs))
         return qnode
 
 
@@ -873,6 +879,18 @@ class BoundTransform:  # pylint: disable=too-many-instance-attributes
         return self.tape_transform
 
     @property
+    def expand_transform(self) -> BoundTransform | None:
+        """The expand_transform associated with this transform."""
+        if not self._transform.expand_transform:
+            return None
+        return BoundTransform(
+            self._transform.expand_transform,
+            args=self.args,
+            kwargs=self.kwargs,
+            use_argnum=self._transform._use_argnum_in_expand,  # pylint:disable=protected-access
+        )
+
+    @property
     def pass_name(self) -> None | str:
         """The name of the corresponding Catalyst pass, if it exists."""
         return self._transform.pass_name
@@ -921,23 +939,22 @@ class BoundTransform:  # pylint: disable=too-many-instance-attributes
     def __add__(self, other):
         """Add two transforms to create a CompilePipeline."""
 
-        # wrap a transform in a BoundTransform
-        if isinstance(other, transform):
-            other = BoundTransform(other)
+        if not isinstance(other, (transform, BoundTransform)):
+            return NotImplemented
 
-        if isinstance(other, BoundTransform):
-            # Import here to avoid circular import
-            # pylint: disable=import-outside-toplevel
-            from .compile_pipeline import CompilePipeline
+        # Import here to avoid circular import
+        # pylint: disable=import-outside-toplevel
+        from .compile_pipeline import CompilePipeline
 
-            if self.is_final_transform and other.is_final_transform:
-                raise TransformError(
-                    f"Both {self} and {other} are final transforms and cannot be combined."
-                )
-            return CompilePipeline([self, other])
+        if self.is_final_transform and other.is_final_transform:
+            raise TransformError(
+                f"Both {self} and {other} are final transforms and cannot be combined."
+            )
 
-        # For CompilePipeline, Python falls back to program.__radd__(container)
-        return NotImplemented
+        pipeline = CompilePipeline([])
+        pipeline += self
+        pipeline += other
+        return pipeline
 
     def __mul__(self, n):
         """Multiply by an integer to create a pipeline with this transform repeated."""
@@ -956,7 +973,9 @@ class BoundTransform:  # pylint: disable=too-many-instance-attributes
                 f"{self} is a final transform and cannot be applied more than once."
             )
 
-        return CompilePipeline([self] * n)
+        pipeline = CompilePipeline([])
+        pipeline += self
+        return pipeline * n
 
     __rmul__ = __mul__
 
