@@ -424,7 +424,9 @@ def _get_resource_decomposition(comp_res_op: CompressedResourceOp, config: Resou
 
     Args:
         comp_res_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): operator in compressed representation to extract resources from
-        config (ResourceConfig | None):  A ResourceConfig object containing the additional parameters required to estimate the resources for an operator. Defaults to :class:`pennylane.estimator.resource_config.ResourceConfig`.
+        config (ResourceConfig | None):  A ``ResourceConfig`` object containing the additional
+        parameters required to estimate the resources for an operator. Defaults to
+        :class:`pennylane.estimator.resource_config.ResourceConfig`.
 
     Returns:
         list: The resource decomposition.
@@ -466,6 +468,7 @@ def _update_counts_from_compressed_res_op(
     if config is None:
         config = ResourceConfig()
 
+    ## Early return if compressed resource operator is already in our defined gate set
     if comp_res_op.name in gate_set:
         gate_counts_dict[comp_res_op] += scalar
         return
@@ -537,7 +540,7 @@ def _get_decomposition_function_and_kwargs(
 
     Args:
         comp_res_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): The operator to find the decomposition for.
-        config (:class:`~.pennylane.estimator.resource_config.ResourceConfig`): The configuration object containing decomposition rules.
+        config (:class:`~.pennylane.estimator.resource_config.ResourceConfig`): The ``ResourceConfig`` containing custom decompositions.
 
     Returns:
         A tuple containing the decomposition function and its associated kwargs.
