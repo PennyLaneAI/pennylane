@@ -17,7 +17,6 @@
 import pytest
 
 import pennylane as qml
-from pennylane.transforms.decompositions import gridsynth
 from pennylane.transforms.decompositions import (
     to_ppr,
     commute_ppr,
@@ -41,6 +40,8 @@ PBC_TRANSFORM_DATA = list(zip(PBC_TRANSFORMS, PASS_NAMES))
 
 @pytest.mark.parametrize("pbc_transform, pass_name", PBC_TRANSFORM_DATA)
 class TestPBCTransforms:
+
+    # pylint: disable=unused-argument
     def test_not_implemented(self, pbc_transform, pass_name):
         """Test that NotImplementedError is raised when trying to use gridsynth on tape."""
 
