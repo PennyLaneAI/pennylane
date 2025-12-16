@@ -20,8 +20,9 @@ import pytest
 
 import pennylane as qml
 from pennylane.estimator.estimate import estimate
-from pennylane.estimator.ops.qubit.non_parametric_ops import Hadamard, X
-from pennylane.estimator.ops.qubit.parametric_ops_single_qubit import RX
+from pennylane.estimator.ops.op_math.symbolic import Adjoint, Controlled, Pow
+from pennylane.estimator.ops.qubit.non_parametric_ops import Hadamard, X, Z
+from pennylane.estimator.ops.qubit.parametric_ops_single_qubit import RX, RZ
 from pennylane.estimator.resource_config import ResourceConfig
 from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
@@ -507,9 +508,6 @@ class TestEstimateResources:
 
     def test_custom_adjoint_decomposition(self):
         """Test that a custom adjoint decomposition can be set and used."""
-        from pennylane.estimator.ops.op_math.symbolic import Adjoint
-        from pennylane.estimator.ops.qubit.parametric_ops_single_qubit import RZ
-        from pennylane.estimator.ops.qubit.non_parametric_ops import Z
 
         def custom_adj_RZ(target_resource_params):
             return [GateCount(resource_rep(Z))]
@@ -528,9 +526,6 @@ class TestEstimateResources:
 
     def test_custom_adjoint_decomposition_error_message(self):
         """Test that a helpful error message is raised when custom decomp has wrong signature."""
-        from pennylane.estimator.ops.op_math.symbolic import Adjoint
-        from pennylane.estimator.ops.qubit.parametric_ops_single_qubit import RZ
-        from pennylane.estimator.ops.qubit.non_parametric_ops import Z
 
         def custom_adj_RZ(stupid):
             return [GateCount(resource_rep(Z))]
@@ -546,9 +541,6 @@ class TestEstimateResources:
 
     def test_custom_controlled_decomposition_error_message(self):
         """Test that a helpful error message is raised when custom controlled decomp has wrong signature."""
-        from pennylane.estimator.ops.op_math.symbolic import Controlled
-        from pennylane.estimator.ops.qubit.parametric_ops_single_qubit import RZ
-        from pennylane.estimator.ops.qubit.non_parametric_ops import Z
 
         def custom_ctrl_RZ(stupid):
             return [GateCount(resource_rep(Z))]
@@ -564,9 +556,6 @@ class TestEstimateResources:
 
     def test_custom_pow_decomposition_error_message(self):
         """Test that a helpful error message is raised when custom pow decomp has wrong signature."""
-        from pennylane.estimator.ops.op_math.symbolic import Pow
-        from pennylane.estimator.ops.qubit.parametric_ops_single_qubit import RZ
-        from pennylane.estimator.ops.qubit.non_parametric_ops import Z
 
         def custom_pow_RZ(stupid):
             return [GateCount(resource_rep(Z))]
