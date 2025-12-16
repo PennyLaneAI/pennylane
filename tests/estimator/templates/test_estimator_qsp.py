@@ -263,3 +263,11 @@ class TestQSP:
         op = DummyOp(wires=[0])
         res = qre.QSP.resource_decomp(op.resource_rep(), poly_deg, convention, rot_precision)
         assert res == expected_res
+
+    def test_resource_decomp_error_convention(self):
+        """Test that an error is raised in resource_decomp when convention is invalid."""
+        op = DummyOp(wires=[0])
+        with pytest.raises(ValueError, match="The valid conventions are 'Z' or 'X'"):
+            qre.QSP.resource_decomp(
+                op.resource_rep(), poly_deg=2, convention="Y", rotation_precision=1e-5
+            )
