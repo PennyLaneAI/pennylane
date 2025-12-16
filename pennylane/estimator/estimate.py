@@ -475,7 +475,7 @@ def _get_resource_decomposition(comp_res_op: CompressedResourceOp, config: Resou
             if not passed_args:
                 raise TypeError(
                     f"The custom decomposition function '{func_name}' failed to execute. "
-                    "It was called with no arguments. Please ensure your function signature accepts no arguments."
+                    "Please ensure your function signature accepts no arguments."
                 ) from e
 
             passed_args_str = ", ".join(f"'{arg}'" for arg in passed_args)

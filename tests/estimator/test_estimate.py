@@ -588,3 +588,19 @@ class TestEstimateResources:
             "ensure your function signature accepts 'precision' as an argument.",
         ):
             estimate(RZ(0.1, wires=0), config=rc)
+
+    def test_custom_decomposition_no_args_error_message(self):
+        """Test that a helpful error message is raised when custom decomp is called with no args but expects some."""
+
+        def custom_decomp(some_arg):
+            return []
+
+        rc = ResourceConfig()
+        rc.set_decomp(DummyZ, custom_decomp, decomp_type="base")
+
+        with pytest.raises(
+            TypeError,
+            match="The custom decomposition function 'custom_decomp' failed to execute. "
+            "Please ensure your function signature accepts no arguments.",
+        ):
+            estimate(DummyZ(wires=0), config=rc)
