@@ -257,7 +257,7 @@ class CompilePipeline:
         """Right addition to prepend a transform to the program.
 
         Args:
-            other: A BoundTransform or transform to prepend.
+            other: A BoundTransform or Transform to prepend.
 
         Returns:
             CompilePipeline: A new program with the transform prepended.
@@ -354,7 +354,7 @@ class CompilePipeline:
 
     def remove(self, obj: BoundTransform | Transform):
         """In place remove the input containers, specifically,
-        1. if the input is a transform, remove all containers matching the dispatcher;
+        1. if the input is a Transform, remove all containers matching the transform;
         2. if the input is a BoundTransform, remove all containers exactly matching the input.
 
         Args:
@@ -367,7 +367,7 @@ class CompilePipeline:
                 t for t in self._compile_pipeline if t.tape_transform != obj.tape_transform
             ]
         else:
-            raise TypeError("Only BoundTransform or transform can be removed.")
+            raise TypeError("Only BoundTransform or Transform can be removed.")
 
     def push_back(self, transform_container: BoundTransform):
         """Add a transform (container) to the end of the program.
