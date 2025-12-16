@@ -504,3 +504,78 @@ class TestEstimateResources:
             qml.CNOT(wires=[0, 1])
 
         assert estimate(circ)() == estimate(circ_w_measurement)(circ)
+
+    def test_custom_adjoint_decomposition(self):
+        """Test that a custom adjoint decomposition can be set and used."""
+        from pennylane.estimator.ops.op_math.symbolic import Adjoint
+        from pennylane.estimator.ops.qubit.parametric_ops_single_qubit import RZ
+        from pennylane.estimator.ops.qubit.non_parametric_ops import Z
+
+        def custom_adj_RZ(target_resource_params):
+            return [GateCount(resource_rep(Z))]
+
+        rc = ResourceConfig()
+        rc.set_decomp(RZ, custom_adj_RZ, decomp_type="adj")
+
+        res = estimate(Adjoint(RZ(0.1, wires=0)), config=rc)
+
+        expected_gates = defaultdict(int, {resource_rep(Z): 1})
+        expected_resources = Resources(
+            zeroed_wires=0, any_state_wires=0, algo_wires=1, gate_types=expected_gates
+        )
+
+        assert res == expected_resources
+
+    def test_custom_adjoint_decomposition_error_message(self):
+        """Test that a helpful error message is raised when custom decomp has wrong signature."""
+        from pennylane.estimator.ops.op_math.symbolic import Adjoint
+        from pennylane.estimator.ops.qubit.parametric_ops_single_qubit import RZ
+        from pennylane.estimator.ops.qubit.non_parametric_ops import Z
+
+        def custom_adj_RZ(stupid):
+            return [GateCount(resource_rep(Z))]
+
+        rc = ResourceConfig()
+        rc.set_decomp(RZ, custom_adj_RZ, decomp_type="adj")
+
+        with pytest.raises(
+            TypeError,
+            match="The custom decomposition function 'custom_adj_RZ' must accept 'target_resource_params' as a keyword argument.",
+        ):
+            estimate(Adjoint(RZ(0.1, wires=0)), config=rc)
+
+    def test_custom_controlled_decomposition_error_message(self):
+        """Test that a helpful error message is raised when custom controlled decomp has wrong signature."""
+        from pennylane.estimator.ops.op_math.symbolic import Controlled
+        from pennylane.estimator.ops.qubit.parametric_ops_single_qubit import RZ
+        from pennylane.estimator.ops.qubit.non_parametric_ops import Z
+
+        def custom_ctrl_RZ(stupid):
+            return [GateCount(resource_rep(Z))]
+
+        rc = ResourceConfig()
+        rc.set_decomp(RZ, custom_ctrl_RZ, decomp_type="ctrl")
+
+        with pytest.raises(
+            TypeError,
+            match="The custom decomposition function 'custom_ctrl_RZ' must accept 'num_ctrl_wires', 'num_zero_ctrl' and 'target_resource_params' as keyword arguments.",
+        ):
+            estimate(Controlled(RZ(0.1, wires=0), num_ctrl_wires=1, num_zero_ctrl=0), config=rc)
+
+    def test_custom_pow_decomposition_error_message(self):
+        """Test that a helpful error message is raised when custom pow decomp has wrong signature."""
+        from pennylane.estimator.ops.op_math.symbolic import Pow
+        from pennylane.estimator.ops.qubit.parametric_ops_single_qubit import RZ
+        from pennylane.estimator.ops.qubit.non_parametric_ops import Z
+
+        def custom_pow_RZ(stupid):
+            return [GateCount(resource_rep(Z))]
+
+        rc = ResourceConfig()
+        rc.set_decomp(RZ, custom_pow_RZ, decomp_type="pow")
+
+        with pytest.raises(
+            TypeError,
+            match="The custom decomposition function 'custom_pow_RZ' must accept 'pow_z' and 'target_resource_params' as keyword arguments.",
+        ):
+            estimate(Pow(RZ(0.1, wires=0), 2), config=rc)

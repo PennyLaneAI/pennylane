@@ -416,7 +416,31 @@ def _get_symbolic_resource_decomposition(decomp_func, params, filtered_kwargs):
 
     params["target_resource_params"] = target_params
 
-    return decomp_func(**params)
+    try:
+        return decomp_func(**params)
+    except TypeError as e:
+        msg = str(e)
+        if "unexpected keyword argument 'target_resource_params'" in msg:
+            raise TypeError(
+                f"The custom decomposition function '{decomp_func.__name__}' must accept "
+                "'target_resource_params' as a keyword argument."
+            ) from e
+
+        if (
+            "unexpected keyword argument 'num_ctrl_wires'" in msg
+            or "unexpected keyword argument 'num_zero_ctrl'" in msg
+        ):
+            raise TypeError(
+                f"The custom decomposition function '{decomp_func.__name__}' must accept "
+                "'num_ctrl_wires', 'num_zero_ctrl' and 'target_resource_params' as keyword arguments."
+            ) from e
+
+        if "unexpected keyword argument 'pow_z'" in msg:
+            raise TypeError(
+                f"The custom decomposition function '{decomp_func.__name__}' must accept "
+                "'pow_z' and 'target_resource_params' as keyword arguments."
+            ) from e
+        raise e
 
 
 def _get_resource_decomposition(comp_res_op: CompressedResourceOp, config: ResourceConfig):
