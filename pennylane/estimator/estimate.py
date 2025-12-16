@@ -33,9 +33,9 @@ from .wires_manager import Allocate, Deallocate, WireResourceManager
 # pylint: disable=too-many-arguments
 
 _SYMBOLIC_DECOMP_MAP = {
-    Adjoint: "_adj_custom_decomps",
-    Controlled: "_ctrl_custom_decomps",
-    Pow: "_pow_custom_decomps",
+    Adjoint: ("adj_custom_decomps", "adjoint_resource_decomp"),
+    Controlled: ("ctrl_custom_decomps", "controlled_resource_decomp"),
+    Pow: ("pow_custom_decomps", "pow_resource_decomp"),
 }
 
 
