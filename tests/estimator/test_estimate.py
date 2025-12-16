@@ -525,7 +525,7 @@ class TestEstimateResources:
         assert res == expected_resources
 
     def test_custom_adjoint_decomposition_error_message(self):
-        """Test that a helpful error message is raised when custom decomp has wrong signature."""
+        """Test that a helpful error message is raised when custom decomp has the wrong signature."""
 
         def custom_adj_RZ(stupid):
             return [GateCount(resource_rep(Z))]
@@ -535,7 +535,8 @@ class TestEstimateResources:
 
         with pytest.raises(
             TypeError,
-            match="The custom decomposition function 'custom_adj_RZ' must accept 'target_resource_params' as a keyword argument.",
+            match="The custom decomposition function 'custom_adj_RZ' must accept "
+            "'target_resource_params' as a keyword argument.",
         ):
             estimate(Adjoint(RZ(0.1, wires=0)), config=rc)
 
@@ -550,12 +551,13 @@ class TestEstimateResources:
 
         with pytest.raises(
             TypeError,
-            match="The custom decomposition function 'custom_ctrl_RZ' must accept 'num_ctrl_wires', 'num_zero_ctrl' and 'target_resource_params' as keyword arguments.",
+            match="The custom decomposition function 'custom_ctrl_RZ' must accept 'num_ctrl_wires', "
+            "'num_zero_ctrl' and 'target_resource_params' as keyword arguments.",
         ):
             estimate(Controlled(RZ(0.1, wires=0), num_ctrl_wires=1, num_zero_ctrl=0), config=rc)
 
     def test_custom_pow_decomposition_error_message(self):
-        """Test that a helpful error message is raised when custom pow decomp has wrong signature."""
+        """Test that a helpful error message is raised when custom pow decomp has the wrong signature."""
 
         def custom_pow_RZ(stupid):
             return [GateCount(resource_rep(Z))]
@@ -565,6 +567,24 @@ class TestEstimateResources:
 
         with pytest.raises(
             TypeError,
-            match="The custom decomposition function 'custom_pow_RZ' must accept 'pow_z' and 'target_resource_params' as keyword arguments.",
+            match="The custom decomposition function 'custom_pow_RZ' must accept 'pow_z' and "
+            "'target_resource_params' as keyword arguments.",
         ):
             estimate(Pow(RZ(0.1, wires=0), 2), config=rc)
+
+    def test_custom_decomposition_error_message_regular_op(self):
+        """Test that a helpful error message is raised when custom decomp for regular op has
+        the wrong signature."""
+
+        def custom_RZ(what):
+            return [GateCount(resource_rep(Z))]
+
+        rc = ResourceConfig()
+        rc.set_decomp(RZ, custom_RZ, decomp_type="base")
+
+        with pytest.raises(
+            TypeError,
+            match="The custom decomposition function 'custom_RZ' failed to execute. Please "
+            "ensure your function signature accepts 'precision' as an argument.",
+        ):
+            estimate(RZ(0.1, wires=0), config=rc)

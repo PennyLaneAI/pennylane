@@ -464,7 +464,28 @@ def _get_resource_decomposition(comp_res_op: CompressedResourceOp, config: Resou
     if op_type in (Adjoint, Controlled, Pow):
         return _get_symbolic_resource_decomposition(decomp_func, params, filtered_kwargs)
 
-    return decomp_func(**params, **filtered_kwargs)
+    try:
+        return decomp_func(**params, **filtered_kwargs)
+    except TypeError as e:
+        msg = str(e)
+        if "unexpected keyword argument" in msg or ("missing" in msg and "argument" in msg):
+            passed_args = sorted(list(params.keys()) + list(filtered_kwargs.keys()))
+            func_name = getattr(decomp_func, "__name__", "custom_decomposition")
+
+            if not passed_args:
+                raise TypeError(
+                    f"The custom decomposition function '{func_name}' failed to execute. "
+                    "It was called with no arguments. Please ensure your function signature accepts no arguments."
+                ) from e
+
+            passed_args_str = ", ".join(f"'{arg}'" for arg in passed_args)
+            arg_desc = "arguments" if len(passed_args) > 1 else "an argument"
+
+            raise TypeError(
+                f"The custom decomposition function '{func_name}' failed to execute. "
+                f"Please ensure your function signature accepts {passed_args_str} as {arg_desc}."
+            ) from e
+        raise e
 
 
 def _update_counts_from_compressed_res_op(
