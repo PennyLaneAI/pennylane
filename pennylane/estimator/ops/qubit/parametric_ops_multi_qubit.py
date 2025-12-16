@@ -608,8 +608,6 @@ class PCPhase(ResourceOperator):
         The projector :math:`\Pi` is decomposed into sums and differences of powers of two,
         which correspond to multi-controlled phase shift gates.
 
-        See :doc:`/ops/qubit/pcphase_decomposition` for more details.
-
     .. seealso:: The corresponding PennyLane operation :class:`~.pennylane.PCPhase`.
 
     **Example**
