@@ -2290,6 +2290,8 @@ class TestResourceQubitization:
             GateCount(ctrl_ref),
         ]
         assert (
-            qre.Qubitization.controlled_resource_decomp(num_ctrl_wires, num_zero_ctrl, target_params)
+            qre.Qubitization.controlled_resource_decomp(
+                num_ctrl_wires, num_zero_ctrl, target_params
+            )
             == expected
         )
