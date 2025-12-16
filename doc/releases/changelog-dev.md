@@ -526,7 +526,8 @@
 
 <h3>Internal changes ⚙️</h3>
 
-* Updated `pyproject.toml` with project dependencies to replace the requirements files. Updated workflows to use installations from `pyproject.toml`. [(8702)](https://github.com/PennyLaneAI/pennylane/pull/8702)
+* Updated `pyproject.toml` with project dependencies to replace the requirements files. Updated workflows to use installations from `pyproject.toml`.
+  [(8702)](https://github.com/PennyLaneAI/pennylane/pull/8702)
 
 * `qml.cond`, the `QNode`, transforms, `qml.grad`, and `qml.jacobian` no longer treat all keyword arguments as static
   arguments. They are instead treated as dynamic, numerical inputs, matching the behaviour of Jax and Catalyst.
