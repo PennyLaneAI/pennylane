@@ -244,9 +244,11 @@ def _op_expval_batch(
     generators = _generators(gates, n_qubits)
     effective_params = _effective_params(gates, params)
 
-    if sparse or isinstance(ops, csr_matrix):
-
+    generators_sp = None
+    if sparse:
         generators_sp = _generators_sp(gates, n_qubits)
+
+    if sparse or isinstance(ops, csr_matrix):
         samples, generators_sp, ops = _to_csr(generators, ops, samples, generators_sp)
 
         samples_gates, samples_sum, samples_len = _sparse_samples(generators_sp, samples, spin_sym)
