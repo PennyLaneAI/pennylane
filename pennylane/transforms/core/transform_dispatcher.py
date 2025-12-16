@@ -102,7 +102,7 @@ def _create_plxpr_fallback_transform(tape_transform):
 
 
 def specific_apply_transform(transform, obj, *targs, **tkwargs):
-    """The default behavior for transform._apply_transform. By default, it dispatches to the
+    """The default behavior for Transform._apply_transform. By default, it dispatches to the
     generic registration."""
     return transform.generic_apply_transform(obj, *targs, **tkwargs)
 
@@ -605,9 +605,9 @@ class Transform:  # pylint: disable=too-many-instance-attributes
                 def __init__(self, ops):
                     self.ops = ops
 
-            from pennylane.transforms.core import transform
+            from pennylane.transforms.core import Transform
 
-            @transform.generic_register
+            @Transform.generic_register
             def apply_to_subroutine(obj: Subroutine, transform, *targs, **tkwargs):
                 tape = qml.tape.QuantumScript(obj.ops)
                 batch, _ = transform(tape, *targs, **tkwargs)
@@ -620,7 +620,7 @@ class Transform:  # pylint: disable=too-many-instance-attributes
 
         .. code-block:: python
 
-            @transform.generic_register(Subroutine)
+            @Transform.generic_register(Subroutine)
             def apply_to_subroutine(obj: Subroutine, transform, *targs, **tkwargs):
                 tape = qml.tape.QuantumScript(obj.ops)
                 batch, _ = transform(tape, *targs, **tkwargs)
