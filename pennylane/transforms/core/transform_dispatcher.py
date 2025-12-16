@@ -208,7 +208,7 @@ class Transform:  # pylint: disable=too-many-instance-attributes
 
     We first apply ``transform`` to ``my_quantum_transform``:
 
-    >>> dispatched_transform = transform(my_quantum_transform)
+    >>> dispatched_transform = qml.transform(my_quantum_transform)
 
     Now you can use the dispatched transform directly on a :class:`pennylane.QNode`.
 
