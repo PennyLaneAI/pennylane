@@ -19,7 +19,7 @@ import pennylane as qml
 from pennylane.ops import __all__ as all_ops
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, QuantumScriptBatch
-from pennylane.transforms.core import transform
+from pennylane.transforms.core import Transform, transform
 from pennylane.transforms.optimization import (
     cancel_inverses,
     commute_controlled,
@@ -34,7 +34,7 @@ default_pipeline = (commute_controlled, cancel_inverses, merge_rotations, remove
 @transform
 def compile(
     tape: QuantumScript,
-    pipeline: Sequence[transform] = default_pipeline,
+    pipeline: Sequence[Transform] = default_pipeline,
     basis_set=None,
     num_passes=1,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
@@ -169,7 +169,7 @@ def compile(
 
     for p in pipeline:
         p_func = p.func if isinstance(p, partial) else p
-        if not isinstance(p_func, transform):
+        if not isinstance(p_func, Transform):
             raise ValueError("Invalid transform function {p} passed to compile.")
 
     if num_passes < 1 or not isinstance(num_passes, int):
