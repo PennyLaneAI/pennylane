@@ -484,3 +484,63 @@ def vscf_integrals(h_integrals, d_integrals=None, modals=None, cutoff=None, cuto
         return h_data, dip_data
 
     return h_data, None
+
+
+def rot_matrix(h_integrals, modals=None, cutoff=None, cutoff_ratio=1e-6):
+    r"""Generates VSCF rotation matrix.
+
+
+    Args:
+        h_integrals (list[TensorLike[float]]): List of Hamiltonian integrals for up to 3 coupled vibrational modes.
+            Look at the Usage Details for more information.
+        modals (list[int]): list containing the maximum number of modals to consider for each vibrational mode.
+            Default value is the maximum number of modals.
+        cutoff (float): threshold value for including matrix elements into operator
+        cutoff_ratio (float): ratio for discarding elements with respect to biggest element in the integrals.
+            Default value is ``1e-6``.
+
+    Returns:
+        TensorLike[float]: VSCF rotation matrix
+
+    *Example*
+
+    >>> from pennylane.labs.trotter_error.realspace import HOState
+    >>> symbols, charge  = ['H', 'H'], 0
+    >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
+    >>> mol = qml.qchem.Molecule(symbols, geometry, charge=charge)
+    >>> pes = vibrational_pes(mol, n_points=3, backend='cf_threadpool', cubic=True)
+    >>> h_integrals = christiansen_integrals(pes, n_states=n_states, cubic=False, backend="cf_threadpool")
+    >>> mode_rots = rot_matrix(h_integrals)
+    >>> states_harm = [HOState(1, len_state, {(i,): 1}) for i in range(n_states)]  # harmonic oscillator states
+    >>> states_vscf = []
+    >>> for i in range(n_states):
+    >>>     state = sum((states_harm[j] * mode_rots[j, i] for j in range(n_states)), HOState.zero_state(1, len_state))
+    >>>     states_vscf.append(state)
+    >>> print(states_vscf[0])
+    HOState(modes=1, gridpoints=3, <Compressed Sparse Row sparse array of dtype 'float64'
+        with 1 stored elements and shape (9, 1)>
+      Coords	Values
+      (0, 0)	1)
+    """
+
+    # h_integrals = [h_integrals]
+    nmodes = np.shape(h_integrals[0])[0]
+
+    imax = np.shape(h_integrals[0])[1]
+    max_modals = nmodes * [imax]
+    if modals is None:
+        modals = max_modals
+    else:
+        if np.max(modals) > imax:
+            raise ValueError(
+                "Number of maximum modals cannot be greater than the modals for unrotated integrals."
+            )
+        imax = np.max(modals)
+
+    if cutoff is None:
+        max_val = np.max([np.max(np.abs(H)) for H in h_integrals])
+        cutoff = max_val * cutoff_ratio
+
+    _, mode_rots = _vscf(h_integrals, modals=max_modals, cutoff=cutoff)
+
+    return mode_rots[0]
