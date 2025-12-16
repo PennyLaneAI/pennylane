@@ -344,6 +344,7 @@ def get_transform_program(
             num_user -= 1
 
     readd_final_transform = False
+    final_transform_start = -1
 
     if level == "device":
         level = slice(0, None)
@@ -364,7 +365,12 @@ def get_transform_program(
     resolved_program = full_transform_program[level]
 
     if qnode.transform_program.has_final_transform and readd_final_transform:
-        resolved_program += qnode.transform_program[-1:]
+        if (
+            len(qnode.transform_program) > 1
+            and qnode.transform_program[-1].expand_transform == qnode.transform_program[-2]
+        ):
+            final_transform_start = -2
+        resolved_program += qnode.transform_program[final_transform_start:]
 
     return resolved_program
 
