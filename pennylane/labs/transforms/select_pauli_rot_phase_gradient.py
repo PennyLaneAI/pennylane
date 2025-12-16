@@ -77,16 +77,13 @@ def select_pauli_rot_phase_gradient(
     For this routine to work, the provided ``phase_grad_wires`` need to hold the phase gradient
     state :math:`|\nabla_Z\rangle = \frac{1}{\sqrt{2^n}} \sum_{m=0}^{2^n-1} e^{-2 \pi i \frac{m}{2^n}} |m\rangle`.
     Because this state is not modified and can be re-used at a later stage, the transform does not prepare it but
-    rather assumes it has been prepared on those wires at an earlier stage.
+    rather assumes it has been prepared on those wires at an earlier stage. Look at the example below to see how
+    this state can be prepared.
 
     .. figure:: ../../../_static/multiplexer_QROM.png
                     :align: center
                     :width: 70%
                     :target: javascript:void(0);
-
-    The first two wires correspond to the multiplexing register, the next wire is the target qubit. This is followed by
-    the register equivalent to the angle wires, which has a length of :math:`b`, and finally, the register where the
-    phase gradient is defined.
 
     Note that this operator contains :class:`~.SemiAdder` that typically uses additional ``work_wires`` for the semi-in-place addition
     :math:`\text{SemiAdder}|x\rangle_\text{ang} |y\rangle_\text{phg} = |x\rangle_\text{ang} |x + y\rangle_\text{phg}`.

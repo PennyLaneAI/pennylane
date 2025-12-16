@@ -27,7 +27,7 @@ from pennylane.labs.transforms.select_pauli_rot_phase_gradient import (
 
 
 def prepare_phase_gradient(wires):
-    """Prepares the phase gradient."""
+    """Prepares the phase gradient state."""
     ops = []
     for i, w in enumerate(wires):
         ops.append(qml.H(w))
