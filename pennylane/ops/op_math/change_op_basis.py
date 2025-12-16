@@ -103,6 +103,10 @@ class ChangeOpBasis(CompositeOp):
     Returns:
         (Operator): Returns an Operator which is the change_op_basis of the provided Operators: compute_op, target_op, uncompute_op.
 
+    .. note::
+        When a ``ChangeOpBasis`` operator is iterated over, its factors are iterated in the reverse order. This is to
+        have a similar behaviour to ``Prod`` which applies its factors in reverse order.
+
     .. seealso:: :func:`~.change_op_basis`
     """
 
