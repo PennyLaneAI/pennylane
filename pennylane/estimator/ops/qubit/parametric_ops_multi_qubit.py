@@ -602,7 +602,13 @@ class PCPhase(ResourceOperator):
         wires (Sequence[int] | None): the wire the operation acts on
 
     Resources:
-        [TODO] The methods and decompositions were taken directly from the PennyLane operator
+        The resources are derived from the decomposition of the generator :math:`G` of the
+        ``PCPhase`` gate into multiple projectors, which generate (multi-controlled) phase shift gates.
+        The generator is given as :math:`G = 2 \Pi - \mathbb{I}_N`, where :math:`\Pi` is a projector.
+        The projector :math:`\Pi` is decomposed into sums and differences of powers of two,
+        which correspond to multi-controlled phase shift gates.
+
+        See :doc:`/ops/qubit/pcphase_decomposition` for more details.
 
     .. seealso:: The corresponding PennyLane operation :class:`~.pennylane.PCPhase`.
 
@@ -654,7 +660,11 @@ class PCPhase(ResourceOperator):
                 decomposition of the phase shift gates used to implement this operation.
 
         Resources:
-            [TODO] The methods and decompositions were taken directly from the PennyLane operator
+            The resources are derived from the decomposition of the generator :math:`G` of the
+            ``PCPhase`` gate into multiple projectors, which generate (multi-controlled) phase shift gates.
+            The generator is given as :math:`G = 2 \Pi - \mathbb{I}_N`, where :math:`\Pi` is a projector.
+            The projector :math:`\Pi` is decomposed into sums and differences of powers of two,
+            which correspond to multi-controlled phase shift gates.
 
         Returns:
             list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
