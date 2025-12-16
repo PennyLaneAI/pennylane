@@ -20,7 +20,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.estimator.estimate import estimate
-from pennylane.estimator.ops.op_math.symbolic import Adjoint, Controlled, Pow
+from pennylane.estimator.ops.op_math.symbolic import Adjoint
 from pennylane.estimator.ops.qubit.non_parametric_ops import Hadamard, X, Z
 from pennylane.estimator.ops.qubit.parametric_ops_single_qubit import RX, RZ
 from pennylane.estimator.resource_config import ResourceConfig
