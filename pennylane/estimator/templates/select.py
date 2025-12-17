@@ -28,7 +28,7 @@ from pennylane.estimator.resource_operator import (
 )
 from pennylane.wires import Wires, WiresLike
 
-# pylint: disable= signature-differs, arguments-differ, too-many-arguments
+# pylint: disable= signature-differs, arguments-differ
 
 
 class SelectTHC(ResourceOperator):
@@ -38,7 +38,7 @@ class SelectTHC(ResourceOperator):
 
             This decomposition assumes that an appropriately sized phase gradient state is available.
             Users should ensure that the cost of constructing this state has been accounted for.
-            See also :class:`~.pennylane.estimator.templates.PhaseGradient`.
+            See also :class:`~.pennylane.estimator.templates.subroutines.PhaseGradient`.
 
     Args:
         thc_ham (:class:`~pennylane.estimator.compact_hamiltonian.THCHamiltonian`): A tensor hypercontracted
@@ -104,7 +104,7 @@ class SelectTHC(ResourceOperator):
 
     resource_keys = {"thc_ham", "batched_rotations", "rotation_precision", "select_swap_depth"}
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         thc_ham: THCHamiltonian,
         batched_rotations: int | None = None,
@@ -166,7 +166,7 @@ class SelectTHC(ResourceOperator):
                   the number of orbitals minus one.
                 * rotation_precision (int): The number of bits used to represent the precision for loading
                   the rotation angles for basis rotation. The default value is set to ``15`` bits.
-                * select_swap_depth (int | None): A parameter of :class:`~.pennylane.estimator.templates.QROM`
+                * select_swap_depth (int | None): A parameter of :class:`~.pennylane.estimator.templates.subroutines.QROM`
                   used to trade-off extra wires for reduced circuit depth. Defaults to :code:`None`, which internally determines the optimal depth.
         """
         return {
@@ -196,7 +196,7 @@ class SelectTHC(ResourceOperator):
                 the number of orbitals minus one.
             rotation_precision (int): The number of bits used to represent the precision for loading
                 the rotation angles for basis rotation. The default value is set to ``15`` bits.
-            select_swap_depth (int | None): A parameter of :class:`~.pennylane.estimator.templates.QROM`
+            select_swap_depth (int | None): A parameter of :class:`~.pennylane.estimator.templates.subroutines.QROM`
                 used to trade-off extra wires for reduced circuit depth. Defaults to :code:`None`, which internally determines the optimal depth.
 
         Returns:
@@ -249,7 +249,7 @@ class SelectTHC(ResourceOperator):
 
             This decomposition assumes that an appropriately sized phase gradient state is available.
             Users should ensure that the cost of constructing this state has been accounted for.
-            See also :class:`~.pennylane.estimator.templates.PhaseGradient`.
+            See also :class:`~.pennylane.estimator.templates.subroutines.PhaseGradient`.
 
         Args:
             thc_ham (:class:`~pennylane.estimator.compact_hamiltonian.THCHamiltonian`): A tensor hypercontracted
@@ -260,7 +260,7 @@ class SelectTHC(ResourceOperator):
                 the number of orbitals minus one.
             rotation_precision (int): The number of bits used to represent the precision for loading
                 the rotation angles for basis rotation. The default value is set to ``15`` bits.
-            select_swap_depth (int | None): A parameter of :class:`~.pennylane.estimator.templates.QROM`
+            select_swap_depth (int | None): A parameter of :class:`~.pennylane.estimator.templates.subroutines.QROM`
                 used to trade-off extra wires for reduced circuit depth. Defaults to :code:`None`, which internally determines the optimal depth.
 
         Resources:
@@ -383,7 +383,7 @@ class SelectTHC(ResourceOperator):
 
             This decomposition assumes that an appropriately sized phase gradient state is available.
             Users should ensure that the cost of constructing this state has been accounted for.
-            See also :class:`~.pennylane.estimator.templates.PhaseGradient`.
+            See also :class:`~.pennylane.estimator.templates.subroutines.PhaseGradient`.
 
         Args:
             num_ctrl_wires (int): the number of wires the operation is controlled on
