@@ -139,6 +139,38 @@ class TestCapturingVJP:
             assert vjp_eqn.params["argnums"] == (2 * argnums, 2 * argnums + 1)
             assert len(vjp_eqn.outvars) == 3  # one result, two vars
 
+    def test_setting_h(self):
+        """Test that an h can be set and captured."""
+
+        def f(x):
+            return 2 * x
+
+        def w(x):
+            return qml.vjp(f, (x,), (1.0,), h=1e-4)
+
+        jaxpr = jax.make_jaxpr(w)(0.5)
+
+        jaxpr_eqn = jaxpr.eqns[0]
+
+        assert jaxpr_eqn.params["h"] == 1e-4
+        assert jaxpr_eqn.params["method"] == "auto"
+
+    def test_setting_method(self):
+        """Test that method=fd can be captured."""
+
+        def f(x):
+            return 2 * x
+
+        def w(x):
+            return qml.vjp(f, (x,), (1.0,), method="fd")
+
+        jaxpr = jax.make_jaxpr(w)(0.5)
+
+        jaxpr_eqn = jaxpr.eqns[0]
+
+        assert jaxpr_eqn.params["method"] == "fd"
+        assert jaxpr_eqn.params["h"] == 1e-6
+
 
 def test_pytrees_in_and_out():
     """Test that pytrees can be handled with both the inputs and the outputs."""
