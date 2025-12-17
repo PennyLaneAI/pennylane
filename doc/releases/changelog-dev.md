@@ -396,17 +396,6 @@
 * The :class:`~.pennylane.estimator.templates.SelectTHC` template now allows for a trade-off between qubits and T-gates. This provides greater flexibility in optimizing algorithms.
   [(#8682)](https://github.com/PennyLaneAI/pennylane/pull/8682)
   
-* The :func:`~pennylane.pauli_decompose` now supports decomposing scipy's sparse matrices,
-  allowing for efficient decomposition of large matrices that cannot fit in memory when written as
-  dense arrays.
-  [(#8612)](https://github.com/PennyLaneAI/pennylane/pull/8612)
-  
-* A decomposition has been added to the adjoint of :class:`pennylane.TemporaryAND`. This decomposition relies on mid-circuit measurments and does not require any T gates.
-  [(#8633)](https://github.com/PennyLaneAI/pennylane/pull/8633)
-
-* The graph-based decomposition system now supports decomposition rules that contains mid-circuit measurements.
-  [(#8079)](https://github.com/PennyLaneAI/pennylane/pull/8079)
-
 * The `~pennylane.estimator.compact_hamiltonian.CDFHamiltonian`, `~pennylane.estimator.compact_hamiltonian.THCHamiltonian`,
   `~pennylane.estimator.compact_hamiltonian.VibrationalHamiltonian`, and `~pennylane.estimator.compact_hamiltonian.VibronicHamiltonian`
   classes were modified to take the 1-norm of the Hamiltonian as an optional argument.
