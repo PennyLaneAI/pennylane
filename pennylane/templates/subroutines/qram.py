@@ -366,7 +366,7 @@ add_decomps(BBQRAM, _bucket_brigade_qram_decomposition)
 class HybridQRAM(Operation):
     r"""Hybrid QRAM combining select-only and bucket-brigade behavior.
 
-    This implements a space–time tradeoff:
+    This hybrid QRAM implements a space–time tradeoff:
 
         #. Total memory address bits: ``n = len(control_wires)``
 
