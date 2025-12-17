@@ -208,6 +208,8 @@
 
 <h3>Improvements 🛠</h3>
 
+* `qml.measure` can now be used as a frontend for `catalyst.measure`.
+
 <h4>Resource estimation</h4>
 
 * Added `Resources.total_wires` and `Resources.total_gates` properties to the 
