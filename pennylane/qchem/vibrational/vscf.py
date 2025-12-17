@@ -409,9 +409,7 @@ def vscf_rot_mats(h_integrals, modals=None, cutoff=None, cutoff_ratio=1e-6):
     [ 0.07886101 -0.62241373  0.27864235 -0.72714547]]
 
     """
-    nmodes = np.shape(h_integrals[0])[0]
-
-    imax = np.shape(h_integrals[0])[1]
+    nmodes, imax = np.shape(h_integrals[0])[0:2]
     max_modals = nmodes * [imax]
     if modals is None:
         modals = max_modals
@@ -420,13 +418,13 @@ def vscf_rot_mats(h_integrals, modals=None, cutoff=None, cutoff_ratio=1e-6):
             raise ValueError(
                 "Number of maximum modals cannot be greater than the modals for unrotated integrals."
             )
-        imax = np.max(modals)
 
     if cutoff is None:
         max_val = np.max([np.max(np.abs(H)) for H in h_integrals])
         cutoff = max_val * cutoff_ratio
 
     _, mode_rots = _vscf(h_integrals, modals=modals, cutoff=cutoff)
+
     return mode_rots
 
 
@@ -508,7 +506,18 @@ def vscf_integrals(h_integrals, d_integrals=None, modals=None, cutoff=None, cuto
                 f"Building n-mode dipole is not implemented for n equal to {len(d_integrals)}."
             )
 
-    mode_rots = vscf_rot_mats(h_integrals, modals, cutoff, cutoff_ratio)
+    nmodes, imax = np.shape(h_integrals[0])[0:2]
+    max_modals = nmodes * [imax]
+    mode_rots = vscf_rot_mats(h_integrals, max_modals, cutoff, cutoff_ratio)
+
+    if modals is None:
+        modals = max_modals
+    else:
+        if np.max(modals) > imax:
+            raise ValueError(
+                "Number of maximum modals cannot be greater than the modals for unrotated integrals."
+            )
+
     h_data = _rotate_hamiltonian(h_integrals, mode_rots, modals)
 
     if d_integrals is not None:
