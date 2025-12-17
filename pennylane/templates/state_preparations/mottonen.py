@@ -169,7 +169,7 @@ def _apply_uniform_rotation_dagger(gate, alpha, control_wires, target_wire):
     gray_code_rank = len(control_wires)
     theta = compute_theta(alpha, num_qubits=gray_code_rank)
 
-    _ATOL = np.finfo(theta.dtype).eps
+    _ATOL = np.finfo(qml.math.get_dtype_name(theta)).eps
 
     if gray_code_rank == 0:
         if (
