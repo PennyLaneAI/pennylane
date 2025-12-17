@@ -368,24 +368,19 @@ class HybridQRAM(Operation):
 
     This hybrid QRAM implements a space–time tradeoff:
 
-        #. Total memory address bits: ``n = len(control_wires)``
-
-        #. Choose an integer :math:`k` with :math:`0 ≤ k < n`.
-
-            #. The first :math:`k` address bits (high-order) are "select" bits.
-
-            #. The remaining :math:`n-k` bits (low-order) are routed through a bucket-brigade tree.
+    - Total memory address bits: ``n = len(control_wires)``
+    - Choose an integer :math:`k` with :math:`0 ≤ k < n`.
+        - The first :math:`k` address bits (high-order) are "select" bits.
+        - The remaining :math:`n-k` bits (low-order) are routed through a bucket-brigade tree.
 
     Instead of a full-depth tree of size :math:`2^n` leaves, we build a smaller tree of depth :math:`n-k` (:math:`2^{n-k}`
     leaves) and reuse it :math:`2^k` times:
 
     For each prefix :math:`s \in {0, …, 2^k - 1}`:
 
-        #. Perofrm a multi-controlled-X on a "signal" auxiliary, controlled by the :math:`k` select bits being equal to :math:`s`.
-
-        #. Conditioned on ``signal==1``, perform a BBQRAM query using only the lower :math:`n-k` address bits and the sub-table of bitstrings whose prefix is :math:`s`.
-
-        #. Uncompute the signal with the same multi-controlled-X.
+    - Perofrm a multi-controlled-X on a "signal" auxiliary, controlled by the :math:`k` select bits being equal to :math:`s`.
+    - Conditioned on ``signal==1``, perform a BBQRAM query using only the lower :math:`n-k` address bits and the sub-table of bitstrings whose prefix is :math:`s`.
+    - Uncompute the signal with the same multi-controlled-X.
 
     In the end, for any full address ``a = (prefix, suffix)``, the target wires are loaded with
     ``bitstrings[a]``.
