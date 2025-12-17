@@ -1898,6 +1898,12 @@ class TestResourceReflection:
         assert op.num_wires == 1
         assert op.cmpr_U == qre.Identity.resource_rep()
 
+    @pytest.mark.parametrize("alpha", (-1, 7))
+    def test_init_alpha_error(self, alpha):
+        """Test that an error is raised if the alpha is provided outside of the expected range"""
+        with pytest.raises(ValueError, match=f"alpha must be within"):
+            op = qre.Reflection(num_wires=1, alpha=alpha)
+
     @pytest.mark.parametrize(
         "U, alpha",
         (

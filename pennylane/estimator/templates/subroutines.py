@@ -2276,8 +2276,8 @@ class Reflection(ResourceOperator):
     Args:
         num_wires (int | None): number of wires the operator acts on
         U (:class:`~.pennylane.estimator.resource_operator.ResourceOperator` | None): the operator that prepares the state :math:`|\Psi\rangle`
-        alpha (float | None): the angle of the operator, default is :math:`\pi`
-        wires (Sequence[int], None): The wires the operation acts on.
+        alpha (float | None): the angle of the operator, should be between :math:`[0, 2\pi]`. Default is :math:`\pi`
+        wires (WiresLike | None): The wires the operation acts on.
 
     Resources:
         The resources are derived from the decomposition :math:`R(U, \alpha) = U R(\alpha) U^\dagger`.
@@ -2288,7 +2288,7 @@ class Reflection(ResourceOperator):
 
             R(\alpha) = I \otimes X(0) \text{Controlled}(\text{PhaseShift}(0), \text{control}=[1, \dots], \text{values}=[1, \dots]) X(0)
 
-        In the special case where :math:`\alpha = \pi`, the phase shift becomes a Z gate.
+        In the special case where :math:`\alpha = \pi`, the phase shift becomes a ``Z`` gate.
         If :math:`\alpha = 0` or :math:`\alpha = 2\pi`, the center block cancels out, leaving :math:`-I`.
         The cost for :math:`-I` is calculated as :math:`X Z X Z = -I`.
 
@@ -2326,7 +2326,10 @@ class Reflection(ResourceOperator):
         wires: WiresLike = None,
     ) -> None:
         self.queue()
-        self.alpha = alpha  # TODO: assert alpha is in [0, 2pi]
+
+        if (alpha > 2 * qnp.pi) or (alpha < 0):
+            raise ValueError(f"alpha must be within [0, 2pi], got {alpha}")
+        self.alpha = alpha
 
         if U is None and num_wires is None:
             raise ValueError("Must provide atleast one of `num_wires` or `U`")
@@ -2361,14 +2364,14 @@ class Reflection(ResourceOperator):
         Resources:
             The resources are derived from the decomposition :math:`R(U, \alpha) = U R(\alpha) U^\dagger`.
             The center block :math:`R(\alpha)` is implemented as a multi-controlled phase shift sandwiched
-            by X gates on the target wire.
+            by ``X`` gates on the target wire.
 
-            If :math:`\alpha = \pi`, the phase shift is replaced by a Z gate.
+            If :math:`\alpha = \pi`, the phase shift is replaced by a ``Z`` gate.
             If :math:`\alpha = 0` or :math:`\alpha = 2\pi`, the operator simplifies to :math:`-I`,
             which costs :math:`X Z X Z`.
 
         Returns:
-            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -2401,7 +2404,7 @@ class Reflection(ResourceOperator):
         return gate_types
 
     @classmethod
-    def adjoint_resource_decomp(cls, target_resource_params=None):
+    def adjoint_resource_decomp(cls, target_resource_params):
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Args:
@@ -2420,7 +2423,7 @@ class Reflection(ResourceOperator):
         return [GateCount(cls.resource_rep(**target_resource_params))]
 
     @classmethod
-    def controlled_resource_decomp(cls, num_ctrl_wires, num_zero_ctrl, target_resource_params=None):
+    def controlled_resource_decomp(cls, num_ctrl_wires, num_zero_ctrl, target_resource_params):
         r"""Returns a list representing the resources for a controlled version of the operator.
 
         Args:
@@ -2520,18 +2523,18 @@ class Qubitization(ResourceOperator):
     r"""Resource class for the Qubitization operator.
 
     This operator is defined in multiple papers:
-    - Figure 1 in here: https://arxiv.org/pdf/1805.03662
-    - Figure 1 in here: https://arxiv.org/pdf/2011.03494
+    - Figure 1 in `arXiv:1805.03662 <https://arxiv.org/pdf/1805.03662>`_
+    - Figure 1 in `arXiv:2011.03494 <https://arxiv.org/pdf/2011.03494>`_
 
     Args:
-        prep_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): the operator that prepares the coefficients of the LCU
-        sel_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): the operator that selectively applies the unitaries of the LCU
-        wires (Sequence[int], None): the wires the operation acts on
+        prep (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): the operator that prepares the coefficients of the LCU
+        sel (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): the operator that selectively applies the unitaries of the LCU
+        wires (WiresLike | None): the wires the operation acts on
 
     Resources:
         The resources are obtained from equation (9) in `Babbush et al. (2018) <https://arxiv.org/pdf/1805.03662>`_.
         Specifically, the walk operator is defined as :math:`W = R \cdot S`, where :math:`R` is a reflection about the state prepared by
-        the prepare operator, and :math:`S` is the select operator. The cost is therefore 1 Select + 1 Reflection.
+        the prepare operator, and :math:`S` is the select operator. The cost is therefore one ``Select`` and one ``Reflection``.
 
     **Example**
 
@@ -2597,7 +2600,7 @@ class Qubitization(ResourceOperator):
             the prepare operator, and :math:`S` is the select operator.
 
         Returns:
-            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -2607,7 +2610,7 @@ class Qubitization(ResourceOperator):
         return [GateCount(sel), GateCount(ref_op)]
 
     @classmethod
-    def adjoint_resource_decomp(cls, target_resource_params=None):
+    def adjoint_resource_decomp(cls, target_resource_params):
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Args:
@@ -2632,7 +2635,7 @@ class Qubitization(ResourceOperator):
         return [GateCount(ref_op), GateCount(sel)]
 
     @classmethod
-    def controlled_resource_decomp(cls, num_ctrl_wires, num_zero_ctrl, target_resource_params=None):
+    def controlled_resource_decomp(cls, num_ctrl_wires, num_zero_ctrl, target_resource_params):
         r"""Returns a list representing the resources for a controlled version of the operator.
 
         Args:
