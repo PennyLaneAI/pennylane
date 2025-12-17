@@ -537,6 +537,7 @@ class TestEstimateResources:
         rc.set_decomp(RZ, custom_pow_RZ, decomp_type="pow")
 
         res = estimate(Pow(RZ(0.1, wires=0), pow_z=3), config=rc)
+        pl_res = estimate(qml.pow(qml.RZ(0.1, wires=0)), config=rc)
 
         expected_gates = defaultdict(int, {resource_rep(Hadamard): 2})
         expected_resources = Resources(
@@ -544,6 +545,7 @@ class TestEstimateResources:
         )
 
         assert res == expected_resources
+        assert pl_res == expected_resources
 
     def test_custom_controlled_decomposition(self):
         """Test that a custom controlled decomposition can be set and used."""
@@ -558,6 +560,7 @@ class TestEstimateResources:
         rc.set_decomp(RZ, custom_ctrl_RZ, decomp_type="ctrl")
 
         res = estimate(Controlled(RZ(0.1, wires=0), num_ctrl_wires=1, num_zero_ctrl=0), config=rc)
+        pl_res = estimate(qml.ctrl(qml.RZ(0.1, wires=0), control=1, control_values=0), config=rc)
 
         expected_gates = defaultdict(int, {resource_rep(X): 3})
         expected_resources = Resources(
@@ -565,3 +568,4 @@ class TestEstimateResources:
         )
 
         assert res == expected_resources
+        assert pl_res == expected_resources
