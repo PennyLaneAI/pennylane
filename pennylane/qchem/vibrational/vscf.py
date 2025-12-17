@@ -380,7 +380,7 @@ def _rotate_hamiltonian(h_integrals, mode_rots, modals):
     return h_data
 
 
-def vscf_rot_mats(h_integrals, modals=None, cutoff=None, cutoff_ratio=1e-6):
+def vscf_rotations(h_integrals, modals=None, cutoff=None, cutoff_ratio=1e-6):
     r"""Generates the VSCF rotation matrices.
 
     Args:
@@ -399,9 +399,13 @@ def vscf_rot_mats(h_integrals, modals=None, cutoff=None, cutoff_ratio=1e-6):
     >>> symbols, charge  = ['H', 'H'], 0
     >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
     >>> mol = qml.qchem.Molecule(symbols, geometry, charge=charge)
-    >>> pes = qml.qchem.vibrational_pes(mol, n_points=3, backend='cf_threadpool', cubic=True)
-    >>> h_integrals = qml.qchem.christiansen_integrals(pes, n_states=4, cubic=False, backend="cf_threadpool")
-    >>> mode_rots = qml.qchem.vscf_rot_mats(h_integrals)
+    >>> pes = qml.qchem.vibrational_pes(
+    ...     mol, n_points=3, backend='cf_threadpool', cubic=True
+    ... )
+    >>> h_integrals = qml.qchem.christiansen_integrals(
+    ...     pes, n_states=4, cubic=False, backend="cf_threadpool"
+    ... )
+    >>> mode_rots = qml.qchem.vscf_rotations(h_integrals)
     >>> print(mode_rots[0])
     [[ 0.98366824  0.17314139 -0.01438041 -0.04703255]
     [ 0.16168107 -0.74327452 -0.0123072   0.64903833]
@@ -508,7 +512,7 @@ def vscf_integrals(h_integrals, d_integrals=None, modals=None, cutoff=None, cuto
 
     nmodes, imax = np.shape(h_integrals[0])[0:2]
     max_modals = nmodes * [imax]
-    mode_rots = vscf_rot_mats(h_integrals, max_modals, cutoff, cutoff_ratio)
+    mode_rots = vscf_rotations(h_integrals, max_modals, cutoff, cutoff_ratio)
 
     if modals is None:
         modals = max_modals

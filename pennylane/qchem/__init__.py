@@ -97,5 +97,5 @@ from .vibrational import (
     taylor_hamiltonian,
     vibrational_pes,
     vscf_integrals,
-    vscf_rot_mats,
+    vscf_rotations,
 )
