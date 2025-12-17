@@ -122,7 +122,7 @@ docs = [
     "sphinxext-opengraph==0.9.0",
     "matplotlib==3.10.0",
     "galois",
-    "requests==2.32.3"
+    "requests==2.32.4"
 ]
 
 [project.scripts]
