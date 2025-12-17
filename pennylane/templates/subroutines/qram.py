@@ -386,7 +386,7 @@ class HybridQRAM(Operation):
     For each prefix :math:`s \in {0, …, 2^k - 1}`:
 
     - Perofrm a multi-controlled-X on a "signal" auxiliary, controlled by the :math:`k` select bits being equal to :math:`s`.
-    - Conditioned on ``signal==1``, perform a BBQRAM query using only the lower :math:`n-k` address bits and the sub-table of bitstrings whose prefix is :math:`s`.
+    - Conditioned on ``signal==1``, perform a bucket-brigade QRAM (:class:`~.BBQRAM`) query using only the lower :math:`n-k` address bits and the sub-table of bitstrings whose prefix is :math:`s`.
     - Uncompute the signal with the same multi-controlled-X.
 
     In the end, for any full address ``a = (prefix, suffix)``, the target wires are loaded with
