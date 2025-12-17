@@ -208,6 +208,8 @@
 
 <h3>Improvements 🛠</h3>
 
+* `qml.while_loop` can now lazily dispatch to catalyst when called, instead of dispatching upon creation.
+
 <h4>Resource estimation</h4>
 
 * Added `Resources.total_wires` and `Resources.total_gates` properties to the 
