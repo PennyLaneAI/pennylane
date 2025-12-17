@@ -483,7 +483,18 @@ class Transform:  # pylint: disable=too-many-instance-attributes
         in (b,) }
     """
 
-    def __new__(cls, *args, **__):
+    def __new__(
+        cls,
+        tape_transform: Callable | None = None,
+        pass_name: None | str = None,
+        *,
+        expand_transform: Callable | None = None,
+        classical_cotransform: Callable | None = None,
+        is_informative: bool = False,
+        final_transform: bool = False,
+        use_argnum_in_expand: bool = False,
+        plxpr_transform=None,
+    ):  # pylint: disable=too-many-arguments
         if os.environ.get("SPHINX_BUILD") == "1":
             # If called during a Sphinx documentation build,
             # simply return the original function rather than
@@ -497,10 +508,9 @@ class Transform:  # pylint: disable=too-many-instance-attributes
                 UserWarning,
             )
 
-            args[0].custom_qnode_transform = lambda x: x
-            args[0].register = _dummy_register
-
-            return args[0]
+            tape_transform.custom_qnode_transform = lambda x: x
+            tape_transform.register = _dummy_register
+            return tape_transform
 
         return super().__new__(cls)
 
