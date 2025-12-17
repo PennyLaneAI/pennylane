@@ -201,8 +201,7 @@
   [(#8686)](https://github.com/PennyLaneAI/pennylane/pull/8686)
 
 * Added the `~pennylane.estimator.templates.UnaryIterationQPE` subroutine in the `pennylane.estimator`
-  module. It is a variant of the Qubitized Quantum Phase Estimation algorithm, in which the ``Select`` operation is implemented via unary
-  iteration. This allows for reduced T and Toffoli gate count, in return
+  module. It is a variant of the Qubitized Quantum Phase Estimation algorithm. This allows for reduced T and Toffoli gate count, in return
   for additional qubits used.
   [(#8708)](https://github.com/PennyLaneAI/pennylane/pull/8708)
 
