@@ -366,6 +366,13 @@ add_decomps(BBQRAM, _bucket_brigade_qram_decomposition)
 class HybridQRAM(Operation):
     r"""Hybrid QRAM combining select-only and bucket-brigade behavior.
 
+    This operator encodes bitstrings associated with indexes:
+
+    .. math::
+        \text{HybridQRAM}|i\rangle|0\rangle = |i\rangle |b_i\rangle,
+
+    where :math:`b_i` is the bitstring associated with index :math:`i`.
+
     This hybrid QRAM implements a space–time tradeoff:
 
     - Total memory address bits: ``n = len(control_wires)``
