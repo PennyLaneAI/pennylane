@@ -337,7 +337,7 @@ def register_resources(
 
           decomps = {"C(Rot)": _controlled_rot_decomp}
 
-          @qml.transforms.decompose(fixed_decomps=decomps, max_work_wires=1)
+          @qml.transforms.decompose(fixed_decomps=decomps, num_work_wires=1)
           @qml.qnode(qml.device("default.qubit"))
           def circuit():
               qml.ctrl(qml.Rot(0.1, 0.2, 0.3, wires=3), control=[0, 1, 2])

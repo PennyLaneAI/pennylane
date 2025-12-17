@@ -118,8 +118,6 @@ class QubitizeTHC(ResourceOperator):
             )
 
         self.thc_ham = thc_ham
-        self.prep_op = prep_op.resource_rep_from_op() if prep_op else None
-        self.select_op = select_op.resource_rep_from_op() if select_op else None
         self.coeff_precision = coeff_precision
         self.rotation_precision = rotation_precision
 
@@ -135,6 +133,20 @@ class QubitizeTHC(ResourceOperator):
         if rotation_precision is None:
             rotation_precision = select_op.rotation_precision if select_op else 15
         self.rotation_precision = rotation_precision
+
+        if prep_op is None:
+            prep_op = PrepTHC(
+                thc_ham,
+                coeff_precision=coeff_precision,
+            )
+        self.prep_op = prep_op.resource_rep_from_op()
+
+        if select_op is None:
+            select_op = SelectTHC(
+                thc_ham,
+                rotation_precision=rotation_precision,
+            )
+        self.select_op = select_op.resource_rep_from_op()
 
         # Algorithmic wires for the walk operator, based on section III D in arXiv:2011.03494.
         # The auxiliary wires are excluded and accounted for by the included templates: QROM, SemiAdder, SelectTHC.
