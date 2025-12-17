@@ -124,13 +124,16 @@ def test_vscf_rot_mats(h_data, h2s_result):
     assert np.allclose(rot_matrix, rot_matrix2)
 
 
-def test_vscf_rot_mats_raise():
+def test_vscf_funcs_raise():
     r"""Test that vscf rotation matrices produces error if modals is greater than the modals for unrotated integrals."""
     with pytest.raises(ValueError, match="Number of maximum modals cannot be greater"):
         vscf.vscf_rot_mats(h_data_h2s, modals=[5, 5, 5, 5])
 
     with pytest.raises(ValueError, match="Number of maximum modals cannot be greater"):
         vscf.vscf_rot_mats(h_data_h2s, modals=[6, 6, 6])
+
+    with pytest.raises(ValueError, match="Number of maximum modals cannot be greater"):
+        vscf.vscf_integrals(h_data_h2s, modals=[7, 7])
 
 
 @pytest.mark.parametrize(
