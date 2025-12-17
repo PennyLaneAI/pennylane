@@ -149,7 +149,7 @@ class Adjoint(ResourceOperator):
 
         """
         # NOTE: This method is not called by the estimate function.
-        # The logic is instead implemented in `pennylane.estimator.estimate._get_decomposition`
+        # The logic is instead implemented in `pennylane.estimator.estimate._get_resource_decomposition`
         # and `pennylane.estimator.estimate._update_counts_from_compressed_res_op`.
         base_class, base_params = (base_cmpr_op.op_type, base_cmpr_op.params)
 
@@ -351,7 +351,7 @@ class Controlled(ResourceOperator):
 
         """
         # NOTE: This method is not called by the estimate function.
-        # The logic is instead implemented in `pennylane.estimator.estimate._get_decomposition`
+        # The logic is instead implemented in `pennylane.estimator.estimate._get_resource_decomposition`
         # and `pennylane.estimator.estimate._update_counts_from_compressed_res_op`.
         base_class, base_params = (base_cmpr_op.op_type, base_cmpr_op.params)
         base_params.update(
@@ -539,7 +539,7 @@ class Pow(ResourceOperator):
 
         """
         # NOTE: This method is not called by the estimate function.
-        # The logic is instead implemented in `pennylane.estimator.estimate._get_decomposition`
+        # The logic is instead implemented in `pennylane.estimator.estimate._get_resource_decomposition`
         # and `pennylane.estimator.estimate._update_counts_from_compressed_res_op`.
         base_class, base_params = (base_cmpr_op.op_type, base_cmpr_op.params)
         base_params.update(
