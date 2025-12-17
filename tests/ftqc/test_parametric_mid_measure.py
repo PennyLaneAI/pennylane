@@ -597,7 +597,7 @@ class TestMeasureFunctions:
 
 
 class TestDrawParametricMidMeasure:
-    @pytest.mark.matplotlib
+
     @pytest.mark.parametrize(
         "mp_class, expected_label",
         [(ParametricMidMeasure, "XY"), (XMidMeasure, "X"), (YMidMeasure, "Y")],
@@ -630,7 +630,6 @@ class TestDrawParametricMidMeasure:
         "mp_class, expected_label",
         [(ParametricMidMeasure, "XY"), (XMidMeasure, "X"), (YMidMeasure, "Y")],
     )
-    @pytest.mark.matplotlib
     def test_draw_mpl_reset(self, mp_class, expected_label):
         """Test that the reset is added after the MCM as expected in a mpl drawing"""
 

@@ -172,7 +172,6 @@ class TestAdjointQfunc:
         assert grad_eqn.primitive == jacobian_prim
         assert set(grad_eqn.params.keys()) == {
             "argnums",
-            "n_consts",
             "jaxpr",
             "method",
             "h",
@@ -180,7 +179,6 @@ class TestAdjointQfunc:
             "scalar_out",
         }
         assert grad_eqn.params["argnums"] == (0,)
-        assert grad_eqn.params["n_consts"] == 0
         assert grad_eqn.params["method"] == "auto"
         assert grad_eqn.params["h"] == 1e-6
         assert len(grad_eqn.params["jaxpr"].eqns) == 1
@@ -441,7 +439,6 @@ class TestCtrlQfunc:
         assert grad_eqn.primitive == jacobian_prim
         assert set(grad_eqn.params.keys()) == {
             "argnums",
-            "n_consts",
             "jaxpr",
             "method",
             "h",
@@ -449,7 +446,6 @@ class TestCtrlQfunc:
             "scalar_out",
         }
         assert grad_eqn.params["argnums"] == (0,)
-        assert grad_eqn.params["n_consts"] == 0
         assert grad_eqn.params["method"] == "auto"
         assert grad_eqn.params["h"] == 1e-6
         assert len(grad_eqn.params["jaxpr"].eqns) == 1
