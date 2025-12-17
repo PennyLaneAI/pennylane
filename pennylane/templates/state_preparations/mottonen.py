@@ -173,7 +173,7 @@ def _apply_uniform_rotation_dagger(gate, alpha, control_wires, target_wire):
         if (
             qml.math.is_abstract(theta)
             or qml.math.requires_grad(theta)
-            or not qml.math.any(qml.math.isclose(theta[..., 0], 0.0))
+            or not qml.math.any(qml.math.isclose(theta[..., 0], 0.0, atol=1e-14, rtol=0))
         ):
             gate(theta[..., 0], wires=[target_wire])
         return
@@ -186,12 +186,12 @@ def _apply_uniform_rotation_dagger(gate, alpha, control_wires, target_wire):
     skip_none = qml.math.is_abstract(theta) or qml.math.requires_grad(theta)
     if not skip_none:
         nonzero = (
-            (not qml.math.isclose(theta, 0.0)) if qml.math.ndim(theta) == 1 else qml.math.any(not qml.math.isclose(theta, 0.0), axis=0)
+            ~qml.math.isclose(theta, 0.0, atol=1e-14, rtol=0) if qml.math.ndim(theta) == 1 else qml.math.any(~qml.math.isclose(theta, 0.0, atol=1e-14, rtol=0), axis=0)
         )
         skip_none = qml.math.all(nonzero)
     for i, control_index in enumerate(control_indices):
         # If we do not _never_ skip, we might skip _some_ rotation
-        if skip_none or qml.math.all(not qml.math.isclose(theta[..., i], 0.0)):
+        if skip_none or not qml.math.any(qml.math.isclose(theta[..., i], 0.0, atol=1e-14, rtol=0)):
             gate(theta[..., i], wires=[target_wire])
         qml.CNOT(wires=[control_wires[control_index], target_wire])
 
@@ -265,7 +265,7 @@ def _get_alpha_y(a, n, k):
     division = qml.math.cast(division, np.float64)
     denominator = qml.math.cast(denominator, np.float64)
 
-    division = qml.math.where(~qml.math.isclose(denominator, 0.0), division, 0.0)
+    division = qml.math.where(denominator != 0.0, division, 0.0)
 
     return 2 * qml.math.arcsin(qml.math.sqrt(division))
 
