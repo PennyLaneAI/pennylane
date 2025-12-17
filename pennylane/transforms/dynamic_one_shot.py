@@ -112,8 +112,7 @@ def dynamic_one_shot(
     **Example**
 
     Most devices that support mid-circuit measurements will include this transform in its
-    preprocessing automatically when applicable. When this is the case, any user-applied
-    ``dynamic_one_shot`` transforms will be ignored. The recommended way to use dynamic one
+    preprocessing automatically when applicable. The recommended way to use dynamic one
     shot is to specify ``mcm_method="one-shot"`` in the ``qml.qnode`` decorator.
 
     .. code-block:: python
