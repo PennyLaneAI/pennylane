@@ -509,7 +509,7 @@ class TestEstimateResources:
     def test_custom_adjoint_decomposition(self):
         """Test that a custom adjoint decomposition can be set and used."""
 
-        def custom_adj_RZ(target_resource_params): #pylint: disable=unused-argument
+        def custom_adj_RZ(target_resource_params):  # pylint: disable=unused-argument
             return [GateCount(resource_rep(Z))]
 
         rc = ResourceConfig()
@@ -528,7 +528,7 @@ class TestEstimateResources:
         """Test that a custom pow decomposition can be set and used."""
         from pennylane.estimator.ops.op_math.symbolic import Pow
 
-        def custom_pow_RZ(pow_z, target_resource_params): #pylint: disable=unused-argument
+        def custom_pow_RZ(pow_z, target_resource_params):  # pylint: disable=unused-argument
             return [GateCount(resource_rep(Hadamard), count=2)]
 
         rc = ResourceConfig()
@@ -547,7 +547,9 @@ class TestEstimateResources:
         """Test that a custom controlled decomposition can be set and used."""
         from pennylane.estimator.ops.op_math.symbolic import Controlled
 
-        def custom_ctrl_RZ(num_ctrl_wires, num_zero_ctrl, target_resource_params): #pylint: disable=unused-argument
+        def custom_ctrl_RZ(
+            num_ctrl_wires, num_zero_ctrl, target_resource_params
+        ):  # pylint: disable=unused-argument
             return [GateCount(resource_rep(X), count=3)]
 
         rc = ResourceConfig()
