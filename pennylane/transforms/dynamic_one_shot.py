@@ -24,7 +24,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane import math
-from pennylane.exceptions import QuantumFunctionError
+from pennylane.exceptions import QuantumFunctionError, TransformError
 from pennylane.measurements import (
     CountsMP,
     ExpectationMP,
@@ -177,21 +177,10 @@ def _supports_one_shot(dev: "qml.devices.Device"):
 @dynamic_one_shot.custom_qnode_transform
 def _dynamic_one_shot_qnode(self, qnode, targs, tkwargs):
     """Custom qnode transform for ``dynamic_one_shot``."""
-    if tkwargs.get("device", None):
-        raise ValueError(
-            "Cannot provide a 'device' value directly to the dynamic_one_shot decorator "
-            "when transforming a QNode."
-        )
-    if qnode.device is not None:
-        if not _supports_one_shot(qnode.device):
-            raise TypeError(
-                f"Device {qnode.device.name} does not support mid-circuit measurements and/or "
-                "one-shot execution mode natively, and hence it does not support the "
-                "dynamic_one_shot transform. 'default.qubit' and 'lightning.qubit' currently "
-                "support mid-circuit measurements and the dynamic_one_shot transform."
-            )
-    tkwargs.setdefault("device", qnode.device)
-    return self.default_qnode_transform(qnode, targs, tkwargs)
+    raise TransformError(
+        "The dynamic_one_shot transform cannot be applied directly on a QNode. "
+        "Use mcm_method='one-shot' instead."
+    )
 
 
 def init_auxiliary_tape(circuit: qml.tape.QuantumScript):

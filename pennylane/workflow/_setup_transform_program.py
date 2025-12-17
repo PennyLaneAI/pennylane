@@ -30,35 +30,6 @@ if TYPE_CHECKING:
     from pennylane.devices.execution_config import ExecutionConfig
 
 
-def _prune_dynamic_transform(
-    outer_transform: CompilePipeline, inner_transform: CompilePipeline
-) -> None:
-    """Ensure a single ``dynamic_one_shot`` transform is applied.
-
-    Sometimes device preprocess contains a ``mid_circuit_measurements`` transform, which will
-    be added to the inner transform program. If the user then applies a ``dynamic_one_shot``
-    manually, it will duplicate the ``mid_circuit_measurements`` transform. This function ensures
-    that there is only one ``dynamic_one_shot`` transform in the outer and inner transform
-    programs combined.
-
-    """
-
-    all_transforms = outer_transform + inner_transform
-    type_to_keep = 0
-    if any("mid_circuit_measurements" in str(t) for t in all_transforms):
-        type_to_keep = 2
-    elif any("dynamic_one_shot" in str(t) for t in all_transforms):
-        type_to_keep = 1
-
-    if type_to_keep == 0:
-        return
-
-    inner_contains_one_shot = inner_transform.prune_dynamic_transform(type_to_keep)
-    if inner_contains_one_shot:
-        type_to_keep = 0
-    outer_transform.prune_dynamic_transform(type_to_keep)
-
-
 def _setup_transform_program(
     device: Device,
     resolved_execution_config: ExecutionConfig,
@@ -94,9 +65,6 @@ def _setup_transform_program(
         outer_transform_program += device_transform_program
     else:
         inner_transform_program += device_transform_program
-
-    # Making sure dynamic_one_shot occurs at most once between the inner and outer transform programs
-    _prune_dynamic_transform(outer_transform_program, inner_transform_program)
 
     # If caching is desired but an explicit cache is not provided, use an ``LRUCache``.
     if cache == "auto":
