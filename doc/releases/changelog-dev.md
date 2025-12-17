@@ -325,7 +325,7 @@
   work wire and :class:`pennylane.TemporaryAND` operators to reduce the resources needed.
   [(#8549)](https://github.com/PennyLaneAI/pennylane/pull/8549)
 
-* :class:`~pennylane.estimator.templates.SelectTHC` template was modified to allow trade-off between qubits and T-gates.
+* The :class:`~.pennylane.estimator.templates.SelectTHC` template now allows for a trade-off between qubits and T-gates. This provides greater flexibility in optimizing algorithms.
   [(#8682)](https://github.com/PennyLaneAI/pennylane/pull/8682)
   
 * The :func:`~pennylane.pauli_decompose` now supports decomposing scipy's sparse matrices,
