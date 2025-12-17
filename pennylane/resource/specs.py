@@ -360,7 +360,7 @@ def specs(
     about the circuit after applying the specified transforms, expansions, and/or compilation passes.
 
     Args:
-        qnode (.QNode | .QJIT): the QNode to calculate the specifications for.
+        qnode (:class:`~pennylane.QNode` | :class:`~catalyst.jit.QJIT`): the QNode to calculate the specifications for.
 
     Keyword Args:
         level (str | int | slice | iter[int]): An indication of which transforms, expansions, and passes to apply before
