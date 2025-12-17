@@ -35,7 +35,6 @@ def commute_ppr(tape, *, max_pauli_size=0):
     :math:`\exp(-{iP\tfrac{\pi}{4}})`, past non-Clifford PPRs gates,
     :math:`\exp(-{iP\tfrac{\pi}{8}})`, where :math:`P` is a Pauli word.
     """
-
     raise NotImplementedError(
         "The commute_ppr compilation pass has no tape implementation, and can only be applied when decorating the entire worfklow with @qml.qjit and when it is placed after all transforms that only have a tape implementation."
     )
@@ -43,7 +42,7 @@ def commute_ppr(tape, *, max_pauli_size=0):
 
 @partial(transform, pass_name="merge-ppr-ppm")
 def merge_ppr_ppm(tape=None, *, max_pauli_size=0):
-    R"""
+    r"""
     A quantum compilation pass that absorbs Clifford Pauli product rotation (PPR) operations,
     :math:`\exp{-iP\tfrac{\pi}{4}}`, into the final Pauli product measurements (PPMs).
     """
@@ -54,7 +53,7 @@ def merge_ppr_ppm(tape=None, *, max_pauli_size=0):
 
 @partial(transform, pass_name="ppr-to-ppm")
 def ppr_to_ppm(tape=None, *, decompose_method="pauli-corrected", avoid_y_measure=False):
-    R"""
+    r"""
     A quantum compilation pass that decomposes Pauli product rotations (PPRs),
     :math:`P(\theta) = \exp(-iP\theta)`, into Pauli product measurements (PPMs).
     """
@@ -67,7 +66,7 @@ def ppr_to_ppm(tape=None, *, decompose_method="pauli-corrected", avoid_y_measure
 def ppm_compilation(
     tape=None, *, decompose_method="pauli-corrected", avoid_y_measure=False, max_pauli_size=0
 ):
-    R"""
+    r"""
     A quantum compilation pass that transforms Clifford+T gates into Pauli product measurements
     (PPMs).
     """
@@ -78,14 +77,13 @@ def ppm_compilation(
 
 @partial(transform, pass_name="reduce-t-depth")
 def reduce_t_depth(qnode):
-    R"""
+    r"""
     A quantum compilation pass that reduces the depth and count of non-Clifford Pauli product
     rotation (PPR, :math:`P(\theta) = \exp(-iP\theta)`) operators (e.g., ``T`` gates) by commuting
     PPRs in adjacent layers and merging compatible ones (a layer comprises PPRs that mutually
     commute). For more details, see Figure 6 of
     `A Game of Surface Codes <https://arXiv:1808.02892v3>`_.
     """
-
     raise NotImplementedError(
         "The reduce_t_depth compilation pass has no tape implementation, and can only be applied when decorating the entire worfklow with @qml.qjit and when it is placed after all transforms that only have a tape implementation."
     )
