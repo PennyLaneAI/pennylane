@@ -597,6 +597,13 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Updated `pyproject.toml` with project dependencies to replace the requirements files. Updated workflows to use installations from `pyproject.toml`.
+  [(8702)](https://github.com/PennyLaneAI/pennylane/pull/8702)
+
+* `qml.cond`, the `QNode`, transforms, `qml.grad`, and `qml.jacobian` no longer treat all keyword arguments as static
+  arguments. They are instead treated as dynamic, numerical inputs, matching the behaviour of Jax and Catalyst.
+  [(#8290)](https://github.com/PennyLaneAI/pennylane/pull/8290)
+
 * To adjust to the Python 3.14, some error messages expectations have been updated in tests; `get_type_str` added a special branch to handle `Union`.
   The import of networkx is softened to not occur on import of pennylane to work around a bug in Python 3.14.1.
   [(#8568)](https://github.com/PennyLaneAI/pennylane/pull/8568)
@@ -721,6 +728,10 @@ A warning message has been added to :doc:`Building a plugin <../development/plug
 
 <h3>Bug fixes 🐛</h3>
 
+* Use a fixed floating number tolerance from `np.finfo` in `_apply_uniform_rotation_dagger`
+  to avoid numerical stability issues on some platforms.
+  [(#8780)](https://github.com/PennyLaneAI/pennylane/pull/8780)
+
 * Handles floating point errors in the norm of the state when applying
   mid circuit measurements.
   [(#8741)](https://github.com/PennyLaneAI/pennylane/pull/8741)
@@ -792,6 +803,7 @@ A warning message has been added to :doc:`Building a plugin <../development/plug
 
 This release contains contributions from (in alphabetical order):
 
+Runor Agbaire,
 Guillermo Alonso,
 Utkarsh Azad,
 Astral Cai,
