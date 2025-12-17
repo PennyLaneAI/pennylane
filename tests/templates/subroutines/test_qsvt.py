@@ -1011,7 +1011,7 @@ class TestIterativeSolver:
             _poly_func(coeffs=target_polynomial_coeffs, x=x_point),
             atol=tolerance,
         )
-        
+
     def test_jit_if_jax_available(self):
 
         def f(x):
