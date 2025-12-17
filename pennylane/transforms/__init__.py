@@ -186,6 +186,7 @@ Transforms developer functions
 
     ~CompilePipeline
     ~transforms.core.BoundTransform
+    ~transforms.core.Transform
 
 Transforming circuits
 ---------------------
