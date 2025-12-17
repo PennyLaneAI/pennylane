@@ -368,7 +368,7 @@ def specs(
             on the available levels. Default is ``"gradient"``.
         compute_depth (bool): Whether to compute the depth of the circuit. If ``False``, circuit
             depth will not be included in the output. By default, ``specs`` will always attempt to calculate circuit
-            depth (behaves as ``True``), except where not available, such as in pass-by-pass analysis with :func:`pennylane.qjit` present.
+            depth (behaves as ``True``), except where not available, such as in pass-by-pass analysis with :func:`~pennylane.qjit` present.
 
     Returns:
         A function that has the same argument signature as ``qnode``. This function returns a
@@ -377,7 +377,8 @@ def specs(
 
     .. warning::
 
-        Computing circuit depth is computationally expensive and can lead to slower ``specs`` calculations. If circuit depth is not needed, set ``compute_depth=False``.
+        Computing circuit depth is computationally expensive and can lead to slower ``specs`` calculations.
+        If circuit depth is not needed, set ``compute_depth=False``.
 
     **Example**
 
