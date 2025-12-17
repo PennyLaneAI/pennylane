@@ -169,11 +169,13 @@ def _apply_uniform_rotation_dagger(gate, alpha, control_wires, target_wire):
     gray_code_rank = len(control_wires)
     theta = compute_theta(alpha, num_qubits=gray_code_rank)
 
+    _ATOL = np.finfo(np.dtype(theta)).eps
+
     if gray_code_rank == 0:
         if (
             qml.math.is_abstract(theta)
             or qml.math.requires_grad(theta)
-            or qml.math.all(~qml.math.allclose(theta[..., 0], 0.0))
+            or qml.math.all(~qml.math.allclose(theta[..., 0], 0.0, atol=_ATOL))
         ):
             gate(theta[..., 0], wires=[target_wire])
         return
@@ -186,14 +188,14 @@ def _apply_uniform_rotation_dagger(gate, alpha, control_wires, target_wire):
     skip_none = qml.math.is_abstract(theta) or qml.math.requires_grad(theta)
     if not skip_none:
         nonzero = (
-            ~qml.math.allclose(theta, 0.0)
+            ~qml.math.allclose(theta, 0.0, atol=_ATOL)
             if qml.math.ndim(theta) == 1
-            else qml.math.any(~qml.math.allclose(theta, 0.0), axis=0)
+            else qml.math.any(~qml.math.allclose(theta, 0.0, atol=_ATOL), axis=0)
         )
         skip_none = qml.math.all(nonzero)
     for i, control_index in enumerate(control_indices):
         # If we do not _never_ skip, we might skip _some_ rotation
-        if skip_none or qml.math.all(~qml.math.allclose(theta[..., i], 0.0)):
+        if skip_none or qml.math.all(~qml.math.allclose(theta[..., i], 0.0, atol=_ATOL)):
             gate(theta[..., i], wires=[target_wire])
         qml.CNOT(wires=[control_wires[control_index], target_wire])
 
