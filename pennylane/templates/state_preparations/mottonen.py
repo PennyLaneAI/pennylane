@@ -169,11 +169,14 @@ def _apply_uniform_rotation_dagger(gate, alpha, control_wires, target_wire):
     gray_code_rank = len(control_wires)
     theta = compute_theta(alpha, num_qubits=gray_code_rank)
 
+    # Tolerance for treating angles as effectively zero (floating-point noise level)
+    _ATOL = 1e-14
+
     if gray_code_rank == 0:
         if (
             qml.math.is_abstract(theta)
             or qml.math.requires_grad(theta)
-            or not qml.math.any(qml.math.isclose(theta[..., 0], 0.0, atol=1e-14, rtol=0))
+            or not qml.math.any(qml.math.abs(theta[..., 0]) < _ATOL)
         ):
             gate(theta[..., 0], wires=[target_wire])
         return
@@ -186,12 +189,14 @@ def _apply_uniform_rotation_dagger(gate, alpha, control_wires, target_wire):
     skip_none = qml.math.is_abstract(theta) or qml.math.requires_grad(theta)
     if not skip_none:
         nonzero = (
-            ~qml.math.isclose(theta, 0.0, atol=1e-14, rtol=0) if qml.math.ndim(theta) == 1 else qml.math.any(~qml.math.isclose(theta, 0.0, atol=1e-14, rtol=0), axis=0)
+            qml.math.abs(theta) >= _ATOL
+            if qml.math.ndim(theta) == 1
+            else qml.math.any(qml.math.abs(theta) >= _ATOL, axis=0)
         )
         skip_none = qml.math.all(nonzero)
     for i, control_index in enumerate(control_indices):
         # If we do not _never_ skip, we might skip _some_ rotation
-        if skip_none or not qml.math.any(qml.math.isclose(theta[..., i], 0.0, atol=1e-14, rtol=0)):
+        if skip_none or not qml.math.any(qml.math.abs(theta[..., i]) < _ATOL):
             gate(theta[..., i], wires=[target_wire])
         qml.CNOT(wires=[control_wires[control_index], target_wire])
 
