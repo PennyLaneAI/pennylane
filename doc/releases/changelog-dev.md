@@ -389,10 +389,6 @@
   system is disabled.
   [(#8532)](https://github.com/PennyLaneAI/pennylane/pull/8532)
 
-* A new decomposition has been added to :class:`pennylane.Toffoli`. This decomposition uses one
-  work wire and :class:`pennylane.TemporaryAND` operators to reduce the resources needed.
-  [(#8549)](https://github.com/PennyLaneAI/pennylane/pull/8549)
-
 * The :class:`~.pennylane.estimator.templates.SelectTHC` template now allows for a trade-off between qubits and T-gates. This provides greater flexibility in optimizing algorithms.
   [(#8682)](https://github.com/PennyLaneAI/pennylane/pull/8682)
   
