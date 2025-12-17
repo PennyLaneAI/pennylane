@@ -509,7 +509,7 @@ class TestEstimateResources:
     def test_custom_adjoint_decomposition(self):
         """Test that a custom adjoint decomposition can be set and used."""
 
-        def custom_adj_RZ(target_resource_params):
+        def custom_adj_RZ(target_resource_params): #pylint: disable=unused-argument
             return [GateCount(resource_rep(Z))]
 
         rc = ResourceConfig()
@@ -520,6 +520,44 @@ class TestEstimateResources:
         expected_gates = defaultdict(int, {resource_rep(Z): 1})
         expected_resources = Resources(
             zeroed_wires=0, any_state_wires=0, algo_wires=1, gate_types=expected_gates
+        )
+
+        assert res == expected_resources
+
+    def test_custom_pow_decomposition(self):
+        """Test that a custom pow decomposition can be set and used."""
+        from pennylane.estimator.ops.op_math.symbolic import Pow
+
+        def custom_pow_RZ(pow_z, target_resource_params): #pylint: disable=unused-argument
+            return [GateCount(resource_rep(Hadamard), count=2)]
+
+        rc = ResourceConfig()
+        rc.set_decomp(RZ, custom_pow_RZ, decomp_type="pow")
+
+        res = estimate(Pow(RZ(0.1, wires=0), pow_z=3), config=rc)
+
+        expected_gates = defaultdict(int, {resource_rep(Hadamard): 2})
+        expected_resources = Resources(
+            zeroed_wires=0, any_state_wires=0, algo_wires=1, gate_types=expected_gates
+        )
+
+        assert res == expected_resources
+
+    def test_custom_controlled_decomposition(self):
+        """Test that a custom controlled decomposition can be set and used."""
+        from pennylane.estimator.ops.op_math.symbolic import Controlled
+
+        def custom_ctrl_RZ(num_ctrl_wires, num_zero_ctrl, target_resource_params): #pylint: disable=unused-argument
+            return [GateCount(resource_rep(X), count=3)]
+
+        rc = ResourceConfig()
+        rc.set_decomp(RZ, custom_ctrl_RZ, decomp_type="ctrl")
+
+        res = estimate(Controlled(RZ(0.1, wires=0), num_ctrl_wires=1, num_zero_ctrl=0), config=rc)
+
+        expected_gates = defaultdict(int, {resource_rep(X): 3})
+        expected_resources = Resources(
+            zeroed_wires=0, any_state_wires=0, algo_wires=2, gate_types=expected_gates
         )
 
         assert res == expected_resources
