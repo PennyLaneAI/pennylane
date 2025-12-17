@@ -15,6 +15,7 @@
 Integration tests for the capture of PennyLane templates into plxpr.
 """
 import inspect
+from itertools import combinations
 
 # pylint: disable=protected-access
 from typing import Any
@@ -23,6 +24,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane import math
 
 jax = pytest.importorskip("jax")
 jnp = jax.numpy
@@ -300,6 +302,7 @@ tested_modified_templates = [
     qml.ControlledSequence,
     qml.FermionicDoubleExcitation,
     qml.HilbertSchmidt,
+    qml.IQP,
     qml.LocalHilbertSchmidt,
     qml.QDrift,
     qml.QSVT,
@@ -592,6 +595,46 @@ class TestModifiedTemplates:
         U = [qml.Hadamard(0), qml.Hadamard(1)]
         V = [qml.RZ(v_params[0], wires=2), qml.RX(v_params[1], wires=3)]
         assert qml.equal(q.queue[0], template(V, U)) is True
+
+    def test_iqp(self):
+        """Test the primitive bind call of IQP."""
+
+        pattern = []
+        for weight in math.arange(1, 2):
+            for gate in combinations(math.arange(4), weight):
+                pattern.append(tuple(tuple(gate)))
+        pattern = tuple(pattern)
+
+        kwargs = {
+            "num_wires": 4,
+            "weights": tuple(math.random.uniform(0, 2 * np.pi, 4)),
+            "pattern": pattern,
+            "spin_sym": True,
+        }
+
+        def qfunc():
+            qml.IQP(**kwargs)
+
+        # Validate inputs
+        qfunc()
+
+        # Actually test primitive bind
+        jaxpr = jax.make_jaxpr(qfunc)()
+
+        assert len(jaxpr.eqns) == 1
+
+        eqn = jaxpr.eqns[0]
+        assert eqn.primitive == qml.IQP._primitive
+        assert eqn.invars == jaxpr.jaxpr.invars
+        assert eqn.params == kwargs
+        assert len(eqn.outvars) == 1
+        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+
+        with qml.queuing.AnnotatedQueue() as q:
+            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+
+        assert len(q) == 1
+        qml.assert_equal(q.queue[0], qml.IQP(**kwargs))
 
     @pytest.mark.parametrize("template", [qml.MERA, qml.MPS, qml.TTN])
     def test_tensor_networks(self, template):

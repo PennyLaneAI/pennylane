@@ -88,7 +88,7 @@ def _get_plxpr_decompose():  # pylint: disable=too-many-statements
             gate_set=None,
             stopping_condition=None,
             max_expansion=None,
-            max_work_wires=0,
+            num_work_wires=0,
             minimize_work_wires=False,
             fixed_decomps=None,
             alt_decomps=None,
@@ -106,7 +106,7 @@ def _get_plxpr_decompose():  # pylint: disable=too-many-statements
             self._decomp_graph_solution = None
             self._target_gate_names = None
             self._fixed_decomps, self._alt_decomps = fixed_decomps, alt_decomps
-            self._max_work_wires = max_work_wires
+            self._num_work_wires = num_work_wires
             self._minimize_work_wires = minimize_work_wires
 
             # We use a ChainMap to store the environment frames, which allows us to push and pop
@@ -164,7 +164,7 @@ def _get_plxpr_decompose():  # pylint: disable=too-many-statements
                         self.stopping_condition,
                         max_expansion=max_expansion,
                         graph_solution=self._decomp_graph_solution,
-                        max_work_wires=self._max_work_wires,
+                        num_work_wires=self._num_work_wires,
                     )
                 )
 
@@ -180,10 +180,10 @@ def _get_plxpr_decompose():  # pylint: disable=too-many-statements
                 return self.interpret_operation(op)
 
             if self._decomp_graph_solution and self._decomp_graph_solution.is_solved_for(
-                op, num_work_wires=self._max_work_wires
+                op, num_work_wires=self._num_work_wires
             ):
                 rule = self._decomp_graph_solution.decomposition(
-                    op, num_work_wires=self._max_work_wires
+                    op, num_work_wires=self._num_work_wires
                 )
                 num_wires = len(op.wires)
 
@@ -235,12 +235,12 @@ def _get_plxpr_decompose():  # pylint: disable=too-many-statements
                     self._decomp_graph_solution = _construct_and_solve_decomp_graph(
                         operations,
                         self._gate_set,
-                        self._max_work_wires,
+                        self._num_work_wires,
                         self._minimize_work_wires,
                         self._fixed_decomps,
                         self._alt_decomps,
                     )
-                    self._max_work_wires = self._decomp_graph_solution.num_work_wires
+                    self._num_work_wires = self._decomp_graph_solution.num_work_wires
 
             for eq in jaxpr.eqns:
                 prim_type = getattr(eq.primitive, "prim_type", "")
@@ -259,10 +259,10 @@ def _get_plxpr_decompose():  # pylint: disable=too-many-statements
                     subfuns, params = eq.primitive.get_bind_params(eq.params)
                     outvals = eq.primitive.bind(*subfuns, *invals, **params)
 
-                    if self._max_work_wires is not None and eq.primitive.name == "allocate":
-                        self._max_work_wires -= params["num_wires"]
-                    if self._max_work_wires is not None and eq.primitive.name == "deallocate":
-                        self._max_work_wires += len(invals)
+                    if self._num_work_wires is not None and eq.primitive.name == "allocate":
+                        self._num_work_wires -= params["num_wires"]
+                    if self._num_work_wires is not None and eq.primitive.name == "deallocate":
+                        self._num_work_wires += len(invals)
 
                 if not eq.primitive.multiple_results:
                     outvals = [outvals]
@@ -309,7 +309,7 @@ def _get_plxpr_decompose():  # pylint: disable=too-many-statements
             if (
                 op.has_qfunc_decomposition
                 or self._decomp_graph_solution
-                and self._decomp_graph_solution.is_solved_for(op, self._max_work_wires)
+                and self._decomp_graph_solution.is_solved_for(op, self._num_work_wires)
             ):
                 return self._evaluate_jaxpr_decomposition(op)
 
@@ -357,7 +357,7 @@ def decompose(
     gate_set=None,
     stopping_condition=None,
     max_expansion=None,
-    max_work_wires: int | None = 0,
+    num_work_wires: int | None = 0,
     minimize_work_wires: bool = False,
     fixed_decomps: dict | None = None,
     alt_decomps: dict | None = None,
@@ -391,7 +391,7 @@ def decompose(
             section below for more details.
         max_expansion (int, optional): The maximum depth of the decomposition. Defaults to ``None``.
             If ``None``, the circuit will be decomposed until the target gate set is reached.
-        max_work_wires (int): The maximum number of work wires that can be simultaneously
+        num_work_wires (int): The maximum number of work wires that can be simultaneously
             allocated. If ``None``, assume an infinite number of work wires. Defaults to ``0``.
         minimize_work_wires (bool): If ``True``, minimize the number of work wires simultaneously
             allocated throughout the circuit. Defaults to ``False``.
@@ -747,12 +747,12 @@ def decompose(
         decomp_graph_solution = _construct_and_solve_decomp_graph(
             tape.operations,
             gate_set,
-            num_work_wires=max_work_wires,
+            num_work_wires=num_work_wires,
             minimize_work_wires=minimize_work_wires,
             fixed_decomps=fixed_decomps,
             alt_decomps=alt_decomps,
         )
-        max_work_wires = decomp_graph_solution.num_work_wires
+        num_work_wires = decomp_graph_solution.num_work_wires
 
     try:
         new_ops = [
@@ -762,7 +762,7 @@ def decompose(
                 op,
                 stopping_condition,
                 max_expansion=max_expansion,
-                max_work_wires=max_work_wires,
+                num_work_wires=num_work_wires,
                 graph_solution=decomp_graph_solution,
             )
         ]
@@ -783,7 +783,7 @@ def _operator_decomposition_gen(  # pylint: disable=too-many-arguments,too-many-
     acceptance_function: Callable[[Operator], bool],
     max_expansion: int | None = None,
     current_depth: int = 0,
-    max_work_wires: int | None = 0,
+    num_work_wires: int | None = 0,
     graph_solution: DecompGraphSolution | None = None,
     custom_decomposer: Callable[[Operator], Sequence[Operator]] | None = None,
     strict: bool = False,
@@ -795,7 +795,7 @@ def _operator_decomposition_gen(  # pylint: disable=too-many-arguments,too-many-
         acceptance_function: Returns True if the operator does not need further decomposition.
         max_expansion: The maximum level of expansion.
         current_depth: The current depth of expansion.
-        max_work_wires: The number of available work wires at the top level.
+        num_work_wires: The number of available work wires at the top level.
         graph_solution: The solution to the decomposition graph.
         custom_decomposer: A custom function that decomposes an operator. This is only relevant
             with the graph enabled, and only used by ``preprocess.decompose``.
@@ -836,13 +836,13 @@ def _operator_decomposition_gen(  # pylint: disable=too-many-arguments,too-many-
     elif acceptance_function(op) or max_depth_reached:
         yield op
 
-    elif graph_solution and graph_solution.is_solved_for(op, max_work_wires):
-        op_rule = graph_solution.decomposition(op, max_work_wires)
+    elif graph_solution and graph_solution.is_solved_for(op, num_work_wires):
+        op_rule = graph_solution.decomposition(op, num_work_wires)
         with queuing.AnnotatedQueue() as decomposed_ops:
             op_rule(*op.parameters, wires=op.wires, **op.hyperparameters)
         decomp = decomposed_ops.queue
-        if max_work_wires is not None:
-            max_work_wires -= op_rule.get_work_wire_spec(**op.resource_params).total
+        if num_work_wires is not None:
+            num_work_wires -= op_rule.get_work_wire_spec(**op.resource_params).total
 
     elif enabled_graph() and isinstance(op, GlobalPhase):
         warnings.warn(
@@ -886,7 +886,7 @@ def _operator_decomposition_gen(  # pylint: disable=too-many-arguments,too-many-
             acceptance_function,
             max_expansion=max_expansion,
             current_depth=current_depth,
-            max_work_wires=max_work_wires,
+            num_work_wires=num_work_wires,
             graph_solution=graph_solution,
             custom_decomposer=custom_decomposer,
             strict=strict,
