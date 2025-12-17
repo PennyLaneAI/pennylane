@@ -39,17 +39,18 @@ PBC_TRANSFORM_DATA = list(zip(PBC_TRANSFORMS, PASS_NAMES))
 
 
 @pytest.mark.parametrize("pbc_transform, pass_name", PBC_TRANSFORM_DATA)
-class TestPBCTransforms:
+class TestPauliBasedComputationTransforms:
 
     # pylint: disable=unused-argument
     def test_not_implemented(self, pbc_transform, pass_name):
-        """Test that NotImplementedError is raised when trying to use gridsynth on tape."""
+        """Test that NotImplementedError is raised when trying to use Pauli-based computation
+        transforms on a tape."""
 
         tape = qml.tape.QuantumScript([qml.T(wires=0), qml.PauliRot(0.1, "Y", wires=0)])
 
         with pytest.raises(
             NotImplementedError,
-            match=f"The {pbc_transform.__name__} compilation pass has no tape implementation, and can only be applied when decorating the entire worfklow with @qml.qjit and when it is placed after all transforms that only have a tape implementation.",
+            match=f"The {pbc_transform.__name__} compilation pass has no tape implementation",
         ):
             pbc_transform(tape)
 
