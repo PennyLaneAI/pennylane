@@ -21,11 +21,10 @@ from functools import partial
 import numpy as np
 
 import pennylane as qml
-from pennylane.exceptions import QuantumFunctionError, TransformError
+from pennylane.exceptions import QuantumFunctionError
 from pennylane.operation import Operator
-from pennylane.tape import QuantumScript, QuantumScriptBatch
+from pennylane.tape import QuantumScript
 from pennylane.transforms import transform
-from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
 
 from .helper import _needs_pyzx
@@ -101,6 +100,7 @@ class EdgeType:  # pylint: disable=too-few-public-methods
     HADAMARD = 2
 
 
+@partial(transform, is_informative=True)
 @_needs_pyzx
 def to_zx(tape, expand_measurements=False):
     """This transform converts a PennyLane quantum tape to a ZX-Graph in the `PyZX framework <https://pyzx.readthedocs.io/en/latest/>`_.
@@ -289,7 +289,7 @@ def to_zx(tape, expand_measurements=False):
 
             wires = qml.wires.Wires([4, 3, 0, 2, 1])
             wires_map = dict(zip(tape_opt.wires, wires))
-            tape_opt_reorder = qml.map_wires(input=tape_opt, wire_map=wires_map)[0][0]
+            tape_opt_reorder = qml.map_wires(tape_opt, wire_map=wires_map)[0][0]
 
             @qml.qnode(device=dev)
             def mod_5_4():
@@ -315,20 +315,7 @@ def to_zx(tape, expand_measurements=False):
 
         Copyright (C) 2018 - Aleks Kissinger and John van de Wetering
     """
-    # If it is a simple operation just transform it to a tape
-    if not isinstance(tape, Operator):
-        if not isinstance(tape, (qml.tape.QuantumScript, qml.QNode)) and not callable(tape):
-            raise TransformError("Input is not an Operator, tape, QNode, or quantum function")
-        return _to_zx_transform(tape, expand_measurements=expand_measurements)
 
-    return to_zx(QuantumScript([tape]))
-
-
-@partial(transform, is_informative=True)
-def _to_zx_transform(
-    tape: QuantumScript, expand_measurements=False
-) -> tuple[QuantumScriptBatch, PostprocessingFn]:
-    """Private function to convert a PennyLane tape to a `PyZX graph <https://pyzx.readthedocs.io/en/latest/>`_ ."""
     # pylint: disable=import-outside-toplevel
     import pyzx
     from pyzx.circuit.gates import TargetMapper
@@ -368,7 +355,7 @@ def _to_zx_transform(
 
         consecutive_wires = Wires(range(len(res[0].wires)))
         consecutive_wires_map = OrderedDict(zip(res[0].wires, consecutive_wires, strict=True))
-        mapped_tapes, fn = qml.map_wires(input=res[0], wire_map=consecutive_wires_map)
+        mapped_tapes, fn = qml.map_wires(res[0], wire_map=consecutive_wires_map)
         mapped_tape = fn(mapped_tapes)
 
         inputs = []
@@ -419,6 +406,11 @@ def _to_zx_transform(
         return graph
 
     return [tape], processing_fn
+
+
+@to_zx.register
+def _op_to_zx(op: Operator, expand_measurements=False):
+    return to_zx(QuantumScript([op]), expand_measurements=expand_measurements)
 
 
 def _add_operations_to_graph(tape, graph, gate_types, q_mapper, c_mapper):

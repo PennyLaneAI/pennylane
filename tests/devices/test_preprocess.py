@@ -14,7 +14,6 @@
 """Unit tests for preprocess in devices/qubit."""
 
 import warnings
-from functools import partial
 
 import numpy as np
 import pytest
@@ -799,7 +798,7 @@ class TestMeasurementsFromCountsOrSamples:
 
         dev = qml.device("default.qubit", wires=4)
 
-        @partial(validate_device_wires, wires=dev.wires)
+        @validate_device_wires(wires=dev.wires)
         @qml.set_shots(5000)
         @qml.qnode(dev)
         def basic_circuit(theta: float):
@@ -839,7 +838,7 @@ class TestMeasurementsFromCountsOrSamples:
 
         dev = qml.device("default.qubit", wires=4, seed=seed)
 
-        @partial(validate_device_wires, wires=dev.wires)
+        @validate_device_wires(wires=dev.wires)
         @qml.set_shots(5000)
         @qml.qnode(dev)
         def basic_circuit(theta: float):
@@ -878,7 +877,7 @@ class TestMeasurementsFromCountsOrSamples:
 
         dev = qml.device("default.qubit", wires=4)
 
-        @partial(validate_device_wires, wires=dev.wires)
+        @validate_device_wires(wires=dev.wires)
         @qml.set_shots(5000)
         @qml.qnode(dev)
         def basic_circuit():

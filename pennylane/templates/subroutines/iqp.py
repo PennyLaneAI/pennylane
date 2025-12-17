@@ -49,19 +49,19 @@ class IQP(Operation):
     Args:
         weights (list): The parameters of the IQP gates.
         num_wires (int): Number of wires in the circuit.
-        pattern (list[list[list[int]]]): Specification of the trainable gates. Each element of `pattern` corresponds to a
+        pattern (list[list[list[int]]]): Specification of the trainable gates. Each element of ``pattern`` corresponds to a
             unique trainable parameter. Each sublist specifies the generators to which that parameter applies.
-            Generators are specified by listing the qubits on which an X operator acts. For example, the `pattern`
-            `[[[0]], [[1]], [[2]], [[3]]]` specifies a circuit with single qubit rotations on the first four qubits, each
-            with its own trainable parameter. The `pattern` `[[[0],[1]], [[2],[3]]]` correspond to a circuit with two
+            Generators are specified by listing the qubits on which an X operator acts. For example, the ``pattern``
+            ``[[[0]], [[1]], [[2]], [[3]]]`` specifies a circuit with single qubit rotations on the first four qubits, each
+            with its own trainable parameter. The ``pattern`` ``[[[0],[1]], [[2],[3]]]`` correspond to a circuit with two
             trainable parameters with generators :math:`X_0+X_1` and :math:`X_2+X_3` respectively. A circuit with a
-            single trainable gate with generator :math:`X_0\otimes X_1` corresponds to the `pattern`
-            `[[[0,1]]]`.
+            single trainable gate with generator :math:`X_0\otimes X_1` corresponds to the ``pattern``
+            ``[[[0,1]]]``.
         spin_sym (bool, optional): If True, the circuit is equivalent to one where the initial state
             :math:`\frac{1}{\sqrt(2)}(|00\dots0> + |11\dots1>)` is used in place of :math:`|00\dots0>`.
 
     Raises:
-        Exception: when pattern and weights have a different number of elements.
+        Exception: when ``pattern`` and ``weights`` have a different number of elements.
 
     **Example:**
 
@@ -73,7 +73,7 @@ class IQP(Operation):
 
         @qml.qnode(dev)
         def iqp_circuit(weights, pattern, spin_sym):
-            qml.IQP(weights, 2, pattern, spin_sym)
+            qml.IQP(weights=weights, num_wires=2, pattern=pattern, spin_sym=spin_sym)
             return [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))]
 
     >>> iqp_circuit(weights=[0.89, 0.54], pattern=[[[0]], [[1]]], spin_sym=False)  # doctest: +SKIP
