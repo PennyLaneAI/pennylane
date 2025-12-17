@@ -719,6 +719,10 @@ A warning message has been added to :doc:`Building a plugin <../development/plug
 
 <h3>Bug fixes 🐛</h3>
 
+* Use a fixed floating number tolerance from `np.finfo` in `_apply_uniform_rotation_dagger`
+  to avoid numerical stability issues on some platforms.
+  [(#8780)](https://github.com/PennyLaneAI/pennylane/pull/8780)
+
 * Handles floating point errors in the norm of the state when applying
   mid circuit measurements.
   [(#8741)](https://github.com/PennyLaneAI/pennylane/pull/8741)
