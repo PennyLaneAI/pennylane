@@ -66,8 +66,9 @@ class MultiplexerStatePreparation(Operation):
     # pylint: disable=too-many-positional-arguments
     def __init__(self, state_vector, wires, id=None):  # pylint: disable=too-many-arguments
 
+        wires = Wires(wires)
         n_amplitudes = math.shape(state_vector)[0]
-        if n_amplitudes != 2 ** len(Wires(wires)):
+        if n_amplitudes != 2 ** len(wires):
             raise ValueError(
                 f"State vectors must be of length {2 ** len(wires)}; vector has length {n_amplitudes}."
             )
@@ -80,7 +81,6 @@ class MultiplexerStatePreparation(Operation):
                 )
 
         self.state_vector = state_vector
-        wires = Wires(wires)
         super().__init__(state_vector, wires=wires, id=id)
 
     @classmethod
@@ -150,25 +150,18 @@ def _multiplexer_state_prep_decomposition(state_vector, wires):  # pylint: disab
             probs_numerator = math.sum(probs_aux, axis=1)[::2]
 
         # Compute the angles θi
-        thetas = qml.math.stack([
-            2 * math.arccos(math.sqrt(probs_numerator[j] / (probs_denominator[j] + eps)))
-            for j in range(math.shape(probs_numerator)[0])
-        ])
+        thetas = 2 * qml.math.arccos(qml.math.sqrt(probs_numerator / (probs_denominator + eps)))
 
         # Apply the SelectPauliRot operation to apply the theta rotations
         qml.SelectPauliRot(thetas, target_wire=wires[i], control_wires=wires[:i], rot_axis="Y")
 
     if not qml.math.is_abstract(phases):
         if not math.allclose(phases, 0.0):
-            # Compute the phases
-            thetas = [1j * phase for phase in phases]
-
             # Apply the DiagonalQubitUnitary operation to encode the phases
-            qml.DiagonalQubitUnitary(math.exp(thetas), wires=wires)
+            qml.DiagonalQubitUnitary(math.exp(1j * phases), wires=wires)
 
     else:
-        thetas = qml.math.stack([1j * phase for phase in phases])
-        qml.DiagonalQubitUnitary(math.exp(thetas), wires=wires)
+        qml.DiagonalQubitUnitary(math.exp(1j * phases), wires=wires)
 
 
 qml.add_decomps(MultiplexerStatePreparation, _multiplexer_state_prep_decomposition)
