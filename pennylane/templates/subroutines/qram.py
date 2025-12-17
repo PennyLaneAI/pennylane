@@ -368,37 +368,43 @@ class HybridQRAM(Operation):
 
     This implements a space–time tradeoff:
 
-    1.Total address bits: n = len(control_wires)
-    2.Choose an integer k with 0 ≤ k < n.
-    2.1 The first k address bits (high-order) are "select" bits.
-    2.2 The remaining n-k bits (low-order) are routed through a bucket-brigade tree.
+        #. Total address bits: ``n = len(control_wires)``
 
-    Instead of a full-depth tree of size 2^n leaves, we build a smaller tree of depth n-k
-    (2^(n-k) leaves) and reuse it 2^k times:
+        #. Choose an integer :math:`k` with :math:`0 ≤ k < n`.
 
-    For each prefix s \in {0, …, 2^k - 1}:
-    1. Multi-controlled-X on a "signal" auxiliary, controlled by the k select bits being equal to s.
-    2. Conditioned on signal==1, perform a BBQRAM query using only the lower n-k address bits and the sub-table of bitstrings whose prefix is s.
-    3. Uncompute the signal with the same multi-controlled-X.
+            #. The first :math:`k` address bits (high-order) are "select" bits.
 
-    In the end, for any full address a = (prefix, suffix), the target wires are loaded with
-    bitstrings[a].
+            #. The remaining :math:`n-k` bits (low-order) are routed through a bucket-brigade tree.
+
+    Instead of a full-depth tree of size :math:`2^n` leaves, we build a smaller tree of depth :math:`n-k` (:math:`2^{n-k}`
+    leaves) and reuse it :math:`2^k` times:
+
+    For each prefix :math:`s \in {0, …, 2^k - 1}`:
+
+        #. Multi-controlled-X on a "signal" auxiliary, controlled by the k select bits being equal to :math:`s`.
+
+        #. Conditioned on ``signal==1``, perform a BBQRAM query using only the lower :math:`n-k` address bits and the sub-table of bitstrings whose prefix is :math:`s`.
+
+        #. Uncompute the signal with the same multi-controlled-X.
+
+    In the end, for any full address ``a = (prefix, suffix)``, the target wires are loaded with
+    ``bitstrings[a]``.
 
     Wire layout:
-    control_wires: [ sel_0, ..., sel_{k-1}, tree_0, ..., tree_{n-k-1} ]
-    work_wires: [ signal, bus, dir..., portL..., portR... ]  (tree auxiliaries)
+    control_wires: [ :math:`sel_0`, ..., :math:`sel_{k-1}`, :math:`tree_0`, ..., :math:`tree_{n-k-1}` ]
+    work_wires: :math:`[ signal, bus, dir..., portL..., portR... ]` (tree auxiliaries)
 
     Args:
-        bitstrings (Sequence[str]): classical data table; must have length 2^n where n = len(control_wires)
-        control_wires (WiresLike): full address register (length n)
-        target_wires (WiresLike): m target qubits; m must equal bitstring length
-        work_wires (WiresLike): auxiliaries: [signal, bus, dir..., portL..., portR...] for a tree of depth (n-k)
-        k (int): number of "select" bits taken from the MSB of control_wires
+        bitstrings (Sequence[str]): classical data table; must have length :math:`2^n` where ``n = len(control_wires)``
+        control_wires (WiresLike): full address register (length ``n``)
+        target_wires (WiresLike): :math:`m` target qubits; :math:`m` must equal bitstring length
+        work_wires (WiresLike): auxiliaries: :math:`[signal, bus, dir..., portL..., portR...]` for a tree of depth :math:`(n-k)`
+        k (int): number of "select" bits taken from the MSB of ``control_wires``
 
     Raises:
-        ValueError: if the ``bitstrings`` are not provided, the ``bitstrings`` are of the wrong
-        length, there are no ``control_wires``, ``k`` >= len(``control_wires``), the ``target_wires``
-        are of the wrong length, or the ``work_wires`` are of the wrong length.
+        ValueError: if the ``bitstrings`` are not provided, the ``bitstrings`` are of the wrong length, there are
+            no ``control_wires``, ``k >= len(control_wires)``, the ``target_wires`` are of the wrong length, or the
+            ``work_wires`` are of the wrong length.
 
     .. seealso:: :class:`~.QROM`, :class:`~.QROMStatePreparation`, :class:`~.BBQRAM`
 
