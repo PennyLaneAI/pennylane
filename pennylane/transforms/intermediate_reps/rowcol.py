@@ -452,6 +452,8 @@ def rowcol(tape: QuantumScript, connectivity=None) -> tuple[QuantumScriptBatch, 
 
 def _rowcol_parity_matrix(P: np.ndarray, connectivity) -> list[tuple[int]]:
     """RowCol algorithm that turns a parity matrix to a list of CNOT operators"""
+    import networkx as nx  # pylint: disable=import-outside-toplevel
+
     P = P.copy()
     n = len(P)
     # If no connectivity is given, assume full connectivity
