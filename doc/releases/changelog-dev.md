@@ -135,7 +135,7 @@
 * The following changes are made to the API of the :class:`~.CompilePipeline` (previously known as the `TransformProgram`)
   [(#8751)](https://github.com/PennyLaneAI/pennylane/pull/8751)
   [(#8774)](https://github.com/PennyLaneAI/pennylane/pull/8774)
-  
+
   - `push_back` is renamed to `append`, and it now accepts both :class:`~.transforms.core.Transform` and :class:`~.trasnforms.core.BoundTransform`.
   - `insert_front` and `insert_front_transform` are removed in favour of a new `insert` method which inserts a transform at any given index.
   - `get_last` is removed, use `pipeline[-1]` to access the last transform instead.
