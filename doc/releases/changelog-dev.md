@@ -40,6 +40,10 @@
   [(#8729)](https://github.com/PennyLaneAI/pennylane/pull/8729)
   [(#8734)](https://github.com/PennyLaneAI/pennylane/pull/8734)
 
+* A new template :class:`~.MultiplexerStatePreparation` has been added. This template allows preparing arbitrary states
+  using the :class:`~.SelectPauliRot` operations.
+  [(#8581)](https://github.com/PennyLaneAI/pennylane/pull/8581)
+
 <h4>Pauli product measurements</h4>
 
 * Writing circuits in terms of `Pauli product measurements <https://pennylane.ai/compilation/pauli-product-measurement>`_
@@ -50,12 +54,6 @@
   [(#8623)](https://github.com/PennyLaneAI/pennylane/pull/8623)
   [(#8663)](https://github.com/PennyLaneAI/pennylane/pull/8663)
   [(#8692)](https://github.com/PennyLaneAI/pennylane/pull/8692)
-
-* A new template :class:`~.MultiplexerStatePreparation` has been added. This template allows preparing arbitrary states
-  using the :class:`~.SelectPauliRot` operations.
-  [(#8581)](https://github.com/PennyLaneAI/pennylane/pull/8581)
-
-<h3>Improvements 🛠</h3>
 
   The new :func:`~.pauli_measure` function is currently only for analysis on the ``null.qubit`` device, which allows for resource tracking with :func:`~.specs` and circuit inspection with :func:`~.drawer.draw`.
 
