@@ -368,7 +368,7 @@ class HybridQRAM(Operation):
 
     This implements a space–time tradeoff:
 
-        #. Total address bits: ``n = len(control_wires)``
+        #. Total memory address bits: ``n = len(control_wires)``
 
         #. Choose an integer :math:`k` with :math:`0 ≤ k < n`.
 
@@ -381,7 +381,7 @@ class HybridQRAM(Operation):
 
     For each prefix :math:`s \in {0, …, 2^k - 1}`:
 
-        #. Multi-controlled-X on a "signal" auxiliary, controlled by the k select bits being equal to :math:`s`.
+        #. Perofrm a multi-controlled-X on a "signal" auxiliary, controlled by the k select bits being equal to :math:`s`.
 
         #. Conditioned on ``signal==1``, perform a BBQRAM query using only the lower :math:`n-k` address bits and the sub-table of bitstrings whose prefix is :math:`s`.
 
