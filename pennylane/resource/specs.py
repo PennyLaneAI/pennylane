@@ -581,6 +581,15 @@ def specs(
         or compilation pass.
         Using ``specs`` in this way can be done by providing one of the following values for the ``level`` argument:
 
+        .. warning::
+            Some resource information from pass-by-pass specs may be estimated, since it is not always
+            possible to determine exact resource usage from intermediate representations.
+            For example, resources contained in a ``for`` loop with a non-static range or a ``while`` loop will only be counted as if one iteration occurred.
+            Additionally, resources contained in conditional branches from ``if`` or ``switch`` statements will take a union of resources over all branches, providing a tight upper-bound.
+
+            Due to similar technical limitations, depth computation is not available for pass-by-pass specs.
+
+
         * An ``int``: the desired pass level of a user-applied pass, see the note below
         * A marker name (str): The name of an applied :func:`qml.marker <pennylane.marker>` pass
         * An iterable: A list, tuple, etc. containing ints and/or marker names. Should be sorted in
@@ -595,14 +604,6 @@ def specs(
 
             In addition, ``"all"`` may show an MLIR "lowering" pass that indicates that the program had to be lowered into MLIR for further compilation with Catalyst.
             If such a pass is returned, it will be placed after all tape transforms but before all other MLIR passes.
-
-        .. warning::
-            Some resource information from pass-by-pass specs may be estimated, since it is not always
-            possible to determine exact resource usage from intermediate representations.
-            For example, resources contained in a ``for`` loop with a non-static range or a ``while`` loop will only be counted as if one iteration occurred.
-            Additionally, resources contained in conditional branches from ``if`` or ``switch`` statements will take a union of resources over all branches, providing a tight upper-bound.
-
-            Due to similar technical limitations, depth computation is not available for pass-by-pass specs.
 
         Here is an example using ``level="all"`` on the circuit from the previous code example:
 
