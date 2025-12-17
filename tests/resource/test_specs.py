@@ -540,8 +540,8 @@ class TestSpecsGraphModeExclusive:
             (4, "Hadamard"),  # 4 wires: insufficient for work_wires=5, so use H fallback
         ],
     )
-    def test_specs_max_work_wires_calculation(self, num_device_wires, expected_decomp):
-        """Test that qml.specs correctly calculates max_work_wires and uses appropriate decomposition."""
+    def test_specs_num_work_wires_calculation(self, num_device_wires, expected_decomp):
+        """Test that qml.specs correctly calculates num_work_wires and uses appropriate decomposition."""
 
         class MyCustomOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
             num_wires = 1
@@ -575,7 +575,7 @@ class TestSpecsGraphModeExclusive:
         # Check that the correct decomposition was used
         assert expected_decomp in specs["resources"].gate_types
 
-    def test_specs_max_work_wires_with_insufficient_wires(self):
+    def test_specs_num_work_wires_with_insufficient_wires(self):
         """Test that qml.specs correctly reports work wires when decomposition fallback is used."""
 
         class MyLimitedOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
@@ -607,7 +607,7 @@ class TestSpecsGraphModeExclusive:
         # Fallback decomposition should be used (H gate)
         assert "Hadamard" in specs["resources"].gate_types
 
-    def test_specs_max_work_wires_no_available_wires(self):
+    def test_specs_num_work_wires_no_available_wires(self):
         """Test qml.specs when all device wires are used by the circuit."""
 
         dev = qml.device("default.qubit", wires=2)
