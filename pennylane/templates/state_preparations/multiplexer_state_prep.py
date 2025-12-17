@@ -45,13 +45,11 @@ class MultiplexerStatePreparation(Operation):
 
         dev = qml.device("default.qubit", wires = 2)
 
-        wires = [0,1]
+        wires = [0, 1]
 
         @qml.qnode(dev)
         def circuit():
-            qml.MultiplexerStatePreparation(
-                np.sqrt(probs_vector), wires
-            )
+            qml.MultiplexerStatePreparation(np.sqrt(probs_vector), wires)
             return qml.probs(wires)
 
     .. code-block:: pycon
@@ -152,13 +150,12 @@ def _multiplexer_state_prep_decomposition(state_vector, wires):  # pylint: disab
             probs_numerator = math.sum(probs_aux, axis=1)[::2]
 
         # Compute the angles θi
-        thetas = [
+        thetas = qml.math.stack([
             2 * math.arccos(math.sqrt(probs_numerator[j] / (probs_denominator[j] + eps)))
             for j in range(math.shape(probs_numerator)[0])
-        ]
-        # Apply the SelectPauliRot operation to apply the theta rotations
+        ])
 
-        thetas = qml.math.stack(thetas)
+        # Apply the SelectPauliRot operation to apply the theta rotations
         qml.SelectPauliRot(thetas, target_wire=wires[i], control_wires=wires[:i], rot_axis="Y")
 
     if not qml.math.is_abstract(phases):
@@ -170,8 +167,7 @@ def _multiplexer_state_prep_decomposition(state_vector, wires):  # pylint: disab
             qml.DiagonalQubitUnitary(math.exp(thetas), wires=wires)
 
     else:
-        thetas = [1j * phase for phase in phases]
-        thetas = qml.math.stack(thetas)
+        thetas = qml.math.stack([1j * phase for phase in phases])
         qml.DiagonalQubitUnitary(math.exp(thetas), wires=wires)
 
 
