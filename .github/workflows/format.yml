@@ -46,7 +46,7 @@ jobs:
           enable-cache: true        
         
       - name: Install Python dependencies
-        run: uv pip install --constraint requirements-dev.txt black pylint isort
+        run: pip install --group dev
 
       - name: Run Black
         run: |

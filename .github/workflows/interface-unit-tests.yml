@@ -813,7 +813,8 @@ jobs:
           PENNYLANE_OSS_SERVER_API_KEY: ${{ secrets.test_report_server_api_key }}
           UV_SYSTEM_PYTHON: 1
         run: |
-          uv pip install -r .github/workflows/scripts/upload_reports/requirements.txt
+          python -m pip install --upgrade pip
+          python -m pip install --group upload-reports
 
           python .github/workflows/scripts/upload_reports/upload.py \
             --commit-sha "${{ github.sha }}" \

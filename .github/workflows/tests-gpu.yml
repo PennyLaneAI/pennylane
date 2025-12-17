@@ -100,9 +100,8 @@ jobs:
 
       - name: Install dependencies
         run: |
-          uv pip install --upgrade pip wheel setuptools>=75.8.1
-          uv pip install -r requirements-ci.txt --upgrade
-          uv pip install -r requirements-dev.txt --upgrade
+          python -m pip install --upgrade pip wheel setuptools>=75.8.1
+          pip install --group dev --group ci --upgrade
 
       - name: Install Torch
         run: |
