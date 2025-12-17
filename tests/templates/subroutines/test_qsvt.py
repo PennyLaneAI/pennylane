@@ -405,7 +405,6 @@ class TestQSVT:
         encoding and projector-controlled phase shift data in a QSVT instance
         are taken into account when inferring the backend of a QuantumScript.
         """
-        import jax
 
         def identity_and_qsvt(angles):
             qml.Identity(wires=wires[0])
@@ -723,7 +722,6 @@ class Testqsvt:
     @pytest.mark.jax
     def test_qsvt_grad(self):
         """Test that the qsvt function generates the correct output with qml.grad and jax.grad."""
-        import jax
         import jax.numpy as jnp
 
         poly = [-0.1, 0, 0.2, 0, 0.5]
@@ -746,7 +744,6 @@ class Testqsvt:
         Note that the traceable argument is A.
         """
 
-        import jax
         import jax.numpy as jnp
 
         poly = [-0.1, 0, 0.2, 0, 0.5]
