@@ -503,6 +503,9 @@ class CompilePipeline:
                 found = True
             elif "dynamic_one_shot" in str(t) or "mid_circuit_measurements" in str(t):
                 self._compile_pipeline.pop(i)
+                if "dynamic_one_shot" in str(t):
+                    self._compile_pipeline.pop(i - 1)
+                    i -= 1
             i -= 1
         return found
 

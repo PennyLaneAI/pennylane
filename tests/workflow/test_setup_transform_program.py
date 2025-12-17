@@ -66,13 +66,13 @@ def test_device_transform_program():
     full_tp, inner_tp = _setup_transform_program(device, config)
 
     assert repr(full_tp) == "CompilePipeline(device_transform)"
-    assert inner_tp.is_empty()
+    assert not inner_tp
 
     config = replace(config, use_device_gradient=False)
 
     full_tp, inner_tp = _setup_transform_program(device, config)
 
-    assert full_tp.is_empty()
+    assert not full_tp
     assert repr(inner_tp) == "CompilePipeline(device_transform)"
 
 
@@ -91,7 +91,7 @@ def test_prune_dynamic_transform():
 
     _prune_dynamic_transform(program1, program2)
     assert len(program1) == 1
-    assert len(program2) == 2
+    assert len(program2) == 3
 
 
 def test_prune_dynamic_transform_with_mcm():
@@ -120,7 +120,7 @@ def test_interface_data_not_supported():
 
     full_tp, inner_tp = _setup_transform_program(device, config)
 
-    assert full_tp.is_empty()
+    assert not full_tp
     assert qml.transforms.convert_to_numpy_parameters in inner_tp
 
 
@@ -167,9 +167,9 @@ def test_cache_handling():
     full_tp, inner_tp = _setup_transform_program(device, config, cache=True)
 
     assert repr(inner_tp) == "CompilePipeline(_cache_transform)"
-    assert full_tp.is_empty()
+    assert not full_tp
 
     full_tp, inner_tp = _setup_transform_program(device, config, cache=False)
 
-    assert full_tp.is_empty()
-    assert inner_tp.is_empty()
+    assert not full_tp
+    assert not inner_tp
