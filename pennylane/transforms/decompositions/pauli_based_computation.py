@@ -25,17 +25,18 @@ def to_ppr(tape):
 
     .. note::
 
-        This transform requires decorating the QNode with :func:`@qml.qjit <pennylane.qjit>` .
+        This transform requires decorating the QNode with :func:`@qml.qjit <pennylane.qjit>` and for
+        program capture to be enabled via :func:`qml.capture.enable() <pennylane.capture.enable>`.
 
     Clifford gates are defined as :math:`\exp(-{iP\tfrac{\pi}{4}})`, where :math:`P` is a Pauli word.
     Non-Clifford gates are defined as :math:`\exp(-{iP\tfrac{\pi}{8}})`.
 
-    For more information on Pauli product measurements and Pauli product rotations, check out the
+    For more information on the PPM compilation pass, check out the
     `compilation hub <https://pennylane.ai/compilation/pauli-product-measurement>`__.
 
     .. note::
 
-        The circuits that are generated from this pass are currently not executable on any backend.
+        The circuits that generated from this pass are currently not executable on any backend.
         This pass is only for analysis with the ``null.qubit`` device and potential future execution
         when a suitable backend is available.
 
@@ -52,7 +53,7 @@ def to_ppr(tape):
     ``catalyst.measure``.
 
     Args:
-        fn (QNode): the QNode to apply the pass to
+        fn (QNode): QNode to apply the pass to
 
     Returns:
         :class:`QNode <pennylane.QNode>`
@@ -113,7 +114,8 @@ def commute_ppr(tape, *, max_pauli_size=0):
 
     .. note::
 
-        This transform requires decorating the QNode with :func:`@qml.qjit <pennylane.qjit>`
+        This transform requires decorating the QNode with :func:`@qml.qjit <pennylane.qjit>` and for
+        program capture to be enabled via :func:`qml.capture.enable() <pennylane.capture.enable>`.
 
     For more information on PPRs, check out the
     `Compilation Hub <https://pennylane.ai/compilation/pauli-product-measurement>`_.
@@ -147,7 +149,7 @@ def commute_ppr(tape, *, max_pauli_size=0):
         qml.capture.enable()
 
         @qml.qjit(target="mlir")
-        @qml.transforms.commute_ppr(max_pauli_size=2)
+        @partial(qml.transforms.commute_ppr, max_pauli_size=2)
         @qml.qnode(qml.device("null.qubit", wires=2))
         def circuit():
 
