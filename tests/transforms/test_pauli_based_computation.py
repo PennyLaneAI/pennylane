@@ -29,10 +29,10 @@ from pennylane.transforms.decompositions import (
 PBC_TRANSFORMS = [to_ppr, commute_ppr, merge_ppr_ppm, ppm_compilation, ppr_to_ppm, reduce_t_depth]
 PASS_NAMES = [
     "to-ppr",
-    "commute_ppr",
-    "merge_ppr_ppm",
+    "commute-ppr",
+    "merge-ppr-ppm",
     "ppm-compilation",
-    "ppr_to_ppm",
+    "ppr-to-ppm",
     "reduce-t-depth",
 ]
 PBC_TRANSFORM_DATA = list(zip(PBC_TRANSFORMS, PASS_NAMES))

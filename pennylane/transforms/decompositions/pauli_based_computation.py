@@ -29,7 +29,7 @@ def to_ppr(tape):
     )
 
 
-@partial(transform, pass_name="commute_ppr")
+@partial(transform, pass_name="commute-ppr")
 def commute_ppr(tape, *, max_pauli_size=0):
     r"""A quantum compilation pass that commutes Clifford Pauli product rotation (PPR) gates,
     :math:`\exp(-{iP\tfrac{\pi}{4}})`, past non-Clifford PPRs gates,
@@ -41,7 +41,7 @@ def commute_ppr(tape, *, max_pauli_size=0):
     )
 
 
-@partial(transform, pass_name="merge_ppr_ppm")
+@partial(transform, pass_name="merge-ppr-ppm")
 def merge_ppr_ppm(tape=None, *, max_pauli_size=0):
     R"""
     A quantum compilation pass that absorbs Clifford Pauli product rotation (PPR) operations,
@@ -52,7 +52,7 @@ def merge_ppr_ppm(tape=None, *, max_pauli_size=0):
     )
 
 
-@partial(transform, pass_name="ppr_to_ppm")
+@partial(transform, pass_name="ppr-to-ppm")
 def ppr_to_ppm(tape=None, *, decompose_method="pauli-corrected", avoid_y_measure=False):
     R"""
     A quantum compilation pass that decomposes Pauli product rotations (PPRs),
