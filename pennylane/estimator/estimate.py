@@ -424,7 +424,7 @@ def _get_resource_decomposition(comp_res_op: CompressedResourceOp, config: Resou
 
     Args:
         comp_res_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): operator in compressed representation to extract resources from
-        config (ResourceConfig | None):  A ``ResourceConfig`` object containing the additional
+        config (ResourceConfig):  A ``ResourceConfig`` object containing the additional
         parameters required to estimate the resources for an operator. Defaults to
         :class:`pennylane.estimator.resource_config.ResourceConfig`.
 

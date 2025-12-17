@@ -516,6 +516,7 @@ class TestEstimateResources:
         rc.set_decomp(RZ, custom_adj_RZ, decomp_type="adj")
 
         res = estimate(Adjoint(RZ(0.1, wires=0)), config=rc)
+        pl_res = estimate(qml.adjoint(qml.RZ(0.1, wires=0)), config=rc)
 
         expected_gates = defaultdict(int, {resource_rep(Z): 1})
         expected_resources = Resources(
@@ -523,6 +524,7 @@ class TestEstimateResources:
         )
 
         assert res == expected_resources
+        assert pl_res == expected_resources
 
     def test_custom_pow_decomposition(self):
         """Test that a custom pow decomposition can be set and used."""
