@@ -14,6 +14,15 @@
   Hadamard gradient differentiation methods per [the paper](https://arxiv.org/pdf/2408.05406).
   [(#8640)](https://github.com/PennyLaneAI/pennylane/pull/8640)
 
+<h4>Instantaneous Quantum Polynomial Circuits </h4>
+
+* A new template for building an Instantaneous Quantum Polynomial (`~.IQP`) circuit has been added along with a 
+  lightweight version (based on the :class:`~.estimator.resource_operator.ResourceOperator` class) to rapidly 
+  estimate its resources. This unlocks easily estimating the resources of the IQP circuit introduced in the 
+  `Train on classical, deploy on quantum <https://arxiv.org/abs/2503.02934>`_ work for generative quantum machine 
+  learning.
+  [(#8748)](https://github.com/PennyLaneAI/pennylane/pull/8748)
+
 <h4>Pauli-based computation </h4>
 
 * Users can now perform rapid Clifford+T decomposition with :func:`pennylane.qjit` using the new 
