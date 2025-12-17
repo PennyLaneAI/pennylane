@@ -95,6 +95,11 @@ def dynamic_one_shot(
     and several-mid-circuit-measurements limit, whereas ``qml.defer_measurements`` is favourable in
     the opposite limit.
 
+    .. warning::
+
+        This transform should not be directly applied on a QNode. It is automatically added to the
+        compile pipeline when a QNode is constructed with `mcm_method='one-shot'`.
+
     Args:
         tape (QNode or QuantumScript or Callable): a quantum circuit.
 

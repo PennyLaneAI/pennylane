@@ -112,7 +112,6 @@ from pennylane.transforms import (
     batch_partial,
     compile,
     defer_measurements,
-    dynamic_one_shot,
     quantum_monte_carlo,
     apply_controlled_Q,
     commutation_dag,
