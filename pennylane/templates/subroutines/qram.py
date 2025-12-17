@@ -393,8 +393,9 @@ class HybridQRAM(Operation):
     ``bitstrings[a]``.
 
     Wire layout:
-    ``control_wires``: [ :math:`sel_0`, ..., :math:`sel_{k-1}`, :math:`tree_0`, ..., :math:`tree_{n-k-1}` ]
-    ``work_wires``: :math:`[ signal, bus, dir..., portL..., portR... ]` (tree auxiliaries)
+
+    - ``control_wires``: [ :math:`sel_0`, ..., :math:`sel_{k-1}`, :math:`tree_0`, ..., :math:`tree_{n-k-1}` ]
+    - ``work_wires``: :math:`[ signal, bus, dir..., portL..., portR... ]` (tree auxiliaries)
 
     Args:
         bitstrings (Sequence[str]): classical data table; must have length :math:`2^n` where ``n = len(control_wires)``
