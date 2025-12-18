@@ -596,7 +596,7 @@ def specs(
         * An ``int``: the desired pass level of a user-applied pass, see the note below
         * A marker name (str): The name of an applied :func:`qml.marker <pennylane.marker>` pass
         * An iterable: A list, tuple, etc. containing ints and/or marker names. Should be sorted in
-          ascending pass order
+          ascending pass order with no duplicates
         * The string "all": To output information about all user-applied transforms and compilation passes
         * The string "all-mlir": To output information about all compilation passes at the MLIR level only
 
