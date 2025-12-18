@@ -402,7 +402,7 @@ class HybridQRAM(Operation):
         control_wires (WiresLike): full address register (length ``n``)
         target_wires (WiresLike): :math:`m` target qubits; :math:`m` must equal bitstring length
         work_wires (WiresLike): auxiliaries: :math:`[signal, bus, dir..., portL..., portR...]` for a tree of depth :math:`(n-k)`
-        k (int): number of "select" bits taken from the MSB of ``control_wires``
+        k (int): number of "select" bits taken from the Most Significant Bit (MSB) of ``control_wires``
 
     Raises:
         ValueError: if the ``bitstrings`` are not provided, the ``bitstrings`` are of the wrong length, there are
