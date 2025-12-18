@@ -103,6 +103,10 @@ class ChangeOpBasis(CompositeOp):
     Returns:
         (Operator): Returns an Operator which is the change_op_basis of the provided Operators: compute_op, target_op, uncompute_op.
 
+    .. note::
+        When a ``ChangeOpBasis`` operator is iterated over, its factors are iterated in the reverse order. This is to
+        have a similar behaviour to ``Prod`` which applies its factors in reverse order.
+
     .. seealso:: :func:`~.change_op_basis`
     """
 
@@ -110,6 +114,9 @@ class ChangeOpBasis(CompositeOp):
         if uncompute_op is None:
             uncompute_op = adjoint(compute_op)
         super().__init__(uncompute_op, target_op, compute_op)
+
+    def _flatten(self):
+        return tuple(reversed(self.operands)), tuple()
 
     # pylint: disable=arguments-differ
     @classmethod

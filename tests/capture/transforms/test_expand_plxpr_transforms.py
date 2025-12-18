@@ -77,9 +77,9 @@ class TestExpandTransformsInterpreter:
             invals = [*inner_args, *jaxpr.consts]
             params = {
                 "inner_jaxpr": jaxpr.jaxpr,
-                "args_slice": slice(0, len(inner_args)),
-                "consts_slice": slice(len(inner_args), len(jaxpr.consts) + len(inner_args)),
-                "targs_slice": slice(len(jaxpr.consts) + len(inner_args), None),
+                "args_slice": (0, len(inner_args), None),
+                "consts_slice": (len(inner_args), len(jaxpr.consts) + len(inner_args), None),
+                "targs_slice": (len(jaxpr.consts) + len(inner_args), None, None),
                 "tkwargs": {},
                 "transform": dummy_tape_and_plxpr_transform,
             }
@@ -175,7 +175,7 @@ class TestExpandPlxprTransforms:
             m1 = g()
             qml.RX(x, 0)
 
-            @partial(qml.transforms.decompose, gate_set=[qml.RX, qml.RY, qml.RZ])
+            @qml.transforms.decompose(gate_set=[qml.RX, qml.RY, qml.RZ])
             def h(m, n, o):
                 qml.Rot(m, n, o, 0)
                 return qml.probs(wires=[0, 1])
@@ -225,7 +225,7 @@ class TestExpandPlxprTransforms:
                 qml.X(0)
                 qml.S(1)
 
-                @partial(qml.transforms.decompose, gate_set=[qml.RX, qml.RY, qml.RZ])
+                @qml.transforms.decompose(gate_set=[qml.RX, qml.RY, qml.RZ])
                 def h(m, n, o):
                     qml.Rot(m, n, o, 0)
                     return qml.probs(wires=[0, 1])

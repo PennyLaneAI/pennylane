@@ -97,11 +97,10 @@ controlled gates and cancel adjacent inverses, we could do:
 .. code-block:: python
 
     from pennylane.transforms import commute_controlled, cancel_inverses
-    from functools import partial
 
     pipeline = [commute_controlled, cancel_inverses]
 
-    @partial(qml.compile, pipeline=pipeline)
+    @qml.compile(pipeline=pipeline)
     @qml.qnode(dev)
     def qfunc(x, y, z):
         qml.Hadamard(wires=0)
@@ -158,12 +157,11 @@ a pre-defined set of gates:
 .. code-block:: python
     
     from pennylane.transforms import decompose
-    from functools import partial
 
     dev = qml.device('default.qubit')
     allowed_gates = {qml.Toffoli, qml.RX, qml.RZ, qml.GlobalPhase}
 
-    @partial(decompose, gate_set=allowed_gates)
+    @decompose(gate_set=allowed_gates)
     @qml.qnode(dev)
     def circuit():
         qml.Hadamard(wires=[0])
@@ -188,7 +186,7 @@ or two-qubit gates using a rule:
 
     qml.decomposition.disable_graph()
 
-    @partial(decompose, gate_set={"H", "T", "CNOT"}, stopping_condition=lambda op: len(op.wires) <= 2)
+    @decompose(gate_set={"H", "T", "CNOT"}, stopping_condition=lambda op: len(op.wires) <= 2)
     @qml.qnode(dev)
     def circuit():
         qml.Toffoli(wires=[0,1,2])
@@ -406,8 +404,7 @@ With the resources registered, this can be used with ``fixed_decomps`` or ``alt_
 
 .. code-block:: python
 
-    @partial(
-        qml.transforms.decompose, 
+    @qml.transforms.decompose( 
         fixed_decomps={qml.CNOT: my_cnot},
         gate_set={qml.H, qml.S, qml.T, qml.CZ},
     )
@@ -439,8 +436,7 @@ type:
         qml.RY(np.pi/2, wires[1])
         qml.Z(wires[1])
 
-    @partial(
-        qml.transforms.decompose,
+    @qml.transforms.decompose(
         gate_set={qml.CZ, qml.H, qml.Z, qml.RY},
         alt_decomps={qml.CNOT: [my_cnot1, my_cnot2]},
     )

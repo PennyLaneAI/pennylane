@@ -18,7 +18,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  TORCH_VERSION: 2.5.1
+  TORCH_VERSION: 2.9.0
 
 jobs:
   gpu-tests:
@@ -43,6 +43,7 @@ jobs:
           - '3.11'
           - '3.12'
           - '3.13'
+          - '3.14'
 
     env:
       SUITE: gpu
@@ -93,8 +94,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip wheel setuptools>=75.8.1
-          pip install -r requirements-ci.txt --upgrade
-          pip install -r requirements-dev.txt --upgrade
+          pip install --group dev --group ci --upgrade
 
       - name: Install Torch
         run: |

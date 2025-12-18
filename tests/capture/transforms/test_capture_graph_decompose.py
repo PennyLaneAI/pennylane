@@ -537,7 +537,7 @@ class TestDecomposeInterpreterGraphEnabled:
 
         @DecomposeInterpreter(
             gate_set={qml.Toffoli, qml.RZ, qml.RY, qml.CNOT},
-            max_work_wires=num_work_wires,
+            num_work_wires=num_work_wires,
             alt_decomps={
                 CustomOpDynamicWireDecomp: [_decomp_without_work_wire, _decomp_with_work_wire],
                 LargeOpDynamicWireDecomp: [_decomp2_without_work_wire, _decomp2_with_work_wire],
@@ -578,3 +578,63 @@ class TestDecomposeInterpreterGraphEnabled:
             qml.adjoint(qml.X(0)),
             qml.adjoint(qml.Y(0)),
         ]
+
+    def test_minimize_work_wires(self):
+        """Tests that the number of allocations can be minimized."""
+
+        class SomeOtherOp(Operation):
+            """Some other operation."""
+
+        @qml.register_resources(
+            {qml.CNOT: 2, LargeOpDynamicWireDecomp: 2},
+            work_wires={"zeroed": 1},
+        )
+        def _some_decomp(wires):
+            with qml.allocation.allocate(1, state="zero", restored=True) as work_wires:
+                qml.CNOT([wires[0], work_wires[0]])
+                LargeOpDynamicWireDecomp(wires)
+                qml.CNOT([wires[0], work_wires[0]])
+
+        @DecomposeInterpreter(
+            gate_set={qml.Toffoli: 1, qml.CRot: 7, qml.CNOT: 1},
+            num_work_wires=None,
+            minimize_work_wires=True,
+            alt_decomps={
+                CustomOpDynamicWireDecomp: [_decomp_with_work_wire, _decomp_without_work_wire],
+                LargeOpDynamicWireDecomp: [_decomp2_with_work_wire],
+                SomeOtherOp: [_some_decomp],
+            },
+        )
+        def circuit():
+            SomeOtherOp(wires=[0, 1, 2, 3, 4])
+            CustomOpDynamicWireDecomp(wires=[0, 1, 4])
+
+        plxpr = jax.make_jaxpr(circuit)()
+        decomp = qml.tape.plxpr_to_tape(plxpr.jaxpr, plxpr.consts)
+        [result], _ = qml.transforms.resolve_dynamic_wires([decomp], min_int=5)
+
+        with qml.capture.pause():
+            with qml.queuing.AnnotatedQueue() as q:
+                # The only decomposition rule available for SomeOtherOp
+                with qml.allocation.allocate(1, state="zero", restored=True) as work_wires:
+                    qml.CNOT([0, work_wires[0]])
+                    # The only decomposition available for LargeOpDynamicWireDecomp
+                    with qml.allocation.allocate(1, state="zero", restored=True) as sub_work_wires:
+                        qml.Toffoli(wires=[0, 1, sub_work_wires[0]])
+                        # At this point, to minimize the number of work wires allocated, we
+                        # select the decomposition rule that does not use any work wires for
+                        # the CustomOpDynamicWireDecomp at the very bottom of the chain
+                        _decomp_without_work_wire(wires=[sub_work_wires[0], 2, 3])
+                        qml.Toffoli(wires=[0, 1, sub_work_wires[0]])
+                        _decomp_without_work_wire(wires=[1, 2, 3])
+                    qml.CNOT([0, work_wires[0]])
+                # Since the SomeOtherOp that came before already used two work wires, this
+                # second CustomOpDynamicWireDecomp should be free to use up to two work wires,
+                # and we verify that this is indeed what happens.
+                _decomp_with_work_wire(wires=[0, 1, 4])
+
+        expected = qml.tape.QuantumScript.from_queue(q)
+        [expected], _ = qml.transforms.resolve_dynamic_wires([expected], min_int=5)
+
+        for actual, exp in zip(result.operations, expected.operations, strict=True):
+            qml.assert_equal(actual, exp)
