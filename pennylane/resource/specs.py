@@ -322,8 +322,8 @@ def _algo_error_qnode(
     """Returns the algorithmic error dictionary for the provided QNode.
 
     Returns:
-        dict[str, AlgorithmicError] | list[dict[str, AlgorithmicError]]: A single dictionary 
-            with error type names as keys and error objects as values when there is only one 
+        dict[str, AlgorithmicError] | list[dict[str, AlgorithmicError]]: A single dictionary
+            with error type names as keys and error objects as values when there is only one
             tape, or a list of such dictionaries when there are multiple tapes in the batch.
     """
 
@@ -354,7 +354,7 @@ def algo_error(
     Returns:
         A function that has the same argument signature as ``qnode``. When called,
         this function returns either:
-        
+
         - A single dictionary with error type names as keys (e.g., ``"SpectralNormError"``)
           and :class:`~.resource.AlgorithmicError` objects as values, when there is only
           one tape in the batch.
