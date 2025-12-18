@@ -228,8 +228,8 @@ class QNode:
             * ``"auto"``: The QNode automatically detects the interface from the input values of
               the quantum function.
 
-        diff_method (str or .transform): The method of differentiation to use in
-            the created QNode. Can either be a :class:`~.transform`, which includes all
+        diff_method (str or .Transform): The method of differentiation to use in
+            the created QNode. Can either be a :class:`~.Transform`, which includes all
             quantum gradient transforms in the :mod:`qml.gradients <.gradients>` module, or a string. The following
             strings are allowed:
 

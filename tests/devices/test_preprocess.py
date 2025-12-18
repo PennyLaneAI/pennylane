@@ -576,14 +576,14 @@ class TestDecomposeTransformations:
             found_correct_call = False
             for call in spy.call_args_list:
                 call_kwargs = call[1]  # Get keyword arguments
-                if "max_work_wires" in call_kwargs:
-                    if call_kwargs["max_work_wires"] == expected_work_wires:
+                if "num_work_wires" in call_kwargs:
+                    if call_kwargs["num_work_wires"] == expected_work_wires:
                         found_correct_call = True
                         break
 
             assert (
                 found_correct_call
-            ), f"Expected max_work_wires={expected_work_wires} not found in calls"
+            ), f"Expected num_work_wires={expected_work_wires} not found in calls"
 
 
 class TestGraphModeExclusiveFeatures:

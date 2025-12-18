@@ -106,8 +106,8 @@ There are also utility functions that take a circuit and return a DAG.
     ~transforms.CommutationDAG
     ~transforms.CommutationDAGNode
 
-Transform for Clifford+T decomposition
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Transforms for Clifford+T decomposition and Pauli-based computation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This transform accepts quantum circuits and decomposes them to the Clifford+T basis.
 
@@ -116,6 +116,13 @@ This transform accepts quantum circuits and decomposes them to the Clifford+T ba
 
     ~clifford_t_decomposition
     ~gridsynth
+    ~transforms.to_ppr
+    ~transforms.commute_ppr
+    ~transforms.ppr_to_ppm
+    ~transforms.merge_ppr_ppm
+    ~transforms.ppm_compilation
+    ~transforms.reduce_t_depth
+
 
 Other transforms
 ~~~~~~~~~~~~~~~~
@@ -186,6 +193,7 @@ Transforms developer functions
 
     ~CompilePipeline
     ~transforms.core.BoundTransform
+    ~transforms.core.Transform
 
 Transforming circuits
 ---------------------
@@ -333,7 +341,16 @@ from .batch_partial import batch_partial
 from .convert_to_numpy_parameters import convert_to_numpy_parameters
 from .compile import compile
 
-from .decompositions import clifford_t_decomposition, gridsynth
+from .decompositions import (
+    clifford_t_decomposition,
+    gridsynth,
+    to_ppr,
+    commute_ppr,
+    merge_ppr_ppm,
+    ppr_to_ppm,
+    ppm_compilation,
+    reduce_t_depth,
+)
 from .defer_measurements import defer_measurements
 from .diagonalize_measurements import diagonalize_measurements
 from .dynamic_one_shot import dynamic_one_shot, is_mcm
