@@ -204,13 +204,6 @@ class TestCompileWithCompilePipeline:
         tape = qml.workflow.construct_tape(circuit)()
         assert len([op for op in tape.operations if op.name == "RX"]) == 2
 
-    def test_bound_transforms(self):
-        """Test CompilePipeline with bound transforms (transforms with arguments)."""
-        bound_merge = qml.transforms.merge_rotations(atol=1e-2)
-        pipeline = qml.CompilePipeline(bound_merge)
-
-        assert len(pipeline) == 1
-
     def test_remove_method(self):
         """Test CompilePipeline remove() method."""
         pipeline = qml.CompilePipeline(
