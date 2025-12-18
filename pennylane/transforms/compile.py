@@ -179,10 +179,7 @@ def compile(
             validated_transforms.append(p)
         # Convert to partial calls that we apply one by one later
         # Keep as list for now, will be applied in the transform loop below
-    elif isinstance(pipeline, CompilePipeline):
-        # New format: CompilePipeline object - validation happens inside CompilePipeline
-        pass
-    else:
+    elif not isinstance(pipeline, CompilePipeline):
         raise ValueError(
             f"pipeline must be a CompilePipeline, tuple, or list, got {type(pipeline).__name__}"
         )
