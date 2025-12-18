@@ -316,36 +316,34 @@ def specs(
     raise ValueError("qml.specs can only be applied to a QNode or qjit'd QNode")
 
 
-def _algo_error_qnode(qnode, level, *args, **kwargs) -> dict[str, "AlgorithmicError"]:
+def _algo_error_qnode(
+    qnode, level, *args, **kwargs
+) -> dict[str, "AlgorithmicError"] | list[dict[str, "AlgorithmicError"]]:
     """Returns the algorithmic error dictionary for the provided QNode.
 
     Returns:
-        dict[str, AlgorithmicError]: dictionary with error type names as keys and combined error objects as values
+        dict[str, AlgorithmicError] | list[dict[str, AlgorithmicError]]: A single dictionary 
+            with error type names as keys and error objects as values when there is only one 
+            tape, or a list of such dictionaries when there are multiple tapes in the batch.
     """
 
     batch, _ = qml.workflow.construct_batch(qnode, level=level)(*args, **kwargs)
 
-    # Combine errors from all tapes in the batch
-    combined_errors = {}
-    for tape in batch:
-        tape_errors = _compute_algo_error(tape)
-        for error_name, error_obj in tape_errors.items():
-            if error_name in combined_errors:
-                combined_errors[error_name] = combined_errors[error_name].combine(error_obj)
-            else:
-                combined_errors[error_name] = error_obj
+    # Compute errors for each tape separately
+    errors_list = [_compute_algo_error(tape) for tape in batch]
 
-    return combined_errors
+    # Return a single dict if only one tape, otherwise return the list
+    return errors_list[0] if len(errors_list) == 1 else errors_list
 
 
 def algo_error(
     qnode,
     level: str | int | slice = "gradient",
-) -> Callable[..., dict[str, "AlgorithmicError"]]:
+) -> Callable[..., dict[str, "AlgorithmicError"] | list[dict[str, "AlgorithmicError"]]]:
     r"""Computes the algorithmic errors in a quantum circuit.
 
-    This transform converts a QNode into a callable that returns a dictionary
-    of algorithmic errors after applying the specified amount of transforms/expansions.
+    This transform converts a QNode into a callable that returns algorithmic
+    error information after applying the specified amount of transforms/expansions.
 
     Args:
         qnode (.QNode): the QNode to calculate the algorithmic errors for.
@@ -354,9 +352,14 @@ def algo_error(
         level (str | int | slice | iter[int]): An indication of which transforms to apply before computing the errors.
 
     Returns:
-        A function that has the same argument signature as ``qnode``. This function
-        returns a dictionary with error type names as keys (e.g., ``"SpectralNormError"``)
-        and combined :class:`~.resource.AlgorithmicError` objects as values.
+        A function that has the same argument signature as ``qnode``. When called,
+        this function returns either:
+        
+        - A single dictionary with error type names as keys (e.g., ``"SpectralNormError"``)
+          and :class:`~.resource.AlgorithmicError` objects as values, when there is only
+          one tape in the batch.
+        - A list of such dictionaries, one for each tape in the batch, when there are
+          multiple tapes.
 
     **Example**
 

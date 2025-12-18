@@ -423,3 +423,52 @@ class TestAlgoError:
         assert set(algo_error_result.keys()) == set(compute_result.keys())
         for key in algo_error_result:
             assert np.isclose(algo_error_result[key].error, compute_result[key].error)
+
+    def test_multi_tape_batch_returns_list(self):
+        """Test that algo_error returns a list when there are multiple tapes."""
+
+        @qml.qnode(self.dev)
+        def circuit():
+            qml.TrotterProduct(_HAMILTONIAN, time=1.0, n=4, order=2)
+            CustomErrorOp1(0.5, [0])
+            return qml.sample()
+
+        # Apply a transform that creates multiple tapes (e.g., split_non_commuting)
+        @qml.transforms.split_non_commuting
+        @qml.qnode(self.dev)
+        def multi_tape_circuit():
+            qml.TrotterProduct(_HAMILTONIAN, time=1.0, n=4, order=2)
+            CustomErrorOp1(0.5, [0])
+            # Non-commuting measurements create multiple tapes
+            return qml.expval(qml.X(0)), qml.expval(qml.Y(0))
+
+        errors = qml.resource.algo_error(multi_tape_circuit)()
+
+        # Should return a list of error dicts, one per tape
+        assert isinstance(errors, list)
+        assert len(errors) == 2
+        for tape_errors in errors:
+            assert isinstance(tape_errors, dict)
+            assert "SpectralNormError" in tape_errors
+            assert "MultiplicativeError" in tape_errors
+
+    def test_torch_layer_support(self):
+        """Test that algo_error works with TorchLayer."""
+        pytest.importorskip("torch")
+        from pennylane.qnn.torch import TorchLayer
+
+        Hamiltonian = qml.dot([1.0, 0.5], [qml.X(0), qml.Y(0)])
+
+        @qml.qnode(self.dev)
+        def circuit(inputs, weights):
+            qml.RX(inputs[0], wires=0)
+            qml.RY(weights[0], wires=0)
+            qml.TrotterProduct(Hamiltonian, time=1.0, n=4, order=2)
+            return qml.expval(qml.Z(0))
+
+        weight_shapes = {"weights": (1,)}
+        layer = TorchLayer(circuit, weight_shapes)
+
+        errors = qml.resource.algo_error(layer)([0.5], layer.weights)
+        assert "SpectralNormError" in errors
+        assert errors["SpectralNormError"].error > 0
