@@ -148,6 +148,8 @@ def _preprocess_level_input(level, marker_to_level) -> list[int]:
 
     if isinstance(level, (int, str)):
         level = [level]
+    elif isinstance(level, slice):
+        level = list(range(level.start or 0, level.stop, level.step or 1))
     else:
         level = list(level)
 
@@ -164,10 +166,11 @@ def _preprocess_level_input(level, marker_to_level) -> list[int]:
                     f"got {lvl}."
                 )
 
-    level_sorted = sorted(level)
+    level_sorted = sorted(list(set(level)))
     if level != level_sorted:
         warnings.warn(
-            "The 'level' argument to qml.specs for QJIT'd QNodes has been sorted to be in ascending order.",
+            "The 'level' argument to qml.specs for QJIT'd QNodes has been sorted to be in ascending "
+            "order with no duplicate levels.",
             UserWarning,
         )
 

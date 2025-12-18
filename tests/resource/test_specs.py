@@ -45,7 +45,11 @@ def test_error_with_bad_key(key):
     "level,output,expect_warnings",
     [
         (0, [0], False),
+        (slice(3), [0, 1, 2], False),
+        (slice(1, 3), [1, 2], False),
+        (slice(1, 4, 2), [1, 3], False),
         ([0, 1], [0, 1], False),
+        ([0, 1, 1, 1], [0, 1], True),
         ((0, 1), [0, 1], False),
         (range(3, 0, -1), [1, 2, 3], True),
         ("foo", [2], False),
@@ -64,7 +68,8 @@ def test_preprocess_levels(level, output, expect_warnings):
     if expect_warnings:
         with pytest.warns(
             UserWarning,
-            match="The 'level' argument to qml.specs for QJIT'd QNodes has been sorted to be in ascending order.",
+            match="The 'level' argument to qml.specs for QJIT'd QNodes has been sorted to be in ascending "
+            "order with no duplicate levels.",
         ):
             assert _preprocess_level_input(level, marker_to_level) == output
     else:
