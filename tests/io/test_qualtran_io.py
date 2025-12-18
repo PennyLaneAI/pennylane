@@ -20,7 +20,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.exceptions import DecompositionUndefinedError
-from pennylane.io.qualtran_io import _get_op_call_graph, _get_to_pl_op, _map_to_bloq, _QReg
+from pennylane.io.qualtran_io import _get_op_call_graph, _get_op_call_graph_estimator, _get_to_pl_op, _map_to_bloq, _QReg
 
 
 @pytest.fixture
@@ -369,7 +369,6 @@ class TestFromBloq:
 
         assert actual == expected
 
-
 @pytest.mark.external
 @pytest.mark.usefixtures("skip_if_no_pl_qualtran_support")
 class TestToBloqDefault:
@@ -478,10 +477,10 @@ class TestToBloqDefault:
         wrapped_circuit_cg = wrapped_circuit.call_graph()[1]
 
         assert mapped_circuit_cg[Hadamard()] == 11
-        assert wrapped_circuit_cg[Hadamard()] == 21
+        assert wrapped_circuit_cg[Hadamard()] == 11
         assert custom_mapped_circuit_cg[Hadamard()] == 2
         assert CNOT() not in mapped_circuit_cg
-        assert wrapped_circuit_cg[CNOT()] == 36
+        assert wrapped_circuit_cg[CNOT()] == 20
 
     def test_from_bloq_to_bloq(self):
         """Tests that FromBloq and to_bloq functions as intended"""
@@ -546,9 +545,9 @@ class TestToBloqDefault:
         ).build_call_graph(ssa=ssa())
 
         assert cg == {
-            qml.to_bloq(qml.Hadamard(0)): 16,
-            qml.to_bloq(qml.CNOT([0, 1])): 26,
-            qml.to_bloq(qml.T(0)): 1144,
+            qml.to_bloq(qml.Hadamard(0), True): 4,
+            qml.to_bloq(qml.ctrl(qml.RX(0.1, wires=0), control=[1]), True): 15,
+            qml.to_bloq(qml.adjoint(qml.QFT(wires=range(1, 5))), False): 1,
         }
 
     def test_map_to_bloq(self):
@@ -594,9 +593,20 @@ class TestToBloqDefault:
     @pytest.mark.parametrize(
         (
             "op",
-            "qml_call_graph",
+            "qml_call_graph",  # Computed by resources from labs or decompositions
         ),
         [
+            (
+                qml.QuantumPhaseEstimation(
+                    unitary=qml.RX(0.1, wires=0), estimation_wires=range(1, 5)
+                ),
+                # ResourceQPE
+                {
+                    (qml.Hadamard(0), True): 4,
+                    (qml.ctrl(qml.RX(0.1, wires=0), control=[1]), True): 15,
+                    (qml.adjoint(qml.QFT(wires=range(1, 5))), False): 1,
+                },
+            ),
             (
                 qml.Superposition(
                     coeffs=np.sqrt(np.array([1 / 3, 1 / 3, 1 / 3])),
@@ -604,21 +614,26 @@ class TestToBloqDefault:
                     wires=[0, 1, 2],
                     work_wire=3,
                 ),
+                # Inspired by Resource Superposition
                 {
-                    (qml.T(0), True): 132,
-                    (qml.CNOT([0, 1]), True): 6,
-                    (qml.X([0]), True): 4,
-                    (qml.Toffoli([0, 1, 2]), True): 4,
-                    (qml.H(0), True): 6,
+                    (
+                        qml.StatePrep(
+                            np.array([0.57735027, 0.57735027, 0.57735027]), wires=[2, 3], pad_with=0
+                        ),
+                        False,
+                    ): 1,
+                    (qml.CNOT([0, 1]), True): 2,
+                    (qml.MultiControlledX(wires=range(4), control_values=[1, 0, 0]), True): 4,
                 },
             ),
             (qml.BasisState(np.array([1, 1]), wires=[0, 1]), {(qml.X(0), True): 2}),
             (
                 qml.QFT(wires=range(5)),
+                # From ResourceQFT
                 {
                     (qml.H(0), True): 5,
-                    (qml.CNOT([0, 1]), True): 26,
-                    (qml.T(0), True): 1320,
+                    (qml.ControlledPhaseShift(1, [0, 1]), True): 10,
+                    (qml.SWAP([0, 1]), True): 2,
                 },
             ),
             (
@@ -626,12 +641,51 @@ class TestToBloqDefault:
                     np.sqrt(np.array([0.5, 0.0, 0.25, 0.25])), [4, 5], [1, 2, 3], [0]
                 ),
                 {
-                    (qml.X([0]), True): 4,
-                    (qml.CNOT([0, 1]), True): 34,
-                    (qml.Toffoli([0, 1, 2]), True): 8,
-                    (qml.H(0), True): 30,
-                    (qml.S(0), True): 6,
-                    (qml.Z(0), True): 3,
+                    (
+                        qml.QROM(
+                            bitstrings=["001"],
+                            control_wires=[],
+                            target_wires=[1, 2, 3],
+                            work_wires=[0],
+                            clean=False,
+                        ),
+                        True,
+                    ): 1,
+                    (
+                        qml.adjoint(
+                            qml.QROM(
+                                bitstrings=["001"],
+                                control_wires=[],
+                                target_wires=[1, 2, 3],
+                                work_wires=[0],
+                                clean=False,
+                            )
+                        ),
+                        True,
+                    ): 1,
+                    (
+                        qml.QROM(
+                            bitstrings=["000", "001"],
+                            control_wires=[4],
+                            target_wires=[1, 2, 3],
+                            work_wires=[0],
+                            clean=False,
+                        ),
+                        True,
+                    ): 1,
+                    (
+                        qml.adjoint(
+                            qml.QROM(
+                                bitstrings=["000", "001"],
+                                control_wires=[4],
+                                target_wires=[1, 2, 3],
+                                work_wires=[0],
+                                clean=False,
+                            )
+                        ),
+                        True,
+                    ): 1,
+                    (qml.CRY(0.0, wires=[0, 1]), True): 6,
                 },
             ),
             (
@@ -642,11 +696,17 @@ class TestToBloqDefault:
                     work_wires=[0],
                     clean=False,
                 ),
+                # From ResourceQROM
                 {
-                    (qml.CNOT([0, 1]), True): 3,
-                    (qml.X(0), True): 1,
-                    (qml.Toffoli([0, 1, 2]), True): 0,
-                    (qml.H(0), True): 0,
+                    (qml.CNOT([0, 1]), True): 1,
+                    (
+                        qml.MultiControlledX(
+                            wires=[0, 1], control_values=[True], work_wires=range(2, 3)
+                        ),
+                        True,
+                    ): 4,
+                    (qml.X(0), True): 4,
+                    (qml.CSWAP([0, 1, 2]), True): 0.0,
                 },
             ),
             (
@@ -657,10 +717,9 @@ class TestToBloqDefault:
                     work_wires=[0],
                     clean=False,
                 ),
+                # From ResourceQROM
                 {
                     (qml.X(0), True): 1,
-                    (qml.Toffoli([0, 1, 2]), True): 0,
-                    (qml.CNOT([0, 1]), True): 0,
                 },
             ),
             (
@@ -671,22 +730,97 @@ class TestToBloqDefault:
                     work_wires=[0],
                     clean=True,
                 ),
+                # From ResourceQROM
                 {
                     (qml.Hadamard(0), True): 6,
-                    (qml.CNOT([0, 1]), True): 6,
-                    (qml.Toffoli([0, 1, 2]), True): 0,
-                    (qml.X(0), True): 2,
+                    (qml.CNOT([0, 1]), True): 1,
+                    (
+                        qml.MultiControlledX(
+                            wires=[0, 1], control_values=[True], work_wires=range(2, 3)
+                        ),
+                        True,
+                    ): 8,
+                    (qml.X(0), True): 8,
+                    (qml.CSWAP([0, 1, 2]), True): 0.0,
                 },
             ),
             (
                 qml.QROMStatePreparation(np.array([0.5, -0.5, 0.5, 0.5]), [4, 5], [1, 2, 3], [0]),
                 {
-                    (qml.X(0), True): 14,
-                    (qml.Toffoli([0, 1, 2]), True): 16,
-                    (qml.CNOT([0, 1]), True): 68,
-                    (qml.Hadamard(0), True): 54,
-                    (qml.S(0), True): 6,
-                    (qml.Z(0), True): 3,
+                    (
+                        qml.QROM(
+                            bitstrings=["001"],
+                            control_wires=[],
+                            target_wires=[1, 2, 3],
+                            work_wires=[0],
+                            clean=False,
+                        ),
+                        True,
+                    ): 1,
+                    (
+                        qml.adjoint(
+                            qml.QROM(
+                                bitstrings=["001"],
+                                control_wires=[],
+                                target_wires=[1, 2, 3],
+                                work_wires=[0],
+                                clean=False,
+                            )
+                        ),
+                        True,
+                    ): 1,
+                    (
+                        qml.QROM(
+                            bitstrings=["000", "001"],
+                            control_wires=[4],
+                            target_wires=[1, 2, 3],
+                            work_wires=[0],
+                            clean=False,
+                        ),
+                        True,
+                    ): 1,
+                    (
+                        qml.adjoint(
+                            qml.QROM(
+                                bitstrings=["000", "001"],
+                                control_wires=[4],
+                                target_wires=[1, 2, 3],
+                                work_wires=[0],
+                                clean=False,
+                            )
+                        ),
+                        True,
+                    ): 1,
+                    (
+                        qml.QROM(
+                            bitstrings=["000", "000", "001", "001"],
+                            control_wires=[4, 5],
+                            target_wires=[1, 2, 3],
+                            work_wires=[0],
+                            clean=False,
+                        ),
+                        True,
+                    ): 1,
+                    (
+                        qml.adjoint(
+                            qml.QROM(
+                                bitstrings=["000", "000", "001", "001"],
+                                control_wires=[4, 5],
+                                target_wires=[1, 2, 3],
+                                work_wires=[0],
+                                clean=False,
+                            )
+                        ),
+                        True,
+                    ): 1,
+                    (qml.CRY(0.0, wires=[0, 1]), True): 6,
+                    (
+                        qml.ctrl(
+                            qml.GlobalPhase((2 * np.pi), wires=[1]),
+                            control=0,
+                        ),
+                        True,
+                    ): 3,
                 },
             ),
             (
@@ -698,10 +832,9 @@ class TestToBloqDefault:
                     work_wires=[5, 6, 7, 8, 9],
                 ),
                 {
-                    (qml.Toffoli([0, 1, 2]), True): 8997,
-                    (qml.CNOT([0, 1]), True): 7398,
-                    (qml.Hadamard(0), True): 9756,
-                    (qml.T(0), True): 316800,
+                    (qml.ctrl(qml.adjoint(qml.QFT(range(4))), control=[4]), False): 1,
+                    (qml.ctrl(qml.QFT(range(4)), control=[4]), False): 1,
+                    (qml.Toffoli([0, 1, 2]), True): 6,
                 },
             ),
             (
@@ -713,10 +846,9 @@ class TestToBloqDefault:
                     work_wires=[6, 7, 8, 9, 10],
                 ),
                 {
-                    (qml.Toffoli([0, 1, 2]), True): 805,
-                    (qml.CNOT([0, 1]), True): 938,
-                    (qml.Hadamard(0), True): 168,
-                    (qml.T(0), True): 57288,
+                    (qml.ctrl(qml.QFT(range(3)), control=[4]), False): 1,
+                    (qml.ctrl(qml.adjoint(qml.QFT(range(3))), control=[4]), False): 1,
+                    (qml.Toffoli([0, 1, 2]), True): 21,
                 },
             ),
             (
@@ -725,8 +857,10 @@ class TestToBloqDefault:
                     projectors=[qml.RZ(-2 * theta, wires=0) for theta in (1.23, -0.5, -0.3)],
                 ),
                 {
-                    (qml.T(0), True): 132,
+                    (qml.RZ(phi=-2.46, wires=0), True): 1,
+                    (qml.RZ(phi=1.0, wires=0), True): 1,
                     (qml.Hadamard(0), True): 2,
+                    (qml.RZ(phi=0.6, wires=0), True): 1,
                 },
             ),
             (
@@ -744,7 +878,8 @@ class TestToBloqDefault:
                     flip=True,
                 ),
                 {
-                    (qml.T(0), True): 176,
+                    (qml.RX(phi=0.012, wires=[0]), True): 2,
+                    (qml.RY(phi=-0.34500000000000003, wires=[0]), True): 2,
                     (qml.CNOT(wires=[0, 1]), True): 2,
                 },
             ),
@@ -763,27 +898,22 @@ class TestToBloqDefault:
                     flip=True,
                 ),
                 {
-                    (qml.T(0), True): 88,
+                    (qml.RX(phi=0.012, wires=[0]), True): 1,
+                    (qml.RY(phi=-0.34500000000000003, wires=[0]), True): 1,
                     (qml.CNOT(wires=[0, 1]), True): 1,
                 },
             ),
             (
                 qml.Select(ops=[qml.X(2), qml.QFT(wires=[2, 3, 4])], control=[0, 1]),
                 {
-                    (qml.Toffoli([0, 1, 2]), True): 8,
-                    (qml.CNOT([0, 1]), True): 14,
-                    (qml.Hadamard(0), True): 9,
-                    (qml.T(0), True): 660,
-                    (qml.X(0), True): 2,
+                    (qml.X(wires=[2]), True): 2,
+                    (qml.ctrl(qml.X(2), control=[0]), True): 1,
+                    (qml.ctrl(qml.QFT(wires=[2, 3, 4]), control=[0]), True): 1,
                 },
             ),
             (
-                qml.StatePrep(
-                    state=[0.5, 0.5, 0.5, 0.5, 0.25, 0.25, 0.25, 0.25],
-                    wires=range(3),
-                    normalize=True,
-                ),
-                {(qml.CNOT([0, 1]), True): 6, (qml.T(0), True): 132},
+                qml.StatePrep(state=[0.5, 0.5, 0.5, 0.5, 0.25, 0.25, 0.25, 0.25], wires=range(3)),
+                {(qml.RZ(0, wires=[0]), True): 27, (qml.CNOT([0, 1]), True): 16},
             ),
         ],
     )
@@ -796,129 +926,6 @@ class TestToBloqDefault:
 
         call_graph = _get_op_call_graph(op)
         assert dict(call_graph) == bloq_call_graph
-
-    @pytest.mark.parametrize(
-        (
-            "op",
-            "qml_call_graph",
-        ),
-        [
-            (
-                qml.Superposition(
-                    coeffs=np.sqrt(np.array([1 / 3, 1 / 3, 1 / 3])),
-                    bases=np.array([[1, 1, 1], [0, 1, 0], [0, 0, 0]]),
-                    wires=[0, 1, 2],
-                    work_wire=3,
-                ),
-                {
-                    (qml.T(0), True): 132,
-                    (qml.CNOT([0, 1]), True): 6,
-                    (qml.X([0]), True): 4,
-                    (qml.Toffoli([0, 1, 2]), True): 4,
-                    (qml.H(0), True): 6,
-                },
-            ),
-            (
-                qml.QROMStatePreparation(
-                    np.sqrt(np.array([0.5, 0.0, 0.25, 0.25])), [4, 5], [1, 2, 3], [0]
-                ),
-                {
-                    (qml.X([0]), True): 4,
-                    (qml.CNOT([0, 1]), True): 34,
-                    (qml.Toffoli([0, 1, 2]), True): 8,
-                    (qml.H(0), True): 30,
-                    (qml.S(0), True): 6,
-                    (qml.Z(0), True): 3,
-                },
-            ),
-            (
-                qml.QROMStatePreparation(np.array([0.5, -0.5, 0.5, 0.5]), [4, 5], [1, 2, 3], [0]),
-                {
-                    (qml.X(0), True): 14,
-                    (qml.Toffoli([0, 1, 2]), True): 16,
-                    (qml.CNOT([0, 1]), True): 68,
-                    (qml.Hadamard(0), True): 54,
-                    (qml.S(0), True): 6,
-                    (qml.Z(0), True): 3,
-                },
-            ),
-            (
-                qml.QSVT(
-                    UA=qml.H(0),
-                    projectors=[qml.RZ(-2 * theta, wires=0) for theta in (1.23, -0.5, -0.3)],
-                ),
-                {
-                    (qml.T(0), True): 132,
-                    (qml.Hadamard(0), True): 2,
-                },
-            ),
-            (
-                qml.TrotterizedQfunc(
-                    0.1,
-                    *(0.12, -3.45),
-                    qfunc=lambda time, theta, phi, wires, flip: (
-                        qml.RX(time * theta, wires[0]),
-                        qml.RY(time * phi, wires[1]),
-                        qml.CNOT(wires=wires[:2]) if flip else None,
-                    ),
-                    n=1,
-                    order=2,
-                    wires=["a", "b"],
-                    flip=True,
-                ),
-                {
-                    (qml.T(0), True): 176,
-                    (qml.CNOT(wires=[0, 1]), True): 2,
-                },
-            ),
-            (
-                qml.TrotterizedQfunc(
-                    0.1,
-                    *(0.12, -3.45),
-                    qfunc=lambda time, theta, phi, wires, flip: (
-                        qml.RX(time * theta, wires[0]),
-                        qml.RY(time * phi, wires[1]),
-                        qml.CNOT(wires=wires[:2]) if flip else None,
-                    ),
-                    n=1,
-                    order=1,
-                    wires=["a", "b"],
-                    flip=True,
-                ),
-                {
-                    (qml.T(0), True): 88,
-                    (qml.CNOT(wires=[0, 1]), True): 1,
-                },
-            ),
-            (
-                qml.Select(ops=[qml.X(2), qml.QFT(wires=[2, 3, 4])], control=[0, 1]),
-                {
-                    (qml.Toffoli([0, 1, 2]), True): 8,
-                    (qml.CNOT([0, 1]), True): 14,
-                    (qml.Hadamard(0), True): 9,
-                    (qml.T(0), True): 660,
-                    (qml.X(0), True): 2,
-                },
-            ),
-            (
-                qml.StatePrep(
-                    state=[0.5, 0.5, 0.5, 0.5, 0.25, 0.25, 0.25, 0.25],
-                    wires=range(3),
-                    normalize=True,
-                ),
-                {(qml.CNOT([0, 1]), True): 6, (qml.T(0), True): 132},
-            ),
-        ],
-    )
-    def test_to_bloq_call_graph(self, op, qml_call_graph):
-        """Tests that the defined call_graphs match the expected decompositions"""
-        bloq_call_graph = {}
-
-        for k, v in qml_call_graph.items():  # k is a tuple of (op, bool)
-            bloq_call_graph[qml.to_bloq(k[0], map_ops=k[1])] = v
-
-        to_bloq_call_graph = qml.to_bloq(op).call_graph()[1]
-        assert bloq_call_graph == to_bloq_call_graph
 
     @pytest.mark.parametrize(
         (
@@ -1216,3 +1223,386 @@ class TestToBloqDefault:
         assert qreg != "not_a_qreg"
         assert qreg != (q0,)
         assert qreg is not None
+
+
+@pytest.mark.external
+@pytest.mark.usefixtures("skip_if_no_pl_qualtran_support")
+class TestToBloqEstimator:
+    """Test that ToBloq and to_bloq accurately wraps or maps Bloqs."""
+
+    def test_to_bloq_circuits(self):
+        """Tests that to_bloq functions as intended for complex circuits"""
+
+        from qualtran.bloqs.basic_gates import CNOT, Hadamard
+
+        dev = qml.device("default.qubit", wires=6)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.H(0)
+            qml.QuantumPhaseEstimation(unitary=qml.RX(0.1, wires=5), estimation_wires=range(5))
+
+        mapped_circuit = qml.to_bloq(circuit)
+        mapped_circuit_cg = mapped_circuit.call_graph()[1]
+        custom_mapped_circuit = qml.to_bloq(
+            circuit,
+            custom_mapping={
+                qml.QuantumPhaseEstimation(
+                    unitary=qml.RX(0.1, wires=5), estimation_wires=range(5)
+                ): Hadamard()
+            },
+        )
+        custom_mapped_circuit_cg = custom_mapped_circuit.call_graph()[1]
+        wrapped_circuit = qml.to_bloq(circuit, map_ops=False, call_graph="estimator")
+        wrapped_circuit_cg = wrapped_circuit.call_graph()[1]
+
+        assert mapped_circuit_cg[Hadamard()] == 11
+        assert wrapped_circuit_cg[Hadamard()] == 21
+        assert custom_mapped_circuit_cg[Hadamard()] == 2
+        assert CNOT() not in mapped_circuit_cg
+        assert wrapped_circuit_cg[CNOT()] == 36
+
+    def test_call_graph(self):
+        """Tests that build_call_graph calls build_call_graph as expected"""
+        from qualtran.resource_counting import SympySymbolAllocator as ssa
+
+        cg = qml.to_bloq(
+            qml.QuantumPhaseEstimation(unitary=qml.RX(0.1, wires=0), estimation_wires=range(1, 5)),
+            False,
+            call_graph="estimator",
+        ).build_call_graph(ssa=ssa())
+
+        assert cg == {
+            qml.to_bloq(qml.Hadamard(0)): 16,
+            qml.to_bloq(qml.CNOT([0, 1])): 26,
+            qml.to_bloq(qml.T(0)): 1144,
+        }
+
+    @pytest.mark.parametrize(
+        (
+            "op",
+            "qml_call_graph",
+        ),
+        [
+            (
+                qml.Superposition(
+                    coeffs=np.sqrt(np.array([1 / 3, 1 / 3, 1 / 3])),
+                    bases=np.array([[1, 1, 1], [0, 1, 0], [0, 0, 0]]),
+                    wires=[0, 1, 2],
+                    work_wire=3,
+                ),
+                {
+                    (qml.T(0), True): 132,
+                    (qml.CNOT([0, 1]), True): 6,
+                    (qml.X([0]), True): 4,
+                    (qml.Toffoli([0, 1, 2]), True): 4,
+                    (qml.H(0), True): 6,
+                },
+            ),
+            (qml.BasisState(np.array([1, 1]), wires=[0, 1]), {(qml.X(0), True): 2}),
+            (
+                qml.QFT(wires=range(5)),
+                {
+                    (qml.H(0), True): 5,
+                    (qml.CNOT([0, 1]), True): 26,
+                    (qml.T(0), True): 1320,
+                },
+            ),
+            (
+                qml.QROMStatePreparation(
+                    np.sqrt(np.array([0.5, 0.0, 0.25, 0.25])), [4, 5], [1, 2, 3], [0]
+                ),
+                {
+                    (qml.X([0]), True): 4,
+                    (qml.CNOT([0, 1]), True): 34,
+                    (qml.Toffoli([0, 1, 2]), True): 8,
+                    (qml.H(0), True): 30,
+                    (qml.S(0), True): 6,
+                    (qml.Z(0), True): 3,
+                },
+            ),
+            (
+                qml.QROM(
+                    bitstrings=["000", "001"],
+                    control_wires=[4],
+                    target_wires=[1, 2, 3],
+                    work_wires=[0],
+                    clean=False,
+                ),
+                {
+                    (qml.CNOT([0, 1]), True): 3,
+                    (qml.X(0), True): 1,
+                    (qml.Toffoli([0, 1, 2]), True): 0,
+                    (qml.H(0), True): 0,
+                },
+            ),
+            (
+                qml.QROM(
+                    bitstrings=["001"],
+                    control_wires=[],
+                    target_wires=[1, 2, 3],
+                    work_wires=[0],
+                    clean=False,
+                ),
+                {
+                    (qml.X(0), True): 1,
+                    (qml.Toffoli([0, 1, 2]), True): 0,
+                    (qml.CNOT([0, 1]), True): 0,
+                },
+            ),
+            (
+                qml.QROM(
+                    bitstrings=["000", "001"],
+                    control_wires=[4],
+                    target_wires=[1, 2, 3],
+                    work_wires=[0],
+                    clean=True,
+                ),
+                {
+                    (qml.Hadamard(0), True): 6,
+                    (qml.CNOT([0, 1]), True): 6,
+                    (qml.Toffoli([0, 1, 2]), True): 0,
+                    (qml.X(0), True): 2,
+                },
+            ),
+            (
+                qml.QROMStatePreparation(np.array([0.5, -0.5, 0.5, 0.5]), [4, 5], [1, 2, 3], [0]),
+                {
+                    (qml.X(0), True): 14,
+                    (qml.Toffoli([0, 1, 2]), True): 16,
+                    (qml.CNOT([0, 1]), True): 68,
+                    (qml.Hadamard(0), True): 54,
+                    (qml.S(0), True): 6,
+                    (qml.Z(0), True): 3,
+                },
+            ),
+            (
+                qml.ModExp(
+                    x_wires=[0, 1],
+                    output_wires=[2, 3, 4],
+                    base=2,
+                    mod=7,
+                    work_wires=[5, 6, 7, 8, 9],
+                ),
+                {
+                    (qml.Toffoli([0, 1, 2]), True): 8997,
+                    (qml.CNOT([0, 1]), True): 7398,
+                    (qml.Hadamard(0), True): 9756,
+                    (qml.T(0), True): 316800,
+                },
+            ),
+            (
+                qml.ModExp(
+                    x_wires=[0, 1, 2],
+                    output_wires=[3, 4, 5],
+                    base=3,
+                    mod=8,
+                    work_wires=[6, 7, 8, 9, 10],
+                ),
+                {
+                    (qml.Toffoli([0, 1, 2]), True): 805,
+                    (qml.CNOT([0, 1]), True): 938,
+                    (qml.Hadamard(0), True): 168,
+                    (qml.T(0), True): 57288,
+                },
+            ),
+            (
+                qml.QSVT(
+                    UA=qml.H(0),
+                    projectors=[qml.RZ(-2 * theta, wires=0) for theta in (1.23, -0.5, -0.3)],
+                ),
+                {
+                    (qml.T(0), True): 132,
+                    (qml.Hadamard(0), True): 2,
+                },
+            ),
+            (
+                qml.TrotterizedQfunc(
+                    0.1,
+                    *(0.12, -3.45),
+                    qfunc=lambda time, theta, phi, wires, flip: (
+                        qml.RX(time * theta, wires[0]),
+                        qml.RY(time * phi, wires[1]),
+                        qml.CNOT(wires=wires[:2]) if flip else None,
+                    ),
+                    n=1,
+                    order=2,
+                    wires=["a", "b"],
+                    flip=True,
+                ),
+                {
+                    (qml.T(0), True): 176,
+                    (qml.CNOT(wires=[0, 1]), True): 2,
+                },
+            ),
+            (
+                qml.TrotterizedQfunc(
+                    0.1,
+                    *(0.12, -3.45),
+                    qfunc=lambda time, theta, phi, wires, flip: (
+                        qml.RX(time * theta, wires[0]),
+                        qml.RY(time * phi, wires[1]),
+                        qml.CNOT(wires=wires[:2]) if flip else None,
+                    ),
+                    n=1,
+                    order=1,
+                    wires=["a", "b"],
+                    flip=True,
+                ),
+                {
+                    (qml.T(0), True): 88,
+                    (qml.CNOT(wires=[0, 1]), True): 1,
+                },
+            ),
+            (
+                qml.Select(ops=[qml.X(2), qml.QFT(wires=[2, 3, 4])], control=[0, 1]),
+                {
+                    (qml.Toffoli([0, 1, 2]), True): 8,
+                    (qml.CNOT([0, 1]), True): 14,
+                    (qml.Hadamard(0), True): 9,
+                    (qml.T(0), True): 660,
+                    (qml.X(0), True): 2,
+                },
+            ),
+            (
+                qml.StatePrep(
+                    state=[0.5, 0.5, 0.5, 0.5, 0.25, 0.25, 0.25, 0.25],
+                    wires=range(3),
+                    normalize=True,
+                ),
+                {(qml.CNOT([0, 1]), True): 6, (qml.T(0), True): 132},
+            ),
+        ],
+    )
+    def test_build_call_graph(self, op, qml_call_graph):
+        """ "Tests that the defined call_graphs match the expected decompostions"""
+        bloq_call_graph = {}
+
+        for k, v in qml_call_graph.items():  # k is a tuple of (op, bool)
+            bloq_call_graph[qml.to_bloq(k[0], map_ops=k[1])] = v
+
+        call_graph = _get_op_call_graph_estimator(op)
+        assert dict(call_graph) == bloq_call_graph
+
+    @pytest.mark.parametrize(
+        (
+            "op",
+            "qml_call_graph",
+        ),
+        [
+            (
+                qml.Superposition(
+                    coeffs=np.sqrt(np.array([1 / 3, 1 / 3, 1 / 3])),
+                    bases=np.array([[1, 1, 1], [0, 1, 0], [0, 0, 0]]),
+                    wires=[0, 1, 2],
+                    work_wire=3,
+                ),
+                {
+                    (qml.T(0), True): 132,
+                    (qml.CNOT([0, 1]), True): 6,
+                    (qml.X([0]), True): 4,
+                    (qml.Toffoli([0, 1, 2]), True): 4,
+                    (qml.H(0), True): 6,
+                },
+            ),
+            (
+                qml.QROMStatePreparation(
+                    np.sqrt(np.array([0.5, 0.0, 0.25, 0.25])), [4, 5], [1, 2, 3], [0]
+                ),
+                {
+                    (qml.X([0]), True): 4,
+                    (qml.CNOT([0, 1]), True): 34,
+                    (qml.Toffoli([0, 1, 2]), True): 8,
+                    (qml.H(0), True): 30,
+                    (qml.S(0), True): 6,
+                    (qml.Z(0), True): 3,
+                },
+            ),
+            (
+                qml.QROMStatePreparation(np.array([0.5, -0.5, 0.5, 0.5]), [4, 5], [1, 2, 3], [0]),
+                {
+                    (qml.X(0), True): 14,
+                    (qml.Toffoli([0, 1, 2]), True): 16,
+                    (qml.CNOT([0, 1]), True): 68,
+                    (qml.Hadamard(0), True): 54,
+                    (qml.S(0), True): 6,
+                    (qml.Z(0), True): 3,
+                },
+            ),
+            (
+                qml.QSVT(
+                    UA=qml.H(0),
+                    projectors=[qml.RZ(-2 * theta, wires=0) for theta in (1.23, -0.5, -0.3)],
+                ),
+                {
+                    (qml.T(0), True): 132,
+                    (qml.Hadamard(0), True): 2,
+                },
+            ),
+            (
+                qml.TrotterizedQfunc(
+                    0.1,
+                    *(0.12, -3.45),
+                    qfunc=lambda time, theta, phi, wires, flip: (
+                        qml.RX(time * theta, wires[0]),
+                        qml.RY(time * phi, wires[1]),
+                        qml.CNOT(wires=wires[:2]) if flip else None,
+                    ),
+                    n=1,
+                    order=2,
+                    wires=["a", "b"],
+                    flip=True,
+                ),
+                {
+                    (qml.T(0), True): 176,
+                    (qml.CNOT(wires=[0, 1]), True): 2,
+                },
+            ),
+            (
+                qml.TrotterizedQfunc(
+                    0.1,
+                    *(0.12, -3.45),
+                    qfunc=lambda time, theta, phi, wires, flip: (
+                        qml.RX(time * theta, wires[0]),
+                        qml.RY(time * phi, wires[1]),
+                        qml.CNOT(wires=wires[:2]) if flip else None,
+                    ),
+                    n=1,
+                    order=1,
+                    wires=["a", "b"],
+                    flip=True,
+                ),
+                {
+                    (qml.T(0), True): 88,
+                    (qml.CNOT(wires=[0, 1]), True): 1,
+                },
+            ),
+            (
+                qml.Select(ops=[qml.X(2), qml.QFT(wires=[2, 3, 4])], control=[0, 1]),
+                {
+                    (qml.Toffoli([0, 1, 2]), True): 8,
+                    (qml.CNOT([0, 1]), True): 14,
+                    (qml.Hadamard(0), True): 9,
+                    (qml.T(0), True): 660,
+                    (qml.X(0), True): 2,
+                },
+            ),
+            (
+                qml.StatePrep(
+                    state=[0.5, 0.5, 0.5, 0.5, 0.25, 0.25, 0.25, 0.25],
+                    wires=range(3),
+                    normalize=True,
+                ),
+                {(qml.CNOT([0, 1]), True): 6, (qml.T(0), True): 132},
+            ),
+        ],
+    )
+    def test_to_bloq_call_graph(self, op, qml_call_graph):
+        """Tests that the defined call_graphs match the expected decompositions"""
+        bloq_call_graph = {}
+
+        for k, v in qml_call_graph.items():  # k is a tuple of (op, bool)
+            bloq_call_graph[qml.to_bloq(k[0], map_ops=k[1])] = v
+
+        to_bloq_call_graph = qml.to_bloq(op, call_graph='estimator').call_graph()[1]
+        assert bloq_call_graph == to_bloq_call_graph
