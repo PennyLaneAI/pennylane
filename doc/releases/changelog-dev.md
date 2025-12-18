@@ -48,7 +48,7 @@
 
   ```python
   import pennylane as qml
-  
+
   dev = qml.device("null.qubit", wires=3)
 
   @qml.qnode(dev)
@@ -88,6 +88,15 @@
   Measurements:
     expval(PauliZ): 1
   ```
+
+* Catalyst compilation passes designed for Pauli-based computation are now available in PennyLane, 
+  providing accessibility for logical compilation research by directly integrating with 
+  :func:`~.pauli_measure` and :class:`~.PauliRot` operations. This includes 
+  :func:`pennylane.transforms.to_ppr`, :func:`pennylane.transforms.commute_ppr`, 
+  :func:`pennylane.transforms.ppr_to_ppm`, 
+  :func:`pennylane.transforms.merge_ppr_ppm`, :func:`pennylane.transforms.ppm_compilation`, 
+  :func:`pennylane.transforms.reduce_t_depth`, 
+  [(#8762)](https://github.com/PennyLaneAI/pennylane/pull/8762)
 
 * New decomposition rules that decompose to :class:`~.PauliRot` are added for the following operators.
   [(#8700)](https://github.com/PennyLaneAI/pennylane/pull/8700)
@@ -177,6 +186,11 @@
   property of the :class:`~.transforms.core.Transform` and :class:`~.transforms.core.BoundTransform` 
   has been renamed to `tape_transform` to avoid ambiguity.
   [(#8756)](https://github.com/PennyLaneAI/pennylane/pull/8756)
+
+* Added a custom solver to :func:`~.transforms.intermediate_reps.rowcol` for linear systems
+  over :math:`\mathbb{Z}_2` based on Gauss-Jordan elimination. This removes the need to install
+  the ``galois`` package for this single function and provides a minor performance improvement.
+  [(#8771)](https://github.com/PennyLaneAI/pennylane/pull/8771)
 
 <h4>Analyzing your algorithms quickly and easily with resource estimation</h4>
 
@@ -524,6 +538,9 @@
   Instead, please use `QNode.transform_program.push_back(transform_container=transform_container)`.
   [(#8468)](https://github.com/PennyLaneAI/pennylane/pull/8468)
 
+* The ``max_work_wires`` argument of the :func:`~pennylane.transforms.decompose` transform has been renamed to ``num_work_wires``.
+  [(#8769)](https://github.com/PennyLaneAI/pennylane/pull/8769)
+
 * ``argnum`` has been renamed ``argnums`` for ``qml.grad``, ``qml.jacobian``, ``qml.jvp`` and ``qml.vjp``.
   [(#8496)](https://github.com/PennyLaneAI/pennylane/pull/8496)
   [(#8481)](https://github.com/PennyLaneAI/pennylane/pull/8481)
@@ -586,7 +603,7 @@
 
   ```python
   import pennylane as qml
-  
+
   @qml.transforms.decompose(gate_set={"H", "T", "CNOT"}, stopping_condition=lambda op: len(op.wires) <= 2)
   @qml.qnode(qml.device("default.qubit"))
   def circuit():
@@ -603,6 +620,13 @@
   ```
 
 <h3>Internal changes ⚙️</h3>
+
+* Updated `pyproject.toml` with project dependencies to replace the requirements files. Updated workflows to use installations from `pyproject.toml`.
+  [(8702)](https://github.com/PennyLaneAI/pennylane/pull/8702)
+
+* `qml.cond`, the `QNode`, transforms, `qml.grad`, and `qml.jacobian` no longer treat all keyword arguments as static
+  arguments. They are instead treated as dynamic, numerical inputs, matching the behaviour of Jax and Catalyst.
+  [(#8290)](https://github.com/PennyLaneAI/pennylane/pull/8290)
 
 * To adjust to the Python 3.14, some error messages expectations have been updated in tests; `get_type_str` added a special branch to handle `Union`.
   The import of networkx is softened to not occur on import of pennylane to work around a bug in Python 3.14.1.
@@ -700,7 +724,7 @@
   example, and the verification of the code example result.
 
 * The code example in the documentation for ``qml.decomposition.register_resources`` has been
-  updated to adhere to renamed keyword arguments and default behaviour of ``max_work_wires``.
+  updated to adhere to renamed keyword arguments and default behaviour of ``num_work_wires``.
   [(#8536)](https://github.com/PennyLaneAI/pennylane/pull/8536)
 
 * The docstring for ``qml.device`` has been updated to include a section on custom decompositions,
@@ -727,6 +751,10 @@ A warning message has been added to :doc:`Building a plugin <../development/plug
   [(#8707)](https://github.com/PennyLaneAI/pennylane/pull/8707)
 
 <h3>Bug fixes 🐛</h3>
+
+* Use a fixed floating number tolerance from `np.finfo` in `_apply_uniform_rotation_dagger`
+  to avoid numerical stability issues on some platforms.
+  [(#8780)](https://github.com/PennyLaneAI/pennylane/pull/8780)
 
 * Handles floating point errors in the norm of the state when applying
   mid circuit measurements.
@@ -799,6 +827,7 @@ A warning message has been added to :doc:`Building a plugin <../development/plug
 
 This release contains contributions from (in alphabetical order):
 
+Runor Agbaire,
 Guillermo Alonso,
 Utkarsh Azad,
 Astral Cai,
