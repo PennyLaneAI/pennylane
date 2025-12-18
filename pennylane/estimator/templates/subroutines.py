@@ -2063,7 +2063,7 @@ class QROM(ResourceOperator):
         return [qre.GateCount(qre.resource_rep(qre.CSWAP), count * num_ctrl_swaps)]
 
     @classmethod
-    def _ctrl_S_adj(cls, num_ctrl_wires: int, count: int = 1):
+    def _ctrl_S_adj(cls, num_ctrl_wires: int, count: int = 1) -> List[GateCount]:
         r"""Constructs the control-S^adj subroutine as defined in Figure 10
         of `arXiv:1092.02134 <https://arxiv.org/abs/1902.02134>_` excluding the terminal ``X`` gate.
 
