@@ -458,7 +458,24 @@ def _(op: qtemps.subroutines.ModExp):
 def _map_to_bloq(op, map_ops=True, custom_mapping=None, call_graph="default", **kwargs):
     """Map PennyLane operators to Qualtran Bloqs. Operators with direct equivalents are directly
     mapped to their Qualtran equivalent even if ``map_ops`` is set to ``False``. Other operators are
-    given a smart default mapping. When given a ``custom_mapping``, the custom mapping is used."""
+    given a smart default mapping. When given a ``custom_mapping``, the custom mapping is used.
+
+    Args:
+        op (QNode | Qfunc | Operation): a PennyLane ``QNode``, ``Qfunc``, or operator to be wrapped
+            as a Qualtran Bloq.
+        map_ops (bool): Whether to map operations to a Qualtran Bloq. Operations are wrapped
+            as a ``ToBloq`` when ``False``. Default is ``True``.
+        custom_mapping (dict): Dictionary to specify a mapping between a PennyLane operator and a
+            Qualtran Bloq. Default is ``None``.
+        call_graph (str): Specifies how to build the call graph. If ``'default'``, custom
+            singledispatch handlers are used that provide detailed Bloq-level resource counts.
+            If ``'estimator'``, the call graph is built using ``pennylane.estimator.estimate()``
+            which provides gate counts at a higher level. Default is ``'default'``.
+        **kwargs: Additional keyword arguments passed to ``ToBloq``.
+
+    Returns:
+        Bloq: A Qualtran Bloq corresponding to the input operator.
+    """
     if not isinstance(op, Operator):
         return ToBloq(
             op, map_ops=map_ops, custom_mapping=custom_mapping, call_graph=call_graph, **kwargs
@@ -1190,9 +1207,10 @@ class ToBloq(Bloq):
             as a ``ToBloq`` when ``False``. Default is ``True``.
         custom_mapping (dict): Dictionary to specify a mapping between a PennyLane operator and a
             Qualtran Bloq. A default mapping is used if not defined.
-        call_graph (str): Specifies how to handle the call graph when converting a QNode or Qfunc.
-            If set to 'default', the call graph defined in the QNode or Qfunc is used. If set to
-            'estimator', the call graph is built using the estimator module. Default is 'default'.
+        call_graph (str): Specifies how to build the call graph. If ``'default'``, custom
+            singledispatch handlers are used that provide detailed Bloq-level resource counts.
+            If ``'estimator'``, the call graph is built using ``pennylane.estimator.estimate()``
+            which provides gate counts at a higher level. Default is ``'default'``.
 
     Raises:
         TypeError: operator must be an instance of :class:`~.Operation`.
@@ -1355,8 +1373,21 @@ class ToBloq(Bloq):
             raise qt.DecomposeNotImplementedError from undefined_decomposition
 
     def build_call_graph(self, ssa):
-        """Build Qualtran call graph with defined call graph if available, otherwise build
-        said call graph with the decomposition"""
+        """Build Qualtran call graph for this Bloq.
+
+        The call graph is built based on the ``call_graph`` mode specified at initialization:
+
+        - ``'default'``: Uses custom singledispatch handlers (``_get_op_call_graph``) that provide
+          detailed Bloq-level resource counts. Falls back to decomposition if no handler exists.
+        - ``'estimator'``: Uses ``pennylane.estimator.estimate()`` to get gate counts at a higher
+          level. Falls back to decomposition if estimation fails.
+
+        Args:
+            ssa: A Qualtran ``SympySymbolAllocator`` instance for symbolic resource counting.
+
+        Returns:
+            dict: A dictionary mapping Bloqs to their counts in this operation's call graph.
+        """
         if self.call_graph_mode == "estimator":
             call_graph = _get_op_call_graph_estimator(self.op)
             if call_graph:
@@ -1411,9 +1442,10 @@ def to_bloq(
             as a ``ToBloq`` when ``False``. Default is ``True``.
         custom_mapping (dict): Dictionary to specify a mapping between a PennyLane operator and a
             Qualtran Bloq. A default mapping is used if not defined.
-        call_graph (str): Specifies how to handle the call graph when converting a QNode or Qfunc.
-            If set to 'default', the call graph defined in the QNode or Qfunc is used. If set to
-            'estimator', the call graph is built using the estimator module. Default is 'default'.
+        call_graph (str): Specifies how to build the call graph. If ``'default'``, custom
+            singledispatch handlers are used that provide detailed Bloq-level resource counts.
+            If ``'estimator'``, the call graph is built using ``pennylane.estimator.estimate()``
+            which provides gate counts at a higher level. Default is ``'default'``.
 
     Returns:
         Bloq: The Qualtran Bloq that corresponds to the given circuit or :class:`~.Operation` and

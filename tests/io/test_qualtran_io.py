@@ -379,7 +379,11 @@ class TestFromBloq:
 @pytest.mark.external
 @pytest.mark.usefixtures("skip_if_no_pl_qualtran_support")
 class TestToBloqDefault:
-    """Test that ToBloq and to_bloq accurately wraps or maps Bloqs."""
+    """Test ToBloq and to_bloq with the default call_graph mode.
+
+    These tests verify that operators are correctly wrapped or mapped to Qualtran Bloqs
+    using the default singledispatch-based call graph handlers.
+    """
 
     def test_to_bloq_init(self):
         """Tests that ToBloq's __init__() functions as intended"""
@@ -1235,7 +1239,11 @@ class TestToBloqDefault:
 @pytest.mark.external
 @pytest.mark.usefixtures("skip_if_no_pl_qualtran_support")
 class TestToBloqEstimator:
-    """Test that ToBloq and to_bloq accurately wraps or maps Bloqs."""
+    """Test ToBloq and to_bloq with the estimator call_graph mode.
+
+    These tests verify that operators are correctly wrapped and that call graphs are built
+    using ``pennylane.estimator.estimate()`` when ``call_graph='estimator'`` is specified.
+    """
 
     def test_to_bloq_circuits(self):
         """Tests that to_bloq functions as intended for complex circuits"""
