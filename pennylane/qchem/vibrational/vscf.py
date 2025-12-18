@@ -381,7 +381,20 @@ def _rotate_hamiltonian(h_integrals, mode_rots, modals):
 
 
 def vscf_rotations(h_integrals, modals=None, cutoff=None, cutoff_ratio=1e-6):
-    r"""Generates the VSCF rotation matrices.
+    r"""Generates the vibrational self-consistent field rotation matrices.
+
+    This functions generates the matrices :math:`U` for each vibrational mode
+    that transforms the primitive harmonic oscillator (HO) basis states
+    (:math:`|\phi_j^{\text{HO}}\rangle`) into the optimized vibrational
+    self-consistent field (VSCF) states (:math:`|\psi_i^{\text{VSCF}}\rangle`).
+
+    The relationship is defined as:
+
+    .. math::
+        |\psi_i^{\text{VSCF}}\rangle = \sum_{j} U_{ji} |\phi_j^{\text{HO}}\rangle,
+
+    where :math:`j` runs over the number of bosonic states per mode and
+    :math:`i` denotes the index of the specific VSCF state.
 
     Args:
         h_integrals (list[TensorLike[float]]): list of n-mode expansion of Hamiltonian integrals
