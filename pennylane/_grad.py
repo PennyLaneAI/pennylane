@@ -110,6 +110,37 @@ def _get_vjp_prim():
     return vjp_prim
 
 
+@lru_cache
+def _get_jvp_prim():
+    if not has_jax:  # pragma: no cover
+        return None
+
+    jvp_prim = capture.QmlPrimitive("jvp")
+    jvp_prim.multiple_results = True
+    jvp_prim.prim_type = "higher_order"
+
+    @jvp_prim.def_impl
+    def _jvp_impl(*args, jaxpr, fn, method, h, argnums):
+        params = args[: len(jaxpr.invars)]
+        dparams = list(args[len(jaxpr.invars) :])
+
+        for i, p in enumerate(params):
+            if i not in argnums:
+                dparams.insert(i, 0 * p)
+
+        def func(*inner_args):
+            return jax.core.eval_jaxpr(jaxpr, [], *inner_args)
+
+        results, dresults = jax.jvp(func, params, dparams)
+        return (*results, *dresults)
+
+    @jvp_prim.def_abstract_eval
+    def _jvp_abstract_eval(*args, jaxpr, fn, method, h, argnums):
+        return 2 * [v.aval for v in jaxpr.outvars]
+
+    return jvp_prim
+
+
 def _shape(shape, dtype, weak_type=False):
     if jax.config.jax_dynamic_shapes and any(
         not isinstance(s, int) for s in shape
@@ -273,7 +304,6 @@ def _capture_vjp(func, params, cotangents, *, argnums=None, method=None, h=None)
     shifted_argnums = tuple(i + len(jaxpr.consts) for i in flat_argnums)
 
     _validate_cotangents(flat_cotangents, jaxpr.out_avals)
-
     prim_kwargs = {
         "fn": func,
         "method": method,
@@ -291,6 +321,34 @@ def _capture_vjp(func, params, cotangents, *, argnums=None, method=None, h=None)
     results = tree_unflatten(flat_fn.out_tree, flat_results)
     dparams = tree_unflatten(trainable_in_tree, flat_dparams)
     return results, dparams
+
+
+def _capture_jvp(func, params, dparams, *, argnums=None, method=None, h=None):
+    from jax.tree_util import tree_leaves, tree_unflatten  # pylint: disable=import-outside-toplevel
+
+    h = _setup_h(h)
+    method = _setup_method(method)
+    flat_args, flat_argnums, _, _ = _args_and_argnums(params, argnums)
+    flat_dargs = tree_leaves(dparams)
+
+    flat_fn = capture.FlatFn(func)
+    jaxpr = jax.make_jaxpr(flat_fn)(*params)
+    j = jaxpr.jaxpr
+    no_consts_jaxpr = j.replace(const_vars=(), invars=j.constvars + j.invars)
+    shifted_argnums = tuple(i + len(jaxpr.consts) for i in flat_argnums)
+
+    prim_kwargs = {
+        "fn": func,
+        "method": method,
+        "h": h,
+        "argnums": shifted_argnums,
+        "jaxpr": no_consts_jaxpr,
+    }
+    out_flat = _get_jvp_prim().bind(*jaxpr.consts, *flat_args, *flat_dargs, **prim_kwargs)
+    flat_results, flat_dresults = out_flat[: len(j.outvars)], out_flat[len(j.outvars)]
+    results = tree_unflatten(flat_fn.out_tree, flat_results)
+    dresults = tree_unflatten(flat_fn.out_tree, flat_dresults)
+    return results, dresults
 
 
 # pylint: disable=too-many-instance-attributes
@@ -979,6 +1037,9 @@ def jvp(f, params, tangents, method=None, h=None, argnums=None, *, argnum=None):
             "argnum in qml.jvp has been renamed to argnums to match jax and catalyst.",
             PennyLaneDeprecationWarning,
         )
+
+    if capture.enabled():
+        return _capture_jvp(f, params, tangents, method=method, h=h, argnums=argnums)
 
     if active_jit := compiler.active_compiler():
         available_eps = compiler.AvailableCompilers.names_entrypoints
