@@ -57,12 +57,11 @@ class GQSP(ResourceOperator):
             signal operator and the control wire required for block-encoding.
 
     Resources:
-        The resources are obtained as described in Theorem 6 of
-        `Generalized Quantum Signal Processing (2024) <https://arxiv.org/pdf/2308.01501>`_.
-        Specifically, the resources are given by:
-          - ``poly_deg`` instances of :math:`\hat{A}`,
-          - ``neg_poly_deg`` instances of :math:`\hat{A^{\prime}}`,
-          - and ``poly_deg + neg_poly_deg + 1`` instances of the general ``Rot`` gate.
+        The resources are obtained as described in Theorem 6 of `Generalized Quantum Signal 
+        Processing (2024) <https://arxiv.org/pdf/2308.01501>`_. Specifically, the resources are given
+        by ``poly_deg`` instances of :math:`\hat{A}`, ``neg_poly_deg`` instances of
+        :math:`\hat{A^{\prime}}`, and ``poly_deg + neg_poly_deg + 1`` instances of the general
+        ``Rot`` gate.
 
     **Example**
 
@@ -191,10 +190,9 @@ class GQSP(ResourceOperator):
         Resources:
             The resources are obtained as described in Theorem 6 of
             `Generalized Quantum Signal Processing (2024) <https://arxiv.org/pdf/2308.01501>`_.
-            Specifically, the resources are given by:
-                - ``poly_deg`` instances of :math:`\hat{A}`,
-                - ``neg_poly_deg`` instances of :math:`\hat{A^{\prime}}`,
-                - and ``poly_deg + neg_poly_deg + 1`` instances of the general ``Rot`` gate.
+            Specifically, the resources are given by ``poly_deg`` instances of :math:`\hat{A}`,
+            ``neg_poly_deg`` instances of :math:`\hat{A^{\prime}}`, and ``poly_deg + neg_poly_deg + 1``
+            instances of the general ``Rot`` gate.
 
         Returns:
             list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
