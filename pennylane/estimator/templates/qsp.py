@@ -45,8 +45,8 @@ class GQSP(ResourceOperator):
             signal operator and the control wire required for block-encoding.
 
     Resources:
-        The resources are obtained as described in Theorem 3 of `Generalized Quantum Signal Processing
-        (2024) <https://arxiv.org/pdf/2308.01501>`_.
+        The resources are obtained as described in Theorem 3 of 
+        `Generalized Quantum Signal Processing (2024) <https://arxiv.org/pdf/2308.01501>`_.
 
     **Example**
 
@@ -218,8 +218,8 @@ class HamiltonianGQSP(ResourceOperator):
             signal operator and the control wire required for block-encoding.
 
     Resources:
-        The resources are obtained as described in Theorem 7 and Corollary 8 of `Generalized Quantum Signal Processing
-        (2024) <https://arxiv.org/pdf/2308.01501>`_.
+        The resources are obtained as described in Theorem 7 and Corollary 8 of
+        `Generalized Quantum Signal Processing (2024) <https://arxiv.org/pdf/2308.01501>`_.
 
     **Example**
 
