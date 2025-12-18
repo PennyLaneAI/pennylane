@@ -20,7 +20,7 @@ import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
-from pennylane.exceptions import QuantumFunctionError
+from pennylane.exceptions import QuantumFunctionError, TransformError
 from pennylane.measurements import (
     CountsMP,
     ExpectationMP,
@@ -79,6 +79,18 @@ def test_parse_native_mid_circuit_measurements_unsupported_meas(measurement):
     circuit = qml.tape.QuantumScript([qml.RX(1.0, 0)], [measurement])
     with pytest.raises(TypeError, match="Native mid-circuit measurement mode does not support"):
         parse_native_mid_circuit_measurements(circuit, [circuit], [np.empty((1, 1))])
+
+
+def test_qnode_transform_error():
+    """Tests that an error is raised when applying dynamic_one_shot on a qnode."""
+
+    with pytest.raises(TransformError, match="cannot be applied directly on a QNode"):
+
+        @qml.dynamic_one_shot
+        @qml.qnode(qml.device("default.qubit"))
+        def _():
+            qml.X(0)
+            qml.expval(qml.Z(0))
 
 
 def test_postselect_mode():
