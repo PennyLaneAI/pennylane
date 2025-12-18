@@ -2006,7 +2006,7 @@ class QROM(ResourceOperator):
         }
 
     @classmethod
-    def _ctrl_T(cls, num_data_blocks: int, num_bit_flips: int, count=1) -> List[GateCount]:
+    def _ctrl_T(cls, num_data_blocks: int, num_bit_flips: int, count=1) -> list[GateCount]:
         """Constructs the control-``T`` subroutine as defined in Appendices A and B of
         `arXiv:1092.02134 <https://arxiv.org/abs/1902.02134>`_.
 
@@ -2048,7 +2048,7 @@ class QROM(ResourceOperator):
         return gate_cost
 
     @classmethod
-    def _ctrl_S(cls, num_ctrl_wires: int, count: int = 1) -> List[GateCount]:
+    def _ctrl_S(cls, num_ctrl_wires: int, count: int = 1) -> list[GateCount]:
         """Constructs the control-S subroutine as defined in Figure 8 of
         `arXiv:1092.02134 <https://arxiv.org/abs/1902.02134>_` excluding the initial ``X`` gate.
 
@@ -2063,7 +2063,7 @@ class QROM(ResourceOperator):
         return [qre.GateCount(qre.resource_rep(qre.CSWAP), count * num_ctrl_swaps)]
 
     @classmethod
-    def _ctrl_S_adj(cls, num_ctrl_wires: int, count: int = 1) -> List[GateCount]:
+    def _ctrl_S_adj(cls, num_ctrl_wires: int, count: int = 1) -> list[GateCount]:
         r"""Constructs the control-S^adj subroutine as defined in Figure 10
         of `arXiv:1092.02134 <https://arxiv.org/abs/1902.02134>_` excluding the terminal ``X`` gate.
 
@@ -2087,7 +2087,7 @@ class QROM(ResourceOperator):
         ]
 
     @classmethod
-    def adjoint_resource_decomp(cls, target_resource_params: dict) -> List[GateCount]:
+    def adjoint_resource_decomp(cls, target_resource_params: dict) -> list[GateCount]:
         r"""Returns a list representing the resources of the adjoint of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
 
