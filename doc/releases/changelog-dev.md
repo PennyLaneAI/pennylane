@@ -189,7 +189,7 @@
   errors from quantum circuits. This provides a dedicated entry point for retrieving error information 
   that was previously accessible through :func:`~pennylane.specs`. The function works with QNodes and 
   returns a dictionary of error types and their computed values.
-  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+  [(#8787)](https://github.com/PennyLaneAI/pennylane/pull/8787)
 
   ```python
   import pennylane as qml
