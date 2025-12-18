@@ -244,7 +244,7 @@ class HamiltonianGQSP(ResourceOperator):
         walk_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): the quantum walk operator
         time (float): the simulation time
         one_norm (float): one norm of the Hamiltonian
-        approximation_error (float): the tolerance for error in the polynomial approximation of :math:`e^{it\cos{theta}}`
+        approximation_error (float): the tolerance for error in the polynomial approximation of :math:`e^{it\cos{(\theta)}}`
         wires (WiresLike | None): The wires the operation acts on. This includes both the wires of the
             signal operator and the control wire required for block-encoding.
 
