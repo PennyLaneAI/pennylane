@@ -416,6 +416,65 @@ class HybridQRAM(Operation):
         QRAM and QROM, though similar, have different applications and purposes. QRAM is intended
         for read-and-write capabilities, where the stored data can be loaded and changed. QROM is
         designed to only load stored data into a quantum register.
+
+    **Example:**
+
+    Consider the following example, where the classical data is a list of bitstrings (each of
+    length 3):
+
+    .. code-block:: python
+
+        bitstrings = ["010", "111", "110", "000", "010", "111", "110", "000"]
+        bitstring_size = 3
+
+    We need the number of bitstrings to equal 2^len(control_wires) so they can be addressed. This
+    tells us the number of control wires needed. We can also define work wires, which are split by index
+    ``k`` into select wires and tree control wires.
+
+    .. code-block:: python
+
+        k=2
+        num_control_wires = 3
+        num_work_wires = 1 + 1 + 3 * (1 << (num_control_wires - k) - 1)
+
+    Now, we can define ``control``, ``target`` and ``work_wires`` registers concretely and demonstrate ``HybridQRAM``
+    in practice. In the following circuit, we prepare the state :math:`\vert 2 \rangle = \vert 010 \rangle` on the
+    ``control_wires``, which indicates that we would like to access the second (zero-indexed) entry of
+    ``bitstrings`` (which is ``"110"``). The ``target_wires`` register should therefore store this
+    state after ``HybridQRAM`` is applied.
+
+    .. code-block:: python
+
+        import pennylane as qml
+        reg = qml.registers(
+            {
+                "control": num_control_wires,
+                "target": bitstring_size,
+                "work": num_work_wires
+            }
+        )
+
+        dev = qml.device("default.qubit")
+        @qml.qnode(dev)
+        def hybrid_qram():
+            # prepare an address, e.g., |010> (index 2)
+            qml.BasisEmbedding(2, wires=reg["control"])
+
+            qml.HybridQRAM(
+                bitstrings,
+                control_wires=reg["control"],
+                target_wires=reg["target"],
+                work_wires=reg["work"],
+                k=k
+            )
+            return qml.probs(wires=reg["target"])
+
+    >>> import numpy as np
+    >>> print(np.round(hybrid_qram()))
+    [0. 0. 0. 0. 0. 0. 1. 0.]
+
+    Note that ``"110"`` in binary is equal to 6 in decimal, which is the position of the only
+    non-zero entry in the ``target_wires`` register.
     """
 
     grad_method = None
