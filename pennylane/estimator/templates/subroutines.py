@@ -2087,7 +2087,7 @@ class QROM(ResourceOperator):
         ]
 
     @classmethod
-    def adjoint_resource_decomp(cls, target_resource_params: dict):
+    def adjoint_resource_decomp(cls, target_resource_params: dict) -> List[GateCount]:
         r"""Returns a list representing the resources of the adjoint of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
 
