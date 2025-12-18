@@ -400,7 +400,7 @@ class HybridQRAM(Operation):
             The classical data as a sequence of bitstrings. The size of the classical data must be
             :math:`2^{\texttt{len(control_wires)}}`.
         control_wires (WiresLike):
-            The full address register (length ``n``) including select wires and tree control wires which enable
+            The full address register (length ``n``) including select wires and tree control wires (:math:`sel_i` and :math:`tree_i`, respectively) which enable
             select and bucket-brigade style behaviour.
         target_wires (WiresLike):
             The register in which the classical data gets loaded. The size of this register must
