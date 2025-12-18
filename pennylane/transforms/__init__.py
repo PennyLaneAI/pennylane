@@ -139,7 +139,6 @@ preprocessing, getting information from a circuit, and more.
     ~apply_controlled_Q
     ~quantum_monte_carlo
     ~transforms.resolve_dynamic_wires
-    ~transforms.dynamic_one_shot
 
 Transforms for intermediate representations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
