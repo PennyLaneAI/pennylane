@@ -41,7 +41,7 @@ class GQSP(ResourceOperator):
         poly_deg (int): the maximum positive degree :math:`d` of the polynomial transformation
         neg_poly_deg (int): the maximum negative degree :math:`k` of the polynomial transformation
         rotation_precision (float | None): The precision with which the general SU(2) rotation gates are applied.
-        wires (WiresLike |None): The wires the operation acts on. This includes both the wires of the
+        wires (WiresLike | None): The wires the operation acts on. This includes both the wires of the
             signal operator and the control wire required for block-encoding.
 
     Resources:
@@ -214,7 +214,7 @@ class HamiltonianGQSP(ResourceOperator):
         time (float): the simulation time
         one_norm (float): one norm of the Hamiltonian
         approximation_error (float): the tolerance for error in the polynomial approximation of :math:`e^{it\cos{theta}}`
-        wires (WiresLike |None): The wires the operation acts on. This includes both the wires of the
+        wires (WiresLike | None): The wires the operation acts on. This includes both the wires of the
             signal operator and the control wire required for block-encoding.
 
     Resources:

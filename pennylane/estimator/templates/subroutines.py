@@ -2522,7 +2522,7 @@ class Reflection(ResourceOperator):
 class Qubitization(ResourceOperator):
     r"""Resource class for the Qubitization operator. This operator encodes a Hamiltonian, written
     as a linear combination of unitaries, into a unitary operator (see Figure 1 in
-    `arXiv:1805.03662 <https://arxiv.org/pdf/1805.03662>`_).
+    `arXiv:1805.03662 <https://arxiv.org/abs/1805.03662>`_).
 
     .. math::
         Q =  \text{Prep}_{\mathcal{H}}(2|0\rangle\langle 0| - I)\text{Prep}_{\mathcal{H}}^{\dagger} \text{Sel}_{\mathcal{H}}.
@@ -2533,7 +2533,7 @@ class Qubitization(ResourceOperator):
         wires (WiresLike | None): the wires the operation acts on
 
     Resources:
-        The resources are obtained from equation (9) in `Babbush et al. (2018) <https://arxiv.org/pdf/1805.03662>`_.
+        The resources are obtained from equation (9) in `Babbush et al. (2018) <https://arxiv.org/abs/1805.03662>`_.
         Specifically, the walk operator is defined as :math:`W = R \cdot S`, where :math:`R` is a reflection about the state prepared by
         the prepare operator, and :math:`S` is the select operator. The cost is therefore one ``Select`` and one ``Reflection``.
 
@@ -2598,7 +2598,7 @@ class Qubitization(ResourceOperator):
                 applies the unitaries of the LCU.
 
         Resources:
-            The resources are obtained from Equation 9 in: `Babbush et al. (2018) <https://arxiv.org/pdf/1805.03662>`_.
+            The resources are obtained from Equation 9 in: `Babbush et al. (2018) <https://arxiv.org/abs/1805.03662>`_.
             Specifically, the walk operator is defined as :math:`W = R \cdot S`, where :math:`R` is a reflection about the state prepared by
             the ``Prepare`` operator, and :math:`S` is the ``Select`` operator.
 
