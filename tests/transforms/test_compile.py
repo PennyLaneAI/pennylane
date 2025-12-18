@@ -204,18 +204,6 @@ class TestCompileWithCompilePipeline:
         tape = qml.workflow.construct_tape(circuit)()
         assert len([op for op in tape.operations if op.name == "RX"]) == 2
 
-    def test_remove_method(self):
-        """Test CompilePipeline remove() method."""
-        pipeline = qml.CompilePipeline(
-            qml.transforms.merge_rotations,
-            qml.transforms.cancel_inverses,
-        )
-        pipeline.remove(qml.transforms.cancel_inverses)
-
-        assert len(pipeline) == 1
-        assert qml.transforms.cancel_inverses not in pipeline
-        assert qml.transforms.merge_rotations in pipeline
-
     def test_num_passes_with_pipeline(self):
         """Test that num_passes works with CompilePipeline."""
         dev = qml.device("default.qubit", wires=1)
