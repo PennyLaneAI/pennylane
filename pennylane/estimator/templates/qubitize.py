@@ -24,6 +24,7 @@ from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
     ResourceOperator,
+    _dequeue,
     resource_rep,
 )
 from pennylane.estimator.templates.select import SelectTHC
@@ -139,6 +140,7 @@ class QubitizeTHC(ResourceOperator):
                 thc_ham,
                 coeff_precision=coeff_precision,
             )
+        _dequeue(prep_op)
         self.prep_op = prep_op.resource_rep_from_op()
 
         if select_op is None:
@@ -146,6 +148,7 @@ class QubitizeTHC(ResourceOperator):
                 thc_ham,
                 rotation_precision=rotation_precision,
             )
+        _dequeue(select_op)
         self.select_op = select_op.resource_rep_from_op()
 
         # Algorithmic wires for the walk operator, based on section III D in arXiv:2011.03494.
