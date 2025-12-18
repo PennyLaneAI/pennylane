@@ -281,7 +281,7 @@ class HamiltonianGQSP(ResourceOperator):
         Returns:
             dict: A dictionary containing the resource parameters:
                 * walk_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`):
-                  The quantum walk operator.
+                  the quantum walk operator
                 * time (float): the simulation time
                 * one_norm (float): one norm of the Hamiltonian
                 * approximation_error (float): the tolerance for error in the polynomial
@@ -307,8 +307,8 @@ class HamiltonianGQSP(ResourceOperator):
         the Operator that are needed to compute the resources.
 
         Args:
-            walk_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): The
-                quantum walk operator.
+            walk_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): the
+                quantum walk operator
             time (float): the simulation time
             one_norm (float): one norm of the Hamiltonian
             approximation_error (float): the tolerance for error in the polynomial approximation of
@@ -338,8 +338,8 @@ class HamiltonianGQSP(ResourceOperator):
         represents a gate and the number of times it occurs in the circuit.
 
         Args:
-            walk_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): The
-                quantum walk operator.
+            walk_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): the
+                quantum walk operator
             time (float): the simulation time
             one_norm (float): one norm of the Hamiltonian
             approximation_error (float): the tolerance for error in the polynomial approximation of

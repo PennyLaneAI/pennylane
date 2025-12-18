@@ -583,8 +583,8 @@ class SelectPauli(ResourceOperator):
                 of the target operator.
 
         Resources:
-            Because each target operation is self-adjoint, the resources of the adjoint operation results
-            are same as the original operation (up to some re-ordering of the application of the gates).
+            Because each target operation is self-adjoint, the resources of the adjoint operation are
+            the same as the original operation (up to some re-ordering of the application of the gates).
 
         Returns:
             list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
@@ -703,11 +703,11 @@ class SelectPauli(ResourceOperator):
     @classmethod
     def resource_rep(cls, pauli_ham: PauliHamiltonian) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation.
+        the Operator that are needed to compute the resources.
 
         Args:
             pauli_ham (:class:`~pennylane.estimator.compact_hamiltonian.PauliHamiltonian`): A Hamiltonian
-            expressed as a linear combination of Pauli words, over which we will apply ``Select``.
+                expressed as a linear combination of Pauli words, over which we will apply ``Select``.
 
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation

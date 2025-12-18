@@ -2276,13 +2276,13 @@ class Reflection(ResourceOperator):
     Args:
         num_wires (int | None): number of wires the operator acts on
         U (:class:`~.pennylane.estimator.resource_operator.ResourceOperator` | None): the operator that prepares the state :math:`|\Psi\rangle`
-        alpha (float | None): the angle of the operator, should be between :math:`[0, 2\pi]`. Default is :math:`\pi`
+        alpha (float | None): the angle of the operator, should be between :math:`[0, 2\pi]`. Default is :math:`\pi`.
         wires (WiresLike | None): The wires the operation acts on.
 
     Resources:
         The resources are derived from the decomposition :math:`R(U, \alpha) = U R(\alpha) U^\dagger`.
         The center block :math:`R(\alpha) = -I + (1 - e^{i\alpha})|0\rangle\langle 0|` is implemented
-        using a multi-controlled phase shift:
+        using a multi-controlled ``PhaseShift``:
 
         .. math::
 
@@ -2412,8 +2412,8 @@ class Reflection(ResourceOperator):
                 of the target operator.
 
         Resources:
-            Reflections are always self-inverse operators. This together with the fact that this is
-            a unitary operator implies that it is self-adjoint.
+            ``Reflection`` operators are always self-inverse operators. This together with the fact
+            that this is a unitary operator implies that it is self-adjoint.
 
         Returns:
             list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
@@ -2543,8 +2543,8 @@ class Qubitization(ResourceOperator):
 
     >>> import pennylane.estimator as qre
     >>> prep_op = qre.Hadamard(wires=0)
-    >>> select_op_op = qre.Z(wires=0)
-    >>> qw_op = qre.Qubitization(prep_op, select_op_op)
+    >>> select_op = qre.Z(wires=0)
+    >>> qw_op = qre.Qubitization(prep_op, select_op)
     >>> print(qre.estimate(qw_op))
     --- Resources: ---
      Total wires: 1
@@ -2598,9 +2598,9 @@ class Qubitization(ResourceOperator):
                 applies the unitaries of the LCU.
 
         Resources:
-            The resources are obtained from equation (9) in `Babbush et al. (2018) <https://arxiv.org/pdf/1805.03662>`_.
+            The resources are obtained from Equation 9 in: `Babbush et al. (2018) <https://arxiv.org/pdf/1805.03662>`_.
             Specifically, the walk operator is defined as :math:`W = R \cdot S`, where :math:`R` is a reflection about the state prepared by
-            the prepare operator, and :math:`S` is the select operator.
+            the ``Prepare`` operator, and :math:`S` is the ``Select`` operator.
 
         Returns:
             list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
@@ -2617,7 +2617,7 @@ class Qubitization(ResourceOperator):
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Args:
-            target_resource_params (dict | None): A dictionary containing the resource parameters
+            target_resource_params (dict): A dictionary containing the resource parameters
                 of the target operator.
 
         Resources:
@@ -2646,11 +2646,11 @@ class Qubitization(ResourceOperator):
                 operation is controlled on
             num_zero_ctrl (int): the number of control qubits, that are
                 controlled when in the :math:`|0\rangle` state
-            target_resource_params (dict | None): A dictionary containing the resource parameters
+            target_resource_params (dict): A dictionary containing the resource parameters
                 of the target operator.
 
         Resources:
-            The resources are obtained from Figure 1 in `Babbush et al. (2018) <https://arxiv.org/pdf/1805.03662>`_.
+            The resources are obtained from Figure 1 in `Babbush et al. (2018) <https://arxiv.org/abs/1805.03662>`_.
 
         Returns:
             list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
@@ -2687,7 +2687,7 @@ class Qubitization(ResourceOperator):
                 * select_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): a compressed representation for the operator that
                   selectively applies the unitaries of the LCU
         """
-        return {"prep_op": self.prep_op, "sel": self.select_op}
+        return {"prep_op": self.prep_op, "select_op": self.select_op}
 
     @classmethod
     def resource_rep(
