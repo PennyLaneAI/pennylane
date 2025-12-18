@@ -1498,7 +1498,9 @@ def to_bloq(
         Note that the chosen Qualtran Bloq may not be an exact equivalent. If an exact
         equivalent is needed, we recommend setting ``map_ops`` to ``False``.
         This will wrap the input PennyLane operator as a Qualtran Bloq, enabling Qualtran functions
-        such as ``decompose_bloq`` or ``call_graph``, but maintaining the PennyLane decomposition definition of the operator.
+        such as ``decompose_bloq`` or ``call_graph``. To toggle between seeing the decompositions
+        from PennyLane or from the resource estimation module, set ``call_graph`` to either
+        `decomposition` or `estimator` respectively.
 
         >>> qml.to_bloq(qml.QuantumPhaseEstimation(
         ...     unitary=qml.RX(0.1, wires=0), estimation_wires=range(1, 5)
