@@ -407,8 +407,8 @@ class HybridQRAM(Operation):
             equal each bitstring length in ``bitstrings``.
         work_wires (WiresLike):
             The additional wires required to funnel the desired entry of ``bitstrings`` into the
-            target register. the work_wires register includes :math:`[signal, bus, dir..., portL..., portR...]`
-            wires in that order for a tree of depth :math:`(n-k)`.
+            target register. The work_wires register includes the signal, bus, direction, left port and right port
+            wires (:math:`[signal, bus, dir..., portL..., portR...]`) in that order for a tree of depth :math:`(n-k)`.
         k (int):
             The number of "select" bits taken from the most significant bits (MSBs) of ``control_wires``
 
