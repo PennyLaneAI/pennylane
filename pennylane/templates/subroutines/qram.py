@@ -398,11 +398,19 @@ class HybridQRAM(Operation):
     - ``work_wires``: :math:`[ signal, bus, dir..., portL..., portR... ]` (tree auxiliaries)
 
     Args:
-        bitstrings (Sequence[str]): classical data table; must have length :math:`2^n` where ``n = len(control_wires)``
-        control_wires (WiresLike): full address register (length ``n``)
-        target_wires (WiresLike): :math:`m` target qubits; :math:`m` must equal bitstring length
-        work_wires (WiresLike): auxiliaries: :math:`[signal, bus, dir..., portL..., portR...]` for a tree of depth :math:`(n-k)`
-        k (int): number of "select" bits taken from the Most Significant Bit (MSB) of ``control_wires``
+        bitstrings (Sequence[str]):
+            The classical data as a sequence of bitstrings. The size of the classical data must be
+            :math:`2^{\texttt{len(control_wires)}}`.
+        control_wires (WiresLike):
+            The full address register (length ``n``) including select wires and tree control wires which enable
+            select and bucket-brigade style behaviour.
+        target_wires (WiresLike):
+            The register in which the classical data gets loaded. The size of this register must
+            equal each bitstring length in ``bitstrings``.
+        work_wires (WiresLike):
+            Auxiliaries: :math:`[signal, bus, dir..., portL..., portR...]` for a tree of depth :math:`(n-k)`
+        k (int):
+            The number of "select" bits taken from the Most Significant Bit (MSB) of ``control_wires``
 
     Raises:
         ValueError: if the ``bitstrings`` are not provided, the ``bitstrings`` are of the wrong length, there are
