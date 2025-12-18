@@ -166,8 +166,22 @@
   workflow, where the pass is performed in MLIR or xDSL.
   [(#8539)](https://github.com/PennyLaneAI/pennylane/pull/8539)
 
-* `qml.compile` takes :class:`~.CompilePipeline` as input.
+* :func:`qml.compile` now accepts :class:`~.CompilePipeline` objects as input to its ``pipeline``
+  argument, in addition to the legacy tuple/list format. This enables using dynamically constructed
+  pipelines with :func:`qml.compile`.
   [(#8775)](https://github.com/PennyLaneAI/pennylane/pull/8775)
+
+  ```python
+  # Dynamic pipeline construction
+  pipeline = qml.CompilePipeline()
+  pipeline += qml.transforms.cancel_inverses
+  pipeline += qml.transforms.merge_rotations * 2
+
+  @qml.compile(pipeline=pipeline)
+  @qml.qnode(dev)
+  def circuit():
+      ...
+  ```
 
 <h4>Analyzing your algorithms quickly and easily with resource estimation</h4>
 

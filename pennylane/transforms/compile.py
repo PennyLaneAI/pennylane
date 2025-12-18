@@ -20,7 +20,7 @@ from pennylane.ops import __all__ as all_ops
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import CompilePipeline
-from pennylane.transforms.core import TransformDispatcher, transform
+from pennylane.transforms.core import BoundTransform, TransformDispatcher, transform
 from pennylane.transforms.optimization import (
     cancel_inverses,
     commute_controlled,
@@ -35,7 +35,7 @@ default_pipeline = (commute_controlled, cancel_inverses, merge_rotations, remove
 @transform
 def compile(
     tape: QuantumScript,
-    pipeline: CompilePipeline = default_pipeline,
+    pipeline: CompilePipeline | Sequence[TransformDispatcher] = default_pipeline,
     basis_set=None,
     num_passes=1,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
@@ -52,7 +52,7 @@ def compile(
 
     Args:
         tape (QNode or QuantumTape or Callable): A quantum circuit.
-        pipeline CompilePipeline: A list of
+        pipeline (CompilePipeline or Sequence[TransformDispatcher]): A list of
             tape and/or quantum function transforms to apply.
         basis_set (list[str]): A list of basis gates. When expanding the tape,
             expansion will continue until gates in the specific set are
@@ -168,10 +168,24 @@ def compile(
 
     """
 
-    for p in pipeline:
-        p_func = p.func if isinstance(p, partial) else p
-        if not isinstance(p_func, TransformDispatcher):
-            raise ValueError(f"Invalid transform function {p} passed to compile.")
+    # Convert pipeline to CompilePipeline if it's a tuple or list
+    if isinstance(pipeline, (tuple, list)):
+        # Legacy format: tuple/list of TransformDispatcher or partial(TransformDispatcher)
+        validated_transforms = []
+        for p in pipeline:
+            p_func = p.func if isinstance(p, partial) else p
+            if not isinstance(p_func, TransformDispatcher):
+                raise ValueError(f"Invalid transform function {p} passed to compile.")
+            validated_transforms.append(p)
+        # Convert to partial calls that we apply one by one later
+        # Keep as list for now, will be applied in the transform loop below
+    elif isinstance(pipeline, CompilePipeline):
+        # New format: CompilePipeline object - validation happens inside CompilePipeline
+        pass
+    else:
+        raise ValueError(
+            f"pipeline must be a CompilePipeline, tuple, or list, got {type(pipeline).__name__}"
+        )
 
     if num_passes < 1 or not isinstance(num_passes, int):
         raise ValueError("Number of passes must be an integer with value at least 1.")
@@ -202,8 +216,15 @@ def compile(
 
         # Apply the full set of compilation transforms num_passes times
         for _ in range(num_passes):
-            for transf in pipeline:
-                [expanded_tape], _ = transf(expanded_tape)
+            if isinstance(pipeline, CompilePipeline):
+                # For CompilePipeline, apply the entire pipeline at once
+                # Skip if pipeline is empty
+                if pipeline:
+                    [expanded_tape], _ = pipeline(expanded_tape)
+            else:
+                # Legacy format: iterate through list/tuple of transforms
+                for transf in pipeline:
+                    [expanded_tape], _ = transf(expanded_tape)
 
     def null_postprocessing(results):
         """A postprocesing function returned by a transform that only converts the batch of results
