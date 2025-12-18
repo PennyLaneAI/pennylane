@@ -410,7 +410,7 @@ class HybridQRAM(Operation):
             target register. the work_wires register includes :math:`[signal, bus, dir..., portL..., portR...]`
             wires in that order for a tree of depth :math:`(n-k)`.
         k (int):
-            The number of "select" bits taken from the Most Significant Bits (MSBs) of ``control_wires``
+            The number of "select" bits taken from the most significant bits (MSBs) of ``control_wires``
 
     Raises:
         ValueError: if the ``bitstrings`` are not provided, the ``bitstrings`` are of the wrong length, there are
