@@ -16,6 +16,18 @@
 
 <h3>Improvements 🛠</h3>
 
+* You can now build Qualtran call graphs using PennyLane's resource estimation module by setting
+  ``call_graph='estimator'`` when calling :func:`~.to_bloq`. This provides gate counts based on :func:`~.estimator.estimate`, 
+  as an alternative to the default, which is based on PennyLane's decomposition.
+  [(#8390)](https://github.com/PennyLaneAI/pennylane/pull/8390)
+
+  ```python
+  >>> op = qml.QFT(wires=range(5))
+  >>> bloq = qml.to_bloq(op, map_ops=False, call_graph="estimator")
+  >>> bloq.call_graph()[1]
+  {Hadamard(): 5, CNOT(): 26, TGate(is_adjoint=False): 1320}
+  ```
+
 * Add the `PCPhaseOp` operation to the xDSL Quantum dialect.
   [(#8621)](https://github.com/PennyLaneAI/pennylane/pull/8621)
 
@@ -197,10 +209,6 @@
 * The `qml.QNode.add_transform` method is removed.
   Instead, please use `QNode.transform_program.push_back(transform_container=transform_container)`.
   [(#8468)](https://github.com/PennyLaneAI/pennylane/pull/8468)
-
-* The custom call graphs for resource estimation have been removed. Call graphs are now
-  computed using the `pennylane.estimator` module, which may lead to different results.
-  [(#8390)](https://github.com/PennyLaneAI/pennylane/pull/8390)
 
 <h3>Deprecations 👋</h3>
 
