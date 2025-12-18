@@ -89,9 +89,9 @@ def _(op: qtemps.subroutines.qpe.QuantumPhaseEstimation):
     gate_counts = defaultdict(int, {})
 
     gate_counts[qt_gates.Hadamard()] = len(op.estimation_wires)
-    controlled_unitary = _map_to_bloq(op.hyperparameters["unitary"]).controlled(CtrlSpec(cvs=[1]))
+    controlled_unitary = _map_to_bloq(op.hyperparameters["unitary"], call_graph="decomposition").controlled(CtrlSpec(cvs=[1]))
     gate_counts[controlled_unitary] = (2 ** len(op.estimation_wires)) - 1
-    adjoint_qft = _map_to_bloq(qtemps.QFT(wires=op.estimation_wires), map_ops=False).adjoint()
+    adjoint_qft = _map_to_bloq(qtemps.QFT(wires=op.estimation_wires), map_ops=False, call_graph="decomposition").adjoint()
     gate_counts[adjoint_qft] = 1
 
     return gate_counts
@@ -122,12 +122,12 @@ def _(op: qtemps.subroutines.TrotterizedQfunc):
     call_graph = defaultdict(int, {})
     if order == 1:
         for q_op in q.queue:
-            call_graph[_map_to_bloq(q_op)] += 1
+            call_graph[_map_to_bloq(q_op, call_graph='decomposition')] += 1
         return call_graph
 
     num_gates = 2 * n * (5 ** (k - 1))
     for q_op in q.queue:
-        call_graph[_map_to_bloq(q_op)] += num_gates
+        call_graph[_map_to_bloq(q_op, call_graph="decomposition")] += num_gates
 
     return call_graph
 
@@ -159,14 +159,15 @@ def _(op: qtemps.state_preparations.Superposition):
         wires=wires[-int(math.ceil(math.log2(len(coeffs)))) :],
         pad_with=0,
     )
-    gate_types[_map_to_bloq(msp)] = 1
+    gate_types[_map_to_bloq(msp, call_graph="decomposition")] = 1
 
     cnot = qt_gates.CNOT()
     num_zero_ctrls = size_basis_state // 2
     control_values = [1] * num_zero_ctrls + [0] * (size_basis_state - num_zero_ctrls)
 
     multi_x = _map_to_bloq(
-        qops.MultiControlledX(wires=range(size_basis_state + 1), control_values=control_values)
+        qops.MultiControlledX(wires=range(size_basis_state + 1), control_values=control_values),
+        call_graph="decomposition",
     )
 
     basis_size = 2**size_basis_state
@@ -193,8 +194,8 @@ def _(op: qtemps.state_preparations.QROMStatePreparation):
             work_wires=work_wires,
             clean=False,
         )
-        gate_types[_map_to_bloq(qrom_op)] += 1
-        gate_types[_map_to_bloq(qops.adjoint(qrom_op))] += 1
+        gate_types[_map_to_bloq(qrom_op, call_graph="decomposition")] += 1
+        gate_types[_map_to_bloq(qops.adjoint(qrom_op), call_graph="decomposition")] += 1
 
     gate_types = defaultdict(int, {})
     positive_and_real = not any(c.imag != 0 or c.real < 0 for c in op.state_vector)
@@ -219,7 +220,7 @@ def _(op: qtemps.state_preparations.QROMStatePreparation):
         bitstrings = [zero_string] * num_bit_flips + [one_string] * num_bit_flips
         _add_qrom_and_adjoint(gate_types, bitstrings, control_wires=input_wires[:i])
 
-    gate_types[_map_to_bloq(qops.CRY(0, wires=[0, 1]))] = num_precision_wires * num_state_qubits
+    gate_types[_map_to_bloq(qops.CRY(0, wires=[0, 1]), call_graph="decomposition")] = num_precision_wires * num_state_qubits
 
     # Use helper for the final conditional QROM
     if not positive_and_real:
@@ -232,7 +233,8 @@ def _(op: qtemps.state_preparations.QROMStatePreparation):
                 qops.ctrl(
                     qops.GlobalPhase((2 * np.pi), wires=input_wires[0]),
                     control=0,
-                )
+                ),
+                call_graph="decomposition",
             )
         ] = num_precision_wires
 
@@ -298,7 +300,8 @@ def _(op: qtemps.subroutines.QROM):
             wires=range(num_select_wires + 1),
             control_values=[True] * num_select_wires,
             work_wires=range(num_select_wires + 1, num_select_wires + 1 + free_work_wires),
-        )
+        ),
+        call_graph="decomposition",
     )
 
     num_total_ctrl_possibilities = 2**num_select_wires
@@ -324,7 +327,7 @@ def _(op: qtemps.subroutines.QFT):
     gate_types = defaultdict(int, {})
     num_wires = len(op.wires)
     gate_types[qt_gates.Hadamard()] = num_wires
-    gate_types[_map_to_bloq(qops.ControlledPhaseShift(1, [0, 1]))] = (
+    gate_types[_map_to_bloq(qops.ControlledPhaseShift(1, [0, 1]), call_graph="decomposition")] = (
         num_wires * (num_wires - 1) // 2
     )
     gate_types[qt_gates.TwoBitSwap()] = num_wires // 2
@@ -342,11 +345,11 @@ def _(op: qtemps.subroutines.QSVT):
     num_projectors = len(projectors)
 
     for proj_op in projectors[:-1]:
-        gate_types[_map_to_bloq(proj_op)] += 1
+        gate_types[_map_to_bloq(proj_op, call_graph="decomposition")] += 1
 
-    gate_types[_map_to_bloq(UA)] += num_projectors // 2
-    gate_types[_map_to_bloq(UA).adjoint()] += (num_projectors - 1) // 2
-    gate_types[_map_to_bloq(projectors[-1])] += 1
+    gate_types[_map_to_bloq(UA, call_graph="decomposition")] += num_projectors // 2
+    gate_types[_map_to_bloq(UA, call_graph="decomposition").adjoint()] += (num_projectors - 1) // 2
+    gate_types[_map_to_bloq(projectors[-1], call_graph="decomposition")] += 1
 
     return gate_types
 
@@ -358,7 +361,7 @@ def _(op: qtemps.subroutines.Select):
     # From ResourceSelect
     gate_types = defaultdict(int, {})
     ops = op.hyperparameters["ops"]
-    cmpr_ops = [_map_to_bloq(op) for op in ops]
+    cmpr_ops = [_map_to_bloq(op, call_graph="decomposition") for op in ops]
 
     x = qt_gates.XGate()
 
@@ -415,13 +418,14 @@ def _(op: qtemps.subroutines.ModExp):
         num_aux_wires = num_work_wires - 1
         num_aux_swap = num_aux_wires - 1
 
-    qft = _map_to_bloq(qtemps.QFT(wires=range(num_aux_wires)), map_ops=False)
+    qft = _map_to_bloq(qtemps.QFT(wires=range(num_aux_wires)), map_ops=False, call_graph="decomposition")
     qft_dag = qft.adjoint()
 
     sequence = _map_to_bloq(
         qtemps.ControlledSequence(
             qtemps.PhaseAdder(k=3, x_wires=range(1, num_x_wires + 1)), control=[0]
-        )
+        ),
+        call_graph="decomposition",
     )
     sequence_dag = sequence.adjoint()
 
@@ -455,7 +459,7 @@ def _(op: qtemps.subroutines.ModExp):
 
 
 @singledispatch
-def _map_to_bloq(op, map_ops=True, custom_mapping=None, call_graph="default", **kwargs):
+def _map_to_bloq(op, map_ops=True, custom_mapping=None, call_graph="estimator", **kwargs):
     """Map PennyLane operators to Qualtran Bloqs. Operators with direct equivalents are directly
     mapped to their Qualtran equivalent even if ``map_ops`` is set to ``False``. Other operators are
     given a smart default mapping. When given a ``custom_mapping``, the custom mapping is used.
@@ -467,10 +471,9 @@ def _map_to_bloq(op, map_ops=True, custom_mapping=None, call_graph="default", **
             as a ``ToBloq`` when ``False``. Default is ``True``.
         custom_mapping (dict): Dictionary to specify a mapping between a PennyLane operator and a
             Qualtran Bloq. Default is ``None``.
-        call_graph (str): Specifies how to build the call graph. If ``'decomposition'``, the call
-            graph is built with either custom call graphs or the pennylane decomposition. If
-            ``'estimator'``, the call graph is built using ``pennylane.estimator.estimate()``.
-            Default is ``'estimator'``.
+        call_graph (str): Specifies how to build the call graph. If ``'estimator'``, the call
+            graph is built using ``pennylane.estimator.estimate()``. If ``'decomposition'``, the
+            call graph is built via the PennyLane decomposition. Default is ``'estimator'``.
 
     Returns:
         Bloq: A Qualtran Bloq corresponding to the input operator.
@@ -687,18 +690,20 @@ def _(op: qops.CZ, **kwargs):
 
 
 @_map_to_bloq.register
-def _(op: qops.Adjoint, map_ops=True, custom_mapping=None, **kwargs):
-    return _map_to_bloq(op.base, custom_mapping=custom_mapping, map_ops=map_ops, **kwargs).adjoint()
+def _(op: qops.Adjoint, map_ops=True, custom_mapping=None, call_graph="estimator", **kwargs):
+    return _map_to_bloq(
+        op.base, custom_mapping=custom_mapping, map_ops=map_ops, call_graph=call_graph, **kwargs
+    ).adjoint()
 
 
 @_map_to_bloq.register
-def _(op: qops.Controlled, map_ops=True, custom_mapping=None, **kwargs):
+def _(op: qops.Controlled, map_ops=True, custom_mapping=None, call_graph="estimator", **kwargs):
     if isinstance(op, qops.CNOT):
         return qt_gates.CNOT()
 
     ctrl_spec = CtrlSpec(cvs=[int(v) for v in op.control_values])
     return _map_to_bloq(
-        op.base, map_ops=map_ops, custom_mapping=custom_mapping, **kwargs
+        op.base, map_ops=map_ops, custom_mapping=custom_mapping, call_graph=call_graph, **kwargs
     ).controlled(ctrl_spec)
 
 
@@ -1206,13 +1211,12 @@ class ToBloq(Bloq):
             as a ``ToBloq`` when ``False``. Default is ``True``.
         custom_mapping (dict): Dictionary to specify a mapping between a PennyLane operator and a
             Qualtran Bloq. A default mapping is used if not defined.
-        call_graph (str): Specifies how to build the call graph. If ``'decomposition'``, the call
-            graph is built with either custom call graphs or the pennylane decomposition. If
-            ``'estimator'``, the call graph is built using ``pennylane.estimator.estimate()``.
-            Default is ``'estimator'``.
+        call_graph (str): Specifies how to build the call graph. If ``'estimator'``, the call
+            graph is built using ``pennylane.estimator.estimate()``. If ``'decomposition'``, the
+            call graph is built via the PennyLane decomposition. Default is ``'estimator'``.
 
     Raises:
-        ValueError: If ``call_graph`` is not ``'default'`` or ``'estimator'``.
+        ValueError: If ``call_graph`` is not ``'estimator'`` or ``'decomposition'``.
 
     .. seealso:: :func:`~.to_bloq` for the recommended way to convert from PennyLane objects to
         their Qualtran equivalents
@@ -1236,7 +1240,7 @@ class ToBloq(Bloq):
     ZPowGate(exponent=\phi, eps=1e-11): 1}
     """
 
-    def __init__(self, op, map_ops=False, custom_mapping=None, call_graph="default", **kwargs):
+    def __init__(self, op, map_ops=False, custom_mapping=None, call_graph="estimator", **kwargs):
         if not qualtran:
             raise ImportError(
                 "Optional dependency 'qualtran' is required "
@@ -1248,8 +1252,10 @@ class ToBloq(Bloq):
                 f"Input must be either an instance of {Operator}, {QNode} or a quantum function."
             )
 
-        if call_graph not in ("default", "estimator"):
-            raise ValueError(f"call_graph must be 'default' or 'estimator', got '{call_graph}'.")
+        if call_graph not in ("estimator", "decomposition"):
+            raise ValueError(
+                f"call_graph must be 'estimator' or 'decomposition', got '{call_graph}'."
+            )
 
         self.op = op
         self.map_ops = map_ops
@@ -1379,10 +1385,8 @@ class ToBloq(Bloq):
 
         The call graph is built based on the ``call_graph_mode`` specified at initialization:
 
-        - ``'default'``: Uses custom singledispatch handlers (``_get_op_call_graph``) that provide
-          detailed Bloq-level resource counts. Falls back to decomposition if no handler exists.
-        - ``'estimator'``: Uses ``pennylane.estimator.estimate()`` to get gate counts at a higher
-          level. Falls back to decomposition if estimation fails.
+        - ``'estimator'``: Uses ``pennylane.estimator.estimate()`` to get gate counts.
+        - ``'decomposition'``: Builds the call graph via the PennyLane decomposition.
         """
         if self.call_graph_mode == "estimator":
             call_graph = _get_op_call_graph_estimator(self.op)
@@ -1418,7 +1422,7 @@ class ToBloq(Bloq):
 
 
 def to_bloq(
-    circuit, map_ops: bool = True, custom_mapping: dict = None, call_graph="default", **kwargs
+    circuit, map_ops: bool = True, custom_mapping: dict = None, call_graph="estimator", **kwargs
 ):
     """
     Converts a PennyLane :class:`~.QNode`, ``Qfunc``, or :class:`~.Operation` to the corresponding `Qualtran Bloq <https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library>`__.
@@ -1438,17 +1442,16 @@ def to_bloq(
             as a ``ToBloq`` when ``False``. Default is ``True``.
         custom_mapping (dict): Dictionary to specify a mapping between a PennyLane operator and a
             Qualtran Bloq. A default mapping is used if not defined.
-        call_graph (str): Specifies how to build the call graph. If ``'decomposition'``, the call
-            graph is built with either custom call graphs or the pennylane decomposition. If
-            ``'estimator'``, the call graph is built using ``pennylane.estimator.estimate()``.
-            Default is ``'estimator'``.
+        call_graph (str): Specifies how to build the call graph. If ``'estimator'``, the call
+            graph is built using ``pennylane.estimator.estimate()``. If ``'decomposition'``, the
+            call graph is built via the PennyLane decomposition. Default is ``'estimator'``.
 
     Returns:
         Bloq: The Qualtran Bloq that corresponds to the given circuit or :class:`~.Operation` and
         options.
 
     Raises:
-        ValueError: If ``call_graph`` is not ``'default'`` or ``'estimator'``.
+        ValueError: If ``call_graph`` is not ``'estimator'`` or ``'decomposition'``.
 
     .. seealso:: :class:`~.ToBloq` for the Bloq objects created when no Qualtran equivalent is found
 
@@ -1520,8 +1523,8 @@ def to_bloq(
             "qualtran via: pip install qualtran."
         )
 
-    if call_graph not in ("default", "estimator"):
-        raise ValueError(f"call_graph must be 'default' or 'estimator', got '{call_graph}'.")
+    if call_graph not in ("estimator", "decomposition"):
+        raise ValueError(f"call_graph must be 'estimator' or 'decomposition', got '{call_graph}'.")
 
     if map_ops and custom_mapping:
         return _map_to_bloq(

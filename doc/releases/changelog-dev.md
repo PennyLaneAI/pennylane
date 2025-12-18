@@ -16,18 +16,11 @@
 
 <h3>Improvements 🛠</h3>
 
-* You can now build Qualtran call graphs using PennyLane's resource estimation module by setting
-  ``call_graph='estimator'`` when calling :func:`~.to_bloq`. This is typically faster than the
-  default. The results between using the estimator and the default will differ at times, as the 
-  latter is based on PennyLane's decompositions, instead of the estimator module's resources.
+* Qualtran call graphs built via :func:`~.to_bloq` now use PennyLane's resource estimation
+  module by default (``call_graph='estimator'``). This provides faster resource counting. 
+  To use the previous behaviour based on PennyLane decompositions, set 
+  ``call_graph='decomposition'``.
   [(#8390)](https://github.com/PennyLaneAI/pennylane/pull/8390)
-
-  ```python
-  >>> op = qml.QFT(wires=range(5))
-  >>> bloq = qml.to_bloq(op, map_ops=False, call_graph="estimator")
-  >>> bloq.call_graph()[1]
-  {Hadamard(): 5, CNOT(): 26, TGate(is_adjoint=False): 1320}
-  ```
 
 * Add the `PCPhaseOp` operation to the xDSL Quantum dialect.
   [(#8621)](https://github.com/PennyLaneAI/pennylane/pull/8621)
@@ -125,6 +118,20 @@
   [(#8549)](https://github.com/PennyLaneAI/pennylane/pull/8549)
 
 <h3>Breaking changes 💔</h3>
+
+* Call graphs now return resource counts via PennyLane's resource estimation module instead of via
+  PennyLane decompositions. To restore the previous behaviour, set ``call_graph='decomposition'``.
+  [(#8390)](https://github.com/PennyLaneAI/pennylane/pull/8390)
+
+  ```python
+  # New default behaviour (estimator mode)
+  >>> qml.to_bloq(qml.QFT(wires=range(5)), map_ops=False).call_graph()[1]
+  {Hadamard(): 5, CNOT(): 26, TGate(is_adjoint=False): 1320}
+
+  # Previous behaviour (decomposition mode)
+  >>> qml.to_bloq(qml.QFT(wires=range(5)), map_ops=False, call_graph='decomposition').call_graph()[1]
+  {Hadamard(): 5, ToBloq(ControlledPhaseShift): 10, TwoBitSwap(): 2}
+  ```
 
 * ``QuantumScript.to_openqasm`` has been removed. Please use ``qml.to_openqasm`` instead. This removes duplicated 
   functionality for converting a circuit to OpenQASM code.

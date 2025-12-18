@@ -378,11 +378,11 @@ class TestFromBloq:
 
 @pytest.mark.external
 @pytest.mark.usefixtures("skip_if_no_pl_qualtran_support")
-class TestToBloqDefault:
-    """Test ToBloq and to_bloq with the default call_graph mode.
+class TestToBloqDecomposition:
+    """Test ToBloq and to_bloq with the decomposition call_graph mode.
 
     These tests verify that operators are correctly wrapped or mapped to Qualtran Bloqs
-    using the default singledispatch-based call graph handlers.
+    using the decomposition singledispatch-based call graph handlers.
     """
 
     def test_to_bloq_init(self):
@@ -403,10 +403,10 @@ class TestToBloqDefault:
     def test_invalid_call_graph_value(self):
         """Tests that ToBloq and to_bloq raise ValueError for invalid call_graph values"""
 
-        with pytest.raises(ValueError, match="call_graph must be 'default' or 'estimator'"):
+        with pytest.raises(ValueError, match="call_graph must be 'estimator' or 'decomposition'"):
             qml.io.ToBloq(qml.H(0), call_graph="invalid")
 
-        with pytest.raises(ValueError, match="call_graph must be 'default' or 'estimator'"):
+        with pytest.raises(ValueError, match="call_graph must be 'estimator' or 'decomposition'"):
             qml.to_bloq(qml.H(0), call_graph="something_else")
 
     def test_equivalence(self):
@@ -482,10 +482,11 @@ class TestToBloqDefault:
             qml.H(0)
             qml.QuantumPhaseEstimation(unitary=qml.RX(0.1, wires=5), estimation_wires=range(5))
 
-        mapped_circuit = qml.to_bloq(circuit)
+        mapped_circuit = qml.to_bloq(circuit, call_graph="decomposition")
         mapped_circuit_cg = mapped_circuit.call_graph()[1]
         custom_mapped_circuit = qml.to_bloq(
             circuit,
+            call_graph="decomposition",
             custom_mapping={
                 qml.QuantumPhaseEstimation(
                     unitary=qml.RX(0.1, wires=5), estimation_wires=range(5)
@@ -493,7 +494,7 @@ class TestToBloqDefault:
             },
         )
         custom_mapped_circuit_cg = custom_mapped_circuit.call_graph()[1]
-        wrapped_circuit = qml.to_bloq(circuit, map_ops=False)
+        wrapped_circuit = qml.to_bloq(circuit, map_ops=False, call_graph="decomposition")
         wrapped_circuit_cg = wrapped_circuit.call_graph()[1]
 
         assert mapped_circuit_cg[Hadamard()] == 11
@@ -562,12 +563,17 @@ class TestToBloqDefault:
         cg = qml.to_bloq(
             qml.QuantumPhaseEstimation(unitary=qml.RX(0.1, wires=0), estimation_wires=range(1, 5)),
             False,
+            call_graph="decomposition",
         ).build_call_graph(ssa=ssa())
 
         assert cg == {
-            qml.to_bloq(qml.Hadamard(0), True): 4,
-            qml.to_bloq(qml.ctrl(qml.RX(0.1, wires=0), control=[1]), True): 15,
-            qml.to_bloq(qml.adjoint(qml.QFT(wires=range(1, 5))), False): 1,
+            qml.to_bloq(qml.Hadamard(0), True, call_graph="decomposition"): 4,
+            qml.to_bloq(
+                qml.ctrl(qml.RX(0.1, wires=0), control=[1]), True, call_graph="decomposition"
+            ): 15,
+            qml.to_bloq(
+                qml.adjoint(qml.QFT(wires=range(1, 5))), False, call_graph="decomposition"
+            ): 1,
         }
 
     def test_map_to_bloq(self):
