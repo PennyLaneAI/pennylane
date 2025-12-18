@@ -373,12 +373,11 @@ class HybridQRAM(Operation):
 
     where :math:`b_i` is the bitstring associated with index :math:`i`.
 
-    This hybrid QRAM implements a space–time tradeoff:
+    This hybrid QRAM implements a space–time tradeoff.
 
-    - Total memory address bits: ``n = len(control_wires)``
-    - Choose an integer :math:`k` with :math:`0 ≤ k < n`.
-        - The first :math:`k` address bits (high-order) are "select" bits.
-        - The remaining :math:`n-k` bits (low-order) are routed through a bucket-brigade tree.
+    It uses a total number of memory address bits ``n = len(control_wires)``. We choose an integer :math:`k` with :math:`0 ≤ k < n`.
+    The first :math:`k` address bits (high-order) are "select" bits. The remaining :math:`n-k` bits (low-order) are routed through
+    a bucket-brigade tree.
 
     Instead of a full-depth tree of size :math:`2^n` leaves, we build a smaller tree of depth :math:`n-k` (:math:`2^{n-k}`
     leaves) and reuse it :math:`2^k` times. For each prefix :math:`s \in {0, …, 2^k - 1}`:
