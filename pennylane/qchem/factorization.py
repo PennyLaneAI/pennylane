@@ -280,7 +280,7 @@ def factorize(
             # compute the factors via cholesky decomposition routine
             # For compressed factorization, we want exactly num_factors, not early stopping
             factors, f_eigvals, f_eigvecs = _double_factorization_cholesky(
-                two, tol_factor=0.0, shape=shape, interface=interface, num_factors=num_factors
+                two, tol_factor=tol_factor, shape=shape, interface=interface, num_factors=num_factors
             )
             # compute the core and orbital rotation tensors from the factors
             core_matrices = qml.math.einsum("ti,tj->tij", f_eigvals, f_eigvals)
