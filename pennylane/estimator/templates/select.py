@@ -127,8 +127,7 @@ class SelectTHC(ResourceOperator):
 
         if batched_rotations is not None and (
             not isinstance(batched_rotations, int)
-            or batched_rotations <= 0
-            or batched_rotations > thc_ham.num_orbitals - 1
+            or batched_rotations not in range(1, thc_ham.num_orbitals)
         ):
             raise ValueError(
                 f"`batched_rotations` must be a positive integer less than the number of orbitals {thc_ham.num_orbitals}, but got {batched_rotations}."
