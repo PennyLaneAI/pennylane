@@ -17,7 +17,7 @@ This submodule defines a class for compute-uncompute patterns.
 from collections import Counter, defaultdict
 from functools import reduce
 
-from pennylane import math, queuing
+from pennylane import math, pytrees, queuing
 from pennylane.decomposition import (
     add_decomps,
     controlled_resource_rep,
@@ -103,6 +103,10 @@ class ChangeOpBasis(CompositeOp):
     Returns:
         (Operator): Returns an Operator which is the change_op_basis of the provided Operators: compute_op, target_op, uncompute_op.
 
+    .. note::
+        When a ``ChangeOpBasis`` operator is iterated over, its factors are iterated in the reverse order. This is to
+        have a similar behaviour to ``Prod`` which applies its factors in reverse order.
+
     .. seealso:: :func:`~.change_op_basis`
     """
 
@@ -110,6 +114,16 @@ class ChangeOpBasis(CompositeOp):
         if uncompute_op is None:
             uncompute_op = adjoint(compute_op)
         super().__init__(uncompute_op, target_op, compute_op)
+
+    def _flatten(self):
+        return tuple(reversed(self.operands)), tuple()
+
+    # pylint: disable=arguments-differ
+    @classmethod
+    def _primitive_bind_call(cls, compute_op, target_op, uncompute_op=None):
+        if uncompute_op is None:
+            uncompute_op = adjoint(compute_op)
+        return cls._primitive.bind(compute_op, target_op, uncompute_op)
 
     resource_keys = frozenset({"compute_op", "target_op", "uncompute_op"})
 
@@ -176,11 +190,7 @@ class ChangeOpBasis(CompositeOp):
     def decomposition(self):
         r"""Decomposition of the product operator is given by each of compute_op, target_op, compute_op† applied in succession."""
         if queuing.QueuingManager.recording():
-            return [
-                self[2]._unflatten(*self[2]._flatten()),  # pylint: disable=protected-access
-                self[1]._unflatten(*self[1]._flatten()),  # pylint: disable=protected-access
-                self[0]._unflatten(*self[0]._flatten()),  # pylint: disable=protected-access
-            ]
+            _ = [queuing.apply(op) for op in reversed(self)]
         return list(self[::-1])
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
@@ -220,9 +230,9 @@ def _adjoint_change_op_basis_resources(base_params, **_):
 # pylint: disable=protected-access
 @register_resources(_adjoint_change_op_basis_resources)
 def _adjoint_change_op_basis_decomp(*_, base, **__):
-    base.operands[2]._unflatten(*base.operands[2]._flatten())
-    adjoint(base.operands[1]._unflatten(*base.operands[1]._flatten()))
-    base.operands[0]._unflatten(*base.operands[0]._flatten())
+    pytrees.unflatten(*pytrees.flatten(base.operands[2]))
+    adjoint(pytrees.unflatten(*pytrees.flatten(base.operands[1])))
+    pytrees.unflatten(*pytrees.flatten(base.operands[0]))
 
 
 add_decomps("Adjoint(ChangeOpBasis)", _adjoint_change_op_basis_decomp)
@@ -264,28 +274,22 @@ def _controlled_change_op_basis_decomposition(
     base,
     **__,
 ):
-    base.operands[2]._unflatten(  # pylint: disable=protected-access
-        *base.operands[2]._flatten()  # pylint: disable=protected-access
-    )
+    pytrees.unflatten(*pytrees.flatten(base.operands[2]))
     ctrl(
-        base.operands[1]._unflatten(  # pylint: disable=protected-access
-            *base.operands[1]._flatten()  # pylint: disable=protected-access
-        ),
+        pytrees.unflatten(*pytrees.flatten(base.operands[1])),
         control=control_wires,
         control_values=control_values,
         work_wires=work_wires,
         work_wire_type=work_wire_type,
     )
-    base.operands[0]._unflatten(  # pylint: disable=protected-access
-        *base.operands[0]._flatten()  # pylint: disable=protected-access
-    )
+    pytrees.unflatten(*pytrees.flatten(base.operands[0]))
 
 
 # pylint: disable=unused-argument
 @register_resources(_change_op_basis_resources)
 def _change_op_basis_decomp(*_, wires=None, operands):
     for op in operands[::-1]:
-        op._unflatten(*op._flatten())  # pylint: disable=protected-access
+        pytrees.unflatten(*pytrees.flatten(op))
 
 
 add_decomps(ChangeOpBasis, _change_op_basis_decomp)

@@ -261,6 +261,10 @@ Other subroutines
 Other useful templates which do not belong to the previous categories can be found here.
 
 .. gallery-item::
+    :description: :doc:`Instantaneous Quantum Polynomial Circuit <../code/api/pennylane.IQP>`
+    :figure: _static/templates/subroutines/iqp.png
+
+.. gallery-item::
     :description: :doc:`Grover Diffusion Operator <../code/api/pennylane.GroverOperator>`
     :figure: _static/templates/subroutines/grover.svg
 
@@ -363,6 +367,10 @@ Other useful templates which do not belong to the previous categories can be fou
 .. gallery-item::
     :description: :doc:`QROM <../code/api/pennylane.QROM>`
     :figure: _static/templates/qrom/qrom_thumbnail.png
+
+.. gallery-item::
+    :description: :doc:`QRAM <../code/api/pennylane.BBQRAM>`
+    :figure: _static/templates/qram/bbqram_thumbnail.png
 
 .. gallery-item::
     :description: :doc:`PrepSelPrep <../code/api/pennylane.PrepSelPrep>`

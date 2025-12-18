@@ -41,6 +41,8 @@ from .qubitization import Qubitization
 from .controlled_sequence import ControlledSequence
 from .aqft import AQFT
 from .amplitude_amplification import AmplitudeAmplification
+from .qram import BBQRAM
+from .iqp import IQP
 from .qrom import QROM
 from .gqsp import GQSP
 from .select_pauli_rot import SelectPauliRot
@@ -70,12 +72,14 @@ from .arithmetic import (
 __all__ = [
     "ArbitraryUnitary",
     "ApproxTimeEvolution",
+    "BBQRAM",
     "CommutingEvolution",
     "QDrift",
     "TrotterizedQfunc",
     "TrotterProduct",
     "trotterize",
     "Interferometer",
+    "IQP",
     "Permute",
     "QFT",
     "QuantumPhaseEstimation",

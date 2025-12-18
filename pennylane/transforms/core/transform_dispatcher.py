@@ -46,8 +46,8 @@ def _create_transform_primitive():
     # pylint: disable=too-many-arguments, disable=unused-argument
     @transform_prim.def_impl
     def _impl(*all_args, inner_jaxpr, args_slice, consts_slice, targs_slice, tkwargs, transform):
-        args = all_args[args_slice]
-        consts = all_args[consts_slice]
+        args = all_args[slice(*args_slice)]
+        consts = all_args[slice(*consts_slice)]
         return capture.eval_jaxpr(inner_jaxpr, consts, *args)
 
     @transform_prim.def_abstract_eval
@@ -67,6 +67,8 @@ def _create_plxpr_fallback_transform(tape_transform):
         return None
 
     def plxpr_fallback_transform(jaxpr, consts, targs, tkwargs, *args):
+        # Restore tkwargs from hashable tuple to dict
+        tkwargs = dict(tkwargs)
 
         def wrapper(*inner_args):
             tape = plxpr_to_tape(jaxpr, consts, *inner_args)
@@ -108,16 +110,17 @@ def generic_apply_transform(obj, transform, *targs, **tkwargs):
     """Apply an generic transform to a specific type of object. A singledispatch function
     used by ``TransformDipsatcher.generic_apply_transform``, but with a different order of arguments
     to allow is to be used by singledispatch.
+
+    When called with an object that is not a valid dispatch target (e.g., not a QNode, tape, etc.),
+    this returns a BoundTransform with the supplied args and kwargs. This enables patterns like:
+
+        decompose(gate_set=gate_set) + merge_rotations(1e-6)
+
+    where transforms are called with just configuration parameters and combined into a CompilePipeline
     """
-    #  error out on transform(*targs, **tkwargs)(obj)
-    # in that care, no special dispatch would be found.
-    raise TransformError(
-        "Decorating a QNode with @transform_fn(**transform_kwargs) has been "
-        "removed. Please decorate with @functools.partial(transform_fn, **transform_kwargs) "
-        "instead, or call the transform directly using qnode = transform_fn(qnode, "
-        "**transform_kwargs). Visit the deprecations page for more details: "
-        "https://docs.pennylane.ai/en/stable/development/deprecations.html#completed-deprecation-cycles",
-    )
+    # If the first argument is not a valid dispatch target, return a BoundTransform
+    # with the first argument and any additional args/kwargs stored as transform parameters.
+    return BoundTransform(transform, args=(obj, *targs), kwargs=tkwargs)
 
 
 # pragma: no cover
@@ -165,14 +168,20 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
     # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(
         self,
-        transform,
-        expand_transform=None,
-        classical_cotransform=None,
-        is_informative=False,
-        final_transform=False,
-        use_argnum_in_expand=False,
+        transform: Callable | None = None,
+        pass_name: None | str = None,
+        *,
+        expand_transform: Callable | None = None,
+        classical_cotransform: Callable | None = None,
+        is_informative: bool = False,
+        final_transform: bool = False,
+        use_argnum_in_expand: bool = False,
         plxpr_transform=None,
     ):
+        if transform is None and pass_name is None:
+            raise ValueError(
+                "Transforms must currently define either a tape transform or a pass_name"
+            )
         self._transform = transform
         self._expand_transform = expand_transform
         self._classical_cotransform = classical_cotransform
@@ -180,15 +189,22 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
         # is_informative supersedes final_transform
         self._final_transform = is_informative or final_transform
         self._custom_qnode_transform = None
+        self._pass_name = pass_name
 
         self._use_argnum_in_expand = use_argnum_in_expand
-        functools.update_wrapper(self, transform)
+        if transform:
+            functools.update_wrapper(self, transform)
 
         self._apply_transform = functools.singledispatch(
             functools.partial(specific_apply_transform, self)
         )
 
         self._plxpr_transform = plxpr_transform or _create_plxpr_fallback_transform(self._transform)
+
+    @property
+    def pass_name(self) -> None | str:
+        """The name of the equivalent MLIR pass."""
+        return self._pass_name
 
     @property
     def register(self):
@@ -270,11 +286,51 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
 
         return generic_apply_transform.register(arg)  # pylint: disable=no-member
 
-    def __call__(self, obj, *targs, **tkwargs):
+    def __call__(self, obj=None, *targs, **tkwargs):  # pylint: disable=keyword-arg-before-vararg
+        # If called with only keyword arguments (no positional args), return a BoundTransform
+        # This enables patterns like: decompose(gate_set=gate_set) + merge_rotations(1e-6)
+        if obj is None:
+            if tkwargs:
+                return BoundTransform(self, args=targs, kwargs=tkwargs)
+            raise TypeError(
+                f"{self!r} requires at least one argument. "
+                "Provide a tape, qfunc, QNode, or device to transform, "
+                "or provide keyword arguments to create a BoundTransform for composition."
+            )
         return self._apply_transform(obj, *targs, **tkwargs)
 
     def __repr__(self):
-        return f"<transform: {self._transform.__name__}>"
+        name = self._transform.__name__ if self._transform else self.pass_name
+        return f"<transform: {name}>"
+
+    def __add__(self, other):
+        """Add two dispatchers or a dispatcher and a container to create a CompilePipeline.
+
+        When adding dispatchers, they are converted to containers with no args or kwargs.
+        For dispatcher + program, Python falls back to CompilePipeline.__radd__.
+
+        Args:
+            other: Another TransformDispatcher or BoundTransform to add.
+
+        Returns:
+            CompilePipeline: A new program with this dispatcher followed by the other.
+        """
+        # Convert this dispatcher to a container (no args/kwargs) and delegate
+        return BoundTransform(self) + other
+
+    def __mul__(self, n):
+        """Multiply a dispatcher by an integer to create a program with repeated dispatchers.
+
+        Args:
+            n (int): Number of times to repeat this dispatcher.
+
+        Returns:
+            CompilePipeline: A new program with this dispatcher repeated n times.
+        """
+        # Convert to container (no args/kwargs) and delegate
+        return BoundTransform(self) * n
+
+    __rmul__ = __mul__
 
     @property
     def transform(self):
@@ -352,7 +408,7 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
 
         if self.expand_transform:
             qnode.transform_program.push_back(
-                TransformContainer(
+                BoundTransform(
                     TransformDispatcher(self._expand_transform),
                     args=targs,
                     kwargs=tkwargs,
@@ -360,7 +416,7 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
                 )
             )
         qnode.transform_program.push_back(
-            TransformContainer(
+            BoundTransform(
                 self,
                 args=targs,
                 kwargs=tkwargs,
@@ -369,24 +425,75 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
         return qnode
 
 
-class TransformContainer:  # pylint: disable=too-many-instance-attributes
-    """Class to store a quantum transform with its ``args``, ``kwargs`` and classical co-transforms.  Use
-    :func:`~.pennylane.transform`.
+class BoundTransform:  # pylint: disable=too-many-instance-attributes
+    """A transform with bound inputs.
 
-    .. warning::
+    Args:
+        transform: Any transform.
+        args (Sequence[Any]): The positional arguments to use with the transform.
+        kwargs (Dict | None): The keyword arguments for use with the transform.
 
-        This class is developer-facing and should not be used directly. Instead, use
-        :func:`qml.transform <pennylane.transform>` if you would like to make a custom
-        transform.
+    Keyword Args:
+        use_argnum (bool): An advanced option used in conjunction with calculating
+            classical cotransforms of jax workflows.
 
     .. seealso:: :func:`~.pennylane.transform`
+
+    >>> bound_t = BoundTransform(qml.transforms.merge_rotations, (), {"atol": 1e-4})
+    >>> bound_t
+    <merge_rotations((), {'atol': 0.0001})>
+
+    The class can also be created by directly calling the transform with its inputs:
+
+    >>> qml.transforms.merge_rotations(atol=1e-4)
+    <merge_rotations((), {'atol': 0.0001})>
+
+    These objects can now directly applied to anything individual transforms can apply to:
+
+    .. code-block:: python
+
+        @bound_t
+        @qml.qnode(qml.device('null.qubit'))
+        def c(x):
+            qml.RX(x, 0)
+            qml.RX(-x + 1e-6, 0)
+            qml.RY(x, 1)
+            qml.RY(-x + 1e-2, 1)
+            return qml.probs(wires=(0,1))
+
+    If we draw this circuit, we can see that the ``merge_rotations`` transforms was applied with a
+    tolerance of ``1e-4``.  The ``RX`` gates sufficiently close to zero disappear, while the ``RY`` gates
+    that are further from zero remain.
+
+    >>> print(qml.draw(c)(1.0))
+    0: ───────────┤ ╭Probs
+    1: ──RY(0.01)─┤ ╰Probs
+
+    Repeated versions of the bound transform can be created with multiplication:
+
+    >>> bound_t * 3
+    CompilePipeline(merge_rotations, merge_rotations, merge_rotations)
+
+    And it can be used in conjunction with both individual transforms, bound transforms, and
+    compile pipelines.
+
+    >>> bound_t + qml.transforms.cancel_inverses
+    CompilePipeline(merge_rotations, cancel_inverses)
+    >>> bound_t + qml.transforms.cancel_inverses + bound_t
+    CompilePipeline(merge_rotations, cancel_inverses, merge_rotations)
+
     """
+
+    def __hash__(self):
+        hashable_dict = tuple((key, value) for key, value in self.kwargs.items())
+        return hash((self.transform, self.pass_name, self.args, hashable_dict))
 
     def __init__(
         self,
         transform: TransformDispatcher,
         args: tuple | list = (),
         kwargs: None | dict = None,
+        *,
         use_argnum: bool = False,
         **transform_config,
     ):
@@ -402,7 +509,8 @@ class TransformContainer:  # pylint: disable=too-many-instance-attributes
         self._use_argnum = use_argnum
 
     def __repr__(self):
-        return f"<{self._transform_dispatcher.transform.__name__}({self._args}, {self._kwargs})>"
+        name = self.transform.__name__ if self.transform else self.pass_name
+        return f"<{name}({self._args}, {self._kwargs})>"
 
     def __call__(self, obj):
         return self._transform_dispatcher(obj, *self.args, **self.kwargs)
@@ -421,11 +529,12 @@ class TransformContainer:  # pylint: disable=too-many-instance-attributes
         )
 
     def __eq__(self, other: object) -> bool:
-        if not isinstance(other, TransformContainer):
+        if not isinstance(other, BoundTransform):
             return False
         return (
             self.args == other.args
             and self.transform == other.transform
+            and self.pass_name == other.pass_name
             and self.kwargs == other.kwargs
             and self.classical_cotransform == other.classical_cotransform
             and self.is_informative == other.is_informative
@@ -433,9 +542,14 @@ class TransformContainer:  # pylint: disable=too-many-instance-attributes
         )
 
     @property
-    def transform(self) -> Callable:
-        """The stored quantum transform."""
+    def transform(self) -> Callable | None:
+        """The raw tape transform definition for the transform."""
         return self._transform_dispatcher.transform
+
+    @property
+    def pass_name(self) -> None | str:
+        """The name of the corresponding Catalyst pass, if it exists."""
+        return self._transform_dispatcher.pass_name
 
     @property
     def args(self) -> tuple:
@@ -454,22 +568,91 @@ class TransformContainer:  # pylint: disable=too-many-instance-attributes
 
     @property
     def plxpr_transform(self) -> None | Callable:
-        """The stored quantum transform's PLxPR transform."""
+        """The stored quantum transform's PLxPR transform.
+
+        **UNMAINTAINED AND EXPERIMENTAL**
+        """
         return self._transform_dispatcher.plxpr_transform
 
     @property
     def is_informative(self) -> bool:
-        """``True`` if the transform is informative."""
+        """Whether or not a transform is informative. If true the transform is queued at the end
+        of the transform program and the tapes or qnode aren't executed.
+
+        This property is rare, but used by such transforms as ``qml.transforms.commutation_dag``.
+        """
         return self._transform_dispatcher.is_informative
 
     @property
     def final_transform(self) -> bool:
-        """``True`` if the transform needs to be executed"""
+        """Whether or not the transform must be the last one to be executed
+        in a ``CompilePipeline``.
+
+        This property is ``True`` for most gradient transforms.
+        """
         return self._transform_dispatcher.final_transform
+
+    def __add__(self, other):
+        """Add two containers or a container and a dispatcher to create a CompilePipeline.
+
+        For container + program, Python falls back to CompilePipeline.__radd__.
+
+        Args:
+            other: Another BoundTransform or TransformDispatcher to add.
+
+        Returns:
+            CompilePipeline: A new program with this container followed by the other.
+        """
+        # Convert dispatcher to container if needed
+        if isinstance(other, TransformDispatcher):
+            other = BoundTransform(other)
+
+        if isinstance(other, BoundTransform):
+            # Import here to avoid circular import\
+            # pylint: disable=import-outside-toplevel
+            from .compile_pipeline import CompilePipeline
+
+            if self.final_transform and other.final_transform:
+                raise TransformError(
+                    f"Both {self} and {other} are final transforms and cannot be combined."
+                )
+            return CompilePipeline([self, other])
+
+        # For CompilePipeline, Python falls back to program.__radd__(container)
+        return NotImplemented
+
+    def __mul__(self, n):
+        """Multiply a container by an integer to create a program with repeated containers.
+
+        Args:
+            n (int): Number of times to repeat this container.
+
+        Returns:
+            CompilePipeline: A new program with this container repeated n times.
+        """
+        # Import here to avoid circular import
+        from .compile_pipeline import CompilePipeline  # pylint: disable=import-outside-toplevel
+
+        if not isinstance(n, int):
+            return NotImplemented
+
+        if n < 0:
+            raise ValueError("Cannot multiply transform container by negative integer")
+
+        if self.final_transform and n > 1:
+            raise TransformError(
+                f"{self} is a final transform and cannot be applied more than once."
+            )
+
+        return CompilePipeline([self] * n)
+
+    __rmul__ = __mul__
 
 
 @TransformDispatcher.generic_register
 def _apply_to_tape(obj: QuantumScript, transform, *targs, **tkwargs):
+    if transform.transform is None:
+        raise NotImplementedError(f"transform {transform} has no defined tape transform.")
     if transform.expand_transform:
         expanded_tapes, expand_processing = transform.expand_transform(obj, *targs, **tkwargs)
         transformed_tapes = []
@@ -501,7 +684,7 @@ def _capture_apply(obj, transform, *targs, **tkwargs):
         import jax  # pylint: disable=import-outside-toplevel
 
         flat_qfunc = capture.flatfn.FlatFn(obj)
-        jaxpr = jax.make_jaxpr(functools.partial(flat_qfunc, **kwargs))(*args)
+        jaxpr = jax.make_jaxpr(flat_qfunc)(*args, **kwargs)
         flat_args = jax.tree_util.tree_leaves(args)
 
         n_args = len(flat_args)
@@ -636,3 +819,6 @@ def _apply_to_sequence(obj: Sequence, transform, *targs, **tkwargs):
         return tuple(final_results)
 
     return tuple(execution_tapes), processing_fn
+
+
+TransformContainer = BoundTransform

@@ -146,8 +146,6 @@ among ``my_cnot1``, ``my_cnot2``, and all existing decomposition rules defined f
 
 .. code-block:: python
 
-    from functools import partial
-
     qml.decomposition.enable_graph()
 
     @qml.register_resources({qml.CNOT: 2, qml.RX: 1})
@@ -170,8 +168,7 @@ among ``my_cnot1``, ``my_cnot2``, and all existing decomposition rules defined f
         qml.RY(np.pi/2, wires[1])
         qml.Z(wires[1])
 
-    @partial(
-        qml.transforms.decompose,
+    @qml.transforms.decompose(
         gate_set={"RX", "RZ", "CZ", "GlobalPhase"},
         alt_decomps={qml.CNOT: [my_cnot1, my_cnot2]},
         fixed_decomps={qml.IsingXX: isingxx_decomp},

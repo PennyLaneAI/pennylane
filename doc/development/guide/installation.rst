@@ -20,7 +20,7 @@ be installed alongside PennyLane:
 * `autograd <https://github.com/HIPS/autograd>`_
 * `tomlkit <https://github.com/python-poetry/tomlkit>`_
 * `appdirs <https://github.com/ActiveState/appdirs>`_
-* `autoray <https://github.com/jcmgray/autoray>`__ == 0.8.0 
+* `autoray <https://github.com/jcmgray/autoray>`__ == 0.8.2 
 * `cachetools <https://github.com/tkem/cachetools>`_
 * `pennylane-lightning <https://github.com/PennyLaneAI/pennylane-lightning>`_ >= 0.42
 * `requests <https://github.com/psf/requests>`_
@@ -80,4 +80,4 @@ pre-commit quality checks. Those can be installed easily via ``pip``:
 
 .. code-block:: bash
 
-    python -m pip install -r requirements-dev.txt
+    python -m pip install --group dev
