@@ -467,11 +467,10 @@ def _map_to_bloq(op, map_ops=True, custom_mapping=None, call_graph="default", **
             as a ``ToBloq`` when ``False``. Default is ``True``.
         custom_mapping (dict): Dictionary to specify a mapping between a PennyLane operator and a
             Qualtran Bloq. Default is ``None``.
-        call_graph (str): Specifies how to build the call graph. If ``'default'``, the call
+        call_graph (str): Specifies how to build the call graph. If ``'decomposition'``, the call
             graph is built with either custom call graphs or the pennylane decomposition. If
             ``'estimator'``, the call graph is built using ``pennylane.estimator.estimate()``.
-            Default is ``'default'``.
-        **kwargs: Additional keyword arguments passed to ``ToBloq``.
+            Default is ``'estimator'``.
 
     Returns:
         Bloq: A Qualtran Bloq corresponding to the input operator.
@@ -1207,10 +1206,10 @@ class ToBloq(Bloq):
             as a ``ToBloq`` when ``False``. Default is ``True``.
         custom_mapping (dict): Dictionary to specify a mapping between a PennyLane operator and a
             Qualtran Bloq. A default mapping is used if not defined.
-        call_graph (str): Specifies how to build the call graph. If ``'default'``, the call
+        call_graph (str): Specifies how to build the call graph. If ``'decomposition'``, the call
             graph is built with either custom call graphs or the pennylane decomposition. If
             ``'estimator'``, the call graph is built using ``pennylane.estimator.estimate()``.
-            Default is ``'default'``.
+            Default is ``'estimator'``.
 
     Raises:
         ValueError: If ``call_graph`` is not ``'default'`` or ``'estimator'``.
@@ -1439,10 +1438,10 @@ def to_bloq(
             as a ``ToBloq`` when ``False``. Default is ``True``.
         custom_mapping (dict): Dictionary to specify a mapping between a PennyLane operator and a
             Qualtran Bloq. A default mapping is used if not defined.
-        call_graph (str): Specifies how to build the call graph. If ``'default'``, the call
+        call_graph (str): Specifies how to build the call graph. If ``'decomposition'``, the call
             graph is built with either custom call graphs or the pennylane decomposition. If
             ``'estimator'``, the call graph is built using ``pennylane.estimator.estimate()``.
-            Default is ``'default'``.
+            Default is ``'estimator'``.
 
     Returns:
         Bloq: The Qualtran Bloq that corresponds to the given circuit or :class:`~.Operation` and
