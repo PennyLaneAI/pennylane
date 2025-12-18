@@ -163,15 +163,6 @@
 * The `ResourcesUndefinedError` has been removed from the `adjoint`, `ctrl`, and `pow` resource
   decomposition methods of `ResourceOperator` to avoid using errors as control flow.
   [(#8598)](https://github.com/PennyLaneAI/pennylane/pull/8598)
-  
-* Improved :mod:`estimator <pennylane.estimator>`'s
-  resource decomposition of `PauliRot` to match the optimal resources
-  for certain special cases of Pauli strings (e.g. for `XX` and `YY` type Pauli strings).
-  [(#8562)](https://github.com/PennyLaneAI/pennylane/pull/8562)
-
-* Added a new decomposition, `_decompose_2_cnots`, for the two-qubit decomposition for `QubitUnitary`.
-  It supports the analytical decomposition a two-qubit unitary known to require exactly 2 CNOTs.
-  [(#8666)](https://github.com/PennyLaneAI/pennylane/issues/8666)
 
 * Quantum compilation passes in MLIR and XDSL can now be applied using the core PennyLane transform
   infrastructure, instead of using Catalyst-specific tools. This is made possible by a new argument in
