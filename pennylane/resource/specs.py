@@ -350,6 +350,7 @@ def algo_error(
 
     Keyword Args:
         level (str | int | slice | iter[int]): An indication of which transforms to apply before computing the errors.
+        See :func:`~pennylane.workflow.get_transform_program` for more information about allowable levels.
 
     Returns:
         A function that has the same argument signature as ``qnode``. When called,
