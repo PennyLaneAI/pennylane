@@ -1827,11 +1827,9 @@ class QROM(ResourceOperator):
                 GateCount(ctrl_swap, swap_restored_prefactor * (W_opt - 1) * size_bitstring)
             )
 
-            if restored:
-                gate_cost.append(Deallocate((W_opt - 1) * size_bitstring))  # release Swap registers
-            else:
+            if not restored:
                 gate_cost.append(GateCount(x, (W_opt - 1) * size_bitstring))  # measure and reset
-                gate_cost.append(Deallocate((W_opt - 1) * size_bitstring))  # release swap registers
+            gate_cost.append(Deallocate((W_opt - 1) * size_bitstring))  # release Swap registers
 
         return gate_cost
 
