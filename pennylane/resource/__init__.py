@@ -140,7 +140,7 @@ We can examine the resources by accessing the :code:`resources` key:
     Measurements:
       expval(PauliZ): 1
 """
-from .error import AlgorithmicError, ErrorOperation, SpectralNormError
+from .error import AlgorithmicError, ErrorOperation, SpectralNormError, algo_error
 from .resource import (
     Resources,
     ResourcesOperation,
@@ -154,7 +154,6 @@ from .resource import (
     substitute,
 )
 from .specs import specs
-from .error import algo_error
 
 
 def __getattr__(name):
