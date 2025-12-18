@@ -72,6 +72,7 @@ def _get_op_call_graph_estimator(op):
         return None
     return qt_gate_types
 
+
 @singledispatch
 def _get_op_call_graph(op):  # pylint: disable=unused-argument
     """Return call graph for PennyLane Operator. If the call graph is not implemented,
@@ -452,13 +453,16 @@ def _(op: qtemps.subroutines.ModExp):
 
     return gate_types
 
+
 @singledispatch
-def _map_to_bloq(op, map_ops=True, custom_mapping=None, call_graph='default', **kwargs):
+def _map_to_bloq(op, map_ops=True, custom_mapping=None, call_graph="default", **kwargs):
     """Map PennyLane operators to Qualtran Bloqs. Operators with direct equivalents are directly
     mapped to their Qualtran equivalent even if ``map_ops`` is set to ``False``. Other operators are
     given a smart default mapping. When given a ``custom_mapping``, the custom mapping is used."""
     if not isinstance(op, Operator):
-        return ToBloq(op, map_ops=map_ops, custom_mapping=custom_mapping, call_graph=call_graph, **kwargs)
+        return ToBloq(
+            op, map_ops=map_ops, custom_mapping=custom_mapping, call_graph=call_graph, **kwargs
+        )
 
     if custom_mapping is not None:
         return custom_mapping[op]
@@ -1215,7 +1219,7 @@ class ToBloq(Bloq):
     ZPowGate(exponent=\phi, eps=1e-11): 1}
     """
 
-    def __init__(self, op, map_ops=False, custom_mapping=None, call_graph='default', **kwargs):
+    def __init__(self, op, map_ops=False, custom_mapping=None, call_graph="default", **kwargs):
         if not qualtran:
             raise ImportError(
                 "Optional dependency 'qualtran' is required "
@@ -1294,7 +1298,11 @@ class ToBloq(Bloq):
             # Add each operation to the composite Bloq.
             for op in ops:
                 bloq = _map_to_bloq(
-                    op, map_ops=self.map_ops, custom_mapping=self.custom_mapping, call_graph=self.call_graph_mode, **self._kwargs
+                    op,
+                    map_ops=self.map_ops,
+                    custom_mapping=self.custom_mapping,
+                    call_graph=self.call_graph_mode,
+                    **self._kwargs,
                 )
                 if bloq is None:
                     continue
@@ -1349,12 +1357,11 @@ class ToBloq(Bloq):
     def build_call_graph(self, ssa):
         """Build Qualtran call graph with defined call graph if available, otherwise build
         said call graph with the decomposition"""
-        if self.call_graph_mode == 'estimator':
+        if self.call_graph_mode == "estimator":
             call_graph = _get_op_call_graph_estimator(self.op)
             if call_graph:
                 return call_graph
             return self.decompose_bloq().build_call_graph(ssa)
-
 
         call_graph = _get_op_call_graph(self.op)
         if call_graph:
@@ -1383,7 +1390,9 @@ class ToBloq(Bloq):
         return "PLQfunc"
 
 
-def to_bloq(circuit, map_ops: bool = True, custom_mapping: dict = None, call_graph='default',**kwargs):
+def to_bloq(
+    circuit, map_ops: bool = True, custom_mapping: dict = None, call_graph="default", **kwargs
+):
     """
     Converts a PennyLane :class:`~.QNode`, ``Qfunc``, or :class:`~.Operation` to the corresponding `Qualtran Bloq <https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library>`__.
 
@@ -1481,6 +1490,8 @@ def to_bloq(circuit, map_ops: bool = True, custom_mapping: dict = None, call_gra
         )
 
     if map_ops and custom_mapping:
-        return _map_to_bloq(circuit, map_ops=True, custom_mapping=custom_mapping, call_graph=call_graph, **kwargs)
+        return _map_to_bloq(
+            circuit, map_ops=True, custom_mapping=custom_mapping, call_graph=call_graph, **kwargs
+        )
 
     return _map_to_bloq(circuit, map_ops=map_ops, call_graph=call_graph, **kwargs)

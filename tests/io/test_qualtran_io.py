@@ -20,7 +20,13 @@ import pytest
 
 import pennylane as qml
 from pennylane.exceptions import DecompositionUndefinedError
-from pennylane.io.qualtran_io import _get_op_call_graph, _get_op_call_graph_estimator, _get_to_pl_op, _map_to_bloq, _QReg
+from pennylane.io.qualtran_io import (
+    _get_op_call_graph,
+    _get_op_call_graph_estimator,
+    _get_to_pl_op,
+    _map_to_bloq,
+    _QReg,
+)
 
 
 @pytest.fixture
@@ -368,6 +374,7 @@ class TestFromBloq:
         actual = qml.bloq_registers(circuit_bloq)
 
         assert actual == expected
+
 
 @pytest.mark.external
 @pytest.mark.usefixtures("skip_if_no_pl_qualtran_support")
@@ -1604,5 +1611,5 @@ class TestToBloqEstimator:
         for k, v in qml_call_graph.items():  # k is a tuple of (op, bool)
             bloq_call_graph[qml.to_bloq(k[0], map_ops=k[1])] = v
 
-        to_bloq_call_graph = qml.to_bloq(op, call_graph='estimator').call_graph()[1]
+        to_bloq_call_graph = qml.to_bloq(op, call_graph="estimator").call_graph()[1]
         assert bloq_call_graph == to_bloq_call_graph
