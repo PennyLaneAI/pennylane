@@ -959,6 +959,7 @@ class SelectOnlyQRAM(Operation):
         "num_select_wires",
     }
 
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         bitstrings,
@@ -1062,7 +1063,7 @@ def _flip_controls(control_wires, control_vals):
 @register_resources(_select_only_qram_resources)
 def _select_only_qram_decomposition(
     wires, bitstrings, select_value, select_wires, control_wires, target_wires, **_
-):  # pylint: disable=unused-argument
+):  # pylint: disable=unused-argument, too-many-arguments
     controls = select_wires + control_wires
     num_select = len(select_wires)
     n_total = num_select + len(control_wires)
