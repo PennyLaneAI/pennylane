@@ -408,7 +408,9 @@ class HybridQRAM(Operation):
             The register in which the classical data gets loaded. The size of this register must
             equal each bitstring length in ``bitstrings``.
         work_wires (WiresLike):
-            Auxiliaries: :math:`[signal, bus, dir..., portL..., portR...]` for a tree of depth :math:`(n-k)`
+            The additional wires required to funnel the desired entry of ``bitstrings`` into the
+            target register. the work_wires register includes :math:`[signal, bus, dir..., portL..., portR...]`
+            wires in that order for a tree of depth :math:`(n-k)`.
         k (int):
             The number of "select" bits taken from the Most Significant Bit (MSB) of ``control_wires``
 
