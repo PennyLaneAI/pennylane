@@ -478,6 +478,18 @@ class SelectOnlyQRAM(Operator):
         select_value: int | None = None,
         id: str | None = None,
     ):
+        if not bitstrings:
+            raise ValueError("'bitstrings' cannot be empty.")
+        m_set = {len(s) for s in bitstrings}
+        if len(m_set) != 1:
+            raise ValueError("All bitstrings must have equal length.")
+        m = next(iter(m_set))
+        bitstrings = list(bitstrings)
+
+        target_wires = Wires(target_wires)
+        if m != len(target_wires):
+            raise ValueError("len(target_wires) must equal bitstring length.")
+
         # Convert to Wires
         control_wires = Wires(control_wires)
         target_wires = Wires(target_wires)

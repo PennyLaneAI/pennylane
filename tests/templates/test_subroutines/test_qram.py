@@ -579,6 +579,36 @@ def test_select_only_quantum(
             ValueError,
             "select_value must be an integer in [0, 1].",
         ),
+        (
+            (
+                [],
+                [0, 1],
+                [2, 3, 4],
+                [5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
+            ),
+            ValueError,
+            "bitstrings' cannot be empty.",
+        ),
+        (
+            (
+                ["000", "00", "111", "10", "100"],
+                [0, 1],
+                [2, 3, 4],
+                [5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
+            ),
+            ValueError,
+            "All bitstrings must have equal length.",
+        ),
+        (
+            (
+                ["010", "111", "110", "000"],
+                [0, 1],
+                [2, 3],
+                [4, 5, 6, 7, 8, 9, 10, 11, 12, 13],
+            ),
+            ValueError,
+            "len(target_wires) must equal bitstring length.",
+        ),
     ],
 )
 def test_select_only_raises(params, error, match):
