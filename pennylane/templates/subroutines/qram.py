@@ -446,7 +446,7 @@ class HybridQRAM(Operation):
 
     .. code-block:: python
 
-        k=2
+        k = 2
         num_control_wires = 3
         num_work_wires = 1 + 1 + 3 * (1 << (num_control_wires - k) - 1)
 
