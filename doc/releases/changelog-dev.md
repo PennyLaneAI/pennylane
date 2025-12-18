@@ -97,6 +97,7 @@
   :func:`pennylane.transforms.merge_ppr_ppm`, :func:`pennylane.transforms.ppm_compilation`, 
   :func:`pennylane.transforms.reduce_t_depth`, 
   [(#8762)](https://github.com/PennyLaneAI/pennylane/pull/8762)
+  [(#8783)](https://github.com/PennyLaneAI/pennylane/pull/8783)
 
 * New decomposition rules that decompose to :class:`~.PauliRot` are added for the following operators.
   [(#8700)](https://github.com/PennyLaneAI/pennylane/pull/8700)
