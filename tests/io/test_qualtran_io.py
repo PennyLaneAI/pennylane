@@ -372,7 +372,7 @@ class TestFromBloq:
 
 @pytest.mark.external
 @pytest.mark.usefixtures("skip_if_no_pl_qualtran_support")
-class TestToBloq:
+class TestToBloqDefault:
     """Test that ToBloq and to_bloq accurately wraps or maps Bloqs."""
 
     def test_to_bloq_init(self):
