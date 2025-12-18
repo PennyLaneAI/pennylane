@@ -374,10 +374,10 @@ class CompilePipeline:
         while i >= 0:
             # pylint: disable=protected-access
             if (isinstance(obj, Transform) and obj == self[i]._transform) or self[i] == obj:
-                removed = self.pop(i)
+                removed = self._compile_pipeline.pop(i)
                 # Remove the associated expand_transform if present
                 if i > 0 and removed.expand_transform == self[i - 1]:
-                    self.pop(i - 1)
+                    self._compile_pipeline.pop(i - 1)
                     i -= 1
             i -= 1
 
