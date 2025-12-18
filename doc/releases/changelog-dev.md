@@ -17,8 +17,9 @@
 <h3>Improvements 🛠</h3>
 
 * You can now build Qualtran call graphs using PennyLane's resource estimation module by setting
-  ``call_graph='estimator'`` when calling :func:`~.to_bloq`. This provides gate counts based on :func:`~.estimator.estimate`, 
-  as an alternative to the default, which is based on PennyLane's decomposition.
+  ``call_graph='estimator'`` when calling :func:`~.to_bloq`. This is typically faster than the
+  default. The results between using the estimator and the default will differ at times, as the 
+  latter is based on PennyLane's decompositions, instead of the estimator module's resources.
   [(#8390)](https://github.com/PennyLaneAI/pennylane/pull/8390)
 
   ```python
