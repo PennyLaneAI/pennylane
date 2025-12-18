@@ -72,9 +72,10 @@
 
 <h4>Bucket-Brigade QRAM </h4>
 
-* Bucket Brigade QRAM is implemented as a template :class:`~.BBQRAM` to allow for selection of bitstrings in 
-  superposition.
+* Bucket Brigade QRAM and a Hybrid QRAM variant are implemented as a template :class:`~.BBQRAM` and :class:`~.HybridQRAM` 
+  to allow for selection of bitstrings in superposition.
   [(#8670)](https://github.com/PennyLaneAI/pennylane/pull/8670)
+  [(#8679)](https://github.com/PennyLaneAI/pennylane/pull/8679)
 
 <h4>Quantum Automatic Differentiation </h4>
 
@@ -180,6 +181,11 @@
   - :class:`~.CY`, :class:`~.CZ`, :class:`~.CSWAP`, :class:`~.CNOT`, :class:`~.Toffoli`
 
 <h4>Compile Pipeline and Transforms </h4>
+
+* Added a custom solver to :func:`~.transforms.intermediate_reps.rowcol` for linear systems
+  over :math:`\mathbb{Z}_2` based on Gauss-Jordan elimination. This removes the need to install
+  the ``galois`` package for this single function and provides a minor performance improvement.
+  [(#8771)](https://github.com/PennyLaneAI/pennylane/pull/8771)
 
 * Added decompositions of the ``RX``, ``RY`` and ``RZ`` rotations into one of the other two, as well
   as basis changing Clifford gates, to the graph-based decomposition system.
@@ -647,7 +653,7 @@
 
   ```python
   import pennylane as qml
-  
+
   @qml.transforms.decompose(gate_set={"H", "T", "CNOT"}, stopping_condition=lambda op: len(op.wires) <= 2)
   @qml.qnode(qml.device("default.qubit"))
   def circuit():
