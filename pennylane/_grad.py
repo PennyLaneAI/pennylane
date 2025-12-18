@@ -121,9 +121,10 @@ def _get_jvp_prim():
 
     @jvp_prim.def_impl
     def _jvp_impl(*args, jaxpr, fn, method, h, argnums):
-        params = args[: len(jaxpr.invars)]
+        params = list(args[: len(jaxpr.invars)])
         dparams = list(args[len(jaxpr.invars) :])
 
+        print(params, dparams)
         for i, p in enumerate(params):
             if i not in argnums:
                 dparams.insert(i, 0 * p)
@@ -132,6 +133,7 @@ def _get_jvp_prim():
             return jax.core.eval_jaxpr(jaxpr, [], *inner_args)
 
         results, dresults = jax.jvp(func, params, dparams)
+        print(results, dresults)
         return (*results, *dresults)
 
     @jvp_prim.def_abstract_eval
@@ -334,7 +336,7 @@ def _capture_jvp(func, params, dparams, *, argnums=None, method=None, h=None):
     flat_fn = capture.FlatFn(func)
     jaxpr = jax.make_jaxpr(flat_fn)(*params)
     j = jaxpr.jaxpr
-    no_consts_jaxpr = j.replace(const_vars=(), invars=j.constvars + j.invars)
+    no_consts_jaxpr = j.replace(constvars=(), invars=j.constvars + j.invars)
     shifted_argnums = tuple(i + len(jaxpr.consts) for i in flat_argnums)
 
     prim_kwargs = {
@@ -345,7 +347,9 @@ def _capture_jvp(func, params, dparams, *, argnums=None, method=None, h=None):
         "jaxpr": no_consts_jaxpr,
     }
     out_flat = _get_jvp_prim().bind(*jaxpr.consts, *flat_args, *flat_dargs, **prim_kwargs)
-    flat_results, flat_dresults = out_flat[: len(j.outvars)], out_flat[len(j.outvars)]
+    flat_results, flat_dresults = out_flat[: len(j.outvars)], out_flat[len(j.outvars) :]
+    print(flat_results)
+    print(flat_dresults)
     results = tree_unflatten(flat_fn.out_tree, flat_results)
     dresults = tree_unflatten(flat_fn.out_tree, flat_dresults)
     return results, dresults
