@@ -14,7 +14,6 @@
 """
 Tests for the add_noise transform.
 """
-from functools import partial
 
 import numpy as np
 import pytest
@@ -153,7 +152,7 @@ class TestAddNoiseInterface:
 
         c, n = qml.noise.op_in([qml.RY, qml.RZ]), qml.noise.partial_wires(qml.AmplitudeDamping, 0.4)
 
-        @partial(add_noise, noise_model=qml.NoiseModel({c: n}))
+        @add_noise(noise_model=qml.NoiseModel({c: n}))
         @qml.qnode(dev)
         def f_noisy(w, x, y, z):
             qml.RX(w, wires=0)
@@ -254,7 +253,7 @@ class TestAddNoiseInterface:
 
         c, n = qml.noise.op_in([qml.RX, qml.RY]), qml.noise.partial_wires(qml.PhaseDamping, 0.3)
 
-        @partial(add_noise, noise_model=qml.NoiseModel({c: n}))
+        @add_noise(noise_model=qml.NoiseModel({c: n}))
         @qml.qnode(dev)
         def f1(w1, w2):
             qml.SimplifiedTwoDesign(w1, w2, wires=[0, 1])
@@ -291,7 +290,7 @@ class TestAddNoiseInterface:
             qml.CRX(kwargs["noise_param"], wires=[0, 1])
 
         @qml.qnode(dev)
-        @partial(add_noise, noise_model=qml.NoiseModel({fcond: noise}, noise_param=0.3))
+        @add_noise(noise_model=qml.NoiseModel({fcond: noise}, noise_param=0.3))
         def noisy_circuit(circuit_param):
             qml.RY(circuit_param, wires=0)
             qml.Hadamard(wires=0)
@@ -330,7 +329,7 @@ class TestAddNoiseInterface:
             [0, 1]
         ), qml.noise.partial_wires(qml.PhaseFlip, 0.2)
 
-        @partial(add_noise, noise_model=qml.NoiseModel({fc: fn}, {mc: mn}))
+        @add_noise(noise_model=qml.NoiseModel({fc: fn}, {mc: mn}))
         @qml.qnode(dev)
         def f_noisy(w, x, y, z):
             qml.RX(w, wires=0)
@@ -405,7 +404,7 @@ class TestAddNoiseLevels:
         ],
     )
     def test_add_noise_level(self, level1, level2):
-        """Test that add_noise can be inserted to correct level in the TransformProgram"""
+        """Test that add_noise can be inserted to correct level in the CompilePipeline"""
         dev = qml.device("default.mixed", wires=2)
 
         @qml.metric_tensor
@@ -438,7 +437,7 @@ class TestAddNoiseLevels:
             assert t1 == t2
 
     def test_add_noise_level_with_final(self):
-        """Test that add_noise can be inserted in the TransformProgram with a final transform"""
+        """Test that add_noise can be inserted in the CompilePipeline with a final transform"""
         dev = qml.device("default.mixed", wires=2)
 
         @qml.metric_tensor

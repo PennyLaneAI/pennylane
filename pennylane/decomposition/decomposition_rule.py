@@ -182,7 +182,6 @@ def register_resources(
 
     .. code-block:: python
 
-        from functools import partial
         import pennylane as qml
 
         qml.decomposition.enable_graph()
@@ -193,7 +192,7 @@ def register_resources(
             qml.CZ(wires=wires)
             qml.H(wires=wires[1])
 
-        @partial(qml.transforms.decompose, gate_set={qml.CZ, qml.H}, fixed_decomps={qml.CNOT: my_cnot})
+        @qml.transforms.decompose(gate_set={qml.CZ, qml.H}, fixed_decomps={qml.CNOT: my_cnot})
         @qml.qnode(qml.device("default.qubit"))
         def circuit():
             qml.CNOT(wires=[0, 1])
@@ -316,7 +315,6 @@ def register_resources(
 
        .. code-block:: python
 
-          from functools import partial
           import pennylane as qml
           from pennylane.allocation import allocate
           from pennylane.decomposition import controlled_resource_rep
@@ -339,7 +337,7 @@ def register_resources(
 
           decomps = {"C(Rot)": _controlled_rot_decomp}
 
-          @partial(qml.transforms.decompose, fixed_decomps=decomps, max_work_wires=1)
+          @qml.transforms.decompose(fixed_decomps=decomps, num_work_wires=1)
           @qml.qnode(qml.device("default.qubit"))
           def circuit():
               qml.ctrl(qml.Rot(0.1, 0.2, 0.3, wires=3), control=[0, 1, 2])
@@ -613,14 +611,12 @@ def null_decomp(*_, **__):
 
     .. code-block:: python
 
-        from functools import partial
         import pennylane as qml
         from pennylane.decomposition import null_decomp
 
         qml.decomposition.enable_graph()
 
-        @partial(
-            qml.transforms.decompose,
+        @qml.transforms.decompose(
             gate_set={qml.RZ},
             fixed_decomps={qml.GlobalPhase: null_decomp}
         )

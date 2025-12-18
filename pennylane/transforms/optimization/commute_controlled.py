@@ -409,7 +409,7 @@ def commute_controlled(
 
     .. code-block:: python
 
-        @partial(commute_controlled, direction="right")
+        @commute_controlled(direction="right")
         @qml.qnode(device=dev)
         def circuit(theta):
             qml.CZ(wires=[0, 2])
