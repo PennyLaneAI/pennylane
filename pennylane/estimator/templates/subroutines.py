@@ -2535,7 +2535,7 @@ class Qubitization(ResourceOperator):
     Resources:
         The resources are obtained from equation (9) in `Babbush et al. (2018) <https://arxiv.org/abs/1805.03662>`_.
         Specifically, the walk operator is defined as :math:`W = R \cdot S`, where :math:`R` is a reflection about the state prepared by
-        the prepare operator, and :math:`S` is the select operator. The cost is therefore one ``Select`` and one ``Reflection``.
+        the ``Prepare`` operator, and :math:`S` is the ``Select`` operator. The cost is therefore one ``Select`` and one ``Reflection``.
 
     **Example**
 
@@ -2621,8 +2621,8 @@ class Qubitization(ResourceOperator):
                 of the target operator.
 
         Resources:
-            Reflections are self-adjoint, and the Select operator is also self-adjoint.
-            So the adjoint of this operator has the same resources, just applied in reverse order.
+            ``Reflection`` operators are self-adjoint, and the ``Select`` operator is also self-adjoint.
+            Thus the adjoint of this operator has the same resources, just applied in reverse order.
 
         Returns:
             list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
@@ -2650,7 +2650,8 @@ class Qubitization(ResourceOperator):
                 of the target operator.
 
         Resources:
-            The resources are obtained from Figure 1 in `Babbush et al. (2018) <https://arxiv.org/abs/1805.03662>`_.
+            The resources are obtained directly from Figure 1 in
+            `Babbush et al. (2018) <https://arxiv.org/abs/1805.03662>`_.
 
         Returns:
             list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
