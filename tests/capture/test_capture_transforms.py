@@ -32,7 +32,7 @@ from pennylane.capture.primitives import (
     while_loop_prim,
 )
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
-from pennylane.transforms.core import TransformError, TransformProgram, transform
+from pennylane.transforms.core import CompilePipeline, TransformError, transform
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
@@ -194,7 +194,7 @@ class TestCaptureTransforms:
         assert qnode_jaxpr.eqns[0].primitive == qnode_prim
 
         qnode = qnode_jaxpr.eqns[0].params["qnode"]
-        expected_program = TransformProgram()
+        expected_program = CompilePipeline()
         expected_program.add_transform(z_to_hadamard, *targs, **tkwargs)
         # Manually change targs from tuple to list
         expected_program[0]._args = tuple(targs)  # pylint: disable=protected-access
@@ -274,7 +274,7 @@ class TestCaptureTransforms:
 
         @qml.qnode(dev)
         def f():
-            @partial(z_to_hadamard, dummy_arg1=targs[0], dummy_arg2=targs[1], **tkwargs)
+            @z_to_hadamard(dummy_arg1=targs[0], dummy_arg2=targs[1], **tkwargs)
             @qml.for_loop(3)
             def g(i):
                 qml.X(i)
@@ -372,7 +372,7 @@ class TestTapeTransformFallback:
         """Test that using tape transforms as decorators works correctly."""
 
         @qml.capture.expand_plxpr_transforms
-        @partial(z_to_hadamard, dummy_arg1=0, dummy_arg2=0)
+        @z_to_hadamard(dummy_arg1=0, dummy_arg2=0)
         def f(x):
             qml.Z(0)
             qml.RX(x, 0)
@@ -605,7 +605,7 @@ class TestTapeTransformFallback:
 
         @qml.capture.expand_plxpr_transforms
         @shift_rx_to_end
-        @partial(z_to_hadamard, dummy_arg1=0, dummy_arg2=0)
+        @z_to_hadamard(dummy_arg1=0, dummy_arg2=0)
         def f(x):
             qml.Z(0)
             qml.RX(x, 0)
@@ -625,8 +625,8 @@ class TestTapeTransformFallback:
         """Test that applying a plxpr transform after a fallback transform works as expected."""
 
         @qml.capture.expand_plxpr_transforms
-        @partial(expval_z_obs_to_x_obs, dummy_arg1=0, dummy_arg2=0)
-        @partial(z_to_hadamard, dummy_arg1=0, dummy_arg2=0)
+        @expval_z_obs_to_x_obs(dummy_arg1=0, dummy_arg2=0)
+        @z_to_hadamard(dummy_arg1=0, dummy_arg2=0)
         def f(x):
             qml.Z(0)
             qml.RX(x, 0)
@@ -646,8 +646,8 @@ class TestTapeTransformFallback:
         """Test that applying a fallback transform after a plxpr transform works as expected."""
 
         @qml.capture.expand_plxpr_transforms
-        @partial(z_to_hadamard, dummy_arg1=0, dummy_arg2=0)
-        @partial(expval_z_obs_to_x_obs, dummy_arg1=0, dummy_arg2=0)
+        @z_to_hadamard(dummy_arg1=0, dummy_arg2=0)
+        @expval_z_obs_to_x_obs(dummy_arg1=0, dummy_arg2=0)
         def f(x):
             qml.Z(0)
             qml.RX(x, 0)
