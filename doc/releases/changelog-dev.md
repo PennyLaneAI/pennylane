@@ -354,7 +354,7 @@
   - :class:`~.SWAP`, :class:`~.ISWAP`, :class:`~.SISWAP`
   - :class:`~.CY`, :class:`~.CZ`, :class:`~.CSWAP`, :class:`~.CNOT`, :class:`~.Toffoli`
 
-* New function `~pennylane.qchem.vscf_rot_mats` has been added for computing VSCF rotation matrices.
+* New function `~pennylane.qchem.vscf_rotations` has been added for computing VSCF rotation matrices.
   [(#8784)](https://github.com/PennyLaneAI/pennylane/pull/8784)
 
 <h3>Breaking changes 💔</h3>
