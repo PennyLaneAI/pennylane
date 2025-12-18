@@ -32,8 +32,8 @@ class MultiplexerStatePreparation(Operation):
         wires (Sequence[int]): The wires on which to prepare the state.
 
     Raises:
-        ValueError: If the length of the input state vector array is not :math:`2^n` where :math:`n` is an integer, or if
-            its norm is not one.
+        ValueError: If the length of the input state vector array is not :math:`2^n`, where :math:`n` is an integer, or if
+            the norm of the input state is not one.
 
     **Example**
 
@@ -57,7 +57,7 @@ class MultiplexerStatePreparation(Operation):
         >>> np.round(circuit(), 2)
         array([0.5 , 0.  , 0.25, 0.25])
 
-    .. seealso:: :class:`~.SelectPauliRot` for a description of the main building blocks in this template and how to break them down.
+    .. seealso:: :class:`~.SelectPauliRot` for a description of the main building blocks implemented in this operation.
 
     """
 
@@ -143,21 +143,18 @@ def _multiplexer_state_prep_decomposition(state_vector, wires):  # pylint: disab
         shapes.append([int(2 ** (i + 1)), -1])
         probs_aux = math.reshape(probs, [1, -1])
 
-        # Calculation of the numerator and denominator of the function f(x) (Eq.5 [arXiv:quant-ph/0208112])
+        # From Eq. 5 of arXiv:quant-ph/0208112.
         for itx in range(i + 1):
             probs_denominator = math.sum(probs_aux, axis=1)
             probs_aux = math.reshape(probs_aux, shapes[itx])
             probs_numerator = math.sum(probs_aux, axis=1)[::2]
 
-        # Compute the angles θi
         thetas = 2 * qml.math.arccos(qml.math.sqrt(probs_numerator / (probs_denominator + eps)))
 
-        # Apply the SelectPauliRot operation to apply the theta rotations
         qml.SelectPauliRot(thetas, target_wire=wires[i], control_wires=wires[:i], rot_axis="Y")
 
     if not qml.math.is_abstract(phases):
         if not math.allclose(phases, 0.0):
-            # Apply the DiagonalQubitUnitary operation to encode the phases
             qml.DiagonalQubitUnitary(math.exp(1j * phases), wires=wires)
 
     else:
