@@ -106,6 +106,7 @@ class MultiplexerStatePreparation(Operation):
 
 
 def _multiplexer_state_prep_decomposition_resources(num_wires) -> dict:
+    r"""Computes the resources of MultiplexerStatePreparation."""
     resources = dict.fromkeys(
         [
             qml.resource_rep(qml.SelectPauliRot, num_wires=i + 1, rot_axis="Y")
@@ -134,7 +135,6 @@ def _multiplexer_state_prep_decomposition(state_vector, wires):  # pylint: disab
 
     probs = math.abs(state_vector) ** 2
     phases = math.angle(state_vector) % (2 * np.pi)
-    eps = 1e-15  # Small constant to avoid division by zero
 
     num_iterations = int(math.log2(math.shape(probs)[0]))
 
@@ -149,7 +149,11 @@ def _multiplexer_state_prep_decomposition(state_vector, wires):  # pylint: disab
             probs_aux = math.reshape(probs_aux, shapes[itx])
             probs_numerator = math.sum(probs_aux, axis=1)[::2]
 
-        thetas = 2 * qml.math.arccos(qml.math.sqrt(probs_numerator / (probs_denominator + eps)))
+        # arcos(x) = arctan2(sqrt(1-x^2), x)
+        thetas = 2 * qml.math.arctan2(
+            qml.math.sqrt(probs_denominator - probs_numerator),
+            qml.math.sqrt(probs_numerator),
+        )
 
         qml.SelectPauliRot(thetas, target_wire=wires[i], control_wires=wires[:i], rot_axis="Y")
 

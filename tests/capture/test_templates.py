@@ -1000,10 +1000,7 @@ class TestModifiedTemplates:
         def qfunc(state_vector):
             qml.MultiplexerStatePreparation(state_vector, **kwargs)
 
-        # Validate inputs
         qfunc(state_vector)
-
-        # Actually test primitive bind
         jaxpr = jax.make_jaxpr(qfunc)(state_vector)
 
         assert len(jaxpr.eqns) == 1
