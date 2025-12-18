@@ -166,6 +166,9 @@
   workflow, where the pass is performed in MLIR or xDSL.
   [(#8539)](https://github.com/PennyLaneAI/pennylane/pull/8539)
 
+* `qml.compile` takes :class:`~.CompilePipeline` as input.
+  [(#8775)](https://github.com/PennyLaneAI/pennylane/pull/8775)
+
 <h4>Analyzing your algorithms quickly and easily with resource estimation</h4>
 
 * Users can now set precisions for a larger variety of `ResourceOperator`s in
