@@ -4,8 +4,8 @@
 
 <h4>Bucket-Brigade QRAM </h4>
 
-* Bucket Brigade QRAM and a Hybrid QRAM variant are implemented as a template :class:`~.BBQRAM` to allow for selection of bitstrings in 
-  superposition.
+* Bucket Brigade QRAM and a Hybrid QRAM variant are implemented as a template :class:`~.BBQRAM` and :class:`~.HybridQRAM` 
+  to allow for selection of bitstrings in superposition.
   [(#8670)](https://github.com/PennyLaneAI/pennylane/pull/8670)
   [(#8679)](https://github.com/PennyLaneAI/pennylane/pull/8679)
 
