@@ -364,7 +364,7 @@ add_decomps(BBQRAM, _bucket_brigade_qram_decomposition)
 
 
 class HybridQRAM(Operation):
-    r"""Hybrid QRAM combining select-only and bucket-brigade behavior.
+    r"""Hybrid QRAM combining select-only and bucket-brigade behaviour.
 
     This operator encodes bitstrings associated with indexes:
 
@@ -428,8 +428,11 @@ class HybridQRAM(Operation):
         bitstring_size = 3
 
     We need the number of bitstrings to equal 2^len(control_wires) so they can be addressed. This
-    tells us the number of control wires needed. We can also define work wires, which are split by index
-    ``k`` into select wires and tree control wires.
+    tells us the number of control wires needed. The control wires are split by index
+    ``k`` into select wires and tree control wires, which allow us to implement select-only and bucket-brigade
+    behaviour. We also define work wires, which include the wires [signal, bus, dir..., portL..., portR...] used for
+    routing up and down the tree as well as loading data and controlling the behaviour.
+
 
     .. code-block:: python
 
