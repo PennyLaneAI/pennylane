@@ -55,7 +55,7 @@ class SelectTHC(ResourceOperator):
 
     Raises:
         TypeError: If ``thc_ham`` is not a :class:`~pennylane.estimator.compact_hamiltonian.THCHamiltonian`.
-        TypeError: If ``rotation_precision`` is not an integer.
+        TypeError: If ``rotation_precision`` is not a positive integer.
         ValueError: If ``num_batches`` is not a positive integer or is greater than or equal
             to the number of orbitals in ``thc_ham``.
         ValueError: If the number of provided ``wires`` does not match the calculated
