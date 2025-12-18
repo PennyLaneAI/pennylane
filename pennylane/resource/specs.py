@@ -22,6 +22,7 @@ from functools import partial
 
 import pennylane as qml
 
+from .error import _compute_algo_error
 from .resource import CircuitSpecs, SpecsResources, resources_from_tape
 
 # Used for device-level qjit resource tracking
@@ -321,7 +322,6 @@ def _algo_error_qnode(qnode, level, *args, **kwargs) -> dict[str, "AlgorithmicEr
     Returns:
         dict[str, AlgorithmicError]: dictionary with error type names as keys and combined error objects as values
     """
-    from .error import _compute_algo_error
 
     batch, _ = qml.workflow.construct_batch(qnode, level=level)(*args, **kwargs)
 
@@ -385,7 +385,7 @@ def algo_error(
     The error values can be accessed from the returned dictionary:
 
     >>> errors["SpectralNormError"].error
-    0.4299...
+    np.float64(0.4299...)
 
     .. note::
 
@@ -402,7 +402,7 @@ def algo_error(
         return partial(_algo_error_qnode, qnode, level)
 
     try:
-        from ..qnn.torch import TorchLayer
+        from ..qnn.torch import TorchLayer  # pylint: disable=import-outside-toplevel
 
         if isinstance(qnode, TorchLayer) and isinstance(qnode.qnode, qml.QNode):
             return partial(_algo_error_qnode, qnode.qnode, level)
