@@ -1739,14 +1739,14 @@ class TestResourceQROM:
                     GateCount(qre.Hadamard.resource_rep(), 0),
                     GateCount(qre.CZ.resource_rep(), 0),
                     GateCount(qre.CNOT.resource_rep(), 0),
-                    GateCount(qre.X.resource_rep(), 42),
-                    GateCount(qre.CNOT.resource_rep(), 32),
-                    GateCount(qre.TemporaryAND.resource_rep(), 20),
+                    GateCount(qre.X.resource_rep(), 21),
+                    GateCount(qre.CNOT.resource_rep(), 16),
+                    GateCount(qre.TemporaryAND.resource_rep(), 10),
                     GateCount(
                         qre.Adjoint.resource_rep(
                             qre.TemporaryAND.resource_rep(),
                         ),
-                        20,
+                        10,
                     ),
                     qre.Deallocate(4),
                 ],
@@ -1810,27 +1810,31 @@ class TestResourceQROM:
         )
 
     @pytest.mark.parametrize(
-        "num_data_points, output_size, depth",
+        "num_data_points, output_size, restored, depth",
         (
-            (100, 10, 2),
-            (100, 2, 4),
-            (12, 1, 1),
+            (100, 10, False, 2),
+            (100, 2, False, 4),
+            (12, 1, False, 1),
+            (12, 3, True, 1),
+            (160, 8, True, 2),
         ),
     )
-    def test_toffoli_counts(self, num_data_points, output_size, depth):
+    def test_toffoli_counts(self, num_data_points, output_size, restored, depth):
         """Test that the Toffoli counts are correct compared to arXiv:1092.02134."""
 
         qrom = qre.Adjoint(
             qre.QROM(
                 num_bitstrings=num_data_points,
                 size_bitstring=output_size,
-                restored=False,
+                restored=restored,
                 select_swap_depth=depth,
             )
         )
         resources = qre.estimate(qrom)
 
         toffoli_count = int(math.ceil(num_data_points / depth)) + depth - 3
+        if restored and depth > 1:
+            toffoli_count *= 2
 
         assert resources.gate_counts["Toffoli"] == toffoli_count
 

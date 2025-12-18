@@ -1636,13 +1636,15 @@ class QROM(ResourceOperator):
             Excluding any additional qubits allocated during the decomposition (e.g select-swap wires).
 
     Resources:
-        The resources for QROM are taken from the following two papers:
-        `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_ (Figure 1.C) for
-        :code:`restored = False` and `Berry et al. (2019) <https://arxiv.org/pdf/1902.02134>`_
-        (Figure 4) for :code:`restored = True`.
+        The resources for QROM are derived from the following references:
 
-        For :code:`restored = False`, we use the measurement based technique described in
-        `arXiv:1092.02134 <https://arxiv.org/abs/1902.02134>_` to further optimize the cost.
+        * :code:`restored=False`: Uses the Select-Swap tree decomposition from Figure 1.C of
+          `Low et al. (2018) <https://arxiv.org/abs/1812.00954>`_, further optimized using the
+          measurement-based uncomputation technique described in
+          `Berry et al. (2019) <https://arxiv.org/abs/1902.02134>`_.
+
+        * :code:`restored=True`: Uses the standard QROM resource accounting from Figure 4 of
+         `Berry et al. (2019) <https://arxiv.org/abs/1902.02134>`_.
 
     .. seealso:: The associated PennyLane operation :class:`~.pennylane.QROM`
 
@@ -1751,13 +1753,15 @@ class QROM(ResourceOperator):
                 (at the cost of higher gate counts). Defaults to :code`True`.
 
         Resources:
-            The resources for QROM are taken from the following two papers:
-            `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_ (Figure 1.C) for
-            :code:`restored = False` and `Berry et al. (2019) <https://arxiv.org/pdf/1902.02134>`_
-            (Figure 4) for :code:`restored = True`.
+           The resources for QROM are derived from the following references:
 
-            For :code:`restored = False`, we use the measurement based technique described in
-            `arXiv:1092.02134 <https://arxiv.org/abs/1902.02134>_` to further optimize the cost.
+            * :code:`restored=False`: Uses the Select-Swap tree decomposition from Figure 1.C of
+              `Low et al. (2018) <https://arxiv.org/abs/1812.00954>`_, further optimized using the
+              measurement-based uncomputation technique described in
+              `Berry et al. (2019) <https://arxiv.org/abs/1902.02134>`_.
+
+            * :code:`restored=True`: Uses the standard QROM resource accounting from Figure 4 of
+              `Berry et al. (2019) <https://arxiv.org/abs/1902.02134>`_.
 
             Note: we use the unary iterator trick to implement the Select. This
             implementation assumes we have access to :math:`n - 1` additional
@@ -2158,10 +2162,10 @@ class QROM(ResourceOperator):
             gate_lst.append(GateCount(had, 2))
 
             num_bit_flips = (k * H) // 2
-
-            ctrl_S_decomp = cls._ctrl_S(num_ctrl_wires=l, count=2)
-            ctrl_S_adj_decomp = cls._ctrl_S_adj(num_ctrl_wires=l, count=2)
-            ctrl_T_decomp = cls._ctrl_T(num_data_blocks=H, num_bit_flips=num_bit_flips, count=2)
+            count = 1 if k == 1 else 2
+            ctrl_S_decomp = cls._ctrl_S(num_ctrl_wires=l, count=count)
+            ctrl_S_adj_decomp = cls._ctrl_S_adj(num_ctrl_wires=l, count=count)
+            ctrl_T_decomp = cls._ctrl_T(num_data_blocks=H, num_bit_flips=num_bit_flips, count=count)
 
             gate_lst.extend(ctrl_S_decomp)
             gate_lst.extend(ctrl_S_adj_decomp)
