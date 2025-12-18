@@ -62,18 +62,17 @@ class SelectTHC(ResourceOperator):
     >>> print(res)
     --- Resources: ---
      Total wires: 356
-        algorithmic wires: 58
-        allocated wires: 298
-          zero state: 298
-          any state: 0
-     Total gates : 4.698E+4
-      'Toffoli': 2.249E+3,
-      'CNOT': 3.764E+4,
-      'X': 388,
-      'Z': 41,
-      'S': 80,
-      'Hadamard': 6.586E+3
-
+       algorithmic wires: 58
+       allocated wires: 298
+         zero state: 298
+         any state: 0
+     Total gates : 3.336E+4
+       'Toffoli': 2.249E+3,
+       'CNOT': 2.344E+4,
+       'X': 392,
+       'Z': 41,
+       'S': 80,
+       'Hadamard': 7.160E+3
     """
 
     resource_keys = {"thc_ham", "rotation_precision", "select_swap_depth"}
