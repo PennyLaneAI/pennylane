@@ -162,8 +162,8 @@ def _compute_algo_error(tape) -> dict[str, AlgorithmicError]:
         if isinstance(op, ErrorOperation):
             op_error = op.error()
             error_name = op_error.__class__.__name__
-            algo_error = algo_errors.get(error_name, None)
-            error_value = op_error if algo_error is None else algo_error.combine(op_error)
+            error = algo_errors.get(error_name, None)
+            error_value = op_error if error is None else error.combine(op_error)
             algo_errors[error_name] = error_value
 
     return algo_errors
