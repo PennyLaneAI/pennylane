@@ -153,7 +153,8 @@ from .resource import (
     resources_from_tape,
     substitute,
 )
-from .specs import specs, algo_error
+from .specs import specs
+from .error import algo_error
 
 
 def __getattr__(name):
