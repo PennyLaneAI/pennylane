@@ -2006,7 +2006,7 @@ class QROM(ResourceOperator):
         }
 
     @classmethod
-    def _ctrl_T(cls, num_data_blocks: int, num_bit_flips: int, count=1):
+    def _ctrl_T(cls, num_data_blocks: int, num_bit_flips: int, count=1) -> List[GateCount]:
         """Constructs the control-``T`` subroutine as defined in Appendices A and B of
         `arXiv:1092.02134 <https://arxiv.org/abs/1902.02134>`_.
 
