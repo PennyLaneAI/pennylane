@@ -134,7 +134,7 @@ class SelectTHC(ResourceOperator):
 
         if not isinstance(num_batches, int) or num_batches not in range(1, thc_ham.num_orbitals):
             raise ValueError(
-                f"`num_batches` must be a positive integer less than the number of orbitals {thc_ham.num_orbitals}, but got {num_batches}."
+                f"`num_batches` must be a positive integer less than the number of orbitals ({thc_ham.num_orbitals}), but got {num_batches}."
             )
 
         self.thc_ham = thc_ham
