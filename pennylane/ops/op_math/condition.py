@@ -336,9 +336,30 @@ class CondCallable:
         results = results[-flat_true_fn.out_tree.num_leaves :]
         return jax.tree_util.tree_unflatten(flat_true_fn.out_tree, results)
 
+    def __call_qjit_no_capture(self, *args, **kwargs):
+        active_jit = compiler.active_compiler()
+        available_eps = compiler.AvailableCompilers.names_entrypoints
+        ops_loader = available_eps[active_jit]["ops"].load()
+
+        cond_func = ops_loader.cond(self.preds[0])(self.branch_fns[0])
+
+        # Optional 'elif' branches
+        for cond_val, elif_fn in zip(self.preds[1:], self.branch_fns[1:]):
+            cond_func.else_if(cond_val)(elif_fn)
+
+        # Optional 'else' branch
+        if self.otherwise_fn:
+            cond_func.otherwise(self.otherwise_fn)
+
+        return cond_func(*args, **kwargs)
+
     def __call__(self, *args, **kwargs):
-        if qml.capture.enabled() and any(math.is_abstract(p) for p in self.preds):
-            return self.__call_capture_enabled(*args, **kwargs)
+        if any(math.is_abstract(p) for p in self.preds):
+            if compiler.active_compiler():
+                return self.__call_qjit_no_capture(*args, **kwargs)
+
+            if qml.capture.enabled():
+                return self.__call_capture_enabled(*args, **kwargs)
 
         return self.__call_capture_disabled(*args, **kwargs)
 
@@ -620,25 +641,6 @@ def cond(
         >>> qnode(par, x, y, z)
         np.float64(-0.3092...)
     """
-
-    if active_jit := compiler.active_compiler():
-        available_eps = compiler.AvailableCompilers.names_entrypoints
-        ops_loader = available_eps[active_jit]["ops"].load()
-
-        if true_fn is None:
-            return ops_loader.cond(condition)
-
-        cond_func = ops_loader.cond(condition)(true_fn)
-
-        # Optional 'elif' branches
-        for cond_val, elif_fn in elifs:
-            cond_func.else_if(cond_val)(elif_fn)
-
-        # Optional 'else' branch
-        if false_fn:
-            cond_func.otherwise(false_fn)
-
-        return cond_func
 
     if not isinstance(condition, qml.ops.MeasurementValue):
         # The condition is not a mid-circuit measurement. This will also work
