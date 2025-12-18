@@ -423,12 +423,8 @@ class SelectTHC(ResourceOperator):
         cswap = resource_rep(qre.CSWAP)
         gate_list.append(GateCount(cswap, 4 * num_orb))
 
-        if batched_rotations is None:
-            batched_rotations = num_orb - 1
-
-        restore_qrom = True
-        if batched_rotations == num_orb - 1:
-            restore_qrom = False
+        batched_rotations = batched_rotations if batched_rotations is not None else num_orb - 1
+        restore_qrom = batched_rotations != num_orb - 1
 
         num_givens_blocks = int(np.ceil((num_orb - 1) / batched_rotations))
 
