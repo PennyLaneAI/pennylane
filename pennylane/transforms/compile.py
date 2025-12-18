@@ -20,7 +20,7 @@ from pennylane.ops import __all__ as all_ops
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import CompilePipeline
-from pennylane.transforms.core import BoundTransform
+from pennylane.transforms.core import BoundTransform, transform
 from pennylane.transforms.optimization import (
     cancel_inverses,
     commute_controlled,
