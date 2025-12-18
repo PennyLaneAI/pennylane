@@ -71,8 +71,7 @@ def _map_to_resource_op(op: Operation) -> ResourceOperator:
         if len(decomp) == 1:
             return _map_to_resource_op(decomp[0])
 
-        decomp_wires = op.wires
-        return re_ops.Prod(tuple(_map_to_resource_op(d_op) for d_op in decomp), wires=decomp_wires)
+        return re_ops.Prod(tuple(_map_to_resource_op(d_op) for d_op in decomp), wires=op.wires)
 
     raise NotImplementedError(
         "Operation doesn't have a resource equivalent and doesn't define a decomposition."
