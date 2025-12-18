@@ -1213,7 +1213,7 @@ class ToBloq(Bloq):
             Default is ``'default'``.
 
     Raises:
-        TypeError: operator must be an instance of :class:`~.Operation`.
+        ValueError: If ``call_graph`` is not ``'default'`` or ``'estimator'``.
 
     .. seealso:: :func:`~.to_bloq` for the recommended way to convert from PennyLane objects to
         their Qualtran equivalents
@@ -1248,6 +1248,9 @@ class ToBloq(Bloq):
             raise TypeError(
                 f"Input must be either an instance of {Operator}, {QNode} or a quantum function."
             )
+
+        if call_graph not in ("default", "estimator"):
+            raise ValueError(f"call_graph must be 'default' or 'estimator', got '{call_graph}'.")
 
         self.op = op
         self.map_ops = map_ops
@@ -1445,6 +1448,9 @@ def to_bloq(
         Bloq: The Qualtran Bloq that corresponds to the given circuit or :class:`~.Operation` and
         options.
 
+    Raises:
+        ValueError: If ``call_graph`` is not ``'default'`` or ``'estimator'``.
+
     .. seealso:: :class:`~.ToBloq` for the Bloq objects created when no Qualtran equivalent is found
 
     **Example**
@@ -1514,6 +1520,9 @@ def to_bloq(
             "The `to_bloq` function requires Qualtran to be installed. You can install"
             "qualtran via: pip install qualtran."
         )
+
+    if call_graph not in ("default", "estimator"):
+        raise ValueError(f"call_graph must be 'default' or 'estimator', got '{call_graph}'.")
 
     if map_ops and custom_mapping:
         return _map_to_bloq(

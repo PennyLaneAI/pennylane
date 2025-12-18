@@ -400,6 +400,15 @@ class TestToBloqDefault:
         with pytest.raises(TypeError, match="Input must be either an instance of"):
             qml.io.ToBloq("123")
 
+    def test_invalid_call_graph_value(self):
+        """Tests that ToBloq and to_bloq raise ValueError for invalid call_graph values"""
+
+        with pytest.raises(ValueError, match="call_graph must be 'default' or 'estimator'"):
+            qml.io.ToBloq(qml.H(0), call_graph="invalid")
+
+        with pytest.raises(ValueError, match="call_graph must be 'default' or 'estimator'"):
+            qml.to_bloq(qml.H(0), call_graph="something_else")
+
     def test_equivalence(self):
         """Tests that ToBloq's __eq__ functions as expected"""
 
