@@ -101,10 +101,10 @@ def _specs_qjit_device_level_tracking(
                 return new_qnode
 
             pass_pipeline = recursively_add_passes(qjit.original_function)
-            new_qjit = QJIT(pass_pipeline, copy.copy(qjit.compile_options))
+            new_qjit = QJIT(pass_pipeline, copy.deepcopy(qjit.compile_options))
         else:
             new_qnode = qjit.original_function.update(device=spoofed_dev)
-            new_qjit = QJIT(new_qnode, copy.copy(qjit.compile_options))
+            new_qjit = QJIT(new_qnode, copy.deepcopy(qjit.compile_options))
 
     if os.path.exists(_RESOURCE_TRACKING_FILEPATH):
         # TODO: Warn that something has gone wrong here
