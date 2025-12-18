@@ -172,7 +172,6 @@
   [(#8775)](https://github.com/PennyLaneAI/pennylane/pull/8775)
 
   ```python
-  # Dynamic pipeline construction
   pipeline = qml.CompilePipeline()
   pipeline += qml.transforms.cancel_inverses
   pipeline += qml.transforms.merge_rotations * 2
