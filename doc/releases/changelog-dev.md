@@ -613,6 +613,9 @@
   that the resource function is correct.
   [(#8687)](https://github.com/PennyLaneAI/pennylane/pull/8687)
 
+* Simplified the decomposition pipeline for the estimator module. ``qre.estimate`` was updated to call the base class's `symbolic_resource_decomp` method directly.
+  [(#8641)](https://github.com/PennyLaneAI/pennylane/pull/8641)
+
 <h3>Documentation 📝</h3>
 
 * The documentation of ``qml.transforms.rz_phase_gradient`` has been updated with respect to the
