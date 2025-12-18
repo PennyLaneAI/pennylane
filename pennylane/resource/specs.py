@@ -408,7 +408,7 @@ def algo_error(
         from ..qnn.torch import TorchLayer  # pylint: disable=import-outside-toplevel
 
         if isinstance(qnode, TorchLayer) and isinstance(qnode.qnode, qml.QNode):
-            return partial(_algo_error_qnode, qnode.qnode, level)
+            return partial(_algo_error_qnode, qnode, level)
     except ImportError:  # pragma: no cover
         pass
 

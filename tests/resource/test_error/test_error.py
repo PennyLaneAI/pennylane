@@ -454,7 +454,7 @@ class TestAlgoError:
 
     def test_torch_layer_support(self):
         """Test that algo_error works with TorchLayer."""
-        pytest.importorskip("torch")
+        torch = pytest.importorskip("torch")
         from pennylane.qnn.torch import TorchLayer
 
         Hamiltonian = qml.dot([1.0, 0.5], [qml.X(0), qml.Y(0)])
@@ -469,6 +469,7 @@ class TestAlgoError:
         weight_shapes = {"weights": (1,)}
         layer = TorchLayer(circuit, weight_shapes)
 
-        errors = qml.resource.algo_error(layer)([0.5], layer.weights)
+        # Pass inputs only - weights are bound to the layer
+        errors = qml.resource.algo_error(layer)(torch.tensor([0.5]))
         assert "SpectralNormError" in errors
         assert errors["SpectralNormError"].error > 0
