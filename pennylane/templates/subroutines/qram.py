@@ -371,6 +371,13 @@ class SelectOnlyQRAM(Operator):
     r"""Select-only QRAM implemented as multi-controlled X on target wires,
     controlled on all address wires (select_wires + control_wires).
 
+    This operator encodes bitstrings associated with indexes:
+
+    .. math::
+        \text{SelectOnlyQRAM}|i\rangle|0\rangle = |i\rangle |b_i\rangle,
+
+    where :math:`b_i` is the bitstring associated with index :math:`i`.
+
     Args:
         bitstrings (Sequence[str]):
             The classical data as a sequence of bitstrings. The size of the classical data must be
