@@ -452,6 +452,7 @@ class TestAlgoError:
             assert "SpectralNormError" in tape_errors
             assert "MultiplicativeError" in tape_errors
 
+    @pytest.mark.torch
     def test_torch_layer_support(self):
         """Test that algo_error works with TorchLayer."""
         torch = pytest.importorskip("torch")
