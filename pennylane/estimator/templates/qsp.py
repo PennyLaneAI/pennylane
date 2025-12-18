@@ -63,6 +63,11 @@ class GQSP(ResourceOperator):
         :math:`\hat{A^{\prime}}`, and ``poly_deg + neg_poly_deg + 1`` instances of the general
         ``Rot`` gate.
 
+    Raises:
+        ValueError: ``poly_deg`` must be a positive integer greater than zero
+        ValueError: ``neg_poly_deg`` must be a positive integer
+        ValueError: if the wires provided don't match the number of wires expected by the operator              
+
     **Example**
 
     The resources for this operation are computed using:
@@ -99,6 +104,14 @@ class GQSP(ResourceOperator):
     ):
         _dequeue(signal_operator)  # remove operator
         self.queue()
+
+        if (not isinstance(poly_deg, int)) or poly_deg <= 0:
+            raise ValueError(
+                f"'poly_deg' must be a positive integer greater than zero, got {poly_deg}"
+            )
+
+        if (not isinstance(neg_poly_deg, int)) or neg_poly_deg < 0:
+            raise ValueError(f"'neg_poly_deg' must be a positive integer, got {neg_poly_deg}")
 
         self.poly_deg = poly_deg
         self.neg_poly_deg = neg_poly_deg
@@ -243,6 +256,9 @@ class HamiltonianGQSP(ResourceOperator):
         where the maximum polynomial degree :math:`n` for the approximation (``poly_deg`` and
         ``neg_poly_deg``) is computed using the ``time``, ``one_norm``, and ``approximation_error``
         according to Theorem 7 of `Generalized Quantum Signal Processing (2024) <https://arxiv.org/pdf/2308.01501>`_.
+
+    Raises:
+        ValueError: if the wires provided don't match the number of wires expected by the operator
 
     **Example**
 

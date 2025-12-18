@@ -31,6 +31,23 @@ class TestGQSP:
             qre.GQSP(op, poly_deg=2, wires=[0])
 
     @pytest.mark.parametrize(
+        "poly_deg, neg_poly_deg, error_msg",
+        (
+            (0.1, 2, "'poly_deg' must be a positive integer greater than zero,"),
+            (-3, 3, "'poly_deg' must be a positive integer greater than zero,"),
+            (0, 5, "'poly_deg' must be a positive integer greater than zero,"),
+            (1, 0.5, "'neg_poly_deg' must be a positive integer,"),
+            (2, -3, "'neg_poly_deg' must be a positive integer,"),
+        ),
+    )
+    def test_poly_deg_error(self, poly_deg, neg_poly_deg, error_msg):
+        """Test that an error is raised of incompatible values are
+        passed for 'poly_deg' and 'neg_poly_deg'."""
+        op = qre.RX(0.1, wires=0)
+        with pytest.raises(ValueError, match=error_msg):
+            _ = qre.GQSP(op, poly_deg, neg_poly_deg)
+
+    @pytest.mark.parametrize(
         "poly_deg, neg_poly_deg, rot_precision",
         (
             (5, 0, 1e-5),

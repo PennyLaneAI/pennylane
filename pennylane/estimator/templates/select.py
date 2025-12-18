@@ -459,6 +459,11 @@ class SelectPauli(ResourceOperator):
         The resources are based on the analysis in `Babbush et al. (2018) <https://arxiv.org/pdf/1805.03662>`_ section III.A,
         'Unary Iteration and Indexed Operations'. See Figures 4, 6, and 7.
 
+    Raises:
+        TypeError: If the input `pauli_ham` isn't an instance of
+            :class:`~pennylane.estimator.compact_hamiltonian.PauliHamiltonian`.
+        ValueError: If the wires provided don't match the number of wires expected by the operator.
+
     .. seealso:: :class:`~.pennylane.Select`, :class:`~.pennylane.estimator.subroutines.Select`
 
     **Example**
@@ -488,6 +493,11 @@ class SelectPauli(ResourceOperator):
 
     def __init__(self, pauli_ham: PauliHamiltonian, wires: WiresLike = None) -> None:
         self.queue()
+
+        if not isinstance(pauli_ham, PauliHamiltonian):
+            raise TypeError(
+                f"'pauli_ham' must be an instance of PauliHamiltonian, got {type(pauli_ham)}"
+            )
         self.pauli_ham = pauli_ham
 
         num_ctrl_wires = math.ceil(math.log2(pauli_ham.num_terms))

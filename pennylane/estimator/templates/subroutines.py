@@ -2292,6 +2292,11 @@ class Reflection(ResourceOperator):
         If :math:`\alpha = 0` or :math:`\alpha = 2\pi`, the center block cancels out, leaving :math:`-I`.
         The cost for :math:`-I` is calculated as :math:`X Z X Z = -I`.
 
+    Raises:
+        ValueError: ``alpha`` must be a float within the range ``[0, 2pi]``
+        ValueError: must provide atleast one of ``num_wires`` or ``U``
+        ValueError: if the wires provided don't match the number of wires expected by the operator
+
     .. seealso:: :class:`~.pennylane.Reflection`
 
     **Example**
@@ -2327,7 +2332,7 @@ class Reflection(ResourceOperator):
     ) -> None:
         self.queue()
 
-        if (alpha > 2 * qnp.pi) or (alpha < 0):
+        if not (0 <= alpha <= 2 * qnp.pi):
             raise ValueError(f"alpha must be within [0, 2pi], got {alpha}")
         self.alpha = alpha
 
@@ -2536,6 +2541,9 @@ class Qubitization(ResourceOperator):
         The resources are obtained from equation (9) in `Babbush et al. (2018) <https://arxiv.org/abs/1805.03662>`_.
         Specifically, the walk operator is defined as :math:`W = R \cdot S`, where :math:`R` is a reflection about the state prepared by
         the ``Prepare`` operator, and :math:`S` is the ``Select`` operator. The cost is therefore one ``Select`` and one ``Reflection``.
+
+    Raises:
+        ValueError: if the wires provided don't match the number of wires expected by the operator
 
     **Example**
 
