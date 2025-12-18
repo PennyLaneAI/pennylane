@@ -1376,8 +1376,6 @@ class TestToBloqEstimator:
                 ),
                 {
                     (qml.X(0), True): 1,
-                    (qml.Toffoli([0, 1, 2]), True): 0,
-                    (qml.CNOT([0, 1]), True): 0,
                 },
             ),
             (
@@ -1389,10 +1387,10 @@ class TestToBloqEstimator:
                     clean=True,
                 ),
                 {
-                    (qml.Hadamard(0), True): 6,
-                    (qml.CNOT([0, 1]), True): 6,
+                    (qml.X(0), True): 1,
+                    (qml.CNOT([0, 1]), True): 3,
                     (qml.Toffoli([0, 1, 2]), True): 0,
-                    (qml.X(0), True): 2,
+                    (qml.H(0), True): 0,
                 },
             ),
             (
