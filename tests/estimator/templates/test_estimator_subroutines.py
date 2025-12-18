@@ -1667,6 +1667,173 @@ class TestResourceQROM:
             == expected_res
         )
 
+    @pytest.mark.parametrize(
+        "num_data_points, size_data_points, num_bit_flips, depth, restored, expected_res",
+        (
+            (
+                10,
+                3,
+                15,
+                None,
+                True,
+                [
+                    GateCount(qre.Hadamard.resource_rep(), 3),
+                    qre.Allocate(4),
+                    GateCount(qre.Z.resource_rep(), 2),
+                    GateCount(qre.Hadamard.resource_rep(), 2),
+                    GateCount(qre.CSWAP.resource_rep(), 2),
+                    GateCount(qre.Hadamard.resource_rep(), 2),
+                    GateCount(qre.CZ.resource_rep(), 2),
+                    GateCount(qre.CNOT.resource_rep(), 2),
+                    GateCount(qre.X.resource_rep(), 14),
+                    GateCount(qre.CNOT.resource_rep(), 16),
+                    GateCount(qre.TemporaryAND.resource_rep(), 6),
+                    GateCount(
+                        qre.Adjoint.resource_rep(
+                            qre.TemporaryAND.resource_rep(),
+                        ),
+                        6,
+                    ),
+                    qre.Deallocate(4),
+                ],
+            ),
+            (
+                100,
+                5,
+                50,
+                2,
+                False,
+                [
+                    GateCount(qre.Hadamard.resource_rep(), 5),
+                    qre.Allocate(7),
+                    GateCount(qre.X.resource_rep(), 2),
+                    GateCount(qre.Hadamard.resource_rep(), 4),
+                    GateCount(qre.CSWAP.resource_rep(), 1),
+                    GateCount(qre.Hadamard.resource_rep(), 1),
+                    GateCount(qre.CZ.resource_rep(), 1),
+                    GateCount(qre.CNOT.resource_rep(), 1),
+                    GateCount(qre.X.resource_rep(), 97),
+                    GateCount(qre.CNOT.resource_rep(), 98),
+                    GateCount(qre.TemporaryAND.resource_rep(), 48),
+                    GateCount(
+                        qre.Adjoint.resource_rep(
+                            qre.TemporaryAND.resource_rep(),
+                        ),
+                        48,
+                    ),
+                    qre.Deallocate(7),
+                ],
+            ),
+            (
+                12,
+                2,
+                5,
+                1,
+                True,
+                [
+                    GateCount(qre.Hadamard.resource_rep(), 2),
+                    qre.Allocate(4),
+                    GateCount(qre.Z.resource_rep(), 2),
+                    GateCount(qre.Hadamard.resource_rep(), 2),
+                    GateCount(qre.CSWAP.resource_rep(), 0),
+                    GateCount(qre.Hadamard.resource_rep(), 0),
+                    GateCount(qre.CZ.resource_rep(), 0),
+                    GateCount(qre.CNOT.resource_rep(), 0),
+                    GateCount(qre.X.resource_rep(), 42),
+                    GateCount(qre.CNOT.resource_rep(), 32),
+                    GateCount(qre.TemporaryAND.resource_rep(), 20),
+                    GateCount(
+                        qre.Adjoint.resource_rep(
+                            qre.TemporaryAND.resource_rep(),
+                        ),
+                        20,
+                    ),
+                    qre.Deallocate(4),
+                ],
+            ),
+            (
+                12,
+                2,
+                5,
+                128,  # This will get truncated to 16 as the max depth
+                False,
+                [
+                    GateCount(qre.Hadamard.resource_rep(), 2),
+                    qre.Allocate(16),
+                    GateCount(qre.X.resource_rep(), 2),
+                    GateCount(qre.Hadamard.resource_rep(), 32),
+                    GateCount(qre.CSWAP.resource_rep(), 15),
+                    GateCount(qre.Hadamard.resource_rep(), 15),
+                    GateCount(qre.CZ.resource_rep(), 15),
+                    GateCount(qre.CNOT.resource_rep(), 15),
+                    GateCount(qre.X.resource_rep(), 8),
+                    qre.Deallocate(16),
+                ],
+            ),
+            (
+                12,
+                2,
+                5,
+                16,
+                True,
+                [
+                    GateCount(qre.Hadamard.resource_rep(), 2),
+                    qre.Allocate(16),
+                    GateCount(qre.Z.resource_rep(), 2),
+                    GateCount(qre.Hadamard.resource_rep(), 2),
+                    GateCount(qre.CSWAP.resource_rep(), 30),
+                    GateCount(qre.Hadamard.resource_rep(), 30),
+                    GateCount(qre.CZ.resource_rep(), 30),
+                    GateCount(qre.CNOT.resource_rep(), 30),
+                    GateCount(qre.X.resource_rep(), 16),
+                    qre.Deallocate(16),
+                ],
+            ),
+        ),
+    )
+    def test_adjoint_resources(
+        self, num_data_points, size_data_points, num_bit_flips, depth, restored, expected_res
+    ):
+        """Test that the resources are correct."""
+
+        assert (
+            qre.QROM.adjoint_resource_decomp(
+                {
+                    "num_bitstrings": num_data_points,
+                    "size_bitstring": size_data_points,
+                    "num_bit_flips": num_bit_flips,
+                    "restored": restored,
+                    "select_swap_depth": depth,
+                }
+            )
+            == expected_res
+        )
+
+    @pytest.mark.parametrize(
+        "num_data_points, output_size, depth",
+        (
+            (100, 10, 2),
+            (100, 2, 4),
+            (12, 1, 1),
+        ),
+    )
+    def test_toffoli_counts(self, num_data_points, output_size, depth):
+        """Test that the Toffoli counts are correct compared to the paper."""
+
+        qrom = qre.Adjoint(
+            qre.QROM(
+                num_bitstrings=num_data_points,
+                size_bitstring=output_size,
+                restored=False,
+                select_swap_depth=depth,
+            )
+        )
+        resources = qre.estimate(qrom)
+
+        toffoli_count = int(math.ceil(num_data_points / depth)) + depth - 3
+
+        assert resources.gate_counts["Toffoli"] == toffoli_count
+
 
 class TestResourceSelectPauliRot:
     """Test the ResourceSelectPauliRot template"""

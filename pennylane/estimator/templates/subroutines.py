@@ -1641,6 +1641,9 @@ class QROM(ResourceOperator):
         :code:`restored = False` and `Berry et al. (2019) <https://arxiv.org/pdf/1902.02134>`_
         (Figure 4) for :code:`restored = True`.
 
+        For :code:`restored = False`, we further use the measurement based technique described in
+        `arXiv:1092.02134 <https://arxiv.org/abs/1902.02134>_` to optimize the cost.
+
     .. seealso:: The associated PennyLane operation :class:`~.pennylane.QROM`
 
     **Example**
@@ -1752,6 +1755,9 @@ class QROM(ResourceOperator):
             `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_ (Figure 1.C) for
             :code:`restored = False` and `Berry et al. (2019) <https://arxiv.org/pdf/1902.02134>`_
             (Figure 4) for :code:`restored = True`.
+
+            For :code:`restored = False`, we further use the measurement based technique described in
+            `arXiv:1092.02134 <https://arxiv.org/abs/1902.02134>_` to optimize the cost.
 
             Note: we use the unary iterator trick to implement the Select. This
             implementation assumes we have access to :math:`n - 1` additional
@@ -2003,7 +2009,9 @@ class QROM(ResourceOperator):
 
     @classmethod
     def _ctrl_T(cls, L_opt, num_bit_flips, count=1):
-        """Constructs the control-T subroutine as defined in appendix A and B."""
+        """Constructs the control-T subroutine as defined in Appendices A and B of
+        `arXiv:1092.02134 <https://arxiv.org/abs/1902.02134>`_."""
+
         x = resource_rep(qre.X)
         cnot = resource_rep(qre.CNOT)
         l_elbow = resource_rep(qre.TemporaryAND)
@@ -2018,9 +2026,8 @@ class QROM(ResourceOperator):
             gate_cost.append(
                 GateCount(
                     cnot,
-                    count * (L_opt - 2)
-                    + count * num_bit_flips,
-                )  # num CNOTs in unary iterator trick   +   each unitary in the select is just a CNOT
+                    count * (L_opt - 2) + count * num_bit_flips,
+                )  # num CNOTs in unary iterator trick + each unitary in the select is just a CNOT
             )
             gate_cost.append(GateCount(l_elbow, count * (L_opt - 2)))
             gate_cost.append(GateCount(r_elbow, count * (L_opt - 2)))
@@ -2035,26 +2042,42 @@ class QROM(ResourceOperator):
 
     @classmethod
     def _ctrl_S(cls, num_ctrl_wires, count=1):
-        """Constructs the control-S subroutine as defined in figure 8 excluding the initial X gate."""
+        """Constructs the control-S subroutine as defined in Figure 8 of
+        `arXiv:1092.02134 <https://arxiv.org/abs/1902.02134>_` excluding the initial X gate."""
         num_ctrl_swaps = 2**num_ctrl_wires - 1
         return [qre.GateCount(qre.resource_rep(qre.CSWAP), count * num_ctrl_swaps)]
 
     @classmethod
     def _ctrl_S_adj(cls, num_ctrl_wires, count=1):
-        """Constructs the control-S^adj subroutine as defined in figure 10 excluding the terminal X gate."""
+        """Constructs the control-S^adj subroutine as defined in Figure 10
+        of `arXiv:1092.02134 <https://arxiv.org/abs/1902.02134>_` excluding the terminal X gate."""
         h = qre.resource_rep(qre.Hadamard)
         cz = qre.resource_rep(qre.CZ)
         cnot = qre.resource_rep(qre.CNOT)
 
         num_ops = 2**num_ctrl_wires - 1
-        return [qre.GateCount(h, count * num_ops), qre.GateCount(cz, count * num_ops), qre.GateCount(cnot, count * num_ops)]
+        return [
+            qre.GateCount(h, count * num_ops),
+            qre.GateCount(cz, count * num_ops),
+            qre.GateCount(cnot, count * num_ops),
+        ]
 
     @classmethod
-    def adjoint_resource_decomp(
-        cls,
-        target_resource_params: dict
-    ):
-        """This decomposition is based on Appendix C of this reference: https://quantum-journal.org/papers/q-2019-12-02-208/pdf/ """
+    def adjoint_resource_decomp(cls, target_resource_params: dict):
+        r"""Returns a list representing the resources of the adjoint of the operator. Each object represents a quantum gate
+        and the number of times it occurs in the decomposition.
+
+        Args:
+            target_resource_params(dict): A dictionary containing the resource parameters of the target operator.
+
+        Resources:
+            This resources are based on Appendix C of `arXiv:1092.02134 <https://arxiv.org/abs/1902.02134>_`.
+
+        Returns:
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
+        """
 
         num_bitstrings = target_resource_params["num_bitstrings"]
         size_bitstring = target_resource_params["size_bitstring"]
@@ -2067,7 +2090,7 @@ class QROM(ResourceOperator):
         z = resource_rep(qre.Z)
         had = qre.resource_rep(qre.Hadamard)
 
-        ## -------- Compute the width (output + swap registers) and length (unary iter entries) of the QROM: --------
+        # Compute the width (output + swap registers) and length (unary iter entries) of the QROM
         if select_swap_depth:
             max_depth = 2 ** math.ceil(math.log2(num_bitstrings))
             select_swap_depth = min(max_depth, select_swap_depth)  # truncate depth beyond max depth
@@ -2075,53 +2098,51 @@ class QROM(ResourceOperator):
         k = select_swap_depth or qre.QROM._t_optimized_select_swap_width(
             num_bitstrings, size_bitstring
         )
-        l = math.ceil(math.log2(k))         # number of qubits in |l> register
+        l = math.ceil(math.log2(k))  # number of qubits in |l> register
 
-        H = math.ceil(num_bitstrings / k)   # number of columns of data
-        h = math.ceil(math.log2(H))         # number of qubits in |h> register
+        H = math.ceil(num_bitstrings / k)  # number of columns of data
+        h = math.ceil(math.log2(H))  # number of qubits in |h> register
 
-        ## -------- Measure output register, Reset qubits and Construct fixup table: --------
-        gate_lst.append(qre.GateCount(had, size_bitstring))  # see the bottom of Figure 5.
+        ## Measure output register, reset qubits and construct fixup table
+        gate_lst.append(qre.GateCount(had, size_bitstring))  # Figure 5.
 
-        ## -------- Allocate all auxiliary qubits: --------
+        ## Allocate auxiliary qubits
         num_alloc_wires = k  # Swap registers
         if H > 1:
             num_alloc_wires += h - 1  # + work_wires for UI trick
 
         gate_lst.append(qre.Allocate(num_alloc_wires))
 
-        ## -------- Cost assuming clean auxiliary qubits (Figure 6.): --------
+        ## Cost assuming clean auxiliary qubits (Figure 6)
         if not restored:
             gate_lst.append(GateCount(x, 2))
             gate_lst.append(GateCount(had, 2 * k))
 
             num_bit_flips = (k * H) // 2
 
-            ctrl_S_decomp = cls._ctrl_S(num_ctrl_wires = l)
-            ctrl_S_adj_decomp = cls._ctrl_S_adj(num_ctrl_wires = l)
-            ctrl_T_decomp = cls._ctrl_T(L_opt=H, num_bit_flips = num_bit_flips)
+            ctrl_S_decomp = cls._ctrl_S(num_ctrl_wires=l)
+            ctrl_S_adj_decomp = cls._ctrl_S_adj(num_ctrl_wires=l)
+            ctrl_T_decomp = cls._ctrl_T(L_opt=H, num_bit_flips=num_bit_flips)
 
             gate_lst.extend(ctrl_S_decomp)
             gate_lst.extend(ctrl_S_adj_decomp)
             gate_lst.extend(ctrl_T_decomp)
 
-
-        ## -------- Cost assuming dirty auxiliary qubits (Figure 7.): --------
+        ## Cost assuming dirty auxiliary qubits (Figure 7)
         else:
             gate_lst.append(GateCount(z, 2))
             gate_lst.append(GateCount(had, 2))
 
             num_bit_flips = (k * H) // 2
 
-            ctrl_S_decomp = cls._ctrl_S(num_ctrl_wires = l, count = 2)
-            ctrl_S_adj_decomp = cls._ctrl_S_adj(num_ctrl_wires = l, count = 2)
-            ctrl_T_decomp = cls._ctrl_T(L_opt=H, num_bit_flips = num_bit_flips, count = 2)
+            ctrl_S_decomp = cls._ctrl_S(num_ctrl_wires=l, count=2)
+            ctrl_S_adj_decomp = cls._ctrl_S_adj(num_ctrl_wires=l, count=2)
+            ctrl_T_decomp = cls._ctrl_T(L_opt=H, num_bit_flips=num_bit_flips, count=2)
 
             gate_lst.extend(ctrl_S_decomp)
             gate_lst.extend(ctrl_S_adj_decomp)
             gate_lst.extend(ctrl_T_decomp)
 
-        ## -------- Deallocate all auxiliary qubits: --------
         gate_lst.append(qre.Deallocate(num_alloc_wires))
 
         return gate_lst
