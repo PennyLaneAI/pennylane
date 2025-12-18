@@ -31,7 +31,7 @@ def to_ppr(tape):
     Clifford gates are defined as :math:`\exp(-{iP\tfrac{\pi}{4}})`, where :math:`P` is a Pauli word.
     Non-Clifford gates are defined as :math:`\exp(-{iP\tfrac{\pi}{8}})`.
 
-    For more information on the PPM compilation pass, check out the
+    For more information on Pauli product measurements and Pauli product rotations, check out the
     `compilation hub <https://pennylane.ai/compilation/pauli-product-measurement>`__.
 
     .. note::
@@ -53,7 +53,7 @@ def to_ppr(tape):
     ``catalyst.measure``.
 
     Args:
-        fn (QNode): QNode to apply the pass to
+        fn (QNode): the QNode to apply the pass to
 
     Returns:
         :class:`QNode <pennylane.QNode>`
