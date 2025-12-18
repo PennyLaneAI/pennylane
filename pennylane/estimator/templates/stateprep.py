@@ -470,17 +470,17 @@ class QROMStatePreparation(ResourceOperator):
     >>> print(qre.estimate(qrom_prep))
     --- Resources: ---
      Total wires: 28
-        algorithmic wires: 5
-        allocated wires: 23
-             zero state: 23
-             any state: 0
-     Total gates : 2.756E+3
-      'Toffoli': 236,
-      'CNOT': 1.522E+3,
-      'X': 230,
-      'Z': 12,
-      'S': 24,
-      'Hadamard': 732
+       algorithmic wires: 5
+       allocated wires: 23
+         zero state: 23
+         any state: 0
+     Total gates : 2.505E+3
+       'Toffoli': 236,
+       'CNOT': 1.181E+3,
+       'X': 236,
+       'Z': 12,
+       'S': 24,
+       'Hadamard': 816
 
     .. details::
         :title: Usage Details

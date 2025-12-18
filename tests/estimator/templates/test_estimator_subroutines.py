@@ -1818,7 +1818,7 @@ class TestResourceQROM:
         ),
     )
     def test_toffoli_counts(self, num_data_points, output_size, depth):
-        """Test that the Toffoli counts are correct compared to the paper."""
+        """Test that the Toffoli counts are correct compared to arXiv:1092.02134."""
 
         qrom = qre.Adjoint(
             qre.QROM(

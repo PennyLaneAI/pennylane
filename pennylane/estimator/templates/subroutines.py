@@ -1756,8 +1756,8 @@ class QROM(ResourceOperator):
             :code:`restored = False` and `Berry et al. (2019) <https://arxiv.org/pdf/1902.02134>`_
             (Figure 4) for :code:`restored = True`.
 
-            For :code:`restored = False`, we further use the measurement based technique described in
-            `arXiv:1092.02134 <https://arxiv.org/abs/1902.02134>_` to optimize the cost.
+            For :code:`restored = False`, we use the measurement based technique described in
+            `arXiv:1092.02134 <https://arxiv.org/abs/1902.02134>_` to further optimize the cost.
 
             Note: we use the unary iterator trick to implement the Select. This
             implementation assumes we have access to :math:`n - 1` additional
@@ -2006,9 +2006,18 @@ class QROM(ResourceOperator):
         }
 
     @classmethod
-    def _ctrl_T(cls, L_opt, num_bit_flips, count=1):
-        """Constructs the control-T subroutine as defined in Appendices A and B of
-        `arXiv:1092.02134 <https://arxiv.org/abs/1902.02134>`_."""
+    def _ctrl_T(cls, num_data_blocks: int, num_bit_flips: int, count=1):
+        """Constructs the control-``T`` subroutine as defined in Appendices A and B of
+        `arXiv:1092.02134 <https://arxiv.org/abs/1902.02134>`_.
+
+        Args:
+            num_data_blocks(int): The number of data blocks formed by partitioning the total bitstrings based on select-swap depth.
+            num_bit_flips (int): The total number of :math:`1`'s in the dataset.
+            count (int): The number of times to repeat the subroutine.
+
+        Returns:
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: The resource decomposition of the control- :math:`T` subroutine.
+        """
 
         x = resource_rep(qre.X)
         cnot = resource_rep(qre.CNOT)
@@ -2017,18 +2026,18 @@ class QROM(ResourceOperator):
 
         gate_cost = []
 
-        if L_opt > 1:
+        if num_data_blocks > 1:
             gate_cost.append(
-                GateCount(x, count * (2 * (L_opt - 2) + 1))
+                GateCount(x, count * (2 * (num_data_blocks - 2) + 1))
             )  # conjugate 0 controlled toffolis + 1 extra X gate from un-controlled unary iterator decomp
             gate_cost.append(
                 GateCount(
                     cnot,
-                    count * (L_opt - 2) + count * num_bit_flips,
+                    count * (num_data_blocks - 2) + count * num_bit_flips,
                 )  # num CNOTs in unary iterator trick + each unitary in the select is just a CNOT
             )
-            gate_cost.append(GateCount(l_elbow, count * (L_opt - 2)))
-            gate_cost.append(GateCount(r_elbow, count * (L_opt - 2)))
+            gate_cost.append(GateCount(l_elbow, count * (num_data_blocks - 2)))
+            gate_cost.append(GateCount(r_elbow, count * (num_data_blocks - 2)))
 
         else:
             gate_cost.append(
@@ -2039,16 +2048,33 @@ class QROM(ResourceOperator):
         return gate_cost
 
     @classmethod
-    def _ctrl_S(cls, num_ctrl_wires, count=1):
+    def _ctrl_S(cls, num_ctrl_wires: int, count: int = 1):
         """Constructs the control-S subroutine as defined in Figure 8 of
-        `arXiv:1092.02134 <https://arxiv.org/abs/1902.02134>_` excluding the initial X gate."""
+        `arXiv:1092.02134 <https://arxiv.org/abs/1902.02134>_` excluding the initial ``X`` gate.
+
+        Args:
+            num_ctrl_wires (int): The number of control wires.
+            count (int): The number of times to repeat the subroutine.
+
+        Returns:
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: The resource decomposition of the control- :math:`S` subroutine.
+        """
         num_ctrl_swaps = 2**num_ctrl_wires - 1
         return [qre.GateCount(qre.resource_rep(qre.CSWAP), count * num_ctrl_swaps)]
 
     @classmethod
-    def _ctrl_S_adj(cls, num_ctrl_wires, count=1):
-        """Constructs the control-S^adj subroutine as defined in Figure 10
-        of `arXiv:1092.02134 <https://arxiv.org/abs/1902.02134>_` excluding the terminal X gate."""
+    def _ctrl_S_adj(cls, num_ctrl_wires: int, count: int = 1):
+        r"""Constructs the control-S^adj subroutine as defined in Figure 10
+        of `arXiv:1092.02134 <https://arxiv.org/abs/1902.02134>_` excluding the terminal ``X`` gate.
+
+        Args:
+            num_ctrl_wires (int): The number of control wires.
+            count (int): The number of times to repeat the subroutine.
+
+        Returns:
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: The resource decomposition of the control- :math:`S^{\dagger}` subroutine.
+
+        """
         h = qre.resource_rep(qre.Hadamard)
         cz = qre.resource_rep(qre.CZ)
         cnot = qre.resource_rep(qre.CNOT)
@@ -2120,7 +2146,7 @@ class QROM(ResourceOperator):
 
             ctrl_S_decomp = cls._ctrl_S(num_ctrl_wires=l)
             ctrl_S_adj_decomp = cls._ctrl_S_adj(num_ctrl_wires=l)
-            ctrl_T_decomp = cls._ctrl_T(L_opt=H, num_bit_flips=num_bit_flips)
+            ctrl_T_decomp = cls._ctrl_T(num_data_blocks=H, num_bit_flips=num_bit_flips)
 
             gate_lst.extend(ctrl_S_decomp)
             gate_lst.extend(ctrl_S_adj_decomp)
@@ -2135,7 +2161,7 @@ class QROM(ResourceOperator):
 
             ctrl_S_decomp = cls._ctrl_S(num_ctrl_wires=l, count=2)
             ctrl_S_adj_decomp = cls._ctrl_S_adj(num_ctrl_wires=l, count=2)
-            ctrl_T_decomp = cls._ctrl_T(L_opt=H, num_bit_flips=num_bit_flips, count=2)
+            ctrl_T_decomp = cls._ctrl_T(num_data_blocks=H, num_bit_flips=num_bit_flips, count=2)
 
             gate_lst.extend(ctrl_S_decomp)
             gate_lst.extend(ctrl_S_adj_decomp)
