@@ -42,9 +42,9 @@ class GQSP(ResourceOperator):
 
         \begin{align}
             \hat{A} &= \ket{0}\bra{0}\otimes\hat{U} + \ket{1}\bra{1}\otimes\mathbf{I}, \\
-            \hat{A^{\prime}} &= \ket{0}\bra{0}\otimes\mathbf{I} + \ket{1}\bra{1}\otimes\hat{U^{\dagger}}, \\ \\
-            GQSP &= \left( \prod_{j=1}^{d^{-}} R(\theta_{j}, \phi_{j}, 0) \hat{A^{\prime}} \right) 
-            \left( \prod_{j=1}^{d^{+}} R(\theta_{d^{-} + j}, \phi_{d^{-} + j}, 0) \hat{A} \right) R(\theta_0, \phi_0, \lambda)
+            \hat{A}^{\prime} &= \ket{0}\bra{0}\otimes\mathbf{I} + \ket{1}\bra{1}\otimes\hat{U}^{\dagger}, \\ \\
+            GQSP &= \left( \prod_{j=1}^{d^{-}} R(\theta_{j}, \phi_{j}, 0) \hat{A}^{\prime} \right) 
+            \left( \prod_{j=1}^{d^{+}} R(\theta_{j + d^{-}}, \phi_{j + d^{-}}, 0) \hat{A} \right) R(\theta_0, \phi_0, \lambda)
         \end{align}
 
     Args:
