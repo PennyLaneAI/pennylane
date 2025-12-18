@@ -1641,8 +1641,8 @@ class QROM(ResourceOperator):
         :code:`restored = False` and `Berry et al. (2019) <https://arxiv.org/pdf/1902.02134>`_
         (Figure 4) for :code:`restored = True`.
 
-        For :code:`restored = False`, we further use the measurement based technique described in
-        `arXiv:1092.02134 <https://arxiv.org/abs/1902.02134>_` to optimize the cost.
+        For :code:`restored = False`, we use the measurement based technique described in
+        `arXiv:1092.02134 <https://arxiv.org/abs/1902.02134>_` to further optimize the cost.
 
     .. seealso:: The associated PennyLane operation :class:`~.pennylane.QROM`
 
