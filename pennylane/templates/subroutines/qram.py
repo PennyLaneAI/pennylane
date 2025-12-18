@@ -438,7 +438,7 @@ class HybridQRAM(Operation):
     We need the number of bitstrings to equal :math:`2^{\texttt{len(control_wires)}}` so they can be addressed. This
     tells us the number of control wires needed. The control wires are split by index
     ``k`` into select wires and tree control wires, which allow us to implement select-only and bucket-brigade
-    behaviour. We also define work wires, which include the wires [signal, bus, dir..., portL..., portR...] used for
+    behaviour. We also define work wires, which include the wires :math:`[signal, bus, dir..., portL..., portR...]` used for
     routing up and down the tree as well as loading data and controlling the behaviour.
 
 
