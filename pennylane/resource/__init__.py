@@ -52,6 +52,7 @@ Error Tracking
     ~AlgorithmicError
     ~SpectralNormError
     ~ErrorOperation
+    ~algo_error
 
 .. warning::
     The functions ``estimate_error``, ``estimate_shots`` and the classes ``DoubleFactorization``,
@@ -152,7 +153,7 @@ from .resource import (
     resources_from_tape,
     substitute,
 )
-from .specs import specs
+from .specs import specs, algo_error
 
 
 def __getattr__(name):

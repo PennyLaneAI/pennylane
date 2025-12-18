@@ -185,6 +185,35 @@
   Users can more easily access the total number of terms (Pauli words) from the `PauliHamiltonian` object directly.
   [(#8761)](https://github.com/PennyLaneAI/pennylane/pull/8761)
 
+* A new :func:`~pennylane.resource.algo_error` function has been added to compute algorithm-specific 
+  errors from quantum circuits. This provides a dedicated entry point for retrieving error information 
+  that was previously accessible through :func:`~pennylane.specs`. The function works with QNodes and 
+  returns a dictionary of error types and their computed values.
+  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+
+  ```python
+  import pennylane as qml
+  from pennylane.resource import SpectralNormError
+  from pennylane.resource.error import ErrorOperation
+  
+  class ApproximateRX(ErrorOperation):
+      def __init__(self, phi, wires):
+          super().__init__(phi, wires=wires)
+      
+      def error(self):
+          return SpectralNormError(0.01)  # simplified example
+  
+  dev = qml.device("default.qubit")
+  
+  @qml.qnode(dev)
+  def circuit():
+      ApproximateRX(0.5, wires=0)
+      return qml.state()
+  
+  errors = qml.resource.algo_error(circuit)()
+  # {'SpectralNormError': SpectralNormError(0.01)}
+  ```
+
 <h4>Seamless resource tracking and circuit visualization for compiled programs </h4>
 
 * A new :func:`~.marker` function allows for easy inspection at particular points in a transform program
