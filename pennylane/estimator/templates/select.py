@@ -43,7 +43,7 @@ class SelectTHC(ResourceOperator):
     Args:
         thc_ham (:class:`~pennylane.estimator.compact_hamiltonian.THCHamiltonian`): A tensor hypercontracted
             Hamiltonian on which this ``Select`` operator is being applied.
-        num_batches (int): The maximum number of batches for loading the rotation angles
+        num_batches (int): The number of batches for loading the rotation angles
             into temporary quantum registers for Givens rotations.
             The default value of ``1`` loads all angles in one batch.
         rotation_precision (int): The number of bits used to represent the precision for loading
