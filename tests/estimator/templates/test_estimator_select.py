@@ -14,6 +14,8 @@
 """
 Tests for select resource operators.
 """
+import re
+
 import pytest
 
 import pennylane.estimator as qre
@@ -243,13 +245,13 @@ class TestSelectTHC:
         "Test that an error is raised when wrong type is provided for precision."
         with pytest.raises(
             TypeError,
-            match=f"`rotation_precision` must be an integer, but type {type(2.5)} was provided.",
+            match=f"`rotation_precision` must be a positive integer, but type {type(2.5)} was provided.",
         ):
             qre.SelectTHC(qre.THCHamiltonian(58, 160), rotation_precision=2.5)
 
         with pytest.raises(
             TypeError,
-            match=f"`rotation_precision` must be an integer, but type {type(2.5)} was provided.",
+            match=f"`rotation_precision` must be a positive integer, but type {type(2.5)} was provided.",
         ):
             qre.SelectTHC.resource_rep(qre.THCHamiltonian(58, 160), rotation_precision=2.5)
 
@@ -257,12 +259,16 @@ class TestSelectTHC:
         "Test that an error is raised when wrong value is provided for batched rotations."
         with pytest.raises(
             ValueError,
-            match="`num_batches` must be a positive integer less than the number of orbitals 58, but got 60.",
+            match=re.escape(
+                "`num_batches` must be a positive integer less than the number of orbitals (58), but got 60."
+            ),
         ):
             qre.SelectTHC(qre.THCHamiltonian(58, 160), num_batches=60)
 
         with pytest.raises(
             ValueError,
-            match="`num_batches` must be a positive integer less than the number of orbitals 58, but got 0.5.",
+            match=re.escape(
+                "`num_batches` must be a positive integer less than the number of orbitals (58), but got 0.5."
+            ),
         ):
             qre.SelectTHC.resource_rep(qre.THCHamiltonian(58, 160), num_batches=0.5)

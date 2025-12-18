@@ -127,9 +127,9 @@ class SelectTHC(ResourceOperator):
                 f"This method works with thc Hamiltonian, {type(thc_ham)} provided"
             )
 
-        if not isinstance(rotation_precision, int):
+        if not isinstance(rotation_precision, int) or rotation_precision <= 0:
             raise TypeError(
-                f"`rotation_precision` must be an integer, but type {type(rotation_precision)} was provided."
+                f"`rotation_precision` must be a positive integer, but type {type(rotation_precision)} was provided."
             )
 
         if not isinstance(num_batches, int) or num_batches not in range(1, thc_ham.num_orbitals):
@@ -213,14 +213,14 @@ class SelectTHC(ResourceOperator):
                 f"This method works with thc Hamiltonian, {type(thc_ham)} provided"
             )
 
-        if not isinstance(rotation_precision, int):
+        if not isinstance(rotation_precision, int) or rotation_precision <= 0:
             raise TypeError(
-                f"`rotation_precision` must be an integer, but type {type(rotation_precision)} was provided."
+                f"`rotation_precision` must be a positive integer, but type {type(rotation_precision)} was provided."
             )
 
         if not isinstance(num_batches, int) or num_batches not in range(1, thc_ham.num_orbitals):
             raise ValueError(
-                f"`num_batches` must be a positive integer less than the number of orbitals {thc_ham.num_orbitals}, but got {num_batches}."
+                f"`num_batches` must be a positive integer less than the number of orbitals ({thc_ham.num_orbitals}), but got {num_batches}."
             )
 
         num_orb = thc_ham.num_orbitals
