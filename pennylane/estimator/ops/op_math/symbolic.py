@@ -1026,7 +1026,7 @@ class ChangeOpBasis(ResourceOperator):
         ]
 
     @classmethod
-    def controlled_resource_decomp(cls, num_ctrl_wires, num_zero_ctrl, target_resource_params=None):
+    def controlled_resource_decomp(cls, num_ctrl_wires, num_zero_ctrl, target_resource_params):
         r"""Returns a list representing the resources for a controlled version of the operator.
 
         Args:

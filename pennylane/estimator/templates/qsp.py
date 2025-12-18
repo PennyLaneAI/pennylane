@@ -33,21 +33,37 @@ from pennylane.wires import Wires, WiresLike
 
 class GQSP(ResourceOperator):
     r"""Resource class for the Generalized Quantum Signal Processing (GQSP) algorithm.
-    As described in theorem 3 of `Generalized Quantum Signal Processing (2024)
-    <https://arxiv.org/pdf/2308.01501>`_.
+    As described in Theorem 6 of `Generalized Quantum Signal Processing (2024)
+    <https://arxiv.org/pdf/2308.01501>`_. Given the block-encoded operator ``signal_operator``
+    (:math:`\hat{U}`), the maximum positive polynomial degree ``poly_deg`` (:math:`d^{+}`) and
+    the maximum negative polynomial degree ``neg_poly_deg`` (:math:`d^{-}`); the ``GQSP`` operator
+    is defined according to:
+
+    .. math::
+
+        \begin{align}
+            \hat{A} &= \ket{0}\bra{0}\otimes\hat{U} + \ket{1}\bra{1}\otimes\mathbf{I}, \\
+            \hat{A^{\prime}} &= \ket{0}\bra{0}\otimes\mathbf{I} + \ket{1}\bra{1}\otimes\hat{U^{\dagger}}, \\ \\
+            GQSP &= \left( \prod_{j=1}^{d^{-}} R(\theta_{j}, \phi_{j}, 0) \hat{A^{\prime}} \right) 
+            \left( \prod_{j=1}^{d^{+}} R(\theta_{d^{-} + j}, \phi_{d^{-} + j}, 0) \hat{A} \right) R(\theta_0, \phi_0, \lambda)
+        \end{align}
 
     Args:
         signal_operator (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): The
-            signal operator which encodes the target hamiltonian.
+            signal operator which encodes the target Hamiltonian.
         poly_deg (int): the maximum positive degree :math:`d` of the polynomial transformation
         neg_poly_deg (int): the maximum negative degree :math:`k` of the polynomial transformation
-        rot_precision (float, None): The precision with which to apply the general SU(2) rotation gates.
-        wires (Sequence[int], None): The wires the operation acts on. This includes both the wires of the
+        rotation_precision (float | None): The precision with which the general SU(2) rotation gates are applied.
+        wires (WiresLike | None): The wires the operation acts on. This includes both the wires of the
             signal operator and the control wire required for block-encoding.
 
     Resources:
-        The resources are obtained as described in theorem 3 of `Generalized Quantum Signal Processing
-        (2024) <https://arxiv.org/pdf/2308.01501>`_.
+        The resources are obtained as described in Theorem 6 of
+        `Generalized Quantum Signal Processing (2024) <https://arxiv.org/pdf/2308.01501>`_.
+        Specifically, the resources are given by:
+          - ``poly_deg`` instances of :math:`\hat{A}`,
+          - ``neg_poly_deg`` instances of :math:`\hat{A^{\prime}}`,
+          - and ``poly_deg + neg_poly_deg + 1`` instances of the general ``Rot`` gate.
 
     **Example**
 
@@ -73,14 +89,14 @@ class GQSP(ResourceOperator):
 
     """
 
-    resource_keys = {"cmpr_signal_op", "poly_deg", "neg_poly_deg", "rot_precision"}
+    resource_keys = {"cmpr_signal_op", "poly_deg", "neg_poly_deg", "rotation_precision"}
 
     def __init__(
         self,
         signal_operator: ResourceOperator,
         poly_deg: int,
         neg_poly_deg: int = 0,
-        rot_precision: float | None = None,
+        rotation_precision: float | None = None,
         wires: WiresLike = None,
     ):
         _dequeue(signal_operator)  # remove operator
@@ -88,7 +104,7 @@ class GQSP(ResourceOperator):
 
         self.poly_deg = poly_deg
         self.neg_poly_deg = neg_poly_deg
-        self.rot_precision = rot_precision
+        self.rotation_precision = rotation_precision
         self.cmpr_signal_op = signal_operator.resource_rep_from_op()
 
         self.num_wires = signal_operator.num_wires + 1  # add control wire
@@ -109,19 +125,19 @@ class GQSP(ResourceOperator):
         Returns:
             dict: A dictionary containing the resource parameters:
                 * cmpr_signal_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`):
-                  The compressed representation of signal operator which encodes the target hamiltonian.
+                  The compressed representation of signal operator which encodes the target Hamiltonian.
                 * poly_deg (int): the maximum positive degree :math:`d` of the polynomial transformation
                 * neg_poly_deg (int): the maximum negative degree :math:`k` of the polynomial
                   transformation
-                * rot_precision (float, None): The precision with which to apply the general SU(2)
-                  rotation gates.
+                * rotation_precision (float | None): The precision with which the general SU(2)
+                  rotation gates are applied.
         """
 
         return {
             "cmpr_signal_op": self.cmpr_signal_op,
             "poly_deg": self.poly_deg,
             "neg_poly_deg": self.neg_poly_deg,
-            "rot_precision": self.rot_precision,
+            "rotation_precision": self.rotation_precision,
         }
 
     @classmethod
@@ -130,18 +146,18 @@ class GQSP(ResourceOperator):
         cmpr_signal_op: CompressedResourceOp,
         poly_deg: int,
         neg_poly_deg: int,
-        rot_precision: float | None,
+        rotation_precision: float | None,
     ):
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation.
+        the Operator that are needed to compute the resources.
 
         Args:
             cmpr_signal_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`):
-                The compressed representation of signal operator which encodes the target hamiltonian.
+                The compressed representation of signal operator which encodes the target Hamiltonian.
             poly_deg (int): the maximum positive degree :math:`d` of the polynomial transformation
             neg_poly_deg (int): the maximum negative degree :math:`k` of the polynomial transformation
-            rot_precision (float, None): The precision with which to apply the general SU(2)
-                rotation gates.
+            rotation_precision (float | None): The precision with which the general SU(2)
+                rotation gates are applied.
 
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
@@ -151,7 +167,7 @@ class GQSP(ResourceOperator):
             "cmpr_signal_op": cmpr_signal_op,
             "poly_deg": poly_deg,
             "neg_poly_deg": neg_poly_deg,
-            "rot_precision": rot_precision,
+            "rotation_precision": rotation_precision,
         }
         return CompressedResourceOp(cls, num_wires, params)
 
@@ -161,28 +177,32 @@ class GQSP(ResourceOperator):
         cmpr_signal_op: CompressedResourceOp,
         poly_deg: int,
         neg_poly_deg: int,
-        rot_precision: float | None,
+        rotation_precision: float | None,
     ):
         r"""Returns a list representing the resources of the operator. Each object in the list
         represents a gate and the number of times it occurs in the circuit.
 
         Args:
             cmpr_signal_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`):
-                The compressed representation of signal operator which encodes the target hamiltonian.
+                The compressed representation of signal operator which encodes the target Hamiltonian.
             poly_deg (int): the maximum positive degree :math:`d` of the polynomial transformation
             neg_poly_deg (int): the maximum negative degree :math:`k` of the polynomial transformation
-            rot_precision (float, None): The precision with which to apply the general SU(2) rotation gates.
+            rotation_precision (float | None): The precision with which the general SU(2) rotation gates are applied.
 
         Resources:
-            The resources are obtained as described in theorem 3 of `Generalized Quantum Signal Processing
-            (2024) <https://arxiv.org/pdf/2308.01501>`_.
+            The resources are obtained as described in Theorem 6 of
+            `Generalized Quantum Signal Processing (2024) <https://arxiv.org/pdf/2308.01501>`_.
+            Specifically, the resources are given by:
+                - ``poly_deg`` instances of :math:`\hat{A}`,
+                - ``neg_poly_deg`` instances of :math:`\hat{A^{\prime}}`,
+                - and ``poly_deg + neg_poly_deg + 1`` instances of the general ``Rot`` gate.
 
         Returns:
-            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
-        rot = Rot.resource_rep(precision=rot_precision)
+        rot = Rot.resource_rep(precision=rotation_precision)
         adj_cmpr_signal_op = Adjoint.resource_rep(cmpr_signal_op)
 
         ctrl_cmpr_signal_op = Controlled.resource_rep(
@@ -208,18 +228,24 @@ class GQSP(ResourceOperator):
 
 
 class HamiltonianGQSP(ResourceOperator):
-    r"""Resource class for performing hamiltonian simulation using GQSP.
+    r"""Resource class for performing Hamiltonian simulation using GQSP.
 
     Args:
         walk_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): the quantum walk operator
         time (float): the simulation time
-        one_norm (float): one norm of the hamiltonian
+        one_norm (float): one norm of the Hamiltonian
         approximation_error (float): the tolerance for error in the polynomial approximation of :math:`e^{it\cos{theta}}`
-        wires (Sequence[int], None): the wires the operation acts on
+        wires (WiresLike | None): The wires the operation acts on. This includes both the wires of the
+            signal operator and the control wire required for block-encoding.
 
     Resources:
-        The resources are obtained as described in theorem 7 and corollary 8 of `Generalized Quantum Signal Processing
-        (2024) <https://arxiv.org/pdf/2308.01501>`_.
+        The resources are obtained as described in Theorem 7 and Corollary 8 of
+        `Generalized Quantum Signal Processing (2024) <https://arxiv.org/pdf/2308.01501>`_.
+
+        Specifically, this operator decomposes into an instance of :class:`~.estimator.templates.qsp.GQSP`
+        where the maximum polynomial degree :math:`n` for the approximation (``poly_deg`` and
+        ``neg_poly_deg``) is computed using the ``time``, ``one_norm``, and ``approximation_error``
+        according to Theorem 7 of `Generalized Quantum Signal Processing (2024) <https://arxiv.org/pdf/2308.01501>`_.
 
     **Example**
 
@@ -281,9 +307,9 @@ class HamiltonianGQSP(ResourceOperator):
         Returns:
             dict: A dictionary containing the resource parameters:
                 * walk_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`):
-                  The quantum walk operator.
+                  the quantum walk operator
                 * time (float): the simulation time
-                * one_norm (float): one norm of the hamiltonian
+                * one_norm (float): one norm of the Hamiltonian
                 * approximation_error (float): the tolerance for error in the polynomial
                   approximation of :math:`e^{it\cos{theta}}`
         """
@@ -304,13 +330,13 @@ class HamiltonianGQSP(ResourceOperator):
         approximation_error: float,
     ):
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation.
+        the Operator that are needed to compute the resources.
 
         Args:
-            walk_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): The
-                quantum walk operator.
+            walk_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): the
+                quantum walk operator
             time (float): the simulation time
-            one_norm (float): one norm of the hamiltonian
+            one_norm (float): one norm of the Hamiltonian
             approximation_error (float): the tolerance for error in the polynomial approximation of
                 :math:`e^{it\cos{theta}}`
 
@@ -338,18 +364,23 @@ class HamiltonianGQSP(ResourceOperator):
         represents a gate and the number of times it occurs in the circuit.
 
         Args:
-            walk_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): The
-                quantum walk operator.
+            walk_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): the
+                quantum walk operator
             time (float): the simulation time
-            one_norm (float): one norm of the hamiltonian
+            one_norm (float): one norm of the Hamiltonian
             approximation_error (float): the tolerance for error in the polynomial approximation of
                 :math:`e^{it\cos{theta}}`
         Resources:
-            The resources are obtained as described in theorem 7 and corollary 8 of `Generalized Quantum Signal Processing
-            (2024) <https://arxiv.org/pdf/2308.01501>`_.
+            The resources are obtained as described in Theorem 7 and Corollary 8 of
+            `Generalized Quantum Signal Processing (2024) <https://arxiv.org/pdf/2308.01501>`_.
+
+            Specifically, this operator decomposes into an instance of :class:`~.estimator.templates.qsp.GQSP`
+            where the maximum polynomial degree :math:`n` for the approximation (``poly_deg`` and
+            ``neg_poly_deg``) is computed using the ``time``, ``one_norm``, and ``approximation_error``
+            according to Theorem 7 of `Generalized Quantum Signal Processing (2024) <https://arxiv.org/pdf/2308.01501>`_.
 
         Returns:
-            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -358,18 +389,18 @@ class HamiltonianGQSP(ResourceOperator):
             walk_op,
             poly_deg=poly_deg,
             neg_poly_deg=poly_deg,
-            rot_precision=None,
+            rotation_precision=None,
         )
         return [GateCount(gqsp)]
 
     @staticmethod
     def degree_of_poly_approx(time, one_norm, epsilon):
         r"""Obtain the maximum degree of the polynomial approximation required
-        to approximate e^(iht * cos(theta)) within error epsilon
+        to approximate e^(iht * cos(theta)) within error epsilon.
 
         Args:
             time (float): the simulation time
-            one_norm (float): one norm of the hamiltonian
+            one_norm (float): one norm of the Hamiltonian
             epsilon (float): the tolerance for error in the polynomial approximation of :math:`e^{it\cos{theta}}`
 
         Returns:

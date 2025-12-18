@@ -21,7 +21,6 @@ from collections.abc import Callable, Sequence
 from typing import Any
 
 import numpy as np
-from networkx import MultiDiGraph, has_path, weakly_connected_components
 
 from pennylane import ops
 from pennylane.measurements import MeasurementProcess
@@ -60,13 +59,13 @@ def _prep_iminus_state(wire):
 
 
 def find_and_place_cuts(
-    graph: MultiDiGraph,
+    graph,
     cut_method: Callable = kahypar_cut,
-    cut_strategy: CutStrategy = None,
+    cut_strategy: CutStrategy | None = None,
     replace_wire_cuts=False,
     local_measurement=False,
     **kwargs,
-) -> MultiDiGraph:
+):
     """Automatically finds and places optimal :class:`~.WireCut` nodes into a given tape-converted graph
     using a customizable graph partitioning function. Preserves existing placed cuts.
 
@@ -309,7 +308,7 @@ def find_and_place_cuts(
     return cut_graph
 
 
-def replace_wire_cut_node(node: WireCut, graph: MultiDiGraph):
+def replace_wire_cut_node(node: WireCut, graph):
     """
     Replace a :class:`~.WireCut` node in the graph with a :class:`~.MeasureNode`
     and :class:`~.PrepareNode`.
@@ -387,7 +386,7 @@ def replace_wire_cut_node(node: WireCut, graph: MultiDiGraph):
             graph.add_edge(prep_node, successor, wire=wire)
 
 
-def replace_wire_cut_nodes(graph: MultiDiGraph):
+def replace_wire_cut_nodes(graph):
     """
     Replace each :class:`~.WireCut` node in the graph with a
     :class:`~.MeasureNode` and :class:`~.PrepareNode`.
@@ -433,9 +432,7 @@ def replace_wire_cut_nodes(graph: MultiDiGraph):
             replace_wire_cut_node(op.obj, graph)
 
 
-def place_wire_cuts(
-    graph: MultiDiGraph, cut_edges: Sequence[tuple[Operation, Operation, Any]]
-) -> MultiDiGraph:
+def place_wire_cuts(graph, cut_edges: Sequence[tuple[Operation, Operation, Any]]):
     """Inserts a :class:`~.WireCut` node for each provided cut edge into a circuit graph.
 
     Args:
@@ -509,7 +506,7 @@ def place_wire_cuts(
     return cut_graph
 
 
-def _remove_existing_cuts(graph: MultiDiGraph) -> MultiDiGraph:
+def _remove_existing_cuts(graph):
     """Removes all existing, manually or automatically placed, cuts from a circuit graph, be it
     ``WireCut``s or ``MeasureNode``-``PrepareNode`` pairs.
 
@@ -539,7 +536,7 @@ def _remove_existing_cuts(graph: MultiDiGraph) -> MultiDiGraph:
 
 
 # pylint: disable=too-many-branches
-def fragment_graph(graph: MultiDiGraph) -> tuple[tuple[MultiDiGraph], MultiDiGraph]:
+def fragment_graph(graph):
     """
     Fragments a graph into a collection of subgraphs as well as returning
     the communication (`quotient <https://en.wikipedia.org/wiki/Quotient_graph>`__)
@@ -610,6 +607,9 @@ def fragment_graph(graph: MultiDiGraph) -> tuple[tuple[MultiDiGraph], MultiDiGra
             cut_edges.append((node1, node2, wire_key))
             graph_copy.remove_edge(node1, node2, key=wire_key)
 
+    # pylint: disable=import-outside-toplevel
+    from networkx import MultiDiGraph, weakly_connected_components
+
     subgraph_nodes = weakly_connected_components(graph_copy)
     subgraphs = tuple(MultiDiGraph(graph_copy.subgraph(n)) for n in subgraph_nodes)
 
@@ -642,6 +642,8 @@ def fragment_graph(graph: MultiDiGraph) -> tuple[tuple[MultiDiGraph], MultiDiGra
     prepare_nodes_removed = []
 
     for i, s in enumerate(subgraphs):
+        from networkx import has_path  # pylint: disable=import-outside-toplevel
+
         if any(has_path(communication_graph, i, t) for t in terminal_indices):
             subgraphs_connected_to_measurements.append(s)
         else:

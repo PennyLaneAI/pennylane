@@ -33,7 +33,7 @@ from pennylane.wires import Wires, WiresLike
 
 
 class SelectTHC(ResourceOperator):
-    r"""Resource class for creating the custom Select operator for tensor hypercontracted (THC) Hamiltonian.
+    r"""Resource class for creating the custom ``Select`` operator for tensor hypercontracted (THC) Hamiltonian.
 
     .. note::
 
@@ -204,7 +204,7 @@ class SelectTHC(ResourceOperator):
 
         Resources:
             The resources are calculated based on Figure 5 in `arXiv:2011.03494 <https://arxiv.org/abs/2011.03494>`_.
-            The resources are modified to remove the control from the Select operation.
+            The resources are modified to remove the control from the ``Select`` operation.
 
         Returns:
             list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
@@ -447,13 +447,13 @@ class SelectTHC(ResourceOperator):
 
 
 class SelectPauli(ResourceOperator):
-    r"""Resource class for the Select subroutine, when working with a hamiltonian expressed as a linear
+    r"""Resource class for the ``Select`` subroutine, when working with a Hamiltonian expressed as a linear
     combination of unitaries (LCU) where each unitary is a Pauli word.
 
     Args:
-        pauli_ham (:class:`~pennylane.estimator.compact_hamiltonian.PauliHamiltonian`): A hamiltonian
-            expressed as a linear combination of Pauli words, over which we will apply Select.
-        wires (Sequence[int], None): The wires the operation acts on.
+        pauli_ham (:class:`~pennylane.estimator.compact_hamiltonian.PauliHamiltonian`): A Hamiltonian
+            expressed as a linear combination of Pauli words, over which we will apply ``Select``.
+        wires (WiresLike | None): The wires the operation acts on.
 
     Resources:
         The resources are based on the analysis in `Babbush et al. (2018) <https://arxiv.org/pdf/1805.03662>`_ section III.A,
@@ -509,8 +509,8 @@ class SelectPauli(ResourceOperator):
         r"""The resources for a select implementation taking advantage of the unary iterator trick.
 
         Args:
-            pauli_ham (:class:`~pennylane.estimator.compact_hamiltonian.PauliHamiltonian`): A hamiltonian
-            expressed as a linear combination of Pauli words, over which we will apply Select.
+            pauli_ham (:class:`~pennylane.estimator.compact_hamiltonian.PauliHamiltonian`): A Hamiltonian
+            expressed as a linear combination of Pauli words, over which we will apply ``Select``.
 
         Resources:
             The resources are based on the analysis in `Babbush et al. (2018) <https://arxiv.org/pdf/1805.03662>`_ section III.A,
@@ -521,7 +521,7 @@ class SelectPauli(ResourceOperator):
             to select.
 
         Returns:
-            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -583,8 +583,8 @@ class SelectPauli(ResourceOperator):
                 of the target operator.
 
         Resources:
-            Because each target operation is self-adjoint, the resources of the adjoint operation results
-            are same as the original operation (up to some re-ordering of the application of the gates).
+            Because each target operation is self-adjoint, the resources of the adjoint operation are
+            the same as the original operation (up to some re-ordering of the application of the gates).
 
         Returns:
             list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
@@ -608,8 +608,8 @@ class SelectPauli(ResourceOperator):
         Resources:
             The resources are based on the analysis in `Babbush et al. (2018) <https://arxiv.org/pdf/1805.03662>`_ section III.A,
             'Unary Iteration and Indexed Operations'. See Figures 4, 6, and 7. This presents the cost of
-            a single qubit controlled Select operator. In the case of multiple control wires, we use one
-            additional auxiliary qubit and two multi-controlled X gates.
+            a single qubit controlled ``Select`` operator. In the case of multiple control wires, we use one
+            additional auxiliary qubit and two multi-controlled ``X`` gates.
 
             Note: This implementation assumes we have access to :math:`n` additional work qubits,
             where :math:`n = \left\lceil log_{2}(N) \right\rceil` and :math:`N` is the number of batches of unitaries
@@ -694,8 +694,8 @@ class SelectPauli(ResourceOperator):
         Returns:
             dict: A dictionary containing the resource parameters:
                 * pauli_ham (:class:`~pennylane.estimator.compact_hamiltonian.PauliHamiltonian`): A
-                  hamiltonian expressed as a linear combination of Pauli words, over which we will apply
-                  Select.
+                  Hamiltonian expressed as a linear combination of Pauli words, over which we will apply
+                  ``Select``.
 
         """
         return {"pauli_ham": self.pauli_ham}
@@ -703,11 +703,11 @@ class SelectPauli(ResourceOperator):
     @classmethod
     def resource_rep(cls, pauli_ham: PauliHamiltonian) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation.
+        the Operator that are needed to compute the resources.
 
         Args:
-            pauli_ham (:class:`~pennylane.estimator.compact_hamiltonian.PauliHamiltonian`): A hamiltonian
-            expressed as a linear combination of Pauli words, over which we will apply Select.
+            pauli_ham (:class:`~pennylane.estimator.compact_hamiltonian.PauliHamiltonian`): A Hamiltonian
+                expressed as a linear combination of Pauli words, over which we will apply ``Select``.
 
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation

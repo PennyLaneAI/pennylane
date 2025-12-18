@@ -2,44 +2,34 @@
 
 <h3>New features since last release</h3>
 
-* Users can now set precisions for a larger variety of `ResourceOperator`s in
-  :mod:`estimator <pennylane.estimator>` using
-  :meth:`ResourceConfig.set_precision <pennylane.estimator.resource_config.ResourceConfig.set_precision>`
-  thanks to the addition of the `resource_key` keyword argument.
-  [(#8561)](https://github.com/PennyLaneAI/pennylane/pull/8561)
+<h4>Bucket-Brigade QRAM </h4>
 
-* Users can now estimate the resources of Trotterization for Pauli Hamiltonians, using the new
-  :class:`estimator.PauliHamiltonian <pennylane.estimator.compact_hamiltonian.PauliHamiltonian>`
-  resource Hamiltonian class and the new
-  :class:`estimator.TrotterPauli <pennylane.estimator.templates.TrotterPauli>`
-  resource operator.
-  [(#8546)](https://github.com/PennyLaneAI/pennylane/pull/8546)
+* Bucket Brigade QRAM is implemented as a template :class:`~.BBQRAM` to allow for selection of bitstrings in 
+  superposition.
+  [(#8670)](https://github.com/PennyLaneAI/pennylane/pull/8670)
 
-* Users can now perform rapid Clifford+T decomposition with QJIT and program capture enabled,
-  using the new :func:`~pennylane.transforms.gridsynth` compilation pass.
-  This pass discretizes ``RZ`` and ``PhaseShift`` gates to either the Clifford+T basis or to the PPR basis.
-  [(#8609)](https://github.com/PennyLaneAI/pennylane/pull/8609)
+<h4>Quantum Automatic Differentiation </h4>
 
 * Quantum Automatic Differentiation implemented to allow automatic selection of optimal
   Hadamard gradient differentiation methods per [the paper](https://arxiv.org/pdf/2408.05406).
   [(#8640)](https://github.com/PennyLaneAI/pennylane/pull/8640)
 
-* A new decomposition has been added for the Controlled :class:`~.SemiAdder`,
-  which is efficient and skips controlling all gates in its decomposition.
-  [(#8423)](https://github.com/PennyLaneAI/pennylane/pull/8423)
+<h4>Instantaneous Quantum Polynomial Circuits </h4>
 
-* Added a :meth:`~pennylane.devices.DeviceCapabilities.gate_set` method to :class:`~pennylane.devices.DeviceCapabilities`
-  that produces a set of gate names to be used as the target gate set in decompositions.
-  [(#8522)](https://github.com/PennyLaneAI/pennylane/pull/8522)
+* A new template for building an Instantaneous Quantum Polynomial (`~.IQP`) circuit has been added along with a 
+  lightweight version (based on the :class:`~.estimator.resource_operator.ResourceOperator` class) to rapidly 
+  estimate its resources. This unlocks easily estimating the resources of the IQP circuit introduced in the 
+  `Train on classical, deploy on quantum <https://arxiv.org/abs/2503.02934>`_ work for generative quantum machine 
+  learning.
+  [(#8748)](https://github.com/PennyLaneAI/pennylane/pull/8748)
 
-* The :func:`~pennylane.transforms.decompose` transform now accepts a `minimize_work_wires` argument. With
-  the new graph-based decomposition system activated via :func:`~pennylane.decomposition.enable_graph`,
-  and `minimize_work_wires` set to `True`, the decomposition system will select decomposition rules that
-  minimizes the maximum number of simultaneously allocated work wires.
-  [(#8729)](https://github.com/PennyLaneAI/pennylane/pull/8729)
-  [(#8734)](https://github.com/PennyLaneAI/pennylane/pull/8734)
+<h4>Pauli-based computation </h4>
 
-<h4>Pauli product measurements</h4>
+* Users can now perform rapid Clifford+T decomposition with :func:`pennylane.qjit` using the new 
+  :func:`~pennylane.transforms.gridsynth` compilation pass.
+  This pass discretizes ``RZ`` and ``PhaseShift`` gates to either the Clifford+T basis or to the PPR basis.
+  [(#8609)](https://github.com/PennyLaneAI/pennylane/pull/8609)
+  [(#8764)](https://github.com/PennyLaneAI/pennylane/pull/8764)
 
 * Writing circuits in terms of `Pauli product measurements <https://pennylane.ai/compilation/pauli-product-measurement>`_
   (PPMs) in PennyLane is now possible with the new :func:`~.pauli_measure` function.
@@ -58,7 +48,7 @@
 
   ```python
   import pennylane as qml
-  
+
   dev = qml.device("null.qubit", wires=3)
 
   @qml.qnode(dev)
@@ -99,10 +89,41 @@
     expval(PauliZ): 1
   ```
 
-<h4> Compile Pipeline and Transforms </h4>
+* Catalyst compilation passes designed for Pauli-based computation are now available in PennyLane, 
+  providing accessibility for logical compilation research by directly integrating with 
+  :func:`~.pauli_measure` and :class:`~.PauliRot` operations. This includes 
+  :func:`pennylane.transforms.to_ppr`, :func:`pennylane.transforms.commute_ppr`, 
+  :func:`pennylane.transforms.ppr_to_ppm`, 
+  :func:`pennylane.transforms.merge_ppr_ppm`, :func:`pennylane.transforms.ppm_compilation`, 
+  :func:`pennylane.transforms.reduce_t_depth`, 
+  [(#8762)](https://github.com/PennyLaneAI/pennylane/pull/8762)
 
-* Arithmetic dunder methods (`__add__`, `__mul__`, `__rmul__`) have been added to 
-  :class:`~.transforms.core.TransformDispatcher`, :class:`~.transforms.core.TransformContainer`, 
+* New decomposition rules that decompose to :class:`~.PauliRot` are added for the following operators.
+  [(#8700)](https://github.com/PennyLaneAI/pennylane/pull/8700)
+  [(#8704)](https://github.com/PennyLaneAI/pennylane/pull/8704)
+
+  - :class:`~.CRX`, :class:`~.CRY`, :class:`~.CRZ`
+  - :class:`~.ControlledPhaseShift`
+  - :class:`~.IsingXX`, :class:`~.IsingYY`, :class:`~.IsingZZ`
+  - :class:`~.PSWAP`
+  - :class:`~.RX`, :class:`~.RY`, :class:`~.RZ`
+  - :class:`~.SingleExcitation`, :class:`~.DoubleExcitation`
+  - :class:`~.SWAP`, :class:`~.ISWAP`, :class:`~.SISWAP`
+  - :class:`~.CY`, :class:`~.CZ`, :class:`~.CSWAP`, :class:`~.CNOT`, :class:`~.Toffoli`
+
+<h4>Compile Pipeline and Transforms </h4>
+
+* Added a custom solver to :func:`~.transforms.intermediate_reps.rowcol` for linear systems
+  over :math:`\mathbb{Z}_2` based on Gauss-Jordan elimination. This removes the need to install
+  the ``galois`` package for this single function and provides a minor performance improvement.
+  [(#8771)](https://github.com/PennyLaneAI/pennylane/pull/8771)
+
+* Added decompositions of the ``RX``, ``RY`` and ``RZ`` rotations into one of the other two, as well
+  as basis changing Clifford gates, to the graph-based decomposition system.
+  [(#8569)](https://github.com/PennyLaneAI/pennylane/pull/8569)
+
+* Arithmetic dunder methods (`__add__`, `__mul__`, `__rmul__`) have been added to
+  :class:`~.transforms.core.TransformDispatcher`, :class:`~.transforms.core.TransformContainer`,
   and :class:`~.CompilePipeline` (previously known as the `TransformProgram`) to enable intuitive composition of transform programs using `+` and `*` operators.
   [(#8703)](https://github.com/PennyLaneAI/pennylane/pull/8703)
 
@@ -118,30 +139,6 @@
 
   [(#8730)](https://github.com/PennyLaneAI/pennylane/pull/8730)
 
-* `@partial` is not needed anymore for using transforms as decorators with arguments.
-  Now, the following two usages are equivalent:
-
-  ```python
-  @partial(qml.transforms.decompose, gate_set={qml.RX, qml.CNOT})
-  @qml.qnode(qml.device('default.qubit', wires=2))
-  def circuit():
-      qml.Hadamard(wires=0)
-      qml.CZ(wires=[0,1])
-      return qml.expval(qml.Z(0))
-  ```
-
-  ```python
-  @qml.transforms.decompose(gate_set={qml.RX, qml.CNOT})
-  @qml.qnode(qml.device('default.qubit', wires=2))
-  def circuit():
-      qml.Hadamard(wires=0)
-      qml.CZ(wires=[0,1])
-      return qml.expval(qml.Z(0))
-  ```
-
-  [(#8730)](https://github.com/PennyLaneAI/pennylane/pull/8730)
-  [(#8754)](https://github.com/PennyLaneAI/pennylane/pull/8754)
-
 * The `TransformProgram` has been renamed to :class:`~pennylane.transforms.core.CompilePipeline`, and uses of
   the term "transform program" has been updated to "compile pipeline" across the codebase. The class is still
   accessible as `TransformProgram` from `pennylane.transforms.core`, but the module `pennylane.transforms.core.transform_program`
@@ -156,36 +153,10 @@
   QNodes.
   [(#8731)](https://github.com/PennyLaneAI/pennylane/pull/8731)
 
-* :class:`~.transforms.core.TransformContainer` has been renamed to :class:`~.transforms.core.BoundTransform`.
-  The old name is still available in the same location.
-  [(#8753)](https://github.com/PennyLaneAI/pennylane/pull/8753)
 * The :class:`~.CompilePipeline` (previously known as the `TransformProgram`) can now be constructed
   more flexibility with a variable number of arguments that are of types `TransformDispatcher`,
   `TransformContainer`, or other `CompilePipeline`s.
   [(#8750)](https://github.com/PennyLaneAI/pennylane/pull/8750)
-
-<h3>Improvements 🛠</h3>
-
-* Added `Resources.total_wires` and `Resources.total_gates` properties to the 
-  ``qml.estimator.Resources`` class. Users can more easily access these quantities from the `Resources` object directly.
-  [(#8761)](https://github.com/PennyLaneAI/pennylane/pull/8761)
-
-* Added `PauliHamiltonian.num_terms` property to the ``qml.estimator.PauliHamiltonian`` class.
-  Users can more easily access the total number of terms (Pauli words) from the `PauliHamiltonian` object directly.
-  [(#8761)](https://github.com/PennyLaneAI/pennylane/pull/8761)
-
-* Improved the resource decomposition for the :class:`~pennylane.estimator.QROM` class. The cost has
-  been reduced in cases when users specify `restored = True` and `sel_swap_depth = 1`.
-  [(#8761)](https://github.com/PennyLaneAI/pennylane/pull/8761)
-
-* Improved :mod:`estimator <pennylane.estimator>`'s
-  resource decomposition of `PauliRot` to match the optimal resources
-  for certain special cases of Pauli strings (e.g. for `XX` and `YY` type Pauli strings).
-  [(#8562)](https://github.com/PennyLaneAI/pennylane/pull/8562)
-
-* Added a new decomposition, `_decompose_2_cnots`, for the two-qubit decomposition for `QubitUnitary`.
-  It supports the analytical decomposition a two-qubit unitary known to require exactly 2 CNOTs.
-  [(#8666)](https://github.com/PennyLaneAI/pennylane/issues/8666)
 
 * Quantum compilation passes in MLIR and XDSL can now be applied using the core PennyLane transform
   infrastructure, instead of using Catalyst-specific tools. This is made possible by a new argument in
@@ -195,9 +166,26 @@
   workflow, where the pass is performed in MLIR or xDSL.
   [(#8539)](https://github.com/PennyLaneAI/pennylane/pull/8539)
 
-* `Operator.decomposition` will fallback to the first entry in `qml.list_decomps` if the `Operator.compute_decomposition`
-  method is not overridden.
-  [(#8686)](https://github.com/PennyLaneAI/pennylane/pull/8686)
+<h4>Analyzing your algorithms quickly and easily with resource estimation</h4>
+
+* Users can now set precisions for a larger variety of `ResourceOperator`s in
+  :mod:`estimator <pennylane.estimator>` using
+  :meth:`ResourceConfig.set_precision <pennylane.estimator.resource_config.ResourceConfig.set_precision>`
+  thanks to the addition of the `resource_key` keyword argument.
+  [(#8561)](https://github.com/PennyLaneAI/pennylane/pull/8561)
+
+* Users can now estimate the resources of Trotterization for Pauli Hamiltonians, using the new
+  :class:`estimator.PauliHamiltonian <pennylane.estimator.compact_hamiltonian.PauliHamiltonian>`
+  resource Hamiltonian class and the new
+  :class:`estimator.TrotterPauli <pennylane.estimator.templates.TrotterPauli>`
+  resource operator.
+  [(#8546)](https://github.com/PennyLaneAI/pennylane/pull/8546)
+
+* Added `PauliHamiltonian.num_terms` property to the ``qml.estimator.PauliHamiltonian`` class.
+  Users can more easily access the total number of terms (Pauli words) from the `PauliHamiltonian` object directly.
+  [(#8761)](https://github.com/PennyLaneAI/pennylane/pull/8761)
+
+<h4>Seamless resource tracking and circuit visualization for compiled programs </h4>
 
 * A new :func:`~.marker` function allows for easy inspection at particular points in a transform program
   with :func:`~.specs` and :func:`~.drawer.draw` instead of having to increment ``level``
@@ -232,13 +220,52 @@
   0: ──RX(6.68)─┤  State
   ```
 
-* `qml.for_loop` will now fall back to a standard Python `for` loop if capturing a condensed, structured loop fails
-  with program capture enabled.
-  [(#8615)](https://github.com/PennyLaneAI/pennylane/pull/8615)
+<h3>Improvements 🛠</h3>
 
-* `qml.cond` will now use standard Python logic if all predicates have concrete values. A nested
-  control flow primitive will no longer be captured as it is not needed.
-  [(#8634)](https://github.com/PennyLaneAI/pennylane/pull/8634)
+<h4>Resource estimation</h4>
+
+* Added `Resources.total_wires` and `Resources.total_gates` properties to the 
+  ``qml.estimator.Resources`` class. Users can more easily access these quantities from the `Resources` object directly.
+  [(#8761)](https://github.com/PennyLaneAI/pennylane/pull/8761)
+
+* Improved the resource decomposition for the :class:`~pennylane.estimator.QROM` class. The cost has
+  been reduced in cases when users specify `restored = True` and `sel_swap_depth = 1`.
+  [(#8761)](https://github.com/PennyLaneAI/pennylane/pull/8761)
+
+* Improved :mod:`estimator <pennylane.estimator>`'s
+  resource decomposition of `PauliRot` to match the optimal resources
+  for certain special cases of Pauli strings (e.g. for `XX` and `YY` type Pauli strings).
+  [(#8562)](https://github.com/PennyLaneAI/pennylane/pull/8562)
+
+* Users can now estimate the resources for quantum circuits that contain or decompose into
+  any of the following symbolic operators: :class:`~.ChangeOpBasis`, :class:`~.Prod`,
+  :class:`~.Controlled`, :class:`~.ControlledOp`, :class:`~.Pow`, and :class:`~.Adjoint`.
+  [(#8464)](https://github.com/PennyLaneAI/pennylane/pull/8464)
+
+<h4>Decompositions</h4>
+
+* A new decomposition has been added for the Controlled :class:`~.SemiAdder`,
+  which is efficient and skips controlling all gates in its decomposition.
+  [(#8423)](https://github.com/PennyLaneAI/pennylane/pull/8423)
+
+* Added a :meth:`~pennylane.devices.DeviceCapabilities.gate_set` method to :class:`~pennylane.devices.DeviceCapabilities`
+  that produces a set of gate names to be used as the target gate set in decompositions.
+  [(#8522)](https://github.com/PennyLaneAI/pennylane/pull/8522)
+
+* The :func:`~pennylane.transforms.decompose` transform now accepts a `minimize_work_wires` argument. With
+  the new graph-based decomposition system activated via :func:`~pennylane.decomposition.enable_graph`,
+  and `minimize_work_wires` set to `True`, the decomposition system will select decomposition rules that
+  minimizes the maximum number of simultaneously allocated work wires.
+  [(#8729)](https://github.com/PennyLaneAI/pennylane/pull/8729)
+  [(#8734)](https://github.com/PennyLaneAI/pennylane/pull/8734)
+
+* Added a new decomposition, `_decompose_2_cnots`, for the two-qubit decomposition for `QubitUnitary`.
+  It supports the analytical decomposition a two-qubit unitary known to require exactly 2 CNOTs.
+  [(#8666)](https://github.com/PennyLaneAI/pennylane/issues/8666)
+
+* `Operator.decomposition` will fallback to the first entry in `qml.list_decomps` if the `Operator.compute_decomposition`
+  method is not overridden.
+  [(#8686)](https://github.com/PennyLaneAI/pennylane/pull/8686)
 
 * The `~.BasisRotation` graph decomposition was re-written in a qjit friendly way with PennyLane control flow.
   [(#8560)](https://github.com/PennyLaneAI/pennylane/pull/8560)
@@ -284,6 +311,71 @@
   - :class:`~.ParticleConservingU1`
   - :class:`~.CommutingEvolution`
 
+* A new decomposition has been added to :class:`pennylane.Toffoli`. This decomposition uses one
+  work wire and :class:`pennylane.TemporaryAND` operators to reduce the resources needed.
+  [(#8549)](https://github.com/PennyLaneAI/pennylane/pull/8549)
+
+* The :func:`~pennylane.pauli_decompose` now supports decomposing scipy's sparse matrices,
+  allowing for efficient decomposition of large matrices that cannot fit in memory when written as
+  dense arrays.
+  [(#8612)](https://github.com/PennyLaneAI/pennylane/pull/8612)
+  
+* A decomposition has been added to the adjoint of :class:`pennylane.TemporaryAND`. This decomposition relies on mid-circuit measurments and does not require any T gates.
+  [(#8633)](https://github.com/PennyLaneAI/pennylane/pull/8633)
+
+* The graph-based decomposition system now supports decomposition rules that contains mid-circuit measurements.
+  [(#8079)](https://github.com/PennyLaneAI/pennylane/pull/8079)
+
+* The decompositions for several templates have been updated to use
+  :class:`~.ops.op_math.ChangeOpBasis`, which makes their decompositions more resource efficient
+  by eliminating unnecessary controlled operations. The templates include :class:`~.PhaseAdder`,
+  :class:`~.TemporaryAND`, :class:`~.QSVT`, and :class:`~.SelectPauliRot`.
+  [(#8490)](https://github.com/PennyLaneAI/pennylane/pull/8490)
+  [(#8577)](https://github.com/PennyLaneAI/pennylane/pull/8577)
+  [(#8721)](https://github.com/PennyLaneAI/pennylane/issues/8721)
+
+<h4>Other improvements</h4>
+
+* The constant to convert the length unit Bohr to Angstrom in ``qml.qchem`` is updated to use scipy
+  constants.
+  [(#8537)](https://github.com/PennyLaneAI/pennylane/pull/8537)
+
+* `@partial` is not needed anymore for using transforms as decorators with arguments.
+  Now, the following two usages are equivalent:
+
+  ```python
+  @partial(qml.transforms.decompose, gate_set={qml.RX, qml.CNOT})
+  @qml.qnode(qml.device('default.qubit', wires=2))
+  def circuit():
+      qml.Hadamard(wires=0)
+      qml.CZ(wires=[0,1])
+      return qml.expval(qml.Z(0))
+  ```
+
+  ```python
+  @qml.transforms.decompose(gate_set={qml.RX, qml.CNOT})
+  @qml.qnode(qml.device('default.qubit', wires=2))
+  def circuit():
+      qml.Hadamard(wires=0)
+      qml.CZ(wires=[0,1])
+      return qml.expval(qml.Z(0))
+  ```
+
+  [(#8730)](https://github.com/PennyLaneAI/pennylane/pull/8730)
+  [(#8754)](https://github.com/PennyLaneAI/pennylane/pull/8754)
+
+* :class:`~.transforms.core.TransformContainer` has been renamed to :class:`~.transforms.core.BoundTransform`.
+  The old name is still available in the same location.
+  [(#8753)](https://github.com/PennyLaneAI/pennylane/pull/8753)
+
+* `qml.for_loop` will now fall back to a standard Python `for` loop if capturing a condensed, structured loop fails
+  with program capture enabled.
+  [(#8615)](https://github.com/PennyLaneAI/pennylane/pull/8615)
+
+* `qml.cond` will now use standard Python logic if all predicates have concrete values. A nested
+  control flow primitive will no longer be captured as it is not needed.
+  [(#8634)](https://github.com/PennyLaneAI/pennylane/pull/8634)
+
 * Added a keyword argument ``recursive`` to ``qml.transforms.cancel_inverses`` that enables
   recursive cancellation of nested pairs of mutually inverse gates. This makes the transform
   more powerful, because it can cancel larger blocks of inverse gates without having to scan
@@ -303,11 +395,6 @@
   variables from outside the workflow scope.
   [(#8504)](https://github.com/PennyLaneAI/pennylane/pull/8504)
 
-* Users can now estimate the resources for quantum circuits that contain or decompose into
-  any of the following symbolic operators: :class:`~.ChangeOpBasis`, :class:`~.Prod`,
-  :class:`~.Controlled`, :class:`~.ControlledOp`, :class:`~.Pow`, and :class:`~.Adjoint`.
-  [(#8464)](https://github.com/PennyLaneAI/pennylane/pull/8464)
-
 * Wires can be specified via `range` with program capture and autograph.
   [(#8500)](https://github.com/PennyLaneAI/pennylane/pull/8500)
 
@@ -316,38 +403,17 @@
   system is disabled.
   [(#8532)](https://github.com/PennyLaneAI/pennylane/pull/8532)
 
-* A new decomposition has been added to :class:`pennylane.Toffoli`. This decomposition uses one
-  work wire and :class:`pennylane.TemporaryAND` operators to reduce the resources needed.
-  [(#8549)](https://github.com/PennyLaneAI/pennylane/pull/8549)
-
-* The :func:`~pennylane.pauli_decompose` now supports decomposing scipy's sparse matrices,
-  allowing for efficient decomposition of large matrices that cannot fit in memory when written as
-  dense arrays.
-  [(#8612)](https://github.com/PennyLaneAI/pennylane/pull/8612)
-  
-* A decomposition has been added to the adjoint of :class:`pennylane.TemporaryAND`. This decomposition relies on mid-circuit measurments and does not require any T gates.
-  [(#8633)](https://github.com/PennyLaneAI/pennylane/pull/8633)
-
-* The graph-based decomposition system now supports decomposition rules that contains mid-circuit measurements.
-  [(#8079)](https://github.com/PennyLaneAI/pennylane/pull/8079)
-
 * The `~pennylane.estimator.compact_hamiltonian.CDFHamiltonian`, `~pennylane.estimator.compact_hamiltonian.THCHamiltonian`,
   `~pennylane.estimator.compact_hamiltonian.VibrationalHamiltonian`, and `~pennylane.estimator.compact_hamiltonian.VibronicHamiltonian`
   classes were modified to take the 1-norm of the Hamiltonian as an optional argument.
   [(#8697)](https://github.com/PennyLaneAI/pennylane/pull/8697)
 
-* New decomposition rules that decompose to :class:`~.PauliRot` are added for the following operators.
-  [(#8700)](https://github.com/PennyLaneAI/pennylane/pull/8700)
-  [(#8704)](https://github.com/PennyLaneAI/pennylane/pull/8704)
+<h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
-  - :class:`~.CRX`, :class:`~.CRY`, :class:`~.CRZ`
-  - :class:`~.ControlledPhaseShift`
-  - :class:`~.IsingXX`, :class:`~.IsingYY`, :class:`~.IsingZZ`
-  - :class:`~.PSWAP`
-  - :class:`~.RX`, :class:`~.RY`, :class:`~.RZ`
-  - :class:`~.SingleExcitation`, :class:`~.DoubleExcitation`
-  - :class:`~.SWAP`, :class:`~.ISWAP`, :class:`~.SISWAP`
-  - :class:`~.CY`, :class:`~.CZ`, :class:`~.CSWAP`, :class:`~.CNOT`, :class:`~.Toffoli`
+* A new transform :func:`~.transforms.select_pauli_rot_phase_gradient` has been added. It allows 
+  implementing arbitrary :class:`~.SelectPauliRot` rotations with a phase gradient resource state and 
+  semi-in-place addition (:class:`~.SemiAdder`).
+  [(#8738)](https://github.com/PennyLaneAI/pennylane/pull/8738)
 
 <h3>Breaking changes 💔</h3>
 
@@ -453,6 +519,21 @@
   has been renamed to `pennylane.transforms.core.compile_pipeline`, and the old name is no longer available.
   [(#8735)](https://github.com/PennyLaneAI/pennylane/pull/8735)
 
+* The ``max_work_wires`` argument of the :func:`~pennylane.transforms.decompose` transform has been renamed to ``num_work_wires``.
+  [(#8769)](https://github.com/PennyLaneAI/pennylane/pull/8769)
+
+* ``argnum`` has been renamed ``argnums`` for ``qml.grad``, ``qml.jacobian``, ``qml.jvp`` and ``qml.vjp``.
+  [(#8496)](https://github.com/PennyLaneAI/pennylane/pull/8496)
+  [(#8481)](https://github.com/PennyLaneAI/pennylane/pull/8481)
+
+* `qml.cond`, the `QNode`, transforms, `qml.grad`, and `qml.jacobian` no longer treat all keyword arguments as static
+  arguments. They are instead treated as dynamic, numerical inputs, matching the behaviour of Jax and Catalyst.
+  [(#8290)](https://github.com/PennyLaneAI/pennylane/pull/8290)
+
+* `qml.cond` will also accept a partial of an operator type as the true function without a false function
+  when capture is enabled.
+  [(#8776)](https://github.com/PennyLaneAI/pennylane/pull/8776)
+  
 <h3>Deprecations 👋</h3>
 
 * Maintenance support of NumPy<2.0 is deprecated as of v0.44 and will be completely dropped in v0.45.
@@ -487,10 +568,6 @@
   - ``qml.estimator.FirstQuantization`` in favor of ``qml.resources.FirstQuantization``
   - ``qml.estimator.DoubleFactorization`` in favor of ``qml.resources.DoubleFactorization``
 
-* ``argnum`` has been renamed ``argnums`` for ``qml.grad``, ``qml.jacobian``, ``qml.jvp`` and ``qml.vjp``.
-  [(#8496)](https://github.com/PennyLaneAI/pennylane/pull/8496)
-  [(#8481)](https://github.com/PennyLaneAI/pennylane/pull/8481)
-
 * The :func:`pennylane.devices.preprocess.mid_circuit_measurements` transform is deprecated. Instead,
   the device should determine which mcm method to use, and explicitly include :func:`~pennylane.transforms.dynamic_one_shot`
   or :func:`~pennylane.transforms.defer_measurements` in its preprocess transforms if necessary.
@@ -507,7 +584,7 @@
 
   ```python
   import pennylane as qml
-  
+
   @qml.transforms.decompose(gate_set={"H", "T", "CNOT"}, stopping_condition=lambda op: len(op.wires) <= 2)
   @qml.qnode(qml.device("default.qubit"))
   def circuit():
@@ -525,12 +602,17 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Updated `pyproject.toml` with project dependencies to replace the requirements files. Updated workflows to use installations from `pyproject.toml`.
+  [(8702)](https://github.com/PennyLaneAI/pennylane/pull/8702)
+
 * `qml.cond`, the `QNode`, transforms, `qml.grad`, and `qml.jacobian` no longer treat all keyword arguments as static
   arguments. They are instead treated as dynamic, numerical inputs, matching the behaviour of Jax and Catalyst.
   [(#8290)](https://github.com/PennyLaneAI/pennylane/pull/8290)
 
 * To adjust to the Python 3.14, some error messages expectations have been updated in tests; `get_type_str` added a special branch to handle `Union`.
+  The import of networkx is softened to not occur on import of pennylane to work around a bug in Python 3.14.1.
   [(#8568)](https://github.com/PennyLaneAI/pennylane/pull/8568)
+  [(#8737)](https://github.com/PennyLaneAI/pennylane/pull/8737)
 
 * Bump `jax` version to `0.7.1` for `capture` module.
   [(#8715)](https://github.com/PennyLaneAI/pennylane/pull/8715)
@@ -599,18 +681,6 @@
   [(#8519)](https://github.com/PennyLaneAI/pennylane/pull/8519)
   [(#8544)](https://github.com/PennyLaneAI/pennylane/pull/8544)
 
-* The decompositions for several templates have been updated to use
-  :class:`~.ops.op_math.ChangeOpBasis`, which makes their decompositions more resource efficient
-  by eliminating unnecessary controlled operations. The templates include :class:`~.PhaseAdder`,
-  :class:`~.TemporaryAND`, :class:`~.QSVT`, and :class:`~.SelectPauliRot`.
-  [(#8490)](https://github.com/PennyLaneAI/pennylane/pull/8490)
-  [(#8577)](https://github.com/PennyLaneAI/pennylane/pull/8577)
-  [(#8721)](https://github.com/PennyLaneAI/pennylane/issues/8721)
-
-* The constant to convert the length unit Bohr to Angstrom in ``qml.qchem`` is updated to use scipy
-  constants.
-  [(#8537)](https://github.com/PennyLaneAI/pennylane/pull/8537)
-
 * Solovay-Kitaev decomposition using the :func:`~.clifford_t_decompostion` transform
   with ``method="sk"`` or directly via :func:`~.ops.sk_decomposition` now raises a more
   informative ``RuntimeError`` when used with JAX-JIT or :func:`~.qjit`.
@@ -621,14 +691,21 @@
   that the resource function is correct.
   [(#8687)](https://github.com/PennyLaneAI/pennylane/pull/8687)
 
+* Disabled autograph for the PauliRot decomposition rule as it should not be used with autograph. 
+  [(#8765)](https://github.com/PennyLaneAI/pennylane/pull/8765)
+
 <h3>Documentation 📝</h3>
+
+* A note clarifying that the factors of a ``~.ChangeOpBasis`` are iterated in reverse order has been
+  added to the documentation of ``~.ChangeOpBasis``.
+  [(#8757)](https://github.com/PennyLaneAI/pennylane/pull/8757)
 
 * The documentation of ``qml.transforms.rz_phase_gradient`` has been updated with respect to the
   sign convention of phase gradient states, how it prepares the phase gradient state in the code
   example, and the verification of the code example result.
 
 * The code example in the documentation for ``qml.decomposition.register_resources`` has been
-  updated to adhere to renamed keyword arguments and default behaviour of ``max_work_wires``.
+  updated to adhere to renamed keyword arguments and default behaviour of ``num_work_wires``.
   [(#8536)](https://github.com/PennyLaneAI/pennylane/pull/8536)
 
 * The docstring for ``qml.device`` has been updated to include a section on custom decompositions,
@@ -650,11 +727,15 @@ A warning message has been added to :doc:`Building a plugin <../development/plug
 * Improves documentation in the transforms module and adds documentation testing for it.
   [(#8557)](https://github.com/PennyLaneAI/pennylane/pull/8557)
 
-<h3>Bug fixes 🐛</h3>
-
 * The :class:`~.GeneralizedAmplitudeDamping` error channel method has been
   updated to match the literature convention for the definition of the Kraus matrices.
   [(#8707)](https://github.com/PennyLaneAI/pennylane/pull/8707)
+
+<h3>Bug fixes 🐛</h3>
+
+* Use a fixed floating number tolerance from `np.finfo` in `_apply_uniform_rotation_dagger`
+  to avoid numerical stability issues on some platforms.
+  [(#8780)](https://github.com/PennyLaneAI/pennylane/pull/8780)
 
 * Handles floating point errors in the norm of the state when applying
   mid circuit measurements.
@@ -727,6 +808,7 @@ A warning message has been added to :doc:`Building a plugin <../development/plug
 
 This release contains contributions from (in alphabetical order):
 
+Runor Agbaire,
 Guillermo Alonso,
 Utkarsh Azad,
 Astral Cai,
@@ -736,6 +818,7 @@ Marcus Edwards,
 Lillian Frederiksen,
 Sengthai Heng,
 Soran Jahangiri,
+Jeffrey Kam,
 Jacob Kitchen,
 Christina Lee,
 Joseph Lee,

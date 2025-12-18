@@ -1898,6 +1898,12 @@ class TestResourceReflection:
         assert op.num_wires == 1
         assert op.cmpr_U == qre.Identity.resource_rep()
 
+    @pytest.mark.parametrize("alpha", (-1, 7))
+    def test_init_alpha_error(self, alpha):
+        """Test that an error is raised if the alpha is provided outside of the expected range"""
+        with pytest.raises(ValueError, match="alpha must be within"):
+            _ = qre.Reflection(num_wires=1, alpha=alpha)
+
     @pytest.mark.parametrize(
         "U, alpha",
         (
@@ -2168,8 +2174,8 @@ class TestResourceQubitization:
         """Test that the resource params are correct."""
         op = qre.Qubitization(prep, sel)
         assert op.resource_params == {
-            "prep": prep.resource_rep_from_op(),
-            "sel": sel.resource_rep_from_op(),
+            "prep_op": prep.resource_rep_from_op(),
+            "select_op": sel.resource_rep_from_op(),
         }
 
     @pytest.mark.parametrize(
@@ -2193,7 +2199,7 @@ class TestResourceQubitization:
         expected = qre.CompressedResourceOp(
             qre.Qubitization,
             sel_cmpr.num_wires,
-            {"prep": prep_cmpr, "sel": sel_cmpr},
+            {"prep_op": prep_cmpr, "select_op": sel_cmpr},
         )
         assert qre.Qubitization.resource_rep(prep_cmpr, sel_cmpr) == expected
 
@@ -2239,7 +2245,7 @@ class TestResourceQubitization:
     )
     def test_adjoint_resources(self, prep_cmpr, sel_cmpr):
         """Test that the adjoint resources are correct."""
-        target_params = {"prep": prep_cmpr, "sel": sel_cmpr}
+        target_params = {"prep_op": prep_cmpr, "select_op": sel_cmpr}
         ref_op = qre.Reflection.resource_rep(
             num_wires=prep_cmpr.num_wires, alpha=math.pi, cmpr_U=prep_cmpr
         )
@@ -2269,7 +2275,7 @@ class TestResourceQubitization:
     )
     def test_controlled_resources(self, num_ctrl_wires, num_zero_ctrl, prep_cmpr, sel_cmpr):
         """Test that the controlled resources are correct."""
-        target_params = {"prep": prep_cmpr, "sel": sel_cmpr}
+        target_params = {"prep_op": prep_cmpr, "select_op": sel_cmpr}
         ref_op = qre.Reflection.resource_rep(
             num_wires=prep_cmpr.num_wires, alpha=math.pi, cmpr_U=prep_cmpr
         )

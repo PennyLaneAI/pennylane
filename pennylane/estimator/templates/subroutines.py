@@ -2276,19 +2276,19 @@ class Reflection(ResourceOperator):
     Args:
         num_wires (int | None): number of wires the operator acts on
         U (:class:`~.pennylane.estimator.resource_operator.ResourceOperator` | None): the operator that prepares the state :math:`|\Psi\rangle`
-        alpha (float | None): the angle of the operator, default is :math:`\pi`
-        wires (Sequence[int], None): The wires the operation acts on.
+        alpha (float | None): the angle of the operator, should be between :math:`[0, 2\pi]`. Default is :math:`\pi`.
+        wires (WiresLike | None): The wires the operation acts on.
 
     Resources:
         The resources are derived from the decomposition :math:`R(U, \alpha) = U R(\alpha) U^\dagger`.
         The center block :math:`R(\alpha) = -I + (1 - e^{i\alpha})|0\rangle\langle 0|` is implemented
-        using a multi-controlled phase shift:
+        using a multi-controlled ``PhaseShift``:
 
         .. math::
 
             R(\alpha) = I \otimes X(0) \text{Controlled}(\text{PhaseShift}(0), \text{control}=[1, \dots], \text{values}=[1, \dots]) X(0)
 
-        In the special case where :math:`\alpha = \pi`, the phase shift becomes a Z gate.
+        In the special case where :math:`\alpha = \pi`, the phase shift becomes a ``Z`` gate.
         If :math:`\alpha = 0` or :math:`\alpha = 2\pi`, the center block cancels out, leaving :math:`-I`.
         The cost for :math:`-I` is calculated as :math:`X Z X Z = -I`.
 
@@ -2326,7 +2326,10 @@ class Reflection(ResourceOperator):
         wires: WiresLike = None,
     ) -> None:
         self.queue()
-        self.alpha = alpha  # TODO: assert alpha is in [0, 2pi]
+
+        if (alpha > 2 * qnp.pi) or (alpha < 0):
+            raise ValueError(f"alpha must be within [0, 2pi], got {alpha}")
+        self.alpha = alpha
 
         if U is None and num_wires is None:
             raise ValueError("Must provide atleast one of `num_wires` or `U`")
@@ -2361,14 +2364,14 @@ class Reflection(ResourceOperator):
         Resources:
             The resources are derived from the decomposition :math:`R(U, \alpha) = U R(\alpha) U^\dagger`.
             The center block :math:`R(\alpha)` is implemented as a multi-controlled phase shift sandwiched
-            by X gates on the target wire.
+            by ``X`` gates on the target wire.
 
-            If :math:`\alpha = \pi`, the phase shift is replaced by a Z gate.
+            If :math:`\alpha = \pi`, the phase shift is replaced by a ``Z`` gate.
             If :math:`\alpha = 0` or :math:`\alpha = 2\pi`, the operator simplifies to :math:`-I`,
             which costs :math:`X Z X Z`.
 
         Returns:
-            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -2401,7 +2404,7 @@ class Reflection(ResourceOperator):
         return gate_types
 
     @classmethod
-    def adjoint_resource_decomp(cls, target_resource_params=None):
+    def adjoint_resource_decomp(cls, target_resource_params):
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Args:
@@ -2409,8 +2412,8 @@ class Reflection(ResourceOperator):
                 of the target operator.
 
         Resources:
-            Reflections are always self-inverse operators. This together with the fact that this is
-            a unitary operator implies that it is self-adjoint.
+            ``Reflection`` operators are always self-inverse operators. This together with the fact
+            that this is a unitary operator implies that it is self-adjoint.
 
         Returns:
             list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
@@ -2420,7 +2423,7 @@ class Reflection(ResourceOperator):
         return [GateCount(cls.resource_rep(**target_resource_params))]
 
     @classmethod
-    def controlled_resource_decomp(cls, num_ctrl_wires, num_zero_ctrl, target_resource_params=None):
+    def controlled_resource_decomp(cls, num_ctrl_wires, num_zero_ctrl, target_resource_params):
         r"""Returns a list representing the resources for a controlled version of the operator.
 
         Args:
@@ -2517,21 +2520,22 @@ class Reflection(ResourceOperator):
 
 
 class Qubitization(ResourceOperator):
-    r"""Resource class for the Qubitization operator.
+    r"""Resource class for the Qubitization operator. This operator encodes a Hamiltonian, written
+    as a linear combination of unitaries, into a unitary operator (see Figure 1 in
+    `arXiv:1805.03662 <https://arxiv.org/abs/1805.03662>`_).
 
-    This operator is defined in multiple papers:
-    - Figure 1 in here: https://arxiv.org/pdf/1805.03662
-    - Figure 1 in here: https://arxiv.org/pdf/2011.03494
+    .. math::
+        Q =  \text{Prep}_{\mathcal{H}}(2|0\rangle\langle 0| - I)\text{Prep}_{\mathcal{H}}^{\dagger} \text{Sel}_{\mathcal{H}}.
 
     Args:
         prep_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): the operator that prepares the coefficients of the LCU
-        sel_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): the operator that selectively applies the unitaries of the LCU
-        wires (Sequence[int], None): the wires the operation acts on
+        select_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): the operator that selectively applies the unitaries of the LCU
+        wires (WiresLike | None): the wires the operation acts on
 
     Resources:
-        The resources are obtained from equation (9) in `Babbush et al. (2018) <https://arxiv.org/pdf/1805.03662>`_.
+        The resources are obtained from equation (9) in `Babbush et al. (2018) <https://arxiv.org/abs/1805.03662>`_.
         Specifically, the walk operator is defined as :math:`W = R \cdot S`, where :math:`R` is a reflection about the state prepared by
-        the prepare operator, and :math:`S` is the select operator. The cost is therefore 1 Select + 1 Reflection.
+        the ``Prepare`` operator, and :math:`S` is the ``Select`` operator. The cost is therefore one ``Select`` and one ``Reflection``.
 
     **Example**
 
@@ -2539,8 +2543,8 @@ class Qubitization(ResourceOperator):
 
     >>> import pennylane.estimator as qre
     >>> prep_op = qre.Hadamard(wires=0)
-    >>> sel_op = qre.Z(wires=0)
-    >>> qw_op = qre.Qubitization(prep_op, sel_op)
+    >>> select_op = qre.Z(wires=0)
+    >>> qw_op = qre.Qubitization(prep_op, select_op)
     >>> print(qre.estimate(qw_op))
     --- Resources: ---
      Total wires: 1
@@ -2555,20 +2559,22 @@ class Qubitization(ResourceOperator):
 
     """
 
-    resource_keys = {"prep", "sel"}
+    resource_keys = {"prep_op", "select_op"}
 
     def __init__(
-        self, prep: ResourceOperator, sel: ResourceOperator, wires: WiresLike = None
+        self, prep_op: ResourceOperator, select_op: ResourceOperator, wires: WiresLike = None
     ) -> None:
         self.queue()
-        _dequeue([prep, sel])
+        _dequeue([prep_op, select_op])
 
-        self.prep = prep.resource_rep_from_op()
-        self.sel = sel.resource_rep_from_op()
-        self.num_wires = sel.num_wires  # The Walk operator acts on the same set of wires as sel
+        self.prep_op = prep_op.resource_rep_from_op()
+        self.select_op = select_op.resource_rep_from_op()
+        self.num_wires = (
+            select_op.num_wires
+        )  # The Walk operator acts on the same set of wires as sel
 
-        prep_wires = prep.wires or Wires([])
-        sel_wires = sel.wires or Wires([])
+        prep_wires = prep_op.wires or Wires([])
+        sel_wires = select_op.wires or Wires([])
         prep_sel_wires = prep_wires + sel_wires
 
         if wires:
@@ -2581,58 +2587,58 @@ class Qubitization(ResourceOperator):
             self.wires = None
 
     @classmethod
-    def resource_decomp(cls, prep: CompressedResourceOp, sel: CompressedResourceOp):
+    def resource_decomp(cls, prep_op: CompressedResourceOp, select_op: CompressedResourceOp):
         r"""Returns a list representing the resources of the operator. Each object in the list
         represents a gate and the number of times it occurs in the circuit.
 
         Args:
-            prep (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A compressed representation for the operator that prepares
+            prep_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A compressed representation for the operator that prepares
                 the coefficients of the LCU.
-            sel (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A compressed representation for the operator that selectively
+            select_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A compressed representation for the operator that selectively
                 applies the unitaries of the LCU.
 
         Resources:
-            The resources are obtained from equation (9) in `Babbush et al. (2018) <https://arxiv.org/pdf/1805.03662>`_.
+            The resources are obtained from Equation 9 in: `Babbush et al. (2018) <https://arxiv.org/abs/1805.03662>`_.
             Specifically, the walk operator is defined as :math:`W = R \cdot S`, where :math:`R` is a reflection about the state prepared by
-            the prepare operator, and :math:`S` is the select operator.
+            the ``Prepare`` operator, and :math:`S` is the ``Select`` operator.
 
         Returns:
-            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
-        num_wires = prep.num_wires  # reflection happens over the prep register
-        ref_op = Reflection.resource_rep(num_wires=num_wires, alpha=math.pi, cmpr_U=prep)
+        num_wires = prep_op.num_wires  # reflection happens over the prep register
+        ref_op = Reflection.resource_rep(num_wires=num_wires, alpha=math.pi, cmpr_U=prep_op)
 
-        return [GateCount(sel), GateCount(ref_op)]
+        return [GateCount(select_op), GateCount(ref_op)]
 
     @classmethod
-    def adjoint_resource_decomp(cls, target_resource_params=None):
+    def adjoint_resource_decomp(cls, target_resource_params):
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Args:
-            target_resource_params (dict | None): A dictionary containing the resource parameters
+            target_resource_params (dict): A dictionary containing the resource parameters
                 of the target operator.
 
         Resources:
-            Reflections are self-adjoint, and the Select operator is also self-adjoint.
-            So the adjoint of this operator has the same resources, just applied in reverse order.
+            ``Reflection`` operators are self-adjoint, and the ``Select`` operator is also self-adjoint.
+            Thus the adjoint of this operator has the same resources, just applied in reverse order.
 
         Returns:
             list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
-        prep = target_resource_params["prep"]
-        sel = target_resource_params["sel"]
+        prep_op = target_resource_params["prep_op"]
+        select_op = target_resource_params["select_op"]
 
-        num_wires = prep.num_wires  # reflection happens over the prep register
-        ref_op = Reflection.resource_rep(num_wires=num_wires, alpha=math.pi, cmpr_U=prep)
+        num_wires = prep_op.num_wires  # reflection happens over the prep register
+        ref_op = Reflection.resource_rep(num_wires=num_wires, alpha=math.pi, cmpr_U=prep_op)
 
-        return [GateCount(ref_op), GateCount(sel)]
+        return [GateCount(ref_op), GateCount(select_op)]
 
     @classmethod
-    def controlled_resource_decomp(cls, num_ctrl_wires, num_zero_ctrl, target_resource_params=None):
+    def controlled_resource_decomp(cls, num_ctrl_wires, num_zero_ctrl, target_resource_params):
         r"""Returns a list representing the resources for a controlled version of the operator.
 
         Args:
@@ -2640,25 +2646,26 @@ class Qubitization(ResourceOperator):
                 operation is controlled on
             num_zero_ctrl (int): the number of control qubits, that are
                 controlled when in the :math:`|0\rangle` state
-            target_resource_params (dict | None): A dictionary containing the resource parameters
+            target_resource_params (dict): A dictionary containing the resource parameters
                 of the target operator.
 
         Resources:
-            The resources are obtained from Figure 1 in `Babbush et al. (2018) <https://arxiv.org/pdf/1805.03662>`_.
+            The resources are obtained directly from Figure 1 in
+            `Babbush et al. (2018) <https://arxiv.org/abs/1805.03662>`_.
 
         Returns:
             list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
-        prep = target_resource_params["prep"]
-        sel = target_resource_params["sel"]
+        prep_op = target_resource_params["prep_op"]
+        select_op = target_resource_params["select_op"]
 
-        num_wires = prep.num_wires  # reflection happens over the prep register
-        ref_op = Reflection.resource_rep(num_wires=num_wires, alpha=math.pi, cmpr_U=prep)
+        num_wires = prep_op.num_wires  # reflection happens over the prep register
+        ref_op = Reflection.resource_rep(num_wires=num_wires, alpha=math.pi, cmpr_U=prep_op)
 
-        ctrl_sel = qre.Controlled.resource_rep(
-            base_cmpr_op=sel,
+        ctrl_select_op = qre.Controlled.resource_rep(
+            base_cmpr_op=select_op,
             num_ctrl_wires=num_ctrl_wires,
             num_zero_ctrl=num_zero_ctrl,
         )
@@ -2668,7 +2675,7 @@ class Qubitization(ResourceOperator):
             num_zero_ctrl=num_zero_ctrl,
         )
 
-        return [GateCount(ctrl_sel), GateCount(ctrl_ref)]
+        return [GateCount(ctrl_select_op), GateCount(ctrl_ref)]
 
     @property
     def resource_params(self) -> dict:
@@ -2676,29 +2683,29 @@ class Qubitization(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * prep (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): a compressed representation for the operator that
+                * prep_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): a compressed representation for the operator that
                   prepares the coefficients of the LCU
-                * sel (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): a compressed representation for the operator that
+                * select_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): a compressed representation for the operator that
                   selectively applies the unitaries of the LCU
         """
-        return {"prep": self.prep, "sel": self.sel}
+        return {"prep_op": self.prep_op, "select_op": self.select_op}
 
     @classmethod
     def resource_rep(
-        cls, prep: CompressedResourceOp, sel: CompressedResourceOp
+        cls, prep_op: CompressedResourceOp, select_op: CompressedResourceOp
     ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
 
         Args:
-            prep (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A compressed representation for the operator that prepares
+            prep_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A compressed representation for the operator that prepares
                 the coefficients of the LCU.
-            sel (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A compressed representation for the operator that selectively
+            select_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A compressed representation for the operator that selectively
                 applies the unitaries of the LCU.
 
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
-        num_wires = sel.num_wires
-        params = {"prep": prep, "sel": sel}
+        num_wires = select_op.num_wires
+        params = {"prep_op": prep_op, "select_op": select_op}
         return CompressedResourceOp(cls, num_wires, params)
