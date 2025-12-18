@@ -89,9 +89,13 @@ def _(op: qtemps.subroutines.qpe.QuantumPhaseEstimation):
     gate_counts = defaultdict(int, {})
 
     gate_counts[qt_gates.Hadamard()] = len(op.estimation_wires)
-    controlled_unitary = _map_to_bloq(op.hyperparameters["unitary"], call_graph="decomposition").controlled(CtrlSpec(cvs=[1]))
+    controlled_unitary = _map_to_bloq(
+        op.hyperparameters["unitary"], call_graph="decomposition"
+    ).controlled(CtrlSpec(cvs=[1]))
     gate_counts[controlled_unitary] = (2 ** len(op.estimation_wires)) - 1
-    adjoint_qft = _map_to_bloq(qtemps.QFT(wires=op.estimation_wires), map_ops=False, call_graph="decomposition").adjoint()
+    adjoint_qft = _map_to_bloq(
+        qtemps.QFT(wires=op.estimation_wires), map_ops=False, call_graph="decomposition"
+    ).adjoint()
     gate_counts[adjoint_qft] = 1
 
     return gate_counts
@@ -122,7 +126,7 @@ def _(op: qtemps.subroutines.TrotterizedQfunc):
     call_graph = defaultdict(int, {})
     if order == 1:
         for q_op in q.queue:
-            call_graph[_map_to_bloq(q_op, call_graph='decomposition')] += 1
+            call_graph[_map_to_bloq(q_op, call_graph="decomposition")] += 1
         return call_graph
 
     num_gates = 2 * n * (5 ** (k - 1))
@@ -220,7 +224,9 @@ def _(op: qtemps.state_preparations.QROMStatePreparation):
         bitstrings = [zero_string] * num_bit_flips + [one_string] * num_bit_flips
         _add_qrom_and_adjoint(gate_types, bitstrings, control_wires=input_wires[:i])
 
-    gate_types[_map_to_bloq(qops.CRY(0, wires=[0, 1]), call_graph="decomposition")] = num_precision_wires * num_state_qubits
+    gate_types[_map_to_bloq(qops.CRY(0, wires=[0, 1]), call_graph="decomposition")] = (
+        num_precision_wires * num_state_qubits
+    )
 
     # Use helper for the final conditional QROM
     if not positive_and_real:
@@ -418,7 +424,9 @@ def _(op: qtemps.subroutines.ModExp):
         num_aux_wires = num_work_wires - 1
         num_aux_swap = num_aux_wires - 1
 
-    qft = _map_to_bloq(qtemps.QFT(wires=range(num_aux_wires)), map_ops=False, call_graph="decomposition")
+    qft = _map_to_bloq(
+        qtemps.QFT(wires=range(num_aux_wires)), map_ops=False, call_graph="decomposition"
+    )
     qft_dag = qft.adjoint()
 
     sequence = _map_to_bloq(

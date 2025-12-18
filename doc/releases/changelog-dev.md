@@ -260,15 +260,9 @@
   ``call_graph='decomposition'``.
   [(#8390)](https://github.com/PennyLaneAI/pennylane/pull/8390)
 
-* Add the `PCPhaseOp` operation to the xDSL Quantum dialect.
-  [(#8621)](https://github.com/PennyLaneAI/pennylane/pull/8621)
-
-* The :func:`~pennylane.transforms.decompose` transform now accepts a `minimize_work_wires` argument. With
-  the new graph-based decomposition system activated via :func:`~pennylane.decomposition.enable_graph`,
-  and `minimize_work_wires` set to `True`, the decomposition system will select decomposition rules that
-  minimizes the maximum number of simultaneously allocated work wires.
-  [(#8729)](https://github.com/PennyLaneAI/pennylane/pull/8729)
-  [(#8734)](https://github.com/PennyLaneAI/pennylane/pull/8734)
+* `qml.for_loop` will now fall back to a standard Python `for` loop if capturing a condensed, structured loop fails
+  with program capture enabled.
+  [(#8615)](https://github.com/PennyLaneAI/pennylane/pull/8615)
 
 * Added a new decomposition, `_decompose_2_cnots`, for the two-qubit decomposition for `QubitUnitary`.
   It supports the analytical decomposition a two-qubit unitary known to require exactly 2 CNOTs.
