@@ -2274,7 +2274,8 @@ class Reflection(ResourceOperator):
        R(U, \alpha) = -I + (1 - e^{i\alpha}) |\Psi\rangle \langle \Psi|
 
     Args:
-        num_wires (int | None): number of wires the operator acts on
+        num_wires (int | None): The number of wires the operator acts on. If ``None`` is provided, the
+            number of wires are infered from the ``U`` operator.
         U (:class:`~.pennylane.estimator.resource_operator.ResourceOperator` | None): the operator that prepares the state :math:`|\Psi\rangle`
         alpha (float | None): the angle of the operator, should be between :math:`[0, 2\pi]`. Default is :math:`\pi`.
         wires (WiresLike | None): The wires the operation acts on.
