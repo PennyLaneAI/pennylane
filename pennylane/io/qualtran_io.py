@@ -477,7 +477,7 @@ def _map_to_bloq(op, map_ops=True, custom_mapping=None, call_graph="estimator", 
             as a Qualtran Bloq.
         map_ops (bool): Whether to map operations to a Qualtran Bloq. Operations are wrapped
             as a ``ToBloq`` when ``False``. Default is ``True``.
-        custom_mapping (dict): Dictionary to specify a mapping between a PennyLane operator and a
+        custom_mapping (dict | None): Dictionary to specify a mapping between a PennyLane operator and a
             Qualtran Bloq. Default is ``None``.
         call_graph (str): Specifies how to build the call graph. If ``'estimator'``, the call
             graph is built using ``pennylane.estimator.estimate()``. If ``'decomposition'``, the
