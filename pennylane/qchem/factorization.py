@@ -279,7 +279,11 @@ def factorize(
         if cholesky and init_params is None:
             # compute the factors via cholesky decomposition routine
             factors, f_eigvals, f_eigvecs = _double_factorization_cholesky(
-                two, tol_factor=tol_factor, shape=shape, interface=interface, num_factors=num_factors
+                two,
+                tol_factor=tol_factor,
+                shape=shape,
+                interface=interface,
+                num_factors=num_factors,
             )
             # compute the core and orbital rotation tensors from the factors
             core_matrices = qml.math.einsum("ti,tj->tij", f_eigvals, f_eigvals)
