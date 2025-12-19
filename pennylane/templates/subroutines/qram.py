@@ -865,7 +865,7 @@ class SelectOnlyQRAM(Operation):
     Args:
         bitstrings (Sequence[str]):
             The classical data as a sequence of bitstrings. The size of the classical data must be
-            :math:`2^{\texttt{len(control_wires)}}`.
+            :math:`2^{\texttt{len(select_wires)}+\texttt{len(control_wires)}}`.
         control_wires (WiresLike):
             The register that stores the index for the entry of the classical data we want to
             access.
