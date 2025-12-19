@@ -109,10 +109,7 @@ class MultiplexerStatePreparation(Operation):
 def _multiplexer_state_prep_decomposition_resources(num_wires) -> dict:
     r"""Computes the resources of MultiplexerStatePreparation."""
     resources = dict.fromkeys(
-        [
-            resource_rep(qml.SelectPauliRot, num_wires=i + 1, rot_axis="Y")
-            for i in range(num_wires)
-        ],
+        [resource_rep(qml.SelectPauliRot, num_wires=i + 1, rot_axis="Y") for i in range(num_wires)],
         1,
     )
 
