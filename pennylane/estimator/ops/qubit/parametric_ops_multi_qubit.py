@@ -629,7 +629,7 @@ class PCPhase(ResourceOperator):
 
     """
 
-    resource_keys = {"num_wires", "dim", "rotation_precision"}  # rot --> rotation precision
+    resource_keys = {"num_wires", "dim", "rotation_precision"}
 
     def __init__(
         self,
