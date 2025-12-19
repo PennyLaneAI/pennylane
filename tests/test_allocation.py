@@ -323,10 +323,10 @@ class TestDeviceIntegration:
 
     @pytest.mark.parametrize("dev_name", ("default.qubit",))
     @pytest.mark.parametrize("device_wires", (None, (0, 1, 2)))
-    def test_reuse_without_mcms(self, dev_name, device_wires):
+    def test_reuse_without_mcms(self, dev_name, device_wires, seed):
         """Test that a dynamic allocations that do not require mcms can be executed."""
 
-        @qml.qnode(qml.device(dev_name, wires=device_wires))
+        @qml.qnode(qml.device(dev_name, wires=device_wires, seed=seed))
         def c():
             with allocate(1, restored=True) as wires:
                 qml.H(wires)
@@ -345,11 +345,11 @@ class TestDeviceIntegration:
     @pytest.mark.parametrize("dev_name", ("default.qubit",))
     @pytest.mark.parametrize("device_wires", (None, (0, 1, 2, 3)))
     @pytest.mark.parametrize("mcm_method", ("tree-traversal", "deferred", "one-shot"))
-    def test_reuse_with_mcms(self, dev_name, device_wires, mcm_method):
+    def test_reuse_with_mcms(self, dev_name, device_wires, mcm_method, seed):
         """Test that a simple dynamic allocation can be executed."""
 
         @qml.set_shots(5000 if mcm_method == "one-shot" else None)
-        @qml.qnode(qml.device(dev_name, wires=device_wires), mcm_method=mcm_method)
+        @qml.qnode(qml.device(dev_name, wires=device_wires, seed=seed), mcm_method=mcm_method)
         def c():
             with allocate(1, restored=False) as wires:
                 qml.H(wires)
