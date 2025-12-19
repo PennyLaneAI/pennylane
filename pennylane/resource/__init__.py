@@ -127,7 +127,7 @@ We can examine the resources by accessing the :code:`resources` key:
 
     >>> resources_lst = tracker.history['resources']
     >>> print(resources_lst[0])
-    Total qubit allocations: 3
+    Total wire allocations: 3
     Total gates: 7
     Circuit depth: 5
     <BLANKLINE>
