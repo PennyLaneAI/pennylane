@@ -963,7 +963,8 @@ def optax_opt(initial_guess, x, y, maxiter, tol):
 
     opt = optax.lbfgs()
     init_carry = (initial_guess, opt.init(initial_guess))
-    lambda_obj_function = lambda phi: obj_function(phi, x=x, y=y)
+    def lambda_obj_function(phi):
+        return obj_function(phi, x=x, y=y)
     val_and_grad = optax.value_and_grad_from_state(lambda_obj_function)
 
     def optimizer_iter_update(carry):
