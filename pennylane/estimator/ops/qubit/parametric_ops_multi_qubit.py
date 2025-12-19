@@ -629,7 +629,7 @@ class PCPhase(ResourceOperator):
 
     """
 
-    resource_keys = {"num_wires", "dim", "rot_precision"}  # rot --> rotation precision
+    resource_keys = {"num_wires", "dim", "rotation_precision"}  # rot --> rotation precision
 
     def __init__(
         self,
@@ -640,7 +640,7 @@ class PCPhase(ResourceOperator):
     ) -> None:
         self.num_wires = num_wires
         self.dim = dim
-        self.rot_precision = rotation_precision
+        self.rotation_precision = rotation_precision
 
         if wires is not None and len(Wires(wires)) != self.num_wires:
             raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
@@ -648,14 +648,14 @@ class PCPhase(ResourceOperator):
 
     @classmethod
     def resource_decomp(
-        cls, num_wires: int, dim: int, rot_precision: float | None = None
+        cls, num_wires: int, dim: int, rotation_precision: float | None = None
     ) -> list[GateCount]:
         r"""Returns a list of GateCount objects representing the operator's resources.
 
         Args:
             num_wires (int): the number of wires this operator acts on
             dim (int): the dimension of the target subspace
-            rot_precision (float | None): The error threshold for the approximate Clifford + T
+            rotation_precision (float | None): The error threshold for the approximate Clifford + T
                 decomposition of the phase shift gates used to implement this operation.
 
         Resources:
@@ -688,7 +688,7 @@ class PCPhase(ResourceOperator):
                         subspace,
                         n_control_wires=i,
                         n_zero_control_values=n_zero_control_values,
-                        rot_precision=rot_precision,
+                        rotation_precision=rotation_precision,
                     )
                 )
 
@@ -713,36 +713,38 @@ class PCPhase(ResourceOperator):
             dict: A dictionary containing the resource parameters:
                 * num_wires (int): the number of wires this operator acts on
                 * dim (int): the dimension of the target subspace
-                * rot_precision(float | None): The error threshold for the approximate Clifford + T
+                * rotation_precision(float | None): The error threshold for the approximate Clifford + T
                   decomposition of the phase shift gates used to implement this operation.
         """
         return {
             "num_wires": self.num_wires,
             "dim": self.dim,
-            "rot_precision": self.rot_precision,
+            "rotation_precision": self.rotation_precision,
         }
 
     @classmethod
-    def resource_rep(cls, num_wires: int, dim: int, rot_precision: float | None = None):
+    def resource_rep(cls, num_wires: int, dim: int, rotation_precision: float | None = None):
         """Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
 
         Args:
             num_wires (int): the number of wires this operator acts on
             dim (int): the dimension of the target subspace
-            rot_precision(float | None): The error threshold for the approximate Clifford + T
+            rotation_precision(float | None): The error threshold for the approximate Clifford + T
                 decomposition of the phase shift gates used to implement this operation.
 
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`:: the operator in a compressed representation
         """
-        params = {"num_wires": num_wires, "dim": dim, "rot_precision": rot_precision}
+        params = {"num_wires": num_wires, "dim": dim, "rotation_precision": rotation_precision}
         return CompressedResourceOp(cls, num_wires, params)
 
     @staticmethod
-    def _ctrl_phase_shift_resource(subspace, n_control_wires, n_zero_control_values, rot_precision):
+    def _ctrl_phase_shift_resource(
+        subspace, n_control_wires, n_zero_control_values, rotation_precision
+    ):
         x = qre.X.resource_rep()
-        phase_shift = qre.PhaseShift.resource_rep(rot_precision)
+        phase_shift = qre.PhaseShift.resource_rep(rotation_precision)
 
         if n_control_wires == 0:
             return {phase_shift: 1}
