@@ -90,17 +90,11 @@
 
 <h4>Pauli-based computation </h4>
 
-* A new template :class:`~.MultiplexerStatePreparation` has been added. This template allows preparing arbitrary states
-  using :class:`~.SelectPauliRot` operations.
-  [(#8581)](https://github.com/PennyLaneAI/pennylane/pull/8581)
-
 * Users can now perform rapid Clifford+T decomposition with :func:`pennylane.qjit` using the new 
   :func:`~pennylane.transforms.gridsynth` compilation pass.
   This pass discretizes ``RZ`` and ``PhaseShift`` gates to either the Clifford+T basis or to the PPR basis.
   [(#8609)](https://github.com/PennyLaneAI/pennylane/pull/8609)
   [(#8764)](https://github.com/PennyLaneAI/pennylane/pull/8764)
-
-<h4>Pauli product measurements</h4>
 
 * Writing circuits in terms of `Pauli product measurements <https://pennylane.ai/compilation/pauli-product-measurement>`_
   (PPMs) in PennyLane is now possible with the new :func:`~.pauli_measure` function.
@@ -321,6 +315,13 @@
   >>> print(qml.draw(circuit, level="rotations-merged")())
   0: ──RX(6.68)─┤  State
   ```
+
+<h4> New templates </h4>
+
+* A new template :class:`~.MultiplexerStatePreparation` has been added. This template allows preparing arbitrary states
+  using :class:`~.SelectPauliRot` operations.
+  [(#8581)](https://github.com/PennyLaneAI/pennylane/pull/8581)
+
 
 <h3>Improvements 🛠</h3>
 
