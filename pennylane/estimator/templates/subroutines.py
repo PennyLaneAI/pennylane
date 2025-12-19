@@ -2262,7 +2262,7 @@ class SelectPauliRot(ResourceOperator):
         return gate_lst
 
 
-class Reflection(ResourceOperator):
+class Reflection(ResourceOperator): 
     r"""Resource class for the Reflection operator. Apply a reflection about a state :math:`|\Psi\rangle`.
 
     This operator works by providing an operation, :math:`U`, that prepares the desired state, :math:`\vert \Psi \rangle`,
@@ -2368,7 +2368,7 @@ class Reflection(ResourceOperator):
 
         Resources:
             The resources are derived from the decomposition :math:`R(U, \alpha) = U R(\alpha) U^\dagger`.
-            The center block :math:`R(\alpha)` is implemented as a multi-controlled phase shift sandwiched
+            The center block :math:`R(\alpha)` is implemented as a multi-controlled ``PhaseShift`` sandwiched
             by ``X`` gates on the target wire.
 
             If :math:`\alpha = \pi`, the phase shift is replaced by a ``Z`` gate.
@@ -2413,7 +2413,7 @@ class Reflection(ResourceOperator):
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Args:
-            target_resource_params (dict | None): A dictionary containing the resource parameters
+            target_resource_params (dict): A dictionary containing the resource parameters
                 of the target operator.
 
         Resources:
@@ -2435,7 +2435,7 @@ class Reflection(ResourceOperator):
             num_ctrl_wires (int): the number of qubits the operation is controlled on
             num_zero_ctrl (int): the number of control qubits, that are controlled when in
                 the :math:`|0\rangle` state
-            target_resource_params (dict | None): A dictionary containing the resource parameters
+            target_resource_params (dict): A dictionary containing the resource parameters
                 of the target operator.
 
         Resources:
@@ -2444,7 +2444,7 @@ class Reflection(ResourceOperator):
             not the :math:`U` or :math:`U^\dagger` operations.
 
             Controlling :math:`R(\alpha)` involves controlling the global phase :math:`-I` and the
-            multi-controlled phase shift. The global phase :math:`-I` is controlled using
+            multi-controlled ``PhaseShift``. The global phase :math:`-I` is controlled using
             :math:`MCX \cdot Z \cdot MCX \cdot Z`.
 
         Returns:
@@ -2538,7 +2538,7 @@ class Qubitization(ResourceOperator):
         wires (WiresLike | None): the wires the operation acts on
 
     Resources:
-        The resources are obtained from equation (9) in `Babbush et al. (2018) <https://arxiv.org/abs/1805.03662>`_.
+        The resources are obtained from Equation: 9 in `Babbush et al. (2018) <https://arxiv.org/abs/1805.03662>`_.
         Specifically, the walk operator is defined as :math:`W = R \cdot S`, where :math:`R` is a reflection about the state prepared by
         the ``Prepare`` operator, and :math:`S` is the ``Select`` operator. The cost is therefore one ``Select`` and one ``Reflection``.
 
