@@ -19,7 +19,11 @@ from collections.abc import Callable
 import numpy as np
 import pytest
 
-from pennylane.labs.resource_estimation.resource_utils import approx_poly_degree
+from pennylane.labs.resource_estimation.resource_utils import (
+    _chebyshev_gauss_lobatto,
+    _legendre_gauss_lobatto,
+    approx_poly_degree,
+)
 
 
 def test_approx_poly_degree():
@@ -70,10 +74,10 @@ def test_approx_poly_project_func():
         return 0.5 * (a + b) + 0.5 * (b - a) * x
 
     deg1, poly1, loss1 = approx_poly_degree(
-        morse, x_vec, basis="chebyshev", project_func=cheb_nodes, poly_degs=(3, 10)
+        morse, x_vec, basis="chebyshev", domain_func=cheb_nodes, poly_degs=(3, 10)
     )
     deg2, poly2, loss2 = approx_poly_degree(
-        morse, x_vec, basis="chebyshev", project_func="gauss-lobatto", poly_degs=(3, 10)
+        morse, x_vec, basis="chebyshev", domain_func="gauss-lobatto", poly_degs=(3, 10)
     )
 
     assert deg1 == deg2
@@ -101,3 +105,43 @@ def test_approx_poly_custom_func(loss_func):
     assert isinstance(deg, int) and deg < 10
     assert isinstance(poly, np.polynomial.laguerre.Laguerre)
     assert isinstance(loss, float) and loss < 1e-6
+
+
+@pytest.mark.parametrize(
+    "num_points, result",
+    [
+        (2, [-1, 1]),
+        (3, [-1, 0, 1]),
+        (4, [-1, -(1 / 5) * np.sqrt(5), (1 / 5) * np.sqrt(5), 1]),
+        (5, [-1, -(1 / 7) * np.sqrt(21), 0, (1 / 7) * np.sqrt(21), 1]),
+        (
+            6,
+            [
+                -1,
+                -np.sqrt((1 / 21) * (7 + 2 * np.sqrt(7))),
+                -np.sqrt((1 / 21) * (7 - 2 * np.sqrt(7))),
+                np.sqrt((1 / 21) * (7 - 2 * np.sqrt(7))),
+                np.sqrt((1 / 21) * (7 + 2 * np.sqrt(7))),
+                1,
+            ],
+        ),
+    ],
+)
+def test_legendre_gauss_lobatto(num_points, result):
+    """Test the Legendre-Gauss-Lobatto function
+
+    Result populated from the table in https://mathworld.wolfram.com/LobattoQuadrature.html for the first 6 nodes.
+    """
+
+    x_nodes = _legendre_gauss_lobatto(-1, 1, num_points)
+    assert len(x_nodes) == num_points
+    assert np.allclose(x_nodes, result)
+
+
+@pytest.mark.parametrize("num_points", range(2, 7))
+def test_chebyshev_gauss_lobatto(num_points):
+    """Test the Chebyshev-Gauss-Lobatto function"""
+
+    x_nodes = _chebyshev_gauss_lobatto(-1, 1, num_points)
+    assert len(x_nodes) == num_points
+    assert np.allclose(x_nodes, np.polynomial.chebyshev.chebpts2(num_points)[::-1])

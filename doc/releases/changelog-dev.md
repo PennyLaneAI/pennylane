@@ -416,7 +416,7 @@
   [(#8738)](https://github.com/PennyLaneAI/pennylane/pull/8738)
 
 * A new function :func:`~.pennylane.labs.resource_estimation.approx_poly_degree` has been added. It allows
-  computing the minimum degree of the polynomial that fits the input function within the given error tolerance.
+  computing the minimum degree of the polynomial that fits a given function within a given error tolerance.
   [(#8625)](https://github.com/PennyLaneAI/pennylane/pull/8625)
 
 <h3>Breaking changes 💔</h3>

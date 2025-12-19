@@ -27,10 +27,10 @@ def approx_poly_degree(
     basis: str = "monomial",
     loss_func: Callable | None = None,
     fit_func: Callable | None = None,
-    project_func: Callable | None = None,
+    domain_func: Callable | None = None,
     **fit_kwargs: dict[str, Any],
 ):
-    r"""Compute the minimum degree of the polynomial that fits the input function within the given
+    r"""Compute the minimum degree of the polynomial that fits an input function within a given
     error tolerance.
 
     The polynomial is fit to the data using the least squares method in the monomial, Chebyshev,
@@ -52,9 +52,9 @@ def approx_poly_degree(
             consider for the polynomial. Defaults to ``None``, which means all degrees from
             ``1`` to ``len(x_vec) - 1`` will be considered. If an integer is provided, it
             will be used as the maximum degree permissible for the approximated polynomial.
-        basis (str): basis to use for the polynomial. Available options are ``"chebyshev"``,
-            ``"legendre"``, and ``"hermite"``. Defaults to ``monomial``, which means fitting
-            data to a polynomial in the monomial basis.
+        basis (str): basis to use for the polynomial. Available options are ``"monomial"``,
+            ``"chebyshev"``, ``"legendre"``, and ``"hermite"``. Defaults to ``"monomial"``,
+            which means fitting data to a polynomial in the monomial basis.
         loss_func (str | Callable | None | optional): loss function to use, where available options
             are ``"mse"`` (mean squared error), ``"mae"`` (mean absolute error), ``"rmse"``
             (root mean squared error), ``"linf"`` (maximum absolute error), or a custom loss
@@ -72,7 +72,7 @@ def approx_poly_degree(
             and ``x_vec`` is used. When ``"uniform"`` is given, the points are evenly spaced between
             ``x_vec[0]`` and ``x_vec[-1]`` based on the degree of the polynomial being fit.
             Whereas, when ``"gauss-lobatto"`` is used, the "`Chebyshev/Legendre-Gauss-Lobatto
-            <https://lorene.obspm.fr/school/polynom.pdf>`_\ " nodes are used for
+            <https://people.maths.ox.ac.uk/trefethen/8all.pdf>`_\ " nodes are used for
             ``basis="chebyshev"/"legendre"``, respectively.
             When a callable is provided, it should have the signature:
             ``f(x_min: float, x_max: float, num_points: int) -> np.ndarray``.
@@ -84,7 +84,7 @@ def approx_poly_degree(
     Keyword Arguments:
         rcond (float): the relative condition number of the fit.
         w (np.ndarray): weights for the sample points. This is equivalent to using a custom
-            ``project_func`` to imitate unselected points with zero weights.
+            ``domain_func`` to imitate unselected points with zero weights.
 
     Returns:
         tuple[int, Callable, float]: the degree of the polynomial, the fit polynomial function, and the loss of the fit.
@@ -117,7 +117,7 @@ def approx_poly_degree(
         >>> target_func = lambda x: np.sin(3*x) + 0.3*x**2 - 0.1*x
         >>> degree, poly, loss = approx_poly_degree(
         ...     target_func, x_vec, poly_degs=(2, 10), error_tol=1e-3,
-        ...     basis="chebyshev", loss_func="linf", project_func="gauss-lobatto"
+        ...     basis="chebyshev", loss_func="linf", domain_func="gauss-lobatto"
         ... )
         >>> print(degree)
         7
@@ -167,7 +167,7 @@ def approx_poly_degree(
     fit_func, fit_args = _process_poly_fit(fit_func, basis)
     fit_kwargs |= fit_args
 
-    proj_func = _process_proj_func(project_func, basis)
+    proj_func = _process_domain_func(domain_func, basis)
 
     best_loss, best_poly = float("inf"), None
     for degree in range(min_degree, max_degree + 1):
@@ -225,9 +225,9 @@ def _process_poly_fit(fit_func: Callable | None, basis: str) -> tuple[Callable, 
     Args:
         fit_func (Callable | None): function that approximately fits the polynomial and has the signature:
             ``f(x_vec: np.ndarray, y_vec: np.ndarray, deg: int, **fit_kwargs) -> tuple[Callable, float]``.
-        basis (str): basis to use for the polynomial. Available options are ``"chebyshev"``,
-            ``"legendre"``, ``"hermite"``, and ``"monomial"``. Any other basis will default
-            to using ``np.polynomial.Polynomial.fit`` as the fitting function unless otherwise provided.
+        basis (str): basis to use for the polynomial. Available options are ``"monomial"``,
+            ``"chebyshev"``, ``"legendre"``, ``"hermite"``. Any other basis will default to
+            using ``np.polynomial.Polynomial.fit`` as the fitting function unless otherwise provided.
 
     Returns:
         tuple[Callable, Callable | None]: the fit polynomial function and the fit polynomial function.
@@ -250,20 +250,20 @@ def _process_poly_fit(fit_func: Callable | None, basis: str) -> tuple[Callable, 
     return fit_func, fit_args
 
 
-def _process_proj_func(project_func: str | Callable | None, basis: str) -> Callable | None:
-    """Process the projection function.
+def _process_domain_func(domain_func: str | Callable | None, basis: str) -> Callable | None:
+    """Process the domain projection function.
 
     Args:
-        project_func (str | Callable | None): function to project the dense interval
+        domain_func (str | Callable | None): function to project the dense interval
             based on ``x_vec`` to a sparse one with ``[x_vec[0], x_vec[-1]]`` as the domain.
-        basis (str): basis to use for the polynomial. Available options are ``"chebyshev"``,
-            ``"legendre"``, ``"hermite"``, and ``"monomial"``. Any other basis will default
+        basis (str): basis to use for the polynomial. Available options are ``"monomial"``,
+            ``"chebyshev"``, ``"legendre"``, ``"hermite"``. Any other basis will default
             to using the ``np.linspace`` as the projection function unless otherwise provided.
 
     Returns:
-        Callable | None: the projection function.
+        Callable | None: the domain projection function.
     """
-    match project_func:
+    match domain_func:
         case "uniform":
             return np.linspace
         case "gauss-lobatto":
@@ -277,11 +277,13 @@ def _process_proj_func(project_func: str | Callable | None, basis: str) -> Calla
                 case _:
                     return np.linspace
         case _:
-            return project_func
+            return domain_func
 
 
 def _chebyshev_gauss_lobatto(x_min: float, x_max: float, num_points: int) -> np.ndarray:
-    """Project the dense interval based on `x_vec` to a sparse one with `[x_vec[0], x_vec[-1]]` as the domain.
+    """Generate `Chebyshev-Gauss-Lobatto nodes <https://en.wikipedia.org/wiki/Chebyshev_nodes>`_
+    mapped to the interval :math:`[x_{\text{min}}, x_{\text{max}}]` from the standard Chebyshev
+    nodes of the second kind on :math:`[-1, 1]` using an affine transformation.
 
     Args:
         x_min (float): minimum x-value
@@ -296,7 +298,9 @@ def _chebyshev_gauss_lobatto(x_min: float, x_max: float, num_points: int) -> np.
 
 
 def _legendre_gauss_lobatto(x_min: float, x_max: float, num_points: int) -> np.ndarray:
-    """Project the dense interval based on `x_vec` to a sparse one with `[x_vec[0], x_vec[-1]]` as the domain.
+    """Generate `Legendre-Gauss-Lobatto nodes <https://mathworld.wolfram.com/LobattoQuadrature.html>`_
+    mapped to the interval :math:`[x_{\text{min}}, x_{\text{max}}]` from the roots of the derivative
+    of (``num_points`` - 1)-th Legendre polynomial using an affine transformation.
 
     Args:
         x_min (float): minimum x-value
