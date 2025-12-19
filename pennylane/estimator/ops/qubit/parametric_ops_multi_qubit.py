@@ -603,7 +603,7 @@ class PCPhase(ResourceOperator):
 
     Resources:
         The resources are derived from the decomposition of the generator :math:`G` of the
-        ``PCPhase`` gate into multiple projectors, which generate (multi-controlled) phase shift gates,
+        ``PCPhase`` gate into multiple projectors, which generate (multi-controlled) ``PhaseShift`` gates,
         potentially complemented with (non-controlled) ``X`` gates and/or a global phase.
         The generator is given as :math:`G = 2 \Pi - \mathbb{I}_N`, where :math:`\Pi` is a projector.
         The projector :math:`\Pi` is decomposed into sums and differences of powers of two,
