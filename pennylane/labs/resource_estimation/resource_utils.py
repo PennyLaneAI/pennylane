@@ -42,39 +42,41 @@ def approx_poly_degree(
     the specified domain ``x_vec`` for the fitting. Please look at the examples below for more details.
 
     Args:
-        target_func (Callable): function to be approximated with a polynomial and has the
+        target_func (Callable): function to be approximated with a polynomial. It must have the
             signature: ``f(x_vec: np.ndarray) -> np.ndarray``.
         x_vec (np.ndarray): the domain values for sampling the target function ``target_func``.
-            The minimum length of ``x_vec`` is two and is expected to be sorted.
+            It must be a sorted array with a minimum length of ``2``.
         error_tol (float | optional): tolerance for the target fitting error. Defaults to ``1e-6``.
-            Unless ``loss_func`` is provided, this is the least squares fit error.
-        poly_degs (Tuple[int, int] | int | None | optional): tuple of minimum and maximum degrees to
-            consider for the polynomial. Defaults to ``None``, which means all degrees from
+            It is the least squares fit error unless a custom loss function (``loss_func``) is provided.
+        poly_degs (Tuple[int, int] | int | None | optional): tuple containing the minimum and maximum
+            degrees of the fitting polynomial. Defaults to ``None``, which means all degrees from
             ``1`` to ``len(x_vec) - 1`` will be considered. If an integer is provided, it
             will be used as the maximum degree permissible for the approximated polynomial.
-        basis (str): basis to use for the polynomial. Available options are ``"monomial"``,
+        basis (str): the basis for the fitting polynomial. Available options are ``"monomial"``,
             ``"chebyshev"``, ``"legendre"``, and ``"hermite"``. Defaults to ``"monomial"``,
             which means fitting data to a polynomial in the monomial basis.
-        loss_func (str | Callable | None | optional): loss function to use, where available options
-            are ``"mse"`` (mean squared error), ``"mae"`` (mean absolute error), ``"rmse"``
-            (root mean squared error), ``"linf"`` (maximum absolute error), or a custom loss
-            function with the signature: ``f(pred: np.ndarray, target: np.ndarray) -> float``.
-            Defaults to ``None``, which means the least squares fit error is used.
-        fit_func (Callable | None | optional): function that approximately fits the polynomial and has the signature:
-            ``f(x_vec: np.ndarray, y_vec: np.ndarray, deg: int, **fit_kwargs) -> tuple[Callable, float]``.
-            It should return a callable for the fit polynomial along with the least squares error of the fit.
-            Defaults to ``None``, which means the NumPy polynomial fitting function corresponding
-            to the ``basis`` keyword argument will be used. Note that, providing a custom function
-            will override the ``basis`` keyword argument.
-        domain_func (str | Callable | None | optional): function that uses the domain interval
-            ``[x_vec[0], x_vec[-1]]`` and computes transformed values for sampling within
-            the given domain intervals. Defaults to ``None``, which means no transformation is performed
-            and ``x_vec`` is used. When ``"uniform"`` is given, the points are evenly spaced between
-            ``x_vec[0]`` and ``x_vec[-1]`` based on the degree of the polynomial being fit.
+        loss_func (str | Callable | None | optional):  the loss function to be minimized during the fitting.
+            Available options are ``"mse"`` for minimizing the mean squared error, ``"mae"`` for minimizing
+            the mean absolute error, ``"rmse"`` for minimizing the root mean squared error, ``"linf"`` for
+            minimizing the maximum absolute error, or a custom loss function with the signature:
+            ``f(pred: np.ndarray, target: np.ndarray) -> float``. Defaults to ``None``, which means
+            the least squares fit error is used.
+        fit_func (Callable | None | optional): a function that fits a target data (``x_vec``, ``y_vec``) with
+            a polynomial of degree ``deg`` and also computes the loss of the fit. It must have the signature:
+            ``f(x_vec: np.ndarray, y_vec: np.ndarray, deg: int, **fit_kwargs) -> tuple[Callable, float]`` and
+            should return a callable for the fit polynomial along with the least squares error of the fit.
+            Defaults to ``None``, which means the NumPy polynomial fitting function corresponding to the
+            ``basis`` keyword argument will be used. Providing a custom function will override
+            the ``basis`` keyword argument.
+        domain_func (str | Callable | None | optional): a function or a preset to generate the fitting
+            points within the domain interval ``[x_vec[0], x_vec[-1]]`` for fitting the ``target_func``.
+            Defaults to ``None``, which means all the points in ``x_vec`` are used directly without any
+            transformation. When ``"uniform"`` is given, the points are sparsely spaced between ``x_vec[0]``
+            and ``x_vec[-1]`` based on the degree of the polynomial being fit.
             Whereas, when ``"gauss-lobatto"`` is used, the "`Chebyshev/Legendre-Gauss-Lobatto
             <https://en.wikipedia.org/wiki/Gaussian_quadrature#Gauss%E2%80%93Lobatto_rules>`_\ " nodes
             are used for ``basis="chebyshev"/"legendre"``, respectively.
-            When a callable is provided, it should have the signature:
+            When a user-defined function is provided, it should have the signature:
             ``f(x_min: float, x_max: float, num_points: int) -> np.ndarray``.
         **fit_kwargs: additional keyword arguments to pass to the `fitting` functions.
             See keyword arguments below for available arguments for the default ``NumPy``
