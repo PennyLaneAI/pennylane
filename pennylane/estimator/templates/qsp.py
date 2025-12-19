@@ -461,7 +461,7 @@ class QSVT(ResourceOperator):
         encoding_dims (int | tuple(int)): The subspace (number of rows and columns) where the operator
             is encoded in the matrix representation of the block encoding operator.
         poly_deg (int): the degree of the polynomial transformation being applied
-        wires (Sequence[int], None): the wires the operation acts on
+        wires (WiresLike | None): the wires the operation acts on
 
     Resources:
         The resources are obtained as described in theorem 4 of `A Grand Unification of Quantum Algorithms
