@@ -529,7 +529,7 @@ class SelectPauli(ResourceOperator):
         wires (WiresLike | None): the wires the operation acts on
 
     Resources:
-        The resources are based on the analysis in `Babbush et al. (2018) <https://arxiv.org/pdf/1805.03662>`_ section III.A,
+        The resources are based on the analysis in `Babbush et al. (2018) <https://arxiv.org/pdf/1805.03662>`_, Section III.A,
         'Unary Iteration and Indexed Operations', and Figures 4, 6, and 7.
 
         Note: This implementation assumes we have access to :math:`n - 1` additional auxiliary qubits,
@@ -541,7 +541,7 @@ class SelectPauli(ResourceOperator):
             :class:`~pennylane.estimator.compact_hamiltonian.PauliHamiltonian`.
         ValueError: if the wires provided don't match the number of wires expected by the operator
 
-    .. seealso:: :class:`~.pennylane.Select`, :class:`~.pennylane.estimator.subroutines.Select`
+    .. seealso:: :class:`~.pennylane.Select`
 
     **Example**
 
@@ -599,10 +599,10 @@ class SelectPauli(ResourceOperator):
 
         Args:
             pauli_ham (:class:`~pennylane.estimator.compact_hamiltonian.PauliHamiltonian`): A Hamiltonian
-            expressed as a linear combination of Pauli words, over which ``Select`` is applied.
+                expressed as a linear combination of Pauli words, over which ``Select`` is applied.
 
         Resources:
-            The resources are based on the analysis in `Babbush et al. (2018) <https://arxiv.org/pdf/1805.03662>`_ section III.A,
+            The resources are based on the analysis in `Babbush et al. (2018) <https://arxiv.org/pdf/1805.03662>`_, Section III.A,
             'Unary Iteration and Indexed Operations', and Figures 4, 6, and 7.
 
             Note: This implementation assumes we have access to :math:`n - 1` additional auxiliary qubits,
@@ -697,7 +697,7 @@ class SelectPauli(ResourceOperator):
                 of the target operator.
 
         Resources:
-            The resources are based on the analysis in `Babbush et al. (2018) <https://arxiv.org/pdf/1805.03662>`_ section III.A,
+            The resources are based on the analysis in `Babbush et al. (2018) <https://arxiv.org/pdf/1805.03662>`_, Section III.A,
             'Unary Iteration and Indexed Operations'. See Figures 4, 6, and 7. This presents the cost of
             a single qubit controlled ``Select`` operator. In the case of multiple control wires, we use one
             additional auxiliary qubit and two multi-controlled ``X`` gates.

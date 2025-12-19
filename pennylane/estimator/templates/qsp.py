@@ -47,7 +47,7 @@ class GQSP(ResourceOperator):
 
     Where :math:`R` is the general rotation operator 
     :class:`~.estimator.ops.qubit.parametric_ops_single_qubit.Rot`, and :math:`\vec{\phi}`, 
-    :math:`vec{\theta}` and :math:`\lambda` are the rotation angles that generate the polynomial transformation.
+    :math:`\vec{\theta}` and :math:`\lambda` are the rotation angles that generate the polynomial transformation.
     Additionally, :math:`\hat{A}` and :math:`\hat{A}^{\prime}` are given by:
 
     .. math::
@@ -358,7 +358,7 @@ class GQSPTimeEvolution(ResourceOperator):
                 * time (float): the simulation time
                 * one_norm (float): one norm of the Hamiltonian
                 * poly_approx_precision (float): the tolerance for error in the polynomial
-                  approximation of :math:`e^{it\cos{theta}}`
+                  approximation of :math:`e^{it\cos{\theta}}`
         """
 
         return {
@@ -438,7 +438,7 @@ class GQSPTimeEvolution(ResourceOperator):
     @staticmethod
     def poly_approx(time: float, one_norm: float, epsilon: float) -> int:
         r"""Obtain the maximum degree of the polynomial approximation required
-        to approximate :math:`e^(iHt * \cos{\theta})` within error epsilon.
+        to approximate :math:`e^{(iHt * \cos{\theta})}` within error epsilon.
 
         Args:
             time (float): the simulation time
@@ -481,7 +481,7 @@ class QSVT(ResourceOperator):
 
         U_{QSVT} = \left[\prod^{d/2}_{k=1}\Pi_{\phi_{2k-1}}U^\dagger\tilde{\Pi}_{\phi_{2k}}U\right].
 
-    Where :math:`\Pi_{\phi}` and :math:\tilde{\Pi}_{\phi}` are projector-controlled phase shifts
+    Where :math:`\Pi_{\phi}` and :math:`\tilde{\Pi}_{\phi}` are projector-controlled phase shifts
     (:class:`~.estimator.ops.qubit.parametric_ops_multi_qubit.PCPhase`) This circuit applies a
     polynomial transformation of degree :math:`d` (:math:`Poly^{SV}`) to the singular values of the
     block encoded matrix:
@@ -834,7 +834,7 @@ class QSP(ResourceOperator):
             ValueError: If the convention is not ``"X"`` or ``"Z"``.
 
         Returns:
-            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
