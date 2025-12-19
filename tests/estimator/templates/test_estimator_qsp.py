@@ -30,6 +30,16 @@ class TestGQSP:
         with pytest.raises(ValueError, match="Expected 2 wires, got 1"):
             qre.GQSP(op, poly_deg=2, wires=[0])
 
+    @pytest.mark.parametrize("rot_prec", (0, -1, -2.5))
+    def test_rotation_precision_error(self, rot_prec):
+        """Test that an error is raised if the rotation_precision is negative"""
+        op = qre.RX(0.1, wires=0)
+        with pytest.raises(
+            ValueError,
+            match="Expected 'rotation_precision' to be a positive real number greater than zero",
+        ):
+            _ = qre.GQSP(op, poly_deg=2, rotation_precision=rot_prec)
+
     @pytest.mark.parametrize(
         "poly_deg, neg_poly_deg, error_msg",
         (

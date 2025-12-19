@@ -32,6 +32,7 @@ from pennylane.wires import Wires, WiresLike
 
 class GQSP(ResourceOperator):
     r"""Resource class for the Generalized Quantum Signal Processing (GQSP) algorithm.
+
     The implementation is based on Theorem 6 of `Generalized Quantum Signal Processing (2024)
     <https://arxiv.org/pdf/2308.01501>`_. Given the block-encoded operator ``signal_operator``
     (:math:`\hat{U}`), the maximum positive polynomial degree ``poly_deg`` (:math:`d^{+}`) and
@@ -74,6 +75,7 @@ class GQSP(ResourceOperator):
     Raises:
         ValueError: ``poly_deg`` must be a positive integer greater than zero
         ValueError: ``neg_poly_deg`` must be a positive integer
+        ValueError: ``rotation_precision`` must be a positive real number greater than zero
         ValueError: if the wires provided don't match the number of wires expected by the operator              
 
     **Example**
@@ -120,6 +122,11 @@ class GQSP(ResourceOperator):
 
         if (not isinstance(neg_poly_deg, int)) or neg_poly_deg < 0:
             raise ValueError(f"'neg_poly_deg' must be a positive integer, got {neg_poly_deg}")
+
+        if rotation_precision is not None and rotation_precision <= 0:
+            raise ValueError(
+                f"Expected 'rotation_precision' to be a positive real number greater than zero, got {rotation_precision}"
+            )
 
         self.poly_deg = poly_deg
         self.neg_poly_deg = neg_poly_deg

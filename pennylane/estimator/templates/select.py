@@ -453,7 +453,7 @@ class SelectPauli(ResourceOperator):
     Args:
         pauli_ham (:class:`~pennylane.estimator.compact_hamiltonian.PauliHamiltonian`): A Hamiltonian
             expressed as a linear combination of Pauli words, over which ``Select`` is applied.
-        wires (WiresLike | None): The wires the operation acts on.
+        wires (WiresLike | None): the wires the operation acts on
 
     Resources:
         The resources are based on the analysis in `Babbush et al. (2018) <https://arxiv.org/pdf/1805.03662>`_ section III.A,
