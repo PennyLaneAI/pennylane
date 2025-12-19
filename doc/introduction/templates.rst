@@ -377,6 +377,10 @@ Other useful templates which do not belong to the previous categories can be fou
     :figure: _static/templates/qram/bbqram_thumbnail.png
 
 .. gallery-item::
+    :description: :doc:`Select Only QRAM <../code/api/pennylane.SelectOnlyQRAM>`
+    :figure: _static/templates/qram/select_qram_thumbnail.png
+
+.. gallery-item::
     :description: :doc:`Hybrid QRAM <../code/api/pennylane.HybridQRAM>`
     :figure: _static/templates/qram/hybrid_qram_thumbnail.png
 
