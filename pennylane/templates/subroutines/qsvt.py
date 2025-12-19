@@ -959,6 +959,7 @@ def obj_function(phi, x, y):
 
 @partial(jit_if_jax_available, static_argnames=["maxiter", "tol"])
 def optax_opt(initial_guess, x, y, maxiter, tol):
+    """Dispatch optimization to the L-BFGS of optax"""
 
     opt = optax.lbfgs()
     init_carry = (initial_guess, opt.init(initial_guess))
