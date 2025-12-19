@@ -102,7 +102,7 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
     `arXiv:0708.1879 <https://arxiv.org/pdf/0708.1879>`__.
 
     Args:
-        bitstrings (Sequence[str]):
+        bitstrings (Sequence[Sequence[bool]]):
             The classical data as a sequence of bitstrings. The size of the classical data must be
             :math:`2^{\texttt{len(control_wires)}}`.
         control_wires (WiresLike):
@@ -139,7 +139,7 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
 
     .. code-block:: python
 
-        bitstrings = ["010", "111", "110", "000"]
+        bitstrings = [[bool(0), bool(1), bool(0)], [bool(1), bool(1), bool(1)], [bool(1), bool(1), bool(0)], [bool(0), bool(0), bool(0)]]
         bitstring_size = 3
 
     The number of wires needed to store a length-4 array is 2, which means that the ``control_wires``
@@ -202,7 +202,7 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
 
     def __init__(
         self,
-        bitstrings: Sequence[str],
+        bitstrings: Sequence[Sequence[bool]],
         control_wires: WiresLike,
         target_wires: WiresLike,
         work_wires: WiresLike,
@@ -277,7 +277,7 @@ def _bucket_brigade_qram_resources(bitstrings):
     resources[resource_rep(Hadamard)] += num_target_wires * 2
     for j in range(num_target_wires):
         for p in range(1 << n_k):
-            resources[resource_rep(PauliZ)] += 1 if int(bitstrings[p][j]) else 0
+            resources[resource_rep(PauliZ)] += 1 if bitstrings[p][j] else 0
     return resources
 
 
@@ -332,9 +332,9 @@ def _leaf_ops_for_bit(wire_manager, bitstrings, n_k, j):
         else:
             target = wire_manager.portR(n_k - 1, p >> 1)
         bit = bitstrings[p][j]
-        if bit == "1":
+        if bit == 1:
             PauliZ(wires=target)
-        elif bit == "0":
+        elif bit == 0:
             pass
     return ops
 
@@ -396,7 +396,7 @@ class HybridQRAM(Operation):
     - ``work_wires``: :math:`[ signal, bus, dir..., portL..., portR... ]` (tree auxiliaries)
 
     Args:
-        bitstrings (Sequence[str]):
+        bitstrings (Sequence[Sequence[bool]]):
             The classical data as a sequence of bitstrings. The size of the classical data must be
             :math:`2^{\texttt{len(control_wires)}}`.
         control_wires (WiresLike):
@@ -432,7 +432,7 @@ class HybridQRAM(Operation):
 
     .. code-block:: python
 
-        bitstrings = ["010", "111", "110", "000", "010", "111", "110", "000"]
+        bitstrings = [[bool(0), bool(1), bool(0)], [bool(1), bool(1), bool(1)], [bool(1), bool(1), bool(0)], [bool(0), bool(0), bool(0)], [bool(0), bool(1), bool(0)], [bool(1), bool(1), bool(1)], [bool(1), bool(1), bool(0)], [bool(0), bool(0), bool(0)]]
         bitstring_size = 3
 
     We need the number of bitstrings to equal :math:`2^{\texttt{len(control_wires)}}` so they can be addressed. This
@@ -499,7 +499,7 @@ class HybridQRAM(Operation):
 
     def __init__(
         self,
-        bitstrings: Sequence[str],
+        bitstrings: Sequence[Sequence[bool]],
         control_wires: WiresLike,
         target_wires: WiresLike,
         work_wires: WiresLike,
@@ -680,7 +680,7 @@ def _hybrid_qram_resources(bitstrings, num_target_wires, num_select_wires, num_t
             )
         ] += sum(
             [
-                bitstrings[(block_index << num_tree_control_wires) + p][j] == "1"
+                bitstrings[(block_index << num_tree_control_wires) + p][j] == 1
                 for j in range(num_target_wires)
                 for p in range(1 << num_tree_control_wires)
             ]
@@ -709,7 +709,7 @@ def _tree_leaf_ops_for_bit_block_ctrl(
         # Global address index: (block_index << n_tree) + p
         addr = (block_index << n_tree) + p
         bit = bitstrings[addr][j]
-        if bit == "1":
+        if bit == 1:
             ctrl(PauliZ(wires=target), control=[signal], control_values=[1])
 
 
@@ -863,7 +863,7 @@ class SelectOnlyQRAM(Operation):
     where :math:`b_i` is the bitstring associated with index :math:`i`.
 
     Args:
-        bitstrings (Sequence[str]):
+        bitstrings (Sequence[Sequence[bool]]):
             The classical data as a sequence of bitstrings. The size of the classical data must be
             :math:`2^{\texttt{len(select_wires)}+\texttt{len(control_wires)}}`.
         control_wires (WiresLike):
@@ -900,7 +900,7 @@ class SelectOnlyQRAM(Operation):
 
     .. code-block:: python
 
-        bitstrings = ["010", "111", "110", "000", "010", "111", "110", "000"]
+        bitstrings = [[bool(0), bool(1), bool(0)], [bool(1), bool(1), bool(1)], [bool(1), bool(1), bool(0)], [bool(0), bool(0), bool(0)], [bool(0), bool(1), bool(0)], [bool(1), bool(1), bool(1)], [bool(1), bool(1), bool(0)], [bool(0), bool(0), bool(0)]]
         bitstring_size = 3
 
     We need the number of bitstrings to equal :math:`2^{\texttt{len(select_wires)}+\texttt{len(control_wires)}}` so they can be addressed. This
@@ -967,7 +967,7 @@ class SelectOnlyQRAM(Operation):
     # pylint: disable=too-many-arguments
     def __init__(
         self,
-        bitstrings,
+        bitstrings: Sequence[Sequence[bool]],
         control_wires: WiresLike,
         target_wires: WiresLike,
         select_wires: WiresLike | None = None,
@@ -1057,7 +1057,7 @@ def _select_only_qram_resources(bitstrings, select_value, num_control_wires, num
                 num_control_wires=n_total,
                 num_zero_control_values=0,
             )
-        ] += bits.count("1")
+        ] += bits.count(1)
 
     return resources
 
@@ -1094,7 +1094,7 @@ def _select_only_qram_decomposition(
 
         # For each bit position in the data
         for j in range(len(bitstrings[0])):
-            if bits[j] == "1":
+            if bits[j]:
                 # Multi-controlled X on target_wires[j],
                 # controlled on controls matching `control_values`.
                 ctrl(
