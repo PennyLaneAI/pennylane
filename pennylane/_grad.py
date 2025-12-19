@@ -17,6 +17,7 @@ This module contains the autograd wrappers :class:`grad` and :func:`jacobian`
 import inspect
 import numbers
 import warnings
+from collections.abc import Sequence
 from functools import lru_cache, wraps
 
 from autograd import jacobian as _jacobian
@@ -160,6 +161,9 @@ def _args_and_argnums(args, argnums):
         argnums = 0
     if argnums_is_int := isinstance(argnums, int):
         argnums = (argnums,)
+    elif not isinstance(argnums, (list, tuple)) or not all(isinstance(a, int) for a in argnums):
+        raise ValueError(f"argnums should be integer or a list of integers, not {argnums}")
+
     argnums = tuple(argnums)
 
     if max(argnums) >= len(args):
@@ -296,6 +300,11 @@ def _capture_vjp(func, params, cotangents, *, argnums=None, method=None, h=None)
     elif isinstance(argnums, int):
         argnums = [argnums]
 
+    if not isinstance(params, Sequence):
+        raise ValueError(f"params must be a Sequence in qml.vjp. Got type {type(params)}.")
+    if not isinstance(cotangents, Sequence):
+        raise ValueError(f"cotangents must be a Sequence in qml.vjp. Got type {type(params)}.")
+
     h = _setup_h(h)
     method = _setup_method(method)
     flat_args, flat_argnums, _, trainable_in_tree = _args_and_argnums(params, argnums)
@@ -329,6 +338,14 @@ def _capture_vjp(func, params, cotangents, *, argnums=None, method=None, h=None)
 def _validate_tangents(params, dparams, argnums):
     from jax._src.api import _dtype  # pylint: disable=import-outside-toplevel
 
+    if len(dparams) != len(argnums):
+        raise TypeError(
+            "number of tangent and number of differentiable parameters in qml.jvp do not "
+            "match; the number of parameters must be equal. "
+            f"Got {len(argnums)} differentiable parameters and so expected "
+            f"as many tangents, but got {len(dparams)} instead."
+        )
+
     for i, dx in zip(argnums, dparams):
         x = params[i]
         if _dtype(x) != _dtype(dx):
@@ -349,6 +366,11 @@ def _validate_tangents(params, dparams, argnums):
 
 def _capture_jvp(func, params, dparams, *, argnums=None, method=None, h=None):
     from jax.tree_util import tree_leaves, tree_unflatten  # pylint: disable=import-outside-toplevel
+
+    if not isinstance(params, Sequence):
+        raise ValueError(f"params must be a Sequence in qml.jvp. Got type {type(params)}.")
+    if not isinstance(dparams, Sequence):
+        raise ValueError(f"tangents must be a Sequence in qml.jvp. Got type {type(params)}.")
 
     h = _setup_h(h)
     method = _setup_method(method)
