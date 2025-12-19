@@ -223,6 +223,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* `qml.while_loop` and `qml.for_loop` can now lazily dispatch to catalyst when called,
+  instead of dispatching upon creation.
+  [(#8786)](https://github.com/PennyLaneAI/pennylane/pull/8786)
+
 <h4>Resource estimation</h4>
 
 * Added `Resources.total_wires` and `Resources.total_gates` properties to the 
