@@ -278,7 +278,6 @@ def factorize(
 
         if cholesky and init_params is None:
             # compute the factors via cholesky decomposition routine
-            # For compressed factorization, we want exactly num_factors, not early stopping
             factors, f_eigvals, f_eigvecs = _double_factorization_cholesky(
                 two, tol_factor=tol_factor, shape=shape, interface=interface, num_factors=num_factors
             )
