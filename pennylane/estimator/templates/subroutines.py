@@ -1940,7 +1940,7 @@ class QROM(ResourceOperator):
 
             Note: we use the single-controlled unary iterator trick to implement the Select. This
             implementation assumes we have access to :math:`n - 1` additional work qubits,
-            where :math:`n = \ceil{log_{2}(N)}` and :math:`N` is the number of batches of
+            where :math:`n = \lceil \log_{2}(N) \rceil` and :math:`N` is the number of batches of
             unitaries to select.
 
         Returns:
