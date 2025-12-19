@@ -1992,7 +1992,7 @@ class QROM(ResourceOperator):
                   Defaults to :code:`(num_bitstrings * size_bitstring) // 2`, which is half the
                   dataset.
                 * restored (bool): Determine if allocated qubits should be reset after the
-                  computation (at the cost of higher gate counts). Defaults to :code`True`.
+                  computation (at the cost of higher gate counts). Defaults to :code:`True`.
                 * select_swap_depth (int | None): A parameter :math:`\lambda` that
                   determines if data will be loaded in parallel by adding more rows following
                   Figure 1.C of `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_. Can be
@@ -2193,7 +2193,7 @@ class QROM(ResourceOperator):
             num_bit_flips (int | None): The total number of :math:`1`'s in the dataset. Defaults to
                 :code:`(num_bitstrings * size_bitstring) // 2`, which is half the dataset.
             restored (bool): Determine if allocated qubits should be reset after the computation
-                (at the cost of higher gate counts). Defaults to :code`True`.
+                (at the cost of higher gate counts). Defaults to :code:`True`.
             select_swap_depth (int | None): A parameter :math:`\lambda` that determines
                 if data will be loaded in parallel by adding more rows following Figure 1.C of
                 `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_. Can be :code:`None`,
