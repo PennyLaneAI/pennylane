@@ -28,6 +28,8 @@ from .subroutines import (
     QPE,
     IterativeQPE,
     UnaryIterationQPE,
+    Reflection,
+    Qubitization,
 )
 
 from .trotter import (
@@ -48,4 +50,5 @@ from .comparators import (
     RegisterComparator,
 )
 from .qubitize import QubitizeTHC
-from .select import SelectTHC
+from .select import SelectTHC, SelectPauli
+from .qsp import GQSP, GQSPTimeEvolution, QSP, QSVT
