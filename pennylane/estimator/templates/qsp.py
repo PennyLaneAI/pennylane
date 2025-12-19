@@ -481,7 +481,7 @@ class QSVT(ResourceOperator):
 
         U_{QSVT} = \left[\prod^{d/2}_{k=1}\Pi_{\phi_{2k-1}}U^\dagger\tilde{\Pi}_{\phi_{2k}}U\right].
 
-    Where :math:`\Pi_{\phi}` and :math:\tilde{\Pi}_{\phi}` are projector-controlled phase shifts
+    Where :math:`\Pi_{\phi}` and :math:`\tilde{\Pi}_{\phi}` are projector-controlled phase shifts
     (:class:`~.estimator.ops.qubit.parametric_ops_multi_qubit.PCPhase`) This circuit applies a
     polynomial transformation of degree :math:`d` (:math:`Poly^{SV}`) to the singular values of the
     block encoded matrix:
