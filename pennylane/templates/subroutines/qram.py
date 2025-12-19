@@ -26,8 +26,6 @@ from collections import defaultdict
 from dataclasses import dataclass
 from typing import Sequence
 
-from pennylane.templates import BasisEmbedding
-
 from pennylane import math
 from pennylane.decomposition import (
     add_decomps,
@@ -37,6 +35,7 @@ from pennylane.decomposition import (
 )
 from pennylane.operation import Operation
 from pennylane.ops import CNOT, CSWAP, SWAP, Controlled, Hadamard, PauliX, PauliZ, adjoint, ctrl
+from pennylane.templates import BasisEmbedding
 from pennylane.wires import Wires, WiresLike
 
 # pylint: disable=consider-using-generator
