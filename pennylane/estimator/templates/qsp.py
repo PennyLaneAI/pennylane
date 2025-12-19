@@ -534,7 +534,7 @@ class QSVT(ResourceOperator):
         Returns:
             dict: A dictionary containing the resource parameters:
                 * block_encoding (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`):
-                  The block encoding operator.
+                  the block encoding operator
                 * encoding_dims (int | tuple(int)): The subspace (number of rows and columns) where
                   the operator is encoded in the matrix representation of the block encoding operator.
                 * poly_deg (int): the degree of the polynomial transformation being applied
@@ -557,7 +557,7 @@ class QSVT(ResourceOperator):
 
         Args:
             block_encoding (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`):
-                The block encoding operator.
+                the block encoding operator
             encoding_dims (int | tuple(int)): The subspace (number of rows and columns) where
                 the operator is encoded in the matrix representation of the block encoding operator.
             poly_deg (int): the degree of the polynomial transformation being applied
@@ -653,11 +653,11 @@ class QSP(ResourceOperator):
     Args:
         block_encoding (:class:`~.estimator.resource_operator.ResourceOperator`): the block encoding operator
         poly_deg (int): the degree of the polynomial transformation being applied
-        convention (str): Which of the conventions to use for the rotation operators.
-            The valid conventions are ``"X"`` or ``"Z"``.
+        convention (str): The basis used for the rotation operators,
+            valid conventions are ``"X"`` or ``"Z"``.
         rotation_precision (float | None): The error threshold for the approximate Clifford + T
             decomposition of the single qubit rotation gates used to implement this operation.
-        wires (Sequence[int], None): the wires the operation acts on
+        wires (WiresLike, None): the wires the operation acts on
 
     Resources:
         The resources are obtained as described in theorem 1 of `A Grand Unification of Quantum Algorithms
@@ -739,7 +739,7 @@ class QSP(ResourceOperator):
         rotation_precision: float | None,
     ):
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation.
+        the Operator that are needed to compute the resources.
 
         Args:
             block_encoding (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`):

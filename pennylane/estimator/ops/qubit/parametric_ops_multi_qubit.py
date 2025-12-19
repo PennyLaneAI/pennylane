@@ -599,12 +599,12 @@ class PCPhase(ResourceOperator):
         dim (int): the dimension of the target subspace
         rotation_precision (float | None): The error threshold for the approximate Clifford + T
             decomposition of the phase shift gates used to implement this operation. 
-        wires (Sequence[int] | None): the wire the operation acts on
+        wires (WiresLike | None): the wire the operation acts on
 
     Resources:
         The resources are derived from the decomposition of the generator :math:`G` of the
         ``PCPhase`` gate into multiple projectors, which generate (multi-controlled) phase shift gates,
-        potentially complemented with (non-controlled) Pauli-X gates and/or a global phase.
+        potentially complemented with (non-controlled) ``X`` gates and/or a global phase.
         The generator is given as :math:`G = 2 \Pi - \mathbb{I}_N`, where :math:`\Pi` is a projector.
         The projector :math:`\Pi` is decomposed into sums and differences of powers of two,
         which correspond to multi-controlled phase shift gates.
@@ -661,7 +661,7 @@ class PCPhase(ResourceOperator):
         Resources:
             The resources are derived from the decomposition of the generator :math:`G` of the
             ``PCPhase`` gate into multiple projectors, which generate (multi-controlled) phase shift gates,
-            potentially complemented with (non-controlled) Pauli-X gates and/or a global phase.
+            potentially complemented with (non-controlled) ``X`` gates and/or a global phase.
             The generator is given as :math:`G = 2 \Pi - \mathbb{I}_N`, where :math:`\Pi` is a projector.
             The projector :math:`\Pi` is decomposed into sums and differences of powers of two,
             which correspond to multi-controlled phase shift gates.
