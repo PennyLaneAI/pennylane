@@ -7,8 +7,7 @@ jax==0.7.1
 jaxlib==0.7.1
 mistune==0.8.4
 m2r2
-# TODO: Remove once galois becomes compatible with latest numpy 
-numpy>=2.0,<=2.2
+numpy>=2.0
 pygments-github-lexers
 packaging
 pyzx
@@ -37,4 +36,3 @@ pennylane-sphinx-theme
 sphinxext-opengraph==0.9.0
 matplotlib==3.10.0
 diastatic-malt
-galois
