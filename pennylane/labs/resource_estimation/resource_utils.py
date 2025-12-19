@@ -111,7 +111,11 @@ def approx_poly_degree(
         >>> print(loss) # Sum of squared errors
         2.40281579329135e-29
 
-    This example fits the function :math:`f(x) = \sin(3x) + 0.3x^2 - 0.1x` using the Chebyshev basis with the Gauss-Lobatto nodes.
+    This example fits the function :math:`f(x) = \sin(3x) + 0.3x^2 - 0.1x` using the Chebyshev basis. Here,
+    we use the Gauss-Lobatto nodes (``domain_func="gauss-lobatto"``), which are the optimal interpolation points
+    for Chebyshev polynomials as they cluster near the endpoints and minimize the interpolation error to avoid the
+    `Runge phenomenon <https://en.wikipedia.org/wiki/Runge%27s_phenomenon>`_ that plagues uniform grids. This enables
+    better convergence for functions with oscillatory behavior like :math:`\sin(3x)` with smaller polynomial degrees.
 
     .. code-block::
 
@@ -130,7 +134,12 @@ def approx_poly_degree(
         >>> print(loss) # Maximum absolute error
         0.0003266957232994083
 
-    This example fits the function :math:`f(x) = \sin(x) \exp(-x)` using a custom fit function for the Laguerre basis.
+    This last example fits the function :math:`f(x) = \sin(x) \exp(-x)` using the Laguerre polynomials.
+    Since the Laguerre basis is not natively supported here, one will need to provide their
+    own custom fit function using the ``fit_func`` keyword argument, which gives users the
+    flexibility to fit a target function with any orthogonal polynomial basis and recipe.
+    Here, we use the ``np.polynomial.laguerre.Laguerre.fit`` function for fitting and obtaining
+    the least squares error of the fit.
 
     .. code-block::
 
@@ -171,6 +180,7 @@ def approx_poly_degree(
     fit_kwargs |= fit_args
 
     proj_func = _process_domain_func(domain_func, basis)
+    print(proj_func)
 
     best_loss, best_poly = float("inf"), None
     for degree in range(min_degree, max_degree + 1):
