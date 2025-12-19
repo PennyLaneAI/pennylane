@@ -72,7 +72,7 @@ def approx_poly_degree(
             and ``x_vec`` is used. When ``"uniform"`` is given, the points are evenly spaced between
             ``x_vec[0]`` and ``x_vec[-1]`` based on the degree of the polynomial being fit.
             Whereas, when ``"gauss-lobatto"`` is used, the "`Chebyshev/Legendre-Gauss-Lobatto
-            <https://en.wikipedia.org/wiki/Gaussian_quadrature#Gauss-Lobatto_rules>`_\ " nodes
+            <https://en.wikipedia.org/wiki/Gaussian_quadrature#Gauss%E2%80%93Lobatto_rules>`_\ " nodes
             are used for ``basis="chebyshev"/"legendre"``, respectively.
             When a callable is provided, it should have the signature:
             ``f(x_min: float, x_max: float, num_points: int) -> np.ndarray``.
