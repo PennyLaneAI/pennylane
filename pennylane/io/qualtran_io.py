@@ -480,7 +480,7 @@ def _map_to_bloq(op, map_ops=True, custom_mapping=None, call_graph="estimator", 
         custom_mapping (dict | None): Dictionary to specify a mapping between a PennyLane operator and a
             Qualtran Bloq. Default is ``None``.
         call_graph (str): Specifies how to build the call graph. If ``'estimator'``, the call
-            graph is built using :func:`~.estimate`. If ``'decomposition'``, the
+            graph is built using :func:`~pennylane.estimator.estimate`. If ``'decomposition'``, the
             call graph is built via the PennyLane decomposition. Default is ``'estimator'``.
 
     Returns:
@@ -1220,7 +1220,7 @@ class ToBloq(Bloq):
         custom_mapping (dict | None): Dictionary to specify a mapping between a PennyLane operator and a
             Qualtran Bloq. A default mapping is used if not defined.
         call_graph (str): Specifies how to build the call graph. If ``'estimator'``, the call
-            graph is built using :func:`~.estimate`. If ``'decomposition'``, the
+            graph is built using :func:`~pennylane.estimator.estimate`. If ``'decomposition'``, the
             call graph is built via the PennyLane decomposition. Default is ``'estimator'``.
 
     Raises:
@@ -1394,7 +1394,7 @@ class ToBloq(Bloq):
 
         The call graph is built based on the ``call_graph_mode`` specified at initialization:
 
-        - ``'estimator'``: Uses :func:`~.estimate` to get gate counts.
+        - ``'estimator'``: Uses :func:`~pennylane.estimator.estimate` to get gate counts.
         - ``'decomposition'``: Builds the call graph via the PennyLane decomposition.
         """
         if self.call_graph_mode == "estimator":
@@ -1452,7 +1452,7 @@ def to_bloq(
         custom_mapping (dict | None): Dictionary to specify a mapping between a PennyLane operator and a
             Qualtran Bloq. A default mapping is used if not defined.
         call_graph (str): Specifies how to build the call graph. If ``'estimator'``, the call
-            graph is built using :func:`~.estimate`. If ``'decomposition'``, the
+            graph is built using :func:`~pennylane.estimator.estimate`. If ``'decomposition'``, the
             call graph is built via the PennyLane decomposition. Default is ``'estimator'``.
 
     Returns:
