@@ -664,7 +664,7 @@ class QSP(ResourceOperator):
         ValueError: If the convention is not ``"X"`` or ``"Z"``.
 
     Resources:
-        The resources are obtained as described in theorem 1 of `A Grand Unification of Quantum Algorithms
+        The resources are obtained as described in Theorem 1 of `A Grand Unification of Quantum Algorithms
         (2021) <https://arxiv.org/pdf/2105.02859>`_.
 
     **Example**
