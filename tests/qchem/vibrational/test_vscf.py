@@ -126,7 +126,7 @@ def test_vscf_rotations(h_data, h2s_result):
 
 def test_vscf_funcs_raise():
     r"""Test that vscf rotation matrices produces error if modals is greater than the modals for unrotated integrals."""
-    with pytest.raises(ValueError, match="Number of maximum modals cannot be greater"):
+    with pytest.raises(ValueError, match="Number of maximum modals must be a list"):
         vscf.vscf_rotations(h_data_h2s, modals=[5, 5, 5, 5])
 
     with pytest.raises(ValueError, match="Number of maximum modals cannot be greater"):

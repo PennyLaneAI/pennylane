@@ -15,6 +15,8 @@
 
 import numpy as np
 
+from pennylane.typing import TensorLike
+
 # pylint: disable=too-many-arguments, too-many-positional-arguments
 
 
@@ -380,7 +382,12 @@ def _rotate_hamiltonian(h_integrals, mode_rots, modals):
     return h_data
 
 
-def vscf_rotations(h_integrals, modals=None, cutoff=None, cutoff_ratio=1e-6):
+def vscf_rotations(
+    h_integrals: list[TensorLike],
+    modals: list[int] | None = None,
+    cutoff: float | None = None,
+    cutoff_ratio: float = 1e-6,
+) -> list[TensorLike]:
     r"""Generates the vibrational self-consistent field rotation matrices.
 
     This functions generates the matrices :math:`U` for each vibrational mode
@@ -431,6 +438,10 @@ def vscf_rotations(h_integrals, modals=None, cutoff=None, cutoff_ratio=1e-6):
     if modals is None:
         modals = max_modals
     else:
+        if len(modals) != nmodes:
+            raise ValueError(
+                "Number of maximum modals must be a list of length equal to the number of modes."
+            )
         if np.max(modals) > imax:
             raise ValueError(
                 "Number of maximum modals cannot be greater than the modals for unrotated integrals."
