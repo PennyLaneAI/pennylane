@@ -316,6 +316,26 @@ class TestCatalyst:
 class TestCatalystControlFlow:
     """Test ``qml.qjit`` with Catalyst's control-flow operations"""
 
+    def test_while_loop_defined_outside_qjit(self):
+        """Test that the while loop can be defined outside the qjit."""
+
+        @qml.while_loop(lambda n: n < 4)
+        def w(n):
+            return n + 1
+
+        res = qml.qjit(w)(0)
+        assert qml.math.allclose(res, 4)
+
+    def test_for_loop_defined_outside_qjit(self):
+        """Test that a for_loop can be defined outside the qjit."""
+
+        @qml.for_loop(5)
+        def f(i, x):
+            return x + i
+
+        res = qml.qjit(f)(0)
+        assert qml.math.allclose(res, 10)
+
     def test_alternating_while_loop(self):
         """Test simple while loop."""
         dev = qml.device("lightning.qubit", wires=1)

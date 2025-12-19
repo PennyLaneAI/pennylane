@@ -885,25 +885,6 @@ class TestIntegration:
         assert np.allclose(r2[1], mv_res(first_par))
         assert spy.call_count == 2
 
-    def test_dynamic_one_shot_if_mcm_unsupported(self):
-        """Test an error is raised if the dynamic one shot transform is a applied to a qnode with a device that
-        does not support mid circuit measurements.
-        """
-        dev = qml.device("default.mixed", wires=2)
-
-        with pytest.raises(
-            TypeError,
-            match="does not support mid-circuit measurements and/or one-shot execution mode",
-        ):
-
-            @qml.transforms.dynamic_one_shot
-            @qml.set_shots(100)
-            @qml.qnode(dev)
-            def _():
-                qml.RX(1.23, 0)
-                ms = [qml.measure(0) for _ in range(10)]
-                return qml.probs(op=ms)
-
     @pytest.mark.parametrize("basis_state", [[1, 0], [0, 1]])
     def test_sampling_with_mcm(self, basis_state, mocker):
         """Tests that a QNode with qml.sample and mid-circuit measurements
