@@ -464,7 +464,7 @@ class QSVT(ResourceOperator):
         wires (WiresLike | None): the wires the operation acts on
 
     Resources:
-        The resources are obtained as described in theorem 4 of `A Grand Unification of Quantum Algorithms
+        The resources are obtained as described in Theorem 4 of `A Grand Unification of Quantum Algorithms
         (2021) <https://arxiv.org/pdf/2105.02859>`_.
 
     **Example**
