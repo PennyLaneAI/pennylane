@@ -918,7 +918,8 @@ class SelectOnlyQRAM(Operation):
     following circuit, we prepare the state :math:`\vert 2 \rangle = \vert 10 \rangle` on the
     ``control_wires``, which indicates that we would like to access the second (zero-indexed) entry of
     ``bitstrings`` (which is ``"110"``). Because ``select_value`` is zero, the full address we are accessing is
-    indeed ``010``. The ``target_wires`` register should therefore store this state after ``SelectOnlyQRAM`` is applied.
+    indeed ``"010"``. The ``target_wires`` register should therefore store the state ``"110"`` after ``SelectOnlyQRAM``
+    is applied.
 
     .. code-block:: python
 
