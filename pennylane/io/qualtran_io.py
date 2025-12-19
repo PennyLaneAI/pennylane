@@ -1217,7 +1217,7 @@ class ToBloq(Bloq):
             as a Qualtran Bloq.
         map_ops (bool): Whether to map operations to a Qualtran Bloq. Operations are wrapped
             as a ``ToBloq`` when ``False``. Default is ``True``.
-        custom_mapping (dict): Dictionary to specify a mapping between a PennyLane operator and a
+        custom_mapping (dict | None): Dictionary to specify a mapping between a PennyLane operator and a
             Qualtran Bloq. A default mapping is used if not defined.
         call_graph (str): Specifies how to build the call graph. If ``'estimator'``, the call
             graph is built using ``pennylane.estimator.estimate()``. If ``'decomposition'``, the
@@ -1449,7 +1449,7 @@ def to_bloq(
             as a Qualtran Bloq.
         map_ops (bool): Whether to map operations to a Qualtran Bloq. Operations are wrapped
             as a ``ToBloq`` when ``False``. Default is ``True``.
-        custom_mapping (dict): Dictionary to specify a mapping between a PennyLane operator and a
+        custom_mapping (dict | None): Dictionary to specify a mapping between a PennyLane operator and a
             Qualtran Bloq. A default mapping is used if not defined.
         call_graph (str): Specifies how to build the call graph. If ``'estimator'``, the call
             graph is built using ``pennylane.estimator.estimate()``. If ``'decomposition'``, the
@@ -1500,7 +1500,7 @@ def to_bloq(
         This will wrap the input PennyLane operator as a Qualtran Bloq, enabling Qualtran functions
         such as ``decompose_bloq`` or ``call_graph``. To toggle between seeing the decompositions
         from PennyLane or from the resource estimation module, set ``call_graph`` to either
-        `decomposition` or `estimator` respectively.
+        ``'decomposition'`` or ``'estimator'`` respectively.
 
         >>> qml.to_bloq(qml.QuantumPhaseEstimation(
         ...     unitary=qml.RX(0.1, wires=0), estimation_wires=range(1, 5)
