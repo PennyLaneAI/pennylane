@@ -607,7 +607,7 @@ class PCPhase(ResourceOperator):
         potentially complemented with (non-controlled) ``X`` gates and/or a global phase.
         The generator is given as :math:`G = 2 \Pi - \mathbb{I}_N`, where :math:`\Pi` is a projector.
         The projector :math:`\Pi` is decomposed into sums and differences of powers of two,
-        which correspond to multi-controlled phase shift gates.
+        which correspond to multi-controlled ``PhaseShift`` gates.
 
     .. seealso:: The corresponding PennyLane operation :class:`~.pennylane.PCPhase`.
 
