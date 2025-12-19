@@ -148,6 +148,47 @@ class TestGQSPTimeEvolution:
         with pytest.raises(ValueError, match="Expected 2 wires, got 1"):
             qre.GQSPTimeEvolution(op, time=1.0, one_norm=1.0, approximation_error=0.1, wires=[0])
 
+    @pytest.mark.parametrize(
+        "time, one_norm, approximation_error, error_msg",
+        (
+            (-1, 1.0, 0.1, "Expected 'time' to be a positive real number greater than zero"),
+            (0, 1.0, 0.1, "Expected 'time' to be a positive real number greater than zero"),
+            (10 + 1j, 1.0, 0.1, "Expected 'time' to be a positive real number greater than zero"),
+            (10, -2, 0.1, "Expected 'one_norm' to be a positive real number greater than zero"),
+            (10, 0, 0.1, "Expected 'one_norm' to be a positive real number greater than zero"),
+            (
+                10,
+                1.0 + 1j,
+                0.1,
+                "Expected 'one_norm' to be a positive real number greater than zero",
+            ),
+            (
+                10,
+                1.0,
+                -0.5,
+                "Expected 'approximation_error' to be a positive real number greater than zero",
+            ),
+            (
+                10,
+                1.0,
+                0,
+                "Expected 'approximation_error' to be a positive real number greater than zero",
+            ),
+            (
+                10,
+                1.0,
+                0.1 + 1j,
+                "Expected 'approximation_error' to be a positive real number greater than zero",
+            ),
+        ),
+    )
+    def test_argument_error(self, time, one_norm, approximation_error, error_msg):
+        """Test that an error is raised if any of the input arguments are not positive real
+        numbers greater than zero."""
+        op = qre.RX(0.1, wires=0)
+        with pytest.raises(ValueError, match=error_msg):
+            qre.GQSPTimeEvolution(op, time, one_norm, approximation_error)
+
     def test_resource_params(self):
         """Test that the resource params for GQSPTimeEvolution are correct."""
         op = qre.RX(0.1, wires=0)

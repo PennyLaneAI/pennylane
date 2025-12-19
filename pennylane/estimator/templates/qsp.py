@@ -265,7 +265,10 @@ class GQSPTimeEvolution(ResourceOperator):
         according to Theorem 7 of `Generalized Quantum Signal Processing (2024) <https://arxiv.org/pdf/2308.01501>`_.
 
     Raises:
-        ValueError: if the wires provided don't match the number of wires expected by the operator
+        ValueError: if the ``wires`` provided don't match the number of wires expected by the operator
+        ValueError: if the ``time`` provided is not a positive real number greater than zero
+        ValueError: if the ``one_norm`` provided is not a positive real number greater than zero
+        ValueError: if the ``approximation_error`` provided is not a positive real number greater than zero
 
     **Example**
 
@@ -304,6 +307,27 @@ class GQSPTimeEvolution(ResourceOperator):
     ):
         _dequeue(walk_op)  # remove operator
         self.queue()
+
+        if (not isinstance(time, (int, float))) or time <= 0:
+            raise (
+                ValueError(
+                    f"Expected 'time' to be a positive real number greater than zero, got {time}"
+                )
+            )
+
+        if (not isinstance(one_norm, (int, float))) or one_norm <= 0:
+            raise (
+                ValueError(
+                    f"Expected 'one_norm' to be a positive real number greater than zero, got {one_norm}"
+                )
+            )
+
+        if (not isinstance(approximation_error, (int, float))) or approximation_error <= 0:
+            raise (
+                ValueError(
+                    f"Expected 'approximation_error' to be a positive real number greater than zero, got {approximation_error}"
+                )
+            )
 
         self.walk_op = walk_op.resource_rep_from_op()
         self.time = time
