@@ -294,13 +294,7 @@ class TestSpecAndTracker:
 class TestAlgoError:
     """Test the qml.resource.algo_error function."""
 
-    @staticmethod
-    def preprocess(execution_config: qml.devices.ExecutionConfig | None = None):
-        """A vanilla preprocesser"""
-        return qml.CompilePipeline(), execution_config
-
-    dev = qml.device("null.qubit", wires=2)
-    dev.preprocess = preprocess.__func__
+    dev = qml.device("default.qubit", wires=2)
 
     def test_basic_usage(self):
         """Test basic usage of algo_error with TrotterProduct."""
