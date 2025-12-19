@@ -65,12 +65,13 @@
   ```
 
 
-<h4>Bucket-Brigade QRAM </h4>
+<h4>QRAM </h4>
 
-* Bucket Brigade QRAM and a Hybrid QRAM variant are implemented as a template :class:`~.BBQRAM` and :class:`~.HybridQRAM` 
+* Bucket Brigade QRAM, a Hybrid QRAM and a Select-Only QRAM variant are implemented as a template :class:`~.BBQRAM`, :class:`~.HybridQRAM` and :class:`~.SelectOnlyQRAM` 
   to allow for selection of bitstrings in superposition.
   [(#8670)](https://github.com/PennyLaneAI/pennylane/pull/8670)
   [(#8679)](https://github.com/PennyLaneAI/pennylane/pull/8679)
+  [(#8680)](https://github.com/PennyLaneAI/pennylane/pull/8680)
 
 <h4>Quantum Automatic Differentiation </h4>
 
@@ -917,6 +918,7 @@ This release contains contributions from (in alphabetical order):
 Runor Agbaire,
 Guillermo Alonso,
 Utkarsh Azad,
+Joseph Bowles,
 Astral Cai,
 Yushao Chen,
 Diksha Dhawan,
@@ -936,5 +938,6 @@ Jay Soni,
 nate stemen,
 Theodoros Trochatos,
 David Wierichs,
+Shifan Xu,
 Hongsheng Zheng,
 Zinan Zhou
