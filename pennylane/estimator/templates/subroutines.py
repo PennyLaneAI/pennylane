@@ -2283,13 +2283,9 @@ class Reflection(ResourceOperator):
     Resources:
         The resources are derived from the decomposition :math:`R(U, \alpha) = U R(\alpha) U^\dagger`.
         The center block :math:`R(\alpha) = -I + (1 - e^{i\alpha})|0\rangle\langle 0|` is implemented
-        using a multi-controlled ``PhaseShift``:
+        using a multi-controlled ``PhaseShift``.
 
-        .. math::
-
-            R(\alpha) = I \otimes X(0) \text{Controlled}(\text{PhaseShift}(0), \text{control}=[1, \dots], \text{values}=[1, \dots]) X(0)
-
-        In the special case where :math:`\alpha = \pi`, the phase shift becomes a ``Z`` gate.
+        In the special case where :math:`\alpha = \pi`, the ``PhaseShift`` becomes a ``Z`` gate.
         If :math:`\alpha = 0` or :math:`\alpha = 2\pi`, the center block cancels out, leaving :math:`-I`.
         The cost for :math:`-I` is calculated as :math:`X Z X Z = -I`.
 
