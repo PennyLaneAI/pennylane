@@ -1033,6 +1033,9 @@ def _select_only_qram_resources(bitstrings, select_value, num_control_wires, num
     resources = defaultdict(int)
     n_total = num_control_wires + num_select_wires
 
+    if select_value is not None and num_select_wires > 0:
+        resources[resource_rep(BasisEmbedding, num_wires=num_select_wires)] += 1
+
     for addr, bits in enumerate(bitstrings):
         if (
             select_value is not None

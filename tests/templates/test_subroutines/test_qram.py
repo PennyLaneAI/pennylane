@@ -661,6 +661,7 @@ def select_only_quantum(
             3,  # addressed from the left
             [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],  # |000>
             [
+                BasisEmbedding([0, 0], wires=[5, 6]),
                 X(5),
                 X(6),
                 X(0),
@@ -719,6 +720,7 @@ def select_only_quantum(
             2,
             [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0],  # |110>
             [
+                BasisEmbedding([0, 0], wires=[5, 6]),
                 X(5),
                 X(6),
                 X(0),
