@@ -45,7 +45,10 @@ def _multi_swap(wires1, wires2):
 def _new_ops(depth, target_wires, control_wires, swap_wires, bitstrings):
 
     with QueuingManager.stop_recording():
-        ops_new = [BasisEmbedding(int(bits, 2), wires=target_wires) for bits in bitstrings]
+        ops_new = [
+            BasisEmbedding(int("".join([str(int(bit)) for bit in bits]), 2), wires=target_wires)
+            for bits in bitstrings
+        ]
         ops_identity_new = ops_new + [qml_ops.I(target_wires)] * int(
             2 ** len(control_wires) - len(ops_new)
         )
@@ -104,7 +107,7 @@ class QROM(Operation):
     where :math:`b_i` is the bitstring associated with index :math:`i`.
 
     Args:
-        bitstrings (list[str]): the bitstrings to be encoded
+        bitstrings (Sequence[Sequence[bool]]): the bitstrings to be encoded
         control_wires (WiresLike):
             The register that stores the index for the entry of the classical data we want to
             read.
@@ -126,7 +129,7 @@ class QROM(Operation):
     .. code-block:: python
 
         # a list of bitstrings is defined
-        bitstrings = ["010", "111", "110", "000"]
+        bitstrings = [[bool(0), bool(1), bool(0)], [bool(1), bool(1), bool(1)], [bool(1), bool(1), bool(0)], [bool(0), bool(0), bool(0)]]
 
         dev = qml.device("default.qubit")
 
@@ -155,8 +158,8 @@ class QROM(Operation):
         at least :math:`\lceil \log_2(m)\rceil` control wires.
 
         The second set of wires is ``target_wires`` which stores the bitstrings.
-        For instance, if the bitstring is "0110", we will need four target wires. Internally, the bitstrings are
-        encoded using the :class:`~.BasisEmbedding` template.
+        For instance, if the bitstring is [False, True, True, False], we will need four target wires. Internally,
+        the bitstrings are encoded using the :class:`~.BasisEmbedding` template.
 
 
         The ``work_wires`` are the auxiliary qubits used by the template to reduce the number of gates required.
@@ -288,7 +291,13 @@ class QROM(Operation):
     ):  # pylint: disable=arguments-differ
 
         if len(control_wires) == 0:
-            return [BasisEmbedding(int(bits, 2), wires=target_wires) for bits in bitstrings]
+            embeddings = []
+            for bits in bitstrings:
+                integer = 0
+                for power, bit in enumerate(bits[::-1]):
+                    integer += (2**power) * int(bit)
+                embeddings.append(BasisEmbedding(integer, wires=target_wires))
+            return embeddings
 
         with QueuingManager.stop_recording():
 
@@ -299,7 +308,10 @@ class QROM(Operation):
             depth = int(2 ** np.floor(np.log2(depth)))
             depth = min(depth, len(bitstrings))
 
-            ops = [BasisEmbedding(int(bits, 2), wires=target_wires) for bits in bitstrings]
+            ops = [
+                BasisEmbedding(int("".join([str(int(bit)) for bit in bits]), 2), wires=target_wires)
+                for bits in bitstrings
+            ]
             ops_identity = ops + [qml_ops.I(target_wires)] * int(2 ** len(control_wires) - len(ops))
 
             n_columns = len(ops) // depth + int(bool(len(ops) % depth))
@@ -501,7 +513,7 @@ def _qrom_decomposition(
 ):  # pylint: disable=unused-argument, too-many-arguments
     if len(control_wires) == 0:
         for bits in bitstrings:
-            BasisEmbedding(int(bits, 2), wires=target_wires)
+            BasisEmbedding(int("".join([str(int(bit)) for bit in bits]), 2), wires=target_wires)
         return
 
     swap_wires = target_wires + work_wires
