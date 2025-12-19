@@ -591,7 +591,7 @@ class QSVT(ResourceOperator):
             poly_deg (int): the degree of the polynomial transformation being applied
 
         Resources:
-            The resources are obtained as described in theorem 4 of `A Grand Unification of Quantum Algorithms
+            The resources are obtained as described in Theorem 4 of `A Grand Unification of Quantum Algorithms
             (2021) <https://arxiv.org/pdf/2105.02859>`_.
 
         Returns:
