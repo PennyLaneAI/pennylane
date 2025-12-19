@@ -15,6 +15,8 @@
 Stores classes and logic to define and track algorithmic error in a quantum workflow.
 """
 from abc import ABC, abstractmethod
+from collections.abc import Callable
+from functools import partial
 
 import pennylane as qml
 from pennylane.operation import Operation, Operator
@@ -160,8 +162,107 @@ def _compute_algo_error(tape) -> dict[str, AlgorithmicError]:
         if isinstance(op, ErrorOperation):
             op_error = op.error()
             error_name = op_error.__class__.__name__
-            algo_error = algo_errors.get(error_name, None)
-            error_value = op_error if algo_error is None else algo_error.combine(op_error)
+            error = algo_errors.get(error_name, None)
+            error_value = op_error if error is None else error.combine(op_error)
             algo_errors[error_name] = error_value
 
     return algo_errors
+
+
+def _algo_error_qnode(
+    qnode, level, *args, **kwargs
+) -> dict[str, "AlgorithmicError"] | list[dict[str, "AlgorithmicError"]]:
+    """Returns the algorithmic error dictionary for the provided QNode.
+
+    Returns:
+        dict[str, AlgorithmicError] | list[dict[str, AlgorithmicError]]: A single dictionary
+            with error type names as keys and error objects as values when there is only one
+            tape, or a list of such dictionaries when there are multiple tapes in the batch.
+    """
+
+    batch, _ = qml.workflow.construct_batch(qnode, level=level)(*args, **kwargs)
+
+    # Compute errors for each tape separately
+    errors_list = [_compute_algo_error(tape) for tape in batch]
+
+    # Return a single dict if only one tape, otherwise return the list
+    return errors_list[0] if len(errors_list) == 1 else errors_list
+
+
+def algo_error(
+    qnode,
+    level: str | int | slice = "gradient",
+) -> Callable[..., dict[str, "AlgorithmicError"] | list[dict[str, "AlgorithmicError"]]]:
+    r"""Computes the algorithmic errors in a quantum circuit.
+
+    This transform converts a QNode into a callable that returns algorithmic
+    error information after applying the specified amount of transforms/expansions.
+
+    Args:
+        qnode (.QNode): the QNode to calculate the algorithmic errors for.
+
+        level (str | int | slice | iter[int]): An indication of which transforms to apply before computing the errors.
+            See :func:`~pennylane.workflow.get_transform_program` for more information about allowable levels.
+
+    Returns:
+        A function that has the same argument signature as ``qnode``. When called,
+        this function returns either:
+
+        - A single dictionary with error type names as keys (e.g., ``"SpectralNormError"``)
+          and :class:`~.resource.AlgorithmicError` objects as values, when there is only
+          one tape in the batch.
+        - A list of such dictionaries, one for each tape in the batch, when there are
+          multiple tapes.
+
+    **Example**
+
+    Consider a circuit with operations that introduce algorithmic errors, such as
+    :class:`~.TrotterProduct`:
+
+    .. code-block:: python
+
+        import pennylane as qml
+
+        dev = qml.device("null.qubit", wires=2)
+        Hamiltonian = qml.dot([1.0, 0.5], [qml.X(0), qml.Y(0)])
+
+        @qml.qnode(dev)
+        def circuit(time):
+            qml.TrotterProduct(Hamiltonian, time=time, n=4, order=2)
+            qml.TrotterProduct(Hamiltonian, time=time, n=4, order=4)
+            return qml.state()
+
+    We can compute the errors using ``algo_error``:
+
+    >>> errors = qml.resource.algo_error(circuit)(time=1.0)
+    >>> print(errors)
+    {'SpectralNormError': SpectralNormError(...)}
+
+    The error values can be accessed from the returned dictionary:
+
+    >>> errors["SpectralNormError"].error
+    np.float64(0.4299...)
+
+    .. note::
+
+        This function is the standard way to retrieve algorithm-specific error metrics
+        from quantum circuits that use :class:`~.resource.ErrorOperation` subclasses.
+        Operations like :class:`~.TrotterProduct` and :class:`~.QuantumPhaseEstimation`
+        implement the ``error()`` method and will contribute to the returned error dictionary.
+
+    .. seealso::
+        :class:`~.resource.AlgorithmicError`, :class:`~.resource.SpectralNormError`,
+        :class:`~.resource.ErrorOperation`, :class:`~.TrotterProduct`
+    """
+    if isinstance(qnode, qml.QNode):
+        return partial(_algo_error_qnode, qnode, level)
+
+    try:
+        from pennylane.qnn.torch import TorchLayer  # pylint: disable=import-outside-toplevel
+
+        if isinstance(qnode, TorchLayer) and isinstance(qnode.qnode, qml.QNode):
+            return partial(_algo_error_qnode, qnode, level)
+    except ImportError:  # pragma: no cover
+        pass
+
+    raise ValueError("qml.resource.algo_error can only be applied to a QNode")
