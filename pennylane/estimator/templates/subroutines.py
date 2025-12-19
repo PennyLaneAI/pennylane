@@ -1750,7 +1750,7 @@ class QROM(ResourceOperator):
                 :code:`1` or a positive integer power of two. Defaults to :code:`None`, which internally
                 determines the optimal depth.
             restored (bool): Determine if allocated qubits should be reset after the computation
-                (at the cost of higher gate counts). Defaults to :code`True`.
+                (at the cost of higher gate counts). Defaults to :code:`True`.
 
         Resources:
            The resources for QROM are derived from the following references:
@@ -2099,7 +2099,7 @@ class QROM(ResourceOperator):
             target_resource_params(dict): A dictionary containing the resource parameters of the target operator.
 
         Resources:
-            This resources are based on Appendix C of `arXiv:1092.02134 <https://arxiv.org/abs/1902.02134>_`.
+            This resources are based on Appendix C of `arXiv:1092.02134<https://arxiv.org/abs/1902.02134>_`.
 
         Returns:
             list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
