@@ -2012,7 +2012,7 @@ class QROM(ResourceOperator):
     @classmethod
     def _ctrl_T(cls, num_data_blocks: int, num_bit_flips: int, count: int = 1) -> list[GateCount]:
         """Constructs the control-``T`` subroutine as defined in Appendices A and B of
-        `arXiv:1092.02134 <https://arxiv.org/abs/1902.02134>`_.
+        `arXiv:1902.02134 <https://arxiv.org/abs/1902.02134>`_.
 
         Args:
             num_data_blocks(int): The number of data blocks formed by partitioning the total bitstrings based on select-swap depth.
@@ -2054,7 +2054,7 @@ class QROM(ResourceOperator):
     @classmethod
     def _ctrl_S(cls, num_ctrl_wires: int, count: int = 1) -> list[GateCount]:
         """Constructs the control-S subroutine as defined in Figure 8 of
-        `arXiv:1092.02134 <https://arxiv.org/abs/1902.02134>_` excluding the initial ``X`` gate.
+        `arXiv:1902.02134 <https://arxiv.org/abs/1902.02134>`_ excluding the initial ``X`` gate.
 
         Args:
             num_ctrl_wires (int): The number of control wires.
@@ -2069,7 +2069,7 @@ class QROM(ResourceOperator):
     @classmethod
     def _ctrl_S_adj(cls, num_ctrl_wires: int, count: int = 1) -> list[GateCount]:
         r"""Constructs the control-S^adj subroutine as defined in Figure 10
-        of `arXiv:1092.02134 <https://arxiv.org/abs/1902.02134>_` excluding the terminal ``X`` gate.
+        of `arXiv:1902.02134 <https://arxiv.org/abs/1902.02134>`_ excluding the terminal ``X`` gate.
 
         Args:
             num_ctrl_wires (int): The number of control wires.
@@ -2099,7 +2099,7 @@ class QROM(ResourceOperator):
             target_resource_params(dict): A dictionary containing the resource parameters of the target operator.
 
         Resources:
-            This resources are based on Appendix C of `arXiv:1092.02134<https://arxiv.org/abs/1902.02134>_`.
+            This resources are based on Appendix C of `arXiv:1902.02134 <https://arxiv.org/abs/1902.02134>`_.
 
         Returns:
             list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
