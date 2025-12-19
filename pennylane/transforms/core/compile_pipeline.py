@@ -499,33 +499,6 @@ class CompilePipeline:
         if self.has_classical_cotransform() and self[-1].kwargs.get("hybrid", True):
             self.cotransform_cache = CotransformCache(qnode, args, kwargs)
 
-    def prune_dynamic_transform(self, type_to_keep=1):
-        """Ensures that only one or none ``dynamic_one_shot`` is applied.
-
-        Args:
-            type_to_keep (int): The type of the dynamic transform to keep. 0: keep none,
-                1: dynamic_one_shot or mid_circuit_measurements, 2: only mid_circuit_measurements.
-
-        Returns:
-            bool: ``True`` if a dynamic transform was found, ``False`` otherwise.
-
-        """
-
-        i = len(self._compile_pipeline) - 1
-        found = False
-        while i >= 0:
-            t = self._compile_pipeline[i]
-            if "mid_circuit_measurements" in str(t) and type_to_keep > 0:
-                type_to_keep = 0  # keep this and do not keep the rest
-                found = True
-            elif "dynamic_one_shot" in str(t) and type_to_keep == 1:
-                type_to_keep = 0  # keep this and do not keep the rest
-                found = True
-            elif "dynamic_one_shot" in str(t) or "mid_circuit_measurements" in str(t):
-                self._compile_pipeline.pop(i)
-            i -= 1
-        return found
-
     def __call_tapes(
         self, tapes: QuantumScript | QuantumScriptBatch
     ) -> tuple[QuantumScriptBatch, BatchPostprocessingFn]:
