@@ -215,6 +215,13 @@ class TestSelectPauli:
         with pytest.raises(ValueError, match=r"Expected 3 wires \(1 control \+ 2 target\), got 2"):
             qre.SelectPauli(pauli_ham, wires=[0, 1])
 
+    def test_ham_error(self):
+        """Test that an error is raised if the input Hamiltonian
+        is not the correct type."""
+        ham = qre.THCHamiltonian(num_orbitals=5, tensor_rank=5)
+        with pytest.raises(TypeError, match="'pauli_ham' must be an instance of PauliHamiltonian"):
+            _ = qre.SelectPauli(ham)
+
     def test_resource_params(self):
         """Test that the resource params for SelectPauli are correct."""
         pauli_ham = qre.PauliHamiltonian(2, {"X": 1, "Z": 1})

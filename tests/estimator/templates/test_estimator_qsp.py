@@ -284,6 +284,23 @@ class TestGQSP:
             qre.GQSP(op, poly_deg=2, wires=[0])
 
     @pytest.mark.parametrize(
+        "poly_deg, neg_poly_deg, error_msg",
+        (
+            (0.1, 2, "'poly_deg' must be a positive integer greater than zero,"),
+            (-3, 3, "'poly_deg' must be a positive integer greater than zero,"),
+            (0, 5, "'poly_deg' must be a positive integer greater than zero,"),
+            (1, 0.5, "'neg_poly_deg' must be a positive integer,"),
+            (2, -3, "'neg_poly_deg' must be a positive integer,"),
+        ),
+    )
+    def test_poly_deg_error(self, poly_deg, neg_poly_deg, error_msg):
+        """Test that an error is raised of incompatible values are
+        passed for 'poly_deg' and 'neg_poly_deg'."""
+        op = qre.RX(0.1, wires=0)
+        with pytest.raises(ValueError, match=error_msg):
+            _ = qre.GQSP(op, poly_deg, neg_poly_deg)
+
+    @pytest.mark.parametrize(
         "poly_deg, neg_poly_deg, rot_precision",
         (
             (5, 0, 1e-5),
@@ -375,19 +392,60 @@ class TestGQSP:
         assert decomp == expected_res
 
 
-class TestHamiltonianGQSP:
-    """Test the HamiltonianGQSP class."""
+class TestGQSPTimeEvolution:
+    """Test the GQSPTimeEvolution class."""
 
     def test_wire_error(self):
         """Test that an error is raised when wrong number of wires is provided."""
         op = qre.RX(0.1, wires=0)
         with pytest.raises(ValueError, match="Expected 2 wires, got 1"):
-            qre.HamiltonianGQSP(op, time=1.0, one_norm=1.0, approximation_error=0.1, wires=[0])
+            qre.GQSPTimeEvolution(op, time=1.0, one_norm=1.0, approximation_error=0.1, wires=[0])
+
+    @pytest.mark.parametrize(
+        "time, one_norm, approximation_error, error_msg",
+        (
+            (-1, 1.0, 0.1, "Expected 'time' to be a positive real number greater than zero"),
+            (0, 1.0, 0.1, "Expected 'time' to be a positive real number greater than zero"),
+            (10 + 1j, 1.0, 0.1, "Expected 'time' to be a positive real number greater than zero"),
+            (10, -2, 0.1, "Expected 'one_norm' to be a positive real number greater than zero"),
+            (10, 0, 0.1, "Expected 'one_norm' to be a positive real number greater than zero"),
+            (
+                10,
+                1.0 + 1j,
+                0.1,
+                "Expected 'one_norm' to be a positive real number greater than zero",
+            ),
+            (
+                10,
+                1.0,
+                -0.5,
+                "Expected 'approximation_error' to be a positive real number greater than zero",
+            ),
+            (
+                10,
+                1.0,
+                0,
+                "Expected 'approximation_error' to be a positive real number greater than zero",
+            ),
+            (
+                10,
+                1.0,
+                0.1 + 1j,
+                "Expected 'approximation_error' to be a positive real number greater than zero",
+            ),
+        ),
+    )
+    def test_argument_error(self, time, one_norm, approximation_error, error_msg):
+        """Test that an error is raised if any of the input arguments are not positive real
+        numbers greater than zero."""
+        op = qre.RX(0.1, wires=0)
+        with pytest.raises(ValueError, match=error_msg):
+            qre.GQSPTimeEvolution(op, time, one_norm, approximation_error)
 
     def test_resource_params(self):
-        """Test that the resource params for HamiltonianGQSP are correct."""
+        """Test that the resource params for GQSPTimeEvolution are correct."""
         op = qre.RX(0.1, wires=0)
-        hamsim = qre.HamiltonianGQSP(op, time=1.0, one_norm=2.0, approximation_error=0.01)
+        hamsim = qre.GQSPTimeEvolution(op, time=1.0, one_norm=2.0, approximation_error=0.01)
 
         assert hamsim.resource_params["time"] == 1.0
         assert hamsim.resource_params["one_norm"] == 2.0
@@ -395,12 +453,12 @@ class TestHamiltonianGQSP:
         assert hamsim.resource_params["walk_op"].op_type == qre.RX
 
     def test_resource_rep(self):
-        """Test that the compressed representation for HamiltonianGQSP is correct."""
+        """Test that the compressed representation for GQSPTimeEvolution is correct."""
         op = qre.RX(0.1, wires=0)
         cmpr_op = op.resource_rep_from_op()
 
         expected = qre.CompressedResourceOp(
-            qre.HamiltonianGQSP,
+            qre.GQSPTimeEvolution,
             2,
             {
                 "walk_op": cmpr_op,
@@ -409,11 +467,11 @@ class TestHamiltonianGQSP:
                 "approximation_error": 0.01,
             },
         )
-        assert qre.HamiltonianGQSP.resource_rep(cmpr_op, 1.0, 2.0, 0.01) == expected
+        assert qre.GQSPTimeEvolution.resource_rep(cmpr_op, 1.0, 2.0, 0.01) == expected
 
-    def test_degree_of_poly_approx(self):
-        """Test degree_of_poly_approx returns a positive integer."""
-        deg = qre.HamiltonianGQSP.degree_of_poly_approx(time=1.0, one_norm=1.0, epsilon=0.1)
+    def test_poly_approx(self):
+        """Test poly_approx returns a positive integer."""
+        deg = qre.GQSPTimeEvolution.poly_approx(time=1.0, one_norm=1.0, epsilon=0.1)
         assert isinstance(deg, int)
         assert deg > 0
 
@@ -422,7 +480,7 @@ class TestHamiltonianGQSP:
         op = qre.RX(0.1, wires=0)
         cmpr_op = op.resource_rep_from_op()
 
-        decomp = qre.HamiltonianGQSP.resource_decomp(
+        decomp = qre.GQSPTimeEvolution.resource_decomp(
             cmpr_op, time=1.0, one_norm=1.0, approximation_error=0.1
         )
         assert len(decomp) == 1

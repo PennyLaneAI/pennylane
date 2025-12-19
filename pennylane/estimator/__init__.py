@@ -108,9 +108,9 @@ from .templates import (
     GQSP,
     Reflection,
     Qubitization,
-    HamiltonianGQSP,
     QSVT,
     QSP,
+    GQSPTimeEvolution,
 )
 
 from .compact_hamiltonian import (

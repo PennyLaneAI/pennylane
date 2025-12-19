@@ -447,17 +447,26 @@ class SelectTHC(ResourceOperator):
 
 
 class SelectPauli(ResourceOperator):
-    r"""Resource class for the ``Select`` subroutine, when working with a Hamiltonian expressed as a linear
+    r"""Resource class for the ``Select`` opreation used with a Hamiltonian expressed as a linear
     combination of unitaries (LCU) where each unitary is a Pauli word.
 
     Args:
         pauli_ham (:class:`~pennylane.estimator.compact_hamiltonian.PauliHamiltonian`): A Hamiltonian
-            expressed as a linear combination of Pauli words, over which we will apply ``Select``.
+            expressed as a linear combination of Pauli words, over which ``Select`` is applied.
         wires (WiresLike | None): The wires the operation acts on.
 
     Resources:
         The resources are based on the analysis in `Babbush et al. (2018) <https://arxiv.org/pdf/1805.03662>`_ section III.A,
-        'Unary Iteration and Indexed Operations'. See Figures 4, 6, and 7.
+        'Unary Iteration and Indexed Operations', and Figures 4, 6, and 7.
+
+        Note: This implementation assumes we have access to :math:`n - 1` additional work qubits,
+        where :math:`n = \left\lceil log_{2}(N) \right\rceil` and :math:`N` is the number of batches of unitaries
+        to select.
+
+    Raises:
+        TypeError: If the input ``pauli_ham`` isn't an instance of
+            :class:`~pennylane.estimator.compact_hamiltonian.PauliHamiltonian`.
+        ValueError: if the wires provided don't match the number of wires expected by the operator
 
     .. seealso:: :class:`~.pennylane.Select`, :class:`~.pennylane.estimator.subroutines.Select`
 
@@ -488,6 +497,11 @@ class SelectPauli(ResourceOperator):
 
     def __init__(self, pauli_ham: PauliHamiltonian, wires: WiresLike = None) -> None:
         self.queue()
+
+        if not isinstance(pauli_ham, PauliHamiltonian):
+            raise TypeError(
+                f"'pauli_ham' must be an instance of PauliHamiltonian, got {type(pauli_ham)}"
+            )
         self.pauli_ham = pauli_ham
 
         num_ctrl_wires = math.ceil(math.log2(pauli_ham.num_terms))
@@ -510,11 +524,11 @@ class SelectPauli(ResourceOperator):
 
         Args:
             pauli_ham (:class:`~pennylane.estimator.compact_hamiltonian.PauliHamiltonian`): A Hamiltonian
-            expressed as a linear combination of Pauli words, over which we will apply ``Select``.
+            expressed as a linear combination of Pauli words, over which ``Select`` is applied.
 
         Resources:
             The resources are based on the analysis in `Babbush et al. (2018) <https://arxiv.org/pdf/1805.03662>`_ section III.A,
-            'Unary Iteration and Indexed Operations'. See Figures 4, 6, and 7.
+            'Unary Iteration and Indexed Operations', and Figures 4, 6, and 7.
 
             Note: This implementation assumes we have access to :math:`n - 1` additional work qubits,
             where :math:`n = \left\lceil log_{2}(N) \right\rceil` and :math:`N` is the number of batches of unitaries
@@ -579,7 +593,7 @@ class SelectPauli(ResourceOperator):
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Args:
-            target_resource_params (dict | None): A dictionary containing the resource parameters
+            target_resource_params (dict): A dictionary containing the resource parameters
                 of the target operator.
 
         Resources:
@@ -602,7 +616,7 @@ class SelectPauli(ResourceOperator):
                 operation is controlled on
             num_zero_ctrl (int): the number of control qubits, that are
                 controlled when in the :math:`|0\rangle` state
-            target_resource_params (dict | None): A dictionary containing the resource parameters
+            target_resource_params (dict): A dictionary containing the resource parameters
                 of the target operator.
 
         Resources:
@@ -694,8 +708,8 @@ class SelectPauli(ResourceOperator):
         Returns:
             dict: A dictionary containing the resource parameters:
                 * pauli_ham (:class:`~pennylane.estimator.compact_hamiltonian.PauliHamiltonian`): A
-                  Hamiltonian expressed as a linear combination of Pauli words, over which we will apply
-                  ``Select``.
+                  Hamiltonian expressed as a linear combination of Pauli words, over which ``Select``
+                  is applied.
 
         """
         return {"pauli_ham": self.pauli_ham}
@@ -707,7 +721,7 @@ class SelectPauli(ResourceOperator):
 
         Args:
             pauli_ham (:class:`~pennylane.estimator.compact_hamiltonian.PauliHamiltonian`): A Hamiltonian
-                expressed as a linear combination of Pauli words, over which we will apply ``Select``.
+                expressed as a linear combination of Pauli words, over which ``Select`` is applied.
 
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
