@@ -318,6 +318,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* `qml.measure` can now be used as a frontend for `catalyst.measure`.
+  [(#8782)](https://github.com/PennyLaneAI/pennylane/pull/8782)
+
 * `qml.while_loop` and `qml.for_loop` can now lazily dispatch to catalyst when called,
   instead of dispatching upon creation.
   [(#8786)](https://github.com/PennyLaneAI/pennylane/pull/8786)
