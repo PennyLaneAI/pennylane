@@ -360,7 +360,7 @@ class TestAlgoError:
         assert errors1["SpectralNormError"].error != errors2["SpectralNormError"].error
 
     def test_level_argument(self):
-        """Test that the level argument works correctly."""
+        """Test that the level argument affects which operations are analyzed for errors."""
         Hamiltonian = qml.dot([1.0, 0.5], [qml.X(0), qml.Y(0)])
 
         @qml.qnode(self.dev)
@@ -368,14 +368,20 @@ class TestAlgoError:
             qml.TrotterProduct(Hamiltonian, time=1.0, n=4, order=2)
             return qml.state()
 
-        # Default level
-        errors_default = qml.resource.algo_error(circuit)()
-        # Level 0 (top)
-        errors_top = qml.resource.algo_error(circuit, level=0)()
+        # At user level (before device decomposition), TrotterProduct ErrorOperation is present
+        errors_user = qml.resource.algo_error(circuit, level="user")()
+        assert "SpectralNormError" in errors_user
+        assert errors_user["SpectralNormError"].error > 0
 
-        # Both should return the same errors since no transforms affect error operations
-        assert "SpectralNormError" in errors_default
-        assert "SpectralNormError" in errors_top
+        # At device level (after full decomposition), TrotterProduct is decomposed
+        # into basic gates, so the ErrorOperation is no longer present
+        errors_device = qml.resource.algo_error(circuit, level="device")()
+        assert errors_device == {}
+
+        # Test with integer level as well
+        errors_level_0 = qml.resource.algo_error(circuit, level=0)()
+        assert "SpectralNormError" in errors_level_0
+        assert errors_level_0["SpectralNormError"].error == errors_user["SpectralNormError"].error
 
     def test_invalid_input(self):
         """Test that algo_error raises an error for invalid input."""
