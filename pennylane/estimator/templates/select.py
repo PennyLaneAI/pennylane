@@ -245,40 +245,35 @@ class SelectTHC(ResourceOperator):
         select_swap_depth: int | None = None,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
-                and the number of times it occurs in the decomposition.
+        and the number of times it occurs in the decomposition.
 
-                .. note::
+        .. note::
 
-                    This decomposition assumes that an appropriately sized phase gradient state is available.
-                    Users should ensure that the cost of constructing this state has been accounted for.
-                    See also :class:`~.pennylane.estimator.templates.subroutines.PhaseGradient`.
+            This decomposition assumes that an appropriately sized phase gradient state is available.
+            Users should ensure that the cost of constructing this state has been accounted for.
+            See also :class:`~.pennylane.estimator.templates.subroutines.PhaseGradient`.
 
-                Args:
-                    thc_ham (:class:`~pennylane.estimator.compact_hamiltonian.THCHamiltonian`): A tensor hypercontracted
-                        Hamiltonian on which this ``Select`` operator is being applied.
-                    num_batches (int): The number of batches for loading the rotation angles
-                        into temporary quantum registers for Givens rotations.
-                        The default value of ``1`` loads all angles in one batch.
-                    rotation_precision (int): The number of bits used to represent the precision for loading
-                        the rotation angles for basis rotation. The default value is set to ``15`` bits.
-                    select_swap_depth (int | None): A parameter of :class:`~.pennylane.estimator.templates.subroutines.QROM`
-                        used to trade-off extra wires for reduced circuit depth. Defaults to :code:`None`, which determines the optimal depth
-                        for minimizing the total ``T``-gate count.
+        Args:
+            thc_ham (:class:`~pennylane.estimator.compact_hamiltonian.THCHamiltonian`): A tensor hypercontracted
+                Hamiltonian on which this ``Select`` operator is being applied.
+            num_batches (int): The number of batches for loading the rotation angles
+                into temporary quantum registers for Givens rotations.
+                The default value of ``1`` loads all angles in one batch.
+            rotation_precision (int): The number of bits used to represent the precision for loading
+                the rotation angles for basis rotation. The default value is set to ``15`` bits.
+            select_swap_depth (int | None): A parameter of :class:`~.pennylane.estimator.templates.subroutines.QROM`
+                used to trade-off extra wires for reduced circuit depth. Defaults to :code:`None`, which determines the optimal depth
+                for minimizing the total ``T``-gate count.
 
-                Resources:
-        <<<<<<< HEAD
-                    The resources are calculated based on Figure 5 in `arXiv:2011.03494 <https://arxiv.org/abs/2011.03494>`_ and
-                    Figure 4 in `arXiv:2501.06165 <https://arxiv.org/abs/2501.06165>`_.
-                    The resources are modified to remove the control from the Select operation.
-        =======
-                    The resources are calculated based on Figure 5 in `arXiv:2011.03494 <https://arxiv.org/abs/2011.03494>`_.
-                    The resources are modified to remove the control from the ``Select`` operation.
-        >>>>>>> qsp_resources
+        Resources:
+            The resources are calculated based on Figure 5 in `arXiv:2011.03494 <https://arxiv.org/abs/2011.03494>`_ and
+            Figure 4 in `arXiv:2501.06165 <https://arxiv.org/abs/2501.06165>`_.
+            The resources are modified to remove the control from the Select operation.
 
-                Returns:
-                    list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
-                    represents a specific quantum gate and the number of times it appears
-                    in the decomposition.
+        Returns:
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
 
         num_orb = thc_ham.num_orbitals
