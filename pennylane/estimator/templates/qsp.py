@@ -259,11 +259,6 @@ class GQSPTimeEvolution(ResourceOperator):
         The resources are obtained as described in Theorem 7 and Corollary 8 of
         `Generalized Quantum Signal Processing (2024) <https://arxiv.org/pdf/2308.01501>`_.
 
-        Specifically, this operator decomposes into an instance of :class:`~.estimator.templates.qsp.GQSP`
-        where the maximum polynomial degrees for the approximation (``poly_deg`` and
-        ``neg_poly_deg``) are computed using the ``time``, ``one_norm``, and ``approximation_error``
-        according to Theorem 7 of `Generalized Quantum Signal Processing (2024) <https://arxiv.org/pdf/2308.01501>`_.
-
     Raises:
         ValueError: if the ``wires`` provided don't match the number of wires expected by the operator
         ValueError: if the ``time`` provided is not a positive real number greater than zero
@@ -418,17 +413,12 @@ class GQSPTimeEvolution(ResourceOperator):
             The resources are obtained as described in Theorem 7 and Corollary 8 of
             `Generalized Quantum Signal Processing (2024) <https://arxiv.org/pdf/2308.01501>`_.
 
-            Specifically, this operator decomposes into an instance of :class:`~.estimator.templates.qsp.GQSP`
-            where the maximum polynomial degree :math:`n` for the approximation (``poly_deg`` and
-            ``neg_poly_deg``) is computed using the ``time``, ``one_norm``, and ``approximation_error``
-            according to Theorem 7 of `Generalized Quantum Signal Processing (2024) <https://arxiv.org/pdf/2308.01501>`_.
-
         Returns:
             list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
-        poly_deg = cls.degree_of_poly_approx(time, one_norm, approximation_error)
+        poly_deg = cls.poly_approx(time, one_norm, approximation_error)
         gqsp = GQSP.resource_rep(
             walk_op,
             poly_deg=poly_deg,
@@ -438,7 +428,7 @@ class GQSPTimeEvolution(ResourceOperator):
         return [GateCount(gqsp)]
 
     @staticmethod
-    def degree_of_poly_approx(time, one_norm, epsilon):
+    def poly_approx(time, one_norm, epsilon):
         r"""Obtain the maximum degree of the polynomial approximation required
         to approximate :math:`e^(iHt * \cos{\theta})` within error epsilon.
 

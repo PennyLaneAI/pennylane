@@ -216,9 +216,9 @@ class TestGQSPTimeEvolution:
         )
         assert qre.GQSPTimeEvolution.resource_rep(cmpr_op, 1.0, 2.0, 0.01) == expected
 
-    def test_degree_of_poly_approx(self):
-        """Test degree_of_poly_approx returns a positive integer."""
-        deg = qre.GQSPTimeEvolution.degree_of_poly_approx(time=1.0, one_norm=1.0, epsilon=0.1)
+    def test_poly_approx(self):
+        """Test poly_approx returns a positive integer."""
+        deg = qre.GQSPTimeEvolution.poly_approx(time=1.0, one_norm=1.0, epsilon=0.1)
         assert isinstance(deg, int)
         assert deg > 0
 
