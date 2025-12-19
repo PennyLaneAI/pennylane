@@ -673,9 +673,7 @@ class Transform:  # pylint: disable=too-many-instance-attributes
             # pylint: disable=import-outside-toplevel
             from .compile_pipeline import CompilePipeline
 
-            pipeline = CompilePipeline([])
-            pipeline.append(self)
-            return pipeline + other
+            return CompilePipeline(self, other)
 
         # Convert this transform to a BoundTransform (no args/kwargs) and delegate
         return BoundTransform(self) + other
@@ -686,9 +684,7 @@ class Transform:  # pylint: disable=too-many-instance-attributes
             # pylint: disable=import-outside-toplevel
             from .compile_pipeline import CompilePipeline
 
-            pipeline = CompilePipeline([])
-            pipeline.append(self)
-            return pipeline * n
+            return CompilePipeline(self) * n
 
         # Convert to container (no args/kwargs) and delegate
         return BoundTransform(self) * n
@@ -971,10 +967,7 @@ class BoundTransform:  # pylint: disable=too-many-instance-attributes
                 f"Both {self} and {other} are final transforms and cannot be combined."
             )
 
-        pipeline = CompilePipeline([])
-        pipeline.append(self)
-        pipeline.append(other)
-        return pipeline
+        return CompilePipeline(self, other)
 
     def __mul__(self, n):
         """Multiply by an integer to create a pipeline with this transform repeated."""
@@ -993,9 +986,7 @@ class BoundTransform:  # pylint: disable=too-many-instance-attributes
                 f"{self} is a final transform and cannot be applied more than once."
             )
 
-        pipeline = CompilePipeline([])
-        pipeline.append(self)
-        return pipeline * n
+        return CompilePipeline(self) * n
 
     __rmul__ = __mul__
 

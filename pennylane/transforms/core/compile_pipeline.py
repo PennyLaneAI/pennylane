@@ -381,23 +381,24 @@ class CompilePipeline:
                     i -= 1
             i -= 1
 
-    def append(self, _transform: BoundTransform | Transform):
+    def append(self, transform: BoundTransform | Transform):
         """Add a transform to the end of the program.
 
         Args:
-            _transform (transform or BoundTransform): A transform represented by its container.
+            transform (Transform or BoundTransform): A transform represented by its container.
+
         """
-        if not isinstance(_transform, BoundTransform):
-            _transform = BoundTransform(_transform)
+        if not isinstance(transform, BoundTransform):
+            transform = BoundTransform(transform)
 
         # Program can only contain one informative transform and at the end of the program
-        if self.has_final_transform and _transform.is_final_transform:
+        if self.has_final_transform and transform.is_final_transform:
             raise TransformError("The compile pipeline already has a terminal transform.")
 
         with _exclude_terminal_transform(self._compile_pipeline):
-            if expand_transform := _transform.expand_transform:
+            if expand_transform := transform.expand_transform:
                 self._compile_pipeline.append(expand_transform)
-            self._compile_pipeline.append(_transform)
+            self._compile_pipeline.append(transform)
 
     def add_transform(self, transform: Transform, *targs, **tkwargs):
         """Add a transform to the end of the program.
@@ -422,7 +423,7 @@ class CompilePipeline:
 
         Args:
             index (int): The index to insert the transform.
-            _transform (transform or BoundTransform): the transform to insert
+            transform (transform or BoundTransform): the transform to insert
 
         """
         if not isinstance(transform, BoundTransform):
@@ -446,10 +447,10 @@ class CompilePipeline:
             BoundTransform: The removed transform.
 
         """
-        _transform = self._compile_pipeline.pop(index)
-        if index > 0 and _transform.expand_transform == self._compile_pipeline[index - 1]:
+        transform = self._compile_pipeline.pop(index)
+        if index > 0 and transform.expand_transform == self._compile_pipeline[index - 1]:
             self._compile_pipeline.pop(index - 1)
-        return _transform
+        return transform
 
     @property
     def is_informative(self) -> bool:
