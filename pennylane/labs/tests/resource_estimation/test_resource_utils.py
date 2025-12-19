@@ -59,8 +59,8 @@ def test_approx_poly_degree_basis(basis):
     assert loss <= e_tol
 
 
-def test_approx_poly_project_func():
-    """Test the approx_poly_degree function with different project functions"""
+def test_approx_poly_domain_func():
+    """Test the approx_poly_degree function with different domain projection functions"""
 
     def morse(x: np.ndarray, x0=1.510, a=2.7968, D=6.610) -> np.ndarray:
         dx = x - x0

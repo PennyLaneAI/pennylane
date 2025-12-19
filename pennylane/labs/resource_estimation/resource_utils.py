@@ -72,8 +72,8 @@ def approx_poly_degree(
             and ``x_vec`` is used. When ``"uniform"`` is given, the points are evenly spaced between
             ``x_vec[0]`` and ``x_vec[-1]`` based on the degree of the polynomial being fit.
             Whereas, when ``"gauss-lobatto"`` is used, the "`Chebyshev/Legendre-Gauss-Lobatto
-            <https://people.maths.ox.ac.uk/trefethen/8all.pdf>`_\ " nodes are used for
-            ``basis="chebyshev"/"legendre"``, respectively.
+            <https://en.wikipedia.org/wiki/Gaussian_quadrature#Gauss-Lobatto_rules>`_\ " nodes
+            are used for ``basis="chebyshev"/"legendre"``, respectively.
             When a callable is provided, it should have the signature:
             ``f(x_min: float, x_max: float, num_points: int) -> np.ndarray``.
         **fit_kwargs: additional keyword arguments to pass to the `fitting` functions.
@@ -138,7 +138,8 @@ def approx_poly_degree(
         ...     poly, stats = np.polynomial.laguerre.Laguerre.fit(x, y, deg, full=True)
         ...     return poly, stats[0]
         >>> degree, poly, loss = approx_poly_degree(
-        ...     target_func, x_vec, poly_degs=(3, 10), error_tol=1e-6, fit_func=fit_func, loss_func="mse"
+        ...     target_func, x_vec, poly_degs=(3, 10), error_tol=1e-6,
+        ...     fit_func=fit_func, loss_func="mse"
         ... )
         >>> print(degree)
         3
