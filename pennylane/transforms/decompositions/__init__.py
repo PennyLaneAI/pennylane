@@ -22,4 +22,5 @@ from .pauli_based_computation import (
     ppm_compilation,
     ppr_to_ppm,
     reduce_t_depth,
+    decompose_arbitrary_ppr,
 )

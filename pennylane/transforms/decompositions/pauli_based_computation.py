@@ -25,8 +25,7 @@ def to_ppr(tape):
 
     .. note::
 
-        This transform requires decorating the QNode with :func:`@qml.qjit <pennylane.qjit>` and for
-        program capture to be enabled via :func:`qml.capture.enable() <pennylane.capture.enable>`.
+        This transform requires decorating the QNode with :func:`@qml.qjit <pennylane.qjit>`.
 
     Clifford gates are defined as :math:`\exp(-{iP\tfrac{\pi}{4}})`, where :math:`P` is a Pauli word.
     Non-Clifford gates are defined as :math:`\exp(-{iP\tfrac{\pi}{8}})`.
@@ -37,8 +36,8 @@ def to_ppr(tape):
     .. note::
 
         The circuits that generated from this pass are currently not executable on any backend.
-        This pass is only for analysis with the ``null.qubit`` device and potential future execution
-        when a suitable backend is available.
+        This pass is only for Pauli-based-computation analysis with the ``null.qubit`` device and
+        potential future execution when a suitable backend is available.
 
     The full list of supported gates and operations are
     ``qml.H``,
@@ -50,7 +49,7 @@ def to_ppr(tape):
     ``qml.adjoint(qml.S)``,
     ``qml.adjoint(qml.T)``,
     ``qml.CNOT``, and
-    ``catalyst.measure``.
+    ``qml.measure`` (with PennyLane program capture enabled: :func:`~.capture.enable`).
 
     Args:
         fn (QNode): QNode to apply the pass to
@@ -74,33 +73,48 @@ def to_ppr(tape):
         def circuit():
             qml.H(0)
             qml.CNOT([0, 1])
+            m = qml.measure(0)
             qml.T(0)
             return qml.expval(qml.Z(0))
 
-    For clear and inspectable results, use ``target="mlir"`` in the ``qjit`` decorator, ensure that
-    PennyLane's program capture is enabled, :func:`pennylane.capture.enable`, and call ``to_ppr``
-    from the PennyLane frontend (``qml.transforms.to_ppr``) instead of with
-    ``catalyst.passes.to_ppr``.
+    To inspect programs compiled with ``to_ppr`` via :func:`~.specs`, ensure that ``target="mlir"``
+    is given in the :func:`qjit <pennylane.qjit>` decorator.
 
-    >>> print(qml.specs(circuit, level="all")()['resources'])
-    {
-        'No transforms': ...,
-        'Before MLIR Passes (MLIR-0)': ...,
-        'to-ppr (MLIR-1)': Resources(
-            num_wires=2,
-            num_gates=7,
-            gate_types=defaultdict(<class 'int'>, {'PPR-pi/4-w1': 5, 'PPR-pi/4-w2': 1, 'PPR-pi/8-w1': 1}),
-            gate_sizes=defaultdict(<class 'int'>, {1: 6, 2: 1}),
-            depth=None,
-            shots=Shots(total_shots=None, shot_vector=())
-        )
-    }
+    >>> print(qml.specs(circuit, level=2)().resources)
+    Total wire allocations: 2
+    Total gates: 8
+    Circuit depth: Not computed
+    <BLANKLINE>
+    Gate types:
+    PPR-pi/4: 6
+    PPM: 1
+    PPR-pi/8: 1
+    <BLANKLINE>
+    Measurements:
+    expval(PauliZ): 1
 
     In the above output, ``PPR-theta-weight`` denotes the type of PPR present in the circuit, where
-    ``theta`` is the PPR angle (:math:`\theta`) and ``weight`` is the PPR weight.
+    ``theta`` is the PPR angle (:math:`\theta`) and ``weight`` is the PPR weight. Note that the
+    mid-circuit measurement in the circuit has been converted to a Pauli product measurement (PPM),
+    as well.
+
+    .. details::
+        :title: Usage Details
+
+        **Visualizing Compiled Circuits**
+
+        catalyst.draw_graph
+
+        **Circuits with Arguments**
+
+        must use type hints
+
+        **Program Capture and Catalyst**
+
+        PC enabled: qml.measure
+        PC disabled: catalyst.measure
 
     """
-
     raise NotImplementedError(
         "The to_ppr compilation pass has no tape implementation, and can only be applied when decorating the entire worfklow with @qml.qjit and when it is placed after all transforms that only have a tape implementation."
     )
@@ -114,8 +128,9 @@ def commute_ppr(tape, *, max_pauli_size=0):
 
     .. note::
 
-        This transform requires decorating the QNode with :func:`@qml.qjit <pennylane.qjit>` and for
-        program capture to be enabled via :func:`qml.capture.enable() <pennylane.capture.enable>`.
+        This transform requires decorating the QNode with :func:`@qml.qjit <pennylane.qjit>`.
+        Additionally, the :func:`pennylane.transforms.to_ppr` transform must be applied before
+        ``commute_ppr``.
 
     For more information on PPRs, check out the
     `Compilation Hub <https://pennylane.ai/compilation/pauli-product-measurement>`_.
@@ -123,8 +138,8 @@ def commute_ppr(tape, *, max_pauli_size=0):
     .. note::
 
         The circuits that generated from this pass are currently not executable on any backend.
-        This pass is only for analysis with the ``null.qubit`` device and potential future execution
-        when a suitable backend is available.
+        This pass is only for Pauli-based-computation analysis with the ``null.qubit`` device and
+        potential future execution when a suitable backend is available.
 
     Args:
         fn (QNode): QNode to apply the pass to.
@@ -168,32 +183,35 @@ def commute_ppr(tape, *, max_pauli_size=0):
 
             return qml.expval(qml.Z(0))
 
-    For clear and inspectable results, use ``target="mlir"`` in the ``qjit`` decorator, ensure that
-    PennyLane's program capture is enabled, :func:`pennylane.capture.enable`, and call
-    ``commute_ppr`` from the PennyLane frontend (``qml.transforms.commute_ppr``) instead of with
-    ``catalyst.passes.commute_ppr``.
+    To inspect programs compiled with ``commute_ppr`` via :func:`~.specs`, ensure that
+    ``target="mlir"`` is given in the :func:`qjit <pennylane.qjit>` decorator.
 
-    >>> print(qml.specs(circuit, level="all")()['resources'])
-    {
-        'No transforms': ...,
-        'Before MLIR Passes (MLIR-0)': ...,
-        'commute-ppr (MLIR-1)': Resources(
-            num_wires=2,
-            num_gates=7,
-            gate_types=defaultdict(<class 'int'>, {'PPR-pi/8-w1': 1, 'PPR-pi/4-w1': 5, 'PPR-pi/4-w2': 1}),
-            gate_sizes=defaultdict(<class 'int'>, {1: 6, 2: 1}),
-            depth=None,
-            shots=Shots(total_shots=None, shot_vector=()))
-    }
+    >>> print(qml.specs(circuit, level=3)())
+    Device: null.qubit
+    Device wires: 2
+    Shots: Shots(total=None)
+    Level: 3
+    <BLANKLINE>
+    Resource specifications:
+    Total wire allocations: 2
+    Total gates: 5
+    Circuit depth: Not computed
+    <BLANKLINE>
+    Gate types:
+        PPR-pi/8: 1
+        PPR-pi/4: 4
+    <BLANKLINE>
+    Measurements:
+        expval(PauliZ): 1
 
-    In the example above, the Clifford PPRs (``H`` and ``CNOT``) will be commuted past the
-    non-Clifford PPR (``T``). In the output above, ``PPR-theta-weight`` denotes the type of PPR
-    present in the circuit, where ``theta`` is the PPR angle (:math:`\theta`) and ``weight`` is the
-    PPR weight.
+    In the example above, the Clifford PPRs (:class:`~.PauliRot` instances with an angle of rotation
+    of :math:`\tfrac{\pi}{2}) will be commuted past the non-Clifford PPR (:class:`~.PauliRot`
+    instances with an angle of rotation of :math:`\tfrac{\pi}{4}). In the output above,
+    ``PPR-theta-weight`` denotes the type of PPR present in the circuit, where ``theta`` is the PPR
+    angle (:math:`\theta`) and ``weight`` is the PPR weight.
 
     Note that if a commutation resulted in a PPR acting on more than ``max_pauli_size`` qubits
     (here, ``max_pauli_size = 2``), that commutation would be skipped.
-
     """
     raise NotImplementedError(
         "The commute_ppr compilation pass has no tape implementation, and can only be applied when decorating the entire worfklow with @qml.qjit and when it is placed after all transforms that only have a tape implementation."
@@ -210,6 +228,8 @@ def merge_ppr_ppm(tape=None, *, max_pauli_size=0):
 
         This transform requires decorating the QNode with :func:`@qml.qjit <pennylane.qjit>` and for
         program capture to be enabled via :func:`qml.capture.enable() <pennylane.capture.enable>`.
+        Additionally, the :func:`pennylane.transforms.to_ppr` transform must be applied before
+        ``merge_ppr_ppm``.
 
     For more information on PPRs and PPMs, check out
     the `Compilation Hub <https://pennylane.ai/compilation/pauli-product-measurement>`_.
@@ -244,35 +264,36 @@ def merge_ppr_ppm(tape=None, *, max_pauli_size=0):
 
         @qml.qjit(target="mlir")
         @partial(qml.transforms.merge_ppr_ppm, max_pauli_size=2)
+        @qml.transforms.to_ppr
         @qml.qnode(qml.device("null.qubit", wires=2))
         def circuit():
             qml.PauliRot(jnp.pi / 2, pauli_word="Z", wires=0)
-            qml.PauliRot(jnp.pi / 2, pauli_word="X", wires=0)
-            qml.PauliRot(jnp.pi / 2, pauli_word="Z", wires=0)
+            qml.PauliRot(jnp.pi / 2, pauli_word="X", wires=1)
 
             ppm = qml.pauli_measure(pauli_word="ZX", wires=[0, 1])
 
-            return
+            return qml.expval(qml.Z(0))
 
-    In the above example, every PPR (``PauliRot``) and the PPM (``pauli_measure``) can be merged
-    into one PPM that acts on two qubits. For clear and inspectable results, use ``target="mlir"``
-    in the ``qjit`` decorator, ensure that PennyLane's program capture is enabled,
-    :func:`pennylane.capture.enable`, and call ``ppr_to_ppm`` from the PennyLane frontend
-    (``qml.transforms.merge_ppr_ppm``) instead of with ``catalyst.passes.merge_ppr_ppm``.
+    To inspect programs compiled with ``merge_ppr_ppm`` via :func:`~.specs`, ensure that
+    ``target="mlir"`` is given in the :func:`qjit <pennylane.qjit>` decorator.
 
-    >>> print(qml.specs(circuit, level="all")()['resources'])
-    {
-        'No transforms': ...,
-        'Before MLIR Passes (MLIR-0)': ...,
-        'merge-ppr-ppm (MLIR-1)': Resources(
-            num_wires=2,
-            num_gates=1,
-            gate_types=defaultdict(<class 'int'>, {'PPM-w2': 1}),
-            gate_sizes=defaultdict(<class 'int'>, {2: 1}),
-            depth=None,
-            shots=Shots(total_shots=None, shot_vector=())
-        )
-    }
+    >>> print(qml.specs(circuit, level=3)())
+    Device: null.qubit
+    Device wires: 2
+    Shots: Shots(total=None)
+    Level: 3
+    <BLANKLINE>
+    Resource specifications:
+    Total wire allocations: 2
+    Total gates: 2
+    Circuit depth: Not computed
+    <BLANKLINE>
+    Gate types:
+        PPM: 1
+        PPR-pi/4: 1
+    <BLANKLINE>
+    Measurements:
+        expval(PauliZ): 1
 
     In the above output, ``PPM-weight`` denotes the type of PPM present in the circuit, where
     ``weight`` is the PPM weight.
@@ -295,6 +316,8 @@ def ppr_to_ppm(tape=None, *, decompose_method="pauli-corrected", avoid_y_measure
 
         This transform requires decorating the QNode with :func:`@qml.qjit <pennylane.qjit>` and for
         program capture to be enabled via :func:`qml.capture.enable() <pennylane.capture.enable>`.
+        Additionally, the :func:`pennylane.transforms.to_ppr` transform must be applied before
+        ``ppr_to_ppm``.
 
     This pass is used to decompose both non-Clifford and Clifford PPRs into PPMs. The non-Clifford
     PPRs (:math:`\theta = \tfrac{\pi}{8}`) are decomposed first, then Clifford PPRs
@@ -344,6 +367,7 @@ def ppr_to_ppm(tape=None, *, decompose_method="pauli-corrected", avoid_y_measure
 
         @qml.qjit(target="mlir")
         @partial(ppr_to_ppm, decompose_method="auto-corrected")
+        @qml.transforms.to_ppr
         @qml.qnode(qml.device("null.qubit", wires=2))
         def circuit():
             # equivalent to a Hadamard gate
@@ -359,26 +383,29 @@ def ppr_to_ppm(tape=None, *, decompose_method="pauli-corrected", avoid_y_measure
             # equivalent to a T gate
             qml.PauliRot(jnp.pi / 4, pauli_word="Z", wires=0)
 
-            return
+            return qml.expval(qml.Z(0))
 
-    For clear and inspectable results, use ``target="mlir"`` in the ``qjit`` decorator, ensure that
-    PennyLane's program capture is enabled, :func:`pennylane.capture.enable`, and call
-    ``ppr_to_ppm`` from the PennyLane frontend (``qml.transforms.ppr_to_ppm``) instead of with
-    ``catalyst.passes.ppr_to_ppm``.
+    To inspect programs compiled with ``merge_ppr_ppm`` via :func:`~.specs`, ensure that
+    ``target="mlir"`` is given in the :func:`qjit <pennylane.qjit>` decorator.
 
-    >>> print(qml.specs(circuit, level="all")()['resources'])
-    {
-        'No transforms': ...,
-        'Before MLIR Passes (MLIR-0)': ...,
-        'ppr-to-ppm (MLIR-1)': Resources(
-            num_wires=8,
-            num_gates=21,
-            gate_types=defaultdict(<class 'int'>, {'PPM-w2': 6, 'PPM-w1': 7, 'PPR-pi/2-w1': 6, 'PPM-w3': 1, 'PPR-pi/2-w2': 1}),
-            gate_sizes=defaultdict(<class 'int'>, {2: 7, 1: 13, 3: 1}),
-            depth=None,
-            shots=Shots(total_shots=None, shot_vector=())
-        )
-    }
+    >>> print(qml.specs(circuit, level=3)())
+    Device: null.qubit
+    Device wires: 2
+    Shots: Shots(total=None)
+    Level: 3
+    <BLANKLINE>
+    Resource specifications:
+    Total wire allocations: 6
+    Total gates: 16
+    Circuit depth: Not computed
+    <BLANKLINE>
+    Gate types:
+        PPM: 10
+        PPR-pi/2: 5
+        qec.fabricate: 1
+    <BLANKLINE>
+    Measurements:
+        expval(PauliZ): 1
 
     In the above output, ``PPM-weight`` denotes the type of PPM present in the circuit, where
     ``weight`` is the PPM weight. ``PPR-theta-weight`` denotes the type of PPR present in the
@@ -451,7 +478,7 @@ def ppm_compilation(
 
     **Example**
 
-    The ``commute_ppr`` compilation pass can be applied as a dectorator on a QNode:
+    The ``ppm_compilation`` compilation pass can be applied as a dectorator on a QNode:
 
     .. code-block:: python
 
@@ -467,26 +494,29 @@ def ppm_compilation(
             qml.H(0)
             qml.CNOT([0, 1])
             qml.T(0)
-            return
+            return qml.expval(qml.Z(0))
 
-    For clear and inspectable results, use ``target="mlir"`` in the ``qjit`` decorator, ensure that
-    PennyLane's program capture is enabled, :func:`pennylane.capture.enable`, and call
-    ``ppm_compilation`` from the PennyLane frontend (``qml.transforms.ppm_compilation``) instead of
-    with ``catalyst.passes.ppm_compilation``.
+    To inspect programs compiled with ``ppm_compilation`` via :func:`~.specs`, ensure that
+    ``target="mlir"`` is given in the :func:`qjit <pennylane.qjit>` decorator.
 
-    >>> print(qml.specs(circuit, level="all")()['resources'])
-    {
-        'No transforms': ...,
-        'Before MLIR Passes (MLIR-0)': ...,
-        'ppm-compilation (MLIR-1)': Resources(
-            num_wires=7,
-            num_gates=18,
-            gate_types=defaultdict(<class 'int'>, {'PPM-w2': 5, 'PPM-w1': 6, 'PPR-pi/2-w1': 5, 'PPM-w3': 1, 'PPR-pi/2-w2': 1}),
-            gate_sizes=defaultdict(<class 'int'>, {2: 6, 1: 11, 3: 1}),
-            depth=None,
-            shots=Shots(total_shots=None, shot_vector=())
-        )
-    }
+    >>> print(qml.specs(circuit, level=2)())
+    Device: null.qubit
+    Device wires: 2
+    Shots: Shots(total=None)
+    Level: 2
+    <BLANKLINE>
+    Resource specifications:
+    Total wire allocations: 7
+    Total gates: 19
+    Circuit depth: Not computed
+    <BLANKLINE>
+    Gate types:
+        qec.fabricate: 1
+        PPM: 12
+        PPR-pi/2: 6
+    <BLANKLINE>
+    Measurements:
+        expval(PauliZ): 1
 
     In the above output, ``PPM-weight`` denotes the type of PPM present in the circuit, where
     ``weight`` is the PPM weight. ``PPR-theta-weight`` denotes the type of PPR present in the
@@ -548,7 +578,6 @@ def reduce_t_depth(qnode):
 
         pips = [("pipe", ["quantum-compilation-stage"])]
 
-
         @qjit(pipelines=pips, target="mlir")
         @reduce_t_depth
         @merge_ppr_ppm
@@ -565,27 +594,35 @@ def reduce_t_depth(qnode):
                 qml.H(wires=i)
                 qml.T(wires=i)
 
-            return
+            return qml.expval(qml.Z(0))
 
-        >>> print(circuit.mlir_opt)
+    To inspect programs compiled with ``reduce_t_depth`` via :func:`~.specs`, ensure that
+    ``target="mlir"`` is given in the :func:`qjit <pennylane.qjit>` decorator.
 
-        . . .
-        %1 = quantum.extract %0[ 0] : !quantum.reg -> !quantum.bit
-        %2 = quantum.extract %0[ 1] : !quantum.reg -> !quantum.bit
-        // layer 1
-        %3 = qec.ppr ["X"](8) %1 : !quantum.bit
-        %4 = qec.ppr ["X"](8) %2 : !quantum.bit
+    >>> print(qml.specs(circuit, level=(4, 5))())
+    <BLANKLINE>
+    Level = reduce-t-depth (MLIR-4):
+    Total wire allocations: 3
+    Total gates: 28
+    Circuit depth: Not computed
+    <BLANKLINE>
+    Gate types:
+        PPR-pi/8: 6
+        PPR-pi/4: 22
+    <BLANKLINE>
+    Measurements:
+        expval(PauliZ): 1
 
-        // layer 2
-        %5 = quantum.extract %0[ 2] : !quantum.reg -> !quantum.bit
-        %6:2 = qec.ppr ["Y", "X"](8) %3, %4 : !quantum.bit, !quantum.bit
-        %7 = qec.ppr ["X"](8) %5 : !quantum.bit
-        %8:3 = qec.ppr ["X", "Y", "X"](8) %6#0, %6#1, %7:!quantum.bit, !quantum.bit, !quantum.bit
-
-        // layer 3
-        %9:3 = qec.ppr ["X", "X", "Y"](8) %8#0, %8#1, %8#2:!quantum.bit, !quantum.bit, !quantum.bit
-        . . .
+    TODO: show circuit graph viz!
     """
     raise NotImplementedError(
         "The reduce_t_depth compilation pass has no tape implementation, and can only be applied when decorating the entire worfklow with @qml.qjit and when it is placed after all transforms that only have a tape implementation."
+    )
+
+
+@partial(transform, pass_name="decompose-arbitrary-ppr")
+def decompose_arbitrary_ppr(qnode):
+    r"""TODO"""
+    raise NotImplementedError(
+        "The decompose_arbitrary_ppr compilation pass has no tape implementation, and can only be applied when decorating the entire worfklow with @qml.qjit and when it is placed after all transforms that only have a tape implementation."
     )

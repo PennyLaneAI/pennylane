@@ -122,6 +122,7 @@ This transform accepts quantum circuits and decomposes them to the Clifford+T ba
     ~transforms.merge_ppr_ppm
     ~transforms.ppm_compilation
     ~transforms.reduce_t_depth
+    ~transforms.decompose_arbitrary_ppr
 
 
 Other transforms
@@ -354,6 +355,7 @@ from .decompositions import (
     ppr_to_ppm,
     ppm_compilation,
     reduce_t_depth,
+    decompose_arbitrary_ppr,
 )
 from .defer_measurements import defer_measurements
 from .diagonalize_measurements import diagonalize_measurements
