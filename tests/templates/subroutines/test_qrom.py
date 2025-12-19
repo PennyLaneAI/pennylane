@@ -25,7 +25,7 @@ from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 @pytest.mark.jax
 def test_assert_valid_qrom():
     """Run standard validity tests."""
-    bitstrings = (
+    data = (
         (0, 0, 0),
         (0, 0, 1),
         (1, 1, 1),
@@ -36,7 +36,7 @@ def test_assert_valid_qrom():
         (1, 1, 1),
     )
 
-    op = qml.QROM(bitstrings, control_wires=[0, 1, 2], target_wires=[3, 4, 5], work_wires=[6, 7, 8])
+    op = qml.QROM(data, control_wires=[0, 1, 2], target_wires=[3, 4, 5], work_wires=[6, 7, 8])
     qml.ops.functions.assert_valid(op)
 
 
@@ -56,7 +56,7 @@ class TestQROM:
     """Test the qml.QROM template."""
 
     @pytest.mark.parametrize(
-        ("bitstrings", "target_wires", "control_wires", "work_wires", "clean"),
+        ("data", "target_wires", "control_wires", "work_wires", "clean"),
         [
             (
                 [
@@ -130,7 +130,7 @@ class TestQROM:
         ],
     )
     def test_operation_result(
-        self, bitstrings, target_wires, control_wires, work_wires, clean
+        self, data, target_wires, control_wires, work_wires, clean
     ):  # pylint: disable=too-many-arguments
         """Test the correctness of the QROM template output."""
         dev = qml.device("default.qubit")
@@ -140,14 +140,14 @@ class TestQROM:
         def circuit(j):
             qml.BasisEmbedding(j, wires=control_wires)
 
-            qml.QROM(bitstrings, control_wires, target_wires, work_wires, clean)
+            qml.QROM(data, control_wires, target_wires, work_wires, clean)
             return qml.sample(wires=target_wires)
 
         for j in range(2 ** len(control_wires)):
-            assert np.allclose(circuit(j), [int(bit) for bit in bitstrings[j]])
+            assert np.allclose(circuit(j), [int(bit) for bit in data[j]])
 
     @pytest.mark.parametrize(
-        ("bitstrings", "target_wires", "control_wires", "work_wires"),
+        ("data", "target_wires", "control_wires", "work_wires"),
         [
             (
                 [[1, 1], [0, 1], [0, 0], [1, 0]],
@@ -185,7 +185,7 @@ class TestQROM:
             ),
         ],
     )
-    def test_work_wires_output(self, bitstrings, target_wires, control_wires, work_wires):
+    def test_work_wires_output(self, data, target_wires, control_wires, work_wires):
         """Tests that the ``clean = True`` version don't modify the initial state in work_wires."""
         dev = qml.device("default.qubit")
 
@@ -200,7 +200,7 @@ class TestQROM:
             for wire in control_wires:
                 qml.Hadamard(wires=wire)
 
-            qml.QROM(bitstrings, control_wires, target_wires, work_wires)
+            qml.QROM(data, control_wires, target_wires, work_wires)
 
             for ind, wire in enumerate(work_wires):
                 qml.RX(-ind, wires=wire)
@@ -246,7 +246,7 @@ class TestQROM:
             qml.assert_equal(op1, op2)
 
     @pytest.mark.parametrize(
-        ("bitstrings", "control_wires", "target_wires", "work_wires", "clean"),
+        ("data", "control_wires", "target_wires", "work_wires", "clean"),
         [
             (
                 [[1, 1], [0, 1], [0, 0], [1, 0]],
@@ -294,11 +294,11 @@ class TestQROM:
         ],  # pylint: disable=too-many-arguments
     )
     def test_decomposition_new(
-        self, bitstrings, control_wires, target_wires, work_wires, clean
+        self, data, control_wires, target_wires, work_wires, clean
     ):  # pylint: disable=too-many-arguments
         """Tests the decomposition rule implemented with the new system."""
         op = qml.QROM(
-            bitstrings,
+            data,
             control_wires=control_wires,
             target_wires=target_wires,
             work_wires=work_wires,
@@ -399,13 +399,13 @@ def test_repr():
 
 
 @pytest.mark.parametrize(
-    ("bitstrings", "control_wires", "target_wires", "msg_match"),
+    ("data", "control_wires", "target_wires", "msg_match"),
     [
         (
             [[1], [0], [0], [1]],
             [0],
             [2],
-            r"Not enough control wires \(1\) for the desired number of bitstrings \(4\). At least 2 control wires are required.",
+            r"Not enough control wires \(1\) for the desired number of data \(4\). At least 2 control wires are required.",
         ),
         (
             [[1], [0], [0], [1]],
@@ -415,10 +415,10 @@ def test_repr():
         ),
     ],
 )
-def test_wrong_wires_error(bitstrings, control_wires, target_wires, msg_match):
+def test_wrong_wires_error(data, control_wires, target_wires, msg_match):
     """Test that error is raised if more ops are requested than can fit in control wires"""
     with pytest.raises(ValueError, match=msg_match):
-        qml.QROM(bitstrings, control_wires, target_wires, work_wires=None)
+        qml.QROM(data, control_wires, target_wires, work_wires=None)
 
 
 def test_none_work_wires_case():
