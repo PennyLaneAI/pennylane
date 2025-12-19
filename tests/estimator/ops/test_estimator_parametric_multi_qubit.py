@@ -497,7 +497,7 @@ class TestPCPhase:
         assert op.resource_params == {
             "num_wires": num_wires,
             "dim": dim,
-            "rot_precision": rot_precision,
+            "rotation_precision": rot_precision,
         }
 
     @pytest.mark.parametrize(
@@ -512,7 +512,7 @@ class TestPCPhase:
         expected = qre.CompressedResourceOp(
             qre.PCPhase,
             num_wires,
-            {"num_wires": num_wires, "dim": dim, "rot_precision": rot_precision},
+            {"num_wires": num_wires, "dim": dim, "rotation_precision": rot_precision},
         )
         assert qre.PCPhase.resource_rep(num_wires, dim, rot_precision) == expected
 
