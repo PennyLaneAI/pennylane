@@ -2,69 +2,6 @@
 
 <h3>New features since last release</h3>
 
-<h4>Pass-by-Pass Circuit Specs </h4>
-
-* Resource tracking with :func:`~pennylane.specs` can now be used to analyze the pass-by-pass impact of arbitrary 
-  compilation passes on workflows compiled with :func:`~pennylane.qjit`.
-  [(#8606)](https://github.com/PennyLaneAI/pennylane/pull/8606)
-  
-  Consider the following :func:`qjit <pennylane.qjit>`'d circuit with two compilation passes applied:
-  
-  ```python
-  @qml.qjit
-  @qml.transforms.merge_rotations
-  @qml.transforms.cancel_inverses
-  @qml.qnode(dev)
-  def circuit(x):
-      qml.RX(x, wires=0)
-      qml.RX(x, wires=0)
-      qml.X(0)
-      qml.X(0)
-      qml.CNOT([0, 1])
-      return qml.probs()
-  ```
-
-  The supplied ``level`` to :func:`pennylane.specs` may be individual `int` values, or an iterable of multiple levels. 
-  Additionally, the strings ``"all"`` and ``"all-mlir"`` are allowed, returning circuit resources for all user-applied transforms
-  and MLIR passes, or all user-applied MLIR passes only, respectively.
-
-  ```pycon
-  >>> print(qml.specs(circuit, level=[1, 2])(1.23))
-  Device: lightning.qubit
-  Device wires: 3
-  Shots: Shots(total=None)
-  Level: ['Before MLIR Passes (MLIR-0)', 'cancel-inverses (MLIR-1)']
-  <BLANKLINE>
-  Resource specifications:
-  Level = Before MLIR Passes (MLIR-0):
-    Total wire allocations: 3
-    Total gates: 5
-    Circuit depth: Not computed
-  <BLANKLINE>
-    Gate types:
-      RX: 2
-      PauliX: 2
-      CNOT: 1
-  <BLANKLINE>
-    Measurements:
-      probs(all wires): 1
-  <BLANKLINE>
-  ------------------------------------------------------------
-  <BLANKLINE>
-  Level = cancel-inverses (MLIR-1):
-    Total wire allocations: 3
-    Total gates: 3
-    Circuit depth: Not computed
-  <BLANKLINE>
-    Gate types:
-      RX: 2
-      CNOT: 1
-  <BLANKLINE>
-    Measurements:
-      probs(all wires): 1
-  ```
-
-
 <h4>QRAM </h4>
 
 * Bucket Brigade QRAM, a Hybrid QRAM and a Select-Only QRAM variant are implemented as a template :class:`~.BBQRAM`, :class:`~.HybridQRAM` and :class:`~.SelectOnlyQRAM` 
@@ -281,17 +218,17 @@
   {'SpectralNormError': SpectralNormError(0.01)}
   ```
 
-<h4>Seamless resource tracking and circuit visualization for compiled programs </h4>
+<h4>Seamless inspection for compiled programs 👓</h4>
 
-* A new :func:`~.marker` function allows for easy inspection at particular points in a transform program
-  with :func:`~.specs` and :func:`~.drawer.draw` instead of having to increment ``level``
-  by integer amounts when not using any Catalyst passes.
+* A new :func:`~.marker` function allows for easy inspection at particular points in a set of 
+  applied compilation passes with :func:`~.specs` and :func:`~.drawer.draw` instead of having to 
+  increment ``level`` by integer amounts.
   [(#8684)](https://github.com/PennyLaneAI/pennylane/pull/8684)
 
   The :func:`~.marker` function works like a transform in PennyLane, and can be deployed as
   a decorator on top of QNodes:
 
-  ```
+  ```python
   @qml.marker(level="rotations-merged")
   @qml.transforms.merge_rotations
   @qml.marker(level="my-level")
@@ -306,7 +243,7 @@
       return qml.state()
   ```
 
-  The string supplied to ``marker`` can then be used as an argument to ``level`` in ``draw``
+  The string supplied to :func:`~.marker` can then be used as an argument to ``level`` in ``draw``
   and ``specs``, showing the cumulative result of applying transforms up to the marker:
 
   ```pycon
@@ -314,6 +251,70 @@
   0: ──RX(0.20)──RX(3.14)──RX(3.14)──RX(0.20)─┤  State
   >>> print(qml.draw(circuit, level="rotations-merged")())
   0: ──RX(6.68)─┤  State
+  ```
+
+  Note that :func:`~.marker` is currently not compatible with programs compiled with 
+  :func:`~pennylane.qjit`.
+
+* Resource tracking with :func:`~.specs` can now be used to analyze the pass-by-pass impact of 
+  arbitrary compilation passes on workflows compiled with :func:`~pennylane.qjit`.
+  [(#8606)](https://github.com/PennyLaneAI/pennylane/pull/8606)
+  
+  Consider the following :func:`qjit <pennylane.qjit>`'d circuit with two compilation passes 
+  applied:
+  
+  ```python
+  @qml.qjit
+  @qml.transforms.merge_rotations
+  @qml.transforms.cancel_inverses
+  @qml.qnode(dev)
+  def circuit(x):
+      qml.RX(x, wires=0)
+      qml.RX(x, wires=0)
+      qml.X(0)
+      qml.X(0)
+      qml.CNOT([0, 1])
+      return qml.probs()
+  ```
+
+  The supplied ``level`` to :func:`pennylane.specs` may be individual `int` values, or an iterable 
+  of multiple levels. Additionally, the strings ``"all"`` and ``"all-mlir"`` are allowed, returning 
+  circuit resources for all user-applied transforms and MLIR passes, or all user-applied MLIR passes only, respectively.
+
+  ```pycon
+  >>> print(qml.specs(circuit, level=[1, 2])(1.23))
+  Device: lightning.qubit
+  Device wires: 3
+  Shots: Shots(total=None)
+  Level: ['Before MLIR Passes (MLIR-0)', 'cancel-inverses (MLIR-1)']
+  <BLANKLINE>
+  Resource specifications:
+  Level = Before MLIR Passes (MLIR-0):
+    Total wire allocations: 3
+    Total gates: 5
+    Circuit depth: Not computed
+  <BLANKLINE>
+    Gate types:
+      RX: 2
+      PauliX: 2
+      CNOT: 1
+  <BLANKLINE>
+    Measurements:
+      probs(all wires): 1
+  <BLANKLINE>
+  ------------------------------------------------------------
+  <BLANKLINE>
+  Level = cancel-inverses (MLIR-1):
+    Total wire allocations: 3
+    Total gates: 3
+    Circuit depth: Not computed
+  <BLANKLINE>
+    Gate types:
+      RX: 2
+      CNOT: 1
+  <BLANKLINE>
+    Measurements:
+      probs(all wires): 1
   ```
 
 <h3>Improvements 🛠</h3>
