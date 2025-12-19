@@ -659,6 +659,10 @@ class QSP(ResourceOperator):
             decomposition of the single qubit rotation gates used to implement this operation.
         wires (WiresLike, None): the wires the operation acts on
 
+    Raises:
+        ValueError: If the block encoding operator acts on more than one qubit.
+        ValueError: If the convention is not ``"X"`` or ``"Z"``.
+
     Resources:
         The resources are obtained as described in theorem 1 of `A Grand Unification of Quantum Algorithms
         (2021) <https://arxiv.org/pdf/2105.02859>`_.
@@ -782,6 +786,9 @@ class QSP(ResourceOperator):
         Resources:
             The resources are obtained as described in theorem 1 of `A Grand Unification of Quantum Algorithms
             (2021) <https://arxiv.org/pdf/2105.02859>`_.
+
+        Raises:
+            ValueError: If the convention is not ``"X"`` or ``"Z"``.
 
         Returns:
             list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
