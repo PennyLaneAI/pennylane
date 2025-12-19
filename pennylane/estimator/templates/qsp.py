@@ -173,7 +173,7 @@ class GQSP(ResourceOperator):
         poly_deg: int,
         neg_poly_deg: int,
         rotation_precision: float | None,
-    ):
+    ) -> CompressedResourcOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
 
@@ -203,7 +203,7 @@ class GQSP(ResourceOperator):
         poly_deg: int,
         neg_poly_deg: int,
         rotation_precision: float | None,
-    ):
+    ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object in the list
         represents a gate and the number of times it occurs in the circuit.
 
@@ -374,7 +374,7 @@ class GQSPTimeEvolution(ResourceOperator):
         time: float,
         one_norm: float,
         poly_approx_precision: float,
-    ):
+    ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
 
@@ -405,7 +405,7 @@ class GQSPTimeEvolution(ResourceOperator):
         time: float,
         one_norm: float,
         poly_approx_precision: float,
-    ):
+    ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object in the list
         represents a gate and the number of times it occurs in the circuit.
 
@@ -435,7 +435,7 @@ class GQSPTimeEvolution(ResourceOperator):
         return [GateCount(gqsp)]
 
     @staticmethod
-    def poly_approx(time, one_norm, epsilon):
+    def poly_approx(time: float, one_norm: float, epsilon: float) -> int:
         r"""Obtain the maximum degree of the polynomial approximation required
         to approximate :math:`e^(iHt * \cos{\theta})` within error epsilon.
 

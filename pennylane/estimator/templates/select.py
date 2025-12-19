@@ -519,7 +519,7 @@ class SelectPauli(ResourceOperator):
             self.num_wires = num_wires
 
     @classmethod
-    def resource_decomp(cls, pauli_ham: PauliHamiltonian):  # pylint: disable=unused-argument
+    def resource_decomp(cls, pauli_ham: PauliHamiltonian) -> list[GateCount]:  # pylint: disable=unused-argument
         r"""The resources for a select implementation taking advantage of the unary iterator trick.
 
         Args:
