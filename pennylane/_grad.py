@@ -38,6 +38,10 @@ except ImportError:
     has_jax = False
 
 
+def _get_shape(x):
+    return x.shape if hasattr(x, "shape") else jax.numpy.shape(x)
+
+
 # pylint: disable=unused-argument, too-many-arguments
 @lru_cache
 def _get_jacobian_prim():
@@ -262,9 +266,6 @@ def _capture_diff(func, *, argnums=None, scalar_out: bool = False, method=None, 
 def _validate_cotangents(cotangents, out_avals):
     from jax._src.api import _dtype  # pylint: disable=import-outside-toplevel
 
-    def get_shape(x):
-        return x.shape if hasattr(x, "shape") else jax.numpy.shape(x)
-
     if len(cotangents) != len(out_avals):
         raise ValueError(
             "The length of cotangents must match the number of"
@@ -279,11 +280,11 @@ def _validate_cotangents(cotangents, out_avals):
                 f"{_dtype(p)}, but got cotangent dtype {_dtype(t)} instead."
             )
 
-        if get_shape(p) != get_shape(t):
+        if _get_shape(p) != _get_shape(t):
             raise ValueError(
                 "qml.vjp called with different function output params and cotangent "
-                f"shapes; got function output params shape {get_shape(p)} and cotangent shape "
-                f"{get_shape(t)}"
+                f"shapes; got function output params shape {_get_shape(p)} and cotangent shape "
+                f"{_get_shape(t)}"
             )
 
 
@@ -325,6 +326,27 @@ def _capture_vjp(func, params, cotangents, *, argnums=None, method=None, h=None)
     return results, dparams
 
 
+def _validate_tangents(params, dparams, argnums):
+    from jax._src.api import _dtype  # pylint: disable=import-outside-toplevel
+
+    for i, dx in zip(argnums, dparams):
+        x = params[i]
+        if _dtype(x) != _dtype(dx):
+            raise TypeError(
+                "function params and tangents arguments to qml.jvp do not match; "
+                "dtypes must be equal. "
+                f"Got function params dtype {_dtype(x)} and so expected tangent dtype "
+                f"{_dtype(x)}, but got tangent dtype {_dtype(dx)} instead."
+            )
+
+        if _get_shape(x) != _get_shape(dx):
+            raise ValueError(
+                "qml.jvp called with different function params and tangent "
+                f"shapes; got function params shape {_get_shape(x)} and tangent shape "
+                f"{_get_shape(dx)}"
+            )
+
+
 def _capture_jvp(func, params, dparams, *, argnums=None, method=None, h=None):
     from jax.tree_util import tree_leaves, tree_unflatten  # pylint: disable=import-outside-toplevel
 
@@ -332,6 +354,8 @@ def _capture_jvp(func, params, dparams, *, argnums=None, method=None, h=None):
     method = _setup_method(method)
     flat_args, flat_argnums, _, _ = _args_and_argnums(params, argnums)
     flat_dargs = tree_leaves(dparams)
+
+    _validate_tangents(flat_args, flat_dargs, flat_argnums)
 
     flat_fn = capture.FlatFn(func)
     jaxpr = jax.make_jaxpr(flat_fn)(*params)
@@ -348,8 +372,7 @@ def _capture_jvp(func, params, dparams, *, argnums=None, method=None, h=None):
     }
     out_flat = _get_jvp_prim().bind(*jaxpr.consts, *flat_args, *flat_dargs, **prim_kwargs)
     flat_results, flat_dresults = out_flat[: len(j.outvars)], out_flat[len(j.outvars) :]
-    print(flat_results)
-    print(flat_dresults)
+
     results = tree_unflatten(flat_fn.out_tree, flat_results)
     dresults = tree_unflatten(flat_fn.out_tree, flat_dresults)
     return results, dresults
