@@ -1490,7 +1490,7 @@ def to_bloq(
         are many varieties of Quantum Phase Estimation. When ``qml.to_bloq`` is called on
         :class:`~pennylane.QuantumPhaseEstimation`, a smart default is chosen.
 
-        >>> qml.to_bloq(qml.QuantumPhaseEstimation( 
+        >>> qml.to_bloq(qml.QuantumPhaseEstimation(
         ...     unitary=qml.RX(0.1, wires=0), estimation_wires=range(1, 5)
         ... ))
         TextbookQPE(unitary=Rx(angle=0.1, eps=1e-11), ctrl_state_prep=RectangularWindowState(bitsize=4), qft_inv=Adjoint(subbloq=QFTTextBook(bitsize=4, with_reverse=True)))
