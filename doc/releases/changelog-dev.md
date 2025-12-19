@@ -408,7 +408,8 @@
   system is disabled.
   [(#8532)](https://github.com/PennyLaneAI/pennylane/pull/8532)
 
-* The :class:`~.pennylane.estimator.templates.SelectTHC` template now allows for a trade-off between qubits and T-gates. This provides greater flexibility in optimizing algorithms.
+* The :class:`~.pennylane.estimator.templates.SelectTHC` resource operation is upgraded to allow for a trade-off between the number of qubits and T-gates.
+  This provides more flexibility in optimizing algorithms.
   [(#8682)](https://github.com/PennyLaneAI/pennylane/pull/8682)
   
 * The `~pennylane.estimator.compact_hamiltonian.CDFHamiltonian`, `~pennylane.estimator.compact_hamiltonian.THCHamiltonian`,
