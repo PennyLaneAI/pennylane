@@ -124,7 +124,7 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
             length, the ``target_wires`` are of the wrong size, or the ``work_wires`` register size is not exactly
             equal to :math:`1 + 3 ((2^\texttt{len(control_wires)}) - 1)`.
 
-    .. seealso:: :class:`~.QROM`, :class:`~.QROMStatePreparation`
+    .. seealso:: :class:`~.SelectOnlyQRAM`, :class:`~.HybridQRAM`, :class:`~.QROM`, :class:`~.QROMStatePreparation`
 
     .. note::
 
@@ -417,7 +417,7 @@ class HybridQRAM(Operation):
             no ``control_wires``, ``k >= len(control_wires)``, the ``target_wires`` are of the wrong length, or the
             ``work_wires`` are of the wrong length.
 
-    .. seealso:: :class:`~.QROM`, :class:`~.QROMStatePreparation`, :class:`~.BBQRAM`
+    .. seealso:: :class:`~.SelectOnlyQRAM`, :class:`~.BBQRAM`, :class:`~.QROM`, :class:`~.QROMStatePreparation`
 
     .. note::
 
@@ -885,7 +885,7 @@ class SelectOnlyQRAM(Operation):
         ValueError: if the ``bitstrings`` are of the wrong length, a ``select_value`` is provided without
              ``select_wires``, or the ``select_value`` is greater than [0, (:math:`2^{\texttt{len(select_wires)}}`) - 1].
 
-    .. seealso:: :class:`~.QROM`, :class:`~.QROMStatePreparation`, :class:`~.BBQRAM`
+    .. seealso:: :class:`~.BBQRAM`, :class:`~.HybridQRAM`, :class:`~.QROM`, :class:`~.QROMStatePreparation`
 
     .. note::
 
