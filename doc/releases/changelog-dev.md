@@ -732,6 +732,8 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* The `_grad.py` file in split into a folder for improved source code organization.
+
 * Updated `pyproject.toml` with project dependencies to replace the requirements files. Updated workflows to use installations from `pyproject.toml`.
   [(8702)](https://github.com/PennyLaneAI/pennylane/pull/8702)
 
