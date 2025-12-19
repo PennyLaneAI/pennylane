@@ -286,6 +286,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* `qml.while_loop` and `qml.for_loop` can now lazily dispatch to catalyst when called,
+  instead of dispatching upon creation.
+  [(#8786)](https://github.com/PennyLaneAI/pennylane/pull/8786)
+
 <h4>Resource estimation</h4>
 
 * Added `Resources.total_wires` and `Resources.total_gates` properties to the 
@@ -597,7 +601,10 @@
 * `qml.cond` will also accept a partial of an operator type as the true function without a false function
   when capture is enabled.
   [(#8776)](https://github.com/PennyLaneAI/pennylane/pull/8776)
-  
+
+* The :func:`~.dynamic_one_shot` transform can no longer be applied directly on a QNode.
+  [(8781)](https://github.com/PennyLaneAI/pennylane/pull/8781)
+
 <h3>Deprecations 👋</h3>
 
 * Maintenance support of NumPy<2.0 is deprecated as of v0.44 and will be completely dropped in v0.45.
