@@ -820,6 +820,7 @@ This release contains contributions from (in alphabetical order):
 Runor Agbaire,
 Guillermo Alonso,
 Utkarsh Azad,
+Joseph Bowles,
 Astral Cai,
 Yushao Chen,
 Diksha Dhawan,
