@@ -420,6 +420,11 @@
   semi-in-place addition (:class:`~.SemiAdder`).
   [(#8738)](https://github.com/PennyLaneAI/pennylane/pull/8738)
 
+* The integration test for computing perturbation error of a compressed double-factorized (CDF)
+  Hamiltonian in ``labs.trotter_error`` is upgraded to use a more realistic molecular geometry and
+  a more reliable reference error.
+  [(#8790)](https://github.com/PennyLaneAI/pennylane/pull/8790)
+
 <h3>Breaking changes 💔</h3>
 
 * The output format of `qml.specs` has been restructured into a dataclass to streamline the outputs.

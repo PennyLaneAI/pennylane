@@ -45,11 +45,9 @@ eri = np.einsum("tpk,tqk,tkl,trl,tsl->tpqrs", U, U, Z, U, U)  # regenerate V_pqr
 h1e = U0 @ Z0 @ U0.T
 h1e = h1e + 0.5 * qml.math.einsum("pqss", two_body)  # regenerate h_pq
 
-h_ferm = [qml.qchem.fermionic_observable(constant=core_constant, one=h1e)]
+h_ferm = [fermionic_observable(constant=core_constant, one=h1e)]
 for frag in eri:
-    h_ferm.append(
-        qml.qchem.fermionic_observable(constant=np.array([0]), two=np.swapaxes(frag, 1, 3))
-    )
+    h_ferm.append(fermionic_observable(constant=np.array([0]), two=np.swapaxes(frag, 1, 3)))
 
 cdf_frags = [np.array(item.to_mat(format="dense")) for item in h_ferm]
 
@@ -88,7 +86,10 @@ def test_perturbation_error(backend, num_workers, parallel_mode, n_states, mpi4p
 
     second_order = ProductFormula(frag_labels, frag_coeffs)
     states = [state] * n_states
-    errors = perturbation_error(second_order, frags, states, max_order=3)
+    max_order, timestep = 3, 1.0
+    errors = perturbation_error(
+        second_order, frags, states, max_order, timestep, num_workers, backend, parallel_mode
+    )
 
     actual = [sum(d.values()) for d in errors]
     expected = np.array([0.009947958260807521j] * n_states)  # computed using effective_hamiltonian
