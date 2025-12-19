@@ -914,11 +914,11 @@ class SelectOnlyQRAM(Operation):
         num_select_wires = 1
         select_value = 0
 
-    Now, we can define all three registers concretely and demonstrate ``SelectOnlyQRAM`` in practice. In the
-    following circuit, we prepare the state :math:`\vert 2 \rangle = \vert 10 \rangle` on the
-    ``control_wires``, which indicates that we would like to access the second (zero-indexed) entry of
-    ``bitstrings`` (which is ``"110"``). Because ``select_value`` is zero, the full address we are accessing is
-    indeed ``"010"``. The ``target_wires`` register should therefore store the state ``"110"`` after ``SelectOnlyQRAM``
+    Now, we can define all three registers concretely and demonstrate ``SelectOnlyQRAM`` in practice. Lets assume that in the
+    following circuit, we want to prepare the state :math:`\vert 2 \rangle = \vert 10 \rangle` on the
+    ``control_wires``. Because ``select_value`` is zero, the full address we are accessing is
+    indeed ``"010"``, which indicates that we would like to access the second (zero-indexed) entry of
+    ``bitstrings`` (which is ``"110"``). The ``target_wires`` register should therefore store the state ``"110"`` after ``SelectOnlyQRAM``
     is applied.
 
     .. code-block:: python
