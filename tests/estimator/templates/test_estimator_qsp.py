@@ -283,6 +283,16 @@ class TestGQSP:
         with pytest.raises(ValueError, match="Expected 2 wires, got 1"):
             qre.GQSP(op, poly_deg=2, wires=[0])
 
+    @pytest.mark.parametrize("rot_prec", (0, -1, -2.5))
+    def test_rotation_precision_error(self, rot_prec):
+        """Test that an error is raised if the rotation_precision is negative"""
+        op = qre.RX(0.1, wires=0)
+        with pytest.raises(
+            ValueError,
+            match="Expected 'rotation_precision' to be a positive real number greater than zero",
+        ):
+            _ = qre.GQSP(op, poly_deg=2, rotation_precision=rot_prec)
+
     @pytest.mark.parametrize(
         "poly_deg, neg_poly_deg, error_msg",
         (
@@ -399,10 +409,10 @@ class TestGQSPTimeEvolution:
         """Test that an error is raised when wrong number of wires is provided."""
         op = qre.RX(0.1, wires=0)
         with pytest.raises(ValueError, match="Expected 2 wires, got 1"):
-            qre.GQSPTimeEvolution(op, time=1.0, one_norm=1.0, approximation_error=0.1, wires=[0])
+            qre.GQSPTimeEvolution(op, time=1.0, one_norm=1.0, poly_approx_precision=0.1, wires=[0])
 
     @pytest.mark.parametrize(
-        "time, one_norm, approximation_error, error_msg",
+        "time, one_norm, poly_approx_precision, error_msg",
         (
             (-1, 1.0, 0.1, "Expected 'time' to be a positive real number greater than zero"),
             (0, 1.0, 0.1, "Expected 'time' to be a positive real number greater than zero"),
@@ -419,37 +429,37 @@ class TestGQSPTimeEvolution:
                 10,
                 1.0,
                 -0.5,
-                "Expected 'approximation_error' to be a positive real number greater than zero",
+                "Expected 'poly_approx_precision' to be a positive real number greater than zero",
             ),
             (
                 10,
                 1.0,
                 0,
-                "Expected 'approximation_error' to be a positive real number greater than zero",
+                "Expected 'poly_approx_precision' to be a positive real number greater than zero",
             ),
             (
                 10,
                 1.0,
                 0.1 + 1j,
-                "Expected 'approximation_error' to be a positive real number greater than zero",
+                "Expected 'poly_approx_precision' to be a positive real number greater than zero",
             ),
         ),
     )
-    def test_argument_error(self, time, one_norm, approximation_error, error_msg):
+    def test_argument_error(self, time, one_norm, poly_approx_precision, error_msg):
         """Test that an error is raised if any of the input arguments are not positive real
         numbers greater than zero."""
         op = qre.RX(0.1, wires=0)
         with pytest.raises(ValueError, match=error_msg):
-            qre.GQSPTimeEvolution(op, time, one_norm, approximation_error)
+            qre.GQSPTimeEvolution(op, time, one_norm, poly_approx_precision)
 
     def test_resource_params(self):
         """Test that the resource params for GQSPTimeEvolution are correct."""
         op = qre.RX(0.1, wires=0)
-        hamsim = qre.GQSPTimeEvolution(op, time=1.0, one_norm=2.0, approximation_error=0.01)
+        hamsim = qre.GQSPTimeEvolution(op, time=1.0, one_norm=2.0, poly_approx_precision=0.01)
 
         assert hamsim.resource_params["time"] == 1.0
         assert hamsim.resource_params["one_norm"] == 2.0
-        assert hamsim.resource_params["approximation_error"] == 0.01
+        assert hamsim.resource_params["poly_approx_precision"] == 0.01
         assert hamsim.resource_params["walk_op"].op_type == qre.RX
 
     def test_resource_rep(self):
@@ -464,7 +474,7 @@ class TestGQSPTimeEvolution:
                 "walk_op": cmpr_op,
                 "time": 1.0,
                 "one_norm": 2.0,
-                "approximation_error": 0.01,
+                "poly_approx_precision": 0.01,
             },
         )
         assert qre.GQSPTimeEvolution.resource_rep(cmpr_op, 1.0, 2.0, 0.01) == expected
@@ -481,7 +491,7 @@ class TestGQSPTimeEvolution:
         cmpr_op = op.resource_rep_from_op()
 
         decomp = qre.GQSPTimeEvolution.resource_decomp(
-            cmpr_op, time=1.0, one_norm=1.0, approximation_error=0.1
+            cmpr_op, time=1.0, one_norm=1.0, poly_approx_precision=0.1
         )
         assert len(decomp) == 1
         assert decomp[0].gate.op_type == qre.GQSP

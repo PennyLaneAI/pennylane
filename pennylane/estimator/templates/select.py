@@ -453,13 +453,13 @@ class SelectPauli(ResourceOperator):
     Args:
         pauli_ham (:class:`~pennylane.estimator.compact_hamiltonian.PauliHamiltonian`): A Hamiltonian
             expressed as a linear combination of Pauli words, over which ``Select`` is applied.
-        wires (WiresLike | None): The wires the operation acts on.
+        wires (WiresLike | None): the wires the operation acts on
 
     Resources:
         The resources are based on the analysis in `Babbush et al. (2018) <https://arxiv.org/pdf/1805.03662>`_ section III.A,
         'Unary Iteration and Indexed Operations', and Figures 4, 6, and 7.
 
-        Note: This implementation assumes we have access to :math:`n - 1` additional work qubits,
+        Note: This implementation assumes we have access to :math:`n - 1` additional auxiliary qubits,
         where :math:`n = \left\lceil log_{2}(N) \right\rceil` and :math:`N` is the number of batches of unitaries
         to select.
 
@@ -519,7 +519,9 @@ class SelectPauli(ResourceOperator):
             self.num_wires = num_wires
 
     @classmethod
-    def resource_decomp(cls, pauli_ham: PauliHamiltonian):  # pylint: disable=unused-argument
+    def resource_decomp(
+        cls, pauli_ham: PauliHamiltonian
+    ) -> list[GateCount]:  # pylint: disable=unused-argument
         r"""The resources for a select implementation taking advantage of the unary iterator trick.
 
         Args:
@@ -530,7 +532,7 @@ class SelectPauli(ResourceOperator):
             The resources are based on the analysis in `Babbush et al. (2018) <https://arxiv.org/pdf/1805.03662>`_ section III.A,
             'Unary Iteration and Indexed Operations', and Figures 4, 6, and 7.
 
-            Note: This implementation assumes we have access to :math:`n - 1` additional work qubits,
+            Note: This implementation assumes we have access to :math:`n - 1` additional auxiliary qubits,
             where :math:`n = \left\lceil log_{2}(N) \right\rceil` and :math:`N` is the number of batches of unitaries
             to select.
 
@@ -589,7 +591,7 @@ class SelectPauli(ResourceOperator):
         return gate_types
 
     @classmethod
-    def adjoint_resource_decomp(cls, target_resource_params=None):
+    def adjoint_resource_decomp(cls, target_resource_params: dict) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Args:
@@ -608,7 +610,9 @@ class SelectPauli(ResourceOperator):
         return [GateCount(cls.resource_rep(**target_resource_params))]
 
     @classmethod
-    def controlled_resource_decomp(cls, num_ctrl_wires, num_zero_ctrl, target_resource_params=None):
+    def controlled_resource_decomp(
+        cls, num_ctrl_wires: int, num_zero_ctrl: int, target_resource_params: dict
+    ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
         Args:
@@ -625,7 +629,7 @@ class SelectPauli(ResourceOperator):
             a single qubit controlled ``Select`` operator. In the case of multiple control wires, we use one
             additional auxiliary qubit and two multi-controlled ``X`` gates.
 
-            Note: This implementation assumes we have access to :math:`n` additional work qubits,
+            Note: This implementation assumes we have access to :math:`n` additional auxiliary qubits,
             where :math:`n = \left\lceil log_{2}(N) \right\rceil` and :math:`N` is the number of batches of unitaries
             to select.
 

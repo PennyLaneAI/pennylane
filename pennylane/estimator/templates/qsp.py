@@ -33,6 +33,7 @@ from pennylane.wires import Wires, WiresLike
 
 class GQSP(ResourceOperator):
     r"""Resource class for the Generalized Quantum Signal Processing (GQSP) algorithm.
+
     The implementation is based on Theorem 6 of `Generalized Quantum Signal Processing (2024)
     <https://arxiv.org/pdf/2308.01501>`_. Given the block-encoded operator ``signal_operator``
     (:math:`\hat{U}`), the maximum positive polynomial degree ``poly_deg`` (:math:`d^{+}`) and
@@ -75,6 +76,7 @@ class GQSP(ResourceOperator):
     Raises:
         ValueError: ``poly_deg`` must be a positive integer greater than zero
         ValueError: ``neg_poly_deg`` must be a positive integer
+        ValueError: ``rotation_precision`` must be a positive real number greater than zero
         ValueError: if the wires provided don't match the number of wires expected by the operator              
 
     **Example**
@@ -122,6 +124,11 @@ class GQSP(ResourceOperator):
         if (not isinstance(neg_poly_deg, int)) or neg_poly_deg < 0:
             raise ValueError(f"'neg_poly_deg' must be a positive integer, got {neg_poly_deg}")
 
+        if rotation_precision is not None and rotation_precision <= 0:
+            raise ValueError(
+                f"Expected 'rotation_precision' to be a positive real number greater than zero, got {rotation_precision}"
+            )
+
         self.poly_deg = poly_deg
         self.neg_poly_deg = neg_poly_deg
         self.rotation_precision = rotation_precision
@@ -167,7 +174,7 @@ class GQSP(ResourceOperator):
         poly_deg: int,
         neg_poly_deg: int,
         rotation_precision: float | None,
-    ):
+    ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
 
@@ -197,7 +204,7 @@ class GQSP(ResourceOperator):
         poly_deg: int,
         neg_poly_deg: int,
         rotation_precision: float | None,
-    ):
+    ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object in the list
         represents a gate and the number of times it occurs in the circuit.
 
@@ -252,7 +259,7 @@ class GQSPTimeEvolution(ResourceOperator):
         walk_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): the quantum walk operator
         time (float): the simulation time
         one_norm (float): one norm of the Hamiltonian
-        approximation_error (float): the tolerance for error in the polynomial approximation of :math:`e^{it\cos{(\theta)}}`
+        poly_approx_precision (float): the tolerance for error in the polynomial approximation of :math:`e^{it\cos{(\theta)}}`
         wires (WiresLike | None): The wires the operation acts on. This includes both the wires of the
             signal operator and the control wire required for block-encoding.
 
@@ -264,7 +271,7 @@ class GQSPTimeEvolution(ResourceOperator):
         ValueError: if the ``wires`` provided don't match the number of wires expected by the operator
         ValueError: if the ``time`` provided is not a positive real number greater than zero
         ValueError: if the ``one_norm`` provided is not a positive real number greater than zero
-        ValueError: if the ``approximation_error`` provided is not a positive real number greater than zero
+        ValueError: if the ``poly_approx_precision`` provided is not a positive real number greater than zero
 
     **Example**
 
@@ -291,14 +298,14 @@ class GQSPTimeEvolution(ResourceOperator):
 
     """
 
-    resource_keys = {"walk_op", "time", "one_norm", "approximation_error"}
+    resource_keys = {"walk_op", "time", "one_norm", "poly_approx_precision"}
 
     def __init__(
         self,
         walk_op: ResourceOperator,
         time: float,
         one_norm: float,
-        approximation_error: float,
+        poly_approx_precision: float,
         wires: WiresLike = None,
     ):
         _dequeue(walk_op)  # remove operator
@@ -318,17 +325,17 @@ class GQSPTimeEvolution(ResourceOperator):
                 )
             )
 
-        if (not isinstance(approximation_error, (int, float))) or approximation_error <= 0:
+        if (not isinstance(poly_approx_precision, (int, float))) or poly_approx_precision <= 0:
             raise (
                 ValueError(
-                    f"Expected 'approximation_error' to be a positive real number greater than zero, got {approximation_error}"
+                    f"Expected 'poly_approx_precision' to be a positive real number greater than zero, got {poly_approx_precision}"
                 )
             )
 
         self.walk_op = walk_op.resource_rep_from_op()
         self.time = time
         self.one_norm = one_norm
-        self.approximation_error = approximation_error
+        self.poly_approx_precision = poly_approx_precision
         self.num_wires = walk_op.num_wires + 1  # control wire
 
         if wires:
@@ -350,7 +357,7 @@ class GQSPTimeEvolution(ResourceOperator):
                   the quantum walk operator
                 * time (float): the simulation time
                 * one_norm (float): one norm of the Hamiltonian
-                * approximation_error (float): the tolerance for error in the polynomial
+                * poly_approx_precision (float): the tolerance for error in the polynomial
                   approximation of :math:`e^{it\cos{theta}}`
         """
 
@@ -358,7 +365,7 @@ class GQSPTimeEvolution(ResourceOperator):
             "walk_op": self.walk_op,
             "time": self.time,
             "one_norm": self.one_norm,
-            "approximation_error": self.approximation_error,
+            "poly_approx_precision": self.poly_approx_precision,
         }
 
     @classmethod
@@ -367,8 +374,8 @@ class GQSPTimeEvolution(ResourceOperator):
         walk_op: CompressedResourceOp,
         time: float,
         one_norm: float,
-        approximation_error: float,
-    ):
+        poly_approx_precision: float,
+    ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
 
@@ -377,7 +384,7 @@ class GQSPTimeEvolution(ResourceOperator):
                 quantum walk operator
             time (float): the simulation time
             one_norm (float): one norm of the Hamiltonian
-            approximation_error (float): the tolerance for error in the polynomial approximation of
+            poly_approx_precision (float): the tolerance for error in the polynomial approximation of
                 :math:`e^{it\cos{\theta}}`
 
         Returns:
@@ -388,7 +395,7 @@ class GQSPTimeEvolution(ResourceOperator):
             "walk_op": walk_op,
             "time": time,
             "one_norm": one_norm,
-            "approximation_error": approximation_error,
+            "poly_approx_precision": poly_approx_precision,
         }
         return CompressedResourceOp(cls, num_wires, params)
 
@@ -398,8 +405,8 @@ class GQSPTimeEvolution(ResourceOperator):
         walk_op: CompressedResourceOp,
         time: float,
         one_norm: float,
-        approximation_error: float,
-    ):
+        poly_approx_precision: float,
+    ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object in the list
         represents a gate and the number of times it occurs in the circuit.
 
@@ -408,7 +415,7 @@ class GQSPTimeEvolution(ResourceOperator):
                 quantum walk operator
             time (float): the simulation time
             one_norm (float): one norm of the Hamiltonian
-            approximation_error (float): the tolerance for error in the polynomial approximation of
+            poly_approx_precision (float): the tolerance for error in the polynomial approximation of
                 :math:`e^{it\cos{\theta}}`
         Resources:
             The resources are obtained as described in Theorem 7 and Corollary 8 of
@@ -419,7 +426,7 @@ class GQSPTimeEvolution(ResourceOperator):
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
-        poly_deg = cls.poly_approx(time, one_norm, approximation_error)
+        poly_deg = cls.poly_approx(time, one_norm, poly_approx_precision)
         gqsp = GQSP.resource_rep(
             walk_op,
             poly_deg=poly_deg,
@@ -429,7 +436,7 @@ class GQSPTimeEvolution(ResourceOperator):
         return [GateCount(gqsp)]
 
     @staticmethod
-    def poly_approx(time, one_norm, epsilon):
+    def poly_approx(time: float, one_norm: float, epsilon: float) -> int:
         r"""Obtain the maximum degree of the polynomial approximation required
         to approximate :math:`e^(iHt * \cos{\theta})` within error epsilon.
 
