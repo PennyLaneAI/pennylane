@@ -186,6 +186,20 @@
   Users can more easily access the total number of terms (Pauli words) from the `PauliHamiltonian` object directly.
   [(#8761)](https://github.com/PennyLaneAI/pennylane/pull/8761)
 
+* Users can now estimate the resources for the Generalized Quantum Signal Processing (GQSP)
+  algorithm using :class:`estimator.GQSP <pennylane.estimator.templates.qsp.GQSP>` and
+  :class:`estimator.GQSPTimeEvolution <pennylane.estimator.templates.qsp.GQSPTimeEvolution>`.
+  [(#8675)](https://github.com/PennyLaneAI/pennylane/pull/8675)
+
+* Users can now easily generate the LCU representation of a ``qml.estimator.PauliHamiltonian``
+  using the new :class:`estimator.SelectPauli <pennylane.estimator.templates.select.SelectPauli>` operator.
+  [(#8675)](https://github.com/PennyLaneAI/pennylane/pull/8675)
+
+* Users can now estimate the resources for the Qubitization algorithm with two new resource
+  operators: :class:`estimator.Reflection <pennylane.estimator.templates.subroutines.Reflection>` and
+  :class:`estimator.Qubitization <pennylane.estimator.templates.subroutines.Qubitization>`.
+  [(#8675)](https://github.com/PennyLaneAI/pennylane/pull/8675)
+
 <h4>Seamless resource tracking and circuit visualization for compiled programs </h4>
 
 * A new :func:`~.marker` function allows for easy inspection at particular points in a transform program
