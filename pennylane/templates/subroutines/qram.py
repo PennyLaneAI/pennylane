@@ -1056,7 +1056,7 @@ def _select_only_qram_resources(data, select_value, num_control_wires, num_selec
                 num_control_wires=n_total,
                 num_zero_control_values=0,
             )
-        ] += bits.count(1)
+        ] += math.sum(bits)
 
     return resources
 
