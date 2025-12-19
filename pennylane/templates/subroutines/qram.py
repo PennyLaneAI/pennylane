@@ -26,6 +26,8 @@ from collections import defaultdict
 from dataclasses import dataclass
 from typing import Sequence
 
+from pennylane.templates import BasisEmbedding
+
 from pennylane import math
 from pennylane.decomposition import (
     add_decomps,
@@ -1069,6 +1071,9 @@ def _select_only_qram_decomposition(
     controls = select_wires + control_wires
     num_select = len(select_wires)
     n_total = num_select + len(control_wires)
+
+    if select_value is not None and len(select_wires) > 0:
+        BasisEmbedding(select_value, wires=select_wires)
 
     # Loop over all addresses (0 .. 2^(num_select+num_controls)-1)
     for addr, bits in enumerate(bitstrings):
