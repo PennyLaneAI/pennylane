@@ -880,7 +880,7 @@ class SelectOnlyQRAM(Operation):
 
     Raises:
         ValueError: if the ``bitstrings`` are of the wrong length, a ``select_value`` is provided without
-        ``select_wires``, or the ``select_value`` is greater than [0, (1 << len(select_wires)) - 1].
+             ``select_wires``, or the ``select_value`` is greater than [0, (1 << len(select_wires)) - 1].
 
     .. seealso:: :class:`~.QROM`, :class:`~.QROMStatePreparation`, :class:`~.BBQRAM`
 
