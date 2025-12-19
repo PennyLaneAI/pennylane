@@ -262,7 +262,7 @@
 
 <h3>Improvements 🛠</h3>
 
-* Qualtran call graphs built via :func:`~.to_bloq` now use PennyLane's resource estimation
+* Qualtran call graphs built via :func:`qml.to_bloq <pennylane.to_bloq>` now use PennyLane's resource estimation
   module by default (``call_graph='estimator'``). This provides faster resource counting. 
   To use the previous behaviour based on PennyLane decompositions, set 
   ``call_graph='decomposition'``.
@@ -426,8 +426,8 @@
 
 <h3>Breaking changes 💔</h3>
 
-* Call graphs now return resource counts via PennyLane's resource estimation module instead of via
-  PennyLane decompositions. To restore the previous behaviour, set ``call_graph='decomposition'``.
+* Qualtran call graphs built via :func`:~.to_bloq` now return resource counts via PennyLane's resource estimation module
+  instead of via PennyLane decompositions. To restore the previous behaviour, set ``call_graph='decomposition'``.
   [(#8390)](https://github.com/PennyLaneAI/pennylane/pull/8390)
 
   ```python
