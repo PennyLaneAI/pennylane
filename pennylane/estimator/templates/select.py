@@ -460,7 +460,7 @@ class SelectPauli(ResourceOperator):
         'Unary Iteration and Indexed Operations', and Figures 4, 6, and 7.
 
     Raises:
-        TypeError: If the input `pauli_ham` isn't an instance of
+        TypeError: If the input ``pauli_ham`` isn't an instance of
             :class:`~pennylane.estimator.compact_hamiltonian.PauliHamiltonian`.
         ValueError: if the wires provided don't match the number of wires expected by the operator
 

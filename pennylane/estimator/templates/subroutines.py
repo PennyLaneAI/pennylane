@@ -2262,7 +2262,7 @@ class SelectPauliRot(ResourceOperator):
         return gate_lst
 
 
-class Reflection(ResourceOperator): 
+class Reflection(ResourceOperator):
     r"""Resource class for the Reflection operator. Apply a reflection about a state :math:`|\Psi\rangle`.
 
     This operator works by providing an operation, :math:`U`, that prepares the desired state, :math:`\vert \Psi \rangle`,
