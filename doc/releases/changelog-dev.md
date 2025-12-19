@@ -437,7 +437,13 @@
 
   # Previous behaviour (decomposition mode)
   >>> qml.to_bloq(qml.QFT(wires=range(5)), map_ops=False, call_graph='decomposition').call_graph()[1]
-  {Hadamard(): 5, ToBloq(ControlledPhaseShift): 10, TwoBitSwap(): 2}
+  {Hadamard(): 5,
+   ZPowGate(exponent=-0.15915494309189535, eps=1e-11): 10,
+   ZPowGate(exponent=-0.15915494309189535, eps=5e-12): 10,
+   ZPowGate(exponent=0.15915494309189535, eps=5e-12): 10,
+   CNOT(): 20,
+   TwoBitSwap(): 2
+  }
   ```
 * The output format of `qml.specs` has been restructured into a dataclass to streamline the outputs.
   Some legacy information has been removed from the new output format.
