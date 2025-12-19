@@ -52,6 +52,7 @@ Error Tracking
     ~AlgorithmicError
     ~SpectralNormError
     ~ErrorOperation
+    ~algo_error
 
 .. warning::
     The functions ``estimate_error``, ``estimate_shots`` and the classes ``DoubleFactorization``,
@@ -139,7 +140,7 @@ We can examine the resources by accessing the :code:`resources` key:
     Measurements:
       expval(PauliZ): 1
 """
-from .error import AlgorithmicError, ErrorOperation, SpectralNormError
+from .error import AlgorithmicError, ErrorOperation, SpectralNormError, algo_error
 from .resource import (
     Resources,
     ResourcesOperation,
