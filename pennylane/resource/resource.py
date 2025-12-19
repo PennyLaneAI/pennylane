@@ -27,7 +27,7 @@ from pennylane.operation import Operation
 from pennylane.ops.op_math import Controlled, ControlledOp
 from pennylane.tape import QuantumScript
 
-from .error import _compute_algo_error
+from .error.error import _compute_algo_error
 
 
 @dataclass(frozen=True)

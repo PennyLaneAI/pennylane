@@ -20,7 +20,6 @@ from .error import (
     AlgorithmicError,
     ErrorOperation,
     SpectralNormError,
-    _compute_algo_error,
     algo_error,
 )
 from .trotter_error import _commutator_error, _one_norm_error

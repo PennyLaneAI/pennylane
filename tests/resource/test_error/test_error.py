@@ -26,8 +26,8 @@ from pennylane.resource.error import (
     AlgorithmicError,
     ErrorOperation,
     SpectralNormError,
-    _compute_algo_error,
 )
+from pennylane.resource.error.error import _compute_algo_error
 
 
 class SimpleError(AlgorithmicError):
