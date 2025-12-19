@@ -1753,7 +1753,7 @@ class QROM(ResourceOperator):
                 (at the cost of higher gate counts). Defaults to :code:`True`.
 
         Resources:
-           The resources for QROM are derived from the following references:
+            The resources for QROM are derived from the following references:
 
             * :code:`restored=False`: Uses the Select-Swap tree decomposition from Figure 1.C of
               `Low et al. (2018) <https://arxiv.org/abs/1812.00954>`_, further optimized using the
@@ -1765,7 +1765,7 @@ class QROM(ResourceOperator):
 
             Note: we use the unary iterator trick to implement the Select. This
             implementation assumes we have access to :math:`n - 1` additional
-            work qubits, where :math:`n = \left\lceil log_{2}(N) \right\rceil` and :math:`N` is
+            work qubits, where :math:`n = \left\lceil \log_{2}(N) \right\rceil` and :math:`N` is
             the number of batches of unitaries to select.
         """
 
