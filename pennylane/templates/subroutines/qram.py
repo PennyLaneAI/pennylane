@@ -874,7 +874,9 @@ class SelectOnlyQRAM(Operation):
         select_wires (WiresLike, optional):
             Wires used to perform the selection.
         select_value (int or None, optional):
-            If provided, only entries whose select bits match this value are loaded.
+            If provided, only entries whose select bits match this value are loaded. ``select_value`` must
+            be an integer in :math`[0, 2^{\texttt{len(select_wires)}}]`, and cannot be used if not ``select_wires``
+            are provided.
         id (str or None):
             Optional name for the operation.
 
