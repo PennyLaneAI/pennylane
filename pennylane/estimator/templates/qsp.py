@@ -40,19 +40,27 @@ class GQSP(ResourceOperator):
 
     .. math::
 
+        GQSP = \left( \prod_{j=1}^{d^{-}} R(\theta_{j}, \phi_{j}, 0) \hat{A}^{\prime} \right) 
+        \left( \prod_{j=1}^{d^{+}} R(\theta_{j + d^{-}}, \phi_{j + d^{-}}, 0) \hat{A} \right) R(\theta_0, \phi_0, \lambda)
+
+    Where :math:`R` is the general rotation operator 
+    :class:`~.estimator.ops.qubit.parametric_ops_single_qubit.Rot`, and :math:`\vec{\phi}`, 
+    :math:`vec{\theta}` and :math:`\lambda` are the rotation angles that generate the polynomial transformation.
+    Additionally, :math:`\hat{A}` and :math:`\hat{A}^{\prime}` are given by:
+
+    .. math::
+
         \begin{align}
             \hat{A} &= \ket{0}\bra{0}\otimes\hat{U} + \ket{1}\bra{1}\otimes\mathbf{I}, \\
             \hat{A}^{\prime} &= \ket{0}\bra{0}\otimes\mathbf{I} + \ket{1}\bra{1}\otimes\hat{U}^{\dagger}, \\ \\
-            GQSP &= \left( \prod_{j=1}^{d^{-}} R(\theta_{j}, \phi_{j}, 0) \hat{A}^{\prime} \right) 
-            \left( \prod_{j=1}^{d^{+}} R(\theta_{j + d^{-}}, \phi_{j + d^{-}}, 0) \hat{A} \right) R(\theta_0, \phi_0, \lambda)
         \end{align}
 
     Args:
-        signal_operator (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): The
-            signal operator which encodes the target Hamiltonian.
+        signal_operator (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): the
+            signal operator which encodes the target Hamiltonian
         poly_deg (int): the maximum positive degree :math:`d^{+}` of the polynomial transformation
         neg_poly_deg (int): the maximum negative degree :math:`d^{-}` of the polynomial transformation
-        rotation_precision (float | None): The precision with which the general rotation gates are applied.
+        rotation_precision (float | None): the precision with which the general rotation gates are applied
         wires (WiresLike | None): The wires the operation acts on. This includes both the wires of the
             signal operator and the control wire required for block-encoding.
 
@@ -136,12 +144,12 @@ class GQSP(ResourceOperator):
         Returns:
             dict: A dictionary containing the resource parameters:
                 * cmpr_signal_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`):
-                  The compressed representation of signal operator which encodes the target Hamiltonian.
+                  the compressed representation of signal operator which encodes the target Hamiltonian
                 * poly_deg (int): the maximum positive degree :math:`d^{+}` of the polynomial transformation
                 * neg_poly_deg (int): the maximum negative degree :math:`d^{-}` of the polynomial
                   transformation
-                * rotation_precision (float | None): The precision with which the general
-                  rotation gates are applied.
+                * rotation_precision (float | None): the precision with which the general
+                  rotation gates are applied
         """
 
         return {
@@ -164,11 +172,10 @@ class GQSP(ResourceOperator):
 
         Args:
             cmpr_signal_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`):
-                The compressed representation of signal operator which encodes the target Hamiltonian.
+                the compressed representation of signal operator which encodes the target Hamiltonian
             poly_deg (int): the maximum positive degree :math:`d^{+}` of the polynomial transformation
             neg_poly_deg (int): the maximum negative degree :math:`d^{-}` of the polynomial transformation
-            rotation_precision (float | None): The precision with which the general SU(2)
-                rotation gates are applied.
+            rotation_precision (float | None): the precision with which the general rotation gates are applied
 
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
@@ -195,10 +202,10 @@ class GQSP(ResourceOperator):
 
         Args:
             cmpr_signal_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`):
-                The compressed representation of signal operator which encodes the target Hamiltonian.
+                the compressed representation of signal operator which encodes the target Hamiltonian
             poly_deg (int): the maximum positive degree :math:`d^{+}` of the polynomial transformation
             neg_poly_deg (int): the maximum negative degree :math:`d^{-}` of the polynomial transformation
-            rotation_precision (float | None): The precision with which the general SU(2) rotation gates are applied.
+            rotation_precision (float | None): the precision with which the general rotation gates are applied
 
         Resources:
             The resources are obtained as described in Theorem 6 of

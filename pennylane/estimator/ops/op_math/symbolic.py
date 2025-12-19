@@ -1030,17 +1030,15 @@ class ChangeOpBasis(ResourceOperator):
         r"""Returns a list representing the resources for a controlled version of the operator.
 
         Args:
-            num_ctrl_wires (int): The number of control qubits to further control the base
-                controlled operation upon.
-            num_zero_ctrl (int): The subset of those control qubits which further control
-                the base controlled operation, which are controlled when in the :math:`|0\rangle` state.
+            num_ctrl_wires (int): the number of qubits the operation is controlled on
+            num_zero_ctrl (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
             target_resource_params (dict): A dictionary containing the resource parameters of the
                 target operator.
 
         Resources:
             The resources are derived from the identity :math:`C(U V U^\dagger) = U C(V) U^\dagger`.
             Since the compute and uncompute operators cancel each other out when the control is off,
-            we only need to control the target operation :math:`V`. The compute and uncompute operations
+            only the target operation :math:`V` needs to be controllled. The compute and uncompute operations
             remain uncontrolled.
 
         Returns:

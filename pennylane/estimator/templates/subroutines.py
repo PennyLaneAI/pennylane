@@ -2332,7 +2332,7 @@ class Reflection(ResourceOperator):
     ) -> None:
         self.queue()
 
-        if not (0 <= alpha <= 2 * qnp.pi):
+        if not 0 <= alpha <= 2 * qnp.pi:
             raise ValueError(f"alpha must be within [0, 2pi], got {alpha}")
         self.alpha = alpha
 

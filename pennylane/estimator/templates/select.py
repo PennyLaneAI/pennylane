@@ -459,6 +459,10 @@ class SelectPauli(ResourceOperator):
         The resources are based on the analysis in `Babbush et al. (2018) <https://arxiv.org/pdf/1805.03662>`_ section III.A,
         'Unary Iteration and Indexed Operations', and Figures 4, 6, and 7.
 
+        Note: This implementation assumes we have access to :math:`n - 1` additional work qubits,
+        where :math:`n = \left\lceil log_{2}(N) \right\rceil` and :math:`N` is the number of batches of unitaries
+        to select.
+
     Raises:
         TypeError: If the input ``pauli_ham`` isn't an instance of
             :class:`~pennylane.estimator.compact_hamiltonian.PauliHamiltonian`.
@@ -524,7 +528,7 @@ class SelectPauli(ResourceOperator):
 
         Resources:
             The resources are based on the analysis in `Babbush et al. (2018) <https://arxiv.org/pdf/1805.03662>`_ section III.A,
-            'Unary Iteration and Indexed Operations'. See Figures 4, 6, and 7.
+            'Unary Iteration and Indexed Operations', and Figures 4, 6, and 7.
 
             Note: This implementation assumes we have access to :math:`n - 1` additional work qubits,
             where :math:`n = \left\lceil log_{2}(N) \right\rceil` and :math:`N` is the number of batches of unitaries
