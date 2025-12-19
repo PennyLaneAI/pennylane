@@ -1737,7 +1737,7 @@ class QROM(ResourceOperator):
         select_swap_depth: int | None = None,
         restored: bool = True,
     ) -> list[GateCount]:
-        r"""Returns a list of GateCount objects representing the operator's resources.
+        r"""Returns a list of ``GateCount`` objects representing the operator's resources.
 
         Args:
             num_bitstrings (int): the number of bitstrings that are to be encoded
@@ -1944,7 +1944,7 @@ class QROM(ResourceOperator):
             unitaries to select.
 
         Returns:
-            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
