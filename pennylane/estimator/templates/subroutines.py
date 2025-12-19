@@ -1623,16 +1623,16 @@ class QROM(ResourceOperator):
     Args:
         num_bitstrings (int): the number of bitstrings that are to be encoded
         size_bitstring (int): the length of each bitstring
-        num_bit_flips (int, optional): The total number of :math:`1`'s in the dataset. Defaults to
+        num_bit_flips (int | None): The total number of :math:`1`'s in the dataset. Defaults to
             :code:`(num_bitstrings * size_bitstring) // 2`, which is half the dataset.
-        restored (bool, optional): Determine if allocated qubits should be reset after the computation
+        restored (bool): Determine if allocated qubits should be reset after the computation
             (at the cost of higher gate counts). Defaults to :code:`True`.
         select_swap_depth (int | None): A parameter :math:`\lambda` that determines
             if data will be loaded in parallel by adding more rows following Figure 1.C of
             `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_. Can be :code:`None`,
             :code:`1` or a positive integer power of two. Defaults to :code:`None`, which internally
             determines the optimal depth.
-        wires (Sequence[int], None): The wires the operation acts on (control and target).
+        wires (WiresLike | None): The wires the operation acts on (control and target).
             Excluding any additional qubits allocated during the decomposition (e.g select-swap wires).
 
     Resources:
@@ -1641,10 +1641,10 @@ class QROM(ResourceOperator):
         * :code:`restored=False`: Uses the Select-Swap tree decomposition from Figure 1.C of
           `Low et al. (2018) <https://arxiv.org/abs/1812.00954>`_, further optimized using the
           measurement-based uncomputation technique described in
-          `Berry et al. (2019) <https://arxiv.org/abs/1902.02134>`_.
+          `Berry et al. (2019) <https://arxiv.org/abs/1902.02134>`__.
 
         * :code:`restored=True`: Uses the standard QROM resource accounting from Figure 4 of
-         `Berry et al. (2019) <https://arxiv.org/abs/1902.02134>`_.
+          `Berry et al. (2019) <https://arxiv.org/abs/1902.02134>`__.
 
     .. seealso:: The associated PennyLane operation :class:`~.pennylane.QROM`
 
@@ -1699,10 +1699,10 @@ class QROM(ResourceOperator):
         self,
         num_bitstrings: int,
         size_bitstring: int,
-        num_bit_flips: int = None,
+        num_bit_flips: int | None = None,
         restored: bool = True,
-        select_swap_depth=None,
-        wires: WiresLike = None,
+        select_swap_depth: int | None = None,
+        wires: WiresLike | None = None,
     ) -> None:
         self.restored = restored
         self.num_bitstrings = num_bitstrings
@@ -1731,25 +1731,25 @@ class QROM(ResourceOperator):
     @classmethod
     def resource_decomp(
         cls,
-        num_bitstrings,
-        size_bitstring,
-        num_bit_flips,
-        select_swap_depth=None,
-        restored=True,
+        num_bitstrings: int,
+        size_bitstring: int,
+        num_bit_flips: int | None = None,
+        select_swap_depth: int | None = None,
+        restored: bool = True,
     ) -> list[GateCount]:
         r"""Returns a list of GateCount objects representing the operator's resources.
 
         Args:
             num_bitstrings (int): the number of bitstrings that are to be encoded
             size_bitstring (int): the length of each bitstring
-            num_bit_flips (int, optional): The total number of :math:`1`'s in the dataset. Defaults to
+            num_bit_flips (int | None): The total number of :math:`1`'s in the dataset. Defaults to
                 :code:`(num_bitstrings * size_bitstring) // 2`, which is half the dataset.
             select_swap_depth (int | None): A parameter :math:`\lambda` that determines
                 if data will be loaded in parallel by adding more rows following Figure 1.C of
                 `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_. Can be :code:`None`,
                 :code:`1` or a positive integer power of two. Defaults to :code:`None`, which internally
                 determines the optimal depth.
-            restored (bool, optional): Determine if allocated qubits should be reset after the computation
+            restored (bool): Determine if allocated qubits should be reset after the computation
                 (at the cost of higher gate counts). Defaults to :code`True`.
 
         Resources:
@@ -1840,11 +1840,11 @@ class QROM(ResourceOperator):
     @classmethod
     def single_controlled_res_decomp(
         cls,
-        num_bitstrings,
-        size_bitstring,
-        num_bit_flips,
-        select_swap_depth,
-        restored,
+        num_bitstrings: int,
+        size_bitstring: int,
+        num_bit_flips: int | None = None,
+        select_swap_depth: int | None = None,
+        restored: bool = True,
     ):
         r"""The resource decomposition for QROM controlled on a single wire."""
         if select_swap_depth:
@@ -1988,10 +1988,10 @@ class QROM(ResourceOperator):
             dict: A dictionary containing the resource parameters:
                 * num_bitstrings (int): the number of bitstrings that are to be encoded
                 * size_bitstring (int): the length of each bitstring
-                * num_bit_flips (int, optional): The total number of :math:`1`'s in the dataset.
+                * num_bit_flips (int | None): The total number of :math:`1`'s in the dataset.
                   Defaults to :code:`(num_bitstrings * size_bitstring) // 2`, which is half the
                   dataset.
-                * restored (bool, optional): Determine if allocated qubits should be reset after the
+                * restored (bool): Determine if allocated qubits should be reset after the
                   computation (at the cost of higher gate counts). Defaults to :code`True`.
                 * select_swap_depth (int | None): A parameter :math:`\lambda` that
                   determines if data will be loaded in parallel by adding more rows following
@@ -2010,7 +2010,7 @@ class QROM(ResourceOperator):
         }
 
     @classmethod
-    def _ctrl_T(cls, num_data_blocks: int, num_bit_flips: int, count=1) -> list[GateCount]:
+    def _ctrl_T(cls, num_data_blocks: int, num_bit_flips: int, count: int = 1) -> list[GateCount]:
         """Constructs the control-``T`` subroutine as defined in Appendices A and B of
         `arXiv:1092.02134 <https://arxiv.org/abs/1902.02134>`_.
 
@@ -2178,11 +2178,11 @@ class QROM(ResourceOperator):
     @classmethod
     def resource_rep(
         cls,
-        num_bitstrings,
-        size_bitstring,
-        num_bit_flips=None,
-        restored=True,
-        select_swap_depth=None,
+        num_bitstrings: int,
+        size_bitstring: int,
+        num_bit_flips: int | None = None,
+        restored: bool = True,
+        select_swap_depth: int | None = None,
     ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
@@ -2190,9 +2190,9 @@ class QROM(ResourceOperator):
         Args:
             num_bitstrings (int): the number of bitstrings that are to be encoded
             size_bitstring (int): the length of each bitstring
-            num_bit_flips (int, optional): The total number of :math:`1`'s in the dataset. Defaults to
+            num_bit_flips (int | None): The total number of :math:`1`'s in the dataset. Defaults to
                 :code:`(num_bitstrings * size_bitstring) // 2`, which is half the dataset.
-            restored (bool, optional): Determine if allocated qubits should be reset after the computation
+            restored (bool): Determine if allocated qubits should be reset after the computation
                 (at the cost of higher gate counts). Defaults to :code`True`.
             select_swap_depth (int | None): A parameter :math:`\lambda` that determines
                 if data will be loaded in parallel by adding more rows following Figure 1.C of
