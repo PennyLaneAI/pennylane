@@ -268,12 +268,11 @@
   Value Transformation (QSVT) algorithms using two new resource operators: :class:`estimator.QSP <pennylane.estimator.templates.qsp.QSP>` and :class:`estimator.QSVT <pennylane.estimator.templates.qsp.QSVT>`.
   [(#8733)](https://github.com/PennyLaneAI/pennylane/pull/8733)
 
-<<<<<<< HEAD
 * Added the `~pennylane.estimator.templates.UnaryIterationQPE` subroutine in the `pennylane.estimator`
   module. It is a variant of the Qubitized Quantum Phase Estimation algorithm. This allows for reduced T and Toffoli gate count, in return
   for additional qubits used.
   [(#8708)](https://github.com/PennyLaneAI/pennylane/pull/8708)
-=======
+
 * A new :func:`~pennylane.resource.algo_error` function has been added to compute algorithm-specific 
   errors from quantum circuits. This provides a dedicated entry point for retrieving error information 
   that was previously accessible through :func:`~pennylane.specs`. The function works with QNodes and 
@@ -304,7 +303,6 @@
   >>> qml.resource.algo_error(circuit)()
   {'SpectralNormError': SpectralNormError(0.01)}
   ```
->>>>>>> qsp_resources
 
 <h4>Seamless resource tracking and circuit visualization for compiled programs </h4>
 

@@ -1134,12 +1134,27 @@ class UnaryIterationQPE(ResourceOperator):
         """
         num_wires = int(math.ceil(math.log2(num_iterations + 1)))
 
+        # extract prep and select from walk operator:
+        prep_op = walk_operator.params["prep_op"]
+        select_op = walk_operator.params["select_op"]
+
+        # build controlled reflection:
+        reflection_operator = resource_rep(
+            qre.Reflection,
+            {
+                "num_wires": prep_op.num_wires,
+                "alpha": math.pi,
+                "cmpr_U": prep_op,
+            },
+        )
+        ctrl_ref_operator = resource_rep(
+            qre.Controlled,
+            {"base_cmpr_op": reflection_operator, "num_ctrl_wires": 1, "num_zero_ctrl": 0},
+        )
+
         hadamard = resource_rep(qre.Hadamard)
         x = resource_rep(qre.X)
         cnot = resource_rep(qre.CNOT)
-        ctrl_walk_operator = resource_rep(
-            qre.Controlled, {"base_cmpr_op": walk_operator, "num_ctrl_wires": 1, "num_zero_ctrl": 0}
-        )
         left_elbow = resource_rep(qre.Toffoli, {"elbow": "left"})
         right_elbow = resource_rep(qre.Toffoli, {"elbow": "right"})
 
@@ -1156,8 +1171,9 @@ class UnaryIterationQPE(ResourceOperator):
             GateCount(hadamard, num_wires),
             GateCount(left_elbow, num_iterations - 1),
             GateCount(cnot, num_iterations - 1),
-            GateCount(x, 2 * (num_iterations - 1)),
-            GateCount(ctrl_walk_operator, num_iterations),
+            GateCount(x, 2 * (num_iterations - 1) + 2),
+            GateCount(ctrl_ref_operator, num_iterations + 1),
+            GateCount(select_op, num_iterations),
             GateCount(right_elbow, num_iterations - 1),
             GateCount(adj_qft_cmpr_op),
             Deallocate(num_wires - 1),
