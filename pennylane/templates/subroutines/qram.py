@@ -900,7 +900,7 @@ class SelectOnlyQRAM(Operation):
         bitstrings = ["010", "111", "110", "000", "010", "111", "110", "000"]
         bitstring_size = 3
 
-    We need the number of bitstrings to equal 2^(len(select_wires)+len(control_wires)) so they can be addressed. This
+    We need the number of bitstrings to equal :math:`2^{\texttt{len(select_wires)}+\texttt{len(control_wires)}}` so they can be addressed. This
     tells us the number of control and select wires needed. We can also provide a select value to apply a filter such
     that only entries whose select bits match this value are loaded.
 
