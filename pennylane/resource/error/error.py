@@ -258,7 +258,7 @@ def algo_error(
         return partial(_algo_error_qnode, qnode, level)
 
     try:
-        from ...qnn.torch import TorchLayer  # pylint: disable=import-outside-toplevel
+        from pennylane.qnn.torch import TorchLayer  # pylint: disable=import-outside-toplevel
 
         if isinstance(qnode, TorchLayer) and isinstance(qnode.qnode, qml.QNode):
             return partial(_algo_error_qnode, qnode, level)
