@@ -741,8 +741,20 @@ class PCPhase(ResourceOperator):
 
     @staticmethod
     def _ctrl_phase_shift_resource(
-        subspace, n_control_wires, n_zero_control_values, rotation_precision
-    ):
+        subspace: int,
+        n_control_wires: int,
+        n_zero_control_values: int,
+        rotation_precision: float | None,
+    ) -> dict[CompressedResourceOp, int]:
+        """Returns the resources for a (multi-)controlled phase shift gate.
+
+        Args:
+            subspace (int): The subspace indicator (0 or 1) determining whether X gates are needed.
+            n_control_wires (int): The number of control wires for the controlled phase shift.
+            n_zero_control_values (int): The number of control qubits controlled on the |0⟩ state.
+            rotation_precision (float | None): The error threshold for the approximate Clifford + T
+                decomposition of the phase shift gate.
+        """
         x = qre.X.resource_rep()
         phase_shift = qre.PhaseShift.resource_rep(rotation_precision)
 
