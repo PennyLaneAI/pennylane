@@ -598,7 +598,7 @@ class PCPhase(ResourceOperator):
         num_wires (int): the number of wires this operator acts on
         dim (int): the dimension of the target subspace
         rotation_precision (float | None): The error threshold for the approximate Clifford + T
-            decomposition of the phase shift gates used to implement this operation. 
+            decomposition of the ``PhaseShift`` gates used to implement this operation. 
         wires (WiresLike | None): the wire the operation acts on
 
     Resources:
@@ -656,15 +656,15 @@ class PCPhase(ResourceOperator):
             num_wires (int): the number of wires this operator acts on
             dim (int): the dimension of the target subspace
             rotation_precision (float | None): The error threshold for the approximate Clifford + T
-                decomposition of the phase shift gates used to implement this operation.
+                decomposition of the ``PhaseShift`` gates used to implement this operation.
 
         Resources:
             The resources are derived from the decomposition of the generator :math:`G` of the
-            ``PCPhase`` gate into multiple projectors, which generate (multi-controlled) phase shift gates,
+            ``PCPhase`` gate into multiple projectors, which generate (multi-controlled) ``PhaseShift`` gates,
             potentially complemented with (non-controlled) ``X`` gates and/or a global phase.
             The generator is given as :math:`G = 2 \Pi - \mathbb{I}_N`, where :math:`\Pi` is a projector.
             The projector :math:`\Pi` is decomposed into sums and differences of powers of two,
-            which correspond to multi-controlled phase shift gates.
+            which correspond to multi-controlled ``PhaseShift`` gates.
 
         Returns:
             list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
@@ -714,7 +714,7 @@ class PCPhase(ResourceOperator):
                 * num_wires (int): the number of wires this operator acts on
                 * dim (int): the dimension of the target subspace
                 * rotation_precision(float | None): The error threshold for the approximate Clifford + T
-                  decomposition of the phase shift gates used to implement this operation.
+                  decomposition of the ``PhaseShift`` gates used to implement this operation.
         """
         return {
             "num_wires": self.num_wires,
@@ -731,7 +731,7 @@ class PCPhase(ResourceOperator):
             num_wires (int): the number of wires this operator acts on
             dim (int): the dimension of the target subspace
             rotation_precision(float | None): The error threshold for the approximate Clifford + T
-                decomposition of the phase shift gates used to implement this operation.
+                decomposition of the ``PhaseShift`` gates used to implement this operation.
 
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`:: the operator in a compressed representation
@@ -746,14 +746,14 @@ class PCPhase(ResourceOperator):
         n_zero_control_values: int,
         rotation_precision: float | None,
     ) -> dict[CompressedResourceOp, int]:
-        """Returns the resources for a (multi-)controlled phase shift gate.
+        """Returns the resources for a (multi-)controlled ``PhaseShift`` gate.
 
         Args:
             subspace (int): The subspace indicator (0 or 1) determining whether X gates are needed.
-            n_control_wires (int): The number of control wires for the controlled phase shift.
+            n_control_wires (int): The number of control wires for the controlled ``PhaseShift``.
             n_zero_control_values (int): The number of control qubits controlled on the |0⟩ state.
             rotation_precision (float | None): The error threshold for the approximate Clifford + T
-                decomposition of the phase shift gate.
+                decomposition of the ``PhaseShift`` gate.
         """
         x = qre.X.resource_rep()
         phase_shift = qre.PhaseShift.resource_rep(rotation_precision)
