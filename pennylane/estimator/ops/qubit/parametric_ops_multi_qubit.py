@@ -734,7 +734,7 @@ class PCPhase(ResourceOperator):
                 decomposition of the ``PhaseShift`` gates used to implement this operation.
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`:: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
         params = {"num_wires": num_wires, "dim": dim, "rotation_precision": rotation_precision}
         return CompressedResourceOp(cls, num_wires, params)
