@@ -210,7 +210,9 @@
       ApproximateRX(0.5, wires=0)
       return qml.state()
   ```
-
+  ```pycon
+  >>> qml.resource.algo_error(circuit)()
+  {'SpectralNormError': SpectralNormError(0.01)}
 <h4>Seamless resource tracking and circuit visualization for compiled programs </h4>
 
 * A new :func:`~.marker` function allows for easy inspection at particular points in a transform program
