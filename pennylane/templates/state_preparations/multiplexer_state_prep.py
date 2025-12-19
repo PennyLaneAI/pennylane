@@ -70,14 +70,14 @@ class MultiplexerStatePreparation(Operation):
         n_amplitudes = math.shape(state_vector)[0]
         if n_amplitudes != 2 ** len(wires):
             raise ValueError(
-                f"State vectors must be of length {2 ** len(wires)}; vector has length {n_amplitudes}."
+                f"State vector must be of length {2 ** len(wires)}; got length {n_amplitudes}."
             )
 
         if not qml.math.is_abstract(state_vector):
             norm = math.linalg.norm(state_vector)
             if not math.allclose(norm, 1.0, atol=1e-3):
                 raise ValueError(
-                    f"Input state vectors must have a norm 1.0, the vector has squared norm {norm}"
+                    f"State vector must have norm 1.0; the input state vector has norm {norm}"
                 )
 
         self.state_vector = state_vector

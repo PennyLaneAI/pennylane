@@ -27,7 +27,7 @@
 <h4>Pauli-based computation </h4>
 
 * A new template :class:`~.MultiplexerStatePreparation` has been added. This template allows preparing arbitrary states
-  using the :class:`~.SelectPauliRot` operations.
+  using :class:`~.SelectPauliRot` operations.
   [(#8581)](https://github.com/PennyLaneAI/pennylane/pull/8581)
 
 * Users can now perform rapid Clifford+T decomposition with :func:`pennylane.qjit` using the new 
