@@ -214,6 +214,16 @@
   is available at the top level namespace as `qml.CompilePipeline`.
   [(#8735)](https://github.com/PennyLaneAI/pennylane/pull/8735)
 
+* The `TransformDispatcher` has been renamed to :class:`~.transforms.core.Transform` and is now
+  available at the top level as `qml.transform`.
+  [(#8756)](https://github.com/PennyLaneAI/pennylane/pull/8756)
+
+* The `final_transform` property of the :class:`~.transforms.core.BoundTransform` has been renamed 
+  to `is_final_transform` to better follow the naming convention for boolean properties. The `transform` 
+  property of the :class:`~.transforms.core.Transform` and :class:`~.transforms.core.BoundTransform` 
+  has been renamed to `tape_transform` to avoid ambiguity.
+  [(#8756)](https://github.com/PennyLaneAI/pennylane/pull/8756)
+
 * Now `CompilePipeline` can dispatch to anything individual transforms can dispatch onto, including
   QNodes.
   [(#8731)](https://github.com/PennyLaneAI/pennylane/pull/8731)
