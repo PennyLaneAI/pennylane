@@ -16,7 +16,8 @@ r"""Contains the MultiplexerStatePreparation template."""
 import numpy as np
 
 import pennylane as qml
-from pennylane import math
+from pennylane import math, queuing
+from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.operation import Operation
 from pennylane.wires import Wires
 
@@ -63,8 +64,8 @@ class MultiplexerStatePreparation(Operation):
 
     resource_keys = {"num_wires"}
 
-    # pylint: disable=too-many-positional-arguments
-    def __init__(self, state_vector, wires, id=None):  # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-positional-arguments, too-many-arguments
+    def __init__(self, state_vector, wires, id=None):
 
         wires = Wires(wires)
         n_amplitudes = math.shape(state_vector)[0]
@@ -73,7 +74,7 @@ class MultiplexerStatePreparation(Operation):
                 f"State vector must be of length {2 ** len(wires)}; got length {n_amplitudes}."
             )
 
-        if not qml.math.is_abstract(state_vector):
+        if not math.is_abstract(state_vector):
             norm = math.linalg.norm(state_vector)
             if not math.allclose(norm, 1.0, atol=1e-3):
                 raise ValueError(
@@ -95,10 +96,10 @@ class MultiplexerStatePreparation(Operation):
 
     @staticmethod
     def compute_decomposition(state_vector, wires):  # pylint: disable=arguments-differ
-        with qml.queuing.AnnotatedQueue() as q:
+        with queuing.AnnotatedQueue() as q:
             _multiplexer_state_prep_decomposition(state_vector, wires)
 
-        if qml.queuing.QueuingManager.recording():
+        if queuing.QueuingManager.recording():
             for op in q.queue:
                 qml.apply(op)
 
@@ -109,18 +110,18 @@ def _multiplexer_state_prep_decomposition_resources(num_wires) -> dict:
     r"""Computes the resources of MultiplexerStatePreparation."""
     resources = dict.fromkeys(
         [
-            qml.resource_rep(qml.SelectPauliRot, num_wires=i + 1, rot_axis="Y")
+            resource_rep(qml.SelectPauliRot, num_wires=i + 1, rot_axis="Y")
             for i in range(num_wires)
         ],
         1,
     )
 
-    resources[qml.resource_rep(qml.DiagonalQubitUnitary, num_wires=num_wires)] = 1
+    resources[resource_rep(qml.DiagonalQubitUnitary, num_wires=num_wires)] = 1
 
     return resources
 
 
-@qml.register_resources(_multiplexer_state_prep_decomposition_resources, exact=False)
+@register_resources(_multiplexer_state_prep_decomposition_resources, exact=False)
 def _multiplexer_state_prep_decomposition(state_vector, wires):  # pylint: disable=arguments-differ
     r"""
     Computes the decomposition operations for the given state vector.
@@ -150,14 +151,14 @@ def _multiplexer_state_prep_decomposition(state_vector, wires):  # pylint: disab
             probs_numerator = math.sum(probs_aux, axis=1)[::2]
 
         # arcos(x) = arctan2(sqrt(1-x^2), x)
-        thetas = 2 * qml.math.arctan2(
-            qml.math.sqrt(probs_denominator - probs_numerator),
-            qml.math.sqrt(probs_numerator),
+        thetas = 2 * math.arctan2(
+            math.sqrt(probs_denominator - probs_numerator),
+            math.sqrt(probs_numerator),
         )
 
         qml.SelectPauliRot(thetas, target_wire=wires[i], control_wires=wires[:i], rot_axis="Y")
 
-    if not qml.math.is_abstract(phases):
+    if not math.is_abstract(phases):
         if not math.allclose(phases, 0.0):
             qml.DiagonalQubitUnitary(math.exp(1j * phases), wires=wires)
 
@@ -165,4 +166,4 @@ def _multiplexer_state_prep_decomposition(state_vector, wires):  # pylint: disab
         qml.DiagonalQubitUnitary(math.exp(1j * phases), wires=wires)
 
 
-qml.add_decomps(MultiplexerStatePreparation, _multiplexer_state_prep_decomposition)
+add_decomps(MultiplexerStatePreparation, _multiplexer_state_prep_decomposition)
