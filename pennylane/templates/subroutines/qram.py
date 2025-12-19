@@ -905,7 +905,8 @@ class SelectOnlyQRAM(Operation):
 
     We need the number of bitstrings to equal :math:`2^{\texttt{len(select_wires)}+\texttt{len(control_wires)}}` so they can be addressed. This
     tells us the number of control and select wires needed. We can also provide a select value to apply a filter such
-    that only entries whose select bits match this value are loaded.
+    that only entries whose select bits match this value are loaded. The full address that is accessed by the algorithm
+    is then the select value prepended to the initial state of the control wires.
 
     .. code-block:: python
 
@@ -916,8 +917,8 @@ class SelectOnlyQRAM(Operation):
     Now, we can define all three registers concretely and demonstrate ``SelectOnlyQRAM`` in practice. In the
     following circuit, we prepare the state :math:`\vert 2 \rangle = \vert 10 \rangle` on the
     ``control_wires``, which indicates that we would like to access the second (zero-indexed) entry of
-    ``bitstrings`` (which is ``"110"``). The ``target_wires`` register should therefore store this
-    state after ``SelectOnlyQRAM`` is applied.
+    ``bitstrings`` (which is ``"110"``). Because ``select_value`` is zero, the full address we are accessing is
+    indeed ``010``. The ``target_wires`` register should therefore store this state after ``SelectOnlyQRAM`` is applied.
 
     .. code-block:: python
 
