@@ -519,7 +519,9 @@ class SelectPauli(ResourceOperator):
             self.num_wires = num_wires
 
     @classmethod
-    def resource_decomp(cls, pauli_ham: PauliHamiltonian) -> list[GateCount]:  # pylint: disable=unused-argument
+    def resource_decomp(
+        cls, pauli_ham: PauliHamiltonian
+    ) -> list[GateCount]:  # pylint: disable=unused-argument
         r"""The resources for a select implementation taking advantage of the unary iterator trick.
 
         Args:
@@ -608,7 +610,9 @@ class SelectPauli(ResourceOperator):
         return [GateCount(cls.resource_rep(**target_resource_params))]
 
     @classmethod
-    def controlled_resource_decomp(cls, num_ctrl_wires: int, num_zero_ctrl: int, target_resource_params: dict) -> list[GateCount]:
+    def controlled_resource_decomp(
+        cls, num_ctrl_wires: int, num_zero_ctrl: int, target_resource_params: dict
+    ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
         Args:
