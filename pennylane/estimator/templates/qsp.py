@@ -173,7 +173,7 @@ class GQSP(ResourceOperator):
         poly_deg: int,
         neg_poly_deg: int,
         rotation_precision: float | None,
-    ) -> CompressedResourcOp:
+    ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
 
