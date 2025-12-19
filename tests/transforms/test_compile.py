@@ -121,6 +121,128 @@ class TestCompile:
         assert new_tape.shots == tape.shots
         assert new_tape.circuit == tape[2:]
 
+    def test_compile_invalid_pipeline_type(self):
+        """Test that error is raised for an invalid pipeline type."""
+        qfunc = build_qfunc([0, 1, 2])
+
+        transformed_qfunc = compile(qfunc, pipeline="invalid")
+        transformed_qnode = qml.QNode(transformed_qfunc, qml.device("default.qubit", wires=3))
+
+        with pytest.raises(ValueError, match="pipeline must be a CompilePipeline, tuple, or list"):
+            transformed_qnode(0.1, 0.2, 0.3)
+
+
+class TestCompileWithCompilePipeline:
+    """Tests for qml.compile with CompilePipeline input."""
+
+    def test_basic_compile_pipeline(self):
+        """Test that compile works with a basic CompilePipeline."""
+        dev = qml.device("default.qubit", wires=2)
+
+        pipeline = qml.CompilePipeline(
+            qml.transforms.merge_rotations,
+            qml.transforms.cancel_inverses,
+        )
+
+        @qml.compile(pipeline=pipeline)
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            qml.RX(-x, wires=0)
+            qml.Hadamard(wires=1)
+            qml.Hadamard(wires=1)
+            return qml.expval(qml.Z(0))
+
+        assert np.allclose(circuit(0.5), 1.0)
+
+    def test_transform_multiplication_creates_pipeline(self):
+        """Test that transform * n creates a CompilePipeline."""
+        pipeline = qml.transforms.merge_rotations * 2
+        assert isinstance(pipeline, qml.CompilePipeline)
+        assert len(pipeline) == 2
+
+    def test_transform_addition_creates_pipeline(self):
+        """Test that transform + transform creates a CompilePipeline."""
+        pipeline = qml.transforms.cancel_inverses + qml.transforms.merge_rotations
+        assert isinstance(pipeline, qml.CompilePipeline)
+        assert len(pipeline) == 2
+
+    def test_in_place_addition(self):
+        """Test dynamically building CompilePipeline with +=."""
+        pipeline = qml.CompilePipeline()
+        pipeline += qml.transforms.cancel_inverses
+        pipeline += qml.transforms.merge_rotations
+
+        assert len(pipeline) == 2
+        assert qml.transforms.cancel_inverses in pipeline
+        assert qml.transforms.merge_rotations in pipeline
+
+    def test_nested_pipelines(self):
+        """Test CompilePipeline containing another CompilePipeline."""
+        inner = qml.CompilePipeline(qml.transforms.merge_rotations)
+        outer = qml.CompilePipeline(qml.transforms.cancel_inverses, inner)
+
+        assert len(outer) == 2
+
+    def test_pipeline_multiplication(self):
+        """Test that pipeline * n repeats the pipeline."""
+        pipeline = qml.CompilePipeline(qml.transforms.merge_rotations) * 3
+        assert len(pipeline) == 3
+
+    def test_empty_pipeline(self):
+        """Test that an empty CompilePipeline preserves original operations."""
+        dev = qml.device("default.qubit", wires=1)
+        pipeline = qml.CompilePipeline()
+
+        @qml.compile(pipeline=pipeline)
+        @qml.qnode(dev)
+        def circuit():
+            qml.RX(0.1, wires=0)
+            qml.RX(0.2, wires=0)
+            return qml.expval(qml.Z(0))
+
+        tape = qml.workflow.construct_tape(circuit)()
+        assert len([op for op in tape.operations if op.name == "RX"]) == 2
+
+    def test_num_passes_with_pipeline(self):
+        """Test that num_passes works with CompilePipeline."""
+        dev = qml.device("default.qubit", wires=1)
+        pipeline = qml.CompilePipeline(qml.transforms.merge_rotations)
+
+        @qml.compile(pipeline=pipeline, num_passes=2)
+        @qml.qnode(dev)
+        def circuit():
+            qml.RX(0.1, wires=0)
+            qml.RX(0.2, wires=0)
+            qml.RX(0.3, wires=0)
+            return qml.expval(qml.Z(0))
+
+        assert np.allclose(circuit(), np.cos(0.6))
+
+    @pytest.mark.external
+    def test_compile_pipeline_with_qjit(self):
+        """Test that CompilePipeline works with qml.qjit."""
+        pytest.importorskip("catalyst")
+
+        dev = qml.device("lightning.qubit", wires=2)
+        pipeline = qml.CompilePipeline(
+            qml.transforms.merge_rotations,
+            qml.transforms.cancel_inverses,
+        )
+
+        @qml.qjit
+        @qml.compile(pipeline=pipeline)
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            qml.RX(x, wires=0)
+            qml.Hadamard(wires=1)
+            qml.Hadamard(wires=1)
+            return qml.expval(qml.Z(0))
+
+        result = circuit(0.3)
+        assert np.allclose(result, np.cos(0.6))
+
 
 class TestCompileIntegration:
     """Integration tests to verify outputs of compilation pipelines."""
