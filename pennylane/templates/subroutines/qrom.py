@@ -33,6 +33,7 @@ from pennylane.queuing import QueuingManager, apply
 from pennylane.templates.embeddings import BasisEmbedding
 from pennylane.wires import Wires, WiresLike
 
+from ...typing import TensorLike
 from .select import Select
 
 
@@ -107,7 +108,7 @@ class QROM(Operation):
     where :math:`b_i` is the bitstring associated with index :math:`i`.
 
     Args:
-        bitstrings (Sequence[Sequence[bool]]): the bitstrings to be encoded
+        bitstrings (TensorLike): the bitstrings to be encoded
         control_wires (WiresLike):
             The register that stores the index for the entry of the classical data we want to
             read.
@@ -129,7 +130,7 @@ class QROM(Operation):
     .. code-block:: python
 
         # a list of bitstrings is defined
-        bitstrings = [[bool(0), bool(1), bool(0)], [bool(1), bool(1), bool(1)], [bool(1), bool(1), bool(0)], [bool(0), bool(0), bool(0)]]
+        bitstrings = [[0, 1, 0], [1, 1, 1], [1, 1, 0], [0, 0, 0]]
 
         dev = qml.device("default.qubit")
 
@@ -158,7 +159,7 @@ class QROM(Operation):
         at least :math:`\lceil \log_2(m)\rceil` control wires.
 
         The second set of wires is ``target_wires`` which stores the bitstrings.
-        For instance, if the bitstring is [False, True, True, False], we will need four target wires. Internally,
+        For instance, if the bitstring is [0, 1, 1, 0], we will need four target wires. Internally,
         the bitstrings are encoded using the :class:`~.BasisEmbedding` template.
 
 
@@ -187,7 +188,7 @@ class QROM(Operation):
 
     def __init__(
         self,
-        bitstrings,
+        bitstrings: TensorLike,
         control_wires: WiresLike,
         target_wires: WiresLike,
         work_wires: WiresLike,

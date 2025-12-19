@@ -36,6 +36,7 @@ from pennylane.decomposition import (
 from pennylane.operation import Operation
 from pennylane.ops import CNOT, CSWAP, SWAP, Controlled, Hadamard, PauliX, PauliZ, adjoint, ctrl
 from pennylane.templates import BasisEmbedding
+from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 
 # pylint: disable=consider-using-generator
@@ -102,7 +103,7 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
     `arXiv:0708.1879 <https://arxiv.org/pdf/0708.1879>`__.
 
     Args:
-        bitstrings (Sequence[Sequence[bool]]):
+        bitstrings (TensorLike):
             The classical data as a sequence of bitstrings. The size of the classical data must be
             :math:`2^{\texttt{len(control_wires)}}`.
         control_wires (WiresLike):
@@ -139,7 +140,7 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
 
     .. code-block:: python
 
-        bitstrings = [[bool(0), bool(1), bool(0)], [bool(1), bool(1), bool(1)], [bool(1), bool(1), bool(0)], [bool(0), bool(0), bool(0)]]
+        bitstrings = [[0, 1, 0], [1, 1, 1], [1, 1, 0], [0, 0, 0]]
         bitstring_size = 3
 
     The number of wires needed to store a length-4 array is 2, which means that the ``control_wires``
@@ -202,7 +203,7 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
 
     def __init__(
         self,
-        bitstrings: Sequence[Sequence[bool]],
+        bitstrings: TensorLike,
         control_wires: WiresLike,
         target_wires: WiresLike,
         work_wires: WiresLike,
@@ -396,7 +397,7 @@ class HybridQRAM(Operation):
     - ``work_wires``: :math:`[ signal, bus, dir..., portL..., portR... ]` (tree auxiliaries)
 
     Args:
-        bitstrings (Sequence[Sequence[bool]]):
+        bitstrings (TensorLike):
             The classical data as a sequence of bitstrings. The size of the classical data must be
             :math:`2^{\texttt{len(control_wires)}}`.
         control_wires (WiresLike):
@@ -432,7 +433,7 @@ class HybridQRAM(Operation):
 
     .. code-block:: python
 
-        bitstrings = [[bool(0), bool(1), bool(0)], [bool(1), bool(1), bool(1)], [bool(1), bool(1), bool(0)], [bool(0), bool(0), bool(0)], [bool(0), bool(1), bool(0)], [bool(1), bool(1), bool(1)], [bool(1), bool(1), bool(0)], [bool(0), bool(0), bool(0)]]
+        bitstrings = [[0, 1, 0], [1, 1, 1], [1, 1, 0], [0, 0, 0], [0, 1, 0], [1, 1, 1], [1, 1, 0], [0, 0, 0]]
         bitstring_size = 3
 
     We need the number of bitstrings to equal :math:`2^{\texttt{len(control_wires)}}` so they can be addressed. This
@@ -499,7 +500,7 @@ class HybridQRAM(Operation):
 
     def __init__(
         self,
-        bitstrings: Sequence[Sequence[bool]],
+        bitstrings: TensorLike,
         control_wires: WiresLike,
         target_wires: WiresLike,
         work_wires: WiresLike,
@@ -863,7 +864,7 @@ class SelectOnlyQRAM(Operation):
     where :math:`b_i` is the bitstring associated with index :math:`i`.
 
     Args:
-        bitstrings (Sequence[Sequence[bool]]):
+        bitstrings (TensorLike):
             The classical data as a sequence of bitstrings. The size of the classical data must be
             :math:`2^{\texttt{len(select_wires)}+\texttt{len(control_wires)}}`.
         control_wires (WiresLike):
@@ -900,7 +901,7 @@ class SelectOnlyQRAM(Operation):
 
     .. code-block:: python
 
-        bitstrings = [[bool(0), bool(1), bool(0)], [bool(1), bool(1), bool(1)], [bool(1), bool(1), bool(0)], [bool(0), bool(0), bool(0)], [bool(0), bool(1), bool(0)], [bool(1), bool(1), bool(1)], [bool(1), bool(1), bool(0)], [bool(0), bool(0), bool(0)]]
+        bitstrings = [[0, 1, 0], [1, 1, 1], [1, 1, 0], [0, 0, 0], [0, 1, 0], [1, 1, 1], [1, 1, 0], [0, 0, 0]]
         bitstring_size = 3
 
     We need the number of bitstrings to equal :math:`2^{\texttt{len(select_wires)}+\texttt{len(control_wires)}}` so they can be addressed. This
@@ -967,7 +968,7 @@ class SelectOnlyQRAM(Operation):
     # pylint: disable=too-many-arguments
     def __init__(
         self,
-        bitstrings: Sequence[Sequence[bool]],
+        bitstrings: TensorLike,
         control_wires: WiresLike,
         target_wires: WiresLike,
         select_wires: WiresLike | None = None,

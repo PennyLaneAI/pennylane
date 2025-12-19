@@ -26,14 +26,14 @@ from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 def test_assert_valid_qrom():
     """Run standard validity tests."""
     bitstrings = (
-        (bool(0), bool(0), bool(0)),
-        (bool(0), bool(0), bool(1)),
-        (bool(1), bool(1), bool(1)),
-        (bool(0), bool(1), bool(1)),
-        (bool(0), bool(0), bool(0)),
-        (bool(1), bool(0), bool(1)),
-        (bool(1), bool(1), bool(0)),
-        (bool(1), bool(1), bool(1)),
+        (0, 0, 0),
+        (0, 0, 1),
+        (1, 1, 1),
+        (0, 1, 1),
+        (0, 0, 0),
+        (1, 0, 1),
+        (1, 1, 0),
+        (1, 1, 1),
     )
 
     op = qml.QROM(bitstrings, control_wires=[0, 1, 2], target_wires=[3, 4, 5], work_wires=[6, 7, 8])
@@ -44,7 +44,7 @@ def test_assert_valid_qrom():
 def test_falsy_zero_as_work_wire():
     """Test that work wire is not treated as a falsy zero."""
     op = qml.QROM(
-        ((bool(1),), (bool(0),), (bool(0),), (bool(1),)),
+        ((1,), (0,), (0,), (1,)),
         control_wires=[1, 2],
         target_wires=[3],
         work_wires=0,
@@ -60,10 +60,10 @@ class TestQROM:
         [
             (
                 [
-                    [bool(1), bool(1), bool(1)],
-                    [bool(1), bool(0), bool(1)],
-                    [bool(1), bool(0), bool(0)],
-                    [bool(1), bool(1), bool(0)],
+                    [1, 1, 1],
+                    [1, 0, 1],
+                    [1, 0, 0],
+                    [1, 1, 0],
                 ],
                 [0, 1, 2],
                 [3, 4],
@@ -72,10 +72,10 @@ class TestQROM:
             ),
             (
                 [
-                    [bool(1), bool(1), bool(1)],
-                    [bool(1), bool(0), bool(1)],
-                    [bool(1), bool(0), bool(0)],
-                    [bool(1), bool(1), bool(0)],
+                    [1, 1, 1],
+                    [1, 0, 1],
+                    [1, 0, 0],
+                    [1, 1, 0],
                 ],
                 [0, 1, 2],
                 [3, 4],
@@ -83,21 +83,21 @@ class TestQROM:
                 True,
             ),
             (
-                [[bool(1), bool(1)], [bool(0), bool(1)], [bool(0), bool(0)], [bool(1), bool(0)]],
+                [[1, 1], [0, 1], [0, 0], [1, 0]],
                 [0, 1],
                 [2, 3],
                 [4, 5],
                 True,
             ),
             (
-                [[bool(1), bool(1)], [bool(0), bool(1)], [bool(0), bool(0)], [bool(1), bool(0)]],
+                [[1, 1], [0, 1], [0, 0], [1, 0]],
                 [0, 1],
                 [2, 3],
                 [4, 5, 6, 7, 8, 9],
                 True,
             ),
             (
-                [[bool(0), bool(1)], [bool(0), bool(1)], [bool(0), bool(0)], [bool(0), bool(0)]],
+                [[0, 1], [0, 1], [0, 0], [0, 0]],
                 ["a", "b"],
                 [2, 3],
                 [4, 5, 6],
@@ -105,10 +105,10 @@ class TestQROM:
             ),
             (
                 [
-                    [bool(1), bool(1), bool(1)],
-                    [bool(0), bool(0), bool(1)],
-                    [bool(0), bool(0), bool(0)],
-                    [bool(1), bool(0), bool(0)],
+                    [1, 1, 1],
+                    [0, 0, 1],
+                    [0, 0, 0],
+                    [1, 0, 0],
                 ],
                 [0, 1, "b"],
                 [2, 3],
@@ -117,10 +117,10 @@ class TestQROM:
             ),
             (
                 [
-                    [bool(1), bool(1), bool(1), bool(1)],
-                    [bool(0), bool(1), bool(0), bool(1)],
-                    [bool(0), bool(1), bool(0), bool(0)],
-                    [bool(1), bool(0), bool(1), bool(0)],
+                    [1, 1, 1, 1],
+                    [0, 1, 0, 1],
+                    [0, 1, 0, 0],
+                    [1, 0, 1, 0],
                 ],
                 [0, 1, "b", "d"],
                 [2, 3],
@@ -150,23 +150,23 @@ class TestQROM:
         ("bitstrings", "target_wires", "control_wires", "work_wires"),
         [
             (
-                [[bool(1), bool(1)], [bool(0), bool(1)], [bool(0), bool(0)], [bool(1), bool(0)]],
+                [[1, 1], [0, 1], [0, 0], [1, 0]],
                 [0, 1],
                 [2, 3],
                 [4, 5],
             ),
             (
-                [[bool(0), bool(1)], [bool(0), bool(1)], [bool(0), bool(0)], [bool(0), bool(0)]],
+                [[0, 1], [0, 1], [0, 0], [0, 0]],
                 ["a", "b"],
                 [2, 3],
                 [4, 5, 6],
             ),
             (
                 [
-                    [bool(1), bool(1), bool(1)],
-                    [bool(0), bool(0), bool(1)],
-                    [bool(0), bool(0), bool(0)],
-                    [bool(1), bool(0), bool(0)],
+                    [1, 1, 1],
+                    [0, 0, 1],
+                    [0, 0, 0],
+                    [1, 0, 0],
                 ],
                 [0, 1, "b"],
                 [2, 3],
@@ -174,10 +174,10 @@ class TestQROM:
             ),
             (
                 [
-                    [bool(1), bool(1), bool(1), bool(1)],
-                    [bool(0), bool(1), bool(0), bool(1)],
-                    [bool(0), bool(1), bool(0), bool(0)],
-                    [bool(1), bool(0), bool(1), bool(0)],
+                    [1, 1, 1, 1],
+                    [0, 1, 0, 1],
+                    [0, 1, 0, 0],
+                    [1, 0, 1, 0],
                 ],
                 [0, 1, "b", "d"],
                 [2, 3],
@@ -212,7 +212,7 @@ class TestQROM:
     def test_decomposition(self):
         """Test that compute_decomposition and decomposition work as expected."""
         qrom_decomposition = qml.QROM(
-            [[bool(1)], [bool(0)], [bool(0)], [bool(1)]],
+            [[1], [0], [0], [1]],
             control_wires=[0, 1],
             target_wires=[2],
             work_wires=[3],
@@ -249,24 +249,24 @@ class TestQROM:
         ("bitstrings", "control_wires", "target_wires", "work_wires", "clean"),
         [
             (
-                [[bool(1), bool(1)], [bool(0), bool(1)], [bool(0), bool(0)], [bool(1), bool(0)]],
+                [[1, 1], [0, 1], [0, 0], [1, 0]],
                 [2, 3],
                 [0, 1],
                 [4, 5, 6, 7, 8, 9],
                 True,
             ),
-            ([[bool(1)], [bool(0)], [bool(0)], [bool(1)]], [0, 1], [2], [3], True),
-            ([[bool(1)]], [], [0], [1], True),
+            ([[1], [0], [0], [1]], [0, 1], [2], [3], True),
+            ([[1]], [], [0], [1], True),
             (
                 [
-                    [bool(1), bool(0)],
-                    [bool(0), bool(0)],
-                    [bool(0), bool(0)],
-                    [bool(0), bool(1)],
-                    [bool(0), bool(1)],
-                    [bool(0), bool(0)],
-                    [bool(0), bool(0)],
-                    [bool(0), bool(1)],
+                    [1, 0],
+                    [0, 0],
+                    [0, 0],
+                    [0, 1],
+                    [0, 1],
+                    [0, 0],
+                    [0, 0],
+                    [0, 1],
                 ],
                 [0, 1, 2],
                 [3, 4],
@@ -275,22 +275,22 @@ class TestQROM:
             ),
             (
                 [
-                    [bool(0), bool(1)],
-                    [bool(0), bool(0)],
-                    [bool(0), bool(0)],
-                    [bool(1), bool(0)],
-                    [bool(1), bool(0)],
-                    [bool(0), bool(0)],
-                    [bool(0), bool(0)],
-                    [bool(0), bool(1)],
+                    [0, 1],
+                    [0, 0],
+                    [0, 0],
+                    [1, 0],
+                    [1, 0],
+                    [0, 0],
+                    [0, 0],
+                    [0, 1],
                 ],
                 [0, 1, 2],
                 [3, 4],
                 [5],
                 True,
             ),
-            ([[bool(1)], [bool(0)], [bool(0)], [bool(1)]], [0, 1], [2], [], False),
-            ([[bool(1)], [bool(0)], [bool(0)], [bool(1)]], [0, 1], [2], [3, 4], False),
+            ([[1], [0], [0], [1]], [0, 1], [2], [], False),
+            ([[1], [0], [0], [1]], [0, 1], [2], [3, 4], False),
         ],  # pylint: disable=too-many-arguments
     )
     def test_decomposition_new(
@@ -313,7 +313,7 @@ class TestQROM:
         dev = qml.device("default.qubit", wires=2)
         qs = qml.tape.QuantumScript(
             qml.QROM.compute_decomposition(
-                ((bool(1), bool(0)),),
+                ((1, 0),),
                 target_wires=[0, 1],
                 work_wires=None,
                 control_wires=[],
@@ -344,7 +344,7 @@ class TestQROM:
         @qml.qnode(dev)
         def circuit():
             qml.QROM(
-                [[bool(1)], [bool(0)], [bool(0)], [bool(1)]],
+                [[1], [0], [0], [1]],
                 control_wires=[0, 1],
                 target_wires=[2],
                 work_wires=[3],
@@ -380,14 +380,14 @@ class TestQROM:
 def test_wires_error(control_wires, target_wires, work_wires, msg_match):
     """Test an error is raised when a control wire is in one of the ops"""
     with pytest.raises(ValueError, match=msg_match):
-        qml.QROM([[bool(1)]] * 8, control_wires, target_wires, work_wires)
+        qml.QROM([[1]] * 8, control_wires, target_wires, work_wires)
 
 
 def test_repr():
     """Test that the __repr__ method works as expected."""
 
     op = qml.QROM(
-        [[bool(1)], [bool(0)], [bool(0)], [bool(1)]],
+        [[1], [0], [0], [1]],
         control_wires=[0, 1],
         target_wires=[2],
         work_wires=[3],
@@ -402,13 +402,13 @@ def test_repr():
     ("bitstrings", "control_wires", "target_wires", "msg_match"),
     [
         (
-            [[bool(1)], [bool(0)], [bool(0)], [bool(1)]],
+            [[1], [0], [0], [1]],
             [0],
             [2],
             r"Not enough control wires \(1\) for the desired number of bitstrings \(4\). At least 2 control wires are required.",
         ),
         (
-            [[bool(1)], [bool(0)], [bool(0)], [bool(1)]],
+            [[1], [0], [0], [1]],
             [0, 1],
             [2, 3],
             r"Bitstring length must match the number of target wires.",
@@ -424,11 +424,9 @@ def test_wrong_wires_error(bitstrings, control_wires, target_wires, msg_match):
 def test_none_work_wires_case():
     """Test that clean version is not applied if work wires are not used"""
 
-    gates_clean = qml.QROM.compute_decomposition(
-        [[bool(1)], [bool(0)], [bool(0)], [bool(1)]], [0, 1], [2], [], clean=True
-    )
+    gates_clean = qml.QROM.compute_decomposition([[1], [0], [0], [1]], [0, 1], [2], [], clean=True)
     expected_gates = qml.QROM.compute_decomposition(
-        [[bool(1)], [bool(0)], [bool(0)], [bool(1)]], [0, 1], [2], [], clean=False
+        [[1], [0], [0], [1]], [0, 1], [2], [], clean=False
     )
 
     assert gates_clean == expected_gates
@@ -438,10 +436,10 @@ def test_too_many_work_wires_case():
     """Test that QROM works when more work wires are given than necessary"""
 
     gates_clean = qml.QROM.compute_decomposition(
-        [[bool(1)], [bool(0)], [bool(0)], [bool(1)]], [0, 1], [2], [3, 4, 5], clean=False
+        [[1], [0], [0], [1]], [0, 1], [2], [3, 4, 5], clean=False
     )
     expected_gates = qml.QROM.compute_decomposition(
-        [[bool(1)], [bool(0)], [bool(0)], [bool(1)]],
+        [[1], [0], [0], [1]],
         [0, 1],
         [2],
         [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
