@@ -4,11 +4,15 @@
 
 <h4>QRAM </h4>
 
-* Bucket Brigade QRAM, a Hybrid QRAM and a Select-Only QRAM variant are implemented as a template :class:`~.BBQRAM`, :class:`~.HybridQRAM` and :class:`~.SelectOnlyQRAM` 
-  to allow for selection of bitstrings in superposition.
+* Several QRAM implementations are now available in PennyLane, including Bucket Brigade QRAM 
+  (:class:`~.BBQRAM`), a Select-Only QRAM (:class:`~.SelectOnlyQRAM`), and a Hybrid QRAM 
+  (:class:`~.HybridQRAM`) that combines behaviour from :class:`~.BBQRAM` and 
+  :class:`~.SelectOnlyQRAM`.
   [(#8670)](https://github.com/PennyLaneAI/pennylane/pull/8670)
   [(#8679)](https://github.com/PennyLaneAI/pennylane/pull/8679)
   [(#8680)](https://github.com/PennyLaneAI/pennylane/pull/8680)
+
+
 
 <h4>Quantum Automatic Differentiation </h4>
 
