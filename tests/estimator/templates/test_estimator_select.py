@@ -14,6 +14,8 @@
 """
 Tests for select resource operators.
 """
+import re
+
 import pytest
 
 import pennylane.estimator as qre
@@ -31,41 +33,37 @@ class TestSelectTHC:
             qre.ControlledSequence(base=qre.SelectTHC(ch, wires=[0, 1, 2]))
 
     @pytest.mark.parametrize(
-        "thc_ham, batched_rotations, rotation_prec, selswap_depth",
+        "thc_ham, num_batches, rotation_prec, selswap_depth",
         (
-            (qre.THCHamiltonian(58, 160), None, 13, 1),
-            (qre.THCHamiltonian(10, 50), None, None, None),
+            (qre.THCHamiltonian(58, 160), 1, 13, 1),
+            (qre.THCHamiltonian(10, 50), 1, None, None),
             (qre.THCHamiltonian(4, 20), 2, None, 2),
         ),
     )
-    def test_resource_params(self, thc_ham, batched_rotations, rotation_prec, selswap_depth):
+    def test_resource_params(self, thc_ham, num_batches, rotation_prec, selswap_depth):
         """Test that the resource params for SelectTHC are correct."""
         if rotation_prec:
-            op = qre.SelectTHC(thc_ham, batched_rotations, rotation_prec, selswap_depth)
+            op = qre.SelectTHC(thc_ham, num_batches, rotation_prec, selswap_depth)
         else:
-            op = qre.SelectTHC(
-                thc_ham, batched_rotations=batched_rotations, select_swap_depth=selswap_depth
-            )
+            op = qre.SelectTHC(thc_ham, num_batches=num_batches, select_swap_depth=selswap_depth)
             rotation_prec = 15
 
         assert op.resource_params == {
             "thc_ham": thc_ham,
-            "batched_rotations": batched_rotations,
+            "num_batches": num_batches,
             "rotation_precision": rotation_prec,
             "select_swap_depth": selswap_depth,
         }
 
     @pytest.mark.parametrize(
-        "thc_ham, batched_rotations, rotation_prec, selswap_depth, num_wires",
+        "thc_ham, num_batches, rotation_prec, selswap_depth, num_wires",
         (
-            (qre.THCHamiltonian(58, 160), None, 13, 1, 138),
-            (qre.THCHamiltonian(10, 50), None, None, None, 38),
+            (qre.THCHamiltonian(58, 160), 1, 13, 1, 138),
+            (qre.THCHamiltonian(10, 50), 1, None, None, 38),
             (qre.THCHamiltonian(4, 20), 2, None, 2, 24),
         ),
     )
-    def test_resource_rep(
-        self, thc_ham, batched_rotations, rotation_prec, selswap_depth, num_wires
-    ):
+    def test_resource_rep(self, thc_ham, num_batches, rotation_prec, selswap_depth, num_wires):
         """Test that the compressed representation for SelectTHC is correct."""
         if rotation_prec:
             expected = qre.CompressedResourceOp(
@@ -73,13 +71,13 @@ class TestSelectTHC:
                 num_wires,
                 {
                     "thc_ham": thc_ham,
-                    "batched_rotations": batched_rotations,
+                    "num_batches": num_batches,
                     "rotation_precision": rotation_prec,
                     "select_swap_depth": selswap_depth,
                 },
             )
             assert (
-                qre.SelectTHC.resource_rep(thc_ham, batched_rotations, rotation_prec, selswap_depth)
+                qre.SelectTHC.resource_rep(thc_ham, num_batches, rotation_prec, selswap_depth)
                 == expected
             )
         else:
@@ -88,14 +86,14 @@ class TestSelectTHC:
                 num_wires,
                 {
                     "thc_ham": thc_ham,
-                    "batched_rotations": batched_rotations,
+                    "num_batches": num_batches,
                     "rotation_precision": 15,
                     "select_swap_depth": selswap_depth,
                 },
             )
             assert (
                 qre.SelectTHC.resource_rep(
-                    thc_ham, batched_rotations=batched_rotations, select_swap_depth=selswap_depth
+                    thc_ham, num_batches=num_batches, select_swap_depth=selswap_depth
                 )
                 == expected
             )
@@ -104,25 +102,25 @@ class TestSelectTHC:
     # Expected number of Toffolis and wires were obtained from Eq. 44 and 46 in https://arxiv.org/abs/2011.03494
     # The numbers were adjusted slightly to account for removal of phase gradient state and a different QROM decomposition
     @pytest.mark.parametrize(
-        "thc_ham, batched_rotations, rotation_prec, selswap_depth, expected_res",
+        "thc_ham, num_batches, rotation_prec, selswap_depth, expected_res",
         (
             (
                 qre.THCHamiltonian(58, 160),
-                None,
+                1,
                 13,
                 1,
                 {"algo_wires": 138, "auxiliary_wires": 752, "toffoli_gates": 5997},
             ),
             (
                 qre.THCHamiltonian(10, 50),
-                None,
+                1,
                 15,
                 None,
                 {"algo_wires": 38, "auxiliary_wires": 148, "toffoli_gates": 1189},
             ),
             (
                 qre.THCHamiltonian(4, 20),
-                None,
+                1,
                 15,
                 2,
                 {"algo_wires": 24, "auxiliary_wires": 103, "toffoli_gates": 545},
@@ -130,22 +128,20 @@ class TestSelectTHC:
             # These numbers were obtained manually for batched rotations based on the technique described in arXiv:2501.06165
             (
                 qre.THCHamiltonian(58, 160),
-                29,
+                2,
                 13,
                 None,
                 {"algo_wires": 138, "auxiliary_wires": 388, "toffoli_gates": 6371},
             ),
         ),
     )
-    def test_resources(
-        self, thc_ham, batched_rotations, rotation_prec, selswap_depth, expected_res
-    ):
+    def test_resources(self, thc_ham, num_batches, rotation_prec, selswap_depth, expected_res):
         """Test that the resource decompostion for SelectTHC is correct."""
 
         select_cost = qre.estimate(
             qre.SelectTHC(
                 thc_ham,
-                batched_rotations=batched_rotations,
+                num_batches=num_batches,
                 rotation_precision=rotation_prec,
                 select_swap_depth=selswap_depth,
             )
@@ -161,11 +157,11 @@ class TestSelectTHC:
     # Expected number of Toffolis and wires were obtained from Eq. 44 and 46 in https://arxiv.org/abs/2011.03494
     # The numbers were adjusted slightly to account for removal of phase gradient state and a different QROM decomposition
     @pytest.mark.parametrize(
-        "thc_ham, batched_rotations, rotation_prec, selswap_depth, num_ctrl_wires, num_zero_ctrl, expected_res",
+        "thc_ham, num_batches, rotation_prec, selswap_depth, num_ctrl_wires, num_zero_ctrl, expected_res",
         (
             (
                 qre.THCHamiltonian(58, 160),
-                None,
+                1,
                 13,
                 1,
                 1,
@@ -174,7 +170,7 @@ class TestSelectTHC:
             ),
             (
                 qre.THCHamiltonian(10, 50),
-                None,
+                1,
                 15,
                 None,
                 2,
@@ -183,7 +179,7 @@ class TestSelectTHC:
             ),
             (
                 qre.THCHamiltonian(4, 20),
-                None,
+                1,
                 15,
                 2,
                 3,
@@ -193,7 +189,7 @@ class TestSelectTHC:
             # These numbers were obtained manually for batched rotations based on the technique described in arXiv:2501.06165
             (
                 qre.THCHamiltonian(58, 160),
-                29,
+                2,
                 13,
                 None,
                 1,
@@ -205,7 +201,7 @@ class TestSelectTHC:
     def test_controlled_resources(
         self,
         thc_ham,
-        batched_rotations,
+        num_batches,
         rotation_prec,
         selswap_depth,
         num_ctrl_wires,
@@ -220,7 +216,7 @@ class TestSelectTHC:
                 num_zero_ctrl=num_zero_ctrl,
                 base_op=qre.SelectTHC(
                     thc_ham,
-                    batched_rotations=batched_rotations,
+                    num_batches=num_batches,
                     rotation_precision=rotation_prec,
                     select_swap_depth=selswap_depth,
                 ),
@@ -249,26 +245,30 @@ class TestSelectTHC:
         "Test that an error is raised when wrong type is provided for precision."
         with pytest.raises(
             TypeError,
-            match=f"`rotation_precision` must be an integer, but type {type(2.5)} was provided.",
+            match=f"`rotation_precision` must be a positive integer, but type {type(2.5)} was provided.",
         ):
             qre.SelectTHC(qre.THCHamiltonian(58, 160), rotation_precision=2.5)
 
         with pytest.raises(
             TypeError,
-            match=f"`rotation_precision` must be an integer, but type {type(2.5)} was provided.",
+            match=f"`rotation_precision` must be a positive integer, but type {type(2.5)} was provided.",
         ):
             qre.SelectTHC.resource_rep(qre.THCHamiltonian(58, 160), rotation_precision=2.5)
 
-    def test_value_error_batched_rotations(self):
+    def test_value_error_num_batches(self):
         "Test that an error is raised when wrong value is provided for batched rotations."
         with pytest.raises(
             ValueError,
-            match="`batched_rotations` must be a positive integer less than the number of orbitals 58, but got 60.",
+            match=re.escape(
+                "`num_batches` must be a positive integer less than the number of orbitals (58), but got 60."
+            ),
         ):
-            qre.SelectTHC(qre.THCHamiltonian(58, 160), batched_rotations=60)
+            qre.SelectTHC(qre.THCHamiltonian(58, 160), num_batches=60)
 
         with pytest.raises(
             ValueError,
-            match="`batched_rotations` must be a positive integer less than the number of orbitals 58, but got 0.5.",
+            match=re.escape(
+                "`num_batches` must be a positive integer less than the number of orbitals (58), but got 0.5."
+            ),
         ):
-            qre.SelectTHC.resource_rep(qre.THCHamiltonian(58, 160), batched_rotations=0.5)
+            qre.SelectTHC.resource_rep(qre.THCHamiltonian(58, 160), num_batches=0.5)

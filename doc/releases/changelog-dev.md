@@ -4,9 +4,10 @@
 
 <h4>Bucket-Brigade QRAM </h4>
 
-* Bucket Brigade QRAM is implemented as a template :class:`~.BBQRAM` to allow for selection of bitstrings in 
-  superposition.
+* Bucket Brigade QRAM and a Hybrid QRAM variant are implemented as a template :class:`~.BBQRAM` and :class:`~.HybridQRAM` 
+  to allow for selection of bitstrings in superposition.
   [(#8670)](https://github.com/PennyLaneAI/pennylane/pull/8670)
+  [(#8679)](https://github.com/PennyLaneAI/pennylane/pull/8679)
 
 <h4>Quantum Automatic Differentiation </h4>
 
@@ -48,7 +49,7 @@
 
   ```python
   import pennylane as qml
-  
+
   dev = qml.device("null.qubit", wires=3)
 
   @qml.qnode(dev)
@@ -89,6 +90,15 @@
     expval(PauliZ): 1
   ```
 
+* Catalyst compilation passes designed for Pauli-based computation are now available in PennyLane, 
+  providing accessibility for logical compilation research by directly integrating with 
+  :func:`~.pauli_measure` and :class:`~.PauliRot` operations. This includes 
+  :func:`pennylane.transforms.to_ppr`, :func:`pennylane.transforms.commute_ppr`, 
+  :func:`pennylane.transforms.ppr_to_ppm`, 
+  :func:`pennylane.transforms.merge_ppr_ppm`, :func:`pennylane.transforms.ppm_compilation`, 
+  :func:`pennylane.transforms.reduce_t_depth`, 
+  [(#8762)](https://github.com/PennyLaneAI/pennylane/pull/8762)
+
 * New decomposition rules that decompose to :class:`~.PauliRot` are added for the following operators.
   [(#8700)](https://github.com/PennyLaneAI/pennylane/pull/8700)
   [(#8704)](https://github.com/PennyLaneAI/pennylane/pull/8704)
@@ -104,12 +114,17 @@
 
 <h4>Compile Pipeline and Transforms </h4>
 
+* Added a custom solver to :func:`~.transforms.intermediate_reps.rowcol` for linear systems
+  over :math:`\mathbb{Z}_2` based on Gauss-Jordan elimination. This removes the need to install
+  the ``galois`` package for this single function and provides a minor performance improvement.
+  [(#8771)](https://github.com/PennyLaneAI/pennylane/pull/8771)
+
 * Added decompositions of the ``RX``, ``RY`` and ``RZ`` rotations into one of the other two, as well
   as basis changing Clifford gates, to the graph-based decomposition system.
   [(#8569)](https://github.com/PennyLaneAI/pennylane/pull/8569)
 
-* Arithmetic dunder methods (`__add__`, `__mul__`, `__rmul__`) have been added to 
-  :class:`~.transforms.core.TransformDispatcher`, :class:`~.transforms.core.TransformContainer`, 
+* Arithmetic dunder methods (`__add__`, `__mul__`, `__rmul__`) have been added to
+  :class:`~.transforms.core.TransformDispatcher`, :class:`~.transforms.core.TransformContainer`,
   and :class:`~.CompilePipeline` (previously known as the `TransformProgram`) to enable intuitive composition of transform programs using `+` and `*` operators.
   [(#8703)](https://github.com/PennyLaneAI/pennylane/pull/8703)
 
@@ -212,6 +227,10 @@
   ```
 
 <h3>Improvements 🛠</h3>
+
+* `qml.while_loop` and `qml.for_loop` can now lazily dispatch to catalyst when called,
+  instead of dispatching upon creation.
+  [(#8786)](https://github.com/PennyLaneAI/pennylane/pull/8786)
 
 <h4>Resource estimation</h4>
 
@@ -527,7 +546,10 @@
 * `qml.cond` will also accept a partial of an operator type as the true function without a false function
   when capture is enabled.
   [(#8776)](https://github.com/PennyLaneAI/pennylane/pull/8776)
-  
+
+* The :func:`~.dynamic_one_shot` transform can no longer be applied directly on a QNode.
+  [(8781)](https://github.com/PennyLaneAI/pennylane/pull/8781)
+
 <h3>Deprecations 👋</h3>
 
 * Maintenance support of NumPy<2.0 is deprecated as of v0.44 and will be completely dropped in v0.45.
@@ -578,7 +600,7 @@
 
   ```python
   import pennylane as qml
-  
+
   @qml.transforms.decompose(gate_set={"H", "T", "CNOT"}, stopping_condition=lambda op: len(op.wires) <= 2)
   @qml.qnode(qml.device("default.qubit"))
   def circuit():
@@ -595,6 +617,13 @@
   ```
 
 <h3>Internal changes ⚙️</h3>
+
+* Updated `pyproject.toml` with project dependencies to replace the requirements files. Updated workflows to use installations from `pyproject.toml`.
+  [(8702)](https://github.com/PennyLaneAI/pennylane/pull/8702)
+
+* `qml.cond`, the `QNode`, transforms, `qml.grad`, and `qml.jacobian` no longer treat all keyword arguments as static
+  arguments. They are instead treated as dynamic, numerical inputs, matching the behaviour of Jax and Catalyst.
+  [(#8290)](https://github.com/PennyLaneAI/pennylane/pull/8290)
 
 * To adjust to the Python 3.14, some error messages expectations have been updated in tests; `get_type_str` added a special branch to handle `Union`.
   The import of networkx is softened to not occur on import of pennylane to work around a bug in Python 3.14.1.
@@ -720,6 +749,10 @@ A warning message has been added to :doc:`Building a plugin <../development/plug
 
 <h3>Bug fixes 🐛</h3>
 
+* Use a fixed floating number tolerance from `np.finfo` in `_apply_uniform_rotation_dagger`
+  to avoid numerical stability issues on some platforms.
+  [(#8780)](https://github.com/PennyLaneAI/pennylane/pull/8780)
+
 * Handles floating point errors in the norm of the state when applying
   mid circuit measurements.
   [(#8741)](https://github.com/PennyLaneAI/pennylane/pull/8741)
@@ -791,6 +824,7 @@ A warning message has been added to :doc:`Building a plugin <../development/plug
 
 This release contains contributions from (in alphabetical order):
 
+Runor Agbaire,
 Guillermo Alonso,
 Utkarsh Azad,
 Astral Cai,
