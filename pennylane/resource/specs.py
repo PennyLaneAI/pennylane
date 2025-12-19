@@ -579,9 +579,7 @@ def specs(
             Measurement data is not currently supported with runtime resource tracking, so measurement
             data may show as missing.
 
-        ----
-
-        **Pass-by-pass specs** can be obtained by analyzing the intermediate representations of compiled circuits.
+        **Pass-by-pass specs** analyze the intermediate representations of compiled circuits.
         This can be helpful for determining how circuit resources change after a given transform or compilation pass.
 
         .. warning::
