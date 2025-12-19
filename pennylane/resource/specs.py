@@ -534,7 +534,7 @@ def specs(
         There are 2 broad ways to use ``specs`` on compiled QNodes: runtime resource tracking,
         and pass-by-pass specs for user applied compilation passes.
 
-        *Runtime resource tracking* (specified by ``level="device"``) works by mock-executing the desired
+        **Runtime resource tracking** (specified by ``level="device"``) works by mock-executing the desired
         workflow and tracking the number of times a given gate has been applied. This mock-execution happens
         after all compilation steps, and should be highly accurate to the final gatecounts of running on
         a real device.
@@ -579,10 +579,10 @@ def specs(
             Measurement data is not currently supported with runtime resource tracking, so measurement
             data may show as missing.
 
-        *Pass-by-pass specs* can be obtained by analyzing the intermediate representations of compiled circuits.
-        This can be helpful for determining how circuit resources change after a given transform
-        or compilation pass.
-        Using ``specs`` in this way can be done by providing one of the following values for the ``level`` argument:
+        ----
+
+        **Pass-by-pass specs** can be obtained by analyzing the intermediate representations of compiled circuits.
+        This can be helpful for determining how circuit resources change after a given transform or compilation pass.
 
         .. warning::
             Some resource information from pass-by-pass specs may be estimated, since it is not always
@@ -592,10 +592,11 @@ def specs(
 
             Due to similar technical limitations, depth computation is not available for pass-by-pass specs.
 
+        Pass-by-pass specs can be obtained by providing one of the following values for the ``level`` argument:
 
         * An ``int``: the desired pass level of a user-applied pass, see the note below
         * A marker name (str): The name of an applied :func:`qml.marker <pennylane.marker>` pass
-        * An iterable: A list, tuple, etc. containing ints and/or marker names. Should be sorted in
+        * An iterable: A ``list``, ``tuple``, or similar containing ints and/or marker names. Should be sorted in
           ascending pass order with no duplicates
         * The string "all": To output information about all user-applied transforms and compilation passes
         * The string "all-mlir": To output information about all compilation passes at the MLIR level only
