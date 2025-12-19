@@ -209,9 +209,6 @@
   def circuit():
       ApproximateRX(0.5, wires=0)
       return qml.state()
-  
-  errors = qml.resource.algo_error(circuit)()
-  # {'SpectralNormError': SpectralNormError(0.01)}
   ```
 
 <h4>Seamless resource tracking and circuit visualization for compiled programs </h4>
