@@ -481,8 +481,10 @@ class QSVT(ResourceOperator):
 
         U_{QSVT} = \left[\prod^{d/2}_{k=1}\Pi_{\phi_{2k-1}}U^\dagger\tilde{\Pi}_{\phi_{2k}}U\right].
 
-    This circuit applies a polynomial transformation of degree :math:`d` (:math:`Poly^{SV}`) to the
-    singular values of the block encoded matrix:
+    Where :math:`\Pi_{\phi}` and :math:\tilde{\Pi}_{\phi}` are projector-controlled phase shifts
+    (:class:`~.estimator.ops.qubit.parametric_ops_multi_qubit.PCPhase`) This circuit applies a
+    polynomial transformation of degree :math:`d` (:math:`Poly^{SV}`) to the singular values of the
+    block encoded matrix:
 
     .. math::
 
@@ -500,8 +502,8 @@ class QSVT(ResourceOperator):
 
     Args:
         block_encoding (:class:`~.estimator.resource_operator.ResourceOperator`): the block encoding operator
-        encoding_dims (int | tuple(int)): The subspace (number of rows and columns) where the operator
-            is encoded in the matrix representation of the block encoding operator.
+        encoding_dims (int | tuple(int)): The dimensions of the encoded operator's sub-matrix. 
+            If an integer is provided, a square sub-matrix is assumed; otherwise, specify (rows, columns).
         poly_deg (int): the degree of the polynomial transformation being applied
         wires (WiresLike | None): the wires the operation acts on
 
@@ -577,8 +579,8 @@ class QSVT(ResourceOperator):
             dict: A dictionary containing the resource parameters:
                 * block_encoding (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`):
                   the block encoding operator
-                * encoding_dims (int | tuple(int)): The subspace (number of rows and columns) where
-                  the operator is encoded in the matrix representation of the block encoding operator.
+                * encoding_dims (int | tuple(int)): The dimensions of the encoded operator's sub-matrix.
+                  If an integer is provided, a square sub-matrix is assumed; otherwise, specify (rows, columns).
                 * poly_deg (int): the degree of the polynomial transformation being applied
         """
         return {
@@ -600,8 +602,8 @@ class QSVT(ResourceOperator):
         Args:
             block_encoding (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`):
                 the block encoding operator
-            encoding_dims (int | tuple(int)): The subspace (number of rows and columns) where
-                the operator is encoded in the matrix representation of the block encoding operator.
+            encoding_dims (int | tuple(int)): The dimensions of the encoded operator's sub-matrix.
+                If an integer is provided, a square sub-matrix is assumed; otherwise, specify (rows, columns).
             poly_deg (int): the degree of the polynomial transformation being applied
 
         Returns:
@@ -628,8 +630,8 @@ class QSVT(ResourceOperator):
         Args:
             block_encoding (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`):
                 the block encoding operator
-            encoding_dims (int | tuple(int)): The subspace (number of rows and columns) where
-                the operator is encoded in the matrix representation of the block encoding operator.
+            encoding_dims (int | tuple(int)): The dimensions of the encoded operator's sub-matrix.
+                If an integer is provided, a square sub-matrix is assumed; otherwise, specify (rows, columns).
             poly_deg (int): the degree of the polynomial transformation being applied
 
         Resources:
@@ -637,7 +639,7 @@ class QSVT(ResourceOperator):
             (2021) <https://arxiv.org/pdf/2105.02859>`_.
 
         Returns:
-            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -695,8 +697,7 @@ class QSP(ResourceOperator):
     Args:
         block_encoding (:class:`~.estimator.resource_operator.ResourceOperator`): the block encoding operator
         poly_deg (int): the degree of the polynomial transformation being applied
-        convention (str): The basis used for the rotation operators,
-            valid conventions are ``"X"`` or ``"Z"``.
+        convention (str): the basis used for the rotation operators, valid conventions are ``"X"`` or ``"Z"``
         rotation_precision (float | None): The error threshold for the approximate Clifford + T
             decomposition of the single qubit rotation gates used to implement this operation.
         wires (WiresLike, None): the wires the operation acts on
@@ -765,7 +766,7 @@ class QSP(ResourceOperator):
                 * block_encoding (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`):
                   the block encoding operator
                 * poly_deg (int): the degree of the polynomial transformation being applied
-                * convention (str): Which of the conventions to use for the rotation operators.
+                * convention (str): the basis used for the rotation operators, valid conventions are ``"X"`` or ``"Z"``
                 * rotation_precision (float | None): The error threshold for the approximate Clifford + T
                   decomposition of the single qubit rotation gates used to implement this operation.
         """
@@ -791,7 +792,7 @@ class QSP(ResourceOperator):
             block_encoding (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`):
                 the block encoding operator
             poly_deg (int): the degree of the polynomial transformation being applied
-            convention (str): specifies the convention used for QSP
+            convention (str):the basis used for the rotation operators, valid conventions are ``"X"`` or ``"Z"``
             rotation_precision (float | None): The error threshold for the approximate Clifford + T
                 decomposition of the single qubit rotation gates used to implement this operation.
 
@@ -821,7 +822,7 @@ class QSP(ResourceOperator):
             block_encoding (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`):
                 the block encoding operator
             poly_deg (int): the degree of the polynomial transformation being applied
-            convention (str): specifies the convention used for QSP
+            convention (str): the basis used for the rotation operators, valid conventions are ``"X"`` or ``"Z"``
             rotation_precision (float): The error threshold for the approximate Clifford + T
                 decomposition of the single qubit rotation gates used to implement this operation.
 

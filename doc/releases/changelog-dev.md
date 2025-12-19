@@ -200,6 +200,10 @@
   :class:`estimator.Qubitization <pennylane.estimator.templates.subroutines.Qubitization>`.
   [(#8675)](https://github.com/PennyLaneAI/pennylane/pull/8675)
 
+* Users can now estimate the resources for the Quantum Signal Processing (QSP) and Quantum Singular
+  Value Transformation (QSVT) algorithms using two new resource operators: :class:`estimator.QSP <pennylane.estimator.templates.qsp.QSP>` and :class:`estimator.QSVT <pennylane.estimator.templates.qsp.QSVT>`.
+  [(#8733)](https://github.com/PennyLaneAI/pennylane/pull/8733)
+
 <h4>Seamless resource tracking and circuit visualization for compiled programs </h4>
 
 * A new :func:`~.marker` function allows for easy inspection at particular points in a transform program
