@@ -41,7 +41,7 @@ from .qubitization import Qubitization
 from .controlled_sequence import ControlledSequence
 from .aqft import AQFT
 from .amplitude_amplification import AmplitudeAmplification
-from .qram import BBQRAM, HybridQRAM
+from .qram import BBQRAM, HybridQRAM, SelectOnlyQRAM
 from .iqp import IQP
 from .qrom import QROM
 from .gqsp import GQSP
@@ -92,6 +92,7 @@ __all__ = [
     "QuantumMonteCarlo",
     "FABLE",
     "Select",
+    "SelectOnlyQRAM",
     "PrepSelPrep",
     "Reflection",
     "Qubitization",
