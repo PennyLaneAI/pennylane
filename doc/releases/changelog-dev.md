@@ -18,12 +18,49 @@
 
 <h4>Instantaneous Quantum Polynomial Circuits </h4>
 
-* A new template for building an Instantaneous Quantum Polynomial (`~.IQP`) circuit has been added along with a 
+* A new template for defining an Instantaneous Quantum Polynomial (:class:`~.IQP`) circuit has been added along with a 
   lightweight version (based on the :class:`~.estimator.resource_operator.ResourceOperator` class) to rapidly 
-  estimate its resources. This unlocks easily estimating the resources of the IQP circuit introduced in the 
-  `Train on classical, deploy on quantum <https://arxiv.org/abs/2503.02934>`_ work for generative quantum machine 
-  learning.
+  estimate its resources.
   [(#8748)](https://github.com/PennyLaneAI/pennylane/pull/8748)
+  
+  IQP circuits are a class of circuits that are believed to be hard to sample from using classical algorithms.
+  The added templates unlock simulating and easily estimating the resources of the IQP circuit introduced in the 
+  [Train on classical, deploy on quantum](https://arxiv.org/abs/2503.02934) work for generative quantum machine 
+  learning.
+
+  Here's a simple example of resource estimation for the simulation of an :class:`~.IQP` circuit:
+
+  ```python
+  import pennylane as qml
+
+  @qml.qnode(qml.device('lightning.qubit', wires=2))
+  def circuit():
+    qml.IQP(
+        weights=[1., 2., 3.],
+        num_wires=2,
+        pattern= [[[0]],[[1]],[[0,1]]],
+        spin_sym=False,
+    )
+    return qml.state()
+  ```
+
+  ```pycon
+  >>> res = qre.estimate(circuit)()
+  >>> print(res)
+  --- Resources: ---
+    Total wires: 2
+      algorithmic wires: 2
+      allocated wires: 0
+        zero state: 0
+        any state: 0
+    Total gates : 138
+      'T': 132,
+      'CNOT': 2,
+      'Hadamard': 4
+  ```
+
+  Please consult the following demo for details about how to efficiently optimize IQP circuits:
+  [Fast optimization of instantaneous quantum polynomial circuits](https://pennylane.ai/qml/demos/tutorial_iqp_circuit_optimization_jax)
 
 <h4>Pauli-based computation </h4>
 
