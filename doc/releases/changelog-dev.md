@@ -23,15 +23,22 @@
   estimate its resources.
   [(#8748)](https://github.com/PennyLaneAI/pennylane/pull/8748)
   
-  IQP circuits are a class of circuits that are believed to be hard to sample from using classical algorithms.
-  The added templates unlock simulating and easily estimating the resources of the IQP circuit introduced in the 
-  [Train on classical, deploy on quantum](https://arxiv.org/abs/2503.02934) work for generative quantum machine 
-  learning.
+  The gates of :class:`~.IQP` circuits correspond to parametrized multi-qubit X rotations acting on specific
+  subsets of qubits. In PennyLane, these are implemented as a block of Hadamard gates followed by multi-qubit
+  Z rotations and a final layer of Hadamards.
+  
+  While :class:`~.IQP` circuits belong to a class of circuits that are believed to be hard to sample from
+  using classical algorithms, Recio-Armengol et al. showed in the [Train on classical, deploy on quantum](https://arxiv.org/abs/2503.02934)
+  work that such circuits can still be optimized efficiently. The added templates facilitate the simulation
+  and resource estimation of large-scale :class:`~.IQP` circuits such as those applicable to generative
+  quantum machine learning tasks.
 
-  Here's a simple example of resource estimation for the simulation of an :class:`~.IQP` circuit:
+  Here is a simple example for defining an :class:`~.IQP` circuit and estimating the required resources
+  for its simulation using the :func:`~.estimator.estimate.estimate` function:
 
   ```python
   import pennylane as qml
+  import pennylane.estimator as qre
 
   @qml.qnode(qml.device('lightning.qubit', wires=2))
   def circuit():
@@ -59,8 +66,8 @@
       'Hadamard': 4
   ```
 
-  Please consult the following demo for details about how to efficiently optimize IQP circuits:
-  [Fast optimization of instantaneous quantum polynomial circuits](https://pennylane.ai/qml/demos/tutorial_iqp_circuit_optimization_jax)
+  For details on how to efficiently optimize these circuits with the [IQPOpt](https://arxiv.org/pdf/2501.04776)
+  package, please consult our [Fast optimization of instantaneous quantum polynomial circuits](https://pennylane.ai/qml/demos/tutorial_iqp_circuit_optimization_jax) demo. 
 
 <h4>Pauli-based computation </h4>
 
