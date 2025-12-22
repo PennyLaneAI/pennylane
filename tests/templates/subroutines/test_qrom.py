@@ -37,7 +37,7 @@ def test_assert_valid_qrom():
     )
 
     op = qml.QROM(data, control_wires=[0, 1, 2], target_wires=[3, 4, 5], work_wires=[6, 7, 8])
-    qml.ops.functions.assert_valid(op)
+    qml.ops.functions.assert_valid(op, skip_differentiation=True)
 
 
 @pytest.mark.jax

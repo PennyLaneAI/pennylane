@@ -196,7 +196,6 @@ class QROM(Operation):
 
         work_wires = Wires(() if work_wires is None else work_wires)
 
-        self.hyperparameters["data"] = tuple(data)
         self.hyperparameters["control_wires"] = control_wires
         self.hyperparameters["target_wires"] = target_wires
         self.hyperparameters["work_wires"] = work_wires
@@ -223,16 +222,16 @@ class QROM(Operation):
             raise ValueError("Bitstring length must match the number of target wires.")
 
         all_wires = target_wires + control_wires + work_wires
-        super().__init__(wires=all_wires, id=id)
+        super().__init__(data, wires=all_wires, id=id)
 
     def _flatten(self):
         metadata = tuple((key, value) for key, value in self.hyperparameters.items())
-        return tuple(), metadata
+        return tuple(self.data), metadata
 
     @property
     def resource_params(self) -> dict:
         return {
-            "num_bitstrings": len(self.hyperparameters["data"]),
+            "num_bitstrings": len(self.data[0]),
             "num_control_wires": len(self.hyperparameters["control_wires"]),
             "num_target_wires": len(self.hyperparameters["target_wires"]),
             "num_work_wires": len(self.hyperparameters["work_wires"]),
@@ -242,7 +241,7 @@ class QROM(Operation):
     @classmethod
     def _unflatten(cls, data, metadata):
         hyperparams_dict = dict(metadata)
-        return cls(**hyperparams_dict)
+        return cls(*data, **hyperparams_dict)
 
     def __repr__(self):
         return f"QROM(control_wires={self.control_wires}, target_wires={self.target_wires},  work_wires={self.work_wires}, clean={self.clean})"
@@ -254,7 +253,7 @@ class QROM(Operation):
         }
 
         return QROM(
-            self.bitstrings,
+            self.data[0],
             new_dict["control_wires"],
             new_dict["target_wires"],
             new_dict["work_wires"],
@@ -274,7 +273,7 @@ class QROM(Operation):
     def decomposition(self):
 
         return self.compute_decomposition(
-            self.bitstrings,
+            self.data[0],
             control_wires=self.control_wires,
             target_wires=self.target_wires,
             work_wires=self.work_wires,
@@ -361,11 +360,6 @@ class QROM(Operation):
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
         return cls._primitive.bind(*args, **kwargs)
-
-    @property
-    def bitstrings(self):
-        """bitstrings to be added."""
-        return self.hyperparameters["data"]
 
     @property
     def control_wires(self):
@@ -497,9 +491,9 @@ def _qrom_decomposition_resources(
     return resources
 
 
-@register_resources(_qrom_decomposition_resources)
+@register_resources(_qrom_decomposition_resources, exact=False)
 def _qrom_decomposition(
-    wires, data, control_wires, target_wires, work_wires, clean
+    data, control_wires, target_wires, work_wires, clean, **__
 ):  # pylint: disable=unused-argument, too-many-arguments
     if len(control_wires) == 0:
         for bits in data:
