@@ -647,7 +647,77 @@ def reduce_t_depth(qnode):
 
 @partial(transform, pass_name="decompose-arbitrary-ppr")
 def decompose_arbitrary_ppr(qnode):
-    r"""TODO"""
+    r"""
+    A quantum compilation pass that decomposes arbitrary-angle Pauli product rotations (PPRs) into a
+    collection of PPRs (with angles of rotation of :math:`\tfrac{\pi}{2}`, :math:`\tfrac{\pi}{4}`,
+    and :math:`\tfrac{\pi}{8}`), PPMs and a single-qubit arbitrary-angle PPR in the Z basis. For
+    details, see `Figure 13(d) of arXiv:2211.15465 <https://arxiv.org/abs/2211.15465>`__.
+
+    .. note::
+
+        This transform requires decorating the QNode with :func:`@qml.qjit <pennylane.qjit>`. In
+        addition, the circuits that generated from this pass are currently not executable on any
+        backend. This pass is only for Pauli-based-computation analysis with the ``null.qubit``
+        device and potential future execution when a suitable backend is available.
+        This transform requires decorating the QNode with :func:`@qml.qjit <pennylane.qjit>`.
+
+        Lastly, the :func:`pennylane.transforms.to_ppr` transform must be applied before
+        ``ppr_to_ppm``.
+
+    Args:
+        qnode (QNode): QNode to apply the pass to.
+
+    Returns:
+        ~.QNode: Returns decorated QNode.
+
+    .. note::
+
+        For better compatibility with other PennyLane functionality, ensure that PennyLane program
+        capture is enabled with :func:`pennylane.capture.enable`.
+
+    **Example**
+
+    In the example below, the arbitrary-angle PPR
+    (``qml.PauliRot(0.1, pauli_word="XY", wires=[0, 1])``), will be decomposed into various other
+    PPRs and PPMs in accordance with
+    `Figure 13(d) of arXiv:2211.15465 <https://arxiv.org/abs/2211.15465>`__.
+
+    .. code-block::
+
+        import pennylane as qml
+
+        qml.capture.enable()
+
+        @qjit(target="mlir")
+        @qml.transforms.decompose_arbitrary_ppr
+        @qml.transforms.to_ppr
+        @qml.qnode(qml.device("null.qubit", wires=3))
+        def circuit():
+            qml.PauliRot(0.1, pauli_word="XY", wires=[0, 1])
+            return qml.expval(qml.Z(0))
+
+    >>> print(qml.specs(circuit, level=3)())
+    Device: null.qubit
+    Device wires: 3
+    Shots: Shots(total=None)
+    Level: 3
+    <BLANKLINE>
+    Resource specifications:
+    Total wire allocations: 4
+    Total gates: 6
+    Circuit depth: Not computed
+    <BLANKLINE>
+    Gate types:
+        qec.prepare: 1
+        PPM-w3: 1
+        PPM-w1: 1
+        PPR-pi/2-w1: 1
+        PPR-pi/2-w2: 1
+        PPR-Phi: 1
+    <BLANKLINE>
+    Measurements:
+        expval(PauliZ): 1
+    """
     raise NotImplementedError(
         "The decompose_arbitrary_ppr compilation pass has no tape implementation, and can only be applied when decorating the entire worfklow with @qml.qjit and when it is placed after all transforms that only have a tape implementation."
     )
