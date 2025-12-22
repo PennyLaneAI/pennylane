@@ -99,7 +99,7 @@ def test_set_device_target():
 
     assert len(program1) == len(program2)
     for t1, t2 in zip(program1, program2):
-        assert t1.transform == t2.transform
+        assert t1.tape_transform == t2.tape_transform
 
         assert len(t1.args) == len(t2.args)
         for i, arg in enumerate(t1.args):
