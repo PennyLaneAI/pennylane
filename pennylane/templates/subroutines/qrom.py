@@ -18,6 +18,7 @@ This submodule contains the template for QROM.
 import math
 from collections import Counter
 from functools import reduce
+from typing import Sequence
 
 import numpy as np
 
@@ -183,7 +184,7 @@ class QROM(Operation):
 
     def __init__(
         self,
-        data: TensorLike,
+        data: TensorLike | Sequence[str],
         control_wires: WiresLike,
         target_wires: WiresLike,
         work_wires: WiresLike,
@@ -193,6 +194,9 @@ class QROM(Operation):
 
         control_wires = Wires(control_wires)
         target_wires = Wires(target_wires)
+
+        if isinstance(data[0], str):
+            data = map(lambda bitstring: [int(bit) for bit in bitstring], data)
 
         work_wires = Wires(() if work_wires is None else work_wires)
 
