@@ -34,7 +34,7 @@ from pennylane.decomposition import (
     resource_rep,
 )
 from pennylane.operation import Operation
-from pennylane.ops import CNOT, CSWAP, SWAP, Controlled, Hadamard, PauliX, PauliZ, adjoint, ctrl
+from pennylane.ops import CNOT, CSWAP, SWAP, Controlled, Hadamard, PauliX, PauliZ, adjoint, ctrl, cond
 from pennylane.templates import BasisEmbedding
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
@@ -333,10 +333,7 @@ def _leaf_ops_for_bit(wire_manager, data, n_k, j):
         else:
             target = wire_manager.portR(n_k - 1, p >> 1)
         bit = data[p][j]
-        if bit == 1:
-            PauliZ(wires=target)
-        elif bit == 0:
-            pass
+        cond(bit, PauliZ)(wires=target)
     return ops
 
 
@@ -710,8 +707,7 @@ def _tree_leaf_ops_for_bit_block_ctrl(
         # Global address index: (block_index << n_tree) + p
         addr = (block_index << n_tree) + p
         bit = data[addr][j]
-        if bit == 1:
-            ctrl(PauliZ(wires=target), control=[signal], control_values=[1])
+        cond(bit, lambda: ctrl(PauliZ(wires=target), control=[signal], control_values=[1]))()
 
 
 def _tree_route_bus_down_first_k_levels_ctrl(k_levels, tree_wire_manager, signal):
@@ -1093,13 +1089,15 @@ def _select_only_qram_decomposition(
 
         # For each bit position in the data
         for j in range(len(data[0])):
-            if bits[j]:
-                # Multi-controlled X on target_wires[j],
-                # controlled on controls matching `control_values`.
-                ctrl(
+            # Multi-controlled X on target_wires[j],
+            # controlled on controls matching `control_values`.
+            cond(
+                bits[j],
+                lambda: ctrl(
                     PauliX(wires=target_wires[j]),
                     control=controls,
                 )
+            )()
 
         _flip_controls(controls, control_values)
 
