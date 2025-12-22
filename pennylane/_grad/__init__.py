@@ -1,4 +1,4 @@
-# Copyright 2018-2024 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,15 +11,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-r"""
-The ``error`` module provides classes and functionality to track and propagate the
-algorithmic error from advanced quantum algorithms.
+"""
+Defines methods for calculation different forms of derivatives.
 """
 
-from .error import (
-    AlgorithmicError,
-    ErrorOperation,
-    SpectralNormError,
-    algo_error,
-)
-from .trotter_error import _commutator_error, _one_norm_error
+
+from .grad import grad, jacobian
+from .jvp import jvp
+from .vjp import vjp
