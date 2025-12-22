@@ -142,9 +142,9 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
         bitstrings = ["010", "111", "110", "000"]
         bitstring_size = 3
 
-    The number of wires needed to store a length-4 array is 2, which means that the ``control_wires``
-    register must contain 2 wires. Additionally, this lets us specify the number of work wires
-    needed.
+    The number of wires needed to store a length-4 array is 2, which means that the
+    ``control_wires`` register must contain 2 wires. Additionally, this lets us specify the number
+    of work wires needed.
 
     .. code-block:: python
 
@@ -153,9 +153,9 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
 
     Now, we can define all three registers concretely and demonstrate ``BBQRAM`` in practice. In the
     following circuit, we prepare the state :math:`\vert 2 \rangle = \vert 10 \rangle` on the
-    ``control_wires``, which indicates that we would like to access the second (zero-indexed) entry of
-    ``bitstrings`` (which is ``"110"``). The ``target_wires`` register should therefore store this
-    state after ``BBQRAM`` is applied.
+    ``control_wires``, which indicates that we would like to access the second (zero-indexed) entry
+    of ``bitstrings`` (which is ``"110"``). The ``target_wires`` register should therefore store
+    this state after ``BBQRAM`` is applied.
 
     .. code-block:: python
 
@@ -852,15 +852,18 @@ add_decomps(HybridQRAM, _hybrid_qram_decomposition)
 
 
 class SelectOnlyQRAM(Operation):
-    r"""Select-only QRAM implemented as multi-controlled X on target wires,
-    controlled on all address wires (select_wires + control_wires).
+    r"""A QRAM implementation comprising :class:`~.MultiControlledX` gates on target (bus) wires,
+    controlled on all address wires. This implementation of QRAM requires :math:`O(\log N)` wires,
+    where :math:`N` is the size of the classical data register being queried.
 
-    This operator encodes bitstrings associated with indexes:
+    ``SelectOnlyQRAM`` encodes bitstrings, :math:`b_i`, corresponding to a given entry, :math:`i`,
+    in a data set:
 
     .. math::
-        \text{SelectOnlyQRAM}|i\rangle|0\rangle = |i\rangle |b_i\rangle,
+        \text{SelectOnlyQRAM}|i\rangle|0\rangle = |i\rangle |b_i\rangle.
 
-    where :math:`b_i` is the bitstring associated with index :math:`i`.
+    For more theoretical information, consult
+    `Figure 8 of arXiv:2012.05340 <https://arxiv.org/abs/2012.05340>`_.
 
     Args:
         bitstrings (Sequence[str]):
@@ -875,17 +878,20 @@ class SelectOnlyQRAM(Operation):
         select_wires (WiresLike, optional):
             Wires used to perform the selection.
         select_value (int or None, optional):
-            If provided, only entries whose select bits match this value are loaded. ``select_value`` must
-            be an integer in :math:`[0, 2^{\texttt{len(select_wires)}}]`, and cannot be used if not ``select_wires``
-            are provided.
+            If provided, only entries whose select bits match this value are loaded.
+            The ``select_value`` must be an integer in :math:`[0, 2^{\texttt{len(select_wires)}}]`,
+            and cannot be used if no ``select_wires`` are provided.
         id (str or None):
             Optional name for the operation.
 
     Raises:
-        ValueError: if the ``bitstrings`` are of the wrong length, a ``select_value`` is provided without
-             ``select_wires``, or the ``select_value`` is greater than [0, (:math:`2^{\texttt{len(select_wires)}}`) - 1].
+        ValueError: if the ``bitstrings`` are of the wrong length, a ``select_value`` is provided
+            without ``select_wires``, or the ``select_value`` is greater than
+            [0, (:math:`2^{\texttt{len(select_wires)}}`) - 1].
 
-    .. seealso:: :class:`~.BBQRAM`, :class:`~.HybridQRAM`, :class:`~.QROM`, :class:`~.QROMStatePreparation`
+    .. seealso::
+
+        :class:`~.BBQRAM`, :class:`~.HybridQRAM`, :class:`~.QROM`, :class:`~.QROMStatePreparation`
 
     .. note::
 
@@ -895,33 +901,24 @@ class SelectOnlyQRAM(Operation):
 
     **Example:**
 
-    Consider the following example, where the classical data is a list of bitstrings (each of
-    length 3):
+    Consider the following example, where the classical data is a list of bitstrings (each of length
+    3):
 
     .. code-block:: python
 
         bitstrings = ["010", "111", "110", "000", "010", "111", "110", "000"]
         bitstring_size = 3
 
-    We need the number of bitstrings to equal :math:`2^{\texttt{len(select_wires)}+\texttt{len(control_wires)}}` so they can be addressed. This
-    tells us the number of control and select wires needed. We can also provide a select value to apply a filter such
-    that only entries whose select bits match this value are loaded. The full address that is accessed by the algorithm
-    is then the select value prepended to the initial state of the control wires.
+    Given the number of bitstrings, the values of ``control_wires`` and ``select_wires`` can be
+    inferred. We can also provide a ``select_value`` to apply a filter such that only entries whose
+    select bits match this value are loaded. The full address that is accessed by the algorithm is
+    then the ``select_value`` prepended to the initial state of the control wires.
 
     .. code-block:: python
 
         num_control_wires = 2
         num_select_wires = 1
         select_value = 0
-
-    Now, we can define all three registers concretely and demonstrate ``SelectOnlyQRAM`` in practice. Lets assume that in the
-    following circuit, we want to prepare the state :math:`\vert 2 \rangle = \vert 10 \rangle` on the
-    ``control_wires``. Because ``select_value`` is zero, the full address we are accessing is
-    indeed ``"010"``, which indicates that we would like to access the second (zero-indexed) entry of
-    ``bitstrings`` (which is ``"110"``). The ``target_wires`` register should therefore store the state ``"110"`` after ``SelectOnlyQRAM``
-    is applied.
-
-    .. code-block:: python
 
         import pennylane as qml
         reg = qml.registers(
@@ -931,6 +928,14 @@ class SelectOnlyQRAM(Operation):
                 "select": num_select_wires
             }
         )
+
+    Consider the case where :math:`\vert 2 \rangle = \vert 10 \rangle` is desired to be prepared on
+    the ``control_wires``. Because ``select_value = 0``, the full address we are accessing is
+    ``"010"``, which indicates that we would like to access the second (zero-indexed) entry of
+    ``bitstrings`` (which is ``"110"``). The ``target_wires`` register should therefore store the
+    state ``"110"`` after ``SelectOnlyQRAM`` is applied.
+
+    .. code-block:: python
 
         dev = qml.device("default.qubit")
         @qml.qnode(dev)
@@ -951,8 +956,7 @@ class SelectOnlyQRAM(Operation):
     >>> print(np.round(select_only_qram()))
     [0. 0. 0. 0. 0. 0. 1. 0.]
 
-    Note that ``"110"`` in binary is equal to 6 in decimal, which is the position of the only
-    non-zero entry in the ``target_wires`` register.
+    Note that ``"110"`` in binary is equal to 6 in decimal.
     """
 
     grad_method = None
