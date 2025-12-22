@@ -267,7 +267,7 @@ def _(op: qtemps.Select):
 
 @map_to_resource_op.register
 def _(op: qtemps.QROM):
-    bitstrings = op.hyperparameters["bitstrings"]
+    bitstrings = op.data[0]
     num_bitstrings = len(bitstrings)
     size_bitstring = len(bitstrings[0]) if num_bitstrings > 0 else 0
     return re_temps.ResourceQROM(
