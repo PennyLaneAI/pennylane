@@ -262,10 +262,10 @@ def _(op: qtemps.subroutines.QROM):
 
     # From ResourceQROM
     gate_types = defaultdict(int, {})
-    bitstrings = op.hyperparameters["bitstrings"]
+    bitstrings = op.data[0]
     num_bitstrings = len(bitstrings)
 
-    num_bit_flips = sum(bits.count("1") for bits in bitstrings)
+    num_bit_flips = sum(sum(bits) for bits in bitstrings)
 
     num_work_wires = len(op.hyperparameters["work_wires"])
     size_bitstring = len(op.hyperparameters["target_wires"])
@@ -567,7 +567,7 @@ def _(op: qtemps.subroutines.QROM, map_ops=True, custom_mapping=None, **kwargs):
     if mapped_op is not None:
         return mapped_op
 
-    data = np.array([int(b, 2) for b in op.bitstrings])
+    data = np.array([int("".join([str(b) for b in bits]), 2) for bits in op.data[0]])
     if op.clean:
         return QROAMClean.build_from_data(data)
 

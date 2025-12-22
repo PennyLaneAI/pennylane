@@ -978,7 +978,7 @@ class TestToBloqDecomposition:
             ),
             (
                 qml.QROM(
-                    data=[[0, 1, 0], [1, 1, 1], [1, 1, 0], [0, 0, 0]],
+                    data=((0, 1, 0), (1, 1, 1), (1, 1, 0), (0, 0, 0)),
                     control_wires=[0, 1],
                     target_wires=[2, 3, 4],
                     work_wires=[5, 6, 7],
@@ -987,7 +987,7 @@ class TestToBloqDecomposition:
             ),
             (
                 qml.QROM(
-                    data=[[0, 1, 0], [1, 1, 1], [1, 1, 0], [0, 0, 0]],
+                    data=((0, 1, 0), (1, 1, 1), (1, 1, 0), (0, 0, 0)),
                     control_wires=[0, 1],
                     target_wires=[2, 3, 4],
                     work_wires=[5, 6, 7],
