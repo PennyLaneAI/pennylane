@@ -995,7 +995,7 @@ class TestModifiedTemplates:
         """Test the primitive bind call of QROM."""
 
         kwargs = {
-            "bitstrings": ["0", "1"],
+            "bitstrings": [[0], [1]],
             "control_wires": [0],
             "target_wires": [1],
             "work_wires": None,
