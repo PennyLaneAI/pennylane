@@ -110,6 +110,7 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
             ``work_wires`` register includes the bus, direction, left port and right port wires in
             that order. Each node in the tree contains one address (direction), one left port and
             one right port wire. The single bus wire is used for address loading and data routing.
+            For more information, consult `arXiv:0708.1879 <https://arxiv.org/pdf/0708.1879>`__.
 
     Raises:
         ValueError: if the ``bitstrings`` are not provided, the ``bitstrings`` are of the wrong
@@ -389,7 +390,8 @@ class HybridQRAM(Operation):
             The additional wires required to funnel the desired entry of ``bitstrings`` into the
             ``target_wires`` register. The ``work_wires`` register includes the signal, bus,
             direction, left port and right port wires in that order for a tree of depth
-            :math:`(n-k)`.
+            :math:`(n-k)`. For more details, consult
+            `section 3 of arXiv:2306.03242 <https://arxiv.org/abs/2306.03242>`__.
         k (int):
             The number of "select" bits taken from ``control_wires``.
 
