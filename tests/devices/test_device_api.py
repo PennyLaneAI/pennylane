@@ -532,14 +532,14 @@ class TestPreprocessTransforms:
             assert qml.transforms.split_non_commuting in program
             assert qml.transforms.split_to_single_terms not in program
             for transform_container in program:
-                if transform_container._transform_dispatcher is qml.transforms.split_non_commuting:
+                if transform_container._transform is qml.transforms.split_non_commuting:
                     assert "grouping_strategy" in transform_container._kwargs
                     assert transform_container._kwargs["grouping_strategy"] == "wires"
         elif not non_commuting_obs:
             assert qml.transforms.split_non_commuting in program
             assert qml.transforms.split_to_single_terms not in program
             for transform_container in program:
-                if transform_container._transform_dispatcher is qml.transforms.split_non_commuting:
+                if transform_container._transform is qml.transforms.split_non_commuting:
                     assert "grouping_strategy" in transform_container._kwargs
                     assert transform_container._kwargs["grouping_strategy"] == "qwc"
         elif not sum_support:
@@ -594,10 +594,7 @@ class TestPreprocessTransforms:
         else:
             assert qml.transforms.diagonalize_measurements in program
             for transform_container in program:
-                if (
-                    transform_container._transform_dispatcher
-                    is qml.transforms.diagonalize_measurements
-                ):
+                if transform_container._transform is qml.transforms.diagonalize_measurements:
                     assert transform_container._kwargs["supported_base_obs"] == {
                         qml.Z,
                         qml.X,
