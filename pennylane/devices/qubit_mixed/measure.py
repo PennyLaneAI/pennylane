@@ -220,19 +220,14 @@ def sum_of_terms_method(
     """
     # Recursively call measure on each term, so that the best measurement method can
     # be used for each term
-    return math.sum(
-        math.stack(
-            [
-                measure(
-                    ExpectationMP(term),
-                    state,
-                    is_state_batched=is_state_batched,
-                    readout_errors=readout_errors,
-                )
-                for term in measurementprocess.obs
-            ]
-        ),
-        axis=0,
+    return sum(
+        measure(
+            ExpectationMP(term),
+            state,
+            is_state_batched=is_state_batched,
+            readout_errors=readout_errors,
+        )
+        for term in measurementprocess.obs
     )
 
 
