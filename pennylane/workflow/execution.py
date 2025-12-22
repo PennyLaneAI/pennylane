@@ -41,7 +41,7 @@ logger.addHandler(logging.NullHandler())
 if TYPE_CHECKING:
     from pennylane.concurrency.executors import ExecBackends
     from pennylane.tape import QuantumScriptBatch
-    from pennylane.transforms.core import TransformDispatcher
+    from pennylane.transforms.core import Transform
     from pennylane.typing import ResultBatch
     from pennylane.workflow.qnode import SupportedDeviceAPIs
     from pennylane.workflow.resolution import SupportedDiffMethods
@@ -51,7 +51,7 @@ if TYPE_CHECKING:
 def execute(
     tapes: QuantumScriptBatch,
     device: SupportedDeviceAPIs,
-    diff_method: Callable | SupportedDiffMethods | TransformDispatcher | None = None,
+    diff_method: Callable | SupportedDiffMethods | Transform | None = None,
     interface: Interface | str | None = Interface.AUTO,
     *,
     grad_on_execution: bool | Literal["best"] = "best",
@@ -72,7 +72,7 @@ def execute(
         device (pennylane.devices.LegacyDevice): Device to use to execute the batch of tapes.
             If the device does not provide a ``batch_execute`` method,
             by default the tapes will be executed in serial.
-        diff_method (Optional[str | TransformDispatcher]): The gradient transform function to use
+        diff_method (Optional[str | Transform]): The gradient transform function to use
             for backward passes. If "device", the device will be queried directly
             for the gradient (if supported).
         interface (str, Interface): The interface that will be used for classical auto-differentiation.
