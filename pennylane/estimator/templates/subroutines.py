@@ -172,7 +172,7 @@ class IQP(ResourceOperator):
 
     resource_keys = {"spin_sym", "pattern", "num_wires"}
 
-    def __init__(self, num_wires, pattern, spin_sym, wires=None) -> None:
+    def __init__(self, num_wires, pattern, spin_sym=False, wires=None) -> None:
         self.num_wires = num_wires
         self.spin_sym = spin_sym
         self.pattern = pattern
