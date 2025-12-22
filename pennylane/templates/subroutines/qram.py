@@ -955,10 +955,10 @@ class SelectOnlyQRAM(Operation):
     grad_method = None
 
     resource_keys = {
-        "data",
         "select_value",
         "num_control_wires",
         "num_select_wires",
+        "num_target_wires",
     }
 
     # pylint: disable=too-many-arguments
@@ -1005,14 +1005,15 @@ class SelectOnlyQRAM(Operation):
                 raise ValueError(f"select_value must be an integer in [0, {max_sel - 1}].")
 
         self._hyperparameters = {
-            "data": data,
             "control_wires": control_wires,
             "target_wires": target_wires,
             "select_wires": select_wires,
             "select_value": select_value,
         }
 
-        super().__init__(wires=list(control_wires) + list(target_wires) + list(select_wires), id=id)
+        super().__init__(
+            data, wires=list(control_wires) + list(target_wires) + list(select_wires), id=id
+        )
 
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
@@ -1021,21 +1022,23 @@ class SelectOnlyQRAM(Operation):
     @property
     def resource_params(self) -> dict:
         return {
-            "data": self.hyperparameters["data"],
             "num_control_wires": len(self.hyperparameters["control_wires"]),
             "select_value": self.hyperparameters["select_value"],
             "num_select_wires": len(self.hyperparameters["select_wires"]),
+            "num_target_wires": len(self.hyperparameters["target_wires"]),
         }
 
 
-def _select_only_qram_resources(data, select_value, num_control_wires, num_select_wires):
+def _select_only_qram_resources(
+    select_value, num_control_wires, num_select_wires, num_target_wires
+):
     resources = defaultdict(int)
     n_total = num_control_wires + num_select_wires
 
     if select_value is not None and num_select_wires > 0:
         resources[resource_rep(BasisEmbedding, num_wires=num_select_wires)] += 1
 
-    for addr, bits in enumerate(data):
+    for addr in range(2 ** (num_select_wires + num_control_wires)):
         if (
             select_value is not None
             and num_select_wires > 0
@@ -1054,7 +1057,7 @@ def _select_only_qram_resources(data, select_value, num_control_wires, num_selec
                 num_control_wires=n_total,
                 num_zero_control_values=0,
             )
-        ] += math.sum(bits)
+        ] += num_control_wires
 
     return resources
 
@@ -1065,9 +1068,9 @@ def _flip_controls(control_wires, control_vals):
             PauliX(control_wires[i])
 
 
-@register_resources(_select_only_qram_resources)
+@register_resources(_select_only_qram_resources, exact=False)
 def _select_only_qram_decomposition(
-    wires, data, select_value, select_wires, control_wires, target_wires, **_
+    data, select_value, select_wires, control_wires, target_wires, **_
 ):  # pylint: disable=unused-argument, too-many-arguments
     controls = select_wires + control_wires
     num_select = len(select_wires)
