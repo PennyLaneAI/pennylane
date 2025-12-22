@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains the autograd wrappers :class:`grad` and :func:`jacobian`
+This submodule contains the autograd wrappers :class:`grad` and :func:`jacobian`
 """
 import inspect
 import numbers
@@ -27,7 +27,7 @@ from autograd.wrap_util import unary_to_nary
 
 from pennylane import capture
 from pennylane.compiler import compiler
-from pennylane.exceptions import CompileError, PennyLaneDeprecationWarning
+from pennylane.exceptions import PennyLaneDeprecationWarning
 
 make_vjp = unary_to_nary(_make_vjp)
 
@@ -80,34 +80,6 @@ def _get_jacobian_prim():
         ]
 
     return jacobian_prim
-
-
-@lru_cache
-def _get_vjp_prim():
-    if not has_jax:  # pragma: no cover
-        return None
-
-    vjp_prim = capture.QmlPrimitive("vjp")
-    vjp_prim.multiple_results = True
-    vjp_prim.prim_type = "higher_order"
-
-    @vjp_prim.def_impl
-    def _vjp_impl(*args, jaxpr, fn, method, h, argnums):
-        params = args[: len(jaxpr.invars)]
-        dy = list(args[len(jaxpr.invars) :])
-
-        def func(*inner_args):
-            return jax.core.eval_jaxpr(jaxpr, [], *inner_args)
-
-        res, vjp_fn = jax.vjp(func, *params)
-        dparams = vjp_fn(dy)
-        return res + [dparams[i] for i in argnums]
-
-    @vjp_prim.def_abstract_eval
-    def _vjp_abstract_eval(*args, jaxpr, fn, method, h, argnums):
-        return [v.aval for v in jaxpr.outvars] + [jaxpr.invars[i].aval for i in argnums]
-
-    return vjp_prim
 
 
 def _shape(shape, dtype, weak_type=False):
@@ -224,73 +196,6 @@ def _capture_diff(func, *, argnums=None, scalar_out: bool = False, method=None, 
         return tree_unflatten(combined_tree, out_flat)
 
     return new_func
-
-
-def _validate_cotangents(cotangents, out_avals):
-    from jax._src.api import _dtype  # pylint: disable=import-outside-toplevel
-
-    def get_shape(x):
-        return x.shape if hasattr(x, "shape") else jax.numpy.shape(x)
-
-    if len(cotangents) != len(out_avals):
-        raise ValueError(
-            "The length of cotangents must match the number of"
-            " outputs of the function with qml.vjp."
-        )
-    for p, t in zip(cotangents, out_avals):
-        if _dtype(p) != _dtype(t):
-            raise TypeError(
-                "function output params and cotangents arguments to qml.vjp do not match; "
-                "dtypes must be equal. "
-                f"Got function output params dtype {_dtype(p)} and so expected cotangent dtype "
-                f"{_dtype(p)}, but got cotangent dtype {_dtype(t)} instead."
-            )
-
-        if get_shape(p) != get_shape(t):
-            raise ValueError(
-                "qml.vjp called with different function output params and cotangent "
-                f"shapes; got function output params shape {get_shape(p)} and cotangent shape "
-                f"{get_shape(t)}"
-            )
-
-
-def _capture_vjp(func, params, cotangents, *, argnums=None, method=None, h=None):
-    from jax.tree_util import tree_leaves, tree_unflatten  # pylint: disable=import-outside-toplevel
-
-    if argnums is None:
-        argnums = [0]
-    elif isinstance(argnums, int):
-        argnums = [argnums]
-
-    h = _setup_h(h)
-    method = _setup_method(method)
-    flat_args, flat_argnums, _, trainable_in_tree = _args_and_argnums(params, argnums)
-    flat_cotangents = tree_leaves(cotangents)
-    flat_fn = capture.FlatFn(func)
-    jaxpr = jax.make_jaxpr(flat_fn)(*params)
-    j = jaxpr.jaxpr
-    no_consts_jaxpr = j.replace(constvars=(), invars=j.constvars + j.invars)
-    shifted_argnums = tuple(i + len(jaxpr.consts) for i in flat_argnums)
-
-    _validate_cotangents(flat_cotangents, jaxpr.out_avals)
-
-    prim_kwargs = {
-        "fn": func,
-        "method": method,
-        "h": h,
-        "argnums": shifted_argnums,
-        "jaxpr": no_consts_jaxpr,
-    }
-    out_flat = _get_vjp_prim().bind(*jaxpr.consts, *flat_args, *flat_cotangents, **prim_kwargs)
-    assert flat_fn.out_tree is not None, "out_tree should be set after executing flat_fn"
-    flat_results, flat_dparams = (
-        out_flat[: flat_fn.out_tree.num_leaves],
-        out_flat[flat_fn.out_tree.num_leaves :],
-    )
-
-    results = tree_unflatten(flat_fn.out_tree, flat_results)
-    dparams = tree_unflatten(trainable_in_tree, flat_dparams)
-    return results, dparams
 
 
 # pylint: disable=too-many-instance-attributes
@@ -804,185 +709,3 @@ class jacobian:
         )
 
         return jac[0] if unpack else jac
-
-
-# pylint: disable=too-many-arguments, too-many-positional-arguments
-def vjp(f, params, cotangents, method=None, h=None, argnums=None, *, argnum=None):
-    """A :func:`~.qjit` compatible Vector-Jacobian product of PennyLane programs.
-
-    This function allows the Vector-Jacobian Product of a hybrid quantum-classical function to be
-    computed within the compiled program.
-
-    .. warning::
-
-        ``vjp`` is intended to be used with :func:`~.qjit` only.
-
-    .. note::
-
-        When used with :func:`~.qjit`, this function only supports the Catalyst compiler.
-        See :func:`catalyst.vjp` for more details.
-
-        Please see the Catalyst :doc:`quickstart guide <catalyst:dev/quick_start>`,
-        as well as the :doc:`sharp bits and debugging tips <catalyst:dev/sharp_bits>`
-        page for an overview of the differences between Catalyst and PennyLane.
-
-    .. warning::
-
-        ``argnum`` has been renamed to ``argnums`` to match catalyst and jax.
-        ``argnum`` will be removed in v0.45.
-
-    Args:
-        f(Callable): Function-like object to calculate VJP for
-        params(Sequence[Array]): List (or a tuple) of arguments for `f` specifying the point to calculate
-                             VJP at. A subset of these parameters are declared as
-                             differentiable by listing their indices in the ``argnums`` parameter.
-        cotangents(List[Array]): List (or a tuple) of tangent values to use in VJP. The list size
-                                 and shapes must match the size and shape of ``f`` outputs.
-        method(str): Differentiation method to use, same as in :func:`~.grad`.
-        h (float): the step-size value for the finite-difference (``"fd"``) method
-        argnums (Union[int, List[int]]): the params' indices to differentiate. Defaults to ``(0, )``.
-
-    Returns:
-        Tuple[Array]: Return values of ``f`` paired with the VJP values.
-
-    Raises:
-        TypeError: invalid parameter types
-        ValueError: invalid parameter values
-
-    .. seealso:: :func:`~.grad`, :func:`~.jvp`, :func:`~.jacobian`
-
-    **Example**
-
-    .. code-block:: python
-
-        @qml.qjit
-        def vjp(params, cotangent):
-          def f(x):
-              y = [jnp.sin(x[0]), x[1] ** 2, x[0] * x[1]]
-              return jnp.stack(y)
-
-          return qml.vjp(f, [params], [cotangent])
-
-    >>> x = jnp.array([0.1, 0.2])
-    >>> dy = jnp.array([-0.5, 0.1, 0.3])
-    >>> vjp(x, dy)
-    (Array([0.09983342, 0.04      , 0.02      ], dtype=float64), (Array([-0.43750208,  0.07      ], dtype=float64),))
-    """
-    argnums = argnums if argnums is not None else argnum
-    if argnum is not None:
-        warnings.warn(
-            "argnum in qml.vjp has been renamed to argnums to match jax and catalyst.",
-            PennyLaneDeprecationWarning,
-        )
-
-    if capture.enabled():
-        return _capture_vjp(f, params, cotangents, argnums=argnums, method=method, h=h)
-
-    if active_jit := compiler.active_compiler():
-        available_eps = compiler.AvailableCompilers.names_entrypoints
-        ops_loader = available_eps[active_jit]["ops"].load()
-        return ops_loader.vjp(f, params, cotangents, method=method, h=h, argnums=argnums)
-
-    raise CompileError("Pennylane does not support the VJP function without QJIT.")
-
-
-# pylint: disable=too-many-arguments, too-many-positional-arguments
-def jvp(f, params, tangents, method=None, h=None, argnums=None, *, argnum=None):
-    """A :func:`~.qjit` compatible Jacobian-vector product of PennyLane programs.
-
-    This function allows the Jacobian-vector Product of a hybrid quantum-classical function to be
-    computed within the compiled program.
-
-    .. warning::
-
-        ``jvp`` is intended to be used with :func:`~.qjit` only.
-
-    .. note::
-
-        When used with :func:`~.qjit`, this function only supports the Catalyst compiler;
-        see :func:`catalyst.jvp` for more details.
-
-        Please see the Catalyst :doc:`quickstart guide <catalyst:dev/quick_start>`,
-        as well as the :doc:`sharp bits and debugging tips <catalyst:dev/sharp_bits>`
-        page for an overview of the differences between Catalyst and PennyLane.
-
-    .. warning::
-
-        ``argnum`` has been renamed to ``argnums`` to match catalyst and jax.
-        ``argnum`` will be removed in v0.45.
-
-    Args:
-        f (Callable): Function-like object to calculate JVP for
-        params (List[Array]): List (or a tuple) of the function arguments specifying the point
-                              to calculate JVP at. A subset of these parameters are declared as
-                              differentiable by listing their indices in the ``argnums`` parameter.
-        tangents(List[Array]): List (or a tuple) of tangent values to use in JVP. The list size and
-                               shapes must match the ones of differentiable params.
-        method(str): Differentiation method to use, same as in :func:`~.grad`.
-        h (float): the step-size value for the finite-difference (``"fd"``) method
-        argnums (Union[int, List[int]]): the params' indices to differentiate.
-
-    Returns:
-        Tuple[Array]: Return values of ``f`` paired with the JVP values.
-
-    Raises:
-        TypeError: invalid parameter types
-        ValueError: invalid parameter values
-
-    .. seealso:: :func:`~.grad`, :func:`~.vjp`, :func:`~.jacobian`
-
-    **Example 1 (basic usage)**
-
-    .. code-block:: python
-
-        @qml.qjit
-        def jvp(params, tangent):
-          def f(x):
-              y = [jnp.sin(x[0]), x[1] ** 2, x[0] * x[1]]
-              return jnp.stack(y)
-
-          return qml.jvp(f, [params], [tangent])
-
-    >>> x = jnp.array([0.1, 0.2])
-    >>> tangent = jnp.array([0.3, 0.6])
-    >>> jvp(x, tangent)
-    (Array([0.09983342, 0.04      , 0.02      ], dtype=float64), Array([0.29850125, 0.24      , 0.12      ], dtype=float64))
-
-    **Example 2 (argnums usage)**
-
-    Here we show how to use ``argnums`` to ignore the non-differentiable parameter ``n`` of the
-    target function. Note that the length and shapes of tangents must match the length and shape of
-    primal parameters, which we mark as differentiable by passing their indices to ``argnums``.
-
-    .. code-block:: python
-
-        @qml.qjit
-        @qml.qnode(qml.device("lightning.qubit", wires=2))
-        def circuit(n, params):
-            qml.RX(params[n, 0], wires=n)
-            qml.RY(params[n, 1], wires=n)
-            return qml.expval(qml.Z(1))
-
-        @qml.qjit
-        def workflow(primals, tangents):
-            return qml.jvp(circuit, [1, primals], [tangents], argnums=[1])
-
-    >>> params = jnp.array([[0.54, 0.3154], [0.654, 0.123]])
-    >>> dy = jnp.array([[1.0, 1.0], [1.0, 1.0]])
-    >>> workflow(params, dy)
-    (Array(0.78766064, dtype=float64), Array(-0.70114352, dtype=float64))
-    """
-
-    argnums = argnums if argnums is not None else argnum
-    if argnum is not None:
-        warnings.warn(
-            "argnum in qml.jvp has been renamed to argnums to match jax and catalyst.",
-            PennyLaneDeprecationWarning,
-        )
-
-    if active_jit := compiler.active_compiler():
-        available_eps = compiler.AvailableCompilers.names_entrypoints
-        ops_loader = available_eps[active_jit]["ops"].load()
-        return ops_loader.jvp(f, params, tangents, method=method, h=h, argnums=argnums)
-
-    raise CompileError("Pennylane does not support the JVP function without QJIT.")
