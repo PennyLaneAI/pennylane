@@ -55,6 +55,85 @@ class TestResourceOutOfPlaceSquare:
         assert qre.OutOfPlaceSquare.resource_decomp(register_size=register_size) == expected
 
 
+class TestIQP:
+    """Test the IQP class."""
+
+    @pytest.mark.parametrize(
+        ("num_wires", "pattern", "spin_sym"),
+        [
+            (4, [[[0]], [[1]], [[2]], [[3]]], False),
+            (
+                6,
+                [[[0]], [[4]], [[3]], [[2]], [[1]], [[5]]],
+                True,
+            ),
+        ],
+    )
+    def test_resource_params(self, num_wires, pattern, spin_sym):
+        """Test that the resource params are correct."""
+        op = qre.IQP(num_wires, pattern, spin_sym)
+        assert op.resource_params == {
+            "spin_sym": spin_sym,
+            "pattern": pattern,
+            "num_wires": num_wires,
+        }
+
+    @pytest.mark.parametrize(
+        ("num_wires", "pattern", "spin_sym"),
+        [
+            (4, [[[0]], [[1]], [[2]], [[3]]], False),
+            (
+                6,
+                [[[0]], [[1]], [[2]], [[3]], [[4]], [[5]]],
+                True,
+            ),
+        ],
+    )
+    def test_resource_rep(self, num_wires, pattern, spin_sym):
+        """Test that the compressed representation is correct."""
+        expected = qre.CompressedResourceOp(
+            qre.IQP,
+            num_wires,
+            {
+                "num_wires": num_wires,
+                "pattern": pattern,
+                "spin_sym": spin_sym,
+            },
+        )
+        assert (
+            qre.IQP.resource_rep(num_wires=num_wires, pattern=pattern, spin_sym=spin_sym)
+            == expected
+        )
+
+    @pytest.mark.parametrize(
+        ("num_wires", "pattern", "spin_sym", "expected_res"),
+        [
+            (
+                4,
+                [[[0]], [[1]], [[2]], [[3]]],
+                False,
+                [
+                    GateCount(resource_rep(qre.Hadamard), 8),
+                    GateCount(resource_rep(qre.MultiRZ, {"num_wires": 1}), 4),
+                ],
+            ),
+            (
+                6,
+                [[[0]], [[1]], [[2]], [[3]], [[4]], [[5]]],
+                True,
+                [
+                    GateCount(resource_rep(qre.Hadamard), 12),
+                    GateCount(resource_rep(qre.PauliRot, {"pauli_string": "YXXXXX"}), 1),
+                    GateCount(resource_rep(qre.MultiRZ, {"num_wires": 1}), 6),
+                ],
+            ),
+        ],
+    )
+    def test_resources(self, num_wires, pattern, spin_sym, expected_res):
+        """Test that the resources are correct."""
+        assert qre.IQP.resource_decomp(num_wires, pattern, spin_sym) == expected_res
+
+
 class TestResourcePhaseGradient:
     """Test the PhaseGradient class."""
 

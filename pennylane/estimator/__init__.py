@@ -74,6 +74,7 @@ from .ops.op_math import (
 
 from .templates import (
     OutOfPlaceSquare,
+    IQP,
     PhaseGradient,
     OutMultiplier,
     SemiAdder,
