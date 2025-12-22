@@ -925,7 +925,16 @@ class TestModifiedTemplates:
         """Test the primitve bind call of SelectOnlyQRAM."""
 
         kwargs = {
-            "data": ([0, 1, 0], [1, 1, 1], [1, 1, 0], [0, 0, 0], [0, 1, 0], [1, 1, 1], [1, 1, 0], [0, 0, 0]),
+            "data": (
+                [0, 1, 0],
+                [1, 1, 1],
+                [1, 1, 0],
+                [0, 0, 0],
+                [0, 1, 0],
+                [1, 1, 1],
+                [1, 1, 0],
+                [0, 0, 0],
+            ),
             "control_wires": (0, 1),
             "target_wires": (2, 3, 4),
             "select_wires": (12),
