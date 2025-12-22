@@ -438,7 +438,7 @@ class GQSPTimeEvolution(ResourceOperator):
     @staticmethod
     def poly_approx(time: float, one_norm: float, epsilon: float) -> int:
         r"""Obtain the maximum degree of the polynomial approximation required
-        to approximate :math:`e^{(iHt * \cos{\theta})}` within error epsilon.
+        to approximate :math:`e^{(iHt \cos{\theta})}` within error epsilon.
 
         Args:
             time (float): the simulation time

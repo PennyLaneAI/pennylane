@@ -50,19 +50,23 @@ class TestQubitizeTHC:
     def test_resource_params(self, thc_ham, prep_op, select_op):
         """Test that the resource params for QubitizeTHC are correct."""
         op = qre.QubitizeTHC(thc_ham, prep_op=prep_op, select_op=select_op)
+        coeff_precision = prep_op.coeff_precision if prep_op else 15
+        rotation_precision = select_op.rotation_precision if select_op else 15
 
-        if prep_op is not None:
-            prep_op = prep_op.resource_rep_from_op()
+        if prep_op is None:
+            prep_op = qre.PrepTHC(thc_ham, coeff_precision=coeff_precision)
+        prep_op = prep_op.resource_rep_from_op()
 
-        if select_op is not None:
-            select_op = select_op.resource_rep_from_op()
+        if select_op is None:
+            select_op = qre.SelectTHC(thc_ham, rotation_precision=rotation_precision)
+        select_op = select_op.resource_rep_from_op()
 
         assert op.resource_params == {
             "thc_ham": thc_ham,
             "prep_op": prep_op,
             "select_op": select_op,
-            "coeff_precision": prep_op.params["coeff_precision"] if prep_op else 15,
-            "rotation_precision": select_op.params["rotation_precision"] if select_op else 15,
+            "coeff_precision": coeff_precision,
+            "rotation_precision": rotation_precision,
         }
 
         assert len(qre.QubitizeTHC.resource_keys) == len(op.resource_params)
