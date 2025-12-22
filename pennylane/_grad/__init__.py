@@ -1,4 +1,4 @@
-# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,9 +11,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
-Version number (major.minor.patch[-label])
+Defines methods for calculation different forms of derivatives.
 """
 
-__version__ = "0.44.0-dev61"
+
+from .grad import grad, jacobian
+from .jvp import jvp
+from .vjp import vjp
