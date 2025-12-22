@@ -32,25 +32,40 @@ from pennylane.wires import Wires, WiresLike
 
 
 class SelectTHC(ResourceOperator):
-    r"""Resource class for creating the custom Select operator for tensor hypercontracted (THC) Hamiltonian.
+    r"""Resource class for creating the custom ``Select`` operator for tensor hypercontracted (THC)
+    Hamiltonian.
 
     .. note::
 
             This decomposition assumes that an appropriately sized phase gradient state is available.
             Users should ensure that the cost of constructing this state has been accounted for.
-            See also :class:`~.pennylane.estimator.templates.PhaseGradient`.
+            See also :class:`~.pennylane.estimator.templates.subroutines.PhaseGradient`.
 
     Args:
         thc_ham (:class:`~pennylane.estimator.compact_hamiltonian.THCHamiltonian`): A tensor hypercontracted
-            Hamiltonian on which the select operator is being applied.
+            Hamiltonian on which this ``Select`` operator is being applied.
+        num_batches (int): The number of batches for loading Givens rotation angles
+            into temporary quantum registers. Must be less than the number of orbitals in ``thc_ham``.
+            The default value of ``1`` loads all angles in one batch.
         rotation_precision (int): The number of bits used to represent the precision for loading
             the rotation angles for basis rotation. The default value is set to ``15`` bits.
         select_swap_depth (int | None): A parameter of :class:`~.pennylane.estimator.templates.subroutines.QROM`
-            used to trade-off extra wires for reduced circuit depth. Defaults to :code:`None`, which internally determines the optimal depth.
+            used to trade-off extra wires for reduced circuit depth. Defaults to :code:`None`, in which
+            case, the ``select_swap_depth`` is set to the optimal depth that minimizes the total
+            ``T``-gate count.
         wires (WiresLike | None): the wires on which the operator acts
 
+    Raises:
+        TypeError: If ``thc_ham`` is not a :class:`~pennylane.estimator.compact_hamiltonian.THCHamiltonian`.
+        TypeError: If ``rotation_precision`` is not a positive integer.
+        ValueError: If ``num_batches`` is not a positive integer or is greater than or equal
+            to the number of orbitals in ``thc_ham``.
+        ValueError: If the number of provided ``wires`` does not match the calculated
+            ``num_wires`` required for the operation.
+
     Resources:
-        The resources are calculated based on Figure 5 in `arXiv:2011.03494 <https://arxiv.org/abs/2011.03494>`_
+        The resources are calculated based on Figure 5 in `arXiv:2011.03494 <https://arxiv.org/abs/2011.03494>`_ and
+        Figure 4 in `arXiv:2501.06165 <https://arxiv.org/abs/2501.06165>`_.
 
     **Example**
 
@@ -74,13 +89,35 @@ class SelectTHC(ResourceOperator):
       'S': 80,
       'Hadamard': 6.586E+3
 
+    Let's also see how the resources change when more batches are used for the rotations:
+
+    >>> res = qre.estimate(qre.SelectTHC(thc_ham, num_batches=2, rotation_precision=15))
+    >>> print(res)
+    --- Resources: ---
+     Total wires: 221
+       algorithmic wires: 58
+       allocated wires: 163
+         zero state: 163
+         any state: 0
+    Total gates : 4.175E+4
+       'Toffoli': 2.345E+3,
+       'CNOT': 3.183E+4,
+       'X': 582,
+       'Z': 41,
+       'S': 80,
+       'Hadamard': 6.874E+3
+
+    We can see that by batching the rotations, the number of allocated wires decreases
+    at the cost of an increased number of Toffoli gates.
+
     """
 
-    resource_keys = {"thc_ham", "rotation_precision", "select_swap_depth"}
+    resource_keys = {"thc_ham", "num_batches", "rotation_precision", "select_swap_depth"}
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         thc_ham: THCHamiltonian,
+        num_batches: int = 1,
         rotation_precision: int = 15,
         select_swap_depth: int | None = None,
         wires: WiresLike | None = None,
@@ -92,12 +129,18 @@ class SelectTHC(ResourceOperator):
                 f"This method works with thc Hamiltonian, {type(thc_ham)} provided"
             )
 
-        if not isinstance(rotation_precision, int):
+        if not isinstance(rotation_precision, int) or rotation_precision <= 0:
             raise TypeError(
-                f"`rotation_precision` must be an integer, but type {type(rotation_precision)} was provided."
+                f"`rotation_precision` must be a positive integer, but type {type(rotation_precision)} was provided."
+            )
+
+        if not isinstance(num_batches, int) or num_batches not in range(1, thc_ham.num_orbitals):
+            raise ValueError(
+                f"`num_batches` must be a positive integer less than the number of orbitals ({thc_ham.num_orbitals}), but got {num_batches}."
             )
 
         self.thc_ham = thc_ham
+        self.num_batches = num_batches
         self.rotation_precision = rotation_precision
         self.select_swap_depth = select_swap_depth
         num_orb = thc_ham.num_orbitals
@@ -122,14 +165,20 @@ class SelectTHC(ResourceOperator):
         Returns:
             dict: A dictionary containing the resource parameters:
                 * thc_ham (:class:`~.pennylane.estimator.compact_hamiltonian.THCHamiltonian`): a tensor hypercontracted
-                  Hamiltonian on which the select operator is being applied
+                  Hamiltonian on which this ``Select`` operator is being applied
+                * num_batches (int): The number of batches for loading Givens rotation angles
+                  into temporary quantum registers. Must be less than the number of orbitals in ``thc_ham``.
+                  The default value of ``1`` loads all angles in one batch.
                 * rotation_precision (int): The number of bits used to represent the precision for loading
                   the rotation angles for basis rotation. The default value is set to ``15`` bits.
-                * select_swap_depth (int | None): A parameter of :class:`~.pennylane.estimator.templates.QROM`
-                  used to trade-off extra wires for reduced circuit depth. Defaults to :code:`None`, which internally determines the optimal depth.
+                * select_swap_depth (int | None): A parameter of :class:`~.pennylane.estimator.templates.subroutines.QROM`
+                  used to trade-off extra wires for reduced circuit depth. Defaults to :code:`None`, in which
+                  case, the ``select_swap_depth`` is set to the optimal depth that minimizes the total
+                  ``T``-gate count.
         """
         return {
             "thc_ham": self.thc_ham,
+            "num_batches": self.num_batches,
             "rotation_precision": self.rotation_precision,
             "select_swap_depth": self.select_swap_depth,
         }
@@ -138,6 +187,7 @@ class SelectTHC(ResourceOperator):
     def resource_rep(
         cls,
         thc_ham: THCHamiltonian,
+        num_batches: int = 1,
         rotation_precision: int = 15,
         select_swap_depth: int | None = None,
     ) -> CompressedResourceOp:
@@ -146,11 +196,16 @@ class SelectTHC(ResourceOperator):
 
         Args:
             thc_ham (:class:`~pennylane.estimator.compact_hamiltonian.THCHamiltonian`): A tensor hypercontracted
-                Hamiltonian on which the select operator is being applied.
+                Hamiltonian on which this ``Select`` operator is being applied.
+            num_batches (int): The number of batches for loading Givens rotation angles
+                into temporary quantum registers. Must be less than the number of orbitals in ``thc_ham``.
+                The default value of ``1`` loads all angles in one batch.
             rotation_precision (int): The number of bits used to represent the precision for loading
                 the rotation angles for basis rotation. The default value is set to ``15`` bits.
-            select_swap_depth (int | None): A parameter of :class:`~.pennylane.estimator.templates.QROM`
-                used to trade-off extra wires for reduced circuit depth. Defaults to :code:`None`, which internally determines the optimal depth.
+            select_swap_depth (int | None): A parameter of :class:`~.pennylane.estimator.templates.subroutines.QROM`
+                used to trade-off extra wires for reduced circuit depth. Defaults to :code:`None`, in which
+                case, the ``select_swap_depth`` is set to the optimal depth that minimizes the total
+                ``T``-gate count.
 
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
@@ -162,16 +217,23 @@ class SelectTHC(ResourceOperator):
                 f"This method works with thc Hamiltonian, {type(thc_ham)} provided"
             )
 
-        if not isinstance(rotation_precision, int):
+        if not isinstance(rotation_precision, int) or rotation_precision <= 0:
             raise TypeError(
-                f"`rotation_precision` must be an integer, but type {type(rotation_precision)} was provided."
+                f"`rotation_precision` must be a positive integer, but type {type(rotation_precision)} was provided."
             )
+
+        if not isinstance(num_batches, int) or num_batches not in range(1, thc_ham.num_orbitals):
+            raise ValueError(
+                f"`num_batches` must be a positive integer less than the number of orbitals ({thc_ham.num_orbitals}), but got {num_batches}."
+            )
+
         num_orb = thc_ham.num_orbitals
         tensor_rank = thc_ham.tensor_rank
 
         num_wires = num_orb * 2 + 2 * int(np.ceil(math.log2(tensor_rank + 1))) + 6
         params = {
             "thc_ham": thc_ham,
+            "num_batches": num_batches,
             "rotation_precision": rotation_precision,
             "select_swap_depth": select_swap_depth,
         }
@@ -180,7 +242,8 @@ class SelectTHC(ResourceOperator):
     @classmethod
     def resource_decomp(
         cls,
-        thc_ham,
+        thc_ham: THCHamiltonian,
+        num_batches: int = 1,
         rotation_precision: int = 15,
         select_swap_depth: int | None = None,
     ) -> list[GateCount]:
@@ -191,18 +254,24 @@ class SelectTHC(ResourceOperator):
 
             This decomposition assumes that an appropriately sized phase gradient state is available.
             Users should ensure that the cost of constructing this state has been accounted for.
-            See also :class:`~.pennylane.estimator.templates.PhaseGradient`.
+            See also :class:`~.pennylane.estimator.templates.subroutines.PhaseGradient`.
 
         Args:
             thc_ham (:class:`~pennylane.estimator.compact_hamiltonian.THCHamiltonian`): A tensor hypercontracted
-                Hamiltonian on which the select operator is being applied.
+                Hamiltonian on which this ``Select`` operator is being applied.
+            num_batches (int): The number of batches for loading Givens rotation angles
+                into temporary quantum registers. Must be less than the number of orbitals in ``thc_ham``.
+                The default value of ``1`` loads all angles in one batch.
             rotation_precision (int): The number of bits used to represent the precision for loading
                 the rotation angles for basis rotation. The default value is set to ``15`` bits.
-            select_swap_depth (int | None): A parameter of :class:`~.pennylane.estimator.templates.QROM`
-                used to trade-off extra wires for reduced circuit depth. Defaults to :code:`None`, which internally determines the optimal depth.
+            select_swap_depth (int | None): A parameter of :class:`~.pennylane.estimator.templates.subroutines.QROM`
+                used to trade-off extra wires for reduced circuit depth. Defaults to :code:`None`, in which
+                case, the ``select_swap_depth`` is set to the optimal depth that minimizes the total
+                ``T``-gate count.
 
         Resources:
-            The resources are calculated based on Figure 5 in `arXiv:2011.03494 <https://arxiv.org/abs/2011.03494>`_.
+            The resources are calculated based on Figure 5 in `arXiv:2011.03494 <https://arxiv.org/abs/2011.03494>`_ and
+            Figure 4 in `arXiv:2501.06165 <https://arxiv.org/abs/2501.06165>`_.
             The resources are modified to remove the control from the Select operation.
 
         Returns:
@@ -221,20 +290,24 @@ class SelectTHC(ResourceOperator):
         cswap = resource_rep(qre.CSWAP)
         gate_list.append(GateCount(cswap, 4 * num_orb))
 
+        restore_qrom = num_batches != 1
+
+        batched_rotations = int(np.ceil((num_orb - 1) / num_batches))
+
         # Data output for rotations
-        gate_list.append(Allocate(rotation_precision * (num_orb - 1)))
+        gate_list.append(Allocate(rotation_precision * batched_rotations))
 
         # QROM to load rotation angles for both 1-body and 2-body integrals
         qrom_full = resource_rep(
             qre.QROM,
             {
                 "num_bitstrings": tensor_rank + num_orb,
-                "size_bitstring": rotation_precision * (num_orb - 1),
-                "restored": False,
+                "size_bitstring": rotation_precision * batched_rotations,
+                "restored": restore_qrom,
                 "select_swap_depth": select_swap_depth,
             },
         )
-        gate_list.append(GateCount(qrom_full))
+        gate_list.append(GateCount(qrom_full, num_batches))
 
         # Cost for rotations by adding the rotations into the phase gradient state
         semiadder = resource_rep(
@@ -262,12 +335,12 @@ class SelectTHC(ResourceOperator):
             qre.QROM,
             {
                 "num_bitstrings": tensor_rank,
-                "size_bitstring": rotation_precision * (num_orb - 1),
-                "restored": False,
+                "size_bitstring": rotation_precision * batched_rotations,
+                "restored": restore_qrom,
                 "select_swap_depth": select_swap_depth,
             },
         )
-        gate_list.append(GateCount(qrom_twobody))
+        gate_list.append(GateCount(qrom_twobody, num_batches))
 
         # Cost for rotations by adding the rotations into the phase gradient state
         gate_list.append(GateCount(semiadder, num_orb - 1))
@@ -297,7 +370,7 @@ class SelectTHC(ResourceOperator):
 
         # 1 cswap between the spin registers
         gate_list.append(qre.GateCount(cswap, 1))
-        gate_list.append(Deallocate(rotation_precision * (num_orb - 1)))
+        gate_list.append(Deallocate(rotation_precision * batched_rotations))
 
         return gate_list
 
@@ -311,7 +384,7 @@ class SelectTHC(ResourceOperator):
 
             This decomposition assumes that an appropriately sized phase gradient state is available.
             Users should ensure that the cost of constructing this state has been accounted for.
-            See also :class:`~.pennylane.estimator.templates.PhaseGradient`.
+            See also :class:`~.pennylane.estimator.templates.subroutines.PhaseGradient`.
 
         Args:
             num_ctrl_wires (int): the number of wires the operation is controlled on
@@ -330,6 +403,7 @@ class SelectTHC(ResourceOperator):
         thc_ham = target_resource_params["thc_ham"]
         rotation_precision = target_resource_params["rotation_precision"]
         select_swap_depth = target_resource_params["select_swap_depth"]
+        num_batches = target_resource_params["num_batches"]
 
         num_orb = thc_ham.num_orbitals
         tensor_rank = thc_ham.tensor_rank
@@ -351,20 +425,24 @@ class SelectTHC(ResourceOperator):
         cswap = resource_rep(qre.CSWAP)
         gate_list.append(GateCount(cswap, 4 * num_orb))
 
+        restore_qrom = num_batches != 1
+
+        batched_rotations = int(np.ceil((num_orb - 1) / num_batches))
+
         # Data output for rotations
-        gate_list.append(Allocate(rotation_precision * (num_orb - 1)))
+        gate_list.append(Allocate(rotation_precision * batched_rotations))
 
         # QROM for loading rotation angles for 1-body and 2-body integrals
         qrom_full = resource_rep(
             qre.QROM,
             {
                 "num_bitstrings": tensor_rank + num_orb,
-                "size_bitstring": rotation_precision * (num_orb - 1),
-                "restored": False,
+                "size_bitstring": rotation_precision * batched_rotations,
+                "restored": restore_qrom,
                 "select_swap_depth": select_swap_depth,
             },
         )
-        gate_list.append(GateCount(qrom_full))
+        gate_list.append(GateCount(qrom_full, num_batches))
 
         # Cost for rotations by adding the rotations into the phase gradient state
         semiadder = resource_rep(
@@ -392,12 +470,12 @@ class SelectTHC(ResourceOperator):
             qre.QROM,
             {
                 "num_bitstrings": tensor_rank,
-                "size_bitstring": rotation_precision * (num_orb - 1),
-                "restored": False,
+                "size_bitstring": rotation_precision * batched_rotations,
+                "restored": restore_qrom,
                 "select_swap_depth": select_swap_depth,
             },
         )
-        gate_list.append(GateCount(qrom_twobody))
+        gate_list.append(GateCount(qrom_twobody, num_batches))
 
         # Cost for rotations by adding the rotations into the phase gradient state
         gate_list.append(GateCount(semiadder, num_orb - 1))
@@ -435,7 +513,7 @@ class SelectTHC(ResourceOperator):
         # 1 cswap between the spin registers
         gate_list.append(qre.GateCount(cswap, 1))
 
-        gate_list.append(Deallocate(rotation_precision * (num_orb - 1)))
+        gate_list.append(Deallocate(rotation_precision * batched_rotations))
 
         if num_ctrl_wires > 1:
             gate_list.append(Deallocate(1))
