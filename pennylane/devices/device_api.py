@@ -35,7 +35,7 @@ from pennylane.transforms import (
     split_non_commuting,
     split_to_single_terms,
 )
-from pennylane.transforms.core import CompilePipeline, TransformDispatcher, TransformError
+from pennylane.transforms.core import CompilePipeline, Transform, TransformError
 from pennylane.typing import Result, ResultBatch, TensorLike
 from pennylane.wires import Wires
 
@@ -1142,14 +1142,14 @@ def _preprocess_transforms_device(original_device, transform, targs, tkwargs):
     return TransformedDevice(original_device, transform, targs, tkwargs)
 
 
-@TransformDispatcher.generic_register
+@Transform.generic_register
 def apply_to_device(obj: Device, transform, *targs, **tkwargs):
     """Apply the transform on a device"""
     if transform.expand_transform:
         raise TransformError("Device transform does not support expand transforms.")
     if transform.is_informative:
         raise TransformError("Device transform does not support informative transforms.")
-    if transform.final_transform:
+    if transform.is_final_transform:
         raise TransformError("Device transform does not support final transforms.")
 
     if type(obj).preprocess != Device.preprocess:
