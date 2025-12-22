@@ -368,19 +368,17 @@ class HybridQRAM(Operation):
     .. math::
         \text{HybridQRAM}|i\rangle|0\rangle = |i\rangle |b_i\rangle.
 
-    With ``HybridQRAM``, an integer :math:`k` with :math:`0 ≤ k < N` must be chosen, where
-    :math:`N` is the size of the classical data register being queried. The first :math:`k` address
-    bits are termed "select" bits, and are used in a procedure akin to what's involed in
-    :class:`~.SelectOnlyQRAM`. The remaining :math:`N-k` bits are used in a procedure akin to what's
-    in :class:`~.BBQRAM`; instead of a full-depth tree of size :math:`2^N` leaves, ``HybridQRAM``
-    builds a smaller tree of depth :math:`N-k` (:math:`2^{N-k}` leaves) and reuses it :math:`2^k`
-    times.
+    With ``HybridQRAM``, an integer :math:`k` with :math:`0 ≤ k < n` must be chosen, where
+    :math:`N = 2^n` is the size of the classical data register being queried. The first :math:`k`
+    address bits are used in a procedure akin to what's involed in :class:`~.SelectOnlyQRAM`. The
+    remaining :math:`n-k` bits are used in a procedure akin to what's in :class:`~.BBQRAM`; instead
+    of a full-depth tree of size :math:`N` leaves, ``HybridQRAM`` builds a smaller tree of depth
+    :math:`N-k` (:math:`2^{n-k}` leaves) and reuses it :math:`2^k` times.
 
     Args:
         bitstrings (Sequence[str]):
             The classical data as a sequence of bitstrings. The size of the classical data must
-            be :math:`2^{\texttt{len(control_wires)}}`, where
-            :math:`N = \texttt{len(control_wires)}`.
+            be :math:`2^{\texttt{len(control_wires)}}`.
         control_wires (WiresLike):
             The register that stores the index for the entry of the classical data we want to
             access.
@@ -391,13 +389,13 @@ class HybridQRAM(Operation):
             The additional wires required to funnel the desired entry of ``bitstrings`` into the
             ``target_wires`` register. The ``work_wires`` register includes the signal, bus,
             direction, left port and right port wires in that order for a tree of depth
-            :math:`(N-k)`.
+            :math:`(n-k)`.
         k (int):
             The number of "select" bits taken from ``control_wires``.
 
     Raises:
         ValueError: if the ``bitstrings`` are not provided, the ``bitstrings`` are of the wrong
-            length, there are no ``control_wires``, :math:`k >= N`, the ``target_wires`` are of
+            length, there are no ``control_wires``, :math:`k >= n`, the ``target_wires`` are of
             the wrong length, or the ``work_wires`` are of the wrong length.
 
     .. seealso::
@@ -419,7 +417,7 @@ class HybridQRAM(Operation):
         bitstrings = ["010", "111", "110", "000", "010", "111", "110", "000"]
         bitstring_size = 3
 
-    The ``control_wires`` are split via the value of ``k``, which allows us to leverage
+    The ``control_wires`` are split via the value of :math:`k`, which allows us to leverage
     :class:`~.SelectOnly` and :class:`~.BBQRAM` behaviour.
 
     .. code-block:: python
