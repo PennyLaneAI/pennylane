@@ -58,8 +58,6 @@ def parity_synth(tape):
         qml.capture.enable()
         dev = qml.device("lightning.qubit", wires=2)
 
-        @qml.qjit(target="mlir")
-        @parity_synth_pass
         @qml.qnode(dev)
         def circuit(x: float, y: float, z: float):
             qml.CNOT((0, 1))
@@ -71,7 +69,7 @@ def parity_synth(tape):
             qml.CNOT((1, 0))
             return qml.state()
 
-    We can draw the circuit and observe the last ``RZ`` gate to be wrapped in a pair of ``CNOT``
+    We can draw the circuit and observe the last ``RZ`` gate being wrapped in a pair of ``CNOT``
     gates that commute with it:
 
     >>> print(qml.draw(circuit)(0.52, 0.12, 0.2))
@@ -87,6 +85,7 @@ def parity_synth(tape):
         compiler = Compiler()
         mlir_module = compiler.run(circuit_qjit.mlir_module)
 
+    TODO: Port the following output an ddiscussion to PL-friendly version
     Looking at the compiled module below, we find only five gates left in the program (note that
     we reduced the output for the purpose of this example); the ``CNOT``\ s
     have been cancelled successfully. Note that for this circuit, ParitySynth is run twice; once
