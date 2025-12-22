@@ -210,6 +210,16 @@
   has been renamed to `pennylane.transforms.core.compile_pipeline`, and the old name is no longer available.
   [(#8735)](https://github.com/PennyLaneAI/pennylane/pull/8735)
 
+* The `TransformDispatcher` has been renamed to :class:`~.transforms.core.Transform` and is now
+  available at the top level as `qml.transform`.
+  [(#8756)](https://github.com/PennyLaneAI/pennylane/pull/8756)
+
+* The `final_transform` property of the :class:`~.transforms.core.BoundTransform` has been renamed 
+  to `is_final_transform` to better follow the naming convention for boolean properties. The `transform` 
+  property of the :class:`~.transforms.core.Transform` and :class:`~.transforms.core.BoundTransform` 
+  has been renamed to `tape_transform` to avoid ambiguity.
+  [(#8756)](https://github.com/PennyLaneAI/pennylane/pull/8756)
+
 * The :class:`~pennylane.transforms.core.CompilePipeline` (previously known as `TransformProgram`)
   is available at the top level namespace as `qml.CompilePipeline`.
   [(#8735)](https://github.com/PennyLaneAI/pennylane/pull/8735)
@@ -943,6 +953,9 @@ A warning message has been added to :doc:`Building a plugin <../development/plug
 * Fixes a bug where :class:`~.estimator.SelectTHC`, `~.estimator.QubitizeTHC`, `~.estimator.PrepTHC` are not accounting for auxiliary
   wires correctly.
   [(#8719)](https://github.com/PennyLaneAI/pennylane/pull/8719)
+
+* Fixes a bug where an error is raised when `to_openqasm` is used with `qml.decomposition.enable_graph()`
+  [(#8809)](https://github.com/PennyLaneAI/pennylane/pull/8809)
 
 <h3>Contributors ✍️</h3>
 
