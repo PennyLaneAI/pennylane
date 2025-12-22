@@ -46,10 +46,7 @@ def _multi_swap(wires1, wires2):
 def _new_ops(depth, target_wires, control_wires, swap_wires, data):
 
     with QueuingManager.stop_recording():
-        ops_new = [
-            BasisEmbedding(int("".join([str(int(bit)) for bit in bits]), 2), wires=target_wires)
-            for bits in data
-        ]
+        ops_new = [BasisEmbedding(bits, wires=target_wires) for bits in data]
         ops_identity_new = ops_new + [qml_ops.I(target_wires)] * int(
             2 ** len(control_wires) - len(ops_new)
         )
@@ -292,10 +289,7 @@ class QROM(Operation):
         if len(control_wires) == 0:
             embeddings = []
             for bits in data:
-                integer = 0
-                for power, bit in enumerate(bits[::-1]):
-                    integer += (2**power) * int(bit)
-                embeddings.append(BasisEmbedding(integer, wires=target_wires))
+                embeddings.append(BasisEmbedding(bits, wires=target_wires))
             return embeddings
 
         with QueuingManager.stop_recording():
@@ -307,10 +301,7 @@ class QROM(Operation):
             depth = int(2 ** np.floor(np.log2(depth)))
             depth = min(depth, len(data))
 
-            ops = [
-                BasisEmbedding(int("".join([str(int(bit)) for bit in bits]), 2), wires=target_wires)
-                for bits in data
-            ]
+            ops = [BasisEmbedding(bits, wires=target_wires) for bits in data]
             ops_identity = ops + [qml_ops.I(target_wires)] * int(2 ** len(control_wires) - len(ops))
 
             n_columns = len(ops) // depth + int(bool(len(ops) % depth))
@@ -512,7 +503,7 @@ def _qrom_decomposition(
 ):  # pylint: disable=unused-argument, too-many-arguments
     if len(control_wires) == 0:
         for bits in data:
-            BasisEmbedding(int("".join([str(int(bit)) for bit in bits]), 2), wires=target_wires)
+            BasisEmbedding(bits, wires=target_wires)
         return
 
     swap_wires = target_wires + work_wires
