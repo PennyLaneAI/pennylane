@@ -54,6 +54,11 @@ def to_ppr(tape):
     Returns:
         :class:`QNode <pennylane.QNode>`
 
+    .. seealso::
+        :func:`~.transforms.commute_ppr`, :func:`~.transforms.merge_ppr_ppm`,
+        :func:`~.transforms.ppr_to_ppm`, :func:`~.transforms.ppm_compilation`,
+        :func:`~.transforms.reduce_t_depth`, :func:`~.transforms.decompose_arbitrary_ppr`
+
     .. note::
 
         For better compatibility with other PennyLane functionality, ensure that PennyLane program
@@ -141,6 +146,11 @@ def commute_ppr(tape, *, max_pauli_size=0):
 
     Returns:
         :class:`QNode <pennylane.QNode>`
+
+    .. seealso::
+        :func:`~.transforms.to_ppr`, :func:`~.transforms.merge_ppr_ppm`,
+        :func:`~.transforms.ppr_to_ppm`, :func:`~.transforms.ppm_compilation`,
+        :func:`~.transforms.reduce_t_depth`, :func:`~.transforms.decompose_arbitrary_ppr`
 
     .. note::
 
@@ -244,6 +254,11 @@ def merge_ppr_ppm(tape=None, *, max_pauli_size=0):
 
     Returns:
         :class:`QNode <pennylane.QNode>`
+
+    .. seealso::
+        :func:`~.transforms.to_ppr`, :func:`~.transforms.commute_ppr`,
+        :func:`~.transforms.ppr_to_ppm`, :func:`~.transforms.ppm_compilation`,
+        :func:`~.transforms.reduce_t_depth`, :func:`~.transforms.decompose_arbitrary_ppr`
 
     .. note::
 
@@ -350,6 +365,11 @@ def ppr_to_ppm(tape=None, *, decompose_method="pauli-corrected", avoid_y_measure
 
     Returns:
         :class:`QNode <pennylane.QNode>`
+
+    .. seealso::
+        :func:`~.transforms.to_ppr`, :func:`~.transforms.commute_ppr`,
+        :func:`~.transforms.merge_ppr_ppm`, :func:`~.transforms.ppm_compilation`,
+        :func:`~.transforms.reduce_t_depth`, :func:`~.transforms.decompose_arbitrary_ppr`
 
     .. note::
 
@@ -568,6 +588,11 @@ def reduce_t_depth(qnode):
     Returns:
         ~.QNode: Returns decorated QNode.
 
+    .. seealso::
+        :func:`~.transforms.to_ppr`, :func:`~.transforms.commute_ppr`,
+        :func:`~.transforms.merge_ppr_ppm`, :func:`~.transforms.ppr_to_ppm`,
+        :func:`~.transforms.ppm_compilation`, :func:`~.transforms.decompose_arbitrary_ppr`
+
     .. note::
 
         For better compatibility with other PennyLane functionality, ensure that PennyLane program
@@ -670,6 +695,11 @@ def decompose_arbitrary_ppr(qnode):
     Returns:
         ~.QNode: Returns decorated QNode.
 
+    .. seealso::
+        :func:`~.transforms.to_ppr`, :func:`~.transforms.commute_ppr`,
+        :func:`~.transforms.merge_ppr_ppm`, :func:`~.transforms.ppr_to_ppm`,
+        :func:`~.transforms.ppm_compilation`, :func:`~.transforms.reduce_t_depth`
+
     .. note::
 
         For better compatibility with other PennyLane functionality, ensure that PennyLane program
@@ -682,7 +712,7 @@ def decompose_arbitrary_ppr(qnode):
     PPRs and PPMs in accordance with
     `Figure 13(d) of arXiv:2211.15465 <https://arxiv.org/abs/2211.15465>`__.
 
-    .. code-block::
+    .. code-block:: python
 
         import pennylane as qml
 
