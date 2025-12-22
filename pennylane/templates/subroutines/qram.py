@@ -374,7 +374,7 @@ class HybridQRAM(Operation):
     address bits are used in a procedure akin to what's involed in :class:`~.SelectOnlyQRAM`. The
     remaining :math:`n-k` bits are used in a procedure akin to what's in :class:`~.BBQRAM`; instead
     of a full-depth tree of size :math:`N` leaves, ``HybridQRAM`` builds a smaller tree of depth
-    :math:`N-k` (:math:`2^{n-k}` leaves) and reuses it :math:`2^k` times.
+    :math:`n-k` (:math:`2^{n-k}` leaves) and reuses it :math:`2^k` times.
 
     Args:
         bitstrings (Sequence[str]):
