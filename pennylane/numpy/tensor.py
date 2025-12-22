@@ -128,9 +128,9 @@ class tensor(_np.ndarray):
         string = super().__repr__()
         return string[:-1] + f", requires_grad={self.requires_grad})"
 
-    def __array_wrap__(self, obj):
+    def __array_wrap__(self, obj, context=None, return_scalar=False):
         out_arr = tensor(obj, requires_grad=self.requires_grad)
-        return super().__array_wrap__(out_arr)
+        return super().__array_wrap__(out_arr, context, return_scalar)
 
     def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
 
