@@ -20,6 +20,7 @@ import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.measurements import Shots
 from pennylane.resource import SpecsResources
+from pennylane.resource.specs import _preprocess_level_input
 
 devices_list = [
     (qml.device("default.qubit"), None),
@@ -38,6 +39,51 @@ def test_error_with_bad_key(key):
     out = qml.specs(c)()
     with pytest.raises(KeyError):
         _ = out[key]
+
+
+@pytest.mark.parametrize(
+    "level,output,expect_warnings",
+    [
+        (0, [0], False),
+        (slice(3), [0, 1, 2], False),
+        (slice(1, 3), [1, 2], False),
+        (slice(1, 4, 2), [1, 3], False),
+        ([0, 1], [0, 1], False),
+        ([0, 1, 1, 1], [0, 1], True),
+        ((0, 1), [0, 1], False),
+        (range(3, 0, -1), [1, 2, 3], True),
+        ("foo", [2], False),
+        (["foo", "bar"], [2, 3], False),
+        ((1, "foo", "baz", 4, "bar"), [1, 2, 3, 4, 5], True),
+    ],
+)
+def test_preprocess_levels(level, output, expect_warnings):
+    """Test that _preprocess_level_input works correctly"""
+    marker_to_level = {
+        "foo": 2,
+        "bar": 3,
+        "baz": 5,
+    }
+
+    if expect_warnings:
+        with pytest.warns(
+            UserWarning,
+            match="The 'level' argument to qml.specs for QJIT'd QNodes has been sorted to be in ascending "
+            "order with no duplicate levels.",
+        ):
+            assert _preprocess_level_input(level, marker_to_level) == output
+    else:
+        assert _preprocess_level_input(level, marker_to_level) == output
+
+
+def test_preprocess_levels_invalid():
+    with pytest.raises(
+        ValueError, match="The 'level' argument to qml.specs for QJIT'd QNodes must be non-negative"
+    ):
+        _preprocess_level_input(-1, {})
+
+    with pytest.raises(ValueError, match="Marker name 'foo' not found"):
+        _preprocess_level_input("foo", {})
 
 
 @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
@@ -390,7 +436,7 @@ Level: 2
 
 Resource specifications:
   Batched tape 0:
-    Total qubit allocations: 2
+    Total wire allocations: 2
     Total gates: 5
     Circuit depth: 5
 
@@ -404,7 +450,7 @@ Resource specifications:
       expval(Prod(num_wires=2, num_terms=2)): 1
 
   Batched tape 1:
-    Total qubit allocations: 3
+    Total wire allocations: 3
     Total gates: 5
     Circuit depth: 5
 
@@ -418,7 +464,7 @@ Resource specifications:
       expval(Prod(num_wires=2, num_terms=2)): 1
 
   Batched tape 2:
-    Total qubit allocations: 3
+    Total wire allocations: 3
     Total gates: 5
     Circuit depth: 5
 
