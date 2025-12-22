@@ -600,7 +600,7 @@ def test_qnode_mid_circuit_measurement_not_deferred_device_api(mocker):
         return qml.probs(wires=0)
 
     draw_qnode = qml.draw_mpl(circ)
-    spy = mocker.spy(qml.defer_measurements, "_transform")
+    spy = mocker.spy(qml.defer_measurements, "_tape_transform")
 
     _ = draw_qnode()
     spy.assert_not_called()
@@ -619,7 +619,7 @@ def test_qnode_transform_program(mocker):
     draw_qnode = qml.draw_mpl(circuit, decimals=2)
     qnode_transform = circuit.transform_program[0]
     # pylint: disable=protected-access
-    spy = mocker.spy(qnode_transform._transform_dispatcher, "_transform")
+    spy = mocker.spy(qnode_transform._transform, "_tape_transform")
 
     _ = draw_qnode()
     spy.assert_called_once()

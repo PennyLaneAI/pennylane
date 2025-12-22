@@ -1,4 +1,4 @@
-# Copyright 2023 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,23 +11,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-r"""This module contains the experimental transforms building blocks (core)."""
-
-import inspect
-from .transform_dispatcher import (
-    Transform,
-    TransformContainer,
-    TransformError,
-    BoundTransform,
-    TransformDispatcher,
-)
-from .compile_pipeline import CompilePipeline, TransformProgram
+"""
+Defines methods for calculation different forms of derivatives.
+"""
 
 
-def transform(*args, **kwargs):
-    """placeholder"""
-    return Transform(*args, **kwargs)
-
-
-transform.__doc__ = Transform.__doc__
-transform.__signature__ = inspect.signature(Transform)
+from .grad import grad, jacobian
+from .jvp import jvp
+from .vjp import vjp
