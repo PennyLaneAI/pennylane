@@ -571,6 +571,7 @@ jobs:
       pytest_additional_args: ${{ needs.warnings-as-errors-setup.outputs.pytest_warning_args }}
       pytest_xml_file_path: '${{ inputs.job_name_prefix }}qchem-tests (${{ matrix.python-version }})${{ inputs.job_name_suffix }}.xml'
       additional_pip_packages: |
+        # pyscf is not compatible with numpy 2.4 yet
         openfermionpyscf basis-set-exchange geometric scikit-learn numpy<2.4
         ${{ inputs.additional_python_packages }}
 
