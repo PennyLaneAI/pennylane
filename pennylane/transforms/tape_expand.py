@@ -376,7 +376,7 @@ def _modify_program(program, custom_decomps):
         return op.decomposition()
 
     for container in program:
-        if container.transform == qml.devices.preprocess.decompose.transform:
+        if container.tape_transform == qml.devices.preprocess.decompose.tape_transform:
             container.kwargs["decomposer"] = decomposer
 
             for cond in ["stopping_condition", "stopping_condition_shots"]:
