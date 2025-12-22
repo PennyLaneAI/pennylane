@@ -82,6 +82,20 @@ def _select_ops(control_wires, depth, target_wires, swap_wires, bitstrings):
 def _swap_ops(control_wires, depth, swap_wires, target_wires):
     n_control_select_wires = int(math.ceil(math.log2(2 ** len(control_wires) / depth)))
     control_swap_wires = control_wires[n_control_select_wires:]
+    for ind in range(len(control_swap_wires) - 1, -1, -1):
+        for j in range(2**ind - 1, -1, -1):
+            new_op = qml_ops.prod(_multi_swap)(
+                swap_wires[(j) * len(target_wires) : (j + 1) * len(target_wires)],
+                swap_wires[
+                    (j + 2**ind) * len(target_wires) : (j + 2 ** (ind + 1)) * len(target_wires)
+                ],
+            )
+            qml_ops.ctrl(new_op, control=control_swap_wires[-ind - 1])
+
+
+def _adjoint_swap_ops(control_wires, depth, swap_wires, target_wires):
+    n_control_select_wires = int(math.ceil(math.log2(2 ** len(control_wires) / depth)))
+    control_swap_wires = control_wires[n_control_select_wires:]
     for ind in range(len(control_swap_wires)):
         for j in range(2**ind):
             new_op = qml_ops.prod(_multi_swap)(
@@ -519,7 +533,7 @@ def _qrom_decomposition(
         for _ in range(2):
             for w in target_wires:
                 qml_ops.Hadamard(wires=w)
-            _swap_ops(control_wires, depth, swap_wires, target_wires)
+            _adjoint_swap_ops(control_wires, depth, swap_wires, target_wires)
             _select_ops(control_wires, depth, target_wires, swap_wires, bitstrings)
             _swap_ops(control_wires, depth, swap_wires, target_wires)
 

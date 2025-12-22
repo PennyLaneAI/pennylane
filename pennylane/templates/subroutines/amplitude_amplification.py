@@ -273,13 +273,13 @@ def _amplitude_amplification_decomposition(
 
         def alpha(iter):
             return np.real(
-                2 * np.arctan(1 / (np.tan(2 * np.pi * (iter + 1) / iters) * np.sqrt(1 - gamma**2)))
+                2 * np.arctan(1 / (np.tan(2 * np.pi * iter / iters) * np.sqrt(1 - gamma**2)))
             )
 
         def beta(iter):
-            return -alpha(-(iter + 1))
+            return -alpha(iters // 2 + 1 - iter)
 
-        @for_loop(iters // 2)
+        @for_loop(1, iters // 2 + 1)
         def half_iter_loop(iter):
             Hadamard(wires=work_wire)
             ctrl(O, control=work_wire)
