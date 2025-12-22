@@ -24,6 +24,7 @@ performs the leaf write (classical bit flip), then routes back and restores the 
 """
 from collections import defaultdict
 from dataclasses import dataclass
+from typing import Sequence
 
 from pennylane import math
 from pennylane.decomposition import (
@@ -215,7 +216,7 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
 
     def __init__(
         self,
-        data: TensorLike,
+        data: TensorLike | Sequence[str],
         control_wires: WiresLike,
         target_wires: WiresLike,
         work_wires: WiresLike,
@@ -508,7 +509,7 @@ class HybridQRAM(Operation):
 
     def __init__(
         self,
-        data: TensorLike,
+        data: TensorLike | Sequence[str],
         control_wires: WiresLike,
         target_wires: WiresLike,
         work_wires: WiresLike,
@@ -970,7 +971,7 @@ class SelectOnlyQRAM(Operation):
     # pylint: disable=too-many-arguments
     def __init__(
         self,
-        data: TensorLike,
+        data: TensorLike | Sequence[str],
         control_wires: WiresLike,
         target_wires: WiresLike,
         select_wires: WiresLike | None = None,
