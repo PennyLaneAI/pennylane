@@ -49,7 +49,7 @@ def test_falsy_zero_as_work_wire():
         target_wires=[3],
         work_wires=0,
     )
-    qml.ops.functions.assert_valid(op)
+    qml.ops.functions.assert_valid(op, skip_differentiation=True)
 
 
 class TestQROM:

@@ -495,7 +495,7 @@ def _qrom_decomposition_resources(
     return resources
 
 
-@register_resources(_qrom_decomposition_resources, exact=False)
+@register_resources(_qrom_decomposition_resources)
 def _qrom_decomposition(
     data, control_wires, target_wires, work_wires, clean, **__
 ):  # pylint: disable=unused-argument, too-many-arguments
