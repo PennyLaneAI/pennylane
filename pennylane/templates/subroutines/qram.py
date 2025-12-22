@@ -24,7 +24,6 @@ performs the leaf write (classical bit flip), then routes back and restores the 
 """
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Sequence
 
 from pennylane import math
 from pennylane.decomposition import (
@@ -709,6 +708,7 @@ def _tree_leaf_ops_for_bit_block_ctrl(
         # Global address index: (block_index << n_tree) + p
         addr = (block_index << n_tree) + p
         bit = data[addr][j]
+        # pylint: disable=cell-var-from-loop
         cond(bit, lambda: ctrl(PauliZ(wires=target), control=[signal], control_values=[1]))()
 
 
@@ -1057,7 +1057,7 @@ def _select_only_qram_resources(
                 num_control_wires=n_total,
                 num_zero_control_values=0,
             )
-        ] += num_control_wires
+        ] += num_target_wires
 
     return resources
 
@@ -1096,13 +1096,9 @@ def _select_only_qram_decomposition(
         for j in range(len(data[0])):
             # Multi-controlled X on target_wires[j],
             # controlled on controls matching `control_values`.
-            cond(
-                bits[j],
-                lambda: ctrl(
-                    PauliX(wires=target_wires[j]),
-                    control=controls,
-                ),
-            )()
+
+            # pylint: disable=cell-var-from-loop
+            cond(bits[j], lambda: ctrl(PauliX(wires=target_wires[j]), control=controls))()
 
         _flip_controls(controls, control_values)
 
