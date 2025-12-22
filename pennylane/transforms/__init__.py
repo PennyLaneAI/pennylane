@@ -344,14 +344,14 @@ from .compile import compile
 
 from .decompositions import (
     clifford_t_decomposition,
-    gridsynth,
-    to_ppr,
     commute_ppr,
-    merge_ppr_ppm,
-    ppr_to_ppm,
-    ppm_compilation,
-    reduce_t_depth,
     decompose_arbitrary_ppr,
+    gridsynth,
+    merge_ppr_ppm,
+    ppm_compilation,
+    ppr_to_ppm,
+    reduce_t_depth,
+    to_ppr,
 )
 from .defer_measurements import defer_measurements
 from .diagonalize_measurements import diagonalize_measurements
