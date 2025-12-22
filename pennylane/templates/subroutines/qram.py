@@ -34,11 +34,21 @@ from pennylane.decomposition import (
     resource_rep,
 )
 from pennylane.operation import Operation
-from pennylane.ops import CNOT, CSWAP, SWAP, Controlled, Hadamard, PauliX, PauliZ, adjoint, ctrl, cond
+from pennylane.ops import (
+    CNOT,
+    CSWAP,
+    SWAP,
+    Controlled,
+    Hadamard,
+    PauliX,
+    PauliZ,
+    adjoint,
+    cond,
+    ctrl,
+)
 from pennylane.templates import BasisEmbedding
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
-
 
 # pylint: disable=consider-using-generator
 
@@ -268,7 +278,7 @@ def _bucket_brigade_qram_resources(num_controls, num_target_wires):
     """
     Calculates the resources, assuming the worst case where data is all ones.
     """
-    n_k = int(math.log2(2 ** num_controls))
+    n_k = int(math.log2(2**num_controls))
     resources = defaultdict(int)
     resources[resource_rep(SWAP)] = ((1 << n_k) - 1 + n_k) * 2 + num_target_wires * 2
     resources[resource_rep(CSWAP)] = ((1 << n_k) - 1) * num_target_wires * 2 + (
@@ -340,9 +350,7 @@ def _leaf_ops_for_bit(wire_manager, data, n_k, j):
 
 
 @register_resources(_bucket_brigade_qram_resources, exact=False)
-def _bucket_brigade_qram_decomposition(
-    data, wire_manager, **__
-):  # pylint: disable=unused-argument
+def _bucket_brigade_qram_decomposition(data, wire_manager, **__):  # pylint: disable=unused-argument
     bus_wire = wire_manager.bus_wire
     control_wires = wire_manager.control_wires
     n_k = len(control_wires)
@@ -491,7 +499,6 @@ class HybridQRAM(Operation):
     grad_method = None
 
     resource_keys = {
-        "data",
         "num_target_wires",
         "num_select_wires",
         "num_tree_control_wires",
@@ -561,10 +568,9 @@ class HybridQRAM(Operation):
 
         all_wires = list(control_wires) + list(target_wires) + list(work_wires)
 
-        super().__init__(wires=all_wires, id=id)
+        super().__init__(data, wires=all_wires, id=id)
 
         self._hyperparameters = {
-            "data": data,
             "select_wires": select_wires,
             "signal_wire": signal_wire,
             "tree_wire_manager": tree_wire_manager,
@@ -579,14 +585,13 @@ class HybridQRAM(Operation):
         wire_manager = self.hyperparameters["tree_wire_manager"]
         k = len(self.hyperparameters["select_wires"])
         return {
-            "data": self.hyperparameters["data"],
             "num_target_wires": len(wire_manager.target_wires),
             "num_select_wires": k,
             "num_tree_control_wires": len(wire_manager.control_wires[k:]),
         }
 
 
-def _hybrid_qram_resources(data, num_target_wires, num_select_wires, num_tree_control_wires):
+def _hybrid_qram_resources(num_target_wires, num_select_wires, num_tree_control_wires):
     resources = defaultdict(int)
     num_blocks = 1 << num_select_wires
 
@@ -678,13 +683,8 @@ def _hybrid_qram_resources(data, num_target_wires, num_select_wires, num_tree_co
                 num_control_wires=1,
                 num_zero_control_values=0,
             )
-        ] += sum(
-            [
-                data[(block_index << num_tree_control_wires) + p][j] == 1
-                for j in range(num_target_wires)
-                for p in range(1 << num_tree_control_wires)
-            ]
-        )
+        ] += (1 << num_tree_control_wires) * num_target_wires
+
     return resources
 
 
@@ -810,9 +810,9 @@ def _block_tree_query_ops(
     adjoint(_tree_mark_routers_via_bus_ctrl, lazy=False)(tree_wire_manager, n_tree, k, signal)
 
 
-@register_resources(_hybrid_qram_resources)
+@register_resources(_hybrid_qram_resources, exact=False)
 def _hybrid_qram_decomposition(
-    wires, data, tree_wire_manager, select_wires, signal_wire, **_
+    data, tree_wire_manager, select_wires, signal_wire, **_
 ):  # pylint: disable=unused-argument, too-many-arguments
     k = len(select_wires)
 
@@ -1098,7 +1098,7 @@ def _select_only_qram_decomposition(
                 lambda: ctrl(
                     PauliX(wires=target_wires[j]),
                     control=controls,
-                )
+                ),
             )()
 
         _flip_controls(controls, control_values)
