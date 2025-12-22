@@ -119,7 +119,7 @@ class TestMapToResourceOp:
             ),
             (
                 qtemps.QROM(
-                    bitstrings=["01", "11", "10"],
+                    data=[[0, 1], [1, 1], [1, 0]],
                     control_wires=[0, 1],
                     target_wires=[2, 3],
                     work_wires=[4],
