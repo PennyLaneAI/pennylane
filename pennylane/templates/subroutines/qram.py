@@ -916,7 +916,7 @@ class SelectOnlyQRAM(Operation):
         dev = qml.device("default.qubit")
         @qml.qnode(dev)
         def select_only_qram():
-            # prepare an address, e.g., |10> (index 2)
+            # prepare an address, e.g., |010> (index 2)
             qml.BasisEmbedding(2, wires=reg["control"])
 
             qml.SelectOnlyQRAM(
