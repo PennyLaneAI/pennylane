@@ -134,37 +134,21 @@ class IQP(ResourceOperator):
 
     **Example:**
 
-    We can inspect the resources used by an IQP subroutine by using `qml.specs`.
+    The resources for this operation are computed using:
 
-    .. code-block:: python
-
-        import pennylane as qml
-
-        @qml.qnode(qml.device('lightning.qubit'))
-        def circuit():
-            qml.IQP(
-                weights=math.random.uniform(0, 2 * np.pi, 4),
-                pattern=[[[0]], [[1]], [[2]], [[3]]],
-                spin_sym=True,
-                num_wires=4,
-            )
-            return qml.state()
-
-    >>> print(qml.specs(circuit, level="device")())
-    Device: lightning.qubit
-    Device wires: None
-    Shots: Shots(total=None)
-    Level: device
-    Resource specifications:
-      Total qubit allocations: 4
-      Total gates: 13
-      Circuit depth: 4
-      Gate types:
-        PauliRot: 1
-        Hadamard: 8
-        MultiRZ: 4
-      Measurements:
-        state(all wires): 1
+    >>> import pennylane.estimator as qre
+    >>> iqp = qre.IQP(num_wires=4, pattern=[[[0]], [[1]], [[2]], [[3]]])
+    >>> print(qre.estimate(iqp))
+    --- Resources: ---
+    Total wires: 4
+        algorithmic wires: 4
+        allocated wires: 0
+        zero state: 0
+        any state: 0
+     Total gates : 184
+         'T': 176,
+         'CNOT': 0,
+         'Hadamard': 8
 
     .. seealso:: :class:`~.IQP`
 
