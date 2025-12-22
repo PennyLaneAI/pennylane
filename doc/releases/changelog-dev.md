@@ -87,6 +87,7 @@
   `Train on classical, deploy on quantum <https://arxiv.org/abs/2503.02934>`_ work for generative quantum machine 
   learning.
   [(#8748)](https://github.com/PennyLaneAI/pennylane/pull/8748)
+  [(#8807)](https://github.com/PennyLaneAI/pennylane/pull/8807)
 
 <h4>Pauli-based computation </h4>
 
