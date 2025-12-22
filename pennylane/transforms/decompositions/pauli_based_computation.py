@@ -25,19 +25,16 @@ def to_ppr(tape):
 
     .. note::
 
-        This transform requires decorating the QNode with :func:`@qml.qjit <pennylane.qjit>`.
+        This transform requires decorating the QNode with :func:`@qml.qjit <pennylane.qjit>`. In
+        addition, the circuits that generated from this pass are currently not executable on any
+        backend. This pass is only for Pauli-based-computation analysis with the ``null.qubit``
+        device and potential future execution when a suitable backend is available.
 
     Clifford gates are defined as :math:`\exp(-{iP\tfrac{\pi}{4}})`, where :math:`P` is a Pauli word.
     Non-Clifford gates are defined as :math:`\exp(-{iP\tfrac{\pi}{8}})`.
 
     For more information on Pauli product measurements and Pauli product rotations, check out the
     `compilation hub <https://pennylane.ai/compilation/pauli-product-measurement>`__.
-
-    .. note::
-
-        The circuits that generated from this pass are currently not executable on any backend.
-        This pass is only for Pauli-based-computation analysis with the ``null.qubit`` device and
-        potential future execution when a suitable backend is available.
 
     The full list of supported gates and operations are
     ``qml.H``,
@@ -56,6 +53,11 @@ def to_ppr(tape):
 
     Returns:
         :class:`QNode <pennylane.QNode>`
+
+    .. note::
+
+        For better compatibility with other PennyLane functionality, ensure that PennyLane program
+        capture is enabled with :func:`pennylane.capture.enable`.
 
     **Example**
 
@@ -80,40 +82,30 @@ def to_ppr(tape):
     To inspect programs compiled with ``to_ppr`` via :func:`~.specs`, ensure that ``target="mlir"``
     is given in the :func:`qjit <pennylane.qjit>` decorator.
 
-    >>> print(qml.specs(circuit, level=2)().resources)
+    >>> print(qml.specs(circuit, level=2)())
+    Device: null.qubit
+    Device wires: 2
+    Shots: Shots(total=None)
+    Level: 2
+    <BLANKLINE>
+    Resource specifications:
     Total wire allocations: 2
     Total gates: 8
     Circuit depth: Not computed
     <BLANKLINE>
     Gate types:
-    PPR-pi/4: 6
-    PPM: 1
-    PPR-pi/8: 1
+        PPR-pi/4-w1: 5
+        PPR-pi/4-w2: 1
+        PPM-w1: 1
+        PPR-pi/8-w1: 1
     <BLANKLINE>
     Measurements:
-    expval(PauliZ): 1
+        expval(PauliZ): 1
 
     In the above output, ``PPR-theta-weight`` denotes the type of PPR present in the circuit, where
     ``theta`` is the PPR angle (:math:`\theta`) and ``weight`` is the PPR weight. Note that the
     mid-circuit measurement in the circuit has been converted to a Pauli product measurement (PPM),
     as well.
-
-    .. details::
-        :title: Usage Details
-
-        **Visualizing Compiled Circuits**
-
-        catalyst.draw_graph
-
-        **Circuits with Arguments**
-
-        must use type hints
-
-        **Program Capture and Catalyst**
-
-        PC enabled: qml.measure
-        PC disabled: catalyst.measure
-
     """
     raise NotImplementedError(
         "The to_ppr compilation pass has no tape implementation, and can only be applied when decorating the entire worfklow with @qml.qjit and when it is placed after all transforms that only have a tape implementation."
@@ -128,18 +120,17 @@ def commute_ppr(tape, *, max_pauli_size=0):
 
     .. note::
 
+        This transform requires decorating the QNode with :func:`@qml.qjit <pennylane.qjit>`. In
+        addition, the circuits that generated from this pass are currently not executable on any
+        backend. This pass is only for Pauli-based-computation analysis with the ``null.qubit``
+        device and potential future execution when a suitable backend is available.
         This transform requires decorating the QNode with :func:`@qml.qjit <pennylane.qjit>`.
-        Additionally, the :func:`pennylane.transforms.to_ppr` transform must be applied before
+
+        Lastly, the :func:`pennylane.transforms.to_ppr` transform must be applied before
         ``commute_ppr``.
 
     For more information on PPRs, check out the
     `Compilation Hub <https://pennylane.ai/compilation/pauli-product-measurement>`_.
-
-    .. note::
-
-        The circuits that generated from this pass are currently not executable on any backend.
-        This pass is only for Pauli-based-computation analysis with the ``null.qubit`` device and
-        potential future execution when a suitable backend is available.
 
     Args:
         fn (QNode): QNode to apply the pass to.
@@ -150,6 +141,11 @@ def commute_ppr(tape, *, max_pauli_size=0):
 
     Returns:
         :class:`QNode <pennylane.QNode>`
+
+    .. note::
+
+        For better compatibility with other PennyLane functionality, ensure that PennyLane program
+        capture is enabled with :func:`pennylane.capture.enable`.
 
     **Example**
 
@@ -198,8 +194,9 @@ def commute_ppr(tape, *, max_pauli_size=0):
     Circuit depth: Not computed
     <BLANKLINE>
     Gate types:
-        PPR-pi/8: 1
-        PPR-pi/4: 4
+        PPR-pi/8-w1: 1
+        PPR-pi/4-w1: 3
+        PPR-pi/4-w2: 1
     <BLANKLINE>
     Measurements:
         expval(PauliZ): 1
@@ -226,19 +223,17 @@ def merge_ppr_ppm(tape=None, *, max_pauli_size=0):
 
     .. note::
 
-        This transform requires decorating the QNode with :func:`@qml.qjit <pennylane.qjit>` and for
-        program capture to be enabled via :func:`qml.capture.enable() <pennylane.capture.enable>`.
-        Additionally, the :func:`pennylane.transforms.to_ppr` transform must be applied before
-        ``merge_ppr_ppm``.
+        This transform requires decorating the QNode with :func:`@qml.qjit <pennylane.qjit>`. In
+        addition, the circuits that generated from this pass are currently not executable on any
+        backend. This pass is only for Pauli-based-computation analysis with the ``null.qubit``
+        device and potential future execution when a suitable backend is available.
+        This transform requires decorating the QNode with :func:`@qml.qjit <pennylane.qjit>`.
+
+        Lastly, the :func:`pennylane.transforms.to_ppr` transform must be applied before
+        ``ppr_to_ppm``.
 
     For more information on PPRs and PPMs, check out
     the `Compilation Hub <https://pennylane.ai/compilation/pauli-product-measurement>`_.
-
-    .. note::
-
-        The circuits that generated from this pass are currently not executable on any backend.
-        This pass is only for analysis with the ``null.qubit`` device and potential future execution
-        when a suitable backend is available.
 
     Args:
         fn (QNode): QNode to apply the pass to
@@ -249,6 +244,11 @@ def merge_ppr_ppm(tape=None, *, max_pauli_size=0):
 
     Returns:
         :class:`QNode <pennylane.QNode>`
+
+    .. note::
+
+        For better compatibility with other PennyLane functionality, ensure that PennyLane program
+        capture is enabled with :func:`pennylane.capture.enable`.
 
     **Example**
 
@@ -289,8 +289,8 @@ def merge_ppr_ppm(tape=None, *, max_pauli_size=0):
     Circuit depth: Not computed
     <BLANKLINE>
     Gate types:
-        PPM: 1
-        PPR-pi/4: 1
+        PPM-w2: 1
+        PPR-pi/4-w1: 1
     <BLANKLINE>
     Measurements:
         expval(PauliZ): 1
@@ -314,9 +314,13 @@ def ppr_to_ppm(tape=None, *, decompose_method="pauli-corrected", avoid_y_measure
 
     .. note::
 
-        This transform requires decorating the QNode with :func:`@qml.qjit <pennylane.qjit>` and for
-        program capture to be enabled via :func:`qml.capture.enable() <pennylane.capture.enable>`.
-        Additionally, the :func:`pennylane.transforms.to_ppr` transform must be applied before
+        This transform requires decorating the QNode with :func:`@qml.qjit <pennylane.qjit>`. In
+        addition, the circuits that generated from this pass are currently not executable on any
+        backend. This pass is only for Pauli-based-computation analysis with the ``null.qubit``
+        device and potential future execution when a suitable backend is available.
+        This transform requires decorating the QNode with :func:`@qml.qjit <pennylane.qjit>`.
+
+        Lastly, the :func:`pennylane.transforms.to_ppr` transform must be applied before
         ``ppr_to_ppm``.
 
     This pass is used to decompose both non-Clifford and Clifford PPRs into PPMs. The non-Clifford
@@ -325,12 +329,6 @@ def ppr_to_ppm(tape=None, *, decompose_method="pauli-corrected", avoid_y_measure
 
     For more information on PPRs and PPMs, check out
     the `Compilation Hub <https://pennylane.ai/compilation/pauli-product-measurement>`_.
-
-    .. note::
-
-        The circuits that generated from this pass are currently not executable on any backend.
-        This pass is only for analysis with the ``null.qubit`` device and potential future execution
-        when a suitable backend is available.
 
     Args:
         qnode (QNode): QNode to apply the pass to.
@@ -352,6 +350,11 @@ def ppr_to_ppm(tape=None, *, decompose_method="pauli-corrected", avoid_y_measure
 
     Returns:
         :class:`QNode <pennylane.QNode>`
+
+    .. note::
+
+        For better compatibility with other PennyLane functionality, ensure that PennyLane program
+        capture is enabled with :func:`pennylane.capture.enable`.
 
     **Example**
 
@@ -400,8 +403,11 @@ def ppr_to_ppm(tape=None, *, decompose_method="pauli-corrected", avoid_y_measure
     Circuit depth: Not computed
     <BLANKLINE>
     Gate types:
-        PPM: 10
-        PPR-pi/2: 5
+        PPM-w2: 4
+        PPM-w1: 5
+        PPM-w3: 1
+        PPR-pi/2-w1: 4
+        PPR-pi/2-w2: 1
         qec.fabricate: 1
     <BLANKLINE>
     Measurements:
@@ -429,8 +435,11 @@ def ppm_compilation(
 
     .. note::
 
-        This transform requires decorating the QNode with :func:`@qml.qjit <pennylane.qjit>` and for
-        program capture to be enabled via :func:`qml.capture.enable() <pennylane.capture.enable>`.
+        This transform requires decorating the QNode with :func:`@qml.qjit <pennylane.qjit>`. In
+        addition, the circuits that generated from this pass are currently not executable on any
+        backend. This pass is only for Pauli-based-computation analysis with the ``null.qubit``
+        device and potential future execution when a suitable backend is available.
+        This transform requires decorating the QNode with :func:`@qml.qjit <pennylane.qjit>`.
 
     This pass combines multiple sub-passes:
 
@@ -445,12 +454,6 @@ def ppm_compilation(
 
     For more information on PPRs and PPMs, check out
     the `Compilation Hub <https://pennylane.ai/compilation/pauli-product-measurement>`_.
-
-    .. note::
-
-        The circuits that generated from this pass are currently not executable on any backend.
-        This pass is only for analysis with the ``null.qubit`` device and potential future execution
-        when a suitable backend is available.
 
     Args:
         qnode (QNode, optional): QNode to apply the pass to. If ``None``, returns a decorator.
@@ -475,6 +478,11 @@ def ppm_compilation(
 
     Returns:
         :class:`QNode <pennylane.QNode>`
+
+    .. note::
+
+        For better compatibility with other PennyLane functionality, ensure that PennyLane program
+        capture is enabled with :func:`pennylane.capture.enable`.
 
     **Example**
 
@@ -512,8 +520,11 @@ def ppm_compilation(
     <BLANKLINE>
     Gate types:
         qec.fabricate: 1
-        PPM: 12
-        PPR-pi/2: 6
+        PPM-w2: 5
+        PPM-w1: 6
+        PPM-w3: 1
+        PPR-pi/2-w1: 5
+        PPR-pi/2-w2: 1
     <BLANKLINE>
     Measurements:
         expval(PauliZ): 1
@@ -525,7 +536,7 @@ def ppm_compilation(
     :math:`P(\tfrac{\pi}{2}) = \exp(-iP\tfrac{\pi}{2}) = P`. Pauli operators can be commuted to the
     end of the circuit and absorbed into terminal measurements.
 
-    Note that if a commutation or merge resulted in a PPR or PPN acting on more than
+    Note that if a commutation or merge resulted in a PPR or PPM acting on more than
     ``max_pauli_size`` qubits (here, ``max_pauli_size = 2``), that commutation or merge would be
     skipped.
     """
@@ -545,20 +556,22 @@ def reduce_t_depth(qnode):
 
     .. note::
 
-        This transform requires decorating the QNode with :func:`@qml.qjit <pennylane.qjit>` and for
-        program capture to be enabled via :func:`qml.capture.enable() <pennylane.capture.enable>`.
-
-    .. note::
-
-        The circuits that generated from this pass are currently not executable on any backend.
-        This pass is only for analysis with the ``null.qubit`` device and potential future execution
-        when a suitable backend is available.
+        This transform requires decorating the QNode with :func:`@qml.qjit <pennylane.qjit>`. In
+        addition, the circuits that generated from this pass are currently not executable on any
+        backend. This pass is only for Pauli-based-computation analysis with the ``null.qubit``
+        device and potential future execution when a suitable backend is available.
+        This transform requires decorating the QNode with :func:`@qml.qjit <pennylane.qjit>`.
 
     Args:
         qnode (QNode): QNode to apply the pass to.
 
     Returns:
         ~.QNode: Returns decorated QNode.
+
+    .. note::
+
+        For better compatibility with other PennyLane functionality, ensure that PennyLane program
+        capture is enabled with :func:`pennylane.capture.enable`.
 
     **Example**
 
@@ -600,20 +613,32 @@ def reduce_t_depth(qnode):
     ``target="mlir"`` is given in the :func:`qjit <pennylane.qjit>` decorator.
 
     >>> print(qml.specs(circuit, level=(4, 5))())
+    Device: null.qubit
+    Device wires: 3
+    Shots: Shots(total=None)
+    Level: 5
     <BLANKLINE>
-    Level = reduce-t-depth (MLIR-4):
+    Resource specifications:
     Total wire allocations: 3
     Total gates: 28
     Circuit depth: Not computed
     <BLANKLINE>
     Gate types:
-        PPR-pi/8: 6
-        PPR-pi/4: 22
+        PPR-pi/8-w1: 3
+        PPR-pi/8-w2: 1
+        PPR-pi/8-w3: 2
+        PPR-pi/4-w1: 19
+        PPR-pi/4-w2: 3
     <BLANKLINE>
     Measurements:
         expval(PauliZ): 1
 
-    TODO: show circuit graph viz!
+    In the above output, ``PPM-weight`` denotes the type of PPM present in the circuit, where
+    ``weight`` is the PPM weight. ``PPR-theta-weight`` denotes the type of PPR present in the
+    circuit, where ``theta`` is the PPR angle (:math:`\theta`) and ``weight`` is the PPR weight.
+    Note that :math:`\theta = \tfrac{\pi}{2}` PPRs correspond to Pauli operators:
+    :math:`P(\tfrac{\pi}{2}) = \exp(-iP\tfrac{\pi}{2}) = P`. Pauli operators can be commuted to the
+    end of the circuit and absorbed into terminal measurements.
     """
     raise NotImplementedError(
         "The reduce_t_depth compilation pass has no tape implementation, and can only be applied when decorating the entire worfklow with @qml.qjit and when it is placed after all transforms that only have a tape implementation."
