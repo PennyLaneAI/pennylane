@@ -130,9 +130,8 @@ class tensor(_np.ndarray):
 
     def __array_wrap__(self, obj, context=None, return_scalar=False):
         out_arr = tensor(obj, requires_grad=self.requires_grad)
-        return super().__array_wrap__(
-            out_arr, context, return_scalar
-        )  # pylint: disable=too-many-function-args
+        # pylint:disable=too-many-function-args
+        return super().__array_wrap__(out_arr, context, return_scalar)
 
     def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
 
