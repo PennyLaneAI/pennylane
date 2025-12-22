@@ -39,6 +39,7 @@ from pennylane.templates import BasisEmbedding
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 
+
 # pylint: disable=consider-using-generator
 
 
@@ -193,12 +194,14 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
 
     grad_method = None
 
-    resource_keys = {"data"}
+    resource_keys = {"num_controls", "num_target_wires"}
 
     @property
     def resource_params(self) -> dict:
+        manager = self.hyperparameters["wire_manager"]
         return {
-            "data": self.hyperparameters["data"],
+            "num_controls": len(manager.control_wires),
+            "num_target_wires": len(manager.target_wires),
         }
 
     def __init__(
@@ -252,19 +255,20 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
 
         self._hyperparameters = {
             "wire_manager": wire_manager,
-            "data": data,
         }
 
-        super().__init__(wires=all_wires, id=id)
+        super().__init__(data, wires=all_wires, id=id)
 
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
         return cls._primitive.bind(*args, **kwargs)
 
 
-def _bucket_brigade_qram_resources(data):
-    num_target_wires = len(data[0])
-    n_k = int(math.log2(len(data)))
+def _bucket_brigade_qram_resources(num_controls, num_target_wires):
+    """
+    Calculates the resources, assuming the worst case where data is all ones.
+    """
+    n_k = int(math.log2(2 ** num_controls))
     resources = defaultdict(int)
     resources[resource_rep(SWAP)] = ((1 << n_k) - 1 + n_k) * 2 + num_target_wires * 2
     resources[resource_rep(CSWAP)] = ((1 << n_k) - 1) * num_target_wires * 2 + (
@@ -275,10 +279,8 @@ def _bucket_brigade_qram_resources(data):
             base_class=SWAP, base_params={}, num_control_wires=1, num_zero_control_values=1
         )
     ] = ((1 << n_k) - 1) * num_target_wires * 2 + (((1 << n_k) - 1 - n_k) * 2)
-    resources[resource_rep(Hadamard)] += num_target_wires * 2
-    for j in range(num_target_wires):
-        for p in range(1 << n_k):
-            resources[resource_rep(PauliZ)] += 1 if data[p][j] else 0
+    resources[resource_rep(Hadamard)] = num_target_wires * 2
+    resources[resource_rep(PauliZ)] = (1 << n_k) * num_target_wires
     return resources
 
 
@@ -337,9 +339,9 @@ def _leaf_ops_for_bit(wire_manager, data, n_k, j):
     return ops
 
 
-@register_resources(_bucket_brigade_qram_resources)
+@register_resources(_bucket_brigade_qram_resources, exact=False)
 def _bucket_brigade_qram_decomposition(
-    wires, wire_manager, data
+    data, wire_manager, **__
 ):  # pylint: disable=unused-argument
     bus_wire = wire_manager.bus_wire
     control_wires = wire_manager.control_wires
