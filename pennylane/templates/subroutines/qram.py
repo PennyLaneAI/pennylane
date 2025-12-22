@@ -11,8 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Contains three different implementations of QRAM: BBQRAM, HybridQRAM, and SelectOnlyQRAM.
-"""
+"""Contains three different implementations of QRAM: BBQRAM, HybridQRAM, and SelectOnlyQRAM."""
 from collections import defaultdict
 from dataclasses import dataclass
 from typing import Sequence
@@ -83,9 +82,9 @@ def _node_index(level: int, prefix_value: int) -> int:
 # Select-prefix × Bucket-Brigade with explicit bus routing
 # -----------------------------
 class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
-    r"""Bucket-brigade QRAM with explicit bus routing using 3 wires per node. Bucket-brigade QRAM 
-    achieves an :math:`O(\log N)` complexity instead of the typical :math:`N`, where :math:`N` is 
-    the size of the classical data register being queried. For more theoretical details on how this 
+    r"""Bucket-brigade QRAM with explicit bus routing using 3 wires per node. Bucket-brigade QRAM
+    achieves an :math:`O(\log N)` complexity instead of the typical :math:`N`, where :math:`N` is
+    the size of the classical data register being queried. For more theoretical details on how this
     algorithm works, please consult `arXiv:0708.1879 <https://arxiv.org/pdf/0708.1879>`__.
 
     ``BBQRAM`` encodes bitstrings, :math:`b_i`, corresponding to a given entry, :math:`i`, in a
@@ -114,10 +113,10 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
 
     Raises:
         ValueError: if the ``bitstrings`` are not provided, the ``bitstrings`` are of the wrong
-            length, the ``target_wires`` are of the wrong size, or the ``work_wires`` register size 
+            length, the ``target_wires`` are of the wrong size, or the ``work_wires`` register size
             is not exactly equal to :math:`1 + 3 ((2^\texttt{len(control_wires)}) - 1)`.
 
-    .. seealso:: 
+    .. seealso::
         :class:`~.SelectOnlyQRAM`, :class:`~.HybridQRAM`, :class:`~.QROM`, :class:`~.QROMStatePreparation`
 
     .. note::
@@ -373,8 +372,8 @@ class HybridQRAM(Operation):
     :math:`N` is the size of the classical data register being queried. The first :math:`k` address
     bits are termed "select" bits, and are used in a procedure akin to what's involed in
     :class:`~.SelectOnlyQRAM`. The remaining :math:`N-k` bits are used in a procedure akin to what's
-    in :class:`~.BBQRAM`; instead of a full-depth tree of size :math:`2^N` leaves, ``HybridQRAM`` 
-    builds a smaller tree of depth :math:`N-k` (:math:`2^{N-k}` leaves) and reuses it :math:`2^k` 
+    in :class:`~.BBQRAM`; instead of a full-depth tree of size :math:`2^N` leaves, ``HybridQRAM``
+    builds a smaller tree of depth :math:`N-k` (:math:`2^{N-k}` leaves) and reuses it :math:`2^k`
     times.
 
     Args:
@@ -420,7 +419,7 @@ class HybridQRAM(Operation):
         bitstrings = ["010", "111", "110", "000", "010", "111", "110", "000"]
         bitstring_size = 3
 
-    The ``control_wires`` are split via the value of ``k``, which allows us to leverage 
+    The ``control_wires`` are split via the value of ``k``, which allows us to leverage
     :class:`~.SelectOnly` and :class:`~.BBQRAM` behaviour.
 
     .. code-block:: python
@@ -438,9 +437,9 @@ class HybridQRAM(Operation):
             }
         )
 
-    In the following circuit, we prepare the state :math:`\vert 2 \rangle = \vert 010 \rangle` 
-    on the ``control_wires``, which indicates that we would like to access the second 
-    (zero-indexed) entry of ``bitstrings`` (which is ``"110"``). The ``target_wires`` register 
+    In the following circuit, we prepare the state :math:`\vert 2 \rangle = \vert 010 \rangle`
+    on the ``control_wires``, which indicates that we would like to access the second
+    (zero-indexed) entry of ``bitstrings`` (which is ``"110"``). The ``target_wires`` register
     should therefore store this state after ``HybridQRAM`` is applied.
 
     .. code-block:: python
@@ -566,7 +565,7 @@ class HybridQRAM(Operation):
         }
 
 
-def _hybrid_qram_resources(bitstrings, num_target_wires, num_select_wires, num_tree_control_wires):N
+def _hybrid_qram_resources(bitstrings, num_target_wires, num_select_wires, num_tree_control_wires):
     resources = defaultdict(int)
     num_blocks = 1 << num_select_wires
 
@@ -834,7 +833,7 @@ add_decomps(HybridQRAM, _hybrid_qram_decomposition)
 class SelectOnlyQRAM(Operation):
     r"""A QRAM implementation comprising :class:`~.MultiControlledX` gates on target (bus) wires,
     controlled on all address wires. This implementation of QRAM requires :math:`O(\log N)` wires,
-    where :math:`N` is the size of the classical data register being queried. For more theoretical 
+    where :math:`N` is the size of the classical data register being queried. For more theoretical
     information, consult `Figure 8 of arXiv:2012.05340 <https://arxiv.org/abs/2012.05340>`__.
 
     ``SelectOnlyQRAM`` encodes bitstrings, :math:`b_i`, corresponding to a given entry, :math:`i`,
@@ -907,9 +906,9 @@ class SelectOnlyQRAM(Operation):
             }
         )
 
-    In the following circuit, we prepare the state :math:`\vert 2 \rangle = \vert 010 \rangle` 
-    on the ``control_wires``, which indicates that we would like to access the second 
-    (zero-indexed) entry of ``bitstrings`` (which is ``"110"``). The ``target_wires`` register 
+    In the following circuit, we prepare the state :math:`\vert 2 \rangle = \vert 010 \rangle`
+    on the ``control_wires``, which indicates that we would like to access the second
+    (zero-indexed) entry of ``bitstrings`` (which is ``"110"``). The ``target_wires`` register
     should therefore store this state after ``SelectOnlyQRAM`` is applied.
 
     .. code-block:: python
