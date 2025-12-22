@@ -579,7 +579,7 @@ class PauliRot(ResourceOperator):
 class PCPhase(ResourceOperator):
     r"""A resource operator representing a projector-controlled phase gate.
 
-    This gate applies a complex phase :math:`e^{i\phi}` to the first :math:`dim`
+    This gate applies a complex phase :math:`e^{i\phi}` to the first ``dim``
     basis vectors of the input state while applying a complex phase :math:`e^{-i \phi}`
     to the remaining basis vectors. For example, consider the 2-qubit case where ``dim = 3``:
 
