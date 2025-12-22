@@ -2,11 +2,76 @@
 
 <h3>New features since last release</h3>
 
-<h4>Bucket-Brigade QRAM </h4>
+<h4>Pass-by-Pass Circuit Specs </h4>
 
-* Bucket Brigade QRAM is implemented as a template :class:`~.BBQRAM` to allow for selection of bitstrings in 
-  superposition.
+* Resource tracking with :func:`~pennylane.specs` can now be used to analyze the pass-by-pass impact of arbitrary 
+  compilation passes on workflows compiled with :func:`~pennylane.qjit`.
+  [(#8606)](https://github.com/PennyLaneAI/pennylane/pull/8606)
+  
+  Consider the following :func:`qjit <pennylane.qjit>`'d circuit with two compilation passes applied:
+  
+  ```python
+  @qml.qjit
+  @qml.transforms.merge_rotations
+  @qml.transforms.cancel_inverses
+  @qml.qnode(dev)
+  def circuit(x):
+      qml.RX(x, wires=0)
+      qml.RX(x, wires=0)
+      qml.X(0)
+      qml.X(0)
+      qml.CNOT([0, 1])
+      return qml.probs()
+  ```
+
+  The supplied ``level`` to :func:`pennylane.specs` may be individual `int` values, or an iterable of multiple levels. 
+  Additionally, the strings ``"all"`` and ``"all-mlir"`` are allowed, returning circuit resources for all user-applied transforms
+  and MLIR passes, or all user-applied MLIR passes only, respectively.
+
+  ```pycon
+  >>> print(qml.specs(circuit, level=[1, 2])(1.23))
+  Device: lightning.qubit
+  Device wires: 3
+  Shots: Shots(total=None)
+  Level: ['Before MLIR Passes (MLIR-0)', 'cancel-inverses (MLIR-1)']
+  <BLANKLINE>
+  Resource specifications:
+  Level = Before MLIR Passes (MLIR-0):
+    Total wire allocations: 3
+    Total gates: 5
+    Circuit depth: Not computed
+  <BLANKLINE>
+    Gate types:
+      RX: 2
+      PauliX: 2
+      CNOT: 1
+  <BLANKLINE>
+    Measurements:
+      probs(all wires): 1
+  <BLANKLINE>
+  ------------------------------------------------------------
+  <BLANKLINE>
+  Level = cancel-inverses (MLIR-1):
+    Total wire allocations: 3
+    Total gates: 3
+    Circuit depth: Not computed
+  <BLANKLINE>
+    Gate types:
+      RX: 2
+      CNOT: 1
+  <BLANKLINE>
+    Measurements:
+      probs(all wires): 1
+  ```
+
+
+<h4>QRAM </h4>
+
+* Bucket Brigade QRAM, a Hybrid QRAM and a Select-Only QRAM variant are implemented as a template :class:`~.BBQRAM`, :class:`~.HybridQRAM` and :class:`~.SelectOnlyQRAM` 
+  to allow for selection of bitstrings in superposition.
   [(#8670)](https://github.com/PennyLaneAI/pennylane/pull/8670)
+  [(#8679)](https://github.com/PennyLaneAI/pennylane/pull/8679)
+  [(#8680)](https://github.com/PennyLaneAI/pennylane/pull/8680)
 
 <h4>Quantum Automatic Differentiation </h4>
 
@@ -48,7 +113,7 @@
 
   ```python
   import pennylane as qml
-  
+
   dev = qml.device("null.qubit", wires=3)
 
   @qml.qnode(dev)
@@ -75,7 +140,7 @@
 
   ```pycon
   >>> print(qml.specs(circuit)()['resources'])
-  Total qubit allocations: 3
+  Total wire allocations: 3
   Total gates: 5
   Circuit depth: 4
 
@@ -88,6 +153,15 @@
   Measurements:
     expval(PauliZ): 1
   ```
+
+* Catalyst compilation passes designed for Pauli-based computation are now available in PennyLane, 
+  providing accessibility for logical compilation research by directly integrating with 
+  :func:`~.pauli_measure` and :class:`~.PauliRot` operations. This includes 
+  :func:`pennylane.transforms.to_ppr`, :func:`pennylane.transforms.commute_ppr`, 
+  :func:`pennylane.transforms.ppr_to_ppm`, 
+  :func:`pennylane.transforms.merge_ppr_ppm`, :func:`pennylane.transforms.ppm_compilation`, 
+  :func:`pennylane.transforms.reduce_t_depth`, 
+  [(#8762)](https://github.com/PennyLaneAI/pennylane/pull/8762)
 
 * New decomposition rules that decompose to :class:`~.PauliRot` are added for the following operators.
   [(#8700)](https://github.com/PennyLaneAI/pennylane/pull/8700)
@@ -104,12 +178,17 @@
 
 <h4>Compile Pipeline and Transforms </h4>
 
+* Added a custom solver to :func:`~.transforms.intermediate_reps.rowcol` for linear systems
+  over :math:`\mathbb{Z}_2` based on Gauss-Jordan elimination. This removes the need to install
+  the ``galois`` package for this single function and provides a minor performance improvement.
+  [(#8771)](https://github.com/PennyLaneAI/pennylane/pull/8771)
+
 * Added decompositions of the ``RX``, ``RY`` and ``RZ`` rotations into one of the other two, as well
   as basis changing Clifford gates, to the graph-based decomposition system.
   [(#8569)](https://github.com/PennyLaneAI/pennylane/pull/8569)
 
-* Arithmetic dunder methods (`__add__`, `__mul__`, `__rmul__`) have been added to 
-  :class:`~.transforms.core.TransformDispatcher`, :class:`~.transforms.core.TransformContainer`, 
+* Arithmetic dunder methods (`__add__`, `__mul__`, `__rmul__`) have been added to
+  :class:`~.transforms.core.TransformDispatcher`, :class:`~.transforms.core.TransformContainer`,
   and :class:`~.CompilePipeline` (previously known as the `TransformProgram`) to enable intuitive composition of transform programs using `+` and `*` operators.
   [(#8703)](https://github.com/PennyLaneAI/pennylane/pull/8703)
 
@@ -171,6 +250,37 @@
   Users can more easily access the total number of terms (Pauli words) from the `PauliHamiltonian` object directly.
   [(#8761)](https://github.com/PennyLaneAI/pennylane/pull/8761)
 
+* A new :func:`~pennylane.resource.algo_error` function has been added to compute algorithm-specific 
+  errors from quantum circuits. This provides a dedicated entry point for retrieving error information 
+  that was previously accessible through :func:`~pennylane.specs`. The function works with QNodes and 
+  returns a dictionary of error types and their computed values.
+  [(#8787)](https://github.com/PennyLaneAI/pennylane/pull/8787)
+
+  ```python
+  import pennylane as qml
+  from pennylane.resource import SpectralNormError
+  from pennylane.resource.error import ErrorOperation
+  
+  class ApproximateRX(ErrorOperation):
+      def __init__(self, phi, wires):
+          super().__init__(phi, wires=wires)
+      
+      def error(self):
+          return SpectralNormError(0.01)  # simplified example
+  
+  dev = qml.device("default.qubit")
+  
+  @qml.qnode(dev)
+  def circuit():
+      ApproximateRX(0.5, wires=0)
+      return qml.state()
+  ```
+
+  ```pycon
+  >>> qml.resource.algo_error(circuit)()
+  {'SpectralNormError': SpectralNormError(0.01)}
+  ```
+
 <h4>Seamless resource tracking and circuit visualization for compiled programs </h4>
 
 * A new :func:`~.marker` function allows for easy inspection at particular points in a transform program
@@ -208,6 +318,13 @@
 
 <h3>Improvements 🛠</h3>
 
+* `qml.measure` can now be used as a frontend for `catalyst.measure`.
+  [(#8782)](https://github.com/PennyLaneAI/pennylane/pull/8782)
+
+* `qml.while_loop` and `qml.for_loop` can now lazily dispatch to catalyst when called,
+  instead of dispatching upon creation.
+  [(#8786)](https://github.com/PennyLaneAI/pennylane/pull/8786)
+
 <h4>Resource estimation</h4>
 
 * Added `Resources.total_wires` and `Resources.total_gates` properties to the 
@@ -244,6 +361,14 @@
   minimizes the maximum number of simultaneously allocated work wires.
   [(#8729)](https://github.com/PennyLaneAI/pennylane/pull/8729)
   [(#8734)](https://github.com/PennyLaneAI/pennylane/pull/8734)
+
+<h3>Improvements 🛠</h3>
+
+* Qualtran call graphs built via :func:`qml.to_bloq <pennylane.to_bloq>` now use PennyLane's resource estimation
+  module by default (``call_graph='estimator'``). This provides faster resource counting. 
+  To use the previous behaviour based on PennyLane decompositions, set 
+  ``call_graph='decomposition'``.
+  [(#8390)](https://github.com/PennyLaneAI/pennylane/pull/8390)
 
 * Added a new decomposition, `_decompose_2_cnots`, for the two-qubit decomposition for `QubitUnitary`.
   It supports the analytical decomposition a two-qubit unitary known to require exactly 2 CNOTs.
@@ -403,6 +528,25 @@
 
 <h3>Breaking changes 💔</h3>
 
+* Qualtran call graphs built via :func`:~.to_bloq` now return resource counts via PennyLane's resource estimation module
+  instead of via PennyLane decompositions. To restore the previous behaviour, set ``call_graph='decomposition'``.
+  [(#8390)](https://github.com/PennyLaneAI/pennylane/pull/8390)
+
+  ```python
+  # New default behaviour (estimator mode)
+  >>> qml.to_bloq(qml.QFT(wires=range(5)), map_ops=False).call_graph()[1]
+  {Hadamard(): 5, CNOT(): 26, TGate(is_adjoint=False): 1320}
+
+  # Previous behaviour (decomposition mode)
+  >>> qml.to_bloq(qml.QFT(wires=range(5)), map_ops=False, call_graph='decomposition').call_graph()[1]
+  {Hadamard(): 5,
+   ZPowGate(exponent=-0.15915494309189535, eps=1e-11): 10,
+   ZPowGate(exponent=-0.15915494309189535, eps=5e-12): 10,
+   ZPowGate(exponent=0.15915494309189535, eps=5e-12): 10,
+   CNOT(): 20,
+   TwoBitSwap(): 2
+  }
+  ```
 * The output format of `qml.specs` has been restructured into a dataclass to streamline the outputs.
   Some legacy information has been removed from the new output format.
   [(#8713)](https://github.com/PennyLaneAI/pennylane/pull/8713)
@@ -505,6 +649,9 @@
   has been renamed to `pennylane.transforms.core.compile_pipeline`, and the old name is no longer available.
   [(#8735)](https://github.com/PennyLaneAI/pennylane/pull/8735)
 
+* The ``max_work_wires`` argument of the :func:`~pennylane.transforms.decompose` transform has been renamed to ``num_work_wires``.
+  [(#8769)](https://github.com/PennyLaneAI/pennylane/pull/8769)
+
 * ``argnum`` has been renamed ``argnums`` for ``qml.grad``, ``qml.jacobian``, ``qml.jvp`` and ``qml.vjp``.
   [(#8496)](https://github.com/PennyLaneAI/pennylane/pull/8496)
   [(#8481)](https://github.com/PennyLaneAI/pennylane/pull/8481)
@@ -516,7 +663,10 @@
 * `qml.cond` will also accept a partial of an operator type as the true function without a false function
   when capture is enabled.
   [(#8776)](https://github.com/PennyLaneAI/pennylane/pull/8776)
-  
+
+* The :func:`~.dynamic_one_shot` transform can no longer be applied directly on a QNode.
+  [(8781)](https://github.com/PennyLaneAI/pennylane/pull/8781)
+
 <h3>Deprecations 👋</h3>
 
 * Maintenance support of NumPy<2.0 is deprecated as of v0.44 and will be completely dropped in v0.45.
@@ -567,7 +717,7 @@
 
   ```python
   import pennylane as qml
-  
+
   @qml.transforms.decompose(gate_set={"H", "T", "CNOT"}, stopping_condition=lambda op: len(op.wires) <= 2)
   @qml.qnode(qml.device("default.qubit"))
   def circuit():
@@ -584,6 +734,16 @@
   ```
 
 <h3>Internal changes ⚙️</h3>
+
+* The `_grad.py` file in split into a folder for improved source code organization.
+  [(#8800)](https://github.com/PennyLaneAI/pennylane/pull/8800)
+
+* Updated `pyproject.toml` with project dependencies to replace the requirements files. Updated workflows to use installations from `pyproject.toml`.
+  [(8702)](https://github.com/PennyLaneAI/pennylane/pull/8702)
+
+* `qml.cond`, the `QNode`, transforms, `qml.grad`, and `qml.jacobian` no longer treat all keyword arguments as static
+  arguments. They are instead treated as dynamic, numerical inputs, matching the behaviour of Jax and Catalyst.
+  [(#8290)](https://github.com/PennyLaneAI/pennylane/pull/8290)
 
 * To adjust to the Python 3.14, some error messages expectations have been updated in tests; `get_type_str` added a special branch to handle `Union`.
   The import of networkx is softened to not occur on import of pennylane to work around a bug in Python 3.14.1.
@@ -681,7 +841,7 @@
   example, and the verification of the code example result.
 
 * The code example in the documentation for ``qml.decomposition.register_resources`` has been
-  updated to adhere to renamed keyword arguments and default behaviour of ``max_work_wires``.
+  updated to adhere to renamed keyword arguments and default behaviour of ``num_work_wires``.
   [(#8536)](https://github.com/PennyLaneAI/pennylane/pull/8536)
 
 * The docstring for ``qml.device`` has been updated to include a section on custom decompositions,
@@ -708,6 +868,14 @@ A warning message has been added to :doc:`Building a plugin <../development/plug
   [(#8707)](https://github.com/PennyLaneAI/pennylane/pull/8707)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixes a bug where `_double_factorization_compressed` of `pennylane/qchem/factorization.py` used to use `X`
+  for `Z` param initialization.
+  [(#8689)](https://github.com/PennyLaneAI/pennylane/pull/8689)
+
+* Use a fixed floating number tolerance from `np.finfo` in `_apply_uniform_rotation_dagger`
+  to avoid numerical stability issues on some platforms.
+  [(#8780)](https://github.com/PennyLaneAI/pennylane/pull/8780)
 
 * Handles floating point errors in the norm of the state when applying
   mid circuit measurements.
@@ -780,14 +948,17 @@ A warning message has been added to :doc:`Building a plugin <../development/plug
 
 This release contains contributions from (in alphabetical order):
 
+Runor Agbaire,
 Guillermo Alonso,
 Utkarsh Azad,
+Joseph Bowles,
 Astral Cai,
 Yushao Chen,
 Diksha Dhawan,
 Marcus Edwards,
 Lillian Frederiksen,
 Sengthai Heng,
+Austin Huang,
 Soran Jahangiri,
 Jeffrey Kam,
 Jacob Kitchen,
@@ -801,5 +972,6 @@ Jay Soni,
 nate stemen,
 Theodoros Trochatos,
 David Wierichs,
+Shifan Xu,
 Hongsheng Zheng,
 Zinan Zhou
