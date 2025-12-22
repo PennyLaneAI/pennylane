@@ -196,7 +196,7 @@ class QROM(Operation):
         target_wires = Wires(target_wires)
 
         if isinstance(data[0], str):
-            data = map(lambda bitstring: [int(bit) for bit in bitstring], data)
+            data = list(map(lambda bitstring: [int(bit) for bit in bitstring], data))
 
         work_wires = Wires(() if work_wires is None else work_wires)
 
