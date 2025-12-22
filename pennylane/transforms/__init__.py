@@ -28,7 +28,7 @@ to one or many new circuits alongside associated classical post-processing.
 .. autosummary::
     :toctree: api
 
-    ~transforms.core.transform
+    ~transform
 
 Transforms library
 ------------------
@@ -187,17 +187,13 @@ that compute the desired quantity.
 Transforms developer functions
 ------------------------------
 
-:class:`~.TransformDispatcher` is a
-developer-facing objects that allow the
-creation, dispatching, and composability of transforms. If you would like to make a custom transform, refer
-instead to the documentation of :func:`qml.transform <pennylane.transform>`.
-
 .. currentmodule:: pennylane
 .. autosummary::
     :toctree: api
 
     ~CompilePipeline
-    ~transforms.core.transform_dispatcher
+    ~transforms.core.BoundTransform
+    ~transforms.core.Transform
 
 Transforming circuits
 ---------------------
