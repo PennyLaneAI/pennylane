@@ -95,6 +95,9 @@ def _args_and_argnums(args, argnums):
         argnums = 0
     if argnums_is_int := isinstance(argnums, int):
         argnums = (argnums,)
+    elif not isinstance(argnums, (list, tuple)) or not all(isinstance(a, int) for a in argnums):
+        raise ValueError(f"argnums should be integer or a list of integers, not {argnums}")
+
     argnums = tuple(argnums)
 
     if max(argnums) >= len(args):

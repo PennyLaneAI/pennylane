@@ -30,6 +30,10 @@ except ImportError:
     has_jax = False
 
 
+def _get_shape(x):
+    return x.shape if hasattr(x, "shape") else jax.numpy.shape(x)
+
+
 # pylint: disable=unused-argument
 @lru_cache
 def _get_vjp_prim():
@@ -62,9 +66,6 @@ def _get_vjp_prim():
 def _validate_cotangents(cotangents, out_avals):
     from jax._src.api import _dtype  # pylint: disable=import-outside-toplevel
 
-    def get_shape(x):
-        return x.shape if hasattr(x, "shape") else jax.numpy.shape(x)
-
     if len(cotangents) != len(out_avals):
         raise ValueError(
             "The length of cotangents must match the number of"
@@ -79,11 +80,11 @@ def _validate_cotangents(cotangents, out_avals):
                 f"{_dtype(p)}, but got cotangent dtype {_dtype(t)} instead."
             )
 
-        if get_shape(p) != get_shape(t):
+        if _get_shape(p) != _get_shape(t):
             raise ValueError(
                 "qml.vjp called with different function output params and cotangent "
-                f"shapes; got function output params shape {get_shape(p)} and cotangent shape "
-                f"{get_shape(t)}"
+                f"shapes; got function output params shape {_get_shape(p)} and cotangent shape "
+                f"{_get_shape(t)}"
             )
 
 
