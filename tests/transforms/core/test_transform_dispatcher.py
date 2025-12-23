@@ -1048,42 +1048,17 @@ class TestTransformSerialization:
         with pytest.raises(ValueError, match="is not a Transform"):
             _get_transform_by_name("pennylane", "numpy")
 
-    def test_transform_reduce_fallback_path(self):
-        """Test the fallback __reduce__ path for Transform without __module__/__name__."""
+    def test_transform_without_name_cannot_be_pickled(self):
+        """Test that a Transform without __name__ raises TypeError when pickling."""
+        import pickle
+
         # Create a Transform with a pass_name only (no tape_transform)
         # This won't have __name__ set by update_wrapper since there's no tape_transform
         dynamic_transform = Transform(pass_name="test_pass")
 
-        # Verify this transform doesn't have __name__ (so it uses fallback path)
+        # Verify this transform doesn't have __name__
         assert not hasattr(dynamic_transform, "__name__")
 
-        # Verify the fallback path returns the expected 3-tuple format
-        reduce_result = dynamic_transform.__reduce__()
-        assert reduce_result[0] is Transform
-        assert reduce_result[1] == (None, "test_pass")
-        assert isinstance(reduce_result[2], dict)
-
-        # Pickle and unpickle to exercise the fallback path and __setstate__
-        pickled = pickle.dumps(dynamic_transform)
-        restored = pickle.loads(pickled)
-
-        # Verify the restored transform has the expected attributes
-        assert isinstance(restored, Transform)
-        assert restored.pass_name == "test_pass"
-        assert restored._tape_transform is None  # pylint: disable=protected-access
-        # __setstate__ should have re-created _apply_transform
-        assert hasattr(restored, "_apply_transform")
-
-    def test_transform_setstate(self):
-        """Test the __setstate__ method for Transform is properly invoked during unpickling."""
-        # Use a normal transform and verify setstate gets called during unpickling
-        transform = qml.transforms.merge_rotations
-
-        # Pickle and unpickle
-        pickled = pickle.dumps(transform)
-        restored = pickle.loads(pickled)
-
-        # Verify the restored transform has all the expected attributes
-        assert hasattr(restored, "_apply_transform")
-        assert hasattr(restored, "_tape_transform")
-        assert restored.__name__ == "merge_rotations"
+        # Should raise TypeError when trying to pickle
+        with pytest.raises(TypeError, match="Cannot pickle"):
+            pickle.dumps(dynamic_transform)

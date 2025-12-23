@@ -692,40 +692,15 @@ class Transform:  # pylint: disable=too-many-instance-attributes
             be pickled.
 
         """
-        # For Transform objects with a known module and name (i.e., decorated with @transform
-        # at module level), serialize by reference using the qualified name
+        # Serialize by reference using the qualified name
         if hasattr(self, "__module__") and hasattr(self, "__name__"):
             return (_get_transform_by_name, (self.__module__, self.__name__))
 
-        # Fallback for transforms without proper __module__/__name__ (e.g., dynamically created)
-        # This will only work if all internal functions are module-level functions
-        return (
-            Transform,
-            (
-                self._tape_transform,
-                self._pass_name,
-            ),
-            {
-                "expand_transform": self._expand_transform,
-                "classical_cotransform": self._classical_cotransform,
-                "is_informative": self._is_informative,
-                "final_transform": self._is_final_transform,
-                "use_argnum_in_expand": self._use_argnum_in_expand,
-                "plxpr_transform": self._plxpr_transform,
-            },
+        raise TypeError(
+            f"Cannot pickle {self!r}: only module-level transforms with __module__ and __name__ "
+            "attributes can be serialized. Transforms with only pass_name or dynamically "
+            "created transforms cannot be pickled."
         )
-
-    def __setstate__(self, state):
-        """Restore state when unpickling."""
-        # Re-initialize the transform with the serialized configuration
-        self._expand_transform = state.get("expand_transform")
-        self._classical_cotransform = state.get("classical_cotransform")
-        self._is_informative = state.get("is_informative", False)
-        self._is_final_transform = state.get("final_transform", False) or self._is_informative
-        self._use_argnum_in_expand = state.get("use_argnum_in_expand", False)
-        self._plxpr_transform = state.get("plxpr_transform")
-        # Re-create the singledispatch
-        self._apply_transform = singledispatch(partial(specific_apply_transform, self))
 
     def __repr__(self):
         name = self._tape_transform.__name__ if self._tape_transform else self.pass_name
@@ -929,23 +904,16 @@ class BoundTransform:  # pylint: disable=too-many-instance-attributes
         """Defines how to pickle and unpickle a BoundTransform.
 
         For more information, see: https://docs.python.org/3/library/pickle.html#object.__reduce__
-
-        .. note::
-
-            The underlying transform must be a module-level function (e.g., a built-in transform
-            like ``qml.transforms.merge_rotations``) for pickling to work correctly. Lambda
-            functions or locally-defined transforms cannot be pickled.
-
         """
         return (
             BoundTransform,
             (self._transform, self._args, self._kwargs),
-            {"_use_argnum": self._use_argnum},
+            {"use_argnum": self._use_argnum},
         )
 
     def __setstate__(self, state):
         """Restore state when unpickling."""
-        self._use_argnum = state.get("_use_argnum", False)
+        self._use_argnum = state.get("use_argnum", False)
 
     def __repr__(self):
         name = self.tape_transform.__name__ if self.tape_transform else self.pass_name
