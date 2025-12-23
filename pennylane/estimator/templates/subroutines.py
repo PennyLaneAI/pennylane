@@ -1773,10 +1773,10 @@ class QROM(ResourceOperator):
         select_swap_depth (int | None): A parameter :math:`\lambda` that determines
             if data will be loaded in parallel by adding more rows following Figure 1.C of
             `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_. Can be :code:`None`,
-            :code:`1` or a positive integer power of two. Defaults to :code:`None`, which internally
-            determines the optimal depth.
-        wires (WiresLike | None): The wires the operation acts on (control and target).
-            Excluding any additional qubits allocated during the decomposition (e.g select-swap wires).
+            :code:`1` or a positive integer power of two. Defaults to None, which sets the
+            depth that minimizes T-gate count.
+        wires (WiresLike | None): The wires the operation acts on (control and target), excluding
+            any additional qubits allocated during the decomposition (e.g select-swap wires).
 
     Resources:
         The resources for QROM are derived from the following references:
@@ -1890,8 +1890,8 @@ class QROM(ResourceOperator):
             select_swap_depth (int | None): A parameter :math:`\lambda` that determines
                 if data will be loaded in parallel by adding more rows following Figure 1.C of
                 `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_. Can be :code:`None`,
-                :code:`1` or a positive integer power of two. Defaults to :code:`None`, which internally
-                determines the optimal depth.
+                :code:`1` or a positive integer power of two. Defaults to None, which sets the
+                depth that minimizes T-gate count.
             restored (bool): Determine if allocated qubits should be reset after the computation
                 (at the cost of higher gate counts). Defaults to :code:`True`.
 
@@ -2139,8 +2139,8 @@ class QROM(ResourceOperator):
                 * select_swap_depth (int | None): A parameter :math:`\lambda` that
                   determines if data will be loaded in parallel by adding more rows following
                   Figure 1.C of `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_. Can be
-                  :code:`None`, :code:`1` or a positive integer power of two. Defaults to :code:`None`,
-                  which internally determines the optimal depth.
+                  :code:`None`, :code:`1` or a positive integer power of two. Defaults to None,
+                  which sets the depth that minimizes T-gate count.
 
         """
 
@@ -2340,8 +2340,8 @@ class QROM(ResourceOperator):
             select_swap_depth (int | None): A parameter :math:`\lambda` that determines
                 if data will be loaded in parallel by adding more rows following Figure 1.C of
                 `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_. Can be :code:`None`,
-                :code:`1` or a positive integer power of two. Defaults to :code:`None`, which internally
-                determines the optimal depth.
+                :code:`1` or a positive integer power of two. Defaults to None, which sets the
+                depth that minimizes T-gate count.
 
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
