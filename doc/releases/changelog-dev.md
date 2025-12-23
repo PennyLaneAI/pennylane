@@ -18,12 +18,53 @@
 
 <h4>Instantaneous Quantum Polynomial Circuits </h4>
 
-* A new template for building an Instantaneous Quantum Polynomial (`~.IQP`) circuit has been added along with a 
+* A new template for defining an Instantaneous Quantum Polynomial (:class:`~.IQP`) circuit has been added along with a 
   lightweight version (based on the :class:`~.estimator.resource_operator.ResourceOperator` class) to rapidly 
-  estimate its resources. This unlocks easily estimating the resources of the IQP circuit introduced in the 
-  `Train on classical, deploy on quantum <https://arxiv.org/abs/2503.02934>`_ work for generative quantum machine 
-  learning.
+  estimate its resources. These new features facilitate the simulation and resource estimation of large-scale
+  generative quantum machine learning tasks.
   [(#8748)](https://github.com/PennyLaneAI/pennylane/pull/8748)
+  [(#8807)](https://github.com/PennyLaneAI/pennylane/pull/8807)
+  
+  While :class:`~.IQP` circuits belong to a class of circuits that are believed to be hard to sample from
+  using classical algorithms, Recio-Armengol et al. showed in a recent paper titled [Train on classical, deploy on quantum](https://arxiv.org/abs/2503.02934)
+  that such circuits can still be optimized efficiently. The added features in this release facilitate the simulation
+  and resource estimation of large-scale :class:`~.IQP` circuits, such as those applicable to generative
+  quantum machine learning tasks.
+
+  Here is a simple example for defining an :class:`~.IQP` circuit and estimating the required resources
+  for its simulation using the :func:`~.estimator.estimate.estimate` function:
+
+  ```python
+  import pennylane as qml
+  import pennylane.estimator as qre
+
+  @qml.qnode(qml.device('lightning.qubit', wires=2))
+  def circuit():
+    qml.IQP(
+        weights=[1., 2., 3.],
+        num_wires=2,
+        pattern= [[[0]],[[1]],[[0,1]]],
+        spin_sym=False,
+    )
+    return qml.state()
+  ```
+
+  ```pycon
+  >>> res = qre.estimate(circuit)()
+  >>> print(res)
+  --- Resources: ---
+    Total wires: 2
+      algorithmic wires: 2
+      allocated wires: 0
+        zero state: 0
+        any state: 0
+    Total gates : 138
+      'T': 132,
+      'CNOT': 2,
+      'Hadamard': 4
+  ```
+
+  For more theoretical details, check out our [Fast optimization of instantaneous quantum polynomial circuits](https://pennylane.ai/qml/demos/tutorial_iqp_circuit_optimization_jax) demo. 
 
 <h4>Pauli-based computation </h4>
 
