@@ -1976,13 +1976,13 @@ class TestResourceUnaryIterationQPE:
     )
     def test_wires_init(self, walk_op, adj_qft, input_wires, expected_wires):
         """Test that we can correctly initialize the wires of the operator"""
-        walk_op = (
-            qre.Qubitization(
-                qre.UniformStatePrep(3),
-                qre.SelectPauli(qre.PauliHamiltonian(2, {"XX": 1, "Z": 1, "Y": 1})),
-            ),
+        op = qre.UnaryIterationQPE(
+            walk_operator=walk_op,
+            num_iterations=11,
+            adj_qft_op=adj_qft,
+            wires=input_wires,
         )
-        adj_qft = (qre.Adjoint(qre.QFT(3)),)
+        assert op.wires == expected_wires
 
     @pytest.mark.parametrize(
         "walk_operator, n_iter, adj_qft",
