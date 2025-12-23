@@ -527,12 +527,6 @@
   The old name is still available in the same location.
   [(#8753)](https://github.com/PennyLaneAI/pennylane/pull/8753)
 
-* The `final_transform` property of the :class:`~.transforms.core.BoundTransform` has been renamed 
-  to `is_final_transform` to better follow the naming convention for boolean properties. The `transform` 
-  property of the :class:`~.transforms.core.Transform` and :class:`~.transforms.core.BoundTransform` 
-  has been renamed to `tape_transform` to avoid ambiguity.
-  [(#8756)](https://github.com/PennyLaneAI/pennylane/pull/8756)
-
 * `qml.for_loop` will now fall back to a standard Python `for` loop if capturing a condensed, structured loop fails
   with program capture enabled.
   [(#8615)](https://github.com/PennyLaneAI/pennylane/pull/8615)
@@ -590,6 +584,12 @@
   [(#8738)](https://github.com/PennyLaneAI/pennylane/pull/8738)
 
 <h3>Breaking changes 💔</h3>
+
+* The `final_transform` property of the :class:`~.transforms.core.BoundTransform` has been renamed 
+  to `is_final_transform` to better follow the naming convention for boolean properties. The `transform` 
+  property of the :class:`~.transforms.core.Transform` and :class:`~.transforms.core.BoundTransform` 
+  has been renamed to `tape_transform` to avoid ambiguity.
+  [(#8756)](https://github.com/PennyLaneAI/pennylane/pull/8756)
 
 * Qualtran call graphs built via :func`:~.to_bloq` now return resource counts via PennyLane's resource estimation module
   instead of via PennyLane decompositions. To restore the previous behaviour, set ``call_graph='decomposition'``.
