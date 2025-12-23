@@ -18,7 +18,8 @@ import scipy.special as sps
 
 import pennylane.numpy as qnp
 from pennylane.estimator.ops.op_math.symbolic import Adjoint, Controlled
-from pennylane.estimator.ops.qubit.parametric_ops_single_qubit import Rot
+from pennylane.estimator.ops.qubit.parametric_ops_multi_qubit import PCPhase
+from pennylane.estimator.ops.qubit.parametric_ops_single_qubit import RX, RZ, Rot
 from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
@@ -456,3 +457,395 @@ class GQSPTimeEvolution(ResourceOperator):
             error = qnp.abs(sps.jv(N + 1, time * one_norm))
 
         return N
+
+
+class QSVT(ResourceOperator):
+    r"""Implements the `Quantum Singular Value Transformation <https://arxiv.org/abs/1806.01838>`_
+    (QSVT) circuit.
+
+    This template estimates the resources for a QSVT circuit of degree :math:`d` (``poly_deg``).
+    The circuit uses a :class:`~.estimator.resource_operator.ResourceOperator` :math:`U` that block
+    encodes a matrix :math:`A` in its top-left block with dimensions :math:`A_n, A_m` (``encoding_dims``).
+
+    When the degree of the polynomial is odd, the QSVT circuit is defined as:
+
+    .. math::
+
+        U_{QSVT} = \tilde{\Pi}_{\phi_1}U\left[\prod^{(d-1)/2}_{k=1}\Pi_{\phi_{2k}}U^\dagger
+        \tilde{\Pi}_{\phi_{2k+1}}U\right].
+
+
+    And when the degree is even:
+
+    .. math::
+
+        U_{QSVT} = \left[\prod^{d/2}_{k=1}\Pi_{\phi_{2k-1}}U^\dagger\tilde{\Pi}_{\phi_{2k}}U\right].
+
+    Where :math:`\Pi_{\phi}` and :math:`\tilde{\Pi}_{\phi}` are projector-controlled phase shifts
+    (:class:`~.estimator.ops.qubit.parametric_ops_multi_qubit.PCPhase`). This circuit applies a
+    polynomial transformation (:math:`Poly^{SV}`) of degree :math:`d` to the singular values of the
+    block encoded matrix:
+
+    .. math::
+
+        \begin{align}
+             U_{QSVT}(A, \vec{\phi}) &=
+             \begin{bmatrix}
+                Poly^{SV}(A) & \cdot \\
+                \cdot & \cdot
+            \end{bmatrix}.
+        \end{align}
+
+    .. seealso::
+
+        :func:`~.qsvt` and :class:`~.QSVT`.
+
+    Args:
+        block_encoding (:class:`~.estimator.resource_operator.ResourceOperator`): the block encoding operator
+        encoding_dims (int | tuple(int)): The dimensions of the encoded operator's sub-matrix. 
+            If an integer is provided, a square sub-matrix is assumed; otherwise, specify (rows, columns).
+        poly_deg (int): the degree of the polynomial transformation being applied
+        wires (WiresLike | None): the wires the operation acts on
+
+    Resources:
+        The resources are obtained as described in Theorem 4 of `A Grand Unification of Quantum Algorithms
+        (2021) <https://arxiv.org/pdf/2105.02859>`_.
+
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> import pennylane.estimator as qre
+    >>> block_encoding = qre.RX(0.1, wires=0)
+    >>> encoding_dims = (2, 2)
+    >>> poly_deg = 3
+    >>> qsvt = qre.QSVT(block_encoding, encoding_dims, poly_deg)
+    >>> print(qre.estimate(qsvt))
+    --- Resources: ---
+     Total wires: 1
+       algorithmic wires: 1
+       allocated wires: 0
+         zero state: 0
+         any state: 0
+     Total gates : 39
+       'T': 39
+    """
+
+    resource_keys = {"block_encoding", "encoding_dims", "poly_deg"}
+
+    def __init__(
+        self,
+        block_encoding: ResourceOperator,
+        encoding_dims: int | tuple[int],
+        poly_deg: int,
+        wires: WiresLike = None,
+    ):
+        _dequeue(block_encoding)  # remove operator
+        if not isinstance(encoding_dims, (int, tuple)):
+            raise ValueError(
+                f"Expected `encoding_dims` to be an int or tuple of int. Got {encoding_dims}"
+            )
+
+        if isinstance(encoding_dims, int):
+            encoding_dims = (encoding_dims, encoding_dims)
+
+        if len(encoding_dims) == 1:
+            dim = encoding_dims[0]
+            encoding_dims = (dim, dim)
+        elif len(encoding_dims) > 2:
+            raise ValueError(
+                "Expected `encoding_dims` to be a tuple of two integers, representing the dimensions"
+                f" (row, col) of the subspace where the matrix is encoded. Got {encoding_dims}"
+            )
+
+        self.block_encoding = block_encoding.resource_rep_from_op()
+        self.encoding_dims = encoding_dims
+        self.poly_deg = poly_deg
+
+        self.num_wires = block_encoding.num_wires
+
+        if wires is None and block_encoding.wires is not None:
+            wires = block_encoding.wires
+
+        if len(wires) != self.num_wires:
+            raise ValueError(f"Expected {self.num_wires} wires, got {len(wires)}.")
+        super().__init__(wires=wires)
+
+    @property
+    def resource_params(self):
+        r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+        Returns:
+            dict: A dictionary containing the resource parameters:
+                * block_encoding (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`):
+                  the block encoding operator
+                * encoding_dims (int | tuple(int)): The dimensions of the encoded operator's sub-matrix.
+                  If an integer is provided, a square sub-matrix is assumed; otherwise, specify (rows, columns).
+                * poly_deg (int): the degree of the polynomial transformation being applied
+        """
+        return {
+            "block_encoding": self.block_encoding,
+            "encoding_dims": self.encoding_dims,
+            "poly_deg": self.poly_deg,
+        }
+
+    @classmethod
+    def resource_rep(
+        cls,
+        block_encoding: CompressedResourceOp,
+        encoding_dims: int,
+        poly_deg: int,
+    ):
+        r"""Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute the resources.
+
+        Args:
+            block_encoding (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`):
+                the block encoding operator
+            encoding_dims (int | tuple(int)): The dimensions of the encoded operator's sub-matrix.
+                If an integer is provided, a square sub-matrix is assumed; otherwise, specify (rows, columns).
+            poly_deg (int): the degree of the polynomial transformation being applied
+
+        Returns:
+            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+        """
+        num_wires = block_encoding.num_wires
+        params = {
+            "block_encoding": block_encoding,
+            "encoding_dims": encoding_dims,
+            "poly_deg": poly_deg,
+        }
+        return CompressedResourceOp(cls, num_wires, params)
+
+    @classmethod
+    def resource_decomp(
+        cls,
+        block_encoding: CompressedResourceOp,
+        encoding_dims: int,
+        poly_deg: int,
+    ):
+        r"""Returns a list representing the resources of the operator. Each object in the list
+        represents a gate and the number of times it occurs in the circuit.
+
+        Args:
+            block_encoding (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`):
+                the block encoding operator
+            encoding_dims (int | tuple(int)): The dimensions of the encoded operator's sub-matrix.
+                If an integer is provided, a square sub-matrix is assumed; otherwise, specify (rows, columns).
+            poly_deg (int): the degree of the polynomial transformation being applied
+
+        Resources:
+            The resources are obtained as described in Theorem 4 of `A Grand Unification of Quantum Algorithms
+            (2021) <https://arxiv.org/pdf/2105.02859>`_.
+
+        Returns:
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
+        """
+        num_rows, num_cols = encoding_dims
+        num_wires = block_encoding.num_wires
+
+        pi = PCPhase.resource_rep(num_wires=num_wires, dim=num_cols)
+        pi_tilde = PCPhase.resource_rep(num_wires=num_wires, dim=num_rows)
+        block_encoding_adj = Adjoint.resource_rep(block_encoding)
+
+        if poly_deg % 2 == 0:  # even degree
+            be_counts = poly_deg // 2
+            be_adj_counts = poly_deg // 2
+            pi_counts = poly_deg // 2
+            pi_tilde_counts = poly_deg // 2
+
+        else:  # odd degree
+            be_counts = ((poly_deg - 1) // 2) + 1
+            be_adj_counts = (poly_deg - 1) // 2
+            pi_counts = (poly_deg - 1) // 2
+            pi_tilde_counts = ((poly_deg - 1) // 2) + 1
+
+        return [
+            GateCount(block_encoding, be_counts),
+            GateCount(block_encoding_adj, be_adj_counts),
+            GateCount(pi, pi_counts),
+            GateCount(pi_tilde, pi_tilde_counts),
+        ]
+
+
+class QSP(ResourceOperator):
+    r"""Implements the `Quantum Signal Processing <https://arxiv.org/pdf/2105.02859>`_
+    (QSP) circuit.
+
+    This template estimates the resources for a QSP circuit of degree :math:`d` (``poly_deg``).
+    The circuit uses a single-qubit :class:`~.estimator.resource_operator.ResourceOperator`
+    :math:`W(a)` that block encodes a scalar value :math:`a` in its top-left entry.
+
+    The circuit is given as follows in the Z-convention (``convention="Z"``):
+
+    .. math::
+
+        \hat{U}_{QSP} = e^{i\phi_{0}\hat{Z}}\prod^{d}_{k=1}\hat{W}(a)e^{i\phi_{k}\hat{Z}} .
+
+    The circuit can also be expressed in the X-convention (``convention="X"``):
+
+    .. math::
+
+        \hat{U}_{QSP} = e^{i\phi_{0}\hat{X}}\prod^{d}_{k=1}\hat{W}(a)e^{i\phi_{k}\hat{X}} .
+
+    .. seealso::
+
+        :func:`~.qsvt` and :class:`~.QSVT`.
+
+    Args:
+        block_encoding (:class:`~.estimator.resource_operator.ResourceOperator`): the block encoding operator
+        poly_deg (int): the degree of the polynomial transformation being applied
+        convention (str): the basis used for the rotation operators, valid conventions are ``"X"`` or ``"Z"``
+        rotation_precision (float | None): The error threshold for the approximate Clifford + T
+            decomposition of the single qubit rotation gates used to implement this operation.
+        wires (WiresLike, None): the wires the operation acts on
+
+    Raises:
+        ValueError: If the block encoding operator acts on more than one qubit.
+        ValueError: If the convention is not ``"X"`` or ``"Z"``.
+
+    Resources:
+        The resources are obtained as described in Theorem 1 of `A Grand Unification of Quantum Algorithms
+        (2021) <https://arxiv.org/pdf/2105.02859>`_.
+
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> import pennylane.estimator as qre
+    >>> block_encoding = qre.RX(0.1, wires=0)
+    >>> poly_deg = 3
+    >>> qsp = qre.QSP(block_encoding, poly_deg, convention="Z", rotation_precision=1e-5)
+    >>> print(qre.estimate(qsp))
+    --- Resources: ---
+     Total wires: 1
+       algorithmic wires: 1
+       allocated wires: 0
+         zero state: 0
+         any state: 0
+     Total gates : 151
+       'T': 151
+    """
+
+    resource_keys = {"block_encoding", "poly_deg", "convention", "rotation_precision"}
+
+    def __init__(
+        self,
+        block_encoding: ResourceOperator,
+        poly_deg: int,
+        convention: str = "Z",
+        rotation_precision: float | None = None,
+        wires: WiresLike = None,
+    ):
+        _dequeue(block_encoding)  # remove operator
+        if block_encoding.num_wires > 1:
+            raise ValueError("The block encoding operator should act on a single qubit!")
+
+        if not (convention in {"Z", "X"}):
+            raise ValueError(f"The valid conventions are 'Z' or 'X'. Got {convention}")
+
+        self.block_encoding = block_encoding.resource_rep_from_op()
+        self.convention = convention
+        self.poly_deg = poly_deg
+        self.rotation_precision = rotation_precision
+
+        self.num_wires = 1
+        if wires is not None and len(wires) != self.num_wires:
+            raise ValueError(f"Expected {self.num_wires} wires, got {len(wires)}.")
+
+        super().__init__(wires=wires)
+
+    @property
+    def resource_params(self):
+        r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+        Returns:
+            dict: A dictionary containing the resource parameters:
+                * block_encoding (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`):
+                  the block encoding operator
+                * poly_deg (int): the degree of the polynomial transformation being applied
+                * convention (str): the basis used for the rotation operators, valid conventions are ``"X"`` or ``"Z"``
+                * rotation_precision (float | None): The error threshold for the approximate Clifford + T
+                  decomposition of the single qubit rotation gates used to implement this operation.
+        """
+        return {
+            "block_encoding": self.block_encoding,
+            "poly_deg": self.poly_deg,
+            "convention": self.convention,
+            "rotation_precision": self.rotation_precision,
+        }
+
+    @classmethod
+    def resource_rep(
+        cls,
+        block_encoding: CompressedResourceOp,
+        poly_deg: int,
+        convention: str,
+        rotation_precision: float | None,
+    ):
+        r"""Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute the resources.
+
+        Args:
+            block_encoding (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`):
+                the block encoding operator
+            poly_deg (int): the degree of the polynomial transformation being applied
+            convention (str):the basis used for the rotation operators, valid conventions are ``"X"`` or ``"Z"``
+            rotation_precision (float | None): The error threshold for the approximate Clifford + T
+                decomposition of the single qubit rotation gates used to implement this operation.
+
+        Returns:
+            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+        """
+        params = {
+            "block_encoding": block_encoding,
+            "poly_deg": poly_deg,
+            "convention": convention,
+            "rotation_precision": rotation_precision,
+        }
+        return CompressedResourceOp(cls, num_wires=1, params=params)
+
+    @classmethod
+    def resource_decomp(
+        cls,
+        block_encoding: CompressedResourceOp,
+        poly_deg: int,
+        convention: str,
+        rotation_precision: float,
+    ):
+        r"""Returns a list representing the resources of the operator. Each object in the list
+        represents a gate and the number of times it occurs in the circuit.
+
+        Args:
+            block_encoding (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`):
+                the block encoding operator
+            poly_deg (int): the degree of the polynomial transformation being applied
+            convention (str): the basis used for the rotation operators, valid conventions are ``"X"`` or ``"Z"``
+            rotation_precision (float): The error threshold for the approximate Clifford + T
+                decomposition of the single qubit rotation gates used to implement this operation.
+
+        Resources:
+            The resources are obtained as described in Theorem 1 of `A Grand Unification of Quantum Algorithms
+            (2021) <https://arxiv.org/pdf/2105.02859>`_.
+
+        Raises:
+            ValueError: If the convention is not ``"X"`` or ``"Z"``.
+
+        Returns:
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
+        """
+        if convention == "Z":
+            rot_op = RZ.resource_rep(rotation_precision)
+        elif convention == "X":
+            rot_op = RX.resource_rep(rotation_precision)
+        else:
+            raise ValueError(f"The valid conventions are 'Z' or 'X'. Got {convention}")
+
+        return [
+            GateCount(block_encoding, poly_deg),
+            GateCount(rot_op, poly_deg + 1),
+        ]

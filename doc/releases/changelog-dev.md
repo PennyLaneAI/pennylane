@@ -280,6 +280,10 @@
   :class:`estimator.Qubitization <pennylane.estimator.templates.subroutines.Qubitization>`.
   [(#8675)](https://github.com/PennyLaneAI/pennylane/pull/8675)
 
+* Users can now estimate the resources for the Quantum Signal Processing (QSP) and Quantum Singular
+  Value Transformation (QSVT) algorithms using two new resource operators: :class:`estimator.QSP <pennylane.estimator.templates.qsp.QSP>` and :class:`estimator.QSVT <pennylane.estimator.templates.qsp.QSVT>`.
+  [(#8733)](https://github.com/PennyLaneAI/pennylane/pull/8733)
+
 * A new :func:`~pennylane.resource.algo_error` function has been added to compute algorithm-specific 
   errors from quantum circuits. This provides a dedicated entry point for retrieving error information 
   that was previously accessible through :func:`~pennylane.specs`. The function works with QNodes and 
