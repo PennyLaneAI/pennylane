@@ -627,6 +627,7 @@ class TestChangeOpBasis:
         cb_op = qre.ChangeOpBasis(qre.X(), qre.Y(), qre.Z())
         assert cb_op.wires is None
 
+    # pylint: disable=too-many-arguments
     @pytest.mark.parametrize(
         "compute_op, target_op, uncompute_op, expected_res",
         (
@@ -727,3 +728,60 @@ class TestChangeOpBasis:
             op.resource_rep(cmpr_compute_op, cmpr_target_op, cmpr_uncompute_op, num_wires)
             == expected
         )
+
+    @pytest.mark.parametrize(
+        "compute_op, target_op, uncompute_op, num_ctrl_wires, num_zero_ctrl, expected_res",
+        (
+            (
+                qre.S(wires=0),
+                qre.X(wires=0),
+                qre.S(wires=0),
+                1,
+                0,
+                [
+                    qre.GateCount(qre.resource_rep(qre.S), 1),
+                    qre.GateCount(
+                        qre.Controlled.resource_rep(
+                            base_cmpr_op=qre.X.resource_rep(),
+                            num_ctrl_wires=1,
+                            num_zero_ctrl=0,
+                        ),
+                        1,
+                    ),
+                    qre.GateCount(qre.resource_rep(qre.S), 1),
+                ],
+            ),
+            (
+                qre.Hadamard(wires=0),
+                qre.Z(wires=0),
+                None,
+                2,
+                1,
+                [
+                    qre.GateCount(qre.resource_rep(qre.Hadamard), 1),
+                    qre.GateCount(
+                        qre.Controlled.resource_rep(
+                            base_cmpr_op=qre.Z.resource_rep(),
+                            num_ctrl_wires=2,
+                            num_zero_ctrl=1,
+                        ),
+                        1,
+                    ),
+                    qre.GateCount(
+                        qre.resource_rep(
+                            qre.Adjoint,
+                            {"base_cmpr_op": qre.Hadamard.resource_rep()},
+                        ),
+                        1,
+                    ),
+                ],
+            ),
+        ),
+    )
+    def test_controlled_resource_decomp(
+        self, compute_op, target_op, uncompute_op, num_ctrl_wires, num_zero_ctrl, expected_res
+    ):
+        """Test that the controlled resource decomposition is correct."""
+        cb_op = qre.ChangeOpBasis(compute_op, target_op, uncompute_op)
+        res = cb_op.controlled_resource_decomp(num_ctrl_wires, num_zero_ctrl, cb_op.resource_params)
+        assert res == expected_res

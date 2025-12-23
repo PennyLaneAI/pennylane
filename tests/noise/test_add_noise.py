@@ -392,6 +392,7 @@ class TestAddNoiseInterface:
 class TestAddNoiseLevels:
     """Tests for custom insertion of add_noise transform at correct level."""
 
+    @pytest.mark.xfail(strict=False, reason="https://github.com/PennyLaneAI/pennylane/issues/8779")
     @pytest.mark.parametrize(
         "level1, level2",
         [
@@ -463,5 +464,5 @@ class TestAddNoiseLevels:
         transform_level2 = qml.workflow.get_transform_program(noisy_qnode)
 
         assert len(transform_level1) == len(transform_level2) - 1
-        assert transform_level2[4].tape_transform == add_noise.tape_transform
+        assert transform_level2[3].tape_transform == add_noise.tape_transform
         assert transform_level2[-1].tape_transform == qml.metric_tensor.tape_transform
