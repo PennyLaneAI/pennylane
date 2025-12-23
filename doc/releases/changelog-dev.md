@@ -23,10 +23,6 @@
   estimate its resources.
   [(#8748)](https://github.com/PennyLaneAI/pennylane/pull/8748)
   
-  The gates of :class:`~.IQP` circuits correspond to parametrized multi-qubit X rotations acting on specific
-  subsets of qubits. In PennyLane, these are implemented as a block of Hadamard gates followed by multi-qubit
-  Z rotations and a final layer of Hadamards.
-  
   While :class:`~.IQP` circuits belong to a class of circuits that are believed to be hard to sample from
   using classical algorithms, Recio-Armengol et al. showed in a recent paper titled [Train on classical, deploy on quantum](https://arxiv.org/abs/2503.02934)
   that such circuits can still be optimized efficiently. The added features in this release facilitate the simulation
