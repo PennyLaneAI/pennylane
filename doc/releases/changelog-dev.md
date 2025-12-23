@@ -20,7 +20,8 @@
 
 * A new template for defining an Instantaneous Quantum Polynomial (:class:`~.IQP`) circuit has been added along with a 
   lightweight version (based on the :class:`~.estimator.resource_operator.ResourceOperator` class) to rapidly 
-  estimate its resources.
+  estimate its resources. These new features facilitate the simulation and resource estimation of large-scale
+  generative quantum machine learning tasks.
   [(#8748)](https://github.com/PennyLaneAI/pennylane/pull/8748)
   
   While :class:`~.IQP` circuits belong to a class of circuits that are believed to be hard to sample from
