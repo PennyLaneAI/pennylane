@@ -319,6 +319,8 @@
 <h3>Improvements 🛠</h3>
 
 * `qml.vjp` can now be captured into plxpr with program capture for integration with Catalyst.
+  A new `qml.value_and_grad` can calculate the results and gradient together and is integrated
+  with both Catalyst frontends.
   [(#8736)](https://github.com/PennyLaneAI/pennylane/pull/8736)
 
 * `qml.measure` can now be used as a frontend for `catalyst.measure`.
