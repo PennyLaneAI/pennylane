@@ -132,6 +132,22 @@ class TestIQP:
         """Test that the resources are correct."""
         assert qre.IQP.resource_decomp(num_wires, pattern, spin_sym) == expected_res
 
+    @pytest.mark.parametrize(
+        ("num_wires", "pattern", "spin_sym", "expected"),
+        [
+            (4, [[[0]], [[1]], [[2]], [[3]]], False, "IQP(4, [[[0]], [[1]], [[2]], [[3]]], False)"),
+            (
+                6,
+                [[[0]], [[1]], [[2]], [[3]], [[4]], [[5]]],
+                True,
+                "IQP(6, [[[0]], [[1]], [[2]], [[3]], [[4]], [[5]]], True)",
+            ),
+        ],
+    )
+    def test_tracking_name(self, num_wires, pattern, spin_sym, expected):
+        """Test that the tracking name is correct."""
+        assert qre.IQP.tracking_name(num_wires, pattern, spin_sym) == expected
+
 
 class TestResourcePhaseGradient:
     """Test the PhaseGradient class."""
