@@ -173,8 +173,6 @@ class BasicEntanglerLayers(Operation):
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-
-
         .. seealso:: :meth:`~.BasicEntanglerLayers.decomposition`.
 
         Args:
