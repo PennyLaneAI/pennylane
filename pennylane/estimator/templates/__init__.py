@@ -28,6 +28,7 @@ from .subroutines import (
     ControlledSequence,
     QPE,
     IterativeQPE,
+    UnaryIterationQPE,
     Reflection,
     Qubitization,
 )
