@@ -27,26 +27,8 @@ More details can be found in :doc:`compiling workflows </introduction/compiling_
 Compilation transforms for circuit optimization
 -----------------------------------------------
 
-PennyLane includes multiple transforms that can act on ``QNode``'s, quantum functions, and multiple
-other PennyLane objects.
-
-:html:`<div class="summary-table">`
-
-.. autosummary::
-    :nosignatures:
-
-    ~pennylane.transforms.cancel_inverses
-    ~pennylane.transforms.commute_controlled
-    ~pennylane.transforms.merge_amplitude_embedding
-    ~pennylane.transforms.merge_rotations
-    ~pennylane.transforms.pattern_matching
-    ~pennylane.transforms.remove_barrier
-    ~pennylane.transforms.single_qubit_fusion
-    ~pennylane.transforms.undo_swaps
-    ~pennylane.transforms.decompose
-    ~pennylane.transforms.combine_global_phases
-
-:html:`</div>`
+PennyLane includes multiple transforms that can act on ``QNode``'s, quantum functions, and multiple 
+other PennyLane objects. See the :ref:`transforms library <transform_library>` for a complete list.
 
 .. note::
 
