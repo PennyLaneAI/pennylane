@@ -15,6 +15,8 @@
 
 import numpy as np
 
+from pennylane.typing import TensorLike
+
 # pylint: disable=too-many-arguments, too-many-positional-arguments
 
 
@@ -380,6 +382,80 @@ def _rotate_hamiltonian(h_integrals, mode_rots, modals):
     return h_data
 
 
+def vscf_rotations(
+    h_integrals: list[TensorLike],
+    modals: list[int] | None = None,
+    cutoff: float | None = None,
+    cutoff_ratio: float = 1e-6,
+) -> list[TensorLike]:
+    r"""Generates the vibrational self-consistent field rotation matrices.
+
+    This functions generates the matrices :math:`U` for each vibrational mode
+    that transforms the primitive harmonic oscillator (HO) basis states
+    (:math:`|\phi_j^{\text{HO}}\rangle`) into the optimized vibrational
+    self-consistent field (VSCF) states (:math:`|\psi_i^{\text{VSCF}}\rangle`).
+
+    The relationship is defined as:
+
+    .. math::
+        |\psi_i^{\text{VSCF}}\rangle = \sum_{j} U_{ji} |\phi_j^{\text{HO}}\rangle,
+
+    where :math:`j` runs over the number of bosonic states per mode and
+    :math:`i` denotes the index of the specific VSCF state.
+
+    Args:
+        h_integrals (list[TensorLike[float]]): list of n-mode expansion of Hamiltonian integrals
+        modals (list[int]): list containing the maximum number of modals to consider for each vibrational mode.
+            Default value is the maximum number of modals.
+        cutoff (float): threshold value for including matrix elements into operator
+        cutoff_ratio (float): ratio for discarding elements with respect to biggest element in the integrals.
+            Default value is ``1e-6``.
+
+    Returns:
+        list(TensorLike[float]): list of rotation matrices for all vibrational modes
+
+    **Example**
+
+    >>> symbols, charge  = ['H', 'H'], 0
+    >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
+    >>> mol = qml.qchem.Molecule(symbols, geometry, charge=charge)
+    >>> pes = qml.qchem.vibrational_pes(
+    ...     mol, n_points=3, backend='cf_threadpool', cubic=True
+    ... )
+    >>> h_integrals = qml.qchem.christiansen_integrals(
+    ...     pes, n_states=4, cubic=False, backend="cf_threadpool"
+    ... )
+    >>> mode_rots = qml.qchem.vscf_rotations(h_integrals)
+    >>> print(mode_rots[0])
+    [[ 0.98366824  0.17314139 -0.01438041 -0.04703255]
+    [ 0.16168107 -0.74327452 -0.0123072   0.64903833]
+    [ 0.00608058 -0.17368421 -0.9602084  -0.21862444]
+    [ 0.07886101 -0.62241373  0.27864235 -0.72714547]]
+
+    """
+    nmodes, imax = np.shape(h_integrals[0])[0:2]
+    max_modals = nmodes * [imax]
+    if modals is None:
+        modals = max_modals
+    else:
+        if len(modals) != nmodes:
+            raise ValueError(
+                "Number of maximum modals must be a list of length equal to the number of modes."
+            )
+        if np.max(modals) > imax:
+            raise ValueError(
+                "Number of maximum modals cannot be greater than the modals for unrotated integrals."
+            )
+
+    if cutoff is None:
+        max_val = np.max([np.max(np.abs(H)) for H in h_integrals])
+        cutoff = max_val * cutoff_ratio
+
+    _, mode_rots = _vscf(h_integrals, modals=modals, cutoff=cutoff)
+
+    return mode_rots
+
+
 def vscf_integrals(h_integrals, d_integrals=None, modals=None, cutoff=None, cutoff_ratio=1e-6):
     r"""Generates vibrational self-consistent field rotated integrals.
 
@@ -458,10 +534,10 @@ def vscf_integrals(h_integrals, d_integrals=None, modals=None, cutoff=None, cuto
                 f"Building n-mode dipole is not implemented for n equal to {len(d_integrals)}."
             )
 
-    nmodes = np.shape(h_integrals[0])[0]
-
-    imax = np.shape(h_integrals[0])[1]
+    nmodes, imax = np.shape(h_integrals[0])[0:2]
     max_modals = nmodes * [imax]
+    mode_rots = vscf_rotations(h_integrals, max_modals, cutoff, cutoff_ratio)
+
     if modals is None:
         modals = max_modals
     else:
@@ -469,13 +545,6 @@ def vscf_integrals(h_integrals, d_integrals=None, modals=None, cutoff=None, cuto
             raise ValueError(
                 "Number of maximum modals cannot be greater than the modals for unrotated integrals."
             )
-        imax = np.max(modals)
-
-    if cutoff is None:
-        max_val = np.max([np.max(np.abs(H)) for H in h_integrals])
-        cutoff = max_val * cutoff_ratio
-
-    _, mode_rots = _vscf(h_integrals, modals=max_modals, cutoff=cutoff)
 
     h_data = _rotate_hamiltonian(h_integrals, mode_rots, modals)
 
