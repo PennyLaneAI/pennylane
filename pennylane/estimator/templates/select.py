@@ -273,7 +273,6 @@ class SelectTHC(ResourceOperator):
         Resources:
             The resources are calculated based on Figure 5 in `arXiv:2011.03494 <https://arxiv.org/abs/2011.03494>`_ and
             Figure 4 in `arXiv:2501.06165 <https://arxiv.org/abs/2501.06165>`_.
-            The resources are modified to remove the control from the Select operation.
 
         Returns:
             list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
@@ -393,7 +392,7 @@ class SelectTHC(ResourceOperator):
             target_resource_params (dict): A dictionary containing the resource parameters of the target operator.
 
         Resources:
-            The resources are calculated based on Figure 5 in `arXiv:2011.03494 <https://arxiv.org/abs/2011.03494>`_
+            The resources are calculated based on Figure 5 in `arXiv:2011.03494 <https://arxiv.org/abs/2011.03494>`_.
 
         Returns:
             list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object

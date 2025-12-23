@@ -1761,7 +1761,7 @@ class Select(ResourceOperator):
 
 
 class QROM(ResourceOperator):
-    r"""Resource class for the QROM template.
+    r"""Resource class for the Quantum Read-Only Memory (QROM) template.
 
     Args:
         num_bitstrings (int): the number of bitstrings that are to be encoded
@@ -1773,8 +1773,8 @@ class QROM(ResourceOperator):
         select_swap_depth (int | None): A parameter :math:`\lambda` that determines
             if data will be loaded in parallel by adding more rows following Figure 1.C of
             `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_. Can be :code:`None`,
-            :code:`1` or a positive integer power of two. Defaults to None, which sets the
-            depth that minimizes T-gate count.
+            :code:`1` or a positive integer power of two. Defaults to ``None``, which sets the
+            depth that minimizes ``T``-gate count.
         wires (WiresLike | None): The wires the operation acts on (control and target), excluding
             any additional qubits allocated during the decomposition (e.g select-swap wires).
 
@@ -1890,8 +1890,8 @@ class QROM(ResourceOperator):
             select_swap_depth (int | None): A parameter :math:`\lambda` that determines
                 if data will be loaded in parallel by adding more rows following Figure 1.C of
                 `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_. Can be :code:`None`,
-                :code:`1` or a positive integer power of two. Defaults to None, which sets the
-                depth that minimizes T-gate count.
+                :code:`1` or a positive integer power of two. Defaults to ``None``, which sets the
+                depth that minimizes ``T``-gate count.
             restored (bool): Determine if allocated qubits should be reset after the computation
                 (at the cost of higher gate counts). Defaults to :code:`True`.
 
@@ -1906,10 +1906,15 @@ class QROM(ResourceOperator):
             * :code:`restored=True`: Uses the standard QROM resource accounting from Figure 4 of
               `Berry et al. (2019) <https://arxiv.org/abs/1902.02134>`__.
 
-            Note: we use the unary iterator trick to implement the Select. This
+            Note: we use the unary iterator trick to implement the ``Select``. This
             implementation assumes we have access to :math:`n - 1` additional
             work qubits, where :math:`n = \left\lceil \log_{2}(N) \right\rceil` and :math:`N` is
             the number of batches of unitaries to select.
+
+        Returns:
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
 
         if select_swap_depth:
@@ -2081,7 +2086,7 @@ class QROM(ResourceOperator):
             :code:`restored = False` and `Berry et al. (2019) <https://arxiv.org/pdf/1902.02134>`_
             (Figure 4) for :code:`restored = True`.
 
-            Note: we use the single-controlled unary iterator trick to implement the Select. This
+            Note: we use the single-controlled unary iterator trick to implement the ``Select``. This
             implementation assumes we have access to :math:`n - 1` additional work qubits,
             where :math:`n = \lceil \log_{2}(N) \rceil` and :math:`N` is the number of batches of
             unitaries to select.
@@ -2340,8 +2345,8 @@ class QROM(ResourceOperator):
             select_swap_depth (int | None): A parameter :math:`\lambda` that determines
                 if data will be loaded in parallel by adding more rows following Figure 1.C of
                 `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_. Can be :code:`None`,
-                :code:`1` or a positive integer power of two. Defaults to None, which sets the
-                depth that minimizes T-gate count.
+                :code:`1` or a positive integer power of two. Defaults to ``None``, which sets the
+                depth that minimizes ``T``-gate count.
 
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
