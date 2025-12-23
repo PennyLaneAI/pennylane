@@ -20,6 +20,7 @@ from collections.abc import Hashable
 from functools import lru_cache
 
 from pennylane.capture import enabled as capture_enabled
+from pennylane.compiler import compiler
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.operation import Operator
 from pennylane.wires import Wires
@@ -377,5 +378,10 @@ def measure(
     if capture_enabled():
         primitive = _create_mid_measure_primitive()
         return primitive.bind(wires, reset=reset, postselect=postselect)
+
+    if active_jit := compiler.active_compiler():
+        available_eps = compiler.AvailableCompilers.names_entrypoints
+        ops_loader = available_eps[active_jit]["ops"].load()
+        return ops_loader.measure(wires, reset=reset, postselect=postselect)
 
     return _measure_impl(wires, reset=reset, postselect=postselect)

@@ -33,7 +33,8 @@ from pennylane.wires import Wires, WiresLike
 
 
 class SelectTHC(ResourceOperator):
-    r"""Resource class for creating the custom ``Select`` operator for tensor hypercontracted (THC) Hamiltonian.
+    r"""Resource class for creating the custom ``Select`` operator for tensor hypercontracted (THC)
+    Hamiltonian.
 
     .. note::
 
@@ -44,14 +45,15 @@ class SelectTHC(ResourceOperator):
     Args:
         thc_ham (:class:`~pennylane.estimator.compact_hamiltonian.THCHamiltonian`): A tensor hypercontracted
             Hamiltonian on which this ``Select`` operator is being applied.
-        num_batches (int): The number of batches for loading the rotation angles
-            into temporary quantum registers for Givens rotations.
+        num_batches (int): The number of batches for loading Givens rotation angles
+            into temporary quantum registers. Must be less than the number of orbitals in ``thc_ham``.
             The default value of ``1`` loads all angles in one batch.
         rotation_precision (int): The number of bits used to represent the precision for loading
             the rotation angles for basis rotation. The default value is set to ``15`` bits.
         select_swap_depth (int | None): A parameter of :class:`~.pennylane.estimator.templates.subroutines.QROM`
-            used to trade-off extra wires for reduced circuit depth. Defaults to :code:`None`, which determines the optimal depth
-            for minimizing the total ``T``-gate count.
+            used to trade-off extra wires for reduced circuit depth. Defaults to :code:`None`, in which
+            case, the ``select_swap_depth`` is set to the optimal depth that minimizes the total
+            ``T``-gate count.
         wires (WiresLike | None): the wires on which the operator acts
 
     Raises:
@@ -111,7 +113,7 @@ class SelectTHC(ResourceOperator):
 
     """
 
-    resource_keys = {"thc_ham", "batched_rotations", "rotation_precision", "select_swap_depth"}
+    resource_keys = {"thc_ham", "num_batches", "rotation_precision", "select_swap_depth"}
 
     def __init__(  # pylint: disable=too-many-arguments
         self,
@@ -165,14 +167,15 @@ class SelectTHC(ResourceOperator):
             dict: A dictionary containing the resource parameters:
                 * thc_ham (:class:`~.pennylane.estimator.compact_hamiltonian.THCHamiltonian`): a tensor hypercontracted
                   Hamiltonian on which this ``Select`` operator is being applied
-                * num_batches (int): The number of batches for loading the rotation angles
-                  into temporary quantum registers for Givens rotations.
+                * num_batches (int): The number of batches for loading Givens rotation angles
+                  into temporary quantum registers. Must be less than the number of orbitals in ``thc_ham``.
                   The default value of ``1`` loads all angles in one batch.
                 * rotation_precision (int): The number of bits used to represent the precision for loading
                   the rotation angles for basis rotation. The default value is set to ``15`` bits.
                 * select_swap_depth (int | None): A parameter of :class:`~.pennylane.estimator.templates.subroutines.QROM`
-                  used to trade-off extra wires for reduced circuit depth. Defaults to :code:`None`, which determines the optimal depth
-                  for minimizing the total ``T``-gate count.
+                  used to trade-off extra wires for reduced circuit depth. Defaults to :code:`None`, in which
+                  case, the ``select_swap_depth`` is set to the optimal depth that minimizes the total
+                  ``T``-gate count.
         """
         return {
             "thc_ham": self.thc_ham,
@@ -195,14 +198,15 @@ class SelectTHC(ResourceOperator):
         Args:
             thc_ham (:class:`~pennylane.estimator.compact_hamiltonian.THCHamiltonian`): A tensor hypercontracted
                 Hamiltonian on which this ``Select`` operator is being applied.
-            num_batches (int): The number of batches for loading the rotation angles
-                into temporary quantum registers for Givens rotations.
+            num_batches (int): The number of batches for loading Givens rotation angles
+                into temporary quantum registers. Must be less than the number of orbitals in ``thc_ham``.
                 The default value of ``1`` loads all angles in one batch.
             rotation_precision (int): The number of bits used to represent the precision for loading
                 the rotation angles for basis rotation. The default value is set to ``15`` bits.
             select_swap_depth (int | None): A parameter of :class:`~.pennylane.estimator.templates.subroutines.QROM`
-                used to trade-off extra wires for reduced circuit depth. Defaults to :code:`None`, which determines the optimal depth
-                for minimizing the total ``T``-gate count.
+                used to trade-off extra wires for reduced circuit depth. Defaults to :code:`None`, in which
+                case, the ``select_swap_depth`` is set to the optimal depth that minimizes the total
+                ``T``-gate count.
 
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
@@ -256,14 +260,15 @@ class SelectTHC(ResourceOperator):
         Args:
             thc_ham (:class:`~pennylane.estimator.compact_hamiltonian.THCHamiltonian`): A tensor hypercontracted
                 Hamiltonian on which this ``Select`` operator is being applied.
-            num_batches (int): The number of batches for loading the rotation angles
-                into temporary quantum registers for Givens rotations.
+            num_batches (int): The number of batches for loading Givens rotation angles
+                into temporary quantum registers. Must be less than the number of orbitals in ``thc_ham``.
                 The default value of ``1`` loads all angles in one batch.
             rotation_precision (int): The number of bits used to represent the precision for loading
                 the rotation angles for basis rotation. The default value is set to ``15`` bits.
             select_swap_depth (int | None): A parameter of :class:`~.pennylane.estimator.templates.subroutines.QROM`
-                used to trade-off extra wires for reduced circuit depth. Defaults to :code:`None`, which determines the optimal depth
-                for minimizing the total ``T``-gate count.
+                used to trade-off extra wires for reduced circuit depth. Defaults to :code:`None`, in which
+                case, the ``select_swap_depth`` is set to the optimal depth that minimizes the total
+                ``T``-gate count.
 
         Resources:
             The resources are calculated based on Figure 5 in `arXiv:2011.03494 <https://arxiv.org/abs/2011.03494>`_ and

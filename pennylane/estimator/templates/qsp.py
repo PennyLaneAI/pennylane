@@ -438,7 +438,7 @@ class GQSPTimeEvolution(ResourceOperator):
     @staticmethod
     def poly_approx(time: float, one_norm: float, epsilon: float) -> int:
         r"""Obtain the maximum degree of the polynomial approximation required
-        to approximate :math:`e^{(iHt * \cos{\theta})}` within error epsilon.
+        to approximate :math:`e^{(iHt \cos{\theta})}` within error epsilon.
 
         Args:
             time (float): the simulation time
@@ -465,7 +465,7 @@ class QSVT(ResourceOperator):
 
     This template estimates the resources for a QSVT circuit of degree :math:`d` (``poly_deg``).
     The circuit uses a :class:`~.estimator.resource_operator.ResourceOperator` :math:`U` that block
-    encodes a matrix :math:`A` in its top-left block with dimensions ``encoding_dims`` :math:`(A_n, A_m)`.
+    encodes a matrix :math:`A` in its top-left block with dimensions :math:`A_n, A_m` (``encoding_dims``).
 
     When the degree of the polynomial is odd, the QSVT circuit is defined as:
 
@@ -482,8 +482,8 @@ class QSVT(ResourceOperator):
         U_{QSVT} = \left[\prod^{d/2}_{k=1}\Pi_{\phi_{2k-1}}U^\dagger\tilde{\Pi}_{\phi_{2k}}U\right].
 
     Where :math:`\Pi_{\phi}` and :math:`\tilde{\Pi}_{\phi}` are projector-controlled phase shifts
-    (:class:`~.estimator.ops.qubit.parametric_ops_multi_qubit.PCPhase`) This circuit applies a
-    polynomial transformation of degree :math:`d` (:math:`Poly^{SV}`) to the singular values of the
+    (:class:`~.estimator.ops.qubit.parametric_ops_multi_qubit.PCPhase`). This circuit applies a
+    polynomial transformation (:math:`Poly^{SV}`) of degree :math:`d` to the singular values of the
     block encoded matrix:
 
     .. math::
