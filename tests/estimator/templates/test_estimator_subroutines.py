@@ -23,6 +23,7 @@ import pennylane.estimator as qre
 from pennylane.estimator import GateCount, resource_rep
 from pennylane.estimator.resource_config import ResourceConfig
 from pennylane.estimator.wires_manager import Allocate, Deallocate
+from pennylane.wires import Wires
 
 # pylint: disable=no-self-use,too-many-arguments
 
@@ -1920,6 +1921,68 @@ class TestResourceUnaryIterationQPE:
             )
             == f"UnaryIterationQPE({walk_op_name}, 8, adj_qft=QFT(3))"
         )
+
+    @pytest.mark.parametrize(
+        "walk_op, adj_qft, input_wires, expected_wires",
+        (
+            (
+                qre.Qubitization(
+                    qre.UniformStatePrep(3),
+                    qre.SelectPauli(qre.PauliHamiltonian(2, {"XX": 1, "Z": 1, "Y": 1})),
+                ),
+                qre.Adjoint(qre.QFT(4)),
+                None,
+                None,
+            ),
+            (
+                qre.Qubitization(
+                    qre.UniformStatePrep(3),
+                    qre.SelectPauli(qre.PauliHamiltonian(2, {"XX": 1, "Z": 1, "Y": 1})),
+                ),
+                qre.Adjoint(qre.QFT(4)),
+                Wires([1, 2, 3, 4, "c1", "c2", "c3", "c4"]),
+                Wires([1, 2, 3, 4, "c1", "c2", "c3", "c4"]),
+            ),
+            (
+                qre.Qubitization(
+                    qre.UniformStatePrep(3),
+                    qre.SelectPauli(qre.PauliHamiltonian(2, {"XX": 1, "Z": 1, "Y": 1})),
+                    wires=[1, 2, 3, 4],
+                ),
+                qre.Adjoint(qre.QFT(4, ["c1", "c2", "c3", "c4"])),
+                None,
+                Wires([1, 2, 3, 4, "c1", "c2", "c3", "c4"]),
+            ),
+            (
+                qre.Qubitization(
+                    qre.UniformStatePrep(3),
+                    qre.SelectPauli(qre.PauliHamiltonian(2, {"XX": 1, "Z": 1, "Y": 1})),
+                    wires=[1, 2, 3, 4],
+                ),
+                qre.Adjoint(qre.QFT(4)),
+                Wires([1, 2, 3, 4, "c1", "c2", "c3", "c4"]),
+                Wires([1, 2, 3, 4, "c1", "c2", "c3", "c4"]),
+            ),
+            (
+                qre.Qubitization(
+                    qre.UniformStatePrep(3),
+                    qre.SelectPauli(qre.PauliHamiltonian(2, {"XX": 1, "Z": 1, "Y": 1})),
+                ),
+                qre.Adjoint(qre.QFT(4, wires=["c1", "c2", "c3", "c4"])),
+                Wires([1, 2, 3, 4, "c1", "c2", "c3", "c4"]),
+                Wires([1, 2, 3, 4, "c1", "c2", "c3", "c4"]),
+            ),
+        ),
+    )
+    def test_wires_init(self, walk_op, adj_qft, input_wires, expected_wires):
+        """Test that we can correctly initialize the wires of the operator"""
+        walk_op = (
+            qre.Qubitization(
+                qre.UniformStatePrep(3),
+                qre.SelectPauli(qre.PauliHamiltonian(2, {"XX": 1, "Z": 1, "Y": 1})),
+            ),
+        )
+        adj_qft = (qre.Adjoint(qre.QFT(3)),)
 
     @pytest.mark.parametrize(
         "walk_operator, n_iter, adj_qft",

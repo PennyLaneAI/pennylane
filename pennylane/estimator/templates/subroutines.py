@@ -1018,25 +1018,24 @@ class UnaryIterationQPE(ResourceOperator):
 
     The resources for this operation are computed as follows:
 
-    >>> import pennylane.estimator as qre
     >>> thc_ham = qre.THCHamiltonian(num_orbitals=20, tensor_rank=40)
-    >>> prep = qre.PrepTHC(thc_ham, coeff_precision=20, select_swap_depth=2)
-    >>> walk_operator = qre.QubitizeTHC(thc_ham, prep_op=prep)
-    >>> print(qre.estimate(qre.UnaryIterationQPE(walk_operator, 11)))
+    >>> num_iter, walk_operator = (11, qre.QubitizeTHC(thc_ham))
+    >>> res = qre.estimate(qre.UnaryIterationQPE(walk_operator, num_iter))
+    >>> print(res)
     --- Resources: ---
-    Total wires: 1417
-      algorithmic wires: 72
-      allocated wires: 1345
-        zero state: 1345
+    Total wires: 1232
+      algorithmic wires: 101
+      allocated wires: 1131
+        zero state: 1131
         any state: 0
-    Total gates : 6.200E+5
-      'Toffoli': 3.858E+4,
+    Total gates : 8.744E+5
+      'Toffoli': 3.647E+4,
       'T': 792,
-      'CNOT': 4.552E+5,
-      'X': 2.282E+4,
-      'Z': 440,
+      'CNOT': 7.255E+5,
+      'X': 1.721E+4,
+      'Z': 475,
       'S': 880,
-      'Hadamard': 1.014E+5
+      'Hadamard': 9.308E+4
     """
 
     resource_keys = {"walk_operator", "num_iterations", "adj_qft_cmpr_op"}
@@ -1060,14 +1059,19 @@ class UnaryIterationQPE(ResourceOperator):
 
         self.num_wires = int(math.ceil(math.log2(num_iterations + 1))) + walk_operator.num_wires
 
-        if wires:
-            self.wires = Wires(wires)
-            if base_wires := walk_operator.wires:
-                self.wires = Wires.all_wires([self.wires, base_wires])
-            if len(self.wires) != self.num_wires:
-                raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}.")
-        else:
+        wires = Wires([]) if wires is None else Wires(wires)
+        walk_wires = Wires([]) if walk_operator.wires is None else walk_operator.wires
+        adj_qft_wires = (
+            Wires([]) if (adj_qft_op is None or adj_qft_op.wires is None) else adj_qft_op.wires
+        )
+
+        all_wires = Wires.all_wires((wires, walk_wires, adj_qft_wires))
+        if len(all_wires) == 0:
             self.wires = None
+        elif len(all_wires) != self.num_wires:
+            raise ValueError(f"Expected {self.num_wires} wires, got {len(all_wires)}.")
+        else:
+            self.wires = all_wires
 
     @property
     def resource_params(self) -> dict:
