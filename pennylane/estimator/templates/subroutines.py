@@ -997,9 +997,8 @@ class UnaryIterationQPE(ResourceOperator):
     of auxiliary qubits required. For a detailed explanation of unary iteration, see the
     `documentation <https://pennylane.ai/compilation/unary-iteration>`_.
 
-    Note, users can also provide a custom adjoint QFT implementation, which can be used to
-    further optimize the resource requirements. For example, one could use an approximate ``QFT``
-    implementation.
+    Note, users can also provide a custom adjoint Quantum Fourier Transform(QFT) implementation,
+    which can be used to further optimize the resource requirements.
 
     Args:
         walk_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): the quantum
@@ -1013,7 +1012,7 @@ class UnaryIterationQPE(ResourceOperator):
     Resources:
         The resources are obtained from Figure 2. in Section III of `arXiv.2011.03494 <https://arxiv.org/pdf/2011.03494>`_.
 
-    .. seealso:: Related PennyLane operation :class:`~.pennylane.QPE` and explanation of `Unary Iteration <https://pennylane.ai/compilation/unary-iteration>`_.
+    .. seealso:: Related PennyLane operation :class:`~.pennylane.QuantumPhaseEstimation` and explanation of `Unary Iteration <https://pennylane.ai/compilation/unary-iteration>`_.
 
     **Example**
 
