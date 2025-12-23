@@ -997,7 +997,7 @@ class UnaryIterationQPE(ResourceOperator):
     of auxiliary qubits required. For a detailed explanation of unary iteration, see the
     `documentation <https://pennylane.ai/compilation/unary-iteration>`_.
 
-    Note, users can also provide a custom adjoint Quantum Fourier Transform(QFT) implementation,
+    Note, users can also provide a custom adjoint Quantum Fourier Transform (QFT) implementation,
     which can be used to further optimize the resource requirements.
 
     Args:
