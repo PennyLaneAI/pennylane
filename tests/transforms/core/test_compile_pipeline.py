@@ -1824,9 +1824,8 @@ class TestCompilePipelineSerialization:
         """Test pickling a compile pipeline with bound transform arguments."""
         import pickle
 
-        pipeline = (
-            qml.transforms.merge_rotations(atol=1e-6)
-            + qml.transforms.cancel_inverses(recursive=True)
+        pipeline = qml.transforms.merge_rotations(atol=1e-6) + qml.transforms.cancel_inverses(
+            recursive=True
         )
         pickled = pickle.dumps(pipeline)
         restored = pickle.loads(pickled)
