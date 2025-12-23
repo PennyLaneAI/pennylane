@@ -234,6 +234,12 @@
   :class:`~.transforms.core.BoundTransform`, or other `CompilePipeline`s.
   [(#8750)](https://github.com/PennyLaneAI/pennylane/pull/8750)
 
+<h3>Improvements 🛠</h3>
+
+* The `ResourcesUndefinedError` has been removed from the `adjoint`, `ctrl`, and `pow` resource
+  decomposition methods of `ResourceOperator` to avoid using errors as control flow.
+  [(#8598)](https://github.com/PennyLaneAI/pennylane/pull/8598)
+
 * Quantum compilation passes in MLIR and XDSL can now be applied using the core PennyLane transform
   infrastructure, instead of using Catalyst-specific tools. This is made possible by a new argument in
   :func:`~pennylane.transform` and :class:`~.transforms.core.Transform` called ``pass_name``, which 
@@ -284,6 +290,24 @@
 * Added `PauliHamiltonian.num_terms` property to the ``qml.estimator.PauliHamiltonian`` class.
   Users can more easily access the total number of terms (Pauli words) from the `PauliHamiltonian` object directly.
   [(#8761)](https://github.com/PennyLaneAI/pennylane/pull/8761)
+
+* Users can now estimate the resources for the Generalized Quantum Signal Processing (GQSP)
+  algorithm using :class:`estimator.GQSP <pennylane.estimator.templates.qsp.GQSP>` and
+  :class:`estimator.GQSPTimeEvolution <pennylane.estimator.templates.qsp.GQSPTimeEvolution>`.
+  [(#8675)](https://github.com/PennyLaneAI/pennylane/pull/8675)
+
+* Users can now easily generate the LCU representation of a ``qml.estimator.PauliHamiltonian``
+  using the new :class:`estimator.SelectPauli <pennylane.estimator.templates.select.SelectPauli>` operator.
+  [(#8675)](https://github.com/PennyLaneAI/pennylane/pull/8675)
+
+* Users can now estimate the resources for the Qubitization algorithm with two new resource
+  operators: :class:`estimator.Reflection <pennylane.estimator.templates.subroutines.Reflection>` and
+  :class:`estimator.Qubitization <pennylane.estimator.templates.subroutines.Qubitization>`.
+  [(#8675)](https://github.com/PennyLaneAI/pennylane/pull/8675)
+
+* Users can now estimate the resources for the Quantum Signal Processing (QSP) and Quantum Singular
+  Value Transformation (QSVT) algorithms using two new resource operators: :class:`estimator.QSP <pennylane.estimator.templates.qsp.QSP>` and :class:`estimator.QSVT <pennylane.estimator.templates.qsp.QSVT>`.
+  [(#8733)](https://github.com/PennyLaneAI/pennylane/pull/8733)
 
 * A new :func:`~pennylane.resource.algo_error` function has been added to compute algorithm-specific 
   errors from quantum circuits. This provides a dedicated entry point for retrieving error information 
@@ -534,6 +558,10 @@
   system is disabled.
   [(#8532)](https://github.com/PennyLaneAI/pennylane/pull/8532)
 
+* The :class:`~.pennylane.estimator.templates.SelectTHC` resource operation is upgraded to allow for a trade-off between the number of qubits and T-gates.
+  This provides more flexibility in optimizing algorithms.
+  [(#8682)](https://github.com/PennyLaneAI/pennylane/pull/8682)
+  
 * The `~pennylane.estimator.compact_hamiltonian.CDFHamiltonian`, `~pennylane.estimator.compact_hamiltonian.THCHamiltonian`,
   `~pennylane.estimator.compact_hamiltonian.VibrationalHamiltonian`, and `~pennylane.estimator.compact_hamiltonian.VibronicHamiltonian`
   classes were modified to take the 1-norm of the Hamiltonian as an optional argument.
@@ -846,6 +874,9 @@
   that the resource function is correct.
   [(#8687)](https://github.com/PennyLaneAI/pennylane/pull/8687)
 
+* Simplified the decomposition pipeline for the estimator module. ``qre.estimate`` was updated to call the base class's `symbolic_resource_decomp` method directly.
+  [(#8641)](https://github.com/PennyLaneAI/pennylane/pull/8641)
+  
 * Disabled autograph for the PauliRot decomposition rule as it should not be used with autograph. 
   [(#8765)](https://github.com/PennyLaneAI/pennylane/pull/8765)
 
@@ -962,6 +993,9 @@ A warning message has been added to :doc:`Building a plugin <../development/plug
 * Fixes a bug where :class:`~.estimator.SelectTHC`, `~.estimator.QubitizeTHC`, `~.estimator.PrepTHC` are not accounting for auxiliary
   wires correctly.
   [(#8719)](https://github.com/PennyLaneAI/pennylane/pull/8719)
+
+* Fixes a bug where an error is raised when `to_openqasm` is used with `qml.decomposition.enable_graph()`
+  [(#8809)](https://github.com/PennyLaneAI/pennylane/pull/8809)
 
 <h3>Contributors ✍️</h3>
 
