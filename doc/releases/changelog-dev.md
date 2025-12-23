@@ -392,6 +392,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* `qml.vjp` can now be captured into plxpr with program capture for integration with Catalyst.
+  [(#8736)](https://github.com/PennyLaneAI/pennylane/pull/8736)
+
 * `qml.measure` can now be used as a frontend for `catalyst.measure`.
   [(#8782)](https://github.com/PennyLaneAI/pennylane/pull/8782)
 

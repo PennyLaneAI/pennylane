@@ -35,7 +35,6 @@ def indices_up_to(n_max):
     return zip(*[a + 1, b + 1])
 
 
-@pytest.mark.usefixtures("get_circuit")  # this fixture is in tests/qnn/conftest.py
 @pytest.fixture
 def module(get_circuit, n_qubits, output_dim):
     """Fixture for creating a hybrid Torch module. The module is composed of quantum TorchLayers
