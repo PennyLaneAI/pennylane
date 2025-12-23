@@ -1103,7 +1103,7 @@ class UnaryIterationQPE(ResourceOperator):
         cls,
         cmpr_walk_op: CompressedResourceOp,
         num_iterations: int,
-        adj_qft_cmpr_op: CompressedResourceOp = None,
+        adj_qft_cmpr_op: CompressedResourceOp | None = None,
     ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
