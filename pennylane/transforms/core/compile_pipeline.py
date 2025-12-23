@@ -110,65 +110,72 @@ def null_postprocessing(results: ResultBatch) -> ResultBatch:
 
 
 class CompilePipeline:
-    """Class that contains a compile pipeline and the methods to interact with it.
-
-    The order of execution is the order in the list containing the containers.
+    """A sequence of quantum circuit transforms.
 
     Args:
-        initial_program (Optional[Sequence[BoundTransform]]): A sequence of transforms with
-            which to initialize the program.
-        cotransform_cache (Optional[CotransformCache]): A named tuple containing the ``qnode``,
+        *transforms (Optional[Sequence[Transform | BoundTransform]]): A sequence of
+            transforms with which to initialize the program.
+        cotransform_cache (Optional[CotransformCache]): a named tuple containing the ``qnode``,
             ``args``, and ``kwargs`` required to compute classical cotransforms.
 
-    The main case where one would have to interact directly with a compile pipeline is when developing a
-    :class:`Device <pennylane.devices.Device>`. In this case, the pre-processing method of a device
-    returns a compile pipeline. You should directly refer to the device API documentation for more details.
+    **Example:**
 
-    .. warning::
+    A `CompilePipeline` is a sequence of quantum transforms to be applied sequentially
+    on a :class:`~pennylane.tape.QuantumScript` or a :class:`~pennylane.QNode`.
 
-        This class is developer-facing and should not be used directly. Instead, use
-        :func:`qml.transform <pennylane.transform>` if you would like to make a custom
-        transform.
+    .. code-block:: python
 
-    .. seealso:: :func:`~.pennylane.transform`
+        pipeline = qml.CompilePipeline(
+            qml.transforms.commute_controlled,
+            qml.transforms.cancel_inverses(recursive=True),
+            qml.transforms.merge_rotations,
+        )
 
-    **Implemented Dunder methods**
+        @pipeline
+        @qml.qnode(qml.device("default.qubit"))
+        def circuit(x, y):
+            qml.CNOT([1, 0])
+            qml.X(0)
+            qml.CNOT([1, 0])
+            qml.H(0)
+            qml.H(0)
+            qml.X(0)
+            qml.RX(x, wires=0)
+            qml.RX(y, wires=0)
+            return qml.expval(qml.Z(1))
 
-    Programs have several implemented dunder methods for easy manipulation.
+    >>> print(qml.draw(circuit)(0.1, 0.2))
+    0: ──RX(0.30)─┤
+    1: ───────────┤  <Z>
 
-    >>> from pennylane import CompilePipeline
-    >>> from copy import copy
-    >>> program = CompilePipeline()
-    >>> program.add_transform(qml.compile)
-    >>> program.add_transform(qml.transforms.cancel_inverses)
-    >>> [t for t in program]  # Iteration
-    [<compile((), {})>, <cancel_inverses((), {})>]
-    >>> program[0]
-    <compile((), {})>
-    >>> program[::-1]
-    CompilePipeline(cancel_inverses, compile)
-    >>> len(program)
-    2
-    >>> True if program else False
-    True
-    >>> True if CompilePipeline() else False
-    False
-    >>> program2 = copy(program)
-    >>> program2 == program
-    True
-    >>> qml.compile in program
-    True
-    >>> qml.transforms.split_non_commuting in program
-    False
-    >>> program + program
-    CompilePipeline(compile, cancel_inverses, compile, cancel_inverses)
+    Alternatively, the transform program can be constructed intuitively by combining
+    multiple transforms:
+
+    >>> pipeline = qml.transforms.merge_rotations + qml.transforms.cancel_inverses(recursive=True)
+    >>> pipeline
+    CompilePipeline(merge_rotations, cancel_inverses)
+
+    It can also be easily modified:
+
+    >>> pipeline += qml.transforms.commute_controlled
+    >>> pipeline
+    CompilePipeline(merge_rotations, cancel_inverses, commute_controlled)
+    >>> pipeline.insert(0, qml.transforms.remove_barrier)
+    >>> pipeline
+    CompilePipeline(remove_barrier, merge_rotations, cancel_inverses, commute_controlled)
+
+    Multiple compile pipelines can be concatenated:
+
+    >>> another_pipeline = qml.transforms.decompose(gate_set={qml.RX, qml.RZ, qml.CNOT}) + qml.transforms.combine_global_phases
+    >>> another_pipeline + pipeline
+    CompilePipeline(decompose, combine_global_phases, remove_barrier, merge_rotations, cancel_inverses, commute_controlled)
 
     """
 
     @overload
     def __init__(
         self,
-        transforms: Sequence[BoundTransform],
+        transforms: Sequence[Transform | BoundTransform],
         /,
         *,
         cotransform_cache: CotransformCache | None = None,
@@ -181,11 +188,17 @@ class CompilePipeline:
     ): ...
     def __init__(
         self,
-        *transforms: CompilePipeline | BoundTransform | Transform | Sequence[BoundTransform],
+        *transforms: CompilePipeline
+        | BoundTransform
+        | Transform
+        | Sequence[Transform | BoundTransform],
         cotransform_cache: CotransformCache | None = None,
     ):
         if len(transforms) == 1 and isinstance(transforms[0], Sequence):
-            self._compile_pipeline = list(transforms[0])
+            self._compile_pipeline = [
+                BoundTransform(transform) if isinstance(transform, Transform) else transform
+                for transform in transforms[0]
+            ]
             self.cotransform_cache = cotransform_cache
             return
 
@@ -591,11 +604,8 @@ class CompilePipeline:
         self, jaxpr: jax.extend.core.Jaxpr, consts: Sequence, *args
     ) -> jax.extend.core.ClosedJaxpr: ...
     @overload
-    def __call__(self, tape: QuantumScript) -> tuple[QuantumScriptBatch, BatchPostprocessingFn]: ...
-
-    @overload
     def __call__(
-        self, tapes: QuantumScriptBatch
+        self, tape: QuantumScript | QuantumScriptBatch
     ) -> tuple[QuantumScriptBatch, BatchPostprocessingFn]: ...
     def __call__(self, *args, **kwargs):
         if type(args[0]).__name__ == "Jaxpr":

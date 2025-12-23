@@ -332,14 +332,12 @@ to maximize gate reduction before execution.
         qml.Hadamard(wires=0)
         qml.X(wires=0)
         qml.RX(x, wires=0)
-        qml.RY(y, wires=0)
-        qml.RZ(y, wires=0)
-        qml.RY(x, wires=0)
+        qml.RX(y, wires=0)
         return qml.expval(qml.Z(0))
 
 In this example, `cancel_inverses` is applied first, which will remove the two Hadamard
 gates and the two Pauli X gates. Subsequently, `merge_rotations` will be applied, which
-will merge all rotations into a single :class:`~pennylane.Rot` gate.
+will merge the two RX rotations into a single RX gate.
 
 Alternatively, multiple transforms can be chained together to create a :class:`~.CompilePipeline`:
 
@@ -360,9 +358,7 @@ circuit with each pass within the pipeline sequentially.
         qml.Hadamard(wires=0)
         qml.X(wires=0)
         qml.RX(x, wires=0)
-        qml.RY(y, wires=0)
-        qml.RZ(y, wires=0)
-        qml.RY(x, wires=0)
+        qml.RX(y, wires=0)
         return qml.expval(qml.Z(0))
 
 Additional information
