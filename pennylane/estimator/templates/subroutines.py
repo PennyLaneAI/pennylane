@@ -121,7 +121,7 @@ class OutOfPlaceSquare(ResourceOperator):
 
 
 class IQP(ResourceOperator):
-    r"""Resource class for IQP.
+    r"""Resource class for the Instantaneous Quantum Polynomial (IQP) template.
 
     Args:
         num_wires (int): the number of qubits the operation acts upon
