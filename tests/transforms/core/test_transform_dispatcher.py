@@ -14,6 +14,7 @@
 """Unit and integration tests for the transform dispatcher."""
 
 import inspect
+import pickle
 from collections.abc import Callable, Sequence
 
 import pytest
@@ -26,6 +27,7 @@ from pennylane.transforms.core import (
     Transform,
     TransformError,
 )
+from pennylane.transforms.core.transform_dispatcher import _get_transform_by_name
 from pennylane.typing import PostprocessingFn, TensorLike
 
 dev = qml.device("default.qubit", wires=2)
@@ -980,8 +982,6 @@ class TestTransformSerialization:
 
     def test_pickle_transform(self):
         """Test pickling a Transform object."""
-        import pickle
-
         transform = qml.transforms.merge_rotations
         pickled = pickle.dumps(transform)
         restored = pickle.loads(pickled)
@@ -992,8 +992,6 @@ class TestTransformSerialization:
 
     def test_pickle_bound_transform(self):
         """Test pickling a BoundTransform object."""
-        import pickle
-
         bound = qml.transforms.merge_rotations(atol=1e-6)
         pickled = pickle.dumps(bound)
         restored = pickle.loads(pickled)
@@ -1004,8 +1002,6 @@ class TestTransformSerialization:
 
     def test_pickle_bound_transform_with_args(self):
         """Test pickling a BoundTransform with positional arguments."""
-        import pickle
-
         # cancel_inverses doesn't take positional args, so we use a transform that does
         bound = BoundTransform(qml.transforms.cancel_inverses, args=(), kwargs={"recursive": True})
         pickled = pickle.dumps(bound)
@@ -1016,8 +1012,6 @@ class TestTransformSerialization:
 
     def test_restored_transform_applies_correctly(self):
         """Test that a restored transform works correctly."""
-        import pickle
-
         transform = qml.transforms.cancel_inverses
         pickled = pickle.dumps(transform)
         restored = pickle.loads(pickled)
@@ -1030,8 +1024,6 @@ class TestTransformSerialization:
 
     def test_restored_bound_transform_applies_correctly(self):
         """Test that a restored BoundTransform works correctly."""
-        import pickle
-
         bound = qml.transforms.merge_rotations(atol=1e-6)
         pickled = pickle.dumps(bound)
         restored = pickle.loads(pickled)
@@ -1045,14 +1037,12 @@ class TestTransformSerialization:
 
     def test_get_transform_by_name_not_found(self):
         """Test that _get_transform_by_name raises ValueError for non-existent transform."""
-        from pennylane.transforms.core.transform_dispatcher import _get_transform_by_name
 
         with pytest.raises(ValueError, match="Cannot find transform"):
             _get_transform_by_name("pennylane.transforms.optimization", "nonexistent_transform")
 
     def test_get_transform_by_name_not_a_transform(self):
         """Test that _get_transform_by_name raises ValueError when object is not a Transform."""
-        from pennylane.transforms.core.transform_dispatcher import _get_transform_by_name
 
         # Try to get something that exists but is not a Transform
         with pytest.raises(ValueError, match="is not a Transform"):
@@ -1060,8 +1050,6 @@ class TestTransformSerialization:
 
     def test_transform_reduce_fallback_path(self):
         """Test the fallback __reduce__ path for Transform without __module__/__name__."""
-        import pickle
-
         # Create a Transform with a pass_name only (no tape_transform)
         # This won't have __name__ set by update_wrapper since there's no tape_transform
         dynamic_transform = Transform(pass_name="test_pass")
@@ -1082,14 +1070,12 @@ class TestTransformSerialization:
         # Verify the restored transform has the expected attributes
         assert isinstance(restored, Transform)
         assert restored.pass_name == "test_pass"
-        assert restored._tape_transform is None
+        assert restored._tape_transform is None  # pylint: disable=protected-access
         # __setstate__ should have re-created _apply_transform
         assert hasattr(restored, "_apply_transform")
 
     def test_transform_setstate(self):
         """Test the __setstate__ method for Transform is properly invoked during unpickling."""
-        import pickle
-
         # Use a normal transform and verify setstate gets called during unpickling
         transform = qml.transforms.merge_rotations
 
