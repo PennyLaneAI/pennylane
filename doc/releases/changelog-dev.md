@@ -181,10 +181,13 @@
 
 * A new :class:`~.CompilePipeline` class (previously known as the `TransformDispatcher`) is now available
   at the top level as `qml.CompilePipeline`. Using this class you can now define large and complex
-  compilation passes in an intuitive and flexible way. Uses of the term "transform program" has been updated to 
-  "compile pipeline" across the codebase. The class is still accessible as `TransformProgram` from 
-  `pennylane.transforms.core`, but the module `pennylane.transforms.core.transform_program`
-  has been renamed to `pennylane.transforms.core.compile_pipeline`, and the old name is no longer available.
+  compilation passes in an intuitive and flexible way. For backward compatibility, the `TransformProgram`
+  class can still be accessed from `pennylane.transforms.core`.
+  [(#8735)](https://github.com/PennyLaneAI/pennylane/pull/8735)
+
+* For naming consistency, uses of the term "transform program" have been updated to "compile pipeline" across the codebase.
+  Correspondingly, the module `pennylane.transforms.core.transform_program` has been renamed to
+  `pennylane.transforms.core.compile_pipeline`, and the old name is no longer available.
   [(#8735)](https://github.com/PennyLaneAI/pennylane/pull/8735)
 
 * The ``TransformDispatcher`` class has been renamed to :class:`~.transforms.core.Transform` and is now
