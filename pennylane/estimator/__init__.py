@@ -106,6 +106,7 @@ from .templates import (
     SingleQubitComparator,
     TwoQubitComparator,
     RegisterComparator,
+    UnaryIterationQPE,
     GQSP,
     Reflection,
     Qubitization,
