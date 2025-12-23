@@ -1144,24 +1144,25 @@ class UnaryIterationQPE(ResourceOperator):
 
     The resources for this operation are computed as follows:
 
+    >>> import pennylane.estimator as qre
     >>> thc_ham = qre.THCHamiltonian(num_orbitals=20, tensor_rank=40)
     >>> num_iter, walk_op = (11, qre.QubitizeTHC(thc_ham))
     >>> res = qre.estimate(qre.UnaryIterationQPE(walk_op, num_iter))
     >>> print(res)
     --- Resources: ---
-    Total wires: 1232
-      algorithmic wires: 101
-      allocated wires: 1131
-        zero state: 1131
-        any state: 0
-    Total gates : 8.744E+5
-      'Toffoli': 3.647E+4,
-      'T': 792,
-      'CNOT': 7.255E+5,
-      'X': 1.721E+4,
-      'Z': 475,
-      'S': 880,
-      'Hadamard': 9.308E+4
+     Total wires: 402
+       algorithmic wires: 101
+       allocated wires: 301
+         zero state: 301
+         any state: 0
+     Total gates : 5.821E+5
+       'Toffoli': 3.546E+4,
+       'T': 792,
+       'CNOT': 4.262E+5,
+       'X': 1.833E+4,
+       'Z': 475,
+       'S': 880,
+       'Hadamard': 9.995E+4
     """
 
     resource_keys = {"cmpr_walk_op", "num_iterations", "adj_qft_cmpr_op"}
