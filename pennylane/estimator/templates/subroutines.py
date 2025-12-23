@@ -120,6 +120,132 @@ class OutOfPlaceSquare(ResourceOperator):
         return gate_lst
 
 
+class IQP(ResourceOperator):
+    r"""Resource class for the Instantaneous Quantum Polynomial (IQP) template.
+
+    Args:
+        num_wires (int): the number of qubits the operation acts upon
+        pattern (list[list[list[int]]]): Specification of the trainable gates. Each element of gates corresponds to a
+            unique trainable parameter. Each sublist specifies the generators to which that parameter applies.
+            Generators are specified by listing the qubits on which an X operator acts.
+        spin_sym (bool, optional): If True, the circuit is equivalent to one where the initial state
+            :math:`\frac{1}{\sqrt(2)}(|00\dots0> + |11\dots1>)` is used in place of :math:`|00\dots0>`.
+        wires (Sequence[int], optional): the wires the operation acts on
+
+    **Example:**
+
+    The resources for this operation are computed using:
+
+    >>> import pennylane.estimator as qre
+    >>> iqp = qre.IQP(num_wires=4, pattern=[[[0]], [[1]], [[2]], [[3]]])
+    >>> print(qre.estimate(iqp))
+    --- Resources: ---
+     Total wires: 4
+       algorithmic wires: 4
+       allocated wires: 0
+         zero state: 0
+         any state: 0
+     Total gates : 184
+       'T': 176,
+       'CNOT': 0,
+       'Hadamard': 8
+
+    .. seealso:: :class:`~.IQP`
+
+    """
+
+    resource_keys = {"spin_sym", "pattern", "num_wires"}
+
+    def __init__(self, num_wires, pattern, spin_sym=False, wires=None) -> None:
+        self.num_wires = num_wires
+        self.spin_sym = spin_sym
+        self.pattern = pattern
+        super().__init__(wires=wires)
+
+    @property
+    def resource_params(self) -> dict:
+        r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+        Returns:
+            dict: A dictionary containing the resource parameters:
+                * num_wires (int): the number of qubits the operation acts upon
+        """
+        return {
+            "spin_sym": self.spin_sym,
+            "pattern": self.pattern,
+            "num_wires": self.num_wires,
+        }
+
+    @classmethod
+    def resource_rep(cls, num_wires, pattern, spin_sym) -> CompressedResourceOp:
+        r"""Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute the resources.
+
+        Args:
+            num_wires (int): the number of qubits the operation acts upon
+            pattern (list[list[list[int]]]): Specification of the trainable gates. Each element of gates corresponds to a
+                unique trainable parameter. Each sublist specifies the generators to which that parameter applies.
+                Generators are specified by listing the qubits on which an X operator acts.
+            spin_sym (bool, optional): If True, the circuit is equivalent to one where the initial state
+                :math:`\frac{1}{\sqrt(2)}(|00\dots0> + |11\dots1>)` is used in place of :math:`|00\dots0>`.
+
+        Returns:
+            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+        """
+        return CompressedResourceOp(
+            cls,
+            num_wires,
+            {
+                "spin_sym": spin_sym,
+                "pattern": pattern,
+                "num_wires": num_wires,
+            },
+        )
+
+    @classmethod
+    def resource_decomp(cls, num_wires, pattern, spin_sym) -> list[GateCount]:
+        r"""Returns a list representing the resources of the operator. Each object in the list
+        represents a gate and the number of times it occurs in the circuit.
+
+        Args:
+            num_wires (int): the number of qubits the operation acts upon
+            pattern (list[list[list[int]]]): Specification of the trainable gates. Each element of gates corresponds to a
+                unique trainable parameter. Each sublist specifies the generators to which that parameter applies.
+                Generators are specified by listing the qubits on which an X operator acts.
+            spin_sym (bool, optional): If True, the circuit is equivalent to one where the initial state
+                :math:`\frac{1}{\sqrt(2)}(|00\dots0> + |11\dots1>)` is used in place of :math:`|00\dots0>`.
+
+        Returns:
+            list[~.pennylane.labs.resource_estimation.GateCount]: A list of GateCount objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
+        """
+        hadamard = resource_rep(qre.Hadamard)
+        pauli_rot = resource_rep(qre.PauliRot, {"pauli_string": "Y" + "X" * (num_wires - 1)})
+
+        hadamard_counts = 2 * num_wires
+        multi_rz_counts = defaultdict(int)
+
+        for gate in pattern:
+            for gen in gate:
+                multi_rz_counts[len(gen)] += 1
+
+        ret = [GateCount(hadamard, hadamard_counts)]
+
+        if spin_sym:
+            ret.append(GateCount(pauli_rot, 1))
+
+        return ret + [
+            GateCount(resource_rep(qre.MultiRZ, {"num_wires": wires}), counts)
+            for (wires, counts) in multi_rz_counts.items()
+        ]
+
+    @staticmethod
+    def tracking_name(num_wires, pattern, spin_sym) -> str:
+        r"""Returns the tracking name built with the operator's parameters."""
+        return f"IQP({num_wires}, {pattern}, {spin_sym})"
+
+
 class PhaseGradient(ResourceOperator):
     r"""Resource class for the PhaseGradient gate.
 
