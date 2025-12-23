@@ -1039,7 +1039,7 @@ class UnaryIterationQPE(ResourceOperator):
       'Hadamard': 9.308E+4
     """
 
-    resource_keys = {"walk_op", "num_iterations", "adj_qft_cmpr_op"}
+    resource_keys = {"cmpr_walk_op", "num_iterations", "adj_qft_cmpr_op"}
 
     def __init__(
         self,

@@ -1904,7 +1904,7 @@ class TestResourceUnaryIterationQPE:
         """Test that an error is raised when wrong number of wires is provided."""
         walk_op = qre.QubitizeTHC(thc_ham=qre.THCHamiltonian(num_orbitals=20, tensor_rank=40))
         with pytest.raises(ValueError, match="Expected 101 wires, got 3"):
-            qre.UnaryIterationQPE(walk_operator=walk_op, num_iterations=8, wires=[0, 1, 2])
+            qre.UnaryIterationQPE(walk_op=walk_op, num_iterations=8, wires=[0, 1, 2])
 
     def test_tracking_name(self):
         """Test that the name of the operator is tracked correctly."""
@@ -1912,7 +1912,7 @@ class TestResourceUnaryIterationQPE:
         walk_op_name = walk_op.resource_rep_from_op().name
         res_params = walk_op.resource_params
 
-        op = qre.UnaryIterationQPE(walk_operator=walk_op, num_iterations=8, adj_qft_op=qre.QFT(3))
+        op = qre.UnaryIterationQPE(walk_op=walk_op, num_iterations=8, adj_qft_op=qre.QFT(3))
         assert (
             op.tracking_name(
                 resource_rep(qre.QubitizeTHC, res_params),
@@ -1977,7 +1977,7 @@ class TestResourceUnaryIterationQPE:
     def test_wires_init(self, walk_op, adj_qft, input_wires, expected_wires):
         """Test that we can correctly initialize the wires of the operator"""
         op = qre.UnaryIterationQPE(
-            walk_operator=walk_op,
+            walk_op=walk_op,
             num_iterations=11,
             adj_qft_op=adj_qft,
             wires=input_wires,
@@ -2020,7 +2020,7 @@ class TestResourceUnaryIterationQPE:
             adj_qft_cmpr = adj_qft.resource_rep_from_op()
 
         assert op.resource_params == {
-            "walk_operator": walk_operator_cmpr,
+            "cmpr_walk_op": walk_operator_cmpr,
             "num_iterations": n_iter,
             "adj_qft_cmpr_op": adj_qft_cmpr,
         }
@@ -2061,7 +2061,7 @@ class TestResourceUnaryIterationQPE:
             qre.UnaryIterationQPE,
             expected_num_wires,
             {
-                "walk_operator": walk_operator_cmpr,
+                "cmpr_walk_op": walk_operator_cmpr,
                 "num_iterations": n_iter,
                 "adj_qft_cmpr_op": adj_qft_cmpr,
             },
