@@ -352,6 +352,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* When program capture is enabled, `qml.adjoint` and `qml.ctrl` can now be called on
+  operators that were constructed ahead of time and used as closure variables.
+
 * `qml.measure` can now be used as a frontend for `catalyst.measure`.
   [(#8782)](https://github.com/PennyLaneAI/pennylane/pull/8782)
 
