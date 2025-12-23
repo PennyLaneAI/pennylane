@@ -66,8 +66,7 @@
       'Hadamard': 4
   ```
 
-  For details on how to efficiently optimize these circuits with the [IQPOpt](https://arxiv.org/pdf/2501.04776)
-  package, please consult our [Fast optimization of instantaneous quantum polynomial circuits](https://pennylane.ai/qml/demos/tutorial_iqp_circuit_optimization_jax) demo. 
+  For more theoretical details, check out our [Fast optimization of instantaneous quantum polynomial circuits](https://pennylane.ai/qml/demos/tutorial_iqp_circuit_optimization_jax) demo. 
 
 <h4>Pauli-based computation </h4>
 
