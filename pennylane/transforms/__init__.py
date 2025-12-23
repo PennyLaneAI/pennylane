@@ -16,6 +16,8 @@ This subpackage contains PennyLane transforms and their building blocks.
 
 .. currentmodule:: pennylane
 
+.. _transform_library:
+
 Transforms library
 ------------------
 
@@ -195,7 +197,7 @@ Custom transforms
 
 The :func:`qml.transform <pennylane.transform>` decorator can be used to generalize
 transform functions that work on :class:`~pennylane.tape.QuantumScript` to also work
-with `QNode`s and quantum functions.
+with ``QNode`` and quantum functions.
 
 .. autosummary::
     :toctree: api
@@ -210,9 +212,8 @@ circuit to one or more circuits, alongside a classical post-processing function.
 Once a transform is registered with PennyLane, the transformed circuits will be executed,
 and the classical post-processing function automatically applied to the outputs.
 This becomes particularly valuable when a transform generates multiple circuits,
-requiring a method to aggregate or reduce the results (e.g.,
-applying the parameter-shift rule or computing the expectation value of a Hamiltonian
-term-by-term).
+requiring a method to aggregate or reduce the results (e.g., applying the parameter-shift
+rule or computing the expectation value of a Hamiltonian term-by-term).
 
 .. note::
 
@@ -252,7 +253,7 @@ first and only result.
 
         return [new_tape], null_postprocessing
 
-The `@qml.transform` decorator makes it applicable to a :class:`~.QNode`:
+The ``@qml.transform`` decorator makes it applicable to a :class:`~.QNode`:
 
 .. code-block:: python
 
@@ -291,7 +292,7 @@ Passing arguments to transforms
 
 We can pass additional arguments to a transform that accepts them, which binds them with
 the transform, creating a :class:`~pennylane.transforms.core.BoundTransform`, which can
-then be applied on a `QNode`. In the following example, we pass the keyword argument
+then be applied on a ``QNode``. In the following example, we pass the keyword argument
 ``grouping_strategy="wires"`` to the :func:`~.split_non_commuting` transform, which splits
 a circuit into tapes measuring groups of commuting observables.
 
@@ -335,8 +336,8 @@ to maximize gate reduction before execution.
         qml.RX(y, wires=0)
         return qml.expval(qml.Z(0))
 
-In this example, `cancel_inverses` is applied first, which will remove the two Hadamard
-gates and the two Pauli X gates. Subsequently, `merge_rotations` will be applied, which
+In this example, ``cancel_inverses`` is applied first, which will remove the two Hadamard
+gates and the two Pauli X gates. Subsequently, ``merge_rotations`` will be applied, which
 will merge the two RX rotations into a single RX gate.
 
 Alternatively, multiple transforms can be chained together to create a :class:`~.CompilePipeline`:
@@ -345,7 +346,7 @@ Alternatively, multiple transforms can be chained together to create a :class:`~
 >>> pipeline
 CompilePipeline(cancel_inverses, merge_rotations)
 
-The :class:`~.CompilePipeline` can also be applied on a `QNode`, which will transform the
+The :class:`~.CompilePipeline` can also be applied on a ``QNode``, which will transform the
 circuit with each pass within the pipeline sequentially.
 
 .. code-block:: python

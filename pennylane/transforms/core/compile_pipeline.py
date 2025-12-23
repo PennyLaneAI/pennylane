@@ -33,6 +33,8 @@ from .transform_dispatcher import BoundTransform, Transform
 if TYPE_CHECKING:
     import jax
 
+    import pennylane as qml
+
 
 def _batch_postprocessing(
     results: ResultBatch,
@@ -603,6 +605,8 @@ class CompilePipeline:
     def __call__(
         self, jaxpr: jax.extend.core.Jaxpr, consts: Sequence, *args
     ) -> jax.extend.core.ClosedJaxpr: ...
+    @overload
+    def __call__(self, qnode: qml.QNode, *args, **kwargs) -> qml.QNode: ...
     @overload
     def __call__(
         self, tape: QuantumScript | QuantumScriptBatch

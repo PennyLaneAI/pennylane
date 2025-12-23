@@ -7,28 +7,27 @@ Compiling circuits
 ==================
 
 PennyLane offers multiple tools for compiling circuits. We use the term "compilation"
-here in a loose sense as the process of transforming one circuit 
-into one or more differing circuits. A circuit could be either a quantum function or a sequence of operators. For
-example, such a transformation could
-replace a gate type with another, fuse gates, exploit mathematical relations that simplify an observable,
-or replace a large circuit by a number of smaller circuits.
+here in a loose sense as the process of transforming one circuit into one or more
+differing circuits. A circuit could be either a quantum function or a sequence of
+operators. For example, such a transformation could replace a gate type with another,
+fuse gates, exploit mathematical relations that simplify an observable, or replace a
+large circuit by a number of smaller circuits.
 
-Compilation functionality is mostly designed as **transforms**; see
-the :doc:`transforms documentation <../code/qml_transforms>` for more details,
-as well as information on how to write your own custom transforms.
+Compilation functionality is mostly designed as **transforms**; see the :doc:`transforms documentation <../code/qml_transforms>` 
+for more details, as well as information on how to write your own custom transforms.
 
-In addition to quantum circuit transforms, PennyLane also
-supports experimental just-in-time compilation, via the :func:`~.qjit` decorator and
-`Catalyst <https://github.com/pennylaneai/catalyst>`__. This is more general, and
-supports full hybrid compilation --- compiling both the classical and quantum components
-of your workflow into a binary that can be run close to the accelerators that you are using. 
-More details can be found in :doc:`compiling workflows </introduction/compiling_workflows>`.
+In addition to quantum circuit transforms, PennyLane also supports experimental 
+just-in-time compilation, via the :func:`~.qjit` decorator and `Catalyst <https://github.com/pennylaneai/catalyst>`__. 
+This is more general, and supports full hybrid compilation --- compiling both the 
+classical and quantum components of your workflow into a binary that can be run 
+close to the accelerators that you are using. More details can be found in :doc:`compiling workflows </introduction/compiling_workflows>`.
 
 Compilation transforms for circuit optimization
 -----------------------------------------------
 
-PennyLane includes multiple transforms that can act on ``QNode``'s, quantum functions, and multiple 
-other PennyLane objects. See the :ref:`transforms library <transform_library>` for a complete list.
+PennyLane includes multiple transforms that can act on ``QNode``'s, quantum functions, 
+and multiple other PennyLane objects. See the :ref:`transforms library <transform_library>` 
+for a complete list.
 
 .. note::
 
