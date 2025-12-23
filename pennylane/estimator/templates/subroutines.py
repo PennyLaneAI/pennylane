@@ -1002,7 +1002,7 @@ class UnaryIterationQPE(ResourceOperator):
     implementation.
 
     Args:
-        walk_operator (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): the quantum
+        walk_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): the quantum
             walk operator :math:`W` to apply the phase estimation protocol on
         num_iterations (int): The total number of times the quantum walk operator operator :math:`W`
             is applied in order to reach a target precision in the eigenvalue estimate.
@@ -1020,8 +1020,8 @@ class UnaryIterationQPE(ResourceOperator):
     The resources for this operation are computed as follows:
 
     >>> thc_ham = qre.THCHamiltonian(num_orbitals=20, tensor_rank=40)
-    >>> num_iter, walk_operator = (11, qre.QubitizeTHC(thc_ham))
-    >>> res = qre.estimate(qre.UnaryIterationQPE(walk_operator, num_iter))
+    >>> num_iter, walk_op = (11, qre.QubitizeTHC(thc_ham))
+    >>> res = qre.estimate(qre.UnaryIterationQPE(walk_op, num_iter))
     >>> print(res)
     --- Resources: ---
     Total wires: 1232
@@ -1039,29 +1039,29 @@ class UnaryIterationQPE(ResourceOperator):
       'Hadamard': 9.308E+4
     """
 
-    resource_keys = {"walk_operator", "num_iterations", "adj_qft_cmpr_op"}
+    resource_keys = {"walk_op", "num_iterations", "adj_qft_cmpr_op"}
 
     def __init__(
         self,
-        walk_operator: ResourceOperator,
+        walk_op: ResourceOperator,
         num_iterations: int,
         adj_qft_op: ResourceOperator | None = None,
         wires: WiresLike | None = None,
     ):
-        remove_ops = [walk_operator, adj_qft_op] if adj_qft_op is not None else [walk_operator]
+        remove_ops = [walk_op, adj_qft_op] if adj_qft_op is not None else [walk_op]
         _dequeue(remove_ops)
         self.queue()
 
-        self.walk_operator = walk_operator.resource_rep_from_op()
+        self.walk_op = walk_op.resource_rep_from_op()
         adj_qft_cmpr_op = None if adj_qft_op is None else adj_qft_op.resource_rep_from_op()
 
         self.adj_qft_cmpr_op = adj_qft_cmpr_op
         self.num_iterations = num_iterations
 
-        self.num_wires = int(math.ceil(math.log2(num_iterations + 1))) + walk_operator.num_wires
+        self.num_wires = int(math.ceil(math.log2(num_iterations + 1))) + walk_op.num_wires
 
         wires = Wires([]) if wires is None else Wires(wires)
-        walk_wires = Wires([]) if walk_operator.wires is None else walk_operator.wires
+        walk_wires = Wires([]) if walk_op.wires is None else walk_op.wires
         adj_qft_wires = (
             Wires([]) if (adj_qft_op is None or adj_qft_op.wires is None) else adj_qft_op.wires
         )
@@ -1080,7 +1080,7 @@ class UnaryIterationQPE(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * walk_operator (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`):
+                * walk_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`):
                   A compressed resource operator corresponding to the quantum walk operator :math:`W`
                   to apply the phase estimation protocol on.
                 * num_iterations (int): The total number of times the quantum walk operator operator
@@ -1093,7 +1093,7 @@ class UnaryIterationQPE(ResourceOperator):
         """
 
         return {
-            "walk_operator": self.walk_operator,
+            "walk_op": self.walk_op,
             "num_iterations": self.num_iterations,
             "adj_qft_cmpr_op": self.adj_qft_cmpr_op,
         }
@@ -1101,7 +1101,7 @@ class UnaryIterationQPE(ResourceOperator):
     @classmethod
     def resource_rep(
         cls,
-        walk_operator: CompressedResourceOp,
+        walk_op: CompressedResourceOp,
         num_iterations: int,
         adj_qft_cmpr_op: CompressedResourceOp = None,
     ) -> CompressedResourceOp:
@@ -1109,7 +1109,7 @@ class UnaryIterationQPE(ResourceOperator):
         the Operator that are needed to compute the resources.
 
         Args:
-            walk_operator (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`):
+            walk_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`):
                 A compressed resource operator corresponding to the quantum walk operator :math:`W`
                 to apply the phase estimation protocol on.
             num_iterations (int): The total number of times the quantum walk operator operator
@@ -1123,24 +1123,24 @@ class UnaryIterationQPE(ResourceOperator):
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
         params = {
-            "walk_operator": walk_operator,
+            "walk_op": walk_op,
             "num_iterations": num_iterations,
             "adj_qft_cmpr_op": adj_qft_cmpr_op,
         }
-        num_wires = int(math.ceil(math.log2(num_iterations + 1))) + walk_operator.num_wires
+        num_wires = int(math.ceil(math.log2(num_iterations + 1))) + walk_op.num_wires
         return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
     def resource_decomp(
         cls,
-        walk_operator: CompressedResourceOp,
+        walk_op: CompressedResourceOp,
         num_iterations: int,
         adj_qft_cmpr_op: CompressedResourceOp | None = None,
     ) -> list[GateCount | Allocate | Deallocate]:
         r"""Returns the resources for Quantum Phase Estimation implemented using unary iteration.
 
         Args:
-            walk_operator (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`):
+            walk_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`):
                 A compressed resource operator corresponding to the quantum walk operator :math:`W`
                 to apply the phase estimation protocol on.
             num_iterations (int): The total number of times the quantum walk operator operator
@@ -1161,8 +1161,8 @@ class UnaryIterationQPE(ResourceOperator):
         num_wires = int(math.ceil(math.log2(num_iterations + 1)))
 
         # extract prep and select from walk operator:
-        prep_op = walk_operator.params["prep_op"]
-        select_op = walk_operator.params["select_op"]
+        prep_op = walk_op.params["prep_op"]
+        select_op = walk_op.params["select_op"]
 
         # build controlled reflection:
         reflection_operator = resource_rep(
@@ -1207,12 +1207,12 @@ class UnaryIterationQPE(ResourceOperator):
 
     @staticmethod
     def tracking_name(
-        walk_operator: CompressedResourceOp,
+        walk_op: CompressedResourceOp,
         num_iterations: int,
         adj_qft_cmpr_op: CompressedResourceOp | None = None,
     ) -> str:
         r"""Returns the tracking name built with the operator's parameters."""
-        base_name = walk_operator.name
+        base_name = walk_op.name
         adj_qft_name = None if adj_qft_cmpr_op is None else adj_qft_cmpr_op.name
         return f"UnaryIterationQPE({base_name}, {num_iterations}, adj_qft={adj_qft_name})"
 
