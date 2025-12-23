@@ -140,15 +140,15 @@ class IQP(ResourceOperator):
     >>> iqp = qre.IQP(num_wires=4, pattern=[[[0]], [[1]], [[2]], [[3]]])
     >>> print(qre.estimate(iqp))
     --- Resources: ---
-    Total wires: 4
-        algorithmic wires: 4
-        allocated wires: 0
-        zero state: 0
-        any state: 0
+     Total wires: 4
+       algorithmic wires: 4
+       allocated wires: 0
+         zero state: 0
+         any state: 0
      Total gates : 184
-         'T': 176,
-         'CNOT': 0,
-         'Hadamard': 8
+       'T': 176,
+       'CNOT': 0,
+       'Hadamard': 8
 
     .. seealso:: :class:`~.IQP`
 
