@@ -10,4 +10,5 @@
 
 This release contains contributions from (in alphabetical order):
 
-Yushao Chen.
+Yushao Chen,
+Andrija Paurevic.
