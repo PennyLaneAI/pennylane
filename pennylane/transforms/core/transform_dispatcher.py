@@ -16,6 +16,7 @@ This module defines the data structure that encapsulates a quantum transform.
 """
 from __future__ import annotations
 
+import importlib
 import os
 import warnings
 from collections.abc import Callable, Sequence
@@ -31,6 +32,32 @@ from pennylane.pytrees import flatten
 from pennylane.queuing import AnnotatedQueue, QueuingManager, apply
 from pennylane.tape import QuantumScript
 from pennylane.typing import ResultBatch
+
+
+def _get_transform_by_name(module_name: str, transform_name: str) -> "Transform":
+    """Helper function to retrieve a Transform by its qualified name.
+
+    This is used for pickle deserialization to look up registered transforms.
+
+    Args:
+        module_name: The module where the transform is defined.
+        transform_name: The name of the transform.
+
+    Returns:
+        The Transform object.
+
+    Raises:
+        ValueError: If the transform cannot be found or is not a Transform.
+    """
+    module = importlib.import_module(module_name)
+    transform = getattr(module, transform_name, None)
+    if transform is None:
+        raise ValueError(f"Cannot find transform '{transform_name}' in module '{module_name}'")
+    if not isinstance(transform, Transform):
+        raise ValueError(
+            f"'{module_name}.{transform_name}' is not a Transform, got {type(transform)}"
+        )
+    return transform
 
 
 @lru_cache
@@ -652,6 +679,54 @@ class Transform:  # pylint: disable=too-many-instance-attributes
             return BoundTransform(self, kwargs=kwargs)
         return self._apply_transform(*args, **kwargs)
 
+    def __reduce__(self):
+        """Defines how to pickle and unpickle a Transform.
+
+        For more information, see: https://docs.python.org/3/library/pickle.html#object.__reduce__
+
+        .. note::
+
+            Only Transform objects that are defined at the module level (e.g., built-in
+            transforms like ``qml.transforms.merge_rotations``) can be pickled. Transforms
+            created dynamically with lambda functions or locally-defined functions cannot
+            be pickled.
+
+        """
+        # For Transform objects with a known module and name (i.e., decorated with @transform
+        # at module level), serialize by reference using the qualified name
+        if hasattr(self, "__module__") and hasattr(self, "__name__"):
+            return (_get_transform_by_name, (self.__module__, self.__name__))
+
+        # Fallback for transforms without proper __module__/__name__ (e.g., dynamically created)
+        # This will only work if all internal functions are module-level functions
+        return (
+            Transform,
+            (
+                self._tape_transform,
+                self._pass_name,
+            ),
+            {
+                "expand_transform": self._expand_transform,
+                "classical_cotransform": self._classical_cotransform,
+                "is_informative": self._is_informative,
+                "final_transform": self._is_final_transform,
+                "use_argnum_in_expand": self._use_argnum_in_expand,
+                "plxpr_transform": self._plxpr_transform,
+            },
+        )
+
+    def __setstate__(self, state):
+        """Restore state when unpickling."""
+        # Re-initialize the transform with the serialized configuration
+        self._expand_transform = state.get("expand_transform")
+        self._classical_cotransform = state.get("classical_cotransform")
+        self._is_informative = state.get("is_informative", False)
+        self._is_final_transform = state.get("final_transform", False) or self._is_informative
+        self._use_argnum_in_expand = state.get("use_argnum_in_expand", False)
+        self._plxpr_transform = state.get("plxpr_transform")
+        # Re-create the singledispatch
+        self._apply_transform = singledispatch(partial(specific_apply_transform, self))
+
     def __repr__(self):
         name = self._tape_transform.__name__ if self._tape_transform else self.pass_name
         return f"<transform: {name}>"
@@ -849,6 +924,28 @@ class BoundTransform:  # pylint: disable=too-many-instance-attributes
         self._args = tuple(args)
         self._kwargs = kwargs or {}
         self._use_argnum = use_argnum
+
+    def __reduce__(self):
+        """Defines how to pickle and unpickle a BoundTransform.
+
+        For more information, see: https://docs.python.org/3/library/pickle.html#object.__reduce__
+
+        .. note::
+
+            The underlying transform must be a module-level function (e.g., a built-in transform
+            like ``qml.transforms.merge_rotations``) for pickling to work correctly. Lambda
+            functions or locally-defined transforms cannot be pickled.
+
+        """
+        return (
+            BoundTransform,
+            (self._transform, self._args, self._kwargs),
+            {"_use_argnum": self._use_argnum},
+        )
+
+    def __setstate__(self, state):
+        """Restore state when unpickling."""
+        self._use_argnum = state.get("_use_argnum", False)
 
     def __repr__(self):
         name = self.tape_transform.__name__ if self.tape_transform else self.pass_name

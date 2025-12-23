@@ -973,3 +973,72 @@ class TestPassName:
 
         with pytest.raises(NotImplementedError, match="has no defined tape transform"):
             c()
+
+
+class TestTransformSerialization:
+    """Tests for Transform and BoundTransform pickle serialization."""
+
+    def test_pickle_transform(self):
+        """Test pickling a Transform object."""
+        import pickle
+
+        transform = qml.transforms.merge_rotations
+        pickled = pickle.dumps(transform)
+        restored = pickle.loads(pickled)
+
+        assert isinstance(restored, Transform)
+        assert restored.__name__ == transform.__name__
+        assert restored.__module__ == transform.__module__
+
+    def test_pickle_bound_transform(self):
+        """Test pickling a BoundTransform object."""
+        import pickle
+
+        bound = qml.transforms.merge_rotations(atol=1e-6)
+        pickled = pickle.dumps(bound)
+        restored = pickle.loads(pickled)
+
+        assert isinstance(restored, BoundTransform)
+        assert restored.kwargs == {"atol": 1e-6}
+        assert restored.args == ()
+
+    def test_pickle_bound_transform_with_args(self):
+        """Test pickling a BoundTransform with positional arguments."""
+        import pickle
+
+        # cancel_inverses doesn't take positional args, so we use a transform that does
+        bound = BoundTransform(qml.transforms.cancel_inverses, args=(), kwargs={"recursive": True})
+        pickled = pickle.dumps(bound)
+        restored = pickle.loads(pickled)
+
+        assert isinstance(restored, BoundTransform)
+        assert restored.kwargs == {"recursive": True}
+
+    def test_restored_transform_applies_correctly(self):
+        """Test that a restored transform works correctly."""
+        import pickle
+
+        transform = qml.transforms.cancel_inverses
+        pickled = pickle.dumps(transform)
+        restored = pickle.loads(pickled)
+
+        tape = QuantumScript([qml.X(0), qml.X(0)])
+        result_tapes, _ = restored(tape)
+
+        assert len(result_tapes) == 1
+        assert len(result_tapes[0].operations) == 0
+
+    def test_restored_bound_transform_applies_correctly(self):
+        """Test that a restored BoundTransform works correctly."""
+        import pickle
+
+        bound = qml.transforms.merge_rotations(atol=1e-6)
+        pickled = pickle.dumps(bound)
+        restored = pickle.loads(pickled)
+
+        tape = QuantumScript([qml.RX(0.1, 0), qml.RX(0.2, 0)])
+        result_tapes, _ = restored(tape)
+
+        assert len(result_tapes) == 1
+        assert len(result_tapes[0].operations) == 1
+        assert result_tapes[0].operations[0].name == "RX"
