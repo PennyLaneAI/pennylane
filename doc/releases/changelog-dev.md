@@ -245,7 +245,7 @@
   ```
 
 * A :class:`~.CompilePipeline` can be initialized by passing any number of transforms or other ``CompilePipeline``s
-  to the ``transforms`` argument, providing more flexibility than the previous ``TransformProgram`` class.
+  providing more flexibility than the previous ``TransformProgram`` class.
   [(#8750)](https://github.com/PennyLaneAI/pennylane/pull/8750)
 
 * Quantum compilation passes in MLIR and XDSL can now be applied using the core PennyLane transform
