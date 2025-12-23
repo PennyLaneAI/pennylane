@@ -787,6 +787,7 @@ def _expand_transform_param_shift(
         tape,
         stopping_condition=_param_shift_stopping_condition,
         skip_initial_state_prep=False,
+        target_gates={"X", "Y", "Z", "RX", "RY", "RZ", "H", "CNOT"},
         name="param_shift",
         error=DecompositionUndefinedError,
     )
