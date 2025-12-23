@@ -285,8 +285,8 @@ class TestCompilePipelineGetter:
         grad_program = get_transform_program(circuit, level="gradient")
         assert len(grad_program) == 4
         assert grad_program[0].tape_transform == qml.compile.tape_transform
-        assert grad_program[1].tape_transform == qml.metric_tensor.expand_transform
-        assert grad_program[2].tape_transform == qml.gradients.param_shift.expand_transform
+        assert grad_program[1].tape_transform == qml.gradients.param_shift.expand_transform
+        assert grad_program[2].tape_transform == qml.metric_tensor.expand_transform
         assert grad_program[3].tape_transform == qml.metric_tensor.tape_transform
 
         dev_program = get_transform_program(circuit, level="device")
