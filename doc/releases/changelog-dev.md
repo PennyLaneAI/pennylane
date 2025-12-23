@@ -28,9 +28,9 @@
   Z rotations and a final layer of Hadamards.
   
   While :class:`~.IQP` circuits belong to a class of circuits that are believed to be hard to sample from
-  using classical algorithms, Recio-Armengol et al. showed in the [Train on classical, deploy on quantum](https://arxiv.org/abs/2503.02934)
-  work that such circuits can still be optimized efficiently. The added templates facilitate the simulation
-  and resource estimation of large-scale :class:`~.IQP` circuits such as those applicable to generative
+  using classical algorithms, Recio-Armengol et al. showed in a recent paper titled [Train on classical, deploy on quantum](https://arxiv.org/abs/2503.02934)
+  that such circuits can still be optimized efficiently. The added features in this release facilitate the simulation
+  and resource estimation of large-scale :class:`~.IQP` circuits, such as those applicable to generative
   quantum machine learning tasks.
 
   Here is a simple example for defining an :class:`~.IQP` circuit and estimating the required resources
