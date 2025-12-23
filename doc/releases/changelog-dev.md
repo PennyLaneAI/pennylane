@@ -72,6 +72,7 @@
   [(#8670)](https://github.com/PennyLaneAI/pennylane/pull/8670)
   [(#8679)](https://github.com/PennyLaneAI/pennylane/pull/8679)
   [(#8680)](https://github.com/PennyLaneAI/pennylane/pull/8680)
+  [(#8801)](https://github.com/PennyLaneAI/pennylane/pull/8801)
 
 <h4>Quantum Automatic Differentiation </h4>
 
@@ -178,35 +179,10 @@
 
 <h4>Compile Pipeline and Transforms </h4>
 
-* Added a custom solver to :func:`~.transforms.intermediate_reps.rowcol` for linear systems
-  over :math:`\mathbb{Z}_2` based on Gauss-Jordan elimination. This removes the need to install
-  the ``galois`` package for this single function and provides a minor performance improvement.
-  [(#8771)](https://github.com/PennyLaneAI/pennylane/pull/8771)
-
-* Added decompositions of the ``RX``, ``RY`` and ``RZ`` rotations into one of the other two, as well
-  as basis changing Clifford gates, to the graph-based decomposition system.
-  [(#8569)](https://github.com/PennyLaneAI/pennylane/pull/8569)
-
-* Arithmetic dunder methods (`__add__`, `__mul__`, `__rmul__`) have been added to
-  :class:`~.transforms.core.TransformDispatcher`, :class:`~.transforms.core.TransformContainer`,
-  and :class:`~.CompilePipeline` (previously known as the `TransformProgram`) to enable intuitive composition of transform programs using `+` and `*` operators.
-  [(#8703)](https://github.com/PennyLaneAI/pennylane/pull/8703)
-
-* `TransformProgram` now has a new method `remove` to remove all bound transforms that match the input.
-  [(#8751)](https://github.com/PennyLaneAI/pennylane/pull/8751)
-
-* In the past, calling a transform with only arguments or keyword but no tapes would raise an error.
-  Now, two transforms can be concatenated naturally as
-
-  ```python
-  decompose(gate_set=gate_set) + merge_rotations(1e-6)
-  ```
-
-  [(#8730)](https://github.com/PennyLaneAI/pennylane/pull/8730)
-
-* The `TransformProgram` has been renamed to :class:`~pennylane.transforms.core.CompilePipeline`, and uses of
-  the term "transform program" has been updated to "compile pipeline" across the codebase. The class is still
-  accessible as `TransformProgram` from `pennylane.transforms.core`, but the module `pennylane.transforms.core.transform_program`
+* The `TransformProgram` has been renamed to :class:`~.CompilePipeline`, and is now available at the
+  top level as `qml.CompilePipeline`. Uses of the term "transform program" has been updated to 
+  "compile pipeline" across the codebase. The class is still accessible as `TransformProgram` from 
+  `pennylane.transforms.core`, but the module `pennylane.transforms.core.transform_program`
   has been renamed to `pennylane.transforms.core.compile_pipeline`, and the old name is no longer available.
   [(#8735)](https://github.com/PennyLaneAI/pennylane/pull/8735)
 
@@ -214,23 +190,49 @@
   available at the top level as `qml.transform`.
   [(#8756)](https://github.com/PennyLaneAI/pennylane/pull/8756)
 
-* The `final_transform` property of the :class:`~.transforms.core.BoundTransform` has been renamed 
-  to `is_final_transform` to better follow the naming convention for boolean properties. The `transform` 
-  property of the :class:`~.transforms.core.Transform` and :class:`~.transforms.core.BoundTransform` 
-  has been renamed to `tape_transform` to avoid ambiguity.
-  [(#8756)](https://github.com/PennyLaneAI/pennylane/pull/8756)
+* The :class:`~.transforms.core.Transform` (previously known as the `TransformDispatcher`), 
+  :class:`~.transforms.core.BoundTransform` (previously known as the `TransformContainer`), 
+  and :class:`~.CompilePipeline` (previously known as the `TransformProgram`) are updated to
+  support intuitive composition of transform programs using `+` and `*` operators.
+  [(#8703)](https://github.com/PennyLaneAI/pennylane/pull/8703)
+  [(#8730)](https://github.com/PennyLaneAI/pennylane/pull/8730)
 
-* The :class:`~pennylane.transforms.core.CompilePipeline` (previously known as `TransformProgram`)
-  is available at the top level namespace as `qml.CompilePipeline`.
-  [(#8735)](https://github.com/PennyLaneAI/pennylane/pull/8735)
+  ```pycon
+  >>> import pennylane as qml
+  >>> qml.transforms.merge_rotations + qml.transforms.cancel_inverses(recursive=True)
+  CompilePipeline(merge_rotations, cancel_inverses)
+  ```
 
-* Now `CompilePipeline` can dispatch to anything individual transforms can dispatch onto, including
-  QNodes.
+* :class:`~.CompilePipeline` (previously known as the `TransformProgram`) now has a `remove` method
+  which removes all matching transforms from the pipeline.
+  [(#8751)](https://github.com/PennyLaneAI/pennylane/pull/8751)
+
+* A :class:`~.CompilePipeline` (previously known as the `TransformProgram`) can now be applied directly on a :class:`~.QNode`.
   [(#8731)](https://github.com/PennyLaneAI/pennylane/pull/8731)
 
+  ```python
+  import pennylane as qml
+
+  pipeline = qml.transforms.merge_rotations + qml.transforms.cancel_inverses(recursive=True)
+
+  @pipeline
+  @qml.qnode(qml.device("default.qubit"))
+  def circuit():
+    qml.H(0)
+    qml.H(0)
+    qml.RX(0.5, 1)
+    qml.RX(0.2, 1)
+    return qml.expval(qml.Z(0) @ qml.Z(1))
+  ```
+  ```pycon
+  >>> print(qml.draw(circuit)())
+  0: ───────────┤ ╭<Z@Z>
+  1: ──RX(0.70)─┤ ╰<Z@Z>
+  ```
+
 * The :class:`~.CompilePipeline` (previously known as the `TransformProgram`) can now be constructed
-  more flexibility with a variable number of arguments that are of types `TransformDispatcher`,
-  `TransformContainer`, or other `CompilePipeline`s.
+  more flexibility with a variable number of arguments that are of types :class:`~.transforms.core.Transform`,
+  :class:`~.transforms.core.BoundTransform`, or other `CompilePipeline`s.
   [(#8750)](https://github.com/PennyLaneAI/pennylane/pull/8750)
 
 <h3>Improvements 🛠</h3>
@@ -241,11 +243,35 @@
 
 * Quantum compilation passes in MLIR and XDSL can now be applied using the core PennyLane transform
   infrastructure, instead of using Catalyst-specific tools. This is made possible by a new argument in
-  :func:`~pennylane.transform` and `~.TransformDispatcher` called ``pass_name``, which accepts a string
-  corresponding to the name of the compilation pass.
-  The ``pass_name`` argument ensures that the given compilation pass will be used when qjit'ing a
-  workflow, where the pass is performed in MLIR or xDSL.
+  :func:`~pennylane.transform` and :class:`~.transforms.core.Transform` called ``pass_name``, which 
+  accepts a string corresponding to the name of the compilation pass. The ``pass_name`` argument 
+  ensures that the given compilation pass will be used when `qjit` is applied to a workflow, where the 
+  pass is performed in MLIR or xDSL.
   [(#8539)](https://github.com/PennyLaneAI/pennylane/pull/8539)
+
+* `@partial` is not needed anymore for using transforms as decorators with arguments.
+  Now, the following two usages are equivalent:
+
+  ```python
+  @partial(qml.transforms.decompose, gate_set={qml.RX, qml.CNOT})
+  @qml.qnode(qml.device('default.qubit', wires=2))
+  def circuit():
+      qml.Hadamard(wires=0)
+      qml.CZ(wires=[0,1])
+      return qml.expval(qml.Z(0))
+  ```
+
+  ```python
+  @qml.transforms.decompose(gate_set={qml.RX, qml.CNOT})
+  @qml.qnode(qml.device('default.qubit', wires=2))
+  def circuit():
+      qml.Hadamard(wires=0)
+      qml.CZ(wires=[0,1])
+      return qml.expval(qml.Z(0))
+  ```
+
+  [(#8730)](https://github.com/PennyLaneAI/pennylane/pull/8730)
+  [(#8754)](https://github.com/PennyLaneAI/pennylane/pull/8754)
 
 <h4>Analyzing your algorithms quickly and easily with resource estimation</h4>
 
@@ -330,7 +356,7 @@
   The :func:`~.marker` function works like a transform in PennyLane, and can be deployed as
   a decorator on top of QNodes:
 
-  ```
+  ```python
   @qml.marker(level="rotations-merged")
   @qml.transforms.merge_rotations
   @qml.marker(level="my-level")
@@ -385,6 +411,10 @@
   [(#8464)](https://github.com/PennyLaneAI/pennylane/pull/8464)
 
 <h4>Decompositions</h4>
+
+* Added decompositions of the ``RX``, ``RY`` and ``RZ`` rotations into one of the other two, as well
+  as basis changing Clifford gates, to the graph-based decomposition system.
+  [(#8569)](https://github.com/PennyLaneAI/pennylane/pull/8569)
 
 * A new decomposition has been added for the Controlled :class:`~.SemiAdder`,
   which is efficient and skips controlling all gates in its decomposition.
@@ -486,37 +516,18 @@
 
 <h4>Other improvements</h4>
 
-* The constant to convert the length unit Bohr to Angstrom in ``qml.qchem`` is updated to use scipy
-  constants.
+* The constant to convert the length unit Bohr to Angstrom in ``qml.qchem`` is updated to use scipy constants.
   [(#8537)](https://github.com/PennyLaneAI/pennylane/pull/8537)
-
-* `@partial` is not needed anymore for using transforms as decorators with arguments.
-  Now, the following two usages are equivalent:
-
-  ```python
-  @partial(qml.transforms.decompose, gate_set={qml.RX, qml.CNOT})
-  @qml.qnode(qml.device('default.qubit', wires=2))
-  def circuit():
-      qml.Hadamard(wires=0)
-      qml.CZ(wires=[0,1])
-      return qml.expval(qml.Z(0))
-  ```
-
-  ```python
-  @qml.transforms.decompose(gate_set={qml.RX, qml.CNOT})
-  @qml.qnode(qml.device('default.qubit', wires=2))
-  def circuit():
-      qml.Hadamard(wires=0)
-      qml.CZ(wires=[0,1])
-      return qml.expval(qml.Z(0))
-  ```
-
-  [(#8730)](https://github.com/PennyLaneAI/pennylane/pull/8730)
-  [(#8754)](https://github.com/PennyLaneAI/pennylane/pull/8754)
 
 * :class:`~.transforms.core.TransformContainer` has been renamed to :class:`~.transforms.core.BoundTransform`.
   The old name is still available in the same location.
   [(#8753)](https://github.com/PennyLaneAI/pennylane/pull/8753)
+
+* The `final_transform` property of the :class:`~.transforms.core.BoundTransform` has been renamed 
+  to `is_final_transform` to better follow the naming convention for boolean properties. The `transform` 
+  property of the :class:`~.transforms.core.Transform` and :class:`~.transforms.core.BoundTransform` 
+  has been renamed to `tape_transform` to avoid ambiguity.
+  [(#8756)](https://github.com/PennyLaneAI/pennylane/pull/8756)
 
 * `qml.for_loop` will now fall back to a standard Python `for` loop if capturing a condensed, structured loop fails
   with program capture enabled.
@@ -537,8 +548,8 @@
   capture, allowing for `qml.qjit(qml.grad(c))` and `qml.qjit(qml.jacobian(c))` to work.
   [(#8382)](https://github.com/PennyLaneAI/pennylane/pull/8382)
 
-* Both the generic and transform-specific application behavior of a `qml.transforms.core.TransformDispatcher`
-  can be overwritten with `TransformDispatcher.generic_register` and `my_transform.register`.
+* Both the generic and transform-specific application behavior of a :class:`~.transforms.core.Transform`
+  can be overwritten with `Transform.generic_register` and `my_transform.register`.
   [(#7797)](https://github.com/PennyLaneAI/pennylane/pull/7797)
 
 * With capture enabled, measurements can now be performed on Operator instances passed as closure
@@ -561,6 +572,11 @@
   `~pennylane.estimator.compact_hamiltonian.VibrationalHamiltonian`, and `~pennylane.estimator.compact_hamiltonian.VibronicHamiltonian`
   classes were modified to take the 1-norm of the Hamiltonian as an optional argument.
   [(#8697)](https://github.com/PennyLaneAI/pennylane/pull/8697)
+
+* Added a custom solver to :func:`~.transforms.intermediate_reps.rowcol` for linear systems
+  over :math:`\mathbb{Z}_2` based on Gauss-Jordan elimination. This removes the need to install
+  the ``galois`` package for this single function and provides a minor performance improvement.
+  [(#8771)](https://github.com/PennyLaneAI/pennylane/pull/8771)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
@@ -685,12 +701,6 @@
 * The `qml.QNode.add_transform` method is removed.
   Instead, please use `QNode.transform_program.push_back(transform_container=transform_container)`.
   [(#8468)](https://github.com/PennyLaneAI/pennylane/pull/8468)
-
-* The `TransformProgram` has been renamed to :class:`~pennylane.transforms.core.CompilePipeline`, and uses of
-  the term "transform program" has been updated to "compile pipeline" across the codebase. The class is still
-  accessible as `TransformProgram` from `pennylane.transforms.core`, but the module `pennylane.transforms.core.transform_program`
-  has been renamed to `pennylane.transforms.core.compile_pipeline`, and the old name is no longer available.
-  [(#8735)](https://github.com/PennyLaneAI/pennylane/pull/8735)
 
 * The ``max_work_wires`` argument of the :func:`~pennylane.transforms.decompose` transform has been renamed to ``num_work_wires``.
   [(#8769)](https://github.com/PennyLaneAI/pennylane/pull/8769)
@@ -818,8 +828,8 @@
   [(#8635)](https://github.com/PennyLaneAI/pennylane/pull/8635)
 
 * In program capture, transforms now have a single transform primitive that have a `transform` param that stores
-  the `TransformDispatcher`. Before, each transform had its own primitive stored on the
-  `TransformDispatcher._primitive` private property. It proved difficult to keep maintaining dispatch behaviour
+  the `Transform`. Before, each transform had its own primitive stored on the
+  `Transform._primitive` private property. It proved difficult to keep maintaining dispatch behaviour
   for every single transform.
   [(#8576)](https://github.com/PennyLaneAI/pennylane/pull/8576)
   [(#8639)](https://github.com/PennyLaneAI/pennylane/pull/8639)
