@@ -322,16 +322,16 @@ def _strongly_entangling_decomposition(weights, wires, ranges, imprimitive):
         weights = jnp.array(weights)
 
     n_wires = len(wires)
-    n_layers = weights.shape[0]
+    n_layers = weights.shape[-3]
 
     @for_loop(n_layers)
     def layers(l):
         @for_loop(n_wires)
         def rot_loop(i):
             Rot(
-                weights[l, i, 0],
-                weights[l, i, 1],
-                weights[l, i, 2],
+                weights[..., l, i, 0],
+                weights[..., l, i, 1],
+                weights[..., l, i, 2],
                 wires=wires[i],
             )
 
