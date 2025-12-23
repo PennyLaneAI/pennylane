@@ -73,22 +73,22 @@ class SelectTHC(ResourceOperator):
     The resources for this operation are computed using:
 
     >>> import pennylane.estimator as qre
-    >>> thc_ham =  qre.THCHamiltonian(num_orbitals=20, tensor_rank=40)
+    >>> thc_ham = qre.THCHamiltonian(num_orbitals=20, tensor_rank=40)
     >>> res = qre.estimate(qre.SelectTHC(thc_ham, rotation_precision=15))
     >>> print(res)
     --- Resources: ---
      Total wires: 356
-        algorithmic wires: 58
-        allocated wires: 298
-          zero state: 298
-          any state: 0
-     Total gates : 4.698E+4
-      'Toffoli': 2.249E+3,
-      'CNOT': 3.764E+4,
-      'X': 388,
-      'Z': 41,
-      'S': 80,
-      'Hadamard': 6.586E+3
+       algorithmic wires: 58
+       allocated wires: 298
+         zero state: 298
+         any state: 0
+     Total gates : 3.336E+4
+       'Toffoli': 2.249E+3,
+       'CNOT': 2.344E+4,
+       'X': 392,
+       'Z': 41,
+       'S': 80,
+       'Hadamard': 7.160E+3
 
     Let's also see how the resources change when more batches are used for the rotations:
 
@@ -100,13 +100,13 @@ class SelectTHC(ResourceOperator):
        allocated wires: 163
          zero state: 163
          any state: 0
-    Total gates : 4.175E+4
+     Total gates : 3.461E+4
        'Toffoli': 2.345E+3,
-       'CNOT': 3.183E+4,
+       'CNOT': 2.438E+4,
        'X': 582,
-       'Z': 41,
+       'Z': 45,
        'S': 80,
-       'Hadamard': 6.874E+3
+       'Hadamard': 7.178E+3
 
     We can see that by batching the rotations, the number of allocated wires decreases
     at the cost of an increased number of Toffoli gates.
