@@ -89,6 +89,7 @@ from .templates import (
     PrepTHC,
     QubitizeTHC,
     SelectTHC,
+    SelectPauli,
     TrotterCDF,
     TrotterProduct,
     TrotterTHC,
@@ -103,6 +104,10 @@ from .templates import (
     SingleQubitComparator,
     TwoQubitComparator,
     RegisterComparator,
+    GQSP,
+    Reflection,
+    Qubitization,
+    GQSPTimeEvolution,
 )
 
 from .compact_hamiltonian import (

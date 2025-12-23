@@ -202,7 +202,7 @@ class PauliHamiltonian:
         PauliHamiltonian: An instance of PauliHamiltonian
 
     .. seealso::
-        :class:`~.estimator.templates.trotter.TrotterPauli`
+        :class:`~.estimator.templates.trotter.TrotterPauli`, :class:`~.estimator.templates.select.SelectPauli`
 
     **Example**
 
