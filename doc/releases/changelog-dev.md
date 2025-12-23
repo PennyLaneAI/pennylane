@@ -191,7 +191,8 @@
   [(#8735)](https://github.com/PennyLaneAI/pennylane/pull/8735)
 
 * The ``TransformDispatcher`` class has been renamed to :class:`~.transforms.core.Transform` and is now
-  available at the top level as `qml.transform`.
+  available at the top level as `qml.transform`. For backward compatibility, `TransformDispatcher`
+  can still be accessed from `pennylane.transforms.core`.
   [(#8756)](https://github.com/PennyLaneAI/pennylane/pull/8756)
 
 * The :class:`~.transforms.core.Transform` class (previously known as the `TransformDispatcher`), 
