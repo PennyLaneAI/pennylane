@@ -1,5 +1,7 @@
 # Release 0.44.0-dev (development release)
 
+* The `qre.H` and `qre.I` aliases have been added for `qre.Hadamard` and `qre.Identity` respectively. These provide convenient shorthand for frequently used resource operators.
+
 <h3>New features since last release</h3>
 
 <h4>Pass-by-Pass Circuit Specs </h4>

@@ -93,6 +93,10 @@ class TestIdentity:
         op = Identity(0)
         assert op.pow_resource_decomp(z) == expected_res
 
+    def test_alias_I(self):
+        """Test that qre.I is an alias for Identity."""
+        assert qre.I is Identity
+
 
 class TestGlobalPhase:
     """Test ResourceGlobalPhase"""

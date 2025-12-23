@@ -151,6 +151,21 @@ class Identity(ResourceOperator):
         return [GateCount(cls.resource_rep())]
 
 
+I = Identity
+r"""Identity(wires)
+Resource class for the Identity gate.
+
+.. seealso:: The equivalent long-form alias :class:`~.Identity`
+
+Args:
+    wires (WiresLike | None): wire label(s) that the identity acts on
+
+Resources:
+    The Identity gate does not require any resources and thus it cannot be decomposed
+    further. Requesting the resources of this gate returns an empty list.
+"""
+
+
 class GlobalPhase(ResourceOperator):
     r"""Resource class for the GlobalPhase gate.
 
