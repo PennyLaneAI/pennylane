@@ -244,7 +244,7 @@
   1: ──RX(0.70)─┤ ╰<Z@Z>
   ```
 
-* A :class:`~.CompilePipeline` can be initialized by passing any number of transforms or other ``CompilePipeline``s
+* A :class:`~.CompilePipeline` can be initialized by passing any number of transforms or other ``CompilePipeline``s,
   providing more flexibility than the previous ``TransformProgram`` class.
   [(#8750)](https://github.com/PennyLaneAI/pennylane/pull/8750)
 
