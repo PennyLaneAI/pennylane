@@ -14,6 +14,7 @@
 """Unit and integration tests for the compile pipeline."""
 # pylint: disable=no-member
 
+import pickle
 
 import pytest
 import rustworkx as rx
@@ -1810,8 +1811,6 @@ class TestCompilePipelineSerialization:
 
     def test_pickle_simple_pipeline(self):
         """Test pickling a simple compile pipeline."""
-        import pickle
-
         pipeline = qml.transforms.merge_rotations + qml.transforms.cancel_inverses
         pickled = pickle.dumps(pipeline)
         restored = pickle.loads(pickled)
@@ -1822,8 +1821,6 @@ class TestCompilePipelineSerialization:
 
     def test_pickle_pipeline_with_bound_arguments(self):
         """Test pickling a compile pipeline with bound transform arguments."""
-        import pickle
-
         pipeline = qml.transforms.merge_rotations(atol=1e-6) + qml.transforms.cancel_inverses(
             recursive=True
         )
@@ -1837,8 +1834,6 @@ class TestCompilePipelineSerialization:
 
     def test_pickle_pipeline_with_multiplication(self):
         """Test pickling a compile pipeline created with multiplication."""
-        import pickle
-
         pipeline = (qml.transforms.merge_rotations + qml.transforms.cancel_inverses) * 2
         pickled = pickle.dumps(pipeline)
         restored = pickle.loads(pickled)
@@ -1849,8 +1844,6 @@ class TestCompilePipelineSerialization:
 
     def test_pickle_pipeline_with_decompose(self):
         """Test pickling a compile pipeline with decompose transform."""
-        import pickle
-
         pipeline = (
             qml.transforms.decompose(gate_set={qml.RX, qml.CNOT, qml.RZ})
             + qml.transforms.merge_rotations
@@ -1866,8 +1859,6 @@ class TestCompilePipelineSerialization:
 
     def test_pickle_empty_pipeline(self):
         """Test pickling an empty compile pipeline."""
-        import pickle
-
         pipeline = CompilePipeline()
         pickled = pickle.dumps(pipeline)
         restored = pickle.loads(pickled)
@@ -1878,8 +1869,6 @@ class TestCompilePipelineSerialization:
 
     def test_restored_pipeline_applies_correctly(self):
         """Test that a restored pipeline works correctly on a QNode."""
-        import pickle
-
         pipeline = qml.transforms.merge_rotations + qml.transforms.cancel_inverses
         pickled = pickle.dumps(pipeline)
         restored = pickle.loads(pickled)
@@ -1904,8 +1893,6 @@ class TestCompilePipelineSerialization:
 
     def test_cotransform_cache_not_serialized(self):
         """Test that cotransform_cache is not serialized (set to None after restore)."""
-        import pickle
-
         # Create a pipeline with cotransform_cache (simulated)
         pipeline = CompilePipeline(
             [BoundTransform(qml.transforms.merge_rotations)],

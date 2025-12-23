@@ -1050,8 +1050,6 @@ class TestTransformSerialization:
 
     def test_transform_without_name_cannot_be_pickled(self):
         """Test that a Transform without __name__ raises TypeError when pickling."""
-        import pickle
-
         # Create a Transform with a pass_name only (no tape_transform)
         # This won't have __name__ set by update_wrapper since there's no tape_transform
         dynamic_transform = Transform(pass_name="test_pass")
