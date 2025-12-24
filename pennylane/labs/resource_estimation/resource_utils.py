@@ -116,11 +116,11 @@ def approx_poly_degree(
 
         One can use the ``fit_func`` keyword argument to provide custom fit functions
         for fitting a target function with any orthogonal polynomial bases and recipe.
-        For example, to fit the function :math:`f(x) = \sin(x) \exp(-x)` using the
+        For example, to fit the function :math:`f(x) = e^{-x} \sin(x)` using the
         Laguerre polynomials, i.e., in the Laguerre basis which is not natively
         supported, one can use the ``np.polynomial.laguerre.Laguerre.fit``
-        function for fitting and obtaining the least squares error of the fit as
-        shown below.
+        function for fitting and obtaining the least squares error of the fit
+        as shown below.
 
         .. code-block::
 
