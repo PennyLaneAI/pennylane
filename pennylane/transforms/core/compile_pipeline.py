@@ -112,7 +112,7 @@ def null_postprocessing(results: ResultBatch) -> ResultBatch:
 
 
 class CompilePipeline:
-    """A sequence of quantum circuit transforms.
+    """A series of transforms to be applied to a quantum function or a :class:`~pennylane.QNode`.
 
     Args:
         *transforms (Optional[Sequence[Transform | BoundTransform]]): A sequence of
@@ -122,8 +122,9 @@ class CompilePipeline:
 
     **Example:**
 
-    A `CompilePipeline` is a sequence of quantum transforms to be applied sequentially
-    on a :class:`~pennylane.tape.QuantumScript` or a :class:`~pennylane.QNode`.
+    A compilation pipeline or transform program can be specified by passing a set of transforms to the
+    ``CompilePipeline`` class. We can then appliy the created compilation ``pipeline`` directly on a
+    quantum function or a :class:`QNode`: to compile it down to a smaller set of gates:
 
     .. code-block:: python
 
@@ -150,28 +151,35 @@ class CompilePipeline:
     0: ──RX(0.30)─┤
     1: ───────────┤  <Z>
 
-    Alternatively, the transform program can be constructed intuitively by combining
-    multiple transforms:
+    In this example the following transformations were applied sequentially to the quantum circuit:
 
-    >>> pipeline = qml.transforms.merge_rotations + qml.transforms.cancel_inverses(recursive=True)
+    - pushing all commuting single-qubit gates as far right as possible
+      (:func:`~pennylane.transforms.commute_controlled`)
+    - cancellation of adjacent inverse gates
+      (:func:`~pennylane.transforms.cancel_inverses`)
+    - merging adjacent rotations of the same type
+      (:func:`~pennylane.transforms.merge_rotations`)
+
+    Alternatively, the transform program can be constructed intuitively by combining multiple transforms:
+
+    >>> pipeline = qml.transforms.merge_rotations + 2 * qml.transforms.cancel_inverses
     >>> pipeline
-    CompilePipeline(merge_rotations, cancel_inverses)
+    CompilePipeline(merge_rotations, cancel_inverses, cancel_inverses)
 
     It can also be easily modified:
 
     >>> pipeline += qml.transforms.commute_controlled
     >>> pipeline
-    CompilePipeline(merge_rotations, cancel_inverses, commute_controlled)
+    CompilePipeline(merge_rotations, cancel_inverses, cancel_inverses, commute_controlled)
     >>> pipeline.insert(0, qml.transforms.remove_barrier)
     >>> pipeline
-    CompilePipeline(remove_barrier, merge_rotations, cancel_inverses, commute_controlled)
+    CompilePipeline(remove_barrier, merge_rotations, cancel_inverses, cancel_inverses, commute_controlled)
 
-    Multiple compile pipelines can be concatenated:
+    Additionally, multiple compile pipelines can be concatenated:
 
     >>> another_pipeline = qml.transforms.decompose(gate_set={qml.RX, qml.RZ, qml.CNOT}) + qml.transforms.combine_global_phases
     >>> another_pipeline + pipeline
-    CompilePipeline(decompose, combine_global_phases, remove_barrier, merge_rotations, cancel_inverses, commute_controlled)
-
+    CompilePipeline(decompose, combine_global_phases, remove_barrier, merge_rotations, cancel_inverses, cancel_inverses, commute_controlled)
     """
 
     @overload
