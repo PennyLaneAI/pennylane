@@ -123,7 +123,7 @@ class TestSelectTHC:
                 1,
                 15,
                 2,
-                {"algo_wires": 24, "auxiliary_wires": 103, "toffoli_gates": 545},
+                {"algo_wires": 24, "auxiliary_wires": 93, "toffoli_gates": 457},
             ),
             # These numbers were obtained manually for batched rotations based on the technique described in arXiv:2501.06165
             (
@@ -184,7 +184,7 @@ class TestSelectTHC:
                 2,
                 3,
                 2,
-                {"algo_wires": 27, "auxiliary_wires": 104, "toffoli_gates": 550},
+                {"algo_wires": 27, "auxiliary_wires": 94, "toffoli_gates": 462},
             ),
             # These numbers were obtained manually for batched rotations based on the technique described in arXiv:2501.06165
             (

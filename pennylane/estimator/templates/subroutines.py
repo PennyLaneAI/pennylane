@@ -1144,24 +1144,25 @@ class UnaryIterationQPE(ResourceOperator):
 
     The resources for this operation are computed as follows:
 
+    >>> import pennylane.estimator as qre
     >>> thc_ham = qre.THCHamiltonian(num_orbitals=20, tensor_rank=40)
     >>> num_iter, walk_op = (11, qre.QubitizeTHC(thc_ham))
     >>> res = qre.estimate(qre.UnaryIterationQPE(walk_op, num_iter))
     >>> print(res)
     --- Resources: ---
-    Total wires: 1232
-      algorithmic wires: 101
-      allocated wires: 1131
-        zero state: 1131
-        any state: 0
-    Total gates : 8.744E+5
-      'Toffoli': 3.647E+4,
-      'T': 792,
-      'CNOT': 7.255E+5,
-      'X': 1.721E+4,
-      'Z': 475,
-      'S': 880,
-      'Hadamard': 9.308E+4
+     Total wires: 402
+       algorithmic wires: 101
+       allocated wires: 301
+         zero state: 301
+         any state: 0
+     Total gates : 5.821E+5
+       'Toffoli': 3.546E+4,
+       'T': 792,
+       'CNOT': 4.262E+5,
+       'X': 1.833E+4,
+       'Z': 475,
+       'S': 880,
+       'Hadamard': 9.995E+4
     """
 
     resource_keys = {"cmpr_walk_op", "num_iterations", "adj_qft_cmpr_op"}
@@ -1989,28 +1990,33 @@ class Select(ResourceOperator):
 
 
 class QROM(ResourceOperator):
-    r"""Resource class for the QROM template.
+    r"""Resource class for the Quantum Read-Only Memory (QROM) template.
 
     Args:
         num_bitstrings (int): the number of bitstrings that are to be encoded
         size_bitstring (int): the length of each bitstring
-        num_bit_flips (int, optional): The total number of :math:`1`'s in the dataset. Defaults to
+        num_bit_flips (int | None): The total number of :math:`1`'s in the dataset. Defaults to
             :code:`(num_bitstrings * size_bitstring) // 2`, which is half the dataset.
-        restored (bool, optional): Determine if allocated qubits should be reset after the computation
+        restored (bool): Determine if allocated qubits should be reset after the computation
             (at the cost of higher gate counts). Defaults to :code:`True`.
         select_swap_depth (int | None): A parameter :math:`\lambda` that determines
             if data will be loaded in parallel by adding more rows following Figure 1.C of
             `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_. Can be :code:`None`,
-            :code:`1` or a positive integer power of two. Defaults to :code:`None`, which internally
-            determines the optimal depth.
-        wires (Sequence[int], None): The wires the operation acts on (control and target).
-            Excluding any additional qubits allocated during the decomposition (e.g select-swap wires).
+            :code:`1` or a positive integer power of two. Defaults to ``None``, which sets the
+            depth that minimizes ``T``-gate count.
+        wires (WiresLike | None): The wires the operation acts on (control and target), excluding
+            any additional qubits allocated during the decomposition (e.g select-swap wires).
 
     Resources:
-        The resources for QROM are taken from the following two papers:
-        `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_ (Figure 1.C) for
-        :code:`restored = False` and `Berry et al. (2019) <https://arxiv.org/pdf/1902.02134>`_
-        (Figure 4) for :code:`restored = True`.
+        The resources for QROM are derived from the following references:
+
+        * :code:`restored=False`: Uses the Select-Swap tree decomposition from Figure 1.C of
+          `Low et al. (2018) <https://arxiv.org/abs/1812.00954>`_, further optimized using the
+          measurement-based uncomputation technique described in
+          `Berry et al. (2019) <https://arxiv.org/abs/1902.02134>`__.
+
+        * :code:`restored=True`: Uses the standard QROM resource accounting from Figure 4 of
+          `Berry et al. (2019) <https://arxiv.org/abs/1902.02134>`__.
 
     .. seealso:: The associated PennyLane operation :class:`~.pennylane.QROM`
 
@@ -2065,10 +2071,10 @@ class QROM(ResourceOperator):
         self,
         num_bitstrings: int,
         size_bitstring: int,
-        num_bit_flips: int = None,
+        num_bit_flips: int | None = None,
         restored: bool = True,
-        select_swap_depth=None,
-        wires: WiresLike = None,
+        select_swap_depth: int | None = None,
+        wires: WiresLike | None = None,
     ) -> None:
         self.restored = restored
         self.num_bitstrings = num_bitstrings
@@ -2097,37 +2103,47 @@ class QROM(ResourceOperator):
     @classmethod
     def resource_decomp(
         cls,
-        num_bitstrings,
-        size_bitstring,
-        num_bit_flips,
-        select_swap_depth=None,
-        restored=True,
+        num_bitstrings: int,
+        size_bitstring: int,
+        num_bit_flips: int | None = None,
+        select_swap_depth: int | None = None,
+        restored: bool = True,
     ) -> list[GateCount]:
-        r"""Returns a list of GateCount objects representing the operator's resources.
+        r"""Returns a list of ``GateCount`` objects representing the operator's resources.
 
         Args:
             num_bitstrings (int): the number of bitstrings that are to be encoded
             size_bitstring (int): the length of each bitstring
-            num_bit_flips (int, optional): The total number of :math:`1`'s in the dataset. Defaults to
+            num_bit_flips (int | None): The total number of :math:`1`'s in the dataset. Defaults to
                 :code:`(num_bitstrings * size_bitstring) // 2`, which is half the dataset.
             select_swap_depth (int | None): A parameter :math:`\lambda` that determines
                 if data will be loaded in parallel by adding more rows following Figure 1.C of
                 `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_. Can be :code:`None`,
-                :code:`1` or a positive integer power of two. Defaults to :code:`None`, which internally
-                determines the optimal depth.
-            restored (bool, optional): Determine if allocated qubits should be reset after the computation
-                (at the cost of higher gate counts). Defaults to :code`True`.
+                :code:`1` or a positive integer power of two. Defaults to ``None``, which sets the
+                depth that minimizes ``T``-gate count.
+            restored (bool): Determine if allocated qubits should be reset after the computation
+                (at the cost of higher gate counts). Defaults to :code:`True`.
 
         Resources:
-            The resources for QROM are taken from the following two papers:
-            `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_ (Figure 1.C) for
-            :code:`restored = False` and `Berry et al. (2019) <https://arxiv.org/pdf/1902.02134>`_
-            (Figure 4) for :code:`restored = True`.
+            The resources for QROM are derived from the following references:
 
-            Note: we use the unary iterator trick to implement the Select. This
+            * :code:`restored=False`: Uses the Select-Swap tree decomposition from Figure 1.C of
+              `Low et al. (2018) <https://arxiv.org/abs/1812.00954>`_, further optimized using the
+              measurement-based uncomputation technique described in
+              `Berry et al. (2019) <https://arxiv.org/abs/1902.02134>`__.
+
+            * :code:`restored=True`: Uses the standard QROM resource accounting from Figure 4 of
+              `Berry et al. (2019) <https://arxiv.org/abs/1902.02134>`__.
+
+            Note: we use the unary iterator trick to implement the ``Select``. This
             implementation assumes we have access to :math:`n - 1` additional
-            work qubits, where :math:`n = \left\lceil log_{2}(N) \right\rceil` and :math:`N` is
+            work qubits, where :math:`n = \left\lceil \log_{2}(N) \right\rceil` and :math:`N` is
             the number of batches of unitaries to select.
+
+        Returns:
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
 
         if select_swap_depth:
@@ -2192,19 +2208,20 @@ class QROM(ResourceOperator):
                 GateCount(ctrl_swap, swap_restored_prefactor * (W_opt - 1) * size_bitstring)
             )
 
-            if restored:
-                gate_cost.append(Deallocate((W_opt - 1) * size_bitstring))  # release Swap registers
+            if not restored:
+                gate_cost.append(GateCount(x, (W_opt - 1) * size_bitstring))  # measure and reset
+            gate_cost.append(Deallocate((W_opt - 1) * size_bitstring))  # release Swap registers
 
         return gate_cost
 
     @classmethod
     def single_controlled_res_decomp(
         cls,
-        num_bitstrings,
-        size_bitstring,
-        num_bit_flips,
-        select_swap_depth,
-        restored,
+        num_bitstrings: int,
+        size_bitstring: int,
+        num_bit_flips: int | None = None,
+        select_swap_depth: int | None = None,
+        restored: bool = True,
     ):
         r"""The resource decomposition for QROM controlled on a single wire."""
         if select_swap_depth:
@@ -2298,13 +2315,13 @@ class QROM(ResourceOperator):
             :code:`restored = False` and `Berry et al. (2019) <https://arxiv.org/pdf/1902.02134>`_
             (Figure 4) for :code:`restored = True`.
 
-            Note: we use the single-controlled unary iterator trick to implement the Select. This
+            Note: we use the single-controlled unary iterator trick to implement the ``Select``. This
             implementation assumes we have access to :math:`n - 1` additional work qubits,
-            where :math:`n = \ceil{log_{2}(N)}` and :math:`N` is the number of batches of
+            where :math:`n = \lceil \log_{2}(N) \rceil` and :math:`N` is the number of batches of
             unitaries to select.
 
         Returns:
-            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -2348,16 +2365,16 @@ class QROM(ResourceOperator):
             dict: A dictionary containing the resource parameters:
                 * num_bitstrings (int): the number of bitstrings that are to be encoded
                 * size_bitstring (int): the length of each bitstring
-                * num_bit_flips (int, optional): The total number of :math:`1`'s in the dataset.
+                * num_bit_flips (int | None): The total number of :math:`1`'s in the dataset.
                   Defaults to :code:`(num_bitstrings * size_bitstring) // 2`, which is half the
                   dataset.
-                * restored (bool, optional): Determine if allocated qubits should be reset after the
-                  computation (at the cost of higher gate counts). Defaults to :code`True`.
+                * restored (bool): Determine if allocated qubits should be reset after the
+                  computation (at the cost of higher gate counts). Defaults to :code:`True`.
                 * select_swap_depth (int | None): A parameter :math:`\lambda` that
                   determines if data will be loaded in parallel by adding more rows following
                   Figure 1.C of `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_. Can be
-                  :code:`None`, :code:`1` or a positive integer power of two. Defaults to :code:`None`,
-                  which internally determines the optimal depth.
+                  :code:`None`, :code:`1` or a positive integer power of two. Defaults to None,
+                  which sets the depth that minimizes T-gate count.
 
         """
 
@@ -2370,13 +2387,179 @@ class QROM(ResourceOperator):
         }
 
     @classmethod
+    def _ctrl_T(cls, num_data_blocks: int, num_bit_flips: int, count: int = 1) -> list[GateCount]:
+        """Constructs the control-``T`` subroutine as defined in Appendices A and B of
+        `arXiv:1902.02134 <https://arxiv.org/abs/1902.02134>`_.
+
+        Args:
+            num_data_blocks(int): The number of data blocks formed by partitioning the total bitstrings based on select-swap depth.
+            num_bit_flips (int): The total number of :math:`1`'s in the dataset.
+            count (int): The number of times to repeat the subroutine.
+
+        Returns:
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: The resource decomposition of the control- :math:`T` subroutine.
+        """
+
+        x = resource_rep(qre.X)
+        cnot = resource_rep(qre.CNOT)
+        l_elbow = resource_rep(qre.TemporaryAND)
+        r_elbow = resource_rep(qre.Adjoint, {"base_cmpr_op": l_elbow})
+
+        gate_cost = []
+
+        if num_data_blocks > 1:
+            gate_cost.append(
+                GateCount(x, count * (2 * (num_data_blocks - 2) + 1))
+            )  # conjugate 0 controlled toffolis + 1 extra X gate from un-controlled unary iterator decomp
+            gate_cost.append(
+                GateCount(
+                    cnot,
+                    count * (num_data_blocks - 2) + count * num_bit_flips,
+                )  # num CNOTs in unary iterator trick + each unitary in the select is just a CNOT
+            )
+            gate_cost.append(GateCount(l_elbow, count * (num_data_blocks - 2)))
+            gate_cost.append(GateCount(r_elbow, count * (num_data_blocks - 2)))
+
+        else:
+            gate_cost.append(
+                GateCount(
+                    x, count * num_bit_flips
+                )  # each unitary in the select is just an X gate to load the data
+            )
+        return gate_cost
+
+    @classmethod
+    def _ctrl_S(cls, num_ctrl_wires: int, count: int = 1) -> list[GateCount]:
+        """Constructs the control-S subroutine as defined in Figure 8 of
+        `arXiv:1902.02134 <https://arxiv.org/abs/1902.02134>`_ excluding the initial ``X`` gate.
+
+        Args:
+            num_ctrl_wires (int): The number of control wires.
+            count (int): The number of times to repeat the subroutine.
+
+        Returns:
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: The resource decomposition of the control- :math:`S` subroutine.
+        """
+        num_ctrl_swaps = 2**num_ctrl_wires - 1
+        return [qre.GateCount(qre.resource_rep(qre.CSWAP), count * num_ctrl_swaps)]
+
+    @classmethod
+    def _ctrl_S_adj(cls, num_ctrl_wires: int, count: int = 1) -> list[GateCount]:
+        r"""Constructs the control-S^adj subroutine as defined in Figure 10
+        of `arXiv:1902.02134 <https://arxiv.org/abs/1902.02134>`_ excluding the terminal ``X`` gate.
+
+        Args:
+            num_ctrl_wires (int): The number of control wires.
+            count (int): The number of times to repeat the subroutine.
+
+        Returns:
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: The resource decomposition of the control- :math:`S^{\dagger}` subroutine.
+
+        """
+        h = qre.resource_rep(qre.Hadamard)
+        cz = qre.resource_rep(qre.CZ)
+        cnot = qre.resource_rep(qre.CNOT)
+
+        num_ops = 2**num_ctrl_wires - 1
+        return [
+            qre.GateCount(h, count * num_ops),
+            qre.GateCount(cz, count * num_ops),
+            qre.GateCount(cnot, count * num_ops),
+        ]
+
+    @classmethod
+    def adjoint_resource_decomp(cls, target_resource_params: dict) -> list[GateCount]:
+        r"""Returns a list representing the resources of the adjoint of the operator. Each object represents a quantum gate
+        and the number of times it occurs in the decomposition.
+
+        Args:
+            target_resource_params(dict): A dictionary containing the resource parameters of the target operator.
+
+        Resources:
+            This resources are based on Appendix C of `arXiv:1902.02134 <https://arxiv.org/abs/1902.02134>`_.
+
+        Returns:
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
+        """
+
+        num_bitstrings = target_resource_params["num_bitstrings"]
+        size_bitstring = target_resource_params["size_bitstring"]
+        num_bit_flips = target_resource_params.get("num_bit_flips", None)
+        select_swap_depth = target_resource_params.get("select_swap_depth", None)
+        restored = target_resource_params.get("restored", True)
+
+        gate_lst = []
+        x = resource_rep(qre.X)
+        z = resource_rep(qre.Z)
+        had = qre.resource_rep(qre.Hadamard)
+
+        # Compute the width (output + swap registers) and length (unary iter entries) of the QROM
+        if select_swap_depth:
+            max_depth = 2 ** math.ceil(math.log2(num_bitstrings))
+            select_swap_depth = min(max_depth, select_swap_depth)  # truncate depth beyond max depth
+
+        k = select_swap_depth or qre.QROM._t_optimized_select_swap_width(
+            num_bitstrings, size_bitstring
+        )
+        l = math.ceil(math.log2(k))  # number of qubits in |l> register
+
+        H = math.ceil(num_bitstrings / k)  # number of columns of data
+        h = math.ceil(math.log2(H))  # number of qubits in |h> register
+
+        ## Measure output register, reset qubits and construct fixup table
+        gate_lst.append(qre.GateCount(had, size_bitstring))  # Figure 5.
+
+        ## Allocate auxiliary qubits
+        num_alloc_wires = k  # Swap registers
+        if H > 1:
+            num_alloc_wires += h - 1  # + work_wires for UI trick
+
+        gate_lst.append(qre.Allocate(num_alloc_wires))
+
+        ## Cost assuming clean auxiliary qubits (Figure 6)
+        if not restored:
+            gate_lst.append(GateCount(x, 2))
+            gate_lst.append(GateCount(had, 2 * k))
+
+            num_bit_flips = (k * H) // 2
+
+            ctrl_S_decomp = cls._ctrl_S(num_ctrl_wires=l)
+            ctrl_S_adj_decomp = cls._ctrl_S_adj(num_ctrl_wires=l)
+            ctrl_T_decomp = cls._ctrl_T(num_data_blocks=H, num_bit_flips=num_bit_flips)
+
+            gate_lst.extend(ctrl_S_decomp)
+            gate_lst.extend(ctrl_S_adj_decomp)
+            gate_lst.extend(ctrl_T_decomp)
+
+        ## Cost assuming dirty auxiliary qubits (Figure 7)
+        else:
+            gate_lst.append(GateCount(z, 2))
+            gate_lst.append(GateCount(had, 2))
+
+            num_bit_flips = (k * H) // 2
+            count = 1 if k == 1 else 2
+            ctrl_S_decomp = cls._ctrl_S(num_ctrl_wires=l, count=count)
+            ctrl_S_adj_decomp = cls._ctrl_S_adj(num_ctrl_wires=l, count=count)
+            ctrl_T_decomp = cls._ctrl_T(num_data_blocks=H, num_bit_flips=num_bit_flips, count=count)
+
+            gate_lst.extend(ctrl_S_decomp)
+            gate_lst.extend(ctrl_S_adj_decomp)
+            gate_lst.extend(ctrl_T_decomp)
+
+        gate_lst.append(qre.Deallocate(num_alloc_wires))
+
+        return gate_lst
+
+    @classmethod
     def resource_rep(
         cls,
-        num_bitstrings,
-        size_bitstring,
-        num_bit_flips=None,
-        restored=True,
-        select_swap_depth=None,
+        num_bitstrings: int,
+        size_bitstring: int,
+        num_bit_flips: int | None = None,
+        restored: bool = True,
+        select_swap_depth: int | None = None,
     ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
@@ -2384,15 +2567,15 @@ class QROM(ResourceOperator):
         Args:
             num_bitstrings (int): the number of bitstrings that are to be encoded
             size_bitstring (int): the length of each bitstring
-            num_bit_flips (int, optional): The total number of :math:`1`'s in the dataset. Defaults to
+            num_bit_flips (int | None): The total number of :math:`1`'s in the dataset. Defaults to
                 :code:`(num_bitstrings * size_bitstring) // 2`, which is half the dataset.
-            restored (bool, optional): Determine if allocated qubits should be reset after the computation
-                (at the cost of higher gate counts). Defaults to :code`True`.
+            restored (bool): Determine if allocated qubits should be reset after the computation
+                (at the cost of higher gate counts). Defaults to :code:`True`.
             select_swap_depth (int | None): A parameter :math:`\lambda` that determines
                 if data will be loaded in parallel by adding more rows following Figure 1.C of
                 `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_. Can be :code:`None`,
-                :code:`1` or a positive integer power of two. Defaults to :code:`None`, which internally
-                determines the optimal depth.
+                :code:`1` or a positive integer power of two. Defaults to ``None``, which sets the
+                depth that minimizes ``T``-gate count.
 
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
