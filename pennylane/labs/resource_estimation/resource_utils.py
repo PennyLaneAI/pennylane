@@ -111,53 +111,68 @@ def approx_poly_degree(
         >>> print(loss) # Sum of squared errors
         2.40281579329135e-29
 
-    This example fits the function :math:`f(x) = \sin(3x) + 0.3x^2 - 0.1x` using the Chebyshev basis. Here,
-    we use the Gauss-Lobatto nodes (``domain_func="gauss-lobatto"``), which are the optimal interpolation points
-    for Chebyshev polynomials as they cluster near the endpoints and minimize the interpolation error to avoid the
-    `Runge phenomenon <https://en.wikipedia.org/wiki/Runge%27s_phenomenon>`_ that plagues uniform grids. This enables
-    better convergence for functions with oscillatory behavior like :math:`\sin(3x)` with smaller polynomial degrees.
+    .. details::
+        :title: Using custom fitting functions
 
-    .. code-block::
+        One can use the ``fit_func`` keyword argument to provide custom fit functions
+        for fitting a target function with any orthogonal polynomial bases and recipe.
+        For example, to fit the function :math:`f(x) = \sin(x) \exp(-x)` using the
+        Laguerre polynomials, i.e., in the Laguerre basis which is not natively
+        supported, one can use the ``np.polynomial.laguerre.Laguerre.fit``
+        function for fitting and obtaining the least squares error of the fit as
+        shown below.
 
-        >>> x_vec = np.linspace(-1, 1, 100)
-        >>> target_func = lambda x: np.sin(3*x) + 0.3*x**2 - 0.1*x
-        >>> degree, poly, loss = approx_poly_degree(
-        ...     target_func, x_vec, poly_degs=(2, 10), error_tol=1e-3,
-        ...     basis="chebyshev", loss_func="linf", domain_func="gauss-lobatto"
-        ... )
-        >>> print(degree)
-        7
-        >>> print(poly) # Chebyshev polynomial
-        0.15 + 0.57811797·T₁(x) + 0.15·T₂(x) - 0.61812903·T₃(x) +
-        (2.43236301e-18)·T₄(x) + 0.08622566·T₅(x) - (9.61838039e-18)·T₆(x) -
-        0.00509459·T₇(x)
-        >>> print(loss) # Maximum absolute error
-        0.0003266957232994083
+        .. code-block::
 
-    This last example fits the function :math:`f(x) = \sin(x) \exp(-x)` using the Laguerre polynomials.
-    Since the Laguerre basis is not natively supported here, one will need to provide their
-    own custom fit function using the ``fit_func`` keyword argument, which gives users the
-    flexibility to fit a target function with any orthogonal polynomial basis and recipe.
-    Here, we use the ``np.polynomial.laguerre.Laguerre.fit`` function for fitting and obtaining
-    the least squares error of the fit.
+            >>> x_vec = np.linspace(0, 1, 100)
+            >>> target_func = lambda x: np.sin(x) * np.exp(-x)
+            >>> def fit_func(x, y, deg, **fit_kwargs):
+            ...     poly, stats = np.polynomial.laguerre.Laguerre.fit(x, y, deg, full=True)
+            ...     return poly, stats[0]
+            >>> degree, poly, loss = approx_poly_degree(
+            ...     target_func, x_vec, poly_degs=(3, 10), error_tol=1e-6,
+            ...     fit_func=fit_func, loss_func="mse"
+            ... )
+            >>> print(degree)
+            3
+            >>> print(poly) # Laguerre polynomial
+            0.71956319 - 2.0816571·L₁(x) + 2.99459653·L₂(x) - 1.63191581·L₃(x)
+            >>> print(loss) # Mean squared error
+            5.286491415090545e-08
 
-    .. code-block::
+    .. details::
+        :title: Using custom fitting points
 
-        >>> x_vec = np.linspace(0, 1, 100)
-        >>> target_func = lambda x: np.sin(x) * np.exp(-x)
-        >>> def fit_func(x, y, deg, **fit_kwargs):
-        ...     poly, stats = np.polynomial.laguerre.Laguerre.fit(x, y, deg, full=True)
-        ...     return poly, stats[0]
-        >>> degree, poly, loss = approx_poly_degree(
-        ...     target_func, x_vec, poly_degs=(3, 10), error_tol=1e-6,
-        ...     fit_func=fit_func, loss_func="mse"
-        ... )
-        >>> print(degree)
-        3
-        >>> print(poly) # Laguerre polynomial
-        0.71956319 - 2.0816571·L₁(x) + 2.99459653·L₂(x) - 1.63191581·L₃(x)
-        >>> print(loss) # Mean squared error
-        5.286491415090545e-08
+        One can use the ``domain_func`` keyword argument to have more control over the fitting points in the
+        domain interval ``[x_vec[0], x_vec[-1]]``. For example, to fit a function with oscillatory behavior
+        like :math:`\sin(3x)` with Chebyshev polynomials, one would want to use the Gauss-Lobatto nodes
+        (``domain_func="gauss-lobatto"``) as they cluster the fitting points near the endpoints and minimize the
+        interpolation error to avoid the `Runge phenomenon <https://en.wikipedia.org/wiki/Runge%27s_phenomenon>`_
+        which plagues uniform grids. This enables better convergence with smaller polynomial degrees,
+        which we demonstrate below by fitting the function :math:`f(x) = \sin(3x) + 0.3x^2 - 0.1x`
+        using the Chebyshev basis.
+
+        .. code-block::
+
+            >>> x_vec = np.linspace(-1, 1, 100)
+            >>> target_func = lambda x: np.sin(3*x) + 0.3*x**2 - 0.1*x
+            >>> degree, poly, loss = approx_poly_degree(
+            ...     target_func, x_vec, poly_degs=(2, 15), error_tol=1e-5,
+            ...     basis="chebyshev", loss_func="linf", domain_func="gauss-lobatto"
+            ... )
+            >>> print(degree)
+            9
+            >>> print(poly) # Chebyshev polynomial
+            0.15 + 0.57811792·T₁(x) + 0.15·T₂(x) - 0.61812545·T₃(x) +
+            (1.72273327e-16)·T₄(x) + 0.08605692·T₅(x) + (8.1513965e-17)·T₆(x) -
+            0.00509818·T₇(x) + (3.34381585e-16)·T₈(x) + 0.00016879·T₉(x)
+            >>> print(loss) # Maximum absolute error
+            7.0638161551173084e-06
+            >>> print(approx_poly_degree(
+            ...    target_func, x_vec, poly_degs=(2, 15), error_tol=1e-5,
+            ...    basis="chebyshev", loss_func="linf", domain_func="uniform"
+            ... )[0]) # Comparing degree with uniform grid points
+            11
     """
     x_vec = np.sort(x_vec)
     y_vec = target_func(x_vec)
@@ -180,7 +195,6 @@ def approx_poly_degree(
     fit_kwargs |= fit_args
 
     proj_func = _process_domain_func(domain_func, basis)
-    print(proj_func)
 
     best_loss, best_poly = float("inf"), None
     for degree in range(min_degree, max_degree + 1):
