@@ -248,6 +248,12 @@
   providing more flexibility than the previous ``TransformProgram`` class.
   [(#8750)](https://github.com/PennyLaneAI/pennylane/pull/8750)
 
+  ```python
+  >>> pipeline = qml.CompilePipeline(qml.transforms.commute_controlled, qml.transforms.cancel_inverses)
+  >>> qml.CompilePipeline(pipeline, qml.transforms.merge_rotations)
+  CompilePipeline(commute_controlled, cancel_inverses, merge_rotations)
+  ```
+
 * Quantum compilation passes in MLIR and XDSL can now be applied using the core PennyLane transform
   infrastructure, instead of using Catalyst-specific tools. This is made possible by a new argument in
   :func:`~pennylane.transform` and :class:`~.transforms.core.Transform` called ``pass_name``, which 
