@@ -390,6 +390,13 @@
   0: ──RX(6.68)─┤  State
   ```
 
+<h4> New templates </h4>
+
+* A new template :class:`~.MultiplexerStatePreparation` has been added. This template allows preparing arbitrary states
+  using :class:`~.SelectPauliRot` operations.
+  [(#8581)](https://github.com/PennyLaneAI/pennylane/pull/8581)
+
+
 <h3>Improvements 🛠</h3>
 
 * `qml.measure` can now be used as a frontend for `catalyst.measure`.
