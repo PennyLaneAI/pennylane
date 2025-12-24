@@ -229,6 +229,8 @@ def _process_loss_func(loss_func: str | Callable | None) -> Callable:
         def _loss_func(x, _: Any = None):
             if isinstance(x, (tuple, list)):
                 return None if len(x[0]) == 0 else float(x[0][0])
+            if isinstance(x, np.ndarray) and len(x) == 1:
+                return x[0]
             return float(x)
 
         return _loss_func
