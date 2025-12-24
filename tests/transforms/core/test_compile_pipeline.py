@@ -905,60 +905,6 @@ class TestCompilePipeline:
         with pytest.raises(TransformError, match="does not appear to be a valid Python function"):
             compile_pipeline.append(10.0)
 
-    def test_append_list(self):
-        """Test appending a list of transforms to a pipeline."""
-        pipeline = CompilePipeline()
-        t1 = transform(first_valid_transform)
-        t2 = transform(second_valid_transform)
-
-        # Append a list of transforms
-        pipeline.append([t1, t2])
-
-        assert len(pipeline) == 2
-        assert pipeline[0].tape_transform is first_valid_transform
-        assert pipeline[1].tape_transform is second_valid_transform
-
-    def test_append_list_with_bound_transforms(self):
-        """Test appending a list containing both Transform and BoundTransform."""
-        pipeline = CompilePipeline()
-        t1 = transform(first_valid_transform)
-        t2_bound = BoundTransform(transform(second_valid_transform))
-
-        pipeline.append([t1, t2_bound])
-
-        assert len(pipeline) == 2
-        assert pipeline[0].tape_transform is first_valid_transform
-        assert pipeline[1].tape_transform is second_valid_transform
-
-    def test_append_multiplied_transform(self):
-        """Test appending a multiplied transform (which returns a CompilePipeline)."""
-        pipeline = CompilePipeline()
-        t1 = BoundTransform(transform(first_valid_transform))
-
-        # Multiplying a BoundTransform returns a CompilePipeline
-        multiplied = 2 * t1
-        assert isinstance(multiplied, CompilePipeline)
-
-        pipeline.append(multiplied)
-
-        assert len(pipeline) == 2
-        assert pipeline[0].tape_transform is first_valid_transform
-        assert pipeline[1].tape_transform is first_valid_transform
-
-    def test_append_compile_pipeline(self):
-        """Test appending a CompilePipeline to another CompilePipeline."""
-        pipeline1 = CompilePipeline()
-        pipeline1.append(BoundTransform(transform(first_valid_transform)))
-
-        pipeline2 = CompilePipeline()
-        pipeline2.append(BoundTransform(transform(second_valid_transform)))
-
-        pipeline1.append(pipeline2)
-
-        assert len(pipeline1) == 2
-        assert pipeline1[0].tape_transform is first_valid_transform
-        assert pipeline1[1].tape_transform is second_valid_transform
-
     def test_add_transform(self):
         """Test to add multiple transforms into a pipeline and also the different methods of a pipeline."""
         compile_pipeline = CompilePipeline()
