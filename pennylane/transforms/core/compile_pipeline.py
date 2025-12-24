@@ -381,13 +381,25 @@ class CompilePipeline:
                     i -= 1
             i -= 1
 
-    def append(self, transform: BoundTransform | Transform):
+    def append(self, transform: BoundTransform | Transform | list):
         """Add a transform to the end of the program.
 
         Args:
-            transform (Transform or BoundTransform): A transform represented by its container.
+            transform (Transform, BoundTransform, CompilePipeline, or list): A transform
+                represented by its container, or a list/CompilePipeline of transforms.
 
         """
+        # Handle lists by appending each element
+        if isinstance(transform, (list, tuple)):
+            for t in transform:
+                self.append(t)
+            return
+
+        # Handle CompilePipeline by using __iadd__ which already handles this case
+        if isinstance(transform, CompilePipeline):
+            self += transform
+            return
+
         if not isinstance(transform, BoundTransform):
             transform = BoundTransform(transform)
 
