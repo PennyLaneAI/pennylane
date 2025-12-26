@@ -179,20 +179,25 @@
 
 <h4>Compile Pipeline and Transforms </h4>
 
-* The `TransformProgram` has been renamed to :class:`~.CompilePipeline`, and is now available at the
-  top level as `qml.CompilePipeline`. Uses of the term "transform program" has been updated to 
-  "compile pipeline" across the codebase. The class is still accessible as `TransformProgram` from 
-  `pennylane.transforms.core`, but the module `pennylane.transforms.core.transform_program`
-  has been renamed to `pennylane.transforms.core.compile_pipeline`, and the old name is no longer available.
+* A new :class:`~.CompilePipeline` class (previously known as the `TransformProgram`) is now available
+  at the top level as `qml.CompilePipeline`. Using this class you can now define large and complex
+  compilation pipelines in an intuitive and flexible way. For backward compatibility, the `TransformProgram`
+  class can still be accessed from `pennylane.transforms.core`.
   [(#8735)](https://github.com/PennyLaneAI/pennylane/pull/8735)
 
-* The `TransformDispatcher` has been renamed to :class:`~.transforms.core.Transform` and is now
-  available at the top level as `qml.transform`.
+* For naming consistency, uses of the term "transform program" have been updated to "compile pipeline" across the codebase.
+  Correspondingly, the module `pennylane.transforms.core.transform_program` has been renamed to
+  `pennylane.transforms.core.compile_pipeline`, and the old name is no longer available.
+  [(#8735)](https://github.com/PennyLaneAI/pennylane/pull/8735)
+
+* The ``TransformDispatcher`` class has been renamed to :class:`~.transforms.core.Transform` and is now
+  available at the top level as `qml.transform`. For backward compatibility, `TransformDispatcher`
+  can still be accessed from `pennylane.transforms.core`.
   [(#8756)](https://github.com/PennyLaneAI/pennylane/pull/8756)
 
-* The :class:`~.transforms.core.Transform` (previously known as the `TransformDispatcher`), 
-  :class:`~.transforms.core.BoundTransform` (previously known as the `TransformContainer`), 
-  and :class:`~.CompilePipeline` (previously known as the `TransformProgram`) are updated to
+* The :class:`~.transforms.core.Transform` class (previously known as the `TransformDispatcher`), 
+  :class:`~.transforms.core.BoundTransform` class (previously known as the `TransformContainer`), 
+  and :class:`~.CompilePipeline` class (previously known as the `TransformProgram`) are updated to
   support intuitive composition of transform programs using `+` and `*` operators.
   [(#8703)](https://github.com/PennyLaneAI/pennylane/pull/8703)
   [(#8730)](https://github.com/PennyLaneAI/pennylane/pull/8730)
@@ -239,16 +244,15 @@
   1: ──RX(0.70)─┤ ╰<Z@Z>
   ```
 
-* The :class:`~.CompilePipeline` (previously known as the `TransformProgram`) can now be constructed
-  more flexibility with a variable number of arguments that are of types :class:`~.transforms.core.Transform`,
-  :class:`~.transforms.core.BoundTransform`, or other `CompilePipeline`s.
+* A :class:`~.CompilePipeline` can be initialized by passing any number of transforms or other ``CompilePipeline``s,
+  providing more flexibility than the previous ``TransformProgram`` class.
   [(#8750)](https://github.com/PennyLaneAI/pennylane/pull/8750)
 
-<h3>Improvements 🛠</h3>
-
-* The `ResourcesUndefinedError` has been removed from the `adjoint`, `ctrl`, and `pow` resource
-  decomposition methods of `ResourceOperator` to avoid using errors as control flow.
-  [(#8598)](https://github.com/PennyLaneAI/pennylane/pull/8598)
+  ```python
+  >>> pipeline = qml.CompilePipeline(qml.transforms.commute_controlled, qml.transforms.cancel_inverses)
+  >>> qml.CompilePipeline(pipeline, qml.transforms.merge_rotations)
+  CompilePipeline(commute_controlled, cancel_inverses, merge_rotations)
+  ```
 
 * Quantum compilation passes in MLIR and XDSL can now be applied using the core PennyLane transform
   infrastructure, instead of using Catalyst-specific tools. This is made possible by a new argument in
@@ -257,6 +261,12 @@
   ensures that the given compilation pass will be used when `qjit` is applied to a workflow, where the 
   pass is performed in MLIR or xDSL.
   [(#8539)](https://github.com/PennyLaneAI/pennylane/pull/8539)
+
+<h3>Improvements 🛠</h3>
+
+* The `ResourcesUndefinedError` has been removed from the `adjoint`, `ctrl`, and `pow` resource
+  decomposition methods of `ResourceOperator` to avoid using errors as control flow.
+  [(#8598)](https://github.com/PennyLaneAI/pennylane/pull/8598)
 
 * `@partial` is not needed anymore for using transforms as decorators with arguments.
   Now, the following two usages are equivalent:
@@ -532,12 +542,6 @@
   The old name is still available in the same location.
   [(#8753)](https://github.com/PennyLaneAI/pennylane/pull/8753)
 
-* The `final_transform` property of the :class:`~.transforms.core.BoundTransform` has been renamed 
-  to `is_final_transform` to better follow the naming convention for boolean properties. The `transform` 
-  property of the :class:`~.transforms.core.Transform` and :class:`~.transforms.core.BoundTransform` 
-  has been renamed to `tape_transform` to avoid ambiguity.
-  [(#8756)](https://github.com/PennyLaneAI/pennylane/pull/8756)
-
 * `qml.for_loop` will now fall back to a standard Python `for` loop if capturing a condensed, structured loop fails
   with program capture enabled.
   [(#8615)](https://github.com/PennyLaneAI/pennylane/pull/8615)
@@ -595,6 +599,12 @@
   [(#8738)](https://github.com/PennyLaneAI/pennylane/pull/8738)
 
 <h3>Breaking changes 💔</h3>
+
+* The `final_transform` property of the :class:`~.transforms.core.BoundTransform` has been renamed 
+  to `is_final_transform` to better follow the naming convention for boolean properties. The `transform` 
+  property of the :class:`~.transforms.core.Transform` and :class:`~.transforms.core.BoundTransform` 
+  has been renamed to `tape_transform` to avoid ambiguity.
+  [(#8756)](https://github.com/PennyLaneAI/pennylane/pull/8756)
 
 * Qualtran call graphs built via :func`:~.to_bloq` now return resource counts via PennyLane's resource estimation module
   instead of via PennyLane decompositions. To restore the previous behaviour, set ``call_graph='decomposition'``.
