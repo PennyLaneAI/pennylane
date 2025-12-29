@@ -181,7 +181,6 @@ class IqpBitflipSimulator:
         ops: list,
         n_samples: int,
         key: list,
-        return_samples: bool = False,
         max_batch_ops: int = None,
         max_batch_samples: int = None,
     ) -> list:
@@ -200,8 +199,6 @@ class IqpBitflipSimulator:
             n_samples (int): Number of samples used to calculate the IQP expectation values. Higher values result in
                 higher precision.
             key (Array): Jax key to control the randomness of the process.
-            return_samples (bool): if True, an extended array that contains the values of the estimator for each
-                of the n_samples samples is returned.
             max_batch_ops (int): Maximum number of operators in a batch. Defaults to None, which means taking all ops at once.
                 Can only be used if ops is a jnp.array
             max_batch_samples (int): Maximum number of samples in a batch. Defaults to None, which means taking all n_samples at once.
@@ -212,7 +209,7 @@ class IqpBitflipSimulator:
 
         # do not batch ops if ops is sparse
         if isinstance(ops, csr_matrix):
-            return self.op_expval_batch(params, ops, return_samples)
+            return self.op_expval_batch(params, ops, False)
 
         if max_batch_ops is None:
             max_batch_ops = len(ops)
@@ -239,7 +236,4 @@ class IqpBitflipSimulator:
                 tmp_expvals = jnp.concatenate((tmp_expvals, batch_expval), axis=-1)
             expvals = jnp.concatenate((expvals, tmp_expvals), axis=0)
 
-        if return_samples:
-            return expvals
-        else:
-            return jnp.mean(expvals, axis=-1), jnp.zeros(len(ops))
+        return jnp.mean(expvals, axis=-1), jnp.zeros(len(ops))

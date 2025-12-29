@@ -59,7 +59,18 @@ def local_gates(n_qubits: int, max_weight=2):
             2,
             False,
             False,
+            None,
             10_000,
+            10_000,
+            False,
+        ),
+        (
+            csr_matrix([[0, 1], [1, 0]]),
+            [0.3, 0.2],
+            2,
+            False,
+            True,
+            None,
             10_000,
             10_000,
             False,
@@ -71,19 +82,19 @@ def local_gates(n_qubits: int, max_weight=2):
             False,
             True,
             10_000,
-            10_000,
+            None,
             10_000,
             False,
         ),
         (
-            [[0, 1], [0, 1]],
+            [[1, 0], [1, 0]],
             [0.3, 0.2],
             2,
-            False,
+            True,
             True,
             10_000,
             10_000,
-            10_000,
+            None,
             False,
         ),
     ],
@@ -117,7 +128,6 @@ def test_expval(
         ops=ops,
         n_samples=n_samples,
         key=key,
-        return_samples=False,
         max_batch_samples=max_batch_samples,
         max_batch_ops=max_batch_ops,
     )
@@ -145,7 +155,7 @@ def test_expval(
     if len(ops.shape) == 1:
         ops = ops.reshape(1, -1)
 
-    simulated_exp_val = jnp.array(iqp_circuit(params, gates, spin_sym, n_qubits, ops))
+    simulated_exp_val = jnp.array(iqp_circuit(params, gates, False, n_qubits, ops))
 
     for i, val in enumerate(simulated_exp_val):
         # Due to the distribution, we expect the simulated and the approximated values to be within 2 standard
