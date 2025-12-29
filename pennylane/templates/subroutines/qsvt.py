@@ -40,17 +40,19 @@ from .fable import FABLE
 from .prepselprep import PrepSelPrep
 from .qubitization import Qubitization
 
-is_jax_available = True
-is_optax_available = True
-try:
-    import jax
-except ImportError:  # pragma: no cover
-    is_jax_available = False  # pragma: no cover
 
-try:
-    import optax
-except ImportError:
-    is_otpax_available = False
+def _is_jax_available():
+    """Check if JAX is available using importlib."""
+    import importlib.util  # pylint: disable=import-outside-toplevel
+
+    return importlib.util.find_spec("jax") is not None
+
+
+def _is_optax_available():
+    """Check if optax is available using importlib."""
+    import importlib.util  # pylint: disable=import-outside-toplevel
+
+    return importlib.util.find_spec("optax") is not None
 
 
 def jit_if_jax_available(f, **kwargs):
@@ -58,8 +60,9 @@ def jit_if_jax_available(f, **kwargs):
     that jit the function if jax is available
     otherwise return the input function
     """
+    if _is_jax_available():
+        import jax  # pylint: disable=import-outside-toplevel
 
-    if is_jax_available:
         return jax.jit(f, **kwargs)
     return f
 
@@ -848,6 +851,8 @@ def _cheby_pol(x, degree):
 def _poly_func(coeffs, x):
     r"""\sum c_kT_{k}(x) where T_k(x)=cos(karccos(x))"""
 
+    import jax  # pylint: disable=import-outside-toplevel
+
     return jax.numpy.sum(
         coeffs @ jax.vmap(_cheby_pol, in_axes=(None, 0))(x, np.arange(coeffs.shape[0]))
     )
@@ -913,8 +918,8 @@ def _qsp_iterate_broadcast(phis, x, interface):
     Returns:
         tensor_like: 2x2 block-encoding of polynomial implemented by the angles phi
     """
+    import jax  # pylint: disable=import-outside-toplevel
 
-    # pylint: disable=import-outside-toplevel
     qsp_iterate_list = jax.vmap(_qsp_iterate, in_axes=(0, None, None))(phis[1:], x, interface)
 
     matrix_iterate = reduce(math.dot, qsp_iterate_list)
@@ -952,6 +957,8 @@ def obj_function(phi, x, y):
     Returns:
         float: \frac{\|f_\Phi(x) - y\|^2}{N}
     """
+    import jax  # pylint: disable=import-outside-toplevel
+
     obj_func = jax.vmap(_qsp_iterate_broadcast, in_axes=(None, 0, None))(phi, x, "jax") - y
     obj_func = jax.numpy.dot(obj_func, obj_func)
     return 1 / x.shape[0] * obj_func
@@ -960,6 +967,8 @@ def obj_function(phi, x, y):
 @partial(jit_if_jax_available, static_argnames=["maxiter", "tol"])
 def optax_opt(initial_guess, x, y, maxiter, tol):
     """Dispatch optimization to the L-BFGS of optax"""
+    import jax  # pylint: disable=import-outside-toplevel
+    import optax  # pylint: disable=import-outside-toplevel
 
     opt = optax.lbfgs()
     init_carry = (initial_guess, opt.init(initial_guess))
@@ -988,6 +997,7 @@ def optax_opt(initial_guess, x, y, maxiter, tol):
 
 def _qsp_optimization(degree: int, coeffs_target_func, maxiter=100, tol=1e-30):
     r"""Algorithm 1 in https://arxiv.org/pdf/2002.11649 produces the angle parameters by minimizing the distance between the target and qsp polynomial over the grid"""
+    import jax  # pylint: disable=import-outside-toplevel
 
     jax.config.update("jax_enable_x64", True)
     grid_points = _grid_pts(degree, "jax")
@@ -1005,12 +1015,11 @@ def _qsp_optimization(degree: int, coeffs_target_func, maxiter=100, tol=1e-30):
 def _compute_qsp_angles_iteratively(
     poly,
 ):
-
-    if not is_jax_available:
+    if not _is_jax_available():
         raise ModuleNotFoundError("jax is required!")
-
-    if not is_optax_available:
-        raise ModuleNotFoundError("optax is required!")  # pragma: no cover
+    if not _is_optax_available():
+        raise ModuleNotFoundError("optax is required!")
+    import jax  # pylint: disable=import-outside-toplevel
 
     poly_cheb = chebyshev.poly2cheb(poly)
     degree = len(poly_cheb) - 1
