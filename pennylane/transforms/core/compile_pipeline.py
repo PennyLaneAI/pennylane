@@ -112,19 +112,31 @@ def null_postprocessing(results: ResultBatch) -> ResultBatch:
 
 
 class CompilePipeline:
-    """A series of transforms to be applied to a quantum function or a :class:`~pennylane.QNode`.
+    """A sequence of transforms to be applied to a quantum function or a :class:`~pennylane.QNode`.
 
     Args:
         *transforms (Optional[Sequence[Transform | BoundTransform]]): A sequence of
             transforms with which to initialize the program.
-        cotransform_cache (Optional[CotransformCache]): a named tuple containing the ``qnode``,
+        cotransform_cache (Optional[CotransformCache]): A named tuple containing the ``qnode``,
             ``args``, and ``kwargs`` required to compute classical cotransforms.
 
     **Example:**
 
-    A compilation pipeline or transform program can be specified by passing a set of transforms to the
-    ``CompilePipeline`` class. We can then appliy the created compilation ``pipeline`` directly on a
-    quantum function or a :class:`QNode`: to compile it down to a smaller set of gates:
+    The ``CompilePipeline`` class allows you to chain together multiple quantum function transforms
+    to create custom circuit optimization pipelines.
+
+    For example, consider if you wanted to apply the following optimizations to a quantum circuit:
+
+    - pushing all commuting single-qubit gates as far right as possible
+      (:func:`~pennylane.transforms.commute_controlled`)
+    - cancellation of adjacent inverse gates
+      (:func:`~pennylane.transforms.cancel_inverses`)
+    - merging adjacent rotations of the same type
+      (:func:`~pennylane.transforms.merge_rotations`)
+
+    You can specify a transform program (``pipeline``) by passing these transforms to the ``CompilePipeline``
+    class. By applying the created ``pipeline`` directly on a quantum function as a decorator, the circuit will
+    be transformed with each pass within the pipeline sequentially:
 
     .. code-block:: python
 
@@ -151,22 +163,16 @@ class CompilePipeline:
     0: ──RX(0.30)─┤
     1: ───────────┤  <Z>
 
-    In this example the following transformations were applied sequentially to the quantum circuit:
-
-    - pushing all commuting single-qubit gates as far right as possible
-      (:func:`~pennylane.transforms.commute_controlled`)
-    - cancellation of adjacent inverse gates
-      (:func:`~pennylane.transforms.cancel_inverses`)
-    - merging adjacent rotations of the same type
-      (:func:`~pennylane.transforms.merge_rotations`)
-
-    Alternatively, the transform program can be constructed intuitively by combining multiple transforms:
+    Alternatively, you can create a transform program intuitively by combining multiple transforms using
+    the ``+`` arithmentic operation. Repeatig a given transform several times is also supported through
+    the ``*`` operation:
 
     >>> pipeline = qml.transforms.merge_rotations + 2 * qml.transforms.cancel_inverses
     >>> pipeline
     CompilePipeline(merge_rotations, cancel_inverses, cancel_inverses)
 
-    It can also be easily modified:
+    The compilation pipeline can also be easily modified using operations similar to Python lists, including
+    ``insert``, ``append``, ``extend`` and ``pop``:
 
     >>> pipeline += qml.transforms.commute_controlled
     >>> pipeline
@@ -175,7 +181,7 @@ class CompilePipeline:
     >>> pipeline
     CompilePipeline(remove_barrier, merge_rotations, cancel_inverses, cancel_inverses, commute_controlled)
 
-    Additionally, multiple compile pipelines can be concatenated:
+    Additionally, multiple compilation pipelines can be concatenated:
 
     >>> another_pipeline = qml.transforms.decompose(gate_set={qml.RX, qml.RZ, qml.CNOT}) + qml.transforms.combine_global_phases
     >>> another_pipeline + pipeline
