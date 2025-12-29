@@ -50,7 +50,6 @@ def local_gates(n_qubits: int, max_weight=2):
         "n_samples",
         "max_batch_samples",
         "max_batch_ops",
-        "indep_estimates",
     ),
     [
         (
@@ -62,7 +61,6 @@ def local_gates(n_qubits: int, max_weight=2):
             None,
             10_000,
             10_000,
-            False,
         ),
         (
             csr_matrix([[0, 1], [1, 0]]),
@@ -73,7 +71,6 @@ def local_gates(n_qubits: int, max_weight=2):
             None,
             10_000,
             10_000,
-            False,
         ),
         (
             [1],
@@ -84,7 +81,6 @@ def local_gates(n_qubits: int, max_weight=2):
             10_000,
             None,
             10_000,
-            False,
         ),
         (
             [[1, 0], [1, 0]],
@@ -95,7 +91,6 @@ def local_gates(n_qubits: int, max_weight=2):
             10_000,
             10_000,
             None,
-            False,
         ),
     ],
 )
@@ -109,7 +104,6 @@ def test_expval(
     n_samples,
     max_batch_samples,
     max_batch_ops,
-    indep_estimates,
 ):  # pylint: disable=too-many-arguments
     import jax
     import jax.numpy as jnp
@@ -121,7 +115,9 @@ def test_expval(
     if not isinstance(ops, csr_matrix):
         ops = jnp.array(ops)
 
-    simulator = IqpBitflipSimulator(n_qubits=n_qubits, gates=gates)
+    simulator = IqpBitflipSimulator(
+        n_qubits=n_qubits, gates=gates, spin_sym=spin_sym, sparse=sparse
+    )
 
     exp_val, std = simulator.op_expval(
         params=np.array(params),
@@ -155,10 +151,14 @@ def test_expval(
     if len(ops.shape) == 1:
         ops = ops.reshape(1, -1)
 
-    simulated_exp_val = jnp.array(iqp_circuit(params, gates, False, n_qubits, ops))
+    simulated_exp_val = jnp.array(iqp_circuit(params, gates, spin_sym, n_qubits, ops))
 
     for i, val in enumerate(simulated_exp_val):
         # Due to the distribution, we expect the simulated and the approximated values to be within 2 standard
         # deviations 96% of the time. We can instead check they are withing 3 standard deviations, which should
         # be True 99.8% of the time, minimizing stochastic failures.
-        assert np.isclose(val, exp_val[i], atol=std[i] * 3)
+        assert (
+            np.isclose(val, exp_val[i], atol=std[i] * 3)
+            if std[i] != 0.0
+            else np.isclose(val, exp_val[i], atol=1e-10)
+        )
