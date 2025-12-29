@@ -16,15 +16,12 @@ Contains tests for the `qml.workflow.get_transform_program` getter and `construc
 
 """
 
-from functools import partial
-
 import numpy as np
 import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
-from pennylane.transforms.core.transform_dispatcher import TransformContainer
-from pennylane.transforms.core.transform_program import TransformProgram
+from pennylane.transforms.core import BoundTransform, CompilePipeline
 from pennylane.workflow import construct_batch, get_transform_program
 
 
@@ -33,7 +30,7 @@ class TestMarker:
     def test_level_not_found(self):
         """Test the error message when a requested level is not found."""
 
-        @partial(qml.marker, level="something")
+        @qml.marker(level="something")
         @qml.qnode(qml.device("null.qubit"))
         def c():
             return qml.state()
@@ -50,7 +47,7 @@ class TestMarker:
         """Test that custom levels can be specified and accessed."""
 
         @qml.transforms.merge_rotations
-        @partial(qml.marker, level="my_level")
+        @qml.marker(level="my_level")
         @qml.transforms.cancel_inverses
         @qml.qnode(qml.device("null.qubit"))
         def c():
@@ -86,7 +83,7 @@ class TestMarker:
     def test_execution_with_marker_transform(self):
         """Test that the marker transform does not effect execution results."""
 
-        @partial(qml.marker, level="my_level")
+        @qml.marker(level="my_level")
         @qml.qnode(qml.device("default.qubit"))
         def c(x):
             qml.RX(x, 0)
@@ -106,8 +103,8 @@ class TestMarker:
     def test_uniqueness_checking(self):
         """Test an error is raised if a level is not unique."""
 
-        @partial(qml.marker, level="something")
-        @partial(qml.marker, level="something")
+        @qml.marker(level="something")
+        @qml.marker(level="something")
         @qml.qnode(qml.device("null.qubit"))
         def c():
             return qml.state()
@@ -118,7 +115,7 @@ class TestMarker:
     def test_protected_levels(self):
         """Test an error is raised for using a protected level."""
 
-        @partial(qml.marker, level="gradient")
+        @qml.marker(level="gradient")
         @qml.qnode(qml.device("null.qubit"))
         def c():
             return qml.state()
@@ -127,7 +124,7 @@ class TestMarker:
             construct_batch(c)()
 
 
-class TestTransformProgramGetter:
+class TestCompilePipelineGetter:
     def test_bad_string_key(self):
         """Test a value error is raised if a bad string key is provided."""
 
@@ -153,36 +150,36 @@ class TestTransformProgramGetter:
 
         dev = qml.device("default.qubit", wires=4)
 
-        @partial(qml.transforms.compile, num_passes=2)
-        @partial(qml.transforms.merge_rotations, atol=1e-5)
+        @qml.transforms.compile(num_passes=2)
+        @qml.transforms.merge_rotations(atol=1e-5)
         @qml.transforms.cancel_inverses
         @qml.qnode(dev, diff_method="parameter-shift", gradient_kwargs={"shifts": 2})
         def circuit():
             return qml.expval(qml.PauliZ(0))
 
-        expected_p0 = TransformContainer(qml.transforms.cancel_inverses)
-        expected_p1 = TransformContainer(qml.transforms.merge_rotations, kwargs={"atol": 1e-5})
-        expected_p2 = TransformContainer(qml.transforms.compile, kwargs={"num_passes": 2})
+        expected_p0 = BoundTransform(qml.transforms.cancel_inverses)
+        expected_p1 = BoundTransform(qml.transforms.merge_rotations, kwargs={"atol": 1e-5})
+        expected_p2 = BoundTransform(qml.transforms.compile, kwargs={"num_passes": 2})
 
-        ps_expand_fn = TransformContainer(
+        ps_expand_fn = BoundTransform(
             qml.transform(qml.gradients.param_shift.expand_transform), kwargs={"shifts": 2}
         )
 
         p0 = get_transform_program(circuit, level=0)
-        assert isinstance(p0, TransformProgram)
+        assert isinstance(p0, CompilePipeline)
         assert len(p0) == 0
 
         p0 = get_transform_program(circuit, level="top")
-        assert isinstance(p0, TransformProgram)
+        assert isinstance(p0, CompilePipeline)
         assert len(p0) == 0
 
         p_grad = get_transform_program(circuit, level="gradient")
-        assert isinstance(p_grad, TransformProgram)
+        assert isinstance(p_grad, CompilePipeline)
         assert len(p_grad) == 4
-        assert p_grad == TransformProgram([expected_p0, expected_p1, expected_p2, ps_expand_fn])
+        assert p_grad == CompilePipeline(expected_p0, expected_p1, expected_p2, ps_expand_fn)
 
         p_dev = get_transform_program(circuit, level="device")
-        assert isinstance(p_grad, TransformProgram)
+        assert isinstance(p_grad, CompilePipeline)
         p_default = get_transform_program(circuit)
         assert p_dev == p_default
 
@@ -196,11 +193,12 @@ class TestTransformProgramGetter:
         # slicing
         p_sliced = get_transform_program(circuit, slice(2, 7, 2))
         assert len(p_sliced) == 3
-        assert p_sliced[0].transform == qml.compile.transform
+        assert p_sliced[0].tape_transform == qml.compile.tape_transform
         assert (
-            p_sliced[2].transform == qml.devices.preprocess.device_resolve_dynamic_wires.transform
+            p_sliced[2].tape_transform
+            == qml.devices.preprocess.device_resolve_dynamic_wires.tape_transform
         )
-        assert p_sliced[1].transform == qml.defer_measurements.transform
+        assert p_sliced[1].tape_transform == qml.defer_measurements.tape_transform
 
     def test_diff_method_device_gradient(self):
         """Test that if level="gradient" but the gradient does not have preprocessing, the program is strictly user transforms."""
@@ -236,7 +234,7 @@ class TestTransformProgramGetter:
         config = dev.setup_execution_config(config)
         dev_program = dev.preprocess_transforms(config)
 
-        expected = TransformProgram()
+        expected = CompilePipeline()
         expected.add_transform(qml.transforms.split_non_commuting)
         expected += dev_program
         assert full_prog == expected
@@ -254,16 +252,19 @@ class TestTransformProgramGetter:
 
         program = get_transform_program(circuit)
 
-        m1 = TransformContainer(qml.transforms.merge_rotations)
-        assert program[:1] == TransformProgram([m1])
+        m1 = BoundTransform(qml.transforms.merge_rotations)
+        assert program[:1] == CompilePipeline([m1])
 
-        m2 = TransformContainer(qml.devices.legacy_facade.legacy_device_batch_transform)
-        assert program[1].transform == m2.transform
+        m2 = BoundTransform(qml.devices.legacy_facade.legacy_device_batch_transform)
+        assert program[1].tape_transform == m2.tape_transform
         assert program[1].kwargs["device"] == dev
 
         # a little hard to check the contents of a expand_fn transform
         # this is the best proxy I can find
-        assert program[2].transform == qml.devices.legacy_facade.legacy_device_expand_fn.transform
+        assert (
+            program[2].tape_transform
+            == qml.devices.legacy_facade.legacy_device_expand_fn.tape_transform
+        )
 
     def test_get_transform_program_final_transform(self):
         """Test that gradient preprocessing and device transform occur before a final transform."""
@@ -277,16 +278,16 @@ class TestTransformProgramGetter:
 
         user_program = get_transform_program(circuit, level="user")
         assert len(user_program) == 3
-        assert user_program[0].transform == qml.compile.transform
-        assert user_program[1].transform == qml.metric_tensor.expand_transform
-        assert user_program[2].transform == qml.metric_tensor.transform
+        assert user_program[0].tape_transform == qml.compile.tape_transform
+        assert user_program[1].tape_transform == qml.metric_tensor.expand_transform
+        assert user_program[2].tape_transform == qml.metric_tensor.tape_transform
 
         grad_program = get_transform_program(circuit, level="gradient")
         assert len(grad_program) == 4
-        assert grad_program[0].transform == qml.compile.transform
-        assert grad_program[1].transform == qml.metric_tensor.expand_transform
-        assert grad_program[2].transform == qml.gradients.param_shift.expand_transform
-        assert grad_program[3].transform == qml.metric_tensor.transform
+        assert grad_program[0].tape_transform == qml.compile.tape_transform
+        assert grad_program[1].tape_transform == qml.gradients.param_shift.expand_transform
+        assert grad_program[2].tape_transform == qml.metric_tensor.expand_transform
+        assert grad_program[3].tape_transform == qml.metric_tensor.tape_transform
 
         dev_program = get_transform_program(circuit, level="device")
         config = qml.devices.ExecutionConfig(interface=getattr(circuit, "interface", None))
@@ -294,10 +295,10 @@ class TestTransformProgramGetter:
         assert len(dev_program) == 4 + len(
             circuit.device.preprocess_transforms(config)
         )  # currently 8
-        assert dev_program[-1].transform == qml.metric_tensor.transform
+        assert dev_program[-1].tape_transform == qml.metric_tensor.tape_transform
 
         full_program = get_transform_program(circuit)
-        assert full_program[-1].transform == qml.metric_tensor.transform
+        assert full_program[-1].tape_transform == qml.metric_tensor.tape_transform
 
         assert dev_program == full_program
 
@@ -478,7 +479,7 @@ class TestConstructBatch:
         """Test a user transform that creates multiple tapes."""
 
         @qml.transforms.split_non_commuting
-        @partial(qml.set_shots, shots=10)
+        @qml.set_shots(shots=10)
         @qml.qnode(qml.device("default.qubit"))
         def circuit():
             qml.S(0)
@@ -527,7 +528,7 @@ class TestConstructBatch:
 
         with pytest.warns(UserWarning, match="Detected 'shots' as an argument"):
 
-            @partial(qml.set_shots, shots=100)
+            @qml.set_shots(shots=100)
             @qml.qnode(dev)
             def circuit(shots):
                 for _ in range(shots):

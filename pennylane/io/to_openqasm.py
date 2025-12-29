@@ -51,6 +51,7 @@ OPENQASM_GATES = {
     "Toffoli": "ccx",
     "CSWAP": "cswap",
     "PhaseShift": "u1",
+    "GlobalPhase": "gphase",
 }
 """
 dict[str, str]: Maps PennyLane gate names to equivalent QASM gate names.
@@ -150,6 +151,7 @@ def _tape_openqasm(
 
     [new_tape], _ = decompose(
         just_ops,
+        target_gates=OPENQASM_GATES.keys() | {"MidMeasure"},
         stopping_condition=stopping_condition,
         skip_initial_state_prep=False,
         name="to_openqasm",

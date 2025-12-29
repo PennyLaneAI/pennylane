@@ -196,11 +196,6 @@ def while_loop(cond_fn, allow_array_resizing: Literal["auto", True, False] = "au
 
     """
 
-    if active_jit := active_compiler():
-        compilers = AvailableCompilers.names_entrypoints
-        ops_loader = compilers[active_jit]["ops"].load()
-        return ops_loader.while_loop(cond_fn)
-
     # if there is no active compiler, simply interpret the while loop
     # via the Python interpreter.
     def _decorator(body_fn: Callable) -> Callable:
@@ -257,7 +252,6 @@ def _get_while_loop_qfunc_prim():
 
     @while_loop_prim.def_abstract_eval
     def _abstract_eval(*args, args_slice, **__):
-        # Convert tuple back to slice (tuple is used for JAX 0.7.0 hashability)
         return args[slice(*args_slice)]
 
     return while_loop_prim
@@ -361,6 +355,13 @@ class WhileLoopCallable:  # pylint:disable=too-few-public-methods
         return jax.tree_util.tree_unflatten(out_tree, results)
 
     def __call__(self, *init_state):
+
+        if active_jit := active_compiler():
+            compilers = AvailableCompilers.names_entrypoints
+            ops_loader = compilers[active_jit]["ops"].load()
+            return ops_loader.while_loop(
+                self.cond_fn, allow_array_resizing=self.allow_array_resizing
+            )(self.body_fn)(*init_state)
 
         if enabled():
             return self._call_capture_enabled(*init_state)

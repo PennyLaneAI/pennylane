@@ -34,12 +34,12 @@ def _add_abstract_shapes(f):
     Dynamic shape support currently has a lot of dragons. This function is subject to change
     at any moment. Use duplicate code till reliable abstractions are found.
 
-    >>> jax.config.update("jax_dynamic_shapes", True)
+    >>> jax.config.update("jax_dynamic_shapes", True)  # doctest: +SKIP
     >>> jax.config.update("jax_enable_x64", True)
     >>> @qml.capture.FlatFn
     ... def f(x):
     ...     return x + 1
-    >>> jax.make_jaxpr(f, abstracted_axes={0:"a"})(jnp.zeros(4))
+    >>> jax.make_jaxpr(f, abstracted_axes={0:"a"})(jnp.zeros(4))  # doctest: +SKIP
     { lambda ; a:i64[] b:f64[a]. let
         c:f64[a] = broadcast_in_dim[
           broadcast_dimensions=()
@@ -48,7 +48,7 @@ def _add_abstract_shapes(f):
         ] 1.0:f64[] a
         d:f64[a] = add b c
       in (d,) }
-    >>> jax.make_jaxpr(_add_abstract_shapes(f), abstracted_axes={0:"a"})(jnp.zeros(4))
+    >>> jax.make_jaxpr(_add_abstract_shapes(f), abstracted_axes={0:"a"})(jnp.zeros(4))  # doctest: +SKIP
     { lambda ; a:i64[] b:f64[a]. let
         c:f64[a] = broadcast_in_dim[
           broadcast_dimensions=()
@@ -75,8 +75,12 @@ def _add_abstract_shapes(f):
     return new_f
 
 
+def _is_operator_type(fn):
+    return isinstance(fn, type) and issubclass(fn, Operator)
+
+
 def _no_return(fn):
-    if isinstance(fn, type) and issubclass(fn, Operator):
+    if _is_operator_type(fn) or (isinstance(fn, functools.partial) and _is_operator_type(fn.func)):
 
         def new_fn(*args, **kwargs):
             fn(*args, **kwargs)
@@ -308,17 +312,17 @@ class CondCallable:
             conditions.append(pred)
             if fn is None:
                 fn = _empty_return_fn
-            f = FlatFn(functools.partial(fn, **kwargs))
+            f = fn if isinstance(fn, FlatFn) else FlatFn(fn)
             if jax.config.jax_dynamic_shapes:
                 f = _add_abstract_shapes(f)
-            jaxpr = jax.make_jaxpr(f, abstracted_axes=abstracted_axes)(*args)
+            jaxpr = jax.make_jaxpr(f, abstracted_axes=abstracted_axes)(*args, **kwargs)
             jaxpr_branches.append(jaxpr.jaxpr)
             consts_slices.append(slice(end_const_ind, end_const_ind + len(jaxpr.consts)))
             consts += jaxpr.consts
             end_const_ind += len(jaxpr.consts)
 
         _validate_jaxpr_returns(jaxpr_branches, self.otherwise_fn)
-        flat_args, _ = jax.tree_util.tree_flatten(args)
+        flat_args, _ = jax.tree_util.tree_flatten((args, kwargs))
         results = cond_prim.bind(
             *conditions,
             *consts,

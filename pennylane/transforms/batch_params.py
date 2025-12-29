@@ -155,9 +155,7 @@ def batch_params(
 
     .. code-block:: python
 
-        from functools import partial
-
-        @partial(qml.batch_params, all_operations=True)
+        @qml.batch_params(all_operations=True)
         @qml.qnode(dev)
         def circuit(x, weights):
             qml.RX(x, wires=0)
