@@ -42,7 +42,6 @@ class IqpBitflipSimulator:
         gates: list,
         device: str = "lightning.qubit",
         spin_sym: bool = False,
-        init_gates: list = None,
         sparse: bool = False,
     ):
         """
@@ -54,8 +53,6 @@ class IqpBitflipSimulator:
             device (str, optional): Pennylane device used for calculating probabilities and sampling.
             spin_sym (bool, optional): If True, the circuit is equivalent to one where the initial state
                 1/sqrt(2)(|00...0> + |11...1>) is used in place of |00...0>.
-            init_gates (list[list[list[int]]], optional): A specification of gates of the same form as the gates argument. The
-                parameters of these gates will be defined by init_coefs later on.
             sparse (bool, optional): If True, generators and ops are always stored in sparse matrix format, leading
                 to better memory efficiency and potentially faster runtime.
 
@@ -71,7 +68,6 @@ class IqpBitflipSimulator:
         self.gates = gates
         self.n_gates = len(gates)
         self.sparse = sparse
-        self.init_gates = init_gates
         self.device = device
         self.spin_sym = spin_sym
 
@@ -79,15 +75,9 @@ class IqpBitflipSimulator:
         self.generators_sp = None
 
         len_gen_init = 0
-        if self.init_gates is not None:
-            len_gen_init = sum(1 for gate in self.init_gates for _ in gate)
 
         len_gen = sum(1 for gate in gates for _ in gate) + len_gen_init
-        self.par_transform = (
-            False
-            if max([len(gate) for gate in self.gates]) == 1 and self.init_gates is None
-            else True
-        )
+        self.par_transform = False if max([len(gate) for gate in self.gates]) == 1 else True
 
         if sparse:
             generators_dok = dok_matrix((len_gen, n_qubits), dtype="float64")
@@ -97,13 +87,6 @@ class IqpBitflipSimulator:
                     for j in gen:
                         generators_dok[i, j] = 1
                     i += 1
-
-            if self.init_gates is not None:
-                for gate in self.init_gates:
-                    for gen in gate:
-                        for j in gen:
-                            generators_dok[i, j] = 1
-                        i += 1
 
             # convert to csr format
             self.generators_sp = generators_dok.tocsr()
@@ -119,14 +102,6 @@ class IqpBitflipSimulator:
                 for gen in gens:
                     self.generators.append(gen)
 
-            if self.init_gates is not None:
-                self.init_gates_as_arrays = gate_lists_to_arrays(self.init_gates, n_qubits)
-
-                # could this be more efficient? we are potentially storing the same generators more than once
-                for gens in self.init_gates_as_arrays:
-                    for gen in gens:
-                        self.generators.append(gen)
-
             self.generators = jnp.array(self.generators)
 
         if self.par_transform:
@@ -140,21 +115,10 @@ class IqpBitflipSimulator:
                     i += 1
             self.trans_par = jnp.array(self.trans_par)
 
-        if self.init_gates is not None:
-            # Matrix that transforms the static parameters (initial coefficients) into a vector of size generators so it can be summed with the variational parameters
-            self.trans_coef = np.zeros((len_gen, len(self.init_gates)))
-            i = len(self.generators) - len_gen_init
-            for j, gens in enumerate(self.init_gates):
-                for gen in gens:
-                    self.trans_coef[i, j] = 1
-                    i += 1
-            self.trans_coef = jnp.array(self.trans_coef)
-
     def op_expval_batch(
         self,
         params: jnp.ndarray,
         ops: jnp.ndarray,
-        init_coefs: list = None,
         return_samples: bool = False,
     ) -> list:
         """Estimate the expectation values of a batch of Pauli-Z type operators. A set of l operators must be specified
@@ -167,8 +131,6 @@ class IqpBitflipSimulator:
         Args:
             params (jnp.ndarray): The parameters of the IQP gates.
             ops (jnp.ndarray): Operator/s for those we want to know the expected value.
-            init_coefs (list[float], optional): List or array of length len(init_gates) that specifies the fixed parameter
-                values of init_gates.
             return_samples (bool): if True, an extended array that contains the values of the estimator for each
                 of the n_samples samples is returned.
 
@@ -177,11 +139,6 @@ class IqpBitflipSimulator:
         """
 
         effective_params = self.trans_par @ params if self.par_transform else params
-        effective_params = (
-            effective_params + self.trans_coef @ init_coefs
-            if self.init_gates is not None
-            else effective_params
-        )
 
         if self.sparse or isinstance(ops, csr_matrix):
 
@@ -196,8 +153,6 @@ class IqpBitflipSimulator:
 
             if self.spin_sym:
                 ops_sum = np.squeeze(np.asarray(ops.sum(axis=-1)))
-
-            del ops
 
             ops_gen.data %= 2
             ops_gen = ops_gen.toarray()
@@ -227,7 +182,6 @@ class IqpBitflipSimulator:
         ops: jnp.ndarray,
         n_samples: int,
         key: Array,
-        init_coefs: list = None,
         return_samples: bool = False,
         max_batch_ops: int = None,
         max_batch_samples: int = None,
@@ -247,8 +201,6 @@ class IqpBitflipSimulator:
             n_samples (int): Number of samples used to calculate the IQP expectation values. Higher values result in
                 higher precision.
             key (Array): Jax key to control the randomness of the process.
-            init_coefs (list[float], optional): List or array of length len(init_gates) that specifies the fixed parameter
-                values of init_gates.
             return_samples (bool): if True, an extended array that contains the values of the estimator for each
                 of the n_samples samples is returned.
             max_batch_ops (int): Maximum number of operators in a batch. Defaults to None, which means taking all ops at once.
@@ -261,7 +213,7 @@ class IqpBitflipSimulator:
 
         # do not batch ops if ops is sparse
         if isinstance(ops, csr_matrix):
-            return self.op_expval_batch(params, ops, init_coefs, return_samples)
+            return self.op_expval_batch(params, ops, return_samples)
 
         if max_batch_ops is None:
             max_batch_ops = len(ops)
@@ -276,8 +228,6 @@ class IqpBitflipSimulator:
 
         expvals = jnp.empty((0, 1))
 
-        init_coefs = jnp.array(init_coefs) if init_coefs is not None else None
-
         for batch_ops in jnp.array_split(ops, np.ceil(ops.shape[0] / max_batch_ops)):
             tmp_expvals = jnp.empty((len(batch_ops), 0))
             for i in range(np.ceil(n_samples / max_batch_samples).astype(jnp.int64)):
@@ -285,7 +235,6 @@ class IqpBitflipSimulator:
                 batch_expval = self.op_expval_batch(
                     params,
                     batch_ops,
-                    init_coefs,
                     return_samples=True,
                 )
                 tmp_expvals = jnp.concatenate((tmp_expvals, batch_expval), axis=-1)
