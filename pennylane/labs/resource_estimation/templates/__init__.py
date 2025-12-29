@@ -19,7 +19,6 @@ from .subroutines import (
     ResourceOutMultiplier,
     ResourceSemiAdder,
     ResourceQFT,
-    ResourceBBQRAM,
     ResourceAQFT,
     ResourceBasisRotation,
     ResourceSelect,

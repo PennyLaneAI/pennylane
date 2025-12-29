@@ -785,45 +785,6 @@ class TestResourceIterativeQPE:
         assert op.resource_decomp(**op.resource_params) == expected_res
 
 
-class TestResourceBBQRAM:
-    """Test the ResourceBBQRAM class."""
-
-    @pytest.mark.parametrize(("num_wires", "bitstrings"), [(15, ["000", "010", "101", "111"])])
-    def test_resource_params(self, num_wires, bitstrings):
-        """Test that the resource params are correct."""
-        op = plre.ResourceBBQRAM(bitstrings, num_wires)
-        assert op.resource_params == {"bitstrings": bitstrings, "num_wires": num_wires}
-
-    @pytest.mark.parametrize(("num_wires", "bitstrings"), [(15, ["000", "010", "101", "111"])])
-    def test_resource_rep(self, num_wires, bitstrings):
-        """Test that the compressed representation is correct."""
-        expected = plre.CompressedResourceOp(
-            plre.ResourceBBQRAM, num_wires, {"bitstrings": bitstrings, "num_wires": num_wires}
-        )
-        assert (
-            plre.ResourceBBQRAM.resource_rep(bitstrings=bitstrings, num_wires=num_wires) == expected
-        )
-
-    @pytest.mark.parametrize(
-        "bitstrings, num_wires, expected_res",
-        (
-            (
-                ["000", "010", "101", "111"],
-                15,
-                [
-                    GateCount(resource_rep(plre.ResourceSWAP), 16),
-                    GateCount(resource_rep(plre.ResourceHadamard), 6),
-                    GateCount(resource_rep(plre.ResourceCSWAP), 40),
-                    GateCount(resource_rep(plre.ResourceZ), 6),
-                ],
-            ),
-        ),
-    )
-    def test_resources(self, bitstrings, num_wires, expected_res):
-        """Test that the resources are correct."""
-        assert plre.ResourceBBQRAM.resource_decomp(bitstrings, num_wires) == expected_res
-
-
 class TestResourceQFT:
     """Test the ResourceQFT class."""
 

@@ -123,7 +123,6 @@ Templates:
     ~ResourceIterativeQPE
     ~ResourceControlledSequence
     ~ResourceQFT
-    ~ResourceBBQRAM
     ~ResourceAQFT
     ~ResourceBasisRotation
     ~ResourceSelect
@@ -229,7 +228,6 @@ from .templates import (
     ResourceOutMultiplier,
     ResourceSemiAdder,
     ResourceQFT,
-    ResourceBBQRAM,
     ResourceAQFT,
     ResourceBasisRotation,
     ResourceSelect,

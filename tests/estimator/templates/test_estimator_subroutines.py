@@ -150,6 +150,43 @@ class TestIQP:
         assert qre.IQP.tracking_name(num_wires, pattern, spin_sym) == expected
 
 
+class TestBBQRAM:
+    """Test the BBQRAM class."""
+
+    @pytest.mark.parametrize(("num_wires", "bitstrings"), [(15, ["000", "010", "101", "111"])])
+    def test_resource_params(self, num_wires, bitstrings):
+        """Test that the resource params are correct."""
+        op = qre.BBQRAM(bitstrings, num_wires)
+        assert op.resource_params == {"bitstrings": bitstrings, "num_wires": num_wires}
+
+    @pytest.mark.parametrize(("num_wires", "bitstrings"), [(15, ["000", "010", "101", "111"])])
+    def test_resource_rep(self, num_wires, bitstrings):
+        """Test that the compressed representation is correct."""
+        expected = qre.CompressedResourceOp(
+            qre.BBQRAM, num_wires, {"bitstrings": bitstrings, "num_wires": num_wires}
+        )
+        assert qre.BBQRAM.resource_rep(bitstrings=bitstrings, num_wires=num_wires) == expected
+
+    @pytest.mark.parametrize(
+        "bitstrings, num_wires, expected_res",
+        (
+            (
+                ["000", "010", "101", "111"],
+                15,
+                [
+                    GateCount(resource_rep(qre.SWAP), 16),
+                    GateCount(resource_rep(qre.Hadamard), 6),
+                    GateCount(resource_rep(qre.CSWAP), 40),
+                    GateCount(resource_rep(qre.Z), 6),
+                ],
+            ),
+        ),
+    )
+    def test_resources(self, bitstrings, num_wires, expected_res):
+        """Test that the resources are correct."""
+        assert qre.BBQRAM.resource_decomp(bitstrings, num_wires) == expected_res
+
+
 class TestResourcePhaseGradient:
     """Test the PhaseGradient class."""
 
