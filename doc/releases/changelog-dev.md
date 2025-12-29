@@ -82,6 +82,10 @@
 
 <h4>Instantaneous Quantum Polynomial Circuits </h4>
 
+* A classical bitflip circuit based expectation value estimator has been added, which should help to validate
+  whether a quantum `~.IQP` circuit is useful.
+  [(#8822)](https://github.com/PennyLaneAI/pennylane/pull/8822)
+
 * A new template for building an Instantaneous Quantum Polynomial (`~.IQP`) circuit has been added along with a 
   lightweight version (based on the :class:`~.estimator.resource_operator.ResourceOperator` class) to rapidly 
   estimate its resources. This unlocks easily estimating the resources of the IQP circuit introduced in the 
