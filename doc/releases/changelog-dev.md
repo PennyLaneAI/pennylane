@@ -396,6 +396,8 @@
   using :class:`~.SelectPauliRot` operations.
   [(#8581)](https://github.com/PennyLaneAI/pennylane/pull/8581)
 
+  Using :class:`~.MultiplexerStatePreparation` is analogous to using other state preparation techniques in PennyLane.
+
   ```python
   probs_vector = np.array([0.5, 0., 0.25, 0.25])
 
@@ -412,6 +414,8 @@
   >>> np.round(circuit(), 2)
   array([0.5 , 0.  , 0.25, 0.25])
   ```
+
+For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208112).
 
 <h3>Improvements 🛠</h3>
 
