@@ -244,6 +244,10 @@
   :class:`~.transforms.core.BoundTransform`, or other `CompilePipeline`s.
   [(#8750)](https://github.com/PennyLaneAI/pennylane/pull/8750)
 
+* Added an ``extend`` method to :class:`~.transforms.core.CompilePipeline` for appending multiple 
+  transforms from an iterable or another ``CompilePipeline``.
+  [(#8820)](https://github.com/PennyLaneAI/pennylane/pull/8820)
+
 <h3>Improvements 🛠</h3>
 
 * The `ResourcesUndefinedError` has been removed from the `adjoint`, `ctrl`, and `pow` resource
