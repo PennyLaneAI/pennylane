@@ -381,25 +381,13 @@ class CompilePipeline:
                     i -= 1
             i -= 1
 
-    def append(self, transform: BoundTransform | Transform | list):
+    def append(self, transform: BoundTransform | Transform):
         """Add a transform to the end of the program.
 
         Args:
-            transform (Transform, BoundTransform, CompilePipeline, or list): A transform
-                represented by its container, or a list/CompilePipeline of transforms.
+            transform (Transform or BoundTransform): A transform represented by its container.
 
         """
-        # Handle lists by appending each element
-        if isinstance(transform, (list, tuple)):
-            for t in transform:
-                self.append(t)
-            return
-
-        # Handle CompilePipeline by using __iadd__ which already handles this case
-        if isinstance(transform, CompilePipeline):
-            self += transform
-            return
-
         if not isinstance(transform, BoundTransform):
             transform = BoundTransform(transform)
 
@@ -411,6 +399,23 @@ class CompilePipeline:
             if expand_transform := transform.expand_transform:
                 self._compile_pipeline.append(expand_transform)
             self._compile_pipeline.append(transform)
+
+    def extend(self, transforms: CompilePipeline | Sequence[BoundTransform | Transform]):
+        """Extend the pipeline by appending transforms from an iterable.
+
+        Args:
+            transforms (CompilePipeline, or Sequence[BoundTransform | Transform]): A
+                CompilePipeline or an iterable of transforms to append.
+
+        """
+        # Handle CompilePipeline by using __iadd__ which already handles this case
+        if isinstance(transforms, CompilePipeline):
+            self += transforms
+            return
+
+        # Handle iterables (list, tuple, etc.)
+        for t in transforms:
+            self.append(t)
 
     def add_transform(self, transform: Transform, *targs, **tkwargs):
         """Add a transform to the end of the program.
@@ -638,8 +643,10 @@ def _exclude_terminal_transform(transforms: list[BoundTransform]):
         terminal_transforms.append(transforms.pop())
         if transforms and terminal_transforms[0].expand_transform == transforms[-1]:
             terminal_transforms.insert(0, transforms.pop())
-    yield
-    transforms.extend(terminal_transforms)
+    try:
+        yield
+    finally:
+        transforms.extend(terminal_transforms)
 
 
 TransformProgram = CompilePipeline
