@@ -390,6 +390,33 @@
   0: ──RX(6.68)─┤  State
   ```
 
+<h4> New templates </h4>
+
+* A new template :class:`~.MultiplexerStatePreparation` has been added. This template allows preparing arbitrary states
+  using :class:`~.SelectPauliRot` operations.
+  [(#8581)](https://github.com/PennyLaneAI/pennylane/pull/8581)
+
+  Using :class:`~.MultiplexerStatePreparation` is analogous to using other state preparation techniques in PennyLane.
+
+  ```python
+  probs_vector = np.array([0.5, 0., 0.25, 0.25])
+
+  dev = qml.device("default.qubit", wires = 2)
+  wires = [0, 1]
+
+  @qml.qnode(dev)
+  def circuit():
+    qml.MultiplexerStatePreparation(np.sqrt(probs_vector), wires)
+    return qml.probs(wires)
+  ```
+  
+  ```pycon
+  >>> np.round(circuit(), 2)
+  array([0.5 , 0.  , 0.25, 0.25])
+  ```
+
+For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208112).
+
 <h3>Improvements 🛠</h3>
 
 * When program capture is enabled, `qml.adjoint` and `qml.ctrl` can now be called on
