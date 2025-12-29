@@ -105,15 +105,6 @@ These transforms accept quantum circuits and decomposes them to the Clifford+T b
     ~clifford_t_decomposition
     ~gridsynth
     ~transforms.reduce_t_depth
-
-Transforms for PPR/PPM compilation
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-These transforms perform PPM/PPR compilation passes.
-
-.. autosummary::
-    :toctree: api
-
     ~transforms.to_ppr
     ~transforms.commute_ppr
     ~transforms.ppr_to_ppm
@@ -123,7 +114,7 @@ These transforms perform PPM/PPR compilation passes.
 Other transforms
 ~~~~~~~~~~~~~~~~
 
-These are some additional transforms that are useful for multiple purposes such as
+These are additional transforms that are useful for multiple purposes such as
 circuit preprocessing, getting information from a circuit, and more.
 
 .. autosummary::
@@ -179,7 +170,18 @@ that compute the desired quantity.
     ~draw
     ~draw_mpl
 
-Transforms developer functions
+Custom transforms
+-----------------
+
+qml.transform can be used to define custom transformations that work with PennyLane QNodes and quantum
+functions; such transformations can map a circuit to one or many new circuits alongside associated classical post-processing.
+
+.. autosummary::
+    :toctree: api
+
+    ~transform
+
+Transforms developer classes
 ------------------------------
 
 .. currentmodule:: pennylane
@@ -191,18 +193,6 @@ Transforms developer functions
     ~transforms.core.Transform
 
 .. _transforms:
-
-Custom transforms
------------------
-
-The :func:`qml.transform <pennylane.transform>` decorator can be used to generalize
-transform functions that work on :class:`~pennylane.tape.QuantumScript` to also work
-with ``QNode`` and quantum functions.
-
-.. autosummary::
-    :toctree: api
-
-    ~transform
 
 Transforming circuits
 ---------------------
@@ -220,72 +210,23 @@ rule or computing the expectation value of a Hamiltonian term-by-term).
     For examples of built-in transforms that come with PennyLane, see the
     :doc:`/introduction/compiling_circuits` documentation.
 
-Creating your own transform
----------------------------
-
-To streamline the creation of transforms and ensure their versatility across various
-circuit abstractions in PennyLane, the :func:`pennylane.transform` is available.
-
-This decorator registers transforms that accept a :class:`~.QuantumScript` as its
-primary input and returns a sequence of :class:`~.QuantumScript` and an associated
-processing function.
-
-To illustrate the process of creating a quantum transform, let's consider an example.
-Suppose we want a transform that removes all :class:`~.RX` operations from a given
-circuit. In this case, we merely need to filter the original :class:`~.QuantumScript`
-and return a new one without the filtered operations. As we don't require a specific
-processing function in this scenario, we include a function that simply returns the
-first and only result.
+Transforms can be applied on ``QNodes`` using the decorator syntax:
 
 .. code-block:: python
 
-    from pennylane.tape import QuantumScript, QuantumScriptBatch
-    from pennylane.typing import PostprocessingFn
+    dev = qml.device("default.qubit", wires=2)
 
-    @qml.transform
-    def remove_rx(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
-
-        operations = filter(lambda op: op.name != "RX", tape.operations)
-        new_tape = tape.copy(operations=operations)
-
-        def null_postprocessing(results):
-            return results[0]
-
-        return [new_tape], null_postprocessing
-
-The ``@qml.transform`` decorator makes it applicable to a :class:`~.QNode`:
-
-.. code-block:: python
-
-    @remove_rx
-    @qml.qnode(qml.device("default.qubit"))
-    def circuit():
-        qml.RX(0.5, wires=0)
-        qml.RY(0.5, wires=1)
-        qml.CNOT([0, 1])
-        return qml.expval(qml.Z(0))
-
-For a more advanced example, let's consider a transform that sums a circuit with its
-adjoint. We define the adjoint of the tape operations, create a new tape with these
-new operations, and return both tapes. The processing function then sums the results
-of the original and the adjoint tape. In this example, we use ``qml.transform`` in
-the form of a decorator in order to turn the custom function into a quantum transform.
-
-.. code-block:: python
-
-    from pennylane.tape import QuantumScript, QuantumScriptBatch
-    from pennylane.typing import PostprocessingFn
-
-    @qml.transform
-    def sum_circuit_and_adjoint(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
-
-        operations = [qml.adjoint(op) for op in tape.operation]
-        new_tape = tape.copy(operations=operations)
-
-        def sum_postprocessing(results):
-            return qml.sum(results)
-
-        return [tape, new_tape], sum_postprocessing
+    @qml.transforms.split_non_commuting
+    @qml.qnode(dev)
+    def circuit(params):
+        qml.RX(params[0], wires=0)
+        qml.RZ(params[1], wires=1)
+        return [
+            qml.expval(qml.X(0)),
+            qml.expval(qml.Y(1)),
+            qml.expval(qml.Z(0) @ qml.Z(1)),
+            qml.expval(qml.X(0) @ qml.Z(1) + 0.5 * qml.Y(1) + qml.Z(0)),
+        ]
 
 Passing arguments to transforms
 -------------------------------
@@ -361,6 +302,73 @@ circuit with each pass within the pipeline sequentially.
         qml.RX(x, wires=0)
         qml.RX(y, wires=0)
         return qml.expval(qml.Z(0))
+
+Creating your own transform
+---------------------------
+
+To streamline the creation of transforms and ensure their versatility across various
+circuit abstractions in PennyLane, the :func:`pennylane.transform` is available.
+
+This decorator registers transforms that accept a :class:`~.QuantumScript` as its
+primary input and returns a sequence of :class:`~.QuantumScript` and an associated
+processing function.
+
+To illustrate the process of creating a quantum transform, let's consider an example.
+Suppose we want a transform that removes all :class:`~.RX` operations from a given
+circuit. In this case, we merely need to filter the original :class:`~.QuantumScript`
+and return a new one without the filtered operations. As we don't require a specific
+processing function in this scenario, we include a function that simply returns the
+first and only result.
+
+.. code-block:: python
+
+    from pennylane.tape import QuantumScript, QuantumScriptBatch
+    from pennylane.typing import PostprocessingFn
+
+    @qml.transform
+    def remove_rx(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
+
+        operations = filter(lambda op: op.name != "RX", tape.operations)
+        new_tape = tape.copy(operations=operations)
+
+        def null_postprocessing(results):
+            return results[0]
+
+        return [new_tape], null_postprocessing
+
+The ``@qml.transform`` decorator makes it applicable to a :class:`~.QNode`:
+
+.. code-block:: python
+
+    @remove_rx
+    @qml.qnode(qml.device("default.qubit"))
+    def circuit():
+        qml.RX(0.5, wires=0)
+        qml.RY(0.5, wires=1)
+        qml.CNOT([0, 1])
+        return qml.expval(qml.Z(0))
+
+For a more advanced example, let's consider a transform that sums a circuit with its
+adjoint. We define the adjoint of the tape operations, create a new tape with these
+new operations, and return both tapes. The processing function then sums the results
+of the original and the adjoint tape. In this example, we use ``qml.transform`` in
+the form of a decorator in order to turn the custom function into a quantum transform.
+
+.. code-block:: python
+
+    from pennylane.tape import QuantumScript, QuantumScriptBatch
+    from pennylane.typing import PostprocessingFn
+
+    @qml.transform
+    def sum_circuit_and_adjoint(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
+
+        operations = [qml.adjoint(op) for op in tape.operation]
+        new_tape = tape.copy(operations=operations)
+
+        def sum_postprocessing(results):
+            return qml.sum(results)
+
+        return [tape, new_tape], sum_postprocessing
 
 Additional information
 ----------------------
