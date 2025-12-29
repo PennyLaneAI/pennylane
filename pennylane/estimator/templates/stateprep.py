@@ -470,17 +470,17 @@ class QROMStatePreparation(ResourceOperator):
     >>> print(qre.estimate(qrom_prep))
     --- Resources: ---
      Total wires: 28
-        algorithmic wires: 5
-        allocated wires: 23
-             zero state: 23
-             any state: 0
-     Total gates : 2.756E+3
-      'Toffoli': 236,
-      'CNOT': 1.522E+3,
-      'X': 230,
-      'Z': 12,
-      'S': 24,
-      'Hadamard': 732
+       algorithmic wires: 5
+       allocated wires: 23
+         zero state: 23
+         any state: 0
+     Total gates : 2.505E+3
+       'Toffoli': 236,
+       'CNOT': 1.181E+3,
+       'X': 236,
+       'Z': 12,
+       'S': 24,
+       'Hadamard': 816
 
     .. details::
         :title: Usage Details
@@ -924,16 +924,16 @@ class PrepTHC(ResourceOperator):
     >>> res = qre.estimate(qre.PrepTHC(thc_ham, coeff_precision=15))
     >>> print(res)
     --- Resources: ---
-     Total wires: 187
-        algorithmic wires: 72
-        allocated wires: 115
-             zero state: 28
-             any state: 87
-     Total gates : 1.485E+4
-      'Toffoli': 467,
-      'CNOT': 1.307E+4,
-      'X': 512,
-      'Hadamard': 797
+     Total wires: 166
+       algorithmic wires: 72
+       allocated wires: 94
+         zero state: 94
+         any state: 0
+     Total gates : 1.494E+4
+       'Toffoli': 467,
+       'CNOT': 1.307E+4,
+       'X': 599,
+       'Hadamard': 797
 
     """
 

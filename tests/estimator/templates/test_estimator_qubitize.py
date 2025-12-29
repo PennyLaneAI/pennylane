@@ -50,19 +50,23 @@ class TestQubitizeTHC:
     def test_resource_params(self, thc_ham, prep_op, select_op):
         """Test that the resource params for QubitizeTHC are correct."""
         op = qre.QubitizeTHC(thc_ham, prep_op=prep_op, select_op=select_op)
+        coeff_precision = prep_op.coeff_precision if prep_op else 15
+        rotation_precision = select_op.rotation_precision if select_op else 15
 
-        if prep_op is not None:
-            prep_op = prep_op.resource_rep_from_op()
+        if prep_op is None:
+            prep_op = qre.PrepTHC(thc_ham, coeff_precision=coeff_precision)
+        prep_op = prep_op.resource_rep_from_op()
 
-        if select_op is not None:
-            select_op = select_op.resource_rep_from_op()
+        if select_op is None:
+            select_op = qre.SelectTHC(thc_ham, rotation_precision=rotation_precision)
+        select_op = select_op.resource_rep_from_op()
 
         assert op.resource_params == {
             "thc_ham": thc_ham,
             "prep_op": prep_op,
             "select_op": select_op,
-            "coeff_precision": prep_op.params["coeff_precision"] if prep_op else 15,
-            "rotation_precision": select_op.params["rotation_precision"] if select_op else 15,
+            "coeff_precision": coeff_precision,
+            "rotation_precision": rotation_precision,
         }
 
         assert len(qre.QubitizeTHC.resource_keys) == len(op.resource_params)
@@ -134,19 +138,19 @@ class TestQubitizeTHC:
                 qre.THCHamiltonian(58, 160),
                 qre.PrepTHC(qre.THCHamiltonian(58, 160), coeff_precision=13),
                 qre.SelectTHC(qre.THCHamiltonian(58, 160), rotation_precision=13),
-                {"algo_wires": 183, "auxiliary_wires": 752, "toffoli_gates": 8989},
+                {"algo_wires": 183, "auxiliary_wires": 752, "toffoli_gates": 8539},
             ),
             (
                 qre.THCHamiltonian(10, 50),
                 None,
                 None,
-                {"algo_wires": 78, "auxiliary_wires": 148, "toffoli_gates": 2349},
+                {"algo_wires": 78, "auxiliary_wires": 148, "toffoli_gates": 2265},
             ),
             (
                 qre.THCHamiltonian(4, 20),
                 qre.PrepTHC(qre.THCHamiltonian(4, 20), select_swap_depth=2),
                 None,
-                {"algo_wires": 59, "auxiliary_wires": 58, "toffoli_gates": 967},
+                {"algo_wires": 59, "auxiliary_wires": 58, "toffoli_gates": 941},
             ),
         ),
     )
@@ -178,7 +182,7 @@ class TestQubitizeTHC:
                 qre.SelectTHC(qre.THCHamiltonian(58, 160), rotation_precision=13),
                 1,
                 1,
-                {"algo_wires": 184, "auxiliary_wires": 752, "toffoli_gates": 8990},
+                {"algo_wires": 184, "auxiliary_wires": 752, "toffoli_gates": 8540},
             ),
             (
                 qre.THCHamiltonian(10, 50),
@@ -186,7 +190,7 @@ class TestQubitizeTHC:
                 None,
                 2,
                 0,
-                {"algo_wires": 80, "auxiliary_wires": 149, "toffoli_gates": 2352},
+                {"algo_wires": 80, "auxiliary_wires": 149, "toffoli_gates": 2268},
             ),
             (
                 qre.THCHamiltonian(4, 20),
@@ -194,7 +198,7 @@ class TestQubitizeTHC:
                 None,
                 3,
                 2,
-                {"algo_wires": 62, "auxiliary_wires": 59, "toffoli_gates": 972},
+                {"algo_wires": 62, "auxiliary_wires": 59, "toffoli_gates": 946},
             ),
         ),
     )
