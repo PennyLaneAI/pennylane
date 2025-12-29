@@ -153,10 +153,21 @@ class TestIQP:
 class TestBBQRAM:
     """Test the BBQRAM class."""
 
-    @pytest.mark.parametrize(("num_wires", "bitstrings"), [(15, ["000", "010", "101", "111"])])
-    def test_resource_params(self, num_wires, bitstrings):
+    @pytest.mark.parametrize(
+        ("num_wires", "bitstrings", "control_wires", "target_wires", "work_wires"),
+        [
+            (
+                15,
+                ["000", "010", "101", "111"],
+                (0, 1),
+                (2, 3, 4),
+                (5, 6, 7, 8, 9, 10, 11, 12, 13, 14),
+            )
+        ],
+    )
+    def test_resource_params(self, num_wires, bitstrings, control_wires, target_wires, work_wires):
         """Test that the resource params are correct."""
-        op = qre.BBQRAM(bitstrings, num_wires)
+        op = qre.BBQRAM(bitstrings, num_wires, control_wires, target_wires, work_wires)
         assert op.resource_params == {"bitstrings": bitstrings, "num_wires": num_wires}
 
     @pytest.mark.parametrize(("num_wires", "bitstrings"), [(15, ["000", "010", "101", "111"])])
