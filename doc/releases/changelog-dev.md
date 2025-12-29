@@ -396,6 +396,22 @@
   using :class:`~.SelectPauliRot` operations.
   [(#8581)](https://github.com/PennyLaneAI/pennylane/pull/8581)
 
+  ```python
+  probs_vector = np.array([0.5, 0., 0.25, 0.25])
+
+  dev = qml.device("default.qubit", wires = 2)
+  wires = [0, 1]
+
+  @qml.qnode(dev)
+  def circuit():
+    qml.MultiplexerStatePreparation(np.sqrt(probs_vector), wires)
+    return qml.probs(wires)
+  ```
+  
+  ```pycon
+  >>> np.round(circuit(), 2)
+  array([0.5 , 0.  , 0.25, 0.25])
+  ```
 
 <h3>Improvements 🛠</h3>
 
