@@ -71,8 +71,7 @@ def _map_to_resource_op(op: Operation) -> ResourceOperator:
         if len(decomp) == 1:
             return _map_to_resource_op(decomp[0])
 
-        decomp_wires = Wires.all_wires([d_op.wires for d_op in decomp])
-        return re_ops.Prod(tuple(_map_to_resource_op(d_op) for d_op in decomp), wires=decomp_wires)
+        return re_ops.Prod(tuple(_map_to_resource_op(d_op) for d_op in decomp), wires=op.wires)
 
     raise NotImplementedError(
         "Operation doesn't have a resource equivalent and doesn't define a decomposition."
@@ -388,6 +387,18 @@ def _(op: qops.IntegerComparator):
         register_size=len(op.wires) - 1,
         geq=op.hyperparameters["geq"],
         wires=op.wires,
+    )
+
+
+@_map_to_resource_op.register
+def _(op: qtemps.Reflection):
+    base = op.hyperparameters["base"]
+    ref_wires = op.hyperparameters["reflection_wires"]
+    return re_temps.Reflection(
+        num_wires=len(ref_wires),
+        U=_map_to_resource_op(base),
+        alpha=op.alpha,
+        wires=ref_wires,
     )
 
 

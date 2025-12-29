@@ -124,7 +124,7 @@ class TestResolveDiffMethod:
         assert resolved_config == initial_config
 
     def test_transform_dispatcher_as_diff_method(self):
-        """Test when diff_method is of type TransformDispatcher"""
+        """Test when diff_method is of type Transform"""
         dev = qml.device("default.mixed", wires=1)
         initial_config = ExecutionConfig(gradient_method=qml.gradients.param_shift)
         resolved_config = _resolve_diff_method(initial_config, dev)
