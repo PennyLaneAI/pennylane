@@ -1,3 +1,21 @@
+# Copyright 2025 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""
+This submodule defines methods for estimating the expectations of a classical bitflip circuit analogous to IQP.
+"""
+
 import numpy as np
 from scipy.sparse import csr_matrix, dok_matrix
 
@@ -32,6 +50,7 @@ def gate_lists_to_arrays(gate_lists: list, n_qubits: int) -> list:
     return gate_arrays
 
 
+# pylint: disable=too-many-instance-attributes
 class IqpBitflipSimulator:
     """Class that creates an IqpBitflipSimulator object corresponding to a parameterized IQP circuit"""
 
@@ -39,7 +58,6 @@ class IqpBitflipSimulator:
         self,
         n_qubits: int,
         gates: list,
-        device: str = "lightning.qubit",
         spin_sym: bool = False,
         sparse: bool = False,
     ):
@@ -49,7 +67,6 @@ class IqpBitflipSimulator:
             gates (list[list[list[int]]]): Specification of the trainable gates. Each element of gates corresponds to a
                 unique trainable parameter. Each sublist specifies the generators to which that parameter applies.
                 Generators are specified by listing the qubits on which an X operator acts.
-            device (str, optional): Pennylane device used for calculating probabilities and sampling.
             spin_sym (bool, optional): If True, the circuit is equivalent to one where the initial state
                 1/sqrt(2)(|00...0> + |11...1>) is used in place of |00...0>.
             sparse (bool, optional): If True, generators and ops are always stored in sparse matrix format, leading
@@ -65,9 +82,7 @@ class IqpBitflipSimulator:
 
         self.n_qubits = n_qubits
         self.gates = gates
-        self.n_gates = len(gates)
         self.sparse = sparse
-        self.device = device
         self.spin_sym = spin_sym
 
         self.generators = []
@@ -76,7 +91,9 @@ class IqpBitflipSimulator:
         len_gen_init = 0
 
         len_gen = sum(1 for gate in gates for _ in gate) + len_gen_init
-        self.par_transform = False if max([len(gate) for gate in self.gates]) == 1 else True
+        self.par_transform = (
+            max([len(gate) for gate in self.gates]) != 1
+        )  # pylint: disable=consider-using-generator
 
         if sparse:
             generators_dok = dok_matrix((len_gen, n_qubits), dtype="float64")
@@ -137,6 +154,8 @@ class IqpBitflipSimulator:
             list: List of Vectors. The expected value of each op and its standard deviation.
         """
 
+        ops_sum = 0
+
         effective_params = self.trans_par @ params if self.par_transform else params
 
         if self.sparse or isinstance(ops, csr_matrix):
@@ -172,9 +191,9 @@ class IqpBitflipSimulator:
 
         if return_samples:
             return jnp.expand_dims(expvals, -1)
-        else:
-            return expvals, jnp.zeros(ops.shape[0])
+        return expvals, jnp.zeros(ops.shape[0])
 
+    # pylint: disable=too-many-arguments
     def op_expval(
         self,
         params: list,
@@ -226,8 +245,8 @@ class IqpBitflipSimulator:
 
         for batch_ops in jnp.array_split(ops, np.ceil(ops.shape[0] / max_batch_ops)):
             tmp_expvals = jnp.empty((len(batch_ops), 0))
-            for i in range(np.ceil(n_samples / max_batch_samples).astype(jnp.int64)):
-                key, subkey = jax.random.split(key, 2)
+            for _ in range(np.ceil(n_samples / max_batch_samples).astype(jnp.int64)):
+                key, _ = jax.random.split(key, 2)
                 batch_expval = self.op_expval_batch(
                     params,
                     batch_ops,
