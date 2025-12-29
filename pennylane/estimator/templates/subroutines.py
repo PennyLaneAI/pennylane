@@ -1859,7 +1859,7 @@ class BBQRAM(ResourceOperator):
             num_wires (int): the number of qubits the operation acts upon
 
         Returns:
-            CompressedResourceOp: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
         params = {"bitstrings": bitstrings, "num_wires": num_wires}
         return CompressedResourceOp(cls, num_wires, params)
