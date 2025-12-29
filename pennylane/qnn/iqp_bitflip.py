@@ -5,7 +5,6 @@ has_jax = True
 try:
     import jax
     import jax.numpy as jnp
-    from jax._src.typing import Array
 
     jax.config.update("jax_enable_x64", True)
 except ImportError as e:
@@ -181,7 +180,7 @@ class IqpBitflipSimulator:
         params: list,
         ops: list,
         n_samples: int,
-        key: Array,
+        key: list,
         return_samples: bool = False,
         max_batch_ops: int = None,
         max_batch_samples: int = None,
