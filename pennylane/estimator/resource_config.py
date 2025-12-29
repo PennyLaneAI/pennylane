@@ -24,13 +24,11 @@ from pennylane.estimator.ops.qubit.parametric_ops_multi_qubit import MultiRZ, Pa
 from pennylane.estimator.ops.qubit.parametric_ops_single_qubit import RX, RY, RZ, Rot
 from pennylane.estimator.ops.qubit.qchem_ops import SingleExcitation
 from pennylane.estimator.templates import (
+    GQSP,
     AliasSampling,
     MPSPrep,
-    PrepTHC,
     QROMStatePreparation,
-    QubitizeTHC,
     SelectPauliRot,
-    SelectTHC,
 )
 from pennylane.estimator.templates.trotter import TrotterVibrational, TrotterVibronic
 
@@ -112,7 +110,6 @@ class ResourceConfig:
 
     def __init__(self) -> None:
         _DEFAULT_PRECISION = 1e-9
-        _DEFAULT_BIT_PRECISION = 15
         _DEFAULT_PHASEGRAD_PRECISION = 1e-6
         self.resource_op_precisions = {
             RX: {"precision": _DEFAULT_PRECISION},
@@ -132,12 +129,6 @@ class ResourceConfig:
             AliasSampling: {"precision": _DEFAULT_PRECISION},
             MPSPrep: {"precision": None},
             QROMStatePreparation: {"precision": _DEFAULT_PRECISION},
-            SelectTHC: {"rotation_precision": _DEFAULT_BIT_PRECISION},
-            PrepTHC: {"coeff_precision": _DEFAULT_BIT_PRECISION},
-            QubitizeTHC: {
-                "coeff_precision": _DEFAULT_BIT_PRECISION,
-                "rotation_precision": _DEFAULT_BIT_PRECISION,
-            },
             TrotterVibronic: {
                 "phase_grad_precision": _DEFAULT_PHASEGRAD_PRECISION,
                 "coeff_precision": 1e-3,
@@ -146,6 +137,7 @@ class ResourceConfig:
                 "phase_grad_precision": _DEFAULT_PHASEGRAD_PRECISION,
                 "coeff_precision": 1e-3,
             },
+            GQSP: {"rotation_precision": None},
         }
         self._custom_decomps = {}
         self._adj_custom_decomps = {}

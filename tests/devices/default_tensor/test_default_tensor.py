@@ -586,7 +586,7 @@ class TestPreprocessingTransforms:
 
         # Check that we have the expected transforms
         transform_names = [
-            transform_container.transform.__name__ for transform_container in program
+            transform_container.tape_transform.__name__ for transform_container in program
         ]
         expected_transforms = [
             "validate_measurements",
@@ -610,7 +610,7 @@ class TestPreprocessingTransforms:
         # Find the decompose transform
         decompose_transform = None
         for transform_container in program:
-            if transform_container.transform.__name__ == "decompose":
+            if transform_container.tape_transform.__name__ == "decompose":
                 decompose_transform = transform_container
                 break
 
@@ -632,7 +632,7 @@ class TestPreprocessingTransforms:
         # Find the decompose transform
         decompose_transform = None
         for transform_container in program:
-            if transform_container.transform.__name__ == "decompose":
+            if transform_container.tape_transform.__name__ == "decompose":
                 decompose_transform = transform_container
                 break
 
