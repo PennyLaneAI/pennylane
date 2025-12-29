@@ -109,7 +109,7 @@ class IqpBitflipSimulator:
             self.trans_par = np.zeros((len_gen, len(gates)))
             i = 0
             for j, gens in enumerate(gates):
-                for gen in gens:
+                for _ in gens:
                     # Matrix that linearly transforms the vector of parameters that are trained into the vector of parameters that apply to the generators
                     self.trans_par[i, j] = 1
                     i += 1
@@ -117,8 +117,8 @@ class IqpBitflipSimulator:
 
     def op_expval_batch(
         self,
-        params: jnp.ndarray,
-        ops: jnp.ndarray,
+        params: list,
+        ops: list,
         return_samples: bool = False,
     ) -> list:
         """Estimate the expectation values of a batch of Pauli-Z type operators. A set of l operators must be specified
@@ -178,8 +178,8 @@ class IqpBitflipSimulator:
 
     def op_expval(
         self,
-        params: jnp.ndarray,
-        ops: jnp.ndarray,
+        params: list,
+        ops: list,
         n_samples: int,
         key: Array,
         return_samples: bool = False,

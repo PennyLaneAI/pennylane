@@ -40,7 +40,6 @@ def local_gates(n_qubits: int, max_weight=2):
     return gates
 
 
-@pytest.mark.jax
 @pytest.mark.parametrize(
     (
         "ops",
@@ -89,6 +88,7 @@ def local_gates(n_qubits: int, max_weight=2):
         ),
     ],
 )
+@pytest.mark.jax
 def test_expval(
     ops,
     params,
