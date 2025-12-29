@@ -54,7 +54,7 @@ def local_gates(n_qubits: int, max_weight=2):
     [
         (
             csr_matrix([[0, 1], [1, 0]]),
-            [0.3, 0.2],
+            [0.3],
             2,
             False,
             False,
@@ -64,7 +64,7 @@ def local_gates(n_qubits: int, max_weight=2):
         ),
         (
             csr_matrix([[0, 1], [1, 0]]),
-            [0.3, 0.2],
+            [0.3],
             2,
             False,
             True,
@@ -84,10 +84,20 @@ def local_gates(n_qubits: int, max_weight=2):
         ),
         (
             [[1, 0], [1, 0]],
-            [0.3, 0.2],
+            [0.2],
             2,
             True,
             True,
+            10_000,
+            10_000,
+            None,
+        ),
+        (
+            [[1, 0], [1, 0]],
+            [0.2],
+            2,
+            True,
+            False,
             10_000,
             10_000,
             None,
@@ -109,6 +119,7 @@ def test_expval(
     import jax.numpy as jnp
 
     gates = local_gates(n_qubits, 1)
+    gates = [[gates[0][0], gates[1][0]]] if len(gates) > 1 else gates
 
     key = jax.random.PRNGKey(np.random.randint(0, 99999))
 
