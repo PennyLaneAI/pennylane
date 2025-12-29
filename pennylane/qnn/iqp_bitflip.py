@@ -92,8 +92,8 @@ class IqpBitflipSimulator:
 
         len_gen = sum(1 for gate in gates for _ in gate) + len_gen_init
         self.par_transform = (
-            max([len(gate) for gate in self.gates]) != 1
-        )  # pylint: disable=consider-using-generator
+            max([len(gate) for gate in self.gates]) != 1  # pylint: disable=consider-using-generator
+        )
 
         if sparse:
             generators_dok = dok_matrix((len_gen, n_qubits), dtype="float64")

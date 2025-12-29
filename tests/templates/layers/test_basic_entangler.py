@@ -123,6 +123,7 @@ class TestDecomposition:
         ([[np.pi] * 2], range(2), qml.RY),
         ([[np.pi] * 3], range(3), qml.RZ),
         ([[np.pi] * 4], range(4), qml.RX),
+        ([[[np.pi, 1, 2, 1]] * 4], range(4), qml.RX),
     ]
 
     @pytest.mark.capture
