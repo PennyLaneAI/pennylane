@@ -186,6 +186,13 @@ class TestBBQRAM:
         """Test that the resources are correct."""
         assert qre.BBQRAM.resource_decomp(bitstrings, num_wires) == expected_res
 
+    @pytest.mark.parametrize(("bitstrings", "num_wires"), [(["000", "101", "010", "111"], 15)])
+    def test_tracking_name(self, bitstrings, num_wires):
+        """Tests that the tracking name is correct."""
+        assert (
+            qre.BBQRAM.tracking_name(bitstrings, num_wires) == f"BBQRAM({bitstrings}, {num_wires})"
+        )
+
 
 class TestResourcePhaseGradient:
     """Test the PhaseGradient class."""
