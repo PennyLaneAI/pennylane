@@ -904,6 +904,22 @@ class TestCompilePipeline:
         with pytest.raises(TransformError, match="does not appear to be a valid Python function"):
             compile_pipeline.append(10.0)
 
+    def test_append_with_list_raises_helpful_error(self):
+        """Test that append with a list raises an error pointing to extend."""
+        pipeline = CompilePipeline()
+        t1 = transform(first_valid_transform)
+        t2 = transform(second_valid_transform)
+
+        with pytest.raises(TypeError, match="Use extend\\(\\) to add multiple transforms"):
+            pipeline.append([t1, t2])
+
+        with pytest.raises(TypeError, match="Use extend\\(\\) to add multiple transforms"):
+            pipeline.append((t1, t2))
+
+        with pytest.raises(TypeError, match="Use extend\\(\\) to add multiple transforms"):
+            other_pipeline = CompilePipeline([t1])
+            pipeline.append(other_pipeline)
+
     def test_extend_list(self):
         """Test extending a pipeline with a list of transforms."""
         pipeline = CompilePipeline()

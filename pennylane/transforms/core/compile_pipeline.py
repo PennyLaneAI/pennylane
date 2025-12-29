@@ -388,6 +388,12 @@ class CompilePipeline:
             transform (Transform or BoundTransform): A transform represented by its container.
 
         """
+        if isinstance(transform, (list, tuple, CompilePipeline)):
+            raise TypeError(
+                "append() expects a single transform, not a sequence. "
+                "Use extend() to add multiple transforms at once."
+            )
+
         if not isinstance(transform, BoundTransform):
             transform = BoundTransform(transform)
 
