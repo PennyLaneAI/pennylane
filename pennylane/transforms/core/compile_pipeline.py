@@ -643,10 +643,8 @@ def _exclude_terminal_transform(transforms: list[BoundTransform]):
         terminal_transforms.append(transforms.pop())
         if transforms and terminal_transforms[0].expand_transform == transforms[-1]:
             terminal_transforms.insert(0, transforms.pop())
-    try:
-        yield
-    finally:
-        transforms.extend(terminal_transforms)
+    yield
+    transforms.extend(terminal_transforms)
 
 
 TransformProgram = CompilePipeline
