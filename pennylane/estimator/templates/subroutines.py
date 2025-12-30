@@ -1799,22 +1799,16 @@ class BBQRAM(ResourceOperator):
     r"""Resource class for BBQRAM.
 
     Args:
-        num_bitstrings (int):
-            The size of the classical memory array to retrieve values from.
-        size_bitstring (int):
-            The length of the individual bitstrings in the classical memory.
-        num_ones (int):
-            The number of 1s in the classical memory.
-        num_wires (int):
-            The number of qubits the operation acts upon.
-        control_wires (WiresLike):
-            The register that stores the index for the entry of the classical data we want to
+        num_bitstrings (int): the size of the classical memory array to retrieve values from
+        size_bitstring (int): the length of the individual bitstrings in the classical memory
+        num_ones (int): the number of 1s in the classical memory
+        num_wires (int): the number of qubits the operation acts upon
+        control_wires (WiresLike): The register that stores the index for the entry of the classical data we want to
             access.
         target_wires (WiresLike):
             The register in which the classical data gets loaded. The size of this register must
             equal each bitstring length in ``bitstrings``.
-        work_wires (WiresLike):
-            The additional wires required to funnel the desired entry of ``bitstrings`` into the
+        work_wires (WiresLike): The additional wires required to funnel the desired entry of ``bitstrings`` into the
             target register.
 
     Resources:
