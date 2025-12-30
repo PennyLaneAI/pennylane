@@ -153,6 +153,18 @@ class TestIQP:
 class TestBBQRAM:
     """Test the BBQRAM class."""
 
+    def test_raises_with_wrong_wire_num(self):
+        with pytest.raises(ValueError, match="Expected 4 wires, got 3."):
+            qre.BBQRAM(
+                4,
+                3,
+                6,
+                num_wires=4,
+                control_wires=(1,),
+                target_wires=(2,),
+                work_wires=(3,),
+            )
+
     @pytest.mark.parametrize(
         (
             "num_wires",
