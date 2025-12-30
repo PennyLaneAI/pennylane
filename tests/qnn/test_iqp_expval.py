@@ -22,7 +22,7 @@ from pennylane import IQP, device, qnode
 from pennylane.math import arange
 from pennylane.measurements import expval
 from pennylane.ops import PauliZ
-from pennylane.qnn.iqp import op_expval
+from pennylane.qnn.iqp import iqp_expval
 
 
 def local_gates(n_qubits: int, max_weight=2):
@@ -131,7 +131,7 @@ def test_expval(
     if not isinstance(ops, csr_matrix):
         ops = jnp.array(ops)
 
-    exp_val, std = op_expval(
+    exp_val, std = iqp_expval(
         ops=ops,
         n_samples=n_samples,
         key=key,

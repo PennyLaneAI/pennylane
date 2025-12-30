@@ -267,13 +267,13 @@ def _op_expval_batch(
 
 
 # pylint: disable=too-many-arguments
-def op_expval(
+def iqp_expval(
     ops: list,
+    weights: list[float],
+    pattern: list[list[list[int]]],
+    num_wires: int,
     n_samples: int,
     key: list,
-    num_wires: int,
-    pattern: list[list[list[int]]],
-    weights: list[float],
     spin_sym: bool = False,
     sparse: bool = False,
     indep_estimates: bool = False,
@@ -291,10 +291,7 @@ def op_expval(
 
     Args:
         ops (jnp.ndarray): Array specifying the operator/s for which to estimate the expectation values.
-        n_samples (int): Number of samples used to calculate the IQP expectation values. Higher values result in
-            higher precision.
-        key (Array): Jax key to control the randomness of the process.
-        num_wires (int): Number of wires in the circuit.
+        weights (list): The parameters of the IQP gates.
         pattern (list[list[list[int]]]): Specification of the trainable gates. Each element of `pattern` corresponds to a
             unique trainable parameter. Each sublist specifies the generators to which that parameter applies.
             Generators are specified by listing the qubits on which an X operator acts. For example, the `pattern`
@@ -303,7 +300,10 @@ def op_expval(
             trainable parameters with generators :math:`X_0+X_1` and :math:`X_2+X_3` respectively. A circuit with a
             single trainable gate with generator :math:`X_0\otimes X_1` corresponds to the `pattern`
             `[[[0,1]]]`.
-        weights (list): The parameters of the IQP gates.
+        num_wires (int): Number of wires in the circuit.
+        n_samples (int): Number of samples used to calculate the IQP expectation values. Higher values result in
+            higher precision.
+        key (Array): Jax key to control the randomness of the process.
         spin_sym (bool, optional): If True, the circuit is equivalent to one where the initial state
             :math:`\frac{1}{\sqrt(2)}(|00\dots0> + |11\dots1>)` is used in place of :math:`|00\dots0>`.
         indep_estimates (bool): Whether to use independent estimates of the ops in a batch.
