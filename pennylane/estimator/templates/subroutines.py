@@ -246,6 +246,184 @@ class IQP(ResourceOperator):
         return f"IQP({num_wires}, {pattern}, {spin_sym})"
 
 
+class SelectOnlyQRAM(ResourceOperator):
+    r"""Resource class for SelectOnlyQRAM.
+
+    Args:
+        num_bitstrings (int):
+            The size of the classical memory array to retrieve values from.
+        num_ones (int):
+            The number of 1s in the classical memory.
+        num_wires (int):
+            The number of qubits the operation acts upon.
+        num_control_wires (int):
+            The number of ``control_wires``.
+        num_select_wires (int):
+            The number of ``select_wires``.
+        control_wires (WiresLike, optional):
+            The register that stores the index for the entry of the classical data we want to
+            access.
+        target_wires (WiresLike, optional):
+            The register in which the classical data gets loaded. The size of this register must
+            equal each bitstring length in ``bitstrings``.
+        select_wires (WiresLike, optional):
+            Wires used to perform the selection.
+        select_value (int, optional):
+            If provided, only entries whose select bits match this value are loaded.
+            The ``select_value`` must be an integer in :math:`[0, 2^{\texttt{len(select_wires)}}]`,
+            and cannot be used if no ``select_wires`` are provided.
+
+    Resources:
+        The resources are obtained from the SelectOnlyQRAM implementation in PennyLane.
+
+    .. seealso:: :class:`~.SelectOnlyQRAM`
+    """
+
+    resource_keys = {
+        "num_bitstrings",
+        "num_ones",
+        "num_control_wires",
+        "select_value",
+        "num_select_wires",
+    }
+
+    def __init__(
+        self,
+        num_bitstrings,
+        num_ones,
+        num_wires,
+        num_control_wires,
+        num_select_wires,
+        control_wires=None,
+        target_wires=None,
+        select_wires=None,
+        select_value=None,
+    ):
+        all_wires = None
+        if control_wires and target_wires and select_wires:
+            all_wires = list(control_wires) + list(target_wires) + list(select_wires)
+        self.num_wires = num_wires if all_wires is None else len(all_wires)
+        self.num_bitstrings = num_bitstrings
+        self.num_ones = num_ones
+        self.select_value = select_value
+        self.num_control_wires = num_control_wires
+        self.num_select_wires = num_select_wires
+        super().__init__(wires=all_wires)
+
+    @property
+    def resource_params(self) -> dict:
+        r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+        Returns:
+            dict: A dictionary containing the resource parameters:
+                * num_bitstrings (int): the size of the classical memory array to retrieve values from
+                * num_ones (int): the number of 1s in the classical memory
+                * num_wires (int): the number of qubits the operation acts upon
+                * select_value (int or None): if provided, only entries whose select bits match this value are loaded
+                * num_select_wires (int): the number of ``select_wires``
+                * num_control_wires (int): the number of ``control_wires``
+        """
+        return {
+            "num_bitstrings": self.num_bitstrings,
+            "num_ones": self.num_ones,
+            "num_wires": self.num_wires,
+            "select_value": self.select_value,
+            "num_select_wires": self.num_select_wires,
+            "num_control_wires": self.num_control_wires,
+        }
+
+    @classmethod
+    def resource_rep(
+        cls, num_bitstrings, num_ones, num_wires, select_value, num_select_wires, num_control_wires
+    ):
+        r"""Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute the resources.
+
+        Args:
+            num_bitstrings (int): the size of the classical memory array to retrieve values from
+            num_ones (int): the number of 1s in the classical memory
+            num_wires (int): the number of qubits the operation acts upon
+            select_value (int or None): if provided, only entries whose select bits match this value are loaded
+            num_select_wires (int): the number of ``select_wires``
+            num_control_wires (int): the number of ``control_wires``
+
+        Returns:
+            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+        """
+        params = {
+            "num_bitstrings": num_bitstrings,
+            "num_ones": num_ones,
+            "num_wires": num_wires,
+            "select_value": select_value,
+            "num_select_wires": num_select_wires,
+            "num_control_wires": num_control_wires,
+        }
+        return CompressedResourceOp(cls, num_wires, params)
+
+    @classmethod
+    def resource_decomp(
+        cls, num_bitstrings, num_ones, num_wires, select_value, num_select_wires, num_control_wires
+    ):
+        r"""Returns a list representing the resources of the operator. Each object in the list
+        represents a gate and the number of times it occurs in the circuit.
+
+        Args:
+            num_bitstrings (int): the size of the classical memory array to retrieve values from
+            num_ones (int): the number of 1s in the classical memory
+            num_wires (int): the number of qubits the operation acts upon
+            select_value (int or None): if provided, only entries whose select bits match this value are loaded
+            num_select_wires (int): the number of ``select_wires``
+            num_control_wires (int): the number of ``control_wires``
+
+        Resources:
+            The resources are obtained from the SelectOnlyQRAM implementation in PennyLane.
+
+        Returns:
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
+                represents a specific quantum gate and the number of times it appears in the decomposition.
+        """
+        n_total = num_control_wires + num_select_wires
+
+        basis_embedding = resource_rep(qre.BasisEmbedding)  # TODO: implement qre.BasisEmbedding
+        paulix = resource_rep(qre.X)
+        mcx = qre.Controlled.resource_rep(resource_rep(qre.X), n_total, 0)
+
+        basis_embedding_count = 0
+        if select_value is not None and num_select_wires > 0:
+            basis_embedding_count = 1
+
+        paulix_count = 0
+        mcx_count = num_ones
+
+        for addr in range(num_bitstrings):
+            if (
+                select_value is not None
+                and num_select_wires > 0
+                and (addr >> num_control_wires) != select_value
+            ):
+                continue
+
+            control_values = [(addr >> (n_total - 1 - i)) & 1 for i in range(n_total)]
+            paulix_count += control_values.count(0) * 2
+
+        ret = []
+        if paulix_count > 0:
+            ret.append(GateCount(paulix, paulix_count))
+        if mcx_count > 0:
+            ret.append(GateCount(mcx, mcx_count))
+        if basis_embedding_count > 0:
+            ret.append(GateCount(basis_embedding, basis_embedding_count))
+
+        return ret
+
+    @staticmethod
+    def tracking_name(
+        num_bitstrings, num_ones, num_wires, select_value, num_select_wires, num_control_wires
+    ) -> str:
+        r"""Returns the tracking name built with the operator's parameters."""
+        return f"SelectOnlyQRAM({num_bitstrings}, {num_ones}, {num_wires}, {select_value}, {num_select_wires}, {num_control_wires})"
+
+
 class PhaseGradient(ResourceOperator):
     r"""Resource class for the PhaseGradient gate.
 
