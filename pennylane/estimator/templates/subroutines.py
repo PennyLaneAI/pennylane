@@ -1805,8 +1805,8 @@ class HybridQRAM(ResourceOperator):
             The number of qubits the operation acts upon.
         num_select_wires (int):
             The number of "select" bits taken from ``control_wires``.
-        num_work_wires (int):
-            The number of ``work_wires`` including select and tree control wires.
+        num_control_wires (int):
+            The number of ``control_wires`` including select and tree control wires.
         control_wires (WiresLike):
             The register that stores the index for the entry of the classical data we want to
             access.
@@ -1827,14 +1827,14 @@ class HybridQRAM(ResourceOperator):
     .. seealso:: :class:`~.HybridQRAM`
     """
 
-    resource_keys = {"bitstrings", "num_target_wires", "num_select_wires", "numm_work_wires"}
+    resource_keys = {"bitstrings", "num_target_wires", "num_select_wires", "num_control_wires"}
 
     def __init__(
         self,
         bitstrings,
         num_wires,
         num_select_wires,
-        num_work_wires,
+        num_control_wires,
         control_wires=None,
         target_wires=None,
         work_wires=None,
@@ -1842,11 +1842,11 @@ class HybridQRAM(ResourceOperator):
         all_wires = None
         if control_wires and target_wires and work_wires:
             all_wires = list(control_wires) + list(target_wires) + list(work_wires)
-            assert num_work_wires == len(work_wires)
+            assert num_control_wires == len(control_wires)
         self.num_wires = num_wires if all_wires is None else len(all_wires)
         self.bitstrings = bitstrings
         self.num_select_wires = num_select_wires
-        self.num_work_wires = num_work_wires
+        self.num_control_wires = num_control_wires
         super().__init__(wires=all_wires)
 
     @property
@@ -1864,7 +1864,7 @@ class HybridQRAM(ResourceOperator):
             "bitstrings": self.bitstrings,
             "num_wires": self.num_wires,
             "num_select_wires": self.num_select_wires,
-            "num_tree_control_wires": self.num_work_wires - self.num_select_wires,
+            "num_tree_control_wires": self.num_control_wires - self.num_select_wires,
         }
 
     @classmethod
@@ -1881,7 +1881,12 @@ class HybridQRAM(ResourceOperator):
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
-        params = {"bitstrings": bitstrings, "num_select_wires": num_select_wires, "num_tree_control_wires": num_tree_control_wires}
+        params = {
+            "bitstrings": bitstrings,
+            "num_wires": num_wires,
+            "num_select_wires": num_select_wires,
+            "num_tree_control_wires": num_tree_control_wires,
+        }
         return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
@@ -1917,7 +1922,7 @@ class HybridQRAM(ResourceOperator):
 
         paulix_counts = (num_select_wires <= 0) * num_blocks * 2
         cswap_counts = (
-             (num_tree_control_wires + (1 << num_tree_control_wires) - 1) * 2 + 2 * num_target_wires
+            (num_tree_control_wires + (1 << num_tree_control_wires) - 1) * 2 + 2 * num_target_wires
         ) * num_blocks
         ccswap_count = (
             (
@@ -1927,9 +1932,7 @@ class HybridQRAM(ResourceOperator):
             * num_blocks
             * 2
         )
-        ch_count = (
-            num_target_wires * num_blocks * 2
-        )
+        ch_count = num_target_wires * num_blocks * 2
 
         cnot_count = 0
         cz_count = 0
@@ -1942,19 +1945,19 @@ class HybridQRAM(ResourceOperator):
             if zero_control_values == 0:
                 cnot_count += (num_select_wires > 0) * 2
             else:
-                cnot_zeroes[qre.Controlled.resource_rep(resource_rep(qre.X), num_select_wires, zero_control_values)] += (num_select_wires > 0) * 2
+                cnot_zeroes[
+                    qre.Controlled.resource_rep(
+                        resource_rep(qre.X), num_select_wires, zero_control_values
+                    )
+                ] += (num_select_wires > 0) * 2
 
-            cz_count += sum(
-                [
-                    bitstrings[(block_index << num_tree_control_wires) + p][j] == "1"
-                    for j in range(num_target_wires)
-                    for p in range(1 << num_tree_control_wires)
-                ]
-            )
+            cz_count = 0
+            for j in range(num_target_wires):
+                for p in range(1 << num_tree_control_wires):
+                    cz_count += bitstrings[(block_index << num_tree_control_wires) + p][j] == "1"
 
         ret = [
             GateCount(paulix, paulix_counts),
-            GateCount(cnot, cnot_count),
             GateCount(cswap_one, cswap_counts),
             GateCount(ccswap_zero, ccswap_count),
             GateCount(ccswap_one, ccswap_count),
@@ -1964,13 +1967,17 @@ class HybridQRAM(ResourceOperator):
 
         for rep, count in cnot_zeroes.items():
             ret.append(GateCount(rep, count))
+        if cnot_count != 0:
+            ret.append(GateCount(cnot, cnot_count))
 
         return ret
 
     @staticmethod
-    def tracking_name(bitstrings, num_wires, num_target_wires, num_select_wires, num_tree_control_wires) -> str:
+    def tracking_name(bitstrings, num_wires, num_select_wires, num_tree_control_wires) -> str:
         r"""Returns the tracking name built with the operator's parameters."""
-        return f"HybridQRAM({bitstrings}, {num_wires}, {num_target_wires}, {num_select_wires}, {num_tree_control_wires})"
+        return (
+            f"HybridQRAM({bitstrings}, {num_wires}, {num_select_wires}, {num_tree_control_wires})"
+        )
 
 
 class Select(ResourceOperator):
