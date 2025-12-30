@@ -1811,6 +1811,9 @@ class BBQRAM(ResourceOperator):
         work_wires (WiresLike): The additional wires required to funnel the desired entry of ``bitstrings`` into the
             target register.
 
+    Raises:
+        ValueError: if the number of wires provided does not match ``num_wires``
+
     Resources:
         The resources are obtained from the BBQRAM implementation in PennyLane. The original publication of
         the algorithm can be found in `Quantum Random Access Memory <https://arxiv.org/abs/0708.1879>`_.
