@@ -1844,6 +1844,7 @@ class BBQRAM(ResourceOperator):
         Returns:
             dict: A dictionary containing the resource parameters:
                 * num_wires (int): the number of qubits the operation acts upon
+                * bitstrings (Sequence[str]): the classical memory to retrieve values from
         """
         return {
             "num_wires": self.num_wires,
@@ -1856,6 +1857,7 @@ class BBQRAM(ResourceOperator):
         the Operator that are needed to compute the resources.
 
         Args:
+            bitstrings (Sequence[str]): the classical memory to retrieve values from
             num_wires (int): the number of qubits the operation acts upon
 
         Returns:
