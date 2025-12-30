@@ -262,36 +262,6 @@
   pass is performed in MLIR or xDSL.
   [(#8539)](https://github.com/PennyLaneAI/pennylane/pull/8539)
 
-<h3>Improvements 🛠</h3>
-
-* The `ResourcesUndefinedError` has been removed from the `adjoint`, `ctrl`, and `pow` resource
-  decomposition methods of `ResourceOperator` to avoid using errors as control flow.
-  [(#8598)](https://github.com/PennyLaneAI/pennylane/pull/8598)
-
-* `@partial` is not needed anymore for using transforms as decorators with arguments.
-  Now, the following two usages are equivalent:
-
-  ```python
-  @partial(qml.transforms.decompose, gate_set={qml.RX, qml.CNOT})
-  @qml.qnode(qml.device('default.qubit', wires=2))
-  def circuit():
-      qml.Hadamard(wires=0)
-      qml.CZ(wires=[0,1])
-      return qml.expval(qml.Z(0))
-  ```
-
-  ```python
-  @qml.transforms.decompose(gate_set={qml.RX, qml.CNOT})
-  @qml.qnode(qml.device('default.qubit', wires=2))
-  def circuit():
-      qml.Hadamard(wires=0)
-      qml.CZ(wires=[0,1])
-      return qml.expval(qml.Z(0))
-  ```
-
-  [(#8730)](https://github.com/PennyLaneAI/pennylane/pull/8730)
-  [(#8754)](https://github.com/PennyLaneAI/pennylane/pull/8754)
-
 <h4>Analyzing your algorithms quickly and easily with resource estimation</h4>
 
 * Users can now set precisions for a larger variety of `ResourceOperator`s in
@@ -429,6 +399,34 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
 
 <h3>Improvements 🛠</h3>
 
+* The `ResourcesUndefinedError` has been removed from the `adjoint`, `ctrl`, and `pow` resource
+  decomposition methods of `ResourceOperator` to avoid using errors as control flow.
+  [(#8598)](https://github.com/PennyLaneAI/pennylane/pull/8598)
+
+* `@partial` is not needed anymore for using transforms as decorators with arguments.
+  Now, the following two usages are equivalent:
+
+  ```python
+  @partial(qml.transforms.decompose, gate_set={qml.RX, qml.CNOT})
+  @qml.qnode(qml.device('default.qubit', wires=2))
+  def circuit():
+      qml.Hadamard(wires=0)
+      qml.CZ(wires=[0,1])
+      return qml.expval(qml.Z(0))
+  ```
+
+  ```python
+  @qml.transforms.decompose(gate_set={qml.RX, qml.CNOT})
+  @qml.qnode(qml.device('default.qubit', wires=2))
+  def circuit():
+      qml.Hadamard(wires=0)
+      qml.CZ(wires=[0,1])
+      return qml.expval(qml.Z(0))
+  ```
+
+  [(#8730)](https://github.com/PennyLaneAI/pennylane/pull/8730)
+  [(#8754)](https://github.com/PennyLaneAI/pennylane/pull/8754)
+
 * When program capture is enabled, `qml.adjoint` and `qml.ctrl` can now be called on
   operators that were constructed ahead of time and used as closure variables.
   [(#8816)](https://github.com/PennyLaneAI/pennylane/pull/8816)
@@ -480,8 +478,6 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
   minimizes the maximum number of simultaneously allocated work wires.
   [(#8729)](https://github.com/PennyLaneAI/pennylane/pull/8729)
   [(#8734)](https://github.com/PennyLaneAI/pennylane/pull/8734)
-
-<h3>Improvements 🛠</h3>
 
 * Qualtran call graphs built via :func:`qml.to_bloq <pennylane.to_bloq>` now use PennyLane's resource estimation
   module by default (``call_graph='estimator'``). This provides faster resource counting. 
