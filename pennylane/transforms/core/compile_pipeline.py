@@ -421,7 +421,12 @@ class CompilePipeline:
 
         # Handle iterables (list, tuple, etc.)
         for t in transforms:
-            self.append(t)
+            # If an item is itself a CompilePipeline (e.g., from transform * 2),
+            # recursively extend rather than append
+            if isinstance(t, CompilePipeline):
+                self.extend(t)
+            else:
+                self.append(t)
 
     def add_transform(self, transform: Transform, *targs, **tkwargs):
         """Add a transform to the end of the program.

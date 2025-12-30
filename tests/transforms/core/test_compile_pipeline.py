@@ -987,6 +987,20 @@ class TestCompilePipeline:
         assert pipeline[0].tape_transform is first_valid_transform
         assert pipeline[1].tape_transform is second_valid_transform
 
+    def test_extend_list_with_multiplied_transform(self):
+        """Test extending with a list containing a multiplied transform (CompilePipeline)."""
+        pipeline = CompilePipeline()
+        t1 = transform(first_valid_transform)
+        t2 = transform(second_valid_transform)
+
+        # t2 * 2 creates a CompilePipeline, which should be flattened when inside a list
+        pipeline.extend([t1, t2 * 2])
+
+        assert len(pipeline) == 3
+        assert pipeline[0].tape_transform is first_valid_transform
+        assert pipeline[1].tape_transform is second_valid_transform
+        assert pipeline[2].tape_transform is second_valid_transform
+
     def test_add_transform(self):
         """Test to add multiple transforms into a pipeline and also the different methods of a pipeline."""
         compile_pipeline = CompilePipeline()
