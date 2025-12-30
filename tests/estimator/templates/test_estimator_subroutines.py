@@ -172,7 +172,7 @@ class TestHybridQRAM:
                 (0, 1),
                 (2, 3, 4),
                 (5, 6, 7, 8, 9, 10, 11, 12, 13, 14),
-            )
+            ),
         ],
     )
     def test_resource_params(
@@ -237,7 +237,6 @@ class TestHybridQRAM:
                 0,
                 2,
                 [
-                    GateCount(resource_rep(qre.X), 2),
                     GateCount(resource_rep(qre.CSWAP), 16),
                     GateCount(
                         qre.Controlled.resource_rep(
@@ -248,6 +247,27 @@ class TestHybridQRAM:
                     GateCount(qre.Controlled.resource_rep(resource_rep(qre.CSWAP), 1, 0), 20),
                     GateCount(qre.Controlled.resource_rep(resource_rep(qre.Hadamard), 1, 0), 6),
                     GateCount(qre.Controlled.resource_rep(resource_rep(qre.Z), 1, 0), 6),
+                    GateCount(resource_rep(qre.X), 2),
+                ],
+            ),
+            (
+                ["010", "111", "110", "000", "010", "111", "110", "000"],
+                15,
+                1,
+                2,
+                [
+                    GateCount(resource_rep(qre.CSWAP), 32),
+                    GateCount(
+                        qre.Controlled.resource_rep(
+                            qre.Controlled.resource_rep(resource_rep(qre.SWAP), 1, 1), 1, 0
+                        ),
+                        40,
+                    ),
+                    GateCount(qre.Controlled.resource_rep(resource_rep(qre.CSWAP), 1, 0), 40),
+                    GateCount(qre.Controlled.resource_rep(resource_rep(qre.Hadamard), 1, 0), 12),
+                    GateCount(qre.Controlled.resource_rep(resource_rep(qre.Z), 1, 0), 6),
+                    GateCount(qre.Controlled.resource_rep(resource_rep(qre.X), 1, 1), 2),
+                    GateCount(resource_rep(qre.CNOT), 2),
                 ],
             ),
         ),

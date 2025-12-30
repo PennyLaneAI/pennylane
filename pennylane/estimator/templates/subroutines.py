@@ -1957,7 +1957,6 @@ class HybridQRAM(ResourceOperator):
                     cz_count += bitstrings[(block_index << num_tree_control_wires) + p][j] == "1"
 
         ret = [
-            GateCount(paulix, paulix_counts),
             GateCount(cswap_one, cswap_counts),
             GateCount(ccswap_zero, ccswap_count),
             GateCount(ccswap_one, ccswap_count),
@@ -1969,6 +1968,8 @@ class HybridQRAM(ResourceOperator):
             ret.append(GateCount(rep, count))
         if cnot_count != 0:
             ret.append(GateCount(cnot, cnot_count))
+        if paulix_counts != 0:
+            ret.append(GateCount(paulix, paulix_counts))
 
         return ret
 
