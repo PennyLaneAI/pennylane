@@ -42,11 +42,11 @@ class GQSP(ResourceOperator):
 
     .. math::
 
-        GQSP = \left( \prod_{j=1}^{d^{-}} R(\theta_{j}, \phi_{j}, 0) \hat{A}^{\prime} \right) 
+        GQSP = \left( \prod_{j=1}^{d^{-}} R(\theta_{j}, \phi_{j}, 0) \hat{A}^{\prime} \right)
         \left( \prod_{j=1}^{d^{+}} R(\theta_{j + d^{-}}, \phi_{j + d^{-}}, 0) \hat{A} \right) R(\theta_0, \phi_0, \lambda)
 
-    Where :math:`R` is the general rotation operator 
-    :class:`~.estimator.ops.qubit.parametric_ops_single_qubit.Rot`, and :math:`\vec{\phi}`, 
+    Where :math:`R` is the general rotation operator
+    :class:`~.estimator.ops.qubit.parametric_ops_single_qubit.Rot`, and :math:`\vec{\phi}`,
     :math:`\vec{\theta}` and :math:`\lambda` are the rotation angles that generate the polynomial transformation.
     Additionally, :math:`\hat{A}` and :math:`\hat{A}^{\prime}` are given by:
 
@@ -61,13 +61,14 @@ class GQSP(ResourceOperator):
         signal_operator (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): the
             signal operator which encodes the target Hamiltonian
         poly_deg (int): the maximum positive degree :math:`d^{+}` of the polynomial transformation
-        neg_poly_deg (int): the maximum negative degree :math:`d^{-}` of the polynomial transformation
+        neg_poly_deg (int): the maximum negative degree :math:`d^{-}` of the polynomial transformation, representing
+            powers of the inverse of the signal operator
         rotation_precision (float | None): the precision with which the general rotation gates are applied
         wires (WiresLike | None): The wires the operation acts on. This includes both the wires of the
             signal operator and the control wire required for block-encoding.
 
     Resources:
-        The resources are obtained as described in Theorem 6 of `Generalized Quantum Signal 
+        The resources are obtained as described in Theorem 6 of `Generalized Quantum Signal
         Processing (2024) <https://arxiv.org/pdf/2308.01501>`_. Specifically, the resources are given
         by ``poly_deg`` instances of :math:`\hat{A}`, ``neg_poly_deg`` instances of
         :math:`\hat{A^{\prime}}`, and ``poly_deg + neg_poly_deg + 1`` instances of the general
@@ -77,7 +78,7 @@ class GQSP(ResourceOperator):
         ValueError: ``poly_deg`` must be a positive integer greater than zero
         ValueError: ``neg_poly_deg`` must be a positive integer
         ValueError: ``rotation_precision`` must be a positive real number greater than zero
-        ValueError: if the wires provided don't match the number of wires expected by the operator              
+        ValueError: if the wires provided don't match the number of wires expected by the operator
 
     **Example**
 
@@ -155,7 +156,7 @@ class GQSP(ResourceOperator):
                   the compressed representation of signal operator which encodes the target Hamiltonian
                 * poly_deg (int): the maximum positive degree :math:`d^{+}` of the polynomial transformation
                 * neg_poly_deg (int): the maximum negative degree :math:`d^{-}` of the polynomial
-                  transformation
+                  transformation, representing powers of the inverse of the signal operator
                 * rotation_precision (float | None): the precision with which the general
                   rotation gates are applied
         """
@@ -182,7 +183,8 @@ class GQSP(ResourceOperator):
             cmpr_signal_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`):
                 the compressed representation of signal operator which encodes the target Hamiltonian
             poly_deg (int): the maximum positive degree :math:`d^{+}` of the polynomial transformation
-            neg_poly_deg (int): the maximum negative degree :math:`d^{-}` of the polynomial transformation
+            neg_poly_deg (int): the maximum negative degree :math:`d^{-}` of the polynomial transformation,
+                representing powers of the inverse of the signal operator
             rotation_precision (float | None): the precision with which the general rotation gates are applied
 
         Returns:
@@ -212,7 +214,8 @@ class GQSP(ResourceOperator):
             cmpr_signal_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`):
                 the compressed representation of signal operator which encodes the target Hamiltonian
             poly_deg (int): the maximum positive degree :math:`d^{+}` of the polynomial transformation
-            neg_poly_deg (int): the maximum negative degree :math:`d^{-}` of the polynomial transformation
+            neg_poly_deg (int): the maximum negative degree :math:`d^{-}` of the polynomial transformation, representing
+                powers of the inverse of the signal operator
             rotation_precision (float | None): the precision with which the general rotation gates are applied
 
         Resources:
@@ -259,7 +262,7 @@ class GQSPTimeEvolution(ResourceOperator):
         walk_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): the quantum walk operator
         time (float): the simulation time
         one_norm (float): one norm of the Hamiltonian
-        poly_approx_precision (float): the tolerance for error in the polynomial approximation of :math:`e^{it\cos{(\theta)}}`
+        poly_approx_precision (float): the tolerance for error in the polynomial approximation
         wires (WiresLike | None): The wires the operation acts on. This includes both the wires of the
             signal operator and the control wire required for block-encoding.
 
@@ -358,7 +361,7 @@ class GQSPTimeEvolution(ResourceOperator):
                 * time (float): the simulation time
                 * one_norm (float): one norm of the Hamiltonian
                 * poly_approx_precision (float): the tolerance for error in the polynomial
-                  approximation of :math:`e^{it\cos{\theta}}`
+                  approximation
         """
 
         return {
@@ -384,8 +387,7 @@ class GQSPTimeEvolution(ResourceOperator):
                 quantum walk operator
             time (float): the simulation time
             one_norm (float): one norm of the Hamiltonian
-            poly_approx_precision (float): the tolerance for error in the polynomial approximation of
-                :math:`e^{it\cos{\theta}}`
+            poly_approx_precision (float): the tolerance for error in the polynomial approximation
 
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
@@ -415,8 +417,8 @@ class GQSPTimeEvolution(ResourceOperator):
                 quantum walk operator
             time (float): the simulation time
             one_norm (float): one norm of the Hamiltonian
-            poly_approx_precision (float): the tolerance for error in the polynomial approximation of
-                :math:`e^{it\cos{\theta}}`
+            poly_approx_precision (float): the tolerance for error in the polynomial approximation
+
         Resources:
             The resources are obtained as described in Theorem 7 and Corollary 8 of
             `Generalized Quantum Signal Processing (2024) <https://arxiv.org/pdf/2308.01501>`_.
@@ -443,7 +445,7 @@ class GQSPTimeEvolution(ResourceOperator):
         Args:
             time (float): the simulation time
             one_norm (float): one norm of the Hamiltonian
-            epsilon (float): the tolerance for error in the polynomial approximation of :math:`e^{it\cos{\theta}}`
+            epsilon (float): the tolerance for error in the polynomial approximation
 
         Returns:
             int: the minimum degree of the polynomial approximation
@@ -502,7 +504,7 @@ class QSVT(ResourceOperator):
 
     Args:
         block_encoding (:class:`~.estimator.resource_operator.ResourceOperator`): the block encoding operator
-        encoding_dims (int | tuple(int)): The dimensions of the encoded operator's sub-matrix. 
+        encoding_dims (int | tuple(int)): The dimensions of the encoded operator's sub-matrix.
             If an integer is provided, a square sub-matrix is assumed; otherwise, specify (rows, columns).
         poly_deg (int): the degree of the polynomial transformation being applied
         wires (WiresLike | None): the wires the operation acts on

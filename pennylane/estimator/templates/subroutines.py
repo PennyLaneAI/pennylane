@@ -2888,7 +2888,7 @@ class Reflection(ResourceOperator):
         self.alpha = alpha
 
         if U is None and num_wires is None:
-            raise ValueError("Must provide atleast one of `num_wires` or `U`")
+            raise ValueError("Must provide at least one of `num_wires` or `U`")
 
         if U is not None:
             _dequeue([U])
@@ -3076,12 +3076,14 @@ class Reflection(ResourceOperator):
 
 
 class Qubitization(ResourceOperator):
-    r"""Resource class for the Qubitization operator. This operator encodes a Hamiltonian, written
-    as a linear combination of unitaries, into a unitary operator (see Figure 1 in
+    r"""Resource class for the Qubitization operator. This class estimates the resources for the unitary operator that
+    advances the quantum walk by one step.
+
+    The operator is constructed by encoding a Hamiltonian, written as a linear combination of unitaries, into a block encoding(see Figure 1 in
     `arXiv:1805.03662 <https://arxiv.org/abs/1805.03662>`_).
 
     .. math::
-        Q =  \text{Prep}_{\mathcal{H}}(2|0\rangle\langle 0| - I)\text{Prep}_{\mathcal{H}}^{\dagger} \text{Sel}_{\mathcal{H}}.
+        Q =  \text{Prep}_{H}(2|0\rangle\langle 0| - I)\text{Prep}_{H}^{\dagger} \text{Sel}_{H}.
 
     Args:
         prep_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): the operator that prepares the coefficients of the LCU
