@@ -1804,7 +1804,7 @@ class BBQRAM(ResourceOperator):
         size_bitstring (int):
             The length of the individual bitstrings in the classical memory.
         num_ones (int):
-            The number of ``1``s in the classical memory.
+            The number of 1s in the classical memory.
         num_wires (int):
             The number of qubits the operation acts upon.
         control_wires (WiresLike):
@@ -1818,7 +1818,7 @@ class BBQRAM(ResourceOperator):
             target register.
 
     Resources:
-        The resources are obtained from the BBQRAM implementation in PennyLane. The original publicaiton of
+        The resources are obtained from the BBQRAM implementation in PennyLane. The original publication of
         the algorithm can be found in `Quantum Random Access Memory <https://arxiv.org/abs/0708.1879>`_.
 
     .. seealso:: :class:`~.BBQRAM`
@@ -1854,7 +1854,7 @@ class BBQRAM(ResourceOperator):
                 * num_wires (int): the number of qubits the operation acts upon
                 * num_bitstrings (int): the size of the classical memory array to retrieve values from
                 * size_bitstring (int): the length of the individual bitstrings in the classical memory
-                * num_ones (int): the number of ``1``s in the classical memory
+                * num_ones (int): the number of 1s in the classical memory
         """
         return {
             "num_wires": self.num_wires,
@@ -1871,7 +1871,7 @@ class BBQRAM(ResourceOperator):
         Args:
             num_bitstrings (int): the size of the classical memory array to retrieve values from
             size_bitstring (int): the length of the individual bitstrings in the classical memory
-            num_ones (int): the number of ``1``s in the classical memory
+            num_ones (int): the number of 1s in the classical memory
             num_wires (int): the number of qubits the operation acts upon
 
         Returns:
@@ -1893,11 +1893,11 @@ class BBQRAM(ResourceOperator):
         Args:
             num_bitstrings (int): the size of the classical memory array to retrieve values from
             size_bitstring (int): the length of the individual bitstrings in the classical memory
-            num_ones (int): the number of ``1``s in the classical memory
+            num_ones (int): the number of 1s in the classical memory
             num_wires (int): the number of qubits the operation acts upon
 
         Resources:
-            The resources are obtained from the BBQRAM implementation in PennyLane. The original publicaiton of
+            The resources are obtained from the BBQRAM implementation in PennyLane. The original publication of
             the algorithm can be found in `Quantum Random Access Memory <https://arxiv.org/abs/0708.1879>`_.
 
         Returns:
