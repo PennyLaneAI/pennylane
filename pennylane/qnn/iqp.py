@@ -21,7 +21,6 @@ has_jax = True
 try:
     import jax
     import jax.numpy as jnp
-    from jax.numpy import array
 except ImportError as e:
     has_jax = False
 
