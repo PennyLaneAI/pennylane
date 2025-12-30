@@ -154,35 +154,86 @@ class TestBBQRAM:
     """Test the BBQRAM class."""
 
     @pytest.mark.parametrize(
-        ("num_wires", "bitstrings", "control_wires", "target_wires", "work_wires"),
+        (
+            "num_wires",
+            "num_bitstrings",
+            "size_bitstring",
+            "num_ones",
+            "control_wires",
+            "target_wires",
+            "work_wires",
+        ),
         [
             (
                 15,
-                ["000", "010", "101", "111"],
+                4,
+                3,
+                6,
                 (0, 1),
                 (2, 3, 4),
                 (5, 6, 7, 8, 9, 10, 11, 12, 13, 14),
             )
         ],
     )
-    def test_resource_params(self, num_wires, bitstrings, control_wires, target_wires, work_wires):
+    def test_resource_params(
+        self,
+        num_wires,
+        num_bitstrings,
+        size_bitstring,
+        num_ones,
+        control_wires,
+        target_wires,
+        work_wires,
+    ):
         """Test that the resource params are correct."""
-        op = qre.BBQRAM(bitstrings, num_wires, control_wires, target_wires, work_wires)
-        assert op.resource_params == {"bitstrings": bitstrings, "num_wires": num_wires}
-
-    @pytest.mark.parametrize(("num_wires", "bitstrings"), [(15, ["000", "010", "101", "111"])])
-    def test_resource_rep(self, num_wires, bitstrings):
-        """Test that the compressed representation is correct."""
-        expected = qre.CompressedResourceOp(
-            qre.BBQRAM, num_wires, {"bitstrings": bitstrings, "num_wires": num_wires}
+        op = qre.BBQRAM(
+            num_bitstrings,
+            size_bitstring,
+            num_ones,
+            num_wires,
+            control_wires,
+            target_wires,
+            work_wires,
         )
-        assert qre.BBQRAM.resource_rep(bitstrings=bitstrings, num_wires=num_wires) == expected
+        assert op.resource_params == {
+            "num_bitstrings": num_bitstrings,
+            "size_bitstring": size_bitstring,
+            "num_ones": num_ones,
+            "num_wires": num_wires,
+        }
 
     @pytest.mark.parametrize(
-        "bitstrings, num_wires, expected_res",
+        ("num_wires", "num_bitstrings", "size_bitstring", "num_ones"), [(15, 4, 3, 6)]
+    )
+    def test_resource_rep(self, num_wires, num_bitstrings, size_bitstring, num_ones):
+        """Test that the compressed representation is correct."""
+        expected = qre.CompressedResourceOp(
+            qre.BBQRAM,
+            num_wires,
+            {
+                "num_bitstrings": num_bitstrings,
+                "size_bitstring": size_bitstring,
+                "num_ones": num_ones,
+                "num_wires": num_wires,
+            },
+        )
+        assert (
+            qre.BBQRAM.resource_rep(
+                num_bitstrings=num_bitstrings,
+                size_bitstring=size_bitstring,
+                num_ones=num_ones,
+                num_wires=num_wires,
+            )
+            == expected
+        )
+
+    @pytest.mark.parametrize(
+        "num_bitstrings, size_bitstring, num_ones, num_wires, expected_res",
         (
             (
-                ["000", "010", "101", "111"],
+                4,
+                3,
+                6,
                 15,
                 [
                     GateCount(resource_rep(qre.SWAP), 16),
@@ -193,15 +244,21 @@ class TestBBQRAM:
             ),
         ),
     )
-    def test_resources(self, bitstrings, num_wires, expected_res):
+    def test_resources(self, num_bitstrings, size_bitstring, num_ones, num_wires, expected_res):
         """Test that the resources are correct."""
-        assert qre.BBQRAM.resource_decomp(bitstrings, num_wires) == expected_res
+        assert (
+            qre.BBQRAM.resource_decomp(num_bitstrings, size_bitstring, num_ones, num_wires)
+            == expected_res
+        )
 
-    @pytest.mark.parametrize(("bitstrings", "num_wires"), [(["000", "101", "010", "111"], 15)])
-    def test_tracking_name(self, bitstrings, num_wires):
+    @pytest.mark.parametrize(
+        ("num_bitstrings", "size_bitstring", "num_ones", "num_wires"), [(4, 3, 6, 15)]
+    )
+    def test_tracking_name(self, num_bitstrings, size_bitstring, num_ones, num_wires):
         """Tests that the tracking name is correct."""
         assert (
-            qre.BBQRAM.tracking_name(bitstrings, num_wires) == f"BBQRAM({bitstrings}, {num_wires})"
+            qre.BBQRAM.tracking_name(num_bitstrings, size_bitstring, num_ones, num_wires)
+            == f"BBQRAM({num_bitstrings}, {size_bitstring}, {num_ones}, {num_wires})"
         )
 
 

@@ -1799,8 +1799,12 @@ class BBQRAM(ResourceOperator):
     r"""Resource class for BBQRAM.
 
     Args:
-        bitstrings (Sequence[str]):
-            The classical memory to retrieve values from.
+        num_bitstrings (int):
+            The size of the classical memory array to retrieve values from.
+        size_bitstring (int):
+            The length of the individual bitstrings in the classical memory.
+        num_ones (int):
+            The number of ``1``s in the classical memory.
         num_wires (int):
             The number of qubits the operation acts upon.
         control_wires (WiresLike):
@@ -1820,11 +1824,13 @@ class BBQRAM(ResourceOperator):
     .. seealso:: :class:`~.BBQRAM`
     """
 
-    resource_keys = {"bitstrings", "num_wires"}
+    resource_keys = {"num_bitstrings", "size_bitstring", "num_ones", "num_wires"}
 
     def __init__(
         self,
-        bitstrings,
+        num_bitstrings,
+        size_bitstring,
+        num_ones,
         num_wires,
         control_wires=None,
         target_wires=None,
@@ -1834,7 +1840,9 @@ class BBQRAM(ResourceOperator):
         if control_wires and target_wires and work_wires:
             all_wires = list(control_wires) + list(target_wires) + list(work_wires)
         self.num_wires = num_wires if all_wires is None else len(all_wires)
-        self.bitstrings = bitstrings
+        self.num_bitstrings = num_bitstrings
+        self.size_bitstring = size_bitstring
+        self.num_ones = num_ones
         super().__init__(wires=all_wires)
 
     @property
@@ -1844,35 +1852,48 @@ class BBQRAM(ResourceOperator):
         Returns:
             dict: A dictionary containing the resource parameters:
                 * num_wires (int): the number of qubits the operation acts upon
-                * bitstrings (Sequence[str]): the classical memory to retrieve values from
+                * num_bitstrings (int): the size of the classical memory array to retrieve values from
+                * size_bitstring (int): the length of the individual bitstrings in the classical memory
+                * num_ones (int): the number of ``1``s in the classical memory
         """
         return {
             "num_wires": self.num_wires,
-            "bitstrings": self.bitstrings,
+            "num_bitstrings": self.num_bitstrings,
+            "size_bitstring": self.size_bitstring,
+            "num_ones": self.num_ones,
         }
 
     @classmethod
-    def resource_rep(cls, bitstrings, num_wires):
+    def resource_rep(cls, num_bitstrings, size_bitstring, num_ones, num_wires):
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
 
         Args:
-            bitstrings (Sequence[str]): the classical memory to retrieve values from
+            num_bitstrings (int): the size of the classical memory array to retrieve values from
+            size_bitstring (int): the length of the individual bitstrings in the classical memory
+            num_ones (int): the number of ``1``s in the classical memory
             num_wires (int): the number of qubits the operation acts upon
 
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
-        params = {"bitstrings": bitstrings, "num_wires": num_wires}
+        params = {
+            "num_bitstrings": num_bitstrings,
+            "size_bitstring": size_bitstring,
+            "num_ones": num_ones,
+            "num_wires": num_wires,
+        }
         return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
-    def resource_decomp(cls, bitstrings, num_wires):
+    def resource_decomp(cls, num_bitstrings, size_bitstring, num_ones, num_wires):
         r"""Returns a list representing the resources of the operator. Each object in the list
         represents a gate and the number of times it occurs in the circuit.
 
         Args:
-            bitstrings (Sequence[str]): the classical memory to retrieve values from
+            num_bitstrings (int): the size of the classical memory array to retrieve values from
+            size_bitstring (int): the length of the individual bitstrings in the classical memory
+            num_ones (int): the number of ``1``s in the classical memory
             num_wires (int): the number of qubits the operation acts upon
 
         Resources:
@@ -1884,8 +1905,8 @@ class BBQRAM(ResourceOperator):
                 represents a specific quantum gate and the number of times it appears
                 in the decomposition.
         """
-        num_target_wires = len(bitstrings[0])
-        n_k = int(math.log2(len(bitstrings)))
+        num_target_wires = size_bitstring
+        n_k = int(math.log2(num_bitstrings))
 
         swap = resource_rep(qre.SWAP)
         cswap = resource_rep(qre.CSWAP)
@@ -1896,10 +1917,7 @@ class BBQRAM(ResourceOperator):
         cswap_counts = ((1 << n_k) - 1) * num_target_wires * 4 + ((1 << n_k) - 1 - n_k) * 4
         hadamard_counts = num_target_wires * 2
 
-        pauliz_counts = 0
-        for j in range(num_target_wires):
-            for p in range(1 << n_k):
-                pauliz_counts += 1 if int(bitstrings[p][j]) else 0
+        pauliz_counts = num_ones
 
         return [
             GateCount(swap, swap_counts),
@@ -1909,9 +1927,9 @@ class BBQRAM(ResourceOperator):
         ]
 
     @staticmethod
-    def tracking_name(bitstrings, num_wires) -> str:
+    def tracking_name(num_bitstrings, size_bitstring, num_ones, num_wires) -> str:
         r"""Returns the tracking name built with the operator's parameters."""
-        return f"BBQRAM({bitstrings}, {num_wires})"
+        return f"BBQRAM({num_bitstrings}, {size_bitstring}, {num_ones}, {num_wires})"
 
 
 class Select(ResourceOperator):
