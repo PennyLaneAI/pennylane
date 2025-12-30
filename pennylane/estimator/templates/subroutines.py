@@ -1803,8 +1803,6 @@ class HybridQRAM(ResourceOperator):
             The classical memory to retrieve values from.
         num_wires (int):
             The number of qubits the operation acts upon.
-        num_target_wires (int):
-            The number of ``target_wires`` that final value is stored in.
         num_select_wires (int):
             The number of "select" bits taken from ``control_wires``.
         num_work_wires (int):
@@ -1835,7 +1833,6 @@ class HybridQRAM(ResourceOperator):
         self,
         bitstrings,
         num_wires,
-        num_target_wires,
         num_select_wires,
         num_work_wires,
         control_wires=None,
@@ -1846,11 +1843,9 @@ class HybridQRAM(ResourceOperator):
         if control_wires and target_wires and work_wires:
             all_wires = list(control_wires) + list(target_wires) + list(work_wires)
             assert num_work_wires == len(work_wires)
-            assert num_target_wires == len(target_wires)
         self.num_wires = num_wires if all_wires is None else len(all_wires)
         self.bitstrings = bitstrings
         self.num_select_wires = num_select_wires
-        self.num_target_wires = num_target_wires
         self.num_work_wires = num_work_wires
         super().__init__(wires=all_wires)
 
@@ -1862,45 +1857,41 @@ class HybridQRAM(ResourceOperator):
             dict: A dictionary containing the resource parameters.
                 * bitstrings (Sequence[str]): the classical memory to retrieve values from
                 * num_wires (int): the number of qubits the operation acts upon
-                * num_target_wires (int): the number of ``target_wires``
                 * num_select_wires (int): the number of select wires
                 * num_tree_control_wires (int): the number of ``work_wires`` minus the number of select wires
         """
         return {
             "bitstrings": self.bitstrings,
             "num_wires": self.num_wires,
-            "num_target_wires": self.num_target_wires,
             "num_select_wires": self.num_select_wires,
             "num_tree_control_wires": self.num_work_wires - self.num_select_wires,
         }
 
     @classmethod
-    def resource_rep(cls, bitstrings, num_wires, num_target_wires, num_select_wires, num_tree_control_wires):
+    def resource_rep(cls, bitstrings, num_wires, num_select_wires, num_tree_control_wires):
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
 
         Args:
             bitstrings (Sequence[str]): the classical memory to retrieve values from
             num_wires (int): the number of qubits the operation acts upon
-            num_target_wires (int): the number of ``target_wires``
             num_select_wires (int): the number of select wires
             num_tree_control_wires (int): the number of ``work_wires`` minus the number of select wires
 
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
-        params = {"bitstrings": bitstrings, "num_target_wires": num_target_wires, "num_select_wires": num_select_wires, "num_tree_control_wires": num_tree_control_wires}
+        params = {"bitstrings": bitstrings, "num_select_wires": num_select_wires, "num_tree_control_wires": num_tree_control_wires}
         return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
-    def resource_decomp(cls, bitstrings, num_wires, num_target_wires, num_select_wires, num_tree_control_wires):
+    def resource_decomp(cls, bitstrings, num_wires, num_select_wires, num_tree_control_wires):
         r"""Returns a list representing the resources of the operator. Each object in the list
         represents a gate and the number of times it occurs in the circuit.
 
         Args:
             bitstrings (Sequence[str]): the classical memory to retrieve values from
             num_wires (int): the number of qubits the operation acts upon
-            num_target_wires (int): the number of ``target_wires``
             num_select_wires (int): the number of select wires
             num_tree_control_wires (int): the number of ``work_wires`` minus the number of select wires
 
@@ -1913,6 +1904,7 @@ class HybridQRAM(ResourceOperator):
                 represents a specific quantum gate and the number of times it appears in the decomposition.
         """
         num_blocks = 1 << num_select_wires
+        num_target_wires = len(bitstrings[0])
 
         paulix = resource_rep(qre.X)
         cnot = resource_rep(qre.CNOT)
