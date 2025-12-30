@@ -308,7 +308,7 @@ class ResourceOperator(ABC):
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
-        For ``ResourceOperator``s that don't define a ``controlled_resource_decomp`` method, this 
+        For ``ResourceOperator``s that don't define a ``controlled_resource_decomp`` method, this
         will be the default ``controlled_resource_decomp`` method.
 
         Resources:
@@ -346,7 +346,7 @@ class ResourceOperator(ABC):
         r"""Returns a list representing the resources for an operator
         raised to a power.
 
-        For ``ResourceOperator``s that don't define a ``pow_resource_decomp`` method, this will 
+        For ``ResourceOperator``s that don't define a ``pow_resource_decomp`` method, this will
         be its ``pow_resource_decomp`` method.
 
         Resources:
