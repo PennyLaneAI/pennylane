@@ -75,6 +75,7 @@ from .ops.op_math import (
 
 from .templates import (
     OutOfPlaceSquare,
+    IQP,
     PhaseGradient,
     OutMultiplier,
     SemiAdder,
@@ -105,6 +106,7 @@ from .templates import (
     SingleQubitComparator,
     TwoQubitComparator,
     RegisterComparator,
+    UnaryIterationQPE,
     GQSP,
     Reflection,
     Qubitization,

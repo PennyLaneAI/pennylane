@@ -89,7 +89,7 @@ class IQP(Operation):
     resource_keys = {"spin_sym", "pattern", "num_wires"}
 
     def __init__(
-        self, weights, num_wires, pattern, spin_sym=None, id=None
+        self, weights, num_wires, pattern, spin_sym=False, id=None
     ):  # pylint: disable=too-many-arguments
         if len(pattern) != len(weights):
             raise ValueError(

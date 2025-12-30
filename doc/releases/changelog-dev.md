@@ -329,6 +329,11 @@
   Value Transformation (QSVT) algorithms using two new resource operators: :class:`estimator.QSP <pennylane.estimator.templates.qsp.QSP>` and :class:`estimator.QSVT <pennylane.estimator.templates.qsp.QSVT>`.
   [(#8733)](https://github.com/PennyLaneAI/pennylane/pull/8733)
 
+* Added the :class:`estimator.UnaryIterationQPE <pennylane.estimator.templates.subroutines.UnaryIterationQPE>` subroutine in the :mod:`estimator <pennylane.estimator>`
+  module. It is a variant of the Qubitized Quantum Phase Estimation algorithm. This allows for reduced T and Toffoli gate count, in return
+  for additional qubits used.
+  [(#8708)](https://github.com/PennyLaneAI/pennylane/pull/8708)
+
 * A new :func:`~pennylane.resource.algo_error` function has been added to compute algorithm-specific 
   errors from quantum circuits. This provides a dedicated entry point for retrieving error information 
   that was previously accessible through :func:`~pennylane.specs`. The function works with QNodes and 
@@ -395,7 +400,38 @@
   0: ──RX(6.68)─┤  State
   ```
 
+<h4> New templates </h4>
+
+* A new template :class:`~.MultiplexerStatePreparation` has been added. This template allows preparing arbitrary states
+  using :class:`~.SelectPauliRot` operations.
+  [(#8581)](https://github.com/PennyLaneAI/pennylane/pull/8581)
+
+  Using :class:`~.MultiplexerStatePreparation` is analogous to using other state preparation techniques in PennyLane.
+
+  ```python
+  probs_vector = np.array([0.5, 0., 0.25, 0.25])
+
+  dev = qml.device("default.qubit", wires = 2)
+  wires = [0, 1]
+
+  @qml.qnode(dev)
+  def circuit():
+    qml.MultiplexerStatePreparation(np.sqrt(probs_vector), wires)
+    return qml.probs(wires)
+  ```
+  
+  ```pycon
+  >>> np.round(circuit(), 2)
+  array([0.5 , 0.  , 0.25, 0.25])
+  ```
+
+For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208112).
+
 <h3>Improvements 🛠</h3>
+
+* When program capture is enabled, `qml.adjoint` and `qml.ctrl` can now be called on
+  operators that were constructed ahead of time and used as closure variables.
+  [(#8816)](https://github.com/PennyLaneAI/pennylane/pull/8816)
 
 * `qml.measure` can now be used as a frontend for `catalyst.measure`.
   [(#8782)](https://github.com/PennyLaneAI/pennylane/pull/8782)

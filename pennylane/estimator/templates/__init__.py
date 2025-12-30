@@ -15,6 +15,7 @@ r"""This module contains resource templates."""
 
 from .subroutines import (
     OutOfPlaceSquare,
+    IQP,
     PhaseGradient,
     OutMultiplier,
     SemiAdder,
@@ -27,6 +28,7 @@ from .subroutines import (
     ControlledSequence,
     QPE,
     IterativeQPE,
+    UnaryIterationQPE,
     Reflection,
     Qubitization,
 )
