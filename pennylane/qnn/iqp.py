@@ -118,7 +118,7 @@ def _op_expval_indep(
             key, val = update(key, op)
             expvals.append(val[0])
 
-        return array(expvals)
+        return jnp.array(expvals)
 
     _, op_expvals = jax.lax.scan(update, key, ops)
 
