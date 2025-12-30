@@ -1795,6 +1795,136 @@ class BasisRotation(ResourceOperator):
         return f"BasisRotation({dim})"
 
 
+class HybridQRAM(ResourceOperator):
+    r"""Resource class for HybridQRAM.
+
+    Args:
+        bitstrings (Sequence[str]):
+            The classical data as a sequence of bitstrings. The size of the classical data must
+            be :math:`2^{\texttt{len(control_wires)}}`.
+        control_wires (WiresLike):
+            The register that stores the index for the entry of the classical data we want to
+            access.
+        target_wires (WiresLike):
+            The register in which the classical data gets loaded. The size of this register must
+            equal each bitstring length in ``bitstrings``.
+        work_wires (WiresLike):
+            The additional wires required to funnel the desired entry of ``bitstrings`` into the
+            ``target_wires`` register. The ``work_wires`` register includes the signal, bus,
+            direction, left port and right port wires in that order for a tree of depth
+            :math:`(n-k)`. For more details, consult
+            `section 3 of arXiv:2306.03242 <https://arxiv.org/abs/2306.03242>`__.
+        k (int):
+            The number of "select" bits taken from ``control_wires``.
+
+    Resources:
+        The resources are obtained from the HybridQRAM implementation in PennyLane. Please find more
+        details about the algorithm in `Systems Architecture for Quantum Random Access Memory <https://arxiv.org/abs/2306.03242>`_.
+
+    .. seealso:: :class:`~.HybridQRAM`
+    """
+
+    resource_keys = {"num_ones", "num_target_wires", "num_select_wires", "numm_work_wires"}
+
+    def __init__(
+        self,
+        num_ones,
+        num_wires,
+        num_target_wires,
+        num_select_wires,
+        num_work_wires,
+        control_wires=None,
+        target_wires=None,
+        work_wires=None,
+    ):
+        all_wires = None
+        if control_wires and target_wires and work_wires:
+            all_wires = list(control_wires) + list(target_wires) + list(work_wires)
+            assert num_work_wires == len(work_wires)
+            assert num_target_wires == len(target_wires)
+        self.num_wires = num_wires if all_wires is None else len(all_wires)
+        self.num_ones = num_ones
+        self.num_select_wires = num_select_wires
+        self.num_target_wires = num_target_wires
+        self.num_work_wires = num_work_wires
+        super().__init__(wires=all_wires)
+
+    @property
+    def resource_params(self) -> dict:
+        r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+        Returns:
+            dict: A dictionary containing the resource parameters.
+        """
+        return {
+            "num_ones": self.num_ones,
+            "num_target_wires": self.num_target_wires,
+            "num_select_wires": self.num_select_wires,
+            "num_tree_control_wires": self.num_work_wires - self.num_select_wires,
+        }
+
+    @classmethod
+    def resource_rep(cls, bitstrings, num_wires):
+        r"""Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute the resources.
+
+        Args:
+            num_wires (int): the number of qubits the operation acts upon
+
+        Returns:
+            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+        """
+        params = {"bitstrings": bitstrings, "num_wires": num_wires}
+        return CompressedResourceOp(cls, num_wires, params)
+
+    @classmethod
+    def resource_decomp(cls, bitstrings, num_wires):
+        r"""Returns a list representing the resources of the operator. Each object in the list
+        represents a gate and the number of times it occurs in the circuit.
+
+        Args:
+            bitstrings (Sequence[str]): the classical memory to retrieve values from
+            num_wires (int): the number of qubits the operation acts upon
+
+        Resources:
+            The resources are obtained from the BBQRAM implementation in PennyLane. The original publicaiton of
+            the algorithm can be found in `Quantum Random Access Memory <https://arxiv.org/abs/0708.1879>`_.
+
+        Returns:
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
+                represents a specific quantum gate and the number of times it appears
+                in the decomposition.
+        """
+        num_target_wires = len(bitstrings[0])
+        n_k = int(math.log2(len(bitstrings)))
+
+        swap = resource_rep(qre.SWAP)
+        cswap = resource_rep(qre.CSWAP)
+        hadamard = resource_rep(qre.Hadamard)
+        pauliz = resource_rep(qre.Z)
+
+        swap_counts = ((1 << n_k) - 1 + n_k) * 2 + num_target_wires * 2
+        cswap_counts = ((1 << n_k) - 1) * num_target_wires * 4 + ((1 << n_k) - 1 - n_k) * 4
+        hadamard_counts = num_target_wires * 2
+
+        pauliz_counts = 0
+        for j in range(num_target_wires):
+            for p in range(1 << n_k):
+                pauliz_counts += 1 if int(bitstrings[p][j]) else 0
+
+        return [
+            GateCount(swap, swap_counts),
+            GateCount(hadamard, hadamard_counts),
+            GateCount(cswap, cswap_counts),
+            GateCount(pauliz, pauliz_counts),
+        ]
+
+    @staticmethod
+    def tracking_name(bitstrings, num_wires) -> str:
+        r"""Returns the tracking name built with the operator's parameters."""
+        return f"BBQRAM({bitstrings}, {num_wires})"
+
+
 class Select(ResourceOperator):
     r"""Resource class for the Select gate.
 
