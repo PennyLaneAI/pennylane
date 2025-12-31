@@ -332,6 +332,8 @@ def iqp_expval(
             max_batch_samples=10_000,
             max_batch_ops=10_000,
         )
+
+    .. seealso:: The :class:`~.IQP` operation associated with this method.
     """
 
     params = jnp.array(weights)
