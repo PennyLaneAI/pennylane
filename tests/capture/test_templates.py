@@ -302,6 +302,7 @@ tested_modified_templates = [
     qml.ControlledSequence,
     qml.FermionicDoubleExcitation,
     qml.HilbertSchmidt,
+    qml.HybridQRAM,
     qml.IQP,
     qml.LocalHilbertSchmidt,
     qml.QDrift,
@@ -311,6 +312,7 @@ tested_modified_templates = [
     qml.Qubitization,
     qml.Reflection,
     qml.Select,
+    qml.SelectOnlyQRAM,
     qml.MERA,
     qml.MPS,
     qml.TTN,
@@ -327,6 +329,7 @@ tested_modified_templates = [
     qml.MPSPrep,
     qml.GQSP,
     qml.QROMStatePreparation,
+    qml.MultiplexerStatePreparation,
     qml.SelectPauliRot,
 ]
 
@@ -885,8 +888,8 @@ class TestModifiedTemplates:
         assert len(q) == 1
         qml.assert_equal(q.queue[0], qml.Qubitization(**kwargs))
 
-    def test_qram(self):
-        """Test the primitve bind call of QRAM."""
+    def test_bbqram(self):
+        """Test the primitve bind call of BBQRAM."""
 
         kwargs = {
             "bitstrings": ("010", "111", "110", "000"),
@@ -918,6 +921,76 @@ class TestModifiedTemplates:
 
         assert len(q) == 1
         qml.assert_equal(q.queue[0], qml.BBQRAM(**kwargs))
+
+    def test_select_only_qram(self):
+        """Test the primitve bind call of SelectOnlyQRAM."""
+
+        kwargs = {
+            "bitstrings": ("010", "111", "110", "000", "010", "111", "110", "000"),
+            "control_wires": (0, 1),
+            "target_wires": (2, 3, 4),
+            "select_wires": (12),
+            "select_value": 1,
+        }
+
+        def qfunc():
+            qml.SelectOnlyQRAM(**kwargs)
+
+        # Validate inputs
+        qfunc()
+
+        # Actually test primitive bind
+        jaxpr = jax.make_jaxpr(qfunc)()
+
+        assert len(jaxpr.eqns) == 1
+
+        eqn = jaxpr.eqns[0]
+        assert eqn.primitive == qml.SelectOnlyQRAM._primitive
+        assert eqn.invars == jaxpr.jaxpr.invars
+        assert eqn.params == kwargs
+        assert len(eqn.outvars) == 1
+        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+
+        with qml.queuing.AnnotatedQueue() as q:
+            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+
+        assert len(q) == 1
+        qml.assert_equal(q.queue[0], qml.SelectOnlyQRAM(**kwargs))
+
+    def test_hybrid_qram(self):
+        """Test the primitve bind call of HybridQRAM."""
+
+        kwargs = {
+            "bitstrings": ("010", "111", "110", "000"),
+            "control_wires": (0, 1),
+            "target_wires": (2, 3, 4),
+            "work_wires": tuple([5, 6, 7, 8, 12, 13, 14, 15, 9, 10, 11]),
+            "k": 0,
+        }
+
+        def qfunc():
+            qml.HybridQRAM(**kwargs)
+
+        # Validate inputs
+        qfunc()
+
+        # Actually test primitive bind
+        jaxpr = jax.make_jaxpr(qfunc)()
+
+        assert len(jaxpr.eqns) == 1
+
+        eqn = jaxpr.eqns[0]
+        assert eqn.primitive == qml.HybridQRAM._primitive
+        assert eqn.invars == jaxpr.jaxpr.invars
+        assert eqn.params == kwargs
+        assert len(eqn.outvars) == 1
+        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+
+        with qml.queuing.AnnotatedQueue() as q:
+            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+
+        assert len(q) == 1
+        qml.assert_equal(q.queue[0], qml.HybridQRAM(**kwargs))
 
     def test_qrom(self):
         """Test the primitive bind call of QROM."""
@@ -987,6 +1060,35 @@ class TestModifiedTemplates:
 
         assert len(q) == 1
         qml.assert_equal(q.queue[0], qml.QROMStatePreparation(**kwargs))
+
+    def test_multiplexer_state_prep(self):
+        """Test the primitive bind call of MultiplexerStatePreparation."""
+
+        state_vector = np.array([1 / 2, -1 / 2, 1 / 2, 1j / 2])
+        kwargs = {
+            "wires": (8, 9),
+        }
+
+        def qfunc(state_vector):
+            qml.MultiplexerStatePreparation(state_vector, **kwargs)
+
+        qfunc(state_vector)
+        jaxpr = jax.make_jaxpr(qfunc)(state_vector)
+
+        assert len(jaxpr.eqns) == 1
+
+        eqn = jaxpr.eqns[0]
+        assert eqn.primitive == qml.MultiplexerStatePreparation._primitive
+        assert eqn.invars == jaxpr.jaxpr.invars
+        assert eqn.params == kwargs
+        assert len(eqn.outvars) == 1
+        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+
+        with qml.queuing.AnnotatedQueue() as q:
+            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, state_vector)
+
+        assert len(q) == 1
+        qml.assert_equal(q.queue[0], qml.MultiplexerStatePreparation(state_vector, **kwargs))
 
     def test_multiplexed_rotation(self):
         """Test the primitive bind call of SelectPauliRot."""
