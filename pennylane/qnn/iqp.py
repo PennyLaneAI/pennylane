@@ -26,7 +26,7 @@ except ImportError as e:  # pragma: no cover
 
 
 def _len_gen(gates):
-    return sum(1 for gate in gates for _ in gate)
+    return sum(len(gate) for gate in gates)
 
 
 def _par_transform(gates):
