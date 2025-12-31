@@ -30,6 +30,7 @@ def _len_gen(gates):
 
 
 def _par_transform(gates):
+    len_gen = _len_gen(gates)
     n_gates = len(gates)
     gens_per_gate = [len(gate) for gate in gates]
     total_gens = sum(gens_per_gate)
