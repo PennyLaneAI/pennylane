@@ -49,8 +49,7 @@ def _gate_lists_to_arrays(gate_lists: list, n_qubits: int) -> list:
     for gates in gate_lists:
         arr = np.zeros([len(gates), n_qubits])
         for i, gate in enumerate(gates):
-            for j in gate:
-                arr[i, j] = 1.0
+            arr[i, gate] = 1.0
         gate_arrays.append(jnp.array(arr))
     return gate_arrays
 
