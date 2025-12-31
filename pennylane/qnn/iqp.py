@@ -311,7 +311,7 @@ def iqp_expval(
         max_batch_samples (int): Maximum number of samples in a batch. Defaults to None, which means taking all n_samples at once.
 
     Returns:
-        list: List of Vectors. The expected value of each op and its standard deviation.
+        list: List of Vectors. The expected value of each operator and its corresponding standard deviation.
 
     **Example:**
 
