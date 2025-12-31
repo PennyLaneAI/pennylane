@@ -329,6 +329,7 @@ tested_modified_templates = [
     qml.MPSPrep,
     qml.GQSP,
     qml.QROMStatePreparation,
+    qml.MultiplexerStatePreparation,
     qml.SelectPauliRot,
 ]
 
@@ -1059,6 +1060,35 @@ class TestModifiedTemplates:
 
         assert len(q) == 1
         qml.assert_equal(q.queue[0], qml.QROMStatePreparation(**kwargs))
+
+    def test_multiplexer_state_prep(self):
+        """Test the primitive bind call of MultiplexerStatePreparation."""
+
+        state_vector = np.array([1 / 2, -1 / 2, 1 / 2, 1j / 2])
+        kwargs = {
+            "wires": (8, 9),
+        }
+
+        def qfunc(state_vector):
+            qml.MultiplexerStatePreparation(state_vector, **kwargs)
+
+        qfunc(state_vector)
+        jaxpr = jax.make_jaxpr(qfunc)(state_vector)
+
+        assert len(jaxpr.eqns) == 1
+
+        eqn = jaxpr.eqns[0]
+        assert eqn.primitive == qml.MultiplexerStatePreparation._primitive
+        assert eqn.invars == jaxpr.jaxpr.invars
+        assert eqn.params == kwargs
+        assert len(eqn.outvars) == 1
+        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+
+        with qml.queuing.AnnotatedQueue() as q:
+            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, state_vector)
+
+        assert len(q) == 1
+        qml.assert_equal(q.queue[0], qml.MultiplexerStatePreparation(state_vector, **kwargs))
 
     def test_multiplexed_rotation(self):
         """Test the primitive bind call of SelectPauliRot."""

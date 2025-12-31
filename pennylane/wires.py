@@ -213,13 +213,20 @@ class Wires(Sequence):
         other = Wires(other)
         return Wires.all_wires([other, self])
 
-    def __array__(self):
+    def __array__(self, dtype=None, copy=None):
         """Defines a numpy array representation of the Wires object.
+
+        Args:
+            dtype: The desired data-type for the array. Default is ``None``.
+            copy: If ``True``, then force a copy. If ``False``, then ensure that a copy
+                is not made. If ``None`` (default), a copy will only be made if
+                necessary.
 
         Returns:
             ndarray: array representing Wires object
         """
-        return np.array(self._labels)
+        arr = np.array(self._labels, dtype=dtype)
+        return arr.copy() if copy else arr
 
     def __jax_array__(self):
         """Defines a JAX numpy array representation of the Wires object.
