@@ -42,7 +42,7 @@ def _par_transform(gates):
     # col_indices: 0, 0, ... 1, 1, 1 ... (gate index repeated for each gen it owns)
     row_indices = np.arange(total_gens)
     col_indices = np.repeat(np.arange(n_gates), gens_per_gate)
-    
+
     trans_par[row_indices, col_indices] = 1
     return jnp.array(trans_par)
 
