@@ -21,7 +21,6 @@ has_jax = True
 try:
     import jax
     import jax.numpy as jnp
-    from jax.numpy import array
 except ImportError as e:
     has_jax = False
 
@@ -119,7 +118,7 @@ def _op_expval_indep(
             key, val = update(key, op)
             expvals.append(val[0])
 
-        return array(expvals)
+        return jnp.array(expvals)
 
     _, op_expvals = jax.lax.scan(update, key, ops)
 
@@ -333,6 +332,8 @@ def iqp_expval(
             max_batch_samples=10_000,
             max_batch_ops=10_000,
         )
+
+    .. seealso:: The :class:`~.IQP` operation associated with this method.
     """
 
     params = jnp.array(weights)
