@@ -280,9 +280,9 @@ def iqp_expval(
     max_batch_ops: int = None,
     max_batch_samples: int = None,
 ) -> list:
-    r"""Estimate the expectation values of a batch of Pauli-Z type operators. A set of l operators must be specified
-    by an array of shape (l,n_qubits), where each row is a binary vector that specifies on which qubit a Pauli Z
-    operator acts.
+    r"""Estimate the expectation values of a batch of Pauli-Z type operators in an IQP circuit. A set of l operators
+    must be specified by an array of shape (l, n_qubits), where each row is a binary vector that specifies on which
+    qubit a Pauli Z operator acts.
     The expectation values are estimated using a randomized method whose precision in controlled by n_samples,
     with larger values giving higher precision. Estimates are unbiased, however may be correlated. To request
     uncorrelated estimate, use indep_estimates=True at the cost of larger runtime.
@@ -290,7 +290,7 @@ def iqp_expval(
     and/or max_batch_samples to a fixed value.
 
     Args:
-        ops (jnp.ndarray): Array specifying the operator/s for which to estimate the expectation values.
+        ops (list): Array specifying the operator/s for which to estimate the expectation values.
         weights (list): The parameters of the IQP gates.
         pattern (list[list[list[int]]]): Specification of the trainable gates. Each element of `pattern` corresponds to a
             unique trainable parameter. Each sublist specifies the generators to which that parameter applies.

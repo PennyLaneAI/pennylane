@@ -16,13 +16,15 @@
 
 <h4>Instantaneous Quantum Polynomial Circuits </h4>
 
+* An efficient expectation value estimator has been added which may be used to train `~.IQP` circuits.
+  [(#8749)](https://github.com/PennyLaneAI/pennylane/pull/8749)
+
 * A new template for building an Instantaneous Quantum Polynomial (`~.IQP`) circuit has been added along with a 
   lightweight version (based on the :class:`~.estimator.resource_operator.ResourceOperator` class) to rapidly 
   estimate its resources. This unlocks easily estimating the resources of the IQP circuit introduced in the 
   `Train on classical, deploy on quantum <https://arxiv.org/abs/2503.02934>`_ work for generative quantum machine 
-  learning. An efficient expectation value estimator has also been added which may be used to train `~.IQP` circuits.
+  learning.
   [(#8748)](https://github.com/PennyLaneAI/pennylane/pull/8748)
-  [(#8749)](https://github.com/PennyLaneAI/pennylane/pull/8749)
 
 <h4>Pauli-based computation </h4>
 
