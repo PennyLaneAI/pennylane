@@ -305,9 +305,11 @@ def iqp_expval(
         key (Array): Jax key to control the randomness of the process.
         spin_sym (bool, optional): If True, the circuit is equivalent to one where the initial state
             :math:`\frac{1}{\sqrt(2)}(|00\dots0> + |11\dots1>)` is used in place of :math:`|00\dots0>`.
-        indep_estimates (bool): Whether to use independent estimates of the ops in a batch.
-        max_batch_ops (int): Maximum number of operators in a batch. Defaults to None, which means taking all ops at once.
-            Can only be used if ``ops`` is a jnp.array.
+        indep_estimates (bool): Whether to use independent estimates of the operators in a batch.
+            If True, correlation among the estimated expectation values can be avoided, although at the cost
+            of larger runtime.
+        max_batch_ops (int): Maximum number of operators in a batch. Defaults to None, which means taking all
+            operators at once. Can only be used if ``ops`` is a jnp.array.
         max_batch_samples (int): Maximum number of samples in a batch. Defaults to None, which means taking all n_samples at once.
 
     Returns:
