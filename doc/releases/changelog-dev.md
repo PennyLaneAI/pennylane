@@ -170,25 +170,25 @@
 
 <h4>Analyzing your algorithms quickly and easily with resource estimation</h4>
 
-* Users can now set precisions for a larger variety of `ResourceOperator`s in
-  :mod:`estimator <pennylane.estimator>` using
-  :meth:`ResourceConfig.set_precision <pennylane.estimator.resource_config.ResourceConfig.set_precision>`
-  thanks to the addition of the `resource_key` keyword argument.
-  [(#8561)](https://github.com/PennyLaneAI/pennylane/pull/8561)
-
-* Users can now estimate the resources of Trotterization for Pauli Hamiltonians, using the new
+* Now it's possible to estimate the resources of Trotterization for Pauli Hamiltonians, using the new
   :class:`estimator.PauliHamiltonian <pennylane.estimator.compact_hamiltonian.PauliHamiltonian>`
   resource Hamiltonian class and the new
   :class:`estimator.TrotterPauli <pennylane.estimator.templates.TrotterPauli>`
   resource operator.
+  It's possible to access the total number of terms (Pauli words) from the `PauliHamiltonian` object directly,
+  using the `PauliHamiltonian.num_terms` property to the ``qml.estimator.PauliHamiltonian`` class.
   [(#8546)](https://github.com/PennyLaneAI/pennylane/pull/8546)
-
-* Added `PauliHamiltonian.num_terms` property to the ``qml.estimator.PauliHamiltonian`` class.
-  Users can more easily access the total number of terms (Pauli words) from the `PauliHamiltonian` object directly.
   [(#8761)](https://github.com/PennyLaneAI/pennylane/pull/8761)
 
-* A new :func:`~pennylane.resource.algo_error` function has been added to compute algorithm-specific 
-  errors from quantum circuits. This provides a dedicated entry point for retrieving error information 
+* Now it's possible to set precisions for a larger variety of `ResourceOperator`s in
+  the :mod:`estimator <pennylane.estimator>` module, using the `resource_key` keyword argument of the
+  :meth:`ResourceConfig.set_precision <pennylane.estimator.resource_config.ResourceConfig.set_precision>`
+  method.
+  [(#8561)](https://github.com/PennyLaneAI/pennylane/pull/8561)
+
+* Compute algorithm-specific 
+  errors from quantum circuits with the :func:`~pennylane.resource.algo_error` function.
+  This provides a dedicated entry point for retrieving error information 
   that was previously accessible through :func:`~pennylane.specs`. The function works with QNodes and 
   returns a dictionary of error types and their computed values.
   [(#8787)](https://github.com/PennyLaneAI/pennylane/pull/8787)
