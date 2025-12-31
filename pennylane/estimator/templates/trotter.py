@@ -2165,12 +2165,12 @@ class TrotterPauli(ResourceOperator):
         pauli_terms = pauli_ham.pauli_terms
 
         if isinstance(pauli_terms, dict):
-            cost_fragments = cls.cost_pauli_group(pauli_terms)
+            cost_fragments = cls._cost_pauli_group(pauli_terms)
             fragment_repetition = num_steps if order == 1 else 2 * num_steps * (5 ** (k - 1))
             return [fragment_repetition * gate_count for gate_count in cost_fragments]
 
         num_groups = len(pauli_terms)  # commuting groups
-        cost_groups = [cls.cost_pauli_group(group) for group in pauli_terms]
+        cost_groups = [cls._cost_pauli_group(group) for group in pauli_terms]
         gate_count_lst = []
         if order == 1:
             for group_cost_lst in cost_groups:
