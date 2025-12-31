@@ -30,16 +30,19 @@ def _len_gen(gates):
 
 
 def _par_transform(gates):
-    len_gen = _len_gen(gates)
+    n_gates = len(gates)
+    gens_per_gate = [len(gate) for gate in gates]
+    total_gens = sum(gens_per_gate)
 
     # Transformation matrix from the number of independent parameters to the number of total generators
     trans_par = np.zeros((len_gen, len(gates)))
-    i = 0
-    for j, gens in enumerate(gates):
-        for _ in gens:
-            # Matrix that linearly transforms the vector of parameters that are trained into the vector of parameters that apply to the generators
-            trans_par[i, j] = 1
-            i += 1
+    # Vectorized assignment
+    # row_indices: 0, 1, 2, ... (one per generator)
+    # col_indices: 0, 0, ... 1, 1, 1 ... (gate index repeated for each gen it owns)
+    row_indices = np.arange(total_gens)
+    col_indices = np.repeat(np.arange(n_gates), gens_per_gate)
+    
+    trans_par[row_indices, col_indices] = 1
     return jnp.array(trans_par)
 
 
