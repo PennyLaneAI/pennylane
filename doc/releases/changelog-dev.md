@@ -4,12 +4,12 @@
 
 <h4>Pass-by-Pass Circuit Specs </h4>
 
-* Resource tracking with :func:`~pennylane.specs` can now be used to analyze the pass-by-pass impact of arbitrary
+* Resource tracking with :func:`~pennylane.specs` can now be used to analyze the pass-by-pass impact of arbitrary 
   compilation passes on workflows compiled with :func:`~pennylane.qjit`.
   [(#8606)](https://github.com/PennyLaneAI/pennylane/pull/8606)
-
+  
   Consider the following :func:`qjit <pennylane.qjit>`'d circuit with two compilation passes applied:
-
+  
   ```python
   @qml.qjit
   @qml.transforms.merge_rotations
@@ -24,7 +24,7 @@
       return qml.probs()
   ```
 
-  The supplied ``level`` to :func:`pennylane.specs` may be individual `int` values, or an iterable of multiple levels.
+  The supplied ``level`` to :func:`pennylane.specs` may be individual `int` values, or an iterable of multiple levels. 
   Additionally, the strings ``"all"`` and ``"all-mlir"`` are allowed, returning circuit resources for all user-applied transforms
   and MLIR passes, or all user-applied MLIR passes only, respectively.
 
@@ -67,7 +67,7 @@
 
 <h4>QRAM </h4>
 
-* Bucket Brigade QRAM, a Hybrid QRAM and a Select-Only QRAM variant are implemented as a template :class:`~.BBQRAM`, :class:`~.HybridQRAM` and :class:`~.SelectOnlyQRAM`
+* Bucket Brigade QRAM, a Hybrid QRAM and a Select-Only QRAM variant are implemented as a template :class:`~.BBQRAM`, :class:`~.HybridQRAM` and :class:`~.SelectOnlyQRAM` 
   to allow for selection of bitstrings in superposition.
   [(#8670)](https://github.com/PennyLaneAI/pennylane/pull/8670)
   [(#8679)](https://github.com/PennyLaneAI/pennylane/pull/8679)
@@ -82,16 +82,16 @@
 
 <h4>Instantaneous Quantum Polynomial Circuits </h4>
 
-* A new template for building an Instantaneous Quantum Polynomial (`~.IQP`) circuit has been added along with a
-  lightweight version (based on the :class:`~.estimator.resource_operator.ResourceOperator` class) to rapidly
-  estimate its resources. This unlocks easily estimating the resources of the IQP circuit introduced in the
-  `Train on classical, deploy on quantum <https://arxiv.org/abs/2503.02934>`_ work for generative quantum machine
+* A new template for building an Instantaneous Quantum Polynomial (`~.IQP`) circuit has been added along with a 
+  lightweight version (based on the :class:`~.estimator.resource_operator.ResourceOperator` class) to rapidly 
+  estimate its resources. This unlocks easily estimating the resources of the IQP circuit introduced in the 
+  `Train on classical, deploy on quantum <https://arxiv.org/abs/2503.02934>`_ work for generative quantum machine 
   learning.
   [(#8748)](https://github.com/PennyLaneAI/pennylane/pull/8748)
 
 <h4>Pauli-based computation </h4>
 
-* Users can now perform rapid Clifford+T decomposition with :func:`pennylane.qjit` using the new
+* Users can now perform rapid Clifford+T decomposition with :func:`pennylane.qjit` using the new 
   :func:`~pennylane.transforms.gridsynth` compilation pass.
   This pass discretizes ``RZ`` and ``PhaseShift`` gates to either the Clifford+T basis or to the PPR basis.
   [(#8609)](https://github.com/PennyLaneAI/pennylane/pull/8609)
@@ -155,13 +155,13 @@
     expval(PauliZ): 1
   ```
 
-* Catalyst compilation passes designed for Pauli-based computation are now available in PennyLane,
-  providing accessibility for logical compilation research by directly integrating with
-  :func:`~.pauli_measure` and :class:`~.PauliRot` operations. This includes
-  :func:`pennylane.transforms.to_ppr`, :func:`pennylane.transforms.commute_ppr`,
-  :func:`pennylane.transforms.ppr_to_ppm`,
-  :func:`pennylane.transforms.merge_ppr_ppm`, :func:`pennylane.transforms.ppm_compilation`,
-  :func:`pennylane.transforms.reduce_t_depth`,
+* Catalyst compilation passes designed for Pauli-based computation are now available in PennyLane, 
+  providing accessibility for logical compilation research by directly integrating with 
+  :func:`~.pauli_measure` and :class:`~.PauliRot` operations. This includes 
+  :func:`pennylane.transforms.to_ppr`, :func:`pennylane.transforms.commute_ppr`, 
+  :func:`pennylane.transforms.ppr_to_ppm`, 
+  :func:`pennylane.transforms.merge_ppr_ppm`, :func:`pennylane.transforms.ppm_compilation`, 
+  :func:`pennylane.transforms.reduce_t_depth`, 
   [(#8762)](https://github.com/PennyLaneAI/pennylane/pull/8762)
 
 * New decomposition rules that decompose to :class:`~.PauliRot` are added for the following operators.
@@ -199,8 +199,8 @@
   can still be accessed from `pennylane.transforms.core`.
   [(#8756)](https://github.com/PennyLaneAI/pennylane/pull/8756)
 
-* The :class:`~.transforms.core.Transform` class (previously known as the `TransformDispatcher`),
-  :class:`~.transforms.core.BoundTransform` class (previously known as the `TransformContainer`),
+* The :class:`~.transforms.core.Transform` class (previously known as the `TransformDispatcher`), 
+  :class:`~.transforms.core.BoundTransform` class (previously known as the `TransformContainer`), 
   and :class:`~.CompilePipeline` class (previously known as the `TransformProgram`) are updated to
   support intuitive composition of transform programs using `+` and `*` operators.
   [(#8703)](https://github.com/PennyLaneAI/pennylane/pull/8703)
@@ -260,9 +260,9 @@
 
 * Quantum compilation passes in MLIR and XDSL can now be applied using the core PennyLane transform
   infrastructure, instead of using Catalyst-specific tools. This is made possible by a new argument in
-  :func:`~pennylane.transform` and :class:`~.transforms.core.Transform` called ``pass_name``, which
-  accepts a string corresponding to the name of the compilation pass. The ``pass_name`` argument
-  ensures that the given compilation pass will be used when `qjit` is applied to a workflow, where the
+  :func:`~pennylane.transform` and :class:`~.transforms.core.Transform` called ``pass_name``, which 
+  accepts a string corresponding to the name of the compilation pass. The ``pass_name`` argument 
+  ensures that the given compilation pass will be used when `qjit` is applied to a workflow, where the 
   pass is performed in MLIR or xDSL.
   [(#8539)](https://github.com/PennyLaneAI/pennylane/pull/8539)
 
@@ -308,9 +308,9 @@
   for additional qubits used.
   [(#8708)](https://github.com/PennyLaneAI/pennylane/pull/8708)
 
-* A new :func:`~pennylane.resource.algo_error` function has been added to compute algorithm-specific
-  errors from quantum circuits. This provides a dedicated entry point for retrieving error information
-  that was previously accessible through :func:`~pennylane.specs`. The function works with QNodes and
+* A new :func:`~pennylane.resource.algo_error` function has been added to compute algorithm-specific 
+  errors from quantum circuits. This provides a dedicated entry point for retrieving error information 
+  that was previously accessible through :func:`~pennylane.specs`. The function works with QNodes and 
   returns a dictionary of error types and their computed values.
   [(#8787)](https://github.com/PennyLaneAI/pennylane/pull/8787)
 
@@ -318,16 +318,16 @@
   import pennylane as qml
   from pennylane.resource import SpectralNormError
   from pennylane.resource.error import ErrorOperation
-
+  
   class ApproximateRX(ErrorOperation):
       def __init__(self, phi, wires):
           super().__init__(phi, wires=wires)
-
+      
       def error(self):
           return SpectralNormError(0.01)  # simplified example
-
+  
   dev = qml.device("default.qubit")
-
+  
   @qml.qnode(dev)
   def circuit():
       ApproximateRX(0.5, wires=0)
@@ -393,7 +393,7 @@
     qml.MultiplexerStatePreparation(np.sqrt(probs_vector), wires)
     return qml.probs(wires)
   ```
-
+  
   ```pycon
   >>> np.round(circuit(), 2)
   array([0.5 , 0.  , 0.25, 0.25])
@@ -444,7 +444,7 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
 
 <h4>Resource estimation</h4>
 
-* Added `Resources.total_wires` and `Resources.total_gates` properties to the
+* Added `Resources.total_wires` and `Resources.total_gates` properties to the 
   ``qml.estimator.Resources`` class. Users can more easily access these quantities from the `Resources` object directly.
   [(#8761)](https://github.com/PennyLaneAI/pennylane/pull/8761)
 
@@ -484,8 +484,8 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
   [(#8734)](https://github.com/PennyLaneAI/pennylane/pull/8734)
 
 * Qualtran call graphs built via :func:`qml.to_bloq <pennylane.to_bloq>` now use PennyLane's resource estimation
-  module by default (``call_graph='estimator'``). This provides faster resource counting.
-  To use the previous behaviour based on PennyLane decompositions, set
+  module by default (``call_graph='estimator'``). This provides faster resource counting. 
+  To use the previous behaviour based on PennyLane decompositions, set 
   ``call_graph='decomposition'``.
   [(#8390)](https://github.com/PennyLaneAI/pennylane/pull/8390)
 
@@ -549,7 +549,7 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
   allowing for efficient decomposition of large matrices that cannot fit in memory when written as
   dense arrays.
   [(#8612)](https://github.com/PennyLaneAI/pennylane/pull/8612)
-
+  
 * A decomposition has been added to the adjoint of :class:`pennylane.TemporaryAND`. This decomposition relies on mid-circuit measurments and does not require any T gates.
   [(#8633)](https://github.com/PennyLaneAI/pennylane/pull/8633)
 
@@ -611,7 +611,7 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
 * The :class:`~.pennylane.estimator.templates.SelectTHC` resource operation is upgraded to allow for a trade-off between the number of qubits and T-gates.
   This provides more flexibility in optimizing algorithms.
   [(#8682)](https://github.com/PennyLaneAI/pennylane/pull/8682)
-
+  
 * The `~pennylane.estimator.compact_hamiltonian.CDFHamiltonian`, `~pennylane.estimator.compact_hamiltonian.THCHamiltonian`,
   `~pennylane.estimator.compact_hamiltonian.VibrationalHamiltonian`, and `~pennylane.estimator.compact_hamiltonian.VibronicHamiltonian`
   classes were modified to take the 1-norm of the Hamiltonian as an optional argument.
@@ -624,16 +624,16 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
-* A new transform :func:`~.transforms.select_pauli_rot_phase_gradient` has been added. It allows
-  implementing arbitrary :class:`~.SelectPauliRot` rotations with a phase gradient resource state and
+* A new transform :func:`~.transforms.select_pauli_rot_phase_gradient` has been added. It allows 
+  implementing arbitrary :class:`~.SelectPauliRot` rotations with a phase gradient resource state and 
   semi-in-place addition (:class:`~.SemiAdder`).
   [(#8738)](https://github.com/PennyLaneAI/pennylane/pull/8738)
 
 <h3>Breaking changes 💔</h3>
 
-* The `final_transform` property of the :class:`~.transforms.core.BoundTransform` has been renamed
-  to `is_final_transform` to better follow the naming convention for boolean properties. The `transform`
-  property of the :class:`~.transforms.core.Transform` and :class:`~.transforms.core.BoundTransform`
+* The `final_transform` property of the :class:`~.transforms.core.BoundTransform` has been renamed 
+  to `is_final_transform` to better follow the naming convention for boolean properties. The `transform` 
+  property of the :class:`~.transforms.core.Transform` and :class:`~.transforms.core.BoundTransform` 
   has been renamed to `tape_transform` to avoid ambiguity.
   [(#8756)](https://github.com/PennyLaneAI/pennylane/pull/8756)
 
@@ -932,8 +932,8 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
 
 * Simplified the decomposition pipeline for the estimator module. ``qre.estimate`` was updated to call the base class's `symbolic_resource_decomp` method directly.
   [(#8641)](https://github.com/PennyLaneAI/pennylane/pull/8641)
-
-* Disabled autograph for the PauliRot decomposition rule as it should not be used with autograph.
+  
+* Disabled autograph for the PauliRot decomposition rule as it should not be used with autograph. 
   [(#8765)](https://github.com/PennyLaneAI/pennylane/pull/8765)
 
 <h3>Documentation 📝</h3>
