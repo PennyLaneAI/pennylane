@@ -24,6 +24,9 @@ from pennylane.measurements import expval
 from pennylane.ops import PauliZ
 from pennylane.qnn.iqp import iqp_expval
 
+jax = pytest.importorskip("jax")
+jnp = pytest.importorskip("jax.numpy")
+
 
 def local_gates(n_qubits: int, max_weight=2):
     """
@@ -40,7 +43,6 @@ def local_gates(n_qubits: int, max_weight=2):
     return gates
 
 
-@pytest.mark.jax
 @pytest.mark.parametrize(
     (
         "ops",
@@ -119,9 +121,6 @@ def test_expval(
     max_batch_ops,
     indep_estimates,
 ):  # pylint: disable=too-many-arguments
-    import jax
-    import jax.numpy as jnp
-
     gates = local_gates(n_qubits, 1)
     if gates_fn == "multi_gens":
         gates = [[gates[0][0], gates[1][0]]] + gates[2:]
