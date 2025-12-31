@@ -2466,7 +2466,7 @@ class TestResourceReflection:
 
     def test_init_raises_error(self):
         """Test that an error is raised when neither num_wires nor U is provided."""
-        with pytest.raises(ValueError, match="Must provide atleast one of `num_wires` or `U`"):
+        with pytest.raises(ValueError, match="Must provide at least one of `num_wires` or `U`"):
             qre.Reflection()
 
     def test_wire_error(self):
