@@ -1146,4 +1146,6 @@ class TestTrotterPauli:
             GateCount(qre.PauliRot.resource_rep("ZZZ"), 10),
         ]
 
-        assert qre.TrotterPauli.cost_pauli_group(pauli_terms) == expected_cost
+        assert (
+            qre.TrotterPauli._cost_pauli_group(pauli_terms) == expected_cost
+        )  # pylint: disable=protected-access
