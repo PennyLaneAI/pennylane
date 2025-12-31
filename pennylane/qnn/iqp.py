@@ -301,33 +301,43 @@ def iqp_expval(
         key (Array): Jax key to control the randomness of the process.
         spin_sym (bool, optional): If True, the circuit is equivalent to one where the initial state
             :math:`\frac{1}{\sqrt(2)}(|00\dots0> + |11\dots1>)` is used in place of :math:`|00\dots0>`.
-        indep_estimates (bool): Whether to use independent estimates of the ops in a batch.
-        max_batch_ops (int): Maximum number of operators in a batch. Defaults to None, which means taking all ops at once.
-            Can only be used if ``ops`` is a jnp.array.
+        indep_estimates (bool): Whether to use independent estimates of the operators in a batch.
+            If True, correlation among the estimated expectation values can be avoided, although at the cost
+            of larger runtime.
+        max_batch_ops (int): Maximum number of operators in a batch. Defaults to None, which means taking all
+            operators at once. Can only be used if ``ops`` is a jnp.array.
         max_batch_samples (int): Maximum number of samples in a batch. Defaults to None, which means taking all n_samples at once.
 
     Returns:
-        list: List of Vectors. The expected value of each op and its standard deviation.
+        list: List of Vectors. The expected value of each operator and its corresponding standard deviation.
 
     **Example:**
 
+    To estimate the expectation value of a Pauli Z tensor, we represent the operator as a binary string
+    (bitstring) that specifies on which qubit a Pauli ``Z`` operator acts. For example, in a three-qubit
+    circuit, the operator :math:`Z_0 Z_2` will be represented as :math:`[1, 0, 1]`. Similarly, the expectation
+    values for a group of operators can be evaluated by specifiying a sequence of bitstrings.
+
+    As an example, lets compute the expectation values for the operators :math:`Z_1`, :math:`Z_0`, and
+    :math:`Z_0 Z_1` for a two-qubit circuit taking 1000 samples:
+
     .. code-block:: python
 
-        key = jax.random.PRNGKey(np.random.randint(0, 99999))
+        from pennylane.qnn import iqp
+        import jax
 
-        exp_val, std = op_expval(
-            ops=jnp.array([[1, 0], [0, 1]]),
-            n_samples=10_000,
-            key=key,
-            num_wires=n_qubits,
-            pattern=[[[0], [1]]],
-            weights=[0.54],
-            spin_sym=True,
-            sparse=False,
-            indep_estimates=True,
-            max_batch_samples=10_000,
-            max_batch_ops=10_000,
-        )
+        num_wires = 2
+        ops = np.array([[0, 1], [1, 0], [1, 1]]) # binary array representing ops Z1, Z0, Z0Z1
+        n_samples = 1000
+        key = jax.random.PRNGKey(42)
+        
+        weights = np.ones(len(pattern))
+        pattern = [[[0]], [[1]], [[0, 1]]] # binary array representing gates X0, X1, X0X1
+    
+        expvals, stds = iqp.iqp_expval(ops, weights, pattern, num_wires, n_samples, key)
+
+    >>> print(expvals, stds)
+    [0.18971464 0.14175898 0.17152457] [0.02615426 0.02614059 0.02615943]
 
     .. seealso:: The :class:`~.IQP` operation associated with this method.
     """
