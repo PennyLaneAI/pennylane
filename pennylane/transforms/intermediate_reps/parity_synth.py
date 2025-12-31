@@ -81,66 +81,20 @@ def parity_synth(tape):
 
     .. code-block:: python
 
-        circuit_qjit = qml.qjit(parity_synth_pass(circuit), autograph=True, target="mlir")
-        compiler = Compiler()
-        mlir_module = compiler.run(circuit_qjit.mlir_module)
+        qjit_circuit = qml.qjit(qml.transforms.parity_synth(circuit))
+        specs = qml.specs(qjit_circuit, level="device")(0.52, 0.12, 0.2)
 
-    TODO: Port the following output an ddiscussion to PL-friendly version
-    Looking at the compiled module below, we find only five gates left in the program (note that
-    we reduced the output for the purpose of this example); the ``CNOT``\ s
-    have been cancelled successfully. Note that for this circuit, ParitySynth is run twice; once
+
+    Looking at the resources of the compiled module, we find only five gates left in the program;
+    the ``CNOT``\ s have been cancelled successfully.
+
+    >>> print(specs.resources["gate_types"])
+    {'RX': 1, 'RZ': 2, 'CNOT': 2}
+
+    Note that for this circuit, ParitySynth is run twice; once
     for the first three gates and once for the last three gates. This is because ``RX`` is not
     a phase polynomial operation, so that it forms a boundary for the phase polynomial subcircuits
     that are re-synthesized by the pass.
-
-    >>> print(mlir_module) # The following output has manually been reduced for readability
-    module @circuit {
-      func.func public @jit_circuit([...]) -> tensor<4xcomplex<f64>> {
-        %0 = "catalyst.launch_kernel"(%arg0, %arg1, %arg2) <[...]> :
-            (tensor<f64>, tensor<f64>, tensor<f64>) -> tensor<4xcomplex<f64>>
-        return %0 : tensor<4xcomplex<f64>>
-      }
-      module @module_circuit {
-        func.func public @circuit(%arg0: tensor<f64>, %arg1: tensor<f64>, %arg2: tensor<f64>) ->
-            tensor<4xcomplex<f64>> attributes [...] {
-          %c = stablehlo.constant dense<0> : tensor<i64>
-          %0 = "tensor.extract"(%c) : (tensor<i64>) -> i64
-          "quantum.device"(%0) <[...]> : (i64) -> ()
-          %c_0 = stablehlo.constant dense<2> : tensor<i64>
-          %1 = "quantum.alloc"() <{nqubits_attr = 2 : i64}> : () -> !quantum.reg
-          %2 = "tensor.extract"(%c) : (tensor<i64>) -> i64
-          %3 = "quantum.extract"(%1, %2) : (!quantum.reg, i64) -> !quantum.bit
-          %c_1 = stablehlo.constant dense<1> : tensor<i64>
-          %4 = "tensor.extract"(%c_1) : (tensor<i64>) -> i64
-          %5 = "quantum.extract"(%1, %4) : (!quantum.reg, i64) -> !quantum.bit
-          %6 = "tensor.extract"(%arg0) : (tensor<f64>) -> f64
-          %7:2 = "quantum.custom"(%5, %3) <{gate_name = "CNOT", [...]> :[...]
-          %8 = "quantum.custom"(%6, %7#1) <{gate_name = "RZ", [...]> :[...]
-          %9:2 = "quantum.custom"(%7#0, %8) <{gate_name = "CNOT", [...]> : [...]
-          %10 = "tensor.extract"(%arg1) : (tensor<f64>) -> f64
-          %11 = "quantum.custom"(%10, %9#0) <{gate_name = "RX", [...]> : [...]
-          %12 = "tensor.extract"(%arg2) : (tensor<f64>) -> f64
-          %13 = "quantum.custom"(%12, %11) <{gate_name = "RZ", [...]> : [...]
-          %14 = "tensor.extract"(%c) : (tensor<i64>) -> i64
-          %15 = "quantum.insert"(%1, %14, %9#1) : (!quantum.reg, i64, !quantum.bit) -> !quantum.reg
-          %16 = "tensor.extract"(%c_1) : (tensor<i64>) -> i64
-          %17 = "quantum.insert"(%15, %16, %13) : (!quantum.reg, i64, !quantum.bit) -> !quantum.reg
-          %18 = "quantum.compbasis"(%17) <[...]> : (!quantum.reg) -> !quantum.obs
-          %19 = "quantum.state"(%18) <[...]> : (!quantum.obs) -> tensor<4xcomplex<f64>>
-          "quantum.dealloc"(%17) : (!quantum.reg) -> ()
-          "quantum.device_release"() : () -> ()
-          return %19 : tensor<4xcomplex<f64>>
-        }
-      }
-      func.func @setup() {
-        "quantum.init"() : () -> ()
-        return
-      }
-      func.func @teardown() {
-        "quantum.finalize"() : () -> ()
-        return
-      }
-    }
 
     """
     raise NotImplementedError(
