@@ -25,3 +25,6 @@ class BasisEmbedding(BasisState):
         num_wires (int): number of wires the operator acts on
         wires (WiresLike, Optional): the wire(s) the operation acts on
     """
+
+    def __init__(self, num_wires, wires=None):
+        super().__init__(num_wires, wires)

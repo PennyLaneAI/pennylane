@@ -286,6 +286,32 @@ def _(op: qtemps.Select):
 
 
 @_map_to_resource_op.register
+def _(op: qtemps.SelectOnlyQRAM):
+    bitstrings = op.hyperparameters["bitstrings"]
+    control_wires = op.hyperparameters["control_wires"]
+    select_wires = op.hyperparameters["select_wires"]
+    target_wires = op.hyperparameters["target_wires"]
+    select_value = op.hyperparameters["select_value"]
+    num_bitstrings = len(bitstrings)
+    num_ones = sum(bitstring.count("1") for bitstring in bitstrings)
+    num_control_wires = len(control_wires)
+    num_select_wires = len(select_wires)
+    num_wires = num_control_wires + num_select_wires + len(target_wires)
+
+    return re_temps.SelectOnlyQRAM(
+        num_bitstrings,
+        num_ones,
+        num_wires,
+        num_control_wires,
+        num_select_wires,
+        control_wires,
+        target_wires,
+        select_wires,
+        select_value,
+    )
+
+
+@_map_to_resource_op.register
 def _(op: qtemps.QROM):
     bitstrings = op.hyperparameters["bitstrings"]
     num_bitstrings = len(bitstrings)

@@ -150,6 +150,179 @@ class TestIQP:
         assert qre.IQP.tracking_name(num_wires, pattern, spin_sym) == expected
 
 
+class TestSelectOnlyQRAM:
+    """Test the SelectOnlyQRAM class."""
+
+    @pytest.mark.parametrize(
+        (
+            "num_bitstrings",
+            "num_ones",
+            "num_wires",
+            "num_control_wires",
+            "num_select_wires",
+            "control_wires",
+            "target_wires",
+            "select_wires",
+            "select_value",
+        ),
+        [
+            (4, 6, 7, 2, 3, (0, 1), (2, 3, 4), (5, 6), 0),
+        ],
+    )
+    def test_resource_params(
+        self,
+        num_bitstrings,
+        num_ones,
+        num_wires,
+        num_control_wires,
+        num_select_wires,
+        control_wires,
+        target_wires,
+        select_wires,
+        select_value,
+    ):
+        """Test that the resource params are correct."""
+        op = qre.SelectOnlyQRAM(
+            num_bitstrings,
+            num_ones,
+            num_wires,
+            num_control_wires,
+            num_select_wires,
+            control_wires,
+            target_wires,
+            select_wires,
+            select_value,
+        )
+        assert op.resource_params == {
+            "num_bitstrings": num_bitstrings,
+            "num_ones": num_ones,
+            "num_wires": num_wires,
+            "select_value": select_value,
+            "num_select_wires": num_select_wires,
+            "num_control_wires": num_control_wires,
+        }
+
+    @pytest.mark.parametrize(
+        (
+            "num_bitstrings",
+            "num_ones",
+            "num_wires",
+            "select_value",
+            "num_select_wires",
+            "num_control_wires",
+        ),
+        [(4, 6, 7, 0, 2, 2)],
+    )
+    def test_resource_rep(
+        self, num_bitstrings, num_ones, num_wires, select_value, num_select_wires, num_control_wires
+    ):
+        """Test that the compressed representation is correct."""
+        expected = qre.CompressedResourceOp(
+            qre.SelectOnlyQRAM,
+            num_wires,
+            {
+                "num_bitstrings": num_bitstrings,
+                "num_ones": num_ones,
+                "num_wires": num_wires,
+                "select_value": select_value,
+                "num_select_wires": num_select_wires,
+                "num_control_wires": num_control_wires,
+            },
+        )
+        assert (
+            qre.SelectOnlyQRAM.resource_rep(
+                num_bitstrings=num_bitstrings,
+                num_ones=num_ones,
+                num_wires=num_wires,
+                select_value=select_value,
+                num_select_wires=num_select_wires,
+                num_control_wires=num_control_wires,
+            )
+            == expected
+        )
+
+    @pytest.mark.parametrize(
+        (
+            "num_bitstrings",
+            "num_ones",
+            "num_wires",
+            "select_value",
+            "num_select_wires",
+            "num_control_wires",
+            "expected",
+        ),
+        (
+            (
+                4,
+                6,
+                7,
+                0,
+                2,
+                2,
+                [
+                    GateCount(resource_rep(qre.X), 24),
+                    GateCount(
+                        qre.Controlled.resource_rep(
+                            resource_rep(qre.X), num_ctrl_wires=4, num_zero_ctrl=0
+                        ),
+                        6,
+                    ),
+                    GateCount(resource_rep(qre.BasisEmbedding, {"num_wires": 2}), 1),
+                ],
+            ),
+        ),
+    )
+    def test_resources(
+        self,
+        num_bitstrings,
+        num_ones,
+        num_wires,
+        select_value,
+        num_select_wires,
+        num_control_wires,
+        expected,
+    ):
+        """Test that the resources are correct."""
+        assert (
+            qre.SelectOnlyQRAM.resource_decomp(
+                num_bitstrings,
+                num_ones,
+                num_wires,
+                select_value,
+                num_select_wires,
+                num_control_wires,
+            )
+            == expected
+        )
+
+    @pytest.mark.parametrize(
+        (
+            "num_bitstrings",
+            "num_ones",
+            "num_wires",
+            "select_value",
+            "num_select_wires",
+            "num_control_wires",
+        ),
+        [(4, 6, 7, 0, 2, 2)],
+    )
+    def test_tracking_name(
+        self, num_bitstrings, num_ones, num_wires, select_value, num_select_wires, num_control_wires
+    ):
+        """Tests that the tracking name is correct."""
+        assert (
+            qre.SelectOnlyQRAM.tracking_name(
+                num_bitstrings,
+                num_ones,
+                num_wires,
+                select_value,
+                num_select_wires,
+                num_control_wires,
+            )
+            == f"SelectOnlyQRAM({num_bitstrings}, {num_ones}, {num_wires}, {select_value}, {num_select_wires}, {num_control_wires})"
+        )
+
+
 class TestResourcePhaseGradient:
     """Test the PhaseGradient class."""
 
