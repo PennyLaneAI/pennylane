@@ -253,7 +253,7 @@ class TestSelectOnlyQRAM:
         ),
         (
             (
-                4,
+                8,
                 6,
                 7,
                 0,
