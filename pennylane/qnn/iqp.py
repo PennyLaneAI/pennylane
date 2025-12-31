@@ -21,8 +21,8 @@ has_jax = True
 try:
     import jax
     import jax.numpy as jnp
-except ImportError as e:
-    has_jax = False
+except ImportError as e:  # pragma: no cover
+    has_jax = False  # pragma: no cover
 
 
 def _len_gen(gates):
