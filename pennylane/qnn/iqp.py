@@ -279,14 +279,10 @@ def iqp_expval(
     max_batch_ops: int = None,
     max_batch_samples: int = None,
 ) -> list:
-    r"""Estimate the expectation values of a batch of Pauli-Z type operators in an IQP circuit. A set of l operators
-    must be specified by an array of shape (l, n_qubits), where each row is a binary vector that specifies on which
-    qubit a Pauli Z operator acts.
-    The expectation values are estimated using a randomized method whose precision in controlled by n_samples,
-    with larger values giving higher precision. Estimates are unbiased, however may be correlated. To request
-    uncorrelated estimate, use indep_estimates=True at the cost of larger runtime.
-    For large batches of operators or large values of n_samples, memory can be controlled by setting max_batch_ops
-    and/or max_batch_samples to a fixed value.
+    r"""Estimates the expectation values of a batch of Pauli-Z type operators for a parameterized :class:`~.IQP` circuit.
+
+    The expectation values are estimated using a randomized method (Monte Carlo method) whose precision
+    is controlled by the number of samples (``n_samples``), with larger values giving higher precision.
 
     Args:
         ops (list): Array specifying the operator/s for which to estimate the expectation values.
