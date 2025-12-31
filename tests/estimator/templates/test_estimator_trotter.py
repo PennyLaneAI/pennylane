@@ -216,78 +216,12 @@ class TestTrotterCDF:
         assert res.algo_wires == expected_res["algo_wires"]
         assert res.gate_counts == expected_res["gate_types"]
 
-    @pytest.mark.parametrize(
-        "cdf_ham, num_steps, order, wires, error_type, error_message",
-        (
-            (
-                qre.THCHamiltonian(num_orbitals=10, tensor_rank=20),
-                10,
-                2,
-                None,
-                TypeError,
-                "Unsupported Hamiltonian representation for TrotterCDF.",
-            ),
-            (
-                qre.CDFHamiltonian(num_orbitals=10, num_fragments=20),
-                10,
-                4,
-                ["w1", "w2", "w3", "w4", "w5"],
-                ValueError,
-                "Expected 20 wires, got 5",
-            ),
-            (
-                qre.CDFHamiltonian(num_orbitals=10, num_fragments=20),
-                10,
-                3,
-                None,
-                ValueError,
-                "`order` is expected to be a positive integer and either one or a multiple of two",
-            ),
-            (
-                qre.CDFHamiltonian(num_orbitals=10, num_fragments=20),
-                10,
-                2.0,
-                None,
-                ValueError,
-                "`order` is expected to be a positive integer and either one or a multiple of two",
-            ),
-            (
-                qre.CDFHamiltonian(num_orbitals=10, num_fragments=20),
-                10,
-                -2,
-                None,
-                ValueError,
-                "`order` is expected to be a positive integer and either one or a multiple of two",
-            ),
-            (
-                qre.CDFHamiltonian(num_orbitals=10, num_fragments=20),
-                10.5,
-                4,
-                None,
-                ValueError,
-                "`num_steps` is expected to be a positive integer greater than one",
-            ),
-            (
-                qre.CDFHamiltonian(num_orbitals=10, num_fragments=20),
-                -5,
-                4,
-                None,
-                ValueError,
-                "`num_steps` is expected to be a positive integer greater than one",
-            ),
-        ),
-    )
-    def test_raises_error_incompatible_inputs(
-        self, cdf_ham, num_steps, order, wires, error_type, error_message
-    ):
-        """Test that the init and resource_rep method raise the appropriate error when incompatible inputs
-        are provided."""
-        with pytest.raises(error_type, match=error_message):
-            qre.TrotterCDF(cdf_ham, num_steps, order, wires=wires)
+    def test_raises_error_incompatible_wires(self):
+        """Test that the init raises an error for incorrect wires"""
+        cdf_ham = qre.CDFHamiltonian(num_orbitals=8, num_fragments=4)
 
-        if wires is None:
-            with pytest.raises(error_type, match=error_message):
-                qre.TrotterCDF.resource_rep(cdf_ham, num_steps, order)
+        with pytest.raises(ValueError, match="Expected 16 wires, got 4"):
+            qre.TrotterCDF(cdf_ham, 10, 4, wires=["w1", "w2", "w3", "w4"])
 
     @pytest.mark.parametrize(
         "num_orbitals, num_fragments, num_steps, order, num_ctrl_wires, num_zero_ctrl, gates_expected",
@@ -482,78 +416,12 @@ class TestTrotterTHC:
 
         assert gates_decomp == gates_expected
 
-    @pytest.mark.parametrize(
-        "thc_ham, num_steps, order, wires, error_type, error_message",
-        (
-            (
-                qre.CDFHamiltonian(num_orbitals=10, num_fragments=20),
-                10,
-                2,
-                None,
-                TypeError,
-                "Unsupported Hamiltonian representation for TrotterTHC.",
-            ),
-            (
-                qre.THCHamiltonian(num_orbitals=10, tensor_rank=20),
-                10,
-                4,
-                ["w1", "w2", "w3", "w4", "w5"],
-                ValueError,
-                "Expected 40 wires, got 5",
-            ),
-            (
-                qre.THCHamiltonian(num_orbitals=10, tensor_rank=20),
-                10,
-                3,
-                None,
-                ValueError,
-                "`order` is expected to be a positive integer and either one or a multiple of two",
-            ),
-            (
-                qre.THCHamiltonian(num_orbitals=10, tensor_rank=20),
-                10,
-                2.0,
-                None,
-                ValueError,
-                "`order` is expected to be a positive integer and either one or a multiple of two",
-            ),
-            (
-                qre.THCHamiltonian(num_orbitals=10, tensor_rank=20),
-                10,
-                -2,
-                None,
-                ValueError,
-                "`order` is expected to be a positive integer and either one or a multiple of two",
-            ),
-            (
-                qre.THCHamiltonian(num_orbitals=10, tensor_rank=20),
-                10.5,
-                4,
-                None,
-                ValueError,
-                "`num_steps` is expected to be a positive integer greater than one",
-            ),
-            (
-                qre.THCHamiltonian(num_orbitals=10, tensor_rank=20),
-                -5,
-                4,
-                None,
-                ValueError,
-                "`num_steps` is expected to be a positive integer greater than one",
-            ),
-        ),
-    )
-    def test_raises_error_incompatible_inputs(
-        self, thc_ham, num_steps, order, wires, error_type, error_message
-    ):
-        """Test that the init and resource_rep method raise the appropriate error when incompatible inputs
-        are provided."""
-        with pytest.raises(error_type, match=error_message):
-            qre.TrotterTHC(thc_ham, num_steps, order, wires=wires)
+    def test_raises_error_incompatible_wires(self):
+        """Test that the init raises an error for incorrect wires"""
+        thc_ham = qre.THCHamiltonian(num_orbitals=8, tensor_rank=20)
 
-        if wires is None:
-            with pytest.raises(error_type, match=error_message):
-                qre.TrotterTHC.resource_rep(thc_ham, num_steps, order)
+        with pytest.raises(ValueError, match="Expected 40 wires, got 4"):
+            qre.TrotterTHC(thc_ham, 10, 4, wires=["w1", "w2", "w3", "w4"])
 
 
 class TestTrotterVibrational:
@@ -687,78 +555,11 @@ class TestTrotterVibrational:
         assert res.algo_wires == expected_res["algo_wires"]
         assert res.gate_counts == expected_res["gate_types"]
 
-    @pytest.mark.parametrize(
-        "vibrational_ham, num_steps, order, wires, error_type, error_message",
-        (
-            (
-                qre.THCHamiltonian(num_orbitals=10, tensor_rank=20),
-                10,
-                2,
-                None,
-                TypeError,
-                "Unsupported Hamiltonian representation for TrotterVibrational.",
-            ),
-            (
-                qre.VibrationalHamiltonian(num_modes=8, grid_size=4, taylor_degree=3),
-                10,
-                4,
-                ["w1", "w2", "w3", "w4", "w5"],
-                ValueError,
-                "Expected 32 wires, got 5",
-            ),
-            (
-                qre.VibrationalHamiltonian(num_modes=8, grid_size=4, taylor_degree=3),
-                10,
-                3,
-                None,
-                ValueError,
-                "`order` is expected to be a positive integer and either one or a multiple of two",
-            ),
-            (
-                qre.VibrationalHamiltonian(num_modes=8, grid_size=4, taylor_degree=3),
-                10,
-                2.0,
-                None,
-                ValueError,
-                "`order` is expected to be a positive integer and either one or a multiple of two",
-            ),
-            (
-                qre.VibrationalHamiltonian(num_modes=8, grid_size=4, taylor_degree=3),
-                10,
-                -2,
-                None,
-                ValueError,
-                "`order` is expected to be a positive integer and either one or a multiple of two",
-            ),
-            (
-                qre.VibrationalHamiltonian(num_modes=8, grid_size=4, taylor_degree=3),
-                10.5,
-                4,
-                None,
-                ValueError,
-                "`num_steps` is expected to be a positive integer greater than one",
-            ),
-            (
-                qre.VibrationalHamiltonian(num_modes=8, grid_size=4, taylor_degree=3),
-                -5,
-                4,
-                None,
-                ValueError,
-                "`num_steps` is expected to be a positive integer greater than one",
-            ),
-        ),
-    )
-    def test_raises_error_incompatible_inputs(
-        self, vibrational_ham, num_steps, order, wires, error_type, error_message
-    ):
-        """Test that the init and resource_rep method raise the appropriate error when incompatible inputs
-        are provided."""
-        with pytest.raises(error_type, match=error_message):
-            qre.TrotterVibrational(vibrational_ham, num_steps, order, wires=wires)
-
-        if wires is None:
-            with pytest.raises(error_type, match=error_message):
-                qre.TrotterVibrational.resource_rep(vibrational_ham, num_steps, order)
+    def test_raises_error_incompatible_wires(self):
+        """Test that the init raises an error for incorrect wires"""
+        vibrational_ham = qre.VibrationalHamiltonian(num_modes=8, grid_size=4, taylor_degree=3)
+        with pytest.raises(ValueError, match="Expected 32 wires, got 4"):
+            qre.TrotterVibrational(vibrational_ham, 10, 4, wires=["w1", "w2", "w3", "w4"])
 
 
 class TestTrotterVibronic:
@@ -905,78 +706,16 @@ class TestTrotterVibronic:
         assert res.algo_wires == expected_res["algo_wires"]
         assert res.gate_counts == expected_res["gate_types"]
 
-    @pytest.mark.parametrize(
-        "vibronic_ham, num_steps, order, wires, error_type, error_message",
-        (
-            (
-                qre.THCHamiltonian(num_orbitals=10, tensor_rank=20),
-                10,
-                2,
-                None,
-                TypeError,
-                "Unsupported Hamiltonian representation for TrotterVibronic.",
-            ),
-            (
-                qre.VibronicHamiltonian(num_modes=8, num_states=2, grid_size=4, taylor_degree=3),
-                10,
-                4,
-                ["w1", "w2", "w3", "w4", "w5"],
-                ValueError,
-                "Expected 33 wires, got 5",
-            ),
-            (
-                qre.VibronicHamiltonian(num_modes=8, num_states=2, grid_size=4, taylor_degree=3),
-                10,
-                3,
-                None,
-                ValueError,
-                "`order` is expected to be a positive integer and either one or a multiple of two",
-            ),
-            (
-                qre.VibronicHamiltonian(num_modes=8, num_states=2, grid_size=4, taylor_degree=3),
-                10,
-                2.0,
-                None,
-                ValueError,
-                "`order` is expected to be a positive integer and either one or a multiple of two",
-            ),
-            (
-                qre.VibronicHamiltonian(num_modes=8, num_states=2, grid_size=4, taylor_degree=3),
-                10,
-                -2,
-                None,
-                ValueError,
-                "`order` is expected to be a positive integer and either one or a multiple of two",
-            ),
-            (
-                qre.VibronicHamiltonian(num_modes=8, num_states=2, grid_size=4, taylor_degree=3),
-                10.5,
-                4,
-                None,
-                ValueError,
-                "`num_steps` is expected to be a positive integer greater than one",
-            ),
-            (
-                qre.VibronicHamiltonian(num_modes=8, num_states=2, grid_size=4, taylor_degree=3),
-                -5,
-                4,
-                None,
-                ValueError,
-                "`num_steps` is expected to be a positive integer greater than one",
-            ),
-        ),
-    )
-    def test_raises_error_incompatible_inputs(
-        self, vibronic_ham, num_steps, order, wires, error_type, error_message
-    ):
-        """Test that the init and resource_rep method raise the appropriate error when incompatible inputs
-        are provided."""
-        with pytest.raises(error_type, match=error_message):
-            qre.TrotterVibronic(vibronic_ham, num_steps, order, wires=wires)
-
-        if wires is None:
-            with pytest.raises(error_type, match=error_message):
-                qre.TrotterVibronic.resource_rep(vibronic_ham, num_steps, order)
+    def test_raises_error_incompatible_wires(self):
+        """Test that the init raises an error for incorrect wires"""
+        vibronic_ham = qre.VibronicHamiltonian(
+            num_modes=8,
+            num_states=2,
+            grid_size=4,
+            taylor_degree=3,
+        )
+        with pytest.raises(ValueError, match="Expected 33 wires, got 4"):
+            qre.TrotterVibronic(vibronic_ham, 10, 4, wires=["w1", "w2", "w3", "w4"])
 
 
 class TestTrotterPauli:
@@ -1041,120 +780,18 @@ class TestTrotterPauli:
         for k in qre.TrotterPauli.resource_keys:
             assert k in trotter_op.resource_params
 
-    @pytest.mark.parametrize(
-        "pauli_ham, num_steps, order, wires, error_type, error_message",
-        (
-            (
-                qre.CDFHamiltonian(num_orbitals=10, num_fragments=20),
-                10,
-                2,
-                None,
-                TypeError,
-                "Unsupported Hamiltonian representation for TrotterPauli.",
+    def test_raises_error_incompatible_wires(self):
+        """Test that the init raises an error for incorrect wires"""
+        pauli_ham = qre.PauliHamiltonian(
+            num_qubits=5,
+            pauli_terms=(
+                {"XX": 15, "X": 5},
+                {"ZZ": 10},
+                {"YY": 5, "X": 5},
             ),
-            (
-                qre.PauliHamiltonian(
-                    num_qubits=5,
-                    pauli_terms=(
-                        {"XX": 15, "X": 5},
-                        {"ZZ": 10},
-                        {"YY": 5, "X": 5},
-                    ),
-                ),
-                10,
-                4,
-                ["w1", "w2", "w3", "w4"],
-                ValueError,
-                "Expected 5 wires, got 4",
-            ),
-            (
-                qre.PauliHamiltonian(
-                    num_qubits=5,
-                    pauli_terms=(
-                        {"XX": 15, "X": 5},
-                        {"ZZ": 10},
-                        {"YY": 5, "X": 5},
-                    ),
-                ),
-                10,
-                3,
-                ["w1", "w2", "w3", "w4", "w5"],
-                ValueError,
-                "`order` is expected to be a positive integer and either one or a multiple of two",
-            ),
-            (
-                qre.PauliHamiltonian(
-                    num_qubits=5,
-                    pauli_terms=(
-                        {"XX": 15, "X": 5},
-                        {"ZZ": 10},
-                        {"YY": 5, "X": 5},
-                    ),
-                ),
-                10,
-                2.0,
-                ["w1", "w2", "w3", "w4", "w5"],
-                ValueError,
-                "`order` is expected to be a positive integer and either one or a multiple of two",
-            ),
-            (
-                qre.PauliHamiltonian(
-                    num_qubits=5,
-                    pauli_terms=(
-                        {"XX": 15, "X": 5},
-                        {"ZZ": 10},
-                        {"YY": 5, "X": 5},
-                    ),
-                ),
-                10,
-                -2,
-                ["w1", "w2", "w3", "w4", "w5"],
-                ValueError,
-                "`order` is expected to be a positive integer and either one or a multiple of two",
-            ),
-            (
-                qre.PauliHamiltonian(
-                    num_qubits=5,
-                    pauli_terms=(
-                        {"XX": 15, "X": 5},
-                        {"ZZ": 10},
-                        {"YY": 5, "X": 5},
-                    ),
-                ),
-                10.5,
-                4,
-                ["w1", "w2", "w3", "w4", "w5"],
-                ValueError,
-                "`num_steps` is expected to be a positive integer greater than one",
-            ),
-            (
-                qre.PauliHamiltonian(
-                    num_qubits=5,
-                    pauli_terms=(
-                        {"XX": 15, "X": 5},
-                        {"ZZ": 10},
-                        {"YY": 5, "X": 5},
-                    ),
-                ),
-                -5,
-                4,
-                ["w1", "w2", "w3", "w4", "w5"],
-                ValueError,
-                "`num_steps` is expected to be a positive integer greater than one",
-            ),
-        ),
-    )
-    def test_raises_error_incompatible_inputs(
-        self, pauli_ham, num_steps, order, wires, error_type, error_message
-    ):
-        """Test that the init and resource_rep method raise the appropriate error when incompatible inputs
-        are provided."""
-        with pytest.raises(error_type, match=error_message):
-            qre.TrotterPauli(pauli_ham, num_steps, order, wires=wires)
-
-        if wires is None:
-            with pytest.raises(error_type, match=error_message):
-                qre.TrotterPauli.resource_rep(pauli_ham, num_steps, order)
+        )
+        with pytest.raises(ValueError, match="Expected 5 wires, got 4"):
+            qre.TrotterPauli(pauli_ham, 10, 4, wires=["w1", "w2", "w3", "w4"])
 
     @pytest.mark.parametrize(
         "pauli_ham, num_steps, order, wires, expected_resource_rep",
@@ -1410,5 +1047,72 @@ class TestTrotterPauli:
         ]
 
         assert (
-            qre.TrotterPauli._cost_pauli_group(pauli_terms) == expected_cost
-        )  # pylint: disable=protected-access
+            qre.TrotterPauli._cost_pauli_group(pauli_terms)  # pylint: disable=protected-access
+            == expected_cost
+        )
+
+
+CLASSES_AND_HAMS = [
+    (qre.TrotterCDF, qre.CDFHamiltonian(num_orbitals=10, num_fragments=20)),
+    (qre.TrotterTHC, qre.THCHamiltonian(num_orbitals=10, tensor_rank=20)),
+    (
+        qre.TrotterVibronic,
+        qre.VibronicHamiltonian(num_modes=8, num_states=2, grid_size=4, taylor_degree=3),
+    ),
+    (qre.TrotterVibrational, qre.VibrationalHamiltonian(num_modes=8, grid_size=4, taylor_degree=3)),
+]
+
+
+class TestInvalidTrotterInputs:
+    """Test that all Trotter classes raise errors for invalid inputs."""
+
+    @pytest.mark.parametrize("op_class, valid_ham", CLASSES_AND_HAMS)
+    @pytest.mark.parametrize(
+        "bad_steps, bad_order, error_type, msg",
+        [
+            (
+                -1,
+                2,
+                ValueError,
+                "`num_steps` is expected to be a positive integer greater than one",
+            ),
+            (
+                10,
+                3,
+                ValueError,
+                "`order` is expected to be a positive integer and either one or a multiple of two",
+            ),
+            (
+                10,
+                -2,
+                ValueError,
+                "`order` is expected to be a positive integer and either one or a multiple of two",
+            ),
+        ],
+    )
+    def test_trotter_common_incompatible_inputs(
+        self, op_class, valid_ham, bad_steps, bad_order, error_type, msg
+    ):
+        """Test that all Trotter classes raise errors for invalid steps/orders."""
+        with pytest.raises(error_type, match=msg):
+            op_class(valid_ham, num_steps=bad_steps, order=bad_order)
+
+        with pytest.raises(error_type, match=msg):
+            op_class.resource_rep(valid_ham, num_steps=bad_steps, order=bad_order)
+
+    @pytest.mark.parametrize(
+        "op_class, invalid_ham_type",
+        [
+            (qre.TrotterCDF, qre.THCHamiltonian(10, 20)),
+            (qre.TrotterTHC, qre.CDFHamiltonian(10, 20)),
+            (qre.TrotterVibrational, qre.CDFHamiltonian(10, 20)),
+            (qre.TrotterVibronic, qre.THCHamiltonian(10, 20)),
+        ],
+    )
+    def test_trotter_invalid_hamiltonian_type(self, op_class, invalid_ham_type):
+        """Test that all Trotter classes raise errors for invalid hamiltonian types."""
+        with pytest.raises(TypeError, match="Unsupported Hamiltonian"):
+            op_class(invalid_ham_type, num_steps=1, order=2)
+
+        with pytest.raises(TypeError, match="Unsupported Hamiltonian"):
+            op_class.resource_rep(invalid_ham_type, num_steps=1, order=2)
