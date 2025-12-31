@@ -330,10 +330,10 @@ def iqp_expval(
         ops = np.array([[0, 1], [1, 0], [1, 1]]) # binary array representing ops Z1, Z0, Z0Z1
         n_samples = 1000
         key = jax.random.PRNGKey(42)
-        
+
         weights = np.ones(len(pattern))
         pattern = [[[0]], [[1]], [[0, 1]]] # binary array representing gates X0, X1, X0X1
-    
+
         expvals, stds = iqp.iqp_expval(ops, weights, pattern, num_wires, n_samples, key)
 
     >>> print(expvals, stds)
