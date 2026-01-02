@@ -196,9 +196,6 @@ class ResourceConfig:
     ) -> None:
         r"""Sets the precision for a given resource operator.
 
-        This method updates the parameter value for operators that use tolerance parameters
-        (e.g., for synthesis error). By default the parameter name is assumed to be ``precision``.
-
         Args:
             op_type (type[:class:`~.pennylane.estimator.resource_operator.ResourceOperator`]): the operator class for which
                 to set the precision

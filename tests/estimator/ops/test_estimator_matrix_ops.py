@@ -33,7 +33,7 @@ class TestResourceQubitUnitary:
 
     def test_init_raises_error(self):
         """Test that an error is raised when wires and num_wires are both not provided"""
-        with pytest.raises(ValueError, match="Must provide atleast one of"):
+        with pytest.raises(ValueError, match="Must provide at least one of"):
             qre.QubitUnitary()
 
     @pytest.mark.parametrize("precision", (None, 1e-3, 1e-5))

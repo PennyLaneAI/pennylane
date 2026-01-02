@@ -90,7 +90,7 @@ class TrotterProduct(ResourceOperator):
         The number of times an operator :math:`e^{itO_{j}}` is applied depends on the
         number of Trotter steps (`n`) and the order of the approximation (`m`) and is given by:
 
-        .. math:: C_{O_j} = 2 * n \cdot 5^{\frac{m}{2} - 1}
+        .. math:: C_{O_j} = 2 \cdot n \cdot 5^{\frac{m}{2} - 1}
 
         Furthermore, because of the symmetric form of the recursive formula, the first and last terms are grouped.
         This reduces the counts for those terms to:
@@ -308,7 +308,7 @@ class TrotterCDF(ResourceOperator):
 
         .. math::
 
-            C_{O_j} = 2 * n \cdot 5^{\frac{m}{2} - 1}.
+            C_{O_j} = 2 \cdot n \cdot 5^{\frac{m}{2} - 1}.
 
         Furthermore, because of the symmetric form of the recursive formula, the first and last terms get grouped.
         This reduces the counts for those terms to:
@@ -438,7 +438,7 @@ class TrotterCDF(ResourceOperator):
 
             .. math::
 
-                C_{O_j} = 2 * n \cdot 5^{\frac{m}{2} - 1}.
+                C_{O_j} = 2 \cdot n \cdot 5^{\frac{m}{2} - 1}.
 
             Furthermore, because of the symmetric form of the recursive formula, the first and last terms get grouped.
             This reduces the counts for those terms to:
@@ -627,7 +627,7 @@ class TrotterTHC(ResourceOperator):
 
         .. math::
 
-            C_{O_j} = 2 * n \cdot 5^{\frac{m}{2} - 1}.
+            C_{O_j} = 2 \cdot n \cdot 5^{\frac{m}{2} - 1}.
 
         Furthermore, because of the symmetric form of the recursive formula, the first and last
         terms get grouped. This reduces the counts for those terms to:
@@ -757,7 +757,7 @@ class TrotterTHC(ResourceOperator):
 
             .. math::
 
-                C_{O_j} = 2 * n \cdot 5^{\frac{m}{2} - 1}.
+                C_{O_j} = 2 \cdot n \cdot 5^{\frac{m}{2} - 1}.
 
             Furthermore, because of the symmetric form of the recursive formula, the first and last
             terms get grouped. This reduces the counts for those terms to:
@@ -951,7 +951,7 @@ class TrotterVibrational(ResourceOperator):
 
         .. math::
 
-            C_{O_j} = 2 * n \cdot 5^{\frac{m}{2} - 1}.
+            C_{O_j} = 2 \cdot n \cdot 5^{\frac{m}{2} - 1}.
 
         Furthermore, because of the symmetric form of the recursive formula, the first and last terms get grouped.
         This reduces the counts for those terms to:
@@ -1238,7 +1238,7 @@ class TrotterVibrational(ResourceOperator):
 
             .. math::
 
-                C_{O_j} = 2 * n \cdot 5^{\frac{m}{2} - 1}.
+                C_{O_j} = 2 \cdot n \cdot 5^{\frac{m}{2} - 1}.
 
             Furthermore, because of the symmetric form of the recursive formula, the first and last terms get grouped.
             This reduces the counts for those terms to:
@@ -1346,7 +1346,7 @@ class TrotterVibronic(ResourceOperator):
 
         .. math::
 
-            C_{O_j} = 2 * n \cdot 5^{\frac{m}{2} - 1}.
+            C_{O_j} = 2 \cdot n \cdot 5^{\frac{m}{2} - 1}.
 
         Furthermore, because of the symmetric form of the recursive formula, the first and last terms get grouped.
         This reduces the counts for those terms to:
@@ -1665,7 +1665,7 @@ class TrotterVibronic(ResourceOperator):
 
             .. math::
 
-                C_{O_j} = 2 * n \cdot 5^{\frac{m}{2} - 1}.
+                C_{O_j} = 2 \cdot n \cdot 5^{\frac{m}{2} - 1}.
 
             Furthermore, because of the symmetric form of the recursive formula, the first and last terms get grouped.
             This reduces the counts for those terms to:
@@ -1737,12 +1737,12 @@ class TrotterVibronic(ResourceOperator):
 
 
 class TrotterPauli(ResourceOperator):
-    r"""An operation representing the Suzuki-Trotter product approximation for the complex matrix
+    r"""A resource operation representing the Suzuki-Trotter product approximation for the complex matrix
     exponential of a Hamiltonian represented as a linear combination of tensor products of Pauli operators.
 
     The Suzuki-Trotter product formula provides a method to approximate the matrix exponential of
     Hamiltonian expressed as a linear combination of terms which in general do not commute.
-    Consider the Hamiltonian :math:`H = \Sigma^{N}_{j=0} \alpha_{j} \cdot O_{j}`: the product formula is
+    For instance, in the Hamiltonian :math:`H = \Sigma^{N}_{j=0} \alpha_{j} \cdot O_{j}`, the product formula is
     constructed using symmetrized products of the terms in the Hamiltonian. The symmetrized products
     of order :math:`m \in [1, 2, 4, ..., 2k]` with :math:`k \in \mathbb{N}` are given by:
 
@@ -1772,35 +1772,13 @@ class TrotterPauli(ResourceOperator):
         wires (WiresLike | None): the wires on which the operator acts
 
     Resources:
-        The resource cost for this subroutine depends on how the Pauli Hamiltonian is expressed.
-        Given the Hamiltonian :math:`H = \Sigma^{N}_{j=0} \alpha_{j} O_{j}`, each :math:`O_{j}` can
-        either be a Pauli string (a tensor product of Pauli operators) :math:`O_{j} = \vec{P}_{j}` or
-        a linear combination of commuting Pauli strings :math:`O_{j} = \Sigma^{M}_{j=0} \beta_{j} \vec{P}_{j}`.
-
-        In the first case, the exponential :math:`e^{i t \alpha_{j} O_{j}} = e^{i t \alpha_{j} \vec{P}_{j}}`
-        is a single generalized Pauli rotation
-        (:class:`~.estimator.ops.qubit.parametric_ops_multi_qubit.PauliRot`). In the second
-        case, the exponential can be expanded using the fact that all operators in the sum commute:
-
-        .. math::
-
-            \begin{align}
-                e^{i t \alpha_{j} O_{j}} &= e^{i t \alpha_{j} (\Sigma^{M}_{k=0} \beta_{k} \vec{P}_{k})}  \\
-                e^{i t \alpha_{j} O_{j}} &= \Pi_{k=0}^{M} e^{i t \alpha_{j} \beta_{k} \vec{P}_{k}}
-            \end{align}
-
-        Thus, the exponential can be expressed as a product of :math:`M` generalized Pauli rotations.
-        Using this as the cost of each individual exponential, the cost of the entire Suzuki-Trotter
-        product formula is derived below.
-
+        The resources are defined according to the recursive formula presented above.
         The number of times an operator :math:`e^{itO_{j}}` is applied depends on the
         number of Trotter steps (`n`) and the order of the approximation (`m`) and is given by:
 
-        .. math::
+        .. math:: C_{O_j} = 2 \cdot n \cdot 5^{\frac{m}{2} - 1}
 
-            C_{O_j} = 2 \cdot n \cdot 5^{\frac{m}{2} - 1}.
-
-        Furthermore, because of the symmetric form of the recursive formula, the first and last terms get grouped.
+        Furthermore, because of the symmetric form of the recursive formula, the first and last terms are grouped.
         This reduces the counts for those terms to:
 
         .. math::
@@ -1837,12 +1815,12 @@ class TrotterPauli(ResourceOperator):
     .. details::
         :title: Usage Details
 
-        Estimating resources for the Trotterization of a Pauli Hamiltonian depends on how
-        the Pauli Hamiltonian was constructed. Specifically, if the terms of the Hamiltonian were
-        separated into commuting groups (see :class:`~.estimator.compact_hamiltonian.PauliHamiltonian` for more information).
-        Note that the order matters because the algorithm merges the boundaries between steps (the last operation of step ``i`` merges
-        with the first operation of step ``i+1``). Therefore, placing the largest commuting groups at the start and end of the list
-        maximizes the number of gates that get merged, significantly reducing resources.
+        This example computes the resources for a Hamiltonian partitioned into commuting groups of
+        Pauli terms. See :class:`~.estimator.compact_hamiltonian.PauliHamiltonian` for more
+        information. Note that placing the largest commuting groups at the
+        boundaries, either the beginning or the end of the list, optimizes resource reduction. This
+        efficiency is achieved by merging the final operation of the Trotter step ``i`` with the initial
+        operation of step ``i+1`` which effectively minimizes gate overhead.
 
         >>> commuting_groups = (
         ...     {"X":10, "XX":5, "XXXX":3},
@@ -1965,35 +1943,13 @@ class TrotterPauli(ResourceOperator):
             order (int): order of the approximation, must be 1 or even.
 
         Resources:
-            The resource cost for this subroutine depends on how the Pauli Hamiltonian is expressed.
-            Given the Hamiltonian :math:`H = \Sigma^{N}_{j=0} \alpha_{j} O_{j}`, each :math:`O_{j}` can
-            either be a Pauli string (a tensor product of Pauli operators) :math:`O_{j} = \vec{P}_{j}` or
-            a linear combination of commuting Pauli strings :math:`O_{j} = \Sigma^{M}_{j=0} \beta_{j} \vec{P}_{j}`.
-
-            In the first case, the exponential :math:`e^{i t \alpha_{j} O_{j}} = e^{i t \alpha_{j} \vec{P}_{j}}`
-            is a single generalized Pauli rotation
-            (:class:`~.pennylane.estimator.ops.qubit.parametric_ops_multi_qubit.PauliRot`). In the second
-            case, the exponential can be expanded using the fact that all operators in the sum commute:
-
-            .. math::
-
-                \begin{align}
-                    e^{i t \alpha_{j} O_{j}} &= e^{i t \alpha_{j} (\Sigma^{M}_{k=0} \beta_{k} \vec{P}_{k})}  \\
-                    e^{i t \alpha_{j} O_{j}} &= \Pi_{k=0}^{M} e^{i t \alpha_{j} \beta_{k} \vec{P}_{k}}
-                \end{align}
-
-            Thus, the exponential can be expressed as a product of :math:`M` generalized Pauli rotations.
-            Using these as the cost of each individual exponential, the cost of the entire Suzuki-Trotter
-            product formula is derived below.
-
+            The resources are defined according to the recursive formula presented above.
             The number of times an operator :math:`e^{itO_{j}}` is applied depends on the
             number of Trotter steps (`n`) and the order of the approximation (`m`) and is given by:
 
-            .. math::
+            .. math:: C_{O_j} = 2 \cdot n \cdot 5^{\frac{m}{2} - 1}
 
-                C_{O_j} = 2 * n \cdot 5^{\frac{m}{2} - 1}.
-
-            Furthermore, because of the symmetric form of the recursive formula, the first and last terms get grouped.
+            Furthermore, because of the symmetric form of the recursive formula, the first and last terms are grouped.
             This reduces the counts for those terms to:
 
             .. math::
