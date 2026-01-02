@@ -299,7 +299,7 @@ class TestGQSP:
         """Test that an error is raised when wrong number of wires is provided."""
         op = qre.RX(0.1, wires=0)
         with pytest.raises(ValueError, match="Expected 2 wires, got 1"):
-            qre.GQSP(op, poly_deg=2, wires=[0])
+            qre.GQSP(op, d_plus=2, wires=[0])
 
     @pytest.mark.parametrize("rot_prec", (0, -1, -2.5))
     def test_rotation_precision_error(self, rot_prec):
@@ -309,7 +309,7 @@ class TestGQSP:
             ValueError,
             match="Expected 'rotation_precision' to be a positive real number greater than zero",
         ):
-            _ = qre.GQSP(op, poly_deg=2, rotation_precision=rot_prec)
+            _ = qre.GQSP(op, d_plus=2, rotation_precision=rot_prec)
 
         with pytest.raises(
             ValueError,
@@ -320,11 +320,11 @@ class TestGQSP:
     @pytest.mark.parametrize(
         "poly_deg, neg_poly_deg, error_msg",
         (
-            (0.1, 2, "'poly_deg' must be a positive integer greater than zero,"),
-            (-3, 3, "'poly_deg' must be a positive integer greater than zero,"),
-            (0, 5, "'poly_deg' must be a positive integer greater than zero,"),
-            (1, 0.5, "'neg_poly_deg' must be a positive integer,"),
-            (2, -3, "'neg_poly_deg' must be a positive integer,"),
+            (0.1, 2, "'d_plus' must be a positive integer greater than zero,"),
+            (-3, 3, "'d_plus' must be a positive integer greater than zero,"),
+            (0, 5, "'d_plus' must be a positive integer greater than zero,"),
+            (1, 0.5, "'d_minus' must be a non-negative integer,"),
+            (2, -3, "'d_minus' must be a non-negative integer,"),
         ),
     )
     def test_poly_deg_error(self, poly_deg, neg_poly_deg, error_msg):
@@ -349,8 +349,8 @@ class TestGQSP:
         op = qre.RX(0.1, wires=0)
         gqsp = qre.GQSP(op, poly_deg, neg_poly_deg, rot_precision)
 
-        assert gqsp.resource_params["poly_deg"] == poly_deg
-        assert gqsp.resource_params["neg_poly_deg"] == neg_poly_deg
+        assert gqsp.resource_params["d_plus"] == poly_deg
+        assert gqsp.resource_params["d_minus"] == neg_poly_deg
         assert gqsp.resource_params["rotation_precision"] == rot_precision
         assert gqsp.resource_params["cmpr_signal_op"].op_type == qre.RX
 
@@ -371,8 +371,8 @@ class TestGQSP:
             2,  # 1 wire for RX + 1 control
             {
                 "cmpr_signal_op": cmpr_op,
-                "poly_deg": poly_deg,
-                "neg_poly_deg": neg_poly_deg,
+                "d_plus": poly_deg,
+                "d_minus": neg_poly_deg,
                 "rotation_precision": rot_precision,
             },
         )

@@ -2117,14 +2117,13 @@ class TrotterPauli(ResourceOperator):
             order (int): order of the approximation, must be 1 or even.
 
         Resources:
-            The resource cost for this subroutine depends on how the Pauli Hamiltonian is expressed.
+            The resource cost for this operation depends on how the Pauli Hamiltonian is expressed.
             Given the Hamiltonian :math:`H = \Sigma^{N}_{j=0} \alpha_{j} O_{j}`, each :math:`O_{j}` can
-            either be a Pauli string (a tensor product of Pauli operators) :math:`O_{j} = \vec{P}_{j}` or
+            either be a tensor product of Pauli operators, :math:`O_{j} = \vec{P}_{j}`, or
             a linear combination of commuting Pauli strings :math:`O_{j} = \Sigma^{M}_{j=0} \beta_{j} \vec{P}_{j}`.
-
             In the first case, the exponential :math:`e^{i t \alpha_{j} O_{j}} = e^{i t \alpha_{j} \vec{P}_{j}}`
             is a single generalized Pauli rotation
-            (:class:`~.pennylane.estimator.ops.qubit.parametric_ops_multi_qubit.PauliRot`). In the second
+            (:class:`~.estimator.ops.qubit.parametric_ops_multi_qubit.PauliRot`). In the second
             case, the exponential can be expanded using the fact that all operators in the sum commute:
 
             .. math::
@@ -2135,15 +2134,15 @@ class TrotterPauli(ResourceOperator):
                 \end{align}
 
             Thus, the exponential can be expressed as a product of :math:`M` generalized Pauli rotations.
-            Using these as the cost of each individual exponential, the cost of the entire Suzuki-Trotter
+            Using this as the cost of each individual exponential, the cost of the entire Suzuki-Trotter
             product formula is derived below.
 
             The number of times an operator :math:`e^{itO_{j}}` is applied depends on the
-            number of Trotter steps (`n`) and the order of the approximation (`m`) and is given by:
+            number of Trotter steps ``n`` and the order of the approximation ``m`` as:
 
             .. math::
 
-                C_{O_j} = 2 * n \cdot 5^{\frac{m}{2} - 1}.
+                C_{O_j} = 2 \cdot n \cdot 5^{\frac{m}{2} - 1}.
 
             Furthermore, because of the symmetric form of the recursive formula, the first and last terms get grouped.
             This reduces the counts for those terms to:
