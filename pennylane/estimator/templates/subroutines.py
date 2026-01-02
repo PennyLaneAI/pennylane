@@ -3076,7 +3076,7 @@ class Reflection(ResourceOperator):
 
 
 class Qubitization(ResourceOperator):
-    r"""Resource class for the Qubitization operator. The operator is also referred to as the ``Quantum Walk`` operator.
+    r"""Resource class for the Qubitization operator. The operator is also referred to as the Quantum Walk operator.
 
     The operator is constructed by encoding a Hamiltonian, written as a linear combination of unitaries, into a block encoding (see Figure 1 in
     `arXiv:1805.03662 <https://arxiv.org/abs/1805.03662>`_).
