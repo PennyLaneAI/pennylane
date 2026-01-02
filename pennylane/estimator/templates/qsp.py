@@ -535,6 +535,11 @@ class QSVT(ResourceOperator):
         poly_deg (int): the degree of the polynomial transformation being applied
         wires (WiresLike | None): the wires the operation acts on
 
+    Raises:
+        ValueError: if ``encoding_dims`` is not a positive integer or a tuple of two positive integers
+        ValueError: if ``poly_deg`` is not a positive integer greater than zero
+        ValueError: if the ``wires`` provided don't match the number of wires expected by the operator
+
     Resources:
         The resources are obtained as described in Theorem 4 of `A Grand Unification of Quantum Algorithms
         (2021) <https://arxiv.org/pdf/2105.02859>`_.
@@ -571,7 +576,7 @@ class QSVT(ResourceOperator):
         _dequeue(block_encoding)  # remove operator
         if not isinstance(encoding_dims, (int, tuple)):
             raise TypeError(
-                f"Expected `encoding_dims` to be an int or tuple of int. Got {encoding_dims}"
+                f"Expected `encoding_dims` to be an int or tuple of ints. Got {encoding_dims}"
             )
 
         if isinstance(encoding_dims, int):
@@ -586,8 +591,17 @@ class QSVT(ResourceOperator):
                 f" (row, col) of the subspace where the matrix is encoded. Got {encoding_dims}"
             )
 
+        if not all(isinstance(d, int) and d > 0 for d in encoding_dims):
+            raise ValueError("Expected elements of `encoding_dims` to be positive integers.")
+
         self.block_encoding = block_encoding.resource_rep_from_op()
         self.encoding_dims = encoding_dims
+
+        if (not isinstance(poly_deg, int)) or poly_deg <= 0:
+            raise ValueError(
+                f"'poly_deg' must be a positive integer greater than zero, got {poly_deg}"
+            )
+
         self.poly_deg = poly_deg
 
         self.num_wires = block_encoding.num_wires
@@ -639,7 +653,7 @@ class QSVT(ResourceOperator):
         """
         if not isinstance(encoding_dims, (int, tuple)):
             raise TypeError(
-                f"Expected `encoding_dims` to be an int or tuple of int. Got {encoding_dims}"
+                f"Expected `encoding_dims` to be an int or tuple of ints. Got {encoding_dims}"
             )
 
         if isinstance(encoding_dims, int):
@@ -652,6 +666,14 @@ class QSVT(ResourceOperator):
             raise ValueError(
                 "Expected `encoding_dims` to be a tuple of two integers, representing the dimensions"
                 f" (row, col) of the subspace where the matrix is encoded. Got {encoding_dims}"
+            )
+
+        if not all(isinstance(d, int) and d > 0 for d in encoding_dims):
+            raise ValueError("Expected elements of `encoding_dims` to be positive integers.")
+
+        if (not isinstance(poly_deg, int)) or poly_deg <= 0:
+            raise ValueError(
+                f"'poly_deg' must be a positive integer greater than zero, got {poly_deg}"
             )
 
         num_wires = block_encoding.num_wires

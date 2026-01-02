@@ -42,28 +42,37 @@ class DummyOp(ResourceOperator):
 class TestQSVT:
     """Test the QSVT class."""
 
-    def test_init_error_encoding_dims(self):
-        """Test that an error is raised when encoding_dims is invalid."""
+    @pytest.mark.parametrize(
+        "dims, poly_deg, error_type, error_msg",
+        [
+            (0.5, 5, TypeError, "Expected `encoding_dims` to be an int or tuple of ints."),
+            ((1, 2, 3), 5, ValueError, "Expected `encoding_dims` to be a tuple of two integers"),
+            ((0,), 5, ValueError, "Expected elements of `encoding_dims` to be positive integers."),
+            (
+                (-2, 2),
+                5,
+                ValueError,
+                "Expected elements of `encoding_dims` to be positive integers.",
+            ),
+            (2, -1, ValueError, "'poly_deg' must be a positive integer greater than zero, got -1"),
+            (
+                2,
+                4.5,
+                ValueError,
+                "'poly_deg' must be a positive integer greater than zero, got 4.5",
+            ),
+        ],
+    )
+    def test_init_failures(self, dims, poly_deg, error_type, error_msg):
+        """Test all invalid inputs raise the correct exceptions."""
         op = DummyOp(wires=[0])
-        with pytest.raises(
-            TypeError, match="Expected `encoding_dims` to be an int or tuple of int"
-        ):
-            qre.QSVT(op, encoding_dims="invalid", poly_deg=2)
+        with pytest.raises(error_type, match=error_msg):
+            qre.QSVT(block_encoding=op, encoding_dims=dims, poly_deg=poly_deg)
 
-        with pytest.raises(
-            TypeError, match="Expected `encoding_dims` to be an int or tuple of int"
-        ):
-            qre.QSVT.resource_rep(op, encoding_dims="invalid", poly_deg=2)
-
-        with pytest.raises(
-            ValueError, match="Expected `encoding_dims` to be a tuple of two integers"
-        ):
-            qre.QSVT(op, encoding_dims=(1, 2, 3), poly_deg=2)
-
-        with pytest.raises(
-            ValueError, match="Expected `encoding_dims` to be a tuple of two integers"
-        ):
-            qre.QSVT.resource_rep(op, encoding_dims=(1, 2, 3), poly_deg=2)
+        with pytest.raises(error_type, match=error_msg):
+            qre.QSVT.resource_rep(
+                block_encoding=op.resource_rep(), encoding_dims=dims, poly_deg=poly_deg
+            )
 
     def test_init_encoding_dims_tuple_len_1(self):
         """Test that encoding_dims is correctly handled when it is a tuple of length 1."""
