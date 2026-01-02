@@ -322,26 +322,42 @@
 
 <h4>Resource estimation</h4>
 
-* Added `Resources.total_wires` and `Resources.total_gates` properties to the 
-  ``qml.estimator.Resources`` class. Users can more easily access these quantities from the `Resources` object directly.
+* It is now easier to access the total gates and wires in resource estimates with the
+  :meth:`~pennylane.estimator.Resources.total_wires` and :meth:`~pennylane.estimator.Resources.total_gates` 
+  properties in the :class:`~pennylane.estimator.Resources` class.
+  [(#8761)](https://github.com/PennyLaneAI/pennylane/pull/8761)
+  ```python
+  import pennylane.estimator as qre
+  def circuit():
+      qml.X(0)
+      qml.Z(0)
+      qml.Y(1)
+
+  resources = qre.estimate(circuit)()
+  ```
+
+  ```pycon
+  >>> resources.total_gates
+  3
+  >>> resources.total_wires
+  2
+  ```
+
+* The resource requirements of the :class:`~pennylane.estimator.QROM` class have been reduced
+  in cases where `restored = True` and `sel_swap_depth=1`.
   [(#8761)](https://github.com/PennyLaneAI/pennylane/pull/8761)
 
-* Improved the resource decomposition for the :class:`~pennylane.estimator.QROM` class. The cost has
-  been reduced in cases when users specify `restored = True` and `sel_swap_depth = 1`.
-  [(#8761)](https://github.com/PennyLaneAI/pennylane/pull/8761)
-
-* Improved :mod:`estimator <pennylane.estimator>`'s
-  resource decomposition of `PauliRot` to match the optimal resources
-  for certain special cases of Pauli strings (e.g. for `XX` and `YY` type Pauli strings).
+* The resource decomposition of :class:`~pennylane.estimator.PauliRot` now matches the optimal
+  resources when the `pauli_string` argument is `XX` or `YY`.
   [(#8562)](https://github.com/PennyLaneAI/pennylane/pull/8562)
 
-* Users can now estimate the resources for quantum circuits that contain or decompose into
+* It is now possible to estimate the resources for quantum circuits that contain or decompose into
   any of the following symbolic operators: :class:`~.ChangeOpBasis`, :class:`~.Prod`,
   :class:`~.Controlled`, :class:`~.ControlledOp`, :class:`~.Pow`, and :class:`~.Adjoint`.
   [(#8464)](https://github.com/PennyLaneAI/pennylane/pull/8464)
 
-* Qualtran call graphs built via :func:`qml.to_bloq <pennylane.to_bloq>` now use PennyLane's resource estimation
-  module by default (``call_graph='estimator'``). This provides faster resource counting. 
+* Qualtran call graphs built via :func:`qml.to_bloq <pennylane.to_bloq>` now provide faster resource
+  counting by using PennyLane's resource estimation module. 
   To use the previous behaviour based on PennyLane decompositions, set 
   ``call_graph='decomposition'``.
   [(#8390)](https://github.com/PennyLaneAI/pennylane/pull/8390)
@@ -349,29 +365,32 @@
 <h4>Decompositions</h4>
 
 * A new decomposition has been added for the Controlled :class:`~.SemiAdder`,
-  which is efficient and skips controlling all gates in its decomposition.
+  which reduces the number of gates in its decomposition by controlling fewer gates.
   [(#8423)](https://github.com/PennyLaneAI/pennylane/pull/8423)
 
-* Added a :meth:`~pennylane.devices.DeviceCapabilities.gate_set` method to :class:`~pennylane.devices.DeviceCapabilities`
-  that produces a set of gate names to be used as the target gate set in decompositions.
+* A new :meth:`~pennylane.devices.DeviceCapabilities.gate_set` method has been added to
+  :class:`~pennylane.devices.DeviceCapabilities` that makes it easy to produce a set of gate names
+  for the target gate set in decompositions.
   [(#8522)](https://github.com/PennyLaneAI/pennylane/pull/8522)
 
 * The :func:`~pennylane.transforms.decompose` transform now accepts a `minimize_work_wires` argument. With
   the new graph-based decomposition system activated via :func:`~pennylane.decomposition.enable_graph`,
   and `minimize_work_wires` set to `True`, the decomposition system will select decomposition rules that
-  minimizes the maximum number of simultaneously allocated work wires.
+  minimize the maximum number of simultaneously allocated work wires.
   [(#8729)](https://github.com/PennyLaneAI/pennylane/pull/8729)
   [(#8734)](https://github.com/PennyLaneAI/pennylane/pull/8734)
 
-* Added a new decomposition, `_decompose_2_cnots`, for the two-qubit decomposition for `QubitUnitary`.
-  It supports the analytical decomposition a two-qubit unitary known to require exactly 2 CNOTs.
-  [(#8666)](https://github.com/PennyLaneAI/pennylane/issues/8666)
+* A new decomposition, `_decompose_2_cnots`, has been added to :class:`~pennylane.QubitUnitary` which reduces
+  the number of CNOTs used to decompose certain two-qubit `~pennylane.QubitUnitary` operations.
+  [(#8717)](https://github.com/PennyLaneAI/pennylane/pull/8717)
 
-* `Operator.decomposition` will fallback to the first entry in `qml.list_decomps` if the `Operator.compute_decomposition`
+* Operator decompositions now only need to be defined in using the graph decomposition system as
+  `Operator.decomposition` will fallback to the first entry in `qml.list_decomps` if the `Operator.compute_decomposition`
   method is not overridden.
   [(#8686)](https://github.com/PennyLaneAI/pennylane/pull/8686)
 
-* The `~.BasisRotation` graph decomposition was re-written in a qjit friendly way with PennyLane control flow.
+* The `~.BasisRotation` graph decomposition can now scale to larger workflows with `qjit` as it has been re-written
+  in a qjit friendly way using PennyLane control flow.
   [(#8560)](https://github.com/PennyLaneAI/pennylane/pull/8560)
   [(#8608)](https://github.com/PennyLaneAI/pennylane/pull/8608)
   [(#8620)](https://github.com/PennyLaneAI/pennylane/pull/8620)
@@ -424,14 +443,15 @@
   dense arrays.
   [(#8612)](https://github.com/PennyLaneAI/pennylane/pull/8612)
   
-* A decomposition has been added to the adjoint of :class:`pennylane.TemporaryAND`. This decomposition relies on mid-circuit measurments and does not require any T gates.
+* A decomposition has been added to the adjoint of :class:`pennylane.TemporaryAND`
+  that relies on mid-circuit measurments and does not require any T gates.
   [(#8633)](https://github.com/PennyLaneAI/pennylane/pull/8633)
 
 * The graph-based decomposition system now supports decomposition rules that contains mid-circuit measurements.
   [(#8079)](https://github.com/PennyLaneAI/pennylane/pull/8079)
 
 * The decompositions for several templates have been updated to use
-  :class:`~.ops.op_math.ChangeOpBasis`, which makes their decompositions more resource efficient
+  :class:`~.ops.op_math.ChangeOpBasis`, which makes their decompositions more resource-efficient
   by eliminating unnecessary controlled operations. The templates include :class:`~.PhaseAdder`,
   :class:`~.TemporaryAND`, :class:`~.QSVT`, and :class:`~.SelectPauliRot`.
   [(#8490)](https://github.com/PennyLaneAI/pennylane/pull/8490)
@@ -441,12 +461,12 @@
 
 <h4>Other improvements</h4>
 
-* The constant to convert the length unit Bohr to Angstrom in ``qml.qchem`` is updated to use scipy
-  constants.
+* The constant to convert the length unit Bohr to Angstrom in ``qml.qchem`` has been updated to use scipy
+  constants, leading to more consistent and standardized conversion.
   [(#8537)](https://github.com/PennyLaneAI/pennylane/pull/8537)
 
-* `@partial` is not needed anymore for using transforms as decorators with arguments.
-  Now, the following two usages are equivalent:
+* It is now possible to specify transform decorator arguments without `@partial`.
+  The following two usages are equivalent:
 
   ```python
   @partial(qml.transforms.decompose, gate_set={qml.RX, qml.CNOT})
@@ -473,19 +493,20 @@
   The old name is still available in the same location.
   [(#8753)](https://github.com/PennyLaneAI/pennylane/pull/8753)
 
-* `qml.for_loop` will now fall back to a standard Python `for` loop if capturing a condensed, structured loop fails
-  with program capture enabled.
+* More programs can be captured because `qml.for_loop` now falls back to a standard Python `for` loop if
+  capturing a condensed, structured loop fails with program capture enabled.
   [(#8615)](https://github.com/PennyLaneAI/pennylane/pull/8615)
 
-* `qml.cond` will now use standard Python logic if all predicates have concrete values. A nested
-  control flow primitive will no longer be captured as it is not needed.
+* `qml.cond` will now use standard Python logic if all predicates have concrete values,
+  leading to shorter, more efficient `jaxpr` programs. Nested
+  control flow primitives will no longer be captured as they are not needed.
   [(#8634)](https://github.com/PennyLaneAI/pennylane/pull/8634)
 
 * Added a keyword argument ``recursive`` to ``qml.transforms.cancel_inverses`` that enables
-  recursive cancellation of nested pairs of mutually inverse gates. This makes the transform
-  more powerful, because it can cancel larger blocks of inverse gates without having to scan
+  recursive cancellation of nested pairs of mutually inverse gates. This allows the transform
+  to cancel larger blocks of inverse gates without having to scan
   the circuit from scratch. By default, the recursive cancellation is enabled (``recursive=True``).
-  To obtain previous behaviour, disable it by setting ``recursive=False``.
+  To obtain the previous behaviour, disable it by setting ``recursive=False``.
   [(#8483)](https://github.com/PennyLaneAI/pennylane/pull/8483)
 
 * `qml.grad` and `qml.jacobian` now lazily dispatch to catalyst and program
