@@ -1224,7 +1224,7 @@ class ToBloq(Bloq):
             call graph is built via the PennyLane decomposition. Default is ``'estimator'``.
 
     Raises:
-        TypeError: operator must be an instance of :class:`~.Operation`.
+        TypeError: op must be an instance of :class:`~.Operation`, :class:`~.QNode`, or a quantum function.
         ValueError: If ``call_graph`` is not ``'estimator'`` or ``'decomposition'``.
 
     .. seealso:: :func:`~.to_bloq` for the recommended way to convert from PennyLane objects to
