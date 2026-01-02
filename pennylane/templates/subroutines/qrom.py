@@ -34,7 +34,7 @@ from pennylane.queuing import QueuingManager, apply
 from pennylane.templates.embeddings import BasisEmbedding
 from pennylane.wires import Wires, WiresLike
 
-from ...typing import TensorLike
+from pennylane.typing import TensorLike
 from .select import Select
 
 
@@ -155,7 +155,7 @@ class QROM(Operation):
         at least :math:`\lceil \log_2(m)\rceil` control wires.
 
         The second set of wires is ``target_wires`` which stores the bitstrings.
-        For instance, if the bitstring is [0, 1, 1, 0], we will need four target wires. Internally,
+        For instance, if the bitstring is ``[0, 1, 1, 0]``, we will need four target wires. Internally,
         the bitstrings are encoded using the :class:`~.BasisEmbedding` template.
 
 
