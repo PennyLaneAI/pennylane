@@ -291,7 +291,7 @@ class PhaseGradient(ResourceOperator):
     def __init__(self, num_wires: int | None = None, wires: WiresLike = None):
         if num_wires is None:
             if wires is None:
-                raise ValueError("Must provide atleast one of `num_wires` and `wires`.")
+                raise ValueError("Must provide at least one of `num_wires` and `wires`.")
             num_wires = len(wires)
         self.num_wires = num_wires
         super().__init__(wires=wires)
@@ -1406,7 +1406,7 @@ class QFT(ResourceOperator):
     def __init__(self, num_wires: int | None = None, wires: WiresLike = None) -> None:
         if num_wires is None:
             if wires is None:
-                raise ValueError("Must provide atleast one of `num_wires` and `wires`.")
+                raise ValueError("Must provide at least one of `num_wires` and `wires`.")
             num_wires = len(wires)
         self.num_wires = num_wires
         super().__init__(wires=wires)
@@ -1567,7 +1567,7 @@ class AQFT(ResourceOperator):
     def __init__(self, order: int, num_wires: int | None = None, wires: WiresLike = None) -> None:
         if num_wires is None:
             if wires is None:
-                raise ValueError("Must provide atleast one of `num_wires` and `wires`.")
+                raise ValueError("Must provide at least one of `num_wires` and `wires`.")
             num_wires = len(wires)
         self.order = order
         self.num_wires = num_wires
@@ -1728,7 +1728,7 @@ class BasisRotation(ResourceOperator):
     def __init__(self, dim: int | None = None, wires: WiresLike = None):
         if dim is None:
             if wires is None:
-                raise ValueError("Must provide atleast one of `dim` and `wires`.")
+                raise ValueError("Must provide at least one of `dim` and `wires`.")
             dim = len(wires)
         self.num_wires = dim
         super().__init__(wires=wires)
@@ -2503,18 +2503,18 @@ class QROM(ResourceOperator):
         k = select_swap_depth or qre.QROM._t_optimized_select_swap_width(
             num_bitstrings, size_bitstring
         )
-        l = math.ceil(math.log2(k))  # number of qubits in |l> register
+        num_qubits_l = math.ceil(math.log2(k))  # number of qubits in |l> register
 
-        H = math.ceil(num_bitstrings / k)  # number of columns of data
-        h = math.ceil(math.log2(H))  # number of qubits in |h> register
+        num_cols = math.ceil(num_bitstrings / k)  # number of columns of data
+        num_qubits_h = math.ceil(math.log2(num_cols))  # number of qubits in |h> register
 
         ## Measure output register, reset qubits and construct fixup table
         gate_lst.append(qre.GateCount(had, size_bitstring))  # Figure 5.
 
         ## Allocate auxiliary qubits
         num_alloc_wires = k  # Swap registers
-        if H > 1:
-            num_alloc_wires += h - 1  # + work_wires for UI trick
+        if num_cols > 1:
+            num_alloc_wires += num_qubits_h - 1  # + work_wires for UI trick
 
         gate_lst.append(qre.Allocate(num_alloc_wires))
 
@@ -2523,11 +2523,11 @@ class QROM(ResourceOperator):
             gate_lst.append(GateCount(x, 2))
             gate_lst.append(GateCount(had, 2 * k))
 
-            num_bit_flips = (k * H) // 2
+            num_bit_flips = (k * num_cols) // 2
 
-            ctrl_S_decomp = cls._ctrl_S(num_ctrl_wires=l)
-            ctrl_S_adj_decomp = cls._ctrl_S_adj(num_ctrl_wires=l)
-            ctrl_T_decomp = cls._ctrl_T(num_data_blocks=H, num_bit_flips=num_bit_flips)
+            ctrl_S_decomp = cls._ctrl_S(num_ctrl_wires=num_qubits_l)
+            ctrl_S_adj_decomp = cls._ctrl_S_adj(num_ctrl_wires=num_qubits_l)
+            ctrl_T_decomp = cls._ctrl_T(num_data_blocks=num_cols, num_bit_flips=num_bit_flips)
 
             gate_lst.extend(ctrl_S_decomp)
             gate_lst.extend(ctrl_S_adj_decomp)
@@ -2538,11 +2538,13 @@ class QROM(ResourceOperator):
             gate_lst.append(GateCount(z, 2))
             gate_lst.append(GateCount(had, 2))
 
-            num_bit_flips = (k * H) // 2
+            num_bit_flips = (k * num_cols) // 2
             count = 1 if k == 1 else 2
-            ctrl_S_decomp = cls._ctrl_S(num_ctrl_wires=l, count=count)
-            ctrl_S_adj_decomp = cls._ctrl_S_adj(num_ctrl_wires=l, count=count)
-            ctrl_T_decomp = cls._ctrl_T(num_data_blocks=H, num_bit_flips=num_bit_flips, count=count)
+            ctrl_S_decomp = cls._ctrl_S(num_ctrl_wires=num_qubits_l, count=count)
+            ctrl_S_adj_decomp = cls._ctrl_S_adj(num_ctrl_wires=num_qubits_l, count=count)
+            ctrl_T_decomp = cls._ctrl_T(
+                num_data_blocks=num_cols, num_bit_flips=num_bit_flips, count=count
+            )
 
             gate_lst.extend(ctrl_S_decomp)
             gate_lst.extend(ctrl_S_adj_decomp)
@@ -2607,7 +2609,7 @@ class QROM(ResourceOperator):
 
 
 class SelectPauliRot(ResourceOperator):
-    r"""Resource class for the SelectPauliRot gate.
+    r"""Resource class for the uniformly controlled rotation gate.
 
     Args:
         rot_axis (str): the rotation axis used in the multiplexer
@@ -2829,7 +2831,7 @@ class Reflection(ResourceOperator):
 
     Args:
         num_wires (int | None): The number of wires the operator acts on. If ``None`` is provided, the
-            number of wires are infered from the ``U`` operator.
+            number of wires are inferred from the ``U`` operator.
         U (:class:`~.pennylane.estimator.resource_operator.ResourceOperator` | None): the operator that prepares the state :math:`|\Psi\rangle`
         alpha (float | None): the angle of the operator, should be between :math:`[0, 2\pi]`. Default is :math:`\pi`.
         wires (WiresLike | None): The wires the operation acts on.
@@ -2844,8 +2846,8 @@ class Reflection(ResourceOperator):
         The cost for :math:`-I` is calculated as :math:`X Z X Z = -I`.
 
     Raises:
-        ValueError: ``alpha`` must be a float within the range ``[0, 2pi]``
-        ValueError: must provide atleast one of ``num_wires`` or ``U``
+        ValueError: if ``alpha`` is not a float within the range ``[0, 2pi]``
+        ValueError: if at least one of ``num_wires`` or ``U`` is not provided
         ValueError: if the wires provided don't match the number of wires expected by the operator
 
     .. seealso:: :class:`~.pennylane.Reflection`
@@ -2888,7 +2890,7 @@ class Reflection(ResourceOperator):
         self.alpha = alpha
 
         if U is None and num_wires is None:
-            raise ValueError("Must provide atleast one of `num_wires` or `U`")
+            raise ValueError("Must provide at least one of `num_wires` or `U`")
 
         if U is not None:
             _dequeue([U])
@@ -3090,12 +3092,13 @@ class Reflection(ResourceOperator):
 
 
 class Qubitization(ResourceOperator):
-    r"""Resource class for the Qubitization operator. This operator encodes a Hamiltonian, written
-    as a linear combination of unitaries, into a unitary operator (see Figure 1 in
+    r"""Resource class for the Qubitization operator. The operator is also referred to as the ``Quantum Walk`` operator.
+
+    The operator is constructed by encoding a Hamiltonian, written as a linear combination of unitaries, into a block encoding (see Figure 1 in
     `arXiv:1805.03662 <https://arxiv.org/abs/1805.03662>`_).
 
     .. math::
-        Q =  \text{Prep}_{\mathcal{H}}(2|0\rangle\langle 0| - I)\text{Prep}_{\mathcal{H}}^{\dagger} \text{Sel}_{\mathcal{H}}.
+        Q =  \text{Prep}_{H}(2|0\rangle\langle 0| - I)\text{Prep}_{H}^{\dagger} \text{Sel}_{H}.
 
     Args:
         prep_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): the operator that prepares the coefficients of the LCU
@@ -3103,7 +3106,7 @@ class Qubitization(ResourceOperator):
         wires (WiresLike | None): the wires the operation acts on
 
     Resources:
-        The resources are obtained from Equation: 9 in `Babbush et al. (2018) <https://arxiv.org/abs/1805.03662>`_.
+        The resources are obtained from Equation 9 in `Babbush et al. (2018) <https://arxiv.org/abs/1805.03662>`_.
         Specifically, the walk operator is defined as :math:`W = R \cdot S`, where :math:`R` is a reflection about the state prepared by
         the ``Prepare`` operator, and :math:`S` is the ``Select`` operator. The cost is therefore one ``Select`` and one ``Reflection``.
 
@@ -3171,7 +3174,7 @@ class Qubitization(ResourceOperator):
                 applies the unitaries of the LCU.
 
         Resources:
-            The resources are obtained from Equation 9 in: `Babbush et al. (2018) <https://arxiv.org/abs/1805.03662>`_.
+            The resources are obtained from Equation 9 in `Babbush et al. (2018) <https://arxiv.org/abs/1805.03662>`_.
             Specifically, the walk operator is defined as :math:`W = R \cdot S`, where :math:`R` is a reflection about the state prepared by
             the ``Prepare`` operator, and :math:`S` is the ``Select`` operator.
 
@@ -3268,7 +3271,7 @@ class Qubitization(ResourceOperator):
         cls, prep_op: CompressedResourceOp, select_op: CompressedResourceOp
     ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation.
+        the Operator that are needed to compute the resources.
 
         Args:
             prep_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A compressed representation for the operator that prepares
