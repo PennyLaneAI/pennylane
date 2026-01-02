@@ -35,7 +35,7 @@ class CDFHamiltonian:
         one_norm (float | None): the one-norm of the Hamiltonian
 
     Raises:
-        ValueError: If ``num_orbitals``, or ``num_fragments`` is not a positive integer.
+        TypeError: If ``num_orbitals``, or ``num_fragments`` is not a positive integer.
         TypeError: If ``one_norm`` is provided but is not a non-negative float or integer.
 
     Returns:
