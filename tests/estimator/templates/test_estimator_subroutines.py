@@ -153,6 +153,21 @@ class TestIQP:
 class TestHybridQRAM:
     """Test the HybridQRAM class."""
 
+    def test_raises_with_wrong_wire_num(self):
+        with pytest.raises(ValueError, match="Expected 10 wires, got 4."):
+            qre.HybridQRAM(
+                ["000", "010", "101", "111"],
+                10,
+                2,
+                2,
+                control_wires=(
+                    0,
+                    1,
+                ),
+                target_wires=(2,),
+                work_wires=(3,),
+            )
+
     @pytest.mark.parametrize(
         (
             "num_wires",

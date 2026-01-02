@@ -1843,7 +1843,9 @@ class HybridQRAM(ResourceOperator):
         if control_wires and target_wires and work_wires:
             all_wires = list(control_wires) + list(target_wires) + list(work_wires)
             assert num_control_wires == len(control_wires)
-        self.num_wires = num_wires if all_wires is None else len(all_wires)
+            if len(all_wires) != num_wires:
+                raise ValueError(f"Expected {num_wires} wires, got {len(all_wires)}.")
+        self.num_wires = num_wires
         self.bitstrings = bitstrings
         self.num_select_wires = num_select_wires
         self.num_control_wires = num_control_wires
