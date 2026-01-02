@@ -462,29 +462,10 @@ class GQSPTimeEvolution(ResourceOperator):
 
 
 class QSVT(ResourceOperator):
-    r"""Implements the `Quantum Singular Value Transformation <https://arxiv.org/abs/1806.01838>`_
-    (QSVT) circuit.
+    r"""Resource class for Quantum Singular Value Transformation (QSVT).
 
-    This template estimates the resources for a QSVT circuit of degree :math:`d` (``poly_deg``).
-    The circuit uses a :class:`~.estimator.resource_operator.ResourceOperator` :math:`U` that block
-    encodes a matrix :math:`A` in its top-left block with dimensions :math:`A_n, A_m` (``encoding_dims``).
-
-    When the degree of the polynomial is odd, the QSVT circuit is defined as:
-
-    .. math::
-
-        U_{QSVT} = \tilde{\Pi}_{\phi_1}U\left[\prod^{(d-1)/2}_{k=1}\Pi_{\phi_{2k}}U^\dagger
-        \tilde{\Pi}_{\phi_{2k+1}}U\right].
-
-
-    And when the degree is even:
-
-    .. math::
-
-        U_{QSVT} = \left[\prod^{d/2}_{k=1}\Pi_{\phi_{2k-1}}U^\dagger\tilde{\Pi}_{\phi_{2k}}U\right].
-
-    Where :math:`\Pi_{\phi}` and :math:`\tilde{\Pi}_{\phi}` are projector-controlled phase shifts
-    (:class:`~.estimator.ops.qubit.parametric_ops_multi_qubit.PCPhase`). This circuit applies a
+    This operation uses a :class:`~.estimator.resource_operator.ResourceOperator` :math:`U` that
+    block encodes a matrix :math:`A` in its top-left block. This circuit applies a
     polynomial transformation (:math:`Poly^{SV}`) of degree :math:`d` to the singular values of the
     block encoded matrix:
 
@@ -498,14 +479,30 @@ class QSVT(ResourceOperator):
             \end{bmatrix}.
         \end{align}
 
+    When the degree of the polynomial is odd, the QSVT circuit is defined as:
+
+    .. math::
+
+        U_{QSVT} = \tilde{\Pi}_{\phi_1}U\left[\prod^{(d-1)/2}_{k=1}\Pi_{\phi_{2k}}U^\dagger
+        \tilde{\Pi}_{\phi_{2k+1}}U\right],
+
+
+    and when the degree is even,
+
+    .. math::
+
+        U_{QSVT} = \left[\prod^{d/2}_{k=1}\Pi_{\phi_{2k-1}}U^\dagger\tilde{\Pi}_{\phi_{2k}}U\right],
+
+    where :math:`\Pi_{\phi}` and :math:`\tilde{\Pi}_{\phi}` are projector-controlled phase shifts.
+
     .. seealso::
 
         :func:`~.qsvt` and :class:`~.QSVT`.
 
     Args:
         block_encoding (:class:`~.estimator.resource_operator.ResourceOperator`): the block encoding operator
-        encoding_dims (int | tuple(int)): The dimensions of the encoded operator's sub-matrix.
-            If an integer is provided, a square sub-matrix is assumed; otherwise, specify (rows, columns).
+        encoding_dims (int | tuple(int)): The dimension of the encoded matrix.
+            If an integer is provided, a square matrix is assumed.
         poly_deg (int): the degree of the polynomial transformation being applied
         wires (WiresLike | None): the wires the operation acts on
 
