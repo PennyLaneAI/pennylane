@@ -1793,7 +1793,7 @@ class TrotterPauli(ResourceOperator):
         product formula is derived below.
 
         The number of times an operator :math:`e^{itO_{j}}` is applied depends on the
-        number of Trotter steps ``n`` and the order of the approximation ``m`` as:
+        number of Trotter steps :math:`n` and the order of the approximation :math:`m` as:
 
         .. math::
 
@@ -1985,7 +1985,7 @@ class TrotterPauli(ResourceOperator):
             product formula is derived below.
 
             The number of times an operator :math:`e^{itO_{j}}` is applied depends on the
-            number of Trotter steps ``n`` and the order of the approximation ``m`` as:
+            number of Trotter steps :math:`n` and the order of the approximation :math:`m` as:
 
             .. math::
 

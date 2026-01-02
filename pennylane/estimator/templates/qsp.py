@@ -147,7 +147,7 @@ class GQSP(ResourceOperator):
         Returns:
             dict: A dictionary containing the resource parameters:
                 * cmpr_signal_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`):
-                  the compressed representation of signal operator which encodes the target Hamiltonian
+                  the compressed representation of the signal operator which encodes the target Hamiltonian
                 * d_plus (int): the largest positive degree :math:`d^{+}` of the polynomial transformation
                 * d_minus (int): The largest (in absolute value) negative degree :math:`d^{-}` of the
                   polynomial transformation, representing powers of the adjoint of the signal operator.
@@ -175,7 +175,7 @@ class GQSP(ResourceOperator):
 
         Args:
             cmpr_signal_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`):
-                the compressed representation of signal operator which encodes the target Hamiltonian
+                the compressed representation of the signal operator which encodes the target Hamiltonian
             d_plus (int): the largest positive degree :math:`d^{+}` of the polynomial transformation
             d_minus (int): The largest (in absolute value) negative degree :math:`d^{-}` of the polynomial
                 transformation, representing powers of the adjoint of the signal operator.
@@ -206,7 +206,7 @@ class GQSP(ResourceOperator):
 
         Args:
             cmpr_signal_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`):
-                the compressed representation of signal operator which encodes the target Hamiltonian
+                the compressed representation of the signal operator which encodes the target Hamiltonian
             d_plus (int): the largest positive degree :math:`d^{+}` of the polynomial transformation
             d_minus (int): The largest (in absolute value) negative degree :math:`d^{-}` of the polynomial
                 transformation, representing powers of the adjoint of the signal operator.
@@ -434,7 +434,7 @@ class GQSPTimeEvolution(ResourceOperator):
     @staticmethod
     def poly_approx(time: float, one_norm: float, epsilon: float) -> int:
         r"""Obtain the maximum degree of the polynomial approximation required
-        to approximate :math:`e^{(iHt \cos{\theta})}` within error epsilon.
+        to approximate :math:`e^{(iHt \cos{\theta})}` within some error epsilon.
 
         Args:
             time (float): the simulation time
@@ -572,8 +572,8 @@ class QSVT(ResourceOperator):
             dict: A dictionary containing the resource parameters:
                 * block_encoding (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`):
                   the block encoding operator
-                * encoding_dims (int | tuple(int)): The dimensions of the encoded operator's sub-matrix.
-                  If an integer is provided, a square sub-matrix is assumed; otherwise, specify (rows, columns).
+                * encoding_dims (int | tuple(int)): The dimensions of the encoded matrix.
+                  If an integer is provided, a square matrix is assumed.
                 * poly_deg (int): the degree of the polynomial transformation being applied
         """
         return {
@@ -595,8 +595,8 @@ class QSVT(ResourceOperator):
         Args:
             block_encoding (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`):
                 the block encoding operator
-            encoding_dims (int | tuple(int)): The dimensions of the encoded operator's sub-matrix.
-                If an integer is provided, a square sub-matrix is assumed; otherwise, specify (rows, columns).
+            encoding_dims (int | tuple(int)): The dimensions of the encoded matrix.
+                If an integer is provided, a square matrix is assumed.
             poly_deg (int): the degree of the polynomial transformation being applied
 
         Returns:
@@ -623,8 +623,8 @@ class QSVT(ResourceOperator):
         Args:
             block_encoding (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`):
                 the block encoding operator
-            encoding_dims (int | tuple(int)): The dimensions of the encoded operator's sub-matrix.
-                If an integer is provided, a square sub-matrix is assumed; otherwise, specify (rows, columns).
+            encoding_dims (int | tuple(int)): The dimensions of the encoded matrix.
+                If an integer is provided, a square matrix is assumed.
             poly_deg (int): the degree of the polynomial transformation being applied
 
         Resources:
@@ -696,8 +696,8 @@ class QSP(ResourceOperator):
         wires (WiresLike, None): the wires the operation acts on
 
     Raises:
-        ValueError: If the block encoding operator acts on more than one qubit.
-        ValueError: If the convention is not ``"X"`` or ``"Z"``.
+        ValueError: if the block encoding operator acts on more than one qubit
+        ValueError: if the convention is not ``"X"`` or ``"Z"``
 
     Resources:
         The resources are obtained as described in Theorem 1 of `A Grand Unification of Quantum Algorithms
@@ -824,7 +824,7 @@ class QSP(ResourceOperator):
             (2021) <https://arxiv.org/pdf/2105.02859>`_.
 
         Raises:
-            ValueError: If the convention is not ``"X"`` or ``"Z"``.
+            ValueError: if the convention is not ``"X"`` or ``"Z"``
 
         Returns:
             list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object

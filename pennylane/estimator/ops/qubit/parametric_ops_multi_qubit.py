@@ -43,7 +43,7 @@ class MultiRZ(ResourceOperator):
     Args:
         num_wires (int | None): the number of wires the operation acts upon
         precision (float | None): error threshold for the Clifford + T decomposition of this operation
-        wires (Sequence[int] | None): the wires the operation acts on
+        wires (WiresLike | None): the wires the operation acts on
 
     Resources:
         The resources come from Section VIII (Figure 3) of `The Bravyi-Kitaev transformation for
@@ -237,7 +237,7 @@ class PauliRot(ResourceOperator):
     Args:
         pauli_string (str): a string describing the Pauli operators that define the rotation
         precision (float | None): error threshold for the Clifford + T decomposition of the operation
-        wires (Sequence[int] | None): the wire the operation acts on
+        wires (WiresLike | None): the wire the operation acts on
 
     Resources:
         The resources are computed based on Section VIII (Figures 3 and 4) of
