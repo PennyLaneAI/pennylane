@@ -193,7 +193,7 @@ class PauliHamiltonian:
 
     Args:
         num_qubits (int): total number of qubits the Hamiltonian acts on
-        pauli_terms (dict[str, int] | Iterable[dict]): dictionary representing the Hamiltonian terms
+        pauli_terms (dict[str, int] | Iterable[dict]): A dictionary representing the Hamiltonian terms
             where the keys are Pauli strings, e.g ``"XY"``, and the values are integers denoting
             how frequently a Pauli word appears in the Hamiltonian. When a list of dictionaries is
             provided, each dictionary is interpreted as a commuting group of terms. See the

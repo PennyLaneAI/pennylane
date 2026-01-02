@@ -42,7 +42,7 @@ class GQSP(ResourceOperator):
         GQSP = \left( \prod_{j=1}^{d^{-}} R(\theta_{j}, \phi_{j}, 0) \hat{A}^{\prime} \right)
         \left( \prod_{j=1}^{d^{+}} R(\theta_{j + d^{-}}, \phi_{j + d^{-}}, 0) \hat{A} \right) R(\theta_0, \phi_0, \lambda),
 
-    where :math:`R` is a rotation operator and :math:`\vec{\phi}`, :math:`\vec{\theta}` and :math:`\lambda`
+    where :math:`R` is the single-qubit rotation operator and :math:`\vec{\phi}`, :math:`\vec{\theta}` and :math:`\lambda`
     are the rotation angles that generate the polynomial transformation. The maximum positive and
     negative polynomial degrees are denoted by :math:`d^{+}` and :math:`d^{-}`, respectively.
     Additionally, :math:`\hat{A}` and :math:`\hat{A}^{\prime}` are given by:
