@@ -90,7 +90,7 @@ class TrotterProduct(ResourceOperator):
         The number of times an operator :math:`e^{itO_{j}}` is applied depends on the
         number of Trotter steps (`n`) and the order of the approximation (`m`) and is given by:
 
-        .. math:: C_{O_j} = 2 * n \cdot 5^{\frac{m}{2} - 1}
+        .. math:: C_{O_j} = 2 \cdot n \cdot 5^{\frac{m}{2} - 1}
 
         Furthermore, because of the symmetric form of the recursive formula, the first and last terms are grouped.
         This reduces the counts for those terms to:
@@ -308,7 +308,7 @@ class TrotterCDF(ResourceOperator):
 
         .. math::
 
-            C_{O_j} = 2 * n \cdot 5^{\frac{m}{2} - 1}.
+            C_{O_j} = 2 \cdot n \cdot 5^{\frac{m}{2} - 1}.
 
         Furthermore, because of the symmetric form of the recursive formula, the first and last terms get grouped.
         This reduces the counts for those terms to:
@@ -438,7 +438,7 @@ class TrotterCDF(ResourceOperator):
 
             .. math::
 
-                C_{O_j} = 2 * n \cdot 5^{\frac{m}{2} - 1}.
+                C_{O_j} = 2 \cdot n \cdot 5^{\frac{m}{2} - 1}.
 
             Furthermore, because of the symmetric form of the recursive formula, the first and last terms get grouped.
             This reduces the counts for those terms to:
@@ -627,7 +627,7 @@ class TrotterTHC(ResourceOperator):
 
         .. math::
 
-            C_{O_j} = 2 * n \cdot 5^{\frac{m}{2} - 1}.
+            C_{O_j} = 2 \cdot n \cdot 5^{\frac{m}{2} - 1}.
 
         Furthermore, because of the symmetric form of the recursive formula, the first and last
         terms get grouped. This reduces the counts for those terms to:
@@ -757,7 +757,7 @@ class TrotterTHC(ResourceOperator):
 
             .. math::
 
-                C_{O_j} = 2 * n \cdot 5^{\frac{m}{2} - 1}.
+                C_{O_j} = 2 \cdot n \cdot 5^{\frac{m}{2} - 1}.
 
             Furthermore, because of the symmetric form of the recursive formula, the first and last
             terms get grouped. This reduces the counts for those terms to:
@@ -951,7 +951,7 @@ class TrotterVibrational(ResourceOperator):
 
         .. math::
 
-            C_{O_j} = 2 * n \cdot 5^{\frac{m}{2} - 1}.
+            C_{O_j} = 2 \cdot n \cdot 5^{\frac{m}{2} - 1}.
 
         Furthermore, because of the symmetric form of the recursive formula, the first and last terms get grouped.
         This reduces the counts for those terms to:
@@ -1238,7 +1238,7 @@ class TrotterVibrational(ResourceOperator):
 
             .. math::
 
-                C_{O_j} = 2 * n \cdot 5^{\frac{m}{2} - 1}.
+                C_{O_j} = 2 \cdot n \cdot 5^{\frac{m}{2} - 1}.
 
             Furthermore, because of the symmetric form of the recursive formula, the first and last terms get grouped.
             This reduces the counts for those terms to:
@@ -1346,7 +1346,7 @@ class TrotterVibronic(ResourceOperator):
 
         .. math::
 
-            C_{O_j} = 2 * n \cdot 5^{\frac{m}{2} - 1}.
+            C_{O_j} = 2 \cdot n \cdot 5^{\frac{m}{2} - 1}.
 
         Furthermore, because of the symmetric form of the recursive formula, the first and last terms get grouped.
         This reduces the counts for those terms to:
@@ -1665,7 +1665,7 @@ class TrotterVibronic(ResourceOperator):
 
             .. math::
 
-                C_{O_j} = 2 * n \cdot 5^{\frac{m}{2} - 1}.
+                C_{O_j} = 2 \cdot n \cdot 5^{\frac{m}{2} - 1}.
 
             Furthermore, because of the symmetric form of the recursive formula, the first and last terms get grouped.
             This reduces the counts for those terms to:
@@ -1776,7 +1776,7 @@ class TrotterPauli(ResourceOperator):
         The number of times an operator :math:`e^{itO_{j}}` is applied depends on the
         number of Trotter steps (`n`) and the order of the approximation (`m`) and is given by:
 
-        .. math:: C_{O_j} = 2 * n \cdot 5^{\frac{m}{2} - 1}
+        .. math:: C_{O_j} = 2 \cdot n \cdot 5^{\frac{m}{2} - 1}
 
         Furthermore, because of the symmetric form of the recursive formula, the first and last terms are grouped.
         This reduces the counts for those terms to:
@@ -1947,7 +1947,7 @@ class TrotterPauli(ResourceOperator):
             The number of times an operator :math:`e^{itO_{j}}` is applied depends on the
             number of Trotter steps (`n`) and the order of the approximation (`m`) and is given by:
 
-            .. math:: C_{O_j} = 2 * n \cdot 5^{\frac{m}{2} - 1}
+            .. math:: C_{O_j} = 2 \cdot n \cdot 5^{\frac{m}{2} - 1}
 
             Furthermore, because of the symmetric form of the recursive formula, the first and last terms are grouped.
             This reduces the counts for those terms to:

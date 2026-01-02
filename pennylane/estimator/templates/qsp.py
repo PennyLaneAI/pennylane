@@ -215,9 +215,6 @@ class GQSP(ResourceOperator):
         Resources:
             The resources are obtained as described in Theorem 6 of
             `Generalized Quantum Signal Processing (2024) <https://arxiv.org/pdf/2308.01501>`_.
-            Specifically, the resources are given by ``d_plus`` instances of :math:`\hat{A}`,
-            ``d_minus`` instances of :math:`\hat{A^{\prime}}`, and ``d_plus + d_minus + 1``
-            instances of the general ``Rot`` gate.
 
         Returns:
             list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
