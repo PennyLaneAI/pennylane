@@ -303,12 +303,12 @@ def iqp_expval(
             higher precision.
         key (Array): Jax key to control the randomness of the process.
         spin_sym (bool, optional): If True, the circuit is equivalent to one where the initial state
-            :math:`\frac{1}{\sqrt(2)}(|00\dots0> + |11\dots1>)` is used in place of :math:`|00\dots0>`. This defines a circuit whose output distribution is invariant to flipping all bits. 
+            :math:`\frac{1}{\sqrt(2)}(|00\dots0> + |11\dots1>)` is used in place of :math:`|00\dots0>`. This defines a circuit whose output distribution is invariant to flipping all bits.
         indep_estimates (bool): Whether to use independent estimates of the operators in a batch.
             If True, correlation among the estimated expectation values can be avoided, although at the cost
             of larger runtime.
         max_batch_ops (int): Specifies the maximum size of sub-batches of ``ops`` that are used to estimate the expectation values (to control memory usage). If None, a single batch is used. Can only be used if ``ops`` is a jnp.array.
-        max_batch_samples (int): Specifies the maximum size of sub-batches of samples that are used to estimate the expectation values of ``ops`` (to control memory usage). If None, a single batch is used. 
+        max_batch_samples (int): Specifies the maximum size of sub-batches of samples that are used to estimate the expectation values of ``ops`` (to control memory usage). If None, a single batch is used.
 
     Returns:
         list: List of Vectors. The expected value of each operator and its corresponding standard deviation.
