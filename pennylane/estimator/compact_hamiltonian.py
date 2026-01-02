@@ -34,8 +34,9 @@ class CDFHamiltonian:
         num_fragments (int): number of fragments in the compressed double-factorized (CDF) representation
         one_norm (float | None): the one-norm of the Hamiltonian
 
-    Returns:
-        CDFHamiltonian: An instance of CDFHamiltonian
+    Raises:
+        TypeError: if ``num_orbitals``, or ``num_fragments`` is not a positive integer
+        TypeError: if ``one_norm`` is provided but is not a non-negative float or integer
 
     .. seealso::
         :class:`~.estimator.templates.TrotterCDF`
@@ -69,8 +70,10 @@ class THCHamiltonian:
         tensor_rank (int):  tensor rank of two-body integrals in the tensor hypercontracted (THC) representation
         one_norm (float | None): the one-norm of the Hamiltonian
 
-    Returns:
-        THCHamiltonian: An instance of THCHamiltonian
+    Raises:
+        TypeError: if ``num_orbitals``, or ``tensor_rank`` is not a positive integer
+        TypeError: if ``one_norm`` is provided but is not a non-negative float or integer
+
 
     .. seealso::
         :class:`~.estimator.templates.TrotterTHC`
@@ -107,8 +110,9 @@ class VibrationalHamiltonian:
         taylor_degree (int): degree of the Taylor expansion used in the vibrational representation
         one_norm (float | None): the one-norm of the Hamiltonian
 
-    Returns:
-        VibrationalHamiltonian: An instance of VibrationalHamiltonian
+    Raises:
+        TypeError: if ``num_modes``, ``grid_size``, or ``taylor_degree`` is not a positive integer
+        TypeError: if ``one_norm`` is provided but is not a non-negative float or integer
 
     .. seealso::
         :class:`~.estimator.templates.TrotterVibrational`
@@ -149,8 +153,9 @@ class VibronicHamiltonian:
         taylor_degree (int): degree of the Taylor expansion used in the vibronic representation
         one_norm (float | None): the one-norm of the Hamiltonian
 
-    Returns:
-        VibronicHamiltonian: An instance of VibronicHamiltonian
+    Raises:
+        TypeError: if ``num_modes``, ``num_states``, ``grid_size``, or ``taylor_degree`` is not a positive integer
+        TypeError: if ``one_norm`` is provided but is not a non-negative float or integer
 
     .. seealso::
         :class:`~.estimator.templates.TrotterVibronic`
@@ -188,18 +193,17 @@ class PauliHamiltonian:
 
     Args:
         num_qubits (int): total number of qubits the Hamiltonian acts on
-        pauli_terms (dict | Iterable(dict)): A representation for all of the terms (Pauli words) of
-            the Hamiltonian. The terms of the Hamiltonian can also be separated into groups such
-            that all Pauli words in a group commute. When a single dictionary is provided, it should
-            represent all the terms of the Hamiltonian where the dictionary keys are Pauli strings
-            (e.g ``"XY"`` or ``"Z"``) and the values are integers corresponding to how frequently
-            that Pauli word appears in the Hamiltonian. When a list of dictionaries is provided,
-            each dictionary is interpreted as a commuting group of terms. See the ``Usage Details``
-            section below for more information.
+        pauli_terms (dict[str, int] | Iterable[dict]): A dictionary representing the Hamiltonian terms
+            where the keys are Pauli strings, e.g ``"XY"``, and the values are integers denoting
+            how frequently a Pauli word appears in the Hamiltonian. When a list of dictionaries is
+            provided, each dictionary is interpreted as a commuting group of terms. See the
+            ``Usage Details`` section for more information.
         one_norm (float | int | None): the one-norm of the Hamiltonian
 
-    Returns:
-        PauliHamiltonian: An instance of PauliHamiltonian
+    Raises:
+        TypeError: if ``pauli_terms`` is not a dictionary
+        ValueError: if ``one_norm`` is provided but is not a non-negative float or integer
+        ValueError: if ``pauli_terms`` contains invalid keys (not Pauli strings) or values (not integers)
 
     .. seealso::
         :class:`~.estimator.templates.trotter.TrotterPauli`, :class:`~.estimator.templates.select.SelectPauli`
@@ -338,7 +342,7 @@ class PauliHamiltonian:
 
     @property
     def one_norm(self):
-        """The one-norm of the Hamiltonian."""
+        """The one-norm of the Hamiltonian"""
         return self._one_norm
 
     @property
@@ -348,7 +352,7 @@ class PauliHamiltonian:
 
     @property
     def num_terms(self) -> int:
-        """The total number of Pauli words in the Hamiltonian."""
+        """The total number of Pauli words in the Hamiltonian"""
         if isinstance(self._pauli_terms, dict):
             return sum(self._pauli_terms.values())
 
