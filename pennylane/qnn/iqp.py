@@ -321,8 +321,8 @@ def iqp_expval(
     circuit, the operator :math:`Z_0 Z_2` will be represented as :math:`[1, 0, 1]`. Similarly, the expectation
     values for a group of operators can be evaluated by specifiying a sequence of bitstrings.
 
-    As an example, lets compute the expectation values for the operators :math:`Z_1`, :math:`Z_0`, and
-    :math:`Z_0 Z_1` for a two-qubit circuit taking 1000 samples:
+    As an example, let's estimate the expectation values for the operators :math:`Z_1`, :math:`Z_0`, and :math:`Z_0 Z_1`
+    for a two-qubit circuit, using 1000 samples for the Monte Carlo estimation:
 
     .. code-block:: python
 
