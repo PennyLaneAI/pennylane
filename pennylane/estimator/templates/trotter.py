@@ -302,10 +302,10 @@ class TrotterCDF(ResourceOperator):
         wires (list[int] | None): the wires on which the operator acts
 
     Raises:
-        TypeError: If ``cdf_ham`` is not an instance of :class:`~.CDFHamiltonian`.
-        ValueError: If ``num_steps`` is not a positive integer.
-        ValueError: If ``order`` is not 1 or a positive even integer.
-        ValueError: If the number of wires provided does not match the number of wires required by the operator`.
+        TypeError: if ``cdf_ham`` is not an instance of :class:`~.CDFHamiltonian`
+        ValueError: if ``num_steps`` is not a positive integer
+        ValueError: if ``order`` is not 1 or a positive even integer
+        ValueError: if the number of wires provided does not match the number of wires required by the operator`
 
     Resources:
         The resources are defined according to the recursive formula presented above.
@@ -654,10 +654,10 @@ class TrotterTHC(ResourceOperator):
         wires (list[int] | None): the wires on which the operator acts
 
     Raises:
-        TypeError: If ``thc_ham`` is not an instance of :class:`~.THCHamiltonian`.
-        ValueError: If ``num_steps`` is not a positive integer.
-        ValueError: If ``order`` is not 1 or a positive even integer.
-        ValueError: If the number of wires provided does not match the number of expected wires for the operation.
+        TypeError: if ``thc_ham`` is not an instance of :class:`~.THCHamiltonian`
+        ValueError: if ``num_steps`` is not a positive integer
+        ValueError: if ``order`` is not 1 or a positive even integer
+        ValueError: if the number of wires provided does not match the number of expected wires for the operation
 
     Resources:
         The resources are defined according to the recursive formula presented above.
@@ -1011,10 +1011,10 @@ class TrotterVibrational(ResourceOperator):
         wires (list[int] | None): the wires on which the operator acts
 
     Raises:
-        TypeError: If ``vibration_ham`` is not an instance of :class:`~.VibrationalHamiltonian`.
-        ValueError: If ``num_steps`` is not a positive integer.
-        ValueError: If ``order`` is not 1 or a positive even integer.
-        ValueError: If the number of wires provided does not match the number of qubits in ``pauli_ham``.
+        TypeError: if ``vibration_ham`` is not an instance of :class:`~.VibrationalHamiltonian`
+        ValueError: if ``num_steps`` is not a positive integer
+        ValueError: if ``order`` is not 1 or a positive even integer
+        ValueError: if the number of wires provided does not match the number of qubits in ``pauli_ham``
 
     Resources:
         The resources are defined according to the recursive formula presented above.
@@ -1439,10 +1439,10 @@ class TrotterVibronic(ResourceOperator):
         wires (list[int] | None): the wires on which the operator acts.
 
     Raises:
-        TypeError: If ``vibronic_ham`` is not an instance of :class:`~.VibronicHamiltonian`.
-        ValueError: If ``num_steps`` is not a positive integer.
-        ValueError: If ``order`` is not 1 or a positive even integer.
-        ValueError: If the number of wires provided does not match the number of wires expected by the operator.
+        TypeError: if ``vibronic_ham`` is not an instance of :class:`~.VibronicHamiltonian`
+        ValueError: if ``num_steps`` is not a positive integer
+        ValueError: if ``order`` is not 1 or a positive even integer
+        ValueError: if the number of wires provided does not match the number of wires expected by the operator
 
     Resources:
         The resources are defined according to the recursive formula presented above.
@@ -1903,10 +1903,10 @@ class TrotterPauli(ResourceOperator):
         wires (WiresLike | None): the wires on which the operator acts
 
     Raises:
-        TypeError: If ``pauli_ham`` is not an instance of :class:`~.PauliHamiltonian`.
-        ValueError: If ``num_steps`` is not a positive integer.
-        ValueError: If ``order`` is not 1 or a positive even integer.
-        ValueError: If the number of wires provided does not match the wires expected by the operator.
+        TypeError: if ``pauli_ham`` is not an instance of :class:`~.PauliHamiltonian`
+        ValueError: if ``num_steps`` is not a positive integer
+        ValueError: if ``order`` is not 1 or a positive even integer
+        ValueError: if the number of wires provided does not match the wires expected by the operator
 
     Resources:
         The resource cost for this subroutine depends on how the Pauli Hamiltonian is expressed.
