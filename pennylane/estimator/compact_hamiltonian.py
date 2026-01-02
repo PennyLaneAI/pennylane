@@ -29,6 +29,8 @@ def _validate_positive_int(name, value):
 class CDFHamiltonian:
     """For a compressed double-factorized (CDF) Hamiltonian, stores the minimum necessary information pertaining to resource estimation.
 
+    The form of this Hamiltonian is described in `arXiv:2506.15784 <https://arxiv.org/abs/2506.15784>`_.
+
     Args:
         num_orbitals (int): number of spatial orbitals
         num_fragments (int): number of fragments in the compressed double-factorized (CDF) representation
@@ -39,7 +41,7 @@ class CDFHamiltonian:
         TypeError: if ``one_norm`` is provided but is not a non-negative float or integer
 
     .. seealso::
-        :class:`~.estimator.templates.TrotterCDF`
+        :class:`~.estimator.templates.trotter.TrotterCDF`
     """
 
     num_orbitals: int
@@ -65,6 +67,8 @@ class CDFHamiltonian:
 class THCHamiltonian:
     """For a tensor hypercontracted (THC) Hamiltonian, stores the minimum necessary information pertaining to resource estimation.
 
+    The form of this Hamiltonian is described in `arXiv:2407.04432 <https://arxiv.org/abs/2407.04432>`_.
+
     Args:
         num_orbitals (int): number of spatial orbitals
         tensor_rank (int):  tensor rank of two-body integrals in the tensor hypercontracted (THC) representation
@@ -76,7 +80,7 @@ class THCHamiltonian:
 
 
     .. seealso::
-        :class:`~.estimator.templates.TrotterTHC`
+        :class:`~.estimator.templates.trotter.TrotterTHC`
     """
 
     num_orbitals: int
@@ -104,6 +108,8 @@ class THCHamiltonian:
 class VibrationalHamiltonian:
     """For a vibrational Hamiltonian, stores the minimum necessary information pertaining to resource estimation.
 
+    The form of this Hamiltonian is described in `arXiv:2504.10602 <https://arxiv.org/pdf/2504.10602>`_.
+
     Args:
         num_modes (int): number of vibrational modes
         grid_size (int): number of grid points used to discretize each mode
@@ -115,7 +121,7 @@ class VibrationalHamiltonian:
         TypeError: if ``one_norm`` is provided but is not a non-negative float or integer
 
     .. seealso::
-        :class:`~.estimator.templates.TrotterVibrational`
+        :class:`~.estimator.templates.trotter.TrotterVibrational`
     """
 
     num_modes: int
@@ -146,6 +152,8 @@ class VibrationalHamiltonian:
 class VibronicHamiltonian:
     """For a vibronic Hamiltonian, stores the minimum necessary information pertaining to resource estimation.
 
+    The form of this Hamiltonian is described in `arXiv:2411.13669 <https://arxiv.org/abs/2411.13669>`_.
+
     Args:
         num_modes (int): number of vibronic modes
         num_states (int): number of vibronic states
@@ -158,7 +166,7 @@ class VibronicHamiltonian:
         TypeError: if ``one_norm`` is provided but is not a non-negative float or integer
 
     .. seealso::
-        :class:`~.estimator.templates.TrotterVibronic`
+        :class:`~.estimator.templates.trotter.TrotterVibronic`
     """
 
     num_modes: int

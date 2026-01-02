@@ -2007,7 +2007,7 @@ class QROM(ResourceOperator):
             if data will be loaded in parallel by adding more rows following Figure 1.C of
             `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_. Can be :code:`None`,
             :code:`1` or a positive integer power of two. Defaults to ``None``, which sets the
-            depth that minimizes ``T``-gate count.
+            depth that minimizes T-gate count.
         wires (WiresLike | None): The wires the operation acts on (control and target), excluding
             any additional qubits allocated during the decomposition (e.g select-swap wires).
 
@@ -2124,7 +2124,7 @@ class QROM(ResourceOperator):
                 if data will be loaded in parallel by adding more rows following Figure 1.C of
                 `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_. Can be :code:`None`,
                 :code:`1` or a positive integer power of two. Defaults to ``None``, which sets the
-                depth that minimizes ``T``-gate count.
+                depth that minimizes T-gate count.
             restored (bool): Determine if allocated qubits should be reset after the computation
                 (at the cost of higher gate counts). Defaults to :code:`True`.
 
@@ -2320,7 +2320,7 @@ class QROM(ResourceOperator):
             (Figure 4) for :code:`restored = True`.
 
             Note: we use the single-controlled unary iterator trick to implement the ``Select``. This
-            implementation assumes we have access to :math:`n - 1` additional work qubits,
+            implementation assumes we have access to :math:`n` additional work qubits,
             where :math:`n = \lceil \log_{2}(N) \rceil` and :math:`N` is the number of batches of
             unitaries to select.
 
@@ -2581,7 +2581,7 @@ class QROM(ResourceOperator):
                 if data will be loaded in parallel by adding more rows following Figure 1.C of
                 `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_. Can be :code:`None`,
                 :code:`1` or a positive integer power of two. Defaults to ``None``, which sets the
-                depth that minimizes ``T``-gate count.
+                depth that minimizes T-gate count.
 
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
