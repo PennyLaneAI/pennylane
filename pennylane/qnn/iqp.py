@@ -294,22 +294,21 @@ def iqp_expval(
             unique trainable parameter. Each sublist specifies the generators to which that parameter applies.
             Generators are specified by listing the qubits on which an X operator acts. For example, the `pattern`
             `[[[0]], [[1]], [[2]], [[3]]]` specifies a circuit with single qubit rotations on the first four qubits, each
-            with its own trainable parameter. The `pattern` `[[[0],[1]], [[2],[3]]]` correspond to a circuit with two
+            with its own trainable parameter. The `pattern` `[[[0],[1]], [[2],[3]]]` corresponds to a circuit with two
             trainable parameters with generators :math:`X_0+X_1` and :math:`X_2+X_3` respectively. A circuit with a
             single trainable gate with generator :math:`X_0\otimes X_1` corresponds to the `pattern`
             `[[[0,1]]]`.
         num_wires (int): Number of wires in the circuit.
-        n_samples (int): Number of samples used to calculate the IQP expectation values. Higher values result in
+        n_samples (int): Number of samples used to estimate the IQP expectation values. Higher values result in
             higher precision.
         key (Array): Jax key to control the randomness of the process.
         spin_sym (bool, optional): If True, the circuit is equivalent to one where the initial state
-            :math:`\frac{1}{\sqrt(2)}(|00\dots0> + |11\dots1>)` is used in place of :math:`|00\dots0>`.
+            :math:`\frac{1}{\sqrt(2)}(|00\dots0> + |11\dots1>)` is used in place of :math:`|00\dots0>`. This defines a circuit whose output distribution is invariant to flipping all bits. 
         indep_estimates (bool): Whether to use independent estimates of the operators in a batch.
             If True, correlation among the estimated expectation values can be avoided, although at the cost
             of larger runtime.
-        max_batch_ops (int): Maximum number of operators in a batch. Defaults to None, which means taking all
-            operators at once. Can only be used if ``ops`` is a jnp.array.
-        max_batch_samples (int): Maximum number of samples in a batch. Defaults to None, which means taking all n_samples at once.
+        max_batch_ops (int): Specifies the maximum size of sub-batches of ``ops`` that are used to estimate the expectation values (to control memory usage). If None, a single batch is used. Can only be used if ``ops`` is a jnp.array.
+        max_batch_samples (int): Specifies the maximum size of sub-batches of samples that are used to estimate the expectation values of ``ops`` (to control memory usage). If None, a single batch is used. 
 
     Returns:
         list: List of Vectors. The expected value of each operator and its corresponding standard deviation.
