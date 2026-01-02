@@ -1973,12 +1973,12 @@ class TrotterPauli(ResourceOperator):
     .. details::
         :title: Usage Details
 
-        Estimating resources for the Trotterization of a Pauli Hamiltonian depends on how
-        the Pauli Hamiltonian was constructed. Specifically, if the terms of the Hamiltonian were
-        separated into commuting groups (see :class:`~.estimator.compact_hamiltonian.PauliHamiltonian` for more information).
-        Note that the order matters because the algorithm merges the boundaries between steps (the last operation of step ``i`` merges
-        with the first operation of step ``i+1``). Therefore, placing the largest commuting groups at the start and end of the list
-        maximizes the number of gates that get merged, significantly reducing resources.
+        This example computes the resources for a Hamiltonian partitioned into commuting groups of
+        Pauli terms. See :class:`~.estimator.compact_hamiltonian.PauliHamiltonian` for more
+        information. Note that sorting the list to place the largest commuting groups at the
+        boundaries, either the beginning or the end of the list, optimizes resource reduction. This
+        efficiency is achieved by merging the final operation of step ``i`` with the initial
+        operation of step ``i+1`` which effectively minimizes gate overhead.
 
         >>> commuting_groups = (
         ...     {"X":10, "XX":5, "XXXX":3},
