@@ -160,7 +160,7 @@ class TestResourcePhaseGradient:
 
     def test_init_raises_error(self):
         """Test that an error is raised when wires and num_wires are both not provided"""
-        with pytest.raises(ValueError, match="Must provide atleast one of"):
+        with pytest.raises(ValueError, match="Must provide at least one of"):
             qre.PhaseGradient()
 
     @pytest.mark.parametrize("num_wires", (1, 2, 3, 4, 5))
@@ -977,7 +977,7 @@ class TestResourceQFT:
 
     def test_init_raises_error(self):
         """Test that an error is raised when wires and num_wires are both not provided"""
-        with pytest.raises(ValueError, match="Must provide atleast one of"):
+        with pytest.raises(ValueError, match="Must provide at least one of"):
             qre.QFT()
 
     def test_tracking_name(self):
@@ -1108,7 +1108,7 @@ class TestResourceAQFT:
 
     def test_init_raises_error(self):
         """Test that an error is raised when wires and num_wires are both not provided"""
-        with pytest.raises(ValueError, match="Must provide atleast one of"):
+        with pytest.raises(ValueError, match="Must provide at least one of"):
             qre.AQFT(order=2)
 
     def test_tracking_name(self):
@@ -1255,7 +1255,7 @@ class TestResourceBasisRotation:
 
     def test_init_raises_error(self):
         """Test that an error is raised when wires and dim are both not provided"""
-        with pytest.raises(ValueError, match="Must provide atleast one of"):
+        with pytest.raises(ValueError, match="Must provide at least one of"):
             qre.BasisRotation()
 
     @pytest.mark.parametrize("dim", (1, 2, 3))
