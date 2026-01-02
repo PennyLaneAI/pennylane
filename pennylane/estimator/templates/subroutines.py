@@ -1820,6 +1820,9 @@ class HybridQRAM(ResourceOperator):
             :math:`(n-k)`. For more details, consult
             `section 3 of arXiv:2306.03242 <https://arxiv.org/abs/2306.03242>`__.
 
+    Raises:
+        ValueError: if the number of wires provided does not match ``num_wires``
+
     Resources:
         The resources are obtained from the HybridQRAM implementation in PennyLane. Please find more
         details about the algorithm in `Systems Architecture for Quantum Random Access Memory <https://arxiv.org/abs/2306.03242>`_.
