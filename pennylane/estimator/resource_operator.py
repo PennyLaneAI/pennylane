@@ -141,7 +141,7 @@ class ResourceOperator(ABC):
         :title: Usage Details
 
         This example shows how to create a custom :class:`~.pennylane.estimator.ResourceOperator`
-        class for resource estimation. We use :class:`~.pennylane.QFT` as a well known gate for
+        class for resource estimation. We use :class:`~.pennylane.QFT` as a well-known gate for
         simplicity.
 
         .. code-block:: python
@@ -275,7 +275,7 @@ class ResourceOperator(ABC):
     def adjoint_resource_decomp(cls, target_resource_params: dict | None = None) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
 
-        For ``ResourceOperator``s that don't define an ``adjoint_resource_decomp`` method, this will
+        For a ``ResourceOperator`` that doesn't define an ``adjoint_resource_decomp`` method, this will
         be the default ``adjoint_resource_decomp`` method.
 
         Resources:
@@ -308,7 +308,7 @@ class ResourceOperator(ABC):
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
-        For ``ResourceOperator``s that don't define a ``controlled_resource_decomp`` method, this
+        For a ``ResourceOperator`` that doesn't define a ``controlled_resource_decomp`` method, this
         will be the default ``controlled_resource_decomp`` method.
 
         Resources:
@@ -346,7 +346,7 @@ class ResourceOperator(ABC):
         r"""Returns a list representing the resources for an operator
         raised to a power.
 
-        For ``ResourceOperator``s that don't define a ``pow_resource_decomp`` method, this will
+        For a ``ResourceOperator`` that doesn't define a ``pow_resource_decomp`` method, this will
         be its ``pow_resource_decomp`` method.
 
         Resources:

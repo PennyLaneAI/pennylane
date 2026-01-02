@@ -1117,7 +1117,7 @@ class IterativeQPE(ResourceOperator):
 class UnaryIterationQPE(ResourceOperator):
     r"""Resource class for Quantum Phase Estimation (QPE) using the unary iteration
     technique.
-    
+
     This form of QPE, as described in `arXiv.2011.03494 <https://arxiv.org/pdf/2011.03494>`_,
     requires the unitary operator to be a quantum walk operator constructed from ``Select`` and ``Prepare``
     subroutines. In this approach, powers of the walk operator are obtained via unary iteration, which
@@ -1181,7 +1181,6 @@ class UnaryIterationQPE(ResourceOperator):
         remove_ops = [walk_op, adj_qft_op] if adj_qft_op is not None else [walk_op]
         _dequeue(remove_ops)
         self.queue()
-
 
         self.walk_op = walk_op.resource_rep_from_op()
         adj_qft_cmpr_op = None if adj_qft_op is None else adj_qft_op.resource_rep_from_op()
