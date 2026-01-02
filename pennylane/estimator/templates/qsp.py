@@ -62,7 +62,7 @@ class GQSP(ResourceOperator):
         d_plus (int): The largest positive degree :math:`d^{+}` of the polynomial transformation.
         d_minus (int): The largest (in absolute value) negative degree :math:`d^{-}` of the polynomial
             transformation, representing powers of the adjoint of the signal operator.
-        rotation_precision (float | None): the precision with which the general rotation gates are applied
+        rotation_precision (float | None): The precision with which the general rotation gates are applied.
         wires (WiresLike | None): The wires the operation acts on. This includes both the wires of the
             signal operator and the control wire required for block-encoding.
 
@@ -151,8 +151,8 @@ class GQSP(ResourceOperator):
                 * d_plus (int): The largest positive degree :math:`d^{+}` of the polynomial transformation.
                 * d_minus (int): The largest (in absolute value) negative degree :math:`d^{-}` of the
                   polynomial transformation, representing powers of the adjoint of the signal operator.
-                * rotation_precision (float | None): the precision with which the general
-                  rotation gates are applied
+                * rotation_precision (float | None): The precision with which the general
+                  rotation gates are applied.
         """
 
         return {
@@ -179,7 +179,7 @@ class GQSP(ResourceOperator):
             d_plus (int): The largest positive degree :math:`d^{+}` of the polynomial transformation.
             d_minus (int): The largest (in absolute value) negative degree :math:`d^{-}` of the polynomial
                 transformation, representing powers of the adjoint of the signal operator.
-            rotation_precision (float | None): the precision with which the general rotation gates are applied
+            rotation_precision (float | None): The precision with which the general rotation gates are applied.
 
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
@@ -210,7 +210,7 @@ class GQSP(ResourceOperator):
             d_plus (int): The largest positive degree :math:`d^{+}` of the polynomial transformation.
             d_minus (int): The largest (in absolute value) negative degree :math:`d^{-}` of the polynomial
                 transformation, representing powers of the adjoint of the signal operator.
-            rotation_precision (float | None): the precision with which the general rotation gates are applied
+            rotation_precision (float | None): The precision with which the general rotation gates are applied.
 
         Resources:
             The resources are obtained as described in Theorem 6 of
