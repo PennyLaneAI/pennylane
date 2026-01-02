@@ -1057,6 +1057,10 @@ A warning message has been added to :doc:`Building a plugin <../development/plug
 * Fixes a bug where an error is raised when `to_openqasm` is used with `qml.decomposition.enable_graph()`
   [(#8809)](https://github.com/PennyLaneAI/pennylane/pull/8809)
 
+* Fixes a bug where `qml.CompilePipeline` does not allow other types of transforms than `BoundTransform`
+  to initialize it.
+  [(#????)](https://github.com/PennyLaneAI/pennylane/pull/????)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):

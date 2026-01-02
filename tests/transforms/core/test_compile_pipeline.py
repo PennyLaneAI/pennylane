@@ -841,6 +841,18 @@ class TestCompilePipelineConstruction:
         )
         assert len(pipeline) == 3
 
+    def test_list_of_transforms_arbitrary(self):
+        """Tests constructing a CompilePipeline with a list of transforms."""
+
+        pipeline = CompilePipeline(
+            [
+                qml.transforms.compile,
+                BoundTransform(qml.transforms.decompose),
+                CompilePipeline(qml.transforms.cancel_inverses),
+            ]
+        )
+        assert len(pipeline) == 3
+
     def test_variable_length_arguments(self):
         """Tests constructing a CompilePipeline with a mixed series of things."""
 
