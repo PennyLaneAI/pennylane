@@ -290,10 +290,7 @@ class QROM(Operation):
     ):  # pylint: disable=arguments-differ
 
         if len(control_wires) == 0:
-            embeddings = []
-            for bits in data:
-                embeddings.append(BasisEmbedding(bits, wires=target_wires))
-            return embeddings
+            return [BasisEmbedding(bits, wires=target_wires) for bits in data]
 
         with QueuingManager.stop_recording():
 
