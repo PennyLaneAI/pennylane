@@ -1801,7 +1801,7 @@ class BBQRAM(ResourceOperator):
     Args:
         num_bitstrings (int): the size of the classical memory array to retrieve values from
         size_bitstring (int): the length of the individual bitstrings in the classical memory
-        num_ones (int): the number of 1s in the classical memory
+        num_bit_flips (int): the number of 1s in the classical memory
         num_wires (int): the number of qubits the operation acts upon
         control_wires (WiresLike): The register that stores the index for the entry of the classical data we want to
             access.
@@ -1821,13 +1821,13 @@ class BBQRAM(ResourceOperator):
     .. seealso:: :class:`~.BBQRAM`
     """
 
-    resource_keys = {"num_bitstrings", "size_bitstring", "num_ones", "num_wires"}
+    resource_keys = {"num_bitstrings", "size_bitstring", "num_bit_flips", "num_wires"}
 
     def __init__(
         self,
         num_bitstrings,
         size_bitstring,
-        num_ones,
+        num_bit_flips,
         num_wires,
         control_wires=None,
         target_wires=None,
@@ -1841,7 +1841,7 @@ class BBQRAM(ResourceOperator):
         self.num_wires = num_wires
         self.num_bitstrings = num_bitstrings
         self.size_bitstring = size_bitstring
-        self.num_ones = num_ones
+        self.num_bit_flips = num_bit_flips
         super().__init__(wires=all_wires)
 
     @property
@@ -1853,24 +1853,24 @@ class BBQRAM(ResourceOperator):
                 * num_wires (int): the number of qubits the operation acts upon
                 * num_bitstrings (int): the size of the classical memory array to retrieve values from
                 * size_bitstring (int): the length of the individual bitstrings in the classical memory
-                * num_ones (int): the number of 1s in the classical memory
+                * num_bit_flips (int): the number of 1s in the classical memory
         """
         return {
             "num_wires": self.num_wires,
             "num_bitstrings": self.num_bitstrings,
             "size_bitstring": self.size_bitstring,
-            "num_ones": self.num_ones,
+            "num_bit_flips": self.num_bit_flips,
         }
 
     @classmethod
-    def resource_rep(cls, num_bitstrings, size_bitstring, num_ones, num_wires):
+    def resource_rep(cls, num_bitstrings, size_bitstring, num_bit_flips, num_wires):
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
 
         Args:
             num_bitstrings (int): the size of the classical memory array to retrieve values from
             size_bitstring (int): the length of the individual bitstrings in the classical memory
-            num_ones (int): the number of 1s in the classical memory
+            num_bit_flips (int): the number of 1s in the classical memory
             num_wires (int): the number of qubits the operation acts upon
 
         Returns:
@@ -1879,20 +1879,20 @@ class BBQRAM(ResourceOperator):
         params = {
             "num_bitstrings": num_bitstrings,
             "size_bitstring": size_bitstring,
-            "num_ones": num_ones,
+            "num_bit_flips": num_bit_flips,
             "num_wires": num_wires,
         }
         return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
-    def resource_decomp(cls, num_bitstrings, size_bitstring, num_ones, num_wires):
+    def resource_decomp(cls, num_bitstrings, size_bitstring, num_bit_flips, num_wires):
         r"""Returns a list representing the resources of the operator. Each object in the list
         represents a gate and the number of times it occurs in the circuit.
 
         Args:
             num_bitstrings (int): the size of the classical memory array to retrieve values from
             size_bitstring (int): the length of the individual bitstrings in the classical memory
-            num_ones (int): the number of 1s in the classical memory
+            num_bit_flips (int): the number of 1s in the classical memory
             num_wires (int): the number of qubits the operation acts upon
 
         Resources:
@@ -1916,7 +1916,7 @@ class BBQRAM(ResourceOperator):
         cswap_counts = ((1 << n_k) - 1) * num_target_wires * 4 + ((1 << n_k) - 1 - n_k) * 4
         hadamard_counts = num_target_wires * 2
 
-        pauliz_counts = num_ones
+        pauliz_counts = num_bit_flips
 
         return [
             GateCount(swap, swap_counts),
@@ -1926,9 +1926,9 @@ class BBQRAM(ResourceOperator):
         ]
 
     @staticmethod
-    def tracking_name(num_bitstrings, size_bitstring, num_ones, num_wires) -> str:
+    def tracking_name(num_bitstrings, size_bitstring, num_bit_flips, num_wires) -> str:
         r"""Returns the tracking name built with the operator's parameters."""
-        return f"BBQRAM({num_bitstrings}, {size_bitstring}, {num_ones}, {num_wires})"
+        return f"BBQRAM({num_bitstrings}, {size_bitstring}, {num_bit_flips}, {num_wires})"
 
 
 class Select(ResourceOperator):
