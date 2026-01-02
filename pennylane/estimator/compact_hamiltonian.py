@@ -204,14 +204,11 @@ class PauliHamiltonian:
 
     Args:
         num_qubits (int): total number of qubits the Hamiltonian acts on
-        pauli_terms (dict | Iterable(dict)): A representation for all of the terms (Pauli words) of
-            the Hamiltonian. The terms of the Hamiltonian can also be separated into groups such
-            that all Pauli words in a group commute. When a single dictionary is provided, it should
-            represent all the terms of the Hamiltonian where the dictionary keys are Pauli strings
-            (e.g ``"XY"`` or ``"Z"``) and the values are integers corresponding to how frequently
-            that Pauli word appears in the Hamiltonian. When a list of dictionaries is provided,
-            each dictionary is interpreted as a commuting group of terms. See the ``Usage Details``
-            section below for more information.
+        pauli_terms (dict[str, int] | Iterable[dict]): dictionary representing the Hamiltonian terms
+            where the keys are Pauli strings, e.g ``"XY"``, and the values are integers denoting
+            how frequently a Pauli word appears in the Hamiltonian. When a list of dictionaries is
+            provided, each dictionary is interpreted as a commuting group of terms. See the
+            ``Usage Details`` section for more information.
         one_norm (float | int | None): the one-norm of the Hamiltonian
 
     Raises:
