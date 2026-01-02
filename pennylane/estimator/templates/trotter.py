@@ -1743,7 +1743,7 @@ class TrotterPauli(ResourceOperator):
     The Suzuki-Trotter product formula provides a method to approximate the matrix exponential of
     Hamiltonian expressed as a linear combination of terms which in general do not commute.
     Consider the Hamiltonian :math:`H = \Sigma^{N}_{j=0} \alpha_{j} \cdot O_{j}`: the product formula is
-    constructed using symmetrized products of the terms in the Hamiltonian. The symmetrized products 
+    constructed using symmetrized products of the terms in the Hamiltonian. The symmetrized products
     of order :math:`m \in [1, 2, 4, ..., 2k]` with :math:`k \in \mathbb{N}` are given by:
 
     .. math::
@@ -1773,12 +1773,12 @@ class TrotterPauli(ResourceOperator):
 
     Resources:
         The resource cost for this subroutine depends on how the Pauli Hamiltonian is expressed.
-        Given the Hamiltonian :math:`H = \Sigma^{N}_{j=0} \alpha_{j} O_{j}`, each :math:`O_{j}` can 
-        either be a Pauli string (a tensor product of Pauli operators) :math:`O_{j} = \vec{P}_{j}` or 
+        Given the Hamiltonian :math:`H = \Sigma^{N}_{j=0} \alpha_{j} O_{j}`, each :math:`O_{j}` can
+        either be a Pauli string (a tensor product of Pauli operators) :math:`O_{j} = \vec{P}_{j}` or
         a linear combination of commuting Pauli strings :math:`O_{j} = \Sigma^{M}_{j=0} \beta_{j} \vec{P}_{j}`.
 
         In the first case, the exponential :math:`e^{i t \alpha_{j} O_{j}} = e^{i t \alpha_{j} \vec{P}_{j}}`
-        is a single generalized Pauli rotation 
+        is a single generalized Pauli rotation
         (:class:`~.estimator.ops.qubit.parametric_ops_multi_qubit.PauliRot`). In the second
         case, the exponential can be expanded using the fact that all operators in the sum commute:
 
@@ -1788,7 +1788,7 @@ class TrotterPauli(ResourceOperator):
                 e^{i t \alpha_{j} O_{j}} &= e^{i t \alpha_{j} (\Sigma^{M}_{k=0} \beta_{k} \vec{P}_{k})}  \\
                 e^{i t \alpha_{j} O_{j}} &= \Pi_{k=0}^{M} e^{i t \alpha_{j} \beta_{k} \vec{P}_{k}}
             \end{align}
-            
+
         Thus, the exponential can be expressed as a product of :math:`M` generalized Pauli rotations.
         Using this as the cost of each individual exponential, the cost of the entire Suzuki-Trotter
         product formula is derived below.
@@ -1833,22 +1833,23 @@ class TrotterPauli(ResourceOperator):
        'Z': 20,
        'S': 40,
        'Hadamard': 48
-    
+
     .. details::
         :title: Usage Details
 
         Estimating resources for the Trotterization of a Pauli Hamiltonian depends on how
-        the Pauli Hamiltonian was constructed. Specifically, if the terms of the Hamiltonian were 
+        the Pauli Hamiltonian was constructed. Specifically, if the terms of the Hamiltonian were
         separated into commuting groups (see :class:`~.estimator.compact_hamiltonian.PauliHamiltonian` for more information).
-        Note, that the order in which the groups are listed matters, keeping the largest groups as
-        the first and last elements of the list will lead to the most reduction in resources.
+        Note that the order matters because the algorithm merges the boundaries between steps (the last operation of step ``i`` merges
+        with the first operation of step ``i+1``). Therefore, placing the largest commuting groups at the start and end of the list
+        maximizes the number of gates that get merged, significantly reducing resources.
 
         >>> commuting_groups = (
         ...     {"X":10, "XX":5, "XXXX":3},
         ...     {"YY": 5, "ZZ":5},
         ...     {"Z": 2},
         ... )
-        >>> pauli_ham = qre.PauliHamiltonian(num_qubits=10, pauli_terms=commuting_groups)        
+        >>> pauli_ham = qre.PauliHamiltonian(num_qubits=10, pauli_terms=commuting_groups)
         >>> num_steps, order = (1, 2)
         >>> res = qre.estimate(qre.TrotterPauli(pauli_ham, num_steps, order))
         >>> print(res)
@@ -1965,12 +1966,12 @@ class TrotterPauli(ResourceOperator):
 
         Resources:
             The resource cost for this subroutine depends on how the Pauli Hamiltonian is expressed.
-            Given the Hamiltonian :math:`H = \Sigma^{N}_{j=0} \alpha_{j} O_{j}`, each :math:`O_{j}` can 
-            either be a Pauli string (a tensor product of Pauli operators) :math:`O_{j} = \vec{P}_{j}` or 
+            Given the Hamiltonian :math:`H = \Sigma^{N}_{j=0} \alpha_{j} O_{j}`, each :math:`O_{j}` can
+            either be a Pauli string (a tensor product of Pauli operators) :math:`O_{j} = \vec{P}_{j}` or
             a linear combination of commuting Pauli strings :math:`O_{j} = \Sigma^{M}_{j=0} \beta_{j} \vec{P}_{j}`.
 
             In the first case, the exponential :math:`e^{i t \alpha_{j} O_{j}} = e^{i t \alpha_{j} \vec{P}_{j}}`
-            is a single generalized Pauli rotation 
+            is a single generalized Pauli rotation
             (:class:`~.pennylane.estimator.ops.qubit.parametric_ops_multi_qubit.PauliRot`). In the second
             case, the exponential can be expanded using the fact that all operators in the sum commute:
 
@@ -1980,7 +1981,7 @@ class TrotterPauli(ResourceOperator):
                     e^{i t \alpha_{j} O_{j}} &= e^{i t \alpha_{j} (\Sigma^{M}_{k=0} \beta_{k} \vec{P}_{k})}  \\
                     e^{i t \alpha_{j} O_{j}} &= \Pi_{k=0}^{M} e^{i t \alpha_{j} \beta_{k} \vec{P}_{k}}
                 \end{align}
-                
+
             Thus, the exponential can be expressed as a product of :math:`M` generalized Pauli rotations.
             Using these as the cost of each individual exponential, the cost of the entire Suzuki-Trotter
             product formula is derived below.
