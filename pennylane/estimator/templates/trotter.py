@@ -301,12 +301,6 @@ class TrotterCDF(ResourceOperator):
         order (int): order of the approximation, must be ``1`` or an even number
         wires (list[int] | None): the wires on which the operator acts
 
-    Raises:
-        TypeError: If ``cdf_ham`` is not an instance of :class:`~.CDFHamiltonian`.
-        ValueError: If ``num_steps`` is not a positive integer.
-        ValueError: If ``order`` is not 1 or a positive even integer.
-        ValueError: If the number of wires provided does not match the number of wires required by the operator`.
-
     Resources:
         The resources are defined according to the recursive formula presented above.
         The number of times an operator :math:`e^{itO_{j}}` is applied depends on the
@@ -372,17 +366,6 @@ class TrotterCDF(ResourceOperator):
                 f"Unsupported Hamiltonian representation for TrotterCDF."
                 f"This method works with cdf Hamiltonian, {type(cdf_ham)} provided"
             )
-
-        if (not isinstance(num_steps, int)) or num_steps < 1:
-            raise ValueError(
-                f"`num_steps` is expected to be a positive integer greater than one, got {num_steps}"
-            )
-
-        if not (isinstance(order, int) and order > 0 and (order == 1 or order % 2 == 0)):
-            raise ValueError(
-                f"`order` is expected to be a positive integer and either one or a multiple of two; got {order}"
-            )
-
         self.num_steps = num_steps
         self.order = order
         self.cdf_ham = cdf_ham
@@ -427,22 +410,6 @@ class TrotterCDF(ResourceOperator):
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
-        if not isinstance(cdf_ham, CDFHamiltonian):
-            raise TypeError(
-                f"Unsupported Hamiltonian representation for TrotterCDF."
-                f"This method works with cdf Hamiltonian, {type(cdf_ham)} provided"
-            )
-
-        if (not isinstance(num_steps, int)) or num_steps < 1:
-            raise ValueError(
-                f"`num_steps` is expected to be a positive integer greater than one, got {num_steps}"
-            )
-
-        if not (isinstance(order, int) and order > 0 and (order == 1 or order % 2 == 0)):
-            raise ValueError(
-                f"`order` is expected to be a positive integer and either one or a multiple of two; got {order}"
-            )
-
         params = {
             "cdf_ham": cdf_ham,
             "num_steps": num_steps,
@@ -653,12 +620,6 @@ class TrotterTHC(ResourceOperator):
         order (int): order of the approximation, must be ``1`` or an even number
         wires (list[int] | None): the wires on which the operator acts
 
-    Raises:
-        TypeError: If ``thc_ham`` is not an instance of :class:`~.THCHamiltonian`.
-        ValueError: If ``num_steps`` is not a positive integer.
-        ValueError: If ``order`` is not 1 or a positive even integer.
-        ValueError: If the number of wires provided does not match the number of expected wires for the operation.
-
     Resources:
         The resources are defined according to the recursive formula presented above.
         The number of times an operator :math:`e^{itO_{j}}` is applied depends on the
@@ -724,17 +685,6 @@ class TrotterTHC(ResourceOperator):
                 f"Unsupported Hamiltonian representation for TrotterTHC."
                 f"This method works with thc Hamiltonian, {type(thc_ham)} provided"
             )
-
-        if (not isinstance(num_steps, int)) or num_steps < 1:
-            raise ValueError(
-                f"`num_steps` is expected to be a positive integer greater than one, got {num_steps}"
-            )
-
-        if not (isinstance(order, int) and order > 0 and (order == 1 or order % 2 == 0)):
-            raise ValueError(
-                f"`order` is expected to be a positive integer and either one or a multiple of two; got {order}"
-            )
-
         self.num_steps = num_steps
         self.order = order
         self.thc_ham = thc_ham
@@ -779,22 +729,6 @@ class TrotterTHC(ResourceOperator):
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
-        if not isinstance(thc_ham, THCHamiltonian):
-            raise TypeError(
-                f"Unsupported Hamiltonian representation for TrotterTHC."
-                f"This method works with thc Hamiltonian, {type(thc_ham)} provided"
-            )
-
-        if (not isinstance(num_steps, int)) or num_steps < 1:
-            raise ValueError(
-                f"`num_steps` is expected to be a positive integer greater than one, got {num_steps}"
-            )
-
-        if not (isinstance(order, int) and order > 0 and (order == 1 or order % 2 == 0)):
-            raise ValueError(
-                f"`order` is expected to be a positive integer and either one or a multiple of two; got {order}"
-            )
-
         params = {
             "thc_ham": thc_ham,
             "num_steps": num_steps,
@@ -1010,12 +944,6 @@ class TrotterVibrational(ResourceOperator):
         coeff_precision (float | None): precision for the loading of coefficients
         wires (list[int] | None): the wires on which the operator acts
 
-    Raises:
-        TypeError: If ``vibration_ham`` is not an instance of :class:`~.VibrationalHamiltonian`.
-        ValueError: If ``num_steps`` is not a positive integer.
-        ValueError: If ``order`` is not 1 or a positive even integer.
-        ValueError: If the number of wires provided does not match the number of qubits in ``pauli_ham``.
-
     Resources:
         The resources are defined according to the recursive formula presented above.
         The number of times an operator :math:`e^{itO_{j}}` is applied depends on the
@@ -1092,16 +1020,6 @@ class TrotterVibrational(ResourceOperator):
                 f"This method works with vibrational Hamiltonian, {type(vibration_ham)} provided"
             )
 
-        if (not isinstance(num_steps, int)) or num_steps < 1:
-            raise ValueError(
-                f"`num_steps` is expected to be a positive integer greater than one, got {num_steps}"
-            )
-
-        if not (isinstance(order, int) and order > 0 and (order == 1 or order % 2 == 0)):
-            raise ValueError(
-                f"`order` is expected to be a positive integer and either one or a multiple of two; got {order}"
-            )
-
         self.num_steps = num_steps
         self.order = order
         self.vibration_ham = vibration_ham
@@ -1159,23 +1077,6 @@ class TrotterVibrational(ResourceOperator):
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
-
-        if not isinstance(vibration_ham, VibrationalHamiltonian):
-            raise TypeError(
-                f"Unsupported Hamiltonian representation for TrotterVibrational."
-                f"This method works with vibrational Hamiltonian, {type(vibration_ham)} provided"
-            )
-
-        if (not isinstance(num_steps, int)) or num_steps < 1:
-            raise ValueError(
-                f"`num_steps` is expected to be a positive integer greater than one, got {num_steps}"
-            )
-
-        if not (isinstance(order, int) and order > 0 and (order == 1 or order % 2 == 0)):
-            raise ValueError(
-                f"`order` is expected to be a positive integer and either one or a multiple of two; got {order}"
-            )
-
         params = {
             "vibration_ham": vibration_ham,
             "num_steps": num_steps,
@@ -1438,12 +1339,6 @@ class TrotterVibronic(ResourceOperator):
         coeff_precision (float | None): precision for the loading of coefficients
         wires (list[int] | None): the wires on which the operator acts.
 
-    Raises:
-        TypeError: If ``vibronic_ham`` is not an instance of :class:`~.VibronicHamiltonian`.
-        ValueError: If ``num_steps`` is not a positive integer.
-        ValueError: If ``order`` is not 1 or a positive even integer.
-        ValueError: If the number of wires provided does not match the number of wires expected by the operator.
-
     Resources:
         The resources are defined according to the recursive formula presented above.
         The number of times an operator :math:`e^{itO_{j}}` is applied depends on the
@@ -1520,16 +1415,6 @@ class TrotterVibronic(ResourceOperator):
                 f"This method works with vibronic Hamiltonian, {type(vibronic_ham)} provided"
             )
 
-        if (not isinstance(num_steps, int)) or num_steps < 1:
-            raise ValueError(
-                f"`num_steps` is expected to be a positive integer greater than one, got {num_steps}"
-            )
-
-        if not (isinstance(order, int) and order > 0 and (order == 1 or order % 2 == 0)):
-            raise ValueError(
-                f"`order` is expected to be a positive integer and either one or a multiple of two; got {order}"
-            )
-
         self.num_steps = num_steps
         self.order = order
         self.vibronic_ham = vibronic_ham
@@ -1589,22 +1474,6 @@ class TrotterVibronic(ResourceOperator):
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
-        if not isinstance(vibronic_ham, VibronicHamiltonian):
-            raise TypeError(
-                f"Unsupported Hamiltonian representation for TrotterVibronic."
-                f"This method works with vibronic Hamiltonian, {type(vibronic_ham)} provided"
-            )
-
-        if (not isinstance(num_steps, int)) or num_steps < 1:
-            raise ValueError(
-                f"`num_steps` is expected to be a positive integer greater than one, got {num_steps}"
-            )
-
-        if not (isinstance(order, int) and order > 0 and (order == 1 or order % 2 == 0)):
-            raise ValueError(
-                f"`order` is expected to be a positive integer and either one or a multiple of two; got {order}"
-            )
-
         params = {
             "vibronic_ham": vibronic_ham,
             "num_steps": num_steps,
@@ -1902,12 +1771,6 @@ class TrotterPauli(ResourceOperator):
         order (int): order of the approximation, must be ``1`` or an even number
         wires (WiresLike | None): the wires on which the operator acts
 
-    Raises:
-        TypeError: If ``pauli_ham`` is not an instance of :class:`~.PauliHamiltonian`.
-        ValueError: If ``num_steps`` is not a positive integer.
-        ValueError: If ``order`` is not 1 or a positive even integer.
-        ValueError: If the number of wires provided does not match the wires expected by the operator.
-
     Resources:
         The resource cost for this subroutine depends on how the Pauli Hamiltonian is expressed.
         Given the Hamiltonian :math:`H = \Sigma^{N}_{j=0} \alpha_{j} O_{j}`, each :math:`O_{j}` can
@@ -2077,22 +1940,6 @@ class TrotterPauli(ResourceOperator):
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
-
-        if not isinstance(pauli_ham, PauliHamiltonian):
-            raise TypeError(
-                "Unsupported Hamiltonian representation for TrotterPauli."
-                f"This method works with PauliHamiltonian, {type(pauli_ham)} provided"
-            )
-        if (not isinstance(num_steps, int)) or num_steps < 1:
-            raise ValueError(
-                f"`num_steps` is expected to be a positive integer greater than one, got {num_steps}"
-            )
-
-        if not (isinstance(order, int) and order > 0 and (order == 1 or order % 2 == 0)):
-            raise ValueError(
-                f"`order` is expected to be a positive integer and either one or a multiple of two; got {order}"
-            )
-
         params = {
             "pauli_ham": pauli_ham,
             "num_steps": num_steps,
@@ -2165,12 +2012,12 @@ class TrotterPauli(ResourceOperator):
         pauli_terms = pauli_ham.pauli_terms
 
         if isinstance(pauli_terms, dict):
-            cost_fragments = cls._cost_pauli_group(pauli_terms)
+            cost_fragments = cls.cost_pauli_group(pauli_terms)
             fragment_repetition = num_steps if order == 1 else 2 * num_steps * (5 ** (k - 1))
             return [fragment_repetition * gate_count for gate_count in cost_fragments]
 
         num_groups = len(pauli_terms)  # commuting groups
-        cost_groups = [cls._cost_pauli_group(group) for group in pauli_terms]
+        cost_groups = [cls.cost_pauli_group(group) for group in pauli_terms]
         gate_count_lst = []
         if order == 1:
             for group_cost_lst in cost_groups:
@@ -2193,7 +2040,7 @@ class TrotterPauli(ResourceOperator):
         return gate_count_lst
 
     @staticmethod
-    def _cost_pauli_group(pauli_terms: dict):
+    def cost_pauli_group(pauli_terms: dict):
         """Given a dictionary of Pauli words and frequencies, return the cost of exponentiating
         the group of terms.
 
