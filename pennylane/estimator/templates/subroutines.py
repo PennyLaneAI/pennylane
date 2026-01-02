@@ -291,7 +291,7 @@ class PhaseGradient(ResourceOperator):
     def __init__(self, num_wires: int | None = None, wires: WiresLike = None):
         if num_wires is None:
             if wires is None:
-                raise ValueError("Must provide atleast one of `num_wires` and `wires`.")
+                raise ValueError("Must provide at least one of `num_wires` and `wires`.")
             num_wires = len(wires)
         self.num_wires = num_wires
         super().__init__(wires=wires)
@@ -1406,7 +1406,7 @@ class QFT(ResourceOperator):
     def __init__(self, num_wires: int | None = None, wires: WiresLike = None) -> None:
         if num_wires is None:
             if wires is None:
-                raise ValueError("Must provide atleast one of `num_wires` and `wires`.")
+                raise ValueError("Must provide at least one of `num_wires` and `wires`.")
             num_wires = len(wires)
         self.num_wires = num_wires
         super().__init__(wires=wires)
@@ -1567,7 +1567,7 @@ class AQFT(ResourceOperator):
     def __init__(self, order: int, num_wires: int | None = None, wires: WiresLike = None) -> None:
         if num_wires is None:
             if wires is None:
-                raise ValueError("Must provide atleast one of `num_wires` and `wires`.")
+                raise ValueError("Must provide at least one of `num_wires` and `wires`.")
             num_wires = len(wires)
         self.order = order
         self.num_wires = num_wires
@@ -1728,7 +1728,7 @@ class BasisRotation(ResourceOperator):
     def __init__(self, dim: int | None = None, wires: WiresLike = None):
         if dim is None:
             if wires is None:
-                raise ValueError("Must provide atleast one of `dim` and `wires`.")
+                raise ValueError("Must provide at least one of `dim` and `wires`.")
             dim = len(wires)
         self.num_wires = dim
         super().__init__(wires=wires)
@@ -2844,8 +2844,8 @@ class Reflection(ResourceOperator):
         The cost for :math:`-I` is calculated as :math:`X Z X Z = -I`.
 
     Raises:
-        ValueError: ``alpha`` must be a float within the range ``[0, 2pi]``
-        ValueError: must provide atleast one of ``num_wires`` or ``U``
+        ValueError: if ``alpha`` is not a float within the range ``[0, 2pi]``
+        ValueError: if at least one of ``num_wires`` or ``U`` is not provided
         ValueError: if the wires provided don't match the number of wires expected by the operator
 
     .. seealso:: :class:`~.pennylane.Reflection`
