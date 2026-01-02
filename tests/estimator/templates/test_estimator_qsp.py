@@ -45,7 +45,7 @@ class TestQSVT:
     @pytest.mark.parametrize(
         "dims, poly_deg, error_type, error_msg",
         [
-            (0.5, 5, TypeError, "Expected `encoding_dims` to be an int or tuple of ints."),
+            (0.5, 5, TypeError, "Expected `encoding_dims` to be an integer or tuple of integers."),
             ((1, 2, 3), 5, ValueError, "Expected `encoding_dims` to be a tuple of two integers"),
             ((0,), 5, ValueError, "Expected elements of `encoding_dims` to be positive integers."),
             (

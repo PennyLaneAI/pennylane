@@ -576,7 +576,7 @@ class QSVT(ResourceOperator):
         _dequeue(block_encoding)  # remove operator
         if not isinstance(encoding_dims, (int, tuple)):
             raise TypeError(
-                f"Expected `encoding_dims` to be an int or tuple of ints. Got {encoding_dims}"
+                f"Expected `encoding_dims` to be an integer or tuple of integers. Got {encoding_dims}"
             )
 
         if isinstance(encoding_dims, int):
@@ -653,7 +653,7 @@ class QSVT(ResourceOperator):
         """
         if not isinstance(encoding_dims, (int, tuple)):
             raise TypeError(
-                f"Expected `encoding_dims` to be an int or tuple of ints. Got {encoding_dims}"
+                f"Expected `encoding_dims` to be an integer or tuple of integers. Got {encoding_dims}"
             )
 
         if isinstance(encoding_dims, int):
