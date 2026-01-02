@@ -1115,23 +1115,25 @@ class IterativeQPE(ResourceOperator):
 
 
 class UnaryIterationQPE(ResourceOperator):
-    r"""Resource class for a variant of Quantum Phase Estimation (QPE) that uses the unary iteration
-    technique (as described in `arXiv.2011.03494 <https://arxiv.org/pdf/2011.03494>`_). This form of
-    QPE requires the unitary to be a quantum walk operator constructed from ``Select`` and ``Prepare``
+    r"""Resource class for Quantum Phase Estimation (QPE) using the unary iteration
+    technique.
+    
+    This form of QPE, as described in `arXiv.2011.03494 <https://arxiv.org/pdf/2011.03494>`_,
+    requires the unitary operator to be a quantum walk operator constructed from ``Select`` and ``Prepare``
     subroutines. In this approach, powers of the walk operator are obtained via unary iteration, which
     reduces :class:`~.pennylane.estimator.ops.qubit.non_parametric_ops.T` and
     :class:`~.pennylane.estimator.ops.op_math.controlled_ops.Toffoli` gate counts at the cost of
     increasing the number of auxiliary qubits required.
 
-    For a detailed explanation of unary iteration, see the
-    `documentation <https://pennylane.ai/compilation/unary-iteration>`_. Note, users can also provide
+    For a detailed explanation of unary iteration, see
+    `here <https://pennylane.ai/compilation/unary-iteration>`_. Note that users can also provide
     a custom adjoint Quantum Fourier Transform (QFT) implementation, which can be used to further
     optimize the resource requirements.
 
     Args:
         walk_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): the quantum
-            walk operator :math:`W` to apply the phase estimation protocol on
-        num_iterations (int): The total number of times the quantum walk operator :math:`W`
+            walk operator to apply the phase estimation protocol on
+        num_iterations (int): The total number of times the quantum walk operator
             is applied in order to reach a target precision in the eigenvalue estimate.
         adj_qft_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator` | None): An optional
             argument to set the subroutine used to perform the adjoint QFT operation.
@@ -1225,10 +1227,10 @@ class UnaryIterationQPE(ResourceOperator):
         Returns:
             dict: A dictionary containing the resource parameters:
                 * cmpr_walk_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`):
-                  A compressed resource operator corresponding to the quantum walk operator :math:`W`
+                  A compressed resource operator corresponding to the quantum walk operator
                   to apply the phase estimation protocol on.
                 * num_iterations (int): The total number of times the quantum walk operator
-                  :math:`W` is applied in order to reach a target precision in the eigenvalue
+                  is applied in order to reach a target precision in the eigenvalue
                   estimate.
                 * adj_qft_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp` | None):
                   An optional compressed resource operator corresponding to the adjoint QFT routine.
@@ -1254,10 +1256,10 @@ class UnaryIterationQPE(ResourceOperator):
 
         Args:
             cmpr_walk_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`):
-                A compressed resource operator corresponding to the quantum walk operator :math:`W`
+                A compressed resource operator corresponding to the quantum walk operator
                 to apply the phase estimation protocol on.
             num_iterations (int): The total number of times the quantum walk operator
-                :math:`W` is applied in order to reach a target precision in the eigenvalue estimate.
+                is applied in order to reach a target precision in the eigenvalue estimate.
             adj_qft_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp` | None):
                 An optional compressed resource operator corresponding to the adjoint QFT routine.
                 If :code:`None`, the default :class:`~.pennylane.estimator.templates.subroutines.QFT`
@@ -1285,10 +1287,10 @@ class UnaryIterationQPE(ResourceOperator):
 
         Args:
             cmpr_walk_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`):
-                A compressed resource operator corresponding to the quantum walk operator :math:`W`
+                A compressed resource operator corresponding to the quantum walk operator
                 to apply the phase estimation protocol on.
             num_iterations (int): The total number of times the quantum walk operator
-                :math:`W` is applied in order to reach a target precision in the eigenvalue estimate.
+                is applied in order to reach a target precision in the eigenvalue estimate.
             adj_qft_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp` | None):
                 An optional compressed resource operator corresponding to the adjoint QFT routine.
                 If :code:`None`, the default :class:`~.pennylane.estimator.templates.subroutines.QFT`
