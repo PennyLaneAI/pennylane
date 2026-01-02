@@ -2607,7 +2607,7 @@ class QROM(ResourceOperator):
 
 
 class SelectPauliRot(ResourceOperator):
-    r"""Resource class for the SelectPauliRot gate.
+    r"""Resource class for the uniformly controlled rotation gate.
 
     Args:
         rot_axis (str): the rotation axis used in the multiplexer
