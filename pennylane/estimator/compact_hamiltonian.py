@@ -35,8 +35,8 @@ class CDFHamiltonian:
         one_norm (float | None): the one-norm of the Hamiltonian
 
     Raises:
-        TypeError: If ``num_orbitals``, or ``num_fragments`` is not a positive integer.
-        TypeError: If ``one_norm`` is provided but is not a non-negative float or integer.
+        TypeError: If ``num_orbitals``, or ``num_fragments`` is not a positive integer
+        TypeError: If ``one_norm`` is provided but is not a non-negative float or integer
 
     .. seealso::
         :class:`~.estimator.templates.TrotterCDF`
@@ -345,7 +345,7 @@ class PauliHamiltonian:
 
     @property
     def one_norm(self):
-        """The one-norm of the Hamiltonian."""
+        """The one-norm of the Hamiltonian"""
         return self._one_norm
 
     @property
@@ -355,7 +355,7 @@ class PauliHamiltonian:
 
     @property
     def num_terms(self) -> int:
-        """The total number of Pauli words in the Hamiltonian."""
+        """The total number of Pauli words in the Hamiltonian"""
         if isinstance(self._pauli_terms, dict):
             return sum(self._pauli_terms.values())
 
