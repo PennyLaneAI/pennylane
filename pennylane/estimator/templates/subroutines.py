@@ -2503,18 +2503,18 @@ class QROM(ResourceOperator):
         k = select_swap_depth or qre.QROM._t_optimized_select_swap_width(
             num_bitstrings, size_bitstring
         )
-        l = math.ceil(math.log2(k))  # number of qubits in |l> register
+        num_qubits_l = math.ceil(math.log2(k))  # number of qubits in |l> register
 
-        H = math.ceil(num_bitstrings / k)  # number of columns of data
-        h = math.ceil(math.log2(H))  # number of qubits in |h> register
+        num_cols = math.ceil(num_bitstrings / k)  # number of columns of data
+        num_qubits_h = math.ceil(math.log2(num_cols))  # number of qubits in |h> register
 
         ## Measure output register, reset qubits and construct fixup table
         gate_lst.append(qre.GateCount(had, size_bitstring))  # Figure 5.
 
         ## Allocate auxiliary qubits
         num_alloc_wires = k  # Swap registers
-        if H > 1:
-            num_alloc_wires += h - 1  # + work_wires for UI trick
+        if num_cols > 1:
+            num_alloc_wires += num_qubits_h - 1  # + work_wires for UI trick
 
         gate_lst.append(qre.Allocate(num_alloc_wires))
 
@@ -2523,11 +2523,11 @@ class QROM(ResourceOperator):
             gate_lst.append(GateCount(x, 2))
             gate_lst.append(GateCount(had, 2 * k))
 
-            num_bit_flips = (k * H) // 2
+            num_bit_flips = (k * num_cols) // 2
 
-            ctrl_S_decomp = cls._ctrl_S(num_ctrl_wires=l)
-            ctrl_S_adj_decomp = cls._ctrl_S_adj(num_ctrl_wires=l)
-            ctrl_T_decomp = cls._ctrl_T(num_data_blocks=H, num_bit_flips=num_bit_flips)
+            ctrl_S_decomp = cls._ctrl_S(num_ctrl_wires=num_qubits_l)
+            ctrl_S_adj_decomp = cls._ctrl_S_adj(num_ctrl_wires=num_qubits_l)
+            ctrl_T_decomp = cls._ctrl_T(num_data_blocks=num_cols, num_bit_flips=num_bit_flips)
 
             gate_lst.extend(ctrl_S_decomp)
             gate_lst.extend(ctrl_S_adj_decomp)
@@ -2538,11 +2538,13 @@ class QROM(ResourceOperator):
             gate_lst.append(GateCount(z, 2))
             gate_lst.append(GateCount(had, 2))
 
-            num_bit_flips = (k * H) // 2
+            num_bit_flips = (k * num_cols) // 2
             count = 1 if k == 1 else 2
-            ctrl_S_decomp = cls._ctrl_S(num_ctrl_wires=l, count=count)
-            ctrl_S_adj_decomp = cls._ctrl_S_adj(num_ctrl_wires=l, count=count)
-            ctrl_T_decomp = cls._ctrl_T(num_data_blocks=H, num_bit_flips=num_bit_flips, count=count)
+            ctrl_S_decomp = cls._ctrl_S(num_ctrl_wires=num_qubits_l, count=count)
+            ctrl_S_adj_decomp = cls._ctrl_S_adj(num_ctrl_wires=num_qubits_l, count=count)
+            ctrl_T_decomp = cls._ctrl_T(
+                num_data_blocks=num_cols, num_bit_flips=num_bit_flips, count=count
+            )
 
             gate_lst.extend(ctrl_S_decomp)
             gate_lst.extend(ctrl_S_adj_decomp)
