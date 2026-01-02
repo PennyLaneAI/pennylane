@@ -252,7 +252,7 @@ class PauliRot(ResourceOperator):
             \end{align}
 
         Note that when the :code:`pauli_string` is a single Pauli operator (:code:`X, Y, Z, Identity`),
-        the cost is the associated single qubit rotation (i.e., :code:`RX, RY, RZ, GlobalPhase`). If the
+        the cost is the associated single-qubit rotation (i.e., :code:`RX, RY, RZ, GlobalPhase`). If the
         :code:`pauli_string` is :code:`XX`, the resources are one :code:`RX` gate at the specified
         precision and two :code:`CNOT` gates. If the :code:`pauli_string` is :code:`YY`, the
         resources are one :code:`RY` gate at the specified precision and two :code:`CY` gates.
@@ -314,7 +314,7 @@ class PauliRot(ResourceOperator):
                 \end{align}
 
             Note that when the :code:`pauli_string` is a single Pauli operator (:code:`X, Y, Z, Identity`),
-            the cost is the associated single qubit rotation (i.e., :code:`RX, RY, RZ, GlobalPhase`). If the
+            the cost is the associated single-qubit rotation (i.e., :code:`RX, RY, RZ, GlobalPhase`). If the
             :code:`pauli_string` is :code:`XX`, the resources are one :code:`RX` gate at the specified
             precision and two :code:`CNOT` gates. If the :code:`pauli_string` is :code:`YY`, the
             resources are one :code:`RY` gate at the specified precision and two :code:`CY` gates.

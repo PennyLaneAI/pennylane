@@ -1840,7 +1840,7 @@ class TrotterPauli(ResourceOperator):
         Pauli terms. See :class:`~.estimator.compact_hamiltonian.PauliHamiltonian` for more
         information. Note that sorting the list to place the largest commuting groups at the
         boundaries, either the beginning or the end of the list, optimizes resource reduction. This
-        efficiency is achieved by merging the final operation of step ``i`` with the initial
+        efficiency is achieved by merging the final operation of the Trotter step ``i`` with the initial
         operation of step ``i+1`` which effectively minimizes gate overhead.
 
         >>> commuting_groups = (

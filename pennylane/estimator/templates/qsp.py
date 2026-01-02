@@ -487,7 +487,8 @@ class QSVT(ResourceOperator):
 
         U_{QSVT} = \left[\prod^{d/2}_{k=1}\Pi_{\phi_{2k-1}}U^\dagger\tilde{\Pi}_{\phi_{2k}}U\right],
 
-    where :math:`\Pi_{\phi}` and :math:`\tilde{\Pi}_{\phi}` are projector-controlled phase shifts.
+    where :math:`\Pi_{\phi}` and :math:`\tilde{\Pi}_{\phi}` are projector-controlled phase shifts
+    (:class:`~.estimator.ops.qubit.parametric_ops_multi_qubit.PCPhase`).
 
     .. seealso::
 
