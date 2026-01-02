@@ -299,7 +299,7 @@ def iqp_expval(
             single trainable gate with generator :math:`X_0\otimes X_1` corresponds to the `pattern`
             `[[[0,1]]]`.
         num_wires (int): Number of wires in the circuit.
-        n_samples (int): Number of samples used to calculate the IQP expectation values. Higher values result in
+        n_samples (int): Number of samples used to estimate the IQP expectation values. Higher values result in
             higher precision.
         key (Array): Jax key to control the randomness of the process.
         spin_sym (bool, optional): If True, the circuit is equivalent to one where the initial state
