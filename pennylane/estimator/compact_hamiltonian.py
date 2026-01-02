@@ -116,7 +116,7 @@ class VibrationalHamiltonian:
         one_norm (float | None): the one-norm of the Hamiltonian
 
     Raises:
-        ValueError: If ``num_modes``, ``grid_size``, or ``taylor_degree`` is not a positive integer.
+        TypeError: If ``num_modes``, ``grid_size``, or ``taylor_degree`` is not a positive integer.
         TypeError: If ``one_norm`` is provided but is not a non-negative float or integer.
 
     Returns:
