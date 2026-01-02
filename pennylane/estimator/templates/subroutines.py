@@ -2619,7 +2619,7 @@ class SelectPauliRot(ResourceOperator):
         rot_axis (str): the rotation axis used in the multiplexer
         num_ctrl_wires (int): the number of control wires of the multiplexer
         precision (float | None): the precision used in the single qubit rotations
-        wires (Sequence[int], None): the wires the operation acts on
+        wires (WiresLike, None): the wires the operation acts on
 
     Resources:
         The resources are obtained from the construction scheme given in `Möttönen and Vartiainen

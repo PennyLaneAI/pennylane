@@ -59,10 +59,10 @@ class GQSP(ResourceOperator):
     Args:
         signal_operator (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): the
             signal operator which encodes a target Hamiltonian
-        d_plus (int): the largest positive degree :math:`d^{+}` of the polynomial transformation
+        d_plus (int): The largest positive degree :math:`d^{+}` of the polynomial transformation.
         d_minus (int): The largest (in absolute value) negative degree :math:`d^{-}` of the polynomial
             transformation, representing powers of the adjoint of the signal operator.
-        rotation_precision (float | None): the precision with which the general rotation gates are applied
+        rotation_precision (float | None): The precision with which the general rotation gates are applied.
         wires (WiresLike | None): The wires the operation acts on. This includes both the wires of the
             signal operator and the control wire required for block-encoding.
 
@@ -148,11 +148,11 @@ class GQSP(ResourceOperator):
             dict: A dictionary containing the resource parameters:
                 * cmpr_signal_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`):
                   the compressed representation of the signal operator which encodes the target Hamiltonian
-                * d_plus (int): the largest positive degree :math:`d^{+}` of the polynomial transformation
+                * d_plus (int): The largest positive degree :math:`d^{+}` of the polynomial transformation.
                 * d_minus (int): The largest (in absolute value) negative degree :math:`d^{-}` of the
                   polynomial transformation, representing powers of the adjoint of the signal operator.
-                * rotation_precision (float | None): the precision with which the general
-                  rotation gates are applied
+                * rotation_precision (float | None): The precision with which the general
+                  rotation gates are applied.
         """
 
         return {
@@ -176,10 +176,10 @@ class GQSP(ResourceOperator):
         Args:
             cmpr_signal_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`):
                 the compressed representation of the signal operator which encodes the target Hamiltonian
-            d_plus (int): the largest positive degree :math:`d^{+}` of the polynomial transformation
+            d_plus (int): The largest positive degree :math:`d^{+}` of the polynomial transformation.
             d_minus (int): The largest (in absolute value) negative degree :math:`d^{-}` of the polynomial
                 transformation, representing powers of the adjoint of the signal operator.
-            rotation_precision (float | None): the precision with which the general rotation gates are applied
+            rotation_precision (float | None): The precision with which the general rotation gates are applied.
 
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
@@ -207,17 +207,14 @@ class GQSP(ResourceOperator):
         Args:
             cmpr_signal_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`):
                 the compressed representation of the signal operator which encodes the target Hamiltonian
-            d_plus (int): the largest positive degree :math:`d^{+}` of the polynomial transformation
+            d_plus (int): The largest positive degree :math:`d^{+}` of the polynomial transformation.
             d_minus (int): The largest (in absolute value) negative degree :math:`d^{-}` of the polynomial
                 transformation, representing powers of the adjoint of the signal operator.
-            rotation_precision (float | None): the precision with which the general rotation gates are applied
+            rotation_precision (float | None): The precision with which the general rotation gates are applied.
 
         Resources:
             The resources are obtained as described in Theorem 6 of
             `Generalized Quantum Signal Processing (2024) <https://arxiv.org/pdf/2308.01501>`_.
-            Specifically, the resources are given by ``d_plus`` instances of :math:`\hat{A}`,
-            ``d_minus`` instances of :math:`\hat{A^{\prime}}`, and ``d_plus + d_minus + 1``
-            instances of the general ``Rot`` gate.
 
         Returns:
             list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
@@ -487,7 +484,8 @@ class QSVT(ResourceOperator):
 
         U_{QSVT} = \left[\prod^{d/2}_{k=1}\Pi_{\phi_{2k-1}}U^\dagger\tilde{\Pi}_{\phi_{2k}}U\right],
 
-    where :math:`\Pi_{\phi}` and :math:`\tilde{\Pi}_{\phi}` are projector-controlled phase shifts.
+    where :math:`\Pi_{\phi}` and :math:`\tilde{\Pi}_{\phi}` are projector-controlled phase shifts
+    (:class:`~.estimator.ops.qubit.parametric_ops_multi_qubit.PCPhase`).
 
     .. seealso::
 
@@ -693,7 +691,7 @@ class QSP(ResourceOperator):
         convention (str): the basis used for the rotation operators, valid conventions are ``"X"`` or ``"Z"``
         rotation_precision (float | None): The error threshold for the approximate Clifford + T
             decomposition of the single qubit rotation gates used to implement this operation.
-        wires (WiresLike, None): the wires the operation acts on
+        wires (WiresLike | None): the wires the operation acts on
 
     Raises:
         ValueError: if the block encoding operator acts on more than one qubit
