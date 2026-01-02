@@ -195,9 +195,10 @@ class PauliHamiltonian:
         num_qubits (int): total number of qubits the Hamiltonian acts on
         pauli_terms (dict[str, int] | Iterable[dict]): A dictionary representing the Hamiltonian terms
             where the keys are Pauli strings, e.g ``"XY"``, and the values are integers denoting
-            how frequently a Pauli string appears in the Hamiltonian. When a list of dictionaries is
+            how frequently a Pauli string appears in the Hamiltonian, irrespective of the qubits
+            they act upon. When a list of dictionaries is
             provided, each dictionary is interpreted as a commuting group of terms. See the
-            ``Usage Details`` section for more information.
+            Usage Details section for more information.
         one_norm (float | int | None): the one-norm of the Hamiltonian
 
     Raises:

@@ -298,7 +298,7 @@ class PauliRot(ResourceOperator):
         r"""Returns a list of GateCount objects representing the operator's resources.
 
         Args:
-            pauli_string (str): a string describing the pauli operators that define the rotation
+            pauli_string (str): a string describing the Pauli operators that define the rotation
             precision (float | None): error threshold for the Clifford + T decomposition of this operation
 
         Resources:
@@ -371,7 +371,7 @@ class PauliRot(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * pauli_string (str): a string describing the pauli operators that define the rotation
+                * pauli_string (str): a string describing the Pauli operators that define the rotation
                 * precision (float): error threshold for the Clifford + T decomposition of this operation
         """
         return {
@@ -385,7 +385,7 @@ class PauliRot(ResourceOperator):
         the Operator that are needed to compute a resource estimation.
 
         Args:
-            pauli_string (str): a string describing the pauli operators that define the rotation
+            pauli_string (str): a string describing the Pauli operators that define the rotation
             precision (float | None): error threshold for the Clifford + T decomposition of this operation
 
         Returns:
@@ -542,7 +542,7 @@ class PauliRot(ResourceOperator):
 
         Resources:
             Taking arbitrary powers of a general rotation produces a sum of rotations.
-            The resources simplify to just one total pauli rotation.
+            The resources simplify to just one total Pauli rotation.
 
         Returns:
             list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,

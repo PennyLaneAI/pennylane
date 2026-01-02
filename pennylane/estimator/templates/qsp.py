@@ -59,7 +59,7 @@ class GQSP(ResourceOperator):
     Args:
         signal_operator (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): the
             signal operator which encodes a target Hamiltonian
-        d_plus (int): the largest positive degree :math:`d^{+}` of the polynomial transformation
+        d_plus (int): The largest positive degree :math:`d^{+}` of the polynomial transformation.
         d_minus (int): The largest (in absolute value) negative degree :math:`d^{-}` of the polynomial
             transformation, representing powers of the adjoint of the signal operator.
         rotation_precision (float | None): the precision with which the general rotation gates are applied
@@ -148,7 +148,7 @@ class GQSP(ResourceOperator):
             dict: A dictionary containing the resource parameters:
                 * cmpr_signal_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`):
                   the compressed representation of the signal operator which encodes the target Hamiltonian
-                * d_plus (int): the largest positive degree :math:`d^{+}` of the polynomial transformation
+                * d_plus (int): The largest positive degree :math:`d^{+}` of the polynomial transformation.
                 * d_minus (int): The largest (in absolute value) negative degree :math:`d^{-}` of the
                   polynomial transformation, representing powers of the adjoint of the signal operator.
                 * rotation_precision (float | None): the precision with which the general
@@ -176,7 +176,7 @@ class GQSP(ResourceOperator):
         Args:
             cmpr_signal_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`):
                 the compressed representation of the signal operator which encodes the target Hamiltonian
-            d_plus (int): the largest positive degree :math:`d^{+}` of the polynomial transformation
+            d_plus (int): The largest positive degree :math:`d^{+}` of the polynomial transformation.
             d_minus (int): The largest (in absolute value) negative degree :math:`d^{-}` of the polynomial
                 transformation, representing powers of the adjoint of the signal operator.
             rotation_precision (float | None): the precision with which the general rotation gates are applied
@@ -207,7 +207,7 @@ class GQSP(ResourceOperator):
         Args:
             cmpr_signal_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`):
                 the compressed representation of the signal operator which encodes the target Hamiltonian
-            d_plus (int): the largest positive degree :math:`d^{+}` of the polynomial transformation
+            d_plus (int): The largest positive degree :math:`d^{+}` of the polynomial transformation.
             d_minus (int): The largest (in absolute value) negative degree :math:`d^{-}` of the polynomial
                 transformation, representing powers of the adjoint of the signal operator.
             rotation_precision (float | None): the precision with which the general rotation gates are applied
@@ -694,7 +694,7 @@ class QSP(ResourceOperator):
         convention (str): the basis used for the rotation operators, valid conventions are ``"X"`` or ``"Z"``
         rotation_precision (float | None): The error threshold for the approximate Clifford + T
             decomposition of the single qubit rotation gates used to implement this operation.
-        wires (WiresLike, None): the wires the operation acts on
+        wires (WiresLike | None): the wires the operation acts on
 
     Raises:
         ValueError: if the block encoding operator acts on more than one qubit
