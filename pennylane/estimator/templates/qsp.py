@@ -34,20 +34,17 @@ from pennylane.wires import Wires, WiresLike
 class GQSP(ResourceOperator):
     r"""Resource class for the Generalized Quantum Signal Processing (GQSP) algorithm.
 
-    The implementation is based on Theorem 6 of `Generalized Quantum Signal Processing (2024)
-    <https://arxiv.org/pdf/2308.01501>`_. Given the block-encoded operator ``signal_operator``
-    (:math:`\hat{U}`), the maximum positive polynomial degree ``poly_deg`` (:math:`d^{+}`) and
-    the maximum negative polynomial degree ``neg_poly_deg`` (:math:`d^{-}`), the ``GQSP`` operator
-    is defined according to:
+    The ``GQSP`` operator is defined based on Theorem 6 of `Generalized Quantum Signal Processing (2024)
+    <https://arxiv.org/pdf/2308.01501>`_:
 
     .. math::
 
         GQSP = \left( \prod_{j=1}^{d^{-}} R(\theta_{j}, \phi_{j}, 0) \hat{A}^{\prime} \right)
-        \left( \prod_{j=1}^{d^{+}} R(\theta_{j + d^{-}}, \phi_{j + d^{-}}, 0) \hat{A} \right) R(\theta_0, \phi_0, \lambda)
+        \left( \prod_{j=1}^{d^{+}} R(\theta_{j + d^{-}}, \phi_{j + d^{-}}, 0) \hat{A} \right) R(\theta_0, \phi_0, \lambda),
 
-    Where :math:`R` is the general rotation operator
-    :class:`~.estimator.ops.qubit.parametric_ops_single_qubit.Rot`, and :math:`\vec{\phi}`,
-    :math:`\vec{\theta}` and :math:`\lambda` are the rotation angles that generate the polynomial transformation.
+    where :math:`R` is a rotation operator and :math:`\vec{\phi}`, :math:`\vec{\theta}` and :math:`\lambda`
+    are the rotation angles that generate the polynomial transformation. The maximum positive and
+    negative polynomial degrees are denoted by :math:`d^{+}` and :math:`d^{-}`, respectively.
     Additionally, :math:`\hat{A}` and :math:`\hat{A}^{\prime}` are given by:
 
     .. math::
@@ -57,27 +54,26 @@ class GQSP(ResourceOperator):
             \hat{A}^{\prime} &= \ket{0}\bra{0}\otimes\mathbf{I} + \ket{1}\bra{1}\otimes\hat{U}^{\dagger}, \\ \\
         \end{align}
 
+    where :math:`U` is a signal operator which encodes a target Hamiltonian.
+
     Args:
         signal_operator (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): the
-            signal operator which encodes the target Hamiltonian
+            signal operator which encodes a target Hamiltonian
         poly_deg (int): the maximum positive degree :math:`d^{+}` of the polynomial transformation
         neg_poly_deg (int): the maximum negative degree :math:`d^{-}` of the polynomial transformation, representing
             powers of the inverse of the signal operator
-        rotation_precision (float | None): the precision with which the general rotation gates are applied
+        rotation_precision (float | None): the precision with which the rotation gates are applied
         wires (WiresLike | None): The wires the operation acts on. This includes both the wires of the
             signal operator and the control wire required for block-encoding.
 
     Resources:
         The resources are obtained as described in Theorem 6 of `Generalized Quantum Signal
-        Processing (2024) <https://arxiv.org/pdf/2308.01501>`_. Specifically, the resources are given
-        by ``poly_deg`` instances of :math:`\hat{A}`, ``neg_poly_deg`` instances of
-        :math:`\hat{A^{\prime}}`, and ``poly_deg + neg_poly_deg + 1`` instances of the general
-        ``Rot`` gate.
+        Processing (2024) <https://arxiv.org/pdf/2308.01501>`_.
 
     Raises:
-        ValueError: ``poly_deg`` must be a positive integer greater than zero
-        ValueError: ``neg_poly_deg`` must be a positive integer
-        ValueError: ``rotation_precision`` must be a positive real number greater than zero
+        ValueError: if ``poly_deg`` is not a positive integer greater than zero
+        ValueError: if ``neg_poly_deg`` is not a positive integer or zero
+        ValueError: if ``rotation_precision`` is not a positive real number greater than zero
         ValueError: if the wires provided don't match the number of wires expected by the operator
 
     **Example**
@@ -501,7 +497,7 @@ class QSVT(ResourceOperator):
 
     Args:
         block_encoding (:class:`~.estimator.resource_operator.ResourceOperator`): the block encoding operator
-        encoding_dims (int | tuple(int)): The dimension of the encoded matrix.
+        encoding_dims (int | tuple(int)): The dimensions of the encoded matrix.
             If an integer is provided, a square matrix is assumed.
         poly_deg (int): the degree of the polynomial transformation being applied
         wires (WiresLike | None): the wires the operation acts on
