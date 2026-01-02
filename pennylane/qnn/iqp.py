@@ -325,7 +325,7 @@ def iqp_expval(
 
     .. code-block:: python
 
-        from pennylane.qnn import iqp
+        from pennylane.qnn import iqp_expval
         import jax
 
         num_wires = 2
