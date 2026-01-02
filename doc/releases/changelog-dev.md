@@ -1059,7 +1059,7 @@ A warning message has been added to :doc:`Building a plugin <../development/plug
 
 * Fixes a bug where `qml.CompilePipeline` does not allow other types of transforms than `BoundTransform`
   to initialize it.
-  [(#????)](https://github.com/PennyLaneAI/pennylane/pull/????)
+  [(#8834)](https://github.com/PennyLaneAI/pennylane/pull/8834)
 
 <h3>Contributors ✍️</h3>
 
