@@ -3078,8 +3078,7 @@ class Reflection(ResourceOperator):
 
 
 class Qubitization(ResourceOperator):
-    r"""Resource class for the Qubitization operator. This class estimates the resources for the unitary operator that
-    advances the quantum walk by one step.
+    r"""Resource class for the Qubitization operator. The operator is also referred to as the ``Quantum Walk`` operator.
 
     The operator is constructed by encoding a Hamiltonian, written as a linear combination of unitaries, into a block encoding (see Figure 1 in
     `arXiv:1805.03662 <https://arxiv.org/abs/1805.03662>`_).
@@ -3258,7 +3257,7 @@ class Qubitization(ResourceOperator):
         cls, prep_op: CompressedResourceOp, select_op: CompressedResourceOp
     ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation.
+        the Operator that are needed to compute the resources.
 
         Args:
             prep_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A compressed representation for the operator that prepares

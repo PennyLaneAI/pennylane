@@ -61,8 +61,8 @@ class GQSP(ResourceOperator):
             signal operator which encodes a target Hamiltonian
         poly_deg (int): the maximum positive degree :math:`d^{+}` of the polynomial transformation
         neg_poly_deg (int): the maximum negative degree :math:`d^{-}` of the polynomial transformation, representing
-            powers of the inverse of the signal operator
-        rotation_precision (float | None): the precision with which the rotation gates are applied
+            powers of the adjoint of the signal operator
+        rotation_precision (float | None): the precision with which the general rotation gates are applied
         wires (WiresLike | None): The wires the operation acts on. This includes both the wires of the
             signal operator and the control wire required for block-encoding.
 
@@ -71,15 +71,9 @@ class GQSP(ResourceOperator):
         Processing (2024) <https://arxiv.org/pdf/2308.01501>`_.
 
     Raises:
-<<<<<<< HEAD
         ValueError: if ``poly_deg`` is not a positive integer greater than zero
         ValueError: if ``neg_poly_deg`` is not a positive integer or zero
         ValueError: if ``rotation_precision`` is not a positive real number greater than zero
-=======
-        ValueError: ``poly_deg`` must be a positive integer greater than zero
-        ValueError: ``neg_poly_deg`` must be a positive integer greater than zero
-        ValueError: ``rotation_precision`` must be a positive real number greater than zero
->>>>>>> fix_docs_estimator
         ValueError: if the wires provided don't match the number of wires expected by the operator
 
     **Example**
@@ -158,7 +152,7 @@ class GQSP(ResourceOperator):
                   the compressed representation of signal operator which encodes the target Hamiltonian
                 * poly_deg (int): the maximum positive degree :math:`d^{+}` of the polynomial transformation
                 * neg_poly_deg (int): the maximum negative degree :math:`d^{-}` of the polynomial
-                  transformation, representing powers of the inverse of the signal operator
+                  transformation, representing powers of the adjoint of the signal operator
                 * rotation_precision (float | None): the precision with which the general
                   rotation gates are applied
         """
@@ -186,7 +180,7 @@ class GQSP(ResourceOperator):
                 the compressed representation of signal operator which encodes the target Hamiltonian
             poly_deg (int): the maximum positive degree :math:`d^{+}` of the polynomial transformation
             neg_poly_deg (int): the maximum negative degree :math:`d^{-}` of the polynomial transformation,
-                representing powers of the inverse of the signal operator
+                representing powers of the adjoint of the signal operator
             rotation_precision (float | None): the precision with which the general rotation gates are applied
 
         Returns:
@@ -217,7 +211,7 @@ class GQSP(ResourceOperator):
                 the compressed representation of signal operator which encodes the target Hamiltonian
             poly_deg (int): the maximum positive degree :math:`d^{+}` of the polynomial transformation
             neg_poly_deg (int): the maximum negative degree :math:`d^{-}` of the polynomial transformation, representing
-                powers of the inverse of the signal operator
+                powers of the adjoint of the signal operator
             rotation_precision (float | None): the precision with which the general rotation gates are applied
 
         Resources:
