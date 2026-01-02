@@ -153,6 +153,23 @@ class TestIQP:
 class TestSelectOnlyQRAM:
     """Test the SelectOnlyQRAM class."""
 
+    def test_raises_with_wrong_wire_num(self):
+        with pytest.raises(ValueError, match="Expected 7 wires, got 4."):
+            qre.SelectOnlyQRAM(
+                4,
+                6,
+                7,
+                2,
+                2,
+                control_wires=(
+                    0,
+                    1,
+                ),
+                target_wires=(2,),
+                select_wires=(3,),
+                select_value=0,
+            )
+
     @pytest.mark.parametrize(
         (
             "num_bitstrings",

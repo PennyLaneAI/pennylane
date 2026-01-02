@@ -273,6 +273,9 @@ class SelectOnlyQRAM(ResourceOperator):
             The ``select_value`` must be an integer in :math:`[0, 2^{\texttt{len(select_wires)}}]`,
             and cannot be used if no ``select_wires`` are provided.
 
+    Raises:
+        ValueError: if the number of wires provided does not match ``num_wires``
+
     Resources:
         The resources are obtained from the SelectOnlyQRAM implementation in PennyLane.
 
@@ -302,7 +305,9 @@ class SelectOnlyQRAM(ResourceOperator):
         all_wires = None
         if control_wires and target_wires and select_wires:
             all_wires = list(control_wires) + list(target_wires) + list(select_wires)
-        self.num_wires = num_wires if all_wires is None else len(all_wires)
+            if len(all_wires) != num_wires:
+                raise ValueError(f"Expected {num_wires} wires, got {len(all_wires)}.")
+        self.num_wires = num_wires
         self.num_bitstrings = num_bitstrings
         self.num_ones = num_ones
         self.select_value = select_value
