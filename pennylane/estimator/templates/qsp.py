@@ -72,7 +72,7 @@ class GQSP(ResourceOperator):
 
     Raises:
         ValueError: ``poly_deg`` must be a positive integer greater than zero
-        ValueError: ``neg_poly_deg`` must be a positive integer greater than zero
+        ValueError: ``neg_poly_deg`` must be a positive integer
         ValueError: ``rotation_precision`` must be a positive real number greater than zero
         ValueError: if the wires provided don't match the number of wires expected by the operator
 
