@@ -316,10 +316,6 @@
 
 <h3>Improvements 🛠</h3>
 
-* `qml.while_loop` and `qml.for_loop` can now lazily dispatch to catalyst when called,
-  instead of dispatching upon creation.
-  [(#8786)](https://github.com/PennyLaneAI/pennylane/pull/8786)
-
 <h4>Resource estimation</h4>
 
 * It is now easier to access the total gates and wires in resource estimates with the
@@ -361,6 +357,11 @@
   To use the previous behaviour based on PennyLane decompositions, set 
   ``call_graph='decomposition'``.
   [(#8390)](https://github.com/PennyLaneAI/pennylane/pull/8390)
+
+* The `~pennylane.estimator.compact_hamiltonian.CDFHamiltonian`, `~pennylane.estimator.compact_hamiltonian.THCHamiltonian`,
+  `~pennylane.estimator.compact_hamiltonian.VibrationalHamiltonian`, and `~pennylane.estimator.compact_hamiltonian.VibronicHamiltonian`
+  classes were modified to take the 1-norm of the Hamiltonian as an optional argument.
+  [(#8697)](https://github.com/PennyLaneAI/pennylane/pull/8697)
 
 <h4>Decompositions</h4>
 
@@ -509,30 +510,31 @@
   To obtain the previous behaviour, disable it by setting ``recursive=False``.
   [(#8483)](https://github.com/PennyLaneAI/pennylane/pull/8483)
 
+* `qml.while_loop` and `qml.for_loop` can now lazily dispatch to catalyst when called,
+  instead of dispatching upon creation.
+  [(#8786)](https://github.com/PennyLaneAI/pennylane/pull/8786)
+
 * `qml.grad` and `qml.jacobian` now lazily dispatch to catalyst and program
   capture, allowing for `qml.qjit(qml.grad(c))` and `qml.qjit(qml.jacobian(c))` to work.
   [(#8382)](https://github.com/PennyLaneAI/pennylane/pull/8382)
 
 * Both the generic and transform-specific application behavior of a `qml.transforms.core.TransformDispatcher`
-  can be overwritten with `TransformDispatcher.generic_register` and `my_transform.register`.
+  can now be overwritten with `TransformDispatcher.generic_register` and `my_transform.register`, leading
+  to easier customization of transforms.
   [(#7797)](https://github.com/PennyLaneAI/pennylane/pull/7797)
 
-* With capture enabled, measurements can now be performed on Operator instances passed as closure
-  variables from outside the workflow scope.
+* With capture enabled, measurements can now be performed on `Operator` instances passed as closure
+  variables from outside the workflow scope. This makes it possible to define observables outside
+  of a `qnode`/circuit and still measure them inside the `qnode`/circuit.
   [(#8504)](https://github.com/PennyLaneAI/pennylane/pull/8504)
 
-* Wires can be specified via `range` with program capture and autograph.
+* Wires can now be specified via the `range` command with program capture and autograph activated.
   [(#8500)](https://github.com/PennyLaneAI/pennylane/pull/8500)
 
 * The :func:`~pennylane.transforms.decompose` transform no longer raises an error if both `gate_set` and
   `stopping_condition` are provided, or if `gate_set` is a dictionary, when the new graph-based decomposition
   system is disabled.
   [(#8532)](https://github.com/PennyLaneAI/pennylane/pull/8532)
-
-* The `~pennylane.estimator.compact_hamiltonian.CDFHamiltonian`, `~pennylane.estimator.compact_hamiltonian.THCHamiltonian`,
-  `~pennylane.estimator.compact_hamiltonian.VibrationalHamiltonian`, and `~pennylane.estimator.compact_hamiltonian.VibronicHamiltonian`
-  classes were modified to take the 1-norm of the Hamiltonian as an optional argument.
-  [(#8697)](https://github.com/PennyLaneAI/pennylane/pull/8697)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
