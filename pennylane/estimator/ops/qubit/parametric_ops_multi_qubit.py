@@ -42,7 +42,7 @@ class MultiRZ(ResourceOperator):
 
     Args:
         num_wires (int | None): the number of wires the operation acts upon
-        precision (float | None): error threshold for Clifford + T decomposition of this operation
+        precision (float | None): error threshold for the Clifford + T decomposition of this operation
         wires (Sequence[int] | None): the wires the operation acts on
 
     Resources:
@@ -98,7 +98,7 @@ class MultiRZ(ResourceOperator):
 
         Args:
             num_wires (int): the number of qubits the operation acts upon
-            precision (float): error threshold for Clifford + T decomposition of this operation
+            precision (float): error threshold for the Clifford + T decomposition of this operation
 
         Resources:
             The resources come from Section VIII (Figure 3) of `The Bravyi-Kitaev transformation for
@@ -125,7 +125,7 @@ class MultiRZ(ResourceOperator):
         Returns:
             dict: A dictionary containing the resource parameters:
                 * num_wires (int): the number of qubits the operation acts upon
-                * precision (float): error threshold for Clifford + T decomposition of this operation
+                * precision (float): error threshold for the Clifford + T decomposition of this operation
         """
         return {"num_wires": self.num_wires, "precision": self.precision}
 
@@ -136,7 +136,7 @@ class MultiRZ(ResourceOperator):
 
         Args:
             num_wires (int): the number of qubits the operation acts upon
-            precision (float): error threshold for Clifford + T decomposition of this operation
+            precision (float): error threshold for the Clifford + T decomposition of this operation
 
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
@@ -299,19 +299,10 @@ class PauliRot(ResourceOperator):
 
         Args:
             pauli_string (str): a string describing the pauli operators that define the rotation
-            precision (float | None): error threshold for Clifford + T decomposition of this operation
+            precision (float | None): error threshold for the Clifford + T decomposition of this operation
 
         Resources:
-            When the :code:`pauli_string` is a single Pauli operator (:code:`X, Y, Z, Identity`)
-            the cost is the associated single qubit rotation (:code:`RX, RY, RZ, GlobalPhase`).
-
-            If the :code:`pauli_string` is :code:`XX`, the resources are one :code:`RX` gate at the specified precision
-            and two :code:`CNOT` gates.
-
-            If the :code:`pauli_string` is :code:`YY`, the resources are one :code:`RY` gate at the specified precision
-            and two :code:`CY` gates.
-
-            For any general Pauli string the resources come from Section VIII (Figures 3 & 4) of
+            The resources are computed based on Section VIII (Figures 3 and 4) of
             `The Bravyi-Kitaev transformation for quantum computation of electronic structure
             <https://arxiv.org/abs/1208.5986>`_, in combination with the following identities:
 
@@ -322,11 +313,11 @@ class PauliRot(ResourceOperator):
                     \hat{Y} &= \hat{S} \cdot \hat{H} \cdot \hat{Z} \cdot \hat{H} \cdot \hat{S}^{\dagger}.
                 \end{align}
 
-            Specifically, the resources are given by one :code:`RZ` gate and a cascade of
-            :math:`2 \times (n - 1)` :code:`CNOT` gates where :math:`n` is the number of qubits
-            the gate acts on. Additionally, for each :code:`X` gate in the Pauli word we conjugate by
-            a pair of :code:`Hadamard` gates, and for each :code:`Y` gate in the Pauli word we
-            conjugate by a pair of :code:`Hadamard` and a pair of :code:`S` gates.
+            Note that when the :code:`pauli_string` is a single Pauli operator (:code:`X, Y, Z, Identity`),
+            the cost is the associated single qubit rotation (i.e., :code:`RX, RY, RZ, GlobalPhase`). If the
+            :code:`pauli_string` is :code:`XX`, the resources are one :code:`RX` gate at the specified
+            precision and two :code:`CNOT` gates. If the :code:`pauli_string` is :code:`YY`, the
+            resources are one :code:`RY` gate at the specified precision and two :code:`CY` gates.
 
         Returns:
             list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
@@ -381,7 +372,7 @@ class PauliRot(ResourceOperator):
         Returns:
             dict: A dictionary containing the resource parameters:
                 * pauli_string (str): a string describing the pauli operators that define the rotation
-                * precision (float): error threshold for Clifford + T decomposition of this operation
+                * precision (float): error threshold for the Clifford + T decomposition of this operation
         """
         return {
             "pauli_string": self.pauli_string,
@@ -395,7 +386,7 @@ class PauliRot(ResourceOperator):
 
         Args:
             pauli_string (str): a string describing the pauli operators that define the rotation
-            precision (float | None): error threshold for Clifford + T decomposition of this operation
+            precision (float | None): error threshold for the Clifford + T decomposition of this operation
 
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`:: the operator in a compressed representation
