@@ -307,8 +307,7 @@ def iqp_expval(
         indep_estimates (bool): Whether to use independent estimates of the operators in a batch.
             If True, correlation among the estimated expectation values can be avoided, although at the cost
             of larger runtime.
-        max_batch_ops (int): Maximum number of operators in a batch. Defaults to None, which means taking all
-            operators at once. Can only be used if ``ops`` is a jnp.array.
+        max_batch_ops (int): Specifies the maximum size of sub-batches of ``ops`` that are used to estimate the expectation values (to control memory usage). If None, a single batch is used. Can only be used if ``ops`` is a jnp.array.
         max_batch_samples (int): Maximum number of samples in a batch. Defaults to None, which means taking all n_samples at once.
 
     Returns:
