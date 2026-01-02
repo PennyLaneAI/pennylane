@@ -308,7 +308,7 @@ def iqp_expval(
             If True, correlation among the estimated expectation values can be avoided, although at the cost
             of larger runtime.
         max_batch_ops (int): Specifies the maximum size of sub-batches of ``ops`` that are used to estimate the expectation values (to control memory usage). If None, a single batch is used. Can only be used if ``ops`` is a jnp.array.
-        max_batch_samples (int): Maximum number of samples in a batch. Defaults to None, which means taking all n_samples at once.
+        max_batch_samples (int): Specifies the maximum size of sub-batches of samples that are used to estimate the expectation values of ``ops`` (to control memory usage). If None, a single batch is used. 
 
     Returns:
         list: List of Vectors. The expected value of each operator and its corresponding standard deviation.
