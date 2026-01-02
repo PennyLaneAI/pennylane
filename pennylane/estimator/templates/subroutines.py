@@ -291,7 +291,7 @@ class PhaseGradient(ResourceOperator):
     def __init__(self, num_wires: int | None = None, wires: WiresLike = None):
         if num_wires is None:
             if wires is None:
-                raise ValueError("Must provide atleast one of `num_wires` and `wires`.")
+                raise ValueError("Must provide at least one of `num_wires` and `wires`.")
             num_wires = len(wires)
         self.num_wires = num_wires
         super().__init__(wires=wires)
@@ -1424,7 +1424,7 @@ class QFT(ResourceOperator):
     def __init__(self, num_wires: int | None = None, wires: WiresLike = None) -> None:
         if num_wires is None:
             if wires is None:
-                raise ValueError("Must provide atleast one of `num_wires` and `wires`.")
+                raise ValueError("Must provide at least one of `num_wires` and `wires`.")
             num_wires = len(wires)
         self.num_wires = num_wires
         super().__init__(wires=wires)
@@ -1585,7 +1585,7 @@ class AQFT(ResourceOperator):
     def __init__(self, order: int, num_wires: int | None = None, wires: WiresLike = None) -> None:
         if num_wires is None:
             if wires is None:
-                raise ValueError("Must provide atleast one of `num_wires` and `wires`.")
+                raise ValueError("Must provide at least one of `num_wires` and `wires`.")
             num_wires = len(wires)
         self.order = order
         self.num_wires = num_wires
@@ -1746,7 +1746,7 @@ class BasisRotation(ResourceOperator):
     def __init__(self, dim: int | None = None, wires: WiresLike = None):
         if dim is None:
             if wires is None:
-                raise ValueError("Must provide atleast one of `dim` and `wires`.")
+                raise ValueError("Must provide at least one of `dim` and `wires`.")
             dim = len(wires)
         self.num_wires = dim
         super().__init__(wires=wires)
@@ -2625,7 +2625,7 @@ class QROM(ResourceOperator):
 
 
 class SelectPauliRot(ResourceOperator):
-    r"""Resource class for the SelectPauliRot gate.
+    r"""Resource class for the uniformly controlled rotation gate.
 
     Args:
         rot_axis (str): the rotation axis used in the multiplexer
@@ -2862,8 +2862,8 @@ class Reflection(ResourceOperator):
         The cost for :math:`-I` is calculated as :math:`X Z X Z = -I`.
 
     Raises:
-        ValueError: ``alpha`` must be a float within the range ``[0, 2pi]``
-        ValueError: must provide atleast one of ``num_wires`` or ``U``
+        ValueError: if ``alpha`` is not a float within the range ``[0, 2pi]``
+        ValueError: if at least one of ``num_wires`` or ``U`` is not provided
         ValueError: if the wires provided don't match the number of wires expected by the operator
 
     .. seealso:: :class:`~.pennylane.Reflection`
@@ -2906,7 +2906,7 @@ class Reflection(ResourceOperator):
         self.alpha = alpha
 
         if U is None and num_wires is None:
-            raise ValueError("Must provide atleast one of `num_wires` or `U`")
+            raise ValueError("Must provide at least one of `num_wires` or `U`")
 
         if U is not None:
             _dequeue([U])
@@ -3094,12 +3094,14 @@ class Reflection(ResourceOperator):
 
 
 class Qubitization(ResourceOperator):
-    r"""Resource class for the Qubitization operator. This operator encodes a Hamiltonian, written
-    as a linear combination of unitaries, into a unitary operator (see Figure 1 in
+    r"""Resource class for the Qubitization operator. This class estimates the resources for the unitary operator that
+    advances the quantum walk by one step.
+
+    The operator is constructed by encoding a Hamiltonian, written as a linear combination of unitaries, into a block encoding(see Figure 1 in
     `arXiv:1805.03662 <https://arxiv.org/abs/1805.03662>`_).
 
     .. math::
-        Q =  \text{Prep}_{\mathcal{H}}(2|0\rangle\langle 0| - I)\text{Prep}_{\mathcal{H}}^{\dagger} \text{Sel}_{\mathcal{H}}.
+        Q =  \text{Prep}_{H}(2|0\rangle\langle 0| - I)\text{Prep}_{H}^{\dagger} \text{Sel}_{H}.
 
     Args:
         prep_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): the operator that prepares the coefficients of the LCU

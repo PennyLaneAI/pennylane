@@ -83,7 +83,7 @@ class MultiRZ(ResourceOperator):
     ) -> None:
         if num_wires is None:
             if wires is None:
-                raise ValueError("Must provide atleast one of `num_wires` and `wires`.")
+                raise ValueError("Must provide at least one of `num_wires` and `wires`.")
             num_wires = len(wires)
 
         self.num_wires = num_wires
@@ -232,28 +232,17 @@ class MultiRZ(ResourceOperator):
 
 
 class PauliRot(ResourceOperator):
-    r"""Resource class for the PauliRot gate.
+    r"""Resource class for an arbitrary Pauli word rotation operation.
 
     Args:
         pauli_string (str): a string describing the Pauli operators that define the rotation
-        precision (float | None): error threshold for Clifford + T decomposition of this operation
+        precision (float | None): error threshold for Clifford + T decomposition of the operation
         wires (Sequence[int] | None): the wire the operation acts on
 
     Resources:
-        When the :code:`pauli_string` is a single Pauli operator (:code:`X, Y, Z, Identity`)
-        the cost is the associated single qubit rotation (:code:`RX, RY, RZ, GlobalPhase`).
-
-        If the :code:`pauli_string` is :code:`XX`, the cost is determined according to the Ising-XX
-        decomposition. Specifically, the resources are one :code:`RX` gate at the specified precision
-        and two :code:`CNOT` gates.
-        
-        If the :code:`pauli_string` is :code:`YY`, the cost is determined according to the Ising-YY
-        decomposition. Specifically, the resources are one :code:`RY` gate at the specified precision
-        and two :code:`CY` gates.
-
-        For any general Pauli string the resources come from Section VIII (Figures 3 & 4) of
+        The resources are computed based on Section VIII (Figures 3 and 4) of
         `The Bravyi-Kitaev transformation for quantum computation of electronic structure
-        <https://arxiv.org/abs/1208.5986>`_ paper, in combination with the following identities:
+        <https://arxiv.org/abs/1208.5986>`_, in combination with the following identities:
 
         .. math::
 
@@ -262,11 +251,11 @@ class PauliRot(ResourceOperator):
                 \hat{Y} &= \hat{S} \cdot \hat{H} \cdot \hat{Z} \cdot \hat{H} \cdot \hat{S}^{\dagger}.
             \end{align}
 
-        Specifically, the resources are given by one :code:`RZ` gate and a cascade of
-        :math:`2 \times (n - 1)` :code:`CNOT` gates where :math:`n` is the number of qubits
-        the gate acts on. Additionally, for each :code:`X` gate in the Pauli word we conjugate by
-        a pair of :code:`Hadamard` gates, and for each :code:`Y` gate in the Pauli word we
-        conjugate by a pair of :code:`Hadamard` and a pair of :code:`S` gates.
+        Note that when the :code:`pauli_string` is a single Pauli operator (:code:`X, Y, Z, Identity`),
+        the cost is the associated single qubit rotation (i.e., :code:`RX, RY, RZ, GlobalPhase`). If the
+        :code:`pauli_string` is :code:`XX`, the resources are one :code:`RX` gate at the specified
+        precision and two :code:`CNOT` gates. If the :code:`pauli_string` is :code:`YY`, the
+        resources are one :code:`RY` gate at the specified precision and two :code:`CY` gates.
 
     .. seealso:: The corresponding PennyLane operation :class:`~.pennylane.PauliRot`.
 
@@ -316,12 +305,10 @@ class PauliRot(ResourceOperator):
             When the :code:`pauli_string` is a single Pauli operator (:code:`X, Y, Z, Identity`)
             the cost is the associated single qubit rotation (:code:`RX, RY, RZ, GlobalPhase`).
 
-            If the :code:`pauli_string` is :code:`XX`, the cost is determined according to the Ising-XX
-            decomposition. Specifically, the resources are one :code:`RX` gate at the specified precision
+            If the :code:`pauli_string` is :code:`XX`, the resources are one :code:`RX` gate at the specified precision
             and two :code:`CNOT` gates.
-            
-            If the :code:`pauli_string` is :code:`YY`, the cost is determined according to the Ising-YY
-            decomposition. Specifically, the resources are one :code:`RY` gate at the specified precision
+
+            If the :code:`pauli_string` is :code:`YY`, the resources are one :code:`RY` gate at the specified precision
             and two :code:`CY` gates.
 
             For any general Pauli string the resources come from Section VIII (Figures 3 & 4) of
@@ -598,7 +585,7 @@ class PCPhase(ResourceOperator):
         num_wires (int): the number of wires this operator acts on
         dim (int): the dimension of the target subspace
         rotation_precision (float | None): The error threshold for the approximate Clifford + T
-            decomposition of the ``PhaseShift`` gates used to implement this operation. 
+            decomposition of the ``PhaseShift`` gates used to implement this operation.
         wires (WiresLike | None): the wire the operation acts on
 
     Resources:
