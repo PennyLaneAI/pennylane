@@ -71,9 +71,15 @@ class GQSP(ResourceOperator):
         Processing (2024) <https://arxiv.org/pdf/2308.01501>`_.
 
     Raises:
+<<<<<<< HEAD
         ValueError: if ``poly_deg`` is not a positive integer greater than zero
         ValueError: if ``neg_poly_deg`` is not a positive integer or zero
         ValueError: if ``rotation_precision`` is not a positive real number greater than zero
+=======
+        ValueError: ``poly_deg`` must be a positive integer greater than zero
+        ValueError: ``neg_poly_deg`` must be a positive integer greater than zero
+        ValueError: ``rotation_precision`` must be a positive real number greater than zero
+>>>>>>> fix_docs_estimator
         ValueError: if the wires provided don't match the number of wires expected by the operator
 
     **Example**

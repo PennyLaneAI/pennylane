@@ -2829,7 +2829,7 @@ class Reflection(ResourceOperator):
 
     Args:
         num_wires (int | None): The number of wires the operator acts on. If ``None`` is provided, the
-            number of wires are infered from the ``U`` operator.
+            number of wires are inferred from the ``U`` operator.
         U (:class:`~.pennylane.estimator.resource_operator.ResourceOperator` | None): the operator that prepares the state :math:`|\Psi\rangle`
         alpha (float | None): the angle of the operator, should be between :math:`[0, 2\pi]`. Default is :math:`\pi`.
         wires (WiresLike | None): The wires the operation acts on.
@@ -3079,7 +3079,7 @@ class Qubitization(ResourceOperator):
     r"""Resource class for the Qubitization operator. This class estimates the resources for the unitary operator that
     advances the quantum walk by one step.
 
-    The operator is constructed by encoding a Hamiltonian, written as a linear combination of unitaries, into a block encoding(see Figure 1 in
+    The operator is constructed by encoding a Hamiltonian, written as a linear combination of unitaries, into a block encoding (see Figure 1 in
     `arXiv:1805.03662 <https://arxiv.org/abs/1805.03662>`_).
 
     .. math::
@@ -3091,7 +3091,7 @@ class Qubitization(ResourceOperator):
         wires (WiresLike | None): the wires the operation acts on
 
     Resources:
-        The resources are obtained from Equation: 9 in `Babbush et al. (2018) <https://arxiv.org/abs/1805.03662>`_.
+        The resources are obtained from Equation 9 in `Babbush et al. (2018) <https://arxiv.org/abs/1805.03662>`_.
         Specifically, the walk operator is defined as :math:`W = R \cdot S`, where :math:`R` is a reflection about the state prepared by
         the ``Prepare`` operator, and :math:`S` is the ``Select`` operator. The cost is therefore one ``Select`` and one ``Reflection``.
 
@@ -3159,7 +3159,7 @@ class Qubitization(ResourceOperator):
                 applies the unitaries of the LCU.
 
         Resources:
-            The resources are obtained from Equation 9 in: `Babbush et al. (2018) <https://arxiv.org/abs/1805.03662>`_.
+            The resources are obtained from Equation 9 in `Babbush et al. (2018) <https://arxiv.org/abs/1805.03662>`_.
             Specifically, the walk operator is defined as :math:`W = R \cdot S`, where :math:`R` is a reflection about the state prepared by
             the ``Prepare`` operator, and :math:`S` is the ``Select`` operator.
 

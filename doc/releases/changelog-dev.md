@@ -82,6 +82,9 @@
 
 <h4>Instantaneous Quantum Polynomial Circuits </h4>
 
+* An efficient expectation value estimator has been added which may be used to train `~.IQP` circuits.
+  [(#8749)](https://github.com/PennyLaneAI/pennylane/pull/8749)
+
 * A new template for building an Instantaneous Quantum Polynomial (`~.IQP`) circuit has been added along with a 
   lightweight version (based on the :class:`~.estimator.resource_operator.ResourceOperator` class) to rapidly 
   estimate its resources. This unlocks easily estimating the resources of the IQP circuit introduced in the 
@@ -178,6 +181,10 @@
   - :class:`~.CY`, :class:`~.CZ`, :class:`~.CSWAP`, :class:`~.CNOT`, :class:`~.Toffoli`
 
 <h4>Compile Pipeline and Transforms </h4>
+
+* A Catalyst compilation pass implementing ParitySynth to resynthesize phase polynomial
+  circuits has been added.
+  [(#8810)](https://github.com/PennyLaneAI/pennylane/pull/8810)
 
 * A new :class:`~.CompilePipeline` class (previously known as the `TransformProgram`) is now available
   at the top level as `qml.CompilePipeline`. Using this class you can now define large and complex

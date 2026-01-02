@@ -35,11 +35,8 @@ class CDFHamiltonian:
         one_norm (float | None): the one-norm of the Hamiltonian
 
     Raises:
-        ValueError: If ``num_orbitals``, or ``num_fragments`` is not a positive integer.
+        TypeError: If ``num_orbitals``, or ``num_fragments`` is not a positive integer.
         TypeError: If ``one_norm`` is provided but is not a non-negative float or integer.
-
-    Returns:
-        CDFHamiltonian: An instance of CDFHamiltonian
 
     .. seealso::
         :class:`~.estimator.templates.TrotterCDF`
@@ -74,11 +71,9 @@ class THCHamiltonian:
         one_norm (float | None): the one-norm of the Hamiltonian
 
     Raises:
-        ValueError: If ``num_orbitals``, or ``tensor_rank`` is not a positive integer.
-        TypeError: If ``one_norm`` is provided but is not a non-negative float or integer.
+        TypeError: If ``num_orbitals``, or ``tensor_rank`` is not a positive integer
+        TypeError: If ``one_norm`` is provided but is not a non-negative float or integer
 
-    Returns:
-        THCHamiltonian: An instance of THCHamiltonian
 
     .. seealso::
         :class:`~.estimator.templates.TrotterTHC`
@@ -116,11 +111,8 @@ class VibrationalHamiltonian:
         one_norm (float | None): the one-norm of the Hamiltonian
 
     Raises:
-        ValueError: If ``num_modes``, ``grid_size``, or ``taylor_degree`` is not a positive integer.
-        TypeError: If ``one_norm`` is provided but is not a non-negative float or integer.
-
-    Returns:
-        VibrationalHamiltonian: An instance of VibrationalHamiltonian
+        TypeError: If ``num_modes``, ``grid_size``, or ``taylor_degree`` is not a positive integer
+        TypeError: If ``one_norm`` is provided but is not a non-negative float or integer
 
     .. seealso::
         :class:`~.estimator.templates.TrotterVibrational`
@@ -162,11 +154,8 @@ class VibronicHamiltonian:
         one_norm (float | None): the one-norm of the Hamiltonian
 
     Raises:
-        ValueError: If ``num_modes``, ``num_states``, ``grid_size``, or ``taylor_degree`` is not a positive integer.
-        TypeError: If ``one_norm`` is provided but is not a non-negative float or integer.
-
-    Returns:
-        VibronicHamiltonian: An instance of VibronicHamiltonian
+        TypeError: If ``num_modes``, ``num_states``, ``grid_size``, or ``taylor_degree`` is not a positive integer
+        TypeError: If ``one_norm`` is provided but is not a non-negative float or integer
 
     .. seealso::
         :class:`~.estimator.templates.TrotterVibronic`
@@ -212,11 +201,9 @@ class PauliHamiltonian:
         one_norm (float | int | None): the one-norm of the Hamiltonian
 
     Raises:
-        ValueError: If ``one_norm`` is provided but is not a non-negative float or integer.
-        ValueError: If ``pauli_terms`` contains invalid keys (not Pauli strings) or values (not integers).
-
-    Returns:
-        PauliHamiltonian: An instance of PauliHamiltonian
+        TypeError: If ``pauli_terms`` is not a dictionary
+        ValueError: If ``one_norm`` is provided but is not a non-negative float or integer
+        ValueError: If ``pauli_terms`` contains invalid keys (not Pauli strings) or values (not integers)
 
     .. seealso::
         :class:`~.estimator.templates.trotter.TrotterPauli`, :class:`~.estimator.templates.select.SelectPauli`
