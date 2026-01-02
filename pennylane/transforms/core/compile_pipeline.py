@@ -185,7 +185,15 @@ class CompilePipeline:
         cotransform_cache: CotransformCache | None = None,
     ):
         if len(transforms) == 1 and isinstance(transforms[0], Sequence):
-            self._compile_pipeline = list(transforms[0])
+            seq = list(transforms[0])
+            # Check that all elements are BoundTransform
+            if not all(isinstance(t, BoundTransform) for t in seq):
+                raise TypeError(
+                    "When passing a list or sequence to CompilePipeline, all elements must be BoundTransform objects. "
+                    "If you want to include repeated transforms or pipelines, pass them as individual arguments instead. "
+                    "For example: CompilePipeline(transform1, transform2 * 2) instead of CompilePipeline([transform1, transform2 * 2])."
+                )
+            self._compile_pipeline = seq
             self.cotransform_cache = cotransform_cache
             return
 
