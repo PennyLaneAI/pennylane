@@ -59,9 +59,9 @@ class GQSP(ResourceOperator):
     Args:
         signal_operator (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): the
             signal operator which encodes a target Hamiltonian
-        poly_deg (int): the maximum positive degree :math:`d^{+}` of the polynomial transformation
-        neg_poly_deg (int): the maximum negative degree :math:`d^{-}` of the polynomial transformation, representing
-            powers of the adjoint of the signal operator
+        d_plus (int): the largest positive degree :math:`d^{+}` of the polynomial transformation
+        d_minus (int): The largest (in absolute value) negative degree :math:`d^{-}` of the polynomial
+            transformation, representing powers of the adjoint of the signal operator.
         rotation_precision (float | None): the precision with which the general rotation gates are applied
         wires (WiresLike | None): The wires the operation acts on. This includes both the wires of the
             signal operator and the control wire required for block-encoding.
@@ -71,8 +71,8 @@ class GQSP(ResourceOperator):
         Processing (2024) <https://arxiv.org/pdf/2308.01501>`_.
 
     Raises:
-        ValueError: if ``poly_deg`` is not a positive integer greater than zero
-        ValueError: if ``neg_poly_deg`` is not a positive integer or zero
+        ValueError: if ``d_plus`` is not a positive integer greater than zero
+        ValueError: if ``d_minus`` is not an integer greater than or equal to zero
         ValueError: if ``rotation_precision`` is not a positive real number greater than zero
         ValueError: if the wires provided don't match the number of wires expected by the operator
 
@@ -82,9 +82,9 @@ class GQSP(ResourceOperator):
 
     >>> import pennylane.estimator as qre
     >>> signal_op = qre.RX(0.1, wires=0)
-    >>> poly_deg = 5
-    >>> neg_poly_deg = 3
-    >>> gqsp = qre.GQSP(signal_op, poly_deg, neg_poly_deg)
+    >>> d_plus = 5
+    >>> d_minus = 3
+    >>> gqsp = qre.GQSP(signal_op, d_plus, d_minus)
     >>> print(qre.estimate(gqsp))
     --- Resources: ---
      Total wires: 2
@@ -100,34 +100,32 @@ class GQSP(ResourceOperator):
 
     """
 
-    resource_keys = {"cmpr_signal_op", "poly_deg", "neg_poly_deg", "rotation_precision"}
+    resource_keys = {"cmpr_signal_op", "d_plus", "d_minus", "rotation_precision"}
 
     def __init__(
         self,
         signal_operator: ResourceOperator,
-        poly_deg: int,
-        neg_poly_deg: int = 0,
+        d_plus: int,
+        d_minus: int = 0,
         rotation_precision: float | None = None,
         wires: WiresLike = None,
     ):
         _dequeue(signal_operator)  # remove operator
         self.queue()
 
-        if (not isinstance(poly_deg, int)) or poly_deg <= 0:
-            raise ValueError(
-                f"'poly_deg' must be a positive integer greater than zero, got {poly_deg}"
-            )
+        if (not isinstance(d_plus, int)) or d_plus <= 0:
+            raise ValueError(f"'d_plus' must be a positive integer greater than zero, got {d_plus}")
 
-        if (not isinstance(neg_poly_deg, int)) or neg_poly_deg < 0:
-            raise ValueError(f"'neg_poly_deg' must be a positive integer, got {neg_poly_deg}")
+        if (not isinstance(d_minus, int)) or d_minus < 0:
+            raise ValueError(f"'d_minus' must be a non-negative integer, got {d_minus}")
 
         if rotation_precision is not None and rotation_precision <= 0:
             raise ValueError(
                 f"Expected 'rotation_precision' to be a positive real number greater than zero, got {rotation_precision}"
             )
 
-        self.poly_deg = poly_deg
-        self.neg_poly_deg = neg_poly_deg
+        self.d_plus = d_plus
+        self.d_minus = d_minus
         self.rotation_precision = rotation_precision
         self.cmpr_signal_op = signal_operator.resource_rep_from_op()
 
@@ -150,17 +148,17 @@ class GQSP(ResourceOperator):
             dict: A dictionary containing the resource parameters:
                 * cmpr_signal_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`):
                   the compressed representation of signal operator which encodes the target Hamiltonian
-                * poly_deg (int): the maximum positive degree :math:`d^{+}` of the polynomial transformation
-                * neg_poly_deg (int): the maximum negative degree :math:`d^{-}` of the polynomial
-                  transformation, representing powers of the adjoint of the signal operator
+                * d_plus (int): the largest positive degree :math:`d^{+}` of the polynomial transformation
+                * d_minus (int): The largest (in absolute value) negative degree :math:`d^{-}` of the
+                  polynomial transformation, representing powers of the adjoint of the signal operator.
                 * rotation_precision (float | None): the precision with which the general
                   rotation gates are applied
         """
 
         return {
             "cmpr_signal_op": self.cmpr_signal_op,
-            "poly_deg": self.poly_deg,
-            "neg_poly_deg": self.neg_poly_deg,
+            "d_plus": self.d_plus,
+            "d_minus": self.d_minus,
             "rotation_precision": self.rotation_precision,
         }
 
@@ -168,8 +166,8 @@ class GQSP(ResourceOperator):
     def resource_rep(
         cls,
         cmpr_signal_op: CompressedResourceOp,
-        poly_deg: int,
-        neg_poly_deg: int,
+        d_plus: int,
+        d_minus: int,
         rotation_precision: float | None,
     ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
@@ -178,9 +176,9 @@ class GQSP(ResourceOperator):
         Args:
             cmpr_signal_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`):
                 the compressed representation of signal operator which encodes the target Hamiltonian
-            poly_deg (int): the maximum positive degree :math:`d^{+}` of the polynomial transformation
-            neg_poly_deg (int): the maximum negative degree :math:`d^{-}` of the polynomial transformation,
-                representing powers of the adjoint of the signal operator
+            d_plus (int): the largest positive degree :math:`d^{+}` of the polynomial transformation
+            d_minus (int): The largest (in absolute value) negative degree :math:`d^{-}` of the polynomial
+                transformation, representing powers of the adjoint of the signal operator.
             rotation_precision (float | None): the precision with which the general rotation gates are applied
 
         Returns:
@@ -189,8 +187,8 @@ class GQSP(ResourceOperator):
         num_wires = cmpr_signal_op.num_wires + 1  # add control wire
         params = {
             "cmpr_signal_op": cmpr_signal_op,
-            "poly_deg": poly_deg,
-            "neg_poly_deg": neg_poly_deg,
+            "d_plus": d_plus,
+            "d_minus": d_minus,
             "rotation_precision": rotation_precision,
         }
         return CompressedResourceOp(cls, num_wires, params)
@@ -199,8 +197,8 @@ class GQSP(ResourceOperator):
     def resource_decomp(
         cls,
         cmpr_signal_op: CompressedResourceOp,
-        poly_deg: int,
-        neg_poly_deg: int,
+        d_plus: int,
+        d_minus: int,
         rotation_precision: float | None,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object in the list
@@ -209,16 +207,16 @@ class GQSP(ResourceOperator):
         Args:
             cmpr_signal_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`):
                 the compressed representation of signal operator which encodes the target Hamiltonian
-            poly_deg (int): the maximum positive degree :math:`d^{+}` of the polynomial transformation
-            neg_poly_deg (int): the maximum negative degree :math:`d^{-}` of the polynomial transformation, representing
-                powers of the adjoint of the signal operator
+            d_plus (int): the largest positive degree :math:`d^{+}` of the polynomial transformation
+            d_minus (int): The largest (in absolute value) negative degree :math:`d^{-}` of the polynomial
+                transformation, representing powers of the adjoint of the signal operator.
             rotation_precision (float | None): the precision with which the general rotation gates are applied
 
         Resources:
             The resources are obtained as described in Theorem 6 of
             `Generalized Quantum Signal Processing (2024) <https://arxiv.org/pdf/2308.01501>`_.
-            Specifically, the resources are given by ``poly_deg`` instances of :math:`\hat{A}`,
-            ``neg_poly_deg`` instances of :math:`\hat{A^{\prime}}`, and ``poly_deg + neg_poly_deg + 1``
+            Specifically, the resources are given by ``d_plus`` instances of :math:`\hat{A}`,
+            ``d_minus`` instances of :math:`\hat{A^{\prime}}`, and ``d_plus + d_minus + 1``
             instances of the general ``Rot`` gate.
 
         Returns:
@@ -241,13 +239,13 @@ class GQSP(ResourceOperator):
             num_zero_ctrl=0,
         )
 
-        if neg_poly_deg == 0:
-            return [GateCount(rot, poly_deg + 1), GateCount(ctrl_cmpr_signal_op, poly_deg)]
+        if d_minus == 0:
+            return [GateCount(rot, d_plus + 1), GateCount(ctrl_cmpr_signal_op, d_plus)]
 
         return [
-            GateCount(rot, poly_deg + neg_poly_deg + 1),
-            GateCount(ctrl_cmpr_signal_op, poly_deg),
-            GateCount(ctrl_adj_cmpr_signal_op, neg_poly_deg),
+            GateCount(rot, d_plus + d_minus + 1),
+            GateCount(ctrl_cmpr_signal_op, d_plus),
+            GateCount(ctrl_adj_cmpr_signal_op, d_minus),
         ]
 
 
@@ -427,8 +425,8 @@ class GQSPTimeEvolution(ResourceOperator):
         poly_deg = cls.poly_approx(time, one_norm, poly_approx_precision)
         gqsp = GQSP.resource_rep(
             walk_op,
-            poly_deg=poly_deg,
-            neg_poly_deg=poly_deg,
+            d_plus=poly_deg,
+            d_minus=poly_deg,
             rotation_precision=None,
         )
         return [GateCount(gqsp)]
