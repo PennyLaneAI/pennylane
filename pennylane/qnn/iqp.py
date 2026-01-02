@@ -336,7 +336,7 @@ def iqp_expval(
         weights = np.ones(len(pattern))
         pattern = [[[0]], [[1]], [[0, 1]]] # binary array representing gates X0, X1, X0X1
 
-        expvals, stds = iqp.iqp_expval(ops, weights, pattern, num_wires, n_samples, key)
+        expvals, stds = iqp_expval(ops, weights, pattern, num_wires, n_samples, key)
 
     >>> print(expvals, stds)
     [0.18971464 0.14175898 0.17152457] [0.02615426 0.02614059 0.02615943]
