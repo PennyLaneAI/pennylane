@@ -42,7 +42,7 @@ class GQSP(ResourceOperator):
         GQSP = \left( \prod_{j=1}^{d^{-}} R(\theta_{j}, \phi_{j}, 0) \hat{A}^{\prime} \right)
         \left( \prod_{j=1}^{d^{+}} R(\theta_{j + d^{-}}, \phi_{j + d^{-}}, 0) \hat{A} \right) R(\theta_0, \phi_0, \lambda),
 
-    where :math:`R` is the single-qubit rotation operator and :math:`\vec{\phi}`, :math:`\vec{\theta}` and :math:`\lambda`
+    where :math:`R` is a rotation operator and :math:`\vec{\phi}`, :math:`\vec{\theta}` and :math:`\lambda`
     are the rotation angles that generate the polynomial transformation. The maximum positive and
     negative polynomial degrees are denoted by :math:`d^{+}` and :math:`d^{-}`, respectively.
     Additionally, :math:`\hat{A}` and :math:`\hat{A}^{\prime}` are given by:
@@ -71,15 +71,9 @@ class GQSP(ResourceOperator):
         Processing (2024) <https://arxiv.org/pdf/2308.01501>`_.
 
     Raises:
-<<<<<<< HEAD
-        ValueError: if ``poly_deg`` is not a positive integer greater than zero
-        ValueError: if ``neg_poly_deg`` is not a positive integer or zero
-        ValueError: if ``rotation_precision`` is not a positive real number greater than zero
-=======
         ValueError: ``poly_deg`` must be a positive integer greater than zero
         ValueError: ``neg_poly_deg`` must be a positive integer greater than zero
         ValueError: ``rotation_precision`` must be a positive real number greater than zero
->>>>>>> 74fd1806e (Removed tests and code changes)
         ValueError: if the wires provided don't match the number of wires expected by the operator
 
     **Example**

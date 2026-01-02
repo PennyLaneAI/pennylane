@@ -313,7 +313,7 @@ class PauliRot(ResourceOperator):
 
             For any general Pauli string the resources come from Section VIII (Figures 3 & 4) of
             `The Bravyi-Kitaev transformation for quantum computation of electronic structure
-            <https://arxiv.org/abs/1208.5986>`_ paper, in combination with the following identities:
+            <https://arxiv.org/abs/1208.5986>`_, in combination with the following identities:
 
             .. math::
 
