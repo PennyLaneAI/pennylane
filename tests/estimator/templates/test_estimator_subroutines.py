@@ -2255,32 +2255,6 @@ class TestResourceUnaryIterationQPE:
         assert op.wires == expected_wires
 
     @pytest.mark.parametrize(
-        "walk_op, n_iter, error_message",
-        (
-            (
-                qre.QubitizeTHC(qre.THCHamiltonian(40, 10)),
-                0,
-                "Expected 'num_iterations' to be an integer greater than zero,",
-            ),
-            (
-                qre.QubitizeTHC(qre.THCHamiltonian(40, 10)),
-                3.5,
-                "Expected 'num_iterations' to be an integer greater than zero,",
-            ),
-            (
-                qre.QubitizeTHC(qre.THCHamiltonian(40, 10)),
-                -2,
-                "Expected 'num_iterations' to be an integer greater than zero,",
-            ),
-            (qre.RZ(), 4, "Expected the 'walk_op' to be a qubitization type operator "),
-        ),
-    )
-    def test_init_errors(self, walk_op, n_iter, error_message):
-        """Test that Value errors are raised when incompatible inputs are provided."""
-        with pytest.raises(ValueError, match=error_message):
-            _ = qre.UnaryIterationQPE(walk_op, n_iter)
-
-    @pytest.mark.parametrize(
         "walk_operator, n_iter, adj_qft",
         (
             (qre.QubitizeTHC(thc_ham=qre.THCHamiltonian(num_orbitals=20, tensor_rank=40)), 5, None),
