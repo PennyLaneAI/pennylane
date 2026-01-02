@@ -340,6 +340,12 @@
   :class:`~.Controlled`, :class:`~.ControlledOp`, :class:`~.Pow`, and :class:`~.Adjoint`.
   [(#8464)](https://github.com/PennyLaneAI/pennylane/pull/8464)
 
+* Qualtran call graphs built via :func:`qml.to_bloq <pennylane.to_bloq>` now use PennyLane's resource estimation
+  module by default (``call_graph='estimator'``). This provides faster resource counting. 
+  To use the previous behaviour based on PennyLane decompositions, set 
+  ``call_graph='decomposition'``.
+  [(#8390)](https://github.com/PennyLaneAI/pennylane/pull/8390)
+
 <h4>Decompositions</h4>
 
 * A new decomposition has been added for the Controlled :class:`~.SemiAdder`,
@@ -356,14 +362,6 @@
   minimizes the maximum number of simultaneously allocated work wires.
   [(#8729)](https://github.com/PennyLaneAI/pennylane/pull/8729)
   [(#8734)](https://github.com/PennyLaneAI/pennylane/pull/8734)
-
-<h3>Improvements 🛠</h3>
-
-* Qualtran call graphs built via :func:`qml.to_bloq <pennylane.to_bloq>` now use PennyLane's resource estimation
-  module by default (``call_graph='estimator'``). This provides faster resource counting. 
-  To use the previous behaviour based on PennyLane decompositions, set 
-  ``call_graph='decomposition'``.
-  [(#8390)](https://github.com/PennyLaneAI/pennylane/pull/8390)
 
 * Added a new decomposition, `_decompose_2_cnots`, for the two-qubit decomposition for `QubitUnitary`.
   It supports the analytical decomposition a two-qubit unitary known to require exactly 2 CNOTs.
@@ -439,6 +437,7 @@
   [(#8490)](https://github.com/PennyLaneAI/pennylane/pull/8490)
   [(#8577)](https://github.com/PennyLaneAI/pennylane/pull/8577)
   [(#8721)](https://github.com/PennyLaneAI/pennylane/issues/8721)
+
 
 <h4>Other improvements</h4>
 
