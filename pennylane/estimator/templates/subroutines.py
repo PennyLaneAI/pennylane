@@ -3277,7 +3277,7 @@ class Qubitization(ResourceOperator):
         cls, prep_op: CompressedResourceOp, select_op: CompressedResourceOp
     ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation.
+        the Operator that are needed to compute the resources.
 
         Args:
             prep_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A compressed representation for the operator that prepares
