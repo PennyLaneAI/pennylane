@@ -256,7 +256,9 @@ class TestBBQRAM:
             ),
         ),
     )
-    def test_resources(self, num_bitstrings, size_bitstring, num_bit_flips, num_wires, expected_res):
+    def test_resources(
+        self, num_bitstrings, size_bitstring, num_bit_flips, num_wires, expected_res
+    ):
         """Test that the resources are correct."""
         assert (
             qre.BBQRAM.resource_decomp(num_bitstrings, size_bitstring, num_bit_flips, num_wires)
