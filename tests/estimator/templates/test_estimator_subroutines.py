@@ -150,6 +150,143 @@ class TestIQP:
         assert qre.IQP.tracking_name(num_wires, pattern, spin_sym) == expected
 
 
+class TestBBQRAM:
+    """Test the BBQRAM class."""
+
+    def test_raises_with_wrong_wire_num(self):
+        with pytest.raises(ValueError, match="Expected 4 wires, got 3."):
+            qre.BBQRAM(
+                4,
+                3,
+                4,
+                6,
+                control_wires=(1,),
+                target_wires=(2,),
+                work_wires=(3,),
+            )
+
+    @pytest.mark.parametrize(
+        (
+            "num_wires",
+            "num_bitstrings",
+            "size_bitstring",
+            "num_bit_flips",
+            "control_wires",
+            "target_wires",
+            "work_wires",
+        ),
+        [
+            (
+                15,
+                4,
+                3,
+                6,
+                (0, 1),
+                (2, 3, 4),
+                (5, 6, 7, 8, 9, 10, 11, 12, 13, 14),
+            ),
+            (
+                15,
+                4,
+                3,
+                None,
+                (0, 1),
+                (2, 3, 4),
+                (5, 6, 7, 8, 9, 10, 11, 12, 13, 14),
+            ),
+        ],
+    )
+    def test_resource_params(
+        self,
+        num_wires,
+        num_bitstrings,
+        size_bitstring,
+        num_bit_flips,
+        control_wires,
+        target_wires,
+        work_wires,
+    ):
+        """Test that the resource params are correct."""
+        op = qre.BBQRAM(
+            num_bitstrings,
+            size_bitstring,
+            num_wires,
+            num_bit_flips,
+            control_wires,
+            target_wires,
+            work_wires,
+        )
+        assert op.resource_params == {
+            "num_bitstrings": num_bitstrings,
+            "size_bitstring": size_bitstring,
+            "num_bit_flips": (
+                num_bit_flips if num_bit_flips is not None else num_bitstrings * size_bitstring // 2
+            ),
+            "num_wires": num_wires,
+        }
+
+    @pytest.mark.parametrize(
+        ("num_wires", "num_bitstrings", "size_bitstring", "num_bit_flips"), [(15, 4, 3, 6)]
+    )
+    def test_resource_rep(self, num_wires, num_bitstrings, size_bitstring, num_bit_flips):
+        """Test that the compressed representation is correct."""
+        expected = qre.CompressedResourceOp(
+            qre.BBQRAM,
+            num_wires,
+            {
+                "num_bitstrings": num_bitstrings,
+                "size_bitstring": size_bitstring,
+                "num_bit_flips": num_bit_flips,
+                "num_wires": num_wires,
+            },
+        )
+        assert (
+            qre.BBQRAM.resource_rep(
+                num_bitstrings=num_bitstrings,
+                size_bitstring=size_bitstring,
+                num_bit_flips=num_bit_flips,
+                num_wires=num_wires,
+            )
+            == expected
+        )
+
+    @pytest.mark.parametrize(
+        "num_bitstrings, size_bitstring, num_bit_flips, num_wires, expected_res",
+        (
+            (
+                4,
+                3,
+                6,
+                15,
+                [
+                    GateCount(resource_rep(qre.SWAP), 16),
+                    GateCount(resource_rep(qre.Hadamard), 6),
+                    GateCount(resource_rep(qre.CSWAP), 40),
+                    GateCount(resource_rep(qre.Z), 6),
+                ],
+            ),
+        ),
+    )
+    def test_resources(
+        self, num_bitstrings, size_bitstring, num_bit_flips, num_wires, expected_res
+    ):
+        """Test that the resources are correct."""
+        assert (
+            qre.BBQRAM.resource_decomp(num_bitstrings, size_bitstring, num_bit_flips, num_wires)
+            == expected_res
+        )
+
+    @pytest.mark.parametrize(
+        ("num_bitstrings", "size_bitstring", "num_bit_flips", "num_wires"), [(4, 3, 6, 15)]
+    )
+    def test_tracking_name(self, num_bitstrings, size_bitstring, num_bit_flips, num_wires):
+        """Tests that the tracking name is correct."""
+        assert (
+            qre.BBQRAM.tracking_name(num_bitstrings, size_bitstring, num_bit_flips, num_wires)
+            == f"BBQRAM({num_bitstrings}, {size_bitstring}, {num_bit_flips}, {num_wires})"
+        )
+
+
 class TestResourcePhaseGradient:
     """Test the PhaseGradient class."""
 

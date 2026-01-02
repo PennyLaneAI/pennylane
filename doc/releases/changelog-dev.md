@@ -67,6 +67,10 @@
 
 <h4>QRAM </h4>
 
+* A lightweight version of Bucket Brigade QRAM :class:`estimator.BBQRAM <pennylane.estimator.templates.BBQRAM>` (based on the :class:`~.estimator.resource_operator.ResourceOperator` class) 
+  has been added to rapidly estimate resources used by :class:`~.BBQRAM`.
+  [(#8825)](https://github.com/PennyLaneAI/pennylane/pull/8825)
+
 * Bucket Brigade QRAM, a Hybrid QRAM and a Select-Only QRAM variant are implemented as a template :class:`~.BBQRAM`, :class:`~.HybridQRAM` and :class:`~.SelectOnlyQRAM` 
   to allow for selection of bitstrings in superposition.
   [(#8670)](https://github.com/PennyLaneAI/pennylane/pull/8670)
