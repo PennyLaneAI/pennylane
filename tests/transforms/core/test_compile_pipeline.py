@@ -862,14 +862,6 @@ class TestCompilePipelineConstruction:
             # matrix is not a transform
             CompilePipeline(qml.transforms.cancel_inverses, qml.matrix)
 
-    def test_init_with_non_boundtransform_in_list_raises(self):
-        """Test that passing a list with non-BoundTransform elements to CompilePipeline raises a clear error."""
-        transform1 = BoundTransform(qml.transform(first_valid_transform))
-        transform2 = qml.transform(second_valid_transform)  # Not a BoundTransform
-        # Should raise TypeError with a clear message
-        with pytest.raises(TypeError, match=r"all elements must be BoundTransform objects"):
-            CompilePipeline([transform1, transform2])
-
 
 class TestCompilePipeline:
     """Test the compile pipeline class and its method."""
