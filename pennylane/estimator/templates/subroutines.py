@@ -1827,8 +1827,8 @@ class BBQRAM(ResourceOperator):
         self,
         num_bitstrings,
         size_bitstring,
-        num_bit_flips,
         num_wires,
+        num_bit_flips=None,
         control_wires=None,
         target_wires=None,
         work_wires=None,
@@ -1838,6 +1838,8 @@ class BBQRAM(ResourceOperator):
             all_wires = list(control_wires) + list(target_wires) + list(work_wires)
             if len(all_wires) != num_wires:
                 raise ValueError(f"Expected {num_wires} wires, got {len(all_wires)}.")
+        if num_bit_flips is None:
+            num_bit_flips = num_bitstrings * size_bitstring // 2
         self.num_wires = num_wires
         self.num_bitstrings = num_bitstrings
         self.size_bitstring = size_bitstring

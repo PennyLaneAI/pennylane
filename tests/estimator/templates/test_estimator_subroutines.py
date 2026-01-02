@@ -158,8 +158,8 @@ class TestBBQRAM:
             qre.BBQRAM(
                 4,
                 3,
+                4,
                 6,
-                num_wires=4,
                 control_wires=(1,),
                 target_wires=(2,),
                 work_wires=(3,),
@@ -184,7 +184,16 @@ class TestBBQRAM:
                 (0, 1),
                 (2, 3, 4),
                 (5, 6, 7, 8, 9, 10, 11, 12, 13, 14),
-            )
+            ),
+            (
+                15,
+                4,
+                3,
+                None,
+                (0, 1),
+                (2, 3, 4),
+                (5, 6, 7, 8, 9, 10, 11, 12, 13, 14),
+            ),
         ],
     )
     def test_resource_params(
@@ -201,8 +210,8 @@ class TestBBQRAM:
         op = qre.BBQRAM(
             num_bitstrings,
             size_bitstring,
-            num_bit_flips,
             num_wires,
+            num_bit_flips,
             control_wires,
             target_wires,
             work_wires,
@@ -210,7 +219,9 @@ class TestBBQRAM:
         assert op.resource_params == {
             "num_bitstrings": num_bitstrings,
             "size_bitstring": size_bitstring,
-            "num_bit_flips": num_bit_flips,
+            "num_bit_flips": (
+                num_bit_flips if num_bit_flips is not None else num_bitstrings * size_bitstring // 2
+            ),
             "num_wires": num_wires,
         }
 
