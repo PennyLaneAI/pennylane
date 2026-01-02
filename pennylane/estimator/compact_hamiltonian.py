@@ -215,6 +215,7 @@ class PauliHamiltonian:
         one_norm (float | int | None): the one-norm of the Hamiltonian
 
     Raises:
+        TypeError: If ``pauli_terms`` is not a dictionary.
         ValueError: If ``one_norm`` is provided but is not a non-negative float or integer.
         ValueError: If ``pauli_terms`` contains invalid keys (not Pauli strings) or values (not integers).
 
