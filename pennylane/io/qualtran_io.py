@@ -1220,7 +1220,7 @@ class ToBloq(Bloq):
         custom_mapping (dict | None): Dictionary to specify a mapping between a PennyLane operator and a
             Qualtran Bloq. A default mapping is used if not defined.
         call_graph (str): Specifies how to build the call graph. If ``'estimator'``, the call
-            graph is built via the :mod:`~.estimator` module. If ``'decomposition'``, the
+            graph is built using the resource functionality of the :mod:`~.estimator` module. If ``'decomposition'``, the
             call graph is built via the PennyLane decomposition. Default is ``'estimator'``.
 
     Raises:
