@@ -133,7 +133,7 @@ class TestMapToResourceOp:
                 re_temps.BBQRAM(
                     num_bitstrings=4,
                     size_bitstring=3,
-                    num_ones=6,
+                    num_bit_flips=6,
                     num_wires=15,
                     control_wires=[0, 1],
                     target_wires=[2, 3, 4],
