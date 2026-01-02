@@ -1905,7 +1905,7 @@ class BBQRAM(ResourceOperator):
                 in the decomposition.
         """
         num_target_wires = size_bitstring
-        n_k = int(math.ceil(math.log2(num_bitstrings)))
+        n_k = (num_bitstrings - 1).bit_length()
 
         swap = resource_rep(qre.SWAP)
         cswap = resource_rep(qre.CSWAP)
