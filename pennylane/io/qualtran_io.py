@@ -568,7 +568,7 @@ def _(op: qtemps.subroutines.QROM, map_ops=True, custom_mapping=None, **kwargs):
         return mapped_op
 
     data = op.data[0]
-    powers_of_two = 2**np.arange(data.shape[1])[::-1]
+    powers_of_two = 2 ** np.arange(data.shape[1])[::-1]
     data = math.sum(powers_of_two * data, axis=1)
     if op.clean:
         return QROAMClean.build_from_data(data)

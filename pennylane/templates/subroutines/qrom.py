@@ -32,9 +32,9 @@ from pennylane.decomposition import (
 from pennylane.operation import Operation
 from pennylane.queuing import QueuingManager, apply
 from pennylane.templates.embeddings import BasisEmbedding
+from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 
-from pennylane.typing import TensorLike
 from .select import Select
 
 
