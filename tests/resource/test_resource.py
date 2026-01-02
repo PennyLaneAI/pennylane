@@ -56,7 +56,7 @@ def test_deprecated_items(item):
     a deprecation error."""
     with pytest.warns(
         PennyLaneDeprecationWarning,
-        match=f"pennylane.{item} is no longer accessible from the resource module",
+        match=f"pennylane.resource.{item} is no longer accessible from the resource module",
     ):
         cls_or_fn = getattr(resource, item)
 
