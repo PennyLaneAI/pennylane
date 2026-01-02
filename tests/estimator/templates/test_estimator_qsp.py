@@ -51,9 +51,19 @@ class TestQSVT:
             qre.QSVT(op, encoding_dims="invalid", poly_deg=2)
 
         with pytest.raises(
+            ValueError, match="Expected `encoding_dims` to be an int or tuple of int"
+        ):
+            qre.QSVT.resource_rep(op, encoding_dims="invalid", poly_deg=2)
+
+        with pytest.raises(
             ValueError, match="Expected `encoding_dims` to be a tuple of two integers"
         ):
             qre.QSVT(op, encoding_dims=(1, 2, 3), poly_deg=2)
+
+        with pytest.raises(
+            ValueError, match="Expected `encoding_dims` to be a tuple of two integers"
+        ):
+            qre.QSVT.resource_rep(op, encoding_dims=(1, 2, 3), poly_deg=2)
 
     def test_init_encoding_dims_tuple_len_1(self):
         """Test that encoding_dims is correctly handled when it is a tuple of length 1."""
@@ -179,11 +189,19 @@ class TestQSP:
         ):
             qre.QSP(op, poly_deg=2)
 
+        with pytest.raises(
+            ValueError, match="The block encoding operator should act on a single qubit"
+        ):
+            qre.QSP.resource_rep(op, poly_deg=2)
+
     def test_init_error_convention(self):
         """Test that an error is raised when convention is invalid."""
         op = DummyOp(wires=[0])
         with pytest.raises(ValueError, match="The valid conventions are 'Z' or 'X'"):
             qre.QSP(op, poly_deg=2, convention="Y")
+
+        with pytest.raises(ValueError, match="The valid conventions are 'Z' or 'X'"):
+            qre.QSP.resource_rep(op, poly_deg=2, convention="Y")
 
     def test_init_wires_mismatch(self):
         """Test that an error is raised when wires don't match block encoding."""
@@ -293,6 +311,12 @@ class TestGQSP:
         ):
             _ = qre.GQSP(op, poly_deg=2, rotation_precision=rot_prec)
 
+        with pytest.raises(
+            ValueError,
+            match="Expected 'rotation_precision' to be a positive real number greater than zero",
+        ):
+            _ = qre.GQSP.resource_rep(op, poly_deg=2, rotation_precision=rot_prec)
+
     @pytest.mark.parametrize(
         "poly_deg, neg_poly_deg, error_msg",
         (
@@ -309,6 +333,9 @@ class TestGQSP:
         op = qre.RX(0.1, wires=0)
         with pytest.raises(ValueError, match=error_msg):
             _ = qre.GQSP(op, poly_deg, neg_poly_deg)
+
+        with pytest.raises(ValueError, match=error_msg):
+            _ = qre.GQSP.resource_rep(op, poly_deg, neg_poly_deg)
 
     @pytest.mark.parametrize(
         "poly_deg, neg_poly_deg, rot_precision",
@@ -451,6 +478,9 @@ class TestGQSPTimeEvolution:
         op = qre.RX(0.1, wires=0)
         with pytest.raises(ValueError, match=error_msg):
             qre.GQSPTimeEvolution(op, time, one_norm, poly_approx_precision)
+
+        with pytest.raises(ValueError, match=error_msg):
+            qre.GQSPTimeEvolution.resource_rep(op, time, one_norm, poly_approx_precision)
 
     def test_resource_params(self):
         """Test that the resource params for GQSPTimeEvolution are correct."""

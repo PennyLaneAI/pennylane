@@ -2469,6 +2469,9 @@ class TestResourceReflection:
         with pytest.raises(ValueError, match="Must provide atleast one of `num_wires` or `U`"):
             qre.Reflection()
 
+        with pytest.raises(ValueError, match="Must provide atleast one of `num_wires` or `U`"):
+            qre.Reflection.resource_rep()
+
     def test_wire_error(self):
         """Test that an error is raised when wrong number of wires is provided."""
         with pytest.raises(ValueError, match="Expected 3 wires, got 2"):
@@ -2492,6 +2495,9 @@ class TestResourceReflection:
         """Test that an error is raised if the alpha is provided outside of the expected range"""
         with pytest.raises(ValueError, match="alpha must be within"):
             _ = qre.Reflection(num_wires=1, alpha=alpha)
+
+        with pytest.raises(ValueError, match="alpha must be within"):
+            _ = qre.Reflection.resource_rep(num_wires=1, alpha=alpha)
 
     @pytest.mark.parametrize(
         "U, alpha",

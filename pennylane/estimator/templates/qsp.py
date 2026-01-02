@@ -42,11 +42,11 @@ class GQSP(ResourceOperator):
 
     .. math::
 
-        GQSP = \left( \prod_{j=1}^{d^{-}} R(\theta_{j}, \phi_{j}, 0) \hat{A}^{\prime} \right) 
+        GQSP = \left( \prod_{j=1}^{d^{-}} R(\theta_{j}, \phi_{j}, 0) \hat{A}^{\prime} \right)
         \left( \prod_{j=1}^{d^{+}} R(\theta_{j + d^{-}}, \phi_{j + d^{-}}, 0) \hat{A} \right) R(\theta_0, \phi_0, \lambda)
 
-    Where :math:`R` is the general rotation operator 
-    :class:`~.estimator.ops.qubit.parametric_ops_single_qubit.Rot`, and :math:`\vec{\phi}`, 
+    Where :math:`R` is the general rotation operator
+    :class:`~.estimator.ops.qubit.parametric_ops_single_qubit.Rot`, and :math:`\vec{\phi}`,
     :math:`\vec{\theta}` and :math:`\lambda` are the rotation angles that generate the polynomial transformation.
     Additionally, :math:`\hat{A}` and :math:`\hat{A}^{\prime}` are given by:
 
@@ -67,7 +67,7 @@ class GQSP(ResourceOperator):
             signal operator and the control wire required for block-encoding.
 
     Resources:
-        The resources are obtained as described in Theorem 6 of `Generalized Quantum Signal 
+        The resources are obtained as described in Theorem 6 of `Generalized Quantum Signal
         Processing (2024) <https://arxiv.org/pdf/2308.01501>`_. Specifically, the resources are given
         by ``poly_deg`` instances of :math:`\hat{A}`, ``neg_poly_deg`` instances of
         :math:`\hat{A^{\prime}}`, and ``poly_deg + neg_poly_deg + 1`` instances of the general
@@ -77,7 +77,7 @@ class GQSP(ResourceOperator):
         ValueError: ``poly_deg`` must be a positive integer greater than zero
         ValueError: ``neg_poly_deg`` must be a positive integer
         ValueError: ``rotation_precision`` must be a positive real number greater than zero
-        ValueError: if the wires provided don't match the number of wires expected by the operator              
+        ValueError: if the wires provided don't match the number of wires expected by the operator
 
     **Example**
 
@@ -172,8 +172,8 @@ class GQSP(ResourceOperator):
         cls,
         cmpr_signal_op: CompressedResourceOp,
         poly_deg: int,
-        neg_poly_deg: int,
-        rotation_precision: float | None,
+        neg_poly_deg: int = 0,
+        rotation_precision: float | None = None,
     ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
@@ -188,6 +188,19 @@ class GQSP(ResourceOperator):
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
+        if (not isinstance(poly_deg, int)) or poly_deg <= 0:
+            raise ValueError(
+                f"'poly_deg' must be a positive integer greater than zero, got {poly_deg}"
+            )
+
+        if (not isinstance(neg_poly_deg, int)) or neg_poly_deg < 0:
+            raise ValueError(f"'neg_poly_deg' must be a positive integer, got {neg_poly_deg}")
+
+        if rotation_precision is not None and rotation_precision <= 0:
+            raise ValueError(
+                f"Expected 'rotation_precision' to be a positive real number greater than zero, got {rotation_precision}"
+            )
+
         num_wires = cmpr_signal_op.num_wires + 1  # add control wire
         params = {
             "cmpr_signal_op": cmpr_signal_op,
@@ -202,8 +215,8 @@ class GQSP(ResourceOperator):
         cls,
         cmpr_signal_op: CompressedResourceOp,
         poly_deg: int,
-        neg_poly_deg: int,
-        rotation_precision: float | None,
+        neg_poly_deg: int = 0,
+        rotation_precision: float | None = None,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object in the list
         represents a gate and the number of times it occurs in the circuit.
@@ -390,6 +403,28 @@ class GQSPTimeEvolution(ResourceOperator):
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
+
+        if (not isinstance(time, (int, float))) or time <= 0:
+            raise (
+                ValueError(
+                    f"Expected 'time' to be a positive real number greater than zero, got {time}"
+                )
+            )
+
+        if (not isinstance(one_norm, (int, float))) or one_norm <= 0:
+            raise (
+                ValueError(
+                    f"Expected 'one_norm' to be a positive real number greater than zero, got {one_norm}"
+                )
+            )
+
+        if (not isinstance(poly_approx_precision, (int, float))) or poly_approx_precision <= 0:
+            raise (
+                ValueError(
+                    f"Expected 'poly_approx_precision' to be a positive real number greater than zero, got {poly_approx_precision}"
+                )
+            )
+
         num_wires = walk_op.num_wires + 1
         params = {
             "walk_op": walk_op,
@@ -502,7 +537,7 @@ class QSVT(ResourceOperator):
 
     Args:
         block_encoding (:class:`~.estimator.resource_operator.ResourceOperator`): the block encoding operator
-        encoding_dims (int | tuple(int)): The dimensions of the encoded operator's sub-matrix. 
+        encoding_dims (int | tuple(int)): The dimensions of the encoded operator's sub-matrix.
             If an integer is provided, a square sub-matrix is assumed; otherwise, specify (rows, columns).
         poly_deg (int): the degree of the polynomial transformation being applied
         wires (WiresLike | None): the wires the operation acts on
@@ -609,6 +644,23 @@ class QSVT(ResourceOperator):
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
+        if not isinstance(encoding_dims, (int, tuple)):
+            raise ValueError(
+                f"Expected `encoding_dims` to be an int or tuple of int. Got {encoding_dims}"
+            )
+
+        if isinstance(encoding_dims, int):
+            encoding_dims = (encoding_dims, encoding_dims)
+
+        if len(encoding_dims) == 1:
+            dim = encoding_dims[0]
+            encoding_dims = (dim, dim)
+        elif len(encoding_dims) > 2:
+            raise ValueError(
+                "Expected `encoding_dims` to be a tuple of two integers, representing the dimensions"
+                f" (row, col) of the subspace where the matrix is encoded. Got {encoding_dims}"
+            )
+
         num_wires = block_encoding.num_wires
         params = {
             "block_encoding": block_encoding,
@@ -782,8 +834,8 @@ class QSP(ResourceOperator):
         cls,
         block_encoding: CompressedResourceOp,
         poly_deg: int,
-        convention: str,
-        rotation_precision: float | None,
+        convention: str = "Z",
+        rotation_precision: float | None = None,
     ):
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
@@ -799,6 +851,12 @@ class QSP(ResourceOperator):
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
+        if block_encoding.num_wires > 1:
+            raise ValueError("The block encoding operator should act on a single qubit!")
+
+        if not (convention in {"Z", "X"}):
+            raise ValueError(f"The valid conventions are 'Z' or 'X'. Got {convention}")
+
         params = {
             "block_encoding": block_encoding,
             "poly_deg": poly_deg,
@@ -812,8 +870,8 @@ class QSP(ResourceOperator):
         cls,
         block_encoding: CompressedResourceOp,
         poly_deg: int,
-        convention: str,
-        rotation_precision: float,
+        convention: str = "Z",
+        rotation_precision: float | None = None,
     ):
         r"""Returns a list representing the resources of the operator. Each object in the list
         represents a gate and the number of times it occurs in the circuit.

@@ -2908,7 +2908,12 @@ class Reflection(ResourceOperator):
             self.wires = None
 
     @classmethod
-    def resource_decomp(cls, num_wires: int, alpha: float, cmpr_U: CompressedResourceOp):
+    def resource_decomp(
+        cls,
+        num_wires: int | None = None,
+        alpha: float = math.pi,
+        cmpr_U: CompressedResourceOp | None = None,
+    ):
         r"""Returns a list representing the resources of the operator. Each object in the list
         represents a gate and the number of times it occurs in the circuit.
 
@@ -3058,7 +3063,10 @@ class Reflection(ResourceOperator):
 
     @classmethod
     def resource_rep(
-        cls, num_wires: int, alpha: float, cmpr_U: CompressedResourceOp
+        cls,
+        num_wires: int | None = None,
+        alpha: float = math.pi,
+        cmpr_U: CompressedResourceOp | None = None,
     ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
@@ -3071,6 +3079,12 @@ class Reflection(ResourceOperator):
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
+        if not 0 <= alpha <= 2 * qnp.pi:
+            raise ValueError(f"alpha must be within [0, 2pi], got {alpha}")
+
+        if cmpr_U is None and num_wires is None:
+            raise ValueError("Must provide atleast one of `num_wires` or `U`")
+
         params = {"alpha": alpha, "num_wires": num_wires, "cmpr_U": cmpr_U}
         return CompressedResourceOp(cls, num_wires, params)
 
