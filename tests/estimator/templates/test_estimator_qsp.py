@@ -46,12 +46,12 @@ class TestQSVT:
         """Test that an error is raised when encoding_dims is invalid."""
         op = DummyOp(wires=[0])
         with pytest.raises(
-            ValueError, match="Expected `encoding_dims` to be an int or tuple of int"
+            TypeError, match="Expected `encoding_dims` to be an int or tuple of int"
         ):
             qre.QSVT(op, encoding_dims="invalid", poly_deg=2)
 
         with pytest.raises(
-            ValueError, match="Expected `encoding_dims` to be an int or tuple of int"
+            TypeError, match="Expected `encoding_dims` to be an int or tuple of int"
         ):
             qre.QSVT.resource_rep(op, encoding_dims="invalid", poly_deg=2)
 
@@ -315,10 +315,10 @@ class TestGQSP:
             ValueError,
             match="Expected 'rotation_precision' to be a positive real number greater than zero",
         ):
-            _ = qre.GQSP.resource_rep(op, poly_deg=2, rotation_precision=rot_prec)
+            _ = qre.GQSP.resource_rep(op, d_plus=2, rotation_precision=rot_prec)
 
     @pytest.mark.parametrize(
-        "poly_deg, neg_poly_deg, error_msg",
+        "d_plus, d_minus, error_msg",
         (
             (0.1, 2, "'d_plus' must be a positive integer greater than zero,"),
             (-3, 3, "'d_plus' must be a positive integer greater than zero,"),
@@ -327,15 +327,15 @@ class TestGQSP:
             (2, -3, "'d_minus' must be a non-negative integer,"),
         ),
     )
-    def test_poly_deg_error(self, poly_deg, neg_poly_deg, error_msg):
+    def test_d_error(self, d_plus, d_minus, error_msg):
         """Test that an error is raised of incompatible values are
         passed for 'poly_deg' and 'neg_poly_deg'."""
         op = qre.RX(0.1, wires=0)
         with pytest.raises(ValueError, match=error_msg):
-            _ = qre.GQSP(op, poly_deg, neg_poly_deg)
+            _ = qre.GQSP(op, d_plus, d_minus)
 
         with pytest.raises(ValueError, match=error_msg):
-            _ = qre.GQSP.resource_rep(op, poly_deg, neg_poly_deg)
+            _ = qre.GQSP.resource_rep(op, d_plus, d_minus)
 
     @pytest.mark.parametrize(
         "poly_deg, neg_poly_deg, rot_precision",

@@ -27,6 +27,7 @@ from pennylane.estimator.templates import (
     GQSP,
     QSP,
     AliasSampling,
+    GQSPTimeEvolution,
     MPSPrep,
     QROMStatePreparation,
     SelectPauliRot,
@@ -140,6 +141,7 @@ class ResourceConfig:
             },
             GQSP: {"rotation_precision": None},
             QSP: {"rotation_precision": None},
+            GQSPTimeEvolution: {"poly_approx_precision": None},
         }
         self._custom_decomps = {}
         self._adj_custom_decomps = {}

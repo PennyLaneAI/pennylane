@@ -184,13 +184,11 @@ class GQSP(ResourceOperator):
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
-        if (not isinstance(poly_deg, int)) or poly_deg <= 0:
-            raise ValueError(
-                f"'poly_deg' must be a positive integer greater than zero, got {poly_deg}"
-            )
+        if (not isinstance(d_plus, int)) or d_plus <= 0:
+            raise ValueError(f"'d_plus' must be a positive integer greater than zero, got {d_plus}")
 
-        if (not isinstance(neg_poly_deg, int)) or neg_poly_deg < 0:
-            raise ValueError(f"'neg_poly_deg' must be a positive integer, got {neg_poly_deg}")
+        if (not isinstance(d_minus, int)) or d_minus < 0:
+            raise ValueError(f"'d_minus' must be a non-negative integer, got {d_minus}")
 
         if rotation_precision is not None and rotation_precision <= 0:
             raise ValueError(
@@ -315,7 +313,7 @@ class GQSPTimeEvolution(ResourceOperator):
         walk_op: ResourceOperator,
         time: float,
         one_norm: float,
-        poly_approx_precision: float,
+        poly_approx_precision: float | None = None,
         wires: WiresLike = None,
     ):
         _dequeue(walk_op)  # remove operator
@@ -335,12 +333,13 @@ class GQSPTimeEvolution(ResourceOperator):
                 )
             )
 
-        if (not isinstance(poly_approx_precision, (int, float))) or poly_approx_precision <= 0:
-            raise (
-                ValueError(
-                    f"Expected 'poly_approx_precision' to be a positive real number greater than zero, got {poly_approx_precision}"
+        if poly_approx_precision is not None:
+            if (not isinstance(poly_approx_precision, (int, float))) or poly_approx_precision <= 0:
+                raise (
+                    ValueError(
+                        f"Expected 'poly_approx_precision' to be a positive real number greater than zero, got {poly_approx_precision}"
+                    )
                 )
-            )
 
         self.walk_op = walk_op.resource_rep_from_op()
         self.time = time
@@ -384,7 +383,7 @@ class GQSPTimeEvolution(ResourceOperator):
         walk_op: CompressedResourceOp,
         time: float,
         one_norm: float,
-        poly_approx_precision: float,
+        poly_approx_precision: float | None = None,
     ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
@@ -394,7 +393,7 @@ class GQSPTimeEvolution(ResourceOperator):
                 quantum walk operator
             time (float): the simulation time
             one_norm (float): one norm of the Hamiltonian
-            poly_approx_precision (float): the tolerance for error in the polynomial approximation
+            poly_approx_precision (float | None): the tolerance for error in the polynomial approximation
 
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
@@ -414,12 +413,13 @@ class GQSPTimeEvolution(ResourceOperator):
                 )
             )
 
-        if (not isinstance(poly_approx_precision, (int, float))) or poly_approx_precision <= 0:
-            raise (
-                ValueError(
-                    f"Expected 'poly_approx_precision' to be a positive real number greater than zero, got {poly_approx_precision}"
+        if poly_approx_precision is not None:
+            if (not isinstance(poly_approx_precision, (int, float))) or poly_approx_precision <= 0:
+                raise (
+                    ValueError(
+                        f"Expected 'poly_approx_precision' to be a positive real number greater than zero, got {poly_approx_precision}"
+                    )
                 )
-            )
 
         num_wires = walk_op.num_wires + 1
         params = {
@@ -436,7 +436,7 @@ class GQSPTimeEvolution(ResourceOperator):
         walk_op: CompressedResourceOp,
         time: float,
         one_norm: float,
-        poly_approx_precision: float,
+        poly_approx_precision: float | None = None,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object in the list
         represents a gate and the number of times it occurs in the circuit.
@@ -446,7 +446,7 @@ class GQSPTimeEvolution(ResourceOperator):
                 quantum walk operator
             time (float): the simulation time
             one_norm (float): one norm of the Hamiltonian
-            poly_approx_precision (float): the tolerance for error in the polynomial approximation
+            poly_approx_precision (float | None): the tolerance for error in the polynomial approximation
 
         Resources:
             The resources are obtained as described in Theorem 7 and Corollary 8 of
@@ -570,7 +570,7 @@ class QSVT(ResourceOperator):
     ):
         _dequeue(block_encoding)  # remove operator
         if not isinstance(encoding_dims, (int, tuple)):
-            raise ValueError(
+            raise TypeError(
                 f"Expected `encoding_dims` to be an int or tuple of int. Got {encoding_dims}"
             )
 
@@ -638,7 +638,7 @@ class QSVT(ResourceOperator):
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
         if not isinstance(encoding_dims, (int, tuple)):
-            raise ValueError(
+            raise TypeError(
                 f"Expected `encoding_dims` to be an int or tuple of int. Got {encoding_dims}"
             )
 
