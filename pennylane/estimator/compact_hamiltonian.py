@@ -38,9 +38,6 @@ class CDFHamiltonian:
         TypeError: If ``num_orbitals``, or ``num_fragments`` is not a positive integer.
         TypeError: If ``one_norm`` is provided but is not a non-negative float or integer.
 
-    Returns:
-        CDFHamiltonian: An instance of CDFHamiltonian
-
     .. seealso::
         :class:`~.estimator.templates.TrotterCDF`
     """
@@ -77,8 +74,6 @@ class THCHamiltonian:
         TypeError: If ``num_orbitals``, or ``tensor_rank`` is not a positive integer.
         TypeError: If ``one_norm`` is provided but is not a non-negative float or integer.
 
-    Returns:
-        THCHamiltonian: An instance of THCHamiltonian
 
     .. seealso::
         :class:`~.estimator.templates.TrotterTHC`
@@ -118,9 +113,6 @@ class VibrationalHamiltonian:
     Raises:
         TypeError: If ``num_modes``, ``grid_size``, or ``taylor_degree`` is not a positive integer.
         TypeError: If ``one_norm`` is provided but is not a non-negative float or integer.
-
-    Returns:
-        VibrationalHamiltonian: An instance of VibrationalHamiltonian
 
     .. seealso::
         :class:`~.estimator.templates.TrotterVibrational`
@@ -164,9 +156,6 @@ class VibronicHamiltonian:
     Raises:
         TypeError: If ``num_modes``, ``num_states``, ``grid_size``, or ``taylor_degree`` is not a positive integer.
         TypeError: If ``one_norm`` is provided but is not a non-negative float or integer.
-
-    Returns:
-        VibronicHamiltonian: An instance of VibronicHamiltonian
 
     .. seealso::
         :class:`~.estimator.templates.TrotterVibronic`
@@ -215,9 +204,6 @@ class PauliHamiltonian:
         TypeError: If ``pauli_terms`` is not a dictionary.
         ValueError: If ``one_norm`` is provided but is not a non-negative float or integer.
         ValueError: If ``pauli_terms`` contains invalid keys (not Pauli strings) or values (not integers).
-
-    Returns:
-        PauliHamiltonian: An instance of PauliHamiltonian
 
     .. seealso::
         :class:`~.estimator.templates.trotter.TrotterPauli`, :class:`~.estimator.templates.select.SelectPauli`
