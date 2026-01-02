@@ -516,9 +516,9 @@
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
-* A new transform :func:`~.transforms.select_pauli_rot_phase_gradient` has been added. It allows 
-  implementing arbitrary :class:`~.SelectPauliRot` rotations with a phase gradient resource state and 
-  semi-in-place addition (:class:`~.SemiAdder`).
+* A new transform :func:`~.transforms.select_pauli_rot_phase_gradient` has been added. This transform
+  may reduce the number of T gates in :circuits with class:`~.SelectPauliRot` rotations by
+  implementing them with a phase gradient resource state and semi-in-place addition (:class:`~.SemiAdder`).
   [(#8738)](https://github.com/PennyLaneAI/pennylane/pull/8738)
 
 <h3>Breaking changes 💔</h3>
