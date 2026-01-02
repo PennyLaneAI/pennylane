@@ -448,6 +448,7 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
 * Documentation for `qml.estimator.templates.GQSP`, `qml.estimator.templates.GQSPTimeEvolution`,
   `qml.estimator.templates.PauliRot`, `qml.estimator.templates.PCPhase`, `qml.estimator.templates.Qubitization`,
   and `qml.estimator.templates.Reflection` operators is improved.
+  [(#8829)](https://github.com/PennyLaneAI/pennylane/pull/8829)
 
 <h4>Resource estimation</h4>
 
