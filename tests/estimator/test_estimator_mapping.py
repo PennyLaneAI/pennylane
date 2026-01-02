@@ -124,6 +124,33 @@ class TestMapToResourceOp:
                 re_temps.Select(ops=[re_ops.X(), re_ops.Y()], wires=[0, 1, 2]),
             ),
             (
+                qtemps.SelectOnlyQRAM(
+                    bitstrings=[
+                        "000",
+                        "101",
+                        "010",
+                        "111",
+                        "000",
+                        "101",
+                        "010",
+                        "111",
+                        "000",
+                        "101",
+                        "010",
+                        "111",
+                        "000",
+                        "101",
+                        "010",
+                        "111",
+                    ],
+                    control_wires=(0, 1),
+                    target_wires=(2, 3, 4),
+                    select_wires=(5, 6),
+                    select_value=0,
+                ),
+                re_temps.SelectOnlyQRAM(16, 24, 7, 2, 2, (0, 1), (2, 3, 4), (5, 6), 0),
+            ),
+            (
                 qtemps.QROM(
                     bitstrings=["01", "11", "10"],
                     control_wires=[0, 1],

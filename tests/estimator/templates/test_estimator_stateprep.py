@@ -25,6 +25,58 @@ from pennylane.estimator.wires_manager import Allocate, Deallocate
 # pylint: disable=no-self-use,too-many-arguments
 
 
+class TestBasisStatePrep:
+    """Test the BasisStatePrep class."""
+
+    def test_wire_error(self):
+        """Test that an error is raised when wrong number of wires is provided."""
+        with pytest.raises(ValueError, match="Expected 2 wires, got 3"):
+            qre.BasisState(num_wires=2, wires=[0, 1, 2])
+
+    @pytest.mark.parametrize(
+        "num_wires",
+        (10, 6, 4),
+    )
+    def test_resource_params(self, num_wires):
+        """Test that the resource params are correct."""
+        op = qre.BasisState(num_wires)
+        assert op.resource_params == {"num_wires": num_wires}
+
+    @pytest.mark.parametrize(
+        "num_wires",
+        (10, 6, 4),
+    )
+    def test_resource_rep(self, num_wires):
+        """Test that the compressed representation is correct."""
+        expected = qre.CompressedResourceOp(qre.BasisState, num_wires, {"num_wires": num_wires})
+        assert qre.BasisState.resource_rep(num_wires) == expected
+
+    @pytest.mark.parametrize(
+        ("num_wires", "expected"),
+        [
+            (
+                10,
+                [
+                    GateCount(resource_rep(qre.X), 9),
+                    GateCount(resource_rep(qre.RX), 1),
+                    GateCount(resource_rep(qre.GlobalPhase), 1),
+                ],
+            ),
+            (
+                6,
+                [
+                    GateCount(resource_rep(qre.X), 5),
+                    GateCount(resource_rep(qre.RX), 1),
+                    GateCount(resource_rep(qre.GlobalPhase), 1),
+                ],
+            ),
+        ],
+    )
+    def test_resources(self, num_wires, expected):
+        """Test that the resources are correct."""
+        assert qre.BasisState.resource_decomp(num_wires) == expected
+
+
 class TestUniformStatePrep:
     """Test the ResourceUniformStatePrep class."""
 
