@@ -42,7 +42,7 @@ class GQSP(ResourceOperator):
         GQSP = \left( \prod_{j=1}^{d^{-}} R(\theta_{j}, \phi_{j}, 0) \hat{A}^{\prime} \right)
         \left( \prod_{j=1}^{d^{+}} R(\theta_{j + d^{-}}, \phi_{j + d^{-}}, 0) \hat{A} \right) R(\theta_0, \phi_0, \lambda),
 
-    where :math:`R` is a rotation operator and :math:`\vec{\phi}`, :math:`\vec{\theta}` and :math:`\lambda`
+    where :math:`R` is the single-qubit rotation operator and :math:`\vec{\phi}`, :math:`\vec{\theta}` and :math:`\lambda`
     are the rotation angles that generate the polynomial transformation. The maximum positive and
     negative polynomial degrees are denoted by :math:`d^{+}` and :math:`d^{-}`, respectively.
     Additionally, :math:`\hat{A}` and :math:`\hat{A}^{\prime}` are given by:
@@ -59,17 +59,10 @@ class GQSP(ResourceOperator):
     Args:
         signal_operator (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): the
             signal operator which encodes a target Hamiltonian
-<<<<<<< HEAD
-        poly_deg (int): the maximum positive degree :math:`d^{+}` of the polynomial transformation
-        neg_poly_deg (int): the maximum negative degree :math:`d^{-}` of the polynomial transformation, representing
-            powers of the inverse of the signal operator
-        rotation_precision (float | None): the precision with which the rotation gates are applied
-=======
         d_plus (int): the largest positive degree :math:`d^{+}` of the polynomial transformation
         d_minus (int): The largest (in absolute value) negative degree :math:`d^{-}` of the polynomial
             transformation, representing powers of the adjoint of the signal operator.
         rotation_precision (float | None): the precision with which the general rotation gates are applied
->>>>>>> 169b4577b (addressed code review comments)
         wires (WiresLike | None): The wires the operation acts on. This includes both the wires of the
             signal operator and the control wire required for block-encoding.
 
@@ -78,15 +71,9 @@ class GQSP(ResourceOperator):
         Processing (2024) <https://arxiv.org/pdf/2308.01501>`_.
 
     Raises:
-<<<<<<< HEAD
-        ValueError: ``poly_deg`` must be a positive integer greater than zero
-        ValueError: ``neg_poly_deg`` must be a positive integer
-        ValueError: ``rotation_precision`` must be a positive real number greater than zero
-=======
         ValueError: if ``d_plus`` is not a positive integer greater than zero
         ValueError: if ``d_minus`` is not an integer greater than or equal to zero
         ValueError: if ``rotation_precision`` is not a positive real number greater than zero
->>>>>>> 169b4577b (addressed code review comments)
         ValueError: if the wires provided don't match the number of wires expected by the operator
 
     **Example**
@@ -160,16 +147,10 @@ class GQSP(ResourceOperator):
         Returns:
             dict: A dictionary containing the resource parameters:
                 * cmpr_signal_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`):
-                  the compressed representation of signal operator which encodes the target Hamiltonian
-<<<<<<< HEAD
-                * poly_deg (int): the maximum positive degree :math:`d^{+}` of the polynomial transformation
-                * neg_poly_deg (int): the maximum negative degree :math:`d^{-}` of the polynomial
-                  transformation, representing powers of the inverse of the signal operator
-=======
+                  the compressed representation of the signal operator which encodes the target Hamiltonian
                 * d_plus (int): the largest positive degree :math:`d^{+}` of the polynomial transformation
                 * d_minus (int): The largest (in absolute value) negative degree :math:`d^{-}` of the
                   polynomial transformation, representing powers of the adjoint of the signal operator.
->>>>>>> 169b4577b (addressed code review comments)
                 * rotation_precision (float | None): the precision with which the general
                   rotation gates are applied
         """
@@ -194,16 +175,10 @@ class GQSP(ResourceOperator):
 
         Args:
             cmpr_signal_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`):
-                the compressed representation of signal operator which encodes the target Hamiltonian
-<<<<<<< HEAD
-            poly_deg (int): the maximum positive degree :math:`d^{+}` of the polynomial transformation
-            neg_poly_deg (int): the maximum negative degree :math:`d^{-}` of the polynomial transformation,
-                representing powers of the inverse of the signal operator
-=======
+                the compressed representation of the signal operator which encodes the target Hamiltonian
             d_plus (int): the largest positive degree :math:`d^{+}` of the polynomial transformation
             d_minus (int): The largest (in absolute value) negative degree :math:`d^{-}` of the polynomial
                 transformation, representing powers of the adjoint of the signal operator.
->>>>>>> 169b4577b (addressed code review comments)
             rotation_precision (float | None): the precision with which the general rotation gates are applied
 
         Returns:
@@ -231,16 +206,10 @@ class GQSP(ResourceOperator):
 
         Args:
             cmpr_signal_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`):
-                the compressed representation of signal operator which encodes the target Hamiltonian
-<<<<<<< HEAD
-            poly_deg (int): the maximum positive degree :math:`d^{+}` of the polynomial transformation
-            neg_poly_deg (int): the maximum negative degree :math:`d^{-}` of the polynomial transformation, representing
-                powers of the inverse of the signal operator
-=======
+                the compressed representation of the signal operator which encodes the target Hamiltonian
             d_plus (int): the largest positive degree :math:`d^{+}` of the polynomial transformation
             d_minus (int): The largest (in absolute value) negative degree :math:`d^{-}` of the polynomial
                 transformation, representing powers of the adjoint of the signal operator.
->>>>>>> 169b4577b (addressed code review comments)
             rotation_precision (float | None): the precision with which the general rotation gates are applied
 
         Resources:
@@ -465,7 +434,7 @@ class GQSPTimeEvolution(ResourceOperator):
     @staticmethod
     def poly_approx(time: float, one_norm: float, epsilon: float) -> int:
         r"""Obtain the maximum degree of the polynomial approximation required
-        to approximate :math:`e^{(iHt \cos{\theta})}` within error epsilon.
+        to approximate :math:`e^{(iHt \cos{\theta})}` within some error epsilon.
 
         Args:
             time (float): the simulation time
@@ -603,8 +572,8 @@ class QSVT(ResourceOperator):
             dict: A dictionary containing the resource parameters:
                 * block_encoding (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`):
                   the block encoding operator
-                * encoding_dims (int | tuple(int)): The dimensions of the encoded operator's sub-matrix.
-                  If an integer is provided, a square sub-matrix is assumed; otherwise, specify (rows, columns).
+                * encoding_dims (int | tuple(int)): The dimensions of the encoded matrix.
+                  If an integer is provided, a square matrix is assumed.
                 * poly_deg (int): the degree of the polynomial transformation being applied
         """
         return {
@@ -626,8 +595,8 @@ class QSVT(ResourceOperator):
         Args:
             block_encoding (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`):
                 the block encoding operator
-            encoding_dims (int | tuple(int)): The dimensions of the encoded operator's sub-matrix.
-                If an integer is provided, a square sub-matrix is assumed; otherwise, specify (rows, columns).
+            encoding_dims (int | tuple(int)): The dimensions of the encoded matrix.
+                If an integer is provided, a square matrix is assumed.
             poly_deg (int): the degree of the polynomial transformation being applied
 
         Returns:
@@ -654,8 +623,8 @@ class QSVT(ResourceOperator):
         Args:
             block_encoding (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`):
                 the block encoding operator
-            encoding_dims (int | tuple(int)): The dimensions of the encoded operator's sub-matrix.
-                If an integer is provided, a square sub-matrix is assumed; otherwise, specify (rows, columns).
+            encoding_dims (int | tuple(int)): The dimensions of the encoded matrix.
+                If an integer is provided, a square matrix is assumed.
             poly_deg (int): the degree of the polynomial transformation being applied
 
         Resources:
@@ -727,8 +696,8 @@ class QSP(ResourceOperator):
         wires (WiresLike, None): the wires the operation acts on
 
     Raises:
-        ValueError: If the block encoding operator acts on more than one qubit.
-        ValueError: If the convention is not ``"X"`` or ``"Z"``.
+        ValueError: if the block encoding operator acts on more than one qubit
+        ValueError: if the convention is not ``"X"`` or ``"Z"``
 
     Resources:
         The resources are obtained as described in Theorem 1 of `A Grand Unification of Quantum Algorithms
@@ -855,7 +824,7 @@ class QSP(ResourceOperator):
             (2021) <https://arxiv.org/pdf/2105.02859>`_.
 
         Raises:
-            ValueError: If the convention is not ``"X"`` or ``"Z"``.
+            ValueError: if the convention is not ``"X"`` or ``"Z"``
 
         Returns:
             list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object

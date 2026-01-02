@@ -698,7 +698,7 @@ class TestMultiControlledX:
 
     def test_init_raises_error(self):
         """Test that an error is raised when wires and num_ctrl_wires are both not provided"""
-        with pytest.raises(ValueError, match="Must provide atleast one of"):
+        with pytest.raises(ValueError, match="Must provide at least one of"):
             qre.MultiControlledX(num_zero_ctrl=1)
 
     @staticmethod
