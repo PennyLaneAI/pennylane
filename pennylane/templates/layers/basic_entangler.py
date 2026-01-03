@@ -173,8 +173,6 @@ class BasicEntanglerLayers(Operation):
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-
-
         .. seealso:: :meth:`~.BasicEntanglerLayers.decomposition`.
 
         Args:
@@ -255,20 +253,20 @@ def _basic_entangler_decomposition(weights, wires, rotation):
         def wires_loop(i):
 
             def recurse(depth, lst, layer, i):
-                if jnp.ndim(weights) - depth == 2:
+                if math.ndim(weights) - depth == 2:
                     return lst[layer][i]
-                return [recurse(depth + 1, l, layer, i) for l in lst]  # pragma: no cover
+                return [recurse(depth + 1, l, layer, i) for l in lst]
 
             rotation(recurse(0, weights, layer, i), wires=wires[i])
 
         wires_loop()  # pylint: disable=no-value-for-parameter
 
         def elif_body():
-            for i in range(len(wires)):
+            for i in range(len(wires)):  # pylint: disable=consider-using-enumerate
                 j = i + 1
                 if j >= len(wires):
                     j = 0
-                CNOT(wires=[i, j])
+                CNOT(wires=[wires[i], wires[j]])
 
         def true_body():
             CNOT(wires=wires)
