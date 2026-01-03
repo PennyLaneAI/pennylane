@@ -1120,9 +1120,9 @@ class UnaryIterationQPE(ResourceOperator):
 
     This form of QPE, as described in `arXiv.2011.03494 <https://arxiv.org/pdf/2011.03494>`_,
     requires the unitary operator to be a quantum walk operator constructed from ``Select`` and ``Prepare``
-    subroutines. In this approach, powers of the walk operator are obtained via unary iteration, which
-    reduces :class:`~.pennylane.estimator.ops.qubit.non_parametric_ops.T` and
-    :class:`~.pennylane.estimator.ops.op_math.controlled_ops.Toffoli` gate counts at the cost of
+    subroutines. In this approach, unary iteration is used to construct successive powers of the walk operator,
+    which reduces :class:`~.pennylane.estimator.ops.qubit.non_parametric_ops.T` and
+    :class:`~.pennylane.estimator.ops.op_math.controlled_ops.Toffoli` gate counts in their decomposition at the cost of
     increasing the number of auxiliary qubits required.
 
     For a detailed explanation of unary iteration, see
