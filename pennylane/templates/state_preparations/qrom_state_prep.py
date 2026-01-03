@@ -217,7 +217,7 @@ class QROMStatePreparation(Operation):
             # Apply the QROM operation to encode the thetas binary representation
             decomp_ops.append(
                 qml.QROM(
-                    bitstrings=thetas_binary,
+                    data=thetas_binary,
                     target_wires=precision_wires,
                     control_wires=input_wires[:i],
                     work_wires=work_wires,
@@ -232,7 +232,7 @@ class QROMStatePreparation(Operation):
             # Clean wires used to store the theta values
             decomp_ops.append(
                 qml.adjoint(qml.QROM)(
-                    bitstrings=thetas_binary,
+                    data=thetas_binary,
                     target_wires=precision_wires,
                     control_wires=input_wires[:i],
                     work_wires=work_wires,
@@ -250,7 +250,7 @@ class QROMStatePreparation(Operation):
             # Apply the QROM operation to encode the thetas binary representation
             decomp_ops.append(
                 qml.QROM(
-                    bitstrings=thetas_binary,
+                    data=thetas_binary,
                     target_wires=precision_wires,
                     control_wires=input_wires,
                     work_wires=work_wires,
@@ -270,7 +270,7 @@ class QROMStatePreparation(Operation):
 
             decomp_ops.append(
                 qml.adjoint(qml.QROM)(
-                    bitstrings=thetas_binary,
+                    data=thetas_binary,
                     target_wires=precision_wires,
                     control_wires=input_wires,
                     work_wires=work_wires,

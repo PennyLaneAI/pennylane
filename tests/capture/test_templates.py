@@ -892,7 +892,7 @@ class TestModifiedTemplates:
         """Test the primitve bind call of BBQRAM."""
 
         kwargs = {
-            "bitstrings": ("010", "111", "110", "000"),
+            "data": ((0, 1, 0), (1, 1, 1), (1, 1, 0), (0, 0, 0)),
             "control_wires": (0, 1),
             "target_wires": (2, 3, 4),
             "work_wires": tuple([5] + [6, 7, 8] + [12, 13, 14] + [9, 10, 11]),
@@ -926,7 +926,16 @@ class TestModifiedTemplates:
         """Test the primitve bind call of SelectOnlyQRAM."""
 
         kwargs = {
-            "bitstrings": ("010", "111", "110", "000", "010", "111", "110", "000"),
+            "data": (
+                (0, 1, 0),
+                (1, 1, 1),
+                (1, 1, 0),
+                (0, 0, 0),
+                (0, 1, 0),
+                (1, 1, 1),
+                (1, 1, 0),
+                (0, 0, 0),
+            ),
             "control_wires": (0, 1),
             "target_wires": (2, 3, 4),
             "select_wires": (12),
@@ -961,7 +970,7 @@ class TestModifiedTemplates:
         """Test the primitve bind call of HybridQRAM."""
 
         kwargs = {
-            "bitstrings": ("010", "111", "110", "000"),
+            "data": ((0, 1, 0), (1, 1, 1), (1, 1, 0), (0, 0, 0)),
             "control_wires": (0, 1),
             "target_wires": (2, 3, 4),
             "work_wires": tuple([5, 6, 7, 8, 12, 13, 14, 15, 9, 10, 11]),
@@ -996,7 +1005,7 @@ class TestModifiedTemplates:
         """Test the primitive bind call of QROM."""
 
         kwargs = {
-            "bitstrings": ["0", "1"],
+            "data": ((0,), (1,)),
             "control_wires": [0],
             "target_wires": [1],
             "work_wires": None,

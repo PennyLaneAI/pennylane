@@ -76,6 +76,7 @@
   [(#8670)](https://github.com/PennyLaneAI/pennylane/pull/8670)
   [(#8679)](https://github.com/PennyLaneAI/pennylane/pull/8679)
   [(#8680)](https://github.com/PennyLaneAI/pennylane/pull/8680)
+  [(#8791)](https://github.com/PennyLaneAI/pennylane/pull/8791)
   [(#8801)](https://github.com/PennyLaneAI/pennylane/pull/8801)
 
 <h4>Quantum Automatic Differentiation </h4>
