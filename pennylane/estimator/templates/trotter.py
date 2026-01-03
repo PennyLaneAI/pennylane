@@ -305,7 +305,7 @@ class TrotterCDF(ResourceOperator):
         TypeError: if ``cdf_ham`` is not an instance of :class:`~.CDFHamiltonian`
         ValueError: if ``num_steps`` is not a positive integer
         ValueError: if ``order`` is not 1 or a positive even integer
-        ValueError: if the number of wires provided does not match the number of wires required by the operator`
+        ValueError: if the number of wires provided does not match the number of wires required by the operator
 
     Resources:
         The resources are defined according to the recursive formula presented above.
@@ -370,7 +370,7 @@ class TrotterCDF(ResourceOperator):
         if not isinstance(cdf_ham, CDFHamiltonian):
             raise TypeError(
                 f"Unsupported Hamiltonian representation for TrotterCDF."
-                f"This method works with cdf Hamiltonian, {type(cdf_ham)} provided"
+                f"This method works with CDFHamiltonian, {type(cdf_ham)} provided"
             )
 
         if (not isinstance(num_steps, int)) or num_steps < 1:
@@ -430,7 +430,7 @@ class TrotterCDF(ResourceOperator):
         if not isinstance(cdf_ham, CDFHamiltonian):
             raise TypeError(
                 f"Unsupported Hamiltonian representation for TrotterCDF."
-                f"This method works with cdf Hamiltonian, {type(cdf_ham)} provided"
+                f"This method works with CDFHamiltonian, {type(cdf_ham)} provided"
             )
 
         if (not isinstance(num_steps, int)) or num_steps < 1:
@@ -722,7 +722,7 @@ class TrotterTHC(ResourceOperator):
         if not isinstance(thc_ham, THCHamiltonian):
             raise TypeError(
                 f"Unsupported Hamiltonian representation for TrotterTHC."
-                f"This method works with thc Hamiltonian, {type(thc_ham)} provided"
+                f"This method works with THCHamiltonian, {type(thc_ham)} provided"
             )
 
         if (not isinstance(num_steps, int)) or num_steps < 1:
@@ -782,7 +782,7 @@ class TrotterTHC(ResourceOperator):
         if not isinstance(thc_ham, THCHamiltonian):
             raise TypeError(
                 f"Unsupported Hamiltonian representation for TrotterTHC."
-                f"This method works with thc Hamiltonian, {type(thc_ham)} provided"
+                f"This method works with THCHamiltonian, {type(thc_ham)} provided"
             )
 
         if (not isinstance(num_steps, int)) or num_steps < 1:
@@ -1014,7 +1014,7 @@ class TrotterVibrational(ResourceOperator):
         TypeError: if ``vibration_ham`` is not an instance of :class:`~.VibrationalHamiltonian`
         ValueError: if ``num_steps`` is not a positive integer
         ValueError: if ``order`` is not 1 or a positive even integer
-        ValueError: if the number of wires provided does not match the number of qubits in ``pauli_ham``
+        ValueError: if the number of wires provided does not match the number of wires expected for the operation
 
     Resources:
         The resources are defined according to the recursive formula presented above.
@@ -1089,7 +1089,7 @@ class TrotterVibrational(ResourceOperator):
         if not isinstance(vibration_ham, VibrationalHamiltonian):
             raise TypeError(
                 f"Unsupported Hamiltonian representation for TrotterVibrational."
-                f"This method works with vibrational Hamiltonian, {type(vibration_ham)} provided"
+                f"This method works with VibrationalHamiltonian, {type(vibration_ham)} provided"
             )
 
         if (not isinstance(num_steps, int)) or num_steps < 1:
@@ -1163,7 +1163,7 @@ class TrotterVibrational(ResourceOperator):
         if not isinstance(vibration_ham, VibrationalHamiltonian):
             raise TypeError(
                 f"Unsupported Hamiltonian representation for TrotterVibrational."
-                f"This method works with vibrational Hamiltonian, {type(vibration_ham)} provided"
+                f"This method works with VibrationalHamiltonian, {type(vibration_ham)} provided"
             )
 
         if (not isinstance(num_steps, int)) or num_steps < 1:
@@ -1517,7 +1517,7 @@ class TrotterVibronic(ResourceOperator):
         if not isinstance(vibronic_ham, VibronicHamiltonian):
             raise TypeError(
                 f"Unsupported Hamiltonian representation for TrotterVibronic."
-                f"This method works with vibronic Hamiltonian, {type(vibronic_ham)} provided"
+                f"This method works with VibronicHamiltonian, {type(vibronic_ham)} provided"
             )
 
         if (not isinstance(num_steps, int)) or num_steps < 1:
@@ -1592,7 +1592,7 @@ class TrotterVibronic(ResourceOperator):
         if not isinstance(vibronic_ham, VibronicHamiltonian):
             raise TypeError(
                 f"Unsupported Hamiltonian representation for TrotterVibronic."
-                f"This method works with vibronic Hamiltonian, {type(vibronic_ham)} provided"
+                f"This method works with VibronicHamiltonian, {type(vibronic_ham)} provided"
             )
 
         if (not isinstance(num_steps, int)) or num_steps < 1:
@@ -1911,7 +1911,7 @@ class TrotterPauli(ResourceOperator):
     Resources:
         The resources are defined according to the recursive formula presented above.
         The number of times an operator :math:`e^{itO_{j}}` is applied depends on the
-        number of Trotter steps ``n`` and the order of the approximation ``m`` as:
+        number of Trotter steps (`n`) and the order of the approximation (`m`) as:
 
         .. math:: C_{O_j} = 2 \cdot n \cdot 5^{\frac{m}{2} - 1}
 
@@ -2098,7 +2098,7 @@ class TrotterPauli(ResourceOperator):
         Resources:
             The resources are defined according to the recursive formula presented above.
             The number of times an operator :math:`e^{itO_{j}}` is applied depends on the
-            number of Trotter steps ``n`` and the order of the approximation ``m`` as:
+            number of Trotter steps (`n`) and the order of the approximation (`m`) as:
 
             .. math:: C_{O_j} = 2 \cdot n \cdot 5^{\frac{m}{2} - 1}
 
