@@ -1060,6 +1060,17 @@ CLASSES_AND_HAMS = [
         qre.VibronicHamiltonian(num_modes=8, num_states=2, grid_size=4, taylor_degree=3),
     ),
     (qre.TrotterVibrational, qre.VibrationalHamiltonian(num_modes=8, grid_size=4, taylor_degree=3)),
+    (
+        qre.TrotterPauli,
+        qre.PauliHamiltonian(
+            num_qubits=5,
+            pauli_terms=(
+                {"XX": 15, "X": 5},
+                {"ZZ": 10},
+                {"YY": 5, "X": 5},
+            ),
+        ),
+    ),
 ]
 
 
