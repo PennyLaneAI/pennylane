@@ -94,15 +94,32 @@
 
 <h4>Pauli-based computation </h4>
 
-* Users can now perform rapid Clifford+T decomposition with :func:`pennylane.qjit` using the new 
+* You can now perform rapid Clifford+T decomposition with :func:`pennylane.qjit` using the new 
   :func:`~pennylane.transforms.gridsynth` compilation pass.
-  This pass discretizes ``RZ`` and ``PhaseShift`` gates to either the Clifford+T basis or to the PPR basis.
+  This pass discretizes ``RZ`` and ``PhaseShift`` gates to either the Clifford+T basis or to the
+  Pauli product rotation (PPR) basis.
   [(#8609)](https://github.com/PennyLaneAI/pennylane/pull/8609)
   [(#8764)](https://github.com/PennyLaneAI/pennylane/pull/8764)
 
+  ```python
+  @qml.qnode(qml.device("lightning.qubit", wires=1))
+  def circuit(x):
+      qml.Hadamard(0)
+      qml.RZ(x, 0)
+      qml.PhaseShift(x * 0.2, 0)
+      return qml.state()
+
+  gridsynth_circuit = qml.transforms.gridsynth(circuit, epsilon=1e-4)
+  qjitted_circuit = qml.qjit(gridsynth_circuit)
+  ```
+  ```pycon
+  >>> qjitted_circuit(1.1)
+  [0.6028324 -0.3695921j  0.50763281+0.49224355j]
+  ``` 
+
 * Writing circuits in terms of `Pauli product measurements <https://pennylane.ai/compilation/pauli-product-measurement>`_
   (PPMs) in PennyLane is now possible with the new :func:`~.pauli_measure` function.
-  Using this function in tandem with :class:`~.PauliRot` to represent Pauli product rotations (PPRs) unlocks surface-code fault-tolerant quantum computing research spurred from `A Game of Surface Codes <http://arxiv.org/abs/1808.02892>`_.
+  Using this function in tandem with :class:`~.PauliRot` to represent PPRs unlocks surface-code fault-tolerant quantum computing research spurred from `A Game of Surface Codes <http://arxiv.org/abs/1808.02892>`_.
   [(#8461)](https://github.com/PennyLaneAI/pennylane/pull/8461)
   [(#8631)](https://github.com/PennyLaneAI/pennylane/pull/8631)
   [(#8623)](https://github.com/PennyLaneAI/pennylane/pull/8623)
@@ -158,14 +175,29 @@
     expval(PauliZ): 1
   ```
 
-* Catalyst compilation passes designed for Pauli-based computation are now available in PennyLane, 
+* Additionally, Catalyst compilation passes designed for Pauli-based computation are now available in PennyLane, 
   providing accessibility for logical compilation research by directly integrating with 
   :func:`~.pauli_measure` and :class:`~.PauliRot` operations. This includes 
   :func:`pennylane.transforms.to_ppr`, :func:`pennylane.transforms.commute_ppr`, 
   :func:`pennylane.transforms.ppr_to_ppm`, 
-  :func:`pennylane.transforms.merge_ppr_ppm`, :func:`pennylane.transforms.ppm_compilation`, 
+  :func:`pennylane.transforms.merge_ppr_ppm`, :func:`pennylane.transforms.ppm_compilation`, and 
   :func:`pennylane.transforms.reduce_t_depth`, 
   [(#8762)](https://github.com/PennyLaneAI/pennylane/pull/8762)
+
+  ```python
+  import pennylane as qml
+
+  qml.capture.enable()
+
+  @qml.qjit(target="mlir")
+  @to_ppr
+  @qml.qnode(qml.device("null.qubit", wires=2))
+  def circuit():
+      qml.H(0)
+      qml.CNOT([0, 1])
+      qml.T(0)
+      return qml.expval(qml.Z(0))
+  ```
 
 * New decomposition rules that decompose to :class:`~.PauliRot` are added for the following operators.
   [(#8700)](https://github.com/PennyLaneAI/pennylane/pull/8700)
@@ -179,6 +211,33 @@
   - :class:`~.SingleExcitation`, :class:`~.DoubleExcitation`
   - :class:`~.SWAP`, :class:`~.ISWAP`, :class:`~.SISWAP`
   - :class:`~.CY`, :class:`~.CZ`, :class:`~.CSWAP`, :class:`~.CNOT`, :class:`~.Toffoli`
+
+  ```python
+  @qml.register_resources(
+      {
+          qml.resource_rep(qml.PauliRot, pauli_word="Z"): 2,
+          qml.resource_rep(qml.PauliRot, pauli_word="X"): 1,
+          qml.GlobalPhase: 1,
+      }
+  )
+  def h_decomp(wires, **_):
+      qml.GlobalPhase(-jnp.pi / 2, wires=wires)
+      qml.PauliRot(jnp.pi / 2, pauli_word="Z", wires=wires)
+      qml.PauliRot(jnp.pi / 2, pauli_word="X", wires=wires)
+      qml.PauliRot(jnp.pi / 2, pauli_word="Z", wires=wires)
+
+  qml.add_decomps(qml.H, h_decomp)
+
+  @qml.qjit(target="mlir")
+  @ppr_to_ppm
+  @partial(qml.transforms.decompose, gate_set={qml.PauliRot, qml.GlobalPhase})
+  @qml.qnode(qml.device("null.qubit", wires=2))
+  def circuit():
+      qml.H(0)
+      qml.CNOT([0, 1])
+      qml.T(0)
+      return qml.expval(qml.Z(0))
+  ```
 
 <h4>Compile Pipeline and Transforms </h4>
 
