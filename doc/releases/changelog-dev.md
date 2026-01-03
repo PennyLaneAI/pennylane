@@ -449,10 +449,13 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
   instead of dispatching upon creation.
   [(#8786)](https://github.com/PennyLaneAI/pennylane/pull/8786)
 
-* Documentation for `qml.estimator.templates.GQSP`, `qml.estimator.templates.GQSPTimeEvolution`,
-  `qml.estimator.templates.PauliRot`, `qml.estimator.templates.PCPhase`, `qml.estimator.templates.Qubitization`,
-  and `qml.estimator.templates.Reflection` operators is improved.
+* Improved the documentation and added input validation for various operators and
+  functions in the :mod:`estimator <pennylane.estimator>`.
+  [(#8827)](https://github.com/PennyLaneAI/pennylane/pull/8827)
   [(#8829)](https://github.com/PennyLaneAI/pennylane/pull/8829)
+  [(#8830)](https://github.com/PennyLaneAI/pennylane/pull/8830)
+  [(#8832)](https://github.com/PennyLaneAI/pennylane/pull/8832)
+  [(#8835)](https://github.com/PennyLaneAI/pennylane/pull/8835)
 
 <h4>Resource estimation</h4>
 

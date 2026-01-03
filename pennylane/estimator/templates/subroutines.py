@@ -1115,21 +1115,25 @@ class IterativeQPE(ResourceOperator):
 
 
 class UnaryIterationQPE(ResourceOperator):
-    r"""Resource class for UnaryIterationQPE. This is a variant of the Quantum Phase Estimation (QPE)
-    algorithm that uses the unary iteration technique as described in `arXiv.2011.03494 <https://arxiv.org/pdf/2011.03494>`_.
-    Note that this form of QPE requires the unitary to be a quantum walk operator constructed from
-    ``Select`` and ``Prepare`` operators. In this approach, powers of the walk operator are obtained
-    via unary iteration, which reduces T and Toffoli gate counts at the cost of increasing the number
-    of auxiliary qubits required. For a detailed explanation of unary iteration, see the
-    `documentation <https://pennylane.ai/compilation/unary-iteration>`_.
+    r"""Resource class for Quantum Phase Estimation (QPE) using the unary iteration
+    technique.
 
-    Note, users can also provide a custom adjoint Quantum Fourier Transform (QFT) implementation,
-    which can be used to further optimize the resource requirements.
+    This form of QPE, as described in `arXiv.2011.03494 <https://arxiv.org/pdf/2011.03494>`_,
+    requires the unitary operator to be a quantum walk operator constructed from ``Select`` and ``Prepare``
+    subroutines. In this approach, unary iteration is used to construct successive powers of the walk operator,
+    which reduces :class:`~.pennylane.estimator.ops.qubit.non_parametric_ops.T` and
+    :class:`~.pennylane.estimator.ops.op_math.controlled_ops.Toffoli` gate counts in their decomposition at the cost of
+    increasing the number of auxiliary qubits required.
+
+    For a detailed explanation of unary iteration, see
+    `here <https://pennylane.ai/compilation/unary-iteration>`_. Note that users can also provide
+    a custom adjoint Quantum Fourier Transform (QFT) implementation, which can be used to further
+    optimize the resource requirements.
 
     Args:
         walk_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): the quantum
-            walk operator :math:`W` to apply the phase estimation protocol on
-        num_iterations (int): The total number of times the quantum walk operator operator :math:`W`
+            walk operator to apply the phase estimation protocol on
+        num_iterations (int): The total number of times the quantum walk operator
             is applied in order to reach a target precision in the eigenvalue estimate.
         adj_qft_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator` | None): An optional
             argument to set the subroutine used to perform the adjoint QFT operation.
@@ -1223,10 +1227,10 @@ class UnaryIterationQPE(ResourceOperator):
         Returns:
             dict: A dictionary containing the resource parameters:
                 * cmpr_walk_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`):
-                  A compressed resource operator corresponding to the quantum walk operator :math:`W`
+                  A compressed resource operator corresponding to the quantum walk operator
                   to apply the phase estimation protocol on.
-                * num_iterations (int): The total number of times the quantum walk operator operator
-                  :math:`W` is applied in order to reach a target precision in the eigenvalue
+                * num_iterations (int): The total number of times the quantum walk operator
+                  is applied in order to reach a target precision in the eigenvalue
                   estimate.
                 * adj_qft_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp` | None):
                   An optional compressed resource operator corresponding to the adjoint QFT routine.
@@ -1252,10 +1256,10 @@ class UnaryIterationQPE(ResourceOperator):
 
         Args:
             cmpr_walk_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`):
-                A compressed resource operator corresponding to the quantum walk operator :math:`W`
+                A compressed resource operator corresponding to the quantum walk operator
                 to apply the phase estimation protocol on.
-            num_iterations (int): The total number of times the quantum walk operator operator
-                :math:`W` is applied in order to reach a target precision in the eigenvalue estimate.
+            num_iterations (int): The total number of times the quantum walk operator
+                is applied in order to reach a target precision in the eigenvalue estimate.
             adj_qft_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp` | None):
                 An optional compressed resource operator corresponding to the adjoint QFT routine.
                 If :code:`None`, the default :class:`~.pennylane.estimator.templates.subroutines.QFT`
@@ -1283,10 +1287,10 @@ class UnaryIterationQPE(ResourceOperator):
 
         Args:
             cmpr_walk_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`):
-                A compressed resource operator corresponding to the quantum walk operator :math:`W`
+                A compressed resource operator corresponding to the quantum walk operator
                 to apply the phase estimation protocol on.
-            num_iterations (int): The total number of times the quantum walk operator operator
-                :math:`W` is applied in order to reach a target precision in the eigenvalue estimate.
+            num_iterations (int): The total number of times the quantum walk operator
+                is applied in order to reach a target precision in the eigenvalue estimate.
             adj_qft_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp` | None):
                 An optional compressed resource operator corresponding to the adjoint QFT routine.
                 If :code:`None`, the default :class:`~.pennylane.estimator.templates.subroutines.QFT`
@@ -2157,7 +2161,7 @@ class QROM(ResourceOperator):
             if data will be loaded in parallel by adding more rows following Figure 1.C of
             `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_. Can be :code:`None`,
             :code:`1` or a positive integer power of two. Defaults to ``None``, which sets the
-            depth that minimizes ``T``-gate count.
+            depth that minimizes T-gate count.
         wires (WiresLike | None): The wires the operation acts on (control and target), excluding
             any additional qubits allocated during the decomposition (e.g select-swap wires).
 
@@ -2274,7 +2278,7 @@ class QROM(ResourceOperator):
                 if data will be loaded in parallel by adding more rows following Figure 1.C of
                 `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_. Can be :code:`None`,
                 :code:`1` or a positive integer power of two. Defaults to ``None``, which sets the
-                depth that minimizes ``T``-gate count.
+                depth that minimizes T-gate count.
             restored (bool): Determine if allocated qubits should be reset after the computation
                 (at the cost of higher gate counts). Defaults to :code:`True`.
 
@@ -2470,7 +2474,7 @@ class QROM(ResourceOperator):
             (Figure 4) for :code:`restored = True`.
 
             Note: we use the single-controlled unary iterator trick to implement the ``Select``. This
-            implementation assumes we have access to :math:`n - 1` additional work qubits,
+            implementation assumes we have access to :math:`n` additional work qubits,
             where :math:`n = \lceil \log_{2}(N) \rceil` and :math:`N` is the number of batches of
             unitaries to select.
 
@@ -2731,7 +2735,7 @@ class QROM(ResourceOperator):
                 if data will be loaded in parallel by adding more rows following Figure 1.C of
                 `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_. Can be :code:`None`,
                 :code:`1` or a positive integer power of two. Defaults to ``None``, which sets the
-                depth that minimizes ``T``-gate count.
+                depth that minimizes T-gate count.
 
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation

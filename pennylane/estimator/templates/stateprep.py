@@ -181,6 +181,7 @@ class AliasSampling(ResourceOperator):
 
     The resources for this operation are computed using:
 
+    >>> import pennylane.estimator as qre
     >>> alias_sampling = qre.AliasSampling(num_coeffs=100)
     >>> print(qre.estimate(alias_sampling))
     --- Resources: ---
@@ -309,6 +310,7 @@ class MPSPrep(ResourceOperator):
 
     The resources for this operation are computed using:
 
+    >>> import pennylane.estimator as qre
     >>> mps = qre.MPSPrep(num_mps_matrices=10, max_bond_dim=2**3)
     >>> print(qre.estimate(mps, gate_set={"CNOT", "RZ", "RY"}))
     --- Resources: ---
@@ -466,6 +468,7 @@ class QROMStatePreparation(ResourceOperator):
 
     The resources for this operation are computed using:
 
+    >>> import pennylane.estimator as qre
     >>> qrom_prep = qre.QROMStatePreparation(num_state_qubits=5, precision=1e-3)
     >>> print(qre.estimate(qrom_prep))
     --- Resources: ---
