@@ -25,7 +25,9 @@ from pennylane.estimator.ops.qubit.parametric_ops_single_qubit import RX, RY, RZ
 from pennylane.estimator.ops.qubit.qchem_ops import SingleExcitation
 from pennylane.estimator.templates import (
     GQSP,
+    QSP,
     AliasSampling,
+    GQSPTimeEvolution,
     MPSPrep,
     QROMStatePreparation,
     SelectPauliRot,
@@ -138,6 +140,8 @@ class ResourceConfig:
                 "coeff_precision": 1e-3,
             },
             GQSP: {"rotation_precision": None},
+            QSP: {"rotation_precision": None},
+            GQSPTimeEvolution: {"poly_approx_precision": None},
         }
         self._custom_decomps = {}
         self._adj_custom_decomps = {}

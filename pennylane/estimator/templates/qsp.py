@@ -167,8 +167,8 @@ class GQSP(ResourceOperator):
         cls,
         cmpr_signal_op: CompressedResourceOp,
         d_plus: int,
-        d_minus: int,
-        rotation_precision: float | None,
+        d_minus: int = 0,
+        rotation_precision: float | None = None,
     ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
@@ -184,6 +184,17 @@ class GQSP(ResourceOperator):
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
+        if (not isinstance(d_plus, int)) or d_plus <= 0:
+            raise ValueError(f"'d_plus' must be a positive integer greater than zero, got {d_plus}")
+
+        if (not isinstance(d_minus, int)) or d_minus < 0:
+            raise ValueError(f"'d_minus' must be a non-negative integer, got {d_minus}")
+
+        if rotation_precision is not None and rotation_precision <= 0:
+            raise ValueError(
+                f"Expected 'rotation_precision' to be a positive real number greater than zero, got {rotation_precision}"
+            )
+
         num_wires = cmpr_signal_op.num_wires + 1  # add control wire
         params = {
             "cmpr_signal_op": cmpr_signal_op,
@@ -198,8 +209,8 @@ class GQSP(ResourceOperator):
         cls,
         cmpr_signal_op: CompressedResourceOp,
         d_plus: int,
-        d_minus: int,
-        rotation_precision: float | None,
+        d_minus: int = 0,
+        rotation_precision: float | None = None,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object in the list
         represents a gate and the number of times it occurs in the circuit.
@@ -299,7 +310,7 @@ class GQSPTimeEvolution(ResourceOperator):
         walk_op: ResourceOperator,
         time: float,
         one_norm: float,
-        poly_approx_precision: float,
+        poly_approx_precision: float | None = None,
         wires: WiresLike = None,
     ):
         _dequeue(walk_op)  # remove operator
@@ -319,12 +330,13 @@ class GQSPTimeEvolution(ResourceOperator):
                 )
             )
 
-        if (not isinstance(poly_approx_precision, (int, float))) or poly_approx_precision <= 0:
-            raise (
-                ValueError(
-                    f"Expected 'poly_approx_precision' to be a positive real number greater than zero, got {poly_approx_precision}"
+        if poly_approx_precision is not None:
+            if (not isinstance(poly_approx_precision, (int, float))) or poly_approx_precision <= 0:
+                raise (
+                    ValueError(
+                        f"Expected 'poly_approx_precision' to be a positive real number greater than zero, got {poly_approx_precision}"
+                    )
                 )
-            )
 
         self.walk_op = walk_op.resource_rep_from_op()
         self.time = time
@@ -368,7 +380,7 @@ class GQSPTimeEvolution(ResourceOperator):
         walk_op: CompressedResourceOp,
         time: float,
         one_norm: float,
-        poly_approx_precision: float,
+        poly_approx_precision: float | None = None,
     ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
@@ -378,11 +390,34 @@ class GQSPTimeEvolution(ResourceOperator):
                 quantum walk operator
             time (float): the simulation time
             one_norm (float): one norm of the Hamiltonian
-            poly_approx_precision (float): the tolerance for error in the polynomial approximation
+            poly_approx_precision (float | None): the tolerance for error in the polynomial approximation
 
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
+
+        if (not isinstance(time, (int, float))) or time <= 0:
+            raise (
+                ValueError(
+                    f"Expected 'time' to be a positive real number greater than zero, got {time}"
+                )
+            )
+
+        if (not isinstance(one_norm, (int, float))) or one_norm <= 0:
+            raise (
+                ValueError(
+                    f"Expected 'one_norm' to be a positive real number greater than zero, got {one_norm}"
+                )
+            )
+
+        if poly_approx_precision is not None:
+            if (not isinstance(poly_approx_precision, (int, float))) or poly_approx_precision <= 0:
+                raise (
+                    ValueError(
+                        f"Expected 'poly_approx_precision' to be a positive real number greater than zero, got {poly_approx_precision}"
+                    )
+                )
+
         num_wires = walk_op.num_wires + 1
         params = {
             "walk_op": walk_op,
@@ -398,7 +433,7 @@ class GQSPTimeEvolution(ResourceOperator):
         walk_op: CompressedResourceOp,
         time: float,
         one_norm: float,
-        poly_approx_precision: float,
+        poly_approx_precision: float | None = None,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object in the list
         represents a gate and the number of times it occurs in the circuit.
@@ -408,7 +443,7 @@ class GQSPTimeEvolution(ResourceOperator):
                 quantum walk operator
             time (float): the simulation time
             one_norm (float): one norm of the Hamiltonian
-            poly_approx_precision (float): the tolerance for error in the polynomial approximation
+            poly_approx_precision (float | None): the tolerance for error in the polynomial approximation
 
         Resources:
             The resources are obtained as described in Theorem 7 and Corollary 8 of
@@ -498,6 +533,11 @@ class QSVT(ResourceOperator):
         poly_deg (int): the degree of the polynomial transformation being applied
         wires (WiresLike | None): the wires the operation acts on
 
+    Raises:
+        ValueError: if ``encoding_dims`` is not a positive integer or a tuple of two positive integers
+        ValueError: if ``poly_deg`` is not a positive integer greater than zero
+        ValueError: if the ``wires`` provided don't match the number of wires expected by the operator
+
     Resources:
         The resources are obtained as described in Theorem 4 of `A Grand Unification of Quantum Algorithms
         (2021) <https://arxiv.org/pdf/2105.02859>`_.
@@ -533,8 +573,8 @@ class QSVT(ResourceOperator):
     ):
         _dequeue(block_encoding)  # remove operator
         if not isinstance(encoding_dims, (int, tuple)):
-            raise ValueError(
-                f"Expected `encoding_dims` to be an int or tuple of int. Got {encoding_dims}"
+            raise TypeError(
+                f"Expected `encoding_dims` to be an integer or tuple of integers. Got {encoding_dims}"
             )
 
         if isinstance(encoding_dims, int):
@@ -549,8 +589,17 @@ class QSVT(ResourceOperator):
                 f" (row, col) of the subspace where the matrix is encoded. Got {encoding_dims}"
             )
 
+        if not all(isinstance(d, int) and d > 0 for d in encoding_dims):
+            raise ValueError("Expected elements of `encoding_dims` to be positive integers.")
+
         self.block_encoding = block_encoding.resource_rep_from_op()
         self.encoding_dims = encoding_dims
+
+        if (not isinstance(poly_deg, int)) or poly_deg <= 0:
+            raise ValueError(
+                f"'poly_deg' must be a positive integer greater than zero, got {poly_deg}"
+            )
+
         self.poly_deg = poly_deg
 
         self.num_wires = block_encoding.num_wires
@@ -600,6 +649,31 @@ class QSVT(ResourceOperator):
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
+        if not isinstance(encoding_dims, (int, tuple)):
+            raise TypeError(
+                f"Expected `encoding_dims` to be an integer or tuple of integers. Got {encoding_dims}"
+            )
+
+        if isinstance(encoding_dims, int):
+            encoding_dims = (encoding_dims, encoding_dims)
+
+        if len(encoding_dims) == 1:
+            dim = encoding_dims[0]
+            encoding_dims = (dim, dim)
+        elif len(encoding_dims) > 2:
+            raise ValueError(
+                "Expected `encoding_dims` to be a tuple of two integers, representing the dimensions"
+                f" (row, col) of the subspace where the matrix is encoded. Got {encoding_dims}"
+            )
+
+        if not all(isinstance(d, int) and d > 0 for d in encoding_dims):
+            raise ValueError("Expected elements of `encoding_dims` to be positive integers.")
+
+        if (not isinstance(poly_deg, int)) or poly_deg <= 0:
+            raise ValueError(
+                f"'poly_deg' must be a positive integer greater than zero, got {poly_deg}"
+            )
+
         num_wires = block_encoding.num_wires
         params = {
             "block_encoding": block_encoding,
@@ -773,8 +847,8 @@ class QSP(ResourceOperator):
         cls,
         block_encoding: CompressedResourceOp,
         poly_deg: int,
-        convention: str,
-        rotation_precision: float | None,
+        convention: str = "Z",
+        rotation_precision: float | None = None,
     ):
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
@@ -790,6 +864,12 @@ class QSP(ResourceOperator):
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
+        if block_encoding.num_wires > 1:
+            raise ValueError("The block encoding operator should act on a single qubit!")
+
+        if not (convention in {"Z", "X"}):
+            raise ValueError(f"The valid conventions are 'Z' or 'X'. Got {convention}")
+
         params = {
             "block_encoding": block_encoding,
             "poly_deg": poly_deg,
@@ -803,8 +883,8 @@ class QSP(ResourceOperator):
         cls,
         block_encoding: CompressedResourceOp,
         poly_deg: int,
-        convention: str,
-        rotation_precision: float,
+        convention: str = "Z",
+        rotation_precision: float | None = None,
     ):
         r"""Returns a list representing the resources of the operator. Each object in the list
         represents a gate and the number of times it occurs in the circuit.

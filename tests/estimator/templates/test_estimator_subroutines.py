@@ -2392,6 +2392,32 @@ class TestResourceUnaryIterationQPE:
         assert op.wires == expected_wires
 
     @pytest.mark.parametrize(
+        "walk_op, n_iter, error_message",
+        (
+            (
+                qre.QubitizeTHC(qre.THCHamiltonian(40, 10)),
+                0,
+                "Expected 'num_iterations' to be an integer greater than zero,",
+            ),
+            (
+                qre.QubitizeTHC(qre.THCHamiltonian(40, 10)),
+                3.5,
+                "Expected 'num_iterations' to be an integer greater than zero,",
+            ),
+            (
+                qre.QubitizeTHC(qre.THCHamiltonian(40, 10)),
+                -2,
+                "Expected 'num_iterations' to be an integer greater than zero,",
+            ),
+            (qre.RZ(), 4, "Expected the 'walk_op' to be a qubitization type operator "),
+        ),
+    )
+    def test_init_errors(self, walk_op, n_iter, error_message):
+        """Test that Value errors are raised when incompatible inputs are provided."""
+        with pytest.raises(ValueError, match=error_message):
+            _ = qre.UnaryIterationQPE(walk_op, n_iter)
+
+    @pytest.mark.parametrize(
         "walk_operator, n_iter, adj_qft",
         (
             (qre.QubitizeTHC(thc_ham=qre.THCHamiltonian(num_orbitals=20, tensor_rank=40)), 5, None),
@@ -2606,6 +2632,9 @@ class TestResourceReflection:
         with pytest.raises(ValueError, match="Must provide at least one of `num_wires` or `U`"):
             qre.Reflection()
 
+        with pytest.raises(ValueError, match="Must provide atleast one of `num_wires` or `U`"):
+            qre.Reflection.resource_rep()
+
     def test_wire_error(self):
         """Test that an error is raised when wrong number of wires is provided."""
         with pytest.raises(ValueError, match="Expected 3 wires, got 2"):
@@ -2629,6 +2658,9 @@ class TestResourceReflection:
         """Test that an error is raised if the alpha is provided outside of the expected range"""
         with pytest.raises(ValueError, match="alpha must be within"):
             _ = qre.Reflection(num_wires=1, alpha=alpha)
+
+        with pytest.raises(ValueError, match="alpha must be within"):
+            _ = qre.Reflection.resource_rep(num_wires=1, alpha=alpha)
 
     @pytest.mark.parametrize(
         "U, alpha",

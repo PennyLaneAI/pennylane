@@ -1142,6 +1142,12 @@ class UnaryIterationQPE(ResourceOperator):
     Resources:
         The resources are obtained from Figure 2. in Section III of `arXiv.2011.03494 <https://arxiv.org/pdf/2011.03494>`_.
 
+    Raises:
+        ValueError: ``num_iterations`` must be an integer greater than zero
+        TypeError: ``walk_op`` must be an instance of
+            :class:`~.pennylane.estimator.templates.subroutines.Qubitization` or
+            :class:`~.pennylane.estimator.templates.qubitize.QubitizeTHC`
+
     .. seealso:: Related PennyLane operation :class:`~.pennylane.QuantumPhaseEstimation` and explanation of `Unary Iteration <https://pennylane.ai/compilation/unary-iteration>`_.
 
     **Example**
@@ -1181,6 +1187,16 @@ class UnaryIterationQPE(ResourceOperator):
         remove_ops = [walk_op, adj_qft_op] if adj_qft_op is not None else [walk_op]
         _dequeue(remove_ops)
         self.queue()
+
+        if not (isinstance(num_iterations, int) and num_iterations > 1):
+            raise ValueError(
+                f"Expected 'num_iterations' to be an integer greater than zero, got {num_iterations}"
+            )
+
+        if not isinstance(walk_op, (qre.Qubitization, qre.QubitizeTHC)):
+            raise ValueError(
+                f"Expected the 'walk_op' to be a qubitization type operator (an instance of 'Qubitization' or 'QubitizeTHC'), got {type(walk_op)}"
+            )
 
         self.walk_op = walk_op.resource_rep_from_op()
         adj_qft_cmpr_op = None if adj_qft_op is None else adj_qft_op.resource_rep_from_op()
@@ -3052,7 +3068,12 @@ class Reflection(ResourceOperator):
             self.wires = None
 
     @classmethod
-    def resource_decomp(cls, num_wires: int, alpha: float, cmpr_U: CompressedResourceOp):
+    def resource_decomp(
+        cls,
+        num_wires: int | None = None,
+        alpha: float = math.pi,
+        cmpr_U: CompressedResourceOp | None = None,
+    ):
         r"""Returns a list representing the resources of the operator. Each object in the list
         represents a gate and the number of times it occurs in the circuit.
 
@@ -3202,7 +3223,10 @@ class Reflection(ResourceOperator):
 
     @classmethod
     def resource_rep(
-        cls, num_wires: int, alpha: float, cmpr_U: CompressedResourceOp
+        cls,
+        num_wires: int | None = None,
+        alpha: float = math.pi,
+        cmpr_U: CompressedResourceOp | None = None,
     ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
@@ -3215,6 +3239,12 @@ class Reflection(ResourceOperator):
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
+        if not 0 <= alpha <= 2 * qnp.pi:
+            raise ValueError(f"alpha must be within [0, 2pi], got {alpha}")
+
+        if cmpr_U is None and num_wires is None:
+            raise ValueError("Must provide atleast one of `num_wires` or `U`")
+
         params = {"alpha": alpha, "num_wires": num_wires, "cmpr_U": cmpr_U}
         return CompressedResourceOp(cls, num_wires, params)
 
