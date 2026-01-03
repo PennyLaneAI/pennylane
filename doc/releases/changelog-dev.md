@@ -182,51 +182,11 @@
 
 <h4>Compile Pipeline and Transforms </h4>
 
-* A Catalyst compilation pass implementing ParitySynth to resynthesize phase polynomial
-  circuits has been added.
-  [(#8810)](https://github.com/PennyLaneAI/pennylane/pull/8810)
-
 * A new :class:`~.CompilePipeline` class (previously known as the `TransformProgram`) is now available
   at the top level as `qml.CompilePipeline`. Using this class you can now define large and complex
   compilation pipelines in an intuitive and flexible way. For backward compatibility, the `TransformProgram`
   class can still be accessed from `pennylane.transforms.core`.
   [(#8735)](https://github.com/PennyLaneAI/pennylane/pull/8735)
-
-* For naming consistency, uses of the term "transform program" have been updated to "compile pipeline" across the codebase.
-  Correspondingly, the module `pennylane.transforms.core.transform_program` has been renamed to
-  `pennylane.transforms.core.compile_pipeline`, and the old name is no longer available.
-  [(#8735)](https://github.com/PennyLaneAI/pennylane/pull/8735)
-
-* The ``TransformDispatcher`` class has been renamed to :class:`~.transforms.core.Transform` and is now
-  available at the top level as `qml.transform`. For backward compatibility, `TransformDispatcher`
-  can still be accessed from `pennylane.transforms.core`.
-  [(#8756)](https://github.com/PennyLaneAI/pennylane/pull/8756)
-
-* The :class:`~.transforms.core.Transform` class (previously known as the `TransformDispatcher`), 
-  :class:`~.transforms.core.BoundTransform` class (previously known as the `TransformContainer`), 
-  and :class:`~.CompilePipeline` class (previously known as the `TransformProgram`) are updated to
-  support intuitive composition of transform programs using `+` and `*` operators.
-  [(#8703)](https://github.com/PennyLaneAI/pennylane/pull/8703)
-  [(#8730)](https://github.com/PennyLaneAI/pennylane/pull/8730)
-
-  ```pycon
-  >>> import pennylane as qml
-  >>> qml.transforms.merge_rotations + qml.transforms.cancel_inverses(recursive=True)
-  CompilePipeline(merge_rotations, cancel_inverses)
-  ```
-
-* The following changes are made to the API of the :class:`~.CompilePipeline` (previously known as the `TransformProgram`)
-  [(#8751)](https://github.com/PennyLaneAI/pennylane/pull/8751)
-  [(#8774)](https://github.com/PennyLaneAI/pennylane/pull/8774)
-  [(#8781)](https://github.com/PennyLaneAI/pennylane/pull/8781)
-
-  - `push_back` is renamed to `append`, and it now accepts both :class:`~.transforms.core.Transform` and :class:`~.trasnforms.core.BoundTransform`.
-  - `insert_front` and `insert_front_transform` are removed in favour of a new `insert` method which inserts a transform at any given index.
-  - `get_last` is removed, use `pipeline[-1]` to access the last transform instead.
-  - `pop_front` is removed in favour of a new `pop` method which removes the transform at any given index.
-  - `is_empty` is removed, use `bool(pipeline)` or `len(pipeline) == 0` to check if `pipeline` is empty.
-  - Added a `remove` method which removes all matching transforms from the pipeline.
-  - The `prune_dynamic_transform` method is removed.
 
 * A :class:`~.CompilePipeline` (previously known as the `TransformProgram`) can now be applied directly on a :class:`~.QNode`.
   [(#8731)](https://github.com/PennyLaneAI/pennylane/pull/8731)
@@ -261,6 +221,42 @@
   CompilePipeline(commute_controlled, cancel_inverses, merge_rotations)
   ```
 
+* The :class:`~.transforms.core.Transform` class (previously known as the `TransformDispatcher`), 
+  :class:`~.transforms.core.BoundTransform` class (previously known as the `TransformContainer`), 
+  and :class:`~.CompilePipeline` class (previously known as the `TransformProgram`) are updated to
+  support intuitive composition of transform programs using `+` and `*` operators.
+  [(#8703)](https://github.com/PennyLaneAI/pennylane/pull/8703)
+  [(#8730)](https://github.com/PennyLaneAI/pennylane/pull/8730)
+
+  ```pycon
+  >>> import pennylane as qml
+  >>> qml.transforms.merge_rotations + qml.transforms.cancel_inverses(recursive=True)
+  CompilePipeline(merge_rotations, cancel_inverses)
+  ```
+
+* The following changes are made to the API of the :class:`~.CompilePipeline` (previously known as the `TransformProgram`)
+  [(#8751)](https://github.com/PennyLaneAI/pennylane/pull/8751)
+  [(#8774)](https://github.com/PennyLaneAI/pennylane/pull/8774)
+  [(#8781)](https://github.com/PennyLaneAI/pennylane/pull/8781)
+
+  - `push_back` is renamed to `append`, and it now accepts both :class:`~.transforms.core.Transform` and :class:`~.trasnforms.core.BoundTransform`.
+  - `insert_front` and `insert_front_transform` are removed in favour of a new `insert` method which inserts a transform at any given index.
+  - `get_last` is removed, use `pipeline[-1]` to access the last transform instead.
+  - `pop_front` is removed in favour of a new `pop` method which removes the transform at any given index.
+  - `is_empty` is removed, use `bool(pipeline)` or `len(pipeline) == 0` to check if `pipeline` is empty.
+  - Added a `remove` method which removes all matching transforms from the pipeline.
+  - The `prune_dynamic_transform` method is removed.
+
+* For naming consistency, uses of the term "transform program" have been updated to "compile pipeline" across the codebase.
+  Correspondingly, the module `pennylane.transforms.core.transform_program` has been renamed to
+  `pennylane.transforms.core.compile_pipeline`, and the old name is no longer available.
+  [(#8735)](https://github.com/PennyLaneAI/pennylane/pull/8735)
+
+* The ``TransformDispatcher`` class has been renamed to :class:`~.transforms.core.Transform` and is now
+  available at the top level as `qml.transform`. For backward compatibility, `TransformDispatcher`
+  can still be accessed from `pennylane.transforms.core`.
+  [(#8756)](https://github.com/PennyLaneAI/pennylane/pull/8756)
+
 * Quantum compilation passes in MLIR and XDSL can now be applied using the core PennyLane transform
   infrastructure, instead of using Catalyst-specific tools. This is made possible by a new argument in
   :func:`~pennylane.transform` and :class:`~.transforms.core.Transform` called ``pass_name``, which 
@@ -268,6 +264,10 @@
   ensures that the given compilation pass will be used when `qjit` is applied to a workflow, where the 
   pass is performed in MLIR or xDSL.
   [(#8539)](https://github.com/PennyLaneAI/pennylane/pull/8539)
+
+* A Catalyst compilation pass implementing ParitySynth to resynthesize phase polynomial
+  circuits has been added.
+  [(#8810)](https://github.com/PennyLaneAI/pennylane/pull/8810)
 
 <h4>Analyzing your algorithms quickly and easily with resource estimation</h4>
 
