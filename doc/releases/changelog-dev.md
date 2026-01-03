@@ -641,6 +641,11 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
   semi-in-place addition (:class:`~.SemiAdder`).
   [(#8738)](https://github.com/PennyLaneAI/pennylane/pull/8738)
 
+* The integration test for computing perturbation error of a compressed double-factorized (CDF)
+  Hamiltonian in ``labs.trotter_error`` is upgraded to use a more realistic molecular geometry and
+  a more reliable reference error.
+  [(#8790)](https://github.com/PennyLaneAI/pennylane/pull/8790)
+
 <h3>Breaking changes 💔</h3>
 
 * The `final_transform` property of the :class:`~.transforms.core.BoundTransform` has been renamed 
