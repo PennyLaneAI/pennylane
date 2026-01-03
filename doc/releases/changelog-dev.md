@@ -265,6 +265,10 @@
   CompilePipeline(commute_controlled, cancel_inverses, merge_rotations)
   ```
 
+* Added an ``extend`` method to :class:`~.transforms.core.CompilePipeline` for appending multiple 
+  transforms from an iterable or another ``CompilePipeline``.
+  [(#8820)](https://github.com/PennyLaneAI/pennylane/pull/8820)
+
 * Quantum compilation passes in MLIR and XDSL can now be applied using the core PennyLane transform
   infrastructure, instead of using Catalyst-specific tools. This is made possible by a new argument in
   :func:`~pennylane.transform` and :class:`~.transforms.core.Transform` called ``pass_name``, which 

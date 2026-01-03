@@ -904,6 +904,99 @@ class TestCompilePipeline:
         with pytest.raises(TransformError, match="does not appear to be a valid Python function"):
             compile_pipeline.append(10.0)
 
+    def test_append_with_list_raises_helpful_error(self):
+        """Test that append with a list raises an error pointing to extend."""
+        pipeline = CompilePipeline()
+        t1 = transform(first_valid_transform)
+        t2 = transform(second_valid_transform)
+
+        with pytest.raises(TypeError, match="Use extend\\(\\) to add multiple transforms"):
+            pipeline.append([t1, t2])
+
+        with pytest.raises(TypeError, match="Use extend\\(\\) to add multiple transforms"):
+            pipeline.append((t1, t2))
+
+    def test_extend_list(self):
+        """Test extending a pipeline with a list of transforms."""
+        pipeline = CompilePipeline()
+        t1 = transform(first_valid_transform)
+        t2 = transform(second_valid_transform)
+
+        # Extend with a list of transforms
+        pipeline.extend([t1, t2])
+
+        assert len(pipeline) == 2
+        assert pipeline[0].tape_transform is first_valid_transform
+        assert pipeline[1].tape_transform is second_valid_transform
+
+    def test_extend_list_with_bound_transforms(self):
+        """Test extending with a list containing both Transform and BoundTransform."""
+        pipeline = CompilePipeline()
+        t1 = transform(first_valid_transform)
+        t2_bound = BoundTransform(transform(second_valid_transform))
+
+        pipeline.extend([t1, t2_bound])
+
+        assert len(pipeline) == 2
+        assert pipeline[0].tape_transform is first_valid_transform
+        assert pipeline[1].tape_transform is second_valid_transform
+
+    def test_extend_multiplied_transform(self):
+        """Test extending with a multiplied transform (which returns a CompilePipeline)."""
+        pipeline = CompilePipeline()
+        t1 = BoundTransform(transform(first_valid_transform))
+
+        # Multiplying a BoundTransform returns a CompilePipeline
+        multiplied = 2 * t1
+        assert isinstance(multiplied, CompilePipeline)
+
+        pipeline.extend(multiplied)
+
+        assert len(pipeline) == 2
+        assert pipeline[0].tape_transform is first_valid_transform
+        assert pipeline[1].tape_transform is first_valid_transform
+
+    def test_extend_compile_pipeline(self):
+        """Test extending a CompilePipeline with another CompilePipeline."""
+        pipeline1 = CompilePipeline()
+        pipeline1.append(BoundTransform(transform(first_valid_transform)))
+
+        pipeline2 = CompilePipeline()
+        pipeline2.append(BoundTransform(transform(second_valid_transform)))
+
+        pipeline1.extend(pipeline2)
+
+        assert len(pipeline1) == 2
+        assert pipeline1[0].tape_transform is first_valid_transform
+        assert pipeline1[1].tape_transform is second_valid_transform
+
+    def test_extend_tuple(self):
+        """Test extending a pipeline with a tuple of transforms."""
+        pipeline = CompilePipeline()
+        t1 = transform(first_valid_transform)
+        t2 = transform(second_valid_transform)
+
+        # Extend with a tuple of transforms
+        pipeline.extend((t1, t2))
+
+        assert len(pipeline) == 2
+        assert pipeline[0].tape_transform is first_valid_transform
+        assert pipeline[1].tape_transform is second_valid_transform
+
+    def test_extend_list_with_multiplied_transform(self):
+        """Test extending with a list containing a multiplied transform (CompilePipeline)."""
+        pipeline = CompilePipeline()
+        t1 = transform(first_valid_transform)
+        t2 = transform(second_valid_transform)
+
+        # t2 * 2 creates a CompilePipeline, which should be flattened when inside a list
+        pipeline.extend([t1, t2 * 2])
+
+        assert len(pipeline) == 3
+        assert pipeline[0].tape_transform is first_valid_transform
+        assert pipeline[1].tape_transform is second_valid_transform
+        assert pipeline[2].tape_transform is second_valid_transform
+
     def test_add_transform(self):
         """Test to add multiple transforms into a pipeline and also the different methods of a pipeline."""
         compile_pipeline = CompilePipeline()
