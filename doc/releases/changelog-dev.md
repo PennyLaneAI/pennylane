@@ -184,11 +184,20 @@
 
 * A new :class:`~.CompilePipeline` class (previously known as the `TransformProgram`) is now available
   at the top level as `qml.CompilePipeline`. Using this class you can now define large and complex
-  compilation pipelines in an intuitive and flexible way. For backward compatibility, the `TransformProgram`
-  class can still be accessed from `pennylane.transforms.core`.
+  compilation pipelines in an intuitive and flexible way.
   [(#8735)](https://github.com/PennyLaneAI/pennylane/pull/8735)
 
-* A :class:`~.CompilePipeline` (previously known as the `TransformProgram`) can now be applied directly on a :class:`~.QNode`.
+* A :class:`~.CompilePipeline` can be initialized by passing any number of transforms or other ``CompilePipeline``s,
+  providing more flexibility than the previous ``TransformProgram`` class.
+  [(#8750)](https://github.com/PennyLaneAI/pennylane/pull/8750)
+
+  ```python
+  >>> pipeline = qml.CompilePipeline(qml.transforms.commute_controlled, qml.transforms.cancel_inverses)
+  >>> qml.CompilePipeline(pipeline, qml.transforms.merge_rotations)
+  CompilePipeline(commute_controlled, cancel_inverses, merge_rotations)
+  ```
+
+* You can apply a :class:`~.CompilePipeline` directly on a :class:`~.QNode` to optimize the number of gates.
   [(#8731)](https://github.com/PennyLaneAI/pennylane/pull/8731)
 
   ```python
@@ -211,19 +220,13 @@
   1: ──RX(0.70)─┤ ╰<Z@Z>
   ```
 
-* A :class:`~.CompilePipeline` can be initialized by passing any number of transforms or other ``CompilePipeline``s,
-  providing more flexibility than the previous ``TransformProgram`` class.
-  [(#8750)](https://github.com/PennyLaneAI/pennylane/pull/8750)
-
-  ```python
-  >>> pipeline = qml.CompilePipeline(qml.transforms.commute_controlled, qml.transforms.cancel_inverses)
-  >>> qml.CompilePipeline(pipeline, qml.transforms.merge_rotations)
-  CompilePipeline(commute_controlled, cancel_inverses, merge_rotations)
-  ```
-
-* The :class:`~.transforms.core.Transform` class (previously known as the `TransformDispatcher`), 
+<!-- * The :class:`~.transforms.core.Transform` class (previously known as the `TransformDispatcher`), 
   :class:`~.transforms.core.BoundTransform` class (previously known as the `TransformContainer`), 
   and :class:`~.CompilePipeline` class (previously known as the `TransformProgram`) are updated to
+  support intuitive composition of transform programs using `+` and `*` operators.
+  [(#8703)](https://github.com/PennyLaneAI/pennylane/pull/8703)
+  [(#8730)](https://github.com/PennyLaneAI/pennylane/pull/8730) -->
+* The :class:`~.CompilePipeline` class as well as `qml.transform` have been updated to
   support intuitive composition of transform programs using `+` and `*` operators.
   [(#8703)](https://github.com/PennyLaneAI/pennylane/pull/8703)
   [(#8730)](https://github.com/PennyLaneAI/pennylane/pull/8730)
@@ -234,28 +237,40 @@
   CompilePipeline(merge_rotations, cancel_inverses)
   ```
 
-* The following changes are made to the API of the :class:`~.CompilePipeline` (previously known as the `TransformProgram`)
+* You can easily modify a :class:`~.CompilePipeline` using operations similar to Python lists such as ``append``,
+  ``extend``, ``insert``, ``pop``, ``remove``.
+  [(#8751)](https://github.com/PennyLaneAI/pennylane/pull/8751)
+  [(#8774)](https://github.com/PennyLaneAI/pennylane/pull/8774)
+  [(#8781)](https://github.com/PennyLaneAI/pennylane/pull/8781)
+
+* The flexibility of the new compilation pipeline functionality in this release is owed to the following internal changes:
+
+  * Renaming the `TransformProgram` class to :class:`~.CompilePipeline`. For backward compatibility, the `TransformProgram`
+  class can still be accessed from `pennylane.transforms.core`.
+  [(#8735)](https://github.com/PennyLaneAI/pennylane/pull/8735)
+
+  * For naming consistency, uses of the term "transform program" have been updated to "compile pipeline" across the codebase.
+    Correspondingly, the module `pennylane.transforms.core.transform_program` has been renamed to
+    `pennylane.transforms.core.compile_pipeline`, and the old name is no longer available.
+    [(#8735)](https://github.com/PennyLaneAI/pennylane/pull/8735)
+
+  * The ``TransformDispatcher`` class has been renamed to :class:`~.transforms.core.Transform` and is now
+    available at the top level as `qml.transform`. For backward compatibility, `TransformDispatcher`
+    can still be accessed from `pennylane.transforms.core`.
+    [(#8756)](https://github.com/PennyLaneAI/pennylane/pull/8756)
+  
+  * The following changes are made to the API of the :class:`~.CompilePipeline` (previously known as the `TransformProgram`)
   [(#8751)](https://github.com/PennyLaneAI/pennylane/pull/8751)
   [(#8774)](https://github.com/PennyLaneAI/pennylane/pull/8774)
   [(#8781)](https://github.com/PennyLaneAI/pennylane/pull/8781)
 
   - `push_back` is renamed to `append`, and it now accepts both :class:`~.transforms.core.Transform` and :class:`~.trasnforms.core.BoundTransform`.
   - `insert_front` and `insert_front_transform` are removed in favour of a new `insert` method which inserts a transform at any given index.
-  - `get_last` is removed, use `pipeline[-1]` to access the last transform instead.
+  - `get_last` is removed, instead you can use `pipeline[-1]` to access the last transform.
   - `pop_front` is removed in favour of a new `pop` method which removes the transform at any given index.
   - `is_empty` is removed, use `bool(pipeline)` or `len(pipeline) == 0` to check if `pipeline` is empty.
-  - Added a `remove` method which removes all matching transforms from the pipeline.
-  - The `prune_dynamic_transform` method is removed.
-
-* For naming consistency, uses of the term "transform program" have been updated to "compile pipeline" across the codebase.
-  Correspondingly, the module `pennylane.transforms.core.transform_program` has been renamed to
-  `pennylane.transforms.core.compile_pipeline`, and the old name is no longer available.
-  [(#8735)](https://github.com/PennyLaneAI/pennylane/pull/8735)
-
-* The ``TransformDispatcher`` class has been renamed to :class:`~.transforms.core.Transform` and is now
-  available at the top level as `qml.transform`. For backward compatibility, `TransformDispatcher`
-  can still be accessed from `pennylane.transforms.core`.
-  [(#8756)](https://github.com/PennyLaneAI/pennylane/pull/8756)
+  - a `remove` method has been added which removes all matching transforms from the pipeline.
+  - The `prune_dynamic_transform` method has been removed.
 
 * Quantum compilation passes in MLIR and XDSL can now be applied using the core PennyLane transform
   infrastructure, instead of using Catalyst-specific tools. This is made possible by a new argument in
