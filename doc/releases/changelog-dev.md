@@ -67,6 +67,10 @@
 
 <h4>QRAM </h4>
 
+* A lightweight version of Bucket Brigade QRAM :class:`estimator.BBQRAM <pennylane.estimator.templates.BBQRAM>` (based on the :class:`~.estimator.resource_operator.ResourceOperator` class) 
+  has been added to rapidly estimate resources used by :class:`~.BBQRAM`.
+  [(#8825)](https://github.com/PennyLaneAI/pennylane/pull/8825)
+
 * Bucket Brigade QRAM, a Hybrid QRAM and a Select-Only QRAM variant are implemented as a template :class:`~.BBQRAM`, :class:`~.HybridQRAM` and :class:`~.SelectOnlyQRAM` 
   to allow for selection of bitstrings in superposition.
   [(#8670)](https://github.com/PennyLaneAI/pennylane/pull/8670)
@@ -444,6 +448,11 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
 * `qml.while_loop` and `qml.for_loop` can now lazily dispatch to catalyst when called,
   instead of dispatching upon creation.
   [(#8786)](https://github.com/PennyLaneAI/pennylane/pull/8786)
+
+* Documentation for `qml.estimator.templates.GQSP`, `qml.estimator.templates.GQSPTimeEvolution`,
+  `qml.estimator.templates.PauliRot`, `qml.estimator.templates.PCPhase`, `qml.estimator.templates.Qubitization`,
+  and `qml.estimator.templates.Reflection` operators is improved.
+  [(#8829)](https://github.com/PennyLaneAI/pennylane/pull/8829)
 
 <h4>Resource estimation</h4>
 
