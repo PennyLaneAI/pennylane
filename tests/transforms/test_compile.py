@@ -72,6 +72,40 @@ class TestCompile:
         with pytest.raises(ValueError, match="Number of passes must be an integer"):
             transformed_qnode(0.1, 0.2, 0.3)
 
+    def test_compile_basis_set_with_operator_types(self):
+        """Test that basis_set accepts Operator subclasses in addition to strings."""
+        tape = qml.tape.QuantumScript([qml.Hadamard(0), qml.RX(0.5, 0)])
+
+        # Using operator types should work the same as using strings
+        [result_types], _ = compile(tape, basis_set=[qml.Hadamard, qml.RX])
+        [result_strings], _ = compile(tape, basis_set=["Hadamard", "RX"])
+
+        assert [op.name for op in result_types.operations] == ["Hadamard", "RX"]
+        assert [op.name for op in result_strings.operations] == ["Hadamard", "RX"]
+
+    def test_compile_basis_set_mixed_strings_and_types(self):
+        """Test that basis_set accepts a mix of strings and Operator types."""
+        # Use S and T gates - both have decompositions
+        # S as string, T as type - both should be preserved (not decomposed)
+        tape = qml.tape.QuantumScript([qml.S(0), qml.T(1)])
+
+        [result], _ = compile(tape, basis_set=["S", qml.T])
+        assert [op.name for op in result.operations] == ["S", "T"]
+
+    def test_compile_basis_set_invalid_type_raises_error(self):
+        """Test that basis_set with invalid types raises ValueError."""
+        tape = qml.tape.QuantumScript([qml.Hadamard(0)])
+
+        with pytest.raises(ValueError, match="must be strings or Operator subclasses"):
+            compile(tape, basis_set=[42])
+
+    def test_compile_basis_set_operator_instance_raises_error(self):
+        """Test that passing operator instances (not classes) raises ValueError."""
+        tape = qml.tape.QuantumScript([qml.Hadamard(0)])
+
+        with pytest.raises(ValueError, match="must be strings or Operator subclasses"):
+            compile(tape, basis_set=[qml.RX(0.5, 0)])
+
     def test_compile_mixed_tape_qfunc_transform(self):
         """Test that we can interchange tape and qfunc transforms."""
 
