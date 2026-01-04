@@ -644,6 +644,10 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
   semi-in-place addition (:class:`~.SemiAdder`).
   [(#8738)](https://github.com/PennyLaneAI/pennylane/pull/8738)
 
+* A new function :func:`~.pennylane.labs.resource_estimation.approx_poly_degree` has been added. It allows
+  computing the minimum degree of the polynomial that fits a given function within a given error tolerance.
+  [(#8625)](https://github.com/PennyLaneAI/pennylane/pull/8625)
+
 <h3>Breaking changes 💔</h3>
 
 * The `final_transform` property of the :class:`~.transforms.core.BoundTransform` has been renamed 

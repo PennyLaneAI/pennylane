@@ -161,6 +161,14 @@ Compact Hamiltonian Class:
 
     ~CompactHamiltonian
 
+Utility Functions:
+~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~approx_poly_degree
+
 """
 
 from .qubit_manager import AllocWires, FreeWires, QubitManager
@@ -255,3 +263,4 @@ from .templates import (
     ResourceControlledSequence,
     ResourceIterativeQPE,
 )
+from .resource_utils import approx_poly_degree
