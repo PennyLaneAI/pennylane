@@ -457,6 +457,20 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
   [(#8832)](https://github.com/PennyLaneAI/pennylane/pull/8832)
   [(#8835)](https://github.com/PennyLaneAI/pennylane/pull/8835)
 
+* Extended :func:`~pennylane.assert_equal` to provide informative error messages for
+  measurement processes. Previously, comparing unequal measurements would produce
+  unhelpful messages like "are not equal for an unspecified reason". Now, the error
+  messages explain why measurements differ (e.g., different wires, observables, or
+  measurement parameters).
+  [(#8841)](https://github.com/PennyLaneAI/pennylane/pull/8841)
+
+  ```pycon
+  >>> qml.assert_equal(qml.expval(qml.Z(0)), qml.expval(qml.X(0)))
+  AssertionError: op1 and op2 have different observables because op1 and op2 are of different types.
+  >>> qml.assert_equal(qml.probs(wires=[0]), qml.probs(wires=[1]))
+  AssertionError: op1 and op2 have different wires. Got Wires([0]) and Wires([1]).
+  ```
+
 <h4>Resource estimation</h4>
 
 * Added `Resources.total_wires` and `Resources.total_gates` properties to the 
