@@ -1809,6 +1809,122 @@ class TestMeasurementsEqual:
         assert qml.equal(m1, m2) is False
 
 
+class TestMeasurementsAssertEqual:
+    """Test that assert_equal produces informative error messages for measurement comparisons."""
+
+    def test_different_observable_types(self):
+        """Test assert_equal message when measurements have different observable types."""
+        m1 = qml.expval(qml.Z(0))
+        m2 = qml.expval(qml.X(0))
+        with pytest.raises(AssertionError, match="different observables.*different types"):
+            qml.assert_equal(m1, m2)
+
+    def test_different_wires(self):
+        """Test assert_equal message when measurements have different wires."""
+        m1 = qml.probs(wires=[0])
+        m2 = qml.probs(wires=[1])
+        with pytest.raises(AssertionError, match="different wires.*Wires.*0.*Wires.*1"):
+            qml.assert_equal(m1, m2)
+
+    def test_mid_measure_different_wires(self):
+        """Test assert_equal message when MidMeasure have different wires."""
+        mp1 = qml.ops.MidMeasure(wires=Wires([0]), id="test")
+        mp2 = qml.ops.MidMeasure(wires=Wires([1]), id="test")
+        with pytest.raises(AssertionError, match="different wires"):
+            qml.assert_equal(mp1, mp2)
+
+    def test_mid_measure_different_reset(self):
+        """Test assert_equal message when MidMeasure have different reset values."""
+        mp1 = qml.ops.MidMeasure(wires=Wires([0]), reset=True, id="test")
+        mp2 = qml.ops.MidMeasure(wires=Wires([0]), reset=False, id="test")
+        with pytest.raises(AssertionError, match="different reset values.*True.*False"):
+            qml.assert_equal(mp1, mp2)
+
+    def test_mid_measure_different_postselect(self):
+        """Test assert_equal message when MidMeasure have different postselect values."""
+        mp1 = qml.ops.MidMeasure(wires=Wires([0]), postselect=0, id="test")
+        mp2 = qml.ops.MidMeasure(wires=Wires([0]), postselect=1, id="test")
+        with pytest.raises(AssertionError, match="different postselect values.*0.*1"):
+            qml.assert_equal(mp1, mp2)
+
+    def test_mid_measure_different_id(self):
+        """Test assert_equal message when MidMeasure have different id values."""
+        mp1 = qml.ops.MidMeasure(wires=Wires([0]), id="foo")
+        mp2 = qml.ops.MidMeasure(wires=Wires([0]), id="bar")
+        with pytest.raises(AssertionError, match="different identifiers id.*foo.*bar"):
+            qml.assert_equal(mp1, mp2)
+
+    def test_pauli_measure_different_wires(self):
+        """Test assert_equal message when PauliMeasure have different wires."""
+        mp1 = PauliMeasure("XY", wires=Wires([0, 1]), id="test")
+        mp2 = PauliMeasure("XY", wires=Wires([1, 2]), id="test")
+        with pytest.raises(AssertionError, match="different wires"):
+            qml.assert_equal(mp1, mp2)
+
+    def test_pauli_measure_different_pauli_word(self):
+        """Test assert_equal message when PauliMeasure have different pauli words."""
+        mp1 = PauliMeasure("XY", wires=Wires([0, 1]), id="test")
+        mp2 = PauliMeasure("XZ", wires=Wires([0, 1]), id="test")
+        with pytest.raises(AssertionError, match="pauli_word XY.*pauli_word XZ"):
+            qml.assert_equal(mp1, mp2)
+
+    def test_pauli_measure_different_postselect(self):
+        """Test assert_equal message when PauliMeasure have different postselect values."""
+        mp1 = PauliMeasure("XY", wires=Wires([0, 1]), id="test")
+        mp2 = PauliMeasure("XY", wires=Wires([0, 1]), postselect=1, id="test")
+        with pytest.raises(AssertionError, match="different postselect values"):
+            qml.assert_equal(mp1, mp2)
+
+    def test_measurement_value_different_wires(self):
+        """Test assert_equal message when MeasurementValue have measurements on different wires."""
+        mv1 = qml.measure(0)
+        mv2 = qml.measure(1)
+        with pytest.raises(AssertionError, match="different measurements.*different wires"):
+            qml.assert_equal(mv1, mv2)
+
+    def test_measurement_value_different_reset(self):
+        """Test assert_equal message when MeasurementValue have different reset values."""
+        mv1 = qml.measure(0, reset=True)
+        mv2 = qml.measure(0, reset=False)
+        with pytest.raises(AssertionError, match="different measurements.*different reset values"):
+            qml.assert_equal(mv1, mv2)
+
+    def test_counts_different_all_outcomes(self):
+        """Test assert_equal message when CountsMP have different all_outcomes values."""
+        m1 = qml.counts(wires=[0], all_outcomes=True)
+        m2 = qml.counts(wires=[0], all_outcomes=False)
+        with pytest.raises(AssertionError, match="different all_outcomes values.*True.*False"):
+            qml.assert_equal(m1, m2)
+
+    def test_vn_entropy_different_log_base(self):
+        """Test assert_equal message when VnEntropyMP have different log_base values."""
+        m1 = qml.vn_entropy(wires=[0], log_base=2)
+        m2 = qml.vn_entropy(wires=[0], log_base=10)
+        with pytest.raises(AssertionError, match="different log_base values.*2.*10"):
+            qml.assert_equal(m1, m2)
+
+    def test_mutual_info_different_log_base(self):
+        """Test assert_equal message when MutualInfoMP have different log_base values."""
+        m1 = qml.mutual_info(wires0=[0], wires1=[1], log_base=2)
+        m2 = qml.mutual_info(wires0=[0], wires1=[1], log_base=10)
+        with pytest.raises(AssertionError, match="different log_base values.*2.*10"):
+            qml.assert_equal(m1, m2)
+
+    def test_different_eigvals(self):
+        """Test assert_equal message when measurements have different eigenvalues."""
+        m1 = ProbabilityMP(eigvals=(1, 0))
+        m2 = ProbabilityMP(eigvals=(0, 1))
+        with pytest.raises(AssertionError, match="different eigenvalues"):
+            qml.assert_equal(m1, m2)
+
+    def test_measurement_obs_one_none(self):
+        """Test assert_equal message when one measurement has obs and the other doesn't."""
+        m1 = qml.expval(qml.Z(0))
+        m2 = qml.probs(wires=[0])
+        with pytest.raises(AssertionError, match="different types"):
+            qml.assert_equal(m1, m2)
+
+
 def test_unsupported_object_type_not_implemented():
     dev = qml.device("default.qubit", wires=1)
 
