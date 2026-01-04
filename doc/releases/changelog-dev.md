@@ -644,6 +644,9 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
   semi-in-place addition (:class:`~.SemiAdder`).
   [(#8738)](https://github.com/PennyLaneAI/pennylane/pull/8738)
 
+* New function `~pennylane.qchem.vscf_rotations` has been added for computing VSCF rotation matrices.
+  [(#8784)](https://github.com/PennyLaneAI/pennylane/pull/8784)
+
 <h3>Breaking changes 💔</h3>
 
 * The `final_transform` property of the :class:`~.transforms.core.BoundTransform` has been renamed 
