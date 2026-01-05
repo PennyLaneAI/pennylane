@@ -652,7 +652,7 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
   has been renamed to `tape_transform` to avoid ambiguity.
   [(#8756)](https://github.com/PennyLaneAI/pennylane/pull/8756)
 
-* Qualtran call graphs built via :func`:~.to_bloq` now return resource counts via PennyLane's resource estimation module
+* Qualtran call graphs built via :func:`~.to_bloq` now return resource counts via PennyLane's resource estimation module
   instead of via PennyLane decompositions. To restore the previous behaviour, set ``call_graph='decomposition'``.
   [(#8390)](https://github.com/PennyLaneAI/pennylane/pull/8390)
 
