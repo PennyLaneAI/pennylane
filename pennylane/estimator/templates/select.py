@@ -51,7 +51,7 @@ class SelectTHC(ResourceOperator):
         rotation_precision (int): The number of bits used to represent the precision for loading
             the rotation angles for basis rotation. The default value is set to ``15`` bits.
         select_swap_depth (int | None): A parameter of :class:`~.pennylane.estimator.templates.subroutines.QROM`
-            used to trade-off extra wires for reduced circuit depth. Defaults to :code:`None`, in which
+            used to trade off extra wires for reduced circuit depth. Defaults to :code:`None`, in which
             case, the ``select_swap_depth`` is set to the optimal depth that minimizes the total
             ``T``-gate count.
         wires (WiresLike | None): the wires on which the operator acts
@@ -73,22 +73,22 @@ class SelectTHC(ResourceOperator):
     The resources for this operation are computed using:
 
     >>> import pennylane.estimator as qre
-    >>> thc_ham =  qre.THCHamiltonian(num_orbitals=20, tensor_rank=40)
+    >>> thc_ham = qre.THCHamiltonian(num_orbitals=20, tensor_rank=40)
     >>> res = qre.estimate(qre.SelectTHC(thc_ham, rotation_precision=15))
     >>> print(res)
     --- Resources: ---
      Total wires: 356
-        algorithmic wires: 58
-        allocated wires: 298
-          zero state: 298
-          any state: 0
-     Total gates : 4.698E+4
-      'Toffoli': 2.249E+3,
-      'CNOT': 3.764E+4,
-      'X': 388,
-      'Z': 41,
-      'S': 80,
-      'Hadamard': 6.586E+3
+       algorithmic wires: 58
+       allocated wires: 298
+         zero state: 298
+         any state: 0
+     Total gates : 3.336E+4
+       'Toffoli': 2.249E+3,
+       'CNOT': 2.344E+4,
+       'X': 392,
+       'Z': 41,
+       'S': 80,
+       'Hadamard': 7.160E+3
 
     Let's also see how the resources change when more batches are used for the rotations:
 
@@ -100,13 +100,13 @@ class SelectTHC(ResourceOperator):
        allocated wires: 163
          zero state: 163
          any state: 0
-    Total gates : 4.175E+4
+     Total gates : 3.461E+4
        'Toffoli': 2.345E+3,
-       'CNOT': 3.183E+4,
+       'CNOT': 2.438E+4,
        'X': 582,
-       'Z': 41,
+       'Z': 45,
        'S': 80,
-       'Hadamard': 6.874E+3
+       'Hadamard': 7.178E+3
 
     We can see that by batching the rotations, the number of allocated wires decreases
     at the cost of an increased number of Toffoli gates.
@@ -132,7 +132,7 @@ class SelectTHC(ResourceOperator):
 
         if not isinstance(rotation_precision, int) or rotation_precision <= 0:
             raise TypeError(
-                f"`rotation_precision` must be a positive integer, but type {type(rotation_precision)} was provided."
+                f"`rotation_precision` must be a positive integer, but got {rotation_precision}."
             )
 
         if not isinstance(num_batches, int) or num_batches not in range(1, thc_ham.num_orbitals):
@@ -173,7 +173,7 @@ class SelectTHC(ResourceOperator):
                 * rotation_precision (int): The number of bits used to represent the precision for loading
                   the rotation angles for basis rotation. The default value is set to ``15`` bits.
                 * select_swap_depth (int | None): A parameter of :class:`~.pennylane.estimator.templates.subroutines.QROM`
-                  used to trade-off extra wires for reduced circuit depth. Defaults to :code:`None`, in which
+                  used to trade off extra wires for reduced circuit depth. Defaults to :code:`None`, in which
                   case, the ``select_swap_depth`` is set to the optimal depth that minimizes the total
                   ``T``-gate count.
         """
@@ -204,7 +204,7 @@ class SelectTHC(ResourceOperator):
             rotation_precision (int): The number of bits used to represent the precision for loading
                 the rotation angles for basis rotation. The default value is set to ``15`` bits.
             select_swap_depth (int | None): A parameter of :class:`~.pennylane.estimator.templates.subroutines.QROM`
-                used to trade-off extra wires for reduced circuit depth. Defaults to :code:`None`, in which
+                used to trade off extra wires for reduced circuit depth. Defaults to :code:`None`, in which
                 case, the ``select_swap_depth`` is set to the optimal depth that minimizes the total
                 ``T``-gate count.
 
@@ -220,7 +220,7 @@ class SelectTHC(ResourceOperator):
 
         if not isinstance(rotation_precision, int) or rotation_precision <= 0:
             raise TypeError(
-                f"`rotation_precision` must be a positive integer, but type {type(rotation_precision)} was provided."
+                f"`rotation_precision` must be a positive integer, but got {rotation_precision}."
             )
 
         if not isinstance(num_batches, int) or num_batches not in range(1, thc_ham.num_orbitals):
@@ -266,14 +266,13 @@ class SelectTHC(ResourceOperator):
             rotation_precision (int): The number of bits used to represent the precision for loading
                 the rotation angles for basis rotation. The default value is set to ``15`` bits.
             select_swap_depth (int | None): A parameter of :class:`~.pennylane.estimator.templates.subroutines.QROM`
-                used to trade-off extra wires for reduced circuit depth. Defaults to :code:`None`, in which
+                used to trade off extra wires for reduced circuit depth. Defaults to :code:`None`, in which
                 case, the ``select_swap_depth`` is set to the optimal depth that minimizes the total
                 ``T``-gate count.
 
         Resources:
             The resources are calculated based on Figure 5 in `arXiv:2011.03494 <https://arxiv.org/abs/2011.03494>`_ and
             Figure 4 in `arXiv:2501.06165 <https://arxiv.org/abs/2501.06165>`_.
-            The resources are modified to remove the control from the Select operation.
 
         Returns:
             list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
@@ -393,7 +392,7 @@ class SelectTHC(ResourceOperator):
             target_resource_params (dict): A dictionary containing the resource parameters of the target operator.
 
         Resources:
-            The resources are calculated based on Figure 5 in `arXiv:2011.03494 <https://arxiv.org/abs/2011.03494>`_
+            The resources are calculated based on Figure 5 in `arXiv:2011.03494 <https://arxiv.org/abs/2011.03494>`_.
 
         Returns:
             list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object

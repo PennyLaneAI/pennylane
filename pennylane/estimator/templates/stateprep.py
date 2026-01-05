@@ -181,6 +181,7 @@ class AliasSampling(ResourceOperator):
 
     The resources for this operation are computed using:
 
+    >>> import pennylane.estimator as qre
     >>> alias_sampling = qre.AliasSampling(num_coeffs=100)
     >>> print(qre.estimate(alias_sampling))
     --- Resources: ---
@@ -309,6 +310,7 @@ class MPSPrep(ResourceOperator):
 
     The resources for this operation are computed using:
 
+    >>> import pennylane.estimator as qre
     >>> mps = qre.MPSPrep(num_mps_matrices=10, max_bond_dim=2**3)
     >>> print(qre.estimate(mps, gate_set={"CNOT", "RZ", "RY"}))
     --- Resources: ---
@@ -466,21 +468,22 @@ class QROMStatePreparation(ResourceOperator):
 
     The resources for this operation are computed using:
 
+    >>> import pennylane.estimator as qre
     >>> qrom_prep = qre.QROMStatePreparation(num_state_qubits=5, precision=1e-3)
     >>> print(qre.estimate(qrom_prep))
     --- Resources: ---
      Total wires: 28
-        algorithmic wires: 5
-        allocated wires: 23
-             zero state: 23
-             any state: 0
-     Total gates : 2.756E+3
-      'Toffoli': 236,
-      'CNOT': 1.522E+3,
-      'X': 230,
-      'Z': 12,
-      'S': 24,
-      'Hadamard': 732
+       algorithmic wires: 5
+       allocated wires: 23
+         zero state: 23
+         any state: 0
+     Total gates : 2.505E+3
+       'Toffoli': 236,
+       'CNOT': 1.181E+3,
+       'X': 236,
+       'Z': 12,
+       'S': 24,
+       'Hadamard': 816
 
     .. details::
         :title: Usage Details
@@ -924,16 +927,16 @@ class PrepTHC(ResourceOperator):
     >>> res = qre.estimate(qre.PrepTHC(thc_ham, coeff_precision=15))
     >>> print(res)
     --- Resources: ---
-     Total wires: 187
-        algorithmic wires: 72
-        allocated wires: 115
-             zero state: 28
-             any state: 87
-     Total gates : 1.485E+4
-      'Toffoli': 467,
-      'CNOT': 1.307E+4,
-      'X': 512,
-      'Hadamard': 797
+     Total wires: 166
+       algorithmic wires: 72
+       allocated wires: 94
+         zero state: 94
+         any state: 0
+     Total gates : 1.494E+4
+       'Toffoli': 467,
+       'CNOT': 1.307E+4,
+       'X': 599,
+       'Hadamard': 797
 
     """
 
@@ -1183,8 +1186,6 @@ class PrepTHC(ResourceOperator):
         and the number of times it occurs in the decomposition.
 
         Args:
-            thc_ham (:class:`~pennylane.estimator.compact_hamiltonian.THCHamiltonian`): a tensor hypercontracted
-                Hamiltonian for which the walk operator is being created
             target_resource_params(dict): A dictionary containing the resource parameters of the target operator.
 
         Resources:

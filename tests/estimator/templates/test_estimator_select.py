@@ -123,7 +123,7 @@ class TestSelectTHC:
                 1,
                 15,
                 2,
-                {"algo_wires": 24, "auxiliary_wires": 103, "toffoli_gates": 545},
+                {"algo_wires": 24, "auxiliary_wires": 93, "toffoli_gates": 457},
             ),
             # These numbers were obtained manually for batched rotations based on the technique described in arXiv:2501.06165
             (
@@ -184,7 +184,7 @@ class TestSelectTHC:
                 2,
                 3,
                 2,
-                {"algo_wires": 27, "auxiliary_wires": 104, "toffoli_gates": 550},
+                {"algo_wires": 27, "auxiliary_wires": 94, "toffoli_gates": 462},
             ),
             # These numbers were obtained manually for batched rotations based on the technique described in arXiv:2501.06165
             (
@@ -245,13 +245,13 @@ class TestSelectTHC:
         "Test that an error is raised when wrong type is provided for precision."
         with pytest.raises(
             TypeError,
-            match=f"`rotation_precision` must be a positive integer, but type {type(2.5)} was provided.",
+            match=f"`rotation_precision` must be a positive integer, but got {2.5}.",
         ):
             qre.SelectTHC(qre.THCHamiltonian(58, 160), rotation_precision=2.5)
 
         with pytest.raises(
             TypeError,
-            match=f"`rotation_precision` must be a positive integer, but type {type(2.5)} was provided.",
+            match=f"`rotation_precision` must be a positive integer, but got {2.5}.",
         ):
             qre.SelectTHC.resource_rep(qre.THCHamiltonian(58, 160), rotation_precision=2.5)
 

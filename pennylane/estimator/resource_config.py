@@ -25,7 +25,9 @@ from pennylane.estimator.ops.qubit.parametric_ops_single_qubit import RX, RY, RZ
 from pennylane.estimator.ops.qubit.qchem_ops import SingleExcitation
 from pennylane.estimator.templates import (
     GQSP,
+    QSP,
     AliasSampling,
+    GQSPTimeEvolution,
     MPSPrep,
     QROMStatePreparation,
     SelectPauliRot,
@@ -138,6 +140,8 @@ class ResourceConfig:
                 "coeff_precision": 1e-3,
             },
             GQSP: {"rotation_precision": None},
+            QSP: {"rotation_precision": None},
+            GQSPTimeEvolution: {"poly_approx_precision": None},
         }
         self._custom_decomps = {}
         self._adj_custom_decomps = {}
@@ -196,11 +200,6 @@ class ResourceConfig:
     ) -> None:
         r"""Sets the precision for a given resource operator.
 
-        This method updates the parameter value for operators that use tolerance parameters
-        (e.g., for synthesis error). By default the parameter name is assumed to be ``precision``.
-        It will raise an error if users attempt to set the precision for an operator that is not
-        configurable. A negative precision will also raise an error.
-
         Args:
             op_type (type[:class:`~.pennylane.estimator.resource_operator.ResourceOperator`]): the operator class for which
                 to set the precision
@@ -210,6 +209,7 @@ class ResourceConfig:
         Raises:
             ValueError: If ``op_type`` is not a configurable operator or if setting
                 the precision for it is not supported, or if ``precision`` is negative.
+            ValueError: If ``resource_key`` is not a supported parameter for the given ``op_type``.
 
         **Example**
 
