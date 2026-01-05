@@ -654,18 +654,14 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
   Some legacy information has been removed from the output.
   [(#8713)](https://github.com/PennyLaneAI/pennylane/pull/8713)
 
-* The value ``None`` has been removed as a valid argument to the ``level`` parameter in the
-  :func:`pennylane.workflow.get_transform_program`, :func:`pennylane.workflow.construct_batch`,
-  :func:`pennylane.draw`, :func:`pennylane.draw_mpl`, and :func:`pennylane.specs` transforms.
+* The value ``level=None`` is no longer a valid argument in the following:
+  :func:`~.workflow.get_transform_program`, :func:`~.workflow.construct_batch`,
+  :func:`~.draw`, :func:`~.draw_mpl`, and :func:`~.specs`.
   Please use ``level='device'`` instead to apply the transform at the device level.
   [(#8477)](https://github.com/PennyLaneAI/pennylane/pull/8477)
 
 * The ``max_work_wires`` argument of the :func:`~pennylane.transforms.decompose` transform has been renamed to ``num_work_wires``.
   [(#8769)](https://github.com/PennyLaneAI/pennylane/pull/8769)
-
-* ``argnum`` has been renamed ``argnums`` for ``qml.grad``, ``qml.jacobian``, ``qml.jvp`` and ``qml.vjp``.
-  [(#8496)](https://github.com/PennyLaneAI/pennylane/pull/8496)
-  [(#8481)](https://github.com/PennyLaneAI/pennylane/pull/8481)
 
 * `qml.cond`, the `QNode`, transforms, `qml.grad`, and `qml.jacobian` no longer treat all keyword arguments as static
   arguments. They are instead treated as dynamic, numerical inputs, matching the behaviour of Jax and Catalyst.
@@ -697,12 +693,12 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
   has been renamed to `tape_transform` to avoid ambiguity.
   [(#8756)](https://github.com/PennyLaneAI/pennylane/pull/8756)
 
-* ``QuantumScript.to_openqasm`` has been removed. Please use ``qml.to_openqasm`` instead. This removes duplicated
+* ``QuantumScript.to_openqasm`` has been removed. Please use :func:`~.to_openqasm` instead. This removes duplicated
   functionality for converting a circuit to OpenQASM code.
   [(#8499)](https://github.com/PennyLaneAI/pennylane/pull/8499)
 
-* Providing ``num_steps`` to :func:`pennylane.evolve`, :func:`pennylane.exp`, :class:`pennylane.ops.Evolution`,
-  and :class:`pennylane.ops.Exp` has been disallowed. Instead, use :class:`~.TrotterProduct` for approximate
+* Providing ``num_steps`` to :func:`~.evolve`, :func:`~.exp`, :class:`~.ops.op_math.Evolution`,
+  and :class:`~.ops.op_math.Exp` has been disallowed. Instead, use :class:`~.TrotterProduct` for approximate
   methods, providing the ``n`` parameter to perform the Suzuki-Trotter product approximation of a Hamiltonian
   with the specified number of Trotter steps.
   [(#8474)](https://github.com/PennyLaneAI/pennylane/pull/8474)
@@ -736,8 +732,8 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
   PauliRot(-0.6, XY, wires=[0, 1])]
   ```
 
-* Access to ``add_noise``, ``insert`` and noise mitigation transforms from the ``pennylane.transforms`` module is removed.
-  Instead, these functions should be imported from the ``pennylane.noise`` module.
+* Access to ``add_noise``, ``insert`` and noise mitigation transforms from the :mod:`~pennylane~.transforms` module is removed.
+  Instead, these functions should be imported from the :mod:`~pennylane~.noise` module.
   [(#8477)](https://github.com/PennyLaneAI/pennylane/pull/8477)
 
 * ``qml.qnn.cost.SquaredErrorLoss`` has been removed. Instead, this hybrid workflow can be accomplished
@@ -754,17 +750,18 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
   - ``descendants_in_order(obj)`` in favor of ``descendants(obj, sort=True)``
 
 * ``pennylane.devices.DefaultExecutionConfig`` has been removed. Instead, use
-  ``qml.devices.ExecutionConfig()`` to create a default execution configuration.
+  :class:`~.devices.ExecutionConfig()` to create a default execution configuration.
   [(#8470)](https://github.com/PennyLaneAI/pennylane/pull/8470)
 
-* Specifying the ``work_wire_type`` argument in ``qml.ctrl`` and other controlled operators as ``"clean"`` or
+* Specifying the ``work_wire_type`` argument in :func:`~.ctrl` and other controlled operators as ``"clean"`` or
   ``"dirty"`` is disallowed. Use ``"zeroed"`` to indicate that the work wires are initially in the :math:`|0\rangle`
   state, and ``"borrowed"`` to indicate that the work wires can be in any arbitrary state. In both cases, the
   work wires are assumed to be restored to their original state upon completing the decomposition.
   [(#8470)](https://github.com/PennyLaneAI/pennylane/pull/8470)
 
-* `QuantumScript.shape` and `QuantumScript.numeric_type` are removed. The corresponding `MeasurementProcess`
-  methods should be used instead.
+* `QuantumScript.shape` and `QuantumScript.numeric_type` are removed.
+  The corresponding :class:`~.measurements.MeasurementProcess`
+  attributes and methods should be used instead.
   [(#8468)](https://github.com/PennyLaneAI/pennylane/pull/8468)
 
 * `MeasurementProcess.expand` is removed.
@@ -779,7 +776,7 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
 * The :func:`~.dynamic_one_shot` transform can no longer be applied directly on a QNode.
   [(8781)](https://github.com/PennyLaneAI/pennylane/pull/8781)
 
-* The unified compiler, implemented in the `qml.compiler.python_compiler` submodule, has been removed from PennyLane.
+* The `qml.compiler.python_compiler` submodule has been removed from PennyLane.
   It has been migrated to Catalyst, available as `catalyst.python_interface`.
   [(#8662)](https://github.com/PennyLaneAI/pennylane/pull/8662)
 
@@ -793,6 +790,11 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
   We recommend upgrading your version of NumPy to benefit from enhanced support and features.
   [(#8578)](https://github.com/PennyLaneAI/pennylane/pull/8578)
   [(#8497)](https://github.com/PennyLaneAI/pennylane/pull/8497)
+
+* The ``argnum`` parameter has been renamed to ``argnums`` for
+  ``qml.grad``, ``qml.jacobian``, ``qml.jvp`` and ``qml.vjp``.
+  [(#8496)](https://github.com/PennyLaneAI/pennylane/pull/8496)
+  [(#8481)](https://github.com/PennyLaneAI/pennylane/pull/8481)
 
 * The ``custom_decomps`` keyword argument to ``qml.device`` has been deprecated and will be removed
   in 0.45. Instead, with ``qml.decomposition.enable_graph()``, new decomposition rules can be defined as
