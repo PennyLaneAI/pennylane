@@ -497,9 +497,7 @@ def _qrom_decomposition(
     data, control_wires, target_wires, work_wires, clean, **__
 ):  # pylint: disable=unused-argument, too-many-arguments
     if len(control_wires) == 0:
-        for bits in data:
-            BasisEmbedding(bits, wires=target_wires)
-        return
+        BasisEmbedding(data[0, :], wires=target_wires)
 
     swap_wires = target_wires + work_wires
 
