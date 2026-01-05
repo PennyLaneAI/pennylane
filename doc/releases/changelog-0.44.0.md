@@ -637,6 +637,10 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
   the ``galois`` package for this single function and provides a minor performance improvement.
   [(#8771)](https://github.com/PennyLaneAI/pennylane/pull/8771)
 
+* `qml.cond` will also accept a partial of an operator type as the true function without a false function
+  when capture is enabled.
+  [(#8776)](https://github.com/PennyLaneAI/pennylane/pull/8776)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * A new transform :func:`~.transforms.select_pauli_rot_phase_gradient` has been added. It allows 
@@ -646,11 +650,26 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
 
 <h3>Breaking changes 💔</h3>
 
-* The `final_transform` property of the :class:`~.transforms.core.BoundTransform` has been renamed 
-  to `is_final_transform` to better follow the naming convention for boolean properties. The `transform` 
-  property of the :class:`~.transforms.core.Transform` and :class:`~.transforms.core.BoundTransform` 
-  has been renamed to `tape_transform` to avoid ambiguity.
-  [(#8756)](https://github.com/PennyLaneAI/pennylane/pull/8756)
+* The output format of :func:`~.specs` has been restructured into a dataclass to streamline the outputs.
+  Some legacy information has been removed from the output.
+  [(#8713)](https://github.com/PennyLaneAI/pennylane/pull/8713)
+
+* The value ``None`` has been removed as a valid argument to the ``level`` parameter in the
+  :func:`pennylane.workflow.get_transform_program`, :func:`pennylane.workflow.construct_batch`,
+  :func:`pennylane.draw`, :func:`pennylane.draw_mpl`, and :func:`pennylane.specs` transforms.
+  Please use ``level='device'`` instead to apply the transform at the device level.
+  [(#8477)](https://github.com/PennyLaneAI/pennylane/pull/8477)
+
+* The ``max_work_wires`` argument of the :func:`~pennylane.transforms.decompose` transform has been renamed to ``num_work_wires``.
+  [(#8769)](https://github.com/PennyLaneAI/pennylane/pull/8769)
+
+* ``argnum`` has been renamed ``argnums`` for ``qml.grad``, ``qml.jacobian``, ``qml.jvp`` and ``qml.vjp``.
+  [(#8496)](https://github.com/PennyLaneAI/pennylane/pull/8496)
+  [(#8481)](https://github.com/PennyLaneAI/pennylane/pull/8481)
+
+* `qml.cond`, the `QNode`, transforms, `qml.grad`, and `qml.jacobian` no longer treat all keyword arguments as static
+  arguments. They are instead treated as dynamic, numerical inputs, matching the behaviour of Jax and Catalyst.
+  [(#8290)](https://github.com/PennyLaneAI/pennylane/pull/8290)
 
 * Qualtran call graphs built via :func:`~.to_bloq` now return resource counts via PennyLane's resource estimation module
   instead of via PennyLane decompositions. To restore the previous behaviour, set ``call_graph='decomposition'``.
@@ -671,16 +690,12 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
    TwoBitSwap(): 2
   }
   ```
-* The output format of `qml.specs` has been restructured into a dataclass to streamline the outputs.
-  Some legacy information has been removed from the new output format.
-  [(#8713)](https://github.com/PennyLaneAI/pennylane/pull/8713)
 
-* The unified compiler, implemented in the `qml.compiler.python_compiler` submodule, has been removed from PennyLane.
-  It has been migrated to Catalyst, available as `catalyst.python_interface`.
-  [(#8662)](https://github.com/PennyLaneAI/pennylane/pull/8662)
-
-* `qml.transforms.map_wires` no longer supports plxpr transforms.
-  [(#8683)](https://github.com/PennyLaneAI/pennylane/pull/8683)
+* The `final_transform` property of the :class:`~.transforms.core.BoundTransform` has been renamed 
+  to `is_final_transform` to better follow the naming convention for boolean properties. The `transform` 
+  property of the :class:`~.transforms.core.Transform` and :class:`~.transforms.core.BoundTransform` 
+  has been renamed to `tape_transform` to avoid ambiguity.
+  [(#8756)](https://github.com/PennyLaneAI/pennylane/pull/8756)
 
 * ``QuantumScript.to_openqasm`` has been removed. Please use ``qml.to_openqasm`` instead. This removes duplicated
   functionality for converting a circuit to OpenQASM code.
@@ -721,13 +736,7 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
   PauliRot(-0.6, XY, wires=[0, 1])]
   ```
 
-* The value ``None`` has been removed as a valid argument to the ``level`` parameter in the
-  :func:`pennylane.workflow.get_transform_program`, :func:`pennylane.workflow.construct_batch`,
-  :func:`pennylane.draw`, :func:`pennylane.draw_mpl`, and :func:`pennylane.specs` transforms.
-  Please use ``level='device'`` instead to apply the transform at the device level.
-  [(#8477)](https://github.com/PennyLaneAI/pennylane/pull/8477)
-
-* Access to ``add_noise``, ``insert`` and noise mitigation transforms from the ``pennylane.transforms`` module is deprecated.
+* Access to ``add_noise``, ``insert`` and noise mitigation transforms from the ``pennylane.transforms`` module is removed.
   Instead, these functions should be imported from the ``pennylane.noise`` module.
   [(#8477)](https://github.com/PennyLaneAI/pennylane/pull/8477)
 
@@ -767,23 +776,15 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
   Instead, please use `QNode.transform_program.push_back(transform_container=transform_container)`.
   [(#8468)](https://github.com/PennyLaneAI/pennylane/pull/8468)
 
-* The ``max_work_wires`` argument of the :func:`~pennylane.transforms.decompose` transform has been renamed to ``num_work_wires``.
-  [(#8769)](https://github.com/PennyLaneAI/pennylane/pull/8769)
-
-* ``argnum`` has been renamed ``argnums`` for ``qml.grad``, ``qml.jacobian``, ``qml.jvp`` and ``qml.vjp``.
-  [(#8496)](https://github.com/PennyLaneAI/pennylane/pull/8496)
-  [(#8481)](https://github.com/PennyLaneAI/pennylane/pull/8481)
-
-* `qml.cond`, the `QNode`, transforms, `qml.grad`, and `qml.jacobian` no longer treat all keyword arguments as static
-  arguments. They are instead treated as dynamic, numerical inputs, matching the behaviour of Jax and Catalyst.
-  [(#8290)](https://github.com/PennyLaneAI/pennylane/pull/8290)
-
-* `qml.cond` will also accept a partial of an operator type as the true function without a false function
-  when capture is enabled.
-  [(#8776)](https://github.com/PennyLaneAI/pennylane/pull/8776)
-
 * The :func:`~.dynamic_one_shot` transform can no longer be applied directly on a QNode.
   [(8781)](https://github.com/PennyLaneAI/pennylane/pull/8781)
+
+* The unified compiler, implemented in the `qml.compiler.python_compiler` submodule, has been removed from PennyLane.
+  It has been migrated to Catalyst, available as `catalyst.python_interface`.
+  [(#8662)](https://github.com/PennyLaneAI/pennylane/pull/8662)
+
+* `qml.transforms.map_wires` no longer supports PLxPR transforms.
+  [(#8683)](https://github.com/PennyLaneAI/pennylane/pull/8683)
 
 <h3>Deprecations 👋</h3>
 
