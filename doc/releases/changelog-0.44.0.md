@@ -994,8 +994,8 @@ A warning message has been added to :doc:`Building a plugin <../development/plug
   for `Z` param initialization.
   [(#8689)](https://github.com/PennyLaneAI/pennylane/pull/8689)
 
-* Use a fixed floating number tolerance from `np.finfo` in `_apply_uniform_rotation_dagger`
-  to avoid numerical stability issues on some platforms.
+* `_apply_uniform_rotation_dagger` now uses a fixed floating number tolerance
+  from `np.finfo` to avoid numerical stability issues on some platforms.
   [(#8780)](https://github.com/PennyLaneAI/pennylane/pull/8780)
 
 * Handles floating point errors in the norm of the state when applying
