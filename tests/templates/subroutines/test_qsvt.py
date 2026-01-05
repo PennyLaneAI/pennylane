@@ -36,6 +36,7 @@ from pennylane.templates.subroutines.qsvt import (
     _z_rotation,
     jit_if_jax_available,
 )
+from importlib import import_module, util
 
 if util.find_spec("jax") is not None:
     jax = import_module("jax")
