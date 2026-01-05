@@ -254,6 +254,7 @@
 * A :class:`~.CompilePipeline` can be initialized by passing any number of transforms or other ``CompilePipeline``s,
   providing more flexibility than the previous ``TransformProgram`` class.
   [(#8750)](https://github.com/PennyLaneAI/pennylane/pull/8750)
+  [(#8834)](https://github.com/PennyLaneAI/pennylane/pull/8834)
 
   ```python
   >>> pipeline = qml.CompilePipeline(qml.transforms.commute_controlled, qml.transforms.cancel_inverses)
@@ -1059,10 +1060,6 @@ A warning message has been added to :doc:`Building a plugin <../development/plug
 
 * Fixes a bug where an error is raised when `to_openqasm` is used with `qml.decomposition.enable_graph()`
   [(#8809)](https://github.com/PennyLaneAI/pennylane/pull/8809)
-
-* Fixes a bug where `qml.CompilePipeline` does not allow other types of transforms than `BoundTransform`
-  to initialize it.
-  [(#8834)](https://github.com/PennyLaneAI/pennylane/pull/8834)
 
 <h3>Contributors ✍️</h3>
 
