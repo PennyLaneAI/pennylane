@@ -37,17 +37,31 @@ from pennylane.templates.subroutines.qsvt import (
     jit_if_jax_available,
 )
 
-is_jax_available = True
-is_optax_available = True
-try:
-    import jax
-except ImportError:
+if util.find_spec("jax") is not None:
+    jax = import_module("jax")
+    is_jax_available = True
+else:
     is_jax_available = False
+    jax = None
 
-try:
-    import optax  # pylint: disable=unused-import
-except ImportError:
+if util.find_spec("optax") is not None:
+    optax = import_module("optax")
+    is_optax_available = True
+else:
     is_optax_available = False
+    optax = None
+
+# is_jax_available = True
+# is_optax_available = True
+# try:
+#     import jax
+# except ImportError:
+#     is_jax_available = False
+
+# try:
+#     import optax  # pylint: disable=unused-import
+# except ImportError:
+#     is_optax_available = False
 
 
 def qfunc(A):

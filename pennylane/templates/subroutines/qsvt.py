@@ -35,22 +35,37 @@ from pennylane.operation import Operation, Operator
 from pennylane.queuing import QueuingManager, apply
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
+from importlib import import_module, util
 
 from .fable import FABLE
 from .prepselprep import PrepSelPrep
 from .qubitization import Qubitization
 
-is_jax_available = True
-is_optax_available = True
-try:
-    import jax
-except ImportError:  # pragma: no cover
-    is_jax_available = False  # pragma: no cover
+if util.find_spec("jax") is not None:
+    jax = import_module("jax")
+    is_jax_available = True
+else:
+    is_jax_available = False
+    jax = None
 
-try:
-    import optax
-except ImportError:
-    is_otpax_available = False
+if util.find_spec("optax") is not None:
+    optax = import_module("optax")
+    is_optax_available = True
+else:
+    is_optax_available = False
+    optax = None
+
+# is_jax_available = True
+# is_optax_available = True
+# try:
+#     import jax
+# except ImportError:  # pragma: no cover
+#     is_jax_available = False  # pragma: no cover
+
+# try:
+#     import optax
+# except ImportError:
+#     is_otpax_available = False
 
 
 def jit_if_jax_available(f, **kwargs):
