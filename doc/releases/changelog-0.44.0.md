@@ -791,42 +791,6 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
   [(#8578)](https://github.com/PennyLaneAI/pennylane/pull/8578)
   [(#8497)](https://github.com/PennyLaneAI/pennylane/pull/8497)
 
-* The ``argnum`` parameter has been renamed to ``argnums`` for
-  ``qml.grad``, ``qml.jacobian``, ``qml.jvp`` and ``qml.vjp``.
-  [(#8496)](https://github.com/PennyLaneAI/pennylane/pull/8496)
-  [(#8481)](https://github.com/PennyLaneAI/pennylane/pull/8481)
-
-* The ``custom_decomps`` keyword argument to ``qml.device`` has been deprecated and will be removed
-  in 0.45. Instead, with ``qml.decomposition.enable_graph()``, new decomposition rules can be defined as
-  quantum functions with registered resources. See :mod:`pennylane.decomposition` for more details.
-
-* `qml.measure`, `qml.measurements.MidMeasureMP`, `qml.measurements.MeasurementValue`,
-  and `qml.measurements.get_mcm_predicates` are now located in `qml.ops.mid_measure`.
-  `MidMeasureMP` is now renamed to `MidMeasure`.
-  `qml.measurements.find_post_processed_mcms` is now `qml.devices.qubit.simulate._find_post_processed_mcms`,
-  and is being made private, as it is an utility for tree-traversal.
-  [(#8466)](https://github.com/PennyLaneAI/pennylane/pull/8466)
-
-* The ``pennylane.operation.Operator.is_hermitian`` property has been deprecated and renamed
-  to ``pennylane.operation.Operator.is_verified_hermitian`` as it better reflects the functionality of this property.
-  The deprecated access through ``is_hermitian`` will be removed in PennyLane v0.45.
-  Alternatively, consider using the ``pennylane.is_hermitian`` function instead as it provides a more reliable check for hermiticity.
-  Please be aware that it comes with a higher computational cost.
-  [(#8494)](https://github.com/PennyLaneAI/pennylane/pull/8494)
-
-* Access to the follow functions and classes from the ``pennylane.resources`` module are deprecated. Instead, these functions must be imported from the ``pennylane.estimator`` module.
-  [(#8484)](https://github.com/PennyLaneAI/pennylane/pull/8484)
-
-  - ``qml.estimator.estimate_shots`` in favor of ``qml.resources.estimate_shots``
-  - ``qml.estimator.estimate_error`` in favor of ``qml.resources.estimate_error``
-  - ``qml.estimator.FirstQuantization`` in favor of ``qml.resources.FirstQuantization``
-  - ``qml.estimator.DoubleFactorization`` in favor of ``qml.resources.DoubleFactorization``
-
-* The :func:`pennylane.devices.preprocess.mid_circuit_measurements` transform is deprecated. Instead,
-  the device should determine which mcm method to use, and explicitly include :func:`~pennylane.transforms.dynamic_one_shot`
-  or :func:`~pennylane.transforms.defer_measurements` in its preprocess transforms if necessary.
-  [(#8467)](https://github.com/PennyLaneAI/pennylane/pull/8467)
-
 * Passing a function to the ``gate_set`` argument in the :func:`~pennylane.transforms.decompose` transform
   is deprecated. The ``gate_set`` argument expects a static iterable of operator type and/or operator names,
   and the function should be passed to the ``stopping_condition`` argument instead.
@@ -853,6 +817,43 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
   1: ────╭●─────│─────╭●─────│───T─╰X──T†─╰X─┤
   2: ──H─╰X──T†─╰X──T─╰X──T†─╰X──T──H────────┤
   ```
+
+* The ``argnum`` parameter has been renamed to ``argnums`` for
+  ``qml.grad``, ``qml.jacobian``, ``qml.jvp`` and ``qml.vjp``.
+  [(#8496)](https://github.com/PennyLaneAI/pennylane/pull/8496)
+  [(#8481)](https://github.com/PennyLaneAI/pennylane/pull/8481)
+
+* The ``custom_decomps`` keyword argument to ``qml.device`` has been deprecated and will be removed
+  in 0.45. Instead, with ``qml.decomposition.enable_graph()``, new decomposition rules can be defined as
+  quantum functions with registered resources. See :mod:`pennylane.decomposition` for more details.
+
+* `qml.measure`, `qml.measurements.MidMeasureMP`, `qml.measurements.MeasurementValue`,
+  and `qml.measurements.get_mcm_predicates` are now located in `qml.ops.mid_measure`.
+  `MidMeasureMP` has been renamed to `MidMeasure`.
+  `qml.measurements.find_post_processed_mcms` is now `qml.devices.qubit.simulate._find_post_processed_mcms`,
+  and is being made private, as it is an utility for tree-traversal.
+  [(#8466)](https://github.com/PennyLaneAI/pennylane/pull/8466)
+
+* The ``pennylane.operation.Operator.is_hermitian`` property has been deprecated and renamed
+  to ``pennylane.operation.Operator.is_verified_hermitian`` as it better reflects the functionality of this property.
+  Access through ``pennylane.operation.Operator.is_hermitian`` is deprecated and will be removed in v0.45.
+  Alternatively, consider using the :func:`~.is_hermitian` function instead for a thorough verification of hermiticity,
+  at a higher computational cost.
+  [(#8494)](https://github.com/PennyLaneAI/pennylane/pull/8494)
+
+* Access to the follow functions and classes from the :mod:`~.resources` module are deprecated.
+  Instead, these functions must be imported from the :mod:`~.estimator` module.
+  [(#8484)](https://github.com/PennyLaneAI/pennylane/pull/8484)
+
+  - ``qml.estimator.estimate_shots`` in favor of ``qml.resources.estimate_shots``
+  - ``qml.estimator.estimate_error`` in favor of ``qml.resources.estimate_error``
+  - ``qml.estimator.FirstQuantization`` in favor of ``qml.resources.FirstQuantization``
+  - ``qml.estimator.DoubleFactorization`` in favor of ``qml.resources.DoubleFactorization``
+
+* The :func:`pennylane.devices.preprocess.mid_circuit_measurements` transform is deprecated. Instead,
+  the device should determine which MCM method to use, and explicitly include :func:`~pennylane.transforms.dynamic_one_shot`
+  or :func:`~pennylane.transforms.defer_measurements` in its preprocessing transforms if necessary.
+  [(#8467)](https://github.com/PennyLaneAI/pennylane/pull/8467)
 
 <h3>Internal changes ⚙️</h3>
 
