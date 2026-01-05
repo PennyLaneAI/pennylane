@@ -40,6 +40,11 @@ def compile(
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Compile a circuit by applying a series of transforms to a quantum function.
 
+    .. note::
+
+        For creating large & complex compilation pipelines in a natural way we recommend using the
+        new :class:`~.CompilePipeline` class.
+
     The default set of transforms includes (in order):
 
     - pushing all commuting single-qubit gates as far right as possible
