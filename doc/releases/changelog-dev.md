@@ -95,13 +95,9 @@
 <h4>Pauli-based computation 💻 </h4>
   
   New tools dedicated to fault-tolerant quantum computing (FTQC) research based on the Pauli-based
-  computation framework are now available! The functionalities are designed to allow rapid and flexible
-  design, optimization and inspectability of quantum circuits at the logical level.
-  
-  Pauli product rotations (PPRs) and Pauli product measurements (PPMs) are the building blocks for
-  quantum computation under the Pauli-based model. In FTQC based on surface code architectures, to
-  save on classical compilation times, it is useful to write common gates and subroutines directly
-  in this representation.
+  computation framework are now available! With this release, you can now express, compile, and inspect 
+  workflows written in terms of Pauli product rotations (PPRs) and Pauli product measurements (PPMs), which are 
+  the building blocks of Pauli-based computation framework.
 
 * Writing circuits in terms of `Pauli product measurements <https://pennylane.ai/compilation/pauli-product-measurement>`_
   (PPMs) in PennyLane is now possible with the new :func:`~.pauli_measure` function.
