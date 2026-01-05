@@ -217,18 +217,16 @@ class Wires(Sequence):
         """Defines a numpy array representation of the Wires object.
 
         Args:
-            dtype: The desired data-type for the array.
-            copy: If True, then force a copy. If False, then ensure that a copy
-                is not made. If None (default), a copy will only be made if
+            dtype: The desired data-type for the array. Default is ``None``.
+            copy: If ``True``, then force a copy. If ``False``, then ensure that a copy
+                is not made. If ``None`` (default), a copy will only be made if
                 necessary.
 
         Returns:
             ndarray: array representing Wires object
         """
         arr = np.array(self._labels, dtype=dtype)
-        if copy:
-            return arr.copy()
-        return arr
+        return arr.copy() if copy else arr
 
     def __jax_array__(self):
         """Defines a JAX numpy array representation of the Wires object.

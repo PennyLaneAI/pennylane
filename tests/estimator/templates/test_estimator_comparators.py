@@ -96,7 +96,7 @@ class TestIntegerComparator:
 
     def test_init_raises_error(self):
         """Test that an error is raised when wires and register_size are both not provided"""
-        with pytest.raises(ValueError, match="Must provide atleast one of"):
+        with pytest.raises(ValueError, match="Must provide at least one of"):
             qre.IntegerComparator(value=3)
 
     @pytest.mark.parametrize(

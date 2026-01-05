@@ -138,19 +138,19 @@ class TestQubitizeTHC:
                 qre.THCHamiltonian(58, 160),
                 qre.PrepTHC(qre.THCHamiltonian(58, 160), coeff_precision=13),
                 qre.SelectTHC(qre.THCHamiltonian(58, 160), rotation_precision=13),
-                {"algo_wires": 183, "auxiliary_wires": 752, "toffoli_gates": 8989},
+                {"algo_wires": 183, "auxiliary_wires": 752, "toffoli_gates": 8539},
             ),
             (
                 qre.THCHamiltonian(10, 50),
                 None,
                 None,
-                {"algo_wires": 78, "auxiliary_wires": 148, "toffoli_gates": 2349},
+                {"algo_wires": 78, "auxiliary_wires": 148, "toffoli_gates": 2265},
             ),
             (
                 qre.THCHamiltonian(4, 20),
                 qre.PrepTHC(qre.THCHamiltonian(4, 20), select_swap_depth=2),
                 None,
-                {"algo_wires": 59, "auxiliary_wires": 58, "toffoli_gates": 967},
+                {"algo_wires": 59, "auxiliary_wires": 58, "toffoli_gates": 941},
             ),
         ),
     )
@@ -182,7 +182,7 @@ class TestQubitizeTHC:
                 qre.SelectTHC(qre.THCHamiltonian(58, 160), rotation_precision=13),
                 1,
                 1,
-                {"algo_wires": 184, "auxiliary_wires": 752, "toffoli_gates": 8990},
+                {"algo_wires": 184, "auxiliary_wires": 752, "toffoli_gates": 8540},
             ),
             (
                 qre.THCHamiltonian(10, 50),
@@ -190,7 +190,7 @@ class TestQubitizeTHC:
                 None,
                 2,
                 0,
-                {"algo_wires": 80, "auxiliary_wires": 149, "toffoli_gates": 2352},
+                {"algo_wires": 80, "auxiliary_wires": 149, "toffoli_gates": 2268},
             ),
             (
                 qre.THCHamiltonian(4, 20),
@@ -198,7 +198,7 @@ class TestQubitizeTHC:
                 None,
                 3,
                 2,
-                {"algo_wires": 62, "auxiliary_wires": 59, "toffoli_gates": 972},
+                {"algo_wires": 62, "auxiliary_wires": 59, "toffoli_gates": 946},
             ),
         ),
     )
