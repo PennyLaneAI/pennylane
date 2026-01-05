@@ -342,7 +342,7 @@
       return qml.probs()
   ```
 
-  The supplied ``level`` to :func:`pennylane.specs` may be individual `int` values, or an iterable 
+  The supplied ``level`` to :func:`pennylane.specs` may be individual ``int`` values, or an iterable 
   of multiple levels. Additionally, the strings ``"all"`` and ``"all-mlir"`` are allowed, returning 
   circuit resources for all user-applied transforms and MLIR passes, or all user-applied MLIR passes only, respectively.
 
