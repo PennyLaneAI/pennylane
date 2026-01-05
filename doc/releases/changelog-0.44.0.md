@@ -963,32 +963,33 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
 * The documentation of ``qml.transforms.rz_phase_gradient`` has been updated with respect to the
   sign convention of phase gradient states, how it prepares the phase gradient state in the code
   example, and the verification of the code example result.
+  [(#8536)](https://github.com/PennyLaneAI/pennylane/pull/8536)
 
 * The code example in the documentation for ``qml.decomposition.register_resources`` has been
   updated to adhere to renamed keyword arguments and default behaviour of ``num_work_wires``.
-  [(#8536)](https://github.com/PennyLaneAI/pennylane/pull/8536)
+  [(#8550)](https://github.com/PennyLaneAI/pennylane/pull/8550)
 
 * The docstring for ``qml.device`` has been updated to include a section on custom decompositions,
-  and a warning about the removal of the ``custom_decomps`` kwarg in v0.45. Additionally, the page
-  :doc:`Building a plugin <../development/plugins>` now includes instructions on using
+  and a warning about the removal of the ``custom_decomps`` kwarg in v0.45. Additionally, the
+  :doc:`Building a plugin <../development/plugins>` page now includes instructions on using
   the :func:`~pennylane.devices.preprocess.decompose` transform for device-level decompositions.
   The documentation for :doc:`Compiling circuits <../introduction/compiling_circuits>` has also been
   updated with a warning message about ``custom_decomps`` future removal.
   [(#8492)](https://github.com/PennyLaneAI/pennylane/pull/8492)
   [(#8564)](https://github.com/PennyLaneAI/pennylane/pull/8564)
 
-A warning message has been added to :doc:`Building a plugin <../development/plugins>`
+* A warning message has been added to :doc:`Building a plugin <../development/plugins>`
   docstring for ``qml.device`` has been updated to include a section on custom decompositions,
   and a warning about the removal of the ``custom_decomps`` kwarg in v0.44. Additionally, the page
   :doc:`Building a plugin <../development/plugins>` now includes instructions on using
   the :func:`~pennylane.devices.preprocess.decompose` transform for device-level decompositions.
   [(#8492)](https://github.com/PennyLaneAI/pennylane/pull/8492)
 
-* Improves documentation in the transforms module and adds documentation testing for it.
+* Improved documentation in the :mod:`~.transforms` module and added documentation testing.
   [(#8557)](https://github.com/PennyLaneAI/pennylane/pull/8557)
 
-* The :class:`~.GeneralizedAmplitudeDamping` error channel method has been
-  updated to match the literature convention for the definition of the Kraus matrices.
+* The documentation for :class:`~.GeneralizedAmplitudeDamping` has been updated to match
+  the standard convention in literature for the definition of the Kraus matrices.
   [(#8707)](https://github.com/PennyLaneAI/pennylane/pull/8707)
 
 <h3>Bug fixes 🐛</h3>
