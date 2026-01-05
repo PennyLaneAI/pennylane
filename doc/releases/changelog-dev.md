@@ -212,6 +212,10 @@
   CompilePipeline(merge_rotations, cancel_inverses)
   ```
 
+* Added an ``extend`` method to :class:`~.transforms.core.CompilePipeline` for appending multiple 
+  transforms from an iterable or another ``CompilePipeline``.
+  [(#8820)](https://github.com/PennyLaneAI/pennylane/pull/8820)
+
 * The following changes are made to the API of the :class:`~.CompilePipeline` (previously known as the `TransformProgram`)
   [(#8751)](https://github.com/PennyLaneAI/pennylane/pull/8751)
   [(#8774)](https://github.com/PennyLaneAI/pennylane/pull/8774)
@@ -257,10 +261,6 @@
   >>> qml.CompilePipeline(pipeline, qml.transforms.merge_rotations)
   CompilePipeline(commute_controlled, cancel_inverses, merge_rotations)
   ```
-
-* Added an ``extend`` method to :class:`~.transforms.core.CompilePipeline` for appending multiple 
-  transforms from an iterable or another ``CompilePipeline``.
-  [(#8820)](https://github.com/PennyLaneAI/pennylane/pull/8820)
 
 * Quantum compilation passes in MLIR and XDSL can now be applied using the core PennyLane transform
   infrastructure, instead of using Catalyst-specific tools. This is made possible by a new argument in
