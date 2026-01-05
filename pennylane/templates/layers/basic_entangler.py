@@ -264,8 +264,7 @@ def _basic_entangler_decomposition(weights, wires, rotation):
         def elif_body():
             for i in range(len(wires)):  # pylint: disable=consider-using-enumerate
                 j = i + 1
-                if j >= len(wires):
-                    j = 0
+                j = j % len(wires)
                 CNOT(wires=[wires[i], wires[j]])
 
         def true_body():
