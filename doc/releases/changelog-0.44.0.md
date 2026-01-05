@@ -641,6 +641,11 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
   when capture is enabled.
   [(#8776)](https://github.com/PennyLaneAI/pennylane/pull/8776)
 
+* Solovay-Kitaev decomposition using the :func:`~.clifford_t_decomposition` transform
+  with ``method="sk"`` or directly via :func:`~.ops.sk_decomposition` now raises a more
+  informative ``RuntimeError`` when used with JAX-JIT or :func:`~.qjit`.
+  [(#8489)](https://github.com/PennyLaneAI/pennylane/pull/8489)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * A new transform :func:`~.transforms.select_pauli_rot_phase_gradient` has been added. It allows 
@@ -662,10 +667,6 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
 
 * The ``max_work_wires`` argument of the :func:`~pennylane.transforms.decompose` transform has been renamed to ``num_work_wires``.
   [(#8769)](https://github.com/PennyLaneAI/pennylane/pull/8769)
-
-* `qml.cond`, the `QNode`, transforms, `qml.grad`, and `qml.jacobian` no longer treat all keyword arguments as static
-  arguments. They are instead treated as dynamic, numerical inputs, matching the behaviour of Jax and Catalyst.
-  [(#8290)](https://github.com/PennyLaneAI/pennylane/pull/8290)
 
 * Qualtran call graphs built via :func:`~.to_bloq` now return resource counts via PennyLane's resource estimation module
   instead of via PennyLane decompositions. To restore the previous behaviour, set ``call_graph='decomposition'``.
@@ -857,7 +858,8 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
 
 <h3>Internal changes ⚙️</h3>
 
-* The `_grad.py` file in split into a folder for improved source code organization.
+* The `_grad.py` file has been split into multiple files within
+  a folder for improved source code organization.
   [(#8800)](https://github.com/PennyLaneAI/pennylane/pull/8800)
 
 * Updated `pyproject.toml` with project dependencies to replace the requirements files. Updated workflows to use installations from `pyproject.toml`.
@@ -867,39 +869,40 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
   arguments. They are instead treated as dynamic, numerical inputs, matching the behaviour of Jax and Catalyst.
   [(#8290)](https://github.com/PennyLaneAI/pennylane/pull/8290)
 
-* To adjust to the Python 3.14, some error messages expectations have been updated in tests; `get_type_str` added a special branch to handle `Union`.
-  The import of networkx is softened to not occur on import of pennylane to work around a bug in Python 3.14.1.
+* Some error handling has been updated in tests, to adjust to Python 3.14; `get_type_str` added a special branch to handle `Union`.
+  The import of `networkx` is softened to not occur on import of PennyLane to work around a bug in Python 3.14.1.
   [(#8568)](https://github.com/PennyLaneAI/pennylane/pull/8568)
   [(#8737)](https://github.com/PennyLaneAI/pennylane/pull/8737)
 
-* Bump `jax` version to `0.7.1` for `capture` module.
+* Bumped `jax` version to `0.7.1` for `capture` module.
   [(#8715)](https://github.com/PennyLaneAI/pennylane/pull/8715)
 
-* Bump `jax` version to `0.7.0` for `capture` module.
+* Bumped `jax` version to `0.7.0` for `capture` module.
   [(#8701)](https://github.com/PennyLaneAI/pennylane/pull/8701)
 
-* Improve error handling when using PennyLane's experimental program capture functionality with an incompatible JAX version.
+* Improved error handling when using PennyLane's experimental program capture functionality with an incompatible JAX version.
   [(#8723)](https://github.com/PennyLaneAI/pennylane/pull/8723)
 
-* Bump `autoray` package version to `0.8.2`.
+* Bumped `autoray` package version to `0.8.2`.
   [(#8674)](https://github.com/PennyLaneAI/pennylane/pull/8674)
 
-* Update the schedule of nightly TestPyPI uploads to occur at the end rather than the beginning of all week days.
+* Updated the schedule of nightly TestPyPI uploads to occur at the end rather than the beginning of all week days.
   [(#8672)](https://github.com/PennyLaneAI/pennylane/pull/8672)
 
-* Add workflow to bump Catalyst and Lightning versions in the RC branch, create a new release tag and draft release, tag the RC branch, and create a PR to merge the RC branch into master.
+* Added workflow to bump Catalyst and Lightning versions in the RC branch, create a new release tag and draft release,
+  tag the RC branch, and create a PR to merge the RC branch into master.
   [(#8352)](https://github.com/PennyLaneAI/pennylane/pull/8352)
 
 * Added `MCM_METHOD` and `POSTSELECT_MODE` `StrEnum` objects to improve validation and handling of `MCMConfig` creation.
   [(#8596)](https://github.com/PennyLaneAI/pennylane/pull/8596)
 
-* Updated various docstrings to be compatible with the new documentation testing approach.
+* Updated various docstring examples in the :mod:`~.fourier` module
+  to be compatible with the new documentation testing approach.
   [(#8635)](https://github.com/PennyLaneAI/pennylane/pull/8635)
 
-* In program capture, transforms now have a single transform primitive that have a `transform` param that stores
+* In program capture, transforms now have a single transform primitive with a `transform` param that stores
   the `Transform`. Before, each transform had its own primitive stored on the
-  `Transform._primitive` private property. It proved difficult to keep maintaining dispatch behaviour
-  for every single transform.
+  `Transform._primitive` private property.
   [(#8576)](https://github.com/PennyLaneAI/pennylane/pull/8576)
   [(#8639)](https://github.com/PennyLaneAI/pennylane/pull/8639)
 
@@ -913,13 +916,13 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
   primitive for use in program capture.
   [(#8357)](https://github.com/PennyLaneAI/pennylane/pull/8357)
 
-* Update versions for `pylint`, `isort` and `black` in `format.yml`
+* Updated versions for `pylint`, `isort` and `black` in `format.yml`
   [(#8506)](https://github.com/PennyLaneAI/pennylane/pull/8506)
 
-* Reclassifies `registers` as a tertiary module for use with tach.
+* Reclassified `registers` as a tertiary module for use with `tach`.
   [(#8513)](https://github.com/PennyLaneAI/pennylane/pull/8513)
 
-* The :class:`~pennylane.devices.LegacyDeviceFacade` is slightly refactored to implement `setup_execution_config` and `preprocess_transforms`
+* The :class:`~pennylane.devices.LegacyDeviceFacade` was refactored to implement `setup_execution_config` and `preprocess_transforms`
   separately as opposed to implementing a single `preprocess` method. Additionally, the `mid_circuit_measurements` transform has been removed
   from the preprocess transform program. Instead, the best mcm method is chosen in `setup_execution_config`. By default, the ``_capabilities``
   dictionary is queried for the ``"supports_mid_measure"`` property. If the underlying device defines a TOML file, the ``supported_mcm_methods``
@@ -939,20 +942,16 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
   [(#8519)](https://github.com/PennyLaneAI/pennylane/pull/8519)
   [(#8544)](https://github.com/PennyLaneAI/pennylane/pull/8544)
 
-* Solovay-Kitaev decomposition using the :func:`~.clifford_t_decompostion` transform
-  with ``method="sk"`` or directly via :func:`~.ops.sk_decomposition` now raises a more
-  informative ``RuntimeError`` when used with JAX-JIT or :func:`~.qjit`.
-  [(#8489)](https://github.com/PennyLaneAI/pennylane/pull/8489)
-
 * Added a `skip_decomp_matrix_check` argument to :func:`~pennylane.ops.functions.assert_valid` that
   allows the test to skip the matrix check part of testing a decomposition rule but still verify
   that the resource function is correct.
   [(#8687)](https://github.com/PennyLaneAI/pennylane/pull/8687)
 
-* Simplified the decomposition pipeline for the estimator module. ``qre.estimate`` was updated to call the base class's `symbolic_resource_decomp` method directly.
+* Simplified the decomposition pipeline for the estimator module. :func:`~.estimator.estimate`
+  was updated to call the base class's `symbolic_resource_decomp` method directly.
   [(#8641)](https://github.com/PennyLaneAI/pennylane/pull/8641)
   
-* Disabled autograph for the PauliRot decomposition rule as it should not be used with autograph. 
+* Disabled autograph for the PauliRot decomposition rule, as it should not be used. 
   [(#8765)](https://github.com/PennyLaneAI/pennylane/pull/8765)
 
 <h3>Documentation 📝</h3>
