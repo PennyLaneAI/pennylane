@@ -90,7 +90,7 @@ class TrotterProduct(ResourceOperator):
         The number of times an operator :math:`e^{itO_{j}}` is applied depends on the
         number of Trotter steps (`n`) and the order of the approximation (`m`) and is given by:
 
-        .. math:: C_{O_j} = 2 * n \cdot 5^{\frac{m}{2} - 1}
+        .. math:: C_{O_j} = 2 \cdot n \cdot 5^{\frac{m}{2} - 1}
 
         Furthermore, because of the symmetric form of the recursive formula, the first and last terms are grouped.
         This reduces the counts for those terms to:
@@ -301,6 +301,12 @@ class TrotterCDF(ResourceOperator):
         order (int): order of the approximation, must be ``1`` or an even number
         wires (list[int] | None): the wires on which the operator acts
 
+    Raises:
+        TypeError: if ``cdf_ham`` is not an instance of :class:`~.CDFHamiltonian`
+        ValueError: if ``num_steps`` is not a positive integer
+        ValueError: if ``order`` is not 1 or a positive even integer
+        ValueError: if the number of wires provided does not match the number of wires required by the operator
+
     Resources:
         The resources are defined according to the recursive formula presented above.
         The number of times an operator :math:`e^{itO_{j}}` is applied depends on the
@@ -308,7 +314,7 @@ class TrotterCDF(ResourceOperator):
 
         .. math::
 
-            C_{O_j} = 2 * n \cdot 5^{\frac{m}{2} - 1}.
+            C_{O_j} = 2 \cdot n \cdot 5^{\frac{m}{2} - 1}.
 
         Furthermore, because of the symmetric form of the recursive formula, the first and last terms get grouped.
         This reduces the counts for those terms to:
@@ -364,8 +370,19 @@ class TrotterCDF(ResourceOperator):
         if not isinstance(cdf_ham, CDFHamiltonian):
             raise TypeError(
                 f"Unsupported Hamiltonian representation for TrotterCDF."
-                f"This method works with cdf Hamiltonian, {type(cdf_ham)} provided"
+                f"This method works with CDFHamiltonian, {type(cdf_ham)} provided"
             )
+
+        if (not isinstance(num_steps, int)) or num_steps < 1:
+            raise ValueError(
+                f"`num_steps` is expected to be a positive integer greater than one, got {num_steps}"
+            )
+
+        if not (isinstance(order, int) and order > 0 and (order == 1 or order % 2 == 0)):
+            raise ValueError(
+                f"`order` is expected to be a positive integer and either one or a multiple of two; got {order}"
+            )
+
         self.num_steps = num_steps
         self.order = order
         self.cdf_ham = cdf_ham
@@ -410,6 +427,22 @@ class TrotterCDF(ResourceOperator):
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
+        if not isinstance(cdf_ham, CDFHamiltonian):
+            raise TypeError(
+                f"Unsupported Hamiltonian representation for TrotterCDF."
+                f"This method works with CDFHamiltonian, {type(cdf_ham)} provided"
+            )
+
+        if (not isinstance(num_steps, int)) or num_steps < 1:
+            raise ValueError(
+                f"`num_steps` is expected to be a positive integer greater than one, got {num_steps}"
+            )
+
+        if not (isinstance(order, int) and order > 0 and (order == 1 or order % 2 == 0)):
+            raise ValueError(
+                f"`order` is expected to be a positive integer and either one or a multiple of two; got {order}"
+            )
+
         params = {
             "cdf_ham": cdf_ham,
             "num_steps": num_steps,
@@ -438,7 +471,7 @@ class TrotterCDF(ResourceOperator):
 
             .. math::
 
-                C_{O_j} = 2 * n \cdot 5^{\frac{m}{2} - 1}.
+                C_{O_j} = 2 \cdot n \cdot 5^{\frac{m}{2} - 1}.
 
             Furthermore, because of the symmetric form of the recursive formula, the first and last terms get grouped.
             This reduces the counts for those terms to:
@@ -620,6 +653,12 @@ class TrotterTHC(ResourceOperator):
         order (int): order of the approximation, must be ``1`` or an even number
         wires (list[int] | None): the wires on which the operator acts
 
+    Raises:
+        TypeError: if ``thc_ham`` is not an instance of :class:`~.THCHamiltonian`
+        ValueError: if ``num_steps`` is not a positive integer
+        ValueError: if ``order`` is not 1 or a positive even integer
+        ValueError: if the number of wires provided does not match the number of expected wires for the operation
+
     Resources:
         The resources are defined according to the recursive formula presented above.
         The number of times an operator :math:`e^{itO_{j}}` is applied depends on the
@@ -627,7 +666,7 @@ class TrotterTHC(ResourceOperator):
 
         .. math::
 
-            C_{O_j} = 2 * n \cdot 5^{\frac{m}{2} - 1}.
+            C_{O_j} = 2 \cdot n \cdot 5^{\frac{m}{2} - 1}.
 
         Furthermore, because of the symmetric form of the recursive formula, the first and last
         terms get grouped. This reduces the counts for those terms to:
@@ -683,8 +722,19 @@ class TrotterTHC(ResourceOperator):
         if not isinstance(thc_ham, THCHamiltonian):
             raise TypeError(
                 f"Unsupported Hamiltonian representation for TrotterTHC."
-                f"This method works with thc Hamiltonian, {type(thc_ham)} provided"
+                f"This method works with THCHamiltonian, {type(thc_ham)} provided"
             )
+
+        if (not isinstance(num_steps, int)) or num_steps < 1:
+            raise ValueError(
+                f"`num_steps` is expected to be a positive integer greater than one, got {num_steps}"
+            )
+
+        if not (isinstance(order, int) and order > 0 and (order == 1 or order % 2 == 0)):
+            raise ValueError(
+                f"`order` is expected to be a positive integer and either one or a multiple of two; got {order}"
+            )
+
         self.num_steps = num_steps
         self.order = order
         self.thc_ham = thc_ham
@@ -729,6 +779,22 @@ class TrotterTHC(ResourceOperator):
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
+        if not isinstance(thc_ham, THCHamiltonian):
+            raise TypeError(
+                f"Unsupported Hamiltonian representation for TrotterTHC."
+                f"This method works with THCHamiltonian, {type(thc_ham)} provided"
+            )
+
+        if (not isinstance(num_steps, int)) or num_steps < 1:
+            raise ValueError(
+                f"`num_steps` is expected to be a positive integer greater than one, got {num_steps}"
+            )
+
+        if not (isinstance(order, int) and order > 0 and (order == 1 or order % 2 == 0)):
+            raise ValueError(
+                f"`order` is expected to be a positive integer and either one or a multiple of two; got {order}"
+            )
+
         params = {
             "thc_ham": thc_ham,
             "num_steps": num_steps,
@@ -757,7 +823,7 @@ class TrotterTHC(ResourceOperator):
 
             .. math::
 
-                C_{O_j} = 2 * n \cdot 5^{\frac{m}{2} - 1}.
+                C_{O_j} = 2 \cdot n \cdot 5^{\frac{m}{2} - 1}.
 
             Furthermore, because of the symmetric form of the recursive formula, the first and last
             terms get grouped. This reduces the counts for those terms to:
@@ -944,6 +1010,12 @@ class TrotterVibrational(ResourceOperator):
         coeff_precision (float | None): precision for the loading of coefficients
         wires (list[int] | None): the wires on which the operator acts
 
+    Raises:
+        TypeError: if ``vibration_ham`` is not an instance of :class:`~.VibrationalHamiltonian`
+        ValueError: if ``num_steps`` is not a positive integer
+        ValueError: if ``order`` is not 1 or a positive even integer
+        ValueError: if the number of wires provided does not match the number of wires expected for the operation
+
     Resources:
         The resources are defined according to the recursive formula presented above.
         The number of times an operator :math:`e^{itO_{j}}` is applied depends on the
@@ -951,7 +1023,7 @@ class TrotterVibrational(ResourceOperator):
 
         .. math::
 
-            C_{O_j} = 2 * n \cdot 5^{\frac{m}{2} - 1}.
+            C_{O_j} = 2 \cdot n \cdot 5^{\frac{m}{2} - 1}.
 
         Furthermore, because of the symmetric form of the recursive formula, the first and last terms get grouped.
         This reduces the counts for those terms to:
@@ -1017,7 +1089,17 @@ class TrotterVibrational(ResourceOperator):
         if not isinstance(vibration_ham, VibrationalHamiltonian):
             raise TypeError(
                 f"Unsupported Hamiltonian representation for TrotterVibrational."
-                f"This method works with vibrational Hamiltonian, {type(vibration_ham)} provided"
+                f"This method works with VibrationalHamiltonian, {type(vibration_ham)} provided"
+            )
+
+        if (not isinstance(num_steps, int)) or num_steps < 1:
+            raise ValueError(
+                f"`num_steps` is expected to be a positive integer greater than one, got {num_steps}"
+            )
+
+        if not (isinstance(order, int) and order > 0 and (order == 1 or order % 2 == 0)):
+            raise ValueError(
+                f"`order` is expected to be a positive integer and either one or a multiple of two; got {order}"
             )
 
         self.num_steps = num_steps
@@ -1077,6 +1159,23 @@ class TrotterVibrational(ResourceOperator):
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
+
+        if not isinstance(vibration_ham, VibrationalHamiltonian):
+            raise TypeError(
+                f"Unsupported Hamiltonian representation for TrotterVibrational."
+                f"This method works with VibrationalHamiltonian, {type(vibration_ham)} provided"
+            )
+
+        if (not isinstance(num_steps, int)) or num_steps < 1:
+            raise ValueError(
+                f"`num_steps` is expected to be a positive integer greater than one, got {num_steps}"
+            )
+
+        if not (isinstance(order, int) and order > 0 and (order == 1 or order % 2 == 0)):
+            raise ValueError(
+                f"`order` is expected to be a positive integer and either one or a multiple of two; got {order}"
+            )
+
         params = {
             "vibration_ham": vibration_ham,
             "num_steps": num_steps,
@@ -1238,7 +1337,7 @@ class TrotterVibrational(ResourceOperator):
 
             .. math::
 
-                C_{O_j} = 2 * n \cdot 5^{\frac{m}{2} - 1}.
+                C_{O_j} = 2 \cdot n \cdot 5^{\frac{m}{2} - 1}.
 
             Furthermore, because of the symmetric form of the recursive formula, the first and last terms get grouped.
             This reduces the counts for those terms to:
@@ -1339,6 +1438,12 @@ class TrotterVibronic(ResourceOperator):
         coeff_precision (float | None): precision for the loading of coefficients
         wires (list[int] | None): the wires on which the operator acts.
 
+    Raises:
+        TypeError: if ``vibronic_ham`` is not an instance of :class:`~.VibronicHamiltonian`
+        ValueError: if ``num_steps`` is not a positive integer
+        ValueError: if ``order`` is not 1 or a positive even integer
+        ValueError: if the number of wires provided does not match the number of wires expected by the operator
+
     Resources:
         The resources are defined according to the recursive formula presented above.
         The number of times an operator :math:`e^{itO_{j}}` is applied depends on the
@@ -1346,7 +1451,7 @@ class TrotterVibronic(ResourceOperator):
 
         .. math::
 
-            C_{O_j} = 2 * n \cdot 5^{\frac{m}{2} - 1}.
+            C_{O_j} = 2 \cdot n \cdot 5^{\frac{m}{2} - 1}.
 
         Furthermore, because of the symmetric form of the recursive formula, the first and last terms get grouped.
         This reduces the counts for those terms to:
@@ -1412,7 +1517,17 @@ class TrotterVibronic(ResourceOperator):
         if not isinstance(vibronic_ham, VibronicHamiltonian):
             raise TypeError(
                 f"Unsupported Hamiltonian representation for TrotterVibronic."
-                f"This method works with vibronic Hamiltonian, {type(vibronic_ham)} provided"
+                f"This method works with VibronicHamiltonian, {type(vibronic_ham)} provided"
+            )
+
+        if (not isinstance(num_steps, int)) or num_steps < 1:
+            raise ValueError(
+                f"`num_steps` is expected to be a positive integer greater than one, got {num_steps}"
+            )
+
+        if not (isinstance(order, int) and order > 0 and (order == 1 or order % 2 == 0)):
+            raise ValueError(
+                f"`order` is expected to be a positive integer and either one or a multiple of two; got {order}"
             )
 
         self.num_steps = num_steps
@@ -1474,6 +1589,22 @@ class TrotterVibronic(ResourceOperator):
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
+        if not isinstance(vibronic_ham, VibronicHamiltonian):
+            raise TypeError(
+                f"Unsupported Hamiltonian representation for TrotterVibronic."
+                f"This method works with VibronicHamiltonian, {type(vibronic_ham)} provided"
+            )
+
+        if (not isinstance(num_steps, int)) or num_steps < 1:
+            raise ValueError(
+                f"`num_steps` is expected to be a positive integer greater than one, got {num_steps}"
+            )
+
+        if not (isinstance(order, int) and order > 0 and (order == 1 or order % 2 == 0)):
+            raise ValueError(
+                f"`order` is expected to be a positive integer and either one or a multiple of two; got {order}"
+            )
+
         params = {
             "vibronic_ham": vibronic_ham,
             "num_steps": num_steps,
@@ -1665,7 +1796,7 @@ class TrotterVibronic(ResourceOperator):
 
             .. math::
 
-                C_{O_j} = 2 * n \cdot 5^{\frac{m}{2} - 1}.
+                C_{O_j} = 2 \cdot n \cdot 5^{\frac{m}{2} - 1}.
 
             Furthermore, because of the symmetric form of the recursive formula, the first and last terms get grouped.
             This reduces the counts for those terms to:
@@ -1737,13 +1868,13 @@ class TrotterVibronic(ResourceOperator):
 
 
 class TrotterPauli(ResourceOperator):
-    r"""An operation representing the Suzuki-Trotter product approximation for the complex matrix
+    r"""A resource operation representing the Suzuki-Trotter product approximation for the complex matrix
     exponential of a Hamiltonian represented as a linear combination of tensor products of Pauli operators.
 
     The Suzuki-Trotter product formula provides a method to approximate the matrix exponential of
     Hamiltonian expressed as a linear combination of terms which in general do not commute.
-    Consider the Hamiltonian :math:`H = \Sigma^{N}_{j=0} \alpha_{j} \cdot O_{j}`: the product formula is
-    constructed using symmetrized products of the terms in the Hamiltonian. The symmetrized products 
+    For instance, in the Hamiltonian :math:`H = \Sigma^{N}_{j=0} \alpha_{j} \cdot O_{j}`, the product formula is
+    constructed using symmetrized products of the terms in the Hamiltonian. The symmetrized products
     of order :math:`m \in [1, 2, 4, ..., 2k]` with :math:`k \in \mathbb{N}` are given by:
 
     .. math::
@@ -1771,36 +1902,20 @@ class TrotterPauli(ResourceOperator):
         order (int): order of the approximation, must be ``1`` or an even number
         wires (WiresLike | None): the wires on which the operator acts
 
+    Raises:
+        TypeError: if ``pauli_ham`` is not an instance of :class:`~.PauliHamiltonian`
+        ValueError: if ``num_steps`` is not a positive integer
+        ValueError: if ``order`` is not 1 or a positive even integer
+        ValueError: if the number of wires provided does not match the wires expected by the operator
+
     Resources:
-        The resource cost for this subroutine depends on how the Pauli Hamiltonian is expressed.
-        Given the Hamiltonian :math:`H = \Sigma^{N}_{j=0} \alpha_{j} O_{j}`, each :math:`O_{j}` can 
-        either be a Pauli string (a tensor product of Pauli operators) :math:`O_{j} = \vec{P}_{j}` or 
-        a linear combination of commuting Pauli strings :math:`O_{j} = \Sigma^{M}_{j=0} \beta_{j} \vec{P}_{j}`.
-
-        In the first case, the exponential :math:`e^{i t \alpha_{j} O_{j}} = e^{i t \alpha_{j} \vec{P}_{j}}`
-        is a single generalized Pauli rotation 
-        (:class:`~.estimator.ops.qubit.parametric_ops_multi_qubit.PauliRot`). In the second
-        case, the exponential can be expanded using the fact that all operators in the sum commute:
-
-        .. math::
-
-            \begin{align}
-                e^{i t \alpha_{j} O_{j}} &= e^{i t \alpha_{j} (\Sigma^{M}_{k=0} \beta_{k} \vec{P}_{k})}  \\
-                e^{i t \alpha_{j} O_{j}} &= \Pi_{k=0}^{M} e^{i t \alpha_{j} \beta_{k} \vec{P}_{k}}
-            \end{align}
-            
-        Thus, the exponential can be expressed as a product of :math:`M` generalized Pauli rotations.
-        Using this as the cost of each individual exponential, the cost of the entire Suzuki-Trotter
-        product formula is derived below.
-
+        The resources are defined according to the recursive formula presented above.
         The number of times an operator :math:`e^{itO_{j}}` is applied depends on the
-        number of Trotter steps (`n`) and the order of the approximation (`m`) and is given by:
+        number of Trotter steps (`n`) and the order of the approximation (`m`) as:
 
-        .. math::
+        .. math:: C_{O_j} = 2 \cdot n \cdot 5^{\frac{m}{2} - 1}
 
-            C_{O_j} = 2 \cdot n \cdot 5^{\frac{m}{2} - 1}.
-
-        Furthermore, because of the symmetric form of the recursive formula, the first and last terms get grouped.
+        Furthermore, because of the symmetric form of the recursive formula, the first and last terms are grouped.
         This reduces the counts for those terms to:
 
         .. math::
@@ -1833,22 +1948,23 @@ class TrotterPauli(ResourceOperator):
        'Z': 20,
        'S': 40,
        'Hadamard': 48
-    
+
     .. details::
         :title: Usage Details
 
-        Estimating resources for the Trotterization of a Pauli Hamiltonian depends on how
-        the Pauli Hamiltonian was constructed. Specifically, if the terms of the Hamiltonian were 
-        separated into commuting groups (see :class:`~.estimator.compact_hamiltonian.PauliHamiltonian` for more information).
-        Note, that the order in which the groups are listed matters, keeping the largest groups as
-        the first and last elements of the list will lead to the most reduction in resources.
+        This example computes the resources for a Hamiltonian partitioned into commuting groups of
+        Pauli terms. See :class:`~.estimator.compact_hamiltonian.PauliHamiltonian` for more
+        information. Note that placing the largest commuting groups at the
+        boundaries, either the beginning or the end of the list, optimizes resource reduction. This
+        efficiency is achieved by merging the final operation of the Trotter step ``i`` with the initial
+        operation of step ``i+1`` which effectively minimizes gate overhead.
 
         >>> commuting_groups = (
         ...     {"X":10, "XX":5, "XXXX":3},
         ...     {"YY": 5, "ZZ":5},
         ...     {"Z": 2},
         ... )
-        >>> pauli_ham = qre.PauliHamiltonian(num_qubits=10, pauli_terms=commuting_groups)        
+        >>> pauli_ham = qre.PauliHamiltonian(num_qubits=10, pauli_terms=commuting_groups)
         >>> num_steps, order = (1, 2)
         >>> res = qre.estimate(qre.TrotterPauli(pauli_ham, num_steps, order))
         >>> print(res)
@@ -1939,6 +2055,22 @@ class TrotterPauli(ResourceOperator):
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
+
+        if not isinstance(pauli_ham, PauliHamiltonian):
+            raise TypeError(
+                "Unsupported Hamiltonian representation for TrotterPauli."
+                f"This method works with PauliHamiltonian, {type(pauli_ham)} provided"
+            )
+        if (not isinstance(num_steps, int)) or num_steps < 1:
+            raise ValueError(
+                f"`num_steps` is expected to be a positive integer greater than one, got {num_steps}"
+            )
+
+        if not (isinstance(order, int) and order > 0 and (order == 1 or order % 2 == 0)):
+            raise ValueError(
+                f"`order` is expected to be a positive integer and either one or a multiple of two; got {order}"
+            )
+
         params = {
             "pauli_ham": pauli_ham,
             "num_steps": num_steps,
@@ -1964,35 +2096,13 @@ class TrotterPauli(ResourceOperator):
             order (int): order of the approximation, must be 1 or even.
 
         Resources:
-            The resource cost for this subroutine depends on how the Pauli Hamiltonian is expressed.
-            Given the Hamiltonian :math:`H = \Sigma^{N}_{j=0} \alpha_{j} O_{j}`, each :math:`O_{j}` can 
-            either be a Pauli string (a tensor product of Pauli operators) :math:`O_{j} = \vec{P}_{j}` or 
-            a linear combination of commuting Pauli strings :math:`O_{j} = \Sigma^{M}_{j=0} \beta_{j} \vec{P}_{j}`.
-
-            In the first case, the exponential :math:`e^{i t \alpha_{j} O_{j}} = e^{i t \alpha_{j} \vec{P}_{j}}`
-            is a single generalized Pauli rotation 
-            (:class:`~.pennylane.estimator.ops.qubit.parametric_ops_multi_qubit.PauliRot`). In the second
-            case, the exponential can be expanded using the fact that all operators in the sum commute:
-
-            .. math::
-
-                \begin{align}
-                    e^{i t \alpha_{j} O_{j}} &= e^{i t \alpha_{j} (\Sigma^{M}_{k=0} \beta_{k} \vec{P}_{k})}  \\
-                    e^{i t \alpha_{j} O_{j}} &= \Pi_{k=0}^{M} e^{i t \alpha_{j} \beta_{k} \vec{P}_{k}}
-                \end{align}
-                
-            Thus, the exponential can be expressed as a product of :math:`M` generalized Pauli rotations.
-            Using these as the cost of each individual exponential, the cost of the entire Suzuki-Trotter
-            product formula is derived below.
-
+            The resources are defined according to the recursive formula presented above.
             The number of times an operator :math:`e^{itO_{j}}` is applied depends on the
-            number of Trotter steps (`n`) and the order of the approximation (`m`) and is given by:
+            number of Trotter steps (`n`) and the order of the approximation (`m`) as:
 
-            .. math::
+            .. math:: C_{O_j} = 2 \cdot n \cdot 5^{\frac{m}{2} - 1}
 
-                C_{O_j} = 2 * n \cdot 5^{\frac{m}{2} - 1}.
-
-            Furthermore, because of the symmetric form of the recursive formula, the first and last terms get grouped.
+            Furthermore, because of the symmetric form of the recursive formula, the first and last terms are grouped.
             This reduces the counts for those terms to:
 
             .. math::
@@ -2011,12 +2121,12 @@ class TrotterPauli(ResourceOperator):
         pauli_terms = pauli_ham.pauli_terms
 
         if isinstance(pauli_terms, dict):
-            cost_fragments = cls.cost_pauli_group(pauli_terms)
+            cost_fragments = cls._cost_pauli_group(pauli_terms)
             fragment_repetition = num_steps if order == 1 else 2 * num_steps * (5 ** (k - 1))
             return [fragment_repetition * gate_count for gate_count in cost_fragments]
 
         num_groups = len(pauli_terms)  # commuting groups
-        cost_groups = [cls.cost_pauli_group(group) for group in pauli_terms]
+        cost_groups = [cls._cost_pauli_group(group) for group in pauli_terms]
         gate_count_lst = []
         if order == 1:
             for group_cost_lst in cost_groups:
@@ -2039,7 +2149,7 @@ class TrotterPauli(ResourceOperator):
         return gate_count_lst
 
     @staticmethod
-    def cost_pauli_group(pauli_terms: dict):
+    def _cost_pauli_group(pauli_terms: dict):
         """Given a dictionary of Pauli words and frequencies, return the cost of exponentiating
         the group of terms.
 
