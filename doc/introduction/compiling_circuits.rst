@@ -51,74 +51,43 @@ for a complete list.
 
     Most compilation transforms support just-in-time compilation with ``jax.jit``.
 
-.. Transforms can be applied on ``QNodes`` using the decorator syntax:
+Transforms can be applied on ``QNodes`` using the decorator syntax:
 
-.. .. code-block:: python
+.. code-block:: python
 
-..     dev = qml.device("default.qubit", wires=2)
+    dev = qml.device("default.qubit", wires=2)
 
-..     @qml.transforms.split_non_commuting(grouping_strategy="wires")
-..     @qml.qnode(dev)
-..     def circuit(params):
-..         qml.RX(params[0], wires=0)
-..         qml.RZ(params[1], wires=1)
-..         return [
-..             qml.expval(qml.X(0)),
-..             qml.expval(qml.Y(1)),
-..             qml.expval(qml.Z(0) @ qml.Z(1)),
-..             qml.expval(qml.X(0) @ qml.Z(1) + 0.5 * qml.Y(1) + qml.Z(0)),
-..         ]
+    @qml.transforms.split_non_commuting(grouping_strategy="wires")
+    @qml.qnode(dev)
+    def circuit(params):
+        qml.RX(params[0], wires=0)
+        qml.RZ(params[1], wires=1)
+        return [
+            qml.expval(qml.X(0)),
+            qml.expval(qml.Y(1)),
+            qml.expval(qml.Z(0) @ qml.Z(1)),
+            qml.expval(qml.X(0) @ qml.Z(1) + 0.5 * qml.Y(1) + qml.Z(0)),
+        ]
 
-.. They can additionally be stacked, allowing for the application of multiple compilation passes on a QNode:
+They can additionally be stacked, allowing for the application of multiple compilation passes on a QNode:
 
-.. .. code-block:: python
+.. code-block:: python
 
-..     dev = qml.device("default.qubit", wires=1)
+    dev = qml.device("default.qubit", wires=1)
 
-..     @qml.transforms.merge_rotations
-..     @qml.transforms.cancel_inverses(recursive=True)
-..     @qml.qnode(device=dev)
-..     def circuit(x, y):
-..         qml.X(wires=0)
-..         qml.Hadamard(wires=0)
-..         qml.Hadamard(wires=0)
-..         qml.X(wires=0)
-..         qml.RX(x, wires=0)
-..         qml.RX(y, wires=0)
-..         return qml.expval(qml.Z(0))
+    @qml.transforms.merge_rotations
+    @qml.transforms.cancel_inverses(recursive=True)
+    @qml.qnode(device=dev)
+    def circuit(x, y):
+        qml.X(wires=0)
+        qml.Hadamard(wires=0)
+        qml.Hadamard(wires=0)
+        qml.X(wires=0)
+        qml.RX(x, wires=0)
+        qml.RX(y, wires=0)
+        return qml.expval(qml.Z(0))
 
-.. Alternatively, multiple transforms can be chained together to create a :class:`~.CompilePipeline`.
-.. The :class:`~.CompilePipeline` can also be applied on a ``QNode``, which will transform the
-.. circuit with each pass within the pipeline sequentially.
-
-.. .. code-block:: python
-
-..     pipeline = qml.CompilePipeline(
-..         qml.transforms.commute_controlled,
-..         qml.transforms.cancel_inverses(recursive=True),
-..         qml.transforms.merge_rotations,
-..     )
-
-..     @pipeline
-..     @qml.qnode(qml.device("default.qubit"))
-..     def circuit(x, y):
-..         qml.CNOT([1, 0])
-..         qml.X(0)
-..         qml.CNOT([1, 0])
-..         qml.H(0)
-..         qml.H(0)
-..         qml.X(0)
-..         qml.RX(x, wires=0)
-..         qml.RX(y, wires=0)
-..         return qml.expval(qml.Z(1))
-
-.. .. code-block:: pycon
-
-..     >>> print(qml.draw(circuit)(0.1, 0.2))
-..     0: ──RX(0.30)─┤
-..     1: ───────────┤  <Z>
-
-The :func:`~.pennylane.compile` transform allows you to chain together
+Alternatively, the :func:`~.pennylane.compile` transform allows you to chain together
 sequences of quantum function transforms into custom circuit optimization pipelines.
 
 For example, take the following decorated quantum function:
