@@ -219,7 +219,7 @@
     ```
 
 * It is not always necessary to go via the Clifford+T to PPR representations. For the following operators
-  directly shortcut decompositions to the :class:`~.PauliRot` gate have been supported:
+  shortcut decompositions directly to the :class:`~.PauliRot` gate have been supported:
   [(#8700)](https://github.com/PennyLaneAI/pennylane/pull/8700)
   [(#8704)](https://github.com/PennyLaneAI/pennylane/pull/8704)
 
