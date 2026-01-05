@@ -2,13 +2,78 @@
 
 <h3>New features since last release</h3>
 
-<h4>QRAM </h4>
+<h4>Quantum Random Access Memory (QRAM) 💾</h4>
 
-* Bucket Brigade QRAM, a Hybrid QRAM and a Select-Only QRAM variant are implemented as a template :class:`~.BBQRAM`, :class:`~.HybridQRAM` and :class:`~.SelectOnlyQRAM` 
-  to allow for selection of bitstrings in superposition.
+* Three implementations of QRAM are now available in PennyLane, including Bucket Brigade QRAM 
+  (:class:`~.BBQRAM`), a Select-Only QRAM (:class:`~.SelectOnlyQRAM`), and a Hybrid QRAM 
+  (:class:`~.HybridQRAM`) that combines behaviour from both :class:`~.BBQRAM` and 
+  :class:`~.SelectOnlyQRAM`. The choice of QRAM implementation depends on the application, ranging
+  from width versus depth tradeoffs to noise resilience.
   [(#8670)](https://github.com/PennyLaneAI/pennylane/pull/8670)
   [(#8679)](https://github.com/PennyLaneAI/pennylane/pull/8679)
   [(#8680)](https://github.com/PennyLaneAI/pennylane/pull/8680)
+
+  Irrespective of the specific implementation, QRAM encodes bitstrings, $b_i$, corresponding to a 
+  given entry, $i$, of a data set of length $N$, and can do so in superposition: 
+  $\texttt{QRAM} \sum_i c_i \vert i \rangle \vert 0 \rangle = \sum_i c_i \vert i \rangle \vert b_i \rangle$.
+  Here, the first register representing $\vert i \rangle$ is called the ``control_wires`` register 
+  (often referred to as the "address" register in literature), and the second register containing 
+  $\vert b_i \rangle$ is called the ``target_wires`` register (where the $i^{\text{th}}$
+  entry of the data set is loaded).
+
+  Each QRAM implementation available in this release can be briefly described as follows:
+
+  * :class:`~.BBQRAM` : a bucket-brigade style QRAM implementation that is also resilient to noise.
+  * :class:`~.SelectOnlyQRAM` : a QRAM implementation that comprises a series of :class:`~.MultiControlledX` gates.
+  * :class:`~.HybridQRAM` : a QRAM implementation that combines :class:`~.BBQRAM` and :class:`~.SelectOnlyQRAM` in a manner that allows for tradeoffs between depth and width.
+
+  An example of using :class:`~.BBQRAM` to read data into a target register is given below, where 
+  the data set in question is given by a list of ``bitstrings`` and we wish to read its second entry
+  (``"110"``):
+
+  ```python
+  import pennylane as qml
+
+  bitstrings = ["010", "111", "110", "000"]
+  bitstring_size = 3
+
+  num_control_wires = 2 # len(bistrings) = 4 = 2**2
+  num_work_wires = 1 + 3 * ((1 << num_control_wires) - 1) # 10
+
+  reg = qml.registers(
+      {
+          "control": num_control_wires,
+          "target": bitstring_size,
+          "work_wires": num_work_wires
+      }
+  )
+
+  dev = qml.device("default.qubit")
+  @qml.qnode(dev)
+  def bb_quantum():
+      # prepare an address, e.g., |10> (index 2)
+      qml.BasisEmbedding(2, wires=reg["control"])
+
+      qml.BBQRAM(
+          bitstrings,
+          control_wires=reg["control"],
+          target_wires=reg["target"],
+          work_wires=reg["work_wires"],
+      )
+      return qml.probs(wires=reg["target"])
+  ```
+
+  ```pycon
+  >>> import numpy as np
+  >>> print(np.round(bb_quantum()))  
+  [0. 0. 0. 0. 0. 0. 1. 0.]
+  ```
+
+  Note that ``"110"`` in binary is equal to 6 in decimal, which is the position of the only 
+  non-zero entry in the ``target_wires`` register.
+
+  For more information on each implementation of QRAM in this release, check out their respective
+  documentation pages.
 
 <h4>Quantum Automatic Differentiation </h4>
 
