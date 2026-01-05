@@ -245,13 +245,13 @@ class TestSelectTHC:
         "Test that an error is raised when wrong type is provided for precision."
         with pytest.raises(
             TypeError,
-            match=f"`rotation_precision` must be a positive integer, but type {type(2.5)} was provided.",
+            match=f"`rotation_precision` must be a positive integer, but got {2.5}.",
         ):
             qre.SelectTHC(qre.THCHamiltonian(58, 160), rotation_precision=2.5)
 
         with pytest.raises(
             TypeError,
-            match=f"`rotation_precision` must be a positive integer, but type {type(2.5)} was provided.",
+            match=f"`rotation_precision` must be a positive integer, but got {2.5}.",
         ):
             qre.SelectTHC.resource_rep(qre.THCHamiltonian(58, 160), rotation_precision=2.5)
 

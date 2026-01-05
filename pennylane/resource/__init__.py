@@ -170,9 +170,9 @@ def __getattr__(name):
         from pennylane.exceptions import PennyLaneDeprecationWarning
 
         warnings.warn(
-            f"pennylane.{name} is no longer accessible from the resource module \
-                and must be imported as pennylane.estimator.{name}. \
-                    Support for access through this module will be removed in v0.45.",
+            f"pennylane.resource.{name} is no longer accessible from the resource module "
+            f"and must be imported as pennylane.estimator.{name}. "
+            "Support for access through this module will be removed in v0.45.",
             PennyLaneDeprecationWarning,
         )
 
