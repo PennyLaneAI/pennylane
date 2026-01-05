@@ -733,22 +733,22 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
   PauliRot(-0.6, XY, wires=[0, 1])]
   ```
 
-* Access to ``add_noise``, ``insert`` and noise mitigation transforms from the :mod:`~pennylane~.transforms` module is removed.
+* Access to ``add_noise``, ``insert`` and noise mitigation transforms from the :mod:`~.transforms` module is removed.
   Instead, these functions should be imported from the :mod:`~pennylane~.noise` module.
   [(#8477)](https://github.com/PennyLaneAI/pennylane/pull/8477)
 
 * ``qml.qnn.cost.SquaredErrorLoss`` has been removed. Instead, this hybrid workflow can be accomplished
-  with a function like ``loss = lambda *args: (circuit(*args) - target)**2``.
+  with a function such as ``loss = lambda *args: (circuit(*args) - target)**2``.
   [(#8477)](https://github.com/PennyLaneAI/pennylane/pull/8477)
 
 * Some unnecessary methods of the ``qml.CircuitGraph`` class have been removed:
   [(#8477)](https://github.com/PennyLaneAI/pennylane/pull/8477)
 
-  - ``print_contents`` in favor of ``print(obj)``
-  - ``observables_in_order`` in favor of ``observables``
-  - ``operations_in_order`` in favor of ``operations``
-  - ``ancestors_in_order(obj)`` in favor of ``ancestors(obj, sort=True)``
-  - ``descendants_in_order(obj)`` in favor of ``descendants(obj, sort=True)``
+  - ``print_contents`` was removed in favor of ``print(obj)``
+  - ``observables_in_order`` was removed in favor of ``observables``
+  - ``operations_in_order`` was removed in favor of ``operations``
+  - ``ancestors_in_order(obj)`` was removed in favor of ``ancestors(obj, sort=True)``
+  - ``descendants_in_order(obj)`` was removed in favor of ``descendants(obj, sort=True)``
 
 * ``pennylane.devices.DefaultExecutionConfig`` has been removed. Instead, use
   :class:`~.devices.ExecutionConfig()` to create a default execution configuration.
@@ -846,10 +846,10 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
   Instead, these functions must be imported from the :mod:`~.estimator` module.
   [(#8484)](https://github.com/PennyLaneAI/pennylane/pull/8484)
 
-  - ``qml.estimator.estimate_shots`` in favor of ``qml.resources.estimate_shots``
-  - ``qml.estimator.estimate_error`` in favor of ``qml.resources.estimate_error``
-  - ``qml.estimator.FirstQuantization`` in favor of ``qml.resources.FirstQuantization``
-  - ``qml.estimator.DoubleFactorization`` in favor of ``qml.resources.DoubleFactorization``
+  - ``qml.estimator.estimate_shots`` rather than ``qml.resources.estimate_shots``
+  - ``qml.estimator.estimate_error`` rather than ``qml.resources.estimate_error``
+  - ``qml.estimator.FirstQuantization`` rather than ``qml.resources.FirstQuantization``
+  - ``qml.estimator.DoubleFactorization`` rather than ``qml.resources.DoubleFactorization``
 
 * The :func:`pennylane.devices.preprocess.mid_circuit_measurements` transform is deprecated. Instead,
   the device should determine which MCM method to use, and explicitly include :func:`~pennylane.transforms.dynamic_one_shot`
