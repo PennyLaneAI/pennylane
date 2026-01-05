@@ -95,8 +95,8 @@ repository = "https://github.com/PennyLaneAI/pennylane"
 [project.optional-dependencies]
 kernels = ["cvxpy", "cvxopt"]
 docs = [
-    "jax==0.7.0",
-    "jaxlib==0.7.0",
+    "jax==0.7.1",
+    "jaxlib==0.7.1",
     "mistune==0.8.4",
     "m2r2",
     # TODO: Remove once galois becomes compatible with latest numpy 
