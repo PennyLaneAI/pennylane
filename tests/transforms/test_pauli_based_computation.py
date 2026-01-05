@@ -19,12 +19,12 @@ import pytest
 import pennylane as qml
 from pennylane.transforms.decompositions import (
     commute_ppr,
+    decompose_arbitrary_ppr,
     merge_ppr_ppm,
     ppm_compilation,
     ppr_to_ppm,
     reduce_t_depth,
     to_ppr,
-    decompose_arbitrary_ppr,
 )
 
 PBC_TRANSFORMS = [
