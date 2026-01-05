@@ -92,7 +92,7 @@
   learning.
   [(#8748)](https://github.com/PennyLaneAI/pennylane/pull/8748)
 
-<h4>Pauli-based computation </h4>
+<h4>Pauli-based computation 💻 </h4>
   
   New tools dedicated to fault-tolerant quantum computing (FTQC) research based on the Pauli-based
   computation framework are now available! The functionalities are designed to allow rapid and flexible
