@@ -350,7 +350,7 @@ class IntegerComparator(ResourceOperator):
     ):
         if register_size is None:
             if wires is None:
-                raise ValueError("Must provide atleast one of `register_size` and `wires`.")
+                raise ValueError("Must provide at least one of `register_size` and `wires`.")
             register_size = len(wires) - 1
 
         self.value = value

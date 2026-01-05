@@ -76,7 +76,7 @@ class QubitUnitary(ResourceOperator):
     ):
         if num_wires is None:
             if wires is None:
-                raise ValueError("Must provide atleast one of `num_wires` and `wires`.")
+                raise ValueError("Must provide at least one of `num_wires` and `wires`.")
             num_wires = len(wires)
         self.num_wires = num_wires
         self.precision = precision
