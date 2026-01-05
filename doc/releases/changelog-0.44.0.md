@@ -992,6 +992,9 @@ A warning message has been added to :doc:`Building a plugin <../development/plug
 
 <h3>Bug fixes 🐛</h3>
 
+* Prevent qml.about() from crashing in environments without pip (e.g., when using the uv package manager) by using standard library metadata.
+  [(#8457)](https://github.com/PennyLaneAI/pennylane/pull/8457)
+
 * Fixes a bug where `_double_factorization_compressed` of `pennylane/qchem/factorization.py` used to use `X`
   for `Z` param initialization.
   [(#8689)](https://github.com/PennyLaneAI/pennylane/pull/8689)
@@ -1101,6 +1104,7 @@ Shuli Shu,
 Jay Soni,
 nate stemen,
 Theodoros Trochatos,
+Leo Wei,
 David Wierichs,
 Shifan Xu,
 Hongsheng Zheng,

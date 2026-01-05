@@ -17,7 +17,9 @@ Unit tests for the :mod:`pennylane` configuration classe :class:`Configuration`.
 # pylint: disable=protected-access
 
 import contextlib
+import importlib
 import io
+import json
 import re
 
 import pytest
@@ -45,3 +47,36 @@ def test_about():
     assert "Scipy version" in out
     assert "default.qubit" in out
     assert "default.gaussian" in out
+
+
+def test_about_prints_core_fields(capsys):
+    about = importlib.import_module("pennylane.about")
+    about.about()
+    cap = capsys.readouterr()
+
+    assert cap.err == ""
+    assert re.search(r"Name:\s*pennylane", cap.out, re.I)
+    assert "Version:" in cap.out
+    assert "Summary:" in cap.out
+    assert "Location:" in cap.out
+
+
+def test_about_shows_editable_location(monkeypatch, capsys):
+    about = importlib.import_module("pennylane.about")
+
+    class Dist:  # pylint: disable=too-few-public-methods
+        metadata = {"Name": "PennyLane", "Version": "x"}
+
+        @staticmethod
+        def read_text(name):  # pylint: disable=unused-argument
+            return json.dumps({"dir_info": {"editable": True}, "url": "file:///tmp/pl"})
+
+    im = importlib.import_module("importlib.metadata")
+    monkeypatch.setattr(about, "metadata", im)
+    monkeypatch.setattr(im, "distribution", lambda _name: Dist())
+    monkeypatch.setattr(about, "_pkg_location", lambda: "/site-packages/pennylane")
+
+    about.about()
+    out = capsys.readouterr().out
+    assert "Editable project location: /tmp/pl" in out
+    assert re.search(r"Location:\s*/site-packages/pennylane", out)
