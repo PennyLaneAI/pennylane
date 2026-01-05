@@ -424,9 +424,11 @@ def test_wrong_wires_error(data, control_wires, target_wires, msg_match):
 def test_none_work_wires_case():
     """Test that clean version is not applied if work wires are not used"""
 
-    gates_clean = qml.QROM.compute_decomposition([[1], [0], [0], [1]], [0, 1], [2], [], clean=True)
+    gates_clean = qml.QROM.compute_decomposition(
+        np.array([[1], [0], [0], [1]]), [0, 1], [2], [], clean=True
+    )
     expected_gates = qml.QROM.compute_decomposition(
-        [[1], [0], [0], [1]], [0, 1], [2], [], clean=False
+        np.array([[1], [0], [0], [1]]), [0, 1], [2], [], clean=False
     )
 
     assert gates_clean == expected_gates
@@ -436,10 +438,10 @@ def test_too_many_work_wires_case():
     """Test that QROM works when more work wires are given than necessary"""
 
     gates_clean = qml.QROM.compute_decomposition(
-        [[1], [0], [0], [1]], [0, 1], [2], [3, 4, 5], clean=False
+        np.array([[1], [0], [0], [1]]), [0, 1], [2], [3, 4, 5], clean=False
     )
     expected_gates = qml.QROM.compute_decomposition(
-        [[1], [0], [0], [1]],
+        np.array([[1], [0], [0], [1]]),
         [0, 1],
         [2],
         [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],

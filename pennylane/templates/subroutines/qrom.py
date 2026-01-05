@@ -52,7 +52,7 @@ def _new_ops(depth, target_wires, control_wires, swap_wires, data):
             2 ** len(control_wires) - len(ops_new)
         )
 
-    n_columns = len(data) // depth if len(data) % depth == 0 else len(data) // depth + 1
+    n_columns = data.shape[0] // depth if data.shape[0] % depth == 0 else data.shape[0] // depth + 1
     new_ops = []
     for i in range(n_columns):
         column_ops = []
@@ -196,7 +196,10 @@ class QROM(Operation):
         target_wires = Wires(target_wires)
 
         if isinstance(data[0], str):
-            data = list(map(lambda bitstring: [int(bit) for bit in bitstring], data))
+            data = np.array(map(lambda bitstring: [int(bit) for bit in bitstring], data))
+
+        if isinstance(data, list) or isinstance(data, tuple):
+            data = np.array(data)
 
         work_wires = Wires(() if work_wires is None else work_wires)
 
@@ -215,14 +218,14 @@ class QROM(Operation):
         if any(wire in control_wires for wire in target_wires):
             raise ValueError("Target wires should be different from control wires.")
 
-        if 2 ** len(control_wires) < len(data):
+        if 2 ** len(control_wires) < data.shape[0]:
             raise ValueError(
                 f"Not enough control wires ({len(control_wires)}) for the desired number of "
-                + f"data ({len(data)}). At least {int(math.ceil(math.log2(len(data))))} control "
+                + f"data ({data.shape[0]}). At least {int(math.ceil(math.log2(data.shape[0])))} control "
                 + "wires are required."
             )
 
-        if len(data[0]) != len(target_wires):
+        if data[0].shape[0] != len(target_wires):
             raise ValueError("Bitstring length must match the number of target wires.")
 
         all_wires = target_wires + control_wires + work_wires
@@ -235,7 +238,7 @@ class QROM(Operation):
     @property
     def resource_params(self) -> dict:
         return {
-            "num_bitstrings": len(self.data[0]),
+            "num_bitstrings": self.data[0].shape[0],
             "num_control_wires": len(self.hyperparameters["control_wires"]),
             "num_target_wires": len(self.hyperparameters["target_wires"]),
             "num_work_wires": len(self.hyperparameters["work_wires"]),
@@ -299,7 +302,7 @@ class QROM(Operation):
             # number of operators we store per column (power of 2)
             depth = len(swap_wires) // len(target_wires)
             depth = int(2 ** np.floor(np.log2(depth)))
-            depth = min(depth, len(data))
+            depth = min(depth, data.shape[0])
 
             ops = [BasisEmbedding(bits, wires=target_wires) for bits in data]
             ops_identity = ops + [qml_ops.I(target_wires)] * int(2 ** len(control_wires) - len(ops))
@@ -504,7 +507,7 @@ def _qrom_decomposition(
     # number of operators we store per column (power of 2)
     depth = len(swap_wires) // len(target_wires)
     depth = int(2 ** np.floor(np.log2(depth)))
-    depth = min(depth, len(data))
+    depth = min(depth, data.shape[0])
 
     if not clean or depth == 1:
         _select_ops(control_wires, depth, target_wires, swap_wires, data)
