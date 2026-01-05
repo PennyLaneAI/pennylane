@@ -17,10 +17,10 @@ Unit tests for the :mod:`pennylane` configuration classe :class:`Configuration`.
 # pylint: disable=protected-access
 
 import contextlib
-import io
-import re
 import importlib
+import io
 import json
+import re
 
 import pytest
 
@@ -48,6 +48,7 @@ def test_about():
     assert "default.qubit" in out
     assert "default.gaussian" in out
 
+
 def test_about_prints_core_fields(capsys):
     about = importlib.import_module("pennylane.about")
     about.about()
@@ -59,13 +60,15 @@ def test_about_prints_core_fields(capsys):
     assert "Summary:" in cap.out
     assert "Location:" in cap.out
 
+
 def test_about_shows_editable_location(monkeypatch, capsys):
     about = importlib.import_module("pennylane.about")
 
-    class Dist:
+    class Dist:  # pylint: disable=too-few-public-methods
         metadata = {"Name": "PennyLane", "Version": "x"}
+
         @staticmethod
-        def read_text(name):
+        def read_text(name):  # pylint: disable=unused-argument
             return json.dumps({"dir_info": {"editable": True}, "url": "file:///tmp/pl"})
 
     im = importlib.import_module("importlib.metadata")

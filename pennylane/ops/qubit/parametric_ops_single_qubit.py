@@ -18,17 +18,26 @@ core parametrized gates.
 """
 # pylint: disable=arguments-differ
 import functools
+import math as builtin_math
+from itertools import combinations
 
 import numpy as np
 import scipy as sp
 
 import pennylane as qml
-from pennylane.decomposition import add_decomps, register_resources, resource_rep
+from pennylane.decomposition import (
+    add_decomps,
+    adjoint_resource_rep,
+    change_op_basis_resource_rep,
+    register_resources,
+    resource_rep,
+)
 from pennylane.decomposition.symbolic_decomposition import (
     adjoint_rotation,
     flip_zero_control,
     pow_rotation,
 )
+from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.operation import Operation
 from pennylane.typing import TensorLike
 from pennylane.wires import WiresLike
@@ -92,6 +101,13 @@ class RX(Operation):
     @property
     def resource_params(self) -> dict:
         return {}
+
+    has_decomposition = False
+
+    @staticmethod
+    def compute_decomposition(phi, wires):
+        # dont use graph decomposition for RX-> Rot
+        raise DecompositionUndefinedError
 
     @staticmethod
     def compute_matrix(theta: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
@@ -180,7 +196,34 @@ def _rx_to_rz_ry(phi, wires: WiresLike, **__):
     qml.RZ(-np.pi / 2, wires=wires)
 
 
-add_decomps(RX, _rx_to_rot, _rx_to_rz_ry)
+def _rx_to_ry_cliff_resources():
+    return {change_op_basis_resource_rep(qml.S, qml.RY): 1}
+
+
+@register_resources(_rx_to_ry_cliff_resources)
+def _rx_to_ry_cliff(phi, wires: WiresLike, **__):
+    qml.change_op_basis(qml.S(wires), qml.RY(phi, wires))
+
+
+def _rx_to_rz_cliff_resources():
+    return {change_op_basis_resource_rep(qml.Hadamard, qml.RZ, qml.Hadamard): 1}
+
+
+@register_resources(_rx_to_rz_cliff_resources)
+def _rx_to_rz_cliff(phi, wires: WiresLike, **__):
+    qml.change_op_basis(qml.Hadamard(wires), qml.RZ(phi, wires), qml.Hadamard(wires))
+
+
+def _rx_to_ppr_resources():
+    return {resource_rep(qml.PauliRot, pauli_word="X"): 1}
+
+
+@register_resources(_rx_to_ppr_resources)
+def _rx_to_ppr(phi, wires, **_):
+    qml.PauliRot(phi, "X", wires=wires)
+
+
+add_decomps(RX, _rx_to_rot, _rx_to_rz_ry, _rx_to_ppr, _rx_to_ry_cliff, _rx_to_rz_cliff)
 add_decomps("Adjoint(RX)", adjoint_rotation)
 add_decomps("Pow(RX)", pow_rotation)
 
@@ -262,6 +305,13 @@ class RY(Operation):
     @property
     def resource_params(self) -> dict:
         return {}
+
+    has_decomposition = False
+
+    @staticmethod
+    def compute_decomposition(phi, wires):
+        # dont use graph decomposition for RY-> Rot
+        raise DecompositionUndefinedError
 
     @staticmethod
     def compute_matrix(theta: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
@@ -349,7 +399,50 @@ def _ry_to_rz_rx(phi, wires: WiresLike, **__):
     qml.RZ(np.pi / 2, wires=wires)
 
 
-add_decomps(RY, _ry_to_rot, _ry_to_rz_rx)
+def _ry_to_rx_cliff_resources():
+    return {change_op_basis_resource_rep(adjoint_resource_rep(qml.S), qml.RX, qml.S): 1}
+
+
+@register_resources(_ry_to_rx_cliff_resources)
+def _ry_to_rx_cliff(phi, wires: WiresLike, **__):
+    qml.change_op_basis(qml.adjoint(qml.S(wires)), qml.RX(phi, wires), qml.S(wires))
+
+
+def _ry_to_rz_cliff_resources():
+    return {
+        change_op_basis_resource_rep(
+            resource_rep(
+                qml.ops.op_math.Prod,
+                resources={adjoint_resource_rep(qml.S): 1, resource_rep(qml.Hadamard): 1},
+            ),
+            qml.RZ,
+            resource_rep(
+                qml.ops.op_math.Prod,
+                resources={resource_rep(qml.S): 1, resource_rep(qml.Hadamard): 1},
+            ),
+        ): 1
+    }
+
+
+@register_resources(_ry_to_rz_cliff_resources)
+def _ry_to_rz_cliff(phi, wires: WiresLike, **__):
+    qml.change_op_basis(
+        qml.Hadamard(wires) @ qml.adjoint(qml.S(wires)),
+        qml.RZ(phi, wires),
+        qml.S(wires) @ qml.Hadamard(wires),
+    )
+
+
+def _ry_to_ppr_resources():
+    return {resource_rep(qml.PauliRot, pauli_word="Y"): 1}
+
+
+@register_resources(_ry_to_ppr_resources)
+def _ry_to_ppr(phi, wires, **_):
+    qml.PauliRot(phi, "Y", wires=wires)
+
+
+add_decomps(RY, _ry_to_rot, _ry_to_rz_rx, _ry_to_ppr, _ry_to_rx_cliff, _ry_to_rz_cliff)
 add_decomps("Adjoint(RY)", adjoint_rotation)
 add_decomps("Pow(RY)", pow_rotation)
 
@@ -425,6 +518,13 @@ class RZ(Operation):
 
     def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
         super().__init__(phi, wires=wires, id=id)
+
+    has_decomposition = False
+
+    @staticmethod
+    def compute_decomposition(phi, wires):
+        # dont use graph decomposition for RZ-> Rot
+        raise DecompositionUndefinedError
 
     @staticmethod
     def compute_matrix(theta: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
@@ -556,7 +656,50 @@ def _rz_to_ry_rx(phi, wires: WiresLike, **__):
     qml.RY(-np.pi / 2, wires=wires)
 
 
-add_decomps(RZ, _rz_to_rot, _rz_to_ry_rx)
+def _rz_to_rx_cliff_resources():
+    return {change_op_basis_resource_rep(qml.Hadamard, qml.RX, qml.Hadamard): 1}
+
+
+@register_resources(_rz_to_rx_cliff_resources)
+def _rz_to_rx_cliff(phi, wires: WiresLike, **__):
+    qml.change_op_basis(qml.Hadamard(wires), qml.RX(phi, wires), qml.Hadamard(wires))
+
+
+def _rz_to_ry_cliff_resources():
+    return {
+        change_op_basis_resource_rep(
+            resource_rep(
+                qml.ops.op_math.Prod,
+                resources={resource_rep(qml.S): 1, resource_rep(qml.Hadamard): 1},
+            ),
+            qml.RY,
+            resource_rep(
+                qml.ops.op_math.Prod,
+                resources={adjoint_resource_rep(qml.S): 1, resource_rep(qml.Hadamard): 1},
+            ),
+        ): 1
+    }
+
+
+@register_resources(_rz_to_ry_cliff_resources)
+def _rz_to_ry_cliff(phi, wires: WiresLike, **__):
+    qml.change_op_basis(
+        qml.S(wires) @ qml.Hadamard(wires),
+        qml.RY(phi, wires),
+        qml.Hadamard(wires) @ qml.adjoint(qml.S(wires)),
+    )
+
+
+def _rz_to_ppr_resources():
+    return {resource_rep(qml.PauliRot, pauli_word="Z"): 1}
+
+
+@register_resources(_rz_to_ppr_resources)
+def _rz_to_ppr(phi, wires, **_):
+    qml.PauliRot(phi, "Z", wires=wires)
+
+
+add_decomps(RZ, _rz_to_rot, _rz_to_ry_rx, _rz_to_ppr, _rz_to_rx_cliff, _rz_to_ry_cliff)
 add_decomps("Adjoint(RZ)", adjoint_rotation)
 add_decomps("Pow(RZ)", pow_rotation)
 
@@ -781,9 +924,29 @@ def _phaseshift_to_rz_gp(phi, wires: WiresLike, **__):
     qml.GlobalPhase(-phi / 2)
 
 
+def _cphase_to_ppr_resource(num_control_wires, **_):
+    resources = {
+        resource_rep(qml.PauliRot, pauli_word="Z" * i): builtin_math.comb(num_control_wires + 1, i)
+        for i in range(1, num_control_wires + 2)
+    }
+    resources[resource_rep(qml.GlobalPhase)] = 1
+    return resources
+
+
+@register_resources(_cphase_to_ppr_resource)
+def _cphase_to_ppr(theta, wires, **_):
+    n = len(wires)
+    for l in range(1, n + 1):
+        for sub_wires in combinations(wires, l):
+            phi = -theta / 2 ** (n - 1) * (-1) ** l
+            qml.PauliRot(phi, pauli_word="Z" * l, wires=sub_wires)
+    qml.GlobalPhase(-theta / 2**n)
+
+
 add_decomps(PhaseShift, _phaseshift_to_rz_gp)
 add_decomps("Adjoint(PhaseShift)", adjoint_rotation)
 add_decomps("Pow(PhaseShift)", pow_rotation)
+add_decomps("C(PhaseShift)", flip_zero_control(_cphase_to_ppr))
 
 
 class Rot(Operation):

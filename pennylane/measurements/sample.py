@@ -250,10 +250,9 @@ def sample(
 
         .. code-block:: python
 
-            from functools import partial
             dev = qml.device("default.qubit")
 
-            @partial(qml.set_shots, shots=10)
+            @qml.set_shots(shots=10)
             @qml.qnode(dev, diff_method="parameter-shift")
             def circuit(angle):
                 qml.RX(angle, wires=0)
@@ -266,10 +265,9 @@ def sample(
 
         .. code-block:: python
 
-            from functools import partial
             dev = qml.device("default.qubit")
 
-            @partial(qml.set_shots, shots=[(1, 10)])
+            @qml.set_shots(shots=[(1, 10)])
             @qml.qnode(dev, diff_method="parameter-shift")
             def circuit(angle):
                 qml.RX(angle, wires=0)
@@ -285,10 +283,9 @@ def sample(
 
     .. code-block:: python3
 
-        from functools import partial
         dev = qml.device("default.qubit", wires=2)
 
-        @partial(qml.set_shots, shots=4)
+        @qml.set_shots(shots=4)
         @qml.qnode(dev)
         def circuit(x):
             qml.RX(x, wires=0)
@@ -308,10 +305,9 @@ def sample(
 
     .. code-block:: python3
 
-        from functools import partial
         dev = qml.device("default.qubit", wires=2)
 
-        @partial(qml.set_shots, shots=4)
+        @qml.set_shots(shots=4)
         @qml.qnode(dev)
         def circuit(x):
             qml.RX(x, wires=0)

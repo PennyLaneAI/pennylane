@@ -151,7 +151,24 @@ class TestSparseOperators:
         )
 
 
+SKIP_ASSERT_VALID = {
+    qml.GlobalPhase: True,
+    qml.QubitUnitary: {"skip_differentiation": True},
+    qml.DiagonalQubitUnitary: {"skip_differentiation": True},
+    qml.ControlledQubitUnitary: {"skip_differentiation": True},
+}
+
+
 class TestOperations:
+
+    @pytest.mark.parametrize("op", ALL_OPERATIONS)
+    def test_assert_valid(self, op):
+        kwargs = SKIP_ASSERT_VALID.get(type(op), {})
+        if kwargs is True:
+            pytest.skip()
+
+        qml.ops.functions.assert_valid(op, **kwargs)
+
     @pytest.mark.parametrize("op", ALL_OPERATIONS + BROADCASTED_OPERATIONS)
     def test_parametrized_op_copy(self, op, tol):
         """Tests that copied parametrized ops function as expected"""
@@ -262,6 +279,15 @@ class TestParameterFrequencies:
 
 
 class TestDecompositions:
+
+    @pytest.mark.parametrize("op_class", (qml.RX, qml.RY, qml.RZ))
+    def test_decompositions_undefined(self, op_class):
+        """Test that RX, RY, and RZ don't have Operator.decomposition definitions, even though they
+        have graph decomps."""
+
+        with pytest.raises(qml.exceptions.DecompositionUndefinedError):
+            op_class(0.5, wires=0).decomposition()
+
     @pytest.mark.parametrize("phi", [0.3, np.array([0.4, 2.1, 0.2])])
     def test_phase_decomposition(self, phi, tol):
         """Tests that the decomposition of the Phase gate is correct"""

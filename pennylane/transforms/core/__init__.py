@@ -13,6 +13,21 @@
 # limitations under the License.
 r"""This module contains the experimental transforms building blocks (core)."""
 
-from .transform import transform
-from .transform_dispatcher import TransformDispatcher, TransformContainer, TransformError
-from .transform_program import TransformProgram
+import inspect
+from .transform_dispatcher import (
+    Transform,
+    TransformContainer,
+    TransformError,
+    BoundTransform,
+    TransformDispatcher,
+)
+from .compile_pipeline import CompilePipeline, TransformProgram
+
+
+def transform(*args, **kwargs):
+    """placeholder"""
+    return Transform(*args, **kwargs)
+
+
+transform.__doc__ = Transform.__doc__
+transform.__signature__ = inspect.signature(Transform)

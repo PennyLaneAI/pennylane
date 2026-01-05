@@ -181,6 +181,7 @@ class AliasSampling(ResourceOperator):
 
     The resources for this operation are computed using:
 
+    >>> import pennylane.estimator as qre
     >>> alias_sampling = qre.AliasSampling(num_coeffs=100)
     >>> print(qre.estimate(alias_sampling))
     --- Resources: ---
@@ -189,12 +190,12 @@ class AliasSampling(ResourceOperator):
         allocated wires: 126
         zero state: 58
         any state: 68
-    Total gates : 6.505E+3
-    'Toffoli': 272,
+    Total gates : 3.796E+3
+    'Toffoli': 174,
     'T': 88,
-    'CNOT': 4.646E+3,
-    'X': 595,
-    'Hadamard': 904
+    'CNOT': 2.600E+3,
+    'X': 398,
+    'Hadamard': 536
     """
 
     resource_keys = {"num_coeffs", "precision"}
@@ -309,6 +310,7 @@ class MPSPrep(ResourceOperator):
 
     The resources for this operation are computed using:
 
+    >>> import pennylane.estimator as qre
     >>> mps = qre.MPSPrep(num_mps_matrices=10, max_bond_dim=2**3)
     >>> print(qre.estimate(mps, gate_set={"CNOT", "RZ", "RY"}))
     --- Resources: ---
@@ -466,21 +468,22 @@ class QROMStatePreparation(ResourceOperator):
 
     The resources for this operation are computed using:
 
+    >>> import pennylane.estimator as qre
     >>> qrom_prep = qre.QROMStatePreparation(num_state_qubits=5, precision=1e-3)
     >>> print(qre.estimate(qrom_prep))
     --- Resources: ---
      Total wires: 28
-        algorithmic wires: 5
-        allocated wires: 23
-             zero state: 23
-             any state: 0
-     Total gates : 2.756E+3
-      'Toffoli': 236,
-      'CNOT': 1.522E+3,
-      'X': 230,
-      'Z': 12,
-      'S': 24,
-      'Hadamard': 732
+       algorithmic wires: 5
+       allocated wires: 23
+         zero state: 23
+         any state: 0
+     Total gates : 2.505E+3
+       'Toffoli': 236,
+       'CNOT': 1.181E+3,
+       'X': 236,
+       'Z': 12,
+       'S': 24,
+       'Hadamard': 816
 
     .. details::
         :title: Usage Details
@@ -906,9 +909,8 @@ class PrepTHC(ResourceOperator):
     Args:
         thc_ham (:class:`~pennylane.estimator.compact_hamiltonian.THCHamiltonian`): a tensor hypercontracted
             Hamiltonian for which the state is being prepared
-        coeff_precision (int | None): The number of bits used to represent the precision for loading
-            the coefficients of Hamiltonian. If :code:`None` is provided, the default value from the
-            :class:`~.pennylane.estimator.resource_config.ResourceConfig` is used.
+        coeff_precision (int): The number of bits used to represent the precision for loading
+            the coefficients of Hamiltonian. The default value is set to ``15`` bits.
         select_swap_depth (int | None): A parameter of :class:`~.pennylane.estimator.templates.subroutines.QROM`
             used to trade-off extra wires for reduced circuit depth. Defaults to :code:`None`, which internally determines the optimal depth.
         wires (WiresLike | None): the wires on which the operator acts
@@ -925,16 +927,16 @@ class PrepTHC(ResourceOperator):
     >>> res = qre.estimate(qre.PrepTHC(thc_ham, coeff_precision=15))
     >>> print(res)
     --- Resources: ---
-     Total wires: 185
-        algorithmic wires: 12
-        allocated wires: 173
-             zero state: 28
-             any state: 145
-     Total gates : 1.485E+4
-      'Toffoli': 467,
-      'CNOT': 1.307E+4,
-      'X': 512,
-      'Hadamard': 797
+     Total wires: 166
+       algorithmic wires: 72
+       allocated wires: 94
+         zero state: 94
+         any state: 0
+     Total gates : 1.494E+4
+       'Toffoli': 467,
+       'CNOT': 1.307E+4,
+       'X': 599,
+       'Hadamard': 797
 
     """
 
@@ -943,7 +945,7 @@ class PrepTHC(ResourceOperator):
     def __init__(
         self,
         thc_ham: THCHamiltonian,
-        coeff_precision: int | None = None,
+        coeff_precision: int = 15,
         select_swap_depth: int | None = None,
         wires: WiresLike | None = None,
     ):
@@ -954,7 +956,7 @@ class PrepTHC(ResourceOperator):
                 f"This method works with thc Hamiltonian, {type(thc_ham)} provided"
             )
 
-        if not isinstance(coeff_precision, int) and coeff_precision is not None:
+        if not isinstance(coeff_precision, int):
             raise TypeError(
                 f"`coeff_precision` must be an integer, but type {type(coeff_precision)} was provided."
             )
@@ -962,8 +964,22 @@ class PrepTHC(ResourceOperator):
         self.thc_ham = thc_ham
         self.coeff_precision = coeff_precision
         self.select_swap_depth = select_swap_depth
+        num_orb = thc_ham.num_orbitals
         tensor_rank = thc_ham.tensor_rank
-        self.num_wires = 2 * int(math.ceil(math.log2(tensor_rank + 1)))
+        num_coeff = num_orb + tensor_rank * (tensor_rank + 1) / 2  # N+M(M+1)/2
+        coeff_register = int(math.ceil(math.log2(num_coeff)))
+
+        # Based on section III D in arXiv:2011.03494
+        # Algorithmic wires for the walk operator, auxiliary wires are accounted for by the QROM operator
+        # The total algorithmic qubits are thus given by : 2*n_M + ceil(log(d)) + 2*\aleph + 6 + m
+        # where \aleph is coeff_precision, m = 2n_M + \aleph + 2, N = 2*num_orb,
+        # d = num_orb + tensor_rank(tensor_rank+1)/2, and n_M = log_2(tensor_rank+1)
+        self.num_wires = (
+            4 * int(math.ceil(math.log2(tensor_rank + 1)))
+            + coeff_register
+            + coeff_precision * 2
+            + 8
+        )
         if wires is not None and len(Wires(wires)) != self.num_wires:
             raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
         super().__init__(wires=wires)
@@ -976,9 +992,8 @@ class PrepTHC(ResourceOperator):
             dict: A dictionary containing the resource parameters:
                 * thc_ham (:class:`~.pennylane.estimator.compact_hamiltonian.THCHamiltonian`): a tensor hypercontracted
                   Hamiltonian for which the state is being prepared
-                * coeff_precision (int | None): The number of bits used to represent the precision for loading
-                  the coefficients of Hamiltonian. If :code:`None` is provided, the default value from the
-                  :class:`~.pennylane.estimator.resource_config.ResourceConfig` is used.
+                * coeff_precision (int): The number of bits used to represent the precision for loading
+                  the coefficients of Hamiltonian. The default value is set to ``15`` bits.
                 * select_swap_depth (int | None): A parameter of :class:`~.pennylane.estimator.templates.QROM`
                   used to trade-off extra wires for reduced circuit depth. Defaults to :code:`None`, which internally determines the optimal depth.
         """
@@ -992,7 +1007,7 @@ class PrepTHC(ResourceOperator):
     def resource_rep(
         cls,
         thc_ham: THCHamiltonian,
-        coeff_precision: int | None = None,
+        coeff_precision: int = 15,
         select_swap_depth: int | None = None,
     ) -> CompressedResourceOp:
         """Returns a compressed representation containing only the parameters of
@@ -1001,9 +1016,8 @@ class PrepTHC(ResourceOperator):
         Args:
             thc_ham (:class:`~pennylane.estimator.compact_hamiltonian.THCHamiltonian`): a tensor hypercontracted
                 Hamiltonian for which the state is being prepared
-            coeff_precision (int | None): The number of bits used to represent the precision for loading
-                the coefficients of Hamiltonian. If :code:`None` is provided, the default value from the
-                :class:`~.pennylane.estimator.resource_config.ResourceConfig` is used.
+            coeff_precision (int): The number of bits used to represent the precision for loading
+                the coefficients of Hamiltonian. The default value is set to ``15`` bits.
             select_swap_depth (int | None): A parameter of :class:`~.pennylane.estimator.templates.QROM`
                 used to trade-off extra wires for reduced circuit depth. Defaults to :code:`None`, which internally determines the optimal depth.
         Returns:
@@ -1015,13 +1029,22 @@ class PrepTHC(ResourceOperator):
                 f"This method works with thc Hamiltonian, {type(thc_ham)} provided"
             )
 
-        if not isinstance(coeff_precision, int) and coeff_precision is not None:
+        if not isinstance(coeff_precision, int):
             raise TypeError(
                 f"`coeff_precision` must be an integer, but type {type(coeff_precision)} was provided."
             )
 
+        num_orb = thc_ham.num_orbitals
         tensor_rank = thc_ham.tensor_rank
-        num_wires = 2 * int(math.ceil(math.log2(tensor_rank + 1)))
+        num_coeff = num_orb + tensor_rank * (tensor_rank + 1) / 2  # N+M(M+1)/2
+        coeff_register = int(math.ceil(math.log2(num_coeff)))
+
+        num_wires = (
+            4 * int(math.ceil(math.log2(tensor_rank + 1)))
+            + coeff_register
+            + coeff_precision * 2
+            + 8
+        )
 
         params = {
             "thc_ham": thc_ham,
@@ -1034,7 +1057,7 @@ class PrepTHC(ResourceOperator):
     def resource_decomp(
         cls,
         thc_ham: THCHamiltonian,
-        coeff_precision: int | None = None,
+        coeff_precision: int = 15,
         select_swap_depth: int | None = None,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
@@ -1043,9 +1066,8 @@ class PrepTHC(ResourceOperator):
         Args:
             thc_ham (:class:`~pennylane.estimator.compact_hamiltonian.THCHamiltonian`): a tensor hypercontracted
                 Hamiltonian for which the walk operator is being created
-            coeff_precision (int | None): The number of bits used to represent the precision for loading
-                the coefficients of Hamiltonian. If :code:`None` is provided, the default value from the
-                :class:`~.pennylane.estimator.resource_config.ResourceConfig` is used.
+            coeff_precision (int): The number of bits used to represent the precision for loading
+                the coefficients of the Hamiltonian. The default value is set to ``15`` bits.
             select_swap_depth (int | None): A parameter of :class:`~.pennylane.estimator.templates.QROM`
                 used to trade-off extra qubits for reduced circuit depth. Defaults to :code:`None`, which internally determines the optimal depth.
 
@@ -1062,14 +1084,9 @@ class PrepTHC(ResourceOperator):
         tensor_rank = thc_ham.tensor_rank
 
         num_coeff = num_orb + tensor_rank * (tensor_rank + 1) / 2  # N+M(M+1)/2
-        coeff_register = int(math.ceil(math.log2(num_coeff)))
         m_register = int(math.ceil(math.log2(tensor_rank + 1)))
 
         gate_list = []
-
-        # 6 auxiliary account for 2 spin registers, 1 for rotation on auxiliary, 1 flag for success of inequality,
-        # 1 flag for one-body vs two-body and 1 to control swap of \mu and \nu registers.
-        gate_list.append(Allocate(coeff_register + 2 * m_register + 2 * coeff_precision + 6))
 
         hadamard = resource_rep(qre.Hadamard)
 
@@ -1169,8 +1186,6 @@ class PrepTHC(ResourceOperator):
         and the number of times it occurs in the decomposition.
 
         Args:
-            thc_ham (:class:`~pennylane.estimator.compact_hamiltonian.THCHamiltonian`): a tensor hypercontracted
-                Hamiltonian for which the walk operator is being created
             target_resource_params(dict): A dictionary containing the resource parameters of the target operator.
 
         Resources:
@@ -1188,7 +1203,6 @@ class PrepTHC(ResourceOperator):
         tensor_rank = thc_ham.tensor_rank
 
         num_coeff = num_orb + tensor_rank * (tensor_rank + 1) / 2
-        coeff_register = int(math.ceil(math.log2(num_coeff)))
         m_register = int(math.ceil(math.log2(tensor_rank + 1)))
         gate_list = []
 
@@ -1271,10 +1285,5 @@ class PrepTHC(ResourceOperator):
         # Swap \mu and \nu registers controlled on |+> state and success of inequality
         gate_list.append(qre.GateCount(cswap, m_register))
         gate_list.append(qre.GateCount(toffoli, 1))
-
-        # Free Prepare Wires
-        # 6 ancillas account for 2 spin registers, 1 for rotation on ancilla, 1 flag for success of inequality,
-        # 1 flag for one-body vs two-body and 1 to control swap of \mu and \nu registers.
-        gate_list.append(Deallocate(coeff_register + 2 * m_register + 2 * coeff_precision + 6))
 
         return gate_list

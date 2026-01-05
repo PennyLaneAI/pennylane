@@ -1,4 +1,4 @@
-# Copyright 2018-2022 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,14 +18,8 @@ The ``resource`` module provides classes and functionality to track the quantum 
 .. seealso::
     The :mod:`~.estimator` module for higher level resource estimation of quantum programs.
 
-.. warning::
-    The functions ``estimate_error``, ``estimate_shots`` and the classes ``DoubleFactorization``,
-    ``FirstQuantization`` have been moved to the :mod:`pennylane.estimator` module.
-    Accessing them from the :mod:`pennylane.resource` module is deprecated and will be removed
-    in v0.45.
-
-Circuit specifications
-----------------------
+Circuit Specifications (specs)
+------------------------------
 
 .. currentmodule:: pennylane
 
@@ -34,6 +28,18 @@ Circuit specifications
 
     ~specs
 
+Circuit Specification Classes and Utilities
+-------------------------------------------
+
+.. currentmodule:: pennylane.resource
+
+.. autosummary::
+    :toctree: api
+
+    ~CircuitSpecs
+    ~SpecsResources
+
+    ~resources_from_tape
 
 Error Tracking
 --------------
@@ -46,6 +52,13 @@ Error Tracking
     ~AlgorithmicError
     ~SpectralNormError
     ~ErrorOperation
+    ~algo_error
+
+.. warning::
+    The functions ``estimate_error``, ``estimate_shots`` and the classes ``DoubleFactorization``,
+    ``FirstQuantization`` have been moved to the :mod:`pennylane.estimator` module.
+    Accessing them from the :mod:`pennylane.resource` module is deprecated and will be removed
+    in v0.45.
 
 Resource Classes
 ----------------
@@ -75,13 +88,13 @@ Resource Functions
 Tracking Resources for Custom Operations
 ----------------------------------------
 
-We can use the :code:`null.qubit` device with the :class:`pennylane.Tracker` to track the resources
-used in a quantum circuit with custom operations without execution.
+We can use the :mod:`null.qubit <pennylane.devices.null_qubit>` device with :class:`pennylane.Tracker`
+to track the resources used in a quantum circuit with custom operations without execution.
 
 .. code-block:: python
 
-    from functools import partial
     from pennylane import numpy as pnp
+    from pennylane.resource import Resources, ResourcesOperation
 
     class MyCustomAlgorithm(ResourcesOperation):
         num_wires = 2
@@ -97,7 +110,7 @@ used in a quantum circuit with custom operations without execution.
 
     dev = qml.device("null.qubit", wires=[0, 1, 2])
 
-    @partial(qml.set_shots, shots=100)
+    @qml.set_shots(shots=100)
     @qml.qnode(dev)
     def circuit(theta):
         qml.RZ(theta, wires=0)
@@ -112,25 +125,32 @@ used in a quantum circuit with custom operations without execution.
 
 We can examine the resources by accessing the :code:`resources` key:
 
->>> resources_lst = tracker.history['resources']
->>> print(resources_lst[0])
-num_wires: 3
-num_gates: 7
-depth: 5
-shots: Shots(total=100)
-gate_types:
-{'RZ': 1, 'CNOT': 2, 'Hadamard': 2, 'PauliZ': 2}
-gate_sizes:
-{1: 5, 2: 2}
+    >>> resources_lst = tracker.history['resources']
+    >>> print(resources_lst[0])
+    Total wire allocations: 3
+    Total gates: 7
+    Circuit depth: 5
+    <BLANKLINE>
+    Gate types:
+      RZ: 1
+      CNOT: 2
+      Hadamard: 2
+      PauliZ: 2
+    <BLANKLINE>
+    Measurements:
+      expval(PauliZ): 1
 """
-from .error import AlgorithmicError, ErrorOperation, SpectralNormError
+from .error import AlgorithmicError, ErrorOperation, SpectralNormError, algo_error
 from .resource import (
     Resources,
     ResourcesOperation,
+    SpecsResources,
+    CircuitSpecs,
     add_in_series,
     add_in_parallel,
     mul_in_series,
     mul_in_parallel,
+    resources_from_tape,
     substitute,
 )
 from .specs import specs
@@ -150,9 +170,9 @@ def __getattr__(name):
         from pennylane.exceptions import PennyLaneDeprecationWarning
 
         warnings.warn(
-            f"pennylane.{name} is no longer accessible from the resource module \
-                and must be imported as pennylane.estimator.{name}. \
-                    Support for access through this module will be removed in v0.45.",
+            f"pennylane.resource.{name} is no longer accessible from the resource module "
+            f"and must be imported as pennylane.estimator.{name}. "
+            "Support for access through this module will be removed in v0.45.",
             PennyLaneDeprecationWarning,
         )
 

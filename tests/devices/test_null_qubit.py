@@ -13,8 +13,6 @@
 # limitations under the License.
 """Tests for null.qubit."""
 
-from collections import defaultdict as dd
-
 import numpy as np
 import pytest
 
@@ -101,7 +99,7 @@ def test_set_device_target():
 
     assert len(program1) == len(program2)
     for t1, t2 in zip(program1, program2):
-        assert t1.transform == t2.transform
+        assert t1.tape_transform == t2.tape_transform
 
         assert len(t1.args) == len(t2.args)
         for i, arg in enumerate(t1.args):
@@ -175,11 +173,11 @@ def test_tracking():
         "vjp_batches": [1],
         "execute_and_vjp_batches": [1],
         "resources": [
-            qml.resource.Resources(
-                num_wires=2,
-                num_gates=2,
-                gate_types=dd(int, {"Hadamard": 1, "FlipSign": 1}),
-                gate_sizes=dd(int, {1: 1, 2: 1}),
+            qml.resource.SpecsResources(
+                num_allocs=2,
+                gate_types={"Hadamard": 1, "FlipSign": 1},
+                gate_sizes={1: 1, 2: 1},
+                measurements={"expval(PauliZ)": 1},
                 depth=2,
             )
         ]
@@ -829,8 +827,8 @@ class TestDeviceDifferentiation:
         x = np.array(np.pi / 7)
         qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
 
-        transform_program = dev.preprocess_transforms(config)
-        [qs], _ = transform_program((qs,))
+        compile_pipeline = dev.preprocess_transforms(config)
+        [qs], _ = compile_pipeline((qs,))
         actual_grad = dev.compute_derivatives([qs], config)
         assert actual_grad == (np.array(0.0),)
 

@@ -15,12 +15,12 @@ r"""
 This module contains the :func:`about` function to display all the details of the PennyLane installation,
 e.g., OS, version, `Numpy` and `Scipy` versions, installation method.
 """
+import json
+import os
 import platform
 import sys
-import os
-import json
 from importlib import metadata
-from importlib.metadata import version, PackageNotFoundError
+from importlib.metadata import PackageNotFoundError, version
 from importlib.util import find_spec
 from sys import version_info
 
@@ -31,6 +31,7 @@ if find_spec("jax"):
     jax_version = version("jax")
 else:
     jax_version = None
+
 
 def _pkg_location():
     """Return absolute path to the installed PennyLane package."""

@@ -25,7 +25,7 @@ import numpy as np
 import scipy
 from numpy.polynomial import Polynomial, chebyshev
 
-from pennylane import math, ops
+from pennylane import math, ops, pytrees
 from pennylane.decomposition import (
     add_decomps,
     adjoint_resource_rep,
@@ -684,14 +684,14 @@ def _QSVT_resources(projectors, UA):
 def _QSVT_decomposition(*_data, UA, projectors, **_kwargs):
 
     for idx, op in enumerate(projectors[:-1]):
-        op._unflatten(*op._flatten())  # pylint: disable=protected-access
+        pytrees.unflatten(*pytrees.flatten(op))
 
         if idx % 2 == 0:
-            UA._unflatten(*UA._flatten())  # pylint: disable=protected-access
+            pytrees.unflatten(*pytrees.flatten(UA))
         else:
             ops.adjoint(UA)
 
-    projectors[-1]._unflatten(*projectors[-1]._flatten())  # pylint: disable=protected-access
+    pytrees.unflatten(*pytrees.flatten(projectors[-1]))
 
 
 add_decomps(QSVT, _QSVT_decomposition)
@@ -1257,7 +1257,7 @@ def poly_to_angles(poly, routine, angle_solver: Literal["root-finding"] = "root-
         raise AssertionError("The polynomial must have at least degree 1.")
 
     for x in [-1, 0, 1]:
-        if math.abs(math.sum(coeff * x**i for i, coeff in enumerate(poly))) > 1:
+        if math.abs(sum(coeff * x**i for i, coeff in enumerate(poly))) > 1:
             # Check that |P(x)| ≤ 1. Only points -1, 0, 1 will be checked.
             raise AssertionError("The polynomial must satisfy that |P(x)| ≤ 1 for all x in [-1, 1]")
 

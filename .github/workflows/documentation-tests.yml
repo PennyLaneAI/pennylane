@@ -31,7 +31,7 @@ jobs:
     needs: [determine_runner]
     runs-on: ${{ needs.determine_runner.outputs.runner_group }}
 
-    name: Documentation Tests on Python 3.11 
+    name: Documentation Tests on Python 3.11
 
     steps:
       - name: Checkout repository
@@ -43,11 +43,11 @@ jobs:
           python-version: "3.11"
 
       - name: Install pip and setuptools
-        run: | 
+        run: |
           python -m pip install --upgrade pip
           pip install --upgrade setuptools
 
-      - name: Install Catalyst and Lightning (dev) 
+      - name: Install Catalyst and Lightning (dev)
         run: |
           pip install --upgrade --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ --pre --no-deps pennylane-catalyst pennylane-lightning
 
@@ -55,10 +55,10 @@ jobs:
         run: |
           pip install --upgrade --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ pennylane-catalyst pennylane-lightning
           pip install -e .
-          pip install sybil pytest "jax~=0.6.0" "jaxlib~=0.6.0" torch matplotlib pyzx
+          pip install sybil pytest "jax==0.7.1" "jaxlib==0.7.1" torch matplotlib pyzx
 
       - name: Print Dependencies
-        run: | 
+        run: |
           python -c "import pennylane as qml; qml.about()"
           python -m pip list
 
@@ -68,7 +68,6 @@ jobs:
         run: |
           IGNORE_OPTS_CLOSED="
           --ignore=pennylane/labs
-          --ignore=pennylane/compiler/python_compiler
           "
           IGNORE_OPTS_CORE="
           --ignore=pennylane/workflow/interfaces/tensorflow.py
