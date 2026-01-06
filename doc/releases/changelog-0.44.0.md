@@ -722,7 +722,7 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
   PauliRot(-0.6, XY, wires=[0, 1])]
   ```
 
-  The same result can be obtained using :class:`~.TrotterProduct` as follows:
+  The same result would now be obtained using :class:`~.TrotterProduct` as follows:
 
   ```pycon
   >>> decomp_ops = qml.adjoint(qml.TrotterProduct(H_flat, time=1.0, n=2)).decomposition()
@@ -734,14 +734,14 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
   ```
 
 * Access to ``add_noise``, ``insert`` and noise mitigation transforms from the :mod:`~.transforms` module is removed.
-  Instead, these functions should be imported from the :mod:`~pennylane~.noise` module.
+  Instead, these functions should be imported from the :mod:`~.noise` module.
   [(#8477)](https://github.com/PennyLaneAI/pennylane/pull/8477)
 
 * ``qml.qnn.cost.SquaredErrorLoss`` has been removed. Instead, this hybrid workflow can be accomplished
   with a function such as ``loss = lambda *args: (circuit(*args) - target)**2``.
   [(#8477)](https://github.com/PennyLaneAI/pennylane/pull/8477)
 
-* Some unnecessary methods of the ``qml.CircuitGraph`` class have been removed:
+* Some unnecessary methods of the :class:`~.CircuitGraph` class have been removed:
   [(#8477)](https://github.com/PennyLaneAI/pennylane/pull/8477)
 
   - ``print_contents`` was removed in favor of ``print(obj)``
@@ -798,7 +798,7 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
   [(#8533)](https://github.com/PennyLaneAI/pennylane/pull/8533)
 
   The example below illustrates how you can provide a function as the ``stopping_condition`` in addition to providing a
-  ``gate_set``. The decomposition of each operator will then stop once it reaches the gates in the ``gate_set`` or the
+  ``gate_set``. The decomposition of each operator will halt upon reaching the gates in the ``gate_set`` or when the
   ``stopping_condition`` is satisfied.
 
   ```python
@@ -820,12 +820,12 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
   ```
 
 * The ``argnum`` parameter has been renamed to ``argnums`` for
-  ``qml.grad``, ``qml.jacobian``, ``qml.jvp`` and ``qml.vjp``.
+  :class:`~.grad`, :class:`~.jacobian`, :func:`~.jvp` and :func:`~.vjp`.
   [(#8496)](https://github.com/PennyLaneAI/pennylane/pull/8496)
   [(#8481)](https://github.com/PennyLaneAI/pennylane/pull/8481)
 
 * The ``custom_decomps`` keyword argument to ``qml.device`` has been deprecated and will be removed
-  in 0.45. Instead, with ``qml.decomposition.enable_graph()``, new decomposition rules can be defined as
+  in 0.45. Instead, with :func:`~.decomposition.enable_graph`, new decomposition rules can be defined as
   quantum functions with registered resources. See :mod:`pennylane.decomposition` for more details.
 
 * `qml.measure`, `qml.measurements.MidMeasureMP`, `qml.measurements.MeasurementValue`,
@@ -886,7 +886,7 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
 * Bumped `autoray` package version to `0.8.2`.
   [(#8674)](https://github.com/PennyLaneAI/pennylane/pull/8674)
 
-* Updated the schedule of nightly TestPyPI uploads to occur at the end rather than the beginning of all week days.
+* Updated the schedule of nightly TestPyPI uploads to occur at the end of all weekdays rather than the beginning of all weekdays.
   [(#8672)](https://github.com/PennyLaneAI/pennylane/pull/8672)
 
 * Added workflow to bump Catalyst and Lightning versions in the RC branch, create a new release tag and draft release,
@@ -895,10 +895,6 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
 
 * Added `MCM_METHOD` and `POSTSELECT_MODE` `StrEnum` objects to improve validation and handling of `MCMConfig` creation.
   [(#8596)](https://github.com/PennyLaneAI/pennylane/pull/8596)
-
-* Updated various docstring examples in the :mod:`~.fourier` module
-  to be compatible with the new documentation testing approach.
-  [(#8635)](https://github.com/PennyLaneAI/pennylane/pull/8635)
 
 * In program capture, transforms now have a single transform primitive with a `transform` param that stores
   the `Transform`. Before, each transform had its own primitive stored on the
@@ -947,14 +943,18 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
   that the resource function is correct.
   [(#8687)](https://github.com/PennyLaneAI/pennylane/pull/8687)
 
-* Simplified the decomposition pipeline for the estimator module. :func:`~.estimator.estimate`
+* Simplified the decomposition pipeline for the estimator module. ``estimator.estimate()``
   was updated to call the base class's `symbolic_resource_decomp` method directly.
   [(#8641)](https://github.com/PennyLaneAI/pennylane/pull/8641)
   
-* Disabled autograph for the PauliRot decomposition rule, as it should not be used. 
+* Disabled autograph for the ``PauliRot`` decomposition rule, as it should not be used. 
   [(#8765)](https://github.com/PennyLaneAI/pennylane/pull/8765)
 
 <h3>Documentation 📝</h3>
+
+* The code example in the documentation for ``qml.decomposition.register_resources`` has been
+  updated to adhere to renamed keyword arguments and default behaviour of ``num_work_wires``.
+  [(#8550)](https://github.com/PennyLaneAI/pennylane/pull/8550)
 
 * A note clarifying that the factors of a ``~.ChangeOpBasis`` are iterated in reverse order has been
   added to the documentation of ``~.ChangeOpBasis``.
@@ -964,10 +964,6 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
   sign convention of phase gradient states, how it prepares the phase gradient state in the code
   example, and the verification of the code example result.
   [(#8536)](https://github.com/PennyLaneAI/pennylane/pull/8536)
-
-* The code example in the documentation for ``qml.decomposition.register_resources`` has been
-  updated to adhere to renamed keyword arguments and default behaviour of ``num_work_wires``.
-  [(#8550)](https://github.com/PennyLaneAI/pennylane/pull/8550)
 
 * The docstring for ``qml.device`` has been updated to include a section on custom decompositions,
   and a warning about the removal of the ``custom_decomps`` kwarg in v0.45. Additionally, the
@@ -985,12 +981,16 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
   the :func:`~pennylane.devices.preprocess.decompose` transform for device-level decompositions.
   [(#8492)](https://github.com/PennyLaneAI/pennylane/pull/8492)
 
-* Improved documentation in the :mod:`~.transforms` module and added documentation testing.
-  [(#8557)](https://github.com/PennyLaneAI/pennylane/pull/8557)
-
 * The documentation for :class:`~.GeneralizedAmplitudeDamping` has been updated to match
   the standard convention in literature for the definition of the Kraus matrices.
   [(#8707)](https://github.com/PennyLaneAI/pennylane/pull/8707)
+
+* Improved documentation in the :mod:`~.transforms` module and added documentation testing.
+  [(#8557)](https://github.com/PennyLaneAI/pennylane/pull/8557)
+
+* Updated various docstring examples in the :mod:`~.fourier` module
+  to be compatible with the new documentation testing approach.
+  [(#8635)](https://github.com/PennyLaneAI/pennylane/pull/8635)
 
 <h3>Bug fixes 🐛</h3>
 
