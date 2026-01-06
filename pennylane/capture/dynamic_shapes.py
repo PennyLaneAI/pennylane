@@ -123,11 +123,7 @@ def determine_abstracted_axes(args):
     was already in the argument loop.
 
     """
-    if not has_jax:  # pragma: no cover
-        raise ImportError(
-            "JAX == 0.7.1 must be installed to use determine_abstracted_axes. "
-            "Install with: pip install jax==0.7.1 jaxlib==0.7.1 "
-        )
+    assert has_jax
     if not jax.config.jax_dynamic_shapes:
         return None, ()
 

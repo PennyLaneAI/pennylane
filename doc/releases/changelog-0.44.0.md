@@ -871,8 +871,10 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
   [(#8737)](https://github.com/PennyLaneAI/pennylane/pull/8737)
 
 * Bump `jax` version to `0.7.1` for `capture` module.
-  [(#8701)](https://github.com/PennyLaneAI/pennylane/pull/8701)
   [(#8715)](https://github.com/PennyLaneAI/pennylane/pull/8715)
+
+* Bump `jax` version to `0.7.0` for `capture` module.
+  [(#8701)](https://github.com/PennyLaneAI/pennylane/pull/8701)
 
 * Improve error handling when using PennyLane's experimental program capture functionality with an incompatible JAX version.
   [(#8723)](https://github.com/PennyLaneAI/pennylane/pull/8723)
