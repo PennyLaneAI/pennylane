@@ -1343,10 +1343,10 @@ class TestToBloqEstimator:
                     np.sqrt(np.array([0.5, 0.0, 0.25, 0.25])), [4, 5], [1, 2, 3], [0]
                 ),
                 {
-                    (qml.X([0]), True): 4,
-                    (qml.CNOT([0, 1]), True): 34,
+                    (qml.X([0]), True): 7,
+                    (qml.CNOT([0, 1]), True): 32,
                     (qml.Toffoli([0, 1, 2]), True): 8,
-                    (qml.H(0), True): 30,
+                    (qml.H(0), True): 40,
                     (qml.S(0), True): 6,
                     (qml.Z(0), True): 3,
                 },
@@ -1396,10 +1396,10 @@ class TestToBloqEstimator:
             (
                 qml.QROMStatePreparation(np.array([0.5, -0.5, 0.5, 0.5]), [4, 5], [1, 2, 3], [0]),
                 {
-                    (qml.X(0), True): 14,
+                    (qml.X(0), True): 19,
                     (qml.Toffoli([0, 1, 2]), True): 16,
-                    (qml.CNOT([0, 1]), True): 68,
-                    (qml.Hadamard(0), True): 54,
+                    (qml.CNOT([0, 1]), True): 62,
+                    (qml.Hadamard(0), True): 69,
                     (qml.S(0), True): 6,
                     (qml.Z(0), True): 3,
                 },
@@ -1539,10 +1539,10 @@ class TestToBloqEstimator:
                     np.sqrt(np.array([0.5, 0.0, 0.25, 0.25])), [4, 5], [1, 2, 3], [0]
                 ),
                 {
-                    (qml.X([0]), True): 4,
-                    (qml.CNOT([0, 1]), True): 34,
+                    (qml.X([0]), True): 7,
+                    (qml.CNOT([0, 1]), True): 32,
                     (qml.Toffoli([0, 1, 2]), True): 8,
-                    (qml.H(0), True): 30,
+                    (qml.H(0), True): 40,
                     (qml.S(0), True): 6,
                     (qml.Z(0), True): 3,
                 },
@@ -1550,10 +1550,10 @@ class TestToBloqEstimator:
             (
                 qml.QROMStatePreparation(np.array([0.5, -0.5, 0.5, 0.5]), [4, 5], [1, 2, 3], [0]),
                 {
-                    (qml.X(0), True): 14,
+                    (qml.X(0), True): 19,
                     (qml.Toffoli([0, 1, 2]), True): 16,
-                    (qml.CNOT([0, 1]), True): 68,
-                    (qml.Hadamard(0), True): 54,
+                    (qml.CNOT([0, 1]), True): 62,
+                    (qml.Hadamard(0), True): 69,
                     (qml.S(0), True): 6,
                     (qml.Z(0), True): 3,
                 },

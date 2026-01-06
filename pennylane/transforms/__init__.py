@@ -138,12 +138,14 @@ Transforms for intermediate representations
 
 Intermediate representations (IRs) are alternative representations of quantum circuits, typically
 offering a more efficient classical description for special classes of circuits.
-The following functions produce intermediate representations of quantum circuits:
+The following functions produce intermediate representations of quantum circuits, or
+use them internally to produce a new quantum circuit:
 
 .. autosummary::
     :toctree: api
 
     ~transforms.parity_matrix
+    ~transforms.parity_synth
     ~transforms.phase_polynomial
     ~transforms.rowcol
 
@@ -449,6 +451,7 @@ from .broadcast_expand import broadcast_expand
 from .decompose import decompose
 from .intermediate_reps import (
     parity_matrix,
+    parity_synth,
     phase_polynomial,
     rowcol,
 )

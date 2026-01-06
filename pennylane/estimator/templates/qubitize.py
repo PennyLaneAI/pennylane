@@ -73,17 +73,17 @@ class QubitizeTHC(ResourceOperator):
     >>> print(res)
     --- Resources: ---
      Total wires: 400
-        algorithmic wires: 102
-        allocated wires: 298
-             zero state: 298
-             any state: 0
-     Total gates : 8.072E+4
-      'Toffoli': 3.250E+3,
-      'CNOT': 6.787E+4,
-      'X': 1.351E+3,
-      'Z': 41,
-      'S': 80,
-      'Hadamard': 8.133E+3
+       algorithmic wires: 102
+       allocated wires: 298
+         zero state: 298
+         any state: 0
+     Total gates : 5.310E+4
+       'Toffoli': 3.151E+3,
+       'CNOT': 3.962E+4,
+       'X': 1.459E+3,
+       'Z': 41,
+       'S': 80,
+       'Hadamard': 8.758E+3
 
     .. details::
         :title: Usage Details

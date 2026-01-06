@@ -141,7 +141,7 @@ class ResourceOperator(ABC):
         :title: Usage Details
 
         This example shows how to create a custom :class:`~.pennylane.estimator.ResourceOperator`
-        class for resource estimation. We use :class:`~.pennylane.QFT` as a well known gate for
+        class for resource estimation. We use :class:`~.pennylane.QFT` as a well-known gate for
         simplicity.
 
         .. code-block:: python
@@ -275,12 +275,12 @@ class ResourceOperator(ABC):
     def adjoint_resource_decomp(cls, target_resource_params: dict | None = None) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
 
-        For ``ResourceOperators`` that don't define a ``adjoint_resource_decomp``, this will be the default
-        ``adjoint_resource_decomp`` method.
+        For a ``ResourceOperator`` that doesn't define an ``adjoint_resource_decomp`` method, this will
+        be the default ``adjoint_resource_decomp`` method.
 
         Resources:
-            The resources for the adjoint of an operator are obtained by tracking the adjoint of each gate in the base
-            resource decomposition of the operator.
+            The resources for the adjoint of an operator are obtained by tracking the adjoint of
+            each gate in the resource decomposition of the operator.
 
         Args:
             target_resource_params (dict | None): A dictionary containing the resource parameters
@@ -308,8 +308,8 @@ class ResourceOperator(ABC):
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
-        For ``ResourceOperators`` that don't define a ``controlled_resource_decomp``, this will be the default
-        ``controlled_resource_decomp`` method.
+        For a ``ResourceOperator`` that doesn't define a ``controlled_resource_decomp`` method, this
+        will be the default ``controlled_resource_decomp`` method.
 
         Resources:
             The resources for the controlled operator are obtained by controlling (with the same number of control
@@ -346,16 +346,17 @@ class ResourceOperator(ABC):
         r"""Returns a list representing the resources for an operator
         raised to a power.
 
-        For ``ResourceOperators`` that don't define a ``pow_resource_decomp``, this will be its
-        ``pow_resource_decomp`` method.
+        For a ``ResourceOperator`` that doesn't define a ``pow_resource_decomp`` method, this will
+        be its ``pow_resource_decomp`` method.
 
         Resources:
             The resources for an operator raised to some power are obtained by taking the base resource
-            decomposition of the operator and tracking each gate raised to the given power. For a power of
-            zero, the identity operator is returned. For a power of one, the base operator is returned.
+            decomposition of the operator and tracking each gate raised to the given power. For a power
+            of zero, the identity operator is returned. For a power of one, the base operator is
+            returned.
 
         Args:
-            pow_z (int): exponent that the operator is being raised to
+            pow_z (int): exponent that the operator is raised to
             target_resource_params (dict | None): A dictionary containing the resource parameters
                 of the target operator.
         """
