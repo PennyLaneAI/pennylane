@@ -77,7 +77,7 @@
   documentation pages.
 
 * A lightweight representation of the :class:`~.BBQRAM` template called 
-  :class:`estimator.BBQRAM <pennylane.estimator.templates.BBQRAM>` has been added for the purpose of
+  :class:`estimator.BBQRAM <pennylane.estimator.templates.BBQRAM>` has been added to the :mod:`~.estimator` module for the purpose of
   fast and efficient resource estimation.
   [(#8825)](https://github.com/PennyLaneAI/pennylane/pull/8825)
 
@@ -86,7 +86,7 @@
   can be done in two ways: 
 
   * Using :class:`estimator.BBQRAM <pennylane.estimator.templates.BBQRAM>` directly inside of a 
-    function and then calling :func:`~.estimator.estimate`:
+    function and then calling :func:`estimate <pennylane.estimator.estimate.estimate>`:
 
   ```python
   import pennylane.estimator as qre
@@ -468,7 +468,7 @@
   Note that :func:`~.marker` is currently not compatible with programs compiled with 
   :func:`~pennylane.qjit`.
 
-* Analyzing resources throughout each step of a compilation pipeline can now be done on qjit'd workflows with :func:`~.specs`, 
+* Analyzing resources throughout each step of a compilation pipeline can now be done on ``qjit``'d workflows with :func:`~.specs`, 
   providing a pass-by-pass overview of quantum circuit resources.
 [(#8606)](https://github.com/PennyLaneAI/pennylane/pull/8606)
   
@@ -489,7 +489,7 @@
       return qml.probs()
   ```
 
-  The supplied ``level`` to :func:`pennylane.specs` can be individual ``int`` values or an iterable 
+  The supplied ``level`` to :func:`pennylane.specs` can be an individual ``int`` value or an iterable 
   of multiple levels. Additionally, the strings ``"all"`` and ``"all-mlir"`` are allowed, returning 
   circuit resources for all user-applied transforms and MLIR passes, or all user-applied MLIR passes 
   only, respectively.
@@ -500,17 +500,17 @@
   Device wires: 2
   Shots: Shots(total=None)
   Level: ['cancel-inverses (MLIR-1)', 'merge-rotations (MLIR-2)']
-  <BLANKLINE>
+
   Resource specifications:
   Level = cancel-inverses (MLIR-1):
     Total wire allocations: 2
     Total gates: 3
     Circuit depth: Not computed
-  <BLANKLINE>
+
     Gate types:
       RX: 2
       CNOT: 1
-  <BLANKLINE>
+
     Measurements:
       probs(all wires): 1
 
