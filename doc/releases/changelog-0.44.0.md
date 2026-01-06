@@ -993,6 +993,7 @@ A warning message has been added to :doc:`Building a plugin <../development/plug
 <h3>Bug fixes 🐛</h3>
 
 * `PauliRot` on a single wire now has a drawer label that is distinguishable from the corresponding native rotation.
+  [(#8855)](https://github.com/PennyLaneAI/pennylane/pull/8855)
 
 * Prevent qml.about() from crashing in environments without pip (e.g., when using the uv package manager) by using standard library metadata.
   [(#8457)](https://github.com/PennyLaneAI/pennylane/pull/8457)
