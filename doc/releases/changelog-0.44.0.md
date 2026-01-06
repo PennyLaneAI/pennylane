@@ -1078,7 +1078,7 @@ A warning message has been added to :doc:`Building a plugin <../development/plug
   [(#8809)](https://github.com/PennyLaneAI/pennylane/pull/8809)
 
 * Fixes a bug where the output dimension of dynamic one-shot is different from single-branch-statistics.
-  [(#8809)](https://github.com/PennyLaneAI/pennylane/pull/8809)
+  [(#8856)](https://github.com/PennyLaneAI/pennylane/pull/8856)
 
 <h3>Contributors ✍️</h3>
 
