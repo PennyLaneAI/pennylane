@@ -187,6 +187,7 @@
   [(#8735)](https://github.com/PennyLaneAI/pennylane/pull/8735)
   [(#8750)](https://github.com/PennyLaneAI/pennylane/pull/8750)
   [(#8731)](https://github.com/PennyLaneAI/pennylane/pull/8731)
+  [(#8817)](https://github.com/PennyLaneAI/pennylane/pull/8817)
 
   The ``CompilePipeline`` class allows you to chain together multiple quantum function transforms
   to create custom circuit optimization pipelines. You can specify a transform program (``pipeline``) as:
