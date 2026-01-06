@@ -4,7 +4,7 @@
 
 <h3>Improvements 🛠</h3>
 
-* `qml.vjp` can no be captured into plxpr.
+* `qml.vjp` can now be captured into plxpr.
   [(#8736)](https://github.com/PennyLaneAI/pennylane/pull/8736)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>

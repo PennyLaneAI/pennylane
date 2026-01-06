@@ -56,13 +56,13 @@ class TestErrors:
     def test_error_on_wrong_number_of_cotangents(self, cotangents):
         """Test an error is raised on the wrong number of cotangents."""
 
-        def f(x, y):
-            return 2 * x, 3 * y
+        def f(x):
+            return 2 * x, 3 * x
 
         with pytest.raises(
             ValueError, match=r"length of cotangents must match the number of outputs"
         ):
-            qml.vjp(f, (0.5, 1.2), cotangents)
+            qml.vjp(f, (0.5,), cotangents)
 
     def test_error_on_wrong_cotangent_dtype(self):
         """Test an error is raised on the wrong cotangent dtype."""
@@ -71,15 +71,7 @@ class TestErrors:
             return 2 * x
 
         with pytest.raises(TypeError, match="dtypes must be equal."):
-            qml.vjp(
-                f,
-                (
-                    jnp.array(
-                        0.5,
-                    ),
-                ),
-                (jnp.array(1)),
-            )
+            qml.vjp(f, (jnp.array(0.5),), jnp.array(1))
 
     def test_error_on_wrong_cotangent_shape(self):
         """Test an error is raised on the wrong cotangent shape."""
@@ -137,7 +129,7 @@ class TestCapturingVJP:
             vjp_eqn = jaxpr.eqns[0]
             assert vjp_eqn.primitive == vjp_prim
             assert vjp_eqn.params["argnums"] == (2 * argnums, 2 * argnums + 1)
-            assert len(vjp_eqn.outvars) == 3  # one result, two vars
+            assert len(vjp_eqn.outvars) == 3  # one result, two dparams
 
     def test_setting_h(self):
         """Test that an h can be set and captured."""

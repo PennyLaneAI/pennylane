@@ -119,7 +119,7 @@ def _args_and_argnums(args, argnums):
         trainable_in_tree = treedef_tuple(trainable_in_trees)
 
     # Create argnums for the flat list of input arrays. For each flattened argument,
-    # add a list of flat argnumss if the argument is trainable and an empty list otherwise.
+    # add a list of flat argnums if the argument is trainable and an empty list otherwise.
     start = 0
     flat_argnums_gen = (
         (

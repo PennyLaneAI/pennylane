@@ -75,8 +75,8 @@ def _validate_cotangents(cotangents, out_avals):
             raise TypeError(
                 "function output params and cotangents arguments to qml.vjp do not match; "
                 "dtypes must be equal. "
-                f"Got function output params dtype {_dtype(p)} and so expected cotangent dtype "
-                f"{_dtype(p)}, but got cotangent dtype {_dtype(t)} instead."
+                f"Got function output params dtype {_dtype(p)} and expected matching cotangent dtype "
+                f", but got cotangent dtype {_dtype(t)} instead."
             )
 
         if get_shape(p) != get_shape(t):
