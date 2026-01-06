@@ -661,32 +661,12 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
 
 * The value ``level=None`` is no longer a valid argument in the following:
   :func:`~.workflow.get_transform_program`, :func:`~.workflow.construct_batch`,
-  :func:`~.draw`, :func:`~.draw_mpl`, and :func:`~.specs`.
+  :func:`~.drawer.draw`, :func:`~.drawer.draw_mpl`, and :func:`~.specs`.
   Please use ``level='device'`` instead to apply all transforms.
   [(#8477)](https://github.com/PennyLaneAI/pennylane/pull/8477)
 
 * The ``max_work_wires`` argument of the :func:`~pennylane.transforms.decompose` transform has been renamed to ``num_work_wires``. This change is only relevant with graph-based decompositions (enabled via :func:`~.decomposition.enable_graph`).
   [(#8769)](https://github.com/PennyLaneAI/pennylane/pull/8769)
-
-* Qualtran call graphs built via :func:`~.to_bloq` now return resource counts via PennyLane's resource estimation module
-  instead of via PennyLane decompositions. To restore the previous behaviour, set ``call_graph='decomposition'``.
-  [(#8390)](https://github.com/PennyLaneAI/pennylane/pull/8390)
-
-  ```python
-  # New default behaviour (estimator mode)
-  >>> qml.to_bloq(qml.QFT(wires=range(5)), map_ops=False).call_graph()[1]
-  {Hadamard(): 5, CNOT(): 26, TGate(is_adjoint=False): 1320}
-
-  # Previous behaviour (decomposition mode)
-  >>> qml.to_bloq(qml.QFT(wires=range(5)), map_ops=False, call_graph='decomposition').call_graph()[1]
-  {Hadamard(): 5,
-   ZPowGate(exponent=-0.15915494309189535, eps=1e-11): 10,
-   ZPowGate(exponent=-0.15915494309189535, eps=5e-12): 10,
-   ZPowGate(exponent=0.15915494309189535, eps=5e-12): 10,
-   CNOT(): 20,
-   TwoBitSwap(): 2
-  }
-  ```
 
 * The ``final_transform`` property of the :class:`~.transforms.core.BoundTransform` has been renamed 
   to ``is_final_transform`` to better follow the naming convention for boolean properties. The ``transform`` 
@@ -733,7 +713,7 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
   PauliRot(-0.6, XY, wires=[0, 1])]
   ```
 
-* Access to ``add_noise``, ``insert`` and noise mitigation transforms from the :mod:`~.transforms` module has been removed.
+* Access to ``add_noise``, ``insert`` and noise mitigation transforms from the :mod:`pennylane.transforms` module has been removed.
   Instead, these functions should be imported from the :mod:`~.noise` module.
   [(#8477)](https://github.com/PennyLaneAI/pennylane/pull/8477)
 
@@ -820,7 +800,7 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
   ```
 
 * The ``argnum`` parameter has been renamed to ``argnums`` for
-  :class:`~.grad`, :class:`~.jacobian`, :func:`~.jvp` and :func:`~.vjp` to better adhere to conventions in JAX and Catalyst.
+  :class:`~.grad`, :class:`~.jacobian`, :func:`~.gradients.jvp` and :func:`~.gradients.vjp` to better adhere to conventions in JAX and Catalyst.
   [(#8496)](https://github.com/PennyLaneAI/pennylane/pull/8496)
   [(#8481)](https://github.com/PennyLaneAI/pennylane/pull/8481)
 
@@ -852,8 +832,8 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
   - ``qml.estimator.DoubleFactorization`` rather than ``qml.resources.DoubleFactorization``
 
 * The :func:`pennylane.devices.preprocess.mid_circuit_measurements` transform is deprecated. Instead,
-  the device should determine which MCM method to use, and explicitly include :func:`~pennylane.transforms.dynamic_one_shot`
-  or :func:`~pennylane.transforms.defer_measurements` in its preprocessing transforms if necessary.
+  the device should determine which MCM method to use, and explicitly include :func:`~.transforms.dynamic_one_shot`
+  or :func:`~.transforms.defer_measurements` in its preprocessing transforms if necessary.
   [(#8467)](https://github.com/PennyLaneAI/pennylane/pull/8467)
 
 <h3>Internal changes ⚙️</h3>
@@ -978,7 +958,7 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
   the standard convention in literature for the definition of the Kraus matrices.
   [(#8707)](https://github.com/PennyLaneAI/pennylane/pull/8707)
 
-* Improved documentation in the :mod:`~.transforms` module and added documentation testing.
+* Improved documentation in the :mod:`pennylane.transforms` module and added documentation testing.
   [(#8557)](https://github.com/PennyLaneAI/pennylane/pull/8557)
 
 * Updated various docstring examples in the :mod:`~.fourier` module
