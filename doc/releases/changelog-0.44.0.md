@@ -662,10 +662,10 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
 * The value ``level=None`` is no longer a valid argument in the following:
   :func:`~.workflow.get_transform_program`, :func:`~.workflow.construct_batch`,
   :func:`~.draw`, :func:`~.draw_mpl`, and :func:`~.specs`.
-  Please use ``level='device'`` instead to apply the transform at the device level.
+  Please use ``level='device'`` instead to apply all transforms.
   [(#8477)](https://github.com/PennyLaneAI/pennylane/pull/8477)
 
-* The ``max_work_wires`` argument of the :func:`~pennylane.transforms.decompose` transform has been renamed to ``num_work_wires``.
+* The ``max_work_wires`` argument of the :func:`~pennylane.transforms.decompose` transform has been renamed to ``num_work_wires``. This change is only relevant with graph-based decompositions (enabled via :func:`~.decomposition.enable_graph`).
   [(#8769)](https://github.com/PennyLaneAI/pennylane/pull/8769)
 
 * Qualtran call graphs built via :func:`~.to_bloq` now return resource counts via PennyLane's resource estimation module
@@ -688,10 +688,10 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
   }
   ```
 
-* The `final_transform` property of the :class:`~.transforms.core.BoundTransform` has been renamed 
-  to `is_final_transform` to better follow the naming convention for boolean properties. The `transform` 
+* The ``final_transform`` property of the :class:`~.transforms.core.BoundTransform` has been renamed 
+  to ``is_final_transform`` to better follow the naming convention for boolean properties. The ``transform`` 
   property of the :class:`~.transforms.core.Transform` and :class:`~.transforms.core.BoundTransform` 
-  has been renamed to `tape_transform` to avoid ambiguity.
+  has been renamed to ``tape_transform`` to avoid ambiguity.
   [(#8756)](https://github.com/PennyLaneAI/pennylane/pull/8756)
 
 * ``QuantumScript.to_openqasm`` has been removed. Please use :func:`~.to_openqasm` instead. This removes duplicated
@@ -733,7 +733,7 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
   PauliRot(-0.6, XY, wires=[0, 1])]
   ```
 
-* Access to ``add_noise``, ``insert`` and noise mitigation transforms from the :mod:`~.transforms` module is removed.
+* Access to ``add_noise``, ``insert`` and noise mitigation transforms from the :mod:`~.transforms` module has been removed.
   Instead, these functions should be imported from the :mod:`~.noise` module.
   [(#8477)](https://github.com/PennyLaneAI/pennylane/pull/8477)
 
@@ -774,14 +774,14 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
   Instead, please use `QNode.transform_program.push_back(transform_container=transform_container)`.
   [(#8468)](https://github.com/PennyLaneAI/pennylane/pull/8468)
 
-* The :func:`~.dynamic_one_shot` transform can no longer be applied directly on a QNode.
+* The :func:`~.dynamic_one_shot` transform can no longer be applied directly on a QNode. Instead, specify the mid-circuit measurement method in QNode: ``@qml.qnode(..., mcm_method="one-shot")``.
   [(8781)](https://github.com/PennyLaneAI/pennylane/pull/8781)
 
 * The `qml.compiler.python_compiler` submodule has been removed from PennyLane.
   It has been migrated to Catalyst, available as `catalyst.python_interface`.
   [(#8662)](https://github.com/PennyLaneAI/pennylane/pull/8662)
 
-* `qml.transforms.map_wires` no longer supports PLxPR transforms.
+* `qml.transforms.map_wires` no longer supports transforming jaxpr directly.
   [(#8683)](https://github.com/PennyLaneAI/pennylane/pull/8683)
 
 <h3>Deprecations 👋</h3>
@@ -820,7 +820,7 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
   ```
 
 * The ``argnum`` parameter has been renamed to ``argnums`` for
-  :class:`~.grad`, :class:`~.jacobian`, :func:`~.jvp` and :func:`~.vjp`.
+  :class:`~.grad`, :class:`~.jacobian`, :func:`~.jvp` and :func:`~.vjp` to better adhere to conventions in JAX and Catalyst.
   [(#8496)](https://github.com/PennyLaneAI/pennylane/pull/8496)
   [(#8481)](https://github.com/PennyLaneAI/pennylane/pull/8481)
 
@@ -832,7 +832,7 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
   and `qml.measurements.get_mcm_predicates` are now located in `qml.ops.mid_measure`.
   `MidMeasureMP` has been renamed to `MidMeasure`.
   `qml.measurements.find_post_processed_mcms` is now `qml.devices.qubit.simulate._find_post_processed_mcms`,
-  and is being made private, as it is an utility for tree-traversal.
+  and is being made private, as it is an utility for tree-traversal mid-circuit measurements.
   [(#8466)](https://github.com/PennyLaneAI/pennylane/pull/8466)
 
 * The ``pennylane.operation.Operator.is_hermitian`` property has been deprecated and renamed
@@ -862,43 +862,42 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
   a folder for improved source code organization.
   [(#8800)](https://github.com/PennyLaneAI/pennylane/pull/8800)
 
-* Updated `pyproject.toml` with project dependencies to replace the requirements files. Updated workflows to use installations from `pyproject.toml`.
+* The `pyproject.toml` has been updated with project dependencies to replace the requirements files. Workflows have also been updated to use installations from `pyproject.toml`.
   [(8702)](https://github.com/PennyLaneAI/pennylane/pull/8702)
 
 * `qml.cond`, the `QNode`, transforms, `qml.grad`, and `qml.jacobian` no longer treat all keyword arguments as static
   arguments. They are instead treated as dynamic, numerical inputs, matching the behaviour of Jax and Catalyst.
   [(#8290)](https://github.com/PennyLaneAI/pennylane/pull/8290)
 
-* Some error handling has been updated in tests, to adjust to Python 3.14; `get_type_str` added a special branch to handle `Union`.
-  The import of `networkx` is softened to not occur on import of PennyLane to work around a bug in Python 3.14.1.
+* Some error handling has been updated in tests, to adjust to Python 3.14; ``get_type_str`` added a special branch to handle ``Union``.
+  The import of ``networkx`` is softened to not occur on import of PennyLane to work around a bug in Python 3.14.1.
   [(#8568)](https://github.com/PennyLaneAI/pennylane/pull/8568)
   [(#8737)](https://github.com/PennyLaneAI/pennylane/pull/8737)
 
-* Bumped `jax` version to `0.7.1` for `capture` module.
+* The ``jax`` version has been updated to ``0.7.1`` for the ``capture`` module.
   [(#8715)](https://github.com/PennyLaneAI/pennylane/pull/8715)
-
-* Bumped `jax` version to `0.7.0` for `capture` module.
   [(#8701)](https://github.com/PennyLaneAI/pennylane/pull/8701)
+
 
 * Improved error handling when using PennyLane's experimental program capture functionality with an incompatible JAX version.
   [(#8723)](https://github.com/PennyLaneAI/pennylane/pull/8723)
 
-* Bumped `autoray` package version to `0.8.2`.
+* The ``autoray`` package version has been updated to ``0.8.2``.
   [(#8674)](https://github.com/PennyLaneAI/pennylane/pull/8674)
 
 * Updated the schedule of nightly TestPyPI uploads to occur at the end of all weekdays rather than the beginning of all weekdays.
   [(#8672)](https://github.com/PennyLaneAI/pennylane/pull/8672)
 
-* Added workflow to bump Catalyst and Lightning versions in the RC branch, create a new release tag and draft release,
+* A github workflow was added to bump Catalyst and Lightning versions in the release candidate (RC) branch, create a new release tag and draft release,
   tag the RC branch, and create a PR to merge the RC branch into master.
   [(#8352)](https://github.com/PennyLaneAI/pennylane/pull/8352)
 
-* Added `MCM_METHOD` and `POSTSELECT_MODE` `StrEnum` objects to improve validation and handling of `MCMConfig` creation.
+* Added ``MCM_METHOD`` and ``POSTSELECT_MODE`` ``StrEnum`` objects to improve validation and handling of ``MCMConfig`` creation.
   [(#8596)](https://github.com/PennyLaneAI/pennylane/pull/8596)
 
-* In program capture, transforms now have a single transform primitive with a `transform` param that stores
-  the `Transform`. Before, each transform had its own primitive stored on the
-  `Transform._primitive` private property.
+* In program capture, transforms now have a single transform primitive with a ``transform`` param that stores
+  the ``Transform``. Before, each transform had its own primitive stored on the
+  ``Transform._primitive`` private property.
   [(#8576)](https://github.com/PennyLaneAI/pennylane/pull/8576)
   [(#8639)](https://github.com/PennyLaneAI/pennylane/pull/8639)
 
@@ -912,15 +911,15 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
   primitive for use in program capture.
   [(#8357)](https://github.com/PennyLaneAI/pennylane/pull/8357)
 
-* Updated versions for `pylint`, `isort` and `black` in `format.yml`
+* The versions for ``pylint``, ``isort`` and ``black`` in ``format.yml`` have been updated.
   [(#8506)](https://github.com/PennyLaneAI/pennylane/pull/8506)
 
-* Reclassified `registers` as a tertiary module for use with `tach`.
+* Reclassified ``registers`` as a tertiary module for use with ``tach``.
   [(#8513)](https://github.com/PennyLaneAI/pennylane/pull/8513)
 
-* The :class:`~pennylane.devices.LegacyDeviceFacade` was refactored to implement `setup_execution_config` and `preprocess_transforms`
-  separately as opposed to implementing a single `preprocess` method. Additionally, the `mid_circuit_measurements` transform has been removed
-  from the preprocess transform program. Instead, the best mcm method is chosen in `setup_execution_config`. By default, the ``_capabilities``
+* The :class:`~pennylane.devices.LegacyDeviceFacade` was refactored to implement ``setup_execution_config`` and `preprocess_transforms``
+  separately as opposed to implementing a single ``preprocess`` method. Additionally, the ``mid_circuit_measurements`` transform has been removed
+  from the preprocess transform program. Instead, the best mcm method is chosen in ``setup_execution_config``. By default, the ``_capabilities``
   dictionary is queried for the ``"supports_mid_measure"`` property. If the underlying device defines a TOML file, the ``supported_mcm_methods``
   field in the TOML file is used as the source of truth.
   [(#8469)](https://github.com/PennyLaneAI/pennylane/pull/8469)
@@ -938,12 +937,12 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
   [(#8519)](https://github.com/PennyLaneAI/pennylane/pull/8519)
   [(#8544)](https://github.com/PennyLaneAI/pennylane/pull/8544)
 
-* Added a `skip_decomp_matrix_check` argument to :func:`~pennylane.ops.functions.assert_valid` that
+* Added a ``skip_decomp_matrix_check`` argument to :func:`pennylane.ops.functions.assert_valid` that
   allows the test to skip the matrix check part of testing a decomposition rule but still verify
   that the resource function is correct.
   [(#8687)](https://github.com/PennyLaneAI/pennylane/pull/8687)
 
-* Simplified the decomposition pipeline for the estimator module. ``estimator.estimate()``
+* Simplified the decomposition pipeline for the ``estimator`` module. ``estimator.estimate()``
   was updated to call the base class's `symbolic_resource_decomp` method directly.
   [(#8641)](https://github.com/PennyLaneAI/pennylane/pull/8641)
   
@@ -974,12 +973,6 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
   [(#8492)](https://github.com/PennyLaneAI/pennylane/pull/8492)
   [(#8564)](https://github.com/PennyLaneAI/pennylane/pull/8564)
 
-* A warning message has been added to :doc:`Building a plugin <../development/plugins>`
-  docstring for ``qml.device`` has been updated to include a section on custom decompositions,
-  and a warning about the removal of the ``custom_decomps`` kwarg in v0.44. Additionally, the page
-  :doc:`Building a plugin <../development/plugins>` now includes instructions on using
-  the :func:`~pennylane.devices.preprocess.decompose` transform for device-level decompositions.
-  [(#8492)](https://github.com/PennyLaneAI/pennylane/pull/8492)
 
 * The documentation for :class:`~.GeneralizedAmplitudeDamping` has been updated to match
   the standard convention in literature for the definition of the Kraus matrices.
