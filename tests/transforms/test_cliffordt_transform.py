@@ -549,6 +549,7 @@ class TestCliffordCompile:
             decomposed_qfunc()
 
     # pylint: disable= import-outside-toplevel
+    @pytest.mark.all_interfaces
     @pytest.mark.parametrize("method, kwargs", [("sk", {"max_depth": 3}), ("gridsynth", {})])
     def test_clifford_decompose_interfaces(self, method, kwargs):
         """Test that unwrap converts lists to lists and interface variables to numpy."""

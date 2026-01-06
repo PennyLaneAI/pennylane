@@ -583,9 +583,9 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
 
 * The default method for decomposing the single-qubit Pauli rotation gates in the Clifford+T basis
   in the :func:`~pennylane.clifford_t_decomposition` transform has been updated to use
-  the [Ross-Selinger algorithm](https://arxiv.org/abs/1403.2975v3) (`method="gridsynth"`)
-  from previously used [Solovay-Kitaev algorithm](https://arxiv.org/abs/quant-ph/0505030) (`method="sk"`).
-  [(#)](https://github.com/PennyLaneAI/pennylane/pull/)
+  the [Ross-Selinger](https://arxiv.org/abs/1403.2975) algorithm (`method="gridsynth"`)
+  from previously used [Solovay-Kitaev](https://arxiv.org/abs/quant-ph/0505030v2) algorithm (`method="sk"`).
+  [(#8862)](https://github.com/PennyLaneAI/pennylane/pull/8862)
 
 <h4>Other improvements</h4>
 
