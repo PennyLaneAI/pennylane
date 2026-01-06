@@ -166,7 +166,7 @@ def test_bb_quantum(
                 [5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
             ),
             ValueError,
-            "len(data) must be 2^(len(control_wires)).",
+            "data.shape[0] must be 2^(len(control_wires)).",
         ),
         (
             (
@@ -644,7 +644,7 @@ def test_hybrid_decomposition_new(
                 0,
             ),
             ValueError,
-            "len(data) must be 2^(len(control_wires)).",
+            "data.shape[0] must be 2^(len(control_wires)).",
         ),
         (
             (
@@ -1046,7 +1046,7 @@ def test_select_only_quantum(
                 2,
             ),
             ValueError,
-            "len(data) must be 2^(len(select_wires)+len(control_wires)).",
+            "data.shape[0] must be 2^(len(select_wires)+len(control_wires)).",
         ),
         (
             (

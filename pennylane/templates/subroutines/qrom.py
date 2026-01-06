@@ -22,6 +22,7 @@ from typing import Sequence
 
 import numpy as np
 
+import pennylane.math as pl_math
 from pennylane import ops as qml_ops
 from pennylane.decomposition import (
     add_decomps,
@@ -199,7 +200,7 @@ class QROM(Operation):
             data = np.array(map(lambda bitstring: [int(bit) for bit in bitstring], data))
 
         if isinstance(data, list) or isinstance(data, tuple):
-            data = np.array(data)
+            data = pl_math.array(data)
 
         work_wires = Wires(() if work_wires is None else work_wires)
 

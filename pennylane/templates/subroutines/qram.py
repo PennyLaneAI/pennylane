@@ -225,12 +225,15 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
         data = list(data)
         control_wires = Wires(control_wires)
 
+        if isinstance(data, list) or isinstance(data, tuple):
+            data = math.array(data)
+
         if isinstance(data[0], str):
-            data = list(map(lambda bitstring: [int(bit) for bit in bitstring], data))
+            data = math.array(list(map(lambda bitstring: [int(bit) for bit in bitstring], data)))
 
         n_k = len(control_wires)
-        if (1 << n_k) != len(data):
-            raise ValueError("len(data) must be 2^(len(control_wires)).")
+        if (1 << n_k) != data.shape[0]:
+            raise ValueError("data.shape[0] must be 2^(len(control_wires)).")
 
         target_wires = Wires(target_wires)
         if m != len(target_wires):
@@ -504,8 +507,11 @@ class HybridQRAM(Operation):
         m = next(iter(m_set))
         data = list(data)
 
+        if isinstance(data, list) or isinstance(data, tuple):
+            data = math.array(data)
+
         if isinstance(data[0], str):
-            data = list(map(lambda bitstring: [int(bit) for bit in bitstring], data))
+            data = math.array(list(map(lambda bitstring: [int(bit) for bit in bitstring], data)))
 
         control_wires = Wires(control_wires)
         target_wires = Wires(target_wires)
@@ -522,8 +528,8 @@ class HybridQRAM(Operation):
         if len(target_wires) != m:
             raise ValueError("len(target_wires) must equal bitstring length.")
 
-        if len(data) != (1 << n_total):
-            raise ValueError("len(data) must be 2^(len(control_wires)).")
+        if data.shape[0] != (1 << n_total):
+            raise ValueError("data.shape[0] must be 2^(len(control_wires)).")
 
         # Split control_wires into select and tree parts
         select_wires = Wires(control_wires[:k])
@@ -966,8 +972,11 @@ class SelectOnlyQRAM(Operation):
         m = next(iter(m_set))
         data = list(data)
 
+        if isinstance(data, list) or isinstance(data, tuple):
+            data = math.array(data)
+
         if isinstance(data[0], str):
-            data = list(map(lambda bitstring: [int(bit) for bit in bitstring], data))
+            data = math.array(list(map(lambda bitstring: [int(bit) for bit in bitstring], data)))
 
         target_wires = Wires(target_wires)
         if m != len(target_wires):
@@ -983,8 +992,8 @@ class SelectOnlyQRAM(Operation):
         num_controls = len(control_wires)
         n_total = num_select + num_controls
 
-        if (1 << n_total) != len(data):
-            raise ValueError("len(data) must be 2^(len(select_wires)+len(control_wires)).")
+        if (1 << n_total) != data.shape[0]:
+            raise ValueError("data.shape[0] must be 2^(len(select_wires)+len(control_wires)).")
 
             # Validate select_value (if provided)
         if select_value is not None:
@@ -1083,7 +1092,7 @@ def _select_only_qram_decomposition(
         _flip_controls(controls, control_values)
 
         # For each bit position in the data
-        for j in range(len(data[0])):
+        for j in range(data[0].shape[0]):
             # Multi-controlled X on target_wires[j],
             # controlled on controls matching `control_values`.
 
