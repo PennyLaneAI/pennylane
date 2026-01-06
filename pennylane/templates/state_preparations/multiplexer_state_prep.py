@@ -29,18 +29,17 @@ class MultiplexerStatePreparation(Operation):
     in `arXiv:0208112 <https://arxiv.org/abs/quant-ph/0208112>`_.
 
     Args:
-        state_vector (tensor_like): The state vector of length :math:`2^n` to be prepared on :math:`n` wires.
+        state_vector (tensor_like): The state vector of length :math:`2^n` to be prepared on
+            :math:`n` wires.
         wires (Sequence[int]): The wires on which to prepare the state.
 
     Raises:
-        ValueError: If the length of the input state vector array is not :math:`2^n`, where :math:`n` is an integer, or if
-            the norm of the input state is not one.
+        ValueError: If the length of the input state vector array is not :math:`2^n`, where
+        :math:`n` is the number, or if the norm of the input state is not :math:`1`.
 
     **Example**
 
     .. code-block:: python
-
-        import numpy as np
 
         probs_vector = np.array([0.5, 0., 0.25, 0.25])
 
@@ -58,7 +57,10 @@ class MultiplexerStatePreparation(Operation):
         >>> np.round(circuit(), 2)
         array([0.5 , 0.  , 0.25, 0.25])
 
-    .. seealso:: :class:`~.SelectPauliRot` for a description of the main building blocks implemented in this operation.
+    .. seealso::
+
+        :class:`~.SelectPauliRot` for a description of the main building blocks used to
+        implement this operation.
 
     """
 
