@@ -19,6 +19,7 @@ import copy
 from collections import defaultdict
 from collections.abc import Sequence
 from functools import partial, reduce
+from importlib import import_module, util
 from typing import Literal
 
 import numpy as np
@@ -35,7 +36,6 @@ from pennylane.operation import Operation, Operator
 from pennylane.queuing import QueuingManager, apply
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
-from importlib import import_module, util
 
 from .fable import FABLE
 from .prepselprep import PrepSelPrep

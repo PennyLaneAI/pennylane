@@ -16,6 +16,7 @@ Tests for the QSVT template and qsvt wrapper function.
 """
 # pylint: disable=too-many-arguments, import-outside-toplevel, no-self-use
 from copy import copy
+from importlib import import_module, util
 
 import pytest
 from numpy.linalg import matrix_power
@@ -36,7 +37,6 @@ from pennylane.templates.subroutines.qsvt import (
     _z_rotation,
     jit_if_jax_available,
 )
-from importlib import import_module, util
 
 if util.find_spec("jax") is not None:
     jax = import_module("jax")
@@ -51,18 +51,6 @@ if util.find_spec("optax") is not None:
 else:
     is_optax_available = False
     optax = None
-
-# is_jax_available = True
-# is_optax_available = True
-# try:
-#     import jax
-# except ImportError:
-#     is_jax_available = False
-
-# try:
-#     import optax  # pylint: disable=unused-import
-# except ImportError:
-#     is_optax_available = False
 
 
 def qfunc(A):
