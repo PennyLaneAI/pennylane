@@ -27,6 +27,10 @@ from pennylane.wires import Wires
 class TestCancelInverses:
     """Test that adjacent inverse gates are cancelled."""
 
+    def test_pass_name_defined(self):
+        """Test cancel_inverses defines a pass_name."""
+        assert cancel_inverses.pass_name == "cancel-inverses"
+
     def test_one_qubit_cancel_adjacent_self_inverse(self):
         """Test that a single-qubit circuit with adjacent self-inverse gate cancels."""
 
@@ -207,6 +211,95 @@ class TestCancelInverses:
         ops = qml.tape.make_qscript(transformed_qfunc)().operations
 
         assert len(ops) == 0
+
+    @pytest.mark.parametrize("wrapped", [False, True])
+    def test_no_recursive_cancellation_with_recursive_false(self, wrapped):
+        """Test that with `recursive=False`, nested pairs of inverses are not cancelled."""
+
+        def qfunc():
+            if wrapped:
+                qml.X(0)
+            qml.S(0)
+            qml.Hadamard(wires=0)
+            qml.Hadamard(wires=0)
+            qml.adjoint(qml.S(0))
+            if wrapped:
+                qml.Y(0)
+
+        transformed_qfunc = cancel_inverses(qfunc, recursive=False)
+
+        ops = qml.tape.make_qscript(transformed_qfunc)().operations
+
+        if wrapped:
+            names_expected = ["PauliX", "S", "Adjoint(S)", "PauliY"]
+            wires_expected = [Wires(0)] * 4
+        else:
+            names_expected = ["S", "Adjoint(S)"]
+            wires_expected = [Wires(0)] * 2
+        compare_operation_lists(ops, names_expected, wires_expected)
+
+    @pytest.mark.parametrize("wrapped", [False, True])
+    def test_recursive_cancellation_with_recursive_true(self, wrapped):
+        """Test that with `recursive=True`, nested pairs of inverses are cancelled."""
+
+        def qfunc():
+            if wrapped:
+                qml.X(0)
+            qml.S(0)
+            qml.Hadamard(wires=0)
+            qml.Hadamard(wires=0)
+            qml.adjoint(qml.S(0))
+            if wrapped:
+                qml.Y(0)
+
+        transformed_qfunc = cancel_inverses(qfunc)
+
+        ops = qml.tape.make_qscript(transformed_qfunc)().operations
+
+        if wrapped:
+            names_expected = ["PauliX", "PauliY"]
+            wires_expected = [Wires(0)] * 2
+        else:
+            names_expected = []
+            wires_expected = []
+        compare_operation_lists(ops, names_expected, wires_expected)
+
+    def test_deep_recursive_cancellation(self):
+        """Test that deeply nested pairs are cancelled for ``recursive=True``."""
+
+        def qfunc():
+            xs = np.arange(500)
+            for x in xs:
+                qml.RX(x, 0)
+            for x in xs[::-1]:
+                qml.adjoint(qml.RX(x, 0))
+
+        transformed_qfunc = cancel_inverses(qfunc)
+        ops = qml.tape.make_qscript(transformed_qfunc)().operations
+
+        names_expected = []
+        wires_expected = []
+        compare_operation_lists(ops, names_expected, wires_expected)
+
+    @pytest.mark.parametrize("adjoint_first", [True, False])
+    def test_symmetric_over_all_wires(self, adjoint_first):
+        """Test that adjacent adjoint ops are cancelled due to wire symmetry."""
+
+        def qfunc(x):
+            if adjoint_first:
+                qml.adjoint(qml.MultiRZ(x, [2, 0, 1]))
+                qml.MultiRZ(x, [0, 1, 2])
+            else:
+                qml.MultiRZ(x, [2, 0, 1])
+                qml.adjoint(qml.MultiRZ(x, [0, 1, 2]))
+
+        transformed_qfunc = cancel_inverses(qfunc)
+
+        ops = qml.tape.make_qscript(transformed_qfunc)(1.5).operations
+
+        names_expected = []
+        wires_expected = []
+        compare_operation_lists(ops, names_expected, wires_expected)
 
 
 # Example QNode and device for interface testing
@@ -461,7 +554,7 @@ class TestTransformDispatch:
     def test_qnode(self):
         """Test the transform on a qnode directly."""
         transformed_qnode = cancel_inverses(qnode_circuit)
-        assert not transformed_qnode.transform_program.is_empty()
+        assert transformed_qnode.transform_program
         assert len(transformed_qnode.transform_program) == 1
         params = [0.1, 0.2]
         res = transformed_qnode(params)

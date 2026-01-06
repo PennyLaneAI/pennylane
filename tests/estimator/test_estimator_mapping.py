@@ -21,8 +21,9 @@ import pytest
 import pennylane as qml
 import pennylane.estimator as re_ops
 import pennylane.estimator.templates as re_temps
+import pennylane.ops as qops
 import pennylane.templates as qtemps
-from pennylane.estimator.resource_mapping import _map_to_resource_op
+from pennylane.estimator.resource_mapping import _map_term_trotter, _map_to_resource_op
 from pennylane.operation import Operation
 
 # pylint: disable= no-self-use,too-few-public-methods
@@ -86,6 +87,12 @@ class TestMapToResourceOp:
             ),
             # Custom/Template Gates
             (qtemps.TemporaryAND(wires=[0, 1, 2]), re_ops.TemporaryAND()),
+            (
+                qtemps.Reflection(U=qml.Hadamard(0), alpha=0.1, reflection_wires=[0]),
+                re_temps.Reflection(
+                    num_wires=1, U=re_ops.Hadamard(wires=[0]), alpha=0.1, wires=[0]
+                ),
+            ),
         ],
     )
     def test_map_to_resource_op(self, operator, expected_res_op):
@@ -101,7 +108,7 @@ class TestMapToResourceOp:
             ),
             (
                 qml.SemiAdder(x_wires=[0, 1, 2], y_wires=[3, 4], work_wires=[5]),
-                re_temps.SemiAdder(max_register_size=3, wires=[0, 1, 2, 3, 4, 5]),
+                re_temps.SemiAdder(max_register_size=3, wires=[0, 1, 2, 3, 4]),
             ),
             (qtemps.QFT(wires=[0, 1, 2]), re_temps.QFT(num_wires=3, wires=[0, 1, 2])),
             (
@@ -115,6 +122,23 @@ class TestMapToResourceOp:
             (
                 qtemps.Select([qml.PauliX(2), qml.PauliY(2)], control=[0, 1]),
                 re_temps.Select(ops=[re_ops.X(), re_ops.Y()], wires=[0, 1, 2]),
+            ),
+            (
+                qtemps.BBQRAM(
+                    bitstrings=["010", "111", "110", "000"],
+                    control_wires=[0, 1],
+                    target_wires=[2, 3, 4],
+                    work_wires=[5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
+                ),
+                re_temps.BBQRAM(
+                    num_bitstrings=4,
+                    size_bitstring=3,
+                    num_bit_flips=6,
+                    num_wires=15,
+                    control_wires=[0, 1],
+                    target_wires=[2, 3, 4],
+                    work_wires=[5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
+                ),
             ),
             (
                 qtemps.QROM(
@@ -184,6 +208,43 @@ class TestMapToResourceOp:
                     order=2,
                 ),
             ),
+            (  # Nested sums in the TrotterProduct
+                qml.TrotterProduct(
+                    qml.dot(
+                        [0.25, 0.75],
+                        [
+                            qml.prod(qml.Z(0), qml.Z(1)),
+                            qml.dot([0.1, -2.3], [qml.X(0), qml.prod(qml.X(0), qml.X(1))]),
+                        ],
+                    ),
+                    time=1.0,
+                    n=10,
+                    order=2,
+                ),
+                re_temps.TrotterProduct(
+                    first_order_expansion=[
+                        re_ops.Prod(
+                            res_ops=(
+                                re_ops.CNOT([0, 1]),
+                                re_ops.RZ(wires=[1]),
+                                re_ops.CNOT([0, 1]),
+                            ),
+                        ),
+                        re_temps.TrotterProduct(
+                            first_order_expansion=[
+                                re_ops.RX(wires=[0]),
+                                re_ops.Prod(
+                                    (re_ops.CNOT([0, 1]), re_ops.RX(wires=[1]), re_ops.CNOT([0, 1]))
+                                ),
+                            ],
+                            num_steps=1,
+                            order=1,
+                        ),
+                    ],
+                    num_steps=10,
+                    order=2,
+                ),
+            ),
             (
                 qml.IntegerComparator(5, geq=False, wires=[0, 1, 2, 3]),
                 re_temps.IntegerComparator(value=5, register_size=3, geq=False, wires=[0, 1, 2, 3]),
@@ -201,16 +262,141 @@ class TestMapToResourceOp:
                     np.array([0.25] * 16), wires=[0, 1, 2, 3], precision_wires=[4, 5]
                 ),
                 re_temps.QROMStatePreparation(
-                    num_state_qubits=6,
+                    num_state_qubits=4,
+                    precision=np.pi / 4,
+                    positive_and_real=True,
+                    select_swap_depths=1,
+                    wires=[0, 1, 2, 3],
+                ),
+            ),
+            (
+                qtemps.QROMStatePreparation(
+                    1j * np.array([0.25] * 16), wires=[0, 1, 2, 3], precision_wires=[4, 5]
+                ),
+                re_temps.QROMStatePreparation(
+                    num_state_qubits=4,
                     precision=np.pi / 4,
                     positive_and_real=False,
                     select_swap_depths=1,
-                    wires=[0, 1, 2, 3, 4, 5],
+                    wires=[0, 1, 2, 3],
                 ),
             ),
         ],
     )
     def test_map_to_resource_op_templates(self, operator, expected_res_op):
+        """Test that _map_to_resource_op maps templates to the appropriate resource operator"""
+        mapped_op = _map_to_resource_op(operator)
+        assert mapped_op == expected_res_op
+        assert mapped_op.wires == expected_res_op.wires
+
+    @pytest.mark.parametrize(
+        "operator, expected_res_op",
+        (
+            (
+                qops.ChangeOpBasis(
+                    compute_op=qops.T(wires=0),
+                    target_op=qops.Z(wires=0),
+                ),
+                re_ops.ChangeOpBasis(
+                    compute_op=re_ops.T(wires=0),
+                    target_op=re_ops.Z(wires=0),
+                    uncompute_op=re_ops.Adjoint(re_ops.T(wires=0)),
+                ),
+            ),
+            (
+                qops.ChangeOpBasis(
+                    compute_op=qtemps.QFT(wires=[0, 1, 2]),
+                    target_op=qtemps.ControlledSequence(qops.S(wires=2), control=[0, 1]),
+                    uncompute_op=qops.adjoint(qtemps.AQFT(order=3, wires=[0, 1, 2, 3, 4])),
+                ),
+                re_ops.ChangeOpBasis(
+                    compute_op=re_temps.QFT(num_wires=3, wires=[0, 1, 2]),
+                    target_op=re_temps.ControlledSequence(
+                        re_ops.S(wires=2), num_control_wires=2, wires=[0, 1]
+                    ),
+                    uncompute_op=re_ops.Adjoint(
+                        re_temps.AQFT(order=3, num_wires=5, wires=[0, 1, 2, 3, 4])
+                    ),
+                ),
+            ),
+            (
+                qops.prod(
+                    qops.X(0),
+                    qops.H(0),
+                    qops.Z(1),
+                    qops.CNOT([0, 1]),
+                    qops.PhaseShift(1.23, wires=2),
+                    qops.CRY(1.23, wires=[0, 2]),
+                ),
+                re_ops.Prod(
+                    (
+                        re_ops.X(wires=0),
+                        re_ops.Hadamard(wires=0),
+                        re_ops.Z(wires=1),
+                        re_ops.CNOT(wires=[0, 1]),
+                        re_ops.PhaseShift(wires=2),
+                        re_ops.CRY(wires=[0, 2]),
+                    ),
+                    wires=[0, 1, 2],
+                ),
+            ),
+            (
+                qops.adjoint(
+                    qtemps.QROMStatePreparation(
+                        state_vector=np.array([1] * (2**3)) / (2 ** (3 / 2)),
+                        wires=[0, 1, 2],
+                        precision_wires=[3, 4, 5],
+                    )
+                ),
+                re_ops.Adjoint(
+                    re_temps.QROMStatePreparation(
+                        num_state_qubits=3,
+                        precision=np.pi / (2**3),
+                        positive_and_real=True,
+                        wires=[0, 1, 2],
+                    ),
+                ),
+            ),
+            (
+                qops.adjoint(qops.T(wires=0)),
+                re_ops.Adjoint(re_ops.T(wires=0)),
+            ),
+            (
+                qops.pow(qops.Hadamard(wires=0), z=7),
+                re_ops.Pow(re_ops.Hadamard(wires=0), pow_z=7),
+            ),
+            (
+                qops.ctrl(
+                    qtemps.SemiAdder(x_wires=[0, 1, 2], y_wires=[3, 4, 5], work_wires=[6, 7, 8]),
+                    control=["c1", "c2"],
+                    work_wires=["w1", "w2"],
+                    work_wire_type="zeroed",
+                ),
+                re_ops.Controlled(
+                    re_temps.SemiAdder(3, wires=[0, 1, 2, 3, 4, 5]),
+                    num_ctrl_wires=2,
+                    num_zero_ctrl=0,
+                    wires=["c1", "c2"],
+                ),
+            ),
+            (
+                qops.ctrl(
+                    qtemps.AQFT(order=4, wires=[0, 1, 2, 3, 4, 5, 6]),
+                    control=["c1", "c2", "c3"],
+                    control_values=[0, 1, 0],
+                    work_wires=["w1", "w2"],
+                    work_wire_type="borrowed",
+                ),
+                re_ops.Controlled(
+                    re_temps.AQFT(order=4, num_wires=7, wires=[0, 1, 2, 3, 4, 5, 6]),
+                    num_ctrl_wires=3,
+                    num_zero_ctrl=2,
+                    wires=["c1", "c2", "c3"],
+                ),
+            ),
+        ),
+    )
+    def test_map_to_resource_op_symbolic(self, operator, expected_res_op):
         """Test that _map_to_resource_op maps templates to the appropriate resource operator"""
         mapped_op = _map_to_resource_op(operator)
         assert mapped_op == expected_res_op
@@ -237,3 +423,55 @@ class TestMapToResourceOp:
             re_ops.CNOT(wires=[0, 1])
 
         assert re_ops.estimate(actual_circ)() == re_ops.estimate(expected_circ)()
+
+
+@pytest.mark.parametrize(
+    "op, mapped_op",
+    (
+        (
+            qml.X(0),
+            qops.Evolution(qml.X(0)),
+        ),
+        (
+            0.5 * qml.X(0),
+            qops.Evolution(qops.op_math.SProd(0.5, qml.X(0))),
+        ),
+        (
+            qops.op_math.SProd(3.4, 0.5 * qml.X(0)),
+            qops.Evolution(qops.op_math.SProd(1.7, qml.X(0))),
+        ),
+        (
+            1.23 * (qml.X(0) @ qml.Y(1)),
+            qops.Evolution(qops.op_math.SProd(1.23, (qml.X(0) @ qml.Y(1)))),
+        ),
+        (
+            qml.dot([1.23, -4.5], [qml.Z(0), qml.Z(1) @ qml.Z(2)]),
+            qtemps.TrotterProduct(
+                hamiltonian=qops.op_math.Sum(
+                    qops.op_math.SProd(1.23, qml.Z(0)),
+                    qops.op_math.SProd(-4.5, qml.Z(1) @ qml.Z(2)),
+                ),
+                n=1,
+                order=1,
+                time=1,
+                check_hermitian=False,
+            ),
+        ),
+        (
+            2 * qml.dot([1.23, -4.5], [qml.Z(0), qml.Z(1) @ qml.Z(2)]),
+            qtemps.TrotterProduct(
+                hamiltonian=qops.op_math.Sum(
+                    qops.op_math.SProd(2.46, qml.Z(0)),
+                    qops.op_math.SProd(-9.0, qml.Z(1) @ qml.Z(2)),
+                ),
+                n=1,
+                order=1,
+                time=1,
+                check_hermitian=False,
+            ),
+        ),
+    ),
+)
+def test_map_term_trotter(op, mapped_op):
+    """Test the private _map_term_trotter function"""
+    assert _map_term_trotter(op) == mapped_op

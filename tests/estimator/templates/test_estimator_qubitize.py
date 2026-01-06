@@ -28,7 +28,7 @@ class TestQubitizeTHC:
     def test_wire_error(self):
         """Test that an error is raised when wrong number of wires is provided."""
         ch = qre.THCHamiltonian(2, 4)
-        with pytest.raises(ValueError, match="Expected 20 wires, got 3"):
+        with pytest.raises(ValueError, match="Expected 43 wires, got 3"):
             qre.ControlledSequence(base=qre.QubitizeTHC(ch, wires=[0, 1, 2]))
 
     @pytest.mark.parametrize(
@@ -50,19 +50,27 @@ class TestQubitizeTHC:
     def test_resource_params(self, thc_ham, prep_op, select_op):
         """Test that the resource params for QubitizeTHC are correct."""
         op = qre.QubitizeTHC(thc_ham, prep_op=prep_op, select_op=select_op)
+        coeff_precision = prep_op.coeff_precision if prep_op else 15
+        rotation_precision = select_op.rotation_precision if select_op else 15
 
-        if prep_op is not None:
-            prep_op = prep_op.resource_rep_from_op()
-        if select_op is not None:
-            select_op = select_op.resource_rep_from_op()
+        if prep_op is None:
+            prep_op = qre.PrepTHC(thc_ham, coeff_precision=coeff_precision)
+        prep_op = prep_op.resource_rep_from_op()
+
+        if select_op is None:
+            select_op = qre.SelectTHC(thc_ham, rotation_precision=rotation_precision)
+        select_op = select_op.resource_rep_from_op()
 
         assert op.resource_params == {
             "thc_ham": thc_ham,
             "prep_op": prep_op,
             "select_op": select_op,
-            "coeff_precision": None,
-            "rotation_precision": None,
+            "coeff_precision": coeff_precision,
+            "rotation_precision": rotation_precision,
         }
+
+        assert len(qre.QubitizeTHC.resource_keys) == len(op.resource_params)
+        assert all(tuple((k in qre.QubitizeTHC.resource_keys) for k in op.resource_params))
 
     @pytest.mark.parametrize(
         "thc_ham, prep_op, select_op, num_wires",
@@ -77,9 +85,9 @@ class TestQubitizeTHC:
                     qre.SelectTHC,
                     {"thc_ham": qre.THCHamiltonian(58, 160), "rotation_precision": 13},
                 ),
-                152,
+                183,
             ),
-            (qre.THCHamiltonian(10, 50), None, None, 49),
+            (qre.THCHamiltonian(10, 50), None, None, 78),
             (
                 qre.THCHamiltonian(4, 20),
                 resource_rep(
@@ -87,12 +95,22 @@ class TestQubitizeTHC:
                     {"thc_ham": qre.THCHamiltonian(4, 20), "select_swap_depth": 2},
                 ),
                 None,
-                32,
+                59,
             ),
         ),
     )
     def test_resource_rep(self, thc_ham, prep_op, select_op, num_wires):
         """Test that the compressed representation  for QubitizeTHC is correct."""
+
+        if prep_op:
+            coeff_precision = prep_op.params["coeff_precision"]
+        else:
+            coeff_precision = 15
+
+        if select_op:
+            rotation_precision = select_op.params["rotation_precision"]
+        else:
+            rotation_precision = 15
 
         expected = qre.CompressedResourceOp(
             qre.QubitizeTHC,
@@ -101,8 +119,8 @@ class TestQubitizeTHC:
                 "thc_ham": thc_ham,
                 "prep_op": prep_op,
                 "select_op": select_op,
-                "coeff_precision": None,
-                "rotation_precision": None,
+                "coeff_precision": coeff_precision,
+                "rotation_precision": rotation_precision,
             },
         )
         assert (
@@ -120,19 +138,19 @@ class TestQubitizeTHC:
                 qre.THCHamiltonian(58, 160),
                 qre.PrepTHC(qre.THCHamiltonian(58, 160), coeff_precision=13),
                 qre.SelectTHC(qre.THCHamiltonian(58, 160), rotation_precision=13),
-                {"algo_wires": 152, "auxiliary_wires": 791, "toffoli_gates": 8579},
+                {"algo_wires": 183, "auxiliary_wires": 752, "toffoli_gates": 8539},
             ),
             (
                 qre.THCHamiltonian(10, 50),
                 None,
                 None,
-                {"algo_wires": 49, "auxiliary_wires": 174, "toffoli_gates": 2299},
+                {"algo_wires": 78, "auxiliary_wires": 148, "toffoli_gates": 2265},
             ),
             (
                 qre.THCHamiltonian(4, 20),
                 qre.PrepTHC(qre.THCHamiltonian(4, 20), select_swap_depth=2),
                 None,
-                {"algo_wires": 32, "auxiliary_wires": 109, "toffoli_gates": 967},
+                {"algo_wires": 59, "auxiliary_wires": 58, "toffoli_gates": 941},
             ),
         ),
     )
@@ -148,7 +166,7 @@ class TestQubitizeTHC:
         )
 
         assert wo_cost.algo_wires == expected_res["algo_wires"]
-        assert wo_cost.zeroed + wo_cost.any_state == expected_res["auxiliary_wires"]
+        assert wo_cost.zeroed_wires + wo_cost.any_state_wires == expected_res["auxiliary_wires"]
         assert wo_cost.gate_counts["Toffoli"] == expected_res["toffoli_gates"]
 
     # The Toffoli and qubit costs are compared here
@@ -164,7 +182,7 @@ class TestQubitizeTHC:
                 qre.SelectTHC(qre.THCHamiltonian(58, 160), rotation_precision=13),
                 1,
                 1,
-                {"algo_wires": 153, "auxiliary_wires": 791, "toffoli_gates": 8580},
+                {"algo_wires": 184, "auxiliary_wires": 752, "toffoli_gates": 8540},
             ),
             (
                 qre.THCHamiltonian(10, 50),
@@ -172,7 +190,7 @@ class TestQubitizeTHC:
                 None,
                 2,
                 0,
-                {"algo_wires": 51, "auxiliary_wires": 175, "toffoli_gates": 2302},
+                {"algo_wires": 80, "auxiliary_wires": 149, "toffoli_gates": 2268},
             ),
             (
                 qre.THCHamiltonian(4, 20),
@@ -180,7 +198,7 @@ class TestQubitizeTHC:
                 None,
                 3,
                 2,
-                {"algo_wires": 35, "auxiliary_wires": 110, "toffoli_gates": 972},
+                {"algo_wires": 62, "auxiliary_wires": 59, "toffoli_gates": 946},
             ),
         ),
     )
@@ -202,7 +220,7 @@ class TestQubitizeTHC:
         )
 
         assert wo_cost.algo_wires == expected_res["algo_wires"]
-        assert wo_cost.zeroed + wo_cost.any_state == expected_res["auxiliary_wires"]
+        assert wo_cost.zeroed_wires + wo_cost.any_state_wires == expected_res["auxiliary_wires"]
         assert wo_cost.gate_counts["Toffoli"] == expected_res["toffoli_gates"]
 
     def test_incompatible_hamiltonian(self):

@@ -12,24 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-Quantum circuit intermediate representations
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Intermediate representations (IRs) are alternative representations of quantum circuits, typically offering a more efficient classical description for special classes of circuits.
-
-.. currentmodule:: pennylane.transforms.intermediate_reps
-
-.. autosummary::
-    :toctree: api
-
-    ~parity_matrix
-    ~phase_polynomial
-    ~postorder_traverse
-    ~preorder_traverse
-    ~rowcol
-
+This submodule contains transforms that compute intermediate representations (IRs)
+from circuits or compile circuits from an IR.
 """
 
 from .parity_matrix import parity_matrix
+from .parity_synth import parity_synth
 from .phase_polynomial import phase_polynomial
 from .rowcol import postorder_traverse, preorder_traverse, rowcol

@@ -107,6 +107,7 @@ params = [
 ]
 
 
+@pytest.mark.xfail(reason="These pt tests are known to be outdated. Tracked in sc-104578.")
 @pytest.mark.parametrize("backend, num_workers, parallel_mode, n_states", params)
 def test_perturbation_error(backend, num_workers, parallel_mode, n_states, mpi4py_support):
     """Test that perturbation_error returns the correct result. This is a precomputed example

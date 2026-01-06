@@ -88,7 +88,7 @@ class TestReturnWithShotVectors:
         def cost(a, b):
             return qml.math.stack(circuit(a, b))
 
-        jac = qml.jacobian(cost, argnum=[0, 1])(a, b)
+        jac = qml.jacobian(cost, argnums=[0, 1])(a, b)
 
         assert isinstance(jac, tuple)
         assert len(jac) == 2
@@ -163,7 +163,7 @@ class TestReturnWithShotVectors:
         def cost(a, b):
             return qml.math.stack(circuit(a, b))
 
-        jac = qml.jacobian(cost, argnum=[0, 1])(a, b)
+        jac = qml.jacobian(cost, argnums=[0, 1])(a, b)
 
         assert isinstance(jac, tuple)
         assert len(jac) == 2
@@ -216,7 +216,7 @@ class TestReturnWithShotVectors:
             res = circuit(x, y)
             return qml.math.stack([qml.math.stack(r) for r in res])
 
-        jac = qml.jacobian(cost, argnum=[0, 1])(par_0, par_1)
+        jac = qml.jacobian(cost, argnums=[0, 1])(par_0, par_1)
 
         assert isinstance(jac, tuple)
         assert len(jac) == 2
@@ -270,7 +270,7 @@ class TestReturnWithShotVectors:
             res = circuit(x, y)
             return qml.math.stack([qml.math.stack(r) for r in res])
 
-        jac = qml.jacobian(cost, argnum=[0, 1])(par_0, par_1)
+        jac = qml.jacobian(cost, argnums=[0, 1])(par_0, par_1)
 
         assert isinstance(jac, tuple)
         assert len(jac) == 2
@@ -347,7 +347,7 @@ class TestReturnWithShotVectors:
             res = circuit(a, b)
             return qml.math.stack([qml.math.hstack(r) for r in res])
 
-        jac = qml.jacobian(cost, argnum=[0, 1])(a, b)
+        jac = qml.jacobian(cost, argnums=[0, 1])(a, b)
 
         assert isinstance(jac, tuple)
         assert len(jac) == 2
@@ -408,9 +408,9 @@ class TestReturnShotVectorHessian:
                 res = circuit(x, y)
                 return qml.math.stack(res)
 
-            return qml.math.stack(qml.jacobian(cost2, argnum=[0, 1])(x, y))
+            return qml.math.stack(qml.jacobian(cost2, argnums=[0, 1])(x, y))
 
-        hess = qml.jacobian(cost, argnum=[0, 1])(par_0, par_1)
+        hess = qml.jacobian(cost, argnums=[0, 1])(par_0, par_1)
 
         assert isinstance(hess, tuple)
         assert len(hess) == 2
@@ -468,9 +468,9 @@ class TestReturnShotVectorHessian:
                 res = circuit(x, y)
                 return qml.math.stack(res)
 
-            return qml.math.stack(qml.jacobian(cost2, argnum=[0, 1])(x, y))
+            return qml.math.stack(qml.jacobian(cost2, argnums=[0, 1])(x, y))
 
-        hess = qml.jacobian(cost, argnum=[0, 1])(par_0, par_1)
+        hess = qml.jacobian(cost, argnums=[0, 1])(par_0, par_1)
 
         assert isinstance(hess, tuple)
         assert len(hess) == 2
@@ -530,9 +530,9 @@ class TestReturnShotVectorHessian:
                 res = circuit(x, y)
                 return qml.math.stack([qml.math.hstack(r) for r in res])
 
-            return qml.math.stack(qml.jacobian(cost2, argnum=[0, 1])(x, y))
+            return qml.math.stack(qml.jacobian(cost2, argnums=[0, 1])(x, y))
 
-        hess = qml.jacobian(cost, argnum=[0, 1])(par_0, par_1)
+        hess = qml.jacobian(cost, argnums=[0, 1])(par_0, par_1)
 
         assert isinstance(hess, tuple)
         assert len(hess) == 2
@@ -602,7 +602,7 @@ class TestReturnShotVectorIntegration:
             res = circuit(x, y)
             return qml.math.stack(res)
 
-        all_res = qml.jacobian(cost, argnum=[0, 1])(x, y)
+        all_res = qml.jacobian(cost, argnums=[0, 1])(x, y)
 
         assert isinstance(all_res, tuple)
         assert len(all_res) == 2
@@ -636,7 +636,7 @@ class TestReturnShotVectorIntegration:
             res = circuit(x, y)
             return qml.math.stack([qml.math.hstack(r) for r in res])
 
-        all_res = qml.jacobian(cost, argnum=[0, 1])(x, y)
+        all_res = qml.jacobian(cost, argnums=[0, 1])(x, y)
 
         assert isinstance(all_res, tuple)
         assert len(all_res) == 2

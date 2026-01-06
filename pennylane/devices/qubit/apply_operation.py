@@ -22,9 +22,8 @@ import scipy as sp
 
 import pennylane as qml
 from pennylane import math, ops
-from pennylane.measurements import MidMeasureMP
 from pennylane.operation import Operator
-from pennylane.ops import Conditional
+from pennylane.ops import Conditional, MidMeasure
 
 SQRT2INV = 1 / math.sqrt(2)
 
@@ -326,7 +325,7 @@ def apply_conditional(
 
 @apply_operation.register
 def apply_mid_measure(
-    op: MidMeasureMP, state, is_state_batched: bool = False, debugger=None, **execution_kwargs
+    op: MidMeasure, state, is_state_batched: bool = False, debugger=None, **execution_kwargs
 ):
     """Applies a native mid-circuit measurement.
 
@@ -352,7 +351,7 @@ def apply_mid_measure(
     prng_key = execution_kwargs.get("prng_key", None)
 
     if is_state_batched:
-        raise ValueError("MidMeasureMP cannot be applied to batched states.")
+        raise ValueError("MidMeasure cannot be applied to batched states.")
     wire = op.wires
     interface = math.get_deep_interface(state)
 
@@ -360,6 +359,14 @@ def apply_mid_measure(
     slices = [slice(None)] * math.ndim(state)
     slices[axis] = 0
     prob0 = math.real(math.norm(state[tuple(slices)])) ** 2
+
+    if interface == "numpy":
+        norm = math.sum(prob0, axis=-1)
+        eps = 10 * math.finfo(state.dtype).eps
+        if (norm - 1) > eps:
+            raise ValueError(f"probabilities greater than 1. Got norm {norm}.")
+        if norm > 1:
+            prob0 = prob0 / norm
 
     if prng_key is not None:
         # pylint: disable=import-outside-toplevel
@@ -730,7 +737,7 @@ def _evolve_state_vector_under_parametrized_evolution(
     except ImportError as e:  # pragma: no cover
         raise ImportError(
             "Module jax is required for the ``ParametrizedEvolution`` class. "
-            "You can install jax via: pip install jax~=0.6.0"
+            "You can install jax via: pip install jax==0.7.1"
         ) from e
 
     if operation.data is None or operation.t is None:

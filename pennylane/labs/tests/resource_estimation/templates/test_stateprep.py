@@ -333,12 +333,12 @@ class TestPrepTHC:
     def test_typeerror_precision(self):
         "Test that an error is raised when wrong type is provided for precision."
         with pytest.raises(
-            TypeError, match=f"`coeff_precision` must be an integer, provided {type(2.5)}."
+            TypeError, match=f"`coeff_precision` must be an integer, provided {float}."
         ):
             plre.ResourcePrepTHC(plre.CompactHamiltonian.thc(58, 160), coeff_precision=2.5)
 
         with pytest.raises(
-            TypeError, match=f"`coeff_precision` must be an integer, provided {type(2.5)}."
+            TypeError, match=f"`coeff_precision` must be an integer, provided {float}."
         ):
             plre.ResourcePrepTHC.resource_rep(
                 plre.CompactHamiltonian.thc(58, 160), coeff_precision=2.5
@@ -503,7 +503,7 @@ class TestQROMStatePrep:
     )
     def test_resource_params(self, num_state_qubits, precision, positive_and_real, selswap_depths):
         """Test that the resource params are as expected"""
-        if all((_ is None for _ in (precision, positive_and_real, selswap_depths))):
+        if all(_ is None for _ in (precision, positive_and_real, selswap_depths)):
             op = plre.ResourceQROMStatePreparation(num_state_qubits)  # check default values
             expected_params = {
                 "num_state_qubits": num_state_qubits,
@@ -537,7 +537,7 @@ class TestQROMStatePrep:
     )
     def test_resource_rep(self, num_state_qubits, precision, positive_and_real, selswap_depths):
         """Test that the resource rep is constructed as expected"""
-        if all((_ is None for _ in (precision, positive_and_real, selswap_depths))):
+        if all(_ is None for _ in (precision, positive_and_real, selswap_depths)):
             actual_resource_rep = plre.ResourceQROMStatePreparation.resource_rep(num_state_qubits)
             expected = plre.CompressedResourceOp(
                 plre.ResourceQROMStatePreparation,

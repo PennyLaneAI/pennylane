@@ -16,6 +16,7 @@
 Developer note: Conditionals inherit from BooleanFn and store the condition they
 utilize in the ``condition`` attribute.
 """
+
 from inspect import isclass, signature
 
 from pennylane import math, measurements
@@ -23,7 +24,17 @@ from pennylane import ops as qops
 from pennylane.boolean_fn import BooleanFn
 from pennylane.exceptions import WireError
 from pennylane.operation import Operation
-from pennylane.ops import Adjoint, Controlled, Exp, LinearCombination, adjoint, ctrl
+from pennylane.ops import (
+    Adjoint,
+    Controlled,
+    Exp,
+    LinearCombination,
+    MeasurementValue,
+    MidMeasure,
+    adjoint,
+    ctrl,
+    measure,
+)
 from pennylane.ops.functions import map_wires, simplify
 from pennylane.queuing import QueuingManager
 from pennylane.templates import ControlledSequence
@@ -309,10 +320,8 @@ def _get_ops(val):
             op_names.append(getattr(qops, _val, None))
         elif isclass(_val) and not issubclass(_val, measurements.MeasurementProcess):
             op_names.append(_val)
-        elif isinstance(_val, (measurements.MeasurementValue, measurements.MidMeasureMP)):
-            mid_measure = (
-                _val if isinstance(_val, measurements.MidMeasureMP) else _val.measurements[0]
-            )
+        elif isinstance(_val, (MeasurementValue, MidMeasure)):
+            mid_measure = _val if isinstance(_val, MidMeasure) else _val.measurements[0]
             op_names.append(["MidMeasure", "Reset"][getattr(mid_measure, "reset", 0)])
         elif isinstance(_val, measurements.MeasurementProcess):
             obs_name = _get_ops(getattr(_val, "obs", None) or getattr(_val, "H", None))
@@ -344,7 +353,6 @@ def _check_arithmetic_ops(op1, op2):
             not isinstance(op1, type(op2))
             or (op1.base.arithmetic_depth != op2.base.arithmetic_depth)
             or not math.allclose(op1.coeff, op2.coeff)
-            or (op1.num_steps != op2.num_steps)
         ):
             return False
         if op1.base.arithmetic_depth:
@@ -506,7 +514,6 @@ class MeasEq(BooleanFn):
         )
 
     def _check_meas(self, mp):
-
         if isclass(mp) and not issubclass(mp, measurements.MeasurementProcess):
             return False
 
@@ -580,7 +587,7 @@ _MEAS_FUNC_MAP = {
     measurements.purity: measurements.PurityMP,
     measurements.classical_shadow: measurements.ClassicalShadowMP,
     measurements.shadow_expval: measurements.ShadowExpvalMP,
-    measurements.measure: measurements.MidMeasureMP,
+    measure: MidMeasure,
 }
 
 

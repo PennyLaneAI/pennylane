@@ -14,12 +14,17 @@
 """
 Contains the TemporaryAND template, which also is known as Elbow.
 """
-
 from functools import lru_cache
 
-from pennylane import math
-from pennylane.decomposition import add_decomps, adjoint_resource_rep, register_resources
-from pennylane.ops import CNOT, Hadamard, Operation, S, T, X, adjoint
+from pennylane import math, ops
+from pennylane.decomposition import (
+    add_decomps,
+    adjoint_resource_rep,
+    change_op_basis_resource_rep,
+    register_resources,
+    resource_rep,
+)
+from pennylane.operation import Operation
 from pennylane.wires import Wires, WiresLike
 
 
@@ -56,7 +61,7 @@ class TemporaryAND(Operation):
 
     **Example**
 
-    .. code-block::
+    .. code-block:: python
 
         @qml.set_shots(1)
         @qml.qnode(qml.device("default.qubit"))
@@ -72,15 +77,13 @@ class TemporaryAND(Operation):
             qml.adjoint(qml.TemporaryAND([0,1,2])) # |1101⟩
             return qml.sample(wires=[0,1,2,3])
 
-    .. code-block:: pycon
-
-        >>> print(qml.draw(circuit)())
-        0: ──X─╭●─────●╮─┤ ╭Sample
-        1: ──X─├●─────●┤─┤ ├Sample
-        2: ────╰──╭●───╯─┤ ├Sample
-        3: ───────╰X─────┤ ╰Sample
-        >>> print(circuit())
-        [[1 1 0 1]]
+    >>> print(qml.draw(circuit)())
+    0: ──X─╭●─────●╮─┤ ╭Sample
+    1: ──X─├●─────●┤─┤ ├Sample
+    2: ────╰⊕─╭●──⊕╯─┤ ├Sample
+    3: ───────╰X─────┤ ╰Sample
+    >>> print(circuit())
+    [[1 1 0 1]]
     """
 
     num_wires = 3
@@ -169,104 +172,75 @@ class TemporaryAND(Operation):
 
         return result_matrix
 
-    @staticmethod
-    def compute_decomposition(
-        wires: WiresLike, control_values=(1, 1)
-    ):  # pylint: disable=arguments-differ
-        r"""Representation of the operator as a product of other operators (static method).
-
-        .. math:: O = O_1 O_2 \dots O_n.
-
-
-        .. seealso:: :meth:`~.TemporaryAND.decomposition`.
-
-        Args:
-            wires (Sequence[int]): the subsystem the gate acts on. The first two wires are the control wires and the
-                third one is the target wire.
-            control_values (bool or int or list[bool or int]): The value(s) the control wire(s)
-                should take. Integers other than 0 or 1 will be treated as ``int(bool(x))``.
-
-        Returns:
-            list[Operator]: decomposition into lower level operations
-
-        **Example:**
-
-        >>> print(qml.TemporaryAND.compute_decomposition((0,1,2)))
-        [H(2),
-        T(2),
-        CNOT(wires=[1, 2]),
-        Adjoint(T(2)),
-        CNOT(wires=[0, 2]),
-        T(2),
-        CNOT(wires=[1, 2]),
-        Adjoint(T(2)),
-        H(2),
-        Adjoint(S(2))]
-        """
-
-        list_decomp = []
-
-        list_decomp.extend([X(wires[idx]) for idx in [0, 1] if control_values[idx] == 0])
-
-        list_decomp += [
-            Hadamard(wires=wires[2]),
-            T(wires=wires[2]),
-            CNOT(wires=[wires[1], wires[2]]),
-            adjoint(T(wires=wires[2])),
-            CNOT(wires=[wires[0], wires[2]]),
-            T(wires=wires[2]),
-            CNOT(wires=[wires[1], wires[2]]),
-            adjoint(T(wires=wires[2])),
-            Hadamard(wires=wires[2]),
-            adjoint(S(wires=wires[2])),
-        ]
-
-        list_decomp.extend([X(wires[idx]) for idx in [0, 1] if control_values[idx] == 0])
-
-        return list_decomp
-
 
 def _temporary_and_resources():
     number_xs = 4  # worst case scenario
+    prod_rep = resource_rep(
+        ops.Prod,
+        resources={
+            resource_rep(ops.Hadamard): 1,
+            resource_rep(ops.T): 1,
+            resource_rep(ops.CNOT): 1,
+            adjoint_resource_rep(ops.T, {}): 1,
+        },
+    )
     return {
-        X: number_xs,
-        Hadamard: 2,
-        CNOT: 3,
-        T: 2,
-        adjoint_resource_rep(T, {}): 2,
-        adjoint_resource_rep(S, {}): 1,
+        resource_rep(ops.X): number_xs,
+        change_op_basis_resource_rep(prod_rep, ops.CNOT, prod_rep): 1,
+        adjoint_resource_rep(ops.S, {}): 1,
     }
 
 
-@register_resources(_temporary_and_resources)
+@register_resources(_temporary_and_resources, exact=False)
 def _temporary_and(wires: WiresLike, **kwargs):
+
     control_values = kwargs["control_values"]
     if control_values[0] == 0:
-        X(wires[0])
-
+        ops.X(wires[0])
     if control_values[1] == 0:
-        X(wires[1])
+        ops.X(wires[1])
 
-    Hadamard(wires=wires[2])
-    T(wires=wires[2])
-    CNOT(wires=[wires[1], wires[2]])
-    adjoint(T(wires=wires[2]))
-    CNOT(wires=[wires[0], wires[2]])
-    T(wires=wires[2])
-    CNOT(wires=[wires[1], wires[2]])
-    adjoint(T(wires=wires[2]))
-    Hadamard(wires=wires[2])
-    adjoint(S(wires=wires[2]))
+    ops.change_op_basis(
+        ops.prod(
+            ops.adjoint(ops.T(wires=wires[2])),
+            ops.CNOT(wires=[wires[1], wires[2]]),
+            ops.T(wires=wires[2]),
+            ops.H(wires[2]),
+        ),
+        ops.CNOT(wires=[wires[0], wires[2]]),
+        ops.prod(
+            ops.H(wires[2]),
+            ops.adjoint(ops.T(wires=wires[2])),
+            ops.CNOT(wires=[wires[1], wires[2]]),
+            ops.T(wires=wires[2]),
+        ),
+    )
+
+    ops.adjoint(ops.S(wires=wires[2]))
 
     if control_values[0] == 0:
-        X(wires[0])
-
+        ops.X(wires[0])
     if control_values[1] == 0:
-        X(wires[1])
+        ops.X(wires[1])
 
 
 add_decomps(TemporaryAND, _temporary_and)
-# TODO: add add_decomps("Adjoint(TemporaryAND)", _adjoint_TemporaryAND) when MCMs supported by the pipeline
+
+
+# pylint: disable=unused-argument
+def _adjoint_temporary_and_resources(base_class=None, base_params=None):
+    return {ops.Hadamard: 1, ops.MidMeasure: 1, ops.CZ: 1}
+
+
+@register_resources(_adjoint_temporary_and_resources)
+def _adjoint_TemporaryAND(wires: WiresLike, **kwargs):  # pylint: disable=unused-argument
+    r"""The implementation of adjoint TemporaryAND by mid-circuit measurements as found in https://arxiv.org/abs/1805.03662."""
+    ops.Hadamard(wires=wires[2])
+    m_0 = ops.measure(wires[2], reset=True)
+    ops.cond(m_0, ops.CZ)(wires=[wires[0], wires[1]])
+
+
+add_decomps("Adjoint(TemporaryAND)", _adjoint_TemporaryAND)
 
 Elbow = TemporaryAND
 r"""Elbow(wire, control_values)

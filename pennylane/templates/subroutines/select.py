@@ -126,15 +126,15 @@ class Select(Operation):
     >>> dev = qml.device('default.qubit', wires=4)
     >>> ops = [qml.X(2), qml.X(3), qml.Y(2), qml.SWAP([2, 3])]
     >>> @qml.qnode(dev)
-    >>> def circuit():
-    >>>     qml.Select(ops, control=[0,1])
-    >>>     return qml.state()
+    ... def circuit():
+    ...     qml.Select(ops, control=[0,1])
+    ...     return qml.state()
     ...
     >>> print(qml.draw(circuit, level='device')())
-    0: ─╭○─╭○─╭●─╭●────┤  State
-    1: ─├○─├●─├○─├●────┤  State
-    2: ─╰X─│──╰Y─├SWAP─┤  State
-    3: ────╰X────╰SWAP─┤  State
+    0: ─╭○─╭○─╭●─╭●────┤ ╭State
+    1: ─├○─├●─├○─├●────┤ ├State
+    2: ─╰X─│──╰Y─├SWAP─┤ ├State
+    3: ────╰X────╰SWAP─┤ ╰State
 
     If there are fewer operators to be applied than possible for the given number of control
     wires, we call the ``Select`` operator a `partial Select <https://pennylane.ai/compilation/partial-select>`__.
@@ -145,15 +145,15 @@ class Select(Operation):
 
     >>> ops = [qml.X(2), qml.X(3), qml.SWAP([2, 3])]
     >>> @qml.qnode(dev)
-    >>> def circuit():
-    >>>     qml.Select(ops, control=[0, 1], partial=True)
-    >>>     return qml.state()
+    ... def circuit():
+    ...     qml.Select(ops, control=[0, 1], partial=True)
+    ...     return qml.state()
     ...
     >>> print(qml.draw(circuit, level='device')())
-    0: ─╭○────╭●────┤  State
-    1: ─├○─╭●─│─────┤  State
-    2: ─╰X─│──├SWAP─┤  State
-    3: ────╰X─╰SWAP─┤  State
+    0: ─╭○────╭●────┤ ╭State
+    1: ─├○─╭●─│─────┤ ├State
+    2: ─╰X─│──├SWAP─┤ ├State
+    3: ────╰X─╰SWAP─┤ ╰State
 
     Note how the first (second) control node of the second (third) operator was skipped.
 
@@ -461,11 +461,13 @@ class Select(Operation):
 
         >>> ops = [qml.X(2), qml.X(3), qml.Y(2), qml.SWAP([2,3])]
         >>> op = qml.Select(ops, control=[0,1])
-        >>> op.decomposition()
-        [MultiControlledX(wires=[0, 1, 2], control_values=[0, 0]),
-         MultiControlledX(wires=[0, 1, 3], control_values=[0, 1]),
-         Controlled(Y(2), control_wires=[0, 1], control_values=[True, False]),
-         Controlled(SWAP(wires=[2, 3]), control_wires=[0, 1])]
+        >>> from pprint import pprint
+        >>> pprint(op.decomposition())
+        [MultiControlledX(wires=[0, 1, 2], control_values=[False, False]),
+        MultiControlledX(wires=[0, 1, 3], control_values=[False, True]),
+        Controlled(Y(2), control_wires=[0, 1], control_values=[True, False]),
+        Controlled(SWAP(wires=[2, 3]), control_wires=[0, 1])]
+
         """
         return self.compute_decomposition(
             self.ops, control=self.control, partial=self.partial, work_wires=self.work_wires
@@ -473,7 +475,7 @@ class Select(Operation):
 
     # pylint: disable=arguments-differ
     @staticmethod
-    def compute_decomposition(ops, control, partial, work_wires=None):
+    def compute_decomposition(ops, control, partial: bool = False, work_wires=None):
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -495,11 +497,14 @@ class Select(Operation):
         **Example**
 
         >>> ops = [qml.X(2), qml.X(3), qml.Y(2), qml.SWAP([2,3])]
-        >>> qml.Select.compute_decomposition(ops, control=[0,1])
-        [MultiControlledX(wires=[0, 1, 2], control_values=[0, 0]),
-         MultiControlledX(wires=[0, 1, 3], control_values=[0, 1),
-         Controlled(Y(2), control_wires=[0, 1], control_values=[True, False]),
-         Controlled(SWAP(wires=[2, 3]), control_wires=[0, 1])]
+        >>> decomp = qml.Select.compute_decomposition(ops, control=[0,1])
+        >>> from pprint import pprint
+        >>> pprint(decomp)
+        [MultiControlledX(wires=[0, 1, 2], control_values=[False, False]),
+        MultiControlledX(wires=[0, 1, 3], control_values=[False, True]),
+        Controlled(Y(2), control_wires=[0, 1], control_values=[True, False]),
+        Controlled(SWAP(wires=[2, 3]), control_wires=[0, 1])]
+
         """
         if partial:
             if len(ops) == 1:

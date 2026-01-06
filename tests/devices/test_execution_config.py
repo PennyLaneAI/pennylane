@@ -20,28 +20,15 @@ from dataclasses import replace
 
 import pytest
 
-from pennylane.devices.execution_config import ExecutionConfig, FrozenMapping, MCMConfig
+from pennylane.devices.execution_config import (
+    MCM_METHOD,
+    POSTSELECT_MODE,
+    ExecutionConfig,
+    FrozenMapping,
+    MCMConfig,
+)
 from pennylane.gradients import param_shift
 from pennylane.math import Interface
-
-
-def test_default_execution_config_deprecation():
-    """Test that the DefaultExecutionConfig is deprecated."""
-    with pytest.warns(
-        UserWarning,
-        match="`pennylane.devices.DefaultExecutionConfig` is deprecated and will be removed in v0.44.",
-    ):
-        from pennylane.devices import (  # pylint: disable=unused-import, import-outside-toplevel, no-name-in-module
-            DefaultExecutionConfig,
-        )
-
-    with pytest.warns(
-        UserWarning,
-        match="`pennylane.devices.execution_config.DefaultExecutionConfig` is deprecated and will be removed in v0.44.",
-    ):
-        from pennylane.devices.execution_config import (  # pylint: disable=unused-import, import-outside-toplevel, no-name-in-module
-            DefaultExecutionConfig,
-        )
 
 
 class TestFrozenMapping:
@@ -167,7 +154,7 @@ class TestExecutionConfig:
         """Test that invalid types for gradient_method raise an error."""
         with pytest.raises(
             ValueError,
-            match=r"Differentiation method .* must be a str, TransformDispatcher, or None",
+            match=r"Differentiation method .* must be a str, Transform, or None",
         ):
             _ = ExecutionConfig(gradient_method=invalid_method)
 
@@ -288,6 +275,19 @@ class TestExecutionConfig:
 class TestMCMConfig:
     """Tests for the MCMConfig class."""
 
+    @pytest.mark.parametrize("mcm_method", [None, "deferred"])
+    @pytest.mark.parametrize("postselect_mode", [None, "hw-like"])
+    def test_repr(self, mcm_method, postselect_mode):
+        mcm_config = MCMConfig(mcm_method, postselect_mode)
+
+        output_repr = repr(mcm_config)
+        expected_mcm_method = "'deferred'" if mcm_method else None
+        expected_postselect_mode = "'hw-like'" if postselect_mode else None
+        assert (
+            output_repr
+            == f"MCMConfig(mcm_method={expected_mcm_method}, postselect_mode={expected_postselect_mode})"
+        )
+
     def test_default_values(self):
         """Tests that the default values are as expected."""
         mcm_config = MCMConfig()
@@ -301,45 +301,45 @@ class TestMCMConfig:
         assert config.mcm_method == "deferred"
         assert config.postselect_mode == "hw-like"
 
+    _VALID_MCM_METHODS: list[str | None] = [None] + [item.value for item in MCM_METHOD]
+
     @pytest.mark.parametrize(
         "mcm_method",
-        [
-            None,
-            "deferred",
-            "one-shot",
-            "some_custom_method",  # Any string is valid as per docstring
-        ],
+        _VALID_MCM_METHODS,
     )
     def test_valid_mcm_method(self, mcm_method):
         """Test that MCMConfig can be instantiated with valid mcm_method values."""
         config = MCMConfig(mcm_method=mcm_method)
         assert config.mcm_method == mcm_method
 
-    @pytest.mark.parametrize(
-        "postselect_mode",
-        [
-            None,
-            "hw-like",
-            "fill-shots",
-            "pad-invalid-samples",
-        ],
-    )
+    _VALID_POSTSELECT_MODES: list[str | None] = [None] + [item.value for item in POSTSELECT_MODE]
+
+    @pytest.mark.parametrize("postselect_mode", _VALID_POSTSELECT_MODES)
     def test_valid_postselect_mode(self, postselect_mode):
         """Test that MCMConfig can be instantiated with valid postselect_mode values."""
         config = MCMConfig(postselect_mode=postselect_mode)
         assert config.postselect_mode == postselect_mode
 
+    _INVALID_MCM_METHODS = ["foo", 123, True, "None", "none"]
+
+    @pytest.mark.parametrize(
+        "mcm_method",
+        _INVALID_MCM_METHODS,
+    )
+    def test_invalid_mcm_method_raises_value_error(self, mcm_method):
+        """Test that MCMConfig raises a ValueError for an invalid mcm method"""
+        with pytest.raises(ValueError, match=f"'{mcm_method}' is not a valid mcm_method"):
+            MCMConfig(mcm_method=mcm_method)
+
+    _INVALID_POSTSELECT_MODES = ["foo", 123, True, "None", "none"]
+
     @pytest.mark.parametrize(
         "invalid_mode",
-        [
-            "foo",
-            123,
-            True,
-        ],
+        _INVALID_POSTSELECT_MODES,
     )
     def test_invalid_postselect_mode_raises_value_error(self, invalid_mode):
         """Test that MCMConfig raises ValueError for invalid postselect_mode."""
-        with pytest.raises(ValueError, match=f"Invalid postselection mode '{invalid_mode}'."):
+        with pytest.raises(ValueError, match=f"'{invalid_mode}' is not a valid postselect_mode"):
             MCMConfig(postselect_mode=invalid_mode)
 
     def test_immutability(self):

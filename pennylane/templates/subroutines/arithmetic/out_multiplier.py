@@ -61,7 +61,7 @@ class OutMultiplier(Operation):
     This example performs the multiplication of two integers :math:`x=2` and :math:`y=7` modulo :math:`mod=12`.
     We'll let :math:`b=0`. See Usage Details for :math:`b \neq 0`.
 
-    .. code-block::
+    .. code-block:: python
 
         x = 2
         y = 7
@@ -73,18 +73,16 @@ class OutMultiplier(Operation):
         work_wires = [5, 10]
 
         dev = qml.device("default.qubit")
-        @partial(qml.set_shots, shots=1)
-        @qml.qnode(dev)
+
+        @qml.qnode(dev, shots=1)
         def circuit():
             qml.BasisEmbedding(x, wires=x_wires)
             qml.BasisEmbedding(y, wires=y_wires)
             qml.OutMultiplier(x_wires, y_wires, output_wires, mod, work_wires)
             return qml.sample(wires=output_wires)
 
-    .. code-block:: pycon
-
-        >>> print(circuit())
-        [[0 0 1 0]]
+    >>> print(circuit())
+    [[0 0 1 0]]
 
     The result :math:`[[0 0 1 0]]`, is the binary representation of
     :math:`2 \cdot 7 \; \text{modulo} \; 12 = 2`.
@@ -108,7 +106,7 @@ class OutMultiplier(Operation):
         :math:`b < mod`, but the most common choice is :math:`b=0` to obtain as a final result :math:`x \cdot y \; \text{mod} \; mod`.
         The following is an example for :math:`b = 1`.
 
-        .. code-block::
+        .. code-block:: python
 
             b = 1
             x = 2
@@ -121,8 +119,8 @@ class OutMultiplier(Operation):
             work_wires = [5, 10]
 
             dev = qml.device("default.qubit")
-            @partial(qml.set_shots, shots=1)
-            @qml.qnode(dev)
+
+            @qml.qnode(dev, shots=1)
             def circuit():
                 qml.BasisEmbedding(x, wires=x_wires)
                 qml.BasisEmbedding(y, wires=y_wires)
@@ -130,10 +128,8 @@ class OutMultiplier(Operation):
                 qml.OutMultiplier(x_wires, y_wires, output_wires, mod, work_wires)
                 return qml.sample(wires=output_wires)
 
-        .. code-block:: pycon
-
-            >>> print(circuit())
-            [[0 0 1 1]]
+        >>> print(circuit())
+        [[0 0 1 1]]
 
         The result :math:`[[0 0 1 1]]`, is the binary representation of
         :math:`2 \cdot 7 + 1\; \text{modulo} \; 12 = 3`.

@@ -159,7 +159,7 @@ def split_non_commuting(
     This transform allows us to transform a QNode measuring multiple observables into multiple
     circuit executions, each measuring a group of commuting observables.
 
-    .. code-block:: python3
+    .. code-block:: python
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -178,7 +178,7 @@ def split_non_commuting(
     Instead of decorating the QNode, we can also create a new function that yields the same
     result in the following way:
 
-    .. code-block:: python3
+    .. code-block:: python
 
         @qml.qnode(dev)
         def circuit(x):
@@ -215,10 +215,7 @@ def split_non_commuting(
     the expectation values.
 
     >>> circuit([np.pi/4, np.pi/4])
-    [0.7071067811865475,
-     -0.7071067811865475,
-     0.49999999999999994,
-     0.8535533905932737]
+    [np.float64(0.707...), np.float64(-0.707...), np.float64(0.499...), np.float64(0.853...)]
 
     There are two algorithms used to compute disjoint groups of commuting observables: ``"qwc"``
     grouping uses :func:`~pennylane.pauli.group_observables` which computes groups of qubit-wise
@@ -234,9 +231,11 @@ def split_non_commuting(
     qwc grouping in all cases, set ``grouping_strategy="qwc"``. Similarly, to force wires grouping,
     set ``grouping_strategy="wires"``:
 
-    .. code-block:: python3
+    .. code-block:: python
 
-        @functools.partial(qml.transforms.split_non_commuting, grouping_strategy="wires")
+        import functools
+
+        @qml.transforms.split_non_commuting(grouping_strategy="wires")
         @qml.qnode(dev)
         def circuit(x):
             qml.RY(x[0], wires=0)
@@ -265,9 +264,9 @@ def split_non_commuting(
 
     Alternatively, to disable grouping completely, set ``grouping_strategy=None``:
 
-    .. code-block:: python3
+    .. code-block:: python
 
-        @functools.partial(qml.transforms.split_non_commuting, grouping_strategy=None)
+        @qml.transforms.split_non_commuting(grouping_strategy=None)
         @qml.qnode(dev)
         def circuit(x):
             qml.RY(x[0], wires=0)
@@ -312,11 +311,10 @@ def split_non_commuting(
         ``shot_dist = "weighted"`` will partition the number of shots performed for
         each commuting group according to the L1 norm of each group's coefficients:
 
-        .. code-block:: python3
+        .. code-block:: python
 
             import pennylane as qml
             from pennylane.transforms import split_non_commuting
-            from functools import partial
 
             ham = qml.Hamiltonian(
                 coeffs=[10, 0.1, 20, 100, 0.2],
@@ -331,7 +329,7 @@ def split_non_commuting(
 
             dev = qml.device("default.qubit")
 
-            @partial(split_non_commuting, shot_dist="weighted")
+            @split_non_commuting(shot_dist="weighted")
             @qml.qnode(dev, shots=10000)
             def circuit():
                 return qml.expval(ham)
@@ -344,7 +342,7 @@ def split_non_commuting(
 
         The ``shot_dist`` strategy can be also defined by a custom function. For example:
 
-        .. code-block:: python3
+        .. code-block:: python
 
             import numpy as np
 
@@ -353,7 +351,7 @@ def split_non_commuting(
                 prob_shots = np.array(max_per_group) / np.sum(max_per_group)
                 return np.round(total_shots * prob_shots)
 
-            @partial(split_non_commuting, shot_dist=my_shot_dist)
+            @split_non_commuting(shot_dist=my_shot_dist)
             @qml.qnode(dev, shots=10000)
             def circuit():
                 return qml.expval(ham)
@@ -369,7 +367,7 @@ def split_non_commuting(
         Internally, this function works with tapes. We can create a tape with multiple
         measurements of non-commuting observables:
 
-        .. code-block:: python3
+        .. code-block:: python
 
             measurements = [
                 qml.expval(qml.Z(0) @ qml.Z(1)),
@@ -390,19 +388,19 @@ def split_non_commuting(
         >>> dev = qml.device("default.qubit", wires=2)
         >>> result_batch = [dev.execute(t) for t in tapes]
         >>> result_batch
-        [(1.0, 1.0), (0.0, 0.0)]
+        [(np.float64(1.0), np.float64(1.0)), (np.float64(0.0), np.float64(0.0))]
 
         The processing function can be used to reorganize the results:
 
         >>> processing_fn(result_batch)
-        (1.0, 0.0, 1.0, 0.0)
+        (np.float64(1.0), np.float64(0.0), np.float64(1.0), np.float64(0.0))
 
         Measurements that accept both observables and ``wires`` so that e.g. ``qml.counts``,
         ``qml.probs`` and ``qml.sample`` can also be used. When initialized using only ``wires``,
         these measurements are interpreted as measuring with respect to the observable
         ``qml.Z(wires[0])@qml.Z(wires[1])@...@qml.Z(wires[len(wires)-1])``
 
-        .. code-block:: python3
+        .. code-block:: python
 
             measurements = [
                 qml.expval(qml.X(0)),

@@ -26,10 +26,10 @@ from pennylane.capture.primitives import (
     cond_prim,
     ctrl_transform_prim,
     for_loop_prim,
-    grad_prim,
     jacobian_prim,
     measure_prim,
     qnode_prim,
+    transform_prim,
     while_loop_prim,
 )
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
@@ -650,13 +650,13 @@ class TestHigherOrderPrimitiveIntegration:
                 return qml.expval(qml.Z(0))
 
             @cond_f.else_if(n > 1)
-            def _():
+            def _else_if():
                 qml.RY(1, 0)
                 qml.RY(1, 0)
                 return qml.expval(qml.Y(0))
 
             @cond_f.otherwise
-            def _():
+            def _else():
                 qml.RX(1, 0)
                 qml.RX(1, 0)
                 return qml.expval(qml.X(0))
@@ -709,7 +709,7 @@ class TestHigherOrderPrimitiveIntegration:
         args = (1.0, 2.0)
         jaxpr = jax.make_jaxpr(f)(*args)
 
-        assert jaxpr.eqns[0].primitive == grad_prim
+        assert jaxpr.eqns[0].primitive == jacobian_prim
 
         grad_jaxpr = jaxpr.eqns[0].params["jaxpr"]
         qfunc_jaxpr = grad_jaxpr.eqns[0].params["qfunc_jaxpr"]
@@ -746,6 +746,7 @@ class TestHigherOrderPrimitiveIntegration:
         jaxpr = jax.make_jaxpr(f)(*args)
 
         assert jaxpr.eqns[0].primitive == jacobian_prim
+        assert not jaxpr.eqns[0].params["scalar_out"]
 
         grad_jaxpr = jaxpr.eqns[0].params["jaxpr"]
         qfunc_jaxpr = grad_jaxpr.eqns[0].params["qfunc_jaxpr"]
@@ -812,8 +813,8 @@ class TestHigherOrderPrimitiveIntegration:
 
         # I test the jaxpr like this because `qml.assert_equal`
         # has issues with mid-circuit measurements
-        # (Got <class 'pennylane.measurements.mid_measure.MidMeasureMP'>
-        # and <class 'pennylane.measurements.mid_measure.MeasurementValue'>.)
+        # (Got <class 'pennylane.ops.mid_measure.MidMeasure'>
+        # and <class 'pennylane.ops.mid_measure.MeasurementValue'>.)
         assert jaxpr.eqns[0].primitive == qml.RX._primitive
         assert jaxpr.eqns[1].primitive == measure_prim
         assert jaxpr.eqns[2].primitive == qml.RX._primitive
@@ -838,7 +839,8 @@ class TestExpandPlxprTransformIntegration:
 
         jaxpr = jax.make_jaxpr(qfunc)()
 
-        assert jaxpr.eqns[0].primitive == qml.transforms.optimization.merge_rotations._primitive
+        assert jaxpr.eqns[0].primitive == transform_prim
+        assert jaxpr.eqns[0].params["transform"] == qml.transforms.optimization.merge_rotations
 
         transformed_qfunc = qml.capture.expand_plxpr_transforms(qfunc)
         transformed_jaxpr = jax.make_jaxpr(transformed_qfunc)()

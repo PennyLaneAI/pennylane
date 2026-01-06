@@ -13,28 +13,16 @@
 # limitations under the License.
 """Unit tests for the QuantumScript"""
 import copy
-from collections import defaultdict
 
 import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.exceptions import PennyLaneDeprecationWarning
-from pennylane.measurements import MutualInfoMP, Shots, StateMP, VnEntropyMP
+from pennylane.measurements import Shots, StateMP
 from pennylane.operation import _UNSET_BATCH_SIZE
 from pennylane.tape import QuantumScript
 
 # pylint: disable=protected-access, unused-argument, too-few-public-methods, use-implicit-booleaness-not-comparison
-
-
-def test_to_openqasm_deprecation():
-    """Test deprecation of the ``QuantumScript.to_openqasm`` method."""
-    circuit = qml.tape.QuantumScript()
-
-    with pytest.warns(
-        PennyLaneDeprecationWarning, match="``QuantumScript.to_openqasm`` is deprecated"
-    ):
-        circuit.to_openqasm()
 
 
 class TestInitialization:
@@ -601,15 +589,13 @@ class TestInfomationProperties:
         qs = QuantumScript()
         assert qs._specs is None
 
-        assert qs.specs["resources"] == qml.resource.Resources()
-
-        assert qs.specs["num_observables"] == 0
-        assert qs.specs["num_trainable_params"] == 0
-
-        with pytest.raises(KeyError, match="is no longer in specs"):
-            _ = qs.specs["num_diagonalizing_gates"]
-
-        assert len(qs.specs) == 4
+        assert qs.specs["resources"] == qml.resource.SpecsResources(
+            num_allocs=0,
+            gate_types={},
+            gate_sizes={},
+            measurements={},
+            depth=0,
+        )
 
         assert qs._specs is qs.specs
 
@@ -621,16 +607,16 @@ class TestInfomationProperties:
         specs = qs.specs
         assert qs._specs is specs
 
-        assert len(specs) == 4
-
-        gate_types = defaultdict(int, {"RX": 2, "Rot": 1, "CNOT": 1})
-        gate_sizes = defaultdict(int, {1: 3, 2: 1})
-        expected_resources = qml.resource.Resources(
-            num_wires=3, num_gates=4, gate_types=gate_types, gate_sizes=gate_sizes, depth=3
+        gate_types = {"RX": 2, "Rot": 1, "CNOT": 1}
+        gate_sizes = {1: 3, 2: 1}
+        expected_resources = qml.resource.SpecsResources(
+            num_allocs=3,
+            gate_types=gate_types,
+            gate_sizes=gate_sizes,
+            measurements={"expval(PauliX)": 1, "probs(2 wires)": 1},
+            depth=3,
         )
         assert specs["resources"] == expected_resources
-        assert specs["num_observables"] == 2
-        assert specs["num_trainable_params"] == 5
 
     @pytest.mark.parametrize(
         "shots, total_shots, shot_vector",
@@ -1258,461 +1244,6 @@ class TestFromQueue:
         # Hadamard is the diagonalizing gate for PauliX
         qml.assert_equal(diag_ops[0], qml.Hadamard(0))
         assert len(q.queue) == 0
-
-
-measures = [
-    (qml.expval(qml.PauliZ(0)), ()),
-    (qml.var(qml.PauliZ(0)), ()),
-    (qml.probs(wires=[0]), (2,)),
-    (qml.probs(wires=[0, 1]), (4,)),
-    (qml.state(), (8,)),  # Assumes 3-qubit device
-    (qml.density_matrix(wires=[0, 1]), (4, 4)),
-    (
-        qml.sample(qml.PauliZ(0)),
-        None,
-    ),  # Shape is None because the expected shape is in the test case
-    (qml.sample(), None),  # Shape is None because the expected shape is in the test case
-    (qml.mutual_info(wires0=[0], wires1=[1]), ()),
-    (qml.vn_entropy(wires=[0, 1]), ()),
-]
-
-multi_measurements = [
-    ([qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))], ((), ())),
-    ([qml.probs(wires=[0]), qml.probs(wires=[1])], ((2,), (2,))),
-    ([qml.probs(wires=[0]), qml.probs(wires=[1, 2])], ((2,), (4,))),
-    ([qml.probs(wires=[0, 2]), qml.probs(wires=[1])], ((4,), (2,))),
-    (
-        [qml.probs(wires=[0]), qml.probs(wires=[1, 2]), qml.probs(wires=[0, 1, 2])],
-        ((2,), (4,), (8,)),
-    ),
-]
-
-
-class TestOutputShape:
-    """Tests for determining the tape output shape of tapes."""
-
-    @pytest.mark.parametrize("measurement, expected_shape", measures)
-    @pytest.mark.parametrize("shots", [None, 1, 10])
-    def test_output_shapes_single(self, measurement, expected_shape, shots):
-        """Test that the output shape produced by the tape matches the expected
-        output shape."""
-        if shots is None and isinstance(measurement, qml.measurements.SampleMP):
-            pytest.skip("Sample doesn't support analytic computations.")
-
-        num_wires = 3
-        dev = qml.device("default.qubit", wires=num_wires)
-
-        a = np.array(0.1)
-        b = np.array(0.2)
-
-        ops = [qml.RY(a, 0), qml.RX(b, 0)]
-        qs = QuantumScript(ops, [measurement], shots=shots)
-
-        shot_dim = len(shots) if isinstance(shots, tuple) else shots
-        if expected_shape is None:
-            expected_shape = (shot_dim,)
-
-        if isinstance(measurement, qml.measurements.SampleMP):
-            if measurement.obs is None:
-                expected_shape = (shots, num_wires)
-
-            else:
-                expected_shape = (shots,)
-
-        with pytest.warns(
-            PennyLaneDeprecationWarning, match="``QuantumScript.shape`` is deprecated"
-        ):
-            assert qs.shape(dev) == expected_shape
-
-    @pytest.mark.parametrize("measurement, expected_shape", measures)
-    @pytest.mark.parametrize("shots", [None, 1, 10, (1, 2, 5, 3)])
-    def test_output_shapes_single_qnode_check(self, measurement, expected_shape, shots):
-        """Test that the output shape produced by the tape matches the output
-        shape of a QNode for a single measurement."""
-        if shots is None and isinstance(measurement, qml.measurements.SampleMP):
-            pytest.skip("Sample doesn't support analytic computations.")
-        if shots and isinstance(measurement, qml.measurements.StateMeasurement):
-            pytest.skip("State measurements with finite shots not supported.")
-
-        dev = qml.device("default.qubit", wires=3)
-
-        a = np.array(0.1)
-        b = np.array(0.2)
-
-        ops = [qml.RY(a, 0), qml.RX(b, 0)]
-        qs = QuantumScript(ops, [measurement], shots=shots)
-        program = dev.preprocess_transforms()
-        # TODO: test diff_method is not None when the interface `execute` functions are implemented
-        res = qml.execute([qs], dev, diff_method=None, transform_program=program)[0]
-
-        if isinstance(shots, tuple):
-            res_shape = tuple(r.shape for r in res)
-        else:
-            res_shape = res.shape
-
-        with pytest.warns(
-            PennyLaneDeprecationWarning, match="``QuantumScript.shape`` is deprecated"
-        ):
-            assert qs.shape(dev) == res_shape
-
-    @pytest.mark.autograd
-    @pytest.mark.parametrize("measurements, expected", multi_measurements)
-    @pytest.mark.parametrize("shots", [None, 1, 10])
-    def test_multi_measure(self, measurements, expected, shots):
-        """Test that the expected output shape is obtained when using multiple
-        expectation value, variance and probability measurements."""
-        dev = qml.device("default.qubit", wires=3)
-
-        qs = QuantumScript(measurements=measurements, shots=shots)
-
-        if isinstance(measurements[0], qml.measurements.SampleMP):
-            expected[1] = shots
-            expected = tuple(expected)
-
-        with pytest.warns(
-            PennyLaneDeprecationWarning, match="``QuantumScript.shape`` is deprecated"
-        ):
-            res = qs.shape(dev)
-        assert res == expected
-
-        # TODO: test diff_method is not None when the interface `execute` functions are implemented
-        res = qml.execute([qs], dev, diff_method=None)[0]
-        res_shape = tuple(r.shape for r in res)
-
-        assert res_shape == expected
-
-    @pytest.mark.autograd
-    @pytest.mark.parametrize("measurements, expected", multi_measurements)
-    def test_multi_measure_shot_vector(self, measurements, expected):
-        """Test that the expected output shape is obtained when using multiple
-        expectation value, variance and probability measurements with a shot
-        vector."""
-        if isinstance(measurements[0], qml.measurements.ProbabilityMP):
-            num_wires = {len(m.wires) for m in measurements}
-            if len(num_wires) > 1:
-                pytest.skip(
-                    "Multi-probs with varying number of varies when using a shot vector is to be updated in PennyLane."
-                )
-
-        shots = (1, 1, 3, 3, 5, 1)
-        dev = qml.device("default.qubit", wires=3)
-
-        a = np.array(0.1)
-        b = np.array(0.2)
-        ops = [qml.RY(a, 0), qml.RX(b, 0)]
-        qs = QuantumScript(ops, measurements, shots=shots)
-
-        # Update expected as we're using a shotvector
-        expected = tuple(expected for _ in shots)
-
-        with pytest.warns(
-            PennyLaneDeprecationWarning, match="``QuantumScript.shape`` is deprecated"
-        ):
-            res = qs.shape(dev)
-        assert res == expected
-
-        # TODO: test diff_method is not None when the interface `execute` functions are implemented
-        res = qml.execute([qs], dev, diff_method=None)[0]
-        res_shape = tuple(tuple(r_.shape for r_ in r) for r in res)
-
-        assert res_shape == expected
-
-    @pytest.mark.autograd
-    @pytest.mark.parametrize("shots", [1, 10])
-    def test_multi_measure_sample(self, shots):
-        """Test that the expected output shape is obtained when using multiple
-        qml.sample measurements."""
-        dev = qml.device("default.qubit", wires=3)
-
-        a = np.array(0.1)
-        b = np.array(0.2)
-
-        num_samples = 3
-        ops = [qml.RY(a, 0), qml.RX(b, 0)]
-        qs = QuantumScript(
-            ops, [qml.sample(qml.PauliZ(i)) for i in range(num_samples)], shots=shots
-        )
-
-        expected = tuple((shots,) for _ in range(num_samples))
-
-        with pytest.warns(
-            PennyLaneDeprecationWarning, match="``QuantumScript.shape`` is deprecated"
-        ):
-            res = qs.shape(dev)
-        assert res == expected
-
-        res = qml.execute([qs], dev, diff_method=None)[0]
-        res_shape = tuple(r.shape for r in res)
-
-        assert res_shape == expected
-
-    @pytest.mark.autograd
-    @pytest.mark.parametrize("measurement, expected_shape", measures)
-    @pytest.mark.parametrize("shots", [None, 1, 10])
-    def test_broadcasting_single(self, measurement, expected_shape, shots):
-        """Test that the output shape produced by the tape matches the expected
-        output shape for a single measurement and parameter broadcasting"""
-        if shots is None and isinstance(measurement, qml.measurements.SampleMP):
-            pytest.skip("Sample doesn't support analytic computations.")
-
-        if (
-            isinstance(measurement, (StateMP, MutualInfoMP, VnEntropyMP))
-            and measurement.wires is not None
-        ):
-            pytest.skip("Density matrix does not support parameter broadcasting")
-
-        num_wires = 3
-        dev = qml.device("default.qubit", wires=num_wires)
-
-        a = np.array([0.1, 0.2, 0.3])
-        b = np.array([0.4, 0.5, 0.6])
-
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RY(a, wires=0)
-            qml.RX(b, wires=0)
-            qml.apply(measurement)
-
-        tape = qml.tape.QuantumScript.from_queue(q, shots=shots)
-        program = dev.preprocess_transforms()
-        expected_shape = qml.execute([tape], dev, diff_method=None, transform_program=program)[
-            0
-        ].shape
-
-        with pytest.warns(
-            PennyLaneDeprecationWarning, match="``QuantumScript.shape`` is deprecated"
-        ):
-            assert tape.shape(dev) == expected_shape
-
-    @pytest.mark.autograd
-    @pytest.mark.parametrize("measurement, expected", measures)
-    @pytest.mark.parametrize("shots", [None, 1, 10])
-    def test_broadcasting_multi(self, measurement, expected, shots):
-        """Test that the output shape produced by the tape matches the expected
-        output shape for multiple measurements and parameter broadcasting"""
-        if shots is None and isinstance(measurement, qml.measurements.SampleMP):
-            pytest.skip("Sample doesn't support analytic computations.")
-
-        if isinstance(measurement, (StateMP, MutualInfoMP, VnEntropyMP)):
-            pytest.skip("Density matrix does not support parameter broadcasting.")
-
-        dev = qml.device("default.qubit", wires=3)
-
-        a = np.array([0.1, 0.2, 0.3])
-        b = np.array([0.4, 0.5, 0.6])
-
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RY(a, wires=0)
-            qml.RX(b, wires=0)
-            for _ in range(2):
-                qml.apply(measurement)
-
-        tape = qml.tape.QuantumScript.from_queue(q, shots=shots)
-        program = dev.preprocess_transforms()
-        expected = qml.execute([tape], dev, diff_method=None, transform_program=program)[0]
-
-        with pytest.warns(
-            PennyLaneDeprecationWarning, match="``QuantumScript.shape`` is deprecated"
-        ):
-            actual = tape.shape(dev)
-
-        for exp, act in zip(expected, actual):
-            assert exp.shape == act
-
-    @pytest.mark.autograd
-    def test_multi_measure_sample_obs_shot_vector(self):
-        """Test that the expected output shape is obtained when using multiple
-        qml.sample measurements with an observable with a shot vector."""
-        shots = (1, 1, 3, 3, 5, 1)
-        dev = qml.device("default.qubit", wires=3)
-
-        a = np.array(0.1)
-        b = np.array(0.2)
-
-        num_samples = 3
-        ops = [qml.RY(a, 0), qml.RX(b, 0)]
-        qs = QuantumScript(
-            ops, [qml.sample(qml.PauliZ(i)) for i in range(num_samples)], shots=shots
-        )
-
-        expected = tuple(tuple((s,) for _ in range(num_samples)) for s in shots)
-
-        with pytest.warns(
-            PennyLaneDeprecationWarning, match="``QuantumScript.shape`` is deprecated"
-        ):
-            res = qs.shape(dev)
-        assert res == expected
-
-        expected = qml.execute([qs], dev, diff_method=None)[0]
-        expected_shape = tuple(tuple(e_.shape for e_ in e) for e in expected)
-
-        assert res == expected_shape
-
-    @pytest.mark.autograd
-    def test_multi_measure_sample_wires_shot_vector(self):
-        """Test that the expected output shape is obtained when using multiple
-        qml.sample measurements with wires with a shot vector."""
-        shots = (1, 1, 3, 3, 5, 1)
-        dev = qml.device("default.qubit", wires=3)
-
-        num_samples = 3
-        ops = [qml.RY(0.3, 0), qml.RX(0.2, 0)]
-        qs = QuantumScript(ops, [qml.sample()] * num_samples, shots=shots)
-
-        expected = tuple(tuple((s, 3) for _ in range(num_samples)) for s in shots)
-
-        with pytest.warns(
-            PennyLaneDeprecationWarning, match="``QuantumScript.shape`` is deprecated"
-        ):
-            res = qs.shape(dev)
-        assert res == expected
-
-        program = dev.preprocess_transforms()
-        expected = qml.execute([qs], dev, diff_method=None, transform_program=program)[0]
-        expected_shape = tuple(tuple(e_.shape for e_ in e) for e in expected)
-
-        assert res == expected_shape
-
-    def test_raises_broadcasting_shot_vector(self):
-        """Test that getting the output shape of a tape that uses parameter
-        broadcasting along with a device with a shot vector raises an error."""
-        dev = qml.device("default.qubit", wires=3)
-
-        y = np.array([0.1, 0.2])
-        tape = qml.tape.QuantumScript([qml.RY(y, 0)], [qml.expval(qml.Z(0))], shots=(1, 2, 3))
-
-        with pytest.warns(
-            PennyLaneDeprecationWarning, match="``QuantumScript.shape`` is deprecated"
-        ):
-            assert tape.shape(dev) == ((2,), (2,), (2,))
-
-
-class TestNumericType:
-    """Tests for determining the numeric type of the tape output."""
-
-    @pytest.mark.parametrize(
-        "ret",
-        [
-            qml.expval(qml.PauliZ(0)),
-            qml.var(qml.PauliZ(0)),
-            qml.probs(wires=[0]),
-            qml.mutual_info(wires0=0, wires1=1),
-            qml.vn_entropy(wires=[0, 1]),
-        ],
-    )
-    @pytest.mark.parametrize("shots", [None, 1, (1, 2, 3)])
-    def test_float_measures(self, ret, shots):
-        """Test that most measurements output floating point values and that
-        the tape output domain correctly identifies this."""
-        dev = qml.device("default.qubit", wires=3)
-        if shots and isinstance(ret, (MutualInfoMP, VnEntropyMP)):
-            pytest.skip("Shots and entropies not supported.")
-
-        a, b = 0.3, 0.2
-        ops = [qml.RY(a, 0), qml.RZ(b, 0)]
-        qs = QuantumScript(ops, [ret], shots=shots)
-        result = qml.execute([qs], dev, diff_method=None)[0]
-
-        if not isinstance(result, tuple):
-            result = (result,)
-
-        # Double-check the domain of the QNode output
-        assert all(np.issubdtype(res.dtype, float) for res in result)
-
-        with pytest.warns(
-            PennyLaneDeprecationWarning, match="``QuantumScript.numeric_type`` is deprecated"
-        ):
-            assert qs.numeric_type is float
-
-    @pytest.mark.parametrize(
-        "ret", [qml.state(), qml.density_matrix(wires=[0, 1]), qml.density_matrix(wires=[2, 0])]
-    )
-    def test_complex_state(self, ret):
-        """Test that a tape with qml.state correctly determines that the output
-        domain will be complex."""
-        dev = qml.device("default.qubit", wires=3)
-
-        a, b = 0.3, 0.2
-        ops = [qml.RY(a, 0), qml.RZ(b, 0)]
-        qs = QuantumScript(ops, [ret])
-
-        result = qml.execute([qs], dev, diff_method=None)[0]
-
-        # Double-check the domain of the QNode output
-        assert np.issubdtype(result.dtype, complex)
-
-        with pytest.warns(
-            PennyLaneDeprecationWarning, match="``QuantumScript.numeric_type`` is deprecated"
-        ):
-            assert qs.numeric_type is complex
-
-    def test_sample_int_eigvals(self):
-        """Test that the tape can correctly determine the output domain for a
-        sampling measurement returning samples"""
-        dev = qml.device("default.qubit", wires=3)
-        qs = QuantumScript([qml.RY(0.4, 0)], [qml.sample()], shots=5)
-
-        result = qml.execute([qs], dev, diff_method=None)[0]
-
-        # Double-check the domain of the QNode output
-        assert np.issubdtype(result.dtype, np.int64)
-
-        with pytest.warns(
-            PennyLaneDeprecationWarning, match="``QuantumScript.numeric_type`` is deprecated"
-        ):
-            assert qs.numeric_type is int
-
-    # TODO: add cases for each interface once qml.Hermitian supports other
-    # interfaces
-    def test_sample_real_eigvals(self):
-        """Test that the tape can correctly determine the output domain when
-        sampling a Hermitian observable with real eigenvalues."""
-        dev = qml.device("default.qubit", wires=3)
-
-        arr = np.array(
-            [
-                1.32,
-                2.312,
-            ]
-        )
-        herm = np.outer(arr, arr)
-
-        qs = QuantumScript([qml.RY(0.4, 0)], [qml.sample(qml.Hermitian(herm, wires=0))], shots=5)
-
-        result = qml.execute([qs], dev, diff_method=None)[0]
-
-        # Double-check the domain of the QNode output
-        assert np.issubdtype(result.dtype, float)
-
-        with pytest.warns(
-            PennyLaneDeprecationWarning, match="``QuantumScript.numeric_type`` is deprecated"
-        ):
-            assert qs.numeric_type is float
-
-    @pytest.mark.autograd
-    def test_sample_real_and_int_eigvals(self):
-        """Test that the tape can correctly determine the output domain for
-        multiple sampling measurements with a Hermitian observable with real
-        eigenvalues and another sample with integer values."""
-        dev = qml.device("default.qubit", wires=3)
-
-        arr = np.array([1.32, 2.312])
-        herm = np.outer(arr, arr)
-
-        a, b = 0, 3
-        ops = [qml.RY(a, 0), qml.RX(b, 0)]
-        m = [qml.sample(qml.Hermitian(herm, wires=0)), qml.sample()]
-        qs = QuantumScript(ops, m, shots=5)
-
-        result = qml.execute([qs], dev, diff_method=None)[0]
-
-        # Double-check the domain of the QNode output
-        assert np.issubdtype(result[0].dtype, float)
-        assert np.issubdtype(result[1].dtype, np.int64)
-
-        with pytest.warns(
-            PennyLaneDeprecationWarning, match="``QuantumScript.numeric_type`` is deprecated"
-        ):
-            assert qs.numeric_type == (float, int)
 
 
 class TestDiagonalizingGates:

@@ -20,6 +20,7 @@ import pytest
 
 import pennylane.estimator as qre
 from pennylane.estimator import GateCount, resource_rep
+from pennylane.estimator.resource_operator import CompressedResourceOp
 from pennylane.wires import Wires
 
 # pylint: disable=no-self-use, too-many-arguments, too-many-positional-arguments
@@ -210,18 +211,17 @@ class TestTrotterCDF:
             qre.TrotterCDF(compact_ham, num_steps=num_steps, order=order)
 
         res = qre.estimate(circ)()
-        assert res.zeroed == expected_res["zeroed"]
-        assert res.any_state == expected_res["any_state"]
+        assert res.zeroed_wires == expected_res["zeroed"]
+        assert res.any_state_wires == expected_res["any_state"]
         assert res.algo_wires == expected_res["algo_wires"]
         assert res.gate_counts == expected_res["gate_types"]
 
-    def test_type_error(self):
-        r"""Test that a TypeError is raised for unsupported Hamiltonian representations."""
-        compact_ham = qre.THCHamiltonian(num_orbitals=4, tensor_rank=10)
-        with pytest.raises(
-            TypeError, match="Unsupported Hamiltonian representation for TrotterCDF"
-        ):
-            qre.TrotterCDF(compact_ham, num_steps=100, order=2)
+    def test_raises_error_incompatible_wires(self):
+        """Test that the init raises an error for incorrect wires"""
+        cdf_ham = qre.CDFHamiltonian(num_orbitals=8, num_fragments=4)
+
+        with pytest.raises(ValueError, match="Expected 16 wires, got 4"):
+            qre.TrotterCDF(cdf_ham, 10, 4, wires=["w1", "w2", "w3", "w4"])
 
     @pytest.mark.parametrize(
         "num_orbitals, num_fragments, num_steps, order, num_ctrl_wires, num_zero_ctrl, gates_expected",
@@ -351,8 +351,8 @@ class TestTrotterTHC:
             qre.TrotterTHC(compact_ham, num_steps=num_steps, order=order)
 
         res = qre.estimate(circ)()
-        assert res.zeroed == expected_res["zeroed"]
-        assert res.any_state == expected_res["any_state"]
+        assert res.zeroed_wires == expected_res["zeroed"]
+        assert res.any_state_wires == expected_res["any_state"]
         assert res.algo_wires == expected_res["algo_wires"]
         assert res.gate_counts == expected_res["gate_types"]
 
@@ -416,13 +416,12 @@ class TestTrotterTHC:
 
         assert gates_decomp == gates_expected
 
-    def test_type_error(self):
-        """Test that a TypeError is raised for unsupported Hamiltonian representations."""
-        compact_ham = qre.CDFHamiltonian(num_orbitals=4, num_fragments=10)
-        with pytest.raises(
-            TypeError, match="Unsupported Hamiltonian representation for TrotterTHC"
-        ):
-            qre.TrotterTHC(compact_ham, num_steps=100, order=2)
+    def test_raises_error_incompatible_wires(self):
+        """Test that the init raises an error for incorrect wires"""
+        thc_ham = qre.THCHamiltonian(num_orbitals=8, tensor_rank=20)
+
+        with pytest.raises(ValueError, match="Expected 40 wires, got 4"):
+            qre.TrotterTHC(thc_ham, 10, 4, wires=["w1", "w2", "w3", "w4"])
 
 
 class TestTrotterVibrational:
@@ -551,19 +550,16 @@ class TestTrotterVibrational:
 
         res = qre.estimate(circ)()
 
-        assert res.zeroed == expected_res["zeroed"]
-        assert res.any_state == expected_res["any_state"]
+        assert res.zeroed_wires == expected_res["zeroed"]
+        assert res.any_state_wires == expected_res["any_state"]
         assert res.algo_wires == expected_res["algo_wires"]
         assert res.gate_counts == expected_res["gate_types"]
 
-    def test_type_error(self):
-        """Test that a TypeError is raised for unsupported Hamiltonian representations."""
-        compact_ham = qre.CDFHamiltonian(num_orbitals=4, num_fragments=10)
-        with pytest.raises(
-            TypeError,
-            match="Unsupported Hamiltonian representation for TrotterVibrational",
-        ):
-            qre.TrotterVibrational(compact_ham, num_steps=100, order=2)
+    def test_raises_error_incompatible_wires(self):
+        """Test that the init raises an error for incorrect wires"""
+        vibrational_ham = qre.VibrationalHamiltonian(num_modes=8, grid_size=4, taylor_degree=3)
+        with pytest.raises(ValueError, match="Expected 32 wires, got 4"):
+            qre.TrotterVibrational(vibrational_ham, 10, 4, wires=["w1", "w2", "w3", "w4"])
 
 
 class TestTrotterVibronic:
@@ -705,15 +701,430 @@ class TestTrotterVibronic:
 
         res = qre.estimate(circ)()
 
-        assert res.zeroed == expected_res["zeroed"]
-        assert res.any_state == expected_res["any_state"]
+        assert res.zeroed_wires == expected_res["zeroed"]
+        assert res.any_state_wires == expected_res["any_state"]
         assert res.algo_wires == expected_res["algo_wires"]
         assert res.gate_counts == expected_res["gate_types"]
 
-    def test_type_error(self):
-        """Test that a TypeError is raised for unsupported Hamiltonian representations."""
-        compact_ham = qre.CDFHamiltonian(num_orbitals=4, num_fragments=10)
-        with pytest.raises(
-            TypeError, match="Unsupported Hamiltonian representation for TrotterVibronic"
-        ):
-            qre.TrotterVibronic(compact_ham, num_steps=100, order=2)
+    def test_raises_error_incompatible_wires(self):
+        """Test that the init raises an error for incorrect wires"""
+        vibronic_ham = qre.VibronicHamiltonian(
+            num_modes=8,
+            num_states=2,
+            grid_size=4,
+            taylor_degree=3,
+        )
+        with pytest.raises(ValueError, match="Expected 33 wires, got 4"):
+            qre.TrotterVibronic(vibronic_ham, 10, 4, wires=["w1", "w2", "w3", "w4"])
+
+
+class TestTrotterPauli:
+    """Test the Resource TrotterPauli class"""
+
+    @pytest.mark.parametrize(
+        "pauli_ham, num_steps, order, wires, expected_num_wires",
+        (
+            (
+                qre.PauliHamiltonian(
+                    num_qubits=5,
+                    pauli_terms={"XXXXX": 11, "YYYYY": 11, "ZZZZZ": 13},
+                ),
+                1,
+                1,
+                [0, 1, 2, 3, 4],
+                5,
+            ),
+            (
+                qre.PauliHamiltonian(
+                    num_qubits=4,
+                    pauli_terms={"XX": 10, "YY": 10, "Z": 5},
+                ),
+                10,
+                2,
+                ["w1", "w2", "w3", "w4"],
+                4,
+            ),
+            (
+                qre.PauliHamiltonian(
+                    num_qubits=5,
+                    pauli_terms=(
+                        {"XX": 15, "X": 5},
+                        {"ZZ": 10},
+                        {"YY": 5, "X": 5},
+                    ),
+                ),
+                5,
+                4,
+                None,
+                5,
+            ),
+        ),
+    )
+    def test_initialization(self, pauli_ham, num_steps, order, wires, expected_num_wires):
+        """Test the init method of TrotterPauli"""
+        trotter_op = qre.TrotterPauli(pauli_ham, num_steps, order, wires)
+
+        # Assert all attributes are correctly set:
+        assert trotter_op.pauli_ham == pauli_ham
+        assert trotter_op.num_steps == num_steps
+        assert trotter_op.order == order
+        assert trotter_op.num_wires == expected_num_wires
+
+        if wires:
+            assert trotter_op.wires == Wires(wires)
+        else:
+            assert trotter_op.wires == wires
+
+        # Assert the resource_params are compatible with the expected resource_keys
+        assert len(qre.TrotterPauli.resource_keys) == len(trotter_op.resource_params)
+        for k in qre.TrotterPauli.resource_keys:
+            assert k in trotter_op.resource_params
+
+    def test_raises_error_incompatible_wires(self):
+        """Test that the init raises an error for incorrect wires"""
+        pauli_ham = qre.PauliHamiltonian(
+            num_qubits=5,
+            pauli_terms=(
+                {"XX": 15, "X": 5},
+                {"ZZ": 10},
+                {"YY": 5, "X": 5},
+            ),
+        )
+        with pytest.raises(ValueError, match="Expected 5 wires, got 4"):
+            qre.TrotterPauli(pauli_ham, 10, 4, wires=["w1", "w2", "w3", "w4"])
+
+    @pytest.mark.parametrize(
+        "pauli_ham, num_steps, order, wires, expected_resource_rep",
+        (
+            (
+                qre.PauliHamiltonian(
+                    num_qubits=5,
+                    pauli_terms={"XXXXX": 11, "YYYYY": 11, "ZZZZZ": 13},
+                ),
+                1,
+                1,
+                [0, 1, 2, 3, 4],
+                CompressedResourceOp(
+                    op_type=qre.TrotterPauli,
+                    num_wires=5,
+                    params={
+                        "pauli_ham": qre.PauliHamiltonian(
+                            num_qubits=5,
+                            pauli_terms={"XXXXX": 11, "YYYYY": 11, "ZZZZZ": 13},
+                        ),
+                        "num_steps": 1,
+                        "order": 1,
+                    },
+                ),
+            ),
+            (
+                qre.PauliHamiltonian(
+                    num_qubits=4,
+                    pauli_terms={"XX": 10, "YY": 10, "Z": 5},
+                ),
+                10,
+                2,
+                ["w1", "w2", "w3", "w4"],
+                CompressedResourceOp(
+                    op_type=qre.TrotterPauli,
+                    num_wires=4,
+                    params={
+                        "pauli_ham": qre.PauliHamiltonian(
+                            num_qubits=4,
+                            pauli_terms={"XX": 10, "YY": 10, "Z": 5},
+                        ),
+                        "num_steps": 10,
+                        "order": 2,
+                    },
+                ),
+            ),
+            (
+                qre.PauliHamiltonian(
+                    num_qubits=5,
+                    pauli_terms=(
+                        {"XX": 15, "X": 5},
+                        {"ZZ": 10},
+                        {"YY": 5, "X": 5},
+                    ),
+                ),
+                5,
+                4,
+                None,
+                CompressedResourceOp(
+                    op_type=qre.TrotterPauli,
+                    num_wires=5,
+                    params={
+                        "pauli_ham": qre.PauliHamiltonian(
+                            num_qubits=5,
+                            pauli_terms=(
+                                {"XX": 15, "X": 5},
+                                {"ZZ": 10},
+                                {"YY": 5, "X": 5},
+                            ),
+                        ),
+                        "num_steps": 5,
+                        "order": 4,
+                    },
+                ),
+            ),
+        ),
+    )
+    def test_resource_rep(self, pauli_ham, num_steps, order, wires, expected_resource_rep):
+        """Test that the resource_rep generated is as expected."""
+        trotter_op = qre.TrotterPauli(pauli_ham, num_steps, order, wires)
+        computed_resource_rep = qre.TrotterPauli.resource_rep(pauli_ham, num_steps, order)
+
+        assert computed_resource_rep == expected_resource_rep
+        assert trotter_op.resource_rep_from_op() == expected_resource_rep
+
+    @pytest.mark.parametrize(
+        "pauli_ham, num_steps, order, expected_cost",  # costs computed by hand
+        (
+            (
+                qre.PauliHamiltonian(
+                    num_qubits=5,
+                    pauli_terms={"XXX": 1, "YYY": 1, "ZZZ": 1},
+                ),
+                1,
+                1,
+                [
+                    GateCount(qre.PauliRot.resource_rep("XXX"), 1),
+                    GateCount(qre.PauliRot.resource_rep("YYY"), 1),
+                    GateCount(qre.PauliRot.resource_rep("ZZZ"), 1),
+                ],
+            ),
+            (
+                qre.PauliHamiltonian(
+                    num_qubits=5,
+                    pauli_terms={"XXX": 1, "YYY": 1, "ZZZ": 1},
+                ),
+                1,
+                2,
+                [
+                    GateCount(qre.PauliRot.resource_rep("XXX"), 2),
+                    GateCount(qre.PauliRot.resource_rep("YYY"), 2),
+                    GateCount(qre.PauliRot.resource_rep("ZZZ"), 2),
+                ],
+            ),
+            (
+                qre.PauliHamiltonian(
+                    num_qubits=5,
+                    pauli_terms={"XXX": 1, "YYY": 1, "ZZZ": 1},
+                ),
+                10,
+                4,
+                [
+                    GateCount(qre.PauliRot.resource_rep("XXX"), 10 * 5 * 2),
+                    GateCount(qre.PauliRot.resource_rep("YYY"), 10 * 5 * 2),
+                    GateCount(qre.PauliRot.resource_rep("ZZZ"), 10 * 5 * 2),
+                ],
+            ),
+            (
+                qre.PauliHamiltonian(num_qubits=5, pauli_terms={"XX": 2, "YY": 1, "Z": 3}),
+                1,
+                1,
+                [
+                    GateCount(qre.PauliRot.resource_rep("XX"), 2),
+                    GateCount(qre.PauliRot.resource_rep("YY"), 1),
+                    GateCount(qre.PauliRot.resource_rep("Z"), 3),
+                ],
+            ),
+            (
+                qre.PauliHamiltonian(num_qubits=5, pauli_terms={"XX": 2, "YY": 1, "Z": 3}),
+                1,
+                2,
+                [
+                    GateCount(qre.PauliRot.resource_rep("XX"), 4),
+                    GateCount(qre.PauliRot.resource_rep("YY"), 2),
+                    GateCount(qre.PauliRot.resource_rep("Z"), 6),
+                ],
+            ),
+            (
+                qre.PauliHamiltonian(num_qubits=5, pauli_terms={"XX": 2, "YY": 1, "Z": 3}),
+                10,
+                4,
+                [
+                    GateCount(qre.PauliRot.resource_rep("XX"), 2 * 10 * 5 * 2),
+                    GateCount(qre.PauliRot.resource_rep("YY"), 1 * 10 * 5 * 2),
+                    GateCount(qre.PauliRot.resource_rep("Z"), 3 * 10 * 5 * 2),
+                ],
+            ),
+            (
+                qre.PauliHamiltonian(
+                    num_qubits=5,
+                    pauli_terms=({"XX": 1}, {"YY": 2}, {"ZZ": 3, "Z": 1}),
+                ),
+                1,
+                1,
+                [
+                    GateCount(qre.PauliRot.resource_rep("XX"), 1),
+                    GateCount(qre.PauliRot.resource_rep("YY"), 2),
+                    GateCount(qre.PauliRot.resource_rep("ZZ"), 3),
+                    GateCount(qre.PauliRot.resource_rep("Z"), 1),
+                ],
+            ),
+            (
+                qre.PauliHamiltonian(
+                    num_qubits=5,
+                    pauli_terms=({"XX": 1}, {"YY": 2}, {"ZZ": 3, "Z": 1}),
+                ),
+                1,
+                2,
+                [
+                    GateCount(qre.PauliRot.resource_rep("XX"), 1 * 2),
+                    GateCount(qre.PauliRot.resource_rep("YY"), 2 * 2),
+                    GateCount(qre.PauliRot.resource_rep("ZZ"), 3),
+                    GateCount(qre.PauliRot.resource_rep("Z"), 1),
+                ],
+            ),
+            (
+                qre.PauliHamiltonian(
+                    num_qubits=5,
+                    pauli_terms=({"XX": 1}, {"YY": 2}, {"ZZ": 3, "Z": 1}),
+                ),
+                10,
+                2,
+                [
+                    GateCount(qre.PauliRot.resource_rep("XX"), 1 * (10 + 1)),
+                    GateCount(qre.PauliRot.resource_rep("YY"), 2 * 2 * 10),
+                    GateCount(qre.PauliRot.resource_rep("ZZ"), 3 * 10),
+                    GateCount(qre.PauliRot.resource_rep("Z"), 1 * 10),
+                ],
+            ),
+            (
+                qre.PauliHamiltonian(
+                    num_qubits=5,
+                    pauli_terms=(
+                        {"YY": 2},
+                        {"ZZ": 3, "Z": 1},
+                        {"XX": 1},
+                    ),
+                ),
+                1,
+                2,
+                [
+                    GateCount(qre.PauliRot.resource_rep("YY"), 2 * 2),
+                    GateCount(qre.PauliRot.resource_rep("ZZ"), 3 * 2),
+                    GateCount(qre.PauliRot.resource_rep("Z"), 1 * 2),
+                    GateCount(qre.PauliRot.resource_rep("XX"), 1),
+                ],
+            ),
+            (
+                qre.PauliHamiltonian(
+                    num_qubits=5,
+                    pauli_terms=(
+                        {"YY": 2},
+                        {"ZZ": 3, "Z": 1},
+                        {"XX": 1},
+                    ),
+                ),
+                10,
+                2,
+                [
+                    GateCount(qre.PauliRot.resource_rep("YY"), 2 * (10 + 1)),
+                    GateCount(qre.PauliRot.resource_rep("ZZ"), 3 * 2 * 10),
+                    GateCount(qre.PauliRot.resource_rep("Z"), 1 * 2 * 10),
+                    GateCount(qre.PauliRot.resource_rep("XX"), 1 * 10),
+                ],
+            ),
+        ),
+    )
+    def test_resource_decomp(self, pauli_ham, num_steps, order, expected_cost):
+        """Test that the resources of the decomposition are as expected."""
+        computed_cost = qre.TrotterPauli.resource_decomp(pauli_ham, num_steps, order)
+        assert computed_cost == expected_cost
+
+    def test_cost_pauli_group(self):
+        """Test that cost_pauli_group function generates the cost of
+        exponentiating a group of Pauli terms as expected."""
+        pauli_terms = {"X": 5, "XX": 1, "YZ": 3, "XYZ": 0, "ZZZ": 10}
+        expected_cost = [
+            GateCount(qre.PauliRot.resource_rep("X"), 5),
+            GateCount(qre.PauliRot.resource_rep("XX")),
+            GateCount(qre.PauliRot.resource_rep("YZ"), 3),
+            GateCount(qre.PauliRot.resource_rep("XYZ"), 0),
+            GateCount(qre.PauliRot.resource_rep("ZZZ"), 10),
+        ]
+
+        assert (
+            qre.TrotterPauli._cost_pauli_group(pauli_terms)  # pylint: disable=protected-access
+            == expected_cost
+        )
+
+
+CLASSES_AND_HAMS = [
+    (qre.TrotterCDF, qre.CDFHamiltonian(num_orbitals=10, num_fragments=20)),
+    (qre.TrotterTHC, qre.THCHamiltonian(num_orbitals=10, tensor_rank=20)),
+    (
+        qre.TrotterVibronic,
+        qre.VibronicHamiltonian(num_modes=8, num_states=2, grid_size=4, taylor_degree=3),
+    ),
+    (qre.TrotterVibrational, qre.VibrationalHamiltonian(num_modes=8, grid_size=4, taylor_degree=3)),
+    (
+        qre.TrotterPauli,
+        qre.PauliHamiltonian(
+            num_qubits=5,
+            pauli_terms=(
+                {"XX": 15, "X": 5},
+                {"ZZ": 10},
+                {"YY": 5, "X": 5},
+            ),
+        ),
+    ),
+]
+
+
+class TestInvalidTrotterInputs:
+    """Test that all Trotter classes raise errors for invalid inputs."""
+
+    @pytest.mark.parametrize("op_class, valid_ham", CLASSES_AND_HAMS)
+    @pytest.mark.parametrize(
+        "bad_steps, bad_order, error_type, msg",
+        [
+            (
+                -1,
+                2,
+                ValueError,
+                "`num_steps` is expected to be a positive integer greater than one",
+            ),
+            (
+                10,
+                3,
+                ValueError,
+                "`order` is expected to be a positive integer and either one or a multiple of two",
+            ),
+            (
+                10,
+                -2,
+                ValueError,
+                "`order` is expected to be a positive integer and either one or a multiple of two",
+            ),
+        ],
+    )
+    def test_trotter_common_incompatible_inputs(
+        self, op_class, valid_ham, bad_steps, bad_order, error_type, msg
+    ):
+        """Test that all Trotter classes raise errors for invalid steps/orders."""
+        with pytest.raises(error_type, match=msg):
+            op_class(valid_ham, num_steps=bad_steps, order=bad_order)
+
+        with pytest.raises(error_type, match=msg):
+            op_class.resource_rep(valid_ham, num_steps=bad_steps, order=bad_order)
+
+    @pytest.mark.parametrize(
+        "op_class, invalid_ham_type",
+        [
+            (qre.TrotterPauli, qre.CDFHamiltonian(10, 20)),
+            (qre.TrotterCDF, qre.THCHamiltonian(10, 20)),
+            (qre.TrotterTHC, qre.CDFHamiltonian(10, 20)),
+            (qre.TrotterVibrational, qre.CDFHamiltonian(10, 20)),
+            (qre.TrotterVibronic, qre.THCHamiltonian(10, 20)),
+        ],
+    )
+    def test_trotter_invalid_hamiltonian_type(self, op_class, invalid_ham_type):
+        """Test that all Trotter classes raise errors for invalid hamiltonian types."""
+        with pytest.raises(TypeError, match="Unsupported Hamiltonian"):
+            op_class(invalid_ham_type, num_steps=1, order=2)
+
+        with pytest.raises(TypeError, match="Unsupported Hamiltonian"):
+            op_class.resource_rep(invalid_ham_type, num_steps=1, order=2)

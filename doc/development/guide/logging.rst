@@ -288,7 +288,6 @@ process, and surrounding operations:
 
 .. code-block:: python
 
-    from functools import partial
     import pennylane as qml
     import jax, jax.numpy as jnp
     from jax import jacfwd, jacrev
@@ -308,7 +307,7 @@ process, and surrounding operations:
        logger.info(f"Creating {dev_name} device with {num_wires} wires with {key} PNRG")
        dev = qml.device(dev_name, wires=num_wires, prng_key=key)
 
-       @partial(qml.set_shots, shots=num_shots)
+       @qml.set_shots(shots=num_shots)
        @qml.qnode(dev, interface="jax", diff_method="backprop")
        def my_circuit():
            qml.RX(param, wires=0)
@@ -355,7 +354,6 @@ tie-into the execution pipeline for devices without backprop supports:
 
 .. code-block:: python
 
-    from functools import partial
     import pennylane as qml
     import logging
 
@@ -370,7 +368,7 @@ tie-into the execution pipeline for devices without backprop supports:
        logger.info(f"Creating {dev_name} device with {num_wires} wires")
        dev = qml.device(dev_name, wires=num_wires)
 
-       @partial(qml.set_shots, shots=num_shots)
+       @qml.set_shots(shots=num_shots)
        @qml.qnode(dev, diff_method="adjoint")
        def my_circuit(param):
            qml.RX(param, wires=0)

@@ -20,15 +20,14 @@ import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
-from pennylane.exceptions import QuantumFunctionError
+from pennylane.exceptions import QuantumFunctionError, TransformError
 from pennylane.measurements import (
     CountsMP,
     ExpectationMP,
-    MeasurementValue,
-    MidMeasureMP,
     ProbabilityMP,
     SampleMP,
 )
+from pennylane.ops import MeasurementValue, MidMeasure
 from pennylane.transforms.dynamic_one_shot import (
     _supports_one_shot,
     fill_in_value,
@@ -82,20 +81,16 @@ def test_parse_native_mid_circuit_measurements_unsupported_meas(measurement):
         parse_native_mid_circuit_measurements(circuit, [circuit], [np.empty((1, 1))])
 
 
-def test_postselection_error_with_wrong_device():
-    """Test that an error is raised when a device does not support native execution."""
-    dev = qml.device("default.mixed", wires=2)
+def test_qnode_transform_error():
+    """Tests that an error is raised when applying dynamic_one_shot on a qnode."""
 
-    with pytest.raises(
-        TypeError,
-        match="does not support mid-circuit measurements and/or one-shot execution mode natively",
-    ):
+    with pytest.raises(TransformError, match="cannot be applied directly on a QNode"):
 
         @qml.dynamic_one_shot
-        @qml.qnode(dev)
+        @qml.qnode(qml.device("default.qubit"))
         def _():
-            qml.measure(0, postselect=1)
-            return qml.probs(wires=[0])
+            qml.X(0)
+            qml.expval(qml.Z(0))
 
 
 def test_postselect_mode():
@@ -144,7 +139,7 @@ def test_hw_like_with_jax(use_jit, diff_method, seed):
 
 def test_unsupported_measurements():
     """Test that using unsupported measurements raises an error."""
-    tape = qml.tape.QuantumScript([MidMeasureMP(0)], [qml.state()])
+    tape = qml.tape.QuantumScript([MidMeasure(0)], [qml.state()])
 
     with pytest.raises(
         TypeError,
@@ -155,7 +150,7 @@ def test_unsupported_measurements():
 
 def test_unsupported_shots():
     """Test that using shots=None raises an error."""
-    tape = qml.tape.QuantumScript([MidMeasureMP(0)], [qml.probs(wires=0)], shots=None)
+    tape = qml.tape.QuantumScript([MidMeasure(0)], [qml.probs(wires=0)], shots=None)
 
     with pytest.raises(
         QuantumFunctionError,
@@ -167,7 +162,7 @@ def test_unsupported_shots():
 @pytest.mark.parametrize("n_shots", range(1, 10))
 def test_len_tapes(n_shots):
     """Test that the transform produces the correct number of tapes."""
-    tape = qml.tape.QuantumScript([MidMeasureMP(0)], [qml.expval(qml.PauliZ(0))], shots=n_shots)
+    tape = qml.tape.QuantumScript([MidMeasure(0)], [qml.expval(qml.PauliZ(0))], shots=n_shots)
     tapes, _ = qml.dynamic_one_shot(tape)
     assert len(tapes) == 1
 
@@ -178,7 +173,7 @@ def test_len_tape_batched(n_batch, n_shots):
     """Test that the transform produces the correct number of tapes with batches."""
     params = np.random.rand(n_batch)
     tape = qml.tape.QuantumScript(
-        [qml.RX(params, 0), MidMeasureMP(0, postselect=1), qml.CNOT([0, 1])],
+        [qml.RX(params, 0), MidMeasure(0, postselect=1), qml.CNOT([0, 1])],
         [qml.expval(qml.PauliZ(0))],
         shots=n_shots,
     )
@@ -201,7 +196,7 @@ def test_len_measurements_obs(measure, aux_measure, n_meas):
     n_shots = 10
     n_mcms = 1
     tape = qml.tape.QuantumScript(
-        [qml.Hadamard(0)] + [MidMeasureMP(0)] * n_mcms, [measure(op=qml.PauliZ(0))], shots=n_shots
+        [qml.Hadamard(0)] + [MidMeasure(0)] * n_mcms, [measure(op=qml.PauliZ(0))], shots=n_shots
     )
     tapes, _ = qml.dynamic_one_shot(tape)
     assert len(tapes) == 1
@@ -226,8 +221,8 @@ def test_len_measurements_mcms(measure, aux_measure, n_meas):
     n_shots = 10
     n_mcms = 1
     tape = qml.tape.QuantumScript(
-        [qml.Hadamard(0)] + [MidMeasureMP(0)] * n_mcms,
-        [measure(op=MeasurementValue([MidMeasureMP(0)], lambda x: x))],
+        [qml.Hadamard(0)] + [MidMeasure(0)] * n_mcms,
+        [measure(op=MeasurementValue([MidMeasure(0)], lambda x: x))],
         shots=n_shots,
     )
     tapes, _ = qml.dynamic_one_shot(tape)
@@ -330,7 +325,7 @@ class TestInterfaces:
         param = qml.math.array(np.pi / 2, like=interface)
 
         mv = qml.measure(0)
-        mcms = [mv.measurements[0]] + [MidMeasureMP(0, id=str(i)) for i in range(n_mcms - 1)]
+        mcms = [mv.measurements[0]] + [MidMeasure(0, id=str(i)) for i in range(n_mcms - 1)]
 
         tape = qml.tape.QuantumScript(
             [qml.RX(param, 0)] + mcms,
@@ -371,7 +366,7 @@ class TestInterfaces:
         parameters"""
         param = qml.math.array(1.5, like=interface)
         mv = qml.measure(0)
-        mcms = [mv.measurements[0]] + [MidMeasureMP(0)] * (n_mcms - 1)
+        mcms = [mv.measurements[0]] + [MidMeasure(0)] * (n_mcms - 1)
         ops = [qml.RX(param, 0)] + mcms
 
         tape = qml.tape.QuantumScript(
@@ -445,7 +440,7 @@ class TestInterfaces:
         mp = mv.measurements[0]
 
         tape = qml.tape.QuantumScript(
-            [qml.RX(param, 0), mp, MidMeasureMP(0)],
+            [qml.RX(param, 0), mp, MidMeasure(0)],
             [measure_f(op=qml.PauliZ(0)), measure_f(op=mv)],
             shots=shots,
         )

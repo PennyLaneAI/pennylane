@@ -1,14 +1,10 @@
-:orphan:
-
-# Release 0.44.0-dev (development release)
+# Release 0.45.0 (development release)
 
 <h3>New features since last release</h3>
 
 <h3>Improvements 🛠</h3>
 
-* Both the generic and transform-specific application behavior of a `qml.transforms.core.TransformDispatcher`
-  can be overwritten with `TransformDispatcher.generic_register` and `my_transform.register`.
-  [(#7797)](https://github.com/PennyLaneAI/pennylane/pull/7797)
+<h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 <h3>Breaking changes 💔</h3>
 
@@ -16,16 +12,8 @@
 
 <h3>Internal changes ⚙️</h3>
 
-* The experimental xDSL implementation of `diagonalize_measurements` has been updated to fix a bug
-  that included the wrong SSA value for final qubit insertion and deallocation at the end of the circuit. A clear error is not also raised when there are observables with overlapping wires.
-  [(#8383)](https://github.com/PennyLaneAI/pennylane/pull/8383)
-
 <h3>Documentation 📝</h3>
 
 <h3>Bug fixes 🐛</h3>
 
 <h3>Contributors ✍️</h3>
-
-This release contains contributions from (in alphabetical order):
-
-Lillian Frederiksen

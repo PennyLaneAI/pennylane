@@ -16,11 +16,18 @@ This module contains the template for performing basis transformation defined by
 """
 import numpy as np
 
-from pennylane import math
+from pennylane import capture, math
+from pennylane.control_flow import for_loop
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.operation import Operation
 from pennylane.ops import PhaseShift, SingleExcitation, cond
-from pennylane.wires import WiresLike
+from pennylane.wires import Wires, WiresLike
+
+has_jax = True
+try:
+    from jax import numpy as jnp
+except ModuleNotFoundError:  # pragma: no cover
+    has_jax = False  # pragma: no cover
 
 
 def _adjust_determinant(matrix):
@@ -31,23 +38,21 @@ def _adjust_determinant(matrix):
         matrix (array): orthogonal matrix to adjust the determinant of.
 
     Returns:
-        tuple[float or None, array]: The angle to be passed into a PhaseShift gate on the first
-        wire to perform the determinant adjustment on the quantum circuit level, which is ``None``
-        if no adjustment is needed, as well as the new matrix with adjusted determinant :math:`+1`.
+        tuple[float, array]: The angle to be passed into a PhaseShift gate on the first
+        wire to perform the determinant adjustment on the quantum circuit level,
+        as well as the new matrix with adjusted determinant :math:`+1`.
 
     """
     det = math.linalg.det(matrix)
-    if math.is_abstract(matrix) or det < 0:
-        # Adjust determinant to make unitary matrix special orthogonal; multiplication of
-        # the first column with -1 is equal to prepending the decomposition with a phase shift
-        matrix = (
-            math.copy(matrix)
-            if math.get_interface(matrix) == "jax"
-            else math.toarray(matrix).copy()
-        )
-        matrix = math.T(math.set_index(math.T(matrix), 0, -matrix[:, 0]))
-        return np.pi * (1 - det) / 2, matrix
-    return None, matrix
+
+    mat = matrix
+    if math.is_abstract(det) or det < 0:
+        if math.get_interface(mat) != "jax":
+            mat = math.toarray(mat).copy()
+        mat = math.T(math.set_index(math.T(mat), 0, -mat[:, 0]))
+        return np.pi * (1 - math.real(det)) / 2, mat
+
+    return np.array(0.0), mat
 
 
 class BasisRotation(Operation):
@@ -359,13 +364,15 @@ class BasisRotation(Operation):
         op_list = []
 
         if math.is_real_obj_or_close(unitary_matrix):
-            angle, unitary_matrix = _adjust_determinant(unitary_matrix)
-            if angle is not None:
+
+            angle, mat = _adjust_determinant(unitary_matrix)
+
+            if not math.is_abstract(angle) and not math.allclose(angle, 0.0):
                 op_list.append(PhaseShift(angle, wires=wires[0]))
 
-            _, givens_list = math.decomposition.givens_decomposition(unitary_matrix)
+            _, givens_list = math.decomposition.givens_decomposition(mat)
             for grot_mat, (i, j) in givens_list:
-                theta = math.arctan2(grot_mat[0, 1], grot_mat[0, 0])
+                theta = math.arctan2(math.real(grot_mat[0, 1]), math.real(grot_mat[0, 0]))
                 op_list.append(SingleExcitation(2 * theta, wires=[wires[i], wires[j]]))
             return op_list
 
@@ -399,27 +406,74 @@ def _basis_rotation_decomp_resources(dim, is_real):
 @register_resources(_basis_rotation_decomp_resources, exact=False)
 def _basis_rotation_decomp(unitary_matrix, wires: WiresLike, **__):
 
-    if math.is_real_obj_or_close(unitary_matrix):
-        angle, unitary_matrix = _adjust_determinant(unitary_matrix)
-        if angle is not None:
-            PhaseShift(angle, wires=wires[0])
+    if isinstance(wires, Wires):
+        wires = wires.labels
 
-        _, givens_list = math.decomposition.givens_decomposition(unitary_matrix)
-        for grot_mat, (i, j) in givens_list:
-            theta = math.arctan2(grot_mat[0, 1], grot_mat[0, 0])
+    if has_jax and capture.enabled():
+        unitary_matrix, wires = jnp.array(unitary_matrix), jnp.array(wires)
+
+    def real_unitary(unitary, wires):
+        angle, unitary = _adjust_determinant(unitary)
+
+        if has_jax and capture.enabled():
+
+            def shift(a):
+                PhaseShift(a, wires=wires[0])
+
+            cond(jnp.logical_not(jnp.allclose(angle, 0.0)), shift)(angle)
+        else:
+            if not math.is_abstract(angle) and not math.allclose(angle, 0.0):
+                PhaseShift(angle, wires=wires[0])
+
+        _, givens_list = math.decomposition.givens_decomposition(unitary)
+        givens_matrices, givens_ids = zip(*givens_list)
+
+        if has_jax and capture.enabled():
+            givens_ids = jnp.array(givens_ids)
+            givens_matrices = jnp.array(givens_matrices)
+
+        @for_loop(len(givens_list))
+        def givens_loop(idx):
+            grot_mat = givens_matrices[idx]
+            (i, j) = givens_ids[idx]
+            theta = math.arctan2(math.real(grot_mat[0, 1]), math.real(grot_mat[0, 0]))
             SingleExcitation(2 * theta, wires=[wires[i], wires[j]])
-        return
 
-    phase_list, givens_list = math.decomposition.givens_decomposition(unitary_matrix)
+        givens_loop()  # pylint: disable=no-value-for-parameter
 
-    for idx, phase in enumerate(phase_list):
-        PhaseShift(math.angle(phase), wires=wires[idx])
+    def complex_unitary(unitary, wires):
+        phase_list, givens_list = math.decomposition.givens_decomposition(unitary)
+        givens_matrices, givens_ids = zip(*givens_list)
 
-    for grot_mat, (i, j) in givens_list:
-        theta = math.arccos(math.real(grot_mat[1, 1]))
-        phi = math.angle(grot_mat[0, 0])
-        SingleExcitation(2 * theta, wires=[wires[i], wires[j]])
-        cond(not math.allclose(phi, 0.0), PhaseShift)(phi, wires[i])
+        if has_jax and capture.enabled():
+            phase_list = jnp.array(phase_list)
+            givens_ids = jnp.array(givens_ids)
+            givens_matrices = jnp.array(givens_matrices)
+
+        @for_loop(len(phase_list))
+        def phase_loop(idx):
+            phase = phase_list[idx]
+            PhaseShift(math.angle(phase), wires=wires[idx])
+
+        phase_loop()  # pylint: disable=no-value-for-parameter
+
+        @for_loop(len(givens_matrices))
+        def givens_loop(idx):
+            grot_mat = givens_matrices[idx]
+            (i, j) = givens_ids[idx]
+            theta = math.arccos(math.real(grot_mat[1, 1]))
+            phi = math.angle(grot_mat[0, 0])
+            SingleExcitation(2 * theta, wires=[wires[i], wires[j]])
+            if has_jax and capture.enabled():
+                cond(jnp.logical_not(math.allclose(phi, 0.0)), PhaseShift)(phi, wires[i])
+            else:
+                cond(not math.allclose(phi, 0.0), PhaseShift)(phi, wires[i])
+
+        givens_loop()  # pylint: disable=no-value-for-parameter
+
+    is_real = math.is_real_obj_or_close(unitary_matrix)
+
+    cond(is_real, real_unitary, complex_unitary)(unitary=unitary_matrix, wires=wires)
 
 
 add_decomps(BasisRotation, _basis_rotation_decomp)

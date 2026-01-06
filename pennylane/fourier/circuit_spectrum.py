@@ -118,19 +118,20 @@ def circuit_spectrum(
             return qml.expval(qml.Z(0))
 
         x = np.array([1, 2, 3])
-        w = np.random.random((n_layers, n_qubits, 3))
+        rng = np.random.default_rng(seed=42)
+        w = rng.random((n_layers, n_qubits, 3))
         res = qml.fourier.circuit_spectrum(circuit)(x, w)
 
     >>> print(qml.draw(circuit)(x, w))
-    0: ──RX(1.00,"x0")──Rot(0.03,0.03,0.37)──RX(1.00,"x0")──Rot(0.35,0.89,0.29)──RZ(1.00,"x0")─┤  <Z>
-    1: ──RX(2.00,"x1")──Rot(0.70,0.12,0.60)──RX(2.00,"x1")──Rot(0.04,0.03,0.88)────────────────┤
-    2: ──RX(3.00,"x2")──Rot(0.65,0.87,0.05)──RX(3.00,"x2")──Rot(0.37,0.53,0.02)────────────────┤
+    0: ──RX(1.00,"x0")──Rot(0.77,0.44,0.86)──RX(1.00,"x0")──Rot(0.45,0.37,0.93)──RZ(1.00,"x0")─┤  <Z>
+    1: ──RX(2.00,"x1")──Rot(0.70,0.09,0.98)──RX(2.00,"x1")──Rot(0.64,0.82,0.44)────────────────┤
+    2: ──RX(3.00,"x2")──Rot(0.76,0.79,0.13)──RX(3.00,"x2")──Rot(0.23,0.55,0.06)────────────────┤
 
     >>> for inp, freqs in res.items():
-    >>>     print(f"{inp}: {freqs}")
-    'x0': [-3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0]
-    'x1': [-2.0, -1.0, 0.0, 1.0, 2.0]
-    'x2': [-2.0, -1.0, 0.0, 1.0, 2.0]
+    ...     print(f"{inp}: {freqs}")
+    x0: [np.float64(-3.0), np.float64(-2.0), np.float64(-1.0), 0, np.float64(1.0), np.float64(2.0), np.float64(3.0)]
+    x1: [np.float64(-2.0), np.float64(-1.0), 0, np.float64(1.0), np.float64(2.0)]
+    x2: [np.float64(-2.0), np.float64(-1.0), 0, np.float64(1.0), np.float64(2.0)]
 
     .. note::
         While the Fourier spectrum usually does not depend
@@ -156,8 +157,8 @@ def circuit_spectrum(
         res = qml.fourier.circuit_spectrum(circuit, encoding_gates=["x0"])(x)
 
     >>> for inp, freqs in res.items():
-    >>>     print(f"{inp}: {freqs}")
-    'x0': [-2.0, -1.0, 0.0, 1.0, 2.0]
+    ...     print(f"{inp}: {freqs}")
+    x0: [np.float64(-2.0), np.float64(-1.0), 0, np.float64(1.0), np.float64(2.0)]
 
     .. note::
         The ``circuit_spectrum`` function does not check if the result of the
@@ -168,23 +169,21 @@ def circuit_spectrum(
 
     .. code-block:: python
 
-        import tensorflow as tf
-
         dev = qml.device("default.qubit", wires=1)
 
-        @qml.qnode(dev, interface='tf')
+        @qml.qnode(dev)
         def circuit(x):
             qml.RX(x[0], wires=0, id="x0")
             qml.PhaseShift(x[1], wires=0, id="x1")
             return qml.expval(qml.Z(0))
 
-        x = tf.constant([1, 2])
+        x = torch.tensor([1, 2])
         res = qml.fourier.circuit_spectrum(circuit)(x)
 
     >>> for inp, freqs in res.items():
-    >>>     print(f"{inp}: {freqs}")
-    'x0': [-1.0, 0.0, 1.0]
-    'x1': [-1.0, 0.0, 1.0]
+    ...     print(f"{inp}: {freqs}")
+    x0: [np.float64(-1.0), 0, np.float64(1.0)]
+    x1: [np.float64(-1.0), 0, np.float64(1.0)]
 
     """
 

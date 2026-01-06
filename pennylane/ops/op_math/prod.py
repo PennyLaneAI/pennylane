@@ -72,7 +72,9 @@ def prod(*ops, id=None, lazy=True):
 
         But it doesn't support batching of operators:
 
-        >>> op = qml.prod(np.array([qml.RX(0.5, 0), qml.RZ(0.3, 0)]), qml.Z(0))
+        >>> qml.prod(np.array([qml.RX(0.5, 0), qml.RZ(0.3, 0)]), qml.Z(0))
+        Traceback (most recent call last):
+            ...
         AttributeError: 'numpy.ndarray' object has no attribute 'wires'
 
     .. seealso:: :class:`~.ops.op_math.Prod`
@@ -83,8 +85,8 @@ def prod(*ops, id=None, lazy=True):
     >>> prod_op
     X(0) @ Z(0)
     >>> prod_op.matrix()
-    array([[ 0, -1],
-           [ 1,  0]])
+    array([[ 0.+0.j, -1.+0.j],
+           [ 1.+0.j,  0.+0.j]])
     >>> prod_op.simplify()
     -1j * Y(0)
     >>> prod_op.terms()
@@ -98,7 +100,7 @@ def prod(*ops, id=None, lazy=True):
     ...     qml.CNOT([0, 1])
     >>> prod_op = prod(qfunc)(1.1)
     >>> prod_op
-    CNOT(wires=[0, 1]) @ RX(1.1, wires=[0])
+    (CNOT(wires=[0, 1])) @ RX(1.1, wires=[0])
 
 
     Notice how the order in the output appears reversed. However, this is correct because the operators are applied from right to left.
@@ -163,12 +165,12 @@ class Prod(CompositeOp):
     >>> prod_op
     X(0) @ Z(1)
     >>> qml.matrix(prod_op, wire_order=prod_op.wires)
-    array([[ 0,  0,  1,  0],
-           [ 0,  0,  0, -1],
-           [ 1,  0,  0,  0],
-           [ 0, -1,  0,  0]])
+    array([[ 0.+0.j,  0.+0.j,  1.+0.j,  0.+0.j],
+           [ 0.+0.j,  0.+0.j,  0.+0.j, -1.+0.j],
+           [ 1.+0.j,  0.+0.j,  0.+0.j,  0.+0.j],
+           [ 0.+0.j, -1.+0.j,  0.+0.j,  0.+0.j]])
     >>> prod_op.terms()
-    ([1.0], [Z(1) @ X(0)])
+    ([1.0], [X(0) @ Z(1)])
 
     .. note::
         When a Prod operator is applied in a circuit, its factors are applied in the reverse order.
@@ -189,13 +191,13 @@ class Prod(CompositeOp):
         >>> prod_op = Prod(qml.RZ(1.23, wires=0), qml.X(0), qml.Z(1))
         >>> prod_op.matrix()
         array([[ 0.        +0.j        ,  0.        +0.j        ,
-                 0.81677345-0.57695852j,  0.        +0.j        ],
-               [ 0.        +0.j        ,  0.        +0.j        ,
-                 0.        +0.j        , -0.81677345+0.57695852j],
-               [ 0.81677345+0.57695852j,  0.        +0.j        ,
+                 0.816...-0.57...j,  0.        +0.j        ],
+               [ 0.        +0.j        , -0.        +0.j        ,
+                 0.        +0.j        , -0.816...+0.57...j],
+               [ 0.816...+0.57...j,  0.        +0.j        ,
                  0.        +0.j        ,  0.        +0.j        ],
-               [ 0.        +0.j        , -0.81677345-0.57695852j,
-                 0.        +0.j        ,  0.        +0.j        ]])
+               [ 0.        +0.j        , -0.816...-0.57...j,
+                 0.        +0.j        , -0.        +0.j        ]])
 
         The Prod operation can be used inside a `qnode` as an operation which,
         if parametrized, can be differentiated.
@@ -209,11 +211,11 @@ class Prod(CompositeOp):
                 qml.prod(qml.Z(0), qml.RX(theta, 1))
                 return qml.expval(qml.Z(1))
 
-        >>> par = np.array(1.23, requires_grad=True)
+        >>> par = qml.numpy.array(1.23, requires_grad=True)
         >>> circuit(par)
-        tensor(0.33423773, requires_grad=True)
+        tensor(0.334..., requires_grad=True)
         >>> qml.grad(circuit)(par)
-        tensor(-0.9424888, requires_grad=True)
+        tensor(-0.942..., requires_grad=True)
 
         The Prod operation can also be measured as an observable.
         If the circuit is parametrized, then we can also differentiate through the
@@ -229,15 +231,15 @@ class Prod(CompositeOp):
                 qml.RX(weights[0], wires=0)
                 return qml.expval(prod_op)
 
-        >>> weights = np.array([0.1], requires_grad=True)
+        >>> weights = qml.numpy.array([0.1], requires_grad=True)
         >>> qml.grad(circuit)(weights)
-        array([-0.07059289])
+        array([-0.070...])
 
         Note that the :meth:`~Prod.terms` method always simplifies and flattens the operands.
 
         >>> op = qml.ops.Prod(qml.X(0), qml.sum(qml.Y(0), qml.Z(1)))
         >>> op.terms()
-        ([1j, 1.0], [Z(0), Z(1) @ X(0)])
+        ([1j, 1.0], [Z(0), X(0) @ Z(1)])
 
     """
 
@@ -254,7 +256,7 @@ class Prod(CompositeOp):
     grad_method = None
 
     @property
-    def is_hermitian(self):
+    def is_verified_hermitian(self):
         """Check if the product operator is hermitian.
 
         Note, this check is not exhaustive. There can be hermitian operators for which this check
@@ -264,7 +266,7 @@ class Prod(CompositeOp):
         for o1, o2 in combinations(self.operands, r=2):
             if qml.wires.Wires.shared_wires([o1.wires, o2.wires]):
                 return False
-        return all(op.is_hermitian for op in self)
+        return all(op.is_verified_hermitian for op in self)
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
@@ -452,11 +454,9 @@ class Prod(CompositeOp):
 
         **Example**
 
-        >>> op = X(0) @ (0.5 * X(1) + X(2))
+        >>> op = qml.X(0) @ (0.5 * qml.X(1) + qml.X(2))
         >>> op.terms()
-        ([0.5, 1.0],
-         [X(1) @ X(0),
-          X(2) @ X(0)])
+        ([np.float64(0.5), 1.0], [X(0) @ X(1), X(0) @ X(2)])
 
         """
         # try using pauli_rep:
@@ -494,7 +494,7 @@ def _prod_resources(resources):
 @qml.register_resources(_prod_resources)
 def _prod_decomp(*_, wires=None, operands):
     for op in reversed(operands):
-        op._unflatten(*op._flatten())  # pylint: disable=protected-access
+        qml.pytrees.unflatten(*qml.pytrees.flatten(op))
 
 
 qml.add_decomps(Prod, _prod_decomp)

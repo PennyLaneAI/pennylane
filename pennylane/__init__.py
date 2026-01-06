@@ -75,12 +75,11 @@ from pennylane._grad import grad, jacobian, vjp, jvp
 from pennylane._version import __version__
 from pennylane.about import about
 from pennylane.circuit_graph import CircuitGraph
-from pennylane.configuration import Configuration
+from pennylane.configuration import Configuration, default_config
 from pennylane.registers import registers
 from pennylane.measurements import (
     counts,
     density_matrix,
-    measure,
     expval,
     probs,
     sample,
@@ -93,7 +92,7 @@ from pennylane.measurements import (
     shadow_expval,
 )
 from pennylane.ops import *
-from pennylane.ops import adjoint, ctrl, cond, change_op_basis, exp, sum, pow, prod, s_prod
+from pennylane.ops import adjoint, ctrl, cond, change_op_basis, exp, sum, pow, prod, s_prod, measure
 from pennylane.ops import LinearCombination as Hamiltonian
 from pennylane.templates import layer
 from pennylane.templates.embeddings import *
@@ -103,7 +102,7 @@ from pennylane.templates.swapnetworks import *
 from pennylane.templates.state_preparations import *
 from pennylane.templates.subroutines import *
 from pennylane import qaoa
-from pennylane.workflow import QNode, qnode, execute, set_shots
+from pennylane.workflow import QNode, qnode, execute, set_shots, marker
 from pennylane import workflow
 
 from pennylane.transforms import (
@@ -120,6 +119,8 @@ from pennylane.transforms import (
     pattern_matching,
     pattern_matching_optimization,
     clifford_t_decomposition,
+    gridsynth,
+    CompilePipeline,
 )
 from pennylane.noise import (
     add_noise,
@@ -205,17 +206,27 @@ from importlib.util import find_spec as _find_spec
 from packaging.version import Version as _Version
 
 if _find_spec("jax") is not None:
-    if (jax_version := _Version(_metadata_version("jax"))) > _Version("0.6.2"):  # pragma: no cover
+    if (jax_version := _Version(_metadata_version("jax"))) > _Version("0.7.1"):  # pragma: no cover
         warnings.warn(
-            "PennyLane is not yet compatible with JAX versions > 0.6.2. "
+            "PennyLane is not yet compatible with JAX versions > 0.7.1. "
             f"You have version {jax_version} installed. "
-            "Please downgrade JAX to 0.6.2 to avoid runtime errors using "
-            "python -m pip install jax~=0.6.0 jaxlib~=0.6.0",
+            "Please downgrade JAX to 0.7.1 to avoid runtime errors using "
+            "python -m pip install jax==0.7.1 jaxlib==0.7.1",
             RuntimeWarning,
         )
 
-# Look for an existing configuration file
-default_config = Configuration("config.toml")
+if _find_spec("numpy") is not None:
+    if (numpy_version := _Version(_metadata_version("numpy"))) < _Version(
+        "2.0.0"
+    ):  # pragma: no cover
+        warnings.warn(
+            "PennyLane v0.44 has dropped maintainence support for NumPy < 2.0.0. "
+            f"You have version {numpy_version} installed. "
+            "Future versions of PennyLane will not work with NumPy<2.0. "
+            "Please consider upgrading NumPy using "
+            "`python -m pip install numpy --upgrade`. ",
+            exceptions.PennyLaneDeprecationWarning,
+        )
 
 
 def __getattr__(name):

@@ -67,7 +67,7 @@ class Hermitian(Operator):
 
     _queue_category = None
 
-    is_hermitian = True
+    is_verified_hermitian = True
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
@@ -136,8 +136,8 @@ class Hermitian(Operator):
 
         >>> A = np.array([[6+0j, 1-2j],[1+2j, -1]])
         >>> qml.Hermitian.compute_matrix(A)
-        [[ 6.+0.j  1.-2.j]
-         [ 1.+2.j -1.+0.j]]
+        array([[ 6.+0.j,  1.-2.j],
+               [ 1.+2.j, -1.+0.j]])
         """
         A = qml.math.asarray(A)
         Hermitian._validate_input(A)
@@ -252,8 +252,8 @@ class Hermitian(Operator):
         >>> A = np.array([[-6, 2 + 1j], [2 - 1j, 0]])
         >>> _, evecs = np.linalg.eigh(A)
         >>> qml.Hermitian.compute_diagonalizing_gates(evecs, wires=[0])
-        [QubitUnitary(tensor([[-0.94915323-0.j,  0.2815786 +0.1407893j ],
-                              [ 0.31481445-0.j,  0.84894846+0.42447423j]], requires_grad=True), wires=[0])]
+        [QubitUnitary(array([[-0.94915323+0.j        ,  0.2815786 +0.1407893j ],
+               [ 0.31481445-0.j        ,  0.84894846+0.42447423j]]), wires=[0])]
 
         """
         return [QubitUnitary(eigenvectors.conj().T, wires=wires)]
@@ -307,7 +307,7 @@ class SparseHamiltonian(Operator):
     """
 
     _queue_category = None
-    is_hermitian = True
+    is_verified_hermitian = True
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
@@ -367,8 +367,8 @@ class SparseHamiltonian(Operator):
         >>> H = csr_matrix(H)
         >>> res = qml.SparseHamiltonian.compute_matrix(H)
         >>> res
-        [[ 6.+0.j  1.-2.j]
-         [ 1.+2.j -1.+0.j]]
+        array([[ 6.+0.j,  1.-2.j],
+               [ 1.+2.j, -1.+0.j]])
         >>> type(res)
         <class 'numpy.ndarray'>
         """
@@ -400,12 +400,10 @@ class SparseHamiltonian(Operator):
         >>> H = csr_matrix(H)
         >>> res = qml.SparseHamiltonian.compute_sparse_matrix(H)
         >>> res
-        (0, 0)	(6+0j)
-        (0, 1)	(1-2j)
-        (1, 0)	(1+2j)
-        (1, 1)	(-1+0j)
+        <Compressed Sparse Row sparse matrix of dtype 'complex128'
+            with 4 stored elements and shape (2, 2)>
         >>> type(res)
-        <class 'scipy.sparse.csr_matrix'>
+        <class 'scipy.sparse._csr.csr_matrix'>
         """
         return H
 
@@ -448,14 +446,14 @@ class Projector(Operator):
         ...     return qml.expval(qml.Projector(state, wires=[0, 1]))
         >>> zero_state = [0, 0]
         >>> circuit(zero_state)
-        1.
+        np.float64(1.0)
         >>> plusplus_state = np.array([1, 1, 1, 1]) / 2
         >>> circuit(plusplus_state)
-        0.25
+        np.float64(0.25000000000000067)
 
     """
 
-    is_hermitian = True
+    is_verified_hermitian = True
     name = "Projector"
     num_params = 1
     _queue_category = None
@@ -471,15 +469,15 @@ class Projector(Operator):
         will be different based on whether the input state is a basis state or a state vector.
         We cache the different types in private class variables so that:
 
+        >>> state = [0, 1]
+        >>> wires = 0
+        >>> basis_state = [0, 1]
+        >>> state_vector = [0, 0, 1, 0]
         >>> Projector(state, wires).__class__ is Projector(state, wires).__class__
         True
-        >>> type(Projector(state, wries)) == type(Projector(state, wires))
+        >>> type(Projector(state, wires)) == type(Projector(state, wires))
         True
         >>> isinstance(Projector(state, wires), type(Projector(state, wires)))
-        True
-        >>> Projector(basis_state, wires).__class__ is Projector._basis_state_type
-        True
-        >>> Projector(state_vector, wires).__class__ is Projector._state_vector_type
         True
 
         """
@@ -582,10 +580,10 @@ class BasisStateProjector(Projector, Operation):
         **Example**
 
         >>> BasisStateProjector.compute_matrix([0, 1])
-        [[0. 0. 0. 0.]
-         [0. 1. 0. 0.]
-         [0. 0. 0. 0.]
-         [0. 0. 0. 0.]]
+        array([[0., 0., 0., 0.],
+               [0., 1., 0., 0.],
+               [0., 0., 0., 0.],
+               [0., 0., 0., 0.]])
         """
         shape = (2 ** len(basis_state), 2 ** len(basis_state))
         if qml.math.get_interface(basis_state) == "jax":
@@ -624,7 +622,7 @@ class BasisStateProjector(Projector, Operation):
         **Example**
 
         >>> BasisStateProjector.compute_eigvals([0, 1])
-        [0. 1. 0. 0.]
+        array([0., 1., 0., 0.])
         """
         if qml.math.get_interface(basis_state) == "jax":
             idx = 0
@@ -731,7 +729,7 @@ class StateVectorProjector(Projector):
         'hi!'
         >>> dev = qml.device("default.qubit", wires=1)
         >>> @qml.qnode(dev)
-        >>> def circuit(state):
+        ... def circuit(state):
         ...     return qml.expval(qml.Projector(state, [0]))
         >>> print(qml.draw(circuit)([1, 0]))
         0: ───┤  <|0⟩⟨0|>
@@ -781,10 +779,10 @@ class StateVectorProjector(Projector):
         The projector of the state :math:`\frac{1}{\sqrt{2}}(\ket{01}+\ket{10})`
 
         >>> StateVectorProjector.compute_matrix([0, 1/np.sqrt(2), 1/np.sqrt(2), 0])
-        [[0. 0.  0.  0.]
-         [0. 0.5 0.5 0.]
-         [0. 0.5 0.5 0.]
-         [0. 0.  0.  0.]]
+        array([[0. , 0. , 0. , 0. ],
+               [0. , 0.5, 0.5, 0. ],
+               [0. , 0.5, 0.5, 0. ],
+               [0. , 0. , 0. , 0. ]])
         """
         return qml.math.outer(state_vector, qml.math.conj(state_vector))
 
@@ -813,8 +811,8 @@ class StateVectorProjector(Projector):
 
         **Example**
 
-        >>> StateVectorProjector.compute_eigvals([0, 0, 1, 0])
-        array([1, 0, 0, 0])
+        >>> StateVectorProjector.compute_eigvals(np.array([0, 0, 1, 0]))
+        array([1., 0., 0., 0.])
         """
         precision = qml.math.get_dtype_name(state_vector)[-2:]
         dtype = f"float{precision}" if precision in {"32", "64"} else "float64"

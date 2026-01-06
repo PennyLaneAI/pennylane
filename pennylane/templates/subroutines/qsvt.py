@@ -16,7 +16,7 @@ Contains the QSVT template and qsvt wrapper function.
 """
 
 import copy
-import math
+from collections import defaultdict
 from collections.abc import Sequence
 from functools import reduce
 from typing import Literal
@@ -25,7 +25,13 @@ import numpy as np
 import scipy
 from numpy.polynomial import Polynomial, chebyshev
 
-from pennylane import math, ops
+from pennylane import math, ops, pytrees
+from pennylane.decomposition import (
+    add_decomps,
+    adjoint_resource_rep,
+    register_resources,
+    resource_rep,
+)
 from pennylane.operation import Operation, Operator
 from pennylane.queuing import QueuingManager, apply
 from pennylane.typing import TensorLike
@@ -193,13 +199,11 @@ def qsvt(
 
         matrix = qml.matrix(circuit, wire_order=[0, 1, 2])()
 
-    .. code-block:: pycon
-
-        >>> print(matrix[:4, :4].real)
-        [[-0.1625  0.     -0.3793  0.    ]
-         [ 0.     -0.1625  0.      0.3793]
-         [-0.3793  0.      0.1625  0.    ]
-         [ 0.      0.3793  0.      0.1625]]
+    >>> print(matrix[:4, :4].real) # doctest: +SKIP
+    [[-0.1625  0.     -0.3793  0.    ]
+     [ 0.     -0.1625  0.      0.3793]
+     [-0.3793  0.      0.1625  0.    ]
+     [ 0.      0.3793  0.      0.1625]]
 
 
     .. details::
@@ -229,13 +233,11 @@ def qsvt(
 
             matrix = qml.matrix(circuit, wire_order=[0, 1, 2, 3])()
 
-        .. code-block:: pycon
-
-            >>> print(np.round(matrix[:4, :4], 4).real)
-            [[-0.7158  0.      0.      0.    ]
-             [ 0.     -0.975   0.      0.    ]
-             [ 0.      0.     -0.7158  0.    ]
-             [ 0.     -0.      0.     -0.975 ]]
+        >>> print(np.round(matrix[:4, :4], 4).real) # doctest: +SKIP
+        [[-0.7158  0.     -0.      0.    ]
+         [ 0.     -0.975   0.     -0.    ]
+         [ 0.      0.     -0.7158  0.    ]
+         [ 0.      0.      0.     -0.975 ]]
 
 
         Alternatively, if the input ``A`` is a matrix, the valid values for ``block_encoding`` are
@@ -259,13 +261,11 @@ def qsvt(
 
             matrix = qml.matrix(circuit, wire_order=[0, 1, 2, 3, 4])()
 
-        .. code-block:: pycon
-
-            >>> print(np.round(matrix[:4, :4], 4).real)
-            [[-0.0954  0.     -0.0056 -0.0054]
-             [ 0.     -0.0912 -0.     -0.    ]
-             [-0.0056  0.     -0.0788  0.0164]
-             [-0.0054 -0.      0.0164 -0.0842]]
+        >>> print(np.round(matrix[:4, :4], 4).real) # doctest: +SKIP
+        [[-0.0954  0.     -0.0056 -0.0054]
+         [-0.     -0.0912  0.      0.    ]
+         [-0.0056  0.     -0.0788  0.0164]
+         [-0.0054  0.      0.0164 -0.0842]]
 
         Note that for the FABLE block encoding to function correctly, it must comply with the following:
 
@@ -276,10 +276,8 @@ def qsvt(
         where :math:`d` is the maximum dimension of :math:`A` and :math:`\|A\|` is the 2-norm of :math:`A`.
         In the previous example this is satisfied since :math:`d = 4` and :math:`\|A\|^2 = 0.2`:
 
-        .. code-block:: pycon
-
-            >>> print(4* np.linalg.norm(A, ord='fro')**2)
-            0.8000000000000004
+        >>> print(4 * np.linalg.norm(A, ord='fro')**2)
+        0.80...
 
 
     """
@@ -362,14 +360,15 @@ class QSVT(Operation):
     >>> dev = qml.device("default.qubit", wires=[0])
     >>> block_encoding = qml.Hadamard(wires=0)  # note H is a block encoding of 1/sqrt(2)
     >>> phase_shifts = [qml.RZ(-2 * theta, wires=0) for theta in (1.23, -0.5, 4)]  # -2*theta to match convention
-    >>>
+
     >>> @qml.qnode(dev)
-    >>> def example_circuit():
+    ... def example_circuit():
     ...     qml.QSVT(block_encoding, phase_shifts)
     ...     return qml.expval(qml.Z(0))
-    >>>
+    ... 
+    
     >>> example_circuit()
-    0.5403023058681395
+    np.float64(0.5403...)
 
     We can visualize the circuit as follows:
 
@@ -380,7 +379,7 @@ class QSVT(Operation):
 
     >>> q_script = qml.tape.QuantumScript(ops=[qml.QSVT(block_encoding, phase_shifts)])
     >>> print(q_script.expand().draw(decimals=2))
-    0: ──RZ(-2.46)──H──RZ(1.00)──H†──RZ(-8.00)─┤
+    0: ──RZ(-2.46)──(H†)@RZ(1.00)@H──RZ(-8.00)─┤
 
     See the Usage Details section for more examples on implementing QSVT with different block
     encoding methods.
@@ -402,7 +401,7 @@ class QSVT(Operation):
         The following example applies the polynomial :math:`p(x) = -x + 0.5x^3 + 0.5x^5` to an
         arbitrary hermitian matrix using :class:`~.BlockEncode` for block encoding.
 
-        .. code-block::
+        .. code-block:: python
 
             poly = np.array([0, -1, 0, 0.5, 0, 0.5])
             angles = qml.poly_to_angles(poly, "QSVT")
@@ -421,11 +420,8 @@ class QSVT(Operation):
                 qml.QSVT(block_encode, projectors)
                 return qml.state()
 
-        .. code-block:: pycon
-
-            >>> circuit()
-            array([-0.194205  +0.66654551j, -0.097905  +0.35831418j,
-                    0.3319832 -0.51047262j, -0.09551437+0.01043668j])
+        >>> circuit() # doctest: +SKIP
+        array([-0.1942+0.6665j, -0.0979+0.3583j,  0.332 -0.5105j, -0.0955+0.0104j])
 
         If we want to transform the singular values of a linear
         combination of unitaries, e.g., a Hamiltonian, it can be block-encoded with operations
@@ -434,7 +430,7 @@ class QSVT(Operation):
         :math:`p(x) = -x + 0.5x^3 + 0.5x^5` to the Hamiltonian :math:`H = 0.1X_3 - 0.7X_3Z_4 - 0.2Z_3Y_4`,
         block-encoded with :class:`~.PrepSelPrep`.
 
-        .. code-block::
+        .. code-block:: python
 
             poly = np.array([0, -1, 0, 0.5, 0, 0.5])
             H = 0.1 * qml.X(2) - 0.7 * qml.X(2) @ qml.Z(3) - 0.2 * qml.Z(2)
@@ -455,17 +451,15 @@ class QSVT(Operation):
                 qml.QSVT(block_encode, projectors)
                 return qml.state()
 
-        .. code-block:: pycon
-
-            >>> circuit()
-            array([ 1.44000000e-01+1.01511390e-01j,  0.00000000e+00+0.00000000e+00j,
-                    4.32000000e-01+3.04534169e-01j,  0.00000000e+00+0.00000000e+00j,
-                    1.92998954e-17+5.00377363e-17j,  0.00000000e+00+0.00000000e+00j,
-                    5.59003542e-01+9.65699229e-02j,  0.00000000e+00+0.00000000e+00j,
-                    4.22566958e-01+7.30000000e-02j,  0.00000000e+00+0.00000000e+00j,
-                   -3.16925218e-01-5.47500000e-02j,  0.00000000e+00+0.00000000e+00j,
-                   -2.98448441e-17-3.10878188e-17j,  0.00000000e+00+0.00000000e+00j,
-                   -2.79501771e-01-4.82849614e-02j,  0.00000000e+00+0.00000000e+00j])
+        >>> circuit() # doctest: +SKIP
+        array([ 1.44000000e-01+1.01511390e-01j,  0.00000000e+00+0.00000000e+00j,
+                4.32000000e-01+3.04534169e-01j,  0.00000000e+00+0.00000000e+00j,
+                -4.14503215e-17+7.27402636e-17j,  0.00000000e+00+0.00000000e+00j,
+                5.59003542e-01+9.65699229e-02j,  0.00000000e+00+0.00000000e+00j,
+                4.22566958e-01+7.30000000e-02j,  0.00000000e+00+0.00000000e+00j,
+                -3.16925218e-01-5.47500000e-02j,  0.00000000e+00+0.00000000e+00j,
+                5.20486781e-18-4.91300614e-17j,  0.00000000e+00+0.00000000e+00j,
+                -2.79501771e-01-4.82849614e-02j,  0.00000000e+00+0.00000000e+00j])
     """
 
     grad_method = None
@@ -484,6 +478,8 @@ class QSVT(Operation):
     def _unflatten(cls, data, _) -> "QSVT":
         return cls(*data)
 
+    resource_keys = {"UA", "projectors"}
+
     def __init__(self, UA, projectors, id=None):
         if not isinstance(UA, Operator):
             raise ValueError("Input block encoding must be an Operator")
@@ -496,6 +492,13 @@ class QSVT(Operation):
         total_wires = Wires.all_wires([proj.wires for proj in projectors]) + Wires(UA.wires)
 
         super().__init__(wires=total_wires, id=id)
+
+    @property
+    def resource_params(self) -> dict:
+        return {
+            "UA": self.hyperparameters["UA"],
+            "projectors": self.hyperparameters["projectors"],
+        }
 
     def map_wires(self, wire_map: dict):
         # pylint: disable=protected-access
@@ -591,21 +594,23 @@ class QSVT(Operation):
         UA_adj = copy.copy(UA)
 
         for idx, op in enumerate(projectors[:-1]):
-            if QueuingManager.recording():
-                apply(op)
-            op_list.append(op)
-
             if idx % 2 == 0:
                 if QueuingManager.recording():
-                    apply(UA)
-                op_list.append(UA)
-
+                    apply(op)
+                op_list.append(op)
             else:
-                op_list.append(ops.adjoint(UA_adj))
+                # change_op_basis would queue internally when called in a queuing context.
+                op_list.append(ops.change_op_basis(UA, op, ops.adjoint(UA_adj)))
 
-        if QueuingManager.recording():
-            apply(projectors[-1])
-        op_list.append(projectors[-1])
+        if len(projectors) % 2 == 0:
+            if QueuingManager.recording():
+                apply(UA)
+            op_list.append(UA)
+
+        if len(projectors) > 1:
+            if QueuingManager.recording():
+                apply(projectors[-1])
+            op_list.append(projectors[-1])
 
         return op_list
 
@@ -657,6 +662,39 @@ class QSVT(Operation):
 
         return mat
 
+
+def _QSVT_resources(projectors, UA):
+    resources = defaultdict(int)
+
+    resources.update(
+        {
+            resource_rep(type(UA), **UA.resource_params): np.ceil((len(projectors) - 1) / 2),
+            adjoint_resource_rep(type(UA), base_params=UA.resource_params): (len(projectors) - 1)
+            // 2,
+        }
+    )
+
+    for op in projectors:
+        resources[resource_rep(type(op), **op.resource_params)] += 1
+
+    return dict(resources)
+
+
+@register_resources(_QSVT_resources)
+def _QSVT_decomposition(*_data, UA, projectors, **_kwargs):
+
+    for idx, op in enumerate(projectors[:-1]):
+        pytrees.unflatten(*pytrees.flatten(op))
+
+        if idx % 2 == 0:
+            pytrees.unflatten(*pytrees.flatten(UA))
+        else:
+            ops.adjoint(UA)
+
+    pytrees.unflatten(*pytrees.flatten(projectors[-1]))
+
+
+add_decomps(QSVT, _QSVT_decomposition)
 
 # pylint: disable=protected-access
 if QSVT._primitive is not None:
@@ -1071,7 +1109,7 @@ def transform_angles(angles, routine1, routine2):
         >>> qsp_angles = np.array([0.2, 0.3, 0.5])
         >>> qsvt_angles = qml.transform_angles(qsp_angles, "QSP", "QSVT")
         >>> print(qsvt_angles)
-        [-6.86858347  1.87079633 -0.28539816]
+        [-6.868...  1.870... -0.285...]
 
 
     .. details::
@@ -1174,7 +1212,7 @@ def poly_to_angles(poly, routine, angle_solver: Literal["root-finding"] = "root-
         >>> poly = np.array([0, 1.0, 0, -1/2, 0, 1/3])
         >>> qsvt_angles = qml.poly_to_angles(poly, "QSVT")
         >>> print(qsvt_angles)
-        [-5.49778714  1.57079633  1.57079633  0.5833829   1.61095884  0.74753829]
+        [-5.497...  1.570...  1.570...  0.583...   1.61...  0.747...]
 
 
     .. details::
@@ -1219,7 +1257,7 @@ def poly_to_angles(poly, routine, angle_solver: Literal["root-finding"] = "root-
         raise AssertionError("The polynomial must have at least degree 1.")
 
     for x in [-1, 0, 1]:
-        if math.abs(math.sum(coeff * x**i for i, coeff in enumerate(poly))) > 1:
+        if math.abs(sum(coeff * x**i for i, coeff in enumerate(poly))) > 1:
             # Check that |P(x)| ≤ 1. Only points -1, 0, 1 will be checked.
             raise AssertionError("The polynomial must satisfy that |P(x)| ≤ 1 for all x in [-1, 1]")
 

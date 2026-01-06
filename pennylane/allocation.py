@@ -49,24 +49,28 @@ else:
     allocate_prim.multiple_results = True
 
     @allocate_prim.def_impl
-    def _(*, num_wires, state: AllocateState = AllocateState.ZERO, restored=False):
+    def _allocate_primitive_impl(
+        *, num_wires, state: AllocateState = AllocateState.ZERO, restored=False
+    ):
         raise NotImplementedError("jaxpr containing qubit allocation cannot be executed.")
 
     # pylint: disable=unused-argument
     @allocate_prim.def_abstract_eval
-    def _(*, num_wires, state: AllocateState = AllocateState.ZERO, restored=False):
+    def _allocate_primitive_abstract_eval(
+        *, num_wires, state: AllocateState = AllocateState.ZERO, restored=False
+    ):
         return [jax.core.ShapedArray((), dtype=int) for _ in range(num_wires)]
 
     deallocate_prim = QmlPrimitive("deallocate")
     deallocate_prim.multiple_results = True
 
     @deallocate_prim.def_impl
-    def _(*wires):
+    def _deallocate_primitive_impl(*wires):
         raise NotImplementedError("jaxpr containing qubit deallocation cannot be executed.")
 
     # pylint: disable=unused-argument
     @deallocate_prim.def_abstract_eval
-    def _(*wires):
+    def _deallocate_primitive_abstract_eval(*wires):
         return []
 
 

@@ -35,27 +35,6 @@ from pennylane.workflow.qnode import _make_execution_config
 from pennylane.workflow.set_shots import set_shots
 
 
-def test_add_transform_deprecation():
-    """Test that the add_transform method raises a deprecation warning."""
-
-    dev = qml.device("default.qubit", wires=2)
-
-    @qml.qnode(dev)
-    def circuit(x):
-        qml.RX(x, wires=0)
-        return qml.expval(qml.PauliZ(0))
-
-    with pytest.warns(
-        PennyLaneDeprecationWarning,
-        match="The `qml.QNode.add_transform` method is deprecated and will be removed in v0.44",
-    ):
-        circuit.add_transform(
-            qml.transforms.core.TransformContainer(
-                qml.transform(qml.gradients.param_shift.expand_transform)
-            )
-        )
-
-
 def dummyfunc():
     """dummy func."""
     return None
@@ -402,7 +381,7 @@ class TestValidation:
 
         with pytest.raises(
             ValueError,
-            match="Differentiation method 5 must be a str, TransformDispatcher, or None",
+            match="Differentiation method 5 must be a str, Transform, or None",
         ):
             QNode(dummyfunc, dev, interface="autograd", diff_method=5)
 
@@ -437,7 +416,7 @@ class TestValidation:
             QuantumFunctionError,
             match="does not support backprop with requested circuit",
         ):
-            qml.grad(circuit, argnum=0)([0.5])
+            qml.grad(circuit, argnums=0)([0.5])
 
     def test_qnode_print(self):
         """Test that printing a QNode object yields the right information."""
@@ -898,32 +877,13 @@ class TestIntegration:
             qml.cond(m_0, qml.RY)(y, wires=1)
             return qml.apply(return_type), mv_return(op=m_0)
 
-        spy = mocker.spy(qml.defer_measurements, "_transform")
+        spy = mocker.spy(qml.defer_measurements, "_tape_transform")
         r1 = cry_qnode(first_par, sec_par)
         r2 = conditional_ry_qnode(first_par, sec_par)
 
         assert np.allclose(r1, r2[0])
         assert np.allclose(r2[1], mv_res(first_par))
         assert spy.call_count == 2
-
-    def test_dynamic_one_shot_if_mcm_unsupported(self):
-        """Test an error is raised if the dynamic one shot transform is a applied to a qnode with a device that
-        does not support mid circuit measurements.
-        """
-        dev = qml.device("default.mixed", wires=2)
-
-        with pytest.raises(
-            TypeError,
-            match="does not support mid-circuit measurements and/or one-shot execution mode",
-        ):
-
-            @qml.transforms.dynamic_one_shot
-            @qml.set_shots(100)
-            @qml.qnode(dev)
-            def _():
-                qml.RX(1.23, 0)
-                ms = [qml.measure(0) for _ in range(10)]
-                return qml.probs(op=ms)
 
     @pytest.mark.parametrize("basis_state", [[1, 0], [0, 1]])
     def test_sampling_with_mcm(self, basis_state, mocker):
@@ -1236,7 +1196,7 @@ class TestShots:
         assert len(circuit(0.8)) == 10
         with pytest.warns(
             PennyLaneDeprecationWarning,
-            match="Specifying 'shots' when calling a QNode is deprecated",
+            match="Specifying 'shots' when executing a QNode is deprecated",
         ):
             assert len(circuit(0.8, shots=2)) == 2
             assert len(circuit(0.8, shots=3178)) == 3178
@@ -1261,7 +1221,7 @@ class TestShots:
         # check that the circuit is temporary non-analytic
         with pytest.warns(
             PennyLaneDeprecationWarning,
-            match="Specifying 'shots' when calling a QNode is deprecated",
+            match="Specifying 'shots' when executing a QNode is deprecated",
         ):
             res1 = [circuit(shots=1) for _ in range(100)]
         assert np.std(res1) != 0.0
@@ -1429,7 +1389,7 @@ class TestShots:
 
         with warnings.catch_warnings():
             warnings.filterwarnings("error", message="Cached execution with finite shots detected")
-            qml.jacobian(circuit, argnum=0)(0.3)
+            qml.jacobian(circuit, argnums=0)(0.3)
 
     # pylint: disable=unexpected-keyword-arg
     @pytest.mark.parametrize(
@@ -1459,7 +1419,7 @@ class TestShots:
         # Override
         with pytest.warns(
             PennyLaneDeprecationWarning,
-            match="Specifying 'shots' when calling a QNode is deprecated",
+            match="Specifying 'shots' when executing a QNode is deprecated",
         ):
             tape = qml.workflow.construct_tape(qn)(0.1, 0.2, shots=shots)
         assert tape.shots.total_shots == total_shots
@@ -1479,7 +1439,7 @@ class TestShots:
         # Override
         with pytest.warns(
             PennyLaneDeprecationWarning,
-            match="Specifying 'shots' when calling a QNode is deprecated",
+            match="Specifying 'shots' when executing a QNode is deprecated",
         ):
             tape = qml.workflow.construct_tape(qn2)(0.1, 0.2, shots=shots)
         assert tape.shots.total_shots == total_shots
@@ -1522,7 +1482,7 @@ class TestShots:
         assert updated_qnode._shots == qml.measurements.Shots(75)
 
 
-class TestTransformProgramIntegration:
+class TestCompilePipelineIntegration:
     """Tests for the integration of the transform program with the qnode."""
 
     def test_transform_program_modifies_circuit(self):
@@ -1546,7 +1506,7 @@ class TestTransformProgramIntegration:
             qml.RX(x, 0)
             return qml.expval(qml.PauliZ(0))
 
-        assert circuit.transform_program[0].transform == just_pauli_x_out.transform
+        assert circuit.transform_program[0].tape_transform == just_pauli_x_out.tape_transform
 
         assert qml.math.allclose(circuit(0.1), -1)
 
@@ -1555,9 +1515,9 @@ class TestTransformProgramIntegration:
 
         assert tracker.totals["executions"] == 1
         assert tracker.history["resources"][0].gate_types["PauliX"] == 1
-        assert tracker.history["resources"][0].gate_types["RX"] == 0
+        assert "RX" not in tracker.history["resources"][0].gate_types
 
-    def tet_transform_program_modifies_results(self):
+    def test_transform_program_modifies_results(self):
         """Test integration with a transform that modifies the result output."""
 
         dev = qml.device("default.qubit", wires=2)
@@ -1571,13 +1531,13 @@ class TestTransformProgramIntegration:
 
             return (tape,), postprocessing
 
-        @partial(pin_result, requested_result=3.0)
+        @pin_result(requested_result=3.0)
         @qml.qnode(dev, interface=None, diff_method=None)
         def circuit(x):
             qml.RX(x, 0)
             return qml.expval(qml.PauliZ(0))
 
-        assert circuit.transform_program[0].transform == pin_result.transform
+        assert circuit.transform_program[0].tape_transform == pin_result.tape_transform
         assert circuit.transform_program[0].kwargs == {"requested_result": 3.0}
 
         assert qml.math.allclose(circuit(0.1), 3.0)
@@ -1652,8 +1612,8 @@ class TestTransformProgramIntegration:
         def shift_output(tape: QuantumScript, shift) -> tuple[QuantumScriptBatch, PostprocessingFn]:
             return (tape,), partial(add_shift, shift=shift)
 
-        @partial(shift_output, shift=1.0)
-        @partial(scale_output, factor=2.0)
+        @shift_output(shift=1.0)
+        @scale_output(factor=2.0)
         @qml.qnode(dev, interface=None, diff_method=None)
         def circuit1():
             return qml.expval(qml.PauliZ(0))
@@ -1661,8 +1621,8 @@ class TestTransformProgramIntegration:
         # first add one, then scale by 2.0.  Outer postprocessing transforms are applied first
         assert qml.math.allclose(circuit1(), 4.0)
 
-        @partial(scale_output, factor=2.0)
-        @partial(shift_output, shift=1.0)
+        @scale_output(factor=2.0)
+        @shift_output(shift=1.0)
         @qml.qnode(dev, interface=None, diff_method=None)
         def circuit2():
             return qml.expval(qml.PauliZ(0))
@@ -1685,7 +1645,7 @@ class TestTransformProgramIntegration:
                 qml.tape.QuantumScript(tape.operations, tape.measurements, shots=n),
             ), num_of_shots_from_sample
 
-        @partial(use_n_shots, n=100)
+        @use_n_shots(n=100)
         @qml.qnode(dev, interface=None, diff_method=None)
         def circuit():
             return qml.sample(wires=0)
@@ -1772,7 +1732,7 @@ class TestNewDeviceIntegration:
 
         with pytest.warns(
             PennyLaneDeprecationWarning,
-            match="Specifying 'shots' when calling a QNode is deprecated",
+            match="Specifying 'shots' when executing a QNode is deprecated",
         ):
             results = circuit(shots=10)  # pylint: disable=unexpected-keyword-arg
             assert qml.math.allclose(results, np.zeros((10, 2)))
@@ -1811,7 +1771,7 @@ class TestMCMConfiguration:
             _ = qml.measure(0, postselect=1)
             return qml.sample(wires=[0, 1])
 
-        with pytest.raises(ValueError, match="Invalid postselection mode 'foo'"):
+        with pytest.raises(ValueError, match="'foo' is not a valid postselect_mode"):
             _ = qml.set_shots(qml.QNode(f, dev, postselect_mode="foo"), shots=shots)
 
     @pytest.mark.jax
@@ -1824,8 +1784,8 @@ class TestMCMConfiguration:
         shots = 100
         postselect = 1
         param = jax.numpy.array(np.pi / 2)
-        spy = mocker.spy(qml.defer_measurements, "_transform")
-        spy_one_shot = mocker.spy(qml.dynamic_one_shot, "_transform")
+        spy = mocker.spy(qml.defer_measurements, "_tape_transform")
+        spy_one_shot = mocker.spy(qml.dynamic_one_shot, "_tape_transform")
 
         dev = qml.device("default.qubit", wires=4, seed=jax.random.PRNGKey(seed))
 
@@ -2152,7 +2112,7 @@ class TestSetShots:
         # Then try to pass shots parameter when calling the QNode
         with pytest.warns(
             PennyLaneDeprecationWarning,
-            match="Specifying 'shots' when calling a QNode is deprecated",
+            match="Specifying 'shots' when executing a QNode is deprecated",
         ):
             with pytest.warns(
                 UserWarning,
@@ -2182,7 +2142,7 @@ class TestSetShots:
         """Test set_shots with partial decorator syntax."""
         dev = qml.device("default.qubit", wires=1)
 
-        @partial(set_shots, shots=50)
+        @set_shots(shots=50)
         @qml.set_shots(10)
         @qml.qnode(dev)
         def circuit():
@@ -2253,7 +2213,7 @@ class TestSetShots:
         """Test set_shots with None for analytic mode."""
         dev = qml.device("default.qubit", wires=1)
 
-        @partial(set_shots, shots=None)
+        @set_shots(shots=None)
         @qml.set_shots(100)
         @qml.qnode(dev)
         def circuit():
@@ -2315,7 +2275,7 @@ class TestSetShots:
         """Test set_shots works correctly with measurements that require shots."""
         dev = qml.device("default.qubit", wires=2)
 
-        @partial(set_shots, shots=1000)
+        @set_shots(shots=1000)
         @qml.qnode(dev)
         def circuit():
             qml.Hadamard(wires=0)
@@ -2452,7 +2412,7 @@ class TestSetShots:
             warnings.simplefilter("always")
             with pytest.warns(
                 PennyLaneDeprecationWarning,
-                match="Specifying 'shots' when calling a QNode is deprecated",
+                match="Specifying 'shots' when executing a QNode is deprecated",
             ):
                 result = circuit.update(diff_method="parameter-shift")(shots=50)
         # Filter for targeted warnings (by type and/or message)
@@ -2469,7 +2429,7 @@ class TestSetShots:
         """Test that no warning is raised if set_shots is called but the shots value is unchanged."""
         dev = qml.device("default.qubit")
 
-        @partial(qml.set_shots, shots=100)
+        @qml.set_shots(shots=100)
         @qml.qnode(dev)
         def circuit():
             return qml.sample(qml.PauliZ(0))

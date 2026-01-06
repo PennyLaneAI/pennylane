@@ -98,7 +98,7 @@ class TTN(Operation):
 
         In general, the block takes D parameters and **must** have the following signature:
 
-        .. code-block:: python
+        .. code-block::
 
             unitary(parameter1, parameter2, ... parameterD, wires)
 

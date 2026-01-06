@@ -26,7 +26,7 @@ import pytest
 plt = pytest.importorskip("matplotlib.pyplot")
 
 from matplotlib.colors import to_rgba
-from matplotlib.patches import FancyArrow
+from matplotlib.patches import Arc, FancyArrow
 
 from pennylane.drawer import MPLDrawer
 from pennylane.math import allclose
@@ -776,6 +776,136 @@ class TestMeasure:
         assert arrow.get_linewidth() == 0.5
 
         plt.close("all")
+
+
+class TestPauliMeasure:
+    """Tests the pauli_measure method."""
+
+    def _verify_notch_dimensions(self, drawer, main_box, notch_box, notch_box_ratio):
+        assert notch_box.get_x() - drawer._pad - main_box.get_width() == main_box.get_x()
+        assert (
+            notch_box.get_y() + notch_box.get_height() / 2
+            == main_box.get_y() + main_box.get_height() / 2
+        )
+        assert notch_box.get_height() == drawer._box_length / 3 - 2 * drawer._notch_pad
+        assert notch_box.get_width() == drawer._box_length * notch_box_ratio - 2 * drawer._notch_pad
+
+    def test_pauli_measure_single_wire(self):
+        """Tests drawing a PauliMeasure on a single wires."""
+
+        drawer = MPLDrawer(1, {0: 0})
+        drawer.pauli_measure(0, "X", 0)
+
+        notch_box = drawer.ax.patches[0]
+        main_box = drawer.ax.patches[1]
+        arc = drawer.ax.patches[2]
+        arrow = drawer.ax.patches[3]
+        main_box_ratio = 4 / 5
+        notch_ratio = 1 - main_box_ratio
+
+        assert main_box.get_x() == -drawer._box_length / 2 + drawer._pad
+        assert main_box.get_y() == -drawer._box_length / 2 + drawer._pad
+        assert main_box.get_width() == drawer._box_length * main_box_ratio - 2 * drawer._pad
+        assert main_box.get_height() == drawer._box_length - 2 * drawer._pad
+
+        self._verify_notch_dimensions(drawer, main_box, notch_box, notch_ratio)
+
+        assert isinstance(arc, Arc)
+        assert arc.center == (
+            notch_box.get_x() + notch_box.get_width() / 2 + drawer._notch_pad,
+            notch_box.get_y() + notch_box.get_height() / 2,
+        )
+        assert arc.theta1 == 270
+        assert arc.theta2 == 90
+        assert arc.height == notch_box.get_height() + drawer._notch_pad * 2
+        assert arc.width == notch_box.get_width() + drawer._notch_pad * 2
+
+        assert isinstance(arrow, FancyArrow)
+        assert len(drawer.ax.texts) == 1
+        assert drawer.ax.texts[0].get_position() == (
+            main_box.get_x() + main_box.get_width() / 2,
+            main_box.get_y() + main_box.get_height() / 2,
+        )
+        assert drawer.ax.texts[0].get_text() == "X"
+
+    def test_pauli_measure_multi_wire(self):
+        """Tests drawing a PauliMeasure on multiple wires."""
+
+        drawer = MPLDrawer(1, {0: 0, 1: 1})
+        drawer.pauli_measure(0, "XY", [0, 1])
+
+        notch_box = drawer.ax.patches[0]
+        main_box = drawer.ax.patches[1]
+        arc = drawer.ax.patches[2]
+        arrow = drawer.ax.patches[3]
+        main_box_ratio = 4 / 5
+        notch_ratio = 1 - main_box_ratio
+
+        assert main_box.get_x() == -drawer._box_length / 2 + drawer._pad
+        assert main_box.get_y() == -drawer._box_length / 2 + drawer._pad
+        assert main_box.get_width() == drawer._box_length * main_box_ratio - 2 * drawer._pad
+        assert main_box.get_height() == 1 + drawer._box_length - 2 * drawer._pad
+
+        self._verify_notch_dimensions(drawer, main_box, notch_box, notch_ratio)
+
+        assert isinstance(arc, Arc)
+        assert arc.center == (
+            notch_box.get_x() + notch_box.get_width() / 2 + drawer._notch_pad,
+            notch_box.get_y() + notch_box.get_height() / 2,
+        )
+        assert arc.theta1 == 270
+        assert arc.theta2 == 90
+        assert arc.height == notch_box.get_height() + drawer._notch_pad * 2
+        assert arc.width == notch_box.get_width() + drawer._notch_pad * 2
+
+        assert isinstance(arrow, FancyArrow)
+        assert len(drawer.ax.texts) == 2
+        assert drawer.ax.texts[0].get_position() == (main_box.get_x() + main_box.get_width() / 2, 0)
+        assert drawer.ax.texts[0].get_text() == "X"
+        assert drawer.ax.texts[1].get_position() == (main_box.get_x() + main_box.get_width() / 2, 1)
+        assert drawer.ax.texts[1].get_text() == "Y"
+
+    def test_pauli_measure_skip_wires(self):
+        """Tests PauliMeasure that skips over wires, make sure that the Pauli strings
+        are labeled on the measured wires as opposed to the skipped over wires."""
+
+        drawer = MPLDrawer(1, {0: 0, 1: 1, 2: 2})
+        # wire 1 is covered by the PauliMeasure box but not actually measured.
+        drawer.pauli_measure(0, "XY", [0, 2])
+
+        notch_box = drawer.ax.patches[0]
+        main_box = drawer.ax.patches[1]
+        main_box_ratio = 4 / 5
+        notch_ratio = 1 - main_box_ratio
+
+        assert main_box.get_x() == -drawer._box_length / 2 + drawer._pad
+        assert main_box.get_y() == -drawer._box_length / 2 + drawer._pad
+        assert main_box.get_width() == drawer._box_length * main_box_ratio - 2 * drawer._pad
+        assert main_box.get_height() == 2 + drawer._box_length - 2 * drawer._pad
+
+        self._verify_notch_dimensions(drawer, main_box, notch_box, notch_ratio)
+
+        assert len(drawer.ax.texts) == 2
+        assert drawer.ax.texts[0].get_position() == (main_box.get_x() + main_box.get_width() / 2, 0)
+        assert drawer.ax.texts[0].get_text() == "X"
+        assert drawer.ax.texts[1].get_position() == (main_box.get_x() + main_box.get_width() / 2, 2)
+        assert drawer.ax.texts[1].get_text() == "Y"
+
+    @pytest.mark.parametrize("postselect", [0, 1])
+    def test_pauli_measure_postselect(self, postselect):
+        """Tests drawing a PauliMeasure with postselection."""
+
+        drawer = MPLDrawer(1, {0: 0})
+        drawer.pauli_measure(0, "X", 0, postselect=postselect)
+
+        arc = drawer.ax.patches[2]
+
+        assert isinstance(arc, Arc)
+        assert arc.theta1 == 320
+        assert arc.theta2 == 90
+
+        assert len(drawer.ax.texts) == 2
+        assert drawer.ax.texts[1].get_text() == str(postselect)
 
 
 class TestAutosize:

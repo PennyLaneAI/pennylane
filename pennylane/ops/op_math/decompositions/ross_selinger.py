@@ -15,7 +15,7 @@
 import math
 
 import pennylane as qml
-from pennylane.compiler.compiler import AvailableCompilers
+from pennylane.compiler.compiler import AvailableCompilers, active_compiler
 from pennylane.ops.op_math.decompositions.grid_problems import GridIterator
 from pennylane.ops.op_math.decompositions.norm_solver import _solve_diophantine
 from pennylane.ops.op_math.decompositions.normal_forms import (
@@ -151,10 +151,14 @@ def _jit_rs_decomposition(wire, decomposition_info):
     leading_t_cond(wire)
     ops.append(leading_t_cond.operation)
 
+    active_jit = active_compiler()
+    compilers = AvailableCompilers.names_entrypoints
+    ops_loader = compilers[active_jit]["ops"].load()
+
     # Middle sequence of HT or SHT syllables.
     if syllable_sequence.shape[0] > 0:
 
-        @qml.for_loop(start=0, stop=syllable_sequence.shape[0])
+        @ops_loader.for_loop(0, syllable_sequence.shape[0], 1)
         def syllable_sequence_loop(i):
             is_HT = syllable_sequence[i]
 
@@ -221,10 +225,7 @@ def rs_decomposition(
 
     Suppose one would like to decompose :class:`~.RZ` with rotation angle :math:`\phi = \pi/3`:
 
-    .. code-block:: python3
-
-        import numpy as np
-        import pennylane as qml
+    .. code-block:: python
 
         op  = qml.RZ(np.pi/3, wires=0)
         ops = qml.ops.rs_decomposition(op, epsilon=1e-3)
@@ -323,12 +324,11 @@ def rs_decomposition(
     if queuing := QueuingManager.recording():
         QueuingManager.remove(op)
 
-    if not is_qjit:
-        if (op_wire := op.wires[0]) != 0:
-            [new_tape], _ = qml.map_wires(new_tape, wire_map={0: op_wire}, queue=True)
-        else:
-            if queuing:
-                _ = [qml.apply(op) for op in new_tape.operations]
+    if not is_qjit and (op_wire := op.wires[0]) != 0:
+        [new_tape], _ = qml.map_wires(new_tape, wire_map={0: op_wire}, queue=True)
+    else:
+        if queuing:
+            _ = [qml.apply(op) for op in new_tape.operations]
 
     interface = qml.math.get_interface(angle)
     phase += qml.math.mod(g_phase, 2) * math.pi

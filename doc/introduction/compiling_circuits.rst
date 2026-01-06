@@ -21,8 +21,8 @@ In addition to quantum circuit transforms, PennyLane also
 supports experimental just-in-time compilation, via the :func:`~.qjit` decorator and
 `Catalyst <https://github.com/pennylaneai/catalyst>`__. This is more general, and
 supports full hybrid compilation --- compiling both the classical and quantum components
-of your workflow into a binary that can be run close to the accelerators.
-that you are using. More details can be found in :doc:`compiling workflows </introduction/compiling_workflows>`.
+of your workflow into a binary that can be run close to the accelerators that you are using. 
+More details can be found in :doc:`compiling workflows </introduction/compiling_workflows>`.
 
 Compilation transforms for circuit optimization
 -----------------------------------------------
@@ -38,7 +38,6 @@ other PennyLane objects.
     ~pennylane.transforms.cancel_inverses
     ~pennylane.transforms.commute_controlled
     ~pennylane.transforms.merge_amplitude_embedding
-    ~pennylane.transforms.cancel_inverses
     ~pennylane.transforms.merge_rotations
     ~pennylane.transforms.pattern_matching
     ~pennylane.transforms.remove_barrier
@@ -98,11 +97,10 @@ controlled gates and cancel adjacent inverses, we could do:
 .. code-block:: python
 
     from pennylane.transforms import commute_controlled, cancel_inverses
-    from functools import partial
 
     pipeline = [commute_controlled, cancel_inverses]
 
-    @partial(qml.compile, pipeline=pipeline)
+    @qml.compile(pipeline=pipeline)
     @qml.qnode(dev)
     def qfunc(x, y, z):
         qml.Hadamard(wires=0)
@@ -159,12 +157,11 @@ a pre-defined set of gates:
 .. code-block:: python
     
     from pennylane.transforms import decompose
-    from functools import partial
 
     dev = qml.device('default.qubit')
     allowed_gates = {qml.Toffoli, qml.RX, qml.RZ, qml.GlobalPhase}
 
-    @partial(decompose, gate_set=allowed_gates)
+    @decompose(gate_set=allowed_gates)
     @qml.qnode(dev)
     def circuit():
         qml.Hadamard(wires=[0])
@@ -187,10 +184,9 @@ or two-qubit gates using a rule:
 
 .. code-block:: python
 
-    # functions in gate_set can only be used with graph decomposition system disabled
     qml.decomposition.disable_graph()
 
-    @partial(decompose, gate_set=lambda op: len(op.wires) <= 2) 
+    @decompose(gate_set={"H", "T", "CNOT"}, stopping_condition=lambda op: len(op.wires) <= 2)
     @qml.qnode(dev)
     def circuit():
         qml.Toffoli(wires=[0,1,2])
@@ -274,6 +270,14 @@ enabled.
 
 Default behaviour with custom decompositions
 ********************************************
+
+.. warning::
+    The keyword argument for defining custom quantum gate decompositions, ``custom_decomps``,
+    has been deprecated and will be removed in v0.45. Instead, to specify custom decompositions for
+    your operators, use the :func:`qml.transforms.decompose <pennylane.transforms.decompose>` transform with the new
+    graph-based system enabled via :func:`qml.decomposition.enable_graph() <pennylane.decomposition.enable_graph>`.
+    The details on how to define your decomposition rules using the graph decomposition system are described
+    in :ref:`the next section <custom_decomps_with_graph>`.
 
 For example, suppose we would like to implement the following QNode:
 
@@ -359,6 +363,8 @@ be used.
     To have better control over custom decompositions, consider using the graph 
     decompositions system functionality outlined in the next section.
 
+.. _custom_decomps_with_graph:
+
 Custom decompositions with qml.decomposition.enable_graph
 *********************************************************
 
@@ -398,8 +404,7 @@ With the resources registered, this can be used with ``fixed_decomps`` or ``alt_
 
 .. code-block:: python
 
-    @partial(
-        qml.transforms.decompose, 
+    @qml.transforms.decompose( 
         fixed_decomps={qml.CNOT: my_cnot},
         gate_set={qml.H, qml.S, qml.T, qml.CZ},
     )
@@ -431,8 +436,7 @@ type:
         qml.RY(np.pi/2, wires[1])
         qml.Z(wires[1])
 
-    @partial(
-        qml.transforms.decompose,
+    @qml.transforms.decompose(
         gate_set={qml.CZ, qml.H, qml.Z, qml.RY},
         alt_decomps={qml.CNOT: [my_cnot1, my_cnot2]},
     )

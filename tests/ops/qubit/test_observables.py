@@ -965,9 +965,9 @@ def test_hermitian_labelling_w_cache():
     op = qml.Hermitian(X, wires=0)
 
     cache = {"matrices": [Z]}
-    assert op.label(cache=cache) == "𝓗(M1)"
+    assert op.label(cache=cache) == "𝓗\n(M1)"
     assert qml.math.allclose(cache["matrices"][1], X)
 
     cache = {"matrices": [Z, Y, X]}
-    assert op.label(cache=cache) == "𝓗(M2)"
+    assert op.label(cache=cache) == "𝓗\n(M2)"
     assert len(cache["matrices"]) == 3

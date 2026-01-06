@@ -19,7 +19,7 @@ import copy
 
 import numpy as np
 
-from pennylane import ops
+from pennylane import ops, pytrees
 from pennylane.decomposition import (
     add_decomps,
     adjoint_resource_rep,
@@ -56,10 +56,10 @@ class Reflection(Operation):
 
     This example shows how to apply the reflection :math:`-I + 2|+\rangle \langle +|` to the state :math:`|1\rangle`.
 
-    .. code-block::
+    .. code-block:: python
 
         U = qml.Hadamard(wires=0)
-        dev = qml.device(‘default.qubit’)
+        dev = qml.device('default.qubit')
 
         @qml.qnode(dev)
         def circuit():
@@ -67,14 +67,14 @@ class Reflection(Operation):
             qml.Reflection(U)
             return qml.state()
 
-    >>> circuit()
-    tensor([1.+6.123234e-17j, 0.-6.123234e-17j], requires_grad=True)
+    >>> circuit() # doctest: +SKIP
+    array([1.+6.123234e-17j, 0.-6.123234e-17j])
 
     For cases when :math:`U` comprises many operations, you can create a quantum
     function containing each operation, one per line, then decorate the quantum
     function with ``@qml.prod``:
 
-    .. code-block::
+    .. code-block:: python
 
         @qml.prod
         def U(wires):
@@ -86,9 +86,9 @@ class Reflection(Operation):
             qml.Reflection(U([0, 1]))
             return qml.state()
 
-    >>> circuit()
-    tensor([-0.00249792-6.13852933e-17j,  0.04991671+3.05651685e-18j,
-         0.99750208+6.10793866e-17j,  0.04991671+3.05651685e-18j], requires_grad=True)
+    >>> circuit() # doctest: +SKIP
+    array([-0.0025-6.1385e-17j,  0.0499+3.0565e-18j,  0.9975+6.1079e-17j,
+            0.0499+3.0565e-18j])
 
     .. details::
         :title: Theory
@@ -271,7 +271,7 @@ def _reflection_decomposition(*parameters, wires=None, **hyperparameters):
         ops.PhaseShift(alpha, wires=wires)
         ops.PauliX(wires=wires)
 
-    U._unflatten(*U._flatten())  # pylint: disable=protected-access
+    pytrees.unflatten(*pytrees.flatten(U))
 
 
 add_decomps(Reflection, _reflection_decomposition)

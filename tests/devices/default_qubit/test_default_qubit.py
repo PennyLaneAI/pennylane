@@ -158,9 +158,7 @@ class TestSupportsDerivatives:
         assert dev.supports_jvp(config, circuit=circuit) is False
         assert dev.supports_vjp(config, circuit=circuit) is False
 
-        circuit = qml.tape.QuantumScript(
-            [qml.measurements.MidMeasureMP(0)], [qml.expval(qml.PauliZ(0))]
-        )
+        circuit = qml.tape.QuantumScript([qml.ops.MidMeasure(0)], [qml.expval(qml.PauliZ(0))])
         assert dev.supports_derivatives(config, circuit=circuit) is False
         assert dev.supports_jvp(config, circuit=circuit) is False
         assert dev.supports_vjp(config, circuit=circuit) is False
@@ -1887,7 +1885,7 @@ class TestPostselection:
         if use_jit and (interface != "jax" or isinstance(shots, tuple)):
             pytest.skip("Cannot JIT in non-JAX interfaces, or with shot vectors.")
 
-        if isinstance(mp, qml.measurements.ClassicalShadowMP):
+        if isinstance(mp, qml.measurements.ShadowExpvalMP):
             mp.seed = seed
 
         dev = qml.device("default.qubit", seed=seed)

@@ -361,10 +361,10 @@ class TestProperties:
             """Dummy operator."""
 
             num_wires = 1
-            is_hermitian = value
+            is_verified_hermitian = value
 
         op: Pow = power_method(base=DummyOp(1), z=2.5)
-        assert op.is_hermitian is value
+        assert op.is_verified_hermitian is value
 
     def test_queue_category(self, power_method):
         """Test that the queue category `"_ops"` carries over."""
@@ -555,7 +555,7 @@ class TestMiscMethods:
         op = Pow(base, -1.2)
 
         cache = {"matrices": []}
-        assert op.label(decimals=2, cache=cache) == "U(M0)⁻¹⋅²"
+        assert op.label(decimals=2, cache=cache) == "U\n(M0)⁻¹⋅²"
         assert len(cache["matrices"]) == 1
 
     def test_eigvals(self):

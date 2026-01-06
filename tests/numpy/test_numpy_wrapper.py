@@ -444,7 +444,7 @@ class TestAutogradIntegration:
         def cost(x):
             return np.sum(np.sin(x))
 
-        grad_fn = qml.grad(cost, argnum=[0])
+        grad_fn = qml.grad(cost, argnums=[0])
         arr1 = np.array([0.0, 1.0, 2.0])
 
         res = grad_fn(arr1)
@@ -458,7 +458,7 @@ class TestAutogradIntegration:
         def cost(x):
             return np.sum(np.sin(x))
 
-        grad_fn = qml.grad(cost, argnum=[0])
+        grad_fn = qml.grad(cost, argnums=[0])
         arr1 = np.array([0.0, 1.0, 2.0], requires_grad=False)
 
         with pytest.raises(pennylane.exceptions.NonDifferentiableError, match="non-differentiable"):

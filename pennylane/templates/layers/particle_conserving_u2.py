@@ -14,10 +14,13 @@
 r"""
 Contains the hardware-efficient ParticleConservingU2 template.
 """
-from pennylane import math
+from pennylane import capture, math
+from pennylane.control_flow import for_loop
+from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.operation import Operation
 from pennylane.ops import CNOT, CRX, RZ
 from pennylane.templates.embeddings import BasisEmbedding
+from pennylane.wires import Wires, WiresLike
 
 
 def u2_ex_gate(phi, wires=None):
@@ -154,6 +157,8 @@ class ParticleConservingU2(Operation):
 
     grad_method = None
 
+    resource_keys = {"num_wires", "n_layers"}
+
     def __init__(self, weights, wires, init_state=None, id=None):
         if len(wires) < 2:
             raise ValueError(
@@ -181,6 +186,10 @@ class ParticleConservingU2(Operation):
     def num_params(self):
         return 1
 
+    @property
+    def resource_params(self) -> dict:
+        return {"num_wires": len(self.wires), "n_layers": math.shape(self.parameters[0])[0]}
+
     @staticmethod
     def compute_decomposition(weights, wires, init_state):  # pylint: disable=arguments-differ
         r"""Representation of the ParticleConservingU2operator as a product of other operators.
@@ -204,14 +213,16 @@ class ParticleConservingU2(Operation):
 
         **Example**
 
-        >>> torch.tensor([[0.3, 1., 0.2]])
-        >>> qml.ParticleConservingU2.compute_decomposition(weights, wires=["a", "b"], init_state=[0, 1])
-        [BasisEmbedding(wires=['a', 'b']),
-         RZ(tensor(0.3000), wires=['a']),
-         RZ(tensor(1.), wires=['b']),
-         CNOT(wires=['a', 'b']),
-         CRX(tensor(0.4000), wires=['b', 'a']),
-         CNOT(wires=['a', 'b'])]
+        >>> weights = torch.tensor([[0.3, 1., 0.2]])
+        >>> ops = qml.ParticleConservingU2.compute_decomposition(weights, wires=["a", "b"], init_state=[0, 1])
+        >>> from pprint import pprint
+        >>> pprint(ops)
+        [BasisEmbedding(array([0, 1]), wires=['a', 'b']),
+        RZ(tensor(0.3000), wires=['a']),
+        RZ(tensor(1.), wires=['b']),
+        CNOT(wires=['a', 'b']),
+        CRX(0.4000000059604645, wires=['b', 'a']),
+        CNOT(wires=['a', 'b'])]
         """
         nm_wires = [wires[l : l + 2] for l in range(0, len(wires) - 1, 2)]
         nm_wires += [wires[l : l + 2] for l in range(1, len(wires) - 1, 2)]
@@ -244,3 +255,63 @@ class ParticleConservingU2(Operation):
                 f"The number of qubits must be greater than one; got 'n_wires' = {n_wires}"
             )
         return n_layers, 2 * n_wires - 1
+
+
+def _particle_conserving_u2_resources(num_wires: int, n_layers: int):
+    # number of pairs of even-indexed of wires
+    num_nm_wires = num_wires - 1
+
+    return {
+        resource_rep(BasisEmbedding, num_wires=num_wires): 1,
+        resource_rep(RZ): n_layers * num_wires,
+        resource_rep(CNOT): 2 * num_nm_wires * n_layers,
+        resource_rep(CRX): num_nm_wires * n_layers,
+    }
+
+
+@register_resources(_particle_conserving_u2_resources)
+def _particle_conserving_u2_decomposition(weights: list, wires: WiresLike, init_state: tuple[int]):
+    nm_wires = [wires[l : l + 2] for l in range(0, len(wires) - 1, 2)]
+    nm_wires += [wires[l : l + 2] for l in range(1, len(wires) - 1, 2)]
+    n_layers = math.shape(weights)[0]
+
+    if isinstance(wires, Wires):
+        wires = wires.labels
+        # If we are using capture, then it is going to be problematic to use Wires.
+        # Instead, we need to use the wire labels. Here we have a collection of Wires,
+        # and this line goes through each of them and turns them into their labels.
+        nm_wires = list(map(lambda w: w.labels if isinstance(w, Wires) else w, nm_wires))
+
+    if capture.enabled():
+        nm_wires, weights, wires, init_state = (
+            math.array(nm_wires, like="jax"),
+            math.array(weights, like="jax"),
+            math.array(wires, like="jax"),
+            math.array(init_state, like="jax"),
+        )
+
+    BasisEmbedding(init_state, wires=wires)
+
+    @for_loop(n_layers)
+    def layers_loop(l):
+
+        @for_loop(len(wires))
+        def rz_loop(j):
+            wires_ = wires[j]
+            RZ(weights[l, j], wires=wires_)
+
+        rz_loop()  # pylint: disable=no-value-for-parameter
+
+        @for_loop(len(nm_wires))
+        def nm_loop(i):
+            wires_ = nm_wires[i]
+            CNOT(wires=wires_)
+            CRX(2 * weights[l, len(wires_) + i], wires=wires_[::-1])
+            CNOT(wires=wires_)
+
+        nm_loop()  # pylint: disable=no-value-for-parameter
+
+    layers_loop()  # pylint: disable=no-value-for-parameter
+
+
+add_decomps(ParticleConservingU2, _particle_conserving_u2_decomposition)

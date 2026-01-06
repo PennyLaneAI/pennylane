@@ -13,12 +13,15 @@
 # limitations under the License.
 """For loop."""
 import functools
+import logging
+import warnings
 from typing import Literal
 
 from pennylane import capture
 from pennylane.capture import FlatFn, enabled
 from pennylane.capture.dynamic_shapes import register_custom_staging_rule
 from pennylane.compiler.compiler import AvailableCompilers, active_compiler
+from pennylane.exceptions import CaptureWarning
 
 from ._loop_abstract_axes import (
     add_abstract_shapes,
@@ -27,6 +30,9 @@ from ._loop_abstract_axes import (
     loop_determine_abstracted_axes,
     validate_no_resizing_returns,
 )
+
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
 
 
 def for_loop(
@@ -233,11 +239,6 @@ def for_loop(
     if stop is None:
         start, stop = 0, start
 
-    if active_jit := active_compiler():
-        compilers = AvailableCompilers.names_entrypoints
-        ops_loader = compilers[active_jit]["ops"].load()
-        return ops_loader.for_loop(start, stop, step)
-
     # if there is no active compiler, simply interpret the for loop
     # via the Python interpreter.
     def _decorator(body_fn):
@@ -280,7 +281,13 @@ def _get_for_loop_qfunc_prim():
 
     # pylint: disable=too-many-arguments
     @for_loop_prim.def_impl
-    def _(start, stop, step, *args, jaxpr_body_fn, consts_slice, args_slice, abstract_shapes_slice):
+    def _impl(
+        start, stop, step, *args, jaxpr_body_fn, consts_slice, args_slice, abstract_shapes_slice
+    ):
+        # Convert tuples back to slices (tuples are used for JAX 0.7.1 hashability)
+        consts_slice = slice(*consts_slice)
+        args_slice = slice(*args_slice)
+        abstract_shapes_slice = slice(*abstract_shapes_slice)
 
         consts = args[consts_slice]
         init_state = args[args_slice]
@@ -296,7 +303,9 @@ def _get_for_loop_qfunc_prim():
 
     # pylint: disable=unused-argument
     @for_loop_prim.def_abstract_eval
-    def _(start, stop, step, *args, args_slice, abstract_shapes_slice, **_):
+    def __abstract_eval(start, stop, step, *args, args_slice, abstract_shapes_slice, **_):
+        args_slice = slice(*args_slice)
+        abstract_shapes_slice = slice(*abstract_shapes_slice)
         return args[abstract_shapes_slice] + args[args_slice]
 
     return for_loop_prim
@@ -364,7 +373,7 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
 
         flat_fn = FlatFn(self.body_fn, in_tree=in_tree)
 
-        if abstracted_axes:
+        if abstracted_axes:  # pragma: no cover
             new_body_fn = add_abstract_shapes(flat_fn, shape_locations)
             dummy_init_state = [get_dummy_arg(arg) for arg in flat_args]
             abstracted_axes = ({},) + abstracted_axes  # add in loop index
@@ -376,11 +385,11 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
             jaxpr_body_fn = jax.make_jaxpr(new_body_fn, abstracted_axes=abstracted_axes)(
                 0, *dummy_init_state
             )
-        except ValueError as e:
+        except ValueError as e:  # pragma: no cover
             handle_jaxpr_error(e, (self.body_fn,), self.allow_array_resizing, "for_loop")
 
         error_msg = validate_no_resizing_returns(jaxpr_body_fn.jaxpr, shape_locations, "for_loop")
-        if error_msg:
+        if error_msg:  # pragma: no cover
             if allow_array_resizing == "auto":
                 # didn't work, so try with array resizing.
                 return self._get_jaxpr(init_state, allow_array_resizing=True)
@@ -393,10 +402,22 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
 
         import jax  # pylint: disable=import-outside-toplevel
 
-        jaxpr_body_fn, abstract_shapes, flat_args, out_tree = self._get_jaxpr(
-            init_state, allow_array_resizing=self.allow_array_resizing
-        )
-
+        try:
+            jaxpr_body_fn, abstract_shapes, flat_args, out_tree = self._get_jaxpr(
+                init_state, allow_array_resizing=self.allow_array_resizing
+            )
+        except Exception as e:  # pylint: disable=broad-exception-caught
+            logger.exception(e, exc_info=True)
+            warnings.warn(
+                (
+                    "Structured capture of qml.for_loop failed with error:"
+                    f"\n\n{e}.\n\nFull error logged at exception level. "
+                    "Use qml.logging.enable_logging() to view."
+                    "\nFalling back to unrolled Python for loop."
+                ),
+                CaptureWarning,
+            )
+            return self._call_capture_disabled(*init_state)
         for_loop_prim = _get_for_loop_qfunc_prim()
 
         consts_slice = slice(0, len(jaxpr_body_fn.consts))
@@ -415,10 +436,18 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
             args_slice=args_slice,
             abstract_shapes_slice=abstract_shapes_slice,
         )
+
         results = results[-out_tree.num_leaves :]
         return jax.tree_util.tree_unflatten(out_tree, results)
 
     def __call__(self, *init_state):
+
+        if active_jit := active_compiler():
+            compilers = AvailableCompilers.names_entrypoints
+            ops_loader = compilers[active_jit]["ops"].load()
+            return ops_loader.for_loop(
+                self.start, self.stop, self.step, allow_array_resizing=self.allow_array_resizing
+            )(self.body_fn)(*init_state)
 
         start_equals_stop = (
             isinstance(self.stop, int) and isinstance(self.start, int) and self.stop == self.start

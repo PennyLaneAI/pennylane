@@ -14,6 +14,7 @@
 """
 Contains the drawing function.
 """
+
 from __future__ import annotations
 
 import warnings
@@ -47,7 +48,7 @@ def draw(
     max_length=100,
     show_matrices=True,
     show_wire_labels=True,
-    level: None | Literal["top", "user", "device", "gradient"] | int | slice = "gradient",
+    level: Literal["top", "user", "device", "gradient"] | int | slice = "gradient",
 ):
     r"""Create a function that draws the given QNode or quantum function.
 
@@ -61,7 +62,7 @@ def draw(
         max_length (int): Maximum string width (columns) when printing the circuit. Defaults to ``100``.
         show_matrices (bool): Show matrix valued parameters below all circuit diagrams. Defaults to ``False``.
         show_wire_labels (bool): Whether or not to show the wire labels. Defaults to ``True``.
-        level (None, str, int, slice): An indication of what transforms to apply before drawing. Defaults to ``"gradient"``.
+        level (str, int, slice): An indication of what transforms to apply before drawing. Defaults to ``"gradient"``.
             Check :func:`~.workflow.get_transform_program` for more information on the allowed values and usage details of
             this argument.
 
@@ -175,10 +176,9 @@ def draw(
 
         .. code-block:: python
 
-            from functools import partial
             from pennylane import numpy as np
 
-            @partial(qml.gradients.param_shift, shifts=[(0.1,)])
+            @qml.gradients.param_shift(shifts=[(0.1,)])
             @qml.qnode(qml.device('default.qubit', wires=1))
             def transformed_circuit(x):
                 qml.RX(x, wires=0)
@@ -344,7 +344,7 @@ def _draw_qnode(
     max_length=100,
     show_matrices=True,
     show_wire_labels=True,
-    level: None | Literal["top", "user", "device", "gradient"] | int | slice = "gradient",
+    level: Literal["top", "user", "device", "gradient"] | int | slice = "gradient",
 ):
     @wraps(qnode)
     def wrapper(*args, **kwargs):
@@ -398,7 +398,7 @@ def draw_mpl(
     *,
     max_length: int | None = None,
     fig=None,
-    level: None | Literal["top", "user", "device", "gradient"] | int | slice = "gradient",
+    level: Literal["top", "user", "device", "gradient"] | int | slice = "gradient",
     **kwargs,
 ):
     r"""Draw a qnode with matplotlib
@@ -431,7 +431,7 @@ def draw_mpl(
         show_wire_labels (bool): Whether or not to show the wire labels.
         active_wire_notches (bool): whether or not to add notches indicating active wires.
             Defaults to ``True``.
-        level (None, str, int, slice): An indication of what transforms to apply before drawing.
+        level (str, int, slice): An indication of what transforms to apply before drawing.
             Check :func:`~.workflow.get_transform_program` for more information on the allowed values and usage details of
             this argument.
 
@@ -784,7 +784,6 @@ def draw_mpl(
         qnode = qnode.user_function
 
     if hasattr(qnode, "construct"):
-
         return _draw_mpl_qnode(
             qnode,
             wire_order=wire_order,

@@ -34,7 +34,7 @@ from .general_shift_rules import (
     generate_shifted_tapes,
 )
 from .gradient_transform import find_and_validate_gradient_methods
-from .parameter_shift import _get_operation_recipe
+from .parameter_shift import _expand_transform_param_shift, _get_operation_recipe
 
 
 def _process_jacs(jac, qhess):
@@ -438,7 +438,24 @@ def contract_qjac_with_cjac(qhess, cjac, tape):
     return hessians[0] if has_single_arg else tuple(hessians)
 
 
-@partial(transform, classical_cotransform=contract_qjac_with_cjac, final_transform=True)
+# pylint: disable=unused-argument
+def _expand_transform_hessian(
+    tape: QuantumScript,
+    argnum=None,
+    diagonal_shifts=None,
+    off_diagonal_shifts=None,
+    f0=None,
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
+    """Expand function to be applied before parameter shift."""
+    return _expand_transform_param_shift(tape)
+
+
+@partial(
+    transform,
+    classical_cotransform=contract_qjac_with_cjac,
+    final_transform=True,
+    expand_transform=_expand_transform_hessian,
+)
 def param_shift_hessian(
     tape: QuantumScript,
     argnum=None,

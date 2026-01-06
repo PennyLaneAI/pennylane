@@ -867,11 +867,11 @@ class TestTensordotDifferentiability:
         v2 = np.array(self.v2, requires_grad=True)
 
         # Test inner product
-        jac = qml.jacobian(partial(fn.tensordot, axes=[0, 0]), argnum=(0, 1))(v0, v1)
+        jac = qml.jacobian(partial(fn.tensordot, axes=[0, 0]), argnums=(0, 1))(v0, v1)
         assert all(fn.allclose(jac[i], _v) for i, _v in enumerate([v1, v0]))
 
         # Test outer product
-        jac = qml.jacobian(partial(fn.tensordot, axes=0), argnum=(0, 1))(v0, v2)
+        jac = qml.jacobian(partial(fn.tensordot, axes=0), argnums=(0, 1))(v0, v2)
         assert all(fn.shape(jac[i]) == self.exp_shapes[i] for i in [0, 1])
         assert all(fn.allclose(jac[i], self.exp_jacs[i]) for i in [0, 1])
 
@@ -2307,7 +2307,7 @@ class TestUnwrap:
             np.tensor(0.1, dtype=np.float64, requires_grad=True),
             np.tensor([0.5, 0.2], requires_grad=True),
         ]
-        _ = qml.grad(cost_fn, argnum=[1, 2])(*values)
+        _ = qml.grad(cost_fn, argnums=[1, 2])(*values)
 
         expected = [np.array([0.1, 0.2]), 0.1, np.array([0.5, 0.2])]
         assert all(np.allclose(a, b) for a, b in zip(unwrapped_params, expected))

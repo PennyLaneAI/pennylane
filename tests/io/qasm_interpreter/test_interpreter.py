@@ -42,8 +42,14 @@ from pennylane import (
     qnode,
     queuing,
 )
-from pennylane.measurements import MeasurementValue, MidMeasureMP
-from pennylane.ops import Adjoint, Controlled, ControlledPhaseShift, MultiControlledX
+from pennylane.ops import (
+    Adjoint,
+    Controlled,
+    ControlledPhaseShift,
+    MeasurementValue,
+    MidMeasure,
+    MultiControlledX,
+)
 from pennylane.ops.op_math.pow import PowOperation
 from pennylane.wires import Wires
 
@@ -313,7 +319,7 @@ class TestMeasurementReset:
             context = QasmInterpreter().interpret(ast, context={"name": "resets", "wire_map": None})
 
         for i in range(10):
-            assert isinstance(q.queue[i], MidMeasureMP)
+            assert isinstance(q.queue[i], MidMeasure)
             assert q.queue[i].wires == Wires([f"q[{i}]"])
             assert q.queue[i].reset
             assert context.vars["a"].val[i].wires == Wires([f"q[{i}]"])
@@ -352,7 +358,7 @@ class TestMeasurementReset:
 
         # Note: we can't compare MeasurementValues using __eq__ as they don't have a truthiness,
         # __eq__ returns a MeasurementValue
-        def compare_measurement_values(mv_1: MeasurementValue[T], mv_2: MeasurementValue[T]):
+        def compare_measurement_values(mv_1: MeasurementValue, mv_2: MeasurementValue):
             res_1 = mv_1.processing_fn()
             res_2 = mv_2.processing_fn()
             meas_1 = mv_1.measurements
@@ -679,7 +685,7 @@ class TestSubroutine:
             QasmInterpreter().interpret(ast, context={"name": "subroutines", "wire_map": None})
 
         assert q.queue[0] == Hadamard("q0")
-        assert isinstance(q.queue[1], MidMeasureMP)
+        assert isinstance(q.queue[1], MidMeasure)
 
 
 @pytest.mark.external

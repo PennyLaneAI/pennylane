@@ -85,7 +85,7 @@ def pattern_matching_optimization(
 
     .. code-block:: python
 
-        @partial(pattern_matching_optimization, pattern_tapes = [pattern])
+        @pattern_matching_optimization(pattern_tapes = [pattern])
         @qml.qnode(device=dev)
         def circuit():
             qml.S(wires=0)
@@ -101,6 +101,7 @@ def pattern_matching_optimization(
     During the call of the circuit, it is first optimized (if possible) and then executed.
 
     >>> circuit()
+    np.float64(0.0)
 
     .. details::
         :title: Usage Details
@@ -122,8 +123,7 @@ def pattern_matching_optimization(
         transform.
 
         >>> qnode = qml.QNode(circuit, dev)
-        >>> optimized_qfunc = pattern_matching_optimization(pattern_tapes=[pattern])(circuit)
-        >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
+        >>> optimized_qnode = pattern_matching_optimization(qnode, pattern_tapes=[pattern])
 
         >>> print(qml.draw(qnode)())
         0: ──S──Z─╭●──────────┤  <X>
@@ -140,8 +140,7 @@ def pattern_matching_optimization(
         quantum cost dictionary with a negative cost for ``pennylane.PauliZ``.
 
         >>> my_cost = {"PauliZ": -1 , "S": 1, "Adjoint(S)": 1}
-        >>> optimized_qfunc = pattern_matching_optimization(circuit, pattern_tapes=[pattern], custom_quantum_cost=my_cost)
-        >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
+        >>> optimized_qnode = pattern_matching_optimization(qnode, pattern_tapes=[pattern], custom_quantum_cost=my_cost)
 
         >>> print(qml.draw(optimized_qnode)())
         0: ──S──Z─╭●────┤  <X>
@@ -174,15 +173,14 @@ def pattern_matching_optimization(
                 qml.CNOT(wires=[0, 1]),
                 qml.CNOT(wires=[0, 2]),
             ]
-            tape = qml.tape.QuantumTape(ops)
+            cnot_pattern = qml.tape.QuantumTape(ops)
 
         For optimizing the circuit given the following pattern of CNOTs we apply the ``pattern_matching``
         transform.
 
         >>> dev = qml.device('default.qubit', wires=5)
         >>> qnode = qml.QNode(circuit, dev)
-        >>> optimized_qfunc = pattern_matching_optimization(circuit, pattern_tapes=[pattern])
-        >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
+        >>> optimized_qnode = pattern_matching_optimization(qnode, pattern_tapes=[cnot_pattern])
 
         In our case, it is possible to find three CNOTs and replace this pattern with only two CNOTs and therefore
         optimizing the circuit. The number of CNOTs in the circuit is reduced by one.
@@ -300,7 +298,7 @@ def pattern_matching_optimization(
                         qml.apply(inst)
 
                 qscript = QuantumScript.from_queue(q_inside)
-                [tape], _ = qml.map_wires(input=qscript, wire_map=inverse_wires_map)
+                [tape], _ = qml.map_wires(qscript, wire_map=inverse_wires_map)
 
     new_tape = tape.copy(measurements=original_tape_meas)
 

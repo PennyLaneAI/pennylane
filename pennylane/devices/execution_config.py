@@ -14,16 +14,18 @@
 """
 Contains the :class:`ExecutionConfig` and :class:`MCMConfig` data classes.
 """
+
 from __future__ import annotations
 
 from collections.abc import MutableMapping
 from copy import deepcopy
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Literal
+from enum import StrEnum
+from typing import TYPE_CHECKING
 
 from pennylane.concurrency.executors.backends import ExecBackends, get_executor
 from pennylane.math.interface_utils import Interface
-from pennylane.transforms.core import TransformDispatcher
+from pennylane.transforms.core import Transform
 
 if TYPE_CHECKING:
     from pennylane.concurrency.executors.base import RemoteExec
@@ -80,20 +82,37 @@ class FrozenMapping(MutableMapping):
         return deepcopy(self._data, memo)
 
 
+class MCM_METHOD(StrEnum):
+    """Canonical set up supported mid-circuit measurement methods."""
+
+    DEFERRED = "deferred"
+    ONE_SHOT = "one-shot"
+    TREE_TRAVERSAL = "tree-traversal"
+    SINGLE_BRANCH_STATISTICS = "single-branch-statistics"
+    DEVICE = "device"
+
+
+class POSTSELECT_MODE(StrEnum):
+    """Canonical set up supported postselect modes."""
+
+    HW_LIKE = "hw-like"
+    FILL_SHOTS = "fill-shots"
+    PAD_INVALID_SAMPLES = "pad-invalid-samples"
+    DEVICE = "device"
+
+
 @dataclass(frozen=True)
 class MCMConfig:
     """A class to store mid-circuit measurement configurations."""
 
-    mcm_method: (
-        Literal["deferred", "one-shot", "tree-traversal", "single-branch-statistics"] | str | None
-    ) = None
+    mcm_method: MCM_METHOD | str | None = None
     """The mid-circuit measurement strategy to use. Use ``"deferred"`` for the deferred
     measurements principle and ``"one-shot"`` if using finite shots to execute the circuit for
     each shot separately. Any other value will be passed to the device, and the device is
     expected to handle mid-circuit measurements using the requested method. If not specified,
     the device will decide which method to use."""
 
-    postselect_mode: Literal["hw-like", "fill-shots", "pad-invalid-samples"] | str | None = None
+    postselect_mode: POSTSELECT_MODE | str | None = None
     """How postselection is handled with finite-shots. If ``"hw-like"``, invalid shots will be
     discarded and only results for valid shots will be returned. In this case, fewer samples
     may be returned than the original number of shots. If ``"fill-shots"``, the returned samples
@@ -101,10 +120,65 @@ class MCMConfig:
     decide which mode to use. Note that internally ``"pad-invalid-samples"`` is used internally
     instead of ``"hw-like"`` when using jax/catalyst."""
 
+    def _validate_inputs(self, mcm_method, postselect_mode) -> None:
+        """Validate inputs to MCMConfig.
+
+        Args:
+            mcm_method (MCM_METHOD | str | None): Mid-circuit measurement method.
+            postselect_mode (POSTSELECT_MODE | str | None): Postselection mode.
+
+        """
+        _valid_mcm_methods: list[str | None] = [None] + [item.value for item in MCM_METHOD]
+        _valid_postselection_modes: list[str | None] = [None] + [
+            item.value for item in POSTSELECT_MODE
+        ]
+
+        if mcm_method not in _valid_mcm_methods:
+            raise ValueError(
+                f"'{mcm_method}' is not a valid mcm_method. Please use one of the supported mid-circuit measurement methods available: {_valid_mcm_methods}"
+            )
+
+        if postselect_mode not in _valid_postselection_modes:
+            raise ValueError(
+                f"'{postselect_mode}' is not a valid postselect_mode. Please use one of the supported postselection modes available: {_valid_postselection_modes}"
+            )
+
     def __post_init__(self):
         """Validate the configured mid-circuit measurement options."""
-        if self.postselect_mode not in ("hw-like", "fill-shots", "pad-invalid-samples", None):
-            raise ValueError(f"Invalid postselection mode '{self.postselect_mode}'.")
+        self._validate_inputs(self.mcm_method, self.postselect_mode)
+
+        object.__setattr__(
+            self,
+            "mcm_method",
+            self.mcm_method if self.mcm_method is None else MCM_METHOD(self.mcm_method),
+        )
+        object.__setattr__(
+            self,
+            "postselect_mode",
+            (
+                self.postselect_mode
+                if self.postselect_mode is None
+                else POSTSELECT_MODE(self.postselect_mode)
+            ),
+        )
+
+    def __repr__(self):
+        """Custom __repr__ for displaying the MCMConfig."""
+        mcm_method: str | None = (
+            self.mcm_method
+            if self.mcm_method is None or isinstance(self.mcm_method, str)
+            else self.mcm_method.value
+        )
+        postselect_mode: str | None = (
+            self.postselect_mode
+            if self.postselect_mode is None or isinstance(self.postselect_mode, str)
+            else self.postselect_mode.value
+        )
+        if mcm_method:
+            mcm_method = "'" + mcm_method + "'"
+        if postselect_mode:
+            postselect_mode = "'" + postselect_mode + "'"
+        return f"MCMConfig(mcm_method={mcm_method}, postselect_mode={postselect_mode})"
 
 
 # pylint: disable=too-many-instance-attributes
@@ -139,7 +213,7 @@ class ExecutionConfig:
     ``True`` indicates to either use the device Jacobian products or fail.
     """
 
-    gradient_method: str | TransformDispatcher | None = None
+    gradient_method: str | Transform | None = None
     """The method used to compute the gradient of the quantum circuit being executed"""
 
     gradient_keyword_arguments: dict = field(default_factory=FrozenMapping)
@@ -194,12 +268,9 @@ class ExecutionConfig:
         _validate_and_freeze_dict("device_options")
         _validate_and_freeze_dict("gradient_keyword_arguments")
 
-        if not (
-            isinstance(self.gradient_method, (str, TransformDispatcher))
-            or self.gradient_method is None
-        ):
+        if not (isinstance(self.gradient_method, (str, Transform)) or self.gradient_method is None):
             raise ValueError(
-                f"Differentiation method {self.gradient_method} must be a str, TransformDispatcher, or None. Got {type(self.gradient_method)} instead."
+                f"Differentiation method {self.gradient_method} must be a str, Transform, or None. Got {type(self.gradient_method)} instead."
             )
 
         if isinstance(self.mcm_config, dict):
@@ -209,20 +280,3 @@ class ExecutionConfig:
 
         if self.executor_backend is None:
             object.__setattr__(self, "executor_backend", get_executor(backend=ExecBackends.MP_Pool))
-
-
-def __getattr__(name):
-    if name == "DefaultExecutionConfig":
-        # pylint: disable=import-outside-toplevel
-        import warnings
-
-        from pennylane.exceptions import PennyLaneDeprecationWarning
-
-        warnings.warn(
-            "`pennylane.devices.execution_config.DefaultExecutionConfig` is deprecated and will be removed in v0.44. "
-            "Please use `ExecutionConfig()` instead.",
-            PennyLaneDeprecationWarning,
-            stacklevel=2,
-        )
-        return ExecutionConfig()
-    raise AttributeError(f"module 'pennylane.devices.execution_config' has no attribute '{name}'")

@@ -20,11 +20,15 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.exceptions import QuantumFunctionError
+from pennylane.gradients import hadamard_gradient
 
 
-def grad_fn(tape, dev, fn=qml.gradients.hadamard_grad, **kwargs):
+def grad_fn(tape, dev, fn=qml.gradients.hadamard_grad, mode="standard", **kwargs):
     """Utility function to automate execution and processing of gradient tapes"""
-    tapes, fn = fn(tape, **kwargs)
+    if fn == qml.gradients.hadamard_grad:
+        tapes, fn = fn(tape, mode=mode, **kwargs)
+    else:
+        tapes, fn = fn(tape, **kwargs)
     return fn(dev.execute(tapes)), tapes
 
 
@@ -401,6 +405,99 @@ class TestDifferentModes:
             out = fn((1.0, 2.0, 3.0, 4.0))
             expected = 1 / np.sqrt(2) * (1.0 - 2.0) + 1 / np.sqrt(2) * (3.0 - 4.0)
             assert qml.math.allclose(out, expected)
+
+    def test_auto_mode_with_multiple_trainable_params(self, mocker):
+        # In this case, the RX gets the standard treatment, but the evolution gets reversed.
+
+        tape = qml.tape.QuantumScript(
+            [qml.RX(0.5, 0), qml.evolve(qml.X(0) + qml.Y(1), 0.5)],
+            [qml.expval(qml.X(0) + qml.Y(0))],
+        )
+
+        # setup mocks
+        standard = mocker.spy(hadamard_gradient, "_hadamard_test")
+        reverse = mocker.spy(hadamard_gradient, "_reversed_hadamard_test")
+
+        batch, _ = qml.gradients.hadamard_grad(tape, aux_wire="a")
+        assert len(batch) == 3
+
+        assert qml.CNOT(("a", 0)) in batch[0].operations
+        assert qml.CNOT(("a", 0)) in batch[1].operations
+        assert qml.CY(("a", 0)) in batch[2].operations
+
+        standard.assert_called_once()
+        reverse.assert_called_once()
+
+    def test_automatic_mode(self, mocker):
+        """Test the automatic mode dispatches the correct modes for the scenario."""
+
+        t = np.array(0.0)
+
+        # setup mocks
+        standard = mocker.spy(hadamard_gradient, "_hadamard_test")
+        direct = mocker.spy(hadamard_gradient, "_direct_hadamard_test")
+        reverse = mocker.spy(hadamard_gradient, "_reversed_hadamard_test")
+        reversed_direct = mocker.spy(hadamard_gradient, "_reversed_direct_hadamard_test")
+
+        op = qml.evolve(qml.X(0) @ qml.X(1) + qml.Z(0) @ qml.Z(1) + qml.Y(0), t)
+        tape = qml.tape.QuantumScript([op], [qml.expval(qml.Z(0))])
+        batch, _ = qml.gradients.hadamard_grad(tape, mode="auto")
+
+        assert len(batch) == 6  # three terms and no work wire
+
+        assert standard.call_count == 0
+        assert direct.call_count == 1
+        assert reverse.call_count == 0
+        assert reversed_direct.call_count == 0
+
+        batch2, _ = qml.gradients.hadamard_grad(tape, aux_wire=2, mode="auto")
+        assert len(batch2) == 3  # three terms and work wire
+
+        assert standard.call_count == 1
+        assert direct.call_count == 1
+        assert reverse.call_count == 0
+        assert reversed_direct.call_count == 0
+
+        op = qml.evolve(qml.X(0) @ qml.X(1) + qml.Y(2) + qml.Z(0) @ qml.Z(1), t)
+        mp = qml.expval(qml.Z(0) @ qml.X(1) + qml.Y(0) + qml.X(0) @ qml.Z(1))
+        tape2 = qml.tape.QuantumScript([op], [mp])
+
+        batch3, _ = qml.gradients.hadamard_grad(tape2, mode="auto")
+        assert len(batch3) == 6  # three terms with no work wire.
+
+        assert standard.call_count == 1
+        assert direct.call_count == 1
+        assert reverse.call_count == 0
+        assert reversed_direct.call_count == 1
+
+        batch, _ = qml.gradients.hadamard_grad(tape2, aux_wire=3, mode="auto")
+        assert len(batch) == 3
+
+        assert standard.call_count == 1
+        assert direct.call_count == 1
+        assert reverse.call_count == 1
+        assert reversed_direct.call_count == 1
+
+    def test_automatic_mode_multiple_observables(self, mocker):
+        """Test the automatic mode dispatches the correct modes for the scenario with multiple observables."""
+
+        # setup mocks
+        standard = mocker.spy(hadamard_gradient, "_hadamard_test")
+        reverse = mocker.spy(hadamard_gradient, "_reversed_hadamard_test")
+
+        # circuit would normally dispatch the reversed method, but has an extra observable.
+
+        op = qml.evolve(qml.X(0) @ qml.X(1) + qml.Y(2) + qml.Z(0) @ qml.Z(1), 0.5)
+        mps = [
+            qml.expval(qml.Z(0) @ qml.X(1) + qml.Y(0) + qml.X(0) @ qml.H(1)),
+            qml.expval(qml.Z(0)),
+        ]
+        tape = qml.tape.QuantumScript([op], mps)
+        batch, _ = qml.gradients.hadamard_grad(tape, aux_wire=3, mode="auto")
+        assert len(batch) == 3
+
+        assert standard.call_count == 1
+        assert reverse.call_count == 0
 
     @pytest.mark.parametrize("mode", ["direct", "reversed-direct"])
     def test_no_available_work_wire_direct_methods(self, mode):

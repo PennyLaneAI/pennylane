@@ -105,24 +105,32 @@ class QROM(Operation):
 
     Args:
         bitstrings (list[str]): the bitstrings to be encoded
-        control_wires (Sequence[int]): the wires where the indexes are specified
+        control_wires (WiresLike):
+            The register that stores the index for the entry of the classical data we want to
+            read.
         target_wires (Sequence[int]): the wires where the bitstring is loaded
         work_wires (Sequence[int]): the auxiliary wires used for the computation
         clean (bool): if True, the work wires are not altered by operator, default is ``True``
+
+    .. seealso:: :class:`~.BBQRAM`, :class:`~.QROMStatePreparation`
+
+    .. note::
+        QRAM and QROM, though similar, have different applications and purposes. QRAM is intended
+        for read-and-write capabilities, where the stored data can be loaded and changed. QROM is
+        designed to only load stored data into a quantum register.
 
     **Example**
 
     In this example, the QROM operator is applied to encode the third bitstring, associated with index 2, in the target wires.
 
-    .. code-block::
+    .. code-block:: python
 
         # a list of bitstrings is defined
         bitstrings = ["010", "111", "110", "000"]
 
         dev = qml.device("default.qubit")
 
-        @partial(qml.set_shots, shots = 1)
-        @qml.qnode(dev)
+        @qml.qnode(dev, shots=1)
         def circuit():
 
             # the third index is encoded in the control wires [0, 1]
@@ -135,10 +143,8 @@ class QROM(Operation):
 
             return qml.sample(wires = [2,3,4])
 
-    .. code-block:: pycon
-
-        >>> print(circuit())
-        [[1 1 0]]
+    >>> print(circuit())
+    [[1 1 0]]
 
 
     .. details::

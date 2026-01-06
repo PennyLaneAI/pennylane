@@ -19,12 +19,27 @@ and plugin development purposes.
 
 import numpy as np
 
-import pennylane as qml
+from pennylane import math
+from pennylane.operation import Operator
+from pennylane.tape import QuantumScript
+from pennylane.transforms import (
+    broadcast_expand,
+    defer_measurements,
+    diagonalize_measurements,
+    split_non_commuting,
+)
+from pennylane.transforms.core import CompilePipeline
+from pennylane.typing import Result
 
 from .device_api import Device
 from .execution_config import ExecutionConfig
 from .modifiers import simulator_tracking, single_tape_support
-from .preprocess import decompose, validate_device_wires, validate_measurements
+from .preprocess import (
+    decompose,
+    measurements_from_samples,
+    validate_device_wires,
+    validate_measurements,
+)
 
 
 def sample_state(state: np.ndarray, shots: int, seed=None):
@@ -44,7 +59,7 @@ def sample_state(state: np.ndarray, shots: int, seed=None):
     return np.array([[int(val) for val in s] for s in bin_strings])
 
 
-def simulate(tape: qml.tape.QuantumTape, seed=None) -> qml.typing.Result:
+def simulate(tape: QuantumScript, seed=None) -> Result:
     """Simulate a tape and turn it into results.
 
     Args:
@@ -59,9 +74,9 @@ def simulate(tape: qml.tape.QuantumTape, seed=None) -> qml.typing.Result:
     # 2) apply all the operations
     for op in tape.operations:
         op_mat = op.matrix(wire_order=tape.wires)
-        if qml.math.get_interface(op_mat) != "numpy":
+        if math.get_interface(op_mat) != "numpy":
             raise ValueError("Reference qubit can only work with numpy data.")
-        state = qml.math.matmul(op_mat, state)
+        state = math.matmul(op_mat, state)
 
     # 3) perform measurements
     # note that shots are pulled from the tape, not from the device
@@ -93,7 +108,7 @@ operations = frozenset(
 )
 
 
-def supports_operation(op: qml.operation.Operator) -> bool:
+def supports_operation(op: Operator) -> bool:
     """This function used by preprocessing determines what operations
     are natively supported by the device.
 
@@ -139,12 +154,12 @@ class ReferenceQubit(Device):
             execution_config = ExecutionConfig()
 
         # Here we convert an arbitrary tape into one natively supported by the device
-        program = qml.transforms.core.TransformProgram()
+        program = CompilePipeline()
         program.add_transform(validate_device_wires, wires=self.wires, name="reference.qubit")
-        program.add_transform(qml.defer_measurements, allow_postselect=False)
-        program.add_transform(qml.transforms.split_non_commuting)
-        program.add_transform(qml.transforms.diagonalize_measurements)
-        program.add_transform(qml.devices.preprocess.measurements_from_samples)
+        program.add_transform(defer_measurements, allow_postselect=False)
+        program.add_transform(split_non_commuting)
+        program.add_transform(diagonalize_measurements)
+        program.add_transform(measurements_from_samples)
         program.add_transform(
             decompose,
             stopping_condition=supports_operation,
@@ -152,7 +167,7 @@ class ReferenceQubit(Device):
             name="reference.qubit",
         )
         program.add_transform(validate_measurements, name="reference.qubit")
-        program.add_transform(qml.transforms.broadcast_expand)
+        program.add_transform(broadcast_expand)
 
         # no need to preprocess the config as the device does not support derivatives
         return program, execution_config

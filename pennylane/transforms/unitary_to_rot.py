@@ -73,6 +73,8 @@ def _get_plxpr_unitary_to_rot():
 
     def unitary_to_rot_plxpr_to_plxpr(jaxpr, consts, targs, tkwargs, *args):
         """Function for applying the ``unitary_to_rot`` transform on plxpr."""
+        # Restore tkwargs from hashable tuple to dict
+        tkwargs = dict(tkwargs)
 
         interpreter = UnitaryToRotInterpreter(*targs, **tkwargs)
 
@@ -113,7 +115,7 @@ def unitary_to_rot(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
 
     Suppose we would like to apply the following unitary operation:
 
-    .. code-block:: python3
+    .. code-block:: python
 
         U = np.array([
             [-0.17111489+0.58564875j, -0.69352236-0.38309524j],
@@ -123,7 +125,7 @@ def unitary_to_rot(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
     The ``unitary_to_rot`` transform enables us to decompose such numerical
     operations while preserving differentiability.
 
-    .. code-block:: python3
+    .. code-block:: python
 
         def qfunc():
             qml.QubitUnitary(U, wires=0)
@@ -136,15 +138,15 @@ def unitary_to_rot(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
     >>> print(qml.draw(qnode)())
     0: ──U(M0)─┤  <Z>
     M0 =
-    [[-0.17111489+0.58564875j -0.69352236-0.38309524j]
-    [ 0.25053735+0.75164238j  0.60700543-0.06171855j]]
+    [[-0.171...+0.5856...j -0.693...-0.383...j]
+    [ 0.250...+0.751...j  0.607...-0.061...j]]
 
     We can use the transform to decompose the gate:
 
     >>> transformed_qfunc = unitary_to_rot(qfunc)
     >>> transformed_qnode = qml.QNode(transformed_qfunc, dev)
     >>> print(qml.draw(transformed_qnode)())
-    0: ──RZ(-1.35)──RY(1.83)──RZ(-0.61)─┤  <Z>
+    0: ──RZ(11.22)──RY(1.83)──RZ(11.96)─┤  <Z>
 
 
     .. details::
@@ -155,9 +157,11 @@ def unitary_to_rot(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
         explicitly construct a :math:`4 \times 4` unitary matrix being
         decomposed. So for example, the following will work:
 
-        .. code-block:: python3
+        .. code-block:: python
 
-            U = scipy.stats.unitary_group.rvs(4)
+            import scipy
+
+            U = scipy.stats.unitary_group.rvs(4, random_state=12345)
 
             def circuit(angles):
                 qml.QubitUnitary(U, wires=["a", "b"])
@@ -171,13 +175,13 @@ def unitary_to_rot(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
             transformed_qnode = qml.QNode(transformed_qfunc, dev)
 
         >>> g = qml.grad(transformed_qnode)
-        >>> params = np.array([0.2, 0.3], requires_grad=True)
+        >>> params = pnp.array([0.2, 0.3], requires_grad=True)
         >>> g(params)
-        array([ 0.00296633, -0.29392145])
+        array([ 0.342..., -0.077...])
 
         However, the following example will **not** be differentiable:
 
-        .. code-block:: python3
+        .. code-block:: python
 
             def circuit(angles):
                 z = angles[0]

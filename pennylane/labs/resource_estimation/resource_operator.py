@@ -17,7 +17,6 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from collections.abc import Hashable, Iterable
-from typing import Union
 
 import numpy as np
 
@@ -236,7 +235,7 @@ class ResourceOperator(ABC):
 
     @staticmethod
     def dequeue(
-        op_to_remove: Union["ResourceOperator", Iterable],
+        op_to_remove: ResourceOperator | Iterable,
         context: QueuingManager = QueuingManager,
     ):
         """Remove the given resource operator(s) from the Operator queue."""

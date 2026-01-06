@@ -36,12 +36,10 @@ quantum operations supported by PennyLane, as well as their conventions.
 # As the qubit based ``decomposition``, ``_matrix``, ``diagonalizing_gates``
 # abstract methods are not defined in the CV case, disabling the related check
 
-import math
-
 import numpy as np
 from scipy.linalg import block_diag
 
-from pennylane import math as qml_math
+from pennylane import math
 from pennylane.operation import CVObservable, CVOperation
 
 from .identity import I, Identity  # pylint: disable=unused-import
@@ -688,7 +686,7 @@ class InterferometerUnitary(CVOperation):
 
     def adjoint(self):
         U = self.parameters[0]
-        return InterferometerUnitary(qml_math.T(qml_math.conj(U)), wires=self.wires)
+        return InterferometerUnitary(math.T(math.conj(U)), wires=self.wires)
 
     def label(self, decimals=None, base_label=None, cache=None):
         return super().label(decimals=decimals, base_label=base_label or "U", cache=cache)
@@ -886,9 +884,9 @@ class FockState(CVOperation):
         if base_label is not None:
             if decimals is None:
                 return base_label
-            p = format(qml_math.asarray(self.parameters[0]), ".0f")
+            p = format(math.asarray(self.parameters[0]), ".0f")
             return base_label + f"\n({p})"
-        return f"|{qml_math.asarray(self.parameters[0])}⟩"
+        return f"|{math.asarray(self.parameters[0])}⟩"
 
 
 class FockStateVector(CVOperation):
@@ -1286,7 +1284,7 @@ class QuadOperator(CVObservable):
         if decimals is None:
             p = "φ"
         else:
-            p = format(qml_math.array(self.parameters[0]), f".{decimals}f")
+            p = format(math.array(self.parameters[0]), f".{decimals}f")
         return f"cos({p})x\n+sin({p})p"
 
 

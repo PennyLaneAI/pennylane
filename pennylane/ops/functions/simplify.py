@@ -51,16 +51,14 @@ def simplify(input: Operator | MeasurementProcess | QuantumScript | QNode | Call
 
     >>> op = qml.adjoint(qml.RX(0.54, wires=0) + qml.X(0) + qml.Z(1))
     >>> op.arithmetic_depth
-    3
+    2
     >>> sim_op = qml.simplify(op)
     >>> sim_op.arithmetic_depth
-    2
+    1
     >>> type(sim_op)
-    pennylane.ops.op_math.sum.Sum
+    <class 'pennylane.ops.op_math.sum.Sum'>
     >>> sim_op.operands
-    (Adjoint(RX)(0.54, wires=[0]),
-    Adjoint(PauliX)(wires=[0]),
-    Adjoint(PauliZ)(wires=[1]))
+    (RX(12.026370614359173, wires=[0]), X(0), Z(1))
 
     This function can also simplify the number of rotation gate parameters:
 
@@ -71,9 +69,9 @@ def simplify(input: Operator | MeasurementProcess | QuantumScript | QNode | Call
 
     >>> op = qml.adjoint(qml.U2(-np.pi/2, np.pi/2, wires=0) + qml.X(0))
     >>> op
-    Adjoint(Sum)([-1.5707963267948966, 1.5707963267948966], [], wires=[0])
+    Adjoint(U2(-1.5707963267948966, 1.5707963267948966, wires=[0]) + X(0))
     >>> qml.simplify(op)
-    Adjoint(RX)(1.5707963267948966, wires=[0]) + Adjoint(PauliX)(wires=[0])
+    RX(10.995574287564276, wires=[0]) + X(0)
 
     Moreover, ``qml.simplify`` can be used to simplify QNodes or quantum functions:
 
@@ -84,7 +82,7 @@ def simplify(input: Operator | MeasurementProcess | QuantumScript | QNode | Call
     ...     qml.adjoint(qml.prod(qml.RX(1, 0) ** 1, qml.RY(1, 0), qml.RZ(1, 0)))
     ...     return qml.probs(wires=0)
     >>> circuit()
-    tensor([0.64596329, 0.35403671], requires_grad=True)
+    array([0.64596329, 0.35403671])
     >>> tape = qml.workflow.construct_tape(circuit)()
     >>> list(tape)
     [RZ(11.566370614359172, wires=[0]) @ RY(11.566370614359172, wires=[0]) @ RX(11.566370614359172, wires=[0]),

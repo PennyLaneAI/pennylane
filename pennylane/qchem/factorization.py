@@ -77,7 +77,7 @@ def factorize(
     .. note::
 
         Packages JAX and Optax are required when performing CDF with ``compressed=True``.
-        Install them using ``pip install jax~=0.6.0 optax``.
+        Install them using ``pip install jax==0.7.1 optax``.
 
     Args:
         two_electron (array[array[float]]): Two-electron integral tensor in the molecular orbital
@@ -262,7 +262,7 @@ def factorize(
         if not has_jax_optax:
             raise ImportError(
                 "Jax and Optax libraries are required for optimizing the factors. Install them via "
-                "pip install jax~=0.6.0 optax"
+                "pip install jax==0.7.1 optax"
             )  # pragma: no cover
 
         norm_order = {None: None, "L1": 1, "L2": 2}.get(regularization, "LX")
@@ -279,7 +279,11 @@ def factorize(
         if cholesky and init_params is None:
             # compute the factors via cholesky decomposition routine
             factors, f_eigvals, f_eigvecs = _double_factorization_cholesky(
-                two, tol_factor, shape, interface, num_factors
+                two,
+                tol_factor=tol_factor,
+                shape=shape,
+                interface=interface,
+                num_factors=num_factors,
             )
             # compute the core and orbital rotation tensors from the factors
             core_matrices = qml.math.einsum("ti,tj->tij", f_eigvals, f_eigvals)
@@ -464,7 +468,7 @@ def _double_factorization_compressed(
         params = (
             {"X": jnp.zeros((1, norb, norb)), "Z": jnp.zeros((1, norb, norb))}
             if init_params is None
-            else {"X": init_params["X"][fidx][None, :], "Z": init_params["X"][fidx][None, :]}
+            else {"X": init_params["X"][fidx][None, :], "Z": init_params["Z"][fidx][None, :]}
         )
         opt_state = optimizer.init(params)
 

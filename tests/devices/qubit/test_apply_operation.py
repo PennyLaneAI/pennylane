@@ -1497,7 +1497,7 @@ class TestConditionalsAndMidMeasure:
 
     @pytest.mark.parametrize("m_res", [(0, 0), (1, 1)])
     def test_mid_measure(self, m_res, monkeypatch):
-        """Test the application of a MidMeasureMP on an arbitrary state to give a basis state."""
+        """Test the application of a MidMeasure on an arbitrary state to give a basis state."""
 
         initial_state = np.array(
             [
@@ -1523,9 +1523,35 @@ class TestConditionalsAndMidMeasure:
 
         assert mid_meas == {m0: m_res[0], m1: m_res[1]}
 
+    def test_floating_point_mcm_bug(self):
+        """Test an edge case where the mcm probability is greater than one by an insignificant amount."""
+
+        ops = [
+            qml.RX(-5.754168297787336, wires=0),
+            qml.H(1),
+            qml.ops.MidMeasure(1),
+            qml.ops.MidMeasure(2),
+            qml.ops.MidMeasure(3),
+        ]
+        state = np.zeros((2, 2, 2, 2))
+        state[0, 0, 0, 0] = 1
+
+        for op in ops:
+            state = apply_operation(op, state, mid_measurements={})
+
+        # just need to make sure that ran without numpy complaining
+
+    def test_norm_greater_than_one_mcm(self):
+        """Test an error is raised about the norm if it is substantially greater than one."""
+
+        state = np.zeros((2,))
+        state[0] = 1.0005
+        with pytest.raises(ValueError, match="probabilities greater than 1."):
+            apply_operation(qml.ops.MidMeasure(0), state)
+
     def test_error_bactched_mid_measure(self):
         """Test that an error is raised when mid_measure is applied to a batched input state."""
 
-        with pytest.raises(ValueError, match="MidMeasureMP cannot be applied to batched states."):
+        with pytest.raises(ValueError, match="MidMeasure cannot be applied to batched states."):
             m0, input_state = qml.measure(0).measurements[0], qml.math.array([[1, 0], [1, 0]])
             apply_operation(m0, state=input_state, is_state_batched=True)

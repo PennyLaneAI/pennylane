@@ -16,11 +16,16 @@ Contains the ApproxTimeEvolution template.
 """
 # pylint: disable=protected-access
 import copy
+from collections import defaultdict
 
+from pennylane.control_flow import for_loop
+from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.operation import Operation
 from pennylane.ops import PauliRot
+from pennylane.ops.op_math.linear_combination import Hamiltonian
+from pennylane.pauli import PauliWord
 from pennylane.queuing import QueuingManager, apply
-from pennylane.wires import Wires
+from pennylane.wires import Wires, WiresLike
 
 
 class ApproxTimeEvolution(Operation):
@@ -33,7 +38,7 @@ class ApproxTimeEvolution(Operation):
         matrix exponentiation. One can recover the behaviour of :class:`~.ApproxTimeEvolution` by
         taking the adjoint:
 
-        >>> qml.adjoint(qml.TrotterProduct(hamiltonian, time, order=1, n=n))
+        >>> qml.adjoint(qml.TrotterProduct(hamiltonian, time, order=1, n=n)) # doctest: +SKIP
 
     The general time-evolution operator for a time-independent Hamiltonian is given by
 
@@ -113,10 +118,12 @@ class ApproxTimeEvolution(Operation):
                 return [qml.expval(qml.Z(i)) for i in wires]
 
         >>> circuit(1)
-        tensor([-0.41614684 -0.41614684], requires_grad=True)
+        [np.float64(-0.416...), np.float64(-0.416...)]
     """
 
     grad_method = None
+
+    resource_keys = {"words", "n"}
 
     def _flatten(self):
         h = self.hyperparameters["hamiltonian"]
@@ -130,6 +137,13 @@ class ApproxTimeEvolution(Operation):
     @classmethod
     def _unflatten(cls, data, metadata):
         return cls(data[0], data[1], n=metadata[0])
+
+    @property
+    def resource_params(self) -> dict:
+        return {
+            "words": tuple(self.hyperparameters["hamiltonian"].pauli_rep.keys()),
+            "n": self.hyperparameters["n"],
+        }
 
     def __init__(self, hamiltonian, time, n, id=None):
         if getattr(hamiltonian, "pauli_rep", None) is None:
@@ -210,15 +224,52 @@ class ApproxTimeEvolution(Operation):
         single_round = []
         with QueuingManager.stop_recording():
             for pw, coeff in hamiltonian.pauli_rep.items():
-                if len(pw) == 0:
-                    continue
-                theta = 2 * time * coeff / n
-                term_str = "".join(pw.values())
-                wires = Wires(pw.keys())
-                single_round.append(PauliRot(theta, term_str, wires=wires))
+                if len(pw):
+                    theta = 2 * time * coeff / n
+                    term_str = "".join(pw.values())
+                    wires = Wires(pw.keys())
+                    single_round.append(PauliRot(theta, term_str, wires=wires))
 
         full_decomp = single_round * n
         if QueuingManager.recording():
             _ = [apply(op) for op in full_decomp]
 
         return full_decomp
+
+
+def _approx_time_evolution_resources(words: tuple[PauliWord], n: int):
+    resources = defaultdict(int)
+
+    for _ in range(n):
+        for pw in words:
+            if len(pw) != 0:
+                term_str = "".join(pw.values())
+                resources[resource_rep(PauliRot, pauli_word=term_str)] += 1
+
+    return resources
+
+
+@register_resources(_approx_time_evolution_resources)
+def _approx_time_evolution_decomposition(
+    *coeffs_and_time: list, wires: WiresLike, hamiltonian: Hamiltonian, n: int
+):  # pylint: disable=unused-argument
+    time = coeffs_and_time[-1]
+
+    @for_loop(n)
+    def rounds_loop(_):
+
+        for pauli_key in list(hamiltonian.pauli_rep.keys()):
+            for pk, coeff in hamiltonian.pauli_rep.items():
+                if pauli_key == pk:
+                    break
+
+            if len(pauli_key) != 0:
+                theta = 2 * time * coeff / n  # pylint: disable=undefined-loop-variable
+                term_str = "".join(pauli_key.values())
+                wires = Wires(pauli_key.keys())
+                PauliRot(theta, term_str, wires=wires)
+
+    rounds_loop()  # pylint: disable=no-value-for-parameter
+
+
+add_decomps(ApproxTimeEvolution, _approx_time_evolution_decomposition)

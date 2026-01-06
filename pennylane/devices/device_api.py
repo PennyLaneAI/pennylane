@@ -22,12 +22,20 @@ from dataclasses import replace
 from numbers import Number
 from typing import overload
 
-import pennylane as qml
 from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.measurements import Shots
+from pennylane.ops import H, X, Y, Z
 from pennylane.tape import QuantumScript, QuantumScriptOrBatch
 from pennylane.tape.qscript import QuantumScriptBatch
-from pennylane.transforms.core import TransformDispatcher, TransformError, TransformProgram
+from pennylane.transforms import (
+    broadcast_expand,
+    defer_measurements,
+    diagonalize_measurements,
+    dynamic_one_shot,
+    split_non_commuting,
+    split_to_single_terms,
+)
+from pennylane.transforms.core import CompilePipeline, Transform, TransformError
 from pennylane.typing import Result, ResultBatch, TensorLike
 from pennylane.wires import Wires
 
@@ -256,7 +264,7 @@ class Device(abc.ABC):
     def preprocess(
         self,
         execution_config: ExecutionConfig | None = None,
-    ) -> tuple[TransformProgram, ExecutionConfig]:
+    ) -> tuple[CompilePipeline, ExecutionConfig]:
         """Device preprocessing function.
 
         .. warning::
@@ -272,7 +280,7 @@ class Device(abc.ABC):
                 the execution.
 
         Returns:
-            TransformProgram, ExecutionConfig: A transform program that is called before execution, and a configuration
+            CompilePipeline, ExecutionConfig: A compile pileline that is called before execution, and a configuration
                 with unset specifications filled in.
 
         Raises:
@@ -312,11 +320,11 @@ class Device(abc.ABC):
         .. code-block:: python
 
                 def preprocess(config):
-                    program = TransformProgram()
+                    program = CompilePipeline()
                     program.add_transform(my_preprocessing_transform)
                     return program, config
 
-        .. seealso:: :func:`~.pennylane.transform.core.transform` and :class:`~.pennylane.transform.core.TransformProgram`
+        .. seealso:: :func:`~.pennylane.transform.core.transform` and :class:`~.pennylane.transform.core.CompilePipeline`
 
         .. details::
             :title: Post processing function and derivatives
@@ -352,8 +360,8 @@ class Device(abc.ABC):
         if execution_config is None:
             execution_config = ExecutionConfig()
         execution_config = self.setup_execution_config(execution_config)
-        transform_program = self.preprocess_transforms(execution_config)
-        return transform_program, execution_config
+        compile_pileline = self.preprocess_transforms(execution_config)
+        return compile_pileline, execution_config
 
     def setup_execution_config(
         self, config: ExecutionConfig | None = None, circuit: QuantumScript | None = None
@@ -389,7 +397,7 @@ class Device(abc.ABC):
         if self.supports_derivatives(config) and config.gradient_method in ("best", None):
             return replace(config, gradient_method="device")
 
-        shots_present = circuit and bool(circuit.shots)
+        shots_present = bool(circuit is not None and bool(circuit.shots))
         validate_mcm_method(self.capabilities, config.mcm_config.mcm_method, shots_present)
         if config.mcm_config.mcm_method is None and self.capabilities is not None:
             # This is a sensible default strategy for resolving the MCM method based on declared
@@ -403,16 +411,16 @@ class Device(abc.ABC):
 
     def preprocess_transforms(
         self, execution_config: ExecutionConfig | None = None
-    ) -> TransformProgram:
-        """Returns the transform program to preprocess a circuit for execution.
+    ) -> CompilePipeline:
+        """Returns the compile pileline to preprocess a circuit for execution.
 
         Args:
             execution_config (ExecutionConfig): The execution configuration object
 
         Returns:
-            TransformProgram: A transform program that is called before execution
+            CompilePipeline: A compile pileline that is called before execution
 
-        The transform program is composed of a list of individual transforms, which may include:
+        The compile pileline is composed of a list of individual transforms, which may include:
 
         * Decomposition of operations and measurements to what is supported by the device.
         * Splitting a circuit with measurements of non-commuting observables or Hamiltonians into multiple executions.
@@ -422,7 +430,7 @@ class Device(abc.ABC):
 
         **Example**
 
-        All transforms that are part of the preprocessing transform program need to respect the
+        All transforms that are part of the preprocessing compile pileline need to respect the
         transform contract defined in :func:`pennylane.transform`.
 
         .. code-block:: python
@@ -439,16 +447,16 @@ class Device(abc.ABC):
 
                 return [tape], processing_fn
 
-        A transform program can hold an arbitrary number of individual transforms:
+        A compile pileline can hold an arbitrary number of individual transforms:
 
         .. code-block:: python
 
             def preprocess(self, config):
-                program = TransformProgram()
+                program = CompilePipeline()
                 program.add_transform(my_preprocessing_transform)
                 return program
 
-        .. seealso:: :func:`~.pennylane.transform.core.transform` and :class:`~.pennylane.transform.core.TransformProgram`
+        .. seealso:: :func:`~.pennylane.transform.core.transform` and :class:`~.pennylane.transform.core.CompilePipeline`
 
         .. details::
             :title: Post processing function and derivatives
@@ -486,7 +494,7 @@ class Device(abc.ABC):
         # TODO: this is obviously not pretty but it's a temporary solution to ensure backwards
         #       compatibility. Basically there are three scenarios:
         #       1. The device does not override anything, then this method returns the default
-        #          transform program, and preprocess calls this method, all good.
+        #          compile pileline, and preprocess calls this method, all good.
         #       2. The device overrides preprocess, but not this method, then this method will
         #          return what is returned from the overridden preprocess method.
         #       3. The device overrides this method and not preprocess (recommended and what we
@@ -497,24 +505,24 @@ class Device(abc.ABC):
             return self.preprocess()[0]
 
         if not self.capabilities:
-            # The capabilities are required to construct a default transform program.
-            return TransformProgram()
+            # The capabilities are required to construct a default compile pileline.
+            return CompilePipeline()
 
         if not execution_config:
             execution_config = ExecutionConfig()
 
-        program = TransformProgram()
+        program = CompilePipeline()
 
         # First handle mid-circuit measurements because it may add wires. At this point we
         # should assume that the mcm method is already validated and resolved.
         if execution_config.mcm_config.mcm_method == "deferred":
             program.add_transform(
-                qml.transforms.defer_measurements,
+                defer_measurements,
                 allow_postselect=self.capabilities.supports_operation("Projector"),
             )
         elif execution_config.mcm_config.mcm_method == "one-shot":
             program.add_transform(
-                qml.transforms.dynamic_one_shot,
+                dynamic_one_shot,
                 postselect_mode=execution_config.mcm_config.postselect_mode,
             )
 
@@ -522,7 +530,7 @@ class Device(abc.ABC):
         capabilities_shots = self.capabilities.filter(finite_shots=True)
 
         needs_diagonalization = False
-        base_obs = {"PauliZ": qml.Z, "PauliX": qml.X, "PauliY": qml.Y, "Hadamard": qml.H}
+        base_obs = {"PauliZ": Z, "PauliX": X, "PauliY": Y, "Hadamard": H}
         if (
             not all(obs in self.capabilities.observables for obs in base_obs)
             # This check is to confirm that `split_non_commuting` has been applied, since
@@ -547,16 +555,16 @@ class Device(abc.ABC):
             )
 
         if not self.capabilities.overlapping_observables:
-            program.add_transform(qml.transforms.split_non_commuting, grouping_strategy="wires")
+            program.add_transform(split_non_commuting, grouping_strategy="wires")
         elif not self.capabilities.non_commuting_observables:
-            program.add_transform(qml.transforms.split_non_commuting, grouping_strategy="qwc")
+            program.add_transform(split_non_commuting, grouping_strategy="qwc")
         elif not self.capabilities.supports_observable("Sum"):
-            program.add_transform(qml.transforms.split_to_single_terms)
+            program.add_transform(split_to_single_terms)
 
         if needs_diagonalization:
             obs_names = base_obs.keys() & self.capabilities.observables.keys()
             obs = {base_obs[obs] for obs in obs_names}
-            program.add_transform(qml.transforms.diagonalize_measurements, supported_base_obs=obs)
+            program.add_transform(diagonalize_measurements, supported_base_obs=obs)
             program.add_transform(
                 decompose,
                 stopping_condition=lambda o: capabilities_analytic.supports_operation(o.name),
@@ -564,7 +572,7 @@ class Device(abc.ABC):
                 name=self.name,
             )
 
-        program.add_transform(qml.transforms.broadcast_expand)
+        program.add_transform(broadcast_expand)
 
         # Handle validations
         program.add_transform(validate_device_wires, self.wires, name=self.name)
@@ -1089,7 +1097,7 @@ def _preprocess_device(original_device, transform, targs, tkwargs):
             self,
             execution_config: ExecutionConfig | None = None,
         ):
-            """This function updates the original device transform program to be applied."""
+            """This function updates the original device compile pileline to be applied."""
             program, config = self.original_device.preprocess(execution_config)
             program = self.transform(program, *self.targs, **self.tkwargs)
             return program, config
@@ -1121,7 +1129,7 @@ def _preprocess_transforms_device(original_device, transform, targs, tkwargs):
             self,
             execution_config: ExecutionConfig | None = None,
         ):
-            """This function updates the original device transform program to be applied."""
+            """This function updates the original device compile pileline to be applied."""
             program = self.original_device.preprocess_transforms(execution_config)
             program = self.transform(program, *self.targs, **self.tkwargs)
             return program
@@ -1134,14 +1142,14 @@ def _preprocess_transforms_device(original_device, transform, targs, tkwargs):
     return TransformedDevice(original_device, transform, targs, tkwargs)
 
 
-@TransformDispatcher.generic_register
+@Transform.generic_register
 def apply_to_device(obj: Device, transform, *targs, **tkwargs):
     """Apply the transform on a device"""
     if transform.expand_transform:
         raise TransformError("Device transform does not support expand transforms.")
     if transform.is_informative:
         raise TransformError("Device transform does not support informative transforms.")
-    if transform.final_transform:
+    if transform.is_final_transform:
         raise TransformError("Device transform does not support final transforms.")
 
     if type(obj).preprocess != Device.preprocess:

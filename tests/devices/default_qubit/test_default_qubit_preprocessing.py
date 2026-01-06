@@ -220,7 +220,7 @@ class TestConfigSetup:
     def test_error_on_unsupported_mcm_method(self):
         """Test that an error is raised on unsupported mcm_method's."""
 
-        config = ExecutionConfig(mcm_config=MCMConfig(mcm_method="bad method"))
+        config = ExecutionConfig(mcm_config=MCMConfig(mcm_method="single-branch-statistics"))
 
         dev = qml.device("default.qubit")
 

@@ -57,7 +57,7 @@ def create_expand_fn(depth, stop_at=None, device=None, docstring=None):
     The stopping criterion is easy to write as
 
     >>> def stop_at(obj):
-    ...     return not (len(op.data) > 1 and any(qml.math.requires_grad(d) for d in obj.data))
+    ...     return not (len(obj.data) > 1 and any(qml.math.requires_grad(d) for d in obj.data))
 
     Then the expansion function can be obtained via
 
@@ -97,7 +97,9 @@ def create_expand_fn(depth, stop_at=None, device=None, docstring=None):
     def expand_fn(tape, depth=depth, **kwargs):
         with qml.QueuingManager.stop_recording():
             if not all(stop_at(op) for op in tape.operations):
-                (tape,), _ = qml.transforms.decompose(tape, max_expansion=depth, gate_set=stop_at)
+                (tape,), _ = qml.transforms.decompose(
+                    tape, max_expansion=depth, stopping_condition=stop_at
+                )
             else:
                 return tape
 
@@ -318,6 +320,11 @@ def create_decomp_expand_fn(custom_decomps, dev, decomp_depth=None):
 
     **Example**
 
+    .. warning::
+
+        This example only applies to the legacy device interface.
+
+
     Suppose we would like a custom expansion function that decomposes all CNOTs
     into CZs. We first define a decomposition function:
 
@@ -335,8 +342,8 @@ def create_decomp_expand_fn(custom_decomps, dev, decomp_depth=None):
     result as a custom function of the device:
 
     >>> custom_decomps = {qml.CNOT : custom_cnot}
-    >>> expand_fn = qml.transforms.create_decomp_expand_fn(custom_decomps, dev)
-    >>> dev.custom_expand(expand_fn)
+    >>> expand_fn = qml.transforms.create_decomp_expand_fn(custom_decomps, dev) # doctest: +SKIP
+    >>> dev.custom_expand(expand_fn) # doctest: +SKIP
     """
     custom_op_names = [op if isinstance(op, str) else op.__name__ for op in custom_decomps.keys()]
 
@@ -369,7 +376,7 @@ def _modify_program(program, custom_decomps):
         return op.decomposition()
 
     for container in program:
-        if container.transform == qml.devices.preprocess.decompose.transform:
+        if container.tape_transform == qml.devices.preprocess.decompose.tape_transform:
             container.kwargs["decomposer"] = decomposer
 
             for cond in ["stopping_condition", "stopping_condition_shots"]:
@@ -423,8 +430,9 @@ def _create_decomp_preprocess(custom_decomps, dev):
     additional stopping criteria the expansion should have), and then register the
     result as a custom function of the device:
 
+    >>> dev = qml.device('default.qubit')
     >>> custom_decomps = {qml.CNOT : custom_cnot}
-    >>> new_preprocessing = _create_decomp_preprocessing(custom_decomps, dev)
+    >>> new_preprocessing = _create_decomp_preprocess(custom_decomps, dev)
     >>> dev.preprocess = new_preprocessing
     """
 

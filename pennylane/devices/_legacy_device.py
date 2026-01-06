@@ -24,22 +24,23 @@ from functools import lru_cache
 
 import numpy as np
 
-import pennylane as qml
+from pennylane.boolean_fn import BooleanFn
 from pennylane.exceptions import DeviceError, QuantumFunctionError, WireError
 from pennylane.measurements import (
     ExpectationMP,
     MeasurementProcess,
-    MidMeasureMP,
     ProbabilityMP,
     SampleMP,
     ShadowExpvalMP,
+    Shots,
     StateMP,
     VarianceMP,
 )
 from pennylane.operation import Operation, Operator, StatePrepBase
-from pennylane.ops import LinearCombination, Prod, SProd, Sum
+from pennylane.ops import LinearCombination, MidMeasure, Prod, Projector, SProd, Sum
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, expand_tape_state_prep
+from pennylane.transforms import broadcast_expand, split_non_commuting
 from pennylane.wires import Wires
 
 from .tracker import Tracker
@@ -111,7 +112,9 @@ class _LegacyMeta(abc.ABCMeta):
     """
 
     def __instancecheck__(cls, instance):
-        if isinstance(instance, qml.devices.LegacyDeviceFacade):
+        from .legacy_facade import LegacyDeviceFacade  # pylint: disable=import-outside-toplevel
+
+        if isinstance(instance, LegacyDeviceFacade):
             return isinstance(instance.target_device, cls)
 
         return super().__instancecheck__(instance)
@@ -281,7 +284,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
 
         elif isinstance(shots, Sequence) and not isinstance(shots, str):
             # device is in batched sampling mode
-            shot_obj = qml.measurements.Shots(shots)
+            shot_obj = Shots(shots)
             self._shots, self._shot_vector = shot_obj.total_shots, list(shot_obj.shot_vector)
             self._raw_shot_sequence = shots
 
@@ -609,7 +612,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
         """.BooleanFn: Returns the stopping condition for the device. The returned
         function accepts a queuable object (including a PennyLane operation
         and observable) and returns ``True`` if supported by the device."""
-        return qml.BooleanFn(
+        return BooleanFn(
             lambda obj: not isinstance(obj, QuantumScript)
             and (isinstance(obj, MeasurementProcess) or self.supports_operation(obj.name))
         )
@@ -778,16 +781,16 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
 
             # Use qwc grouping if the circuit contains a single measurement of a
             # Sum with grouping indices already calculated.
-            circuits, processing_fn = qml.transforms.split_non_commuting(circuit, "qwc")
+            circuits, processing_fn = split_non_commuting(circuit, "qwc")
 
         elif any(isinstance(m.obs, LinearCombination) for m in circuit.measurements):
 
             # Otherwise, use wire-based grouping if the circuit contains a Hamiltonian
             # that is potentially very large.
-            circuits, processing_fn = qml.transforms.split_non_commuting(circuit, "wires")
+            circuits, processing_fn = split_non_commuting(circuit, "wires")
 
         else:
-            circuits, processing_fn = qml.transforms.split_non_commuting(circuit)
+            circuits, processing_fn = split_non_commuting(circuit)
 
         # Check whether the circuit was broadcasted and whether broadcasting is supported
         if circuit.batch_size is None or self.capabilities().get("supports_broadcasting"):
@@ -795,7 +798,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
             return circuits, processing_fn
 
         # Expand each of the broadcasted Hamiltonian-expanded circuits
-        expanded_tapes, expanded_fn = qml.transforms.broadcast_expand(circuits)
+        expanded_tapes, expanded_fn = broadcast_expand(circuits)
 
         # Chain the postprocessing functions of the broadcasted-tape expansions and the Hamiltonian
         # expansion. Note that the application order is reversed compared to the expansion order,
@@ -983,7 +986,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
         for o in queue:
             operation_name = o.name
 
-            if isinstance(o, MidMeasureMP) and not self.capabilities().get(
+            if isinstance(o, MidMeasure) and not self.capabilities().get(
                 "supports_mid_measure", False
             ):
                 raise DeviceError(
@@ -992,7 +995,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
                     "simulate the application of mid-circuit measurements on this device."
                 )
 
-            if isinstance(o, qml.Projector):
+            if isinstance(o, Projector):
                 raise ValueError(f"Postselection is not supported on the {self.name} device.")
 
             if not self.stopping_condition(o):
@@ -1006,14 +1009,14 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
                 if o is None:
                     continue
 
-            if isinstance(o, qml.ops.Prod):
+            if isinstance(o, Prod):
 
                 supports_prod = self.supports_observable(o.name)
                 if not supports_prod:
                     raise DeviceError(f"Observable Prod not supported on device {self.short_name}")
 
                 simplified_op = o.simplify()
-                if isinstance(simplified_op, qml.ops.Prod):
+                if isinstance(simplified_op, Prod):
                     for i in o.simplify().operands:
                         if not self.supports_observable(i.name):
                             raise DeviceError(

@@ -64,8 +64,8 @@ class TestComparison:
         qnode_def = qml.QNode(circuit, dev_def)
         qnode = qml.QNode(circuit, dev)
 
-        grad_def = qml.grad(qnode_def, argnum=[0, 1])
-        grad = qml.grad(qnode, argnum=[0, 1])
+        grad_def = qml.grad(qnode_def, argnums=[0, 1])
+        grad = qml.grad(qnode, argnums=[0, 1])
 
         def workload():
             return (
@@ -124,8 +124,8 @@ class TestComparison:
         qnode_def = qml.QNode(circuit, dev_def)
         qnode = qml.QNode(circuit, dev)
 
-        grad_def = qml.grad(qnode_def, argnum=[0, 1])
-        grad = qml.grad(qnode, argnum=[0, 1])
+        grad_def = qml.grad(qnode_def, argnums=[0, 1])
+        grad = qml.grad(qnode, argnums=[0, 1])
 
         def workload():
             return (
@@ -171,8 +171,8 @@ class TestComparison:
         qnode_def = qml.QNode(circuit, dev_def)
         qnode = qml.QNode(circuit, dev)
 
-        grad_def = qml.grad(qnode_def, argnum=[0, 1])
-        grad = qml.grad(qnode, argnum=[0, 1])
+        grad_def = qml.grad(qnode_def, argnums=[0, 1])
+        grad = qml.grad(qnode, argnums=[0, 1])
 
         assert pnp.allclose(qnode(theta, phi), qnode_def(theta, phi), atol=tol(dev.shots))
         assert pnp.allclose(grad(theta, phi), grad_def(theta, phi), atol=tol(dev.shots))
@@ -209,8 +209,8 @@ class TestComparison:
         qnode_def = qml.QNode(circuit, dev_def)
         qnode = qml.QNode(circuit, dev)
 
-        grad_def = qml.grad(qnode_def, argnum=0)
-        grad = qml.grad(qnode, argnum=0)
+        grad_def = qml.grad(qnode_def, argnums=0)
+        grad = qml.grad(qnode, argnums=0)
 
         assert pnp.allclose(qnode(weights), qnode_def(weights), atol=tol(dev.shots))
         assert pnp.allclose(grad(weights), grad_def(weights), atol=tol(dev.shots))
@@ -251,7 +251,8 @@ class TestComparison:
         ]
 
         layers = 3
-        rng = pnp.random.default_rng(1967)
+        # Avoid seed 1967 until https://github.com/Qiskit/qiskit/issues/15278 is fixed.
+        rng = pnp.random.default_rng(1968)
         gates_per_layers = [rng.permutation(gates).numpy() for _ in range(layers)]
 
         def circuit():

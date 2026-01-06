@@ -23,6 +23,7 @@ from scipy.sparse import csr_matrix
 
 import pennylane as qml
 from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition.resources import resource_rep
 from pennylane.decomposition.symbolic_decomposition import adjoint_rotation, pow_rotation
 from pennylane.operation import Operation
 from pennylane.typing import TensorLike
@@ -280,7 +281,7 @@ def _single_excitation_resources():
 
 
 @register_resources(_single_excitation_resources)
-def _single_excitation_decomp(phi, wires, **__):
+def _single_excitation_decomp(phi: TensorLike, wires: WiresLike, **__):
     qml.Hadamard(wires[0])
     qml.CNOT(wires)
     qml.RY(-phi / 2, wires[0])
@@ -289,7 +290,20 @@ def _single_excitation_decomp(phi, wires, **__):
     qml.Hadamard(wires[0])
 
 
-add_decomps(SingleExcitation, _single_excitation_decomp)
+def _single_excitation_ppr_resource():
+    return {
+        resource_rep(qml.PauliRot, pauli_word="XY"): 1,
+        resource_rep(qml.PauliRot, pauli_word="YX"): 1,
+    }
+
+
+@register_resources(_single_excitation_ppr_resource)
+def _single_excitation_ppr(phi: TensorLike, wires: WiresLike, **__):
+    qml.PauliRot(phi / 2, "YX", wires=wires)
+    qml.PauliRot(-phi / 2, "XY", wires=wires)
+
+
+add_decomps(SingleExcitation, _single_excitation_decomp, _single_excitation_ppr)
 add_decomps("Adjoint(SingleExcitation)", adjoint_rotation)
 add_decomps("Pow(SingleExcitation)", pow_rotation)
 
@@ -567,17 +581,10 @@ class SingleExcitationPlus(Operation):
 
         **Example:**
 
-        >>> qml.SingleExcitationPlus.compute_decomposition(1.23, wires=(0,1))
-        [H(1),
-         CNOT(wires=[1, 0]),
-         RY(0.615, wires=[0]),
-         RY(0.615, wires=[1]),
-         CY(wires=[1, 0]),
-         S(1),
-         H(1),
-         RZ(0.615, wires=[1]),
-         CNOT(wires=[0, 1]),
-         GlobalPhase(-0.3075, wires=[])]
+        >>> from pprint import pprint
+        >>> decomp = qml.SingleExcitationPlus.compute_decomposition(1.23, wires=(0,1))
+        >>> pprint(decomp)
+        [H(1), CNOT(wires=[1, 0]), RY(0.615, wires=[0]), RY(0.615, wires=[1]), CY(wires=[1, 0]), S(1), H(1), RZ(-0.615, wires=[1]), CNOT(wires=[0, 1]), GlobalPhase(-0.3075, wires=[])]
 
         """
         decomp_ops = [
@@ -857,7 +864,7 @@ def _doublexcit_resource():
 
 
 @register_resources(_doublexcit_resource)
-def _doublexcit(phi, wires, **__):
+def _doublexcit(phi: TensorLike, wires: WiresLike, **_):
     qml.CNOT(wires=[wires[2], wires[3]])
     qml.CNOT(wires=[wires[0], wires[2]])
     qml.Hadamard(wires=wires[3])
@@ -888,7 +895,32 @@ def _doublexcit(phi, wires, **__):
     qml.CNOT(wires=[wires[2], wires[3]])
 
 
-add_decomps(DoubleExcitation, _doublexcit)
+def _doublexcit_ppr_resource():
+    return {
+        resource_rep(qml.PauliRot, pauli_word="YYYX"): 1,
+        resource_rep(qml.PauliRot, pauli_word="YYXY"): 1,
+        resource_rep(qml.PauliRot, pauli_word="YXYY"): 1,
+        resource_rep(qml.PauliRot, pauli_word="YXXX"): 1,
+        resource_rep(qml.PauliRot, pauli_word="XYYY"): 1,
+        resource_rep(qml.PauliRot, pauli_word="XYXX"): 1,
+        resource_rep(qml.PauliRot, pauli_word="XXYX"): 1,
+        resource_rep(qml.PauliRot, pauli_word="XXXY"): 1,
+    }
+
+
+@register_resources(_doublexcit_ppr_resource)
+def _doublexcit_ppr(phi: TensorLike, wires: WiresLike, **_):
+    qml.PauliRot(phi / 8, pauli_word="YYYX", wires=wires)
+    qml.PauliRot(phi / 8, pauli_word="YYXY", wires=wires)
+    qml.PauliRot(-phi / 8, pauli_word="YXYY", wires=wires)
+    qml.PauliRot(phi / 8, pauli_word="YXXX", wires=wires)
+    qml.PauliRot(-phi / 8, pauli_word="XYYY", wires=wires)
+    qml.PauliRot(phi / 8, pauli_word="XYXX", wires=wires)
+    qml.PauliRot(-phi / 8, pauli_word="XXYX", wires=wires)
+    qml.PauliRot(-phi / 8, pauli_word="XXXY", wires=wires)
+
+
+add_decomps(DoubleExcitation, _doublexcit, _doublexcit_ppr)
 add_decomps("Adjoint(DoubleExcitation)", adjoint_rotation)
 add_decomps("Pow(DoubleExcitation)", pow_rotation)
 
@@ -1267,8 +1299,7 @@ class OrbitalRotation(Operation):
         **Example:**
 
         >>> qml.OrbitalRotation.compute_decomposition(1.2, wires=[0, 1, 2, 3])
-        [qml.FermionicSWAP(np.pi, wires=[1, 2]), SingleExcitation(1.2, wires=[0, 2]),
-         SingleExcitation(1.2, wires=[1, 3]), qml.FermionicSWAP(np.pi, wires=[1, 2])]
+        [FermionicSWAP(3.141592653589793, wires=[1, 2]), SingleExcitation(1.2, wires=[0, 1]), SingleExcitation(1.2, wires=[2, 3]), FermionicSWAP(3.141592653589793, wires=[1, 2])]
 
         """
 
@@ -1353,7 +1384,8 @@ class FermionicSWAP(Operation):
         ...     qml.FermionicSWAP(phi, wires=[0, 1])
         ...     return qml.state()
         >>> circuit(0.1)
-        array([0.+0.j, 0.9975+0.04992j, 0.0025-0.04992j, 0.+0.j])
+        array([0.        +0.j        , 0.99750208+0.04991671j,
+               0.00249792-0.04991671j, 0.        +0.j        ])
     """
 
     num_wires = 2
@@ -1412,10 +1444,11 @@ class FermionicSWAP(Operation):
         **Example**
 
         >>> qml.FermionicSWAP.compute_matrix(torch.tensor(0.5))
-        tensor([1.   +0.j, 0.   +0.j  , 0.   +0.j  , 0.   +0.j   ],
-               [0.   +0.j, 0.939+0.24j, 0.061-0.24j, 0.   +0.j   ],
-               [0.   +0.j, 0.061-0.24j, 0.939+0.24j, 0.   +0.j   ],
-               [0.   +0.j, 0.   +0.j  , 0.   +0.j  , 0.878+0.479j]])
+        tensor([[1.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j],
+                [0.0000+0.0000j, 0.9388+0.2397j, 0.0612-0.2397j, 0.0000+0.0000j],
+                [0.0000+0.0000j, 0.0612-0.2397j, 0.9388+0.2397j, 0.0000+0.0000j],
+                [0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j, 0.8776+0.4794j]],
+               dtype=torch.complex128)
         """
 
         if (

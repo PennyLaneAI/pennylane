@@ -28,9 +28,11 @@ will not work with devices other than default qubit.
 ...     qml.RX(x, 0)
 ...     return qml.expval(qml.Z(0))
 >>> jax.vmap(circuit)(jax.numpy.array([1.0, 2.0, 3.0]))
-TypeError: RX(): incompatible function arguments. The following argument types are supported:
-    1. (self: pennylane_lightning.lightning_qubit_ops.StateVectorC128, arg0: list[int], arg1: bool, arg2: list[float]) -> None
-    2. (self: pennylane_lightning.lightning_qubit_ops.StateVectorC128, arg0: list[int], arg1: list[bool], arg2: list[int], arg3: bool, arg4: list[float]) -> None
+Traceback (most recent call last):
+    ...
+ValueError: Converting a JAX array to a NumPy array not supported when using the JAX JIT.
+--------------------
+For simplicity, JAX has removed its internal frames from the traceback of the following exception. Set JAX_TRACEBACK_FILTERING=off to include these.
 
 **Grouping commuting measurements and/or splitting up non-commuting measurements.** Currently, each
 measurement is fully independent and generated from different raw samples than every other measurement.
@@ -39,13 +41,21 @@ should be taken together. A "Combination measurement process" higher order primi
 We will also need to figure out how to implement splitting up a circuit with non-commuting measurements into
 multiple circuits.
 
->>> @partial(qml.set_shots, shots=5)
-... @qml.qnode(qml.device('default.qubit', wires=1))
+>>> @qml.set_shots(shots=5)
+... @qml.qnode(qml.device('default.qubit', seed=42, wires=1))
 ... def circuit():
 ...     qml.H(0)
 ...     return qml.sample(wires=0), qml.sample(wires=0)
 >>> circuit()
-(Array([1, 0, 1, 0, 0], dtype=int64), Array([0, 0, 1, 0, 0], dtype=int64))
+(array([[1],
+        [0],
+        [1],
+        [1],
+        [0]]), array([[1],
+        [0],
+        [1],
+        [1],
+        [0]]))
 
 **Figuring out what types of data can be sent to the device.** Is the device always
 responsible for converting jax arrays to numpy arrays? Is the device responsible for having a
@@ -70,9 +80,13 @@ from functools import partial
 from numbers import Number
 from warnings import warn
 
-import jax
-from jax.interpreters import ad, batching, mlir
-from jax.interpreters import partial_eval as pe
+try:
+    import jax
+    from jax.interpreters import ad, batching, mlir
+    from jax.interpreters import partial_eval as pe
+
+except (ImportError, NameError) as e:  # pragma: no cover
+    pass
 
 import pennylane as qml
 from pennylane.capture import FlatFn, QmlPrimitive
@@ -244,7 +258,7 @@ def custom_staging_rule(
     """
     shots_len, jaxpr = params["shots_len"], params["qfunc_jaxpr"]
     device = params["device"]
-    invars = [jaxpr_trace.getvar(x) for x in tracers]
+    invars = [x.val for x in tracers]
     shots_vars = invars[:shots_len]
 
     batch_dims = params.get("batch_dims")
@@ -259,15 +273,8 @@ def custom_staging_rule(
         num_device_wires=len(device.wires),
         batch_shape=batch_shape,
     )
-    out_tracers = [pe.DynamicJaxprTracer(jaxpr_trace, o) for o in new_shapes]
-
-    eqn = jax.core.new_jaxpr_eqn(
-        invars,
-        [jaxpr_trace.makevar(o) for o in out_tracers],
-        qnode_prim,
-        params,
-        jax.core.no_effects,
-        source_info=source_info,
+    eqn, out_tracers = jaxpr_trace.make_eqn(
+        tracers, new_shapes, qnode_prim, params, jax.core.no_effects, source_info
     )
 
     jaxpr_trace.frame.add_eqn(eqn)
@@ -424,55 +431,15 @@ def _split_static_args(args, static_argnums):
     return tuple(dynamic_args), tuple(static_args)
 
 
-def _get_jaxpr_cache_key(dynamic_args, static_args, kwargs, abstracted_axes):
-    """Create a hash using the arguments and keyword arguments of a QNode.
-
-    The hash is dependent on the abstract evaluation of ``dynamic_args``. For any indices
-    in ``static_args``, the concrete value of the argument will be used to create
-    the hash. If any arguments have dynamic shapes, their abstract axes will be replaced
-    by the respective letter provided in ``abstracted_axes``.
-
-    For keyword arguments, the string representation of the keyword argument
-    dictionary will be used to create the hash.
-
-    Args:
-        dynamic_args (tuple): dynamic positional arguments of the cached qfunc
-        static_args (tuple): static positional arguments of the cached qfunc
-        kwargs (dict): keyword arguments of the cached qfunc
-        abstract_axes (Optional[tuple[dict[int, str]]]): corresponding abstract axes
-            of positional arguments
-
-    Returns:
-        int: hash to be used as the jaxpr cache's key
-    """
-    serialized = "args="
-
-    for i, arg in enumerate(dynamic_args):
-        if abstracted_axes:
-            serialized_shape = tuple(
-                abstracted_axes[i].get(j, s) for j, s in enumerate(qml.math.shape(arg))
-            )
-        else:
-            serialized_shape = qml.math.shape(arg)
-        serialized += f"{serialized_shape},{qml.math.get_dtype_name(arg)};"
-
-    for arg in static_args:
-        serialized += f"{arg};"
-
-    serialized += f";;{kwargs=}"
-    return hash(serialized)
-
-
 def _extract_qfunc_jaxpr(qnode, abstracted_axes, *args, **kwargs):
     """Process the quantum function of a QNode to create a Jaxpr."""
 
-    qfunc = partial(qnode.func, **kwargs) if kwargs else qnode.func
-    flat_fn = FlatFn(qfunc)
+    flat_fn = FlatFn(qnode.func)
 
     try:
         qfunc_jaxpr = jax.make_jaxpr(
             flat_fn, abstracted_axes=abstracted_axes, static_argnums=qnode.static_argnums
-        )(*args)
+        )(*args, **kwargs)
     except (
         jax.errors.TracerArrayConversionError,
         jax.errors.TracerIntegerConversionError,
@@ -507,49 +474,43 @@ def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
     .. code-block:: python
 
         qml.capture.enable()
+        jax.config.update("jax_enable_x64", True)
 
-        @qml.qnode(qml.device('lightning.qubit', wires=1))
+        @qml.set_shots(50_000)
+        @qml.qnode(qml.device('lightning.qubit', seed=42, wires=1))
         def circuit(x):
             qml.RX(x, wires=0)
             return qml.expval(qml.Z(0)), qml.probs()
 
         def f(x):
-            expval_z, probs = circuit(np.pi * x, shots=50000)
+            expval_z, probs = circuit(np.pi * x)
             return 2 * expval_z + probs
 
         jaxpr = jax.make_jaxpr(f)(0.1)
-        print("jaxpr:")
-        print(jaxpr)
-
         res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.7)
-        print()
-        print("result:")
-        print(res)
 
+    >>> print(jaxpr)
+    { lambda ; a:f64[]. let
+        b:f64[] = mul 3.141592653589793:f64[] a
+        c:f64[] d:f64[2] = qnode[
+          device=<lightning.qubit device (wires=1) at ...>
+          execution_config=ExecutionConfig(grad_on_execution=False, use_device_gradient=None, use_device_jacobian_product=False, gradient_method='best', gradient_keyword_arguments={}, device_options={}, interface=<Interface.JAX: 'jax'>, derivative_order=1, mcm_config=MCMConfig(mcm_method=None, postselect_mode=None), convert_to_numpy=True, executor_backend=<class 'pennylane.concurrency.executors.native.multiproc.MPPoolExec'>)
+          n_consts=0
+          qfunc_jaxpr={ lambda ; e:f64[]. let
+              _:AbstractOperator() = RX[n_wires=1] e 0:i64[]
+              f:AbstractOperator() = PauliZ[n_wires=1] 0:i64[]
+              g:AbstractMeasurement(n_wires=None) = expval_obs f
+              h:AbstractMeasurement(n_wires=0) = probs_wires
+            in (g, h) }
+          qnode=<QNode: device='<lightning.qubit device (wires=1) at ...>', interface='jax', diff_method='best', shots='Shots(total=50000)'>
+          shots_len=1
+        ] 50000:i64[] b
+        i:f64[] = mul 2.0:f64[] c
+        j:f64[2] = add i d
+      in (j,) }
 
-    .. code-block:: none
-
-        jaxpr:
-        { lambda ; a:f32[]. let
-            b:f32[] = mul 3.141592653589793 a
-            c:f32[] d:f32[2] = qnode[
-              device=<lightning.qubit device (wires=1) at 0x10557a070>
-              qfunc_jaxpr={ lambda ; e:f32[]. let
-                  _:AbstractOperator() = RX[n_wires=1] e 0
-                  f:AbstractOperator() = PauliZ[n_wires=1] 0
-                  g:AbstractMeasurement(n_wires=None) = expval_obs f
-                  h:AbstractMeasurement(n_wires=0) = probs_wires
-                in (g, h) }
-              qnode=<QNode: device='<lightning.qubit device (wires=1) at 0x10557a070>', interface='auto', diff_method='best'>
-              qnode_kwargs={'diff_method': 'best', 'grad_on_execution': 'best', 'cache': False, 'cachesize': 10000, 'max_diff': 1, 'device_vjp': False, 'mcm_method': None, 'postselect_mode': None}
-              shots=Shots(total=50000)
-            ] b
-            i:f32[] = mul 2.0 c
-            j:f32[2] = add i d
-          in (j,) }
-
-        result:
-        [Array([-0.96939224, -0.38207346], dtype=float32)]
+    >>> print(res)
+    [Array([-0.956..., -0.365...], dtype=float64)]
 
 
     """
@@ -570,27 +531,23 @@ def _bind_qnode(qnode, *args, **kwargs):
     # We compute ``abstracted_axes`` using the flattened arguments because trying to flatten
     # pytree ``abstracted_axes`` causes the abstract axis dictionaries to get flattened, which
     # we don't want to correctly compute the ``cache_key``.
-    dynamic_args, static_args = _split_static_args(args, qnode.static_argnums)
-    flat_dynamic_args, dynamic_args_struct = jax.tree_util.tree_flatten(dynamic_args)
-    flat_static_args = jax.tree_util.tree_leaves(static_args)
-    abstracted_axes, abstract_shapes = qml.capture.determine_abstracted_axes(flat_dynamic_args)
-    cache_key = _get_jaxpr_cache_key(flat_dynamic_args, flat_static_args, kwargs, abstracted_axes)
+    dynamic_args, _ = _split_static_args(args, qnode.static_argnums)
+    flat_args = jax.tree_util.tree_leaves((dynamic_args, kwargs))
 
-    if cached_value := qnode.capture_cache.get(cache_key, None):
-        qfunc_jaxpr, config, out_tree = cached_value
-    else:
-        config = construct_execution_config(
-            qnode, resolve=False
-        )()  # no need for args and kwargs as not resolving
+    abstracted_axes, abstract_shapes = qml.capture.determine_abstracted_axes(flat_args)
 
-        if abstracted_axes:
-            # We unflatten the ``abstracted_axes`` here to be have the same pytree structure
-            # as the original dynamic arguments
-            abstracted_axes = jax.tree_util.tree_unflatten(dynamic_args_struct, abstracted_axes)
+    # no need for args and kwargs as not resolving
+    config = construct_execution_config(qnode, resolve=False)()
 
-        qfunc_jaxpr, out_tree = _extract_qfunc_jaxpr(qnode, abstracted_axes, *args, **kwargs)
+    if abstracted_axes:  # pragma: no cover
+        # We unflatten the ``abstracted_axes`` here to be have the same pytree structure
+        # as the original dynamic arguments
+        # kwargs and abstracted axes will error out in Jax with NotImplementedError
+        # rely on jax to handle that validation
+        struct = jax.tree_util.tree_structure(args)
+        abstracted_axes = jax.tree_util.tree_unflatten(struct, abstracted_axes)
 
-        qnode.capture_cache[cache_key] = (qfunc_jaxpr, config, out_tree)
+    qfunc_jaxpr, out_tree = _extract_qfunc_jaxpr(qnode, abstracted_axes, *args, **kwargs)
 
     flat_shots = tuple(qnode._shots) if qnode._shots else ()  # pylint: disable=protected-access
 
@@ -598,7 +555,7 @@ def _bind_qnode(qnode, *args, **kwargs):
         *flat_shots,
         *qfunc_jaxpr.consts,
         *abstract_shapes,
-        *flat_dynamic_args,
+        *flat_args,
         shots_len=len(flat_shots),
         qnode=qnode,
         device=qnode.device,

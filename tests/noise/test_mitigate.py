@@ -15,14 +15,11 @@
 Tests for mitigation transforms.
 """
 # pylint:disable=no-self-use, unnecessary-lambda-assignment, protected-access
-from functools import partial
-
 import pytest
 from packaging import version
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.noise.insert_ops import insert
 from pennylane.noise.mitigate import (
     _polyfit,
@@ -146,8 +143,7 @@ class TestMitigateWithZNE:
         shapes = qml.SimplifiedTwoDesign.shape(n_layers, n_wires)
         w1, w2 = (np.random.random(s) for s in shapes)
 
-        @partial(
-            mitigate_with_zne,
+        @mitigate_with_zne(
             scale_factors=[1, 2, 3],
             folding=fold_global,
             extrapolate=extrapolate,
@@ -313,13 +309,12 @@ class TestMitiqIntegration:
         shapes = qml.SimplifiedTwoDesign.shape(n_layers, n_wires)
         w1, w2 = (np.random.random(s) for s in shapes)
 
-        @partial(
-            mitigate_with_zne,
+        @mitigate_with_zne(
             scale_factors=[1, 2, 3],
             folding=fold_global,
             extrapolate=RichardsonFactory.extrapolate,
         )
-        @partial(decompose, gate_set=["RY", "CZ"])
+        @decompose(gate_set=["RY", "CZ"])
         @qml.qnode(dev)
         def mitigated_circuit(w1, w2):
             qml.SimplifiedTwoDesign(w1, w2, wires=range(2))
@@ -363,13 +358,12 @@ class TestMitiqIntegration:
         shapes = qml.SimplifiedTwoDesign.shape(n_layers, n_wires)
         w1, w2 = (np.random.random(s) for s in shapes)
 
-        @partial(
-            mitigate_with_zne,
+        @mitigate_with_zne(
             scale_factors=[1, 2, 3],
             folding=fold_global,
             extrapolate=RichardsonFactory.extrapolate,
         )
-        @partial(decompose, gate_set=["RY", "CZ"])
+        @decompose(gate_set=["RY", "CZ"])
         @qml.qnode(dev)
         def mitigated_circuit(w1, w2):
             qml.SimplifiedTwoDesign(w1, w2, wires=range(2))
@@ -386,6 +380,13 @@ class TestMitiqIntegration:
         assert res_mitigated.shape == res_ideal.shape
         assert not np.allclose(res_mitigated, res_ideal)
 
+    @pytest.mark.xfail(
+        reason="Mitiq 0.47.0 uses removed QuantumScript.to_openqasm. Note that Mitiq 0.48.1 "
+        "no longer raises this error as per https://github.com/unitaryfoundation/mitiq/issues/2814. "
+        "However, as there is no stable dependency resolution for qualtran, cirq and mitiq==0.48.1, "
+        "we cannot test this case for the time being. Qualtran should update soon and enable this "
+        "test case to pass."
+    )
     def test_with_reps_per_factor(self):
         """Tests if the expected shape is returned when mitigating a circuit with a reps_per_factor
         set not equal to 1"""
@@ -403,14 +404,13 @@ class TestMitiqIntegration:
         shapes = qml.SimplifiedTwoDesign.shape(n_layers, n_wires)
         w1, w2 = (np.random.random(s) for s in shapes)
 
-        @partial(
-            mitigate_with_zne,
+        @mitigate_with_zne(
             scale_factors=[1, 2, 3],
             folding=fold_gates_at_random,
             extrapolate=RichardsonFactory.extrapolate,
             reps_per_factor=2,
         )
-        @partial(decompose, gate_set=["RY", "CZ"])
+        @decompose(gate_set=["RY", "CZ"])
         @qml.qnode(dev)
         def mitigated_circuit(w1, w2):
             qml.SimplifiedTwoDesign(w1, w2, wires=range(2))
@@ -421,10 +421,9 @@ class TestMitiqIntegration:
             qml.SimplifiedTwoDesign(w1, w2, wires=range(2))
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.warns(
-            PennyLaneDeprecationWarning, match="``QuantumScript.to_openqasm`` is deprecated"
-        ):
-            res_mitigated = mitigated_circuit(w1, w2)
+        # Raises CircuitConversionError
+        # Note that Mitiq should no longer raise this error once it has reached v0.48.1
+        res_mitigated = mitigated_circuit(w1, w2)
 
         res_ideal = ideal_circuit(w1, w2)
 
@@ -455,13 +454,12 @@ class TestMitiqIntegration:
         exact_qnode = qml.QNode(circuit, dev_noise_free)
         noisy_qnode = qml.QNode(circuit, dev)
 
-        @partial(
-            mitigate_with_zne,
+        @mitigate_with_zne(
             scale_factors=[1, 2, 3],
             folding=fold_global,
             extrapolate=RichardsonFactory.extrapolate,
         )
-        @partial(decompose, gate_set=["RY", "CZ"])
+        @decompose(gate_set=["RY", "CZ"])
         @qml.qnode(dev)
         def mitigated_qnode(w1, w2):
             qml.SimplifiedTwoDesign(w1, w2, wires=range(2))
@@ -505,13 +503,12 @@ class TestMitiqIntegration:
         shapes = qml.SimplifiedTwoDesign.shape(n_layers, n_wires)
         w1, w2 = (np.random.random(s, requires_grad=True) for s in shapes)
 
-        @partial(
-            mitigate_with_zne,
+        @mitigate_with_zne(
             scale_factors=[1, 2, 3],
             folding=fold_global,
             extrapolate=RichardsonFactory.extrapolate,
         )
-        @partial(decompose, gate_set=["RY", "CZ"])
+        @decompose(gate_set=["RY", "CZ"])
         @qml.qnode(dev)
         def mitigated_circuit(w1, w2):
             qml.SimplifiedTwoDesign(w1, w2, wires=range(2))
@@ -566,7 +563,7 @@ class TestDifferentiableZNE:
         dev = qml.device("default.qubit", wires=range(n_wires))
 
         # This circuit itself produces the identity by construction
-        @partial(decompose, gate_set=["RY", "CZ"])
+        @decompose(gate_set=["RY", "CZ"])
         @qml.qnode(dev)
         def circuit(w1, w2):
             template(w1, w2, wires=range(n_wires))

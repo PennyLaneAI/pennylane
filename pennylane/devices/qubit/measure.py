@@ -22,10 +22,9 @@ from pennylane import math
 from pennylane.measurements import (
     ExpectationMP,
     MeasurementProcess,
-    MeasurementValue,
     StateMeasurement,
 )
-from pennylane.ops import LinearCombination, Sum
+from pennylane.ops import LinearCombination, MeasurementValue, Sum
 from pennylane.pauli.conversion import is_pauli_sentence, pauli_sentence
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires

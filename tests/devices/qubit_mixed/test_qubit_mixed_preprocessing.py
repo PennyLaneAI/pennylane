@@ -44,19 +44,17 @@ def test_mid_circuit_measurement_preprocessing():
     tape = qml.tape.QuantumScript(ops, [qml.expval(qml.Z(0))], shots=1000)
 
     # Process the tape with the device's preprocess method
-    transform_program, _ = dev.preprocess()
+    compile_pipeline, _ = dev.preprocess()
 
-    # Apply the transform program to the tape
-    processed_tapes, _ = transform_program([tape])
+    # Apply the compile pipeline to the tape
+    processed_tapes, _ = compile_pipeline([tape])
 
     # There should be one processed tape
     assert len(processed_tapes) == 1, "Expected exactly one processed tape."
     processed_tape = processed_tapes[0]
 
     # Check that mid-circuit measurements have been deferred
-    mid_measure_ops = [
-        op for op in processed_tape.operations if isinstance(op, qml.measurements.MidMeasureMP)
-    ]
+    mid_measure_ops = [op for op in processed_tape.operations if isinstance(op, qml.ops.MidMeasure)]
     assert len(mid_measure_ops) == 0, "Mid-circuit measurements were not deferred properly."
     assert processed_tape.circuit == [qml.CNOT([0, 1]), qml.CNOT([1, 0]), qml.expval(qml.Z(0))]
 

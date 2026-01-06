@@ -14,6 +14,7 @@
 """
 Tests for the AllSinglesDoubles template.
 """
+
 import numpy as np
 
 # pylint: disable=too-many-arguments,too-few-public-methods
@@ -21,23 +22,56 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as pnp
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 
 @pytest.mark.jax
 def test_standard_validity():
     """Run standard tests of operation validity."""
     op = qml.AllSinglesDoubles(
-        [1.0, 2.0],
-        wires=range(4),
-        hf_state=np.array([1, 1, 0, 0]),
-        singles=[[0, 1]],
-        doubles=[[0, 1, 2, 3]],
+        np.array([1.0, 2.0]),
+        np.array(list(range(4))),
+        np.array([1, 1, 0, 0]),
+        singles=np.array([[0, 1]]),
+        doubles=np.array([[0, 1, 2, 3]]),
     )
     qml.ops.functions.assert_valid(op)
 
 
 class TestDecomposition:
     """Tests that the template defines the correct decomposition."""
+
+    DECOMP_PARAMS = [
+        (
+            np.array([-2.8, 0.5]),
+            range(4),
+            np.array([1, 1, 0, 0]),
+            [[0, 2]],
+            [[0, 1, 2, 3]],
+        ),
+        (
+            np.array([0.0, 1.0]),
+            range(4),
+            np.array([0, 1, 0, 1]),
+            [[1, 3]],
+            [[0, 1, 2, 3]],
+        ),
+        (
+            np.array([0.0, -11.0]),
+            range(4),
+            np.array([1, 1, 1, 1]),
+            [[1, 3]],
+            [[3, 2, 1, 0]],
+        ),
+    ]
+
+    @pytest.mark.capture
+    @pytest.mark.parametrize(("weights", "wires", "hf_state", "singles", "doubles"), DECOMP_PARAMS)
+    def test_decomposition_new(self, weights, wires, hf_state, singles, doubles):
+        """Test the decomposition of the AllSinglesDoubles template."""
+        op = qml.AllSinglesDoubles(weights, wires, hf_state, singles=singles, doubles=doubles)
+        for rule in qml.list_decomps(qml.AllSinglesDoubles):
+            _test_decomposition_rule(op, rule)
 
     @pytest.mark.parametrize(
         ("singles", "doubles", "weights", "ref_gates"),
@@ -158,6 +192,24 @@ class TestDecomposition:
 class TestInputs:
     """Test inputs and pre-processing."""
 
+    @pytest.mark.jax
+    @pytest.mark.parametrize("singles", [None, np.array([[0, 1]])])
+    @pytest.mark.parametrize("doubles", [None, np.array([[0, 1, 2, 3]])])
+    def test_optional_arguments(self, singles, doubles):
+        """Tests that optional arguments are truly optional."""
+        if singles is None and doubles is None:
+            pytest.skip(reason="Not a valid configuration - both cannot be empty.")
+
+        weights = np.array([1.0]) if singles is None or doubles is None else np.array([1.0, 2.0])
+        op = qml.AllSinglesDoubles(
+            weights,
+            np.array(list(range(4))),
+            np.array([1, 1, 0, 0]),
+            singles=singles,
+            doubles=doubles,
+        )
+        qml.ops.functions.assert_valid(op)
+
     @pytest.mark.parametrize(
         ("weights", "wires", "singles", "doubles", "hf_state", "msg_match"),
         [
@@ -191,7 +243,7 @@ class TestInputs:
                 None,
                 [[0, 1, 2, 3, 4]],
                 np.array([1, 1, 0, 0]),
-                "Expected entries of 'doubles' to be of size 4",
+                "Expected all entries of 'doubles' to be of size 4",
             ),
             (
                 np.array([-2.8]),
@@ -199,7 +251,7 @@ class TestInputs:
                 [[0, 2, 3]],
                 None,
                 np.array([1, 1, 0, 0]),
-                "Expected entries of 'singles' to be of size 2",
+                "Expected all entries of 'singles' to be of size 2",
             ),
             (
                 np.array([-2.8, 0.5]),
@@ -207,7 +259,7 @@ class TestInputs:
                 [[0, 2]],
                 [[0, 1, 2, 3]],
                 np.array([1, 1, 0, 0, 0]),
-                "State must be of length 4",
+                r"Expected length of 'hf_state' to match number of wires \(4\)",
             ),
             (
                 np.array([-2.8, 1.6]),

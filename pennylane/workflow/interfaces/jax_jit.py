@@ -25,10 +25,16 @@ For example:
 ...     return qml.math.unwrap(x)
 >>> x = jax.numpy.array(1.0)
 >>> jax.jit(f)(x)
+Traceback (most recent call last):
+    ...
 ValueError: Converting a JAX array to a NumPy array not supported when using the JAX JIT.
+--------------------
+For simplicity, JAX has removed its internal frames from the traceback of the following exception. Set JAX_TRACEBACK_FILTERING=off to include these.
+>>> jax.config.update("jax_enable_x64", True)
 >>> def g(x):
 ...     expected_output_shape = jax.ShapeDtypeStruct((), jax.numpy.float64)
 ...     return jax.pure_callback(f, expected_output_shape, x, vmap_method="sequential")
+>>> x = jax.numpy.array(1.0)
 >>> jax.jit(g)(x)
 Array(1., dtype=float64)
 
@@ -143,7 +149,7 @@ def _jac_shape_dtype_struct(tape: "qml.tape.QuantumScript", device: "qml.devices
     ShapeDtypeStruct(shape=(2,), dtype=float64))
     >>> tapes, fn = qml.gradients.param_shift(tape)
     >>> fn(dev.execute(tapes))
-    (array(0.), array([-0.42073549,  0.42073549]))
+    (array(0.), array([-0.42...,  0.42...]))
     """
     shape_and_dtype = _result_shape_dtype_struct(tape, device)
     if len(tape.trainable_params) == 1:

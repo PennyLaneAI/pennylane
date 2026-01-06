@@ -167,7 +167,6 @@ class TestCompressedResourceOp:
                     [qml.X(0) @ qml.X(1), qml.Z(2), qml.Y(0) @ qml.Y(1), qml.I((0, 1, 2))],
                 ).pauli_rep,
                 "coeff": 1.2j,
-                "num_steps": 3,
             },
         )
         assert isinstance(hash(op), int)
@@ -176,7 +175,6 @@ class TestCompressedResourceOp:
         """Tests when the resource params contains a list."""
 
         class CustomOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
-
             resource_keys = {"foo", "bar"}
 
             @property
@@ -263,7 +261,6 @@ class TestResourceRep:
             resource_rep(int)
 
         class CustomOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
-
             resource_keys = {}
 
             @property

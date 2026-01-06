@@ -20,6 +20,7 @@ import copy
 import numpy as np
 
 from pennylane import math
+from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.operation import Operation
 from pennylane.ops import QubitUnitary
 from pennylane.wires import Wires
@@ -54,11 +55,11 @@ def probs_to_unitary(probs):
     **Example:**
 
     >>> p = np.ones(4) / 4
-    >>> probs_to_unitary(p)
-    array([[ 0.5       ,  0.5       ,  0.5       ,  0.5       ],
-           [ 0.5       , -0.83333333,  0.16666667,  0.16666667],
-           [ 0.5       ,  0.16666667, -0.83333333,  0.16666667],
-           [ 0.5       ,  0.16666667,  0.16666667, -0.83333333]])
+    >>> probs_to_unitary(p) # doctest: +SKIP
+    array([[ 0.5   ,  0.5   ,  0.5   ,  0.5   ],
+           [ 0.5   , -0.8333,  0.1667,  0.1667],
+           [ 0.5   ,  0.1667, -0.8333,  0.1667],
+           [ 0.5   ,  0.1667,  0.1667, -0.8333]])
     """
 
     if not math.is_abstract(
@@ -116,20 +117,15 @@ def func_to_unitary(func, M):
 
     >>> func = lambda i: np.sin(i) ** 2
     >>> M = 16
-    >>> func_to_unitary(func, M)
-    array([[ 1.        ,  0.        ,  0.        , ...,  0.        ,
-             0.        ,  0.        ],
-           [ 0.        , -1.        ,  0.        , ...,  0.        ,
-             0.        ,  0.        ],
-           [ 0.        ,  0.        ,  0.54030231, ...,  0.        ,
-             0.        ,  0.        ],
+    >>> func_to_unitary(func, M) # doctest: +SKIP
+    array([[ 1.    ,  0.    ,  0.    , ...,  0.    ,  0.    ,  0.    ],
+           [ 0.    , -1.    ,  0.    , ...,  0.    ,  0.    ,  0.    ],
+           [ 0.    ,  0.    ,  0.5403, ...,  0.    ,  0.    ,  0.    ],
            ...,
-           [ 0.        ,  0.        ,  0.        , ..., -0.13673722,
-             0.        ,  0.        ],
-           [ 0.        ,  0.        ,  0.        , ...,  0.        ,
-             0.75968791,  0.65028784],
-           [ 0.        ,  0.        ,  0.        , ...,  0.        ,
-             0.65028784, -0.75968791]])
+           [ 0.    ,  0.    ,  0.    , ..., -0.1367,  0.    ,  0.    ],
+           [ 0.    ,  0.    ,  0.    , ...,  0.    ,  0.7597,  0.6503],
+           [ 0.    ,  0.    ,  0.    , ...,  0.    ,  0.6503, -0.7597]],
+          shape=(32, 32))
     """
     unitary = np.zeros((2 * M, 2 * M))
 
@@ -313,7 +309,7 @@ class QuantumMonteCarlo(Operation):
 
         The ``QuantumMonteCarlo`` template can then be used:
 
-        .. code-block::
+        .. code-block:: python
 
             n = 10
             N = 2 ** n
@@ -338,14 +334,26 @@ class QuantumMonteCarlo(Operation):
         The estimated value can be retrieved using the formula :math:`\mu = (1-\cos(\pi \theta))/2`
 
         >>> (1 - np.cos(np.pi * phase_estimated)) / 2
-        0.4327096457464369
+        np.float64(0.4327...)
     """
 
     grad_method = None
 
+    resource_keys = {"num_target_wires", "num_estimation_wires", "q_resource_rep"}
+
     @classmethod
-    def _primitive_bind_call(cls, *args, **kwargs):
-        return cls._primitive.bind(*args, **kwargs)
+    def _primitive_bind_call(
+        cls, probs, func, target_wires, estimation_wires, id=None
+    ):  # pylint: disable=arguments-differ
+        # handle target wires and estimation wires
+        return cls._primitive.bind(
+            probs,
+            *target_wires,
+            *estimation_wires,
+            func=func,
+            num_target_wires=len(target_wires),
+            id=id,
+        )
 
     @classmethod
     def _unflatten(cls, data, metadata):
@@ -355,6 +363,16 @@ class QuantumMonteCarlo(Operation):
         # call operation.__init__ to initialize private properties like _name, _id, _pauli_rep, etc.
         Operation.__init__(new_op, *data, wires=metadata[0])
         return new_op
+
+    @property
+    def resource_params(self) -> dict:
+        return {
+            "num_target_wires": len(self.hyperparameters["target_wires"]),
+            "num_estimation_wires": len(self.hyperparameters["estimation_wires"]),
+            "q_resource_rep": resource_rep(
+                QubitUnitary, num_wires=len(self.hyperparameters["target_wires"])
+            ),
+        }
 
     def __init__(self, probs, func, target_wires, estimation_wires, id=None):
         if isinstance(probs, np.ndarray) and probs.ndim != 1:
@@ -431,3 +449,37 @@ class QuantumMonteCarlo(Operation):
         ]
 
         return op_list
+
+
+# pylint: disable=protected-access
+if QuantumMonteCarlo._primitive is not None:
+
+    @QuantumMonteCarlo._primitive.def_impl
+    def _quantum_monte_carlo_impl(probs, *wires, func, num_target_wires, id=None):
+        target_wires = wires[:num_target_wires]
+        estimation_wires = wires[num_target_wires:]
+        return type.__call__(QuantumMonteCarlo, probs, func, target_wires, estimation_wires, id)
+
+
+def _quantum_monte_carlo_resources(num_target_wires, num_estimation_wires, q_resource_rep):
+    return {
+        resource_rep(QubitUnitary, num_wires=num_target_wires - 1): 1,
+        resource_rep(QubitUnitary, num_wires=num_target_wires): 1,
+        resource_rep(
+            QuantumPhaseEstimation,
+            base_resource_rep=q_resource_rep,
+            num_estimation_wires=num_estimation_wires,
+        ): 1,
+    }
+
+
+@register_resources(_quantum_monte_carlo_resources)
+def _quantum_monte_carlo_decomposition(
+    A, R, Q, wires, estimation_wires, target_wires
+):  # pylint: disable=unused-argument
+    QubitUnitary(A, wires=target_wires[:-1])
+    QubitUnitary(R, wires=target_wires)
+    QuantumPhaseEstimation(Q, target_wires=target_wires, estimation_wires=estimation_wires)
+
+
+add_decomps(QuantumMonteCarlo, _quantum_monte_carlo_decomposition)

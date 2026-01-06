@@ -35,22 +35,22 @@ def commutator(op1, op2, pauli=False):
 
     You can compute commutators between operators in PennyLane.
 
-    >>> qml.commutator(X(0), Y(0))
+    >>> qml.commutator(qml.X(0), qml.Y(0))
     2j * Z(0)
 
-    >>> op1 = X(0) @ X(1)
-    >>> op2 = Y(0) @ Y(1)
+    >>> op1 = qml.X(0) @ qml.X(1)
+    >>> op2 = qml.Y(0) @ qml.Y(1)
     >>> qml.commutator(op1, op2)
     0 * I()
 
     We can return a :class:`~PauliSentence` instance by setting ``pauli=True``.
 
-    >>> op1 = X(0) @ X(1)
-    >>> op2 = Y(0) + Y(1)
+    >>> op1 = qml.X(0) @ qml.X(1)
+    >>> op2 = qml.Y(0) + qml.Y(1)
     >>> res = qml.commutator(op1, op2, pauli=True)
     >>> res
-    2j * X(1) @ Z(0)
-    + 2j * Z(1) @ X(0)
+    2j * Z(0) @ X(1)
+    + 2j * X(0) @ Z(1)
     >>> isinstance(res, PauliSentence)
     True
 

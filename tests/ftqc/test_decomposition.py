@@ -326,7 +326,7 @@ class TestMBQCFormalismConversion:
         assert isinstance(tape.operations[1], GraphStatePrep)
         assert isinstance(tape.operations[2], qml.CZ)
         for tape_op in tape.operations[3:]:
-            assert isinstance(tape_op, tuple([qml.measurements.MidMeasureMP, qml.ops.Conditional]))
+            assert isinstance(tape_op, tuple([qml.ops.MidMeasure, qml.ops.Conditional]))
 
         # tape yields expected results
         with qml.queuing.AnnotatedQueue() as q:
@@ -389,7 +389,7 @@ class TestMBQCFormalismConversion:
         assert isinstance(tape.operations[3], qml.CZ)
         assert isinstance(tape.operations[4], qml.CZ)
         for op in tape.operations[5:]:
-            assert isinstance(op, tuple([qml.measurements.MidMeasureMP, qml.ops.Conditional]))
+            assert isinstance(op, tuple([qml.ops.MidMeasure, qml.ops.Conditional]))
 
         # tape yields expected results
         (diagonalized_tape,), _ = diagonalize_mcms(tape)
@@ -423,7 +423,7 @@ class TestMBQCFormalismConversion:
         assert isinstance(graph_op, GraphStatePrep)
         assert isinstance(entanglement_op, qml.CZ)
         for m in measurements:
-            assert isinstance(m, qml.measurements.MidMeasureMP)
+            assert isinstance(m, qml.ops.MidMeasure)
         for bp in byproducts:
             assert isinstance(bp, qml.ops.Conditional)
         assert isinstance(final_op, gate)
@@ -543,10 +543,10 @@ class TestMBQCFormalismConversion:
 
         # after transform, only state prep and MCMs are present on the tape
         (transformed_tape,), _ = convert_to_mbqc_formalism(tape)
-        expected_gates = (GraphStatePrep, qml.CZ, qml.measurements.MidMeasureMP, qml.X, qml.Y)
+        expected_gates = (GraphStatePrep, qml.CZ, qml.ops.MidMeasure, qml.X, qml.Y)
         for op in transformed_tape.operations:
             if isinstance(op, qml.ops.Conditional):
-                assert isinstance(op.base, (qml.X, qml.Z, qml.measurements.MidMeasureMP))
+                assert isinstance(op.base, (qml.X, qml.Z, qml.ops.MidMeasure))
             else:
                 assert isinstance(op, expected_gates)
 

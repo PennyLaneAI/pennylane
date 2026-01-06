@@ -18,9 +18,12 @@ Contains the CommutingEvolution template.
 import copy
 
 from pennylane import math
+from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.operation import Operation
+from pennylane.ops.op_math.linear_combination import Hamiltonian
+from pennylane.pauli import PauliWord
 from pennylane.queuing import QueuingManager
-from pennylane.wires import Wires
+from pennylane.wires import Wires, WiresLike
 
 from .approx_time_evolution import ApproxTimeEvolution
 
@@ -106,10 +109,12 @@ class CommutingEvolution(Operation):
                 return qml.expval(qml.Z(0))
 
         >>> circuit(1)
-        0.6536436208636115
+        np.float64(0.653...)
     """
 
     grad_method = None
+
+    resource_keys = {"words"}
 
     def _flatten(self):
         h = self.hyperparameters["hamiltonian"]
@@ -123,6 +128,12 @@ class CommutingEvolution(Operation):
     @classmethod
     def _unflatten(cls, data, metadata) -> "CommutingEvolution":
         return cls(data[1], data[0], frequencies=metadata[0], shifts=metadata[1])
+
+    @property
+    def resource_params(self) -> dict:
+        return {
+            "words": tuple(self.hyperparameters["hamiltonian"].pauli_rep.keys()),
+        }
 
     def __init__(self, hamiltonian, time, frequencies=None, shifts=None, id=None):
         # pylint: disable=import-outside-toplevel,too-many-positional-arguments
@@ -195,3 +206,17 @@ class CommutingEvolution(Operation):
         shifts = self.hyperparameters["shifts"]
 
         return CommutingEvolution(hamiltonian, -time, frequencies, shifts)
+
+
+def _commuting_evolution_resources(words: tuple[PauliWord]):
+    return {resource_rep(ApproxTimeEvolution, words=words, n=1): 1}
+
+
+@register_resources(_commuting_evolution_resources)
+def _commuting_evolution_decomposition(
+    time: list, *_, wires: WiresLike, hamiltonian: Hamiltonian, **__
+):  # pylint: disable=unused-argument
+    ApproxTimeEvolution(hamiltonian, time, 1)
+
+
+add_decomps(CommutingEvolution, _commuting_evolution_decomposition)

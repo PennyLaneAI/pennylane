@@ -129,7 +129,7 @@ class TestCaptureForLoop:
 
     def test_for_loop_grad(self):
         """Test simple for-loop primitive with gradient."""
-        from pennylane.capture.primitives import grad_prim
+        from pennylane.capture.primitives import jacobian_prim
 
         @qml.qnode(qml.device("default.qubit", wires=2))
         def inner_func(x):
@@ -156,9 +156,17 @@ class TestCaptureForLoop:
         assert len(jaxpr.eqns) == 1  # a single grad equation
 
         grad_eqn = jaxpr.eqns[0]
-        assert grad_eqn.primitive == grad_prim
-        assert set(grad_eqn.params.keys()) == {"argnum", "n_consts", "jaxpr", "method", "h"}
-        assert grad_eqn.params["argnum"] == [0]
+        assert grad_eqn.primitive == jacobian_prim
+        assert set(grad_eqn.params.keys()) == {
+            "argnums",
+            "n_consts",
+            "jaxpr",
+            "method",
+            "h",
+            "fn",
+            "scalar_out",
+        }
+        assert grad_eqn.params["argnums"] == (0,)
         assert [var.aval for var in grad_eqn.outvars] == jaxpr.out_avals
         assert len(grad_eqn.params["jaxpr"].eqns) == 1  # a single QNode equation
 
@@ -288,8 +296,12 @@ class TestDynamicShapes:
             a0, b0 = jnp.ones(i0), jnp.ones(i0)
             return f(a0, b0)
 
-        with pytest.raises(ValueError, match="Detected dynamically shaped arrays being resized"):
-            jax.make_jaxpr(w)(1)
+        with pytest.warns(
+            qml.exceptions.CaptureWarning, match="Structured capture of qml.for_loop failed"
+        ):
+            jaxpr = jax.make_jaxpr(w)(1)
+
+        assert for_loop_prim not in {eqn.primitive for eqn in jaxpr.eqns}
 
     def test_error_is_combining_independent_shapes(self):
         """Test that a useful error is raised if two arrays with dynamic shapes are combined."""
@@ -302,10 +314,12 @@ class TestDynamicShapes:
             a0, b0 = jnp.ones(i0), jnp.ones(i0)
             return f(a0, b0)
 
-        with pytest.raises(
-            ValueError, match="attempt to combine arrays with two different dynamic shapes."
+        with pytest.warns(
+            qml.exceptions.CaptureWarning, match="Structured capture of qml.for_loop failed"
         ):
-            jax.make_jaxpr(w)(2)
+            jaxpr = jax.make_jaxpr(w)(2)
+
+        assert for_loop_prim not in {eqn.primitive for eqn in jaxpr.eqns}
 
     def test_array_initialized_with_size_of_other_arg(self):
         """Test that one argument can have a shape that matches another argument, but
@@ -339,8 +353,11 @@ class TestDynamicShapes:
 
             return f(jnp.arange(i0))
 
-        with pytest.raises(ValueError, match="due to a closure variable with a dynamic shape"):
-            jax.make_jaxpr(w)(3)
+        with pytest.warns(
+            qml.exceptions.CaptureWarning, match="Structured capture of qml.for_loop failed"
+        ):
+            jaxpr = jax.make_jaxpr(w)(3)
+        assert for_loop_prim not in {eqn.primitive for eqn in jaxpr.eqns}
 
     @pytest.mark.parametrize("allow_array_resizing", ("auto", False))
     def test_loop_with_argument_combining(self, allow_array_resizing):

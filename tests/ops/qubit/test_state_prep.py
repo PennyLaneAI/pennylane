@@ -100,11 +100,11 @@ def test_labelling_matrix_cache(op, mat, base):
     assert op.label() == base
 
     cache = {"matrices": []}
-    assert op.label(cache=cache) == f"{base}(M0)"
+    assert op.label(cache=cache) == f"{base}\n(M0)"
     assert qml.math.allclose(cache["matrices"][0], mat)
 
     cache = {"matrices": [0, mat, 0]}
-    assert op.label(cache=cache) == f"{base}(M1)"
+    assert op.label(cache=cache) == f"{base}\n(M1)"
     assert len(cache["matrices"]) == 3
 
 

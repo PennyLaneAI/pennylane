@@ -57,10 +57,7 @@ def s_prod(scalar, operator, lazy=True, id=None):
         >>> qml.matrix(op).shape
         (3, 2, 2)
 
-        But it doesn't support batching of operators:
-
-        >>> op = qml.s_prod(scalar=4, operator=[qml.RX(1, wires=0), qml.RX(2, wires=0)])
-        AttributeError: 'list' object has no attribute 'batch_size'
+        But it doesn't support batching of operators.
 
     .. seealso:: :class:`~.ops.op_math.SProd` and :class:`~.ops.op_math.SymbolicOp`
 
@@ -70,8 +67,8 @@ def s_prod(scalar, operator, lazy=True, id=None):
     >>> sprod_op
     2.0 * X(0)
     >>> sprod_op.matrix()
-    array([[ 0., 2.],
-           [ 2., 0.]])
+    array([[0., 2.],
+           [2., 0.]])
     """
     if lazy or not isinstance(operator, SProd):
         return SProd(scalar, operator, id=id)
@@ -106,7 +103,7 @@ class SProd(ScalarSymbolicOp):
     array([[0.  , 1.23],
            [1.23, 0.  ]])
     >>> sprod_op.terms()
-    ([1.23], [PauliX(wires=[0]])
+    ([1.23], [X(0)])
 
     .. details::
         :title: Usage Details
@@ -124,8 +121,8 @@ class SProd(ScalarSymbolicOp):
                 return qml.expval(qml.s_prod(scalar, qml.Hadamard(wires=0)))
 
         >>> scalar, theta = (1.2, 3.4)
-        >>> qml.grad(circuit, argnum=[0,1])(scalar, theta)
-        (array(-0.68362956), array(0.21683382))
+        >>> qml.grad(circuit, argnums=[0,1])(scalar, theta)
+        (array(-0.6836...), array(0.2168...))
 
     """
 
@@ -202,10 +199,10 @@ class SProd(ScalarSymbolicOp):
 
     @property
     @handle_recursion_error
-    def is_hermitian(self):
+    def is_verified_hermitian(self):
         """If the base operator is hermitian and the scalar is real,
         then the scalar product operator is hermitian."""
-        return self.base.is_hermitian and not math.iscomplex(self.scalar)
+        return self.base.is_verified_hermitian and not math.iscomplex(self.scalar)
 
     # pylint: disable=arguments-renamed,invalid-overridden-method
     @property

@@ -19,7 +19,7 @@ from collections.abc import Callable, Sequence
 from typing import Union
 
 import pennylane as qml
-from pennylane import QueuingManager
+from pennylane import QueuingManager, math
 from pennylane.capture import FlatFn
 from pennylane.capture.autograph import wraps
 from pennylane.compiler import compiler
@@ -34,19 +34,29 @@ def _add_abstract_shapes(f):
     Dynamic shape support currently has a lot of dragons. This function is subject to change
     at any moment. Use duplicate code till reliable abstractions are found.
 
+    >>> jax.config.update("jax_dynamic_shapes", True)  # doctest: +SKIP
+    >>> jax.config.update("jax_enable_x64", True)
     >>> @qml.capture.FlatFn
     ... def f(x):
     ...     return x + 1
-    >>> jax.make_jaxpr(f, abstracted_axes={0:"a"})(jnp.zeros(4))
-    { lambda ; a:i32[] b:f32[a]. let
-        c:f32[a] = broadcast_in_dim[broadcast_dimensions=() shape=(None,)] 1.0 a
-        d:f32[a] = add b c
-    in (d,) }
-    >>> jax.make_jaxpr(_add_abstract_shapes(f), abstracted_axes={0:"a"})(jnp.zeros(4))
-    { lambda ; a:i32[] b:f32[a]. let
-        c:f32[a] = broadcast_in_dim[broadcast_dimensions=() shape=(None,)] 1.0 a
-        d:f32[a] = add b c
-    in (a, d) }
+    >>> jax.make_jaxpr(f, abstracted_axes={0:"a"})(jnp.zeros(4))  # doctest: +SKIP
+    { lambda ; a:i64[] b:f64[a]. let
+        c:f64[a] = broadcast_in_dim[
+          broadcast_dimensions=()
+          shape=(None,)
+          sharding=None
+        ] 1.0:f64[] a
+        d:f64[a] = add b c
+      in (d,) }
+    >>> jax.make_jaxpr(_add_abstract_shapes(f), abstracted_axes={0:"a"})(jnp.zeros(4))  # doctest: +SKIP
+    { lambda ; a:i64[] b:f64[a]. let
+        c:f64[a] = broadcast_in_dim[
+          broadcast_dimensions=()
+          shape=(None,)
+          sharding=None
+        ] 1.0:f64[] a
+        d:f64[a] = add b c
+      in (a, d) }
 
     Now both the dimension of the array and the array are getting returned, rather than
     just the array.
@@ -59,14 +69,18 @@ def _add_abstract_shapes(f):
         out = f(*args, **kwargs)
         shapes = []
         for x in out:
-            shapes.extend(s for s in getattr(x, "shape", ()) if qml.math.is_abstract(s))
+            shapes.extend(s for s in getattr(x, "shape", ()) if math.is_abstract(s))
         return *shapes, *out
 
     return new_f
 
 
+def _is_operator_type(fn):
+    return isinstance(fn, type) and issubclass(fn, Operator)
+
+
 def _no_return(fn):
-    if isinstance(fn, type) and issubclass(fn, Operator):
+    if _is_operator_type(fn) or (isinstance(fn, functools.partial) and _is_operator_type(fn.func)):
 
         def new_fn(*args, **kwargs):
             fn(*args, **kwargs)
@@ -93,16 +107,21 @@ class Conditional(SymbolicOp, Operation):
     will apply the :func:`defer_measurements` transform.
 
     Args:
-        expr (qml.measurements.MeasurementValue): the measurement outcome value to consider
+        expr (qml.ops.MeasurementValue): the measurement outcome value to consider
         then_op (Operation): the PennyLane operation to apply conditionally
         id (str): custom label given to an operator instance,
             can be useful for some applications where the instance has to be identified
     """
 
     def __init__(self, expr, then_op: Operation, id=None):
+        # pylint: disable=super-init-not-called
         self.hyperparameters["meas_val"] = expr
         self._name = f"Conditional({then_op.name})"
-        super().__init__(then_op, id=id)
+        self.hyperparameters["base"] = then_op
+        self._id = id
+        self._pauli_rep = None
+        self.queue()
+
         if self.grad_recipe is None:
             self.grad_recipe = [None] * self.num_params
 
@@ -188,14 +207,14 @@ class CondCallable:
         self.branch_fns = [true_fn]
         self.otherwise_fn = false_fn
 
-        # when working with `qml.capture.enabled()`,
-        # it's easier to store the original `elifs` argument
-        self.orig_elifs = elifs
-
-        if false_fn is None and not qml.capture.enabled():
-            self.otherwise_fn = lambda *args, **kwargs: None
-
-        if elifs and not qml.capture.enabled():
+        if (
+            len(elifs) == 2
+            and not isinstance(elifs[0], (tuple, list))
+            and isinstance(elifs[1], Callable)
+        ):
+            # elifs = (elif_condition, elif_function)
+            elifs = (elifs,)
+        if elifs:
             elif_preds, elif_fns = list(zip(*elifs))
             self.preds.extend(elif_preds)
             self.branch_fns.extend(elif_fns)
@@ -214,7 +233,6 @@ class CondCallable:
         def decorator(branch_fn):
             self.preds.append(pred)
             self.branch_fns.append(branch_fn)
-            self.orig_elifs += ((pred, branch_fn),)
             return self
 
         return decorator
@@ -235,6 +253,7 @@ class CondCallable:
 
         Alias for ``otherwise_fn``.
         """
+        # used for matching naming with the catalyst version of this class
         return self.otherwise_fn
 
     @property
@@ -264,26 +283,22 @@ class CondCallable:
         for pred, branch_fn in zip(self.preds, self.branch_fns):
             if pred:
                 return branch_fn(*args, **kwargs)
-
-        return self.false_fn(*args, **kwargs)
+        if self.otherwise_fn:
+            return self.otherwise_fn(*args, **kwargs)
+        return None
 
     def __call_capture_enabled(self, *args, **kwargs):
         import jax  # pylint: disable=import-outside-toplevel
 
         cond_prim = _get_cond_qfunc_prim()
 
-        elifs = (
-            [self.orig_elifs]
-            if len(self.orig_elifs) > 0 and not isinstance(self.orig_elifs[0], tuple)
-            else list(self.orig_elifs)
-        )
+        elifs = zip(self.preds[1:], self.branch_fns[1:])  # skip true branch
         true_fn = _no_return(self.true_fn) if self.otherwise_fn is None else self.true_fn
         flat_true_fn = FlatFn(true_fn)
         branches = [(self.preds[0], flat_true_fn), *elifs, (True, self.otherwise_fn)]
 
-        end_const_ind = len(
-            branches
-        )  # consts go after the len(branches) conditions, first const at len(branches)
+        # consts go after the len(branches) conditions, first const at len(branches)
+        end_const_ind = len(branches)
         conditions = []
         jaxpr_branches = []
         consts = []
@@ -292,22 +307,22 @@ class CondCallable:
         abstracted_axes, abstract_shapes = qml.capture.determine_abstracted_axes(args)
 
         for pred, fn in branches:
-            if (pred_shape := qml.math.shape(pred)) != ():
+            if (pred_shape := math.shape(pred)) != ():
                 raise ValueError(f"Condition predicate must be a scalar. Got {pred_shape}.")
             conditions.append(pred)
             if fn is None:
                 fn = _empty_return_fn
-            f = FlatFn(functools.partial(fn, **kwargs))
+            f = fn if isinstance(fn, FlatFn) else FlatFn(fn)
             if jax.config.jax_dynamic_shapes:
                 f = _add_abstract_shapes(f)
-            jaxpr = jax.make_jaxpr(f, abstracted_axes=abstracted_axes)(*args)
+            jaxpr = jax.make_jaxpr(f, abstracted_axes=abstracted_axes)(*args, **kwargs)
             jaxpr_branches.append(jaxpr.jaxpr)
             consts_slices.append(slice(end_const_ind, end_const_ind + len(jaxpr.consts)))
             consts += jaxpr.consts
             end_const_ind += len(jaxpr.consts)
 
         _validate_jaxpr_returns(jaxpr_branches, self.otherwise_fn)
-        flat_args, _ = jax.tree_util.tree_flatten(args)
+        flat_args, _ = jax.tree_util.tree_flatten((args, kwargs))
         results = cond_prim.bind(
             *conditions,
             *consts,
@@ -322,15 +337,14 @@ class CondCallable:
         return jax.tree_util.tree_unflatten(flat_true_fn.out_tree, results)
 
     def __call__(self, *args, **kwargs):
-
-        if qml.capture.enabled():
+        if qml.capture.enabled() and any(math.is_abstract(p) for p in self.preds):
             return self.__call_capture_enabled(*args, **kwargs)
 
         return self.__call_capture_disabled(*args, **kwargs)
 
 
 def cond(
-    condition: Union["qml.measurements.MeasurementValue", bool],
+    condition: Union["qml.ops.MeasurementValue", bool],
     true_fn: Callable | None = None,
     false_fn: Callable | None = None,
     elifs: Sequence = (),
@@ -371,7 +385,7 @@ def cond(
         If a branch returns one or more variables, every other branch must return the same abstract values.
 
     Args:
-        condition (Union[qml.measurements.MeasurementValue, bool]): a conditional expression that may involve a mid-circuit
+        condition (Union[qml.ops.MeasurementValue, bool]): a conditional expression that may involve a mid-circuit
            measurement value (see :func:`.pennylane.measure`).
         true_fn (callable): The quantum function or PennyLane operation to
             apply if ``condition`` is ``True``
@@ -387,7 +401,7 @@ def cond(
 
     **Example**
 
-    .. code-block:: python3
+    .. code-block:: python
 
         dev = qml.device("default.qubit", wires=3)
 
@@ -403,12 +417,10 @@ def cond(
             qml.cond(m_1 == 0, qml.RX)(y, wires=1)
             return qml.expval(qml.Z(1))
 
-    .. code-block :: pycon
-
-        >>> first_par = np.array(0.3)
-        >>> sec_par = np.array(1.23)
-        >>> qnode(first_par, sec_par)
-        tensor(0.32677361, requires_grad=True)
+    >>> first_par = np.array(0.3)
+    >>> sec_par = np.array(1.23)
+    >>> qnode(first_par, sec_par)
+    np.float64(0.32...)
 
     .. note::
 
@@ -426,7 +438,7 @@ def cond(
 
     In just-in-time (JIT) mode using the :func:`~.qjit` decorator,
 
-    .. code-block:: python3
+    .. code-block:: python
 
         dev = qml.device("lightning.qubit", wires=1)
 
@@ -435,7 +447,6 @@ def cond(
         def circuit(x: float):
             def ansatz_true():
                 qml.RX(x, wires=0)
-                qml.Hadamard(wires=0)
 
             def ansatz_false():
                 qml.RY(x, wires=0)
@@ -444,14 +455,17 @@ def cond(
 
             return qml.expval(qml.Z(0))
 
-    >>> circuit(1.4)
-    Array(0.16996714, dtype=float64)
-    >>> circuit(1.6)
-    Array(0., dtype=float64)
+        ansatz_true = circuit(1.4)
+        ansatz_false = circuit(1.6)
+
+    >>> jnp.allclose(ansatz_true, jnp.cos(1.4))
+    Array(True, dtype=bool)
+    >>> jnp.allclose(ansatz_false, jnp.cos(1.6))
+    Array(True, dtype=bool)
 
     Additional 'else-if' clauses can also be included via the ``elif`` argument:
 
-    .. code-block:: python3
+    .. code-block:: python
 
         @qml.qjit
         @qml.qnode(dev)
@@ -485,7 +499,7 @@ def cond(
 
         The ``cond`` transform allows conditioning quantum functions too:
 
-        .. code-block:: python3
+        .. code-block:: python
 
             dev = qml.device("default.qubit")
 
@@ -500,18 +514,16 @@ def cond(
                 qml.cond(m_0, qfunc)(x, wires=[1])
                 return qml.expval(qml.Z(1))
 
-        .. code-block :: pycon
-
-            >>> par = np.array(0.3)
-            >>> qnode(par)
-            tensor(0.3522399, requires_grad=True)
+        >>> par = np.array(0.3)
+        >>> qnode(par)
+        np.float64(0.35...)
 
         **Postprocessing multiple measurements into a condition**
 
         The Boolean condition for ``cond`` may consist of arithmetic expressions
         of one or multiple mid-circuit measurements:
 
-        .. code-block:: python3
+        .. code-block:: python
 
             def cond_fn(mcms):
                 first_term = np.prod(mcms)
@@ -536,7 +548,7 @@ def cond(
         ``cond``, the transform can apply a quantum function in both the
         ``True`` and ``False`` case:
 
-        .. code-block:: python3
+        .. code-block:: python
 
             dev = qml.device("default.qubit", wires=2)
 
@@ -555,17 +567,15 @@ def cond(
                 qml.cond(m_0, qfunc1, qfunc2)(x, wires=[1])
                 return qml.expval(qml.Z(1))
 
-        .. code-block :: pycon
-
-            >>> par = np.array(0.3)
-            >>> qnode1(par)
-            tensor(-0.1477601, requires_grad=True)
+        >>> par = np.array(0.3)
+        >>> qnode1(par)
+        np.float64(-0.1477...)
 
         The previous QNode is equivalent to using ``cond`` twice, inverting the
         conditional expression in the second case using the ``~`` unary
         operator:
 
-        .. code-block:: python3
+        .. code-block:: python
 
             @qml.qnode(dev)
             def qnode2(x):
@@ -575,10 +585,8 @@ def cond(
                 qml.cond(~m_0, qfunc2)(x, wires=[1])
                 return qml.expval(qml.Z(1))
 
-        .. code-block :: pycon
-
-            >>> qnode2(par)
-            tensor(-0.1477601, requires_grad=True)
+        >>> qnode2(par)
+        np.float64(-0.14776...)
 
         **Quantum functions with different signatures**
 
@@ -586,7 +594,7 @@ def cond(
         different signatures. In such a case, ``lambda`` functions taking no
         arguments can be used with Python closure:
 
-        .. code-block:: python3
+        .. code-block:: python
 
             dev = qml.device("default.qubit", wires=2)
 
@@ -605,14 +613,12 @@ def cond(
                 qml.cond(m_0, lambda: qfunc1(a, wire=1), lambda: qfunc2(x, y, z, wire=1))()
                 return qml.expval(qml.Z(1))
 
-        .. code-block :: pycon
-
-            >>> par = np.array(0.3)
-            >>> x = np.array(1.2)
-            >>> y = np.array(1.1)
-            >>> z = np.array(0.3)
-            >>> qnode(par, x, y, z)
-            tensor(-0.30922805, requires_grad=True)
+        >>> par = np.array(0.3)
+        >>> x = np.array(1.2)
+        >>> y = np.array(1.1)
+        >>> z = np.array(0.3)
+        >>> qnode(par, x, y, z)
+        np.float64(-0.3092...)
     """
 
     if active_jit := compiler.active_compiler():
@@ -634,7 +640,7 @@ def cond(
 
         return cond_func
 
-    if not isinstance(condition, qml.measurements.MeasurementValue):
+    if not isinstance(condition, qml.ops.MeasurementValue):
         # The condition is not a mid-circuit measurement. This will also work
         # when the condition is a mid-circuit measurement but qml.capture.enabled()
         if true_fn is None:
@@ -684,7 +690,7 @@ def cond(
                 raise ConditionalTransformError(with_meas_err)
 
             for op in qscript.operations:
-                if isinstance(op, qml.measurements.MidMeasureMP):
+                if isinstance(op, (qml.ops.MidMeasure, qml.ops.PauliMeasure)):
                     raise ConditionalTransformError(with_meas_err)
                 Conditional(condition, op)
 
@@ -698,7 +704,7 @@ def cond(
                 inverted_condition = ~condition
 
                 for op in else_qscript.operations:
-                    if isinstance(op, qml.measurements.MidMeasureMP):
+                    if isinstance(op, (qml.ops.MidMeasure, qml.ops.PauliMeasure)):
                         raise ConditionalTransformError(with_meas_err)
                     Conditional(inverted_condition, op)
 
@@ -730,21 +736,23 @@ def _validate_abstract_values(
             f" #{branch_index}: {len(outvals)} vs {len(expected_outvals)} "
             f" for {outvals} and {expected_outvals}"
         )
-        if jax.config.jax_dynamic_shapes:
+        if jax.config.jax_dynamic_shapes:  # pragma: no cover
             msg += "\n This may be due to different sized shapes when dynamic shapes are enabled."
         raise ValueError(msg)
 
     for i, (outval, expected_outval) in enumerate(zip(outvals, expected_outvals)):
         if jax.config.jax_dynamic_shapes:
             # we need to be a bit more manual with the comparison.
-            if type(outval) != type(expected_outval):
+            if type(outval) != type(expected_outval):  # pragma: no cover
                 _aval_mismatch_error(branch_type, branch_index, i, outval, expected_outval)
-            if getattr(outval, "dtype", None) != getattr(expected_outval, "dtype", None):
+            if getattr(outval, "dtype", None) != getattr(
+                expected_outval, "dtype", None
+            ):  # pragma: no cover
                 _aval_mismatch_error(branch_type, branch_index, i, outval, expected_outval)
 
             shape1 = getattr(outval, "shape", ())
             shape2 = getattr(expected_outval, "shape", ())
-            for s1, s2 in zip(shape1, shape2, strict=True):
+            for s1, s2 in zip(shape1, shape2, strict=True):  # pragma: no cover
                 if isinstance(s1, jax.extend.core.Var) != isinstance(s2, jax.extend.core.Var):
                     _aval_mismatch_error(branch_type, branch_index, i, outval, expected_outval)
                 elif isinstance(s1, int) and s1 != s2:
@@ -783,11 +791,14 @@ def _get_cond_qfunc_prim():
     )
 
     @cond_prim.def_abstract_eval
-    def _(*_, jaxpr_branches, **__):
+    def _abstract_eval(*_, jaxpr_branches, **__):
         return [out.aval for out in jaxpr_branches[0].outvars]
 
     @cond_prim.def_impl
-    def _(*all_args, jaxpr_branches, consts_slices, args_slice):
+    def _impl(*all_args, jaxpr_branches, consts_slices, args_slice):
+        args_slice = slice(*args_slice)
+        consts_slices = [slice(*s) for s in consts_slices]
+
         n_branches = len(jaxpr_branches)
         conditions = all_args[:n_branches]
         args = all_args[args_slice]
@@ -795,7 +806,7 @@ def _get_cond_qfunc_prim():
         # Find predicates that use mid-circuit measurements. We don't check the last
         # condition as that is always `True`.
         mcm_conditions = tuple(
-            pred for pred in conditions[:-1] if isinstance(pred, qml.measurements.MeasurementValue)
+            pred for pred in conditions[:-1] if isinstance(pred, qml.ops.MeasurementValue)
         )
         if len(mcm_conditions) != 0:
             if len(mcm_conditions) != len(conditions) - 1:
@@ -807,7 +818,7 @@ def _get_cond_qfunc_prim():
 
         for pred, jaxpr, const_slice in zip(conditions, jaxpr_branches, consts_slices):
             consts = all_args[const_slice]
-            if isinstance(pred, qml.measurements.MeasurementValue):
+            if isinstance(pred, qml.ops.MeasurementValue):
 
                 with qml.queuing.AnnotatedQueue() as q:
                     out = qml.capture.eval_jaxpr(jaxpr, consts, *args)

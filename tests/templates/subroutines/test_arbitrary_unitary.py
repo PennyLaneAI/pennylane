@@ -21,6 +21,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as pnp
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.arbitrary_unitary import (
     _all_pauli_words_but_identity,
     _n_k_gray_code,
@@ -187,6 +188,20 @@ class TestDecomposition:
 
         assert np.allclose(res1, res2, atol=tol, rtol=0)
         assert np.allclose(state1, state2, atol=tol, rtol=0)
+
+    DECOMP_PARAMS = [
+        (np.arange(np.prod((15,)), dtype=float).reshape((15,)), range(2)),
+        (np.arange(np.prod((1, 15)), dtype=float).reshape((1, 15)), range(2)),
+        (np.arange(np.prod((2, 15)), dtype=float).reshape((2, 15)), range(2)),
+        (np.random.random(size=(63,)), range(3)),
+    ]
+
+    @pytest.mark.capture
+    @pytest.mark.parametrize(("weights", "wires"), DECOMP_PARAMS)
+    def test_decomposition_new(self, weights, wires):
+        op = qml.ArbitraryUnitary(weights, wires=wires)
+        for rule in qml.list_decomps(qml.ArbitraryUnitary):
+            _test_decomposition_rule(op, rule)
 
 
 class TestInputs:

@@ -18,7 +18,7 @@ from collections.abc import Hashable, Sequence
 
 from pennylane.allocation import AllocateState
 from pennylane.exceptions import AllocationError
-from pennylane.measurements import measure
+from pennylane.ops import measure
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn, Result, ResultBatch
 
@@ -121,11 +121,11 @@ def resolve_dynamic_wires(
     min_int: int | None = None,
     allow_resets: bool = True,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
-    """Map dynamic wires to concrete values determined by the provided ``zeroed`` and ``any_state`` registers.
+    r"""Map dynamic wires to concrete values determined by the provided ``zeroed`` and ``any_state`` registers.
 
     Args:
         tape (QuantumScript): A circuit that may contain dynamic wire allocations and deallocations
-        zeroed (Sequence[Hashable]): a register of wires known to be the zero state
+        zeroed (Sequence[Hashable]): a register of wires known to be in the :math:`|0\rangle` state
         any_state (Sequence[Hashable]): a register of wires with any state
         min_int (Optional[int]): If not ``None``, new wire labels can be created starting at this
             integer and incrementing whenever a new wire is needed.
@@ -143,7 +143,7 @@ def resolve_dynamic_wires(
 
         This approach also means we pop wires from the *end* of the stack first.
 
-    For a dynamic wire requested to be in the zero state (``state="zero"``), we try three things before erroring:
+    For a dynamic wire requested to be in the zero state (``state="zero"``), we try three things before raising an error:
 
       #. If wires exist in the ``zeroed`` register, we take one from that register
       #. If no ``zeroed`` wires exist and we are allowed to use resets, we pull one from ``any_state`` and apply a reset operation
@@ -152,7 +152,7 @@ def resolve_dynamic_wires(
 
     For a dynamic wire with ``state="any"``, we try:
 
-      #. If wires exist in the ``any_state``, we take one from that register
+      #. If wires exist in the ``any_state`` register, we take one from there
       #. If no wires exist in ``any_state``, we pull one from ``zeroed``
       #. If no wires exist in the ``zeroed`` or ``any_state`` registers and ``min_int`` is not ``None``,
          we increment ``min_int`` and add a new wire
@@ -198,14 +198,16 @@ def resolve_dynamic_wires(
 
     >>> no_resets = resolve_dynamic_wires(circuit, zeroed=("a",), allow_resets=False)
     >>> print(qml.draw(no_resets)())
-    AllocationError: no wires left to allocate.
+    Traceback (most recent call last):
+        ...
+    pennylane.exceptions.AllocationError: no wires left to allocate.
 
     If we only provide ``any_state`` qubits with unknown states, then they will be reset to zero before being used
     in an operation that requires a zero state.
 
     >>> assigned_any_state = resolve_dynamic_wires(circuit, any_state=("a", "b"))
     >>> print(qml.draw(assigned_any_state)())
-    b: ──┤↗│  │0⟩──X──┤↗│  │0⟩──Y─|
+    b: ──┤↗│  │0⟩──X──┤↗│  │0⟩──Y─┤
 
 
     Note that the last provided wire with label ``"b"`` is used first.

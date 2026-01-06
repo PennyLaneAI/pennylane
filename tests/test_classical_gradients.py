@@ -254,7 +254,7 @@ class TestGrad:
         def cost(x):
             return np.sin(x)
 
-        grad_fn = qml.grad(cost, argnum=[0])
+        grad_fn = qml.grad(cost, argnums=[0])
         arr1 = np.array([0.0, 1.0, 2.0], requires_grad=True)
 
         with pytest.raises(TypeError, match="only applies to real scalar-output functions"):
@@ -327,26 +327,26 @@ class TestGrad:
 class TestJacobian:
     """Tests for the jacobian function"""
 
-    def test_single_argnum_jacobian(self, tol):
-        """Test the qml.jacobian function for a single argnum"""
+    def test_single_argnums_jacobian(self, tol):
+        """Test the qml.jacobian function for a single argnums"""
         cost_fn = lambda x, y: np.array([np.sin(x) * np.cos(y), x * y**2])
 
         x = np.array(0.5, requires_grad=True)
         y = np.array(0.2, requires_grad=True)
 
-        jac_fn = qml.jacobian(cost_fn, argnum=0)
+        jac_fn = qml.jacobian(cost_fn, argnums=0)
         res = jac_fn(x, y)
         expected = np.array([np.cos(x) * np.cos(y), y**2])
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_multiple_argnum_jacobian(self, tol):
-        """Test the qml.jacobian function for multiple argnums"""
+    def test_multiple_argnums_jacobian(self, tol):
+        """Test the qml.jacobian function for multiple argnumss"""
         cost_fn = lambda x, y: np.array([np.sin(x) * np.cos(y), x * y**2])
 
         x = np.array(0.5, requires_grad=True)
         y = np.array(0.2, requires_grad=True)
 
-        jac_fn = qml.jacobian(cost_fn, argnum=[0, 1])
+        jac_fn = qml.jacobian(cost_fn, argnums=[0, 1])
         res = jac_fn(x, y)
         expected = (
             np.array([np.cos(x) * np.cos(y), y**2]),
@@ -354,8 +354,8 @@ class TestJacobian:
         )
         assert all(np.allclose(_r, _e, atol=tol, rtol=0) for _r, _e in zip(res, expected))
 
-    def test_no_argnum_jacobian(self, tol):
-        """Test the qml.jacobian function for inferred argnums"""
+    def test_no_argnums_jacobian(self, tol):
+        """Test the qml.jacobian function for inferred argnumss"""
         cost_fn = lambda x, y: np.array([np.sin(x) * np.cos(y), x * y**2])
 
         x = np.array(0.5, requires_grad=True)

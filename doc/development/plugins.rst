@@ -70,8 +70,8 @@ In a more minimal example, for any initial batch of quantum tapes and a config o
 .. code-block:: python
 
     execution_config = dev.setup_execution_config(initial_config)
-    transform_program = dev.preprocess_transforms(execution_config)
-    circuit_batch, postprocessing = transform_program(initial_circuit_batch)
+    compile_pipeline = dev.preprocess_transforms(execution_config)
+    circuit_batch, postprocessing = compile_pipeline(initial_circuit_batch)
     results = dev.execute(circuit_batch, execution_config)
     final_results = postprocessing(results)
 
@@ -131,24 +131,24 @@ Preprocessing
 
 There are two components of preprocessing circuits for device execution:
 
-1) Create a :class:`~.TransformProgram` capable of turning an arbitrary batch of :class:`~.QuantumScript`\ s into a new batch of tapes supported by the ``execute`` method.
+1) Create a :class:`~.CompilePipeline` capable of turning an arbitrary batch of :class:`~.QuantumScript`\ s into a new batch of tapes supported by the ``execute`` method.
 2) Setup the :class:`~.ExecutionConfig` dataclass by filling in device options and making decisions about differentiation.
 
 These two tasks are performed by :meth:`~.devices.Device.setup_execution_config` and :meth:`~.devices.Device.preprocess_transforms`
-respectively. Once the transform program has been applied to a batch of circuits, the result
+respectively. Once the compile pipeline has been applied to a batch of circuits, the result
 circuit batch produced by the program should be run via ``Device.execute`` without error:
 
 .. code-block:: python
 
     execution_config = dev.setup_execution_config(initial_config)
-    transform_program = dev.preprocess_transforms(execution_config)
-    batch, fn = transform_program(initial_batch)
+    compile_pipeline = dev.preprocess_transforms(execution_config)
+    batch, fn = compile_pipeline(initial_batch)
     fn(dev.execute(batch, execution_config))
 
 This section will focus on :meth:`~.devices.Device.preprocess_transforms`, see the section on the :ref:`**Execution Config** <execution_config>`
 below for more information on :meth:`~.devices.Device.setup_execution_config`.
 
-PennyLane can potentially provide a default implementation of a transform program through :meth:`~.devices.Device.preprocess_transforms`,
+PennyLane can potentially provide a default implementation of a compile pipeline through :meth:`~.devices.Device.preprocess_transforms`,
 which should be sufficient for most plugin devices. This requires that a TOML-formatted configuration
 file is defined for your device. The details of this configuration file is described :ref:`the next section <device_capabilities>`.
 The default preprocessing program will be constructed based on what is declared in this file if provided.
@@ -156,13 +156,13 @@ The default preprocessing program will be constructed based on what is declared 
 You could override the :meth:`~.devices.Device.preprocess_transforms` method with a completely
 customized implementation, or extend the default behaviour by adding new transforms.
 
-The :meth:`~.devices.Device.preprocess_transforms` method should start with creating a transform program:
+The :meth:`~.devices.Device.preprocess_transforms` method should start with creating a compile pipeline:
 
 .. code-block:: python
 
-    program = qml.transforms.core.TransformProgram()
+    program = qml.CompilePipeline()
 
-Once a program is created, individual transforms can be added to the program with the :meth:`~.TransformProgram.add_transform` method.
+Once a program is created, individual transforms can be added to the program with the :meth:`~.CompilePipeline.add_transform` method.
 
 .. code-block:: python
 
@@ -232,6 +232,89 @@ or can include in-built transforms such as:
 * :func:`pennylane.devices.preprocess.validate_multiprocessing_workers`
 * :func:`pennylane.devices.preprocess.validate_adjoint_trainable_params`
 * :func:`pennylane.devices.preprocess.no_sampling`
+  
+Custom Device Decompositions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The :func:`pennylane.devices.preprocess.decompose` transform is typically required as part of the compile pipeline that
+decomposes unsupported operations to the device's native gate set. To define this transform a stopping condition needs
+to be specified. This is a function mapping an operator to a boolean that determines whether the operator should be decomposed.
+
+For example, for a device supporting the ``CNOT``, ``RX`` and ``RZ`` gates, the stopping condition and the decompose transform
+can be specified like so:
+
+.. code-block:: python
+
+    from pennylane.devices.preprocess import decompose
+
+    def stopping_condition(op):
+        return obj.name in {"CNOT", "RX", "RZ"}
+    
+    program.add_transform(decompose, stopping_condition=stopping_condition, name="my_device")
+
+However, if the device native gate set is unreachable with the default decompositions defined in PennyLane,
+an error will be raised. In this case, you may need to override the decompositions of certain operators
+via the ``decomposer`` argument. 
+
+For example, consider a device with ``RX``, ``RY`` and ``IsingXX`` as native gates but we want
+to execute a circuit written in terms of ``CNOT`` s. Then, we can define a decomposition for ``CNOT`` 
+(e.g., ``custom_decomposer``) and pass it to the decomposer kwarg:
+
+.. code-block:: python
+
+    def stopping_condition(op):
+        return op.name in {"IsingXX", "RX", "RY"}
+
+    def custom_decomposer(op):
+        if isinstance(op, qml.CNOT):
+            wires = op.wires
+            return [
+                qml.RY(np.pi/2, wires=wires[0]),
+                qml.IsingXX(np.pi/2, wires=wires),
+                qml.RX(-np.pi/2, wires=wires[0]),
+                qml.RY(-np.pi/2, wires=wires[0]),
+                qml.RY(-np.pi/2, wires=wires[1])
+            ]
+        return op.decomposition()
+    
+    program.add_transform(
+        decompose,
+        stopping_condition=stopping_condition,
+        decomposer=custom_decomposer,
+        name="my_device"
+    )
+
+There is also an experimental graph-based decomposition algorithm (activated via
+:func:`qml.decomposition.enable_graph() <pennylane.decomposition.enable_graph>`) that can
+be leveraged when overriding the decompositions of certain operators. To make your device
+compatible with this new system, the ``target_gates`` kwarg in the :func:`pennylane.devices.preprocess.decompose` transform
+needs to be specified as part of the compile pipeline. Note that the stopping condition function
+defines whether an operator should be decomposed, while the ``target_gates`` defines the set of operator
+types that the graph-based decomposition algorithm needs to target.
+
+In this case, the decomposition for the CNOT needs to be specified as a quantum function, ``decompose_cnot``, and
+registered with ``qml.add_decomps``:
+
+.. code-block:: python
+
+    @qml.register_resources({qml.RY: 3, qml.RX: 1, qml.IsingXX: 1})
+    def decompose_cnot(wires, **_):
+        qml.RY(np.pi/2, wires=wires[0]),
+        qml.IsingXX(np.pi/2, wires=wires),
+        qml.RX(-np.pi/2, wires=wires[0]),
+        qml.RY(-np.pi/2, wires=wires[0]),
+        qml.RY(-np.pi/2, wires=wires[1])
+
+    qml.add_decomps(qml.CNOT, decompose_cnot)
+
+    program.add_transform(
+        decompose,
+        stopping_condition=stopping_condition,
+        decomposer=custom_decomposer,
+        device_wires=[2],
+        target_gates={qml.IsingXX, "RX", "RY"},
+        name="my_device"
+    )
 
 .. _device_capabilities:
 
@@ -379,7 +462,7 @@ include ``"one-shot"`` as one of the ``supported_mcm_methods`` in your configura
 ``"one-shot"`` method is requested on the ``QNode``, the :ref:`dynamic one-shot <one_shot_transform>`
 method will be applied.
 
-Both methods mentioned above involve transform programs to be applied on the circuits that prepare
+Both methods mentioned above involve compile pipelines to be applied on the circuits that prepare
 them for device execution and post-processing functions to aggregate the results. Alternatively, if
 your device natively supports all mid-circuit measurement features provided in PennyLane, you should
 include ``"device"`` as one of the ``supported_mcm_methods``.
@@ -421,7 +504,7 @@ TypeError: MyHardware.__init__() got an unexpected keyword argument 'wires'
 
 To implement such validation, a device developer can simply leave ``wires`` from the initialization
 call signature and hard code the ``wires`` property. They should additionally make sure to include
-``validate_device_wires`` in the transform program.
+``validate_device_wires`` in the compile pipeline.
 
 .. code-block:: python
 

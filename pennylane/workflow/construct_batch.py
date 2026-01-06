@@ -15,12 +15,11 @@
 
 from __future__ import annotations
 
-import warnings
 from collections.abc import Callable
 from typing import TYPE_CHECKING, Literal
 
 import pennylane as qml
-from pennylane.exceptions import PennyLaneDeprecationWarning
+from pennylane.transforms.core import CompilePipeline, transform
 
 from ._setup_transform_program import _setup_transform_program
 from .qnode import _make_execution_config
@@ -34,8 +33,52 @@ if TYPE_CHECKING:
     from .qnode import QNode
 
 
-def _get_full_transform_program(qnode: QNode, gradient_fn) -> qml.transforms.core.TransformProgram:
-    program = qml.transforms.core.TransformProgram(qnode.transform_program)
+def null_postprocessing(results):
+    """A null postprocessing function for the null ``marker`` transform."""
+    return results[0]
+
+
+# pylint: disable=unused-argument
+@transform
+def marker(tape, level: str):
+    """Mark a location in a transform program for easy access with inspectability.
+
+    Args:
+        tape (QuantumScript | QNode | CompilePipeline): the object we want to dispatch the transform onto
+        level (str): the label for the level.
+
+    .. note::
+
+        Invalid level names in ``marker`` are ``"top"``, ``"user"``, ``"device"``, and ``"gradient"``,
+        ``"all"``, and ``"all-mlir"``, which are internally protected.
+
+    .. code-block:: python
+
+        @qml.marker(level="rotations-merged")
+        @qml.transforms.merge_rotations
+        @qml.marker(level="my_level")
+        @qml.transforms.cancel_inverses
+        @qml.qnode(qml.device('null.qubit'))
+        def c():
+            qml.RX(0.2,0)
+            qml.X(0)
+            qml.X(0)
+            qml.RX(0.2, 0)
+            return qml.state()
+
+    >>> print(qml.draw(c, level="my_level")())
+    0: ──RX(0.20)──RX(0.20)─┤  State
+    >>> qml.specs(c, level="my_level")()['resources'].gate_types
+    {'RX': 2}
+    >>> print(qml.draw(c, level="rotations-merged")())
+    0: ──RX(0.40)─┤  State
+
+    """
+    return (tape,), null_postprocessing
+
+
+def _get_full_transform_program(qnode: QNode, gradient_fn) -> CompilePipeline:
+    program = CompilePipeline(qnode.transform_program)
 
     if getattr(gradient_fn, "expand_transform", False):
         program.add_transform(
@@ -54,7 +97,7 @@ def _get_full_transform_program(qnode: QNode, gradient_fn) -> qml.transforms.cor
 
 
 def _validate_level(
-    level: Literal["top", "user", "device", "gradient"] | int | slice | None,
+    level: str | int | slice,
 ) -> None:
     """Check that the level specification is valid.
 
@@ -64,32 +107,50 @@ def _validate_level(
     Raises:
         ValueError: If the level is not recognized
     """
-    if level is None:
-        warnings.warn(
-            "Using `level=None` is deprecated and will be removed in a future release. "
-            "Please use `level='device'` to include all transforms.",
-            PennyLaneDeprecationWarning,
-            stacklevel=2,
-        )
+
+    if isinstance(level, (int, slice, str)):
         return
 
-    if isinstance(level, (int, slice)):
-        return
+    raise ValueError(f"level {level} not recognized. Acceptable types are int, str, and slice.")
 
-    if isinstance(level, str):
-        if level not in ("top", "user", "device", "gradient"):
-            raise ValueError(
-                f"level {level} not recognized. Acceptable strings are 'device', 'top', 'user', and 'gradient'."
-            )
-        return
 
+def _validate_custom_levels(program):
+    protected_options = {"top", "user", "gradient", "device", "all", "all-mlir"}
+    found_levels = set()
+    for t in program:
+        if t.tape_transform == marker.tape_transform:
+            level = t.args[0] if t.args else t.kwargs["level"]
+            if level in protected_options:
+                raise ValueError(
+                    f"Found marker for protected level {level}."
+                    f" Protected options are {protected_options}"
+                )
+            if level in found_levels:
+                raise ValueError(
+                    f"Found multiple markers for level {level}.  Markers should be unique."
+                )
+            found_levels.add(level)
+
+
+def _find_level(program, level):
+    found_levels = []
+    for idx, t in enumerate(program):
+        if t.tape_transform == marker.tape_transform:
+            found_level = t.args[0] if t.args else t.kwargs["level"]
+            found_levels.append(found_level)
+
+            if found_level == level:
+                return idx
     raise ValueError(
-        f"level {level} not recognized. Acceptable types are None, int, str, and slice."
+        f"level {level} not found in transform program. "
+        "Builtin options are 'top', 'user', 'device', and 'gradient'."
+        f" Custom levels are {found_levels}."
     )
 
 
 def _get_user_transform_slice(
-    level: Literal["top", "user", "device", "gradient"] | int | slice | None,
+    program,
+    level: str | int | slice,
     num_user_transforms: int,
 ) -> slice:
     """Interpret the level specification for the initial user transform slice.
@@ -113,14 +174,17 @@ def _get_user_transform_slice(
     if level in ("device", "gradient"):
         return slice(0, None)
 
-    if level is None or isinstance(level, int):
+    if isinstance(level, str):
+        return slice(0, _find_level(program, level))
+
+    if isinstance(level, int):
         return slice(0, level)
 
     return level
 
 
 def _get_inner_transform_slice(
-    level: Literal["top", "user", "device", "gradient"] | int | slice | None,
+    level: Literal["top", "user", "device", "gradient"] | int | slice,
     num_user_transforms: int,
     has_gradient_expand: bool,
 ) -> slice:
@@ -151,10 +215,8 @@ def _get_inner_transform_slice(
         inner_level = level - num_user_transforms
         return slice(0, inner_level)
 
-    if level is None:
-        return slice(0, None)  # Include all remaining transforms
-
     # Handle slice objects - adjust for the fact that user transforms are already applied
+    assert isinstance(level, slice)
     start = max(0, (level.start or 0) - num_user_transforms)
     stop = None if level.stop is None else max(0, level.stop - num_user_transforms)
     return slice(start, stop, level.step)
@@ -162,31 +224,26 @@ def _get_inner_transform_slice(
 
 def get_transform_program(
     qnode: QNode,
-    level: Literal["top", "user", "device", "gradient"] | int | slice | None = "device",
+    level: Literal["top", "user", "device", "gradient"] | int | slice = "device",
     gradient_fn="unset",
-) -> qml.transforms.core.TransformProgram:
+) -> CompilePipeline:
     """Extract a transform program at a designated level.
-
-    .. warning::
-
-        Using ``level=None`` is deprecated and will be removed in a future release.
-        Please use ``level='device'`` to include all transforms.
 
     Args:
         qnode (QNode): the qnode to get the transform program for.
-        level (None, str, int, slice): An indication of what transforms to use from the full program.
+        level (str, int, slice): An indication of what transforms to use from the full program.
 
-            - ``None`` or ``"device"``: Uses the entire transformation pipeline.
+            - ``"device"``: Uses the entire transformation pipeline.
             - ``"top"``: Ignores transformations and returns the original tape as defined.
             - ``"user"``: Includes transformations that are manually applied by the user.
             - ``"gradient"``: Extracts the gradient-level tape.
             - ``int``: Can also accept an integer, corresponding to a number of transforms in the program. ``level=0`` corresponds to the start of the program.
             - ``slice``: Can also accept a ``slice`` object to select an arbitrary subset of the transform program.
 
-        gradient_fn (None, str, TransformDispatcher): The processed gradient fn for the workflow.
+        gradient_fn (None, str, Transform): The processed gradient fn for the workflow.
 
     Returns:
-        TransformProgram: the transform program corresponding to the requested level.
+        CompilePipeline: the transform program corresponding to the requested level.
 
     .. details::
         :title: Usage Details
@@ -210,22 +267,20 @@ def get_transform_program(
             @qml.metric_tensor # final transform
             @qml.transforms.merge_rotations # transform 2
             @qml.transforms.cancel_inverses # transform 1
-            @qml.qnode(dev, diff_method="parameter-shift", shifts=np.pi / 4)
+            @qml.qnode(dev, diff_method="parameter-shift", gradient_kwargs={"shifts": np.pi / 4})
             def circuit():
                 return qml.expval(qml.Z(0))
 
         By default, we get the full transform program. This can be explicitly specified by ``level="device"``.
 
         >>> qml.workflow.get_transform_program(circuit)
-        TransformProgram(cancel_inverses, merge_rotations, _expand_metric_tensor,
-        _expand_transform_param_shift, validate_device_wires, defer_measurements,
-        decompose, validate_measurements, validate_observables, metric_tensor)
+        CompilePipeline(cancel_inverses, merge_rotations, _expand_transform_param_shift, defer_measurements, decompose, device_resolve_dynamic_wires, validate_device_wires, validate_measurements, _conditional_broadcast_expand, _expand_metric_tensor, metric_tensor)
 
         The ``"user"`` transforms are the ones manually applied to the qnode, :func:`~.cancel_inverses`,
         :func:`~.merge_rotations` and :func:`~.metric_tensor`.
 
         >>> qml.workflow.get_transform_program(circuit, level="user")
-        TransformProgram(cancel_inverses, merge_rotations, _expand_metric_tensor, metric_tensor)
+        CompilePipeline(cancel_inverses, merge_rotations, _expand_metric_tensor, metric_tensor)
 
         The ``_expand_transform_param_shift`` is the ``"gradient"`` transform.
         This expands all trainable operations to a state where the parameter shift transform can operate on them. For example,
@@ -233,30 +288,28 @@ def get_transform_program(
         present at the very end of resulting program.
 
         >>> qml.workflow.get_transform_program(circuit, level="gradient")
-        TransformProgram(cancel_inverses, merge_rotations, _expand_metric_tensor, _expand_transform_param_shift, metric_tensor)
+        CompilePipeline(cancel_inverses, merge_rotations, _expand_transform_param_shift, _expand_metric_tensor, metric_tensor)
 
         ``"top"`` and ``0`` both return empty transform programs.
 
         >>> qml.workflow.get_transform_program(circuit, level="top")
-        TransformProgram()
+        CompilePipeline()
         >>> qml.workflow.get_transform_program(circuit, level=0)
-        TransformProgram()
+        CompilePipeline()
 
         The ``level`` can also be any integer, corresponding to a number of transforms in the program.
 
         >>> qml.workflow.get_transform_program(circuit, level=2)
-        TransformProgram(cancel_inverses, merge_rotations)
+        CompilePipeline(cancel_inverses, merge_rotations)
 
         ``level`` can also accept a ``slice`` object to select out any arbitrary subset of the
         transform program.  This allows you to select different starting transforms or strides.
         For example, you can skip the first transform or reverse the order:
 
         >>> qml.workflow.get_transform_program(circuit, level=slice(1,3))
-        TransformProgram(merge_rotations, _expand_transform_param_shift)
+        CompilePipeline(merge_rotations, _expand_transform_param_shift)
         >>> qml.workflow.get_transform_program(circuit, level=slice(None, None, -1))
-        TransformProgram(metric_tensor, validate_observables, validate_measurements,
-        decompose, defer_measurements, validate_device_wires, _expand_transform_param_shift,
-        _expand_metric_tensor, merge_rotations, cancel_inverses)
+        CompilePipeline(metric_tensor, _expand_metric_tensor, _conditional_broadcast_expand, validate_measurements, validate_device_wires, device_resolve_dynamic_wires, decompose, defer_measurements, _expand_transform_param_shift, merge_rotations, cancel_inverses)
 
         You can get creative and pick a single category of transforms as follows, excluding
         any preceding transforms (and the final transform if it exists):
@@ -265,19 +318,16 @@ def get_transform_program(
         >>> grad_prog = qml.workflow.get_transform_program(circuit, level="gradient")
         >>> dev_prog = qml.workflow.get_transform_program(circuit, level="device")
         >>> grad_prog[len(user_prog) - 1 : -1]
-        TransformProgram(_expand_transform_param_shift)
+        CompilePipeline(_expand_metric_tensor)
         >>> dev_prog[len(grad_prog) - 1 : -1]
-        TransformProgram(validate_device_wires, mid_circuit_measurements, decompose, validate_measurements, validate_observables)
+        CompilePipeline(decompose, device_resolve_dynamic_wires, validate_device_wires, validate_measurements, _conditional_broadcast_expand, _expand_metric_tensor)
 
     """
     _validate_level(level)
     if gradient_fn == "unset":
         config = qml.workflow.construct_execution_config(qnode, resolve=False)()
         # pylint: disable = protected-access
-        config = qml.workflow.resolution._resolve_diff_method(
-            config,
-            qnode.device,
-        )
+        config = qml.workflow.resolution._resolve_diff_method(config, qnode.device)
         gradient_fn = config.gradient_method
     has_gradient_expand = bool(getattr(gradient_fn, "expand_transform", False))
     full_transform_program = _get_full_transform_program(qnode, gradient_fn)
@@ -286,55 +336,63 @@ def get_transform_program(
     if qnode.transform_program.has_final_transform:
         # final transform is placed after device transforms
         num_user -= 1
+        if (
+            len(qnode.transform_program) > 1
+            and qnode.transform_program[-1].expand_transform == qnode.transform_program[-2]
+        ):
+            # The expand transform associated with the final transform
+            num_user -= 1
 
     readd_final_transform = False
+    final_transform_start = -1
 
     if level == "device":
-        level = None
+        level = slice(0, None)
     elif level == "top":
-        level = 0
+        level = slice(0, 0)
     elif level == "user":
         readd_final_transform = True
-        level = num_user
+        level = slice(0, num_user)
     elif level == "gradient":
         readd_final_transform = True
-
         level = num_user + 1 if has_gradient_expand else num_user
-
-    if level is None or isinstance(level, int):
+        level = slice(0, level)
+    elif isinstance(level, str):
+        level = slice(0, _find_level(full_transform_program, level))
+    elif isinstance(level, int):
         level = slice(0, level)
 
     resolved_program = full_transform_program[level]
 
     if qnode.transform_program.has_final_transform and readd_final_transform:
-        resolved_program += qnode.transform_program[-1:]
+        if (
+            len(qnode.transform_program) > 1
+            and qnode.transform_program[-1].expand_transform == qnode.transform_program[-2]
+        ):
+            final_transform_start = -2
+        resolved_program += qnode.transform_program[final_transform_start:]
 
     return resolved_program
 
 
 def construct_batch(
     qnode: QNode | TorchLayer,
-    level: Literal["top", "user", "device", "gradient"] | int | slice | None = "user",
+    level: str | int | slice = "user",
 ) -> Callable:
     """Construct the batch of tapes and post processing for a designated stage in the transform program.
 
-    .. warning::
-
-        Using ``level=None`` is deprecated and will be removed in a future release.
-        Please use ``level='device'`` to include all transforms.
-
     Args:
         qnode (QNode): the qnode we want to get the tapes and post-processing for.
-        level (None, str, int, slice): An indication of what transforms to apply before drawing.
-            Check :func:`~.workflow.get_transform_program` for more information on the allowed values and usage details of
-            this argument.
+        level (str, int, slice): An indication of what transforms to apply before
+            drawing. Check :func:`~.workflow.get_transform_program` for more
+            information on the allowed values and usage details of this argument.
 
     Returns:
-        Callable:  A function with the same call signature as the initial quantum function. This function returns
-        a batch (tuple) of tapes and postprocessing function.
+        Callable:
+            A function with the same call signature as the initial quantum function.
+            This function returns a batch (tuple) of tapes and postprocessing function.
 
     .. seealso:: :func:`pennylane.workflow.get_transform_program` to inspect the contents of the transform program for a specified level.
-
 
     .. details::
         :title: Usage Details
@@ -408,17 +466,13 @@ def construct_batch(
 
         >>> batch, fn = construct_batch(circuit, level=slice(1,None))(1.23)
         >>> batch[0].circuit
-        [RY(tensor(1., requires_grad=True), wires=[1]),
-         RX(tensor(2., requires_grad=True), wires=[0]),
-         X(0),
-         X(0),
-         expval(X(0) + Y(0))]
+        [RY(1.0, wires=[1]), RX(2.0, wires=[0]), X(0), X(0), expval(X(0) + Y(0))]
 
     """
     _validate_level(level)
     is_torch_layer = type(qnode).__name__ == "TorchLayer"
-
     user_program = qnode.transform_program
+    _validate_custom_levels(user_program)
     num_user_transforms = len(user_program)
 
     def batch_constructor(*args, **kwargs) -> tuple[QuantumScriptBatch, PostprocessingFn]:
@@ -436,9 +490,9 @@ def construct_batch(
         params = initial_tape.get_parameters(trainable_only=False)
         initial_tape.trainable_params = qml.math.get_trainable_indices(params)
 
-        level_slice_initial = _get_user_transform_slice(
-            level, num_user_transforms
-        )  # This should be fine, since the case where `has_gradient_expand==True` only increase 1 to the end of level slice
+        # This should be fine, since the case where `has_gradient_expand==True`
+        # only increase 1 to the end of level slice
+        level_slice_initial = _get_user_transform_slice(user_program, level, num_user_transforms)
         program = user_program[level_slice_initial]
         user_transformed_tapes, user_post_processing = program((initial_tape,))
 

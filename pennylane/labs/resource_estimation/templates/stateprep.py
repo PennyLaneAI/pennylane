@@ -13,7 +13,6 @@
 # limitations under the License.
 r"""Resource operators for state preparation templates."""
 import math
-from typing import Dict
 
 import pennylane.numpy as np
 from pennylane.labs import resource_estimation as plre
@@ -315,7 +314,7 @@ class ResourceMPSPrep(ResourceOperator):
         super().__init__(wires=wires)
 
     @property
-    def resource_params(self) -> Dict:
+    def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
         Returns:

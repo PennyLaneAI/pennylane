@@ -72,7 +72,7 @@ def grad(f: Callable, argnums: Sequence[int] | int = 0) -> Callable:
         interface = get_interface(*args)
 
         if interface == "autograd":
-            g = _autograd_grad(f, argnum=argnums)(*args, **kwargs)
+            g = _autograd_grad(f, argnums=argnums)(*args, **kwargs)
             return g[0] if argnums_integer else g
 
         if interface == "jax":
@@ -232,7 +232,7 @@ def jacobian(f: Callable, argnums: Sequence[int] | int = 0) -> Callable:
         interface = get_interface(*args)
 
         if interface == "autograd":
-            return _autograd_jacobian(f, argnum=argnums)(*args, **kwargs)
+            return _autograd_jacobian(f, argnums=argnums)(*args, **kwargs)
 
         if interface == "jax":
             import jax

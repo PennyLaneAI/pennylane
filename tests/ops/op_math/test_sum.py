@@ -677,9 +677,9 @@ class TestProperties:
         true_hermitian_state = True
 
         for op in ops_lst:
-            true_hermitian_state = true_hermitian_state and op.is_hermitian
+            true_hermitian_state = true_hermitian_state and op.is_verified_hermitian
 
-        assert sum_op.is_hermitian == true_hermitian_state
+        assert sum_op.is_verified_hermitian == true_hermitian_state
 
     @pytest.mark.parametrize("sum_method", [sum_using_dunder_method, qml.sum])
     @pytest.mark.parametrize("ops_lst", ops)

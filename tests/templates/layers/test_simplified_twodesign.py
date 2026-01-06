@@ -21,6 +21,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as pnp
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 
 @pytest.mark.jax
@@ -149,6 +150,20 @@ class TestDecomposition:
 
         assert np.allclose(res1, res2, atol=tol, rtol=0)
         assert np.allclose(state1, state2, atol=tol, rtol=0)
+
+    DECOMP_PARAMS = [
+        ([np.pi], [], range(1)),
+        ([np.pi] * 2, [[[np.pi] * 2]], range(2)),
+        ([np.pi] * 3, [[[np.pi] * 2] * 2], range(3)),
+        ([np.pi] * 4, [[[np.pi] * 2] * 3], range(4)),
+    ]
+
+    @pytest.mark.capture
+    @pytest.mark.parametrize(("initial_layer_weights", "weights", "wires"), DECOMP_PARAMS)
+    def test_decomposition_new(self, initial_layer_weights, weights, wires):
+        op = qml.SimplifiedTwoDesign(initial_layer_weights, weights, wires)
+        for rule in qml.list_decomps(qml.SimplifiedTwoDesign):
+            _test_decomposition_rule(op, rule)
 
 
 class TestInputs:

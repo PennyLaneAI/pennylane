@@ -64,9 +64,8 @@ def optimize_t_count(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postproce
 
     **Example:**
 
-    .. code-block:: python3
+    .. code-block:: python
 
-        import pennylane as qml
         import pennylane.transforms.zx as zx
 
         dev = qml.device("default.qubit")
@@ -83,13 +82,10 @@ def optimize_t_count(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postproce
             qml.T(1)
             return qml.state()
 
-
-    .. code-block:: pycon
-
-        >>> print(qml.draw(circuit)())
-        0: ──Z─╭●────╭●─┤  State
-        1: ────╰X──S─│──┤  State
-        2: ──────────╰X─┤  State
+    >>> print(qml.draw(circuit)())
+    0: ──Z─╭●────╭●─┤  State
+    1: ────╰X──S─│──┤  State
+    2: ──────────╰X─┤  State
 
     """
     # pylint: disable=import-outside-toplevel

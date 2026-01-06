@@ -22,8 +22,7 @@ import itertools
 
 import numpy as np
 
-import pennylane as qml
-from pennylane.exceptions import QuantumFunctionError
+from pennylane.exceptions import EigvalsUndefinedError, QuantumFunctionError
 from pennylane.measurements import MeasurementProcess
 from pennylane.wires import Wires
 
@@ -406,11 +405,9 @@ class QutritDevice(QubitDevice):
             indices = np.array(indices)  # Add np.array here for Jax support.
             try:
                 samples = observable.eigvals()[indices]
-            except qml.operation.EigvalsUndefinedError as e:
+            except EigvalsUndefinedError as e:
                 # if observable has no info on eigenvalues, we cannot return this measurement
-                raise qml.operation.EigvalsUndefinedError(
-                    f"Cannot compute samples of {observable.name}."
-                ) from e
+                raise EigvalsUndefinedError(f"Cannot compute samples of {observable.name}.") from e
 
         if bin_size is None:
             if counts:

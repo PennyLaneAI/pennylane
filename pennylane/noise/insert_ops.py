@@ -101,11 +101,9 @@ def insert(
 
     .. code-block:: python
 
-        from functools import partial
-
         dev = qml.device("default.mixed", wires=2)
 
-        @partial(qml.noise.insert, op=qml.AmplitudeDamping, op_args=0.2, position="end")
+        @qml.noise.insert(op=qml.AmplitudeDamping, op_args=0.2, position="end")
         @qml.qnode(dev)
         def f(w, x, y, z):
             qml.RX(w, wires=0)
@@ -144,7 +142,7 @@ def insert(
             dev = qml.device("default.qubit", wires=2)
 
             @qml.qnode(dev)
-            @partial(qml.noise.insert, op=op, op_args=[0.2, 0.3], position="end")
+            @qml.noise.insert(op=op, op_args=[0.2, 0.3], position="end")
             def f(w, x, y, z):
                 qml.RX(w, wires=0)
                 qml.RY(x, wires=1)
@@ -258,7 +256,10 @@ def insert(
 
         if req_ops:
             for operation in req_ops:
-                if operation == type(circuit_op):
+                # Use `isinstance` rather than checking `operation == type(circuit_op)`
+                # circuit_op is an instance of an operation.
+                # operation is a type; either Operator or some subclass of Operator.
+                if isinstance(circuit_op, operation):
                     for w in circuit_op.wires:
                         sub_tape = make_qscript(op)(*op_args, wires=w)
                         new_operations.extend(sub_tape.operations)

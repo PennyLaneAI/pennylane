@@ -27,14 +27,12 @@ from pennylane.capture.primitives import (
     cond_prim,
     ctrl_transform_prim,
     for_loop_prim,
-    grad_prim,
     jacobian_prim,
     qnode_prim,
     while_loop_prim,
 )
-from pennylane.measurements import MidMeasureMP
 from pennylane.operation import Operation
-from pennylane.ops import Conditional
+from pennylane.ops import Conditional, MidMeasure
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 from pennylane.transforms.decompose import DecomposeInterpreter, decompose_plxpr_to_plxpr
 
@@ -44,9 +42,7 @@ pytestmark = [pytest.mark.jax, pytest.mark.capture]
 class TestDecomposeInterpreter:
     """Unit tests for the DecomposeInterpreter class for decomposing plxpr."""
 
-    @pytest.mark.parametrize(
-        "gate_set", [["RX"], [qml.RX], lambda op: op.name == "RX", qml.RX, "RX"]
-    )
+    @pytest.mark.parametrize("gate_set", [["RX"], [qml.RX], qml.RX, "RX"])
     @pytest.mark.parametrize("max_expansion", [None, 4])
     def test_init(self, gate_set, max_expansion):
         """Test that DecomposeInterpreter is initialized correctly."""
@@ -76,9 +72,9 @@ class TestDecomposeInterpreter:
     def test_stopping_condition(self, op):
         """Test that stopping_condition works correctly."""
         # pylint: disable=unnecessary-lambda-assignment
-        gate_set = lambda op: op.name == "RX"
-        interpreter = DecomposeInterpreter(gate_set=gate_set)
-        assert interpreter.stopping_condition(op) == gate_set(op)
+        stopping_condition = lambda op: op.name == "RX"
+        interpreter = DecomposeInterpreter(stopping_condition=stopping_condition)
+        assert interpreter.stopping_condition(op) == stopping_condition(op)
 
     def test_decompose_simple(self):
         """Test that a simple function can be decomposed correctly."""
@@ -324,12 +320,12 @@ class TestDecomposeInterpreter:
                 return qml.expval(qml.Z(0))
 
             @cond_f.else_if(x > 1)
-            def _():
+            def _else_if():
                 qml.Y(0)
                 return qml.expval(qml.Y(0))
 
             @cond_f.otherwise
-            def _():
+            def _else():
                 qml.Z(0)
                 return qml.expval(qml.X(0))
 
@@ -459,10 +455,7 @@ class TestDecomposeInterpreter:
 
         jaxpr = jax.make_jaxpr(f)(0.5, 1.5, 2.5)
 
-        if grad_fn == qml.grad:
-            assert jaxpr.eqns[0].primitive == grad_prim
-        else:
-            assert jaxpr.eqns[0].primitive == jacobian_prim
+        assert jaxpr.eqns[0].primitive == jacobian_prim
         grad_jaxpr = jaxpr.eqns[0].params["jaxpr"]
         qfunc_jaxpr = grad_jaxpr.eqns[0].params["qfunc_jaxpr"]
         assert qfunc_jaxpr.eqns[0].primitive == qml.RZ._primitive
@@ -523,8 +516,8 @@ class TestDecomposeInterpreter:
         qml.assert_equal(ops[5].base, q.queue[5].base)
         qml.assert_equal(ops[6].base, q.queue[6].base)
         qml.assert_equal(ops[8].base, q.queue[8].base)
-        assert isinstance(ops[3], MidMeasureMP)
-        assert isinstance(ops[7], MidMeasureMP)
+        assert isinstance(ops[3], MidMeasure)
+        assert isinstance(ops[7], MidMeasure)
 
 
 class TestControlledDecompositions:

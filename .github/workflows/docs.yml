@@ -32,8 +32,27 @@ on:
 permissions: write-all
 
 jobs:
+  get_branch:
+    runs-on: ubuntu-24.04
+    outputs:
+      run_sphinx: ${{ steps.get_pr_branch.outputs.run_sphinx }}
+    steps:
+      - name: Get PR branch name
+        id: get_pr_branch
+        run: |
+          BRANCH_NAME="${{ github.head_ref}}"
+          echo "branch is $BRANCH_NAME"
+          if [[ "$BRANCH_NAME" =~ v[0-9]+\.[0-9]+\.[0-9]+-docs$ ]]; then
+            echo "run_sphinx=true" >> $GITHUB_OUTPUT  
+          elif [ "${{github.event.pull_request.draft}}" == false ]; then
+            echo "run_sphinx=true" >> $GITHUB_OUTPUT
+          else
+            echo "run_sphinx=false" >> $GITHUB_OUTPUT
+          fi
+
   determine_runner:
-    if: github.event.pull_request.draft == false
+    if: needs.get_branch.outputs.run_sphinx == 'true'
+    needs: get_branch
     name: Determine runner type to use
     uses: ./.github/workflows/determine-workflow-runner.yml
     with:
@@ -41,33 +60,33 @@ jobs:
       force_large_runner: ${{ github.event_name == 'merge_group' }}
 
   sphinx:
-    if: github.event.pull_request.draft == false
-    needs: [determine_runner]
+    if: needs.get_branch.outputs.run_sphinx == 'true'
+    needs: [determine_runner, get_branch]
     runs-on: ${{ needs.determine_runner.outputs.runner_group }}
     steps:
-    - uses: actions/checkout@v4
-    - uses: PennyLaneAI/sphinx-action@master
-      with:
-        docs-folder: "doc/"
-        pre-build-command: >
+      - uses: actions/checkout@v4
+      - uses: PennyLaneAI/sphinx-action@master
+        with:
+          docs-folder: "doc/"
+          pre-build-command: >
             apt install -y graphviz
-            && pip3 install -r doc/requirements.txt
+            && pip3 install -e '.[docs]'
             && pip3 install .
             && pip3 install openfermionpyscf
             && pip3 install aiohttp fsspec h5py
-        build-command: "sphinx-build -b html . _build -W --keep-going"
+          build-command: "sphinx-build -b html . _build -W --keep-going"
 
-    - name: Freeze dependencies
-      shell: bash
-      run: |
-        pip freeze | grep -v 'file:///' > doc.txt
-        cat doc.txt
+      - name: Freeze dependencies
+        shell: bash
+        run: |
+          pip freeze | grep -v 'file:///' > doc.txt
+          cat doc.txt
 
-    - name: Upload frozen requirements
-      uses: actions/upload-artifact@v4
-      with:
-        name: frozen-doc
-        path: doc.txt
+      - name: Upload frozen requirements
+        uses: actions/upload-artifact@v4
+        with:
+          name: frozen-doc
+          path: doc.txt
 
   upload-stable-deps:
     if: github.event_name == 'schedule'

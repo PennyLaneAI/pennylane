@@ -27,7 +27,7 @@ from functools import singledispatch
 from typing import TYPE_CHECKING
 
 from pennylane import ops
-from pennylane.measurements import MidMeasureMP
+from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
 
 from .drawable_layers import drawable_layers
 from .mpldrawer import MPLDrawer
@@ -156,7 +156,7 @@ def _(op: ops.WireCut, drawer, layer, _):
 
 
 @_add_operation_to_drawer.register
-def _(op: MidMeasureMP, drawer, layer, _):
+def _(op: ops.MidMeasure, drawer, layer, _):
     text = None if op.postselect is None else str(int(op.postselect))
     drawer.measure(layer, op.wires[0], text=text)  # assume one wire
 
@@ -169,6 +169,11 @@ def _(op: MidMeasureMP, drawer, layer, _):
             box_options={"zorder": 4},
             text_options={"zorder": 5},
         )
+
+
+@_add_operation_to_drawer.register
+def _(op: ops.PauliMeasure, drawer, layer, _):
+    drawer.pauli_measure(layer, op.pauli_word, op.wires, op.postselect)
 
 
 @_add_operation_to_drawer.register
@@ -199,8 +204,7 @@ def _get_measured_wires(measurements, wires) -> set:
     return measured_wires
 
 
-def _add_classical_wires(drawer, cwire_layers, cwire_wires):
-
+def _add_classical_wires(drawer, layers, cwire_layers, cwire_wires):
     for cwire, layer_ids_per_cwire in cwire_layers.items():
         for layer_ids, layer_wires in zip(layer_ids_per_cwire, cwire_wires[cwire], strict=True):
             xs, ys = [], []
@@ -209,10 +213,22 @@ def _add_classical_wires(drawer, cwire_layers, cwire_wires):
             if len_diff > 0:
                 layer_wires += [cwire + drawer.n_wires] * len_diff
             for l, w in zip(layer_ids, layer_wires, strict=True):
+                if l < len(layers) and _ppm_controlled(layers[l]):
+                    l -= drawer.ppm_offset
                 xs.extend([l, l, l])
                 ys.extend([cwire + drawer.n_wires, w, cwire + drawer.n_wires])
 
             drawer.classical_wire(xs, ys)
+
+
+def _ppm_controlled(layer):
+    last_op = layer[0]
+    last_wire = max(last_op.wires)
+    for op in layer[1:]:
+        if (wire := max(op.wires)) > last_wire:
+            last_wire = wire
+            last_op = op
+    return isinstance(last_op, PauliMeasure)
 
 
 def _get_measured_bits(measurements, bit_map, offset):
@@ -252,7 +268,7 @@ def _draw_layers(layers, measurements, wire_map, config, starting_dots=False, **
     else:
         drawer.crop_wire_labels()
 
-    _add_classical_wires(drawer, config.cwire_layers, config.cwire_wires)
+    _add_classical_wires(drawer, layers, config.cwire_layers, config.cwire_wires)
 
     for layer, layer_ops in enumerate(layers):
         for op in layer_ops:
@@ -298,7 +314,7 @@ def _tape_mpl(tape, wire_order=None, show_all_wires=False, max_length=None, **kw
     layers = drawable_layers(tape.operations, wire_map={i: i for i in tape.wires}, bit_map=bit_map)
 
     for i, layer in enumerate(layers):
-        if any(isinstance(o, MidMeasureMP) and o.reset for o in layer):
+        if any(isinstance(o, ops.MidMeasure) and o.reset for o in layer):
             layers.insert(i + 1, [])
 
     bit_map, cwire_layers, cwire_wires = cwire_connections(layers + [tape.measurements], bit_map)

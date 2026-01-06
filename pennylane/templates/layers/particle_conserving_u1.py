@@ -16,10 +16,13 @@ Contains the hardware-efficient ParticleConservingU1 template.
 """
 import numpy as np
 
-from pennylane import math
+from pennylane import capture, math
+from pennylane.control_flow import for_loop
+from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.operation import Operation
 from pennylane.ops import CNOT, CZ, CRot, PhaseShift
 from pennylane.templates.embeddings import BasisEmbedding
+from pennylane.wires import Wires, WiresLike
 
 
 def decompose_ua(phi, wires=None):
@@ -246,6 +249,8 @@ class ParticleConservingU1(Operation):
 
     grad_method = None
 
+    resource_keys = {"num_wires", "n_layers"}
+
     def __init__(self, weights, wires, init_state=None, id=None):
         if len(wires) < 2:
             raise ValueError(
@@ -277,6 +282,10 @@ class ParticleConservingU1(Operation):
     def num_params(self):
         return 1
 
+    @property
+    def resource_params(self) -> dict:
+        return {"num_wires": len(self.wires), "n_layers": math.shape(self.parameters[0])[0]}
+
     @staticmethod
     def compute_decomposition(weights, wires, init_state):  # pylint: disable=arguments-differ
         r"""Representation of the ParticleConservingU1operator as a product of other operators.
@@ -301,20 +310,27 @@ class ParticleConservingU1(Operation):
         **Example**
 
         >>> weights = torch.tensor([[[0.3, 1.]]])
-        >>> qml.ParticleConservingU1.compute_decomposition(weights, wires=["a", "b"], init_state=[0, 1])
-        [BasisEmbedding(wires=['a', 'b']),
-         CZ(wires=['a', 'b']),
-         CRot(tensor(-0.3000), 3.141592653589793, tensor(0.3000), wires=['a', 'b']),
-         PhaseShift(tensor(-0.3000), wires=['b']), CNOT(wires=['a', 'b']),
-         PhaseShift(tensor(0.3000), wires=['b']), CNOT(wires=['a', 'b']),
-         PhaseShift(tensor(-0.3000), wires=['a']), CZ(wires=['b', 'a']),
-         CRot(0, tensor(2.), 0, wires=['b', 'a']), CZ(wires=['a', 'b']),
-         CRot(tensor(0.3000), 3.141592653589793, tensor(-0.3000), wires=['a', 'b']),
-         PhaseShift(tensor(0.3000), wires=['b']),
-         CNOT(wires=['a', 'b']),
-         PhaseShift(tensor(-0.3000), wires=['b']),
-         CNOT(wires=['a', 'b']),
-         PhaseShift(tensor(0.3000), wires=['a'])]
+        >>> ops = qml.ParticleConservingU1.compute_decomposition(weights, wires=["a", "b"], init_state=[0, 1])
+        >>> from pprint import pprint
+        >>> pprint(ops)
+        [BasisEmbedding(array([0, 1]), wires=['a', 'b']),
+        CZ(wires=['a', 'b']),
+        CRot(tensor(-0.3000), 3.141592653589793, tensor(0.3000), wires=Wires(['a', 'b'])),
+        PhaseShift(tensor(-0.3000), wires=['b']),
+        CNOT(wires=['a', 'b']),
+        PhaseShift(tensor(0.3000), wires=['b']),
+        CNOT(wires=['a', 'b']),
+        PhaseShift(tensor(-0.3000), wires=['a']),
+        CZ(wires=['b', 'a']),
+        CRot(0, tensor(2.), 0, wires=Wires(['b', 'a'])),
+        CZ(wires=['a', 'b']),
+        CRot(tensor(0.3000), 3.141592653589793, tensor(-0.3000), wires=Wires(['a', 'b'])),
+        PhaseShift(tensor(0.3000), wires=['b']),
+        CNOT(wires=['a', 'b']),
+        PhaseShift(tensor(-0.3000), wires=['b']),
+        CNOT(wires=['a', 'b']),
+        PhaseShift(tensor(0.3000), wires=['a'])]
+
         """
 
         nm_wires = [wires[l : l + 2] for l in range(0, len(wires) - 1, 2)]
@@ -344,4 +360,107 @@ class ParticleConservingU1(Operation):
             raise ValueError(
                 f"The number of qubits must be greater than one; got 'n_wires' = {n_wires}"
             )
+
         return n_layers, n_wires - 1, 2
+
+
+def _particle_conserving_u1_resources(n_layers: int, num_wires: int):
+    # number of pairs of even-indexed of wires
+    num_nm_wires = num_wires - 1
+
+    resources = {
+        resource_rep(BasisEmbedding, num_wires=num_wires): 1,
+        resource_rep(CZ): 3 * num_nm_wires * n_layers,
+        resource_rep(CRot): 3 * num_nm_wires * n_layers,
+        resource_rep(PhaseShift): 6 * num_nm_wires * n_layers,
+        resource_rep(CNOT): 4 * num_nm_wires * n_layers,
+    }
+
+    return resources
+
+
+def _decompose_ua_qfunc(phi: float, wires: WiresLike):
+    r"""Appends the circuit decomposing the controlled application of the unitary
+    :math:`U_A(\phi)`
+
+    .. math::
+
+        U_A(\phi) = \left(\begin{array}{cc} 0 & e^{-i\phi} \\ e^{-i\phi} & 0 \\ \end{array}\right)
+
+    in terms of the quantum operations supported by PennyLane.
+
+    :math:`U_A(\phi)` is used in `arXiv:1805.04340 <https://arxiv.org/abs/1805.04340>`_,
+    to define two-qubit exchange gates required to build particle-conserving
+    VQE ansatze for quantum chemistry simulations. See :func:`~.ParticleConservingU1`.
+
+    :math:`U_A(\phi)` is expressed in terms of ``PhaseShift``, ``Rot`` and ``PauliZ`` operations
+    :math:`U_A(\phi) = R_\phi(-2\phi) R(-\phi, \pi, \phi) \sigma_z`.
+
+    Args:
+        phi (float): angle :math:`\phi` defining the unitary :math:`U_A(\phi)`
+        wires (Iterable): the wires ``n`` and ``m`` the circuit acts on
+
+    Returns:
+          list[.Operator]: sequence of operators defined by this function
+    """
+    n, m = wires
+
+    CZ(wires=wires)
+    CRot(-phi, np.pi, phi, wires=wires)
+
+    # decomposition of C-PhaseShift(2*phi) gate
+    PhaseShift(-phi, wires=m)
+    CNOT(wires=wires)
+    PhaseShift(phi, wires=m)
+    CNOT(wires=wires)
+    PhaseShift(-phi, wires=n)
+
+
+@register_resources(_particle_conserving_u1_resources)
+def _particle_conserving_u1_decomposition(
+    weights: list, wires: WiresLike, init_state: tuple[int]
+):  # pylint: disable=arguments-differ
+    nm_wires = [wires[l : l + 2] for l in range(0, len(wires) - 1, 2)]
+    nm_wires += [wires[l : l + 2] for l in range(1, len(wires) - 1, 2)]
+    n_layers = math.shape(weights)[0]
+
+    if isinstance(wires, Wires):
+        wires = wires.labels
+        # If we are using capture, then it is going to be problematic to use Wires.
+        # Instead, we need to use the wire labels. Here we have a collection of Wires,
+        # and this line goes through each of them and turns them into their labels.
+        nm_wires = list(map(lambda w: w.labels if isinstance(w, Wires) else w, nm_wires))
+
+    if capture.enabled():
+        nm_wires, weights, wires, init_state = (
+            math.array(nm_wires, like="jax"),
+            math.array(weights, like="jax"),
+            math.array(wires, like="jax"),
+            math.array(init_state, like="jax"),
+        )
+
+    BasisEmbedding(init_state, wires=wires)
+
+    @for_loop(n_layers)
+    def layers_loop(l):
+
+        @for_loop(len(nm_wires))
+        def nm_loop(i):
+            wires_ = nm_wires[i]
+            phi, theta = weights[l, i, 0], weights[l, i, 1]
+
+            # C-UA(phi)
+            _decompose_ua_qfunc(phi, wires_)
+
+            CZ(wires=wires_[::-1])
+            CRot(0, 2 * theta, 0, wires=wires_[::-1])
+
+            # C-UA(-phi)
+            _decompose_ua_qfunc(-phi, wires_)
+
+        nm_loop()  # pylint: disable=no-value-for-parameter
+
+    layers_loop()  # pylint: disable=no-value-for-parameter
+
+
+add_decomps(ParticleConservingU1, _particle_conserving_u1_decomposition)

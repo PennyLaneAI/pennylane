@@ -19,21 +19,19 @@ executed by a device.
 
 import contextlib
 import copy
-import warnings
 from collections import Counter
 from collections.abc import Callable, Hashable, Iterable, Iterator, Sequence
 from functools import cached_property
-from typing import Any, ParamSpec, TypeVar, Union
+from typing import Any, ParamSpec, TypeVar
 
 import pennylane as qml
-from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.measurements import MeasurementProcess
 from pennylane.measurements.shots import Shots, ShotsLike
 from pennylane.operation import _UNSET_BATCH_SIZE, Operation, Operator
 from pennylane.pytrees import register_pytree
 from pennylane.queuing import AnnotatedQueue, process_queue
 from pennylane.typing import TensorLike
-from pennylane.wires import Wires, WiresLike
+from pennylane.wires import Wires
 
 QS = TypeVar("QS", bound="QuantumScript")
 
@@ -721,100 +719,6 @@ class QuantumScript:
         )
 
     # ========================================================
-    # MEASUREMENT SHAPE
-    #
-    # We can extract the private static methods to a new class later
-    # ========================================================
-
-    def shape(
-        self, device: Union["qml.devices.Device", "qml.devices.LegacyDevice"]
-    ) -> tuple[int, ...] | tuple[tuple[int, ...], ...]:
-        """Produces the output shape of the quantum script by inspecting its measurements
-        and the device used for execution.
-
-        .. note::
-
-            The computed shape is not stored because the output shape may be
-            dependent on the device used for execution.
-
-        Args:
-            device (pennylane.devices.Device): the device that will be used for the script execution
-
-        Returns:
-            Union[tuple[int], tuple[tuple[int]]]: the output shape(s) of the quantum script result
-
-        .. warning::
-
-            The ``QuantumScript.shape`` method is deprecated and will be removed in v0.44.
-            Instead, please use ``MeasurementProcess.shape``.
-
-        **Examples**
-
-        >>> dev = qml.device('default.qubit', wires=2)
-        >>> qs = QuantumScript(measurements=[qml.state()])
-        >>> qs.shape(dev)
-        (4,)
-        >>> m = [qml.state(), qml.expval(qml.Z(0)), qml.probs((0,1))]
-        >>> qs = QuantumScript(measurements=m)
-        >>> qs.shape(dev)
-        ((4,), (), (4,))
-
-        """
-        warnings.warn(
-            "``QuantumScript.shape`` is deprecated and will be removed in v0.44. "
-            "Instead, please use ``MeasurementProcess.shape``.",
-            PennyLaneDeprecationWarning,
-        )
-
-        num_device_wires = len(device.wires) if device.wires else len(self.wires)
-
-        def get_shape(mp, _shots):
-            # depends on num_device_wires and self.batch_size from closure
-            standard_shape = mp.shape(shots=_shots, num_device_wires=num_device_wires)
-            if self.batch_size:
-                return (self.batch_size, *standard_shape)
-            return standard_shape
-
-        shape = []
-        for s in self.shots if self.shots else [None]:
-            shots_shape = tuple(get_shape(mp, s) for mp in self.measurements)
-            shots_shape = shots_shape[0] if len(shots_shape) == 1 else tuple(shots_shape)
-            shape.append(shots_shape)
-
-        return tuple(shape) if self.shots.has_partitioned_shots else shape[0]
-
-    @property
-    def numeric_type(self) -> type | tuple[type, ...]:
-        """Returns the expected numeric type of the quantum script result by inspecting
-        its measurements.
-
-        Returns:
-            Union[type, Tuple[type]]: The numeric type corresponding to the result type of the
-            quantum script, or a tuple of such types if the script contains multiple measurements
-
-        .. warning::
-
-            The ``QuantumScript.numeric_type`` method is deprecated and will be removed in v0.44.
-            Instead, please use ``MeasurementProcess.numeric_type``.
-
-        **Example:**
-
-        >>> dev = qml.device('default.qubit', wires=2)
-        >>> qs = QuantumScript(measurements=[qml.state()])
-        >>> qs.numeric_type
-         <class 'complex'>
-        """
-        warnings.warn(
-            "``QuantumScript.numeric_type`` is deprecated and will be removed in v0.44. "
-            "Instead, please use ``MeasurementProcess.numeric_type``.",
-            PennyLaneDeprecationWarning,
-        )
-
-        types = tuple(observable.numeric_type for observable in self.measurements)
-
-        return types[0] if len(types) == 1 else types
-
-    # ========================================================
     # Transforms: QuantumScript to QuantumScript
     # ========================================================
 
@@ -1079,33 +983,32 @@ class QuantumScript:
         return self._graph
 
     @property
-    def specs(self) -> "qml.resource.resource.SpecsDict[str, Any]":
+    def specs(self) -> dict[str, Any]:
         """Resource information about a quantum circuit.
 
         Returns:
-            SpecsDict[str, Any]: A dictionary containing the specifications of the quantum script.
+            dict[str, Any]: A dictionary containing the specifications of the quantum script.
 
         **Example**
          >>> ops = [qml.Hadamard(0), qml.RX(0.26, 1), qml.CNOT((1,0)),
          ...         qml.Rot(1.8, -2.7, 0.2, 0), qml.Hadamard(1), qml.CNOT((0, 1))]
          >>> qscript = QuantumScript(ops, [qml.expval(qml.Z(0) @ qml.Z(1))])
 
-        Asking for the specs produces a dictionary of useful information about the circuit:
+        Asking for the specs produces a dictionary of useful information about the circuit.
+        Note that this may return slightly different information than running :func:`~.pennylane.specs` on
+        a qnode directly.
 
-        >>> qscript.specs['num_observables']
-        1
-        >>> print(qscript.specs['resources'])
-        num_wires: 2
-        num_gates: 6
-        depth: 4
-        shots: Shots(total=None)
-        gate_types:
-        {'Hadamard': 2, 'RX': 1, 'CNOT': 2, 'Rot': 1}
-        gate_sizes:
-        {1: 4, 2: 2}
+        >>> from pprint import pprint
+        >>> pprint(qscript.specs['resources'])
+        SpecsResources(gate_types={'CNOT': 2, 'Hadamard': 2, 'RX': 1, 'Rot': 1},
+                       gate_sizes={1: 4, 2: 2},
+                       measurements={'expval(Prod(num_wires=2, num_terms=2))': 1},
+                       num_allocs=2,
+                       depth=4)
         """
         if self._specs is None:
-            self._specs = qml.resource.resource.specs_from_tape(self)
+            resources, errors = qml.resource.resource.resources_from_tape(self, compute_errors=True)
+            self._specs = {"resources": resources, "shots": self.shots, "errors": errors}
         return self._specs
 
     # pylint: disable=too-many-arguments, too-many-positional-arguments
@@ -1138,56 +1041,6 @@ class QuantumScript:
             decimals=decimals,
             max_length=max_length,
             show_matrices=show_matrices,
-        )
-
-    def to_openqasm(
-        self,
-        wires: WiresLike | None = None,
-        rotations: bool = True,
-        measure_all: bool = True,
-        precision: int | None = None,
-    ) -> str:
-        """Serialize the circuit as an OpenQASM 2.0 program.
-
-        Measurements are assumed to be performed on all qubits in the computational basis. An
-        optional ``rotations`` argument can be provided so that output of the OpenQASM circuit is
-        diagonal in the eigenbasis of the quantum script's observables. The measurement outputs can be
-        restricted to only those specified in the script by setting ``measure_all=False``.
-
-        .. note::
-
-            The serialized OpenQASM program assumes that gate definitions
-            in ``qelib1.inc`` are available.
-
-        .. warning::
-
-            The ``QuantumScript.to_openqasm`` method is deprecated and will be removed in v0.44.
-            Instead, please use the :func:`~.to_openqasm` function.
-
-        Args:
-            wires (Wires or None): the wires to use when serializing the circuit
-            rotations (bool): in addition to serializing user-specified
-                operations, also include the gates that diagonalize the
-                measured wires such that they are in the eigenbasis of the circuit observables.
-            measure_all (bool): whether to perform a computational basis measurement on all qubits
-                or just those specified in the script
-            precision (int): decimal digits to display for parameters
-
-        Returns:
-            str: OpenQASM serialization of the circuit
-        """
-        warnings.warn(
-            "``QuantumScript.to_openqasm`` is deprecated and will be removed in v0.44. "
-            "Instead, please use ``qml.to_openqasm``.",
-            PennyLaneDeprecationWarning,
-        )
-
-        return qml.to_openqasm(
-            self,
-            wires=wires,
-            rotations=rotations,
-            measure_all=measure_all,
-            precision=precision,
         )
 
     @classmethod

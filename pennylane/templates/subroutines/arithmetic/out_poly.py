@@ -190,8 +190,7 @@ class OutPoly(Operation):
             def f(x, y):
                 return x ** 2 + y
 
-            @partial(qml.set_shots, shots=1)
-            @qml.qnode(qml.device("default.qubit"))
+            @qml.qnode(qml.device("default.qubit"), shots=1)
             def circuit():
                 # load values of x and y
                 qml.BasisEmbedding(3, wires=wires["x"])
@@ -205,12 +204,8 @@ class OutPoly(Operation):
 
                 return qml.sample(wires=wires["output"])
 
-            print(circuit())
-
-        .. code-block:: pycon
-
-            >>> print(circuit())
-            [[1 0 1 1]]
+        >>> print(circuit())
+        [[1 0 1 1]]
 
         The result, :math:`[[1 0 1 1]]`, is the binary representation of :math:`3^2 + 2 = 11`.
         Note that the default value of `mod` in this example is :math:`2^{\text{len(output_wires)}} = 2^4 = 16`.
@@ -236,8 +231,7 @@ class OutPoly(Operation):
             def f(x, y):
                 return x ** 2 + y
 
-            @partial(qml.set_shots, shots=1)
-            @qml.qnode(qml.device("default.qubit"))
+            @qml.qnode(qml.device("default.qubit"), shots=1)
             def circuit():
                 # loading values for x and y
                 qml.BasisEmbedding(3, wires=x_wires)
@@ -255,10 +249,8 @@ class OutPoly(Operation):
 
                 return qml.sample(wires=output_wires)
 
-        .. code-block:: pycon
-
-            >>> print(circuit())
-            [[1 0 1]]
+        >>> print(circuit())
+        [[1 0 1]]
 
         The result, :math:`[[1 0 1]]`, is the binary representation
         of :math:`1 + f(3, 2) = 1 + 3^2 + 2  \; \text{mod} \; 7 = 5`.
@@ -410,22 +402,24 @@ class OutPoly(Operation):
 
         .. code-block:: python
 
-            print(
-            qml.OutPoly.compute_decomposition(
+            from pprint import pprint
+
+            ops = qml.OutPoly.compute_decomposition(
                 lambda x, y: x + y,
                 input_registers=[[0, 1],[2,3]],
                 output_wires=[4, 5],
                 mod=4,
                 )
-            )
+            pprint(ops)
 
-        .. code-block:: pycon
+        .. code-block::
 
-            [QFT(wires=[4]),
-             Controlled(PhaseAdder(wires=[4, None]),
-             control_wires=[3]),
-             Controlled(PhaseAdder(wires=[4, None]), control_wires=[1]),
-             Adjoint(QFT(wires=[4]))]
+            [QFT(wires=[4, 5]),
+            Controlled(PhaseAdder(wires=[4, 5]), control_wires=[3]),
+            Controlled(PhaseAdder(wires=[4, 5]), control_wires=[2]),
+            Controlled(PhaseAdder(wires=[4, 5]), control_wires=[1]),
+            Controlled(PhaseAdder(wires=[4, 5]), control_wires=[0]),
+            Adjoint(QFT(wires=[4, 5]))]
         """
         registers_wires = [*input_registers, output_wires]
 
@@ -440,7 +434,13 @@ class OutPoly(Operation):
 
         list_ops.append(QFT(wires=output_adder_mod))
 
-        coeffs_dic = dict(kwargs["coeffs_list"])
+        wires_vars = [len(w) for w in registers_wires[:-1]]
+
+        coeffs_list = kwargs.get("coeffs_list")
+        if coeffs_list is None:
+            coeffs_dic = _get_polynomial(polynomial_function, mod, *wires_vars)
+        else:
+            coeffs_dic = dict(kwargs["coeffs_list"])
 
         all_wires_input = sum([*registers_wires[:-1]], start=[])
 

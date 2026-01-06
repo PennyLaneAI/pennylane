@@ -71,8 +71,8 @@ class ControlledSequence(SymbolicOp, Operation):
 
             return qml.probs(wires = range(3))
 
-    >>> print(circuit())
-    [0.92059345 0.02637178 0.00729619 0.00423258 0.00360545 0.00423258 0.00729619 0.02637178]
+    >>> print(circuit()) # doctest: +SKIP
+    [0.9206 0.0264 0.0073 0.0042 0.0036 0.0042 0.0073 0.0264]
 
     """
 
@@ -177,10 +177,10 @@ class ControlledSequence(SymbolicOp, Operation):
                 return qml.state()
 
         >>> print(qml.draw(circuit, wire_order=[0,1,2,3])())
-        0: ─╭●─────────────────────────────────────┤  State
-        1: ─│────────────╭●────────────────────────┤  State
-        2: ─│────────────│────────────╭●───────────┤  State
-        3: ─╰(RX(1.00))──╰(RX(0.50))──╰(RX(0.25))──┤  State
+        0: ─╭●────────────────────────────┤  State
+        1: ─│─────────╭●──────────────────┤  State
+        2: ─│─────────│─────────╭●────────┤  State
+        3: ─╰RX(1.00)─╰RX(0.50)─╰RX(0.25)─┤  State
 
         To display the operators as powers of the base operator without further simplification,
         the `compute_decomposition` method can be used with `lazy=True`.
@@ -196,9 +196,9 @@ class ControlledSequence(SymbolicOp, Operation):
                 return qml.state()
 
         >>> print(qml.draw(circuit, wire_order=[0,1,2,3])())
-        0: ─╭●─────────────────────────────────────┤  State
-        1: ─│────────────╭●────────────────────────┤  State
-        2: ─│────────────│────────────╭●───────────┤  State
+        0: ─╭(RX(0.25))⁴───────────────────────────┤  State
+        1: ─│────────────╭(RX(0.25))²──────────────┤  State
+        2: ─│────────────│────────────╭(RX(0.25))¹─┤  State
         3: ─╰(RX(0.25))⁴─╰(RX(0.25))²─╰(RX(0.25))¹─┤  State
 
         """

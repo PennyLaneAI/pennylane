@@ -411,7 +411,7 @@ class TestBroadcasting:
         [
             (
                 qml.density_matrix(wires=[0, 1]),
-                lambda x: math.reshape(x, newshape=(BATCH_SIZE, 4, 4)),
+                lambda x: math.reshape(x, (BATCH_SIZE, 4, 4)),
             ),
             (qml.density_matrix(wires=[1]), lambda x: math.trace(x, axis1=1, axis2=3)),
         ],
@@ -613,7 +613,7 @@ class TestSumOfTermsDifferentiability:
         the coefficients of Hamiltonians using new and old math."""
 
         coeffs = qml.numpy.array((2.5, 6.2), requires_grad=True)
-        gradient = qml.grad(self.f, argnum=1)(self.x, coeffs)
+        gradient = qml.grad(self.f, argnums=1)(self.x, coeffs)
         expected_gradient = qml.grad(self.expected)(self.x, coeffs)
 
         assert len(gradient) == 2

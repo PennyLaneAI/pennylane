@@ -19,9 +19,8 @@ from functools import singledispatch, wraps
 from typing import Any, overload
 
 from pennylane.devices.preprocess import decompose
-from pennylane.measurements import MidMeasureMP
 from pennylane.operation import Operator
-from pennylane.ops import Conditional
+from pennylane.ops import Conditional, MidMeasure
 from pennylane.tape import QuantumScript
 from pennylane.transforms import convert_to_numpy_parameters
 from pennylane.wires import Wires, WiresLike
@@ -52,6 +51,7 @@ OPENQASM_GATES = {
     "Toffoli": "ccx",
     "CSWAP": "cswap",
     "PhaseShift": "u1",
+    "GlobalPhase": "gphase",
 }
 """
 dict[str, str]: Maps PennyLane gate names to equivalent QASM gate names.
@@ -90,7 +90,7 @@ def _obj_string(op: Operator, wires: Wires, bit_map: dict, precision: None | int
 
 
 @_obj_string.register
-def _mid_measure_str(op: MidMeasureMP, wires: Wires, bit_map: dict, precision: None | int) -> str:
+def _mid_measure_str(op: MidMeasure, wires: Wires, bit_map: dict, precision: None | int) -> str:
     if op.reset:
         raise NotImplementedError(f"Unable to translate mid circuit measurements with reset {op}.")
     if op.postselect:
@@ -130,9 +130,9 @@ def _tape_openqasm(
     lines.append(f"qreg q[{len(wires)}];")
     lines.append(f"creg c[{len(wires)}];")
 
-    num_mcms = sum(isinstance(o, MidMeasureMP) for o in tape.operations)
+    num_mcms = sum(isinstance(o, MidMeasure) for o in tape.operations)
     if num_mcms:
-        lines.append(f"creg mcms[{num_mcms}]")
+        lines.append(f"creg mcms[{num_mcms}];")
     bit_map = {}
 
     # get the user applied circuit operations without interface information
@@ -147,10 +147,11 @@ def _tape_openqasm(
     just_ops = QuantumScript(operations)
 
     def stopping_condition(op):
-        return op.name in OPENQASM_GATES or isinstance(op, (MidMeasureMP, Conditional))
+        return op.name in OPENQASM_GATES or isinstance(op, (MidMeasure, Conditional))
 
     [new_tape], _ = decompose(
         just_ops,
+        target_gates=OPENQASM_GATES.keys() | {"MidMeasure"},
         stopping_condition=stopping_condition,
         skip_initial_state_prep=False,
         name="to_openqasm",
@@ -237,7 +238,8 @@ def to_openqasm(
             qml.RZ(phi, wires=1)
             return qml.sample()
 
-    >>> print(qml.to_openqasm(circuit)(1.2, 0.9))
+    >>> output = qml.to_openqasm(circuit)(1.2, 0.9)
+    >>> print(output)
     OPENQASM 2.0;
     include "qelib1.inc";
     qreg q[2];
@@ -248,12 +250,21 @@ def to_openqasm(
     measure q[0] -> c[0];
     measure q[1] -> c[1];
 
+    Note that the terminal measurements will be re-imported as mid-circuit measurements
+    when used with ``from_qasm`` or ``from_qasm3``.
+
+    >>> print(qml.draw(qml.from_qasm(output))())
+    0: ──RX(1.20)─╭●──┤↗├───────────┤
+    1: ───────────╰X──RZ(0.90)──┤↗├─┤
+
     .. details::
         :title: Usage Details
 
-        By default, the resulting OpenQASM code will have terminal measurements on all qubits, where all the measurements are performed in the computational basis.
-        However, if terminal measurements in the circuit act only on a subset of the qubits and ``measure_all=False``,
-        the OpenQASM code will include measurements on those specific qubits only.
+        By default, the resulting OpenQASM code will have terminal measurements on all qubits,
+        where all the measurements are performed in the computational basis.
+        However, if terminal measurements in the circuit act only on a subset of the qubits
+        and ``measure_all=False``, the OpenQASM code will include measurements on those
+        specific qubits only.
 
         .. code-block:: python
 
@@ -274,8 +285,9 @@ def to_openqasm(
         cx q[0],q[1];
         measure q[1] -> c[1];
 
-        If the circuit returns an expectation value of a given observable and ``rotations=True``, the OpenQASM 2.0 program will also
-        include the gates that rotate the quantum state into the eigenbasis of the measured observable.
+        If the circuit returns an expectation value of a given observable and ``rotations=True``,
+        the OpenQASM 2.0 program will also include the gates that rotate the quantum state into
+        the eigenbasis of the measured observable.
 
         .. code-block:: python
 

@@ -28,9 +28,9 @@ Modules
 from .operations import RotXZX
 from .decomposition import convert_to_mbqc_formalism, convert_to_mbqc_gateset
 from .parametric_midmeasure import (
-    ParametricMidMeasureMP,
-    XMidMeasureMP,
-    YMidMeasureMP,
+    ParametricMidMeasure,
+    XMidMeasure,
+    YMidMeasure,
     measure_arbitrary_basis,
     measure_x,
     measure_y,
@@ -50,9 +50,9 @@ __all__ = [
     "Lattice",
     "QubitGraph",
     "QubitMgr",
-    "ParametricMidMeasureMP",
-    "XMidMeasureMP",
-    "YMidMeasureMP",
+    "ParametricMidMeasure",
+    "XMidMeasure",
+    "YMidMeasure",
     "cond_measure",
     "measure_arbitrary_basis",
     "measure_x",

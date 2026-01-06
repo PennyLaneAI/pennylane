@@ -14,13 +14,6 @@
 """
 This subpackage contains PennyLane transforms and their building blocks.
 
-.. warning::
-
-    The transforms ``add_noise``, ``insert``, ``mitigate_with_zne``, ``fold_global``, ``poly_extrapolate``, ``richardson_extrapolate``,
-    ``exponential_extrapolate`` have been moved to the :mod:`pennylane.noise` module.
-    Accessing these transforms from the :mod:`pennylane.transforms` module is deprecated
-    and will be removed in v0.44.
-
 .. currentmodule:: pennylane
 
 .. _transforms:
@@ -35,7 +28,7 @@ to one or many new circuits alongside associated classical post-processing.
 .. autosummary::
     :toctree: api
 
-    ~transforms.core.transform
+    ~transform
 
 Transforms library
 ------------------
@@ -82,7 +75,8 @@ There is a set of transforms that use ZX calculus to optimize circuits.
     zx.todd
 
 The following utility functions assist when working explicitly with ZX diagrams,
-for example when writing custom ZX compilation passes.
+for example when writing custom ZX compilation passes. Also see the section
+on intermediate representations below.
 
 .. currentmodule:: pennylane
 .. autosummary::
@@ -90,10 +84,6 @@ for example when writing custom ZX compilation passes.
 
     ~transforms.to_zx
     ~transforms.from_zx
-    ~transforms.postorder_traverse
-    ~transforms.preorder_traverse
-    ~transforms.parity_matrix
-    ~transforms.phase_polynomial
 
 Other compilation utilities
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -116,8 +106,8 @@ There are also utility functions that take a circuit and return a DAG.
     ~transforms.CommutationDAG
     ~transforms.CommutationDAGNode
 
-Transform for Clifford+T decomposition
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Transforms for Clifford+T decomposition and Pauli-based computation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This transform accepts quantum circuits and decomposes them to the Clifford+T basis.
 
@@ -125,6 +115,14 @@ This transform accepts quantum circuits and decomposes them to the Clifford+T ba
     :toctree: api
 
     ~clifford_t_decomposition
+    ~gridsynth
+    ~transforms.to_ppr
+    ~transforms.commute_ppr
+    ~transforms.ppr_to_ppm
+    ~transforms.merge_ppr_ppm
+    ~transforms.ppm_compilation
+    ~transforms.reduce_t_depth
+
 
 Other transforms
 ~~~~~~~~~~~~~~~~
@@ -149,12 +147,38 @@ preprocessing, getting information from a circuit, and more.
     ~quantum_monte_carlo
     ~transforms.resolve_dynamic_wires
 
+Transforms for intermediate representations
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Intermediate representations (IRs) are alternative representations of quantum circuits, typically
+offering a more efficient classical description for special classes of circuits.
+The following functions produce intermediate representations of quantum circuits, or
+use them internally to produce a new quantum circuit:
+
+.. autosummary::
+    :toctree: api
+
+    ~transforms.parity_matrix
+    ~transforms.parity_synth
+    ~transforms.phase_polynomial
+    ~transforms.rowcol
+
+In addition, there are the following utility functions to traverse a graph:
+
+.. currentmodule:: pennylane.transforms
+.. autosummary::
+    :toctree: api
+
+    intermediate_reps.postorder_traverse
+    intermediate_reps.preorder_traverse
+
 Transforms that act only on QNodes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 These transforms only accept QNodes, and return new transformed functions
 that compute the desired quantity.
 
+.. currentmodule:: pennylane
 .. autosummary::
     :toctree: api
 
@@ -165,16 +189,13 @@ that compute the desired quantity.
 Transforms developer functions
 ------------------------------
 
-:class:`~.TransformContainer`, :class:`~.TransformDispatcher`, and  :class:`~.TransformProgram` are
-developer-facing objects that allow the
-creation, dispatching, and composability of transforms. If you would like to make a custom transform, refer
-instead to the documentation of :func:`qml.transform <pennylane.transform>`.
-
+.. currentmodule:: pennylane
 .. autosummary::
     :toctree: api
 
-    ~transforms.core.transform_dispatcher
-    ~transforms.core.transform_program
+    ~CompilePipeline
+    ~transforms.core.BoundTransform
+    ~transforms.core.Transform
 
 Transforming circuits
 ---------------------
@@ -261,19 +282,19 @@ passes on a QNode to maximize gate reduction before execution.
 
 .. code-block:: python
 
-        dev = qml.device("default.qubit", wires=1)
+    dev = qml.device("default.qubit", wires=1)
 
-        @qml.transforms.merge_rotations
-        @qml.transforms.cancel_inverses
-        @qml.qnode(device=dev)
-        def circuit(x, y):
-            qml.Hadamard(wires=0)
-            qml.Hadamard(wires=0)
-            qml.RX(x, wires=0)
-            qml.RY(y, wires=0)
-            qml.RZ(y, wires=0)
-            qml.RY(x, wires=0)
-            return qml.expval(qml.Z(0))
+    @qml.transforms.merge_rotations
+    @qml.transforms.cancel_inverses
+    @qml.qnode(device=dev)
+    def circuit(x, y):
+        qml.Hadamard(wires=0)
+        qml.Hadamard(wires=0)
+        qml.RX(x, wires=0)
+        qml.RY(y, wires=0)
+        qml.RZ(y, wires=0)
+        qml.RY(x, wires=0)
+        return qml.expval(qml.Z(0))
 
 In this example, inverses are canceled, leading to the removal of two Hadamard gates. Subsequently, rotations are
 merged into a single :class:`qml.Rot` gate. Consequently, two transforms are successfully applied to the circuit.
@@ -282,27 +303,25 @@ merged into a single :class:`qml.Rot` gate. Consequently, two transforms are suc
 Passing arguments to transforms
 -------------------------------
 
-We can decorate a QNode with ``@partial(transform_fn, **transform_kwargs)`` to provide additional keyword arguments to a transform function.
+We can decorate a QNode with ``@transform_fn(**transform_kwargs)`` to provide additional keyword arguments to a transform function.
 In the following example, we pass the keyword argument ``grouping_strategy="wires"`` to the :func:`~.split_non_commuting` quantum transform,
 which splits a circuit into tapes measuring groups of commuting observables.
 
 .. code-block:: python
 
-        from functools import partial
+    dev = qml.device("default.qubit", wires=2)
 
-        dev = qml.device("default.qubit", wires=2)
-
-        @partial(qml.transforms.split_non_commuting, grouping_strategy="wires")
-        @qml.qnode(dev)
-        def circuit(params):
-            qml.RX(params[0], wires=0)
-            qml.RZ(params[1], wires=1)
-            return [
-                qml.expval(qml.X(0)),
-                qml.expval(qml.Y(1)),
-                qml.expval(qml.Z(0) @ qml.Z(1)),
-                qml.expval(qml.X(0) @ qml.Z(1) + 0.5 * qml.Y(1) + qml.Z(0)),
-            ]
+    @qml.transforms.split_non_commuting(grouping_strategy="wires")
+    @qml.qnode(dev)
+    def circuit(params):
+        qml.RX(params[0], wires=0)
+        qml.RZ(params[1], wires=1)
+        return [
+            qml.expval(qml.X(0)),
+            qml.expval(qml.Y(1)),
+            qml.expval(qml.Z(0) @ qml.Z(1)),
+            qml.expval(qml.X(0) @ qml.Z(1) + 0.5 * qml.Y(1) + qml.Z(0)),
+        ]
 
 Additional information
 ----------------------
@@ -317,14 +336,23 @@ from pennylane.tape import make_qscript as make_tape
 from pennylane.exceptions import TransformError
 
 # Import the decorators first to prevent circular imports when used in other transforms
-from .core import transform
+from .core import transform, CompilePipeline
 from .batch_params import batch_params
 from .batch_input import batch_input
 from .batch_partial import batch_partial
 from .convert_to_numpy_parameters import convert_to_numpy_parameters
 from .compile import compile
 
-from .decompositions import clifford_t_decomposition
+from .decompositions import (
+    clifford_t_decomposition,
+    gridsynth,
+    to_ppr,
+    commute_ppr,
+    merge_ppr_ppm,
+    ppr_to_ppm,
+    ppm_compilation,
+    reduce_t_depth,
+)
 from .defer_measurements import defer_measurements
 from .diagonalize_measurements import diagonalize_measurements
 from .dynamic_one_shot import dynamic_one_shot, is_mcm
@@ -373,37 +401,8 @@ from .broadcast_expand import broadcast_expand
 from .decompose import decompose
 from .intermediate_reps import (
     parity_matrix,
+    parity_synth,
     phase_polynomial,
     rowcol,
-    postorder_traverse,
-    preorder_traverse,
 )
 from .rz_phase_gradient import rz_phase_gradient
-
-
-def __getattr__(name):
-    if name in {
-        "add_noise",
-        "insert",
-        "mitigate_with_zne",
-        "fold_global",
-        "poly_extrapolate",
-        "richardson_extrapolate",
-        "exponential_extrapolate",
-    }:
-
-        # pylint: disable=import-outside-toplevel
-        import warnings
-        from pennylane import exceptions
-        from pennylane import noise
-
-        warnings.warn(
-            f"pennylane.{name} is no longer accessible from the transforms module and must "
-            "be imported as pennylane.noise.{name}. Support for access through this module "
-            "will be removed in v0.44.",
-            exceptions.PennyLaneDeprecationWarning,
-        )
-
-        return getattr(noise, name)
-
-    raise AttributeError(f"module 'pennylane' has no attribute '{name}'")  # pragma: no cover

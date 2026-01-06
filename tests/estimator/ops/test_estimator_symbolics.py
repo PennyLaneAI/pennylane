@@ -19,13 +19,38 @@ from collections import defaultdict
 import pytest
 
 import pennylane.estimator as qre
+from pennylane.estimator.ops.op_math.symbolic import apply_adj
 from pennylane.estimator.resource_operator import GateCount, resource_rep
 from pennylane.estimator.wires_manager import Allocate, Deallocate
-from pennylane.exceptions import ResourcesUndefinedError
 from pennylane.queuing import AnnotatedQueue
 from pennylane.wires import Wires
 
 # pylint: disable=no-self-use, too-few-public-methods
+
+
+class DummyOp(qre.ResourceOperator):
+    resource_keys = {"num_wires"}
+
+    def __init__(self, num_wires, wires=None):
+        self.num_wires = num_wires
+        super().__init__(wires=wires)
+
+    @property
+    def resource_params(self) -> dict:
+        return {"num_wires": self.num_wires}
+
+    @classmethod
+    def resource_rep(cls, num_wires) -> qre.CompressedResourceOp:
+        params = {"num_wires": num_wires}
+        return qre.CompressedResourceOp(cls, num_wires, params)
+
+    @classmethod
+    def resource_decomp(cls, num_wires) -> list[GateCount]:
+        return [
+            Allocate(num_wires),
+            GateCount(qre.X.resource_rep()),
+            Deallocate(num_wires),
+        ]
 
 
 class TestAdjoint:
@@ -57,24 +82,18 @@ class TestAdjoint:
             **op.resource_params
         )
 
-        class ResourceDummyS(qre.S):
-            """Dummy class with no default adjoint decomp"""
-
-            @classmethod
-            def adjoint_resource_decomp(cls, target_resource_params=None) -> list[GateCount]:
-                """No default resources"""
-                raise ResourcesUndefinedError
-
-        op = ResourceDummyS()  # no default_adjoint_decomp defined
+        op = DummyOp(num_wires=1)  # no default_adjoint_decomp defined
         adj_op = qre.Adjoint(op)
         expected_res = [
+            Allocate(1),
             GateCount(
                 qre.resource_rep(
                     qre.Adjoint,
-                    {"base_cmpr_op": qre.resource_rep(qre.T)},
+                    {"base_cmpr_op": qre.X.resource_rep()},
                 ),
-                2,
-            )
+                1,
+            ),
+            Deallocate(1),
         ]
         assert adj_op.resource_decomp(**adj_op.resource_params) == expected_res
 
@@ -84,8 +103,8 @@ class TestAdjoint:
             (
                 qre.SemiAdder(5),
                 qre.Resources(
-                    zeroed=4,
-                    any_state=0,
+                    zeroed_wires=4,
+                    any_state_wires=0,
                     algo_wires=10,
                     gate_types=defaultdict(
                         int,
@@ -100,8 +119,8 @@ class TestAdjoint:
             (
                 qre.CRZ(precision=1e-3),
                 qre.Resources(
-                    zeroed=0,
-                    any_state=0,
+                    zeroed_wires=0,
+                    any_state_wires=0,
                     algo_wires=2,
                     gate_types=defaultdict(
                         int, {resource_rep(qre.CNOT): 2, resource_rep(qre.T): 42}
@@ -111,8 +130,8 @@ class TestAdjoint:
             (
                 qre.CRZ(),
                 qre.Resources(
-                    zeroed=0,
-                    any_state=0,
+                    zeroed_wires=0,
+                    any_state_wires=0,
                     algo_wires=2,
                     gate_types=defaultdict(
                         int, {resource_rep(qre.CNOT): 2, resource_rep(qre.T): 88}
@@ -151,22 +170,18 @@ class TestAdjoint:
         assert qre.Adjoint.tracking_name(qre.S.resource_rep()) == "Adjoint(S)"
         assert qre.Adjoint.tracking_name(qre.CNOT.resource_rep()) == "Adjoint(CNOT)"
 
-    # pylint: disable=protected-access, import-outside-toplevel
     def test_apply_adj(self):
         """Test that the apply_adj method is working correctly."""
-        from pennylane.estimator.ops.op_math.symbolic import _apply_adj
-
-        assert _apply_adj(Allocate(1)) == Deallocate(1)
-        assert _apply_adj(Deallocate(1)) == Allocate(1)
+        assert apply_adj(Allocate(1)) == Deallocate(1)
+        assert apply_adj(Deallocate(1)) == Allocate(1)
 
         expected_res = GateCount(qre.Adjoint.resource_rep(qre.T.resource_rep()), 1)
-        assert _apply_adj(GateCount(qre.T.resource_rep(), 1)) == expected_res
+        assert apply_adj(GateCount(qre.T.resource_rep(), 1)) == expected_res
 
-    # pylint: disable=protected-access
-    def test_apply_adj_raises_error_on_unknown_type(self):
+    def test_raises_error_on_unknown_type(self):
         """Test that the apply_adj method is working correctly."""
         with pytest.raises(TypeError):
-            qre.ops.op_math.symbolic._apply_adj(1)
+            qre.ops.op_math.symbolic.apply_adj(1)
 
 
 class TestControlled:
@@ -212,29 +227,43 @@ class TestControlled:
             ctrl_op = qre.Controlled(op, ctrl_wires, ctrl_values)
             assert ctrl_op.resource_decomp(**ctrl_op.resource_params) == res
 
-        class ResourceDummyZ(qre.Z):
-            """Dummy class with no default ctrl decomp"""
-
-            @classmethod
-            def controlled_resource_decomp(
-                cls, num_ctrl_wires, num_zero_ctrl, **kwargs
-            ) -> list[GateCount]:
-                """No default resources"""
-                raise ResourcesUndefinedError
-
-        op = ResourceDummyZ()  # no default_ctrl_decomp defined
+        op = DummyOp(num_wires=1)  # no default_controlled_decomp defined
         ctrl_op = qre.Controlled(op, num_ctrl_wires=3, num_zero_ctrl=2)
         expected_res = [
             GateCount(qre.resource_rep(qre.X), 4),
+            Allocate(1),
             GateCount(
                 qre.Controlled.resource_rep(
-                    qre.resource_rep(qre.S),
+                    qre.resource_rep(qre.X),
                     num_ctrl_wires=3,
                     num_zero_ctrl=0,
                 ),
-                2,
+                1,
             ),
+            Deallocate(1),
         ]
+        assert ctrl_op.resource_decomp(**ctrl_op.resource_params) == expected_res
+
+    def test_else_block_of_apply_controlled(self):
+        """Test that the else block of the apply_controlled method for code coverage purposes."""
+
+        base_op = DummyOp(num_wires=2)
+        ctrl_op = qre.Controlled(base_op, num_ctrl_wires=2, num_zero_ctrl=1)
+
+        expected_res = [
+            GateCount(qre.X.resource_rep(), 2),
+            qre.Allocate(2),
+            GateCount(
+                qre.Controlled.resource_rep(
+                    qre.X.resource_rep(),
+                    num_ctrl_wires=2,
+                    num_zero_ctrl=0,
+                ),
+                1,
+            ),
+            qre.Deallocate(2),
+        ]
+
         assert ctrl_op.resource_decomp(**ctrl_op.resource_params) == expected_res
 
     @pytest.mark.parametrize(
@@ -243,8 +272,8 @@ class TestControlled:
             (
                 qre.SemiAdder(5),
                 qre.Resources(
-                    zeroed=4,
-                    any_state=0,
+                    zeroed_wires=4,
+                    any_state_wires=0,
                     algo_wires=11,
                     gate_types=defaultdict(
                         int,
@@ -256,8 +285,8 @@ class TestControlled:
                     ),
                 ),
                 qre.Resources(
-                    zeroed=5,
-                    any_state=0,
+                    zeroed_wires=5,
+                    any_state_wires=0,
                     algo_wires=12,
                     gate_types=defaultdict(
                         int,
@@ -273,8 +302,8 @@ class TestControlled:
             (
                 qre.CRZ(precision=1e-3),
                 qre.Resources(
-                    zeroed=0,
-                    any_state=0,
+                    zeroed_wires=0,
+                    any_state_wires=0,
                     algo_wires=3,
                     gate_types=defaultdict(
                         int,
@@ -285,8 +314,8 @@ class TestControlled:
                     ),
                 ),
                 qre.Resources(
-                    zeroed=1,
-                    any_state=0,
+                    zeroed_wires=1,
+                    any_state_wires=0,
                     algo_wires=4,
                     gate_types=defaultdict(
                         int,
@@ -303,8 +332,8 @@ class TestControlled:
             (
                 qre.CRZ(),
                 qre.Resources(
-                    zeroed=0,
-                    any_state=0,
+                    zeroed_wires=0,
+                    any_state_wires=0,
                     algo_wires=3,
                     gate_types=defaultdict(
                         int,
@@ -315,8 +344,8 @@ class TestControlled:
                     ),
                 ),
                 qre.Resources(
-                    zeroed=1,
-                    any_state=0,
+                    zeroed_wires=1,
+                    any_state_wires=0,
                     algo_wires=4,
                     gate_types=defaultdict(
                         int,
@@ -423,18 +452,17 @@ class TestPow:
             pow_op = qre.Pow(op, z)
             assert pow_op.resource_decomp(**pow_op.resource_params) == res
 
-        class ResourceDummyX(qre.X):
-            """Dummy class with no default pow decomp"""
+        op = DummyOp(num_wires=1)  # no default_pow_decomp defined
+        z_and_expected_res_unitary = (
+            (0, [GateCount(qre.resource_rep(qre.Identity()))]),
+            (1, [GateCount(op.resource_rep_from_op())]),
+            (2, [GateCount(op.resource_rep_from_op(), 2)]),
+            (3, [GateCount(op.resource_rep_from_op(), 3)]),
+        )
 
-            @classmethod
-            def pow_resource_decomp(cls, pow_z, **kwargs) -> list[GateCount]:
-                """No default resources"""
-                raise ResourcesUndefinedError
-
-        op = ResourceDummyX()  # no default_pow_decomp defined
-        pow_op = qre.Pow(op, 7)
-        expected_res = [GateCount(op.resource_rep_from_op(), 7)]
-        assert pow_op.resource_decomp(**pow_op.resource_params) == expected_res
+        for z, res in z_and_expected_res_unitary:
+            pow_op = qre.Pow(op, z)
+            assert pow_op.resource_decomp(**pow_op.resource_params) == res
 
     @pytest.mark.parametrize("z", (0, 1, 2, 3))
     @pytest.mark.parametrize(
@@ -467,8 +495,8 @@ class TestPow:
                 qre.RX(),
                 2,
                 qre.Resources(
-                    zeroed=0,
-                    any_state=0,
+                    zeroed_wires=0,
+                    any_state_wires=0,
                     algo_wires=1,
                     gate_types=defaultdict(
                         int,
@@ -482,8 +510,8 @@ class TestPow:
                 qre.RX(precision=1e-3),
                 2,
                 qre.Resources(
-                    zeroed=0,
-                    any_state=0,
+                    zeroed_wires=0,
+                    any_state_wires=0,
                     algo_wires=1,
                     gate_types=defaultdict(
                         int,
@@ -599,6 +627,7 @@ class TestChangeOpBasis:
         cb_op = qre.ChangeOpBasis(qre.X(), qre.Y(), qre.Z())
         assert cb_op.wires is None
 
+    # pylint: disable=too-many-arguments
     @pytest.mark.parametrize(
         "compute_op, target_op, uncompute_op, expected_res",
         (
@@ -699,3 +728,60 @@ class TestChangeOpBasis:
             op.resource_rep(cmpr_compute_op, cmpr_target_op, cmpr_uncompute_op, num_wires)
             == expected
         )
+
+    @pytest.mark.parametrize(
+        "compute_op, target_op, uncompute_op, num_ctrl_wires, num_zero_ctrl, expected_res",
+        (
+            (
+                qre.S(wires=0),
+                qre.X(wires=0),
+                qre.S(wires=0),
+                1,
+                0,
+                [
+                    qre.GateCount(qre.resource_rep(qre.S), 1),
+                    qre.GateCount(
+                        qre.Controlled.resource_rep(
+                            base_cmpr_op=qre.X.resource_rep(),
+                            num_ctrl_wires=1,
+                            num_zero_ctrl=0,
+                        ),
+                        1,
+                    ),
+                    qre.GateCount(qre.resource_rep(qre.S), 1),
+                ],
+            ),
+            (
+                qre.Hadamard(wires=0),
+                qre.Z(wires=0),
+                None,
+                2,
+                1,
+                [
+                    qre.GateCount(qre.resource_rep(qre.Hadamard), 1),
+                    qre.GateCount(
+                        qre.Controlled.resource_rep(
+                            base_cmpr_op=qre.Z.resource_rep(),
+                            num_ctrl_wires=2,
+                            num_zero_ctrl=1,
+                        ),
+                        1,
+                    ),
+                    qre.GateCount(
+                        qre.resource_rep(
+                            qre.Adjoint,
+                            {"base_cmpr_op": qre.Hadamard.resource_rep()},
+                        ),
+                        1,
+                    ),
+                ],
+            ),
+        ),
+    )
+    def test_controlled_resource_decomp(
+        self, compute_op, target_op, uncompute_op, num_ctrl_wires, num_zero_ctrl, expected_res
+    ):
+        """Test that the controlled resource decomposition is correct."""
+        cb_op = qre.ChangeOpBasis(compute_op, target_op, uncompute_op)
+        res = cb_op.controlled_resource_decomp(num_ctrl_wires, num_zero_ctrl, cb_op.resource_params)
+        assert res == expected_res

@@ -973,7 +973,13 @@ class TestNewVQE:
 
         res = qml.specs(circuit)()
 
-        assert res["num_observables"] == 1
+        assert res["resources"] == qml.resource.SpecsResources(
+            num_allocs=2,
+            gate_types={"Hadamard": 1, "CNOT": 1},
+            gate_sizes={1: 1, 2: 1},
+            measurements={"expval(Hamiltonian(num_wires=2, num_terms=2))": 1},
+            depth=2,
+        )
 
 
 class TestInterfaces:
@@ -998,7 +1004,7 @@ class TestInterfaces:
         params = np.array([a, b])
 
         cost = generate_cost_fn(ansatz, H, dev, interface=interface)
-        dcost = qml.grad(cost, argnum=[0])
+        dcost = qml.grad(cost, argnums=[0])
         res = dcost(params)
 
         expected = [
@@ -1099,7 +1105,7 @@ class TestInterfaces:
         w = params
         ansatz = qml.templates.layers.StronglyEntanglingLayers
         cost = generate_cost_fn(ansatz, H, dev, interface="autograd")
-        dcost = qml.grad(cost, argnum=[0])
+        dcost = qml.grad(cost, argnums=[0])
         res = dcost(w)
 
         assert np.allclose(res, res_torch, atol=tol, rtol=0)

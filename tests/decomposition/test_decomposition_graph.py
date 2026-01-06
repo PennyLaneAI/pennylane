@@ -15,6 +15,7 @@
 """Unit tests for the decomposition graph."""
 # pylint: disable=protected-access,no-name-in-module
 
+import warnings
 from unittest.mock import patch
 
 import numpy as np
@@ -42,7 +43,6 @@ from pennylane.operation import Operation
     side_effect=lambda x: decompositions[_to_name(x)],
 )
 class TestDecompositionGraph:
-
     def test_weighted_graph_solve(self, _):
         """Tests solving a simple graph for the optimal decompositions with weighted gates."""
 
@@ -230,6 +230,15 @@ class TestDecompositionGraph:
         # edges from the dummy starting node to the target gate set.
         assert len(graph._graph.edges()) == 11
 
+        solution = graph.solve()
+
+        # verify that is_solved_for returns False for gates in the gate set
+        assert not solution.is_solved_for(qml.RX(0.5, wires=0))
+
+        # verify that the correct error is raised
+        with pytest.raises(DecompositionError, match="is unsolved in this decomposition graph."):
+            solution.decomposition(qml.RX(0.5, wires=0))
+
     def test_graph_solve(self, _):
         """Tests solving a simple graph for the optimal decompositions."""
 
@@ -251,13 +260,25 @@ class TestDecompositionGraph:
         # verify that is_solved_for returns False for non-existent operators
         assert not solution.is_solved_for(qml.Toffoli(wires=[0, 1, 2]))
 
-    def test_decomposition_not_found(self, _):
-        """Tests that the correct error is raised if a decomposition isn't found."""
+    def test_decomposition_not_found_warning(self, _):
+        """Tests that the correct warning is raised if a decomposition isn't found."""
 
         op = qml.Hadamard(wires=[0])
         graph = DecompositionGraph(operations=[op], gate_set={"RX", "RY", "GlobalPhase"})
         with pytest.warns(UserWarning, match="unable to find a decomposition for {'Hadamard'}"):
             graph.solve()
+
+    @pytest.mark.parametrize(
+        "op", [qml.allocation.Allocate(1), qml.allocation.Deallocate(qml.allocation.DynamicWire())]
+    )
+    def test_decomposition_not_found_ignored_op_no_warning(self, _, op):
+        """Tests that no warning is raised if a decomposition isn't found but the unsolved
+        operator type is among specific operators, like Allocate and Deallocate."""
+
+        graph = DecompositionGraph(operations=[op], gate_set={"RX", "RY", "GlobalPhase"})
+        with warnings.catch_warnings(record=True) as record:
+            graph.solve()
+        assert len(record) == 0
 
     def test_lazy_solve(self, _):
         """Tests the lazy keyword argument."""
@@ -480,6 +501,83 @@ class TestDecompositionGraph:
         solution = graph.solve(num_work_wires=None)
         assert solution.decomposition(op, num_work_wires=None) is _decomp2_with_work_wire
         assert solution.decomposition(small_op, num_work_wires=None) is _decomp_with_work_wire
+
+    def test_non_work_wire_dependent_ops_reused(self, _):
+        """Tests that ops that are not work-wire dependent are not affected by work-wire
+        dependent decomposition rules upstream."""
+
+        class SimpleOp(Operation):  # pylint: disable=too-few-public-methods
+            """A simple operation that does not depend on work wires."""
+
+        @qml.register_resources({qml.X: 1})
+        def _simple_decomp(_):
+            raise NotImplementedError
+
+        class CustomOp(Operation):  # pylint: disable=too-few-public-methods
+            """Another operation."""
+
+        @qml.register_resources({SimpleOp: 1}, work_wires={"zeroed": 1})
+        def _custom_decomp(_):
+            raise NotImplementedError
+
+        @qml.register_resources({qml.X: 1})
+        def _another_decomp(_):
+            raise NotImplementedError
+
+        graph = DecompositionGraph(
+            [CustomOp(0), SimpleOp(0)],
+            gate_set={qml.X},
+            alt_decomps={SimpleOp: [_simple_decomp], CustomOp: [_custom_decomp, _another_decomp]},
+        )
+        solution = graph.solve()
+        assert solution.is_solved_for(SimpleOp(0))
+
+    def test_min_work_wires(self, _):
+        """Tests that the graph tracks the minimum number of work wires."""
+
+        class SimpleOp(Operation):  # pylint: disable=too-few-public-methods
+            """A simple operation that does not depend on work wires."""
+
+        @qml.register_resources({qml.X: 4})
+        def _simple_decomp(_):
+            raise NotImplementedError
+
+        class CustomOp(Operation):  # pylint: disable=too-few-public-methods
+            """Another operation."""
+
+        @qml.register_resources({SimpleOp: 1, qml.CNOT: 4}, work_wires={"zeroed": 2})
+        def _custom_decomp(_):
+            raise NotImplementedError
+
+        class AnotherOp(Operation):  # pylint: disable=too-few-public-methods
+            """Some other op."""
+
+        @qml.register_resources({CustomOp: 1, qml.CNOT: 4}, work_wires={"zeroed": 2})
+        def _another_decomp(_):
+            raise NotImplementedError
+
+        @qml.register_resources({SimpleOp: 3, qml.CNOT: 4}, work_wires={"zeroed": 3})
+        def _yet_another_decomp(_):
+            raise NotImplementedError
+
+        graph = DecompositionGraph(
+            [AnotherOp(0)],
+            gate_set={qml.X, qml.CNOT},
+            alt_decomps={
+                SimpleOp: [_simple_decomp],
+                CustomOp: [_custom_decomp],
+                AnotherOp: [_another_decomp, _yet_another_decomp],
+            },
+        )
+        assert graph._min_work_wires == 3
+        with pytest.raises(DecompositionError, match="at least 3 work wires"):
+            graph.solve(num_work_wires=2)
+
+        solution = graph.solve(num_work_wires=None)
+        assert solution.decomposition(AnotherOp(0)) == _another_decomp
+
+        solution = graph.solve(num_work_wires=None, minimize_work_wires=True)
+        assert solution.decomposition(AnotherOp(0), num_work_wires=None) == _yet_another_decomp
 
 
 @pytest.mark.unit

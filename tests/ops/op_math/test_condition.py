@@ -23,7 +23,6 @@ are located in the:
 files.
 """
 
-
 import numpy as np
 import pytest
 
@@ -66,7 +65,7 @@ class TestCond:
         target_wire = qml.wires.Wires(1)
 
         assert len(ops) == 4
-        assert isinstance(ops[0], qml.measurements.MidMeasureMP)
+        assert isinstance(ops[0], qml.ops.MidMeasure)
 
         assert isinstance(ops[1], qml.ops.Conditional)
         assert isinstance(ops[1].base, qml.PauliX)
@@ -131,7 +130,7 @@ class TestCond:
 
         assert len(ops) == 5
 
-        assert isinstance(ops[0], qml.measurements.MidMeasureMP)
+        assert isinstance(ops[0], qml.ops.MidMeasure)
 
         assert isinstance(ops[1], qml.ops.Conditional)
         assert isinstance(ops[1].base, qml.PauliX)
@@ -229,6 +228,17 @@ class TestAdditionalCond:
             m_0 = qml.measure(1)
             qml.cond(m_0, qml.X, qml.measure)(0)
 
+    def test_cond_error_for_ppms(self):
+        """Test that an error is raised if a pauli-product measurement is applied inside
+        a Conditional"""
+
+        with pytest.raises(
+            ConditionalTransformError,
+            match="Only quantum functions that contain no measurements can be applied conditionally.",
+        ):
+            m_0 = qml.measure(1)
+            qml.cond(m_0, qml.pauli_measure)("X", wires=[0])
+
     def test_map_wires(self):
         """Tests the cond.map_wires function."""
         with qml.queuing.AnnotatedQueue() as q:
@@ -305,7 +315,7 @@ class TestOtherTransforms:
         target_wire = qml.wires.Wires(1)
 
         assert len(ops) == 3
-        assert isinstance(ops[0], qml.measurements.MidMeasureMP)
+        assert isinstance(ops[0], qml.ops.MidMeasure)
 
         assert isinstance(ops[1], qml.ops.Conditional)
         assert isinstance(ops[1].base, qml.ops.op_math.Adjoint)
@@ -334,7 +344,7 @@ class TestOtherTransforms:
         ops = tape.operations
 
         assert len(ops) == 3
-        assert isinstance(ops[0], qml.measurements.MidMeasureMP)
+        assert isinstance(ops[0], qml.ops.MidMeasure)
 
         assert isinstance(ops[1], qml.ops.Conditional)
         assert isinstance(ops[1].base, qml.ops.op_math.Controlled)
@@ -361,7 +371,7 @@ class TestOtherTransforms:
         ops = tape.operations
 
         assert len(ops) == 3
-        assert isinstance(ops[0], qml.measurements.MidMeasureMP)
+        assert isinstance(ops[0], qml.ops.MidMeasure)
 
         assert isinstance(ops[1], qml.ops.op_math.Controlled)
         assert isinstance(ops[1].base, qml.ops.Conditional)
@@ -390,8 +400,8 @@ class TestOtherTransforms:
         """Test that operations given are arguments to a conditioned function are not queued."""
 
         # Need to construct now so that id is not random
-        mp = qml.measurements.MidMeasureMP(0, id="foo")
-        mv = qml.measurements.MeasurementValue([mp], lambda v: v)
+        mp = qml.ops.MidMeasure(0, id="foo")
+        mv = qml.ops.MeasurementValue([mp], lambda v: v)
 
         def circuit():
             qml.Hadamard(0)

@@ -227,8 +227,8 @@ def _get_plxpr_merge_amplitude_embedding():
     # Overwrite the cond primitive so that visited wires can be correctly
     # detected across the different branches.
     @MergeAmplitudeEmbeddingInterpreter.register_primitive(cond_prim)
-    def _(self, *invals, jaxpr_branches, consts_slices, args_slice):
-        args = invals[args_slice]
+    def _cond_primitive(self, *invals, jaxpr_branches, consts_slices, args_slice):
+        args = invals[slice(*args_slice)]
 
         new_jaxprs = []
         new_consts = []
@@ -250,7 +250,7 @@ def _get_plxpr_merge_amplitude_embedding():
         curr_ops_found = self.state["ops_found"]
 
         for const_slice, jaxpr in zip(consts_slices, jaxpr_branches, strict=True):
-            consts = invals[const_slice]
+            consts = invals[slice(*const_slice)]
             new_jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr, consts, *args)
 
             # Update state so far so collisions with
@@ -291,7 +291,7 @@ def _get_plxpr_merge_amplitude_embedding():
         )
 
     @MergeAmplitudeEmbeddingInterpreter.register_primitive(measure_prim)
-    def _(self, *invals, **params):
+    def _measure_primitive(self, *invals, **params):
         # Make sure to record that we have visited the wires on this measurement
         # in order to be able to detect potential wire collisions with future AE gates
         self.state["visited_wires"] = self.state["visited_wires"].union(set(invals))
@@ -351,7 +351,8 @@ def merge_amplitude_embedding(tape: QuantumScript) -> tuple[QuantumScriptBatch, 
             return qml.state()
 
     >>> circuit()
-    [1.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j]
+    array([0.+0.j, 0.+0.j, 0.+0.j, 1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j,
+           0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j])
 
     .. details::
         :title: Usage Details
@@ -373,12 +374,10 @@ def merge_amplitude_embedding(tape: QuantumScript) -> tuple[QuantumScriptBatch, 
         >>> optimized_qfunc = qml.transforms.merge_amplitude_embedding(qfunc)
         >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
         >>> print(qml.draw(optimized_qnode)())
-        0: ─╭●──────────────────────┤  State
-        1: ─╰X──────────────────────┤  State
-        2: ─╭AmplitudeEmbedding(M0)─┤  State
-        3: ─╰AmplitudeEmbedding(M0)─┤  State
-        M0 =
-        [0.+0.j 0.+0.j 0.+0.j 1.+0.j]
+        0: ─╭●───┤  State
+        1: ─╰X───┤  State
+        2: ─╭|Ψ⟩─┤  State
+        3: ─╰|Ψ⟩─┤  State
 
     """
     new_operations = []

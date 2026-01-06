@@ -20,6 +20,8 @@ See JAX documentation on this process `here <https://jax.readthedocs.io/en/lates
 
 .. code-block:: python
 
+    jax.config.update("jax_enable_x64", True)
+
     def f(x):
         return x**2
 
@@ -34,13 +36,15 @@ See JAX documentation on this process `here <https://jax.readthedocs.io/en/lates
     registered_f_jvp.defjvp(f_and_jvp)
 
 >>> jax.grad(registered_f_jvp)(jax.numpy.array(2.0))
-in custom jvp function:  2.0 Traced<ShapedArray(float64[], weak_type=True):JaxprTrace(level=1/0)>
+in custom jvp function:  2.0 Traced<~float64[]:JaxprTrace>
 Array(4., dtype=float64, weak_type=True)
 
 
 We can do something similar for the VJP as well:
 
 .. code-block:: python
+
+    jax.config.update("jax_enable_x64", True)
 
     def f_fwd(x):
         print("in forward pass: ", x)
@@ -70,13 +74,21 @@ For example, if we replace the definition of ``f_and_jvp`` from above with one t
 
 .. code-block:: python
 
-    def f_and_jvp(primals, tangents):
+    jax.config.update("jax_enable_x64", True)
+
+    def bad_f_and_jvp(primals, tangents):
         x = primals[0]
         dx = qml.math.unwrap(tangents[0]) # This line breaks tracing
         return x**2, 2*x*dx
 
->>> jax.grad(registered_f_jvp)(jax.numpy.array(2.0))
+>>> bad_f = jax.custom_jvp(f)
+>>> bad_f.defjvp(bad_f_and_jvp)
+<function bad_f_and_jvp at 0x...>
+>>> jax.grad(bad_f)(jax.numpy.array(2.0))
+Traceback (most recent call last):
+    ...
 ValueError: Converting a JAX array to a NumPy array not supported when using the JAX JIT.
+...
 
 Note that the comment about ``JIT`` is generally a comment about not being able to trace code.
 
@@ -99,6 +111,8 @@ The trainable arguments for the registered functions can be any valid pytree.
 
 .. code-block:: python
 
+    jax.config.update("jax_enable_x64", True)
+
     def f(x):
         return x['a']**2
 
@@ -113,7 +127,7 @@ The trainable arguments for the registered functions can be any valid pytree.
     registered_f_jvp.defjvp(f_and_jvp)
 
 >>> jax.grad(registered_f_jvp)({'a': jax.numpy.array(2.0)})
-in custom jvp function:  {'a': Array(2., dtype=float64, weak_type=True)} {'a': Traced<ShapedArray(float64[], weak_type=True):JaxprTrace(level=1/0)>}
+in custom jvp function:  {'a': Array(2., dtype=float64, weak_type=True)} {'a': Traced<~float64[]:JaxprTrace>}
 {'a': Array(4., dtype=float64, weak_type=True)}
 
 As we can see here, the tangents are packed into the same pytree structure as the trainable arguments.

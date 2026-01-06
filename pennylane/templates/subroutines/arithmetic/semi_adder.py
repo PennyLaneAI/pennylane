@@ -13,9 +13,14 @@
 # limitations under the License.
 """Contains the SemiAdder template for performing the semi-out-place addition."""
 
-from pennylane.decomposition import add_decomps, adjoint_resource_rep, register_resources
+from pennylane.decomposition import (
+    add_decomps,
+    adjoint_resource_rep,
+    controlled_resource_rep,
+    register_resources,
+)
 from pennylane.operation import Operation
-from pennylane.ops import CNOT, adjoint
+from pennylane.ops import CNOT, adjoint, ctrl
 from pennylane.queuing import AnnotatedQueue, QueuingManager, apply
 from pennylane.wires import Wires, WiresLike
 
@@ -23,7 +28,13 @@ from .temporary_and import TemporaryAND
 
 
 def _left_operator(wires, ik_is_zero=False):
-    """Implement the left block in figure 2, https://arxiv.org/pdf/1709.06648"""
+    """Implement the left block in figure 2, https://arxiv.org/pdf/1709.06648.
+
+    Args:
+        wires (Sequence[int]): the four wires that are represented in figure 2
+        ik_is_zero (bool): boolean used to specify if the input state :math:`|i_k\rangle = |0\rangle`. This
+                           extra information reduces de complexity of the circuit.
+    """
 
     if not ik_is_zero:
         ck, ik, tk, aux = wires
@@ -40,7 +51,13 @@ def _left_operator(wires, ik_is_zero=False):
 
 
 def _right_operator(wires, ik_is_zero=False):
-    """Implement the right block in figure 2, https://arxiv.org/pdf/1709.06648"""
+    """Implement the right block in figure 2, https://arxiv.org/pdf/1709.06648.
+
+    Args:
+        wires (Sequence[int]): the four wires that are represented in figure 2
+        ik_is_zero (bool): boolean used to specify if the input state :math:`|i_k\rangle = |0\rangle`. This
+                           extra information reduces de complexity of the circuit.
+    """
 
     if not ik_is_zero:
         ck, ik, tk, aux = wires
@@ -54,6 +71,49 @@ def _right_operator(wires, ik_is_zero=False):
     ck, tk, aux = wires
 
     return [CNOT([ck, aux]), adjoint(TemporaryAND([ck, tk, aux]))]
+
+
+def _controlled_right_operator(
+    wires, control_wires, control_values, ik_is_zero=False, work_wires=None
+):
+    """Implement the right block in figure 4, https://arxiv.org/pdf/1709.06648.
+
+    Args:
+        control_wires (Sequence[int]): wires used to control the operator
+        control_values (Iterable[bool | int]): the control values
+        wires (Sequence[int]): the last four wires that are represented in figure 4
+        ik_is_zero (bool): boolean used to specify if the input state :math:`|i_k\rangle = |0\rangle`. This
+                           extra information reduces de complexity of the circuit
+    """
+
+    if not ik_is_zero:
+        ck, ik, tk, aux = wires
+        return [
+            CNOT([ck, aux]),
+            adjoint(TemporaryAND([ik, tk, aux])),
+            ctrl(
+                CNOT(wires=[ik, tk]),
+                control=control_wires,
+                control_values=control_values,
+                work_wires=work_wires,
+            ),
+            CNOT([ck, ik]),
+            CNOT([ck, tk]),
+        ]
+
+    ck, tk, aux = wires
+
+    return [
+        CNOT([ck, aux]),
+        adjoint(TemporaryAND([ck, tk, aux])),
+        ctrl(
+            CNOT(wires=[ck, tk]),
+            control=control_wires,
+            control_values=control_values,
+            work_wires=work_wires,
+        ),
+        CNOT([ck, tk]),
+    ]
 
 
 class SemiAdder(Operation):
@@ -80,7 +140,7 @@ class SemiAdder(Operation):
 
     This example computes the sum of two integers :math:`x=3` and :math:`y=4`.
 
-    .. code-block::
+    .. code-block:: python
 
         x = 3
         y = 4
@@ -106,7 +166,7 @@ class SemiAdder(Operation):
 
     Note that the result is computed modulo :math:`2^{\text{len(y_wires)}}` which makes the computed value dependent on the size of the ``y_wires`` register. This behavior is demonstrated in the following example.
 
-    .. code-block::
+    .. code-block:: python
 
         x = 3
         y = 1
@@ -123,10 +183,8 @@ class SemiAdder(Operation):
             qml.SemiAdder(wires["x"], wires["y"], wires["work"])
             return qml.sample(wires=wires["y"])
 
-    .. code-block:: pycon
-
-        >>> print(circuit())
-        [[0 0]]
+    >>> print(circuit())
+    [[0 0]]
 
     The result :math:`[0\ 0]` is the binary representation of :math:`3 + 1 = 4` where :math:`4 \mod 2^2 = 0`.
     """
@@ -254,6 +312,102 @@ def _semiadder(x_wires, y_wires, work_wires, **_):
 
     x_wires_pl = x_wires[::-1][:num_y_wires]
     y_wires_pl = y_wires[::-1]
+    work_wires_pl_template = work_wires[: num_y_wires - 1][::-1]
+
+    TemporaryAND([x_wires_pl[0], y_wires_pl[0], work_wires_pl_template[0]])
+
+    for i in range(1, num_y_wires - 1):
+        if i < num_x_wires:
+            _left_operator(
+                [
+                    work_wires_pl_template[i - 1],
+                    x_wires_pl[i],
+                    y_wires_pl[i],
+                    work_wires_pl_template[i],
+                ]
+            )
+        else:
+            _left_operator(
+                [work_wires_pl_template[i - 1], y_wires_pl[i], work_wires_pl_template[i]],
+                ik_is_zero=True,
+            )
+
+    CNOT([work_wires_pl_template[-1], y_wires_pl[-1]])
+
+    if num_x_wires >= num_y_wires:
+        CNOT([x_wires_pl[-1], y_wires_pl[-1]])
+
+    for i in range(len(y_wires_pl) - 2, 0, -1):
+        if i < num_x_wires:
+            _right_operator(
+                [
+                    work_wires_pl_template[i - 1],
+                    x_wires_pl[i],
+                    y_wires_pl[i],
+                    work_wires_pl_template[i],
+                ]
+            )
+        else:
+            _right_operator(
+                [work_wires_pl_template[i - 1], y_wires_pl[i], work_wires_pl_template[i]],
+                ik_is_zero=True,
+            )
+
+    adjoint(TemporaryAND([x_wires_pl[0], y_wires_pl[0], work_wires_pl_template[0]]))
+    CNOT([x_wires_pl[0], y_wires_pl[0]])
+
+
+add_decomps(SemiAdder, _semiadder)
+
+
+def _controlled_semi_adder_resource(
+    base_class, base_params, num_control_wires, num_zero_control_values, **kwargs
+):  # pylint: disable=unused-argument
+    r"""
+    Resources calculated from `arXiv:1709.06648 <https://arxiv.org/abs/1709.06648>`_.
+    In the case where len(x_wires) < len(y_wires), this is an upper bound.
+    """
+    num_y_wires = base_params["num_y_wires"]
+    return {
+        TemporaryAND: num_y_wires - 1,
+        adjoint_resource_rep(TemporaryAND, {}): num_y_wires - 1,
+        CNOT: 6 * (num_y_wires - 2) + 1,
+        controlled_resource_rep(
+            CNOT,
+            {},
+            num_control_wires=num_control_wires,
+            num_zero_control_values=num_zero_control_values,
+            work_wire_type="borrowed",
+        ): num_y_wires,
+    }
+
+
+@register_resources(_controlled_semi_adder_resource, exact=False)
+def _controlled_semi_adder(base, control_wires, control_values, **__):
+    r"""
+    Decomposition extracted from `arXiv:1709.06648 <https://arxiv.org/abs/1709.06648>`_
+    using building block described in Figure 4.
+    """
+
+    y_wires = base.hyperparameters["y_wires"]
+    x_wires = base.hyperparameters["x_wires"]
+    work_wires = base.hyperparameters["work_wires"][: len(y_wires) - 1]
+    extra_work_wires = base.hyperparameters["work_wires"][len(y_wires) - 1 :]
+
+    num_y_wires = len(y_wires)
+    num_x_wires = len(x_wires)
+
+    if num_y_wires == 1:
+        ctrl(
+            CNOT([x_wires[-1], y_wires[0]]),
+            control=control_wires,
+            control_values=control_values,
+            work_wires=extra_work_wires,
+        )
+        return
+
+    x_wires_pl = x_wires[::-1][:num_y_wires]
+    y_wires_pl = y_wires[::-1]
     work_wires_pl = work_wires[::-1]
     TemporaryAND([x_wires_pl[0], y_wires_pl[0], work_wires_pl[0]])
 
@@ -263,21 +417,39 @@ def _semiadder(x_wires, y_wires, work_wires, **_):
         else:
             _left_operator([work_wires_pl[i - 1], y_wires_pl[i], work_wires_pl[i]], ik_is_zero=True)
 
-    CNOT([work_wires_pl[-1], y_wires_pl[-1]])
+    ctrl(
+        CNOT([work_wires_pl[-1], y_wires_pl[-1]]),
+        control=control_wires,
+        control_values=control_values,
+        work_wires=extra_work_wires,
+    )
 
     if num_x_wires >= num_y_wires:
         CNOT([x_wires_pl[-1], y_wires_pl[-1]])
 
     for i in range(len(y_wires_pl) - 2, 0, -1):
+
+        wire_args = [work_wires_pl[i - 1], y_wires_pl[i], work_wires_pl[i]]
+        ik_is_zero = True
         if i < num_x_wires:
-            _right_operator([work_wires_pl[i - 1], x_wires_pl[i], y_wires_pl[i], work_wires_pl[i]])
-        else:
-            _right_operator(
-                [work_wires_pl[i - 1], y_wires_pl[i], work_wires_pl[i]], ik_is_zero=True
-            )
+            wire_args.insert(1, x_wires_pl[i])
+            ik_is_zero = False
+
+        _controlled_right_operator(
+            wire_args,
+            control_wires=control_wires,
+            control_values=control_values,
+            work_wires=extra_work_wires,
+            ik_is_zero=ik_is_zero,
+        )
 
     adjoint(TemporaryAND([x_wires_pl[0], y_wires_pl[0], work_wires_pl[0]]))
-    CNOT([x_wires_pl[0], y_wires_pl[0]])
+    ctrl(
+        CNOT([x_wires_pl[0], y_wires_pl[0]]),
+        control=control_wires,
+        control_values=control_values,
+        work_wires=extra_work_wires,
+    )
 
 
-add_decomps(SemiAdder, _semiadder)
+add_decomps("C(SemiAdder)", _controlled_semi_adder)

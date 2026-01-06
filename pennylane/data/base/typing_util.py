@@ -77,6 +77,9 @@ def get_type_str(cls: type | str | None) -> str:  # pylint: disable=too-many-ret
 
     Otherwise, returns the fully-qualified class name, including the module.
     """
+    # pylint: disable=unidiomatic-typecheck
+    # Keep this check as it ensures that get_type_str(type(None)) = 'None'
+    # rather than `NoneType`.
     if cls is None or cls is type(None):
         return "None"
 
@@ -97,6 +100,14 @@ def get_type_str(cls: type | str | None) -> str:  # pylint: disable=too-many-ret
         # This is either a parametrized generic or parametrized special form
         orig_args = get_args(cls)
         if orig_args:
+            # Special handling for Union types in Python 3.14+
+            # In Python 3.14, get_origin(Union[...]) returns typing.Union as a regular class,
+            # not a _SpecialForm, so we need to check for it explicitly
+            if (
+                getattr(orig_type, "__module__", None) == "typing"
+                and getattr(orig_type, "__name__", None) == "Union"
+            ):
+                return f"Union[{', '.join(get_type_str(arg) for arg in orig_args)}]"
             return f"{get_type_str(orig_type)}[{', '.join(get_type_str(arg) for arg in orig_args)}]"
 
         return get_type_str(orig_type)

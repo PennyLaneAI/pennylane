@@ -15,6 +15,7 @@
 """This module defines decomposition functions for unitary matrices."""
 
 import warnings
+from itertools import product
 
 import numpy as np
 from scipy import sparse
@@ -54,17 +55,20 @@ def one_qubit_decomposition(U, wire, rotations="ZYZ", return_global_phase=False)
 
     **Example**
 
+    >>> from pprint import pprint
     >>> U = np.array([[1, 1], [1, -1]]) / np.sqrt(2)  # Hadamard
-    >>> qml.ops.one_qubit_decomposition(U, 0, rotations='ZYZ', return_global_phase=True)
-    [RZ(3.1415926535897927, wires=[0]),
-     RY(1.5707963267948963, wires=[0]),
-     RZ(0.0, wires=[0]),
-     GlobalPhase(-1.5707963267948966, wires=[])]
-    >>> qml.ops.one_qubit_decomposition(U, 0, rotations='XZX', return_global_phase=True)
-    [RX(1.5707963267948966, wires=[0]),
-     RZ(1.5707963267948968, wires=[0]),
-     RX(1.5707963267948966, wires=[0]),
-     GlobalPhase(-1.5707963267948966, wires=[])]
+    >>> decomp = qml.ops.one_qubit_decomposition(U, 0, rotations='ZYZ', return_global_phase=True)
+    >>> pprint(decomp)
+    [RZ(np.float64(3.14159...), wires=[0]),
+     RY(np.float64(1.57079...), wires=[0]),
+     RZ(np.float64(0.0), wires=[0]),
+     GlobalPhase(np.float64(-1.57079...), wires=[])]
+    >>> decomp = qml.ops.one_qubit_decomposition(U, 0, rotations='XZX', return_global_phase=True)
+    >>> pprint(decomp)
+    [RX(np.float64(1.57079...), wires=[0]),
+     RZ(np.float64(1.57079...), wires=[0]),
+     RX(np.float64(1.57079...), wires=[0]),
+     GlobalPhase(np.float64(-1.57079...), wires=[])]
     """
 
     supported_rotations = {
@@ -122,8 +126,10 @@ def two_qubit_decomposition(U, wires):
     where :math:`A, B, C, D` are :math:`SU(2)` operations, and the rotation angles are
     computed based on features of the input unitary :math:`U`.
 
-    For the 2-CNOT case, the decomposition is currently not supported and will
-    instead produce a 3-CNOT circuit like above.
+    For the 2-CNOT case, the decomposition is based on the
+    real-trace criterion of Proposition III.3 in reference (2).
+    Whenever :math:`trace(\gamma(U))` has real coefficients (equivalently :math:`trace(\gamma(U)`) ∈ R),
+    the decomposition uses exactly two CNOT gates.
 
     For a single CNOT, we have a CNOT surrounded by one :math:`SU(2)` per wire on each
     side.  The special case of no CNOTs simply returns a tensor product of two
@@ -155,36 +161,28 @@ def two_qubit_decomposition(U, wires):
     into elementary gates in our circuit.
 
     >>> from scipy.stats import unitary_group
-    >>> U = unitary_group.rvs(4)
-    >>> U
-    array([[-0.29113625+0.56393527j,  0.39546712-0.14193837j,
-             0.04637428+0.01311566j, -0.62006741+0.18403743j],
-           [-0.45479211+0.25978444j, -0.52737418-0.5549423j ,
-            -0.23429057+0.10728103j,  0.16061807-0.21769762j],
-           [-0.4501231 +0.04065613j, -0.25558662+0.38209554j,
-            -0.04143479-0.56598134j,  0.12983673+0.49548507j],
-           [ 0.23899902+0.24800931j,  0.03374589-0.15784319j,
-             0.24898226-0.73975147j,  0.0269508 -0.49534518j]])
+    >>> U = unitary_group.rvs(4, random_state=42)
 
     We can compute its decompositon like so:
 
+    >>> from pprint import pprint
     >>> decomp = qml.ops.two_qubit_decomposition(np.array(U), wires=[0, 1])
-    >>> decomp
-    [QubitUnitary(array([[ 0.02867704+0.82548843j,  0.5568274 -0.08769111j],
-           [-0.5568274 -0.08769111j,  0.02867704-0.82548843j]]), wires=[0]),
-    QubitUnitary(array([[ 0.32799033-0.78598401j,  0.40660725+0.33063881j],
-           [-0.40660725+0.33063881j,  0.32799033+0.78598401j]]), wires=[1]),
-    CNOT(wires=[1, 0]),
-    RZ(0.259291854677022, wires=[0]),
-    RY(-0.05808874413267284, wires=[1]),
-    CNOT(wires=[0, 1]),
-    RY(-1.6742322786950354, wires=[1]),
-    CNOT(wires=[1, 0]),
-    QubitUnitary(array([[ 0.91031205-0.21930866j,  0.20674186-0.28371375j],
-           [-0.20674186-0.28371375j,  0.91031205+0.21930866j]]), wires=[1]),
-    QubitUnitary(array([[-0.81886788-0.02979899j,  0.53279787-0.21140919j],
-           [-0.53279787-0.21140919j, -0.81886788+0.02979899j]]), wires=[0]),
-    GlobalPhase(0.1180587403699308, wires=[])]
+    >>> pprint(decomp) # doctest: +SKIP
+    [QubitUnitary(array([[ 0.35935497-0.35945703j, -0.81150079+0.28830732j],
+           [ 0.81150079+0.28830732j,  0.35935497+0.35945703j]]), wires=[0]),
+     QubitUnitary(array([[ 0.73465919-0.15696895j,  0.51629531-0.41118825j],
+           [-0.51629531-0.41118825j,  0.73465919+0.15696895j]]), wires=[1]),
+     CNOT(wires=[1, 0]),
+     RZ(np.float64(0.028408953417448358), wires=[0]),
+     RY(np.float64(0.6226823676455966), wires=[1]),
+     CNOT(wires=[0, 1]),
+     RY(np.float64(-0.7259987841675299), wires=[1]),
+     CNOT(wires=[1, 0]),
+     QubitUnitary(array([[ 0.85429569-0.34743933j,  0.14569083+0.35810469j],
+           [-0.14569083+0.35810469j,  0.85429569+0.34743933j]]), wires=[0]),
+     QubitUnitary(array([[-0.30052527-0.4826478j ,  0.74833925-0.34164898j],
+           [-0.74833925-0.34164898j, -0.30052527+0.4826478j ]]), wires=[1]),
+     GlobalPhase(np.float64(0.07394316416802127), wires=[])]
 
     """
 
@@ -212,13 +210,20 @@ def two_qubit_decomposition(U, wires):
             global_phase += _decompose_3_cnots(U, wires, global_phase)
         else:
             num_cnots = _compute_num_cnots(U)
-            # Use the 3-CNOT case for num_cnots=2 as well because we do not have a reliably
-            # correct implementation of the 2-CNOT case right now.
+
+            elifs = [(num_cnots == 1, _decompose_1_cnot)]
+
+            # The 2-CNOT decomposition relies on sorting eigenvalues, which is not supported
+            # with abstract tracers when capture is enabled. In that case, we fall back
+            # to the 3-CNOT decomposition.
+            if not capture.enabled():
+                elifs.append((num_cnots == 2, _decompose_2_cnots))
+
             global_phase += ops.cond(
                 num_cnots == 0,
                 _decompose_0_cnots,
                 _decompose_3_cnots,
-                elifs=[(num_cnots == 1, _decompose_1_cnot)],
+                elifs=elifs,
             )(U, wires, global_phase)
 
         if _is_jax_jit(U) or not math.allclose(global_phase, 0):
@@ -382,13 +387,20 @@ def two_qubit_decomp_rule(U, wires, **__):
 
     U, initial_phase = math.convert_to_su4(U, return_global_phase=True)
     num_cnots = _compute_num_cnots(U)
-    # Use the 3-CNOT case for num_cnots=2 as well because we do not have a reliably
-    # correct implementation of the 2-CNOT case right now.
+
+    elifs = [(num_cnots == 1, _decompose_1_cnot)]
+
+    # The 2-CNOT decomposition relies on sorting eigenvalues, which is not supported
+    # with abstract tracers when capture is enabled. In that case, we fall back
+    # to the 3-CNOT decomposition.
+    if not capture.enabled():
+        elifs.append((num_cnots == 2, _decompose_2_cnots))
+
     additional_phase = ops.cond(
         num_cnots == 0,
         _decompose_0_cnots,
         _decompose_3_cnots,
-        elifs=[(num_cnots == 1, _decompose_1_cnot)],
+        elifs=elifs,
     )(U, wires, initial_phase)
     total_phase = initial_phase + additional_phase
     ops.cond(math.logical_not(math.allclose(total_phase, 0)), ops.GlobalPhase)(-total_phase)
@@ -479,7 +491,8 @@ S_0_dag = S_0.conj().T
 
 
 def _compute_num_cnots(U):
-    r"""Compute the number of CNOTs required to implement a U in SU(4).
+    r"""
+    Compute the number of CNOTs required to implement a U in SU(4).
     This is based on the trace of
 
     .. math::
@@ -487,7 +500,6 @@ def _compute_num_cnots(U):
         \gamma(U) = (E^\dag U E) (E^\dag U E)^T,
 
     and follows the arguments of this paper: https://arxiv.org/abs/quant-ph/0308045.
-
     """
 
     U = math.dot(E_dag, math.dot(U, E))
@@ -607,6 +619,190 @@ def _decompose_1_cnot(U, wires, initial_phase):
     ops.QubitUnitary(B, wires=wires[0])
 
     return math.cast_like(-np.pi / 4, initial_phase)
+
+
+def _get_basis_and_eigenvalues(M):
+    r"""
+    Helper to diagonalize M, extract diagonal eigenvalues, and sort canonically.
+    Returns eigenvalues and basis O such that :math:`D = O^T M O` is diagonal with
+    sorted eigenvalues.
+    """
+    # pylint: disable=protected-access
+    # Use split_eigh to get a basis (ignoring its mixed eigenvalues)
+    _, O = _real_imag_split_eigh(M, 1.0)
+
+    # Compute true eigenvalues: D = O.T @ M @ O
+    d_mat = math.dot(math.transpose(O), math.dot(M, O))
+    eigvals = math.diag(d_mat)
+
+    # Canonical Sort: Real part descending, then Imaginary part descending
+    r = np.round(math.real(eigvals), 6)
+    i = np.round(math.imag(eigvals), 6)
+
+    # Sort by imag then real to ensure deterministic aligning of U and V
+    sort_indices = np.lexsort((i, r))
+
+    # Reorder
+    eigvals_sorted = eigvals[sort_indices]
+    O_sorted = O[:, sort_indices]
+
+    # Enforce determinant 1 (SO(4))
+    det = math.linalg.det(O_sorted)
+    if math.real(det) < 0:
+        O_sorted = math.set_index(O_sorted, (slice(None), 3), -O_sorted[:, 3])
+
+    return eigvals_sorted, O_sorted
+
+
+def _find_so4_decomposition(U, u_mag, O_u, candidates):
+    r"""
+    Performs the exhaustive search for alpha, beta, and signs
+    to ensure Real :math:`SO(4)` correction gates.
+    Returns the best found parameters along with the basis O_v and
+    v_mag for the kernel V.
+    """
+    CNOT10_np = np.array([[1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0]], dtype=complex)
+    CNOT10 = math.cast_like(CNOT10_np, U)
+    best_result = None
+    min_error = np.inf
+
+    # Search Parameter Permutations
+    for alpha, beta in candidates:
+        # Construct Kernel V
+        rza = ops.RZ.compute_matrix(alpha)
+        rxb = ops.RX.compute_matrix(beta)
+        kernel_inner = math.kron(rza, rxb)
+        V = _multidot(CNOT10, kernel_inner, CNOT10)
+
+        # Get basis for V
+        v_mag = _multidot(math.cast_like(E_dag, U), V, math.cast_like(E, U))
+        gamma_v = math.dot(v_mag, math.T(v_mag))
+        _, O_v = _get_basis_and_eigenvalues(gamma_v)
+
+        # P = v^dag O_v, Q = O_u^T u
+        P = math.dot(math.conj(math.T(v_mag)), O_v)
+        Q = math.dot(math.T(O_u), u_mag)
+
+        # Sign Search to fix Gauge Freedom
+        for signs in product([1.0, -1.0], repeat=4):
+            # Enforce determinant +1 to stay in SO(4)
+            if np.prod(signs) < 0:
+                continue
+
+            S_diag = math.cast_like(signs, P)
+            # Broadcasting P * S is faster than matrix mult
+            # Metric: sum of absolute imaginary parts (should be 0 for valid decomposition)
+            R_trial = math.dot(P * S_diag, Q)
+            error = math.sum(math.abs(math.imag(R_trial)))
+
+            if error < min_error:
+                min_error = error
+                best_result = (alpha, beta, signs, O_v, v_mag)
+
+    # FALLBACK CHECK:
+    # If the best error we found is still "large" (e.g., > 1e-5),
+    # then we failed to find a valid Real-valued decomposition.
+    # We return None to signal that 2-CNOT decomposition is likely impossible/unsafe.
+    if min_error > 1e-5:
+        return None
+
+    return best_result
+
+
+def _decompose_2_cnots(U, wires, initial_phase):
+    r"""Decompose a two-qubit unitary known to require exactly 2 CNOTs.
+
+    The resulting circuit has the following canonical form:
+        0: ──A──╭X──RZ(a)──╭X──C──┤
+        1: ──B──╰●──RX(b)──╰●──D──┤
+
+    where A, B, C, D are single-qubit unitaries (:math:`SU(2)` gates) and a, b
+    are rotation angles determined by the entanglement properties of the unitary.
+
+    This implementation is based on the work by Shende, Bullock, and Markov and
+    this is done following the methods in https://arxiv.org/abs/quant-ph/0308045.
+
+    The decomposition relies on the Magic Basis, where local unitaries correspond to
+    orthogonal matrices (:math:`SO(4)`), and the entangling power of an operator is captured by
+    the spectrum (eigenvalues) of the symmetric invariant matrix: :math:`\gamma(U) = (E^\dagger U E) (E^\dagger U E)^T`.
+
+    The algorithm proceeds in four main steps:
+
+    1.  The invariant matrix :math:`\gamma(U)` is computed. Its eigenvalues
+        are extracted. These eigenvalues come in conjugate pairs,
+        and their phases directly determine the rotation parameters a, and b
+        needed for the circuit's core.
+
+    2.  A reference operator V is built using the
+        calculated parameters a, b. This operator represents the ideal
+        2-CNOT circuit core: :math:`CNOT \cdot (RZ(\alpha) \otimes RX(\beta)) \cdot CNOT`.
+        By construction, V is isospectral to U in the Magic Basis.
+
+    3.  To transform the input U into V using only
+        local gates, we align their eigenbases. This involves diagonalizing :math:`\gamma(U)` and
+        :math:`\gamma(V)` and sorting their eigenvectors canonically to match corresponding subspaces.
+
+    4.  Since eigenvectors are defined only up to a sign (parity), there are
+        :math:`2^4 = 16` possible alignments. The algorithm exhaustively searches these combinations
+        to find the specific parity that results in a valid, real-valued local transformation
+        (a matrix in :math:`SO(4)`). This transformation determines the local gates A, B, C, D.
+
+    The final circuit is then constructed by applying these local gates around the V.
+    """
+    # pylint: disable=too-many-locals
+    # 1. Compute gamma(U)
+    u_mag = _multidot(math.cast_like(E_dag, U), U, math.cast_like(E, U))
+    gamma_u = math.dot(u_mag, math.T(u_mag))
+
+    # 2. Extract interaction parameters
+    eig_u, O_u = _get_basis_and_eigenvalues(gamma_u)
+    # Extract phases and sort to group conjugate pairs
+    abs_angles = np.sort(np.abs(math.angle(eig_u)))
+    # Pick distinct representatives
+    theta1 = abs_angles[3]
+    theta2 = abs_angles[1]
+    # Map to circuit parameters
+    a_calc = (theta1 + theta2) / 2
+    b_calc = (theta1 - theta2) / 2
+    candidates = [(a_calc, b_calc), (b_calc, a_calc)]
+
+    # 3. Perform Search (Delegated to helper)
+    result = _find_so4_decomposition(U, u_mag, O_u, candidates)
+
+    # SAFETY FALLBACK to _decompose_3_cnots:
+    # If the 2-CNOT search failed (result is None), it means U is likely
+    # not a 2-CNOT gate (despite trace invariants) or numerical noise is too high.
+    # We fall back to the generic 3-CNOT decomposition to guarantee correctness.
+    if result is None:
+        return _decompose_3_cnots(U, wires, initial_phase)
+
+    alpha_f, beta_f, signs_f, O_v, v_mag = result
+
+    # 4. Compute Local Gates L (Left) and R (Right) in SO(4)
+    S_mat = math.diag(signs_f)
+    L = _multidot(O_u, S_mat, math.T(O_v))
+    R = _multidot(math.conj(math.T(v_mag)), math.T(L), u_mag)
+
+    # 5. Convert to local gates
+    AB = _multidot(math.cast_like(E, U), L, math.cast_like(E_dag, U))
+    CD = _multidot(math.cast_like(E, U), R, math.cast_like(E_dag, U))
+
+    A, B = math.decomposition.su2su2_to_tensor_products(AB)
+    C, D = math.decomposition.su2su2_to_tensor_products(CD)
+
+    # 6. Queue Circuit
+    ops.QubitUnitary(C, wires=wires[0])
+    ops.QubitUnitary(D, wires=wires[1])
+
+    ops.CNOT(wires=[wires[1], wires[0]])
+    ops.RZ(alpha_f, wires=wires[0])
+    ops.RX(beta_f, wires=wires[1])
+    ops.CNOT(wires=[wires[1], wires[0]])
+
+    ops.QubitUnitary(A, wires=wires[0])
+    ops.QubitUnitary(B, wires=wires[1])
+
+    return math.cast_like(0.0, initial_phase)
 
 
 def _multidot(*matrices):

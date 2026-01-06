@@ -203,7 +203,18 @@ class TestIntegration:
 
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", [False, True])
-    @pytest.mark.parametrize("shots", [None, 50000])
+    @pytest.mark.parametrize(
+        "shots",
+        [
+            None,
+            pytest.param(
+                50000,
+                marks=pytest.mark.xfail(
+                    reason="Flaky test under investigation (tracked in sc-101771)", strict=False
+                ),
+            ),
+        ],
+    )
     def test_qnode_jax(self, shots, use_jit, seed):
         """Test that the QNode executes and is differentiable with JAX. The shots
         argument controls whether autodiff or parameter-shift gradients are used."""

@@ -15,8 +15,17 @@
 This submodule contains the templates for the Hilbert-Schmidt tests.
 """
 import copy
+from collections import defaultdict
 from collections.abc import Iterable
 
+from pennylane import capture, math
+from pennylane.control_flow import for_loop
+from pennylane.decomposition import (
+    CompressedResourceOp,
+    add_decomps,
+    register_resources,
+    resource_rep,
+)
 from pennylane.math import is_abstract
 from pennylane.operation import Operation, Operator
 from pennylane.ops import CNOT, Hadamard, QubitUnitary
@@ -101,6 +110,8 @@ class HilbertSchmidt(Operation):
 
     grad_method = None
 
+    resource_keys = {"num_wires", "u_reps", "v_wires"}
+
     @classmethod
     def _primitive_bind_call(cls, V, U, **kwargs):  # kwarg is id
         # pylint: disable=arguments-differ
@@ -116,6 +127,16 @@ class HilbertSchmidt(Operation):
     @classmethod
     def _unflatten(cls, data, _) -> "HilbertSchmidt":
         return cls(*data)
+
+    @property
+    def resource_params(self) -> dict:
+        u_ops = self.hyperparameters["U"]
+        v_ops = self.hyperparameters["V"]
+        return {
+            "num_wires": len(self.wires),
+            "u_reps": [resource_rep(type(op_u), **op_u.resource_params) for op_u in u_ops],
+            "v_wires": [len(op_v.wires) for op_v in v_ops],
+        }
 
     def __init__(
         self,
@@ -251,7 +272,7 @@ class HilbertSchmidt(Operation):
 if HilbertSchmidt._primitive is not None:
 
     @HilbertSchmidt._primitive.def_impl
-    def _(*ops, num_v_ops, **kwargs):
+    def _hilbert_schmidt_impl(*ops, num_v_ops, **kwargs):
         V = ops[:num_v_ops]
         U = ops[num_v_ops:]
         return type.__call__(HilbertSchmidt, V, U, **kwargs)
@@ -324,8 +345,10 @@ class LocalHilbertSchmidt(HilbertSchmidt):
         Now that the cost function has been defined it can be called for specific parameters:
 
         >>> cost_lhst(V, U)
-        np.float64(0.5)
+        np.float64(0.5...)
     """
+
+    resource_keys = {"num_wires", "u_reps", "v_wires"}
 
     @staticmethod
     def compute_decomposition(
@@ -370,6 +393,16 @@ class LocalHilbertSchmidt(HilbertSchmidt):
 
         return decomp_ops
 
+    @property
+    def resource_params(self) -> dict:
+        u_ops = self.hyperparameters["U"]
+        v_ops = self.hyperparameters["V"]
+        return {
+            "num_wires": len(self.wires),
+            "u_reps": [resource_rep(type(op_u), **op_u.resource_params) for op_u in u_ops],
+            "v_wires": [len(op_v.wires) for op_v in v_ops],
+        }
+
     def __copy__(self):
         clone = LocalHilbertSchmidt.__new__(LocalHilbertSchmidt)
         clone._hyperparameters = {
@@ -386,7 +419,160 @@ class LocalHilbertSchmidt(HilbertSchmidt):
 if LocalHilbertSchmidt._primitive is not None:
 
     @LocalHilbertSchmidt._primitive.def_impl
-    def _(*ops, num_v_ops, **kwargs):
+    def _local_hilbert_schmidt_impl(*ops, num_v_ops, **kwargs):
         V = ops[:num_v_ops]
         U = ops[num_v_ops:]
         return type.__call__(LocalHilbertSchmidt, V, U, **kwargs)
+
+
+def _hilbert_schmidt_resources(
+    num_wires: int, u_reps: list[CompressedResourceOp], v_wires: list[int]
+):
+    num_first_range = num_wires // 2
+    num_second_range = num_wires - num_first_range
+
+    resources = defaultdict(int)
+
+    resources.update(
+        {
+            resource_rep(Hadamard): num_first_range * 2,
+            resource_rep(CNOT): min(num_first_range, num_second_range) * 2,
+        }
+    )
+
+    for op_rep in u_reps:
+        resources[op_rep] += 1
+
+    for n_wires in v_wires:
+        resources[resource_rep(QubitUnitary, num_wires=n_wires)] += 1
+
+    return resources
+
+
+def _local_hilbert_schmidt_resources(
+    num_wires: int, u_reps: list[CompressedResourceOp], v_wires: list[int]
+):
+    num_first_range = num_wires // 2
+    num_second_range = num_wires - num_first_range
+
+    resources = defaultdict(int)
+
+    resources.update(
+        {
+            resource_rep(Hadamard): num_first_range + 1,
+            resource_rep(CNOT): min(num_first_range, num_second_range) + 1,
+        }
+    )
+
+    for op_rep in u_reps:
+        resources[op_rep] += 1
+
+    for n_wires in v_wires:
+        resources[resource_rep(QubitUnitary, num_wires=n_wires)] += 1
+
+    return resources
+
+
+def _up_to_last_layer(
+    wires: int | Iterable[int | str] | Wires,
+    U: Operator | Iterable[Operator],
+    V: Operator | Iterable[Operator],
+) -> tuple[int, Iterable, Iterable, list[int]]:
+    u_ops = (U,) if isinstance(U, Operator) else tuple(U)
+    v_ops = (V,) if isinstance(V, Operator) else tuple(V)
+
+    def collect_wires_in_order(ops):
+
+        accumulator = []
+        for operator in ops:
+            for wire_index in range(  # pylint: disable=consider-using-enumerate
+                len(operator.wires)
+            ):
+
+                if capture.enabled() and isinstance(operator.wires, Wires):
+                    wire = operator.wires.labels[wire_index]
+                else:
+                    wire = operator.wires[wire_index]
+
+                if wire not in accumulator:
+                    accumulator.append(wire)
+
+        return accumulator
+
+    u_wires = collect_wires_in_order(u_ops)
+    v_wires = collect_wires_in_order(v_ops)
+
+    n_wires = len(u_wires + v_wires)
+    first_range = range(n_wires // 2)
+    second_range = range(n_wires // 2, n_wires)
+
+    if capture.enabled():
+        if isinstance(wires, Wires):
+            wires = wires.labels
+        wires, u_wires, v_wires, first_range, second_range = (
+            math.array(wires, like="jax"),
+            math.array(u_wires, like="jax"),
+            math.array(v_wires, like="jax"),
+            math.array(first_range, like="jax"),
+            math.array(second_range, like="jax"),
+        )
+
+    @for_loop(len(first_range))
+    def layer_hadamards(i):
+        Hadamard(wires[i])
+
+    layer_hadamards()  # pylint: disable=no-value-for-parameter
+
+    @for_loop(min(len(first_range), len(second_range)))
+    def layer_cnots(j):
+        CNOT(wires=[wires[first_range[j]], wires[second_range[j]]])
+
+    layer_cnots()  # pylint: disable=no-value-for-parameter
+
+    for op_u in u_ops:
+        apply(op_u)
+
+    for op_v in v_ops:
+        mat = op_v.matrix().conjugate()
+        QubitUnitary(mat, wires=op_v.wires)
+
+    return n_wires, first_range, second_range, wires
+
+
+@register_resources(_hilbert_schmidt_resources)
+def _hilbert_schmidt_decomposition(
+    *params: TensorLike,
+    wires: int | Iterable[int | str] | Wires,
+    U: Operator | Iterable[Operator],
+    V: Operator | Iterable[Operator],
+):  # pylint: disable=unused-argument
+    _, first_range, second_range, wires = _up_to_last_layer(wires, U, V)
+
+    @for_loop(min(len(first_range), len(second_range)))
+    def layer_cnots(j):
+        CNOT(wires=[wires[first_range[j]], wires[second_range[j]]])
+
+    layer_cnots()  # pylint: disable=no-value-for-parameter
+
+    @for_loop(len(first_range))
+    def layer_hadamards(i):
+        Hadamard(wires[i])
+
+    layer_hadamards()  # pylint: disable=no-value-for-parameter
+
+
+@register_resources(_local_hilbert_schmidt_resources)
+def _local_hilbert_schmidt_decomposition(
+    *params: TensorLike,
+    wires: int | Iterable[int | str] | Wires,
+    U: Operator | Iterable[Operator],
+    V: Operator | Iterable[Operator],
+):  # pylint: disable=unused-argument
+    n_wires, _, _, wires = _up_to_last_layer(wires, U, V)
+
+    CNOT(wires=[wires[0], wires[n_wires // 2]])
+    Hadamard(wires[0])
+
+
+add_decomps(HilbertSchmidt, _hilbert_schmidt_decomposition)
+add_decomps(LocalHilbertSchmidt, _local_hilbert_schmidt_decomposition)
