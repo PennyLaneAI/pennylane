@@ -432,42 +432,6 @@
 
 <h4>Seamless inspection for compiled programs 👓</h4>
 
-* A new :func:`~.marker` function allows for easy inspection at particular points in a set of 
-  applied compilation passes with :func:`~.specs` and :func:`~.drawer.draw` instead of having to 
-  increment ``level`` by integer amounts.
-  [(#8684)](https://github.com/PennyLaneAI/pennylane/pull/8684)
-
-  The :func:`~.marker` function works like a transform in PennyLane, and can be deployed as
-  a decorator on top of QNodes:
-
-  ```python
-  @qml.marker(level="rotations-merged")
-  @qml.transforms.merge_rotations
-  @qml.marker(level="my-level")
-  @qml.transforms.cancel_inverses
-  @qml.transforms.decompose(gate_set={qml.RX})
-  @qml.qnode(qml.device('lightning.qubit'))
-  def circuit():
-      qml.RX(0.2,0)
-      qml.X(0)
-      qml.X(0)
-      qml.RX(0.2, 0)
-      return qml.state()
-  ```
-
-  The string supplied to :func:`~.marker` can then be used as an argument to ``level`` in ``draw``
-  and ``specs``, showing the cumulative result of applying transforms up to the marker:
-
-  ```pycon
-  >>> print(qml.draw(circuit, level="my-level")())
-  0: ──RX(0.20)──RX(3.14)──RX(3.14)──RX(0.20)─┤  State
-  >>> print(qml.draw(circuit, level="rotations-merged")())
-  0: ──RX(6.68)─┤  State
-  ```
-
-  Note that :func:`~.marker` is currently not compatible with programs compiled with 
-  :func:`~pennylane.qjit`.
-
 * Analyzing resources throughout each step of a compilation pipeline can now be done on ``qjit``'d workflows with :func:`~.specs`, 
   providing a pass-by-pass overview of quantum circuit resources.
 [(#8606)](https://github.com/PennyLaneAI/pennylane/pull/8606)
@@ -520,14 +484,50 @@
     Total wire allocations: 2
     Total gates: 2
     Circuit depth: Not computed
-  <BLANKLINE>
+
     Gate types:
       RX: 1
       CNOT: 1
-  <BLANKLINE>
+
     Measurements:
       probs(all wires): 1
   ```
+
+* A new :func:`~.marker` function allows for easy inspection at particular points in a set of 
+  applied compilation passes with :func:`~.specs` and :func:`~.drawer.draw` instead of having to 
+  increment ``level`` by integer amounts.
+  [(#8684)](https://github.com/PennyLaneAI/pennylane/pull/8684)
+
+  The :func:`~.marker` function works like a transform in PennyLane, and can be deployed as
+  a decorator on top of QNodes:
+
+  ```python
+  @qml.marker(level="rotations-merged")
+  @qml.transforms.merge_rotations
+  @qml.marker(level="my-level")
+  @qml.transforms.cancel_inverses
+  @qml.transforms.decompose(gate_set={qml.RX})
+  @qml.qnode(qml.device('lightning.qubit'))
+  def circuit():
+      qml.RX(0.2,0)
+      qml.X(0)
+      qml.X(0)
+      qml.RX(0.2, 0)
+      return qml.state()
+  ```
+
+  The string supplied to :func:`~.marker` can then be used as an argument to ``level`` in ``draw``
+  and ``specs``, showing the cumulative result of applying transforms up to the marker:
+
+  ```pycon
+  >>> print(qml.draw(circuit, level="my-level")())
+  0: ──RX(0.20)──RX(3.14)──RX(3.14)──RX(0.20)─┤  State
+  >>> print(qml.draw(circuit, level="rotations-merged")())
+  0: ──RX(6.68)─┤  State
+  ```
+
+  Note that :func:`~.marker` is currently not compatible with programs compiled with 
+  :func:`~pennylane.qjit`.
 
 <h4> New templates </h4>
 
