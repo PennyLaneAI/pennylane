@@ -76,6 +76,92 @@
   For more information on each implementation of QRAM in this release, check out their respective
   documentation pages.
 
+* A lightweight representation of the :class:`~.BBQRAM` template called 
+  :class:`estimator.BBQRAM <pennylane.estimator.templates.BBQRAM>` has been added for the purpose of
+  fast and efficient resource estimation.
+  [(#8825)](https://github.com/PennyLaneAI/pennylane/pull/8825)
+
+  Like with other existing lightweight representations of PennyLane operations, leveraging 
+  :class:`estimator.BBQRAM <pennylane.estimator.templates.BBQRAM>` for fast resource estimation
+  can be done in two ways: 
+
+  * Using :class:`estimator.BBQRAM <pennylane.estimator.templates.BBQRAM>` directly inside of a 
+    function and then calling :func:`~.estimator.estimate`:
+
+  ```python
+  import pennylane.estimator as qre
+
+  def circuit():
+      qre.CNOT()
+      qre.QFT(num_wires=4)
+      qre.BBQRAM(num_bit_strings=30, size_bitstring=8)
+      qre.Hadamard()
+  ```
+
+  ```
+  >>> print(qre.estimate(circuit)())
+  --- Resources: ---
+  Total wires: 100
+    algorithmic wires: 100
+    allocated wires: 0
+      zero state: 0
+      any state: 0
+  Total gates : 4.504E+3
+    'Toffoli': 1.096E+3,
+    'T': 792,
+    'CNOT': 2.475E+3,
+    'Z': 120,
+    'Hadamard': 21
+  ```
+
+  * On a simulatable circuit with detailed information:
+
+  ```python
+  bitstrings = ["010", "111", "110", "000"]
+  bitstring_size = 3
+
+  num_control_wires = 2 # len(bistrings) = 4 = 2**2
+  num_work_wires = 1 + 3 * ((1 << num_control_wires) - 1) # 10
+
+  reg = qml.registers(
+      {
+          "control": num_control_wires,
+          "target": bitstring_size,
+          "work_wires": num_work_wires
+      }
+  )
+
+  dev = qml.device("default.qubit")
+  @qml.qnode(dev)
+  def bb_quantum():
+      # prepare an address, e.g., |10> (index 2)
+      qml.BasisEmbedding(2, wires=reg["control"])
+
+      qml.BBQRAM(
+          bitstrings,
+          control_wires=reg["control"],
+          target_wires=reg["target"],
+          work_wires=reg["work_wires"],
+      )
+      return qml.probs(wires=reg["target"])
+  ```
+
+  ```pycon
+  >>> print(qre.estimate(bb_quantum)())
+  --- Resources: ---
+  Total wires: 15
+    algorithmic wires: 15
+    allocated wires: 0
+      zero state: 0
+      any state: 0
+  Total gates : 181
+    'Toffoli': 40,
+    'CNOT': 128,
+    'X': 1,
+    'Z': 6,
+    'Hadamard': 6
+  ```
+
 <h4>Quantum Automatic Differentiation </h4>
 
 * Quantum Automatic Differentiation implemented to allow automatic selection of optimal
