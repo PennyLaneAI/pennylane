@@ -382,9 +382,7 @@ def gather_mcm_qjit(measurement, samples, is_valid, postselect_mode=None):  # pr
         if isinstance(measurement, ProbabilityMP):
             counts = math.array([sum_valid - count_1, count_1], like=interface)
             return counts / sum_valid
-    result = gather_non_mcm(measurement, meas, is_valid, postselect_mode=postselect_mode)
-    return result
-
+    return gather_non_mcm(measurement, meas, is_valid, postselect_mode=postselect_mode)
 
 @singledispatch
 def gather_non_mcm(measurement, samples, is_valid, postselect_mode=None) -> TensorLike:
@@ -535,4 +533,6 @@ def gather_mcm(measurement: MeasurementProcess, samples, is_valid, postselect_mo
     if isinstance(measurement, CountsMP):
         mcm_samples = [{float(s.item()): 1} for s in mcm_samples]
     results = gather_non_mcm(measurement, mcm_samples, is_valid, postselect_mode=postselect_mode)
+    if isinstance(measurement, SampleMP):
+        results = math.squeeze(results)
     return results
