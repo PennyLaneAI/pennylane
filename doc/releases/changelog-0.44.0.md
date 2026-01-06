@@ -640,9 +640,46 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * A new transform :func:`~.transforms.select_pauli_rot_phase_gradient` has been added. This transform
-  may reduce the number of T gates in :circuits with class:`~.SelectPauliRot` rotations by
+  may reduce the number of T gates in circuits with :class:`~.SelectPauliRot` rotations by
   implementing them with a phase gradient resource state and semi-in-place addition (:class:`~.SemiAdder`).
   [(#8738)](https://github.com/PennyLaneAI/pennylane/pull/8738)
+
+  ```python
+  from pennylane.labs.transforms import select_pauli_rot_phase_gradient
+  import numpy as np
+
+  precision = 4
+  angle_wires = [f"ang_{i}" for i in range(precision)]
+  phase_grad_wires = [f"phg_{i}" for i in range(precision)]
+  work_wires = [f"work_{i}" for i in range(precision - 1)]
+
+  @select_pauli_rot_phase_gradient(
+      angle_wires=angle_wires,
+      phase_grad_wires=phase_grad_wires,
+      work_wires=work_wires,
+  )
+  @qml.qnode(qml.device("default.qubit"))
+  def select_pauli_rot_circ(phis, control_wires, target_wire):
+      # prepare phase gradient state
+      for i, w in enumerate(phase_grad_wires):
+          qml.H(w)
+          qml.PhaseShift(-np.pi / 2**i, w)
+
+      for wire in control_wires:
+          qml.Hadamard(wire)
+
+      qml.SelectPauliRot(phis, control_wires, target_wire, rot_axis="X")
+
+      return qml.probs(target_wire)
+
+  phis = [
+      (1 / 2 + 1 / 4 + 1 / 8) * 2 * np.pi,
+      (1 / 2 + 1 / 4 + 0 / 8) * 2 * np.pi,
+      (1 / 2 + 0 / 4 + 1 / 8) * 2 * np.pi,
+      (0 / 2 + 1 / 4 + 1 / 8) * 2 * np.pi,
+  ]
+
+  print(select_pauli_rot_circ(phis, control_wires=[0, 1], target_wire="targ"))
 
 <h3>Breaking changes 💔</h3>
 
