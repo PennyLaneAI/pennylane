@@ -1222,11 +1222,11 @@ class ToBloq(Bloq):
         custom_mapping (dict | None): Dictionary to specify a mapping between a PennyLane operator and a
             Qualtran Bloq. A default mapping is used if not defined.
         call_graph (str): Specifies how to build the call graph. If ``'estimator'``, the call
-            graph is built using :func:`~pennylane.estimator.estimate`. If ``'decomposition'``, the
+            graph is built using the resource functionality of the :mod:`~.estimator` module. If ``'decomposition'``, the
             call graph is built via the PennyLane decomposition. Default is ``'estimator'``.
 
     Raises:
-        TypeError: operator must be an instance of :class:`~.Operation`.
+        TypeError: ``op`` must be an instance of :class:`~.Operation`, :class:`~.QNode`, or a quantum function.
         ValueError: If ``call_graph`` is not ``'estimator'`` or ``'decomposition'``.
 
     .. seealso:: :func:`~.to_bloq` for the recommended way to convert from PennyLane objects to
@@ -1454,7 +1454,7 @@ def to_bloq(
         custom_mapping (dict | None): Dictionary to specify a mapping between a PennyLane operator and a
             Qualtran Bloq. A default mapping is used if not defined.
         call_graph (str): Specifies how to build the call graph. If ``'estimator'``, the call
-            graph is built using :func:`~pennylane.estimator.estimate`. If ``'decomposition'``, the
+            graph is built using the resource functionality of the :mod:`~.estimator` module. If ``'decomposition'``, the
             call graph is built via the PennyLane decomposition. Default is ``'estimator'``.
 
     Returns:

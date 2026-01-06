@@ -124,6 +124,23 @@ class TestMapToResourceOp:
                 re_temps.Select(ops=[re_ops.X(), re_ops.Y()], wires=[0, 1, 2]),
             ),
             (
+                qtemps.BBQRAM(
+                    bitstrings=["010", "111", "110", "000"],
+                    control_wires=[0, 1],
+                    target_wires=[2, 3, 4],
+                    work_wires=[5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
+                ),
+                re_temps.BBQRAM(
+                    num_bitstrings=4,
+                    size_bitstring=3,
+                    num_bit_flips=6,
+                    num_wires=15,
+                    control_wires=[0, 1],
+                    target_wires=[2, 3, 4],
+                    work_wires=[5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
+                ),
+            ),
+            (
                 qtemps.QROM(
                     data=[[0, 1], [1, 1], [1, 0]],
                     control_wires=[0, 1],
