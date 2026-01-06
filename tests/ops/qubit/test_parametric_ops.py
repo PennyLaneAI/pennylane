@@ -3829,6 +3829,7 @@ label_data = [
     (qml.RY(1.23456, wires=0), "RY", "RY\n(1.23)", "RY\n(1)"),
     (qml.RZ(1.23456, wires=0), "RZ", "RZ\n(1.23)", "RZ\n(1)"),
     (qml.MultiRZ(1.23456, wires=0), "MultiRZ", "MultiRZ\n(1.23)", "MultiRZ\n(1)"),
+    (qml.PauliRot(1.23456, "X", wires=0), "R(X)", "R(X)\n(1.23)", "R(X)\n(1)"),
     (
         qml.PauliRot(1.2345, "XYZ", wires=(0, 1, 2)),
         "RXYZ",
