@@ -185,14 +185,12 @@ class CompilePipeline:
         cotransform_cache: CotransformCache | None = None,
     ):
         if len(transforms) == 1 and isinstance(transforms[0], Sequence):
-            seq = list(transforms[0])
+            transforms = list(transforms[0])
             # If all elements are BoundTransform, store directly (already expanded)
-            if all(isinstance(t, BoundTransform) for t in seq):
-                self._compile_pipeline = seq
+            if all(isinstance(t, BoundTransform) for t in transforms):
+                self._compile_pipeline = transforms
                 self.cotransform_cache = cotransform_cache
                 return
-            # Otherwise, process each element
-            transforms = seq
 
         self._compile_pipeline = []
         self.cotransform_cache = cotransform_cache
