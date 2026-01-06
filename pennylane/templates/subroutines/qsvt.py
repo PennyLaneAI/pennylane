@@ -992,7 +992,6 @@ def optax_opt(initial_guess, x, y, maxiter, tol):
 def _qsp_optimization(degree: int, coeffs_target_func, maxiter=100, tol=1e-30):
     r"""Algorithm 1 in https://arxiv.org/pdf/2002.11649 produces the angle parameters by minimizing the distance between the target and qsp polynomial over the grid"""
 
-    jax.config.update("jax_enable_x64", True)
     grid_points = _grid_pts(degree, "jax")
     initial_guess = [np.pi / 4] + [0.0] * (degree - 1) + [np.pi / 4]
 
