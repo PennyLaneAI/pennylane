@@ -69,7 +69,7 @@ Transforms can be applied on ``QNodes`` using the decorator syntax:
             qml.expval(qml.X(0) @ qml.Z(1) + 0.5 * qml.Y(1) + qml.Z(0)),
         ]
 
-They can additionally be stacked, allowing for the application of multiple compilation passes on a QNode:
+They can additionally be stacked, allowing for the application of multiple compilation passes on a ``QNode``:
 
 .. code-block:: python
 
@@ -87,17 +87,28 @@ They can additionally be stacked, allowing for the application of multiple compi
         qml.RX(y, wires=0)
         return qml.expval(qml.Z(0))
 
-Alternatively, the :func:`~.pennylane.compile` transform allows you to chain together
-sequences of quantum function transforms into custom circuit optimization pipelines.
+Alternatively, multiple transforms can be chained together into custom circuit optimization pipelines
+via the :class:`~.CompilePipeline` class. 
 
-For example, take the following decorated quantum function:
+For example, a sequence of three transforms: :func:`~.pennylane.transforms.commute_controlled`,
+:func:`~.pennylane.transforms.cancel_inverses`, and :func:`~.pennylane.transforms.merge_rotations` can be combined
+into a pipeline:
 
 .. code-block:: python
 
-    dev = qml.device('default.qubit', wires=[0, 1, 2])
+    pipeline = qml.CompilePipeline(
+        qml.transforms.commute_controlled,
+        qml.transforms.cancel_inverses(recursive=True),
+        qml.transforms.merge_rotations,
+    )
 
-    @qml.compile
-    @qml.qnode(dev)
+The defined compilation program can then be applied on a ``QNode``, which will transform the
+circuit with each pass therein:
+
+.. code-block:: python
+
+    @pipeline
+    @qml.qnode(qml.device("default.qubit"))
     def circuit(x, y, z):
         qml.Hadamard(wires=0)
         qml.Hadamard(wires=1)
@@ -114,57 +125,17 @@ For example, take the following decorated quantum function:
         qml.CZ(wires=[1, 2])
         return qml.expval(qml.Z(wires=0))
 
-The default behaviour of :func:`~.pennylane.compile` applies a sequence of three
-transforms: :func:`~.pennylane.transforms.commute_controlled`, :func:`~.pennylane.transforms.cancel_inverses`,
-and then :func:`~.pennylane.transforms.merge_rotations`.
-
 >>> print(qml.draw(circuit)(0.2, 0.3, 0.4))
 0: ──H──RX(0.60)─────────────────┤  <Z>
 1: ──H─╭X─────────────────────╭●─┤     
 2: ──H─╰●─────────RX(0.30)──Y─╰Z─┤     
-
-
-The :func:`~.pennylane.compile` transform is flexible and accepts a custom pipeline
-of quantum function transforms (you can even write your own!).
-For example, if we wanted to only push single-qubit gates through
-controlled gates and cancel adjacent inverses, we could do:
-
-.. code-block:: python
-
-    from pennylane.transforms import commute_controlled, cancel_inverses
-
-    pipeline = [commute_controlled, cancel_inverses]
-
-    @qml.compile(pipeline=pipeline)
-    @qml.qnode(dev)
-    def qfunc(x, y, z):
-        qml.Hadamard(wires=0)
-        qml.Hadamard(wires=1)
-        qml.Hadamard(wires=2)
-        qml.RZ(z, wires=2)
-        qml.CNOT(wires=[2, 1])
-        qml.RX(z, wires=0)
-        qml.CNOT(wires=[1, 0])
-        qml.RX(x, wires=0)
-        qml.CNOT(wires=[1, 0])
-        qml.RZ(-z, wires=2)
-        qml.RX(y, wires=2)
-        qml.Y(wires=2)
-        qml.CZ(wires=[1, 2])
-        return qml.expval(qml.Z(wires=0))
-
->>> print(qml.draw(qfunc)(0.2, 0.3, 0.4))
-0: ──H──RX(0.40)──RX(0.20)────────────────────────────┤  <Z>
-1: ──H─╭X──────────────────────────────────────────╭●─┤     
-2: ──H─╰●─────────RZ(0.40)──RZ(-0.40)──RX(0.30)──Y─╰Z─┤     
 
 .. note::
 
     The :class:`~.pennylane.Barrier` operator can be used to prevent blocks of code from being merged during
     compilation.
 
-
-For more details on :func:`~.pennylane.compile` and the available compilation transforms, visit
+For more details on :class:`~.CompilePipeline` and the available compilation transforms, visit
 `the compilation documentation
 <../code/qml_transforms.html#transforms-for-circuit-compilation>`_.
 
