@@ -163,26 +163,30 @@ class CompilePipeline:
     0: ──RX(0.30)─┤
     1: ───────────┤  <Z>
 
-    Alternatively, you can create a transform program intuitively by combining multiple transforms using
-    the ``+`` arithmentic operation. Repeatig a given transform several times is also supported through
-    the ``*`` operation:
+    Alternatively, the transform program can be constructed intuitively by combining multiple transforms. For
+    example, the transforms can be added toguether with ``+``:
 
-    >>> pipeline = qml.transforms.merge_rotations + 2 * qml.transforms.cancel_inverses
+    >>> pipeline = qml.transforms.merge_rotations + qml.transforms.cancel_inverses(recursive=True)
     >>> pipeline
-    CompilePipeline(merge_rotations, cancel_inverses, cancel_inverses)
+    CompilePipeline(merge_rotations, cancel_inverses)
 
-    The compilation pipeline can also be easily modified using operations similar to Python lists, including
+    Or multiplied by a scalar via ``*``:
+    >>> pipeline += 2 * qml.transforms.commute_controlled
+    >>> pipeline
+    CompilePipeline(merge_rotations, cancel_inverses, commute_controlled, commute_controlled)
+
+    A compilation pipeline can also be easily modified using operations similar to Python lists, including
     ``insert``, ``append``, ``extend`` and ``pop``:
 
     >>> pipeline.insert(0, qml.transforms.remove_barrier)
     >>> pipeline
-    CompilePipeline(remove_barrier, merge_rotations, cancel_inverses, cancel_inverses)
+    CompilePipeline(remove_barrier, merge_rotations, cancel_inverses, commute_controlled, commute_controlled)
 
     Additionally, multiple compilation pipelines can be concatenated:
 
     >>> another_pipeline = qml.transforms.decompose(gate_set={qml.RX, qml.RZ, qml.CNOT}) + qml.transforms.combine_global_phases
     >>> another_pipeline + pipeline
-    CompilePipeline(decompose, combine_global_phases, remove_barrier, merge_rotations, cancel_inverses, cancel_inverses)
+    CompilePipeline(decompose, combine_global_phases, remove_barrier, merge_rotations, cancel_inverses, commute_controlled, commute_controlled)
     """
 
     @overload
