@@ -275,6 +275,12 @@
 
 <h4>Analyzing your algorithms quickly and easily with resource estimation</h4>
 
+* Now it's possible to set precisions for a larger variety of `ResourceOperator`s in
+  the :mod:`estimator <pennylane.estimator>` module, using the `resource_key` keyword argument of the
+  :meth:`ResourceConfig.set_precision <pennylane.estimator.resource_config.ResourceConfig.set_precision>`
+  method.
+  [(#8561)](https://github.com/PennyLaneAI/pennylane/pull/8561)
+
 * Now it's possible to estimate the resources of Trotterization for Pauli Hamiltonians, using the new
   :class:`estimator.PauliHamiltonian <pennylane.estimator.compact_hamiltonian.PauliHamiltonian>`
   resource Hamiltonian class and the new
@@ -284,12 +290,6 @@
   using the `PauliHamiltonian.num_terms` property to the ``qml.estimator.PauliHamiltonian`` class.
   [(#8546)](https://github.com/PennyLaneAI/pennylane/pull/8546)
   [(#8761)](https://github.com/PennyLaneAI/pennylane/pull/8761)
-
-* Now it's possible to set precisions for a larger variety of `ResourceOperator`s in
-  the :mod:`estimator <pennylane.estimator>` module, using the `resource_key` keyword argument of the
-  :meth:`ResourceConfig.set_precision <pennylane.estimator.resource_config.ResourceConfig.set_precision>`
-  method.
-  [(#8561)](https://github.com/PennyLaneAI/pennylane/pull/8561)
 
 * Users can now estimate the resources for the Generalized Quantum Signal Processing (GQSP)
   algorithm using :class:`estimator.GQSP <pennylane.estimator.templates.qsp.GQSP>` and
