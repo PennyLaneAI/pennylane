@@ -189,7 +189,7 @@ def _(self, *wires, pauli_word="", postselect=None):
 
 
 @CollectOpsandMeas.register_primitive(jacobian_prim)
-def _jacobian_primitive(self, *invals, jaxpr, n_consts, **params):
+def _jacobian_primitive(self, *invals, **params):
     raise NotImplementedError("CollectOpsandMeas cannot handle the jacobian primitive")
 
 

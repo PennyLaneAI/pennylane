@@ -12,8 +12,13 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Removes `n_consts` from the `jacobian_prim`, instead promoting all consts to invars when capturing
+  jacobians with program capture.
+
 <h3>Documentation 📝</h3>
 
 <h3>Bug fixes 🐛</h3>
 
 <h3>Contributors ✍️</h3>
+
+Christina Lee
