@@ -14,13 +14,13 @@
   [(#8680)](https://github.com/PennyLaneAI/pennylane/pull/8680)
   [(#8801)](https://github.com/PennyLaneAI/pennylane/pull/8801)
 
-  Irrespective of the specific implementation, QRAM encodes bitstrings, $b_i$, corresponding to a 
-  given entry, $i$, of a data set of length $N$, and can do so in superposition: 
-  $\texttt{QRAM} \sum_i c_i \vert i \rangle \vert 0 \rangle = \sum_i c_i \vert i \rangle \vert b_i \rangle$.
-  Here, the first register representing $\vert i \rangle$ is called the ``control_wires`` register 
+  Irrespective of the specific implementation, QRAM encodes bitstrings, :math:`b_i`, corresponding to a 
+  given entry, :math:`i`, of a data set of length :math:`N`, and can do so in superposition: 
+  :math:`\texttt{QRAM} \sum_i c_i \vert i \rangle \vert 0 \rangle = \sum_i c_i \vert i \rangle \vert b_i \rangle`.
+  Here, the first register representing :math:`\vert i \rangle` is called the ``control_wires`` register 
   (often referred to as the "address" register in literature), and the second register containing 
-  $\vert b_i \rangle$ is called the ``target_wires`` register (where the $i^{\text{th}}$
-  entry of the data set is loaded).
+  :math:`\vert b_i \rangle` is called the ``target_wires`` register (where the 
+  :math:`i^{\text{th}}` entry of the data set is loaded).
 
   Each QRAM implementation available in this release can be briefly described as follows:
 
