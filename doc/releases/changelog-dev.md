@@ -73,7 +73,7 @@
   [(#8679)](https://github.com/PennyLaneAI/pennylane/pull/8679)
   [(#8680)](https://github.com/PennyLaneAI/pennylane/pull/8680)
 
-<h4>Quantum Automatic Differentiation </h4>
+<h4>Quantum Automatic Differentiation 🤖</h4>
 
 * The Hadamard test gradient method (``diff_method="hadamard"``) in PennyLane now has an ``"auto"`` 
   mode, which automatically chooses the most efficient mode of differentiation.
