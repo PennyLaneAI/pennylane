@@ -381,7 +381,7 @@ class TestValidation:
 
         with pytest.raises(
             ValueError,
-            match="Differentiation method 5 must be a str, TransformDispatcher, or None",
+            match="Differentiation method 5 must be a str, Transform, or None",
         ):
             QNode(dummyfunc, dev, interface="autograd", diff_method=5)
 
@@ -877,7 +877,7 @@ class TestIntegration:
             qml.cond(m_0, qml.RY)(y, wires=1)
             return qml.apply(return_type), mv_return(op=m_0)
 
-        spy = mocker.spy(qml.defer_measurements, "_transform")
+        spy = mocker.spy(qml.defer_measurements, "_tape_transform")
         r1 = cry_qnode(first_par, sec_par)
         r2 = conditional_ry_qnode(first_par, sec_par)
 
@@ -1506,7 +1506,7 @@ class TestCompilePipelineIntegration:
             qml.RX(x, 0)
             return qml.expval(qml.PauliZ(0))
 
-        assert circuit.transform_program[0].transform == just_pauli_x_out.transform
+        assert circuit.transform_program[0].tape_transform == just_pauli_x_out.tape_transform
 
         assert qml.math.allclose(circuit(0.1), -1)
 
@@ -1537,7 +1537,7 @@ class TestCompilePipelineIntegration:
             qml.RX(x, 0)
             return qml.expval(qml.PauliZ(0))
 
-        assert circuit.transform_program[0].transform == pin_result.transform
+        assert circuit.transform_program[0].tape_transform == pin_result.tape_transform
         assert circuit.transform_program[0].kwargs == {"requested_result": 3.0}
 
         assert qml.math.allclose(circuit(0.1), 3.0)
@@ -1784,8 +1784,8 @@ class TestMCMConfiguration:
         shots = 100
         postselect = 1
         param = jax.numpy.array(np.pi / 2)
-        spy = mocker.spy(qml.defer_measurements, "_transform")
-        spy_one_shot = mocker.spy(qml.dynamic_one_shot, "_transform")
+        spy = mocker.spy(qml.defer_measurements, "_tape_transform")
+        spy_one_shot = mocker.spy(qml.dynamic_one_shot, "_tape_transform")
 
         dev = qml.device("default.qubit", wires=4, seed=jax.random.PRNGKey(seed))
 

@@ -1737,13 +1737,13 @@ class TestPrepTHC:
                 qre.THCHamiltonian(10, 50),
                 None,
                 None,
-                {"algo_wires": 73, "auxiliary_wires": 115, "toffoli_gates": 579},
+                {"algo_wires": 73, "auxiliary_wires": 95, "toffoli_gates": 579},
             ),
             (
                 qre.THCHamiltonian(4, 20),
                 None,
                 2,
-                {"algo_wires": 66, "auxiliary_wires": 55, "toffoli_gates": 279},
+                {"algo_wires": 66, "auxiliary_wires": 33, "toffoli_gates": 279},
             ),
         ),
     )

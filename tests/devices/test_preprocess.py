@@ -666,7 +666,7 @@ class TestMidCircuitMeasurements:
         dev = qml.device("default.qubit")
         mcm_config = {"postselect_mode": None, "mcm_method": mcm_method}
         tape = QuantumScript([qml.ops.MidMeasure(0)], [], shots=shots)
-        spy = mocker.spy(expected_transform, "_transform")
+        spy = mocker.spy(expected_transform, "_tape_transform")
 
         _, _ = mid_circuit_measurements(tape, dev, mcm_config)
         spy.assert_called_once()
