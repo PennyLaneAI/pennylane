@@ -468,9 +468,9 @@
   Note that :func:`~.marker` is currently not compatible with programs compiled with 
   :func:`~pennylane.qjit`.
 
-* Resource tracking with :func:`~.specs` can now be used to analyze the pass-by-pass impact of 
-  arbitrary compilation passes on workflows compiled with :func:`~pennylane.qjit`.
-  [(#8606)](https://github.com/PennyLaneAI/pennylane/pull/8606)
+* Analyzing resources throughout each step of a compilation pipeline can now be done on qjit'd workflows with :func:`~.specs`, 
+  providing a pass-by-pass overview of quantum circuit resources.
+[(#8606)](https://github.com/PennyLaneAI/pennylane/pull/8606)
   
   Consider the following :func:`qjit <pennylane.qjit>`'d circuit with two compilation passes 
   applied:
