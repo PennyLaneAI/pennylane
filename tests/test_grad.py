@@ -90,3 +90,23 @@ def test_jacobian_name():
             return x**2
 
     assert qml.jacobian(A()).__name__ == "<jacobian: A>"
+
+
+def test_vjp_without_qjit():
+    """Test that an error is raised when using VJP without QJIT."""
+
+    def vjp(params, cotangent):
+        def f(x):
+            y = [qml.math.sin(x[0]), x[1] ** 2, x[0] * x[1]]
+            return qml.math.stack(y)
+
+        return qml.vjp(f, [params], [cotangent])
+
+    x = qml.numpy.array([0.1, 0.2])
+    dy = qml.numpy.array([-0.5, 0.1, 0.3])
+
+    with pytest.raises(
+        qml.exceptions.CompileError,
+        match="Pennylane does not support the VJP function without QJIT.",
+    ):
+        vjp(x, dy)
