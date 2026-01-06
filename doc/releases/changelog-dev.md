@@ -444,11 +444,11 @@
   dense arrays.
   [(#8612)](https://github.com/PennyLaneAI/pennylane/pull/8612)
   
-* A decomposition has been added to the adjoint of :class:`pennylane.TemporaryAND`
+* A new decomposition has been added to the adjoint of :class:`pennylane.TemporaryAND`
   that relies on mid-circuit measurments and does not require any T gates.
   [(#8633)](https://github.com/PennyLaneAI/pennylane/pull/8633)
 
-* The graph-based decomposition system now supports decomposition rules that contains mid-circuit measurements.
+* The graph-based decomposition system now supports decomposition rules that contain mid-circuit measurements.
   [(#8079)](https://github.com/PennyLaneAI/pennylane/pull/8079)
 
 * The decompositions for several templates have been updated to use
