@@ -275,8 +275,56 @@
 
 <h4>Analyzing your algorithms quickly and easily with resource estimation</h4>
 
-* Resources are now available for several new algorithms. These include:
+* A new :func:`~pennylane.resource.algo_error` function has been added to compute algorithm-specific 
+  errors from quantum circuits. This provides a dedicated entry point for retrieving error information 
+  that was previously accessible through :func:`~pennylane.specs`. The function works with QNodes and 
+  returns a dictionary of error types and their computed values.
+  [(#8787)](https://github.com/PennyLaneAI/pennylane/pull/8787)
+
+  ```python
+  import pennylane as qml
   
+  Hamiltonian = qml.dot([1.0, 0.5], [qml.X(0), qml.Y(0)])
+  
+  dev = qml.device("default.qubit")
+  
+  @qml.qnode(dev)
+  def circuit():
+      qml.TrotterProduct(Hamiltonian, time=1.0, n=4, order=2)
+      return qml.state()
+  ```
+
+  ```pycon
+  >>> qml.resource.algo_error(circuit)()
+  {'SpectralNormError': SpectralNormError(0.25)}
+  ```
+
+* Resources are now available for many new algorithms. These include:
+   
+  * The Generalized Quantum Signal Processing (GQSP)
+    algorithm and its time evolution via the :class:`estimator.GQSP <pennylane.estimator.templates.qsp.GQSP>` and
+    :class:`estimator.GQSPTimeEvolution <pennylane.estimator.templates.qsp.GQSPTimeEvolution>` resource operations.
+    [(#8675)](https://github.com/PennyLaneAI/pennylane/pull/8675)
+
+  * The Qubitization algorithm via two new resource
+    operators: :class:`estimator.Reflection <pennylane.estimator.templates.subroutines.Reflection>` and
+    :class:`estimator.Qubitization <pennylane.estimator.templates.subroutines.Qubitization>`.
+    [(#8675)](https://github.com/PennyLaneAI/pennylane/pull/8675)
+
+  * The Quantum Signal Processing (QSP) and Quantum Singular
+    Value Transformation (QSVT) algorithms via two new resource operators: :class:`estimator.QSP <pennylane.estimator.templates.qsp.QSP>` and :class:`estimator.QSVT <pennylane.estimator.templates.qsp.QSVT>`.
+    [(#8733)](https://github.com/PennyLaneAI/pennylane/pull/8733)
+
+  * The unary iteration implementation of QPE via the new
+    :class:`estimator.UnaryIterationQPE <pennylane.estimator.templates.subroutines.UnaryIterationQPE>`
+    subroutine, which makes it possible to reduce T and Toffoli gate count, in exchange
+    for using additional qubits.
+    [(#8708)](https://github.com/PennyLaneAI/pennylane/pull/8708)
+
+  * Linear combination of unitaries (LCU) representations of ``qml.estimator.PauliHamiltonian`` Hamiltonians via the
+    new :class:`estimator.SelectPauli <pennylane.estimator.templates.select.SelectPauli>` operator.
+    [(#8675)](https://github.com/PennyLaneAI/pennylane/pull/8675)
+
   * Trotterization for Pauli Hamiltonians, using the new
     :class:`estimator.PauliHamiltonian <pennylane.estimator.compact_hamiltonian.PauliHamiltonian>`
     resource Hamiltonian class and the new
@@ -297,67 +345,12 @@
     >>> pauli_ham.num_terms
     30
     ```
-  
-  * Generalized Quantum Signal Processing (GQSP)
-    algorithm and its time evolution via the :class:`estimator.GQSP <pennylane.estimator.templates.qsp.GQSP>` and
-    :class:`estimator.GQSPTimeEvolution <pennylane.estimator.templates.qsp.GQSPTimeEvolution>` resource operations.
-    [(#8675)](https://github.com/PennyLaneAI/pennylane/pull/8675)
-
-  * LCU representations of ``qml.estimator.PauliHamiltonian`` Hamiltonians via the
-    new :class:`estimator.SelectPauli <pennylane.estimator.templates.select.SelectPauli>` operator.
-    [(#8675)](https://github.com/PennyLaneAI/pennylane/pull/8675)
-
-  * The Qubitization algorithm via two new resource
-    operators: :class:`estimator.Reflection <pennylane.estimator.templates.subroutines.Reflection>` and
-    :class:`estimator.Qubitization <pennylane.estimator.templates.subroutines.Qubitization>`.
-    [(#8675)](https://github.com/PennyLaneAI/pennylane/pull/8675)
-
-  * The Quantum Signal Processing (QSP) and Quantum Singular
-    Value Transformation (QSVT) algorithms via two new resource operators: :class:`estimator.QSP <pennylane.estimator.templates.qsp.QSP>` and :class:`estimator.QSVT <pennylane.estimator.templates.qsp.QSVT>`.
-    [(#8733)](https://github.com/PennyLaneAI/pennylane/pull/8733)
-
-  * The unary iteration implementation of QPE via the new
-    :class:`estimator.UnaryIterationQPE <pennylane.estimator.templates.subroutines.UnaryIterationQPE>`
-    subroutine, which makes it possible to reduce T and Toffoli gate count, in exchange
-    for using additional qubits.
-    [(#8708)](https://github.com/PennyLaneAI/pennylane/pull/8708)
 
 * The new `resource_key` keyword argument of the
   :meth:`ResourceConfig.set_precision <pennylane.estimator.resource_config.ResourceConfig.set_precision>`
   method makes it possible to set precisions for a larger variety of `ResourceOperator`s in
   the :mod:`estimator <pennylane.estimator>` module.
   [(#8561)](https://github.com/PennyLaneAI/pennylane/pull/8561)
-
-* A new :func:`~pennylane.resource.algo_error` function has been added to compute algorithm-specific 
-  errors from quantum circuits. This provides a dedicated entry point for retrieving error information 
-  that was previously accessible through :func:`~pennylane.specs`. The function works with QNodes and 
-  returns a dictionary of error types and their computed values.
-  [(#8787)](https://github.com/PennyLaneAI/pennylane/pull/8787)
-
-  ```python
-  import pennylane as qml
-  from pennylane.resource import SpectralNormError
-  from pennylane.resource.error import ErrorOperation
-  
-  class ApproximateRX(ErrorOperation):
-      def __init__(self, phi, wires):
-          super().__init__(phi, wires=wires)
-      
-      def error(self):
-          return SpectralNormError(0.01)  # simplified example
-  
-  dev = qml.device("default.qubit")
-  
-  @qml.qnode(dev)
-  def circuit():
-      ApproximateRX(0.5, wires=0)
-      return qml.state()
-  ```
-
-  ```pycon
-  >>> qml.resource.algo_error(circuit)()
-  {'SpectralNormError': SpectralNormError(0.01)}
-  ```
 
 <h4>Seamless resource tracking and circuit visualization for compiled programs </h4>
 
