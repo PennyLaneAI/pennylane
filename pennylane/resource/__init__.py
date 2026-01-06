@@ -52,6 +52,7 @@ Error Tracking
     ~AlgorithmicError
     ~SpectralNormError
     ~ErrorOperation
+    ~algo_error
 
 .. warning::
     The functions ``estimate_error``, ``estimate_shots`` and the classes ``DoubleFactorization``,
@@ -126,7 +127,7 @@ We can examine the resources by accessing the :code:`resources` key:
 
     >>> resources_lst = tracker.history['resources']
     >>> print(resources_lst[0])
-    Total qubit allocations: 3
+    Total wire allocations: 3
     Total gates: 7
     Circuit depth: 5
     <BLANKLINE>
@@ -139,7 +140,7 @@ We can examine the resources by accessing the :code:`resources` key:
     Measurements:
       expval(PauliZ): 1
 """
-from .error import AlgorithmicError, ErrorOperation, SpectralNormError
+from .error import AlgorithmicError, ErrorOperation, SpectralNormError, algo_error
 from .resource import (
     Resources,
     ResourcesOperation,
@@ -169,9 +170,9 @@ def __getattr__(name):
         from pennylane.exceptions import PennyLaneDeprecationWarning
 
         warnings.warn(
-            f"pennylane.{name} is no longer accessible from the resource module \
-                and must be imported as pennylane.estimator.{name}. \
-                    Support for access through this module will be removed in v0.45.",
+            f"pennylane.resource.{name} is no longer accessible from the resource module "
+            f"and must be imported as pennylane.estimator.{name}. "
+            "Support for access through this module will be removed in v0.45.",
             PennyLaneDeprecationWarning,
         )
 

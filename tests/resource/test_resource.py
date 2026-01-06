@@ -56,7 +56,7 @@ def test_deprecated_items(item):
     a deprecation error."""
     with pytest.warns(
         PennyLaneDeprecationWarning,
-        match=f"pennylane.{item} is no longer accessible from the resource module",
+        match=f"pennylane.resource.{item} is no longer accessible from the resource module",
     ):
         cls_or_fn = getattr(resource, item)
 
@@ -758,7 +758,7 @@ class TestSpecsResources:
 
         s = self.example_specs_resource()
 
-        expected = "Total qubit allocations: 2\n"
+        expected = "Total wire allocations: 2\n"
         expected += "Total gates: 3\n"
         expected += "Circuit depth: 2\n"
         expected += "\n"
@@ -779,7 +779,7 @@ class TestSpecsResources:
 
         s = SpecsResources(gate_types={}, gate_sizes={}, measurements={}, num_allocs=0)
 
-        expected = "Total qubit allocations: 0\n"
+        expected = "Total wire allocations: 0\n"
         expected += "Total gates: 0\n"
         expected += "Circuit depth: Not computed\n"
         expected += "\n"

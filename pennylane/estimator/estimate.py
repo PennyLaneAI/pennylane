@@ -33,9 +33,9 @@ from .wires_manager import Allocate, Deallocate, WireResourceManager
 # pylint: disable=too-many-arguments
 
 _SYMBOLIC_DECOMP_MAP = {
-    Adjoint: "_adj_custom_decomps",
-    Controlled: "_ctrl_custom_decomps",
-    Pow: "_pow_custom_decomps",
+    Adjoint: ("adj_custom_decomps", "adjoint_resource_decomp"),
+    Controlled: ("ctrl_custom_decomps", "controlled_resource_decomp"),
+    Pow: ("pow_custom_decomps", "pow_resource_decomp"),
 }
 
 
@@ -405,6 +405,44 @@ def _resources_from_pl_ops(
     )
 
 
+def _get_symbolic_resource_decomposition(decomp_func, params, filtered_kwargs):
+    """Get resource decomposition for symbolic operators."""
+    base_cmpr_op = params.pop("base_cmpr_op")
+
+    target_params = base_cmpr_op.params.copy()
+    for k, v in filtered_kwargs.items():
+        if k in target_params and target_params[k] is None:
+            target_params[k] = v
+
+    params["target_resource_params"] = target_params
+
+    return decomp_func(**params)
+
+
+def _get_resource_decomposition(comp_res_op: CompressedResourceOp, config: ResourceConfig):
+    """Get the resource decomposition for a compressed resource operator.
+
+    Args:
+        comp_res_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): operator in compressed representation to extract resources from
+        config (ResourceConfig):  A ``ResourceConfig`` object containing the additional
+        parameters required to estimate the resources for an operator. Defaults to
+        :class:`pennylane.estimator.resource_config.ResourceConfig`.
+
+    Returns:
+        list: The resource decomposition.
+    """
+    decomp_func, kwargs = _get_decomposition_function_and_kwargs(comp_res_op, config)
+
+    params = {key: value for key, value in comp_res_op.params.items() if value is not None}
+    filtered_kwargs = {key: value for key, value in kwargs.items() if key not in params}
+
+    op_type = comp_res_op.op_type
+    if op_type in (Adjoint, Controlled, Pow):
+        return _get_symbolic_resource_decomposition(decomp_func, params, filtered_kwargs)
+
+    return decomp_func(**params, **filtered_kwargs)
+
+
 def _update_counts_from_compressed_res_op(
     comp_res_op: CompressedResourceOp,
     gate_counts_dict: dict,
@@ -435,12 +473,7 @@ def _update_counts_from_compressed_res_op(
         gate_counts_dict[comp_res_op] += scalar
         return
 
-    ## Otherwise need to use its resource decomp to extract the resources
-    decomp_func, kwargs = _get_decomposition(comp_res_op, config)
-
-    params = {key: value for key, value in comp_res_op.params.items() if value is not None}
-    filtered_kwargs = {key: value for key, value in kwargs.items() if key not in params}
-    resource_decomp = decomp_func(**params, **filtered_kwargs)
+    resource_decomp = _get_resource_decomposition(comp_res_op, config)
     qubit_alloc_sum = _sum_allocated_wires(resource_decomp)
 
     for action in resource_decomp:
@@ -453,22 +486,14 @@ def _update_counts_from_compressed_res_op(
                 gate_set=gate_set,
                 config=config,
             )
-            continue
-
-        if isinstance(action, Allocate):
+        elif isinstance(action, Allocate):
             # When qubits are allocated and deallocate in equal numbers, we allocate and deallocate
             # in series, meaning we don't need to apply the scalar
-            if qubit_alloc_sum != 0:
-                wire_manager.grab_zeroed(action.num_wires * scalar)
-            else:
-                wire_manager.grab_zeroed(action.num_wires)
-        if isinstance(action, Deallocate):
-            if qubit_alloc_sum != 0:
-                wire_manager.free_wires(action.num_wires * scalar)
-            else:
-                wire_manager.free_wires(action.num_wires)
-
-    return
+            num_wires = action.num_wires * scalar if qubit_alloc_sum != 0 else action.num_wires
+            wire_manager.grab_zeroed(num_wires)
+        elif isinstance(action, Deallocate):
+            num_wires = action.num_wires * scalar if qubit_alloc_sum != 0 else action.num_wires
+            wire_manager.free_wires(num_wires)
 
 
 def _sum_allocated_wires(decomp):
@@ -504,7 +529,7 @@ def _ops_to_compressed_reps(
     return cmp_rep_ops
 
 
-def _get_decomposition(
+def _get_decomposition_function_and_kwargs(
     comp_res_op: CompressedResourceOp, config: ResourceConfig
 ) -> tuple[Callable, dict]:
     """
@@ -515,7 +540,7 @@ def _get_decomposition(
 
     Args:
         comp_res_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): The operator to find the decomposition for.
-        config (:class:`~.pennylane.estimator.resource_config.ResourceConfig`): The configuration object containing decomposition rules.
+        config (:class:`~.pennylane.estimator.resource_config.ResourceConfig`): The ``ResourceConfig`` containing custom decompositions.
 
     Returns:
         A tuple containing the decomposition function and its associated kwargs.
@@ -523,13 +548,17 @@ def _get_decomposition(
     op_type = comp_res_op.op_type
     lookup_op_type = op_type
     custom_decomp_dict = config.custom_decomps
+    decomp_func = op_type.resource_decomp
 
     if op_type in _SYMBOLIC_DECOMP_MAP:
-        decomp_attr_name = _SYMBOLIC_DECOMP_MAP[op_type]
+        decomp_attr_name, decomp_method_name = _SYMBOLIC_DECOMP_MAP[op_type]
         custom_decomp_dict = getattr(config, decomp_attr_name)
         lookup_op_type = comp_res_op.params["base_cmpr_op"].op_type
+        decomp_func = custom_decomp_dict.get(
+            lookup_op_type, getattr(lookup_op_type, decomp_method_name)
+        )
 
     kwargs = config.resource_op_precisions.get(lookup_op_type, {})
-    decomp_func = custom_decomp_dict.get(lookup_op_type, op_type.resource_decomp)
+    decomp_func = custom_decomp_dict.get(lookup_op_type, decomp_func)
 
     return decomp_func, kwargs

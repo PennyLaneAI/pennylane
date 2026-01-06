@@ -33,7 +33,7 @@ jobs:
     env:
       UV_SYSTEM_PYTHON: 1
 
-    name: Documentation Tests on Python 3.11 
+    name: Documentation Tests on Python 3.11
 
     steps:
       - name: Checkout repository
@@ -50,11 +50,11 @@ jobs:
           version: 0.6.5
           enable-cache: true  
       - name: Install pip and setuptools
-        run: | 
+        run: |
           python -m pip install --upgrade pip
           uv pip install --upgrade setuptools
 
-      - name: Install Catalyst and Lightning (dev) 
+      - name: Install Catalyst and Lightning (dev)
         run: |
           uv pip install --upgrade --extra-index-url https://test.pypi.org/simple/ --index-url https://pypi.org/simple/ --index-strategy first-index --pre --no-deps pennylane-catalyst pennylane-lightning
 
@@ -65,7 +65,7 @@ jobs:
           uv pip install sybil pytest "jax==0.7.1" "jaxlib==0.7.1" torch matplotlib pyzx                  
 
       - name: Print Dependencies
-        run: | 
+        run: |
           python -c "import pennylane as qml; qml.about()"
           uv pip list
 
