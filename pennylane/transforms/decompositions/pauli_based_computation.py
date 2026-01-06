@@ -94,23 +94,22 @@ def to_ppr(tape):
     Level: 2
     <BLANKLINE>
     Resource specifications:
-    Total wire allocations: 2
-    Total gates: 8
-    Circuit depth: Not computed
+        Total wire allocations: 2
+        Total gates: 8
+        Circuit depth: Not computed
     <BLANKLINE>
     Gate types:
-        PPR-pi/4-w1: 5
-        PPR-pi/4-w2: 1
-        PPM-w1: 1
-        PPR-pi/8-w1: 1
+        PPR-pi/4: 6
+        PPM: 1
+        PPR-pi/8: 1
     <BLANKLINE>
     Measurements:
         expval(PauliZ): 1
 
-    In the above output, ``PPR-theta-weight`` denotes the type of PPR present in the circuit, where
-    ``theta`` is the PPR angle (:math:`\theta`) and ``weight`` is the PPR weight. Note that the
-    mid-circuit measurement in the circuit has been converted to a Pauli product measurement (PPM),
-    as well.
+    In the above output, ``PPR-theta`` denotes the type of PPR present in the circuit, where
+    ``theta`` is the PPR angle (:math:`\theta`). Note that the mid-circuit measurement
+    (:func:`~.measure`) in the circuit has been converted to a Pauli product measurement (PPM), as
+    well.
     """
     raise NotImplementedError(
         "The to_ppr compilation pass has no tape implementation, and can only be applied when decorating the entire worfklow with @qml.qjit and when it is placed after all transforms that only have a tape implementation."
@@ -171,6 +170,7 @@ def commute_ppr(tape, *, max_pauli_size=0):
 
         @qml.qjit(target="mlir")
         @partial(qml.transforms.commute_ppr, max_pauli_size=2)
+        @qml.transforms.to_ppr
         @qml.qnode(qml.device("null.qubit", wires=2))
         def circuit():
 
@@ -199,23 +199,22 @@ def commute_ppr(tape, *, max_pauli_size=0):
     Level: 3
     <BLANKLINE>
     Resource specifications:
-    Total wire allocations: 2
-    Total gates: 5
-    Circuit depth: Not computed
+        Total wire allocations: 2
+        Total gates: 5
+        Circuit depth: Not computed
     <BLANKLINE>
     Gate types:
-        PPR-pi/8-w1: 1
-        PPR-pi/4-w1: 3
-        PPR-pi/4-w2: 1
+        PPR-pi/8: 1
+        PPR-pi/4: 4
     <BLANKLINE>
     Measurements:
         expval(PauliZ): 1
 
     In the example above, the Clifford PPRs (:class:`~.PauliRot` instances with an angle of rotation
-    of :math:`\tfrac{\pi}{2}) will be commuted past the non-Clifford PPR (:class:`~.PauliRot`
-    instances with an angle of rotation of :math:`\tfrac{\pi}{4}). In the output above,
-    ``PPR-theta-weight`` denotes the type of PPR present in the circuit, where ``theta`` is the PPR
-    angle (:math:`\theta`) and ``weight`` is the PPR weight.
+    of :math:`\tfrac{\pi}{2}`) will be commuted past the non-Clifford PPR (:class:`~.PauliRot`
+    instances with an angle of rotation of :math:`\tfrac{\pi}{4}`). In the output above,
+    ``PPR-theta`` denotes the type of PPR present in the circuit, where ``theta`` is the PPR
+    angle (:math:`\theta`).
 
     Note that if a commutation resulted in a PPR acting on more than ``max_pauli_size`` qubits
     (here, ``max_pauli_size = 2``), that commutation would be skipped.
@@ -304,14 +303,11 @@ def merge_ppr_ppm(tape=None, *, max_pauli_size=0):
     Circuit depth: Not computed
     <BLANKLINE>
     Gate types:
-        PPM-w2: 1
-        PPR-pi/4-w1: 1
+        PPM: 1
+        PPR-pi/4: 1
     <BLANKLINE>
     Measurements:
         expval(PauliZ): 1
-
-    In the above output, ``PPM-weight`` denotes the type of PPM present in the circuit, where
-    ``weight`` is the PPM weight.
 
     If a merging resulted in a PPM acting on more than ``max_pauli_size`` qubits, that merging
     operation would be skipped.
@@ -418,27 +414,22 @@ def ppr_to_ppm(tape=None, *, decompose_method="pauli-corrected", avoid_y_measure
     Level: 3
     <BLANKLINE>
     Resource specifications:
-    Total wire allocations: 6
-    Total gates: 16
+    Total wire allocations: 7
+    Total gates: 18
     Circuit depth: Not computed
     <BLANKLINE>
     Gate types:
-        PPM-w2: 4
-        PPM-w1: 5
-        PPM-w3: 1
-        PPR-pi/2-w1: 4
-        PPR-pi/2-w2: 1
+        PPM: 12
+        PPR-pi/2: 5
         qec.fabricate: 1
     <BLANKLINE>
     Measurements:
         expval(PauliZ): 1
 
-    In the above output, ``PPM-weight`` denotes the type of PPM present in the circuit, where
-    ``weight`` is the PPM weight. ``PPR-theta-weight`` denotes the type of PPR present in the
-    circuit, where ``theta`` is the PPR angle (:math:`\theta`) and ``weight`` is the PPR weight.
-    Note that :math:`\theta = \tfrac{\pi}{2}` PPRs correspond to Pauli operators:
-    :math:`P(\tfrac{\pi}{2}) = \exp(-iP\tfrac{\pi}{2}) = P`. Pauli operators can be commuted to the
-    end of the circuit and absorbed into terminal measurements.
+    In the above output, ``PPR-theta`` denotes the type of PPR present in the circuit, where
+    ``theta`` is the PPR angle (:math:`\theta`). Note that :math:`\theta = \tfrac{\pi}{2}` PPRs
+    correspond to Pauli operators (:math:`P(\tfrac{\pi}{2}) = \exp(-iP\tfrac{\pi}{2}) = P`). Pauli
+    operators can be commuted to the end of the circuit and absorbed into terminal measurements.
     """
     raise NotImplementedError(
         "The ppr_to_ppm compilation pass has no tape implementation, and can only be applied when decorating the entire worfklow with @qml.qjit and when it is placed after all transforms that only have a tape implementation."
@@ -534,27 +525,22 @@ def ppm_compilation(
     Level: 2
     <BLANKLINE>
     Resource specifications:
-    Total wire allocations: 7
-    Total gates: 19
+    Total wire allocations: 8
+    Total gates: 22
     Circuit depth: Not computed
     <BLANKLINE>
     Gate types:
         qec.fabricate: 1
-        PPM-w2: 5
-        PPM-w1: 6
-        PPM-w3: 1
-        PPR-pi/2-w1: 5
-        PPR-pi/2-w2: 1
+        PPM: 14
+        PPR-pi/2: 7
     <BLANKLINE>
     Measurements:
         expval(PauliZ): 1
 
-    In the above output, ``PPM-weight`` denotes the type of PPM present in the circuit, where
-    ``weight`` is the PPM weight. ``PPR-theta-weight`` denotes the type of PPR present in the
-    circuit, where ``theta`` is the PPR angle (:math:`\theta`) and ``weight`` is the PPR weight.
-    Note that :math:`\theta = \tfrac{\pi}{2}` PPRs correspond to Pauli operators:
-    :math:`P(\tfrac{\pi}{2}) = \exp(-iP\tfrac{\pi}{2}) = P`. Pauli operators can be commuted to the
-    end of the circuit and absorbed into terminal measurements.
+    In the above output, ``PPR-theta`` denotes the type of PPR present in the circuit, where
+    ``theta`` is the PPR angle (:math:`\theta`). Note that :math:`\theta = \tfrac{\pi}{2}` PPRs
+    correspond to Pauli operators (:math:`P(\tfrac{\pi}{2}) = \exp(-iP\tfrac{\pi}{2}) = P`). Pauli
+    operators can be commuted to the end of the circuit and absorbed into terminal measurements.
 
     Note that if a commutation or merge resulted in a PPR or PPM acting on more than
     ``max_pauli_size`` qubits (here, ``max_pauli_size = 2``), that commutation or merge would be
@@ -611,16 +597,14 @@ def reduce_t_depth(qnode):
     .. code-block:: python
 
         import pennylane as qml
-        from catalyst import qjit, measure
-        from catalyst.passes import to_ppr, commute_ppr, reduce_t_depth, merge_ppr_ppm
 
-        pips = [("pipe", ["quantum-compilation-stage"])]
+        qml.capture.enable()
 
-        @qjit(pipelines=pips, target="mlir")
-        @reduce_t_depth
-        @merge_ppr_ppm
-        @commute_ppr
-        @to_ppr
+        @qml.qjit(target="mlir")
+        @qml.transforms.reduce_t_depth
+        @qml.transforms.merge_ppr_ppm
+        @qml.transforms.commute_ppr
+        @qml.transforms.to_ppr
         @qml.qnode(qml.device("null.qubit", wires=3))
         def circuit():
             n = 3
@@ -739,14 +723,16 @@ def decompose_arbitrary_ppr(qnode):
     <BLANKLINE>
     Gate types:
         qec.prepare: 1
-        PPM-w3: 1
-        PPM-w1: 1
-        PPR-pi/2-w1: 1
-        PPR-pi/2-w2: 1
+        PPM: 2
+        PPR-pi/2: 2
         PPR-Phi: 1
     <BLANKLINE>
     Measurements:
         expval(PauliZ): 1
+
+    In the above output, ``PPR-theta`` denotes the type of PPR present in the circuit, where
+    ``theta`` is the PPR angle (:math:`\theta`). ``PPR-Phi`` corresponds to a PPR whose angle of
+    rotation is not :math:`\tfrac{\pi}{2}`, :math:`\tfrac{\pi}{4}`, or :math:`\tfrac{\pi}{8}`.
     """
     raise NotImplementedError(
         "The decompose_arbitrary_ppr compilation pass has no tape implementation, and can only be applied when decorating the entire worfklow with @qml.qjit and when it is placed after all transforms that only have a tape implementation."
