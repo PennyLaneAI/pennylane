@@ -375,7 +375,10 @@ class PauliRot(Operation):
 
         """
         pauli_word = self.hyperparameters["pauli_word"]
-        op_label = base_label or ("R" + pauli_word)
+        if len(self.wires) == 1:
+            op_label = f"R({pauli_word})"
+        else:
+            op_label = base_label or ("R" + pauli_word)
 
         # TODO[dwierichs]: Implement a proper label for parameter-broadcasted operators
         if decimals is not None and self.batch_size is None:
