@@ -436,7 +436,7 @@ class _CachedCallable:
 def clifford_t_decomposition(
     tape: QuantumScript,
     epsilon=1e-4,
-    method="sk",
+    method="gridsynth",
     cache_size=1000,
     cache_eps_rtol=None,
     **method_kwargs,
@@ -451,40 +451,36 @@ def clifford_t_decomposition(
     - Two qubit gates - :class:`~.CNOT`, :class:`~.CY`, :class:`~.CZ`, :class:`~.SWAP`, and :class:`~.ISWAP`.
 
     Then, the leftover single qubit :class:`~.RZ` operations are approximated in the Clifford+T basis with
-    :math:`\epsilon > 0` error. By default, we use the Solovay-Kitaev algorithm described in
-    `Dawson and Nielsen (2005) <https://arxiv.org/abs/quant-ph/0505030>`_ for this.
-    Alternatively, the Ross-Selinger algorithm described in `Ross and Selinger (2016) <https://arxiv.org/abs/1403.2975v3>`_
-    can be used by setting the ``method`` to ``"gridsynth"``.
+    :math:`\epsilon > 0` error. By default, we use the Ross-Selinger algorithm described in
+    `Ross and Selinger (2016) <https://arxiv.org/abs/1403.2975v3>`_ for this. Alternatively,
+    the Solovay-Kitaev algorithm described in `Dawson and Nielsen (2005) <https://arxiv.org/abs/quant-ph/0505030>`_
+    can be used via ``method="sk"`` instead.
 
     Args:
         tape (QNode or QuantumTape or Callable): The quantum circuit to be decomposed.
         epsilon (float): The maximum permissible operator norm error of the complete circuit decomposition. Defaults to ``0.0001``.
-        method (str): Method to be used for Clifford+T decomposition. Default value is ``"sk"`` for Solovay-Kitaev. Alternatively,
-            the Ross-Selinger algorithm can be used with ``"gridsynth"``.
+        method (str): Method to be used for Clifford+T decomposition. Default value is ``"gridsynth"`` for Ross-Selinger algorithm.
+            Alternatively, the Solovay-Kitaev decomposition can be used with ``"sk"``.
         cache_size (int): The size of the cache built for the decomposition function based on the angle. Defaults to ``1000``.
         cache_eps_rtol (Optional[float]): The relative tolerance for ``epsilon`` values between which the cache may be reused.
             Defaults to ``None``, which means that a cached decomposition will be used if it is `at least as precise` as the requested error.
         **method_kwargs: Keyword argument to pass options for the ``method`` used for decompositions.
 
-    Returns:
-        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as described
-        in the :func:`qml.transform <pennylane.transform>`.
-
     **Keyword Arguments**
-
-    - Solovay-Kitaev decomposition --
-        **max_depth** (int), **basis_set** (list[str]), **basis_length** (int) -- arguments for the ``"sk"`` method,
-        where the decomposition is performed using the :func:`~.sk_decomposition` method.
 
     - Ross-Selinger (``gridsynth``) decomposition --
         **max_search_trials** (int), **max_factoring_trials** (int) -- arguments for the ``"gridsynth"`` method,
         where the decomposition is performed using the :func:`~.rs_decomposition` method.
 
+    - Solovay-Kitaev decomposition --
+        **max_depth** (int), **basis_set** (list[str]), **basis_length** (int) -- arguments for the ``"sk"`` method,
+        where the decomposition is performed using the :func:`~.sk_decomposition` method.
+
     Raises:
         ValueError: If a gate operation does not have a decomposition when required.
         NotImplementedError: If chosen decomposition ``method`` is not supported.
 
-    .. seealso:: :func:`~.rs_decomposition` and :func:`~.sk_decomposition` for Ross-Selinger and Solovay-Kitaev decomposition methods, respectively.
+    .. seealso:: :func:`~.rs_decomposition` and :func:`~.sk_decomposition` for the Ross-Selinger and Solovay-Kitaev decomposition methods, respectively.
 
     **Example**
 
