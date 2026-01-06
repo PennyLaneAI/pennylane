@@ -194,7 +194,7 @@ def _specs_qjit_intermediate_passes(
     marker_to_level = {
         trans.kwargs["level"]: i + 1
         for i, trans in enumerate(trans_prog)
-        if trans.transform == qml.marker.transform
+        if trans.tape_transform == qml.marker.tape_transform
     }
     level_to_marker = {v: k for k, v in marker_to_level.items()}
 
