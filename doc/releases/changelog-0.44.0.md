@@ -680,6 +680,7 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
   ]
 
   print(select_pauli_rot_circ(phis, control_wires=[0, 1], target_wire="targ"))
+  ```
 
 <h3>Breaking changes 💔</h3>
 
