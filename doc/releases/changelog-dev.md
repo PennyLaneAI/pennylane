@@ -198,7 +198,7 @@
   ```
 
   By applying the created ``pipeline`` directly on a quantum function as a decorator, the circuit can
-  be transformed with each pass within the pipeline:
+  be transformed with each pass therein:
 
   ```python
   import pennylane as qml
