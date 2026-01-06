@@ -88,11 +88,12 @@ They can additionally be stacked, allowing for the application of multiple compi
         return qml.expval(qml.Z(0))
 
 Alternatively, multiple transforms can be chained together into custom circuit optimization pipelines
-via the :class:`~.CompilePipeline` class. 
+via the :class:`~.CompilePipeline` class. The defined compilation program can then be applied on a
+``QNode``, which will transform the circuit with each pass therein.
 
-For example, a sequence of three transforms: :func:`~.pennylane.transforms.commute_controlled`,
-:func:`~.pennylane.transforms.cancel_inverses`, and :func:`~.pennylane.transforms.merge_rotations` can be combined
-into a pipeline:
+For example, by constructing a pipeline with the sequence of three transforms: :func:`~.pennylane.transforms.commute_controlled`,
+:func:`~.pennylane.transforms.cancel_inverses`, and :func:`~.pennylane.transforms.merge_rotations`,
+the number of gates in the following quantum circuit can be reduced by almost a half:
 
 .. code-block:: python
 
@@ -101,11 +102,6 @@ into a pipeline:
         qml.transforms.cancel_inverses(recursive=True),
         qml.transforms.merge_rotations,
     )
-
-The defined compilation program can then be applied on a ``QNode``, which will transform the
-circuit with each pass therein:
-
-.. code-block:: python
 
     @pipeline
     @qml.qnode(qml.device("default.qubit"))

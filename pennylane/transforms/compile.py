@@ -42,8 +42,9 @@ def compile(
 
     .. note::
 
-        For creating large & complex compilation pipelines in a natural way we recommend using the
-        new :class:`~.CompilePipeline` class.
+        While ``qml.compile`` is useful for initial exploration by appliying a default set of
+        transforms, the new :class:`~.CompilePipeline` class is the recommended tool for
+        constructing large & modular compilation pipelines in a natural way.
 
     The default set of transforms includes (in order):
 
