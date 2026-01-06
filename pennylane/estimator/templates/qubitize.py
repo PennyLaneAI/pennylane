@@ -299,16 +299,21 @@ class QubitizeTHC(ResourceOperator):
         tensor_rank = thc_ham.tensor_rank
         m_register = int(np.ceil(np.log2(tensor_rank)))
 
-        select_kwargs = {"thc_ham": thc_ham}
+        select_kwargs = {
+            "thc_ham": thc_ham,
+            "select_swap_depth": select_op.params["select_swap_depth"],
+            "num_batches": select_op.params["num_batches"],
+        }
         if rotation_precision:
             select_kwargs["rotation_precision"] = rotation_precision
 
         if rotation_precision or select_op is None:
             # Select cost from Figure 5 in arXiv:2011.03494
             select_op = resource_rep(SelectTHC, select_kwargs)
+        print(select_op)
         gate_list.append(GateCount(select_op))
 
-        prep_kwargs = {"thc_ham": thc_ham}
+        prep_kwargs = {"thc_ham": thc_ham, "select_swap_depth": prep_op.params["select_swap_depth"]}
         if coeff_precision:
             prep_kwargs["coeff_precision"] = coeff_precision
 
@@ -372,7 +377,11 @@ class QubitizeTHC(ResourceOperator):
             gate_list.append(Allocate(1))
             gate_list.append(GateCount(mcx, 2))
 
-        select_kwargs = {"thc_ham": thc_ham}
+        select_kwargs = {
+            "thc_ham": thc_ham,
+            "select_swap_depth": select_op.params["select_swap_depth"],
+            "num_batches": select_op.params["num_batches"],
+        }
         if rotation_precision:
             select_kwargs["rotation_precision"] = rotation_precision
 
@@ -388,7 +397,7 @@ class QubitizeTHC(ResourceOperator):
             )
         )
 
-        prep_kwargs = {"thc_ham": thc_ham}
+        prep_kwargs = {"thc_ham": thc_ham, "select_swap_depth": prep_op.params["select_swap_depth"]}
         if coeff_precision:
             prep_kwargs["coeff_precision"] = coeff_precision
 
