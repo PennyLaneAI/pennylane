@@ -273,7 +273,7 @@
   pass is performed in MLIR or xDSL.
   [(#8539)](https://github.com/PennyLaneAI/pennylane/pull/8539)
 
-<h4>Analyzing algorithms quickly and easily with resource estimation</h4>
+<h4>Analyzing algorithms quickly and easily with resource estimation 📖</h4>
 
 * A new :func:`~pennylane.resource.algo_error` function has been added to compute algorithm-specific 
   errors from quantum circuits. This provides a dedicated entry point for retrieving error information 
@@ -299,7 +299,7 @@
   {'SpectralNormError': SpectralNormError(0.25)}
   ```
 
-* Resource estimation is now available for many new algorithms. These include:
+* Fast resource estimation is now available for many algorithms, including:
    
   * The **Generalized Quantum Signal Processing** (GQSP)
     algorithm and its time evolution via the :class:`estimator.GQSP <pennylane.estimator.templates.qsp.GQSP>` and
@@ -317,7 +317,7 @@
 
   * The **unary iteration implementation of QPE** via the new
     :class:`estimator.UnaryIterationQPE <pennylane.estimator.templates.subroutines.UnaryIterationQPE>`
-    subroutine, which makes it possible to reduce T and Toffoli gate count, in exchange
+    subroutine, which makes it possible to reduce ``T`` and ``Toffoli`` gate counts in exchange
     for using additional qubits.
     [(#8708)](https://github.com/PennyLaneAI/pennylane/pull/8708)
 
@@ -331,8 +331,9 @@
     :class:`estimator.TrotterPauli <pennylane.estimator.templates.TrotterPauli>`
     resource operator. [(#8546)](https://github.com/PennyLaneAI/pennylane/pull/8546)
     [(#8761)](https://github.com/PennyLaneAI/pennylane/pull/8761)
+    
     ```pycon
-    >>> pauli_terms = {"X":10, "XX":5, "XXXX":3, "YY": 5, "ZZ":5, "Z": 2}
+    >>> pauli_terms = {"X": 10, "XX": 5, "XXXX": 3, "YY": 5, "ZZ":5, "Z": 2}
     >>> pauli_ham = qre.PauliHamiltonian(num_qubits=10, pauli_terms=pauli_terms)
     >>> res = qre.estimate(qre.TrotterPauli(pauli_ham, num_steps=1, order=2))
     >>> res.total_gates
@@ -351,6 +352,7 @@
   method makes it possible to set precisions for a larger variety of `ResourceOperator`s in
   the :mod:`estimator <pennylane.estimator>` module.
   [(#8561)](https://github.com/PennyLaneAI/pennylane/pull/8561)
+  
   ```pycon
   >>> vibration_ham = qre.VibrationalHamiltonian(num_modes=2, grid_size=4, taylor_degree=2)
   >>> trotter = qre.TrotterVibrational(vibration_ham, num_steps=10, order=2)
