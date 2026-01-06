@@ -612,8 +612,33 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
 
 <h4>Other improvements</h4>
 
-* The constant to convert the length unit Bohr to Angstrom in ``qml.qchem`` is updated to use scipy constants.
+* The constant to convert the length unit Bohr to Angstrom in ``qml.qchem`` has been updated to use scipy
+  constants, leading to more consistent and standardized conversion.
   [(#8537)](https://github.com/PennyLaneAI/pennylane/pull/8537)
+
+* It is now possible to specify transform decorator arguments without `@partial`.
+  The following two usages are equivalent:
+
+  ```python
+  @partial(qml.transforms.decompose, gate_set={qml.RX, qml.CNOT})
+  @qml.qnode(qml.device('default.qubit', wires=2))
+  def circuit():
+      qml.Hadamard(wires=0)
+      qml.CZ(wires=[0,1])
+      return qml.expval(qml.Z(0))
+  ```
+
+  ```python
+  @qml.transforms.decompose(gate_set={qml.RX, qml.CNOT})
+  @qml.qnode(qml.device('default.qubit', wires=2))
+  def circuit():
+      qml.Hadamard(wires=0)
+      qml.CZ(wires=[0,1])
+      return qml.expval(qml.Z(0))
+  ```
+
+  [(#8730)](https://github.com/PennyLaneAI/pennylane/pull/8730)
+  [(#8754)](https://github.com/PennyLaneAI/pennylane/pull/8754)
 
 * :class:`~.transforms.core.TransformContainer` has been renamed to :class:`~.transforms.core.BoundTransform`.
   The old name is still available in the same location.
@@ -643,8 +668,9 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
   capture, allowing for `qml.qjit(qml.grad(c))` and `qml.qjit(qml.jacobian(c))` to work.
   [(#8382)](https://github.com/PennyLaneAI/pennylane/pull/8382)
 
-* Both the generic and transform-specific application behavior of a :class:`~.transforms.core.Transform`
-  can be overwritten with `Transform.generic_register` and `my_transform.register`.
+* Both the generic and transform-specific application behavior of a `qml.transforms.core.TransformDispatcher`
+  can now be overwritten with `TransformDispatcher.generic_register` and `my_transform.register`, leading
+  to easier customization of transforms.
   [(#7797)](https://github.com/PennyLaneAI/pennylane/pull/7797)
 
 * With capture enabled, measurements can now be performed on `Operator` instances passed as closure
