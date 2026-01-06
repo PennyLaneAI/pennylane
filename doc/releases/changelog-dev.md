@@ -182,8 +182,7 @@
 
 <h4>Flexible and modular compilation pipelines 🦋</h4>
 
-* A new :class:`~.CompilePipeline` class is now available at the top level as ``qml.CompilePipeline``.
-  Using this class you can now define large and complex compilation pipelines in an intuitive and flexible way.
+* Defining large and complex compilation pipelines in intuitive, modular, and flexible ways is now possible with the new :class:`~.CompilePipeline` class.
   [(#8735)](https://github.com/PennyLaneAI/pennylane/pull/8735)
   [(#8750)](https://github.com/PennyLaneAI/pennylane/pull/8750)
   [(#8731)](https://github.com/PennyLaneAI/pennylane/pull/8731)
