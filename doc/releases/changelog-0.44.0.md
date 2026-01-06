@@ -639,8 +639,8 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
-* A new transform :func:`~.transforms.select_pauli_rot_phase_gradient` has been added. This transform
-  may reduce the number of T gates in circuits with :class:`~.SelectPauliRot` rotations by
+* A new transform :func:`~labs.transforms.select_pauli_rot_phase_gradient` has been added. This transform
+  may reduce the number of ``T`` gates in circuits with :class:`~.SelectPauliRot` rotations by
   implementing them with a phase gradient resource state and semi-in-place addition (:class:`~.SemiAdder`).
   [(#8738)](https://github.com/PennyLaneAI/pennylane/pull/8738)
 
