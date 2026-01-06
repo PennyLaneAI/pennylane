@@ -384,6 +384,7 @@ def gather_mcm_qjit(measurement, samples, is_valid, postselect_mode=None):  # pr
             return counts / sum_valid
     return gather_non_mcm(measurement, meas, is_valid, postselect_mode=postselect_mode)
 
+
 @singledispatch
 def gather_non_mcm(measurement, samples, is_valid, postselect_mode=None) -> TensorLike:
     """Combines, gathers and normalizes several measurements with trivial measurement values.
