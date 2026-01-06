@@ -154,7 +154,7 @@ class TestExecutionConfig:
         """Test that invalid types for gradient_method raise an error."""
         with pytest.raises(
             ValueError,
-            match=r"Differentiation method .* must be a str, TransformDispatcher, or None",
+            match=r"Differentiation method .* must be a str, Transform, or None",
         ):
             _ = ExecutionConfig(gradient_method=invalid_method)
 

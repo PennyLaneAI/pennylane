@@ -24,6 +24,7 @@ from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
     ResourceOperator,
+    _dequeue,
     resource_rep,
 )
 from pennylane.estimator.templates.select import SelectTHC
@@ -72,17 +73,17 @@ class QubitizeTHC(ResourceOperator):
     >>> print(res)
     --- Resources: ---
      Total wires: 400
-        algorithmic wires: 102
-        allocated wires: 298
-             zero state: 298
-             any state: 0
-     Total gates : 8.072E+4
-      'Toffoli': 3.250E+3,
-      'CNOT': 6.787E+4,
-      'X': 1.351E+3,
-      'Z': 41,
-      'S': 80,
-      'Hadamard': 8.133E+3
+       algorithmic wires: 102
+       allocated wires: 298
+         zero state: 298
+         any state: 0
+     Total gates : 5.310E+4
+       'Toffoli': 3.151E+3,
+       'CNOT': 3.962E+4,
+       'X': 1.459E+3,
+       'Z': 41,
+       'S': 80,
+       'Hadamard': 8.758E+3
 
     .. details::
         :title: Usage Details
@@ -118,8 +119,6 @@ class QubitizeTHC(ResourceOperator):
             )
 
         self.thc_ham = thc_ham
-        self.prep_op = prep_op.resource_rep_from_op() if prep_op else None
-        self.select_op = select_op.resource_rep_from_op() if select_op else None
         self.coeff_precision = coeff_precision
         self.rotation_precision = rotation_precision
 
@@ -135,6 +134,22 @@ class QubitizeTHC(ResourceOperator):
         if rotation_precision is None:
             rotation_precision = select_op.rotation_precision if select_op else 15
         self.rotation_precision = rotation_precision
+
+        if prep_op is None:
+            prep_op = PrepTHC(
+                thc_ham,
+                coeff_precision=coeff_precision,
+            )
+        _dequeue(prep_op)
+        self.prep_op = prep_op.resource_rep_from_op()
+
+        if select_op is None:
+            select_op = SelectTHC(
+                thc_ham,
+                rotation_precision=rotation_precision,
+            )
+        _dequeue(select_op)
+        self.select_op = select_op.resource_rep_from_op()
 
         # Algorithmic wires for the walk operator, based on section III D in arXiv:2011.03494.
         # The auxiliary wires are excluded and accounted for by the included templates: QROM, SemiAdder, SelectTHC.

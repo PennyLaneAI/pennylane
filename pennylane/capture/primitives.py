@@ -17,7 +17,7 @@ created in pennylane.
 
 It has a jax dependency and should be located in a standard import path.
 """
-from pennylane._grad import _get_jacobian_prim
+from pennylane._grad.grad import _get_jacobian_prim
 from pennylane.control_flow.for_loop import _get_for_loop_qfunc_prim
 from pennylane.control_flow.while_loop import _get_while_loop_qfunc_prim
 from pennylane.measurements.capture_measurements import _get_abstract_measurement

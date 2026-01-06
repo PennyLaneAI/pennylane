@@ -15,6 +15,8 @@ r"""This module contains resource templates."""
 
 from .subroutines import (
     OutOfPlaceSquare,
+    IQP,
+    BBQRAM,
     PhaseGradient,
     OutMultiplier,
     SemiAdder,
@@ -27,6 +29,9 @@ from .subroutines import (
     ControlledSequence,
     QPE,
     IterativeQPE,
+    UnaryIterationQPE,
+    Reflection,
+    Qubitization,
 )
 
 from .trotter import (
@@ -47,4 +52,5 @@ from .comparators import (
     RegisterComparator,
 )
 from .qubitize import QubitizeTHC
-from .select import SelectTHC
+from .select import SelectTHC, SelectPauli
+from .qsp import GQSP, GQSPTimeEvolution, QSP, QSVT

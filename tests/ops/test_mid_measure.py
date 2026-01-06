@@ -26,6 +26,32 @@ from pennylane.wires import Wires
 # pylint: disable=too-few-public-methods, too-many-public-methods
 
 
+@pytest.mark.external
+@pytest.mark.catalyst
+def test_measure_catalyst_dispatch():
+    """Test that qml.measure can be used with qjit and capture disabled."""
+
+    pytest.importorskip("catalyst")
+
+    @qml.qjit
+    @qml.qnode(qml.device("lightning.qubit", wires=2))
+    def c():
+        qml.X(0)
+        m = qml.measure(0, reset=True, postselect=True)
+
+        def f():
+            qml.X(1)
+
+        qml.cond(m, f)()
+
+        return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
+
+    z0, z1 = c()
+
+    assert qml.math.allclose(z0, 1)
+    assert qml.math.allclose(z1, -1)
+
+
 class TestMeasure:
     """Tests for the measure function"""
 

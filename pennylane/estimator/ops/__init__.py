@@ -32,6 +32,7 @@ from .qubit import (
     MultiRZ,
     SingleExcitation,
     QubitUnitary,
+    PCPhase,
 )
 
 from .op_math import (
