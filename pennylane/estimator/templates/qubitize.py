@@ -77,13 +77,13 @@ class QubitizeTHC(ResourceOperator):
        allocated wires: 298
          zero state: 298
          any state: 0
-     Total gates : 5.310E+4
-       'Toffoli': 3.151E+3,
-       'CNOT': 3.962E+4,
-       'X': 1.459E+3,
+     Total gates : 5.617E+4
+       'Toffoli': 3.501E+3,
+       'CNOT': 4.031E+4,
+       'X': 2.231E+3,
        'Z': 41,
        'S': 80,
-       'Hadamard': 8.758E+3
+       'Hadamard': 1.001E+4
 
     .. details::
         :title: Usage Details
@@ -310,7 +310,7 @@ class QubitizeTHC(ResourceOperator):
         if rotation_precision or select_op is None:
             # Select cost from Figure 5 in arXiv:2011.03494
             select_op = resource_rep(SelectTHC, select_kwargs)
-        print(select_op)
+
         gate_list.append(GateCount(select_op))
 
         prep_kwargs = {"thc_ham": thc_ham, "select_swap_depth": prep_op.params["select_swap_depth"]}
