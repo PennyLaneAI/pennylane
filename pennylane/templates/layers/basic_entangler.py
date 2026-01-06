@@ -20,12 +20,6 @@ from pennylane.decomposition import add_decomps, register_resources, resource_re
 from pennylane.operation import Operation
 from pennylane.ops import CNOT, RX, cond
 
-has_jax = True
-try:
-    from jax import numpy as jnp
-except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
-    has_jax = False  # pragma: no cover
-
 
 class BasicEntanglerLayers(Operation):
     r"""Layers consisting of one-parameter single-qubit rotations on each qubit, followed by a closed chain
@@ -243,8 +237,8 @@ def _basic_entangler_resources(repeat, num_wires, rotation):
 def _basic_entangler_decomposition(weights, wires, rotation):
     repeat = math.shape(weights)[-2]
 
-    if has_jax and capture.enabled():
-        weights, wires = jnp.array(weights), jnp.array(wires)
+    if capture.enabled():
+        weights, wires = math.array(weights, like="jax"), math.array(wires, like="jax")
 
     @for_loop(repeat)
     def repeat_loop(layer):
@@ -255,7 +249,9 @@ def _basic_entangler_decomposition(weights, wires, rotation):
             def recurse(depth, lst, layer, i):
                 if math.ndim(weights) - depth == 2:
                     return lst[layer][i]
-                return jnp.array([recurse(depth + 1, l, layer, i) for l in lst])
+                if capture.enabled():
+                    return math.array([recurse(depth + 1, l, layer, i) for l in lst], like="jax")
+                return [recurse(depth + 1, l, layer, i) for l in lst]
 
             rotation(recurse(0, weights, layer, i), wires=wires[i])
 
