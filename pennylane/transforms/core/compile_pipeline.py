@@ -174,18 +174,15 @@ class CompilePipeline:
     The compilation pipeline can also be easily modified using operations similar to Python lists, including
     ``insert``, ``append``, ``extend`` and ``pop``:
 
-    >>> pipeline += qml.transforms.commute_controlled
-    >>> pipeline
-    CompilePipeline(merge_rotations, cancel_inverses, cancel_inverses, commute_controlled)
     >>> pipeline.insert(0, qml.transforms.remove_barrier)
     >>> pipeline
-    CompilePipeline(remove_barrier, merge_rotations, cancel_inverses, cancel_inverses, commute_controlled)
+    CompilePipeline(remove_barrier, merge_rotations, cancel_inverses, cancel_inverses)
 
     Additionally, multiple compilation pipelines can be concatenated:
 
     >>> another_pipeline = qml.transforms.decompose(gate_set={qml.RX, qml.RZ, qml.CNOT}) + qml.transforms.combine_global_phases
     >>> another_pipeline + pipeline
-    CompilePipeline(decompose, combine_global_phases, remove_barrier, merge_rotations, cancel_inverses, cancel_inverses, commute_controlled)
+    CompilePipeline(decompose, combine_global_phases, remove_barrier, merge_rotations, cancel_inverses, cancel_inverses)
     """
 
     @overload
