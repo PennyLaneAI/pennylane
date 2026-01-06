@@ -94,7 +94,7 @@
   def circuit():
       qre.CNOT()
       qre.QFT(num_wires=4)
-      qre.BBQRAM(num_bit_strings=30, size_bitstring=8)
+      qre.BBQRAM(num_bitstrings=30, size_bitstring=8, num_wires=100)
       qre.Hadamard()
   ```
 
