@@ -180,7 +180,7 @@
   - :class:`~.SWAP`, :class:`~.ISWAP`, :class:`~.SISWAP`
   - :class:`~.CY`, :class:`~.CZ`, :class:`~.CSWAP`, :class:`~.CNOT`, :class:`~.Toffoli`
 
-<h4>Compile Pipeline and Transforms </h4>
+<h4>Flexible and modular compilation pipelines 🦋</h4>
 
 * A new :class:`~.CompilePipeline` class is now available at the top level as ``qml.CompilePipeline``.
   Using this class you can now define large and complex compilation pipelines in an intuitive and flexible way.
