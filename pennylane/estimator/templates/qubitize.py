@@ -301,8 +301,8 @@ class QubitizeTHC(ResourceOperator):
 
         select_kwargs = {
             "thc_ham": thc_ham,
-            "select_swap_depth": select_op.params["select_swap_depth"],
-            "num_batches": select_op.params["num_batches"],
+            "select_swap_depth": select_op.params["select_swap_depth"] if select_op else None,
+            "num_batches": select_op.params["num_batches"] if select_op else 1,
         }
         if rotation_precision:
             select_kwargs["rotation_precision"] = rotation_precision
@@ -313,7 +313,10 @@ class QubitizeTHC(ResourceOperator):
 
         gate_list.append(GateCount(select_op))
 
-        prep_kwargs = {"thc_ham": thc_ham, "select_swap_depth": prep_op.params["select_swap_depth"]}
+        prep_kwargs = {
+            "thc_ham": thc_ham,
+            "select_swap_depth": prep_op.params["select_swap_depth"] if prep_op else None,
+        }
         if coeff_precision:
             prep_kwargs["coeff_precision"] = coeff_precision
 
@@ -379,8 +382,8 @@ class QubitizeTHC(ResourceOperator):
 
         select_kwargs = {
             "thc_ham": thc_ham,
-            "select_swap_depth": select_op.params["select_swap_depth"],
-            "num_batches": select_op.params["num_batches"],
+            "select_swap_depth": select_op.params["select_swap_depth"] if select_op else None,
+            "num_batches": select_op.params["num_batches"] if select_op else 1,
         }
         if rotation_precision:
             select_kwargs["rotation_precision"] = rotation_precision
@@ -397,7 +400,10 @@ class QubitizeTHC(ResourceOperator):
             )
         )
 
-        prep_kwargs = {"thc_ham": thc_ham, "select_swap_depth": prep_op.params["select_swap_depth"]}
+        prep_kwargs = {
+            "thc_ham": thc_ham,
+            "select_swap_depth": prep_op.params["select_swap_depth"] if prep_op else None,
+        }
         if coeff_precision:
             prep_kwargs["coeff_precision"] = coeff_precision
 
