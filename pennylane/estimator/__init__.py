@@ -48,6 +48,7 @@ from .ops.qubit import (
     PauliRot,
     SingleExcitation,
     QubitUnitary,
+    PCPhase,
 )
 
 from .ops.op_math import (
@@ -74,6 +75,8 @@ from .ops.op_math import (
 
 from .templates import (
     OutOfPlaceSquare,
+    IQP,
+    BBQRAM,
     PhaseGradient,
     OutMultiplier,
     SemiAdder,
@@ -89,6 +92,7 @@ from .templates import (
     PrepTHC,
     QubitizeTHC,
     SelectTHC,
+    SelectPauli,
     TrotterCDF,
     TrotterProduct,
     TrotterTHC,
@@ -103,6 +107,13 @@ from .templates import (
     SingleQubitComparator,
     TwoQubitComparator,
     RegisterComparator,
+    UnaryIterationQPE,
+    GQSP,
+    Reflection,
+    Qubitization,
+    QSVT,
+    QSP,
+    GQSPTimeEvolution,
 )
 
 from .compact_hamiltonian import (
