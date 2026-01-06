@@ -55,18 +55,6 @@ else:
     is_optax_available = False
     optax = None
 
-# is_jax_available = True
-# is_optax_available = True
-# try:
-#     import jax
-# except ImportError:  # pragma: no cover
-#     is_jax_available = False  # pragma: no cover
-
-# try:
-#     import optax
-# except ImportError:
-#     is_otpax_available = False
-
 
 def jit_if_jax_available(f, **kwargs):
     r"""thin wrapper around jax.jit
