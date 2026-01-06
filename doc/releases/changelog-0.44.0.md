@@ -1077,9 +1077,6 @@ A warning message has been added to :doc:`Building a plugin <../development/plug
 * Fixes a bug where an error is raised when `to_openqasm` is used with `qml.decomposition.enable_graph()`
   [(#8809)](https://github.com/PennyLaneAI/pennylane/pull/8809)
 
-* Fixed various incorrect decomposition rules.
-  [(#8812)](https://github.com/PennyLaneAI/pennylane/pull/8812)
-
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
