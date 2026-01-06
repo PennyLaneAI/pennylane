@@ -323,9 +323,9 @@ def _handle_measurement_qjit(
             math.sum(result[1] * math.reshape(is_valid, (-1, 1)), axis=0),
         )
         return res, m_count + 1
-    result = qml.math.squeeze(result)
+    result = math.squeeze(result)
     if result.ndim == 1:
-        result = qml.math.expand_dims(result, axis=1)
+        result = math.expand_dims(result, axis=1)
     return gather_non_mcm(m, result, is_valid, postselect_mode=postselect_mode), m_count + 1
 
 
@@ -540,7 +540,7 @@ def gather_mcm(measurement: MeasurementProcess, samples, is_valid, postselect_mo
         mcm_samples = [{float(s.item()): 1} for s in mcm_samples]
     results = gather_non_mcm(measurement, mcm_samples, is_valid, postselect_mode=postselect_mode)
     if isinstance(measurement, SampleMP):
-        results = qml.math.squeeze(results)
+        results = math.squeeze(results)
         if results.ndim == 1:
-            results = qml.math.expand_dims(results, axis=1)
+            results = math.expand_dims(results, axis=1)
     return results
