@@ -273,7 +273,7 @@
   pass is performed in MLIR or xDSL.
   [(#8539)](https://github.com/PennyLaneAI/pennylane/pull/8539)
 
-<h4>Analyzing your algorithms quickly and easily with resource estimation</h4>
+<h4>Analyzing algorithms quickly and easily with resource estimation</h4>
 
 * A new :func:`~pennylane.resource.algo_error` function has been added to compute algorithm-specific 
   errors from quantum circuits. This provides a dedicated entry point for retrieving error information 
@@ -299,33 +299,33 @@
   {'SpectralNormError': SpectralNormError(0.25)}
   ```
 
-* Resources are now available for many new algorithms. These include:
+* Resource estimation is now available for many new algorithms. These include:
    
-  * The Generalized Quantum Signal Processing (GQSP)
+  * The **Generalized Quantum Signal Processing** (GQSP)
     algorithm and its time evolution via the :class:`estimator.GQSP <pennylane.estimator.templates.qsp.GQSP>` and
     :class:`estimator.GQSPTimeEvolution <pennylane.estimator.templates.qsp.GQSPTimeEvolution>` resource operations.
     [(#8675)](https://github.com/PennyLaneAI/pennylane/pull/8675)
 
-  * The Qubitization algorithm via two new resource
+  * The **Qubitization** algorithm via two new resource
     operators: :class:`estimator.Reflection <pennylane.estimator.templates.subroutines.Reflection>` and
     :class:`estimator.Qubitization <pennylane.estimator.templates.subroutines.Qubitization>`.
     [(#8675)](https://github.com/PennyLaneAI/pennylane/pull/8675)
 
-  * The Quantum Signal Processing (QSP) and Quantum Singular
+  * The **Quantum Signal Processing** (QSP) and Quantum Singular
     Value Transformation (QSVT) algorithms via two new resource operators: :class:`estimator.QSP <pennylane.estimator.templates.qsp.QSP>` and :class:`estimator.QSVT <pennylane.estimator.templates.qsp.QSVT>`.
     [(#8733)](https://github.com/PennyLaneAI/pennylane/pull/8733)
 
-  * The unary iteration implementation of QPE via the new
+  * The **unary iteration implementation of QPE** via the new
     :class:`estimator.UnaryIterationQPE <pennylane.estimator.templates.subroutines.UnaryIterationQPE>`
     subroutine, which makes it possible to reduce T and Toffoli gate count, in exchange
     for using additional qubits.
     [(#8708)](https://github.com/PennyLaneAI/pennylane/pull/8708)
 
-  * Linear combination of unitaries (LCU) representations of ``qml.estimator.PauliHamiltonian`` Hamiltonians via the
+  * **Linear combination of unitaries** (LCU) representations of ``qml.estimator.PauliHamiltonian`` Hamiltonians via the
     new :class:`estimator.SelectPauli <pennylane.estimator.templates.select.SelectPauli>` operator.
     [(#8675)](https://github.com/PennyLaneAI/pennylane/pull/8675)
 
-  * Trotterization for Pauli Hamiltonians, using the new
+  * **Trotterization** for Pauli Hamiltonians, using the new
     :class:`estimator.PauliHamiltonian <pennylane.estimator.compact_hamiltonian.PauliHamiltonian>`
     resource Hamiltonian class and the new
     :class:`estimator.TrotterPauli <pennylane.estimator.templates.TrotterPauli>`
@@ -351,6 +351,16 @@
   method makes it possible to set precisions for a larger variety of `ResourceOperator`s in
   the :mod:`estimator <pennylane.estimator>` module.
   [(#8561)](https://github.com/PennyLaneAI/pennylane/pull/8561)
+  ```pycon
+  >>> vibration_ham = qre.VibrationalHamiltonian(num_modes=2, grid_size=4, taylor_degree=2)
+  >>> trotter = qre.TrotterVibrational(vibration_ham, num_steps=10, order=2)
+  >>> config = qre.ResourceConfig()
+  >>> qre.estimate(trotter, config = config).total_gates
+  123867.0
+  >>> config.set_precision(qre.TrotterVibrational, precision=1e-10, resource_key='phase_grad_precision')
+  >>> qre.estimate(trotter, config = config).total_gates
+  124497.0
+  ```
 
 <h4>Seamless resource tracking and circuit visualization for compiled programs </h4>
 
