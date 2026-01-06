@@ -17,6 +17,7 @@ from .subroutines import (
     OutOfPlaceSquare,
     IQP,
     HybridQRAM,
+    BBQRAM,
     PhaseGradient,
     OutMultiplier,
     SemiAdder,

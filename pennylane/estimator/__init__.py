@@ -77,6 +77,7 @@ from .templates import (
     OutOfPlaceSquare,
     IQP,
     HybridQRAM,
+    BBQRAM,
     PhaseGradient,
     OutMultiplier,
     SemiAdder,

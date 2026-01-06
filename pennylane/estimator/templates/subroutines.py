@@ -216,7 +216,7 @@ class IQP(ResourceOperator):
                 :math:`\frac{1}{\sqrt(2)}(|00\dots0> + |11\dots1>)` is used in place of :math:`|00\dots0>`.
 
         Returns:
-            list[~.pennylane.labs.resource_estimation.GateCount]: A list of GateCount objects, where each object
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -291,7 +291,7 @@ class PhaseGradient(ResourceOperator):
     def __init__(self, num_wires: int | None = None, wires: WiresLike = None):
         if num_wires is None:
             if wires is None:
-                raise ValueError("Must provide atleast one of `num_wires` and `wires`.")
+                raise ValueError("Must provide at least one of `num_wires` and `wires`.")
             num_wires = len(wires)
         self.num_wires = num_wires
         super().__init__(wires=wires)
@@ -1115,21 +1115,25 @@ class IterativeQPE(ResourceOperator):
 
 
 class UnaryIterationQPE(ResourceOperator):
-    r"""Resource class for UnaryIterationQPE. This is a variant of the Quantum Phase Estimation (QPE)
-    algorithm that uses the unary iteration technique as described in `arXiv.2011.03494 <https://arxiv.org/pdf/2011.03494>`_.
-    Note that this form of QPE requires the unitary to be a quantum walk operator constructed from
-    ``Select`` and ``Prepare`` operators. In this approach, powers of the walk operator are obtained
-    via unary iteration, which reduces T and Toffoli gate counts at the cost of increasing the number
-    of auxiliary qubits required. For a detailed explanation of unary iteration, see the
-    `documentation <https://pennylane.ai/compilation/unary-iteration>`_.
+    r"""Resource class for Quantum Phase Estimation (QPE) using the unary iteration
+    technique.
 
-    Note, users can also provide a custom adjoint Quantum Fourier Transform (QFT) implementation,
-    which can be used to further optimize the resource requirements.
+    This form of QPE, as described in `arXiv.2011.03494 <https://arxiv.org/pdf/2011.03494>`_,
+    requires the unitary operator to be a quantum walk operator constructed from ``Select`` and ``Prepare``
+    subroutines. In this approach, unary iteration is used to construct successive powers of the walk operator,
+    which reduces :class:`~.pennylane.estimator.ops.qubit.non_parametric_ops.T` and
+    :class:`~.pennylane.estimator.ops.op_math.controlled_ops.Toffoli` gate counts in their decomposition at the cost of
+    increasing the number of auxiliary qubits required.
+
+    For a detailed explanation of unary iteration, see
+    `here <https://pennylane.ai/compilation/unary-iteration>`_. Note that users can also provide
+    a custom adjoint Quantum Fourier Transform (QFT) implementation, which can be used to further
+    optimize the resource requirements.
 
     Args:
         walk_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): the quantum
-            walk operator :math:`W` to apply the phase estimation protocol on
-        num_iterations (int): The total number of times the quantum walk operator operator :math:`W`
+            walk operator to apply the phase estimation protocol on
+        num_iterations (int): The total number of times the quantum walk operator
             is applied in order to reach a target precision in the eigenvalue estimate.
         adj_qft_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator` | None): An optional
             argument to set the subroutine used to perform the adjoint QFT operation.
@@ -1137,6 +1141,12 @@ class UnaryIterationQPE(ResourceOperator):
 
     Resources:
         The resources are obtained from Figure 2. in Section III of `arXiv.2011.03494 <https://arxiv.org/pdf/2011.03494>`_.
+
+    Raises:
+        ValueError: ``num_iterations`` must be an integer greater than zero
+        TypeError: ``walk_op`` must be an instance of
+            :class:`~.pennylane.estimator.templates.subroutines.Qubitization` or
+            :class:`~.pennylane.estimator.templates.qubitize.QubitizeTHC`
 
     .. seealso:: Related PennyLane operation :class:`~.pennylane.QuantumPhaseEstimation` and explanation of `Unary Iteration <https://pennylane.ai/compilation/unary-iteration>`_.
 
@@ -1178,6 +1188,16 @@ class UnaryIterationQPE(ResourceOperator):
         _dequeue(remove_ops)
         self.queue()
 
+        if not (isinstance(num_iterations, int) and num_iterations > 1):
+            raise ValueError(
+                f"Expected 'num_iterations' to be an integer greater than zero, got {num_iterations}"
+            )
+
+        if not isinstance(walk_op, (qre.Qubitization, qre.QubitizeTHC)):
+            raise ValueError(
+                f"Expected the 'walk_op' to be a qubitization type operator (an instance of 'Qubitization' or 'QubitizeTHC'), got {type(walk_op)}"
+            )
+
         self.walk_op = walk_op.resource_rep_from_op()
         adj_qft_cmpr_op = None if adj_qft_op is None else adj_qft_op.resource_rep_from_op()
 
@@ -1207,10 +1227,10 @@ class UnaryIterationQPE(ResourceOperator):
         Returns:
             dict: A dictionary containing the resource parameters:
                 * cmpr_walk_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`):
-                  A compressed resource operator corresponding to the quantum walk operator :math:`W`
+                  A compressed resource operator corresponding to the quantum walk operator
                   to apply the phase estimation protocol on.
-                * num_iterations (int): The total number of times the quantum walk operator operator
-                  :math:`W` is applied in order to reach a target precision in the eigenvalue
+                * num_iterations (int): The total number of times the quantum walk operator
+                  is applied in order to reach a target precision in the eigenvalue
                   estimate.
                 * adj_qft_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp` | None):
                   An optional compressed resource operator corresponding to the adjoint QFT routine.
@@ -1236,10 +1256,10 @@ class UnaryIterationQPE(ResourceOperator):
 
         Args:
             cmpr_walk_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`):
-                A compressed resource operator corresponding to the quantum walk operator :math:`W`
+                A compressed resource operator corresponding to the quantum walk operator
                 to apply the phase estimation protocol on.
-            num_iterations (int): The total number of times the quantum walk operator operator
-                :math:`W` is applied in order to reach a target precision in the eigenvalue estimate.
+            num_iterations (int): The total number of times the quantum walk operator
+                is applied in order to reach a target precision in the eigenvalue estimate.
             adj_qft_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp` | None):
                 An optional compressed resource operator corresponding to the adjoint QFT routine.
                 If :code:`None`, the default :class:`~.pennylane.estimator.templates.subroutines.QFT`
@@ -1267,10 +1287,10 @@ class UnaryIterationQPE(ResourceOperator):
 
         Args:
             cmpr_walk_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`):
-                A compressed resource operator corresponding to the quantum walk operator :math:`W`
+                A compressed resource operator corresponding to the quantum walk operator
                 to apply the phase estimation protocol on.
-            num_iterations (int): The total number of times the quantum walk operator operator
-                :math:`W` is applied in order to reach a target precision in the eigenvalue estimate.
+            num_iterations (int): The total number of times the quantum walk operator
+                is applied in order to reach a target precision in the eigenvalue estimate.
             adj_qft_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp` | None):
                 An optional compressed resource operator corresponding to the adjoint QFT routine.
                 If :code:`None`, the default :class:`~.pennylane.estimator.templates.subroutines.QFT`
@@ -1406,7 +1426,7 @@ class QFT(ResourceOperator):
     def __init__(self, num_wires: int | None = None, wires: WiresLike = None) -> None:
         if num_wires is None:
             if wires is None:
-                raise ValueError("Must provide atleast one of `num_wires` and `wires`.")
+                raise ValueError("Must provide at least one of `num_wires` and `wires`.")
             num_wires = len(wires)
         self.num_wires = num_wires
         super().__init__(wires=wires)
@@ -1567,7 +1587,7 @@ class AQFT(ResourceOperator):
     def __init__(self, order: int, num_wires: int | None = None, wires: WiresLike = None) -> None:
         if num_wires is None:
             if wires is None:
-                raise ValueError("Must provide atleast one of `num_wires` and `wires`.")
+                raise ValueError("Must provide at least one of `num_wires` and `wires`.")
             num_wires = len(wires)
         self.order = order
         self.num_wires = num_wires
@@ -1728,7 +1748,7 @@ class BasisRotation(ResourceOperator):
     def __init__(self, dim: int | None = None, wires: WiresLike = None):
         if dim is None:
             if wires is None:
-                raise ValueError("Must provide atleast one of `dim` and `wires`.")
+                raise ValueError("Must provide at least one of `dim` and `wires`.")
             dim = len(wires)
         self.num_wires = dim
         super().__init__(wires=wires)
@@ -1986,6 +2006,144 @@ class HybridQRAM(ResourceOperator):
         )
 
 
+class BBQRAM(ResourceOperator):
+    r"""Resource class for BBQRAM.
+
+    Args:
+        num_bitstrings (int): the size of the classical memory array to retrieve values from
+        size_bitstring (int): the length of the individual bitstrings in the classical memory
+        num_bit_flips (int): the number of 1s in the classical memory
+        num_wires (int): the number of qubits the operation acts upon
+        control_wires (WiresLike): The register that stores the index for the entry of the classical data we want to
+            access.
+        target_wires (WiresLike):
+            The register in which the classical data gets loaded. The size of this register must
+            equal each bitstring length in ``bitstrings``.
+        work_wires (WiresLike): The additional wires required to funnel the desired entry of ``bitstrings`` into the
+            target register.
+
+    Raises:
+        ValueError: if the number of wires provided does not match ``num_wires``
+
+    Resources:
+        The resources are obtained from the BBQRAM implementation in PennyLane. The original publication of
+        the algorithm can be found in `Quantum Random Access Memory <https://arxiv.org/abs/0708.1879>`_.
+
+    .. seealso:: :class:`~.BBQRAM`
+    """
+
+    resource_keys = {"num_bitstrings", "size_bitstring", "num_bit_flips", "num_wires"}
+
+    def __init__(
+        self,
+        num_bitstrings,
+        size_bitstring,
+        num_wires,
+        num_bit_flips=None,
+        control_wires=None,
+        target_wires=None,
+        work_wires=None,
+    ):
+        all_wires = None
+        if control_wires and target_wires and work_wires:
+            all_wires = list(control_wires) + list(target_wires) + list(work_wires)
+            if len(all_wires) != num_wires:
+                raise ValueError(f"Expected {num_wires} wires, got {len(all_wires)}.")
+        if num_bit_flips is None:
+            num_bit_flips = num_bitstrings * size_bitstring // 2
+        self.num_wires = num_wires
+        self.num_bitstrings = num_bitstrings
+        self.size_bitstring = size_bitstring
+        self.num_bit_flips = num_bit_flips
+        super().__init__(wires=all_wires)
+
+    @property
+    def resource_params(self) -> dict:
+        r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+        Returns:
+            dict: A dictionary containing the resource parameters:
+                * num_wires (int): the number of qubits the operation acts upon
+                * num_bitstrings (int): the size of the classical memory array to retrieve values from
+                * size_bitstring (int): the length of the individual bitstrings in the classical memory
+                * num_bit_flips (int): the number of 1s in the classical memory
+        """
+        return {
+            "num_wires": self.num_wires,
+            "num_bitstrings": self.num_bitstrings,
+            "size_bitstring": self.size_bitstring,
+            "num_bit_flips": self.num_bit_flips,
+        }
+
+    @classmethod
+    def resource_rep(cls, num_bitstrings, size_bitstring, num_bit_flips, num_wires):
+        r"""Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute the resources.
+
+        Args:
+            num_bitstrings (int): the size of the classical memory array to retrieve values from
+            size_bitstring (int): the length of the individual bitstrings in the classical memory
+            num_bit_flips (int): the number of 1s in the classical memory
+            num_wires (int): the number of qubits the operation acts upon
+
+        Returns:
+            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+        """
+        params = {
+            "num_bitstrings": num_bitstrings,
+            "size_bitstring": size_bitstring,
+            "num_bit_flips": num_bit_flips,
+            "num_wires": num_wires,
+        }
+        return CompressedResourceOp(cls, num_wires, params)
+
+    @classmethod
+    def resource_decomp(cls, num_bitstrings, size_bitstring, num_bit_flips, num_wires):
+        r"""Returns a list representing the resources of the operator. Each object in the list
+        represents a gate and the number of times it occurs in the circuit.
+
+        Args:
+            num_bitstrings (int): the size of the classical memory array to retrieve values from
+            size_bitstring (int): the length of the individual bitstrings in the classical memory
+            num_bit_flips (int): the number of 1s in the classical memory
+            num_wires (int): the number of qubits the operation acts upon
+
+        Resources:
+            The resources are obtained from the BBQRAM implementation in PennyLane. The original publication of
+            the algorithm can be found in `Quantum Random Access Memory <https://arxiv.org/abs/0708.1879>`_.
+
+        Returns:
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
+                represents a specific quantum gate and the number of times it appears
+                in the decomposition.
+        """
+        num_target_wires = size_bitstring
+        n_k = (num_bitstrings - 1).bit_length()
+
+        swap = resource_rep(qre.SWAP)
+        cswap = resource_rep(qre.CSWAP)
+        hadamard = resource_rep(qre.Hadamard)
+        pauliz = resource_rep(qre.Z)
+
+        swap_counts = ((1 << n_k) - 1 + n_k) * 2 + num_target_wires * 2
+        cswap_counts = ((1 << n_k) - 1) * num_target_wires * 4 + ((1 << n_k) - 1 - n_k) * 4
+        hadamard_counts = num_target_wires * 2
+
+        pauliz_counts = num_bit_flips
+
+        return [
+            GateCount(swap, swap_counts),
+            GateCount(hadamard, hadamard_counts),
+            GateCount(cswap, cswap_counts),
+            GateCount(pauliz, pauliz_counts),
+        ]
+
+    @staticmethod
+    def tracking_name(num_bitstrings, size_bitstring, num_bit_flips, num_wires) -> str:
+        r"""Returns the tracking name built with the operator's parameters."""
+        return f"BBQRAM({num_bitstrings}, {size_bitstring}, {num_bit_flips}, {num_wires})"
+
+
 class Select(ResourceOperator):
     r"""Resource class for the Select gate.
 
@@ -2194,7 +2352,7 @@ class QROM(ResourceOperator):
             if data will be loaded in parallel by adding more rows following Figure 1.C of
             `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_. Can be :code:`None`,
             :code:`1` or a positive integer power of two. Defaults to ``None``, which sets the
-            depth that minimizes ``T``-gate count.
+            depth that minimizes T-gate count.
         wires (WiresLike | None): The wires the operation acts on (control and target), excluding
             any additional qubits allocated during the decomposition (e.g select-swap wires).
 
@@ -2311,7 +2469,7 @@ class QROM(ResourceOperator):
                 if data will be loaded in parallel by adding more rows following Figure 1.C of
                 `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_. Can be :code:`None`,
                 :code:`1` or a positive integer power of two. Defaults to ``None``, which sets the
-                depth that minimizes ``T``-gate count.
+                depth that minimizes T-gate count.
             restored (bool): Determine if allocated qubits should be reset after the computation
                 (at the cost of higher gate counts). Defaults to :code:`True`.
 
@@ -2507,7 +2665,7 @@ class QROM(ResourceOperator):
             (Figure 4) for :code:`restored = True`.
 
             Note: we use the single-controlled unary iterator trick to implement the ``Select``. This
-            implementation assumes we have access to :math:`n - 1` additional work qubits,
+            implementation assumes we have access to :math:`n` additional work qubits,
             where :math:`n = \lceil \log_{2}(N) \rceil` and :math:`N` is the number of batches of
             unitaries to select.
 
@@ -2694,18 +2852,18 @@ class QROM(ResourceOperator):
         k = select_swap_depth or qre.QROM._t_optimized_select_swap_width(
             num_bitstrings, size_bitstring
         )
-        l = math.ceil(math.log2(k))  # number of qubits in |l> register
+        num_qubits_l = math.ceil(math.log2(k))  # number of qubits in |l> register
 
-        H = math.ceil(num_bitstrings / k)  # number of columns of data
-        h = math.ceil(math.log2(H))  # number of qubits in |h> register
+        num_cols = math.ceil(num_bitstrings / k)  # number of columns of data
+        num_qubits_h = math.ceil(math.log2(num_cols))  # number of qubits in |h> register
 
         ## Measure output register, reset qubits and construct fixup table
         gate_lst.append(qre.GateCount(had, size_bitstring))  # Figure 5.
 
         ## Allocate auxiliary qubits
         num_alloc_wires = k  # Swap registers
-        if H > 1:
-            num_alloc_wires += h - 1  # + work_wires for UI trick
+        if num_cols > 1:
+            num_alloc_wires += num_qubits_h - 1  # + work_wires for UI trick
 
         gate_lst.append(qre.Allocate(num_alloc_wires))
 
@@ -2714,11 +2872,11 @@ class QROM(ResourceOperator):
             gate_lst.append(GateCount(x, 2))
             gate_lst.append(GateCount(had, 2 * k))
 
-            num_bit_flips = (k * H) // 2
+            num_bit_flips = (k * num_cols) // 2
 
-            ctrl_S_decomp = cls._ctrl_S(num_ctrl_wires=l)
-            ctrl_S_adj_decomp = cls._ctrl_S_adj(num_ctrl_wires=l)
-            ctrl_T_decomp = cls._ctrl_T(num_data_blocks=H, num_bit_flips=num_bit_flips)
+            ctrl_S_decomp = cls._ctrl_S(num_ctrl_wires=num_qubits_l)
+            ctrl_S_adj_decomp = cls._ctrl_S_adj(num_ctrl_wires=num_qubits_l)
+            ctrl_T_decomp = cls._ctrl_T(num_data_blocks=num_cols, num_bit_flips=num_bit_flips)
 
             gate_lst.extend(ctrl_S_decomp)
             gate_lst.extend(ctrl_S_adj_decomp)
@@ -2729,11 +2887,13 @@ class QROM(ResourceOperator):
             gate_lst.append(GateCount(z, 2))
             gate_lst.append(GateCount(had, 2))
 
-            num_bit_flips = (k * H) // 2
+            num_bit_flips = (k * num_cols) // 2
             count = 1 if k == 1 else 2
-            ctrl_S_decomp = cls._ctrl_S(num_ctrl_wires=l, count=count)
-            ctrl_S_adj_decomp = cls._ctrl_S_adj(num_ctrl_wires=l, count=count)
-            ctrl_T_decomp = cls._ctrl_T(num_data_blocks=H, num_bit_flips=num_bit_flips, count=count)
+            ctrl_S_decomp = cls._ctrl_S(num_ctrl_wires=num_qubits_l, count=count)
+            ctrl_S_adj_decomp = cls._ctrl_S_adj(num_ctrl_wires=num_qubits_l, count=count)
+            ctrl_T_decomp = cls._ctrl_T(
+                num_data_blocks=num_cols, num_bit_flips=num_bit_flips, count=count
+            )
 
             gate_lst.extend(ctrl_S_decomp)
             gate_lst.extend(ctrl_S_adj_decomp)
@@ -2766,7 +2926,7 @@ class QROM(ResourceOperator):
                 if data will be loaded in parallel by adding more rows following Figure 1.C of
                 `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_. Can be :code:`None`,
                 :code:`1` or a positive integer power of two. Defaults to ``None``, which sets the
-                depth that minimizes ``T``-gate count.
+                depth that minimizes T-gate count.
 
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
@@ -2798,13 +2958,13 @@ class QROM(ResourceOperator):
 
 
 class SelectPauliRot(ResourceOperator):
-    r"""Resource class for the SelectPauliRot gate.
+    r"""Resource class for the uniformly controlled rotation gate.
 
     Args:
         rot_axis (str): the rotation axis used in the multiplexer
         num_ctrl_wires (int): the number of control wires of the multiplexer
         precision (float | None): the precision used in the single qubit rotations
-        wires (Sequence[int], None): the wires the operation acts on
+        wires (WiresLike, None): the wires the operation acts on
 
     Resources:
         The resources are obtained from the construction scheme given in `Möttönen and Vartiainen
@@ -3020,7 +3180,7 @@ class Reflection(ResourceOperator):
 
     Args:
         num_wires (int | None): The number of wires the operator acts on. If ``None`` is provided, the
-            number of wires are infered from the ``U`` operator.
+            number of wires are inferred from the ``U`` operator.
         U (:class:`~.pennylane.estimator.resource_operator.ResourceOperator` | None): the operator that prepares the state :math:`|\Psi\rangle`
         alpha (float | None): the angle of the operator, should be between :math:`[0, 2\pi]`. Default is :math:`\pi`.
         wires (WiresLike | None): The wires the operation acts on.
@@ -3035,8 +3195,8 @@ class Reflection(ResourceOperator):
         The cost for :math:`-I` is calculated as :math:`X Z X Z = -I`.
 
     Raises:
-        ValueError: ``alpha`` must be a float within the range ``[0, 2pi]``
-        ValueError: must provide atleast one of ``num_wires`` or ``U``
+        ValueError: if ``alpha`` is not a float within the range ``[0, 2pi]``
+        ValueError: if at least one of ``num_wires`` or ``U`` is not provided
         ValueError: if the wires provided don't match the number of wires expected by the operator
 
     .. seealso:: :class:`~.pennylane.Reflection`
@@ -3079,7 +3239,7 @@ class Reflection(ResourceOperator):
         self.alpha = alpha
 
         if U is None and num_wires is None:
-            raise ValueError("Must provide atleast one of `num_wires` or `U`")
+            raise ValueError("Must provide at least one of `num_wires` or `U`")
 
         if U is not None:
             _dequeue([U])
@@ -3099,7 +3259,12 @@ class Reflection(ResourceOperator):
             self.wires = None
 
     @classmethod
-    def resource_decomp(cls, num_wires: int, alpha: float, cmpr_U: CompressedResourceOp):
+    def resource_decomp(
+        cls,
+        num_wires: int | None = None,
+        alpha: float = math.pi,
+        cmpr_U: CompressedResourceOp | None = None,
+    ):
         r"""Returns a list representing the resources of the operator. Each object in the list
         represents a gate and the number of times it occurs in the circuit.
 
@@ -3249,7 +3414,10 @@ class Reflection(ResourceOperator):
 
     @classmethod
     def resource_rep(
-        cls, num_wires: int, alpha: float, cmpr_U: CompressedResourceOp
+        cls,
+        num_wires: int | None = None,
+        alpha: float = math.pi,
+        cmpr_U: CompressedResourceOp | None = None,
     ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
@@ -3262,17 +3430,24 @@ class Reflection(ResourceOperator):
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
+        if not 0 <= alpha <= 2 * qnp.pi:
+            raise ValueError(f"alpha must be within [0, 2pi], got {alpha}")
+
+        if cmpr_U is None and num_wires is None:
+            raise ValueError("Must provide atleast one of `num_wires` or `U`")
+
         params = {"alpha": alpha, "num_wires": num_wires, "cmpr_U": cmpr_U}
         return CompressedResourceOp(cls, num_wires, params)
 
 
 class Qubitization(ResourceOperator):
-    r"""Resource class for the Qubitization operator. This operator encodes a Hamiltonian, written
-    as a linear combination of unitaries, into a unitary operator (see Figure 1 in
+    r"""Resource class for the Qubitization operator. The operator is also referred to as the Quantum Walk operator.
+
+    The operator is constructed by encoding a Hamiltonian, written as a linear combination of unitaries, into a block encoding (see Figure 1 in
     `arXiv:1805.03662 <https://arxiv.org/abs/1805.03662>`_).
 
     .. math::
-        Q =  \text{Prep}_{\mathcal{H}}(2|0\rangle\langle 0| - I)\text{Prep}_{\mathcal{H}}^{\dagger} \text{Sel}_{\mathcal{H}}.
+        Q =  \text{Prep}_{H}(2|0\rangle\langle 0| - I)\text{Prep}_{H}^{\dagger} \text{Sel}_{H}.
 
     Args:
         prep_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): the operator that prepares the coefficients of the LCU
@@ -3280,7 +3455,7 @@ class Qubitization(ResourceOperator):
         wires (WiresLike | None): the wires the operation acts on
 
     Resources:
-        The resources are obtained from Equation: 9 in `Babbush et al. (2018) <https://arxiv.org/abs/1805.03662>`_.
+        The resources are obtained from Equation 9 in `Babbush et al. (2018) <https://arxiv.org/abs/1805.03662>`_.
         Specifically, the walk operator is defined as :math:`W = R \cdot S`, where :math:`R` is a reflection about the state prepared by
         the ``Prepare`` operator, and :math:`S` is the ``Select`` operator. The cost is therefore one ``Select`` and one ``Reflection``.
 
@@ -3348,7 +3523,7 @@ class Qubitization(ResourceOperator):
                 applies the unitaries of the LCU.
 
         Resources:
-            The resources are obtained from Equation 9 in: `Babbush et al. (2018) <https://arxiv.org/abs/1805.03662>`_.
+            The resources are obtained from Equation 9 in `Babbush et al. (2018) <https://arxiv.org/abs/1805.03662>`_.
             Specifically, the walk operator is defined as :math:`W = R \cdot S`, where :math:`R` is a reflection about the state prepared by
             the ``Prepare`` operator, and :math:`S` is the ``Select`` operator.
 
@@ -3445,7 +3620,7 @@ class Qubitization(ResourceOperator):
         cls, prep_op: CompressedResourceOp, select_op: CompressedResourceOp
     ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation.
+        the Operator that are needed to compute the resources.
 
         Args:
             prep_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A compressed representation for the operator that prepares
