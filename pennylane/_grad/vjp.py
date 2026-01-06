@@ -117,10 +117,9 @@ def _capture_vjp(func, params, cotangents, *, argnums=None, method=None, h=None)
     }
     out_flat = _get_vjp_prim().bind(*jaxpr.consts, *flat_args, *flat_cotangents, **prim_kwargs)
     assert flat_fn.out_tree is not None, "out_tree should be set after executing flat_fn"
-    flat_results, flat_dparams = (
-        out_flat[: flat_fn.out_tree.num_leaves],
-        out_flat[flat_fn.out_tree.num_leaves :],
-    )
+    num_outputs = len(no_consts_jaxpr.outvars)
+    flat_results = out_flat[:num_outputs]
+    flat_dparams = out_flat[num_outputs:]
 
     results = tree_unflatten(flat_fn.out_tree, flat_results)
     dparams = tree_unflatten(trainable_in_tree, flat_dparams)
