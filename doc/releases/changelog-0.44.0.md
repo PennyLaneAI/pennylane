@@ -260,7 +260,6 @@
 * A :class:`~.CompilePipeline` can be initialized by passing any number of transforms or other ``CompilePipeline``s,
   providing more flexibility than the previous ``TransformProgram`` class.
   [(#8750)](https://github.com/PennyLaneAI/pennylane/pull/8750)
-  [(#8834)](https://github.com/PennyLaneAI/pennylane/pull/8834)
 
   ```python
   >>> pipeline = qml.CompilePipeline(qml.transforms.commute_controlled, qml.transforms.cancel_inverses)
