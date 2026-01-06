@@ -13,8 +13,8 @@
 # limitations under the License.
 """Contains three different implementations of QRAM: BBQRAM, HybridQRAM, and SelectOnlyQRAM."""
 from collections import defaultdict
-from dataclasses import dataclass
 from collections.abc import Sequence
+from dataclasses import dataclass
 
 from pennylane import math
 from pennylane.decomposition import (
