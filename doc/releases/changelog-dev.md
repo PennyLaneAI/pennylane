@@ -16,7 +16,7 @@
   Hadamard gradient differentiation methods per [the paper](https://arxiv.org/pdf/2408.05406).
   [(#8640)](https://github.com/PennyLaneAI/pennylane/pull/8640)
 
-<h4>Instantaneous Quantum Polynomial Circuits </h4>
+<h4>Instantaneous Quantum Polynomial Circuits 💨</h4>
 
 * A new template for defining an Instantaneous Quantum Polynomial (:class:`~.IQP`) circuit has been added along with a 
   lightweight version (based on the :class:`~.estimator.resource_operator.ResourceOperator` class) to rapidly 
