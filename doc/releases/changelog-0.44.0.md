@@ -132,7 +132,7 @@
   ```
   
   The expectation values of Pauli-Z type observables for parameterized :class:`~.IQP` circuits can be efficeintly
-  evaluated with the :func:`~.qnn.iqp.iqp_expval` function. This estimator function is based on a randomized method
+  evaluated with the :func:`pennylane.qnn.iqp.iqp_expval` function. This estimator function is based on a randomized method
   allowing for the efficient optimization of circuits with thousands of qubits and millions of gates.
 
   ```python
