@@ -1387,7 +1387,7 @@ class MultiControlledX(ResourceOperator):
 
         if num_ctrl_wires is None:
             if wires is None:
-                raise ValueError("Must provide atleast one of `num_ctrl_wires` and `wires`.")
+                raise ValueError("Must provide at least one of `num_ctrl_wires` and `wires`.")
 
             num_ctrl_wires = len(wires) - 1
 
