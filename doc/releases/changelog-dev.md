@@ -201,7 +201,7 @@
         return qml.expval(qml.Z(0))
     ```
     ```pycon
-    >>> print(qml.specs(circuit, level="all")()['resources']['to-ppr (MLIR-1)'])
+    >>> print(qml.specs(circuit, level=2)())
     Total wire allocations: 2
     Total gates: 7
     Circuit depth: Not computed
