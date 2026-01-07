@@ -277,9 +277,11 @@
 
 * A new :func:`~pennylane.resource.algo_error` function has been added to compute algorithm-specific 
   errors from quantum circuits. This provides a dedicated entry point for retrieving error information 
-  that was previously accessible through :func:`~pennylane.specs`. The function works with QNodes and 
-  returns a dictionary of error types and their computed values.
+  that was previously accessible through :func:`~pennylane.specs`.
   [(#8787)](https://github.com/PennyLaneAI/pennylane/pull/8787)
+  
+  The function works with QNodes and 
+  returns a dictionary of error types and their computed values:
 
   ```python
   import pennylane as qml
@@ -321,10 +323,6 @@
     for using additional qubits.
     [(#8708)](https://github.com/PennyLaneAI/pennylane/pull/8708)
 
-  * **Linear combination of unitaries** (LCU) representations of ``qml.estimator.PauliHamiltonian`` Hamiltonians via the
-    new :class:`estimator.SelectPauli <pennylane.estimator.templates.select.SelectPauli>` operator.
-    [(#8675)](https://github.com/PennyLaneAI/pennylane/pull/8675)
-
   * **Trotterization** for Pauli Hamiltonians, using the new
     :class:`estimator.PauliHamiltonian <pennylane.estimator.compact_hamiltonian.PauliHamiltonian>`
     resource Hamiltonian class and the new
@@ -346,11 +344,18 @@
     >>> pauli_ham.num_terms
     30
     ```
+  
+  * **Linear combination of unitaries** (LCU) representations of ``qml.estimator.PauliHamiltonian`` Hamiltonians via the
+    new :class:`estimator.SelectPauli <pennylane.estimator.templates.select.SelectPauli>` operator.
+    [(#8675)](https://github.com/PennyLaneAI/pennylane/pull/8675)
+
 
 * The new ``resource_key`` keyword argument of the
   :meth:`ResourceConfig.set_precision <pennylane.estimator.resource_config.ResourceConfig.set_precision>`
   method makes it possible to set precisions for a larger variety of `ResourceOperator`s in
-  the :mod:`estimator <pennylane.estimator>` module.
+  the :mod:`estimator <pennylane.estimator>` module, including ``phase_grad_precision`` and ``coeff_precision`` for
+  ``TrotterVibronic`` and ``TrotterVibrational``, ``rotation_precision`` for ``GQSP`` and ``QSP``
+  and ``poly_approx_precision`` for ``GQSPTimeEvolution``. 
   [(#8561)](https://github.com/PennyLaneAI/pennylane/pull/8561)
   
   ```pycon
