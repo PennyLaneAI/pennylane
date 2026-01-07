@@ -656,7 +656,7 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
 <h3>Breaking changes 💔</h3>
 
 * The output format of :func:`~.specs` has been restructured into a dataclass to streamline the outputs.
-  Some legacy information has been removed from the output.
+  Some legacy information has been removed from the output, such as gradient and interface information.
   [(#8713)](https://github.com/PennyLaneAI/pennylane/pull/8713)
 
 * The value ``level=None`` is no longer a valid argument in the following:
@@ -764,6 +764,10 @@ should be used instead.
 * `qml.transforms.map_wires` no longer supports transforming jaxpr directly.
   [(#8683)](https://github.com/PennyLaneAI/pennylane/pull/8683)
 
+* `qml.cond`, the `QNode`, transforms, `qml.grad`, and `qml.jacobian` no longer treat all keyword arguments as static
+  arguments. They are instead treated as dynamic, numerical inputs, matching the behaviour of JAX and Catalyst.
+  [(#8290)](https://github.com/PennyLaneAI/pennylane/pull/8290)
+
 <h3>Deprecations 👋</h3>
 
 * Maintenance support of NumPy<2.0 is deprecated as of v0.44 and will be completely dropped in v0.45.
@@ -799,6 +803,15 @@ should be used instead.
   2: ──H─╰X──T†─╰X──T─╰X──T†─╰X──T──H────────┤
   ```
 
+* Access to the follow functions and classes from the :mod:`~.resources` module are deprecated.
+  Instead, these functions must be imported from the :mod:`~.estimator` module.
+  [(#8484)](https://github.com/PennyLaneAI/pennylane/pull/8484)
+
+  - ``qml.estimator.estimate_shots`` rather than ``qml.resources.estimate_shots``
+  - ``qml.estimator.estimate_error`` rather than ``qml.resources.estimate_error``
+  - ``qml.estimator.FirstQuantization`` rather than ``qml.resources.FirstQuantization``
+  - ``qml.estimator.DoubleFactorization`` rather than ``qml.resources.DoubleFactorization``
+
 * The ``argnum`` parameter has been renamed to ``argnums`` for
   :class:`~.grad`, :class:`~.jacobian`, :func:`~.gradients.jvp` and :func:`~.gradients.vjp` to better adhere to conventions in JAX and Catalyst.
   [(#8496)](https://github.com/PennyLaneAI/pennylane/pull/8496)
@@ -822,18 +835,9 @@ should be used instead.
   at a higher computational cost.
   [(#8494)](https://github.com/PennyLaneAI/pennylane/pull/8494)
 
-* Access to the follow functions and classes from the :mod:`~.resources` module are deprecated.
-  Instead, these functions must be imported from the :mod:`~.estimator` module.
-  [(#8484)](https://github.com/PennyLaneAI/pennylane/pull/8484)
-
-  - ``qml.estimator.estimate_shots`` rather than ``qml.resources.estimate_shots``
-  - ``qml.estimator.estimate_error`` rather than ``qml.resources.estimate_error``
-  - ``qml.estimator.FirstQuantization`` rather than ``qml.resources.FirstQuantization``
-  - ``qml.estimator.DoubleFactorization`` rather than ``qml.resources.DoubleFactorization``
-
 * The :func:`pennylane.devices.preprocess.mid_circuit_measurements` transform is deprecated. Instead,
-  the device should determine which MCM method to use, and explicitly include :func:`~.transforms.dynamic_one_shot`
-  or :func:`~.transforms.defer_measurements` in its preprocessing transforms if necessary.
+  the device should determine which MCM method to use,
+  and explicitly include relevant preprocessing transforms if necessary.
   [(#8467)](https://github.com/PennyLaneAI/pennylane/pull/8467)
 
 <h3>Internal changes ⚙️</h3>
@@ -845,10 +849,6 @@ should be used instead.
 * The `pyproject.toml` has been updated with project dependencies to replace the requirements files. Workflows have also been updated to use installations from `pyproject.toml`.
   [(8702)](https://github.com/PennyLaneAI/pennylane/pull/8702)
 
-* `qml.cond`, the `QNode`, transforms, `qml.grad`, and `qml.jacobian` no longer treat all keyword arguments as static
-  arguments. They are instead treated as dynamic, numerical inputs, matching the behaviour of Jax and Catalyst.
-  [(#8290)](https://github.com/PennyLaneAI/pennylane/pull/8290)
-
 * Some error handling has been updated in tests, to adjust to Python 3.14; ``get_type_str`` added a special branch to handle ``Union``.
   The import of ``networkx`` is softened to not occur on import of PennyLane to work around a bug in Python 3.14.1.
   [(#8568)](https://github.com/PennyLaneAI/pennylane/pull/8568)
@@ -857,7 +857,6 @@ should be used instead.
 * The ``jax`` version has been updated to ``0.7.1`` for the ``capture`` module.
   [(#8715)](https://github.com/PennyLaneAI/pennylane/pull/8715)
   [(#8701)](https://github.com/PennyLaneAI/pennylane/pull/8701)
-
 
 * Improved error handling when using PennyLane's experimental program capture functionality with an incompatible JAX version.
   [(#8723)](https://github.com/PennyLaneAI/pennylane/pull/8723)
