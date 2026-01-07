@@ -227,8 +227,6 @@
   CompilePipeline(remove_barrier, commute_controlled, cancel_inverses, merge_rotations, cancel_inverses, cancel_inverses)
   ```
 
-  Additionally, you can use ``pipeline[-1]`` to access the last transform, and use ``bool(pipeline)`` or
-  ``len(pipeline) == 0`` to check if a ``pipeline`` is empty.
 
   By applying a created ``pipeline`` directly on a quantum function as a decorator, the circuit can
   be transformed with each pass therein:
