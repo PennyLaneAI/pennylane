@@ -747,7 +747,9 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
 
 * `MeasurementProcess.expand` is removed.
   `qml.tape.QuantumScript(mp.obs.diagonalizing_gates(), [type(mp)(eigvals=mp.obs.eigvals(), wires=mp.obs.wires)])`
-  can be used instead.
+* ``MeasurementProcess.expand`` has been removed.
+``qml.tape.QuantumScript(mp.obs.diagonalizing_gates(), [type(mp)(eigvals=mp.obs.eigvals(), wires=mp.obs.wires)])``
+should be used instead.
   [(#8468)](https://github.com/PennyLaneAI/pennylane/pull/8468)
 
 * The `qml.QNode.add_transform` method is removed.
