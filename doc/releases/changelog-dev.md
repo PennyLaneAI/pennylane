@@ -170,9 +170,6 @@
   * :func:`~.transforms.gridsynth`: This pass decomposes :math:`Z`-basis rotations and and :class:`~.PhaseShift`
   gates to either the Clifford+T basis or to other PPRs.
 
-    The :func:`~pennylane.transforms.gridsynth` function accepts an ``epsilon`` arguments that determines
-    the maximum permissible operator norm error per rotation gate:
-
     ```python
     @qml.qnode(qml.device("lightning.qubit", wires=1))
     def circuit(x):
