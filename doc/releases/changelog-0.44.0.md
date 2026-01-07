@@ -434,11 +434,11 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
   ```
 
 * The :class:`~pennylane.estimator.QROM` now uses fewer resources
-  when argument values are `restored = True` and `sel_swap_depth=1`.
+  when argument values are `restored=True` and `sel_swap_depth=1`.
   [(#8761)](https://github.com/PennyLaneAI/pennylane/pull/8761)
 
 * The resource decomposition of :class:`~pennylane.estimator.PauliRot` now matches the optimal
-  resources when the `pauli_string` argument is `XX` or `YY`.
+  resources when the ``pauli_string`` argument is ``XX`` or ``YY``.
   [(#8562)](https://github.com/PennyLaneAI/pennylane/pull/8562)
 
 * It is now possible to estimate the resources for quantum circuits that contain or decompose into
@@ -482,8 +482,8 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
   [(#8832)](https://github.com/PennyLaneAI/pennylane/pull/8832)
   [(#8835)](https://github.com/PennyLaneAI/pennylane/pull/8835)
 
-* The `ResourcesUndefinedError` has been removed from the `adjoint`, `ctrl`, and `pow` resource
-  decomposition methods of `ResourceOperator` to avoid using errors as control flow.
+* The ``ResourcesUndefinedError`` has been removed from the ``adjoint``, ``ctrl``, and ``pow`` resource
+  decomposition methods of ``ResourceOperator`` to avoid using errors as control flow.
   [(#8598)](https://github.com/PennyLaneAI/pennylane/pull/8598)
   [(#8811)](https://github.com/PennyLaneAI/pennylane/pull/8811)
 
@@ -516,23 +516,23 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
 
 * It is now possible to minimize the number of work wires in decompositions by activating
   the new graph-based decomposition system (:func:`~pennylane.decomposition.enable_graph`)
-  and setting `minimize_work_wires = True` in the :func:`~pennylane.transforms.decompose` transform.
+  and setting ``minimize_work_wires=True`` in the :func:`~pennylane.transforms.decompose` transform.
   The decomposition system will select decomposition rules that
   minimize the maximum number of simultaneously allocated work wires.
   [(#8729)](https://github.com/PennyLaneAI/pennylane/pull/8729)
   [(#8734)](https://github.com/PennyLaneAI/pennylane/pull/8734)
 
-* A new decomposition, `_decompose_2_cnots`, has been added to :class:`~pennylane.QubitUnitary` which reduces
+* A new decomposition rule has been added to :class:`~pennylane.QubitUnitary` which reduces
   the number of CNOTs used to decompose certain two-qubit `~pennylane.QubitUnitary` operations.
   [(#8717)](https://github.com/PennyLaneAI/pennylane/pull/8717)
 
-* Operator decompositions now only need to be defined in using the graph decomposition system as
-  `Operator.decomposition` will fallback to the first entry in `qml.list_decomps` if the `Operator.compute_decomposition`
+* Operator decompositions now only need to be defined in the graph decomposition system, as
+  ``Operator.decomposition`` will fallback to the first entry in ``qml.list_decomps`` if the ``Operator.compute_decomposition``
   method is not overridden.
   [(#8686)](https://github.com/PennyLaneAI/pennylane/pull/8686)
 
-* The `~.BasisRotation` graph decomposition can now scale to larger workflows with `qjit` as it has been re-written
-  in a qjit friendly way using PennyLane control flow.
+* The `~.BasisRotation` graph decomposition can now scale to larger workflows with ``qjit`` as it has been re-written
+  in a ``qjit`` friendly way using PennyLane control flow.
   [(#8560)](https://github.com/PennyLaneAI/pennylane/pull/8560)
   [(#8608)](https://github.com/PennyLaneAI/pennylane/pull/8608)
   [(#8620)](https://github.com/PennyLaneAI/pennylane/pull/8620)
@@ -601,7 +601,7 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
   ```
   
 * A new decomposition has been added to the adjoint of :class:`pennylane.TemporaryAND`
-  that relies on mid-circuit measurments and does not require any T gates.
+  that relies on mid-circuit measurments and does not require any ``T`` gates.
   [(#8633)](https://github.com/PennyLaneAI/pennylane/pull/8633)
 
 * The graph-based decomposition system now supports decomposition rules that contain mid-circuit measurements.
@@ -618,7 +618,7 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
 
 <h4>Other improvements</h4>
 
-* When program capture is enabled, `qml.adjoint` and `qml.ctrl` can now be called on
+* When program capture is enabled, ``qml.adjoint`` and ``qml.ctrl`` can now be called on
   operators that were constructed ahead of time and used as closure variables.
   [(#8816)](https://github.com/PennyLaneAI/pennylane/pull/8816)
 
@@ -626,7 +626,9 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
   constants, leading to more consistent and standardized conversion.
   [(#8537)](https://github.com/PennyLaneAI/pennylane/pull/8537)
 
-* Transform decorator arguments can now be defined without `@partial`, leading to a simpler interface.
+* Transform decorator arguments can now be defined without ``@partial``, leading to a simpler interface. 
+  [(#8730)](https://github.com/PennyLaneAI/pennylane/pull/8730)
+  [(#8754)](https://github.com/PennyLaneAI/pennylane/pull/8754)
   For example, the following two usages are equivalent:
 
   ```python
@@ -647,19 +649,17 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
       return qml.expval(qml.Z(0))
   ```
 
-  [(#8730)](https://github.com/PennyLaneAI/pennylane/pull/8730)
-  [(#8754)](https://github.com/PennyLaneAI/pennylane/pull/8754)
 
 * :class:`~.transforms.core.TransformContainer` has been renamed to :class:`~.transforms.core.BoundTransform`.
   The old name is still available in the same location.
   [(#8753)](https://github.com/PennyLaneAI/pennylane/pull/8753)
 
-* More programs can be captured because `qml.for_loop` now falls back to a standard Python `for` loop if
+* More programs can be captured because ``qml.for_loop`` now falls back to a standard Python ``for`` loop if
   capturing a condensed, structured loop fails with program capture enabled.
   [(#8615)](https://github.com/PennyLaneAI/pennylane/pull/8615)
 
-* `qml.cond` will now use standard Python logic if all predicates have concrete values,
-  leading to shorter, more efficient `jaxpr` programs. Nested
+* ``qml.cond`` will now use standard Python logic if all predicates have concrete values,
+  leading to shorter, more efficient jaxpr programs. Nested
   control flow primitives will no longer be captured as they are not needed.
   [(#8634)](https://github.com/PennyLaneAI/pennylane/pull/8634)
 
@@ -670,25 +670,25 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
   To obtain the previous behaviour, disable it by setting ``recursive=False``.
   [(#8483)](https://github.com/PennyLaneAI/pennylane/pull/8483)
 
-* `qml.while_loop` and `qml.for_loop` can now lazily dispatch to catalyst when called,
+* ``qml.while_loop`` and ``qml.for_loop`` can now lazily dispatch to Catalyst when called,
   instead of dispatching upon creation.
   [(#8786)](https://github.com/PennyLaneAI/pennylane/pull/8786)
 
-* `qml.grad` and `qml.jacobian` now lazily dispatch to catalyst and program
-  capture, allowing for `qml.qjit(qml.grad(c))` and `qml.qjit(qml.jacobian(c))` to work.
+* ``qml.grad`` and ``qml.jacobian`` now lazily dispatch to Catalyst and program
+  capture, allowing for ``qml.qjit(qml.grad(c))`` and ``qml.qjit(qml.jacobian(c))`` to work.
   [(#8382)](https://github.com/PennyLaneAI/pennylane/pull/8382)
 
-* Both the generic and transform-specific application behavior of a `qml.transforms.core.TransformDispatcher`
-  can now be overwritten with `TransformDispatcher.generic_register` and `my_transform.register`, leading
+* Both the generic and transform-specific application behavior of a ``qml.transforms.core.TransformDispatcher``
+  can now be overwritten with ``TransformDispatcher.generic_register`` and ``my_transform.register``, leading
   to easier customization of transforms.
   [(#7797)](https://github.com/PennyLaneAI/pennylane/pull/7797)
 
-* With capture enabled, measurements can now be performed on `Operator` instances passed as closure
+* With capture enabled, measurements can now be performed on ``Operator`` instances passed as closure
   variables from outside the workflow scope. This makes it possible to define observables outside
-  of a `qnode`/circuit and still measure them inside the `qnode`/circuit.
+  of a QNode and still measure them inside the QNode.
   [(#8504)](https://github.com/PennyLaneAI/pennylane/pull/8504)
 
-* Wires can now be specified via the `range` command with program capture and autograph activated.
+* Wires can now be specified via the ``range`` function with program capture enabled and Autograph activated via ``@qml.qjit(autograph=True)``.
   [(#8500)](https://github.com/PennyLaneAI/pennylane/pull/8500)
 
 * The :func:`~pennylane.transforms.decompose` transform no longer raises an error if both `gate_set` and
@@ -710,7 +710,7 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
   the ``galois`` package for this single function and provides a minor performance improvement.
   [(#8771)](https://github.com/PennyLaneAI/pennylane/pull/8771)
 
-* `qml.measure` can now be used as a frontend for `catalyst.measure`.
+* ``qml.measure`` can now be used as a frontend for ``catalyst.measure``.
   [(#8782)](https://github.com/PennyLaneAI/pennylane/pull/8782)
 
 * `qml.cond` will also accept a partial of an operator type as the true function without a false function
