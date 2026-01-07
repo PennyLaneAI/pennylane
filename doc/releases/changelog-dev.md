@@ -112,9 +112,8 @@
   The new :func:`~.pauli_measure` function is currently only for analysis on the ``null.qubit`` device,
   which allows for resource tracking with :func:`~.specs` and circuit inspection with :func:`~.drawer.draw`.
 
-  In the following example, a measurement of the ``XY`` Pauli product on wires ``0`` and ``2`` is performed
-  using :func:`~.pauli_measure`, followed by application of a :class:`~.PauliX` gate conditional on
-  the outcome of the PPM:
+  Using :func:`~.pauli_measure` in a circuit is similar to :func:`~.measure` (a mid-circuit measurement),
+  but requires that a ``pauli_word`` be specified for the measurement basis:
 
   ```python
   import pennylane as qml
@@ -159,15 +158,15 @@
     expval(PauliZ): 1
   ```
 
-* Several qjit-compatible compilation passes designed for Pauli-based computation are now available with this release, and are designed to work directly with
-  :func:`~.pauli_measure` and :class:`~.PauliRot` operations.
+* Several qjit-compatible compilation passes designed for Pauli-based computation are now available
+  with this release, and are designed to work directly with :func:`~.pauli_measure` and :class:`~.PauliRot` operations.
   [(#8609)](https://github.com/PennyLaneAI/pennylane/pull/8609)
   [(#8764)](https://github.com/PennyLaneAI/pennylane/pull/8764)
   [(#8762)](https://github.com/PennyLaneAI/pennylane/pull/8762)
   
   The compilation passes included in this release are:
 
-  * :func:`~.transforms.gridsynth`: This pass decomposes :math:`Z`-basis rotations and and :class:`~.PhaseShift`
+  * :func:`~.transforms.gridsynth`: This pass decomposes :math:`Z`-basis rotations and :class:`~.PhaseShift`
   gates to either the Clifford+T basis or to other PPRs.
 
     ```python
@@ -182,12 +181,13 @@
 
     ```
     ```pycon
-    >>> qjitted_circuit(1.1)
-    [0.6028324 -0.3695921j  0.50763281+0.49224355j]
+    >>> circuit(1.1)
+    [0.60284353-0.36960984j 0.5076425 +0.4922066j ]
     ```
 
-  * Five transforms for compiling Clifford+T gates, PPRs, and/or PPMs, including func:`~.transforms.to_ppr`, :func:`~.transforms.commute_ppr`, :func:`~.transforms.merge_ppr_ppm`,
-  :func:`~.transforms.ppr_to_ppm`, and :func:`~.transforms.ppm_compilation`,
+  * Five transforms for compiling Clifford+T gates, PPRs, and/or PPMs, including func:`~.transforms.to_ppr`,
+  :func:`~.transforms.commute_ppr`, :func:`~.transforms.merge_ppr_ppm`,
+  :func:`~.transforms.ppr_to_ppm`, :func:`~.transforms.ppm_compilation`,
   :func:`pennylane.transforms.reduce_t_depth`, and :func:`~.transforms.decompose_arbitrary_ppr`.
   
     ```python
@@ -201,12 +201,25 @@
         return qml.expval(qml.Z(0))
     ```
     ```pycon
-    >>> print(qml.specs(circuit, level="all", compute_depth=False)()['resources'])
+    >>> print(qml.specs(circuit, level="all")()['resources']['to-ppr (MLIR-1)'])
+    Total wire allocations: 2
+    Total gates: 7
+    Circuit depth: Not computed
+
+    Gate types:
+      PPR-pi/4: 6
+      PPR-pi/8: 1
+
+    Measurements:
+      expval(PauliZ): 1
     ```
 
-* Directly decomposing Clifford+T gates and other small gates into PPRs is possible via :func:`~.transforms.decompose` and enabling graph-based decompositions with :func:`~.decomposition.enable_graph`. This allows for bypassing the :func:`~.transforms.clifford_t_decomposition`, which can be expensive in some cases.
+* Directly decomposing Clifford+T gates and other small gates into PPRs is possible via :func:`~.transforms.decompose`
+  and enabling graph-based decompositions with :func:`~.decomposition.enable_graph`. This allows for bypassing the
+  :func:`~.transforms.clifford_t_decomposition`, which can be expensive in some cases.
   [(#8700)](https://github.com/PennyLaneAI/pennylane/pull/8700)
   [(#8704)](https://github.com/PennyLaneAI/pennylane/pull/8704)
+
   The following operations have newly added decomposition rules in terms of PPRs (:class:`~.PauliRot`):
   - :class:`~.CRX`, :class:`~.CRY`, :class:`~.CRZ`
   - :class:`~.ControlledPhaseShift`
