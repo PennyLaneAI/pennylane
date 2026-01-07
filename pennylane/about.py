@@ -46,19 +46,6 @@ def _pkg_location():
         return "(unknown)"
 
 
-def _pkg_location():
-    """Return absolute path to the installed PennyLane package."""
-    try:
-        dist = metadata.distribution("pennylane")
-        return os.path.abspath(str(dist.locate_file("")))
-    except (PackageNotFoundError, OSError):
-        # Use imported module path if available
-        mod = sys.modules.get("pennylane")
-        if mod and getattr(mod, "__file__", None):
-            return os.path.abspath(os.path.dirname(mod.__file__))
-        return "(unknown)"
-
-
 def about():
     """
     Prints the information for pennylane installation.
