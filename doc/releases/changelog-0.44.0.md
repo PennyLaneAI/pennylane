@@ -990,27 +990,27 @@ A warning message has been added to :doc:`Building a plugin <../development/plug
 
 <h3>Bug fixes 🐛</h3>
 
-* Fixed a bug where `_double_factorization_compressed` of `pennylane/qchem/factorization.py` used to use `X`
-  for `Z` param initialization.
+* Fixed a bug where ``_double_factorization_compressed`` of ``pennylane/qchem/factorization.py`` used to use ``X``
+  for ``Z`` parameter initialization.
   [(#8689)](https://github.com/PennyLaneAI/pennylane/pull/8689)
 
-* Fixed some numerical stability issues of `_apply_uniform_rotation_dagger`
-  by using a fixed floating number tolerance from `np.finfo`.
+* Fixed some numerical stability issues of ``_apply_uniform_rotation_dagger``
+  by using a fixed floating-point number tolerance from ``np.finfo``.
   [(#8780)](https://github.com/PennyLaneAI/pennylane/pull/8780)
 
-* Fixed handling of floating point errors in the norm of the state when applying
+* Fixed handling of floating-point errors in the norm of the state when applying
   mid-circuit measurements.
   [(#8741)](https://github.com/PennyLaneAI/pennylane/pull/8741)
 
-* Updated `interface-unit-tests.yml` to use the input parameter `pytest_additional_args` when running pytest.
+* Updated ``interface-unit-tests.yml`` to use the input parameter ``pytest_additional_args`` when running pytest.
   [(#8705)](https://github.com/PennyLaneAI/pennylane/pull/8705)
 
-* Fixed a bug in `resolve_work_wire_type` which incorrectly returned a value of `zeroed` if `both work_wires`
-  and `base_work_wires` were empty, causing an incorrect work wire type.
+* Fixed a bug in ``resolve_work_wire_type`` which incorrectly returned a value of ``zeroed`` if ``both work_wires``
+  and ``base_work_wires`` were empty, causing an incorrect work wire type.
   [(#8718)](https://github.com/PennyLaneAI/pennylane/pull/8718)
 
 * Fixed the warnings-as-errors CI action which was failing
-  due to an incompatibility between `pytest-xdist` and `pytest-benchmark`.
+  due to an incompatibility between ``pytest-xdist`` and ``pytest-benchmark``.
   Disabling the benchmark package allows the tests to be collected and executed.
   [(#8699)](https://github.com/PennyLaneAI/pennylane/pull/8699)
 
@@ -1018,26 +1018,26 @@ A warning message has been added to :doc:`Building a plugin <../development/plug
   operations until they are supported.
   [(#8698)](https://github.com/PennyLaneAI/pennylane/pull/8698)
 
-* Fixed a bug in the `default.mixed` device where certain diagonal operations were incorrectly
-  reshaped during application when using broadcasting.
+* Fixed a bug in the ``default.mixed`` device where certain diagonal operations were incorrectly
+  reshaped during application when using parameter broadcasting.
   [(#8593)](https://github.com/PennyLaneAI/pennylane/pull/8593)
 
-* Added an exception to the warning for unsolved operators within the graph-based decomposition
-  system if the unsolved operators are :class:`.allocation.Allocate` or :class:`.allocation.Deallocate`.
+* If :class:`.allocation.Allocate` or :class:`.allocation.Deallocate` instructions are encountered with graph-based decompositions enabled,
+  they are now ignored instead of raising a warning.
   [(#8553)](https://github.com/PennyLaneAI/pennylane/pull/8553)
 
-* Fixed a bug in `clifford_t_decomposition` with `method="gridsynth"` and qjit,
-  where using cached decomposition with the same parameter caused an error.
+* Fixed a bug in ``clifford_t_decomposition`` with ``method="gridsynth"`` and ``qjit``,
+  where using a cached decomposition with the same parameter caused an error.
   [(#8535)](https://github.com/PennyLaneAI/pennylane/pull/8535)
 
 * Fixed a bug in :class:`~.SemiAdder` where the results were incorrect when more ``work_wires`` than required were passed.
  [(#8423)](https://github.com/PennyLaneAI/pennylane/pull/8423)
 
-* Fixed a bug where the deferred measurement method was used silently even if ``mcm_method="one-shot"`` was explicitly requested,
+* Fixed a bug where the deferred-measurement method was used silently even if ``mcm_method="one-shot"`` was explicitly requested,
   when a device that extends the ``LegacyDevice`` does not declare support for mid-circuit measurements.
   [(#8486)](https://github.com/PennyLaneAI/pennylane/pull/8486)
 
-* Fixed a bug where a `KeyError` was raised when querying the decomposition rule for an operator
+* Fixed a bug where a ``KeyError`` was raised when querying the decomposition rule for an operator
   in the gate set from a :class:`~pennylane.decomposition.DecompGraphSolution`.
   [(#8526)](https://github.com/PennyLaneAI/pennylane/pull/8526)
 
@@ -1050,28 +1050,28 @@ A warning message has been added to :doc:`Building a plugin <../development/plug
 * Fixed a bug where an error was raised when trying to decompose a nested composite operator with capture and the new graph system enabled.
   [(#8695)](https://github.com/PennyLaneAI/pennylane/pull/8695)
 
-* Fixed a bug where :func:`~.change_op_basis` could not be captured when the `uncompute_op` is left out.
+* Fixed a bug where the :func:`~.change_op_basis` function could not be captured when the ``uncompute_op`` argument is left out.
   [(#8695)](https://github.com/PennyLaneAI/pennylane/pull/8695)
 
-* Fixed a bug in :func:`~.ops.rs_decomposition` where valid solution candidates were being rejected.
+* Fixed a bug in the :func:`~.ops.rs_decomposition` function where valid solution candidates were being rejected.
   [(#8625)](https://github.com/PennyLaneAI/pennylane/pull/8625)
 
-* Fixed a bug where decomposition rules were sometimes incorrectly disregarded by the `DecompositionGraph` when a higher level
-  decomposition rule uses dynamically allocated work wires.
+* Fixed a bug where decomposition rules were sometimes incorrectly disregarded by the ``DecompositionGraph`` when a higher level
+  decomposition rule uses dynamically allocated work wires via ``qml.allocate``.
   [(#8725)](https://github.com/PennyLaneAI/pennylane/pull/8725)
 
-* Fixed a bug where :class:`~.ops.op_math.ChangeOpBasis` was not correctly reconstructed using `qml.pytrees.unflatten(*qml.pytrees.flatten(op))`
+* Fixed a bug where :class:`~.ops.op_math.ChangeOpBasis` was not correctly reconstructed using ``qml.pytrees.unflatten(*qml.pytrees.flatten(op))``.
   [(#8721)](https://github.com/PennyLaneAI/pennylane/issues/8721)
 
-* Fixed a bug where `estimator.SelectTHC`, `estimator.QubitizeTHC`, and `estimator.PrepTHC` were not accounting for auxiliary
+* Fixed a bug where ``qml.estimator.SelectTHC``, ``qml.estimator.QubitizeTHC``, and ``qml.estimator.PrepTHC`` were not accounting for auxiliary
   wires correctly.
   [(#8719)](https://github.com/PennyLaneAI/pennylane/pull/8719)
 
-* Fixed a bug where the associated `expand_transform` does not stay with the original :class:`~.transforms.core.Transform` in a :class:`~.CompilePipeline`
+* Fixed a bug where the associated ``expand_transform`` does not stay with the original :class:`~.transforms.core.Transform` in a :class:`~.CompilePipeline`
   during manipulations of the :class:`~.CompilePipeline`.
   [(#8774)](https://github.com/PennyLaneAI/pennylane/pull/8774)
 
-* Fixed a bug where an error was raised when `to_openqasm` is used with `qml.decomposition.enable_graph()`
+* Fixed a bug where an error was raised when ``to_openqasm`` is used with ``qml.decomposition.enable_graph()``
   [(#8809)](https://github.com/PennyLaneAI/pennylane/pull/8809)
 
 <h3>Contributors ✍️</h3>
