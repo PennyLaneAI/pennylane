@@ -192,6 +192,7 @@
   [(#8751)](https://github.com/PennyLaneAI/pennylane/pull/8751)
   [(#8774)](https://github.com/PennyLaneAI/pennylane/pull/8774)
   [(#8781)](https://github.com/PennyLaneAI/pennylane/pull/8781)
+  [(#8834)](https://github.com/PennyLaneAI/pennylane/pull/8834)
 
   The :class:`~.CompilePipeline` class allows you to chain together multiple transforms
   to create custom circuit optimization pipelines with ease. For example, :class:~.CompilePipeline objects can compound:
