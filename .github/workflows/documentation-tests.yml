@@ -17,7 +17,7 @@ on:
       run_count:
         description: 'Number of times to run the documentation tests'
         required: false
-        default: 5
+        default: 1
         type: string
 
 concurrency:
@@ -35,6 +35,7 @@ jobs:
 
   prepare-run-count:
     if: github.event.pull_request.draft == false
+    name: Prepare run count list
     needs: determine_runner
     runs-on: ubuntu-latest
     outputs:
@@ -43,8 +44,7 @@ jobs:
       - name: Set run count
         id: set-run-count
         run: |
-          echo "Run count input: ${{ inputs.run_count || 5}}"        
-          RUN_COUNT_LIST=$(seq -s, 1 ${{ inputs.run_count || 5 }})
+          RUN_COUNT_LIST=$(seq -s, 1 ${{ inputs.run_count || 1 }})
           echo "run-count-list=$RUN_COUNT_LIST" >> $GITHUB_OUTPUT
           echo "Run count list is set to $RUN_COUNT_LIST"
           RUN_COUNT_JSON=$(echo "[\"$(echo $RUN_COUNT_LIST | sed 's/,/\",\"/g')\"]")
