@@ -4,7 +4,7 @@
 
 <h3>Improvements 🛠</h3>
 
-* Implement addition of :class:`~.resources.SpecsResources`, corresponding to the resources
+* Implement addition of :class:`~.resource.SpecsResources`, corresponding to the resources
   required by executing the added circuits in series.
   [(#8866)](https://github.com/PennyLaneAI/pennylane/pull/8866)
 
