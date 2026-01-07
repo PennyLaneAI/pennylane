@@ -207,7 +207,7 @@
   CompilePipeline(commute_controlled, cancel_inverses, merge_rotations)
   ```
 
-  be added together with ``+``:
+  They can be added together with ``+``:
 
   ```pycon
   >>> pipeline += qml.transforms.merge_rotations
