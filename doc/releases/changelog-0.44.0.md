@@ -93,7 +93,7 @@
   results in the fewest total executions. This takes into account the number of observables, the 
   number of generators, the number of measurements, and the presence of available auxiliary wires. 
   For more details on how ``"auto"`` works, consult the section titled 
-  "Variants of the standard hadamard gradient" in the :func:`documentation for the Hadamard test gradient <pennylane.gradients.hadamard_grad>`_.
+  "Variants of the standard hadamard gradient" in the documentation for the Hadamard test gradient (:func:`pennylane.gradients.hadamard_grad`).
 
   The ``"auto"`` method can be accessed by specifying it in ``gradient_kwargs`` in the QNode when 
   using ``diff_method="hadamard"``:
@@ -107,7 +107,7 @@
   ```
 
   ```pycon
-  >> print(qml.grad(circuit)(qml.numpy.array(0.5)))
+  >>> print(qml.grad(circuit)(qml.numpy.array(0.5)))
   0.7342549405478683
   ```
 
