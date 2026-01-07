@@ -433,8 +433,8 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
   2
   ```
 
-* The resource requirements of the :class:`~pennylane.estimator.QROM` class have been reduced
-  in cases where `restored = True` and `sel_swap_depth=1`.
+* The :class:`~pennylane.estimator.QROM` now uses fewer resources
+  when argument values are `restored = True` and `sel_swap_depth=1`.
   [(#8761)](https://github.com/PennyLaneAI/pennylane/pull/8761)
 
 * The resource decomposition of :class:`~pennylane.estimator.PauliRot` now matches the optimal
@@ -470,21 +470,28 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
 
 * The `~pennylane.estimator.compact_hamiltonian.CDFHamiltonian`, `~pennylane.estimator.compact_hamiltonian.THCHamiltonian`,
   `~pennylane.estimator.compact_hamiltonian.VibrationalHamiltonian`, and `~pennylane.estimator.compact_hamiltonian.VibronicHamiltonian`
-  classes were modified to take the 1-norm of the Hamiltonian as an optional argument.
+  classes have been modified to take the 1-norm of the Hamiltonian as an optional argument.
   [(#8697)](https://github.com/PennyLaneAI/pennylane/pull/8697)
 
-* Improved the documentation and added input validation for various operators and
-  functions in the :mod:`estimator <pennylane.estimator>`.
+* Improved the :mod:`estimator <pennylane.estimator>` module documentation for clarity
+  and added input validation for various operators and
+  functions to raise more informative errors.
   [(#8827)](https://github.com/PennyLaneAI/pennylane/pull/8827)
   [(#8829)](https://github.com/PennyLaneAI/pennylane/pull/8829)
   [(#8830)](https://github.com/PennyLaneAI/pennylane/pull/8830)
   [(#8832)](https://github.com/PennyLaneAI/pennylane/pull/8832)
   [(#8835)](https://github.com/PennyLaneAI/pennylane/pull/8835)
 
+* The `ResourcesUndefinedError` has been removed from the `adjoint`, `ctrl`, and `pow` resource
+  decomposition methods of `ResourceOperator` to avoid using errors as control flow.
+  [(#8598)](https://github.com/PennyLaneAI/pennylane/pull/8598)
+  [(#8811)](https://github.com/PennyLaneAI/pennylane/pull/8811)
+
 <h4>Decompositions</h4>
 
-* Added decompositions of the ``RX``, ``RY`` and ``RZ`` rotations into one of the other two, as well
-  as basis changing Clifford gates, to the graph-based decomposition system.
+* The graph-based decomposition system now supports 
+  basis-changing Clifford gates and decomposing
+  ``RX``, ``RY`` and ``RZ`` rotations into each other. 
   [(#8569)](https://github.com/PennyLaneAI/pennylane/pull/8569)
 
 * A new decomposition has been added for the Controlled :class:`~.SemiAdder`,
@@ -496,18 +503,31 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
   for the target gate set in decompositions.
   [(#8522)](https://github.com/PennyLaneAI/pennylane/pull/8522)
 
-* The :func:`~pennylane.transforms.decompose` transform now accepts a `minimize_work_wires` argument. With
-  the new graph-based decomposition system activated via :func:`~pennylane.decomposition.enable_graph`,
-  and `minimize_work_wires` set to `True`, the decomposition system will select decomposition rules that
+  ```pycon
+  >>> dev = qml.device('lightning.qubit')
+  >>> dev.capabilities.gate_set()
+  {'Adjoint(CNOT)',
+  'Adjoint(CRX)',
+  'Adjoint(CRY)',
+  'Adjoint(CRZ)',
+  'Adjoint(CRot)',
+  ...
+  ```
+
+* It is now possible to minimize the number of work wires in decompositions by activating
+  the new graph-based decomposition system (:func:`~pennylane.decomposition.enable_graph`)
+  and setting `minimize_work_wires = True` in the :func:`~pennylane.transforms.decompose` transform.
+  The decomposition system will select decomposition rules that
   minimize the maximum number of simultaneously allocated work wires.
   [(#8729)](https://github.com/PennyLaneAI/pennylane/pull/8729)
   [(#8734)](https://github.com/PennyLaneAI/pennylane/pull/8734)
 
-* Added a new decomposition, `_decompose_2_cnots`, for the two-qubit decomposition for `QubitUnitary`.
-  It supports the analytical decomposition a two-qubit unitary known to require exactly 2 CNOTs.
-  [(#8666)](https://github.com/PennyLaneAI/pennylane/issues/8666)
+* A new decomposition, `_decompose_2_cnots`, has been added to :class:`~pennylane.QubitUnitary` which reduces
+  the number of CNOTs used to decompose certain two-qubit `~pennylane.QubitUnitary` operations.
+  [(#8717)](https://github.com/PennyLaneAI/pennylane/pull/8717)
 
-* `Operator.decomposition` will fallback to the first entry in `qml.list_decomps` if the `Operator.compute_decomposition`
+* Operator decompositions now only need to be defined in using the graph decomposition system as
+  `Operator.decomposition` will fallback to the first entry in `qml.list_decomps` if the `Operator.compute_decomposition`
   method is not overridden.
   [(#8686)](https://github.com/PennyLaneAI/pennylane/pull/8686)
 
@@ -517,7 +537,7 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
   [(#8608)](https://github.com/PennyLaneAI/pennylane/pull/8608)
   [(#8620)](https://github.com/PennyLaneAI/pennylane/pull/8620)
 
-* The new graph based decompositions system enabled via :func:`~.decomposition.enable_graph` now supports the following
+* The graph-based decompositions system enabled via :func:`~.decomposition.enable_graph` now supports the following
   additional templates.
   [(#8520)](https://github.com/PennyLaneAI/pennylane/pull/8520)
   [(#8515)](https://github.com/PennyLaneAI/pennylane/pull/8515)
@@ -564,6 +584,21 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
   allowing for efficient decomposition of large matrices that cannot fit in memory when written as
   dense arrays.
   [(#8612)](https://github.com/PennyLaneAI/pennylane/pull/8612)
+  ```python
+  arr = np.array([[0, 0, 0, 1, 0, 0, 0, 0],
+                  [0, 0, 1, 0, 0, 0, 0, 0],
+                  [0, 1, 0, 0, 0, 0, 0, 0],
+                  [1, 0, 0, 0, 0, 0, 0, 0],
+                  [0, 0, 0, 0, 0, 0, 0, 1],
+                  [0, 0, 0, 0, 0, 0, 1, 0],
+                  [0, 0, 0, 0, 0, 1, 0, 0],
+                  [0, 0, 0, 0, 1, 0, 0, 0]])
+  sparse = sp.sparse.csr_array(arr)
+  ```
+  ```pycon
+  >>> qml.pauli_decompose(sparse)
+  1.0 * (I(0) @ X(1) @ X(2))
+  ```
   
 * A new decomposition has been added to the adjoint of :class:`pennylane.TemporaryAND`
   that relies on mid-circuit measurments and does not require any T gates.
@@ -678,9 +713,6 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
 * `qml.measure` can now be used as a frontend for `catalyst.measure`.
   [(#8782)](https://github.com/PennyLaneAI/pennylane/pull/8782)
 
-* The `ResourcesUndefinedError` has been removed from the `adjoint`, `ctrl`, and `pow` resource
-  decomposition methods of `ResourceOperator` to avoid using errors as control flow.
-  [(#8598)](https://github.com/PennyLaneAI/pennylane/pull/8598)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
