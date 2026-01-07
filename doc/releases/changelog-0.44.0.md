@@ -658,6 +658,59 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
 * The output format of :func:`~.specs` has been restructured into a dataclass to streamline the outputs.
   Some legacy information has been removed from the output, such as gradient and interface information.
   [(#8713)](https://github.com/PennyLaneAI/pennylane/pull/8713)
+  
+  Consider the following circuit:
+
+  ```python
+  dev = qml.device("default.qubit")
+  @qml.qnode(dev)
+  def circuit():
+    qml.X(0)
+    qml.Y(1)
+    qml.Z(2)
+    return qml.state()
+  ```
+
+  The new :func:`~.specs` provides:
+
+  ```pycon
+  >>> qml.specs(circuit)()
+  Device: default.qubit
+  Device wires: None
+  Shots: Shots(total=None)
+  Level: gradient
+
+  Resource specifications:
+    Total wire allocations: 3
+    Total gates: 3
+    Circuit depth: 1
+
+    Gate types:
+      PauliX: 1
+      PauliY: 1
+      PauliZ: 1
+
+    Measurements:
+      state(all wires): 1
+  ```
+
+  Whereas previously, :func:`~.specs` provided:
+
+  ```pycon
+  >>> qml.specs(circuit)()
+  {'resources': Resources(num_wires=3, num_gates=3, gate_types=defaultdict(<class 'int'>, {'PauliX': 1, 'PauliY': 1, 'PauliZ': 1}), gate_sizes=defaultdict(<class 'int'>, {1: 3}), depth=1, shots=Shots(total_shots=None, shot_vector=())),
+  'errors': {},
+  'num_observables': 1,
+  'num_trainable_params': 0,
+  'num_device_wires': 3,
+  'num_tape_wires': 3,
+  'device_name': 'default.qubit',
+  'level': 'gradient',
+  'gradient_options': {},
+  'interface': 'auto',
+  'diff_method': 'best',
+  'gradient_fn': 'backprop'}
+  ```
 
 * The value ``level=None`` is no longer a valid argument in the following:
   :func:`~.workflow.get_transform_program`, :func:`~.workflow.construct_batch`,
