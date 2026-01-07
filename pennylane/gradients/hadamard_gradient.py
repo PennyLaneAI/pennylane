@@ -608,6 +608,11 @@ def _quantum_automatic_differentiation(
         trainable_op, _, _ = tape.get_operation(trainable_param_idx)
         _, generators = _get_pauli_generators(trainable_op)
 
+        if tape.measurements[0].obs is None:
+            raise ValueError(
+                "The circuit must have observables in order to use Quantum Automatic Differentiation."
+            )
+
         _, observables = _get_pauli_terms(tape.measurements[0].obs)
 
         def _count_groupings(paulis):
@@ -632,11 +637,16 @@ def _quantum_automatic_differentiation(
 
     if direct:
         if standard:
+            assert_no_probability(tape.measurements, "direct")
             return _direct_hadamard_test(tape, trainable_param_idx, aux_wire)
+
+        # The case where probs would appear here is covered on line 611 since probs are measurements but not obs
         return _reversed_direct_hadamard_test(tape, trainable_param_idx, aux_wire)
 
     if standard:
         return _hadamard_test(tape, trainable_param_idx, aux_wire)
+
+    # The case where probs would appear here is covered on line 611 since probs are measurements but not obs
     return _reversed_hadamard_test(tape, trainable_param_idx, aux_wire)
 
 
