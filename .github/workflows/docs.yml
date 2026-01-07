@@ -33,7 +33,7 @@ permissions: write-all
 
 jobs:
   get_branch:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       run_sphinx: ${{ steps.get_pr_branch.outputs.run_sphinx }}
     steps:
