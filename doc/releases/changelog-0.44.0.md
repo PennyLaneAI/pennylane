@@ -218,9 +218,9 @@
       expval(PauliZ): 1
     ```
 
-* Directly decomposing Clifford+T gates and other small gates into PPRs is possible via :func:`~.transforms.decompose`
-  and enabling graph-based decompositions with :func:`~.decomposition.enable_graph`. This allows for bypassing the
-  :func:`~.transforms.clifford_t_decomposition`, which can be expensive in some cases.
+* Directly decomposing Clifford+T gates and other small gates into PPRs is possible using the :func:`~.transforms.decompose` transform
+  with graph-based decompositions enabled (:func:`~.decomposition.enable_graph`). This allows direct decomposition of certain operators without the need to use approximate methods such as those found in the
+  :func:`~.transforms.clifford_t_decomposition` transform, which can sometimes be less efficient.
   [(#8700)](https://github.com/PennyLaneAI/pennylane/pull/8700)
   [(#8704)](https://github.com/PennyLaneAI/pennylane/pull/8704)
 
