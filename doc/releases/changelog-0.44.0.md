@@ -452,12 +452,9 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
   ``call_graph='decomposition'``.
   [(#8390)](https://github.com/PennyLaneAI/pennylane/pull/8390)
 
-  ```pycon
-  # New default behaviour (estimator mode)
-  >>> qml.to_bloq(qml.QFT(wires=range(5)), map_ops=False).call_graph()[1]
-  {Hadamard(): 5, CNOT(): 26, TGate(is_adjoint=False): 1320}
+  The old behaviour was the following:
 
-  # Previous behaviour (decomposition mode)
+  ```pycon
   >>> qml.to_bloq(qml.QFT(wires=range(5)), map_ops=False, call_graph='decomposition').call_graph()[1]
   {Hadamard(): 5,
    ZPowGate(exponent=-0.15915494309189535, eps=1e-11): 10,
@@ -466,6 +463,13 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
    CNOT(): 20,
    TwoBitSwap(): 2
   }
+  ```
+
+  The new behaviour is now this:
+
+  ```pycon
+  >>> qml.to_bloq(qml.QFT(wires=range(5)), map_ops=False).call_graph()[1]
+  {Hadamard(): 5, CNOT(): 26, TGate(is_adjoint=False): 1320}
   ```
 
 * The `~pennylane.estimator.compact_hamiltonian.CDFHamiltonian`, `~pennylane.estimator.compact_hamiltonian.THCHamiltonian`,
