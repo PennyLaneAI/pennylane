@@ -410,53 +410,6 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
 
 <h3>Improvements 🛠</h3>
 
-* The `ResourcesUndefinedError` has been removed from the `adjoint`, `ctrl`, and `pow` resource
-  decomposition methods of `ResourceOperator` to avoid using errors as control flow.
-  [(#8598)](https://github.com/PennyLaneAI/pennylane/pull/8598)
-
-* `@partial` is not needed anymore for using transforms as decorators with arguments.
-  Now, the following two usages are equivalent:
-
-  ```python
-  @partial(qml.transforms.decompose, gate_set={qml.RX, qml.CNOT})
-  @qml.qnode(qml.device('default.qubit', wires=2))
-  def circuit():
-      qml.Hadamard(wires=0)
-      qml.CZ(wires=[0,1])
-      return qml.expval(qml.Z(0))
-  ```
-
-  ```python
-  @qml.transforms.decompose(gate_set={qml.RX, qml.CNOT})
-  @qml.qnode(qml.device('default.qubit', wires=2))
-  def circuit():
-      qml.Hadamard(wires=0)
-      qml.CZ(wires=[0,1])
-      return qml.expval(qml.Z(0))
-  ```
-
-  [(#8730)](https://github.com/PennyLaneAI/pennylane/pull/8730)
-  [(#8754)](https://github.com/PennyLaneAI/pennylane/pull/8754)
-
-* When program capture is enabled, `qml.adjoint` and `qml.ctrl` can now be called on
-  operators that were constructed ahead of time and used as closure variables.
-  [(#8816)](https://github.com/PennyLaneAI/pennylane/pull/8816)
-
-* `qml.measure` can now be used as a frontend for `catalyst.measure`.
-  [(#8782)](https://github.com/PennyLaneAI/pennylane/pull/8782)
-
-* `qml.while_loop` and `qml.for_loop` can now lazily dispatch to catalyst when called,
-  instead of dispatching upon creation.
-  [(#8786)](https://github.com/PennyLaneAI/pennylane/pull/8786)
-
-* Improved the documentation and added input validation for various operators and
-  functions in the :mod:`estimator <pennylane.estimator>`.
-  [(#8827)](https://github.com/PennyLaneAI/pennylane/pull/8827)
-  [(#8829)](https://github.com/PennyLaneAI/pennylane/pull/8829)
-  [(#8830)](https://github.com/PennyLaneAI/pennylane/pull/8830)
-  [(#8832)](https://github.com/PennyLaneAI/pennylane/pull/8832)
-  [(#8835)](https://github.com/PennyLaneAI/pennylane/pull/8835)
-
 <h4>Resource estimation</h4>
 
 * It is now easier to access the total gates and wires in resource estimates with the
@@ -519,6 +472,14 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
   `~pennylane.estimator.compact_hamiltonian.VibrationalHamiltonian`, and `~pennylane.estimator.compact_hamiltonian.VibronicHamiltonian`
   classes were modified to take the 1-norm of the Hamiltonian as an optional argument.
   [(#8697)](https://github.com/PennyLaneAI/pennylane/pull/8697)
+
+* Improved the documentation and added input validation for various operators and
+  functions in the :mod:`estimator <pennylane.estimator>`.
+  [(#8827)](https://github.com/PennyLaneAI/pennylane/pull/8827)
+  [(#8829)](https://github.com/PennyLaneAI/pennylane/pull/8829)
+  [(#8830)](https://github.com/PennyLaneAI/pennylane/pull/8830)
+  [(#8832)](https://github.com/PennyLaneAI/pennylane/pull/8832)
+  [(#8835)](https://github.com/PennyLaneAI/pennylane/pull/8835)
 
 <h4>Decompositions</h4>
 
@@ -622,12 +583,16 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
 
 <h4>Other improvements</h4>
 
+* When program capture is enabled, `qml.adjoint` and `qml.ctrl` can now be called on
+  operators that were constructed ahead of time and used as closure variables.
+  [(#8816)](https://github.com/PennyLaneAI/pennylane/pull/8816)
+
 * The constant to convert the length unit Bohr to Angstrom in ``qml.qchem`` has been updated to use scipy
   constants, leading to more consistent and standardized conversion.
   [(#8537)](https://github.com/PennyLaneAI/pennylane/pull/8537)
 
-* It is now possible to specify transform decorator arguments without `@partial`.
-  The following two usages are equivalent:
+* Transform decorator arguments can now be defined without `@partial`, leading to a simpler interface.
+  For example, the following two usages are equivalent:
 
   ```python
   @partial(qml.transforms.decompose, gate_set={qml.RX, qml.CNOT})
@@ -709,6 +674,13 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
   over :math:`\mathbb{Z}_2` based on Gauss-Jordan elimination. This removes the need to install
   the ``galois`` package for this single function and provides a minor performance improvement.
   [(#8771)](https://github.com/PennyLaneAI/pennylane/pull/8771)
+
+* `qml.measure` can now be used as a frontend for `catalyst.measure`.
+  [(#8782)](https://github.com/PennyLaneAI/pennylane/pull/8782)
+
+* The `ResourcesUndefinedError` has been removed from the `adjoint`, `ctrl`, and `pow` resource
+  decomposition methods of `ResourceOperator` to avoid using errors as control flow.
+  [(#8598)](https://github.com/PennyLaneAI/pennylane/pull/8598)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
