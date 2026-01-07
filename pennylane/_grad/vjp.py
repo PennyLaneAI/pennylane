@@ -26,7 +26,9 @@ from .grad import _args_and_argnums, _setup_h, _setup_method
 has_jax = True
 try:
     import jax
-except ImportError:
+
+    # not quite sure why the no jax import isn't getting hit
+except ImportError:  # pragma: no cover
     has_jax = False
 
 
@@ -153,11 +155,11 @@ def vjp(f, params, cotangents, method=None, h=None, argnums=None, *, argnum=None
 
     Args:
         f(Callable): Function-like object to calculate VJP for
-        params(List[Array]): List (or a tuple) of arguments for `f` specifying the point to calculate
+        params(Sequence[Pytree[Array]]): List (or a tuple) of arguments for `f` specifying the point to calculate
                              VJP at. A subset of these parameters are declared as
                              differentiable by listing their indices in the ``argnums`` parameter.
-        cotangents(List[Array]): List (or a tuple) of tangent values to use in VJP. The list size
-                                 and shapes must match the size and shape of ``f`` outputs.
+        cotangents(Pytree[Array]): Cotangent values to use in VJP. Should match the pytree
+            structure of the functions output.
         method(str): Differentiation method to use, same as in :func:`~.grad`.
         h (float): the step-size value for the finite-difference (``"fd"``) method
         argnums (Union[int, List[int]]): the params' indices to differentiate.
@@ -165,11 +167,10 @@ def vjp(f, params, cotangents, method=None, h=None, argnums=None, *, argnum=None
     Returns:
         Tuple[Array]: Return values of ``f`` paired with the VJP values.
 
-    Raises:
-        TypeError: invalid parameter types
-        ValueError: invalid parameter values
-
     .. seealso:: :func:`~.grad`, :func:`~.jvp`, :func:`~.jacobian`
+
+    Note that while ``jax.vjp`` has no ``argnums`` and treats all params as trainable as default, we
+    default to only the first argument as trainable by default.
 
     **Example**
 
@@ -177,16 +178,19 @@ def vjp(f, params, cotangents, method=None, h=None, argnums=None, *, argnum=None
 
         @qml.qjit
         def vjp(params, cotangent):
-          def f(x):
-              y = [jnp.sin(x[0]), x[1] ** 2, x[0] * x[1]]
-              return jnp.stack(y)
+          def f(x, y):
+              return x * y
 
-          return qml.vjp(f, [params], [cotangent])
+          return qml.vjp(f, params, cotangent)
 
-    >>> x = jnp.array([0.1, 0.2])
-    >>> dy = jnp.array([-0.5, 0.1, 0.3])
-    >>> vjp(x, dy)
-    (Array([0.09983342, 0.04      , 0.02      ], dtype=float64), (Array([-0.43750208,  0.07      ], dtype=float64),))
+    >>> params = (jnp.array([1.0, 2.0]), jnp.array([2.0, 3.0]))
+    >>> dy = jnp.array([10.0, 20.0])
+    >>> results, dparams = vjp(params, dy)
+    >>> results
+    Array([2., 6.], dtype=float64)
+    >>> dparams
+    (Array([20., 60.], dtype=float64),)
+
     """
     argnums = argnums if argnums is not None else argnum
     if argnum is not None:

@@ -93,6 +93,22 @@ def _shape(shape, dtype, weak_type=False):
 
 
 def _args_and_argnums(args, argnums):
+    """
+    Perform some setup for args and argnums that are consistent between grad and vjp.
+
+    Returns:
+        Flat arguments
+        Flat argnums
+        Pytree for all the args
+        Pytree for the trainable args
+
+    Processing steps are:
+    * set default values for argnums
+    * validating the length of the argnums
+    * flattening out the args and argnums
+    * extracting out the pytree just for the trainable args
+
+    """
     if argnums is None:
         argnums = 0
     if argnums_is_int := isinstance(argnums, int):

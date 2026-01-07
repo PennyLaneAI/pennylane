@@ -95,7 +95,7 @@ class TestCapturingVJP:
             return jnp.array([2, 1]) * x
 
         def w(x):
-            return qml.vjp(f, (x,), (jnp.array([1.0, 1.0]),))
+            return qml.vjp(f, (x,), jnp.array([1.0, 1.0]))
 
         jaxpr = jax.make_jaxpr(w)(0.5)
 
@@ -121,7 +121,7 @@ class TestCapturingVJP:
         y = [2.0, 3.0]
 
         def w(x, y, argnums):
-            return qml.vjp(f, (x, y), (-1.0,), argnums=argnums)
+            return qml.vjp(f, (x, y), -1.0, argnums=argnums)
 
         for argnums in (0, 1):
 
@@ -138,7 +138,7 @@ class TestCapturingVJP:
             return 2 * x
 
         def w(x):
-            return qml.vjp(f, (x,), (1.0,), h=1e-4)
+            return qml.vjp(f, (x,), 1.0, h=1e-4)
 
         jaxpr = jax.make_jaxpr(w)(0.5)
 
@@ -154,7 +154,7 @@ class TestCapturingVJP:
             return 2 * x
 
         def w(x):
-            return qml.vjp(f, (x,), (1.0,), method="fd")
+            return qml.vjp(f, (x,), 1.0, method="fd")
 
         jaxpr = jax.make_jaxpr(w)(0.5)
 
@@ -162,6 +162,58 @@ class TestCapturingVJP:
 
         assert jaxpr_eqn.params["method"] == "fd"
         assert jaxpr_eqn.params["h"] == 1e-6
+
+    def test_multiple_outputs(self):
+        """Test capturing the vjp of a function with multiple outputs."""
+
+        def f(x):
+            y = jnp.stack([x, x])
+            z = jnp.stack([y, y])
+            return y**2, z**3
+
+        def w(x, dy1, dy2):
+            return qml.vjp(f, (x,), (dy1, dy2))
+
+        x = jnp.array(0.5)
+        dy1 = jnp.array([2.0, 3.0])
+        dy2 = jnp.array([[3.0, 4.0], [5.0, 6.0]])
+        jaxpr = jax.make_jaxpr(w)(x, dy1, dy2).jaxpr
+        vjp_eqn = jaxpr.eqns[0]
+
+        assert len(vjp_eqn.invars) == 3
+        assert vjp_eqn.invars[0].aval.shape == ()  # input
+        assert vjp_eqn.invars[1].aval.shape == (2,)  # dy1
+        assert vjp_eqn.invars[2].aval.shape == (2, 2)  # dy2
+
+        assert len(vjp_eqn.outvars) == 3
+        assert vjp_eqn.outvars[0].aval.shape == (2,)  # y1
+        assert vjp_eqn.outvars[1].aval.shape == (2, 2)  # y2
+        assert vjp_eqn.outvars[2].aval.shape == ()  # dx
+
+    def test_sequence_argnums(self):
+        """Test that multiple argnums can be provided in a sequence."""
+
+        def f(x, y, z):
+            return jnp.sum(x) + jnp.sum(y) + jnp.sum(z)
+
+        def w(x, y, z, dy):
+            return qml.vjp(f, (x, y, z), dy, argnums=[0, 2])
+
+        x = jnp.arange(2, dtype=float)
+        y = jnp.arange(3, dtype=float)
+        z = jnp.arange(4, dtype=float)
+        dy = jnp.array(2.0)
+        jaxpr = jax.make_jaxpr(w)(x, y, z, dy)
+        vjp_eqn = jaxpr.eqns[0]
+
+        assert vjp_eqn.params["argnums"] == (0, 2)
+
+        assert len(vjp_eqn.invars) == 4  # three inputs, one dy
+        assert len(vjp_eqn.outvars) == 3  # one result, two dx
+
+        assert vjp_eqn.outvars[0].aval.shape == ()  # result
+        assert vjp_eqn.outvars[1].aval.shape == (2,)  # dx
+        assert vjp_eqn.outvars[2].aval.shape == (4,)  # dz
 
 
 def test_pytrees_in_and_out():
