@@ -158,8 +158,8 @@
 
 <h4>Arbitrary State Preparation </h4>
 
-* A new template :class:`~.MultiplexerStatePreparation` has been added. :class:`~.MultiplexerStatePreparation`
-  allows preparing arbitrary states using :class:`~.SelectPauliRot` operations.
+* A new template :class:`~.MultiplexerStatePreparation` is now available,
+  allowing the preparation of arbitrary states using :class:`~.SelectPauliRot` operations.
   [(#8581)](https://github.com/PennyLaneAI/pennylane/pull/8581)
 
   Using :class:`~.MultiplexerStatePreparation` is analogous to using other state preparation techniques in PennyLane.
