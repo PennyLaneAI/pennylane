@@ -215,7 +215,7 @@
   CompilePipeline(commute_controlled, cancel_inverses, merge_rotations)
   ```
 
-  multiplied by scalars via ``*`` to repeat compilation passes an integer number of times:
+  They can be multiplied by scalars via ``*`` to repeat compilation passes a predetermined number of times:
   
   ```pycon
   >>> pipeline += 2 * qml.transforms.cancel_inverses(recursive=True)
