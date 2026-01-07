@@ -268,10 +268,16 @@ def custom_qnode_wrapper(self, qnode, targs, tkwargs):
     """QNode execution wrapper for supporting ``add_noise`` with levels"""
     cqnode = copy(qnode)
     level = tkwargs.get("level", "user")
+    bound_transform = BoundTransform(self, targs, {**tkwargs})
+
+    if level == "top":
+        cqnode._transform_program = copy(qnode.transform_program)
+        cqnode.transform_program.insert(0, bound_transform)
+        return cqnode
 
     compile_pipeline = get_transform_program(qnode, level=level)
 
     cqnode._transform_program = compile_pipeline
-    cqnode.transform_program.append(BoundTransform(self, targs, {**tkwargs}))
+    cqnode.transform_program.append(bound_transform)
 
     return cqnode
