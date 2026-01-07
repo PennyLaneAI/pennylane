@@ -98,7 +98,7 @@
 
 <h4>Pauli-based computation 💻 </h4>
   
-  New tools dedicated to fault-tolerant quantum computing (FTQC) research based on the Pauli-based
+* New tools dedicated to fault-tolerant quantum computing (FTQC) research based on the Pauli-based
   computation framework are now available! With this release, you can express, compile, and inspect 
   workflows written in terms of Pauli product rotations (PPRs) and Pauli product measurements (PPMs), which are 
   the building blocks of Pauli-based computation framework.
@@ -170,7 +170,7 @@
   
   The compilation passes included in this release are:
 
-  * :func:`~.transforms.gridsynth`: This pass decomposes :math:`Z`-basis rotations and :class:`~.PhaseShift`
+  * :func:`~.gridsynth`: This pass decomposes :math:`Z`-basis rotations and :class:`~.PhaseShift`
   gates to either the Clifford+T basis or to other PPRs.
 
     ```python
@@ -220,7 +220,7 @@
 
 * Directly decomposing Clifford+T gates and other small gates into PPRs is possible using the :func:`~.transforms.decompose` transform
   with graph-based decompositions enabled (:func:`~.decomposition.enable_graph`). This allows direct decomposition of certain operators without the need to use approximate methods such as those found in the
-  :func:`~.transforms.clifford_t_decomposition` transform, which can sometimes be less efficient.
+  :func:`~.clifford_t_decomposition` transform, which can sometimes be less efficient.
   [(#8700)](https://github.com/PennyLaneAI/pennylane/pull/8700)
   [(#8704)](https://github.com/PennyLaneAI/pennylane/pull/8704)
 
