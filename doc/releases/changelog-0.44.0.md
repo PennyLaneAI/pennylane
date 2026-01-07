@@ -78,11 +78,41 @@
   [(#8680)](https://github.com/PennyLaneAI/pennylane/pull/8680)
   [(#8801)](https://github.com/PennyLaneAI/pennylane/pull/8801)
 
-<h4>Quantum Automatic Differentiation </h4>
+<h4>Quantum Automatic Differentiation 🤖</h4>
 
-* Quantum Automatic Differentiation implemented to allow automatic selection of optimal
-  Hadamard gradient differentiation methods per [the paper](https://arxiv.org/pdf/2408.05406).
+* The Hadamard test gradient method (``diff_method="hadamard"``) in PennyLane now has an ``"auto"`` 
+  mode, which automatically chooses the most efficient mode of differentiation.
   [(#8640)](https://github.com/PennyLaneAI/pennylane/pull/8640)
+
+  The Hadamard test gradient method is a hardware-compatible differentation method that can 
+  differentiate a broad range of parameterized gates. Accessing this differentiation method can be 
+  done by setting ``diff_method="hadamard"`` in the QNode. 
+  
+  Using the ``"auto"`` mode with ``diff_method="hadamard"`` will result in an automatic selection of 
+  the method (either ``"standard"``, ``"reversed"``, ``"direct"``, or ``"reversed-direct"``) which 
+  results in the fewest total executions. This takes into account the number of observables, the 
+  number of generators, the number of measurements, and the presence of available auxiliary wires. 
+  For more details on how ``"auto"`` works, consult the section titled 
+  "Variants of the standard hadamard gradient" in the documentation for the Hadamard test gradient (:func:`pennylane.gradients.hadamard_grad`).
+
+  The ``"auto"`` method can be accessed by specifying it in ``gradient_kwargs`` in the QNode when 
+  using ``diff_method="hadamard"``:
+
+  ```python
+  dev = qml.device('default.qubit')
+  @qml.qnode(dev, diff_method="hadamard", gradient_kwargs={"mode": "auto"})
+  def circuit(x):
+      qml.evolve(qml.X(0) @ qml.X(1) + qml.Z(0) @ qml.Z(1) + qml.H(0), x)
+      return qml.expval(qml.Z(0) @ qml.Z(1) + qml.Y(0))
+  ```
+
+  ```pycon
+  >>> print(qml.grad(circuit)(qml.numpy.array(0.5)))
+  0.7342549405478683
+  ```
+
+  More information on how each mode works can be found in 
+  [arXiv:2408.05406](https://arxiv.org/pdf/2408.05406). 
 
 <h4>Instantaneous Quantum Polynomial Circuits </h4>
 
