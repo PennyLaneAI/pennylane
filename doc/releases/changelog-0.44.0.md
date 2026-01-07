@@ -86,9 +86,10 @@
 
 <h4>Instantaneous Quantum Polynomial Circuits 💨</h4>
 
-* A new template for defining an Instantaneous Quantum Polynomial (:class:`~.IQP`) circuit has been added along with a 
-  lightweight version (based on the :class:`~.estimator.resource_operator.ResourceOperator` class) to rapidly 
-  estimate its resources. These new features facilitate the simulation and resource estimation of large-scale
+* A new template for defining an Instantaneous Quantum Polynomial (:class:`~.IQP`) circuit has been added,
+  as well as an associated :class:`~.estimator.resource_operator.ResourceOperator`
+  for resource estimation in the :mod:`~.estimator` module.
+  These new features facilitate the simulation and resource estimation of large-scale
   generative quantum machine learning tasks.
   [(#8748)](https://github.com/PennyLaneAI/pennylane/pull/8748)
   [(#8807)](https://github.com/PennyLaneAI/pennylane/pull/8807)
@@ -131,7 +132,7 @@
   ```
   
   The expectation values of Pauli-Z type observables for parameterized :class:`~.IQP` circuits can be efficeintly
-  evaluated with the :func:`~.qnn.iqp_expval` function. This estimator function is based on a randomized method
+  evaluated with the :func:`~.qnn.iqp.iqp_expval` function. This estimator function is based on a randomized method
   allowing for the efficient optimization of circuits with thousands of qubits and millions of gates.
 
   ```python
