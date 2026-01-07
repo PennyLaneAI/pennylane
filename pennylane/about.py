@@ -30,7 +30,20 @@ import scipy
 if find_spec("jax"):
     jax_version = version("jax")
 else:
-    jax_version = None
+    jax_version = None  # pragma: no cover
+
+
+def _pkg_location():
+    """Return absolute path to the installed PennyLane package."""
+    try:
+        dist = metadata.distribution("pennylane")
+        return os.path.abspath(str(dist.locate_file("")))
+    except (PackageNotFoundError, OSError):  # pragma: no cover
+        # Use imported module path if available
+        mod = sys.modules.get("pennylane")
+        if mod and getattr(mod, "__file__", None):
+            return os.path.abspath(os.path.dirname(mod.__file__))
+        return "(unknown)"
 
 
 def _pkg_location():
@@ -90,9 +103,9 @@ def about():
 
         info = "\n".join(lines)
 
-    except PackageNotFoundError:
+    except PackageNotFoundError:  # pragma: no cover
         info = "PennyLane version info unavailable (no distribution metadata)"
-    except OSError:
+    except OSError:  # pragma: no cover
         info = "PennyLane version info unavailable (metadata read error)"
 
     print(info)
