@@ -1077,9 +1077,6 @@ A warning message has been added to :doc:`Building a plugin <../development/plug
 * Fixes a bug where an error is raised when `to_openqasm` is used with `qml.decomposition.enable_graph()`
   [(#8809)](https://github.com/PennyLaneAI/pennylane/pull/8809)
 
-* Fixes a bug where the output dimension of dynamic one-shot is different from single-branch-statistics.
-  [(#8856)](https://github.com/PennyLaneAI/pennylane/pull/8856)
-
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
