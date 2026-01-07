@@ -192,7 +192,7 @@
   * Seven transforms for compiling Clifford+T gates, PPRs, and/or PPMs, including :func:`~.transforms.to_ppr`,
   :func:`~.transforms.commute_ppr`, :func:`~.transforms.merge_ppr_ppm`,
   :func:`~.transforms.ppr_to_ppm`, :func:`~.transforms.ppm_compilation`,
-  :func:`pennylane.transforms.reduce_t_depth`, and :func:`~.transforms.decompose_arbitrary_ppr`.
+  :func:`~.transforms.reduce_t_depth`, and :func:`~.transforms.decompose_arbitrary_ppr`.
   
     ```python
     @qml.qjit(target="mlir")
