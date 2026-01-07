@@ -223,6 +223,7 @@
   [(#8751)](https://github.com/PennyLaneAI/pennylane/pull/8751)
   [(#8774)](https://github.com/PennyLaneAI/pennylane/pull/8774)
   [(#8781)](https://github.com/PennyLaneAI/pennylane/pull/8781)
+  [(#8820)](https://github.com/PennyLaneAI/pennylane/pull/8820)
 
   - `push_back` is renamed to `append`, and it now accepts both :class:`~.transforms.core.Transform` and :class:`~.trasnforms.core.BoundTransform`.
   - `insert_front` and `insert_front_transform` are removed in favour of a new `insert` method which inserts a transform at any given index.
@@ -230,6 +231,7 @@
   - `pop_front` is removed in favour of a new `pop` method which removes the transform at any given index.
   - `is_empty` is removed, use `bool(pipeline)` or `len(pipeline) == 0` to check if `pipeline` is empty.
   - Added a `remove` method which removes all matching transforms from the pipeline.
+  - Added an ``extend`` method which extends the pipeline with an iterable of transforms.
   - The `prune_dynamic_transform` method is removed.
 
 * A :class:`~.CompilePipeline` (previously known as the `TransformProgram`) can now be applied directly on a :class:`~.QNode`.
@@ -990,6 +992,9 @@ A warning message has been added to :doc:`Building a plugin <../development/plug
 
 <h3>Bug fixes 🐛</h3>
 
+* Prevent qml.about() from crashing in environments without pip (e.g., when using the uv package manager) by using standard library metadata.
+  [(#8457)](https://github.com/PennyLaneAI/pennylane/pull/8457)
+
 * Fixes a bug where `_double_factorization_compressed` of `pennylane/qchem/factorization.py` used to use `X`
   for `Z` param initialization.
   [(#8689)](https://github.com/PennyLaneAI/pennylane/pull/8689)
@@ -1099,6 +1104,7 @@ Shuli Shu,
 Jay Soni,
 nate stemen,
 Theodoros Trochatos,
+Leo Wei,
 David Wierichs,
 Shifan Xu,
 Hongsheng Zheng,

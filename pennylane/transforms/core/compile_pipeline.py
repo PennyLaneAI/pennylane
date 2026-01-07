@@ -388,6 +388,12 @@ class CompilePipeline:
             transform (Transform or BoundTransform): A transform represented by its container.
 
         """
+        if isinstance(transform, (list, tuple, CompilePipeline)):
+            raise TypeError(
+                "append() expects a single transform, not a sequence. "
+                "Use extend() to add multiple transforms at once."
+            )
+
         if not isinstance(transform, BoundTransform):
             transform = BoundTransform(transform)
 
@@ -399,6 +405,23 @@ class CompilePipeline:
             if expand_transform := transform.expand_transform:
                 self._compile_pipeline.append(expand_transform)
             self._compile_pipeline.append(transform)
+
+    def extend(self, transforms: CompilePipeline | Sequence[BoundTransform | Transform]):
+        """Extend the pipeline by appending transforms from an iterable.
+
+        Args:
+            transforms (CompilePipeline, or Sequence[BoundTransform | Transform]): A
+                CompilePipeline or an iterable of transforms to append.
+
+        """
+        # Handle CompilePipeline by using __iadd__ which already handles this case
+        if isinstance(transforms, CompilePipeline):
+            self += transforms
+            return
+
+        # Handle iterables (list, tuple, etc.)
+        for t in transforms:
+            self += t
 
     def add_transform(self, transform: Transform, *targs, **tkwargs):
         """Add a transform to the end of the program.
