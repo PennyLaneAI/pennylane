@@ -77,7 +77,7 @@ def factorize(
     .. note::
 
         Packages JAX and Optax are required when performing CDF with ``compressed=True``.
-        Install them using ``pip install jax==0.7.1 optax``.
+        Install them using ``pip install jax optax``.
 
     Args:
         two_electron (array[array[float]]): Two-electron integral tensor in the molecular orbital
@@ -262,7 +262,7 @@ def factorize(
         if not has_jax_optax:
             raise ImportError(
                 "Jax and Optax libraries are required for optimizing the factors. Install them via "
-                "pip install jax==0.7.1 optax"
+                "pip install jax optax"
             )  # pragma: no cover
 
         norm_order = {None: None, "L1": 1, "L2": 2}.get(regularization, "LX")
