@@ -20,6 +20,6 @@ resource estimation.
     This module is experimental. Frequent changes will occur,
     with no guarantees of stability or backwards compatibility.
 
-.. currentmodule:: pennylane.labs.resource_estimation
+.. currentmodule:: pennylane.labs.estimator_beta
 
 """

@@ -8,7 +8,8 @@
 
 * Removed all of the resource estimation functionality from the ``/labs/resource_estimation``
   module. Users can now directly access a more stable version of this functionality using the 
-  :mod:`estimator <pennylane.estimator>` module.
+  :mod:`estimator <pennylane.estimator>` module. All experimental development of resource estimation
+  will be added to ``/labs/estimator_beta``
   [(#8868)](https://github.com/PennyLaneAI/pennylane/pull/8868)
 
 <h3>Breaking changes 💔</h3>

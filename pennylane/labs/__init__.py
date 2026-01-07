@@ -26,14 +26,14 @@ Modules
     :toctree: api
 
     dla
-    resource_estimation
+    estimator_beta
     transforms
     trotter_error
 
 """
 
 from pennylane.labs import dla
-from pennylane.labs import resource_estimation
+from pennylane.labs import estimator_beta
 from pennylane.labs import transforms
 from pennylane.labs import trotter_error
 
