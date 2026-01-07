@@ -187,19 +187,49 @@
   [(#8750)](https://github.com/PennyLaneAI/pennylane/pull/8750)
   [(#8731)](https://github.com/PennyLaneAI/pennylane/pull/8731)
   [(#8817)](https://github.com/PennyLaneAI/pennylane/pull/8817)
+  [(#8703)](https://github.com/PennyLaneAI/pennylane/pull/8703)
+  [(#8730)](https://github.com/PennyLaneAI/pennylane/pull/8730)
+  [(#8751)](https://github.com/PennyLaneAI/pennylane/pull/8751)
+  [(#8774)](https://github.com/PennyLaneAI/pennylane/pull/8774)
+  [(#8781)](https://github.com/PennyLaneAI/pennylane/pull/8781)
 
   The :class:`~.CompilePipeline` class allows you to chain together multiple transforms
-  to create custom circuit optimization pipelines with ease. For example, :class:`~.CompilePipeline` objects can
-  compound, be added together with ``+``, multiplied by scalars via ``*`` to repeat compilation passes, be modified 
-  via ``list`` operations like ``append``, ``extend``, and ``insert``, and more:
+  to create custom circuit optimization pipelines with ease. For example, :class:~.CompilePipeline objects can compound:
 
-  ```python
+  ```pycon
   >>> pipeline = qml.CompilePipeline(qml.transforms.commute_controlled, qml.transforms.cancel_inverses)
   >>> qml.CompilePipeline(pipeline, qml.transforms.merge_rotations)
   CompilePipeline(commute_controlled, cancel_inverses, merge_rotations)
   ```
 
-  By applying the created ``pipeline`` directly on a quantum function as a decorator, the circuit can
+  be added together with ``+``:
+
+  ```pycon
+  >>> pipeline += qml.transforms.merge_rotations
+  >>> pipeline
+  CompilePipeline(commute_controlled, cancel_inverses, merge_rotations)
+  ```
+
+  multiplied by scalars via ``*`` to repeat compilation passes an integer number of times:
+  
+  ```pycon
+  >>> pipeline += 2 * qml.transforms.cancel_inverses(recursive=True)
+  >>> pipeline
+  CompilePipeline(commute_controlled, cancel_inverses, merge_rotations, cancel_inverses, cancel_inverses)
+  ```
+
+  and be modified via ``list`` operations like ``append``, ``extend``, and ``insert``:
+
+  ```pycon
+  >>> pipeline.insert(0, qml.transforms.remove_barrier)
+  >>> pipeline
+  CompilePipeline(remove_barrier, commute_controlled, cancel_inverses, merge_rotations, cancel_inverses, cancel_inverses)
+  ```
+
+  Additionally, you can use ``pipeline[-1]`` to access the last transform, and use ``bool(pipeline)`` or
+  ``len(pipeline) == 0`` to check if a ``pipeline`` is empty.
+
+  By applying a created ``pipeline`` directly on a quantum function as a decorator, the circuit can
   be transformed with each pass therein:
 
   ```python
@@ -221,75 +251,6 @@
   0: ───────────┤ ╭<Z@Z>
   1: ──RX(0.70)─┤ ╰<Z@Z>
   ```
-
-  Alternatively, you can create a transform program intuitively by combining multiple transforms using
-  the familiar arithmentic operations ``+`` and ``*``:
-  [(#8703)](https://github.com/PennyLaneAI/pennylane/pull/8703)
-  [(#8730)](https://github.com/PennyLaneAI/pennylane/pull/8730)
-
-  ```pycon
-  >>> pipeline = qml.transforms.merge_rotations + 2 * qml.transforms.cancel_inverses
-  >>> pipeline
-  CompilePipeline(merge_rotations, cancel_inverses, cancel_inverses)
-  ```
-
-  Multipliying a transform by a factor ``n`` will result in repeatig the given transform ``n`` times.
-  
-
-* You can easily modify a :class:`~.CompilePipeline` using operations similar to Python lists such as ``append``,
-  ``extend``, ``insert``, ``pop``, and ``remove``:
-  [(#8751)](https://github.com/PennyLaneAI/pennylane/pull/8751)
-  [(#8774)](https://github.com/PennyLaneAI/pennylane/pull/8774)
-  [(#8781)](https://github.com/PennyLaneAI/pennylane/pull/8781)
-
-  ```pycon
-  >>> pipeline += qml.transforms.commute_controlled
-  >>> pipeline
-  CompilePipeline(merge_rotations, cancel_inverses, cancel_inverses, commute_controlled)
-  >>> pipeline.insert(0, qml.transforms.remove_barrier)
-  >>> pipeline
-  CompilePipeline(remove_barrier, merge_rotations, cancel_inverses, cancel_inverses, commute_controlled)
-  ```
-
-  Additionally, you can use ``pipeline[-1]`` to access the last transform, and use ``bool(pipeline)`` or
-  ``len(pipeline) == 0`` to check if a ``pipeline`` is empty.
-
-* The flexibility of the new compilation pipeline functionality in this release is related to the following internal changes:
-
-  * Renaming the developer facing class ``TransformProgram`` to :class:`~.CompilePipeline`. For
-    backward compatibility, the ``TransformProgram`` class can still be accessed from `pennylane.transforms.core`.
-    For naming consistency, uses of the term "transform program" have been updated to "compile pipeline"
-    across the codebase. Correspondingly, the module `pennylane.transforms.core.transform_program` has
-    been renamed to `pennylane.transforms.core.compile_pipeline`, and the old name is no longer available.
-    [(#8735)](https://github.com/PennyLaneAI/pennylane/pull/8735)
-
-  * Renaming the class to dispatch transforms, the ``TransformDispatcher`` class, to :class:`~.transforms.core.Transform`.
-    This class is now available as `qml.transform`. For backward compatibility, the ``TransformDispatcher`` class
-    can still be accessed from `pennylane.transforms.core`.
-    [(#8756)](https://github.com/PennyLaneAI/pennylane/pull/8756)
-
-* Quantum compilation passes in MLIR and XDSL can now be applied using the core PennyLane transform
-  infrastructure, instead of using Catalyst-specific tools. This is made possible by a new argument in
-  :func:`~pennylane.transform` and :class:`~.transforms.core.Transform` called ``pass_name``, which 
-  accepts a string corresponding to the name of the compilation pass. The ``pass_name`` argument 
-  ensures that the given compilation pass will be used when `qjit` is applied to a workflow, where the 
-  pass is performed in MLIR or xDSL.
-  [(#8539)](https://github.com/PennyLaneAI/pennylane/pull/8539)
-  [(#8810)](https://github.com/PennyLaneAI/pennylane/pull/8810)
-
-  ```python
-  my_transform = qml.transform(pass_name="cancel-inverses")
-
-  @qml.qjit
-  @my_transform
-  @qml.qnode(qml.device('lightning.qubit', wires=4))
-  def circuit():
-      qml.X(0)
-      qml.X(0)
-      return qml.expval(qml.Z(0))
-  ```
-
-  For additional details see the Transforms with Catalyst section in :func:`~pennylane.transform`.
 
 <h4>Analyzing your algorithms quickly and easily with resource estimation</h4>
 
@@ -427,6 +388,29 @@
 For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208112).
 
 <h3>Improvements 🛠</h3>
+
+* Quantum compilation passes in MLIR and XDSL can now be applied using the core PennyLane transform
+  infrastructure, instead of using Catalyst-specific tools. This is made possible by a new argument in
+  :func:`~pennylane.transform` and :class:`~.transforms.core.Transform` called ``pass_name``, which 
+  accepts a string corresponding to the name of the compilation pass. The ``pass_name`` argument 
+  ensures that the given compilation pass will be used when `qjit` is applied to a workflow, where the 
+  pass is performed in MLIR or xDSL.
+  [(#8539)](https://github.com/PennyLaneAI/pennylane/pull/8539)
+  [(#8810)](https://github.com/PennyLaneAI/pennylane/pull/8810)
+
+  ```python
+  my_transform = qml.transform(pass_name="cancel-inverses")
+
+  @qml.qjit
+  @my_transform
+  @qml.qnode(qml.device('lightning.qubit', wires=4))
+  def circuit():
+      qml.X(0)
+      qml.X(0)
+      return qml.expval(qml.Z(0))
+  ```
+
+  For additional details see the Transforms with Catalyst section in :func:`~pennylane.transform`.
 
 * The `ResourcesUndefinedError` has been removed from the `adjoint`, `ctrl`, and `pow` resource
   decomposition methods of `ResourceOperator` to avoid using errors as control flow.
@@ -660,6 +644,18 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
   [(#8738)](https://github.com/PennyLaneAI/pennylane/pull/8738)
 
 <h3>Breaking changes 💔</h3>
+
+* The ``TransformProgram`` class has been renamed to :class:`~.CompilePipeline`. For
+  backward compatibility, the ``TransformProgram`` class can still be accessed from `pennylane.transforms.core`.
+  For naming consistency, uses of the term "transform program" have been updated to "compile pipeline"
+  across the codebase. Correspondingly, the module `pennylane.transforms.core.transform_program` has
+  been renamed to `pennylane.transforms.core.compile_pipeline`, and the old name is no longer available.
+  [(#8735)](https://github.com/PennyLaneAI/pennylane/pull/8735)
+
+* The class to dispatch transforms, the ``TransformDispatcher`` class, has been renamed to :class:`~.transforms.core.Transform`
+  and is now available as `qml.transform`. For backward compatibility, the ``TransformDispatcher`` class
+  can still be accessed from `pennylane.transforms.core`.
+  [(#8756)](https://github.com/PennyLaneAI/pennylane/pull/8756)
 
 * The `final_transform` property of the :class:`~.transforms.core.BoundTransform` has been renamed 
   to `is_final_transform` to better follow the naming convention for boolean properties. The `transform` 
