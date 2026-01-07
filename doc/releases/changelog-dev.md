@@ -167,9 +167,8 @@
   
   The compilation passes included in this release are:
 
-  * The new :func:`~pennylane.transforms.gridsynth` compilation pass to perform rapid Clifford+T
-  decomposition with :func:`pennylane.qjit`. This pass discretizes ``RZ`` and ``PhaseShift``
-  gates to either the Clifford+T basis or to the Pauli product rotation (PPR) basis.
+  * :func:`~.transforms.gridsynth`: This pass decomposes :math:`Z`-basis rotations and and :class:`~.PhaseShift`
+  gates to either the Clifford+T basis or to other PPRs.
 
     The :func:`~pennylane.transforms.gridsynth` function accepts an ``epsilon`` arguments that determines
     the maximum permissible operator norm error per rotation gate:
