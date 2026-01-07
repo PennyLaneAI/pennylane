@@ -311,8 +311,8 @@
     :class:`estimator.Qubitization <pennylane.estimator.templates.subroutines.Qubitization>`.
     [(#8675)](https://github.com/PennyLaneAI/pennylane/pull/8675)
 
-  * The **Quantum Signal Processing** (QSP) and Quantum Singular
-    Value Transformation (QSVT) algorithms via two new resource operators: :class:`estimator.QSP <pennylane.estimator.templates.qsp.QSP>` and :class:`estimator.QSVT <pennylane.estimator.templates.qsp.QSVT>`.
+  * The **Quantum Signal Processing** (QSP) and **Quantum Singular
+    Value Transformation** (QSVT) algorithms via two new resource operators: :class:`estimator.QSP <pennylane.estimator.templates.qsp.QSP>` and :class:`estimator.QSVT <pennylane.estimator.templates.qsp.QSVT>`.
     [(#8733)](https://github.com/PennyLaneAI/pennylane/pull/8733)
 
   * The **unary iteration implementation of QPE** via the new
@@ -339,15 +339,15 @@
     >>> res.total_gates
     2844
     ```
-    The `PauliHamiltonian` object also makes it easy to access the total number of terms (Pauli words)
-    in the Hamiltonians with the `PauliHamiltonian.num_terms` property:
+    The ``PauliHamiltonian`` object also makes it easy to access the total number of terms (Pauli words)
+    in the Hamiltonians with the ``PauliHamiltonian.num_terms`` property:
 
     ```pycon
     >>> pauli_ham.num_terms
     30
     ```
 
-* The new `resource_key` keyword argument of the
+* The new ``resource_key`` keyword argument of the
   :meth:`ResourceConfig.set_precision <pennylane.estimator.resource_config.ResourceConfig.set_precision>`
   method makes it possible to set precisions for a larger variety of `ResourceOperator`s in
   the :mod:`estimator <pennylane.estimator>` module.
