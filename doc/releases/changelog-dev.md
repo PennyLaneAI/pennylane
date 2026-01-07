@@ -232,7 +232,7 @@
 
   To access these decompositions, simply specify a target gate set including :class:`~.PauliRot` and :class:`~.GlobalPhase`.
   The following example illustrates how the :class:`~.CNOT` gate can be represented in terms of three
-  :math:`2π/4` PPRs (``IX``, ``ZI`` and ``ZX``) acting on two wires:
+  :math:`\tfrac{\pi}{2}` PPRs (``IX``, ``ZI`` and ``ZX``) acting on two wires:
 
   ```python
   from functools import partial
