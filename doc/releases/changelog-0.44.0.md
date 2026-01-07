@@ -477,13 +477,8 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
   classes have been modified to take the 1-norm of the Hamiltonian as an optional argument.
   [(#8697)](https://github.com/PennyLaneAI/pennylane/pull/8697)
 
-* Improved the :mod:`estimator <pennylane.estimator>` module documentation for clarity
-  and added input validation for various operators and
-  functions to raise more informative errors.
-  [(#8827)](https://github.com/PennyLaneAI/pennylane/pull/8827)
-  [(#8829)](https://github.com/PennyLaneAI/pennylane/pull/8829)
-  [(#8830)](https://github.com/PennyLaneAI/pennylane/pull/8830)
-  [(#8832)](https://github.com/PennyLaneAI/pennylane/pull/8832)
+* Input validation has been added to various operators and
+  functions in the :mod:`estimator <pennylane.estimator>` module to raise more informative errors.
   [(#8835)](https://github.com/PennyLaneAI/pennylane/pull/8835)
 
 * The ``ResourcesUndefinedError`` has been removed from the ``adjoint``, ``ctrl``, and ``pow`` resource
@@ -1138,6 +1133,12 @@ should be used instead.
 * Updated various docstring examples in the :mod:`~.fourier` module
   to be compatible with the new documentation testing approach.
   [(#8635)](https://github.com/PennyLaneAI/pennylane/pull/8635)
+  
+* The :mod:`estimator <pennylane.estimator>` module documentation has been revised for clarity.
+  [(#8827)](https://github.com/PennyLaneAI/pennylane/pull/8827)
+  [(#8829)](https://github.com/PennyLaneAI/pennylane/pull/8829)
+  [(#8830)](https://github.com/PennyLaneAI/pennylane/pull/8830)
+  [(#8832)](https://github.com/PennyLaneAI/pennylane/pull/8832)
 
 <h3>Bug fixes 🐛</h3>
 
