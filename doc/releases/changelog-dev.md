@@ -192,7 +192,7 @@
   
     ```python
     @qml.qjit(target="mlir")
-    @to_ppr
+    @qml.transforms.to_ppr
     @qml.qnode(qml.device("null.qubit", wires=2))
     def circuit():
         qml.H(0)
