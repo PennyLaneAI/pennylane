@@ -392,11 +392,9 @@ class TestAddNoiseInterface:
 class TestAddNoiseLevels:
     """Tests for custom insertion of add_noise transform at correct level."""
 
-    @pytest.mark.xfail(strict=False, reason="https://github.com/PennyLaneAI/pennylane/issues/8779")
     @pytest.mark.parametrize(
         "level1, level2",
         [
-            ("top", 0),
             (0, slice(0, 0)),
             ("user", 4),
             ("user", slice(0, 4)),
@@ -436,6 +434,31 @@ class TestAddNoiseLevels:
             if t1.tape_transform.__name__ == t2.tape_transform.__name__ == "expand_fn":
                 continue
             assert t1 == t2
+
+    def test_add_noise_level_top_prepends_without_dropping_existing_transforms(self):
+        """Test that level='top' prepends add_noise to the existing QNode transform program."""
+        dev = qml.device("default.mixed", wires=2)
+
+        @qml.transforms.cancel_inverses
+        @qml.qnode(dev)
+        def f():
+            qml.H(0)
+            qml.H(0)
+            qml.RX(0.5, 1)
+            return qml.expval(qml.Z(0) @ qml.Z(1))
+
+        fcond = qml.noise.op_eq(qml.RX)
+        fcall = qml.noise.partial_wires(qml.AmplitudeDamping, 0.1)
+        noise_model = qml.NoiseModel({fcond: fcall})
+
+        noisy_qnode = add_noise(f, noise_model=noise_model, level="top")
+
+        transform_program = noisy_qnode.transform_program
+        transform_names = [t.tape_transform.__name__ for t in transform_program]
+
+        assert "add_noise" in transform_names
+        assert "cancel_inverses" in transform_names
+        assert transform_names.index("add_noise") < transform_names.index("cancel_inverses")
 
     def test_add_noise_level_with_final(self):
         """Test that add_noise can be inserted in the CompilePipeline with a final transform"""
