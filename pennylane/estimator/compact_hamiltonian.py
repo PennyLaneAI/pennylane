@@ -29,6 +29,8 @@ def _validate_positive_int(name, value):
 class CDFHamiltonian:
     """For a compressed double-factorized (CDF) Hamiltonian, stores the minimum necessary information pertaining to resource estimation.
 
+    The form of this Hamiltonian is described in `arXiv:2506.15784 <https://arxiv.org/abs/2506.15784>`_.
+
     Args:
         num_orbitals (int): number of spatial orbitals
         num_fragments (int): number of fragments in the compressed double-factorized (CDF) representation
@@ -39,7 +41,7 @@ class CDFHamiltonian:
         TypeError: if ``one_norm`` is provided but is not a non-negative float or integer
 
     .. seealso::
-        :class:`~.estimator.templates.TrotterCDF`
+        :class:`~.estimator.templates.trotter.TrotterCDF`
     """
 
     num_orbitals: int
@@ -65,6 +67,8 @@ class CDFHamiltonian:
 class THCHamiltonian:
     """For a tensor hypercontracted (THC) Hamiltonian, stores the minimum necessary information pertaining to resource estimation.
 
+    The form of this Hamiltonian is described in `arXiv:2407.04432 <https://arxiv.org/abs/2407.04432>`_.
+
     Args:
         num_orbitals (int): number of spatial orbitals
         tensor_rank (int):  tensor rank of two-body integrals in the tensor hypercontracted (THC) representation
@@ -76,7 +80,7 @@ class THCHamiltonian:
 
 
     .. seealso::
-        :class:`~.estimator.templates.TrotterTHC`
+        :class:`~.estimator.templates.trotter.TrotterTHC`
     """
 
     num_orbitals: int
@@ -104,6 +108,8 @@ class THCHamiltonian:
 class VibrationalHamiltonian:
     """For a vibrational Hamiltonian, stores the minimum necessary information pertaining to resource estimation.
 
+    The form of this Hamiltonian is described in `arXiv:2504.10602 <https://arxiv.org/pdf/2504.10602>`_.
+
     Args:
         num_modes (int): number of vibrational modes
         grid_size (int): number of grid points used to discretize each mode
@@ -115,7 +121,7 @@ class VibrationalHamiltonian:
         TypeError: if ``one_norm`` is provided but is not a non-negative float or integer
 
     .. seealso::
-        :class:`~.estimator.templates.TrotterVibrational`
+        :class:`~.estimator.templates.trotter.TrotterVibrational`
     """
 
     num_modes: int
@@ -146,6 +152,8 @@ class VibrationalHamiltonian:
 class VibronicHamiltonian:
     """For a vibronic Hamiltonian, stores the minimum necessary information pertaining to resource estimation.
 
+    The form of this Hamiltonian is described in `arXiv:2411.13669 <https://arxiv.org/abs/2411.13669>`_.
+
     Args:
         num_modes (int): number of vibronic modes
         num_states (int): number of vibronic states
@@ -158,7 +166,7 @@ class VibronicHamiltonian:
         TypeError: if ``one_norm`` is provided but is not a non-negative float or integer
 
     .. seealso::
-        :class:`~.estimator.templates.TrotterVibronic`
+        :class:`~.estimator.templates.trotter.TrotterVibronic`
     """
 
     num_modes: int
@@ -193,14 +201,11 @@ class PauliHamiltonian:
 
     Args:
         num_qubits (int): total number of qubits the Hamiltonian acts on
-        pauli_terms (dict | Iterable(dict)): A representation for all of the terms (Pauli words) of
-            the Hamiltonian. The terms of the Hamiltonian can also be separated into groups such
-            that all Pauli words in a group commute. When a single dictionary is provided, it should
-            represent all the terms of the Hamiltonian where the dictionary keys are Pauli strings
-            (e.g ``"XY"`` or ``"Z"``) and the values are integers corresponding to how frequently
-            that Pauli word appears in the Hamiltonian. When a list of dictionaries is provided,
-            each dictionary is interpreted as a commuting group of terms. See the ``Usage Details``
-            section below for more information.
+        pauli_terms (dict[str, int] | Iterable[dict]): A dictionary representing the Hamiltonian terms
+            where the keys are Pauli strings, e.g ``"XY"``, and the values are integers denoting
+            how frequently a Pauli string appears in the Hamiltonian. When a list of dictionaries is
+            provided, each dictionary is interpreted as a commuting group of terms. See the
+            Usage Details section for more information.
         one_norm (float | int | None): the one-norm of the Hamiltonian
 
     Raises:

@@ -1,4 +1,4 @@
-# Release 0.44.0-dev (development release)
+# Release 0.44.0 (current release)
 
 <h3>New features since last release</h3>
 
@@ -66,6 +66,10 @@
 
 
 <h4>QRAM </h4>
+
+* A lightweight version of Bucket Brigade QRAM :class:`estimator.BBQRAM <pennylane.estimator.templates.BBQRAM>` (based on the :class:`~.estimator.resource_operator.ResourceOperator` class) 
+  has been added to rapidly estimate resources used by :class:`~.BBQRAM`.
+  [(#8825)](https://github.com/PennyLaneAI/pennylane/pull/8825)
 
 * Bucket Brigade QRAM, a Hybrid QRAM and a Select-Only QRAM variant are implemented as a template :class:`~.BBQRAM`, :class:`~.HybridQRAM` and :class:`~.SelectOnlyQRAM` 
   to allow for selection of bitstrings in superposition.
@@ -516,10 +520,13 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
   instead of dispatching upon creation.
   [(#8786)](https://github.com/PennyLaneAI/pennylane/pull/8786)
 
-* Documentation for `qml.estimator.templates.GQSP`, `qml.estimator.templates.GQSPTimeEvolution`,
-  `qml.estimator.templates.PauliRot`, `qml.estimator.templates.PCPhase`, `qml.estimator.templates.Qubitization`,
-  and `qml.estimator.templates.Reflection` operators is improved.
+* Improved the documentation and added input validation for various operators and
+  functions in the :mod:`estimator <pennylane.estimator>`.
+  [(#8827)](https://github.com/PennyLaneAI/pennylane/pull/8827)
   [(#8829)](https://github.com/PennyLaneAI/pennylane/pull/8829)
+  [(#8830)](https://github.com/PennyLaneAI/pennylane/pull/8830)
+  [(#8832)](https://github.com/PennyLaneAI/pennylane/pull/8832)
+  [(#8835)](https://github.com/PennyLaneAI/pennylane/pull/8835)
 
 <h4>Resource estimation</h4>
 
@@ -1146,9 +1153,11 @@ Utkarsh Azad,
 Joseph Bowles,
 Astral Cai,
 Yushao Chen,
+Isaac De Vlugt,
 Diksha Dhawan,
 Marcus Edwards,
 Lillian Frederiksen,
+Diego Guala,
 Sengthai Heng,
 Austin Huang,
 Soran Jahangiri,
@@ -1156,14 +1165,15 @@ Jeffrey Kam,
 Jacob Kitchen,
 Christina Lee,
 Joseph Lee,
+Anton Naim Ibrahim,
 Lee J. O'Riordan,
-Gabriela Sanchez Diaz,
 Mudit Pandey,
+Gabriela Sanchez Diaz,
 Shuli Shu,
 Jay Soni,
-nate stemen,
+Nate Stemen,
 Theodoros Trochatos,
 David Wierichs,
 Shifan Xu,
 Hongsheng Zheng,
-Zinan Zhou
+Zinan Zhou.
