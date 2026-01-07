@@ -108,8 +108,8 @@ def to_ppr(tape):
 
     In the above output, ``PPR-theta`` denotes the type of PPR present in the circuit, where
     ``theta`` is the PPR angle (:math:`\theta`). Note that the mid-circuit measurement
-    (:func:`~.measure`) in the circuit has been converted to a Pauli product measurement (PPM), as
-    well.
+    (:func:`pennylane.measure`) in the circuit has been converted to a Pauli product measurement
+    (PPM), as well.
     """
     raise NotImplementedError(
         "The to_ppr compilation pass has no tape implementation, and can only be applied when decorating the entire worfklow with @qml.qjit and when it is placed after all transforms that only have a tape implementation."
@@ -628,12 +628,12 @@ def reduce_t_depth(qnode):
 
     >>> import catalyst
     >>> num_passes = len(pipeline)
-    >>> fig1, _ = catalyst.draw_graph(circuit, level=num_passes-1)()
-    >>> fig2, _ = catalyst.draw_graph(circuit, level=num_passes)()
+    >>> fig1, _ = catalyst.draw_graph(circuit, level=num_passes-1)() # doctest: +SKIP
+    >>> fig2, _ = catalyst.draw_graph(circuit, level=num_passes)() # doctest: +SKIP
 
     Without ``reduce_t_depth`` applied:
 
-    >>> fig1.savefig('path_to_file1.png', dpi=300, bbox_inches="tight")
+    >>> fig1.savefig('path_to_file1.png', dpi=300, bbox_inches="tight") # doctest: +SKIP
 
     .. figure:: ../../../doc/_static/reduce-t-depth-example1.png
         :width: 35%
@@ -642,7 +642,7 @@ def reduce_t_depth(qnode):
 
     With ``reduce_t_depth`` applied:
 
-    >>> fig2.savefig('path_to_file2.png', dpi=300, bbox_inches="tight")
+    >>> fig2.savefig('path_to_file2.png', dpi=300, bbox_inches="tight") # doctest: +SKIP
 
     .. figure:: ../../../doc/_static/reduce-t-depth-example2.png
         :width: 35%
