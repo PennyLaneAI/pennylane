@@ -180,8 +180,6 @@
         qml.PhaseShift(x * 0.2, 0)
         return qml.state()
 
-    gridsynth_circuit = qml.transforms.gridsynth(circuit, epsilon=1e-4)
-    qjitted_circuit = qml.qjit(gridsynth_circuit)
     ```
     ```pycon
     >>> qjitted_circuit(1.1)
