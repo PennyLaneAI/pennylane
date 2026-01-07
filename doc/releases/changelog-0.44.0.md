@@ -223,7 +223,7 @@
   CompilePipeline(commute_controlled, cancel_inverses, merge_rotations, cancel_inverses, cancel_inverses)
   ```
 
-  and be modified via ``list`` operations like ``append``, ``extend``, and ``insert``:
+  Finally, they can be modified via ``list`` operations like ``append``, ``extend``, and ``insert``:
 
   ```pycon
   >>> pipeline.insert(0, qml.transforms.remove_barrier)
