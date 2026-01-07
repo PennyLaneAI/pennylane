@@ -126,28 +126,28 @@
   learning.
   [(#8748)](https://github.com/PennyLaneAI/pennylane/pull/8748)
 
-<h4>Pauli-based computation </h4>
-
-* Users can now perform rapid Clifford+T decomposition with :func:`pennylane.qjit` using the new 
-  :func:`~pennylane.transforms.gridsynth` compilation pass.
-  This pass discretizes ``RZ`` and ``PhaseShift`` gates to either the Clifford+T basis or to the PPR basis.
-  [(#8609)](https://github.com/PennyLaneAI/pennylane/pull/8609)
-  [(#8764)](https://github.com/PennyLaneAI/pennylane/pull/8764)
+<h4>Pauli-based computation 💻 </h4>
+  
+* New tools dedicated to fault-tolerant quantum computing (FTQC) research based on the Pauli-based
+  computation framework are now available! With this release, you can express, compile, and inspect 
+  workflows written in terms of Pauli product rotations (PPRs) and Pauli product measurements (PPMs), which are 
+  the building blocks of Pauli-based computation framework.
 
 * Writing circuits in terms of `Pauli product measurements <https://pennylane.ai/compilation/pauli-product-measurement>`_
   (PPMs) in PennyLane is now possible with the new :func:`~.pauli_measure` function.
-  Using this function in tandem with :class:`~.PauliRot` to represent Pauli product rotations (PPRs) unlocks surface-code fault-tolerant quantum computing research spurred from `A Game of Surface Codes <http://arxiv.org/abs/1808.02892>`_.
+  Using this function in tandem with :class:`~.PauliRot` to represent PPRs unlocks surface-code
+  FTQC research spurred from `A Game of Surface Codes <http://arxiv.org/abs/1808.02892>`_.
   [(#8461)](https://github.com/PennyLaneAI/pennylane/pull/8461)
   [(#8631)](https://github.com/PennyLaneAI/pennylane/pull/8631)
   [(#8623)](https://github.com/PennyLaneAI/pennylane/pull/8623)
   [(#8663)](https://github.com/PennyLaneAI/pennylane/pull/8663)
   [(#8692)](https://github.com/PennyLaneAI/pennylane/pull/8692)
 
-  The new :func:`~.pauli_measure` function is currently only for analysis on the ``null.qubit`` device, which allows for resource tracking with :func:`~.specs` and circuit inspection with :func:`~.drawer.draw`.
+  The new :func:`~.pauli_measure` function is currently only for analysis on the ``null.qubit`` device,
+  which allows for circuit inspection with :func:`~.specs` and :func:`~.drawer.draw`.
 
-  In the following example, a measurement of the ``XY`` Pauli product on wires ``0`` and ``2`` is performed
-  using :func:`~.pauli_measure`, followed by application of a :class:`~.PauliX` gate conditional on
-  the outcome of the PPM:
+  Using :func:`~.pauli_measure` in a circuit is similar to :func:`~.measure` (a mid-circuit measurement),
+  but requires that a ``pauli_word`` be specified for the measurement basis:
 
   ```python
   import pennylane as qml
@@ -172,9 +172,9 @@
                        ╚════╝
   ```
 
-  By appliying the :func:`~.specs` function to the circuit above, you can easily determine its resource information.
+  You can use the :func:`pennylane.specs` function to easily determine the circuit's resources.
   In this case, in addition to other gates, we can see that the circuit includes one PPR and one PPM operation (represented
-  by the :class:`~.PauliRot` and :class:`~.ops.mid_measure.pauli_measure.PauliMeasure` gate types):
+  by the :class:`~.PauliRot` and ``PauliMeasure`` gate types):
 
   ```pycon
   >>> print(qml.specs(circuit)()['resources'])
@@ -192,19 +192,69 @@
     expval(PauliZ): 1
   ```
 
-* Catalyst compilation passes designed for Pauli-based computation are now available in PennyLane, 
-  providing accessibility for logical compilation research by directly integrating with 
-  :func:`~.pauli_measure` and :class:`~.PauliRot` operations. This includes 
-  :func:`pennylane.transforms.to_ppr`, :func:`pennylane.transforms.commute_ppr`, 
-  :func:`pennylane.transforms.ppr_to_ppm`, 
-  :func:`pennylane.transforms.merge_ppr_ppm`, :func:`pennylane.transforms.ppm_compilation`, 
-  :func:`pennylane.transforms.reduce_t_depth`, 
+* Several ``qjit``-compatible compilation passes designed for Pauli-based computation are now available
+  with this release, and are designed to work directly with :func:`~.pauli_measure` and :class:`~.PauliRot` operations.
+  [(#8609)](https://github.com/PennyLaneAI/pennylane/pull/8609)
+  [(#8764)](https://github.com/PennyLaneAI/pennylane/pull/8764)
   [(#8762)](https://github.com/PennyLaneAI/pennylane/pull/8762)
+  
+  The compilation passes included in this release are:
 
-* New decomposition rules that decompose to :class:`~.PauliRot` are added for the following operators.
+  * :func:`~.gridsynth`: This pass decomposes :math:`Z`-basis rotations and :class:`~.PhaseShift`
+  gates to either the Clifford+T basis or to other PPRs.
+
+    ```python
+    @qml.qjit
+    @qml.transforms.gridsynth
+    @qml.qnode(qml.device("lightning.qubit", wires=1))
+    def circuit(x):
+        qml.Hadamard(0)
+        qml.RZ(x, 0)
+        qml.PhaseShift(x * 0.2, 0)
+        return qml.state()
+
+    ```
+    ```pycon
+    >>> circuit(1.1)
+    [0.60284353-0.36960984j 0.5076425 +0.4922066j ]
+    ```
+
+  * Seven transforms for compiling Clifford+T gates, PPRs, and/or PPMs, including :func:`~.transforms.to_ppr`,
+  :func:`~.transforms.commute_ppr`, :func:`~.transforms.merge_ppr_ppm`,
+  :func:`~.transforms.ppr_to_ppm`, :func:`~.transforms.ppm_compilation`,
+  :func:`~.transforms.reduce_t_depth`, and :func:`~.transforms.decompose_arbitrary_ppr`.
+  
+    ```python
+    @qml.qjit(target="mlir")
+    @qml.transforms.to_ppr
+    @qml.qnode(qml.device("null.qubit", wires=2))
+    def circuit():
+        qml.H(0)
+        qml.CNOT([0, 1])
+        qml.T(0)
+        return qml.expval(qml.Z(0))
+    ```
+    ```pycon
+    >>> print(qml.specs(circuit, level=2)())
+    Total wire allocations: 2
+    Total gates: 7
+    Circuit depth: Not computed
+
+    Gate types:
+      PPR-pi/4: 6
+      PPR-pi/8: 1
+
+    Measurements:
+      expval(PauliZ): 1
+    ```
+
+* Directly decomposing Clifford+T gates and other small gates into PPRs is possible using the :func:`~.transforms.decompose` transform
+  with graph-based decompositions enabled (:func:`~.decomposition.enable_graph`). This allows direct decomposition of certain operators without the need to use approximate methods such as those found in the
+  :func:`~.clifford_t_decomposition` transform, which can sometimes be less efficient.
   [(#8700)](https://github.com/PennyLaneAI/pennylane/pull/8700)
   [(#8704)](https://github.com/PennyLaneAI/pennylane/pull/8704)
 
+  The following operations have newly added decomposition rules in terms of PPRs (:class:`~.PauliRot`):
   - :class:`~.CRX`, :class:`~.CRY`, :class:`~.CRZ`
   - :class:`~.ControlledPhaseShift`
   - :class:`~.IsingXX`, :class:`~.IsingYY`, :class:`~.IsingZZ`
@@ -213,6 +263,27 @@
   - :class:`~.SingleExcitation`, :class:`~.DoubleExcitation`
   - :class:`~.SWAP`, :class:`~.ISWAP`, :class:`~.SISWAP`
   - :class:`~.CY`, :class:`~.CZ`, :class:`~.CSWAP`, :class:`~.CNOT`, :class:`~.Toffoli`
+
+  To access these decompositions, simply specify a target gate set including :class:`~.PauliRot` and :class:`~.GlobalPhase`.
+  The following example illustrates how the :class:`~.CNOT` gate can be represented in terms of three
+  :math:`\tfrac{\pi}{2}` PPRs (``IX``, ``ZI`` and ``ZX``) acting on two wires:
+
+  ```python
+  from functools import partial
+  
+  qml.decomposition.enable_graph()
+
+  @partial(qml.transforms.decompose, gate_set={qml.PauliRot, qml.GlobalPhase})
+  @qml.qnode(qml.device("null.qubit", wires=2))
+  def circuit():
+      qml.CNOT([0, 1])
+      return qml.expval(qml.Z(0))
+  ```
+  ```pycon
+  >>> qml.draw(circuit)()
+  0: ─╭RIX(-1.57)─╭RZI(-1.57)─╭RZX(1.57)─╭GlobalPhase(0.79)─┤  <Z>
+  1: ─╰RIX(-1.57)─╰RZI(-1.57)─╰RZX(1.57)─╰GlobalPhase(0.79)─┤ 
+  ```
 
 <h4>Compile Pipeline and Transforms </h4>
 
