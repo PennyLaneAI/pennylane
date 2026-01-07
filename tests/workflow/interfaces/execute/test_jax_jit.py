@@ -181,7 +181,7 @@ class TestCaching:
     def test_cache_maxsize(self, mocker):
         """Test the cachesize property of the cache"""
         dev = qml.device("default.qubit", wires=1)
-        spy = mocker.spy(qml.workflow._cache_transform, "_transform")
+        spy = mocker.spy(qml.workflow._cache_transform, "_tape_transform")
 
         def cost(a, cachesize):
             with qml.queuing.AnnotatedQueue() as q:
@@ -210,7 +210,7 @@ class TestCaching:
     def test_custom_cache(self, mocker):
         """Test the use of a custom cache object"""
         dev = qml.device("default.qubit", wires=1)
-        spy = mocker.spy(qml.workflow._cache_transform, "_transform")
+        spy = mocker.spy(qml.workflow._cache_transform, "_tape_transform")
 
         def cost(a, cache):
             with qml.queuing.AnnotatedQueue() as q:
@@ -237,7 +237,7 @@ class TestCaching:
     def test_custom_cache_multiple(self, mocker):
         """Test the use of a custom cache object with multiple tapes"""
         dev = qml.device("default.qubit", wires=1)
-        spy = mocker.spy(qml.workflow._cache_transform, "_transform")
+        spy = mocker.spy(qml.workflow._cache_transform, "_tape_transform")
 
         a = jax.numpy.array(0.1)
         b = jax.numpy.array(0.2)
