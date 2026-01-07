@@ -92,6 +92,7 @@
   generative quantum machine learning tasks.
   [(#8748)](https://github.com/PennyLaneAI/pennylane/pull/8748)
   [(#8807)](https://github.com/PennyLaneAI/pennylane/pull/8807)
+  [(#8749)](https://github.com/PennyLaneAI/pennylane/pull/8749)
   
   While :class:`~.IQP` circuits belong to a class of circuits that are believed to be hard to sample from
   using classical algorithms, Recio-Armengol et al. showed in a recent paper titled [Train on classical, deploy on quantum](https://arxiv.org/abs/2503.02934)
@@ -111,7 +112,7 @@
     qml.IQP(
         weights=[1., 2., 3.],
         num_wires=2,
-        pattern= [[[0]],[[1]],[[0,1]]],
+        pattern= [[[0]],[[1]],[[0,1]]], # binary array representing gates X0, X1, X0X1
         spin_sym=False,
     )
     return qml.state()
@@ -131,17 +132,37 @@
       'CNOT': 2,
       'Hadamard': 4
   ```
+  
+  The expectation values of Pauli-Z type observables for parameterized :class:`~.IQP` circuits can be efficeintly
+  evaluated with the :func:`~.qnn.iqp_expval` function. This estimator function is based on a randomized method
+  allowing for the efficient optimization of circuits with thousands of qubits and millions of gates.
 
-* An efficient expectation value estimator has been added which may be used to train `~.IQP` circuits.
-  [(#8749)](https://github.com/PennyLaneAI/pennylane/pull/8749)
+  ```python
+    from pennylane.qnn import iqp_expval
+    import jax
+
+    num_wires = 2
+    ops = np.array([[0, 1], [1, 0], [1, 1]]) # binary array representing ops Z1, Z0, Z0Z1
+    n_samples = 1000
+    key = jax.random.PRNGKey(42)
+
+    weights = np.ones(len(pattern))
+    pattern = [[[0]], [[1]], [[0, 1]]]
+
+    expvals, stds = iqp_expval(ops, weights, pattern, num_wires, n_samples, key)
+  ```
+  ```pycon
+  >>> print(expvals, stds)
+  [0.18971464 0.14175898 0.17152457] [0.02615426 0.02614059 0.02615943]
+  ```
 
   For more theoretical details, check out our [Fast optimization of instantaneous quantum polynomial circuits](https://pennylane.ai/qml/demos/tutorial_iqp_circuit_optimization_jax) demo.
 
 
 <h4>Arbitrary State Preparation </h4>
 
-* A new template :class:`~.MultiplexerStatePreparation` has been added. This template allows preparing arbitrary states
-  using :class:`~.SelectPauliRot` operations.
+* A new template :class:`~.MultiplexerStatePreparation` has been added. :class:`~.MultiplexerStatePreparation`
+  allows preparing arbitrary states using :class:`~.SelectPauliRot` operations.
   [(#8581)](https://github.com/PennyLaneAI/pennylane/pull/8581)
 
   Using :class:`~.MultiplexerStatePreparation` is analogous to using other state preparation techniques in PennyLane.
