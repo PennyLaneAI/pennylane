@@ -568,6 +568,9 @@ def reduce_t_depth(qnode):
         device and potential future execution when a suitable backend is available.
         This transform requires decorating the QNode with :func:`@qml.qjit <pennylane.qjit>`.
 
+        Lastly, the :func:`pennylane.transforms.to_ppr` transform must be applied before
+        ``reduce_t_depth``.
+
     Args:
         qnode (QNode): QNode to apply the pass to.
 
@@ -586,68 +589,65 @@ def reduce_t_depth(qnode):
 
     **Example**
 
-    In the example below, after performing the :func:`catalyst.passes.to_ppr` and
-    :func:`catalyst.passes.merge_ppr_ppm` passes, the circuit contains a depth of four of
+    In the example below, after performing the :func:`~.transforms.to_ppr` and
+    :func:`~.transforms.merge_ppr_ppm` passes, the circuit contains a depth of four of
     non-Clifford PPRs. Subsequently applying the ``reduce_t_depth`` pass will move PPRs around via
     commutation, resulting in a circuit with a smaller PPR depth.
 
     Specifically, in the circuit below, the Pauli-:math:`X` PPR (:math:`\exp(iX\tfrac{\pi}{8})`) on
     qubit Q1 will be moved to the first layer, which results in a depth of three non-Clifford PPRs.
 
+    Consider the following example:
+
     .. code-block:: python
 
         import pennylane as qml
+        import jax.numpy as jnp
 
         qml.capture.enable()
 
+        pipeline = qml.CompilePipeline([
+            qml.transforms.to_ppr, qml.transforms.reduce_t_depth
+        ])
+
         @qml.qjit(target="mlir")
-        @qml.transforms.reduce_t_depth
-        @qml.transforms.merge_ppr_ppm
-        @qml.transforms.commute_ppr
-        @qml.transforms.to_ppr
-        @qml.qnode(qml.device("null.qubit", wires=3))
+        @pipeline
+        @qml.qnode(qml.device("null.qubit", wires=4))
         def circuit():
-            n = 3
-            for i in range(n):
-                qml.H(wires=i)
-                qml.S(wires=i)
-                qml.CNOT(wires=[i, (i + 1) % n])
-                qml.T(wires=i)
-                qml.H(wires=i)
-                qml.T(wires=i)
+            qml.PauliRot(jnp.pi / 4, pauli_word="Z", wires=1)
+            qml.PauliRot(-jnp.pi / 4, pauli_word="XYZ", wires=[0, 2, 3])
+            qml.PauliRot(-jnp.pi / 2, pauli_word="XYZY", wires=[0, 1, 2, 3])
+            qml.PauliRot(jnp.pi / 4, pauli_word="XZX", wires=[0, 1, 3])
+            qml.PauliRot(-jnp.pi / 4, pauli_word="XZY", wires=[0, 1, 2])
 
             return qml.expval(qml.Z(0))
 
-    To inspect programs compiled with ``reduce_t_depth`` via :func:`~.specs`, ensure that
-    ``target="mlir"`` is given in the :func:`qjit <pennylane.qjit>` decorator.
+    The ``reduce_t_depth`` compilation pass will rearrange the last three PPRs in the above circuit
+    to reduce the non-Clifford PPR depth. This is best seen with the :func:`catalyst.draw_graph`
+    function:
 
-    >>> print(qml.specs(circuit, level=(4, 5))())
-    Device: null.qubit
-    Device wires: 3
-    Shots: Shots(total=None)
-    Level: 5
-    <BLANKLINE>
-    Resource specifications:
-    Total wire allocations: 3
-    Total gates: 28
-    Circuit depth: Not computed
-    <BLANKLINE>
-    Gate types:
-        PPR-pi/8-w1: 3
-        PPR-pi/8-w2: 1
-        PPR-pi/8-w3: 2
-        PPR-pi/4-w1: 19
-        PPR-pi/4-w2: 3
-    <BLANKLINE>
-    Measurements:
-        expval(PauliZ): 1
+    >>> import catalyst
+    >>> num_passes = len(pipeline)
+    >>> fig1, _ = catalyst.draw_graph(circuit, level=num_passes-1)()
+    >>> fig2, _ = catalyst.draw_graph(circuit, level=num_passes)()
 
-    In the above output, ``PPM-weight`` denotes the type of PPM present in the circuit, where
-    ``weight`` is the PPM weight. ``PPR-theta-weight`` denotes the type of PPR present in the
-    circuit, where ``theta`` is the PPR angle (:math:`\theta`) and ``weight`` is the PPR weight.
-    Note that :math:`\theta = \tfrac{\pi}{2}` PPRs correspond to Pauli operators:
-    :math:`P(\tfrac{\pi}{2}) = \exp(-iP\tfrac{\pi}{2}) = P`. Pauli operators can be commuted to the
-    end of the circuit and absorbed into terminal measurements.
+    Without ``reduce_t_depth`` applied:
+
+    >>> fig1.savefig('path_to_file1.png', dpi=300, bbox_inches="tight")
+
+    .. figure:: ../../../doc/_static/reduce-t-depth-example1.png
+        :width: 35%
+        :alt: Graphical representation of circuit without ``reduce_t_depth``
+        :align: left
+
+    With ``reduce_t_depth`` applied:
+
+    >>> fig2.savefig('path_to_file2.png', dpi=300, bbox_inches="tight")
+
+    .. figure:: ../../../doc/_static/reduce-t-depth-example2.png
+        :width: 35%
+        :alt: Graphical representation of circuit with ``reduce_t_depth``
+        :align: left
     """
     raise NotImplementedError(
         "The reduce_t_depth compilation pass has no tape implementation, and can only be applied when decorating the entire worfklow with @qml.qjit and when it is placed after all transforms that only have a tape implementation."
