@@ -141,7 +141,7 @@ def commute_ppr(tape, *, max_pauli_size=0):
         max_pauli_size (int):
             The maximum size of Pauli strings resulting from commutation. If a commutation results
             in a PPR that acts on more than ``max_pauli_size`` qubits, that commutation will not be
-            performed.
+            performed. Note that the default ``max_pauli_size=0`` indicates no limit.
 
     Returns:
         :class:`QNode <pennylane.QNode>`
@@ -702,7 +702,7 @@ def decompose_arbitrary_ppr(qnode):
 
         qml.capture.enable()
 
-        @qjit(target="mlir")
+        @qml.qjit(target="mlir")
         @qml.transforms.decompose_arbitrary_ppr
         @qml.transforms.to_ppr
         @qml.qnode(qml.device("null.qubit", wires=3))
