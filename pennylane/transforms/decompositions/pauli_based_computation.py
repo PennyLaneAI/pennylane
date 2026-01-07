@@ -343,7 +343,7 @@ def ppr_to_ppm(tape=None, *, decompose_method="pauli-corrected", avoid_y_measure
 
     Args:
         qnode (QNode): QNode to apply the pass to.
-        decompose_method (str, optional): The method to use for decomposing non-Clifford PPRs.
+        decompose_method (str): The method to use for decomposing non-Clifford PPRs.
             Options are ``"pauli-corrected"``, ``"auto-corrected"``, and ``"clifford-corrected"``.
             Defaults to ``"pauli-corrected"``.
             ``"pauli-corrected"`` uses a reactive measurement for correction that is based on Figure
