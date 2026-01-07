@@ -171,6 +171,8 @@
   gates to either the Clifford+T basis or to other PPRs.
 
     ```python
+    @qml.qjit
+    @qml.transforms.gridsynth
     @qml.qnode(qml.device("lightning.qubit", wires=1))
     def circuit(x):
         qml.Hadamard(0)
