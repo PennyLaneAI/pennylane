@@ -16,6 +16,27 @@ This subpackage contains PennyLane transforms and their building blocks.
 
 .. currentmodule:: pennylane
 
+Custom transforms
+-----------------
+
+``qml.transform`` can be used to define custom transformations that work with PennyLane QNodes and quantum
+functions; such transformations can map a circuit to one or many new circuits alongside associated classical post-processing.
+
+.. autosummary::
+    :toctree: api
+
+    ~transform
+
+Compile Pipeline
+----------------
+
+Multiple transforms can be chained together into a compile pipeline. See :ref:`composing_transforms` for more details.
+
+.. autosummary::
+    :toctree: api
+
+    ~CompilePipeline
+
 .. _transform_library:
 
 Transforms library
@@ -171,27 +192,6 @@ that compute the desired quantity.
     ~batch_partial
     ~draw
     ~draw_mpl
-
-Custom transforms
------------------
-
-``qml.transform`` can be used to define custom transformations that work with PennyLane QNodes and quantum
-functions; such transformations can map a circuit to one or many new circuits alongside associated classical post-processing.
-
-.. autosummary::
-    :toctree: api
-
-    ~transform
-
-Compile Pipeline
-----------------
-
-Multiple transforms can be chained together into a compile pipeline. See :ref:`composing_transforms` for more details.
-
-.. autosummary::
-    :toctree: api
-
-    ~CompilePipeline
 
 Transforms developer classes
 ------------------------------
