@@ -232,8 +232,8 @@
   ```
 
 
-  By applying a created ``pipeline`` directly on a quantum function as a decorator, the circuit can
-  be transformed with each pass therein:
+  By applying a created ``pipeline`` directly on a quantum function as a decorator, each compilation pass
+  therein will be applied to the circuit:
 
   ```python
   import pennylane as qml
