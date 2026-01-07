@@ -42,7 +42,7 @@ jobs:
         run: |
           BRANCH_NAME="${{ github.head_ref}}"
           echo "branch is $BRANCH_NAME"
-          echo "target is ${{ github.base_ref}}"
+          echo "target is ${{ github.base_ref}} "
           if [[ "$BRANCH_NAME" =~ v[0-9]+\.[0-9]+\.[0-9]+-docs$ ]]; then
             echo "run_sphinx=true" >> $GITHUB_OUTPUT  
           elif [ "${{github.event.pull_request.draft}}" == false ]; then
