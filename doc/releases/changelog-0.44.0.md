@@ -189,7 +189,7 @@
     [0.60284353-0.36960984j 0.5076425 +0.4922066j ]
     ```
 
-  * Seven transforms for compiling Clifford+T gates, PPRs, and/or PPMs, including func:`~.transforms.to_ppr`,
+  * Seven transforms for compiling Clifford+T gates, PPRs, and/or PPMs, including :func:`~.transforms.to_ppr`,
   :func:`~.transforms.commute_ppr`, :func:`~.transforms.merge_ppr_ppm`,
   :func:`~.transforms.ppr_to_ppm`, :func:`~.transforms.ppm_compilation`,
   :func:`pennylane.transforms.reduce_t_depth`, and :func:`~.transforms.decompose_arbitrary_ppr`.
