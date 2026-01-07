@@ -207,7 +207,7 @@
 * Directly decomposing Clifford+T gates and other small gates into PPRs is possible via :func:`~.transforms.decompose` and enabling graph-based decompositions with :func:`~.decomposition.enable_graph`. This allows for bypassing the :func:`~.transforms.clifford_t_decomposition`, which can be expensive in some cases.
   [(#8700)](https://github.com/PennyLaneAI/pennylane/pull/8700)
   [(#8704)](https://github.com/PennyLaneAI/pennylane/pull/8704)
-
+  The following operations have newly added decomposition rules in terms of PPRs (:class:`~.PauliRot`):
   - :class:`~.CRX`, :class:`~.CRY`, :class:`~.CRZ`
   - :class:`~.ControlledPhaseShift`
   - :class:`~.IsingXX`, :class:`~.IsingYY`, :class:`~.IsingZZ`
