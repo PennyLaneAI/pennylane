@@ -628,6 +628,7 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
 * Transform decorator arguments can now be defined without ``@partial``, leading to a simpler interface. 
   [(#8730)](https://github.com/PennyLaneAI/pennylane/pull/8730)
   [(#8754)](https://github.com/PennyLaneAI/pennylane/pull/8754)
+
   For example, the following two usages are equivalent:
 
   ```python
