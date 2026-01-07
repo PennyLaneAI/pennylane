@@ -245,15 +245,7 @@ def _basic_entangler_decomposition(weights, wires, rotation):
 
         @for_loop(len(wires))
         def wires_loop(i):
-
-            def recurse(depth, lst, layer, i):
-                if math.ndim(weights) - depth == 2:
-                    return lst[layer][i]
-                if capture.enabled():
-                    return math.array([recurse(depth + 1, l, layer, i) for l in lst], like="jax")
-                return [recurse(depth + 1, l, layer, i) for l in lst]
-
-            rotation(recurse(0, weights, layer, i), wires=wires[i])
+            rotation(weights[..., layer, i], wires=wires[i])
 
         wires_loop()  # pylint: disable=no-value-for-parameter
 
