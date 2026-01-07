@@ -113,8 +113,8 @@
   [(#8663)](https://github.com/PennyLaneAI/pennylane/pull/8663)
   [(#8692)](https://github.com/PennyLaneAI/pennylane/pull/8692)
 
-  The new :func:`~.pauli_measure` function is currently only for analysis on the ``null.qubit`` device,
-  which allows for resource tracking with :func:`~.specs` and circuit inspection with :func:`~.drawer.draw`.
+  The new :func:`~.pauli_measure` function is currently only supported on the ``null.qubit`` device,
+  which allows for circuit inspection with :func:`~.specs` and :func:`~.drawer.draw`.
 
   Using :func:`~.pauli_measure` in a circuit is similar to :func:`~.measure` (a mid-circuit measurement),
   but requires that a ``pauli_word`` be specified for the measurement basis:
