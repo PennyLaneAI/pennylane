@@ -186,10 +186,9 @@
     [0.6028324 -0.3695921j  0.50763281+0.49224355j]
     ```
 
-  * Five transforms for decomposing Clifford+T gates into PPRs and PPMs and further optimizing a circuit down to PPMs,
-  namely, func:`pennylane.transforms.to_ppr`, :func:`pennylane.transforms.commute_ppr`, :func:`pennylane.transforms.merge_ppr_ppm`,
-  :func:`pennylane.transforms.ppr_to_ppm`, and :func:`pennylane.transforms.ppm_compilation`. Additionally, the
-  :func:`pennylane.transforms.reduce_t_depth` transform to reduce the depth of T gates. 
+  * Five transforms for compiling Clifford+T gates, PPRs, and/or PPMs, including func:`~.transforms.to_ppr`, :func:`~.transforms.commute_ppr`, :func:`~.transforms.merge_ppr_ppm`,
+  :func:`~.transforms.ppr_to_ppm`, and :func:`~.transforms.ppm_compilation`,
+  :func:`pennylane.transforms.reduce_t_depth`, and :func:`~.transforms.decompose_arbitrary_ppr`.
   
     ```python
     from pennylane.transforms import to_ppr
