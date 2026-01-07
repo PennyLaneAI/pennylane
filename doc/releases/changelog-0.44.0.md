@@ -144,7 +144,7 @@
 
   By appliying the :func:`~.specs` function to the circuit above, you can easily determine its resources.
   In this case, in addition to other gates, we can see that the circuit includes one PPR and one PPM operation (represented
-  by the :class:`~.PauliRot` and :class:`~.ops.mid_measure.pauli_measure.PauliMeasure` gate types):
+  by the :class:`~.PauliRot` and ``PauliMeasure`` gate types):
 
   ```pycon
   >>> print(qml.specs(circuit)()['resources'])
