@@ -451,20 +451,24 @@ def clifford_t_decomposition(
     - Two qubit gates - :class:`~.CNOT`, :class:`~.CY`, :class:`~.CZ`, :class:`~.SWAP`, and :class:`~.ISWAP`.
 
     Then, the leftover single qubit :class:`~.RZ` operations are approximated in the Clifford+T basis with
-    :math:`\epsilon > 0` error. By default, we use the Ross-Selinger algorithm described in
-    `Ross and Selinger (2016) <https://arxiv.org/abs/1403.2975v3>`_ for this. Alternatively,
+    :math:`\epsilon > 0` error. By default, the Ross-Selinger algorithm described in
+    `Ross and Selinger (2016) <https://arxiv.org/abs/1403.2975v3>`_ is used for this. Alternatively,
     the Solovay-Kitaev algorithm described in `Dawson and Nielsen (2005) <https://arxiv.org/abs/quant-ph/0505030>`_
-    can be used via ``method="sk"`` instead.
+    is available by setting ``method="sk"``.
 
     Args:
         tape (QNode or QuantumTape or Callable): The quantum circuit to be decomposed.
         epsilon (float): The maximum permissible operator norm error of the complete circuit decomposition. Defaults to ``0.0001``.
-        method (str): Method to be used for Clifford+T decomposition. Default value is ``"gridsynth"`` for Ross-Selinger algorithm.
-            Alternatively, the Solovay-Kitaev decomposition can be used with ``"sk"``.
+        method (str): Method to be used for Clifford+T decomposition. Default value is ``"gridsynth"`` for the Ross-Selinger algorithm.
+            Alternatively, use the value ``"sk"`` for the Solovay-Kitaev algorithm.
         cache_size (int): The size of the cache built for the decomposition function based on the angle. Defaults to ``1000``.
         cache_eps_rtol (Optional[float]): The relative tolerance for ``epsilon`` values between which the cache may be reused.
             Defaults to ``None``, which means that a cached decomposition will be used if it is `at least as precise` as the requested error.
         **method_kwargs: Keyword argument to pass options for the ``method`` used for decompositions.
+
+    Returns:
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as described
+        in the :func:`qml.transform <pennylane.transform>`.
 
     **Keyword Arguments**
 
