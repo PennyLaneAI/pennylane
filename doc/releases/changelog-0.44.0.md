@@ -644,6 +644,48 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
   implementing them with a phase gradient resource state and semi-in-place addition (:class:`~.SemiAdder`).
   [(#8738)](https://github.com/PennyLaneAI/pennylane/pull/8738)
 
+  ```python
+  import pennylane as qml
+  from pennylane.labs.transforms import select_pauli_rot_phase_gradient
+  import numpy as np
+
+  @qml.qnode(qml.device("default.qubit"))
+  def select_pauli_rot_circ(phis):
+      # prepare phase gradient state
+      for i, w in enumerate([6,7,8,9]):
+          qml.H(w)
+          qml.PhaseShift(-np.pi / 2**i, w)
+
+      for wire in [0,1]:
+          qml.Hadamard(wire)
+
+      qml.SelectPauliRot(phis, [0,1], 13, rot_axis="X")
+
+      return qml.probs(13)
+
+  phase_grad = select_pauli_rot_phase_gradient(select_pauli_rot_circ,
+      angle_wires=[2,3,4,5],
+      phase_grad_wires=[6,7,8,9],
+      work_wires=[10,11,12],
+  )
+
+  phis = [
+      (1 / 2 + 1 / 4 + 1 / 8) * 2 * np.pi,
+      (1 / 2 + 1 / 4 + 0 / 8) * 2 * np.pi,
+      (1 / 2 + 0 / 4 + 1 / 8) * 2 * np.pi,
+      (0 / 2 + 1 / 4 + 1 / 8) * 2 * np.pi,
+  ]
+
+  clifford_T = qml.clifford_t_decomposition(select_pauli_rot_circ)
+  clifford_T_phase_gradient = qml.clifford_t_decomposition(phase_grad)
+  ```
+  ```pycon
+  >>> qml.specs(clifford_T)(phis).resources.gate_types['T']
+  16630
+  >>> qml.specs(clifford_T_phase_gradient)(phis).resources.gate_types['T']
+  3462
+  ```
+
 <h3>Breaking changes 💔</h3>
 
 * The `final_transform` property of the :class:`~.transforms.core.BoundTransform` has been renamed 
