@@ -1014,7 +1014,7 @@ A warning message has been added to :doc:`Building a plugin <../development/plug
   Disabling the benchmark package allows the tests to be collected and executed.
   [(#8699)](https://github.com/PennyLaneAI/pennylane/pull/8699)
 
-* Added an `expand_transform` to `param_shift_hessian` to pre-decompose
+* Added a missing `expand_transform` to `param_shift_hessian` to pre-decompose
   operations until they are supported.
   [(#8698)](https://github.com/PennyLaneAI/pennylane/pull/8698)
 
