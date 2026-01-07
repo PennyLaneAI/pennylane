@@ -191,10 +191,6 @@
   :func:`pennylane.transforms.reduce_t_depth`, and :func:`~.transforms.decompose_arbitrary_ppr`.
   
     ```python
-    from pennylane.transforms import to_ppr
-
-    qml.capture.enable()
-
     @qml.qjit(target="mlir")
     @to_ppr
     @qml.qnode(qml.device("null.qubit", wires=2))
