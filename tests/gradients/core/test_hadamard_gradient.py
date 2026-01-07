@@ -499,6 +499,28 @@ class TestDifferentModes:
         assert standard.call_count == 1
         assert reverse.call_count == 0
 
+    def test_automatic_mode_raises(self):
+        t = np.array(0.0)
+
+        op = qml.evolve(qml.X(0) @ qml.X(1) + qml.Y(2) + qml.Z(0) @ qml.Z(1), t)
+        mp = qml.expval(qml.Z(0) @ qml.X(1) + qml.Y(0) + qml.X(0) @ qml.Z(1))
+        tape = qml.tape.QuantumScript([op], [mp, qml.probs((0, 1))])
+
+        with pytest.raises(
+            ValueError,
+            match="Computing the gradient of probabilities with the direct gradient transform is not supported.",
+        ):
+            batch, _ = qml.gradients.hadamard_grad(tape, mode="auto")
+
+        op = qml.evolve(qml.X(0) @ qml.X(1) + qml.Y(2) + qml.Z(0) @ qml.Z(1), t)
+        tape = qml.tape.QuantumScript([op], [qml.probs((0, 1))])
+
+        with pytest.raises(
+            ValueError,
+            match="The circuit must have observables in order to use Quantum Automatic Differentiation.",
+        ):
+            batch, _ = qml.gradients.hadamard_grad(tape, mode="auto")
+
     @pytest.mark.parametrize("mode", ["direct", "reversed-direct"])
     def test_no_available_work_wire_direct_methods(self, mode):
         """Test that direct and reversed direct work with no available work wires."""
