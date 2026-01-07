@@ -199,7 +199,7 @@
   [(#8834)](https://github.com/PennyLaneAI/pennylane/pull/8834)
 
   The :class:`~.CompilePipeline` class allows you to chain together multiple transforms
-  to create custom circuit optimization pipelines with ease. For example, :class:~.CompilePipeline objects can compound:
+  to create custom circuit optimization pipelines with ease. For example, :class:`~.CompilePipeline` objects can compound:
 
   ```pycon
   >>> pipeline = qml.CompilePipeline(qml.transforms.commute_controlled, qml.transforms.cancel_inverses)
