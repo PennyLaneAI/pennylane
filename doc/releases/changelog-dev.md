@@ -165,7 +165,7 @@
   [(#8764)](https://github.com/PennyLaneAI/pennylane/pull/8764)
   [(#8762)](https://github.com/PennyLaneAI/pennylane/pull/8762)
   
-  These compilation passes include:
+  The compilation passes included in this release are:
 
   * The new :func:`~pennylane.transforms.gridsynth` compilation pass to perform rapid Clifford+T
   decomposition with :func:`pennylane.qjit`. This pass discretizes ``RZ`` and ``PhaseShift``
