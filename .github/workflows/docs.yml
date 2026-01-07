@@ -48,7 +48,7 @@ jobs:
             echo "run_sphinx=true" >> $GITHUB_OUTPUT  
           elif [ "${{github.event.pull_request.draft}}" == false ]; then
             echo "run_sphinx=true" >> $GITHUB_OUTPUT
-          elif [[ "${{ github.base_ref }}" =~ v[0-9]+\.[0-9]+\.[0-9]+-docs$ ]]; then
+          elif [[ "$TARGET_NAME" =~ v[0-9]+\.[0-9]+\.[0-9]+-docs$ ]]; then
             echo "run_sphinx=true" >> $GITHUB_OUTPUT            
           else
             echo "run_sphinx=false" >> $GITHUB_OUTPUT
