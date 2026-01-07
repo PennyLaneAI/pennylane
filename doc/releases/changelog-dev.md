@@ -158,7 +158,7 @@
     expval(PauliZ): 1
   ```
 
-* Several qjit-compatible compilation passes designed for Pauli-based computation are now available
+* Several ``qjit``-compatible compilation passes designed for Pauli-based computation are now available
   with this release, and are designed to work directly with :func:`~.pauli_measure` and :class:`~.PauliRot` operations.
   [(#8609)](https://github.com/PennyLaneAI/pennylane/pull/8609)
   [(#8764)](https://github.com/PennyLaneAI/pennylane/pull/8764)
