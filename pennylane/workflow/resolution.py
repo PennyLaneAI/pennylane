@@ -29,7 +29,7 @@ from pennylane import math
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.logging import debug_logger
 from pennylane.math import Interface, get_interface
-from pennylane.transforms.core import TransformDispatcher
+from pennylane.transforms.core import Transform
 
 SupportedDiffMethods = Literal[
     None,
@@ -262,7 +262,7 @@ def _resolve_diff_method(
 
         if diff_method in gradient_transform_map:
             updated_values["gradient_method"] = gradient_transform_map[diff_method]
-        elif isinstance(diff_method, TransformDispatcher):
+        elif isinstance(diff_method, Transform):
             updated_values["gradient_method"] = diff_method
         else:
             raise QuantumFunctionError(

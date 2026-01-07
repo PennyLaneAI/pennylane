@@ -28,7 +28,7 @@ to one or many new circuits alongside associated classical post-processing.
 .. autosummary::
     :toctree: api
 
-    ~transforms.core.transform
+    ~transform
 
 Transforms library
 ------------------
@@ -152,12 +152,14 @@ Transforms for intermediate representations
 
 Intermediate representations (IRs) are alternative representations of quantum circuits, typically
 offering a more efficient classical description for special classes of circuits.
-The following functions produce intermediate representations of quantum circuits:
+The following functions produce intermediate representations of quantum circuits, or
+use them internally to produce a new quantum circuit:
 
 .. autosummary::
     :toctree: api
 
     ~transforms.parity_matrix
+    ~transforms.parity_synth
     ~transforms.phase_polynomial
     ~transforms.rowcol
 
@@ -187,17 +189,13 @@ that compute the desired quantity.
 Transforms developer functions
 ------------------------------
 
-:class:`~.TransformDispatcher` is a
-developer-facing objects that allow the
-creation, dispatching, and composability of transforms. If you would like to make a custom transform, refer
-instead to the documentation of :func:`qml.transform <pennylane.transform>`.
-
 .. currentmodule:: pennylane
 .. autosummary::
     :toctree: api
 
     ~CompilePipeline
-    ~transforms.core.transform_dispatcher
+    ~transforms.core.BoundTransform
+    ~transforms.core.Transform
 
 Transforming circuits
 ---------------------
@@ -403,6 +401,7 @@ from .broadcast_expand import broadcast_expand
 from .decompose import decompose
 from .intermediate_reps import (
     parity_matrix,
+    parity_synth,
     phase_polynomial,
     rowcol,
 )
