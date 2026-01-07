@@ -899,7 +899,7 @@ should be used instead.
 * Reclassified ``registers`` as a tertiary module for use with ``tach``.
   [(#8513)](https://github.com/PennyLaneAI/pennylane/pull/8513)
 
-* The :class:`~pennylane.devices.LegacyDeviceFacade` was refactored to implement ``setup_execution_config`` and `preprocess_transforms``
+* The :class:`~pennylane.devices.LegacyDeviceFacade` was refactored to implement ``setup_execution_config`` and ``preprocess_transforms``
   separately as opposed to implementing a single ``preprocess`` method. Additionally, the ``mid_circuit_measurements`` transform has been removed
   from the preprocess transform program. Instead, the best mcm method is chosen in ``setup_execution_config``. By default, the ``_capabilities``
   dictionary is queried for the ``"supports_mid_measure"`` property. If the underlying device defines a TOML file, the ``supported_mcm_methods``
