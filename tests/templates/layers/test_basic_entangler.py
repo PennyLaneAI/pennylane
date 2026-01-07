@@ -73,6 +73,7 @@ class TestDecomposition:
 
         assert rotation in [type(gate) for gate in queue]
 
+    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     @pytest.mark.parametrize(
         "weights, n_wires, target",
         [
@@ -95,6 +96,7 @@ class TestDecomposition:
         expectations = circuit(weights)
         np.testing.assert_allclose(expectations, target, atol=tol, rtol=0)
 
+    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     def test_custom_wire_labels(self, tol):
         """Test that template can deal with non-numeric, nonconsecutive wire labels."""
         weights = np.random.random(size=(1, 3))
@@ -123,6 +125,7 @@ class TestDecomposition:
         ([[np.pi] * 2], range(2), qml.RY),
         ([[np.pi] * 3], range(3), qml.RZ),
         ([[np.pi] * 4], range(4), qml.RX),
+        ([[[np.pi, 1, 2, 1]] * 4], range(4), qml.RX),
     ]
 
     @pytest.mark.capture
