@@ -671,7 +671,7 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
     return qml.state()
   ```
 
-  The new :func:`~.specs` provides:
+  The new :func:`~.specs` output format is:
 
   ```pycon
   >>> qml.specs(circuit)()
