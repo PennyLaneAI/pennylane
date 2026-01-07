@@ -304,29 +304,29 @@
 * Fast resource estimation is now available for many algorithms, including:
    
   * The **Generalized Quantum Signal Processing** (GQSP)
-    algorithm and its time evolution via the :class:`estimator.GQSP <pennylane.estimator.templates.qsp.GQSP>` and
-    :class:`estimator.GQSPTimeEvolution <pennylane.estimator.templates.qsp.GQSPTimeEvolution>` resource operations.
+    algorithm and its time evolution via the :class:``qml.estimator.GQSP`` and
+    :class:``qml.estimator.GQSPTimeEvolution`` resource operations.
     [(#8675)](https://github.com/PennyLaneAI/pennylane/pull/8675)
 
   * The **Qubitization** algorithm via two new resource
-    operators: :class:`estimator.Reflection <pennylane.estimator.templates.subroutines.Reflection>` and
-    :class:`estimator.Qubitization <pennylane.estimator.templates.subroutines.Qubitization>`.
+    operators: :class:``qml.estimator.Reflection`` and
+    :class:``qml.estimator.Qubitization``.
     [(#8675)](https://github.com/PennyLaneAI/pennylane/pull/8675)
 
   * The **Quantum Signal Processing** (QSP) and **Quantum Singular
-    Value Transformation** (QSVT) algorithms via two new resource operators: :class:`estimator.QSP <pennylane.estimator.templates.qsp.QSP>` and :class:`estimator.QSVT <pennylane.estimator.templates.qsp.QSVT>`.
+    Value Transformation** (QSVT) algorithms via two new resource operators: :class:``qml.estimator.QSP``.
     [(#8733)](https://github.com/PennyLaneAI/pennylane/pull/8733)
 
   * The **unary iteration implementation of QPE** via the new
-    :class:`estimator.UnaryIterationQPE <pennylane.estimator.templates.subroutines.UnaryIterationQPE>`
+    :class:``qml.estimator.UnaryIterationQPE``
     subroutine, which makes it possible to reduce ``T`` and ``Toffoli`` gate counts in exchange
     for using additional qubits.
     [(#8708)](https://github.com/PennyLaneAI/pennylane/pull/8708)
 
   * **Trotterization** for Pauli Hamiltonians, using the new
-    :class:`estimator.PauliHamiltonian <pennylane.estimator.compact_hamiltonian.PauliHamiltonian>`
+    :class:``qml.estimator.PauliHamiltonian``
     resource Hamiltonian class and the new
-    :class:`estimator.TrotterPauli <pennylane.estimator.templates.TrotterPauli>`
+    :class:``qml.estimator.TrotterPauli``
     resource operator. [(#8546)](https://github.com/PennyLaneAI/pennylane/pull/8546)
     [(#8761)](https://github.com/PennyLaneAI/pennylane/pull/8761)
     
@@ -346,7 +346,7 @@
     ```
   
   * **Linear combination of unitaries** (LCU) representations of ``qml.estimator.PauliHamiltonian`` Hamiltonians via the
-    new :class:`estimator.SelectPauli <pennylane.estimator.templates.select.SelectPauli>` operator.
+    new :class:``qml.estimator.SelectPauli`` operator.
     [(#8675)](https://github.com/PennyLaneAI/pennylane/pull/8675)
 
 
