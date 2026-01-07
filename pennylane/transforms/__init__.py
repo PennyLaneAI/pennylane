@@ -175,13 +175,23 @@ that compute the desired quantity.
 Custom transforms
 -----------------
 
-qml.transform can be used to define custom transformations that work with PennyLane QNodes and quantum
+``qml.transform`` can be used to define custom transformations that work with PennyLane QNodes and quantum
 functions; such transformations can map a circuit to one or many new circuits alongside associated classical post-processing.
 
 .. autosummary::
     :toctree: api
 
     ~transform
+
+Compile Pipeline
+----------------
+
+Multiple transforms can be chained together into a compile pipeline. See :ref:`composing_transforms` for more details.
+
+.. autosummary::
+    :toctree: api
+
+    ~CompilePipeline
 
 Transforms developer classes
 ------------------------------
@@ -190,7 +200,6 @@ Transforms developer classes
 .. autosummary::
     :toctree: api
 
-    ~CompilePipeline
     ~transforms.core.BoundTransform
     ~transforms.core.Transform
 
@@ -254,6 +263,8 @@ a circuit into tapes measuring groups of commuting observables.
             qml.expval(qml.Z(0) @ qml.Z(1)),
             qml.expval(qml.X(0) @ qml.Z(1) + 0.5 * qml.Y(1) + qml.Z(0)),
         ]
+
+.. _composing_transforms:
 
 Composability of transforms
 ---------------------------
