@@ -41,6 +41,7 @@ jobs:
         id: get_pr_branch
         run: |
           BRANCH_NAME="${{ github.head_ref}}"
+          TARGET_NAME="${{ github.base_ref}}"
           echo "branch is $BRANCH_NAME"
           echo "target is ${{ github.base_ref}}"
           if [[ "$BRANCH_NAME" =~ v[0-9]+\.[0-9]+\.[0-9]+-docs$ ]]; then
