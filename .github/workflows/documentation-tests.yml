@@ -12,6 +12,13 @@ on:
       - reopened
       - synchronize
       - ready_for_review
+  workflow_dispatch:
+    inputs:
+      run_count:
+        description: 'Number of times to run the documentation tests'
+        required: false
+        default: 5
+        type: string
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -26,11 +33,31 @@ jobs:
       default_runner: ubuntu-latest
       force_large_runner: ${{ github.event_name == 'merge_group' }}
 
+  prepare-run-count:
+    if: github.event.pull_request.draft == false
+    needs: determine_runner
+    runs-on: ubuntu-latest
+    outputs:
+      run-count: ${{ steps.set-run-count.outputs.run-count }}
+    steps:
+      - name: Set run count
+        id: set-run-count
+        run: |
+          echo "Run count input: ${{ inputs.run_count || 5}}"        
+          RUN_COUNT_LIST=$(seq -s, 1 ${{ inputs.run_count || 5 }})
+          echo "run-count-list=$RUN_COUNT_LIST" >> $GITHUB_OUTPUT
+          echo "Run count list is set to $RUN_COUNT_LIST"
+          RUN_COUNT_JSON=$(echo "[\"$(echo $RUN_COUNT_LIST | sed 's/,/\",\"/g')\"]")
+          echo "run-count=$RUN_COUNT_JSON" >> $GITHUB_OUTPUT
+
   documentation-tests:
     if: github.event.pull_request.draft == false
-    needs: [determine_runner]
+    needs: [determine_runner, prepare-run-count]
     runs-on: ${{ needs.determine_runner.outputs.runner_group }}
-
+    strategy:
+      max-parallel: 5
+      matrix:
+        run-count: ${{ fromJSON(needs.prepare-run-count.outputs.run-count) }}
     name: Documentation Tests on Python 3.11
 
     steps:
