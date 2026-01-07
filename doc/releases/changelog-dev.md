@@ -217,6 +217,7 @@
   - :class:`~.SWAP`, :class:`~.ISWAP`, :class:`~.SISWAP`
   - :class:`~.CY`, :class:`~.CZ`, :class:`~.CSWAP`, :class:`~.CNOT`, :class:`~.Toffoli`
 
+  To access these decompositions, simply specify a target gate set including :class:`~.PauliRot` and :class:`~.GlobalPhase`.
   The following example illustrates how the :class:`~.CNOT` gate can be represented in terms of three
   :math:`2π/4` PPRs (``IX``, ``ZI`` and ``ZX``) acting on two wires:
 
