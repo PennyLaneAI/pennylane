@@ -1071,7 +1071,7 @@ A warning message has been added to :doc:`Building a plugin <../development/plug
   during manipulations of the :class:`~.CompilePipeline`.
   [(#8774)](https://github.com/PennyLaneAI/pennylane/pull/8774)
 
-* Fixed a bug where an error was raised when ``to_openqasm`` is used with ``qml.decomposition.enable_graph()``
+* Fixed a bug where an error was raised when ``to_openqasm`` is used with ``qml.decomposition.enable_graph()``.
   [(#8809)](https://github.com/PennyLaneAI/pennylane/pull/8809)
 
 <h3>Contributors ✍️</h3>
