@@ -98,8 +98,7 @@
   using classical algorithms, Recio-Armengol et al. showed in a recent paper titled [Train on classical, deploy on quantum](https://arxiv.org/abs/2503.02934)
   that such circuits can still be optimized efficiently.
 
-  Here is a simple example for defining an :class:`~.IQP` circuit and estimating the required resources
-  for its simulation using the :func:`~.estimator.estimate.estimate` function:
+  Here is a simple example showing how to define an :class:`~.IQP` circuit and how to estimate the required quantum resources using the :func:`~.estimator.estimate.estimate` function:
 
   ```python
   import pennylane as qml
