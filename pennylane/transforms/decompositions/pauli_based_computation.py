@@ -199,13 +199,13 @@ def commute_ppr(tape, *, max_pauli_size=0):
     Level: 3
     <BLANKLINE>
     Resource specifications:
-        Total wire allocations: 2
-        Total gates: 5
-        Circuit depth: Not computed
+    Total wire allocations: 2
+    Total gates: 7
+    Circuit depth: Not computed
     <BLANKLINE>
     Gate types:
         PPR-pi/8: 1
-        PPR-pi/4: 4
+        PPR-pi/4: 6
     <BLANKLINE>
     Measurements:
         expval(PauliZ): 1
@@ -414,13 +414,13 @@ def ppr_to_ppm(tape=None, *, decompose_method="pauli-corrected", avoid_y_measure
     Level: 3
     <BLANKLINE>
     Resource specifications:
-    Total wire allocations: 7
-    Total gates: 18
+    Total wire allocations: 9
+    Total gates: 24
     Circuit depth: Not computed
     <BLANKLINE>
     Gate types:
-        PPM: 12
-        PPR-pi/2: 5
+        PPM: 16
+        PPR-pi/2: 7
         qec.fabricate: 1
     <BLANKLINE>
     Measurements:
