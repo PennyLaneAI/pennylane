@@ -581,12 +581,6 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
   [(#8577)](https://github.com/PennyLaneAI/pennylane/pull/8577)
   [(#8721)](https://github.com/PennyLaneAI/pennylane/issues/8721)
 
-* The default method for decomposing the single-qubit Pauli rotation gates in the Clifford+T basis
-  in the :func:`~pennylane.clifford_t_decomposition` transform has been updated to use
-  the [Ross-Selinger](https://arxiv.org/abs/1403.2975) algorithm (`method="gridsynth"`)
-  from previously used [Solovay-Kitaev](https://arxiv.org/abs/quant-ph/0505030v2) algorithm (`method="sk"`).
-  [(#8862)](https://github.com/PennyLaneAI/pennylane/pull/8862)
-
 <h4>Other improvements</h4>
 
 * The constant to convert the length unit Bohr to Angstrom in ``qml.qchem`` is updated to use scipy constants.
