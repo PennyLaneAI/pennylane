@@ -19,14 +19,14 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.exceptions import QuantumFunctionError
+from pennylane.exceptions import PennyLaneDeprecationWarning, QuantumFunctionError
 from pennylane.gradients import hadamard_gradient
 
 
-def grad_fn(tape, dev, fn=qml.gradients.hadamard_grad, mode="standard", **kwargs):
+def grad_fn(tape, dev, fn=qml.gradients.hadamard_grad, mode="standard", aux_wire=None, **kwargs):
     """Utility function to automate execution and processing of gradient tapes"""
     if fn == qml.gradients.hadamard_grad:
-        tapes, fn = fn(tape, mode=mode, **kwargs)
+        tapes, fn = fn(tape, mode=mode, aux_wire=aux_wire, **kwargs)
     else:
         tapes, fn = fn(tape, **kwargs)
     return fn(dev.execute(tapes)), tapes
@@ -119,7 +119,7 @@ class TestHadamardValidation:
         tape = qml.tape.QuantumScript([qml.RX(0.543, 0), qml.RY(-0.654, 0)], [qml.expval(qml.Z(0))])
         _match = r"Invalid mode"
         with pytest.raises(ValueError, match=_match):
-            qml.gradients.hadamard_grad(tape, mode=mode)
+            qml.gradients.hadamard_grad(tape, mode=mode, aux_wire=1)
 
     @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
     def test_trainable_batched_tape_raises(self, mode):
@@ -128,7 +128,7 @@ class TestHadamardValidation:
         tape = qml.tape.QuantumScript([qml.RX([0.4, 0.2], 0)], [qml.expval(qml.PauliZ(0))])
         _match = r"Computing the gradient of broadcasted tapes"
         with pytest.raises(NotImplementedError, match=_match):
-            qml.gradients.hadamard_grad(tape, mode=mode)
+            qml.gradients.hadamard_grad(tape, mode=mode, aux_wire=1)
 
     @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
     def test_error_trainable_obs_probs(self, mode):
@@ -137,7 +137,7 @@ class TestHadamardValidation:
         H = qml.numpy.array(2.0) * (qml.X(0) + qml.Y(0))
         tape = qml.tape.QuantumScript([], [qml.probs(op=H)])
         with pytest.raises(ValueError, match="Can only differentiate Hamiltonian coefficients"):
-            qml.gradients.hadamard_grad(tape, mode=mode)
+            qml.gradients.hadamard_grad(tape, mode=mode, aux_wire=1)
 
     @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
     def test_tape_with_partitioned_shots_multiple_measurements_raises(self, mode):
@@ -148,7 +148,7 @@ class TestHadamardValidation:
             shots=(1000, 10000),
         )
         with pytest.raises(NotImplementedError):
-            qml.gradients.hadamard_grad(tape, mode=mode)
+            qml.gradients.hadamard_grad(tape, mode=mode, aux_wire=1)
 
     @pytest.mark.parametrize("mode", ["standard", "reversed"])
     @pytest.mark.parametrize("aux_wire", [qml.wires.Wires(0), qml.wires.Wires(1)])
@@ -192,7 +192,7 @@ class TestHadamardValidation:
             qml.gradients.hadamard_grad(tape, aux_wire=aux_wire, device_wires=dev.wires, mode=mode)
 
     @pytest.mark.parametrize("mode", ["standard", "reversed"])
-    @pytest.mark.parametrize("aux_wire", [None, qml.wires.Wires(0), qml.wires.Wires(1)])
+    @pytest.mark.parametrize("aux_wire", [qml.wires.Wires(0), qml.wires.Wires(1)])
     def test_device_not_enough_wires(self, aux_wire, mode):
         """Test that an error is raised when the device cannot accept an auxiliary wire
         because it is full."""
@@ -230,7 +230,7 @@ class TestHadamardValidation:
         tape = qml.tape.QuantumScript([qml.RX(0.543, 0), qml.RY(-0.654, 0)], [measurement])
         _match = r"is not supported"
         with pytest.raises(ValueError, match=_match):
-            qml.gradients.hadamard_grad(tape, mode=mode)
+            qml.gradients.hadamard_grad(tape, mode=mode, aux_wire=1)
 
     @pytest.mark.parametrize("measurement", [qml.probs(wires=[0])])
     @pytest.mark.parametrize("mode", ["reversed", "direct", "reversed-direct"])
@@ -240,7 +240,7 @@ class TestHadamardValidation:
         tape = qml.tape.QuantumScript([qml.RX(0.543, 0), qml.RY(-0.654, 0)], [measurement])
         _match = r"is not supported"
         with pytest.raises(ValueError, match=_match):
-            qml.gradients.hadamard_grad(tape, mode=mode)
+            qml.gradients.hadamard_grad(tape, mode=mode, aux_wire=1)
 
     @pytest.mark.parametrize("mode", ("reversed", "reversed-direct"))
     def test_at_most_one_measurement_with_reversed(self, mode):
@@ -251,7 +251,7 @@ class TestHadamardValidation:
             [qml.RX(0.543, 0), qml.RY(-0.654, 0)], [qml.expval(qml.Z(0)), qml.expval(qml.X(0))]
         )
         with pytest.raises(NotImplementedError):
-            qml.gradients.hadamard_grad(tape, mode=mode)
+            qml.gradients.hadamard_grad(tape, mode=mode, aux_wire=1)
 
 
 class TestDifferentModes:
@@ -263,7 +263,7 @@ class TestDifferentModes:
         tape = qml.tape.QuantumScript(
             [qml.IsingXY(0.5, wires=(0, 1))], [qml.expval(qml.X(0) + qml.Y(0))], shots=50
         )
-        batch, fn = qml.gradients.hadamard_grad(tape, mode="reversed")
+        batch, fn = qml.gradients.hadamard_grad(tape, mode="reversed", aux_wire=2)
         assert len(batch) == 2
 
         expected_H = qml.IsingXY(0.5, wires=(0, 1)).generator() @ qml.Y(2)
@@ -362,7 +362,7 @@ class TestDifferentModes:
         """Test that reversed mode can handle measuring an observable that does not have a pauli rep."""
 
         tape = qml.tape.QuantumScript([qml.RX(0.5, 0)], [qml.expval(qml.H(0))])
-        batch, fn = qml.gradients.hadamard_grad(tape, mode="reversed")
+        batch, fn = qml.gradients.hadamard_grad(tape, mode="reversed", aux_wire=1)
 
         assert len(batch) == 2
 
@@ -418,7 +418,7 @@ class TestDifferentModes:
         standard = mocker.spy(hadamard_gradient, "_hadamard_test")
         reverse = mocker.spy(hadamard_gradient, "_reversed_hadamard_test")
 
-        batch, _ = qml.gradients.hadamard_grad(tape, aux_wire="a")
+        batch, _ = qml.gradients.hadamard_grad(tape, mode="auto", aux_wire="a")
         assert len(batch) == 3
 
         assert qml.CNOT(("a", 0)) in batch[0].operations
@@ -499,25 +499,13 @@ class TestDifferentModes:
         assert standard.call_count == 1
         assert reverse.call_count == 0
 
-    def test_automatic_mode_fallback(self, mocker):
-        # setup mocks
-        standard = mocker.spy(hadamard_gradient, "_hadamard_test")
-
-        t = np.array(0.0)
-
-        op = qml.evolve(qml.X(0) @ qml.X(1) + qml.Y(2) + qml.Z(0) @ qml.Z(1), t)
-        mp = qml.expval(qml.Z(0) @ qml.X(1) + qml.Y(0) + qml.X(0) @ qml.Z(1))
-        tape = qml.tape.QuantumScript([op], [mp, qml.probs((0, 1))])
-
-        batch, _ = qml.gradients.hadamard_grad(tape, mode="auto")
-
-        assert standard.call_count == 1
-
     @pytest.mark.parametrize("mode", ["direct", "reversed-direct"])
     def test_no_available_work_wire_direct_methods(self, mode):
         """Test that direct and reversed direct work with no available work wires."""
         tape = qml.tape.QuantumScript([qml.RX(0.5, 0)], [qml.expval(qml.Z(0))])
-        _ = qml.gradients.hadamard_grad(tape, mode=mode, device_wires=qml.wires.Wires(0))
+        _ = qml.gradients.hadamard_grad(
+            tape, mode=mode, aux_wire=1, device_wires=qml.wires.Wires(0)
+        )
 
 
 # pylint: disable=too-many-public-methods
@@ -534,7 +522,7 @@ class TestHadamardGrad:
         tape = qml.tape.QuantumScript(
             [qml.RY(0.6, 0), qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))], trainable_params=[0]
         )
-        batched_tapes, batched_fn = qml.gradients.hadamard_grad(tape, mode=mode)
+        batched_tapes, batched_fn = qml.gradients.hadamard_grad(tape, mode=mode, aux_wire=1)
         batched_grad = batched_fn(dev.execute(batched_tapes))
         separate_tapes = [
             qml.tape.QuantumScript(
@@ -542,7 +530,9 @@ class TestHadamardGrad:
             )
             for _x in x
         ]
-        separate_tapes_and_fns = [qml.gradients.hadamard_grad(t, mode=mode) for t in separate_tapes]
+        separate_tapes_and_fns = [
+            qml.gradients.hadamard_grad(t, mode=mode, aux_wire=1) for t in separate_tapes
+        ]
         separate_grad = [_fn(dev.execute(_tapes)) for _tapes, _fn in separate_tapes_and_fns]
         assert np.allclose(batched_grad, separate_grad)
 
@@ -560,13 +550,13 @@ class TestHadamardGrad:
         tape = qml.tape.QuantumScript.from_queue(q)
         tape.trainable_params = {1}
 
-        res_hadamard, tapes = grad_fn(tape, dev)
+        res_hadamard, tapes = grad_fn(tape, dev, aux_wire=1)
 
         assert len(tapes) == 1
 
         assert res_hadamard.shape == ()
 
-        res_param_shift, _ = grad_fn(tape, dev, qml.gradients.param_shift)
+        res_param_shift, _ = grad_fn(tape, dev, qml.gradients.param_shift, aux_wire=1)
 
         assert np.allclose(res_hadamard, res_param_shift, atol=tol, rtol=0)
 
@@ -585,13 +575,13 @@ class TestHadamardGrad:
         tape.trainable_params = {1, 2, 3}
 
         num_params = len(tape.trainable_params)
-        res_hadamard, tapes = grad_fn(tape, dev)
+        res_hadamard, tapes = grad_fn(tape, dev, aux_wire=1)
 
         assert len(tapes) == num_params
         # assert isinstance(res_hadamard, tuple)
         assert len(res_hadamard) == num_params
 
-        res_param_shift, _ = grad_fn(tape, dev, qml.gradients.param_shift)
+        res_param_shift, _ = grad_fn(tape, dev, qml.gradients.param_shift, aux_wire=1)
 
         assert np.allclose(res_hadamard, res_param_shift, atol=tol, rtol=0)
 
@@ -612,9 +602,9 @@ class TestHadamardGrad:
         res_hadamard = dev.execute(tape)
         assert np.allclose(res_hadamard, -np.cos(theta / 2), atol=tol, rtol=0)
 
-        res_hadamard, _ = grad_fn(tape, dev)
+        res_hadamard, _ = grad_fn(tape, dev, aux_wire=2)
 
-        res_param_shift, _ = grad_fn(tape, dev, qml.gradients.param_shift)
+        res_param_shift, _ = grad_fn(tape, dev, qml.gradients.param_shift, aux_wire=2)
         assert np.allclose(res_hadamard, res_param_shift, atol=tol, rtol=0)
 
         expected = np.sin(theta / 2) / 2
@@ -634,7 +624,7 @@ class TestHadamardGrad:
         tape = qml.tape.QuantumScript.from_queue(q)
         tape.trainable_params = {0, 1, 2}
 
-        res_hadamard, _ = grad_fn(tape, dev)
+        res_hadamard, _ = grad_fn(tape, dev, aux_wire=3)
         assert np.allclose(res_hadamard, np.zeros(3), atol=tol, rtol=0)
 
     @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, 2 * np.pi, 7))
@@ -652,8 +642,8 @@ class TestHadamardGrad:
         tape = qml.tape.QuantumScript.from_queue(q)
         tape.trainable_params = {1}
 
-        res_hadamard, _ = grad_fn(tape, dev)
-        res_param_shift, _ = grad_fn(tape, dev, qml.gradients.param_shift)
+        res_hadamard, _ = grad_fn(tape, dev, aux_wire=2)
+        res_param_shift, _ = grad_fn(tape, dev, qml.gradients.param_shift, aux_wire=2)
 
         assert isinstance(res_hadamard, (list, tuple))
         assert np.allclose(res_hadamard[0], res_param_shift[0], atol=tol, rtol=0)
@@ -673,9 +663,9 @@ class TestHadamardGrad:
         tape = qml.tape.QuantumScript.from_queue(q)
         tape.trainable_params = {1}
 
-        res_hadamard, _ = grad_fn(tape, dev)
+        res_hadamard, _ = grad_fn(tape, dev, aux_wire=2)
 
-        res_param_shift, _ = grad_fn(tape, dev, qml.gradients.param_shift)
+        res_param_shift, _ = grad_fn(tape, dev, qml.gradients.param_shift, aux_wire=2)
 
         assert np.allclose(res_hadamard, res_param_shift, atol=tol, rtol=0)
 
@@ -698,7 +688,7 @@ class TestHadamardGrad:
         expected = -np.cos(b / 2) * np.cos(0.5 * (a + c))
         assert np.allclose(res_hadamard, expected, atol=tol, rtol=0)
 
-        grad, _ = grad_fn(tape, dev)
+        grad, _ = grad_fn(tape, dev, aux_wire=2)
 
         expected = np.array(
             [
@@ -733,11 +723,11 @@ class TestHadamardGrad:
         tape.trainable_params = {0, 2, 3}
         dev = qml.device("default.qubit", wires=3)
 
-        grad_F1, _ = grad_fn(tape, dev, fn=qml.gradients.finite_diff, approx_order=1)
+        grad_F1, _ = grad_fn(tape, dev, fn=qml.gradients.finite_diff, approx_order=1, aux_wire=2)
         grad_F2, _ = grad_fn(
-            tape, dev, fn=qml.gradients.finite_diff, approx_order=2, strategy="center"
+            tape, dev, fn=qml.gradients.finite_diff, approx_order=2, strategy="center", aux_wire=2
         )
-        grad_A, _ = grad_fn(tape, dev)
+        grad_A, _ = grad_fn(tape, dev, aux_wire=2)
 
         # gradients computed with different methods must agree
         assert np.allclose(grad_A, grad_F1, atol=tol, rtol=0)
@@ -755,8 +745,8 @@ class TestHadamardGrad:
 
         tape = qml.tape.QuantumScript.from_queue(q)
 
-        res_hadamard, _ = grad_fn(tape, dev)
-        res_param_shift, _ = grad_fn(tape, dev, fn=qml.gradients.param_shift)
+        res_hadamard, _ = grad_fn(tape, dev, aux_wire=2)
+        res_param_shift, _ = grad_fn(tape, dev, fn=qml.gradients.param_shift, aux_wire=2)
 
         assert np.allclose(res_hadamard, res_param_shift, tol)
 
@@ -775,7 +765,7 @@ class TestHadamardGrad:
 
         tape = qml.tape.QuantumScript.from_queue(q)
 
-        res_hadamard, tapes = grad_fn(tape, dev)
+        res_hadamard, tapes = grad_fn(tape, dev, aux_wire=2)
 
         assert len(tapes) == 2
 
@@ -804,7 +794,7 @@ class TestHadamardGrad:
 
         tape = qml.tape.QuantumScript.from_queue(q)
 
-        res_hadamard, tapes = grad_fn(tape, dev)
+        res_hadamard, tapes = grad_fn(tape, dev, aux_wire=2)
 
         assert len(tapes) == 2
 
@@ -830,7 +820,7 @@ class TestHadamardGrad:
 
         tape = qml.tape.QuantumScript.from_queue(q)
 
-        res_hadamard, tapes = grad_fn(tape, dev)
+        res_hadamard, tapes = grad_fn(tape, dev, aux_wire=2)
 
         assert len(tapes) == 2
         assert isinstance(res_hadamard, (tuple, list))
@@ -867,7 +857,7 @@ class TestHadamardGrad:
 
         tape = qml.tape.QuantumScript.from_queue(q)
 
-        res_hadamard, tapes = grad_fn(tape, dev)
+        res_hadamard, tapes = grad_fn(tape, dev, aux_wire=2)
 
         assert len(tapes) == 2
 
@@ -942,7 +932,7 @@ class TestHadamardGrad:
         x = np.array(0.419)
         circuit = qml.QNode(cost, dev)
 
-        res_hadamard = qml.gradients.hadamard_grad(circuit, mode=mode)(x)
+        res_hadamard = qml.gradients.hadamard_grad(circuit, mode=mode, aux_wire=2)(x)
 
         assert isinstance(res_hadamard, exp_type)
         assert np.array(res_hadamard).shape == exp_shape
@@ -966,7 +956,7 @@ class TestHadamardGrad:
         x = np.random.rand(3)
         circuit = qml.QNode(cost, dev)
 
-        res_hadamard = qml.gradients.hadamard_grad(circuit, mode=mode)(x)
+        res_hadamard = qml.gradients.hadamard_grad(circuit, mode=mode, aux_wire=2)(x)
 
         assert isinstance(res_hadamard, exp_type)
         if len(res_hadamard) == 1:
@@ -998,7 +988,7 @@ class TestHadamardGrad:
         x = np.random.rand(3)
         circuit = qml.QNode(cost, dev)
 
-        res_hadamard = qml.gradients.hadamard_grad(circuit, mode=mode)(x)
+        res_hadamard = qml.gradients.hadamard_grad(circuit, mode=mode, aux_wire=5)(x)
         assert isinstance(res_hadamard, exp_type)
         if len(res_hadamard) == 1:
             res_hadamard = res_hadamard[0]
@@ -1006,7 +996,7 @@ class TestHadamardGrad:
 
         # Also check on the tape level
         tape = qml.workflow.construct_tape(circuit)(x)
-        tapes, fn = qml.gradients.hadamard_grad(tape, mode=mode)
+        tapes, fn = qml.gradients.hadamard_grad(tape, mode=mode, aux_wire=6)
         res_hadamard_tape = qml.math.moveaxis(qml.math.stack(fn(dev.execute(tapes))), -2, -1)
 
         for res in [res_hadamard, res_hadamard_tape]:
@@ -1038,7 +1028,7 @@ class TestHadamardGrad:
             qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
         tape = qml.tape.QuantumScript.from_queue(q, shots=shots)
-        _, tapes = grad_fn(tape, dev)
+        _, tapes = grad_fn(tape, dev, aux_wire=2)
 
         assert all(new_tape.shots == tape.shots for new_tape in tapes)
 
@@ -1057,7 +1047,7 @@ class TestHadamardGrad:
 
         weights = [0.1, 0.2]
         with pytest.raises(QuantumFunctionError, match="No trainable parameters."):
-            qml.gradients.hadamard_grad(circuit, mode=mode)(weights)
+            qml.gradients.hadamard_grad(circuit, mode=mode, aux_wire=2)(weights)
 
     @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
     @pytest.mark.torch
@@ -1074,7 +1064,7 @@ class TestHadamardGrad:
 
         weights = [0.1, 0.2]
         with pytest.raises(QuantumFunctionError, match="No trainable parameters."):
-            qml.gradients.hadamard_grad(circuit, mode=mode)(weights)
+            qml.gradients.hadamard_grad(circuit, mode=mode, aux_wire=2)(weights)
 
     @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
     @pytest.mark.tf
@@ -1091,7 +1081,7 @@ class TestHadamardGrad:
 
         weights = [0.1, 0.2]
         with pytest.raises(QuantumFunctionError, match="No trainable parameters."):
-            qml.gradients.hadamard_grad(circuit, mode=mode)(weights)
+            qml.gradients.hadamard_grad(circuit, mode=mode, aux_wire=2)(weights)
 
     @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
     @pytest.mark.jax
@@ -1108,7 +1098,7 @@ class TestHadamardGrad:
 
         weights = [0.1, 0.2]
         with pytest.raises(QuantumFunctionError, match="No trainable parameters."):
-            qml.gradients.hadamard_grad(circuit, mode=mode)(weights)
+            qml.gradients.hadamard_grad(circuit, mode=mode, aux_wire=2)(weights)
 
     @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
     def test_no_trainable_params_tape(self, mode):
@@ -1127,7 +1117,7 @@ class TestHadamardGrad:
         tape.trainable_params = []
 
         with pytest.warns(UserWarning, match="gradient of a tape with no trainable parameters"):
-            g_tapes, post_processing = qml.gradients.hadamard_grad(tape, mode=mode)
+            g_tapes, post_processing = qml.gradients.hadamard_grad(tape, mode=mode, aux_wire=2)
         res_hadamard = post_processing(qml.execute(g_tapes, dev, None))
 
         assert g_tapes == []
@@ -1143,7 +1133,7 @@ class TestHadamardGradEdgeCases:
     device_wires = [qml.wires.Wires([0, 1, "aux"])]
     device_wires_no_aux = [qml.wires.Wires([0, 1, 2])]
 
-    working_wires = [None, qml.wires.Wires("aux"), "aux"]
+    working_wires = [qml.wires.Wires("aux"), "aux"]
     already_used_wires = [qml.wires.Wires(0), qml.wires.Wires(1)]
 
     @pytest.mark.parametrize("mode", ["standard"])  # test is fairly standard specific
@@ -1179,7 +1169,7 @@ class TestHadamardGradEdgeCases:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         with pytest.warns(UserWarning, match="gradient of a tape with no trainable parameters"):
-            tapes, _ = qml.gradients.hadamard_grad(tape, mode=mode)
+            tapes, _ = qml.gradients.hadamard_grad(tape, mode=mode, aux_wire=1)
         assert not tapes
 
     @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
@@ -1190,7 +1180,7 @@ class TestHadamardGradEdgeCases:
             qml.expval(qml.PauliZ(1))
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        tapes, _ = qml.gradients.hadamard_grad(tape, mode=mode)
+        tapes, _ = qml.gradients.hadamard_grad(tape, mode=mode, aux_wire=2)
         assert not tapes
 
     def test_independent_parameter(self):
@@ -1205,7 +1195,7 @@ class TestHadamardGradEdgeCases:
         tape = qml.tape.QuantumScript.from_queue(q)
         dev = qml.device("default.qubit", wires=3)
 
-        res_hadamard, tapes = grad_fn(tape, dev)
+        res_hadamard, tapes = grad_fn(tape, dev, aux_wire=2)
 
         assert len(tapes) == 1
 
@@ -1230,7 +1220,7 @@ class TestHadamardGradEdgeCases:
         tape.trainable_params = []
 
         with pytest.warns(UserWarning, match="gradient of a tape with no trainable parameters"):
-            res_hadamard, tapes = grad_fn(tape, dev)
+            res_hadamard, tapes = grad_fn(tape, dev, aux_wire=2)
 
         assert tapes == []
         assert isinstance(res_hadamard, tuple)
@@ -1251,7 +1241,7 @@ class TestHadamardGradEdgeCases:
 
         tape = qml.tape.QuantumScript.from_queue(q)
 
-        res_hadamard, tapes = grad_fn(tape, dev)
+        res_hadamard, tapes = grad_fn(tape, dev, aux_wire=1)
 
         assert tapes == []
 
@@ -1286,7 +1276,7 @@ class TestHadamardGradEdgeCases:
 
         tape = qml.tape.QuantumScript.from_queue(q)
 
-        res_hadamard, tapes = grad_fn(tape, dev)
+        res_hadamard, tapes = grad_fn(tape, dev, aux_wire=1)
 
         assert tapes == []
 
@@ -1338,7 +1328,7 @@ class TestHadamardGradEdgeCases:
 
         params = np.array([0.5, 0.5, 0.5], requires_grad=True)
 
-        result = qml.gradients.hadamard_grad(circuit, mode=mode)(params)
+        result = qml.gradients.hadamard_grad(circuit, mode=mode, aux_wire=1)(params)
 
         assert isinstance(result, np.ndarray)
         assert result.shape == (4, 3)
@@ -1365,7 +1355,7 @@ class TestHadamardTestGradDiff:
 
             tape = qml.tape.QuantumScript.from_queue(q)
             tape.trainable_params = {0, 1}
-            tapes, fn = qml.gradients.hadamard_grad(tape, mode=mode)
+            tapes, fn = qml.gradients.hadamard_grad(tape, mode=mode, aux_wire=2)
             jac = fn(dev.execute(tapes))
             return qml.math.stack(jac)
 
@@ -1404,7 +1394,7 @@ class TestHadamardTestGradDiff:
 
             tape = qml.tape.QuantumScript.from_queue(q)
             tape.trainable_params = {0, 1}
-            tapes, fn = qml.gradients.hadamard_grad(tape, mode=mode)
+            tapes, fn = qml.gradients.hadamard_grad(tape, mode=mode, aux_wire=2)
             jac_h = fn(dev.execute(tapes))
             jac_h = qml.math.stack(jac_h)
 
@@ -1443,7 +1433,7 @@ class TestHadamardTestGradDiff:
                 qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
             tape = qml.tape.QuantumScript.from_queue(q)
-            tapes, fn = qml.gradients.hadamard_grad(tape, mode=mode)
+            tapes, fn = qml.gradients.hadamard_grad(tape, mode=mode, aux_wire=2)
 
             return tuple(fn(dev.execute(tapes)))
 
@@ -1484,7 +1474,7 @@ class TestHadamardTestGradDiff:
 
             tape = qml.tape.QuantumScript.from_queue(q)
             tape.trainable_params = {0, 1}
-            tapes, fn = qml.gradients.hadamard_grad(tape, mode=mode)
+            tapes, fn = qml.gradients.hadamard_grad(tape, mode=mode, aux_wire=2)
 
             return fn(dev.execute(tapes))
 
@@ -1497,7 +1487,7 @@ class TestHadamardTestGradDiff:
 
             tape = qml.tape.QuantumScript.from_queue(q)
             tape.trainable_params = {0, 1}
-            tapes, fn = qml.gradients.hadamard_grad(tape, mode=mode)
+            tapes, fn = qml.gradients.hadamard_grad(tape, mode=mode, aux_wire=2)
 
             return fn(dev.execute(tapes))
 
@@ -1536,7 +1526,7 @@ class TestJaxArgnums:
             QuantumFunctionError,
             match="argnum does not work with the Jax interface. You should use argnums instead.",
         ):
-            qml.gradients.hadamard_grad(circuit, argnum=argnums, mode=mode)(x, y)
+            qml.gradients.hadamard_grad(circuit, argnum=argnums, mode=mode, aux_wire=2)(x, y)
 
     def test_single_expectation_value(self, argnums, interface, mode):
         """Test for single expectation value."""
@@ -1554,7 +1544,7 @@ class TestJaxArgnums:
         x = jax.numpy.array([0.543, 0.2])
         y = jax.numpy.array(-0.654)
 
-        res = qml.gradients.hadamard_grad(circuit, argnums=argnums, mode=mode)(x, y)
+        res = qml.gradients.hadamard_grad(circuit, argnums=argnums, mode=mode, aux_wire=2)(x, y)
 
         expected_0 = np.array([-np.sin(y) * np.sin(x[0]), 0])
         expected_1 = np.array(np.cos(y) * np.cos(x[0]))
@@ -1585,7 +1575,7 @@ class TestJaxArgnums:
         x = jax.numpy.array([0.543, 0.2])
         y = jax.numpy.array(-0.654)
 
-        res = qml.gradients.hadamard_grad(circuit, argnums=argnums, mode=mode)(x, y)
+        res = qml.gradients.hadamard_grad(circuit, argnums=argnums, mode=mode, aux_wire=2)(x, y)
 
         expected_0 = np.array([[-np.sin(x[0]), 0.0], [0.0, 0.0]])
         expected_1 = np.array([0, np.cos(y)])
@@ -1619,7 +1609,8 @@ class TestJaxArgnums:
         y = jax.numpy.array(-0.123)
 
         res = jax.jacobian(
-            qml.gradients.hadamard_grad(circuit, argnums=argnums, mode=mode), argnums=argnums
+            qml.gradients.hadamard_grad(circuit, argnums=argnums, mode=mode, aux_wire=2),
+            argnums=argnums,
         )(x, y)
         res_expected = jax.hessian(circuit, argnums=argnums)(x, y)
 

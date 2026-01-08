@@ -9,6 +9,12 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* Providing a value of None to aux_wire in reversed or standard mode has been deprecated and will
+  no longer be supported in 0.45. An aux_wire will no longer be automatically assigned.
+
+  - Deprecated in v0.44
+  - Will be removed in v0.45
+
 * Maintenance support of NumPy<2.0 is deprecated and will be dropped in v0.45.
   PennyLane v0.45 and beyond are not guaranteed to work with NumPy<2.0.
   We recommend upgrading your version of NumPy to benefit from enhanced support and features.
