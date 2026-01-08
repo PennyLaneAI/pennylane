@@ -23,7 +23,7 @@ import numpy as np
 
 from pennylane import math, ops
 from pennylane.devices.preprocess import decompose
-from pennylane.exceptions import DecompositionUndefinedError, PennyLaneDeprecationWarning
+from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.measurements import ProbabilityMP, expval
 from pennylane.operation import Operator
 from pennylane.ops import Sum
@@ -424,14 +424,6 @@ def hadamard_grad(
 
     # Validate or get default for aux_wire
     # unless using direct or reversed-direct modes
-
-    if mode in ["standard", "reversed"] and aux_wire is None:
-        raise PennyLaneDeprecationWarning(
-            """
-            Providing a value of None to aux_wire in reversed or standard mode has been deprecated and will 
-            no longer be supported in 0.45. An aux_wire will no longer be automatically assigned.
-            """
-        )
 
     aux_wire = (
         _get_aux_wire(aux_wire, tape, device_wires)
