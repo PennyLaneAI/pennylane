@@ -960,7 +960,7 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
 <h3>Documentation 📝</h3>
 
 * A note clarifying the incompatbility of the :func:`~.transforms.clifford_t_decomposition` transform
-  has been added to its docstring.
+  with ``qjit`` has been added to its docstring.
   [(#8883)](https://github.com/PennyLaneAI/pennylane/pull/8883)
 
 * A note clarifying that the factors of a ``~.ChangeOpBasis`` are iterated in reverse order has been
