@@ -14,6 +14,7 @@
 """
 This module contains the qml.matrix function.
 """
+from collections.abc import Sequence
 from functools import partial
 
 import pennylane as qml
@@ -33,7 +34,9 @@ def catalyst_qjit(qnode):
     return qnode.__class__.__name__ == "QJIT" and hasattr(qnode, "user_function")
 
 
-def matrix(op: Operator | PauliWord | PauliSentence, wire_order=None) -> TensorLike:
+def matrix(
+    op: Operator | PauliWord | PauliSentence | Sequence[Operator], wire_order=None
+) -> TensorLike:
     r"""The dense matrix representation of an operation or quantum circuit.
 
     .. note::
@@ -162,9 +165,14 @@ def matrix(op: Operator | PauliWord | PauliSentence, wire_order=None) -> TensorL
                 )
             return op.to_mat(wire_order=wire_order)
 
-        if isinstance(op, QuantumScript):
+        if isinstance(op, (QuantumScript, Sequence)):
+            if isinstance(op, Sequence):
+                op = QuantumScript(op)
+
             if wire_order is None:
-                error_base_str = "wire_order is required by qml.matrix() for tapes"
+                error_base_str = (
+                    "wire_order is required by qml.matrix() for tapes or sequences of operators"
+                )
                 if len(op.wires) > 1:
                     raise ValueError(error_base_str + " with more than one wire.")
                 if len(op.wires) == 0:
