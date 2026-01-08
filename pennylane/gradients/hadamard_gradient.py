@@ -427,8 +427,7 @@ def hadamard_grad(
 
     aux_wire = (
         _get_aux_wire(aux_wire, tape, device_wires)
-        if mode in ["standard", "reversed"]
-        or (mode == "auto" and (device_wires is not None or aux_wire is not None))
+        if mode in ["standard", "reversed"] or (mode == "auto" and aux_wire is not None)
         else None
     )
 
@@ -448,11 +447,7 @@ def hadamard_grad(
         else:
             # can dispatch between different algorithms here in the future
             # hadamard test, direct hadamard test, reversed, reversed direct, and flexible
-            batch, new_coeffs = (
-                gradient_method(tape, trainable_param_idx, aux_wire, device_wires)
-                if mode == "auto"
-                else gradient_method(tape, trainable_param_idx, aux_wire)
-            )
+            batch, new_coeffs = gradient_method(tape, trainable_param_idx, aux_wire)
             g_tapes += batch
             coeffs += new_coeffs
             generators_per_parameter.append(len(batch))
@@ -579,7 +574,7 @@ def _reversed_direct_hadamard_test(tape, trainable_param_idx, aux_wire) -> tuple
 
 
 def _quantum_automatic_differentiation(
-    tape, trainable_param_idx, aux_wire, device_wires
+    tape, trainable_param_idx, aux_wire
 ) -> tuple[list, list]:
 
     # We check if we have a work wire -> direct or standard differentiation.
@@ -625,13 +620,11 @@ def _quantum_automatic_differentiation(
             assert_no_probability(tape.measurements, "direct")
             return _direct_hadamard_test(tape, trainable_param_idx, aux_wire)
 
-        # The case where probs would appear here is covered on line 611 since probs are measurements but not obs
         return _reversed_direct_hadamard_test(tape, trainable_param_idx, aux_wire)
 
     if standard:
         return _hadamard_test(tape, trainable_param_idx, aux_wire)
 
-    # The case where probs would appear here is covered on line 611 since probs are measurements but not obs
     return _reversed_hadamard_test(tape, trainable_param_idx, aux_wire)
 
 
