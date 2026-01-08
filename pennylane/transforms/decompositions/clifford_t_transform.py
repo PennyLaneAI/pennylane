@@ -431,8 +431,15 @@ class _CachedCallable:
         return self.decompose_fn(op)
 
 
+def _clifford_t_plxpr_transform(jaxpr, consts, targs, tkwargs, *args):
+    raise NotImplementedError(
+        "The clifford_t_decomposition is incompatible with program capture. "
+        "Please use qml.transforms.decompose and qml.transforms.gridsynth instead."
+    )
+
+
 # pylint: disable=too-many-branches,too-many-statements
-@transform
+@partial(transform, plxpr_transform=_clifford_t_plxpr_transform)
 def clifford_t_decomposition(
     tape: QuantumScript,
     epsilon=1e-4,
