@@ -1,6 +1,6 @@
 name: Run tests multiple times
 permissions:
-  contents: read
+  contents: write-all
 
 on:
   push:
