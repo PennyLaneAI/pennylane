@@ -512,6 +512,15 @@ class TestDifferentModes:
         ):
             batch, _ = qml.gradients.hadamard_grad(tape, mode="auto")
 
+        op = qml.evolve(qml.X(0) @ qml.X(1) + qml.Y(2) + qml.Z(0) @ qml.Z(1), t)
+        tape = qml.tape.QuantumScript([op], [qml.probs((0, 1))])
+
+        with pytest.raises(
+            ValueError,
+            match="The circuit must have observables in order to use Quantum Automatic Differentiation.",
+        ):
+            batch, _ = qml.gradients.hadamard_grad(tape, mode="auto")
+
     @pytest.mark.parametrize("mode", ["direct", "reversed-direct"])
     def test_no_available_work_wire_direct_methods(self, mode):
         """Test that direct and reversed direct work with no available work wires."""
