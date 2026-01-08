@@ -13,7 +13,7 @@
 # limitations under the License.
 """
 This module contains functionality for converting PennyLane QNodes into layers that are compatible
-with PyTorch.
+with PyTorch, and estimators that assist with classically training quantum circuits.
 
 .. note::
 
@@ -28,6 +28,13 @@ with PyTorch.
     :template: autosummary/class_no_inherited.rst
 
     ~TorchLayer
+
+.. rubric:: Estimators
+
+.. autosummary::
+    :toctree: api
+
+    ~iqp_expval
 """
 
 import importlib
