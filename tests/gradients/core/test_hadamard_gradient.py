@@ -510,7 +510,7 @@ class TestDifferentModes:
             ValueError,
             match="Computing the gradient of probabilities with the direct gradient transform is not supported.",
         ):
-            batch, _ = qml.gradients.hadamard_grad(tape, mode="auto")
+            _, _ = qml.gradients.hadamard_grad(tape, mode="auto")
 
         op = qml.evolve(qml.X(0) @ qml.X(1) + qml.Y(2) + qml.Z(0) @ qml.Z(1), t)
         tape = qml.tape.QuantumScript([op], [qml.probs((0, 1))])
@@ -519,7 +519,7 @@ class TestDifferentModes:
             ValueError,
             match="The circuit must have observables in order to use Quantum Automatic Differentiation.",
         ):
-            batch, _ = qml.gradients.hadamard_grad(tape, mode="auto")
+            _, _ = qml.gradients.hadamard_grad(tape, mode="auto")
 
     @pytest.mark.parametrize("mode", ["direct", "reversed-direct"])
     def test_no_available_work_wire_direct_methods(self, mode):
