@@ -125,7 +125,7 @@ class TestMapToResourceOp:
             ),
             (
                 qtemps.BBQRAM(
-                    bitstrings=["010", "111", "110", "000"],
+                    data=["010", "111", "110", "000"],
                     control_wires=[0, 1],
                     target_wires=[2, 3, 4],
                     work_wires=[5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
