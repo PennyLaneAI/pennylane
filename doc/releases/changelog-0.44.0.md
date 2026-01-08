@@ -114,17 +114,105 @@
   More information on how each mode works can be found in 
   [arXiv:2408.05406](https://arxiv.org/pdf/2408.05406). 
 
-<h4>Instantaneous Quantum Polynomial Circuits </h4>
+<h4>Instantaneous Quantum Polynomial Circuits 💨</h4>
 
-* An efficient expectation value estimator has been added which may be used to train `~.IQP` circuits.
-  [(#8749)](https://github.com/PennyLaneAI/pennylane/pull/8749)
-
-* A new template for building an Instantaneous Quantum Polynomial (`~.IQP`) circuit has been added along with a 
-  lightweight version (based on the :class:`~.estimator.resource_operator.ResourceOperator` class) to rapidly 
-  estimate its resources. This unlocks easily estimating the resources of the IQP circuit introduced in the 
-  `Train on classical, deploy on quantum <https://arxiv.org/abs/2503.02934>`_ work for generative quantum machine 
-  learning.
+* A new template for defining an Instantaneous Quantum Polynomial (:class:`~.IQP`) circuit has been added,
+  as well as an associated :class:`~.estimator.resource_operator.ResourceOperator`
+  for resource estimation in the :mod:`~.estimator` module.
+  These new features facilitate the simulation and resource estimation of large-scale
+  generative quantum machine learning tasks.
   [(#8748)](https://github.com/PennyLaneAI/pennylane/pull/8748)
+  [(#8807)](https://github.com/PennyLaneAI/pennylane/pull/8807)
+  [(#8749)](https://github.com/PennyLaneAI/pennylane/pull/8749)
+  
+  While :class:`~.IQP` circuits belong to a class of circuits that are believed to be hard to sample from
+  using classical algorithms, Recio-Armengol et al. showed in a recent paper titled [Train on classical, deploy on quantum](https://arxiv.org/abs/2503.02934)
+  that such circuits can still be optimized efficiently.
+
+  Here is a simple example showing how to define an :class:`~.IQP` circuit and how to estimate the required quantum resources using the :func:`~.estimator.estimate.estimate` function:
+
+  ```python
+  import pennylane as qml
+  import pennylane.estimator as qre
+
+  @qml.qnode(qml.device('lightning.qubit', wires=2))
+  def circuit():
+    qml.IQP(
+        weights=[1., 2., 3.],
+        num_wires=2,
+        pattern= [[[0]],[[1]],[[0,1]]], # binary array representing gates X0, X1, X0X1
+        spin_sym=False,
+    )
+    return qml.state()
+  ```
+
+  ```pycon
+  >>> res = qre.estimate(circuit)()
+  >>> print(res)
+  --- Resources: ---
+    Total wires: 2
+      algorithmic wires: 2
+      allocated wires: 0
+        zero state: 0
+        any state: 0
+    Total gates : 138
+      'T': 132,
+      'CNOT': 2,
+      'Hadamard': 4
+  ```
+  
+  The expectation values of Pauli-Z type observables for parameterized :class:`~.IQP` circuits can be efficeintly
+  evaluated with the :func:`pennylane.qnn.iqp_expval` function. This estimator function is based on a randomized method
+  allowing for the efficient optimization of circuits with thousands of qubits and millions of gates.
+
+  ```python
+    from pennylane.qnn import iqp_expval
+    import jax
+
+    num_wires = 2
+    ops = np.array([[0, 1], [1, 0], [1, 1]]) # binary array representing ops Z1, Z0, Z0Z1
+    n_samples = 1000
+    key = jax.random.PRNGKey(42)
+
+    weights = np.ones(len(pattern))
+    pattern = [[[0]], [[1]], [[0, 1]]]
+
+    expvals, stds = iqp_expval(ops, weights, pattern, num_wires, n_samples, key)
+  ```
+  ```pycon
+  >>> print(expvals, stds)
+  [0.18971464 0.14175898 0.17152457] [0.02615426 0.02614059 0.02615943]
+  ```
+
+  For more theoretical details, check out our [Fast optimization of instantaneous quantum polynomial circuits](https://pennylane.ai/qml/demos/tutorial_iqp_circuit_optimization_jax) demo.
+
+
+<h4>Arbitrary State Preparation </h4>
+
+* A new template :class:`~.MultiplexerStatePreparation` is now available,
+  allowing the preparation of arbitrary states using :class:`~.SelectPauliRot` operations.
+  [(#8581)](https://github.com/PennyLaneAI/pennylane/pull/8581)
+
+  Using :class:`~.MultiplexerStatePreparation` is analogous to using other state preparation techniques in PennyLane.
+
+  ```python
+  probs_vector = np.array([0.5, 0., 0.25, 0.25])
+
+  dev = qml.device("default.qubit", wires = 2)
+  wires = [0, 1]
+
+  @qml.qnode(dev)
+  def circuit():
+    qml.MultiplexerStatePreparation(np.sqrt(probs_vector), wires)
+    return qml.probs(wires)
+  ```
+  
+  ```pycon
+  >>> np.round(circuit(), 2)
+  array([0.5 , 0.  , 0.25, 0.25])
+  ```
+
+For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208112).
 
 <h4>Pauli-based computation 💻 </h4>
   
@@ -453,6 +541,67 @@
 
 <h4>Seamless resource tracking and circuit visualization for compiled programs </h4>
 
+* Resource tracking with :func:`~pennylane.specs` can now be used to analyze the pass-by-pass impact of arbitrary 
+  compilation passes on workflows compiled with :func:`~pennylane.qjit`.
+  [(#8606)](https://github.com/PennyLaneAI/pennylane/pull/8606)
+  
+  Consider the following :func:`qjit <pennylane.qjit>`'d circuit with two compilation passes applied:
+  
+  ```python
+  @qml.qjit
+  @qml.transforms.merge_rotations
+  @qml.transforms.cancel_inverses
+  @qml.qnode(dev)
+  def circuit(x):
+      qml.RX(x, wires=0)
+      qml.RX(x, wires=0)
+      qml.X(0)
+      qml.X(0)
+      qml.CNOT([0, 1])
+      return qml.probs()
+  ```
+
+  The supplied ``level`` to :func:`pennylane.specs` may be individual `int` values, or an iterable of multiple levels. 
+  Additionally, the strings ``"all"`` and ``"all-mlir"`` are allowed, returning circuit resources for all user-applied transforms
+  and MLIR passes, or all user-applied MLIR passes only, respectively.
+
+  ```pycon
+  >>> print(qml.specs(circuit, level=[1, 2])(1.23))
+  Device: lightning.qubit
+  Device wires: 3
+  Shots: Shots(total=None)
+  Level: ['Before MLIR Passes (MLIR-0)', 'cancel-inverses (MLIR-1)']
+  <BLANKLINE>
+  Resource specifications:
+  Level = Before MLIR Passes (MLIR-0):
+    Total wire allocations: 3
+    Total gates: 5
+    Circuit depth: Not computed
+  <BLANKLINE>
+    Gate types:
+      RX: 2
+      PauliX: 2
+      CNOT: 1
+  <BLANKLINE>
+    Measurements:
+      probs(all wires): 1
+  <BLANKLINE>
+  ------------------------------------------------------------
+  <BLANKLINE>
+  Level = cancel-inverses (MLIR-1):
+    Total wire allocations: 3
+    Total gates: 3
+    Circuit depth: Not computed
+  <BLANKLINE>
+    Gate types:
+      RX: 2
+      CNOT: 1
+  <BLANKLINE>
+    Measurements:
+      probs(all wires): 1
+  ```
+
+
 * A new :func:`~.marker` function allows for easy inspection at particular points in a transform program
   with :func:`~.specs` and :func:`~.drawer.draw` instead of having to increment ``level``
   by integer amounts when not using any Catalyst passes.
@@ -485,33 +634,6 @@
   >>> print(qml.draw(circuit, level="rotations-merged")())
   0: ──RX(6.68)─┤  State
   ```
-
-<h4> New templates </h4>
-
-* A new template :class:`~.MultiplexerStatePreparation` has been added. This template allows preparing arbitrary states
-  using :class:`~.SelectPauliRot` operations.
-  [(#8581)](https://github.com/PennyLaneAI/pennylane/pull/8581)
-
-  Using :class:`~.MultiplexerStatePreparation` is analogous to using other state preparation techniques in PennyLane.
-
-  ```python
-  probs_vector = np.array([0.5, 0., 0.25, 0.25])
-
-  dev = qml.device("default.qubit", wires = 2)
-  wires = [0, 1]
-
-  @qml.qnode(dev)
-  def circuit():
-    qml.MultiplexerStatePreparation(np.sqrt(probs_vector), wires)
-    return qml.probs(wires)
-  ```
-  
-  ```pycon
-  >>> np.round(circuit(), 2)
-  array([0.5 , 0.  , 0.25, 0.25])
-  ```
-
-For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208112).
 
 <h3>Improvements 🛠</h3>
 
