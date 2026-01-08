@@ -6,12 +6,7 @@ on:
   merge_group:
     types:
       - checks_requested
-  pull_request:
-    types:
-      - opened
-      - reopened
-      - synchronize
-      - ready_for_review
+  push:
   workflow_dispatch:
     inputs:
       run_count:
