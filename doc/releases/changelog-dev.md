@@ -4,6 +4,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* The ``qml.estimator.Resources`` class now has a nice string representation in Jupyter Notebooks.
+  [(#8880)](https://github.com/PennyLaneAI/pennylane/pull/8880)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * Removed all of the resource estimation functionality from the ``/labs/resource_estimation``
@@ -26,4 +29,5 @@
 
 This release contains contributions from (in alphabetical order):
 
+Omkar Sarkar,
 Jay Soni

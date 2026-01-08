@@ -737,7 +737,7 @@ def _evolve_state_vector_under_parametrized_evolution(
     except ImportError as e:  # pragma: no cover
         raise ImportError(
             "Module jax is required for the ``ParametrizedEvolution`` class. "
-            "You can install jax via: pip install jax==0.7.1"
+            "You can install jax via: pip install jax"
         ) from e
 
     if operation.data is None or operation.t is None:
