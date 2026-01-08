@@ -444,7 +444,8 @@ def hadamard_grad(
 
     aux_wire = (
         _get_aux_wire(aux_wire, tape, device_wires)
-        if mode in ["standard", "reversed"] or (mode == "auto" and aux_wire is not None)
+        if mode in ["standard", "reversed"]
+        or (mode == "auto" and (device_wires is not None or aux_wire is not None))
         else None
     )
 
@@ -464,7 +465,11 @@ def hadamard_grad(
         else:
             # can dispatch between different algorithms here in the future
             # hadamard test, direct hadamard test, reversed, reversed direct, and flexible
-            batch, new_coeffs = gradient_method(tape, trainable_param_idx, aux_wire)
+            batch, new_coeffs = (
+                gradient_method(tape, trainable_param_idx, aux_wire, device_wires)
+                if mode == "auto"
+                else gradient_method(tape, trainable_param_idx, aux_wire)
+            )
             g_tapes += batch
             coeffs += new_coeffs
             generators_per_parameter.append(len(batch))
@@ -590,7 +595,9 @@ def _reversed_direct_hadamard_test(tape, trainable_param_idx, aux_wire) -> tuple
     return new_batch, new_coeffs
 
 
-def _quantum_automatic_differentiation(tape, trainable_param_idx, aux_wire) -> tuple[list, list]:
+def _quantum_automatic_differentiation(
+    tape, trainable_param_idx, aux_wire, device_wires
+) -> tuple[list, list]:
 
     # We check if we have a work wire -> direct or standard differentiation.
     # We also check if we are doing forward or reversed (switch the generator with the measured op) based how many
@@ -602,16 +609,13 @@ def _quantum_automatic_differentiation(tape, trainable_param_idx, aux_wire) -> t
 
     direct = not aux_wire
 
-    if len(tape.measurements) > 1:
+    if len(tape.measurements) > 1 or any(isinstance(m, ProbabilityMP) for m in tape.measurements):
         standard = True
+        if direct:
+            aux_wire = _get_aux_wire(aux_wire, tape, device_wires)
     else:
         trainable_op, _, _ = tape.get_operation(trainable_param_idx)
         _, generators = _get_pauli_generators(trainable_op)
-
-        if tape.measurements[0].obs is None:
-            raise ValueError(
-                "The circuit must have observables in order to use Quantum Automatic Differentiation."
-            )
 
         _, observables = _get_pauli_terms(tape.measurements[0].obs)
 
@@ -637,16 +641,18 @@ def _quantum_automatic_differentiation(tape, trainable_param_idx, aux_wire) -> t
 
     if direct:
         if standard:
-            assert_no_probability(tape.measurements, "direct")
+            if any(isinstance(m, ProbabilityMP) for m in tape.measurements):
+                aux_wire = _get_aux_wire(aux_wire, tape, device_wires)
+                return _hadamard_test(tape, trainable_param_idx, aux_wire)
             return _direct_hadamard_test(tape, trainable_param_idx, aux_wire)
 
-        # The case where probs would appear here is covered on line 611 since probs are measurements but not obs
+        # The case where probs would appear here is covered on line 612
         return _reversed_direct_hadamard_test(tape, trainable_param_idx, aux_wire)
 
     if standard:
         return _hadamard_test(tape, trainable_param_idx, aux_wire)
 
-    # The case where probs would appear here is covered on line 611 since probs are measurements but not obs
+    # The case where probs would appear here is covered on line 612
     return _reversed_hadamard_test(tape, trainable_param_idx, aux_wire)
 
 
