@@ -41,7 +41,7 @@ jobs:
 
   rerun-docs:
     needs: prepare-run-count
-    if: ${{ inputs.workflow == 'docs' }}
+    if: ${{ inputs.workflow == 'docs' || true}}
     # runs-on: ubuntu-latest
     strategy:
       max-parallel: 5
