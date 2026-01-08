@@ -199,7 +199,7 @@ class QROM(Operation):
         if isinstance(data[0], str):
             data = np.array(list(map(lambda bitstring: [int(bit) for bit in bitstring], data)))
 
-        if isinstance(data, list) or isinstance(data, tuple):
+        if isinstance(data, (list, tuple)):
             data = pl_math.array(data)
 
         work_wires = Wires(() if work_wires is None else work_wires)

@@ -225,7 +225,7 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
         data = list(data)
         control_wires = Wires(control_wires)
 
-        if isinstance(data, list) or isinstance(data, tuple):
+        if isinstance(data, (list, tuple)):
             data = math.array(data)
 
         if isinstance(data[0], str):
@@ -507,7 +507,7 @@ class HybridQRAM(Operation):
         m = next(iter(m_set))
         data = list(data)
 
-        if isinstance(data, list) or isinstance(data, tuple):
+        if isinstance(data, (list, tuple)):
             data = math.array(data)
 
         if isinstance(data[0], str):
@@ -972,7 +972,7 @@ class SelectOnlyQRAM(Operation):
         m = next(iter(m_set))
         data = list(data)
 
-        if isinstance(data, list) or isinstance(data, tuple):
+        if isinstance(data, (list, tuple)):
             data = math.array(data)
 
         if isinstance(data[0], str):
