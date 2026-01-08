@@ -1,6 +1,5 @@
 name: Run tests multiple times
-permissions:
-  contents: write-all
+permissions: write-all
 
 on:
   push:
