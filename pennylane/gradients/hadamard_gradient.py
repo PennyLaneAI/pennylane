@@ -573,9 +573,7 @@ def _reversed_direct_hadamard_test(tape, trainable_param_idx, aux_wire) -> tuple
     return new_batch, new_coeffs
 
 
-def _quantum_automatic_differentiation(
-    tape, trainable_param_idx, aux_wire
-) -> tuple[list, list]:
+def _quantum_automatic_differentiation(tape, trainable_param_idx, aux_wire) -> tuple[list, list]:
 
     # We check if we have a work wire -> direct or standard differentiation.
     # We also check if we are doing forward or reversed (switch the generator with the measured op) based how many
