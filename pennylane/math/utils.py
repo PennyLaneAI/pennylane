@@ -262,6 +262,9 @@ def cast(tensor, dtype):
         except (AttributeError, TypeError, ImportError):
             dtype = getattr(dtype, "name", dtype)
 
+        if math.get_interface(dtype) == "torch":
+            tensor = np.asarray(tensor, like="torch")
+
     return ar.astype(tensor, ar.to_backend_dtype(dtype, like=ar.infer_backend(tensor)))
 
 
@@ -293,7 +296,7 @@ def cast_like(tensor1, tensor2):
     elif isinstance(tensor2, ArrayBox):
         dtype = ar.to_numpy(tensor2._value).dtype.type  # pylint: disable=protected-access
     elif hasattr(tensor2, "dtype"):
-        dtype = tensor2.dtype.type
+        dtype = tensor2.dtype
     else:
         dtype = ar.to_numpy(tensor2).dtype.type
     return cast(tensor1, dtype)
