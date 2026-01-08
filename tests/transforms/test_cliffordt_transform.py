@@ -146,6 +146,16 @@ def circuit_10():
     return qml.expval(qml.Z(0))
 
 
+@pytest.mark.capture
+def test_error_with_program_capture():
+    """Test that an error is raised when program capture is enabled."""
+    import jax
+
+    jaxpr = jax.make_jaxpr(lambda x: x + 1)(0.5)
+    with pytest.raises(NotImplementedError):
+        qml.transforms.clifford_t_decomposition.plxpr_transform(jaxpr.jaxpr, jaxpr.consts, (), {})
+
+
 class TestCliffordCompile:
     """Unit tests for clifford compilation function."""
 

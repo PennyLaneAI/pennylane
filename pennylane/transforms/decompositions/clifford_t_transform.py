@@ -431,6 +431,7 @@ class _CachedCallable:
         return self.decompose_fn(op)
 
 
+# pylint: disable=unused-argument
 def _clifford_t_plxpr_transform(jaxpr, consts, targs, tkwargs, *args):
     raise NotImplementedError(
         "The clifford_t_decomposition is incompatible with program capture. "
