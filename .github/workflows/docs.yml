@@ -88,6 +88,7 @@ jobs:
           cat doc.txt
 
       - name: Upload frozen requirements
+        if: ${{ github.event_name != 'workflow_call' }}
         uses: actions/upload-artifact@v4
         with:
           name: frozen-doc
