@@ -464,6 +464,12 @@ def clifford_t_decomposition(
     Alternatively, the Ross-Selinger algorithm described in `Ross and Selinger (2016) <https://arxiv.org/abs/1403.2975v3>`_
     can be used by setting the ``method`` to ``"gridsynth"``.
 
+    .. note::
+
+        The ``clifford_t_decomposition`` transform is incompatible with :func:`~.qjit`. For compatibility with :func:`~.qjit`, 
+        please use :func:`~.transforms.decompose` with a Clifford+T ``gate_set`` in tandem with :func:`~.transforms.gridnsynth` 
+        instead.
+
     Args:
         tape (QNode or QuantumTape or Callable): The quantum circuit to be decomposed.
         epsilon (float): The maximum permissible operator norm error of the complete circuit decomposition. Defaults to ``0.0001``.
