@@ -15,7 +15,6 @@ r"""Resource operators for symbolic operations."""
 from collections.abc import Iterable
 from functools import singledispatch
 
-import pennylane.estimator as qre
 from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
@@ -24,7 +23,6 @@ from pennylane.estimator.resource_operator import (
     resource_rep,
 )
 from pennylane.estimator.wires_manager import Allocate, Deallocate
-from pennylane.exceptions import ResourcesUndefinedError
 from pennylane.wires import Wires, WiresLike
 
 # pylint: disable=arguments-differ,super-init-not-called, signature-differs
@@ -150,6 +148,9 @@ class Adjoint(ResourceOperator):
             in the decomposition.
 
         """
+        # NOTE: This method is not called by the estimate function.
+        # The logic is instead implemented in `pennylane.estimator.estimate._get_resource_decomposition`
+        # and `pennylane.estimator.estimate._update_counts_from_compressed_res_op`.
         base_class, base_params = (base_cmpr_op.op_type, base_cmpr_op.params)
 
         base_params.update(
@@ -158,15 +159,7 @@ class Adjoint(ResourceOperator):
             if key in base_params and base_params[key] is None
         )
 
-        try:
-            return base_class.adjoint_resource_decomp(base_params)
-        except ResourcesUndefinedError:
-            gate_lst = []
-            decomp = base_class.resource_decomp(**base_params)
-
-            for gate in decomp[::-1]:  # reverse the order
-                gate_lst.append(_apply_adj(gate))
-            return gate_lst
+        return base_class.adjoint_resource_decomp(target_resource_params=base_params)
 
     @classmethod
     def adjoint_resource_decomp(cls, target_resource_params: dict) -> list[GateCount]:
@@ -357,7 +350,9 @@ class Controlled(ResourceOperator):
             in the decomposition.
 
         """
-
+        # NOTE: This method is not called by the estimate function.
+        # The logic is instead implemented in `pennylane.estimator.estimate._get_resource_decomposition`
+        # and `pennylane.estimator.estimate._update_counts_from_compressed_res_op`.
         base_class, base_params = (base_cmpr_op.op_type, base_cmpr_op.params)
         base_params.update(
             (key, value)
@@ -365,35 +360,11 @@ class Controlled(ResourceOperator):
             if key in base_params and base_params[key] is None
         )
 
-        try:
-            return base_class.controlled_resource_decomp(
-                num_ctrl_wires=num_ctrl_wires,
-                num_zero_ctrl=num_zero_ctrl,
-                target_resource_params=base_params,
-            )
-        except ResourcesUndefinedError:
-            pass
-
-        gate_lst = []
-        if num_zero_ctrl != 0:
-            x = resource_rep(qre.X)
-            gate_lst.append(GateCount(x, 2 * num_zero_ctrl))
-
-        decomp = base_class.resource_decomp(**base_params)
-        for action in decomp:
-            if isinstance(action, GateCount):
-                gate = action.gate
-                c_gate = cls.resource_rep(
-                    gate,
-                    num_ctrl_wires,
-                    num_zero_ctrl=0,  # we flipped already and added the X gates above
-                )
-                gate_lst.append(GateCount(c_gate, action.count))
-
-            else:  # pragma: no cover
-                gate_lst.append(action)
-
-        return gate_lst
+        return base_class.controlled_resource_decomp(
+            num_ctrl_wires=num_ctrl_wires,
+            num_zero_ctrl=num_zero_ctrl,
+            target_resource_params=base_params,
+        )
 
     @classmethod
     def controlled_resource_decomp(
@@ -567,6 +538,9 @@ class Pow(ResourceOperator):
             in the decomposition.
 
         """
+        # NOTE: This method is not called by the estimate function.
+        # The logic is instead implemented in `pennylane.estimator.estimate._get_resource_decomposition`
+        # and `pennylane.estimator.estimate._update_counts_from_compressed_res_op`.
         base_class, base_params = (base_cmpr_op.op_type, base_cmpr_op.params)
         base_params.update(
             (key, value)
@@ -574,16 +548,7 @@ class Pow(ResourceOperator):
             if key in base_params and base_params[key] is None
         )
 
-        if pow_z == 0:
-            return [GateCount(resource_rep(qre.Identity))]
-
-        if pow_z == 1:
-            return [GateCount(base_cmpr_op)]
-
-        try:
-            return base_class.pow_resource_decomp(pow_z=pow_z, target_resource_params=base_params)
-        except ResourcesUndefinedError:
-            return [GateCount(base_cmpr_op, pow_z)]
+        return base_class.pow_resource_decomp(pow_z=pow_z, target_resource_params=base_params)
 
     @classmethod
     def pow_resource_decomp(cls, pow_z: int, target_resource_params: dict) -> list[GateCount]:
@@ -1025,23 +990,110 @@ class ChangeOpBasis(ResourceOperator):
             GateCount(cmpr_uncompute_op),
         ]
 
+    @classmethod
+    def controlled_resource_decomp(
+        cls, num_ctrl_wires: int, num_zero_ctrl: int, target_resource_params: dict
+    ) -> list[GateCount]:
+        r"""Returns a list representing the resources for a controlled version of the operator.
+
+        Args:
+            num_ctrl_wires (int): the number of qubits the operation is controlled on
+            num_zero_ctrl (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
+            target_resource_params (dict): A dictionary containing the resource parameters of the
+                target operator.
+
+        Resources:
+            The resources are derived from the identity :math:`C(U V U^\dagger) = U C(V) U^\dagger`.
+            Since the compute and uncompute operators cancel each other out when the control is off,
+            only the target operation :math:`V` needs to be controllled. The compute and uncompute operations
+            remain uncontrolled.
+
+        Returns:
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
+        """
+        compute_op = target_resource_params["cmpr_compute_op"]
+        target_op = target_resource_params["cmpr_target_op"]
+        uncompute_op = target_resource_params["cmpr_uncompute_op"]
+
+        ctrl_target_op = Controlled.resource_rep(
+            base_cmpr_op=target_op,
+            num_ctrl_wires=num_ctrl_wires,
+            num_zero_ctrl=num_zero_ctrl,
+        )
+        return [
+            GateCount(compute_op),
+            GateCount(ctrl_target_op),
+            GateCount(uncompute_op),
+        ]
+
 
 @singledispatch
-def _apply_adj(action):
+def apply_adj(action: GateCount | Allocate | Deallocate) -> GateCount | Allocate | Deallocate:
+    """Create the adjoint of a resource-tracking gate.
+
+    For a :class:`~.GateCount`, it wraps
+    the gate in :class:`~.Adjoint`. For :class:`~.Allocate` and
+    :class:`~.Deallocate`, it converts one to the other.
+
+    Args:
+        action (GateCount or Allocate or Deallocate): The gate to be adjointed.
+
+    Returns:
+        GateCount or Allocate or Deallocate.
+
+    Raises:
+        TypeError: if the gate is of an unsupported type.
+    """
     raise TypeError(f"Unsupported type {action}")
 
 
-@_apply_adj.register
+@apply_adj.register
 def _(action: GateCount):
     gate = action.gate
     return GateCount(resource_rep(Adjoint, {"base_cmpr_op": gate}), action.count)
 
 
-@_apply_adj.register
+@apply_adj.register
 def _(action: Allocate):
     return Deallocate(action.num_wires)
 
 
-@_apply_adj.register
+@apply_adj.register
 def _(action: Deallocate):
     return Allocate(action.num_wires)
+
+
+# pylint: disable=unused-argument
+@singledispatch
+def apply_controlled(
+    action: GateCount | Allocate | Deallocate, num_ctrl_wires: int, num_zero_ctrl: int
+) -> GateCount | Allocate | Deallocate:
+    """Create the controlled version of a resource-tracking gate.
+
+    For a :class:`~.GateCount`, it wraps
+    the gate in :class:`~.Controlled`. Other actions like :class:`~.Allocate`
+    and :class:`~.Deallocate` are returned unchanged.
+
+    Args:
+        action (GateCount or Allocate or Deallocate): The gate to be controlled.
+        num_ctrl_wires (int): The number of qubits to control the operation on.
+        num_zero_ctrl (int): The number of control qubits that are controlled on the
+            :math:`|0\\rangle` state.
+
+    Returns:
+        GateCount or Allocate or Deallocate.
+    """
+    return action
+
+
+@apply_controlled.register
+def _(action: GateCount, num_ctrl_wires, num_zero_ctrl):
+    gate = action.gate
+    c_gate = Controlled.resource_rep(
+        gate,
+        num_ctrl_wires,
+        num_zero_ctrl=num_zero_ctrl,
+    )
+    return GateCount(c_gate, action.count)

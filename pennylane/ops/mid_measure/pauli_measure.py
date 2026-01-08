@@ -177,7 +177,7 @@ def pauli_measure(pauli_word: str, wires: WiresLike, postselect: int | None = No
     where they are denoted as a :class:`~.ops.mid_measure.pauli_measure.PauliMeasure` gate type:
 
     >>> print(qml.specs(circuit)()['resources'])
-    Total qubit allocations: 3
+    Total wire allocations: 3
     Total gates: 4
     Circuit depth: 3
     Gate types:

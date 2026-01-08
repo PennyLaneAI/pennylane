@@ -21,7 +21,10 @@ from pennylane import CNOT
 from pennylane.tape import QuantumScript
 from pennylane.transforms import parity_matrix, rowcol
 from pennylane.transforms.intermediate_reps import postorder_traverse, preorder_traverse
-from pennylane.transforms.intermediate_reps.rowcol import _rowcol_parity_matrix
+from pennylane.transforms.intermediate_reps.rowcol import (
+    _rowcol_parity_matrix,
+    _solve_regular_linear_system_z2,
+)
 
 path_graph_4 = nx.path_graph(4)
 binary_graph_3 = nx.balanced_tree(2, 3)
@@ -140,6 +143,58 @@ class TestTreeTraversal:
         assert pre == expected
 
 
+def _make_random_regular_matrix(n, random_ops, rs: np.random.RandomState):
+    """Create a random regular (=non-singular) binary matrix.
+    This is done by performing random row additions on the identity matrix, preserving
+    the regularity of the identity matrix itself.
+
+    In the picture of quantum circuits, we are computing the parity matrix of a random CNOT
+    circuit.
+    """
+    P = np.eye(n, dtype=int)
+    for _ in range(random_ops):
+        i, j = rs.choice(n, size=2, replace=False)  # Random pair of rows
+        P[i] += P[j]  # Add second sampled row to first sampled row
+    return P % 2  # Make into binary matrix
+
+
+class TestSolveRegularLinearSystemZ2:
+    """Tests for the helper method ``_solve_regular_linear_system_z2``."""
+
+    @pytest.mark.parametrize(
+        "A",
+        [
+            np.array([[0]]),
+            np.array([[1, 0], [0, 0]]),
+            np.array([[1, 1], [1, 1]]),
+            np.array([[1, 1, 0], [0, 1, 0], [1, 0, 0]]),
+            np.array([[1, 1, 0], [0, 1, 0], [1, 1, 0]]),
+            np.array([[1, 1, 0, 0], [0, 1, 0, 0], [1, 1, 1, 1], [0, 1, 1, 1]]),
+        ],
+    )
+    def test_error_for_singular_matrix(self, A, seed):
+        """Test that an error is raised for singular matrices."""
+        rs = np.random.RandomState(seed)
+        x = rs.randint(0, 2, (len(A),))
+        b = (A @ x) % 2
+        with pytest.raises(ValueError, match="not find next pivot"):
+            _ = _solve_regular_linear_system_z2(A, b)
+
+    @pytest.mark.parametrize("n", [1, 4, 5, 10, 13, 28, 102])
+    def test_with_random_matrix(self, n, seed):
+        """Test that the system is solved correctly for a random matrix
+        of given dimension and reverse-engineered coefficient vector b."""
+        rs = np.random.RandomState(seed)
+        random_ops = n**2 if n > 1 else 0  # Can't do row operations in 1D.
+        A = _make_random_regular_matrix(n, random_ops, rs)
+        x = rs.randint(0, 2, (n,))
+        b = (A @ x) % 2
+        x_sol = _solve_regular_linear_system_z2(A, b)
+        assert x_sol.shape == (n,) and x_sol.dtype == np.int64
+        assert set(x_sol).issubset({0, 1})
+        assert np.allclose(x_sol, x)
+
+
 def assert_reproduces_parity_matrix(cnots, expected_P):
     """Helper function that compares a CNOT circuit to a given parity matrix."""
     tape = QuantumScript([CNOT(wires) for wires in cnots])
@@ -222,14 +277,11 @@ class TestRowCol:
     @pytest.mark.parametrize("n", list(range(2, 13)))
     @pytest.mark.parametrize("connectivity_fn", [nx.path_graph, nx.complete_graph])
     @pytest.mark.parametrize("input_depth", [(lambda n: n), (lambda n: n**3)])
-    def test_random_circuit(self, n, connectivity_fn, input_depth):
+    def test_random_circuit(self, n, connectivity_fn, input_depth, seed):
         """Test with a random CNOT circuit."""
 
-        P = np.eye(n, dtype=int)
-        for _ in range(input_depth(n)):
-            i, j = np.random.choice(n, size=2, replace=False)
-            P[i] += P[j]
-        P %= 2
+        rs = np.random.RandomState(seed)
+        P = _make_random_regular_matrix(n, input_depth(n), rs)
         input_P = P.copy()
 
         connectivity = connectivity_fn(n)

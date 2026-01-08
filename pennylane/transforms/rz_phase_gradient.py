@@ -32,7 +32,9 @@ def _binary_repr_int(phi, precision):
     # at the same time, we want to floor off any additional floats when converting to the desired precision,
     # e.g. representing (1, 1, 1, 1) with only 3 digits we want to obtain (1, 1, 1)
     # so overall we floor but make sure we add a little term to not accidentally write 14 when the result is 14.999..
-    return int(np.floor(2**precision * phi / (2 * np.pi) + 1e-10))
+    phi = phi % (2 * np.pi)
+    phi_round = np.round(2**precision * phi / (2 * np.pi))
+    return int(bin(int(np.floor(phi_round + 1e-10)))[-precision:], 2)
 
 
 @QueuingManager.stop_recording()

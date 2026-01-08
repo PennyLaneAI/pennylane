@@ -19,7 +19,6 @@ from collections.abc import Callable
 from functools import partial
 
 import numpy as np
-from networkx import MultiDiGraph
 
 from pennylane import ops
 from pennylane.measurements import SampleMP, sample
@@ -548,7 +547,7 @@ MC_MEASUREMENTS = [
 
 
 def expand_fragment_tapes_mc(
-    tapes: QuantumScriptBatch, communication_graph: MultiDiGraph, shots: int, seed=None
+    tapes: QuantumScriptBatch, communication_graph, shots: int, seed=None
 ) -> tuple[QuantumScriptBatch, np.ndarray]:
     """
     Expands fragment tapes into a sequence of random configurations of the contained pairs of

@@ -82,6 +82,8 @@ class TestResources:
         assert resources.any_state_wires == any_state
         assert resources.algo_wires == algo
         assert resources.gate_types == expected_gate_types
+        assert resources.total_wires == zeroed + algo + any_state
+        assert resources.total_gates == sum(expected_gate_types.values())
 
     str_data = (
         (
