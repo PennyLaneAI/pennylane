@@ -35,7 +35,7 @@ class MultiplexerStatePreparation(Operation):
 
     Raises:
         ValueError: If the length of the input state vector array is not :math:`2^n`, where
-            :math:`n` is the number, or if the norm of the input state is not :math:`1`.
+            :math:`n` is the number, or if the norm of the input state is not unity.
 
     **Example**
 
