@@ -280,6 +280,65 @@ class SpecsResources:
     num_allocs: int
     depth: int | None = None
 
+    def __add__(self, other: Resources):
+        r"""Adds two :class:`~resource.SpecsResources` objects together as if the circuits were executed in series.
+
+        Args:
+            other (SpecsResources): the resource object to add
+
+        Returns:
+            SpecsResources: the combined resources
+
+        .. details::
+
+            **Example**
+
+            First we build two :class:`~.resource.SpecsResources` objects.
+
+            .. code-block:: python
+
+                from pennylane.measurements import Shots
+                from pennylane.resource import Resources
+
+                r1 = Resources(
+                    num_wires = 2,
+                    num_gates = 2,
+                    gate_types = {"Hadamard": 1, "CNOT": 1},
+                    gate_sizes = {1: 1, 2: 1},
+                    depth = 2,
+                    shots = Shots(10)
+                )
+
+                r2 = Resources(
+                    num_wires = 3,
+                    num_gates = 2,
+                    gate_types = {"RX": 1, "CNOT": 1},
+                    gate_sizes = {1: 1, 2: 1},
+                    depth = 1,
+                    shots = Shots((5, (2, 10)))
+                )
+
+            Now we print their sum.
+
+            >>> print(r1 + r2)
+            num_wires: 3
+            num_gates: 4
+            depth: 3
+            shots: Shots(total=35, vector=[10 shots, 5 shots, 2 shots x 10])
+            gate_types:
+            {'Hadamard': 1, 'CNOT': 2, 'RX': 1}
+            gate_sizes:
+            {1: 2, 2: 2}
+        """
+        new_gate_types = _combine_dict(self.gate_types, other.gate_types)
+        new_gate_sizes = _combine_dict(self.gate_sizes, other.gate_sizes)
+        new_measurements = _combine_dict(self.measurements, other.measurements)
+        new_num_allocs = max(self.num_allocs, other.num_allocs)
+        new_depth = None if self.depth is None or other.depth is None else self.depth + other.depth
+        return SpecsResources(
+            new_gate_types, new_gate_sizes, new_measurements, new_num_allocs, new_depth
+        )
+
     def __post_init__(self):
         if sum(self.gate_types.values()) != sum(self.gate_sizes.values()):
             raise ValueError(

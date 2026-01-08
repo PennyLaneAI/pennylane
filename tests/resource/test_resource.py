@@ -811,6 +811,51 @@ class TestSpecsResources:
 
         assert s.to_dict() == expected
 
+    def test_addition(self):
+        """Test the addition of SpecsResources."""
+        s0 = self.example_specs_resource()
+        s_add = s0 + s0
+        s_add_expected = SpecsResources(
+            gate_types={"Hadamard": 4, "CNOT": 2},
+            gate_sizes={1: 4, 2: 2},
+            measurements={"expval(PauliZ)": 2},
+            num_allocs=2,
+            depth=4,
+        )
+        assert s_add == s_add_expected
+
+        s_more_alloc = SpecsResources(
+            gate_types={"Hadamard": 7, "CNOT": 2},
+            gate_sizes={1: 7, 2: 2},
+            measurements={"expval(PauliZ)": 2},
+            num_allocs=3,
+            depth=2,
+        )
+        s_add = s0 + s_more_alloc
+        s_add_expected = SpecsResources(
+            gate_types={"Hadamard": 9, "CNOT": 3},
+            gate_sizes={1: 9, 2: 3},
+            measurements={"expval(PauliZ)": 3},
+            num_allocs=3,
+            depth=4,
+        )
+        assert s_add == s_add_expected
+
+        s_no_depth = SpecsResources(
+            gate_types={"Hadamard": 7, "CNOT": 2},
+            gate_sizes={1: 7, 2: 2},
+            measurements={"expval(PauliZ)": 2},
+            num_allocs=3,
+        )
+        s_add = s0 + s_no_depth
+        s_add_expected = SpecsResources(
+            gate_types={"Hadamard": 9, "CNOT": 3},
+            gate_sizes={1: 9, 2: 3},
+            measurements={"expval(PauliZ)": 3},
+            num_allocs=3,
+        )
+        assert s_add == s_add_expected
+
 
 class TestCircuitSpecs:
 
