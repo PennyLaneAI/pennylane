@@ -2,81 +2,165 @@
 
 <h3>New features since last release</h3>
 
-<h4>Pass-by-Pass Circuit Specs </h4>
+<h4>Quantum Random Access Memory (QRAM) 💾</h4>
 
-* Resource tracking with :func:`~pennylane.specs` can now be used to analyze the pass-by-pass impact of arbitrary 
-  compilation passes on workflows compiled with :func:`~pennylane.qjit`.
-  [(#8606)](https://github.com/PennyLaneAI/pennylane/pull/8606)
-
-  Consider the following :func:`qjit <pennylane.qjit>`'d circuit with two compilation passes applied:
-
-  ```python
-  @qml.qjit
-  @qml.transforms.merge_rotations
-  @qml.transforms.cancel_inverses
-  @qml.qnode(dev)
-  def circuit(x):
-      qml.RX(x, wires=0)
-      qml.RX(x, wires=0)
-      qml.X(0)
-      qml.X(0)
-      qml.CNOT([0, 1])
-      return qml.probs()
-  ```
-
-  The supplied ``level`` to :func:`pennylane.specs` may be individual `int` values, or an iterable of multiple levels. 
-  Additionally, the strings ``"all"`` and ``"all-mlir"`` are allowed, returning circuit resources for all user-applied transforms
-  and MLIR passes, or all user-applied MLIR passes only, respectively.
-
-  ```pycon
-  >>> print(qml.specs(circuit, level=[1, 2])(1.23))
-  Device: lightning.qubit
-  Device wires: 3
-  Shots: Shots(total=None)
-  Level: ['Before MLIR Passes (MLIR-0)', 'cancel-inverses (MLIR-1)']
-  <BLANKLINE>
-  Resource specifications:
-  Level = Before MLIR Passes (MLIR-0):
-    Total wire allocations: 3
-    Total gates: 5
-    Circuit depth: Not computed
-  <BLANKLINE>
-    Gate types:
-      RX: 2
-      PauliX: 2
-      CNOT: 1
-  <BLANKLINE>
-    Measurements:
-      probs(all wires): 1
-  <BLANKLINE>
-  ------------------------------------------------------------
-  <BLANKLINE>
-  Level = cancel-inverses (MLIR-1):
-    Total wire allocations: 3
-    Total gates: 3
-    Circuit depth: Not computed
-  <BLANKLINE>
-    Gate types:
-      RX: 2
-      CNOT: 1
-  <BLANKLINE>
-    Measurements:
-      probs(all wires): 1
-  ```
-
-
-<h4>QRAM </h4>
-
-* A lightweight version of Bucket Brigade QRAM :class:`estimator.BBQRAM <pennylane.estimator.templates.BBQRAM>` (based on the :class:`~.estimator.resource_operator.ResourceOperator` class) 
-  has been added to rapidly estimate resources used by :class:`~.BBQRAM`.
-  [(#8825)](https://github.com/PennyLaneAI/pennylane/pull/8825)
-
-* Bucket Brigade QRAM, a Hybrid QRAM and a Select-Only QRAM variant are implemented as a template :class:`~.BBQRAM`, :class:`~.HybridQRAM` and :class:`~.SelectOnlyQRAM` 
-  to allow for selection of bitstrings in superposition.
+* Three implementations of QRAM are now available in PennyLane, including Bucket Brigade QRAM 
+  (:class:`~.BBQRAM`), a Select-Only QRAM (:class:`~.SelectOnlyQRAM`), and a Hybrid QRAM 
+  (:class:`~.HybridQRAM`) that combines behaviour from both :class:`~.BBQRAM` and 
+  :class:`~.SelectOnlyQRAM`. The choice of QRAM implementation depends on the application, ranging
+  from width versus depth tradeoffs to noise resilience.
   [(#8670)](https://github.com/PennyLaneAI/pennylane/pull/8670)
   [(#8679)](https://github.com/PennyLaneAI/pennylane/pull/8679)
   [(#8680)](https://github.com/PennyLaneAI/pennylane/pull/8680)
   [(#8801)](https://github.com/PennyLaneAI/pennylane/pull/8801)
+
+  Irrespective of the specific implementation, QRAM encodes bitstrings, :math:`b_i`, corresponding to a 
+  given entry, :math:`i`, of a data set of length :math:`N`, and can do so in superposition: 
+  :math:`\texttt{QRAM} \sum_i c_i \vert i \rangle \vert 0 \rangle = \sum_i c_i \vert i \rangle \vert b_i \rangle`.
+  Here, the first register representing :math:`\vert i \rangle` is called the ``control_wires`` register 
+  (often referred to as the "address" register in literature), and the second register containing 
+  :math:`\vert b_i \rangle` is called the ``target_wires`` register (where the 
+  :math:`i^{\text{th}}` entry of the data set is loaded).
+
+  Each QRAM implementation available in this release can be briefly described as follows:
+
+  * :class:`~.BBQRAM` : a bucket-brigade style QRAM implementation that is also resilient to noise.
+  * :class:`~.SelectOnlyQRAM` : a QRAM implementation that comprises a series of :class:`~.MultiControlledX` gates.
+  * :class:`~.HybridQRAM` : a QRAM implementation that combines :class:`~.BBQRAM` and :class:`~.SelectOnlyQRAM` in a manner that allows for tradeoffs between depth and width.
+
+  An example of using :class:`~.BBQRAM` to read data into a target register is given below, where 
+  the data set in question is given by a list of ``bitstrings`` and we wish to read its second entry
+  (``"110"``):
+
+  ```python
+  import pennylane as qml
+
+  bitstrings = ["010", "111", "110", "000"]
+  bitstring_size = 3
+
+  num_control_wires = 2 # len(bistrings) = 4 = 2**2
+  num_work_wires = 1 + 3 * ((1 << num_control_wires) - 1) # 10
+
+  reg = qml.registers(
+      {
+          "control": num_control_wires,
+          "target": bitstring_size,
+          "work_wires": num_work_wires
+      }
+  )
+
+  dev = qml.device("default.qubit")
+  @qml.qnode(dev)
+  def bb_quantum():
+      # prepare an address, e.g., |10> (index 2)
+      qml.BasisEmbedding(2, wires=reg["control"])
+
+      qml.BBQRAM(
+          bitstrings,
+          control_wires=reg["control"],
+          target_wires=reg["target"],
+          work_wires=reg["work_wires"],
+      )
+      return qml.probs(wires=reg["target"])
+  ```
+
+  ```pycon
+  >>> import numpy as np
+  >>> print(np.round(bb_quantum()))  
+  [0. 0. 0. 0. 0. 0. 1. 0.]
+  ```
+
+  Note that ``"110"`` in binary is equal to 6 in decimal, which is the position of the only 
+  non-zero entry in the ``target_wires`` register.
+
+  For more information on each implementation of QRAM in this release, check out their respective
+  documentation pages.
+
+* A lightweight representation of the :class:`~.BBQRAM` template called 
+  :class:`estimator.BBQRAM <pennylane.estimator.templates.BBQRAM>` has been added to the :mod:`~.estimator` module for the purpose of
+  fast and efficient resource estimation.
+  [(#8825)](https://github.com/PennyLaneAI/pennylane/pull/8825)
+
+  Like with other existing lightweight representations of PennyLane operations, leveraging 
+  :class:`estimator.BBQRAM <pennylane.estimator.templates.BBQRAM>` for fast resource estimation
+  can be done in two ways: 
+
+  * Using :class:`estimator.BBQRAM <pennylane.estimator.templates.BBQRAM>` directly inside of a 
+    function and then calling :func:`estimate <pennylane.estimator.estimate.estimate>`:
+
+  ```python
+  import pennylane.estimator as qre
+
+  def circuit():
+      qre.CNOT()
+      qre.QFT(num_wires=4)
+      qre.BBQRAM(num_bitstrings=30, size_bitstring=8, num_wires=100)
+      qre.Hadamard()
+  ```
+
+  ```
+  >>> print(qre.estimate(circuit)())
+  --- Resources: ---
+  Total wires: 100
+    algorithmic wires: 100
+    allocated wires: 0
+      zero state: 0
+      any state: 0
+  Total gates : 4.504E+3
+    'Toffoli': 1.096E+3,
+    'T': 792,
+    'CNOT': 2.475E+3,
+    'Z': 120,
+    'Hadamard': 21
+  ```
+
+  * On a simulatable circuit with detailed information:
+
+  ```python
+  bitstrings = ["010", "111", "110", "000"]
+  bitstring_size = 3
+
+  num_control_wires = 2 # len(bistrings) = 4 = 2**2
+  num_work_wires = 1 + 3 * ((1 << num_control_wires) - 1) # 10
+
+  reg = qml.registers(
+      {
+          "control": num_control_wires,
+          "target": bitstring_size,
+          "work_wires": num_work_wires
+      }
+  )
+
+  dev = qml.device("default.qubit")
+  @qml.qnode(dev)
+  def bb_quantum():
+      # prepare an address, e.g., |10> (index 2)
+      qml.BasisEmbedding(2, wires=reg["control"])
+
+      qml.BBQRAM(
+          bitstrings,
+          control_wires=reg["control"],
+          target_wires=reg["target"],
+          work_wires=reg["work_wires"],
+      )
+      return qml.probs(wires=reg["target"])
+  ```
+
+  ```pycon
+  >>> print(qre.estimate(bb_quantum)())
+  --- Resources: ---
+  Total wires: 15
+    algorithmic wires: 15
+    allocated wires: 0
+      zero state: 0
+      any state: 0
+  Total gates : 181
+    'Toffoli': 40,
+    'CNOT': 128,
+    'X': 1,
+    'Z': 6,
+    'Hadamard': 6
+  ```
 
 <h4>Quantum Automatic Differentiation 🤖</h4>
 
@@ -539,72 +623,72 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
   124497.0
   ```
 
-<h4>Seamless resource tracking and circuit visualization for compiled programs </h4>
+<h4>Seamless inspection for compiled programs 👓</h4>
 
-* Resource tracking with :func:`~pennylane.specs` can now be used to analyze the pass-by-pass impact of arbitrary 
-  compilation passes on workflows compiled with :func:`~pennylane.qjit`.
-  [(#8606)](https://github.com/PennyLaneAI/pennylane/pull/8606)
+* Analyzing resources throughout each step of a compilation pipeline can now be done on ``qjit``'d workflows with :func:`~.specs`, 
+  providing a pass-by-pass overview of quantum circuit resources.
+[(#8606)](https://github.com/PennyLaneAI/pennylane/pull/8606)
   
-  Consider the following :func:`qjit <pennylane.qjit>`'d circuit with two compilation passes applied:
+  Consider the following :func:`qjit <pennylane.qjit>`'d circuit with two compilation passes 
+  applied:
   
   ```python
   @qml.qjit
   @qml.transforms.merge_rotations
   @qml.transforms.cancel_inverses
-  @qml.qnode(dev)
-  def circuit(x):
-      qml.RX(x, wires=0)
-      qml.RX(x, wires=0)
+  @qml.qnode(qml.device('lightning.qubit', wires=2))
+  def circuit():
+      qml.RX(1.23, wires=0)
+      qml.RX(1.23, wires=0)
       qml.X(0)
       qml.X(0)
       qml.CNOT([0, 1])
       return qml.probs()
   ```
 
-  The supplied ``level`` to :func:`pennylane.specs` may be individual `int` values, or an iterable of multiple levels. 
-  Additionally, the strings ``"all"`` and ``"all-mlir"`` are allowed, returning circuit resources for all user-applied transforms
-  and MLIR passes, or all user-applied MLIR passes only, respectively.
+  The supplied ``level`` to :func:`pennylane.specs` can be an individual ``int`` value or an iterable 
+  of multiple levels. Additionally, the strings ``"all"`` and ``"all-mlir"`` are allowed, returning 
+  circuit resources for all user-applied transforms and MLIR passes, or all user-applied MLIR passes 
+  only, respectively.
 
   ```pycon
-  >>> print(qml.specs(circuit, level=[1, 2])(1.23))
+  >>> print(qml.specs(circuit, level=[2, 3])())
   Device: lightning.qubit
-  Device wires: 3
+  Device wires: 2
   Shots: Shots(total=None)
-  Level: ['Before MLIR Passes (MLIR-0)', 'cancel-inverses (MLIR-1)']
-  <BLANKLINE>
+  Level: ['cancel-inverses (MLIR-1)', 'merge-rotations (MLIR-2)']
+
   Resource specifications:
-  Level = Before MLIR Passes (MLIR-0):
-    Total wire allocations: 3
-    Total gates: 5
-    Circuit depth: Not computed
-  <BLANKLINE>
-    Gate types:
-      RX: 2
-      PauliX: 2
-      CNOT: 1
-  <BLANKLINE>
-    Measurements:
-      probs(all wires): 1
-  <BLANKLINE>
-  ------------------------------------------------------------
-  <BLANKLINE>
   Level = cancel-inverses (MLIR-1):
-    Total wire allocations: 3
+    Total wire allocations: 2
     Total gates: 3
     Circuit depth: Not computed
-  <BLANKLINE>
+
     Gate types:
       RX: 2
       CNOT: 1
-  <BLANKLINE>
+
+    Measurements:
+      probs(all wires): 1
+
+  ------------------------------------------------------------
+
+  Level = merge-rotations (MLIR-2):
+    Total wire allocations: 2
+    Total gates: 2
+    Circuit depth: Not computed
+
+    Gate types:
+      RX: 1
+      CNOT: 1
+
     Measurements:
       probs(all wires): 1
   ```
 
-
-* A new :func:`~.marker` function allows for easy inspection at particular points in a transform program
-  with :func:`~.specs` and :func:`~.drawer.draw` instead of having to increment ``level``
-  by integer amounts when not using any Catalyst passes.
+* A new :func:`~.marker` function allows for easy inspection at particular points in a set of 
+  applied compilation passes with :func:`~.specs` and :func:`~.drawer.draw` instead of having to 
+  increment ``level`` by integer amounts.
   [(#8684)](https://github.com/PennyLaneAI/pennylane/pull/8684)
 
   The :func:`~.marker` function works like a transform in PennyLane, and can be deployed as
@@ -625,7 +709,7 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
       return qml.state()
   ```
 
-  The string supplied to ``marker`` can then be used as an argument to ``level`` in ``draw``
+  The string supplied to :func:`~.marker` can then be used as an argument to ``level`` in ``draw``
   and ``specs``, showing the cumulative result of applying transforms up to the marker:
 
   ```pycon
@@ -634,6 +718,9 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
   >>> print(qml.draw(circuit, level="rotations-merged")())
   0: ──RX(6.68)─┤  State
   ```
+
+  Note that :func:`~.marker` is currently not compatible with programs compiled with 
+  :func:`~pennylane.qjit`.
 
 <h3>Improvements 🛠</h3>
 
