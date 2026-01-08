@@ -43,6 +43,8 @@ def to_ppr(tape):
     ``qml.X``,
     ``qml.Y``,
     ``qml.Z``,
+    ``qml.PauliRot``,
+    ``qml.adjoint(qml.PauliRot)``,
     ``qml.adjoint(qml.S)``,
     ``qml.adjoint(qml.T)``,
     ``qml.CNOT``, and
@@ -112,7 +114,10 @@ def to_ppr(tape):
     (PPM), as well.
     """
     raise NotImplementedError(
-        "The to_ppr compilation pass has no tape implementation, and can only be applied when decorating the entire worfklow with @qml.qjit and when it is placed after all transforms that only have a tape implementation."
+        "The 'to_ppr' compilation pass has no tape implementation, "
+        "and can only be applied when decorating the entire worfklow "
+        "with '@qml.qjit' and when it is placed after all transforms "
+        "that only have a tape implementation."
     )
 
 
@@ -163,13 +168,12 @@ def commute_ppr(tape, *, max_pauli_size=0):
     .. code-block:: python
 
         import pennylane as qml
-        from functools import partial
         import jax.numpy as jnp
 
         qml.capture.enable()
 
         @qml.qjit(target="mlir")
-        @partial(qml.transforms.commute_ppr, max_pauli_size=2)
+        @qml.transforms.commute_ppr(max_pauli_size=2)
         @qml.transforms.to_ppr
         @qml.qnode(qml.device("null.qubit", wires=2))
         def circuit():
@@ -220,7 +224,10 @@ def commute_ppr(tape, *, max_pauli_size=0):
     (here, ``max_pauli_size = 2``), that commutation would be skipped.
     """
     raise NotImplementedError(
-        "The commute_ppr compilation pass has no tape implementation, and can only be applied when decorating the entire worfklow with @qml.qjit and when it is placed after all transforms that only have a tape implementation."
+        "The 'commute_ppr' compilation pass has no tape implementation, "
+        "and can only be applied when decorating the entire worfklow "
+        "with '@qml.qjit' and when it is placed after all transforms "
+        "that only have a tape implementation."
     )
 
 
@@ -239,7 +246,7 @@ def merge_ppr_ppm(tape=None, *, max_pauli_size=0):
         This transform requires decorating the QNode with :func:`@qml.qjit <pennylane.qjit>`.
 
         Lastly, the :func:`pennylane.transforms.to_ppr` transform must be applied before
-        ``ppr_to_ppm``.
+        ``merge_ppr_ppm``.
 
     For more information on PPRs and PPMs, check out
     the `Compilation Hub <https://pennylane.ai/compilation/pauli-product-measurement>`_.
@@ -271,13 +278,12 @@ def merge_ppr_ppm(tape=None, *, max_pauli_size=0):
     .. code-block:: python
 
         import pennylane as qml
-        from functools import partial
         import jax.numpy as jnp
 
         qml.capture.enable()
 
         @qml.qjit(target="mlir")
-        @partial(qml.transforms.merge_ppr_ppm, max_pauli_size=2)
+        @qml.transforms.merge_ppr_ppm(max_pauli_size=2)
         @qml.transforms.to_ppr
         @qml.qnode(qml.device("null.qubit", wires=2))
         def circuit():
@@ -313,7 +319,10 @@ def merge_ppr_ppm(tape=None, *, max_pauli_size=0):
     operation would be skipped.
     """
     raise NotImplementedError(
-        "The merge_ppr_ppm compilation pass has no tape implementation, and can only be applied when decorating the entire worfklow with @qml.qjit and when it is placed after all transforms that only have a tape implementation."
+        "The 'merge_ppr_ppm' compilation pass has no tape implementation, "
+        "and can only be applied when decorating the entire worfklow "
+        "with '@qml.qjit' and when it is placed after all transforms "
+        "that only have a tape implementation."
     )
 
 
@@ -356,7 +365,7 @@ def ppr_to_ppm(tape=None, *, decompose_method="pauli-corrected", avoid_y_measure
         avoid_y_measure (bool): Rather than performing a Pauli-Y measurement for Clifford rotations
             (sometimes more costly), a :math:`Y` state (:math:`Y\vert 0 \rangle`) is used instead
             (requires :math:`Y`-state preparation). This is currently only supported when using the
-            ``"clifford-corrected"`` and ``"pauli-corrected"`` decomposition method. Defaults to
+            ``"clifford-corrected"`` and ``"pauli-corrected"`` decomposition methods. Defaults to
             ``False``.
 
     Returns:
@@ -432,7 +441,10 @@ def ppr_to_ppm(tape=None, *, decompose_method="pauli-corrected", avoid_y_measure
     operators can be commuted to the end of the circuit and absorbed into terminal measurements.
     """
     raise NotImplementedError(
-        "The ppr_to_ppm compilation pass has no tape implementation, and can only be applied when decorating the entire worfklow with @qml.qjit and when it is placed after all transforms that only have a tape implementation."
+        "The 'ppr_to_ppm' compilation pass has no tape implementation, "
+        "and can only be applied when decorating the entire worfklow "
+        "with '@qml.qjit' and when it is placed after all transforms "
+        "that only have a tape implementation."
     )
 
 
@@ -481,7 +493,7 @@ def ppm_compilation(
         avoid_y_measure (bool): Rather than performing a Pauli-Y measurement for Clifford rotations
             (sometimes more costly), a :math:`Y` state (:math:`Y\vert 0 \rangle`) is used instead
             (requires :math:`Y`-state preparation). This is currently only supported when using the
-            ``"clifford-corrected"`` and ``"pauli-corrected"`` decomposition method. Defaults to
+            ``"clifford-corrected"`` and ``"pauli-corrected"`` decomposition methods. Defaults to
             ``False``.
 
         max_pauli_size (int): The maximum size of the Pauli strings after commuting or merging.
@@ -502,12 +514,11 @@ def ppm_compilation(
     .. code-block:: python
 
         import pennylane as qml
-        from functools import partial
 
         qml.capture.enable()
 
         @qml.qjit(target="mlir")
-        @partial(qml.transforms.ppm_compilation, decompose_method="clifford-corrected", max_pauli_size=2)
+        @qml.transforms.ppm_compilation(decompose_method="clifford-corrected", max_pauli_size=2)
         @qml.qnode(qml.device("null.qubit", wires=2))
         def circuit():
             qml.H(0)
@@ -547,7 +558,10 @@ def ppm_compilation(
     skipped.
     """
     raise NotImplementedError(
-        "The ppm_compilation compilation pass has no tape implementation, and can only be applied when decorating the entire worfklow with @qml.qjit and when it is placed after all transforms that only have a tape implementation."
+        "The 'ppm_compilation' compilation pass has no tape implementation, "
+        "and can only be applied when decorating the entire worfklow "
+        "with '@qml.qjit' and when it is placed after all transforms "
+        "that only have a tape implementation."
     )
 
 
@@ -650,7 +664,10 @@ def reduce_t_depth(qnode):
         :align: left
     """
     raise NotImplementedError(
-        "The reduce_t_depth compilation pass has no tape implementation, and can only be applied when decorating the entire worfklow with @qml.qjit and when it is placed after all transforms that only have a tape implementation."
+        "The 'reduce_t_depth' compilation pass has no tape implementation, "
+        "and can only be applied when decorating the entire worfklow "
+        "with '@qml.qjit' and when it is placed after all transforms "
+        "that only have a tape implementation."
     )
 
 
@@ -671,7 +688,7 @@ def decompose_arbitrary_ppr(qnode):
         This transform requires decorating the QNode with :func:`@qml.qjit <pennylane.qjit>`.
 
         Lastly, the :func:`pennylane.transforms.to_ppr` transform must be applied before
-        ``ppr_to_ppm``.
+        ``decompose_arbitrary_ppr``.
 
     Args:
         qnode (QNode): QNode to apply the pass to.
@@ -735,5 +752,8 @@ def decompose_arbitrary_ppr(qnode):
     rotation is not :math:`\tfrac{\pi}{2}`, :math:`\tfrac{\pi}{4}`, or :math:`\tfrac{\pi}{8}`.
     """
     raise NotImplementedError(
-        "The decompose_arbitrary_ppr compilation pass has no tape implementation, and can only be applied when decorating the entire worfklow with @qml.qjit and when it is placed after all transforms that only have a tape implementation."
+        "The 'decompose_arbitrary_ppr' compilation pass has no tape "
+        "implementation, and can only be applied when decorating the "
+        "entire workflow with '@qml.qjit' and when it is placed after "
+        "all transforms that only have a tape implementation."
     )
