@@ -583,6 +583,10 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
 
 <h4>Other improvements</h4>
 
+* An informative error is now raised when :func:`~.transforms.clifford_t_decomposition` is used when program
+  capture is enabled.
+  [(#8883)](https://github.com/PennyLaneAI/pennylane/pull/8883)
+
 * The constant to convert the length unit Bohr to Angstrom in ``qml.qchem`` is updated to use scipy constants.
   [(#8537)](https://github.com/PennyLaneAI/pennylane/pull/8537)
 
@@ -954,6 +958,10 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
   [(#8765)](https://github.com/PennyLaneAI/pennylane/pull/8765)
 
 <h3>Documentation 📝</h3>
+
+* A note clarifying the incompatbility of the :func:`~.transforms.clifford_t_decomposition` transform
+  has been added to its docstring.
+  [(#8883)](https://github.com/PennyLaneAI/pennylane/pull/8883)
 
 * A note clarifying that the factors of a ``~.ChangeOpBasis`` are iterated in reverse order has been
   added to the documentation of ``~.ChangeOpBasis``.
