@@ -346,3 +346,36 @@ class TestResources:
         expected_matmul = Resources(zeroed, any_state * k, algo * k, expected_gate_types_matmul)
 
         assert (res.multiply_parallel(k)) == expected_matmul
+
+    def test_ipython_display(self, capsys):
+        """Test that _ipython_display_ prints the string representation."""
+
+        # Helper class to simulate a Gate object (required by Resources API)
+        class FakeGate:
+            def __init__(self, name):
+                self.name = name
+                self.params = {}
+
+        # Create gate types using objects, NOT strings
+        gate_types = {FakeGate("Hadamard"): 5, FakeGate("CNOT"): 3}
+
+        resources = Resources(
+            zeroed_wires=2, any_state_wires=1, algo_wires=3, gate_types=gate_types
+        )
+
+        # Call the method
+        resources._ipython_display_()
+
+        # Capture output and verify
+        captured = capsys.readouterr()
+        assert captured.out == str(resources) + "\n"
+
+    def test_ipython_display_empty_resources(self, capsys):
+        """Test _ipython_display_ with empty Resources object."""
+
+        resources = Resources(zeroed_wires=0, any_state_wires=0, algo_wires=0, gate_types={})
+
+        resources._ipython_display_()
+        captured = capsys.readouterr()
+
+        assert captured.out == str(resources) + "\n"
