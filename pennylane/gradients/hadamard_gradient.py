@@ -122,7 +122,7 @@ def hadamard_grad(
         mode (str): Specifies the gradient computation mode. Accepted values are
             ``"standard"``, ``"reversed"``, ``"direct"``, ``"reversed-direct"``, or ``"auto"``.
             The default ``"auto"`` chooses the method that leads to the
-            fewest total executions.
+            fewest total executions, given the wires available.
 
     Returns:
         qnode (QNode) or tuple[List[QuantumTape], function]:
@@ -344,10 +344,10 @@ def hadamard_grad(
         **Auto mode**
 
         Using auto mode will result in an automatic selection of the method which results in the fewest
-        total executions. This takes into account the number of observables and the number of generators
-        invovled in each problem to choose whether the standard or reversed order is preferred.
-        It also takes into account whether we have one or multiple measurements, and whether we have an
-        auxilliary wire.
+        total executions, given the wires available. Any auxilliary wires must be provided explicitly.
+        This method takes into account the number of observables and the number of generators invovled
+        in each problem to choose whether the standard or reversed order is preferred. It also takes
+        into account whether we have one or multiple measurements, and whether we have an auxilliary wire.
 
         ===============  ===============  ==============================
         Auxilliary Wire  Standard Order   Method
