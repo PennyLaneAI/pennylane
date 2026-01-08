@@ -17,6 +17,7 @@ Contains the :class:`ExecutionConfig` and :class:`MCMConfig` data classes.
 
 from __future__ import annotations
 
+import pprint
 from collections.abc import MutableMapping
 from copy import deepcopy
 from dataclasses import dataclass, field
@@ -280,3 +281,6 @@ class ExecutionConfig:
 
         if self.executor_backend is None:
             object.__setattr__(self, "executor_backend", get_executor(backend=ExecBackends.MP_Pool))
+
+    def __str__(self):
+        return pprint.pformat(self)
