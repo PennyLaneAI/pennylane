@@ -45,7 +45,6 @@ jobs:
           TARGET_NAME="${{ github.base_ref}}"
           echo "branch is $BRANCH_NAME"
           echo "target is $TARGET_NAME"
-          echo "event name is ${{ github.event_name }}"
           if [[ "$BRANCH_NAME" =~ v[0-9]+\.[0-9]+\.[0-9]+-docs$ ]]; then
             echo "run_sphinx=true" >> $GITHUB_OUTPUT  
           elif [ "${{github.event.pull_request.draft}}" == false ]; then
@@ -62,7 +61,7 @@ jobs:
     name: Determine runner type to use
     uses: ./.github/workflows/determine-workflow-runner.yml
     with:
-      default_runner: ubuntu-latest
+      default_runner: ubuntu-24.04
       force_large_runner: ${{ github.event_name == 'merge_group' }}
 
   sphinx:
@@ -89,7 +88,7 @@ jobs:
           cat doc.txt
 
       - name: Upload frozen requirements
-        if: ${{ github.event_name != 'workflow_call' }}
+        if: ${{ github.event_name != 'push' }} # change to workflow_call
         uses: actions/upload-artifact@v4
         with:
           name: frozen-doc
