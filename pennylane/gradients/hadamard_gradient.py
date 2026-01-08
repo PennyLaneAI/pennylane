@@ -600,18 +600,11 @@ def _quantum_automatic_differentiation(
 
     direct = not aux_wire
 
-    if len(tape.measurements) > 1 or any(isinstance(m, ProbabilityMP) for m in tape.measurements):
+    if len(tape.measurements) > 1:
         standard = True
-        if direct:
-            aux_wire = _get_aux_wire(aux_wire, tape, device_wires)
     else:
         trainable_op, _, _ = tape.get_operation(trainable_param_idx)
         _, generators = _get_pauli_generators(trainable_op)
-
-        if tape.measurements[0].obs is None:
-            raise ValueError(
-                "The circuit must have observables in order to use Quantum Automatic Differentiation."
-            )
 
         _, observables = _get_pauli_terms(tape.measurements[0].obs)
 
