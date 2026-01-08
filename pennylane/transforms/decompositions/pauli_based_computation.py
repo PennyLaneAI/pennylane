@@ -134,6 +134,10 @@ def commute_ppr(tape, *, max_pauli_size=0):
         backend. This pass is only for Pauli-based-computation analysis with the ``null.qubit``
         device and potential future execution when a suitable backend is available.
 
+        Secondly, the ``commute_ppr`` transform does not currently affect terminal measurements. So,
+        for accurate results, it is recommended to return nothing (i.e., a blank ``return``
+        statement) from the QNode.
+
         Lastly, the :func:`pennylane.transforms.to_ppr` transform must be applied before
         ``commute_ppr``.
 
@@ -190,7 +194,7 @@ def commute_ppr(tape, *, max_pauli_size=0):
             # equivalent to a T gate
             qml.PauliRot(jnp.pi / 4, pauli_word="Z", wires=0)
 
-            return qml.expval(qml.Z(0))
+            return
 
     To inspect programs compiled with ``commute_ppr`` via :func:`~.specs`, ensure that
     ``target="mlir"`` is given in the :func:`qjit <pennylane.qjit>` decorator.
@@ -211,7 +215,7 @@ def commute_ppr(tape, *, max_pauli_size=0):
         PPR-pi/4: 6
     <BLANKLINE>
     Measurements:
-        expval(PauliZ): 1
+        No measurements.
 
     In the example above, the Clifford PPRs (:class:`~.PauliRot` instances with an angle of rotation
     of :math:`\tfrac{\pi}{2}`) will be commuted past the non-Clifford PPR (:class:`~.PauliRot`
