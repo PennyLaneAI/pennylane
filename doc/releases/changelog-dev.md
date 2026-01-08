@@ -3,6 +3,7 @@
 <h3>New features since last release</h3>
 
 <h3>Improvements 🛠</h3>
+
 * The ``qml.estimator.Resources`` class now has a nice string representation in Jupyter Notebooks.
   [(#8880)](https://github.com/PennyLaneAI/pennylane/pull/8880)
 
