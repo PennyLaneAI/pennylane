@@ -24,7 +24,6 @@ on:
 
 jobs:
   prepare-run-count:
-    if: github.event.pull_request.draft == false
     name: Prepare run count list
     runs-on: ubuntu-latest
     outputs:
@@ -33,7 +32,7 @@ jobs:
       - name: Set run count
         id: set-run-count
         run: |
-          RUN_COUNT_LIST=$(seq -s, 1 ${{ inputs.run_count || 1 }})
+          RUN_COUNT_LIST=$(seq -s, 1 ${{ inputs.run_count || 2 }})
           echo "run-count-list=$RUN_COUNT_LIST" >> $GITHUB_OUTPUT
           echo "Run count list is set to $RUN_COUNT_LIST"
           RUN_COUNT_JSON=$(echo "[\"$(echo $RUN_COUNT_LIST | sed 's/,/\",\"/g')\"]")
