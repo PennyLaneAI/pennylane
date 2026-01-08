@@ -186,7 +186,6 @@ class TestDecomposition:
                     range_idx += 1
 
 
-@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 @pytest.mark.jax
 @pytest.mark.capture
 # pylint:disable=protected-access
