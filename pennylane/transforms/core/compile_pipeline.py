@@ -164,7 +164,7 @@ class CompilePipeline:
     1: ───────────┤  <Z>
 
     Alternatively, the transform program can be constructed intuitively by combining multiple transforms. For
-    example, the transforms can be added toguether with ``+``:
+    example, the transforms can be added together with ``+``:
 
     >>> pipeline = qml.transforms.merge_rotations + qml.transforms.cancel_inverses(recursive=True)
     >>> pipeline
@@ -187,6 +187,13 @@ class CompilePipeline:
     >>> another_pipeline = qml.transforms.decompose(gate_set={qml.RX, qml.RZ, qml.CNOT}) + qml.transforms.combine_global_phases
     >>> another_pipeline + pipeline
     CompilePipeline(decompose, combine_global_phases, remove_barrier, merge_rotations, cancel_inverses, commute_controlled, commute_controlled)
+
+    We can create a new pipeline that will do multiple passes of the original with multiplication:
+
+    >>> original = qml.transforms.merge_rotations + qml.transforms.cancel_inverses
+    >>> 2 * original
+    CompilePipeline(merge_rotations, cancel_inverses, merge_rotations, cancel_inverses)
+
     """
 
     @overload
