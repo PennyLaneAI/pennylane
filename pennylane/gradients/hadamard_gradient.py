@@ -158,6 +158,7 @@ def hadamard_grad(
     to use during autodifferentiation:
 
     >>> import jax
+    >>> from pennylane import numpy as np
     >>> dev = qml.device("default.qubit")
     >>> @qml.qnode(dev, diff_method="hadamard", gradient_kwargs={"mode": "standard", "aux_wire": 1})
     ... def circuit(params):
@@ -214,7 +215,7 @@ def hadamard_grad(
         ...     return qml.expval(qml.Z(0))
         >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
         >>> qml.gradients.hadamard_grad(circuit, mode="auto", aux_wire=1)(params)
-        Array([-0.3875172 , -0.18884785, -0.38355708], dtype=float32)
+        tensor([-0.3875172 , -0.18884787, -0.38355704], requires_grad=True)
 
         This quantum gradient transform can also be applied to low-level
         :class:`~.QuantumTape` objects. This will result in no implicit quantum
@@ -249,7 +250,7 @@ def hadamard_grad(
 
         >>> dev = qml.device("default.qubit")
         >>> fn(qml.execute(gradient_tapes, dev, None))
-        [Array(-0.3875172, dtype=float32), Array(-0.18884785, dtype=float32), Array(-0.38355708, dtype=float32)]
+        [np.float64(-0.3875172020222171), np.float64(-0.18884787122715604), np.float64(-0.38355704238148114)]
 
         This transform can be registered directly as the quantum gradient transform
         to use during autodifferentiation:
