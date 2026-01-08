@@ -22,7 +22,7 @@ import pytest
 
 from pennylane.estimator.resources_base import Resources
 
-# pylint: disable= no-self-use,too-few-public-methods,comparison-with-itself
+# pylint: disable= no-self-use,too-few-public-methods,comparison-with-itself,protected-access
 
 
 @dataclass(frozen=True)
@@ -352,6 +352,8 @@ class TestResources:
 
         # Helper class to simulate a Gate object (required by Resources API)
         class FakeGate:
+            """Helper class to simulate a Gate object."""
+
             def __init__(self, name):
                 self.name = name
                 self.params = {}
