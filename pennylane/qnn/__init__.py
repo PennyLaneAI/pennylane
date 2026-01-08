@@ -31,6 +31,7 @@ with PyTorch.
 """
 
 import importlib
+from .iqp import iqp_expval
 
 class_map = {"TorchLayer": "torch"}
 mods = "torch"

@@ -18,9 +18,6 @@ import heapq
 from collections import OrderedDict
 from functools import partial
 
-import networkx as nx
-from networkx.drawing.nx_pydot import to_pydot
-
 import pennylane as qml
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
@@ -199,6 +196,8 @@ class CommutationDAG:
     def __init__(self, tape: QuantumScript):
         self.num_wires = len(tape.wires)
         self.node_id = -1
+        import networkx as nx  # pylint: disable=import-outside-toplevel
+
         self._multi_graph = nx.MultiDiGraph()
 
         consecutive_wires = Wires(range(len(tape.wires)))
@@ -310,6 +309,8 @@ class CommutationDAG:
         Returns:
             list[int]: List of the predecessors of the given node.
         """
+        import networkx as nx  # pylint: disable=import-outside-toplevel
+
         pred = list(nx.ancestors(self._multi_graph, node_id))
         pred.sort()
         return pred
@@ -336,6 +337,8 @@ class CommutationDAG:
         Returns:
             list[int]: List of the successors of the given node.
         """
+        import networkx as nx  # pylint: disable=import-outside-toplevel
+
         succ = list(nx.descendants(self._multi_graph, node_id))
         succ.sort()
         return succ
@@ -365,6 +368,8 @@ class CommutationDAG:
         Args:
             filename (str): The file name which is in PNG format. Default = 'dag.png'
         """
+        import networkx as nx  # pylint: disable=import-outside-toplevel
+
         draw_graph = nx.MultiDiGraph()
 
         for node in self.get_nodes():
@@ -386,6 +391,9 @@ class CommutationDAG:
 
         for edge in self.get_edges():
             draw_graph.add_edge(edge[0], edge[1])
+
+        # pylint: disable=import-outside-toplevel
+        from networkx.drawing.nx_pydot import to_pydot
 
         dot = to_pydot(draw_graph)
         dot.write_png(filename)

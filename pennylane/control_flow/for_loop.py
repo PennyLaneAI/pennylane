@@ -239,11 +239,6 @@ def for_loop(
     if stop is None:
         start, stop = 0, start
 
-    if active_jit := active_compiler():
-        compilers = AvailableCompilers.names_entrypoints
-        ops_loader = compilers[active_jit]["ops"].load()
-        return ops_loader.for_loop(start, stop, step)
-
     # if there is no active compiler, simply interpret the for loop
     # via the Python interpreter.
     def _decorator(body_fn):
@@ -446,6 +441,13 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
         return jax.tree_util.tree_unflatten(out_tree, results)
 
     def __call__(self, *init_state):
+
+        if active_jit := active_compiler():
+            compilers = AvailableCompilers.names_entrypoints
+            ops_loader = compilers[active_jit]["ops"].load()
+            return ops_loader.for_loop(
+                self.start, self.stop, self.step, allow_array_resizing=self.allow_array_resizing
+            )(self.body_fn)(*init_state)
 
         start_equals_stop = (
             isinstance(self.stop, int) and isinstance(self.start, int) and self.stop == self.start

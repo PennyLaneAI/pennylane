@@ -70,7 +70,7 @@ jobs:
           docs-folder: "doc/"
           pre-build-command: >
             apt install -y graphviz
-            && pip3 install -r doc/requirements.txt
+            && pip3 install -e '.[docs]'
             && pip3 install .
             && pip3 install openfermionpyscf
             && pip3 install aiohttp fsspec h5py

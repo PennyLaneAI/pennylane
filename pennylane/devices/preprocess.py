@@ -447,7 +447,7 @@ def decompose(  # pylint: disable = too-many-positional-arguments
             for final_op in _operator_decomposition_gen(
                 op,
                 stopping_condition,
-                max_work_wires=num_available_work_wires,
+                num_work_wires=num_available_work_wires,
                 graph_solution=graph_solution,
                 custom_decomposer=decomposer,
                 strict=True,

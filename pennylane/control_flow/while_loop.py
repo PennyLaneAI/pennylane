@@ -196,11 +196,6 @@ def while_loop(cond_fn, allow_array_resizing: Literal["auto", True, False] = "au
 
     """
 
-    if active_jit := active_compiler():
-        compilers = AvailableCompilers.names_entrypoints
-        ops_loader = compilers[active_jit]["ops"].load()
-        return ops_loader.while_loop(cond_fn)
-
     # if there is no active compiler, simply interpret the while loop
     # via the Python interpreter.
     def _decorator(body_fn: Callable) -> Callable:
@@ -360,6 +355,13 @@ class WhileLoopCallable:  # pylint:disable=too-few-public-methods
         return jax.tree_util.tree_unflatten(out_tree, results)
 
     def __call__(self, *init_state):
+
+        if active_jit := active_compiler():
+            compilers = AvailableCompilers.names_entrypoints
+            ops_loader = compilers[active_jit]["ops"].load()
+            return ops_loader.while_loop(
+                self.cond_fn, allow_array_resizing=self.allow_array_resizing
+            )(self.body_fn)(*init_state)
 
         if enabled():
             return self._call_capture_enabled(*init_state)

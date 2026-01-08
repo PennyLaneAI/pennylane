@@ -75,8 +75,12 @@ def _add_abstract_shapes(f):
     return new_f
 
 
+def _is_operator_type(fn):
+    return isinstance(fn, type) and issubclass(fn, Operator)
+
+
 def _no_return(fn):
-    if isinstance(fn, type) and issubclass(fn, Operator):
+    if _is_operator_type(fn) or (isinstance(fn, functools.partial) and _is_operator_type(fn.func)):
 
         def new_fn(*args, **kwargs):
             fn(*args, **kwargs)

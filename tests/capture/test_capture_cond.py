@@ -18,6 +18,8 @@ Tests for capturing conditionals into jaxpr.
 # pylint: disable=redefined-outer-name, too-many-arguments, too-many-positional-arguments
 # pylint: disable=no-self-use
 
+from functools import partial
+
 import numpy as np
 import pytest
 
@@ -442,12 +444,14 @@ class TestCondReturns:
         ):
             jax.make_jaxpr(g)(True, True, jax.numpy.array(1))
 
-    def test_true_fn_operator_type_no_false_fn(self):
+    @pytest.mark.parametrize("partial_operator", (True, False))
+    def test_true_fn_operator_type_no_false_fn(self, partial_operator):
         """Test that the true_fn can be an operator type when there is no false function. Instead,
         the cond simply has no output."""
 
         def f(pred):
-            qml.cond(pred, qml.X)(0)
+            fn = partial(qml.X) if partial_operator else qml.X
+            qml.cond(pred, fn)(0)
 
         jaxpr = jax.make_jaxpr(f)(True)
         assert jaxpr.eqns[0].primitive == cond_prim

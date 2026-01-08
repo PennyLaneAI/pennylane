@@ -19,8 +19,6 @@ import copy
 from collections.abc import Callable, Sequence
 from itertools import product
 
-from networkx import MultiDiGraph
-
 from pennylane import ops
 from pennylane.measurements import ExpectationMP, MeasurementProcess, SampleMP, expval, sample
 from pennylane.operation import Operator
@@ -33,7 +31,7 @@ from pennylane.wires import Wires
 from .ops import MeasureNode, PrepareNode
 
 
-def tape_to_graph(tape: QuantumScript) -> MultiDiGraph:
+def tape_to_graph(tape: QuantumScript):
     """
     Converts a quantum tape to a directed multigraph.
 
@@ -69,6 +67,8 @@ def tape_to_graph(tape: QuantumScript) -> MultiDiGraph:
     >>> qml.qcut.tape_to_graph(tape)
     <networkx.classes.multidigraph.MultiDiGraph at 0x7fe41cbd7210>
     """
+    from networkx import MultiDiGraph  # pylint: disable=import-outside-toplevel
+
     graph = MultiDiGraph()
 
     wire_latest_node = {w: None for w in tape.wires}
@@ -101,7 +101,7 @@ def tape_to_graph(tape: QuantumScript) -> MultiDiGraph:
     return graph
 
 
-def graph_to_tape(graph: MultiDiGraph) -> QuantumScript:
+def graph_to_tape(graph) -> QuantumScript:
     """
     Converts a directed multigraph to the corresponding :class:`~.QuantumTape`.
 
@@ -208,7 +208,7 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumScript:
     return QuantumScript(ops=operations_from_graph, measurements=measurements_from_graph)
 
 
-def _add_operator_node(graph: MultiDiGraph, op: Operator, order: int, wire_latest_node: dict):
+def _add_operator_node(graph, op: Operator, order: int, wire_latest_node: dict):
     """
     Helper function to add operators as nodes during tape to graph conversion.
     """

@@ -24,13 +24,13 @@ from pennylane.estimator.ops.qubit.parametric_ops_multi_qubit import MultiRZ, Pa
 from pennylane.estimator.ops.qubit.parametric_ops_single_qubit import RX, RY, RZ, Rot
 from pennylane.estimator.ops.qubit.qchem_ops import SingleExcitation
 from pennylane.estimator.templates import (
+    GQSP,
+    QSP,
     AliasSampling,
+    GQSPTimeEvolution,
     MPSPrep,
-    PrepTHC,
     QROMStatePreparation,
-    QubitizeTHC,
     SelectPauliRot,
-    SelectTHC,
 )
 from pennylane.estimator.templates.trotter import TrotterVibrational, TrotterVibronic
 
@@ -112,7 +112,6 @@ class ResourceConfig:
 
     def __init__(self) -> None:
         _DEFAULT_PRECISION = 1e-9
-        _DEFAULT_BIT_PRECISION = 15
         _DEFAULT_PHASEGRAD_PRECISION = 1e-6
         self.resource_op_precisions = {
             RX: {"precision": _DEFAULT_PRECISION},
@@ -132,12 +131,6 @@ class ResourceConfig:
             AliasSampling: {"precision": _DEFAULT_PRECISION},
             MPSPrep: {"precision": None},
             QROMStatePreparation: {"precision": _DEFAULT_PRECISION},
-            SelectTHC: {"rotation_precision": _DEFAULT_BIT_PRECISION},
-            PrepTHC: {"coeff_precision": _DEFAULT_BIT_PRECISION},
-            QubitizeTHC: {
-                "coeff_precision": _DEFAULT_BIT_PRECISION,
-                "rotation_precision": _DEFAULT_BIT_PRECISION,
-            },
             TrotterVibronic: {
                 "phase_grad_precision": _DEFAULT_PHASEGRAD_PRECISION,
                 "coeff_precision": 1e-3,
@@ -146,6 +139,9 @@ class ResourceConfig:
                 "phase_grad_precision": _DEFAULT_PHASEGRAD_PRECISION,
                 "coeff_precision": 1e-3,
             },
+            GQSP: {"rotation_precision": None},
+            QSP: {"rotation_precision": None},
+            GQSPTimeEvolution: {"poly_approx_precision": None},
         }
         self._custom_decomps = {}
         self._adj_custom_decomps = {}
@@ -204,11 +200,6 @@ class ResourceConfig:
     ) -> None:
         r"""Sets the precision for a given resource operator.
 
-        This method updates the parameter value for operators that use tolerance parameters
-        (e.g., for synthesis error). By default the parameter name is assumed to be ``precision``.
-        It will raise an error if users attempt to set the precision for an operator that is not
-        configurable. A negative precision will also raise an error.
-
         Args:
             op_type (type[:class:`~.pennylane.estimator.resource_operator.ResourceOperator`]): the operator class for which
                 to set the precision
@@ -218,6 +209,7 @@ class ResourceConfig:
         Raises:
             ValueError: If ``op_type`` is not a configurable operator or if setting
                 the precision for it is not supported, or if ``precision`` is negative.
+            ValueError: If ``resource_key`` is not a supported parameter for the given ``op_type``.
 
         **Example**
 

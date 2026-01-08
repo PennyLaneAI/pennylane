@@ -537,7 +537,7 @@ class TestDecomposeInterpreterGraphEnabled:
 
         @DecomposeInterpreter(
             gate_set={qml.Toffoli, qml.RZ, qml.RY, qml.CNOT},
-            max_work_wires=num_work_wires,
+            num_work_wires=num_work_wires,
             alt_decomps={
                 CustomOpDynamicWireDecomp: [_decomp_without_work_wire, _decomp_with_work_wire],
                 LargeOpDynamicWireDecomp: [_decomp2_without_work_wire, _decomp2_with_work_wire],
@@ -597,7 +597,7 @@ class TestDecomposeInterpreterGraphEnabled:
 
         @DecomposeInterpreter(
             gate_set={qml.Toffoli: 1, qml.CRot: 7, qml.CNOT: 1},
-            max_work_wires=None,
+            num_work_wires=None,
             minimize_work_wires=True,
             alt_decomps={
                 CustomOpDynamicWireDecomp: [_decomp_with_work_wire, _decomp_without_work_wire],
