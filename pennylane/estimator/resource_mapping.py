@@ -308,6 +308,7 @@ def _(op: qtemps.HybridQRAM):
     )
 
 
+@_map_to_resource_op.register
 def _(op: qtemps.BBQRAM):
     bitstrings = op.hyperparameters["bitstrings"]
     wire_manager = op.hyperparameters["wire_manager"]
