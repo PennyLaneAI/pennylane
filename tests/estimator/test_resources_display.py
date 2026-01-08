@@ -15,7 +15,9 @@
 Unit tests for the IPython display integration in the Estimator module.
 """
 from collections import defaultdict
+
 import pytest
+
 from pennylane.estimator.resources_base import Resources
 
 # pylint: disable=no-self-use, too-few-public-methods
