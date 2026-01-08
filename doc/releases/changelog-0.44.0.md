@@ -992,9 +992,6 @@ A warning message has been added to :doc:`Building a plugin <../development/plug
 
 <h3>Bug fixes 🐛</h3>
 
-* Fixes a bug when `torch.vmap` is used with native parameter broadcasting and `qml.RZ`.
-  [(#8760)](https://github.com/PennyLaneAI/pennylane/pull/8760)
-
 * Prevent qml.about() from crashing in environments without pip (e.g., when using the uv package manager) by using standard library metadata.
   [(#8457)](https://github.com/PennyLaneAI/pennylane/pull/8457)
 
