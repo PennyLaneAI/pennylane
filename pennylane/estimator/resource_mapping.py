@@ -287,14 +287,14 @@ def _(op: qtemps.Select):
 
 @_map_to_resource_op.register
 def _(op: qtemps.BBQRAM):
-    bitstrings = op.hyperparameters["bitstrings"]
+    bitstrings = op.data[0]
     wire_manager = op.hyperparameters["wire_manager"]
     num_bitstrings = len(bitstrings)
     size_bitstring = len(bitstrings[0]) if num_bitstrings > 0 else 0
     return re_temps.BBQRAM(
         num_bitstrings=num_bitstrings,
         size_bitstring=size_bitstring,
-        num_bit_flips=sum(bitstring.count("1") for bitstring in bitstrings),
+        num_bit_flips=sum(sum(bitstring) for bitstring in bitstrings),
         num_wires=len(op.wires),
         control_wires=wire_manager.control_wires,
         target_wires=wire_manager.target_wires,
