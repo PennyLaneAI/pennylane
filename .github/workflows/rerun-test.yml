@@ -3,9 +3,6 @@ permissions:
   contents: read
 
 on:
-  merge_group:
-    types:
-      - checks_requested
   push:
   workflow_dispatch:
     inputs:
