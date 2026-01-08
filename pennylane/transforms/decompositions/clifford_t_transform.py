@@ -466,9 +466,10 @@ def clifford_t_decomposition(
 
     .. note::
 
-        The ``clifford_t_decomposition`` transform is incompatible with :func:`~.qjit`. For compatibility with :func:`~.qjit`, 
-        please use :func:`~.transforms.decompose` with a Clifford+T ``gate_set`` in tandem with :func:`~.transforms.gridnsynth` 
-        instead.
+        The ``clifford_t_decomposition`` transform is incompatible with program capture.
+        For compatibility with :func:`~.qjit`, either turn off program capture with ``qml.capture.disable()``
+        or use :func:`~.transforms.decompose` with a Clifford+T ``gate_set`` in tandem with
+        :func:`~.transforms.gridnsynth` .
 
     Args:
         tape (QNode or QuantumTape or Callable): The quantum circuit to be decomposed.
