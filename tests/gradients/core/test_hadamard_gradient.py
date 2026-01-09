@@ -508,16 +508,7 @@ class TestDifferentModes:
 
         with pytest.raises(
             ValueError,
-            match="Computing the gradient of probabilities with the direct gradient transform is not supported.",
-        ):
-            _, _ = qml.gradients.hadamard_grad(tape, mode="auto")
-
-        op = qml.evolve(qml.X(0) @ qml.X(1) + qml.Y(2) + qml.Z(0) @ qml.Z(1), t)
-        tape = qml.tape.QuantumScript([op], [qml.probs((0, 1))])
-
-        with pytest.raises(
-            ValueError,
-            match="The circuit must have observables in order to use Quantum Automatic Differentiation.",
+            match="Computing the gradient of probabilities is only possible with the standard",
         ):
             _, _ = qml.gradients.hadamard_grad(tape, mode="auto")
 

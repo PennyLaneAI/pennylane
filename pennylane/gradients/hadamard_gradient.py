@@ -47,27 +47,6 @@ from .gradient_transform import (
 from .metric_tensor import _get_aux_wire
 
 
-def _assert_no_probability(measurements, transform_name):
-    """Check whether a set of measurements contains a probability measurement
-    raise an error if this is the case.
-
-    Args:
-        measurements (list[MeasurementProcess]): measurements to analyze
-        transform_name (str): Name of the gradient transform that queries the measurements
-    """
-    if any(isinstance(m, ProbabilityMP) for m in measurements):
-        err_str = (
-            f"Computing the gradient of probabilities with the {transform_name} "
-            f"gradient transform is not supported."
-        )
-        if transform_name == "direct":
-            err_str += (
-                " Automatically selected direct mode for differentiation because no auxiliary wire was passed."
-                " Consider explicitly supplying an aux_wire to the gradient method."
-            )
-        raise ValueError(err_str)
-
-
 def _hadamard_stopping_condition(op) -> bool:
     if not op.has_decomposition:
         # let things without decompositions through without error
@@ -621,16 +600,20 @@ def _quantum_automatic_differentiation(tape, trainable_param_idx, aux_wire) -> t
 
     direct = not aux_wire
 
+    if any(isinstance(m, ProbabilityMP) for m in tape.measurements):
+        if aux_wire:
+            return _hadamard_test(tape, trainable_param_idx, aux_wire)
+        else:
+            raise ValueError(
+                f"Computing the gradient of probabilities is only possible with the standard "
+                "Hadamard gradient, which requires an auxiliary wire. Please provide an aux_wire."
+            )
+
     if len(tape.measurements) > 1:
         standard = True
     else:
         trainable_op, _, _ = tape.get_operation(trainable_param_idx)
         _, generators = _get_pauli_generators(trainable_op)
-
-        if tape.measurements[0].obs is None:
-            raise ValueError(
-                "The circuit must have observables in order to use Quantum Automatic Differentiation."
-            )
 
         _, observables = _get_pauli_terms(tape.measurements[0].obs)
 
@@ -656,16 +639,11 @@ def _quantum_automatic_differentiation(tape, trainable_param_idx, aux_wire) -> t
 
     if direct:
         if standard:
-            _assert_no_probability(tape.measurements, "direct")
             return _direct_hadamard_test(tape, trainable_param_idx, aux_wire)
-
-        _assert_no_probability(tape.measurements, "reversed-direct")
         return _reversed_direct_hadamard_test(tape, trainable_param_idx, aux_wire)
 
     if standard:
         return _hadamard_test(tape, trainable_param_idx, aux_wire)
-
-    _assert_no_probability(tape.measurements, "reversed")
     return _reversed_hadamard_test(tape, trainable_param_idx, aux_wire)
 
 
