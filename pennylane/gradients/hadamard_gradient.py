@@ -62,7 +62,7 @@ def _assert_no_probability(measurements, transform_name):
         )
         if transform_name == "direct":
             err_str += (
-                "Automatically selected direct mode for differentiation because no auxiliary wire was passed."
+                " Automatically selected direct mode for differentiation because no auxiliary wire was passed."
                 "Consider explicitly supplying an aux_wire to the gradient method."
             )
         raise ValueError(err_str)
