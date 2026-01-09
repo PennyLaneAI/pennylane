@@ -160,7 +160,7 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
     Now, we can define all three registers concretely and demonstrate ``BBQRAM`` in practice. In the
     following circuit, we prepare the state :math:`\vert 2 \rangle = \vert 10 \rangle` on the
     ``control_wires``, which indicates that we would like to access the second (zero-indexed) entry of
-    ``data`` (which is ``"110"``). The ``target_wires`` register should therefore store this
+    ``data`` (which is ``[1, 1, 0]``). The ``target_wires`` register should therefore store this
     state after ``BBQRAM`` is applied.
 
     .. code-block:: python
