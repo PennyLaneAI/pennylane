@@ -66,11 +66,14 @@ JAX versions no longer exists. All patches assume DynamicJaxprTrace.
 has_jax = True
 try:
     import jax
-    
+
     # only do the following if jax is 0.7.x
     jax_version = jax.__version__
     from packaging import version
-    if version.parse(jax_version) >= version.parse("0.7.0") and version.parse(jax_version) < version.parse("0.8.0"):
+
+    if version.parse(jax_version) >= version.parse("0.7.0") and version.parse(
+        jax_version
+    ) < version.parse("0.8.0"):
         from jax._src import config as jax_config
         from jax._src import core, pjit, source_info_util
         from jax._src.core import JaxprEqnContext, Var
