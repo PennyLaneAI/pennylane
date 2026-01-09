@@ -88,79 +88,79 @@
   * Using :class:`estimator.BBQRAM <pennylane.estimator.templates.BBQRAM>` directly inside of a 
     function and then calling :func:`estimate <pennylane.estimator.estimate.estimate>`:
 
-  ```python
-  import pennylane.estimator as qre
+    ```python
+    import pennylane.estimator as qre
 
-  def circuit():
-      qre.CNOT()
-      qre.QFT(num_wires=4)
-      qre.BBQRAM(num_bitstrings=30, size_bitstring=8, num_wires=100)
-      qre.Hadamard()
-  ```
+    def circuit():
+        qre.CNOT()
+        qre.QFT(num_wires=4)
+        qre.BBQRAM(num_bitstrings=30, size_bitstring=8, num_wires=100)
+        qre.Hadamard()
+    ```
 
-  ```
-  >>> print(qre.estimate(circuit)())
-  --- Resources: ---
-  Total wires: 100
-    algorithmic wires: 100
-    allocated wires: 0
-      zero state: 0
-      any state: 0
-  Total gates : 4.504E+3
-    'Toffoli': 1.096E+3,
-    'T': 792,
-    'CNOT': 2.475E+3,
-    'Z': 120,
-    'Hadamard': 21
-  ```
+    ```
+    >>> print(qre.estimate(circuit)())
+    --- Resources: ---
+    Total wires: 100
+      algorithmic wires: 100
+      allocated wires: 0
+        zero state: 0
+        any state: 0
+    Total gates : 4.504E+3
+      'Toffoli': 1.096E+3,
+      'T': 792,
+      'CNOT': 2.475E+3,
+      'Z': 120,
+      'Hadamard': 21
+    ```
 
   * On a simulatable circuit with detailed information:
 
-  ```python
-  bitstrings = ["010", "111", "110", "000"]
-  bitstring_size = 3
+    ```python
+    bitstrings = ["010", "111", "110", "000"]
+    bitstring_size = 3
 
-  num_control_wires = 2 # len(bistrings) = 4 = 2**2
-  num_work_wires = 1 + 3 * ((1 << num_control_wires) - 1) # 10
+    num_control_wires = 2 # len(bistrings) = 4 = 2**2
+    num_work_wires = 1 + 3 * ((1 << num_control_wires) - 1) # 10
 
-  reg = qml.registers(
-      {
-          "control": num_control_wires,
-          "target": bitstring_size,
-          "work_wires": num_work_wires
-      }
-  )
+    reg = qml.registers(
+        {
+            "control": num_control_wires,
+            "target": bitstring_size,
+            "work_wires": num_work_wires
+        }
+    )
 
-  dev = qml.device("default.qubit")
-  @qml.qnode(dev)
-  def bb_quantum():
-      # prepare an address, e.g., |10> (index 2)
-      qml.BasisEmbedding(2, wires=reg["control"])
+    dev = qml.device("default.qubit")
+    @qml.qnode(dev)
+    def bb_quantum():
+        # prepare an address, e.g., |10> (index 2)
+        qml.BasisEmbedding(2, wires=reg["control"])
 
-      qml.BBQRAM(
-          bitstrings,
-          control_wires=reg["control"],
-          target_wires=reg["target"],
-          work_wires=reg["work_wires"],
-      )
-      return qml.probs(wires=reg["target"])
-  ```
+        qml.BBQRAM(
+            bitstrings,
+            control_wires=reg["control"],
+            target_wires=reg["target"],
+            work_wires=reg["work_wires"],
+        )
+        return qml.probs(wires=reg["target"])
+    ```
 
-  ```pycon
-  >>> print(qre.estimate(bb_quantum)())
-  --- Resources: ---
-  Total wires: 15
-    algorithmic wires: 15
-    allocated wires: 0
-      zero state: 0
-      any state: 0
-  Total gates : 181
-    'Toffoli': 40,
-    'CNOT': 128,
-    'X': 1,
-    'Z': 6,
-    'Hadamard': 6
-  ```
+    ```pycon
+    >>> print(qre.estimate(bb_quantum)())
+    --- Resources: ---
+    Total wires: 15
+      algorithmic wires: 15
+      allocated wires: 0
+        zero state: 0
+        any state: 0
+    Total gates : 181
+      'Toffoli': 40,
+      'CNOT': 128,
+      'X': 1,
+      'Z': 6,
+      'Hadamard': 6
+    ```
 
 <h4>Quantum Automatic Differentiation 🤖</h4>
 
