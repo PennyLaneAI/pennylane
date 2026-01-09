@@ -20,6 +20,9 @@ global side effects.
 """
 
 
+from copy import deepcopy
+
+
 class Patcher:
     """Context manager for temporarily patching object attributes.
 
@@ -63,8 +66,8 @@ class Patcher:
                 # Dictionary patch: (dict, '__dict_item__', key, value)
                 obj, marker, key, fn = item
                 if marker == "__dict_item__":
-                    self.backup[(id(obj), "__dict_item__", repr(key))] = obj.get(
-                        key, "__NOTFOUND__"
+                    self.backup[(id(obj), "__dict_item__", repr(key))] = deepcopy(
+                        obj.get(key, "__NOTFOUND__")
                     )
                     obj[key] = fn
             elif len(item) == 3:
