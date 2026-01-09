@@ -880,7 +880,7 @@ special_non_par_op_decomps = [
         [1, 2],
         [0],
         qml.CSWAP,
-        [qml.Toffoli(wires=[0, 2, 1]), qml.Toffoli(wires=[0, 1, 2]), qml.Toffoli(wires=[0, 2, 1])],
+        [qml.change_op_basis(qml.CNOT([2, 1]), qml.Toffoli(wires=[0, 1, 2]), qml.CNOT([2, 1]))],
     ),
 ]
 
@@ -2203,7 +2203,7 @@ class TestTapeExpansionWithControlled:
     @pytest.mark.parametrize(
         "op, params, depth, expected",
         [
-            (qml.templates.QFT, [], 2, 11),
+            (qml.templates.QFT, [], 2, 9),
             (qml.templates.BasicEntanglerLayers, [pnp.ones([3, 2])], 1, 9),
         ],
     )

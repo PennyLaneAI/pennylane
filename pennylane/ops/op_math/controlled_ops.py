@@ -812,7 +812,7 @@ class CSWAP(ControlledOp):
         **Example:**
 
         >>> print(qml.CSWAP.compute_decomposition((0,1,2)))
-        [CNOT(wires=[2, 1]), Toffoli(wires=[0, 1, 2]), CNOT(wires=[2, 1])]
+        [(CNOT(wires=[2, 1])) @ (Toffoli(wires=[0, 1, 2])) @ (CNOT(wires=[2, 1]))]
 
         """
         return [
