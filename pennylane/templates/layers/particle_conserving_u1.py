@@ -233,7 +233,9 @@ class ParticleConservingU1(Operation):
             layers = 2
             shape = qml.ParticleConservingU1.shape(layers, qubits)
             params = np.random.random(shape)
-            print(cost_fn(params))
+        
+        >>> print(cost_fn(params))
+        -0.9630...
 
         **Parameter shape**
 
