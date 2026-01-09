@@ -234,7 +234,7 @@ class ParticleConservingU1(Operation):
             shape = qml.ParticleConservingU1.shape(layers, qubits)
             params = np.random.random(shape)
         
-        >>> print(cost_fn(params))
+        >>> print(cost_fn(params))  # doctest: +SKIP
         -0.9630...
 
         **Parameter shape**
