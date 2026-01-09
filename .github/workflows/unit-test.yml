@@ -179,7 +179,12 @@ jobs:
                 echo "Now installing -> uv pip install $line"
                 echo ''
                 
-                uv pip install $line
+                if [[ "$line" == *"https://test.pypi.org/simple"* ]]; then
+                  UV_INDEX_STRATEGY=unsafe-best-match uv pip install $line
+                else
+                  uv pip install $line
+                fi
+
             fi
           done <<< "$ADDITIONAL_PIP_PACKAGES"
 
