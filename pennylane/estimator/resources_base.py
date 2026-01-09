@@ -486,3 +486,7 @@ class Resources:
     def __repr__(self):
         """Compact string representation of the Resources object"""
         return f"Resources(zeroed={self.zeroed_wires}, any_state={self.any_state_wires}, algo_wires={self.algo_wires}, gate_types={self.gate_types})"
+
+    def _ipython_display_(self):
+        """Displays the object in IPython/Jupyter."""
+        print(str(self))
