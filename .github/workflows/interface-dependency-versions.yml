@@ -63,7 +63,7 @@ jobs:
       
       - name: Nightly Catalyst Version
         id: catalyst
-        run: echo "nightly=---extra-index-url https://test.pypi.org/simple/ --index-strategy unsafe-best-match --prerelease=allow --upgrade-package PennyLane-Catalyst PennyLane-Catalyst" >> $GITHUB_OUTPUT
+        run: echo "nightly=--extra-index-url https://test.pypi.org/simple/ --index-strategy unsafe-best-match --prerelease=allow --upgrade-package PennyLane-Catalyst PennyLane-Catalyst" >> $GITHUB_OUTPUT
       
       - name: PennyLane-Lightning Latest Version
         id: pennylane-lightning
