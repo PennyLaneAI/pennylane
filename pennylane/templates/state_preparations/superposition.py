@@ -382,7 +382,7 @@ class Superposition(Operation):
         )
 
 
-def _suerposition_resources(num_wires, num_coeffs, bases):
+def _superposition_resources(num_wires, num_coeffs, bases):
     perms = order_states(bases)
 
     resources = Counter()
@@ -421,8 +421,10 @@ def _suerposition_resources(num_wires, num_coeffs, bases):
     return dict(resources)
 
 
-@register_resources(_suerposition_resources)
-def _superposition_decomposition(coeffs, bases, target_wires, work_wire, wires=None):
+@register_resources(_superposition_resources)
+def _superposition_decomposition(
+    coeffs, bases, wires, target_wires, work_wire  # pylint: disable=unused-argument
+):
     dic_state = dict(zip(bases, coeffs))
     perms = order_states(bases)
     new_dic_state = {perms[key]: dic_state[key] for key in dic_state if key in perms}
@@ -436,11 +438,11 @@ def _superposition_decomposition(coeffs, bases, target_wires, work_wire, wires=N
 
     qml.StatePrep(
         qml.math.stack(sorted_coefficients),
-        wires=wires[-int(qml.math.ceil(qml.math.log2(len(coeffs)))) :],
+        wires=target_wires[-int(qml.math.ceil(qml.math.log2(len(coeffs)))) :],
         pad_with=0,
     )
 
-    bas = [(b2, b1) for b1, b2 in perms.items()]
+    bas = list(perms.items())
 
     @for_loop(len(list(perms.keys())))
     def apply_permutations(i):
