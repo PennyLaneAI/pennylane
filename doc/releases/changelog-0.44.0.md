@@ -953,6 +953,12 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
 
 <h3>Documentation 📝</h3>
 
+* A note was made in the documentation of ``qml.transforms.decompose`` for its behaviour 
+  when graph-based decompositions are enabled with ``qjit`` present. It clarifies that, when used with ``qjit``, 
+  non-deterministic graph solutions may lead to non-executable programs if intermediate gates 
+  are not executable by Catalyst.
+  [(#8894)](https://github.com/PennyLaneAI/pennylane/pull/8894)
+
 * A note clarifying that the factors of a ``~.ChangeOpBasis`` are iterated in reverse order has been
   added to the documentation of ``~.ChangeOpBasis``.
   [(#8757)](https://github.com/PennyLaneAI/pennylane/pull/8757)
