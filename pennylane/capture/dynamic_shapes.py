@@ -15,6 +15,10 @@
 Contains a utility for handling inputs with dynamically shaped arrays.
 """
 from collections.abc import Callable
+from contextlib import contextmanager
+
+from .jax_patches import get_jax_patches
+from .patching import Patcher
 
 has_jax = True
 try:
@@ -24,6 +28,60 @@ try:
 
 except ImportError as e:  # pragma: no cover
     has_jax = False
+
+
+@contextmanager
+def dynamic_shapes():
+    """Context manager that enables JAX dynamic shapes with required patches.
+
+    This context manager enables ``jax_dynamic_shapes`` mode and applies
+    necessary patches to fix JAX 0.7.x compatibility issues. Use this instead
+    of manually calling ``jax.config.update("jax_dynamic_shapes", True)``.
+
+    **Example**
+
+    .. code-block:: python
+
+        import pennylane as qml
+        import jax
+        import jax.numpy as jnp
+
+        with qml.capture.dynamic_shapes():
+            def f(n):
+                return jnp.arange(n)
+
+            jaxpr = jax.make_jaxpr(f, abstracted_axes={0: 'n'})(3)
+            print(jaxpr)
+
+    Without this context manager (or the patches), creating arrays with traced
+    dimensions would raise an ``AssertionError`` due to JAX 0.7.x bugs.
+
+    .. seealso::
+
+        :doc:`pennylane/capture/intro_to_dynamic_shapes.md`
+            Detailed documentation on dynamic shapes support.
+
+        :func:`~.capture.determine_abstracted_axes`
+            Utility to compute abstracted axes from arguments.
+
+    """
+    if not has_jax:
+        raise ImportError("Dynamic shapes requires JAX to be installed.")
+
+    # Save previous state
+    was_enabled = jax.config.jax_dynamic_shapes
+
+    try:
+        # Enable dynamic shapes
+        jax.config.update("jax_dynamic_shapes", True)
+
+        # Apply patches and yield
+        with Patcher(*get_jax_patches()):
+            yield
+    finally:
+        # Restore previous state
+        if not was_enabled:
+            jax.config.update("jax_dynamic_shapes", False)
 
 
 def _get_shape_for_array(x, abstract_shapes: list, previous_ints: list) -> dict:

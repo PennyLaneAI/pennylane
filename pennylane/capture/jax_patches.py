@@ -169,7 +169,7 @@ def _patch_dyn_shape_staging_rule():
 
     def patched_dyn_shape_staging_rule(trace, source_info, prim, out_aval, *args, **params):
         """Patched version of _dyn_shape_staging_rule using make_eqn helper.
-        
+
         Note: JAX 0.7.x only uses DynamicJaxprTrace (no StagingJaxprTrace exists).
         The make_eqn helper creates TracingEqn which add_eqn expects.
         """
