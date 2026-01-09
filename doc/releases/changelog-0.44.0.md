@@ -167,7 +167,7 @@
   [(#8640)](https://github.com/PennyLaneAI/pennylane/pull/8640)
   [(#8875)](https://github.com/PennyLaneAI/pennylane/pull/8875)
 
-  The Hadamard test gradient method is a hardware-compatible differentation method that can 
+  The Hadamard test gradient method is a hardware-compatible differentiation method that can 
   differentiate a broad range of parameterized gates. Using the ``"auto"`` mode with 
   ``diff_method="hadamard"`` will result in an automatic selection of the method (either 
   ``"standard"``, ``"reversed"``, ``"direct"``, or ``"reversed-direct"``) which results in the 
@@ -248,7 +248,7 @@
   ```
   
   The expectation values of Pauli-Z type observables for parameterized :class:`~.IQP` circuits can 
-  be efficeintly evaluated with the :func:`pennylane.qnn.iqp_expval` function. This estimator 
+  be efficiently evaluated with the :func:`pennylane.qnn.iqp_expval` function. This estimator 
   function is based on a randomized method allowing for the efficient optimization of circuits with 
   thousands of qubits and millions of gates.
 
@@ -858,7 +858,7 @@ inspect workflows written in terms of Pauli product rotations (PPRs) and Pauli p
   ``Operator.compute_decomposition`` method is not overridden.
   [(#8686)](https://github.com/PennyLaneAI/pennylane/pull/8686)
 
-* The `~.BasisRotation` graph decomposition can now scale to larger workflows with ``qjit`` as it 
+* The :class:`~.BasisRotation` graph decomposition can now scale to larger workflows with ``qjit`` as it 
   has been re-written in a ``qjit`` friendly way using PennyLane control flow.
   [(#8560)](https://github.com/PennyLaneAI/pennylane/pull/8560)
   [(#8608)](https://github.com/PennyLaneAI/pennylane/pull/8608)
@@ -939,7 +939,7 @@ inspect workflows written in terms of Pauli product rotations (PPRs) and Pauli p
   [(#8079)](https://github.com/PennyLaneAI/pennylane/pull/8079)
   
 * A new decomposition has been added to the adjoint of :class:`~.TemporaryAND` that relies on 
-  mid-circuit measurments and does not require any ``T`` gates.
+  mid-circuit measurements and does not require any ``T`` gates.
   [(#8633)](https://github.com/PennyLaneAI/pennylane/pull/8633)
 
 * The decompositions for several templates have been updated to use
@@ -1376,7 +1376,7 @@ inspect workflows written in terms of Pauli product rotations (PPRs) and Pauli p
 
 * The ``custom_decomps`` keyword argument to ``qml.device`` has been deprecated and will be removed
   in 0.45. Instead, with :func:`~.decomposition.enable_graph`, new decomposition rules can be 
-  efined as quantum functions with registered resources. See :mod:`pennylane.decomposition` for more 
+  defined as quantum functions with registered resources. See :mod:`pennylane.decomposition` for more 
   details.
 
 * ``qml.measure``, ``qml.measurements.MidMeasureMP``, ``qml.measurements.MeasurementValue``, and 
@@ -1551,7 +1551,7 @@ inspect workflows written in terms of Pauli product rotations (PPRs) and Pauli p
 <h3>Bug fixes 🐛</h3>
 
 * Fixed the difference between the output dimensions of the dynamic one-shot and 
-  sngle-branch-statistics mid-circuit measurement methods.
+  single-branch-statistics mid-circuit measurement methods.
   [(#8856)](https://github.com/PennyLaneAI/pennylane/pull/8856)
 
 * Fixed a bug in ``qml.estimator.QubitizeTHC`` where specified arguments for ``Prepare`` and 
