@@ -1128,9 +1128,9 @@ inspect workflows written in terms of Pauli product rotations (PPRs) and Pauli p
   ```
   ```pycon
   >>> qml.specs(clifford_T)(phis).resources.gate_types['T']
-  16630
+  128
   >>> qml.specs(clifford_T_phase_gradient)(phis).resources.gate_types['T']
-  3462
+  84
   ```
 
 <h3>Breaking changes 💔</h3>
