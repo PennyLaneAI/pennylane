@@ -108,7 +108,10 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
     Args:
         data (TensorLike):
             The classical data as a sequence of bitstrings. The size of the classical data must be
-            :math:`2^{\texttt{len(control_wires)}}`.
+        data (TensorLike):
+            The classical data as an array.  The shape must be `(num_data, size_data)`, where `num_data` is
+            :math:`2^{\texttt{len(control_wires)}}` and `size_data = len(target_wires)`. Providing data
+            as a Sequence of strings is now deprecated.
         control_wires (WiresLike):
             The register that stores the index for the entry of the classical data we want to
             access.
