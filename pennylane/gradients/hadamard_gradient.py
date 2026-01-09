@@ -214,7 +214,7 @@ def hadamard_grad(
         ...     qml.RY(params[1], wires=0)
         ...     qml.RX(params[2], wires=0)
         ...     return qml.expval(qml.Z(0))
-        >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
+        >>> params = qml.numpy.array([0.1, 0.2, 0.3], requires_grad=True)
         >>> qml.gradients.hadamard_grad(circuit, mode="auto", aux_wire=1)(params)
         tensor([-0.3875172 , -0.18884787, -0.38355704], requires_grad=True)
 
