@@ -325,8 +325,9 @@ inspect workflows written in terms of Pauli product rotations (PPRs) and Pauli p
   The new :func:`~.pauli_measure` function is currently only for analysis on the ``null.qubit`` device,
   which allows for circuit inspection with :func:`~.specs` and :func:`~.drawer.draw`.
 
-  Using :func:`~.pauli_measure` in a circuit is similar to :func:`~.measure` (a mid-circuit measurement),
-  but requires that a ``pauli_word`` be specified for the measurement basis:
+  Using :func:`~.pauli_measure` in a circuit is similar to :func:`qml.measure <pennylane.measure>` 
+  (a mid-circuit measurement), but requires that a ``pauli_word`` be specified for the measurement 
+  basis:
 
   ```python
   import pennylane as qml
