@@ -159,7 +159,6 @@ def hadamard_grad(
     to use during autodifferentiation:
 
     >>> import jax
-    >>> from pennylane import numpy as np
     >>> dev = qml.device("default.qubit")
     >>> @qml.qnode(dev, diff_method="hadamard", gradient_kwargs={"mode": "standard", "aux_wire": 1})
     ... def circuit(params):
