@@ -1496,8 +1496,10 @@ inspect workflows written in terms of Pauli product rotations (PPRs) and Pauli p
   [(#8765)](https://github.com/PennyLaneAI/pennylane/pull/8765)
 
 <h3>Documentation 📝</h3>
+
 * Minor corrections in the docstring code examples for ``QAOAEmbedding`` and ``ParticleConservingU1`` were made.
   [(#8895)](https://github.com/PennyLaneAI/pennylane/pull/8895)
+
 * The code example in the documentation for ``qml.decomposition.register_resources`` has been
   updated to adhere to renamed keyword arguments and default behaviour of ``num_work_wires``.
   [(#8550)](https://github.com/PennyLaneAI/pennylane/pull/8550)
@@ -1537,6 +1539,7 @@ inspect workflows written in terms of Pauli product rotations (PPRs) and Pauli p
   [(#8829)](https://github.com/PennyLaneAI/pennylane/pull/8829)
   [(#8830)](https://github.com/PennyLaneAI/pennylane/pull/8830)
   [(#8832)](https://github.com/PennyLaneAI/pennylane/pull/8832)
+  [(#8892)](https://github.com/PennyLaneAI/pennylane/pull/8892)
 
 <h3>Bug fixes 🐛</h3>
 
