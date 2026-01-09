@@ -205,6 +205,7 @@
   [(#8748)](https://github.com/PennyLaneAI/pennylane/pull/8748)
   [(#8807)](https://github.com/PennyLaneAI/pennylane/pull/8807)
   [(#8749)](https://github.com/PennyLaneAI/pennylane/pull/8749)
+  [(#8882)](https://github.com/PennyLaneAI/pennylane/pull/8882)
   
   While :class:`~.IQP` circuits belong to a class of circuits that are believed to be hard to sample 
   from using classical algorithms, Recio-Armengol et al. showed in a recent paper titled 
