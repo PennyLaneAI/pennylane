@@ -1500,6 +1500,12 @@ inspect workflows written in terms of Pauli product rotations (PPRs) and Pauli p
 * Minor corrections in the docstring code examples for ``QAOAEmbedding`` and ``ParticleConservingU1`` were made.
   [(#8895)](https://github.com/PennyLaneAI/pennylane/pull/8895)
 
+* A note was made in the documentation of ``qml.transforms.decompose`` for its behaviour 
+  when graph-based decompositions are enabled with ``qjit`` present. It clarifies that, when used with ``qjit``, 
+  non-deterministic graph solutions may lead to non-executable programs if intermediate gates 
+  are not executable by Catalyst.
+  [(#8894)](https://github.com/PennyLaneAI/pennylane/pull/8894)
+
 * The code example in the documentation for ``qml.decomposition.register_resources`` has been
   updated to adhere to renamed keyword arguments and default behaviour of ``num_work_wires``.
   [(#8550)](https://github.com/PennyLaneAI/pennylane/pull/8550)
