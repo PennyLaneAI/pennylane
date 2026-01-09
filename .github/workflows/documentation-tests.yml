@@ -19,6 +19,8 @@ on:
         required: false
         default: 1
         type: string
+  workflow_call:
+
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
