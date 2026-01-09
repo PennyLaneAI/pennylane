@@ -47,6 +47,27 @@ from .gradient_transform import (
 from .metric_tensor import _get_aux_wire
 
 
+def _assert_no_probability(measurements, transform_name):
+    """Check whether a set of measurements contains a probability measurement
+    raise an error if this is the case.
+
+    Args:
+        measurements (list[MeasurementProcess]): measurements to analyze
+        transform_name (str): Name of the gradient transform that queries the measurements
+    """
+    if any(isinstance(m, ProbabilityMP) for m in measurements):
+        err_str = (
+            f"Computing the gradient of probabilities with the {transform_name} "
+            f"gradient transform is not supported."
+        )
+        if transform_name == "direct":
+            err_str += (
+                "Automatically selected direct mode for differentiation because no auxiliary wire was passed."
+                "Consider explicitly supplying an aux_wire to the gradient method."
+            )
+        raise ValueError(err_str)
+
+
 def _hadamard_stopping_condition(op) -> bool:
     if not op.has_decomposition:
         # let things without decompositions through without error
@@ -635,16 +656,16 @@ def _quantum_automatic_differentiation(tape, trainable_param_idx, aux_wire) -> t
 
     if direct:
         if standard:
-            assert_no_probability(tape.measurements, "direct")
+            _assert_no_probability(tape.measurements, "direct")
             return _direct_hadamard_test(tape, trainable_param_idx, aux_wire)
 
-        # The case where probs would appear here is covered on line 594 since probs are measurements but not obs
+        _assert_no_probability(tape.measurements, "reversed-direct")
         return _reversed_direct_hadamard_test(tape, trainable_param_idx, aux_wire)
 
     if standard:
         return _hadamard_test(tape, trainable_param_idx, aux_wire)
 
-    # The case where probs would appear here is covered on line 594 since probs are measurements but not obs
+    _assert_no_probability(tape.measurements, "reversed")
     return _reversed_hadamard_test(tape, trainable_param_idx, aux_wire)
 
 
