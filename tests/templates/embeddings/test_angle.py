@@ -93,9 +93,8 @@ class TestDecomposition:
         for gate in tape.operations:
             assert gate.name == "R" + rotation
 
-    def test_state(
-        self,
-    ):
+    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
+    def test_state(self):
         """Checks the state produced using the rotation='X' strategy."""
 
         features = [np.pi / 2, np.pi / 2, np.pi / 4, 0]
@@ -113,6 +112,7 @@ class TestDecomposition:
 
         assert np.allclose(res, target)
 
+    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     def test_fewer_features(self):
         """Tests fewer features than rotation gates."""
 
@@ -129,6 +129,7 @@ class TestDecomposition:
         target = [0, 0, 1, 0, 1]
         assert np.allclose(res, target)
 
+    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     def test_custom_wire_labels(self, tol):
         """Test that template can deal with non-numeric, nonconsecutive wire labels."""
         features = np.random.random(size=(3,))
