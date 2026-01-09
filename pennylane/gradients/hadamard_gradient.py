@@ -359,13 +359,13 @@ def hadamard_grad(
         **Auto mode**
 
         Using auto mode will result in an automatic selection of the method which results in the fewest
-        total executions, given the wires available. Any auxilliary wires must be provided explicitly.
-        This method takes into account the number of observables and the number of generators invovled
+        total executions, given the wires available. Any auxiliary wires must be provided explicitly.
+        This method takes into account the number of observables and the number of generators involved
         in each problem to choose whether the standard or reversed order is preferred. It also takes
-        into account whether we have one or multiple measurements, and whether we have an auxilliary wire.
+        into account whether we have one or multiple measurements, and whether we have an auxiliary wire.
 
         ===============  ===============  ==============================
-        Auxilliary Wire  Standard Order   Method
+        Auxiliary Wire  Standard Order   Method
         ===============  ===============  ==============================
         False            True             Direct Hadamard test
         False            False            Reversed direct Hadamard test
