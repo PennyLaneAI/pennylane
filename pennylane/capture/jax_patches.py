@@ -61,7 +61,7 @@ JAX versions no longer exists. All patches assume DynamicJaxprTrace.
 
 # pylint: disable=too-many-arguments
 # pylint: disable=unused-import,no-else-return,unidiomatic-typecheck,use-dict-literal
-# pylint: disable=protected-access
+# pylint: disable=protected-access,possibly-used-before-assignment
 
 has_jax = True
 try:
