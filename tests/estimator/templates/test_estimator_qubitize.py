@@ -152,6 +152,24 @@ class TestQubitizeTHC:
                 None,
                 {"algo_wires": 59, "auxiliary_wires": 58, "toffoli_gates": 941},
             ),
+            (
+                qre.THCHamiltonian(4, 20),
+                qre.PrepTHC(qre.THCHamiltonian(4, 20), select_swap_depth=1),
+                None,
+                {"algo_wires": 59, "auxiliary_wires": 58, "toffoli_gates": 1127},
+            ),
+            (
+                qre.THCHamiltonian(4, 20),
+                None,
+                qre.SelectTHC(qre.THCHamiltonian(4, 20), num_batches=2),
+                {"algo_wires": 59, "auxiliary_wires": 43, "toffoli_gates": 981},
+            ),
+            (
+                qre.THCHamiltonian(4, 20),
+                None,
+                qre.SelectTHC(qre.THCHamiltonian(4, 20), num_batches=1, select_swap_depth=2),
+                {"algo_wires": 59, "auxiliary_wires": 93, "toffoli_gates": 989},
+            ),
         ),
     )
     def test_resources(self, thc_ham, prep_op, select_op, expected_res):
