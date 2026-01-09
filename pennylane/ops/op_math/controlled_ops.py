@@ -816,25 +816,21 @@ class CSWAP(ControlledOp):
 
         """
         return [
-            qml.change_op_basis(
-                qml.CNOT([wires[2], wires[1]]),
-                qml.Toffoli(wires=[wires[0], wires[1], wires[2]]),
-                qml.CNOT([wires[2], wires[1]]),
-            )
+            qml.CNOT([wires[2], wires[1]]),
+            qml.Toffoli(wires=[wires[0], wires[1], wires[2]]),
+            qml.CNOT([wires[2], wires[1]]),
         ]
 
 
 def _cswap_to_toffoli_resources():
-    return {change_op_basis_resource_rep(qml.CNOT, qml.Toffoli, qml.CNOT): 1}
+    return {qml.CNOT: 2, qml.Toffoli: 1}
 
 
 @register_resources(_cswap_to_toffoli_resources)
 def _cswap(wires: WiresLike, **__):
-    qml.change_op_basis(
-        qml.CNOT([wires[2], wires[1]]),
-        qml.Toffoli(wires=[wires[0], wires[1], wires[2]]),
-        qml.CNOT([wires[2], wires[1]]),
-    )
+    qml.CNOT([wires[2], wires[1]])
+    qml.Toffoli(wires=[wires[0], wires[1], wires[2]])
+    qml.CNOT([wires[2], wires[1]])
 
 
 def _cswap_to_ppr_resource():
