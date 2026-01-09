@@ -30,6 +30,7 @@ quantum-classical programs.
     ~enable
     ~enabled
     ~pause
+    ~dynamic_shapes
     ~determine_abstracted_axes
     ~expand_plxpr_transforms
     ~eval_jaxpr
@@ -167,7 +168,7 @@ from .capture_meta import CaptureMeta, ABCCaptureMeta
 from .flatfn import FlatFn
 from .make_plxpr import make_plxpr
 from .autograph import run_autograph, disable_autograph
-from .dynamic_shapes import determine_abstracted_axes, register_custom_staging_rule
+from .dynamic_shapes import determine_abstracted_axes, register_custom_staging_rule, dynamic_shapes
 
 # Import Patcher for contextual patching (preferred over global patches)
 from .patching import Patcher
@@ -233,6 +234,7 @@ __all__ = (
     "CaptureMeta",
     "ABCCaptureMeta",
     "determine_abstracted_axes",
+    "dynamic_shapes",
     "expand_plxpr_transforms",
     "register_custom_staging_rule",
     "AbstractOperator",
