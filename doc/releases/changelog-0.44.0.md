@@ -13,6 +13,7 @@
   [(#8679)](https://github.com/PennyLaneAI/pennylane/pull/8679)
   [(#8680)](https://github.com/PennyLaneAI/pennylane/pull/8680)
   [(#8801)](https://github.com/PennyLaneAI/pennylane/pull/8801)
+  [(#8897)](https://github.com/PennyLaneAI/pennylane/pull/8897)
 
   Irrespective of the specific implementation, QRAM encodes bitstrings, :math:`b_i`, corresponding to a 
   given entry, :math:`i`, of a data set of length :math:`N`, and can do so in superposition: 
