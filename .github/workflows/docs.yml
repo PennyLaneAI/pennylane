@@ -89,7 +89,7 @@ jobs:
           echo "event name is ${{ github.event_name }}"
 
       - name: Upload frozen requirements
-        if: ${{ github.event_name != 'push' }} # change to workflow_call
+        if: ${{ github.event_name != 'pull_request' }} # change to workflow_dispatch
         uses: actions/upload-artifact@v4
         with:
           name: frozen-doc
