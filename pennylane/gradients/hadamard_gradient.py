@@ -122,7 +122,8 @@ def hadamard_grad(
         mode (str): Specifies the gradient computation mode. Accepted values are
             ``"standard"``, ``"reversed"``, ``"direct"``, ``"reversed-direct"``, or ``"auto"``.
             The default ``"auto"`` chooses the method that leads to the
-            fewest total executions, given the wires available.
+            fewest total executions, based on the circuit observable and whether or not an
+            auxiliary wire has been provided.
 
     Returns:
         qnode (QNode) or tuple[List[QuantumTape], function]:
