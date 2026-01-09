@@ -74,8 +74,8 @@ def _adjoint_rotation(base_class, base_params, **__):
 @register_resources(_adjoint_rotation)
 def adjoint_rotation(phi, wires, base, **__):
     """Decompose the adjoint of a rotation operator by inverting the angle."""
-    _, struct = base._flatten()
-    base._unflatten((-phi,), struct)
+    _, struct = qml.pytrees.flatten(base)
+    qml.pytrees.unflatten((-phi,), struct)
 
 
 def is_integer(x):

@@ -19,6 +19,7 @@ import pytest
 import pennylane as qml
 from pennylane.transforms.decompositions import (
     commute_ppr,
+    decompose_arbitrary_ppr,
     merge_ppr_ppm,
     ppm_compilation,
     ppr_to_ppm,
@@ -26,7 +27,15 @@ from pennylane.transforms.decompositions import (
     to_ppr,
 )
 
-PBC_TRANSFORMS = [to_ppr, commute_ppr, merge_ppr_ppm, ppm_compilation, ppr_to_ppm, reduce_t_depth]
+PBC_TRANSFORMS = [
+    to_ppr,
+    commute_ppr,
+    merge_ppr_ppm,
+    ppm_compilation,
+    ppr_to_ppm,
+    reduce_t_depth,
+    decompose_arbitrary_ppr,
+]
 PASS_NAMES = [
     "to-ppr",
     "commute-ppr",
@@ -34,6 +43,7 @@ PASS_NAMES = [
     "ppm-compilation",
     "ppr-to-ppm",
     "reduce-t-depth",
+    "decompose-arbitrary-ppr",
 ]
 PBC_TRANSFORM_DATA = list(zip(PBC_TRANSFORMS, PASS_NAMES))
 
@@ -50,7 +60,7 @@ class TestPauliBasedComputationTransforms:
 
         with pytest.raises(
             NotImplementedError,
-            match=f"The {pbc_transform.__name__} compilation pass has no tape implementation",
+            match=f"The '{pbc_transform.__name__}' compilation pass has no tape implementation",
         ):
             pbc_transform(tape)
 
