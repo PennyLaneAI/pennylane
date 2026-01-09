@@ -169,8 +169,8 @@ def hadamard_grad(
     ...     return qml.expval(qml.Z(0)), qml.probs(wires=0)
     >>> params = jax.numpy.array([0.1, 0.2, 0.3])
     >>> jax.jacobian(circuit)(params)
-    (Array([-0.3875172 , -0.18884787, -0.38355705], dtype=float32), Array([[-0.1937586 , -0.09442393, -0.19177853],
-           [ 0.1937586 ,  0.09442393,  0.19177853]], dtype=float32))
+    (Array([-0.3875172 , -0.18884787, -0.38355705], dtype=float64), Array([[-0.1937586 , -0.09442393, -0.19177853],
+           [ 0.1937586 ,  0.09442393,  0.19177853]], dtype=float64))
 
     .. details::
         :title: Usage Details
@@ -265,7 +265,21 @@ def hadamard_grad(
         ...     return qml.expval(qml.Z(0))
         >>> params = jax.numpy.array([0.1, 0.2, 0.3])
         >>> jax.jacobian(circuit)(params)
-        Array([-0.3875172 , -0.18884787, -0.38355705], dtype=float32)
+        Array([-0.3875172 , -0.18884787, -0.38355705], dtype=float64)
+
+        If you use custom wires on your device, and you want to use the "standard" or "reversed" modes, you need to pass an auxiliary wire.
+        >>> dev_wires = ("a", "c")
+        >>> dev = qml.device("default.qubit", wires=dev_wires)
+        >>> gradient_kwargs = {"aux_wire": "c"}
+        >>> @qml.qnode(dev, interface="jax", diff_method="hadamard", gradient_kwargs=gradient_kwargs)
+        >>> def circuit(params):
+        ...    qml.RX(params[0], wires="a")
+        ...    qml.RY(params[1], wires="a")
+        ...    qml.RX(params[2], wires="a")
+        ...    return qml.expval(qml.Z("a"))
+        >>> params = jax.numpy.array([0.1, 0.2, 0.3])
+        >>> jax.jacobian(circuit)(params)
+        Array([-0.3875172 , -0.18884787, -0.38355705], dtype=float64)
 
     .. details::
         :title: Variants of the standard hadamard gradient
