@@ -1,4 +1,4 @@
-# Copyright 2024-2026 Xanadu Quantum Technologies Inc.
+# Copyright 2026 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,29 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-.. currentmodule:: pennylane
+This module contains experimental features for
+resource estimation.
 
-This module contains experimental features enabling
-advanced quantum computing research.
+.. warning::
 
-.. currentmodule:: pennylane.labs
+    This module is experimental. Frequent changes will occur,
+    with no guarantees of stability or backwards compatibility.
 
-Modules
-~~~~~~~
-
-.. autosummary::
-    :toctree: api
-
-    dla
-    estimator_beta
-    transforms
-    trotter_error
+.. currentmodule:: pennylane.labs.estimator_beta
 
 """
-
-from pennylane.labs import dla
-from pennylane.labs import estimator_beta
-from pennylane.labs import transforms
-from pennylane.labs import trotter_error
-
-__all__ = []
