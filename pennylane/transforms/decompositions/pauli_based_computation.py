@@ -618,12 +618,9 @@ def reduce_t_depth(qnode):
 
         qml.capture.enable()
 
-        pipeline = qml.CompilePipeline([
-            qml.transforms.to_ppr, qml.transforms.reduce_t_depth
-        ])
-
         @qml.qjit(target="mlir")
-        @pipeline
+        @qml.transforms.reduce_t_depth
+        @qml.transforms.to_ppr
         @qml.qnode(qml.device("null.qubit", wires=4))
         def circuit():
             qml.PauliRot(jnp.pi / 4, pauli_word="Z", wires=1)
@@ -639,7 +636,7 @@ def reduce_t_depth(qnode):
     function:
 
     >>> import catalyst
-    >>> num_passes = len(pipeline)
+    >>> num_passes = 2
     >>> fig1, _ = catalyst.draw_graph(circuit, level=num_passes-1)() # doctest: +SKIP
     >>> fig2, _ = catalyst.draw_graph(circuit, level=num_passes)() # doctest: +SKIP
 
