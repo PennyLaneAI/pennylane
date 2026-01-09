@@ -502,7 +502,7 @@ def _qrom_decomposition(
             for w in target_wires:
                 qml_ops.Hadamard(wires=w)
             qml_ops.adjoint(_swap_ops, lazy=False)(control_wires, depth, swap_wires, target_wires)
-            _select_ops(control_wires, depth, target_wires, swap_wires, bitstrings)
+            _select_ops(control_wires, depth, target_wires, swap_wires, data)
             _swap_ops(control_wires, depth, swap_wires, target_wires)
 
 
