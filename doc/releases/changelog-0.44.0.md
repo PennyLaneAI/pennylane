@@ -786,8 +786,8 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
   {Hadamard(): 5, CNOT(): 26, TGate(is_adjoint=False): 1320}
   ```
 
-* The `~pennylane.estimator.compact_hamiltonian.CDFHamiltonian`, `~pennylane.estimator.compact_hamiltonian.THCHamiltonian`,
-  `~pennylane.estimator.compact_hamiltonian.VibrationalHamiltonian`, and `~pennylane.estimator.compact_hamiltonian.VibronicHamiltonian`
+* The :class:`~pennylane.estimator.compact_hamiltonian.CDFHamiltonian`, :class:`~pennylane.estimator.compact_hamiltonian.THCHamiltonian`,
+  :class:`~pennylane.estimator.compact_hamiltonian.VibrationalHamiltonian`, and :class:`~pennylane.estimator.compact_hamiltonian.VibronicHamiltonian`
   classes have been modified to take the 1-norm of the Hamiltonian as an optional argument.
   [(#8697)](https://github.com/PennyLaneAI/pennylane/pull/8697)
 
@@ -836,7 +836,7 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
   [(#8734)](https://github.com/PennyLaneAI/pennylane/pull/8734)
 
 * A new decomposition rule has been added to :class:`~pennylane.QubitUnitary` which reduces
-  the number of CNOTs used to decompose certain two-qubit `~pennylane.QubitUnitary` operations.
+  the number of CNOTs used to decompose certain two-qubit :class:`~pennylane.QubitUnitary` operations.
   [(#8717)](https://github.com/PennyLaneAI/pennylane/pull/8717)
 
 * Operator decompositions now only need to be defined in the graph decomposition system, as
@@ -1036,11 +1036,6 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
 * The :class:`~.pennylane.estimator.templates.SelectTHC` resource operation is upgraded to allow for a trade-off between the number of qubits and T-gates.
   This provides more flexibility in optimizing algorithms.
   [(#8682)](https://github.com/PennyLaneAI/pennylane/pull/8682)
-  
-* The `~pennylane.estimator.compact_hamiltonian.CDFHamiltonian`, `~pennylane.estimator.compact_hamiltonian.THCHamiltonian`,
-  `~pennylane.estimator.compact_hamiltonian.VibrationalHamiltonian`, and `~pennylane.estimator.compact_hamiltonian.VibronicHamiltonian`
-  classes were modified to take the 1-norm of the Hamiltonian as an optional argument.
-  [(#8697)](https://github.com/PennyLaneAI/pennylane/pull/8697)
 
 * Added a custom solver to :func:`~.transforms.intermediate_reps.rowcol` for linear systems
   over :math:`\mathbb{Z}_2` based on Gauss-Jordan elimination. This removes the need to install
