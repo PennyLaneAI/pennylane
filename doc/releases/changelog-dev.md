@@ -4,6 +4,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* :class:`~.BBQRAM`, :class:`~.HybridQRAM`, :class:`SelectOnlyQRAM` and :class:`~.QROM` now accept 
+  their classical data as `TensorLike` data, which increases compatibility with Catalyst.
+  [(#8791)](https://github.com/PennyLaneAI/pennylane/pull/8791)
+
 * The ``qml.estimator.Resources`` class now has a nice string representation in Jupyter Notebooks.
   [(#8880)](https://github.com/PennyLaneAI/pennylane/pull/8880)
 
@@ -29,5 +33,6 @@
 
 This release contains contributions from (in alphabetical order):
 
+Marcus Edwards,
 Omkar Sarkar,
 Jay Soni
