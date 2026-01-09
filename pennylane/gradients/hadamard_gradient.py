@@ -267,6 +267,7 @@ def hadamard_grad(
         Array([-0.3875172 , -0.18884787, -0.38355705], dtype=float64)
 
         If you use custom wires on your device, and you want to use the "standard" or "reversed" modes, you need to pass an auxiliary wire.
+
         >>> dev_wires = ("a", "c")
         >>> dev = qml.device("default.qubit", wires=dev_wires)
         >>> gradient_kwargs = {"aux_wire": "c"}
