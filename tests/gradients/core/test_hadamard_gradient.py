@@ -499,7 +499,10 @@ class TestDifferentModes:
         assert standard.call_count == 1
         assert reverse.call_count == 0
 
-    def test_automatic_mode_raises(self):
+    def test_automatic_mode_raises(self, mocker):
+        # setup mocks
+        standard = mocker.spy(hadamard_gradient, "_hadamard_test")
+
         t = np.array(0.0)
 
         op = qml.evolve(qml.X(0) @ qml.X(1) + qml.Y(2) + qml.Z(0) @ qml.Z(1), t)
@@ -511,6 +514,9 @@ class TestDifferentModes:
             match="Computing the gradient of probabilities is only possible with the standard",
         ):
             _, _ = qml.gradients.hadamard_grad(tape, mode="auto")
+
+        _, _ = qml.gradients.hadamard_grad(tape, mode="auto", aux_wire=3)
+        assert standard.call_count == 1
 
     @pytest.mark.parametrize("mode", ["direct", "reversed-direct"])
     def test_no_available_work_wire_direct_methods(self, mode):
