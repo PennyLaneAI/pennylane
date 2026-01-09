@@ -174,7 +174,7 @@ def enable_disable_plxpr():
 @pytest.fixture(scope="function")
 def enable_disable_dynamic_shapes():
     """Enable dynamic shapes and apply JAX patches for the duration of a test.
-    
+
     JAX 0.7.x requires patches to fix AssertionError in trace.frame.add_eqn
     when using dynamic shapes. See pennylane/capture/jax_patches.py for details.
     """
