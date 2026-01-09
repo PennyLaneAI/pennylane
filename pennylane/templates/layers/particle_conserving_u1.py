@@ -232,10 +232,11 @@ class ParticleConservingU1(Operation):
             # Compute the expectation value of 'h'
             layers = 2
             shape = qml.ParticleConservingU1.shape(layers, qubits)
-            params = np.random.random(shape)
+            rng = np.random.default_rng(seed=1234)
+            params = rng.random(shape)
         
-        >>> print(cost_fn(params))  # doctest: +SKIP
-        -0.9630...
+        >>> print(cost_fn(params))
+        -0.9686...
 
         **Parameter shape**
 
