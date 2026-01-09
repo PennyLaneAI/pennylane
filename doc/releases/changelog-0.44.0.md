@@ -167,6 +167,7 @@
 * The Hadamard test gradient method (``diff_method="hadamard"``) in PennyLane now has an ``"auto"`` 
   mode, which automatically chooses the most efficient mode of differentiation.
   [(#8640)](https://github.com/PennyLaneAI/pennylane/pull/8640)
+  [(#8875)](https://github.com/PennyLaneAI/pennylane/pull/8875)
 
   The Hadamard test gradient method is a hardware-compatible differentation method that can 
   differentiate a broad range of parameterized gates. Accessing this differentiation method can be 
@@ -425,6 +426,7 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
   :func:`~.clifford_t_decomposition` transform, which can sometimes be less efficient.
   [(#8700)](https://github.com/PennyLaneAI/pennylane/pull/8700)
   [(#8704)](https://github.com/PennyLaneAI/pennylane/pull/8704)
+  [(#8857)](https://github.com/PennyLaneAI/pennylane/pull/8857)
 
   The following operations have newly added decomposition rules in terms of PPRs (:class:`~.PauliRot`):
   - :class:`~.CRX`, :class:`~.CRY`, :class:`~.CRZ`
@@ -627,7 +629,8 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
 
 * Analyzing resources throughout each step of a compilation pipeline can now be done on ``qjit``'d workflows with :func:`~.specs`, 
   providing a pass-by-pass overview of quantum circuit resources.
-[(#8606)](https://github.com/PennyLaneAI/pennylane/pull/8606)
+  [(#8606)](https://github.com/PennyLaneAI/pennylane/pull/8606)
+  [(#8860)](https://github.com/PennyLaneAI/pennylane/pull/8860)
   
   Consider the following :func:`qjit <pennylane.qjit>`'d circuit with two compilation passes 
   applied:
@@ -928,6 +931,11 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
   [(#8577)](https://github.com/PennyLaneAI/pennylane/pull/8577)
   [(#8721)](https://github.com/PennyLaneAI/pennylane/issues/8721)
 
+* The :func:`~pennylane.clifford_t_decomposition` transform now uses the [Ross-Selinger](https://arxiv.org/abs/1403.2975)
+  algorithm (`method="gridsynth"`) as the default method for decomposing single-qubit Pauli rotation
+  gates in the Clifford+T basis. Before the [Solovay-Kitaev](https://arxiv.org/abs/quant-ph/0505030v2)
+  algorithm (`method="sk"`) was used as default.
+  [(#8862)](https://github.com/PennyLaneAI/pennylane/pull/8862)
 
 <h4>Other improvements</h4>
 
@@ -1492,6 +1500,20 @@ should be used instead.
   [(#8832)](https://github.com/PennyLaneAI/pennylane/pull/8832)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixed the difference between the output dimensions of the dynamic one-shot and single-branch-statistics mid-circuit
+  measurement methods.
+  [(#8856)](https://github.com/PennyLaneAI/pennylane/pull/8856)
+
+* Fixed a bug in ``qml.estimator.QubitizeTHC`` where specified arguments for Prepare and Select resource
+  operators were being ignored in favor of default ones.
+  [(#8858)] (https://github.com/PennyLaneAI/pennylane/pull/8858)
+
+* Fixed a bug in ``torch.vmap`` that produced an error when it was used with native parameter broadcasting and ``qml.RZ``
+  [(#8760)](https://github.com/PennyLaneAI/pennylane/pull/8760)
+
+* Fixed various incorrect decomposition rules.
+  [(#8812)](https://github.com/PennyLaneAI/pennylane/pull/8812)
 
 * Fixed a bug where ``_double_factorization_compressed`` of ``pennylane/qchem/factorization.py`` used to use ``X``
   for ``Z`` parameter initialization.
