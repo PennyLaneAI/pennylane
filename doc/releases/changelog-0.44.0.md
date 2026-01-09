@@ -39,7 +39,7 @@
   bitstrings = ["010", "111", "110", "000"]
   bitstring_size = 3
 
-  num_control_wires = 2 # len(bistrings) = 4 = 2**2
+  num_control_wires = 2 # len(bitstrings) = 4 = 2**2
   num_work_wires = 1 + 3 * ((1 << num_control_wires) - 1) # 10
 
   reg = qml.registers(
