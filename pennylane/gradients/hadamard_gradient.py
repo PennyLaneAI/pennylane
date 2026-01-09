@@ -605,7 +605,7 @@ def _quantum_automatic_differentiation(tape, trainable_param_idx, aux_wire) -> t
             return _hadamard_test(tape, trainable_param_idx, aux_wire)
         raise ValueError(
             "Computing the gradient of probabilities is only possible with the standard "
-            "Hadamard gradient, which requires an auxiliary wire. Please provide an aux_wire."
+            "Hadamard gradient, which requires an auxiliary wire. Please provide a value for aux_wire."
         )
 
     if len(tape.measurements) > 1:
