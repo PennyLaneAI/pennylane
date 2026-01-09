@@ -44,14 +44,63 @@ jobs:
           RUN_COUNT_JSON=$(echo "[\"$(echo $RUN_COUNT_LIST | sed 's/,/\",\"/g')\"]")
           echo "run-count=$RUN_COUNT_JSON" >> $GITHUB_OUTPUT
           echo "workflow=${{ inputs.workflow }}"
-          echo "event name is ${{ github.event_name }}"
 
   docs:
     name: Run docs
     needs: prepare-run-count
-    if: ${{ inputs.workflow == 'docs' || true }}
+    if: ${{ inputs.workflow == 'docs' }}
     strategy:
       max-parallel: 5
       matrix:
         run-count: ${{ fromJSON(needs.prepare-run-count.outputs.run-count) }}
     uses: ./.github/workflows/docs.yml
+
+  documentation-tests:
+    name: Run documentation-tests
+    needs: prepare-run-count
+    if: ${{ inputs.workflow == 'documentation-tests' || true}}
+    strategy:
+      max-parallel: 5
+      matrix:
+        run-count: ${{ fromJSON(needs.prepare-run-count.outputs.run-count) }}
+    uses: ./.github/workflows/documentation-tests.yml
+
+  format:
+    name: Run format
+    needs: prepare-run-count
+    if: ${{ inputs.workflow == 'format' || true}}
+    strategy:
+      max-parallel: 5
+      matrix:
+        run-count: ${{ fromJSON(needs.prepare-run-count.outputs.run-count) }}
+    uses: ./.github/workflows/format.yml  
+
+  module-validation:
+    name: Run module-validation
+    needs: prepare-run-count
+    if: ${{ inputs.workflow == 'module-validation' || true}}
+    strategy:
+      max-parallel: 5
+      matrix:
+        run-count: ${{ fromJSON(needs.prepare-run-count.outputs.run-count) }}
+    uses: ./.github/workflows/module-validation.yml
+
+  package-warning-as-errors:
+    name:  Run package-warning-as-errors
+    needs: prepare-run-count
+    if: ${{ inputs.workflow == 'package-warning-as-errors' || true}}
+    strategy:
+      max-parallel: 5
+      matrix:
+        run-count: ${{ fromJSON(needs.prepare-run-count.outputs.run-count) }}
+    uses: ./.github/workflows/package_warnings_as_errors.yml
+
+  test_numpy1_compat:
+    name: Run test-numpy1-compat
+    needs: prepare-run-count
+    if: ${{ inputs.workflow == 'test-numpy1-compat' || true}}
+    strategy:
+      max-parallel: 5
+      matrix:
+        run-count: ${{ fromJSON(needs.prepare-run-count.outputs.run-count) }}
+    uses: ./.github/workflows/test_numpy_1_compat.yml
