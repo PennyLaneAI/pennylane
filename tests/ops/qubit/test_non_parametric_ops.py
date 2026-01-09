@@ -496,19 +496,22 @@ class TestDecompositions:
         op = qml.CSWAP(wires=[0, 1, 2])
         res = op.decomposition()
 
-        assert len(res) == 3
+        expected_ops = [qml.CNOT([2, 1]), qml.Toffoli([0, 1, 2]), qml.CNOT([2, 1])]
+        assert all(
+            qml.equal(dec_op, exp_op) for dec_op, exp_op in zip(res, expected_ops, strict=True)
+        )
 
         mats = []
 
         for i in reversed(res):  # only use 3 toffoli gates
-            if i.wires == Wires([0, 2, 1]) and i.name == "Toffoli":
+            if i.wires == Wires([2, 1]) and i.name == "CNOT":
                 mats.append(
                     np.array(
                         [
                             [1, 0, 0, 0, 0, 0, 0, 0],
-                            [0, 1, 0, 0, 0, 0, 0, 0],
-                            [0, 0, 1, 0, 0, 0, 0, 0],
                             [0, 0, 0, 1, 0, 0, 0, 0],
+                            [0, 0, 1, 0, 0, 0, 0, 0],
+                            [0, 1, 0, 0, 0, 0, 0, 0],
                             [0, 0, 0, 0, 1, 0, 0, 0],
                             [0, 0, 0, 0, 0, 0, 0, 1],
                             [0, 0, 0, 0, 0, 0, 1, 0],
@@ -531,6 +534,8 @@ class TestDecompositions:
                         ]
                     )
                 )
+            else:
+                raise AssertionError("Unexpected operation in decomposition")
 
         decomposed_matrix = np.linalg.multi_dot(mats)
 
