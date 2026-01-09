@@ -4,8 +4,8 @@
 
 <h3>Improvements 🛠</h3>
 
-* :class:`~.CSWAP` is now decomposed into two CNOTs and a Toffoli gate, rather than three Toffoli
-  gates.
+* :class:`~.CSWAP` is now decomposed more cheaply, using ``change_op_basis`` with
+  two ``CNOT`` gates and a single ``Toffoli`` gate.
   [(#8887)](https://github.com/PennyLaneAI/pennylane/pull/8887)
 
 * The ``qml.estimator.Resources`` class now has a nice string representation in Jupyter Notebooks.

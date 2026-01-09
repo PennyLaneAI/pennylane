@@ -495,6 +495,7 @@ class TestDecompositions:
         """Tests that the decomposition of the CSWAP gate is correct"""
         op = qml.CSWAP(wires=[0, 1, 2])
         res = op.decomposition()
+        res = sum((op.decomposition() for op in res), start=[])
 
         expected_ops = [qml.CNOT([2, 1]), qml.Toffoli([0, 1, 2]), qml.CNOT([2, 1])]
         assert all(
