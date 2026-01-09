@@ -431,8 +431,16 @@ class _CachedCallable:
         return self.decompose_fn(op)
 
 
+# pylint: disable=unused-argument
+def _clifford_t_plxpr_transform(jaxpr, consts, targs, tkwargs, *args):
+    raise NotImplementedError(
+        "The clifford_t_decomposition is incompatible with program capture. "
+        "Please use qml.transforms.decompose and qml.transforms.gridsynth instead."
+    )
+
+
 # pylint: disable=too-many-branches,too-many-statements
-@transform
+@partial(transform, plxpr_transform=_clifford_t_plxpr_transform)
 def clifford_t_decomposition(
     tape: QuantumScript,
     epsilon=1e-4,
@@ -455,6 +463,13 @@ def clifford_t_decomposition(
     `Ross and Selinger (2016) <https://arxiv.org/abs/1403.2975v3>`_ is used for this. Alternatively,
     the Solovay-Kitaev algorithm described in `Dawson and Nielsen (2005) <https://arxiv.org/abs/quant-ph/0505030>`_
     is available by setting ``method="sk"``.
+
+    .. note::
+
+        The ``clifford_t_decomposition`` transform is incompatible with program capture.
+        For compatibility with :func:`~.qjit`, either turn off program capture with ``qml.capture.disable()``
+        or use :func:`~.transforms.decompose` with a Clifford+T ``gate_set`` in tandem with
+        :func:`~.transforms.gridnsynth` .
 
     Args:
         tape (QNode or QuantumTape or Callable): The quantum circuit to be decomposed.

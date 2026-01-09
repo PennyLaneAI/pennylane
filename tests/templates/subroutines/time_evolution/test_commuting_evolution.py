@@ -62,8 +62,8 @@ def test_adjoint():
     res1, state1 = evolution_circuit(0.13)
     res2, state2 = adjoint_evolution_circuit(-0.13)
 
-    assert res1 == res2
-    assert all(np.isclose(state1, state2))
+    assert qml.math.allclose(res1, res2)
+    assert qml.math.allclose(state1, state2)
 
 
 def test_queuing():
