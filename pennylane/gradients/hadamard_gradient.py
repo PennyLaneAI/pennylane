@@ -365,7 +365,7 @@ def hadamard_grad(
         into account whether we have one or multiple measurements, and whether we have an auxiliary wire.
 
         ===============  ===============  ==============================
-        Auxiliary Wire  Standard Order   Method
+        Auxiliary Wire   Standard Order   Method
         ===============  ===============  ==============================
         False            True             Direct Hadamard test
         False            False            Reversed direct Hadamard test
