@@ -262,16 +262,28 @@ def _check_queue_op(operation, noise_func, metadata):
     return any(test_id == getattr(o, "id", "") for o in test_queue)
 
 
-# pylint:disable = protected-access
+# pylint:disable=protected-access
 @add_noise.custom_qnode_transform
 def custom_qnode_wrapper(self, qnode, targs, tkwargs):
-    """QNode execution wrapper for supporting ``add_noise`` with levels"""
     cqnode = copy(qnode)
     level = tkwargs.get("level", "user")
 
-    compile_pipeline = get_transform_program(qnode, level=level)
+    if level == "top":
+        # "top" means prepend without discarding whatever is already there
+        program = copy(qnode.transform_program)
+        program.insert(0, BoundTransform(self, targs, dict(tkwargs)))
+        cqnode._transform_program = program
+        return cqnode
 
-    cqnode._transform_program = compile_pipeline
-    cqnode.transform_program.append(BoundTransform(self, targs, {**tkwargs}))
+    # IMPORTANT:
+    # Base program must be the same compile-pipeline *slice* used by the tests.
+    base = copy(get_transform_program(qnode, level=level))
 
+    # Now insert add_noise into that base using the same API as the test
+    base.add_transform(self, *targs, **tkwargs)
+
+    cqnode._transform_program = base
     return cqnode
+
+
+
