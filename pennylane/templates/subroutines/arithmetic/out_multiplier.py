@@ -151,7 +151,7 @@ class OutMultiplier(Operation):
 
     grad_method = None
 
-    resource_keys = {"num_output_wires", "num_x_wires", "num_y_wires", "mod"}
+    resource_keys = {"num_output_wires", "num_x_wires", "num_y_wires", "num_work_wires", "mod"}
 
     def __init__(
         self,
@@ -217,6 +217,7 @@ class OutMultiplier(Operation):
             "num_output_wires": len(self.hyperparameters["output_wires"]),
             "num_x_wires": len(self.hyperparameters["x_wires"]),
             "num_y_wires": len(self.hyperparameters["y_wires"]),
+            "num_work_wires": len(self.hyperparameters["work_wires"]),
             "mod": self.hyperparameters["mod"],
         }
 
@@ -299,8 +300,9 @@ class OutMultiplier(Operation):
 
 
 def _out_multiplier_decomposition_resources(
-    num_output_wires, num_x_wires, num_y_wires, mod
+    num_output_wires, num_x_wires, num_y_wires, mod, num_work_wires
 ) -> dict:
+    # pylint: disable=unused-argument
     qft_wires = num_output_wires + 1 if mod != 2**num_output_wires else num_output_wires
     return {
         change_op_basis_resource_rep(
@@ -319,6 +321,11 @@ def _out_multiplier_decomposition_resources(
     }
 
 
+def _out_multiplier_decomposition_condition(num_output_wires, mod, num_work_wires, **_):
+    return mod in (None, 2**num_output_wires) or num_work_wires >= 1
+
+
+@register_condition(_out_multiplier_decomposition_condition)
 @register_resources(_out_multiplier_decomposition_resources)
 def _out_multiplier_decomposition(
     x_wires: WiresLike,
@@ -344,7 +351,9 @@ def _out_multiplier_decomposition(
     )
 
 
-def _out_multiplier_with_adders_resources(num_output_wires, num_x_wires, num_y_wires, mod) -> dict:
+def _out_multiplier_with_adders_resources(
+    num_output_wires, num_x_wires, num_y_wires, mod, num_work_wires
+) -> dict:
     # pylint: disable=unused-argument
     if num_output_wires == num_x_wires + num_y_wires:
         return {
@@ -370,7 +379,11 @@ def _out_multiplier_with_adders_resources(num_output_wires, num_x_wires, num_y_w
     return dict(resources)
 
 
-@register_condition(lambda num_output_wires, mod=None, **_: mod in (None, 2**num_output_wires))
+def _out_multiplier_with_adders_condition(num_output_wires, num_y_wires, mod, num_work_wires, **_):
+    return mod in (None, 2**num_output_wires) and num_work_wires >= num_y_wires
+
+
+@register_condition(_out_multiplier_with_adders_condition)
 @register_resources(_out_multiplier_with_adders_resources)
 def _out_multiplier_with_adders(
     x_wires: WiresLike,
