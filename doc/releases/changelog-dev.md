@@ -4,6 +4,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* Added a standard decomposition of :class:`~.OutMultiplier` that is significantly cheaper when
+  auxiliary wires are available
+  [(#8900)](https://github.com/PennyLaneAI/pennylane/pull/8900)
+
 * The ``qml.estimator.Resources`` class now has a nice string representation in Jupyter Notebooks.
   [(#8880)](https://github.com/PennyLaneAI/pennylane/pull/8880)
 
@@ -30,4 +34,5 @@
 This release contains contributions from (in alphabetical order):
 
 Omkar Sarkar,
-Jay Soni
+Jay Soni,
+David Wierichs,
