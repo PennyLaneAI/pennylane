@@ -352,18 +352,9 @@ def _out_multiplier_decomposition(
 
 
 def _out_multiplier_with_adders_resources(
-    num_output_wires, num_x_wires, num_y_wires, mod, num_work_wires
+    num_output_wires, num_x_wires, num_y_wires, num_work_wires, mod
 ) -> dict:
     # pylint: disable=unused-argument
-    if num_output_wires == num_x_wires + num_y_wires:
-        return {
-            controlled_resource_rep(
-                base_class=SemiAdder,
-                base_params={"num_y_wires": num_y_wires + 1},
-                num_control_wires=1,
-                num_zero_control_values=0,
-            ): num_x_wires
-        }
 
     resources = defaultdict(int)
     for i in range(min(num_output_wires, num_x_wires)):
