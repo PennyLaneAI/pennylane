@@ -188,9 +188,9 @@ class OutMultiplier(Operation):
             )
 
         registers = [
-            (set(x_wires), "x_wires"),
-            (set(y_wires), "y_wires"),
-            (set(output_wires), "output_wires"),
+            (x_wires, "x_wires"),
+            (y_wires, "y_wires"),
+            (output_wires, "output_wires"),
         ]
 
         if num_work_wires != 0:

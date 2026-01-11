@@ -153,23 +153,27 @@ class SignedOutMultiplier(Operation):
         x_wires: WiresLike,
         y_wires: WiresLike,
         output_wires: WiresLike,
-        work_wires: WiresLike = (),
+        work_wires: WiresLike,
         id=None,
     ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
 
         x_wires = Wires(x_wires)
         y_wires = Wires(y_wires)
         output_wires = Wires(output_wires)
-        work_wires = Wires(() if work_wires is None else work_wires)
+        work_wires = Wires(work_wires)
+        num_required_work_wires = max(len(x_wires) - 1, len(y_wires) - 1)
+        if len(work_wires) < num_required_work_wires:
+            raise ValueError(
+                f"SignedOutMultiplier requires at least {num_required_work_wires} work wires for "
+                f"{len(x_wires)} and {len(y_wires)} input wires."
+            )
 
         registers = [
             (x_wires, "x_wires"),
             (y_wires, "y_wires"),
             (output_wires, "output_wires"),
+            (work_wires, "work_wires"),
         ]
-
-        if len(work_wires) != 0:
-            registers.append((work_wires, "work_wires"))
 
         for (reg0, reg0_name), (reg1, reg1_name) in combinations(registers, r=2):
             if reg0.intersection(reg1):
@@ -178,7 +182,7 @@ class SignedOutMultiplier(Operation):
                 )
 
         for wires, name in registers:
-            self.hyperparameters[name] = Wires(wires)
+            self.hyperparameters[name] = wires
 
         all_wires = sum((self.hyperparameters[name] for _, name in registers), start=[])
         super().__init__(wires=all_wires, id=id)
@@ -248,10 +252,6 @@ class SignedOutMultiplier(Operation):
         >>> qml.SignedOutMultiplier.compute_decomposition(x_wires=[0,1], y_wires=[2,3], output_wires=[5,6], work_wires=[4,7])
         # TODO
         """
-
-        print(f"{x_wires=}")
-        print(f"{y_wires=}")
-        print(f"{output_wires=}")
         nx = len(x_wires)
         ny = len(y_wires)
         m = len(output_wires)
@@ -265,7 +265,7 @@ class SignedOutMultiplier(Operation):
                 ctrl(
                     SemiAdder(
                         y_wires[1:],
-                        output_wires[max(0, m - (nx + ny)) : max(0, m - nx)],
+                        output_wires[max(0, m - (nx + ny) + 1) : max(0, m - nx + 1)],
                         work_wires=work_wires,
                     ),
                     control=x_wires[0],
@@ -275,21 +275,28 @@ class SignedOutMultiplier(Operation):
             op_list.append(
                 ctrl(
                     SemiAdder(
-                        x_wires[1:], output_wires[m - (nx + ny) : m - ny], work_wires=work_wires
+                        x_wires[1:],
+                        output_wires[max(0, m - (nx + ny) + 1) : max(0, m - ny + 1)],
+                        work_wires=work_wires,
                     ),
                     control=y_wires[0],
                 )
             )
         if need_first_subtractor or need_second_subtractor:
             op_list.extend(X(w) for w in output_wires)
-        if m >= nx + ny:
-            op_list.append(Toffoli([x_wires[0], y_wires[0], output_wires[m - nx - ny]]))
+        op_list.append(Toffoli([x_wires[0], y_wires[0], output_wires[0]]))
         return op_list
 
 
 def _signed_out_multiplier_resources(
     num_output_wires, num_x_wires, num_y_wires, num_work_wires
 ) -> dict:
+    need_first_subtractor = max(0, num_output_wires - num_x_wires) > max(
+        0, num_output_wires - (num_x_wires + num_y_wires)
+    )
+    need_second_subtractor = max(0, num_output_wires - num_y_wires) > max(
+        0, num_output_wires - (num_x_wires + num_y_wires)
+    )
     resources = {
         resource_rep(
             OutMultiplier,
@@ -305,18 +312,17 @@ def _signed_out_multiplier_resources(
                 "num_y_wires": num_y_wires,
             },
             num_control_wires=1,
-        ): 1,
+        ): need_first_subtractor,
         controlled_resource_rep(
             base_class=SemiAdder,
             base_params={
                 "num_y_wires": num_x_wires,
             },
             num_control_wires=1,
-        ): 1,
-        resource_rep(X): 2 * num_output_wires,
+        ): need_second_subtractor,
+        resource_rep(X): 2 * num_output_wires * (need_first_subtractor or need_second_subtractor),
     }
-    if num_output_wires >= num_x_wires + num_y_wires:
-        resources[resource_rep(Toffoli)] = 1
+    resources[resource_rep(Toffoli)] = 1
     return resources
 
 
@@ -328,32 +334,7 @@ def _signed_out_multiplier(
     work_wires: WiresLike,
     **__,
 ):
-    nx = len(x_wires)
-    ny = len(y_wires)
-    m = len(output_wires)
-    need_first_subtractor = max(0, m - nx) > max(0, m - (nx + ny))
-    need_second_subtractor = max(0, m - ny) > max(0, m - (nx + ny))
-    OutMultiplier(x_wires[1:], y_wires[1:], output_wires, work_wires=work_wires)
-    if need_first_subtractor or need_second_subtractor:
-        _ = [X(w) for w in output_wires]
-    if need_first_subtractor:
-        ctrl(
-            SemiAdder(
-                y_wires[1:],
-                output_wires[max(0, m - (nx + ny)) : max(0, m - nx)],
-                work_wires=work_wires,
-            ),
-            control=x_wires[0],
-        )
-    if need_second_subtractor:
-        ctrl(
-            SemiAdder(x_wires[1:], output_wires[m - (nx + ny) : m - ny], work_wires=work_wires),
-            control=y_wires[0],
-        )
-    if need_first_subtractor or need_second_subtractor:
-        _ = [X(w) for w in output_wires]
-    if m >= nx + ny:
-        Toffoli([x_wires[0], y_wires[0], output_wires[m - nx - ny]])
+    SignedOutMultiplier.compute_decomposition(x_wires, y_wires, output_wires, work_wires)
 
 
 add_decomps(SignedOutMultiplier, _signed_out_multiplier)
