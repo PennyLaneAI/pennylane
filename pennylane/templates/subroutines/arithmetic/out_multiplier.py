@@ -14,6 +14,8 @@
 """
 Contains the OutMultiplier template.
 """
+from itertools import combinations
+
 from pennylane.decomposition import (
     add_decomps,
     change_op_basis_resource_rep,
@@ -30,7 +32,7 @@ from .phase_adder import PhaseAdder
 
 
 class OutMultiplier(Operation):
-    r"""Performs the out-place modular multiplication operation.
+    r"""Performs the out-of-place modular multiplication operation.
 
     This operator performs the modular multiplication of integers :math:`x` and :math:`y` modulo
     :math:`mod` in the computational basis:
@@ -38,23 +40,28 @@ class OutMultiplier(Operation):
     .. math::
         \text{OutMultiplier}(mod) |x \rangle |y \rangle |b \rangle = |x \rangle |y \rangle |b + x \cdot y \; \text{mod} \; mod \rangle,
 
-    The implementation is based on the quantum Fourier transform method presented in
-    `arXiv:2311.08555 <https://arxiv.org/abs/2311.08555>`_.
+    The two decompositions of this operation are based on the quantum Fourier transform method
+    presented in `arXiv:2311.08555 <https://arxiv.org/abs/2311.08555>`_,
+    and on controlled :class:`~.SemiAdder`\ s, respectively.
 
     .. note::
 
         To obtain the correct result, :math:`x`, :math:`y` and :math:`b` must be smaller than :math:`mod`.
 
-    .. seealso:: :class:`~.PhaseAdder` and :class:`~.Multiplier`.
+    .. seealso:: :class:`~.SemiAdder`, :class:`~.PhaseAdder`, :class:`~.SignedOutMultiplier` and :class:`~.Multiplier`.
 
     Args:
         x_wires (Sequence[int]): the wires that store the integer :math:`x`
         y_wires (Sequence[int]): the wires that store the integer :math:`y`
-        output_wires (Sequence[int]): the wires that store the multiplication result. If the register is in a non-zero state :math:`b`, the solution will be added to this value
-        mod (int): the modulo for performing the multiplication. If not provided, it will be set to its maximum value, :math:`2^{\text{len(output_wires)}}`
+        output_wires (Sequence[int]): the wires that store the multiplication result. If the
+            register is in a non-zero state :math:`b`, the solution will be added to this value
+        mod (int): the modulo for performing the multiplication. If not provided, it will
+            be set to its maximum value, :math:`2^{\text{len(output_wires)}}`
         work_wires (Sequence[int]): the auxiliary wires to use for the multiplication. The
-            work wires are not needed if :math:`mod=2^{\text{len(output_wires)}}`, otherwise two work wires
-            should be provided. Defaults to empty tuple.
+            number of required work wires depends on the decomposition and on the value of ``mod``.
+            For the adder-based decomposition, ``len(y_wires)`` work wires are required. For the
+            phase adder-based decomposition, not work wires are needed if
+            :math:`mod=2^{\text{len(output_wires)}}`, otherwise two work wires should be provided. Defaults to empty tuple.
 
     **Example**
 
@@ -136,17 +143,20 @@ class OutMultiplier(Operation):
 
         The fourth set of wires is ``work_wires`` which consist of the auxiliary qubits used to perform the modular multiplication operation.
 
+        - If the cheaper decomposition based on :class:`~.SemiAdder` is used,
+          ``len(y_wires)`` work wires are required, which are passed to the adders.
+
         - If :math:`mod = 2^{\text{len(output_wires)}}`, there will be no need for ``work_wires``, hence ``work_wires=()``. This is the case by default.
 
         - If :math:`mod \neq 2^{\text{len(output_wires)}}`, two ``work_wires`` have to be provided.
 
         Note that the ``OutMultiplier`` template allows us to perform modular multiplication in the computational basis. However if one just wants to perform
-        standard multiplication (with no modulo), that would be equivalent to setting the modulo :math:`mod` to a large enough value to ensure that :math:`x \cdot k < mod`.
+        standard multiplication (with no modulo), that would be equivalent to setting the modulo :math:`mod` to a large enough value to ensure that :math:`x \cdot y < mod`.
     """
 
     grad_method = None
 
-    resource_keys = {"num_output_wires", "num_x_wires", "num_y_wires", "mod"}
+    resource_keys = {"num_output_wires", "num_x_wires", "num_y_wires", "num_work_wires", "mod"}
 
     def __init__(
         self,
@@ -167,6 +177,7 @@ class OutMultiplier(Operation):
 
         if mod is None:
             mod = 2 ** len(output_wires)
+        print(mod, 2 ** len(output_wires))
         if mod != 2 ** len(output_wires) and num_work_wires != 2:
             raise ValueError(
                 f"If mod is not 2^{len(output_wires)}, two work wires should be provided."
@@ -177,33 +188,26 @@ class OutMultiplier(Operation):
                 f"with len(output_wires)={len(output_wires)} is {2 ** len(output_wires)}, but received {mod}."
             )
 
-        if len(work_wires) != 0:
-            if any(wire in work_wires for wire in x_wires):
-                raise ValueError("None of the wires in work_wires should be included in x_wires.")
-            if any(wire in work_wires for wire in y_wires):
-                raise ValueError("None of the wires in work_wires should be included in y_wires.")
+        registers = [
+            (set(x_wires), "x_wires"),
+            (set(y_wires), "y_wires"),
+            (set(output_wires), "output_wires"),
+        ]
 
-        if any(wire in y_wires for wire in x_wires):
-            raise ValueError("None of the wires in y_wires should be included in x_wires.")
-        if any(wire in x_wires for wire in output_wires):
-            raise ValueError("None of the wires in x_wires should be included in output_wires.")
-        if any(wire in y_wires for wire in output_wires):
-            raise ValueError("None of the wires in y_wires should be included in output_wires.")
+        if num_work_wires != 0:
+            registers.append((work_wires, "work_wires"))
 
-        wires_list = [x_wires, y_wires, output_wires]
-        wires_name = ["x_wires", "y_wires", "output_wires"]
-        self.hyperparameters["work_wires"] = work_wires
+        for (reg0, reg0_name), (reg1, reg1_name) in combinations(registers, r=2):
+            if reg0.intersection(reg1):
+                raise ValueError(
+                    f"None of the wires in {reg0_name} should be included in {reg1_name}."
+                )
 
-        if len(work_wires) != 0:
-            wires_list.append(work_wires)
-            wires_name.append("work_wires")
-
-        for name, wires in zip(wires_name, wires_list):
+        for wires, name in registers:
             self.hyperparameters[name] = Wires(wires)
         self.hyperparameters["mod"] = mod
 
-        # pylint: disable=consider-using-generator
-        all_wires = sum([self.hyperparameters[name] for name in wires_name], start=[])
+        all_wires = sum((self.hyperparameters[name] for _, name in registers), start=[])
         super().__init__(wires=all_wires, id=id)
 
     @property
@@ -212,6 +216,7 @@ class OutMultiplier(Operation):
             "num_output_wires": len(self.hyperparameters["output_wires"]),
             "num_x_wires": len(self.hyperparameters["x_wires"]),
             "num_y_wires": len(self.hyperparameters["y_wires"]),
+            "num_work_wires": len(self.hyperparameters["work_wires"]),
             "mod": self.hyperparameters["mod"],
         }
 
@@ -294,8 +299,9 @@ class OutMultiplier(Operation):
 
 
 def _out_multiplier_decomposition_resources(
-    num_output_wires, num_x_wires, num_y_wires, mod
+    num_output_wires, num_x_wires, num_y_wires, num_work_wires, mod
 ) -> dict:
+    # pylint: disable=unused-argument
     qft_wires = num_output_wires + 1 if mod != 2**num_output_wires else num_output_wires
     return {
         change_op_basis_resource_rep(
