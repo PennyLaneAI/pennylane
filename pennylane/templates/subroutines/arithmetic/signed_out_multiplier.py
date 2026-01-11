@@ -1,4 +1,4 @@
-# Copyright 2018-2024 Xanadu Quantum Technologies Inc.
+# Copyright 2026 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,57 +12,47 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Contains the OutMultiplier template.
+Contains the SignedOutMultiplier template.
 """
 from itertools import combinations
 
 from pennylane.decomposition import (
     add_decomps,
-    change_op_basis_resource_rep,
+    controlled_resource_rep,
     register_resources,
 )
 from pennylane.decomposition.resources import resource_rep
 from pennylane.operation import Operation
-from pennylane.ops import change_op_basis
-from pennylane.templates.subroutines.controlled_sequence import ControlledSequence
-from pennylane.templates.subroutines.qft import QFT
+from pennylane.ops import Toffoli, X, ctrl
+from pennylane.templates.subroutines.arithmetic import OutMultiplier, SemiAdder
 from pennylane.wires import Wires, WiresLike
 
-from .phase_adder import PhaseAdder
 
+class SignedOutMultiplier(Operation):
+    r"""Performs the signed out-of-place modular multiplication operation.
 
-class OutMultiplier(Operation):
-    r"""Performs the out-of-place modular multiplication operation.
-
-    This operator performs the modular multiplication of integers :math:`x` and :math:`y` modulo
-    :math:`mod` in the computational basis:
+    This operator performs the modular multiplication of signed integers :math:`x` and :math:`y`
+    modulo :math:`2^{n}` in the computational basis, where :math:`n` is the size of the output
+    register to which the product is added:
 
     .. math::
-        \text{OutMultiplier}(mod) |x \rangle |y \rangle |b \rangle = |x \rangle |y \rangle |b + x \cdot y \; \text{mod} \; mod \rangle,
+        \text{SignedOutMultiplier}(mod) |x \rangle |y \rangle |b \rangle = |x \rangle |y \rangle |b + x \cdot y \; \text{mod} \; 2^n \rangle,
 
-    The two decompositions of this operation are based on the quantum Fourier transform method
-    presented in `arXiv:2311.08555 <https://arxiv.org/abs/2311.08555>`_,
-    and on controlled :class:`~.SemiAdder`\ s, respectively.
+    The signed multiplication is implemented with :class:`~.OutMultiplier`, controlled
+    :class:`~.SemiAdder`\ s, and a :class:`~.Toffoli` gate.
 
-    .. note::
-
-        To obtain the correct result, :math:`x`, :math:`y` and :math:`b` must be smaller than :math:`mod`.
-
-    .. seealso:: :class:`~.SemiAdder`, :class:`~.PhaseAdder`, :class:`~.SignedOutMultiplier` and :class:`~.Multiplier`.
+    .. seealso:: :class:`~.SemiAdder`, :class:`~.OutMultiplier` and :class:`~.Multiplier`.
 
     Args:
         x_wires (Sequence[int]): the wires that store the integer :math:`x`
         y_wires (Sequence[int]): the wires that store the integer :math:`y`
-        output_wires (Sequence[int]): the wires that store the multiplication result. If the
-            register is in a non-zero state :math:`b`, the solution will be added to this value
-        mod (int): the modulo for performing the multiplication. If not provided, it will
-            be set to its maximum value, :math:`2^{\text{len(output_wires)}}`
-        work_wires (Sequence[int]): the auxiliary wires to use for the multiplication. The
-            number of required work wires depends on the decomposition and on the value of ``mod``.
-            For the adder-based decomposition, ``len(y_wires)`` work wires are required. For the
-            phase adder-based decomposition, not work wires are needed if
-            :math:`mod=2^{\text{len(output_wires)}}`, otherwise two work wires should be provided. Defaults to empty tuple.
+        output_wires (Sequence[int]): the wires that store the multiplication result. If the register
+            is in a non-zero state :math:`b`, the solution will be added to this value, modulo
+            :math:`2^n`, where :math:`n` is ``len(output_wires)``.
+        work_wires (Sequence[int]): the auxiliary wires to use for the multiplication.
+            ``len(y_wires)-1`` work wires should be provided.
 
+    TODO : Update from here on
     **Example**
 
     This example performs the multiplication of two integers :math:`x=2` and :math:`y=7` modulo :math:`mod=12`.
@@ -85,7 +75,7 @@ class OutMultiplier(Operation):
         def circuit():
             qml.BasisEmbedding(x, wires=x_wires)
             qml.BasisEmbedding(y, wires=y_wires)
-            qml.OutMultiplier(x_wires, y_wires, output_wires, mod, work_wires)
+            qml.SignedOutMultiplier(x_wires, y_wires, output_wires, mod, work_wires)
             return qml.sample(wires=output_wires)
 
     >>> print(circuit())
@@ -132,7 +122,7 @@ class OutMultiplier(Operation):
                 qml.BasisEmbedding(x, wires=x_wires)
                 qml.BasisEmbedding(y, wires=y_wires)
                 qml.BasisEmbedding(b, wires=output_wires)
-                qml.OutMultiplier(x_wires, y_wires, output_wires, mod, work_wires)
+                qml.SignedOutMultiplier(x_wires, y_wires, output_wires, mod, work_wires)
                 return qml.sample(wires=output_wires)
 
         >>> print(circuit())
@@ -150,20 +140,19 @@ class OutMultiplier(Operation):
 
         - If :math:`mod \neq 2^{\text{len(output_wires)}}`, two ``work_wires`` have to be provided.
 
-        Note that the ``OutMultiplier`` template allows us to perform modular multiplication in the computational basis. However if one just wants to perform
+        Note that the ``SignedOutMultiplier`` template allows us to perform modular multiplication in the computational basis. However if one just wants to perform
         standard multiplication (with no modulo), that would be equivalent to setting the modulo :math:`mod` to a large enough value to ensure that :math:`x \cdot y < mod`.
     """
 
     grad_method = None
 
-    resource_keys = {"num_output_wires", "num_x_wires", "num_y_wires", "num_work_wires", "mod"}
+    resource_keys = {"num_output_wires", "num_x_wires", "num_y_wires", "num_work_wires"}
 
     def __init__(
         self,
         x_wires: WiresLike,
         y_wires: WiresLike,
         output_wires: WiresLike,
-        mod=None,
         work_wires: WiresLike = (),
         id=None,
     ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
@@ -173,27 +162,13 @@ class OutMultiplier(Operation):
         output_wires = Wires(output_wires)
         work_wires = Wires(() if work_wires is None else work_wires)
 
-        num_work_wires = len(work_wires)
-
-        if mod is None:
-            mod = 2 ** len(output_wires)
-        if mod != 2 ** len(output_wires) and num_work_wires != 2:
-            raise ValueError(
-                f"If mod is not 2^{len(output_wires)}, two work wires should be provided."
-            )
-        if mod > 2 ** (len(output_wires)):
-            raise ValueError(
-                "OutMultiplier must have enough wires to represent mod. The maximum mod "
-                f"with len(output_wires)={len(output_wires)} is {2 ** len(output_wires)}, but received {mod}."
-            )
-
         registers = [
-            (set(x_wires), "x_wires"),
-            (set(y_wires), "y_wires"),
-            (set(output_wires), "output_wires"),
+            (x_wires, "x_wires"),
+            (y_wires, "y_wires"),
+            (output_wires, "output_wires"),
         ]
 
-        if num_work_wires != 0:
+        if len(work_wires) != 0:
             registers.append((work_wires, "work_wires"))
 
         for (reg0, reg0_name), (reg1, reg1_name) in combinations(registers, r=2):
@@ -204,7 +179,6 @@ class OutMultiplier(Operation):
 
         for wires, name in registers:
             self.hyperparameters[name] = Wires(wires)
-        self.hyperparameters["mod"] = mod
 
         all_wires = sum((self.hyperparameters[name] for _, name in registers), start=[])
         super().__init__(wires=all_wires, id=id)
@@ -216,7 +190,6 @@ class OutMultiplier(Operation):
             "num_x_wires": len(self.hyperparameters["x_wires"]),
             "num_y_wires": len(self.hyperparameters["y_wires"]),
             "num_work_wires": len(self.hyperparameters["work_wires"]),
-            "mod": self.hyperparameters["mod"],
         }
 
     @property
@@ -238,11 +211,10 @@ class OutMultiplier(Operation):
             for key in ["x_wires", "y_wires", "output_wires", "work_wires"]
         }
 
-        return OutMultiplier(
+        return SignedOutMultiplier(
             new_dict["x_wires"],
             new_dict["y_wires"],
             new_dict["output_wires"],
-            self.hyperparameters["mod"],
             new_dict["work_wires"],
         )
 
@@ -255,93 +227,133 @@ class OutMultiplier(Operation):
 
     @staticmethod
     def compute_decomposition(
-        x_wires: WiresLike, y_wires: WiresLike, output_wires: WiresLike, mod, work_wires: WiresLike
+        x_wires: WiresLike, y_wires: WiresLike, output_wires: WiresLike, work_wires: WiresLike
     ):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
 
         Args:
             x_wires (Sequence[int]): the wires that store the integer :math:`x`
             y_wires (Sequence[int]): the wires that store the integer :math:`y`
-            output_wires (Sequence[int]): the wires that store the multiplication result. If the register is in a non-zero state :math:`b`, the solution will be added to this value
-            mod (int): the modulo for performing the multiplication. If not provided, it will be set to its maximum value, :math:`2^{\text{len(output_wires)}}`
-            work_wires (Sequence[int]): the auxiliary wires to use for the multiplication. The
-                work wires are not needed if :math:`mod=2^{\text{len(output_wires)}}`, otherwise two work wires
-                should be provided.
+            output_wires (Sequence[int]): the wires that store the multiplication result. If the
+                register is in a non-zero state :math:`b`, the solution will be added to this value
+            work_wires (Sequence[int]): the auxiliary wires to use for the multiplication. The work
+                wires are not needed if :math:`mod=2^{\text{len(output_wires)}}`, otherwise two
+                work wires should be provided.
 
         Returns:
             list[.Operator]: Decomposition of the operator
 
         **Example**
 
-        >>> qml.OutMultiplier.compute_decomposition(x_wires=[0,1], y_wires=[2,3], output_wires=[5,6], mod=4, work_wires=[4,7])
-        [(Adjoint(QFT(wires=[5, 6]))) @ (ControlledSequence(ControlledSequence(PhaseAdder(wires=[5, 6]), control=[0, 1]), control=[2, 3])) @ QFT(wires=[5, 6])]
+        >>> qml.SignedOutMultiplier.compute_decomposition(x_wires=[0,1], y_wires=[2,3], output_wires=[5,6], work_wires=[4,7])
+        # TODO
         """
-        if mod != 2 ** len(output_wires):
-            qft_output_wires = work_wires[:1] + output_wires
-            work_wire = work_wires[1:]
-        else:
-            qft_output_wires = output_wires
-            work_wire = ()
 
-        op_list = [
-            change_op_basis(
-                QFT(wires=qft_output_wires),
-                ControlledSequence(
-                    ControlledSequence(
-                        PhaseAdder(1, qft_output_wires, mod, work_wire), control=x_wires
+        print(f"{x_wires=}")
+        print(f"{y_wires=}")
+        print(f"{output_wires=}")
+        nx = len(x_wires)
+        ny = len(y_wires)
+        m = len(output_wires)
+        need_first_subtractor = max(0, m - nx) > max(0, m - (nx + ny))
+        need_second_subtractor = max(0, m - ny) > max(0, m - (nx + ny))
+        op_list = [OutMultiplier(x_wires[1:], y_wires[1:], output_wires, work_wires=work_wires)]
+        if need_first_subtractor or need_second_subtractor:
+            op_list.extend(X(w) for w in output_wires)
+        if need_first_subtractor:
+            op_list.append(
+                ctrl(
+                    SemiAdder(
+                        y_wires[1:],
+                        output_wires[max(0, m - (nx + ny)) : max(0, m - nx)],
+                        work_wires=work_wires,
                     ),
-                    control=y_wires,
-                ),
+                    control=x_wires[0],
+                )
             )
-        ]
+        if need_second_subtractor:
+            op_list.append(
+                ctrl(
+                    SemiAdder(
+                        x_wires[1:], output_wires[m - (nx + ny) : m - ny], work_wires=work_wires
+                    ),
+                    control=y_wires[0],
+                )
+            )
+        if need_first_subtractor or need_second_subtractor:
+            op_list.extend(X(w) for w in output_wires)
+        if m >= nx + ny:
+            op_list.append(Toffoli([x_wires[0], y_wires[0], output_wires[m - nx - ny]]))
         return op_list
 
 
-def _out_multiplier_decomposition_resources(
-    num_output_wires, num_x_wires, num_y_wires, num_work_wires, mod
+def _signed_out_multiplier_resources(
+    num_output_wires, num_x_wires, num_y_wires, num_work_wires
 ) -> dict:
-    # pylint: disable=unused-argument
-    qft_wires = num_output_wires + 1 if mod != 2**num_output_wires else num_output_wires
-    return {
-        change_op_basis_resource_rep(
-            resource_rep(QFT, num_wires=qft_wires),
-            resource_rep(
-                ControlledSequence,
-                base_class=ControlledSequence,
-                base_params={
-                    "base_class": PhaseAdder,
-                    "base_params": {"num_x_wires": qft_wires, "mod": mod},
-                    "num_control_wires": num_x_wires,
-                },
-                num_control_wires=num_y_wires,
-            ),
-        ): 1
+    resources = {
+        resource_rep(
+            OutMultiplier,
+            num_output_wires=num_output_wires,
+            num_x_wires=num_x_wires - 1,
+            num_y_wires=num_y_wires - 1,
+            num_work_wires=num_work_wires,
+            mod=2**num_output_wires,
+        ): 1,
+        controlled_resource_rep(
+            base_class=SemiAdder,
+            base_params={
+                "num_y_wires": num_y_wires,
+            },
+            num_control_wires=1,
+        ): 1,
+        controlled_resource_rep(
+            base_class=SemiAdder,
+            base_params={
+                "num_y_wires": num_x_wires,
+            },
+            num_control_wires=1,
+        ): 1,
+        resource_rep(X): 2 * num_output_wires,
     }
+    if num_output_wires >= num_x_wires + num_y_wires:
+        resources[resource_rep(Toffoli)] = 1
+    return resources
 
 
-@register_resources(_out_multiplier_decomposition_resources)
-def _out_multiplier_decomposition(
+@register_resources(_signed_out_multiplier_resources)
+def _signed_out_multiplier(
     x_wires: WiresLike,
     y_wires: WiresLike,
     output_wires: WiresLike,
-    mod,
     work_wires: WiresLike,
     **__,
 ):
-    if mod != 2 ** len(output_wires):
-        qft_output_wires = work_wires[:1] + output_wires
-        work_wire = work_wires[1:]
-    else:
-        qft_output_wires = output_wires
-        work_wire = ()
+    nx = len(x_wires)
+    ny = len(y_wires)
+    m = len(output_wires)
+    need_first_subtractor = max(0, m - nx) > max(0, m - (nx + ny))
+    need_second_subtractor = max(0, m - ny) > max(0, m - (nx + ny))
+    OutMultiplier(x_wires[1:], y_wires[1:], output_wires, work_wires=work_wires)
+    if need_first_subtractor or need_second_subtractor:
+        _ = [X(w) for w in output_wires]
+    if need_first_subtractor:
+        ctrl(
+            SemiAdder(
+                y_wires[1:],
+                output_wires[max(0, m - (nx + ny)) : max(0, m - nx)],
+                work_wires=work_wires,
+            ),
+            control=x_wires[0],
+        )
+    if need_second_subtractor:
+        ctrl(
+            SemiAdder(x_wires[1:], output_wires[m - (nx + ny) : m - ny], work_wires=work_wires),
+            control=y_wires[0],
+        )
+    if need_first_subtractor or need_second_subtractor:
+        _ = [X(w) for w in output_wires]
+    if m >= nx + ny:
+        Toffoli([x_wires[0], y_wires[0], output_wires[m - nx - ny]])
 
-    change_op_basis(
-        QFT(wires=qft_output_wires),
-        ControlledSequence(
-            ControlledSequence(PhaseAdder(1, qft_output_wires, mod, work_wire), control=x_wires),
-            control=y_wires,
-        ),
-    )
 
-
-add_decomps(OutMultiplier, _out_multiplier_decomposition)
+add_decomps(SignedOutMultiplier, _signed_out_multiplier)

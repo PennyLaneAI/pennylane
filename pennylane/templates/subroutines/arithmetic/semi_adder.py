@@ -303,6 +303,10 @@ def _semiadder_resources(num_y_wires):
 @register_resources(_semiadder_resources, exact=False)
 def _semiadder(x_wires, y_wires, work_wires, **_):
 
+    print("In SemiAdder")
+    print(f"{x_wires=}")
+    print(f"{y_wires=}")
+    print(f"{work_wires=}")
     num_y_wires = len(y_wires)
     num_x_wires = len(x_wires)
 
