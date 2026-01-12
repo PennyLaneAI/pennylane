@@ -270,9 +270,7 @@ def custom_qnode_wrapper(self, qnode, targs, tkwargs):
 
     if level == "top":
         # "top" means prepend without discarding whatever is already there
-        program = copy(qnode.transform_program)
-        program.insert(0, BoundTransform(self, targs, dict(tkwargs)))
-        cqnode._transform_program = program
+        cqnode._transform_program = BoundTransform(self, targs, dict(tkwargs)) + qnode.transform_program
         return cqnode
 
     # IMPORTANT:
