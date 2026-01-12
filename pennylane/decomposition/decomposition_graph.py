@@ -27,7 +27,7 @@ from __future__ import annotations
 
 import warnings
 from collections import defaultdict
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping, Set
 from dataclasses import dataclass, replace
 
 import rustworkx as rx
@@ -222,12 +222,12 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
     def __init__(
         self,
         operations: list[Operator | CompressedResourceOp],
-        gate_set: set[type | str] | dict[type | str, float],
+        gate_set: Set[type | str] | Mapping[type | str, float],
         fixed_decomps: dict | None = None,
         alt_decomps: dict | None = None,
     ):
         self._gate_set_weights: dict[str, float]
-        if isinstance(gate_set, dict):
+        if isinstance(gate_set, Mapping):
             # the gate_set is a dict
             self._gate_set_weights = {_to_name(gate): weight for gate, weight in gate_set.items()}
         else:
