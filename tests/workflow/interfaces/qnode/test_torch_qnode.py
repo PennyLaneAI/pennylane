@@ -259,7 +259,7 @@ class TestQNode:
             diff_method=diff_method,
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
-            gradint_kwargs=gradient_kwargs,
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(a, b):
             qml.RY(a, wires=0)
@@ -1268,6 +1268,10 @@ class TestTapeExpansion:
             def decomposition(self):
                 return [qml.RY(3 * self.data[0], wires=self.wires)]
 
+        gradient_kwargs = {}
+        if diff_method == "hadamard":
+            gradient_kwargs["aux_wire"] = 1
+
         @qnode(
             dev,
             diff_method=diff_method,
@@ -1275,6 +1279,7 @@ class TestTapeExpansion:
             max_diff=2,
             device_vjp=device_vjp,
             interface="torch",
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(x):
             qml.Hadamard(wires=0)
@@ -1315,6 +1320,10 @@ class TestTapeExpansion:
             def decomposition(self):
                 return [qml.RY(3 * self.data[0], wires=self.wires)]
 
+        gradient_kwargs = {}
+        if diff_method == "hadamard":
+            gradient_kwargs["aux_wire"] = 1
+
         @qnode(
             dev,
             diff_method=diff_method,
@@ -1322,6 +1331,7 @@ class TestTapeExpansion:
             max_diff=max_diff,
             interface="torch",
             device_vjp=device_vjp,
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(x, y):
             qml.Hadamard(wires=0)
@@ -1669,12 +1679,17 @@ class TestReturn:
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
 
+        gradient_kwargs = {}
+        if diff_method == "hadamard":
+            gradient_kwargs["mode"] = "direct"
+
         @qnode(
             dev,
             interface="torch",
             diff_method=diff_method,
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
+            gradient_kwargs=gradient_kwargs
         )
         def circuit(a):
             qml.RY(a, wires=0)
@@ -1702,12 +1717,17 @@ class TestReturn:
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
 
+        gradient_kwargs = {}
+        if diff_method == "hadamard":
+            gradient_kwargs["mode"] = "direct"
+
         @qnode(
             dev,
             interface="torch",
             diff_method=diff_method,
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
+            gradient_kwargs=gradient_kwargs
         )
         def circuit(a, b):
             qml.RY(a, wires=0)
@@ -1735,12 +1755,17 @@ class TestReturn:
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
 
+        gradient_kwargs = {}
+        if diff_method == "hadamard":
+            gradient_kwargs["mode"] = "direct"
+
         @qnode(
             dev,
             interface="torch",
             diff_method=diff_method,
             device_vjp=device_vjp,
             grad_on_execution=grad_on_execution,
+            gradient_kwargs=gradient_kwargs
         )
         def circuit(a):
             qml.RY(a[0], wires=0)
@@ -1770,12 +1795,17 @@ class TestReturn:
         if diff_method == "adjoint":
             pytest.skip("Test does not supports adjoint because of probabilities.")
 
+        gradient_kwargs = {}
+        if diff_method == "hadamard":
+            gradient_kwargs["aux_wire"] = 2
+
         @qnode(
             dev,
             interface="torch",
             diff_method=diff_method,
             device_vjp=device_vjp,
             grad_on_execution=grad_on_execution,
+            gradient_kwargs=gradient_kwargs
         )
         def circuit(a):
             qml.RY(a, wires=0)
@@ -1799,12 +1829,17 @@ class TestReturn:
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
 
+        gradient_kwargs = {}
+        if diff_method == "hadamard":
+            gradient_kwargs["aux_wire"] = 2
+
         @qnode(
             dev,
             interface="torch",
             diff_method=diff_method,
             device_vjp=device_vjp,
             grad_on_execution=grad_on_execution,
+            gradient_kwargs=gradient_kwargs
         )
         def circuit(a, b):
             qml.RY(a, wires=0)
@@ -1849,10 +1884,16 @@ class TestReturn:
             return qml.probs(wires=[0, 1])
 
         a = torch.tensor([0.1, 0.2], requires_grad=True)
-        jac = jacobian(circuit, a)
 
-        assert isinstance(jac, torch.Tensor)
-        assert jac.shape == (4, 2)
+        if diff_method == "hadamard":
+            # Cannot find a way to use an aux_wire that is not already in use by the circuit!
+            with pytest.raises(PennyLaneDeprecationWarning, match="aux_wire"):
+                jacobian(circuit, a)
+        else:
+            jac = jacobian(circuit, a)
+
+            assert isinstance(jac, torch.Tensor)
+            assert jac.shape == (4, 2)
 
     def test_jacobian_expval_expval_multiple_params(
         self, dev, diff_method, grad_on_execution, device_vjp, shots
@@ -1864,6 +1905,10 @@ class TestReturn:
         par_0 = torch.tensor(0.1, requires_grad=True)
         par_1 = torch.tensor(0.2, requires_grad=True)
 
+        gradient_kwargs = {}
+        if diff_method == "hadamard":
+            gradient_kwargs["aux_wire"] = 2
+
         @qml.set_shots(shots=shots)
         @qnode(
             dev,
@@ -1872,6 +1917,7 @@ class TestReturn:
             max_diff=1,
             device_vjp=device_vjp,
             grad_on_execution=grad_on_execution,
+            gradient_kwargs=gradient_kwargs
         )
         def circuit(x, y):
             qml.RX(x, wires=[0])
@@ -1904,6 +1950,10 @@ class TestReturn:
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
 
+        gradient_kwargs = {}
+        if diff_method == "hadamard":
+            gradient_kwargs["aux_wire"] = 2
+
         @qml.set_shots(shots=shots)
         @qnode(
             dev,
@@ -1911,6 +1961,7 @@ class TestReturn:
             diff_method=diff_method,
             device_vjp=device_vjp,
             grad_on_execution=grad_on_execution,
+            gradient_kwargs=gradient_kwargs
         )
         def circuit(a):
             qml.RY(a[0], wires=0)
@@ -2025,6 +2076,10 @@ class TestReturn:
         if diff_method == "adjoint":
             pytest.skip("Test does not supports adjoint because of probabilities.")
 
+        gradient_kwargs = {}
+        if diff_method == "hadamard":
+            gradient_kwargs["aux_wire"] = 2
+
         @qml.set_shots(shots=shots)
         @qnode(
             dev,
@@ -2032,6 +2087,7 @@ class TestReturn:
             diff_method=diff_method,
             device_vjp=device_vjp,
             grad_on_execution=grad_on_execution,
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(a):
             qml.RY(a, wires=0)
@@ -2060,6 +2116,10 @@ class TestReturn:
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
 
+        gradient_kwargs = {}
+        if diff_method == "hadamard":
+            gradient_kwargs["aux_wire"] = 2
+
         @qml.set_shots(shots=shots)
         @qnode(
             dev,
@@ -2067,6 +2127,7 @@ class TestReturn:
             diff_method=diff_method,
             device_vjp=device_vjp,
             grad_on_execution=grad_on_execution,
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(a, b):
             qml.RY(a, wires=0)
@@ -2104,6 +2165,10 @@ class TestReturn:
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
 
+        gradient_kwargs = {}
+        if diff_method == "hadamard":
+            gradient_kwargs["aux_wire"] = 2
+
         @qml.set_shots(shots=shots)
         @qnode(
             dev,
@@ -2111,6 +2176,7 @@ class TestReturn:
             diff_method=diff_method,
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(a):
             qml.RY(a[0], wires=0)
@@ -2143,6 +2209,10 @@ class TestReturn:
         par_0 = torch.tensor(0.1, requires_grad=True, dtype=torch.float64)
         par_1 = torch.tensor(0.2, requires_grad=True, dtype=torch.float64)
 
+        gradient_kwargs = {}
+        if diff_method == "hadamard":
+            gradient_kwargs["mode"] = "direct"
+
         @qml.set_shots(shots=shots)
         @qnode(
             dev,
@@ -2151,6 +2221,7 @@ class TestReturn:
             max_diff=2,
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(x, y):
             qml.RX(x, wires=[0])
@@ -2188,6 +2259,10 @@ class TestReturn:
 
         params = torch.tensor([0.1, 0.2], requires_grad=True)
 
+        gradient_kwargs = {}
+        if diff_method == "hadamard":
+            gradient_kwargs["mode"] = "direct"
+
         @qml.set_shots(shots=shots)
         @qnode(
             dev,
@@ -2196,6 +2271,7 @@ class TestReturn:
             max_diff=2,
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(x):
             qml.RX(x[0], wires=[0])
