@@ -1018,6 +1018,103 @@ def _compute_qsp_angles_iteratively(poly):
 
     return angles
 
+def _next_pow_2(x:int):
+    #the next power of 2 from an integer
+    return 1<<(x-1).bit_length()
+def _fftconv(a,b,reduce=False):
+    #scip fft convolve for large vectors
+    if min(len(a), len(b))<3000:
+        z=scipy.signal.fftconvolve(a,b)
+    elif reduce:
+        n=2**_next_pow_2(max(len(a),len(b)))
+        a1=np.concatenate((a,np.zeros(n-len(a))))
+        b1=np.concatenate((b,np.zeros(n-len(b))))
+        z=np.fft.fft(np.fft.ifft(a1)*np.fft.ifft(b1))*n
+    else:
+        n=2**_next_pow_2(len(a)+len(b))
+        a1=np.concatenate((a,np.zeros(n-len(a))))
+        b1=np.concatenate((b,np.zeros(n-len(b))))
+        z=np.fft.fft(np.fft.ifft(a1)*np.fft.ifft(b1))*n
+        z=z[:(len(a)+len(b)-1)]
+    if reduce:
+        z=z[len(a)-1:len(b)]
+    return z
+    
+def _inlft(a,b):
+    #the inverse non-linear fast fourier transform, as arXiv:2505.12615 
+    n=len(a)
+    gammas=np.zeros(n,dtype='clongdouble')
+    if n==1:
+        Gi=np.concatenate((a,b))
+        gamma=Gi[1]/Gi[0]
+        gammas[0]=gamma
+        xi=np.array([gamma,0])/np.sqrt(1+np.square(np.abs(gamma)))
+        eta=np.array([1,0])/np.sqrt(1+np.square(np.abs(gamma)))
+        return gammas, xi, eta
+    m=int(np.ceil(n/2))
+    
+    gamma_first_half, xi1, eta1 = _inlft(a[0:m], b[0:m]);
+    gammas[0:m] = gamma_first_half;
+
+    am = _fftconv(eta1[::-1],a,reduce=True) + _fftconv(xi1[::-1],b,reduce=True)
+    bm = -1*_fftconv(xi1,a,reduce=True) + _fftconv(eta1,b,reduce=True)
+
+    [gamma_last_half, xi2, eta2] = _inlft(am, bm);
+    
+    gammas[m:n] = gamma_last_half;
+    xi = _fftconv(xi1, eta2) + _fftconv(eta1[::-1], xi2)
+    eta = _fftconv(eta1, eta2) - _fftconv(xi1[::-1], xi2);
+
+    return gammas, xi, eta
+
+def _compute_qsp_angles_inlfft(poly):
+    """Calculates the angles given a polynomial in canonical base using 
+    the weiss transform arXiv:2407.05634 followed by inverse non-linear fast fourier transform arXiv:2505.12615 
+
+    Args:
+        poly (tensor_like): coefficients of a chebyshev polynomial ordered from lowest to highest power
+    """
+
+    #Weiss Algorithm first
+    coef=poly
+    eta=.5
+    coef=-1*coef
+    parity=int(len(coef)%2) #parity of polynomial
+
+    if parity == 0:    
+        coef[0] = coef[0]*2  
+
+    bc = coef/2
+    d = len(bc) - 1 #degree
+    N = int(np.ceil(d/eta))
+    N = max(N,2*d+2)
+    thd = 1 #initial threshold, to be overwritten 
+    Weiss_thd=1e-10 #accuracy target
+
+
+    while thd > Weiss_thd:
+        ext_bc = np.concatenate((bc,np.zeros(N-2*d-1-parity),bc[::-1][:(len(bc)-1-parity)]))
+        bz = np.fft.ifft(ext_bc)*N
+    
+        if parity == 1:
+            bz = bz*np.exp(1j*np.pi/N*np.array(list(range(N)))) 
+
+        logsqrt_b = np.log(np.sqrt(1-np.square(np.abs(bz))))
+        r = np.fft.fft(logsqrt_b)/N
+        r[1:int(N/2)]=0
+        r[int(N/2):N] = 2*r[int(N/2):N]
+        G = np.fft.ifft(r)*N
+
+        AN = np.fft.fft(np.conjugate(np.exp(G)))/N
+        thd = np.square(np.linalg.norm(AN[int(np.floor(N/4))-1:int(np.ceil(N*3/4))]))/np.square(np.linalg.norm(AN))
+        N = N * 3
+
+    #inverse nonlinear fast fourier transform call
+    ac = np.real(AN[0:d+1])# % coefficient of a^*(z)
+    F2, xi1, eta1 = _inlft(ac,bc[::-1]);
+    phi = np.atan(F2[::-1])
+    qsp_phase=np.concatenate((phi[1::2][::-1],phi[1::2]))+np.concatenate((np.zeros(len(phi)-1),[np.pi/2]))
+    return qsp_phase
 
 def _gqsp_u3_gate(theta, phi, lambd):
     r"""
@@ -1191,6 +1288,7 @@ def poly_to_angles(poly, routine, angle_solver: Literal["root-finding"] = "root-
             - ``"root-finding"``: effective for polynomials of degree up to :math:`\sim 1000`
             - ``"iterative"``: effective for polynomials of degree higher than :math:`\sim 1000` for
               the ``"QSP"`` and ``"QSVT"`` routines.
+            - ``"inlfft"``: effective for very large polynomials
 
     Returns:
         (tensor-like): computed angles for the specified routine
@@ -1274,9 +1372,11 @@ def poly_to_angles(poly, routine, angle_solver: Literal["root-finding"] = "root-
             return transform_angles(_compute_qsp_angle(poly), "QSP", "QSVT")
         if angle_solver == "iterative":
             return transform_angles(_compute_qsp_angles_iteratively(poly), "QSP", "QSVT")
+        if angle_solver == 'inlfft':
+            return transform_angles(_compute_qsp_angles_inlfft(poly), "QSP", "QSVT")
 
         raise AssertionError(
-            "Invalid angle solver method. We currently support 'root-finding' and 'iterative'"
+            "Invalid angle solver method. We currently support 'root-finding', 'iterative', and inverse non-linear fast fourier transform ('inlfft')"
         )
 
     if routine == "QSP":
@@ -1284,8 +1384,11 @@ def poly_to_angles(poly, routine, angle_solver: Literal["root-finding"] = "root-
             return _compute_qsp_angle(poly)
         if angle_solver == "iterative":
             return _compute_qsp_angles_iteratively(poly)
+        if angle_solver == 'inlfft':
+            return _compute_qsp_angles_inlfft(poly)
+
         raise AssertionError(
-            "Invalid angle solver method. Valid value is 'root-finding' and 'iterative'"
+            "Invalid angle solver method. Valid value is 'root-finding', 'iterative', and inverse non-linear fast fourier transform ('inlfft')"
         )
 
     if routine == "GQSP":
