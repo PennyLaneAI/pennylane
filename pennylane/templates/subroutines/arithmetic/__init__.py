@@ -21,6 +21,7 @@ from .out_adder import OutAdder
 from .semi_adder import SemiAdder
 from .out_multiplier import OutMultiplier
 from .out_poly import OutPoly
+from .temporary_and import TemporaryAND, Elbow
+from .out_square import OutSquare
 from .phase_adder import PhaseAdder
 from .signed_out_multiplier import SignedOutMultiplier
-from .temporary_and import TemporaryAND, Elbow
