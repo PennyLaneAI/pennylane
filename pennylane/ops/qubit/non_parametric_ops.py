@@ -1758,7 +1758,24 @@ def _swap_to_cnot(wires, **__):
     qml.CNOT(wires=[wires[0], wires[1]])
 
 
-add_decomps(SWAP, _swap_to_cnot)
+def _swap_to_ppr_resource():
+    return {
+        resource_rep(qml.PauliRot, pauli_word="XX"): 1,
+        resource_rep(qml.PauliRot, pauli_word="YY"): 1,
+        resource_rep(qml.PauliRot, pauli_word="ZZ"): 1,
+        qml.GlobalPhase: 1,
+    }
+
+
+@register_resources(_swap_to_ppr_resource)
+def _swap_to_ppr(wires, **_):
+    qml.PauliRot(np.pi / 2, "YY", wires=wires)
+    qml.PauliRot(np.pi / 2, "XX", wires=wires)
+    qml.PauliRot(np.pi / 2, "ZZ", wires=wires)
+    qml.GlobalPhase(-np.pi / 4)
+
+
+add_decomps(SWAP, _swap_to_cnot, _swap_to_ppr)
 add_decomps("Adjoint(SWAP)", self_adjoint)
 add_decomps("Pow(SWAP)", pow_involutory)
 
@@ -2116,7 +2133,20 @@ def _iswap_decomp(wires, **__):
     Hadamard(wires=wires[1])
 
 
-add_decomps(ISWAP, _iswap_decomp)
+def _iswap_to_ppr_resource():
+    return {
+        resource_rep(qml.PauliRot, pauli_word="XX"): 1,
+        resource_rep(qml.PauliRot, pauli_word="YY"): 1,
+    }
+
+
+@register_resources(_iswap_to_ppr_resource)
+def _iswap_to_ppr(wires, **_):
+    qml.PauliRot(-np.pi / 2, "YY", wires=wires)
+    qml.PauliRot(-np.pi / 2, "XX", wires=wires)
+
+
+add_decomps(ISWAP, _iswap_decomp, _iswap_to_ppr)
 
 
 @register_condition(lambda z, **_: math.allclose(z % 4, 0.5))
@@ -2319,7 +2349,20 @@ def _siswap_decomp(wires, **__):
     SX(wires=wires[1])
 
 
-add_decomps(SISWAP, _siswap_decomp)
+def _siswap_to_ppr_resource():
+    return {
+        resource_rep(qml.PauliRot, pauli_word="XX"): 1,
+        resource_rep(qml.PauliRot, pauli_word="YY"): 1,
+    }
+
+
+@register_resources(_siswap_to_ppr_resource)
+def _siswap_to_ppr(wires, **_):
+    qml.PauliRot(-np.pi / 4, "YY", wires=wires)
+    qml.PauliRot(-np.pi / 4, "XX", wires=wires)
+
+
+add_decomps(SISWAP, _siswap_decomp, _siswap_to_ppr)
 
 
 @register_condition(lambda z, **_: math.allclose(z % 8, 2))

@@ -32,7 +32,7 @@ from pennylane.capture.primitives import (
     while_loop_prim,
 )
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
-from pennylane.transforms.core import TransformError, TransformProgram, transform
+from pennylane.transforms.core import CompilePipeline, TransformError, transform
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
@@ -127,10 +127,11 @@ class TestCaptureTransforms:
         assert (transform_eqn := jaxpr.eqns[0]).primitive == transform_prim
 
         params = transform_eqn.params
-        assert params["args_slice"] == slice(0, 1)
-        assert params["consts_slice"] == slice(1, 1)
-        assert params["targs_slice"] == slice(1, None)
-        assert params["tkwargs"] == tkwargs
+        assert params["args_slice"] == (0, 1, None)
+        assert params["consts_slice"] == (1, 1, None)
+        assert params["targs_slice"] == (1, None, None)
+
+        assert dict(params["tkwargs"]) == tkwargs
         assert params["transform"] == z_to_hadamard
 
         inner_jaxpr = params["inner_jaxpr"]
@@ -156,10 +157,11 @@ class TestCaptureTransforms:
         assert transform_eqn.params["transform"] == z_to_hadamard
 
         params = transform_eqn.params
-        assert params["args_slice"] == slice(0, 2)
-        assert params["consts_slice"] == slice(2, 2)
-        assert params["targs_slice"] == slice(2, None)
-        assert params["tkwargs"] == tkwargs
+        assert params["args_slice"] == (0, 2, None)
+        assert params["consts_slice"] == (2, 2, None)
+        assert params["targs_slice"] == (2, None, None)
+        # Dicts are also converted to tuples
+        assert dict(params["tkwargs"]) == tkwargs
 
         inner_jaxpr = params["inner_jaxpr"]
         expected_jaxpr = jax.make_jaxpr(func)(*args).jaxpr
@@ -192,7 +194,7 @@ class TestCaptureTransforms:
         assert qnode_jaxpr.eqns[0].primitive == qnode_prim
 
         qnode = qnode_jaxpr.eqns[0].params["qnode"]
-        expected_program = TransformProgram()
+        expected_program = CompilePipeline()
         expected_program.add_transform(z_to_hadamard, *targs, **tkwargs)
         # Manually change targs from tuple to list
         expected_program[0]._args = tuple(targs)  # pylint: disable=protected-access
@@ -242,20 +244,21 @@ class TestCaptureTransforms:
         assert transform_eqn1.params["transform"] == z_to_hadamard
 
         params1 = transform_eqn1.params
-        assert params1["args_slice"] == slice(0, 1)
-        assert params1["consts_slice"] == slice(1, 1)
-        assert params1["targs_slice"] == slice(1, None)
-        assert params1["tkwargs"] == tkwargs1
+        assert params1["args_slice"] == (0, 1, None)
+        assert params1["consts_slice"] == (1, 1, None)
+        assert params1["targs_slice"] == (1, None, None)
+        # Dicts are also converted to tuples
+        assert dict(params1["tkwargs"]) == tkwargs1
 
         inner_jaxpr = params1["inner_jaxpr"]
         assert (transform_eqn2 := inner_jaxpr.eqns[0]).primitive == transform_prim
         assert transform_eqn2.params["transform"] == expval_z_obs_to_x_obs
 
         params2 = transform_eqn2.params
-        assert params2["args_slice"] == slice(0, 1)
-        assert params2["consts_slice"] == slice(1, 1)
-        assert params2["targs_slice"] == slice(1, None)
-        assert params2["tkwargs"] == tkwargs2
+        assert params2["args_slice"] == (0, 1, None)
+        assert params2["consts_slice"] == (1, 1, None)
+        assert params2["targs_slice"] == (1, None, None)
+        assert dict(params2["tkwargs"]) == tkwargs2
 
         inner_inner_jaxpr = params2["inner_jaxpr"]
         expected_jaxpr = jax.make_jaxpr(func)(*args).jaxpr
@@ -271,7 +274,7 @@ class TestCaptureTransforms:
 
         @qml.qnode(dev)
         def f():
-            @partial(z_to_hadamard, dummy_arg1=targs[0], dummy_arg2=targs[1], **tkwargs)
+            @z_to_hadamard(dummy_arg1=targs[0], dummy_arg2=targs[1], **tkwargs)
             @qml.for_loop(3)
             def g(i):
                 qml.X(i)
@@ -369,7 +372,7 @@ class TestTapeTransformFallback:
         """Test that using tape transforms as decorators works correctly."""
 
         @qml.capture.expand_plxpr_transforms
-        @partial(z_to_hadamard, dummy_arg1=0, dummy_arg2=0)
+        @z_to_hadamard(dummy_arg1=0, dummy_arg2=0)
         def f(x):
             qml.Z(0)
             qml.RX(x, 0)
@@ -602,7 +605,7 @@ class TestTapeTransformFallback:
 
         @qml.capture.expand_plxpr_transforms
         @shift_rx_to_end
-        @partial(z_to_hadamard, dummy_arg1=0, dummy_arg2=0)
+        @z_to_hadamard(dummy_arg1=0, dummy_arg2=0)
         def f(x):
             qml.Z(0)
             qml.RX(x, 0)
@@ -622,8 +625,8 @@ class TestTapeTransformFallback:
         """Test that applying a plxpr transform after a fallback transform works as expected."""
 
         @qml.capture.expand_plxpr_transforms
-        @partial(expval_z_obs_to_x_obs, dummy_arg1=0, dummy_arg2=0)
-        @partial(z_to_hadamard, dummy_arg1=0, dummy_arg2=0)
+        @expval_z_obs_to_x_obs(dummy_arg1=0, dummy_arg2=0)
+        @z_to_hadamard(dummy_arg1=0, dummy_arg2=0)
         def f(x):
             qml.Z(0)
             qml.RX(x, 0)
@@ -643,8 +646,8 @@ class TestTapeTransformFallback:
         """Test that applying a fallback transform after a plxpr transform works as expected."""
 
         @qml.capture.expand_plxpr_transforms
-        @partial(z_to_hadamard, dummy_arg1=0, dummy_arg2=0)
-        @partial(expval_z_obs_to_x_obs, dummy_arg1=0, dummy_arg2=0)
+        @z_to_hadamard(dummy_arg1=0, dummy_arg2=0)
+        @expval_z_obs_to_x_obs(dummy_arg1=0, dummy_arg2=0)
         def f(x):
             qml.Z(0)
             qml.RX(x, 0)

@@ -19,6 +19,7 @@ from functools import lru_cache, partial
 from typing import overload
 
 import pennylane as qml
+from pennylane import pytrees
 from pennylane.capture.autograph import wraps
 from pennylane.compiler import compiler
 from pennylane.math import conj, moveaxis, transpose
@@ -324,6 +325,14 @@ class Adjoint(SymbolicOp):
     @classmethod
     def _unflatten(cls, data, _):
         return cls(data[0])
+
+    # pylint: disable=arguments-differ
+    @classmethod
+    def _primitive_bind_call(cls, base, **kwargs):
+        if isinstance(base, Operator):
+            qml.QueuingManager.remove(base)
+            base = pytrees.unflatten(*pytrees.flatten(base))
+        return cls._primitive.bind(base, **kwargs)
 
     def __new__(cls, base=None, id=None):
         """Returns an uninitialized type with the necessary mixins.

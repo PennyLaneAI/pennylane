@@ -25,7 +25,7 @@ import pennylane as qml
 from pennylane import numpy as qnp
 from pennylane.math import allclose, get_interface
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
-from pennylane.resource import Resources
+from pennylane.resource import Resources, SpecsResources
 from pennylane.resource.error import SpectralNormError
 from pennylane.templates.subroutines.time_evolution.trotter import (
     TrotterizedQfunc,
@@ -717,11 +717,11 @@ class TestResources:
             qml.TrotterProduct(hamiltonian, time, n=5, order=2)
             return qml.expval(qml.Z(0))
 
-        expected_resources = Resources(
-            num_wires=2,
-            num_gates=30,
-            gate_types=defaultdict(int, {"Evolution": 30}),
-            gate_sizes=defaultdict(int, {1: 30}),
+        expected_resources = SpecsResources(
+            num_allocs=2,
+            gate_types={"Evolution": 30},
+            gate_sizes={1: 30},
+            measurements={"expval(PauliZ)": 1},
             depth=20,
         )
 
@@ -733,38 +733,6 @@ class TestResources:
 
         assert expected_resources == spec_resources
         assert expected_resources == tracker_resources
-
-    def test_resources_and_error(self):
-        """Test that we can compute the resources and error together"""
-        time = 0.1
-        coeffs = qml.math.array([1.0, 0.5])
-        hamiltonian = qml.dot(coeffs, [qml.X(0), qml.Y(0)])
-
-        dev = qml.device("default.qubit")
-
-        @qml.qnode(dev)
-        def circ():
-            qml.TrotterProduct(hamiltonian, time, n=2, order=2)
-            return qml.expval(qml.Z(0))
-
-        specs = qml.specs(circ)()
-
-        computed_error = (specs["errors"])["SpectralNormError"]
-        computed_resources = specs["resources"]
-
-        # Expected resources and errors (computed by hand)
-        expected_resources = Resources(
-            num_wires=1,
-            num_gates=8,
-            gate_types=defaultdict(int, {"Evolution": 8}),
-            gate_sizes=defaultdict(int, {1: 8}),
-            depth=8,
-        )
-        expected_error = 0.001
-
-        assert computed_resources == expected_resources
-        assert isinstance(computed_error, SpectralNormError)
-        assert qnp.isclose(computed_error.error, qml.math.array(expected_error))
 
 
 class TestDecomposition:

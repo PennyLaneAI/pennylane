@@ -25,6 +25,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane import math, queuing
+from pennylane.capture.autograph import disable_autograph
 from pennylane.decomposition import add_decomps, controlled_resource_rep, register_resources
 from pennylane.decomposition.resources import change_op_basis_resource_rep, resource_rep
 from pennylane.decomposition.symbolic_decomposition import adjoint_rotation, pow_rotation
@@ -600,7 +601,8 @@ def _pauli_rot_resources(pauli_word):
 
 
 @register_resources(_pauli_rot_resources)
-def _pauli_rot_decomposition(theta, pauli_word, wires, **__):
+@disable_autograph
+def _pauli_rot_decomposition(theta: TensorLike, wires: WiresLike, pauli_word: str, **__):
 
     active_wire_gates = [(w, g) for w, g in zip(wires, pauli_word) if g != "I"]
 
@@ -1298,7 +1300,16 @@ def _isingxx_to_cnot_rx_cnot(phi: TensorLike, wires: WiresLike, **__):
     qml.change_op_basis(qml.CNOT(wires=wires), qml.RX(phi, wires=[wires[0]]), qml.CNOT(wires=wires))
 
 
-add_decomps(IsingXX, _isingxx_to_cnot_rx_cnot)
+def _isingxx_to_ppr_resource():
+    return {resource_rep(qml.PauliRot, pauli_word="XX"): 1}
+
+
+@register_resources(_isingxx_to_ppr_resource)
+def _isingxx_to_ppr(phi: TensorLike, wires: WiresLike, **_):
+    qml.PauliRot(phi, "XX", wires=wires)
+
+
+add_decomps(IsingXX, _isingxx_to_cnot_rx_cnot, _isingxx_to_ppr)
 add_decomps("Adjoint(IsingXX)", adjoint_rotation)
 add_decomps("Pow(IsingXX)", pow_rotation)
 
@@ -1469,7 +1480,16 @@ def _isingyy_to_cy_ry_cy(phi: TensorLike, wires: WiresLike, **__):
     )
 
 
-add_decomps(IsingYY, _isingyy_to_cy_ry_cy)
+def _isingyy_to_ppr_resource():
+    return {resource_rep(qml.PauliRot, pauli_word="YY"): 1}
+
+
+@register_resources(_isingyy_to_ppr_resource)
+def _isingyy_to_ppr(phi: TensorLike, wires: WiresLike, **_):
+    qml.PauliRot(phi, "YY", wires=wires)
+
+
+add_decomps(IsingYY, _isingyy_to_cy_ry_cy, _isingyy_to_ppr)
 add_decomps("Adjoint(IsingYY)", adjoint_rotation)
 add_decomps("Pow(IsingYY)", pow_rotation)
 
@@ -1668,7 +1688,16 @@ def _isingzz_to_cnot_rz_cnot(phi: TensorLike, wires: WiresLike, **__):
     qml.change_op_basis(qml.CNOT(wires=wires), RZ(phi, wires=[wires[1]]), qml.CNOT(wires=wires))
 
 
-add_decomps(IsingZZ, _isingzz_to_cnot_rz_cnot)
+def _isingzz_to_ppr_resource():
+    return {resource_rep(qml.PauliRot, pauli_word="ZZ"): 1}
+
+
+@register_resources(_isingzz_to_ppr_resource)
+def _isingzz_to_ppr(phi: TensorLike, wires: WiresLike, **_):
+    qml.PauliRot(phi, "ZZ", wires=wires)
+
+
+add_decomps(IsingZZ, _isingzz_to_cnot_rz_cnot, _isingzz_to_ppr)
 add_decomps("Adjoint(IsingZZ)", adjoint_rotation)
 add_decomps("Pow(IsingZZ)", pow_rotation)
 
@@ -2095,7 +2124,24 @@ def _pswap_to_swap_cnot_phaseshift_cnot(phi: TensorLike, wires: WiresLike, **__)
     )
 
 
-add_decomps(PSWAP, _pswap_to_swap_cnot_phaseshift_cnot)
+def _pswap_to_ppr_resources():
+    return {
+        resource_rep(qml.PauliRot, pauli_word="XX"): 1,
+        resource_rep(qml.PauliRot, pauli_word="YY"): 1,
+        resource_rep(qml.PauliRot, pauli_word="ZZ"): 1,
+        qml.GlobalPhase: 1,
+    }
+
+
+@register_resources(_pswap_to_ppr_resources)
+def _pswap_to_ppr(phi: TensorLike, wires: WiresLike, **__):
+    qml.PauliRot(-np.pi / 2, pauli_word="YY", wires=wires)
+    qml.PauliRot(-np.pi / 2, pauli_word="XX", wires=wires)
+    qml.PauliRot(phi - np.pi / 2, pauli_word="ZZ", wires=wires)
+    qml.GlobalPhase(np.pi / 4 - phi / 2)
+
+
+add_decomps(PSWAP, _pswap_to_swap_cnot_phaseshift_cnot, _pswap_to_ppr)
 add_decomps("Adjoint(PSWAP)", adjoint_rotation)
 
 

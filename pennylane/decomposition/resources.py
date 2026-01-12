@@ -487,6 +487,9 @@ def resolve_work_wire_type(base_work_wires, base_work_wire_type, work_wires, wor
     if work_wires and work_wire_type == "borrowed":
         return "borrowed"
 
+    if not work_wires and not base_work_wires:
+        return "borrowed"
+
     return "zeroed"
 
 

@@ -172,91 +172,54 @@ class TemporaryAND(Operation):
 
         return result_matrix
 
-    @staticmethod
-    def compute_decomposition(
-        wires: WiresLike, control_values=(1, 1)
-    ):  # pylint: disable=arguments-differ
-        r"""Representation of the operator as a product of other operators (static method).
-
-        .. math:: O = O_1 O_2 \dots O_n.
-
-
-        .. seealso:: :meth:`~.TemporaryAND.decomposition`.
-
-        Args:
-            wires (Sequence[int]): the subsystem the gate acts on. The first two wires are the control wires and the
-                third one is the target wire.
-            control_values (bool or int or list[bool or int]): The value(s) the control wire(s)
-                should take. Integers other than 0 or 1 will be treated as ``int(bool(x))``.
-
-        Returns:
-            list[Operator]: decomposition into lower level operations
-
-        **Example:**
-
-        >>> print(qml.TemporaryAND.compute_decomposition((0,1,2)))
-        [(H(2) @ ((Adjoint(T(2))) @ (CNOT(wires=[1, 2])) @ T(2))) @ (CNOT(wires=[0, 2])) @ (((Adjoint(T(2))) @ (CNOT(wires=[1, 2])) @ T(2)) @ H(2)), Adjoint(S(2))]
-        """
-
-        list_decomp = []
-
-        list_decomp.extend([ops.X(wire) for wire, cval in zip(wires, control_values) if cval == 0])
-
-        list_decomp += [
-            ops.change_op_basis(
-                ops.change_op_basis(ops.T(wires=wires[2]), ops.CNOT(wires=[wires[1], wires[2]]))
-                @ ops.Hadamard(wires=wires[2]),
-                ops.CNOT(wires=[wires[0], wires[2]]),
-                ops.Hadamard(wires=wires[2])
-                @ ops.change_op_basis(ops.T(wires=wires[2]), ops.CNOT(wires=[wires[1], wires[2]])),
-            ),
-            ops.adjoint(ops.S(wires=wires[2])),
-        ]
-
-        list_decomp.extend([ops.X(wire) for wire, cval in zip(wires, control_values) if cval == 0])
-
-        return list_decomp
-
 
 def _temporary_and_resources():
-    basis_rep = change_op_basis_resource_rep(resource_rep(ops.T), resource_rep(ops.CNOT))
-
     number_xs = 4  # worst case scenario
+    prod_rep = resource_rep(
+        ops.Prod,
+        resources={
+            resource_rep(ops.Hadamard): 1,
+            resource_rep(ops.T): 1,
+            resource_rep(ops.CNOT): 1,
+            adjoint_resource_rep(ops.T, {}): 1,
+        },
+    )
     return {
         resource_rep(ops.X): number_xs,
-        change_op_basis_resource_rep(
-            resource_rep(ops.Hadamard),
-            change_op_basis_resource_rep(basis_rep, resource_rep(ops.CNOT), basis_rep),
-            resource_rep(ops.Hadamard),
-        ): 1,
+        change_op_basis_resource_rep(prod_rep, ops.CNOT, prod_rep): 1,
         adjoint_resource_rep(ops.S, {}): 1,
     }
 
 
-@register_resources(_temporary_and_resources)
+@register_resources(_temporary_and_resources, exact=False)
 def _temporary_and(wires: WiresLike, **kwargs):
+
     control_values = kwargs["control_values"]
     if control_values[0] == 0:
         ops.X(wires[0])
-
     if control_values[1] == 0:
         ops.X(wires[1])
 
     ops.change_op_basis(
-        ops.Hadamard(wires=wires[2]),
-        ops.change_op_basis(
-            ops.change_op_basis(ops.T(wires=wires[2]), ops.CNOT(wires=[wires[1], wires[2]])),
-            ops.CNOT(wires=[wires[0], wires[2]]),
-            ops.change_op_basis(ops.T(wires=wires[2]), ops.CNOT(wires=[wires[1], wires[2]])),
+        ops.prod(
+            ops.adjoint(ops.T(wires=wires[2])),
+            ops.CNOT(wires=[wires[1], wires[2]]),
+            ops.T(wires=wires[2]),
+            ops.H(wires[2]),
         ),
-        ops.Hadamard(wires=wires[2]),
+        ops.CNOT(wires=[wires[0], wires[2]]),
+        ops.prod(
+            ops.H(wires[2]),
+            ops.adjoint(ops.T(wires=wires[2])),
+            ops.CNOT(wires=[wires[1], wires[2]]),
+            ops.T(wires=wires[2]),
+        ),
     )
 
     ops.adjoint(ops.S(wires=wires[2]))
 
     if control_values[0] == 0:
         ops.X(wires[0])
-
     if control_values[1] == 0:
         ops.X(wires[1])
 
@@ -264,9 +227,8 @@ def _temporary_and(wires: WiresLike, **kwargs):
 add_decomps(TemporaryAND, _temporary_and)
 
 
-def _adjoint_temporary_and_resources(
-    base_class=None, base_params=None
-):  # pylint: disable=unused-argument
+# pylint: disable=unused-argument
+def _adjoint_temporary_and_resources(base_class=None, base_params=None):
     return {ops.Hadamard: 1, ops.MidMeasure: 1, ops.CZ: 1}
 
 

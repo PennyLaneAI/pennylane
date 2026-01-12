@@ -1058,10 +1058,10 @@ def param_shift(
 
         .. code-block:: python
 
-            from functools import partial
             shots = (10, 100, 1000)
             dev = qml.device("default.qubit")
-            @partial(qml.set_shots, shots=shots)
+
+            @qml.set_shots(shots=shots)
             @qml.qnode(dev)
             def circuit(params):
                 qml.RX(params[0], wires=0)

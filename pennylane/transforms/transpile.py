@@ -4,8 +4,6 @@ Contains the transpiler transform.
 
 from functools import partial
 
-import networkx as nx
-
 import pennylane as qml
 from pennylane.ops import LinearCombination
 from pennylane.ops import __all__ as all_ops
@@ -131,9 +129,9 @@ def transpile(
         device_wires = None
         is_default_mixed = False
     # init connectivity graph
-    coupling_graph = (
-        nx.Graph(coupling_map) if not isinstance(coupling_map, nx.Graph) else coupling_map
-    )
+    import networkx as nx  # pylint: disable=import-outside-toplevel
+
+    coupling_graph = coupling_map if isinstance(coupling_map, nx.Graph) else nx.Graph(coupling_map)
 
     # make sure every wire is present in coupling map
     if any(wire not in coupling_graph.nodes for wire in tape.wires):

@@ -237,6 +237,8 @@ def _get_plxpr_commute_controlled():  # pylint: disable=too-many-statements
     def commute_controlled_plxpr_to_plxpr(
         jaxpr, consts, targs, tkwargs, *args
     ):  # pylint: disable=unused-argument
+        tkwargs = dict(tkwargs)
+
         interpreter = CommuteControlledInterpreter(direction=tkwargs.get("direction", "right"))
 
         def wrapper(*inner_args):
@@ -407,7 +409,7 @@ def commute_controlled(
 
     .. code-block:: python
 
-        @partial(commute_controlled, direction="right")
+        @commute_controlled(direction="right")
         @qml.qnode(device=dev)
         def circuit(theta):
             qml.CZ(wires=[0, 2])

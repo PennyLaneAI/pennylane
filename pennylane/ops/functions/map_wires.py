@@ -17,7 +17,7 @@ This module contains the qml.map_wires function.
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import TYPE_CHECKING, overload
+from typing import overload
 
 import pennylane as qml
 from pennylane import transform
@@ -26,9 +26,7 @@ from pennylane.operation import Operator
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn
-
-if TYPE_CHECKING:
-    from pennylane.workflow import QNode
+from pennylane.workflow import QNode
 
 
 @overload
@@ -47,8 +45,6 @@ def map_wires(
 def map_wires(
     input: QNode, wire_map: dict, queue: bool = False, replace: bool = False
 ) -> QNode: ...
-
-
 @overload
 def map_wires(
     input: Callable, wire_map: dict, queue: bool = False, replace: bool = False
@@ -57,14 +53,15 @@ def map_wires(
 def map_wires(
     input: QuantumScriptBatch, wire_map: dict, queue: bool = False, replace: bool = False
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]: ...
+@transform
 def map_wires(
     input: Operator | MeasurementProcess | QuantumScript | QNode | Callable | QuantumScriptBatch,
     wire_map: dict,
     queue=False,
     replace=False,
-):
-    """Changes the wires of an operator, tape, qnode or quantum function according to the given
-    wire map.
+):  # pylint: disable=unused-argument
+    """Changes the wires of an operator, tape, qnode or quantum function according
+    to the given wire map.
 
     Args:
         input (Operator or QNode or QuantumTape or Callable): an operator or a quantum circuit.
@@ -86,8 +83,8 @@ def map_wires(
 
             dev = qml.device("default.qubit")
             wire_map = {0: 10}
-            import functools
-            @functools.partial(qml.map_wires, wire_map=wire_map)
+
+            @qml.map_wires(wire_map=wire_map)
             @qml.qnode(dev)
             def func(x):
                 qml.RX(x, wires=0)
@@ -131,40 +128,28 @@ def map_wires(
     >>> list(tape)
     [RX(0.54, wires=[3]) @ X(2) @ Z(1) @ RY(1.23, wires=[0]), probs(wires=[3])]
     """
-    if isinstance(input, (Operator, MeasurementProcess)):
-        if QueuingManager.recording():
-            with QueuingManager.stop_recording():
-                new_op = input.map_wires(wire_map=wire_map)
-            if replace:
-                QueuingManager.remove(input)
-            if queue:
-                new_op = qml.apply(new_op)
-            return new_op
-        return input.map_wires(wire_map=wire_map)
-    return _map_wires_transform(input, wire_map=wire_map, queue=queue)
+    assert isinstance(input, QuantumScript)
+    ops = [map_wires(op, wire_map, queue=queue) for op in input.operations]
+    measurements = [map_wires(m, wire_map, queue=queue) for m in input.measurements]
+    out = input.copy(ops=ops, measurements=measurements, trainable_params=input.trainable_params)
+
+    def null_processing(res):
+        """An empty postprocessing function that leaves the results unchanged."""
+        return res[0]
+
+    return (out,), null_processing
 
 
-def processing_fn(res):
-    """An empty postprocessing function that leaves the results unchanged."""
-    return res[0]
-
-
-@transform
-def _map_wires_transform(
-    tape: QuantumScript, wire_map=None, queue=False
-) -> tuple[QuantumScriptBatch, PostprocessingFn]:
-    ops = [
-        (
-            map_wires(op, wire_map, queue=queue)
-            if not isinstance(op, QuantumScript)
-            else map_wires(op, wire_map, queue=queue)[0][0]
-        )
-        for op in tape.operations
-    ]
-    measurements = [map_wires(m, wire_map, queue=queue) for m in tape.measurements]
-
-    out = tape.__class__(
-        ops=ops, measurements=measurements, shots=tape.shots, trainable_params=tape.trainable_params
-    )
-
-    return (out,), processing_fn
+@map_wires.register
+def _map_op_meas_wires(
+    input: Operator | MeasurementProcess, wire_map: dict, queue: bool = False, replace: bool = False
+):
+    if QueuingManager.recording():
+        with QueuingManager.stop_recording():
+            new_op = input.map_wires(wire_map=wire_map)
+        if replace:
+            QueuingManager.remove(input)
+        if queue:
+            new_op = qml.apply(new_op)
+        return new_op
+    return input.map_wires(wire_map=wire_map)

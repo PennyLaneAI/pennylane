@@ -134,6 +134,7 @@ class TestDecomposition:
         gate_names = [gate.name for gate in ops]
         assert gate_names.count("CZ") == n_wires * n_layers
 
+    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     def test_custom_wire_labels(self, tol, batch_dim):
         """Test that template can deal with non-numeric, nonconsecutive wire labels."""
         shape = (1, 3, 3) if batch_dim is None else (batch_dim, 1, 3, 3)
@@ -255,8 +256,6 @@ class TestDynamicDecomposition:
     ):  # pylint:disable=too-many-arguments
         """Test that the StronglyEntanglingLayer gives correct result after dynamic decomposition."""
 
-        from functools import partial
-
         import jax
 
         from pennylane.transforms.decompose import DecomposeInterpreter
@@ -280,7 +279,7 @@ class TestDynamicDecomposition:
 
         with qml.capture.pause():
 
-            @partial(qml.transforms.decompose, max_expansion=max_expansion, gate_set=gate_set)
+            @qml.transforms.decompose(max_expansion=max_expansion, gate_set=gate_set)
             @qml.qnode(device=qml.device("default.qubit", wires=n_wires))
             def circuit_comparison():
                 qml.StronglyEntanglingLayers(

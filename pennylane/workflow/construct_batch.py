@@ -19,7 +19,7 @@ from collections.abc import Callable
 from typing import TYPE_CHECKING, Literal
 
 import pennylane as qml
-from pennylane.transforms.core import TransformProgram, transform
+from pennylane.transforms.core import CompilePipeline, transform
 
 from ._setup_transform_program import _setup_transform_program
 from .qnode import _make_execution_config
@@ -44,7 +44,7 @@ def marker(tape, level: str):
     """Mark a location in a transform program for easy access with inspectability.
 
     Args:
-        tape (QuantumScript | QNode | TransformProgram): the object we want to dispatch the transform onto
+        tape (QuantumScript | QNode | CompilePipeline): the object we want to dispatch the transform onto
         level (str): the label for the level.
 
     .. note::
@@ -54,11 +54,9 @@ def marker(tape, level: str):
 
     .. code-block:: python
 
-        from functools import partial
-
-        @partial(qml.marker, level="rotations-merged")
+        @qml.marker(level="rotations-merged")
         @qml.transforms.merge_rotations
-        @partial(qml.marker, level="my_level")
+        @qml.marker(level="my_level")
         @qml.transforms.cancel_inverses
         @qml.qnode(qml.device('null.qubit'))
         def c():
@@ -71,7 +69,7 @@ def marker(tape, level: str):
     >>> print(qml.draw(c, level="my_level")())
     0: ──RX(0.20)──RX(0.20)─┤  State
     >>> qml.specs(c, level="my_level")()['resources'].gate_types
-    defaultdict(<class 'int'>, {'RX': 2})
+    {'RX': 2}
     >>> print(qml.draw(c, level="rotations-merged")())
     0: ──RX(0.40)─┤  State
 
@@ -79,8 +77,8 @@ def marker(tape, level: str):
     return (tape,), null_postprocessing
 
 
-def _get_full_transform_program(qnode: QNode, gradient_fn) -> TransformProgram:
-    program = TransformProgram(qnode.transform_program)
+def _get_full_transform_program(qnode: QNode, gradient_fn) -> CompilePipeline:
+    program = CompilePipeline(qnode.transform_program)
 
     if getattr(gradient_fn, "expand_transform", False):
         program.add_transform(
@@ -120,7 +118,7 @@ def _validate_custom_levels(program):
     protected_options = {"top", "user", "gradient", "device", "all", "all-mlir"}
     found_levels = set()
     for t in program:
-        if t.transform == marker.transform:
+        if t.tape_transform == marker.tape_transform:
             level = t.args[0] if t.args else t.kwargs["level"]
             if level in protected_options:
                 raise ValueError(
@@ -137,7 +135,7 @@ def _validate_custom_levels(program):
 def _find_level(program, level):
     found_levels = []
     for idx, t in enumerate(program):
-        if t.transform == marker.transform:
+        if t.tape_transform == marker.tape_transform:
             found_level = t.args[0] if t.args else t.kwargs["level"]
             found_levels.append(found_level)
 
@@ -228,7 +226,7 @@ def get_transform_program(
     qnode: QNode,
     level: Literal["top", "user", "device", "gradient"] | int | slice = "device",
     gradient_fn="unset",
-) -> TransformProgram:
+) -> CompilePipeline:
     """Extract a transform program at a designated level.
 
     Args:
@@ -242,10 +240,10 @@ def get_transform_program(
             - ``int``: Can also accept an integer, corresponding to a number of transforms in the program. ``level=0`` corresponds to the start of the program.
             - ``slice``: Can also accept a ``slice`` object to select an arbitrary subset of the transform program.
 
-        gradient_fn (None, str, TransformDispatcher): The processed gradient fn for the workflow.
+        gradient_fn (None, str, Transform): The processed gradient fn for the workflow.
 
     Returns:
-        TransformProgram: the transform program corresponding to the requested level.
+        CompilePipeline: the transform program corresponding to the requested level.
 
     .. details::
         :title: Usage Details
@@ -276,13 +274,13 @@ def get_transform_program(
         By default, we get the full transform program. This can be explicitly specified by ``level="device"``.
 
         >>> qml.workflow.get_transform_program(circuit)
-        TransformProgram(cancel_inverses, merge_rotations, _expand_metric_tensor, _expand_transform_param_shift, defer_measurements, decompose, device_resolve_dynamic_wires, validate_device_wires, validate_measurements, _conditional_broadcast_expand, metric_tensor)
+        CompilePipeline(cancel_inverses, merge_rotations, _expand_transform_param_shift, defer_measurements, decompose, device_resolve_dynamic_wires, validate_device_wires, validate_measurements, _conditional_broadcast_expand, _expand_metric_tensor, metric_tensor)
 
         The ``"user"`` transforms are the ones manually applied to the qnode, :func:`~.cancel_inverses`,
         :func:`~.merge_rotations` and :func:`~.metric_tensor`.
 
         >>> qml.workflow.get_transform_program(circuit, level="user")
-        TransformProgram(cancel_inverses, merge_rotations, _expand_metric_tensor, metric_tensor)
+        CompilePipeline(cancel_inverses, merge_rotations, _expand_metric_tensor, metric_tensor)
 
         The ``_expand_transform_param_shift`` is the ``"gradient"`` transform.
         This expands all trainable operations to a state where the parameter shift transform can operate on them. For example,
@@ -290,28 +288,28 @@ def get_transform_program(
         present at the very end of resulting program.
 
         >>> qml.workflow.get_transform_program(circuit, level="gradient")
-        TransformProgram(cancel_inverses, merge_rotations, _expand_metric_tensor, _expand_transform_param_shift, metric_tensor)
+        CompilePipeline(cancel_inverses, merge_rotations, _expand_transform_param_shift, _expand_metric_tensor, metric_tensor)
 
         ``"top"`` and ``0`` both return empty transform programs.
 
         >>> qml.workflow.get_transform_program(circuit, level="top")
-        TransformProgram()
+        CompilePipeline()
         >>> qml.workflow.get_transform_program(circuit, level=0)
-        TransformProgram()
+        CompilePipeline()
 
         The ``level`` can also be any integer, corresponding to a number of transforms in the program.
 
         >>> qml.workflow.get_transform_program(circuit, level=2)
-        TransformProgram(cancel_inverses, merge_rotations)
+        CompilePipeline(cancel_inverses, merge_rotations)
 
         ``level`` can also accept a ``slice`` object to select out any arbitrary subset of the
         transform program.  This allows you to select different starting transforms or strides.
         For example, you can skip the first transform or reverse the order:
 
         >>> qml.workflow.get_transform_program(circuit, level=slice(1,3))
-        TransformProgram(merge_rotations, _expand_metric_tensor)
+        CompilePipeline(merge_rotations, _expand_transform_param_shift)
         >>> qml.workflow.get_transform_program(circuit, level=slice(None, None, -1))
-        TransformProgram(metric_tensor, _conditional_broadcast_expand, validate_measurements, validate_device_wires, device_resolve_dynamic_wires, decompose, defer_measurements, _expand_transform_param_shift, _expand_metric_tensor, merge_rotations, cancel_inverses)
+        CompilePipeline(metric_tensor, _expand_metric_tensor, _conditional_broadcast_expand, validate_measurements, validate_device_wires, device_resolve_dynamic_wires, decompose, defer_measurements, _expand_transform_param_shift, merge_rotations, cancel_inverses)
 
         You can get creative and pick a single category of transforms as follows, excluding
         any preceding transforms (and the final transform if it exists):
@@ -320,19 +318,16 @@ def get_transform_program(
         >>> grad_prog = qml.workflow.get_transform_program(circuit, level="gradient")
         >>> dev_prog = qml.workflow.get_transform_program(circuit, level="device")
         >>> grad_prog[len(user_prog) - 1 : -1]
-        TransformProgram(_expand_transform_param_shift)
+        CompilePipeline(_expand_metric_tensor)
         >>> dev_prog[len(grad_prog) - 1 : -1]
-        TransformProgram(defer_measurements, decompose, device_resolve_dynamic_wires, validate_device_wires, validate_measurements, _conditional_broadcast_expand)
+        CompilePipeline(decompose, device_resolve_dynamic_wires, validate_device_wires, validate_measurements, _conditional_broadcast_expand, _expand_metric_tensor)
 
     """
     _validate_level(level)
     if gradient_fn == "unset":
         config = qml.workflow.construct_execution_config(qnode, resolve=False)()
         # pylint: disable = protected-access
-        config = qml.workflow.resolution._resolve_diff_method(
-            config,
-            qnode.device,
-        )
+        config = qml.workflow.resolution._resolve_diff_method(config, qnode.device)
         gradient_fn = config.gradient_method
     has_gradient_expand = bool(getattr(gradient_fn, "expand_transform", False))
     full_transform_program = _get_full_transform_program(qnode, gradient_fn)
@@ -341,8 +336,15 @@ def get_transform_program(
     if qnode.transform_program.has_final_transform:
         # final transform is placed after device transforms
         num_user -= 1
+        if (
+            len(qnode.transform_program) > 1
+            and qnode.transform_program[-1].expand_transform == qnode.transform_program[-2]
+        ):
+            # The expand transform associated with the final transform
+            num_user -= 1
 
     readd_final_transform = False
+    final_transform_start = -1
 
     if level == "device":
         level = slice(0, None)
@@ -363,7 +365,12 @@ def get_transform_program(
     resolved_program = full_transform_program[level]
 
     if qnode.transform_program.has_final_transform and readd_final_transform:
-        resolved_program += qnode.transform_program[-1:]
+        if (
+            len(qnode.transform_program) > 1
+            and qnode.transform_program[-1].expand_transform == qnode.transform_program[-2]
+        ):
+            final_transform_start = -2
+        resolved_program += qnode.transform_program[final_transform_start:]
 
     return resolved_program
 

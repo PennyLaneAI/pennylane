@@ -55,11 +55,9 @@ class Tracker:
 
     .. code-block:: python
 
-        from functools import partial
-
         dev = qml.device('default.qubit', wires=1)
 
-        @partial(qml.set_shots, shots=100)
+        @qml.set_shots(shots=100)
         @qml.qnode(dev, diff_method="parameter-shift")
         def circuit(x):
             qml.RX(x, wires=0)
@@ -142,9 +140,8 @@ class Tracker:
         When used with the null qubit device (eg. ``dev = qml.device("null.qubit")``), we can track the resources
         used in the circuit without execution!
 
-        >>> from functools import partial
         >>> dev = qml.device("null.qubit", wires=[0])
-        >>> @partial(qml.set_shots, shots=10)
+        >>> @qml.set_shots(shots=10)
         ... @qml.qnode(dev)
         ... def circuit(x):
         ...     qml.RX(x, wires=0)

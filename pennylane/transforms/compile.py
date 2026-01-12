@@ -19,7 +19,7 @@ import pennylane as qml
 from pennylane.ops import __all__ as all_ops
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, QuantumScriptBatch
-from pennylane.transforms.core import TransformDispatcher, transform
+from pennylane.transforms.core import Transform, transform
 from pennylane.transforms.optimization import (
     cancel_inverses,
     commute_controlled,
@@ -34,11 +34,17 @@ default_pipeline = (commute_controlled, cancel_inverses, merge_rotations, remove
 @transform
 def compile(
     tape: QuantumScript,
-    pipeline: Sequence[TransformDispatcher] = default_pipeline,
+    pipeline: Sequence[Transform] = default_pipeline,
     basis_set=None,
     num_passes=1,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Compile a circuit by applying a series of transforms to a quantum function.
+
+    .. note::
+
+        While ``qml.compile`` is useful for initial exploration by appliying a default set of
+        transforms, the new :class:`~.CompilePipeline` class is the recommended tool for
+        constructing large & modular compilation pipelines in a natural way.
 
     The default set of transforms includes (in order):
 
@@ -51,7 +57,7 @@ def compile(
 
     Args:
         tape (QNode or QuantumTape or Callable): A quantum circuit.
-        pipeline (Sequence[TransformDispatcher]): A list of
+        pipeline (Sequence[transform]): A list of
             tape and/or quantum function transforms to apply.
         basis_set (list[str]): A list of basis gates. When expanding the tape,
             expansion will continue until gates in the specific set are
@@ -169,7 +175,7 @@ def compile(
 
     for p in pipeline:
         p_func = p.func if isinstance(p, partial) else p
-        if not isinstance(p_func, TransformDispatcher):
+        if not isinstance(p_func, Transform):
             raise ValueError("Invalid transform function {p} passed to compile.")
 
     if num_passes < 1 or not isinstance(num_passes, int):

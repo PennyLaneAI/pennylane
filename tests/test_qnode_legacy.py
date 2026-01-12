@@ -28,7 +28,7 @@ from pennylane import QNode
 from pennylane import numpy as pnp
 from pennylane import qnode
 from pennylane.exceptions import PennyLaneDeprecationWarning, QuantumFunctionError
-from pennylane.resource import Resources
+from pennylane.resource import SpecsResources
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn
 
@@ -129,7 +129,7 @@ class TestValidation:
 
         with pytest.raises(
             ValueError,
-            match="Differentiation method 5 must be a str, TransformDispatcher, or None",
+            match="Differentiation method 5 must be a str, Transform, or None",
         ):
             QNode(dummyfunc, dev, interface="autograd", diff_method=5)
 
@@ -218,7 +218,15 @@ class TestValidation:
             "shots": [None],
             "batches": [1],
             "batch_len": [1],
-            "resources": [Resources(1, 1, {"RX": 1}, {1: 1}, 1)],
+            "resources": [
+                SpecsResources(
+                    num_allocs=1,
+                    gate_types={"RX": 1},
+                    gate_sizes={1: 1},
+                    measurements={"expval(PauliZ)": 1},
+                    depth=1,
+                )
+            ],
         }
 
     def test_autograd_interface_device_switched_no_warnings(self):
@@ -611,7 +619,7 @@ class TestIntegration:
         mocker.patch.object(
             qml.devices.LegacyDevice, "_capabilities", {"supports_mid_measure": True}
         )
-        spy = mocker.spy(qml.defer_measurements, "_transform")
+        spy = mocker.spy(qml.defer_measurements, "_tape_transform")
 
         @qml.qnode(dev)
         def circuit():
@@ -652,7 +660,7 @@ class TestIntegration:
             qml.cond(m_0, qml.RY)(x, wires=1)
             return qml.sample(qml.PauliZ(1))
 
-        spy = mocker.spy(qml.defer_measurements, "_transform")
+        spy = mocker.spy(qml.defer_measurements, "_tape_transform")
         r1 = cry_qnode(first_par)
         r2 = conditional_ry_qnode(first_par)
         assert np.allclose(r1, r2)
@@ -1082,7 +1090,7 @@ class TestShots:
         assert tape.shots.shot_vector == shot_vector
 
 
-class TestTransformProgramIntegration:
+class TestCompilePipelineIntegration:
     def test_transform_program_modifies_circuit(self):
         """Test qnode integration with a transform that turns the circuit into just a pauli x."""
         dev = DefaultQubitLegacy(wires=1)
@@ -1104,7 +1112,7 @@ class TestTransformProgramIntegration:
             qml.RX(x, 0)
             return qml.expval(qml.PauliZ(0))
 
-        assert circuit.transform_program[0].transform == just_pauli_x_out.transform
+        assert circuit.transform_program[0].tape_transform == just_pauli_x_out.tape_transform
 
         assert qml.math.allclose(circuit(0.1), -1)
 
@@ -1113,7 +1121,7 @@ class TestTransformProgramIntegration:
 
         assert tracker.totals["executions"] == 1
         assert tracker.history["resources"][0].gate_types["PauliX"] == 1
-        assert tracker.history["resources"][0].gate_types["RX"] == 0
+        assert "RX" not in tracker.history["resources"][0].gate_types
 
     def tet_transform_program_modifies_results(self):
         """Test integration with a transform that modifies the result output."""
@@ -1129,13 +1137,13 @@ class TestTransformProgramIntegration:
 
             return (tape,), postprocessing
 
-        @partial(pin_result, requested_result=3.0)
+        @pin_result(requested_result=3.0)
         @qml.qnode(dev, interface=None, diff_method=None)
         def circuit(x):
             qml.RX(x, 0)
             return qml.expval(qml.PauliZ(0))
 
-        assert circuit.transform_program[0].transform == pin_result.transform
+        assert circuit.transform_program[0].tape_transform == pin_result.tape_transform
         assert circuit.transform_program[0].kwargs == {"requested_result": 3.0}
 
         assert qml.math.allclose(circuit(0.1), 3.0)
@@ -1210,8 +1218,8 @@ class TestTransformProgramIntegration:
         def shift_output(tape: QuantumScript, shift) -> tuple[QuantumScriptBatch, PostprocessingFn]:
             return (tape,), partial(add_shift, shift=shift)
 
-        @partial(shift_output, shift=1.0)
-        @partial(scale_output, factor=2.0)
+        @shift_output(shift=1.0)
+        @scale_output(factor=2.0)
         @qml.qnode(dev, interface=None, diff_method=None)
         def circuit1():
             return qml.expval(qml.PauliZ(0))
@@ -1219,8 +1227,8 @@ class TestTransformProgramIntegration:
         # first add one, then scale by 2.0.  Outer postprocessing transforms are applied first
         assert qml.math.allclose(circuit1(), 4.0)
 
-        @partial(scale_output, factor=2.0)
-        @partial(shift_output, shift=1.0)
+        @scale_output(factor=2.0)
+        @shift_output(shift=1.0)
         @qml.qnode(dev, interface=None, diff_method=None)
         def circuit2():
             return qml.expval(qml.PauliZ(0))
@@ -1243,7 +1251,7 @@ class TestTransformProgramIntegration:
                 qml.tape.QuantumScript(tape.operations, tape.measurements, shots=n),
             ), num_of_shots_from_sample
 
-        @partial(use_n_shots, n=100)
+        @use_n_shots(n=100)
         @qml.qnode(dev, interface=None, diff_method=None)
         def circuit():
             return qml.sample(wires=0)

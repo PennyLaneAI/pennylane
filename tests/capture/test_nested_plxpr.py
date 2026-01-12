@@ -179,7 +179,7 @@ class TestAdjointQfunc:
             "fn",
             "scalar_out",
         }
-        assert grad_eqn.params["argnums"] == [0]
+        assert grad_eqn.params["argnums"] == (0,)
         assert grad_eqn.params["n_consts"] == 0
         assert grad_eqn.params["method"] == "auto"
         assert grad_eqn.params["h"] == 1e-6
@@ -301,7 +301,7 @@ class TestCtrlQfunc:
         qml.assert_equal(q.queue[0], expected)
 
         assert plxpr.eqns[0].primitive == ctrl_transform_prim
-        assert plxpr.eqns[0].params["control_values"] == [True]
+        assert plxpr.eqns[0].params["control_values"] == (True,)
         assert plxpr.eqns[0].params["n_control"] == 1
         assert plxpr.eqns[0].params["work_wires"] is None
         assert plxpr.eqns[0].params["n_consts"] == 0
@@ -323,7 +323,7 @@ class TestCtrlQfunc:
         assert len(q) == 1
 
         assert plxpr.eqns[0].primitive == ctrl_transform_prim
-        assert plxpr.eqns[0].params["control_values"] == [True, True]
+        assert plxpr.eqns[0].params["control_values"] == (True, True)
         assert plxpr.eqns[0].params["n_control"] == 2
         assert plxpr.eqns[0].params["work_wires"] is None
 
@@ -361,7 +361,7 @@ class TestCtrlQfunc:
         qml.assert_equal(q.queue[0], expected)
         assert len(q) == 1
 
-        assert plxpr.eqns[0].params["control_values"] == [False, True]
+        assert plxpr.eqns[0].params["control_values"] == (False, True)
         assert plxpr.eqns[0].params["n_control"] == 2
 
     def test_nested_control(self):
@@ -416,7 +416,7 @@ class TestCtrlQfunc:
             qml.assert_equal(q.queue[2], qml.ctrl(qml.S(2), 0))
 
         eqn = jaxpr.eqns[0]
-        assert eqn.params["control_values"] == [True]
+        assert eqn.params["control_values"] == (True,)
         assert eqn.params["n_consts"] == 0
         assert eqn.params["n_control"] == 1
         assert eqn.params["work_wires"] is None
@@ -448,7 +448,7 @@ class TestCtrlQfunc:
             "fn",
             "scalar_out",
         }
-        assert grad_eqn.params["argnums"] == [0]
+        assert grad_eqn.params["argnums"] == (0,)
         assert grad_eqn.params["n_consts"] == 0
         assert grad_eqn.params["method"] == "auto"
         assert grad_eqn.params["h"] == 1e-6

@@ -39,6 +39,9 @@ class CollectResourceOps(FlattenedInterpreter):
         self.state["ops"].add(resource_rep(type(op), **op.resource_params))
         return op
 
+    def interpret_measurement_eqn(self, eqn):
+        pass
+
 
 @CollectResourceOps.register_primitive(measure_prim)
 def _mid_measure_prim(self, wires, reset, postselect):  # pylint: disable=unused-argument
@@ -101,10 +104,10 @@ def explore_all_branches(self, *invals, jaxpr_branches, consts_slices, args_slic
     """Handle the cond primitive by a flattened python strategy."""
     n_branches = len(jaxpr_branches)
     conditions = invals[:n_branches]
-    args = invals[args_slice]
+    args = invals[slice(*args_slice)]
     outvals = ()
     for _, jaxpr, consts_slice in zip(conditions, jaxpr_branches, consts_slices):
-        consts = invals[consts_slice]
+        consts = invals[slice(*consts_slice)]
         dummy = copy(self).eval(jaxpr, consts, *args)
         # The cond_prim may or may not expect outvals, so we need to check whether
         # the first branch returns something significant. If so, we use the return

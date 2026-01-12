@@ -196,11 +196,6 @@ def while_loop(cond_fn, allow_array_resizing: Literal["auto", True, False] = "au
 
     """
 
-    if active_jit := active_compiler():
-        compilers = AvailableCompilers.names_entrypoints
-        ops_loader = compilers[active_jit]["ops"].load()
-        return ops_loader.while_loop(cond_fn)
-
     # if there is no active compiler, simply interpret the while loop
     # via the Python interpreter.
     def _decorator(body_fn: Callable) -> Callable:
@@ -241,6 +236,9 @@ def _get_while_loop_qfunc_prim():
         cond_slice,
         args_slice,
     ):
+        body_slice = slice(*body_slice)
+        cond_slice = slice(*cond_slice)
+        args_slice = slice(*args_slice)
 
         jaxpr_consts_body = args[body_slice]
         jaxpr_consts_cond = args[cond_slice]
@@ -254,7 +252,7 @@ def _get_while_loop_qfunc_prim():
 
     @while_loop_prim.def_abstract_eval
     def _abstract_eval(*args, args_slice, **__):
-        return args[args_slice]
+        return args[slice(*args_slice)]
 
     return while_loop_prim
 
@@ -302,7 +300,7 @@ class WhileLoopCallable:  # pylint:disable=too-few-public-methods
         flat_body_fn = FlatFn(self.body_fn, in_tree=in_tree)
         flat_cond_fn = FlatFn(self.cond_fn, in_tree=in_tree)
 
-        if abstracted_axes:
+        if abstracted_axes:  # pragma: no cover
             new_body_fn = add_abstract_shapes(flat_body_fn, shape_locations)
             dummy_init_state = [get_dummy_arg(arg) for arg in flat_args]
         else:
@@ -320,7 +318,7 @@ class WhileLoopCallable:  # pylint:disable=too-few-public-methods
             handle_jaxpr_error(e, (self.cond_fn, self.body_fn), self.allow_array_resizing)
 
         error_msg = validate_no_resizing_returns(jaxpr_body_fn.jaxpr, shape_locations)
-        if error_msg:
+        if error_msg:  # pragma: no cover
             if allow_array_resizing == "auto":
                 return self._get_jaxprs(init_state, allow_array_resizing=True)
             raise ValueError(error_msg)
@@ -357,6 +355,13 @@ class WhileLoopCallable:  # pylint:disable=too-few-public-methods
         return jax.tree_util.tree_unflatten(out_tree, results)
 
     def __call__(self, *init_state):
+
+        if active_jit := active_compiler():
+            compilers = AvailableCompilers.names_entrypoints
+            ops_loader = compilers[active_jit]["ops"].load()
+            return ops_loader.while_loop(
+                self.cond_fn, allow_array_resizing=self.allow_array_resizing
+            )(self.body_fn)(*init_state)
 
         if enabled():
             return self._call_capture_enabled(*init_state)
