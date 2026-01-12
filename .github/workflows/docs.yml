@@ -86,10 +86,9 @@ jobs:
         run: |
           pip freeze | grep -v 'file:///' > doc.txt
           cat doc.txt
-          echo "event name is ${{ github.event_name }}"
 
       - name: Upload frozen requirements
-        if: ${{ github.event_name != 'pull_request' }} # change to workflow_dispatch
+        if: ${{ github.event_name != 'workflow_dispatch' }} 
         uses: actions/upload-artifact@v4
         with:
           name: frozen-doc
