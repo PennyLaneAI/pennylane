@@ -347,7 +347,7 @@ def _leaf_ops_for_bit(wire_manager, data, n_k, j):
             target = wire_manager.portL(n_k - 1, p >> 1)
         else:
             target = wire_manager.portR(n_k - 1, p >> 1)
-        bit = data[p,j]
+        bit = data[p, j]
         cond(bit, PauliZ)(wires=target)
     return ops
 
