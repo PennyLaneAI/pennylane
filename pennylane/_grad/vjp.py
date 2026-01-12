@@ -43,8 +43,8 @@ def vjp(f, params, cotangents, method=None, h=None, argnums=None, *, argnum=None
 
     .. warning::
 
-        ``argnum`` has been renamed to ``argnums`` to match catalyst and jax.
-        ``argnum`` will be removed in v0.45.
+        The argument ``argnum`` has been renamed to ``argnums`` to match Catalyst and JAX.
+        The ability to use ``argnum`` will be removed in v0.45.
 
     Args:
         f(Callable): Function-like object to calculate VJP for
