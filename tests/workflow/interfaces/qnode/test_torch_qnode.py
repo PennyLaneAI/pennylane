@@ -83,10 +83,7 @@ class TestQNode:
         if diff_method == "hadamard":
             qnode_kwargs["gradient_kwargs"] = {"mode": "direct"}
 
-        @qnode(
-            dev,
-            **qnode_kwargs
-        )
+        @qnode(dev, **qnode_kwargs)
         def circuit(a):
             qml.RY(a, wires=0)
             qml.RX(0.2, wires=0)
@@ -122,10 +119,7 @@ class TestQNode:
         if diff_method == "hadamard":
             qnode_kwargs["gradient_kwargs"] = {"mode": "direct"}
 
-        @qnode(
-            dev,
-            **qnode_kwargs
-        )
+        @qnode(dev, **qnode_kwargs)
         def circuit(a):
             qml.RY(a, wires=0)
             qml.RX(0.2, wires=0)
@@ -399,7 +393,7 @@ class TestQNode:
             grad_on_execution=grad_on_execution,
             interface=interface,
             device_vjp=device_vjp,
-            gradient_kwargs=gradient_kwargs
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(a, b, c):
             qml.RY(a * c, wires=0)
@@ -488,10 +482,7 @@ class TestQNode:
         if diff_method == "hadamard":
             qnode_kwargs["gradient_kwargs"] = {"mode": "direct"}
 
-        @qnode(
-            dev,
-            **qnode_kwargs
-        )
+        @qnode(dev, **qnode_kwargs)
         def circuit(U, a):
             qml.QubitUnitary(U, wires=0)
             qml.RY(a, wires=0)
@@ -812,14 +803,18 @@ class TestQubitIntegration:
             diff_method=diff_method,
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
-            gradient_kwargs=gradient_kwargs
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit1(weights):
             qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1])
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
         @qnode(
-            dev, interface=interface, diff_method=diff_method, grad_on_execution=grad_on_execution, gradient_kwargs=gradient_kwargs
+            dev,
+            interface=interface,
+            diff_method=diff_method,
+            grad_on_execution=grad_on_execution,
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit2(data, weights):
             data = qml.math.hstack(data)
@@ -1689,7 +1684,7 @@ class TestReturn:
             diff_method=diff_method,
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
-            gradient_kwargs=gradient_kwargs
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(a):
             qml.RY(a, wires=0)
@@ -1727,7 +1722,7 @@ class TestReturn:
             diff_method=diff_method,
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
-            gradient_kwargs=gradient_kwargs
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(a, b):
             qml.RY(a, wires=0)
@@ -1765,7 +1760,7 @@ class TestReturn:
             diff_method=diff_method,
             device_vjp=device_vjp,
             grad_on_execution=grad_on_execution,
-            gradient_kwargs=gradient_kwargs
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(a):
             qml.RY(a[0], wires=0)
@@ -1805,7 +1800,7 @@ class TestReturn:
             diff_method=diff_method,
             device_vjp=device_vjp,
             grad_on_execution=grad_on_execution,
-            gradient_kwargs=gradient_kwargs
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(a):
             qml.RY(a, wires=0)
@@ -1839,7 +1834,7 @@ class TestReturn:
             diff_method=diff_method,
             device_vjp=device_vjp,
             grad_on_execution=grad_on_execution,
-            gradient_kwargs=gradient_kwargs
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(a, b):
             qml.RY(a, wires=0)
@@ -1917,7 +1912,7 @@ class TestReturn:
             max_diff=1,
             device_vjp=device_vjp,
             grad_on_execution=grad_on_execution,
-            gradient_kwargs=gradient_kwargs
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(x, y):
             qml.RX(x, wires=[0])
@@ -1961,7 +1956,7 @@ class TestReturn:
             diff_method=diff_method,
             device_vjp=device_vjp,
             grad_on_execution=grad_on_execution,
-            gradient_kwargs=gradient_kwargs
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(a):
             qml.RY(a[0], wires=0)

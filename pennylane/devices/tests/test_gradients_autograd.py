@@ -190,10 +190,7 @@ class TestGradients:
         dev = device(wires=wires)
         tol = tol(dev.shots)
 
-        qnode_kwargs = {
-            "diff_method": diff_method,
-            "max_diff": 2
-        }
+        qnode_kwargs = {"diff_method": diff_method, "max_diff": 2}
         if diff_method == "hadamard":
             qnode_kwargs["gradient_kwargs"] = {"mode": "reversed-direct"}
 
