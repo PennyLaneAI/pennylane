@@ -896,5 +896,5 @@ def apply_transform_to_qnode(obj: QNode, transform, *targs, **tkwargs) -> QNode:
     if transform._custom_qnode_transform:
         return transform._custom_qnode_transform(transform, obj, targs, tkwargs)
     new_qnode = copy.copy(obj)
-    new_qnode._compile_pipeline = transform(new_qnode.transform_program, *targs, **tkwargs)
+    new_qnode._compile_pipeline = transform(new_qnode.compile_pipeline, *targs, **tkwargs)
     return new_qnode

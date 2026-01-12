@@ -219,14 +219,14 @@ class Transform:  # pylint: disable=too-many-instance-attributes
     >>> transformed_qnode
     <QNode: device='<default.qubit device at ...>', interface='auto', diff_method='best', shots='Shots(total=None)'>
 
-    >>> transformed_qnode.transform_program
+    >>> transformed_qnode.compile_pipeline
     CompilePipeline(my_quantum_transform)
 
     If we apply ``dispatched_transform`` a second time to the :class:`pennylane.QNode`, we would add
     it to the compile pipeline again and therefore the transform would be applied twice before execution.
 
     >>> transformed_qnode = dispatched_transform(transformed_qnode)
-    >>> transformed_qnode.transform_program
+    >>> transformed_qnode.compile_pipeline
     CompilePipeline(my_quantum_transform, my_quantum_transform)
 
     When a transformed QNode is executed, the QNode's compile pipeline is applied to the generated tape
@@ -763,7 +763,7 @@ class Transform:  # pylint: disable=too-many-instance-attributes
         """
         # same comment as custom_qnode_transform :(
         qnode = copy(qnode)
-        qnode.transform_program.append(BoundTransform(self, args=targs, kwargs=tkwargs))
+        qnode.compile_pipeline.append(BoundTransform(self, args=targs, kwargs=tkwargs))
         return qnode
 
 
