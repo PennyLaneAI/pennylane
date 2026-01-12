@@ -19,6 +19,10 @@
 
 <h3>Deprecations 👋</h3>
 
+* Deprecated passing ``None`` to ``aux_wire`` when using a mode that needs an ``aux_wire`` as we now 
+  use the resources available to choose a mode and not vice versa.
+  [(#8905)](https://github.com/PennyLaneAI/pennylane/pull/8905)
+
 <h3>Internal changes ⚙️</h3>
 
 <h3>Documentation 📝</h3>
