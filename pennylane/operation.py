@@ -1022,11 +1022,6 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         """String for the name of the operator."""
         return self._name
 
-    @property
-    def id(self) -> str:
-        """Custom string to label a specific operator instance."""
-        return self._id
-
     @name.setter
     def name(self, value: str):
         self._name = value
@@ -1092,7 +1087,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         op_label = base_label or self.__class__.__name__
 
         if self.num_params == 0:
-            return op_label if self._id is None else f'{op_label}("{self._id}")'
+            return op_label
 
         def _format(x):
             """Format a scalar parameter or retrieve/store a matrix-valued parameter
@@ -1122,19 +1117,12 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         # Format each parameter individually, excluding those that lead to empty strings
         param_strings = [out for p in self.parameters if (out := _format(p)) != ""]
         inner_string = ",\n".join(param_strings)
-        # Include operation's id in string
-        if self._id is not None:
-            if inner_string == "":
-                inner_string = f'"{self._id}"'
-            else:
-                inner_string = f'{inner_string},"{self._id}"'
         if inner_string == "":
             return f"{op_label}"
         return f"{op_label}\n({inner_string})"
 
-    def __init__(self, *params: TensorLike, wires: WiresLike | None = None, id: str | None = None):
+    def __init__(self, *params: TensorLike, wires: WiresLike | None = None):
         self._name: str = self.__class__.__name__  #: str: name of the operator
-        self._id: str = id
         self._pauli_rep: qml.pauli.PauliSentence | None = (
             None  # Union[PauliSentence, None]: Representation of the operator as a pauli sentence, if applicable
         )
@@ -2035,9 +2023,8 @@ class Operation(Operator):
         self,
         *params: TensorLike,
         wires: WiresLike | None = None,
-        id: str | None = None,
     ):
-        super().__init__(*params, wires=wires, id=id)
+        super().__init__(*params, wires=wires)
 
         # check the grad_recipe validity
         if self.grad_recipe is None:
