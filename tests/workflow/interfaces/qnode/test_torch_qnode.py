@@ -22,7 +22,7 @@ from param_shift_dev import ParamShiftDerivativesDevice
 import pennylane as qml
 from pennylane import qnode
 from pennylane.devices import DefaultQubit
-from pennylane.exceptions import DeviceError
+from pennylane.exceptions import DeviceError, PennyLaneDeprecationWarning
 
 pytestmark = pytest.mark.torch
 
@@ -74,12 +74,18 @@ class TestQNode:
         if diff_method == "backprop":
             pytest.skip("Test does not support backprop")
 
+        qnode_kwargs = {
+            "diff_method": diff_method,
+            "grad_on_execution": grad_on_execution,
+            "interface": interface,
+            "device_vjp": device_vjp,
+        }
+        if diff_method == "hadamard":
+            qnode_kwargs["gradient_kwargs"] = {"mode": "direct"}
+
         @qnode(
             dev,
-            diff_method=diff_method,
-            grad_on_execution=grad_on_execution,
-            interface=interface,
-            device_vjp=device_vjp,
+            **qnode_kwargs
         )
         def circuit(a):
             qml.RY(a, wires=0)
@@ -107,12 +113,18 @@ class TestQNode:
         """Test that the Torch interface can be applied to a QNode
         with a pre-existing interface"""
 
+        qnode_kwargs = {
+            "diff_method": diff_method,
+            "grad_on_execution": grad_on_execution,
+            "interface": "autograd",
+            "device_vjp": device_vjp,
+        }
+        if diff_method == "hadamard":
+            qnode_kwargs["gradient_kwargs"] = {"mode": "direct"}
+
         @qnode(
             dev,
-            diff_method=diff_method,
-            interface="autograd",
-            grad_on_execution=grad_on_execution,
-            device_vjp=device_vjp,
+            **qnode_kwargs
         )
         def circuit(a):
             qml.RY(a, wires=0)
@@ -179,6 +191,8 @@ class TestQNode:
             gradient_kwargs["sampler_rng"] = np.random.default_rng(seed)
             gradient_kwargs["num_directions"] = 20
             tol = TOL_FOR_SPSA
+        if diff_method == "hadamard":
+            gradient_kwargs["mode"] = "direct"
 
         a_val = 0.1
         b_val = 0.2
@@ -228,10 +242,13 @@ class TestQNode:
         device_vjp,
     ):
         """Test calculating the jacobian with a different datatype"""
+        gradient_kwargs = {}
         if not "lightning" in getattr(dev, "name", "").lower():
             pytest.xfail("Failing unless lightning.qubit")
         if diff_method == "backprop":
             pytest.skip("Test does not support backprop")
+        if diff_method == "hadamard":
+            gradient_kwargs["mode"] = "direct"
 
         a = torch.tensor(0.1, dtype=torch.float32, requires_grad=True)
         b = torch.tensor(0.2, dtype=torch.float32, requires_grad=True)
@@ -242,6 +259,7 @@ class TestQNode:
             diff_method=diff_method,
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
+            gradint_kwargs=gradient_kwargs,
         )
         def circuit(a, b):
             qml.RY(a, wires=0)
@@ -371,12 +389,17 @@ class TestQNode:
         b = torch.tensor(0.2, dtype=torch.float64, requires_grad=False)
         c = torch.tensor(0.3, dtype=torch.float64, requires_grad=True)
 
+        gradient_kwargs = {}
+        if diff_method == "hadamard":
+            gradient_kwargs["mode"] = "direct"
+
         @qnode(
             dev,
             diff_method=diff_method,
             grad_on_execution=grad_on_execution,
             interface=interface,
             device_vjp=device_vjp,
+            gradient_kwargs=gradient_kwargs
         )
         def circuit(a, b, c):
             qml.RY(a * c, wires=0)
@@ -456,12 +479,18 @@ class TestQNode:
         a_val = 0.1
         a = torch.tensor(a_val, dtype=torch.float64, requires_grad=True)
 
+        qnode_kwargs = {
+            "diff_method": diff_method,
+            "grad_on_execution": grad_on_execution,
+            "interface": interface,
+            "device_vjp": device_vjp,
+        }
+        if diff_method == "hadamard":
+            qnode_kwargs["gradient_kwargs"] = {"mode": "direct"}
+
         @qnode(
             dev,
-            diff_method=diff_method,
-            grad_on_execution=grad_on_execution,
-            interface=interface,
-            device_vjp=device_vjp,
+            **qnode_kwargs
         )
         def circuit(U, a):
             qml.QubitUnitary(U, wires=0)
@@ -491,6 +520,8 @@ class TestQNode:
             gradient_kwargs["sampler_rng"] = np.random.default_rng(seed)
             gradient_kwargs["num_directions"] = 20
             tol = TOL_FOR_SPSA
+        if diff_method == "hadamard":
+            gradient_kwargs["mode"] = "direct"
 
         class U3(qml.U3):  # pylint:disable=too-few-public-methods
             def decomposition(self):
@@ -655,6 +686,8 @@ class TestQubitIntegration:
         if diff_method == "spsa":
             gradient_kwargs["sampler_rng"] = np.random.default_rng(seed)
             tol = TOL_FOR_SPSA
+        if diff_method == "hadamard":
+            gradient_kwargs["aux_wire"] = 2
 
         x_val = 0.543
         y_val = -0.654
@@ -720,6 +753,8 @@ class TestQubitIntegration:
             gradient_kwargs["sampler_rng"] = np.random.default_rng(seed)
             gradient_kwargs["num_directions"] = 20
             tol = TOL_FOR_SPSA
+        if diff_method == "hadamard":
+            gradient_kwargs["aux_wire"] = 2
 
         x_val = 0.543
         y_val = -0.654
@@ -767,6 +802,9 @@ class TestQubitIntegration:
         device_vjp,
     ):
         """Test that the gradient of chained QNodes works without error"""
+        gradient_kwargs = {}
+        if diff_method == "hadamard":
+            gradient_kwargs["mode"] = "direct"
 
         @qnode(
             dev,
@@ -774,13 +812,14 @@ class TestQubitIntegration:
             diff_method=diff_method,
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
+            gradient_kwargs=gradient_kwargs
         )
         def circuit1(weights):
             qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1])
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
         @qnode(
-            dev, interface=interface, diff_method=diff_method, grad_on_execution=grad_on_execution
+            dev, interface=interface, diff_method=diff_method, grad_on_execution=grad_on_execution, gradient_kwargs=gradient_kwargs
         )
         def circuit2(data, weights):
             data = qml.math.hstack(data)
@@ -813,6 +852,8 @@ class TestQubitIntegration:
         options = {}
         if diff_method == "finite-diff":
             options = {"h": 1e-6}
+        if diff_method == "hadamard":
+            options["mode"] = "direct"
 
         @qnode(
             dev,
@@ -883,42 +924,47 @@ class TestQubitIntegration:
 
         x = torch.tensor([1.0, 2.0], requires_grad=True, dtype=torch.float64)
         res = circuit(x)
-        jac_fn = lambda x: jacobian(circuit, x, create_graph=True)
 
-        g = jac_fn(x)
-        hess = jacobian(jac_fn, x)
-
-        a, b = x.detach().numpy()
-
-        assert isinstance(hess, torch.Tensor)
-        assert tuple(hess.shape) == (2, 2, 2)
-
-        expected_res = [
-            0.5 + 0.5 * np.cos(a) * np.cos(b),
-            0.5 - 0.5 * np.cos(a) * np.cos(b),
-        ]
-        assert np.allclose(res.detach(), expected_res, atol=tol, rtol=0)
-
-        expected_g = [
-            [-0.5 * np.sin(a) * np.cos(b), -0.5 * np.cos(a) * np.sin(b)],
-            [0.5 * np.sin(a) * np.cos(b), 0.5 * np.cos(a) * np.sin(b)],
-        ]
-        assert np.allclose(g.detach(), expected_g, atol=tol, rtol=0)
-
-        expected_hess = [
-            [
-                [-0.5 * np.cos(a) * np.cos(b), 0.5 * np.sin(a) * np.sin(b)],
-                [0.5 * np.sin(a) * np.sin(b), -0.5 * np.cos(a) * np.cos(b)],
-            ],
-            [
-                [0.5 * np.cos(a) * np.cos(b), -0.5 * np.sin(a) * np.sin(b)],
-                [-0.5 * np.sin(a) * np.sin(b), 0.5 * np.cos(a) * np.cos(b)],
-            ],
-        ]
-        if diff_method == "finite-diff":
-            assert np.allclose(hess.detach(), expected_hess, atol=10e-2, rtol=0)
+        if diff_method == "hadamard":
+            with pytest.raises(PennyLaneDeprecationWarning, match="aux_wire"):
+                jacobian(circuit, x, create_graph=True)
         else:
-            assert np.allclose(hess.detach(), expected_hess, atol=tol, rtol=0)
+            jac_fn = lambda x: jacobian(circuit, x, create_graph=True)
+
+            g = jac_fn(x)
+            hess = jacobian(jac_fn, x)
+
+            a, b = x.detach().numpy()
+
+            assert isinstance(hess, torch.Tensor)
+            assert tuple(hess.shape) == (2, 2, 2)
+
+            expected_res = [
+                0.5 + 0.5 * np.cos(a) * np.cos(b),
+                0.5 - 0.5 * np.cos(a) * np.cos(b),
+            ]
+            assert np.allclose(res.detach(), expected_res, atol=tol, rtol=0)
+
+            expected_g = [
+                [-0.5 * np.sin(a) * np.cos(b), -0.5 * np.cos(a) * np.sin(b)],
+                [0.5 * np.sin(a) * np.cos(b), 0.5 * np.cos(a) * np.sin(b)],
+            ]
+            assert np.allclose(g.detach(), expected_g, atol=tol, rtol=0)
+
+            expected_hess = [
+                [
+                    [-0.5 * np.cos(a) * np.cos(b), 0.5 * np.sin(a) * np.sin(b)],
+                    [0.5 * np.sin(a) * np.sin(b), -0.5 * np.cos(a) * np.cos(b)],
+                ],
+                [
+                    [0.5 * np.cos(a) * np.cos(b), -0.5 * np.sin(a) * np.sin(b)],
+                    [-0.5 * np.sin(a) * np.sin(b), 0.5 * np.cos(a) * np.cos(b)],
+                ],
+            ]
+            if diff_method == "finite-diff":
+                assert np.allclose(hess.detach(), expected_hess, atol=10e-2, rtol=0)
+            else:
+                assert np.allclose(hess.detach(), expected_hess, atol=tol, rtol=0)
 
     def test_hessian_ragged(self, interface, dev, diff_method, grad_on_execution, device_vjp, tol):
         """Test hessian calculation of a ragged QNode"""
