@@ -489,7 +489,7 @@ jobs:
       pytest_additional_args: ${{ needs.warnings-as-errors-setup.outputs.pytest_warning_args }}
       pytest_xml_file_path: '${{ inputs.job_name_prefix }}external-libraries-tests (${{ matrix.python-version }})${{ inputs.job_name_suffix }}.xml'
       additional_pip_packages: |
-        pyzx matplotlib stim quimb mitiq>=0.45.1 ply optax scipy-openblas32>=0.3.26 qualtran openqasm3 antlr4_python3_runtime
+        pyzx matplotlib stim quimb mitiq>=0.45.1 optax scipy-openblas32>=0.3.26 qualtran openqasm3 antlr4_python3_runtime
         ${{ needs.default-dependency-versions.outputs.jax-version }}
         git+https://github.com/PennyLaneAI/pennylane-qiskit.git@master
         ${{ needs.default-dependency-versions.outputs.catalyst-nightly }}
