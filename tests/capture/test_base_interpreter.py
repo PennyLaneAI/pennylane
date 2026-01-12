@@ -700,6 +700,26 @@ class TestHigherOrderPrimitiveRegistrations:
         assert jaxpr2.consts == [scalar]
         assert len(jaxpr2.eqns[0].params["qfunc_jaxpr"].constvars) == 1
 
+    def test_subroutine(self):
+        """Test subroutines can be processed with interpreters."""
+
+        @qml.capture.subroutine
+        def some_func(x):
+            _ = qml.RX(x, 0) ** 2
+
+        @SimplifyInterpreter()
+        def c(x):
+            some_func(x)
+            some_func(x)
+
+        jaxpr = jax.make_jaxpr(c)(0.5)
+
+        jaxpr0 = jaxpr.eqns[0].params["jaxpr"]
+        assert jaxpr0.eqns[0].primitive.name == "add"
+        assert jaxpr0.eqns[1].primitive == qml.RX._primitive  # pylint: disable=protected-access
+
+        assert jaxpr0 is jaxpr.eqns[1].params["jaxpr"]  # properly cached
+
     @pytest.mark.parametrize("grad_f", (qml.grad, qml.jacobian))
     def test_grad_and_jac(self, grad_f):
         """Test interpreters can handle grad and jacobian HOP's."""

@@ -523,3 +523,21 @@ class TestPlxprToTape:
         assert tape.operations[2].wires == tape.operations[1].wires
         assert isinstance(tape.operations[3], qml.allocation.Deallocate)
         assert tape.operations[3].wires == tape.operations[1].wires
+
+    def test_subroutine(self):
+        """Test that jaxpr's with subroutines can be converted to a tape."""
+
+        @qml.capture.subroutine
+        def some_func(x):
+            qml.RX(x, 0)
+
+        def c(x):
+            some_func(x)
+            some_func(x)
+
+        jaxpr = jax.make_jaxpr(c)(0.5)
+        tape = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 0.5)
+        assert isinstance(tape, qml.tape.QuantumScript)
+        assert len(tape) == 2
+        qml.assert_equal(tape[0], qml.RX(0.5, 0))
+        qml.assert_equal(tape[1], qml.RX(0.5, 0))
