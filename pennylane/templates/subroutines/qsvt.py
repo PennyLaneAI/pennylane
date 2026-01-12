@@ -1077,10 +1077,11 @@ def _compute_qsp_angles_inlfft(poly):
 
     #Weiss Algorithm first
     coef=poly
+    print(coef)
     eta=.5
     coef=-1*coef
     parity=int(len(coef)%2) #parity of polynomial
-
+    print(parity)
     if parity == 0:    
         coef[0] = coef[0]*2  
 
@@ -1097,7 +1098,7 @@ def _compute_qsp_angles_inlfft(poly):
         bz = np.fft.ifft(ext_bc)*N
     
         if parity == 1:
-            bz = bz*np.exp(1j*np.pi/N*np.array(list(range(N)))) 
+            bz = bz*np.exp(1j*np.pi/N*np.array(list(range(N-2)))) 
 
         logsqrt_b = np.log(np.sqrt(1-np.square(np.abs(bz))))
         r = np.fft.fft(logsqrt_b)/N
@@ -1108,12 +1109,13 @@ def _compute_qsp_angles_inlfft(poly):
         AN = np.fft.fft(np.conjugate(np.exp(G)))/N
         thd = np.square(np.linalg.norm(AN[int(np.floor(N/4))-1:int(np.ceil(N*3/4))]))/np.square(np.linalg.norm(AN))
         N = N * 3
-
+    print(AN)
     #inverse nonlinear fast fourier transform call
     ac = np.real(AN[0:d+1])# % coefficient of a^*(z)
     F2, xi1, eta1 = _inlft(ac,bc[::-1]);
     phi = np.atan(F2[::-1])
     qsp_phase=np.concatenate((phi[1::2][::-1],phi[1::2]))+np.concatenate((np.zeros(len(phi)-1),[np.pi/2]))
+    print(qsp_phase[:5])
     return qsp_phase
 
 def _gqsp_u3_gate(theta, phi, lambd):
@@ -1372,7 +1374,7 @@ def poly_to_angles(poly, routine, angle_solver: Literal["root-finding"] = "root-
             return transform_angles(_compute_qsp_angle(poly), "QSP", "QSVT")
         if angle_solver == "iterative":
             return transform_angles(_compute_qsp_angles_iteratively(poly), "QSP", "QSVT")
-        if angle_solver == 'inlfft':
+        if angle_solver == "inlfft":
             return transform_angles(_compute_qsp_angles_inlfft(poly), "QSP", "QSVT")
 
         raise AssertionError(
@@ -1384,7 +1386,7 @@ def poly_to_angles(poly, routine, angle_solver: Literal["root-finding"] = "root-
             return _compute_qsp_angle(poly)
         if angle_solver == "iterative":
             return _compute_qsp_angles_iteratively(poly)
-        if angle_solver == 'inlfft':
+        if angle_solver == "inlfft":
             return _compute_qsp_angles_inlfft(poly)
 
         raise AssertionError(
