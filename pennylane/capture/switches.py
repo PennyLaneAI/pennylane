@@ -21,12 +21,14 @@ from contextlib import contextmanager
 has_jax = True
 is_jax_compatible = True
 
+REQUIRED_JAX_VERSION = "0.7.1"
+
 try:
     import jax  # pylint: disable=unused-import
     from packaging import version
 
     jax_version = version.parse(jax.__version__)
-    required_version = version.parse("0.7.1")
+    required_version = version.parse(REQUIRED_JAX_VERSION)
     if jax_version != required_version:  # pragma: no cover
         is_jax_compatible = False
 except ImportError:  # pragma: no cover
@@ -55,9 +57,9 @@ def _make_switches() -> tuple[Callable[[], None], Callable[[], None], Callable[[
             raise ImportError("plxpr requires JAX to be installed.")
         if not is_jax_compatible:  # pragma: no cover
             raise ImportError(
-                f"PennyLane's program capture requires JAX == 0.7.1 to be installed to ensure functionality. "
+                f"PennyLane's program capture requires JAX=={REQUIRED_JAX_VERSION} to be installed to ensure functionality. "
                 f"You have JAX {jax.__version__} installed. "
-                f"Please pin JAX by running: pip install --upgrade jax==0.7.1 jaxlib==0.7.1"
+                f"Please pin JAX by running: pip install --upgrade jax=={REQUIRED_JAX_VERSION} jaxlib=={REQUIRED_JAX_VERSION}"
             )
         nonlocal _FEATURE_ENABLED
         _FEATURE_ENABLED = True

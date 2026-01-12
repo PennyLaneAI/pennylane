@@ -223,6 +223,7 @@
   [(#8751)](https://github.com/PennyLaneAI/pennylane/pull/8751)
   [(#8774)](https://github.com/PennyLaneAI/pennylane/pull/8774)
   [(#8781)](https://github.com/PennyLaneAI/pennylane/pull/8781)
+  [(#8820)](https://github.com/PennyLaneAI/pennylane/pull/8820)
 
   - `push_back` is renamed to `append`, and it now accepts both :class:`~.transforms.core.Transform` and :class:`~.trasnforms.core.BoundTransform`.
   - `insert_front` and `insert_front_transform` are removed in favour of a new `insert` method which inserts a transform at any given index.
@@ -230,6 +231,7 @@
   - `pop_front` is removed in favour of a new `pop` method which removes the transform at any given index.
   - `is_empty` is removed, use `bool(pipeline)` or `len(pipeline) == 0` to check if `pipeline` is empty.
   - Added a `remove` method which removes all matching transforms from the pipeline.
+  - Added an ``extend`` method which extends the pipeline with an iterable of transforms.
   - The `prune_dynamic_transform` method is removed.
 
 * A :class:`~.CompilePipeline` (previously known as the `TransformProgram`) can now be applied directly on a :class:`~.QNode`.
@@ -580,6 +582,10 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
   [(#8721)](https://github.com/PennyLaneAI/pennylane/issues/8721)
 
 <h4>Other improvements</h4>
+
+* An informative error is now raised when :func:`~.transforms.clifford_t_decomposition` is used when program
+  capture is enabled.
+  [(#8883)](https://github.com/PennyLaneAI/pennylane/pull/8883)
 
 * The constant to convert the length unit Bohr to Angstrom in ``qml.qchem`` is updated to use scipy constants.
   [(#8537)](https://github.com/PennyLaneAI/pennylane/pull/8537)
@@ -953,6 +959,10 @@ For theoretical details, see [arXiv:0208112](https://arxiv.org/abs/quant-ph/0208
 
 <h3>Documentation 📝</h3>
 
+* A note clarifying the incompatbility of the :func:`~.transforms.clifford_t_decomposition` transform
+  with ``qjit`` has been added to its docstring.
+  [(#8883)](https://github.com/PennyLaneAI/pennylane/pull/8883)
+
 * A note clarifying that the factors of a ``~.ChangeOpBasis`` are iterated in reverse order has been
   added to the documentation of ``~.ChangeOpBasis``.
   [(#8757)](https://github.com/PennyLaneAI/pennylane/pull/8757)
@@ -989,6 +999,9 @@ A warning message has been added to :doc:`Building a plugin <../development/plug
   [(#8707)](https://github.com/PennyLaneAI/pennylane/pull/8707)
 
 <h3>Bug fixes 🐛</h3>
+
+* Prevent qml.about() from crashing in environments without pip (e.g., when using the uv package manager) by using standard library metadata.
+  [(#8457)](https://github.com/PennyLaneAI/pennylane/pull/8457)
 
 * Fixes a bug where `_double_factorization_compressed` of `pennylane/qchem/factorization.py` used to use `X`
   for `Z` param initialization.
@@ -1099,6 +1112,7 @@ Shuli Shu,
 Jay Soni,
 nate stemen,
 Theodoros Trochatos,
+Leo Wei,
 David Wierichs,
 Shifan Xu,
 Hongsheng Zheng,
