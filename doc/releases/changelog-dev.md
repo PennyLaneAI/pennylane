@@ -22,6 +22,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* Remove ``id`` from ``Operation`` and ``Operator`` constructors.
+  [(#8910)](https://github.com/PennyLaneAI/pennylane/pull/8910)
+
 <h3>Deprecations 👋</h3>
 
 <h3>Internal changes ⚙️</h3>
