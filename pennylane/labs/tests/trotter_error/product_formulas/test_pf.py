@@ -13,14 +13,10 @@
 # limitations under the License.
 """Tests for the product formula representations"""
 
-from itertools import product
-
 import numpy as np
 import pytest
-from scipy.sparse.linalg import expm
 
 from pennylane.labs.trotter_error import ProductFormula, effective_hamiltonian
-from pennylane.labs.trotter_error.abstract import nested_commutator
 
 
 def _hermitian(mat):
