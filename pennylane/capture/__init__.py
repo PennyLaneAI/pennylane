@@ -244,4 +244,6 @@ __all__ = (
     "FlatFn",
     "run_autograph",
     "make_plxpr",
+    "Patcher",
+    "get_jax_patches",
 )
