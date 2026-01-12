@@ -15,7 +15,7 @@ dependencies = [
     "rustworkx>=0.14.0",
     "autograd",
     "appdirs",
-    "autoray==0.8.2",
+    "autoray==0.8.4",
     "cachetools",
     "pennylane-lightning>=0.43",
     "requests",
@@ -23,7 +23,7 @@ dependencies = [
     "typing_extensions",
     "packaging",
     "diastatic-malt",
-    "numpy"
+    "numpy>=2.0"
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -65,7 +65,7 @@ dev = [
     "pytest-split",
     "tomlkit~=0.13",
     "rich>=13.7.1",
-    "tach==0.28.5",
+    "tach~=0.33",
     "build",
     "pylint~=4.0.0",
     "isort~=7.0.0",
@@ -78,7 +78,7 @@ docker = [
     "cachetools~=5.3.0", # this should be at least v5.3.0 because qualtran v0.6 (as of 2025/01/14) requires it, no known reason for why it cannot be anything higher.
     "matplotlib~=3.5",
     "opt_einsum~=3.3",
-    "tach~=0.28.5",
+    "tach~=0.33",
 ]
 upload-reports = [
     "pydantic==2.10.6",
@@ -113,7 +113,7 @@ docs = [
     "sphinxcontrib-qthelp==2.0.0",
     "sphinxcontrib-htmlhelp==2.1.0",
     "sphinxcontrib-serializinghtml==2.0.0",
-    "torch==2.9.0",
+    "torch~=2.9.0",
     "tensornetwork==0.3",
     "jinja2>=3.1",
     "networkx==3.1",
