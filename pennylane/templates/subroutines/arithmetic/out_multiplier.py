@@ -14,16 +14,20 @@
 """
 Contains the OutMultiplier template.
 """
+from collections import defaultdict
 from itertools import combinations
 
 from pennylane.decomposition import (
     add_decomps,
     change_op_basis_resource_rep,
+    controlled_resource_rep,
+    register_condition,
     register_resources,
 )
 from pennylane.decomposition.resources import resource_rep
 from pennylane.operation import Operation
-from pennylane.ops import change_op_basis
+from pennylane.ops import change_op_basis, ctrl
+from pennylane.templates.subroutines.arithmetic import SemiAdder
 from pennylane.templates.subroutines.controlled_sequence import ControlledSequence
 from pennylane.templates.subroutines.qft import QFT
 from pennylane.wires import Wires, WiresLike
@@ -319,6 +323,11 @@ def _out_multiplier_decomposition_resources(
     }
 
 
+def _out_multiplier_decomposition_condition(num_output_wires, mod, num_work_wires, **_):
+    return mod in (None, 2**num_output_wires) or num_work_wires >= 1
+
+
+@register_condition(_out_multiplier_decomposition_condition)
 @register_resources(_out_multiplier_decomposition_resources)
 def _out_multiplier_decomposition(
     x_wires: WiresLike,
@@ -344,4 +353,49 @@ def _out_multiplier_decomposition(
     )
 
 
-add_decomps(OutMultiplier, _out_multiplier_decomposition)
+def _out_multiplier_with_adders_resources(
+    num_output_wires, num_x_wires, num_y_wires, num_work_wires, mod
+) -> dict:
+    # pylint: disable=unused-argument
+
+    resources = defaultdict(int)
+    for i in range(min(num_output_wires, num_x_wires)):
+        size = num_output_wires - i - max(0, num_output_wires - (num_y_wires + 1 + i))
+        resources[
+            controlled_resource_rep(
+                base_class=SemiAdder,
+                base_params={"num_y_wires": size},
+                num_control_wires=1,
+                num_zero_control_values=0,
+            )
+        ] += 1
+    return dict(resources)
+
+
+def _out_multiplier_with_adders_condition(num_output_wires, num_y_wires, mod, num_work_wires, **_):
+    return mod in (None, 2**num_output_wires) and num_work_wires >= num_y_wires
+
+
+@register_condition(_out_multiplier_with_adders_condition)
+@register_resources(_out_multiplier_with_adders_resources)
+def _out_multiplier_with_adders(
+    x_wires: WiresLike,
+    y_wires: WiresLike,
+    output_wires: WiresLike,
+    mod,
+    work_wires: WiresLike,
+    **__,
+):  # pylint: disable=unused-argument
+    n = len(y_wires)
+    m = len(output_wires)
+    for i, x_wire in enumerate(x_wires[::-1]):
+        if i < m:
+            ctrl(
+                SemiAdder(
+                    y_wires, output_wires[max(0, m - (n + 1 + i)) : m - i], work_wires=work_wires
+                ),
+                control=x_wire,
+            )
+
+
+add_decomps(OutMultiplier, _out_multiplier_decomposition, _out_multiplier_with_adders)
