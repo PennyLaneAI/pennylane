@@ -41,6 +41,7 @@ def test_falsy_zero_as_work_wire():
 class TestQROM:
     """Test the qml.QROM template."""
 
+    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     @pytest.mark.parametrize(
         ("bitstrings", "target_wires", "control_wires", "work_wires", "clean"),
         [
@@ -105,7 +106,6 @@ class TestQROM:
         @qml.qnode(dev)
         def circuit(j):
             qml.BasisEmbedding(j, wires=control_wires)
-
             qml.QROM(bitstrings, control_wires, target_wires, work_wires, clean)
             return qml.sample(wires=target_wires)
 

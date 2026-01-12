@@ -278,6 +278,7 @@ def test_correct_queueing():
     assert np.allclose(circuit1(), circuit3())
 
 
+@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 def test_amplification():
     """Test that AmplitudeAmplification amplifies a marked element."""
 
@@ -300,6 +301,7 @@ def test_amplification():
     assert np.allclose(res, expected)
 
 
+@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 @pytest.mark.parametrize(("p_min"), [0.7, 0.8, 0.9])
 def test_p_min(p_min):
     """Test that the p_min parameter works correctly."""

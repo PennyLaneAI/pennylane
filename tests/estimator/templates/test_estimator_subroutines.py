@@ -150,6 +150,143 @@ class TestIQP:
         assert qre.IQP.tracking_name(num_wires, pattern, spin_sym) == expected
 
 
+class TestBBQRAM:
+    """Test the BBQRAM class."""
+
+    def test_raises_with_wrong_wire_num(self):
+        with pytest.raises(ValueError, match="Expected 4 wires, got 3."):
+            qre.BBQRAM(
+                4,
+                3,
+                4,
+                6,
+                control_wires=(1,),
+                target_wires=(2,),
+                work_wires=(3,),
+            )
+
+    @pytest.mark.parametrize(
+        (
+            "num_wires",
+            "num_bitstrings",
+            "size_bitstring",
+            "num_bit_flips",
+            "control_wires",
+            "target_wires",
+            "work_wires",
+        ),
+        [
+            (
+                15,
+                4,
+                3,
+                6,
+                (0, 1),
+                (2, 3, 4),
+                (5, 6, 7, 8, 9, 10, 11, 12, 13, 14),
+            ),
+            (
+                15,
+                4,
+                3,
+                None,
+                (0, 1),
+                (2, 3, 4),
+                (5, 6, 7, 8, 9, 10, 11, 12, 13, 14),
+            ),
+        ],
+    )
+    def test_resource_params(
+        self,
+        num_wires,
+        num_bitstrings,
+        size_bitstring,
+        num_bit_flips,
+        control_wires,
+        target_wires,
+        work_wires,
+    ):
+        """Test that the resource params are correct."""
+        op = qre.BBQRAM(
+            num_bitstrings,
+            size_bitstring,
+            num_wires,
+            num_bit_flips,
+            control_wires,
+            target_wires,
+            work_wires,
+        )
+        assert op.resource_params == {
+            "num_bitstrings": num_bitstrings,
+            "size_bitstring": size_bitstring,
+            "num_bit_flips": (
+                num_bit_flips if num_bit_flips is not None else num_bitstrings * size_bitstring // 2
+            ),
+            "num_wires": num_wires,
+        }
+
+    @pytest.mark.parametrize(
+        ("num_wires", "num_bitstrings", "size_bitstring", "num_bit_flips"), [(15, 4, 3, 6)]
+    )
+    def test_resource_rep(self, num_wires, num_bitstrings, size_bitstring, num_bit_flips):
+        """Test that the compressed representation is correct."""
+        expected = qre.CompressedResourceOp(
+            qre.BBQRAM,
+            num_wires,
+            {
+                "num_bitstrings": num_bitstrings,
+                "size_bitstring": size_bitstring,
+                "num_bit_flips": num_bit_flips,
+                "num_wires": num_wires,
+            },
+        )
+        assert (
+            qre.BBQRAM.resource_rep(
+                num_bitstrings=num_bitstrings,
+                size_bitstring=size_bitstring,
+                num_bit_flips=num_bit_flips,
+                num_wires=num_wires,
+            )
+            == expected
+        )
+
+    @pytest.mark.parametrize(
+        "num_bitstrings, size_bitstring, num_bit_flips, num_wires, expected_res",
+        (
+            (
+                4,
+                3,
+                6,
+                15,
+                [
+                    GateCount(resource_rep(qre.SWAP), 16),
+                    GateCount(resource_rep(qre.Hadamard), 6),
+                    GateCount(resource_rep(qre.CSWAP), 40),
+                    GateCount(resource_rep(qre.Z), 6),
+                ],
+            ),
+        ),
+    )
+    def test_resources(
+        self, num_bitstrings, size_bitstring, num_bit_flips, num_wires, expected_res
+    ):
+        """Test that the resources are correct."""
+        assert (
+            qre.BBQRAM.resource_decomp(num_bitstrings, size_bitstring, num_bit_flips, num_wires)
+            == expected_res
+        )
+
+    @pytest.mark.parametrize(
+        ("num_bitstrings", "size_bitstring", "num_bit_flips", "num_wires"), [(4, 3, 6, 15)]
+    )
+    def test_tracking_name(self, num_bitstrings, size_bitstring, num_bit_flips, num_wires):
+        """Tests that the tracking name is correct."""
+        assert (
+            qre.BBQRAM.tracking_name(num_bitstrings, size_bitstring, num_bit_flips, num_wires)
+            == f"BBQRAM({num_bitstrings}, {size_bitstring}, {num_bit_flips}, {num_wires})"
+        )
+
+
 class TestResourcePhaseGradient:
     """Test the PhaseGradient class."""
 
@@ -160,7 +297,7 @@ class TestResourcePhaseGradient:
 
     def test_init_raises_error(self):
         """Test that an error is raised when wires and num_wires are both not provided"""
-        with pytest.raises(ValueError, match="Must provide atleast one of"):
+        with pytest.raises(ValueError, match="Must provide at least one of"):
             qre.PhaseGradient()
 
     @pytest.mark.parametrize("num_wires", (1, 2, 3, 4, 5))
@@ -977,7 +1114,7 @@ class TestResourceQFT:
 
     def test_init_raises_error(self):
         """Test that an error is raised when wires and num_wires are both not provided"""
-        with pytest.raises(ValueError, match="Must provide atleast one of"):
+        with pytest.raises(ValueError, match="Must provide at least one of"):
             qre.QFT()
 
     def test_tracking_name(self):
@@ -1108,7 +1245,7 @@ class TestResourceAQFT:
 
     def test_init_raises_error(self):
         """Test that an error is raised when wires and num_wires are both not provided"""
-        with pytest.raises(ValueError, match="Must provide atleast one of"):
+        with pytest.raises(ValueError, match="Must provide at least one of"):
             qre.AQFT(order=2)
 
     def test_tracking_name(self):
@@ -1255,7 +1392,7 @@ class TestResourceBasisRotation:
 
     def test_init_raises_error(self):
         """Test that an error is raised when wires and dim are both not provided"""
-        with pytest.raises(ValueError, match="Must provide atleast one of"):
+        with pytest.raises(ValueError, match="Must provide at least one of"):
             qre.BasisRotation()
 
     @pytest.mark.parametrize("dim", (1, 2, 3))
@@ -2255,6 +2392,32 @@ class TestResourceUnaryIterationQPE:
         assert op.wires == expected_wires
 
     @pytest.mark.parametrize(
+        "walk_op, n_iter, error_message",
+        (
+            (
+                qre.QubitizeTHC(qre.THCHamiltonian(40, 10)),
+                0,
+                "Expected 'num_iterations' to be an integer greater than zero,",
+            ),
+            (
+                qre.QubitizeTHC(qre.THCHamiltonian(40, 10)),
+                3.5,
+                "Expected 'num_iterations' to be an integer greater than zero,",
+            ),
+            (
+                qre.QubitizeTHC(qre.THCHamiltonian(40, 10)),
+                -2,
+                "Expected 'num_iterations' to be an integer greater than zero,",
+            ),
+            (qre.RZ(), 4, "Expected the 'walk_op' to be a qubitization type operator "),
+        ),
+    )
+    def test_init_errors(self, walk_op, n_iter, error_message):
+        """Test that Value errors are raised when incompatible inputs are provided."""
+        with pytest.raises(ValueError, match=error_message):
+            _ = qre.UnaryIterationQPE(walk_op, n_iter)
+
+    @pytest.mark.parametrize(
         "walk_operator, n_iter, adj_qft",
         (
             (qre.QubitizeTHC(thc_ham=qre.THCHamiltonian(num_orbitals=20, tensor_rank=40)), 5, None),
@@ -2466,8 +2629,11 @@ class TestResourceReflection:
 
     def test_init_raises_error(self):
         """Test that an error is raised when neither num_wires nor U is provided."""
-        with pytest.raises(ValueError, match="Must provide atleast one of `num_wires` or `U`"):
+        with pytest.raises(ValueError, match="Must provide at least one of `num_wires` or `U`"):
             qre.Reflection()
+
+        with pytest.raises(ValueError, match="Must provide atleast one of `num_wires` or `U`"):
+            qre.Reflection.resource_rep()
 
     def test_wire_error(self):
         """Test that an error is raised when wrong number of wires is provided."""
@@ -2492,6 +2658,9 @@ class TestResourceReflection:
         """Test that an error is raised if the alpha is provided outside of the expected range"""
         with pytest.raises(ValueError, match="alpha must be within"):
             _ = qre.Reflection(num_wires=1, alpha=alpha)
+
+        with pytest.raises(ValueError, match="alpha must be within"):
+            _ = qre.Reflection.resource_rep(num_wires=1, alpha=alpha)
 
     @pytest.mark.parametrize(
         "U, alpha",

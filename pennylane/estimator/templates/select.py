@@ -51,7 +51,7 @@ class SelectTHC(ResourceOperator):
         rotation_precision (int): The number of bits used to represent the precision for loading
             the rotation angles for basis rotation. The default value is set to ``15`` bits.
         select_swap_depth (int | None): A parameter of :class:`~.pennylane.estimator.templates.subroutines.QROM`
-            used to trade-off extra wires for reduced circuit depth. Defaults to :code:`None`, in which
+            used to trade off extra wires for reduced circuit depth. Defaults to :code:`None`, in which
             case, the ``select_swap_depth`` is set to the optimal depth that minimizes the total
             ``T``-gate count.
         wires (WiresLike | None): the wires on which the operator acts
@@ -132,7 +132,7 @@ class SelectTHC(ResourceOperator):
 
         if not isinstance(rotation_precision, int) or rotation_precision <= 0:
             raise TypeError(
-                f"`rotation_precision` must be a positive integer, but type {type(rotation_precision)} was provided."
+                f"`rotation_precision` must be a positive integer, but got {rotation_precision}."
             )
 
         if not isinstance(num_batches, int) or num_batches not in range(1, thc_ham.num_orbitals):
@@ -173,7 +173,7 @@ class SelectTHC(ResourceOperator):
                 * rotation_precision (int): The number of bits used to represent the precision for loading
                   the rotation angles for basis rotation. The default value is set to ``15`` bits.
                 * select_swap_depth (int | None): A parameter of :class:`~.pennylane.estimator.templates.subroutines.QROM`
-                  used to trade-off extra wires for reduced circuit depth. Defaults to :code:`None`, in which
+                  used to trade off extra wires for reduced circuit depth. Defaults to :code:`None`, in which
                   case, the ``select_swap_depth`` is set to the optimal depth that minimizes the total
                   ``T``-gate count.
         """
@@ -204,7 +204,7 @@ class SelectTHC(ResourceOperator):
             rotation_precision (int): The number of bits used to represent the precision for loading
                 the rotation angles for basis rotation. The default value is set to ``15`` bits.
             select_swap_depth (int | None): A parameter of :class:`~.pennylane.estimator.templates.subroutines.QROM`
-                used to trade-off extra wires for reduced circuit depth. Defaults to :code:`None`, in which
+                used to trade off extra wires for reduced circuit depth. Defaults to :code:`None`, in which
                 case, the ``select_swap_depth`` is set to the optimal depth that minimizes the total
                 ``T``-gate count.
 
@@ -220,7 +220,7 @@ class SelectTHC(ResourceOperator):
 
         if not isinstance(rotation_precision, int) or rotation_precision <= 0:
             raise TypeError(
-                f"`rotation_precision` must be a positive integer, but type {type(rotation_precision)} was provided."
+                f"`rotation_precision` must be a positive integer, but got {rotation_precision}."
             )
 
         if not isinstance(num_batches, int) or num_batches not in range(1, thc_ham.num_orbitals):
@@ -266,7 +266,7 @@ class SelectTHC(ResourceOperator):
             rotation_precision (int): The number of bits used to represent the precision for loading
                 the rotation angles for basis rotation. The default value is set to ``15`` bits.
             select_swap_depth (int | None): A parameter of :class:`~.pennylane.estimator.templates.subroutines.QROM`
-                used to trade-off extra wires for reduced circuit depth. Defaults to :code:`None`, in which
+                used to trade off extra wires for reduced circuit depth. Defaults to :code:`None`, in which
                 case, the ``select_swap_depth`` is set to the optimal depth that minimizes the total
                 ``T``-gate count.
 
