@@ -343,6 +343,18 @@ class TestPreprocessing:
             (qml.QFT(wires=range(10)), False),
             (qml.GroverOperator(wires=range(10)), True),
             (qml.GroverOperator(wires=range(14)), False),
+            (
+                qml.IQP(
+                    np.zeros(5, dtype=np.float64), num_wires=5, pattern=[[[i]] for i in range(5)]
+                ),
+                True,
+            ),
+            (
+                qml.IQP(
+                    np.zeros(6, dtype=np.float64), num_wires=6, pattern=[[[i]] for i in range(6)]
+                ),
+                False,
+            ),
             (qml.pow(qml.RX(1.1, 0), 3), True),
             (qml.pow(qml.RX(qml.numpy.array(1.1), 0), 3), False),
             (qml.QubitUnitary(sp.sparse.csr_matrix(np.eye(8)), wires=range(3)), True),
