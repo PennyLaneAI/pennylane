@@ -7,7 +7,8 @@
 * The ``qml.estimator.Resources`` class now has a nice string representation in Jupyter Notebooks.
   [(#8880)](https://github.com/PennyLaneAI/pennylane/pull/8880)
 
-* Adds a ``qml.capture.subroutine`` for jitting quantum subroutines with program capture.
+* Adds a `qml.capture.subroutine` for jitting quantum subroutines with program capture.
+  [(#8912)](https://github.com/PennyLaneAI/pennylane/pull/8912)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
