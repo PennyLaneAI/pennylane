@@ -114,7 +114,7 @@ def hadamard_grad(
             with respect to. If not provided, the derivatives with respect to all
             trainable parameters are returned. Note that the indices are with respect to
             the list of trainable parameters.
-        aux_wire (pennylane.wires.Wires): Auxiliary wire to be used for the Hadamard tests.
+        aux_wire (pennylane.wires.Wires or None): Auxiliary wire to be used for the Hadamard tests.
             If ``None`` (the default) and ``mode`` is "standard" or "reversed", a suitable wire
             is inferred from the wires used in the original circuit and ``device_wires``.
         device_wires (pennylane.wires.Wires): Wires of the device that are going to be used for the
