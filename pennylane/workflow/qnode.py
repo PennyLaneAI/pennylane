@@ -663,7 +663,7 @@ class QNode:
 
         """
         warnings.warn(
-            "The 'transform_program' property of the QNode has been renamed to 'compile_pipeline'."
+            "The 'transform_program' property of the QNode has been renamed to 'compile_pipeline'. "
             "Access through 'transform_program' will be removed in PennyLane v0.46.",
             PennyLaneDeprecationWarning,
         )

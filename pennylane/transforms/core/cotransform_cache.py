@@ -22,7 +22,7 @@ from pennylane._grad import jacobian as autograd_jacobian
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.typing import TensorLike
 
-from .transform_dispatcher import BoundTransform
+from .transform import BoundTransform
 
 
 def _numpy_jac(*_, **__) -> TensorLike:
