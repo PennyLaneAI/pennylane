@@ -39,12 +39,14 @@ _ADJOINT_CLIFFORD_T = frozenset({f"Adjoint({op.__name__})" for op in _CLIFFORD_T
 
 _CLIFFORD_T = _CLIFFORD_T_ORIGINAL | _ADJOINT_CLIFFORD_T
 
+_MID_MEASURE = frozenset({ops.MidMeasure})
+
 IDENTITY = frozenset({ops.Identity, ops.GlobalPhase})
 
-CLIFFORD_T = _CLIFFORD_T | IDENTITY
+CLIFFORD_T = _CLIFFORD_T | IDENTITY | _MID_MEASURE
 
 _CLIFFORD_T_RZ = {op: 1.0 for op in _CLIFFORD_T} | {op: 0.0 for op in IDENTITY} | {ops.RZ: 100}
 
 CLIFFORDD_T_PLUS_RZ = MappingProxyType(_CLIFFORD_T_RZ)  # readonly view
 
-ROTATIONS_PLUS_CNOT = frozenset({ops.RX, ops.RY, ops.RZ, ops.CNOT}) | IDENTITY
+ROTATIONS_PLUS_CNOT = frozenset({ops.RX, ops.RY, ops.RZ, ops.CNOT}) | IDENTITY | _MID_MEASURE
