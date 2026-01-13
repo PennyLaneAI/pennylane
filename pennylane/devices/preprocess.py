@@ -188,49 +188,6 @@ def validate_device_wires(
 
 
 @transform
-def mid_circuit_measurements(
-    tape: QuantumScript,
-    device,
-    mcm_config=MCMConfig(),
-    **kwargs,  # pylint: disable=unused-argument
-) -> tuple[QuantumScriptBatch, PostprocessingFn]:
-    """Provide the transform to handle mid-circuit measurements.
-
-    In the case where no method is specified, if the tape or device
-    uses finite-shot, the ``qml.dynamic_one_shot`` transform will be
-    applied, otherwise ``qml.defer_measurements`` is used instead.
-
-    .. warning::
-
-        This transform is deprecated and will be removed in a future release. Instead,
-        the device should determine which mcm method to use, and explicitly include
-        :func:`~pennylane.transforms.dynamic_one_shot` or :func:`~pennylane.transforms.defer_measurements`
-        in its preprocess transforms if necessary. See :func:`DefaultQubit.setup_execution_config <pennylane.devices.DefaultQubit.setup_execution_config>`
-        and :func:`DefaultQubit.preprocess_transforms <pennylane.devices.DefaultQubit.preprocess_transforms>` for an example.
-
-    """
-
-    warnings.warn(
-        "The mid_circuit_measurements transform is deprecated. Instead, the device should "
-        "determine the best mcm method, and explicitly include qml.transforms.dynamic_one_shot "
-        "or qml.transforms.defer_measurements in the preprocess compile pileline if needed.",
-        PennyLaneDeprecationWarning,
-    )
-
-    if isinstance(mcm_config, dict):
-        mcm_config = MCMConfig(**mcm_config)
-    mcm_method = mcm_config.mcm_method
-    if mcm_method is None:
-        mcm_method = "one-shot" if tape.shots else "deferred"
-
-    if mcm_method == "one-shot":
-        return dynamic_one_shot(tape, postselect_mode=mcm_config.postselect_mode)
-    if mcm_method in ("tree-traversal", "device"):
-        return (tape,), null_postprocessing
-    return defer_measurements(tape, allow_postselect=False)
-
-
-@transform
 def validate_multiprocessing_workers(
     tape: QuantumScript, max_workers: int, device
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
