@@ -36,7 +36,7 @@ try:
     quantum_subroutine_prim = copy.deepcopy(pjit_p)
     quantum_subroutine_prim.name = "quantum_subroutine_prim"
 
-except ImportError:
+except ImportError: # pragma: no cover
     has_jax = False
     quantum_subroutine_prim = None
 
@@ -170,7 +170,7 @@ def subroutine(func, static_argnums=None, static_argnames=None):
 
     """
     if not has_jax:
-        raise ImportError("jax is required for use of subroutine")
+        raise ImportError("jax is required for use of subroutine") # pragma: no cover
 
     old_pjit = jax._src.pjit.jit_p  # pylint: disable=protected-access
 
